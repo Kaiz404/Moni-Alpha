@@ -1,5 +1,5 @@
 {
-  "name": "basic-turbo",
+  "name": "wallet",
   "private": true,
   "scripts": {
     "build": "turbo run build",
