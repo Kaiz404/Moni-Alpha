@@ -1,0 +1,281 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+import { api } from '@/lib/api/client';
+import type {
+  Transaction,
+  TransactionListResponse,
+  CreateTransaction,
+  WalletListResponse,
+  CategoryListResponse,
+} from '@repo/types';
+
+export default function TransactionsPage() {
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [wallets, setWallets] = useState<{ id: string; name: string }[]>([]);
+  const [categories, setCategories] = useState<{ id: string; name: string; type: string }[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [modal, setModal] = useState<'create' | 'edit' | null>(null);
+  const [editing, setEditing] = useState<Transaction | null>(null);
+  const [form, setForm] = useState<CreateTransaction>({
+    walletId: '',
+    amount: 0,
+    type: 'expense',
+    description: '',
+    transactionDate: new Date().toISOString().slice(0, 16),
+  } as CreateTransaction);
+
+  const fetchData = () => {
+    Promise.all([
+      api.get<TransactionListResponse>('/api/transactions?limit=100'),
+      api.get<WalletListResponse>('/api/wallets'),
+      api.get<CategoryListResponse>('/api/categories'),
+    ])
+      .then(([txRes, walletRes, catRes]) => {
+        setTransactions(txRes.transactions);
+        setWallets(walletRes.wallets.map((w) => ({ id: w.id, name: w.name })));
+        setCategories(catRes.categories.map((c) => ({ id: c.id, name: c.name, type: c.type })));
+      })
+      .catch((e) => setError(e.message))
+      .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const openCreate = () => {
+    setForm({
+      walletId: wallets[0]?.id ?? '',
+      amount: 0,
+      type: 'expense',
+      description: '',
+      transactionDate: new Date().toISOString().slice(0, 16),
+    } as CreateTransaction);
+    setEditing(null);
+    setModal('create');
+  };
+
+  const openEdit = (t: Transaction) => {
+    setEditing(t);
+    setForm({
+      walletId: t.walletId,
+      amount: t.amount,
+      type: t.type,
+      categoryId: t.categoryId,
+      description: t.description ?? '',
+      transactionDate: t.transactionDate.slice(0, 16),
+    } as CreateTransaction);
+    setModal('edit');
+  };
+
+  const formatDate = (d: string) => new Date(d).toLocaleDateString();
+  const formatAmount = (amount: number, type: string) => {
+    const n = type === 'expense' ? -amount : amount;
+    return `${n >= 0 ? '+' : ''}$${Math.abs(n).toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const payload = {
+      ...form,
+      walletId: form.walletId || wallets[0]?.id,
+      amount: Number(form.amount),
+      transactionDate: new Date(form.transactionDate!).toISOString(),
+      categoryId: form.categoryId || null,
+      description: form.description || null,
+    };
+    try {
+      if (modal === 'create') {
+        await api.post('/api/transactions', payload);
+      } else if (editing) {
+        await api.put(`/api/transactions/${editing.id}`, {
+          walletId: payload.walletId,
+          amount: payload.amount,
+          type: payload.type,
+          categoryId: payload.categoryId,
+          description: payload.description,
+          transactionDate: payload.transactionDate,
+        });
+      }
+      setModal(null);
+      setEditing(null);
+      fetchData();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed');
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('Delete this transaction?')) return;
+    try {
+      await api.delete(`/api/transactions/${id}`);
+      fetchData();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed');
+    }
+  };
+
+  const expenseCategories = categories.filter((c) => c.type === 'expense');
+  const incomeCategories = categories.filter((c) => c.type === 'income');
+
+  if (loading) return <p>Loading transactions...</p>;
+  if (error) return <p className="auth-error">Error: {error}</p>;
+
+  return (
+    <>
+      <div className="dashboard-header">
+        <h1>Transactions</h1>
+        <button onClick={openCreate} className="btn btn-primary" disabled={wallets.length === 0}>
+          Add transaction
+        </button>
+      </div>
+
+      {wallets.length === 0 && (
+        <p className="auth-error" style={{ marginBottom: '1rem' }}>
+          Create a wallet first before adding transactions.
+        </p>
+      )}
+
+      <div className="card">
+        <div className="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Description</th>
+                <th>Type</th>
+                <th>Amount</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {transactions.map((t) => (
+                <tr key={t.id}>
+                  <td>{formatDate(t.transactionDate)}</td>
+                  <td>{t.description || t.merchant || '—'}</td>
+                  <td>{t.type}</td>
+                  <td className={t.type === 'expense' ? 'negative' : 'positive'}>
+                    {formatAmount(t.amount, t.type)}
+                  </td>
+                  <td>
+                    <button onClick={() => openEdit(t)} className="btn btn-secondary btn-sm" style={{ marginRight: '0.5rem' }}>
+                      Edit
+                    </button>
+                    <button onClick={() => handleDelete(t.id)} className="btn btn-danger btn-sm">
+                      Delete
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        {transactions.length === 0 && (
+          <p style={{ color: 'color-mix(in srgb, var(--foreground) 60%, transparent)', margin: 0 }}>
+            No transactions yet.
+          </p>
+        )}
+      </div>
+
+      {modal && (
+        <div className="modal-overlay" onClick={() => setModal(null)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <h3>{modal === 'create' ? 'Add transaction' : 'Edit transaction'}</h3>
+            <form onSubmit={handleSubmit}>
+              <div className="form-row">
+                <label>Wallet</label>
+                <select
+                  value={form.walletId}
+                  onChange={(e) => setForm((f) => ({ ...f, walletId: e.target.value }))}
+                  required
+                >
+                  {wallets.map((w) => (
+                    <option key={w.id} value={w.id}>
+                      {w.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="form-row">
+                <label>Type</label>
+                <select
+                  value={form.type}
+                  onChange={(e) =>
+                    setForm((f) => ({
+                      ...f,
+                      type: e.target.value as CreateTransaction['type'],
+                    }))
+                  }
+                >
+                  <option value="expense">Expense</option>
+                  <option value="income">Income</option>
+                </select>
+              </div>
+              <div className="form-row">
+                <label>Amount</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={form.amount || ''}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, amount: parseFloat(e.target.value) || 0 }))
+                  }
+                  required
+                />
+              </div>
+              <div className="form-row">
+                <label>Category</label>
+                <select
+                  value={form.categoryId ?? ''}
+                  onChange={(e) =>
+                    setForm((f) => ({
+                      ...f,
+                      categoryId: e.target.value || null,
+                    }))
+                  }
+                >
+                  <option value="">—</option>
+                  {(form.type === 'expense' ? expenseCategories : incomeCategories).map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="form-row">
+                <label>Description</label>
+                <input
+                  value={form.description ?? ''}
+                  onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
+                  placeholder="Optional"
+                />
+              </div>
+              <div className="form-row">
+                <label>Date</label>
+                <input
+                  type="datetime-local"
+                  value={form.transactionDate ?? ''}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, transactionDate: e.target.value }))
+                  }
+                  required
+                />
+              </div>
+              <div className="form-actions">
+                <button type="button" onClick={() => setModal(null)} className="btn btn-secondary">
+                  Cancel
+                </button>
+                <button type="submit" className="btn btn-primary">
+                  {modal === 'create' ? 'Create' : 'Save'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}

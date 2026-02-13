@@ -1,0 +1,24 @@
+{
+  "name": "@repo/types",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./wallet": "./src/wallet.ts",
+    "./transaction": "./src/transaction.ts",
+    "./category": "./src/category.ts",
+    "./tag": "./src/tag.ts",
+    "./user": "./src/user.ts",
+    "./analytics": "./src/analytics.ts",
+    "./sync": "./src/sync.ts",
+    "./api": "./src/api.ts"
+  },
+  "dependencies": {
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@repo/typescript-config": "workspace:*",
+    "typescript": "5.9.2"
+  }
+}
