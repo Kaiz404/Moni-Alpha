@@ -1,9 +1,16 @@
 #!/usr/bin/env node
+/* eslint-disable no-undef */
 /**
  * Creates a test user via Supabase Admin API (bypasses email rate limit).
  * Run from apps/web: pnpm run create-test-user
  * Or: node scripts/create-test-user.mjs [email] [password] [displayName]
  */
+
+// Ensure this script only runs in Node.js environment
+if (typeof process === 'undefined') {
+  throw new Error('This script must be run in Node.js environment');
+}
+
 import { createClient } from '@supabase/supabase-js';
 import { readFileSync } from 'fs';
 import { resolve, dirname } from 'path';
@@ -68,4 +75,4 @@ async function main() {
   console.log('Or: TEST_EMAIL=' + email + ' ./scripts/test-api.sh');
 }
 
-main();
+await main();

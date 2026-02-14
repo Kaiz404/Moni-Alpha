@@ -42,11 +42,11 @@ export async function POST(request: NextRequest) {
             });
           }
           // Handle update and delete actions similarly
-        } catch (err: any) {
+        } catch (err) {
           results.wallets.push({
             localId: change.id,
             status: 'error',
-            error: err.message,
+            error: err instanceof Error ? err.message : String(err),
           });
         }
       }
