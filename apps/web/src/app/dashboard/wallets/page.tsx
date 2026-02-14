@@ -1,8 +1,13 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { api } from '@/lib/api/client';
-import type { Wallet, WalletListResponse, CreateWallet } from '@repo/types';
+import { useState } from 'react';
+import {
+  useWallets,
+  useCreateWallet,
+  useUpdateWallet,
+  useDeleteWallet,
+} from '@/lib/hooks';
+import type { Wallet, CreateWallet } from '@repo/types';
 
 const WALLET_TYPES = ['bank', 'cash', 'credit', 'debit', 'ewallet', 'investment', 'other'] as const;
 const WALLET_ICONS: Record<string, string> = {
@@ -16,9 +21,6 @@ const WALLET_ICONS: Record<string, string> = {
 };
 
 export default function WalletsPage() {
-  const [wallets, setWallets] = useState<Wallet[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
   const [modal, setModal] = useState<'create' | 'edit' | null>(null);
   const [editing, setEditing] = useState<Wallet | null>(null);
   const [form, setForm] = useState<CreateWallet>({
@@ -30,17 +32,13 @@ export default function WalletsPage() {
     icon: '🏦',
   });
 
-  const fetchWallets = () => {
-    api
-      .get<WalletListResponse>('/api/wallets')
-      .then((r) => setWallets(r.wallets))
-      .catch((e) => setError(e.message))
-      .finally(() => setLoading(false));
-  };
+  const { data: walletData, isLoading, error } = useWallets();
+  const createMutation = useCreateWallet();
+  const updateMutation = useUpdateWallet();
+  const deleteMutation = useDeleteWallet();
 
-  useEffect(() => {
-    fetchWallets();
-  }, []);
+  const wallets = walletData?.wallets ?? [];
+  const displayError = error?.message ?? createMutation.error?.message ?? updateMutation.error?.message ?? deleteMutation.error?.message ?? '';
 
   const openCreate = () => {
     setForm({
@@ -72,35 +70,36 @@ export default function WalletsPage() {
     e.preventDefault();
     try {
       if (modal === 'create') {
-        await api.post('/api/wallets', form);
+        await createMutation.mutateAsync(form);
       } else if (editing) {
-        await api.put(`/api/wallets/${editing.id}`, {
-          name: form.name,
-          type: form.type,
-          color: form.color,
-          icon: form.icon,
+        await updateMutation.mutateAsync({
+          id: editing.id,
+          payload: {
+            name: form.name,
+            type: form.type,
+            color: form.color,
+            icon: form.icon,
+          },
         });
       }
       setModal(null);
       setEditing(null);
-      fetchWallets();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed');
+    } catch {
+      // Error surfaced via mutation.error
     }
   };
 
   const handleDelete = async (id: string) => {
     if (!confirm('Delete this wallet? It will be deactivated.')) return;
     try {
-      await api.delete(`/api/wallets/${id}`);
-      fetchWallets();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed');
+      await deleteMutation.mutateAsync(id);
+    } catch {
+      // Error surfaced via mutation.error
     }
   };
 
-  if (loading) return <p>Loading wallets...</p>;
-  if (error) return <p className="auth-error">Error: {error}</p>;
+  if (isLoading) return <p>Loading wallets...</p>;
+  if (displayError) return <p className="auth-error">Error: {displayError}</p>;
 
   return (
     <>
@@ -214,7 +213,7 @@ export default function WalletsPage() {
                 <button type="button" onClick={() => setModal(null)} className="btn btn-secondary">
                   Cancel
                 </button>
-                <button type="submit" className="btn btn-primary">
+                <button type="submit" className="btn btn-primary" disabled={createMutation.isPending || updateMutation.isPending}>
                   {modal === 'create' ? 'Create' : 'Save'}
                 </button>
               </div>

@@ -156,6 +156,9 @@ importers:
       '@supabase/supabase-js':
         specifier: ^2.47.10
         version: 2.95.3
+      '@tanstack/react-query':
+        specifier: ^5.64.3
+        version: 5.90.21(react@19.2.0)
       next:
         specifier: 16.1.5
         version: 16.1.5(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
@@ -7196,6 +7199,11 @@ snapshots:
     dependencies:
       '@tanstack/query-core': 5.90.20
       react: 19.1.0
+
+  '@tanstack/react-query@5.90.21(react@19.2.0)':
+    dependencies:
+      '@tanstack/query-core': 5.90.20
+      react: 19.2.0
 
   '@tybys/wasm-util@0.10.1':
     dependencies:

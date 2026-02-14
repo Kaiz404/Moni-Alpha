@@ -1,24 +1,12 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { api } from '@/lib/api/client';
-import type { OverviewStatsResponse } from '@repo/types';
+import { useOverviewStats } from '@/lib/hooks';
 
 export default function DashboardPage() {
-  const [stats, setStats] = useState<OverviewStatsResponse | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const { data: stats, isLoading, error } = useOverviewStats();
 
-  useEffect(() => {
-    api
-      .get<OverviewStatsResponse>('/api/analytics/overview')
-      .then(setStats)
-      .catch((e) => setError(e.message))
-      .finally(() => setLoading(false));
-  }, []);
-
-  if (loading) return <p>Loading overview...</p>;
-  if (error) return <p className="auth-error">Error: {error}</p>;
+  if (isLoading) return <p>Loading overview...</p>;
+  if (error) return <p className="auth-error">Error: {error.message}</p>;
   if (!stats) return null;
 
   const { totalIncome, totalExpenses, netCashFlow, totalBalance, transactionCount } =

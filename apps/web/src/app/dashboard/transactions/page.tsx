@@ -1,21 +1,20 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { api } from '@/lib/api/client';
+import { useState } from 'react';
+import {
+  useTransactions,
+  useWallets,
+  useCategories,
+  useCreateTransaction,
+  useUpdateTransaction,
+  useDeleteTransaction,
+} from '@/lib/hooks';
 import type {
   Transaction,
-  TransactionListResponse,
   CreateTransaction,
-  WalletListResponse,
-  CategoryListResponse,
 } from '@repo/types';
 
 export default function TransactionsPage() {
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [wallets, setWallets] = useState<{ id: string; name: string }[]>([]);
-  const [categories, setCategories] = useState<{ id: string; name: string; type: string }[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
   const [modal, setModal] = useState<'create' | 'edit' | null>(null);
   const [editing, setEditing] = useState<Transaction | null>(null);
   const [form, setForm] = useState<CreateTransaction>({
@@ -26,24 +25,23 @@ export default function TransactionsPage() {
     transactionDate: new Date().toISOString().slice(0, 16),
   } as CreateTransaction);
 
-  const fetchData = () => {
-    Promise.all([
-      api.get<TransactionListResponse>('/api/transactions?limit=100'),
-      api.get<WalletListResponse>('/api/wallets'),
-      api.get<CategoryListResponse>('/api/categories'),
-    ])
-      .then(([txRes, walletRes, catRes]) => {
-        setTransactions(txRes.transactions);
-        setWallets(walletRes.wallets.map((w) => ({ id: w.id, name: w.name })));
-        setCategories(catRes.categories.map((c) => ({ id: c.id, name: c.name, type: c.type })));
-      })
-      .catch((e) => setError(e.message))
-      .finally(() => setLoading(false));
-  };
+  const { data: txData, isLoading: txLoading, error: txError } = useTransactions({ limit: 100 });
+  const { data: walletData, isLoading: walletLoading } = useWallets();
+  const { data: categoryData } = useCategories();
 
-  useEffect(() => {
-    fetchData();
-  }, []);
+  const createMutation = useCreateTransaction();
+  const updateMutation = useUpdateTransaction();
+  const deleteMutation = useDeleteTransaction();
+
+  const transactions = txData?.transactions ?? [];
+  const wallets = walletData?.wallets ?? [];
+  const categories = categoryData?.categories ?? [];
+
+  const walletsForSelect = wallets.map((w) => ({ id: w.id, name: w.name }));
+  const categoriesForSelect = categories.map((c) => ({ id: c.id, name: c.name, type: c.type }));
+
+  const isLoading = txLoading || walletLoading;
+  const error = txError?.message ?? createMutation.error?.message ?? updateMutation.error?.message ?? deleteMutation.error?.message ?? '';
 
   const openCreate = () => {
     setForm({
@@ -78,9 +76,11 @@ export default function TransactionsPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const payload = {
+    const walletId = form.walletId || wallets[0]?.id;
+    if (!walletId) return;
+    const payload: CreateTransaction = {
       ...form,
-      walletId: form.walletId || wallets[0]?.id,
+      walletId,
       amount: Number(form.amount),
       transactionDate: new Date(form.transactionDate!).toISOString(),
       categoryId: form.categoryId || null,
@@ -88,39 +88,40 @@ export default function TransactionsPage() {
     };
     try {
       if (modal === 'create') {
-        await api.post('/api/transactions', payload);
+        await createMutation.mutateAsync(payload);
       } else if (editing) {
-        await api.put(`/api/transactions/${editing.id}`, {
-          walletId: payload.walletId,
-          amount: payload.amount,
-          type: payload.type,
-          categoryId: payload.categoryId,
-          description: payload.description,
-          transactionDate: payload.transactionDate,
+        await updateMutation.mutateAsync({
+          id: editing.id,
+          payload: {
+            walletId: payload.walletId,
+            amount: payload.amount,
+            type: payload.type,
+            categoryId: payload.categoryId,
+            description: payload.description,
+            transactionDate: payload.transactionDate,
+          },
         });
       }
       setModal(null);
       setEditing(null);
-      fetchData();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed');
+    } catch {
+      // Error surfaced via mutation.error
     }
   };
 
   const handleDelete = async (id: string) => {
     if (!confirm('Delete this transaction?')) return;
     try {
-      await api.delete(`/api/transactions/${id}`);
-      fetchData();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed');
+      await deleteMutation.mutateAsync(id);
+    } catch {
+      // Error surfaced via mutation.error
     }
   };
 
-  const expenseCategories = categories.filter((c) => c.type === 'expense');
-  const incomeCategories = categories.filter((c) => c.type === 'income');
+  const expenseCategories = categoriesForSelect.filter((c) => c.type === 'expense');
+  const incomeCategories = categoriesForSelect.filter((c) => c.type === 'income');
 
-  if (loading) return <p>Loading transactions...</p>;
+  if (isLoading) return <p>Loading transactions...</p>;
   if (error) return <p className="auth-error">Error: {error}</p>;
 
   return (
@@ -191,7 +192,7 @@ export default function TransactionsPage() {
                   onChange={(e) => setForm((f) => ({ ...f, walletId: e.target.value }))}
                   required
                 >
-                  {wallets.map((w) => (
+                  {walletsForSelect.map((w) => (
                     <option key={w.id} value={w.id}>
                       {w.name}
                     </option>
@@ -268,7 +269,7 @@ export default function TransactionsPage() {
                 <button type="button" onClick={() => setModal(null)} className="btn btn-secondary">
                   Cancel
                 </button>
-                <button type="submit" className="btn btn-primary">
+                <button type="submit" className="btn btn-primary" disabled={createMutation.isPending || updateMutation.isPending}>
                   {modal === 'create' ? 'Create' : 'Save'}
                 </button>
               </div>

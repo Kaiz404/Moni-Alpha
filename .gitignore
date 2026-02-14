@@ -27,6 +27,8 @@ out/
 build
 dist
 
+# Supabase
+supabase/.temp*/
 
 # Debug
 npm-debug.log*
