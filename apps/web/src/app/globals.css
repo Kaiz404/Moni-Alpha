@@ -142,6 +142,36 @@ a {
   cursor: not-allowed;
 }
 
+.auth-divider {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin: 0.5rem 0;
+}
+
+.auth-divider::before,
+.auth-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: color-mix(in srgb, var(--foreground) 20%, transparent);
+}
+
+.auth-divider span {
+  font-size: 0.875rem;
+  color: color-mix(in srgb, var(--foreground) 50%, transparent);
+}
+
+.auth-submit.auth-google {
+  background: transparent;
+  color: var(--foreground);
+  border: 1px solid color-mix(in srgb, var(--foreground) 25%, transparent);
+}
+
+.auth-submit.auth-google:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--foreground) 5%, transparent);
+}
+
 .auth-footer {
   margin-top: 1.5rem;
   text-align: center;
