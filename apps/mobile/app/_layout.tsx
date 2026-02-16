@@ -10,6 +10,8 @@ import "../global.css";
 
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { QueryProvider } from "@/lib/query/query-client";
+import { AuthProvider } from "@/lib/auth/auth-context";
+import { AuthGuard } from "@/components/auth-guard";
 
 export const unstable_settings = {
   anchor: "(tabs)",
@@ -21,13 +23,18 @@ export default function RootLayout() {
   return (
     <QueryProvider>
       <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
-        <Stack>
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          <Stack.Screen
-            name="modal"
-            options={{ presentation: "modal", title: "Modal" }}
-          />
-        </Stack>
+        <AuthProvider>
+          <AuthGuard>
+            <Stack>
+              <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+              <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+              <Stack.Screen
+                name="modal"
+                options={{ presentation: "modal", title: "Modal" }}
+              />
+            </Stack>
+          </AuthGuard>
+        </AuthProvider>
         <StatusBar style="auto" />
       </ThemeProvider>
     </QueryProvider>
