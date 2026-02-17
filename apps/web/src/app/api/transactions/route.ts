@@ -143,6 +143,7 @@ export async function POST(request: NextRequest) {
       const tagInserts = validated.tagIds.map(tagId => ({
         transaction_id: data.id,
         tag_id: tagId,
+        user_id: user.id,
       }));
 
       await supabase.from('transaction_tags').insert(tagInserts);

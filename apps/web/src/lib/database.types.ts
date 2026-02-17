@@ -144,14 +144,17 @@ export type Database = {
         Row: {
           tag_id: string
           transaction_id: string
+          user_id: string
         }
         Insert: {
           tag_id: string
           transaction_id: string
+          user_id: string
         }
         Update: {
           tag_id?: string
           transaction_id?: string
+          user_id?: string
         }
         Relationships: [
           {

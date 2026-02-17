@@ -65,6 +65,7 @@ export async function PUT(
           updates.tagIds.map((tagId) => ({
             transaction_id: id,
             tag_id: tagId,
+            user_id: user.id,
           }))
         );
       }

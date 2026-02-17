@@ -1,0 +1,55 @@
+# See https://docs.powersync.com/usage/sync-rules/compatibility for config:edition details
+config:
+  edition: 2
+
+# Define sync rules to control which data is synced to each user
+# Docs: https://docs.powersync.com/usage/sync-rules
+bucket_definitions:
+  user_profile:
+    # Sync the user's profile information
+    # Parameter Query, selecting a user_id parameter:
+    parameters: SELECT request.user_id() as user_id
+    data:
+      - SELECT * FROM profiles WHERE profiles.id = bucket.user_id
+
+  user_wallet:
+    # Only sync wallet rows belonging to the user, using fields from the auth token
+    # Parameter Query, selecting a user_id parameter:
+    parameters: SELECT request.user_id() as user_id
+    data:
+      - SELECT * FROM wallets WHERE wallets.user_id = bucket.user_id
+
+  user_transactions:
+    # Only sync transactions rows belonging to the user, using fields from the auth token
+    # Parameter Query, selecting a user_id parameter:
+    parameters: SELECT request.user_id() as user_id
+    data:
+      - SELECT * FROM transactions WHERE transactions.user_id = bucket.user_id
+
+  user_categories_without_user_id:
+    # Sync system categories (user_id IS NULL)
+    data:
+      # System categories (no parameters needed)
+      - SELECT * FROM categories WHERE categories.user_id IS NULL
+
+  user_categories_with_user_id:
+    # Sync user's personal categories
+    # Parameter Query, selecting a user_id parameter:
+    parameters: SELECT request.user_id() as user_id
+    data:
+      # User-specific categories
+      - SELECT * FROM categories WHERE categories.user_id = bucket.user_id
+
+  user_tags:
+    # Sync tags belonging to the user
+    # Parameter Query, selecting a user_id parameter:
+    parameters: SELECT request.user_id() as user_id
+    data:
+      - SELECT * FROM tags WHERE tags.user_id = bucket.user_id
+
+  user_transaction_tags:
+    # Sync transaction-tag relationships for transactions the user has access to
+    # Parameter Query, selecting a user_id parameter:
+    parameters: SELECT request.user_id() as user_id
+    data:
+      - SELECT transaction_id || '.' || tag_id as id, * FROM transaction_tags WHERE transaction_tags.user_id = bucket.user_id
