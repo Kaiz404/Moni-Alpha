@@ -1,27 +1,28 @@
-import { supabase } from '@/lib/supabase/client';
+import { syncSystem } from '@/lib/powersync/Powersync';
 
 export async function getWalletBalance(walletId: string): Promise<number> {
+  const { db } = syncSystem;
+
   // Get initial balance from wallet
-  const { data: wallet, error: walletError } = await supabase
-    .from('wallets')
+  const wallet = await db
+    .selectFrom('wallets')
+    .where('id', '=', walletId)
     .select('initial_balance')
-    .eq('id', walletId)
-    .single();
+    .executeTakeFirst();
 
-  if (walletError) throw walletError;
+  if (!wallet) throw new Error('Wallet not found');
 
-  const initialBalance = parseFloat(wallet.initial_balance);
+  const initialBalance = parseFloat(wallet.initial_balance || '0');
 
   // Calculate balance from transactions
-  const { data: transactions, error: txError } = await supabase
-    .from('transactions')
-    .select('amount, type')
-    .eq('wallet_id', walletId);
+  const transactions = await db
+    .selectFrom('transactions')
+    .where('wallet_id', '=', walletId)
+    .select(['amount', 'type'])
+    .execute();
 
-  if (txError) throw txError;
-
-  const transactionBalance = (transactions || []).reduce((total, tx) => {
-    const amount = parseFloat(tx.amount);
+  const transactionBalance = transactions.reduce((total, tx) => {
+    const amount = parseFloat(tx.amount || '0');
     return tx.type === 'income' ? total + amount : total - amount;
   }, 0);
 

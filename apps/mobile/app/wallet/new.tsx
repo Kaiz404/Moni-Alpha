@@ -42,7 +42,7 @@ export default function NewWalletScreen() {
     }
     setLoading(true);
     try {
-      await createWallet(user.id, parsed.data);
+      await createWallet(parsed.data);
       router.back();
     } catch (e) {
       Alert.alert('Error', e instanceof Error ? e.message : 'Failed to create wallet');

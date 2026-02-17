@@ -60,7 +60,7 @@ export default function NewTransactionScreen() {
     }
     setLoading(true);
     try {
-      await createTransaction(user.id, parsed.data);
+      await createTransaction(parsed.data);
       router.back();
     } catch (e) {
       Alert.alert('Error', e instanceof Error ? e.message : 'Failed to create transaction');

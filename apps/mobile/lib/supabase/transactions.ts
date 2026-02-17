@@ -1,25 +1,26 @@
-import { supabase } from '@/lib/supabase/client';
+import { syncSystem } from '@/lib/powersync/Powersync';
 import type { CreateTransaction } from '@repo/types';
+import { randomUUID } from 'expo-crypto';
 
 export async function getTransactions(walletId?: string) {
-  let query = supabase
-    .from('transactions')
-    .select('*')
-    .order('transaction_date', { ascending: false });
+  const { db } = syncSystem;
+
+  let query = db
+    .selectFrom('transactions')
+    .selectAll()
+    .orderBy('transaction_date', 'desc');
 
   if (walletId) {
-    query = query.eq('wallet_id', walletId);
+    query = query.where('wallet_id', '=', walletId);
   }
 
-  const { data, error } = await query;
+  const transactions = await query.execute();
 
-  if (error) throw error;
-
-  return (data || []).map(t => ({
+  return transactions.map(t => ({
     id: t.id,
     userId: t.user_id,
     walletId: t.wallet_id,
-    amount: parseFloat(t.amount),
+    amount: parseFloat(t.amount || '0'),
     type: t.type,
     categoryId: t.category_id,
     transferToWalletId: t.transfer_to_wallet_id,
@@ -39,15 +40,21 @@ export async function getTransactions(walletId?: string) {
 }
 
 export async function createTransaction(data: CreateTransaction) {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('User not authenticated');
+  const { db, supabaseConnector } = syncSystem;
+  
+  const userId = await supabaseConnector.getUserId()
 
-  const { data: result, error } = await supabase
-    .from('transactions')
-    .insert({
-      user_id: user.id,
+  if (!userId) throw new Error('User ID required');
+
+  const id = randomUUID();
+
+  const result = await db
+    .insertInto('transactions')
+    .values({
+      id,
+      user_id: userId,
       wallet_id: data.walletId,
-      amount: data.amount,
+      amount: data.amount.toString(),
       type: data.type,
       category_id: data.categoryId || null,
       transfer_to_wallet_id: data.transferToWalletId || null,
@@ -55,18 +62,18 @@ export async function createTransaction(data: CreateTransaction) {
       merchant: data.merchant || null,
       notes: data.notes || null,
       transaction_date: data.transactionDate || new Date().toISOString(),
-      metadata: {},
+      metadata: JSON.stringify({}),
     })
-    .select()
-    .single();
+    .returningAll()
+    .executeTakeFirst();
 
-  if (error) throw error;
+  if (!result) throw new Error('Failed to create transaction');
 
   return {
     id: result.id,
     userId: result.user_id,
     walletId: result.wallet_id,
-    amount: parseFloat(result.amount),
+    amount: parseFloat(result.amount || '0'),
     type: result.type,
     categoryId: result.category_id,
     transferToWalletId: result.transfer_to_wallet_id,
@@ -79,17 +86,17 @@ export async function createTransaction(data: CreateTransaction) {
     locationLongitude: result.location_longitude ? parseFloat(result.location_longitude) : null,
     locationName: result.location_name,
     receiptImageUrl: result.receipt_image_url,
-    metadata: result.metadata,
+    metadata: result.metadata ? JSON.parse(result.metadata) : {},
     createdAt: result.created_at,
     updatedAt: result.updated_at,
   };
 }
 
 export async function deleteTransaction(id: string) {
-  const { error } = await supabase
-    .from('transactions')
-    .delete()
-    .eq('id', id);
+  const { db } = syncSystem;
 
-  if (error) throw error;
+  await db
+    .deleteFrom('transactions')
+    .where('id', '=', id)
+    .execute();
 }

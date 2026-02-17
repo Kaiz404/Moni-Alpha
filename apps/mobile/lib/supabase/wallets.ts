@@ -1,32 +1,35 @@
-import { supabase } from '@/lib/supabase/client';
+import { syncSystem } from '@/lib/powersync/Powersync';
 import { getWalletBalances } from '@/lib/supabase/balances';
 import type { CreateWallet } from '@repo/types';
+import { randomUUID } from 'expo-crypto';
 
 export async function getWallets() {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('User not authenticated');
+  const { db, supabaseConnector } = syncSystem;
 
-  const { data, error } = await supabase
-    .from('wallets')
-    .select('*')
-    .eq('user_id', user.id)
-    .eq('is_active', true)
-    .order('display_order', { ascending: true });
+  const userId = await supabaseConnector.getUserId()
 
-  if (error) throw error;
+  if (!userId) throw new Error('User ID required');
+
+  const wallets = await db
+    .selectFrom('wallets')
+    .selectAll()
+    .where('user_id', '=', userId)
+    .where('is_active', '=', 1)
+    .orderBy('display_order', 'asc')
+    .execute();
 
   // Get current balances for all wallets
-  const walletIds = (data || []).map(w => w.id);
+  const walletIds = wallets.map(w => w.id);
   const balances = await getWalletBalances(walletIds);
 
-  return (data || []).map(w => ({
+  return wallets.map(w => ({
     id: w.id,
     userId: w.user_id,
     name: w.name,
     type: w.type,
     currency: w.currency,
-    initialBalance: parseFloat(w.initial_balance),
-    currentBalance: balances[w.id] || parseFloat(w.initial_balance),
+    initialBalance: parseFloat(w.initial_balance || '0'),
+    currentBalance: balances[w.id] || parseFloat(w.initial_balance || '0'),
     color: w.color,
     icon: w.icon,
     isActive: w.is_active,
@@ -37,25 +40,31 @@ export async function getWallets() {
 }
 
 export async function createWallet(data: CreateWallet) {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('User not authenticated');
+  const { db, supabaseConnector } = syncSystem;
 
-  const { data: result, error } = await supabase
-    .from('wallets')
-    .insert({
-      user_id: user.id,
+  const userId = await supabaseConnector.getUserId()
+
+  if (!userId) throw new Error('User ID required');
+
+  const id = randomUUID();
+
+  const result = await db
+    .insertInto('wallets')
+    .values({ 
+      id,
+      user_id: userId,
       name: data.name,
       type: data.type,
       currency: data.currency ?? 'USD',
-      initial_balance: data.initialBalance ?? 0,
+      initial_balance: (data.initialBalance ?? 0).toString(),
       color: data.color,
       icon: data.icon,
       display_order: 0,
     })
-    .select()
-    .single();
+    .returningAll()
+    .executeTakeFirst();
 
-  if (error) throw error;
+  if (!result) throw new Error('Failed to create wallet');
 
   return {
     id: result.id,
@@ -63,7 +72,7 @@ export async function createWallet(data: CreateWallet) {
     name: result.name,
     type: result.type,
     currency: result.currency,
-    initialBalance: parseFloat(result.initial_balance),
+    initialBalance: parseFloat(result.initial_balance || '0'),
     color: result.color,
     icon: result.icon,
     isActive: result.is_active,
@@ -74,17 +83,22 @@ export async function createWallet(data: CreateWallet) {
 }
 
 export async function updateWallet(id: string, data: Partial<CreateWallet>) {
-  const { data: result, error } = await supabase
-    .from('wallets')
-    .update({
-      ...data,
-      initial_balance: data.initialBalance,
-    })
-    .eq('id', id)
-    .select()
-    .single();
+  const { db } = syncSystem;
 
-  if (error) throw error;
+  const updateData: any = { ...data };
+  if (data.initialBalance !== undefined) {
+    updateData.initial_balance = data.initialBalance.toString();
+  }
+  delete updateData.initialBalance;
+
+  const result = await db
+    .updateTable('wallets')
+    .set(updateData)
+    .where('id', '=', id)
+    .returningAll()
+    .executeTakeFirst();
+
+  if (!result) throw new Error('Failed to update wallet');
 
   return {
     id: result.id,
@@ -92,7 +106,7 @@ export async function updateWallet(id: string, data: Partial<CreateWallet>) {
     name: result.name,
     type: result.type,
     currency: result.currency,
-    initialBalance: parseFloat(result.initial_balance),
+    initialBalance: parseFloat(result.initial_balance || '0'),
     color: result.color,
     icon: result.icon,
     isActive: result.is_active,
@@ -103,10 +117,10 @@ export async function updateWallet(id: string, data: Partial<CreateWallet>) {
 }
 
 export async function deleteWallet(id: string) {
-  const { error } = await supabase
-    .from('wallets')
-    .delete()
-    .eq('id', id);
+  const { db } = syncSystem;
 
-  if (error) throw error;
+  await db
+    .deleteFrom('wallets')
+    .where('id', '=', id)
+    .execute();
 }

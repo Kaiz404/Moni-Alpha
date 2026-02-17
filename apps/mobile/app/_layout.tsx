@@ -14,7 +14,7 @@ import { AuthProvider } from "@/lib/auth/auth-context";
 import { AuthGuard } from "@/components/auth-guard";
 import { PowersyncProvider } from "@/lib/powersync/PowersyncProvider";
 import { useEffect } from "react";
-import { system } from "@/lib/powersync/Powersync";
+import { syncSystem } from "@/lib/powersync/Powersync";
 
 export const unstable_settings = {
   anchor: "(tabs)",
@@ -25,7 +25,7 @@ export default function RootLayout() {
 
 
   useEffect(() => {
-    system.init();
+    syncSystem.init();
   }, []);
 
   return (

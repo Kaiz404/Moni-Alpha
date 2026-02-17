@@ -24,9 +24,11 @@ export class SupabaseConnector implements PowerSyncBackendConnector {
   constructor() {
     this.client = createClient(supabaseUrl, supabaseAnonKey, {
       auth: {
+        storage: mmkvStorage,
+        autoRefreshToken: true,
         persistSession: true,
-        storage: mmkvStorage
-      }
+        detectSessionInUrl: false,
+      },
     });
   }
 
@@ -41,7 +43,7 @@ export class SupabaseConnector implements PowerSyncBackendConnector {
     }
   }
 
-  async userId() {
+  async getUserId() {
     const {
       data: { session },
     } = await this.client.auth.getSession();
