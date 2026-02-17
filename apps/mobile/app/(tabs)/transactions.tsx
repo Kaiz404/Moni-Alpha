@@ -1,7 +1,7 @@
-import { useLocalSearchParams } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { View, Text, FlatList, TouchableOpacity, RefreshControl } from 'react-native';
-import { Link } from 'expo-router';
+import { Link, useLocalSearchParams } from 'expo-router';
+import { useFocusEffect } from '@react-navigation/native';
 import { useAuth } from '@/lib/auth/auth-context';
 import { getTransactions } from '@/lib/supabase/transactions';
 import { getWallets } from '@/lib/supabase/wallets';
@@ -13,7 +13,7 @@ export default function TransactionsScreen() {
   const [wallets, setWallets] = useState<any[]>([]);
   const [refreshing, setRefreshing] = useState(false);
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     if (!user) return;
 
     try {
@@ -27,7 +27,7 @@ export default function TransactionsScreen() {
     } catch (error) {
       console.error('Error loading transactions:', error);
     }
-  };
+  }, [user, walletId]);
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -35,9 +35,11 @@ export default function TransactionsScreen() {
     setRefreshing(false);
   };
 
-  useEffect(() => {
-    loadData();
-  }, [user, walletId]);
+  useFocusEffect(
+    useCallback(() => {
+      loadData();
+    }, [loadData])
+  );
 
   const walletMap = Object.fromEntries(wallets.map((w) => [w.id, w]));
 

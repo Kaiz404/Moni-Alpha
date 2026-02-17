@@ -50,7 +50,7 @@ export async function createWallet(data: CreateWallet) {
 
   const result = await db
     .insertInto('wallets')
-    .values({ 
+    .values({
       id,
       user_id: userId,
       name: data.name,
@@ -59,6 +59,7 @@ export async function createWallet(data: CreateWallet) {
       initial_balance: (data.initialBalance ?? 0).toString(),
       color: data.color,
       icon: data.icon,
+      is_active: 1,
       display_order: 0,
     })
     .returningAll()

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 import {
   View,
   Text,
@@ -7,6 +7,7 @@ import {
   RefreshControl,
 } from 'react-native';
 import { Link, router } from 'expo-router';
+import { useFocusEffect } from '@react-navigation/native';
 import { useAuth } from '@/lib/auth/auth-context';
 import { getWallets } from '@/lib/supabase/wallets';
 import { getWalletBalances } from '@/lib/supabase/balances';
@@ -43,9 +44,11 @@ export default function WalletsScreen() {
     setRefreshing(false);
   }, [loadData]);
 
-  useEffect(() => {
-    loadData();
-  }, [loadData]);
+  useFocusEffect(
+    useCallback(() => {
+      loadData();
+    }, [loadData])
+  );
 
   return (
     <View className="flex-1 p-4 bg-white dark:bg-gray-900">
