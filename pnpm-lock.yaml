@@ -20,12 +20,21 @@ importers:
 
   apps/mobile:
     dependencies:
+      '@azure/core-asynciterator-polyfill':
+        specifier: ^1.0.2
+        version: 1.0.2
       '@expo/vector-icons':
         specifier: ^15.0.3
         version: 15.0.3(expo-font@14.0.11(expo@54.0.33(@babel/core@7.29.0)(@expo/metro-runtime@6.1.2)(expo-router@6.0.23)(react-native@0.81.5(@babel/core@7.29.0)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0))(react-native@0.81.5(@babel/core@7.29.0)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0))(react-native@0.81.5(@babel/core@7.29.0)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0)
+      '@journeyapps/react-native-quick-sqlite':
+        specifier: ^2.5.1
+        version: 2.5.1(react-native@0.81.5(@babel/core@7.29.0)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0)
       '@powersync/kysely-driver':
         specifier: ^1.3.3
         version: 1.3.3(@powersync/common@1.47.0)
+      '@powersync/react-native':
+        specifier: ^1.30.0
+        version: 1.30.0(@journeyapps/react-native-quick-sqlite@2.5.1(react-native@0.81.5(@babel/core@7.29.0)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0))(@powersync/common@1.47.0)(react-native@0.81.5(@babel/core@7.29.0)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0)
       '@react-navigation/bottom-tabs':
         specifier: ^7.4.0
         version: 7.13.0(@react-navigation/native@7.1.28(react-native@0.81.5(@babel/core@7.29.0)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0))(react-native-safe-area-context@5.6.2(react-native@0.81.5(@babel/core@7.29.0)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0))(react-native-screens@4.16.0(react-native@0.81.5(@babel/core@7.29.0)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0))(react-native@0.81.5(@babel/core@7.29.0)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0)
@@ -135,6 +144,9 @@ importers:
         specifier: ^3.24.1
         version: 3.25.76
     devDependencies:
+      '@babel/plugin-transform-async-generator-functions':
+        specifier: ^7.29.0
+        version: 7.29.0(@babel/core@7.29.0)
       '@types/react':
         specifier: ~19.1.0
         version: 19.1.17
@@ -294,6 +306,10 @@ packages:
     peerDependenciesMeta:
       graphql:
         optional: true
+
+  '@azure/core-asynciterator-polyfill@1.0.2':
+    resolution: {integrity: sha512-3rkP4LnnlWawl0LZptJOdXNrT/fHp2eQMadoasa6afspXdpGrtPZuAQc2PD0cpgyuoXtUWyC3tv7xfntjGS5Dw==}
+    engines: {node: '>=12.0.0'}
 
   '@babel/code-frame@7.10.4':
     resolution: {integrity: sha512-vG6SvB6oYEhvgisZNFRmRCUkLz11c7rp+tbNTynGqc6mS1d5ATd/sGyV6W0KZZnXRKMTzZDRgQT3Ou9jhpAfUg==}
@@ -1166,6 +1182,12 @@ packages:
     resolution: {integrity: sha512-u3UPsIilWKOM3F9CXtrG8LEJmNxwoCQC/XVj4IKYXvvpx7QIi/Kg1LI5uDmDpKlac62NUtX7eLjRh+jVZcLOzw==}
     engines: {node: ^14.15.0 || ^16.10.0 || >=18.0.0}
 
+  '@journeyapps/react-native-quick-sqlite@2.5.1':
+    resolution: {integrity: sha512-LDSR8j86bzvoogg1HMprnS4g6Tx0ySNBeKvrCwvhWSyY3H9L4FpU5zMV2S4NEjn3RYk2/klcCc0KB/eyITgwPQ==}
+    peerDependencies:
+      react: '*'
+      react-native: '*'
+
   '@jridgewell/gen-mapping@0.3.13':
     resolution: {integrity: sha512-2kkt/7niJ6MgEPxF0bYdQ6etZaA+fQvDcLKckhy1yIQOzaoKjBBjSj63/aLVjYE3qhRt5dvM+uUyfCg6UKCBbA==}
 
@@ -1265,6 +1287,23 @@ packages:
     resolution: {integrity: sha512-ODktTJvPWjxYDPoyTDaK5n04d5aO8MGYR7QyKXohiHaRK47U1GKCcsT0Ay7nmDT1MOj7dn6pY9wUdKFosACLrA==}
     peerDependencies:
       '@powersync/common': ^1.47.0
+
+  '@powersync/react-native@1.30.0':
+    resolution: {integrity: sha512-vr/15pGSX/QfYwpZIKC6wuZjjFtgVLVS1kUUL4+3Vzp4lFrDj7LA53lvKMyfiOjj64ffTjVRSE6cjnejWo5xbQ==}
+    peerDependencies:
+      '@journeyapps/react-native-quick-sqlite': ^2.5.0
+      '@powersync/common': ^1.47.0
+      react: '*'
+      react-native: '*'
+    peerDependenciesMeta:
+      '@journeyapps/react-native-quick-sqlite':
+        optional: true
+
+  '@powersync/react@1.8.3':
+    resolution: {integrity: sha512-eIxtYRC0puX1chxnjY5NlXjnUYOuZUL4QRIzpnck+nLqINxX9YHLmaFD3wvoYXfd41cB7VChAxUqMCXQbbXzOQ==}
+    peerDependencies:
+      '@powersync/common': ^1.47.0
+      react: '*'
 
   '@radix-ui/primitive@1.1.3':
     resolution: {integrity: sha512-JTF99U/6XIjCBo0wqkU5sK10glYe27MRRsfwoiq5zzOEZLHU3A3KCMa5X/azekYRCJ0HlwI0crAXS/5dEHTzDg==}
@@ -5005,6 +5044,8 @@ snapshots:
 
   '@0no-co/graphql.web@1.2.0': {}
 
+  '@azure/core-asynciterator-polyfill@1.0.2': {}
+
   '@babel/code-frame@7.10.4':
     dependencies:
       '@babel/highlight': 7.25.9
@@ -6163,6 +6204,11 @@ snapshots:
       '@types/yargs': 17.0.35
       chalk: 4.1.2
 
+  '@journeyapps/react-native-quick-sqlite@2.5.1(react-native@0.81.5(@babel/core@7.29.0)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0)':
+    dependencies:
+      react: 19.1.0
+      react-native: 0.81.5(@babel/core@7.29.0)(@types/react@19.1.17)(react@19.1.0)
+
   '@jridgewell/gen-mapping@0.3.13':
     dependencies:
       '@jridgewell/sourcemap-codec': 1.5.5
@@ -6247,6 +6293,21 @@ snapshots:
     dependencies:
       '@powersync/common': 1.47.0
       kysely: 0.28.11
+
+  '@powersync/react-native@1.30.0(@journeyapps/react-native-quick-sqlite@2.5.1(react-native@0.81.5(@babel/core@7.29.0)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0))(@powersync/common@1.47.0)(react-native@0.81.5(@babel/core@7.29.0)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0)':
+    dependencies:
+      '@powersync/common': 1.47.0
+      '@powersync/react': 1.8.3(@powersync/common@1.47.0)(react@19.1.0)
+      async-mutex: 0.5.0
+      react: 19.1.0
+      react-native: 0.81.5(@babel/core@7.29.0)(@types/react@19.1.17)(react@19.1.0)
+    optionalDependencies:
+      '@journeyapps/react-native-quick-sqlite': 2.5.1(react-native@0.81.5(@babel/core@7.29.0)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0)
+
+  '@powersync/react@1.8.3(@powersync/common@1.47.0)(react@19.1.0)':
+    dependencies:
+      '@powersync/common': 1.47.0
+      react: 19.1.0
 
   '@radix-ui/primitive@1.1.3': {}
 

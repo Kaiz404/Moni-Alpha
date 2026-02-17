@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import type { Session, User } from '@supabase/supabase-js';
-import { supabase } from '@/lib/supabase/client';
 import { signInSchema, signUpSchema } from '@repo/types';
+import { syncSystem, useSyncSystem } from '../powersync/Powersync';
 
 type AuthContextType = {
   user: User | null;
@@ -19,14 +19,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  const { supabaseConnector } = useSyncSystem();
+
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabaseConnector.client.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
       setIsLoading(false);
     });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+    const { data: { subscription } } = supabaseConnector.client.auth.onAuthStateChange(
       (_event, session) => {
         setSession(session);
         setUser(session?.user ?? null);
@@ -41,7 +43,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!parsed.success) {
       return { error: new Error(parsed.error.errors[0]?.message ?? 'Invalid input') };
     }
-    const { error } = await supabase.auth.signInWithPassword({
+    const { error } = await supabaseConnector.client.auth.signInWithPassword({
       email: parsed.data.email,
       password: parsed.data.password,
     });
@@ -53,14 +55,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!parsed.success) {
       return { error: new Error(parsed.error.errors[0]?.message ?? 'Invalid input') };
     }
-    const { data, error } = await supabase.auth.signUp({
+    const { data, error } = await supabaseConnector.client.auth.signUp({
       email: parsed.data.email,
       password: parsed.data.password,
       options: { data: { display_name: parsed.data.displayName } },
     });
     if (error) return { error: new Error(error.message) };
     if (data.user) {
-      await supabase.from('profiles').insert({
+      await supabaseConnector.client.from('profiles').insert({
         id: data.user.id,
         display_name: parsed.data.displayName,
         preferences: { currency: 'USD', theme: 'system', notifications_enabled: true },
@@ -70,7 +72,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signOut = async () => {
-    await supabase.auth.signOut();
+    await syncSystem.powersync.disconnectAndClear();
+    await supabaseConnector.client.auth.signOut();
   };
 
   return (
