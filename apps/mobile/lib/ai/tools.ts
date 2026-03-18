@@ -98,9 +98,9 @@ export function createFinanceTools(onPropose: (tx: PendingTransaction) => void) 
 
     create_transaction: tool({
       description:
-        'Propose a new transaction for user confirmation. You MUST have the walletId (from get_wallets) before calling this. The user will see a confirmation card and must tap Confirm to save it.',
+        'Propose a new transaction for user confirmation. You MUST call get_wallets first and use an exact wallet ID from that response. Never invent or guess wallet IDs. The user will see a confirmation card and must tap Confirm to save it.',
       inputSchema: z.object({
-        walletId: z.string().describe('Target wallet ID obtained from get_wallets'),
+        walletId: z.string().describe('Exact wallet ID from get_wallets — never make this up'),
         amount: z.number().positive().describe('Transaction amount — always a positive number'),
         type: z
           .enum(['income', 'expense', 'transfer'])
@@ -118,19 +118,32 @@ export function createFinanceTools(onPropose: (tx: PendingTransaction) => void) 
         try {
           const wallets = await getWallets();
           const wallet = wallets.find((w) => w.id === data.walletId);
+
+          // Guard: the model hallucinated a wallet ID that doesn't exist.
+          // Return an error result (not throw) so the model can see it and
+          // self-correct by calling get_wallets on its next step.
           if (!wallet) {
-            console.warn(TAG, `create_transaction: walletId "${data.walletId}" not found among`, wallets.map((w) => w.id));
+            const available = wallets.map((w) => ({ id: w.id, name: w.name }));
+            console.warn(
+              TAG,
+              `create_transaction: walletId "${data.walletId}" not found. Available:`,
+              available,
+            );
+            return {
+              error: `Wallet ID "${data.walletId}" does not exist. You must call get_wallets first and use one of the real IDs listed below.`,
+              available_wallets: available,
+            };
           }
 
           const pending: PendingTransaction = {
-            walletId: data.walletId,
+            walletId: wallet.id,
             amount: data.amount,
             type: data.type,
             merchant: data.merchant ?? null,
             description: data.description ?? null,
             categoryId: data.categoryId ?? null,
             transactionDate: data.transactionDate ?? new Date().toISOString(),
-            walletName: wallet?.name ?? 'Unknown Wallet',
+            walletName: wallet.name ?? 'Wallet',
           };
 
           console.log(TAG, 'create_transaction: firing onPropose with:', JSON.stringify(pending, null, 2));
