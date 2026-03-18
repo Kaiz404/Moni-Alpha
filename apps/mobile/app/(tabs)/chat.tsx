@@ -88,7 +88,9 @@ export default function ChatScreen() {
 
     setMessages((prev) => [...prev, userMsg, assistantMsg]);
 
-    const updatedHistory: AiHistoryMessage[] = [
+    // `any[]` because mid-loop messages include tool-call / tool-result roles
+    // that aren't in the simple AiHistoryMessage type.
+    const currentMessages: any[] = [
       ...aiHistory,
       { role: 'user', content: text },
     ];
@@ -104,7 +106,6 @@ export default function ChatScreen() {
         status: 'pending',
       };
       setMessages((prev) => {
-        // Insert the confirmation card just before the streaming assistant bubble
         const assistantIdx = prev.findIndex((m) => m.id === assistantId);
         if (assistantIdx === -1) return [...prev, confirmMsg];
         const next = [...prev];
@@ -114,97 +115,172 @@ export default function ChatScreen() {
     });
 
     try {
-      console.log(TAG, 'calling streamText…');
-      // AI SDK v5 types don't yet expose maxSteps on streamText; cast to pass it through
-      const result = streamText({
-        model,
-        system: FINANCE_SYSTEM_PROMPT,
-        messages: updatedHistory,
-        tools,
-        maxSteps: 6,
-      } as any);
-
+      // ── Manual agentic loop ──────────────────────────────────────────────────
+      // maxSteps is not supported by this AI SDK build on streamText, so we
+      // drive the tool-call → result → continue cycle ourselves.
+      const MAX_STEPS = 6;
       let fullText = '';
       let deltaCount = 0;
+      let loggedTextDeltaKeys = false;
+      let loggedToolCallKeys = false;
+      let loggedToolResultKeys = false;
 
-      // Use fullStream to log every event type (text, tool-calls, finish, errors)
-      for await (const part of (result as any).fullStream) {
-        switch (part.type) {
-          case 'text-delta': {
-            // AI SDK v5/v6 renamed the property — probe all known variants
-            const delta: string =
-              part.textDelta ??   // AI SDK v4
-              part.delta ??       // AI SDK v5 candidate
-              part.text ??        // fallback
-              '';
-            if (deltaCount === 0) {
-              // Log the first delta part so we can confirm the exact shape
-              console.log(TAG, 'first text-delta part keys:', Object.keys(part));
-              console.log(TAG, 'first text-delta part:', JSON.stringify(part));
+      for (let step = 1; step <= MAX_STEPS; step++) {
+        console.log(TAG, `\n─── agentic step ${step}/${MAX_STEPS} ──────────────`);
+        console.log(TAG, `messages going in: ${currentMessages.length}`);
+
+        const stepToolCalls: any[] = [];
+        const stepToolResults: any[] = [];
+        let stepFinishReason = 'stop';
+
+        const result = streamText({
+          model,
+          system: FINANCE_SYSTEM_PROMPT,
+          messages: currentMessages,
+          tools,
+        } as any);
+
+        for await (const part of (result as any).fullStream) {
+          switch (part.type) {
+            case 'text-delta': {
+              const delta: string =
+                part.textDelta ?? part.delta ?? part.text ?? '';
+              if (!loggedTextDeltaKeys) {
+                console.log(TAG, 'text-delta keys:', Object.keys(part), '→ value:', JSON.stringify(delta));
+                loggedTextDeltaKeys = true;
+              }
+              fullText += delta;
+              deltaCount++;
+              setMessages((prev) =>
+                prev.map((m) =>
+                  m.id === assistantId
+                    ? ({ ...m, content: fullText } as AssistantMessage)
+                    : m,
+                ),
+              );
+              break;
             }
-            fullText += delta;
-            deltaCount++;
-            setMessages((prev) =>
-              prev.map((m) =>
-                m.id === assistantId
-                  ? ({ ...m, content: fullText } as AssistantMessage)
-                  : m,
-              ),
-            );
-            break;
+
+            case 'tool-call': {
+              if (!loggedToolCallKeys) {
+                console.log(TAG, 'tool-call keys:', Object.keys(part));
+                console.log(TAG, 'tool-call full:', JSON.stringify(part));
+                loggedToolCallKeys = true;
+              }
+              const name = part.toolName ?? part.name ?? '?';
+              const args = part.args ?? part.input ?? part.parameters ?? {};
+              console.log(TAG, `🔧 tool-call: ${name}`, JSON.stringify(args));
+              stepToolCalls.push(part);
+              break;
+            }
+
+            case 'tool-result': {
+              if (!loggedToolResultKeys) {
+                console.log(TAG, 'tool-result keys:', Object.keys(part));
+                console.log(TAG, 'tool-result full (truncated):', JSON.stringify(part).slice(0, 400));
+                loggedToolResultKeys = true;
+              }
+              const resolved = part.result ?? part.output ?? part.toolResult ?? part.content;
+              const name = part.toolName ?? part.name ?? '?';
+              console.log(
+                TAG,
+                `✅ tool-result: ${name}`,
+                Array.isArray(resolved) ? `(${resolved.length} items)` : JSON.stringify(resolved)?.slice(0, 150),
+              );
+              stepToolResults.push({ ...part, _resolved: resolved });
+              break;
+            }
+
+            case 'finish-step':
+            case 'step-finish':
+              stepFinishReason = part.finishReason ?? stepFinishReason;
+              console.log(TAG, `■ step-finish: ${part.finishReason}`);
+              break;
+
+            case 'finish':
+              // Only update if we haven't already got a tool-calls finish reason
+              if (stepFinishReason !== 'tool-calls') {
+                stepFinishReason = part.finishReason ?? stepFinishReason;
+              }
+              console.log(TAG, `🏁 finish: ${part.finishReason}`, JSON.stringify(part.usage ?? {}));
+              break;
+
+            case 'error':
+              console.error(TAG, '❌ stream error event:', part.error);
+              break;
+
+            case 'start':
+            case 'step-start':
+            case 'start-step':
+              break; // noise — ignore
+
+            default:
+              console.log(TAG, `other event: ${part.type}`);
           }
+        }
 
-          case 'tool-call':
-            console.log(TAG, `🔧 tool-call: ${part.toolName}`, JSON.stringify(part.args ?? part.input));
-            break;
+        console.log(TAG, `step ${step} done – finish: "${stepFinishReason}", text so far: ${fullText.length} chars, toolCalls: ${stepToolCalls.length}`);
 
-          case 'tool-result':
-            console.log(
-              TAG,
-              `✅ tool-result: ${part.toolName}`,
-              Array.isArray(part.result)
-                ? `(${part.result.length} items)`
-                : JSON.stringify(part.result),
-            );
-            break;
+        // If the model finished normally (stop / length / etc.), we're done
+        if (stepFinishReason !== 'tool-calls' || stepToolCalls.length === 0) {
+          break;
+        }
 
-          case 'step-start':
-          case 'start-step':
-            console.log(TAG, `▶ step-start`);
-            break;
+        // ── The model made tool calls but has more to say; build history ──────
+        // First try result.response (AI SDK v4 style) to get the canonically
+        // formatted messages — avoids us having to guess property names.
+        let appendedViaResponse = false;
+        try {
+          const response = await (result as any).response;
+          const responseMessages: any[] = response?.messages ?? [];
+          if (responseMessages.length > 0) {
+            console.log(TAG, `appending ${responseMessages.length} messages from result.response`);
+            currentMessages.push(...responseMessages);
+            appendedViaResponse = true;
+          }
+        } catch {
+          // result.response doesn't exist in this SDK build
+        }
 
-          case 'step-finish':
-          case 'finish-step':
-            console.log(
-              TAG,
-              `■ step-finish – finishReason: ${part.finishReason}, isContinued: ${part.isContinued}`,
-            );
-            break;
+        if (!appendedViaResponse) {
+          // Fallback: manually construct assistant (tool-calls) + tool messages.
+          // Property names are probed with fallbacks to handle SDK version differences.
+          const getId = (p: any, i: number) =>
+            p.toolCallId ?? p.id ?? p.toolUseId ?? `call-${step}-${i}`;
+          const getName = (p: any) => p.toolName ?? p.name ?? 'tool';
+          const getArgs = (p: any) => p.args ?? p.input ?? p.parameters ?? {};
 
-          case 'finish':
-            console.log(
-              TAG,
-              `🏁 finish – finishReason: ${part.finishReason}`,
-              `usage: ${JSON.stringify(part.usage ?? {})}`,
-            );
-            break;
+          const toolCallParts = stepToolCalls.map((tc, i) => ({
+            type: 'tool-call' as const,
+            toolCallId: getId(tc, i),
+            toolName: getName(tc),
+            args: getArgs(tc),
+          }));
 
-          case 'error':
-            console.error(TAG, '❌ stream error event:', part.error);
-            break;
+          const toolResultParts = stepToolResults.map((tr, i) => ({
+            type: 'tool-result' as const,
+            toolCallId: getId(tr, i),
+            toolName: getName(tr),
+            result: tr._resolved,
+          }));
 
-          default:
-            console.log(TAG, `unknown part type: ${part.type}`, part);
+          console.log(TAG, 'manually appending tool-call + tool-result messages');
+          console.log(TAG, 'toolCallParts:', JSON.stringify(toolCallParts));
+          console.log(TAG, 'toolResultParts (truncated):', JSON.stringify(toolResultParts).slice(0, 400));
+
+          currentMessages.push(
+            { role: 'assistant', content: toolCallParts },
+            { role: 'tool', content: toolResultParts },
+          );
         }
       }
+      // ── End agentic loop ─────────────────────────────────────────────────────
 
-      console.log(TAG, `stream complete – ${deltaCount} deltas, total length: ${fullText.length}`);
-      console.log(TAG, 'final assistant text:', fullText.slice(0, 200) + (fullText.length > 200 ? '…' : ''));
+      console.log(TAG, `all steps done – ${deltaCount} deltas, ${fullText.length} chars total`);
+      console.log(TAG, 'final text:', fullText.slice(0, 200) + (fullText.length > 200 ? '…' : ''));
 
-      // Remove the assistant bubble entirely if the model only made tool calls
-      // (e.g. the confirmation card is self-explanatory)
       if (fullText.trim() === '') {
-        console.log(TAG, 'no text generated – removing empty assistant bubble');
+        console.log(TAG, 'no text – removing empty assistant bubble');
         setMessages((prev) => prev.filter((m) => m.id !== assistantId));
       } else {
         setMessages((prev) =>
@@ -216,8 +292,10 @@ export default function ChatScreen() {
         );
       }
 
+      // Persist a simplified (text-only) history for future turns
       setAiHistory([
-        ...updatedHistory,
+        ...aiHistory,
+        { role: 'user', content: text },
         ...(fullText.trim() ? [{ role: 'assistant' as const, content: fullText }] : []),
       ]);
     } catch (err) {
@@ -226,11 +304,7 @@ export default function ChatScreen() {
       setMessages((prev) =>
         prev.map((m) =>
           m.id === assistantId
-            ? ({
-                ...m,
-                content: `Error: ${msg}`,
-                isStreaming: false,
-              } as AssistantMessage)
+            ? ({ ...m, content: `Error: ${msg}`, isStreaming: false } as AssistantMessage)
             : m,
         ),
       );
