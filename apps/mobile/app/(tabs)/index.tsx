@@ -6,8 +6,7 @@ import {
   TouchableOpacity,
   RefreshControl,
 } from 'react-native';
-import { Link, router } from 'expo-router';
-import { useFocusEffect } from '@react-navigation/native';
+import { Link, router, useFocusEffect } from 'expo-router';
 import { useAuth } from '@/lib/auth/auth-context';
 import { getWallets } from '@/lib/supabase/wallets';
 import { getWalletBalances } from '@/lib/supabase/balances';
