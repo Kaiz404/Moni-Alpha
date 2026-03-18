@@ -40,6 +40,16 @@
             "backgroundColor": "#000000"
           }
         }
+      ],
+      [
+        "llama.rn",
+        // optional fields, below are the default values
+        {
+          "enableEntitlements": true,
+          "entitlementsProfile": "production",
+          "forceCxx20": true,
+          "enableOpenCL": true
+        }
       ]
     ],
     "experiments": {  

@@ -16,6 +16,8 @@ import { PowersyncProvider } from "@/lib/powersync/PowersyncProvider";
 import { useEffect } from "react";
 import { syncSystem } from "@/lib/powersync/Powersync";
 
+import '../polyfills'
+
 export const unstable_settings = {
   anchor: "(tabs)",
 };

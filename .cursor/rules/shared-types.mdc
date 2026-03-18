@@ -1,0 +1,121 @@
+---
+description: Shared types and Zod schema patterns for @repo/types package
+globs: packages/types/**
+alwaysApply: false
+---
+
+# Shared Types Package – @repo/types
+
+The `packages/types` package is the **single source of truth** for all data shapes. Both the mobile app and web app import from `@repo/types`.
+
+## Pattern: Zod Schema → Inferred TypeScript Type
+
+Always define schemas first, then infer types. Never write standalone TypeScript interfaces that duplicate Zod schemas.
+
+```typescript
+// packages/types/src/wallet.ts
+import { z } from 'zod';
+
+export const walletTypeSchema = z.enum([
+  'bank', 'cash', 'credit', 'debit', 'ewallet', 'investment', 'other',
+]);
+
+// Full entity schema (what the DB returns)
+export const walletSchema = z.object({
+  id: z.string().uuid(),
+  userId: z.string().uuid(),
+  name: z.string().min(1).max(100),
+  type: walletTypeSchema,
+  currency: z.string().length(3),
+  initialBalance: z.number(),
+  color: z.string().regex(/^#[0-9A-Fa-f]{6}$/),
+  icon: z.string(),
+  isActive: z.boolean(),
+  displayOrder: z.number(),
+  createdAt: z.string().datetime(),
+  updatedAt: z.string().datetime(),
+});
+
+// Request schema (subset — what clients send)
+export const createWalletSchema = z.object({
+  name: z.string().min(1).max(100),
+  type: walletTypeSchema,
+  currency: z.string().length(3).default('USD'),
+  initialBalance: z.number().default(0),
+  color: z.string().regex(/^#[0-9A-Fa-f]{6}$/),
+  icon: z.string(),
+});
+
+export const updateWalletSchema = createWalletSchema.partial();
+
+// Infer TypeScript types from Zod
+export type Wallet = z.infer<typeof walletSchema>;
+export type CreateWallet = z.infer<typeof createWalletSchema>;
+export type UpdateWallet = z.infer<typeof updateWalletSchema>;
+
+// API response wrapper types
+export type WalletResponse = { wallet: Wallet };
+export type WalletListResponse = { wallets: Wallet[] };
+```
+
+## File Structure
+
+```
+packages/types/src/
+├── index.ts        - Re-export everything
+├── api.ts          - ApiError, Pagination, ListResponse<T>
+├── wallet.ts
+├── transaction.ts  - includes transactionListParamsSchema
+├── category.ts
+├── tag.ts
+├── user.ts
+├── analytics.ts    - Dashboard overview response types
+└── sync.ts         - SyncPushRequest, SyncPushResponse, SyncPullResponse
+```
+
+Always re-export from `index.ts` after adding a new file.
+
+## Common API Types (api.ts)
+
+```typescript
+export type ApiError = { error: string; details?: unknown };
+
+export type Pagination = {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+};
+
+export type ListResponse<T> = {
+  data: T[];
+  pagination: Pagination;
+};
+```
+
+## Transaction Schema Example (with refinements)
+
+```typescript
+export const createTransactionSchema = z.object({
+  walletId: z.string().uuid(),
+  amount: z.number().positive(),
+  type: z.enum(['income', 'expense', 'transfer']),
+  categoryId: z.string().uuid().optional(),
+  transferToWalletId: z.string().uuid().optional(),
+  description: z.string().max(500).optional(),
+  transactionDate: z.string().datetime().optional(),
+  tagIds: z.array(z.string().uuid()).optional(),
+}).refine(
+  (data) => data.type !== 'transfer' || !!data.transferToWalletId,
+  { message: 'Transfer must specify a target wallet' }
+);
+```
+
+## Usage Rules
+
+- ✅ Import Zod schemas on both client and server for runtime validation
+- ✅ Import inferred types for TypeScript compile-time safety
+- ✅ Use `.parse()` to validate — throws `ZodError` on invalid input
+- ✅ Use `.safeParse()` when you want to handle errors without try/catch
+- ❌ Never manually cast API responses without parsing (use the schema)
+- ❌ Never duplicate schema definitions across apps

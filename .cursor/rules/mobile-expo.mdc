@@ -1,0 +1,133 @@
+---
+description: Expo React Native patterns for the Moni mobile app
+globs: apps/mobile/**
+alwaysApply: false
+---
+
+# Mobile App – Expo React Native Patterns
+
+## File-Based Routing (expo-router)
+
+Route groups: `(auth)/` for unauthenticated, `(app)/` for authenticated.
+
+```typescript
+// apps/mobile/app/(app)/(home)/transaction/new.tsx
+import { Stack } from 'expo-router';
+
+export default function NewTransactionScreen() {
+  return (
+    <>
+      <Stack.Screen options={{ title: 'New Transaction' }} />
+      <TransactionForm />
+    </>
+  );
+}
+```
+
+Auth guard lives in `app/_layout.tsx` — redirect based on `segments[0]`.
+
+## Database (Drizzle + expo-sqlite)
+
+Always use `drizzle-orm/expo-sqlite`, not the generic Drizzle package.
+
+**SQLite column types** (different from PostgreSQL):
+- `text('id')` for UUIDs (not `uuid`)
+- `integer('created_at', { mode: 'timestamp' })` for timestamps
+- `real('amount')` for decimals (not `decimal`)
+- `integer('is_synced', { mode: 'boolean' })` for booleans
+
+```typescript
+// apps/mobile/db/client.ts
+import { drizzle } from 'drizzle-orm/expo-sqlite';
+import { openDatabaseSync } from 'expo-sqlite';
+import * as schema from './schema';
+
+const expoDb = openDatabaseSync('moni.db', { enableChangeListener: true });
+export const db = drizzle(expoDb, { schema });
+```
+
+Use `useLiveQuery` for reactive UI (auto-updates when data changes):
+
+```typescript
+import { useLiveQuery } from 'drizzle-orm/expo-sqlite';
+
+const { data } = useLiveQuery(
+  db.select().from(transactions).orderBy(desc(transactions.transactionDate))
+);
+```
+
+## Local-First Write Pattern
+
+Always write to SQLite first, then sync in background:
+
+```typescript
+// 1. Insert locally with isSynced: false
+await db.insert(transactions).values({ ...data, isSynced: false, localCreatedAt: Date.now() });
+
+// 2. UI updates immediately via useLiveQuery
+
+// 3. Background sync
+try {
+  await fetchApi('/api/transactions', { method: 'POST', body: JSON.stringify(data) });
+  await db.update(transactions).set({ isSynced: true }).where(eq(transactions.id, id));
+} catch {
+  // Will retry on next sync interval
+}
+```
+
+## API Client (TanStack Query)
+
+```typescript
+// apps/mobile/lib/api.ts — always attach Bearer token
+async function fetchApi<T>(endpoint: string, options?: RequestInit): Promise<T> {
+  const session = await getSupabaseSession();
+  const response = await fetch(`${API_URL}${endpoint}`, {
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${session?.access_token}`,
+      ...options?.headers,
+    },
+  });
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || 'API request failed');
+  }
+  return response.json();
+}
+```
+
+Use `useQuery` for reads, `useMutation` + `invalidateQueries` for writes. Use `useInfiniteQuery` for paginated lists with `FlashList`.
+
+## Styling (Tailwind via Uniwind)
+
+Use Tailwind class names via the `className` prop. Use `cn()` from `@/lib/utils` for conditional classes:
+
+```typescript
+import { Pressable, Text } from 'react-native';
+import { cn } from '@/lib/utils';
+
+<Pressable className={cn('px-4 py-3 rounded-lg bg-blue-600', disabled && 'opacity-50')}>
+  <Text className="text-white font-semibold text-center">{label}</Text>
+</Pressable>
+```
+
+## Authentication (Supabase + SecureStore)
+
+Store tokens with `expo-secure-store`, not AsyncStorage. Auth client lives in `apps/mobile/lib/supabase.ts`.
+
+## Migrations
+
+Run `pnpm drizzle-kit generate` in `apps/mobile/` after schema changes. Migrations apply automatically via `useMigrations` hook in `app/_layout.tsx`.
+
+## Component Structure
+
+```
+components/ui/          - Base components (Button, Input, Card, Modal)
+components/transactions/ - Transaction-specific components
+components/wallets/      - Wallet-specific components
+components/analytics/    - Chart components
+components/shared/       - LoadingSpinner, EmptyState, ErrorBoundary
+```
+
+Keep components small and focused. Extract reusable logic into hooks in `hooks/`.

@@ -1,0 +1,171 @@
+---
+description: Next.js App Router patterns for the Moni web app (dashboard + REST API)
+globs: apps/web/**
+alwaysApply: false
+---
+
+# Web App – Next.js App Router Patterns
+
+## Directory Structure
+
+```
+src/app/
+├── layout.tsx              - Root layout
+├── page.tsx                - Landing page
+├── (auth)/login|register/  - Auth pages (no sidebar)
+├── (dashboard)/            - Authenticated dashboard (has sidebar layout)
+│   ├── layout.tsx
+│   ├── page.tsx            - Overview
+│   ├── transactions/
+│   ├── wallets/
+│   ├── analytics/
+│   └── settings/
+└── api/                    - REST API route handlers
+    ├── auth/
+    ├── wallets/[id]/route.ts
+    ├── transactions/[id]/route.ts
+    ├── categories/route.ts
+    ├── analytics/overview/route.ts
+    └── sync/pull|push/route.ts
+```
+
+## API Route Handler Pattern
+
+Every route handler must: authenticate → validate → query → respond.
+
+```typescript
+// apps/web/src/app/api/wallets/route.ts
+import { NextRequest, NextResponse } from 'next/server';
+import { createClient } from '@/lib/supabase/server';
+import { createWalletSchema, type WalletListResponse } from '@repo/types';
+
+export async function GET(request: NextRequest) {
+  const supabase = createClient();
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  if (authError || !user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  const { data, error } = await supabase
+    .from('wallets')
+    .select('*')
+    .eq('user_id', user.id)
+    .eq('is_active', true)
+    .order('display_order');
+
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+
+  const response: WalletListResponse = { wallets: data || [] };
+  return NextResponse.json(response);
+}
+
+export async function POST(request: NextRequest) {
+  const supabase = createClient();
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  if (authError || !user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  try {
+    const body = await request.json();
+    const validated = createWalletSchema.parse(body); // Always validate with Zod
+    const { data, error } = await supabase.from('wallets')
+      .insert({ ...validated, user_id: user.id })
+      .select().single();
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ wallet: data });
+  } catch (error) {
+    return handleApiError(error);
+  }
+}
+```
+
+Use the `withAuth` middleware from `@/lib/api-middleware.ts` when available to reduce boilerplate.
+
+## Error Handling
+
+Centralise in `src/lib/errors.ts`:
+
+```typescript
+import { ZodError } from 'zod';
+
+export function handleApiError(error: unknown) {
+  if (error instanceof ZodError) {
+    return NextResponse.json({ error: 'Validation error', details: error.errors }, { status: 400 });
+  }
+  if (error instanceof Error) {
+    if (error.message.includes('duplicate key'))
+      return NextResponse.json({ error: 'Already exists' }, { status: 409 });
+  }
+  return NextResponse.json({ error: 'An unexpected error occurred' }, { status: 500 });
+}
+```
+
+Standard status codes: 400 validation, 401 unauth, 403 forbidden, 404 not found, 409 conflict, 500 server error.
+
+## Server vs Client Components
+
+- **Server Components** (default): Fetch directly from Supabase, no `'use client'`
+- **Client Components**: Prefix with `'use client'`, use TanStack Query for data fetching
+
+```typescript
+// Server component — fetch on server
+export default async function DashboardPage() {
+  const supabase = createClient(); // server client
+  const { data: wallets } = await supabase.from('wallets').select('*');
+  return <WalletGrid wallets={wallets ?? []} />;
+}
+
+// Client component — fetch with TanStack Query
+'use client';
+export function TransactionTable() {
+  const { data, isLoading } = useQuery({
+    queryKey: ['transactions'],
+    queryFn: async () => {
+      const res = await fetch('/api/transactions');
+      if (!res.ok) throw new Error('Failed to fetch');
+      return res.json() as Promise<TransactionListResponse>;
+    },
+  });
+  // ...
+}
+```
+
+## Realtime (Supabase)
+
+Use `invalidateQueries` on realtime events — don't mutate cache manually:
+
+```typescript
+'use client';
+export function useRealtimeTransactions(userId: string) {
+  const queryClient = useQueryClient();
+  const supabase = createClient(); // browser client
+
+  useEffect(() => {
+    const channel = supabase.channel('transactions')
+      .on('postgres_changes', {
+        event: '*', schema: 'public', table: 'transactions',
+        filter: `user_id=eq.${userId}`,
+      }, () => {
+        queryClient.invalidateQueries({ queryKey: ['transactions'] });
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [userId]);
+}
+```
+
+## Supabase Client Usage
+
+- `@/lib/supabase/server` → server components and route handlers
+- `@/lib/supabase/client` → client components and hooks
+
+## Row Level Security
+
+Never bypass RLS. All Supabase queries automatically scope to the authenticated user. Never use `service_role` key in client-side code.
+
+## Styling
+
+Standard Tailwind CSS. Use `cn()` from `@/lib/utils` for conditional classes. Keep component styles co-located; avoid global CSS except in `globals.css`.
