@@ -7,7 +7,7 @@ import {
 } from '@react-native-ai/llama';
 
 export const CHAT_MODEL_ID =
-  'Qwen/Qwen2.5-3B-Instruct-GGUF/qwen2.5-3b-instruct-q3_k_m.gguf';
+  'mradermacher/Qwen3.5-2B-GPT-5.1-HighIQ-INSTRUCT-i1-GGUF/Qwen3.5-2B-GPT-5.1-HighIQ-INSTRUCT.i1-Q4_K_M.gguf';
 
 export type ModelStatus =
   | 'idle'

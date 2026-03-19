@@ -93,13 +93,44 @@ const transaction_tags = new Table(
   { indexes: {} }
 );
 
+const proposed_transactions = new Table(
+  {
+    user_id: column.text,
+    // Source notification
+    source_app: column.text,
+    notification_title: column.text,
+    notification_body: column.text,
+    notification_received_at: column.text,
+    // AI analysis
+    ai_reasoning: column.text,
+    ai_confidence: column.text,
+    // Proposed transaction fields
+    wallet_id: column.text,
+    wallet_hint: column.text,
+    amount: column.text,
+    currency: column.text,
+    type: column.text,
+    description: column.text,
+    merchant: column.text,
+    category_id: column.text,
+    category_hint: column.text,
+    transaction_date: column.text,
+    // Lifecycle
+    status: column.text,
+    created_at: column.text,
+    updated_at: column.text,
+  },
+  { indexes: {} }
+);
+
 export const AppSchema = new Schema({
   profiles,
   wallets,
   transactions,
   categories,
   tags,
-  transaction_tags
+  transaction_tags,
+  proposed_transactions,
 });
 
 export type Database = (typeof AppSchema)['types'];

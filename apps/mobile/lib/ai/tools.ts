@@ -9,13 +9,30 @@ export type PendingTransaction = CreateTransaction & {
   walletName: string;
 };
 
+export type WalletPickRequest = {
+  prompt: string;
+  wallets: { id: string; name: string; type: string; currency: string; balance: number }[];
+  pendingData: {
+    amount: number;
+    type: 'income' | 'expense' | 'transfer';
+    description?: string | null;
+    merchant?: string | null;
+    categoryId?: string | null;
+    transactionDate?: string;
+  };
+};
+
 const TAG = '[Moni/Tool]';
 
 /**
  * Creates the set of finance tools for the AI assistant.
- * @param onPropose - Called when the model proposes a transaction; triggers the confirmation UI
+ * @param onPropose - Called when the model proposes a transaction ready for confirmation.
+ * @param onPickWallet - Called when wallet is ambiguous; renders an interactive picker in chat.
  */
-export function createFinanceTools(onPropose: (tx: PendingTransaction) => void) {
+export function createFinanceTools(
+  onPropose: (tx: PendingTransaction) => void,
+  onPickWallet: (req: WalletPickRequest) => void,
+) {
   return {
     get_wallets: tool({
       description: "Retrieve the user's wallets with their current balances and IDs",
@@ -98,14 +115,14 @@ export function createFinanceTools(onPropose: (tx: PendingTransaction) => void) 
 
     create_transaction: tool({
       description:
-        'Propose a new transaction for user confirmation. You MUST call get_wallets first and use an exact wallet ID from that response. Never invent or guess wallet IDs. The user will see a confirmation card and must tap Confirm to save it.',
+        'Propose a new transaction for user confirmation. You MUST call get_wallets first and use an exact wallet ID from that response. Never invent or guess wallet IDs. A confirmation card will appear in the chat — do NOT explain what you are about to do, just call this tool.',
       inputSchema: z.object({
         walletId: z.string().describe('Exact wallet ID from get_wallets — never make this up'),
         amount: z.number().positive().describe('Transaction amount — always a positive number'),
         type: z
           .enum(['income', 'expense', 'transfer'])
           .describe('Transaction type: income, expense, or transfer'),
-        merchant: z.string().optional().describe('Merchant or payee name'),
+        merchant: z.string().optional().describe('Merchant, app, or payee name'),
         description: z.string().optional().describe('Short note or description'),
         categoryId: z.string().optional().describe('Category ID from get_categories'),
         transactionDate: z
@@ -119,18 +136,11 @@ export function createFinanceTools(onPropose: (tx: PendingTransaction) => void) 
           const wallets = await getWallets();
           const wallet = wallets.find((w) => w.id === data.walletId);
 
-          // Guard: the model hallucinated a wallet ID that doesn't exist.
-          // Return an error result (not throw) so the model can see it and
-          // self-correct by calling get_wallets on its next step.
           if (!wallet) {
             const available = wallets.map((w) => ({ id: w.id, name: w.name }));
-            console.warn(
-              TAG,
-              `create_transaction: walletId "${data.walletId}" not found. Available:`,
-              available,
-            );
+            console.warn(TAG, `create_transaction: walletId "${data.walletId}" not found. Available:`, available);
             return {
-              error: `Wallet ID "${data.walletId}" does not exist. You must call get_wallets first and use one of the real IDs listed below.`,
+              error: `Wallet ID "${data.walletId}" does not exist. Call get_wallets and use a real ID.`,
               available_wallets: available,
             };
           }
@@ -152,6 +162,56 @@ export function createFinanceTools(onPropose: (tx: PendingTransaction) => void) 
           return { status: 'pending_confirmation' };
         } catch (e) {
           console.error(TAG, 'create_transaction error:', e);
+          throw e;
+        }
+      },
+    }),
+
+    request_wallet_selection: tool({
+      description:
+        'Show the user an interactive wallet picker when the correct wallet cannot be determined. Only call this if get_wallets returned multiple wallets AND the user gave no usable hint about which wallet to use. Pass the full pending transaction data so the app can complete it after the user picks.',
+      inputSchema: z.object({
+        prompt: z
+          .string()
+          .describe('One short question for the user, e.g. "Which wallet is this from?"'),
+        wallets: z
+          .array(z.object({ id: z.string(), name: z.string() }))
+          .describe('Wallet options to show — use the list returned by get_wallets'),
+        amount: z.number().positive(),
+        type: z.enum(['income', 'expense', 'transfer']),
+        merchant: z.string().optional().nullable(),
+        description: z.string().optional().nullable(),
+        categoryId: z.string().optional().nullable(),
+        transactionDate: z.string().optional(),
+      }),
+      execute: async (data) => {
+        console.log(TAG, 'request_wallet_selection called:', JSON.stringify(data, null, 2));
+        try {
+          const wallets = await getWallets();
+          const enriched = wallets.map((w) => ({
+            id: w.id,
+            name: w.name ?? 'Wallet',
+            type: w.type ?? '',
+            currency: w.currency ?? 'USD',
+            balance: w.currentBalance ?? w.initialBalance ?? 0,
+          }));
+
+          onPickWallet({
+            prompt: data.prompt,
+            wallets: enriched,
+            pendingData: {
+              amount: data.amount,
+              type: data.type,
+              description: data.description ?? null,
+              merchant: data.merchant ?? null,
+              categoryId: data.categoryId ?? null,
+              transactionDate: data.transactionDate,
+            },
+          });
+
+          return { status: 'waiting_for_wallet_selection' };
+        } catch (e) {
+          console.error(TAG, 'request_wallet_selection error:', e);
           throw e;
         }
       },

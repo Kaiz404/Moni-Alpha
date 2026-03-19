@@ -13,13 +13,13 @@ import {
 import { randomUUID } from 'expo-crypto';
 import { streamText } from 'ai';
 
-const TAG = '[Moni/Chat]';
 
 import { useLlamaModel } from '@/hooks/use-llama-model';
-import { createFinanceTools, type PendingTransaction } from '@/lib/ai/tools';
+import { createFinanceTools, type PendingTransaction, type WalletPickRequest } from '@/lib/ai/tools';
 import { FINANCE_SYSTEM_PROMPT } from '@/lib/ai/system-prompt';
 import { createTransaction } from '@/lib/supabase/transactions';
 
+const TAG = '[Moni/Chat]';
 // ─── Message types ────────────────────────────────────────────────────────────
 
 type UserMessage = {
@@ -42,7 +42,14 @@ type ConfirmationMessage = {
   status: 'pending' | 'confirmed' | 'cancelled';
 };
 
-type DisplayMessage = UserMessage | AssistantMessage | ConfirmationMessage;
+type WalletPickerMessage = {
+  id: string;
+  role: 'wallet-picker';
+  request: WalletPickRequest;
+  status: 'pending' | 'selected';
+};
+
+type DisplayMessage = UserMessage | AssistantMessage | ConfirmationMessage | WalletPickerMessage;
 
 type AiHistoryMessage = {
   role: 'user' | 'assistant';
@@ -97,22 +104,40 @@ export default function ChatScreen() {
 
     // Tools are created fresh per request so the closure captures the current
     // setMessages without needing an additional ref.
-    const tools = createFinanceTools((tx: PendingTransaction) => {
-      console.log(TAG, 'onPropose fired → inserting confirmation card');
-      const confirmMsg: ConfirmationMessage = {
-        id: randomUUID(),
-        role: 'confirmation',
-        transaction: tx,
-        status: 'pending',
-      };
-      setMessages((prev) => {
-        const assistantIdx = prev.findIndex((m) => m.id === assistantId);
-        if (assistantIdx === -1) return [...prev, confirmMsg];
-        const next = [...prev];
-        next.splice(assistantIdx, 0, confirmMsg);
-        return next;
-      });
-    });
+    const tools = createFinanceTools(
+      (tx: PendingTransaction) => {
+        console.log(TAG, 'onPropose fired → inserting confirmation card');
+        const confirmMsg: ConfirmationMessage = {
+          id: randomUUID(),
+          role: 'confirmation',
+          transaction: tx,
+          status: 'pending',
+        };
+        setMessages((prev) => {
+          const assistantIdx = prev.findIndex((m) => m.id === assistantId);
+          if (assistantIdx === -1) return [...prev, confirmMsg];
+          const next = [...prev];
+          next.splice(assistantIdx, 0, confirmMsg);
+          return next;
+        });
+      },
+      (req: WalletPickRequest) => {
+        console.log(TAG, 'onPickWallet fired → inserting wallet picker card');
+        const pickerMsg: WalletPickerMessage = {
+          id: randomUUID(),
+          role: 'wallet-picker',
+          request: req,
+          status: 'pending',
+        };
+        setMessages((prev) => {
+          const assistantIdx = prev.findIndex((m) => m.id === assistantId);
+          if (assistantIdx === -1) return [...prev, pickerMsg];
+          const next = [...prev];
+          next.splice(assistantIdx, 0, pickerMsg);
+          return next;
+        });
+      },
+    );
 
     try {
       // ── Manual agentic loop ──────────────────────────────────────────────────
@@ -248,15 +273,12 @@ export default function ChatScreen() {
           const getId = (p: any, i: number) =>
             p.toolCallId ?? p.id ?? p.toolUseId ?? `call-${step}-${i}`;
           const getName = (p: any) => p.toolName ?? p.name ?? 'tool';
-          const getArgs = (p: any) => p.args ?? p.input ?? p.parameters ?? {};
-
           const toolCallParts = stepToolCalls.map((tc, i) => ({
             type: 'tool-call' as const,
             toolCallId: getId(tc, i),
             toolName: getName(tc),
-            args: getArgs(tc),
+            args: tc.args ?? tc.input ?? tc.parameters ?? {},
           }));
-
           const toolResultParts = stepToolResults.map((tr, i) => ({
             type: 'tool-result' as const,
             toolCallId: getId(tr, i),
@@ -355,6 +377,44 @@ export default function ChatScreen() {
     );
   }, []);
 
+  const handleWalletPick = useCallback(
+    async (msgId: string, walletId: string, walletName: string, req: WalletPickRequest) => {
+      // Mark picker as selected
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === msgId ? ({ ...m, status: 'selected' } as WalletPickerMessage) : m,
+        ),
+      );
+
+      // Immediately show a confirmation card for the completed transaction
+      const tx: PendingTransaction = {
+        walletId,
+        walletName,
+        amount: req.pendingData.amount,
+        type: req.pendingData.type,
+        description: req.pendingData.description ?? null,
+        merchant: req.pendingData.merchant ?? null,
+        categoryId: req.pendingData.categoryId ?? null,
+        transactionDate: req.pendingData.transactionDate ?? new Date().toISOString(),
+      };
+
+      const confirmMsg: ConfirmationMessage = {
+        id: randomUUID(),
+        role: 'confirmation',
+        transaction: tx,
+        status: 'pending',
+      };
+
+      setMessages((prev) => {
+        const pickerIdx = prev.findIndex((m) => m.id === msgId);
+        const next = [...prev];
+        next.splice(pickerIdx + 1, 0, confirmMsg);
+        return next;
+      });
+    },
+    [],
+  );
+
   // ── Render ──────────────────────────────────────────────────────────────────
 
   if (
@@ -390,6 +450,7 @@ export default function ChatScreen() {
             message={item}
             onConfirm={handleConfirm}
             onCancel={handleCancel}
+            onWalletPick={handleWalletPick}
           />
         )}
         contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 16, paddingBottom: 8 }}
@@ -439,10 +500,12 @@ function MessageItem({
   message,
   onConfirm,
   onCancel,
+  onWalletPick,
 }: {
   message: DisplayMessage;
   onConfirm: (id: string, tx: PendingTransaction) => void;
   onCancel: (id: string) => void;
+  onWalletPick: (msgId: string, walletId: string, walletName: string, req: WalletPickRequest) => void;
 }) {
   if (message.role === 'confirmation') {
     return (
@@ -450,6 +513,17 @@ function MessageItem({
         message={message}
         onConfirm={() => onConfirm(message.id, message.transaction)}
         onCancel={() => onCancel(message.id)}
+      />
+    );
+  }
+
+  if (message.role === 'wallet-picker') {
+    return (
+      <WalletPickerCard
+        message={message}
+        onPick={(walletId, walletName) =>
+          onWalletPick(message.id, walletId, walletName, message.request)
+        }
       />
     );
   }
@@ -484,6 +558,73 @@ function MessageItem({
             <View className="w-1.5 h-1.5 rounded-full bg-gray-400 opacity-100" />
           </View>
         )}
+      </View>
+    </View>
+  );
+}
+
+function WalletPickerCard({
+  message,
+  onPick,
+}: {
+  message: WalletPickerMessage;
+  onPick: (walletId: string, walletName: string) => void;
+}) {
+  const { request, status } = message;
+  const walletTypeIcon: Record<string, string> = {
+    bank: '🏦',
+    cash: '💵',
+    credit: '💳',
+    debit: '💳',
+    ewallet: '📱',
+    investment: '📈',
+    other: '👛',
+  };
+
+  if (status === 'selected') {
+    return (
+      <View className="mb-4 mt-1 mx-2">
+        <View className="bg-gray-100 dark:bg-gray-800 rounded-2xl px-4 py-3 flex-row items-center">
+          <Text className="text-gray-400 dark:text-gray-500 text-sm">Wallet selected ✓</Text>
+        </View>
+      </View>
+    );
+  }
+
+  return (
+    <View className="mb-4 mt-1">
+      <View className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-2xl p-4 mx-2">
+        <View className="flex-row items-center mb-3">
+          <Text className="text-xl mr-2">👛</Text>
+          <Text className="font-semibold text-gray-900 dark:text-white text-base flex-1">
+            {request.prompt}
+          </Text>
+        </View>
+        <View>
+          {request.wallets.map((w) => (
+            <TouchableOpacity
+              key={w.id}
+              className="flex-row items-center bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3 mb-2 active:opacity-70"
+              onPress={() => onPick(w.id, w.name)}
+              activeOpacity={0.7}
+            >
+              <Text className="text-xl mr-3">
+                {walletTypeIcon[w.type] ?? '👛'}
+              </Text>
+              <View className="flex-1">
+                <Text className="text-gray-900 dark:text-white font-medium text-sm">
+                  {w.name}
+                </Text>
+                <Text className="text-gray-400 dark:text-gray-500 text-xs capitalize">
+                  {w.type} · {w.currency}
+                </Text>
+              </View>
+              <Text className="text-blue-600 dark:text-blue-400 font-semibold text-sm">
+                {w.balance >= 0 ? '+' : ''}{w.balance.toFixed(2)}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
       </View>
     </View>
   );
@@ -699,8 +840,8 @@ function ModelSetupScreen({
         <>
           <View className="w-full bg-gray-50 dark:bg-gray-800 rounded-2xl p-4 mb-6">
             {[
-              { label: 'Model', value: 'Qwen 2.5 3B Instruct (Q3)' },
-              { label: 'Size', value: '~1.9 GB' },
+              { label: 'Model', value: 'Qwen 3.5 2B Instruct (Q4)' },
+              { label: 'Size', value: '~1.5 GB' },
               { label: 'Privacy', value: 'Runs entirely on your device' },
               { label: 'Requires', value: 'One-time download' },
             ].map(({ label, value }) => (
