@@ -6,8 +6,8 @@ import {
   getModelPath,
 } from '@react-native-ai/llama';
 
-export const CHAT_MODEL_ID =
-  'mradermacher/Qwen3.5-2B-GPT-5.1-HighIQ-INSTRUCT-i1-GGUF/Qwen3.5-2B-GPT-5.1-HighIQ-INSTRUCT.i1-Q4_K_M.gguf';
+export const CHAT_MODEL_ID = 'mradermacher/Qwen3.5-2B-GPT-5.1-HighIQ-INSTRUCT-i1-GGUF/Qwen3.5-2B-GPT-5.1-HighIQ-INSTRUCT.i1-Q4_K_M.gguf';
+// export const CHAT_MODEL_ID = 'unsloth/gemma-3-1b-it-GGUF/gemma-3-1b-it-IQ4_NL.gguf';
 
 export type ModelStatus =
   | 'idle'
@@ -35,8 +35,24 @@ export function useLlamaModel() {
     try {
       const modelPath = getModelPath(CHAT_MODEL_ID);
       console.log(TAG, 'model path:', modelPath);
+      // n_gpu_layers: 99  → offload all layers to GPU
+      //   iOS:     Metal GPU (enabled by default in release builds)
+      //   Android: OpenCL GPU — requires the llama.rn plugin to be built with
+      //            enableOpenCL: true in app.json (already set). OpenCL offload
+      //            is the primary speed-up on Android; it can cut inference time
+      //            by 3-5× vs pure CPU on Adreno/Mali GPUs.
+      // n_threads: 4  → number of CPU threads used for layers NOT offloaded to GPU.
+      //   On most mobile SoCs, 4 performance cores is optimal. Increasing beyond
+      //   this adds scheduling overhead without proportional gain on small models.
+      // use_mlock: true → pin model weights in RAM so the OS cannot swap them out
+      //   mid-inference (reduces latency spikes on memory-constrained devices).
       const model = llama.languageModel(modelPath, {
-        contextParams: { n_ctx: 4096, n_gpu_layers: 99 },
+        contextParams: {
+          n_ctx: 4096,
+          n_gpu_layers: 99,
+          n_threads: 4,
+          use_mlock: true,
+        },
       });
       console.log(TAG, 'calling model.prepare()…');
       await model.prepare();

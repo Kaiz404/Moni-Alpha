@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import {
   View,
   Text,
@@ -13,13 +13,22 @@ import {
 import { randomUUID } from 'expo-crypto';
 import { streamText } from 'ai';
 
-
 import { useLlamaModel } from '@/hooks/use-llama-model';
-import { createFinanceTools, type PendingTransaction, type WalletPickRequest } from '@/lib/ai/tools';
-import { FINANCE_SYSTEM_PROMPT } from '@/lib/ai/system-prompt';
+import {
+  createFinanceTools,
+  type PendingTransaction,
+  type WalletPickRequest,
+  type WalletSeed,
+  type CategorySeed,
+} from '@/lib/ai/tools';
+import { buildFinanceSystemPrompt } from '@/lib/ai/system-prompt';
 import { createTransaction } from '@/lib/supabase/transactions';
+import { getWallets } from '@/lib/supabase/wallets';
+import { getCategories } from '@/lib/supabase/categories';
 
 const TAG = '[Moni/Chat]';
+const today = new Date().toISOString().split('T')[0];
+
 // ─── Message types ────────────────────────────────────────────────────────────
 
 type UserMessage = {
@@ -66,9 +75,45 @@ export default function ChatScreen() {
   const [aiHistory, setAiHistory] = useState<AiHistoryMessage[]>([]);
   const [input, setInput] = useState('');
   const [isSending, setIsSending] = useState(false);
+  const [wallets, setWallets] = useState<WalletSeed[]>([]);
+  const [categories, setCategories] = useState<CategorySeed[]>([]);
 
   const flatListRef = useRef<FlatList>(null);
   const isReady = status === 'ready';
+
+  const loadContextData = useCallback(async () => {
+    try {
+      const [ws, cats] = await Promise.all([
+        getWallets(),
+        getCategories(),
+      ]);
+      setWallets(
+        ws.map((w) => ({
+          id: w.id,
+          name: w.name ?? 'Wallet',
+          type: w.type ?? 'other',
+          currency: w.currency ?? 'MYR',
+          balance: w.currentBalance ?? w.initialBalance ?? 0,
+        })),
+      );
+      setCategories(
+        cats.map((c) => ({
+          id: c.id,
+          name: c.name ?? 'Other',
+          type: c.type ?? 'expense',
+        })),
+      );
+    } catch (e) {
+      console.warn(TAG, 'loadContextData failed (non-fatal):', e);
+    }
+  }, []);
+
+  // Load wallets + categories once model is ready
+  useEffect(() => {
+    if (status === 'ready') {
+      loadContextData();
+    }
+  }, [status, loadContextData]);
 
   // ── Send handler ────────────────────────────────────────────────────────────
 
@@ -78,11 +123,34 @@ export default function ChatScreen() {
 
     console.log(TAG, '── handleSend ──────────────────────────');
     console.log(TAG, 'user input:', text);
-    console.log(TAG, 'model ref:', model ? 'present' : 'null');
-    console.log(TAG, 'conversation history length:', aiHistory.length);
 
     setInput('');
     setIsSending(true);
+
+    // Refresh wallet/category data so the system prompt is always up to date
+    let currentWallets = wallets;
+    let currentCategories = categories;
+    try {
+      const [ws, cats] = await Promise.all([getWallets(), getCategories()]);
+      currentWallets = ws.map((w) => ({
+        id: w.id,
+        name: w.name ?? 'Wallet',
+        type: w.type ?? 'other',
+        currency: w.currency ?? 'MYR',
+        balance: w.currentBalance ?? w.initialBalance ?? 0,
+      }));
+      currentCategories = cats.map((c) => ({
+        id: c.id,
+        name: c.name ?? 'Other',
+        type: c.type ?? 'expense',
+      }));
+      setWallets(currentWallets);
+      setCategories(currentCategories);
+    } catch (e) {
+      console.warn(TAG, 'data refresh failed, using cached:', e);
+    }
+
+    const systemPrompt = buildFinanceSystemPrompt(currentWallets, currentCategories);
 
     const userMsg: UserMessage = { id: randomUUID(), role: 'user', content: text };
     const assistantId = randomUUID();
@@ -95,17 +163,19 @@ export default function ChatScreen() {
 
     setMessages((prev) => [...prev, userMsg, assistantMsg]);
 
-    // `any[]` because mid-loop messages include tool-call / tool-result roles
-    // that aren't in the simple AiHistoryMessage type.
     const currentMessages: any[] = [
       ...aiHistory,
       { role: 'user', content: text },
     ];
 
-    // Tools are created fresh per request so the closure captures the current
-    // setMessages without needing an additional ref.
+    // Track whether create_transaction was called during this turn.
+    // If it was, we suppress the assistant text bubble (the card is confirmation enough).
+    let transactionProposed = false;
+
     const tools = createFinanceTools(
+      currentWallets,
       (tx: PendingTransaction) => {
+        transactionProposed = true;
         console.log(TAG, 'onPropose fired → inserting confirmation card');
         const confirmMsg: ConfirmationMessage = {
           id: randomUUID(),
@@ -140,9 +210,6 @@ export default function ChatScreen() {
     );
 
     try {
-      // ── Manual agentic loop ──────────────────────────────────────────────────
-      // maxSteps is not supported by this AI SDK build on streamText, so we
-      // drive the tool-call → result → continue cycle ourselves.
       const MAX_STEPS = 6;
       let fullText = '';
       let deltaCount = 0;
@@ -160,7 +227,7 @@ export default function ChatScreen() {
 
         const result = streamText({
           model,
-          system: FINANCE_SYSTEM_PROMPT,
+          system: systemPrompt,
           messages: currentMessages,
           tools,
         } as any);
@@ -168,21 +235,23 @@ export default function ChatScreen() {
         for await (const part of (result as any).fullStream) {
           switch (part.type) {
             case 'text-delta': {
-              const delta: string =
-                part.textDelta ?? part.delta ?? part.text ?? '';
+              const delta: string = part.textDelta ?? part.delta ?? part.text ?? '';
               if (!loggedTextDeltaKeys) {
                 console.log(TAG, 'text-delta keys:', Object.keys(part), '→ value:', JSON.stringify(delta));
                 loggedTextDeltaKeys = true;
               }
-              fullText += delta;
-              deltaCount++;
-              setMessages((prev) =>
-                prev.map((m) =>
-                  m.id === assistantId
-                    ? ({ ...m, content: fullText } as AssistantMessage)
-                    : m,
-                ),
-              );
+              // If transaction was already proposed, discard follow-up text
+              if (!transactionProposed) {
+                fullText += delta;
+                deltaCount++;
+                setMessages((prev) =>
+                  prev.map((m) =>
+                    m.id === assistantId
+                      ? ({ ...m, content: fullText } as AssistantMessage)
+                      : m,
+                  ),
+                );
+              }
               break;
             }
 
@@ -210,7 +279,9 @@ export default function ChatScreen() {
               console.log(
                 TAG,
                 `✅ tool-result: ${name}`,
-                Array.isArray(resolved) ? `(${resolved.length} items)` : JSON.stringify(resolved)?.slice(0, 150),
+                Array.isArray(resolved)
+                  ? `(${resolved.length} items)`
+                  : JSON.stringify(resolved)?.slice(0, 150),
               );
               stepToolResults.push({ ...part, _resolved: resolved });
               break;
@@ -223,7 +294,6 @@ export default function ChatScreen() {
               break;
 
             case 'finish':
-              // Only update if we haven't already got a tool-calls finish reason
               if (stepFinishReason !== 'tool-calls') {
                 stepFinishReason = part.finishReason ?? stepFinishReason;
               }
@@ -237,23 +307,29 @@ export default function ChatScreen() {
             case 'start':
             case 'step-start':
             case 'start-step':
-              break; // noise — ignore
+              break;
 
             default:
               console.log(TAG, `other event: ${part.type}`);
           }
         }
 
-        console.log(TAG, `step ${step} done – finish: "${stepFinishReason}", text so far: ${fullText.length} chars, toolCalls: ${stepToolCalls.length}`);
+        console.log(
+          TAG,
+          `step ${step} done – finish: "${stepFinishReason}", text: ${fullText.length} chars, toolCalls: ${stepToolCalls.length}, transactionProposed: ${transactionProposed}`,
+        );
 
-        // If the model finished normally (stop / length / etc.), we're done
+        // After a successful create_transaction call, stop the loop — the card is confirmation enough
+        if (transactionProposed) {
+          console.log(TAG, 'transaction proposed — ending agentic loop');
+          break;
+        }
+
         if (stepFinishReason !== 'tool-calls' || stepToolCalls.length === 0) {
           break;
         }
 
-        // ── The model made tool calls but has more to say; build history ──────
-        // First try result.response (AI SDK v4 style) to get the canonically
-        // formatted messages — avoids us having to guess property names.
+        // Build history for next step
         let appendedViaResponse = false;
         try {
           const response = await (result as any).response;
@@ -264,12 +340,10 @@ export default function ChatScreen() {
             appendedViaResponse = true;
           }
         } catch {
-          // result.response doesn't exist in this SDK build
+          // result.response unavailable in this SDK build
         }
 
         if (!appendedViaResponse) {
-          // Fallback: manually construct assistant (tool-calls) + tool messages.
-          // Property names are probed with fallbacks to handle SDK version differences.
           const getId = (p: any, i: number) =>
             p.toolCallId ?? p.id ?? p.toolUseId ?? `call-${step}-${i}`;
           const getName = (p: any) => p.toolName ?? p.name ?? 'tool';
@@ -287,22 +361,18 @@ export default function ChatScreen() {
           }));
 
           console.log(TAG, 'manually appending tool-call + tool-result messages');
-          console.log(TAG, 'toolCallParts:', JSON.stringify(toolCallParts));
-          console.log(TAG, 'toolResultParts (truncated):', JSON.stringify(toolResultParts).slice(0, 400));
-
           currentMessages.push(
             { role: 'assistant', content: toolCallParts },
             { role: 'tool', content: toolResultParts },
           );
         }
       }
-      // ── End agentic loop ─────────────────────────────────────────────────────
 
-      console.log(TAG, `all steps done – ${deltaCount} deltas, ${fullText.length} chars total`);
-      console.log(TAG, 'final text:', fullText.slice(0, 200) + (fullText.length > 200 ? '…' : ''));
+      console.log(TAG, `all steps done – ${deltaCount} deltas, ${fullText.length} chars`);
 
-      if (fullText.trim() === '') {
-        console.log(TAG, 'no text – removing empty assistant bubble');
+      // Remove the assistant bubble if transaction was proposed (card replaces it)
+      // or if there was no text generated at all
+      if (transactionProposed || fullText.trim() === '') {
         setMessages((prev) => prev.filter((m) => m.id !== assistantId));
       } else {
         setMessages((prev) =>
@@ -314,11 +384,13 @@ export default function ChatScreen() {
         );
       }
 
-      // Persist a simplified (text-only) history for future turns
+      // Persist text-only history for future turns (skip if we just did a tool-only turn)
       setAiHistory([
         ...aiHistory,
         { role: 'user', content: text },
-        ...(fullText.trim() ? [{ role: 'assistant' as const, content: fullText }] : []),
+        ...(fullText.trim() && !transactionProposed
+          ? [{ role: 'assistant' as const, content: fullText }]
+          : []),
       ]);
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
@@ -334,7 +406,7 @@ export default function ChatScreen() {
       setIsSending(false);
       console.log(TAG, '── handleSend done ─────────────────────');
     }
-  }, [input, model, isSending, aiHistory]);
+  }, [input, model, isSending, aiHistory, wallets, categories]);
 
   // ── Confirmation handlers ───────────────────────────────────────────────────
 
@@ -354,9 +426,7 @@ export default function ChatScreen() {
         console.log(TAG, '✅ transaction saved, id:', saved.id);
         setMessages((prev) =>
           prev.map((m) =>
-            m.id === msgId
-              ? ({ ...m, status: 'confirmed' } as ConfirmationMessage)
-              : m,
+            m.id === msgId ? ({ ...m, status: 'confirmed' } as ConfirmationMessage) : m,
           ),
         );
       } catch (err) {
@@ -370,23 +440,19 @@ export default function ChatScreen() {
   const handleCancel = useCallback((msgId: string) => {
     setMessages((prev) =>
       prev.map((m) =>
-        m.id === msgId
-          ? ({ ...m, status: 'cancelled' } as ConfirmationMessage)
-          : m,
+        m.id === msgId ? ({ ...m, status: 'cancelled' } as ConfirmationMessage) : m,
       ),
     );
   }, []);
 
   const handleWalletPick = useCallback(
     async (msgId: string, walletId: string, walletName: string, req: WalletPickRequest) => {
-      // Mark picker as selected
       setMessages((prev) =>
         prev.map((m) =>
           m.id === msgId ? ({ ...m, status: 'selected' } as WalletPickerMessage) : m,
         ),
       );
 
-      // Immediately show a confirmation card for the completed transaction
       const tx: PendingTransaction = {
         walletId,
         walletName,
@@ -423,12 +489,14 @@ export default function ChatScreen() {
     status === 'downloading' ||
     status === 'preparing'
   ) {
-    return <ModelSetupScreen
-      status={status}
-      downloadProgress={downloadProgress}
-      error={error}
-      onDownload={downloadAndPrepare}
-    />;
+    return (
+      <ModelSetupScreen
+        status={status}
+        downloadProgress={downloadProgress}
+        error={error}
+        onDownload={downloadAndPrepare}
+      />
+    );
   }
 
   if (status === 'error') {
@@ -438,8 +506,7 @@ export default function ChatScreen() {
   return (
     <KeyboardAvoidingView
       className="flex-1 bg-white dark:bg-gray-900"
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      keyboardVerticalOffset={90}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <FlatList
         ref={flatListRef}
@@ -511,7 +578,7 @@ function MessageItem({
     return (
       <ConfirmationCard
         message={message}
-        onConfirm={() => onConfirm(message.id, message.transaction)}
+        onConfirm={(editedTx) => onConfirm(message.id, editedTx)}
         onCancel={() => onCancel(message.id)}
       />
     );
@@ -608,9 +675,7 @@ function WalletPickerCard({
               onPress={() => onPick(w.id, w.name)}
               activeOpacity={0.7}
             >
-              <Text className="text-xl mr-3">
-                {walletTypeIcon[w.type] ?? '👛'}
-              </Text>
+              <Text className="text-xl mr-3">{walletTypeIcon[w.type] ?? '👛'}</Text>
               <View className="flex-1">
                 <Text className="text-gray-900 dark:text-white font-medium text-sm">
                   {w.name}
@@ -620,7 +685,8 @@ function WalletPickerCard({
                 </Text>
               </View>
               <Text className="text-blue-600 dark:text-blue-400 font-semibold text-sm">
-                {w.balance >= 0 ? '+' : ''}{w.balance.toFixed(2)}
+                {w.balance >= 0 ? '+' : ''}
+                {w.balance.toFixed(2)}
               </Text>
             </TouchableOpacity>
           ))}
@@ -630,24 +696,36 @@ function WalletPickerCard({
   );
 }
 
+const TX_TYPES = ['expense', 'income', 'transfer'] as const;
+type TxType = (typeof TX_TYPES)[number];
+
 function ConfirmationCard({
   message,
   onConfirm,
   onCancel,
 }: {
   message: ConfirmationMessage;
-  onConfirm: () => void;
+  onConfirm: (tx: PendingTransaction) => void;
   onCancel: () => void;
 }) {
   const { transaction, status } = message;
-  const isExpense = transaction.type === 'expense';
-  const isIncome = transaction.type === 'income';
+  const isPending = status === 'pending';
 
+  // Local editable state — only meaningful while pending
+  const [txType, setTxType] = useState<TxType>(transaction.type as TxType);
+  const [amount, setAmount] = useState(transaction.amount.toFixed(2));
+  const [merchant, setMerchant] = useState(transaction.merchant ?? '');
+  const [description, setDescription] = useState(transaction.description ?? '');
+  const [date, setDate] = useState(
+    transaction.transactionDate
+      ? new Date(transaction.transactionDate).toISOString().split('T')[0]
+      : today,
+  );
+
+  const isExpense = txType === 'expense';
+  const isIncome = txType === 'income';
   const typeEmoji = isExpense ? '💸' : isIncome ? '💰' : '🔄';
-  const amountColor = isExpense
-    ? 'text-red-600 dark:text-red-400'
-    : 'text-green-600 dark:text-green-400';
-  const amountPrefix = isExpense ? '−' : '+';
+  const amountColor = isExpense ? '#DC2626' : '#16A34A';
 
   const statusBadge = {
     pending: 'bg-amber-100 dark:bg-amber-900 text-amber-700 dark:text-amber-300',
@@ -656,37 +734,73 @@ function ConfirmationCard({
   }[status];
 
   const statusLabel = {
-    pending: 'Awaiting confirmation',
+    pending: 'Tap to edit · confirm when ready',
     confirmed: '✓ Saved',
     cancelled: 'Cancelled',
   }[status];
 
-  const rows: { label: string; value: string; valueClass?: string }[] = [
-    {
-      label: 'Amount',
-      value: `${amountPrefix}$${transaction.amount.toFixed(2)}`,
-      valueClass: `font-semibold ${amountColor}`,
-    },
-    { label: 'Wallet', value: transaction.walletName },
-    ...(transaction.merchant ? [{ label: 'Merchant', value: transaction.merchant }] : []),
-    ...(transaction.description ? [{ label: 'Note', value: transaction.description }] : []),
-    {
-      label: 'Type',
-      value: transaction.type.charAt(0).toUpperCase() + transaction.type.slice(1),
-    },
-    {
-      label: 'Date',
-      value: new Date(transaction.transactionDate ?? Date.now()).toLocaleDateString(undefined, {
-        month: 'short',
-        day: 'numeric',
-        year: 'numeric',
-      }),
-    },
-  ];
+  const handleConfirm = () => {
+    const parsedAmount = parseFloat(amount);
+    onConfirm({
+      ...transaction,
+      amount: isNaN(parsedAmount) || parsedAmount <= 0 ? transaction.amount : parsedAmount,
+      type: txType,
+      merchant: merchant.trim() || null,
+      description: description.trim() || null,
+      transactionDate: date
+        ? new Date(date + 'T00:00:00').toISOString()
+        : transaction.transactionDate,
+    });
+  };
 
+  // ── Read-only view (confirmed / cancelled) ──────────────────────────────────
+  if (!isPending) {
+    const prefix = transaction.type === 'expense' ? '−' : '+';
+    const color = transaction.type === 'expense'
+      ? 'text-red-600 dark:text-red-400'
+      : 'text-green-600 dark:text-green-400';
+    return (
+      <View className="mb-4 mt-1">
+        <View className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-2xl p-4 mx-2">
+          <View className="flex-row items-center mb-3">
+            <Text className="text-xl mr-2">{typeEmoji}</Text>
+            <Text className="font-semibold text-gray-900 dark:text-white text-base flex-1">
+              Transaction
+            </Text>
+            <View className={`px-2 py-0.5 rounded-full ${statusBadge}`}>
+              <Text className="text-xs font-medium">{statusLabel}</Text>
+            </View>
+          </View>
+          {[
+            { label: 'Amount', value: `${prefix}${transaction.amount.toFixed(2)}`, cls: `font-semibold ${color}` },
+            { label: 'Wallet', value: transaction.walletName },
+            ...(transaction.merchant ? [{ label: 'Merchant', value: transaction.merchant, cls: undefined }] : []),
+            ...(transaction.description ? [{ label: 'Note', value: transaction.description, cls: undefined }] : []),
+            { label: 'Type', value: transaction.type.charAt(0).toUpperCase() + transaction.type.slice(1) },
+            { label: 'Date', value: new Date(transaction.transactionDate ?? Date.now()).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) },
+          ].map(({ label, value, cls }) => (
+            <View key={label} className="flex-row justify-between mb-1.5">
+              <Text className="text-gray-500 dark:text-gray-400 text-sm">{label}</Text>
+              <Text className={`text-gray-900 dark:text-white text-sm text-right ml-4 ${cls ?? ''}`} style={{ maxWidth: '60%' }} numberOfLines={2}>{value}</Text>
+            </View>
+          ))}
+          {status === 'confirmed' && (
+            <View className="flex-row items-center justify-center pt-2">
+              <Text className="text-green-600 dark:text-green-400 text-sm font-medium">
+                Transaction saved successfully
+              </Text>
+            </View>
+          )}
+        </View>
+      </View>
+    );
+  }
+
+  // ── Editable pending view ────────────────────────────────────────────────────
   return (
     <View className="mb-4 mt-1">
       <View className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-2xl p-4 mx-2">
+
         {/* Header */}
         <View className="flex-row items-center mb-3">
           <Text className="text-xl mr-2">{typeEmoji}</Text>
@@ -698,53 +812,118 @@ function ConfirmationCard({
           </View>
         </View>
 
-        {/* Details */}
-        <View className="mb-4">
-          {rows.map(({ label, value, valueClass }) => (
-            <View key={label} className="flex-row justify-between mb-1.5">
-              <Text className="text-gray-500 dark:text-gray-400 text-sm">{label}</Text>
+        {/* Type toggle */}
+        <View className="flex-row mb-3 gap-2">
+          {TX_TYPES.map((t) => (
+            <TouchableOpacity
+              key={t}
+              onPress={() => setTxType(t)}
+              className={`flex-1 py-1.5 rounded-lg items-center border ${
+                txType === t
+                  ? t === 'expense'
+                    ? 'bg-red-100 dark:bg-red-950 border-red-400 dark:border-red-600'
+                    : t === 'income'
+                    ? 'bg-green-100 dark:bg-green-950 border-green-400 dark:border-green-600'
+                    : 'bg-blue-100 dark:bg-blue-950 border-blue-400 dark:border-blue-600'
+                  : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-600'
+              }`}
+              activeOpacity={0.7}
+            >
               <Text
-                className={`text-gray-900 dark:text-white text-sm text-right ml-4 shrink ${
-                  valueClass ?? ''
+                className={`text-xs font-semibold capitalize ${
+                  txType === t
+                    ? t === 'expense'
+                      ? 'text-red-600 dark:text-red-400'
+                      : t === 'income'
+                      ? 'text-green-600 dark:text-green-400'
+                      : 'text-blue-600 dark:text-blue-400'
+                    : 'text-gray-500 dark:text-gray-400'
                 }`}
-                style={{ maxWidth: '60%' }}
-                numberOfLines={3}
               >
-                {value}
+                {t}
               </Text>
-            </View>
+            </TouchableOpacity>
           ))}
         </View>
 
-        {/* Action buttons — only shown while pending */}
-        {status === 'pending' && (
-          <View className="flex-row">
-            <TouchableOpacity
-              className="flex-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl py-3 items-center mr-2"
-              onPress={onCancel}
-              activeOpacity={0.7}
-            >
-              <Text className="text-gray-700 dark:text-gray-300 font-medium text-sm">
-                Cancel
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              className="flex-1 bg-blue-600 rounded-xl py-3 items-center"
-              onPress={onConfirm}
-              activeOpacity={0.7}
-            >
-              <Text className="text-white font-semibold text-sm">Confirm & Save</Text>
-            </TouchableOpacity>
+        {/* Editable rows */}
+        <View className="mb-3">
+          {/* Amount */}
+          <View className="flex-row items-center justify-between mb-2">
+            <Text className="text-gray-500 dark:text-gray-400 text-sm w-20">Amount</Text>
+            <TextInput
+              className="flex-1 text-right text-sm font-semibold bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-1.5"
+              style={{ color: amountColor }}
+              value={amount}
+              onChangeText={setAmount}
+              keyboardType="decimal-pad"
+              selectTextOnFocus
+            />
           </View>
-        )}
 
-        {status === 'confirmed' && (
-          <View className="flex-row items-center justify-center py-1">
-            <Text className="text-green-600 dark:text-green-400 text-sm font-medium">
-              Transaction saved successfully
+          {/* Wallet — read-only */}
+          <View className="flex-row items-center justify-between mb-2">
+            <Text className="text-gray-500 dark:text-gray-400 text-sm w-20">Wallet</Text>
+            <Text className="text-gray-900 dark:text-white text-sm text-right flex-1" numberOfLines={1}>
+              {transaction.walletName}
             </Text>
           </View>
-        )}
+
+          {/* Merchant */}
+          <View className="flex-row items-center justify-between mb-2">
+            <Text className="text-gray-500 dark:text-gray-400 text-sm w-20">Merchant</Text>
+            <TextInput
+              className="flex-1 text-right text-sm text-gray-900 dark:text-white bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-1.5"
+              value={merchant}
+              onChangeText={setMerchant}
+              placeholder="optional"
+              placeholderTextColor="#9CA3AF"
+            />
+          </View>
+
+          {/* Note */}
+          <View className="flex-row items-center justify-between mb-2">
+            <Text className="text-gray-500 dark:text-gray-400 text-sm w-20">Note</Text>
+            <TextInput
+              className="flex-1 text-right text-sm text-gray-900 dark:text-white bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-1.5"
+              value={description}
+              onChangeText={setDescription}
+              placeholder="optional"
+              placeholderTextColor="#9CA3AF"
+            />
+          </View>
+
+          {/* Date */}
+          <View className="flex-row items-center justify-between">
+            <Text className="text-gray-500 dark:text-gray-400 text-sm w-20">Date</Text>
+            <TextInput
+              className="flex-1 text-right text-sm text-gray-900 dark:text-white bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-1.5"
+              value={date}
+              onChangeText={setDate}
+              placeholder="YYYY-MM-DD"
+              placeholderTextColor="#9CA3AF"
+            />
+          </View>
+        </View>
+
+        {/* Action buttons */}
+        <View className="flex-row">
+          <TouchableOpacity
+            className="flex-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl py-3 items-center mr-2"
+            onPress={onCancel}
+            activeOpacity={0.7}
+          >
+            <Text className="text-gray-700 dark:text-gray-300 font-medium text-sm">Cancel</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            className="flex-1 bg-blue-600 rounded-xl py-3 items-center"
+            onPress={handleConfirm}
+            activeOpacity={0.7}
+          >
+            <Text className="text-white font-semibold text-sm">Confirm & Save</Text>
+          </TouchableOpacity>
+        </View>
+
       </View>
     </View>
   );
@@ -752,10 +931,10 @@ function ConfirmationCard({
 
 function EmptyState() {
   const suggestions = [
-    'Log a $45 expense at Whole Foods',
+    'Log RM45 food expense on TNG',
     'Show my recent transactions',
     'What are my wallet balances?',
-    'Add a $2500 salary income',
+    'Add RM2500 salary income',
   ];
 
   return (
@@ -767,17 +946,14 @@ function EmptyState() {
         {"Hi, I'm Moni"}
       </Text>
       <Text className="text-gray-500 dark:text-gray-400 text-center text-sm mb-8 leading-5">
-        Your on-device finance assistant. I can help you log transactions, review spending, and check your balances.
+        Your on-device finance assistant. Log transactions, review spending, and check your balances — all privately on your device.
       </Text>
       <Text className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3">
         Try asking
       </Text>
       <View className="w-full">
         {suggestions.map((s) => (
-          <View
-            key={s}
-            className="bg-gray-50 dark:bg-gray-800 rounded-xl px-4 py-3 mb-2"
-          >
+          <View key={s} className="bg-gray-50 dark:bg-gray-800 rounded-xl px-4 py-3 mb-2">
             <Text className="text-gray-700 dark:text-gray-300 text-sm">{s}</Text>
           </View>
         ))}
@@ -845,7 +1021,10 @@ function ModelSetupScreen({
               { label: 'Privacy', value: 'Runs entirely on your device' },
               { label: 'Requires', value: 'One-time download' },
             ].map(({ label, value }) => (
-              <View key={label} className="flex-row justify-between py-2 border-b border-gray-100 dark:border-gray-700 last:border-0">
+              <View
+                key={label}
+                className="flex-row justify-between py-2 border-b border-gray-100 dark:border-gray-700 last:border-0"
+              >
                 <Text className="text-gray-500 dark:text-gray-400 text-sm">{label}</Text>
                 <Text className="text-gray-900 dark:text-white text-sm font-medium">{value}</Text>
               </View>
