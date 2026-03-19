@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, Alert } from 'react-native';
+import { ScrollView, View, Text, TextInput, TouchableOpacity, Alert } from 'react-native';
 import { router } from 'expo-router';
 import { useAuth } from '@/lib/auth/auth-context';
 import { createWallet } from '@/lib/supabase/wallets';
@@ -22,7 +22,7 @@ export default function NewWalletScreen() {
   const [name, setName] = useState('');
   const [type, setType] = useState<(typeof WALLET_TYPES)[0]['value']>('bank');
   const [currency, setCurrency] = useState('USD');
-  const [initialBalance, setInitialBalance] = useState('0');
+  const [initialBalance, setInitialBalance] = useState('');
   const [color, setColor] = useState(COLORS[0]);
   const [loading, setLoading] = useState(false);
 
@@ -52,27 +52,38 @@ export default function NewWalletScreen() {
   };
 
   return (
-    <View className="flex-1 p-6 bg-white dark:bg-gray-900">
-      <Text className="text-2xl font-semibold mb-6 text-gray-900 dark:text-white">New Wallet</Text>
-      <TextInput
+    <View className="flex-1 bg-[#C9BEFF] dark:bg-gray-900 bottom-10">
+      <ScrollView className="p-6" contentContainerStyle={{ paddingBottom: 32 }}>
+        <Text className="text-sm font-medium mb-2 text-gray-900 dark:text-white">Name</Text>
+        <TextInput
         className="border border-gray-300 dark:border-gray-600 rounded-lg p-3 mb-4 text-base bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
-        placeholder="Name"
+        placeholder="Enter Wallet Name"
         placeholderTextColor="#9CA3AF"
         value={name}
         onChangeText={setName}
       />
       <Text className="text-sm font-medium mb-2 text-gray-900 dark:text-white">Type</Text>
-      <View className="flex-row flex-wrap gap-2 mb-4">
-        {WALLET_TYPES.map((t) => (
-          <TouchableOpacity
-            key={t.value}
-            className={`p-3 rounded-lg ${type === t.value ? 'bg-blue-100 dark:bg-blue-900' : 'bg-gray-100 dark:bg-gray-700'}`}
-            onPress={() => setType(t.value)}
-          >
-            <Text className="text-gray-900 dark:text-white">{t.icon}</Text>
-          </TouchableOpacity>
-        ))}
+      <View className="mb-4">
+        {WALLET_TYPES.map((t) => {
+          const selected = t.value === type;
+          return (
+            <View className='border border-gray-300 dark:border-gray-600 rounded-lg mb-1 ml-3 mr-3' key={t.value}>
+              <TouchableOpacity
+                key={t.value}
+                onPress={() => setType(t.value)}
+                className={`flex-row items-center justify-between border rounded-lg px-3 py-1 ${selected ? 'border-blue-500 bg-blue-50 dark:border-blue-300 dark:bg-blue-900/30' : 'border-gray-300 bg-white dark:border-gray-600 dark:bg-gray-800'}`}
+              >
+                <View className="flex-row items-center gap-2">
+                  <Text className="text-lg">{t.icon}</Text>
+                  <Text className="text-sm text-gray-900 dark:text-white">{t.label}</Text>
+                </View>
+                <View className={`w-4 h-4 rounded-full ${selected ? 'bg-blue-500' : 'bg-transparent border border-gray-400 dark:border-gray-500'}`} />
+              </TouchableOpacity>
+            </View>
+          );
+        })}
       </View>
+      <Text className="text-sm font-medium mb-2 text-gray-900 dark:text-white">Currency</Text>
       <TextInput
         className="border border-gray-300 dark:border-gray-600 rounded-lg p-3 mb-4 text-base bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
         placeholder="Currency"
@@ -80,9 +91,10 @@ export default function NewWalletScreen() {
         value={currency}
         onChangeText={setCurrency}
       />
+      <Text className="text-sm font-medium mb-2 text-gray-900 dark:text-white">Initial Balance</Text>
       <TextInput
         className="border border-gray-300 dark:border-gray-600 rounded-lg p-3 mb-4 text-base bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
-        placeholder="Initial balance"
+        placeholder="Enter Initial Balance"
         placeholderTextColor="#9CA3AF"
         value={initialBalance}
         onChangeText={setInitialBalance}
@@ -106,7 +118,8 @@ export default function NewWalletScreen() {
       >
         <Text className="text-white text-base font-semibold">{loading ? 'Creating...' : 'Create Wallet'}</Text>
       </TouchableOpacity>
-    </View>
+    </ScrollView>
+  </View>
   );
 }
 
