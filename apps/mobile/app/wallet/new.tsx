@@ -15,7 +15,7 @@ const WALLET_TYPES = [
   { value: 'other' as const, label: 'Other', icon: '📦' },
 ];
 
-const COLORS = ['#0066FF', '#FF6B6B', '#06D6A0', '#FFD166', '#EF476F', '#118AB2'];
+const COLORS = ['#EF476F', '#FF6B6B', '#FFD166', '#06D6A0', '#118AB2', '#0066FF'];
 
 export default function NewWalletScreen() {
   const { user } = useAuth();
@@ -79,7 +79,7 @@ export default function NewWalletScreen() {
               <TouchableOpacity
                 key={t.value}
                 onPress={() => setType(t.value)}
-                className={`flex-row items-center justify-between border rounded-lg px-3 py-1 ${selected ? 'border-[#8494FF] bg-blue-50 dark:border-blue-300 dark:bg-blue-900/30' : 'border-gray-300 bg-white dark:border-gray-600 dark:bg-gray-800'}`}
+                className={`flex-row items-center justify-between border rounded-lg px-3 py-1 ${selected ? 'border-[#8494FF] border-x-2 border-y-2 bg-white/50 dark:border-blue-300 dark:bg-blue-900/30' : 'border-gray-300 bg-white dark:border-gray-600 dark:bg-gray-800'}`}
               >
                 <View className="flex-row items-center gap-2">
                   <Text className="text-lg">{t.icon}</Text>
@@ -113,7 +113,7 @@ export default function NewWalletScreen() {
         {COLORS.map((c) => (
           <TouchableOpacity
             key={c}
-            className={`w-9 h-9 rounded-full ${color === c ? 'border border-white/70 dark:border-gray-200' : ''}`}
+            className={`w-9 h-9 rounded-full ${color === c ? 'border border-x-3 border-y-3 border-white dark:border-gray-200' : ''}`}
             style={{ backgroundColor: c }}
             onPress={() => setColor(c)}
           />
