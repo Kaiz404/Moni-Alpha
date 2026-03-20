@@ -3,6 +3,7 @@ import {
   View,
   Text,
   TextInput,
+  Pressable,
   TouchableOpacity,
   FlatList,
   KeyboardAvoidingView,
@@ -12,6 +13,7 @@ import {
 } from 'react-native';
 import { randomUUID } from 'expo-crypto';
 import { streamText } from 'ai';
+import { ExpoSpeechRecognitionModule, useSpeechRecognitionEvent } from 'expo-speech-recognition';
 
 import { useLlamaModel } from '@/hooks/use-llama-model';
 import {
@@ -75,11 +77,43 @@ export default function ChatScreen() {
   const [aiHistory, setAiHistory] = useState<AiHistoryMessage[]>([]);
   const [input, setInput] = useState('');
   const [isSending, setIsSending] = useState(false);
+  const [isSpeechRecognizing, setIsSpeechRecognizing] = useState(false);
   const [wallets, setWallets] = useState<WalletSeed[]>([]);
   const [categories, setCategories] = useState<CategorySeed[]>([]);
 
   const flatListRef = useRef<FlatList>(null);
   const isReady = status === 'ready';
+
+  // Used to prefill the user's current draft when starting speech-to-text,
+  // so interim/final results append to whatever they typed before.
+  const speechBaseRef = useRef('');
+  const speechActiveRef = useRef(false);
+
+  useSpeechRecognitionEvent('start', () => {
+    speechActiveRef.current = true;
+    setIsSpeechRecognizing(true);
+  });
+
+  useSpeechRecognitionEvent('end', () => {
+    speechActiveRef.current = false;
+    setIsSpeechRecognizing(false);
+  });
+
+  useSpeechRecognitionEvent('error', (event: any) => {
+    console.warn(TAG, 'Speech recognition error:', event?.error, event?.message);
+    speechActiveRef.current = false;
+    setIsSpeechRecognizing(false);
+  });
+
+  useSpeechRecognitionEvent('result', (event: any) => {
+    const transcript: string = event?.results?.[0]?.transcript ?? '';
+    const text = transcript.trim();
+    if (!text) return;
+
+    const base = speechBaseRef.current ?? '';
+    const prefix = base.trim().length ? `${base.trimEnd()} ` : '';
+    setInput(prefix + text);
+  });
 
   const loadContextData = useCallback(async () => {
     try {
@@ -114,6 +148,46 @@ export default function ChatScreen() {
       loadContextData();
     }
   }, [status, loadContextData]);
+
+  // ── Speech-to-text (hold-to-talk) ──────────────────────────────────────────
+
+  const startSpeech = useCallback(async () => {
+    if (!isReady || isSending) return;
+    if (speechActiveRef.current) return;
+
+    try {
+      const perms = await ExpoSpeechRecognitionModule.getPermissionsAsync();
+      if (!perms.granted) {
+        const req = await ExpoSpeechRecognitionModule.requestPermissionsAsync();
+        if (!req.granted) return;
+      }
+
+      speechBaseRef.current = input;
+      speechActiveRef.current = true;
+      setIsSpeechRecognizing(true); // updated again by native 'start' event
+
+      ExpoSpeechRecognitionModule.start({
+        lang: 'en-US',
+        interimResults: true,
+        continuous: false,
+      });
+    } catch (e) {
+      speechActiveRef.current = false;
+      setIsSpeechRecognizing(false);
+      console.warn(TAG, 'Failed to start speech recognition:', e);
+    }
+  }, [input, isReady, isSending]);
+
+  const stopSpeech = useCallback(() => {
+    if (!speechActiveRef.current) return;
+    speechActiveRef.current = false;
+    try {
+      ExpoSpeechRecognitionModule.stop();
+    } catch (e) {
+      setIsSpeechRecognizing(false);
+      console.warn(TAG, 'Failed to stop speech recognition:', e);
+    }
+  }, []);
 
   // ── Send handler ────────────────────────────────────────────────────────────
 
@@ -528,34 +602,51 @@ export default function ChatScreen() {
 
       <View className="flex-row items-end px-4 py-3 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
         <TextInput
-          className="flex-1 bg-gray-100 dark:bg-gray-800 rounded-2xl px-4 py-3 text-base text-gray-900 dark:text-white mr-3"
+          className="flex-1 bg-gray-100 dark:bg-gray-800 rounded-2xl px-4 py-3 text-base text-gray-900 dark:text-white mr-2"
           style={{ maxHeight: 112 }}
           placeholder="Message Moni…"
           placeholderTextColor="#9CA3AF"
           value={input}
           onChangeText={setInput}
           multiline
-          editable={isReady && !isSending}
+          editable={isReady && !isSending && !isSpeechRecognizing}
           returnKeyType="send"
           blurOnSubmit
           onSubmitEditing={handleSend}
         />
-        <TouchableOpacity
-          className={`w-11 h-11 rounded-full items-center justify-center ${
-            isReady && input.trim() && !isSending
-              ? 'bg-blue-600'
-              : 'bg-gray-300 dark:bg-gray-600'
-          }`}
-          onPress={handleSend}
-          disabled={!isReady || !input.trim() || isSending}
-          activeOpacity={0.7}
-        >
-          {isSending ? (
-            <ActivityIndicator size="small" color="white" />
-          ) : (
-            <Text className="text-white text-lg font-bold">↑</Text>
-          )}
-        </TouchableOpacity>
+        <View className="flex-row items-end gap-2">
+          <Pressable
+            className={`w-11 h-11 rounded-full items-center justify-center ${
+              isSpeechRecognizing ? 'bg-red-600' : 'bg-gray-300 dark:bg-gray-600'
+            }`}
+            onPressIn={startSpeech}
+            onPressOut={stopSpeech}
+            disabled={!isReady || isSending}
+            accessibilityRole="button"
+            accessibilityLabel={isSpeechRecognizing ? 'Listening' : 'Hold to speak'}
+          >
+            <Text className={`${isSpeechRecognizing ? 'text-white' : 'text-gray-900 dark:text-white'} text-lg font-bold`}>
+              🎙️
+            </Text>
+          </Pressable>
+
+          <TouchableOpacity
+            className={`w-11 h-11 rounded-full items-center justify-center ${
+              isReady && input.trim() && !isSending && !isSpeechRecognizing
+                ? 'bg-blue-600'
+                : 'bg-gray-300 dark:bg-gray-600'
+            }`}
+            onPress={handleSend}
+            disabled={!isReady || !input.trim() || isSending || isSpeechRecognizing}
+            activeOpacity={0.7}
+          >
+            {isSending ? (
+              <ActivityIndicator size="small" color="white" />
+            ) : (
+              <Text className="text-white text-lg font-bold">↑</Text>
+            )}
+          </TouchableOpacity>
+        </View>
       </View>
     </KeyboardAvoidingView>
   );

@@ -6,8 +6,12 @@ import {
   getModelPath,
 } from '@react-native-ai/llama';
 
-export const CHAT_MODEL_ID = 'mradermacher/Qwen3.5-2B-GPT-5.1-HighIQ-INSTRUCT-i1-GGUF/Qwen3.5-2B-GPT-5.1-HighIQ-INSTRUCT.i1-Q4_K_M.gguf';
+export const CHAT_MODEL_ID = 'Qwen/Qwen2.5-3B-Instruct-GGUF/qwen2.5-3b-instruct-q3_k_m.gguf';
+// export const CHAT_MODEL_ID = 'mradermacher/Qwen3.5-2B-GPT-5.1-HighIQ-INSTRUCT-i1-GGUF/Qwen3.5-2B-GPT-5.1-HighIQ-INSTRUCT.i1-Q4_K_M.gguf';
 // export const CHAT_MODEL_ID = 'unsloth/gemma-3-1b-it-GGUF/gemma-3-1b-it-IQ4_NL.gguf';
+// export const CHAT_MODEL_ID = 'unsloth/Qwen3.5-4B-GGUF/Qwen3.5-4B-IQ4_NL.gguf';
+// export const CHAT_MODEL_ID = 'unsloth/Qwen3.5-0.8B-GGUF/Qwen3.5-0.8B-Q4_K_M.gguf'
+// export const CHAT_MODEL_ID = 'unsloth/Qwen3.5-0.8B-GGUF/Qwen3.5-0.8B-Q3_K_M.gguf'
 
 export type ModelStatus =
   | 'idle'
