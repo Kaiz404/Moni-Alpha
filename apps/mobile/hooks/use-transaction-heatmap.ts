@@ -7,9 +7,11 @@ export interface TransactionPinPoint {
   longitude: number;
   transactionCount: number;
   locationName: string;
+  description: string;
+  amount: number;
 }
 
-export function useTransactionHeatmap() {
+export function useTransactionPinmap() {
   const [pinPoints, setPinPoints] = useState<TransactionPinPoint[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -21,7 +23,14 @@ export function useTransactionHeatmap() {
       const transactions = await getTransactions();
       
       const locationCounts: {
-        [key: string]: { lat: number; lng: number; count: number; locationName: string };
+        [key: string]: {
+          lat: number;
+          lng: number;
+          count: number;
+          locationName: string;
+          description: string;
+          amount: number;
+        };
       } = {};
       
       transactions.forEach((transaction) => {
@@ -34,6 +43,8 @@ export function useTransactionHeatmap() {
               lng: transaction.locationLongitude,
               count: 0,
               locationName: transaction.locationName?.trim() || 'Saved Transaction Location',
+              description: transaction.description?.trim() || 'No description',
+              amount: transaction.amount,
             };
           }
           locationCounts[key].count += 1;
@@ -45,6 +56,8 @@ export function useTransactionHeatmap() {
         longitude: location.lng,
         transactionCount: location.count,
         locationName: location.locationName,
+        description: location.description,
+        amount: location.amount,
       }));
 
       setPinPoints(points);
@@ -99,3 +112,5 @@ export function useTransactionHeatmap() {
     refresh: load,
   };
 }
+
+export const useTransactionHeatmap = useTransactionPinmap;

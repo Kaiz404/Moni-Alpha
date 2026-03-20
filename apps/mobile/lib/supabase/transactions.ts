@@ -1,6 +1,7 @@
 import { syncSystem } from '@/lib/powersync/Powersync';
 import type { CreateTransaction } from '@repo/types';
 import { randomUUID } from 'expo-crypto';
+import * as Location from 'expo-location';
 
 export async function getTransactions(walletId?: string) {
   const { db } = syncSystem;
@@ -46,6 +47,49 @@ export async function createTransaction(data: CreateTransaction) {
 
   if (!userId) throw new Error('User ID required');
 
+  let resolvedLocationLatitude = data.locationLatitude ?? null;
+  let resolvedLocationLongitude = data.locationLongitude ?? null;
+  let resolvedLocationName = data.locationName ?? null;
+
+  const shouldCaptureLocation =
+    resolvedLocationLatitude === null ||
+    resolvedLocationLatitude === undefined ||
+    resolvedLocationLongitude === null ||
+    resolvedLocationLongitude === undefined;
+
+  if (shouldCaptureLocation) {
+    try {
+      const permission = await Location.requestForegroundPermissionsAsync();
+      if (permission.status === 'granted') {
+        const current = await Location.getCurrentPositionAsync({
+          accuracy: Location.Accuracy.Balanced,
+        });
+
+        resolvedLocationLatitude = current.coords.latitude;
+        resolvedLocationLongitude = current.coords.longitude;
+
+        if (!resolvedLocationName) {
+          try {
+            const addresses = await Location.reverseGeocodeAsync({
+              latitude: current.coords.latitude,
+              longitude: current.coords.longitude,
+            });
+            const first = addresses[0];
+            if (first) {
+              resolvedLocationName =
+                [first.name, first.street, first.city, first.region]
+                  .filter(Boolean)
+                  .join(', ')
+                  .trim() || null;
+            }
+          } catch {
+          }
+        }
+      }
+    } catch {
+    }
+  }
+
   const id = randomUUID();
 
   const result = await db
@@ -62,6 +106,15 @@ export async function createTransaction(data: CreateTransaction) {
       merchant: data.merchant || null,
       notes: data.notes || null,
       transaction_date: data.transactionDate || new Date().toISOString(),
+      location_latitude:
+        resolvedLocationLatitude === undefined || resolvedLocationLatitude === null
+          ? null
+          : resolvedLocationLatitude.toString(),
+      location_longitude:
+        resolvedLocationLongitude === undefined || resolvedLocationLongitude === null
+          ? null
+          : resolvedLocationLongitude.toString(),
+      location_name: resolvedLocationName || null,
       metadata: JSON.stringify({}),
     })
     .returningAll()

@@ -8,6 +8,7 @@ import {
   ScrollView,
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
+import * as Location from 'expo-location';
 import { useAuth } from '@/lib/auth/auth-context';
 import { createTransaction } from '@/lib/supabase/transactions';
 import { getWallets } from '@/lib/supabase/wallets';
@@ -45,6 +46,45 @@ export default function NewTransactionScreen() {
 
   const handleSubmit = async () => {
     if (!user || !walletId) return;
+
+    let locationPayload: {
+      locationLatitude?: number | null;
+      locationLongitude?: number | null;
+      locationName?: string | null;
+    } = {};
+
+    try {
+      const permission = await Location.requestForegroundPermissionsAsync();
+      if (permission.status === 'granted') {
+        const current = await Location.getCurrentPositionAsync({
+          accuracy: Location.Accuracy.Balanced,
+        });
+
+        let locationName: string | null = null;
+        try {
+          const addresses = await Location.reverseGeocodeAsync({
+            latitude: current.coords.latitude,
+            longitude: current.coords.longitude,
+          });
+          const first = addresses[0];
+          if (first) {
+            locationName = [first.name, first.street, first.city, first.region]
+              .filter(Boolean)
+              .join(', ')
+              .trim() || null;
+          }
+        } catch {
+        }
+
+        locationPayload = {
+          locationLatitude: current.coords.latitude,
+          locationLongitude: current.coords.longitude,
+          locationName,
+        };
+      }
+    } catch {
+    }
+
     const parsed = createTransactionSchema.safeParse({
       walletId,
       amount: parseFloat(amount) || 0,
@@ -53,6 +93,7 @@ export default function NewTransactionScreen() {
       merchant: merchant.trim() || null,
       description: description.trim() || null,
       transactionDate: new Date().toISOString(),
+      ...locationPayload,
     });
     if (!parsed.success) {
       Alert.alert('Error', parsed.error.errors[0]?.message ?? 'Invalid input');
