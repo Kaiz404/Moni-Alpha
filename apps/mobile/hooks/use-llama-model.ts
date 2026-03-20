@@ -4,6 +4,7 @@ import {
   downloadModel,
   isModelDownloaded,
   getModelPath,
+  removeModel,
 } from '@react-native-ai/llama';
 
 export const CHAT_MODEL_ID = 'Qwen/Qwen2.5-3B-Instruct-GGUF/qwen2.5-3b-instruct-q3_k_m.gguf';
@@ -24,6 +25,12 @@ export type ModelStatus =
 
 const TAG = '[Moni/Model]';
 
+const PREPARE_CONTEXT_ATTEMPTS = [
+  { n_ctx: 4096, n_gpu_layers: 99 },
+  { n_ctx: 2048, n_gpu_layers: 0 },
+  { n_ctx: 1024, n_gpu_layers: 0 },
+] as const;
+
 export function useLlamaModel() {
   const [status, setStatus] = useState<ModelStatus>('idle');
   const [downloadProgress, setDownloadProgress] = useState(0);
@@ -32,11 +39,52 @@ export function useLlamaModel() {
   // Keep model instance in a ref so it's not tied to render cycles
   const modelRef = useRef<ReturnType<typeof llama.languageModel> | null>(null);
 
+  const createAndPrepareWithFallback = useCallback(async (modelPath: string) => {
+    let lastError: unknown;
+
+    for (const params of PREPARE_CONTEXT_ATTEMPTS) {
+      let model: ReturnType<typeof llama.languageModel> | null = null;
+      try {
+        console.log(TAG, 'prepare attempt with params:', params);
+        model = llama.languageModel(modelPath, { contextParams: params });
+        await model.prepare();
+        console.log(TAG, 'prepare attempt succeeded with params:', params);
+        return model;
+      } catch (err) {
+        lastError = err;
+        const msg = err instanceof Error ? err.message : String(err);
+        console.warn(TAG, 'prepare attempt failed:', params, msg);
+        try {
+          await model?.unload();
+        } catch {
+          // best effort cleanup
+        }
+      }
+    }
+
+    throw lastError ?? new Error('Failed to load model');
+  }, []);
+
   const prepare = useCallback(async () => {
     console.log(TAG, 'prepare() – loading model into memory, modelId:', CHAT_MODEL_ID);
     setStatus('preparing');
     setError(null);
     try {
+      const downloaded = await isModelDownloaded(CHAT_MODEL_ID);
+      if (!downloaded) {
+        throw new Error('Model file is not downloaded yet');
+      }
+
+      if (modelRef.current) {
+        console.log(TAG, 'existing model found in memory, unloading before prepare...');
+        try {
+          await modelRef.current.unload();
+        } catch (unloadErr) {
+          console.warn(TAG, 'existing model unload warning (continuing):', unloadErr);
+        }
+        modelRef.current = null;
+      }
+
       const modelPath = getModelPath(CHAT_MODEL_ID);
       console.log(TAG, 'model path:', modelPath);
       // n_gpu_layers: 99  → offload all layers to GPU
@@ -60,6 +108,37 @@ export function useLlamaModel() {
       });
       console.log(TAG, 'calling model.prepare()…');
       await model.prepare();
+
+      let model: ReturnType<typeof llama.languageModel>;
+      try {
+        model = await createAndPrepareWithFallback(modelPath);
+      } catch (firstPrepareError) {
+        const firstPrepareMsg =
+          firstPrepareError instanceof Error
+            ? firstPrepareError.message
+            : String(firstPrepareError);
+        console.warn(TAG, 'initial prepare failed, attempting redownload recovery:', firstPrepareMsg);
+
+        try {
+          await removeModel(CHAT_MODEL_ID);
+          console.log(TAG, 'stale model removed');
+        } catch (removeErr) {
+          console.warn(TAG, 'removeModel warning (continuing):', removeErr);
+        }
+
+        setStatus('downloading');
+        setDownloadProgress(0);
+        await downloadModel(CHAT_MODEL_ID, ({ percentage }) => {
+          const pct = Math.round(percentage);
+          setDownloadProgress(pct);
+        });
+
+        setStatus('preparing');
+        const recoveredPath = getModelPath(CHAT_MODEL_ID);
+        console.log(TAG, 'recovered model path:', recoveredPath);
+        model = await createAndPrepareWithFallback(recoveredPath);
+      }
+
       modelRef.current = model;
       console.log(TAG, '✅ model ready');
       setStatus('ready');
@@ -70,7 +149,7 @@ export function useLlamaModel() {
       setStatus('error');
       setError(msg);
     }
-  }, []);
+  }, [createAndPrepareWithFallback]);
 
   const downloadAndPrepare = useCallback(async () => {
     console.log(TAG, 'downloadAndPrepare() called');

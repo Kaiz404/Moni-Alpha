@@ -16,6 +16,7 @@ import {
 import { generateText } from 'ai';
 import { z } from 'zod';
 import { CHAT_MODEL_ID } from '@/hooks/use-llama-model';
+import type { CreateProposedTransaction } from '@repo/types';
 
 // ─── Model IDs ────────────────────────────────────────────────────────────────
 
@@ -131,6 +132,129 @@ export type NotificationAnalysisResult =
       transactionDate: string;
     };
 
+export type NotificationAnalysisDebugEvent = {
+  event:
+    | 'prefilter.signals'
+    | 'prefilter.rejected'
+    | 'llm.request'
+    | 'llm.response.parsed'
+    | 'llm.response.invalid'
+    | 'llm.error';
+  details?: Record<string, unknown>;
+};
+
+export const TRANSACTION_DETECTION_SYSTEM_PROMPT = `You are a strict notification transaction detector for a personal finance app.
+
+Your task:
+1) Decide if a notification is a real financial transaction.
+2) Only classify as transaction when all are true:
+   - Source app is a bank, fintech, payment, or wallet app.
+   - Message contains a real money amount.
+   - Message indicates money movement to or from a person/business/merchant.
+
+Treat as NOT a transaction:
+- Promotions, ads, cashback campaigns, coupons, reminders.
+- OTP/security alerts/login/device alerts.
+- Generic balance snapshots without a transaction event.
+- Bills due notices without confirmed payment.
+
+If transaction=true:
+- Extract amount as a positive number.
+- Infer type:
+  - income: credited/received/refund inbound.
+  - expense: debited/paid/spent/purchase outbound.
+- Currency must be 3-letter ISO when possible (USD, NGN, INR, etc).
+- Merchant/counterparty should be null when unknown.
+- transaction_date should be ISO datetime if inferable; else current timestamp.
+
+Return ONLY valid JSON that matches the schema.`;
+
+export const NOTIFICATION_TOOL_WORKFLOW_SYSTEM_PROMPT = `You are a strict notification transaction router.
+
+You have exactly two tools:
+- get_wallets
+- create_transaction
+
+Workflow rules (mandatory):
+1) Always call get_wallets first.
+2) Compare notification source app/origin with returned wallet names.
+3) Only if there is a wallet match, call create_transaction with the exact walletId from get_wallets.
+4) If no wallet matches, do not call create_transaction. Return exactly: SKIP_NON_USER_WALLET
+5) Do not invent wallet IDs.
+6) Keep output concise. If create_transaction is called successfully, final text can be: CREATED
+`;
+
+const MONEY_PATTERN =
+  /(?:[$€£¥₦₹₩₪₱฿₫₲₴₵₸₽₾R])\s*[\d,]+(?:[.,]\d{1,2})?|[\d,]+(?:[.,]\d{1,2})?\s*(?:USD|EUR|GBP|NGN|ZAR|KES|GHS|UGX|TZS|MYR|SGD|AUD|CAD|CHF|JPY|CNY|INR|BRL|MXN|AED|SAR|QAR|KWD|OMR|BHD)\b/i;
+
+const BANK_WALLET_APP_PATTERN =
+  /\b(bank|wallet|pay|payments|upi|momo|mobile money|mpesa|paypal|venmo|cash app|revolut|wise|chime|monzo|opay|kuda|palmpay|moniepoint|branch|stanchart|gtbank|access bank|uba|zenith)\b/i;
+
+const TRANSFER_SIGNAL_PATTERN =
+  /\b(credited|debited|received|sent|paid|payment|purchase|spent|withdrawn|withdrawal|deposit|transferred|transfer|refund|dr\b|cr\b|from\s+|to\s+|at\s+|via\s+|merchant|beneficiary|sender|receiver)\b/i;
+
+function notificationText(notification: RawNotification): string {
+  return [
+    notification.title,
+    notification.titleBig,
+    notification.text,
+    notification.bigText,
+    notification.subText,
+    notification.summaryText,
+    notification.extraInfoText,
+  ]
+    .filter(Boolean)
+    .join(' ');
+}
+
+export function passesTransactionPrefilter(notification: RawNotification): boolean {
+  const text = notificationText(notification);
+  // Prefilter now only requires a money amount and a transfer signal.
+  // App-name checks are removed — wallet matching is handled later via get_wallets.
+  return MONEY_PATTERN.test(text) && TRANSFER_SIGNAL_PATTERN.test(text);
+}
+
+function inferTypeFromText(input: string): 'income' | 'expense' {
+  const lower = input.toLowerCase();
+  if (
+    /(credited|received|refund|reversed|cashback received|deposit)/.test(lower)
+  ) {
+    return 'income';
+  }
+  return 'expense';
+}
+
+export function buildPotentialTransaction(
+  notification: RawNotification,
+  result: Extract<NotificationAnalysisResult, { isTransaction: true }>,
+): CreateProposedTransaction {
+  const combined = notificationText(notification);
+  const normalizedType =
+    result.type === 'income' || result.type === 'expense'
+      ? result.type
+      : inferTypeFromText(combined);
+
+  return {
+    sourceApp: notification.app ?? null,
+    notificationTitle: notification.title ?? null,
+    notificationBody: notification.bigText || notification.text || null,
+    notificationReceivedAt: notification.receivedAt ?? null,
+    aiReasoning: result.reasoning,
+    aiConfidence: result.confidence,
+    walletId: null,
+    walletHint: result.walletHint,
+    amount: result.amount,
+    currency: result.currency,
+    type: normalizedType,
+    description: result.description,
+    merchant: result.merchant,
+    categoryId: null,
+    categoryHint: result.categoryHint,
+    transactionDate: result.transactionDate,
+    status: 'pending',
+  };
+}
+
 const notificationSchema = z.discriminatedUnion('is_transaction', [
   z.object({
     is_transaction: z.literal(false),
@@ -158,18 +282,58 @@ const notificationSchema = z.discriminatedUnion('is_transaction', [
 export async function analyzeNotification(
   notification: RawNotification,
   model: LoadedModel,
+  generateFn: typeof generateText = generateText,
+  onDebug?: (debugEvent: NotificationAnalysisDebugEvent) => void,
 ): Promise<NotificationAnalysisResult | null> {
   try {
+    const mergedText = notificationText(notification);
+    const hasMoneySignal = MONEY_PATTERN.test(mergedText);
+    const hasTransferSignal = TRANSFER_SIGNAL_PATTERN.test(mergedText);
+
+    onDebug?.({
+      event: 'prefilter.signals',
+      details: {
+        notificationId: notification.id,
+        app: notification.app,
+        hasMoneySignal,
+        hasTransferSignal,
+        textLength: mergedText.length,
+      },
+    });
+
+    if (!hasMoneySignal || !hasTransferSignal) {
+      onDebug?.({
+        event: 'prefilter.rejected',
+        details: {
+          notificationId: notification.id,
+          reason: 'missing_required_signals',
+        },
+      });
+      return {
+        isTransaction: false,
+        reasoning: 'Failed deterministic prefilter (app/source, amount, or transfer signal missing)',
+      };
+    }
+
     const body = notification.bigText || notification.text || notification.subText || notification.summaryText || '';
     const title = notification.titleBig || notification.title || '';
 
-    const result = await generateText({
+    onDebug?.({
+      event: 'llm.request',
+      details: {
+        notificationId: notification.id,
+        app: notification.app,
+        hasTitle: Boolean(title),
+        hasBody: Boolean(body),
+      },
+    });
+
+    const result = await generateFn({
       model,
+      system: TRANSACTION_DETECTION_SYSTEM_PROMPT,
       prompt: [
-        'You are a financial transaction detector for a personal finance app.',
-        'Analyze the following push notification and decide whether it represents a real financial transaction',
-        '(payment, purchase, bank debit/credit, mobile-money transfer, wallet top-up, etc.)',
-        'or something else (promotion, offer, OTP, general alert).',
+        'Analyze this Android push notification and classify whether it is a real transaction.',
+        'Use only the notification content. If unsure, classify as not a transaction.',
         '',
         `App: ${notification.app || 'Unknown'}`,
         `Title: ${title}`,
@@ -183,6 +347,28 @@ export async function analyzeNotification(
     } as any);
 
     const object = (result as any).object as z.infer<typeof notificationSchema>;
+
+    if (!object || typeof object.is_transaction !== 'boolean') {
+      onDebug?.({
+        event: 'llm.response.invalid',
+        details: {
+          notificationId: notification.id,
+          reason: 'missing_or_invalid_object',
+        },
+      });
+      return null;
+    }
+
+    onDebug?.({
+      event: 'llm.response.parsed',
+      details: {
+        notificationId: notification.id,
+        isTransaction: object.is_transaction,
+        confidence: object.is_transaction ? object.confidence : null,
+        amount: object.is_transaction ? object.amount : null,
+        currency: object.is_transaction ? object.currency : null,
+      },
+    });
 
     if (!object.is_transaction) {
       return { isTransaction: false, reasoning: object.reasoning ?? 'Not a transaction' };
@@ -203,7 +389,14 @@ export async function analyzeNotification(
       categoryHint: object.category_hint ?? null,
       transactionDate: object.transaction_date ?? new Date().toISOString(),
     };
-  } catch {
+  } catch (error) {
+    onDebug?.({
+      event: 'llm.error',
+      details: {
+        notificationId: notification.id,
+        message: error instanceof Error ? error.message : 'unknown_error',
+      },
+    });
     return null;
   }
 }

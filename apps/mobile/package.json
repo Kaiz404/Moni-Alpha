@@ -9,7 +9,10 @@
     "android": "expo run:android",
     "ios": "expo run:ios",
     "web": "expo start --web",
-    "lint": "expo lint"
+    "lint": "expo lint",
+    "test:notification-detection": "node ./scripts/notification-detection-suite.mjs"
+    ,"test:model-mock": "node ./scripts/model-mock-suite.mjs"
+    ,"test:model-real": "node ./scripts/model-real-runner.mjs"
   },
   "dependencies": {
     "@azure/core-asynciterator-polyfill": "^1.0.2",

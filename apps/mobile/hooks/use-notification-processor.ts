@@ -10,7 +10,6 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { AppState } from 'react-native';
 import { createMMKV } from 'react-native-mmkv';
 import {
-  analyzeNotification,
   downloadNotificationModel,
   getOrLoadChatModelFallback,
   getOrLoadNotificationModel,
@@ -18,7 +17,7 @@ import {
   NOTIFICATION_MODEL_ID,
   type RawNotification,
 } from '@/lib/ai/notification-processor';
-import { createProposedTransaction } from '@/lib/supabase/proposed-transactions';
+import { runNotificationOrchestration } from '@/lib/ai/notification-orchestrator';
 
 const PENDING_AI_KEY = 'pending_ai_queue';
 const notificationStorage = createMMKV({ id: 'moni-notifications' });
@@ -110,29 +109,20 @@ export function useNotificationProcessor() {
 
       for (const notification of queue) {
         try {
-          const result = await analyzeNotification(notification, model);
-
-          if (result?.isTransaction) {
-            await createProposedTransaction({
-              sourceApp: notification.app ?? null,
-              notificationTitle: notification.title ?? null,
-              notificationBody: notification.bigText || notification.text || null,
-              notificationReceivedAt: notification.receivedAt ?? null,
-              aiReasoning: result.reasoning,
-              aiConfidence: result.confidence,
-              walletId: null,
-              walletHint: result.walletHint,
-              amount: result.amount,
-              currency: result.currency,
-              type: result.type,
-              description: result.description,
-              merchant: result.merchant,
-              categoryId: null,
-              categoryHint: result.categoryHint,
-              transactionDate: result.transactionDate,
-              status: 'pending',
-            });
+          const result = await runNotificationOrchestration(model, notification, {
+            trace: (event) => {
+              const details = event.details ? JSON.stringify(event.details) : '';
+              console.log(
+                '[Processor/Trace]',
+                `${event.stage}.${event.event}`,
+                details,
+              );
+            },
+          });
+          if (result.created) {
             newProposals++;
+          } else {
+            console.log('[Processor] Notification skipped:', result.reason);
           }
 
           processedIds.add(notification.id);

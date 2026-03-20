@@ -24,6 +24,7 @@ import {
   type CategorySeed,
 } from '@/lib/ai/tools';
 import { buildFinanceSystemPrompt } from '@/lib/ai/system-prompt';
+import { routeChatIntentSubAgent } from '@/lib/ai/chat-orchestrator';
 import { createTransaction } from '@/lib/supabase/transactions';
 import { getWallets } from '@/lib/supabase/wallets';
 import { getCategories } from '@/lib/supabase/categories';
@@ -246,42 +247,62 @@ export default function ChatScreen() {
     // If it was, we suppress the assistant text bubble (the card is confirmation enough).
     let transactionProposed = false;
 
-    const tools = createFinanceTools(
-      currentWallets,
-      (tx: PendingTransaction) => {
-        transactionProposed = true;
-        console.log(TAG, 'onPropose fired → inserting confirmation card');
-        const confirmMsg: ConfirmationMessage = {
-          id: randomUUID(),
-          role: 'confirmation',
-          transaction: tx,
-          status: 'pending',
-        };
-        setMessages((prev) => {
-          const assistantIdx = prev.findIndex((m) => m.id === assistantId);
-          if (assistantIdx === -1) return [...prev, confirmMsg];
-          const next = [...prev];
-          next.splice(assistantIdx, 0, confirmMsg);
-          return next;
-        });
-      },
-      (req: WalletPickRequest) => {
-        console.log(TAG, 'onPickWallet fired → inserting wallet picker card');
-        const pickerMsg: WalletPickerMessage = {
-          id: randomUUID(),
-          role: 'wallet-picker',
-          request: req,
-          status: 'pending',
-        };
-        setMessages((prev) => {
-          const assistantIdx = prev.findIndex((m) => m.id === assistantId);
-          if (assistantIdx === -1) return [...prev, pickerMsg];
-          const next = [...prev];
-          next.splice(assistantIdx, 0, pickerMsg);
-          return next;
-        });
-      },
+    const trace = (stage: string, event: string, details?: Record<string, unknown>) => {
+      console.log(TAG, `[Trace] ${stage}.${event}`, details ? JSON.stringify(details) : '');
+    };
+
+    const routerDecision = await routeChatIntentSubAgent(
+      model,
+      text,
+      ({ stage, event, details }) => trace(stage, event, details as Record<string, unknown> | undefined),
     );
+    const shouldEnableFinanceTools = routerDecision.intent !== 'OTHER';
+    trace('router', 'selected', {
+      intent: routerDecision.intent,
+      reason: routerDecision.reason,
+      shouldEnableFinanceTools,
+    });
+
+    // Tools are created fresh per request so the closure captures the current
+    // setMessages without needing an additional ref.
+    const tools = shouldEnableFinanceTools
+      ? createFinanceTools(
+          currentWallets,
+          (tx: PendingTransaction) => {
+            transactionProposed = true;
+            console.log(TAG, 'onPropose fired → inserting confirmation card');
+            const confirmMsg: ConfirmationMessage = {
+              id: randomUUID(),
+              role: 'confirmation',
+              transaction: tx,
+              status: 'pending',
+            };
+            setMessages((prev) => {
+              const assistantIdx = prev.findIndex((m) => m.id === assistantId);
+              if (assistantIdx === -1) return [...prev, confirmMsg];
+              const next = [...prev];
+              next.splice(assistantIdx, 0, confirmMsg);
+              return next;
+            });
+          },
+          (req: WalletPickRequest) => {
+            console.log(TAG, 'onPickWallet fired → inserting wallet picker card');
+            const pickerMsg: WalletPickerMessage = {
+              id: randomUUID(),
+              role: 'wallet-picker',
+              request: req,
+              status: 'pending',
+            };
+            setMessages((prev) => {
+              const assistantIdx = prev.findIndex((m) => m.id === assistantId);
+              if (assistantIdx === -1) return [...prev, pickerMsg];
+              const next = [...prev];
+              next.splice(assistantIdx, 0, pickerMsg);
+              return next;
+            });
+          },
+        )
+      : undefined;
 
     try {
       const MAX_STEPS = 6;
@@ -299,12 +320,22 @@ export default function ChatScreen() {
         const stepToolResults: any[] = [];
         let stepFinishReason = 'stop';
 
-        const result = streamText({
+        const streamParams: any = {
           model,
           system: systemPrompt,
           messages: currentMessages,
-          tools,
-        } as any);
+        };
+        if (tools) {
+          streamParams.tools = tools;
+        }
+
+        trace('executor', 'step.start', {
+          step,
+          maxSteps: MAX_STEPS,
+          toolMode: tools ? 'enabled' : 'disabled',
+        });
+
+        const result = streamText(streamParams as any);
 
         for await (const part of (result as any).fullStream) {
           switch (part.type) {
@@ -338,6 +369,7 @@ export default function ChatScreen() {
               const name = part.toolName ?? part.name ?? '?';
               const args = part.args ?? part.input ?? part.parameters ?? {};
               console.log(TAG, `🔧 tool-call: ${name}`, JSON.stringify(args));
+              trace('tool-runner', 'tool-call', { step, name });
               stepToolCalls.push(part);
               break;
             }
@@ -357,6 +389,11 @@ export default function ChatScreen() {
                   ? `(${resolved.length} items)`
                   : JSON.stringify(resolved)?.slice(0, 150),
               );
+              trace('tool-runner', 'tool-result', {
+                step,
+                name,
+                hasArrayResult: Array.isArray(resolved),
+              });
               stepToolResults.push({ ...part, _resolved: resolved });
               break;
             }
@@ -388,12 +425,14 @@ export default function ChatScreen() {
           }
         }
 
-        console.log(
-          TAG,
-          `step ${step} done – finish: "${stepFinishReason}", text: ${fullText.length} chars, toolCalls: ${stepToolCalls.length}, transactionProposed: ${transactionProposed}`,
-        );
+        console.log(TAG, `step ${step} done – finish: "${stepFinishReason}", text so far: ${fullText.length} chars, toolCalls: ${stepToolCalls.length}`);
+        trace('executor', 'step.finish', {
+          step,
+          finishReason: stepFinishReason,
+          toolCalls: stepToolCalls.length,
+          textChars: fullText.length,
+        });
 
-        // After a successful create_transaction call, stop the loop — the card is confirmation enough
         if (transactionProposed) {
           console.log(TAG, 'transaction proposed — ending agentic loop');
           break;
@@ -633,8 +672,8 @@ export default function ChatScreen() {
           <TouchableOpacity
             className={`w-11 h-11 rounded-full items-center justify-center ${
               isReady && input.trim() && !isSending && !isSpeechRecognizing
-                ? 'bg-blue-600'
-                : 'bg-gray-300 dark:bg-gray-600'
+            ? 'bg-blue-600'
+            : 'bg-gray-300 dark:bg-gray-600'
             }`}
             onPress={handleSend}
             disabled={!isReady || !input.trim() || isSending || isSpeechRecognizing}
