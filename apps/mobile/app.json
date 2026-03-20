@@ -30,8 +30,21 @@
     },
     "plugins": [
       "expo-router",
+      [
+        "react-native-maps",
+        {
+          "iosGoogleMapsApiKey": "AIzaSyAsS70ARqJsU4OJGNmxP04DD171Yc6aMWU",
+          "androidGoogleMapsApiKey": "AIzaSyAsS70ARqJsU4OJGNmxP04DD171Yc6aMWU"
+        }
+      ],
       "./plugins/with-notification-listener-manifest",
       "expo-speech-recognition",
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Allow $(PRODUCT_NAME) to access your location for transaction tracking."
+        }
+      ],
       [
         "expo-splash-screen",
         {
