@@ -4,6 +4,9 @@ import { useLlamaModel, CHAT_MODEL_ID } from '@/hooks/use-llama-model';
 import { getModelPath, llama as llamaRuntime } from '@react-native-ai/llama';
 import { runNotificationOrchestration } from '@/lib/ai/notification-orchestrator';
 import type { RawNotification } from '@/lib/ai/notification-processor';
+import { getWallets, createWallet } from '@/lib/supabase/wallets';
+import { syncSystem } from '@/lib/powersync/Powersync';
+import { randomUUID } from 'expo-crypto';
 
 type TestResult = {
   id: string;
@@ -88,6 +91,111 @@ export default function DebugModelRunner() {
       try {
         console.log('[DebugRunner]', label, obj);
       } catch (_) {}
+    }
+  };
+
+  const ensureSeedWallet = async () => {
+    const wallets = await getWallets();
+    if (wallets.length > 0) {
+      return wallets[0].id;
+    }
+
+    const wallet = await createWallet({
+      name: 'Heatmap Seed Wallet',
+      type: 'cash',
+      currency: 'USD',
+      initialBalance: 1000,
+      color: '#3b82f6',
+      icon: 'wallet',
+    });
+
+    return wallet.id;
+  };
+
+  const seedHeatmapData = async () => {
+    try {
+      append('Seeding heatmap test transactions...');
+      const { db, supabaseConnector } = syncSystem;
+      const userId = await supabaseConnector.getUserId();
+      if (!userId) {
+        append('Seed failed: no authenticated user');
+        return;
+      }
+
+      const walletId = await ensureSeedWallet();
+      const now = Date.now();
+      const metadata = JSON.stringify({ seedSource: 'heatmap-demo' });
+
+      const clusters = [
+        { lat: 3.139, lng: 101.6869, name: 'Kuala Lumpur', count: 24 },
+        { lat: 3.0738, lng: 101.5183, name: 'Shah Alam', count: 12 },
+        { lat: 3.1073, lng: 101.6067, name: 'Petaling Jaya', count: 16 },
+        { lat: 1.4927, lng: 103.7414, name: 'Johor Bahru', count: 8 },
+      ];
+
+      let inserted = 0;
+
+      for (const cluster of clusters) {
+        for (let index = 0; index < cluster.count; index += 1) {
+          const latJitter = (Math.random() - 0.5) * 0.01;
+          const lngJitter = (Math.random() - 0.5) * 0.01;
+          const txDate = new Date(now - (inserted + 1) * 3600_000).toISOString();
+
+          await db
+            .insertInto('transactions')
+            .values({
+              id: randomUUID(),
+              user_id: userId,
+              wallet_id: walletId,
+              amount: (8 + Math.round(Math.random() * 120)).toString(),
+              type: 'expense',
+              category_id: null,
+              transfer_to_wallet_id: null,
+              linked_transaction_id: null,
+              description: `Heatmap test transaction ${inserted + 1}`,
+              merchant: `${cluster.name} Merchant ${index + 1}`,
+              notes: 'Seeded for heatmap testing',
+              transaction_date: txDate,
+              location_latitude: (cluster.lat + latJitter).toFixed(8),
+              location_longitude: (cluster.lng + lngJitter).toFixed(8),
+              location_name: cluster.name,
+              receipt_image_url: null,
+              metadata,
+            })
+            .execute();
+
+          inserted += 1;
+        }
+      }
+
+      append(`Seed complete: inserted ${inserted} location transactions`);
+      append('Open the Heatmap tab to view clustered hot zones');
+    } catch (e: any) {
+      append('Seed failed: ' + (e?.message ?? String(e)));
+      appendObj('Seed error', e);
+    }
+  };
+
+  const clearHeatmapSeedData = async () => {
+    try {
+      append('Removing seeded heatmap transactions...');
+      const { db, supabaseConnector } = syncSystem;
+      const userId = await supabaseConnector.getUserId();
+      if (!userId) {
+        append('Cleanup failed: no authenticated user');
+        return;
+      }
+
+      await db
+        .deleteFrom('transactions')
+        .where('user_id', '=', userId)
+        .where('metadata', 'like', '%"seedSource":"heatmap-demo"%')
+        .execute();
+
+      append('Seed cleanup complete');
+    } catch (e: any) {
+      append('Cleanup failed: ' + (e?.message ?? String(e)));
+      appendObj('Cleanup error', e);
     }
   };
 
@@ -283,6 +391,14 @@ export default function DebugModelRunner() {
       <TextInput value={modelPath} onChangeText={setModelPath} style={styles.input} placeholder="/sdcard/models/qwen3.5-2b" placeholderTextColor="#888" />
       <View style={{ marginTop: 12 }}>
         <Button title="Connect & Run Tests" onPress={() => runModelTestsWithRuntime()} />
+      </View>
+
+      <View style={{ marginTop: 12 }}>
+        <Button title="Seed Heatmap Test Data" onPress={seedHeatmapData} />
+      </View>
+
+      <View style={{ marginTop: 12 }}>
+        <Button title="Clear Heatmap Seed Data" onPress={clearHeatmapSeedData} color="#c0392b" />
       </View>
 
       <View style={{ marginTop: 12 }}>

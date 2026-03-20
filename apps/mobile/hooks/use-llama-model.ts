@@ -98,17 +98,6 @@ export function useLlamaModel() {
       //   this adds scheduling overhead without proportional gain on small models.
       // use_mlock: true → pin model weights in RAM so the OS cannot swap them out
       //   mid-inference (reduces latency spikes on memory-constrained devices).
-      const model = llama.languageModel(modelPath, {
-        contextParams: {
-          n_ctx: 4096,
-          n_gpu_layers: 99,
-          n_threads: 4,
-          use_mlock: true,
-        },
-      });
-      console.log(TAG, 'calling model.prepare()…');
-      await model.prepare();
-
       let model: ReturnType<typeof llama.languageModel>;
       try {
         model = await createAndPrepareWithFallback(modelPath);

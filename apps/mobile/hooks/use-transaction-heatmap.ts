@@ -2,14 +2,15 @@ import { useCallback, useState, useMemo } from 'react';
 import { useFocusEffect } from 'expo-router';
 import { getTransactions } from '@/lib/supabase/transactions';
 
-export interface HeatmapPoint {
+export interface TransactionPinPoint {
   latitude: number;
   longitude: number;
-  weight?: number;
+  transactionCount: number;
+  locationName: string;
 }
 
 export function useTransactionHeatmap() {
-  const [heatmapPoints, setHeatmapPoints] = useState<HeatmapPoint[]>([]);
+  const [pinPoints, setPinPoints] = useState<TransactionPinPoint[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -19,12 +20,12 @@ export function useTransactionHeatmap() {
     try {
       const transactions = await getTransactions();
       
-      // Filter transactions with location data and group by location
-      const locationCounts: { [key: string]: { lat: number; lng: number; count: number } } = {};
+      const locationCounts: {
+        [key: string]: { lat: number; lng: number; count: number; locationName: string };
+      } = {};
       
       transactions.forEach((transaction) => {
         if (transaction.locationLatitude && transaction.locationLongitude) {
-          // Round coordinates to 4 decimal places to group nearby transactions
           const key = `${transaction.locationLatitude.toFixed(4)},${transaction.locationLongitude.toFixed(4)}`;
           
           if (!locationCounts[key]) {
@@ -32,20 +33,21 @@ export function useTransactionHeatmap() {
               lat: transaction.locationLatitude,
               lng: transaction.locationLongitude,
               count: 0,
+              locationName: transaction.locationName?.trim() || 'Saved Transaction Location',
             };
           }
           locationCounts[key].count += 1;
         }
       });
 
-      // Convert to heatmap points with weights
-      const points: HeatmapPoint[] = Object.values(locationCounts).map((location) => ({
+      const points: TransactionPinPoint[] = Object.values(locationCounts).map((location) => ({
         latitude: location.lat,
         longitude: location.lng,
-        weight: Math.min(1, location.count / 10), // Normalize weight (cap at 10 transactions)
+        transactionCount: location.count,
+        locationName: location.locationName,
       }));
 
-      setHeatmapPoints(points);
+      setPinPoints(points);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to load transaction locations');
       console.error('Error loading heatmap data:', e);
@@ -60,10 +62,8 @@ export function useTransactionHeatmap() {
     }, [load]),
   );
 
-  // Calculate the map region to fit all heatmap points
   const mapRegion = useMemo(() => {
-    if (heatmapPoints.length === 0) {
-      // Default to a world view
+    if (pinPoints.length === 0) {
       return {
         latitude: 0,
         longitude: 0,
@@ -72,15 +72,15 @@ export function useTransactionHeatmap() {
       };
     }
 
-    const latitudes = heatmapPoints.map((p) => p.latitude);
-    const longitudes = heatmapPoints.map((p) => p.longitude);
+    const latitudes = pinPoints.map((point) => point.latitude);
+    const longitudes = pinPoints.map((point) => point.longitude);
 
     const minLat = Math.min(...latitudes);
     const maxLat = Math.max(...latitudes);
     const minLng = Math.min(...longitudes);
     const maxLng = Math.max(...longitudes);
 
-    const latitudeDelta = Math.max(maxLat - minLat, 0.1) * 1.2; // Add 20% padding
+    const latitudeDelta = Math.max(maxLat - minLat, 0.1) * 1.2;
     const longitudeDelta = Math.max(maxLng - minLng, 0.1) * 1.2;
 
     return {
@@ -89,10 +89,10 @@ export function useTransactionHeatmap() {
       latitudeDelta,
       longitudeDelta,
     };
-  }, [heatmapPoints]);
+  }, [pinPoints]);
 
   return {
-    heatmapPoints,
+    pinPoints,
     mapRegion,
     isLoading,
     error,
