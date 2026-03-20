@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { ScrollView, View, Text, TextInput, TouchableOpacity, Alert } from 'react-native';
-import { router } from 'expo-router';
+import { Link, router } from 'expo-router';
 import { useAuth } from '@/lib/auth/auth-context';
 import { createWallet } from '@/lib/supabase/wallets';
 import { createWalletSchema } from '@repo/types';
@@ -52,7 +52,15 @@ export default function NewWalletScreen() {
   };
 
   return (
-    <View className="flex-1 bg-[#C9BEFF] dark:bg-gray-900 bottom-10">
+    <View className="flex-1 bg-[#C9BEFF] dark:bg-gray-900">
+      <View className="bg-[#FFDBFD] h-25 border rounded-b-4xl border-transparent shadow-xl/10 shadow-[#6367FF] flex-row">
+        <Link href={'/../' as any} asChild>
+          <TouchableOpacity className="bg-blue-600 dark:bg-blue-500 px-4 py-1 rounded-lg">
+            <Text className="text-white font-semibold">Back</Text>
+          </TouchableOpacity>
+        </Link>
+        <Text />
+      </View>
       <ScrollView className="p-6" contentContainerStyle={{ paddingBottom: 32 }}>
         <Text className="text-sm font-medium mb-2 text-gray-900 dark:text-white">Name</Text>
         <TextInput

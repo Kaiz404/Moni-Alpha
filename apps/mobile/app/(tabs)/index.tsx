@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import {
   Alert,
   View,
@@ -13,6 +13,19 @@ import { mmkvStorage } from '@/lib/storage/mmkv-storage';
 import { getWallets, deleteWallet } from '@/lib/supabase/wallets';
 import { getWalletBalances } from '@/lib/supabase/balances';
 import { PowerSyncStatusIndicator } from '@/components/power-sync-status-indicator';
+import * as React from "react";
+import type { ICarouselInstance } from "react-native-reanimated-carousel";
+import Carousel from "react-native-reanimated-carousel";
+
+
+const defaultDataWith6Colors = [
+  "#B0604D",
+	"#899F9C",
+	"#B3C680",
+	"#5C6265",
+	"#F5D399",
+	"#F1F1F1",
+];
 
 const MAIN_WALLET_KEY = 'main_wallet_id';
 
@@ -22,6 +35,14 @@ export default function WalletsScreen() {
   const [balances, setBalances] = useState<Record<string, number>>({});
   const [refreshing, setRefreshing] = useState(false);
   const [mainWalletId, setMainWalletId] = useState<string | null>(null);
+  const [activeWalletIndex, setActiveWalletIndex] = useState(0);
+  const onViewableItemsChanged = useRef((info: any) => {
+    const first = info.viewableItems?.[0];
+    if (first?.index != null) {
+      setActiveWalletIndex(first.index);
+    }
+  }).current;
+  const renderItem = () => {<View>AKJDGH</View>}
 
   const mainWallet = wallets.find((w) => w.id === mainWalletId) ?? wallets[0] ?? null;
 
@@ -111,6 +132,8 @@ export default function WalletsScreen() {
     }, [loadData])
   );
 
+  const ref = React.useRef<ICarouselInstance>(null);
+
   return (
     <View className="flex-1 bg-white dark:bg-gray-900 pt-5">
       <View className="px-4 pt-4 pb-2 flex-1 flex-row items-center justify-between">
@@ -125,12 +148,10 @@ export default function WalletsScreen() {
 
       <View className="bg-slate-100 flex-30 top-30">
         <View className="relative bottom-20 flex-2 flex-row items-center justify-between pl-5 pr-5">
-          <View className="bg-slate-100 border border-slate-200/70 h-30 w-10 ">
-
-          </View>
-          <View className="  mt-25">
-            <View className="bg-slate-200/20 dark:bg-slate-700/80 rounded-2xl shadow-sm absolute top-10 left-12 right-12 bottom-10 z-10" />
-            <View className="bg-blue-600 dark:bg-blue-500 rounded-3xl p-4 h-44 overflow-hidden">
+          
+          <View className="mt-25">
+            {/* <View className="bg-slate-200/20 dark:bg-slate-700/80 rounded-2xl shadow-sm absolute top-10 left-12 right-12 bottom-10 z-10" /> */}
+            {/* <View className="bg-blue-600 dark:bg-blue-500 rounded-3xl p-4 h-44 overflow-hidden">
               <Text className="text-xs text-blue-100 font-medium">Main Wallet</Text>
               <View className="flex-row justify-between mt-3 items-center">
                 <Text className="text-xl text-white font-bold">{mainWallet?.name ?? 'No wallet selected'}</Text>
@@ -143,16 +164,98 @@ export default function WalletsScreen() {
                 ${((mainWallet && (balances[mainWallet.id] ?? mainWallet.initialBalance)) ?? 0).toFixed(2)}
               </Text>
               <Text className="text-xs text-blue-100/90 mt-2">{mainWallet?.currency ?? 'USD'}</Text>
+            </View> */}
+            <View
+              id="carousel-component"
+              // dataSet={{ kind: "basic-layouts", name: "stack" }}
+            >
+              <Carousel
+                ref={ref}
+                autoPlayInterval={2000}
+                data={defaultDataWith6Colors}
+                loop={true}
+                pagingEnabled={true}
+                snapEnabled={true}
+                style={{
+                  width: 430 * 0.75,
+                  height: 220,
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+                mode={"horizontal-stack"}
+                modeConfig={{
+                  snapDirection: "left",
+                  stackInterval: 18,
+                }}
+                customConfig={() => ({ type: "positive", viewCount: 5 })}
+                renderItem={renderItem()}
+              />
+            </View>
+            <FlatList
+              style={{ flexGrow: 0 }}
+              data={wallets}
+              horizontal
+              pagingEnabled
+              showsHorizontalScrollIndicator={false}
+              keyExtractor={(item) => item.id}
+              contentContainerStyle={{ paddingVertical: 8, paddingHorizontal: 8 }}
+              refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+              onViewableItemsChanged={onViewableItemsChanged}
+              viewabilityConfig={{ viewAreaCoveragePercentThreshold: 50 }}
+              ListEmptyComponent={() => (
+                <View className="mx-2 w-72 rounded-xl border border-dashed border-slate-300 dark:border-slate-600 bg-white/60 p-4">
+                  <Text className="text-center text-slate-500 dark:text-slate-300">No other wallets yet.</Text>
+                </View>
+              )}
+              renderItem={({ item }) => {
+                const balance = balances[item.id] ?? item.initialBalance ?? 0;
+                const isMain = item.id === mainWallet?.id;
+                return (
+                  <View className="mx-2 w-60 rounded-3xl border border-slate-200 bg-white p-3 shadow-sm dark:border-slate-700 dark:bg-slate-800 relative ">
+                    <TouchableOpacity
+                      onPress={() => router.push(`/(tabs)/transactions?walletId=${item.id}` as any)}
+                    >
+                      <Text className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-600">{item.type ?? 'Wallet'}</Text>
+                      <Text className="mt-2 text-xl font-bold text-slate-900 dark:text-white">{item.name}</Text>
+                      <Text className="mt-1 text-xs text-slate-500 dark:text-slate-300">{item.currency ?? 'USD'}</Text>
+                      <Text className="mt-3 text-xs text-slate-500 dark:text-slate-300">Balance</Text>
+                      <Text className="text-2xl font-bold text-slate-900 dark:text-white">${balance.toFixed(2)}</Text>
+                    </TouchableOpacity>
+                    <View className="mt-3 flex-row justify-between items-center">
+                      <TouchableOpacity
+                        onPress={() => setAsMainWallet(item.id)}
+                        className={`rounded-full px-3 py-1.5 border ${isMain ? 'bg-green-600 border-green-600' : 'bg-slate-100 border-slate-300 dark:bg-slate-700 dark:border-slate-600'}`}
+                      >
+                        <Text className={`text-xs font-semibold ${isMain ? 'text-white' : 'text-slate-700 dark:text-slate-200'}`}>
+                          {isMain ? 'Main wallet' : 'Set main'}
+                        </Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        onPress={() => handleDeleteWallet(item.id)}
+                        className="rounded-full border border-red-300 bg-red-50 px-3 py-1.5"
+                      >
+                        <Text className="text-xs font-semibold text-red-700">Delete</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                );
+              }}
+            />
+            <View className="mt-2 flex-row items-center justify-center space-x-2">
+              {wallets.map((wallet, index) => (
+                <View
+                  key={wallet.id}
+                  className={`h-2 ${index === activeWalletIndex ? 'w-6 bg-blue-600' : 'w-2 bg-slate-300 dark:bg-slate-500'} rounded-full`}
+                />
+              ))}
             </View>
           </View>
-          <View className="bg-slate-100 border border-slate-200/70 h-30 w-10  ">
-
-          </View>
+          
         </View>
 
         <View className=" pl-8 pr-8 flex-3 relative bottom-20">
           <View className="h-px bg-slate-300 dark:bg-slate-700 mb-3" />
-          <View className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-3 mb-2 flex-1 bottom-1">
+          {/* <View className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-3 mb-2 flex-1 bottom-1">
             <View className="flex-row items-center justify-between mb-4">
               <Text className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2">Other wallets</Text>
               <Link href={'/wallet/new' as any} asChild>
@@ -211,7 +314,7 @@ export default function WalletsScreen() {
               }}
               showsVerticalScrollIndicator={false}
             />
-          </View>
+          </View> */}
         </View>
       </View>
 
