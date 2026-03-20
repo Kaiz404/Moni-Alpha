@@ -36,12 +36,12 @@ export default function RootLayout() {
         <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
           <AuthProvider>
             <AuthGuard>
-              <Stack>
+              <Stack screenOptions={{headerShown: false}}>
                 <Stack.Screen name="(auth)" options={{ headerShown: false }} />
                 <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
                 <Stack.Screen
                   name="modal"
-                  options={{ presentation: "modal", title: "Modal" }}
+                  options={{ presentation: "modal", title: "Modal", headerShown: false }}
                 />
               </Stack>
             </AuthGuard>

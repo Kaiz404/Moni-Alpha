@@ -1,7 +1,6 @@
 import { useCallback, useState } from 'react';
 import { View, Text, FlatList, TouchableOpacity, RefreshControl } from 'react-native';
-import { Link, useLocalSearchParams } from 'expo-router';
-import { useFocusEffect } from '@react-navigation/native';
+import { Link, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { useAuth } from '@/lib/auth/auth-context';
 import { getTransactions } from '@/lib/supabase/transactions';
 import { getWallets } from '@/lib/supabase/wallets';
