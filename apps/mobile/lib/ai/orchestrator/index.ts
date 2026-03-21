@@ -54,13 +54,26 @@ export async function runOrchestration(
   try {
     switch (item.type) {
       case 'text':
-        return await runTextFlow(model, item.text, adapters, logger);
+        return await runTextFlow(model, item.text, adapters, item.locationSnapshot, logger);
 
       case 'image':
-        return await runImageFlow(model, item.imageUri, item.userContext, adapters, logger);
+        return await runImageFlow(
+          model,
+          item.imageUri,
+          item.userContext,
+          adapters,
+          item.locationSnapshot,
+          logger,
+        );
 
       case 'notification':
-        return await runNotificationFlow(model, item.notification, adapters, logger);
+        return await runNotificationFlow(
+          model,
+          item.notification,
+          adapters,
+          item.locationSnapshot,
+          logger,
+        );
 
       default:
         return { created: false, skipped: true, reason: 'Unknown item type' };

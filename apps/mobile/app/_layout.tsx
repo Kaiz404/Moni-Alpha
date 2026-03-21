@@ -18,6 +18,8 @@ import { AppState } from "react-native";
 import { syncSystem } from "@/lib/powersync/Powersync";
 import { ProposalReviewModal } from "@/components/proposal-review-modal";
 import { drainImageUploadQueue } from "@/lib/storage/image-upload-queue";
+import { getPendingCount } from "@/lib/ai/processing-queue";
+import { startBackgroundProcessor } from "@/lib/ai/background-processor";
 
 import '../polyfills'
 
@@ -27,10 +29,32 @@ export const unstable_settings = {
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
-  const appState = useRef(AppState.currentState);
+  const processorAppState = useRef(AppState.currentState);
+  const uploadAppState = useRef(AppState.currentState);
+
+  const triggerProcessingIfPending = async () => {
+    if (getPendingCount() > 0) {
+      await startBackgroundProcessor();
+    }
+  };
 
   useEffect(() => {
     syncSystem.init();
+  }, []);
+
+  // Ensure queued AI work (including notifications captured in headless mode)
+  // resumes automatically when the app starts or returns to foreground.
+  useEffect(() => {
+    triggerProcessingIfPending().catch(() => {});
+
+    const sub = AppState.addEventListener("change", (nextState) => {
+      if (processorAppState.current.match(/inactive|background/) && nextState === "active") {
+        triggerProcessingIfPending().catch(() => {});
+      }
+      processorAppState.current = nextState;
+    });
+
+    return () => sub.remove();
   }, []);
 
   // Drain pending image uploads whenever the app comes to foreground
@@ -38,10 +62,10 @@ export default function RootLayout() {
     drainImageUploadQueue().catch(() => {});
 
     const sub = AppState.addEventListener("change", (nextState) => {
-      if (appState.current.match(/inactive|background/) && nextState === "active") {
+      if (uploadAppState.current.match(/inactive|background/) && nextState === "active") {
         drainImageUploadQueue().catch(() => {});
       }
-      appState.current = nextState;
+      uploadAppState.current = nextState;
     });
     return () => sub.remove();
   }, []);

@@ -10,11 +10,13 @@ All flows produce `proposed_transactions` records (never real transactions). Use
 
 ## Input Sources
 
-| Source | Entry Point | When Triggered |
-|--------|-------------|----------------|
-| **Text input** | User types a transaction description in the chat tab | User presses send |
-| **Image input** | User takes/picks a receipt photo in the chat tab | User presses send |
-| **Push notification** | Android notification listener headless task | Notification received |
+
+| Source                | Entry Point                                          | When Triggered        |
+| --------------------- | ---------------------------------------------------- | --------------------- |
+| **Text input**        | User types a transaction description in the chat tab | User presses send     |
+| **Image input**       | User takes/picks a receipt photo in the chat tab     | User presses send     |
+| **Push notification** | Android notification listener headless task          | Notification received |
+
 
 ---
 
@@ -75,18 +77,21 @@ All flows produce `proposed_transactions` records (never real transactions). Use
 **Purpose:** Extract transaction fields from user input.
 
 **For text inputs:**
+
 - **Prompt:** `TRANSACTION_EXTRACTION_PROMPT`
 - **Method:** `generateObject()` with `extractionResultSchema` for grammar-constrained JSON
 - **Input:** User's natural language text
 - **Output:** JSON with `amount`, `type`, `currency`, `merchant`, `description`, `wallet_hint`, `category_hint`
 
 **For image inputs:**
+
 - **Prompt:** `RECEIPT_EXTRACTION_PROMPT`
 - **Method:** `generateObject()` with multimodal `messages` format — passes the local `file://` URI as a `file` content part
 - **Output:** Same JSON schema as text extraction
 - **Fallback:** If vision fails, falls back to text extraction using user context
 
 **For notifications:**
+
 - Uses the classification result which already includes extracted details
 - The `buildPotentialTransaction()` helper maps the analysis result to a `CreateProposedTransaction`
 
@@ -97,6 +102,7 @@ All flows produce `proposed_transactions` records (never real transactions). Use
 **System prompt:** `WALLET_RESOLUTION_PROMPT`
 
 **Logic (in priority order):**
+
 1. If user has only one wallet → auto-select
 2. If `wallet_hint` matches a wallet name deterministically → use that wallet
 3. LLM-based resolution via `generateObject()` with wallet list in prompt → model selects best match
@@ -107,6 +113,7 @@ All flows produce `proposed_transactions` records (never real transactions). Use
 **Purpose:** Insert the final `proposed_transaction` record into PowerSync.
 
 **Fields populated:**
+
 - `sourceType`: `'text'` | `'image'` | `'notification'`
 - `sourceText`: User's original text input (or notification body)
 - `sourceImageUri`: Local `file://` path for receipt images
@@ -121,12 +128,15 @@ All flows produce `proposed_transactions` records (never real transactions). Use
 
 The orchestrator uses a single **Qwen 2.5 VL 3B Instruct** model for all flows (text, image, notification). This VL model handles both text-only and multimodal inputs.
 
-| File | Purpose | Size |
-|------|---------|------|
-| `Qwen2.5-VL-3B-Instruct-Q4_K_M.gguf` | Main VL model (text + vision) | ~2.0 GB |
-| `qwen2.5-vl-3b-instruct-mmproj-f16.gguf` | Vision projector | ~200 MB |
+
+| File                                     | Purpose                       | Size    |
+| ---------------------------------------- | ----------------------------- | ------- |
+| `Qwen2.5-VL-3B-Instruct-Q4_K_M.gguf`     | Main VL model (text + vision) | ~2.0 GB |
+| `qwen2.5-vl-3b-instruct-mmproj-f16.gguf` | Vision projector              | ~200 MB |
+
 
 Loaded via `model-manager.ts`:
+
 ```typescript
 llama.languageModel(mainPath, {
   projectorPath: mmProjPath,
@@ -155,6 +165,7 @@ const { object } = await generateObject({
 ```
 
 For image inputs, the multimodal `messages` format is used:
+
 ```typescript
 const { object } = await generateObject({
   model,
@@ -176,6 +187,7 @@ const { object } = await generateObject({
 **Storage:** MMKV instance `moni-processing`, key `unified_processing_queue`
 
 **Item types:**
+
 ```typescript
 TextQueueItem       { type: 'text', text: string }
 ImageQueueItem      { type: 'image', imageUri: string, userContext?: string }
@@ -185,6 +197,7 @@ NotificationQueueItem { type: 'notification', notification: RawNotification }
 **Status lifecycle:** `pending` → `processing` → `done` | `error`
 
 **Writers:**
+
 - Chat screen (text/image): `enqueue()` from `processing-queue.ts`
 - Headless notification task: Writes directly to MMKV in `index.js`
 
@@ -197,6 +210,7 @@ NotificationQueueItem { type: 'notification', notification: RawNotification }
 Uses `react-native-background-actions` to run an Android foreground service.
 
 **Lifecycle:**
+
 1. `startBackgroundProcessor()` called after user submits input or on app foreground with pending items
 2. Foreground service starts with notification: "Moni: Processing your transactions..."
 3. Model loaded via `getOrLoadModel()` (singleton, shared with UI)
@@ -212,6 +226,7 @@ Uses `react-native-background-actions` to run an Android foreground service.
 ## Image Storage
 
 **Offline-first design:**
+
 1. `saveImageLocally(uri)` → copies to `{documentDir}/receipts/{uuid}.jpg`
 2. Local path stored in `proposed_transactions.source_image_uri`
 3. `enqueueImageUpload()` → adds to MMKV upload queue
@@ -224,51 +239,58 @@ This ensures the LLM always works offline (reads local file), and the image is e
 
 ## Fallback & Error Recovery
 
-| Scenario | Recovery |
-|----------|----------|
-| LLM classification fails | Deterministic regex fallback |
-| LLM extraction returns no amount | Item skipped, marked as error |
-| LLM wallet resolution fails | Direct DB lookup + deterministic name matching |
-| Vision model not available | Fall back to text extraction with user context |
-| Background service fails to start | Run processing in foreground |
-| Image upload fails | Stays in upload queue, retried on next foreground |
-| Model download fails | User prompted to retry from debug screen |
+
+| Scenario                          | Recovery                                          |
+| --------------------------------- | ------------------------------------------------- |
+| LLM classification fails          | Deterministic regex fallback                      |
+| LLM extraction returns no amount  | Item skipped, marked as error                     |
+| LLM wallet resolution fails       | Direct DB lookup + deterministic name matching    |
+| Vision model not available        | Fall back to text extraction with user context    |
+| Background service fails to start | Run processing in foreground                      |
+| Image upload fails                | Stays in upload queue, retried on next foreground |
+| Model download fails              | User prompted to retry from debug screen          |
+
 
 ---
 
 ## Key Files Reference
 
-| File | Purpose |
-|------|---------|
-| `lib/ai/orchestrator/index.ts` | Unified orchestration entry point |
-| `lib/ai/orchestrator/types.ts` | Shared types (TraceEvent, OrchestrationResult) |
-| `lib/ai/orchestrator/prompts.ts` | System prompts + Zod schemas |
-| `lib/ai/orchestrator/text-flow.ts` | Text extraction sub-agent + flow |
-| `lib/ai/orchestrator/image-flow.ts` | Image extraction sub-agent + flow (multimodal) |
-| `lib/ai/orchestrator/notification-flow.ts` | Notification classification + flow |
-| `lib/ai/orchestrator/wallet-resolver.ts` | Wallet resolution sub-agent |
-| `lib/ai/notification-orchestrator.ts` | Backward-compatible wrapper |
-| `lib/ai/notification-processor.ts` | Notification classification + analysis |
-| `lib/ai/processing-queue.ts` | MMKV-backed unified queue |
-| `lib/ai/model-manager.ts` | Shared model lifecycle (download, load, unload, delete) |
-| `lib/ai/background-processor.ts` | Android foreground service processor |
-| `lib/ai/chat-orchestrator.ts` | Chat intent routing |
-| `lib/ai/tools.ts` | Finance tools for chat |
-| `lib/ai/system-prompt.ts` | Chat system prompt builder |
-| `lib/storage/image-storage.ts` | Local image persistence + Supabase upload |
-| `lib/storage/image-upload-queue.ts` | Offline-first image upload queue |
-| `lib/supabase/proposed-transactions.ts` | PowerSync CRUD for proposals |
-| `app/(tabs)/chat.tsx` | Transaction input screen (text + image + voice) |
-| `components/proposal-review-modal.tsx` | Full-screen proposal review form |
-| `app/_layout.tsx` | Global proposal check + upload queue drain |
-| `index.js` | Headless notification task → unified queue |
+
+| File                                       | Purpose                                                 |
+| ------------------------------------------ | ------------------------------------------------------- |
+| `lib/ai/orchestrator/index.ts`             | Unified orchestration entry point                       |
+| `lib/ai/orchestrator/types.ts`             | Shared types (TraceEvent, OrchestrationResult)          |
+| `lib/ai/orchestrator/prompts.ts`           | System prompts + Zod schemas                            |
+| `lib/ai/orchestrator/text-flow.ts`         | Text extraction sub-agent + flow                        |
+| `lib/ai/orchestrator/image-flow.ts`        | Image extraction sub-agent + flow (multimodal)          |
+| `lib/ai/orchestrator/notification-flow.ts` | Notification classification + flow                      |
+| `lib/ai/orchestrator/wallet-resolver.ts`   | Wallet resolution sub-agent                             |
+| `lib/ai/notification-orchestrator.ts`      | Backward-compatible wrapper                             |
+| `lib/ai/notification-processor.ts`         | Notification classification + analysis                  |
+| `lib/ai/processing-queue.ts`               | MMKV-backed unified queue                               |
+| `lib/ai/model-manager.ts`                  | Shared model lifecycle (download, load, unload, delete) |
+| `lib/ai/background-processor.ts`           | Android foreground service processor                    |
+| `lib/ai/chat-orchestrator.ts`              | Chat intent routing                                     |
+| `lib/ai/tools.ts`                          | Finance tools for chat                                  |
+| `lib/ai/system-prompt.ts`                  | Chat system prompt builder                              |
+| `lib/storage/image-storage.ts`             | Local image persistence + Supabase upload               |
+| `lib/storage/image-upload-queue.ts`        | Offline-first image upload queue                        |
+| `lib/supabase/proposed-transactions.ts`    | PowerSync CRUD for proposals                            |
+| `app/(tabs)/chat.tsx`                      | Transaction input screen (text + image + voice)         |
+| `components/proposal-review-modal.tsx`     | Full-screen proposal review form                        |
+| `app/_layout.tsx`                          | Global proposal check + upload queue drain              |
+| `index.js`                                 | Headless notification task → unified queue              |
+
 
 ---
 
 ## MMKV Storage Keys
 
-| Instance ID | Key | Purpose |
-|-------------|-----|---------|
-| `moni-processing` | `unified_processing_queue` | Processing queue items |
-| `moni-image-uploads` | `pending_image_uploads` | Pending receipt uploads |
-| `moni-notifications` | `captured_notifications` | Full notification history (UI) |
+
+| Instance ID          | Key                        | Purpose                        |
+| -------------------- | -------------------------- | ------------------------------ |
+| `moni-processing`    | `unified_processing_queue` | Processing queue items         |
+| `moni-image-uploads` | `pending_image_uploads`    | Pending receipt uploads        |
+| `moni-notifications` | `captured_notifications`   | Full notification history (UI) |
+
+

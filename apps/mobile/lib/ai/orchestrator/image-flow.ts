@@ -6,6 +6,8 @@ import { RECEIPT_EXTRACTION_PROMPT, extractionResultSchema } from './prompts';
 import { textExtractionSubAgent } from './text-flow';
 import { walletResolutionSubAgent } from './wallet-resolver';
 import type { TraceEvent, TraceLogger, OrchestrationResult } from './types';
+import type { LocationSnapshot } from '@/lib/location/location-snapshot';
+import { saveProposalLocationSnapshot } from '@/lib/ai/proposal-location-cache';
 
 /** Max time for one VL inference — avoids indefinite hangs if native stack stalls. */
 const VISION_GENERATE_OBJECT_MS = 180_000;
@@ -187,6 +189,7 @@ export async function runImageFlow(
   imageUri: string,
   userContext: string | undefined,
   adapters: Adapters,
+  locationSnapshot?: LocationSnapshot | null,
   logger?: TraceLogger,
 ): Promise<OrchestrationResult> {
   trace(logger, 'orchestrator', 'flow.image', { imageUri, hasContext: Boolean(userContext) });
@@ -233,12 +236,16 @@ export async function runImageFlow(
 
   try {
     const created = await adapters.createProposedTransaction(proposal);
+    const proposalId = (created as any)?.id;
+    if (proposalId && locationSnapshot) {
+      saveProposalLocationSnapshot(proposalId, locationSnapshot);
+    }
     trace(logger, 'creator', 'image.created', { walletId: walletResult.walletId });
     return {
       created: true,
       skipped: false,
       reason: 'Created from receipt image',
-      proposalId: (created as any)?.id,
+      proposalId,
     };
   } catch (e) {
     trace(logger, 'creator', 'image.error', { message: e instanceof Error ? e.message : String(e) });

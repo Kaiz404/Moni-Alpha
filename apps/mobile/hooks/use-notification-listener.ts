@@ -7,6 +7,7 @@ export type PermissionStatus = 'authorized' | 'denied' | 'unknown' | 'unavailabl
 export type CapturedNotification = {
   id: string;
   receivedAt: string;
+  prefilterPassed?: boolean;
   time: string;
   app: string;
   title: string;

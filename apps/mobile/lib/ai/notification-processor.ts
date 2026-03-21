@@ -17,6 +17,10 @@ import { generateObject } from 'ai';
 import { z } from 'zod';
 import { MAIN_MODEL_ID } from '@/lib/ai/model-manager';
 import type { CreateProposedTransaction } from '@repo/types';
+import {
+  buildNotificationContext,
+  formatNotificationContextForLlm,
+} from '@/lib/ai/notification-context';
 
 // ─── Model IDs ────────────────────────────────────────────────────────────────
 
@@ -184,15 +188,6 @@ Workflow rules (mandatory):
 6) Keep output concise. If create_transaction is called successfully, final text can be: CREATED
 `;
 
-const MONEY_PATTERN =
-  /(?:[$€£¥₦₹₩₪₱฿₫₲₴₵₸₽₾R])\s*[\d,]+(?:[.,]\d{1,2})?|[\d,]+(?:[.,]\d{1,2})?\s*(?:USD|EUR|GBP|NGN|ZAR|KES|GHS|UGX|TZS|MYR|RM|SGD|AUD|CAD|CHF|JPY|CNY|INR|BRL|MXN|AED|SAR|QAR|KWD|OMR|BHD)\b/i;
-
-const BANK_WALLET_APP_PATTERN =
-  /\b(bank|wallet|pay|payments|upi|momo|mobile money|mpesa|paypal|venmo|cash app|revolut|wise|chime|monzo|opay|kuda|palmpay|moniepoint|branch|stanchart|gtbank|access bank|uba|zenith)\b/i;
-
-const TRANSFER_SIGNAL_PATTERN =
-  /\b(credited|debited|received|sent|paid|payment|purchase|spent|withdrawn|withdrawal|deposit|transferred|transfer|refund|dr\b|cr\b|from\s+|to\s+|at\s+|via\s+|merchant|beneficiary|sender|receiver)\b/i;
-
 function notificationText(notification: RawNotification): string {
   return [
     notification.title,
@@ -208,10 +203,10 @@ function notificationText(notification: RawNotification): string {
 }
 
 export function passesTransactionPrefilter(notification: RawNotification): boolean {
-  const text = notificationText(notification);
+  const context = buildNotificationContext(notification);
   // Prefilter now only requires a money amount and a transfer signal.
   // App-name checks are removed — wallet matching is handled later via get_wallets.
-  return MONEY_PATTERN.test(text) && TRANSFER_SIGNAL_PATTERN.test(text);
+  return context.signals.hasMoney && context.signals.hasTransferSignal;
 }
 
 function inferTypeFromText(input: string): 'income' | 'expense' {
@@ -289,8 +284,9 @@ export async function analyzeNotification(
 ): Promise<NotificationAnalysisResult | null> {
   try {
     const mergedText = notificationText(notification);
-    const hasMoneySignal = MONEY_PATTERN.test(mergedText);
-    const hasTransferSignal = TRANSFER_SIGNAL_PATTERN.test(mergedText);
+    const context = buildNotificationContext(notification);
+    const hasMoneySignal = context.signals.hasMoney;
+    const hasTransferSignal = context.signals.hasTransferSignal;
 
     onDebug?.({
       event: 'prefilter.signals',
@@ -317,16 +313,13 @@ export async function analyzeNotification(
       };
     }
 
-    const body = notification.bigText || notification.text || notification.subText || notification.summaryText || '';
-    const title = notification.titleBig || notification.title || '';
-
     onDebug?.({
       event: 'llm.request',
       details: {
         notificationId: notification.id,
         app: notification.app,
-        hasTitle: Boolean(title),
-        hasBody: Boolean(body),
+        hasTitle: Boolean(context.title),
+        hasBody: Boolean(context.body),
       },
     });
 
@@ -338,10 +331,7 @@ export async function analyzeNotification(
         'Analyze this Android push notification and classify whether it is a real transaction.',
         'Use only the notification content. If unsure, classify as not a transaction.',
         '',
-        `App: ${notification.app || 'Unknown'}`,
-        `Title: ${title}`,
-        `Body: ${body}`,
-        `Time: ${notification.time || notification.receivedAt}`,
+        formatNotificationContextForLlm(notification),
       ].join('\n'),
     });
 

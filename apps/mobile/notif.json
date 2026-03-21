@@ -1,0 +1,36 @@
+{
+  "1": {
+    "app": "my.com.tngdigital.ewallet",
+    "audioContentsURI": "",
+    "bigText": "CHANG KAI ZHE has transferred RM 1.00 to you. Tap here to check the transaction details.",
+    "extraInfoText": "",
+    "groupedMessages": [],
+    "icon": "aslhdflakjshfkljasdhfkljasdhfkjldsa INGORE THIS URL",
+    "iconLarge": "aslhdflakjshfkljasdhfkljasdhfkjldsa INGORE THIS URL",
+    "image": "",
+    "imageBackgroundURI": "",
+    "subText": "",
+    "summaryText": "",
+    "text": "CHANG KAI ZHE has transferred RM 1.00 to you. Tap here to check the transaction details.",
+    "time": "1774098872245",
+    "title": "You’ve received money!",
+    "titleBig": ""
+  },
+  "2": {
+    "app": "com.maybank2u.life",
+    "audioContentsURI": "",
+    "bigText": "",
+    "extraInfoText": "",
+    "groupedMessages": [],
+    "icon": "aslhdflakjshfkljasdhfkljasdhfkjldsa INGORE THIS URL",
+    "iconLarge": "aslhdflakjshfkljasdhfkljasdhfkjldsa INGORE THIS URL",
+    "image": "",
+    "imageBackgroundURI": "",
+    "subText": "",
+    "summaryText": "",
+    "text": "DuitNow of RM 1.00 to CHANG KAI ZHE. Mobile Number : ****0827. REF: 341856015M",
+    "time": "1774098870826",
+    "title": "Maybank2u: Transfer",
+    "titleBig": ""
+  }
+}

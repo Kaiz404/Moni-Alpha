@@ -226,5 +226,5 @@ export async function walletResolutionSubAgent(
     }
   }
 
-  return { shouldCreate: true, walletId: null, reason: 'No wallet match — user will select during review' };
+  return { shouldCreate: true, walletId: null, reason: 'No wallet match - no proposal created' };
 }

@@ -2,6 +2,10 @@ import { syncSystem } from '@/lib/powersync/Powersync';
 import { randomUUID } from 'expo-crypto';
 import type { CreateProposedTransaction, ProposedTransaction } from '@repo/types';
 import { createTransaction } from './transactions';
+import {
+  getProposalLocationSnapshot,
+  clearProposalLocationSnapshot,
+} from '@/lib/ai/proposal-location-cache';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -111,6 +115,8 @@ export async function approveProposedTransaction(
     throw new Error('Cannot approve: amount or type is missing');
   }
 
+  const earlyLocation = getProposalLocationSnapshot(proposal.id);
+
   await createTransaction({
     walletId,
     amount: proposal.amount,
@@ -119,6 +125,9 @@ export async function approveProposedTransaction(
     description: proposal.description ?? null,
     merchant: proposal.merchant ?? null,
     transactionDate: proposal.transactionDate ?? new Date().toISOString(),
+    locationLatitude: earlyLocation?.latitude ?? null,
+    locationLongitude: earlyLocation?.longitude ?? null,
+    locationName: earlyLocation?.name ?? null,
   });
 
   const now = new Date().toISOString();
@@ -127,6 +136,8 @@ export async function approveProposedTransaction(
     .set({ status: 'approved', updated_at: now })
     .where('id', '=', proposal.id)
     .execute();
+
+  clearProposalLocationSnapshot(proposal.id);
 }
 
 /** Mark a proposal as rejected (keeps it in history but removes it from the pending list). */
@@ -138,6 +149,8 @@ export async function rejectProposedTransaction(id: string): Promise<void> {
     .set({ status: 'rejected', updated_at: new Date().toISOString() })
     .where('id', '=', id)
     .execute();
+
+  clearProposalLocationSnapshot(id);
 }
 
 /** Update the image URI once a receipt has been uploaded to Supabase Storage. */
@@ -156,4 +169,5 @@ export async function updateProposalImageUri(
 export async function deleteProposedTransaction(id: string): Promise<void> {
   const { db } = syncSystem;
   await db.deleteFrom('proposed_transactions').where('id', '=', id).execute();
+  clearProposalLocationSnapshot(id);
 }

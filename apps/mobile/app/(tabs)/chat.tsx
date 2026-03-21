@@ -26,6 +26,7 @@ import { saveImageLocally } from '@/lib/storage/image-storage';
 import { enqueueImageUpload } from '@/lib/storage/image-upload-queue';
 import { startBackgroundProcessor } from '@/lib/ai/background-processor';
 import { syncSystem } from '@/lib/powersync/Powersync';
+import { captureLocationSnapshot } from '@/lib/location/location-snapshot';
 
 const TAG = '[Moni/Chat]';
 
@@ -195,6 +196,7 @@ export default function ChatScreen() {
     try {
       let queueItem: ProcessingQueueItem;
       let entry: SubmissionEntry;
+      const locationSnapshot = await captureLocationSnapshot();
 
       if (hasImage) {
         // Save image to persistent storage
@@ -207,6 +209,7 @@ export default function ChatScreen() {
           userContext: text || undefined,
           createdAt: now,
           status: 'pending',
+          locationSnapshot,
         };
 
         entry = {
@@ -234,6 +237,7 @@ export default function ChatScreen() {
           text,
           createdAt: now,
           status: 'pending',
+          locationSnapshot,
         };
 
         entry = {

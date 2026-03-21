@@ -9,6 +9,8 @@ import {
 } from '@/lib/ai/notification-processor';
 import { walletResolutionSubAgent } from './wallet-resolver';
 import type { TraceEvent, TraceLogger, OrchestrationResult } from './types';
+import type { LocationSnapshot } from '@/lib/location/location-snapshot';
+import { saveProposalLocationSnapshot } from '@/lib/ai/proposal-location-cache';
 
 function trace(
   logger: TraceLogger | undefined,
@@ -124,6 +126,7 @@ export async function runNotificationFlow(
   model: any,
   notification: RawNotification,
   adapters: Adapters,
+  locationSnapshot?: LocationSnapshot | null,
   logger?: TraceLogger,
 ): Promise<OrchestrationResult> {
   trace(logger, 'orchestrator', 'flow.notification', {
@@ -158,6 +161,20 @@ export async function runNotificationFlow(
     return { created: false, skipped: true, reason: walletResult.reason };
   }
 
+  // For notification-origin proposals, wallet mapping is mandatory.
+  // If no concrete wallet can be resolved, skip creation.
+  if (!walletResult.walletId) {
+    trace(logger, 'creator', 'notification.skipped.no-wallet', {
+      notificationId: notification.id,
+      reason: walletResult.reason,
+    });
+    return {
+      created: false,
+      skipped: true,
+      reason: 'No wallet match — notification ignored',
+    };
+  }
+
   const finalProposal: CreateProposedTransaction = {
     ...proposal,
     sourceType: 'notification',
@@ -168,6 +185,10 @@ export async function runNotificationFlow(
 
   try {
     const created = await adapters.createProposedTransaction(finalProposal);
+    const proposalId = (created as any)?.id;
+    if (proposalId && locationSnapshot) {
+      saveProposalLocationSnapshot(proposalId, locationSnapshot);
+    }
     trace(logger, 'creator', 'notification.created', {
       walletId: walletResult.walletId,
       notificationId: notification.id,
@@ -176,7 +197,7 @@ export async function runNotificationFlow(
       created: true,
       skipped: false,
       reason: 'Created from notification',
-      proposalId: (created as any)?.id,
+      proposalId,
     };
   } catch (e) {
     trace(logger, 'creator', 'notification.error', {

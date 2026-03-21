@@ -4,6 +4,8 @@ import type { CreateProposedTransaction } from '@repo/types';
 import { TRANSACTION_EXTRACTION_PROMPT, extractionResultSchema } from './prompts';
 import { walletResolutionSubAgent } from './wallet-resolver';
 import type { TraceEvent, TraceLogger, OrchestrationResult } from './types';
+import type { LocationSnapshot } from '@/lib/location/location-snapshot';
+import { saveProposalLocationSnapshot } from '@/lib/ai/proposal-location-cache';
 
 function trace(
   logger: TraceLogger | undefined,
@@ -53,6 +55,7 @@ export async function runTextFlow(
   model: any,
   text: string,
   adapters: Adapters,
+  locationSnapshot?: LocationSnapshot | null,
   logger?: TraceLogger,
 ): Promise<OrchestrationResult> {
   trace(logger, 'orchestrator', 'flow.text', { textLength: text.length });
@@ -99,12 +102,16 @@ export async function runTextFlow(
 
   try {
     const created = await adapters.createProposedTransaction(proposal);
+    const proposalId = (created as any)?.id;
+    if (proposalId && locationSnapshot) {
+      saveProposalLocationSnapshot(proposalId, locationSnapshot);
+    }
     trace(logger, 'creator', 'text.created', { walletId: walletResult.walletId });
     return {
       created: true,
       skipped: false,
       reason: 'Created from text input',
-      proposalId: (created as any)?.id,
+      proposalId,
     };
   } catch (e) {
     trace(logger, 'creator', 'text.error', { message: e instanceof Error ? e.message : String(e) });

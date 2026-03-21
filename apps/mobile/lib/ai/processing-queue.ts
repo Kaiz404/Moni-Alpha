@@ -1,5 +1,6 @@
 import { createMMKV } from 'react-native-mmkv';
 import type { RawNotification } from './notification-processor';
+import type { LocationSnapshot } from '@/lib/location/location-snapshot';
 
 const storage = createMMKV({ id: 'moni-processing' });
 const QUEUE_KEY = 'unified_processing_queue';
@@ -10,6 +11,7 @@ type QueueItemBase = {
   id: string;
   createdAt: string;
   status: 'pending' | 'processing' | 'done' | 'error';
+  locationSnapshot?: LocationSnapshot | null;
 };
 
 export type TextQueueItem = QueueItemBase & {
