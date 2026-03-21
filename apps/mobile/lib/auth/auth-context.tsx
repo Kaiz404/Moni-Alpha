@@ -8,7 +8,11 @@ type AuthContextType = {
   session: Session | null;
   isLoading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
-  signUp: (email: string, password: string, displayName: string) => Promise<{ error: Error | null }>;
+  signUp: (
+    email: string,
+    password: string,
+    displayName: string
+  ) => Promise<{ error: Error | null; session: Session | null }>;
   signOut: () => Promise<void>;
 };
 
@@ -53,14 +57,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signUp = async (email: string, password: string, displayName: string) => {
     const parsed = signUpSchema.safeParse({ email, password, displayName });
     if (!parsed.success) {
-      return { error: new Error(parsed.error.errors[0]?.message ?? 'Invalid input') };
+      return {
+        error: new Error(parsed.error.errors[0]?.message ?? 'Invalid input'),
+        session: null,
+      };
     }
     const { data, error } = await supabaseConnector.client.auth.signUp({
       email: parsed.data.email,
       password: parsed.data.password,
       options: { data: { display_name: parsed.data.displayName } },
     });
-    if (error) return { error: new Error(error.message) };
+    if (error) return { error: new Error(error.message), session: null };
     if (data.user) {
       await supabaseConnector.client.from('profiles').insert({
         id: data.user.id,
@@ -68,7 +75,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         preferences: { currency: 'USD', theme: 'system', notifications_enabled: true },
       });
     }
-    return { error: null };
+    return { error: null, session: data.session ?? null };
   };
 
   const signOut = async () => {

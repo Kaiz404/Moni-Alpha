@@ -6,6 +6,7 @@ import {
   getProposalLocationSnapshot,
   clearProposalLocationSnapshot,
 } from '@/lib/ai/proposal-location-cache';
+import { emitProposedTransactionsChanged } from '@/lib/proposals/proposed-transactions-events';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -101,7 +102,9 @@ export async function createProposedTransaction(
     .executeTakeFirst();
 
   if (!result) throw new Error('Failed to create proposed transaction');
-  return rowToProposedTransaction(result);
+  const created = rowToProposedTransaction(result);
+  emitProposedTransactionsChanged();
+  return created;
 }
 
 /** Mark a proposal as approved and create the real transaction record. */
@@ -138,6 +141,7 @@ export async function approveProposedTransaction(
     .execute();
 
   clearProposalLocationSnapshot(proposal.id);
+  emitProposedTransactionsChanged();
 }
 
 /** Mark a proposal as rejected (keeps it in history but removes it from the pending list). */
@@ -151,6 +155,7 @@ export async function rejectProposedTransaction(id: string): Promise<void> {
     .execute();
 
   clearProposalLocationSnapshot(id);
+  emitProposedTransactionsChanged();
 }
 
 /** Update the image URI once a receipt has been uploaded to Supabase Storage. */
@@ -164,10 +169,12 @@ export async function updateProposalImageUri(
     .set({ source_image_uri: remoteUrl, updated_at: new Date().toISOString() })
     .where('id', '=', id)
     .execute();
+  emitProposedTransactionsChanged();
 }
 
 export async function deleteProposedTransaction(id: string): Promise<void> {
   const { db } = syncSystem;
   await db.deleteFrom('proposed_transactions').where('id', '=', id).execute();
   clearProposalLocationSnapshot(id);
+  emitProposedTransactionsChanged();
 }

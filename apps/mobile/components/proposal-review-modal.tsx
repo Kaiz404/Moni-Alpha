@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -8,6 +8,8 @@ import {
   ScrollView,
   ActivityIndicator,
   Pressable,
+  AppState,
+  DeviceEventEmitter,
 } from 'react-native';
 import { Image } from 'expo-image';
 import type { ProposedTransaction } from '@repo/types';
@@ -16,6 +18,7 @@ import {
   approveProposedTransaction,
   rejectProposedTransaction,
 } from '@/lib/supabase/proposed-transactions';
+import { PROPOSED_TRANSACTIONS_CHANGED } from '@/lib/proposals/proposed-transactions-events';
 import { getWallets } from '@/lib/supabase/wallets';
 
 type WalletOption = {
@@ -33,12 +36,16 @@ export function ProposalReviewModal() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [isActioning, setIsActioning] = useState(false);
+  const proposalsRef = useRef(proposals);
+  proposalsRef.current = proposals;
+  const appStateRef = useRef(AppState.currentState);
 
   const visible = proposals.length > 0 && !isLoading;
   const current = proposals[currentIndex];
 
   const loadData = useCallback(async () => {
-    setIsLoading(true);
+    const quietRefresh = proposalsRef.current.length > 0;
+    if (!quietRefresh) setIsLoading(true);
     try {
       const [pending, ws] = await Promise.all([
         getProposedTransactions('pending'),
@@ -57,12 +64,29 @@ export function ProposalReviewModal() {
     } catch (e) {
       console.warn('[ProposalReview] load error:', e);
     } finally {
-      setIsLoading(false);
+      if (!quietRefresh) setIsLoading(false);
     }
   }, []);
 
   useEffect(() => {
     loadData();
+  }, [loadData]);
+
+  useEffect(() => {
+    const sub = DeviceEventEmitter.addListener(PROPOSED_TRANSACTIONS_CHANGED, () => {
+      loadData();
+    });
+    return () => sub.remove();
+  }, [loadData]);
+
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (next) => {
+      if (appStateRef.current.match(/inactive|background/) && next === 'active') {
+        loadData();
+      }
+      appStateRef.current = next;
+    });
+    return () => sub.remove();
   }, [loadData]);
 
   const handleApprove = useCallback(
@@ -121,12 +145,6 @@ export function ProposalReviewModal() {
     }
   }
 
-  /** Exposed for parent to re-check proposals (e.g., on app foreground). */
-  useEffect(() => {
-    // Re-export loadData on a module level is complex, so we use an event pattern
-    // Parent will call this via ref or context — for now, auto-reload is enough.
-  }, []);
-
   if (!visible || !current) return null;
 
   return (
@@ -162,9 +180,6 @@ export function ProposalReviewModal() {
     </Modal>
   );
 }
-
-// Re-export for _layout.tsx to trigger reloads
-export { getProposedTransactions };
 
 // ─── Proposal form ───────────────────────────────────────────────────────────
 

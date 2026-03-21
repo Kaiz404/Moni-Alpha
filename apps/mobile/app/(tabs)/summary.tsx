@@ -9,6 +9,7 @@ import {
   View,
   useWindowDimensions,
 } from 'react-native';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useFocusEffect, useRouter } from 'expo-router';
 import MapView, { Marker } from 'react-native-maps';
 import {
@@ -43,8 +44,13 @@ type WalletItem = {
   id: string;
   name: string;
   color?: string | null;
+  icon?: string | null;
+  currency?: string | null;
   initialBalance?: number;
+  currentBalance?: number;
 };
+
+const WALLET_ACCENT_COLORS = ['#0a7ea4', '#3b82f6', '#6366f1', '#8b5cf6', '#ec4899', '#f59e0b'];
 
 export default function SummaryScreen() {
   const colorScheme = useColorScheme();
@@ -224,6 +230,19 @@ export default function SummaryScreen() {
 
   const pieInnerRadius = Math.max(36, Math.round(chartWidth * 0.12));
 
+  const walletRows = useMemo(() => {
+    return wallets.map((w, index) => ({
+      wallet: w,
+      balance: w.currentBalance ?? w.initialBalance ?? 0,
+      dotColor: w.color?.trim() || WALLET_ACCENT_COLORS[index % WALLET_ACCENT_COLORS.length],
+    }));
+  }, [wallets]);
+
+  const totalWalletBalance = useMemo(
+    () => walletRows.reduce((sum, row) => sum + row.balance, 0),
+    [walletRows]
+  );
+
   if (loading) {
     return (
       <View className="flex-1 items-center justify-center bg-white dark:bg-gray-900">
@@ -253,7 +272,68 @@ export default function SummaryScreen() {
 
   return (
     <ScrollView className="flex-1 bg-white dark:bg-gray-900" contentContainerStyle={{ padding: 16, paddingBottom: 48 }}>
-      <Text className="text-2xl font-semibold text-gray-900 dark:text-white mb-4">Summary</Text>
+      <View className="flex-row items-center mb-4 pt-4">
+        <View className="w-9 h-9 rounded-xl bg-slate-200 dark:bg-slate-700 items-center justify-center">
+          <MaterialIcons name="bar-chart" size={20} color={isDark ? '#f1f5f9' : '#334155'} />
+        </View>
+        <Text className="text-2xl ml-3 font-bold text-gray-900 dark:text-white">Summary</Text>
+      </View>
+
+      <View className="rounded-2xl overflow-hidden mb-4 border border-[#8494FF]/25 dark:border-indigo-500/35 shadow-sm">
+        <View className="bg-[#8494FF] dark:bg-[#4f54c4] px-4 py-3">
+          <Text className="text-xs font-semibold uppercase tracking-[0.06em] text-white/90">Wallet balances</Text>
+          <Text className="mt-1 text-2xl font-bold text-[#FAFAFA]">
+            ${totalWalletBalance.toFixed(2)}
+          </Text>
+          <Text className="text-xs text-[#FAFAFA]/80">
+            {wallets.length === 0
+              ? 'Add wallets to see your total here'
+              : wallets.length === 1
+                ? 'Total across 1 wallet'
+                : `Total across ${wallets.length} wallets`}
+          </Text>
+        </View>
+        <View className="bg-[#FAFAFA] dark:bg-slate-900/90 px-3 py-1">
+          {walletRows.length === 0 ? (
+            <View className="py-6 px-2">
+              <Text className="text-center text-sm text-slate-500 dark:text-slate-400">
+                No wallets yet. Add a wallet from the Wallets tab to see balances here.
+              </Text>
+            </View>
+          ) : (
+            walletRows.map(({ wallet, balance, dotColor }, index) => (
+              <View
+                key={wallet.id}
+                className={`flex-row items-center justify-between py-3 px-1 ${
+                  index < walletRows.length - 1 ? 'border-b border-slate-200/90 dark:border-slate-600/80' : ''
+                }`}
+              >
+                <View className="flex-row items-center flex-1 min-w-0 pr-2">
+                  <View
+                    className="w-2.5 h-2.5 rounded-full mr-3"
+                    style={{ backgroundColor: dotColor }}
+                  />
+                  <View className="flex-1 min-w-0">
+                    <Text className="text-base font-semibold text-slate-900 dark:text-white" numberOfLines={1}>
+                      {wallet.name}
+                    </Text>
+                    <Text className="text-xs text-slate-500 dark:text-slate-400">
+                      {wallet.currency?.trim() || 'USD'}
+                    </Text>
+                  </View>
+                </View>
+                <Text
+                  className={`text-base font-bold shrink-0 ${
+                    balance < 0 ? 'text-red-600 dark:text-red-400' : 'text-slate-900 dark:text-white'
+                  }`}
+                >
+                  ${balance.toFixed(2)}
+                </Text>
+              </View>
+            ))
+          )}
+        </View>
+      </View>
 
       <View className="rounded-xl bg-gray-100 dark:bg-gray-800 p-3 mb-4">
         <Text className="text-base font-semibold text-gray-900 dark:text-white mb-2">Transaction Pinmap</Text>

@@ -41,7 +41,7 @@ export default function TabLayout() {
         name="chat"
         options={{
           title: 'Moni Agent',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="forum" color={color} />,
+          tabBarIcon: ({ color }) => <IconSymbol size={28} name="smart-toy" color={color} />,
           tabBarHideOnKeyboard: true,
         }}
       />

@@ -313,7 +313,7 @@ export default function WalletsScreen() {
             >
             <TouchableOpacity
               onPress={() =>
-                router.push(`/(tabs)/transactions?walletId=${item.id}` as any)
+                router.push({ pathname: '/transaction/index', params: { walletId: item.id } })
               }
               activeOpacity={0.85}
             >
