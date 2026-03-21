@@ -3,12 +3,13 @@ import type { CreateTransaction } from '@repo/types';
 import { randomUUID } from 'expo-crypto';
 import * as Location from 'expo-location';
 
-export async function getTransactions(walletId?: string) {
+export async function getTransactions(walletId?: string, limit: number = 100) {
   const { db } = syncSystem;
 
   let query = db
     .selectFrom('transactions')
     .selectAll()
+    .limit(limit)
     .orderBy('transaction_date', 'desc');
 
   if (walletId) {
