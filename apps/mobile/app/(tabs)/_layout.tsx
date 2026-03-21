@@ -27,35 +27,21 @@ export default function TabLayout() {
         name="index"
         options={{
           title: 'Wallets',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="creditcard.fill" color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="transactions"
-        options={{
-          title: 'Transactions',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="list.bullet" color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="heatmap"
-        options={{
-          title: 'Pinmap',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="map.fill" color={color} />,
+          tabBarIcon: ({ color }) => <IconSymbol size={28} name="credit-card" color={color} />,
         }}
       />
       <Tabs.Screen
         name="summary"
         options={{
           title: 'Summary',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="chart.bar.fill" color={color} />,
+          tabBarIcon: ({ color }) => <IconSymbol size={28} name="bar-chart" color={color} />,
         }}
       />
       <Tabs.Screen
         name="chat"
         options={{
-          title: 'AI Chat',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="bubble.left.and.bubble.right.fill" color={color} />,
+          title: 'Moni Agent',
+          tabBarIcon: ({ color }) => <IconSymbol size={28} name="forum" color={color} />,
           tabBarHideOnKeyboard: true,
         }}
       />
@@ -63,7 +49,7 @@ export default function TabLayout() {
         name="profile"
         options={{
           title: 'Profile',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="person.fill" color={color} />,
+          tabBarIcon: ({ color }) => <IconSymbol size={28} name="person" color={color} />,
         }}
       />
     </Tabs>

@@ -26,6 +26,8 @@ import {
   runNotificationTests,
   seedHeatmapData,
   clearHeatmapSeedData,
+  seedVisualDemoData,
+  clearVisualSeedData,
   runQueueInspection,
   pruneQueue,
   getQueueSnapshot,
@@ -148,6 +150,20 @@ function useDebugButtons(): GridButton[] {
       description: 'Remove seeded data',
       color: '#b91c1c',
       run: clearHeatmapSeedData,
+    },
+    {
+      id: 'seed-visual',
+      label: 'Seed Visual',
+      description: 'Insert Touch n Go chart demo data',
+      color: '#f59e0b',
+      run: seedVisualDemoData,
+    },
+    {
+      id: 'clear-visual',
+      label: 'Clear Visual',
+      description: 'Remove Touch n Go visual demo',
+      color: '#ea580c',
+      run: clearVisualSeedData,
     },
   ];
 }

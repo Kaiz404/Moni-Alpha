@@ -23,6 +23,7 @@ export {
 export { runNotificationTests } from './notification-test';
 
 export { seedHeatmapData, clearHeatmapSeedData } from './heatmap-seed';
+export { seedVisualDemoData, clearVisualSeedData } from './visual-seed';
 
 export {
   runQueueInspection,
