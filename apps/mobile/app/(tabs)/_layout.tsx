@@ -30,20 +30,8 @@ export default function TabLayout() {
           tabBarIcon: ({ color }) => <IconSymbol size={28} name="creditcard.fill" color={color} />,
         }}
       />
-      <Tabs.Screen
-        name="transactions"
-        options={{
-          title: 'Transactions',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="list.bullet" color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="heatmap"
-        options={{
-          title: 'Pinmap',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="map.fill" color={color} />,
-        }}
-      />
+      
+      
       <Tabs.Screen
         name="summary"
         options={{
@@ -59,13 +47,7 @@ export default function TabLayout() {
           tabBarHideOnKeyboard: true,
         }}
       />
-      <Tabs.Screen
-        name="notifications"
-        options={{
-          title: 'Notifications',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="bell.fill" color={color} />,
-        }}
-      />
+      
       <Tabs.Screen
         name="debug"
         options={{

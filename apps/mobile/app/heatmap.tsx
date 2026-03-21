@@ -15,14 +15,6 @@ export default function HeatmapScreen() {
 
   const isDark = colorScheme === 'dark';
 
-  const getPinColor = (transactionCount: number) => {
-    if (transactionCount >= 15) return '#d32f2f';
-    if (transactionCount >= 8) return '#f57c00';
-    if (transactionCount >= 4) return '#fbc02d';
-    if (transactionCount >= 2) return '#43a047';
-    return '#1e88e5';
-  };
-
   const openInMaps = async (latitude: number, longitude: number, locationName: string) => {
     const encodedLabel = encodeURIComponent(locationName);
     const latLng = `${latitude},${longitude}`;
@@ -60,7 +52,7 @@ export default function HeatmapScreen() {
   if (error) {
     return (
       <View style={[styles.container, { backgroundColor: isDark ? '#1a1a1a' : '#ffffff' }]}>
-        <Text style={[styles.errorText, { color: '#ff4444' }]}>
+        <Text style={[styles.errorText, { color: '#ff4444' }]}> 
           Error: {error}
         </Text>
       </View>
@@ -70,7 +62,7 @@ export default function HeatmapScreen() {
   if (pinPoints.length === 0) {
     return (
       <View style={[styles.container, { backgroundColor: isDark ? '#1a1a1a' : '#ffffff' }]}>
-        <Text style={[styles.emptyText, { color: isDark ? '#cccccc' : '#666666' }]}>
+        <Text style={[styles.emptyText, { color: isDark ? '#cccccc' : '#666666' }]}> 
           No transactions with location data found.
           Start adding locations to your transactions!
         </Text>
@@ -91,21 +83,21 @@ export default function HeatmapScreen() {
           <Marker
             key={`${point.latitude}-${point.longitude}-${index}`}
             coordinate={{ latitude: point.latitude, longitude: point.longitude }}
-            pinColor={getPinColor(point.transactionCount)}
+            pinColor={'#1e88e5'}
             onSelect={() => setSelectedPin(point)}
             onPress={() => setSelectedPin(point)}
           />
         ))}
       </MapView>
 
-      <View style={[styles.legend, { backgroundColor: isDark ? 'rgba(0, 0, 0, 0.8)' : 'rgba(255, 255, 255, 0.9)' }]}>
-        <Text style={[styles.legendTitle, { color: isDark ? '#ffffff' : '#000000' }]}>
+      <View style={[styles.legend, { backgroundColor: isDark ? 'rgba(0, 0, 0, 0.8)' : 'rgba(255, 255, 255, 0.9)' }] }>
+        <Text style={[styles.legendTitle, { color: isDark ? '#ffffff' : '#000000' }]}> 
           Pinmap
         </Text>
-        <Text style={[styles.legendInstruction, { color: isDark ? '#cccccc' : '#666666' }]}>
+        <Text style={[styles.legendInstruction, { color: isDark ? '#cccccc' : '#666666' }]}> 
           Tap a pin to view transaction details.
         </Text>
-        <Text style={[styles.info, { color: isDark ? '#999999' : '#999999' }]}>
+        <Text style={[styles.info, { color: isDark ? '#999999' : '#999999' }]}> 
           {pinPoints.length} pinned location(s)
         </Text>
       </View>

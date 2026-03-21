@@ -199,6 +199,107 @@ export default function DebugModelRunner() {
     }
   };
 
+  const ensureTouchNGOWallet = async () => {
+    const wallets = await getWallets();
+    const found = wallets.find((w: any) => (w.name || '').toLowerCase() === 'touch n go' || (w.name || '').toLowerCase() === 'touch n go wallet');
+    if (found) return found.id;
+
+    const wallet = await createWallet({
+      name: 'Touch n Go',
+      type: 'ewallet',
+      currency: 'USD',
+      initialBalance: 100,
+      color: '#f59e0b',
+      icon: 'credit-card',
+    });
+
+    return wallet.id;
+  };
+
+  const seedVisualDemoData = async () => {
+    try {
+      append('Seeding visual demo transactions for Touch n Go...');
+      const { db, supabaseConnector } = syncSystem;
+      const userId = await supabaseConnector.getUserId();
+      if (!userId) {
+        append('Seed failed: no authenticated user');
+        return;
+      }
+
+      const walletId = await ensureTouchNGOWallet();
+      const now = Date.now();
+      const metadata = JSON.stringify({ seedSource: 'visual-seed' });
+
+      const categories = await db
+        .selectFrom('categories')
+        .select(['id', 'name'])
+        .where('is_active', '=', 1)
+        .execute();
+
+      let usable = categories.filter((c: any) => !(c.name || '').toLowerCase().includes('other'));
+      if (!usable.length) usable = categories;
+
+      const total = 160;
+      for (let i = 0; i < total; i += 1) {
+        const daysAgo = Math.floor(Math.random() * 90);
+        const txDate = new Date(now - daysAgo * 24 * 3600_000).toISOString();
+        const category = usable[Math.floor(Math.random() * usable.length)];
+        const amount = (3 + Math.round(Math.random() * 200)).toString();
+
+        await db
+          .insertInto('transactions')
+          .values({
+            id: randomUUID(),
+            user_id: userId,
+            wallet_id: walletId,
+            amount,
+            type: Math.random() > 0.15 ? 'expense' : 'income',
+            category_id: category.id,
+            transfer_to_wallet_id: null,
+            linked_transaction_id: null,
+            description: `Visual seed ${i + 1}`,
+            merchant: `Merchant ${Math.ceil(Math.random() * 40)}`,
+            notes: 'Seeded for visual chart demo',
+            transaction_date: txDate,
+            location_latitude: null,
+            location_longitude: null,
+            location_name: null,
+            receipt_image_url: null,
+            metadata,
+          })
+          .execute();
+      }
+
+      append(`Visual seed complete: inserted ${total} transactions into Touch n Go wallet`);
+    } catch (e: any) {
+      append('Visual seed failed: ' + (e?.message ?? String(e)));
+      appendObj('Visual seed error', e);
+    }
+  };
+
+  const clearVisualSeedData = async () => {
+    try {
+      append('Removing visual-seed transactions...');
+      const { db, supabaseConnector } = syncSystem;
+      const userId = await supabaseConnector.getUserId();
+      if (!userId) {
+        append('Cleanup failed: no authenticated user');
+        return;
+      }
+
+      await db
+        .deleteFrom('transactions')
+        .where('user_id', '=', userId)
+        .where('metadata', 'like', '%"seedSource":"visual-seed"%')
+        .execute();
+
+      append('Visual seed cleanup complete');
+    } catch (e: any) {
+      append('Cleanup failed: ' + (e?.message ?? String(e)));
+      appendObj('Cleanup error', e);
+    }
+  };
+
   function sampleNotifications() {
     return [
       {
@@ -395,6 +496,14 @@ export default function DebugModelRunner() {
 
       <View style={{ marginTop: 12 }}>
         <Button title="Seed Heatmap Test Data" onPress={seedHeatmapData} />
+      </View>
+
+      <View style={{ marginTop: 12 }}>
+        <Button title="Seed Visual Chart Demo (Touch n Go)" onPress={seedVisualDemoData} />
+      </View>
+
+      <View style={{ marginTop: 12 }}>
+        <Button title="Clear Visual Chart Demo" onPress={clearVisualSeedData} />
       </View>
 
       <View style={{ marginTop: 12 }}>

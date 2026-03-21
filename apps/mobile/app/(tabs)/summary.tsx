@@ -1,10 +1,21 @@
 import { useCallback, useMemo, useState } from 'react';
-import { ActivityIndicator, Platform, ScrollView, Text, UIManager, View, useWindowDimensions } from 'react-native';
-import { useFocusEffect } from 'expo-router';
+import {
+  ActivityIndicator,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  UIManager,
+  View,
+  useWindowDimensions,
+} from 'react-native';
+import { useFocusEffect, useRouter } from 'expo-router';
+import MapView, { Marker } from 'react-native-maps';
 import {
   VictoryAxis,
   VictoryBar,
   VictoryChart,
+  VictoryLegend,
   VictoryLine,
   VictoryPie,
   VictoryScatter,
@@ -13,6 +24,7 @@ import {
 
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useTransactionPinmap, type TransactionPinPoint } from '@/hooks/use-transaction-heatmap';
 import { syncSystem } from '@/lib/powersync/Powersync';
 import { getTransactions } from '@/lib/supabase/transactions';
 import { getWallets } from '@/lib/supabase/wallets';
@@ -34,32 +46,27 @@ type WalletItem = {
   initialBalance?: number;
 };
 
-const WEEKDAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-const HEATMAP_WEEKS = 8;
-
-const toDateOnly = (date: Date) => {
-  const d = new Date(date);
-  d.setHours(0, 0, 0, 0);
-  return d;
-};
-
 export default function SummaryScreen() {
   const colorScheme = useColorScheme();
-  const { width } = useWindowDimensions();
+  const { width, height } = useWindowDimensions();
   const isDark = colorScheme === 'dark';
-  const chartWidth = Math.max(width - 48, 280);
+  const chartWidth = Math.max(width * 0.4, 280); // ensure a minimum width for charts on small devices
   const hasSvgViewManager = useMemo(() => {
     if (Platform.OS !== 'android') return true;
     const getConfig = UIManager.getViewManagerConfig?.bind(UIManager);
     if (!getConfig) return false;
     return Boolean(getConfig('RNSVGRect') || getConfig('RCTRNSVGRect'));
   }, []);
+  const { pinPoints, mapRegion, isLoading: pinmapLoading, error: pinmapError } = useTransactionPinmap();
+  const router = useRouter();
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [transactions, setTransactions] = useState<TransactionItem[]>([]);
   const [wallets, setWallets] = useState<WalletItem[]>([]);
   const [categoryMap, setCategoryMap] = useState<Record<string, string>>({});
+  const [selectedPin, setSelectedPin] = useState<TransactionPinPoint | null>(null);
+  const [chartLayout, setChartLayout] = useState<{ x: number; y: number; width: number; height: number } | null>(null);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -143,7 +150,7 @@ export default function SummaryScreen() {
 
     let running = initialTotal;
     return keys.map((key) => {
-      running += deltaByDay[key];
+      running -= deltaByDay[key];
       return { x: new Date(key), y: Number(running.toFixed(2)) };
     });
   }, [transactions, wallets]);
@@ -166,39 +173,52 @@ export default function SummaryScreen() {
       .sort((a, b) => b.y - a.y);
   }, [transactions, wallets]);
 
-  const heatmapData = useMemo(() => {
-    const today = toDateOnly(new Date());
-    const heat: Record<string, number> = {};
-
-    transactions.forEach((tx) => {
-      if (tx.type !== 'expense') return;
-      const txDate = toDateOnly(new Date(tx.transactionDate));
-      const diffDays = Math.floor((today.getTime() - txDate.getTime()) / (1000 * 60 * 60 * 24));
-      const weekOffset = Math.floor(diffDays / 7);
-
-      if (weekOffset < 0 || weekOffset >= HEATMAP_WEEKS) return;
-
-      const weekIndex = HEATMAP_WEEKS - weekOffset;
-      const weekday = WEEKDAY_LABELS[txDate.getDay()];
-      const key = `${weekIndex}-${weekday}`;
-      heat[key] = (heat[key] ?? 0) + tx.amount;
-    });
-
-    const points: Array<{ x: string; y: string; amount: number }> = [];
-    for (let week = 1; week <= HEATMAP_WEEKS; week += 1) {
-      for (const day of WEEKDAY_LABELS) {
-        points.push({
-          x: day,
-          y: `W${week}`,
-          amount: Number((heat[`${week}-${day}`] ?? 0).toFixed(2)),
-        });
-      }
-    }
-
-    return points;
-  }, [transactions]);
 
   const chartTheme = useMemo(() => VictoryTheme.material, []);
+  const pieColorScale = ["#0a7ea4", "#3b82f6", "#6366f1", "#8b5cf6", "#ec4899", "#f59e0b"];
+
+  const pieLegendData = useMemo(() => {
+    const total = pieData.reduce((s, p) => s + (p.y || 0), 0) || 1;
+    return (pieData.length ? pieData : [{ x: 'No expenses', y: 1 }]).slice(0, 6).map((item, index) => ({
+      name: `${item.x} (${Math.round((item.y / total) * 100)}%)`,
+      symbol: { fill: pieColorScale[index % pieColorScale.length] },
+    }));
+  }, [pieData]);
+
+  const usageBarWidth = useMemo(() => {
+    const count = Math.max(1, usageBarData.length);
+    // approx 60% of the available slot per bar, clamp for large/small screens
+    const approx = Math.floor((chartWidth / count) * 0.4);
+    // cap max width lower to avoid very wide bars on tablets
+    return Math.max(6, Math.min(36, approx));
+  }, [usageBarData.length, chartWidth]);
+
+  const usageDomainPaddingX = useMemo(() => Math.max(20, Math.floor(chartWidth / Math.max(usageBarData.length || 1, 1) * 0.08)), [usageBarData.length, chartWidth]);
+
+  // Add an extra left-domain padding derived from half the bar width so the first bar
+  // doesn't butt up against the Y axis. This is used to set asymmetric domainPadding.x
+  const leftDomainExtra = useMemo(() => Math.ceil(usageBarWidth / 2) + 8, [usageBarWidth]);
+
+  // Responsive chart dimensions based on device size
+  const pieHeight = useMemo(() => {
+    const base = Math.round(Math.min(420, Math.max(240, chartWidth * 0.66)));
+    // don't exceed half device height
+    return Math.min(base, Math.round(height * 0.48));
+  }, [chartWidth, height]);
+
+  const lineChartHeight = useMemo(() => {
+    const base = Math.round(Math.min(360, Math.max(220, chartWidth * 0.56)));
+    return Math.min(base, Math.round(height * 0.45));
+  }, [chartWidth, height]);
+
+  const usageChartHeight = useMemo(() => {
+    const base = Math.round(Math.min(380, Math.max(220, chartWidth * 0.46)));
+    return Math.min(base, Math.round(height * 0.44));
+  }, [chartWidth, height]);
+
+  const usageBottomPadding = useMemo(() => Math.max(52, Math.round(usageChartHeight * 0.18)), [usageChartHeight]);
+
+  const pieInnerRadius = Math.max(36, Math.round(chartWidth * 0.12));
 
   if (loading) {
     return (
@@ -232,87 +252,203 @@ export default function SummaryScreen() {
       <Text className="text-2xl font-semibold text-gray-900 dark:text-white mb-4">Summary</Text>
 
       <View className="rounded-xl bg-gray-100 dark:bg-gray-800 p-3 mb-4">
-        <Text className="text-base font-semibold text-gray-900 dark:text-white mb-2">Spending Heatmap (Last 8 Weeks)</Text>
-        <VictoryChart
-          theme={chartTheme}
-          width={chartWidth}
-          height={280}
-          domainPadding={{ x: 12, y: 10 }}
-        >
-          <VictoryAxis style={{ tickLabels: { fill: isDark ? '#d1d5db' : '#374151', fontSize: 10 } }} />
-          <VictoryAxis dependentAxis style={{ tickLabels: { fill: isDark ? '#d1d5db' : '#374151', fontSize: 10 } }} />
-          <VictoryScatter
-            data={heatmapData}
-            x="x"
-            y="y"
-            size={10}
-            symbol="square"
-            style={{
-              data: {
-                fill: ({ datum }: any) =>
-                  datum.amount > 0 ? '#0a7ea4' : isDark ? '#1f2937' : '#e5e7eb',
-                stroke: isDark ? '#111827' : '#ffffff',
-                strokeWidth: 1,
-              },
-            }}
-          />
-        </VictoryChart>
+        <Text className="text-base font-semibold text-gray-900 dark:text-white mb-2">Transaction Pinmap</Text>
+        {pinmapLoading ? (
+          <View className="h-56 items-center justify-center">
+            <ActivityIndicator size="large" color={Colors[colorScheme ?? 'light'].tint} />
+            <Text className="mt-2 text-gray-600 dark:text-gray-300">Loading map pins...</Text>
+          </View>
+        ) : pinmapError ? (
+          <View className="h-56 items-center justify-center px-3">
+            <Text className="text-center text-red-500">{pinmapError}</Text>
+          </View>
+        ) : pinPoints.length === 0 ? (
+          <View className="h-56 items-center justify-center px-3">
+            <Text className="text-center text-gray-600 dark:text-gray-300">No transaction locations available yet.</Text>
+          </View>
+        ) : (
+          <>
+            <View style={styles.mapContainer}>
+              <MapView
+                style={styles.map}
+                initialRegion={mapRegion}
+                provider="google"
+                onPress={() => router.push('/heatmap')}
+              >
+                {pinPoints.map((point, index) => (
+                  <Marker
+                    key={`${point.latitude}-${point.longitude}-${index}`}
+                    coordinate={{ latitude: point.latitude, longitude: point.longitude }}
+                    pinColor={'#1e88e5'}
+                  />
+                ))}
+              </MapView>
+            </View>
+
+            {selectedPin ? (
+              <View className="mt-2 rounded-lg bg-white dark:bg-gray-700 p-2">
+                <Text className="text-sm font-semibold text-gray-900 dark:text-white">{selectedPin.locationName}</Text>
+                <Text className="text-xs text-gray-700 dark:text-gray-200">{selectedPin.transactionCount} transaction(s)</Text>
+                <Text className="text-xs text-gray-700 dark:text-gray-200">Amount: ${selectedPin.amount.toFixed(2)}</Text>
+                <Text className="text-xs text-gray-500 dark:text-gray-300">{selectedPin.description}</Text>
+              </View>
+            ) : null}
+          </>
+        )}
       </View>
 
       <View className="rounded-xl bg-gray-100 dark:bg-gray-800 p-3 mb-4">
         <Text className="text-base font-semibold text-gray-900 dark:text-white mb-2">Expense Categories Contribution</Text>
-        <VictoryPie
-          theme={chartTheme}
-          width={chartWidth}
-          height={300}
-          data={pieData.length ? pieData : [{ x: 'No expenses', y: 1 }]}
-          colorScale={["#0a7ea4", "#3b82f6", "#6366f1", "#8b5cf6", "#ec4899", "#f59e0b"]}
-          labels={({ datum }: any) => `${datum.x}: ${Number(datum.y).toFixed(0)}`}
-          style={{ labels: { fill: isDark ? '#f3f4f6' : '#111827', fontSize: 10 } }}
-        />
+          <VictoryPie
+            theme={chartTheme}
+            width={chartWidth}
+            height={pieHeight}
+            data={pieData.length ? pieData : [{ x: 'No expenses', y: 1 }]}
+            colorScale={pieColorScale}
+            // render as donut and avoid in-slice labels to prevent overlap on small areas
+            innerRadius={pieInnerRadius}
+            padAngle={2}
+            labels={() => ''}
+            style={{ labels: { fill: isDark ? '#f3f4f6' : '#111827', fontSize: 10, padding: 4 } }}
+          />
+          <VictoryLegend
+            width={chartWidth}
+            height={78}
+            orientation="horizontal"
+            gutter={12}
+            itemsPerRow={2}
+            data={pieLegendData}
+            style={{ labels: { fill: isDark ? '#d1d5db' : '#374151', fontSize: 11 } }}
+          />
       </View>
 
-      <View className="rounded-xl bg-gray-100 dark:bg-gray-800 p-3 mb-4">
-        <Text className="text-base font-semibold text-gray-900 dark:text-white mb-2">Total Wallet Value Over Time</Text>
+        <View className="rounded-xl bg-gray-100 dark:bg-gray-800 p-3 mb-4">
+          <Text className="text-base font-semibold text-gray-900 dark:text-white mb-2">Total Wallet Value Over Time</Text>
+          <View onLayout={(e) => setChartLayout(e.nativeEvent.layout)} style={{ position: 'relative' }}>
+            {/* Use explicit padding so we can compute plot area offsets reliably */}
+            <VictoryChart
+              theme={chartTheme}
+              width={chartWidth}
+              height={lineChartHeight}
+              // increase left padding so Y-axis label sits clear of tick values on large screens
+              padding={{ top: 10, bottom: 50, left: Math.max(56, Math.round(width * 0.06)), right: 20 }}
+              scale={{ x: 'time', y: 'linear' }}
+              domainPadding={{ x: 8, y: 12 }}
+            >
+              <VictoryAxis
+                label="Date"
+                tickFormat={(tick) => `${new Date(tick).getMonth() + 1}/${new Date(tick).getDate()}`}
+                style={{
+                  tickLabels: { fill: isDark ? '#d1d5db' : '#374151', fontSize: 10 },
+                  axisLabel: { fill: isDark ? '#d1d5db' : '#374151', fontSize: 11, padding: 28 },
+                }}
+              />
+              <VictoryAxis
+                dependentAxis
+                label="Total Value ($)"
+                tickFormat={(tick) => `$${Number(tick).toFixed(0)}`}
+                style={{
+                  tickLabels: { fill: isDark ? '#d1d5db' : '#374151', fontSize: 10 },
+                  // move axis label further left so it doesn't overlap numeric ticks
+                  axisLabel: { fill: isDark ? '#d1d5db' : '#374151', fontSize: 11, padding: 56 },
+                }}
+              />
+              <VictoryLine
+                data={lineData}
+                style={{ data: { stroke: '#0a7ea4', strokeWidth: 3 } }}
+              />
+              <VictoryScatter
+                data={lineData}
+                size={4}
+                style={{ data: { fill: '#0a7ea4' } }}
+              />
+            </VictoryChart>
+          </View>
+        </View>
+
+      <View className="rounded-xl bg-gray-100 dark:bg-gray-800 p-3">
+        <Text className="text-base font-semibold text-gray-900 dark:text-white mb-2"># of Transactions Involved</Text>
         <VictoryChart
           theme={chartTheme}
           width={chartWidth}
-          height={260}
-          scale={{ x: 'time', y: 'linear' }}
-          domainPadding={{ x: 8, y: 12 }}
+          height={usageChartHeight}
+          // balanced but reduced left/right padding so the plotted area has more room
+          padding={{ top: 10, bottom: usageBottomPadding, left: 56, right: 48 }}
+          // apply extra left domain padding equal to half a bar + offset
+          domainPadding={{ x: [usageDomainPaddingX + leftDomainExtra, usageDomainPaddingX], y: 12 }}
+          // ensure headroom so bars don't clash with axis/labels
+          domain={{ y: [0, Math.max(5, Math.ceil((usageBarData.reduce((m, d) => Math.max(m, d.y), 0) || 1) * 1.08))] }}
         >
           <VictoryAxis
-            tickFormat={(tick) => `${new Date(tick).getMonth() + 1}/${new Date(tick).getDate()}`}
-            style={{ tickLabels: { fill: isDark ? '#d1d5db' : '#374151', fontSize: 10 } }}
+            label="Wallet"
+            style={{
+              // force tick labels to match wallet names and keep them readable on wide screens
+              tickLabels: { fill: isDark ? '#d1d5db' : '#374151', fontSize: 11, angle: -25, padding: 12 },
+              axisLabel: { fill: isDark ? '#d1d5db' : '#374151', fontSize: 11, padding: 36 },
+              grid: { stroke: 'transparent' },
+            }}
+            tickValues={usageBarData.map((d) => d.x)}
+            tickFormat={usageBarData.map((d) => d.x)}
           />
           <VictoryAxis
             dependentAxis
-            tickFormat={(tick) => `$${Number(tick).toFixed(0)}`}
-            style={{ tickLabels: { fill: isDark ? '#d1d5db' : '#374151', fontSize: 10 } }}
+            label="Transaction Count"
+            style={{
+              tickLabels: { fill: isDark ? '#d1d5db' : '#374151', fontSize: 10 },
+              axisLabel: { fill: isDark ? '#d1d5db' : '#374151', fontSize: 11, padding: 42 },
+              grid: { stroke: 'transparent' },
+            }}
           />
-          <VictoryLine
-            data={lineData}
-            style={{ data: { stroke: '#0a7ea4', strokeWidth: 3 } }}
-          />
-        </VictoryChart>
-      </View>
-
-      <View className="rounded-xl bg-gray-100 dark:bg-gray-800 p-3">
-        <Text className="text-base font-semibold text-gray-900 dark:text-white mb-2">Wallet Usage (Transactions Involved)</Text>
-        <VictoryChart
-          theme={chartTheme}
-          width={chartWidth}
-          height={280}
-          domainPadding={{ x: 20, y: 12 }}
-        >
-          <VictoryAxis style={{ tickLabels: { fill: isDark ? '#d1d5db' : '#374151', fontSize: 10, angle: -25 } }} />
-          <VictoryAxis dependentAxis style={{ tickLabels: { fill: isDark ? '#d1d5db' : '#374151', fontSize: 10 } }} />
           <VictoryBar
             data={usageBarData.length ? usageBarData : [{ x: 'No wallets', y: 0 }]}
             style={{ data: { fill: '#0a7ea4' } }}
+            barWidth={usageBarWidth}
           />
         </VictoryChart>
+        {/* Selection UI removed for visual-only mode */}
       </View>
     </ScrollView>
   );
 }
+
+const styles = StyleSheet.create({
+  mapContainer: {
+    height: 240,
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
+  map: {
+    flex: 1,
+  },
+  legendDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+  },
+  tooltip: {
+    position: 'absolute',
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    borderRadius: 6,
+    backgroundColor: '#ffffff',
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+  },
+  tooltipArrow: {
+    position: 'absolute',
+    bottom: -6,
+    left: '50%',
+    marginLeft: -6,
+    width: 0,
+    height: 0,
+    borderLeftWidth: 6,
+    borderRightWidth: 6,
+    borderTopWidth: 6,
+    borderLeftColor: 'transparent',
+    borderRightColor: 'transparent',
+    borderTopColor: '#ffffff',
+  },
+});
