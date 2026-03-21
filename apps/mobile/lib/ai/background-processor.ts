@@ -17,6 +17,7 @@ import {
 import { runOrchestration } from './orchestrator/index';
 
 const TAG = '[BGProc]';
+const NOTIF_TAG = '[NotifProc]';
 
 // Visual icons for sub-agent stages in console output
 const STAGE_ICONS: Record<string, string> = {
@@ -90,6 +91,10 @@ async function processingTask(taskData?: { delay?: number }) {
         item.type === 'text' ? `"${item.text.slice(0, 40)}"` :
         item.type === 'notification' ? `[${item.notification.app}] "${item.notification.text.slice(0, 35)}"` :
         `image:${item.imageUri.slice(-25)}`;
+
+      if (item.type === 'notification') {
+        console.log(NOTIF_TAG, `Processing notification queue item id=${item.id} app=${item.notification.app}`);
+      }
 
       console.log(TAG, '\u{2502}');
       console.log(TAG, `\u{251C}\u{2500}\u{2500} Item #${processedCount + 1}: ${item.type} ${preview}`);

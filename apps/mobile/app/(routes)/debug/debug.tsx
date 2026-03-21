@@ -32,12 +32,14 @@ import {
   pruneQueue,
   getQueueSnapshot,
   runVisionImageDescribeTest,
+  PROCESS_LABELS,
+  formatDuration,
+  useDebugProcessMonitor,
+  useCapturedProcessLogs,
   type DebugTestResult,
   type LogFn,
+  type ProcessId,
 } from '@/lib/debug';
-import {
-  isBackgroundProcessorRunning,
-} from '@/lib/ai/background-processor';
 
 // ─── Grid button definitions ─────────────────────────────────────────────────
 
@@ -266,7 +268,13 @@ export default function DebugPage() {
   const [visionPreviewUri, setVisionPreviewUri] = useState<string | null>(null);
   const [lastResult, setLastResult] = useState<{ id: string; result: DebugTestResult } | null>(null);
   const [logLines, setLogLines] = useState<string[]>([]);
+  const [selectedProcessLog, setSelectedProcessLog] = useState<ProcessId>('debug-log');
   const scrollRef = useRef<ScrollView>(null);
+  const processStates = useDebugProcessMonitor({
+    uiActionRunning: runningId !== null,
+    visionRunning: visionBusy,
+  });
+  const { clearCapturedLogs, getFormattedLogs } = useCapturedProcessLogs();
 
   const uiLocked = runningId !== null || visionBusy;
 
@@ -278,7 +286,10 @@ export default function DebugPage() {
   const clearLog = useCallback(() => {
     setLogLines([]);
     setLastResult(null);
-  }, []);
+    clearCapturedLogs();
+  }, [clearCapturedLogs]);
+
+  const selectedProcessLogs = getFormattedLogs(selectedProcessLog, 160);
 
   const runVisionDescribeFlow = useCallback(
     async (source: 'camera' | 'library') => {
@@ -478,6 +489,51 @@ export default function DebugPage() {
           })}
         </View>
 
+        {/* Process monitor */}
+        <View className="mx-4 mt-4 rounded-xl border border-zinc-800 bg-zinc-950/80 p-3">
+          <Text className="text-zinc-200 font-semibold text-sm">Background process monitor</Text>
+          <Text className="text-zinc-500 text-[10px] mt-1">
+            Live state, running process count, and duration per process.
+          </Text>
+
+          <View className="flex-row flex-wrap mt-3">
+            {processStates.map((proc) => (
+              <View key={proc.id} className="w-1/2 p-1">
+                <View
+                  className="rounded-lg border p-2"
+                  style={{
+                    borderColor: proc.state === 'running' ? '#166534' : '#3f3f46',
+                    backgroundColor: proc.state === 'running' ? '#052e16aa' : '#18181baa',
+                  }}
+                >
+                  <View className="flex-row items-center justify-between">
+                    <Text className="text-[11px] font-semibold text-zinc-200">{proc.label}</Text>
+                    <View
+                      className="w-2 h-2 rounded-full"
+                      style={{ backgroundColor: proc.state === 'running' ? '#22c55e' : '#71717a' }}
+                    />
+                  </View>
+                  <Text className="text-[10px] text-zinc-400 mt-1">
+                    State: {proc.state === 'running' ? 'Running' : 'Idle'}
+                  </Text>
+                  <Text className="text-[10px] text-zinc-400">
+                    Running for: {proc.state === 'running' ? formatDuration(proc.runningForMs) : '-'}
+                  </Text>
+                  {proc.detail ? (
+                    <Text className="text-[9px] text-zinc-500 mt-1 leading-3" numberOfLines={2}>
+                      {proc.detail}
+                    </Text>
+                  ) : null}
+                </View>
+              </View>
+            ))}
+          </View>
+
+          <Text className="text-[10px] text-zinc-500 mt-2">
+            Active: {processStates.filter((p) => p.state === 'running').length}/{processStates.length}
+          </Text>
+        </View>
+
         {/* Result banner */}
         {lastResult && (
           <View
@@ -497,17 +553,44 @@ export default function DebugPage() {
           </View>
         )}
 
-        {/* Log output */}
-        {logLines.length > 0 && (
+        {/* Per-process logs */}
+        <View className="mx-4 mt-4">
+          <View className="flex-row justify-between items-center mb-2">
+            <Text className="text-zinc-400 text-xs font-semibold">Live process logs</Text>
+            <TouchableOpacity onPress={clearLog}>
+              <Text className="text-zinc-600 text-xs">Clear All Logs</Text>
+            </TouchableOpacity>
+          </View>
+          <View className="flex-row flex-wrap gap-2">
+            {(Object.keys(PROCESS_LABELS) as ProcessId[]).map((id) => (
+              <TouchableOpacity
+                key={id}
+                onPress={() => setSelectedProcessLog(id)}
+                className="rounded-md px-2.5 py-1.5 border"
+                style={{
+                  borderColor: selectedProcessLog === id ? '#3b82f6' : '#3f3f46',
+                  backgroundColor: selectedProcessLog === id ? '#1e3a8a55' : '#18181b',
+                }}
+              >
+                <Text
+                  className="text-[10px]"
+                  style={{ color: selectedProcessLog === id ? '#93c5fd' : '#a1a1aa' }}
+                >
+                  {PROCESS_LABELS[id]}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+        {(selectedProcessLogs.length > 0 || logLines.length > 0) && (
           <View className="mx-4 mt-3">
             <View className="flex-row justify-between items-center mb-1">
-              <Text className="text-zinc-500 text-xs font-semibold">Output Log</Text>
-              <TouchableOpacity onPress={clearLog}>
-                <Text className="text-zinc-600 text-xs">Clear</Text>
-              </TouchableOpacity>
+              <Text className="text-zinc-500 text-xs font-semibold">
+                {PROCESS_LABELS[selectedProcessLog]} console
+              </Text>
             </View>
             <View className="bg-zinc-950 rounded-lg border border-zinc-800 p-3">
-              {logLines.map((line, i) => (
+              {(selectedProcessLogs.length > 0 ? selectedProcessLogs : logLines).map((line, i) => (
                 <Text
                   key={i}
                   className="text-[11px] leading-4 font-mono"

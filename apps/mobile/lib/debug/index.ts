@@ -32,3 +32,17 @@ export {
 } from './queue-inspector';
 
 export { runVisionImageDescribeTest } from './vision-image-test';
+
+export {
+  PROCESS_LABELS,
+  formatDuration,
+  useDebugProcessMonitor,
+  useCapturedProcessLogs,
+  type ProcessId,
+  type ProcessState,
+} from './process-monitor';
+
+export {
+  getNotificationProcessSnapshot,
+  type NotificationProcessSnapshot,
+} from './notification-process-reader';
