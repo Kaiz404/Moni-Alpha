@@ -50,7 +50,12 @@ export default function SummaryScreen() {
   const colorScheme = useColorScheme();
   const { width, height } = useWindowDimensions();
   const isDark = colorScheme === 'dark';
-  const chartWidth = Math.max(width * 0.4, 280); // ensure a minimum width for charts on small devices
+  /** Full width inside ScrollView (p-16) + card (p-3 × 2). Charts were ~40% width and looked left-aligned. */
+  const chartWidth = useMemo(() => {
+    const scrollHorizontal = 32;
+    const cardHorizontal = 24;
+    return Math.max(width - scrollHorizontal - cardHorizontal, 260);
+  }, [width]);
   const hasSvgViewManager = useMemo(() => {
     if (Platform.OS !== 'android') return true;
     const getConfig = UIManager.getViewManagerConfig?.bind(UIManager);
@@ -66,7 +71,6 @@ export default function SummaryScreen() {
   const [wallets, setWallets] = useState<WalletItem[]>([]);
   const [categoryMap, setCategoryMap] = useState<Record<string, string>>({});
   const [selectedPin, setSelectedPin] = useState<TransactionPinPoint | null>(null);
-  const [chartLayout, setChartLayout] = useState<{ x: number; y: number; width: number; height: number } | null>(null);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -297,8 +301,8 @@ export default function SummaryScreen() {
         )}
       </View>
 
-      <View className="rounded-xl bg-gray-100 dark:bg-gray-800 p-3 mb-4">
-        <Text className="text-base font-semibold text-gray-900 dark:text-white mb-2">Expense Categories Contribution</Text>
+      <View className="rounded-xl bg-gray-100 dark:bg-gray-800 p-3 mb-4 items-center">
+        <Text className="text-base font-semibold text-gray-900 dark:text-white mb-2 self-stretch">Expense Categories Contribution</Text>
           <VictoryPie
             theme={chartTheme}
             width={chartWidth}
@@ -322,9 +326,9 @@ export default function SummaryScreen() {
           />
       </View>
 
-        <View className="rounded-xl bg-gray-100 dark:bg-gray-800 p-3 mb-4">
-          <Text className="text-base font-semibold text-gray-900 dark:text-white mb-2">Total Wallet Value Over Time</Text>
-          <View onLayout={(e) => setChartLayout(e.nativeEvent.layout)} style={{ position: 'relative' }}>
+        <View className="rounded-xl bg-gray-100 dark:bg-gray-800 p-3 mb-4 items-center">
+          <Text className="text-base font-semibold text-gray-900 dark:text-white mb-2 self-stretch">Total Wallet Value Over Time</Text>
+          <View style={{ position: 'relative', alignSelf: 'stretch' }}>
             {/* Use explicit padding so we can compute plot area offsets reliably */}
             <VictoryChart
               theme={chartTheme}
@@ -366,8 +370,8 @@ export default function SummaryScreen() {
           </View>
         </View>
 
-      <View className="rounded-xl bg-gray-100 dark:bg-gray-800 p-3">
-        <Text className="text-base font-semibold text-gray-900 dark:text-white mb-2"># of Transactions Involved</Text>
+      <View className="rounded-xl bg-gray-100 dark:bg-gray-800 p-3 items-center">
+        <Text className="text-base font-semibold text-gray-900 dark:text-white mb-2 self-stretch"># of Transactions Involved</Text>
         <VictoryChart
           theme={chartTheme}
           width={chartWidth}
@@ -380,7 +384,6 @@ export default function SummaryScreen() {
           domain={{ y: [0, Math.max(5, Math.ceil((usageBarData.reduce((m, d) => Math.max(m, d.y), 0) || 1) * 1.08))] }}
         >
           <VictoryAxis
-            label="Wallet"
             style={{
               // force tick labels to match wallet names and keep them readable on wide screens
               tickLabels: { fill: isDark ? '#d1d5db' : '#374151', fontSize: 11, angle: -25, padding: 12 },

@@ -347,7 +347,7 @@ export default function ChatScreen() {
         <TextInput
           className="flex-1 bg-gray-100 dark:bg-gray-800 rounded-2xl px-4 py-3 text-base text-gray-900 dark:text-white mr-2"
           style={{ maxHeight: 112 }}
-          placeholder="Describe a transaction, or attach a receipt..."
+          placeholder="Describe a transaction..."
           placeholderTextColor="#9CA3AF"
           value={input}
           onChangeText={setInput}

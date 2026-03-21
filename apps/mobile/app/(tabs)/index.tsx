@@ -1,16 +1,31 @@
-import { useCallback, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useMemo, useRef, useState, type ReactNode } from 'react';
 import {
   Alert,
   Dimensions,
+  Platform,
+  UIManager,
   View,
   Text,
   ScrollView,
   TouchableOpacity,
   RefreshControl,
+  useWindowDimensions,
 } from 'react-native';
-import { Link, router, useFocusEffect } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
+import {
+  VictoryAxis,
+  VictoryChart,
+  VictoryLegend,
+  VictoryLine,
+  VictoryPie,
+  VictoryScatter,
+  VictoryTheme,
+} from 'victory-native';
+
 import { useAuth } from '@/lib/auth/auth-context';
+import { useColorScheme } from '@/hooks/use-color-scheme';
 import { mmkvStorage } from '@/lib/storage/mmkv-storage';
+import { syncSystem } from '@/lib/powersync/Powersync';
 import { getWallets, deleteWallet } from '@/lib/supabase/wallets';
 import { getWalletBalances } from '@/lib/supabase/balances';
 import { getTransactions } from '@/lib/supabase/transactions';
@@ -19,6 +34,15 @@ import * as React from "react";
 import type { ICarouselInstance } from "react-native-reanimated-carousel";
 import Carousel from "react-native-reanimated-carousel";
 import Animated, { Extrapolation, interpolate, useAnimatedStyle, type SharedValue } from 'react-native-reanimated';
+
+type WalletTx = {
+  id: string;
+  walletId: string;
+  amount: number;
+  type: 'income' | 'expense' | 'transfer';
+  categoryId?: string | null;
+  transactionDate: string;
+};
 
 const MAIN_WALLET_KEY = 'main_wallet_id';
 
@@ -46,28 +70,107 @@ function CarouselItemDepth({
 
 export default function WalletsScreen() {
   const screenWidth = Dimensions.get('window').width;
+  const { width, height } = useWindowDimensions();
+  const colorScheme = useColorScheme();
+  const isDark = colorScheme === 'dark';
   const carouselItemWidth = Math.min(screenWidth - 56, 340);
+  const chartWidth = Math.max(width - 48, 280);
   const { user } = useAuth();
   const [wallets, setWallets] = useState<any[]>([]);
   const [balances, setBalances] = useState<Record<string, number>>({});
   const [transactions, setTransactions] = useState<any[]>([]);
+  const [walletChartTransactions, setWalletChartTransactions] = useState<WalletTx[]>([]);
+  const [categoryMap, setCategoryMap] = useState<Record<string, string>>({});
   const [refreshing, setRefreshing] = useState(false);
   const [mainWalletId, setMainWalletId] = useState<string | null>(null);
   const [activeWalletIndex, setActiveWalletIndex] = useState(0);
   const [expandedWalletId, setExpandedWalletId] = useState<string | null>(null);
-  const onViewableItemsChanged = useRef((info: any) => {
-    const first = info.viewableItems?.[0];
-    if (first?.index != null && first.index < wallets.length) {
-      setActiveWalletIndex(first.index);
-    }
-  }).current;
+
+  const hasSvgViewManager = useMemo(() => {
+    if (Platform.OS !== 'android') return true;
+    const getConfig = UIManager.getViewManagerConfig?.bind(UIManager);
+    if (!getConfig) return false;
+    return Boolean(getConfig('RNSVGRect') || getConfig('RCTRNSVGRect'));
+  }, []);
 
   const mainWallet = wallets.find((w) => w.id === mainWalletId) ?? wallets[0] ?? null;
 
+  const focusedWallet = useMemo(() => {
+    if (activeWalletIndex < 0 || activeWalletIndex >= wallets.length) return null;
+    return wallets[activeWalletIndex] ?? null;
+  }, [wallets, activeWalletIndex]);
+
+  const chartTheme = useMemo(() => VictoryTheme.material, []);
+  const pieColorScale = ['#0a7ea4', '#3b82f6', '#6366f1', '#8b5cf6', '#ec4899', '#f59e0b'];
+
+  const pieData = useMemo(() => {
+    const totals: Record<string, number> = {};
+    walletChartTransactions.forEach((tx) => {
+      if (tx.type !== 'expense') return;
+      const categoryName = tx.categoryId
+        ? categoryMap[tx.categoryId] ?? 'Uncategorized'
+        : 'Uncategorized';
+      totals[categoryName] = (totals[categoryName] ?? 0) + tx.amount;
+    });
+    const entries = Object.entries(totals)
+      .map(([x, y]) => ({ x, y }))
+      .sort((a, b) => b.y - a.y);
+    if (entries.length <= 6) return entries;
+    const top = entries.slice(0, 5);
+    const otherTotal = entries.slice(5).reduce((sum, c) => sum + c.y, 0);
+    return [...top, { x: 'Other', y: otherTotal }];
+  }, [walletChartTransactions, categoryMap]);
+
+  const walletBalanceLineData = useMemo(() => {
+    if (!focusedWallet) {
+      return [{ x: new Date(), y: 0 }];
+    }
+    const initial = Number(focusedWallet.initialBalance ?? 0);
+    const sorted = [...walletChartTransactions].sort(
+      (a, b) => new Date(a.transactionDate).getTime() - new Date(b.transactionDate).getTime()
+    );
+    if (!sorted.length) {
+      return [{ x: new Date(), y: initial }];
+    }
+    let running = initial;
+    const points: { x: Date; y: number }[] = [];
+    points.push({ x: new Date(sorted[0].transactionDate), y: Number(running.toFixed(2)) });
+    for (const tx of sorted) {
+      const delta = tx.type === 'income' ? tx.amount : -tx.amount;
+      running += delta;
+      points.push({ x: new Date(tx.transactionDate), y: Number(running.toFixed(2)) });
+    }
+    return points;
+  }, [focusedWallet, walletChartTransactions]);
+
+  const pieLegendData = useMemo(() => {
+    const total = pieData.reduce((s, p) => s + (p.y || 0), 0) || 1;
+    return (pieData.length ? pieData : [{ x: 'No expenses', y: 1 }]).slice(0, 6).map((item, index) => ({
+      name: `${item.x} (${Math.round((item.y / total) * 100)}%)`,
+      symbol: { fill: pieColorScale[index % pieColorScale.length] },
+    }));
+  }, [pieData]);
+
+  const pieHeight = useMemo(() => {
+    const base = Math.round(Math.min(420, Math.max(220, chartWidth * 0.66)));
+    return Math.min(base, Math.round(height * 0.48));
+  }, [chartWidth, height]);
+
+  const lineChartHeight = useMemo(() => {
+    const base = Math.round(Math.min(360, Math.max(200, chartWidth * 0.56)));
+    return Math.min(base, Math.round(height * 0.45));
+  }, [chartWidth, height]);
+
+  const pieInnerRadius = Math.max(36, Math.round(chartWidth * 0.12));
+
   const loadTransactionsForWallet = useCallback(async (walletId?: string | null) => {
     try {
-      const txData = await getTransactions(walletId ?? undefined, 5);
-      setTransactions(txData);
+      const [txRecent, txForCharts] = await Promise.all([
+        getTransactions(walletId ?? undefined, 5),
+        getTransactions(walletId ?? undefined, 2000),
+      ]);
+      setTransactions(txRecent);
+      setWalletChartTransactions(txForCharts as WalletTx[]);
     } catch (error) {
       console.error('Error loading transactions:', error);
     }
@@ -77,12 +180,21 @@ export default function WalletsScreen() {
     if (!user) return;
 
     try {
-      const [walletsData] = await Promise.all([
+      const [walletsData, categoryRows] = await Promise.all([
         getWallets(),
-        getWalletBalances([]),
+        syncSystem.db
+          .selectFrom('categories')
+          .select(['id', 'name'])
+          .where('is_active', '=', 1)
+          .execute(),
       ]);
       const walletList = walletsData || [];
       setWallets(walletList);
+      setCategoryMap(
+        Object.fromEntries(
+          categoryRows.map((row) => [row.id, row.name ?? 'Uncategorized'])
+        )
+      );
       const walletIds = walletList.map((w: any) => w.id);
       const balancesDataFiltered = await getWalletBalances(walletIds);
       setBalances(balancesDataFiltered);
@@ -168,7 +280,7 @@ export default function WalletsScreen() {
               className="rounded-3xl border border-dashed border-slate-300 bg-white/90 p-4 shadow-sm dark:border-slate-600 dark:bg-slate-800 relative"
             >
               <TouchableOpacity
-                onPress={() => router.push('/wallet/new' as any)}
+                onPress={() => router.push('/(routes)/wallet/new' as any)}
                 activeOpacity={0.85}
                 className="flex-1 items-center justify-center"
               >
@@ -292,105 +404,104 @@ export default function WalletsScreen() {
 
   return (
     <View className="flex-1 bg-white dark:bg-gray-900 pt-5">
-      <View className="px-4 pt-4 pb-2 flex-1 flex-row items-center justify-between">
-        <View className="flex-row items-center space-x-2">
-          <View className="w-9 h-9 rounded-xl bg-slate-200 dark:bg-slate-700 items-center justify-center">
-            <Text className="text-base text-slate-700 dark:text-slate-100 font-bold">{mainWallet?.icon ?? 'W'}</Text>
-          </View>
-          <Text className="text-2xl ml-3 font-bold text-gray-900 dark:text-white">Wallets</Text>
-        </View>
-        <PowerSyncStatusIndicator />
-      </View>
-      <View
-        id="carousel-component"
-        className="top-8"
+      <ScrollView
+        nestedScrollEnabled
+        className="flex-1"
+        contentContainerStyle={{ paddingBottom: 0, flexGrow: 1 }}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
-        {wallets.length ? (
-          <Carousel
-            ref={ref}
-            autoPlayInterval={2000}
-            data={[...wallets, { id: 'add', name: 'Add Wallet', type: 'Action', icon: '+', color: '#10b981' }]}
-            loop={true}
-            pagingEnabled={true}
-            snapEnabled={true}
-            width={carouselItemWidth}
-            height={240}
-            style={{
-              width: screenWidth,
-              height: 240,
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-            mode={"parallax"}
-            modeConfig={{
-              parallaxScrollingScale: 0.96,
-              parallaxScrollingOffset: 36,
-              parallaxAdjacentItemScale: 0.86,
-            }}
-            onSnapToItem={(index) => {
-              if (index < wallets.length) {
-                setActiveWalletIndex(index);
-                loadTransactionsForWallet(wallets[index]?.id ?? null);
-              }
-            }}
-            renderItem={renderWalletCarouselItem}
-          />
-        ) : (
-          <Carousel
-            ref={ref}
-            autoPlayInterval={2000}
-            data={[{ id: 'add', name: 'Add Wallet', type: 'Action', icon: '+', color: '#10b981' }]}
-            loop={true}
-            pagingEnabled={true}
-            snapEnabled={true}
-            width={carouselItemWidth}
-            height={240}
-            style={{
-              width: screenWidth,
-              height: 240,
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-            mode={"parallax"}
-            modeConfig={{
-              parallaxScrollingScale: 0.96,
-              parallaxScrollingOffset: 36,
-              parallaxAdjacentItemScale: 0.86,
-            }}
-            renderItem={renderWalletCarouselItem}
-          />
-        )}
-      </View>
-      
-      <View className="mt-5 mb-2 flex-row flex-1 items-center justify-center space-x-2">
-        {Array.from({ length: wallets.length }, (_, index) => {
-          const isActive = index === activeWalletIndex;
-          return (
-            <TouchableOpacity
-              key={`wallet-dot-${index}`}
-              onPress={() => {
-                setActiveWalletIndex(index);
-                loadTransactionsForWallet(wallets[index]?.id ?? null);
-                ref.current?.scrollTo({ index, animated: true });
-              }}
-              className={`h-2 ml-1 ${isActive ? 'w-6 bg-[#8494FF]' : 'w-2 bg-slate-300 dark:bg-slate-500'} rounded-full `}
-            />
-          );
-        })}
-      </View>
-      
-      <View className="bg-[#6367FF]/70 dark:bg-[#2a2d5c]/95 flex-12 rounded-t-2xl">
-        <View className='flex-row justify-between relative'>
-          <View className="h-15 w-12 left-12 rounded-b-4xl border-l-4 border-r-4 border-b-4 border-[#EDEDED] dark:border-slate-700 bg-[#9EADFF] dark:bg-[#4a5080] bottom-1"/>
-          <View className="h-15 w-12 right-12 rounded-b-4xl border-l-4 border-r-4 border-b-4 border-[#EDEDED] dark:border-slate-700 bg-[#9EADFF] dark:bg-[#4a5080] bottom-1"/>
+        <View className="px-4 pt-4 pb-2 flex-row items-center justify-between">
+          <View className="flex-row items-center space-x-2">
+            <View className="w-9 h-9 rounded-xl bg-slate-200 dark:bg-slate-700 items-center justify-center">
+              <Text className="text-base text-slate-700 dark:text-slate-100 font-bold">{mainWallet?.icon ?? 'W'}</Text>
+            </View>
+            <Text className="text-2xl ml-3 font-bold text-gray-900 dark:text-white">Wallets</Text>
+          </View>
+          <PowerSyncStatusIndicator />
         </View>
 
-        <ScrollView
-          contentContainerStyle={{ paddingBottom: 36 }}
-          className="bg-[#FAFAFA]/80 dark:bg-gray-950/95 mt-1 rounded-t-2xl"
-          style={{ flex: 1 }}
-        >
-          <View className="px-4 pt-6">
+        <View id="carousel-component" className="top-8">
+          {wallets.length ? (
+            <Carousel
+              ref={ref}
+              autoPlayInterval={2000}
+              data={[...wallets, { id: 'add', name: 'Add Wallet', type: 'Action', icon: '+', color: '#10b981' }]}
+              loop={true}
+              pagingEnabled={true}
+              snapEnabled={true}
+              width={carouselItemWidth}
+              height={240}
+              style={{
+                width: screenWidth,
+                height: 240,
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+              mode={'parallax'}
+              modeConfig={{
+                parallaxScrollingScale: 0.96,
+                parallaxScrollingOffset: 36,
+                parallaxAdjacentItemScale: 0.86,
+              }}
+              onSnapToItem={(index) => {
+                if (index < wallets.length) {
+                  setActiveWalletIndex(index);
+                  loadTransactionsForWallet(wallets[index]?.id ?? null);
+                }
+              }}
+              renderItem={renderWalletCarouselItem}
+            />
+          ) : (
+            <Carousel
+              ref={ref}
+              autoPlayInterval={2000}
+              data={[{ id: 'add', name: 'Add Wallet', type: 'Action', icon: '+', color: '#10b981' }]}
+              loop={true}
+              pagingEnabled={true}
+              snapEnabled={true}
+              width={carouselItemWidth}
+              height={240}
+              style={{
+                width: screenWidth,
+                height: 240,
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+              mode={'parallax'}
+              modeConfig={{
+                parallaxScrollingScale: 0.96,
+                parallaxScrollingOffset: 36,
+                parallaxAdjacentItemScale: 0.86,
+              }}
+              renderItem={renderWalletCarouselItem}
+            />
+          )}
+        </View>
+
+        <View className="mt-5 mb-2 flex-row items-center justify-center space-x-2">
+          {Array.from({ length: wallets.length }, (_, index) => {
+            const isActive = index === activeWalletIndex;
+            return (
+              <TouchableOpacity
+                key={`wallet-dot-${index}`}
+                onPress={() => {
+                  setActiveWalletIndex(index);
+                  loadTransactionsForWallet(wallets[index]?.id ?? null);
+                  ref.current?.scrollTo({ index, animated: true });
+                }}
+                className={`h-2 ml-1 ${isActive ? 'w-6 bg-[#8494FF]' : 'w-2 bg-slate-300 dark:bg-slate-500'} rounded-full `}
+              />
+            );
+          })}
+        </View>
+
+        <View className="bg-[#6367FF]/70 dark:bg-[#2a2d5c]/95 rounded-t-2xl mt-1">
+          <View className="flex-row justify-between relative">
+            <View className="h-15 w-12 left-12 rounded-b-4xl border-l-4 border-r-4 border-b-4 border-[#EDEDED] dark:border-slate-700 bg-[#9EADFF] dark:bg-[#4a5080] bottom-1" />
+            <View className="h-15 w-12 right-12 rounded-b-4xl border-l-4 border-r-4 border-b-4 border-[#EDEDED] dark:border-slate-700 bg-[#9EADFF] dark:bg-[#4a5080] bottom-1" />
+          </View>
+
+          <View className="bg-[#FAFAFA]/80 dark:bg-gray-950/95 mt-1 rounded-t-2xl px-4 pt-6 pb-8">
             <Text className="mb-2 text-sm font-semibold text-slate-700 dark:text-slate-100">Recent Transactions</Text>
             {transactions.map((item) => (
               <View
@@ -398,8 +509,11 @@ export default function WalletsScreen() {
                 className="mb-2 rounded-xl border border-slate-300 bg-white p-3 shadow-sm dark:border-slate-700 dark:bg-slate-800"
               >
                 <View className="flex-row items-baseline gap-1">
-                  <Text className={`text-base font-semibold ${item.type === 'income' ? 'text-green-600 dark:text-green-400' : 'text-red-500 dark:text-red-400'}`}>
-                    {item.type === 'income' ? '+' : '-'}{item.amount.toFixed(2)}
+                  <Text
+                    className={`text-base font-semibold ${item.type === 'income' ? 'text-green-600 dark:text-green-400' : 'text-red-500 dark:text-red-400'}`}
+                  >
+                    {item.type === 'income' ? '+' : '-'}
+                    {item.amount.toFixed(2)}
                   </Text>
                   <Text className="text-xs text-slate-500 dark:text-slate-400">
                     {wallets[activeWalletIndex]?.currency ?? 'USD'}
@@ -421,31 +535,89 @@ export default function WalletsScreen() {
               </View>
             ) : null}
 
-            <View className="mt-6">
-              <View className="bg-[#8494FF] dark:bg-[#4f54c4] rounded-xl h-50 items-center justify-center px-3">
-                <Text className="text-sm text-white/80">
-                  some chart idk
+            {focusedWallet && hasSvgViewManager ? (
+              <>
+                <View className="mt-6 rounded-xl bg-gray-100 dark:bg-gray-800 p-3">
+                  <Text className="text-base font-semibold text-gray-900 dark:text-white mb-2">
+                    Expense categories ({focusedWallet.name})
+                  </Text>
+                  <VictoryPie
+                    theme={chartTheme}
+                    width={chartWidth}
+                    height={pieHeight}
+                    data={pieData.length ? pieData : [{ x: 'No expenses', y: 1 }]}
+                    colorScale={pieColorScale}
+                    innerRadius={pieInnerRadius}
+                    padAngle={2}
+                    labels={() => ''}
+                    style={{
+                      labels: { fill: isDark ? '#f3f4f6' : '#111827', fontSize: 10, padding: 4 },
+                    }}
+                  />
+                  <VictoryLegend
+                    width={chartWidth}
+                    height={78}
+                    orientation="horizontal"
+                    gutter={12}
+                    itemsPerRow={2}
+                    data={pieLegendData}
+                    style={{ labels: { fill: isDark ? '#d1d5db' : '#374151', fontSize: 11 } }}
+                  />
+                </View>
+
+                <View className="mt-6 rounded-xl bg-gray-100 dark:bg-gray-800 p-3 mb-2">
+                  <Text className="text-base font-semibold text-gray-900 dark:text-white mb-2">
+                    Balance over time ({focusedWallet.name})
+                  </Text>
+                  <VictoryChart
+                    theme={chartTheme}
+                    width={chartWidth}
+                    height={lineChartHeight}
+                    padding={{ top: 10, bottom: 50, left: Math.max(56, Math.round(width * 0.06)), right: 20 }}
+                    scale={{ x: 'time', y: 'linear' }}
+                    domainPadding={{ x: 8, y: 12 }}
+                  >
+                    <VictoryAxis
+                      label="Date"
+                      tickFormat={(tick) => `${new Date(tick).getMonth() + 1}/${new Date(tick).getDate()}`}
+                      style={{
+                        tickLabels: { fill: isDark ? '#d1d5db' : '#374151', fontSize: 10 },
+                        axisLabel: { fill: isDark ? '#d1d5db' : '#374151', fontSize: 11, padding: 28 },
+                      }}
+                    />
+                    <VictoryAxis
+                      dependentAxis
+                      label={`Balance (${focusedWallet.currency ?? 'USD'})`}
+                      tickFormat={(tick) => `${Number(tick).toFixed(0)}`}
+                      style={{
+                        tickLabels: { fill: isDark ? '#d1d5db' : '#374151', fontSize: 10 },
+                        axisLabel: { fill: isDark ? '#d1d5db' : '#374151', fontSize: 11, padding: 56 },
+                      }}
+                    />
+                    <VictoryLine
+                      data={walletBalanceLineData}
+                      style={{ data: { stroke: '#0a7ea4', strokeWidth: 3 } }}
+                    />
+                    <VictoryScatter
+                      data={walletBalanceLineData}
+                      size={4}
+                      style={{ data: { fill: '#0a7ea4' } }}
+                    />
+                  </VictoryChart>
+                </View>
+              </>
+            ) : null}
+
+            {focusedWallet && !hasSvgViewManager ? (
+              <View className="mt-6 rounded-xl border border-slate-300 bg-white p-4 dark:border-slate-600 dark:bg-slate-800">
+                <Text className="text-sm text-slate-600 dark:text-slate-300">
+                  Charts need native SVG support. Reinstall the dev client after dependency changes (react-native-svg).
                 </Text>
               </View>
-            </View>
-            <View className="mt-6">
-              <View className="bg-[#8494FF] dark:bg-[#4f54c4] rounded-xl h-50 items-center justify-center px-3">
-                <Text className="text-sm text-white/80">
-                  some chart idk
-                </Text>
-              </View>
-            </View>
-            <View className="mt-6">
-              <View className="bg-[#8494FF] dark:bg-[#4f54c4] rounded-xl h-50 items-center justify-center px-3">
-                <Text className="text-sm text-white/80">
-                  some chart idk
-                </Text>
-              </View>
-            </View>
+            ) : null}
           </View>
-        </ScrollView>
-      </View>
-      
+        </View>
+      </ScrollView>
     </View>
   );
 }
