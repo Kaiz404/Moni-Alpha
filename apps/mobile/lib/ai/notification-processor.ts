@@ -13,9 +13,9 @@ import {
   getModelPath,
   downloadModel,
 } from '@react-native-ai/llama';
-import { generateText } from 'ai';
+import { generateObject } from 'ai';
 import { z } from 'zod';
-import { CHAT_MODEL_ID } from '@/hooks/use-llama-model';
+import { MAIN_MODEL_ID } from '@/lib/ai/model-manager';
 import type { CreateProposedTransaction } from '@repo/types';
 
 // ─── Model IDs ────────────────────────────────────────────────────────────────
@@ -76,13 +76,13 @@ export async function getOrLoadNotificationModel(): Promise<LoadedModel | null> 
   }
 }
 
-/** Load the chat model (already downloaded for the AI Chat tab) as a fallback. */
+/** Load the main model (already downloaded for the AI Chat tab) as a fallback. */
 export async function getOrLoadChatModelFallback(): Promise<LoadedModel | null> {
   try {
-    const downloaded = await isModelDownloaded(CHAT_MODEL_ID);
+    const downloaded = await isModelDownloaded(MAIN_MODEL_ID);
     if (!downloaded) return null;
 
-    const path = getModelPath(CHAT_MODEL_ID);
+    const path = getModelPath(MAIN_MODEL_ID);
     const model = llama.languageModel(path, {
       contextParams: { n_ctx: 2048, n_gpu_layers: 99 },
     });
@@ -185,7 +185,7 @@ Workflow rules (mandatory):
 `;
 
 const MONEY_PATTERN =
-  /(?:[$€£¥₦₹₩₪₱฿₫₲₴₵₸₽₾R])\s*[\d,]+(?:[.,]\d{1,2})?|[\d,]+(?:[.,]\d{1,2})?\s*(?:USD|EUR|GBP|NGN|ZAR|KES|GHS|UGX|TZS|MYR|SGD|AUD|CAD|CHF|JPY|CNY|INR|BRL|MXN|AED|SAR|QAR|KWD|OMR|BHD)\b/i;
+  /(?:[$€£¥₦₹₩₪₱฿₫₲₴₵₸₽₾R])\s*[\d,]+(?:[.,]\d{1,2})?|[\d,]+(?:[.,]\d{1,2})?\s*(?:USD|EUR|GBP|NGN|ZAR|KES|GHS|UGX|TZS|MYR|RM|SGD|AUD|CAD|CHF|JPY|CNY|INR|BRL|MXN|AED|SAR|QAR|KWD|OMR|BHD)\b/i;
 
 const BANK_WALLET_APP_PATTERN =
   /\b(bank|wallet|pay|payments|upi|momo|mobile money|mpesa|paypal|venmo|cash app|revolut|wise|chime|monzo|opay|kuda|palmpay|moniepoint|branch|stanchart|gtbank|access bank|uba|zenith)\b/i;
@@ -235,7 +235,10 @@ export function buildPotentialTransaction(
       : inferTypeFromText(combined);
 
   return {
+    sourceType: 'notification',
     sourceApp: notification.app ?? null,
+    sourceText: null,
+    sourceImageUri: null,
     notificationTitle: notification.title ?? null,
     notificationBody: notification.bigText || notification.text || null,
     notificationReceivedAt: notification.receivedAt ?? null,
@@ -282,7 +285,6 @@ const notificationSchema = z.discriminatedUnion('is_transaction', [
 export async function analyzeNotification(
   notification: RawNotification,
   model: LoadedModel,
-  generateFn: typeof generateText = generateText,
   onDebug?: (debugEvent: NotificationAnalysisDebugEvent) => void,
 ): Promise<NotificationAnalysisResult | null> {
   try {
@@ -328,8 +330,9 @@ export async function analyzeNotification(
       },
     });
 
-    const result = await generateFn({
+    const { object } = await generateObject({
       model,
+      schema: notificationSchema,
       system: TRANSACTION_DETECTION_SYSTEM_PROMPT,
       prompt: [
         'Analyze this Android push notification and classify whether it is a real transaction.',
@@ -339,14 +342,8 @@ export async function analyzeNotification(
         `Title: ${title}`,
         `Body: ${body}`,
         `Time: ${notification.time || notification.receivedAt}`,
-        '',
-        'Respond strictly as JSON that matches the provided schema.',
       ].join('\n'),
-      output: 'json',
-      schema: notificationSchema,
-    } as any);
-
-    const object = (result as any).object as z.infer<typeof notificationSchema>;
+    });
 
     if (!object || typeof object.is_transaction !== 'boolean') {
       onDebug?.({

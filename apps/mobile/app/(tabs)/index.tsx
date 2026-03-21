@@ -78,7 +78,7 @@ export default function WalletsScreen() {
     async (walletId: string) => {
       Alert.alert(
         'Delete wallet',
-        'This will permanently delete the wallet and its local transactions. Continue?',
+        'This will permanently delete this wallet and all related transactions. This cannot be undone. Continue?',
         [
           { text: 'Cancel', style: 'cancel' },
           {

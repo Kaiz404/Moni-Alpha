@@ -2,13 +2,17 @@ import { z } from 'zod';
 import { transactionTypeSchema } from './transaction';
 
 export const proposedTransactionStatusSchema = z.enum(['pending', 'approved', 'rejected']);
+export const proposedTransactionSourceTypeSchema = z.enum(['notification', 'text', 'image']);
 
 export const proposedTransactionSchema = z.object({
   id: z.string().uuid(),
   userId: z.string().uuid(),
 
-  // Source notification metadata
+  // Source metadata
+  sourceType: proposedTransactionSourceTypeSchema,
   sourceApp: z.string().nullable(),
+  sourceText: z.string().nullable(),
+  sourceImageUri: z.string().nullable(),
   notificationTitle: z.string().nullable(),
   notificationBody: z.string().nullable(),
   notificationReceivedAt: z.string().datetime().nullable(),
@@ -42,6 +46,7 @@ export const createProposedTransactionSchema = proposedTransactionSchema.omit({
   updatedAt: true,
 });
 
+export type ProposedTransactionSourceType = z.infer<typeof proposedTransactionSourceTypeSchema>;
 export type ProposedTransactionStatus = z.infer<typeof proposedTransactionStatusSchema>;
 export type ProposedTransaction = z.infer<typeof proposedTransactionSchema>;
 export type CreateProposedTransaction = z.infer<typeof createProposedTransactionSchema>;

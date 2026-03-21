@@ -149,6 +149,16 @@ supabase db dump -f backup.sql
 psql -h db.xxx.supabase.co -p 5432 -U postgres -d postgres -f backup.sql
 ```
 
+## Storage (receipt images)
+
+The mobile app uploads receipt images to a Storage bucket named **`receipts`** (path: `{userId}/{proposalId}.jpg`).
+
+If you see **`Bucket not found`** in logs, apply the migration that creates the bucket and policies:
+
+- `migrations/20260323000000_storage_receipts_bucket.sql`
+
+Or in **Dashboard → Storage → New bucket**, create `receipts` (public read optional; policies in the migration restrict access by `auth.uid()` prefix).
+
 ## Next Steps
 
 1. Configure API keys in apps
@@ -156,3 +166,4 @@ psql -h db.xxx.supabase.co -p 5432 -U postgres -d postgres -f backup.sql
 3. Create first wallet via web/mobile app
 4. Verify RLS policies work
 5. Test sync functionality
+6. Apply storage migration if using receipt image uploads from mobile

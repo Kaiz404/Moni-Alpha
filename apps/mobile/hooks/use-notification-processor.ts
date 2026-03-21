@@ -1,26 +1,18 @@
 /**
- * Drains the `pending_ai_queue` MMKV list (filled by the headless notification
- * task) by running each notification through the on-device AI and saving
- * any detected transactions as ProposedTransactions in PowerSync.
+ * Hook for the Notifications tab.
  *
- * Processing is intentionally lazy — it runs when the user opens the
- * Notifications tab — so it never competes with foreground UI work.
+ * Notifications now go through the unified processing queue and background
+ * processor. This hook provides status information and a trigger to start
+ * processing any pending notification items.
  */
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { AppState } from 'react-native';
-import { createMMKV } from 'react-native-mmkv';
+import { getPendingCount, getAll } from '@/lib/ai/processing-queue';
+import { areModelsDownloaded, downloadModels } from '@/lib/ai/model-manager';
 import {
-  downloadNotificationModel,
-  getOrLoadChatModelFallback,
-  getOrLoadNotificationModel,
-  isNotificationModelDownloaded,
-  NOTIFICATION_MODEL_ID,
-  type RawNotification,
-} from '@/lib/ai/notification-processor';
-import { runNotificationOrchestration } from '@/lib/ai/notification-orchestrator';
-
-const PENDING_AI_KEY = 'pending_ai_queue';
-const notificationStorage = createMMKV({ id: 'moni-notifications' });
+  startBackgroundProcessor,
+  isBackgroundProcessorRunning,
+} from '@/lib/ai/background-processor';
 
 export type ProcessorModelStatus =
   | 'idle'
@@ -29,128 +21,71 @@ export type ProcessorModelStatus =
   | 'ready'
   | 'unavailable';
 
-function readPendingQueue(): RawNotification[] {
-  try {
-    const raw = notificationStorage.getString(PENDING_AI_KEY);
-    return raw ? JSON.parse(raw) : [];
-  } catch {
-    return [];
-  }
-}
-
-function clearPendingQueue() {
-  notificationStorage.remove(PENDING_AI_KEY);
-}
-
-function removeProcessed(processedIds: Set<string>) {
-  const remaining = readPendingQueue().filter((n) => !processedIds.has(n.id));
-  notificationStorage.set(PENDING_AI_KEY, JSON.stringify(remaining));
-}
-
 export function useNotificationProcessor() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [pendingCount, setPendingCount] = useState(0);
   const [processedCount, setProcessedCount] = useState(0);
   const [modelStatus, setModelStatus] = useState<ProcessorModelStatus>('idle');
   const [downloadProgress, setDownloadProgress] = useState(0);
-  const processingRef = useRef(false);
 
   const refreshPendingCount = useCallback(() => {
-    setPendingCount(readPendingQueue().length);
+    const notifPending = getAll().filter(
+      (i) => i.type === 'notification' && (i.status === 'pending' || i.status === 'processing'),
+    ).length;
+    setPendingCount(notifPending);
+
+    const notifDone = getAll().filter(
+      (i) => i.type === 'notification' && i.status === 'done',
+    ).length;
+    setProcessedCount(notifDone);
   }, []);
 
   const checkModelStatus = useCallback(async () => {
-    const downloaded = await isNotificationModelDownloaded();
-    setModelStatus(downloaded ? 'ready' : 'not-downloaded');
-    return downloaded;
+    const { main } = await areModelsDownloaded();
+    setModelStatus(main ? 'ready' : 'not-downloaded');
+    return main;
   }, []);
 
   const downloadModel = useCallback(async () => {
     setModelStatus('downloading');
     setDownloadProgress(0);
     try {
-      await downloadNotificationModel((pct) => setDownloadProgress(pct));
+      await downloadModels((p) => {
+        const combined = Math.round((p.mainPct * 0.85) + (p.mmProjPct * 0.15));
+        setDownloadProgress(combined);
+      });
       setModelStatus('ready');
     } catch {
       setModelStatus('not-downloaded');
     }
   }, []);
 
-  /**
-   * Process every item in the pending queue.
-   * Tries notification model first; falls back to chat model.
-   */
   const processQueue = useCallback(async () => {
-    if (processingRef.current) return;
+    if (isBackgroundProcessorRunning()) {
+      setIsProcessing(true);
+      return;
+    }
 
-    const queue = readPendingQueue();
-    if (queue.length === 0) {
+    const pending = getPendingCount();
+    if (pending === 0) {
       setPendingCount(0);
       return;
     }
 
-    processingRef.current = true;
     setIsProcessing(true);
-    setPendingCount(queue.length);
-
     try {
-      // Resolve model — prefer small notification model, fall back to chat model
-      let model = await getOrLoadNotificationModel();
-      if (!model) {
-        model = await getOrLoadChatModelFallback();
-      }
-      if (!model) {
-        setModelStatus('unavailable');
-        return;
-      }
-
-      const processedIds = new Set<string>();
-      let newProposals = 0;
-
-      for (const notification of queue) {
-        try {
-          const result = await runNotificationOrchestration(model, notification, {
-            trace: (event) => {
-              const details = event.details ? JSON.stringify(event.details) : '';
-              console.log(
-                '[Processor/Trace]',
-                `${event.stage}.${event.event}`,
-                details,
-              );
-            },
-          });
-          if (result.created) {
-            newProposals++;
-          } else {
-            console.log('[Processor] Notification skipped:', result.reason);
-          }
-
-          processedIds.add(notification.id);
-        } catch {
-          // Skip this notification and continue with the rest
-        }
-      }
-
-      removeProcessed(processedIds);
-      setProcessedCount((c) => c + processedIds.size);
-      setPendingCount(readPendingQueue().length);
-
-      if (newProposals > 0) {
-        console.log(`[Processor] Created ${newProposals} transaction proposal(s)`);
-      }
+      await startBackgroundProcessor();
     } finally {
-      processingRef.current = false;
       setIsProcessing(false);
+      refreshPendingCount();
     }
-  }, []);
+  }, [refreshPendingCount]);
 
-  // Check model status and pending count on mount
   useEffect(() => {
     checkModelStatus();
     refreshPendingCount();
   }, [checkModelStatus, refreshPendingCount]);
 
-  // Re-check when app comes back to foreground
   useEffect(() => {
     const sub = AppState.addEventListener('change', (state) => {
       if (state === 'active') {
@@ -166,11 +101,11 @@ export function useNotificationProcessor() {
     processedCount,
     modelStatus,
     downloadProgress,
-    notificationModelId: NOTIFICATION_MODEL_ID,
+    notificationModelId: 'unified-queue',
     processQueue,
     downloadModel,
     checkModelStatus,
     refreshPendingCount,
-    clearPendingQueue,
+    clearPendingQueue: () => {},
   };
 }

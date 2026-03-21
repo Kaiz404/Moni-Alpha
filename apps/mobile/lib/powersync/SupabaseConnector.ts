@@ -8,14 +8,16 @@ const powersyncUrl = process.env.EXPO_PUBLIC_POWERSYNC_URL! as string;
 
 /// Postgres Response codes that we cannot recover from by retrying.
 const FATAL_RESPONSE_CODES = [
-  // Class 22 — Data Exception
-  // Examples include data type mismatch.
+  // Class 22 — Data Exception (data type mismatch, etc.)
   new RegExp('^22...$'),
-  // Class 23 — Integrity Constraint Violation.
-  // Examples include NOT NULL, FOREIGN KEY and UNIQUE violations.
+  // Class 23 — Integrity Constraint Violation (NOT NULL, FK, UNIQUE)
   new RegExp('^23...$'),
-  // INSUFFICIENT PRIVILEGE - typically a row-level security violation
-  new RegExp('^42501$')
+  // INSUFFICIENT PRIVILEGE — row-level security violation
+  new RegExp('^42501$'),
+  // PostgREST PGRST204 — column/relationship not found in schema cache.
+  // This is a schema mismatch (local SQLite schema is ahead of Postgres),
+  // not a transient network error, so retrying endlessly won't help.
+  new RegExp('^PGRST2'),
 ];
 
 export class SupabaseConnector implements PowerSyncBackendConnector {

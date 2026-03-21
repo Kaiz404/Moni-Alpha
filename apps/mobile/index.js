@@ -13,16 +13,17 @@ if (Platform.OS === 'android') {
   void RNAndroidNotificationListener;
 
   const notificationStorage = createMMKV({ id: 'moni-notifications' });
+  const processingStorage = createMMKV({ id: 'moni-processing' });
 
   const ALL_NOTIFICATIONS_KEY = 'captured_notifications';
-  const PENDING_AI_KEY = 'pending_ai_queue';
+  const UNIFIED_QUEUE_KEY = 'unified_processing_queue';
   const MAX_STORED = 100;
 
-  function appendToList(key, item, max) {
-    const existing = notificationStorage.getString(key);
+  function appendToList(storage, key, item, max) {
+    const existing = storage.getString(key);
     const list = existing ? JSON.parse(existing) : [];
     list.unshift(item);
-    notificationStorage.set(key, JSON.stringify(list.slice(0, max)));
+    storage.set(key, JSON.stringify(list.slice(0, max)));
   }
 
   const headlessNotificationListener = async ({ notification }) => {
@@ -36,12 +37,19 @@ if (Platform.OS === 'android') {
         receivedAt: new Date().toISOString(),
       };
 
-      // Always store in the full notifications list
-      appendToList(ALL_NOTIFICATIONS_KEY, enriched, MAX_STORED);
+      // Always store in the full notifications list for the UI
+      appendToList(notificationStorage, ALL_NOTIFICATIONS_KEY, enriched, MAX_STORED);
 
-      // Queue only likely real bank/wallet transaction notifications for AI analysis
+      // Queue notifications that pass the prefilter into the unified processing queue
       if (passesNotificationTransactionPrefilter(parsed)) {
-        appendToList(PENDING_AI_KEY, enriched, MAX_STORED);
+        const queueItem = {
+          id: enriched.id,
+          type: 'notification',
+          notification: enriched,
+          createdAt: enriched.receivedAt,
+          status: 'pending',
+        };
+        appendToList(processingStorage, UNIFIED_QUEUE_KEY, queueItem, MAX_STORED);
       }
     } catch {
       // Malformed notification payload — silently ignore

@@ -120,6 +120,17 @@ export async function updateWallet(id: string, data: Partial<CreateWallet>) {
 export async function deleteWallet(id: string) {
   const { db } = syncSystem;
 
+  // Remove all transactions related to this wallet first so the wallet delete
+  // doesn't violate FK constraints during remote sync.
+  await db
+    .deleteFrom('transactions')
+    .where((eb) =>
+      eb.or([
+        eb('wallet_id', '=', id),
+      ])
+    )
+    .execute();
+
   await db
     .deleteFrom('wallets')
     .where('id', '=', id)

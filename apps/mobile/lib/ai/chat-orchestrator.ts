@@ -1,4 +1,4 @@
-import { generateText } from 'ai';
+import { generateObject } from 'ai';
 import { z } from 'zod';
 
 export type ChatIntent = 'WALLET_QUERY' | 'SEND_FUNDS' | 'OTHER';
@@ -46,24 +46,21 @@ export async function routeChatIntentSubAgent(
   });
 
   try {
-    const result = await generateText({
+    const { object } = await generateObject({
       model,
+      schema: chatRouteSchema,
       system: CHAT_ROUTER_SYSTEM_PROMPT,
       prompt: `User input: ${userInput}`,
-      output: 'json',
-      schema: chatRouteSchema,
       temperature: 0,
-      maxTokens: 64,
-    } as any);
+    });
 
-    const parsed = (result as any).object as z.infer<typeof chatRouteSchema>;
     emit(trace, {
       stage: 'router',
       event: 'decision',
-      details: { intent: parsed.intent, reason: parsed.reason },
+      details: { intent: object.intent, reason: object.reason },
     });
 
-    return { intent: parsed.intent, reason: parsed.reason };
+    return { intent: object.intent, reason: object.reason };
   } catch (error) {
     emit(trace, {
       stage: 'router',

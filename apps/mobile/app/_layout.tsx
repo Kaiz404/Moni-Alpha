@@ -13,8 +13,11 @@ import { QueryProvider } from "@/lib/query/query-client";
 import { AuthProvider } from "@/lib/auth/auth-context";
 import { AuthGuard } from "@/components/auth-guard";
 import { PowersyncProvider } from "@/lib/powersync/PowersyncProvider";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
+import { AppState } from "react-native";
 import { syncSystem } from "@/lib/powersync/Powersync";
+import { ProposalReviewModal } from "@/components/proposal-review-modal";
+import { drainImageUploadQueue } from "@/lib/storage/image-upload-queue";
 
 import '../polyfills'
 
@@ -24,10 +27,23 @@ export const unstable_settings = {
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
-
+  const appState = useRef(AppState.currentState);
 
   useEffect(() => {
     syncSystem.init();
+  }, []);
+
+  // Drain pending image uploads whenever the app comes to foreground
+  useEffect(() => {
+    drainImageUploadQueue().catch(() => {});
+
+    const sub = AppState.addEventListener("change", (nextState) => {
+      if (appState.current.match(/inactive|background/) && nextState === "active") {
+        drainImageUploadQueue().catch(() => {});
+      }
+      appState.current = nextState;
+    });
+    return () => sub.remove();
   }, []);
 
   return (
@@ -44,6 +60,7 @@ export default function RootLayout() {
                   options={{ presentation: "modal", title: "Modal", headerShown: false }}
                 />
               </Stack>
+              <ProposalReviewModal />
             </AuthGuard>
           </AuthProvider>
           <StatusBar style="auto" />

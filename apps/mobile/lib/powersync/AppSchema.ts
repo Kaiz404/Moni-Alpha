@@ -96,8 +96,11 @@ const transaction_tags = new Table(
 const proposed_transactions = new Table(
   {
     user_id: column.text,
-    // Source notification
+    // Source metadata
+    source_type: column.text,
     source_app: column.text,
+    source_text: column.text,
+    source_image_uri: column.text,
     notification_title: column.text,
     notification_body: column.text,
     notification_received_at: column.text,

@@ -9,86 +9,69 @@ import {
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
+  ActionSheetIOS,
   Alert,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { randomUUID } from 'expo-crypto';
-import { streamText } from 'ai';
-import { ExpoSpeechRecognitionModule, useSpeechRecognitionEvent } from 'expo-speech-recognition';
+import * as ImagePicker from 'expo-image-picker';
+import {
+  ExpoSpeechRecognitionModule,
+  useSpeechRecognitionEvent,
+} from 'expo-speech-recognition';
 
 import { useLlamaModel } from '@/hooks/use-llama-model';
-import {
-  createFinanceTools,
-  type PendingTransaction,
-  type WalletPickRequest,
-  type WalletSeed,
-  type CategorySeed,
-} from '@/lib/ai/tools';
-import { buildFinanceSystemPrompt } from '@/lib/ai/system-prompt';
-import { routeChatIntentSubAgent } from '@/lib/ai/chat-orchestrator';
-import { createTransaction } from '@/lib/supabase/transactions';
-import { getWallets } from '@/lib/supabase/wallets';
-import { getCategories } from '@/lib/supabase/categories';
+import { enqueue, getAll, pruneCompleted, type ProcessingQueueItem } from '@/lib/ai/processing-queue';
+import { saveImageLocally } from '@/lib/storage/image-storage';
+import { enqueueImageUpload } from '@/lib/storage/image-upload-queue';
+import { startBackgroundProcessor } from '@/lib/ai/background-processor';
+import { syncSystem } from '@/lib/powersync/Powersync';
 
 const TAG = '[Moni/Chat]';
-const today = new Date().toISOString().split('T')[0];
 
-// ─── Message types ────────────────────────────────────────────────────────────
+// ─── Types ───────────────────────────────────────────────────────────────────
 
-type UserMessage = {
+type SubmissionEntry = {
   id: string;
-  role: 'user';
-  content: string;
+  type: 'text' | 'image';
+  text?: string;
+  imageUri?: string;
+  status: 'queued' | 'processing' | 'done' | 'error';
+  createdAt: string;
 };
 
-type AssistantMessage = {
-  id: string;
-  role: 'assistant';
-  content: string;
-  isStreaming?: boolean;
-};
-
-type ConfirmationMessage = {
-  id: string;
-  role: 'confirmation';
-  transaction: PendingTransaction;
-  status: 'pending' | 'confirmed' | 'cancelled';
-};
-
-type WalletPickerMessage = {
-  id: string;
-  role: 'wallet-picker';
-  request: WalletPickRequest;
-  status: 'pending' | 'selected';
-};
-
-type DisplayMessage = UserMessage | AssistantMessage | ConfirmationMessage | WalletPickerMessage;
-
-type AiHistoryMessage = {
-  role: 'user' | 'assistant';
-  content: string;
-};
-
-// ─── Main screen ──────────────────────────────────────────────────────────────
+// ─── Main screen ─────────────────────────────────────────────────────────────
 
 export default function ChatScreen() {
-  const { model, status, downloadProgress, error, downloadAndPrepare } =
-    useLlamaModel();
+  const { status, downloadProgress, error, downloadAndPrepare } = useLlamaModel();
 
-  const [messages, setMessages] = useState<DisplayMessage[]>([]);
-  const [aiHistory, setAiHistory] = useState<AiHistoryMessage[]>([]);
   const [input, setInput] = useState('');
+  const [attachedImage, setAttachedImage] = useState<string | null>(null);
   const [isSending, setIsSending] = useState(false);
   const [isSpeechRecognizing, setIsSpeechRecognizing] = useState(false);
-  const [wallets, setWallets] = useState<WalletSeed[]>([]);
-  const [categories, setCategories] = useState<CategorySeed[]>([]);
+  const [submissions, setSubmissions] = useState<SubmissionEntry[]>([]);
 
   const flatListRef = useRef<FlatList>(null);
-  const isReady = status === 'ready';
-
-  // Used to prefill the user's current draft when starting speech-to-text,
-  // so interim/final results append to whatever they typed before.
   const speechBaseRef = useRef('');
   const speechActiveRef = useRef(false);
+  const isReady = status === 'ready';
+
+  // Load existing queue items on mount
+  useEffect(() => {
+    const items = getAll();
+    setSubmissions(
+      items.map((item) => ({
+        id: item.id,
+        type: item.type === 'notification' ? 'text' : item.type,
+        text: item.type === 'text' ? item.text : item.type === 'image' ? item.userContext : undefined,
+        imageUri: item.type === 'image' ? item.imageUri : undefined,
+        status: item.status === 'pending' || item.status === 'processing' ? 'queued' : item.status,
+        createdAt: item.createdAt,
+      })),
+    );
+  }, []);
+
+  // ── Speech recognition ─────────────────────────────────────────────────────
 
   useSpeechRecognitionEvent('start', () => {
     speechActiveRef.current = true;
@@ -100,8 +83,7 @@ export default function ChatScreen() {
     setIsSpeechRecognizing(false);
   });
 
-  useSpeechRecognitionEvent('error', (event: any) => {
-    console.warn(TAG, 'Speech recognition error:', event?.error, event?.message);
+  useSpeechRecognitionEvent('error', () => {
     speechActiveRef.current = false;
     setIsSpeechRecognizing(false);
   });
@@ -110,72 +92,30 @@ export default function ChatScreen() {
     const transcript: string = event?.results?.[0]?.transcript ?? '';
     const text = transcript.trim();
     if (!text) return;
-
     const base = speechBaseRef.current ?? '';
     const prefix = base.trim().length ? `${base.trimEnd()} ` : '';
     setInput(prefix + text);
   });
 
-  const loadContextData = useCallback(async () => {
-    try {
-      const [ws, cats] = await Promise.all([
-        getWallets(),
-        getCategories(),
-      ]);
-      setWallets(
-        ws.map((w) => ({
-          id: w.id,
-          name: w.name ?? 'Wallet',
-          type: w.type ?? 'other',
-          currency: w.currency ?? 'MYR',
-          balance: w.currentBalance ?? w.initialBalance ?? 0,
-        })),
-      );
-      setCategories(
-        cats.map((c) => ({
-          id: c.id,
-          name: c.name ?? 'Other',
-          type: c.type ?? 'expense',
-        })),
-      );
-    } catch (e) {
-      console.warn(TAG, 'loadContextData failed (non-fatal):', e);
-    }
-  }, []);
-
-  // Load wallets + categories once model is ready
-  useEffect(() => {
-    if (status === 'ready') {
-      loadContextData();
-    }
-  }, [status, loadContextData]);
-
-  // ── Speech-to-text (hold-to-talk) ──────────────────────────────────────────
-
   const startSpeech = useCallback(async () => {
-    if (!isReady || isSending) return;
-    if (speechActiveRef.current) return;
-
+    if (!isReady || isSending || speechActiveRef.current) return;
     try {
       const perms = await ExpoSpeechRecognitionModule.getPermissionsAsync();
       if (!perms.granted) {
         const req = await ExpoSpeechRecognitionModule.requestPermissionsAsync();
         if (!req.granted) return;
       }
-
       speechBaseRef.current = input;
       speechActiveRef.current = true;
-      setIsSpeechRecognizing(true); // updated again by native 'start' event
-
+      setIsSpeechRecognizing(true);
       ExpoSpeechRecognitionModule.start({
         lang: 'en-US',
         interimResults: true,
         continuous: false,
       });
-    } catch (e) {
+    } catch {
       speechActiveRef.current = false;
       setIsSpeechRecognizing(false);
-      console.warn(TAG, 'Failed to start speech recognition:', e);
     }
   }, [input, isReady, isSending]);
 
@@ -184,417 +124,148 @@ export default function ChatScreen() {
     speechActiveRef.current = false;
     try {
       ExpoSpeechRecognitionModule.stop();
-    } catch (e) {
+    } catch {
       setIsSpeechRecognizing(false);
-      console.warn(TAG, 'Failed to stop speech recognition:', e);
     }
   }, []);
 
-  // ── Send handler ────────────────────────────────────────────────────────────
+  // ── Image picker ───────────────────────────────────────────────────────────
+
+  const pickImage = useCallback(async (source: 'camera' | 'library') => {
+    try {
+      if (source === 'camera') {
+        const perm = await ImagePicker.requestCameraPermissionsAsync();
+        if (!perm.granted) {
+          Alert.alert('Permission needed', 'Camera permission is required to take photos.');
+          return;
+        }
+      }
+
+      const result = source === 'camera'
+        ? await ImagePicker.launchCameraAsync({
+            mediaTypes: ['images'],
+            quality: 0.8,
+          })
+        : await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: ['images'],
+            quality: 0.8,
+          });
+
+      if (!result.canceled && result.assets[0]) {
+        setAttachedImage(result.assets[0].uri);
+      }
+    } catch (e) {
+      console.warn(TAG, 'Image picker error:', e);
+    }
+  }, []);
+
+  const showImageOptions = useCallback(() => {
+    if (Platform.OS === 'ios') {
+      ActionSheetIOS.showActionSheetWithOptions(
+        {
+          options: ['Cancel', 'Take Photo', 'Choose from Gallery'],
+          cancelButtonIndex: 0,
+        },
+        (buttonIndex) => {
+          if (buttonIndex === 1) pickImage('camera');
+          if (buttonIndex === 2) pickImage('library');
+        },
+      );
+    } else {
+      Alert.alert('Attach Image', 'Choose an option', [
+        { text: 'Take Photo', onPress: () => pickImage('camera') },
+        { text: 'Choose from Gallery', onPress: () => pickImage('library') },
+        { text: 'Cancel', style: 'cancel' },
+      ]);
+    }
+  }, [pickImage]);
+
+  // ── Submit handler ─────────────────────────────────────────────────────────
 
   const handleSend = useCallback(async () => {
     const text = input.trim();
-    if (!text || !model || isSending) return;
+    const hasImage = !!attachedImage;
+    if (!text && !hasImage) return;
+    if (isSending) return;
 
-    console.log(TAG, '── handleSend ──────────────────────────');
-    console.log(TAG, 'user input:', text);
-
-    setInput('');
     setIsSending(true);
-
-    // Refresh wallet/category data so the system prompt is always up to date
-    let currentWallets = wallets;
-    let currentCategories = categories;
-    try {
-      const [ws, cats] = await Promise.all([getWallets(), getCategories()]);
-      currentWallets = ws.map((w) => ({
-        id: w.id,
-        name: w.name ?? 'Wallet',
-        type: w.type ?? 'other',
-        currency: w.currency ?? 'MYR',
-        balance: w.currentBalance ?? w.initialBalance ?? 0,
-      }));
-      currentCategories = cats.map((c) => ({
-        id: c.id,
-        name: c.name ?? 'Other',
-        type: c.type ?? 'expense',
-      }));
-      setWallets(currentWallets);
-      setCategories(currentCategories);
-    } catch (e) {
-      console.warn(TAG, 'data refresh failed, using cached:', e);
-    }
-
-    const systemPrompt = buildFinanceSystemPrompt(currentWallets, currentCategories);
-
-    const userMsg: UserMessage = { id: randomUUID(), role: 'user', content: text };
-    const assistantId = randomUUID();
-    const assistantMsg: AssistantMessage = {
-      id: assistantId,
-      role: 'assistant',
-      content: '',
-      isStreaming: true,
-    };
-
-    setMessages((prev) => [...prev, userMsg, assistantMsg]);
-
-    const currentMessages: any[] = [
-      ...aiHistory,
-      { role: 'user', content: text },
-    ];
-
-    // Track whether create_transaction was called during this turn.
-    // If it was, we suppress the assistant text bubble (the card is confirmation enough).
-    let transactionProposed = false;
-
-    const trace = (stage: string, event: string, details?: Record<string, unknown>) => {
-      console.log(TAG, `[Trace] ${stage}.${event}`, details ? JSON.stringify(details) : '');
-    };
-
-    const routerDecision = await routeChatIntentSubAgent(
-      model,
-      text,
-      ({ stage, event, details }) => trace(stage, event, details as Record<string, unknown> | undefined),
-    );
-    const shouldEnableFinanceTools = routerDecision.intent !== 'OTHER';
-    trace('router', 'selected', {
-      intent: routerDecision.intent,
-      reason: routerDecision.reason,
-      shouldEnableFinanceTools,
-    });
-
-    // Tools are created fresh per request so the closure captures the current
-    // setMessages without needing an additional ref.
-    const tools = shouldEnableFinanceTools
-      ? createFinanceTools(
-          currentWallets,
-          (tx: PendingTransaction) => {
-            transactionProposed = true;
-            console.log(TAG, 'onPropose fired → inserting confirmation card');
-            const confirmMsg: ConfirmationMessage = {
-              id: randomUUID(),
-              role: 'confirmation',
-              transaction: tx,
-              status: 'pending',
-            };
-            setMessages((prev) => {
-              const assistantIdx = prev.findIndex((m) => m.id === assistantId);
-              if (assistantIdx === -1) return [...prev, confirmMsg];
-              const next = [...prev];
-              next.splice(assistantIdx, 0, confirmMsg);
-              return next;
-            });
-          },
-          (req: WalletPickRequest) => {
-            console.log(TAG, 'onPickWallet fired → inserting wallet picker card');
-            const pickerMsg: WalletPickerMessage = {
-              id: randomUUID(),
-              role: 'wallet-picker',
-              request: req,
-              status: 'pending',
-            };
-            setMessages((prev) => {
-              const assistantIdx = prev.findIndex((m) => m.id === assistantId);
-              if (assistantIdx === -1) return [...prev, pickerMsg];
-              const next = [...prev];
-              next.splice(assistantIdx, 0, pickerMsg);
-              return next;
-            });
-          },
-        )
-      : undefined;
+    const id = randomUUID();
+    const now = new Date().toISOString();
 
     try {
-      const MAX_STEPS = 6;
-      let fullText = '';
-      let deltaCount = 0;
-      let loggedTextDeltaKeys = false;
-      let loggedToolCallKeys = false;
-      let loggedToolResultKeys = false;
+      let queueItem: ProcessingQueueItem;
+      let entry: SubmissionEntry;
 
-      for (let step = 1; step <= MAX_STEPS; step++) {
-        console.log(TAG, `\n─── agentic step ${step}/${MAX_STEPS} ──────────────`);
-        console.log(TAG, `messages going in: ${currentMessages.length}`);
+      if (hasImage) {
+        // Save image to persistent storage
+        const localUri = await saveImageLocally(attachedImage!);
 
-        const stepToolCalls: any[] = [];
-        const stepToolResults: any[] = [];
-        let stepFinishReason = 'stop';
-
-        const streamParams: any = {
-          model,
-          system: systemPrompt,
-          messages: currentMessages,
+        queueItem = {
+          id,
+          type: 'image',
+          imageUri: localUri,
+          userContext: text || undefined,
+          createdAt: now,
+          status: 'pending',
         };
-        if (tools) {
-          streamParams.tools = tools;
-        }
 
-        trace('executor', 'step.start', {
-          step,
-          maxSteps: MAX_STEPS,
-          toolMode: tools ? 'enabled' : 'disabled',
-        });
+        entry = {
+          id,
+          type: 'image',
+          text: text || undefined,
+          imageUri: localUri,
+          status: 'queued',
+          createdAt: now,
+        };
 
-        const result = streamText(streamParams as any);
-
-        for await (const part of (result as any).fullStream) {
-          switch (part.type) {
-            case 'text-delta': {
-              const delta: string = part.textDelta ?? part.delta ?? part.text ?? '';
-              if (!loggedTextDeltaKeys) {
-                console.log(TAG, 'text-delta keys:', Object.keys(part), '→ value:', JSON.stringify(delta));
-                loggedTextDeltaKeys = true;
-              }
-              // If transaction was already proposed, discard follow-up text
-              if (!transactionProposed) {
-                fullText += delta;
-                deltaCount++;
-                setMessages((prev) =>
-                  prev.map((m) =>
-                    m.id === assistantId
-                      ? ({ ...m, content: fullText } as AssistantMessage)
-                      : m,
-                  ),
-                );
-              }
-              break;
-            }
-
-            case 'tool-call': {
-              if (!loggedToolCallKeys) {
-                console.log(TAG, 'tool-call keys:', Object.keys(part));
-                console.log(TAG, 'tool-call full:', JSON.stringify(part));
-                loggedToolCallKeys = true;
-              }
-              const name = part.toolName ?? part.name ?? '?';
-              const args = part.args ?? part.input ?? part.parameters ?? {};
-              console.log(TAG, `🔧 tool-call: ${name}`, JSON.stringify(args));
-              trace('tool-runner', 'tool-call', { step, name });
-              stepToolCalls.push(part);
-              break;
-            }
-
-            case 'tool-result': {
-              if (!loggedToolResultKeys) {
-                console.log(TAG, 'tool-result keys:', Object.keys(part));
-                console.log(TAG, 'tool-result full (truncated):', JSON.stringify(part).slice(0, 400));
-                loggedToolResultKeys = true;
-              }
-              const resolved = part.result ?? part.output ?? part.toolResult ?? part.content;
-              const name = part.toolName ?? part.name ?? '?';
-              console.log(
-                TAG,
-                `✅ tool-result: ${name}`,
-                Array.isArray(resolved)
-                  ? `(${resolved.length} items)`
-                  : JSON.stringify(resolved)?.slice(0, 150),
-              );
-              trace('tool-runner', 'tool-result', {
-                step,
-                name,
-                hasArrayResult: Array.isArray(resolved),
-              });
-              stepToolResults.push({ ...part, _resolved: resolved });
-              break;
-            }
-
-            case 'finish-step':
-            case 'step-finish':
-              stepFinishReason = part.finishReason ?? stepFinishReason;
-              console.log(TAG, `■ step-finish: ${part.finishReason}`);
-              break;
-
-            case 'finish':
-              if (stepFinishReason !== 'tool-calls') {
-                stepFinishReason = part.finishReason ?? stepFinishReason;
-              }
-              console.log(TAG, `🏁 finish: ${part.finishReason}`, JSON.stringify(part.usage ?? {}));
-              break;
-
-            case 'error':
-              console.error(TAG, '❌ stream error event:', part.error);
-              break;
-
-            case 'start':
-            case 'step-start':
-            case 'start-step':
-              break;
-
-            default:
-              console.log(TAG, `other event: ${part.type}`);
-          }
-        }
-
-        console.log(TAG, `step ${step} done – finish: "${stepFinishReason}", text so far: ${fullText.length} chars, toolCalls: ${stepToolCalls.length}`);
-        trace('executor', 'step.finish', {
-          step,
-          finishReason: stepFinishReason,
-          toolCalls: stepToolCalls.length,
-          textChars: fullText.length,
-        });
-
-        if (transactionProposed) {
-          console.log(TAG, 'transaction proposed — ending agentic loop');
-          break;
-        }
-
-        if (stepFinishReason !== 'tool-calls' || stepToolCalls.length === 0) {
-          break;
-        }
-
-        // Build history for next step
-        let appendedViaResponse = false;
+        // Queue the image for Supabase upload (async, best-effort)
         try {
-          const response = await (result as any).response;
-          const responseMessages: any[] = response?.messages ?? [];
-          if (responseMessages.length > 0) {
-            console.log(TAG, `appending ${responseMessages.length} messages from result.response`);
-            currentMessages.push(...responseMessages);
-            appendedViaResponse = true;
+          const userId = await syncSystem.supabaseConnector.getUserId();
+          if (userId) {
+            enqueueImageUpload({ proposalId: id, localUri, userId });
           }
         } catch {
-          // result.response unavailable in this SDK build
+          // Upload queue failure is non-critical
         }
-
-        if (!appendedViaResponse) {
-          const getId = (p: any, i: number) =>
-            p.toolCallId ?? p.id ?? p.toolUseId ?? `call-${step}-${i}`;
-          const getName = (p: any) => p.toolName ?? p.name ?? 'tool';
-          const toolCallParts = stepToolCalls.map((tc, i) => ({
-            type: 'tool-call' as const,
-            toolCallId: getId(tc, i),
-            toolName: getName(tc),
-            args: tc.args ?? tc.input ?? tc.parameters ?? {},
-          }));
-          const toolResultParts = stepToolResults.map((tr, i) => ({
-            type: 'tool-result' as const,
-            toolCallId: getId(tr, i),
-            toolName: getName(tr),
-            result: tr._resolved,
-          }));
-
-          console.log(TAG, 'manually appending tool-call + tool-result messages');
-          currentMessages.push(
-            { role: 'assistant', content: toolCallParts },
-            { role: 'tool', content: toolResultParts },
-          );
-        }
-      }
-
-      console.log(TAG, `all steps done – ${deltaCount} deltas, ${fullText.length} chars`);
-
-      // Remove the assistant bubble if transaction was proposed (card replaces it)
-      // or if there was no text generated at all
-      if (transactionProposed || fullText.trim() === '') {
-        setMessages((prev) => prev.filter((m) => m.id !== assistantId));
       } else {
-        setMessages((prev) =>
-          prev.map((m) =>
-            m.id === assistantId
-              ? ({ ...m, isStreaming: false } as AssistantMessage)
-              : m,
-          ),
-        );
+        queueItem = {
+          id,
+          type: 'text',
+          text,
+          createdAt: now,
+          status: 'pending',
+        };
+
+        entry = {
+          id,
+          type: 'text',
+          text,
+          status: 'queued',
+          createdAt: now,
+        };
       }
 
-      // Persist text-only history for future turns (skip if we just did a tool-only turn)
-      setAiHistory([
-        ...aiHistory,
-        { role: 'user', content: text },
-        ...(fullText.trim() && !transactionProposed
-          ? [{ role: 'assistant' as const, content: fullText }]
-          : []),
-      ]);
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-      console.error(TAG, '❌ handleSend caught error:', msg, err);
-      setMessages((prev) =>
-        prev.map((m) =>
-          m.id === assistantId
-            ? ({ ...m, content: `Error: ${msg}`, isStreaming: false } as AssistantMessage)
-            : m,
-        ),
+      // Enqueue for processing
+      enqueue(queueItem);
+      setSubmissions((prev) => [entry, ...prev]);
+
+      // Clear inputs
+      setInput('');
+      setAttachedImage(null);
+
+      // Start background processing
+      startBackgroundProcessor().catch((e) =>
+        console.warn(TAG, 'Background processor start failed:', e),
       );
+    } catch (e) {
+      console.error(TAG, 'Send failed:', e);
+      Alert.alert('Error', 'Failed to queue your input. Please try again.');
     } finally {
       setIsSending(false);
-      console.log(TAG, '── handleSend done ─────────────────────');
     }
-  }, [input, model, isSending, aiHistory, wallets, categories]);
+  }, [input, attachedImage, isSending]);
 
-  // ── Confirmation handlers ───────────────────────────────────────────────────
-
-  const handleConfirm = useCallback(
-    async (msgId: string, transaction: PendingTransaction) => {
-      console.log(TAG, 'handleConfirm – saving transaction:', JSON.stringify(transaction, null, 2));
-      try {
-        const saved = await createTransaction({
-          walletId: transaction.walletId,
-          amount: transaction.amount,
-          type: transaction.type,
-          merchant: transaction.merchant,
-          description: transaction.description,
-          categoryId: transaction.categoryId,
-          transactionDate: transaction.transactionDate,
-        });
-        console.log(TAG, '✅ transaction saved, id:', saved.id);
-        setMessages((prev) =>
-          prev.map((m) =>
-            m.id === msgId ? ({ ...m, status: 'confirmed' } as ConfirmationMessage) : m,
-          ),
-        );
-      } catch (err) {
-        console.error(TAG, '❌ createTransaction failed:', err);
-        Alert.alert('Error', 'Failed to save the transaction. Please try again.');
-      }
-    },
-    [],
-  );
-
-  const handleCancel = useCallback((msgId: string) => {
-    setMessages((prev) =>
-      prev.map((m) =>
-        m.id === msgId ? ({ ...m, status: 'cancelled' } as ConfirmationMessage) : m,
-      ),
-    );
-  }, []);
-
-  const handleWalletPick = useCallback(
-    async (msgId: string, walletId: string, walletName: string, req: WalletPickRequest) => {
-      setMessages((prev) =>
-        prev.map((m) =>
-          m.id === msgId ? ({ ...m, status: 'selected' } as WalletPickerMessage) : m,
-        ),
-      );
-
-      const tx: PendingTransaction = {
-        walletId,
-        walletName,
-        amount: req.pendingData.amount,
-        type: req.pendingData.type,
-        description: req.pendingData.description ?? null,
-        merchant: req.pendingData.merchant ?? null,
-        categoryId: req.pendingData.categoryId ?? null,
-        transactionDate: req.pendingData.transactionDate ?? new Date().toISOString(),
-      };
-
-      const confirmMsg: ConfirmationMessage = {
-        id: randomUUID(),
-        role: 'confirmation',
-        transaction: tx,
-        status: 'pending',
-      };
-
-      setMessages((prev) => {
-        const pickerIdx = prev.findIndex((m) => m.id === msgId);
-        const next = [...prev];
-        next.splice(pickerIdx + 1, 0, confirmMsg);
-        return next;
-      });
-    },
-    [],
-  );
-
-  // ── Render ──────────────────────────────────────────────────────────────────
+  // ── Model setup screens ────────────────────────────────────────────────────
 
   if (
     status === 'not-downloaded' ||
@@ -616,6 +287,10 @@ export default function ChatScreen() {
     return <ModelErrorScreen error={error} onRetry={downloadAndPrepare} />;
   }
 
+  // ── Main UI ────────────────────────────────────────────────────────────────
+
+  const hasInput = input.trim().length > 0 || !!attachedImage;
+
   return (
     <KeyboardAvoidingView
       className="flex-1 bg-white dark:bg-gray-900"
@@ -623,437 +298,144 @@ export default function ChatScreen() {
     >
       <FlatList
         ref={flatListRef}
-        data={messages}
+        data={submissions}
         keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <MessageItem
-            message={item}
-            onConfirm={handleConfirm}
-            onCancel={handleCancel}
-            onWalletPick={handleWalletPick}
-          />
-        )}
+        renderItem={({ item }) => <SubmissionCard entry={item} />}
         contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 16, paddingBottom: 8 }}
-        onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
-        onLayout={() => flatListRef.current?.scrollToEnd({ animated: false })}
         ListEmptyComponent={<EmptyState />}
+        inverted={submissions.length > 0}
       />
 
+      {/* Image preview */}
+      {attachedImage && (
+        <View className="px-4 pb-2">
+          <View className="flex-row items-center bg-gray-100 dark:bg-gray-800 rounded-xl p-2">
+            <Image
+              source={{ uri: attachedImage }}
+              style={{ width: 56, height: 56, borderRadius: 8 }}
+              contentFit="cover"
+            />
+            <Text className="flex-1 text-gray-600 dark:text-gray-400 text-sm ml-3" numberOfLines={1}>
+              Receipt attached
+            </Text>
+            <Pressable
+              onPress={() => setAttachedImage(null)}
+              className="w-8 h-8 items-center justify-center"
+            >
+              <Text className="text-gray-400 text-lg">x</Text>
+            </Pressable>
+          </View>
+        </View>
+      )}
+
+      {/* Input bar */}
       <View className="flex-row items-end px-4 py-3 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
+        {/* Image picker */}
+        <Pressable
+          className="w-11 h-11 rounded-full items-center justify-center bg-gray-100 dark:bg-gray-800 mr-2"
+          onPress={showImageOptions}
+          disabled={isSending}
+        >
+          <Text className="text-lg">📷</Text>
+        </Pressable>
+
+        {/* Text input */}
         <TextInput
           className="flex-1 bg-gray-100 dark:bg-gray-800 rounded-2xl px-4 py-3 text-base text-gray-900 dark:text-white mr-2"
           style={{ maxHeight: 112 }}
-          placeholder="Message Moni…"
+          placeholder="Describe a transaction, or attach a receipt..."
           placeholderTextColor="#9CA3AF"
           value={input}
           onChangeText={setInput}
           multiline
-          editable={isReady && !isSending && !isSpeechRecognizing}
+          editable={!isSending && !isSpeechRecognizing}
           returnKeyType="send"
           blurOnSubmit
           onSubmitEditing={handleSend}
         />
-        <View className="flex-row items-end gap-2">
-          <Pressable
-            className={`w-11 h-11 rounded-full items-center justify-center ${
-              isSpeechRecognizing ? 'bg-red-600' : 'bg-gray-300 dark:bg-gray-600'
-            }`}
-            onPressIn={startSpeech}
-            onPressOut={stopSpeech}
-            disabled={!isReady || isSending}
-            accessibilityRole="button"
-            accessibilityLabel={isSpeechRecognizing ? 'Listening' : 'Hold to speak'}
-          >
-            <Text className={`${isSpeechRecognizing ? 'text-white' : 'text-gray-900 dark:text-white'} text-lg font-bold`}>
-              🎙️
-            </Text>
-          </Pressable>
 
-          <TouchableOpacity
-            className={`w-11 h-11 rounded-full items-center justify-center ${
-              isReady && input.trim() && !isSending && !isSpeechRecognizing
-            ? 'bg-blue-600'
-            : 'bg-gray-300 dark:bg-gray-600'
-            }`}
-            onPress={handleSend}
-            disabled={!isReady || !input.trim() || isSending || isSpeechRecognizing}
-            activeOpacity={0.7}
-          >
-            {isSending ? (
-              <ActivityIndicator size="small" color="white" />
-            ) : (
-              <Text className="text-white text-lg font-bold">↑</Text>
-            )}
-          </TouchableOpacity>
-        </View>
+        {/* Voice button */}
+        <Pressable
+          className={`w-11 h-11 rounded-full items-center justify-center mr-2 ${
+            isSpeechRecognizing ? 'bg-red-600' : 'bg-gray-100 dark:bg-gray-800'
+          }`}
+          onPressIn={startSpeech}
+          onPressOut={stopSpeech}
+          disabled={isSending}
+          accessibilityLabel={isSpeechRecognizing ? 'Listening' : 'Hold to speak'}
+        >
+          <Text className={`${isSpeechRecognizing ? 'text-white' : 'text-gray-900 dark:text-white'} text-lg`}>
+            🎤
+          </Text>
+        </Pressable>
+
+        {/* Send button */}
+        <TouchableOpacity
+          className={`w-11 h-11 rounded-full items-center justify-center ${
+            hasInput && !isSending ? 'bg-blue-600' : 'bg-gray-300 dark:bg-gray-600'
+          }`}
+          onPress={handleSend}
+          disabled={!hasInput || isSending || isSpeechRecognizing}
+          activeOpacity={0.7}
+        >
+          {isSending ? (
+            <ActivityIndicator size="small" color="white" />
+          ) : (
+            <Text className="text-white text-lg font-bold">↑</Text>
+          )}
+        </TouchableOpacity>
       </View>
     </KeyboardAvoidingView>
   );
 }
 
-// ─── Sub-components ────────────────────────────────────────────────────────────
+// ─── Sub-components ──────────────────────────────────────────────────────────
 
-function MessageItem({
-  message,
-  onConfirm,
-  onCancel,
-  onWalletPick,
-}: {
-  message: DisplayMessage;
-  onConfirm: (id: string, tx: PendingTransaction) => void;
-  onCancel: (id: string) => void;
-  onWalletPick: (msgId: string, walletId: string, walletName: string, req: WalletPickRequest) => void;
-}) {
-  if (message.role === 'confirmation') {
-    return (
-      <ConfirmationCard
-        message={message}
-        onConfirm={(editedTx) => onConfirm(message.id, editedTx)}
-        onCancel={() => onCancel(message.id)}
-      />
-    );
-  }
+function SubmissionCard({ entry }: { entry: SubmissionEntry }) {
+  const statusConfig = {
+    queued: { label: 'Queued', color: 'bg-amber-100 dark:bg-amber-900', textColor: 'text-amber-700 dark:text-amber-300', icon: '⏳' },
+    processing: { label: 'Processing', color: 'bg-blue-100 dark:bg-blue-900', textColor: 'text-blue-700 dark:text-blue-300', icon: '⚙️' },
+    done: { label: 'Done', color: 'bg-green-100 dark:bg-green-900', textColor: 'text-green-700 dark:text-green-300', icon: '✓' },
+    error: { label: 'Error', color: 'bg-red-100 dark:bg-red-900', textColor: 'text-red-700 dark:text-red-300', icon: '!' },
+  }[entry.status];
 
-  if (message.role === 'wallet-picker') {
-    return (
-      <WalletPickerCard
-        message={message}
-        onPick={(walletId, walletName) =>
-          onWalletPick(message.id, walletId, walletName, message.request)
-        }
-      />
-    );
-  }
+  const isNew = Date.now() - new Date(entry.createdAt).getTime() < 5000;
 
-  const isUser = message.role === 'user';
   return (
-    <View className={`flex-row mb-3 ${isUser ? 'justify-end' : 'justify-start'}`}>
-      {!isUser && (
-        <View className="w-8 h-8 rounded-full bg-blue-600 items-center justify-center mr-2 mt-0.5">
-          <Text className="text-white text-xs font-bold">M</Text>
-        </View>
-      )}
-      <View
-        className={`rounded-2xl px-4 py-3 ${
-          isUser
-            ? 'bg-blue-600 rounded-tr-sm'
-            : 'bg-gray-100 dark:bg-gray-800 rounded-tl-sm'
-        }`}
-        style={{ maxWidth: '78%' }}
-      >
-        <Text
-          className={`text-base leading-6 ${
-            isUser ? 'text-white' : 'text-gray-900 dark:text-white'
-          }`}
-        >
-          {message.content}
-        </Text>
-        {message.role === 'assistant' && message.isStreaming && (
-          <View className="flex-row items-center mt-1.5">
-            <View className="w-1.5 h-1.5 rounded-full bg-gray-400 mr-1 opacity-60" />
-            <View className="w-1.5 h-1.5 rounded-full bg-gray-400 mr-1 opacity-80" />
-            <View className="w-1.5 h-1.5 rounded-full bg-gray-400 opacity-100" />
+    <View className={`mb-3 ${isNew ? 'opacity-100' : 'opacity-90'}`}>
+      <View className="bg-gray-50 dark:bg-gray-800 rounded-2xl p-4">
+        <View className="flex-row items-center mb-2">
+          <Text className="text-sm mr-2">{entry.type === 'image' ? '📷' : '💬'}</Text>
+          <Text className="flex-1 text-gray-900 dark:text-white font-medium text-sm" numberOfLines={1}>
+            {entry.text || (entry.type === 'image' ? 'Receipt image' : 'Text input')}
+          </Text>
+          <View className={`px-2 py-0.5 rounded-full flex-row items-center ${statusConfig.color}`}>
+            <Text className={`text-xs font-medium ${statusConfig.textColor}`}>
+              {statusConfig.icon} {statusConfig.label}
+            </Text>
           </View>
+        </View>
+
+        {entry.imageUri && (
+          <Image
+            source={{ uri: entry.imageUri }}
+            style={{ width: '100%', height: 120, borderRadius: 8, marginBottom: 8 }}
+            contentFit="cover"
+          />
         )}
-      </View>
-    </View>
-  );
-}
 
-function WalletPickerCard({
-  message,
-  onPick,
-}: {
-  message: WalletPickerMessage;
-  onPick: (walletId: string, walletName: string) => void;
-}) {
-  const { request, status } = message;
-  const walletTypeIcon: Record<string, string> = {
-    bank: '🏦',
-    cash: '💵',
-    credit: '💳',
-    debit: '💳',
-    ewallet: '📱',
-    investment: '📈',
-    other: '👛',
-  };
-
-  if (status === 'selected') {
-    return (
-      <View className="mb-4 mt-1 mx-2">
-        <View className="bg-gray-100 dark:bg-gray-800 rounded-2xl px-4 py-3 flex-row items-center">
-          <Text className="text-gray-400 dark:text-gray-500 text-sm">Wallet selected ✓</Text>
-        </View>
-      </View>
-    );
-  }
-
-  return (
-    <View className="mb-4 mt-1">
-      <View className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-2xl p-4 mx-2">
-        <View className="flex-row items-center mb-3">
-          <Text className="text-xl mr-2">👛</Text>
-          <Text className="font-semibold text-gray-900 dark:text-white text-base flex-1">
-            {request.prompt}
+        {entry.status === 'queued' && (
+          <Text className="text-gray-500 dark:text-gray-400 text-xs">
+            Processing in background — you can close the app.
           </Text>
-        </View>
-        <View>
-          {request.wallets.map((w) => (
-            <TouchableOpacity
-              key={w.id}
-              className="flex-row items-center bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3 mb-2 active:opacity-70"
-              onPress={() => onPick(w.id, w.name)}
-              activeOpacity={0.7}
-            >
-              <Text className="text-xl mr-3">{walletTypeIcon[w.type] ?? '👛'}</Text>
-              <View className="flex-1">
-                <Text className="text-gray-900 dark:text-white font-medium text-sm">
-                  {w.name}
-                </Text>
-                <Text className="text-gray-400 dark:text-gray-500 text-xs capitalize">
-                  {w.type} · {w.currency}
-                </Text>
-              </View>
-              <Text className="text-blue-600 dark:text-blue-400 font-semibold text-sm">
-                {w.balance >= 0 ? '+' : ''}
-                {w.balance.toFixed(2)}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-      </View>
-    </View>
-  );
-}
+        )}
 
-const TX_TYPES = ['expense', 'income', 'transfer'] as const;
-type TxType = (typeof TX_TYPES)[number];
-
-function ConfirmationCard({
-  message,
-  onConfirm,
-  onCancel,
-}: {
-  message: ConfirmationMessage;
-  onConfirm: (tx: PendingTransaction) => void;
-  onCancel: () => void;
-}) {
-  const { transaction, status } = message;
-  const isPending = status === 'pending';
-
-  // Local editable state — only meaningful while pending
-  const [txType, setTxType] = useState<TxType>(transaction.type as TxType);
-  const [amount, setAmount] = useState(transaction.amount.toFixed(2));
-  const [merchant, setMerchant] = useState(transaction.merchant ?? '');
-  const [description, setDescription] = useState(transaction.description ?? '');
-  const [date, setDate] = useState(
-    transaction.transactionDate
-      ? new Date(transaction.transactionDate).toISOString().split('T')[0]
-      : today,
-  );
-
-  const isExpense = txType === 'expense';
-  const isIncome = txType === 'income';
-  const typeEmoji = isExpense ? '💸' : isIncome ? '💰' : '🔄';
-  const amountColor = isExpense ? '#DC2626' : '#16A34A';
-
-  const statusBadge = {
-    pending: 'bg-amber-100 dark:bg-amber-900 text-amber-700 dark:text-amber-300',
-    confirmed: 'bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300',
-    cancelled: 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400',
-  }[status];
-
-  const statusLabel = {
-    pending: 'Tap to edit · confirm when ready',
-    confirmed: '✓ Saved',
-    cancelled: 'Cancelled',
-  }[status];
-
-  const handleConfirm = () => {
-    const parsedAmount = parseFloat(amount);
-    onConfirm({
-      ...transaction,
-      amount: isNaN(parsedAmount) || parsedAmount <= 0 ? transaction.amount : parsedAmount,
-      type: txType,
-      merchant: merchant.trim() || null,
-      description: description.trim() || null,
-      transactionDate: date
-        ? new Date(date + 'T00:00:00').toISOString()
-        : transaction.transactionDate,
-    });
-  };
-
-  // ── Read-only view (confirmed / cancelled) ──────────────────────────────────
-  if (!isPending) {
-    const prefix = transaction.type === 'expense' ? '−' : '+';
-    const color = transaction.type === 'expense'
-      ? 'text-red-600 dark:text-red-400'
-      : 'text-green-600 dark:text-green-400';
-    return (
-      <View className="mb-4 mt-1">
-        <View className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-2xl p-4 mx-2">
-          <View className="flex-row items-center mb-3">
-            <Text className="text-xl mr-2">{typeEmoji}</Text>
-            <Text className="font-semibold text-gray-900 dark:text-white text-base flex-1">
-              Transaction
-            </Text>
-            <View className={`px-2 py-0.5 rounded-full ${statusBadge}`}>
-              <Text className="text-xs font-medium">{statusLabel}</Text>
-            </View>
-          </View>
-          {[
-            { label: 'Amount', value: `${prefix}${transaction.amount.toFixed(2)}`, cls: `font-semibold ${color}` },
-            { label: 'Wallet', value: transaction.walletName },
-            ...(transaction.merchant ? [{ label: 'Merchant', value: transaction.merchant, cls: undefined }] : []),
-            ...(transaction.description ? [{ label: 'Note', value: transaction.description, cls: undefined }] : []),
-            { label: 'Type', value: transaction.type.charAt(0).toUpperCase() + transaction.type.slice(1) },
-            { label: 'Date', value: new Date(transaction.transactionDate ?? Date.now()).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) },
-          ].map(({ label, value, cls }) => (
-            <View key={label} className="flex-row justify-between mb-1.5">
-              <Text className="text-gray-500 dark:text-gray-400 text-sm">{label}</Text>
-              <Text className={`text-gray-900 dark:text-white text-sm text-right ml-4 ${cls ?? ''}`} style={{ maxWidth: '60%' }} numberOfLines={2}>{value}</Text>
-            </View>
-          ))}
-          {status === 'confirmed' && (
-            <View className="flex-row items-center justify-center pt-2">
-              <Text className="text-green-600 dark:text-green-400 text-sm font-medium">
-                Transaction saved successfully
-              </Text>
-            </View>
-          )}
-        </View>
-      </View>
-    );
-  }
-
-  // ── Editable pending view ────────────────────────────────────────────────────
-  return (
-    <View className="mb-4 mt-1">
-      <View className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-2xl p-4 mx-2">
-
-        {/* Header */}
-        <View className="flex-row items-center mb-3">
-          <Text className="text-xl mr-2">{typeEmoji}</Text>
-          <Text className="font-semibold text-gray-900 dark:text-white text-base flex-1">
-            Transaction Proposal
-          </Text>
-          <View className={`px-2 py-0.5 rounded-full ${statusBadge}`}>
-            <Text className="text-xs font-medium">{statusLabel}</Text>
-          </View>
-        </View>
-
-        {/* Type toggle */}
-        <View className="flex-row mb-3 gap-2">
-          {TX_TYPES.map((t) => (
-            <TouchableOpacity
-              key={t}
-              onPress={() => setTxType(t)}
-              className={`flex-1 py-1.5 rounded-lg items-center border ${
-                txType === t
-                  ? t === 'expense'
-                    ? 'bg-red-100 dark:bg-red-950 border-red-400 dark:border-red-600'
-                    : t === 'income'
-                    ? 'bg-green-100 dark:bg-green-950 border-green-400 dark:border-green-600'
-                    : 'bg-blue-100 dark:bg-blue-950 border-blue-400 dark:border-blue-600'
-                  : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-600'
-              }`}
-              activeOpacity={0.7}
-            >
-              <Text
-                className={`text-xs font-semibold capitalize ${
-                  txType === t
-                    ? t === 'expense'
-                      ? 'text-red-600 dark:text-red-400'
-                      : t === 'income'
-                      ? 'text-green-600 dark:text-green-400'
-                      : 'text-blue-600 dark:text-blue-400'
-                    : 'text-gray-500 dark:text-gray-400'
-                }`}
-              >
-                {t}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-
-        {/* Editable rows */}
-        <View className="mb-3">
-          {/* Amount */}
-          <View className="flex-row items-center justify-between mb-2">
-            <Text className="text-gray-500 dark:text-gray-400 text-sm w-20">Amount</Text>
-            <TextInput
-              className="flex-1 text-right text-sm font-semibold bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-1.5"
-              style={{ color: amountColor }}
-              value={amount}
-              onChangeText={setAmount}
-              keyboardType="decimal-pad"
-              selectTextOnFocus
-            />
-          </View>
-
-          {/* Wallet — read-only */}
-          <View className="flex-row items-center justify-between mb-2">
-            <Text className="text-gray-500 dark:text-gray-400 text-sm w-20">Wallet</Text>
-            <Text className="text-gray-900 dark:text-white text-sm text-right flex-1" numberOfLines={1}>
-              {transaction.walletName}
-            </Text>
-          </View>
-
-          {/* Merchant */}
-          <View className="flex-row items-center justify-between mb-2">
-            <Text className="text-gray-500 dark:text-gray-400 text-sm w-20">Merchant</Text>
-            <TextInput
-              className="flex-1 text-right text-sm text-gray-900 dark:text-white bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-1.5"
-              value={merchant}
-              onChangeText={setMerchant}
-              placeholder="optional"
-              placeholderTextColor="#9CA3AF"
-            />
-          </View>
-
-          {/* Note */}
-          <View className="flex-row items-center justify-between mb-2">
-            <Text className="text-gray-500 dark:text-gray-400 text-sm w-20">Note</Text>
-            <TextInput
-              className="flex-1 text-right text-sm text-gray-900 dark:text-white bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-1.5"
-              value={description}
-              onChangeText={setDescription}
-              placeholder="optional"
-              placeholderTextColor="#9CA3AF"
-            />
-          </View>
-
-          {/* Date */}
-          <View className="flex-row items-center justify-between">
-            <Text className="text-gray-500 dark:text-gray-400 text-sm w-20">Date</Text>
-            <TextInput
-              className="flex-1 text-right text-sm text-gray-900 dark:text-white bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-1.5"
-              value={date}
-              onChangeText={setDate}
-              placeholder="YYYY-MM-DD"
-              placeholderTextColor="#9CA3AF"
-            />
-          </View>
-        </View>
-
-        {/* Action buttons */}
-        <View className="flex-row">
-          <TouchableOpacity
-            className="flex-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl py-3 items-center mr-2"
-            onPress={onCancel}
-            activeOpacity={0.7}
-          >
-            <Text className="text-gray-700 dark:text-gray-300 font-medium text-sm">Cancel</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            className="flex-1 bg-blue-600 rounded-xl py-3 items-center"
-            onPress={handleConfirm}
-            activeOpacity={0.7}
-          >
-            <Text className="text-white font-semibold text-sm">Confirm & Save</Text>
-          </TouchableOpacity>
-        </View>
-
+        <Text className="text-gray-400 dark:text-gray-500 text-xs mt-1">
+          {new Date(entry.createdAt).toLocaleTimeString(undefined, {
+            hour: '2-digit',
+            minute: '2-digit',
+          })}
+        </Text>
       </View>
     </View>
   );
@@ -1061,25 +443,26 @@ function ConfirmationCard({
 
 function EmptyState() {
   const suggestions = [
-    'Log RM45 food expense on TNG',
-    'Show my recent transactions',
-    'What are my wallet balances?',
-    'Add RM2500 salary income',
+    'Lunch at McDonald\'s RM12.50',
+    'Grab ride RM8.90',
+    'Salary RM2500 to bank',
+    'Or snap a photo of your receipt',
   ];
 
   return (
     <View className="py-12 px-4 items-center">
       <View className="w-16 h-16 rounded-full bg-blue-100 dark:bg-blue-950 items-center justify-center mb-4">
-        <Text className="text-3xl">💬</Text>
+        <Text className="text-3xl">⚡</Text>
       </View>
       <Text className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-        {"Hi, I'm Moni"}
+        Quick Add Transaction
       </Text>
       <Text className="text-gray-500 dark:text-gray-400 text-center text-sm mb-8 leading-5">
-        Your on-device finance assistant. Log transactions, review spending, and check your balances — all privately on your device.
+        Describe a transaction or take a photo of a receipt.{'\n'}
+        AI processes it in the background — you can close the app right after.
       </Text>
       <Text className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3">
-        Try asking
+        Try typing
       </Text>
       <View className="w-full">
         {suggestions.map((s) => (
@@ -1112,10 +495,10 @@ function ModelSetupScreen({
         <Text className="text-4xl">🤖</Text>
       </View>
       <Text className="text-2xl font-bold text-gray-900 dark:text-white mb-2 text-center">
-        AI Finance Assistant
+        AI Transaction Processor
       </Text>
       <Text className="text-gray-500 dark:text-gray-400 text-center text-sm leading-5 mb-8">
-        Chat with an on-device model to log transactions, review spending, and get financial insights — all privately on your device.
+        An on-device model processes your text and receipt inputs into transaction proposals — all privately on your device.
       </Text>
 
       {isLoading ? (
@@ -1123,7 +506,7 @@ function ModelSetupScreen({
           <ActivityIndicator size="large" color="#2563EB" />
           <Text className="text-blue-600 dark:text-blue-400 font-medium mt-4 text-center">
             {status === 'downloading'
-              ? `Downloading… ${downloadProgress}%`
+              ? `Downloading model… ${downloadProgress}%`
               : status === 'preparing'
               ? 'Loading model into memory…'
               : 'Checking…'}
@@ -1137,7 +520,7 @@ function ModelSetupScreen({
                 />
               </View>
               <Text className="text-gray-400 dark:text-gray-500 text-xs text-center mt-1.5">
-                ~1.9 GB · stored on your device
+                ~2 GB · includes vision capability · stored on your device
               </Text>
             </View>
           )}
@@ -1146,10 +529,10 @@ function ModelSetupScreen({
         <>
           <View className="w-full bg-gray-50 dark:bg-gray-800 rounded-2xl p-4 mb-6">
             {[
-              { label: 'Model', value: 'Qwen 3.5 2B Instruct (Q4)' },
-              { label: 'Size', value: '~1.5 GB' },
-              { label: 'Privacy', value: 'Runs entirely on your device' },
-              { label: 'Requires', value: 'One-time download' },
+              { label: 'Model', value: 'Qwen 2.5 3B VL (Q3)' },
+              { label: 'Size', value: '~2 GB (model + vision)' },
+              { label: 'Capabilities', value: 'Text + Receipt images' },
+              { label: 'Privacy', value: 'Runs entirely on device' },
             ].map(({ label, value }) => (
               <View
                 key={label}

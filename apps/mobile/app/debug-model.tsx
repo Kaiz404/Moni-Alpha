@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, Button, ScrollView, StyleSheet } from 'react-native';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { View, Text, TextInput, Button, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
 import { useLlamaModel, CHAT_MODEL_ID } from '@/hooks/use-llama-model';
 import { getModelPath, llama as llamaRuntime } from '@react-native-ai/llama';
 import { runNotificationOrchestration } from '@/lib/ai/notification-orchestrator';
@@ -7,6 +7,53 @@ import type { RawNotification } from '@/lib/ai/notification-processor';
 import { getWallets, createWallet } from '@/lib/supabase/wallets';
 import { syncSystem } from '@/lib/powersync/Powersync';
 import { randomUUID } from 'expo-crypto';
+import BackgroundService from 'react-native-background-actions';
+import {
+  enqueue,
+  getAll,
+  getPendingCount,
+  pruneCompleted,
+  type ProcessingQueueItem,
+} from '@/lib/ai/processing-queue';
+import {
+  startBackgroundProcessor,
+  stopBackgroundProcessor,
+  isBackgroundProcessorRunning,
+} from '@/lib/ai/background-processor';
+import { areModelsDownloaded } from '@/lib/ai/model-manager';
+
+// ─── Heartbeat task (pure service-alive test, no LLM) ────────────────────────
+
+const HEARTBEAT_BG_OPTIONS = {
+  taskName: 'MoniHeartbeatTest',
+  taskTitle: 'Background Service Test',
+  taskDesc: 'Moni is verifying background execution...',
+  taskIcon: { name: 'ic_launcher', type: 'mipmap' },
+  color: '#10b981',
+  linkingURI: 'moni://',
+  parameters: { durationMs: 60_000, intervalMs: 3_000 },
+};
+
+async function heartbeatTask(taskData?: { durationMs?: number; intervalMs?: number }) {
+  const duration = taskData?.durationMs ?? 60_000;
+  const interval = taskData?.intervalMs ?? 3_000;
+  const start = Date.now();
+  let tick = 0;
+
+  console.log('[HeartbeatTest] Service started — will run for', duration / 1000, 'seconds. Exit the app now to test.');
+
+  while (BackgroundService.isRunning() && Date.now() - start < duration) {
+    tick++;
+    const elapsed = Math.round((Date.now() - start) / 1000);
+    console.log(`[HeartbeatTest] tick ${tick} — ${elapsed}s elapsed — service alive`);
+    await new Promise<void>((r) => setTimeout(r, interval));
+  }
+
+  const totalElapsed = Math.round((Date.now() - start) / 1000);
+  console.log(`[HeartbeatTest] Finished — ${totalElapsed}s, ${tick} ticks`);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 
 type TestResult = {
   id: string;
@@ -72,6 +119,132 @@ export default function DebugModelRunner() {
   const [log, setLog] = useState<string>('');
   const [connected, setConnected] = useState<boolean | null>(null);
   const [results, setResults] = useState<TestResult[]>([]);
+
+  // ── Background processor state ───────────────────────────────────────────
+  const [bgRunning, setBgRunning] = useState(false);
+  const [bgServiceRunning, setBgServiceRunning] = useState(false);
+  const [heartbeatRunning, setHeartbeatRunning] = useState(false);
+  const [queueItems, setQueueItems] = useState<ProcessingQueueItem[]>([]);
+  const [modelStatus, setModelStatus] = useState<{ main: boolean; mmProj: boolean } | null>(null);
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const refreshQueueState = useCallback(() => {
+    setQueueItems(getAll());
+    setBgRunning(isBackgroundProcessorRunning());
+    setBgServiceRunning(BackgroundService.isRunning());
+  }, []);
+
+  // Poll queue + service status every second while screen is mounted
+  useEffect(() => {
+    refreshQueueState();
+    areModelsDownloaded().then(setModelStatus).catch(() => {});
+    pollRef.current = setInterval(refreshQueueState, 1000);
+    return () => {
+      if (pollRef.current) clearInterval(pollRef.current);
+    };
+  }, [refreshQueueState]);
+
+  const bgLog = useCallback((s: string) => {
+    setLog((l) => (l ? l + '\n[BG] ' + s : '[BG] ' + s));
+    console.log('[DebugRunner][BG]', s);
+  }, []);
+
+  /**
+   * Pure heartbeat test — starts a foreground service that ticks every 3s for
+   * 60s with no LLM involved. Exit the app during the test; if you see ticks
+   * continuing in adb logcat the service is truly alive in the background.
+   *
+   * BackgroundService.start() resolves immediately once the Android service is
+   * up — it does NOT wait for the task function to finish. So we must NOT call
+   * stop() here; we let the task run to completion on its own and rely on the
+   * bgServiceRunning poll to detect when it's done.
+   */
+  const testServiceHeartbeat = useCallback(async () => {
+    if (heartbeatRunning) {
+      bgLog('Heartbeat already running — use Stop to cancel it');
+      return;
+    }
+    // Kill any stale service before starting fresh
+    if (BackgroundService.isRunning()) {
+      try { await BackgroundService.stop(); } catch { /* ignore */ }
+    }
+    bgLog('Starting heartbeat service (60s, 3s ticks)...');
+    bgLog('Watch adb logcat for [HeartbeatTest] ticks after you exit the app.');
+    setHeartbeatRunning(true);
+    try {
+      // Resolves as soon as the Android foreground service is up, NOT when done
+      await BackgroundService.start(heartbeatTask, HEARTBEAT_BG_OPTIONS);
+      bgLog('Service is UP — ticking in background. Green dot = alive.');
+    } catch (e: any) {
+      bgLog('Failed to start service: ' + (e?.message ?? String(e)));
+      setHeartbeatRunning(false);
+    }
+    // Do NOT call stop() here — that would kill the task immediately.
+    // The bgServiceRunning effect below resets heartbeatRunning when done.
+  }, [bgLog, heartbeatRunning]);
+
+  // Detect when the heartbeat service finishes on its own (duration elapsed or errored)
+  const prevBgServiceRunningRef = useRef(false);
+  useEffect(() => {
+    if (prevBgServiceRunningRef.current && !bgServiceRunning && heartbeatRunning) {
+      setHeartbeatRunning(false);
+      bgLog('Heartbeat service completed / stopped');
+    }
+    prevBgServiceRunningRef.current = bgServiceRunning;
+  }, [bgServiceRunning, heartbeatRunning, bgLog]);
+
+  const stopHeartbeat = useCallback(async () => {
+    bgLog('Stopping heartbeat service...');
+    try { await BackgroundService.stop(); } catch { /* ignore */ }
+    setHeartbeatRunning(false);
+    bgLog('Heartbeat stopped');
+  }, [bgLog]);
+
+  /** Enqueue a real transaction text so the LLM runs inside the foreground service */
+  const testLLMInBackground = useCallback(async () => {
+    bgLog('Enqueueing LLM test item: "Coffee at Starbucks 12.50 USD"');
+    enqueue({
+      id: randomUUID(),
+      type: 'text',
+      text: 'Coffee at Starbucks 12.50 USD',
+      createdAt: new Date().toISOString(),
+      status: 'pending',
+    });
+    bgLog('Enqueueing second item: "Transfer 500 MYR to savings"');
+    enqueue({
+      id: randomUUID(),
+      type: 'text',
+      text: 'Transfer 500 MYR to savings',
+      createdAt: new Date().toISOString(),
+      status: 'pending',
+    });
+    refreshQueueState();
+    bgLog(`Queue now has ${getPendingCount()} pending item(s). Starting processor...`);
+    bgLog('You can now EXIT the app — the foreground service will keep running.');
+    try {
+      await startBackgroundProcessor();
+      bgLog('Processor finished (or fell back to foreground)');
+    } catch (e: any) {
+      bgLog('startBackgroundProcessor() threw: ' + (e?.message ?? String(e)));
+    }
+    refreshQueueState();
+  }, [bgLog, refreshQueueState]);
+
+  const stopBgProcessor = useCallback(async () => {
+    bgLog('Stopping background processor...');
+    await stopBackgroundProcessor();
+    bgLog('Stopped');
+    refreshQueueState();
+  }, [bgLog, refreshQueueState]);
+
+  const clearQueue = useCallback(() => {
+    pruneCompleted();
+    refreshQueueState();
+    bgLog('Queue pruned (completed/errored items removed)');
+  }, [bgLog, refreshQueueState]);
+
+  // ────────────────────────────────────────────────────────────────────────
+
   const append = (s: string) => {
     // update on-screen log
     setLog((l) => (l ? l + '\n' + s : s));
@@ -401,6 +574,96 @@ export default function DebugModelRunner() {
         <Button title="Clear Heatmap Seed Data" onPress={clearHeatmapSeedData} color="#c0392b" />
       </View>
 
+      {/* ── Background Processor Tests ─────────────────────────── */}
+      <View style={styles.bgSection}>
+        <Text style={styles.bgSectionTitle}>Background Processor</Text>
+
+        {/* Service status */}
+        <View style={styles.bgStatusRow}>
+          <View style={[styles.bgDot, { backgroundColor: bgRunning || bgServiceRunning || heartbeatRunning ? '#22c55e' : '#6b7280' }]} />
+          <Text style={styles.bgStatusText}>
+            {heartbeatRunning
+              ? 'Heartbeat service RUNNING'
+              : bgRunning || bgServiceRunning
+                ? 'Processor service RUNNING'
+                : 'Service idle'}
+          </Text>
+        </View>
+
+        {/* Model download status */}
+        <View style={styles.bgStatusRow}>
+          <Text style={styles.bgMeta}>
+            Model: main={modelStatus == null ? '?' : modelStatus.main ? '✓' : '✗ not downloaded'}
+            {'  '}mmproj={modelStatus == null ? '?' : modelStatus.mmProj ? '✓' : '✗'}
+          </Text>
+        </View>
+        {modelStatus != null && !modelStatus.main && (
+          <Text style={[styles.bgMeta, { color: '#f87171', marginTop: 2 }]}>
+            ⚠ LLM test will skip — download the model from the model tab first.
+          </Text>
+        )}
+
+        {/* Queue summary */}
+        <View style={styles.bgStatusRow}>
+          <Text style={styles.bgMeta}>
+            Queue: {queueItems.filter(i => i.status === 'pending').length} pending
+            {' · '}{queueItems.filter(i => i.status === 'processing').length} processing
+            {' · '}{queueItems.filter(i => i.status === 'done').length} done
+            {' · '}{queueItems.filter(i => i.status === 'error').length} error
+          </Text>
+        </View>
+
+        {queueItems.length > 0 && (
+          <ScrollView horizontal style={{ marginTop: 6 }}>
+            <View>
+              {queueItems.slice(-8).map((item) => (
+                <Text key={item.id} style={styles.queueItem}>
+                  [{item.status.toUpperCase().padEnd(10)}] {item.type} — {
+                    item.type === 'text' ? item.text.slice(0, 45)
+                    : item.type === 'notification' ? item.notification.text.slice(0, 45)
+                    : item.imageUri.slice(-30)
+                  }
+                </Text>
+              ))}
+            </View>
+          </ScrollView>
+        )}
+
+        <View style={{ marginTop: 10, gap: 8 }}>
+          {/* Heartbeat — no LLM needed */}
+          <TouchableOpacity
+            style={[styles.bgButton, heartbeatRunning && styles.bgButtonActive]}
+            onPress={heartbeatRunning ? stopHeartbeat : testServiceHeartbeat}
+          >
+            <Text style={styles.bgButtonText}>
+              {heartbeatRunning ? '⏹ Stop Heartbeat Service' : '❤️ Test Service Alive (no LLM)'}
+            </Text>
+            <Text style={styles.bgButtonSub}>
+              Starts a foreground service that ticks every 3s for 60s.
+              Exit the app — watch adb logcat for [HeartbeatTest] ticks to confirm it keeps running.
+            </Text>
+          </TouchableOpacity>
+
+          {/* LLM in background */}
+          <TouchableOpacity style={[styles.bgButton, styles.bgButtonPrimary]} onPress={testLLMInBackground}>
+            <Text style={[styles.bgButtonText, { color: '#fff' }]}>Test LLM in Background</Text>
+            <Text style={[styles.bgButtonSub, { color: '#c7d2fe' }]}>
+              Enqueues 2 transaction items → foreground service → loads model → runs inference.
+              {!modelStatus?.main ? ' (model not downloaded — will skip immediately)' : ' Exit the app to verify.'}
+            </Text>
+          </TouchableOpacity>
+
+          {/* Stop processor */}
+          <TouchableOpacity style={[styles.bgButton, styles.bgButtonStop]} onPress={stopBgProcessor}>
+            <Text style={[styles.bgButtonText, { color: '#fca5a5' }]}>Stop LLM Processor</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={[styles.bgButton, { borderColor: '#374151' }]} onPress={clearQueue}>
+            <Text style={[styles.bgButtonText, { color: '#9ca3af' }]}>Prune Completed Queue Items</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+
       <View style={{ marginTop: 12 }}>
         <Text style={styles.label}>Connection status: <Text style={{ fontWeight: '600' }}>{connected === null ? 'idle' : connected ? 'connected' : 'not connected'}</Text></Text>
       </View>
@@ -442,5 +705,78 @@ const styles = StyleSheet.create({
   traceGroup: { marginTop: 6 },
   traceGroupTitle: { color: '#9fb8ff', fontWeight: '600', marginBottom: 2 },
   traceLine: { color: '#d2d8e8', fontSize: 12, lineHeight: 17, fontFamily: 'monospace' },
+
+  // Background processor section
+  bgSection: {
+    marginTop: 20,
+    borderColor: '#1e3a5f',
+    borderWidth: 1,
+    borderRadius: 12,
+    padding: 14,
+    backgroundColor: '#0d1b2a',
+  },
+  bgSectionTitle: {
+    color: '#60a5fa',
+    fontWeight: '700',
+    fontSize: 15,
+    marginBottom: 10,
+    letterSpacing: 0.4,
+  },
+  bgStatusRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  bgDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    marginRight: 8,
+  },
+  bgStatusText: {
+    color: '#e2e8f0',
+    fontWeight: '600',
+    fontSize: 13,
+  },
+  bgMeta: {
+    color: '#94a3b8',
+    fontSize: 12,
+    fontFamily: 'monospace',
+  },
+  queueItem: {
+    color: '#7dd3fc',
+    fontSize: 11,
+    fontFamily: 'monospace',
+    lineHeight: 16,
+  },
+  bgButton: {
+    borderColor: '#334155',
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: 12,
+    backgroundColor: '#111827',
+  },
+  bgButtonPrimary: {
+    borderColor: '#4f46e5',
+    backgroundColor: '#1e1b4b',
+  },
+  bgButtonStop: {
+    borderColor: '#7f1d1d',
+    backgroundColor: '#1c0505',
+  },
+  bgButtonActive: {
+    borderColor: '#16a34a',
+    backgroundColor: '#052e16',
+  },
+  bgButtonText: {
+    color: '#e2e8f0',
+    fontWeight: '600',
+    fontSize: 14,
+  },
+  bgButtonSub: {
+    color: '#94a3b8',
+    fontSize: 11,
+    marginTop: 3,
+  },
 });
 

@@ -9,7 +9,10 @@ function rowToProposedTransaction(row: any): ProposedTransaction {
   return {
     id: row.id,
     userId: row.user_id,
+    sourceType: row.source_type ?? 'notification',
     sourceApp: row.source_app,
+    sourceText: row.source_text ?? null,
+    sourceImageUri: row.source_image_uri ?? null,
     notificationTitle: row.notification_title,
     notificationBody: row.notification_body,
     notificationReceivedAt: row.notification_received_at,
@@ -67,7 +70,10 @@ export async function createProposedTransaction(
     .values({
       id,
       user_id: userId,
+      source_type: data.sourceType ?? 'notification',
       source_app: data.sourceApp ?? null,
+      source_text: data.sourceText ?? null,
+      source_image_uri: data.sourceImageUri ?? null,
       notification_title: data.notificationTitle ?? null,
       notification_body: data.notificationBody ?? null,
       notification_received_at: data.notificationReceivedAt ?? null,
@@ -130,6 +136,19 @@ export async function rejectProposedTransaction(id: string): Promise<void> {
   await db
     .updateTable('proposed_transactions')
     .set({ status: 'rejected', updated_at: new Date().toISOString() })
+    .where('id', '=', id)
+    .execute();
+}
+
+/** Update the image URI once a receipt has been uploaded to Supabase Storage. */
+export async function updateProposalImageUri(
+  id: string,
+  remoteUrl: string,
+): Promise<void> {
+  const { db } = syncSystem;
+  await db
+    .updateTable('proposed_transactions')
+    .set({ source_image_uri: remoteUrl, updated_at: new Date().toISOString() })
     .where('id', '=', id)
     .execute();
 }
