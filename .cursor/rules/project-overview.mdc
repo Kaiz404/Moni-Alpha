@@ -5,7 +5,7 @@ alwaysApply: true
 
 # Moni – Project Overview
 
-**Moni** is a local-first, privacy-focused personal finance app (wallets, transactions, analytics). Built as a Turborepo monorepo with two apps and shared packages.
+**Moni** is a local-first, privacy-focused personal finance app: wallets, transactions, analytics, and **on-device AI** that turns natural language, receipt photos, and (on Android) bank notifications into **reviewable transaction proposals**—processed with a local vision-language model, not a cloud API. Built as a Turborepo monorepo with two apps and shared packages.
 
 ## Monorepo Structure
 
@@ -41,6 +41,7 @@ Run commands with pnpm:
 | Server state | TanStack Query | TanStack Query |
 | Validation | Zod (from @repo/types) | Zod (from @repo/types) |
 | Animations | react-native-reanimated ~4 | — |
+| On-device AI (mobile) | Qwen 2.5 VL 3B via `@react-native-ai/llama`; unified orchestrator → `proposed_transactions` (user review before save) | — |
 
 ## Key Conventions
 
@@ -51,6 +52,6 @@ Run commands with pnpm:
 - Currency amounts stored as `real` (SQLite) / `decimal(12,2)` (PostgreSQL)
 - UUIDs stored as `text` in SQLite, `uuid` in PostgreSQL
 
-## Phase 1 Focus
+## Current focus
 
-CRUD for wallets, transactions, categories. Offline-first mobile with background sync. Basic web dashboard with analytics. No AI/ML yet.
+CRUD for wallets, transactions, and categories; offline-first mobile with background sync; web dashboard with analytics. **AI:** on-device extraction and wallet resolution into pending proposals (`proposed_transactions`), with a review modal before data is committed—see `apps/mobile/lib/ai/ORCHESTRATOR.md`.

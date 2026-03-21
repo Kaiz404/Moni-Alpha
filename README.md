@@ -1,87 +1,88 @@
 # Moni 💰
 
-> A modern, privacy-focused personal finance management application
+> **Your money. Your model. Your call.**
 
-Moni is a local-first finance tracking app that helps you manage transactions across multiple wallets (bank accounts, cash, credit cards, e-wallets) with comprehensive analytics and insights—all while keeping your data under your control.
+**Moni** is a local-first personal finance app that tracks wallets and spending, syncs when you want, and uses **on-device AI** to turn chats, receipt photos, and (on Android) bank notifications into **transaction proposals** you approve before they hit your books—no cloud LLM required for core capture.
 
 ## ✨ Features
 
-### Phase 1: Foundation (Current Focus)
-- 🔐 **Secure Authentication** - Powered by Supabase Auth
-- 💼 **Multi-Wallet Management** - Track unlimited wallets of different types
-- 💳 **Transaction Tracking** - Manual entry with full control over details
-- 🏷️ **Categories & Tags** - Organize transactions your way
-- 📊 **Basic Analytics** - Spending breakdowns and insights
-- 📱 **Mobile-First** - Beautiful React Native interface
-- 🌐 **Web Dashboard** - Comprehensive web-based analytics
-- 🔄 **Offline-First** - Local SQLite database with cloud sync
-- 🚀 **Real-time Sync** - Changes sync across devices
+### Core (Phase 1 — in progress)
+- 🔐 **Secure authentication** — Supabase Auth
+- 💼 **Multi-wallet management** — Bank, cash, cards, e-wallets, and more
+- 💳 **Transaction tracking** — Manual entry with full control
+- 🤖 **AI-assisted capture (mobile)** — Natural language and receipt images processed **on-device** (Qwen 2.5 VL via `@react-native-ai/llama`); outputs go to **pending proposals**, not straight into the ledger
+- 🔔 **Android notification capture** — Classifies and extracts spend signals from push notifications (with review)
+- 🏷️ **Categories** — Organize transactions your way
+- 📊 **Analytics** — Spending breakdowns and insights (web + mobile)
+- 📱 **Mobile-first** — Expo / React Native
+- 🌐 **Web dashboard** — Next.js app with REST API
+- 🔄 **Offline-first** — SQLite on mobile with background Supabase sync
 
-### Coming Soon
-- 🎤 **Voice Input** - Natural language transaction entry (Phase 2)
-- 🤖 **AI Assistant** - Smart data extraction from text/speech (Phase 2)
-- 📸 **Receipt Scanning** - OCR and AI-powered receipt processing (Phase 3)
-- 📍 **Location Tracking** - Analyze spending by location (Phase 4)
-- 📈 **Advanced Analytics** - Pattern recognition and forecasts (Phase 4)
-- 💡 **Smart Insights** - AI-powered financial insights (Phase 5)
+### On the roadmap
+- 🎤 **Voice-first input** — Wired into the same orchestrator as typed chat
+- 📍 **Location-aware insights** — Spending by place
+- 📈 **Advanced analytics** — Patterns, budgets, forecasts
+
+Details: [PROJECT_CONTEXT.md](./PROJECT_CONTEXT.md) · Mobile AI pipeline: [apps/mobile/lib/ai/ORCHESTRATOR.md](./apps/mobile/lib/ai/ORCHESTRATOR.md)
 
 ## 🏗️ Architecture
 
-Moni is built as a **Turborepo monorepo** with:
+Moni is a **Turborepo monorepo** with:
 
-- **Mobile App** (`apps/mobile`) - Expo/React Native
-- **Web App** (`apps/web`) - Next.js with App Router
-- **Shared Packages**:
-  - `@repo/ui` - Shared React components
-  - `@repo/types` - Shared types and Zod schemas
-  - `@repo/eslint-config` - Shared ESLint configs
-  - `@repo/typescript-config` - Shared TypeScript configs
+- **Mobile** (`apps/mobile`) — Expo / React Native
+- **Web** (`apps/web`) — Next.js App Router + REST API
+- **Shared packages**:
+  - `@repo/ui` — Shared React components
+  - `@repo/types` — Shared types and Zod schemas
+  - `@repo/eslint-config` — Shared ESLint configs
+  - `@repo/typescript-config` — Shared TypeScript configs
 
-### Tech Stack
+### Tech stack
 
 **Mobile:**
 - Expo SDK 54 + React Native 0.81
 - expo-sqlite + Drizzle ORM (local database)
 - TanStack Query (server state)
-- Tailwind CSS + Uniwind (styling)
+- Tailwind + Uniwind (styling)
 - expo-router (file-based routing)
+- **On-device AI** — `@react-native-ai/llama` (Qwen 2.5 VL 3B), Vercel AI SDK `generateObject` + Zod for structured extraction → `proposed_transactions`
 
 **Web:**
 - Next.js 16 (App Router)
 - REST API (Next.js Route Handlers)
 - Supabase (PostgreSQL + Auth + Storage + Realtime)
 - Recharts (data visualization)
-- Type-safe with shared Zod schemas
+- Shared Zod schemas from `@repo/types`
 
 **Shared:**
 - TypeScript (strict mode)
 - Zod (validation + shared types)
 - pnpm workspaces
-- Turborepo (build system)
-- `@repo/types` - Shared types and schemas for type-safe APIs
+- Turborepo
 
 ## 📚 Documentation
 
-**New to Moni?** Start with our comprehensive documentation:
+**New to Moni?** Start here:
 
-- **[IMPLEMENTATION_SUMMARY.md](./IMPLEMENTATION_SUMMARY.md)** ⭐ **START HERE** - Current implementation status & quick start
-- **[PHASE1_IMPLEMENTATION_STATUS.md](./PHASE1_IMPLEMENTATION_STATUS.md)** - Detailed progress tracking
-- **[PROJECT_CONTEXT.md](./PROJECT_CONTEXT.md)** - Complete project overview, architecture, and roadmap
-- **[ARCHITECTURE_SIMPLIFIED.md](./docs/ARCHITECTURE_SIMPLIFIED.md)** - Simplified architecture guide (REST + Shared Types)
-- **[SETUP_GUIDE.md](./docs/SETUP_GUIDE.md)** - Step-by-step development setup
-- **[DATABASE_SCHEMA.md](./docs/DATABASE_SCHEMA.md)** - Database structure and migrations
-- **[TECHNICAL_REFERENCE.md](./docs/TECHNICAL_REFERENCE.md)** - Common patterns and code examples
+- **[IMPLEMENTATION_SUMMARY.md](./IMPLEMENTATION_SUMMARY.md)** — Current status and quick start
+- **[PHASE1_IMPLEMENTATION_STATUS.md](./PHASE1_IMPLEMENTATION_STATUS.md)** — Progress tracking
+- **[PROJECT_CONTEXT.md](./PROJECT_CONTEXT.md)** — Overview, architecture, roadmap
+- **[apps/mobile/lib/ai/ORCHESTRATOR.md](./apps/mobile/lib/ai/ORCHESTRATOR.md)** — On-device AI orchestrator (text / image / notifications)
+- **[ARCHITECTURE_SIMPLIFIED.md](./docs/ARCHITECTURE_SIMPLIFIED.md)** — REST + shared types
+- **[SETUP_GUIDE.md](./docs/SETUP_GUIDE.md)** — Development setup
+- **[DATABASE_SCHEMA.md](./docs/DATABASE_SCHEMA.md)** — Database structure
+- **[TECHNICAL_REFERENCE.md](./docs/TECHNICAL_REFERENCE.md)** — Patterns and examples
 
-See [docs/README.md](./docs/README.md) for a full documentation index.
+See [docs/README.md](./docs/README.md) for the full index.
 
-## 🚀 Quick Start
+## 🚀 Quick start
 
 ### Prerequisites
 
 - Node.js >= 18
 - pnpm >= 9.0
 - Supabase account ([sign up](https://supabase.com/))
-- Expo Go app ([iOS](https://apps.apple.com/app/expo-go/id982107779) | [Android](https://play.google.com/store/apps/details?id=host.exp.exponent))
+- Expo Go or a dev build ([iOS](https://apps.apple.com/app/expo-go/id982107779) | [Android](https://play.google.com/store/apps/details?id=host.exp.exponent))
 
 ### Installation
 
@@ -96,21 +97,21 @@ See [docs/README.md](./docs/README.md) for a full documentation index.
    pnpm install
    ```
 
-3. **Setup Supabase**
-   - Create a new Supabase project
-   - Run the database schema from `docs/DATABASE_SCHEMA.md`
+3. **Set up Supabase**
+   - Create a Supabase project
+   - Apply the schema from `docs/DATABASE_SCHEMA.md`
    - Copy your API keys
 
-4. **Configure environment variables**
-   
-   Create `apps/web/.env.local`:
+4. **Environment variables**
+
+   `apps/web/.env.local`:
    ```bash
    NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
    NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
    SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
    ```
-   
-   Create `apps/mobile/.env`:
+
+   `apps/mobile/.env`:
    ```bash
    EXPO_PUBLIC_SUPABASE_URL=your_supabase_url
    EXPO_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
@@ -121,153 +122,90 @@ See [docs/README.md](./docs/README.md) for a full documentation index.
    ```bash
    pnpm dev
    ```
-   
-   This starts both the web app (http://localhost:3000) and mobile app (Expo dev server).
 
-📖 For detailed setup instructions, see [SETUP_GUIDE.md](./docs/SETUP_GUIDE.md)
+   Starts the web app (http://localhost:3000) and the Expo dev server.
+
+For more detail, see [SETUP_GUIDE.md](./docs/SETUP_GUIDE.md).
 
 ## 🛠️ Development
 
 ### Commands
 
 ```bash
-# Start all apps
-pnpm dev
-
-# Start web app only
-pnpm --filter web dev
-
-# Start mobile app only
-pnpm --filter mobile dev
-
-# Build all apps
+pnpm dev                 # All apps
+pnpm --filter web dev    # Web only
+pnpm --filter mobile dev # Mobile only
 pnpm build
-
-# Lint all packages
 pnpm lint
-
-# Type check
 pnpm check-types
-
-# Format code
 pnpm format
 ```
 
-### Project Structure
+### Project structure
 
 ```
 Moni/
 ├── apps/
-│   ├── mobile/          # Expo React Native app
-│   │   ├── app/         # File-based routing
-│   │   ├── components/  # React components
-│   │   ├── db/          # Local database
-│   │   └── lib/         # Utilities
-│   └── web/             # Next.js web app
-│       ├── src/
-│       │   ├── app/     # App Router
-│       │   ├── components/
-│       │   └── lib/
-│       └── public/
+│   ├── mobile/          # Expo app (local DB, AI orchestrator, sync)
+│   │   ├── app/
+│   │   ├── components/
+│   │   ├── db/
+│   │   └── lib/         # includes lib/ai/ (on-device pipeline)
+│   └── web/             # Next.js + API routes
 ├── packages/
-│   ├── ui/              # Shared UI components
-│   ├── types/           # Shared types + Zod schemas [TO CREATE]
+│   ├── ui/
+│   ├── types/           # Shared Zod schemas + TypeScript types
 │   ├── eslint-config/
 │   └── typescript-config/
-├── docs/                # Documentation
-└── turbo.json           # Turborepo config
+├── docs/
+└── turbo.json
 ```
 
-## 🔐 Security & Privacy
+## 🔐 Security & privacy
 
-- **Local-First**: Data stored locally on your device
-- **End-to-End Control**: You own and control your data
-- **Row Level Security**: Database-level access control
-- **Encrypted Storage**: Secure token storage (iOS/Android)
-- **HTTPS Only**: All network communication encrypted
-- **GDPR Compliant**: Export and delete your data anytime
+- **Local-first** — Data on device; optional cloud sync
+- **On-device AI** — Core extraction runs locally; proposals are reviewed before commit
+- **Row Level Security** — Tenant isolation in PostgreSQL
+- **Secure storage** — Tokens in secure storage on mobile
+- **HTTPS** — API traffic encrypted
 
 ## 🤝 Contributing
 
-We welcome contributions! Here's how you can help:
-
 1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Make your changes
-4. Run tests and linting (`pnpm lint && pnpm check-types`)
-5. Commit your changes (`git commit -m 'feat: add amazing feature'`)
-6. Push to the branch (`git push origin feature/amazing-feature`)
-7. Open a Pull Request
+2. Create a branch (`git checkout -b feature/your-feature`)
+3. Make changes
+4. Run `pnpm lint && pnpm check-types`
+5. Commit and open a Pull Request
 
-Please read our documentation before contributing.
+Read [PROJECT_CONTEXT.md](./PROJECT_CONTEXT.md) and the relevant package READMEs before large changes.
 
-## 📝 Development Phases
+## 📝 Roadmap (high level)
 
-### Phase 1: Foundation 🚧 (50% Complete)
-Core infrastructure, authentication, CRUD operations, basic sync
+| Phase | Focus |
+| --- | --- |
+| **1** | Foundation: auth, CRUD, sync, dashboards, **on-device AI proposals** |
+| **2+** | Voice input, richer analytics, location, production polish |
 
-**Completed:**
-- ✅ Complete type system with Zod schemas
-- ✅ Supabase PostgreSQL database with RLS
-- ✅ REST API routes (auth, wallets, transactions, categories, tags, analytics)
-- ✅ API error handling and validation
-- ✅ Dependencies installed
+See [PROJECT_CONTEXT.md](./PROJECT_CONTEXT.md) for the full backlog.
 
-**In Progress:**
-- 🚧 Mobile SQLite database setup
-- 🚧 Mobile authentication
-- 🚧 Mobile UI components
-- 🚧 Sync implementation
+## 🐛 Known issues
 
-See [IMPLEMENTATION_SUMMARY.md](./IMPLEMENTATION_SUMMARY.md) for details.
-
-### Phase 2: AI-Powered Input 🔜 (Next)
-Voice input, natural language processing, smart transaction entry
-
-### Phase 3: Image Processing 📋
-Receipt scanning, OCR, AI-powered data extraction
-
-### Phase 4: Advanced Analytics 📊
-Location-based insights, spending patterns, forecasts
-
-### Phase 5: Production Polish ✨
-Optimization, testing, deployment, user documentation
-
-## 🐛 Known Issues
-
-- [ ] Sync conflict resolution needs improvement
-- [ ] iOS/Android build configurations pending
-- [ ] Web dashboard charts need styling
-
-See [GitHub Issues](https://github.com/yourusername/Moni/issues) for a complete list.
+- Sync conflict resolution can be improved
+- Platform-specific build and store setup may need tuning
+- Track [GitHub Issues](https://github.com/yourusername/Moni/issues) for current bugs
 
 ## 📜 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+MIT — see [LICENSE](LICENSE).
 
 ## 🙏 Acknowledgments
 
-Built with:
-- [Expo](https://expo.dev/) - React Native framework
-- [Next.js](https://nextjs.org/) - React framework
-- [Supabase](https://supabase.com/) - Backend-as-a-Service
-- [Drizzle ORM](https://orm.drizzle.team/) - TypeScript ORM
-- [Zod](https://zod.dev/) - TypeScript-first schema validation
-- [TanStack Query](https://tanstack.com/query) - Powerful data synchronization
-- [Turborepo](https://turbo.build/repo) - Monorepo build system
-
-## 📧 Contact
-
-- **Project Lead**: [Your Name]
-- **Email**: your.email@example.com
-- **Discord**: [Join our community](#)
-
-## 🗺️ Roadmap
-
-See [PROJECT_CONTEXT.md](./PROJECT_CONTEXT.md) for the complete roadmap and feature backlog.
+- [Expo](https://expo.dev/) · [Next.js](https://nextjs.org/) · [Supabase](https://supabase.com/)
+- [Drizzle ORM](https://orm.drizzle.team/) · [Zod](https://zod.dev/)
+- [TanStack Query](https://tanstack.com/query) · [Turborepo](https://turbo.build/repo)
 
 ---
 
-**Made with ❤️ for privacy-conscious individuals who want to understand their finances**
+**Made for people who want to understand their money—without giving it all to the cloud.**
 
-*Last Updated: February 14, 2026*
+*Last updated: March 22, 2026*

@@ -2,15 +2,15 @@
 
 ## Project Overview
 
-**Moni** is a modern, privacy-focused personal finance management application that enables users to track their daily financial transactions across multiple wallets (bank accounts, cash, credit cards, e-wallets) with comprehensive analytics and insights.
+**Moni** is a modern, privacy-focused personal finance app for tracking daily activity across multiple wallets (bank accounts, cash, credit cards, e-wallets) with analytics—and **on-device AI** that helps capture transactions from chat-style text, receipt photos, and (on Android) bank push notifications. AI never writes straight to the ledger: it creates **proposals** users approve in a review flow.
 
 ### Vision
-Create a local-first, user-controlled finance tracking application that provides powerful insights into spending patterns while maintaining data privacy and offline-first functionality.
+A local-first, user-controlled finance app where insights and **private, on-device intelligence** work together: powerful spending visibility, optional cloud sync, and AI that runs on the phone so prompts and receipts are not sent to third-party LLM APIs.
 
 ### Core Philosophy
-- **User Control First**: Users have complete control over all transaction details
-- **Privacy-Focused**: Local-first architecture with optional cloud sync
-- **Offline-First**: Full functionality without internet connection
+- **User Control First**: Users approve AI output before it becomes real transactions
+- **Privacy-Focused**: Local-first architecture with optional cloud sync; core AI inference on-device (Qwen 2.5 VL via `@react-native-ai/llama`)
+- **Offline-First**: Full functionality without internet connection; model and queue work offline where possible
 - **Cross-Platform**: Seamless experience across mobile and web
 
 ---
@@ -79,25 +79,37 @@ Moni/
 ## Phase 1: Foundation (Current Focus)
 
 ### Objectives
-Establish core infrastructure without AI/ML features:
+Establish core infrastructure **plus on-device AI-assisted capture** on mobile (proposals, not auto-posted transactions):
 1. ✅ Authentication system (Supabase Auth)
 2. ✅ Database schema and migrations
 3. ✅ Secure REST API routes with type safety
 4. ✅ Local-first data architecture with cloud sync
 5. ✅ Basic CRUD operations for wallets and transactions
-6. ✅ Mobile UI for transaction entry
+6. ✅ Mobile UI for transaction entry (manual and AI-assisted)
 7. ✅ Web dashboard with basic analytics
+8. 🔄 **AI orchestrator** (unified queue → text / image / notification flows → `proposed_transactions` → user review)
 
 ### Phase 1 Features
 - User registration and authentication
 - Profile management
 - Wallet management (create, read, update, delete)
-- Manual transaction entry (text input only)
+- Manual transaction entry and **AI-assisted entry** (natural language, receipt image, Android notifications) as **pending proposals** until the user confirms
 - Transaction listing with filters
 - Basic transaction categorization
 - Simple analytics (spending by category, time-based views)
 - Web dashboard with charts
 - Offline support with background sync
+- **On-device VL model** (Qwen 2.5 VL 3B), MMKV-backed processing queue, Android foreground service for background processing (see `apps/mobile/lib/ai/ORCHESTRATOR.md`)
+
+### AI-assisted capture (mobile) — summary
+
+| Input | Behavior |
+| --- | --- |
+| **Text** (chat tab) | Extract amount, merchant, category hints, wallet hint → proposal |
+| **Image** (receipt) | Multimodal extraction; local file saved under `documentDir/receipts`, optional upload to Supabase Storage |
+| **Push notification** (Android) | Classify transaction vs spam/OTP; regex fallback if the model fails |
+
+All paths produce **`proposed_transactions`** with `status: pending`; the app surfaces a **proposal review modal** before committing to the real transaction list.
 
 ---
 
@@ -1026,72 +1038,30 @@ const data: WalletResponse = await response.json();
 
 ## Future Phases (Backlog)
 
-### Phase 2: AI-Powered Transaction Entry
-**Objective:** Enable natural language transaction input
+### Phase 2: AI-Powered Transaction Entry — *partially delivered (on-device)*
 
-**Features:**
-- Voice-to-text transaction entry using Expo Speech Recognition
-- LLM-powered natural language processing (OpenAI GPT-4 or Anthropic Claude)
-- AI extracts: amount, category, merchant, date from user input
-- Confidence scores for AI suggestions
-- User can correct AI suggestions before saving
+**Delivered (mobile):** Natural-language and typed text → structured extraction via **on-device** Qwen 2.5 VL; **grammar-constrained JSON** (`generateObject` + Zod); wallet resolution sub-agent; proposals with confidence/reasoning; user review before save.
 
-**Example Flow:**
+**Still on the backlog:**
+- First-class **voice-to-text** pipeline (e.g. Expo Speech / on-device STT) wired into the same orchestrator
+- Optional **cloud LLM** path for users who prefer it (would be opt-in and clearly labeled)
+
+**Original example flow** (still valid; today often typed or pasted instead of spoken):
 ```
-User speaks: "I spent $45.50 at Starbucks this morning"
+User: "I spent $45.50 at Starbucks this morning"
 ↓
-AI extracts: {
-  amount: 45.50,
-  type: "expense",
-  merchant: "Starbucks",
-  category: "Food & Dining > Coffee",
-  date: today at ~9:00 AM
-}
+Model extracts: amount, type, merchant, category hints, wallet hint
 ↓
-User reviews and confirms/edits
+User reviews in proposal modal and confirms/edits
 ```
 
-**Tech Stack:**
-- Expo Speech Recognition or OpenAI Whisper API for voice-to-text
-- OpenAI GPT-4 or Anthropic Claude for NLP extraction
-- Structured output with Zod validation
+**Tech (as implemented):** `@react-native-ai/llama`, Vercel AI SDK `generateObject`, shared Zod schemas in `@repo/types` where applicable.
 
-**Database Changes:**
-- Add `metadata.ai_suggested` and `metadata.ai_confidence` fields
+### Phase 3: Receipt OCR & Image Processing — *partially delivered (on-device VL)*
 
-### Phase 3: Receipt OCR & Image Processing
-**Objective:** Extract transaction data from receipt photos
+**Delivered:** Receipt/camera image in chat → **multimodal** VL extraction (no separate cloud OCR required for the happy path); local image persistence; offline-first upload queue to Supabase Storage; same proposal + review flow.
 
-**Features:**
-- Take photo of receipt using expo-image-picker
-- OCR extraction using Google Cloud Vision or AWS Textract
-- LLM processes OCR text to extract structured data
-- Store receipt image in Supabase Storage
-- Link receipt image to transaction
-
-**Example Flow:**
-```
-User takes photo of receipt
-↓
-OCR extracts text
-↓
-LLM parses: merchant, items, amounts, total, date, tax
-↓
-Create transaction with extracted data
-↓
-User reviews and saves
-```
-
-**Tech Stack:**
-- `expo-image-picker` for camera
-- `react-native-vision-camera` for advanced camera features
-- Google Cloud Vision API or AWS Textract for OCR
-- LLM for structuring OCR output
-- Supabase Storage for image storage
-
-**Database Changes:**
-- Populate `receipt_image_url` field
-- Add `metadata.receipt_items` for itemized receipts
+**Backlog:** Deeper itemized line items (`metadata.receipt_items`), richer merchant/tax breakdown, optional **cloud OCR** fallback for hard images.
 
 ### Phase 4: Advanced Analytics & Location
 **Objective:** Provide insights into spending patterns
@@ -1286,7 +1256,8 @@ eas submit --platform android
 - Mobile UI implementation
 - Web dashboard
 - Sync functionality
+- **On-device AI orchestrator** (text / image / Android notifications → proposed transactions, user review); see `apps/mobile/lib/ai/ORCHESTRATOR.md`
 
 ---
 
-*Last Updated: February 14, 2026*
+*Last Updated: March 22, 2026*
