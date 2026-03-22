@@ -12,11 +12,52 @@ function trace(
   try { logger?.({ stage, event, details }); } catch { /* never break orchestration */ }
 }
 
+function escapeRegex(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
 function hintMatchesWallet(hint: string, walletName: string): boolean {
   const h = hint.trim().toLowerCase();
   const w = walletName.trim().toLowerCase();
   if (!h || !w) return false;
   return h === w || h.includes(w) || w.includes(h);
+}
+
+/**
+ * If the user message names a wallet (e.g. "by cash") and a wallet is literally named "Cash",
+ * match on whole-word / token appearance before looser heuristics.
+ */
+function walletNameAppearsInHint(
+  combinedHint: string,
+  wallets: { id: string; name: string }[],
+): { id: string; name: string } | null {
+  const lower = combinedHint.toLowerCase();
+  for (const w of wallets) {
+    const name = w.name.trim();
+    if (name.length < 2) continue;
+    const n = name.toLowerCase();
+    try {
+      if (new RegExp(`\\b${escapeRegex(n)}\\b`, 'i').test(lower)) {
+        return { id: w.id, name: w.name };
+      }
+    } catch {
+      if (lower.includes(n)) return { id: w.id, name: w.name };
+    }
+  }
+  return null;
+}
+
+/** Combine receipt extraction hint with the user's own message (e.g. "I paid by cash"). */
+export function mergeWalletHintsForResolution(
+  extractedHint: string | null | undefined,
+  userNote: string | null | undefined,
+): string | null {
+  const u = userNote?.trim();
+  const r = extractedHint?.trim();
+  if (u && r) return `${u} | ${r}`;
+  if (u) return u;
+  if (r) return r;
+  return null;
 }
 
 /**
@@ -78,18 +119,24 @@ async function llmWalletDecision(
   amount: number,
   transactionType: 'income' | 'expense',
   logger?: TraceLogger,
+  userContext?: string | null,
 ): Promise<z.infer<typeof walletDecisionSchema> | null> {
   const userPrompt = [
     'Match this transaction to one of the user wallets.',
     '',
     `Available wallets (use only these ids): ${JSON.stringify(cachedWallets)}`,
-    `Source/hint: ${hint ?? 'none'}`,
+    userContext?.trim()
+      ? `User message (may state how they paid — e.g. cash, card, bank name): ${userContext.trim()}`
+      : null,
+    `Extracted payment / wallet hint (from receipt or parser): ${hint ?? 'none'}`,
     `Amount: ${amount}`,
     `Transaction type: ${transactionType}`,
     '',
     'Respond with ONLY a single JSON object (no markdown fences, no prose):',
     '{"action":"create" or "skip","walletId":"<exact id from list or null>","reason":"short"}',
-  ].join('\n');
+  ]
+    .filter((line) => line != null)
+    .join('\n');
 
   const result = await generateText({
     model,
@@ -124,6 +171,11 @@ async function llmWalletDecision(
   return parsed.data;
 }
 
+export type WalletResolutionOptions = {
+  /** Full user message (e.g. chat caption with receipt) — used with extracted hint for matching. */
+  userContext?: string | null;
+};
+
 export async function walletResolutionSubAgent(
   model: any,
   hint: string | null | undefined,
@@ -131,6 +183,7 @@ export async function walletResolutionSubAgent(
   transactionType: 'income' | 'expense',
   adapters: Adapters,
   logger?: TraceLogger,
+  options?: WalletResolutionOptions,
 ): Promise<{ shouldCreate: boolean; walletId: string | null; reason: string }> {
   let cachedWallets: { id: string; name: string }[] = [];
 
@@ -140,6 +193,8 @@ export async function walletResolutionSubAgent(
   } catch {
     return { shouldCreate: false, walletId: null, reason: 'Wallet lookup failed' };
   }
+
+  const effectiveHint = mergeWalletHintsForResolution(hint, options?.userContext ?? null);
 
   if (cachedWallets.length === 1) {
     trace(logger, 'wallet-resolver', 'auto-select.single-wallet', {
@@ -156,32 +211,46 @@ export async function walletResolutionSubAgent(
     return { shouldCreate: false, walletId: null, reason: 'No wallets configured' };
   }
 
-  if (hint) {
-    const match = cachedWallets.find((w) => hintMatchesWallet(hint, w.name));
+  if (effectiveHint) {
+    const wordMatch = walletNameAppearsInHint(effectiveHint, cachedWallets);
+    if (wordMatch) {
+      trace(logger, 'wallet-resolver', 'word-boundary-match', {
+        effectiveHint: effectiveHint.slice(0, 120),
+        walletId: wordMatch.id,
+        walletName: wordMatch.name,
+      });
+      return {
+        shouldCreate: true,
+        walletId: wordMatch.id,
+        reason: `Matched "${wordMatch.name}" from user or hint text`,
+      };
+    }
+
+    const match = cachedWallets.find((w) => hintMatchesWallet(effectiveHint, w.name));
     if (match) {
       trace(logger, 'wallet-resolver', 'deterministic-match', {
-        hint,
+        hint: effectiveHint,
         walletId: match.id,
         walletName: match.name,
       });
       return {
         shouldCreate: true,
         walletId: match.id,
-        reason: `Matched hint "${hint}" to wallet "${match.name}"`,
+        reason: `Matched hint "${effectiveHint}" to wallet "${match.name}"`,
       };
     }
 
-    const fuzzy = heuristicWalletMatch(hint, cachedWallets);
+    const fuzzy = heuristicWalletMatch(effectiveHint, cachedWallets);
     if (fuzzy) {
       trace(logger, 'wallet-resolver', 'heuristic-match', {
-        hint,
+        hint: effectiveHint,
         walletId: fuzzy.id,
         walletName: fuzzy.name,
       });
       return {
         shouldCreate: true,
         walletId: fuzzy.id,
-        reason: `Heuristic match from hint "${hint}" to wallet "${fuzzy.name}"`,
+        reason: `Heuristic match from hint "${effectiveHint}" to wallet "${fuzzy.name}"`,
       };
     }
   }
@@ -193,15 +262,21 @@ export async function walletResolutionSubAgent(
   };
 
   try {
-    trace(logger, 'wallet-resolver', 'llm-start', { hint, amount, transactionType });
+    trace(logger, 'wallet-resolver', 'llm-start', {
+      hint: effectiveHint,
+      amount,
+      transactionType,
+      hasUserContext: Boolean(options?.userContext?.trim()),
+    });
 
     const llm = await llmWalletDecision(
       model,
       cachedWallets,
-      hint,
+      hint ?? null,
       amount,
       transactionType,
       logger,
+      options?.userContext ?? null,
     );
 
     if (llm) {

@@ -93,6 +93,24 @@ const transaction_tags = new Table(
   { indexes: {} }
 );
 
+const ai_insights = new Table(
+  {
+    user_id: column.text,
+    feature_key: column.text,
+    context_key: column.text,
+    schema_version: column.integer,
+    input_hash: column.text,
+    status: column.text,
+    tool_snapshot: column.text,
+    result: column.text,
+    error_message: column.text,
+    model_id: column.text,
+    created_at: column.text,
+    updated_at: column.text,
+  },
+  { indexes: {} },
+);
+
 const proposed_transactions = new Table(
   {
     user_id: column.text,
@@ -133,6 +151,7 @@ export const AppSchema = new Schema({
   categories,
   tags,
   transaction_tags,
+  ai_insights,
   proposed_transactions,
 });
 

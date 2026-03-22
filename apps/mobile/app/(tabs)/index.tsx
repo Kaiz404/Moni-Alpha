@@ -13,7 +13,7 @@ import {
   useWindowDimensions,
 } from 'react-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import { router, useFocusEffect } from 'expo-router';
+import { Link, router, useFocusEffect } from 'expo-router';
 import {
   VictoryAxis,
   VictoryChart,
@@ -645,7 +645,22 @@ export default function WalletsScreen() {
           </View>
 
           <View className="bg-[#FAFAFA]/80 dark:bg-gray-950/95 mt-1 rounded-t-2xl px-4 pt-6 pb-8">
-            <Text className="mb-2 text-sm font-semibold text-slate-700 dark:text-slate-100">Recent Transactions</Text>
+            <View className="flex-row justify-between items-center mb-2">
+              <Text className="text-sm font-semibold text-slate-700 dark:text-slate-100">
+                Recent Transactions
+              </Text>
+              <Link
+                href={
+                  (focusedWallet?.id
+                    ? `/transaction/new?walletId=${focusedWallet.id}`
+                    : '/transaction/new') as any
+                }
+                asChild>
+                <TouchableOpacity className="bg-blue-600 dark:bg-blue-500 px-4 py-2 rounded-lg">
+                  <Text className="text-white font-semibold">+ Add</Text>
+                </TouchableOpacity>
+              </Link>
+            </View>
             {transactions.map((item) => {
               const canEdit = item.type === 'income' || item.type === 'expense';
               return (
@@ -701,8 +716,8 @@ export default function WalletsScreen() {
             })}
             {transactions.length === 0 ? (
               <View className="mb-2 rounded-xl border border-dashed border-slate-300 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-800">
-                <Text className="text-sm text-slate-500 dark:text-slate-400">
-                  No transactions for this wallet yet.
+                <Text className="text-center text-sm text-slate-500 dark:text-slate-400">
+                  No transactions for this wallet yet. Tap + Add to create one.
                 </Text>
               </View>
             ) : null}

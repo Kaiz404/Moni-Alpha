@@ -1,5 +1,6 @@
 -- Seed visual demo transactions for Touch n Go wallets
 -- Adds 160 transactions per user under a Touch n Go wallet (creates wallet if missing)
+-- (Renamed from duplicate 20260321000000 prefix — keep unique migration versions.)
 
 DO $$
 DECLARE
@@ -56,7 +57,7 @@ BEGIN
         description, merchant, notes, transaction_date, location_latitude, location_longitude, location_name,
         receipt_image_url, metadata
       ) VALUES (
-        uuid_generate_v4(), rec.user_id, w_id, amt, tx_type::transaction_type, chosen_cat, NULL, NULL,
+        gen_random_uuid(), rec.user_id, w_id, amt, tx_type::transaction_type, chosen_cat, NULL, NULL,
         CONCAT('Visual seed txn ', i), CONCAT('Merchant ', (floor(random()*40)+1)::int), 'Seeded for visual chart demo', tx_date,
         NULL, NULL, NULL, NULL, metadata
       );

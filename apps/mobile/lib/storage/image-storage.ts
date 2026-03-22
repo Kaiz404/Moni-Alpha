@@ -1,6 +1,11 @@
+import { Image } from 'react-native';
 import { Directory, File, Paths } from 'expo-file-system';
 import { randomUUID } from 'expo-crypto';
+import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
 import { supabase } from '@/lib/supabase/client';
+
+/** Longer edge cap for on-device VL / native vision — avoids OOM and timeouts on huge photos. */
+export const VISION_MAX_EDGE_PX = 700;
 
 /** Avoid spamming the console when the Supabase project has no `receipts` bucket yet. */
 let receiptsBucketMissingLogged = false;
@@ -27,15 +32,64 @@ function getExtension(input: string): string {
   return rawExt in EXT_TO_MIME ? rawExt : DEFAULT_EXT;
 }
 
+function getImageSize(uri: string): Promise<{ width: number; height: number }> {
+  return new Promise((resolve, reject) => {
+    Image.getSize(
+      uri,
+      (width, height) => resolve({ width, height }),
+      (err) => reject(err ?? new Error('Image.getSize failed')),
+    );
+  });
+}
+
+/**
+ * Downscale so the image fits inside VISION_MAX_EDGE_PX × VISION_MAX_EDGE_PX (aspect ratio kept).
+ * Returns the original URI if already within bounds.
+ */
+export async function resizeImageToVisionMax(sourceUri: string): Promise<string> {
+  try {
+    const { width: w, height: h } = await getImageSize(sourceUri);
+    if (w <= VISION_MAX_EDGE_PX && h <= VISION_MAX_EDGE_PX) {
+      return sourceUri;
+    }
+    const actions =
+      w >= h
+        ? [{ resize: { width: VISION_MAX_EDGE_PX } }]
+        : [{ resize: { height: VISION_MAX_EDGE_PX } }];
+
+    const result = await manipulateAsync(sourceUri, actions, {
+      compress: 0.88,
+      format: SaveFormat.JPEG,
+    });
+    return result.uri;
+  } catch (e) {
+    console.warn('[ImageStorage] resizeImageToVisionMax failed, trying width-only fallback:', e);
+    try {
+      const result = await manipulateAsync(
+        sourceUri,
+        [{ resize: { width: VISION_MAX_EDGE_PX } }],
+        { compress: 0.88, format: SaveFormat.JPEG },
+      );
+      return result.uri;
+    } catch (e2) {
+      console.warn('[ImageStorage] resize fallback failed, using original:', e2);
+      return sourceUri;
+    }
+  }
+}
+
 /**
  * Copy a picked/captured image into the app's persistent documents directory.
- * Returns the new local file:// URI that survives cache clears.
+ * Images are downscaled to fit inside {@link VISION_MAX_EDGE_PX}² before save so the LLM and uploads
+ * never see extreme resolutions.
  */
 export async function saveImageLocally(sourceUri: string): Promise<string> {
   await ensureReceiptsDir();
-  const ext = getExtension(sourceUri);
+  const processedUri = await resizeImageToVisionMax(sourceUri);
+  const wasResized = processedUri !== sourceUri;
+  const ext = wasResized ? 'jpg' : getExtension(sourceUri);
   const filename = `${randomUUID()}.${ext}`;
-  const sourceFile = new File(sourceUri);
+  const sourceFile = new File(processedUri);
   const destinationFile = new File(RECEIPTS_DIR, filename);
   sourceFile.copy(destinationFile);
   return destinationFile.uri;

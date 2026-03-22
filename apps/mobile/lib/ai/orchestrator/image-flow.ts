@@ -2,7 +2,15 @@ import { generateText } from 'ai';
 import type { z } from 'zod';
 import type { CreateProposedTransaction } from '@repo/types';
 import { isVisionMultimodalEnabled } from '@/lib/ai/model-manager';
-import { RECEIPT_EXTRACTION_PROMPT, extractionResultSchema } from './prompts';
+import { resizeImageToVisionMax, VISION_MAX_EDGE_PX } from '@/lib/storage/image-storage';
+import {
+  RECEIPT_EXTRACTION_PROMPT,
+  RECEIPT_AMOUNT_VISION_PROMPT,
+  RECEIPT_DETAILS_VISION_PROMPT,
+  extractionResultSchema,
+  receiptAmountVisionSchema,
+  receiptDetailsVisionSchema,
+} from './prompts';
 import { textExtractionSubAgent } from './text-flow';
 import { walletResolutionSubAgent } from './wallet-resolver';
 import type { TraceEvent, TraceLogger, OrchestrationResult } from './types';
@@ -44,55 +52,150 @@ function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise
   });
 }
 
-/**
- * Native llama.rn completion with image_paths — often more reliable than AI SDK multimodal
- * for the same loaded VL model. Parse JSON from text.
- */
-async function nativeVisionExtract(
+async function runNativeVisionJson<T>(
   model: any,
   imageUri: string,
-  userContext: string | undefined,
-  logger?: TraceLogger,
-): Promise<z.infer<typeof extractionResultSchema> | null> {
+  prompt: string,
+  schema: z.ZodType<T>,
+  opts: {
+    n_predict: number;
+    traceLabel: string;
+    logger?: TraceLogger;
+    /**
+     * Default `false`: pass `stop: ['\\n\\n']` (legacy). Set `true` for JSON that may contain
+     * blank lines — otherwise generation stops early and details parse as empty.
+     */
+    omitStop?: boolean;
+  },
+): Promise<T | null> {
   const context = model.getContext?.();
   if (!context?.completion) {
-    trace(logger, 'extractor', 'native-vision.no-context', {});
+    trace(opts.logger, 'extractor', `${opts.traceLabel}.no-context`, {});
     return null;
   }
 
-  trace(logger, 'extractor', 'native-vision.completion', {});
+  trace(opts.logger, 'extractor', `${opts.traceLabel}.completion`, {});
 
-  const prompt = [
-    RECEIPT_EXTRACTION_PROMPT,
-    userContext ? `User context: ${userContext}` : '',
-    'Analyze the receipt image and return ONLY valid JSON matching:',
-    '{"amount": number|null, "type": "income"|"expense"|null, "currency": string|null, "merchant": string|null, "description": string|null, "wallet_hint": string|null, "category_hint": string|null}',
-  ]
-    .filter(Boolean)
-    .join('\n');
+  const completionArgs: Parameters<typeof context.completion>[0] = {
+    prompt,
+    image_paths: [imageUri],
+    n_predict: opts.n_predict,
+    temperature: 0,
+    ...(!opts.omitStop ? { stop: ['\n\n'] } : {}),
+  };
 
   const response = (await withTimeout(
-    context.completion({
-      prompt,
-      image_paths: [imageUri],
-      n_predict: 512,
-      temperature: 0,
-      stop: ['\n\n'],
-    }),
+    context.completion(completionArgs),
     VISION_GENERATE_OBJECT_MS,
-    'native-vision-completion',
+    `${opts.traceLabel}-completion`,
   )) as { text?: string } | undefined;
 
   const text = response?.text ?? '';
-  trace(logger, 'extractor', 'native-vision.raw', { textLength: text.length });
+  trace(opts.logger, 'extractor', `${opts.traceLabel}.raw`, { textLength: text.length });
 
   const jsonMatch = text.match(/\{[\s\S]*\}/);
   if (!jsonMatch) return null;
 
-  const parsed = extractionResultSchema.safeParse(JSON.parse(jsonMatch[0]));
+  let parsedJson: unknown;
+  try {
+    parsedJson = JSON.parse(jsonMatch[0]);
+  } catch {
+    return null;
+  }
+
+  const parsed = schema.safeParse(parsedJson);
   if (!parsed.success) return null;
-  trace(logger, 'extractor', 'native-vision.parsed', { amount: parsed.data.amount });
+  trace(opts.logger, 'extractor', `${opts.traceLabel}.parsed`, {});
   return parsed.data;
+}
+
+/**
+ * Sub-agent A — native vision: amount, type, currency only (narrow task).
+ */
+async function nativeVisionAmountSubAgent(
+  model: any,
+  imageUri: string,
+  logger?: TraceLogger,
+): Promise<z.infer<typeof receiptAmountVisionSchema> | null> {
+  return runNativeVisionJson(model, imageUri, RECEIPT_AMOUNT_VISION_PROMPT, receiptAmountVisionSchema, {
+    n_predict: 320,
+    traceLabel: 'receipt-amount',
+    logger,
+    omitStop: false,
+  });
+}
+
+function detailsPayloadIsThin(d: z.infer<typeof receiptDetailsVisionSchema> | null): boolean {
+  if (!d) return true;
+  const m = d.merchant?.trim() ?? '';
+  const desc = d.description?.trim() ?? '';
+  return m.length < 2 && desc.length < 4;
+}
+
+/**
+ * Sub-agent B — native vision: merchant, description, wallet/category hints (image + user note).
+ * Runs **after** amount extraction succeeds; omitStop avoids truncating multi-line JSON.
+ */
+async function nativeVisionDetailsSubAgent(
+  model: any,
+  imageUri: string,
+  userContext: string | undefined,
+  logger: TraceLogger | undefined,
+  attempt: 1 | 2,
+): Promise<z.infer<typeof receiptDetailsVisionSchema> | null> {
+  const prompt = [
+    RECEIPT_DETAILS_VISION_PROMPT,
+    '',
+    `User message (if any — use for wallet_hint when payment method is not on the receipt): ${userContext?.trim() ?? '(none)'}`,
+  ].join('\n');
+
+  trace(logger, 'extractor', 'receipt-details.subagent', { attempt, after: 'receipt-amount' });
+
+  return runNativeVisionJson(model, imageUri, prompt, receiptDetailsVisionSchema, {
+    n_predict: attempt === 1 ? 512 : 768,
+    traceLabel: attempt === 1 ? 'receipt-details' : 'receipt-details-retry',
+    logger,
+    omitStop: true,
+  });
+}
+
+/**
+ * Second pass when the first details JSON is missing or too thin — still native vision only.
+ */
+async function runDetailsExtractionAfterAmount(
+  model: any,
+  imageUri: string,
+  userContext: string | undefined,
+  logger?: TraceLogger,
+): Promise<z.infer<typeof receiptDetailsVisionSchema> | null> {
+  let details = await nativeVisionDetailsSubAgent(model, imageUri, userContext, logger, 1);
+  if (detailsPayloadIsThin(details)) {
+    trace(logger, 'extractor', 'receipt-details.retry-native', {});
+    const second = await nativeVisionDetailsSubAgent(model, imageUri, userContext, logger, 2);
+    if (!detailsPayloadIsThin(second)) details = second;
+  }
+  if (details) {
+    trace(logger, 'extractor', 'receipt-details.merged-into-proposal', {
+      merchantLen: details.merchant?.length ?? 0,
+      descriptionLen: details.description?.length ?? 0,
+    });
+  }
+  return details;
+}
+
+function mergeNativeVisionExtractions(
+  amount: z.infer<typeof receiptAmountVisionSchema>,
+  details: z.infer<typeof receiptDetailsVisionSchema> | null,
+): z.infer<typeof extractionResultSchema> {
+  return {
+    amount: amount.amount,
+    type: amount.type ?? null,
+    currency: amount.currency ?? null,
+    merchant: details?.merchant ?? null,
+    description: details?.description ?? null,
+    wallet_hint: details?.wallet_hint ?? null,
+    category_hint: details?.category_hint ?? null,
+  };
 }
 
 type Adapters = {
@@ -169,9 +272,8 @@ async function multimodalReceiptExtractWithGenerateText(
  *
  * - If the model was loaded **without** mmproj (text-only), **never** call multimodal APIs
  *   (they can hang). Use `userContext` text extraction only.
- * - If vision is enabled: native `completion` + `image_paths` first (fast), then
- *   `generateText` multimodal + JSON parse (same stack as the debug vision smoke test).
- *   We do **not** use `generateObject` for multimodal — it can stall on this native binding.
+ * - If vision is enabled: **two native vision sub-agents** (amount, then details), then
+ *   optional `generateText` multimodal fallback. No `generateObject` for multimodal.
  */
 export async function imageExtractionSubAgent(
   model: any,
@@ -180,6 +282,11 @@ export async function imageExtractionSubAgent(
   logger?: TraceLogger,
 ): Promise<z.infer<typeof extractionResultSchema> | null> {
   trace(logger, 'extractor', 'start.image', { imageUri, hasContext: Boolean(userContext) });
+
+  const visionUri = await resizeImageToVisionMax(imageUri);
+  if (visionUri !== imageUri) {
+    trace(logger, 'extractor', 'vision.downscaled', { maxEdge: VISION_MAX_EDGE_PX });
+  }
 
   if (!isVisionMultimodalEnabled()) {
     trace(logger, 'extractor', 'skip-multimodal-text-only-model', {
@@ -196,14 +303,27 @@ export async function imageExtractionSubAgent(
   trace(logger, 'extractor', 'using-multimodal', {});
 
   try {
-    trace(logger, 'extractor', 'try-native-vision', {});
-    const native = await nativeVisionExtract(model, imageUri, userContext, logger);
-    if (native && native.amount != null && native.amount > 0) {
-      trace(logger, 'extractor', 'native-vision.ok', { amount: native.amount });
-      return native;
+    trace(logger, 'extractor', 'try-native-two-agent', {});
+    const amountOnly = await nativeVisionAmountSubAgent(model, visionUri, logger);
+    if (amountOnly && amountOnly.amount != null && amountOnly.amount > 0) {
+      let details: z.infer<typeof receiptDetailsVisionSchema> | null = null;
+      try {
+        details = await runDetailsExtractionAfterAmount(model, visionUri, userContext, logger);
+      } catch (e) {
+        trace(logger, 'extractor', 'receipt-details-error', {
+          message: e instanceof Error ? e.message : String(e),
+        });
+      }
+      const merged = mergeNativeVisionExtractions(amountOnly, details);
+      trace(logger, 'extractor', 'native-two-agent.ok', {
+        amount: merged.amount,
+        hasMerchant: Boolean(merged.merchant?.trim()),
+        hasDescription: Boolean(merged.description?.trim()),
+      });
+      return merged;
     }
   } catch (e) {
-    trace(logger, 'extractor', 'native-vision-error', {
+    trace(logger, 'extractor', 'native-two-agent-error', {
       message: e instanceof Error ? e.message : String(e),
     });
   }
@@ -211,7 +331,7 @@ export async function imageExtractionSubAgent(
   try {
     const fromText = await multimodalReceiptExtractWithGenerateText(
       model,
-      imageUri,
+      visionUri,
       userContext,
       logger,
     );
@@ -255,9 +375,22 @@ export async function runImageFlow(
     type,
     adapters,
     logger,
+    { userContext: userContext ?? null },
   );
 
   const now = new Date().toISOString();
+  const merchantTrim = extraction.merchant?.trim() ?? '';
+  const descriptionTrim = extraction.description?.trim() ?? '';
+  const descriptionForProposal =
+    descriptionTrim ||
+    (merchantTrim ? `Purchase at ${merchantTrim}` : 'Receipt');
+
+  const aiReasoningParts = [
+    `Amount ${extraction.amount} ${extraction.currency ?? 'MYR'} (${type}).`,
+    merchantTrim ? `Vendor: ${merchantTrim}.` : null,
+    descriptionTrim ? descriptionTrim : null,
+  ].filter(Boolean);
+
   const proposal: CreateProposedTransaction = {
     sourceType: 'image',
     sourceApp: null,
@@ -266,15 +399,15 @@ export async function runImageFlow(
     notificationTitle: null,
     notificationBody: null,
     notificationReceivedAt: null,
-    aiReasoning: `Extracted from receipt image: amount=${extraction.amount}, type=${type}`,
+    aiReasoning: aiReasoningParts.join(' '),
     aiConfidence: 0.6,
     walletId: walletResult.walletId,
     walletHint: extraction.wallet_hint ?? null,
     amount: extraction.amount,
     currency: extraction.currency ?? 'MYR',
     type,
-    description: extraction.description ?? 'Receipt',
-    merchant: extraction.merchant ?? null,
+    description: descriptionForProposal,
+    merchant: merchantTrim || null,
     categoryId: null,
     categoryHint: extraction.category_hint ?? null,
     transactionDate: now,

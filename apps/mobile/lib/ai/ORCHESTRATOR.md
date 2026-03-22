@@ -47,8 +47,8 @@ All flows produce `proposed_transactions` records (never real transactions). Use
      │   Text Flow      │   │   Image Flow     │   │  Notification   │
      │  (text-flow.ts)  │   │ (image-flow.ts)  │   │     Flow        │
      │                   │   │                   │   │ (notif-flow.ts) │
-     │ Skip classify    │   │ VL model extract │   │ Classify first  │
-     │ Extract details  │   │ (multimodal msg) │   │ Extract details │
+     │ Skip classify    │   │ 2× native vision │   │ Classify first  │
+     │ Extract details  │   │ + optional fallback │   │ Extract details │
      │ Resolve wallet   │   │ Resolve wallet   │   │ Resolve wallet  │
      │ Create proposal  │   │ Create proposal  │   │ Create proposal │
      └──────────────────┘   └──────────────────┘   └─────────────────┘
@@ -83,12 +83,16 @@ All flows produce `proposed_transactions` records (never real transactions). Use
 - **Input:** User's natural language text
 - **Output:** JSON with `amount`, `type`, `currency`, `merchant`, `description`, `wallet_hint`, `category_hint`
 
-**For image inputs:**
+**For image inputs (receipts):**
 
-- **Prompt:** `RECEIPT_EXTRACTION_PROMPT`
-- **Method:** `generateObject()` with multimodal `messages` format — passes the local `file://` URI as a `file` content part
-- **Output:** Same JSON schema as text extraction
-- **Fallback:** If vision fails, falls back to text extraction using user context
+Two **native vision sub-agents** (llama.rn `context.completion` + `image_paths`) run in sequence — no `generateObject` on multimodal (it can stall on `@react-native-ai/llama`):
+
+1. **ReceiptAmountAgent** — `RECEIPT_AMOUNT_VISION_PROMPT` + `receiptAmountVisionSchema`: total amount, type, currency from the image only.
+2. **ReceiptDetailsAgent** — `RECEIPT_DETAILS_VISION_PROMPT` + `receiptDetailsVisionSchema`: merchant, description, category, and `wallet_hint` from the image; the user’s caption (e.g. “paid by cash”) is included in the prompt so payment wording can fill `wallet_hint` when the receipt does not show it.
+
+Results are merged into the same shape as `extractionResultSchema`.
+
+**Fallback:** If native steps fail, `generateText` multimodal + JSON parse (same pattern as the debug vision smoke test), then text-only extraction from `userContext` if present.
 
 **For notifications:**
 
@@ -104,9 +108,14 @@ All flows produce `proposed_transactions` records (never real transactions). Use
 **Logic (in priority order):**
 
 1. If user has only one wallet → auto-select
-2. If `wallet_hint` matches a wallet name deterministically → use that wallet
-3. LLM-based resolution via `generateObject()` with wallet list in prompt → model selects best match
-4. If no match found → `walletId = null` (user selects during review)
+2. Build **effective hint** = `mergeWalletHintsForResolution(extracted_wallet_hint, userContext)` so captions like “I paid this by cash” participate in matching (e.g. wallet named “Cash”)
+3. Whole-word match of a wallet name inside the effective hint (e.g. `cash` ↔ “Cash”)
+4. Deterministic substring match (`hintMatchesWallet`) on the effective hint
+5. Heuristic token overlap (`heuristicWalletMatch`)
+6. LLM via **`generateText`** + JSON parse (not `generateObject`) — prompt includes both **user message** and **extracted hint** when provided
+7. If no match found → `walletId = null` (user selects during review)
+
+Flows pass optional **`userContext`** into wallet resolution: image captions from chat, full text for the text flow, notification title+body for notification flow.
 
 ### 4. Proposal Creator
 
@@ -151,10 +160,17 @@ The mmproj projector enables vision capabilities. If not downloaded, the model r
 
 ## LLM API Usage
 
-All structured LLM calls use `generateObject()` from the Vercel AI SDK with Zod schemas for grammar-constrained JSON output. This ensures reliable parsing without manual JSON extraction.
+| Flow | Primary API | Notes |
+|------|-------------|--------|
+| Text extraction | `generateObject()` + `extractionResultSchema` | Text-only; grammar JSON is stable here |
+| Receipt image | **Native** `completion` + `image_paths` (two sub-agents) | Avoids multimodal `generateObject` stalls |
+| Receipt fallback | `generateText()` multimodal + JSON parse | Same as debug vision smoke test |
+| Wallet resolution | `generateText()` + JSON parse | `generateObject` avoided on this RN binding |
+| Notifications | `generateText()` / pipeline in `notification-processor.ts` | Classification + extraction |
 
 ```typescript
 import { generateObject } from 'ai';
+// Text flow only — example:
 const { object } = await generateObject({
   model,
   schema: extractionResultSchema,
@@ -164,21 +180,7 @@ const { object } = await generateObject({
 });
 ```
 
-For image inputs, the multimodal `messages` format is used:
-
-```typescript
-const { object } = await generateObject({
-  model,
-  schema: extractionResultSchema,
-  messages: [{
-    role: 'user',
-    content: [
-      { type: 'text', text: RECEIPT_EXTRACTION_PROMPT },
-      { type: 'file', mediaType: 'image/jpeg', data: imageUri },
-    ],
-  }],
-});
-```
+Receipt image processing does **not** use multimodal `generateObject`; it uses native vision completions and, on failure, `generateText` with multimodal `messages` (see `image-flow.ts`).
 
 ---
 

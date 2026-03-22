@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Platform,
@@ -26,9 +26,23 @@ import {
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useTransactionPinmap, type TransactionPinPoint } from '@/hooks/use-transaction-heatmap';
+import { AiInsightSection } from '@/components/ai-insight-section';
+import {
+  computeInsightInputHash,
+  runSummaryInsightOrchestration,
+} from '@/lib/ai/insights/insight-orchestrator';
+import type { TxForMetrics } from '@/lib/ai/insights/insight-metrics';
+import { getOrLoadModel } from '@/lib/ai/model-manager';
 import { syncSystem } from '@/lib/powersync/Powersync';
+import {
+  AI_INSIGHT_CONTEXT_GLOBAL,
+  AI_INSIGHT_FEATURE_SUMMARY,
+  getAiInsightSlot,
+  upsertSummaryInsightCards,
+} from '@/lib/supabase/ai-insights';
 import { getTransactions } from '@/lib/supabase/transactions';
 import { getWallets } from '@/lib/supabase/wallets';
+import type { SummaryInsightCardsV1 } from '@repo/types';
 
 type TransactionItem = {
   id: string;
@@ -37,6 +51,7 @@ type TransactionItem = {
   amount: number;
   type: 'income' | 'expense' | 'transfer';
   categoryId?: string | null;
+  merchant?: string | null;
   transactionDate: string;
 };
 
@@ -78,13 +93,19 @@ export default function SummaryScreen() {
   const [categoryMap, setCategoryMap] = useState<Record<string, string>>({});
   const [selectedPin, setSelectedPin] = useState<TransactionPinPoint | null>(null);
 
+  const [insightCards, setInsightCards] = useState<SummaryInsightCardsV1 | null>(null);
+  const [storedInsightHash, setStoredInsightHash] = useState<string | null>(null);
+  const [liveInputHash, setLiveInputHash] = useState<string | null>(null);
+  const [insightGenerating, setInsightGenerating] = useState(false);
+  const [insightError, setInsightError] = useState<string | null>(null);
+
   const loadData = useCallback(async () => {
     setLoading(true);
     setError(null);
 
     try {
       const [txData, walletData, categoryRows] = await Promise.all([
-        getTransactions(),
+        getTransactions(undefined, 8000),
         getWallets(),
         syncSystem.db
           .selectFrom('categories')
@@ -100,6 +121,15 @@ export default function SummaryScreen() {
           categoryRows.map((row) => [row.id, row.name ?? 'Uncategorized'])
         )
       );
+
+      const row = await getAiInsightSlot(AI_INSIGHT_FEATURE_SUMMARY, AI_INSIGHT_CONTEXT_GLOBAL);
+      if (row?.status === 'ready' && row.result) {
+        setInsightCards(row.result);
+        setStoredInsightHash(row.inputHash);
+      } else {
+        setInsightCards(null);
+        setStoredInsightHash(row?.inputHash ?? null);
+      }
     } catch (e) {
       console.error('Error loading summary data:', e);
       setError(e instanceof Error ? e.message : 'Failed to load summary data');
@@ -107,6 +137,68 @@ export default function SummaryScreen() {
       setLoading(false);
     }
   }, []);
+
+  const currencyHint = useMemo(
+    () => wallets[0]?.currency?.trim() || 'USD',
+    [wallets],
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      if (!transactions.length && !wallets.length) {
+        setLiveInputHash(null);
+        return;
+      }
+      const txs: TxForMetrics[] = transactions.map((t) => ({
+        amount: t.amount,
+        type: t.type,
+        categoryId: t.categoryId,
+        merchant: t.merchant ?? null,
+        transactionDate: t.transactionDate,
+      }));
+      const { inputHash } = await computeInsightInputHash(txs, categoryMap, currencyHint);
+      if (!cancelled) setLiveInputHash(inputHash);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [transactions, categoryMap, currencyHint, wallets.length]);
+
+  const insightStale =
+    storedInsightHash != null &&
+    liveInputHash != null &&
+    storedInsightHash !== liveInputHash;
+
+  const generateInsights = useCallback(async () => {
+    setInsightError(null);
+    setInsightGenerating(true);
+    try {
+      const txs: TxForMetrics[] = transactions.map((t) => ({
+        amount: t.amount,
+        type: t.type,
+        categoryId: t.categoryId,
+        merchant: t.merchant ?? null,
+        transactionDate: t.transactionDate,
+      }));
+      const model = await getOrLoadModel();
+      const out = await runSummaryInsightOrchestration(model, txs, categoryMap, currencyHint);
+      setInsightCards(out.result);
+      setStoredInsightHash(out.inputHash);
+      await upsertSummaryInsightCards({
+        inputHash: out.inputHash,
+        status: 'ready',
+        toolSnapshot: out.snapshot,
+        result: out.result,
+        errorMessage: null,
+        modelId: out.trace.modelId,
+      });
+    } catch (e) {
+      setInsightError(e instanceof Error ? e.message : 'Could not generate insights');
+    } finally {
+      setInsightGenerating(false);
+    }
+  }, [transactions, categoryMap, currencyHint]);
 
   useFocusEffect(
     useCallback(() => {
@@ -278,6 +370,15 @@ export default function SummaryScreen() {
         </View>
         <Text className="text-2xl ml-3 font-bold text-gray-900 dark:text-white">Summary</Text>
       </View>
+
+      <AiInsightSection
+        insight={insightCards}
+        generating={insightGenerating}
+        stale={insightStale}
+        errorMessage={insightError}
+        onRefresh={generateInsights}
+        disabled={loading}
+      />
 
       <View className="rounded-2xl overflow-hidden mb-4 border border-[#8494FF]/25 dark:border-indigo-500/35 shadow-sm">
         <View className="bg-[#8494FF] dark:bg-[#4f54c4] px-4 py-3">

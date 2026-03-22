@@ -74,6 +74,7 @@ export async function runTextFlow(
     type,
     adapters,
     logger,
+    { userContext: text },
   );
 
   const now = new Date().toISOString();

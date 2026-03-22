@@ -7,3 +7,4 @@ export * from './tag';
 export * from './transaction';
 export * from './analytics';
 export * from './proposed-transaction';
+export * from './ai-insight';

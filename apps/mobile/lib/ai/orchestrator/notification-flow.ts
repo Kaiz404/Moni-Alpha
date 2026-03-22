@@ -148,6 +148,8 @@ export async function runNotificationFlow(
   const normalizedType: 'income' | 'expense' =
     proposal.type === 'income' ? 'income' : 'expense';
 
+  const notifContext = [notification.title, notification.text].filter(Boolean).join(' ').trim();
+
   const walletResult = await walletResolutionSubAgent(
     model,
     notification.app ?? proposal.walletHint,
@@ -155,6 +157,7 @@ export async function runNotificationFlow(
     normalizedType,
     adapters,
     logger,
+    notifContext ? { userContext: notifContext } : undefined,
   );
 
   if (!walletResult.shouldCreate) {

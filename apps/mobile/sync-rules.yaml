@@ -52,6 +52,11 @@ bucket_definitions:
     data:
       - SELECT * FROM proposed_transactions WHERE proposed_transactions.user_id = bucket.user_id
 
+  user_ai_insights:
+    parameters: SELECT request.user_id() as user_id
+    data:
+      - SELECT * FROM ai_insights WHERE ai_insights.user_id = bucket.user_id
+
   user_transaction_tags:
     # Sync transaction-tag relationships for transactions the user has access to
     # Parameter Query, selecting a user_id parameter:

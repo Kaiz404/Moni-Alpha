@@ -1,5 +1,6 @@
 import { generateText } from 'ai';
 import { getOrLoadModel, isVisionMultimodalEnabled } from '@/lib/ai/model-manager';
+import { resizeImageToVisionMax, VISION_MAX_EDGE_PX } from '@/lib/storage/image-storage';
 import type { LogFn, DebugTestResult } from './types';
 
 const DESCRIBE_SYSTEM =
@@ -43,6 +44,11 @@ export async function runVisionImageDescribeTest(
   log('=== Vision smoke test ===');
   log(`Image URI: ${imageUri.slice(0, 80)}${imageUri.length > 80 ? '…' : ''}`);
 
+  const visionUri = await resizeImageToVisionMax(imageUri);
+  if (visionUri !== imageUri) {
+    log(`Downscaled for vision (max ${VISION_MAX_EDGE_PX}px edge): ${visionUri.slice(0, 80)}…`);
+  }
+
   log('Loading model (getOrLoadModel)...');
   const model = await getOrLoadModel();
   if (!model) {
@@ -64,7 +70,7 @@ export async function runVisionImageDescribeTest(
     };
   }
 
-  const mediaType = mediaTypeForUri(imageUri);
+  const mediaType = mediaTypeForUri(visionUri);
 
   try {
     log(`Running generateText (multimodal, ${VISION_TIMEOUT_MS / 1000}s max)...`);
@@ -78,7 +84,7 @@ export async function runVisionImageDescribeTest(
             role: 'user' as const,
             content: [
               { type: 'text' as const, text: DESCRIBE_USER },
-              { type: 'file' as const, mediaType, data: imageUri },
+              { type: 'file' as const, mediaType, data: visionUri },
             ],
           },
         ],
@@ -119,7 +125,7 @@ export async function runVisionImageDescribeTest(
       const raw = (await withTimeout(
         ctx.completion({
           prompt: `${DESCRIBE_SYSTEM}\n\n${DESCRIBE_USER}`,
-          image_paths: [imageUri],
+          image_paths: [visionUri],
           n_predict: 256,
           temperature: 0.2,
         } as Parameters<typeof ctx.completion>[0]),
