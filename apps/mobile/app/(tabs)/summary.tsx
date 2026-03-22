@@ -26,23 +26,24 @@ import {
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useTransactionPinmap, type TransactionPinPoint } from '@/hooks/use-transaction-heatmap';
-import { AiInsightSection } from '@/components/ai-insight-section';
+import { MoniFinanceAssistantSection } from '@/components/moni-finance-assistant-section';
 import {
-  computeInsightInputHash,
-  runSummaryInsightOrchestration,
-} from '@/lib/ai/insights/insight-orchestrator';
+  computeFinanceAssistantInputHash,
+  runFinanceAssistantOrchestration,
+} from '@/lib/ai/insights/finance-assistant-orchestrator';
 import type { TxForMetrics } from '@/lib/ai/insights/insight-metrics';
 import { getOrLoadModel } from '@/lib/ai/model-manager';
 import { syncSystem } from '@/lib/powersync/Powersync';
 import {
   AI_INSIGHT_CONTEXT_GLOBAL,
-  AI_INSIGHT_FEATURE_SUMMARY,
+  AI_INSIGHT_FEATURE_MONI_FINANCE_ASSISTANT,
   getAiInsightSlot,
-  upsertSummaryInsightCards,
+  upsertAiInsight,
 } from '@/lib/supabase/ai-insights';
+import { getCategoryBudgets } from '@/lib/supabase/category-budgets';
 import { getTransactions } from '@/lib/supabase/transactions';
 import { getWallets } from '@/lib/supabase/wallets';
-import type { SummaryInsightCardsV1 } from '@repo/types';
+import type { MoniFinanceAssistantV1 } from '@repo/types';
 
 type TransactionItem = {
   id: string;
@@ -93,7 +94,8 @@ export default function SummaryScreen() {
   const [categoryMap, setCategoryMap] = useState<Record<string, string>>({});
   const [selectedPin, setSelectedPin] = useState<TransactionPinPoint | null>(null);
 
-  const [insightCards, setInsightCards] = useState<SummaryInsightCardsV1 | null>(null);
+  const [financeInsight, setFinanceInsight] = useState<MoniFinanceAssistantV1 | null>(null);
+  const [budgetRows, setBudgetRows] = useState<{ categoryId: string; amount: number }[]>([]);
   const [storedInsightHash, setStoredInsightHash] = useState<string | null>(null);
   const [liveInputHash, setLiveInputHash] = useState<string | null>(null);
   const [insightGenerating, setInsightGenerating] = useState(false);
@@ -104,7 +106,7 @@ export default function SummaryScreen() {
     setError(null);
 
     try {
-      const [txData, walletData, categoryRows] = await Promise.all([
+      const [txData, walletData, categoryRows, budgets] = await Promise.all([
         getTransactions(undefined, 8000),
         getWallets(),
         syncSystem.db
@@ -112,6 +114,7 @@ export default function SummaryScreen() {
           .select(['id', 'name'])
           .where('is_active', '=', 1)
           .execute(),
+        getCategoryBudgets(),
       ]);
 
       setTransactions(txData as TransactionItem[]);
@@ -121,14 +124,18 @@ export default function SummaryScreen() {
           categoryRows.map((row) => [row.id, row.name ?? 'Uncategorized'])
         )
       );
+      setBudgetRows(budgets.map((b) => ({ categoryId: b.categoryId, amount: b.amount })));
 
-      const row = await getAiInsightSlot(AI_INSIGHT_FEATURE_SUMMARY, AI_INSIGHT_CONTEXT_GLOBAL);
-      if (row?.status === 'ready' && row.result) {
-        setInsightCards(row.result);
+      const row = await getAiInsightSlot(AI_INSIGHT_FEATURE_MONI_FINANCE_ASSISTANT, AI_INSIGHT_CONTEXT_GLOBAL);
+      if (row?.status === 'ready' && row.result?.schema === 'moni_finance_assistant_v1') {
+        setFinanceInsight(row.result);
         setStoredInsightHash(row.inputHash);
+      } else if (!row) {
+        setFinanceInsight(null);
+        setStoredInsightHash(null);
       } else {
-        setInsightCards(null);
-        setStoredInsightHash(row?.inputHash ?? null);
+        // Keep showing the last successful run; only replace when user taps Regenerate or DB has a ready row.
+        setStoredInsightHash(row.inputHash ?? null);
       }
     } catch (e) {
       console.error('Error loading summary data:', e);
@@ -157,13 +164,13 @@ export default function SummaryScreen() {
         merchant: t.merchant ?? null,
         transactionDate: t.transactionDate,
       }));
-      const { inputHash } = await computeInsightInputHash(txs, categoryMap, currencyHint);
+      const { inputHash } = await computeFinanceAssistantInputHash(txs, categoryMap, budgetRows, currencyHint);
       if (!cancelled) setLiveInputHash(inputHash);
     })();
     return () => {
       cancelled = true;
     };
-  }, [transactions, categoryMap, currencyHint, wallets.length]);
+  }, [transactions, categoryMap, currencyHint, wallets.length, budgetRows]);
 
   const insightStale =
     storedInsightHash != null &&
@@ -182,10 +189,12 @@ export default function SummaryScreen() {
         transactionDate: t.transactionDate,
       }));
       const model = await getOrLoadModel();
-      const out = await runSummaryInsightOrchestration(model, txs, categoryMap, currencyHint);
-      setInsightCards(out.result);
+      const out = await runFinanceAssistantOrchestration(model, txs, categoryMap, budgetRows, currencyHint);
+      setFinanceInsight(out.result);
       setStoredInsightHash(out.inputHash);
-      await upsertSummaryInsightCards({
+      await upsertAiInsight({
+        featureKey: AI_INSIGHT_FEATURE_MONI_FINANCE_ASSISTANT,
+        contextKey: AI_INSIGHT_CONTEXT_GLOBAL,
         inputHash: out.inputHash,
         status: 'ready',
         toolSnapshot: out.snapshot,
@@ -198,7 +207,7 @@ export default function SummaryScreen() {
     } finally {
       setInsightGenerating(false);
     }
-  }, [transactions, categoryMap, currencyHint]);
+  }, [transactions, categoryMap, currencyHint, budgetRows]);
 
   useFocusEffect(
     useCallback(() => {
@@ -252,7 +261,7 @@ export default function SummaryScreen() {
 
     let running = initialTotal;
     return keys.map((key) => {
-      running -= deltaByDay[key];
+      running += deltaByDay[key];
       return { x: new Date(key), y: Number(running.toFixed(2)) };
     });
   }, [transactions, wallets]);
@@ -371,15 +380,6 @@ export default function SummaryScreen() {
         <Text className="text-2xl ml-3 font-bold text-gray-900 dark:text-white">Summary</Text>
       </View>
 
-      <AiInsightSection
-        insight={insightCards}
-        generating={insightGenerating}
-        stale={insightStale}
-        errorMessage={insightError}
-        onRefresh={generateInsights}
-        disabled={loading}
-      />
-
       <View className="rounded-2xl overflow-hidden mb-4 border border-[#8494FF]/25 dark:border-indigo-500/35 shadow-sm">
         <View className="bg-[#8494FF] dark:bg-[#4f54c4] px-4 py-3">
           <Text className="text-xs font-semibold uppercase tracking-[0.06em] text-white/90">Wallet balances</Text>
@@ -435,6 +435,17 @@ export default function SummaryScreen() {
           )}
         </View>
       </View>
+
+      <MoniFinanceAssistantSection
+        insight={financeInsight}
+        generating={insightGenerating}
+        stale={insightStale}
+        errorMessage={insightError}
+        onRegenerate={generateInsights}
+        disabled={loading}
+        hasBudgetsConfigured={budgetRows.length > 0}
+        onManageBudgets={() => router.push('/budget/budgets')}
+      />
 
       <View className="rounded-xl bg-gray-100 dark:bg-gray-800 p-3 mb-4">
         <Text className="text-base font-semibold text-gray-900 dark:text-white mb-2">Transaction Pinmap</Text>

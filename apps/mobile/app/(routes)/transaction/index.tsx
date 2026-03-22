@@ -407,8 +407,16 @@ export default function TransactionsScreen() {
                 const categoryLabel = item.categoryId ? categoryMap[item.categoryId] : null;
                 const canEdit = item.type === 'income' || item.type === 'expense';
                 return (
-                  <View
+                  <Pressable
                     key={item.id}
+                    accessibilityRole={canEdit ? 'button' : undefined}
+                    accessibilityHint={canEdit ? 'Opens transaction details' : undefined}
+                    onPress={() => {
+                      if (canEdit) {
+                        router.push({ pathname: '/transaction/[id]', params: { id: item.id } });
+                      }
+                    }}
+                    style={({ pressed }) => (pressed && canEdit ? { opacity: 0.92 } : undefined)}
                     className="mb-2 rounded-xl border border-slate-300 bg-white p-3 shadow-sm dark:border-slate-700 dark:bg-slate-800">
                     <View className="flex-row items-start justify-between gap-2">
                       <View className="flex-1 min-w-0 pr-1">
@@ -446,17 +454,6 @@ export default function TransactionsScreen() {
                       </View>
                       <View className="items-end shrink-0">
                         <View className="mb-1 flex-row items-center gap-0.5">
-                          {canEdit ? (
-                            <Pressable
-                              accessibilityLabel="Edit transaction"
-                              hitSlop={8}
-                              onPress={() =>
-                                router.push({ pathname: '/transaction/[id]', params: { id: item.id } })
-                              }
-                              className="rounded p-1 active:opacity-70">
-                              <MaterialIcons name="edit" size={18} color="#64748b" />
-                            </Pressable>
-                          ) : null}
                           <Pressable
                             accessibilityLabel="Delete transaction"
                             hitSlop={8}
@@ -475,7 +472,7 @@ export default function TransactionsScreen() {
                         </Text>
                       </View>
                     </View>
-                  </View>
+                  </Pressable>
                 );
               })
             )}

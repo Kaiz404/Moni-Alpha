@@ -93,6 +93,18 @@ const transaction_tags = new Table(
   { indexes: {} }
 );
 
+const category_budgets = new Table(
+  {
+    user_id: column.text,
+    category_id: column.text,
+    amount: column.text,
+    period: column.text,
+    created_at: column.text,
+    updated_at: column.text,
+  },
+  { indexes: {} },
+);
+
 const ai_insights = new Table(
   {
     user_id: column.text,
@@ -149,6 +161,7 @@ export const AppSchema = new Schema({
   wallets,
   transactions,
   categories,
+  category_budgets,
   tags,
   transaction_tags,
   ai_insights,

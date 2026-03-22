@@ -62,7 +62,7 @@ export function mergeWalletHintsForResolution(
 
 /**
  * Light fuzzy match: token overlap + substring between hint and wallet name.
- * Helps when the LLM extracts "Savings" as merchant but the wallet is "Maybank Savings".
+ * Helps when the LLM extracts "Savings" as merchant but the wallet is "Primary Savings".
  */
 function heuristicWalletMatch(
   hint: string | null | undefined,

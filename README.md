@@ -26,7 +26,7 @@
 
 ### Everyday money
 
-- **Multi-wallet** — Bank, cash, cards, e-wallets, and more; balances follow from transactions.
+- **Multi-wallet** — Bank, cash, cards, digital wallets, and more; balances follow from transactions.
 - **Transactions** — Manual entry, categories, filters, and a clear history tied to each wallet.
 - **Summary & analytics** — Spending views, charts, and breakdowns built from local (and synced) data—the same data path future **AI insight cards** attach to.
 - **Secure sign-in** — Supabase Auth with tokens in secure storage.

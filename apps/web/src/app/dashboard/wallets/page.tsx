@@ -19,6 +19,16 @@ const WALLET_ICONS: Record<string, string> = {
   investment: '📈',
   other: '💰',
 };
+/** UI labels (internal type stays `ewallet` for API/schema compatibility). */
+const WALLET_TYPE_LABELS: Record<(typeof WALLET_TYPES)[number], string> = {
+  bank: 'Bank',
+  cash: 'Cash',
+  credit: 'Credit',
+  debit: 'Debit',
+  ewallet: 'Digital wallet',
+  investment: 'Investment',
+  other: 'Other',
+};
 
 export default function WalletsPage() {
   const [modal, setModal] = useState<'create' | 'edit' | null>(null);
@@ -129,7 +139,7 @@ export default function WalletsPage() {
                     <span style={{ marginRight: '0.5rem' }}>{w.icon}</span>
                     {w.name}
                   </td>
-                  <td>{w.type}</td>
+                  <td>{WALLET_TYPE_LABELS[w.type as (typeof WALLET_TYPES)[number]] ?? w.type}</td>
                   <td>
                     ${(w.currentBalance ?? w.initialBalance).toLocaleString('en-US', { minimumFractionDigits: 2 })}
                   </td>
@@ -182,7 +192,7 @@ export default function WalletsPage() {
                 >
                   {WALLET_TYPES.map((t) => (
                     <option key={t} value={t}>
-                      {t}
+                      {WALLET_TYPE_LABELS[t]}
                     </option>
                   ))}
                 </select>

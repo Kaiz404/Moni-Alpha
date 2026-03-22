@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-**Moni** is a modern, privacy-focused personal finance app for tracking daily activity across multiple wallets (bank accounts, cash, credit cards, e-wallets) with analytics—and **on-device AI** that helps capture transactions from chat-style text, receipt photos, and (on Android) bank push notifications. AI never writes straight to the ledger: it creates **proposals** users approve in a review flow.
+**Moni** is a modern, privacy-focused personal finance app for tracking daily activity across multiple wallets (bank accounts, cash, credit cards, digital wallets) with analytics—and **on-device AI** that helps capture transactions from chat-style text, receipt photos, and (on Android) bank push notifications. AI never writes straight to the ledger: it creates **proposals** users approve in a review flow.
 
 ### Vision
 A local-first, user-controlled finance app where insights and **private, on-device intelligence** work together: powerful spending visibility, optional cloud sync, and AI that runs on the phone so prompts and receipts are not sent to third-party LLM APIs.

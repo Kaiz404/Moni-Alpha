@@ -10,7 +10,9 @@ import {
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
+  StyleSheet,
 } from 'react-native';
+import MapView, { Marker } from 'react-native-maps';
 import { router, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
@@ -46,6 +48,12 @@ export default function EditTransactionScreen() {
 
   const [readOnlyDate, setReadOnlyDate] = useState('');
   const [readOnlyLocation, setReadOnlyLocation] = useState<string | null>(null);
+  const [savedLocationCoords, setSavedLocationCoords] = useState<{
+    latitude: number;
+    longitude: number;
+    name: string | null;
+  } | null>(null);
+  const [mapExpanded, setMapExpanded] = useState(true);
   const [isTransfer, setIsTransfer] = useState(false);
 
   const chipBase =
@@ -81,6 +89,24 @@ export default function EditTransactionScreen() {
             : '—',
         );
         setReadOnlyLocation(tx.locationName ?? null);
+
+        const lat = tx.locationLatitude;
+        const lng = tx.locationLongitude;
+        if (
+          lat != null &&
+          lng != null &&
+          !Number.isNaN(lat) &&
+          !Number.isNaN(lng)
+        ) {
+          setSavedLocationCoords({
+            latitude: lat,
+            longitude: lng,
+            name: tx.locationName ?? null,
+          });
+        } else {
+          setSavedLocationCoords(null);
+        }
+        setMapExpanded(true);
 
         setWalletId(tx.walletId);
         setAmount(tx.amount.toFixed(2));
@@ -330,6 +356,61 @@ export default function EditTransactionScreen() {
               textAlignVertical="top"
               editable={!isTransfer}
             />
+
+            <View className=" bg-[#C9BEFF] pt-2 dark:bg-gray-900">
+              {!savedLocationCoords ? (
+                <Text className="text-xs text-slate-600 dark:text-slate-400">
+                  No location saved for this transaction.
+                </Text>
+              ) : (
+                <View>
+                  <TouchableOpacity
+                    className="flex-row items-center justify-between py-1"
+                    onPress={() => setMapExpanded(!mapExpanded)}
+                    activeOpacity={0.7}
+                    accessibilityRole="button"
+                    accessibilityLabel={mapExpanded ? 'Hide map' : 'Show map'}>
+                    <Text className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                      Transaction location {mapExpanded ? '▲' : '▼'}
+                    </Text>
+                  </TouchableOpacity>
+                  {savedLocationCoords.name ? (
+                    <Text
+                      className="text-xs text-slate-600 dark:text-slate-300 mb-1"
+                      numberOfLines={mapExpanded ? 4 : 2}>
+                      {savedLocationCoords.name}
+                    </Text>
+                  ) : null}
+                  {mapExpanded ? (
+                    <View
+                      className="mt-1 rounded-xl overflow-hidden border border-slate-200/90 dark:border-slate-600 bg-white/80 dark:bg-slate-800/80"
+                      style={styles.locationMapBox}>
+                      <MapView
+                        style={styles.locationMap}
+                        initialRegion={{
+                          latitude: savedLocationCoords.latitude,
+                          longitude: savedLocationCoords.longitude,
+                          latitudeDelta: 0.006,
+                          longitudeDelta: 0.006,
+                        }}
+                        provider="google"
+                        scrollEnabled={false}
+                        zoomEnabled={false}
+                        rotateEnabled={false}
+                        pitchEnabled={false}>
+                        <Marker
+                          coordinate={{
+                            latitude: savedLocationCoords.latitude,
+                            longitude: savedLocationCoords.longitude,
+                          }}
+                          pinColor="#6367FF"
+                        />
+                      </MapView>
+                    </View>
+                  ) : null}
+                </View>
+              )}
+            </View>
           </ScrollView>
 
           {!isTransfer ? (
@@ -368,3 +449,13 @@ export default function EditTransactionScreen() {
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  locationMapBox: {
+    height: 200,
+    width: '100%',
+  },
+  locationMap: {
+    ...StyleSheet.absoluteFillObject,
+  },
+});

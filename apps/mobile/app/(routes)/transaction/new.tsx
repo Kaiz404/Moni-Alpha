@@ -9,7 +9,10 @@ import {
   Pressable,
   KeyboardAvoidingView,
   Platform,
+  ActivityIndicator,
+  StyleSheet,
 } from 'react-native';
+import MapView, { Marker } from 'react-native-maps';
 import { router, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
@@ -43,6 +46,70 @@ export default function NewTransactionScreen() {
   const [description, setDescription] = useState('');
   const [loading, setLoading] = useState(false);
 
+  const [locationSnapshot, setLocationSnapshot] = useState<{
+    latitude: number;
+    longitude: number;
+    name: string | null;
+  } | null>(null);
+  const [locationLoading, setLocationLoading] = useState(true);
+  const [locationUnavailable, setLocationUnavailable] = useState(false);
+  const [mapExpanded, setMapExpanded] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      setLocationLoading(true);
+      setLocationUnavailable(false);
+      try {
+        const permission = await Location.requestForegroundPermissionsAsync();
+        if (permission.status !== 'granted') {
+          if (!cancelled) {
+            setLocationSnapshot(null);
+            setLocationUnavailable(true);
+          }
+          return;
+        }
+        const current = await Location.getCurrentPositionAsync({
+          accuracy: Location.Accuracy.Balanced,
+        });
+
+        let locationName: string | null = null;
+        try {
+          const addresses = await Location.reverseGeocodeAsync({
+            latitude: current.coords.latitude,
+            longitude: current.coords.longitude,
+          });
+          const first = addresses[0];
+          if (first) {
+            locationName =
+              [first.name, first.street, first.city, first.region].filter(Boolean).join(', ').trim() ||
+              null;
+          }
+        } catch {
+          // keep coords without a label
+        }
+
+        if (!cancelled) {
+          setLocationSnapshot({
+            latitude: current.coords.latitude,
+            longitude: current.coords.longitude,
+            name: locationName,
+          });
+        }
+      } catch {
+        if (!cancelled) {
+          setLocationSnapshot(null);
+          setLocationUnavailable(true);
+        }
+      } finally {
+        if (!cancelled) setLocationLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   useEffect(() => {
     if (!user) return;
     getWallets().then(setWallets);
@@ -62,43 +129,18 @@ export default function NewTransactionScreen() {
   const handleSubmit = async () => {
     if (!user || !walletId) return;
 
-    let locationPayload: {
+    const locationPayload: {
       locationLatitude?: number | null;
       locationLongitude?: number | null;
       locationName?: string | null;
-    } = {};
-
-    try {
-      const permission = await Location.requestForegroundPermissionsAsync();
-      if (permission.status === 'granted') {
-        const current = await Location.getCurrentPositionAsync({
-          accuracy: Location.Accuracy.Balanced,
-        });
-
-        let locationName: string | null = null;
-        try {
-          const addresses = await Location.reverseGeocodeAsync({
-            latitude: current.coords.latitude,
-            longitude: current.coords.longitude,
-          });
-          const first = addresses[0];
-          if (first) {
-            locationName = [first.name, first.street, first.city, first.region]
-              .filter(Boolean)
-              .join(', ')
-              .trim() || null;
+    } =
+      locationSnapshot != null
+        ? {
+            locationLatitude: locationSnapshot.latitude,
+            locationLongitude: locationSnapshot.longitude,
+            locationName: locationSnapshot.name,
           }
-        } catch {
-        }
-
-        locationPayload = {
-          locationLatitude: current.coords.latitude,
-          locationLongitude: current.coords.longitude,
-          locationName,
-        };
-      }
-    } catch {
-    }
+        : {};
 
     const parsed = createTransactionSchema.safeParse({
       walletId,
@@ -256,6 +298,7 @@ export default function NewTransactionScreen() {
             </Text>
             <Text className="text-[10px] text-slate-400 dark:text-slate-500">optional</Text>
           </View>
+          
           <TextInput
             className={`mb-1 min-h-[72px] text-sm ${inputClass}`}
             placeholder="Notes"
@@ -265,7 +308,69 @@ export default function NewTransactionScreen() {
             multiline
             textAlignVertical="top"
           />
+
+          <View className=" bg-[#C9BEFF] pt-2 dark:bg-gray-900">
+            {locationLoading ? (
+              <View className="flex-row items-center gap-2">
+                <ActivityIndicator size="small" color="#6367FF" />
+                <Text className="text-xs text-slate-600 dark:text-slate-400">Finding transaction location…</Text>
+              </View>
+            ) : locationUnavailable || !locationSnapshot ? (
+              <Text className="text-xs text-slate-600 dark:text-slate-400">
+                Location unavailable. Enable location access to attach this transaction to where you are now.
+              </Text>
+            ) : (
+              <View>
+                <TouchableOpacity
+                  className="flex-row items-center justify-between py-1"
+                  onPress={() => setMapExpanded(!mapExpanded)}
+                  activeOpacity={0.7}
+                  accessibilityRole="button"
+                  accessibilityLabel={mapExpanded ? 'Hide map' : 'Show map'}>
+                  <Text className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                    Transaction location {mapExpanded ? '▲' : '▼'}
+                  </Text>
+                </TouchableOpacity>
+                {locationSnapshot.name ? (
+                  <Text
+                    className="text-xs text-slate-600 dark:text-slate-300 mb-1"
+                    numberOfLines={mapExpanded ? 4 : 2}>
+                    {locationSnapshot.name}
+                  </Text>
+                ) : null}
+                {mapExpanded ? (
+                  <View
+                    className="mt-1 rounded-xl overflow-hidden border border-slate-200/90 dark:border-slate-600 bg-white/80 dark:bg-slate-800/80"
+                    style={styles.locationMapBox}>
+                    <MapView
+                      style={styles.locationMap}
+                      initialRegion={{
+                        latitude: locationSnapshot.latitude,
+                        longitude: locationSnapshot.longitude,
+                        latitudeDelta: 0.006,
+                        longitudeDelta: 0.006,
+                      }}
+                      provider="google"
+                      scrollEnabled={false}
+                      zoomEnabled={false}
+                      rotateEnabled={false}
+                      pitchEnabled={false}>
+                      <Marker
+                        coordinate={{
+                          latitude: locationSnapshot.latitude,
+                          longitude: locationSnapshot.longitude,
+                        }}
+                        pinColor="#6367FF"
+                      />
+                    </MapView>
+                  </View>
+                ) : null}
+              </View>
+            )}
+          </View>
           </ScrollView>
+
+
 
           <View
             className="border-t border-slate-400/20 bg-[#C9BEFF] px-4 pt-3 dark:border-slate-600/30 dark:bg-gray-900"
@@ -290,3 +395,13 @@ export default function NewTransactionScreen() {
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  locationMapBox: {
+    height: 200,
+    width: '100%',
+  },
+  locationMap: {
+    ...StyleSheet.absoluteFillObject,
+  },
+});

@@ -40,6 +40,11 @@ bucket_definitions:
       # User-specific categories
       - SELECT * FROM categories WHERE categories.user_id = bucket.user_id
 
+  user_category_budgets:
+    parameters: SELECT request.user_id() as user_id
+    data:
+      - SELECT * FROM category_budgets WHERE category_budgets.user_id = bucket.user_id
+
   user_tags:
     # Sync tags belonging to the user
     # Parameter Query, selecting a user_id parameter:

@@ -172,6 +172,10 @@ export default function ProfileScreen() {
     router.push('/debug' as any);
   }, []);
 
+  const openBudgets = useCallback(() => {
+    router.push('/budget/budgets' as any);
+  }, []);
+
   const refreshPermissionStatus = useCallback(async () => {
     const [locationPerm, cameraPerm, micPerm] = await Promise.all([
       Location.getForegroundPermissionsAsync(),
@@ -231,7 +235,7 @@ export default function ProfileScreen() {
         contentContainerClassName="grow pb-10"
         showsVerticalScrollIndicator>
         <View className="px-4 pt-4 pb-2 flex-row items-center justify-between">
-          <View className="flex-row items-center">
+          <View className="flex-row items-center mt-4">
             <View className="h-9 w-9 items-center justify-center rounded-xl bg-slate-200 dark:bg-slate-700">
               <MaterialIcons name="person" size={22} color="#475569" />
             </View>
@@ -342,6 +346,13 @@ export default function ProfileScreen() {
 
           <View className="mt-6">
             <ProfileSectionTitle>Shortcuts</ProfileSectionTitle>
+            <SettingsRow
+              icon="account-balance-wallet"
+              iconBgClassName="bg-emerald-600"
+              title="Category budgets"
+              subtitle="Monthly caps per category (all wallets) for AI coaching"
+              onPress={openBudgets}
+            />
             <SettingsRow
               icon="notifications"
               iconBgClassName="bg-[#8494FF]"

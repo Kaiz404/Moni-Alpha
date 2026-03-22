@@ -3,7 +3,7 @@ export const WALLET_TYPE_OPTIONS = [
   { value: 'cash', label: 'Cash', icon: '💵' },
   { value: 'credit', label: 'Credit', icon: '💳' },
   { value: 'debit', label: 'Debit', icon: '💳' },
-  { value: 'ewallet', label: 'E-Wallet', icon: '📱' },
+  { value: 'ewallet', label: 'Digital wallet', icon: '📱' },
   { value: 'investment', label: 'Investment', icon: '📈' },
   { value: 'other', label: 'Other', icon: '📦' },
 ] as const;

@@ -1,17 +1,21 @@
-import { ActivityIndicator, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Pressable, Text, TouchableOpacity, View } from 'react-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import type { SummaryInsightCardsV1 } from '@repo/types';
+import type { BudgetCoachCardsV1, SummaryInsightCardsV1 } from '@repo/types';
+
+type InsightPayload = BudgetCoachCardsV1 | SummaryInsightCardsV1 | null;
 
 type Props = {
-  insight: SummaryInsightCardsV1 | null;
+  insight: InsightPayload;
   generating: boolean;
   stale: boolean;
   errorMessage: string | null;
   onRefresh: () => void;
   disabled?: boolean;
+  onManageBudgets?: () => void;
+  hasBudgetsConfigured?: boolean;
 };
 
-function kindStyles(kind: SummaryInsightCardsV1['cards'][number]['kind']): {
+function kindStyles(kind: NonNullable<InsightPayload>['cards'][number]['kind']): {
   border: string;
   icon: keyof typeof MaterialIcons.glyphMap;
   iconColor: string;
@@ -51,6 +55,8 @@ export function AiInsightSection({
   errorMessage,
   onRefresh,
   disabled,
+  onManageBudgets,
+  hasBudgetsConfigured,
 }: Props) {
   return (
     <View className="rounded-2xl overflow-hidden mb-4 border border-indigo-200/60 dark:border-indigo-500/40 bg-indigo-50/80 dark:bg-slate-800/90">
@@ -58,7 +64,7 @@ export function AiInsightSection({
         <View className="flex-row items-center flex-1 min-w-0 pr-2">
           <MaterialIcons name="auto-awesome" size={22} color="#e0e7ff" />
           <Text className="ml-2 text-base font-bold text-white" numberOfLines={1}>
-            Moni insights
+            Budget coach
           </Text>
         </View>
         <TouchableOpacity
@@ -79,9 +85,23 @@ export function AiInsightSection({
       </View>
 
       <View className="px-3 py-3">
+        {onManageBudgets ? (
+          <Pressable
+            onPress={onManageBudgets}
+            className="mb-2 flex-row items-center justify-between rounded-lg bg-white/60 dark:bg-slate-900/50 px-2 py-1.5"
+          >
+            <Text className="text-xs text-slate-700 dark:text-slate-300 flex-1 pr-2">
+              {hasBudgetsConfigured
+                ? 'Edit monthly category budgets'
+                : 'Set monthly budgets per category (all wallets)'}
+            </Text>
+            <MaterialIcons name="chevron-right" size={18} color="#64748b" />
+          </Pressable>
+        ) : null}
+
         {stale && !generating ? (
           <Text className="text-xs text-amber-800 dark:text-amber-200 mb-2">
-            Your transactions changed — refresh for updated insights.
+            Your data changed — refresh for updated coaching.
           </Text>
         ) : null}
 
@@ -91,8 +111,8 @@ export function AiInsightSection({
 
         {!insight?.cards?.length && !generating ? (
           <Text className="text-sm text-slate-600 dark:text-slate-400 leading-5">
-            Get short, on-device summaries of your last 30 days. Numbers are computed locally; the model
-            only writes the wording.
+            Spending is analyzed against your category budgets for this calendar month. The model suggests
+            habits to save money — numbers are computed on-device first.
           </Text>
         ) : null}
 

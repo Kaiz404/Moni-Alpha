@@ -8,3 +8,4 @@ export * from './transaction';
 export * from './analytics';
 export * from './proposed-transaction';
 export * from './ai-insight';
+export * from './category-budget';

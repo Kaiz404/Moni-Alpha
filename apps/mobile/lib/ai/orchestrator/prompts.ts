@@ -78,7 +78,7 @@ Return ONLY a single JSON object (no prose before or after, no markdown):
 Fields:
 1. merchant — Store or business name as printed (header/logo); include branch or mall if printed and helpful.
 2. description — 2–4 sentences when possible: what category of purchase this is, main items or departments (e.g. "groceries and household", "dinner for two", "fuel"), quantities or notable lines if readable, time of day or meal if implied. Avoid generic one-word answers like "purchase" or "items" unless nothing else is visible.
-3. wallet_hint — Payment method printed on the receipt (card type, last 4 digits, e-wallet, cash). If a user message is provided below and the receipt does not contradict it, include how they said they paid so it can match a named wallet (e.g. user says "cash" → include "cash").
+3. wallet_hint — Payment method printed on the receipt (card type, last 4 digits, digital wallet, cash). If a user message is provided below and the receipt does not contradict it, include how they said they paid so it can match a named wallet (e.g. user says "cash" → include "cash").
 4. category_hint — Short label: food, groceries, transport, health, entertainment, utilities, etc., or null.
 
 Do not leave description empty if any line items, department names, or totals labels are visible — summarize them.

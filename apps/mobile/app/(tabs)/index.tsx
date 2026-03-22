@@ -664,10 +664,17 @@ export default function WalletsScreen() {
             {transactions.map((item) => {
               const canEdit = item.type === 'income' || item.type === 'expense';
               return (
-                <View
+                <Pressable
                   key={item.id}
-                  className="mb-2 rounded-xl border border-slate-300 bg-white p-3 shadow-sm dark:border-slate-700 dark:bg-slate-800"
-                >
+                  accessibilityRole={canEdit ? 'button' : undefined}
+                  accessibilityHint={canEdit ? 'Opens transaction details' : undefined}
+                  onPress={() => {
+                    if (canEdit) {
+                      router.push({ pathname: '/transaction/[id]', params: { id: item.id } });
+                    }
+                  }}
+                  style={({ pressed }) => (pressed && canEdit ? { opacity: 0.92 } : undefined)}
+                  className="mb-2 rounded-xl border border-slate-300 bg-white p-3 shadow-sm dark:border-slate-700 dark:bg-slate-800">
                   <View className="flex-row items-start justify-between gap-2">
                     <View className="min-w-0 flex-1 pr-1">
                       <View className="flex-row items-baseline gap-1 flex-wrap">
@@ -689,18 +696,6 @@ export default function WalletsScreen() {
                       </Text>
                     </View>
                     <View className="flex items-center gap-0.5 pt-0.5">
-                      {canEdit ? (
-                        <Pressable
-                          accessibilityLabel="Edit transaction"
-                          hitSlop={8}
-                          onPress={() =>
-                            router.push({ pathname: '/transaction/[id]', params: { id: item.id } })
-                          }
-                          className="rounded p-1 active:opacity-70"
-                        >
-                          <MaterialIcons name="edit" size={18} color="#64748b" />
-                        </Pressable>
-                      ) : null}
                       <Pressable
                         accessibilityLabel="Delete transaction"
                         hitSlop={8}
@@ -711,7 +706,7 @@ export default function WalletsScreen() {
                       </Pressable>
                     </View>
                   </View>
-                </View>
+                </Pressable>
               );
             })}
             {transactions.length === 0 ? (

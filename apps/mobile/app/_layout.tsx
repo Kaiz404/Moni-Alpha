@@ -83,6 +83,7 @@ export default function RootLayout() {
                   name="modal"
                   options={{ presentation: "modal", title: "Modal", headerShown: false }}
                 />
+                <Stack.Screen name="budgets" options={{ headerShown: false }} />
               </Stack>
               <ProposalReviewModal />
             </AuthGuard>
