@@ -8,6 +8,17 @@
 
 **Moni** is a **local-first** personal finance app for **iOS and Android** (Expo / React Native). It helps you manage wallets and spending, stay organized offline, sync when you choose—and it runs a **private, on-device vision-language model** so natural language, receipt photos, and (on Android) bank notifications become **reviewable transaction proposals**, not cloud API calls for the core capture flow.
 
+### Hackathon: preview build & demo
+
+**Preview build (EAS):** [Expo build](https://expo.dev/accounts/kaiz827s-organization/projects/moni/builds/a71182c0-d759-47c1-ad4f-a4eb910c6d5e) — **Android only.** This preview does not install or run on iOS as I am too broke for an Apple Dev Account :(
+
+**Demo video:** [YouTube](https://www.youtube.com/watch?v=ftlmI3bbxpI)
+
+**For hackathon judges / anyone demoing the app:** The preview build works **only on Android**. Sign in with the demo account:
+
+- **Email:** `test@example.com`
+- **Password:** `Test1234`
+
 ---
 
 ## Why users should care
@@ -15,7 +26,7 @@
 | Theme                           | What Moni does                                                                                                                                                                                                                   |
 | ------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Privacy by architecture**     | Core AI inference runs **on the phone** (Qwen 2.5 VL via `@react-native-ai/llama`). Your prompts and receipt images are not sent to a third-party LLM for extraction.                                                            |
-| **Human in the loop**           | The model never posts to your ledger. Everything becomes **`proposed_transactions`** with a review screen—you edit, confirm, or reject before it is real.                                                                        |
+| **Human in the loop**           | The model never posts to your ledger. Everything becomes `**proposed_transactions`\*\* with a review screen—you edit, confirm, or reject before it is real.                                                                      |
 | **Trust the math to code**      | Heavy lifting is **deterministic**: SQLite, heuristics, structured JSON. The small model handles **narrow** tasks (extract, classify, match wallets)—same design philosophy as production on-device AI.                          |
 | **Offline-first**               | SQLite is the source of truth on device; background sync (PowerSync / Supabase) keeps optional cloud and web in step.                                                                                                            |
 | **Finance advisor (direction)** | **Insight cards** and coaching are built as **tools-first**: aggregates and metrics from your data, then short, schema-bound language for nudges—so a hackathon demo can show _your_ numbers turned into prose, still on-device. |
@@ -59,12 +70,12 @@ The **Next.js** app in `apps/web` provides a dashboard and **REST API** (`app/ap
 
 Moni combines **cloud data services** with **on-device** inference: the product story is “sync and auth in the cloud, thinking on the phone.”
 
-| Layer | Role |
-| --- | --- |
-| **Supabase** | **PostgreSQL** (canonical rows), **Auth** (JWT), **Row Level Security** for multi-tenant isolation; optional Realtime/Storage as needed. |
-| **PowerSync** | **Local SQLite** on mobile (`PowerSyncDatabase` + Kysely) that **replicates** with Postgres via sync rules—offline-friendly reads/writes with eventual cloud consistency. |
-| **`@react-native-ai/llama`** | Loads a **GGUF** vision-language model on-device; exposes a **`languageModel`** compatible with the AI SDK. |
-| **Vercel AI SDK** (`ai`) | **`generateObject`** / **`generateText`** with Zod-backed schemas—structured extraction, wallet resolution, and insight composition **without** calling remote LLM APIs for core flows. |
+| Layer                          | Role                                                                                                                                                                                      |
+| ------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Supabase**                   | **PostgreSQL** (canonical rows), **Auth** (JWT), **Row Level Security** for multi-tenant isolation; optional Realtime/Storage as needed.                                                  |
+| **PowerSync**                  | **Local SQLite** on mobile (`PowerSyncDatabase` + Kysely) that **replicates** with Postgres via sync rules—offline-friendly reads/writes with eventual cloud consistency.                 |
+| `**@react-native-ai/llama`\*\* | Loads a **GGUF** vision-language model on-device; exposes a `**languageModel`\*\* compatible with the AI SDK.                                                                             |
+| **Vercel AI SDK** (`ai`)       | `**generateObject`** / `**generateText`** with Zod-backed schemas—structured extraction, wallet resolution, and insight composition **without\*\* calling remote LLM APIs for core flows. |
 
 The diagrams below are **memory-style** views: first, how app layers sit above storage and sync; second, how AI calls are layered on the same device.
 
@@ -155,7 +166,7 @@ packages/types/  Shared Zod schemas and TypeScript types
 packages/ui/     Shared React components
 ```
 
-**Mobile stack (high level):** Expo SDK ~54, React Native ~0.81, expo-router, **PowerSync** + SQLite (Kysely), TanStack Query, Tailwind via Uniwind, **`@react-native-ai/llama`** (GGUF VL model), **Vercel AI SDK** (`ai`) for structured generation bound to the local model.
+**Mobile stack (high level):** Expo SDK ~54, React Native ~0.81, expo-router, **PowerSync** + SQLite (Kysely), TanStack Query, Tailwind via Uniwind, `**@react-native-ai/llama`** (GGUF VL model), **Vercel AI SDK\*\* (`ai`) for structured generation bound to the local model.
 
 **Web stack (high level):** Next.js 16, Supabase (PostgreSQL + Auth), TanStack Query, Recharts.
 
