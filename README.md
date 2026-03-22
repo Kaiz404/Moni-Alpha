@@ -55,6 +55,97 @@ The **Next.js** app in `apps/web` provides a dashboard and **REST API** (`app/ap
 
 ---
 
+## Technical architecture
+
+Moni combines **cloud data services** with **on-device** inference: the product story is “sync and auth in the cloud, thinking on the phone.”
+
+| Layer | Role |
+| --- | --- |
+| **Supabase** | **PostgreSQL** (canonical rows), **Auth** (JWT), **Row Level Security** for multi-tenant isolation; optional Realtime/Storage as needed. |
+| **PowerSync** | **Local SQLite** on mobile (`PowerSyncDatabase` + Kysely) that **replicates** with Postgres via sync rules—offline-friendly reads/writes with eventual cloud consistency. |
+| **`@react-native-ai/llama`** | Loads a **GGUF** vision-language model on-device; exposes a **`languageModel`** compatible with the AI SDK. |
+| **Vercel AI SDK** (`ai`) | **`generateObject`** / **`generateText`** with Zod-backed schemas—structured extraction, wallet resolution, and insight composition **without** calling remote LLM APIs for core flows. |
+
+The diagrams below are **memory-style** views: first, how app layers sit above storage and sync; second, how AI calls are layered on the same device.
+
+### Stack layers (data + sync)
+
+```mermaid
+flowchart TB
+  subgraph mobile[Mobile app Expo]
+    UI[UI: tabs, chat, Summary]
+    Logic[React state, orchestrators]
+    PS[PowerSync SQLite + Kysely]
+    Q[MMKV: processing and upload queues]
+    UI --> Logic
+    Logic --> PS
+    Logic --> Q
+  end
+  subgraph cloud[Supabase]
+    PG[(PostgreSQL + RLS)]
+    AUTH[Auth JWT]
+  end
+  subgraph web[Optional web]
+    NEXT[Next.js + REST]
+  end
+  Logic --> AUTH
+  PS <-->|PowerSync replication| PG
+  NEXT --> PG
+  NEXT --> AUTH
+```
+
+### On-device AI stack
+
+```mermaid
+flowchart TB
+  subgraph inputs[Inputs]
+    T[Text / voice]
+    I[Receipt image]
+    N[Android notifications]
+  end
+  subgraph queue[Queues and orchestration]
+    UQ[Unified processing queue]
+    OF[Orchestrator: text / image / notification flows]
+  end
+  subgraph ai[Inference]
+    VAI[Vercel AI SDK: ai package]
+    RN[react-native-ai llama]
+    GGUF[GGUF VL model on device]
+  end
+  subgraph store[Persistence]
+    DB[(PowerSync SQLite: transactions, proposals, insights)]
+  end
+  T --> UQ
+  I --> UQ
+  N --> UQ
+  UQ --> OF
+  OF --> VAI
+  VAI --> RN
+  RN --> GGUF
+  OF --> DB
+```
+
+### End-to-end (one screen)
+
+```mermaid
+flowchart LR
+  subgraph device[Phone]
+    M[Moni app]
+    L[Local model via llama.rn]
+  end
+  subgraph supa[Supabase]
+    P[(Postgres)]
+    A[Auth]
+  end
+  M --> L
+  M -->|PowerSync| P
+  M -->|session| A
+```
+
+For the full AI pipeline (sub-agents, queues, background processing), see [apps/mobile/lib/ai/ORCHESTRATOR.md](./apps/mobile/lib/ai/ORCHESTRATOR.md).
+
+---
+
 ## Monorepo layout
 
 ```
@@ -64,7 +155,7 @@ packages/types/  Shared Zod schemas and TypeScript types
 packages/ui/     Shared React components
 ```
 
-**Mobile stack (high level):** Expo SDK ~54, React Native ~0.81, expo-router, expo-sqlite + Drizzle, TanStack Query, Tailwind via Uniwind, `@react-native-ai/llama` (Qwen 2.5 VL 3B + vision projector).
+**Mobile stack (high level):** Expo SDK ~54, React Native ~0.81, expo-router, **PowerSync** + SQLite (Kysely), TanStack Query, Tailwind via Uniwind, **`@react-native-ai/llama`** (GGUF VL model), **Vercel AI SDK** (`ai`) for structured generation bound to the local model.
 
 **Web stack (high level):** Next.js 16, Supabase (PostgreSQL + Auth), TanStack Query, Recharts.
 
