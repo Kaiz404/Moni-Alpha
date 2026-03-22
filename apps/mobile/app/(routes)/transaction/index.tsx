@@ -2,16 +2,18 @@ import { useCallback, useMemo, useState } from 'react';
 import {
   View,
   Text,
-  FlatList,
+  ScrollView,
   TouchableOpacity,
   RefreshControl,
   Alert,
   Modal,
   ActivityIndicator,
+  Pressable,
 } from 'react-native';
-import { Link, useLocalSearchParams, useFocusEffect } from 'expo-router';
+import { Link, router, useLocalSearchParams, useFocusEffect } from 'expo-router';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useAuth } from '@/lib/auth/auth-context';
-import { getTransactions } from '@/lib/supabase/transactions';
+import { deleteTransaction, getTransactions } from '@/lib/supabase/transactions';
 import { getWallets } from '@/lib/supabase/wallets';
 import { useProposedTransactions } from '@/hooks/use-proposed-transactions';
 import { IconSymbol } from '@/components/ui/icon-symbol';
@@ -84,7 +86,7 @@ function ProposalCard({
 }) {
   const isExpense = item.type === 'expense' || !item.type;
   return (
-    <View className="bg-white dark:bg-gray-800 rounded-lg p-4 mb-2 border border-gray-100 dark:border-gray-700">
+    <View className="mb-2 rounded-xl border border-slate-300 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-800">
       <View className="flex-row items-center justify-between mb-1">
         <Text className="text-xs font-semibold text-blue-600 dark:text-blue-400">
           {item.sourceApp || 'Unknown app'}
@@ -257,185 +259,229 @@ export default function TransactionsScreen() {
     [reject],
   );
 
-  const currency = selectedWallet?.currency ?? 'USD';
-
-  const listHeader = useMemo(
-    () => (
-      <View className="pb-2">
-        {selectedWallet ? (
-          <View className="mb-4 rounded-2xl border border-indigo-200/80 bg-[#8494FF] p-4 dark:border-indigo-500/40 dark:bg-[#4f54c4]">
-            <View className="flex-row items-start justify-between">
-              <View className="flex-row items-center flex-1">
-                <View className="w-12 h-12 rounded-2xl items-center justify-center bg-white/25">
-                  <Text className="text-lg font-bold text-white">{selectedWallet.icon ?? 'W'}</Text>
-                </View>
-                <View className="ml-3 flex-1">
-                  <Text className="text-xs font-semibold uppercase tracking-wide text-white/90">
-                    {selectedWallet.type ?? 'Wallet'}
-                  </Text>
-                  <Text className="text-xl font-bold text-white">{selectedWallet.name}</Text>
-                  <Text className="text-sm text-white/85">{selectedWallet.currency ?? 'USD'}</Text>
-                </View>
-              </View>
-            </View>
-            <View className="mt-4 border-t border-white/20 pt-4">
-              <Text className="text-xs font-medium text-white/80">Current balance</Text>
-              <Text className="text-2xl font-bold text-white mt-0.5">
-                {formatMoney(
-                  Number(selectedWallet.currentBalance ?? selectedWallet.initialBalance ?? 0),
-                  currency,
-                )}
-              </Text>
-            </View>
-            <View className="mt-4 flex-row gap-3">
-              <View className="flex-1 rounded-xl bg-white/15 px-3 py-2">
-                <Text className="text-[11px] font-medium uppercase text-white/75">Income (list)</Text>
-                <Text className="text-base font-semibold text-emerald-200">
-                  {formatMoney(listStats.income, currency)}
-                </Text>
-              </View>
-              <View className="flex-1 rounded-xl bg-white/15 px-3 py-2">
-                <Text className="text-[11px] font-medium uppercase text-white/75">Expenses (list)</Text>
-                <Text className="text-base font-semibold text-rose-200">
-                  {formatMoney(listStats.expense, currency)}
-                </Text>
-              </View>
-            </View>
-            <Text className="text-[11px] text-white/70 mt-3">
-              Totals reflect the transactions below (up to 100 most recent). Transfers are excluded from
-              income/expense sums.
-            </Text>
-          </View>
-        ) : (
-          <View className="mb-4 rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800/80">
-            <Text className="text-sm font-medium text-slate-500 dark:text-slate-400">All wallets</Text>
-            <Text className="text-lg font-bold text-slate-900 dark:text-white mt-1">
-              {listStats.count} transaction{listStats.count === 1 ? '' : 's'} loaded
-            </Text>
-            <Text className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-              Open a wallet from Wallets to filter by account and see balance.
-            </Text>
-          </View>
-        )}
-
-        <View className="mb-3">
-          <View className="flex-row items-center justify-between mb-2">
-            <Text className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">
-              Pending Proposals
-            </Text>
-            {proposalsLoading ? <ActivityIndicator size="small" color="#6b7280" /> : null}
-          </View>
-          {proposals.length === 0 && !proposalsLoading ? (
-            <View className="bg-gray-100 dark:bg-gray-800 rounded-lg p-4 mb-2 border border-dashed border-gray-200 dark:border-gray-700">
-              <Text className="text-sm text-gray-500 dark:text-gray-400 text-center">
-                No pending AI proposals.
-              </Text>
-            </View>
-          ) : (
-            proposals.map((p) => (
-              <ProposalCard
-                key={p.id}
-                item={p}
-                onApprove={handleApprove}
-                onReject={handleReject}
-              />
-            ))
-          )}
-        </View>
-
-        <View className="flex-row justify-between items-center mb-3">
-          <Text className="text-xl font-semibold text-gray-900 dark:text-white">
-            {walletId ? selectedWallet?.name ?? 'Transactions' : 'All transactions'}
-          </Text>
-          <Link
-            href={(walletId ? `/transaction/new?walletId=${walletId}` : '/transaction/new') as any}
-            asChild>
-            <TouchableOpacity className="bg-blue-600 dark:bg-blue-500 px-4 py-2 rounded-lg">
-              <Text className="text-white font-semibold">+ Add</Text>
-            </TouchableOpacity>
-          </Link>
-        </View>
-      </View>
-    ),
-    [
-      selectedWallet,
-      walletId,
-      listStats,
-      proposals,
-      proposalsLoading,
-      handleApprove,
-      handleReject,
-      currency,
-    ],
+  const handleDeleteTransaction = useCallback(
+    (id: string) => {
+      Alert.alert(
+        'Delete transaction',
+        'This will remove the transaction from your records.',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Delete',
+            style: 'destructive',
+            onPress: async () => {
+              try {
+                await deleteTransaction(id);
+                await loadData();
+                await reloadProposals();
+              } catch (e) {
+                Alert.alert('Error', e instanceof Error ? e.message : 'Failed to delete');
+              }
+            },
+          },
+        ],
+      );
+    },
+    [loadData, reloadProposals],
   );
+
+  const currency = selectedWallet?.currency ?? 'USD';
 
   return (
     <View className="flex-1 bg-white dark:bg-gray-900">
-      <FlatList
-        data={transactions}
-        keyExtractor={(item) => item.id}
-        contentContainerClassName="px-4 pb-8 pt-2"
+      <ScrollView
+        className="flex-1"
+        contentContainerClassName="grow"
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-        ListHeaderComponent={listHeader}
-        renderItem={({ item }) => {
-          const isIncome = item.type === 'income';
-          const categoryLabel = item.categoryId ? categoryMap[item.categoryId] : null;
-          return (
-            <View className="bg-gray-100 dark:bg-gray-800 rounded-xl p-4 mb-2 border border-gray-200/80 dark:border-gray-700/80">
-              <View className="flex-row items-start justify-between gap-2">
-                <View className="flex-1 min-w-0">
-                  <Text className="text-base font-semibold text-gray-900 dark:text-white" numberOfLines={2}>
-                    {item.merchant || item.description || item.type}
-                  </Text>
-                  {item.description && item.merchant ? (
-                    <Text className="text-sm text-gray-600 dark:text-gray-400 mt-0.5" numberOfLines={2}>
-                      {item.description}
-                    </Text>
-                  ) : null}
-                  <View className="flex-row flex-wrap items-center gap-x-2 gap-y-1 mt-2">
-                    <Text className="text-xs text-gray-500 dark:text-gray-400">
-                      {new Date(item.transactionDate).toLocaleString(undefined, {
-                        dateStyle: 'medium',
-                        timeStyle: 'short',
-                      })}
-                    </Text>
-                    {categoryLabel ? (
-                      <View className="rounded-full bg-slate-200/90 px-2 py-0.5 dark:bg-slate-600/90">
-                        <Text className="text-[11px] font-medium text-slate-700 dark:text-slate-200">
-                          {categoryLabel}
-                        </Text>
-                      </View>
-                    ) : null}
-                    <Text className="text-xs text-gray-500 dark:text-gray-400">
-                      {walletMap[item.walletId]?.name ?? 'Wallet'}
-                    </Text>
+        showsVerticalScrollIndicator>
+        <View className="px-4 pt-2 pb-4">
+          {selectedWallet ? (
+            <View className="rounded-2xl border border-indigo-200/80 bg-[#8494FF] p-4 dark:border-indigo-500/40 dark:bg-[#4f54c4]">
+              <View className="flex-row items-start justify-between">
+                <View className="flex-row items-center flex-1">
+                  <View className="w-12 h-12 rounded-2xl items-center justify-center bg-white/25">
+                    <Text className="text-lg font-bold text-white">{selectedWallet.icon ?? 'W'}</Text>
                   </View>
-                  {item.notes ? (
-                    <Text className="text-xs text-gray-500 dark:text-gray-400 mt-1 italic" numberOfLines={2}>
-                      {item.notes}
+                  <View className="ml-3 flex-1">
+                    <Text className="text-xs font-semibold uppercase tracking-wide text-white/90">
+                      {selectedWallet.type ?? 'Wallet'}
                     </Text>
-                  ) : null}
+                    <Text className="text-xl font-bold text-white">{selectedWallet.name}</Text>
+                    <Text className="text-sm text-white/85">{selectedWallet.currency ?? 'USD'}</Text>
+                  </View>
                 </View>
-                <View className="items-end shrink-0">
-                  <Text
-                    className={`text-lg font-bold ${isIncome ? 'text-green-600 dark:text-green-400' : 'text-red-500 dark:text-red-400'}`}>
-                    {isIncome ? '+' : '−'}
-                    {item.amount.toFixed(2)}
+              </View>
+              <View className="mt-4 border-t border-white/20 pt-4">
+                <Text className="text-xs font-medium text-white/80">Current balance</Text>
+                <Text className="text-2xl font-bold text-white mt-0.5">
+                  {formatMoney(
+                    Number(selectedWallet.currentBalance ?? selectedWallet.initialBalance ?? 0),
+                    currency,
+                  )}
+                </Text>
+              </View>
+              <View className="mt-4 flex-row gap-3">
+                <View className="flex-1 rounded-xl bg-white/15 px-3 py-2">
+                  <Text className="text-[11px] font-medium uppercase text-white/75">Total Income</Text>
+                  <Text className="text-base font-semibold text-emerald-200">
+                    {formatMoney(listStats.income, currency)}
                   </Text>
-                  <Text className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                    {walletMap[item.walletId]?.currency ?? 'USD'}
+                </View>
+                <View className="flex-1 rounded-xl bg-white/15 px-3 py-2">
+                  <Text className="text-[11px] font-medium uppercase text-white/75">Total Expenses</Text>
+                  <Text className="text-base font-semibold text-rose-200">
+                    {formatMoney(listStats.expense, currency)}
                   </Text>
                 </View>
               </View>
             </View>
-          );
-        }}
-        ListEmptyComponent={
-          <Text className="text-center text-gray-600 dark:text-gray-400 mt-6 px-2">
-            No transactions yet. Tap + Add to create one.
-          </Text>
-        }
-      />
+          ) : (
+            <View className="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800/80">
+              <Text className="text-sm font-medium text-slate-500 dark:text-slate-400">All wallets</Text>
+              <Text className="text-lg font-bold text-slate-900 dark:text-white mt-1">
+                {listStats.count} transaction{listStats.count === 1 ? '' : 's'} loaded
+              </Text>
+              <Text className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                Open a wallet from Wallets to filter by account and see balance.
+              </Text>
+            </View>
+          )}
+        </View>
+
+        <View className="bg-[#6367FF]/70 dark:bg-[#2a2d5c]/95 rounded-t-2xl mt-1">
+          <View className="flex-row justify-between relative">
+            <View className="h-15 w-12 left-12 rounded-b-4xl border-l-4 border-r-4 border-b-4 border-[#EDEDED] dark:border-slate-700 bg-[#9EADFF] dark:bg-[#4a5080] bottom-1" />
+            <View className="h-15 w-12 right-12 rounded-b-4xl border-l-4 border-r-4 border-b-4 border-[#EDEDED] dark:border-slate-700 bg-[#9EADFF] dark:bg-[#4a5080] bottom-1" />
+          </View>
+
+          <View className="bg-[#FAFAFA]/80 dark:bg-gray-950/95 mt-1 rounded-t-2xl px-4 pt-6 pb-6">
+            {proposals.length > 0 ? (
+              <View className="mb-4">
+                <View className="flex-row items-center justify-between mb-2">
+                  <Text className="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400">
+                    Pending Proposals
+                  </Text>
+                  {proposalsLoading ? <ActivityIndicator size="small" color="#6b7280" /> : null}
+                </View>
+                {proposals.map((p) => (
+                  <ProposalCard
+                    key={p.id}
+                    item={p}
+                    onApprove={handleApprove}
+                    onReject={handleReject}
+                  />
+                ))}
+              </View>
+            ) : null}
+
+            <View className="flex-row justify-between items-center mb-2">
+              <View className="flex-1 mr-2">
+                <Text className="text-sm font-semibold text-slate-700 dark:text-slate-100">
+                  Recent transactions
+                </Text>
+                {/* <Text className="text-sm font-semibold text-slate-700 dark:text-slate-100">
+                  {walletId ? `${selectedWallet?.name ?? 'Wallet'}` : 'All transactions'}
+                </Text> */}
+                <Text className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                  {walletId ? 'Recorded in this wallet' : 'Across every wallet'}
+                </Text>
+              </View>
+              <Link
+                href={(walletId ? `/transaction/new?walletId=${walletId}` : '/transaction/new') as any}
+                asChild>
+                <TouchableOpacity className="bg-blue-600 dark:bg-blue-500 px-4 py-2 rounded-lg">
+                  <Text className="text-white font-semibold">+ Add</Text>
+                </TouchableOpacity>
+              </Link>
+            </View>
+
+            {transactions.length === 0 ? (
+              <View className="mb-2 mt-1 rounded-xl border border-dashed border-slate-300 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-800">
+                <Text className="text-center text-sm text-slate-500 dark:text-slate-400">
+                  No transactions yet. Tap + Add to create one.
+                </Text>
+              </View>
+            ) : (
+              transactions.map((item) => {
+                const isIncome = item.type === 'income';
+                const categoryLabel = item.categoryId ? categoryMap[item.categoryId] : null;
+                const canEdit = item.type === 'income' || item.type === 'expense';
+                return (
+                  <View
+                    key={item.id}
+                    className="mb-2 rounded-xl border border-slate-300 bg-white p-3 shadow-sm dark:border-slate-700 dark:bg-slate-800">
+                    <View className="flex-row items-start justify-between gap-2">
+                      <View className="flex-1 min-w-0 pr-1">
+                        <Text className="text-base font-semibold text-slate-900 dark:text-white" numberOfLines={2}>
+                          {item.merchant || item.description || item.type}
+                        </Text>
+                        {item.description && item.merchant ? (
+                          <Text className="text-sm text-slate-600 dark:text-slate-400 mt-0.5" numberOfLines={2}>
+                            {item.description}
+                          </Text>
+                        ) : null}
+                        <View className="flex-row flex-wrap items-center gap-x-2 gap-y-1 mt-2">
+                          <Text className="text-xs text-slate-600 dark:text-slate-400">
+                            {new Date(item.transactionDate).toLocaleString(undefined, {
+                              dateStyle: 'medium',
+                              timeStyle: 'short',
+                            })}
+                          </Text>
+                          {categoryLabel ? (
+                            <View className="rounded-full bg-slate-200/90 px-2 py-0.5 dark:bg-slate-600/90">
+                              <Text className="text-[11px] font-medium text-slate-700 dark:text-slate-200">
+                                {categoryLabel}
+                              </Text>
+                            </View>
+                          ) : null}
+                          <Text className="text-xs text-slate-600 dark:text-slate-400">
+                            {walletMap[item.walletId]?.name ?? 'Wallet'}
+                          </Text>
+                        </View>
+                        {item.notes ? (
+                          <Text className="text-xs text-slate-600 dark:text-slate-400 mt-1 italic" numberOfLines={2}>
+                            {item.notes}
+                          </Text>
+                        ) : null}
+                      </View>
+                      <View className="items-end shrink-0">
+                        <View className="mb-1 flex-row items-center gap-0.5">
+                          {canEdit ? (
+                            <Pressable
+                              accessibilityLabel="Edit transaction"
+                              hitSlop={8}
+                              onPress={() =>
+                                router.push({ pathname: '/transaction/[id]', params: { id: item.id } })
+                              }
+                              className="rounded p-1 active:opacity-70">
+                              <MaterialIcons name="edit" size={18} color="#64748b" />
+                            </Pressable>
+                          ) : null}
+                          <Pressable
+                            accessibilityLabel="Delete transaction"
+                            hitSlop={8}
+                            onPress={() => handleDeleteTransaction(item.id)}
+                            className="rounded p-1 active:opacity-70">
+                            <MaterialIcons name="delete-outline" size={18} color="#ef4444" />
+                          </Pressable>
+                        </View>
+                        <Text
+                          className={`text-lg font-bold ${isIncome ? 'text-green-600 dark:text-green-400' : 'text-red-500 dark:text-red-400'}`}>
+                          {isIncome ? '+' : '−'}
+                          {item.amount.toFixed(2)}
+                        </Text>
+                        <Text className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                          {walletMap[item.walletId]?.currency ?? 'USD'}
+                        </Text>
+                      </View>
+                    </View>
+                  </View>
+                );
+              })
+            )}
+          </View>
+        </View>
+      </ScrollView>
       <WalletPickerModal
         visible={walletPickerVisible}
         wallets={walletPickerWallets}

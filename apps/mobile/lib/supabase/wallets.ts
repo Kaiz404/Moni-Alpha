@@ -39,6 +39,40 @@ export async function getWallets() {
   }));
 }
 
+export async function getWalletById(id: string) {
+  const { db, supabaseConnector } = syncSystem;
+
+  const userId = await supabaseConnector.getUserId();
+  if (!userId) throw new Error('User ID required');
+
+  const w = await db
+    .selectFrom('wallets')
+    .selectAll()
+    .where('id', '=', id)
+    .where('user_id', '=', userId)
+    .executeTakeFirst();
+
+  if (!w) return null;
+
+  const balances = await getWalletBalances([w.id]);
+
+  return {
+    id: w.id,
+    userId: w.user_id,
+    name: w.name ?? '',
+    type: w.type,
+    currency: w.currency,
+    initialBalance: parseFloat(w.initial_balance || '0'),
+    currentBalance: balances[w.id] ?? parseFloat(w.initial_balance || '0'),
+    color: w.color,
+    icon: w.icon,
+    isActive: w.is_active === 1,
+    displayOrder: w.display_order,
+    createdAt: w.created_at,
+    updatedAt: w.updated_at,
+  };
+}
+
 export async function createWallet(data: CreateWallet) {
   const { db, supabaseConnector } = syncSystem;
 
@@ -86,15 +120,22 @@ export async function createWallet(data: CreateWallet) {
 export async function updateWallet(id: string, data: Partial<CreateWallet>) {
   const { db } = syncSystem;
 
-  const updateData: any = { ...data };
+  const set: Record<string, string | number> = {
+    updated_at: new Date().toISOString(),
+  };
+
+  if (data.name !== undefined) set.name = data.name;
+  if (data.type !== undefined) set.type = data.type;
+  if (data.currency !== undefined) set.currency = data.currency;
+  if (data.color !== undefined) set.color = data.color;
+  if (data.icon !== undefined) set.icon = data.icon;
   if (data.initialBalance !== undefined) {
-    updateData.initial_balance = data.initialBalance.toString();
+    set.initial_balance = data.initialBalance.toString();
   }
-  delete updateData.initialBalance;
 
   const result = await db
     .updateTable('wallets')
-    .set(updateData)
+    .set(set)
     .where('id', '=', id)
     .returningAll()
     .executeTakeFirst();
@@ -110,7 +151,7 @@ export async function updateWallet(id: string, data: Partial<CreateWallet>) {
     initialBalance: parseFloat(result.initial_balance || '0'),
     color: result.color,
     icon: result.icon,
-    isActive: result.is_active,
+    isActive: result.is_active === 1,
     displayOrder: result.display_order,
     createdAt: result.created_at,
     updatedAt: result.updated_at,

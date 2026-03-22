@@ -1,4 +1,4 @@
-import { generateObject } from 'ai';
+import { generateText } from 'ai';
 import type { z } from 'zod';
 import type { CreateProposedTransaction } from '@repo/types';
 import { isVisionMultimodalEnabled } from '@/lib/ai/model-manager';
@@ -101,12 +101,77 @@ type Adapters = {
 };
 
 /**
+ * Multimodal receipt extraction using `generateText` + JSON parse — same pattern as the
+ * debug vision smoke test. We intentionally avoid `generateObject` here: on
+ * `@react-native-ai/llama`, grammar/structured decoding with multimodal input can stall
+ * indefinitely (see wallet-resolver.ts for the text-only case).
+ */
+async function multimodalReceiptExtractWithGenerateText(
+  model: any,
+  imageUri: string,
+  userContext: string | undefined,
+  logger?: TraceLogger,
+): Promise<z.infer<typeof extractionResultSchema> | null> {
+  const mediaType = mediaTypeForUri(imageUri);
+  const contextLine = userContext ? `\nUser context: ${userContext}` : '';
+  const textPrompt = [
+    RECEIPT_EXTRACTION_PROMPT,
+    contextLine,
+    '',
+    'Analyze the receipt image and extract the transaction details.',
+    'Respond with ONLY a single JSON object (no markdown, no prose) matching:',
+    '{"amount": number|null, "type": "income"|"expense"|null, "currency": string|null, "merchant": string|null, "description": string|null, "wallet_hint": string|null, "category_hint": string|null}',
+  ]
+    .filter(Boolean)
+    .join('\n');
+
+  trace(logger, 'extractor', 'generateText-multimodal.start', {});
+
+  const result = await withTimeout(
+    generateText({
+      model,
+      messages: [
+        {
+          role: 'user' as const,
+          content: [
+            { type: 'text' as const, text: textPrompt },
+            { type: 'file' as const, mediaType, data: imageUri },
+          ],
+        },
+      ],
+      temperature: 0,
+    }),
+    VISION_GENERATE_OBJECT_MS,
+    'multimodal-generateText',
+  );
+
+  const raw = (result.text ?? '').trim();
+  trace(logger, 'extractor', 'generateText-multimodal.raw', { textLength: raw.length });
+
+  const jsonMatch = raw.match(/\{[\s\S]*\}/);
+  if (!jsonMatch) return null;
+
+  let parsedJson: unknown;
+  try {
+    parsedJson = JSON.parse(jsonMatch[0]);
+  } catch {
+    return null;
+  }
+
+  const parsed = extractionResultSchema.safeParse(parsedJson);
+  if (!parsed.success) return null;
+  trace(logger, 'extractor', 'generateText-multimodal.parsed', { amount: parsed.data.amount });
+  return parsed.data;
+}
+
+/**
  * Extract transaction details from a receipt image.
  *
  * - If the model was loaded **without** mmproj (text-only), **never** call multimodal APIs
  *   (they can hang). Use `userContext` text extraction only.
- * - If vision is enabled: try `generateObject` with a timeout, then native `completion`,
- *   then text fallback.
+ * - If vision is enabled: native `completion` + `image_paths` first (fast), then
+ *   `generateText` multimodal + JSON parse (same stack as the debug vision smoke test).
+ *   We do **not** use `generateObject` for multimodal — it can stall on this native binding.
  */
 export async function imageExtractionSubAgent(
   model: any,
@@ -128,60 +193,42 @@ export async function imageExtractionSubAgent(
     return null;
   }
 
-  const mediaType = mediaTypeForUri(imageUri);
-  const contextLine = userContext ? `\nUser context: ${userContext}` : '';
+  trace(logger, 'extractor', 'using-multimodal', {});
 
   try {
-    trace(logger, 'extractor', 'using-multimodal', {});
-
-    const { object } = await withTimeout(
-      generateObject({
-        model,
-        schema: extractionResultSchema,
-        messages: [
-          {
-            role: 'user' as const,
-            content: [
-              {
-                type: 'text' as const,
-                text: `${RECEIPT_EXTRACTION_PROMPT}${contextLine}\n\nAnalyze the receipt image and extract the transaction details.`,
-              },
-              {
-                type: 'file' as const,
-                mediaType,
-                data: imageUri,
-              },
-            ],
-          },
-        ],
-        temperature: 0,
-      }),
-      VISION_GENERATE_OBJECT_MS,
-      'multimodal-generateObject',
-    );
-
-    trace(logger, 'extractor', 'multimodal.parsed', { amount: object?.amount });
-    return object;
+    trace(logger, 'extractor', 'try-native-vision', {});
+    const native = await nativeVisionExtract(model, imageUri, userContext, logger);
+    if (native && native.amount != null && native.amount > 0) {
+      trace(logger, 'extractor', 'native-vision.ok', { amount: native.amount });
+      return native;
+    }
   } catch (e) {
-    trace(logger, 'extractor', 'multimodal-failed', {
+    trace(logger, 'extractor', 'native-vision-error', {
       message: e instanceof Error ? e.message : String(e),
     });
-
-    try {
-      const native = await nativeVisionExtract(model, imageUri, userContext, logger);
-      if (native) return native;
-    } catch (e2) {
-      trace(logger, 'extractor', 'native-vision-error', {
-        message: e2 instanceof Error ? e2.message : String(e2),
-      });
-    }
-
-    if (userContext) {
-      trace(logger, 'extractor', 'fallback-to-text', {});
-      return textExtractionSubAgent(model, userContext, logger);
-    }
-    return null;
   }
+
+  try {
+    const fromText = await multimodalReceiptExtractWithGenerateText(
+      model,
+      imageUri,
+      userContext,
+      logger,
+    );
+    if (fromText && fromText.amount != null && fromText.amount > 0) {
+      return fromText;
+    }
+  } catch (e) {
+    trace(logger, 'extractor', 'generateText-multimodal-failed', {
+      message: e instanceof Error ? e.message : String(e),
+    });
+  }
+
+  if (userContext) {
+    trace(logger, 'extractor', 'fallback-to-text', {});
+    return textExtractionSubAgent(model, userContext, logger);
+  }
+  return null;
 }
 
 export async function runImageFlow(

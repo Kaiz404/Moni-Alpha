@@ -1,5 +1,6 @@
 import { syncSystem } from '@/lib/powersync/Powersync';
-import type { CreateTransaction } from '@repo/types';
+import type { CreateTransaction, UpdateTransaction } from '@repo/types';
+import { updateTransactionSchema } from '@repo/types';
 import { randomUUID } from 'expo-crypto';
 import * as Location from 'expo-location';
 
@@ -18,10 +19,34 @@ export async function getTransactions(walletId?: string, limit: number = 100) {
 
   const transactions = await query.execute();
 
-  return transactions.map(t => ({
+  return transactions.map((t) => mapTransactionRow(t));
+}
+
+function mapTransactionRow(t: {
+  id: string;
+  user_id: string | null;
+  wallet_id: string | null;
+  amount: string | null;
+  type: string | null;
+  category_id: string | null;
+  transfer_to_wallet_id: string | null;
+  linked_transaction_id: string | null;
+  description: string | null;
+  merchant: string | null;
+  notes: string | null;
+  transaction_date: string | null;
+  location_latitude: string | null;
+  location_longitude: string | null;
+  location_name: string | null;
+  receipt_image_url: string | null;
+  metadata: string | null;
+  created_at: string | null;
+  updated_at: string | null;
+}) {
+  return {
     id: t.id,
-    userId: t.user_id,
-    walletId: t.wallet_id,
+    userId: t.user_id ?? '',
+    walletId: t.wallet_id ?? '',
     amount: parseFloat(t.amount || '0'),
     type: t.type,
     categoryId: t.category_id,
@@ -38,7 +63,61 @@ export async function getTransactions(walletId?: string, limit: number = 100) {
     metadata: t.metadata,
     createdAt: t.created_at,
     updatedAt: t.updated_at,
-  }));
+  };
+}
+
+export async function getTransactionById(id: string) {
+  const { db } = syncSystem;
+
+  const t = await db
+    .selectFrom('transactions')
+    .selectAll()
+    .where('id', '=', id)
+    .executeTakeFirst();
+
+  if (!t) return null;
+
+  return mapTransactionRow(t);
+}
+
+export async function updateTransaction(id: string, data: UpdateTransaction) {
+  const { db } = syncSystem;
+
+  const parsed = updateTransactionSchema.safeParse(data);
+  if (!parsed.success) {
+    throw new Error(parsed.error.errors[0]?.message ?? 'Invalid update');
+  }
+
+  const p = parsed.data;
+  const set: Record<string, string | null> = {
+    updated_at: new Date().toISOString(),
+  };
+
+  if (p.walletId !== undefined) set.wallet_id = p.walletId;
+  if (p.amount !== undefined) set.amount = p.amount.toString();
+  if (p.type !== undefined) set.type = p.type;
+  if (p.categoryId !== undefined) set.category_id = p.categoryId;
+  if (p.description !== undefined) set.description = p.description;
+  if (p.merchant !== undefined) set.merchant = p.merchant;
+  if (p.notes !== undefined) set.notes = p.notes;
+  if (p.transactionDate !== undefined) set.transaction_date = p.transactionDate;
+  if (p.locationLatitude !== undefined) {
+    set.location_latitude =
+      p.locationLatitude === null || p.locationLatitude === undefined
+        ? null
+        : p.locationLatitude.toString();
+  }
+  if (p.locationLongitude !== undefined) {
+    set.location_longitude =
+      p.locationLongitude === null || p.locationLongitude === undefined
+        ? null
+        : p.locationLongitude.toString();
+  }
+  if (p.locationName !== undefined) set.location_name = p.locationName;
+
+  await db.updateTable('transactions').set(set).where('id', '=', id).execute();
+
+  return getTransactionById(id);
 }
 
 export async function createTransaction(data: CreateTransaction) {

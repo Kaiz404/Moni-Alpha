@@ -26,29 +26,35 @@ function NotificationCard({
             {item.app || 'Unknown app'}
           </Text>
         </View>
-        <View className="flex-row items-center gap-2">
-          <Text className="text-xs text-gray-400 dark:text-gray-500">
-            {received.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-          </Text>
-          <TouchableOpacity
-            onPress={() => onDismiss(item.id)}
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-            <IconSymbol name="xmark" size={12} color="#9ca3af" />
-          </TouchableOpacity>
+
+        <View className="flex-row items-center justify-between">
+          <View className={`self-start mr-2 px-2 py-0.5 rounded-full ${isPrefilterPassed ? 'bg-green-100 dark:bg-green-900' : 'bg-gray-100 dark:bg-gray-700'}`}>
+            <Text className={`text-[11px] font-semibold ${isPrefilterPassed ? 'text-green-700 dark:text-green-300' : 'text-gray-600 dark:text-gray-300'}`}>
+              {isPrefilterPassed ? 'Queued' : 'Ignored'}
+            </Text>
+          </View>
+          
+          <View className="flex-row items-center gap-2">
+            <Text className="text-xs text-gray-400 dark:text-gray-500">
+              {received.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+            </Text>
+            <TouchableOpacity
+              onPress={() => onDismiss(item.id)}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+              <IconSymbol name="close" size={12} color="#9ca3af" />
+            </TouchableOpacity>
+          </View>
+
+
         </View>
       </View>
 
-      <View className="mb-2">
-        <View className={`self-start px-2 py-0.5 rounded-full ${isPrefilterPassed ? 'bg-green-100 dark:bg-green-900' : 'bg-gray-100 dark:bg-gray-700'}`}>
-          <Text className={`text-[11px] font-semibold ${isPrefilterPassed ? 'text-green-700 dark:text-green-300' : 'text-gray-600 dark:text-gray-300'}`}>
-            {isPrefilterPassed ? 'Matched prefilter' : 'Normal notification'}
-          </Text>
-        </View>
-      </View>
 
       <Text className="text-sm font-semibold text-gray-900 dark:text-white mb-1" numberOfLines={2}>
         {displayTitle}
       </Text>
+
+      
       <Text className="text-sm text-gray-600 dark:text-gray-400" numberOfLines={3}>
         {displayBody}
       </Text>

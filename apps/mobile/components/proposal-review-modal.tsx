@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import {
   View,
   Text,
@@ -10,7 +10,9 @@ import {
   Pressable,
   AppState,
   DeviceEventEmitter,
+  StyleSheet,
 } from 'react-native';
+import MapView, { Marker } from 'react-native-maps';
 import { Image } from 'expo-image';
 import type { ProposedTransaction } from '@repo/types';
 import {
@@ -19,6 +21,7 @@ import {
   rejectProposedTransaction,
 } from '@/lib/supabase/proposed-transactions';
 import { PROPOSED_TRANSACTIONS_CHANGED } from '@/lib/proposals/proposed-transactions-events';
+import { getProposalLocationSnapshot } from '@/lib/ai/proposal-location-cache';
 import { getWallets } from '@/lib/supabase/wallets';
 
 type WalletOption = {
@@ -284,6 +287,8 @@ function ProposalForm({
         )}
       </View>
 
+      <ProposalLocationSection proposalId={proposal.id} />
+
       {/* Type toggle */}
       <Text className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">
         Transaction Type
@@ -468,6 +473,82 @@ function FieldRow({
     </View>
   );
 }
+
+/** Optional collapsible map when a location was captured with this proposal (MMKV cache). */
+function ProposalLocationSection({ proposalId }: { proposalId: string }) {
+  const [expanded, setExpanded] = useState(false);
+  const snapshot = useMemo(() => getProposalLocationSnapshot(proposalId), [proposalId]);
+
+  const region = useMemo(() => {
+    if (!snapshot) return null;
+    return {
+      latitude: snapshot.latitude,
+      longitude: snapshot.longitude,
+      latitudeDelta: 0.006,
+      longitudeDelta: 0.006,
+    };
+  }, [snapshot]);
+
+  if (!snapshot || !region) return null;
+
+  return (
+    <View className="mb-4">
+      <TouchableOpacity
+        className="flex-row items-center"
+        onPress={() => setExpanded(!expanded)}
+        activeOpacity={0.7}
+      >
+        <Text className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">
+          Captured location {expanded ? '▲' : '▼'}
+        </Text>
+      </TouchableOpacity>
+      {expanded ? (
+        <View className="mt-2">
+          <View
+            className="rounded-xl overflow-hidden border border-gray-200 dark:border-gray-600 bg-gray-100 dark:bg-gray-800"
+            style={styles.locationMapBox}
+          >
+            <MapView
+              style={styles.locationMap}
+              initialRegion={region}
+              provider="google"
+              scrollEnabled={false}
+              zoomEnabled={false}
+              rotateEnabled={false}
+              pitchEnabled={false}
+            >
+              <Marker
+                coordinate={{
+                  latitude: snapshot.latitude,
+                  longitude: snapshot.longitude,
+                }}
+                pinColor="#1e88e5"
+              />
+            </MapView>
+          </View>
+          {snapshot.name ? (
+            <Text
+              className="text-gray-500 dark:text-gray-400 text-xs mt-2"
+              numberOfLines={3}
+            >
+              {snapshot.name}
+            </Text>
+          ) : null}
+        </View>
+      ) : null}
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  locationMapBox: {
+    height: 200,
+    width: '100%',
+  },
+  locationMap: {
+    ...StyleSheet.absoluteFillObject,
+  },
+});
 
 function AIReasoningSection({
   reasoning,

@@ -3,14 +3,16 @@ import {
   Alert,
   Dimensions,
   Platform,
+  Pressable,
+  RefreshControl,
+  ScrollView,
+  Text,
+  TouchableOpacity,
   UIManager,
   View,
-  Text,
-  ScrollView,
-  TouchableOpacity,
-  RefreshControl,
   useWindowDimensions,
 } from 'react-native';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { router, useFocusEffect } from 'expo-router';
 import {
   VictoryAxis,
@@ -24,16 +26,21 @@ import {
 
 import { useAuth } from '@/lib/auth/auth-context';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { mmkvStorage } from '@/lib/storage/mmkv-storage';
 import { syncSystem } from '@/lib/powersync/Powersync';
 import { getWallets, deleteWallet } from '@/lib/supabase/wallets';
 import { getWalletBalances } from '@/lib/supabase/balances';
-import { getTransactions } from '@/lib/supabase/transactions';
+import { deleteTransaction, getTransactions } from '@/lib/supabase/transactions';
 import { PowerSyncStatusIndicator } from '@/components/power-sync-status-indicator';
-import * as React from "react";
 import type { ICarouselInstance } from "react-native-reanimated-carousel";
 import Carousel from "react-native-reanimated-carousel";
-import Animated, { Extrapolation, interpolate, useAnimatedStyle, type SharedValue } from 'react-native-reanimated';
+import Animated, {
+  Extrapolation,
+  interpolate,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+  type SharedValue,
+} from 'react-native-reanimated';
 
 type WalletTx = {
   id: string;
@@ -44,7 +51,59 @@ type WalletTx = {
   transactionDate: string;
 };
 
-const MAIN_WALLET_KEY = 'main_wallet_id';
+type WalletTxBundle = { recent: any[]; chart: WalletTx[] };
+
+const DOT_ACTIVE_W = 24;
+const DOT_INACTIVE_W = 8;
+
+const PIE_COLOR_SCALE = ['#0a7ea4', '#3b82f6', '#6366f1', '#8b5cf6', '#ec4899', '#f59e0b'];
+
+function WalletPaginationDots({
+  count,
+  activeIndex,
+  onPressDot,
+}: {
+  count: number;
+  activeIndex: SharedValue<number>;
+  onPressDot: (index: number) => void;
+}) {
+  if (count <= 0) return null;
+  return (
+    <View className="mt-5 mb-2 flex-row items-center justify-center gap-1">
+      {Array.from({ length: count }, (_, index) => (
+        <WalletPaginationDot
+          key={`wallet-dot-${index}`}
+          index={index}
+          activeIndex={activeIndex}
+          onPress={() => onPressDot(index)}
+        />
+      ))}
+    </View>
+  );
+}
+
+function WalletPaginationDot({
+  index,
+  activeIndex,
+  onPress,
+}: {
+  index: number;
+  activeIndex: SharedValue<number>;
+  onPress: () => void;
+}) {
+  const style = useAnimatedStyle(() => {
+    const active = Math.round(activeIndex.value) === index;
+    return {
+      width: withTiming(active ? DOT_ACTIVE_W : DOT_INACTIVE_W, { duration: 180 }),
+      backgroundColor: active ? '#8494FF' : '#94a3b8',
+    };
+  });
+  return (
+    <Pressable onPress={onPress} hitSlop={6} accessibilityRole="button">
+      <Animated.View style={[{ height: 8, borderRadius: 9999, marginLeft: 4 }, style]} />
+    </Pressable>
+  );
+}
 
 function CarouselItemDepth({
   animationValue,
@@ -82,9 +141,15 @@ export default function WalletsScreen() {
   const [walletChartTransactions, setWalletChartTransactions] = useState<WalletTx[]>([]);
   const [categoryMap, setCategoryMap] = useState<Record<string, string>>({});
   const [refreshing, setRefreshing] = useState(false);
-  const [mainWalletId, setMainWalletId] = useState<string | null>(null);
-  const [activeWalletIndex, setActiveWalletIndex] = useState(0);
+  /** Bumps when `focusedWalletIndexRef` changes so the tree re-renders without storing the index in React state. */
+  const [snapRevision, setSnapRevision] = useState(0);
+  const focusedWalletIndexRef = useRef(0);
+  const carouselRef = useRef<ICarouselInstance>(null);
   const [expandedWalletId, setExpandedWalletId] = useState<string | null>(null);
+
+  const walletTxCacheRef = useRef<Record<string, WalletTxBundle>>({});
+  const walletFetchGenRef = useRef(0);
+  const activeIndexShared = useSharedValue(0);
 
   const hasSvgViewManager = useMemo(() => {
     if (Platform.OS !== 'android') return true;
@@ -93,15 +158,14 @@ export default function WalletsScreen() {
     return Boolean(getConfig('RNSVGRect') || getConfig('RCTRNSVGRect'));
   }, []);
 
-  const mainWallet = wallets.find((w) => w.id === mainWalletId) ?? wallets[0] ?? null;
-
   const focusedWallet = useMemo(() => {
-    if (activeWalletIndex < 0 || activeWalletIndex >= wallets.length) return null;
-    return wallets[activeWalletIndex] ?? null;
-  }, [wallets, activeWalletIndex]);
+    void snapRevision;
+    const i = focusedWalletIndexRef.current;
+    if (i < 0 || i >= wallets.length) return null;
+    return wallets[i] ?? null;
+  }, [wallets, snapRevision]);
 
   const chartTheme = useMemo(() => VictoryTheme.material, []);
-  const pieColorScale = ['#0a7ea4', '#3b82f6', '#6366f1', '#8b5cf6', '#ec4899', '#f59e0b'];
 
   const pieData = useMemo(() => {
     const totals: Record<string, number> = {};
@@ -147,7 +211,7 @@ export default function WalletsScreen() {
     const total = pieData.reduce((s, p) => s + (p.y || 0), 0) || 1;
     return (pieData.length ? pieData : [{ x: 'No expenses', y: 1 }]).slice(0, 6).map((item, index) => ({
       name: `${item.x} (${Math.round((item.y / total) * 100)}%)`,
-      symbol: { fill: pieColorScale[index % pieColorScale.length] },
+      symbol: { fill: PIE_COLOR_SCALE[index % PIE_COLOR_SCALE.length] },
     }));
   }, [pieData]);
 
@@ -163,18 +227,78 @@ export default function WalletsScreen() {
 
   const pieInnerRadius = Math.max(36, Math.round(chartWidth * 0.12));
 
-  const loadTransactionsForWallet = useCallback(async (walletId?: string | null) => {
-    try {
-      const [txRecent, txForCharts] = await Promise.all([
-        getTransactions(walletId ?? undefined, 5),
-        getTransactions(walletId ?? undefined, 2000),
-      ]);
-      setTransactions(txRecent);
-      setWalletChartTransactions(txForCharts as WalletTx[]);
-    } catch (error) {
-      console.error('Error loading transactions:', error);
-    }
+  const fetchBundleForWallet = useCallback(async (walletId: string): Promise<WalletTxBundle> => {
+    const [txRecent, txForCharts] = await Promise.all([
+      getTransactions(walletId, 5),
+      getTransactions(walletId, 2000),
+    ]);
+    return { recent: txRecent, chart: txForCharts as WalletTx[] };
   }, []);
+
+  const prefetchWalletCaches = useCallback(
+    async (walletIds: string[]) => {
+      await Promise.all(
+        walletIds.map(async (id) => {
+          try {
+            const bundle = await fetchBundleForWallet(id);
+            walletTxCacheRef.current[id] = bundle;
+          } catch (e) {
+            console.error('Prefetch wallet transactions failed', id, e);
+          }
+        })
+      );
+    },
+    [fetchBundleForWallet]
+  );
+
+  const loadWalletTransactions = useCallback(
+    async (walletId: string | null, opts?: { forceNetwork?: boolean }) => {
+      if (!walletId) {
+        setTransactions([]);
+        setWalletChartTransactions([]);
+        return;
+      }
+      if (opts?.forceNetwork) {
+        delete walletTxCacheRef.current[walletId];
+      }
+      const cached = walletTxCacheRef.current[walletId];
+      if (cached && !opts?.forceNetwork) {
+        setTransactions(cached.recent);
+        setWalletChartTransactions(cached.chart);
+        return;
+      }
+      const gen = ++walletFetchGenRef.current;
+      try {
+        const bundle = await fetchBundleForWallet(walletId);
+        walletTxCacheRef.current[walletId] = bundle;
+        if (gen !== walletFetchGenRef.current) return;
+        if (wallets[focusedWalletIndexRef.current]?.id !== walletId) return;
+        setTransactions(bundle.recent);
+        setWalletChartTransactions(bundle.chart);
+      } catch (error) {
+        console.error('Error loading transactions:', error);
+      }
+    },
+    [fetchBundleForWallet, wallets]
+  );
+
+  const syncFromCacheOrFetch = useCallback(
+    (walletId: string | null) => {
+      if (!walletId) {
+        setTransactions([]);
+        setWalletChartTransactions([]);
+        return;
+      }
+      const cached = walletTxCacheRef.current[walletId];
+      if (cached) {
+        setTransactions(cached.recent);
+        setWalletChartTransactions(cached.chart);
+        return;
+      }
+      void loadWalletTransactions(walletId);
+    },
+    [loadWalletTransactions]
+  );
 
   const loadData = useCallback(async () => {
     if (!user) return;
@@ -199,33 +323,54 @@ export default function WalletsScreen() {
       const balancesDataFiltered = await getWalletBalances(walletIds);
       setBalances(balancesDataFiltered);
 
-      let storedMainWalletId = await mmkvStorage.getItem(MAIN_WALLET_KEY);
-      const hasStoredMain = storedMainWalletId && walletList.some((w: any) => w.id === storedMainWalletId);
-      if (!hasStoredMain && walletList.length) {
-        const nextMainWalletId = walletList[0].id;
-        storedMainWalletId = nextMainWalletId;
-        await mmkvStorage.setItem(MAIN_WALLET_KEY, nextMainWalletId);
-      }
-      const resolvedMainWalletId = storedMainWalletId ?? walletList[0]?.id ?? null;
-      setMainWalletId(resolvedMainWalletId);
-      const resolvedIndex = walletList.findIndex((w: any) => w.id === resolvedMainWalletId);
-      setActiveWalletIndex(resolvedIndex >= 0 ? resolvedIndex : 0);
-      await loadTransactionsForWallet(resolvedMainWalletId);
+      walletTxCacheRef.current = {};
+      await prefetchWalletCaches(walletIds);
+
+      const prevIdx = focusedWalletIndexRef.current;
+      const clampedIdx = walletList.length
+        ? Math.min(Math.max(0, prevIdx), walletList.length - 1)
+        : 0;
+      focusedWalletIndexRef.current = walletList.length ? clampedIdx : 0;
+      activeIndexShared.value = clampedIdx;
+      syncFromCacheOrFetch(walletList[clampedIdx]?.id ?? null);
+      setSnapRevision((r) => r + 1);
     } catch (error) {
       console.error('Error loading wallets:', error);
     }
-  }, [user, loadTransactionsForWallet]);
-
-  const setAsMainWallet = useCallback(async (walletId: string) => {
-    await mmkvStorage.setItem(MAIN_WALLET_KEY, walletId);
-    setMainWalletId(walletId);
-  }, []);
+  }, [user, prefetchWalletCaches, syncFromCacheOrFetch, activeIndexShared]);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
     await loadData();
     setRefreshing(false);
   }, [loadData]);
+
+  const handleDeleteTransaction = useCallback(
+    (id: string) => {
+      Alert.alert(
+        'Delete transaction',
+        'This will remove the transaction from your records.',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Delete',
+            style: 'destructive',
+            onPress: async () => {
+              try {
+                await deleteTransaction(id);
+                const wid = wallets[focusedWalletIndexRef.current]?.id;
+                if (wid) delete walletTxCacheRef.current[wid];
+                await loadWalletTransactions(wid ?? null, { forceNetwork: true });
+              } catch (e) {
+                Alert.alert('Error', e instanceof Error ? e.message : 'Failed to delete');
+              }
+            },
+          },
+        ],
+      );
+    },
+    [loadWalletTransactions, wallets],
+  );
 
   const handleDeleteWallet = useCallback(
     async (walletId: string) => {
@@ -239,25 +384,27 @@ export default function WalletsScreen() {
             style: 'destructive',
             onPress: async () => {
               try {
+                const deletedIndex = wallets.findIndex((w) => w.id === walletId);
+                const nextWallets = wallets.filter((w) => w.id !== walletId);
+                let nextIdx = focusedWalletIndexRef.current;
+                if (deletedIndex === nextIdx) {
+                  nextIdx = Math.min(nextIdx, Math.max(0, nextWallets.length - 1));
+                } else if (deletedIndex !== -1 && deletedIndex < nextIdx) {
+                  nextIdx -= 1;
+                }
+                focusedWalletIndexRef.current = nextIdx;
+                activeIndexShared.value = nextIdx;
+                delete walletTxCacheRef.current[walletId];
                 await deleteWallet(walletId);
-                setWallets((prev) => {
-                  const next = prev.filter((w) => w.id !== walletId);
-                  if (mainWalletId === walletId) {
-                    const nextMain = next[0]?.id ?? null;
-                    if (nextMain) {
-                      mmkvStorage.setItem(MAIN_WALLET_KEY, nextMain);
-                    } else {
-                      mmkvStorage.removeItem(MAIN_WALLET_KEY);
-                    }
-                    setMainWalletId(nextMain);
-                  }
-                  return next;
-                });
+                setWallets(nextWallets);
                 setBalances((prev) => {
                   const next = { ...prev };
                   delete next[walletId];
                   return next;
                 });
+                setSnapRevision((r) => r + 1);
+                await loadWalletTransactions(nextWallets[nextIdx]?.id ?? null);
+                carouselRef.current?.scrollTo({ index: nextIdx, animated: true });
               } catch (error) {
                 console.error('Failed to delete wallet', error);
                 Alert.alert('Delete failed', 'Could not delete wallet. Please try again.');
@@ -267,7 +414,7 @@ export default function WalletsScreen() {
         ]
       );
     },
-    [mainWalletId]
+    [wallets, loadWalletTransactions, activeIndexShared]
   );
 
   const renderWalletCarouselItem = useCallback(
@@ -303,7 +450,6 @@ export default function WalletsScreen() {
       }
 
       const balance = balances[item.id] ?? item.currentBalance ?? item.initialBalance ?? 0;
-      const isMain = item.id === mainWallet?.id;
 
       return (
         <CarouselItemDepth animationValue={animationValue}>
@@ -313,7 +459,7 @@ export default function WalletsScreen() {
             >
             <TouchableOpacity
               onPress={() =>
-                router.push({ pathname: '/transaction/index', params: { walletId: item.id } })
+                router.push({ pathname: '/transaction', params: { walletId: item.id } })
               }
               activeOpacity={0.85}
             >
@@ -348,16 +494,13 @@ export default function WalletsScreen() {
                       </TouchableOpacity>
 
                       <TouchableOpacity
-                        onPress={() => setAsMainWallet(item.id)}
-                        className={`rounded-full px-2 py-1 border ${
-                          isMain
-                            ? 'bg-green-600 border-green-600'
-                            : 'bg-white/20 border-white/30'
-                        }`}
+                        onPress={() => {
+                          setExpandedWalletId(null);
+                          router.push({ pathname: '/wallet/[id]', params: { id: item.id } });
+                        }}
+                        className="rounded-full border border-white/40 bg-white/20 px-2 py-1"
                       >
-                        <Text className="text-xs font-semibold text-white">
-                          {isMain ? 'Main' : 'Set'}
-                        </Text>
+                        <Text className="text-xs font-semibold text-white">Edit</Text>
                       </TouchableOpacity>
 
                       <TouchableOpacity
@@ -391,7 +534,18 @@ export default function WalletsScreen() {
         </CarouselItemDepth>
       );
     },
-    [balances, handleDeleteWallet, mainWallet?.id, setAsMainWallet, expandedWalletId, setExpandedWalletId, carouselItemWidth]
+    [balances, handleDeleteWallet, expandedWalletId, setExpandedWalletId, carouselItemWidth]
+  );
+
+  const handleWalletDotPress = useCallback(
+    (index: number) => {
+      focusedWalletIndexRef.current = index;
+      activeIndexShared.value = index;
+      syncFromCacheOrFetch(wallets[index]?.id ?? null);
+      setSnapRevision((r) => r + 1);
+      carouselRef.current?.scrollTo({ index, animated: true });
+    },
+    [wallets, syncFromCacheOrFetch, activeIndexShared]
   );
 
   useFocusEffect(
@@ -399,8 +553,6 @@ export default function WalletsScreen() {
       loadData();
     }, [loadData])
   );
-
-  const ref = React.useRef<ICarouselInstance>(null);
 
   return (
     <View className="flex-1 bg-white dark:bg-gray-900 pt-5">
@@ -413,7 +565,7 @@ export default function WalletsScreen() {
         <View className="px-4 pt-4 pb-2 flex-row items-center justify-between">
           <View className="flex-row items-center space-x-2">
             <View className="w-9 h-9 rounded-xl bg-slate-200 dark:bg-slate-700 items-center justify-center">
-              <Text className="text-base text-slate-700 dark:text-slate-100 font-bold">{mainWallet?.icon ?? 'W'}</Text>
+              <Text className="text-base text-slate-700 dark:text-slate-100 font-bold">{focusedWallet?.icon ?? 'W'}</Text>
             </View>
             <Text className="text-2xl ml-3 font-bold text-gray-900 dark:text-white">Wallets</Text>
           </View>
@@ -423,7 +575,7 @@ export default function WalletsScreen() {
         <View id="carousel-component" className="top-8">
           {wallets.length ? (
             <Carousel
-              ref={ref}
+              ref={carouselRef}
               autoPlayInterval={2000}
               data={[...wallets, { id: 'add', name: 'Add Wallet', type: 'Action', icon: '+', color: '#10b981' }]}
               loop={true}
@@ -445,15 +597,17 @@ export default function WalletsScreen() {
               }}
               onSnapToItem={(index) => {
                 if (index < wallets.length) {
-                  setActiveWalletIndex(index);
-                  loadTransactionsForWallet(wallets[index]?.id ?? null);
+                  focusedWalletIndexRef.current = index;
+                  activeIndexShared.value = index;
+                  syncFromCacheOrFetch(wallets[index]?.id ?? null);
+                  setSnapRevision((r) => r + 1);
                 }
               }}
               renderItem={renderWalletCarouselItem}
             />
           ) : (
             <Carousel
-              ref={ref}
+              ref={carouselRef}
               autoPlayInterval={2000}
               data={[{ id: 'add', name: 'Add Wallet', type: 'Action', icon: '+', color: '#10b981' }]}
               loop={true}
@@ -478,22 +632,11 @@ export default function WalletsScreen() {
           )}
         </View>
 
-        <View className="mt-5 mb-2 flex-row items-center justify-center space-x-2">
-          {Array.from({ length: wallets.length }, (_, index) => {
-            const isActive = index === activeWalletIndex;
-            return (
-              <TouchableOpacity
-                key={`wallet-dot-${index}`}
-                onPress={() => {
-                  setActiveWalletIndex(index);
-                  loadTransactionsForWallet(wallets[index]?.id ?? null);
-                  ref.current?.scrollTo({ index, animated: true });
-                }}
-                className={`h-2 ml-1 ${isActive ? 'w-6 bg-[#8494FF]' : 'w-2 bg-slate-300 dark:bg-slate-500'} rounded-full `}
-              />
-            );
-          })}
-        </View>
+        <WalletPaginationDots
+          count={wallets.length}
+          activeIndex={activeIndexShared}
+          onPressDot={handleWalletDotPress}
+        />
 
         <View className="bg-[#6367FF]/70 dark:bg-[#2a2d5c]/95 rounded-t-2xl mt-1">
           <View className="flex-row justify-between relative">
@@ -503,30 +646,59 @@ export default function WalletsScreen() {
 
           <View className="bg-[#FAFAFA]/80 dark:bg-gray-950/95 mt-1 rounded-t-2xl px-4 pt-6 pb-8">
             <Text className="mb-2 text-sm font-semibold text-slate-700 dark:text-slate-100">Recent Transactions</Text>
-            {transactions.map((item) => (
-              <View
-                key={item.id}
-                className="mb-2 rounded-xl border border-slate-300 bg-white p-3 shadow-sm dark:border-slate-700 dark:bg-slate-800"
-              >
-                <View className="flex-row items-baseline gap-1">
-                  <Text
-                    className={`text-base font-semibold ${item.type === 'income' ? 'text-green-600 dark:text-green-400' : 'text-red-500 dark:text-red-400'}`}
-                  >
-                    {item.type === 'income' ? '+' : '-'}
-                    {item.amount.toFixed(2)}
-                  </Text>
-                  <Text className="text-xs text-slate-500 dark:text-slate-400">
-                    {wallets[activeWalletIndex]?.currency ?? 'USD'}
-                  </Text>
+            {transactions.map((item) => {
+              const canEdit = item.type === 'income' || item.type === 'expense';
+              return (
+                <View
+                  key={item.id}
+                  className="mb-2 rounded-xl border border-slate-300 bg-white p-3 shadow-sm dark:border-slate-700 dark:bg-slate-800"
+                >
+                  <View className="flex-row items-start justify-between gap-2">
+                    <View className="min-w-0 flex-1 pr-1">
+                      <View className="flex-row items-baseline gap-1 flex-wrap">
+                        <Text
+                          className={`text-base font-semibold ${item.type === 'income' ? 'text-green-600 dark:text-green-400' : 'text-red-500 dark:text-red-400'}`}
+                        >
+                          {item.type === 'income' ? '+' : '-'}
+                          {item.amount.toFixed(2)}
+                        </Text>
+                        <Text className="text-xs text-slate-500 dark:text-slate-400">
+                          {focusedWallet?.currency ?? 'USD'}
+                        </Text>
+                      </View>
+                      <Text className="text-base text-slate-900 dark:text-white">
+                        {item.merchant || item.description || item.type}
+                      </Text>
+                      <Text className="text-xs text-slate-600 dark:text-slate-400">
+                        {new Date(item.transactionDate).toLocaleDateString()}
+                      </Text>
+                    </View>
+                    <View className="flex items-center gap-0.5 pt-0.5">
+                      {canEdit ? (
+                        <Pressable
+                          accessibilityLabel="Edit transaction"
+                          hitSlop={8}
+                          onPress={() =>
+                            router.push({ pathname: '/transaction/[id]', params: { id: item.id } })
+                          }
+                          className="rounded p-1 active:opacity-70"
+                        >
+                          <MaterialIcons name="edit" size={18} color="#64748b" />
+                        </Pressable>
+                      ) : null}
+                      <Pressable
+                        accessibilityLabel="Delete transaction"
+                        hitSlop={8}
+                        onPress={() => handleDeleteTransaction(item.id)}
+                        className="rounded p-1 active:opacity-70"
+                      >
+                        <MaterialIcons name="delete-outline" size={18} color="#ef4444" />
+                      </Pressable>
+                    </View>
+                  </View>
                 </View>
-                <Text className="text-base text-slate-900 dark:text-white">
-                  {item.merchant || item.description || item.type}
-                </Text>
-                <Text className="text-xs text-slate-600 dark:text-slate-400">
-                  {new Date(item.transactionDate).toLocaleDateString()}
-                </Text>
-              </View>
-            ))}
+              );
+            })}
             {transactions.length === 0 ? (
               <View className="mb-2 rounded-xl border border-dashed border-slate-300 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-800">
                 <Text className="text-sm text-slate-500 dark:text-slate-400">
@@ -546,7 +718,7 @@ export default function WalletsScreen() {
                     width={chartWidth}
                     height={pieHeight}
                     data={pieData.length ? pieData : [{ x: 'No expenses', y: 1 }]}
-                    colorScale={pieColorScale}
+                    colorScale={PIE_COLOR_SCALE}
                     innerRadius={pieInnerRadius}
                     padAngle={2}
                     labels={() => ''}

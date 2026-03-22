@@ -2,7 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { View, Text } from 'react-native';
 import { usePowerSync } from '@powersync/react-native';
 
-export const PowerSyncStatus = () => {
+type PowerSyncStatusProps = {
+  /** Merged with default container classes for layout in different screens */
+  className?: string;
+};
+
+export function PowerSyncStatus({ className }: PowerSyncStatusProps = {}) {
   const powersync = usePowerSync();
   const [connected, setConnected] = useState(powersync.connected);
   const [status, setStatus] = useState(powersync.currentStatus);
@@ -90,7 +95,13 @@ export const PowerSyncStatus = () => {
   };
 
   return (
-    <View className="mb-6 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+    <View
+      className={[
+        'mb-6 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg',
+        className ?? '',
+      ]
+        .filter(Boolean)
+        .join(' ')}>
       <Text className="text-lg font-semibold mb-3 text-gray-900 dark:text-white">
         Sync Status
       </Text>
@@ -139,4 +150,4 @@ export const PowerSyncStatus = () => {
       </View>
     </View>
   );
-};
+}
