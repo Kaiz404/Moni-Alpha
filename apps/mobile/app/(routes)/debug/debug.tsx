@@ -5,19 +5,9 @@ import {
   ScrollView,
   TouchableOpacity,
   ActivityIndicator,
-  Alert,
-  Platform,
-  ActionSheetIOS,
 } from 'react-native';
-import { Image } from 'expo-image';
-import * as ImagePicker from 'expo-image-picker';
 import BackgroundService from 'react-native-background-actions';
 import {
-  runModelStatusCheck,
-  loadModel,
-  unloadModel,
-  downloadModelsDebug,
-  deleteModelsDebug,
   startHeartbeat,
   stopHeartbeat,
   isHeartbeatRunning,
@@ -31,7 +21,6 @@ import {
   runQueueInspection,
   pruneQueue,
   getQueueSnapshot,
-  runVisionImageDescribeTest,
   PROCESS_LABELS,
   formatDuration,
   useDebugProcessMonitor,
@@ -41,8 +30,6 @@ import {
   type ProcessId,
 } from '@/lib/debug';
 
-// ─── Grid button definitions ─────────────────────────────────────────────────
-
 type GridButton = {
   id: string;
   label: string;
@@ -50,7 +37,6 @@ type GridButton = {
   color: string;
   activeColor?: string;
   run: (log: LogFn) => Promise<DebugTestResult>;
-  /** For toggle-style buttons (heartbeat, etc.) */
   isActive?: () => boolean;
   onActivePress?: (log: LogFn) => Promise<void>;
   activeLabel?: string;
@@ -59,44 +45,9 @@ type GridButton = {
 function useDebugButtons(): GridButton[] {
   return [
     {
-      id: 'model-download',
-      label: 'Download Models',
-      description: 'Download LLM + vision projector',
-      color: '#059669',
-      run: downloadModelsDebug,
-    },
-    {
-      id: 'model-delete',
-      label: 'Delete Models',
-      description: 'Remove all model files',
-      color: '#dc2626',
-      run: deleteModelsDebug,
-    },
-    {
-      id: 'model-status',
-      label: 'Model Status',
-      description: 'Check download & load state',
-      color: '#3b82f6',
-      run: runModelStatusCheck,
-    },
-    {
-      id: 'model-load',
-      label: 'Load Model',
-      description: 'Load LLM into memory',
-      color: '#8b5cf6',
-      run: loadModel,
-    },
-    {
-      id: 'model-unload',
-      label: 'Unload Model',
-      description: 'Free model from memory',
-      color: '#6366f1',
-      run: unloadModel,
-    },
-    {
       id: 'heartbeat',
       label: 'Heartbeat',
-      description: 'BG service alive test (no LLM)',
+      description: 'BG service alive test',
       color: '#10b981',
       activeColor: '#dc2626',
       isActive: isHeartbeatRunning,
@@ -105,16 +56,16 @@ function useDebugButtons(): GridButton[] {
       onActivePress: stopHeartbeat,
     },
     {
-      id: 'llm-bg',
-      label: 'LLM Background',
-      description: 'Enqueue + process in BG service',
+      id: 'ai-bg',
+      label: 'AI Queue Test',
+      description: 'Enqueue + process via mock AI client',
       color: '#4f46e5',
       run: runLLMBackgroundTest,
     },
     {
       id: 'stop-processor',
       label: 'Stop Processor',
-      description: 'Kill background LLM processor',
+      description: 'Kill background processor',
       color: '#ef4444',
       run: stopLLMProcessor,
     },
@@ -170,61 +121,6 @@ function useDebugButtons(): GridButton[] {
   ];
 }
 
-// ─── Vision smoke test: pick image → LLM describes it ────────────────────────
-
-async function launchImageForVisionTest(source: 'camera' | 'library'): Promise<string | null> {
-  if (source === 'camera') {
-    const perm = await ImagePicker.requestCameraPermissionsAsync();
-    if (!perm.granted) {
-      Alert.alert('Permission needed', 'Camera permission is required to take a photo.');
-      return null;
-    }
-  } else {
-    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!perm.granted) {
-      Alert.alert('Permission needed', 'Photo library access is required.');
-      return null;
-    }
-  }
-
-  const result =
-    source === 'camera'
-      ? await ImagePicker.launchCameraAsync({
-          mediaTypes: ['images'],
-          quality: 0.85,
-        })
-      : await ImagePicker.launchImageLibraryAsync({
-          mediaTypes: ['images'],
-          quality: 0.85,
-        });
-
-  if (result.canceled || !result.assets?.[0]?.uri) return null;
-  return result.assets[0].uri;
-}
-
-function showVisionImageOptions(onPick: (source: 'camera' | 'library') => void) {
-  if (Platform.OS === 'ios') {
-    ActionSheetIOS.showActionSheetWithOptions(
-      {
-        options: ['Cancel', 'Take Photo', 'Choose from Library'],
-        cancelButtonIndex: 0,
-      },
-      (buttonIndex) => {
-        if (buttonIndex === 1) onPick('camera');
-        if (buttonIndex === 2) onPick('library');
-      },
-    );
-  } else {
-    Alert.alert('Vision test', 'Choose an image source', [
-      { text: 'Take Photo', onPress: () => onPick('camera') },
-      { text: 'Choose from Library', onPress: () => onPick('library') },
-      { text: 'Cancel', style: 'cancel' },
-    ]);
-  }
-}
-
-// ─── Status bar (live indicators) ────────────────────────────────────────────
-
 function StatusBar() {
   const [snap, setSnap] = useState(() => getQueueSnapshot());
   const [heartbeat, setHeartbeat] = useState(false);
@@ -259,24 +155,20 @@ function StatusBar() {
   );
 }
 
-// ─── Main page ───────────────────────────────────────────────────────────────
-
 export default function DebugPage() {
   const buttons = useDebugButtons();
   const [runningId, setRunningId] = useState<string | null>(null);
-  const [visionBusy, setVisionBusy] = useState(false);
-  const [visionPreviewUri, setVisionPreviewUri] = useState<string | null>(null);
   const [lastResult, setLastResult] = useState<{ id: string; result: DebugTestResult } | null>(null);
   const [logLines, setLogLines] = useState<string[]>([]);
   const [selectedProcessLog, setSelectedProcessLog] = useState<ProcessId>('debug-log');
   const scrollRef = useRef<ScrollView>(null);
   const processStates = useDebugProcessMonitor({
     uiActionRunning: runningId !== null,
-    visionRunning: visionBusy,
+    visionRunning: false,
   });
   const { clearCapturedLogs, getFormattedLogs } = useCapturedProcessLogs();
 
-  const uiLocked = runningId !== null || visionBusy;
+  const uiLocked = runningId !== null;
 
   const log: LogFn = useCallback((message: string) => {
     setLogLines((prev) => [...prev, message]);
@@ -291,45 +183,10 @@ export default function DebugPage() {
 
   const selectedProcessLogs = getFormattedLogs(selectedProcessLog, 160);
 
-  const runVisionDescribeFlow = useCallback(
-    async (source: 'camera' | 'library') => {
-      if (uiLocked) return;
-      setVisionBusy(true);
-      setLogLines([]);
-      setLastResult(null);
-      setVisionPreviewUri(null);
-      try {
-        const uri = await launchImageForVisionTest(source);
-        if (!uri) {
-          setLastResult({
-            id: 'vision-smoke',
-            result: { success: false, summary: 'No image selected' },
-          });
-          return;
-        }
-        setVisionPreviewUri(uri);
-        log('Image captured — asking LLM to describe it...');
-        const result = await runVisionImageDescribeTest(uri, log);
-        setLastResult({ id: 'vision-smoke', result });
-      } catch (e: unknown) {
-        const msg = e instanceof Error ? e.message : String(e);
-        log(`Vision test error: ${msg}`);
-        setLastResult({
-          id: 'vision-smoke',
-          result: { success: false, summary: `Error: ${msg}` },
-        });
-      } finally {
-        setVisionBusy(false);
-      }
-    },
-    [uiLocked, log],
-  );
-
   const handlePress = useCallback(
     async (btn: GridButton) => {
-      if (runningId || visionBusy) return;
+      if (runningId) return;
 
-      // Toggle buttons: if active, run the stop action
       if (btn.isActive?.() && btn.onActivePress) {
         setRunningId(btn.id);
         setLogLines([]);
@@ -363,7 +220,7 @@ export default function DebugPage() {
         setRunningId(null);
       }
     },
-    [runningId, visionBusy, log],
+    [runningId, log],
   );
 
   return (
@@ -375,68 +232,13 @@ export default function DebugPage() {
         contentContainerClassName="pb-20"
         onContentSizeChange={() => scrollRef.current?.scrollToEnd({ animated: true })}
       >
-        {/* Header */}
         <View className="px-4 pt-4 pb-2">
           <Text className="text-white text-lg font-bold">Debug Panel</Text>
           <Text className="text-zinc-500 text-xs mt-1">
-            Tap any button to run a test. Results appear below.
+            Tap any button to run a test. AI inference is mocked until the Go backend exists.
           </Text>
         </View>
 
-        {/* Vision smoke test */}
-        <View className="mx-4 mt-4 rounded-xl border border-violet-900/60 bg-zinc-950/80 p-3">
-          <Text className="text-violet-200 font-semibold text-sm">Vision smoke test</Text>
-          <Text className="text-zinc-500 text-[10px] mt-1 leading-4">
-            Pick a photo or use the camera, then the on-device LLM only describes what it sees.
-            Requires vision (mmproj) — check Model Status if this always fails.
-          </Text>
-
-          <View className="flex-row flex-wrap gap-2 mt-3">
-            <TouchableOpacity
-              onPress={() => showVisionImageOptions(runVisionDescribeFlow)}
-              disabled={uiLocked}
-              activeOpacity={0.75}
-              className="rounded-lg px-3 py-2.5 border border-violet-600/50 bg-violet-950/50"
-              style={{ opacity: uiLocked ? 0.45 : 1 }}
-            >
-              {visionBusy ? (
-                <ActivityIndicator size="small" color="#a78bfa" />
-              ) : (
-                <Text className="text-violet-100 text-xs font-semibold">Pick or capture…</Text>
-              )}
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              onPress={() => runVisionDescribeFlow('camera')}
-              disabled={uiLocked}
-              className="rounded-lg px-3 py-2.5 border border-zinc-700 bg-zinc-900"
-              style={{ opacity: uiLocked ? 0.45 : 1 }}
-            >
-              <Text className="text-zinc-300 text-xs">Camera</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              onPress={() => runVisionDescribeFlow('library')}
-              disabled={uiLocked}
-              className="rounded-lg px-3 py-2.5 border border-zinc-700 bg-zinc-900"
-              style={{ opacity: uiLocked ? 0.45 : 1 }}
-            >
-              <Text className="text-zinc-300 text-xs">Library</Text>
-            </TouchableOpacity>
-          </View>
-
-          {visionPreviewUri ? (
-            <View className="mt-3 rounded-lg overflow-hidden border border-zinc-800">
-              <Image
-                source={{ uri: visionPreviewUri }}
-                style={{ width: '100%', height: 140, backgroundColor: '#0a0a0a' }}
-                contentFit="contain"
-              />
-            </View>
-          ) : null}
-        </View>
-
-        {/* Button Grid */}
         <View className="flex-row flex-wrap px-3 mt-1">
           {buttons.map((btn) => {
             const isActive = btn.isActive?.() ?? false;
@@ -489,7 +291,6 @@ export default function DebugPage() {
           })}
         </View>
 
-        {/* Process monitor */}
         <View className="mx-4 mt-4 rounded-xl border border-zinc-800 bg-zinc-950/80 p-3">
           <Text className="text-zinc-200 font-semibold text-sm">Background process monitor</Text>
           <Text className="text-zinc-500 text-[10px] mt-1">
@@ -534,7 +335,6 @@ export default function DebugPage() {
           </Text>
         </View>
 
-        {/* Result banner */}
         {lastResult && (
           <View
             className="mx-4 mt-3 rounded-lg px-3 py-2"
@@ -553,7 +353,6 @@ export default function DebugPage() {
           </View>
         )}
 
-        {/* Per-process logs */}
         <View className="mx-4 mt-4">
           <View className="flex-row justify-between items-center mb-2">
             <Text className="text-zinc-400 text-xs font-semibold">Live process logs</Text>

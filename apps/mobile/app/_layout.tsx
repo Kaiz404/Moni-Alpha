@@ -19,8 +19,6 @@ import { drainImageUploadQueue } from "@/lib/storage/image-upload-queue";
 import { getPendingCount } from "@/lib/ai/processing-queue";
 import { startBackgroundProcessor } from "@/lib/ai/background-processor";
 
-import '../polyfills'
-
 export const unstable_settings = {
   anchor: "(tabs)",
 };

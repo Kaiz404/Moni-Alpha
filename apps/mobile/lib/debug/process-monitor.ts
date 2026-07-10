@@ -33,7 +33,7 @@ export const PROCESS_LABELS: Record<ProcessId, string> = {
   'ui-action': 'UI Action',
   'vision-smoke': 'Vision Smoke',
   heartbeat: 'Heartbeat',
-  'llm-processor': 'LLM Processor',
+  'llm-processor': 'AI Processor',
   notifications: 'Notifications',
   'bg-service': 'BG Service',
   'debug-log': 'Debug Log',

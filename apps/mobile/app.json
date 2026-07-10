@@ -59,15 +59,6 @@
             "backgroundColor": "#000000"
           }
         }
-      ],
-      [
-        "llama.rn",
-        {
-          "enableEntitlements": true,
-          "entitlementsProfile": "production",
-          "forceCxx20": true,
-          "enableOpenCL": true
-        }
       ]
     ],
     "experiments": {

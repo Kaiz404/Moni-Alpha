@@ -2,25 +2,14 @@ import { randomUUID } from 'expo-crypto';
 import {
   enqueue,
   getPendingCount,
-  getAll,
-  pruneCompleted,
-  type ProcessingQueueItem,
 } from '@/lib/ai/processing-queue';
 import {
   startBackgroundProcessor,
   stopBackgroundProcessor,
-  isBackgroundProcessorRunning,
 } from '@/lib/ai/background-processor';
-import { areModelsDownloaded } from '@/lib/ai/model-manager';
 import type { LogFn, DebugTestResult } from './types';
 
 export async function runLLMBackgroundTest(log: LogFn): Promise<DebugTestResult> {
-  const { main } = await areModelsDownloaded();
-  if (!main) {
-    log('Model not downloaded — LLM background test cannot run');
-    return { success: false, summary: 'Model not downloaded' };
-  }
-
   log('Enqueueing test item: "Coffee at Starbucks 12.50 USD"');
   enqueue({
     id: randomUUID(),
@@ -41,7 +30,7 @@ export async function runLLMBackgroundTest(log: LogFn): Promise<DebugTestResult>
 
   const pending = getPendingCount();
   log(`Queue now has ${pending} pending item(s). Starting processor...`);
-  log('You can EXIT the app — the foreground service will keep running.');
+  log('AI backend is mocked — items will be marked unavailable/error until Go service exists.');
 
   try {
     await startBackgroundProcessor();
@@ -59,28 +48,4 @@ export async function stopLLMProcessor(log: LogFn): Promise<DebugTestResult> {
   await stopBackgroundProcessor();
   log('Stopped');
   return { success: true, summary: 'Processor stopped' };
-}
-
-export function getQueueSnapshot(): {
-  items: ProcessingQueueItem[];
-  pending: number;
-  processing: number;
-  done: number;
-  error: number;
-  isProcessorRunning: boolean;
-} {
-  const items = getAll();
-  return {
-    items,
-    pending: items.filter((i) => i.status === 'pending').length,
-    processing: items.filter((i) => i.status === 'processing').length,
-    done: items.filter((i) => i.status === 'done').length,
-    error: items.filter((i) => i.status === 'error').length,
-    isProcessorRunning: isBackgroundProcessorRunning(),
-  };
-}
-
-export function pruneQueue(log: LogFn): void {
-  pruneCompleted();
-  log('Queue pruned (completed/errored items removed)');
 }

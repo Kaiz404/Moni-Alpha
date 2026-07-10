@@ -8,7 +8,6 @@ import {
   FlatList,
   KeyboardAvoidingView,
   Platform,
-  ActivityIndicator,
   ActionSheetIOS,
   Alert,
   Animated,
@@ -25,7 +24,6 @@ import {
   useSpeechRecognitionEvent,
 } from 'expo-speech-recognition';
 
-import { useLlamaModel } from '@/hooks/use-llama-model';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import {
   enqueue,
@@ -90,7 +88,6 @@ function sortEntriesDesc(items: SubmissionEntry[]) {
 // ─── Main screen ─────────────────────────────────────────────────────────────
 
 export default function ChatScreen() {
-  const { status, downloadProgress, error, downloadAndPrepare } = useLlamaModel();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
   const insets = useSafeAreaInsets();
@@ -107,7 +104,6 @@ export default function ChatScreen() {
   const pendingCommitIdsRef = useRef<Set<string>>(new Set());
   const speechBaseRef = useRef('');
   const speechActiveRef = useRef(false);
-  const isReady = status === 'ready';
 
   const accentIcon = isDark ? '#c4c9ff' : ACCENT;
   const slateIcon = isDark ? '#e2e8f0' : '#475569';
@@ -190,7 +186,7 @@ export default function ChatScreen() {
   });
 
   const startSpeech = useCallback(async () => {
-    if (!isReady || speechActiveRef.current) return;
+    if (speechActiveRef.current) return;
     try {
       const perms = await ExpoSpeechRecognitionModule.getPermissionsAsync();
       if (!perms.granted) {
@@ -209,7 +205,7 @@ export default function ChatScreen() {
       speechActiveRef.current = false;
       setIsSpeechRecognizing(false);
     }
-  }, [input, isReady]);
+  }, [input]);
 
   const stopSpeech = useCallback(() => {
     if (!speechActiveRef.current) return;
@@ -385,38 +381,14 @@ export default function ChatScreen() {
     setSubmissions((prev) => prev.filter((s) => s.id !== id));
   }, []);
 
-  // ── Model setup screens ────────────────────────────────────────────────────
-
-  if (
-    status === 'not-downloaded' ||
-    status === 'checking' ||
-    status === 'downloading' ||
-    status === 'preparing'
-  ) {
-    return (
-      <ModelSetupScreen
-        status={status}
-        downloadProgress={downloadProgress}
-        error={error}
-        onDownload={downloadAndPrepare}
-      />
-    );
-  }
-
-  if (status === 'error') {
-    return <ModelErrorScreen error={error} onRetry={downloadAndPrepare} />;
-  }
-
   // ── Main UI ────────────────────────────────────────────────────────────────
 
   const hasContent = input.trim().length > 0 || !!attachedImage;
   /** Mic when empty (or actively listening — don't flip to send mid-utterance). */
   const showMicMode = isSpeechRecognizing || !hasContent;
-  const inputPlaceholder = !isReady
-    ? 'Set up the AI model to use voice…'
-    : isSpeechRecognizing
-      ? 'Listening… speak now'
-      : 'Describe a transaction...';
+  const inputPlaceholder = isSpeechRecognizing
+    ? 'Listening… speak now'
+    : 'Describe a transaction...';
 
   const bottomPad = Math.max(insets.bottom, 5) + 20;
 
@@ -554,7 +526,6 @@ export default function ChatScreen() {
               }}
               onPressIn={startSpeech}
               onPressOut={stopSpeech}
-              disabled={!isReady}
               accessibilityLabel={
                 isSpeechRecognizing ? 'Listening' : 'Hold to speak'
               }
@@ -802,7 +773,7 @@ function EmptyState({ isDark }: { isDark: boolean }) {
         }`}
       >
         Describe a transaction or take a photo of a receipt.{'\n'}
-        AI processes it in the background — you can close the app right after.
+        Queued for the AI backend — you can leave this screen after sending.
       </Text>
       <Text
         className={`text-xs font-semibold uppercase tracking-wider mb-3 ${
@@ -835,127 +806,4 @@ function EmptyState({ isDark }: { isDark: boolean }) {
   );
 }
 
-function ModelSetupScreen({
-  status,
-  downloadProgress,
-  error,
-  onDownload,
-}: {
-  status: string;
-  downloadProgress: number;
-  error: string | null;
-  onDownload: () => void;
-}) {
-  const isLoading =
-    status === 'downloading' || status === 'preparing' || status === 'checking';
 
-  return (
-    <View className="flex-1 bg-white dark:bg-gray-900 items-center justify-center px-8">
-      <View className="w-20 h-20 rounded-full bg-indigo-100 dark:bg-indigo-950 items-center justify-center mb-6">
-        <IconSymbol name="smart-toy" size={48} color={ACCENT} />
-      </View>
-      <Text className="text-2xl font-bold text-gray-900 dark:text-white mb-2 text-center">
-        AI Transaction Processor
-      </Text>
-      <Text className="text-gray-500 dark:text-gray-400 text-center text-sm leading-5 mb-8">
-        An on-device model processes your text and receipt inputs into
-        transaction proposals — all privately on your device.
-      </Text>
-
-      {isLoading ? (
-        <View className="items-center w-full">
-          <ActivityIndicator size="large" color={ACCENT} />
-          <Text className="text-indigo-600 dark:text-indigo-400 font-medium mt-4 text-center">
-            {status === 'downloading'
-              ? `Downloading model… ${downloadProgress}%`
-              : status === 'preparing'
-                ? 'Loading model into memory…'
-                : 'Checking…'}
-          </Text>
-          {status === 'downloading' && (
-            <View className="w-full mt-3">
-              <View className="h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                <View
-                  className="h-2 rounded-full"
-                  style={{
-                    width: `${downloadProgress}%`,
-                    backgroundColor: ACCENT,
-                  }}
-                />
-              </View>
-              <Text className="text-gray-400 dark:text-gray-500 text-xs text-center mt-1.5">
-                ~2 GB · includes vision capability · stored on your device
-              </Text>
-            </View>
-          )}
-        </View>
-      ) : (
-        <>
-          <View className="w-full bg-gray-50 dark:bg-gray-800 rounded-2xl p-4 mb-6">
-            {[
-              { label: 'Model', value: 'Qwen 2.5 3B VL (Q3)' },
-              { label: 'Size', value: '~2 GB (model + vision)' },
-              { label: 'Capabilities', value: 'Text + Receipt images' },
-              { label: 'Privacy', value: 'Runs entirely on device' },
-            ].map(({ label, value }) => (
-              <View
-                key={label}
-                className="flex-row justify-between py-2 border-b border-gray-100 dark:border-gray-700 last:border-0"
-              >
-                <Text className="text-gray-500 dark:text-gray-400 text-sm">
-                  {label}
-                </Text>
-                <Text className="text-gray-900 dark:text-white text-sm font-medium">
-                  {value}
-                </Text>
-              </View>
-            ))}
-          </View>
-
-          {error && (
-            <Text className="text-red-500 text-sm text-center mb-4">{error}</Text>
-          )}
-
-          <TouchableOpacity
-            className="w-full py-4 rounded-2xl items-center"
-            style={{ backgroundColor: ACCENT }}
-            onPress={onDownload}
-            activeOpacity={0.8}
-          >
-            <Text className="text-white font-semibold text-base">
-              Download & Set Up Model
-            </Text>
-          </TouchableOpacity>
-        </>
-      )}
-    </View>
-  );
-}
-
-function ModelErrorScreen({
-  error,
-  onRetry,
-}: {
-  error: string | null;
-  onRetry: () => void;
-}) {
-  return (
-    <View className="flex-1 bg-white dark:bg-gray-900 items-center justify-center px-8">
-      <IconSymbol name="error-outline" size={56} color="#ef4444" />
-      <Text className="text-xl font-bold text-gray-900 dark:text-white mb-2 mt-4">
-        Failed to Load Model
-      </Text>
-      <Text className="text-gray-500 dark:text-gray-400 text-center text-sm mb-6 leading-5">
-        {error ?? 'An unexpected error occurred while loading the AI model.'}
-      </Text>
-      <TouchableOpacity
-        className="px-8 py-4 rounded-2xl"
-        style={{ backgroundColor: ACCENT }}
-        onPress={onRetry}
-        activeOpacity={0.8}
-      >
-        <Text className="text-white font-semibold">Try Again</Text>
-      </TouchableOpacity>
-    </View>
-  );
-}

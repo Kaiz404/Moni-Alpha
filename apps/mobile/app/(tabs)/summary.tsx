@@ -32,7 +32,6 @@ import {
   runFinanceAssistantOrchestration,
 } from '@/lib/ai/insights/finance-assistant-orchestrator';
 import type { TxForMetrics } from '@/lib/ai/insights/insight-metrics';
-import { getOrLoadModel } from '@/lib/ai/model-manager';
 import { getCategoryNameRows } from '@/lib/supabase/categories';
 import {
   AI_INSIGHT_CONTEXT_GLOBAL,
@@ -184,8 +183,7 @@ export default function SummaryScreen() {
         merchant: t.merchant ?? null,
         transactionDate: t.transactionDate,
       }));
-      const model = await getOrLoadModel();
-      const out = await runFinanceAssistantOrchestration(model, txs, categoryMap, budgetRows, currencyHint);
+      const out = await runFinanceAssistantOrchestration(txs, categoryMap, budgetRows, currencyHint);
       setFinanceInsight(out.result);
       setStoredInsightHash(out.inputHash);
       await upsertAiInsight({

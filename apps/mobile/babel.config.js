@@ -5,7 +5,6 @@ module.exports = function (api) {
     plugins: [
       // Needed for reanimated worklets (and any reanimated-based components like carousels).
       'react-native-reanimated/plugin',
-      '@babel/plugin-transform-async-generator-functions'
     ],
   };
 };

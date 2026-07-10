@@ -1,5 +1,5 @@
 import { createMMKV } from 'react-native-mmkv';
-import type { RawNotification } from './notification-processor';
+import type { RawNotification } from './notification-types';
 import type { LocationSnapshot } from '@/lib/location/location-snapshot';
 
 const storage = createMMKV({ id: 'moni-processing' });

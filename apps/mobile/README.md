@@ -1,12 +1,12 @@
 # Moni — mobile app
 
-Part of the [Moni](https://github.com/yourusername/Moni) monorepo: Expo / React Native client with local SQLite, PowerSync-oriented sync, and **on-device AI** for transaction proposals.
+Part of the [Moni](https://github.com/yourusername/Moni) monorepo: Expo / React Native client with local-first sync and AI-assisted transaction capture.
 
-## AI (on-device)
+## AI (backend-bound)
 
-The mobile app runs a **Qwen 2.5 VL** model via `@react-native-ai/llama`. Text, receipt images, and (on Android) bank notifications are processed through a unified orchestrator into **`proposed_transactions`**; users confirm in the proposal review UI before anything is committed.
+Inference no longer runs on-device. The app queues text / receipt / notification inputs and calls a typed AI client (`lib/ai/client`) aimed at a future **Go** service. Until `EXPO_PUBLIC_AI_API_URL` is set, the client is a **mock** (features no-op cleanly).
 
-See **[lib/ai/ORCHESTRATOR.md](./lib/ai/ORCHESTRATOR.md)** for architecture, queues, and file map.
+Prompts and former on-device orchestration notes for the Go port: **[lib/ai/BACKEND_AI.md](./lib/ai/BACKEND_AI.md)**.
 
 ## Develop
 
@@ -17,9 +17,4 @@ pnpm install
 pnpm --filter mobile dev
 ```
 
-Environment: copy variables from the root [SETUP_GUIDE.md](../../docs/SETUP_GUIDE.md) into `apps/mobile/.env`.
-
-## Learn more
-
-- [Expo documentation](https://docs.expo.dev/)
-- [Expo Router](https://docs.expo.dev/router/introduction/)
+Environment: copy variables from the root [SETUP_GUIDE.md](../../docs/SETUP_GUIDE.md) into `apps/mobile/.env`. Optional: `EXPO_PUBLIC_AI_API_URL` for the Go AI backend.

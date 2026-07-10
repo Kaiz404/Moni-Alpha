@@ -1,16 +1,10 @@
 /**
- * Moni Finance Assistant: 3 sequential sub-agents (trend, budget, story) → one DB payload.
+ * Moni Finance Assistant: call AI backend for copy, fall back to deterministic metrics.
  */
-import { generateObject } from 'ai';
 import type { MoniFinanceAssistantV1 } from '@repo/types';
 import { moniFinanceAssistantV1Schema } from '@repo/types';
 import * as Crypto from 'expo-crypto';
-import { MAIN_MODEL_ID } from '@/lib/ai/model-manager';
-import {
-  BUDGET_AGENT_SYSTEM,
-  STORY_AGENT_SYSTEM,
-  TREND_AGENT_SYSTEM,
-} from './finance-assistant-prompts';
+import { getAiClient } from '@/lib/ai/client';
 import {
   buildFinanceAssistantToolSnapshot,
   stableFinanceAssistantSnapshotString,
@@ -44,7 +38,7 @@ async function sha256Hex(text: string): Promise<string> {
 }
 
 const NOT_ADVICE =
-  'Moni is not a financial advisor. These notes are generated on-device for demo purposes only.';
+  'Moni is not a financial advisor. These notes are generated for demo purposes only.';
 
 function fallbackTrend(s: FinanceAssistantToolSnapshot): z.infer<typeof singleBlockSchema> {
   const c = s.calendarMonth;
@@ -134,94 +128,13 @@ function fallbackStory(s: FinanceAssistantToolSnapshot): z.infer<typeof singleBl
   };
 }
 
-async function runSubAgent(
-  model: any,
-  system: string,
-  userPrompt: string,
-  trace: FinanceAssistantTrace,
-  name: string,
-): Promise<z.infer<typeof singleBlockSchema> | null> {
-  try {
-    const { object } = await generateObject({
-      model,
-      schema: singleBlockSchema,
-      system,
-      prompt: userPrompt,
-      temperature: 0.15,
-    });
-    trace.stages.push({ name, ok: true });
-    return object;
-  } catch (e) {
-    trace.stages.push({
-      name,
-      ok: false,
-      detail: e instanceof Error ? e.message : String(e),
-    });
-    return null;
-  }
-}
-
-export async function computeFinanceAssistantInputHash(
-  transactions: TxForMetrics[],
-  categoryMap: Record<string, string>,
-  budgets: BudgetRow[],
-  currencyHint: string,
-  now?: Date,
-): Promise<{ inputHash: string; snapshot: FinanceAssistantToolSnapshot }> {
-  const snapshot = buildFinanceAssistantToolSnapshot(
-    transactions,
-    categoryMap,
-    budgets,
-    currencyHint,
-    now,
-  );
-  const inputHash = await sha256Hex(stableFinanceAssistantSnapshotString(snapshot));
-  return { inputHash, snapshot };
-}
-
-export async function runFinanceAssistantOrchestration(
-  model: any | null,
-  transactions: TxForMetrics[],
-  categoryMap: Record<string, string>,
-  budgets: BudgetRow[],
-  currencyHint: string,
-  now: Date = new Date(),
-): Promise<FinanceAssistantOrchestrationResult> {
-  const trace: FinanceAssistantTrace = { stages: [], modelId: model ? MAIN_MODEL_ID : null };
-  const snapshot = buildFinanceAssistantToolSnapshot(
-    transactions,
-    categoryMap,
-    budgets,
-    currencyHint,
-    now,
-  );
-  const inputHash = await sha256Hex(stableFinanceAssistantSnapshotString(snapshot));
-
-  const trendPrompt = `TREND_DATA:\n${JSON.stringify(
-    { calendarMonth: snapshot.calendarMonth, rolling30: snapshot.rolling30 },
-    null,
-    2,
-  )}`;
-
-  const budgetPrompt = `BUDGET_SNAPSHOT:\n${JSON.stringify(snapshot.budgetCoach, null, 2)}`;
-
-  const storyPrompt = `STORY_SNAPSHOT:\n${JSON.stringify(snapshot.spendingStory, null, 2)}`;
-
-  let trendBlock: z.infer<typeof singleBlockSchema> | null = null;
-  let budgetBlock: z.infer<typeof singleBlockSchema> | null = null;
-  let storyBlock: z.infer<typeof singleBlockSchema> | null = null;
-
-  if (model) {
-    trendBlock = await runSubAgent(model, TREND_AGENT_SYSTEM, trendPrompt, trace, 'trend_agent');
-    budgetBlock = await runSubAgent(model, BUDGET_AGENT_SYSTEM, budgetPrompt, trace, 'budget_agent');
-    storyBlock = await runSubAgent(model, STORY_AGENT_SYSTEM, storyPrompt, trace, 'story_agent');
-  }
-
-  if (!trendBlock) trendBlock = fallbackTrend(snapshot);
-  if (!budgetBlock) budgetBlock = fallbackBudget(snapshot);
-  if (!storyBlock) storyBlock = fallbackStory(snapshot);
-
-  const result: MoniFinanceAssistantV1 = {
+function buildFromBlocks(
+  trendBlock: z.infer<typeof singleBlockSchema>,
+  budgetBlock: z.infer<typeof singleBlockSchema>,
+  storyBlock: z.infer<typeof singleBlockSchema>,
+  stages: string[],
+): MoniFinanceAssistantV1 {
+  return {
     schema: 'moni_finance_assistant_v1',
     disclaimer: NOT_ADVICE,
     insights: [
@@ -244,36 +157,79 @@ export async function runFinanceAssistantOrchestration(
         body: storyBlock.body,
       },
     ],
-    trace: {
-      stages: trace.stages.map((s) => `${s.name}:${s.ok ? 'ok' : 'fail'}`),
-    },
+    trace: { stages },
   };
+}
+
+export async function computeFinanceAssistantInputHash(
+  transactions: TxForMetrics[],
+  categoryMap: Record<string, string>,
+  budgets: BudgetRow[],
+  currencyHint: string,
+  now?: Date,
+): Promise<{ inputHash: string; snapshot: FinanceAssistantToolSnapshot }> {
+  const snapshot = buildFinanceAssistantToolSnapshot(
+    transactions,
+    categoryMap,
+    budgets,
+    currencyHint,
+    now,
+  );
+  const inputHash = await sha256Hex(stableFinanceAssistantSnapshotString(snapshot));
+  return { inputHash, snapshot };
+}
+
+export async function runFinanceAssistantOrchestration(
+  transactions: TxForMetrics[],
+  categoryMap: Record<string, string>,
+  budgets: BudgetRow[],
+  currencyHint: string,
+  now: Date = new Date(),
+): Promise<FinanceAssistantOrchestrationResult> {
+  const trace: FinanceAssistantTrace = { stages: [], modelId: null };
+  const snapshot = buildFinanceAssistantToolSnapshot(
+    transactions,
+    categoryMap,
+    budgets,
+    currencyHint,
+    now,
+  );
+  const inputHash = await sha256Hex(stableFinanceAssistantSnapshotString(snapshot));
+
+  const api = await getAiClient().generateFinanceAssistant({ snapshot });
+  if (api.status === 'ok') {
+    trace.stages.push({ name: 'ai_backend', ok: true });
+    trace.modelId = api.modelId;
+    const parsed = moniFinanceAssistantV1Schema.safeParse(api.result);
+    if (parsed.success) {
+      return { ok: true, inputHash, snapshot, result: parsed.data, trace };
+    }
+    trace.stages.push({ name: 'validate', ok: false, detail: 'schema_fallback' });
+  } else {
+    trace.stages.push({
+      name: 'ai_backend',
+      ok: false,
+      detail: api.reason,
+    });
+  }
+
+  // Deterministic fallbacks so Summary still has useful copy while AI is offline.
+  const trendBlock = fallbackTrend(snapshot);
+  const budgetBlock = fallbackBudget(snapshot);
+  const storyBlock = fallbackStory(snapshot);
+  trace.stages.push({ name: 'deterministic_fallback', ok: true });
+
+  const result = buildFromBlocks(trendBlock, budgetBlock, storyBlock, [
+    ...trace.stages.map((s) => `${s.name}:${s.ok ? 'ok' : 'fail'}`),
+  ]);
 
   const parsed = moniFinanceAssistantV1Schema.safeParse(result);
   if (!parsed.success) {
-    trace.stages.push({ name: 'validate', ok: false, detail: 'schema_fallback' });
     return {
       ok: true,
       inputHash,
       snapshot,
-      result: {
-        schema: 'moni_finance_assistant_v1',
-        disclaimer: NOT_ADVICE,
-        insights: [
-          {
-            agentKey: 'spending_trend',
-            ...fallbackTrend(snapshot),
-          },
-          {
-            agentKey: 'budget_advisor',
-            ...fallbackBudget(snapshot),
-          },
-          {
-            agentKey: 'spending_story',
-            ...fallbackStory(snapshot),
-          },
-        ],
-      },
+      result: buildFromBlocks(trendBlock, budgetBlock, storyBlock, ['validate:fail']),
       trace,
     };
   }

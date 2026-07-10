@@ -1,32 +1,21 @@
 /**
  * Hook for the Notifications tab.
  *
- * Notifications now go through the unified processing queue and background
- * processor. This hook provides status information and a trigger to start
- * processing any pending notification items.
+ * Notifications go through the unified processing queue and background
+ * processor (AI backend client — mocked until the Go service exists).
  */
 import { useCallback, useEffect, useState } from 'react';
 import { AppState } from 'react-native';
 import { getPendingCount, getAll } from '@/lib/ai/processing-queue';
-import { areModelsDownloaded, downloadModels } from '@/lib/ai/model-manager';
 import {
   startBackgroundProcessor,
   isBackgroundProcessorRunning,
 } from '@/lib/ai/background-processor';
 
-export type ProcessorModelStatus =
-  | 'idle'
-  | 'not-downloaded'
-  | 'downloading'
-  | 'ready'
-  | 'unavailable';
-
 export function useNotificationProcessor() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [pendingCount, setPendingCount] = useState(0);
   const [processedCount, setProcessedCount] = useState(0);
-  const [modelStatus, setModelStatus] = useState<ProcessorModelStatus>('idle');
-  const [downloadProgress, setDownloadProgress] = useState(0);
 
   const refreshPendingCount = useCallback(() => {
     const notifPending = getAll().filter(
@@ -38,26 +27,6 @@ export function useNotificationProcessor() {
       (i) => i.type === 'notification' && i.status === 'done',
     ).length;
     setProcessedCount(notifDone);
-  }, []);
-
-  const checkModelStatus = useCallback(async () => {
-    const { main } = await areModelsDownloaded();
-    setModelStatus(main ? 'ready' : 'not-downloaded');
-    return main;
-  }, []);
-
-  const downloadModel = useCallback(async () => {
-    setModelStatus('downloading');
-    setDownloadProgress(0);
-    try {
-      await downloadModels((p) => {
-        const combined = Math.round((p.mainPct * 0.85) + (p.mmProjPct * 0.15));
-        setDownloadProgress(combined);
-      });
-      setModelStatus('ready');
-    } catch {
-      setModelStatus('not-downloaded');
-    }
   }, []);
 
   const processQueue = useCallback(async () => {
@@ -82,9 +51,8 @@ export function useNotificationProcessor() {
   }, [refreshPendingCount]);
 
   useEffect(() => {
-    checkModelStatus();
     refreshPendingCount();
-  }, [checkModelStatus, refreshPendingCount]);
+  }, [refreshPendingCount]);
 
   useEffect(() => {
     const sub = AppState.addEventListener('change', (state) => {
@@ -99,12 +67,7 @@ export function useNotificationProcessor() {
     isProcessing,
     pendingCount,
     processedCount,
-    modelStatus,
-    downloadProgress,
-    notificationModelId: 'unified-queue',
     processQueue,
-    downloadModel,
-    checkModelStatus,
     refreshPendingCount,
     clearPendingQueue: () => {},
   };

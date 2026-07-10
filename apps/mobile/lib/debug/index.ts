@@ -1,15 +1,6 @@
 export { type DebugModule, type DebugTestResult, type LogFn } from './types';
 
 export {
-  runModelStatusCheck,
-  loadModel,
-  unload as unloadModel,
-  getModelInfo,
-  downloadModelsDebug,
-  deleteModelsDebug,
-} from './model-status';
-
-export {
   startHeartbeat,
   stopHeartbeat,
   isHeartbeatRunning,
@@ -30,8 +21,6 @@ export {
   pruneQueue,
   getQueueSnapshot,
 } from './queue-inspector';
-
-export { runVisionImageDescribeTest } from './vision-image-test';
 
 export {
   PROCESS_LABELS,
