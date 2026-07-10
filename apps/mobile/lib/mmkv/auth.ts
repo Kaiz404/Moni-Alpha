@@ -1,12 +1,10 @@
-import { createMMKV } from 'react-native-mmkv'
+import { createMMKV } from 'react-native-mmkv';
 
-/**
- * MMKV-backed storage adapter for Supabase Auth.
- * Implements the key-value interface using react-native-mmkv.
- */
+/** MMKV instance for Supabase Auth session tokens (`supabase-auth`). */
 const storage = createMMKV({ id: 'supabase-auth' });
 
-export const mmkvStorage = {
+/** Async key-value adapter required by `@supabase/supabase-js` auth storage. */
+export const authMMKV = {
   async getItem(key: string): Promise<string | null> {
     return storage.getString(key) ?? null;
   },

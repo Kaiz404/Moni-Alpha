@@ -1,17 +1,18 @@
+/**
+ * Legend-State synced observables (wallets, transactions, etc.).
+ * Persistence is MMKV-backed via `@/lib/mmkv/legend-store` — not to be confused with
+ * auth session storage (`lib/mmkv/auth`) or receipt upload queue (`lib/mmkv/image-uploads`).
+ */
 import { observable, syncState, type Observable } from '@legendapp/state';
-import { createMMKV } from 'react-native-mmkv';
-import { observablePersistMMKV } from '@legendapp/state/persist-plugins/mmkv';
 import {
   configureSyncedSupabase,
   syncedSupabase,
 } from '@legendapp/state/sync-plugins/supabase';
+import { legendMMKV, legendPersistPlugin } from '@/lib/mmkv/legend-store';
 import { supabase } from '@/lib/supabase/client';
 import { randomUUID } from 'expo-crypto';
 
-/** Separate MMKV instance from supabase-auth (session tokens). */
-export const legendMMKV = createMMKV({ id: 'legend-store' });
-
-const persistPlugin = observablePersistMMKV({ id: 'legend-store' });
+const persistPlugin = legendPersistPlugin;
 
 const persistOptions = {
   plugin: persistPlugin,

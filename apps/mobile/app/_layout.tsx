@@ -15,7 +15,7 @@ import { AuthGuard } from "@/components/auth-guard";
 import { useEffect, useRef } from "react";
 import { AppState } from "react-native";
 import { ProposalReviewModal } from "@/components/proposal-review-modal";
-import { drainImageUploadQueue } from "@/lib/storage/image-upload-queue";
+import { drainImageUploadQueue } from "@/lib/receipts/upload-queue";
 import { getPendingCount } from "@/lib/ai/processing-queue";
 import { startBackgroundProcessor } from "@/lib/ai/background-processor";
 

@@ -1,8 +1,7 @@
-import { createMMKV } from 'react-native-mmkv';
-import { uploadReceiptImage } from './image-storage';
+import { imageUploadMMKV } from '@/lib/mmkv/image-uploads';
+import { uploadReceiptImage } from '@/lib/receipts/images';
 import { updateProposalImageUri } from '@/lib/supabase/proposed-transactions';
 
-const storage = createMMKV({ id: 'moni-image-uploads' });
 const QUEUE_KEY = 'pending_image_uploads';
 
 type PendingUpload = {
@@ -13,7 +12,7 @@ type PendingUpload = {
 
 function readQueue(): PendingUpload[] {
   try {
-    const raw = storage.getString(QUEUE_KEY);
+    const raw = imageUploadMMKV.getString(QUEUE_KEY);
     return raw ? JSON.parse(raw) : [];
   } catch {
     return [];
@@ -21,7 +20,7 @@ function readQueue(): PendingUpload[] {
 }
 
 function writeQueue(items: PendingUpload[]) {
-  storage.set(QUEUE_KEY, JSON.stringify(items));
+  imageUploadMMKV.set(QUEUE_KEY, JSON.stringify(items));
 }
 
 export function enqueueImageUpload(item: PendingUpload) {

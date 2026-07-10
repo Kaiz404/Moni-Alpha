@@ -31,8 +31,8 @@ import {
   remove,
   type ProcessingQueueItem,
 } from '@/lib/ai/processing-queue';
-import { saveImageLocally } from '@/lib/storage/image-storage';
-import { enqueueImageUpload } from '@/lib/storage/image-upload-queue';
+import { saveImageLocally } from '@/lib/receipts/images';
+import { enqueueImageUpload } from '@/lib/receipts/upload-queue';
 import { startBackgroundProcessor } from '@/lib/ai/background-processor';
 import { getUserId } from '@/lib/supabase/client';
 import { captureLocationSnapshot } from '@/lib/location/location-snapshot';

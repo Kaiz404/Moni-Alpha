@@ -63,7 +63,7 @@ export async function resizeImageToVisionMax(sourceUri: string): Promise<string>
     });
     return result.uri;
   } catch (e) {
-    console.warn('[ImageStorage] resizeImageToVisionMax failed, trying width-only fallback:', e);
+    console.warn('[ReceiptImages] resizeImageToVisionMax failed, trying width-only fallback:', e);
     try {
       const result = await manipulateAsync(
         sourceUri,
@@ -72,7 +72,7 @@ export async function resizeImageToVisionMax(sourceUri: string): Promise<string>
       );
       return result.uri;
     } catch (e2) {
-      console.warn('[ImageStorage] resize fallback failed, using original:', e2);
+      console.warn('[ReceiptImages] resize fallback failed, using original:', e2);
       return sourceUri;
     }
   }
@@ -108,7 +108,7 @@ export async function uploadReceiptImage(
   try {
     const localFile = new File(localUri);
     if (!localFile.exists) {
-      console.warn('[ImageStorage] local file does not exist:', localUri);
+      console.warn('[ReceiptImages] local file does not exist:', localUri);
       return null;
     }
 
@@ -131,7 +131,7 @@ export async function uploadReceiptImage(
         if (!receiptsBucketMissingLogged) {
           receiptsBucketMissingLogged = true;
           console.warn(
-            '[ImageStorage] Supabase Storage bucket `receipts` is missing. Run migration',
+            '[ReceiptImages] Supabase Storage bucket `receipts` is missing. Run migration',
             '`supabase/migrations/20260323000000_storage_receipts_bucket.sql` (or create the bucket',
             'in Dashboard → Storage). Receipt uploads are skipped until then.',
           );
@@ -139,7 +139,7 @@ export async function uploadReceiptImage(
         return null;
       }
 
-      console.warn('[ImageStorage] upload error:', msg);
+      console.warn('[ReceiptImages] upload error:', msg);
       return null;
     }
 
@@ -149,7 +149,7 @@ export async function uploadReceiptImage(
 
     return data.publicUrl;
   } catch (e) {
-    console.warn('[ImageStorage] upload exception:', e);
+    console.warn('[ReceiptImages] upload exception:', e);
     return null;
   }
 }
