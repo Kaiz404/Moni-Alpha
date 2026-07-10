@@ -3,7 +3,6 @@ module.exports = function (api) {
   return {
     presets: ['babel-preset-expo'],
     plugins: [
-      ['inline-import', { extensions: ['.sql'] }],
       // Needed for reanimated worklets (and any reanimated-based components like carousels).
       'react-native-reanimated/plugin',
       '@babel/plugin-transform-async-generator-functions'

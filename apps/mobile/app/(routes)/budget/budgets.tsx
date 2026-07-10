@@ -15,7 +15,7 @@ import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { syncSystem } from '@/lib/powersync/Powersync';
+import { getExpenseCategoriesForBudgets } from '@/lib/supabase/categories';
 import {
   deleteCategoryBudget,
   getCategoryBudgets,
@@ -37,31 +37,15 @@ export default function BudgetsScreen() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const { db, supabaseConnector } = syncSystem;
-      const userId = await supabaseConnector.getUserId();
-      if (!userId) {
-        setCategories([]);
-        setAmountDraft({});
-        return;
-      }
-
       const [catRows, budgets] = await Promise.all([
-        db
-          .selectFrom('categories')
-          .select(['id', 'name', 'color'])
-          .where('type', '=', 'expense')
-          .where('is_active', '=', 1)
-          .where((eb) => eb.or([eb('user_id', 'is', null), eb('user_id', '=', userId)]))
-          .orderBy('display_order', 'asc')
-          .orderBy('name', 'asc')
-          .execute(),
+        getExpenseCategoriesForBudgets(),
         getCategoryBudgets(),
       ]);
 
       setCategories(
         catRows.map((c) => ({
           id: c.id,
-          name: c.name ?? 'Category',
+          name: c.name,
           color: c.color,
         })),
       );

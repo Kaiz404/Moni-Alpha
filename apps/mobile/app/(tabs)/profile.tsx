@@ -13,7 +13,7 @@ import * as Location from 'expo-location';
 import * as ImagePicker from 'expo-image-picker';
 import { ExpoSpeechRecognitionModule } from 'expo-speech-recognition';
 import { useAuth } from '@/lib/auth/auth-context';
-import { PowerSyncStatus } from '@/components/power-sync-status';
+import { SyncStatus } from '@/components/sync-status';
 import { useNotificationListener } from '@/hooks/use-notification-listener';
 
 function ProfileSectionTitle({ children }: { children: string }) {
@@ -270,7 +270,7 @@ export default function ProfileScreen() {
 
         <View className="px-4 pt-2 pb-6">
           <ProfileSectionTitle>Sync</ProfileSectionTitle>
-          <PowerSyncStatus className="mb-4 border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800/90 rounded-xl shadow-sm" />
+          <SyncStatus className="mb-4 border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800/90 rounded-xl shadow-sm" />
 
           <ProfileSectionTitle>Permissions</ProfileSectionTitle>
           <Text className="mb-3 text-xs text-slate-500 dark:text-slate-400">

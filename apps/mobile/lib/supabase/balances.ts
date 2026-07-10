@@ -1,28 +1,24 @@
-import { syncSystem } from '@/lib/powersync/Powersync';
+import { transactions$, wallets$ } from '@/lib/store';
+import { getRecordValues } from '@/lib/store/helpers';
 
 export async function getWalletBalance(walletId: string): Promise<number> {
-  const { db } = syncSystem;
-
-  // Get initial balance from wallet
-  const wallet = await db
-    .selectFrom('wallets')
-    .where('id', '=', walletId)
-    .select('initial_balance')
-    .executeTakeFirst();
+  const wallet = getRecordValues<{
+    id: string;
+    initial_balance: string | number | null;
+  }>(wallets$).find((w) => w.id === walletId);
 
   if (!wallet) throw new Error('Wallet not found');
 
-  const initialBalance = parseFloat(wallet.initial_balance || '0');
+  const initialBalance = parseFloat(String(wallet.initial_balance ?? '0'));
 
-  // Calculate balance from transactions
-  const transactions = await db
-    .selectFrom('transactions')
-    .where('wallet_id', '=', walletId)
-    .select(['amount', 'type'])
-    .execute();
+  const txs = getRecordValues<{
+    wallet_id: string | null;
+    amount: string | number | null;
+    type: string | null;
+  }>(transactions$).filter((t) => t.wallet_id === walletId);
 
-  const transactionBalance = transactions.reduce((total, tx) => {
-    const amount = parseFloat(tx.amount || '0');
+  const transactionBalance = txs.reduce((total, tx) => {
+    const amount = parseFloat(String(tx.amount ?? '0'));
     return tx.type === 'income' ? total + amount : total - amount;
   }, 0);
 

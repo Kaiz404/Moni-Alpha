@@ -17,7 +17,7 @@ import { deleteTransaction, getTransactions } from '@/lib/supabase/transactions'
 import { getWallets } from '@/lib/supabase/wallets';
 import { useProposedTransactions } from '@/hooks/use-proposed-transactions';
 import { IconSymbol } from '@/components/ui/icon-symbol';
-import { syncSystem } from '@/lib/powersync/Powersync';
+import { getCategoryNameRows } from '@/lib/supabase/categories';
 import type { ProposedTransaction } from '@repo/types';
 
 type WalletItem = { id: string; name: string; currency: string };
@@ -165,11 +165,7 @@ export default function TransactionsScreen() {
       const [txData, walletData, categoryRows] = await Promise.all([
         getTransactions(walletId),
         getWallets(),
-        syncSystem.db
-          .selectFrom('categories')
-          .select(['id', 'name'])
-          .where('is_active', '=', 1)
-          .execute(),
+        getCategoryNameRows(),
       ]);
 
       setTransactions(txData as TxRow[]);

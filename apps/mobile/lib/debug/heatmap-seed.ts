@@ -1,6 +1,8 @@
-import { randomUUID } from 'expo-crypto';
-import { syncSystem } from '@/lib/powersync/Powersync';
+import { transactions$ } from '@/lib/store';
+import { getRecordValues, patchRow } from '@/lib/store/helpers';
+import { getUserId } from '@/lib/supabase/client';
 import { getWallets, createWallet } from '@/lib/supabase/wallets';
+import { createTransaction } from '@/lib/supabase/transactions';
 import type { LogFn, DebugTestResult } from './types';
 
 const CLUSTERS = [
@@ -9,8 +11,6 @@ const CLUSTERS = [
   { lat: 3.1073, lng: 101.6067, name: 'Petaling Jaya', count: 16 },
   { lat: 1.4927, lng: 103.7414, name: 'Johor Bahru', count: 8 },
 ];
-
-const SEED_TAG = '{"seedSource":"heatmap-demo"}';
 
 async function ensureSeedWallet(): Promise<string> {
   const wallets = await getWallets();
@@ -30,8 +30,7 @@ async function ensureSeedWallet(): Promise<string> {
 export async function seedHeatmapData(log: LogFn): Promise<DebugTestResult> {
   try {
     log('Seeding heatmap test transactions...');
-    const { db, supabaseConnector } = syncSystem;
-    const userId = await supabaseConnector.getUserId();
+    const userId = await getUserId();
     if (!userId) {
       log('No authenticated user');
       return { success: false, summary: 'Not authenticated' };
@@ -47,28 +46,18 @@ export async function seedHeatmapData(log: LogFn): Promise<DebugTestResult> {
         const lngJitter = (Math.random() - 0.5) * 0.01;
         const txDate = new Date(now - (inserted + 1) * 3600_000).toISOString();
 
-        await db
-          .insertInto('transactions')
-          .values({
-            id: randomUUID(),
-            user_id: userId,
-            wallet_id: walletId,
-            amount: (8 + Math.round(Math.random() * 120)).toString(),
-            type: 'expense',
-            category_id: null,
-            transfer_to_wallet_id: null,
-            linked_transaction_id: null,
-            description: `Heatmap test transaction ${inserted + 1}`,
-            merchant: `${cluster.name} Merchant ${i + 1}`,
-            notes: 'Seeded for heatmap testing',
-            transaction_date: txDate,
-            location_latitude: (cluster.lat + latJitter).toFixed(8),
-            location_longitude: (cluster.lng + lngJitter).toFixed(8),
-            location_name: cluster.name,
-            receipt_image_url: null,
-            metadata: SEED_TAG,
-          })
-          .execute();
+        await createTransaction({
+          walletId,
+          amount: 8 + Math.round(Math.random() * 120),
+          type: 'expense',
+          description: `Heatmap test transaction ${inserted + 1}`,
+          merchant: `${cluster.name} Merchant ${i + 1}`,
+          notes: 'Seeded for heatmap testing (heatmap-demo)',
+          transactionDate: txDate,
+          locationLatitude: cluster.lat + latJitter,
+          locationLongitude: cluster.lng + lngJitter,
+          locationName: cluster.name,
+        });
 
         inserted++;
       }
@@ -86,18 +75,23 @@ export async function seedHeatmapData(log: LogFn): Promise<DebugTestResult> {
 export async function clearHeatmapSeedData(log: LogFn): Promise<DebugTestResult> {
   try {
     log('Removing seeded heatmap transactions...');
-    const { db, supabaseConnector } = syncSystem;
-    const userId = await supabaseConnector.getUserId();
+    const userId = await getUserId();
     if (!userId) {
       log('No authenticated user');
       return { success: false, summary: 'Not authenticated' };
     }
 
-    await db
-      .deleteFrom('transactions')
-      .where('user_id', '=', userId)
-      .where('metadata', 'like', '%"seedSource":"heatmap-demo"%')
-      .execute();
+    const now = new Date().toISOString();
+    for (const tx of getRecordValues<{
+      id: string;
+      user_id: string | null;
+      notes: string | null;
+    }>(transactions$)) {
+      if (tx.user_id !== userId) continue;
+      if ((tx.notes ?? '').includes('heatmap-demo')) {
+        patchRow(transactions$, tx.id, { deleted: true, updated_at: now });
+      }
+    }
 
     log('Seed data cleared');
     return { success: true, summary: 'Heatmap seed data removed' };

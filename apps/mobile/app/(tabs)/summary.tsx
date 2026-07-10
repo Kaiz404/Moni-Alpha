@@ -33,7 +33,7 @@ import {
 } from '@/lib/ai/insights/finance-assistant-orchestrator';
 import type { TxForMetrics } from '@/lib/ai/insights/insight-metrics';
 import { getOrLoadModel } from '@/lib/ai/model-manager';
-import { syncSystem } from '@/lib/powersync/Powersync';
+import { getCategoryNameRows } from '@/lib/supabase/categories';
 import {
   AI_INSIGHT_CONTEXT_GLOBAL,
   AI_INSIGHT_FEATURE_MONI_FINANCE_ASSISTANT,
@@ -109,11 +109,7 @@ export default function SummaryScreen() {
       const [txData, walletData, categoryRows, budgets] = await Promise.all([
         getTransactions(undefined, 8000),
         getWallets(),
-        syncSystem.db
-          .selectFrom('categories')
-          .select(['id', 'name'])
-          .where('is_active', '=', 1)
-          .execute(),
+        getCategoryNameRows(),
         getCategoryBudgets(),
       ]);
 

@@ -1,30 +1,24 @@
-import { syncSystem } from '@/lib/powersync/Powersync';
+import { categories$ } from '@/lib/store';
+import { getRecordValues, isActive } from '@/lib/store/helpers';
+import { getUserId } from '@/lib/supabase/client';
 
-export async function getCategories(type?: 'income' | 'expense') {
-  const { db } = syncSystem;
+type CategoryRow = {
+  id: string;
+  user_id: string | null;
+  name: string | null;
+  icon: string | null;
+  color: string | null;
+  parent_id: string | null;
+  type: string | null;
+  is_active: boolean | number | null;
+  display_order: number | null;
+  created_at: string | null;
+  updated_at: string | null;
+  deleted?: boolean;
+};
 
-  let query = db
-    .selectFrom('categories')
-    .selectAll()
-    .where((eb) => eb.or([
-      eb('user_id', 'is', null),
-      eb('user_id', '=', 'user_id_placeholder') // We'll replace this with actual user ID
-    ]))
-    .orderBy('display_order', 'asc')
-    .orderBy('name', 'asc');
-
-  // Note: For now, we'll get all categories and filter client-side
-  // In a full implementation, you'd need to handle user authentication differently
-  let categories = await query.execute();
-
-  // Filter by user (simplified for now)
-  categories = categories.filter(c => c.user_id === null || c.user_id === 'current_user_id');
-
-  if (type) {
-    categories = categories.filter(c => c.type === type);
-  }
-
-  return categories.map(c => ({
+function mapCategoryRow(c: CategoryRow) {
+  return {
     id: c.id,
     userId: c.user_id,
     name: c.name,
@@ -32,9 +26,63 @@ export async function getCategories(type?: 'income' | 'expense') {
     color: c.color,
     parentId: c.parent_id,
     type: c.type,
-    isActive: c.is_active,
+    isActive: isActive(c.is_active),
     displayOrder: c.display_order,
     createdAt: c.created_at,
     updatedAt: c.updated_at,
-  }));
+  };
+}
+
+function getAllCategoryRows(userId: string | null): CategoryRow[] {
+  const merged = getRecordValues<CategoryRow>(categories$).filter((c) => isActive(c.is_active));
+
+  if (!userId) {
+    return merged.filter((c) => c.user_id === null);
+  }
+
+  return merged.filter((c) => c.user_id === null || c.user_id === userId);
+}
+
+export async function getCategories(type?: 'income' | 'expense') {
+  const userId = await getUserId();
+  let categories = getAllCategoryRows(userId);
+
+  if (type) {
+    categories = categories.filter((c) => c.type === type);
+  }
+
+  categories.sort((a, b) => {
+    const orderDiff = (a.display_order ?? 0) - (b.display_order ?? 0);
+    if (orderDiff !== 0) return orderDiff;
+    return (a.name ?? '').localeCompare(b.name ?? '');
+  });
+
+  return categories.map(mapCategoryRow);
+}
+
+/** Minimal category rows for name maps in list/chart screens. */
+export async function getCategoryNameRows(): Promise<Array<{ id: string; name: string | null }>> {
+  const userId = await getUserId();
+  return getAllCategoryRows(userId).map((c) => ({ id: c.id, name: c.name }));
+}
+
+/** Expense categories (system + user) for budget screens. */
+export async function getExpenseCategoriesForBudgets(): Promise<
+  Array<{ id: string; name: string; color: string | null }>
+> {
+  const userId = await getUserId();
+  if (!userId) return [];
+
+  return getAllCategoryRows(userId)
+    .filter((c) => c.type === 'expense')
+    .sort((a, b) => {
+      const orderDiff = (a.display_order ?? 0) - (b.display_order ?? 0);
+      if (orderDiff !== 0) return orderDiff;
+      return (a.name ?? '').localeCompare(b.name ?? '');
+    })
+    .map((c) => ({
+      id: c.id,
+      name: c.name ?? 'Category',
+      color: c.color,
+    }));
 }

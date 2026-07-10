@@ -2,7 +2,7 @@ import { Stack, router } from 'expo-router';
 import { Pressable, View } from 'react-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { PowerSyncStatusIndicator } from '@/components/power-sync-status-indicator';
+import { SyncStatusIndicator } from '@/components/sync-status-indicator';
 
 export default function TransactionLayout() {
   const colorScheme = useColorScheme();
@@ -32,7 +32,7 @@ export default function TransactionLayout() {
           ),
           headerRight: () => (
             <View className="mr-2">
-              <PowerSyncStatusIndicator />
+              <SyncStatusIndicator />
             </View>
           ),
         }}

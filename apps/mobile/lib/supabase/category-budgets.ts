@@ -1,21 +1,26 @@
 import { randomUUID } from 'expo-crypto';
 import type { CategoryBudget } from '@repo/types';
-import { syncSystem } from '@/lib/powersync/Powersync';
+import { categoryBudgets$ } from '@/lib/store';
+import { getRecordValues, patchRow } from '@/lib/store/helpers';
+import { getUserId } from '@/lib/supabase/client';
 
-function rowToBudget(row: {
+type BudgetRow = {
   id: string;
   user_id: string | null;
   category_id: string | null;
-  amount: string | null;
+  amount: string | number | null;
   period: string | null;
   created_at: string | null;
   updated_at: string | null;
-}): CategoryBudget {
+  deleted?: boolean;
+};
+
+function rowToBudget(row: BudgetRow): CategoryBudget {
   return {
     id: row.id,
     userId: row.user_id ?? '',
     categoryId: row.category_id ?? '',
-    amount: parseFloat(row.amount || '0'),
+    amount: parseFloat(String(row.amount ?? '0')),
     period: (row.period as CategoryBudget['period']) ?? 'monthly',
     createdAt: row.created_at ?? '',
     updatedAt: row.updated_at ?? '',
@@ -23,80 +28,64 @@ function rowToBudget(row: {
 }
 
 export async function getCategoryBudgets(): Promise<CategoryBudget[]> {
-  const { db, supabaseConnector } = syncSystem;
-  const userId = await supabaseConnector.getUserId();
+  const userId = await getUserId();
   if (!userId) return [];
 
-  const rows = await db
-    .selectFrom('category_budgets')
-    .selectAll()
-    .where('user_id', '=', userId)
-    .execute();
-
-  return rows.map((r) => rowToBudget(r as Parameters<typeof rowToBudget>[0]));
+  return getRecordValues<BudgetRow>(categoryBudgets$)
+    .filter((r) => r.user_id === userId)
+    .map(rowToBudget);
 }
 
-export async function upsertCategoryBudget(categoryId: string, amount: number): Promise<CategoryBudget> {
-  const { db, supabaseConnector } = syncSystem;
-  const userId = await supabaseConnector.getUserId();
+export async function upsertCategoryBudget(
+  categoryId: string,
+  amount: number,
+): Promise<CategoryBudget> {
+  const userId = await getUserId();
   if (!userId) throw new Error('Not authenticated');
 
   const now = new Date().toISOString();
-
-  const existing = await db
-    .selectFrom('category_budgets')
-    .select(['id'])
-    .where('user_id', '=', userId)
-    .where('category_id', '=', categoryId)
-    .executeTakeFirst();
+  const existing = getRecordValues<BudgetRow>(categoryBudgets$).find(
+    (r) => r.user_id === userId && r.category_id === categoryId,
+  );
 
   if (existing?.id) {
-    await db
-      .updateTable('category_budgets')
-      .set({
-        amount: amount.toString(),
-        updated_at: now,
-      })
-      .where('id', '=', existing.id)
-      .execute();
-    const row = await db
-      .selectFrom('category_budgets')
-      .selectAll()
-      .where('id', '=', existing.id)
-      .executeTakeFirst();
-    return rowToBudget(row as Parameters<typeof rowToBudget>[0]);
+    patchRow(categoryBudgets$, existing.id, {
+      amount,
+      updated_at: now,
+    });
+    const row = getRecordValues<BudgetRow>(categoryBudgets$).find((r) => r.id === existing.id);
+    if (!row) throw new Error('Failed to update budget');
+    return rowToBudget(row);
   }
 
   const id = randomUUID();
-  await db
-    .insertInto('category_budgets')
-    .values({
-      id,
-      user_id: userId,
-      category_id: categoryId,
-      amount: amount.toString(),
-      period: 'monthly',
-      created_at: now,
-      updated_at: now,
-    })
-    .execute();
+  categoryBudgets$[id].set({
+    id,
+    user_id: userId,
+    category_id: categoryId,
+    amount,
+    period: 'monthly',
+    deleted: false,
+    created_at: now,
+    updated_at: now,
+  });
 
-  const row = await db
-    .selectFrom('category_budgets')
-    .selectAll()
-    .where('id', '=', id)
-    .executeTakeFirst();
-  return rowToBudget(row as Parameters<typeof rowToBudget>[0]);
+  const row = getRecordValues<BudgetRow>(categoryBudgets$).find((r) => r.id === id);
+  if (!row) throw new Error('Failed to create budget');
+  return rowToBudget(row);
 }
 
 export async function deleteCategoryBudget(categoryId: string): Promise<void> {
-  const { db, supabaseConnector } = syncSystem;
-  const userId = await supabaseConnector.getUserId();
+  const userId = await getUserId();
   if (!userId) throw new Error('Not authenticated');
 
-  await db
-    .deleteFrom('category_budgets')
-    .where('user_id', '=', userId)
-    .where('category_id', '=', categoryId)
-    .execute();
+  const existing = getRecordValues<BudgetRow>(categoryBudgets$).find(
+    (r) => r.user_id === userId && r.category_id === categoryId,
+  );
+  if (!existing) return;
+
+  patchRow(categoryBudgets$, existing.id, {
+    deleted: true,
+    updated_at: new Date().toISOString(),
+  });
 }

@@ -1,9 +1,10 @@
-import { randomUUID } from 'expo-crypto';
-import { syncSystem } from '@/lib/powersync/Powersync';
+import { transactions$ } from '@/lib/store';
+import { getRecordValues, patchRow } from '@/lib/store/helpers';
+import { getUserId } from '@/lib/supabase/client';
 import { getWallets, createWallet } from '@/lib/supabase/wallets';
+import { createTransaction } from '@/lib/supabase/transactions';
+import { getCategories } from '@/lib/supabase/categories';
 import type { LogFn, DebugTestResult } from './types';
-
-const VISUAL_SEED_TAG = '{"seedSource":"visual-seed"}';
 
 async function ensureTouchNGOWallet(): Promise<string> {
   const wallets = await getWallets();
@@ -28,8 +29,7 @@ async function ensureTouchNGOWallet(): Promise<string> {
 export async function seedVisualDemoData(log: LogFn): Promise<DebugTestResult> {
   try {
     log('Seeding visual demo transactions for Touch n Go...');
-    const { db, supabaseConnector } = syncSystem;
-    const userId = await supabaseConnector.getUserId();
+    const userId = await getUserId();
     if (!userId) {
       log('No authenticated user');
       return { success: false, summary: 'Not authenticated' };
@@ -37,11 +37,7 @@ export async function seedVisualDemoData(log: LogFn): Promise<DebugTestResult> {
 
     const walletId = await ensureTouchNGOWallet();
     const now = Date.now();
-    const categories = await db
-      .selectFrom('categories')
-      .select(['id', 'name'])
-      .where('is_active', '=', 1)
-      .execute();
+    const categories = await getCategories();
 
     let usable = categories.filter((c: any) => !(c.name || '').toLowerCase().includes('other'));
     if (!usable.length) usable = categories;
@@ -55,30 +51,18 @@ export async function seedVisualDemoData(log: LogFn): Promise<DebugTestResult> {
       const daysAgo = Math.floor(Math.random() * 90);
       const txDate = new Date(now - daysAgo * 24 * 3600_000).toISOString();
       const category = usable[Math.floor(Math.random() * usable.length)];
-      const amount = (3 + Math.round(Math.random() * 200)).toString();
+      const amount = 3 + Math.round(Math.random() * 200);
 
-      await db
-        .insertInto('transactions')
-        .values({
-          id: randomUUID(),
-          user_id: userId,
-          wallet_id: walletId,
-          amount,
-          type: Math.random() > 0.15 ? 'expense' : 'income',
-          category_id: category.id,
-          transfer_to_wallet_id: null,
-          linked_transaction_id: null,
-          description: `Visual seed ${i + 1}`,
-          merchant: `Merchant ${Math.ceil(Math.random() * 40)}`,
-          notes: 'Seeded for visual chart demo',
-          transaction_date: txDate,
-          location_latitude: null,
-          location_longitude: null,
-          location_name: null,
-          receipt_image_url: null,
-          metadata: VISUAL_SEED_TAG,
-        })
-        .execute();
+      await createTransaction({
+        walletId,
+        amount,
+        type: Math.random() > 0.15 ? 'expense' : 'income',
+        categoryId: category.id,
+        description: `Visual seed ${i + 1}`,
+        merchant: `Merchant ${Math.ceil(Math.random() * 40)}`,
+        notes: 'Seeded for visual chart demo (visual-seed)',
+        transactionDate: txDate,
+      });
     }
 
     log(`Inserted ${total} visual demo transactions into Touch n Go`);
@@ -93,18 +77,23 @@ export async function seedVisualDemoData(log: LogFn): Promise<DebugTestResult> {
 export async function clearVisualSeedData(log: LogFn): Promise<DebugTestResult> {
   try {
     log('Removing visual-seed transactions...');
-    const { db, supabaseConnector } = syncSystem;
-    const userId = await supabaseConnector.getUserId();
+    const userId = await getUserId();
     if (!userId) {
       log('No authenticated user');
       return { success: false, summary: 'Not authenticated' };
     }
 
-    await db
-      .deleteFrom('transactions')
-      .where('user_id', '=', userId)
-      .where('metadata', 'like', '%"seedSource":"visual-seed"%')
-      .execute();
+    const now = new Date().toISOString();
+    for (const tx of getRecordValues<{
+      id: string;
+      user_id: string | null;
+      notes: string | null;
+    }>(transactions$)) {
+      if (tx.user_id !== userId) continue;
+      if ((tx.notes ?? '').includes('visual-seed')) {
+        patchRow(transactions$, tx.id, { deleted: true, updated_at: now });
+      }
+    }
 
     log('Visual seed data cleared');
     return { success: true, summary: 'Visual seed data removed' };

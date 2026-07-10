@@ -4,7 +4,7 @@ import { View } from 'react-native';
 
 import { HapticTab } from '@/components/haptic-tab';
 import { IconSymbol } from '@/components/ui/icon-symbol';
-import { PowerSyncStatusIndicator } from '@/components/power-sync-status-indicator';
+import { SyncStatusIndicator } from '@/components/sync-status-indicator';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 
@@ -18,7 +18,7 @@ export default function TabLayout() {
         headerShown: false,
         headerRight: () => (
           <View className="mr-4">
-            <PowerSyncStatusIndicator />
+            <SyncStatusIndicator />
           </View>
         ),
         tabBarButton: HapticTab,

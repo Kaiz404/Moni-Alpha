@@ -26,11 +26,11 @@ import {
 
 import { useAuth } from '@/lib/auth/auth-context';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { syncSystem } from '@/lib/powersync/Powersync';
+import { getCategoryNameRows } from '@/lib/supabase/categories';
 import { getWallets, deleteWallet } from '@/lib/supabase/wallets';
 import { getWalletBalances } from '@/lib/supabase/balances';
 import { deleteTransaction, getTransactions } from '@/lib/supabase/transactions';
-import { PowerSyncStatusIndicator } from '@/components/power-sync-status-indicator';
+import { SyncStatusIndicator } from '@/components/sync-status-indicator';
 import type { ICarouselInstance } from "react-native-reanimated-carousel";
 import Carousel from "react-native-reanimated-carousel";
 import Animated, {
@@ -306,11 +306,7 @@ export default function WalletsScreen() {
     try {
       const [walletsData, categoryRows] = await Promise.all([
         getWallets(),
-        syncSystem.db
-          .selectFrom('categories')
-          .select(['id', 'name'])
-          .where('is_active', '=', 1)
-          .execute(),
+        getCategoryNameRows(),
       ]);
       const walletList = walletsData || [];
       setWallets(walletList);
@@ -569,7 +565,7 @@ export default function WalletsScreen() {
             </View>
             <Text className="text-2xl ml-3 font-bold text-gray-900 dark:text-white">Wallets</Text>
           </View>
-          <PowerSyncStatusIndicator />
+          <SyncStatusIndicator />
         </View>
 
         <View id="carousel-component" className="top-8">

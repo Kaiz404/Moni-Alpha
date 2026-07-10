@@ -7,15 +7,13 @@ import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import "react-native-reanimated";
 import "../global.css";
- 
+
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { QueryProvider } from "@/lib/query/query-client";
 import { AuthProvider } from "@/lib/auth/auth-context";
 import { AuthGuard } from "@/components/auth-guard";
-import { PowersyncProvider } from "@/lib/powersync/PowersyncProvider";
 import { useEffect, useRef } from "react";
 import { AppState } from "react-native";
-import { syncSystem } from "@/lib/powersync/Powersync";
 import { ProposalReviewModal } from "@/components/proposal-review-modal";
 import { drainImageUploadQueue } from "@/lib/storage/image-upload-queue";
 import { getPendingCount } from "@/lib/ai/processing-queue";
@@ -37,10 +35,6 @@ export default function RootLayout() {
       await startBackgroundProcessor();
     }
   };
-
-  useEffect(() => {
-    syncSystem.init();
-  }, []);
 
   // Ensure queued AI work (including notifications captured in headless mode)
   // resumes automatically when the app starts or returns to foreground.
@@ -71,26 +65,24 @@ export default function RootLayout() {
   }, []);
 
   return (
-    <PowersyncProvider>
-      <QueryProvider>
-        <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
-          <AuthProvider>
-            <AuthGuard>
-              <Stack screenOptions={{headerShown: false}}>
-                <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-                <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-                <Stack.Screen
-                  name="modal"
-                  options={{ presentation: "modal", title: "Modal", headerShown: false }}
-                />
-                <Stack.Screen name="budgets" options={{ headerShown: false }} />
-              </Stack>
-              <ProposalReviewModal />
-            </AuthGuard>
-          </AuthProvider>
+    <QueryProvider>
+      <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
+        <AuthProvider>
+          <AuthGuard>
+            <Stack screenOptions={{headerShown: false}}>
+              <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+              <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+              <Stack.Screen
+                name="modal"
+                options={{ presentation: "modal", title: "Modal", headerShown: false }}
+              />
+              <Stack.Screen name="budgets" options={{ headerShown: false }} />
+            </Stack>
+            <ProposalReviewModal />
+          </AuthGuard>
           <StatusBar style="auto" />
-        </ThemeProvider>
-      </QueryProvider>
-    </PowersyncProvider>
+        </AuthProvider>
+      </ThemeProvider>
+    </QueryProvider>
   );
 }

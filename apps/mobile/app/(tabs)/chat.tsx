@@ -36,7 +36,7 @@ import {
 import { saveImageLocally } from '@/lib/storage/image-storage';
 import { enqueueImageUpload } from '@/lib/storage/image-upload-queue';
 import { startBackgroundProcessor } from '@/lib/ai/background-processor';
-import { syncSystem } from '@/lib/powersync/Powersync';
+import { getUserId } from '@/lib/supabase/client';
 import { captureLocationSnapshot } from '@/lib/location/location-snapshot';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 
@@ -303,7 +303,7 @@ export default function ChatScreen() {
           enqueue(queueItem);
 
           try {
-            const userId = await syncSystem.supabaseConnector.getUserId();
+            const userId = await getUserId();
             if (userId) {
               enqueueImageUpload({ proposalId: id, localUri, userId });
             }

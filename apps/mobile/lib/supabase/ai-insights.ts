@@ -1,7 +1,9 @@
 import { randomUUID } from 'expo-crypto';
 import type { AiInsightResult } from '@repo/types';
 import { aiInsightResultSchema } from '@repo/types';
-import { syncSystem } from '@/lib/powersync/Powersync';
+import { aiInsights$ } from '@/lib/store';
+import { getRecordValues, patchRow } from '@/lib/store/helpers';
+import { getUserId } from '@/lib/supabase/client';
 
 export const AI_INSIGHT_FEATURE_SUMMARY = 'summary_insight_cards' as const;
 export const AI_INSIGHT_FEATURE_BUDGET_COACH = 'budget_coach_cards' as const;
@@ -25,23 +27,7 @@ export type AiInsightRow = {
   updatedAt: string;
 };
 
-function parseJson<T>(raw: string | null | undefined): T | null {
-  if (raw == null || raw === '') return null;
-  try {
-    return JSON.parse(raw) as T;
-  } catch {
-    return null;
-  }
-}
-
-export function parseAiInsightResult(raw: string | null | undefined): AiInsightResult | null {
-  const j = parseJson<unknown>(raw);
-  if (!j || typeof j !== 'object') return null;
-  const r = aiInsightResultSchema.safeParse(j);
-  return r.success ? r.data : null;
-}
-
-function rowToInsight(row: {
+type InsightDbRow = {
   id: string;
   user_id: string | null;
   feature_key: string | null;
@@ -49,13 +35,36 @@ function rowToInsight(row: {
   schema_version: number | null;
   input_hash: string | null;
   status: string | null;
-  tool_snapshot: string | null;
-  result: string | null;
+  tool_snapshot: string | Record<string, unknown> | null;
+  result: string | Record<string, unknown> | null;
   error_message: string | null;
   model_id: string | null;
   created_at: string | null;
   updated_at: string | null;
-}): AiInsightRow {
+  deleted?: boolean;
+};
+
+function parseJson<T>(raw: string | Record<string, unknown> | null | undefined): T | null {
+  if (raw == null) return null;
+  if (typeof raw === 'object') return raw as T;
+  if (raw === '') return null;
+  try {
+    return JSON.parse(raw) as T;
+  } catch {
+    return null;
+  }
+}
+
+export function parseAiInsightResult(
+  raw: string | Record<string, unknown> | null | undefined,
+): AiInsightResult | null {
+  const j = parseJson<unknown>(raw);
+  if (!j || typeof j !== 'object') return null;
+  const r = aiInsightResultSchema.safeParse(j);
+  return r.success ? r.data : null;
+}
+
+function rowToInsight(row: InsightDbRow): AiInsightRow {
   return {
     id: row.id,
     userId: row.user_id ?? '',
@@ -77,18 +86,16 @@ export async function getAiInsightSlot(
   featureKey: string,
   contextKey: string,
 ): Promise<AiInsightRow | null> {
-  const { db, supabaseConnector } = syncSystem;
-  const userId = await supabaseConnector.getUserId();
+  const userId = await getUserId();
   if (!userId) return null;
 
-  const row = await db
-    .selectFrom('ai_insights')
-    .selectAll()
-    .where('user_id', '=', userId)
-    .where('feature_key', '=', featureKey)
-    .where('context_key', '=', contextKey)
-    .executeTakeFirst();
-  return row ? rowToInsight(row as any) : null;
+  const row = getRecordValues<InsightDbRow>(aiInsights$).find(
+    (r) =>
+      r.user_id === userId &&
+      r.feature_key === featureKey &&
+      r.context_key === contextKey,
+  );
+  return row ? rowToInsight(row) : null;
 }
 
 export async function upsertAiInsight(args: {
@@ -101,19 +108,16 @@ export async function upsertAiInsight(args: {
   errorMessage?: string | null;
   modelId: string | null;
 }): Promise<void> {
-  const { db, supabaseConnector } = syncSystem;
-  const userId = await supabaseConnector.getUserId();
+  const userId = await getUserId();
   if (!userId) throw new Error('Not authenticated');
 
   const now = new Date().toISOString();
-
-  const existing = await db
-    .selectFrom('ai_insights')
-    .select(['id'])
-    .where('user_id', '=', userId)
-    .where('feature_key', '=', args.featureKey)
-    .where('context_key', '=', args.contextKey)
-    .executeTakeFirst();
+  const existing = getRecordValues<InsightDbRow>(aiInsights$).find(
+    (r) =>
+      r.user_id === userId &&
+      r.feature_key === args.featureKey &&
+      r.context_key === args.contextKey,
+  );
 
   const payload = {
     user_id: userId,
@@ -122,30 +126,25 @@ export async function upsertAiInsight(args: {
     schema_version: AI_INSIGHT_SCHEMA_VERSION,
     input_hash: args.inputHash,
     status: args.status,
-    tool_snapshot: JSON.stringify(args.toolSnapshot ?? null),
-    result: args.result ? JSON.stringify(args.result) : null,
+    tool_snapshot: args.toolSnapshot ?? null,
+    result: args.result ?? null,
     error_message: args.errorMessage ?? null,
     model_id: args.modelId,
     updated_at: now,
+    deleted: false,
   };
 
   if (existing?.id) {
-    await db
-      .updateTable('ai_insights')
-      .set(payload)
-      .where('id', '=', existing.id)
-      .execute();
+    patchRow(aiInsights$, existing.id, payload);
     return;
   }
 
-  await db
-    .insertInto('ai_insights')
-    .values({
-      id: randomUUID(),
-      ...payload,
-      created_at: now,
-    })
-    .execute();
+  const id = randomUUID();
+  aiInsights$[id].set({
+    id,
+    ...payload,
+    created_at: now,
+  });
 }
 
 /** @deprecated Use upsertAiInsight with AI_INSIGHT_FEATURE_SUMMARY */
