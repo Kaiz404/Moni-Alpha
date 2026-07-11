@@ -10,6 +10,7 @@ import {
 import { Link, router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@/lib/auth/auth-context';
+import { GoogleSignInButton } from '@/components/google-sign-in-button';
 
 const inputClassName =
   'border border-gray-300 dark:border-gray-600 rounded-lg p-3 text-base bg-white dark:bg-gray-800 text-gray-900 dark:text-white';
@@ -118,6 +119,13 @@ export default function RegisterScreen() {
             {loading ? 'Creating account...' : 'Sign up'}
           </Text>
         </TouchableOpacity>
+
+        <GoogleSignInButton
+          disabled={loading}
+          onError={(message) => Alert.alert('Google sign in failed', message, [{ text: 'OK' }], {
+          cancelable: true,
+        })}
+        />
 
         <Link href={'/(auth)/login' as any} asChild>
           <TouchableOpacity className="mt-8 items-center py-2">

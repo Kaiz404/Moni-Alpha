@@ -3,10 +3,16 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "go run ./cmd/server",
+    "dev": "dotenv -e .env -- concurrently -k -n server,ngrok -c blue,magenta \"go run ./cmd/server\" \"wait-on tcp:127.0.0.1:8080 && ngrok http --url=slang-compound-landmass.ngrok-free.dev 8080\"",
+    "dev:server": "dotenv -e .env -- go run ./cmd/server",
     "build": "go build -o bin/ ./cmd/server",
     "lint": "go vet ./...",
     "check-types": "go build ./...",
     "test": "go test ./..."
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2",
+    "dotenv-cli": "^8.0.0",
+    "wait-on": "^8.0.1"
   }
 }

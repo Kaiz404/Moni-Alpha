@@ -25,8 +25,13 @@ Supabase signs user access tokens with an asymmetric ES256 key. The backend veri
 ```bash
 cd apps/backend
 cp .env.example .env   # fill in SUPABASE_URL + GROQ_API_KEY
-go run ./cmd/server    # or: pnpm --filter backend dev
+pnpm --filter backend dev   # Go server + ngrok tunnel (for physical devices)
+# or: pnpm --filter backend dev:server   # localhost only
 ```
+
+`dev` starts the server on `:8080` and, once the port is listening, runs `ngrok http --url=slang-compound-landmass.ngrok-free.dev 8080`. Requires [ngrok](https://ngrok.com/) installed and authenticated. Point the mobile app at `EXPO_PUBLIC_AI_API_URL=https://slang-compound-landmass.ngrok-free.dev`.
+
+From the monorepo root, `pnpm dev` runs this via Turborepo alongside the Expo app (`--filter=!web`).
 
 Test with a real user token:
 

@@ -2,7 +2,13 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import type { Session, User } from '@supabase/supabase-js';
 import { signInSchema, signUpSchema } from '@repo/types';
 import { supabase } from '@/lib/supabase/client';
-import { clearStore } from '@/lib/store';
+import { clearStore, resyncStore } from '@/lib/store';
+import { initStoreAuthSync } from '@/lib/store/auth-sync';
+import {
+  configureGoogleSignIn,
+  signInWithGoogleNative,
+  signOutGoogleNative,
+} from '@/lib/auth/google-signin';
 
 type AuthContextType = {
   user: User | null;
@@ -14,6 +20,7 @@ type AuthContextType = {
     password: string,
     displayName: string
   ) => Promise<{ error: Error | null; session: Session | null }>;
+  signInWithGoogle: () => Promise<{ error: Error | null; cancelled?: boolean }>;
   signOut: () => Promise<void>;
 };
 
@@ -25,6 +32,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    configureGoogleSignIn();
+    initStoreAuthSync(() => {
+      void resyncStore();
+    });
+
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
@@ -77,14 +89,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return { error: null, session: data.session ?? null };
   };
 
+  const signInWithGoogle = async () => {
+    return signInWithGoogleNative();
+  };
+
   const signOut = async () => {
     await clearStore();
+    await signOutGoogleNative();
     await supabase.auth.signOut();
   };
 
   return (
     <AuthContext.Provider
-      value={{ user, session, isLoading, signIn, signUp, signOut }}
+      value={{ user, session, isLoading, signIn, signUp, signInWithGoogle, signOut }}
     >
       {children}
     </AuthContext.Provider>

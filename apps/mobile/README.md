@@ -10,7 +10,7 @@ pnpm --filter moni dev      # Metro / Expo
 pnpm --filter moni android  # native dev client (required — Expo Go won't work)
 ```
 
-Env: copy `.env.example` to `.env` (Supabase publishable key + AI backend URL — see [docs/SETUP.md](../../docs/SETUP.md)).
+Env: copy `.env.example` to `.env` (Supabase publishable key, AI backend URL, Google web client ID — see [docs/SETUP.md](../../docs/SETUP.md)).
 
 ## Map
 
@@ -19,6 +19,7 @@ Env: copy `.env.example` to `.env` (Supabase publishable key + AI backend URL �
 | `app/` | expo-router routes: `(auth)`, `(tabs)` (Wallets / Summary / Moni Agent / Profile), `(routes)` (wallet, transaction, budget, notifications, debug) |
 | `lib/store/` | Legend-State synced observables — the data layer |
 | `lib/supabase/` | Supabase client (publishable key) + CRUD helpers over the store |
+| `lib/auth/` | Auth context (email/password + native Google Sign-In) |
 | `lib/mmkv/` | MMKV instances: auth session, store cache, upload queue |
 | `lib/ai/` | Processing queue, background processor, AI client (HTTP ↔ Go backend, mock fallback) |
 | `lib/notifications/` | Deterministic notification prefilter (shared with headless task) |

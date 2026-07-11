@@ -26,7 +26,7 @@ flowchart LR
 
 ## Core decisions
 
-- **Mobile is a first-class Supabase client.** Legend-State observables (`apps/mobile/lib/store/index.ts`) sync directly to Postgres via `@legendapp/state/sync-plugins/supabase`, persisted locally in MMKV. Writes hit the local store first; sync happens in the background with soft deletes (`deleted` column) and `last-sync` change tracking.
+- **Mobile is a first-class Supabase client.** Legend-State observables (`apps/mobile/lib/store/index.ts`) sync directly to Postgres via `@legendapp/state/sync-plugins/supabase`, persisted locally in MMKV. Sync and remote writes are gated on `authReady$` (Supabase session); `resyncStore()` runs on sign-in. Writes hit the local store first; sync happens in the background with soft deletes (`deleted` column) and `last-sync` change tracking.
 - **Mobile and web never talk to each other.** The Next.js app (`apps/web`) is a self-contained dashboard with its own API routes for its own pages. Anything both clients need lives in Supabase (data) or the Go backend (AI).
 - **The Go backend is stateless.** It verifies the caller's Supabase JWT against the project JWKS (ES256), calls Groq, and returns extraction results. It never touches the database — the mobile client inserts `proposed_transactions` rows itself.
 - **AI never writes to the ledger.** Every AI extraction becomes a `proposed_transactions` row that the user approves or rejects in a review modal before a real transaction is created.
