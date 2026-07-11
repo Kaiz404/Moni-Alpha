@@ -1,20 +1,12 @@
 export { type DebugModule, type DebugTestResult, type LogFn } from './types';
 
-export {
-  startHeartbeat,
-  stopHeartbeat,
-  isHeartbeatRunning,
-} from './heartbeat-test';
-
-export {
-  runLLMBackgroundTest,
-  stopLLMProcessor,
-} from './llm-background-test';
-
 export { runNotificationTests } from './notification-test';
 
-export { seedHeatmapData, clearHeatmapSeedData } from './heatmap-seed';
-export { seedVisualDemoData, clearVisualSeedData } from './visual-seed';
+export {
+  getNotificationDiagnostics,
+  injectTestNotificationCapture,
+  type NotificationDiagnostics,
+} from './notification-debug';
 
 export {
   runQueueInspection,
@@ -24,14 +16,19 @@ export {
 
 export {
   PROCESS_LABELS,
-  formatDuration,
-  useDebugProcessMonitor,
   useCapturedProcessLogs,
   type ProcessId,
-  type ProcessState,
 } from './process-monitor';
 
 export {
   getNotificationProcessSnapshot,
+  getNotificationMonitorSnapshot,
+  useNotificationMonitor,
+  QUEUE_STATUS_LABELS,
+  QUEUE_STATUS_COLORS,
+  PERMISSION_COLORS,
   type NotificationProcessSnapshot,
+  type NotificationMonitorSnapshot,
+  type NotificationMonitorEntry,
+  type NotificationQueueStatus,
 } from './notification-process-reader';

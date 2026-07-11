@@ -29,10 +29,14 @@ if (Platform.OS === 'android') {
   }
 
   const headlessNotificationListener = async ({ notification }) => {
-    if (!notification) return;
+    if (!notification) {
+      console.log('[NotifCapture] empty payload — listener fired but no data');
+      return;
+    }
 
     try {
-      const parsed = JSON.parse(notification);
+      const parsed =
+        typeof notification === 'string' ? JSON.parse(notification) : notification;
       const prefilterPassed = passesNotificationTransactionPrefilter(parsed);
       const enriched = {
         ...parsed,
@@ -43,10 +47,21 @@ if (Platform.OS === 'android') {
 
       // Always store in the full notifications list for the UI
       appendToList(notificationStorage, ALL_NOTIFICATIONS_KEY, enriched, MAX_STORED);
+      console.log(
+        '[NotifCapture] stored',
+        enriched.app ?? 'unknown',
+        prefilterPassed ? 'queued' : 'ignored',
+      );
 
       // Queue notifications that pass the prefilter into the unified processing queue
       if (prefilterPassed) {
-        const locationSnapshot = await captureLocationSnapshot();
+        let locationSnapshot = null;
+        try {
+          locationSnapshot = await captureLocationSnapshot();
+        } catch {
+          // Location is best-effort in headless context (no UI for permission prompts).
+        }
+
         const queueItem = {
           id: enriched.id,
           type: 'notification',
@@ -59,10 +74,12 @@ if (Platform.OS === 'android') {
 
         // Kick off processing immediately from headless context so notification
         // orchestration runs even when the app UI is not open.
-        await startBackgroundProcessor().catch(() => {});
+        await startBackgroundProcessor().catch((e) => {
+          console.error('[NotifCapture] processor start failed:', e?.message ?? e);
+        });
       }
-    } catch {
-      // Malformed notification payload — silently ignore
+    } catch (e) {
+      console.error('[NotifCapture] failed to handle notification:', e?.message ?? e);
     }
   };
 

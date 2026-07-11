@@ -8,7 +8,7 @@ import {
   Pressable,
 } from 'react-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import * as Location from 'expo-location';
 import * as ImagePicker from 'expo-image-picker';
 import { ExpoSpeechRecognitionModule } from 'expo-speech-recognition';
@@ -74,6 +74,7 @@ function mapSpeechPermissionStatus(result: { granted: boolean; status?: string }
 function PermissionColumn({
   title,
   statusLabel,
+  granted,
   actionLabel,
   onAction,
   actionDisabled,
@@ -85,6 +86,7 @@ function PermissionColumn({
 }: {
   title: string;
   statusLabel: string;
+  granted?: boolean;
   actionLabel?: string;
   onAction?: () => void;
   actionDisabled?: boolean;
@@ -115,6 +117,12 @@ function PermissionColumn({
       </Text>
       {muted ? (
         <Text className="mt-2 text-center text-[10px] text-slate-400 dark:text-slate-500">—</Text>
+      ) : granted ? (
+        <View className="mt-2 rounded-lg bg-emerald-500/15 py-2 dark:bg-emerald-500/20">
+          <Text className="text-center text-[10px] font-semibold text-emerald-700 dark:text-emerald-400">
+            On
+          </Text>
+        </View>
       ) : showAction && actionLabel && onAction ? (
         <TouchableOpacity
           className="mt-2 rounded-lg bg-[#8494FF] px-1.5 py-2 dark:bg-[#6b74e8]"
@@ -128,9 +136,9 @@ function PermissionColumn({
           </Text>
         </TouchableOpacity>
       ) : (
-        <View className="mt-2 rounded-lg bg-emerald-500/15 py-2 dark:bg-emerald-500/20">
-          <Text className="text-center text-[10px] font-semibold text-emerald-700 dark:text-emerald-400">
-            On
+        <View className="mt-2 rounded-lg bg-slate-100 py-2 dark:bg-slate-700/50">
+          <Text className="text-center text-[10px] font-semibold text-slate-500 dark:text-slate-400">
+            Off
           </Text>
         </View>
       )}
@@ -140,7 +148,8 @@ function PermissionColumn({
 
 export default function ProfileScreen() {
   const { user, signOut } = useAuth();
-  const { permissionStatus, isCheckingPermission, requestPermission } = useNotificationListener();
+  const { permissionStatus, isCheckingPermission, requestPermission, checkPermission } =
+    useNotificationListener();
   const [locationStatus, setLocationStatus] = useState<Location.PermissionStatus | null>(null);
   const [cameraStatus, setCameraStatus] = useState<ImagePicker.PermissionStatus | null>(null);
   const [micStatus, setMicStatus] = useState<string | null>(null);
@@ -149,6 +158,12 @@ export default function ProfileScreen() {
   const [isRequestingMic, setIsRequestingMic] = useState(false);
   const isAndroid = Platform.OS === 'android';
   const isAuthorized = permissionStatus === 'authorized';
+
+  useFocusEffect(
+    useCallback(() => {
+      checkPermission();
+    }, [checkPermission]),
+  );
   const isLocationGranted = locationStatus === 'granted';
   const isCameraGranted = cameraStatus === 'granted';
   const isMicGranted = micStatus === 'granted';
@@ -274,8 +289,8 @@ export default function ProfileScreen() {
 
           <ProfileSectionTitle>Permissions</ProfileSectionTitle>
           <Text className="mb-3 text-xs text-slate-500 dark:text-slate-400">
-            Grant access so Moni can sync notifications (Android), use location, scan receipts, and use voice
-            input in chat.
+            Grant access so Moni can read bank/wallet alerts (Android notification access), use
+            location, scan receipts, and use voice input in chat.
           </Text>
           <View className="flex-row flex-wrap gap-2">
             {!isAndroid ? (
@@ -290,13 +305,22 @@ export default function ProfileScreen() {
               />
             ) : (
               <PermissionColumn
-                title="Notifications"
-                statusLabel={isAuthorized ? 'Enabled' : 'Off'}
+                title="Notification access"
+                statusLabel={
+                  isAuthorized
+                    ? 'Enabled'
+                    : permissionStatus === 'denied'
+                      ? 'Off'
+                      : isCheckingPermission
+                        ? 'Checking…'
+                        : 'Off'
+                }
+                granted={isAuthorized}
                 actionLabel={
                   !isAuthorized
                     ? isCheckingPermission
                       ? '…'
-                      : 'Enable'
+                      : 'Open settings'
                     : undefined
                 }
                 onAction={!isAuthorized ? requestPermission : undefined}
@@ -310,6 +334,7 @@ export default function ProfileScreen() {
             <PermissionColumn
               title="Location"
               statusLabel={labelForStatus(locationStatus)}
+              granted={isLocationGranted}
               actionLabel={
                 !isLocationGranted ? (isRequestingLocation ? '…' : 'Enable') : undefined
               }
@@ -323,6 +348,7 @@ export default function ProfileScreen() {
             <PermissionColumn
               title="Camera"
               statusLabel={labelForStatus(cameraStatus)}
+              granted={isCameraGranted}
               actionLabel={!isCameraGranted ? (isRequestingCamera ? '…' : 'Enable') : undefined}
               onAction={!isCameraGranted ? requestCameraAccess : undefined}
               actionDisabled={isRequestingCamera}
@@ -334,6 +360,7 @@ export default function ProfileScreen() {
             <PermissionColumn
               title="Microphone"
               statusLabel={labelForStatus(micStatus)}
+              granted={isMicGranted}
               actionLabel={!isMicGranted ? (isRequestingMic ? '…' : 'Enable') : undefined}
               onAction={!isMicGranted ? requestMicAccess : undefined}
               actionDisabled={isRequestingMic}

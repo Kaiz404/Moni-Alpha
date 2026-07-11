@@ -29,6 +29,17 @@ type TransactionRow = {
   deleted?: boolean;
 };
 
+/** Normalize persisted transaction_date values (string, epoch ms, etc.) for sorting/display. */
+function toDateSortKey(value: unknown): string {
+  if (value == null || value === '') return '';
+  if (typeof value === 'string') return value;
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return new Date(value).toISOString();
+  }
+  const parsed = Date.parse(String(value));
+  return Number.isNaN(parsed) ? '' : new Date(parsed).toISOString();
+}
+
 function mapTransactionRow(t: TransactionRow) {
   let metadata: Record<string, unknown> = {};
   if (typeof t.metadata === 'string' && t.metadata) {
@@ -53,7 +64,7 @@ function mapTransactionRow(t: TransactionRow) {
     description: t.description,
     merchant: t.merchant,
     notes: t.notes,
-    transactionDate: t.transaction_date,
+    transactionDate: toDateSortKey(t.transaction_date) || toDateSortKey(t.created_at),
     locationLatitude: t.location_latitude != null ? parseFloat(String(t.location_latitude)) : null,
     locationLongitude: t.location_longitude != null ? parseFloat(String(t.location_longitude)) : null,
     locationName: t.location_name,
@@ -71,11 +82,7 @@ export async function getTransactions(walletId?: string, limit: number = 100) {
     rows = rows.filter((t) => t.wallet_id === walletId);
   }
 
-  rows.sort((a, b) => {
-    const da = a.transaction_date ?? '';
-    const db = b.transaction_date ?? '';
-    return db.localeCompare(da);
-  });
+  rows.sort((a, b) => toDateSortKey(b.transaction_date).localeCompare(toDateSortKey(a.transaction_date)));
 
   return rows.slice(0, limit).map(mapTransactionRow);
 }

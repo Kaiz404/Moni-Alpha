@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback, useEffect } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import {
   View,
   Text,
@@ -6,25 +6,18 @@ import {
   TouchableOpacity,
   ActivityIndicator,
 } from 'react-native';
-import BackgroundService from 'react-native-background-actions';
 import {
-  startHeartbeat,
-  stopHeartbeat,
-  isHeartbeatRunning,
-  runLLMBackgroundTest,
-  stopLLMProcessor,
   runNotificationTests,
-  seedHeatmapData,
-  clearHeatmapSeedData,
-  seedVisualDemoData,
-  clearVisualSeedData,
   runQueueInspection,
   pruneQueue,
-  getQueueSnapshot,
+  injectTestNotificationCapture,
+  getNotificationDiagnostics,
   PROCESS_LABELS,
-  formatDuration,
-  useDebugProcessMonitor,
   useCapturedProcessLogs,
+  useNotificationMonitor,
+  QUEUE_STATUS_LABELS,
+  QUEUE_STATUS_COLORS,
+  PERMISSION_COLORS,
   type DebugTestResult,
   type LogFn,
   type ProcessId,
@@ -35,39 +28,17 @@ type GridButton = {
   label: string;
   description: string;
   color: string;
-  activeColor?: string;
   run: (log: LogFn) => Promise<DebugTestResult>;
-  isActive?: () => boolean;
-  onActivePress?: (log: LogFn) => Promise<void>;
-  activeLabel?: string;
 };
 
 function useDebugButtons(): GridButton[] {
   return [
     {
-      id: 'heartbeat',
-      label: 'Heartbeat',
-      description: 'BG service alive test',
-      color: '#10b981',
-      activeColor: '#dc2626',
-      isActive: isHeartbeatRunning,
-      activeLabel: 'Stop Heartbeat',
-      run: startHeartbeat,
-      onActivePress: stopHeartbeat,
-    },
-    {
-      id: 'ai-bg',
-      label: 'AI Queue Test',
-      description: 'Enqueue + process via mock AI client',
-      color: '#4f46e5',
-      run: runLLMBackgroundTest,
-    },
-    {
-      id: 'stop-processor',
-      label: 'Stop Processor',
-      description: 'Kill background processor',
-      color: '#ef4444',
-      run: stopLLMProcessor,
+      id: 'simulate-capture',
+      label: 'Simulate Capture',
+      description: 'Write a test notification to MMKV',
+      color: '#8b5cf6',
+      run: injectTestNotificationCapture,
     },
     {
       id: 'notif-test',
@@ -90,67 +61,182 @@ function useDebugButtons(): GridButton[] {
       color: '#64748b',
       run: pruneQueue,
     },
-    {
-      id: 'seed-heatmap',
-      label: 'Seed Heatmap',
-      description: 'Insert 60 test locations',
-      color: '#22c55e',
-      run: seedHeatmapData,
-    },
-    {
-      id: 'clear-heatmap',
-      label: 'Clear Heatmap',
-      description: 'Remove seeded data',
-      color: '#b91c1c',
-      run: clearHeatmapSeedData,
-    },
-    {
-      id: 'seed-visual',
-      label: 'Seed Visual',
-      description: 'Insert Touch n Go chart demo data',
-      color: '#f59e0b',
-      run: seedVisualDemoData,
-    },
-    {
-      id: 'clear-visual',
-      label: 'Clear Visual',
-      description: 'Remove Touch n Go visual demo',
-      color: '#ea580c',
-      run: clearVisualSeedData,
-    },
   ];
 }
 
-function StatusBar() {
-  const [snap, setSnap] = useState(() => getQueueSnapshot());
-  const [heartbeat, setHeartbeat] = useState(false);
-  const [bgService, setBgService] = useState(false);
+function formatRelativeTime(iso: string | null): string {
+  if (!iso) return 'never';
+  const diff = Date.now() - new Date(iso).getTime();
+  if (diff < 60_000) return `${Math.max(1, Math.round(diff / 1000))}s ago`;
+  if (diff < 3_600_000) return `${Math.round(diff / 60_000)}m ago`;
+  return new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+}
 
-  useEffect(() => {
-    const poll = setInterval(() => {
-      setSnap(getQueueSnapshot());
-      setHeartbeat(isHeartbeatRunning());
-      setBgService(BackgroundService.isRunning());
-    }, 1000);
-    return () => clearInterval(poll);
-  }, []);
+function StatCard({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <View className="flex-1 rounded-lg border border-zinc-800 bg-zinc-900/60 px-3 py-2.5">
+      <Text className="text-[10px] text-zinc-500 uppercase tracking-wide">{label}</Text>
+      <View className="mt-1">{children}</View>
+    </View>
+  );
+}
 
-  const processorUp = snap.processorRunning || bgService || heartbeat;
+function NotificationPipelinePanel() {
+  const { snapshot, permissionStatus, lastCheckedAt, refresh } = useNotificationMonitor();
+  const { queue, recent, isAndroid } = snapshot;
+  const diagnostics = getNotificationDiagnostics(permissionStatus);
+
+  const permissionLabel =
+    permissionStatus === 'authorized'
+      ? 'Authorized'
+      : permissionStatus === 'denied'
+        ? 'Denied'
+        : permissionStatus === 'unavailable'
+          ? 'N/A (iOS)'
+          : 'Unknown';
+
+  const buildLabel = diagnostics.isExpoGo
+    ? 'Expo Go (unsupported)'
+    : diagnostics.isDevClient
+      ? 'Dev client'
+      : 'Production build';
 
   return (
-    <View className="flex-row items-center px-4 py-2 bg-zinc-900 border-b border-zinc-800">
-      <View
-        className="w-2.5 h-2.5 rounded-full mr-2"
-        style={{ backgroundColor: processorUp ? '#22c55e' : '#6b7280' }}
-      />
-      <Text className="text-zinc-400 text-xs font-mono flex-1">
-        {heartbeat
-          ? 'Heartbeat running'
-          : snap.processorRunning
-            ? 'Processor running'
-            : 'Idle'}
-        {'  |  '}Q: {snap.pending}p {snap.processing}a {snap.done}d {snap.error}e
+    <View className="mx-3 mt-4 rounded-xl border border-zinc-800 bg-zinc-950/80 p-4">
+      <View className="flex-row items-center justify-between">
+        <Text className="text-zinc-200 font-semibold text-base">Notification pipeline</Text>
+        <TouchableOpacity onPress={refresh} hitSlop={8}>
+          <Text className="text-xs text-blue-400">Refresh</Text>
+        </TouchableOpacity>
+      </View>
+      <Text className="text-zinc-500 text-xs mt-1 leading-4">
+        Listener access (read other apps&apos; alerts). Not the same as App Info → Notifications.
       </Text>
+      {lastCheckedAt ? (
+        <Text className="text-[10px] text-zinc-600 mt-1">
+          Permission re-checked {formatRelativeTime(lastCheckedAt)}
+        </Text>
+      ) : null}
+
+      <View className="mt-4 gap-2">
+        <View className="flex-row gap-2">
+          <StatCard label="Permission">
+            <View className="flex-row items-center">
+              <View
+                className="w-2 h-2 rounded-full mr-1.5"
+                style={{ backgroundColor: PERMISSION_COLORS[permissionStatus] }}
+              />
+              <Text className="text-sm font-semibold text-zinc-100">{permissionLabel}</Text>
+            </View>
+          </StatCard>
+          <StatCard label="Last captured">
+            <Text className="text-sm font-semibold text-zinc-100">
+              {formatRelativeTime(snapshot.lastReceivedAt)}
+            </Text>
+          </StatCard>
+        </View>
+
+        <View className="flex-row gap-2">
+          <StatCard label="Captured">
+            <Text className="text-sm font-semibold text-zinc-100">{snapshot.capturedTotal}</Text>
+          </StatCard>
+          <StatCard label="Prefilter pass">
+            <Text className="text-sm font-semibold text-green-400">{snapshot.prefilterPassed}</Text>
+          </StatCard>
+          <StatCard label="Ignored">
+            <Text className="text-sm font-semibold text-zinc-400">{snapshot.prefilterIgnored}</Text>
+          </StatCard>
+        </View>
+      </View>
+
+      <View className="mt-3 rounded-lg border border-zinc-800 bg-zinc-900/40 px-3 py-2.5">
+        <View className="flex-row items-center justify-between">
+          <Text className="text-xs text-zinc-500">Queue (notifications only)</Text>
+          <View className="flex-row items-center">
+            <View
+              className="w-2 h-2 rounded-full mr-1.5"
+              style={{ backgroundColor: queue.running ? '#22c55e' : '#71717a' }}
+            />
+            <Text className="text-xs text-zinc-400">{queue.running ? 'Processing' : 'Idle'}</Text>
+          </View>
+        </View>
+        <Text className="text-xs text-zinc-300 mt-1.5 font-mono leading-5">
+          {queue.pending} pending · {queue.processing} active · {queue.done} done · {queue.error}{' '}
+          error
+        </Text>
+      </View>
+
+      <View className="mt-3 rounded-lg border border-zinc-800/80 bg-zinc-900/30 px-3 py-2.5">
+        <Text className="text-xs text-zinc-500">Native status</Text>
+        <Text className="text-sm font-mono font-medium text-zinc-200 mt-0.5">{permissionStatus}</Text>
+        <Text className="text-[10px] text-zinc-500 mt-1 leading-4">
+          Queried live from Android — not cached. If this disagrees with system settings, pull to
+          refresh or revisit this screen after changing access.
+        </Text>
+      </View>
+
+      <View className="mt-3 rounded-lg border border-zinc-800/80 bg-zinc-900/30 px-3 py-2.5">
+        <Text className="text-xs text-zinc-500">Build</Text>
+        <Text
+          className="text-sm font-medium mt-0.5"
+          style={{ color: diagnostics.isExpoGo ? '#f87171' : '#a5b4fc' }}
+        >
+          {buildLabel}
+        </Text>
+      </View>
+
+      {!isAndroid ? (
+        <Text className="text-xs text-zinc-500 mt-3 leading-4">
+          Notification listener is Android-only.
+        </Text>
+      ) : recent.length === 0 ? (
+        <View className="mt-3 rounded-lg border border-amber-900/40 bg-amber-950/20 px-3 py-2.5">
+          <Text className="text-xs font-semibold text-amber-300/90">No captures yet</Text>
+          {diagnostics.troubleshooting.map((tip, i) => (
+            <Text key={i} className="text-xs text-amber-200/70 mt-1.5 leading-4">
+              • {tip}
+            </Text>
+          ))}
+        </View>
+      ) : (
+        <View className="mt-4">
+          <Text className="text-xs text-zinc-500 mb-2">Recent captures</Text>
+          {recent.map((entry) => (
+            <View
+              key={entry.id}
+              className="rounded-lg border border-zinc-800 bg-zinc-900/50 px-3 py-2.5 mb-2"
+            >
+              <View className="flex-row items-start justify-between gap-2">
+                <Text className="text-sm font-semibold text-zinc-100 flex-1" numberOfLines={1}>
+                  {entry.app}
+                </Text>
+                <View
+                  className="rounded px-2 py-0.5 shrink-0"
+                  style={{ backgroundColor: `${QUEUE_STATUS_COLORS[entry.queueStatus]}22` }}
+                >
+                  <Text
+                    className="text-[10px] font-semibold"
+                    style={{ color: QUEUE_STATUS_COLORS[entry.queueStatus] }}
+                  >
+                    {QUEUE_STATUS_LABELS[entry.queueStatus]}
+                  </Text>
+                </View>
+              </View>
+              <Text className="text-xs text-zinc-400 mt-1 leading-4">{entry.preview}</Text>
+              <Text className="text-[10px] text-zinc-600 mt-1">
+                {formatRelativeTime(entry.receivedAt)}
+                {!entry.prefilterPassed ? ' · prefilter rejected' : ''}
+              </Text>
+            </View>
+          ))}
+        </View>
+      )}
     </View>
   );
 }
@@ -162,10 +248,6 @@ export default function DebugPage() {
   const [logLines, setLogLines] = useState<string[]>([]);
   const [selectedProcessLog, setSelectedProcessLog] = useState<ProcessId>('debug-log');
   const scrollRef = useRef<ScrollView>(null);
-  const processStates = useDebugProcessMonitor({
-    uiActionRunning: runningId !== null,
-    visionRunning: false,
-  });
   const { clearCapturedLogs, getFormattedLogs } = useCapturedProcessLogs();
 
   const uiLocked = runningId !== null;
@@ -186,22 +268,6 @@ export default function DebugPage() {
   const handlePress = useCallback(
     async (btn: GridButton) => {
       if (runningId) return;
-
-      if (btn.isActive?.() && btn.onActivePress) {
-        setRunningId(btn.id);
-        setLogLines([]);
-        setLastResult(null);
-        try {
-          await btn.onActivePress(log);
-          setLastResult({
-            id: btn.id,
-            result: { success: true, summary: `${btn.label} stopped` },
-          });
-        } finally {
-          setRunningId(null);
-        }
-        return;
-      }
 
       setRunningId(btn.id);
       setLogLines([]);
@@ -225,27 +291,24 @@ export default function DebugPage() {
 
   return (
     <View className="flex-1 bg-black">
-      <StatusBar />
-
       <ScrollView
         ref={scrollRef}
         contentContainerClassName="pb-20"
         onContentSizeChange={() => scrollRef.current?.scrollToEnd({ animated: true })}
       >
-        <View className="px-4 pt-4 pb-2">
+        <View className="px-3 pt-4 pb-2">
           <Text className="text-white text-lg font-bold">Debug Panel</Text>
           <Text className="text-zinc-500 text-xs mt-1">
-            Tap any button to run a test. AI inference is mocked until the Go backend exists.
+            Tools for testing notification capture and the AI processing queue.
           </Text>
         </View>
 
-        <View className="flex-row flex-wrap px-3 mt-1">
+        <NotificationPipelinePanel />
+
+        <View className="flex-row flex-wrap px-3 mt-4">
           {buttons.map((btn) => {
-            const isActive = btn.isActive?.() ?? false;
             const isRunning = runningId === btn.id;
             const isDisabled = uiLocked && !isRunning;
-            const displayLabel = isActive && btn.activeLabel ? btn.activeLabel : btn.label;
-            const displayColor = isActive && btn.activeColor ? btn.activeColor : btn.color;
 
             return (
               <View key={btn.id} className="w-1/3 p-1">
@@ -255,20 +318,18 @@ export default function DebugPage() {
                   activeOpacity={0.7}
                   className="rounded-xl p-3 min-h-[80px] justify-between"
                   style={{
-                    backgroundColor: isDisabled ? '#1a1a1a' : `${displayColor}18`,
+                    backgroundColor: isDisabled ? '#1a1a1a' : `${btn.color}18`,
                     borderWidth: 1,
-                    borderColor: isRunning ? displayColor : isDisabled ? '#222' : `${displayColor}40`,
+                    borderColor: isRunning ? btn.color : isDisabled ? '#222' : `${btn.color}40`,
                     opacity: isDisabled ? 0.4 : 1,
                   }}
                 >
                   {isRunning ? (
-                    <ActivityIndicator size="small" color={displayColor} />
+                    <ActivityIndicator size="small" color={btn.color} />
                   ) : (
                     <View
                       className="w-2 h-2 rounded-full mb-1"
-                      style={{
-                        backgroundColor: isActive ? '#22c55e' : displayColor,
-                      }}
+                      style={{ backgroundColor: btn.color }}
                     />
                   )}
                   <Text
@@ -276,7 +337,7 @@ export default function DebugPage() {
                     style={{ color: isDisabled ? '#555' : '#e2e8f0' }}
                     numberOfLines={1}
                   >
-                    {displayLabel}
+                    {btn.label}
                   </Text>
                   <Text
                     className="text-[10px] mt-0.5"
@@ -289,50 +350,6 @@ export default function DebugPage() {
               </View>
             );
           })}
-        </View>
-
-        <View className="mx-4 mt-4 rounded-xl border border-zinc-800 bg-zinc-950/80 p-3">
-          <Text className="text-zinc-200 font-semibold text-sm">Background process monitor</Text>
-          <Text className="text-zinc-500 text-[10px] mt-1">
-            Live state, running process count, and duration per process.
-          </Text>
-
-          <View className="flex-row flex-wrap mt-3">
-            {processStates.map((proc) => (
-              <View key={proc.id} className="w-1/2 p-1">
-                <View
-                  className="rounded-lg border p-2"
-                  style={{
-                    borderColor: proc.state === 'running' ? '#166534' : '#3f3f46',
-                    backgroundColor: proc.state === 'running' ? '#052e16aa' : '#18181baa',
-                  }}
-                >
-                  <View className="flex-row items-center justify-between">
-                    <Text className="text-[11px] font-semibold text-zinc-200">{proc.label}</Text>
-                    <View
-                      className="w-2 h-2 rounded-full"
-                      style={{ backgroundColor: proc.state === 'running' ? '#22c55e' : '#71717a' }}
-                    />
-                  </View>
-                  <Text className="text-[10px] text-zinc-400 mt-1">
-                    State: {proc.state === 'running' ? 'Running' : 'Idle'}
-                  </Text>
-                  <Text className="text-[10px] text-zinc-400">
-                    Running for: {proc.state === 'running' ? formatDuration(proc.runningForMs) : '-'}
-                  </Text>
-                  {proc.detail ? (
-                    <Text className="text-[9px] text-zinc-500 mt-1 leading-3" numberOfLines={2}>
-                      {proc.detail}
-                    </Text>
-                  ) : null}
-                </View>
-              </View>
-            ))}
-          </View>
-
-          <Text className="text-[10px] text-zinc-500 mt-2">
-            Active: {processStates.filter((p) => p.state === 'running').length}/{processStates.length}
-          </Text>
         </View>
 
         {lastResult && (
@@ -355,7 +372,7 @@ export default function DebugPage() {
 
         <View className="mx-4 mt-4">
           <View className="flex-row justify-between items-center mb-2">
-            <Text className="text-zinc-400 text-xs font-semibold">Live process logs</Text>
+            <Text className="text-zinc-400 text-xs font-semibold">Live logs</Text>
             <TouchableOpacity onPress={clearLog}>
               <Text className="text-zinc-600 text-xs">Clear All Logs</Text>
             </TouchableOpacity>

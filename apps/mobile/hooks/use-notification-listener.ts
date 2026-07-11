@@ -1,8 +1,13 @@
 import { useCallback, useEffect, useState } from 'react';
 import { AppState, Platform } from 'react-native';
 import { createMMKV } from 'react-native-mmkv';
+import {
+  openNotificationListenerSettings,
+  readNotificationListenerPermission,
+  type NotificationListenerPermission,
+} from '@/lib/notifications/permission';
 
-export type PermissionStatus = 'authorized' | 'denied' | 'unknown' | 'unavailable';
+export type PermissionStatus = NotificationListenerPermission;
 
 export type CapturedNotification = {
   id: string;
@@ -35,6 +40,7 @@ function readStoredNotifications(): CapturedNotification[] {
 
 export function useNotificationListener() {
   const [permissionStatus, setPermissionStatus] = useState<PermissionStatus>('unknown');
+  const [lastPermissionCheckAt, setLastPermissionCheckAt] = useState<string | null>(null);
   const [notifications, setNotifications] = useState<CapturedNotification[]>([]);
   const [isCheckingPermission, setIsCheckingPermission] = useState(false);
 
@@ -47,33 +53,23 @@ export function useNotificationListener() {
   const checkPermission = useCallback(async () => {
     if (!isAndroid) {
       setPermissionStatus('unavailable');
+      setLastPermissionCheckAt(new Date().toISOString());
       return;
     }
+
     setIsCheckingPermission(true);
     try {
-      const { default: RNAndroidNotificationListener } = await import(
-        'react-native-android-notification-listener'
-      );
-      const status = await RNAndroidNotificationListener.getPermissionStatus();
-      setPermissionStatus(status as PermissionStatus);
-    } catch {
-      setPermissionStatus('unknown');
+      const status = await readNotificationListenerPermission();
+      setPermissionStatus(status);
+      setLastPermissionCheckAt(new Date().toISOString());
     } finally {
       setIsCheckingPermission(false);
     }
   }, [isAndroid]);
 
-  const requestPermission = useCallback(async () => {
-    if (!isAndroid) return;
-    try {
-      const { default: RNAndroidNotificationListener } = await import(
-        'react-native-android-notification-listener'
-      );
-      RNAndroidNotificationListener.requestPermission();
-    } catch {
-      // Module unavailable in this environment
-    }
-  }, [isAndroid]);
+  const requestPermission = useCallback(() => {
+    openNotificationListenerSettings();
+  }, []);
 
   const clearAll = useCallback(() => {
     notificationStorage.remove(STORAGE_KEY);
@@ -86,8 +82,6 @@ export function useNotificationListener() {
     setNotifications(updated);
   }, []);
 
-  // Check permission on mount and whenever the app comes back to foreground
-  // (user may have just enabled it in Settings)
   useEffect(() => {
     checkPermission();
     refresh();
@@ -104,6 +98,7 @@ export function useNotificationListener() {
 
   return {
     permissionStatus,
+    lastPermissionCheckAt,
     isCheckingPermission,
     notifications,
     checkPermission,
