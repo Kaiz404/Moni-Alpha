@@ -1,1 +1,0 @@
-- generate a test web page that tests if notif detection works. and for every passing notif call a mock tool (console.log("ur mom") or smth idk)

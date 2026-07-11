@@ -8,7 +8,7 @@ if (Platform.OS === 'android') {
   const { createMMKV } = require('react-native-mmkv');
   const {
     passesNotificationTransactionPrefilter,
-  } = require('./scripts/notification-filter');
+  } = require('./lib/notifications/notification-filter');
   const { startBackgroundProcessor } = require('./lib/ai/background-processor');
   const { captureLocationSnapshot } = require('./lib/location/location-snapshot');
 
