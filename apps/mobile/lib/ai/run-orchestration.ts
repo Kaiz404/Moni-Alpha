@@ -1,6 +1,6 @@
 /**
  * Thin orchestration: queue item → AI backend client → proposed_transaction.
- * All inference lives on the (future) Go service; see BACKEND_AI.md.
+ * All inference lives on the Go service (apps/backend); see docs/AI.md.
  */
 import type { CreateProposedTransaction } from '@repo/types';
 import { getWallets } from '@/lib/supabase/wallets';

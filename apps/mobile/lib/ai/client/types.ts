@@ -1,6 +1,6 @@
 /**
- * AI backend client types — contract for the future Go inference service.
- * See BACKEND_AI.md for prompts and orchestration notes.
+ * AI backend client types — wire contract for the Go inference service
+ * (apps/backend). Prompts and model allocation live in docs/AI.md.
  */
 
 import type { RawNotification } from '@/lib/ai/notification-types';
@@ -37,6 +37,12 @@ export type ExtractImageRequest = {
   imageUri: string;
   userContext?: string;
   wallets: AiWalletContext[];
+};
+
+/** Wire shape for POST /v1/extract/image — image data resolved at send time. */
+export type ExtractImageWireRequest = ExtractImageRequest & {
+  imageBase64?: string;
+  imageUrl?: string;
 };
 
 export type ExtractNotificationRequest = {

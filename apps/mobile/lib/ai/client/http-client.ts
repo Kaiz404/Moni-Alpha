@@ -1,11 +1,13 @@
 /**
- * Real HTTP AI client for the Go backend.
- * Not used until EXPO_PUBLIC_AI_API_URL is set; kept as the swap-in target.
+ * Real HTTP AI client for the Go backend (apps/backend).
+ * Active when EXPO_PUBLIC_AI_API_URL is set.
  */
 import { AI_API_BASE_URL, AI_BACKEND_CONFIGURED, AI_UNAVAILABLE_REASON } from './config';
+import { buildImagePayload } from './image-payload';
 import type {
   AiClient,
   ExtractImageRequest,
+  ExtractImageWireRequest,
   ExtractNotificationRequest,
   ExtractResult,
   ExtractTextRequest,
@@ -78,8 +80,12 @@ export const httpAiClient: AiClient = {
 
   async extractFromImage(req: ExtractImageRequest): Promise<ExtractResult> {
     try {
-      // Future: upload image / send base64. For now pass local URI metadata.
-      return asExtractResult(await postJson('/v1/extract/image', req));
+      const payload = await buildImagePayload(req.imageUri);
+      if (!payload) {
+        return { status: 'skipped', reason: 'Could not read the receipt image' };
+      }
+      const wireReq: ExtractImageWireRequest = { ...req, ...payload };
+      return asExtractResult(await postJson('/v1/extract/image', wireReq));
     } catch (e) {
       return {
         status: 'unavailable',

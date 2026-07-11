@@ -270,7 +270,7 @@ function ProposalForm({
         <Text className="text-sm text-gray-600 dark:text-gray-400">{sourceLabel}</Text>
         {proposal.sourceText && (
           <Text className="text-gray-900 dark:text-white text-sm mt-1" numberOfLines={3}>
-            "{proposal.sourceText}"
+            &ldquo;{proposal.sourceText}&rdquo;
           </Text>
         )}
         {proposal.sourceImageUri && (
