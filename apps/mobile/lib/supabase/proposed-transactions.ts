@@ -88,7 +88,6 @@ export async function createProposedTransaction(
   if (!userId) throw new Error('User ID required');
 
   const id = randomUUID();
-  const now = new Date().toISOString();
 
   proposedTransactions$[id].set({
     id,
@@ -114,8 +113,6 @@ export async function createProposedTransaction(
     transaction_date: data.transactionDate ?? null,
     status: data.status ?? 'pending',
     deleted: false,
-    created_at: now,
-    updated_at: now,
   });
 
   const created = getRecordValues<ProposedRow>(proposedTransactions$).find((r) => r.id === id);

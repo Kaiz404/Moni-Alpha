@@ -38,8 +38,8 @@ function mapWalletRow(w: WalletRow, currentBalance?: number) {
     icon: w.icon,
     isActive: isActive(w.is_active),
     displayOrder: w.display_order ?? 0,
-    createdAt: w.created_at,
-    updatedAt: w.updated_at,
+    createdAt: w.created_at ?? w.updated_at ?? '',
+    updatedAt: w.updated_at ?? w.created_at ?? '',
   };
 }
 
@@ -75,7 +75,6 @@ export async function createWallet(data: CreateWallet) {
   if (!userId) throw new Error('User ID required');
 
   const id = randomUUID();
-  const now = new Date().toISOString();
 
   wallets$[id].set({
     id,
@@ -89,8 +88,6 @@ export async function createWallet(data: CreateWallet) {
     is_active: true,
     display_order: 0,
     deleted: false,
-    created_at: now,
-    updated_at: now,
   });
 
   const created = getRecordValues<WalletRow>(wallets$).find((w) => w.id === id);

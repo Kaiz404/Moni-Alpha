@@ -66,8 +66,6 @@ export async function upsertCategoryBudget(
     amount,
     period: 'monthly',
     deleted: false,
-    created_at: now,
-    updated_at: now,
   });
 
   const row = getRecordValues<BudgetRow>(categoryBudgets$).find((r) => r.id === id);

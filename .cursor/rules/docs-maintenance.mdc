@@ -7,6 +7,8 @@ alwaysApply: true
 
 Docs are lean and single-source-of-truth. When a change affects any area below, update the matching doc **in the same change** — do not leave docs stale, and do not create new doc files when an existing one covers the topic.
 
+**Keep updates lean.** Match the doc’s existing tone, structure, and bullet length. State architecture-level facts in `docs/`; put file names, function names, and step-by-step implementation detail in the relevant app README (e.g. sync lifecycle in `apps/mobile/README.md`, not a long bullet in `docs/ARCHITECTURE.md`). Prefer tightening a line over adding a paragraph.
+
 | Change | Update |
 | --- | --- |
 | Architecture, sync model, app boundaries, hosting | `docs/ARCHITECTURE.md` |

@@ -2,8 +2,8 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import type { Session, User } from '@supabase/supabase-js';
 import { signInSchema, signUpSchema } from '@repo/types';
 import { supabase } from '@/lib/supabase/client';
-import { clearStore, resyncStore } from '@/lib/store';
-import { initStoreAuthSync } from '@/lib/store/auth-sync';
+import { clearStore } from '@/lib/store';
+import { authReady$, initAuthReadySync } from '@/lib/store/auth-sync';
 import {
   configureGoogleSignIn,
   signInWithGoogleNative,
@@ -33,9 +33,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     configureGoogleSignIn();
-    initStoreAuthSync(() => {
-      void resyncStore();
-    });
+    initAuthReadySync();
 
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
@@ -94,6 +92,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signOut = async () => {
+    authReady$.set(false);
     await clearStore();
     await signOutGoogleNative();
     await supabase.auth.signOut();

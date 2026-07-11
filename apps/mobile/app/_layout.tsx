@@ -12,6 +12,7 @@ import { useColorScheme } from "@/hooks/use-color-scheme";
 import { QueryProvider } from "@/lib/query/query-client";
 import { AuthProvider } from "@/lib/auth/auth-context";
 import { AuthGuard } from "@/components/auth-guard";
+import { StoreSyncActivator } from "@/components/store-sync-activator";
 import { useEffect, useRef } from "react";
 import { AppState } from "react-native";
 import { ProposalReviewModal } from "@/components/proposal-review-modal";
@@ -66,6 +67,7 @@ export default function RootLayout() {
     <QueryProvider>
       <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
         <AuthProvider>
+          <StoreSyncActivator />
           <AuthGuard>
             <Stack screenOptions={{headerShown: false}}>
               <Stack.Screen name="(auth)" options={{ headerShown: false }} />

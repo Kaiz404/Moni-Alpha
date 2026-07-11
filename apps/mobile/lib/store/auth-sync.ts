@@ -1,25 +1,24 @@
 import { observable } from '@legendapp/state';
 import { supabase } from '@/lib/supabase/client';
 
-/** True when Supabase has an authenticated user — gates Legend-State sync read/write. */
+/** True when Supabase has an authenticated user and sync observers are active. */
 export const authReady$ = observable(false);
 
 let bound = false;
 
-export function initStoreAuthSync(onSignedIn: () => void): void {
+/**
+ * Clear authReady$ as soon as the session ends.
+ * StoreSyncActivator sets it true after observers are registered on sign-in.
+ */
+export function initAuthReadySync(): void {
   if (bound) return;
   bound = true;
 
   supabase.auth.getSession().then(({ data: { session } }) => {
-    const ready = Boolean(session?.user);
-    authReady$.set(ready);
-    if (ready) onSignedIn();
+    if (!session?.user) authReady$.set(false);
   });
 
-  supabase.auth.onAuthStateChange((event, session) => {
-    authReady$.set(Boolean(session?.user));
-    if (event === 'SIGNED_IN') {
-      onSignedIn();
-    }
+  supabase.auth.onAuthStateChange((_event, session) => {
+    if (!session?.user) authReady$.set(false);
   });
 }

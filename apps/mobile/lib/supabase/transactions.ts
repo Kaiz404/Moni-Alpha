@@ -70,8 +70,8 @@ function mapTransactionRow(t: TransactionRow) {
     locationName: t.location_name,
     receiptImageUrl: t.receipt_image_url,
     metadata,
-    createdAt: t.created_at,
-    updatedAt: t.updated_at,
+    createdAt: t.created_at ?? t.updated_at ?? '',
+    updatedAt: t.updated_at ?? t.created_at ?? '',
   };
 }
 
@@ -171,7 +171,7 @@ export async function createTransaction(data: CreateTransaction) {
   }
 
   const id = randomUUID();
-  const now = new Date().toISOString();
+  const transactionDate = data.transactionDate || new Date().toISOString();
 
   transactions$[id].set({
     id,
@@ -185,15 +185,13 @@ export async function createTransaction(data: CreateTransaction) {
     description: data.description || null,
     merchant: data.merchant || null,
     notes: data.notes || null,
-    transaction_date: data.transactionDate || now,
+    transaction_date: transactionDate,
     location_latitude: resolvedLocationLatitude,
     location_longitude: resolvedLocationLongitude,
     location_name: resolvedLocationName || null,
     receipt_image_url: null,
     metadata: {},
     deleted: false,
-    created_at: now,
-    updated_at: now,
   });
 
   const result = await getTransactionById(id);

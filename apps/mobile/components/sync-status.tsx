@@ -32,11 +32,19 @@ function useSyncStatus() {
 
 export function SyncStatus({ className }: SyncStatusProps = {}) {
   const status = useSyncStatus();
-  const lastSync = useSelector(() => syncState(transactions$).get().lastSync);
+  const syncMeta = useSelector(() => {
+    const state = syncState(transactions$).get();
+    return {
+      lastSync: state.lastSync as number | undefined,
+      pendingSets: state.numPendingSets ?? 0,
+      isSyncEnabled: state.isSyncEnabled !== false,
+      errorMessage: state.error?.message as string | undefined,
+    };
+  });
 
   const formatLastSyncTime = () => {
-    if (!lastSync) return 'Never';
-    const diffMs = Date.now() - lastSync;
+    if (!syncMeta.lastSync) return 'Never';
+    const diffMs = Date.now() - syncMeta.lastSync;
     const diffMinutes = Math.floor(diffMs / (1000 * 60));
     const diffHours = Math.floor(diffMinutes / 60);
     const diffDays = Math.floor(diffHours / 24);
@@ -67,9 +75,27 @@ export function SyncStatus({ className }: SyncStatusProps = {}) {
         </View>
 
         <View className="flex-row items-center justify-between">
+          <Text className="text-sm text-gray-600 dark:text-gray-400">Remote sync:</Text>
+          <Text className="text-sm text-gray-900 dark:text-white">
+            {syncMeta.isSyncEnabled ? 'Enabled' : 'Disabled'}
+          </Text>
+        </View>
+
+        <View className="flex-row items-center justify-between">
           <Text className="text-sm text-gray-600 dark:text-gray-400">Last Sync:</Text>
           <Text className="text-sm text-gray-900 dark:text-white">{formatLastSyncTime()}</Text>
         </View>
+
+        {syncMeta.pendingSets > 0 ? (
+          <View className="flex-row items-center justify-between">
+            <Text className="text-sm text-gray-600 dark:text-gray-400">Pending uploads:</Text>
+            <Text className="text-sm text-gray-900 dark:text-white">{syncMeta.pendingSets}</Text>
+          </View>
+        ) : null}
+
+        {syncMeta.errorMessage ? (
+          <Text className="text-xs text-red-500 dark:text-red-400 mt-1">{syncMeta.errorMessage}</Text>
+        ) : null}
       </View>
     </View>
   );

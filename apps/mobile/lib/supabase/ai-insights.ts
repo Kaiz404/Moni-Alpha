@@ -130,12 +130,14 @@ export async function upsertAiInsight(args: {
     result: args.result ?? null,
     error_message: args.errorMessage ?? null,
     model_id: args.modelId,
-    updated_at: now,
     deleted: false,
   };
 
   if (existing?.id) {
-    patchRow(aiInsights$, existing.id, payload);
+    patchRow(aiInsights$, existing.id, {
+      ...payload,
+      updated_at: now,
+    });
     return;
   }
 
@@ -143,7 +145,6 @@ export async function upsertAiInsight(args: {
   aiInsights$[id].set({
     id,
     ...payload,
-    created_at: now,
   });
 }
 
