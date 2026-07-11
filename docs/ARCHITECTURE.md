@@ -68,7 +68,6 @@ apps/mobile/      Expo SDK 54 + expo-router — primary client
 apps/backend/     Go + Gin AI gateway (see apps/backend/README.md)
 apps/web/         Next.js 16 dashboard — isolated, deprioritized
 packages/types/   @repo/types — Zod schemas + inferred TS types
-packages/ui/      @repo/ui — shared React components (scaffold, unused)
 supabase/         Migrations, config.toml, storage policies
 docs/             This documentation set
 ```

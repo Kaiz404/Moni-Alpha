@@ -13,7 +13,6 @@
   },
   "dependencies": {
     "@repo/types": "workspace:*",
-    "@repo/ui": "workspace:*",
     "@supabase/ssr": "^0.8.0",
     "@supabase/supabase-js": "^2.47.10",
     "@tanstack/react-query": "^5.64.3",
