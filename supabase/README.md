@@ -1,169 +1,34 @@
-# Supabase Setup Instructions
+# Supabase
 
-## Quick Setup (via Dashboard)
+Hosted Supabase project: Postgres, Auth, Storage, Realtime. Schema reference: [docs/DATABASE.md](../docs/DATABASE.md).
 
-1. **Create Project**
-   - Go to [Supabase Dashboard](https://app.supabase.com/)
-   - Click "New Project"
-   - Fill in project details
-   - Wait for provisioning
-
-2. **Run Migration**
-   - In Supabase Dashboard, go to **SQL Editor**
-   - Click "New Query"
-   - Copy entire contents of `migrations/20260214000000_initial_schema.sql`
-   - Paste and run
-
-3. **Verify Setup**
-   ```sql
-   -- Check tables
-   SELECT table_name FROM information_schema.tables 
-   WHERE table_schema = 'public' 
-   ORDER BY table_name;
-   
-   -- Check RLS is enabled
-   SELECT schemaname, tablename, rowsecurity 
-   FROM pg_tables 
-   WHERE schemaname = 'public';
-   
-   -- Check seed data
-   SELECT COUNT(*) FROM categories WHERE user_id IS NULL;
-   -- Should return 18 (13 expense + 5 income categories)
-   ```
-
-4. **Get API Keys**
-   - Go to **Settings** → **API**
-   - Copy:
-     - Project URL
-     - `anon` public key
-     - `service_role` key (keep secret!)
-
-5. **Configure Environment Variables**
-   - Update `apps/web/.env.local`
-   - Update `apps/mobile/.env`
-   (See main README.md for details)
-
-## Advanced Setup (via CLI)
-
-### Install Supabase CLI
+## Migrations
 
 ```bash
-npm install -g supabase
+npx supabase link --project-ref <project-ref>
+npx supabase migration new <name>
+npx supabase db push
 ```
 
-### Link to Project
+Migrations are append-only. Synced tables need `created_at`/`updated_at`, a `deleted` soft-delete flag, RLS, and realtime publication (see `20260707000000_legend_state_prep.sql`).
 
-```bash
-# From project root
-supabase link --project-ref your-project-ref
-```
+## API keys
 
-### Apply Migrations
+Use the new key system (Dashboard → Settings → API Keys):
 
-```bash
-supabase db push
-```
+- `sb_publishable_...` → mobile (`EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY`) and web (`NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`)
+- `sb_secret_...` → server-side scripts only (`SUPABASE_SECRET_KEY`); sent via the `apikey` header, never `Authorization: Bearer`
 
-### Generate TypeScript Types
+Legacy `anon` / `service_role` JWT keys should stay deactivated once nothing uses them (Dashboard → Settings → API Keys → legacy tab; reversible).
 
-```bash
-supabase gen types typescript --linked > apps/web/src/lib/database.types.ts
-```
+## JWT signing
 
-## Database Structure
+Auth signs user access tokens with an **ES256 asymmetric key**. The Go backend verifies tokens against `https://<project-ref>.supabase.co/auth/v1/.well-known/jwks.json` — don't revert to the legacy HS256 shared secret or backend auth breaks.
 
-### Tables Created
-- `profiles` - User profiles
-- `wallets` - Financial accounts
-- `categories` - Transaction categories
-- `tags` - User tags
-- `transactions` - Financial transactions
-- `transaction_tags` - Tag associations
+## Storage
 
-### System Categories
-18 default categories are seeded:
-- 13 expense categories (Food, Transport, etc.)
-- 5 income categories (Salary, Freelance, etc.)
+Bucket `receipts` — receipt images at `{userId}/{proposalId}.jpg`, policies restrict access by `auth.uid()` prefix (`20260323000000_storage_receipts_bucket.sql`). If mobile logs `Bucket not found`, push migrations.
 
-### Row Level Security (RLS)
-All tables have RLS enabled with policies ensuring users can only access their own data.
+## Seeded data
 
-## Testing the Setup
-
-### Create Test User
-
-```sql
--- Via Supabase Dashboard → Authentication → Add User
--- Or use the auth API endpoints
-```
-
-### Insert Test Data
-
-```sql
--- Insert profile
-INSERT INTO profiles (id, display_name)
-VALUES ('user-id-here', 'Test User');
-
--- Insert wallet
-INSERT INTO wallets (user_id, name, type, color, icon, initial_balance)
-VALUES ('user-id-here', 'Test Wallet', 'bank', '#0066FF', '🏦', 1000);
-
--- Query with RLS
-SET request.jwt.claim.sub = 'user-id-here';
-SELECT * FROM wallets;
-```
-
-## Troubleshooting
-
-### RLS Not Working
-```sql
--- Check if RLS is enabled
-SELECT schemaname, tablename, rowsecurity 
-FROM pg_tables 
-WHERE schemaname = 'public';
-
--- Enable RLS if missing
-ALTER TABLE table_name ENABLE ROW LEVEL SECURITY;
-```
-
-### Missing System Categories
-```sql
--- Re-run seed data from migration file
--- Or manually insert categories
-```
-
-### Migration Errors
-- Ensure UUID extension is enabled
-- Check for existing tables/types
-- Run `DROP TABLE` commands if resetting
-
-## Backup
-
-Supabase provides automatic backups. For manual backups:
-
-```bash
-# Via CLI
-supabase db dump -f backup.sql
-
-# Restore
-psql -h db.xxx.supabase.co -p 5432 -U postgres -d postgres -f backup.sql
-```
-
-## Storage (receipt images)
-
-The mobile app uploads receipt images to a Storage bucket named **`receipts`** (path: `{userId}/{proposalId}.jpg`).
-
-If you see **`Bucket not found`** in logs, apply the migration that creates the bucket and policies:
-
-- `migrations/20260323000000_storage_receipts_bucket.sql`
-
-Or in **Dashboard → Storage → New bucket**, create `receipts` (public read optional; policies in the migration restrict access by `auth.uid()` prefix).
-
-## Next Steps
-
-1. Configure API keys in apps
-2. Test authentication flow
-3. Create first wallet via web/mobile app
-4. Verify RLS policies work
-5. Test sync functionality
-6. Apply storage migration if using receipt image uploads from mobile
+18 system categories (`user_id IS NULL`) from the initial schema; profile rows auto-created on signup by trigger.

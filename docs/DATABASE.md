@@ -1,0 +1,50 @@
+# Database
+
+Single PostgreSQL database on Supabase. Migrations live in `supabase/migrations/` and are the source of truth — this doc is the map, not the territory.
+
+## Tables
+
+| Table | Purpose | RLS |
+| --- | --- | --- |
+| `profiles` | User profile, auto-created on signup (trigger) | Own row only |
+| `wallets` | Financial accounts (bank, cash, e-wallet, …) | Own rows |
+| `categories` | System categories (`user_id IS NULL`, 18 seeded) + user categories | System readable by all; own rows writable |
+| `tags` | User-defined tags | Own rows |
+| `transactions` | The ledger. Includes optional `location_latitude` / `location_longitude` / `location_name` for the heatmap | Own rows |
+| `transaction_tags` | Transaction ↔ tag junction (has own `id` PK for sync) | Via transaction ownership |
+| `proposed_transactions` | AI-extracted candidates pending user review (`status`: pending / approved / rejected). Carries source metadata (`source_type` text/image/notification, `source_text`, `source_image_uri`, notification fields) and AI metadata (`ai_reasoning`, `ai_confidence`, `wallet_hint`, `category_hint`) | Own rows |
+| `ai_insights` | Cached insight payloads (`feature_key`, `context_key`, `status`, `result` JSONB validated against `@repo/types` schemas) | Own rows |
+| `category_budgets` | Monthly cap per category | Own rows |
+
+**View:** `wallet_balances` — computed balance per wallet (initial balance + transaction deltas).
+
+## Sync-related columns
+
+The Legend-State ↔ Supabase sync (`supabase/migrations/20260707000000_legend_state_prep.sql`) requires on every synced table:
+
+- `created_at` / `updated_at` timestamps (auto-set by trigger)
+- `deleted boolean` — soft delete; clients filter `deleted = false`, hard deletes never happen from the app
+- Realtime publication enabled (postgres_changes)
+
+When adding a synced table: add those columns, enable RLS + realtime, then register a new observable in `apps/mobile/lib/store/index.ts`.
+
+## Conventions
+
+- UUID primary keys (`gen_random_uuid()`)
+- Money as `DECIMAL(12,2)`; currency as `CHAR(3)` ISO code
+- `transaction_type` enum: `income` | `expense` | `transfer`
+- All user tables reference `auth.users(id) ON DELETE CASCADE`
+- RLS on everything; policies scope to `auth.uid()`. Clients use the publishable key + user JWT, so RLS is always in force.
+
+## Storage
+
+Bucket `receipts` (`supabase/migrations/20260323000000_storage_receipts_bucket.sql`): receipt images uploaded as `{userId}/{proposalId}.jpg`. Mobile saves locally first, uploads via a background queue (`apps/mobile/lib/receipts/upload-queue.ts`), then updates the proposal's `source_image_uri` to the remote URL.
+
+## Applying changes
+
+```bash
+npx supabase migration new <name>   # create a migration
+npx supabase db push                # apply to linked project
+```
+
+Keep migrations append-only. After schema changes, update `@repo/types` schemas and (if synced) the Legend-State store.
