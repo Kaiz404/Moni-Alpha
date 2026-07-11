@@ -1,0 +1,27 @@
+---
+description: Documentation map and the rule that code changes update docs in the same change
+alwaysApply: true
+---
+
+# Documentation Maintenance
+
+Docs are lean and single-source-of-truth. When a change affects any area below, update the matching doc **in the same change** — do not leave docs stale, and do not create new doc files when an existing one covers the topic.
+
+| Change | Update |
+| --- | --- |
+| Architecture, sync model, app boundaries, hosting | `docs/ARCHITECTURE.md` |
+| Env vars, setup steps, tooling, keys | `docs/SETUP.md` + relevant `.env.example` |
+| Migrations, tables, RLS, storage buckets | `docs/DATABASE.md` |
+| AI endpoints, models, prompts, rate limits, wire contract | `docs/AI.md` |
+| Backend endpoints/auth/deploy | `apps/backend/README.md` |
+| Mobile structure or data flow | `apps/mobile/README.md` |
+| Web dashboard | `apps/web/README.md` |
+| Supabase workflow/keys | `supabase/README.md` |
+
+Also keep in sync:
+
+- AI wire contract: `apps/mobile/lib/ai/client/types.ts` ↔ `apps/backend/internal/extract/types.go` (manual mirror — changing one requires changing the other and noting it in `docs/AI.md`)
+- New/changed shared shapes → `packages/types` Zod schemas first, then consumers
+- If a cursor rule in `.cursor/rules/` states something this change makes false, fix the rule too
+
+Never resurrect deleted docs (PROJECT_CONTEXT.md, docs/SETUP_GUIDE.md, etc.) — git history has them.

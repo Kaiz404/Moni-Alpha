@@ -1,10 +1,12 @@
 ---
-description: Next.js App Router patterns for the Moni web app (dashboard + REST API)
+description: Next.js App Router patterns for the Moni web app (isolated dashboard)
 globs: apps/web/**
 alwaysApply: false
 ---
 
 # Web App – Next.js App Router Patterns
+
+**The web app is isolated.** Its API routes serve only its own dashboard pages — the mobile app does NOT call them (mobile talks to Supabase directly). Web is deprioritized vs mobile + Go backend.
 
 ## Directory Structure
 
@@ -20,13 +22,12 @@ src/app/
 │   ├── wallets/
 │   ├── analytics/
 │   └── settings/
-└── api/                    - REST API route handlers
+└── api/                    - REST route handlers (web dashboard only)
     ├── auth/
     ├── wallets/[id]/route.ts
     ├── transactions/[id]/route.ts
     ├── categories/route.ts
-    ├── analytics/overview/route.ts
-    └── sync/pull|push/route.ts
+    └── analytics/overview/route.ts
 ```
 
 ## API Route Handler Pattern
@@ -164,7 +165,7 @@ export function useRealtimeTransactions(userId: string) {
 
 ## Row Level Security
 
-Never bypass RLS. All Supabase queries automatically scope to the authenticated user. Never use `service_role` key in client-side code.
+Never bypass RLS. All Supabase queries automatically scope to the authenticated user. Never use the secret key (`sb_secret_...`) in client-side code — it's for server-side scripts only.
 
 ## Styling
 

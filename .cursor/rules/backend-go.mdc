@@ -1,0 +1,30 @@
+---
+description: Go AI backend patterns — Gin conventions, Groq usage, auth
+globs: apps/backend/**
+alwaysApply: false
+---
+
+# Go AI Backend – apps/backend
+
+Stateless Gin service: Supabase JWT in → Groq inference → structured extraction out. No database access, ever — mobile persists results itself.
+
+## Layout
+
+```
+cmd/server/         main: config, routes, graceful shutdown
+internal/config/    env loading (SUPABASE_URL, GROQ_API_KEY)
+internal/auth/      JWKS ES256 verification (lestrrat-go/jwx) + per-user rate limit
+internal/groq/      HTTP client, model constants, JSON-mode helpers
+internal/extract/   text/image/notification extraction + wallet ladder + prompts
+internal/insights/  finance assistant (3 parallel agents)
+```
+
+## Conventions
+
+- Handlers bind with `ShouldBindJSON`; invalid body → `400 {"error": "...", "details": ...}`. All error responses use `{ error, details? }`.
+- Extraction endpoints return HTTP 200 with a discriminated `Result` (`ok | skipped | unavailable`) — model/provider failures become `unavailable`, NOT 5xx, because the mobile queue treats `unavailable` as retryable.
+- Wire structs in `internal/extract/types.go` use camelCase JSON and must mirror `apps/mobile/lib/ai/client/types.ts`. LLM-facing schemas are snake_case (see prompts) and mapped explicitly.
+- Model choice via constants in `internal/groq/models.go` — fast model for live flows, quality model for fallback/insights, vision model for images. Don't inline model IDs elsewhere.
+- LLM calls: `groq.CompleteJSON` (JSON mode + fence-stripping + unmarshal). Live flows keep `MaxRetryWait` ≤ 5s; background flows may wait longer on 429.
+- Wallet resolution: deterministic ladder first, LLM last, `nil` when unsure (user picks in review modal). Never invent wallet IDs — validate against the provided list.
+- Tests colocated `*_test.go`; fake Groq with `httptest`; auth tests generate a local ES256 JWK. Run `go test ./...` and `go vet ./...` before finishing.

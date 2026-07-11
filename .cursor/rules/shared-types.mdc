@@ -69,8 +69,10 @@ packages/types/src/
 ├── category.ts
 ├── tag.ts
 ├── user.ts
-├── analytics.ts    - Dashboard overview response types
-└── sync.ts         - SyncPushRequest, SyncPushResponse, SyncPullResponse
+├── analytics.ts              - Dashboard overview response types
+├── proposed-transaction.ts   - AI proposal schemas
+├── ai-insight.ts             - Insight card / finance assistant payload schemas
+└── category-budget.ts        - Budget schemas
 ```
 
 Always re-export from `index.ts` after adding a new file.

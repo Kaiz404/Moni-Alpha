@@ -1,133 +1,48 @@
 ---
-description: Expo React Native patterns for the Moni mobile app
+description: Mobile app patterns — Legend-State sync, MMKV, expo-router, AI queue
 globs: apps/mobile/**
 alwaysApply: false
 ---
 
-# Mobile App – Expo React Native Patterns
+# Mobile App – Expo Patterns
 
-## File-Based Routing (expo-router)
+## Data layer: Legend-State → Supabase (no SQLite, no Drizzle, no TanStack Query for app data)
 
-Route groups: `(auth)/` for unauthenticated, `(app)/` for authenticated.
-
-```typescript
-// apps/mobile/app/(app)/(home)/transaction/new.tsx
-import { Stack } from 'expo-router';
-
-export default function NewTransactionScreen() {
-  return (
-    <>
-      <Stack.Screen options={{ title: 'New Transaction' }} />
-      <TransactionForm />
-    </>
-  );
-}
-```
-
-Auth guard lives in `app/_layout.tsx` — redirect based on `segments[0]`.
-
-## Database (Drizzle + expo-sqlite)
-
-Always use `drizzle-orm/expo-sqlite`, not the generic Drizzle package.
-
-**SQLite column types** (different from PostgreSQL):
-- `text('id')` for UUIDs (not `uuid`)
-- `integer('created_at', { mode: 'timestamp' })` for timestamps
-- `real('amount')` for decimals (not `decimal`)
-- `integer('is_synced', { mode: 'boolean' })` for booleans
+All synced data lives in Legend-State observables (`lib/store/index.ts`), persisted to MMKV and synced to Supabase via `syncedSupabase`. Never call the Supabase REST API directly for CRUD — mutate the observables.
 
 ```typescript
-// apps/mobile/db/client.ts
-import { drizzle } from 'drizzle-orm/expo-sqlite';
-import { openDatabaseSync } from 'expo-sqlite';
-import * as schema from './schema';
+// Read (reactive) — components use the observable hooks
+import { wallets$ } from '@/lib/store';
+import { use$ } from '@legendapp/state/react';
+const wallets = use$(wallets$);
 
-const expoDb = openDatabaseSync('moni.db', { enableChangeListener: true });
-export const db = drizzle(expoDb, { schema });
+// Write — via helpers in lib/supabase/*.ts which set() into the store;
+// Legend-State syncs to Postgres in the background
+wallets$[id].set({ ...wallet, name: 'Updated' });
+
+// Delete — soft delete only (synced tables have a `deleted` column)
 ```
 
-Use `useLiveQuery` for reactive UI (auto-updates when data changes):
+New synced table checklist: migration adds `created_at`/`updated_at`/`deleted` + RLS + realtime → add observable in `lib/store/index.ts` → CRUD helper in `lib/supabase/`.
 
-```typescript
-import { useLiveQuery } from 'drizzle-orm/expo-sqlite';
+## MMKV instances (lib/mmkv/)
 
-const { data } = useLiveQuery(
-  db.select().from(transactions).orderBy(desc(transactions.transactionDate))
-);
-```
+- `auth` — Supabase session storage (client uses `EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY`)
+- `legend-store` — observable persistence
+- `image-uploads` — receipt upload queue
 
-## Local-First Write Pattern
+## AI pipeline (lib/ai/)
 
-Always write to SQLite first, then sync in background:
+Input → `processing-queue.ts` (MMKV) → `background-processor.ts` (Android FG service) → `run-orchestration.ts` → `lib/ai/client` (HTTP → Go backend when `EXPO_PUBLIC_AI_API_URL` set, mock otherwise) → `proposed_transactions` → review modal.
 
-```typescript
-// 1. Insert locally with isSynced: false
-await db.insert(transactions).values({ ...data, isSynced: false, localCreatedAt: Date.now() });
+- Client results are `{ status: 'ok' | 'skipped' | 'unavailable' }` — never throw across this boundary
+- Wire types in `lib/ai/client/types.ts` must match `apps/backend/internal/extract/types.go`
+- Notification prefilter is deterministic and on-device: `lib/notifications/notification-filter.js` (CommonJS — required by the headless task in `index.js` before expo-router loads)
 
-// 2. UI updates immediately via useLiveQuery
+## Routing (expo-router)
 
-// 3. Background sync
-try {
-  await fetchApi('/api/transactions', { method: 'POST', body: JSON.stringify(data) });
-  await db.update(transactions).set({ isSynced: true }).where(eq(transactions.id, id));
-} catch {
-  // Will retry on next sync interval
-}
-```
+`app/(auth)` unauthenticated; `app/(tabs)` main tabs (Wallets / Summary / Moni Agent / Profile); `app/(routes)` stack screens. Auth guard in `app/_layout.tsx`.
 
-## API Client (TanStack Query)
+## Styling
 
-```typescript
-// apps/mobile/lib/api.ts — always attach Bearer token
-async function fetchApi<T>(endpoint: string, options?: RequestInit): Promise<T> {
-  const session = await getSupabaseSession();
-  const response = await fetch(`${API_URL}${endpoint}`, {
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${session?.access_token}`,
-      ...options?.headers,
-    },
-  });
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error || 'API request failed');
-  }
-  return response.json();
-}
-```
-
-Use `useQuery` for reads, `useMutation` + `invalidateQueries` for writes. Use `useInfiniteQuery` for paginated lists with `FlashList`.
-
-## Styling (Tailwind via Uniwind)
-
-Use Tailwind class names via the `className` prop. Use `cn()` from `@/lib/utils` for conditional classes:
-
-```typescript
-import { Pressable, Text } from 'react-native';
-import { cn } from '@/lib/utils';
-
-<Pressable className={cn('px-4 py-3 rounded-lg bg-blue-600', disabled && 'opacity-50')}>
-  <Text className="text-white font-semibold text-center">{label}</Text>
-</Pressable>
-```
-
-## Authentication (Supabase + SecureStore)
-
-Store tokens with `expo-secure-store`, not AsyncStorage. Auth client lives in `apps/mobile/lib/supabase.ts`.
-
-## Migrations
-
-Run `pnpm drizzle-kit generate` in `apps/mobile/` after schema changes. Migrations apply automatically via `useMigrations` hook in `app/_layout.tsx`.
-
-## Component Structure
-
-```
-components/ui/          - Base components (Button, Input, Card, Modal)
-components/transactions/ - Transaction-specific components
-components/wallets/      - Wallet-specific components
-components/analytics/    - Chart components
-components/shared/       - LoadingSpinner, EmptyState, ErrorBoundary
-```
-
-Keep components small and focused. Extract reusable logic into hooks in `hooks/`.
+Tailwind via Uniwind `className`. Native modules in use → always test with a dev client (`pnpm --filter moni android`), never Expo Go.
