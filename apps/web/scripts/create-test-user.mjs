@@ -12,12 +12,18 @@ if (typeof process === 'undefined') {
 }
 
 import { createClient } from '@supabase/supabase-js';
-import { readFileSync } from 'fs';
+import { existsSync, readFileSync } from 'fs';
 import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const envPath = resolve(__dirname, '../.env.local');
+const envPath = ['../.env.local', '../.env']
+  .map((p) => resolve(__dirname, p))
+  .find((p) => existsSync(p));
+if (!envPath) {
+  console.error('No .env.local or .env found in apps/web');
+  process.exit(1);
+}
 const env = Object.fromEntries(
   readFileSync(envPath, 'utf8')
     .split('\n')
@@ -29,14 +35,14 @@ const env = Object.fromEntries(
 );
 
 const supabaseUrl = env.NEXT_PUBLIC_SUPABASE_URL;
-const serviceRoleKey = env.SUPABASE_SERVICE_ROLE_KEY;
+const secretKey = env.SUPABASE_SECRET_KEY;
 
-if (!supabaseUrl || !serviceRoleKey) {
-  console.error('Missing SUPABASE_SERVICE_ROLE_KEY or NEXT_PUBLIC_SUPABASE_URL in .env.local');
+if (!supabaseUrl || !secretKey) {
+  console.error('Missing SUPABASE_SECRET_KEY or NEXT_PUBLIC_SUPABASE_URL in .env.local');
   process.exit(1);
 }
 
-const supabase = createClient(supabaseUrl, serviceRoleKey, { auth: { autoRefreshToken: false, persistSession: false } });
+const supabase = createClient(supabaseUrl, secretKey, { auth: { autoRefreshToken: false, persistSession: false } });
 
 const email = process.argv[2] || `test-${Date.now()}@example.com`;
 const password = process.argv[3] || 'Test1234';
@@ -70,9 +76,6 @@ async function main() {
   console.log('User created successfully!');
   console.log('Email:', email);
   console.log('Password:', password);
-  console.log('');
-  console.log('Run: ./scripts/test-api.sh');
-  console.log('Or: TEST_EMAIL=' + email + ' ./scripts/test-api.sh');
 }
 
 await main();

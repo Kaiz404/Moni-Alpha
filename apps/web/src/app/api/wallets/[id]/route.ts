@@ -67,7 +67,7 @@ export async function PUT(
     const body = await request.json();
     const updates = updateWalletSchema.parse(body);
 
-    const updateData: any = {};
+    const updateData: Record<string, unknown> = {};
     if (updates.name !== undefined) updateData.name = updates.name;
     if (updates.type !== undefined) updateData.type = updates.type;
     if (updates.currency !== undefined) updateData.currency = updates.currency;

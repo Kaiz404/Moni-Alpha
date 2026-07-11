@@ -51,7 +51,7 @@ export async function PUT(request: NextRequest) {
     const body = await request.json();
     const updates = updateProfileSchema.parse(body);
 
-    const updateData: any = {};
+    const updateData: Record<string, unknown> = {};
     if (updates.displayName !== undefined) {
       updateData.display_name = updates.displayName;
     }

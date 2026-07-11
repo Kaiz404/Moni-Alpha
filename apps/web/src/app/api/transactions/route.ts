@@ -29,8 +29,8 @@ export async function GET(request: NextRequest) {
       search: searchParams.get('search') || undefined,
       page: searchParams.get('page') ? parseInt(searchParams.get('page')!) : 1,
       limit: searchParams.get('limit') ? parseInt(searchParams.get('limit')!) : 50,
-      sortBy: searchParams.get('sortBy') as any || 'date',
-      sortOrder: searchParams.get('sortOrder') as any || 'desc',
+      sortBy: searchParams.get('sortBy') ?? 'date',
+      sortOrder: searchParams.get('sortOrder') ?? 'desc',
     });
 
     let query = supabase
