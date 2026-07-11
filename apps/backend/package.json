@@ -1,0 +1,12 @@
+{
+  "name": "backend",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "go run ./cmd/server",
+    "build": "go build -o bin/ ./cmd/server",
+    "lint": "go vet ./...",
+    "check-types": "go build ./...",
+    "test": "go test ./..."
+  }
+}

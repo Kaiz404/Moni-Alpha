@@ -5,7 +5,10 @@
     "build": {
       "dependsOn": ["^build"],
       "inputs": ["$TURBO_DEFAULT$", ".env*"],
-      "outputs": [".next/**", "!.next/cache/**"]
+      "outputs": [".next/**", "!.next/cache/**", "bin/**"]
+    },
+    "test": {
+      "dependsOn": ["^build"]
     },
     "lint": {
       "dependsOn": ["^lint"]
@@ -18,5 +21,14 @@
       "persistent": true
     }
   },
-  "globalEnv": ["NODE_ENV"]
+  "globalEnv": ["NODE_ENV"],
+  "globalPassThroughEnv": [
+    "GOCACHE",
+    "GOPATH",
+    "GOMODCACHE",
+    "GOROOT",
+    "LOCALAPPDATA",
+    "USERPROFILE",
+    "HOME"
+  ]
 }
