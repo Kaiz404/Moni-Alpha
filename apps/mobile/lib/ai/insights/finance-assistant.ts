@@ -25,7 +25,7 @@ export type FinanceAssistantTrace = {
   modelId: string | null;
 };
 
-export type FinanceAssistantOrchestrationResult = {
+export type FinanceAssistantResult = {
   ok: boolean;
   inputHash: string;
   snapshot: FinanceAssistantToolSnapshot;
@@ -179,13 +179,13 @@ export async function computeFinanceAssistantInputHash(
   return { inputHash, snapshot };
 }
 
-export async function runFinanceAssistantOrchestration(
+export async function runFinanceAssistant(
   transactions: TxForMetrics[],
   categoryMap: Record<string, string>,
   budgets: BudgetRow[],
   currencyHint: string,
   now: Date = new Date(),
-): Promise<FinanceAssistantOrchestrationResult> {
+): Promise<FinanceAssistantResult> {
   const trace: FinanceAssistantTrace = { stages: [], modelId: null };
   const snapshot = buildFinanceAssistantToolSnapshot(
     transactions,

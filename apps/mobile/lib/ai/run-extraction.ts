@@ -1,5 +1,5 @@
 /**
- * Thin orchestration: queue item → AI backend client → proposed_transaction.
+ * Thin extraction runner: queue item → AI backend client → proposed_transaction.
  * All inference lives on the Go service (apps/backend); see docs/AI.md.
  */
 import type { CreateProposedTransaction } from '@repo/types';
@@ -12,14 +12,14 @@ import type { LocationSnapshot } from '@/lib/location/location-snapshot';
 import { passesTransactionPrefilter } from '@/lib/ai/notification-types';
 
 export type TraceEvent = {
-  stage: 'orchestrator' | 'extractor' | 'creator';
+  stage: 'extraction' | 'extractor' | 'creator';
   event: string;
   details?: Record<string, unknown>;
 };
 
 export type TraceLogger = (event: TraceEvent) => void;
 
-export type OrchestrationResult = {
+export type RunExtractionResult = {
   created: boolean;
   skipped: boolean;
   reason: string;
@@ -35,7 +35,7 @@ function trace(
   try {
     logger?.({ stage, event, details });
   } catch {
-    /* never break orchestration */
+    /* never break extraction */
   }
 }
 
@@ -97,7 +97,7 @@ async function persistProposal(
   proposal: CreateProposedTransaction,
   locationSnapshot: LocationSnapshot | null | undefined,
   logger?: TraceLogger,
-): Promise<OrchestrationResult> {
+): Promise<RunExtractionResult> {
   try {
     const created = await createProposedTransaction(proposal);
     const proposalId = (created as { id?: string })?.id;
@@ -125,7 +125,7 @@ async function persistProposal(
 function mapClientResult(
   result: ExtractResult,
   logger?: TraceLogger,
-): OrchestrationResult | Extract<ExtractResult, { status: 'ok' }> {
+): RunExtractionResult | Extract<ExtractResult, { status: 'ok' }> {
   if (result.status === 'ok') {
     trace(logger, 'extractor', 'ok', {
       amount: result.extraction.amount,
@@ -137,14 +137,14 @@ function mapClientResult(
   return { created: false, skipped: true, reason: result.reason };
 }
 
-export async function runOrchestration(
+export async function runExtraction(
   item: ProcessingQueueItem,
   options?: { trace?: TraceLogger },
-): Promise<OrchestrationResult> {
+): Promise<RunExtractionResult> {
   const logger = options?.trace;
   const client = getAiClient();
 
-  trace(logger, 'orchestrator', 'start', { type: item.type, id: item.id });
+  trace(logger, 'extraction', 'start', { type: item.type, id: item.id });
 
   try {
     const wallets = await loadWalletContext();
@@ -163,7 +163,7 @@ export async function runOrchestration(
             logger,
           );
         }
-        return mapped as OrchestrationResult;
+        return mapped as RunExtractionResult;
       }
 
       case 'image': {
@@ -187,7 +187,7 @@ export async function runOrchestration(
             logger,
           );
         }
-        return mapped as OrchestrationResult;
+        return mapped as RunExtractionResult;
       }
 
       case 'notification': {
@@ -229,7 +229,7 @@ export async function runOrchestration(
             logger,
           );
         }
-        return mapped as OrchestrationResult;
+        return mapped as RunExtractionResult;
       }
 
       default:
@@ -237,7 +237,7 @@ export async function runOrchestration(
     }
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
-    trace(logger, 'orchestrator', 'fatal-error', { message: msg });
-    return { created: false, skipped: true, reason: `Orchestration error: ${msg}` };
+    trace(logger, 'extraction', 'fatal-error', { message: msg });
+    return { created: false, skipped: true, reason: `Extraction error: ${msg}` };
   }
 }

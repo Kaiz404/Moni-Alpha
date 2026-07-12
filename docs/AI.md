@@ -8,7 +8,7 @@ Moni turns natural language, receipt photos, and (on Android) bank notifications
 Input (chat text / receipt photo / notification)
   → MMKV processing queue                 apps/mobile/lib/ai/processing-queue.ts
   → background processor (Android FG svc) apps/mobile/lib/ai/background-processor.ts
-  → run-orchestration                     apps/mobile/lib/ai/run-orchestration.ts
+  → run-extraction                        apps/mobile/lib/ai/run-extraction.ts
   → AiClient                              apps/mobile/lib/ai/client/
   → Go backend                            apps/backend (Gin, stateless)
   → Groq
@@ -65,7 +65,7 @@ All calls use Groq's OpenAI-compatible endpoint with `response_format: json_obje
   4. `walletId = null` → user picks in the review modal
 - For **transfers**, resolution runs twice: source (`wallet_id` + context) and destination (`transfer_to_wallet_id` + hint only).
 - **Text transfer patterns:** deposits ("deposited cash to bank"), withdrawals, top-ups, and explicit "from X to Y" moves are transfers between wallets in `AVAILABLE_WALLETS` — not income. The model uses wallet names/types to infer direction (e.g. cash → bank for deposits).
-- **Notification rule:** mobile skips proposals without a resolved wallet (`run-orchestration.ts`), so unattributable notifications never create noise.
+- **Notification rule:** mobile skips proposals without a resolved wallet (`run-extraction.ts`), so unattributable notifications never create noise.
 - **Notification prefilter stays on-device** (`apps/mobile/lib/notifications/notification-filter.js`): requires a money-amount signal AND a transfer signal before an LLM ever sees it. Test suite: `pnpm --filter moni test:notification-detection`.
 - **Receipt images:** mobile downscales/compresses (`lib/ai/client/image-payload.ts`), sends base64 for local files or the URL if already uploaded to the `receipts` Storage bucket.
 

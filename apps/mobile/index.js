@@ -73,7 +73,7 @@ if (Platform.OS === 'android') {
         appendToList(processingStorage, UNIFIED_QUEUE_KEY, queueItem, MAX_STORED);
 
         // Kick off processing immediately from headless context so notification
-        // orchestration runs even when the app UI is not open.
+        // extraction runs even when the app UI is not open.
         await startBackgroundProcessor().catch((e) => {
           console.error('[NotifCapture] processor start failed:', e?.message ?? e);
         });

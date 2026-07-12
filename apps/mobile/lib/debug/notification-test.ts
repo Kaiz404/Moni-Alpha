@@ -1,4 +1,4 @@
-import { runOrchestration } from '@/lib/ai/run-orchestration';
+import { runExtraction } from '@/lib/ai/run-extraction';
 import type { RawNotification } from '@/lib/ai/notification-types';
 import type { LogFn, DebugTestResult } from './types';
 
@@ -37,7 +37,7 @@ const SAMPLE_NOTIFICATIONS: TestCase[] = [
 ];
 
 export async function runNotificationTests(log: LogFn): Promise<DebugTestResult> {
-  log('Running notification orchestration via AI client (mock until Go backend exists)...');
+  log('Running notification extraction via AI client (mock until Go backend exists)...');
 
   let passed = 0;
   for (const tc of SAMPLE_NOTIFICATIONS) {
@@ -50,7 +50,7 @@ export async function runNotificationTests(log: LogFn): Promise<DebugTestResult>
       receivedAt: new Date().toISOString(),
     };
 
-    const result = await runOrchestration({
+    const result = await runExtraction({
       id: `queue-${tc.id}`,
       type: 'notification',
       notification,

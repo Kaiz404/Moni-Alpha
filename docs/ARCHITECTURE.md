@@ -44,7 +44,7 @@ MMKV processing queue (lib/ai/processing-queue.ts)
 background-processor.ts (Android foreground service)
         │
         ▼
-run-orchestration.ts → AiClient (lib/ai/client) ──HTTP──► Go backend ──► Groq
+run-extraction.ts → AiClient (lib/ai/client) ──HTTP──► Go backend ──► Groq
         │
         ▼
 proposed_transactions (unreviewed)

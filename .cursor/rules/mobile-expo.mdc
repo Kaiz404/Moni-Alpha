@@ -33,7 +33,7 @@ New synced table checklist: migration adds `created_at`/`updated_at`/`deleted` +
 
 ## AI pipeline (lib/ai/)
 
-Input → `processing-queue.ts` (MMKV) → `background-processor.ts` (Android FG service) → `run-orchestration.ts` → `lib/ai/client` (HTTP → Go backend when `EXPO_PUBLIC_AI_API_URL` set, mock otherwise) → `proposed_transactions` → review modal.
+Input → `processing-queue.ts` (MMKV) → `background-processor.ts` (Android FG service) → `run-extraction.ts` → `lib/ai/client` (HTTP → Go backend when `EXPO_PUBLIC_AI_API_URL` set, mock otherwise) → `proposed_transactions` → review modal.
 
 - Client results are `{ status: 'ok' | 'skipped' | 'unavailable' }` — never throw across this boundary
 - Wire types in `lib/ai/client/types.ts` must match `apps/backend/internal/extract/types.go`

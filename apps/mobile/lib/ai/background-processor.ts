@@ -12,13 +12,13 @@ import {
   markError,
   getPendingCount,
 } from './processing-queue';
-import { runOrchestration } from './run-orchestration';
+import { runExtraction } from './run-extraction';
 
 const TAG = '[BGProc]';
 const NOTIF_TAG = '[NotifProc]';
 
 const STAGE_ICONS: Record<string, string> = {
-  orchestrator: '\u{1F3AF}',
+  extraction: '\u{1F3AF}',
   extractor: '\u{1F4E4}',
   creator: '\u{2705}',
 };
@@ -102,7 +102,7 @@ async function processingTask(taskData?: { delay?: number }) {
       const itemStart = Date.now();
 
       try {
-        const result = await runOrchestration(item, {
+        const result = await runExtraction(item, {
           trace: (event) => {
             console.log(TAG, formatTraceEvent(event));
           },

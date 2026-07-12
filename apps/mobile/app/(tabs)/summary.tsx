@@ -29,8 +29,8 @@ import { useTransactionPinmap, type TransactionPinPoint } from '@/hooks/use-tran
 import { MoniFinanceAssistantSection } from '@/components/moni-finance-assistant-section';
 import {
   computeFinanceAssistantInputHash,
-  runFinanceAssistantOrchestration,
-} from '@/lib/ai/insights/finance-assistant-orchestrator';
+  runFinanceAssistant,
+} from '@/lib/ai/insights/finance-assistant';
 import type { TxForMetrics } from '@/lib/ai/insights/insight-metrics';
 import { getCategoryNameRows } from '@/lib/supabase/categories';
 import {
@@ -183,7 +183,7 @@ export default function SummaryScreen() {
         merchant: t.merchant ?? null,
         transactionDate: t.transactionDate,
       }));
-      const out = await runFinanceAssistantOrchestration(txs, categoryMap, budgetRows, currencyHint);
+      const out = await runFinanceAssistant(txs, categoryMap, budgetRows, currencyHint);
       setFinanceInsight(out.result);
       setStoredInsightHash(out.inputHash);
       await upsertAiInsight({
