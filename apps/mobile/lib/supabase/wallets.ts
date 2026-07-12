@@ -5,7 +5,8 @@ import {
 import { getRecordValues, isActive, patchRow } from '@/lib/store/helpers';
 import { getUserId } from '@/lib/supabase/client';
 import { getWalletBalances } from '@/lib/supabase/balances';
-import type { CreateWallet } from '@repo/types';
+import { refreshLinkedPackagesFromStore } from '@/lib/notifications/linked-packages-cache';
+import type { CreateWallet, UpdateWallet } from '@repo/types';
 import { randomUUID } from 'expo-crypto';
 
 type WalletRow = {
@@ -19,6 +20,9 @@ type WalletRow = {
   icon: string | null;
   is_active: boolean | number | null;
   display_order: number | null;
+  notification_package: string | null;
+  notification_app_label: string | null;
+  notification_account_hint: string | null;
   created_at: string | null;
   updated_at: string | null;
   deleted?: boolean;
@@ -38,6 +42,9 @@ function mapWalletRow(w: WalletRow, currentBalance?: number) {
     icon: w.icon,
     isActive: isActive(w.is_active),
     displayOrder: w.display_order ?? 0,
+    notificationPackage: w.notification_package ?? null,
+    notificationAppLabel: w.notification_app_label ?? null,
+    notificationAccountHint: w.notification_account_hint ?? null,
     createdAt: w.created_at ?? w.updated_at ?? '',
     updatedAt: w.updated_at ?? w.created_at ?? '',
   };
@@ -85,10 +92,15 @@ export async function createWallet(data: CreateWallet) {
     initial_balance: data.initialBalance ?? 0,
     color: data.color,
     icon: data.icon,
+    notification_package: data.notificationPackage ?? null,
+    notification_app_label: data.notificationAppLabel ?? null,
+    notification_account_hint: data.notificationAccountHint ?? null,
     is_active: true,
     display_order: 0,
     deleted: false,
   });
+
+  refreshLinkedPackagesFromStore();
 
   const created = getRecordValues<WalletRow>(wallets$).find((w) => w.id === id);
   if (!created) throw new Error('Failed to create wallet');
@@ -96,7 +108,7 @@ export async function createWallet(data: CreateWallet) {
   return mapWalletRow(created);
 }
 
-export async function updateWallet(id: string, data: Partial<CreateWallet>) {
+export async function updateWallet(id: string, data: UpdateWallet) {
   const now = new Date().toISOString();
   const patch: Record<string, unknown> = { updated_at: now };
 
@@ -106,8 +118,14 @@ export async function updateWallet(id: string, data: Partial<CreateWallet>) {
   if (data.color !== undefined) patch.color = data.color;
   if (data.icon !== undefined) patch.icon = data.icon;
   if (data.initialBalance !== undefined) patch.initial_balance = data.initialBalance;
+  if (data.notificationPackage !== undefined) patch.notification_package = data.notificationPackage;
+  if (data.notificationAppLabel !== undefined) patch.notification_app_label = data.notificationAppLabel;
+  if (data.notificationAccountHint !== undefined) {
+    patch.notification_account_hint = data.notificationAccountHint;
+  }
 
   patchRow(wallets$, id, patch);
+  refreshLinkedPackagesFromStore();
 
   const updated = getRecordValues<WalletRow>(wallets$).find((w) => w.id === id);
   if (!updated) throw new Error('Failed to update wallet');
@@ -125,4 +143,5 @@ export async function deleteWallet(id: string) {
   }
 
   patchRow(wallets$, id, { deleted: true, updated_at: now });
+  refreshLinkedPackagesFromStore();
 }

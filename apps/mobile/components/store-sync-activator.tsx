@@ -2,7 +2,8 @@ import { useEffect } from 'react';
 import { observe } from '@legendapp/state';
 import { useAuth } from '@/lib/auth/auth-context';
 import { authReady$ } from '@/lib/store/auth-sync';
-import { ALL_STORE_OBSERVABLES, enableStoreSync } from '@/lib/store';
+import { ALL_STORE_OBSERVABLES, enableStoreSync, wallets$ } from '@/lib/store';
+import { refreshLinkedPackagesFromStore } from '@/lib/notifications/linked-packages-cache';
 
 /**
  * Keeps synced table roots observed (required for Legend-State remote sync)
@@ -23,8 +24,15 @@ export function StoreSyncActivator() {
 
     authReady$.set(true);
     void enableStoreSync({ fullReset: true });
+    refreshLinkedPackagesFromStore();
+
+    const walletsDispose = observe(() => {
+      wallets$.get();
+      refreshLinkedPackagesFromStore();
+    });
 
     return () => {
+      walletsDispose();
       for (const dispose of disposers) {
         dispose();
       }

@@ -9,7 +9,10 @@ import {
 
 export type RawNotification = {
   id: string;
+  /** Android package name from the native listener (same as packageName). */
   app: string;
+  /** Canonical routing key — equals `app` from react-native-android-notification-listener. */
+  packageName: string;
   title: string;
   titleBig?: string;
   text: string;
@@ -87,6 +90,8 @@ export function buildPotentialTransaction(
     aiConfidence: result.confidence,
     walletId: null,
     walletHint: result.walletHint,
+    transferToWalletId: null,
+    transferToWalletHint: null,
     amount: result.amount,
     currency: result.currency,
     type: normalizedType,

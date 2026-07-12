@@ -7,7 +7,7 @@ Single PostgreSQL database on Supabase. Migrations live in `supabase/migrations/
 | Table | Purpose | RLS |
 | --- | --- | --- |
 | `profiles` | User profile, auto-created on signup (trigger) | Own row only |
-| `wallets` | Financial accounts (bank, cash, e-wallet, …) | Own rows |
+| `wallets` | Financial accounts (bank, cash, e-wallet, …). Optional `notification_package` / `notification_app_label` / `notification_account_hint` for Android notification routing | Own rows |
 | `categories` | System categories (`user_id IS NULL`, 18 seeded) + user categories | System readable by all; own rows writable |
 | `tags` | User-defined tags | Own rows |
 | `transactions` | The ledger. Includes optional `location_latitude` / `location_longitude` / `location_name` for the heatmap | Own rows |

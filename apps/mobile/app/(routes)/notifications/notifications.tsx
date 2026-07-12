@@ -4,6 +4,8 @@ import { View, Text, FlatList, TouchableOpacity, RefreshControl, Alert } from 'r
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { useNotificationListener } from '@/hooks/use-notification-listener';
 import type { CapturedNotification } from '@/hooks/use-notification-listener';
+import { isPackageLinkedInCache } from '@/lib/notifications/linked-packages-cache';
+import { resolveNotificationPackageName } from '@/lib/notifications/notification-package';
 
 function NotificationCard({
   item,
@@ -16,21 +18,49 @@ function NotificationCard({
   const displayBody = item.bigText || item.text || item.subText || item.summaryText || '(no content)';
   const received = new Date(item.receivedAt);
   const isPrefilterPassed = !!item.prefilterPassed;
+  const packageName = resolveNotificationPackageName(item);
+  const isLinked = item.packageLinked ?? isPackageLinkedInCache(packageName);
 
   return (
     <View className="mb-3 rounded-xl border border-border bg-card p-4 shadow-sm">
       <View className="flex-row items-center justify-between mb-2">
         <View className="flex-row items-center flex-1 mr-2">
-          <View className={`w-2 h-2 rounded-full mr-2 ${isPrefilterPassed ? 'bg-green-500' : 'bg-blue-400'}`} />
+          <View
+            className={`w-2 h-2 rounded-full mr-2 ${
+              isPrefilterPassed && isLinked
+                ? 'bg-green-500'
+                : isPrefilterPassed
+                  ? 'bg-amber-400'
+                  : 'bg-blue-400'
+            }`}
+          />
           <Text className="text-xs font-semibold text-foreground flex-1" numberOfLines={1}>
-            {item.app || 'Unknown app'}
+            {item.app || packageName || 'Unknown app'}
           </Text>
         </View>
 
         <View className="flex-row items-center justify-between">
-          <View className={`self-start mr-2 px-2 py-0.5 rounded-full ${isPrefilterPassed ? 'bg-green-100 dark:bg-green-900' : 'bg-background-muted'}`}>
-            <Text className={`text-[11px] font-semibold ${isPrefilterPassed ? 'text-green-700 dark:text-green-300' : 'text-muted'}`}>
-              {isPrefilterPassed ? 'Queued' : 'Ignored'}
+          <View
+            className={`self-start mr-2 px-2 py-0.5 rounded-full ${
+              isPrefilterPassed && isLinked
+                ? 'bg-green-100 dark:bg-green-900'
+                : isPrefilterPassed
+                  ? 'bg-amber-100 dark:bg-amber-900'
+                  : 'bg-background-muted'
+            }`}>
+            <Text
+              className={`text-[11px] font-semibold ${
+                isPrefilterPassed && isLinked
+                  ? 'text-green-700 dark:text-green-300'
+                  : isPrefilterPassed
+                    ? 'text-amber-800 dark:text-amber-200'
+                    : 'text-muted'
+              }`}>
+              {isPrefilterPassed && isLinked
+                ? 'Queued'
+                : isPrefilterPassed
+                  ? 'Unlinked'
+                  : 'Ignored'}
             </Text>
           </View>
           

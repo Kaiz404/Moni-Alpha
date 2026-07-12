@@ -49,7 +49,7 @@ func (s *Service) FromText(ctx context.Context, req TextRequest) Result {
 		return Skipped("No transaction amount found in text")
 	}
 
-	return OK(s.finalize(out, req.Wallets, req.Text, 0.85))
+	return OK(s.finalize(out, req.Wallets, req.Text, 0.85, nil))
 }
 
 // FromImage extracts a transaction from a receipt image. Accepts a public
@@ -92,7 +92,7 @@ func (s *Service) FromImage(ctx context.Context, req ImageRequest) Result {
 		return Skipped("Could not read a payable amount from the receipt")
 	}
 
-	return OK(s.finalize(out, req.Wallets, req.UserContext, 0.8))
+	return OK(s.finalize(out, req.Wallets, req.UserContext, 0.8, nil))
 }
 
 // FromNotification classifies and extracts a transaction from an Android
@@ -103,7 +103,7 @@ func (s *Service) FromNotification(ctx context.Context, req NotificationRequest)
 		return Skipped("Empty notification")
 	}
 
-	user := walletPreamble(req.Wallets) + "App: " + req.Notification.App + "\nNotification: " + combined
+	user := walletPreamble(req.Wallets) + "App: " + req.Notification.PackageNameForRouting() + "\nNotification: " + combined
 
 	var out llmNotificationResult
 	err := s.groq.CompleteJSON(ctx,
@@ -140,9 +140,8 @@ func (s *Service) FromNotification(ctx context.Context, req NotificationRequest)
 		Confidence:   out.Confidence,
 		Reasoning:    out.Reasoning,
 	}
-	// Wallet context for notifications: app name + notification body.
-	extraCtx := req.Notification.App + " " + combined
-	return OK(s.finalize(ex, req.Wallets, extraCtx, 0.7))
+	extraCtx := req.Notification.PackageNameForRouting() + " " + combined
+	return OK(s.finalize(ex, req.Wallets, extraCtx, 0.7, req.LockedWalletID))
 }
 
 // finalize normalizes LLM output and resolves the wallet.
@@ -151,6 +150,7 @@ func (s *Service) finalize(
 	wallets []WalletContext,
 	extraContext string,
 	defaultConfidence float64,
+	lockedWalletID *string,
 ) Extraction {
 	txType := strings.ToLower(strings.TrimSpace(out.Type))
 	if txType != "income" && txType != "expense" && txType != "transfer" {
@@ -172,7 +172,7 @@ func (s *Service) finalize(
 		reasoning = "Extracted by Moni AI backend"
 	}
 
-	walletID := ResolveWallet(wallets, out.WalletID, out.WalletHint, extraContext)
+	walletID := ResolveWalletWithLock(wallets, lockedWalletID, out.WalletID, out.WalletHint, extraContext)
 
 	var transferToWalletID *string
 	transferHint := emptyToNil(out.TransferToWalletHint)

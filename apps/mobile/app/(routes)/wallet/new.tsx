@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -12,13 +12,17 @@ import {
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@/lib/auth/auth-context';
-import { createWallet } from '@/lib/supabase/wallets';
+import { createWallet, getWallets } from '@/lib/supabase/wallets';
 import { createWalletSchema } from '@repo/types';
 import {
   WALLET_ACCENT_COLORS,
   WALLET_TYPE_OPTIONS,
   type WalletKind,
 } from '@/constants/wallet-form';
+import {
+  WalletNotificationLinkSection,
+  type WalletNotificationLinkValue,
+} from '@/components/wallet-notification-link-section';
 import { BrandHeader } from '@/components/ui/brand-header';
 import { ScreenShell } from '@/components/ui/screen-shell';
 import { chipClass, chipTextClass } from '@/components/ui/chip';
@@ -36,6 +40,27 @@ export default function NewWalletScreen() {
   const [initialBalance, setInitialBalance] = useState('');
   const [color, setColor] = useState(WALLET_ACCENT_COLORS[0]);
   const [loading, setLoading] = useState(false);
+  const [notificationLink, setNotificationLink] = useState<WalletNotificationLinkValue>({
+    notificationPackage: null,
+    notificationAppLabel: null,
+    notificationAccountHint: null,
+  });
+  const [sharedPackageWalletNames, setSharedPackageWalletNames] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (!user) return;
+    void getWallets().then((wallets) => {
+      if (!notificationLink.notificationPackage) {
+        setSharedPackageWalletNames([]);
+        return;
+      }
+      setSharedPackageWalletNames(
+        wallets
+          .filter((w) => w.notificationPackage === notificationLink.notificationPackage)
+          .map((w) => w.name),
+      );
+    });
+  }, [user, notificationLink.notificationPackage]);
 
   const handleSubmit = async () => {
     if (!user) return;
@@ -46,6 +71,9 @@ export default function NewWalletScreen() {
       initialBalance: parseFloat(initialBalance) || 0,
       color,
       icon: WALLET_TYPE_OPTIONS.find((t) => t.value === type)?.icon ?? '💰',
+      notificationPackage: notificationLink.notificationPackage,
+      notificationAppLabel: notificationLink.notificationAppLabel,
+      notificationAccountHint: notificationLink.notificationAccountHint,
     });
     if (!parsed.success) {
       Alert.alert('Error', parsed.error.errors[0]?.message ?? 'Invalid input');
@@ -133,6 +161,12 @@ export default function NewWalletScreen() {
                 />
               </View>
             </View>
+
+            <WalletNotificationLinkSection
+              value={notificationLink}
+              onChange={setNotificationLink}
+              sharedPackageWalletNames={sharedPackageWalletNames}
+            />
 
             <Text className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-muted">
               Accent color

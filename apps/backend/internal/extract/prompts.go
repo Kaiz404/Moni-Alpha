@@ -9,11 +9,11 @@ package extract
 const walletSelectionRules = `
 
 Wallet selection:
-- The user message includes AVAILABLE_WALLETS: a JSON array of {id, name, type?, currency?}.
+- The user message includes AVAILABLE_WALLETS: a JSON array of {id, name, type?, currency?, accountHint?}.
 - Set wallet_id to the id of the wallet this transaction belongs to (source / "from" for transfers).
 - For transfers only, set transfer_to_wallet_id to the destination wallet id ("to").
 - Only use ids from AVAILABLE_WALLETS — never invent wallet ids.
-- Match by wallet name, type, or payment method (e.g. "Maybank", "cash", "Touch n Go", card brand).
+- Match by wallet name, type, payment method, or accountHint when multiple wallets share the same banking app.
 - For transfers, cross-check names AND type fields (e.g. type "cash" vs type "bank") when the user names only one side.
 - If only one wallet is listed, use its id unless the input clearly refers to a different account.
 - If uncertain, set wallet_id to null and set wallet_hint with your best textual guess.`
@@ -123,7 +123,7 @@ If transaction=true:
   - expense: debited/paid/spent/purchase outbound.
 - Currency must be 3-letter ISO when possible (USD, MYR, INR, etc).
 - Merchant/counterparty should be null when unknown.
-- Set wallet_id from AVAILABLE_WALLETS when the notification app or text clearly maps to one wallet (e.g. Maybank app -> Maybank wallet). Otherwise null and optional wallet_hint.
+- Set wallet_id from AVAILABLE_WALLETS when the notification app or text clearly maps to one wallet (e.g. Maybank app -> Maybank wallet). When multiple wallets share the same app, use accountHint and notification body (account name, last digits, product type) to pick the correct wallet_id. Otherwise null and optional wallet_hint.
 
 Return ONLY valid JSON. When not a transaction:
 {"is_transaction": false, "reasoning": "..."}

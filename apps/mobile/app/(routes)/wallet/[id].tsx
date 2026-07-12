@@ -13,8 +13,8 @@ import {
 import { router, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@/lib/auth/auth-context';
-import { getWalletById, updateWallet } from '@/lib/supabase/wallets';
-import { createWalletSchema } from '@repo/types';
+import { getWalletById, getWallets, updateWallet } from '@/lib/supabase/wallets';
+import { updateWalletSchema } from '@repo/types';
 import {
   WALLET_ACCENT_COLORS,
   WALLET_TYPE_OPTIONS,
@@ -25,6 +25,10 @@ import { BrandHeader } from '@/components/ui/brand-header';
 import { ScreenShell } from '@/components/ui/screen-shell';
 import { chipClass, chipTextClass } from '@/components/ui/chip';
 import { PrimaryButton } from '@/components/ui/primary-button';
+import {
+  WalletNotificationLinkSection,
+  type WalletNotificationLinkValue,
+} from '@/components/wallet-notification-link-section';
 
 const inputClass =
   'rounded-xl border border-border bg-card px-3 py-2.5 text-foreground';
@@ -51,6 +55,12 @@ export default function EditWalletScreen() {
 
   const [readOnlyBalance, setReadOnlyBalance] = useState('');
   const [readOnlyUpdated, setReadOnlyUpdated] = useState('');
+  const [notificationLink, setNotificationLink] = useState<WalletNotificationLinkValue>({
+    notificationPackage: null,
+    notificationAppLabel: null,
+    notificationAccountHint: null,
+  });
+  const [sharedPackageWalletNames, setSharedPackageWalletNames] = useState<string[]>([]);
 
   useEffect(() => {
     if (!user || !walletId) return;
@@ -85,6 +95,23 @@ export default function EditWalletScreen() {
               })
             : '—',
         );
+        setNotificationLink({
+          notificationPackage: w.notificationPackage ?? null,
+          notificationAppLabel: w.notificationAppLabel ?? null,
+          notificationAccountHint: w.notificationAccountHint ?? null,
+        });
+        const others = await getWallets();
+        if (!cancelled) {
+          setSharedPackageWalletNames(
+            others
+              .filter(
+                (row) =>
+                  row.id !== walletId &&
+                  row.notificationPackage === (w.notificationPackage ?? null),
+              )
+              .map((row) => row.name),
+          );
+        }
       } catch (e) {
         if (!cancelled) {
           setLoadError(e instanceof Error ? e.message : 'Failed to load wallet');
@@ -99,17 +126,38 @@ export default function EditWalletScreen() {
     };
   }, [user, walletId]);
 
+  useEffect(() => {
+    if (!user || !walletId) return;
+    void getWallets().then((wallets) => {
+      if (!notificationLink.notificationPackage) {
+        setSharedPackageWalletNames([]);
+        return;
+      }
+      setSharedPackageWalletNames(
+        wallets
+          .filter(
+            (w) =>
+              w.id !== walletId && w.notificationPackage === notificationLink.notificationPackage,
+          )
+          .map((w) => w.name),
+      );
+    });
+  }, [user, walletId, notificationLink.notificationPackage]);
+
   const handleSubmit = useCallback(async () => {
     if (!user || !walletId) return;
 
     const cur = currency.trim().toUpperCase().slice(0, 3) || 'USD';
-    const parsed = createWalletSchema.safeParse({
+    const parsed = updateWalletSchema.safeParse({
       name: name.trim(),
       type,
       currency: cur,
       initialBalance: parseFloat(initialBalance) || 0,
       color,
       icon: WALLET_TYPE_OPTIONS.find((t) => t.value === type)?.icon ?? '💰',
+      notificationPackage: notificationLink.notificationPackage,
+      notificationAppLabel: notificationLink.notificationAppLabel,
+      notificationAccountHint: notificationLink.notificationAccountHint,
     });
     if (!parsed.success) {
       Alert.alert('Error', parsed.error.errors[0]?.message ?? 'Invalid input');
@@ -125,7 +173,7 @@ export default function EditWalletScreen() {
     } finally {
       setLoading(false);
     }
-  }, [user, walletId, name, type, currency, initialBalance, color]);
+  }, [user, walletId, name, type, currency, initialBalance, color, notificationLink]);
 
   if (!walletId) {
     return (
@@ -244,6 +292,12 @@ export default function EditWalletScreen() {
             <Text className="mb-3 text-[11px] text-muted">
               Changing initial balance updates how running balance is calculated from your transactions.
             </Text>
+
+            <WalletNotificationLinkSection
+              value={notificationLink}
+              onChange={setNotificationLink}
+              sharedPackageWalletNames={sharedPackageWalletNames}
+            />
 
             <Text className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-muted">
               Accent color

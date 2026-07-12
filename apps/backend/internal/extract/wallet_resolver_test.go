@@ -125,6 +125,26 @@ func TestResolveWalletDepositDestinationBank(t *testing.T) {
 	}
 }
 
+func TestResolveWalletLockedID(t *testing.T) {
+	ws := wallets("Maybank", "Maybank Savings")
+	locked := "id-Maybank Savings"
+	got := ResolveWalletWithLock(ws, &locked, nil, nil, "")
+	if got == nil || *got != "id-Maybank Savings" {
+		t.Fatalf("expected locked wallet, got %v", got)
+	}
+}
+
+func TestResolveWalletAccountHintMatch(t *testing.T) {
+	ws := []WalletContext{
+		{ID: "w-spend", Name: "Maybank Spending", AccountHint: strPtr("****4521")},
+		{ID: "w-save", Name: "Maybank Savings", AccountHint: strPtr("Savings")},
+	}
+	got := ResolveWallet(ws, nil, nil, "maybank debit MYR 50 from savings account")
+	if got == nil || *got != "w-save" {
+		t.Fatalf("expected savings wallet via account hint, got %v", got)
+	}
+}
+
 func TestFormatWalletsForPrompt(t *testing.T) {
 	got := FormatWalletsForPrompt(wallets("Maybank", "Cash"))
 	for _, want := range []string{"AVAILABLE_WALLETS:", "id-Maybank", "Maybank", "id-Cash"} {

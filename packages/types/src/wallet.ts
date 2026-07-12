@@ -1,5 +1,10 @@
 import { z } from 'zod';
 
+/** Android package name pattern (e.g. com.maybank2u.life). */
+export const androidPackageSchema = z
+  .string()
+  .regex(/^[a-zA-Z][a-zA-Z0-9_]*(\.[a-zA-Z][a-zA-Z0-9_]*)+$/, 'Invalid Android package name');
+
 // Wallet type enum
 export const walletTypeSchema = z.enum([
   'bank',
@@ -24,6 +29,9 @@ export const walletSchema = z.object({
   icon: z.string(),
   isActive: z.boolean(),
   displayOrder: z.number().int().nonnegative(),
+  notificationPackage: z.string().nullable().optional(),
+  notificationAppLabel: z.string().nullable().optional(),
+  notificationAccountHint: z.string().max(100).nullable().optional(),
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
 });
@@ -36,6 +44,9 @@ export const createWalletSchema = z.object({
   initialBalance: z.number().default(0),
   color: z.string().regex(/^#[0-9A-Fa-f]{6}$/),
   icon: z.string(),
+  notificationPackage: androidPackageSchema.nullable().optional(),
+  notificationAppLabel: z.string().max(100).nullable().optional(),
+  notificationAccountHint: z.string().max(100).nullable().optional(),
 });
 
 // Update wallet schema
@@ -43,10 +54,14 @@ export const updateWalletSchema = z.object({
   name: z.string().min(1).max(100).optional(),
   type: walletTypeSchema.optional(),
   currency: z.string().length(3).optional(),
+  initialBalance: z.number().optional(),
   color: z.string().regex(/^#[0-9A-Fa-f]{6}$/).optional(),
   icon: z.string().optional(),
   isActive: z.boolean().optional(),
   displayOrder: z.number().int().nonnegative().optional(),
+  notificationPackage: androidPackageSchema.nullable().optional(),
+  notificationAppLabel: z.string().max(100).nullable().optional(),
+  notificationAccountHint: z.string().max(100).nullable().optional(),
 });
 
 // Reorder wallets schema

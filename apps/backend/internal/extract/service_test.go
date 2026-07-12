@@ -22,7 +22,7 @@ func TestFinalizeTransferResolvesBothWallets(t *testing.T) {
 		Reasoning:            "User moved money between own accounts",
 	}
 
-	got := s.finalize(out, ws, "transfer 500 from Maybank to savings", 0.85)
+	got := s.finalize(out, ws, "transfer 500 from Maybank to savings", 0.85, nil)
 
 	if got.Type != "transfer" {
 		t.Fatalf("type = %q, want transfer", got.Type)
@@ -57,7 +57,7 @@ func TestFinalizeDepositCashToBank(t *testing.T) {
 		Reasoning:          "User deposited own cash into their bank — transfer from Cash to Maybank",
 	}
 
-	got := s.finalize(out, ws, "Deposited 100 cash to bank", 0.85)
+	got := s.finalize(out, ws, "Deposited 100 cash to bank", 0.85, nil)
 
 	if got.Type != "transfer" {
 		t.Fatalf("type = %q, want transfer", got.Type)
@@ -88,7 +88,7 @@ func TestFinalizeDepositResolvesWalletsFromHints(t *testing.T) {
 		Reasoning:            "Deposit cash to bank",
 	}
 
-	got := s.finalize(out, ws, "Deposited 100 cash to bank", 0.85)
+	got := s.finalize(out, ws, "Deposited 100 cash to bank", 0.85, nil)
 
 	if got.Type != "transfer" {
 		t.Fatalf("type = %q, want transfer", got.Type)
@@ -116,7 +116,7 @@ func TestFinalizeUsesLLMWalletIDs(t *testing.T) {
 		WalletHint: strPtr("ignored when id is valid"),
 	}
 
-	got := s.finalize(out, ws, "", 0.85)
+	got := s.finalize(out, ws, "", 0.85, nil)
 	if got.WalletID == nil || *got.WalletID != "w2" {
 		t.Fatalf("walletId = %v, want w2 from model", got.WalletID)
 	}
@@ -133,7 +133,7 @@ func TestFinalizeTransferClearsSameWalletDestination(t *testing.T) {
 		TransferToWalletHint: strPtr("Cash"),
 	}
 
-	got := s.finalize(out, ws, "", 0.8)
+	got := s.finalize(out, ws, "", 0.8, nil)
 
 	if got.TransferToWalletID != nil {
 		t.Fatalf("expected nil destination when source equals dest, got %v", got.TransferToWalletID)

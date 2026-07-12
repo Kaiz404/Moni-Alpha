@@ -13,6 +13,8 @@ export type CapturedNotification = {
   id: string;
   receivedAt: string;
   prefilterPassed?: boolean;
+  packageLinked?: boolean;
+  packageName?: string;
   time: string;
   app: string;
   title: string;

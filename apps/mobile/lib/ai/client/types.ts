@@ -12,6 +12,8 @@ export type AiWalletContext = {
   name: string;
   type?: string | null;
   currency?: string | null;
+  /** Optional hint for disambiguating multiple wallets on the same Android app. */
+  accountHint?: string | null;
 };
 
 export type ExtractedTransaction = {
@@ -51,6 +53,8 @@ export type ExtractImageWireRequest = ExtractImageRequest & {
 export type ExtractNotificationRequest = {
   notification: RawNotification;
   wallets: AiWalletContext[];
+  /** When exactly one wallet is linked to the notification app, skip wallet inference. */
+  lockedWalletId?: string | null;
 };
 
 export type ExtractResult =

@@ -1,15 +1,15 @@
-// Package extract implements transaction extraction from text, receipt
-// images, and Android notifications. Contract mirrors the mobile client
-// (apps/mobile/lib/ai/client/types.ts).
 package extract
+
+import "strings"
 
 // WalletContext is the user's wallet list sent with every request so the
 // backend can resolve which wallet a transaction belongs to.
 type WalletContext struct {
-	ID       string  `json:"id"`
-	Name     string  `json:"name"`
-	Type     *string `json:"type,omitempty"`
-	Currency *string `json:"currency,omitempty"`
+	ID          string  `json:"id"`
+	Name        string  `json:"name"`
+	Type        *string `json:"type,omitempty"`
+	Currency    *string `json:"currency,omitempty"`
+	AccountHint *string `json:"accountHint,omitempty"`
 }
 
 // Extraction is a normalized transaction candidate.
@@ -61,6 +61,7 @@ type ImageRequest struct {
 type RawNotification struct {
 	ID            string `json:"id"`
 	App           string `json:"app"`
+	PackageName   string `json:"packageName"`
 	Title         string `json:"title"`
 	TitleBig      string `json:"titleBig"`
 	Text          string `json:"text"`
@@ -70,6 +71,14 @@ type RawNotification struct {
 	ExtraInfoText string `json:"extraInfoText"`
 	Time          string `json:"time"`
 	ReceivedAt    string `json:"receivedAt"`
+}
+
+// PackageNameForRouting returns the canonical Android package for wallet linking.
+func (n RawNotification) PackageNameForRouting() string {
+	if p := strings.TrimSpace(n.PackageName); p != "" {
+		return p
+	}
+	return strings.TrimSpace(n.App)
 }
 
 // CombinedText joins all textual fields for matching and prompting.
@@ -89,8 +98,9 @@ func (n RawNotification) CombinedText() string {
 }
 
 type NotificationRequest struct {
-	Notification RawNotification `json:"notification" binding:"required"`
-	Wallets      []WalletContext `json:"wallets"`
+	Notification   RawNotification `json:"notification" binding:"required"`
+	Wallets        []WalletContext `json:"wallets"`
+	LockedWalletID *string         `json:"lockedWalletId,omitempty"`
 }
 
 // llmExtraction matches the snake_case JSON the prompts ask for.

@@ -10,6 +10,9 @@ import type { ProcessingQueueItem } from '@/lib/ai/processing-queue';
 import { saveProposalLocationSnapshot } from '@/lib/ai/proposal-location-cache';
 import type { LocationSnapshot } from '@/lib/location/location-snapshot';
 import { passesTransactionPrefilter } from '@/lib/ai/notification-types';
+import { resolveNotificationPackageName, enrichNotificationPackage } from '@/lib/notifications/notification-package';
+import { resolveNotificationCandidates } from '@/lib/notifications/notification-routing';
+import type { RawNotification } from '@/lib/ai/notification-types';
 
 export type TraceEvent = {
   stage: 'extraction' | 'extractor' | 'creator';
@@ -39,6 +42,12 @@ function trace(
   }
 }
 
+function enrichNotificationForExtraction(
+  notification: RawNotification & { packageName?: string },
+): RawNotification {
+  return enrichNotificationPackage(notification);
+}
+
 async function loadWalletContext(): Promise<AiWalletContext[]> {
   const wallets = await getWallets();
   return wallets.map((w) => ({
@@ -46,6 +55,20 @@ async function loadWalletContext(): Promise<AiWalletContext[]> {
     name: w.name ?? '',
     type: w.type ?? null,
     currency: w.currency ?? null,
+    accountHint: w.notificationAccountHint ?? null,
+  }));
+}
+
+async function loadWalletsForNotificationRouting() {
+  const wallets = await getWallets();
+  return wallets.map((w) => ({
+    id: w.id,
+    name: w.name ?? '',
+    type: w.type ?? null,
+    currency: w.currency ?? null,
+    notificationPackage: w.notificationPackage ?? null,
+    notificationAppLabel: w.notificationAppLabel ?? null,
+    notificationAccountHint: w.notificationAccountHint ?? null,
   }));
 }
 
@@ -191,7 +214,8 @@ export async function runExtraction(
       }
 
       case 'notification': {
-        if (!passesTransactionPrefilter(item.notification)) {
+        const n = enrichNotificationForExtraction(item.notification);
+        if (!passesTransactionPrefilter(n)) {
           return {
             created: false,
             skipped: true,
@@ -199,26 +223,33 @@ export async function runExtraction(
           };
         }
 
+        const packageName = resolveNotificationPackageName(n);
+        const walletLinks = await loadWalletsForNotificationRouting();
+        const { candidates, lockedWalletId } = resolveNotificationCandidates(
+          packageName,
+          walletLinks,
+        );
+
+        if (candidates.length === 0) {
+          return {
+            created: false,
+            skipped: true,
+            reason: 'No wallet linked to notification app',
+          };
+        }
+
         const result = await client.extractFromNotification({
-          notification: item.notification,
-          wallets,
+          notification: n,
+          wallets: candidates,
+          lockedWalletId,
         });
         const mapped = mapClientResult(result, logger);
         if ('status' in mapped && mapped.status === 'ok') {
-          const n = item.notification;
-          // Notifications historically required a resolved wallet.
-          if (!mapped.extraction.walletId) {
-            return {
-              created: false,
-              skipped: true,
-              reason: 'No wallet match — notification ignored',
-            };
-          }
           return persistProposal(
             proposalFromExtraction(
               {
                 sourceType: 'notification',
-                sourceApp: n.app,
+                sourceApp: n.packageName || n.app,
                 notificationTitle: n.title,
                 notificationBody: n.bigText || n.text || null,
                 notificationReceivedAt: n.receivedAt,

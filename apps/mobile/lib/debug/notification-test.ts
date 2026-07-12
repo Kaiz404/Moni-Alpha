@@ -44,6 +44,7 @@ export async function runNotificationTests(log: LogFn): Promise<DebugTestResult>
     const notification: RawNotification = {
       id: `test-${tc.id}`,
       app: tc.app,
+      packageName: tc.app.includes('.') ? tc.app : `com.test.${tc.id}`,
       title: tc.app,
       text: tc.text,
       time: new Date().toISOString(),

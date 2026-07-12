@@ -14,14 +14,15 @@ func FormatWalletsForPrompt(wallets []WalletContext) string {
 		return "AVAILABLE_WALLETS: []"
 	}
 	type entry struct {
-		ID       string  `json:"id"`
-		Name     string  `json:"name"`
-		Type     *string `json:"type,omitempty"`
-		Currency *string `json:"currency,omitempty"`
+		ID          string  `json:"id"`
+		Name        string  `json:"name"`
+		Type        *string `json:"type,omitempty"`
+		Currency    *string `json:"currency,omitempty"`
+		AccountHint *string `json:"accountHint,omitempty"`
 	}
 	list := make([]entry, len(wallets))
 	for i, w := range wallets {
-		list[i] = entry{ID: w.ID, Name: w.Name, Type: w.Type, Currency: w.Currency}
+		list[i] = entry{ID: w.ID, Name: w.Name, Type: w.Type, Currency: w.Currency, AccountHint: w.AccountHint}
 	}
 	b, err := json.Marshal(list)
 	if err != nil {
@@ -34,15 +35,17 @@ func FormatWalletsForPrompt(wallets []WalletContext) string {
 // client-provided list. The model's wallet_id is preferred when valid;
 // deterministic hint matching is the fallback when the model is unsure.
 //
+//  0. Locked wallet id from client (single wallet linked to notification app)
 //  1. Only one wallet -> auto-select
 //  2. Valid wallet_id from the model (must be in the provided list)
 //  3. Effective hint = merge(walletHint, user context / notification text)
-//  4. Whole-word wallet name match inside effective hint
-//  5. Substring match (hint contains wallet name)
-//  6. Reverse substring (wallet name contains hint, e.g. "bank" -> "Maybank")
-//  7. Wallet type matches wallet_hint (e.g. hint "bank" -> type "bank")
-//  8. Heuristic token overlap
-//  9. nil (user picks in the review modal)
+//  4. Account-hint token match against notification body
+//  5. Whole-word wallet name match inside effective hint
+//  6. Substring match (hint contains wallet name)
+//  7. Reverse substring (wallet name contains hint, e.g. "bank" -> "Maybank")
+//  8. Wallet type matches wallet_hint (e.g. hint "bank" -> type "bank")
+//  9. Heuristic token overlap
+//  10. nil (user picks in the review modal)
 func ResolveWallet(
 	wallets []WalletContext,
 	llmWalletID *string,
@@ -62,6 +65,13 @@ func ResolveWallet(
 
 	hint := strings.TrimSpace(strings.ToLower(joinHint(walletHint, extraContext)))
 	if hint != "" {
+		// Account-hint match: user-configured disambiguator for same-app wallets.
+		for i := range wallets {
+			ah := strings.TrimSpace(strings.ToLower(derefString(wallets[i].AccountHint)))
+			if len(ah) >= 2 && strings.Contains(hint, ah) {
+				return &wallets[i].ID
+			}
+		}
 		// Whole-word match on wallet name.
 		for i := range wallets {
 			name := strings.ToLower(strings.TrimSpace(wallets[i].Name))
@@ -118,6 +128,27 @@ func ResolveWallet(
 	}
 
 	return nil
+}
+
+// ResolveWalletWithLock applies an optional client-locked wallet before the ladder.
+func ResolveWalletWithLock(
+	wallets []WalletContext,
+	lockedWalletID *string,
+	llmWalletID *string,
+	walletHint *string,
+	extraContext string,
+) *string {
+	if id := validateWalletID(wallets, lockedWalletID); id != nil {
+		return id
+	}
+	return ResolveWallet(wallets, llmWalletID, walletHint, extraContext)
+}
+
+func derefString(s *string) string {
+	if s == nil {
+		return ""
+	}
+	return *s
 }
 
 func validateWalletID(wallets []WalletContext, id *string) *string {

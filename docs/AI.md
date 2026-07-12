@@ -58,14 +58,15 @@ All calls use Groq's OpenAI-compatible endpoint with `response_format: json_obje
 ## Extraction pipeline details
 
 - **Prompts** live in `apps/backend/internal/extract/prompts.go` and `internal/insights/prompts.go` (ported from the former on-device pipeline; git history has `apps/mobile/lib/ai/BACKEND_AI.md` if you need the archaeology).
-- **Wallet selection** — the client's `wallets[]` is injected into every extraction user message as `AVAILABLE_WALLETS` (JSON array of `{id, name, type?, currency?}`). The extraction model returns `wallet_id` / `transfer_to_wallet_id` directly; the backend validates ids against the provided list (`internal/extract/wallet_resolver.go`):
-  1. Only one wallet → auto-select
-  2. Valid `wallet_id` from the model (must be in the provided list)
-  3. Fallback: merge `wallet_hint` + user context → whole-word name match → substring → token overlap
-  4. `walletId = null` → user picks in the review modal
+- **Wallet selection** — the client's `wallets[]` is injected into every extraction user message as `AVAILABLE_WALLETS` (JSON array of `{id, name, type?, currency?, accountHint?}`). The extraction model returns `wallet_id` / `transfer_to_wallet_id` directly; the backend validates ids against the provided list (`internal/extract/wallet_resolver.go`):
+  1. Client-locked wallet when exactly one wallet is linked to the notification app (`lockedWalletId`)
+  2. Only one wallet in candidate list → auto-select
+  3. Valid `wallet_id` from the model (must be in the provided list)
+  4. Fallback: merge `wallet_hint` + notification body → `accountHint` match → whole-word name match → substring → token overlap
+  5. `walletId = null` → user picks in the review modal
 - For **transfers**, resolution runs twice: source (`wallet_id` + context) and destination (`transfer_to_wallet_id` + hint only).
 - **Text transfer patterns:** deposits ("deposited cash to bank"), withdrawals, top-ups, and explicit "from X to Y" moves are transfers between wallets in `AVAILABLE_WALLETS` — not income. The model uses wallet names/types to infer direction (e.g. cash → bank for deposits).
-- **Notification rule:** mobile skips proposals without a resolved wallet (`run-extraction.ts`), so unattributable notifications never create noise.
+- **Notification rule:** each wallet may link one Android app (`notification_package` on `wallets`). Notifications from unlinked apps are captured for debug but not queued. Candidate wallets are narrowed by package before extraction; ambiguous same-app wallets may create proposals with `walletId: null` for review (`run-extraction.ts`).
 - **Notification prefilter stays on-device** (`apps/mobile/lib/notifications/notification-filter.js`): requires a money-amount signal AND a transfer signal before an LLM ever sees it. Test suite: `pnpm --filter moni test:notification-detection`.
 - **Receipt images:** mobile downscales/compresses (`lib/ai/client/image-payload.ts`), sends base64 for local files or the URL if already uploaded to the `receipts` Storage bucket.
 

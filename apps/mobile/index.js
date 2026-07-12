@@ -11,6 +11,8 @@ if (Platform.OS === 'android') {
   } = require('./lib/notifications/notification-filter');
   const { startBackgroundProcessor } = require('./lib/ai/background-processor');
   const { captureLocationSnapshot } = require('./lib/location/location-snapshot');
+  const { isPackageLinked } = require('./lib/notifications/linked-packages-cache.js');
+  const { enrichNotificationPackage } = require('./lib/notifications/notification-package.js');
 
   void RNAndroidNotificationListener;
 
@@ -37,24 +39,28 @@ if (Platform.OS === 'android') {
     try {
       const parsed =
         typeof notification === 'string' ? JSON.parse(notification) : notification;
-      const prefilterPassed = passesNotificationTransactionPrefilter(parsed);
+      const withPackage = enrichNotificationPackage(parsed);
+      const prefilterPassed = passesNotificationTransactionPrefilter(withPackage);
+      const packageLinked = isPackageLinked(withPackage.packageName);
       const enriched = {
-        ...parsed,
+        ...withPackage,
         id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
         receivedAt: new Date().toISOString(),
         prefilterPassed,
+        packageLinked,
       };
 
       // Always store in the full notifications list for the UI
       appendToList(notificationStorage, ALL_NOTIFICATIONS_KEY, enriched, MAX_STORED);
+      const queueEligible = prefilterPassed && packageLinked;
       console.log(
         '[NotifCapture] stored',
-        enriched.app ?? 'unknown',
-        prefilterPassed ? 'queued' : 'ignored',
+        enriched.packageName ?? enriched.app ?? 'unknown',
+        queueEligible ? 'queued' : prefilterPassed ? 'unlinked' : 'ignored',
       );
 
-      // Queue notifications that pass the prefilter into the unified processing queue
-      if (prefilterPassed) {
+      // Queue only linked-app notifications that pass the prefilter
+      if (queueEligible) {
         let locationSnapshot = null;
         try {
           locationSnapshot = await captureLocationSnapshot();
