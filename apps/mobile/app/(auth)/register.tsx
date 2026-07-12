@@ -1,19 +1,13 @@
 import { useState } from 'react';
-import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  Alert,
-  ScrollView,
-} from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, Alert, ScrollView } from 'react-native';
 import { Link, router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@/lib/auth/auth-context';
 import { GoogleSignInButton } from '@/components/google-sign-in-button';
+import { ScreenShell } from '@/components/ui/screen-shell';
 
 const inputClassName =
-  'border border-gray-300 dark:border-gray-600 rounded-lg p-3 text-base bg-white dark:bg-gray-800 text-gray-900 dark:text-white';
+  'rounded-lg border border-border bg-card p-3 text-base text-foreground';
 
 export default function RegisterScreen() {
   const { signUp } = useAuth();
@@ -45,19 +39,19 @@ export default function RegisterScreen() {
   };
 
   return (
-    <View className="flex-1 bg-[#C9BEFF] dark:bg-gray-900">
+    <ScreenShell variant="canvas">
       <View
         style={{ paddingTop: Math.max(insets.top, 12) }}
-        className="bg-[#6367FF] rounded-b-2xl border border-transparent shadow-xl/50 shadow-[#6367FF]">
+        className="rounded-b-2xl border border-transparent bg-primary shadow-xl/50 shadow-primary">
         <View className="flex-row items-start gap-3 px-4 pb-6">
           <Link href={'/(auth)/login' as any} asChild>
-            <TouchableOpacity className="mt-1 h-10 w-10 items-center justify-center rounded-2xl bg-[#8494FF]">
-              <Text className="text-lg font-semibold text-white">‹</Text>
+            <TouchableOpacity className="mt-1 h-10 w-10 items-center justify-center rounded-2xl bg-primary-soft">
+              <Text className="text-lg font-semibold text-primary-foreground">‹</Text>
             </TouchableOpacity>
           </Link>
           <View className="flex-1 pr-2">
-            <Text className="text-2xl font-bold text-white">Join Moni</Text>
-            <Text className="mt-2 text-base leading-6 text-white/90">
+            <Text className="text-2xl font-bold text-primary-foreground">Join Moni</Text>
+            <Text className="mt-2 text-base leading-6 text-primary-foreground/90">
               Create a profile to sync wallets and transactions securely. Same local-first privacy as the rest of the app.
             </Text>
           </View>
@@ -68,11 +62,11 @@ export default function RegisterScreen() {
         className="flex-1 px-6 pt-6"
         keyboardShouldPersistTaps="handled"
         contentContainerStyle={{ paddingBottom: 32 }}>
-        <Text className="mb-6 text-xl font-semibold text-gray-900 dark:text-white">
+        <Text className="mb-6 text-xl font-semibold text-foreground">
           Create account
         </Text>
 
-        <Text className="text-sm font-medium mb-2 text-gray-900 dark:text-white">
+        <Text className="mb-2 text-sm font-medium text-foreground">
           Display name
         </Text>
         <TextInput
@@ -84,7 +78,7 @@ export default function RegisterScreen() {
           autoCapitalize="words"
         />
 
-        <Text className="text-sm font-medium mb-2 text-gray-900 dark:text-white">
+        <Text className="mb-2 text-sm font-medium text-foreground">
           Email
         </Text>
         <TextInput
@@ -98,7 +92,7 @@ export default function RegisterScreen() {
           autoComplete="email"
         />
 
-        <Text className="text-sm font-medium mb-2 text-gray-900 dark:text-white">
+        <Text className="mb-2 text-sm font-medium text-foreground">
           Password
         </Text>
         <TextInput
@@ -112,10 +106,10 @@ export default function RegisterScreen() {
         />
 
         <TouchableOpacity
-          className={`bg-[#6367FF] dark:bg-blue-500 p-3.5 rounded-lg items-center mt-2 ${loading ? 'opacity-60' : ''}`}
+          className={`mt-2 items-center rounded-lg bg-primary p-3.5 ${loading ? 'opacity-60' : ''}`}
           onPress={handleRegister}
           disabled={loading}>
-          <Text className="text-white text-base font-semibold">
+          <Text className="text-base font-semibold text-primary-foreground">
             {loading ? 'Creating account...' : 'Sign up'}
           </Text>
         </TouchableOpacity>
@@ -129,12 +123,12 @@ export default function RegisterScreen() {
 
         <Link href={'/(auth)/login' as any} asChild>
           <TouchableOpacity className="mt-8 items-center py-2">
-            <Text className="text-sm font-medium text-[#4f54c4] dark:text-[#9EADFF]">
+            <Text className="text-sm font-medium text-primary">
               Already have an account? Sign in
             </Text>
           </TouchableOpacity>
         </Link>
       </ScrollView>
-    </View>
+    </ScreenShell>
   );
 }

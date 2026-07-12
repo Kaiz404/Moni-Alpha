@@ -30,6 +30,7 @@ New synced table checklist: migration adds `created_at`/`updated_at`/`deleted` +
 - `auth` — Supabase session storage (client uses `EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY`)
 - `legend-store` — observable persistence
 - `image-uploads` — receipt upload queue
+- `preferences` — local UI prefs (theme: light / dark / system)
 
 ## AI pipeline (lib/ai/)
 
@@ -43,6 +44,15 @@ Input → `processing-queue.ts` (MMKV) → `background-processor.ts` (Android FG
 
 `app/(auth)` unauthenticated; `app/(tabs)` main tabs (Wallets / Summary / Moni Agent / Profile); `app/(routes)` stack screens. Auth guard in `app/_layout.tsx`.
 
-## Styling
+## Styling (Uniwind)
 
-Tailwind via Uniwind `className`. Native modules in use → always test with a dev client (`pnpm --filter moni android`), never Expo Go.
+Tailwind via Uniwind `className` — **not** NativeWind. Design tokens live in `global.css`:
+
+- Brand scale: `--color-brand-*` in `@theme`
+- Semantic light/dark: `--color-background`, `--color-primary`, etc. in `@layer theme` `@variant`
+- Screens use semantic utilities (`bg-primary`, `text-foreground`, `bg-canvas`) — never hardcode brand hex
+- JS color props (charts, tab bar, icons): `useThemeTokens()` from `@/hooks/use-theme-tokens`
+- Theme preference: `lib/theme/preference.ts` → `Uniwind.setTheme('light' | 'dark' | 'system')`; default **light**
+- Shared chrome: `components/ui/brand-header`, `screen-shell`, `chip`, `primary-button`
+
+Native modules in use → always test with a dev client (`pnpm --filter moni android`), never Expo Go.

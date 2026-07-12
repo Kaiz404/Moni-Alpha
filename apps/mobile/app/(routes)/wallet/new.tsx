@@ -6,13 +6,11 @@ import {
   TouchableOpacity,
   Alert,
   ScrollView,
-  Pressable,
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
 import { router } from 'expo-router';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@/lib/auth/auth-context';
 import { createWallet } from '@/lib/supabase/wallets';
 import { createWalletSchema } from '@repo/types';
@@ -21,9 +19,13 @@ import {
   WALLET_TYPE_OPTIONS,
   type WalletKind,
 } from '@/constants/wallet-form';
+import { BrandHeader } from '@/components/ui/brand-header';
+import { ScreenShell } from '@/components/ui/screen-shell';
+import { chipClass, chipTextClass } from '@/components/ui/chip';
+import { PrimaryButton } from '@/components/ui/primary-button';
 
 const inputClass =
-  'rounded-xl bg-white/95 px-3 py-2.5 text-slate-900 dark:bg-slate-800/95 dark:text-white';
+  'rounded-xl border border-border bg-card px-3 py-2.5 text-foreground';
 
 export default function NewWalletScreen() {
   const { user } = useAuth();
@@ -34,10 +36,6 @@ export default function NewWalletScreen() {
   const [initialBalance, setInitialBalance] = useState('');
   const [color, setColor] = useState(WALLET_ACCENT_COLORS[0]);
   const [loading, setLoading] = useState(false);
-
-  const chipBase =
-    'py-1.5 px-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800';
-  const chipActive = 'border-[#6367FF] bg-[#6367FF]/12 dark:bg-[#6367FF]/25 dark:border-[#8494FF]';
 
   const handleSubmit = async () => {
     if (!user) return;
@@ -65,22 +63,8 @@ export default function NewWalletScreen() {
   };
 
   return (
-    <View className="flex-1 bg-[#C9BEFF] dark:bg-gray-900">
-      <SafeAreaView edges={['top']} className="bg-[#6367FF]">
-        <View className="bg-[#6367FF] h-25 border rounded-b-2xl border-transparent shadow-xl/50 shadow-[#6367FF] flex-row items-center justify-start pl-7 pr-5">
-          <Pressable
-            onPress={() => router.back()}
-            accessibilityRole="button"
-            accessibilityLabel="Go back"
-            hitSlop={10}
-            className="h-10 w-10 items-center justify-center rounded-2xl bg-[#8494FF] active:opacity-80">
-            <MaterialIcons name="arrow-back" size={22} color="#ffffff" />
-          </Pressable>
-          <Text className="ml-3 flex-1 text-2xl font-medium text-white dark:text-white" numberOfLines={1}>
-            New Wallet
-          </Text>
-        </View>
-      </SafeAreaView>
+    <ScreenShell variant="canvas">
+      <BrandHeader title="New Wallet" />
 
       <KeyboardAvoidingView
         className="flex-1"
@@ -92,7 +76,7 @@ export default function NewWalletScreen() {
             keyboardShouldPersistTaps="handled"
             contentContainerClassName="px-4 pt-4 pb-2"
             showsVerticalScrollIndicator={false}>
-            <Text className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+            <Text className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-muted">
               Name
             </Text>
             <TextInput
@@ -103,19 +87,17 @@ export default function NewWalletScreen() {
               onChangeText={setName}
             />
 
-            <Text className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+            <Text className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-muted">
               Type
             </Text>
             <View className="mb-4 flex-row flex-wrap gap-1.5">
               {WALLET_TYPE_OPTIONS.map((t) => (
                 <TouchableOpacity
                   key={t.value}
-                  className={`${chipBase} ${type === t.value ? chipActive : ''}`}
+                  className={chipClass(type === t.value)}
                   onPress={() => setType(t.value)}
                   activeOpacity={0.85}>
-                  <Text
-                    className={`text-xs ${type === t.value ? 'font-semibold text-[#4f54c4] dark:text-indigo-200' : 'text-slate-800 dark:text-slate-100'}`}
-                    numberOfLines={1}>
+                  <Text className={`text-xs ${chipTextClass(type === t.value)}`} numberOfLines={1}>
                     {t.icon} {t.label}
                   </Text>
                 </TouchableOpacity>
@@ -124,7 +106,7 @@ export default function NewWalletScreen() {
 
             <View className="mb-4 flex-row gap-3">
               <View className="min-w-[100px] flex-1">
-                <Text className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                <Text className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-muted">
                   Currency
                 </Text>
                 <TextInput
@@ -138,7 +120,7 @@ export default function NewWalletScreen() {
                 />
               </View>
               <View className="min-w-[120px] flex-1">
-                <Text className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                <Text className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-muted">
                   Initial balance
                 </Text>
                 <TextInput
@@ -152,7 +134,7 @@ export default function NewWalletScreen() {
               </View>
             </View>
 
-            <Text className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+            <Text className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-muted">
               Accent color
             </Text>
             <View className="mb-2 flex-row flex-wrap gap-2">
@@ -161,7 +143,7 @@ export default function NewWalletScreen() {
                   key={c}
                   onPress={() => setColor(c)}
                   activeOpacity={0.85}
-                  className={`h-10 w-10 items-center justify-center rounded-full ${color === c ? 'border-2 border-white' : 'border border-slate-300/80 dark:border-slate-600'}`}
+                  className={`h-10 w-10 items-center justify-center rounded-full ${color === c ? 'border-2 border-primary' : 'border border-border'}`}
                   style={{ backgroundColor: c }}
                   accessibilityLabel={`Color ${c}`}
                 />
@@ -170,25 +152,19 @@ export default function NewWalletScreen() {
           </ScrollView>
 
           <View
-            className="border-t border-slate-400/20 bg-[#C9BEFF] px-4 pt-3 dark:border-slate-600/30 dark:bg-gray-900"
+            className="border-t border-border bg-canvas px-4 pt-3"
             style={{ paddingBottom: Math.max(insets.bottom, 12) }}>
-            <TouchableOpacity
-              className={`flex-row items-center justify-center gap-2 rounded-xl bg-[#6367FF] py-3.5 dark:bg-blue-600 ${loading ? 'opacity-60' : ''}`}
+            <PrimaryButton
+              label="Create wallet"
+              loading={loading}
+              loadingLabel="Creating..."
+              icon="check"
               onPress={handleSubmit}
               disabled={loading}
-              activeOpacity={0.88}>
-              {loading ? (
-                <Text className="text-base font-semibold text-white">Creating…</Text>
-              ) : (
-                <>
-                  <MaterialIcons name="check" size={20} color="#ffffff" />
-                  <Text className="text-base font-semibold text-white">Create wallet</Text>
-                </>
-              )}
-            </TouchableOpacity>
+            />
           </View>
         </View>
       </KeyboardAvoidingView>
-    </View>
+    </ScreenShell>
   );
 }

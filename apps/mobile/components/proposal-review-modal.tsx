@@ -24,6 +24,7 @@ import {
 import { PROPOSED_TRANSACTIONS_CHANGED } from '@/lib/proposals/proposed-transactions-events';
 import { getProposalLocationSnapshot } from '@/lib/ai/proposal-location-cache';
 import { getWallets } from '@/lib/supabase/wallets';
+import { useThemeTokens } from '@/hooks/use-theme-tokens';
 
 type WalletOption = {
   id: string;
@@ -41,6 +42,7 @@ function normalizeTxType(type: ProposedTransaction['type']): TxType {
 }
 
 export function ProposalReviewModal() {
+  const tokens = useThemeTokens();
   const [proposals, setProposals] = useState<ProposedTransaction[]>([]);
   const [wallets, setWallets] = useState<WalletOption[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -195,12 +197,12 @@ export function ProposalReviewModal() {
       presentationStyle="fullScreen"
       statusBarTranslucent
     >
-      <View className="flex-1 bg-white dark:bg-gray-900">
-        <View className="pt-14 pb-4 px-6 border-b border-gray-200 dark:border-gray-700">
-          <Text className="text-xl font-bold text-gray-900 dark:text-white">
+      <View className="flex-1 bg-background">
+        <View className="border-b border-border px-6 pb-4 pt-14">
+          <Text className="text-xl font-bold text-foreground">
             Review Transaction Proposal
           </Text>
-          <Text className="text-gray-500 dark:text-gray-400 text-sm mt-1">
+          <Text className="mt-1 text-sm text-muted">
             {proposals.length > 1
               ? `${currentIndex + 1} of ${proposals.length} proposals`
               : 'AI detected a transaction for your review'}
@@ -244,6 +246,7 @@ function ProposalForm({
   onApprove: (edited: EditedFields) => void;
   onReject: () => void;
 }) {
+  const tokens = useThemeTokens();
   const [txType, setTxType] = useState<TxType>(normalizeTxType(proposal.type));
   const [amount, setAmount] = useState(proposal.amount?.toFixed(2) ?? '0.00');
   const [merchant, setMerchant] = useState(proposal.merchant ?? '');
@@ -291,7 +294,7 @@ function ProposalForm({
 
   const selectedWallet = wallets.find((w) => w.id === selectedWalletId);
   const selectedTransferToWallet = wallets.find((w) => w.id === selectedTransferToWalletId);
-  const amountColor = isTransfer ? '#0284C7' : txType === 'expense' ? '#DC2626' : '#16A34A';
+  const amountColor = isTransfer ? tokens.transfer : txType === 'expense' ? tokens.expense : tokens.income;
   const sourceLabel = {
     text: '💬 From text input',
     image: '📷 From receipt photo',
@@ -330,10 +333,10 @@ function ProposalForm({
 
   return (
     <View>
-      <View className="bg-gray-100 dark:bg-gray-800 rounded-xl px-4 py-3 mb-4">
-        <Text className="text-sm text-gray-600 dark:text-gray-400">{sourceLabel}</Text>
+      <View className="mb-4 rounded-xl bg-background-muted px-4 py-3">
+        <Text className="text-sm text-muted">{sourceLabel}</Text>
         {proposal.sourceText && (
-          <Text className="text-gray-900 dark:text-white text-sm mt-1" numberOfLines={3}>
+          <Text className="mt-1 text-sm text-foreground" numberOfLines={3}>
             &ldquo;{proposal.sourceText}&rdquo;
           </Text>
         )}
@@ -345,7 +348,7 @@ function ProposalForm({
           />
         )}
         {proposal.sourceType === 'notification' && proposal.notificationBody && (
-          <Text className="text-gray-900 dark:text-white text-sm mt-1" numberOfLines={3}>
+          <Text className="mt-1 text-sm text-foreground" numberOfLines={3}>
             {proposal.notificationTitle}: {proposal.notificationBody}
           </Text>
         )}
@@ -353,7 +356,7 @@ function ProposalForm({
 
       <ProposalLocationSection proposalId={proposal.id} />
 
-      <Text className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">
+      <Text className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted">
         Transaction Type
       </Text>
       <View className="flex-row mb-4 gap-2">
@@ -367,8 +370,8 @@ function ProposalForm({
                   ? 'bg-red-50 dark:bg-red-950 border-red-400'
                   : t === 'income'
                     ? 'bg-green-50 dark:bg-green-950 border-green-400'
-                    : 'bg-sky-50 dark:bg-sky-950 border-sky-400'
-                : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-600'
+                    : 'bg-primary-muted border-sky-400'
+                : 'bg-card border-border'
             }`}
             activeOpacity={0.7}
           >
@@ -380,7 +383,7 @@ function ProposalForm({
                     : t === 'income'
                       ? 'text-green-600 dark:text-green-400'
                       : 'text-sky-600 dark:text-sky-400'
-                  : 'text-gray-500 dark:text-gray-400'
+                  : 'text-muted'
               }`}
             >
               {t}
@@ -391,7 +394,7 @@ function ProposalForm({
 
       <FieldRow label="Amount">
         <TextInput
-          className="flex-1 text-right text-base font-semibold bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2"
+          className="flex-1 rounded-lg border border-border bg-card px-3 py-2 text-right text-base font-semibold"
           style={{ color: amountColor }}
           value={amount}
           onChangeText={setAmount}
@@ -402,7 +405,7 @@ function ProposalForm({
 
       <FieldRow label={isTransfer ? 'From wallet' : 'Wallet'}>
         <TouchableOpacity
-          className="flex-1 flex-row items-center justify-end bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2"
+          className="flex-1 flex-row items-center justify-end rounded-lg border border-border bg-card px-3 py-2"
           onPress={() => {
             setShowTransferToPicker(false);
             setShowWalletPicker(!showWalletPicker);
@@ -412,31 +415,31 @@ function ProposalForm({
           <Text
             className={`text-sm ${
               selectedWallet
-                ? 'text-gray-900 dark:text-white'
-                : 'text-gray-400 dark:text-gray-500'
+                ? 'text-foreground'
+                : 'text-muted'
             }`}
           >
             {selectedWallet?.name ?? 'Select wallet...'}
           </Text>
-          <Text className="text-gray-400 ml-2 text-xs">▼</Text>
+          <Text className="ml-2 text-xs text-muted">▼</Text>
         </TouchableOpacity>
       </FieldRow>
 
       {showWalletPicker && (
-        <View className="mb-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl overflow-hidden">
+        <View className="mb-4 overflow-hidden rounded-xl border border-border bg-card">
           {wallets.map((w) => (
             <Pressable
               key={w.id}
-              className={`px-4 py-3 border-b border-gray-100 dark:border-gray-700 ${
-                w.id === selectedWalletId ? 'bg-blue-50 dark:bg-blue-950' : ''
+              className={`border-b border-border px-4 py-3 ${
+                w.id === selectedWalletId ? 'bg-primary-muted' : ''
               }`}
               onPress={() => {
                 setSelectedWalletId(w.id);
                 setShowWalletPicker(false);
               }}
             >
-              <Text className="text-gray-900 dark:text-white text-sm font-medium">{w.name}</Text>
-              <Text className="text-gray-400 dark:text-gray-500 text-xs capitalize">
+              <Text className="text-sm font-medium text-foreground">{w.name}</Text>
+              <Text className="text-xs capitalize text-muted">
                 {w.type} · {w.currency}
               </Text>
             </Pressable>
@@ -448,7 +451,7 @@ function ProposalForm({
         <>
           <FieldRow label="To wallet">
             <TouchableOpacity
-              className="flex-1 flex-row items-center justify-end bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2"
+              className="flex-1 flex-row items-center justify-end rounded-lg border border-border bg-card px-3 py-2"
               onPress={() => {
                 setShowWalletPicker(false);
                 setShowTransferToPicker(!showTransferToPicker);
@@ -458,38 +461,38 @@ function ProposalForm({
               <Text
                 className={`text-sm ${
                   selectedTransferToWallet
-                    ? 'text-gray-900 dark:text-white'
-                    : 'text-gray-400 dark:text-gray-500'
+                    ? 'text-foreground'
+                    : 'text-muted'
                 }`}
               >
                 {selectedTransferToWallet?.name ?? 'Select destination...'}
               </Text>
-              <Text className="text-gray-400 ml-2 text-xs">▼</Text>
+              <Text className="ml-2 text-xs text-muted">▼</Text>
             </TouchableOpacity>
           </FieldRow>
 
           {showTransferToPicker && (
-            <View className="mb-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl overflow-hidden">
+            <View className="mb-4 overflow-hidden rounded-xl border border-border bg-card">
               {destinationWallets.length === 0 ? (
-                <Text className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">
+                <Text className="px-4 py-3 text-sm text-muted">
                   Add another wallet to complete this transfer.
                 </Text>
               ) : (
                 destinationWallets.map((w) => (
                   <Pressable
                     key={w.id}
-                    className={`px-4 py-3 border-b border-gray-100 dark:border-gray-700 ${
-                      w.id === selectedTransferToWalletId ? 'bg-blue-50 dark:bg-blue-950' : ''
+                    className={`border-b border-border px-4 py-3 ${
+                      w.id === selectedTransferToWalletId ? 'bg-primary-muted' : ''
                     }`}
                     onPress={() => {
                       setSelectedTransferToWalletId(w.id);
                       setShowTransferToPicker(false);
                     }}
                   >
-                    <Text className="text-gray-900 dark:text-white text-sm font-medium">
+                    <Text className="text-sm font-medium text-foreground">
                       {w.name}
                     </Text>
-                    <Text className="text-gray-400 dark:text-gray-500 text-xs capitalize">
+                    <Text className="text-xs capitalize text-muted">
                       {w.type} · {w.currency}
                     </Text>
                   </Pressable>
@@ -503,32 +506,32 @@ function ProposalForm({
       {!isTransfer ? (
         <FieldRow label="Merchant">
           <TextInput
-            className="flex-1 text-right text-sm text-gray-900 dark:text-white bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2"
+            className="flex-1 rounded-lg border border-border bg-card px-3 py-2 text-right text-sm text-foreground"
             value={merchant}
             onChangeText={setMerchant}
             placeholder="optional"
-            placeholderTextColor="#9CA3AF"
+            placeholderTextColor={tokens.muted}
           />
         </FieldRow>
       ) : null}
 
       <FieldRow label="Description">
         <TextInput
-          className="flex-1 text-right text-sm text-gray-900 dark:text-white bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2"
+          className="flex-1 rounded-lg border border-border bg-card px-3 py-2 text-right text-sm text-foreground"
           value={description}
           onChangeText={setDescription}
           placeholder="optional"
-          placeholderTextColor="#9CA3AF"
+          placeholderTextColor={tokens.muted}
         />
       </FieldRow>
 
       <FieldRow label="Date">
         <TextInput
-          className="flex-1 text-right text-sm text-gray-900 dark:text-white bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2"
+          className="flex-1 rounded-lg border border-border bg-card px-3 py-2 text-right text-sm text-foreground"
           value={date}
           onChangeText={setDate}
           placeholder="YYYY-MM-DD"
-          placeholderTextColor="#9CA3AF"
+          placeholderTextColor={tokens.muted}
         />
       </FieldRow>
 
@@ -541,31 +544,31 @@ function ProposalForm({
 
       <View className="flex-row mt-6 gap-3">
         <TouchableOpacity
-          className="flex-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl py-4 items-center"
+          className="flex-1 items-center rounded-xl border border-border bg-card py-4"
           onPress={onReject}
           disabled={isActioning}
           activeOpacity={0.7}
         >
           {isActioning ? (
-            <ActivityIndicator size="small" color="#6B7280" />
+            <ActivityIndicator size="small" color={tokens.muted} />
           ) : (
-            <Text className="text-gray-700 dark:text-gray-300 font-semibold text-base">
+            <Text className="text-base font-semibold text-foreground">
               Decline
             </Text>
           )}
         </TouchableOpacity>
         <TouchableOpacity
-          className={`flex-1 rounded-xl py-4 items-center ${
-            canApprove ? 'bg-blue-600' : 'bg-blue-400'
+          className={`flex-1 items-center rounded-xl py-4 ${
+            canApprove ? 'bg-primary' : 'bg-primary/60'
           }`}
           onPress={handleApprovePress}
           disabled={isActioning}
           activeOpacity={0.7}
         >
           {isActioning ? (
-            <ActivityIndicator size="small" color="white" />
+            <ActivityIndicator size="small" color={tokens.primaryForeground} />
           ) : (
-            <Text className="text-white font-semibold text-base">
+            <Text className="text-base font-semibold text-primary-foreground">
               {canApprove ? 'Approve' : isTransfer ? 'Select wallets' : 'Select Wallet'}
             </Text>
           )}
@@ -584,13 +587,14 @@ function FieldRow({
 }) {
   return (
     <View className="flex-row items-center mb-3">
-      <Text className="text-gray-500 dark:text-gray-400 text-sm w-24">{label}</Text>
+      <Text className="w-24 text-sm text-muted">{label}</Text>
       {children}
     </View>
   );
 }
 
 function ProposalLocationSection({ proposalId }: { proposalId: string }) {
+  const tokens = useThemeTokens();
   const [expanded, setExpanded] = useState(false);
   const snapshot = useMemo(() => getProposalLocationSnapshot(proposalId), [proposalId]);
 
@@ -613,14 +617,14 @@ function ProposalLocationSection({ proposalId }: { proposalId: string }) {
         onPress={() => setExpanded(!expanded)}
         activeOpacity={0.7}
       >
-        <Text className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">
+        <Text className="text-xs font-semibold uppercase tracking-wider text-muted">
           Captured location {expanded ? '▲' : '▼'}
         </Text>
       </TouchableOpacity>
       {expanded ? (
         <View className="mt-2">
           <View
-            className="rounded-xl overflow-hidden border border-gray-200 dark:border-gray-600 bg-gray-100 dark:bg-gray-800"
+            className="overflow-hidden rounded-xl border border-border bg-background-muted"
             style={styles.locationMapBox}
           >
             <MapView
@@ -637,12 +641,12 @@ function ProposalLocationSection({ proposalId }: { proposalId: string }) {
                   latitude: snapshot.latitude,
                   longitude: snapshot.longitude,
                 }}
-                pinColor="#1e88e5"
+                pinColor={tokens.primary}
               />
             </MapView>
           </View>
           {snapshot.name ? (
-            <Text className="text-gray-500 dark:text-gray-400 text-xs mt-2" numberOfLines={3}>
+            <Text className="mt-2 text-xs text-muted" numberOfLines={3}>
               {snapshot.name}
             </Text>
           ) : null}
@@ -678,19 +682,19 @@ function AIReasoningSection({
         onPress={() => setExpanded(!expanded)}
         activeOpacity={0.7}
       >
-        <Text className="text-gray-400 dark:text-gray-500 text-xs font-medium">
+        <Text className="text-xs font-medium text-muted">
           AI Analysis {expanded ? '▲' : '▼'}
         </Text>
         {confidence !== null && (
-          <View className="ml-2 bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded">
-            <Text className="text-gray-500 dark:text-gray-400 text-xs">
+          <View className="ml-2 rounded bg-background-muted px-2 py-0.5">
+            <Text className="text-xs text-muted">
               {Math.round(confidence * 100)}% confidence
             </Text>
           </View>
         )}
       </TouchableOpacity>
       {expanded && (
-        <Text className="text-gray-400 dark:text-gray-500 text-xs mt-2 leading-4">
+        <Text className="mt-2 text-xs leading-4 text-muted">
           {reasoning}
         </Text>
       )}

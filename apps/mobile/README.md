@@ -20,11 +20,19 @@ Env: copy `.env.example` to `.env` (Supabase publishable key, AI backend URL, Go
 | `lib/store/` | Legend-State synced observables — the data layer |
 | `lib/supabase/` | Supabase client (publishable key) + CRUD helpers over the store |
 | `lib/auth/` | Auth context (email/password + native Google Sign-In) |
-| `lib/mmkv/` | MMKV instances: auth session, store cache, upload queue |
+| `lib/mmkv/` | MMKV instances: auth session, store cache, upload queue, UI preferences (theme) |
+| `lib/theme/` | Theme preference ↔ Uniwind (`light` / `dark` / `system`) |
 | `lib/ai/` | Processing queue, background processor, AI client (HTTP ↔ Go backend, mock fallback) |
 | `lib/notifications/` | Deterministic notification prefilter (shared with headless task) |
 | `lib/receipts/` | Local receipt image save + Storage upload queue |
+| `global.css` | Uniwind design tokens (brand + light/dark semantic colors) |
 | `index.js` | Android headless notification listener (registered before expo-router) |
+
+## Theming
+
+Tokens are CSS-first in `global.css`. Prefer semantic classes (`bg-primary`, `text-foreground`, `bg-card`) and shared UI helpers under `components/ui/` (`BrandHeader`, `ScreenShell`, chips, `PrimaryButton`). For native APIs that need a color string, use `useThemeTokens()`. Change brand colors in `global.css` only — do not hardcode hex in screens.
+
+Appearance: Profile → Appearance (`light` default; `system` follows the device). Persisted in MMKV via `lib/theme/preference.ts`.
 
 ## AI
 

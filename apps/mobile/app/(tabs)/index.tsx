@@ -25,7 +25,7 @@ import {
 } from 'victory-native';
 
 import { useAuth } from '@/lib/auth/auth-context';
-import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { getCategoryNameRows } from '@/lib/supabase/categories';
 import { getWallets, deleteWallet } from '@/lib/supabase/wallets';
 import { getWalletBalances } from '@/lib/supabase/balances';
@@ -57,8 +57,6 @@ type WalletTxBundle = { recent: any[]; chart: WalletTx[] };
 
 const DOT_ACTIVE_W = 24;
 const DOT_INACTIVE_W = 8;
-
-const PIE_COLOR_SCALE = ['#0a7ea4', '#3b82f6', '#6366f1', '#8b5cf6', '#ec4899', '#f59e0b'];
 
 function WalletPaginationDots({
   count,
@@ -93,11 +91,12 @@ function WalletPaginationDot({
   activeIndex: SharedValue<number>;
   onPress: () => void;
 }) {
+  const tokens = useThemeTokens();
   const style = useAnimatedStyle(() => {
     const active = Math.round(activeIndex.value) === index;
     return {
       width: withTiming(active ? DOT_ACTIVE_W : DOT_INACTIVE_W, { duration: 180 }),
-      backgroundColor: active ? '#8494FF' : '#94a3b8',
+      backgroundColor: active ? tokens.primary : '#94a3b8',
     };
   });
   return (
@@ -132,8 +131,7 @@ function CarouselItemDepth({
 export default function WalletsScreen() {
   const screenWidth = Dimensions.get('window').width;
   const { width, height } = useWindowDimensions();
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === 'dark';
+  const tokens = useThemeTokens();
   const carouselItemWidth = Math.min(screenWidth - 56, 340);
   const chartWidth = Math.max(width - 48, 280);
   const { user } = useAuth();
@@ -222,7 +220,7 @@ export default function WalletsScreen() {
     const total = pieData.reduce((s, p) => s + (p.y || 0), 0) || 1;
     return (pieData.length ? pieData : [{ x: 'No expenses', y: 1 }]).slice(0, 6).map((item, index) => ({
       name: `${item.x} (${Math.round((item.y / total) * 100)}%)`,
-      symbol: { fill: PIE_COLOR_SCALE[index % PIE_COLOR_SCALE.length] },
+      symbol: { fill: tokens.chart[index % tokens.chart.length] },
     }));
   }, [pieData]);
 
@@ -431,7 +429,7 @@ export default function WalletsScreen() {
           <CarouselItemDepth animationValue={animationValue}>
             <View
               style={{ width: carouselItemWidth, height: 200 }}
-              className="rounded-3xl border border-dashed border-slate-300 bg-white/90 p-4 shadow-sm dark:border-slate-600 dark:bg-slate-800 relative"
+              className="relative rounded-3xl border border-dashed border-border bg-card p-4 shadow-sm"
             >
               <TouchableOpacity
                 onPress={() => router.push('/(routes)/wallet/new' as any)}
@@ -440,15 +438,15 @@ export default function WalletsScreen() {
               >
                 <View className="flex-row items-center space-x-3">
                   <View
-                    className="w-11 h-11 rounded-2xl items-center justify-center"
-                    style={{ backgroundColor: '#8494FF' }}
+                    className="h-11 w-11 items-center justify-center rounded-2xl"
+                    style={{ backgroundColor: tokens.primary }}
                   >
-                    <Text className="text-base text-white font-bold">+</Text>
+                    <Text className="text-base font-bold text-primary-foreground">+</Text>
                   </View>
                   
                 </View>
                 <View className="mt-4">
-                  <Text className="text-sm text-slate-500 dark:text-slate-300">Tap to Add New Wallet</Text>
+                  <Text className="text-sm text-muted">Tap to Add New Wallet</Text>
                 </View>
               </TouchableOpacity>
             </View>
@@ -462,7 +460,7 @@ export default function WalletsScreen() {
         <CarouselItemDepth animationValue={animationValue}>
             <View
               style={{ width: carouselItemWidth, height: 200 }}
-              className="rounded-3xl border border-white/20 bg-[#8494FF] p-4 shadow-sm dark:border-indigo-400/25 dark:bg-[#4f54c4] relative"
+              className="relative rounded-3xl border border-white/20 bg-primary p-4 shadow-sm"
             >
             <TouchableOpacity
               onPress={() =>
@@ -472,17 +470,17 @@ export default function WalletsScreen() {
             >
               <View className="flex-row items-start justify-between">
                 <View className="flex-row items-center space-x-3 flex-1 ">
-                  <View className="w-12 h-12 rounded-2xl items-center justify-center bg-white/25">
-                    <Text className="text-base text-white font-bold">{item.icon ?? 'W'}</Text>
+                  <View className="h-12 w-12 items-center justify-center rounded-2xl bg-white/25">
+                    <Text className="text-base font-bold text-primary-foreground">{item.icon ?? 'W'}</Text>
                   </View>
                   <View className="flex-1 ml-2">
-                    <Text className="text-xs font-semibold uppercase tracking-[0.05em] text-[#FAFAFA]/95">
+                    <Text className="text-xs font-semibold uppercase tracking-[0.05em] text-primary-foreground/95">
                       {item.type ?? 'Wallet'}
                     </Text>
-                    <Text className="text-lg font-bold text-[#FAFAFA]">
+                    <Text className="text-lg font-bold text-primary-foreground">
                       {item.name}
                     </Text>
-                    <Text className="text-xs text-[#FAFAFA]/80">
+                    <Text className="text-xs text-primary-foreground/80">
                       {item.currency ?? 'USD'}
                     </Text>
                   </View>
@@ -497,7 +495,7 @@ export default function WalletsScreen() {
                         onPress={() => setExpandedWalletId(null)}
                         className="rounded-full px-1.5 py-0.5"
                       >
-                        <Text className="text-xs font-semibold text-white/80">✕</Text>
+                        <Text className="text-xs font-semibold text-primary-foreground/80">✕</Text>
                       </TouchableOpacity>
 
                       <TouchableOpacity
@@ -507,14 +505,14 @@ export default function WalletsScreen() {
                         }}
                         className="rounded-full border border-white/40 bg-white/20 px-2 py-1"
                       >
-                        <Text className="text-xs font-semibold text-white">Edit</Text>
+                        <Text className="text-xs font-semibold text-primary-foreground">Edit</Text>
                       </TouchableOpacity>
 
                       <TouchableOpacity
                         onPress={() => handleDeleteWallet(item.id)}
-                        className="rounded-full border border-red-300 bg-red-50 px-2 py-1 dark:border-red-500/50 dark:bg-red-950/60"
+                        className="rounded-full border border-danger/40 bg-danger/10 px-2 py-1"
                       >
-                        <Text className="text-xs font-semibold text-red-700 dark:text-red-300">Del</Text>
+                        <Text className="text-xs font-semibold text-danger">Del</Text>
                       </TouchableOpacity>
 
                       
@@ -524,15 +522,15 @@ export default function WalletsScreen() {
                       onPress={() => setExpandedWalletId(item.id)}
                       className="rounded-full bg-white/25 px-2.5 py-1.5"
                     >
-                      <Text className="text-sm font-semibold text-white">⋯</Text>
+                      <Text className="text-sm font-semibold text-primary-foreground">⋯</Text>
                     </TouchableOpacity>
                   )}
                 </View>
               </View>
 
               <View className="mt-4 top-3">
-                <Text className="text-xs text-[#FAFAFA]/80">Balance</Text>
-                <Text className="mt-1 text-3xl font-bold text-[#FAFAFA]">
+                <Text className="text-xs text-primary-foreground/80">Balance</Text>
+                <Text className="mt-1 text-3xl font-bold text-primary-foreground">
                   ${balance.toFixed(2)}
                 </Text>
               </View>
@@ -562,7 +560,7 @@ export default function WalletsScreen() {
   );
 
   return (
-    <View className="flex-1 bg-white dark:bg-gray-900 pt-5">
+    <View className="flex-1 bg-background pt-5">
       <ScrollView
         nestedScrollEnabled
         className="flex-1"
@@ -571,10 +569,10 @@ export default function WalletsScreen() {
       >
         <View className="px-4 pt-4 pb-2 flex-row items-center justify-between">
           <View className="flex-row items-center space-x-2">
-            <View className="w-9 h-9 rounded-xl bg-slate-200 dark:bg-slate-700 items-center justify-center">
-              <Text className="text-base text-slate-700 dark:text-slate-100 font-bold">{focusedWallet?.icon ?? 'W'}</Text>
+            <View className="h-9 w-9 items-center justify-center rounded-xl bg-background-muted">
+              <Text className="text-base font-bold text-foreground">{focusedWallet?.icon ?? 'W'}</Text>
             </View>
-            <Text className="text-2xl ml-3 font-bold text-gray-900 dark:text-white">Wallets</Text>
+            <Text className="ml-3 text-2xl font-bold text-foreground">Wallets</Text>
           </View>
           <SyncStatusIndicator />
         </View>
@@ -584,7 +582,7 @@ export default function WalletsScreen() {
             <Carousel
               ref={carouselRef}
               autoPlayInterval={2000}
-              data={[...wallets, { id: 'add', name: 'Add Wallet', type: 'Action', icon: '+', color: '#10b981' }]}
+              data={[...wallets, { id: 'add', name: 'Add Wallet', type: 'Action', icon: '+' }]}
               loop={true}
               pagingEnabled={true}
               snapEnabled={true}
@@ -616,7 +614,7 @@ export default function WalletsScreen() {
             <Carousel
               ref={carouselRef}
               autoPlayInterval={2000}
-              data={[{ id: 'add', name: 'Add Wallet', type: 'Action', icon: '+', color: '#10b981' }]}
+              data={[{ id: 'add', name: 'Add Wallet', type: 'Action', icon: '+' }]}
               loop={true}
               pagingEnabled={true}
               snapEnabled={true}
@@ -645,15 +643,15 @@ export default function WalletsScreen() {
           onPressDot={handleWalletDotPress}
         />
 
-        <View className="bg-[#6367FF]/70 dark:bg-[#2a2d5c]/95 rounded-t-2xl mt-1">
+        <View className="mt-1 rounded-t-2xl bg-primary-muted">
           <View className="flex-row justify-between relative">
-            <View className="h-15 w-12 left-12 rounded-b-4xl border-l-4 border-r-4 border-b-4 border-[#EDEDED] dark:border-slate-700 bg-[#9EADFF] dark:bg-[#4a5080] bottom-1" />
-            <View className="h-15 w-12 right-12 rounded-b-4xl border-l-4 border-r-4 border-b-4 border-[#EDEDED] dark:border-slate-700 bg-[#9EADFF] dark:bg-[#4a5080] bottom-1" />
+            <View className="h-15 w-12 left-12 rounded-b-4xl border-b-4 border-l-4 border-r-4 border-border bg-primary-soft bottom-1" />
+            <View className="h-15 w-12 right-12 rounded-b-4xl border-b-4 border-l-4 border-r-4 border-border bg-primary-soft bottom-1" />
           </View>
 
-          <View className="bg-[#FAFAFA]/80 dark:bg-gray-950/95 mt-1 rounded-t-2xl px-4 pt-6 pb-8">
+          <View className="mt-1 rounded-t-2xl bg-background px-4 pb-8 pt-6">
             <View className="flex-row justify-between items-center mb-2">
-              <Text className="text-sm font-semibold text-slate-700 dark:text-slate-100">
+              <Text className="text-sm font-semibold text-foreground">
                 Recent Transactions
               </Text>
               <Link
@@ -663,8 +661,8 @@ export default function WalletsScreen() {
                     : '/transaction/new') as any
                 }
                 asChild>
-                <TouchableOpacity className="bg-blue-600 dark:bg-blue-500 px-4 py-2 rounded-lg">
-                  <Text className="text-white font-semibold">+ Add</Text>
+                <TouchableOpacity className="rounded-lg bg-primary px-4 py-2">
+                  <Text className="font-semibold text-primary-foreground">+ Add</Text>
                 </TouchableOpacity>
               </Link>
             </View>
@@ -683,10 +681,10 @@ export default function WalletsScreen() {
                   )
                 : item.merchant || item.description || item.type;
               const amountClass = isTransfer
-                ? 'text-sky-600 dark:text-sky-400'
+                ? 'text-sky-600'
                 : isIncome
-                  ? 'text-green-600 dark:text-green-400'
-                  : 'text-red-500 dark:text-red-400';
+                  ? 'text-green-600'
+                  : 'text-red-500';
               return (
                 <Pressable
                   key={item.id}
@@ -696,7 +694,7 @@ export default function WalletsScreen() {
                     router.push({ pathname: '/transaction/[id]', params: { id: item.id } });
                   }}
                   style={({ pressed }) => (pressed ? { opacity: 0.92 } : undefined)}
-                  className="mb-2 rounded-xl border border-slate-300 bg-white p-3 shadow-sm dark:border-slate-700 dark:bg-slate-800">
+                  className="mb-2 rounded-xl border border-border bg-card p-3 shadow-sm">
                   <View className="flex-row items-start justify-between gap-2">
                     <View className="min-w-0 flex-1 pr-1">
                       <View className="flex-row items-baseline gap-1 flex-wrap">
@@ -704,12 +702,12 @@ export default function WalletsScreen() {
                           {isTransfer ? '' : isIncome ? '+' : '-'}
                           {item.amount.toFixed(2)}
                         </Text>
-                        <Text className="text-xs text-slate-500 dark:text-slate-400">
+                        <Text className="text-xs text-muted">
                           {focusedWallet?.currency ?? 'USD'}
                         </Text>
                       </View>
-                      <Text className="text-base text-slate-900 dark:text-white">{title}</Text>
-                      <Text className="text-xs text-slate-600 dark:text-slate-400">
+                      <Text className="text-base text-foreground">{title}</Text>
+                      <Text className="text-xs text-muted">
                         {new Date(item.transactionDate).toLocaleDateString()}
                       </Text>
                     </View>
@@ -720,7 +718,7 @@ export default function WalletsScreen() {
                         onPress={() => handleDeleteTransaction(item.id)}
                         className="rounded p-1 active:opacity-70"
                       >
-                        <MaterialIcons name="delete-outline" size={18} color="#ef4444" />
+                        <MaterialIcons name="delete-outline" size={18} color={tokens.danger} />
                       </Pressable>
                     </View>
                   </View>
@@ -728,8 +726,8 @@ export default function WalletsScreen() {
               );
             })}
             {transactions.length === 0 ? (
-              <View className="mb-2 rounded-xl border border-dashed border-slate-300 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-800">
-                <Text className="text-center text-sm text-slate-500 dark:text-slate-400">
+              <View className="mb-2 rounded-xl border border-dashed border-border bg-card p-4 shadow-sm">
+                <Text className="text-center text-sm text-muted">
                   No transactions for this wallet yet. Tap + Add to create one.
                 </Text>
               </View>
@@ -737,8 +735,8 @@ export default function WalletsScreen() {
 
             {focusedWallet && hasSvgViewManager ? (
               <>
-                <View className="mt-6 rounded-xl bg-gray-100 dark:bg-gray-800 p-3">
-                  <Text className="text-base font-semibold text-gray-900 dark:text-white mb-2">
+                <View className="mt-6 rounded-xl bg-background-muted p-3">
+                  <Text className="mb-2 text-base font-semibold text-foreground">
                     Expense categories ({focusedWallet.name})
                   </Text>
                   <VictoryPie
@@ -746,12 +744,12 @@ export default function WalletsScreen() {
                     width={chartWidth}
                     height={pieHeight}
                     data={pieData.length ? pieData : [{ x: 'No expenses', y: 1 }]}
-                    colorScale={PIE_COLOR_SCALE}
+                    colorScale={[...tokens.chart]}
                     innerRadius={pieInnerRadius}
                     padAngle={2}
                     labels={() => ''}
                     style={{
-                      labels: { fill: isDark ? '#f3f4f6' : '#111827', fontSize: 10, padding: 4 },
+                      labels: { fill: tokens.foreground, fontSize: 10, padding: 4 },
                     }}
                   />
                   <VictoryLegend
@@ -761,12 +759,12 @@ export default function WalletsScreen() {
                     gutter={12}
                     itemsPerRow={2}
                     data={pieLegendData}
-                    style={{ labels: { fill: isDark ? '#d1d5db' : '#374151', fontSize: 11 } }}
+                    style={{ labels: { fill: tokens.muted, fontSize: 11 } }}
                   />
                 </View>
 
-                <View className="mt-6 rounded-xl bg-gray-100 dark:bg-gray-800 p-3 mb-2">
-                  <Text className="text-base font-semibold text-gray-900 dark:text-white mb-2">
+                <View className="mb-2 mt-6 rounded-xl bg-background-muted p-3">
+                  <Text className="mb-2 text-base font-semibold text-foreground">
                     Balance over time ({focusedWallet.name})
                   </Text>
                   <VictoryChart
@@ -781,8 +779,8 @@ export default function WalletsScreen() {
                       label="Date"
                       tickFormat={(tick) => `${new Date(tick).getMonth() + 1}/${new Date(tick).getDate()}`}
                       style={{
-                        tickLabels: { fill: isDark ? '#d1d5db' : '#374151', fontSize: 10 },
-                        axisLabel: { fill: isDark ? '#d1d5db' : '#374151', fontSize: 11, padding: 28 },
+                        tickLabels: { fill: tokens.muted, fontSize: 10 },
+                        axisLabel: { fill: tokens.muted, fontSize: 11, padding: 28 },
                       }}
                     />
                     <VictoryAxis
@@ -790,18 +788,18 @@ export default function WalletsScreen() {
                       label={`Balance (${focusedWallet.currency ?? 'USD'})`}
                       tickFormat={(tick) => `${Number(tick).toFixed(0)}`}
                       style={{
-                        tickLabels: { fill: isDark ? '#d1d5db' : '#374151', fontSize: 10 },
-                        axisLabel: { fill: isDark ? '#d1d5db' : '#374151', fontSize: 11, padding: 56 },
+                        tickLabels: { fill: tokens.muted, fontSize: 10 },
+                        axisLabel: { fill: tokens.muted, fontSize: 11, padding: 56 },
                       }}
                     />
                     <VictoryLine
                       data={walletBalanceLineData}
-                      style={{ data: { stroke: '#0a7ea4', strokeWidth: 3 } }}
+                      style={{ data: { stroke: tokens.primary, strokeWidth: 3 } }}
                     />
                     <VictoryScatter
                       data={walletBalanceLineData}
                       size={4}
-                      style={{ data: { fill: '#0a7ea4' } }}
+                      style={{ data: { fill: tokens.primary } }}
                     />
                   </VictoryChart>
                 </View>
@@ -809,8 +807,8 @@ export default function WalletsScreen() {
             ) : null}
 
             {focusedWallet && !hasSvgViewManager ? (
-              <View className="mt-6 rounded-xl border border-slate-300 bg-white p-4 dark:border-slate-600 dark:bg-slate-800">
-                <Text className="text-sm text-slate-600 dark:text-slate-300">
+              <View className="mt-6 rounded-xl border border-border bg-card p-4">
+                <Text className="text-sm text-muted">
                   Charts need native SVG support. Reinstall the dev client after dependency changes (react-native-svg).
                 </Text>
               </View>

@@ -1,46 +1,61 @@
 /**
- * Below are the colors that are used in the app. The colors are defined in the light and dark mode.
- * There are many other ways to style your app. For example, [Nativewind](https://www.nativewind.dev/), [Tamagui](https://tamagui.dev/), [unistyles](https://reactnativeunistyles.vercel.app), etc.
+ * Design tokens for JS APIs that cannot use className (tab bar, charts, icons).
+ * Semantic colors live in `global.css` — change brand there, not here.
+ * Prefer `useThemeTokens()` / `useCSSVariable` in components.
  */
 
 import { Platform } from 'react-native';
 
-const tintColorLight = '#0a7ea4';
-const tintColorDark = '#fff';
+/** Fallback hex when CSS variables are not yet resolved (SSR / first paint). */
+export const ThemeFallbacks = {
+  primary: '#059669',
+  primarySoft: '#10b981',
+  primaryForeground: '#ffffff',
+  accent: '#10b981',
+  background: '#ffffff',
+  backgroundDark: '#0b1210',
+  foreground: '#0f172a',
+  foregroundDark: '#ecfdf5',
+  muted: '#64748b',
+  mutedDark: '#94a3b8',
+  border: '#d8e5de',
+  danger: '#dc2626',
+  income: '#059669',
+  expense: '#dc2626',
+  transfer: '#0284c7',
+  chart: ['#059669', '#0d9488', '#0284c7', '#7c3aed', '#db2777', '#d97706'] as const,
+} as const;
 
-/** Matches wallets tab accents (carousel active, wallet card chrome). */
-const accentColor = '#8494FF';
-
+/**
+ * @deprecated Prefer semantic Uniwind classes (`bg-background`, `text-foreground`)
+ * or `useThemeTokens()`. Kept for gradual migration of ThemedText/ThemedView.
+ */
 export const Colors = {
   light: {
-    text: '#11181C',
-    background: '#fff',
-    tint: tintColorLight,
-    accent: accentColor,
-    icon: '#687076',
-    tabIconDefault: '#687076',
-    tabIconSelected: tintColorLight,
+    text: ThemeFallbacks.foreground,
+    background: ThemeFallbacks.background,
+    tint: ThemeFallbacks.primary,
+    accent: ThemeFallbacks.accent,
+    icon: ThemeFallbacks.muted,
+    tabIconDefault: ThemeFallbacks.muted,
+    tabIconSelected: ThemeFallbacks.primary,
   },
   dark: {
-    text: '#ECEDEE',
-    background: '#151718',
-    tint: tintColorDark,
-    accent: accentColor,
-    icon: '#9BA1A6',
-    tabIconDefault: '#9BA1A6',
-    tabIconSelected: tintColorDark,
+    text: ThemeFallbacks.foregroundDark,
+    background: ThemeFallbacks.backgroundDark,
+    tint: ThemeFallbacks.primarySoft,
+    accent: ThemeFallbacks.accent,
+    icon: ThemeFallbacks.mutedDark,
+    tabIconDefault: ThemeFallbacks.mutedDark,
+    tabIconSelected: ThemeFallbacks.primarySoft,
   },
 };
 
 export const Fonts = Platform.select({
   ios: {
-    /** iOS `UIFontDescriptorSystemDesignDefault` */
     sans: 'system-ui',
-    /** iOS `UIFontDescriptorSystemDesignSerif` */
     serif: 'ui-serif',
-    /** iOS `UIFontDescriptorSystemDesignRounded` */
     rounded: 'ui-rounded',
-    /** iOS `UIFontDescriptorSystemDesignMonospaced` */
     mono: 'ui-monospace',
   },
   default: {

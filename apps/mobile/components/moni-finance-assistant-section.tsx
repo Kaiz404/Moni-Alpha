@@ -41,7 +41,7 @@ function agentAccent(agentKey: MoniFinanceAssistantV1['insights'][number]['agent
     default:
       return {
         border: 'border-slate-200 dark:border-slate-600',
-        bar: 'bg-slate-400',
+        bar: 'bg-muted',
         icon: 'insights',
       };
   }
@@ -69,8 +69,8 @@ export function MoniFinanceAssistantSection({
   const canToggleCollapse = hasInsights && !generating;
 
   return (
-    <View className="rounded-2xl overflow-hidden mb-4 border border-indigo-200/60 dark:border-indigo-500/40 bg-indigo-50/80 dark:bg-slate-800/90">
-      <View className="flex-row items-center justify-between px-4 py-3 bg-indigo-600 dark:bg-indigo-950/90">
+    <View className="mb-4 overflow-hidden rounded-2xl border border-primary/40 bg-primary-muted">
+      <View className="flex-row items-center justify-between bg-primary px-4 py-3">
         <Pressable
           onPress={() => {
             if (canToggleCollapse) setExpanded((v) => !v);
@@ -90,7 +90,7 @@ export function MoniFinanceAssistantSection({
             <Text className="text-base font-bold text-white" numberOfLines={1}>
               Moni Finance Assistant
             </Text>
-            <Text className="text-[11px] text-indigo-100 mt-0.5" numberOfLines={2}>
+            <Text className="mt-0.5 text-[11px] text-primary-foreground/80" numberOfLines={2}>
               Three on-device analysts: trends, budgets, and spending story
             </Text>
           </View>
@@ -123,9 +123,9 @@ export function MoniFinanceAssistantSection({
       {!expanded && hasInsights && !generating ? (
         <Pressable
           onPress={() => setExpanded(true)}
-          className="px-4 py-2 bg-indigo-500/25 dark:bg-indigo-950/50 border-b border-indigo-400/20"
+          className="border-b border-primary/20 bg-primary-soft/25 px-4 py-2"
         >
-          <Text className="text-xs text-indigo-900 dark:text-indigo-100" numberOfLines={2}>
+          <Text className="text-xs text-foreground" numberOfLines={2}>
             {insight?.insights.map((b) => b.title).join(' · ')}
           </Text>
         </Pressable>
@@ -136,9 +136,9 @@ export function MoniFinanceAssistantSection({
         {onManageBudgets ? (
           <Pressable
             onPress={onManageBudgets}
-            className="mb-3 flex-row items-center justify-between rounded-lg bg-white/60 dark:bg-slate-900/50 px-2 py-1.5"
+            className="mb-3 flex-row items-center justify-between rounded-lg bg-card px-2 py-1.5"
           >
-            <Text className="text-xs text-slate-700 dark:text-slate-300 flex-1 pr-2">
+            <Text className="flex-1 pr-2 text-xs text-foreground">
               {hasBudgetsConfigured
                 ? 'Edit monthly category budgets'
                 : 'Set monthly budgets per category (all wallets)'}
@@ -152,7 +152,7 @@ export function MoniFinanceAssistantSection({
         ) : null}
 
         {!insight?.insights?.length && !generating ? (
-          <Text className="text-sm text-slate-600 dark:text-slate-400 leading-5">
+          <Text className="text-sm text-muted leading-5">
             Tap Regenerate to run three specialist agents on your numbers: month-over-month trends, budget
             behavior, and where spending concentrates. Results are saved on-device.
           </Text>
@@ -161,7 +161,7 @@ export function MoniFinanceAssistantSection({
         {generating && !insight?.insights?.length ? (
           <View className="py-6 items-center">
             <ActivityIndicator size="large" color="#6366f1" />
-            <Text className="mt-2 text-sm text-slate-600 dark:text-slate-400">
+            <Text className="mt-2 text-sm text-muted">
               Generating insights (3 agents)…
             </Text>
           </View>
@@ -172,19 +172,19 @@ export function MoniFinanceAssistantSection({
           return (
             <View
               key={`${block.agentKey}-${i}`}
-              className={`rounded-xl border bg-white dark:bg-slate-900/85 mb-3 overflow-hidden ${ac.border}`}
+              className={`mb-3 overflow-hidden rounded-xl border bg-card ${ac.border}`}
             >
               <View className="flex-row items-stretch min-h-[3px]">
                 <View className={`w-1 ${ac.bar}`} />
                 <View className="flex-1 px-3 py-2.5">
                   <View className="flex-row items-center mb-1">
                     <MaterialIcons name={ac.icon} size={16} color="#64748b" />
-                    <Text className="ml-1.5 text-[11px] font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                    <Text className="ml-1.5 text-[11px] font-bold uppercase tracking-wide text-muted">
                       {block.label}
                     </Text>
                   </View>
-                  <Text className="text-sm font-semibold text-slate-900 dark:text-white">{block.title}</Text>
-                  <Text className="text-sm text-slate-600 dark:text-slate-300 mt-2 leading-6">{block.body}</Text>
+                  <Text className="text-sm font-semibold text-foreground">{block.title}</Text>
+                  <Text className="mt-2 text-sm leading-6 text-muted">{block.body}</Text>
                 </View>
               </View>
             </View>
@@ -192,14 +192,14 @@ export function MoniFinanceAssistantSection({
         })}
 
         {stale && Boolean(insight?.insights?.length) && !generating ? (
-          <Text className="text-[11px] text-slate-500 dark:text-slate-400 mt-2 leading-4">
+          <Text className="mt-2 text-[11px] leading-4 text-muted">
             Your numbers changed since this run. Tap Regenerate to replace these insights with ones based on
             current data.
           </Text>
         ) : null}
 
         {insight?.disclaimer ? (
-          <Text className="text-[11px] text-slate-500 dark:text-slate-500 mt-1 leading-4">{insight.disclaimer}</Text>
+          <Text className="text-[11px] text-muted mt-1 leading-4">{insight.disclaimer}</Text>
         ) : null}
       </View>
       ) : null}

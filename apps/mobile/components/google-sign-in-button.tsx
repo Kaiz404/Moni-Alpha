@@ -35,21 +35,21 @@ export function GoogleSignInButton({ disabled, onError }: GoogleSignInButtonProp
   return (
     <View className="mt-4">
       <View className="my-4 flex-row items-center gap-3">
-        <View className="h-px flex-1 bg-gray-300 dark:bg-gray-600" />
-        <Text className="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
+        <View className="h-px flex-1 bg-border" />
+        <Text className="text-xs font-medium uppercase tracking-wide text-muted">
           or
         </Text>
-        <View className="h-px flex-1 bg-gray-300 dark:bg-gray-600" />
+        <View className="h-px flex-1 bg-border" />
       </View>
 
       <TouchableOpacity
-        className={`flex-row items-center justify-center gap-2 rounded-lg border border-gray-300 bg-white p-3.5 dark:border-gray-600 dark:bg-gray-800 ${loading || disabled ? 'opacity-60' : ''}`}
+        className={`flex-row items-center justify-center gap-2 rounded-lg border border-border bg-card p-3.5 ${loading || disabled ? 'opacity-60' : ''}`}
         onPress={handlePress}
         disabled={loading || disabled}
         accessibilityRole="button"
         accessibilityLabel="Continue with Google">
-        <Text className="text-lg leading-none text-gray-700 dark:text-gray-200">G</Text>
-        <Text className="text-base font-semibold text-gray-900 dark:text-white">
+        <Text className="text-lg leading-none text-primary">G</Text>
+        <Text className="text-base font-semibold text-foreground">
           {loading ? 'Connecting...' : 'Continue with Google'}
         </Text>
       </TouchableOpacity>

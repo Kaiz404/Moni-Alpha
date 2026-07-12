@@ -24,7 +24,7 @@ import {
   useSpeechRecognitionEvent,
 } from 'expo-speech-recognition';
 
-import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import {
   enqueue,
   getAll,
@@ -39,12 +39,6 @@ import { captureLocationSnapshot } from '@/lib/location/location-snapshot';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 
 const TAG = '[Moni/Chat]';
-
-/** Align with wallets tab: purple accents, slate surfaces */
-const ACCENT = '#8494FF';
-const ACCENT_DARK = '#4f54c4';
-const SURFACE_BOTTOM = 'rgba(99, 103, 255, 0.7)';
-const SURFACE_BOTTOM_DARK = 'rgba(42, 45, 92, 0.95)';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -88,8 +82,7 @@ function sortEntriesDesc(items: SubmissionEntry[]) {
 // ─── Main screen ─────────────────────────────────────────────────────────────
 
 export default function ChatScreen() {
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === 'dark';
+  const tokens = useThemeTokens();
   const insets = useSafeAreaInsets();
 
   const [input, setInput] = useState('');
@@ -105,11 +98,11 @@ export default function ChatScreen() {
   const speechBaseRef = useRef('');
   const speechActiveRef = useRef(false);
 
-  const accentIcon = isDark ? '#c4c9ff' : ACCENT;
-  const slateIcon = isDark ? '#e2e8f0' : '#475569';
-  const borderTop = isDark ? 'border-slate-700' : 'border-slate-200';
-  const inputBg = isDark ? 'bg-slate-800' : 'bg-slate-100';
-  const screenBg = isDark ? 'bg-gray-900' : 'bg-white';
+  const accentIcon = tokens.primary;
+  const slateIcon = tokens.muted;
+  const borderTop = 'border-border';
+  const inputBg = 'bg-card';
+  const screenBg = 'bg-background';
 
   const refreshFromQueue = useCallback(() => {
     setSubmissions((prev) => {
@@ -401,25 +394,13 @@ export default function ChatScreen() {
         style={{ flex: 1 }}
       >
         <View className="px-6 pt-5 pb-2 flex-row items-center">
-          <Text className="mt-5 text-2xl font-bold text-gray-900 dark:text-white">
+          <Text className="mt-5 text-2xl font-bold text-foreground">
             Moni Agent
           </Text>
         </View>
 
-        <View
-          className="flex-1 rounded-t-2xl mt-1 overflow-hidden"
-          style={{
-            backgroundColor: isDark ? SURFACE_BOTTOM_DARK : SURFACE_BOTTOM,
-          }}
-        >
-          <View
-            className="flex-1 rounded-t-2xl px-3 pt-4 pb-2"
-            style={{
-              backgroundColor: isDark
-                ? 'rgba(15, 23, 42, 0.95)'
-                : 'rgba(250, 250, 250, 0.92)',
-            }}
-          >
+        <View className="mt-1 flex-1 overflow-hidden rounded-t-2xl bg-primary-muted">
+          <View className="flex-1 rounded-t-2xl bg-background px-3 pt-4 pb-2">
             <FlatList
               ref={flatListRef}
               data={submissions}
@@ -427,7 +408,6 @@ export default function ChatScreen() {
               renderItem={({ item }) => (
                 <SubmissionCard
                   entry={item}
-                  isDark={isDark}
                   onDismissDone={
                     item.status === 'done'
                       ? () => dismissCompleted(item.id)
@@ -440,7 +420,7 @@ export default function ChatScreen() {
                 paddingBottom: 8,
                 flexGrow: 1,
               }}
-              ListEmptyComponent={<EmptyState isDark={isDark} />}
+              ListEmptyComponent={<EmptyState primary={tokens.primary} />}
               inverted={submissions.length > 0}
             />
           </View>
@@ -448,22 +428,14 @@ export default function ChatScreen() {
 
         {attachedImage && (
           <View className="px-4 pb-2 pt-1">
-            <View
-              className={`flex-row items-center rounded-xl p-2 border shadow-sm ${
-                isDark
-                  ? 'bg-slate-800 border-slate-600'
-                  : 'bg-white border-slate-300'
-              }`}
-            >
+            <View className="flex-row items-center rounded-xl border border-border bg-card p-2 shadow-sm">
               <Image
                 source={{ uri: attachedImage }}
                 style={{ width: 56, height: 56, borderRadius: 8 }}
                 contentFit="cover"
               />
               <Text
-                className={`flex-1 text-sm ml-3 ${
-                  isDark ? 'text-slate-300' : 'text-slate-600'
-                }`}
+                className="ml-3 flex-1 text-sm text-muted"
                 numberOfLines={1}
               >
                 Receipt attached
@@ -480,29 +452,21 @@ export default function ChatScreen() {
         )}
 
         <View
-          className={`flex-row items-end px-4 pt-2 border-t ${borderTop} ${
-            isDark ? 'bg-slate-900' : 'bg-white'
-          }`}
+          className={`flex-row items-end border-t px-4 pt-2 ${borderTop} bg-background`}
           style={{ paddingBottom: bottomPad }}
         >
           <Pressable
-            className={`w-11 h-11 rounded-full items-center justify-center mr-2 ${
-              isDark ? 'bg-slate-800' : 'bg-slate-100'
-            }`}
+            className="mr-2 h-11 w-11 items-center justify-center rounded-full bg-card"
             onPress={showImageOptions}
           >
             <IconSymbol name="photo-camera" size={24} color={accentIcon} />
           </Pressable>
 
           <TextInput
-            className={`flex-1 rounded-2xl px-4 py-3 text-base mr-2 border ${inputBg} ${
-              isDark
-                ? 'text-white border-slate-600'
-                : 'text-slate-900 border-slate-200'
-            }`}
+            className={`mr-2 flex-1 rounded-2xl border border-border px-4 py-3 text-base text-foreground ${inputBg}`}
             style={{ maxHeight: 112 }}
             placeholder={inputPlaceholder}
-            placeholderTextColor={isDark ? '#94a3b8' : '#64748b'}
+            placeholderTextColor={tokens.muted}
             value={input}
             onChangeText={setInput}
             multiline
@@ -517,12 +481,8 @@ export default function ChatScreen() {
               className="w-11 h-11 rounded-full items-center justify-center"
               style={{
                 backgroundColor: isSpeechRecognizing
-                  ? isDark
-                    ? '#b91c1c'
-                    : '#dc2626'
-                  : isDark
-                    ? ACCENT_DARK
-                    : ACCENT,
+                  ? tokens.danger
+                  : tokens.primary,
               }}
               onPressIn={startSpeech}
               onPressOut={stopSpeech}
@@ -539,7 +499,7 @@ export default function ChatScreen() {
           ) : (
             <TouchableOpacity
               className="w-11 h-11 rounded-full items-center justify-center"
-              style={{ backgroundColor: isDark ? ACCENT_DARK : ACCENT }}
+              style={{ backgroundColor: tokens.primary }}
               onPress={handleSend}
               disabled={!hasContent || isSpeechRecognizing}
               activeOpacity={0.7}
@@ -557,81 +517,61 @@ export default function ChatScreen() {
 
 function SubmissionCard({
   entry,
-  isDark,
   onDismissDone,
 }: {
   entry: SubmissionEntry;
-  isDark: boolean;
   onDismissDone?: () => void;
 }) {
+  const tokens = useThemeTokens();
   const statusConfig = {
     queued: {
       label: 'Queued',
-      color: isDark ? 'bg-amber-900/80' : 'bg-amber-100',
-      textColor: isDark ? 'text-amber-200' : 'text-amber-800',
+      color: 'bg-warning/15',
+      textColor: 'text-warning',
     },
     processing: {
       label: 'Processing',
-      color: isDark ? 'bg-indigo-900/80' : 'bg-indigo-100',
-      textColor: isDark ? 'text-indigo-200' : 'text-indigo-800',
+      color: 'bg-primary-muted',
+      textColor: 'text-primary',
     },
     done: {
       label: 'Done',
-      color: isDark ? 'bg-emerald-900/80' : 'bg-emerald-100',
-      textColor: isDark ? 'text-emerald-200' : 'text-emerald-800',
+      color: 'bg-success/15',
+      textColor: 'text-success',
     },
     error: {
       label: 'Error',
-      color: isDark ? 'bg-red-900/80' : 'bg-red-100',
-      textColor: isDark ? 'text-red-200' : 'text-red-800',
+      color: 'bg-danger/15',
+      textColor: 'text-danger',
     },
   }[entry.status];
 
   const isNew = Date.now() - new Date(entry.createdAt).getTime() < 5000;
-  const cardBorder = isDark ? 'border-slate-600' : 'border-slate-300';
-  const cardBg = isDark ? 'bg-slate-800' : 'bg-white';
 
   const inner = (
     <View className={`mb-3 ${isNew ? 'opacity-100' : 'opacity-95'}`}>
-      <View
-        className={`rounded-2xl p-4 border shadow-sm ${cardBorder} ${cardBg}`}
-      >
-        <View className="flex-row items-center mb-2 gap-2">
+      <View className="rounded-2xl border border-border bg-card p-4 shadow-sm">
+        <View className="mb-2 flex-row items-center gap-2">
           <IconSymbol
             name={entry.type === 'image' ? 'image' : 'chat-bubble-outline'}
             size={18}
-            color={isDark ? '#94a3b8' : '#64748b'}
+            color={tokens.muted}
           />
-          <Text
-            className={`flex-1 font-medium text-sm min-w-0 ${
-              isDark ? 'text-white' : 'text-slate-900'
-            }`}
-            numberOfLines={1}
-          >
-            {entry.text ||
-              (entry.type === 'image' ? 'Receipt image' : 'Text input')}
+          <Text className="min-w-0 flex-1 text-sm font-medium text-foreground" numberOfLines={1}>
+            {entry.text || (entry.type === 'image' ? 'Receipt image' : 'Text input')}
           </Text>
-          <View
-            className={`px-2 py-0.5 rounded-full shrink-0 ${statusConfig.color}`}
-          >
-            <Text
-              className={`text-xs font-medium ${statusConfig.textColor}`}
-            >
+          <View className={`shrink-0 rounded-full px-2 py-0.5 ${statusConfig.color}`}>
+            <Text className={`text-xs font-medium ${statusConfig.textColor}`}>
               {statusConfig.label}
             </Text>
           </View>
           {onDismissDone ? (
             <Pressable
               onPress={onDismissDone}
-              className="w-8 h-8 items-center justify-center rounded-full shrink-0"
+              className="h-8 w-8 shrink-0 items-center justify-center rounded-full"
               hitSlop={8}
-              accessibilityLabel="Remove from list"
-            >
-              <IconSymbol
-                name="close"
-                size={20}
-                color={isDark ? '#94a3b8' : '#64748b'}
-              />
+              accessibilityLabel="Remove from list">
+              <IconSymbol name="close" size={20} color={tokens.muted} />
             </Pressable>
           ) : null}
         </View>
@@ -650,20 +590,12 @@ function SubmissionCard({
         )}
 
         {entry.status === 'queued' && (
-          <Text
-            className={`text-xs ${
-              isDark ? 'text-slate-400' : 'text-slate-500'
-            }`}
-          >
+          <Text className="text-xs text-muted">
             Processing in background — you can close the app.
           </Text>
         )}
 
-        <Text
-          className={`text-xs mt-1 ${
-            isDark ? 'text-slate-500' : 'text-slate-400'
-          }`}
-        >
+        <Text className="mt-1 text-xs text-muted">
           {new Date(entry.createdAt).toLocaleTimeString(undefined, {
             hour: '2-digit',
             minute: '2-digit',
@@ -682,13 +614,8 @@ function SubmissionCard({
       friction={2}
       overshootRight={false}
       renderRightActions={(_progress, dragX) => (
-        <RightDismissAction
-          dragX={dragX}
-          onPress={onDismissDone}
-          isDark={isDark}
-        />
-      )}
-    >
+        <RightDismissAction dragX={dragX} onPress={onDismissDone} />
+      )}>
       {inner}
     </Swipeable>
   );
@@ -697,40 +624,24 @@ function SubmissionCard({
 function RightDismissAction({
   dragX,
   onPress,
-  isDark,
 }: {
   dragX: Animated.AnimatedInterpolation<number>;
   onPress: () => void;
-  isDark: boolean;
 }) {
+  const tokens = useThemeTokens();
   const trans = dragX.interpolate({
     inputRange: [-80, 0],
     outputRange: [0, 80],
     extrapolate: 'clamp',
   });
   return (
-    <Animated.View
-      style={[styles.swipeActions, { transform: [{ translateX: trans }] }]}
-    >
+    <Animated.View style={[styles.swipeActions, { transform: [{ translateX: trans }] }]}>
       <TouchableOpacity
         onPress={onPress}
         activeOpacity={0.85}
-        className="flex-1 rounded-2xl mr-1 items-center justify-center px-4"
-        style={{
-          backgroundColor: isDark ? '#7f1d1d' : '#fecaca',
-        }}
-      >
-        <IconSymbol
-          name="delete-outline"
-          size={26}
-          color={isDark ? '#fecaca' : '#991b1b'}
-        />
-        <Text
-          className="text-xs font-semibold mt-0.5"
-          style={{ color: isDark ? '#fecaca' : '#991b1b' }}
-        >
-          Remove
-        </Text>
+        className="mr-1 flex-1 items-center justify-center rounded-2xl bg-danger/20 px-4">
+        <IconSymbol name="delete-outline" size={26} color={tokens.danger} />
+        <Text className="mt-0.5 text-xs font-semibold text-danger">Remove</Text>
       </TouchableOpacity>
     </Animated.View>
   );
@@ -744,7 +655,7 @@ const styles = StyleSheet.create({
   },
 });
 
-function EmptyState({ isDark }: { isDark: boolean }) {
+function EmptyState({ primary }: { primary: string }) {
   const suggestions = [
     "Lunch at McDonald's RM12.50",
     'Grab ride RM8.90',
@@ -753,52 +664,24 @@ function EmptyState({ isDark }: { isDark: boolean }) {
   ];
 
   return (
-    <View className="py-12 px-4 items-center">
+    <View className="items-center px-4 py-12">
       <View
-        className="w-16 h-16 rounded-full items-center justify-center mb-4"
-        style={{ backgroundColor: isDark ? ACCENT_DARK : `${ACCENT}33` }}
-      >
-        <IconSymbol name="bolt" size={36} color={isDark ? '#e0e7ff' : ACCENT} />
+        className="mb-4 h-16 w-16 items-center justify-center rounded-full"
+        style={{ backgroundColor: `${primary}33` }}>
+        <IconSymbol name="bolt" size={36} color={primary} />
       </View>
-      <Text
-        className={`text-xl font-semibold mb-2 ${
-          isDark ? 'text-white' : 'text-slate-900'
-        }`}
-      >
-        Quick Add Transaction
-      </Text>
-      <Text
-        className={`text-center text-sm mb-8 leading-5 ${
-          isDark ? 'text-slate-400' : 'text-slate-500'
-        }`}
-      >
+      <Text className="mb-2 text-xl font-semibold text-foreground">Quick Add Transaction</Text>
+      <Text className="mb-8 text-center text-sm leading-5 text-muted">
         Describe a transaction or take a photo of a receipt.{'\n'}
         Queued for the AI backend — you can leave this screen after sending.
       </Text>
-      <Text
-        className={`text-xs font-semibold uppercase tracking-wider mb-3 ${
-          isDark ? 'text-slate-500' : 'text-slate-400'
-        }`}
-      >
+      <Text className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted">
         Try typing
       </Text>
       <View className="w-full">
         {suggestions.map((s) => (
-          <View
-            key={s}
-            className={`rounded-xl px-4 py-3 mb-2 border ${
-              isDark
-                ? 'bg-slate-800 border-slate-600'
-                : 'bg-white border-slate-300'
-            }`}
-          >
-            <Text
-              className={`text-sm ${
-                isDark ? 'text-slate-300' : 'text-slate-700'
-              }`}
-            >
-              {s}
-            </Text>
+          <View key={s} className="mb-2 rounded-xl border border-border bg-card px-4 py-3">
+            <Text className="text-sm text-foreground">{s}</Text>
           </View>
         ))}
       </View>

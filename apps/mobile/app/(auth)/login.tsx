@@ -1,19 +1,13 @@
 import { useState } from 'react';
-import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  Alert,
-  ScrollView,
-} from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, Alert, ScrollView } from 'react-native';
 import { Link, router, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@/lib/auth/auth-context';
 import { GoogleSignInButton } from '@/components/google-sign-in-button';
+import { ScreenShell } from '@/components/ui/screen-shell';
 
 const inputClassName =
-  'border border-gray-300 dark:border-gray-600 rounded-lg p-3 text-base bg-white dark:bg-gray-800 text-gray-900 dark:text-white';
+  'rounded-lg border border-border bg-card p-3 text-base text-foreground';
 
 export default function LoginScreen() {
   const { signIn } = useAuth();
@@ -41,12 +35,12 @@ export default function LoginScreen() {
   };
 
   return (
-    <View className="flex-1 bg-[#C9BEFF] dark:bg-gray-900">
+    <ScreenShell variant="canvas">
       <View
         style={{ paddingTop: Math.max(insets.top, 12) }}
-        className="bg-[#6367FF] rounded-b-2xl border border-transparent shadow-xl/50 shadow-[#6367FF] px-6 pb-8">
-        <Text className="text-3xl font-bold text-white">Moni</Text>
-        <Text className="mt-2 text-base leading-6 text-white/90">
+        className="rounded-b-2xl border border-transparent bg-primary px-6 pb-8 shadow-xl/50 shadow-primary">
+        <Text className="text-3xl font-bold text-primary-foreground">Moni</Text>
+        <Text className="mt-2 text-base leading-6 text-primary-foreground/90">
           Wallets, spending, and on-device AI—organized in one place. Local-first so your finances stay on your device.
         </Text>
       </View>
@@ -56,25 +50,25 @@ export default function LoginScreen() {
         keyboardShouldPersistTaps="handled"
         contentContainerStyle={{ paddingBottom: 32 }}>
         <View className="mb-6">
-          <Text className="text-xl font-semibold text-gray-900 dark:text-white">
+          <Text className="text-xl font-semibold text-foreground">
             Sign in
           </Text>
-          <Text className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+          <Text className="mt-1 text-sm text-muted">
             Welcome back. Use the email and password for your account.
           </Text>
           {showVerifyEmailHint ? (
-            <View className="mt-4 rounded-xl border border-[#8494FF] bg-white/90 px-4 py-3 dark:border-indigo-400/50 dark:bg-indigo-950/40">
-              <Text className="text-sm font-semibold text-[#4f54c4] dark:text-indigo-200">
+            <View className="mt-4 rounded-xl border border-primary/40 bg-primary-muted px-4 py-3">
+              <Text className="text-sm font-semibold text-primary">
                 Confirm your email
               </Text>
-              <Text className="mt-1 text-sm leading-5 text-gray-700 dark:text-indigo-100/90">
+              <Text className="mt-1 text-sm leading-5 text-foreground">
                 We sent you a link. Open it to verify your address, then sign in below.
               </Text>
             </View>
           ) : null}
         </View>
 
-        <Text className="text-sm font-medium mb-2 text-gray-900 dark:text-white">
+        <Text className="mb-2 text-sm font-medium text-foreground">
           Email
         </Text>
         <TextInput
@@ -88,7 +82,7 @@ export default function LoginScreen() {
           autoComplete="email"
         />
 
-        <Text className="text-sm font-medium mb-2 text-gray-900 dark:text-white">
+        <Text className="mb-2 text-sm font-medium text-foreground">
           Password
         </Text>
         <TextInput
@@ -102,10 +96,10 @@ export default function LoginScreen() {
         />
 
         <TouchableOpacity
-          className={`bg-[#6367FF] dark:bg-blue-500 p-3.5 rounded-lg items-center mt-2 ${loading ? 'opacity-60' : ''}`}
+          className={`mt-2 items-center rounded-lg bg-primary p-3.5 ${loading ? 'opacity-60' : ''}`}
           onPress={handleLogin}
           disabled={loading}>
-          <Text className="text-white text-base font-semibold">
+          <Text className="text-base font-semibold text-primary-foreground">
             {loading ? 'Signing in...' : 'Sign in'}
           </Text>
         </TouchableOpacity>
@@ -119,12 +113,12 @@ export default function LoginScreen() {
 
         <Link href={'/(auth)/register' as any} asChild>
           <TouchableOpacity className="mt-8 items-center py-2">
-            <Text className="text-sm font-medium text-[#4f54c4] dark:text-[#9EADFF]">
+            <Text className="text-sm font-medium text-primary">
               Don&apos;t have an account? Sign up
             </Text>
           </TouchableOpacity>
         </Link>
       </ScrollView>
-    </View>
+    </ScreenShell>
   );
 }

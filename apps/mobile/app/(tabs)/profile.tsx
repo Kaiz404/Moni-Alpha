@@ -14,11 +14,13 @@ import * as ImagePicker from 'expo-image-picker';
 import { ExpoSpeechRecognitionModule } from 'expo-speech-recognition';
 import { useAuth } from '@/lib/auth/auth-context';
 import { SyncStatus } from '@/components/sync-status';
+import { ThemePreferencePicker } from '@/components/theme-preference-picker';
+import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { useNotificationListener } from '@/hooks/use-notification-listener';
 
 function ProfileSectionTitle({ children }: { children: string }) {
   return (
-    <Text className="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-2">
+    <Text className="mb-2 text-xs font-bold uppercase tracking-wider text-muted">
       {children}
     </Text>
   );
@@ -27,6 +29,7 @@ function ProfileSectionTitle({ children }: { children: string }) {
 function SettingsRow({
   icon,
   iconBgClassName,
+  iconBgColor,
   title,
   subtitle,
   onPress,
@@ -35,32 +38,35 @@ function SettingsRow({
 }: {
   icon: keyof typeof MaterialIcons.glyphMap;
   iconBgClassName: string;
+  iconBgColor?: string;
   title: string;
   subtitle?: string;
   onPress: () => void;
   right?: ReactNode;
   disabled?: boolean;
 }) {
+  const tokens = useThemeTokens();
   return (
     <Pressable
       onPress={onPress}
       disabled={disabled}
-      className={`mb-2 flex-row items-center rounded-xl border border-slate-300 bg-white p-3.5 shadow-sm dark:border-slate-700 dark:bg-slate-800 active:opacity-90 ${disabled ? 'opacity-50' : ''}`}>
+      className={`mb-2 flex-row items-center rounded-xl border border-border bg-card p-3.5 shadow-sm active:opacity-90 ${disabled ? 'opacity-50' : ''}`}>
       <View
-        className={`h-11 w-11 items-center justify-center rounded-2xl ${iconBgClassName}`}>
+        className={`h-11 w-11 items-center justify-center rounded-2xl ${iconBgClassName}`}
+        style={iconBgColor ? { backgroundColor: iconBgColor } : undefined}>
         <MaterialIcons name={icon} size={22} color="#fff" />
       </View>
       <View className="ml-3 flex-1 min-w-0">
-        <Text className="text-base font-semibold text-slate-900 dark:text-white" numberOfLines={1}>
+        <Text className="text-base font-semibold text-foreground" numberOfLines={1}>
           {title}
         </Text>
         {subtitle ? (
-          <Text className="mt-0.5 text-xs text-slate-500 dark:text-slate-400" numberOfLines={2}>
+          <Text className="mt-0.5 text-xs text-muted" numberOfLines={2}>
             {subtitle}
           </Text>
         ) : null}
       </View>
-      {right ?? <MaterialIcons name="chevron-right" size={22} color="#94a3b8" />}
+      {right ?? <MaterialIcons name="chevron-right" size={22} color={tokens.muted} />}
     </Pressable>
   );
 }
@@ -99,24 +105,24 @@ function PermissionColumn({
 }) {
   return (
     <View
-      className={`rounded-xl border border-slate-300 bg-white p-3 shadow-sm dark:border-slate-700 dark:bg-slate-800 ${widthClassName}`}>
+      className={`rounded-xl border border-border bg-card p-3 shadow-sm ${widthClassName}`}>
       <View
         className="mx-auto h-9 w-9 items-center justify-center rounded-xl"
         style={{ backgroundColor: iconTint }}>
         <MaterialIcons name={icon} size={20} color="#fff" />
       </View>
       <Text
-        className="mt-2 text-center text-xs font-semibold text-slate-900 dark:text-white"
+        className="mt-2 text-center text-xs font-semibold text-foreground"
         numberOfLines={2}>
         {title}
       </Text>
       <Text
-        className="mt-1 text-center text-[10px] leading-tight text-slate-500 dark:text-slate-400"
+        className="mt-1 text-center text-[10px] leading-tight text-muted"
         numberOfLines={2}>
         {statusLabel}
       </Text>
       {muted ? (
-        <Text className="mt-2 text-center text-[10px] text-slate-400 dark:text-slate-500">—</Text>
+        <Text className="mt-2 text-center text-[10px] text-muted">—</Text>
       ) : granted ? (
         <View className="mt-2 rounded-lg bg-emerald-500/15 py-2 dark:bg-emerald-500/20">
           <Text className="text-center text-[10px] font-semibold text-emerald-700 dark:text-emerald-400">
@@ -125,7 +131,7 @@ function PermissionColumn({
         </View>
       ) : showAction && actionLabel && onAction ? (
         <TouchableOpacity
-          className="mt-2 rounded-lg bg-[#8494FF] px-1.5 py-2 dark:bg-[#6b74e8]"
+          className="mt-2 rounded-lg bg-primary px-1.5 py-2"
           onPress={onAction}
           disabled={actionDisabled}
           activeOpacity={0.85}>
@@ -136,8 +142,8 @@ function PermissionColumn({
           </Text>
         </TouchableOpacity>
       ) : (
-        <View className="mt-2 rounded-lg bg-slate-100 py-2 dark:bg-slate-700/50">
-          <Text className="text-center text-[10px] font-semibold text-slate-500 dark:text-slate-400">
+        <View className="mt-2 rounded-lg bg-background-muted py-2">
+          <Text className="text-center text-[10px] font-semibold text-muted">
             Off
           </Text>
         </View>
@@ -148,6 +154,7 @@ function PermissionColumn({
 
 export default function ProfileScreen() {
   const { user, signOut } = useAuth();
+  const tokens = useThemeTokens();
   const { permissionStatus, isCheckingPermission, requestPermission, checkPermission } =
     useNotificationListener();
   const [locationStatus, setLocationStatus] = useState<Location.PermissionStatus | null>(null);
@@ -244,22 +251,22 @@ export default function ProfileScreen() {
   };
 
   return (
-    <View className="flex-1 bg-white dark:bg-gray-900">
+    <View className="flex-1 bg-background">
       <ScrollView
         className="flex-1"
         contentContainerClassName="grow pb-10"
         showsVerticalScrollIndicator>
         <View className="px-4 pt-4 pb-2 flex-row items-center justify-between">
           <View className="flex-row items-center mt-4">
-            <View className="h-9 w-9 items-center justify-center rounded-xl bg-slate-200 dark:bg-slate-700">
-              <MaterialIcons name="person" size={22} color="#475569" />
+            <View className="h-9 w-9 items-center justify-center rounded-xl bg-background-muted">
+              <MaterialIcons name="person" size={22} color={tokens.primary} />
             </View>
-            <Text className="ml-3 text-2xl font-bold text-gray-900 dark:text-white">Profile</Text>
+            <Text className="ml-3 text-2xl font-bold text-foreground">Profile</Text>
           </View>
         </View>
 
         <View className="px-4 pb-4">
-          <View className="overflow-hidden rounded-2xl border border-indigo-200/80 bg-[#8494FF] p-4 dark:border-indigo-500/40 dark:bg-[#4f54c4]">
+          <View className="overflow-hidden rounded-2xl border border-primary/40 bg-primary p-4">
             <View className="flex-row items-center">
               <View className="h-14 w-14 items-center justify-center rounded-2xl bg-white/25">
                 <Text className="text-2xl font-bold text-white">{userInitial}</Text>
@@ -285,10 +292,10 @@ export default function ProfileScreen() {
 
         <View className="px-4 pt-2 pb-6">
           <ProfileSectionTitle>Sync</ProfileSectionTitle>
-          <SyncStatus className="mb-4 border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800/90 rounded-xl shadow-sm" />
+          <SyncStatus className="mb-4 rounded-xl border border-border shadow-sm" />
 
           <ProfileSectionTitle>Permissions</ProfileSectionTitle>
-          <Text className="mb-3 text-xs text-slate-500 dark:text-slate-400">
+          <Text className="mb-3 text-xs text-muted">
             Grant access so Moni can read bank/wallet alerts (Android notification access), use
             location, scan receipts, and use voice input in chat.
           </Text>
@@ -326,7 +333,7 @@ export default function ProfileScreen() {
                 onAction={!isAuthorized ? requestPermission : undefined}
                 actionDisabled={isCheckingPermission}
                 icon="notifications-active"
-                iconTint="#8494FF"
+                iconTint={tokens.primary}
                 showAction={!isAuthorized}
                 widthClassName="w-[48%]"
               />
@@ -372,6 +379,11 @@ export default function ProfileScreen() {
           </View>
 
           <View className="mt-6">
+            <ProfileSectionTitle>Appearance</ProfileSectionTitle>
+            <ThemePreferencePicker />
+          </View>
+
+          <View className="mt-6">
             <ProfileSectionTitle>Shortcuts</ProfileSectionTitle>
             <SettingsRow
               icon="account-balance-wallet"
@@ -382,14 +394,15 @@ export default function ProfileScreen() {
             />
             <SettingsRow
               icon="notifications"
-              iconBgClassName="bg-[#8494FF]"
+              iconBgClassName=""
+              iconBgColor={tokens.primary}
               title="Notifications"
               subtitle="View captured notification history"
               onPress={openNotifications}
             />
             <SettingsRow
               icon="bug-report"
-              iconBgClassName="bg-slate-600 dark:bg-slate-500"
+              iconBgClassName="bg-muted"
               title="Debug panel"
               subtitle="Diagnostics and developer tools"
               onPress={openDebugPanel}

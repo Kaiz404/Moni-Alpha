@@ -56,12 +56,12 @@ function WalletPickerModal({
   return (
     <Modal visible={visible} transparent animationType="slide">
       <View className="flex-1 justify-end bg-black/50">
-        <View className="bg-white dark:bg-gray-900 rounded-t-2xl p-6 pb-10">
-          <Text className="text-base font-semibold text-gray-900 dark:text-white mb-4">
+        <View className="rounded-t-2xl bg-background p-6 pb-10">
+          <Text className="mb-4 text-base font-semibold text-foreground">
             {title}
           </Text>
           {wallets.length === 0 ? (
-            <Text className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+            <Text className="text-sm text-muted mb-4">
               Add another wallet to complete this transfer.
             </Text>
           ) : (
@@ -71,17 +71,17 @@ function WalletPickerModal({
                 className="flex-row items-center py-3 border-b border-gray-100 dark:border-gray-800"
                 onPress={() => onSelect(w.id)}>
                 <View className="flex-1">
-                  <Text className="text-sm font-medium text-gray-900 dark:text-white">{w.name}</Text>
-                  <Text className="text-xs text-gray-500 dark:text-gray-400">{w.currency}</Text>
+                  <Text className="text-sm font-medium text-foreground">{w.name}</Text>
+                  <Text className="text-xs text-muted">{w.currency}</Text>
                 </View>
                 <IconSymbol name="chevron-right" size={16} color="#9ca3af" />
               </TouchableOpacity>
             ))
           )}
           <TouchableOpacity
-            className="mt-4 py-3 items-center rounded-lg bg-gray-100 dark:bg-gray-800"
+            className="mt-4 py-3 items-center rounded-lg bg-background-muted"
             onPress={onCancel}>
-            <Text className="text-sm font-medium text-gray-700 dark:text-gray-300">Cancel</Text>
+            <Text className="text-sm font-medium text-foreground">Cancel</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -114,12 +114,12 @@ function ProposalCard({
   const isExpense = item.type === 'expense' || !item.type;
   const isTransfer = item.type === 'transfer';
   return (
-    <View className="mb-2 rounded-xl border border-slate-300 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-800">
+    <View className="mb-2 rounded-xl border border-border bg-card p-4 shadow-sm">
       <View className="flex-row items-center justify-between mb-1">
         <Text className="text-xs font-semibold text-blue-600 dark:text-blue-400">
           {item.sourceApp || 'Unknown app'}
         </Text>
-        <Text className="text-xs text-gray-500 dark:text-gray-400">
+        <Text className="text-xs text-muted">
           {item.aiConfidence != null ? `${Math.round(item.aiConfidence * 100)}% confidence` : 'AI proposal'}
         </Text>
       </View>
@@ -134,7 +134,7 @@ function ProposalCard({
         {isTransfer ? '' : isExpense ? '−' : '+'}
         {item.currency ?? ''} {item.amount?.toFixed(2) ?? '—'}
       </Text>
-      <Text className="text-sm mt-1 text-gray-900 dark:text-white" numberOfLines={1}>
+      <Text className="mt-1 text-sm text-foreground" numberOfLines={1}>
         {item.merchant || item.description || item.type || 'Transaction'}
       </Text>
       <View className="flex-row gap-2 mt-3">
@@ -145,10 +145,10 @@ function ProposalCard({
           <Text className="text-white text-sm font-semibold">Approve</Text>
         </TouchableOpacity>
         <TouchableOpacity
-          className="flex-1 flex-row items-center justify-center gap-1 py-2.5 rounded-lg bg-gray-100 dark:bg-gray-700"
+          className="flex-1 flex-row items-center justify-center gap-1 py-2.5 rounded-lg bg-background-muted"
           onPress={() => onReject(item.id)}>
           <IconSymbol name="close" size={14} color="#6b7280" />
-          <Text className="text-gray-700 dark:text-gray-300 text-sm font-semibold">Reject</Text>
+          <Text className="text-foreground text-sm font-semibold">Reject</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -451,7 +451,7 @@ export default function TransactionsScreen() {
   const currency = selectedWallet?.currency ?? 'USD';
 
   return (
-    <View className="flex-1 bg-white dark:bg-gray-900">
+    <View className="flex-1 bg-background">
       <ScrollView
         className="flex-1"
         contentContainerClassName="grow"
@@ -459,7 +459,7 @@ export default function TransactionsScreen() {
         showsVerticalScrollIndicator>
         <View className="px-4 pt-2 pb-4">
           {selectedWallet ? (
-            <View className="rounded-2xl border border-indigo-200/80 bg-[#8494FF] p-4 dark:border-indigo-500/40 dark:bg-[#4f54c4]">
+            <View className="rounded-2xl border border-primary/40 bg-primary p-4">
               <View className="flex-row items-start justify-between">
                 <View className="flex-row items-center flex-1">
                   <View className="w-12 h-12 rounded-2xl items-center justify-center bg-white/25">
@@ -499,29 +499,29 @@ export default function TransactionsScreen() {
               </View>
             </View>
           ) : (
-            <View className="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800/80">
-              <Text className="text-sm font-medium text-slate-500 dark:text-slate-400">All wallets</Text>
-              <Text className="text-lg font-bold text-slate-900 dark:text-white mt-1">
+            <View className="rounded-2xl border border-border bg-card p-4">
+              <Text className="text-sm font-medium text-muted">All wallets</Text>
+              <Text className="mt-1 text-lg font-bold text-foreground">
                 {listStats.count} transaction{listStats.count === 1 ? '' : 's'} loaded
               </Text>
-              <Text className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+              <Text className="mt-1 text-xs text-muted">
                 Open a wallet from Wallets to filter by account and see balance.
               </Text>
             </View>
           )}
         </View>
 
-        <View className="bg-[#6367FF]/70 dark:bg-[#2a2d5c]/95 rounded-t-2xl mt-1">
+        <View className="mt-1 rounded-t-2xl bg-primary-muted">
           <View className="flex-row justify-between relative">
-            <View className="h-15 w-12 left-12 rounded-b-4xl border-l-4 border-r-4 border-b-4 border-[#EDEDED] dark:border-slate-700 bg-[#9EADFF] dark:bg-[#4a5080] bottom-1" />
-            <View className="h-15 w-12 right-12 rounded-b-4xl border-l-4 border-r-4 border-b-4 border-[#EDEDED] dark:border-slate-700 bg-[#9EADFF] dark:bg-[#4a5080] bottom-1" />
+            <View className="h-15 w-12 left-12 rounded-b-4xl border-b-4 border-l-4 border-r-4 border-border bg-primary-soft bottom-1" />
+            <View className="h-15 w-12 right-12 rounded-b-4xl border-b-4 border-l-4 border-r-4 border-border bg-primary-soft bottom-1" />
           </View>
 
-          <View className="bg-[#FAFAFA]/80 dark:bg-gray-950/95 mt-1 rounded-t-2xl px-4 pt-6 pb-6">
+          <View className="mt-1 rounded-t-2xl bg-background px-4 pt-6 pb-6">
             {proposals.length > 0 ? (
               <View className="mb-4">
                 <View className="flex-row items-center justify-between mb-2">
-                  <Text className="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400">
+                  <Text className="text-xs font-bold uppercase tracking-wider text-muted">
                     Pending Proposals
                   </Text>
                   {proposalsLoading ? <ActivityIndicator size="small" color="#6b7280" /> : null}
@@ -539,28 +539,28 @@ export default function TransactionsScreen() {
 
             <View className="flex-row justify-between items-center mb-2">
               <View className="flex-1 mr-2">
-                <Text className="text-sm font-semibold text-slate-700 dark:text-slate-100">
+                <Text className="text-sm font-semibold text-foreground">
                   Recent transactions
                 </Text>
-                {/* <Text className="text-sm font-semibold text-slate-700 dark:text-slate-100">
+                {/* <Text className="text-sm font-semibold text-foreground">
                   {walletId ? `${selectedWallet?.name ?? 'Wallet'}` : 'All transactions'}
                 </Text> */}
-                <Text className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                <Text className="mt-0.5 text-xs text-muted">
                   {walletId ? 'Recorded in this wallet' : 'Across every wallet'}
                 </Text>
               </View>
               <Link
                 href={(walletId ? `/transaction/new?walletId=${walletId}` : '/transaction/new') as any}
                 asChild>
-                <TouchableOpacity className="bg-blue-600 dark:bg-blue-500 px-4 py-2 rounded-lg">
+                <TouchableOpacity className="rounded-lg bg-primary px-4 py-2">
                   <Text className="text-white font-semibold">+ Add</Text>
                 </TouchableOpacity>
               </Link>
             </View>
 
             {transactions.length === 0 ? (
-              <View className="mb-2 mt-1 rounded-xl border border-dashed border-slate-300 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-800">
-                <Text className="text-center text-sm text-slate-500 dark:text-slate-400">
+              <View className="mb-2 mt-1 rounded-xl border border-dashed border-border bg-card p-4 shadow-sm">
+                <Text className="text-center text-sm text-muted">
                   No transactions yet. Tap + Add to create one.
                 </Text>
               </View>
@@ -579,7 +579,7 @@ export default function TransactionsScreen() {
                           type: item.type,
                         },
                         Object.fromEntries(
-                          Object.entries(walletMap).map(([id, w]) => [id, w?.name ?? 'Wallet']),
+                          Object.entries(walletMap as Record<string, any>).map(([id, w]) => [id, w?.name ?? 'Wallet']),
                         ),
                         selectedWallet?.id,
                       )
@@ -598,24 +598,24 @@ export default function TransactionsScreen() {
                       router.push({ pathname: '/transaction/[id]', params: { id: item.id } });
                     }}
                     style={({ pressed }) => (pressed ? { opacity: 0.92 } : undefined)}
-                    className="mb-2 rounded-xl border border-slate-300 bg-white p-3 shadow-sm dark:border-slate-700 dark:bg-slate-800">
+                    className="mb-2 rounded-xl border border-border bg-card p-3 shadow-sm">
                     <View className="flex-row items-start justify-between gap-2">
                       <View className="flex-1 min-w-0 pr-1">
-                        <Text className="text-base font-semibold text-slate-900 dark:text-white" numberOfLines={2}>
+                        <Text className="text-base font-semibold text-foreground" numberOfLines={2}>
                           {title}
                         </Text>
                         {!isTransfer && item.description && item.merchant ? (
-                          <Text className="text-sm text-slate-600 dark:text-slate-400 mt-0.5" numberOfLines={2}>
+                          <Text className="text-sm text-muted mt-0.5" numberOfLines={2}>
                             {item.description}
                           </Text>
                         ) : null}
                         {isTransfer && item.description ? (
-                          <Text className="text-sm text-slate-600 dark:text-slate-400 mt-0.5" numberOfLines={2}>
+                          <Text className="text-sm text-muted mt-0.5" numberOfLines={2}>
                             {item.description}
                           </Text>
                         ) : null}
                         <View className="flex-row flex-wrap items-center gap-x-2 gap-y-1 mt-2">
-                          <Text className="text-xs text-slate-600 dark:text-slate-400">
+                          <Text className="text-xs text-muted">
                             {new Date(item.transactionDate).toLocaleString(undefined, {
                               dateStyle: 'medium',
                               timeStyle: 'short',
@@ -628,20 +628,20 @@ export default function TransactionsScreen() {
                               </Text>
                             </View>
                           ) : categoryLabel ? (
-                            <View className="rounded-full bg-slate-200/90 px-2 py-0.5 dark:bg-slate-600/90">
-                              <Text className="text-[11px] font-medium text-slate-700 dark:text-slate-200">
+                            <View className="rounded-full bg-background-muted px-2 py-0.5">
+                              <Text className="text-[11px] font-medium text-foreground">
                                 {categoryLabel}
                               </Text>
                             </View>
                           ) : null}
                           {!isTransfer ? (
-                            <Text className="text-xs text-slate-600 dark:text-slate-400">
+                            <Text className="text-xs text-muted">
                               {walletMap[item.walletId]?.name ?? 'Wallet'}
                             </Text>
                           ) : null}
                         </View>
                         {item.notes ? (
-                          <Text className="text-xs text-slate-600 dark:text-slate-400 mt-1 italic" numberOfLines={2}>
+                          <Text className="text-xs text-muted mt-1 italic" numberOfLines={2}>
                             {item.notes}
                           </Text>
                         ) : null}
@@ -660,7 +660,7 @@ export default function TransactionsScreen() {
                           {isTransfer ? '' : isIncome ? '+' : '−'}
                           {item.amount.toFixed(2)}
                         </Text>
-                        <Text className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                        <Text className="mt-0.5 text-xs text-muted">
                           {walletMap[item.walletId]?.currency ?? 'USD'}
                         </Text>
                       </View>

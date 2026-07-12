@@ -5,16 +5,16 @@ import { View } from 'react-native';
 import { HapticTab } from '@/components/haptic-tab';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { SyncStatusIndicator } from '@/components/sync-status-indicator';
-import { Colors } from '@/constants/theme';
-import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useThemeTokens } from '@/hooks/use-theme-tokens';
 
 export default function TabLayout() {
-  const colorScheme = useColorScheme();
+  const tokens = useThemeTokens();
 
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme ?? 'light'].accent,
+        tabBarActiveTintColor: tokens.accent,
+        tabBarInactiveTintColor: tokens.muted,
         headerShown: false,
         headerRight: () => (
           <View className="mr-4">

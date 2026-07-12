@@ -2,18 +2,15 @@ import React, { useState } from 'react';
 import { View, StyleSheet, ActivityIndicator, Text, Linking, Platform, Pressable } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 import { useTransactionPinmap, type TransactionPinPoint } from '@/hooks/use-transaction-heatmap';
-import { useColorScheme } from '@/hooks/use-color-scheme';
-import { Colors } from '@/constants/theme';
+import { useThemeTokens } from '@/hooks/use-theme-tokens';
 
 export default function HeatmapScreen() {
   const { pinPoints, mapRegion, isLoading, error } = useTransactionPinmap();
-  const colorScheme = useColorScheme();
+  const tokens = useThemeTokens();
   const [isMapReady, setIsMapReady] = useState(false);
   const [selectedPin, setSelectedPin] = useState<TransactionPinPoint | null>(null);
   
   const mapRef = React.useRef<MapView>(null);
-
-  const isDark = colorScheme === 'dark';
 
   const openInMaps = async (latitude: number, longitude: number, locationName: string) => {
     const encodedLabel = encodeURIComponent(locationName);
@@ -40,9 +37,9 @@ export default function HeatmapScreen() {
 
   if (!isMapReady && isLoading) {
     return (
-      <View style={[styles.container, { backgroundColor: isDark ? '#1a1a1a' : '#ffffff' }]}>
-        <ActivityIndicator size="large" color={Colors[colorScheme ?? 'light'].tint} />
-        <Text style={[styles.loadingText, { color: isDark ? '#ffffff' : '#000000' }]}>
+      <View className="flex-1 items-center justify-center bg-background">
+        <ActivityIndicator size="large" color={tokens.primary} />
+        <Text className="mt-3 text-base text-foreground">
           Loading transaction locations...
         </Text>
       </View>
@@ -51,8 +48,8 @@ export default function HeatmapScreen() {
 
   if (error) {
     return (
-      <View style={[styles.container, { backgroundColor: isDark ? '#1a1a1a' : '#ffffff' }]}>
-        <Text style={[styles.errorText, { color: '#ff4444' }]}> 
+      <View className="flex-1 items-center justify-center bg-background">
+        <Text className="px-5 text-center text-base text-danger">
           Error: {error}
         </Text>
       </View>
@@ -61,8 +58,8 @@ export default function HeatmapScreen() {
 
   if (pinPoints.length === 0) {
     return (
-      <View style={[styles.container, { backgroundColor: isDark ? '#1a1a1a' : '#ffffff' }]}>
-        <Text style={[styles.emptyText, { color: isDark ? '#cccccc' : '#666666' }]}> 
+      <View className="flex-1 items-center justify-center bg-background">
+        <Text className="px-5 text-center text-base text-muted">
           No transactions with location data found.
           Start adding locations to your transactions!
         </Text>
@@ -71,7 +68,7 @@ export default function HeatmapScreen() {
   }
 
   return (
-    <View style={styles.container}>
+    <View className="flex-1 items-center justify-center bg-background">
       <MapView
         ref={mapRef}
         style={styles.map}
@@ -83,21 +80,21 @@ export default function HeatmapScreen() {
           <Marker
             key={`${point.latitude}-${point.longitude}-${index}`}
             coordinate={{ latitude: point.latitude, longitude: point.longitude }}
-            pinColor={'#1e88e5'}
+            pinColor={tokens.primary}
             onSelect={() => setSelectedPin(point)}
             onPress={() => setSelectedPin(point)}
           />
         ))}
       </MapView>
 
-      <View style={[styles.legend, { backgroundColor: isDark ? 'rgba(0, 0, 0, 0.8)' : 'rgba(255, 255, 255, 0.9)' }] }>
-        <Text style={[styles.legendTitle, { color: isDark ? '#ffffff' : '#000000' }]}> 
+      <View className="absolute bottom-5 left-5 right-5 rounded-lg bg-card/95 p-3 shadow-sm">
+        <Text className="mb-2 text-sm font-bold text-foreground">
           Pinmap
         </Text>
-        <Text style={[styles.legendInstruction, { color: isDark ? '#cccccc' : '#666666' }]}> 
+        <Text className="mb-2 text-xs text-muted">
           Tap a pin to view transaction details.
         </Text>
-        <Text style={[styles.info, { color: isDark ? '#999999' : '#999999' }]}> 
+        <Text className="mt-1 text-xs text-muted">
           {pinPoints.length} pinned location(s)
         </Text>
       </View>
@@ -110,23 +107,31 @@ export default function HeatmapScreen() {
       ) : null}
 
       {selectedPin ? (
-        <View style={[styles.bottomCard, { backgroundColor: isDark ? 'rgba(0, 0, 0, 0.92)' : 'rgba(255, 255, 255, 0.98)' }]}>
+        <View style={styles.bottomCard} className="rounded-xl bg-card p-3.5">
           <Pressable
-            style={styles.closeButton}
+            style={[styles.closeButton, { backgroundColor: `${tokens.muted}33` }]}
             onPress={() => setSelectedPin(null)}
           >
-            <Text style={styles.closeButtonText}>✕</Text>
+            <Text style={[styles.closeButtonText, { color: tokens.foreground }]}>✕</Text>
           </Pressable>
-          <Text style={[styles.bottomCardTitle, { color: isDark ? '#ffffff' : '#000000' }]}>{selectedPin.locationName}</Text>
-          <Text style={[styles.bottomCardLine, { color: isDark ? '#dddddd' : '#333333' }]}>Description: {selectedPin.description}</Text>
-          <Text style={[styles.bottomCardLine, { color: isDark ? '#dddddd' : '#333333' }]}>Amount: ${selectedPin.amount.toFixed(2)}</Text>
-          <Text style={[styles.bottomCardLine, { color: isDark ? '#aaaaaa' : '#666666' }]}>{selectedPin.transactionCount} transaction(s) at this location</Text>
+          <Text className="mb-1.5 pr-7 text-[15px] font-bold text-foreground">
+            {selectedPin.locationName}
+          </Text>
+          <Text className="mb-1 text-xs text-foreground">Description: {selectedPin.description}</Text>
+          <Text className="mb-1 text-xs text-foreground">Amount: ${selectedPin.amount.toFixed(2)}</Text>
+          <Text className="mb-1 text-xs text-muted">
+            {selectedPin.transactionCount} transaction(s) at this location
+          </Text>
 
           <Pressable
-            style={({ pressed }) => [styles.navigateButton, { opacity: pressed ? 0.85 : 1 }]}
+            style={({ pressed }) => [
+              styles.navigateButton,
+              { opacity: pressed ? 0.85 : 1 },
+            ]}
             onPress={() => openInMaps(selectedPin.latitude, selectedPin.longitude, selectedPin.locationName)}
+            className="bg-primary"
           >
-            <Text style={styles.navigateButtonText}>Open in Map App</Text>
+            <Text className="text-[13px] font-semibold text-primary-foreground">Open in Map App</Text>
           </Pressable>
         </View>
       ) : null}
@@ -135,56 +140,8 @@ export default function HeatmapScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
   map: {
     ...StyleSheet.absoluteFillObject,
-  },
-  loadingText: {
-    marginTop: 12,
-    fontSize: 16,
-  },
-  errorText: {
-    fontSize: 16,
-    textAlign: 'center',
-    paddingHorizontal: 20,
-  },
-  emptyText: {
-    fontSize: 16,
-    textAlign: 'center',
-    paddingHorizontal: 20,
-  },
-  legend: {
-    position: 'absolute',
-    bottom: 20,
-    left: 20,
-    right: 20,
-    borderRadius: 8,
-    padding: 12,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
-  },
-  legendTitle: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    marginBottom: 8,
-  },
-  legendInstruction: {
-    fontSize: 12,
-    marginBottom: 8,
-  },
-  info: {
-    fontSize: 12,
-    marginTop: 4,
   },
   backdrop: {
     ...StyleSheet.absoluteFillObject,
@@ -215,34 +172,16 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(120,120,120,0.25)',
   },
   closeButtonText: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#ffffff',
     lineHeight: 16,
-  },
-  bottomCardTitle: {
-    fontSize: 15,
-    fontWeight: '700',
-    marginBottom: 6,
-    paddingRight: 28,
-  },
-  bottomCardLine: {
-    fontSize: 12,
-    marginBottom: 4,
   },
   navigateButton: {
     marginTop: 8,
-    backgroundColor: '#1e88e5',
     borderRadius: 8,
     paddingVertical: 10,
     alignItems: 'center',
-  },
-  navigateButtonText: {
-    color: '#ffffff',
-    fontSize: 13,
-    fontWeight: '600',
   },
 });

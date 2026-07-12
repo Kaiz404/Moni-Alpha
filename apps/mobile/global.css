@@ -1,2 +1,86 @@
 @import "tailwindcss";
 @import "uniwind";
+
+/*
+ * Moni design tokens (Uniwind / Tailwind v4).
+ * Change brand colors here — screens should use semantic utilities
+ * (bg-primary, text-foreground, bg-canvas, …), not raw hex.
+ */
+
+@theme {
+  /* Money-green brand scale */
+  --color-brand-50: #ecfdf5;
+  --color-brand-100: #d1fae5;
+  --color-brand-200: #a7f3d0;
+  --color-brand-300: #6ee7b7;
+  --color-brand-400: #34d399;
+  --color-brand-500: #10b981;
+  --color-brand-600: #059669;
+  --color-brand-700: #047857;
+  --color-brand-800: #065f46;
+  --color-brand-900: #064e3b;
+}
+
+@layer theme {
+  :root {
+    @variant light {
+      --color-background: #ffffff;
+      --color-background-muted: #f4faf7;
+      --color-canvas: #e8f5ef;
+      --color-card: #ffffff;
+      --color-foreground: #0f172a;
+      --color-muted: #64748b;
+      --color-border: #d8e5de;
+      --color-border-subtle: #e8f0ec;
+
+      --color-primary: #059669;
+      --color-primary-soft: #10b981;
+      --color-primary-foreground: #ffffff;
+      --color-primary-muted: #d1fae5;
+      --color-accent: #10b981;
+      --color-surface-tray: #a7f3d0;
+
+      --color-danger: #dc2626;
+      --color-success: #059669;
+      --color-warning: #d97706;
+      --color-income: #059669;
+      --color-expense: #dc2626;
+      --color-transfer: #0284c7;
+    }
+
+    @variant dark {
+      --color-background: #0b1210;
+      --color-background-muted: #111a17;
+      --color-canvas: #0f1a16;
+      --color-card: #1a2420;
+      --color-foreground: #ecfdf5;
+      --color-muted: #94a3b8;
+      --color-border: #2d3b35;
+      --color-border-subtle: #1e2a25;
+
+      --color-primary: #10b981;
+      --color-primary-soft: #34d399;
+      --color-primary-foreground: #ecfdf5;
+      --color-primary-muted: #064e3b;
+      --color-accent: #34d399;
+      --color-surface-tray: #065f46;
+
+      --color-danger: #f87171;
+      --color-success: #34d399;
+      --color-warning: #fbbf24;
+      --color-income: #34d399;
+      --color-expense: #f87171;
+      --color-transfer: #38bdf8;
+    }
+  }
+}
+
+/* Always available to useCSSVariable (charts, tab bar, maps, ActivityIndicator) */
+@theme static {
+  --color-chart-1: #059669;
+  --color-chart-2: #0d9488;
+  --color-chart-3: #0284c7;
+  --color-chart-4: #7c3aed;
+  --color-chart-5: #db2777;
+  --color-chart-6: #d97706;
+}

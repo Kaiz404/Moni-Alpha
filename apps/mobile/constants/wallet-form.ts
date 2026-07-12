@@ -10,11 +10,12 @@ export const WALLET_TYPE_OPTIONS = [
 
 export type WalletKind = (typeof WALLET_TYPE_OPTIONS)[number]['value'];
 
+/** Per-wallet accent swatches (user-chosen; not brand theme tokens). */
 export const WALLET_ACCENT_COLORS = [
-  '#EF476F',
-  '#FF6B6B',
-  '#FFD166',
-  '#06D6A0',
-  '#118AB2',
-  '#0066FF',
+  '#059669',
+  '#0d9488',
+  '#0284c7',
+  '#7c3aed',
+  '#db2777',
+  '#d97706',
 ];

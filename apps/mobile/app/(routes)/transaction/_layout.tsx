@@ -1,14 +1,11 @@
 import { Stack, router } from 'expo-router';
 import { Pressable, View } from 'react-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { SyncStatusIndicator } from '@/components/sync-status-indicator';
 
 export default function TransactionLayout() {
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === 'dark';
-  const headerTint = isDark ? '#f9fafb' : '#111827';
-  const headerBg = isDark ? '#111827' : '#ffffff';
+  const tokens = useThemeTokens();
 
   return (
     <Stack>
@@ -17,8 +14,8 @@ export default function TransactionLayout() {
         options={{
           title: 'Transactions',
           headerShown: true,
-          headerStyle: { backgroundColor: headerBg },
-          headerTintColor: headerTint,
+          headerStyle: { backgroundColor: tokens.background },
+          headerTintColor: tokens.foreground,
           headerShadowVisible: true,
           headerLeft: () => (
             <Pressable
@@ -27,7 +24,7 @@ export default function TransactionLayout() {
               accessibilityLabel="Go back"
               hitSlop={12}
               className="ml-1 p-1 active:opacity-70">
-              <MaterialIcons name="arrow-back" size={24} color={headerTint} />
+              <MaterialIcons name="arrow-back" size={24} color={tokens.foreground} />
             </Pressable>
           ),
           headerRight: () => (

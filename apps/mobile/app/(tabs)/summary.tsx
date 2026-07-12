@@ -23,8 +23,8 @@ import {
   VictoryTheme,
 } from 'victory-native';
 
-import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { useTransactionPinmap, type TransactionPinPoint } from '@/hooks/use-transaction-heatmap';
 import { MoniFinanceAssistantSection } from '@/components/moni-finance-assistant-section';
 import {
@@ -65,10 +65,9 @@ type WalletItem = {
   currentBalance?: number;
 };
 
-const WALLET_ACCENT_COLORS = ['#0a7ea4', '#3b82f6', '#6366f1', '#8b5cf6', '#ec4899', '#f59e0b'];
-
 export default function SummaryScreen() {
   const colorScheme = useColorScheme();
+  const tokens = useThemeTokens();
   const { width, height } = useWindowDimensions();
   const isDark = colorScheme === 'dark';
   /** Full width inside ScrollView (p-16) + card (p-3 × 2). Charts were ~40% width and looked left-aligned. */
@@ -91,7 +90,7 @@ export default function SummaryScreen() {
   const [transactions, setTransactions] = useState<TransactionItem[]>([]);
   const [wallets, setWallets] = useState<WalletItem[]>([]);
   const [categoryMap, setCategoryMap] = useState<Record<string, string>>({});
-  const [selectedPin, setSelectedPin] = useState<TransactionPinPoint | null>(null);
+  const [selectedPin] = useState<TransactionPinPoint | null>(null);
 
   const [financeInsight, setFinanceInsight] = useState<MoniFinanceAssistantV1 | null>(null);
   const [budgetRows, setBudgetRows] = useState<{ categoryId: string; amount: number }[]>([]);
@@ -280,7 +279,7 @@ export default function SummaryScreen() {
 
 
   const chartTheme = useMemo(() => VictoryTheme.material, []);
-  const pieColorScale = ["#0a7ea4", "#3b82f6", "#6366f1", "#8b5cf6", "#ec4899", "#f59e0b"];
+  const pieColorScale = useMemo(() => [...tokens.chart], [tokens.chart]);
 
   const pieLegendData = useMemo(() => {
     const total = pieData.reduce((s, p) => s + (p.y || 0), 0) || 1;
@@ -288,7 +287,7 @@ export default function SummaryScreen() {
       name: `${item.x} (${Math.round((item.y / total) * 100)}%)`,
       symbol: { fill: pieColorScale[index % pieColorScale.length] },
     }));
-  }, [pieData]);
+  }, [pieData, pieColorScale]);
 
   const usageBarWidth = useMemo(() => {
     const count = Math.max(1, usageBarData.length);
@@ -329,9 +328,9 @@ export default function SummaryScreen() {
     return wallets.map((w, index) => ({
       wallet: w,
       balance: w.currentBalance ?? w.initialBalance ?? 0,
-      dotColor: w.color?.trim() || WALLET_ACCENT_COLORS[index % WALLET_ACCENT_COLORS.length],
+      dotColor: w.color?.trim() || tokens.chart[index % tokens.chart.length],
     }));
-  }, [wallets]);
+  }, [wallets, tokens.chart]);
 
   const totalWalletBalance = useMemo(
     () => walletRows.reduce((sum, row) => sum + row.balance, 0),
@@ -340,16 +339,16 @@ export default function SummaryScreen() {
 
   if (loading) {
     return (
-      <View className="flex-1 items-center justify-center bg-white dark:bg-gray-900">
-        <ActivityIndicator size="large" color={Colors[colorScheme ?? 'light'].tint} />
-        <Text className="mt-3 text-gray-600 dark:text-gray-300">Loading summary...</Text>
+      <View className="flex-1 items-center justify-center bg-background">
+        <ActivityIndicator size="large" color={tokens.primary} />
+        <Text className="mt-3 text-muted">Loading summary...</Text>
       </View>
     );
   }
 
   if (error) {
     return (
-      <View className="flex-1 items-center justify-center bg-white dark:bg-gray-900 px-4">
+      <View className="flex-1 items-center justify-center bg-background px-4">
         <Text className="text-center text-red-500">{error}</Text>
       </View>
     );
@@ -357,25 +356,25 @@ export default function SummaryScreen() {
 
   if (!hasSvgViewManager) {
     return (
-      <View className="flex-1 items-center justify-center bg-white dark:bg-gray-900 px-5">
-        <Text className="text-center text-lg font-semibold text-gray-900 dark:text-white mb-2">Summary charts unavailable in this build</Text>
-        <Text className="text-center text-sm text-gray-600 dark:text-gray-300 mb-1">Native SVG module is missing from your installed Android development client.</Text>
-        <Text className="text-center text-sm text-gray-600 dark:text-gray-300">Reinstall a fresh dev build after dependency changes (`react-native-svg`) and reopen Summary.</Text>
+      <View className="flex-1 items-center justify-center bg-background px-5">
+        <Text className="mb-2 text-center text-lg font-semibold text-foreground">Summary charts unavailable in this build</Text>
+        <Text className="mb-1 text-center text-sm text-muted">Native SVG module is missing from your installed Android development client.</Text>
+        <Text className="text-center text-sm text-muted">Reinstall a fresh dev build after dependency changes (`react-native-svg`) and reopen Summary.</Text>
       </View>
     );
   }
 
   return (
-    <ScrollView className="flex-1 bg-white dark:bg-gray-900" contentContainerStyle={{ padding: 16, paddingBottom: 48 }}>
+    <ScrollView className="flex-1 bg-background" contentContainerStyle={{ padding: 16, paddingBottom: 48 }}>
       <View className="flex-row items-center mb-4 pt-4">
-        <View className="w-9 h-9 rounded-xl bg-slate-200 dark:bg-slate-700 items-center justify-center">
-          <MaterialIcons name="bar-chart" size={20} color={isDark ? '#f1f5f9' : '#334155'} />
+        <View className="w-9 h-9 rounded-xl bg-background-muted items-center justify-center">
+          <MaterialIcons name="bar-chart" size={20} color={tokens.primary} />
         </View>
-        <Text className="text-2xl ml-3 font-bold text-gray-900 dark:text-white">Summary</Text>
+        <Text className="ml-3 text-2xl font-bold text-foreground">Summary</Text>
       </View>
 
-      <View className="rounded-2xl overflow-hidden mb-4 border border-[#8494FF]/25 dark:border-indigo-500/35 shadow-sm">
-        <View className="bg-[#8494FF] dark:bg-[#4f54c4] px-4 py-3">
+      <View className="mb-4 overflow-hidden rounded-2xl border border-primary/25 shadow-sm">
+        <View className="bg-primary px-4 py-3">
           <Text className="text-xs font-semibold uppercase tracking-[0.06em] text-white/90">Wallet balances</Text>
           <Text className="mt-1 text-2xl font-bold text-[#FAFAFA]">
             ${totalWalletBalance.toFixed(2)}
@@ -388,10 +387,10 @@ export default function SummaryScreen() {
                 : `Total across ${wallets.length} wallets`}
           </Text>
         </View>
-        <View className="bg-[#FAFAFA] dark:bg-slate-900/90 px-3 py-1">
+        <View className="bg-card px-3 py-1">
           {walletRows.length === 0 ? (
             <View className="py-6 px-2">
-              <Text className="text-center text-sm text-slate-500 dark:text-slate-400">
+              <Text className="text-center text-sm text-muted">
                 No wallets yet. Add a wallet from the Wallets tab to see balances here.
               </Text>
             </View>
@@ -409,17 +408,17 @@ export default function SummaryScreen() {
                     style={{ backgroundColor: dotColor }}
                   />
                   <View className="flex-1 min-w-0">
-                    <Text className="text-base font-semibold text-slate-900 dark:text-white" numberOfLines={1}>
+                    <Text className="text-base font-semibold text-foreground" numberOfLines={1}>
                       {wallet.name}
                     </Text>
-                    <Text className="text-xs text-slate-500 dark:text-slate-400">
+                    <Text className="text-xs text-muted">
                       {wallet.currency?.trim() || 'USD'}
                     </Text>
                   </View>
                 </View>
                 <Text
                   className={`text-base font-bold shrink-0 ${
-                    balance < 0 ? 'text-red-600 dark:text-red-400' : 'text-slate-900 dark:text-white'
+                    balance < 0 ? 'text-red-600 dark:text-red-400' : 'text-foreground'
                   }`}
                 >
                   ${balance.toFixed(2)}
@@ -441,12 +440,12 @@ export default function SummaryScreen() {
         onManageBudgets={() => router.push('/budget/budgets')}
       />
 
-      <View className="rounded-xl bg-gray-100 dark:bg-gray-800 p-3 mb-4">
-        <Text className="text-base font-semibold text-gray-900 dark:text-white mb-2">Transaction Pinmap</Text>
+      <View className="mb-4 rounded-xl bg-card p-3">
+        <Text className="mb-2 text-base font-semibold text-foreground">Transaction Pinmap</Text>
         {pinmapLoading ? (
           <View className="h-56 items-center justify-center">
-            <ActivityIndicator size="large" color={Colors[colorScheme ?? 'light'].tint} />
-            <Text className="mt-2 text-gray-600 dark:text-gray-300">Loading map pins...</Text>
+            <ActivityIndicator size="large" color={tokens.primary} />
+            <Text className="mt-2 text-muted">Loading map pins...</Text>
           </View>
         ) : pinmapError ? (
           <View className="h-56 items-center justify-center px-3">
@@ -454,7 +453,7 @@ export default function SummaryScreen() {
           </View>
         ) : pinPoints.length === 0 ? (
           <View className="h-56 items-center justify-center px-3">
-            <Text className="text-center text-gray-600 dark:text-gray-300">No transaction locations available yet.</Text>
+            <Text className="text-center text-muted">No transaction locations available yet.</Text>
           </View>
         ) : (
           <>
@@ -469,26 +468,26 @@ export default function SummaryScreen() {
                   <Marker
                     key={`${point.latitude}-${point.longitude}-${index}`}
                     coordinate={{ latitude: point.latitude, longitude: point.longitude }}
-                    pinColor={'#1e88e5'}
+                    pinColor={tokens.primary}
                   />
                 ))}
               </MapView>
             </View>
 
             {selectedPin ? (
-              <View className="mt-2 rounded-lg bg-white dark:bg-gray-700 p-2">
-                <Text className="text-sm font-semibold text-gray-900 dark:text-white">{selectedPin.locationName}</Text>
-                <Text className="text-xs text-gray-700 dark:text-gray-200">{selectedPin.transactionCount} transaction(s)</Text>
-                <Text className="text-xs text-gray-700 dark:text-gray-200">Amount: ${selectedPin.amount.toFixed(2)}</Text>
-                <Text className="text-xs text-gray-500 dark:text-gray-300">{selectedPin.description}</Text>
+              <View className="mt-2 rounded-lg bg-background p-2">
+                <Text className="text-sm font-semibold text-foreground">{selectedPin.locationName}</Text>
+                <Text className="text-xs text-foreground">{selectedPin.transactionCount} transaction(s)</Text>
+                <Text className="text-xs text-foreground">Amount: ${selectedPin.amount.toFixed(2)}</Text>
+                <Text className="text-xs text-muted">{selectedPin.description}</Text>
               </View>
             ) : null}
           </>
         )}
       </View>
 
-      <View className="rounded-xl bg-gray-100 dark:bg-gray-800 p-3 mb-4 items-center">
-        <Text className="text-base font-semibold text-gray-900 dark:text-white mb-2 self-stretch">Expense Categories Contribution</Text>
+      <View className="mb-4 items-center rounded-xl bg-card p-3">
+        <Text className="mb-2 self-stretch text-base font-semibold text-foreground">Expense Categories Contribution</Text>
           <VictoryPie
             theme={chartTheme}
             width={chartWidth}
@@ -512,8 +511,8 @@ export default function SummaryScreen() {
           />
       </View>
 
-        <View className="rounded-xl bg-gray-100 dark:bg-gray-800 p-3 mb-4 items-center">
-          <Text className="text-base font-semibold text-gray-900 dark:text-white mb-2 self-stretch">Total Wallet Value Over Time</Text>
+        <View className="mb-4 items-center rounded-xl bg-card p-3">
+          <Text className="mb-2 self-stretch text-base font-semibold text-foreground">Total Wallet Value Over Time</Text>
           <View style={{ position: 'relative', alignSelf: 'stretch' }}>
             {/* Use explicit padding so we can compute plot area offsets reliably */}
             <VictoryChart
@@ -545,19 +544,19 @@ export default function SummaryScreen() {
               />
               <VictoryLine
                 data={lineData}
-                style={{ data: { stroke: '#0a7ea4', strokeWidth: 3 } }}
+                style={{ data: { stroke: tokens.primary, strokeWidth: 3 } }}
               />
               <VictoryScatter
                 data={lineData}
                 size={4}
-                style={{ data: { fill: '#0a7ea4' } }}
+                style={{ data: { fill: tokens.primary } }}
               />
             </VictoryChart>
           </View>
         </View>
 
-      <View className="rounded-xl bg-gray-100 dark:bg-gray-800 p-3 items-center">
-        <Text className="text-base font-semibold text-gray-900 dark:text-white mb-2 self-stretch"># of Transactions Involved</Text>
+      <View className="items-center rounded-xl bg-card p-3">
+        <Text className="mb-2 self-stretch text-base font-semibold text-foreground"># of Transactions Involved</Text>
         <VictoryChart
           theme={chartTheme}
           width={chartWidth}
@@ -590,7 +589,7 @@ export default function SummaryScreen() {
           />
           <VictoryBar
             data={usageBarData.length ? usageBarData : [{ x: 'No wallets', y: 0 }]}
-            style={{ data: { fill: '#0a7ea4' } }}
+            style={{ data: { fill: tokens.primary } }}
             barWidth={usageBarWidth}
           />
         </VictoryChart>

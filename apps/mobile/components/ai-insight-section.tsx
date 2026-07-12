@@ -59,8 +59,8 @@ export function AiInsightSection({
   hasBudgetsConfigured,
 }: Props) {
   return (
-    <View className="rounded-2xl overflow-hidden mb-4 border border-indigo-200/60 dark:border-indigo-500/40 bg-indigo-50/80 dark:bg-slate-800/90">
-      <View className="flex-row items-center justify-between px-4 py-3 bg-indigo-500/90 dark:bg-indigo-900/80">
+    <View className="mb-4 overflow-hidden rounded-2xl border border-primary/40 bg-primary-muted">
+      <View className="flex-row items-center justify-between bg-primary px-4 py-3">
         <View className="flex-row items-center flex-1 min-w-0 pr-2">
           <MaterialIcons name="auto-awesome" size={22} color="#e0e7ff" />
           <Text className="ml-2 text-base font-bold text-white" numberOfLines={1}>
@@ -88,9 +88,9 @@ export function AiInsightSection({
         {onManageBudgets ? (
           <Pressable
             onPress={onManageBudgets}
-            className="mb-2 flex-row items-center justify-between rounded-lg bg-white/60 dark:bg-slate-900/50 px-2 py-1.5"
+            className="mb-2 flex-row items-center justify-between rounded-lg bg-card px-2 py-1.5"
           >
-            <Text className="text-xs text-slate-700 dark:text-slate-300 flex-1 pr-2">
+            <Text className="flex-1 pr-2 text-xs text-foreground">
               {hasBudgetsConfigured
                 ? 'Edit monthly category budgets'
                 : 'Set monthly budgets per category (all wallets)'}
@@ -110,7 +110,7 @@ export function AiInsightSection({
         ) : null}
 
         {!insight?.cards?.length && !generating ? (
-          <Text className="text-sm text-slate-600 dark:text-slate-400 leading-5">
+          <Text className="text-sm text-muted leading-5">
             Spending is analyzed against your category budgets for this calendar month. The model suggests
             habits to save money — numbers are computed on-device first.
           </Text>
@@ -119,7 +119,7 @@ export function AiInsightSection({
         {generating && !insight?.cards?.length ? (
           <View className="py-6 items-center">
             <ActivityIndicator size="large" color="#6366f1" />
-            <Text className="mt-2 text-sm text-slate-600 dark:text-slate-400">Generating insights…</Text>
+            <Text className="mt-2 text-sm text-muted">Generating insights…</Text>
           </View>
         ) : null}
 
@@ -128,13 +128,13 @@ export function AiInsightSection({
           return (
             <View
               key={`${card.title}-${i}`}
-              className={`rounded-xl border bg-white dark:bg-slate-900/80 p-3 mb-2 ${st.border}`}
+              className={`mb-2 rounded-xl border bg-card p-3 ${st.border}`}
             >
               <View className="flex-row items-start">
                 <MaterialIcons name={st.icon} size={20} color={st.iconColor} style={{ marginTop: 2 }} />
                 <View className="ml-2 flex-1 min-w-0">
-                  <Text className="text-sm font-semibold text-slate-900 dark:text-white">{card.title}</Text>
-                  <Text className="text-sm text-slate-600 dark:text-slate-300 mt-1 leading-5">{card.body}</Text>
+                  <Text className="text-sm font-semibold text-foreground">{card.title}</Text>
+                  <Text className="mt-1 text-sm leading-5 text-muted">{card.body}</Text>
                 </View>
               </View>
             </View>
@@ -142,7 +142,7 @@ export function AiInsightSection({
         })}
 
         {insight?.disclaimer ? (
-          <Text className="text-[11px] text-slate-500 dark:text-slate-500 mt-1 leading-4">{insight.disclaimer}</Text>
+          <Text className="text-[11px] text-muted mt-1 leading-4">{insight.disclaimer}</Text>
         ) : null}
       </View>
     </View>

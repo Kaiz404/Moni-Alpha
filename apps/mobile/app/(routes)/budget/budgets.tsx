@@ -6,15 +6,16 @@ import {
   Platform,
   Pressable,
   ScrollView,
-  StyleSheet,
   Text,
   TextInput,
   View,
 } from 'react-native';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useThemeTokens } from '@/hooks/use-theme-tokens';
+import { BrandHeader } from '@/components/ui/brand-header';
+import { ScreenShell } from '@/components/ui/screen-shell';
+import { PrimaryButton } from '@/components/ui/primary-button';
 import { getExpenseCategoriesForBudgets } from '@/lib/supabase/categories';
 import {
   deleteCategoryBudget,
@@ -26,9 +27,7 @@ type CatRow = { id: string; name: string; color: string | null };
 
 export default function BudgetsScreen() {
   const insets = useSafeAreaInsets();
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === 'dark';
-  const bg = isDark ? '#111827' : '#ffffff';
+  const tokens = useThemeTokens();
   const [loading, setLoading] = useState(true);
   const [categories, setCategories] = useState<CatRow[]>([]);
   const [amountDraft, setAmountDraft] = useState<Record<string, string>>({});
@@ -106,203 +105,67 @@ export default function BudgetsScreen() {
   };
 
   return (
-    <View style={[styles.root, { backgroundColor: bg, paddingTop: insets.top }]}>
+    <ScreenShell>
+      <BrandHeader title="Category budgets" />
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        style={styles.flex}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
-      >
-        <View
-          style={[
-            styles.headerRow,
-            { borderBottomColor: isDark ? '#334155' : '#e2e8f0' },
-          ]}
-        >
-          <Pressable
-            onPress={() => router.back()}
-            style={({ pressed }) => [styles.backBtn, pressed && styles.backBtnPressed]}
-            hitSlop={8}
-          >
-            <MaterialIcons name="arrow-back" size={24} color="#64748b" />
-          </Pressable>
-          <Text
-            style={[styles.headerTitle, { color: isDark ? '#f8fafc' : '#0f172a' }]}
-            numberOfLines={1}
-          >
-            Category budgets
-          </Text>
-          <View style={styles.headerSpacer} />
-        </View>
-
+        className="flex-1"
+        keyboardVerticalOffset={0}>
         {loading ? (
-          <View style={styles.centered}>
-            <ActivityIndicator size="large" color="#6366f1" />
+          <View className="flex-1 items-center justify-center bg-background">
+            <ActivityIndicator size="large" color={tokens.primary} />
           </View>
         ) : (
           <ScrollView
-            style={styles.flex}
-            contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 24 }]}
-            keyboardShouldPersistTaps="handled"
-          >
-            <Text style={[styles.intro, { color: isDark ? '#94a3b8' : '#475569' }]}>
-              Monthly limits apply to <Text style={styles.introBold}>all wallets</Text> combined. The
-              budget coach compares this month&apos;s expenses (by category) to these caps.
-            </Text>
-
-            {categories.length === 0 ? (
-              <Text style={[styles.empty, { color: isDark ? '#94a3b8' : '#64748b' }]}>
-                No expense categories available.
+            className="flex-1 bg-background"
+            contentContainerStyle={{ paddingBottom: insets.bottom + 24 }}
+            keyboardShouldPersistTaps="handled">
+            <View className="px-4 pt-4">
+              <Text className="mb-4 text-sm leading-5 text-muted">
+                Monthly limits apply to <Text className="font-bold text-foreground">all wallets</Text> combined. The
+                budget coach compares this month&apos;s expenses (by category) to these caps.
               </Text>
-            ) : (
-              categories.map((c) => (
-                <View
-                  key={c.id}
-                  style={[
-                    styles.card,
-                    {
-                      borderColor: isDark ? '#334155' : '#e2e8f0',
-                      backgroundColor: isDark ? 'rgba(30,41,59,0.85)' : '#f8fafc',
-                    },
-                  ]}
-                >
-                  <Text style={[styles.cardTitle, { color: isDark ? '#f8fafc' : '#0f172a' }]}>
-                    {c.name}
-                  </Text>
-                  <View style={styles.row}>
-                    <TextInput
-                      style={[
-                        styles.input,
-                        {
-                          borderColor: isDark ? '#475569' : '#cbd5e1',
-                          backgroundColor: isDark ? '#0f172a' : '#ffffff',
-                          color: isDark ? '#f8fafc' : '#0f172a',
-                        },
-                      ]}
-                      placeholder="Monthly budget (empty = none)"
-                      placeholderTextColor="#94a3b8"
-                      keyboardType="decimal-pad"
-                      value={amountDraft[c.id] ?? ''}
-                      onChangeText={(t) => setAmountDraft((prev) => ({ ...prev, [c.id]: t }))}
-                    />
-                    <Pressable
-                      onPress={() => saveBudget(c.id)}
-                      disabled={savingId === c.id}
-                      style={({ pressed }) => [
-                        styles.saveBtn,
-                        pressed && { opacity: 0.9 },
-                        savingId === c.id && { opacity: 0.7 },
-                      ]}
-                    >
+
+              {categories.length === 0 ? (
+                <Text className="py-8 text-center text-[15px] text-muted">
+                  No expense categories available.
+                </Text>
+              ) : (
+                categories.map((c) => (
+                  <View
+                    key={c.id}
+                    className="mb-3 rounded-xl border border-border bg-card p-3">
+                    <Text className="text-base font-semibold text-foreground">
+                      {c.name}
+                    </Text>
+                    <View className="mt-2 flex-row items-center gap-2">
+                      <TextInput
+                        className="flex-1 rounded-lg border border-border bg-background px-3 py-2.5 text-base text-foreground"
+                        placeholder="Monthly budget (empty = none)"
+                        placeholderTextColor="#94a3b8"
+                        keyboardType="decimal-pad"
+                        value={amountDraft[c.id] ?? ''}
+                        onChangeText={(t) => setAmountDraft((prev) => ({ ...prev, [c.id]: t }))}
+                      />
                       {savingId === c.id ? (
-                        <ActivityIndicator color="#fff" />
+                        <View className="min-w-[88px] items-center justify-center rounded-lg bg-primary px-4 py-3">
+                          <ActivityIndicator color="#ffffff" />
+                        </View>
                       ) : (
-                        <Text style={styles.saveBtnText}>Save</Text>
+                        <PrimaryButton
+                          label="Save"
+                          className="min-w-[88px] px-4 py-3"
+                          onPress={() => saveBudget(c.id)}
+                        />
                       )}
-                    </Pressable>
+                    </View>
                   </View>
-                </View>
-              ))
-            )}
+                ))
+              )}
+            </View>
           </ScrollView>
         )}
       </KeyboardAvoidingView>
-    </View>
+    </ScreenShell>
   );
 }
-
-const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-  },
-  flex: {
-    flex: 1,
-  },
-  headerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-  },
-  backBtn: {
-    width: 40,
-    height: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 20,
-  },
-  backBtnPressed: {
-    backgroundColor: 'rgba(148,163,184,0.2)',
-  },
-  headerTitle: {
-    flex: 1,
-    fontSize: 18,
-    fontWeight: '700',
-    textAlign: 'center',
-    paddingRight: 40,
-  },
-  headerSpacer: {
-    width: 40,
-  },
-  centered: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  scrollContent: {
-    flexGrow: 1,
-    paddingHorizontal: 16,
-    paddingTop: 12,
-  },
-  intro: {
-    fontSize: 14,
-    lineHeight: 20,
-    marginBottom: 16,
-  },
-  introBold: {
-    fontWeight: '700',
-  },
-  empty: {
-    textAlign: 'center',
-    paddingVertical: 32,
-    fontSize: 15,
-  },
-  card: {
-    marginBottom: 12,
-    borderRadius: 12,
-    borderWidth: 1,
-    padding: 12,
-  },
-  cardTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  row: {
-    marginTop: 8,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  input: {
-    flex: 1,
-    borderWidth: 1,
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    fontSize: 16,
-  },
-  saveBtn: {
-    backgroundColor: '#8494FF',
-    borderRadius: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    minWidth: 72,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  saveBtnText: {
-    color: '#ffffff',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-});

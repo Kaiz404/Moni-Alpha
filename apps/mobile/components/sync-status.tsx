@@ -58,38 +58,38 @@ export function SyncStatus({ className }: SyncStatusProps = {}) {
   return (
     <View
       className={[
-        'mb-6 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg',
+        'mb-6 rounded-lg bg-card p-4',
         className ?? '',
       ]
         .filter(Boolean)
         .join(' ')}
     >
-      <Text className="text-lg font-semibold mb-3 text-gray-900 dark:text-white">
+      <Text className="mb-3 text-lg font-semibold text-foreground">
         Sync Status
       </Text>
 
       <View className="space-y-2">
         <View className="flex-row items-center justify-between">
-          <Text className="text-sm text-gray-600 dark:text-gray-400">Status:</Text>
+          <Text className="text-sm text-muted">Status:</Text>
           <Text className={`text-sm font-medium ${status.colorClass}`}>{status.text}</Text>
         </View>
 
         <View className="flex-row items-center justify-between">
-          <Text className="text-sm text-gray-600 dark:text-gray-400">Remote sync:</Text>
-          <Text className="text-sm text-gray-900 dark:text-white">
+          <Text className="text-sm text-muted">Remote sync:</Text>
+          <Text className="text-sm text-foreground">
             {syncMeta.isSyncEnabled ? 'Enabled' : 'Disabled'}
           </Text>
         </View>
 
         <View className="flex-row items-center justify-between">
-          <Text className="text-sm text-gray-600 dark:text-gray-400">Last Sync:</Text>
-          <Text className="text-sm text-gray-900 dark:text-white">{formatLastSyncTime()}</Text>
+          <Text className="text-sm text-muted">Last Sync:</Text>
+          <Text className="text-sm text-foreground">{formatLastSyncTime()}</Text>
         </View>
 
         {syncMeta.pendingSets > 0 ? (
           <View className="flex-row items-center justify-between">
-            <Text className="text-sm text-gray-600 dark:text-gray-400">Pending uploads:</Text>
-            <Text className="text-sm text-gray-900 dark:text-white">{syncMeta.pendingSets}</Text>
+            <Text className="text-sm text-muted">Pending uploads:</Text>
+            <Text className="text-sm text-foreground">{syncMeta.pendingSets}</Text>
           </View>
         ) : null}
 

@@ -24,9 +24,9 @@ export function SyncStatusIndicator() {
     if (isSyncing) {
       return {
         text: 'Syncing',
-        bgColor: 'bg-blue-100 dark:bg-blue-900',
-        dotColor: 'bg-blue-500',
-        textColor: 'text-blue-700 dark:text-blue-300',
+        bgColor: 'bg-primary-muted',
+        dotColor: 'bg-primary',
+        textColor: 'text-primary',
       };
     }
     if (isLoaded) {

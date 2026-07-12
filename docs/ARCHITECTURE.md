@@ -61,6 +61,13 @@ Android notifications are prefiltered on-device (`lib/notifications/notification
 - Supabase signs access tokens with an **asymmetric ES256 key**; the Go backend verifies them statelessly via the JWKS endpoint.
 - API keys are the new Supabase key system: `sb_publishable_...` in clients, `sb_secret_...` server-side only. Legacy `anon`/`service_role` JWT keys are being phased out.
 
+## Mobile theming (Uniwind)
+
+- Styling is Tailwind via **Uniwind** (`className`).
+- Semantic tokens live in `apps/mobile/global.css` (`@theme` brand scale + `@layer theme` light/dark variants). Screens use `bg-primary`, `text-foreground`, `bg-canvas`, etc. — not raw hex.
+- Appearance preference (`light` default, plus `dark` / `system`) is stored in MMKV (`lib/mmkv/preferences.ts`) and applied with `Uniwind.setTheme` (`lib/theme/preference.ts`). Profile → Appearance.
+- JS-only color consumers (tab bar, charts, map pins) use `useThemeTokens()` / `useCSSVariable`.
+
 ## Monorepo layout
 
 ```

@@ -18,24 +18,24 @@ function NotificationCard({
   const isPrefilterPassed = !!item.prefilterPassed;
 
   return (
-    <View className="mb-3 p-4 rounded-xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-sm">
+    <View className="mb-3 rounded-xl border border-border bg-card p-4 shadow-sm">
       <View className="flex-row items-center justify-between mb-2">
         <View className="flex-row items-center flex-1 mr-2">
           <View className={`w-2 h-2 rounded-full mr-2 ${isPrefilterPassed ? 'bg-green-500' : 'bg-blue-400'}`} />
-          <Text className="text-xs font-semibold text-gray-700 dark:text-gray-200 flex-1" numberOfLines={1}>
+          <Text className="text-xs font-semibold text-foreground flex-1" numberOfLines={1}>
             {item.app || 'Unknown app'}
           </Text>
         </View>
 
         <View className="flex-row items-center justify-between">
-          <View className={`self-start mr-2 px-2 py-0.5 rounded-full ${isPrefilterPassed ? 'bg-green-100 dark:bg-green-900' : 'bg-gray-100 dark:bg-gray-700'}`}>
-            <Text className={`text-[11px] font-semibold ${isPrefilterPassed ? 'text-green-700 dark:text-green-300' : 'text-gray-600 dark:text-gray-300'}`}>
+          <View className={`self-start mr-2 px-2 py-0.5 rounded-full ${isPrefilterPassed ? 'bg-green-100 dark:bg-green-900' : 'bg-background-muted'}`}>
+            <Text className={`text-[11px] font-semibold ${isPrefilterPassed ? 'text-green-700 dark:text-green-300' : 'text-muted'}`}>
               {isPrefilterPassed ? 'Queued' : 'Ignored'}
             </Text>
           </View>
           
           <View className="flex-row items-center gap-2">
-            <Text className="text-xs text-gray-400 dark:text-gray-500">
+            <Text className="text-xs text-muted">
               {received.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
             </Text>
             <TouchableOpacity
@@ -50,12 +50,12 @@ function NotificationCard({
       </View>
 
 
-      <Text className="text-sm font-semibold text-gray-900 dark:text-white mb-1" numberOfLines={2}>
+      <Text className="mb-1 text-sm font-semibold text-foreground" numberOfLines={2}>
         {displayTitle}
       </Text>
 
       
-      <Text className="text-sm text-gray-600 dark:text-gray-400" numberOfLines={3}>
+      <Text className="text-sm text-muted" numberOfLines={3}>
         {displayBody}
       </Text>
     </View>
@@ -91,11 +91,11 @@ export default function NotificationsScreen() {
   }, [clearAll]);
 
   return (
-    <View className="flex-1 p-4 bg-gray-50 dark:bg-gray-900">
+    <View className="flex-1 bg-background p-4">
       <Stack.Screen options={{ headerShown: true, title: 'Notifications' }} />
 
       <View className="mb-3 flex-row items-center justify-between">
-        <Text className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+        <Text className="text-xs font-semibold uppercase tracking-wider text-muted">
           Raw Notifications ({notifications.length}/50)
         </Text>
         {notifications.length > 0 && (
@@ -112,7 +112,7 @@ export default function NotificationsScreen() {
         renderItem={({ item }) => <NotificationCard item={item} onDismiss={clearOne} />}
         ListEmptyComponent={
           <View className="items-center py-8">
-            <Text className="text-sm text-gray-400 dark:text-gray-500">
+            <Text className="text-sm text-muted">
               No notifications captured yet.
             </Text>
           </View>
