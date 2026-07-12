@@ -12,7 +12,7 @@ Single PostgreSQL database on Supabase. Migrations live in `supabase/migrations/
 | `tags` | User-defined tags | Own rows |
 | `transactions` | The ledger. Includes optional `location_latitude` / `location_longitude` / `location_name` for the heatmap | Own rows |
 | `transaction_tags` | Transaction ↔ tag junction (has own `id` PK for sync) | Via transaction ownership |
-| `proposed_transactions` | AI-extracted candidates pending user review (`status`: pending / approved / rejected). Carries source metadata (`source_type` text/image/notification, `source_text`, `source_image_uri`, notification fields) and AI metadata (`ai_reasoning`, `ai_confidence`, `wallet_hint`, `category_hint`) | Own rows |
+| `proposed_transactions` | AI-extracted candidates awaiting user review (soft-deleted on approve/decline). Carries source metadata (`source_type` text/image/notification, `source_text`, `source_image_uri`, notification fields) and AI metadata (`ai_reasoning`, `ai_confidence`, `wallet_hint`, `category_hint`, `transfer_to_wallet_hint`). For transfers: `transfer_to_wallet_id` (resolved destination) | Own rows |
 | `ai_insights` | Cached insight payloads (`feature_key`, `context_key`, `status`, `result` JSONB validated against `@repo/types` schemas) | Own rows |
 | `category_budgets` | Monthly cap per category | Own rows |
 
@@ -32,7 +32,7 @@ When adding a synced table: add those columns, enable RLS + realtime, then regis
 
 - UUID primary keys (`gen_random_uuid()`)
 - Money as `DECIMAL(12,2)`; currency as `CHAR(3)` ISO code
-- `transaction_type` enum: `income` | `expense` | `transfer`
+- `transaction_type` enum: `income` | `expense` | `transfer` — transfers store source in `wallet_id`, destination in `transfer_to_wallet_id` (same currency only in the app); net worth unchanged across wallets
 - All user tables reference `auth.users(id) ON DELETE CASCADE`
 - RLS on everything; policies scope to `auth.uid()`. Clients use the publishable key + user JWT, so RLS is always in force.
 

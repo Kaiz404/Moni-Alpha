@@ -14,16 +14,18 @@ type WalletContext struct {
 
 // Extraction is a normalized transaction candidate.
 type Extraction struct {
-	Amount       float64  `json:"amount"`
-	Type         string   `json:"type"` // "income" | "expense"
-	Currency     string   `json:"currency"`
-	Merchant     *string  `json:"merchant"`
-	Description  *string  `json:"description"`
-	WalletHint   *string  `json:"walletHint"`
-	CategoryHint *string  `json:"categoryHint"`
-	WalletID     *string  `json:"walletId"`
-	Confidence   float64  `json:"confidence"`
-	Reasoning    string   `json:"reasoning"`
+	Amount               float64  `json:"amount"`
+	Type                 string   `json:"type"` // "income" | "expense" | "transfer"
+	Currency             string   `json:"currency"`
+	Merchant             *string  `json:"merchant"`
+	Description          *string  `json:"description"`
+	WalletHint           *string  `json:"walletHint"`
+	CategoryHint         *string  `json:"categoryHint"`
+	WalletID             *string  `json:"walletId"`
+	TransferToWalletHint *string  `json:"transferToWalletHint"`
+	TransferToWalletID   *string  `json:"transferToWalletId"`
+	Confidence           float64  `json:"confidence"`
+	Reasoning            string   `json:"reasoning"`
 }
 
 // Result is the discriminated union the mobile client consumes.
@@ -93,15 +95,18 @@ type NotificationRequest struct {
 
 // llmExtraction matches the snake_case JSON the prompts ask for.
 type llmExtraction struct {
-	Amount       *float64 `json:"amount"`
-	Type         string   `json:"type"`
-	Currency     string   `json:"currency"`
-	Merchant     *string  `json:"merchant"`
-	Description  *string  `json:"description"`
-	WalletHint   *string  `json:"wallet_hint"`
-	CategoryHint *string  `json:"category_hint"`
-	Confidence   *float64 `json:"confidence"`
-	Reasoning    string   `json:"reasoning"`
+	Amount               *float64 `json:"amount"`
+	Type                 string   `json:"type"`
+	Currency             string   `json:"currency"`
+	Merchant             *string  `json:"merchant"`
+	Description          *string  `json:"description"`
+	WalletID             *string  `json:"wallet_id"`
+	WalletHint           *string  `json:"wallet_hint"`
+	TransferToWalletID   *string  `json:"transfer_to_wallet_id"`
+	TransferToWalletHint *string  `json:"transfer_to_wallet_hint"`
+	CategoryHint         *string  `json:"category_hint"`
+	Confidence           *float64 `json:"confidence"`
+	Reasoning            string   `json:"reasoning"`
 }
 
 // llmNotificationResult matches the notification detection schema.
@@ -114,6 +119,7 @@ type llmNotificationResult struct {
 	Type          string   `json:"type"`
 	Merchant      *string  `json:"merchant"`
 	Description   *string  `json:"description"`
+	WalletID      *string  `json:"wallet_id"`
 	WalletHint    *string  `json:"wallet_hint"`
 	CategoryHint  *string  `json:"category_hint"`
 }

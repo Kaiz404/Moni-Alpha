@@ -1,6 +1,7 @@
-import { transactions$ } from '@/lib/store';
+import { transactions$, wallets$ } from '@/lib/store';
 import { getRecordValues, patchRow } from '@/lib/store/helpers';
 import { getUserId } from '@/lib/supabase/client';
+import { isTransactionRelevantToWallet } from '@/lib/supabase/transaction-balance';
 import type { CreateTransaction, UpdateTransaction } from '@repo/types';
 import { updateTransactionSchema } from '@repo/types';
 import { randomUUID } from 'expo-crypto';
@@ -79,7 +80,7 @@ export async function getTransactions(walletId?: string, limit: number = 100) {
   let rows = getRecordValues<TransactionRow>(transactions$);
 
   if (walletId) {
-    rows = rows.filter((t) => t.wallet_id === walletId);
+    rows = rows.filter((t) => isTransactionRelevantToWallet(t, walletId));
   }
 
   rows.sort((a, b) => toDateSortKey(b.transaction_date).localeCompare(toDateSortKey(a.transaction_date)));
@@ -108,6 +109,7 @@ export async function updateTransaction(id: string, data: UpdateTransaction) {
   if (p.amount !== undefined) patch.amount = p.amount;
   if (p.type !== undefined) patch.type = p.type;
   if (p.categoryId !== undefined) patch.category_id = p.categoryId;
+  if (p.transferToWalletId !== undefined) patch.transfer_to_wallet_id = p.transferToWalletId;
   if (p.description !== undefined) patch.description = p.description;
   if (p.merchant !== undefined) patch.merchant = p.merchant;
   if (p.notes !== undefined) patch.notes = p.notes;
@@ -197,6 +199,47 @@ export async function createTransaction(data: CreateTransaction) {
   const result = await getTransactionById(id);
   if (!result) throw new Error('Failed to create transaction');
   return result;
+}
+
+export async function createTransfer(data: {
+  fromWalletId: string;
+  toWalletId: string;
+  amount: number;
+  description?: string | null;
+  notes?: string | null;
+  transactionDate?: string;
+}) {
+  if (data.fromWalletId === data.toWalletId) {
+    throw new Error('Source and destination wallets must differ');
+  }
+  if (data.amount <= 0) {
+    throw new Error('Amount must be positive');
+  }
+
+  const wallets = getRecordValues<{ id: string; currency: string | null }>(wallets$);
+  const fromWallet = wallets.find((w) => w.id === data.fromWalletId);
+  const toWallet = wallets.find((w) => w.id === data.toWalletId);
+
+  if (!fromWallet) throw new Error('Source wallet not found');
+  if (!toWallet) throw new Error('Destination wallet not found');
+
+  const fromCurrency = (fromWallet.currency ?? 'USD').toUpperCase();
+  const toCurrency = (toWallet.currency ?? 'USD').toUpperCase();
+  if (fromCurrency !== toCurrency) {
+    throw new Error('Transfers require both wallets to use the same currency');
+  }
+
+  return createTransaction({
+    walletId: data.fromWalletId,
+    transferToWalletId: data.toWalletId,
+    amount: data.amount,
+    type: 'transfer',
+    categoryId: null,
+    description: data.description ?? null,
+    merchant: null,
+    notes: data.notes ?? null,
+    transactionDate: data.transactionDate,
+  });
 }
 
 export async function deleteTransaction(id: string) {

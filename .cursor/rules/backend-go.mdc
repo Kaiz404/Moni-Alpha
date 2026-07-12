@@ -26,5 +26,5 @@ internal/insights/  finance assistant (3 parallel agents)
 - Wire structs in `internal/extract/types.go` use camelCase JSON and must mirror `apps/mobile/lib/ai/client/types.ts`. LLM-facing schemas are snake_case (see prompts) and mapped explicitly.
 - Model choice via constants in `internal/groq/models.go` — fast model for live flows, quality model for fallback/insights, vision model for images. Don't inline model IDs elsewhere.
 - LLM calls: `groq.CompleteJSON` (JSON mode + fence-stripping + unmarshal). Live flows keep `MaxRetryWait` ≤ 5s; background flows may wait longer on 429.
-- Wallet resolution: deterministic ladder first, LLM last, `nil` when unsure (user picks in review modal). Never invent wallet IDs — validate against the provided list.
+- Wallet resolution: model picks `wallet_id` from `AVAILABLE_WALLETS` in the prompt; backend validates ids against the client list, then deterministic hint fallback, `nil` when unsure (user picks in review modal). Never invent wallet IDs.
 - Tests colocated `*_test.go`; fake Groq with `httptest`; auth tests generate a local ES256 JWK. Run `go test ./...` and `go vet ./...` before finishing.

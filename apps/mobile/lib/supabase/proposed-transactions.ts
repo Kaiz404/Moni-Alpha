@@ -24,6 +24,8 @@ type ProposedRow = {
   ai_confidence: string | number | null;
   wallet_id: string | null;
   wallet_hint: string | null;
+  transfer_to_wallet_id: string | null;
+  transfer_to_wallet_hint: string | null;
   amount: string | number | null;
   currency: string | null;
   type: string | null;
@@ -53,6 +55,8 @@ function rowToProposedTransaction(row: ProposedRow): ProposedTransaction {
     aiConfidence: row.ai_confidence != null ? parseFloat(String(row.ai_confidence)) : null,
     walletId: row.wallet_id,
     walletHint: row.wallet_hint,
+    transferToWalletId: row.transfer_to_wallet_id,
+    transferToWalletHint: row.transfer_to_wallet_hint,
     amount: row.amount != null ? parseFloat(String(row.amount)) : null,
     currency: row.currency ?? 'USD',
     type: row.type as ProposedTransaction['type'],
@@ -61,20 +65,15 @@ function rowToProposedTransaction(row: ProposedRow): ProposedTransaction {
     categoryId: row.category_id,
     categoryHint: row.category_hint,
     transactionDate: row.transaction_date,
-    status: row.status as ProposedTransaction['status'],
+    status: 'pending',
     createdAt: row.created_at ?? '',
     updatedAt: row.updated_at ?? '',
   };
 }
 
-export async function getProposedTransactions(
-  status?: ProposedTransaction['status'],
-): Promise<ProposedTransaction[]> {
-  let rows = getRecordValues<ProposedRow>(proposedTransactions$);
-
-  if (status) {
-    rows = rows.filter((r) => r.status === status);
-  }
+/** All non-deleted rows are unreviewed proposals awaiting user action. */
+export async function getProposedTransactions(): Promise<ProposedTransaction[]> {
+  const rows = getRecordValues<ProposedRow>(proposedTransactions$);
 
   rows.sort((a, b) => (b.created_at ?? '').localeCompare(a.created_at ?? ''));
 
@@ -103,6 +102,8 @@ export async function createProposedTransaction(
     ai_confidence: data.aiConfidence ?? null,
     wallet_id: data.walletId ?? null,
     wallet_hint: data.walletHint ?? null,
+    transfer_to_wallet_id: data.transferToWalletId ?? null,
+    transfer_to_wallet_hint: data.transferToWalletHint ?? null,
     amount: data.amount ?? null,
     currency: data.currency ?? 'USD',
     type: data.type ?? null,
@@ -124,10 +125,21 @@ export async function createProposedTransaction(
 
 export async function approveProposedTransaction(
   proposal: ProposedTransaction,
-  walletId: string,
+  wallets: { walletId: string; transferToWalletId?: string | null },
 ): Promise<void> {
   if (!proposal.amount || !proposal.type) {
     throw new Error('Cannot approve: amount or type is missing');
+  }
+
+  const walletId = wallets.walletId;
+  const transferToWalletId =
+    wallets.transferToWalletId ?? proposal.transferToWalletId ?? null;
+
+  if (proposal.type === 'transfer' && !transferToWalletId) {
+    throw new Error('Cannot approve transfer: destination wallet is required');
+  }
+  if (proposal.type === 'transfer' && walletId === transferToWalletId) {
+    throw new Error('Source and destination wallets must differ');
   }
 
   const earlyLocation = getProposalLocationSnapshot(proposal.id);
@@ -136,6 +148,7 @@ export async function approveProposedTransaction(
     walletId,
     amount: proposal.amount,
     type: proposal.type,
+    transferToWalletId: proposal.type === 'transfer' ? transferToWalletId : null,
     categoryId: proposal.categoryId ?? null,
     description: proposal.description ?? null,
     merchant: proposal.merchant ?? null,
@@ -145,24 +158,11 @@ export async function approveProposedTransaction(
     locationName: earlyLocation?.name ?? null,
   });
 
-  const now = new Date().toISOString();
-  patchRow(proposedTransactions$, proposal.id, {
-    status: 'approved',
-    updated_at: now,
-  });
-
-  clearProposalLocationSnapshot(proposal.id);
-  emitProposedTransactionsChanged();
+  await deleteProposedTransaction(proposal.id);
 }
 
 export async function rejectProposedTransaction(id: string): Promise<void> {
-  patchRow(proposedTransactions$, id, {
-    status: 'rejected',
-    updated_at: new Date().toISOString(),
-  });
-
-  clearProposalLocationSnapshot(id);
-  emitProposedTransactionsChanged();
+  await deleteProposedTransaction(id);
 }
 
 export async function updateProposalImageUri(id: string, remoteUrl: string): Promise<void> {

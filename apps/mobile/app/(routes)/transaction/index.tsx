@@ -14,6 +14,7 @@ import { Link, router, useLocalSearchParams, useFocusEffect } from 'expo-router'
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useAuth } from '@/lib/auth/auth-context';
 import { deleteTransaction, getTransactions } from '@/lib/supabase/transactions';
+import { formatTransferLabel } from '@/lib/supabase/transaction-balance';
 import { getWallets } from '@/lib/supabase/wallets';
 import { useProposedTransactions } from '@/hooks/use-proposed-transactions';
 import { IconSymbol } from '@/components/ui/icon-symbol';
@@ -22,25 +23,32 @@ import type { ProposedTransaction } from '@repo/types';
 
 type WalletItem = { id: string; name: string; currency: string };
 
-type TxRow = {
-  id: string;
-  walletId: string;
-  amount: number;
-  type: string;
-  categoryId?: string | null;
-  merchant?: string | null;
-  description?: string | null;
-  notes?: string | null;
-  transactionDate: string;
-};
+type WalletPickerFlow =
+  | { proposal: ProposedTransaction; step: 'single' }
+  | { proposal: ProposedTransaction; step: 'transfer-source' }
+  | {
+      proposal: ProposedTransaction;
+      step: 'transfer-destination';
+      sourceWalletId: string;
+      sourceCurrency: string;
+    };
+
+function walletPickerTitle(flow: WalletPickerFlow | null): string {
+  if (!flow) return 'Select wallet for this transaction';
+  if (flow.step === 'single') return 'Select wallet for this transaction';
+  if (flow.step === 'transfer-source') return 'Select source wallet';
+  return 'Select destination wallet';
+}
 
 function WalletPickerModal({
   visible,
+  title,
   wallets,
   onSelect,
   onCancel,
 }: {
   visible: boolean;
+  title: string;
   wallets: WalletItem[];
   onSelect: (walletId: string) => void;
   onCancel: () => void;
@@ -50,20 +58,26 @@ function WalletPickerModal({
       <View className="flex-1 justify-end bg-black/50">
         <View className="bg-white dark:bg-gray-900 rounded-t-2xl p-6 pb-10">
           <Text className="text-base font-semibold text-gray-900 dark:text-white mb-4">
-            Select wallet for this transaction
+            {title}
           </Text>
-          {wallets.map((w) => (
-            <TouchableOpacity
-              key={w.id}
-              className="flex-row items-center py-3 border-b border-gray-100 dark:border-gray-800"
-              onPress={() => onSelect(w.id)}>
-              <View className="flex-1">
-                <Text className="text-sm font-medium text-gray-900 dark:text-white">{w.name}</Text>
-                <Text className="text-xs text-gray-500 dark:text-gray-400">{w.currency}</Text>
-              </View>
-              <IconSymbol name="chevron-right" size={16} color="#9ca3af" />
-            </TouchableOpacity>
-          ))}
+          {wallets.length === 0 ? (
+            <Text className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+              Add another wallet to complete this transfer.
+            </Text>
+          ) : (
+            wallets.map((w) => (
+              <TouchableOpacity
+                key={w.id}
+                className="flex-row items-center py-3 border-b border-gray-100 dark:border-gray-800"
+                onPress={() => onSelect(w.id)}>
+                <View className="flex-1">
+                  <Text className="text-sm font-medium text-gray-900 dark:text-white">{w.name}</Text>
+                  <Text className="text-xs text-gray-500 dark:text-gray-400">{w.currency}</Text>
+                </View>
+                <IconSymbol name="chevron-right" size={16} color="#9ca3af" />
+              </TouchableOpacity>
+            ))
+          )}
           <TouchableOpacity
             className="mt-4 py-3 items-center rounded-lg bg-gray-100 dark:bg-gray-800"
             onPress={onCancel}>
@@ -75,6 +89,19 @@ function WalletPickerModal({
   );
 }
 
+type TxRow = {
+  id: string;
+  walletId: string;
+  transferToWalletId?: string | null;
+  amount: number;
+  type: string;
+  categoryId?: string | null;
+  merchant?: string | null;
+  description?: string | null;
+  notes?: string | null;
+  transactionDate: string;
+};
+
 function ProposalCard({
   item,
   onApprove,
@@ -85,6 +112,7 @@ function ProposalCard({
   onReject: (id: string) => void;
 }) {
   const isExpense = item.type === 'expense' || !item.type;
+  const isTransfer = item.type === 'transfer';
   return (
     <View className="mb-2 rounded-xl border border-slate-300 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-800">
       <View className="flex-row items-center justify-between mb-1">
@@ -96,8 +124,14 @@ function ProposalCard({
         </Text>
       </View>
       <Text
-        className={`text-xl font-bold ${isExpense ? 'text-red-500 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>
-        {isExpense ? '−' : '+'}
+        className={`text-xl font-bold ${
+          isTransfer
+            ? 'text-sky-600 dark:text-sky-400'
+            : isExpense
+              ? 'text-red-500 dark:text-red-400'
+              : 'text-green-600 dark:text-green-400'
+        }`}>
+        {isTransfer ? '' : isExpense ? '−' : '+'}
         {item.currency ?? ''} {item.amount?.toFixed(2) ?? '—'}
       </Text>
       <Text className="text-sm mt-1 text-gray-900 dark:text-white" numberOfLines={1}>
@@ -148,7 +182,7 @@ export default function TransactionsScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [walletPickerVisible, setWalletPickerVisible] = useState(false);
   const [walletPickerWallets, setWalletPickerWallets] = useState<WalletItem[]>([]);
-  const [pendingApproval, setPendingApproval] = useState<ProposedTransaction | null>(null);
+  const [walletPickerFlow, setWalletPickerFlow] = useState<WalletPickerFlow | null>(null);
   const {
     proposals,
     isLoading: proposalsLoading,
@@ -208,11 +242,93 @@ export default function TransactionsScreen() {
     return { income, expense, count: transactions.length };
   }, [transactions]);
 
+  const closeWalletPicker = useCallback(() => {
+    setWalletPickerVisible(false);
+    setWalletPickerFlow(null);
+  }, []);
+
+  const mapWalletOptions = useCallback(
+    (walletOptions: Awaited<ReturnType<typeof fetchWallets>>): WalletItem[] =>
+      walletOptions.map((w) => ({
+        id: w.id,
+        name: w.name ?? '',
+        currency: w.currency ?? 'USD',
+      })),
+    [],
+  );
+
+  const approveTransfer = useCallback(
+    async (
+      proposal: ProposedTransaction,
+      walletId: string,
+      transferToWalletId: string,
+      walletsById: Map<string, WalletItem>,
+    ) => {
+      if (walletId === transferToWalletId) {
+        Alert.alert('Cannot approve', 'Source and destination wallets must differ.');
+        return;
+      }
+      const fromWallet = walletsById.get(walletId);
+      const toWallet = walletsById.get(transferToWalletId);
+      if (fromWallet && toWallet) {
+        if (fromWallet.currency.toUpperCase() !== toWallet.currency.toUpperCase()) {
+          Alert.alert(
+            'Cannot approve',
+            'Transfers require both wallets to use the same currency.',
+          );
+          return;
+        }
+      }
+      try {
+        await approve(proposal, { walletId, transferToWalletId });
+        Alert.alert('Approved', 'Transaction has been added to your records.');
+      } catch (e) {
+        Alert.alert('Error', e instanceof Error ? e.message : 'Failed to approve');
+      }
+    },
+    [approve],
+  );
+
   const handleApprove = useCallback(
     async (proposal: ProposedTransaction) => {
+      const isTransfer = proposal.type === 'transfer';
+
+      if (isTransfer) {
+        if (proposal.walletId && proposal.transferToWalletId) {
+          const walletOptions = await fetchWallets();
+          const walletsById = new Map(mapWalletOptions(walletOptions).map((w) => [w.id, w]));
+          await approveTransfer(
+            proposal,
+            proposal.walletId,
+            proposal.transferToWalletId,
+            walletsById,
+          );
+          return;
+        }
+
+        const walletOptions = await fetchWallets();
+        const options = mapWalletOptions(walletOptions);
+
+        if (proposal.walletId && !proposal.transferToWalletId) {
+          setWalletPickerWallets(options.filter((w) => w.id !== proposal.walletId));
+          setWalletPickerFlow({
+            proposal,
+            step: 'transfer-destination',
+            sourceWalletId: proposal.walletId,
+            sourceCurrency:
+              options.find((w) => w.id === proposal.walletId)?.currency.toUpperCase() ?? 'USD',
+          });
+        } else {
+          setWalletPickerWallets(options);
+          setWalletPickerFlow({ proposal, step: 'transfer-source' });
+        }
+        setWalletPickerVisible(true);
+        return;
+      }
+
       if (proposal.walletId) {
         try {
-          await approve(proposal, proposal.walletId);
+          await approve(proposal, { walletId: proposal.walletId });
           Alert.alert('Approved', 'Transaction has been added to your records.');
         } catch (e) {
           Alert.alert('Error', e instanceof Error ? e.message : 'Failed to approve');
@@ -220,29 +336,80 @@ export default function TransactionsScreen() {
         return;
       }
 
-      setPendingApproval(proposal);
       const walletOptions = await fetchWallets();
-      setWalletPickerWallets(
-        walletOptions.map((w) => ({ id: w.id, name: w.name ?? '', currency: w.currency ?? 'USD' })),
-      );
+      setWalletPickerWallets(mapWalletOptions(walletOptions));
+      setWalletPickerFlow({ proposal, step: 'single' });
       setWalletPickerVisible(true);
     },
-    [approve, fetchWallets],
+    [approve, approveTransfer, fetchWallets, mapWalletOptions],
   );
 
   const handleWalletSelected = useCallback(
     async (selectedWalletId: string) => {
-      setWalletPickerVisible(false);
-      if (!pendingApproval) return;
-      try {
-        await approve(pendingApproval, selectedWalletId);
-        Alert.alert('Approved', 'Transaction has been added to your records.');
-      } catch (e) {
-        Alert.alert('Error', e instanceof Error ? e.message : 'Failed to approve');
+      if (!walletPickerFlow) return;
+
+      const { proposal } = walletPickerFlow;
+
+      if (walletPickerFlow.step === 'single') {
+        closeWalletPicker();
+        try {
+          await approve(proposal, { walletId: selectedWalletId });
+          Alert.alert('Approved', 'Transaction has been added to your records.');
+        } catch (e) {
+          Alert.alert('Error', e instanceof Error ? e.message : 'Failed to approve');
+        }
+        return;
       }
-      setPendingApproval(null);
+
+      if (walletPickerFlow.step === 'transfer-source') {
+        const destId = proposal.transferToWalletId;
+        if (destId) {
+          const walletsById = new Map(walletPickerWallets.map((w) => [w.id, w]));
+          closeWalletPicker();
+          await approveTransfer(proposal, selectedWalletId, destId, walletsById);
+          return;
+        }
+
+        const selected = walletPickerWallets.find((w) => w.id === selectedWalletId);
+        const destinationOptions = walletPickerWallets.filter((w) => w.id !== selectedWalletId);
+        if (destinationOptions.length === 0) {
+          Alert.alert('Cannot approve', 'Add another wallet to complete this transfer.');
+          return;
+        }
+
+        setWalletPickerWallets(destinationOptions);
+        setWalletPickerFlow({
+          proposal,
+          step: 'transfer-destination',
+          sourceWalletId: selectedWalletId,
+          sourceCurrency: selected?.currency.toUpperCase() ?? 'USD',
+        });
+        return;
+      }
+
+      const { sourceWalletId, sourceCurrency } = walletPickerFlow;
+      const destination = walletPickerWallets.find((w) => w.id === selectedWalletId);
+      if (selectedWalletId === sourceWalletId) {
+        Alert.alert('Cannot approve', 'Source and destination wallets must differ.');
+        return;
+      }
+      if (destination && destination.currency.toUpperCase() !== sourceCurrency) {
+        Alert.alert(
+          'Cannot approve',
+          'Transfers require both wallets to use the same currency.',
+        );
+        return;
+      }
+
+      closeWalletPicker();
+      const walletsById = new Map(
+        [...walletPickerWallets, { id: sourceWalletId, name: '', currency: sourceCurrency }].map(
+          (w) => [w.id, w],
+        ),
+      );
+      await approveTransfer(proposal, sourceWalletId, selectedWalletId, walletsById);
     },
-    [approve, pendingApproval],
+    [walletPickerFlow, walletPickerWallets, approve, approveTransfer, closeWalletPicker],
   );
 
   const handleReject = useCallback(
@@ -400,26 +567,49 @@ export default function TransactionsScreen() {
             ) : (
               transactions.map((item) => {
                 const isIncome = item.type === 'income';
+                const isTransfer = item.type === 'transfer';
                 const categoryLabel = item.categoryId ? categoryMap[item.categoryId] : null;
-                const canEdit = item.type === 'income' || item.type === 'expense';
+                const canEdit = true;
+                const title =
+                  isTransfer
+                    ? formatTransferLabel(
+                        {
+                          wallet_id: item.walletId,
+                          transfer_to_wallet_id: item.transferToWalletId,
+                          type: item.type,
+                        },
+                        Object.fromEntries(
+                          Object.entries(walletMap).map(([id, w]) => [id, w?.name ?? 'Wallet']),
+                        ),
+                        selectedWallet?.id,
+                      )
+                    : item.merchant || item.description || item.type;
+                const amountClass = isTransfer
+                  ? 'text-sky-600 dark:text-sky-400'
+                  : isIncome
+                    ? 'text-green-600 dark:text-green-400'
+                    : 'text-red-500 dark:text-red-400';
                 return (
                   <Pressable
                     key={item.id}
-                    accessibilityRole={canEdit ? 'button' : undefined}
-                    accessibilityHint={canEdit ? 'Opens transaction details' : undefined}
+                    accessibilityRole="button"
+                    accessibilityHint="Opens transaction details"
                     onPress={() => {
-                      if (canEdit) {
-                        router.push({ pathname: '/transaction/[id]', params: { id: item.id } });
-                      }
+                      router.push({ pathname: '/transaction/[id]', params: { id: item.id } });
                     }}
-                    style={({ pressed }) => (pressed && canEdit ? { opacity: 0.92 } : undefined)}
+                    style={({ pressed }) => (pressed ? { opacity: 0.92 } : undefined)}
                     className="mb-2 rounded-xl border border-slate-300 bg-white p-3 shadow-sm dark:border-slate-700 dark:bg-slate-800">
                     <View className="flex-row items-start justify-between gap-2">
                       <View className="flex-1 min-w-0 pr-1">
                         <Text className="text-base font-semibold text-slate-900 dark:text-white" numberOfLines={2}>
-                          {item.merchant || item.description || item.type}
+                          {title}
                         </Text>
-                        {item.description && item.merchant ? (
+                        {!isTransfer && item.description && item.merchant ? (
+                          <Text className="text-sm text-slate-600 dark:text-slate-400 mt-0.5" numberOfLines={2}>
+                            {item.description}
+                          </Text>
+                        ) : null}
+                        {isTransfer && item.description ? (
                           <Text className="text-sm text-slate-600 dark:text-slate-400 mt-0.5" numberOfLines={2}>
                             {item.description}
                           </Text>
@@ -431,16 +621,24 @@ export default function TransactionsScreen() {
                               timeStyle: 'short',
                             })}
                           </Text>
-                          {categoryLabel ? (
+                          {isTransfer ? (
+                            <View className="rounded-full bg-sky-100 px-2 py-0.5 dark:bg-sky-900/50">
+                              <Text className="text-[11px] font-medium text-sky-700 dark:text-sky-200">
+                                Transfer
+                              </Text>
+                            </View>
+                          ) : categoryLabel ? (
                             <View className="rounded-full bg-slate-200/90 px-2 py-0.5 dark:bg-slate-600/90">
                               <Text className="text-[11px] font-medium text-slate-700 dark:text-slate-200">
                                 {categoryLabel}
                               </Text>
                             </View>
                           ) : null}
-                          <Text className="text-xs text-slate-600 dark:text-slate-400">
-                            {walletMap[item.walletId]?.name ?? 'Wallet'}
-                          </Text>
+                          {!isTransfer ? (
+                            <Text className="text-xs text-slate-600 dark:text-slate-400">
+                              {walletMap[item.walletId]?.name ?? 'Wallet'}
+                            </Text>
+                          ) : null}
                         </View>
                         {item.notes ? (
                           <Text className="text-xs text-slate-600 dark:text-slate-400 mt-1 italic" numberOfLines={2}>
@@ -458,9 +656,8 @@ export default function TransactionsScreen() {
                             <MaterialIcons name="delete-outline" size={18} color="#ef4444" />
                           </Pressable>
                         </View>
-                        <Text
-                          className={`text-lg font-bold ${isIncome ? 'text-green-600 dark:text-green-400' : 'text-red-500 dark:text-red-400'}`}>
-                          {isIncome ? '+' : '−'}
+                        <Text className={`text-lg font-bold ${amountClass}`}>
+                          {isTransfer ? '' : isIncome ? '+' : '−'}
                           {item.amount.toFixed(2)}
                         </Text>
                         <Text className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
@@ -477,12 +674,10 @@ export default function TransactionsScreen() {
       </ScrollView>
       <WalletPickerModal
         visible={walletPickerVisible}
+        title={walletPickerTitle(walletPickerFlow)}
         wallets={walletPickerWallets}
         onSelect={handleWalletSelected}
-        onCancel={() => {
-          setWalletPickerVisible(false);
-          setPendingApproval(null);
-        }}
+        onCancel={closeWalletPicker}
       />
     </View>
   );

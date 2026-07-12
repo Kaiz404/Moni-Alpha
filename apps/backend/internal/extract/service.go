@@ -18,12 +18,16 @@ func NewService(client *groq.Client) *Service {
 
 const defaultCurrency = "MYR"
 
+func walletPreamble(wallets []WalletContext) string {
+	return FormatWalletsForPrompt(wallets) + "\n\n"
+}
+
 // FromText extracts a transaction from free-form user text.
 // Live UX flow: fast model, quality fallback, no long 429 waits.
 func (s *Service) FromText(ctx context.Context, req TextRequest) Result {
 	messages := []groq.Message{
 		{Role: "system", Content: textExtractionPrompt},
-		{Role: "user", Content: req.Text},
+		{Role: "user", Content: walletPreamble(req.Wallets) + req.Text},
 	}
 
 	var out llmExtraction
@@ -45,7 +49,7 @@ func (s *Service) FromText(ctx context.Context, req TextRequest) Result {
 		return Skipped("No transaction amount found in text")
 	}
 
-	return OK(s.finalize(ctx, out, req.Wallets, req.Text, 0.85))
+	return OK(s.finalize(out, req.Wallets, req.Text, 0.85))
 }
 
 // FromImage extracts a transaction from a receipt image. Accepts a public
@@ -63,7 +67,7 @@ func (s *Service) FromImage(ctx context.Context, req ImageRequest) Result {
 		return Skipped("No image data provided — upload the receipt or include base64")
 	}
 
-	userText := "Extract the transaction from this receipt."
+	userText := walletPreamble(req.Wallets) + "Extract the transaction from this receipt."
 	if strings.TrimSpace(req.UserContext) != "" {
 		userText += "\nUser message: " + req.UserContext
 	}
@@ -88,7 +92,7 @@ func (s *Service) FromImage(ctx context.Context, req ImageRequest) Result {
 		return Skipped("Could not read a payable amount from the receipt")
 	}
 
-	return OK(s.finalize(ctx, out, req.Wallets, req.UserContext, 0.8))
+	return OK(s.finalize(out, req.Wallets, req.UserContext, 0.8))
 }
 
 // FromNotification classifies and extracts a transaction from an Android
@@ -99,7 +103,7 @@ func (s *Service) FromNotification(ctx context.Context, req NotificationRequest)
 		return Skipped("Empty notification")
 	}
 
-	user := "App: " + req.Notification.App + "\nNotification: " + combined
+	user := walletPreamble(req.Wallets) + "App: " + req.Notification.App + "\nNotification: " + combined
 
 	var out llmNotificationResult
 	err := s.groq.CompleteJSON(ctx,
@@ -130,6 +134,7 @@ func (s *Service) FromNotification(ctx context.Context, req NotificationRequest)
 		Currency:     out.Currency,
 		Merchant:     out.Merchant,
 		Description:  out.Description,
+		WalletID:     out.WalletID,
 		WalletHint:   out.WalletHint,
 		CategoryHint: out.CategoryHint,
 		Confidence:   out.Confidence,
@@ -137,19 +142,18 @@ func (s *Service) FromNotification(ctx context.Context, req NotificationRequest)
 	}
 	// Wallet context for notifications: app name + notification body.
 	extraCtx := req.Notification.App + " " + combined
-	return OK(s.finalize(ctx, ex, req.Wallets, extraCtx, 0.7))
+	return OK(s.finalize(ex, req.Wallets, extraCtx, 0.7))
 }
 
 // finalize normalizes LLM output and resolves the wallet.
 func (s *Service) finalize(
-	ctx context.Context,
 	out llmExtraction,
 	wallets []WalletContext,
 	extraContext string,
 	defaultConfidence float64,
 ) Extraction {
 	txType := strings.ToLower(strings.TrimSpace(out.Type))
-	if txType != "income" && txType != "expense" {
+	if txType != "income" && txType != "expense" && txType != "transfer" {
 		txType = "expense"
 	}
 
@@ -168,21 +172,37 @@ func (s *Service) finalize(
 		reasoning = "Extracted by Moni AI backend"
 	}
 
-	rctx, cancel := resolveCtx(ctx)
-	defer cancel()
-	walletID := ResolveWallet(rctx, s.groq, wallets, out.WalletHint, extraContext)
+	walletID := ResolveWallet(wallets, out.WalletID, out.WalletHint, extraContext)
+
+	var transferToWalletID *string
+	transferHint := emptyToNil(out.TransferToWalletHint)
+	if txType == "transfer" {
+		transferToWalletID = ResolveWallet(wallets, out.TransferToWalletID, transferHint, "")
+		if walletID != nil && transferToWalletID != nil && *walletID == *transferToWalletID {
+			transferToWalletID = nil
+		}
+	}
+
+	merchant := emptyToNil(out.Merchant)
+	categoryHint := emptyToNil(out.CategoryHint)
+	if txType == "transfer" {
+		merchant = nil
+		categoryHint = nil
+	}
 
 	return Extraction{
-		Amount:       *out.Amount,
-		Type:         txType,
-		Currency:     currency,
-		Merchant:     emptyToNil(out.Merchant),
-		Description:  emptyToNil(out.Description),
-		WalletHint:   emptyToNil(out.WalletHint),
-		CategoryHint: emptyToNil(out.CategoryHint),
-		WalletID:     walletID,
-		Confidence:   confidence,
-		Reasoning:    reasoning,
+		Amount:               *out.Amount,
+		Type:                 txType,
+		Currency:             currency,
+		Merchant:             merchant,
+		Description:          emptyToNil(out.Description),
+		WalletHint:           emptyToNil(out.WalletHint),
+		CategoryHint:         categoryHint,
+		WalletID:             walletID,
+		TransferToWalletHint: transferHint,
+		TransferToWalletID:   transferToWalletID,
+		Confidence:           confidence,
+		Reasoning:            reasoning,
 	}
 }
 

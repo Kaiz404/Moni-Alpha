@@ -12,8 +12,8 @@ Input (chat text / receipt photo / notification)
   → AiClient                              apps/mobile/lib/ai/client/
   → Go backend                            apps/backend (Gin, stateless)
   → Groq
-  → proposed_transactions (pending)
-  → ProposalReviewModal → approve/reject
+  → proposed_transactions (unreviewed)
+  → ProposalReviewModal → approve/decline (soft-delete proposal)
 ```
 
 If `EXPO_PUBLIC_AI_API_URL` is unset, the mobile client falls back to a mock that returns `unavailable` — AI features degrade cleanly.
@@ -27,10 +27,13 @@ Every extract endpoint returns:
 ```ts
 type ExtractResult =
   | { status: 'ok'; extraction: { amount, type, currency, merchant, description,
-      walletHint, categoryHint, walletId, confidence, reasoning } }
+      walletHint, categoryHint, walletId, transferToWalletHint, transferToWalletId,
+      confidence, reasoning } }
   | { status: 'skipped'; reason: string }      // input isn't a transaction
-  | { status: 'unavailable'; reason: string }  // backend/model failure (mobile queue retries)
+  | { status: 'unavailable'; reason: string }  // backend model failure (mobile queue retries)
 ```
+
+`type` is `income` | `expense` | `transfer`. Transfers use `walletId` as the source wallet and `transferToWalletId` as the destination (either may be `null` for user completion in the review modal). Receipt and notification extraction remain income/expense only; **text** extraction detects transfers (e.g. "move 500 from Maybank to savings").
 
 Auth: `Authorization: Bearer <supabase-user-jwt>`, verified via JWKS (ES256). Errors: `{ error, details? }`.
 
@@ -55,14 +58,13 @@ All calls use Groq's OpenAI-compatible endpoint with `response_format: json_obje
 ## Extraction pipeline details
 
 - **Prompts** live in `apps/backend/internal/extract/prompts.go` and `internal/insights/prompts.go` (ported from the former on-device pipeline; git history has `apps/mobile/lib/ai/BACKEND_AI.md` if you need the archaeology).
-- **Wallet resolution ladder** (`internal/extract/wallet_resolver.go`) — deterministic first, LLM last:
+- **Wallet selection** — the client's `wallets[]` is injected into every extraction user message as `AVAILABLE_WALLETS` (JSON array of `{id, name, type?, currency?}`). The extraction model returns `wallet_id` / `transfer_to_wallet_id` directly; the backend validates ids against the provided list (`internal/extract/wallet_resolver.go`):
   1. Only one wallet → auto-select
-  2. Merge `wallet_hint` + user context / notification text
-  3. Whole-word wallet-name match
-  4. Substring match
-  5. Token-overlap heuristic
-  6. LLM (`{action, walletId, reason}`, IDs validated against the provided list)
-  7. `walletId = null` → user picks in the review modal
+  2. Valid `wallet_id` from the model (must be in the provided list)
+  3. Fallback: merge `wallet_hint` + user context → whole-word name match → substring → token overlap
+  4. `walletId = null` → user picks in the review modal
+- For **transfers**, resolution runs twice: source (`wallet_id` + context) and destination (`transfer_to_wallet_id` + hint only).
+- **Text transfer patterns:** deposits ("deposited cash to bank"), withdrawals, top-ups, and explicit "from X to Y" moves are transfers between wallets in `AVAILABLE_WALLETS` — not income. The model uses wallet names/types to infer direction (e.g. cash → bank for deposits).
 - **Notification rule:** mobile skips proposals without a resolved wallet (`run-orchestration.ts`), so unattributable notifications never create noise.
 - **Notification prefilter stays on-device** (`apps/mobile/lib/notifications/notification-filter.js`): requires a money-amount signal AND a transfer signal before an LLM ever sees it. Test suite: `pnpm --filter moni test:notification-detection`.
 - **Receipt images:** mobile downscales/compresses (`lib/ai/client/image-payload.ts`), sends base64 for local files or the URL if already uploaded to the `receipts` Storage bucket.

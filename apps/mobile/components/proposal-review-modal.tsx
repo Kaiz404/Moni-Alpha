@@ -11,6 +11,7 @@ import {
   AppState,
   DeviceEventEmitter,
   StyleSheet,
+  Alert,
 } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 import { Image } from 'expo-image';
@@ -31,7 +32,13 @@ type WalletOption = {
   currency: string;
 };
 
-const TX_TYPES = ['expense', 'income'] as const;
+const TX_TYPES = ['expense', 'income', 'transfer'] as const;
+type TxType = (typeof TX_TYPES)[number];
+
+function normalizeTxType(type: ProposedTransaction['type']): TxType {
+  if (type === 'income' || type === 'expense' || type === 'transfer') return type;
+  return 'expense';
+}
 
 export function ProposalReviewModal() {
   const [proposals, setProposals] = useState<ProposedTransaction[]>([]);
@@ -50,10 +57,7 @@ export function ProposalReviewModal() {
     const quietRefresh = proposalsRef.current.length > 0;
     if (!quietRefresh) setIsLoading(true);
     try {
-      const [pending, ws] = await Promise.all([
-        getProposedTransactions('pending'),
-        getWallets(),
-      ]);
+      const [pending, ws] = await Promise.all([getProposedTransactions(), getWallets()]);
       setProposals(pending);
       setWallets(
         ws.map((w) => ({
@@ -92,52 +96,6 @@ export function ProposalReviewModal() {
     return () => sub.remove();
   }, [loadData]);
 
-  const handleApprove = useCallback(
-    async (edited: EditedFields) => {
-      if (!current || isActioning) return;
-      setIsActioning(true);
-      try {
-        const walletId = edited.walletId ?? current.walletId;
-        if (!walletId) {
-          // Cannot approve without a wallet
-          return;
-        }
-
-        const updatedProposal: ProposedTransaction = {
-          ...current,
-          amount: edited.amount,
-          type: edited.type,
-          merchant: edited.merchant || null,
-          description: edited.description || null,
-          transactionDate: edited.date
-            ? new Date(edited.date + 'T00:00:00').toISOString()
-            : current.transactionDate,
-        };
-
-        await approveProposedTransaction(updatedProposal, walletId);
-        advanceOrDismiss();
-      } catch (e) {
-        console.error('[ProposalReview] approve error:', e);
-      } finally {
-        setIsActioning(false);
-      }
-    },
-    [current, isActioning, proposals, currentIndex],
-  );
-
-  const handleReject = useCallback(async () => {
-    if (!current || isActioning) return;
-    setIsActioning(true);
-    try {
-      await rejectProposedTransaction(current.id);
-      advanceOrDismiss();
-    } catch (e) {
-      console.error('[ProposalReview] reject error:', e);
-    } finally {
-      setIsActioning(false);
-    }
-  }, [current, isActioning, proposals, currentIndex]);
-
   function advanceOrDismiss() {
     const remaining = proposals.filter((_, i) => i !== currentIndex);
     setProposals(remaining);
@@ -147,6 +105,86 @@ export function ProposalReviewModal() {
       setCurrentIndex(Math.min(currentIndex, remaining.length - 1));
     }
   }
+
+  const handleApprove = useCallback(
+    async (edited: EditedFields) => {
+      if (!current || isActioning) return;
+      setIsActioning(true);
+      try {
+        const effectiveType = edited.type ?? current.type ?? 'expense';
+        const walletId = edited.walletId ?? current.walletId;
+        const transferToWalletId = edited.transferToWalletId ?? current.transferToWalletId;
+
+        if (!walletId) {
+          Alert.alert('Cannot approve', 'Select a source wallet.');
+          return;
+        }
+
+        if (effectiveType === 'transfer') {
+          if (!transferToWalletId) {
+            Alert.alert('Cannot approve', 'Select a destination wallet for this transfer.');
+            return;
+          }
+          if (walletId === transferToWalletId) {
+            Alert.alert('Cannot approve', 'Source and destination wallets must differ.');
+            return;
+          }
+          const fromWallet = wallets.find((w) => w.id === walletId);
+          const toWallet = wallets.find((w) => w.id === transferToWalletId);
+          if (fromWallet && toWallet) {
+            const fromCur = fromWallet.currency.toUpperCase();
+            const toCur = toWallet.currency.toUpperCase();
+            if (fromCur !== toCur) {
+              Alert.alert(
+                'Cannot approve',
+                'Transfers require both wallets to use the same currency.',
+              );
+              return;
+            }
+          }
+        }
+
+        const updatedProposal: ProposedTransaction = {
+          ...current,
+          amount: edited.amount,
+          type: effectiveType,
+          merchant: effectiveType === 'transfer' ? null : edited.merchant || null,
+          description: edited.description || null,
+          transactionDate: edited.date
+            ? new Date(edited.date + 'T00:00:00').toISOString()
+            : current.transactionDate,
+        };
+
+        await approveProposedTransaction(updatedProposal, {
+          walletId,
+          transferToWalletId: effectiveType === 'transfer' ? transferToWalletId : null,
+        });
+        advanceOrDismiss();
+      } catch (e) {
+        const message = e instanceof Error ? e.message : 'Failed to approve';
+        console.error('[ProposalReview] approve error:', e);
+        Alert.alert('Error', message);
+      } finally {
+        setIsActioning(false);
+      }
+    },
+    [current, isActioning, wallets, proposals, currentIndex],
+  );
+
+  const handleReject = useCallback(async () => {
+    if (!current || isActioning) return;
+    setIsActioning(true);
+    try {
+      await rejectProposedTransaction(current.id);
+      advanceOrDismiss();
+    } catch (e) {
+      const message = e instanceof Error ? e.message : 'Failed to reject';
+      console.error('[ProposalReview] reject error:', e);
+      Alert.alert('Error', message);
+    } finally {
+      setIsActioning(false);
+    }
+  }, [current, isActioning, proposals, currentIndex]);
 
   if (!visible || !current) return null;
 
@@ -158,7 +196,6 @@ export function ProposalReviewModal() {
       statusBarTranslucent
     >
       <View className="flex-1 bg-white dark:bg-gray-900">
-        {/* Header */}
         <View className="pt-14 pb-4 px-6 border-b border-gray-200 dark:border-gray-700">
           <Text className="text-xl font-bold text-gray-900 dark:text-white">
             Review Transaction Proposal
@@ -184,12 +221,11 @@ export function ProposalReviewModal() {
   );
 }
 
-// ─── Proposal form ───────────────────────────────────────────────────────────
-
 type EditedFields = {
   amount: number;
-  type: 'income' | 'expense';
+  type: TxType;
   walletId: string | null;
+  transferToWalletId: string | null;
   merchant: string;
   description: string;
   date: string;
@@ -208,9 +244,7 @@ function ProposalForm({
   onApprove: (edited: EditedFields) => void;
   onReject: () => void;
 }) {
-  const [txType, setTxType] = useState<'income' | 'expense'>(
-    (proposal.type as 'income' | 'expense') ?? 'expense',
-  );
+  const [txType, setTxType] = useState<TxType>(normalizeTxType(proposal.type));
   const [amount, setAmount] = useState(proposal.amount?.toFixed(2) ?? '0.00');
   const [merchant, setMerchant] = useState(proposal.merchant ?? '');
   const [description, setDescription] = useState(proposal.description ?? '');
@@ -219,14 +253,21 @@ function ProposalForm({
       ? new Date(proposal.transactionDate).toISOString().split('T')[0]
       : new Date().toISOString().split('T')[0],
   );
-  const [selectedWalletId, setSelectedWalletId] = useState<string | null>(
-    proposal.walletId,
+  const [selectedWalletId, setSelectedWalletId] = useState<string | null>(proposal.walletId);
+  const [selectedTransferToWalletId, setSelectedTransferToWalletId] = useState<string | null>(
+    proposal.transferToWalletId,
   );
   const [showWalletPicker, setShowWalletPicker] = useState(false);
+  const [showTransferToPicker, setShowTransferToPicker] = useState(false);
 
-  // Reset form when proposal changes
+  const isTransfer = txType === 'transfer';
+  const destinationWallets = useMemo(
+    () => wallets.filter((w) => w.id !== selectedWalletId),
+    [wallets, selectedWalletId],
+  );
+
   useEffect(() => {
-    setTxType((proposal.type as 'income' | 'expense') ?? 'expense');
+    setTxType(normalizeTxType(proposal.type));
     setAmount(proposal.amount?.toFixed(2) ?? '0.00');
     setMerchant(proposal.merchant ?? '');
     setDescription(proposal.description ?? '');
@@ -236,27 +277,51 @@ function ProposalForm({
         : new Date().toISOString().split('T')[0],
     );
     setSelectedWalletId(proposal.walletId);
-  }, [proposal.id]);
+    setSelectedTransferToWalletId(proposal.transferToWalletId);
+    setShowWalletPicker(false);
+    setShowTransferToPicker(false);
+  }, [proposal]);
+
+  useEffect(() => {
+    if (!isTransfer) return;
+    if (selectedTransferToWalletId && selectedTransferToWalletId === selectedWalletId) {
+      setSelectedTransferToWalletId(null);
+    }
+  }, [isTransfer, selectedWalletId, selectedTransferToWalletId]);
 
   const selectedWallet = wallets.find((w) => w.id === selectedWalletId);
-  const amountColor = txType === 'expense' ? '#DC2626' : '#16A34A';
+  const selectedTransferToWallet = wallets.find((w) => w.id === selectedTransferToWalletId);
+  const amountColor = isTransfer ? '#0284C7' : txType === 'expense' ? '#DC2626' : '#16A34A';
   const sourceLabel = {
     text: '💬 From text input',
     image: '📷 From receipt photo',
     notification: `🔔 From ${proposal.sourceApp ?? 'notification'}`,
   }[proposal.sourceType ?? 'notification'];
 
-  const handleApprove = () => {
+  const canApprove =
+    !!selectedWalletId && (!isTransfer || !!selectedTransferToWalletId);
+
+  const handleApprovePress = () => {
     const parsedAmount = parseFloat(amount);
-    if (isNaN(parsedAmount) || parsedAmount <= 0) return;
+    if (isNaN(parsedAmount) || parsedAmount <= 0) {
+      Alert.alert('Cannot approve', 'Enter a valid positive amount.');
+      return;
+    }
     if (!selectedWalletId) {
       setShowWalletPicker(true);
+      Alert.alert('Select wallet', isTransfer ? 'Choose the source wallet.' : 'Choose a wallet.');
+      return;
+    }
+    if (isTransfer && !selectedTransferToWalletId) {
+      setShowTransferToPicker(true);
+      Alert.alert('Select wallet', 'Choose the destination wallet for this transfer.');
       return;
     }
     onApprove({
       amount: parsedAmount,
       type: txType,
       walletId: selectedWalletId,
+      transferToWalletId: isTransfer ? selectedTransferToWalletId : null,
       merchant,
       description,
       date,
@@ -265,7 +330,6 @@ function ProposalForm({
 
   return (
     <View>
-      {/* Source badge */}
       <View className="bg-gray-100 dark:bg-gray-800 rounded-xl px-4 py-3 mb-4">
         <Text className="text-sm text-gray-600 dark:text-gray-400">{sourceLabel}</Text>
         {proposal.sourceText && (
@@ -289,7 +353,6 @@ function ProposalForm({
 
       <ProposalLocationSection proposalId={proposal.id} />
 
-      {/* Type toggle */}
       <Text className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">
         Transaction Type
       </Text>
@@ -302,7 +365,9 @@ function ProposalForm({
               txType === t
                 ? t === 'expense'
                   ? 'bg-red-50 dark:bg-red-950 border-red-400'
-                  : 'bg-green-50 dark:bg-green-950 border-green-400'
+                  : t === 'income'
+                    ? 'bg-green-50 dark:bg-green-950 border-green-400'
+                    : 'bg-sky-50 dark:bg-sky-950 border-sky-400'
                 : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-600'
             }`}
             activeOpacity={0.7}
@@ -312,7 +377,9 @@ function ProposalForm({
                 txType === t
                   ? t === 'expense'
                     ? 'text-red-600 dark:text-red-400'
-                    : 'text-green-600 dark:text-green-400'
+                    : t === 'income'
+                      ? 'text-green-600 dark:text-green-400'
+                      : 'text-sky-600 dark:text-sky-400'
                   : 'text-gray-500 dark:text-gray-400'
               }`}
             >
@@ -322,7 +389,6 @@ function ProposalForm({
         ))}
       </View>
 
-      {/* Amount */}
       <FieldRow label="Amount">
         <TextInput
           className="flex-1 text-right text-base font-semibold bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2"
@@ -334,11 +400,13 @@ function ProposalForm({
         />
       </FieldRow>
 
-      {/* Wallet */}
-      <FieldRow label="Wallet">
+      <FieldRow label={isTransfer ? 'From wallet' : 'Wallet'}>
         <TouchableOpacity
           className="flex-1 flex-row items-center justify-end bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2"
-          onPress={() => setShowWalletPicker(!showWalletPicker)}
+          onPress={() => {
+            setShowTransferToPicker(false);
+            setShowWalletPicker(!showWalletPicker);
+          }}
           activeOpacity={0.7}
         >
           <Text
@@ -354,7 +422,6 @@ function ProposalForm({
         </TouchableOpacity>
       </FieldRow>
 
-      {/* Wallet picker dropdown */}
       {showWalletPicker && (
         <View className="mb-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl overflow-hidden">
           {wallets.map((w) => (
@@ -368,9 +435,7 @@ function ProposalForm({
                 setShowWalletPicker(false);
               }}
             >
-              <Text className="text-gray-900 dark:text-white text-sm font-medium">
-                {w.name}
-              </Text>
+              <Text className="text-gray-900 dark:text-white text-sm font-medium">{w.name}</Text>
               <Text className="text-gray-400 dark:text-gray-500 text-xs capitalize">
                 {w.type} · {w.currency}
               </Text>
@@ -379,18 +444,74 @@ function ProposalForm({
         </View>
       )}
 
-      {/* Merchant */}
-      <FieldRow label="Merchant">
-        <TextInput
-          className="flex-1 text-right text-sm text-gray-900 dark:text-white bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2"
-          value={merchant}
-          onChangeText={setMerchant}
-          placeholder="optional"
-          placeholderTextColor="#9CA3AF"
-        />
-      </FieldRow>
+      {isTransfer ? (
+        <>
+          <FieldRow label="To wallet">
+            <TouchableOpacity
+              className="flex-1 flex-row items-center justify-end bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2"
+              onPress={() => {
+                setShowWalletPicker(false);
+                setShowTransferToPicker(!showTransferToPicker);
+              }}
+              activeOpacity={0.7}
+            >
+              <Text
+                className={`text-sm ${
+                  selectedTransferToWallet
+                    ? 'text-gray-900 dark:text-white'
+                    : 'text-gray-400 dark:text-gray-500'
+                }`}
+              >
+                {selectedTransferToWallet?.name ?? 'Select destination...'}
+              </Text>
+              <Text className="text-gray-400 ml-2 text-xs">▼</Text>
+            </TouchableOpacity>
+          </FieldRow>
 
-      {/* Description */}
+          {showTransferToPicker && (
+            <View className="mb-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl overflow-hidden">
+              {destinationWallets.length === 0 ? (
+                <Text className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">
+                  Add another wallet to complete this transfer.
+                </Text>
+              ) : (
+                destinationWallets.map((w) => (
+                  <Pressable
+                    key={w.id}
+                    className={`px-4 py-3 border-b border-gray-100 dark:border-gray-700 ${
+                      w.id === selectedTransferToWalletId ? 'bg-blue-50 dark:bg-blue-950' : ''
+                    }`}
+                    onPress={() => {
+                      setSelectedTransferToWalletId(w.id);
+                      setShowTransferToPicker(false);
+                    }}
+                  >
+                    <Text className="text-gray-900 dark:text-white text-sm font-medium">
+                      {w.name}
+                    </Text>
+                    <Text className="text-gray-400 dark:text-gray-500 text-xs capitalize">
+                      {w.type} · {w.currency}
+                    </Text>
+                  </Pressable>
+                ))
+              )}
+            </View>
+          )}
+        </>
+      ) : null}
+
+      {!isTransfer ? (
+        <FieldRow label="Merchant">
+          <TextInput
+            className="flex-1 text-right text-sm text-gray-900 dark:text-white bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2"
+            value={merchant}
+            onChangeText={setMerchant}
+            placeholder="optional"
+            placeholderTextColor="#9CA3AF"
+          />
+        </FieldRow>
+      ) : null}
+
       <FieldRow label="Description">
         <TextInput
           className="flex-1 text-right text-sm text-gray-900 dark:text-white bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2"
@@ -401,7 +522,6 @@ function ProposalForm({
         />
       </FieldRow>
 
-      {/* Date */}
       <FieldRow label="Date">
         <TextInput
           className="flex-1 text-right text-sm text-gray-900 dark:text-white bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2"
@@ -412,7 +532,6 @@ function ProposalForm({
         />
       </FieldRow>
 
-      {/* AI reasoning (collapsible) */}
       {proposal.aiReasoning && (
         <AIReasoningSection
           reasoning={proposal.aiReasoning}
@@ -420,7 +539,6 @@ function ProposalForm({
         />
       )}
 
-      {/* Action buttons */}
       <View className="flex-row mt-6 gap-3">
         <TouchableOpacity
           className="flex-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl py-4 items-center"
@@ -438,9 +556,9 @@ function ProposalForm({
         </TouchableOpacity>
         <TouchableOpacity
           className={`flex-1 rounded-xl py-4 items-center ${
-            selectedWalletId ? 'bg-blue-600' : 'bg-blue-400'
+            canApprove ? 'bg-blue-600' : 'bg-blue-400'
           }`}
-          onPress={handleApprove}
+          onPress={handleApprovePress}
           disabled={isActioning}
           activeOpacity={0.7}
         >
@@ -448,7 +566,7 @@ function ProposalForm({
             <ActivityIndicator size="small" color="white" />
           ) : (
             <Text className="text-white font-semibold text-base">
-              {selectedWalletId ? 'Approve' : 'Select Wallet'}
+              {canApprove ? 'Approve' : isTransfer ? 'Select wallets' : 'Select Wallet'}
             </Text>
           )}
         </TouchableOpacity>
@@ -456,8 +574,6 @@ function ProposalForm({
     </View>
   );
 }
-
-// ─── Utility components ──────────────────────────────────────────────────────
 
 function FieldRow({
   label,
@@ -474,7 +590,6 @@ function FieldRow({
   );
 }
 
-/** Optional collapsible map when a location was captured with this proposal (MMKV cache). */
 function ProposalLocationSection({ proposalId }: { proposalId: string }) {
   const [expanded, setExpanded] = useState(false);
   const snapshot = useMemo(() => getProposalLocationSnapshot(proposalId), [proposalId]);
@@ -527,10 +642,7 @@ function ProposalLocationSection({ proposalId }: { proposalId: string }) {
             </MapView>
           </View>
           {snapshot.name ? (
-            <Text
-              className="text-gray-500 dark:text-gray-400 text-xs mt-2"
-              numberOfLines={3}
-            >
+            <Text className="text-gray-500 dark:text-gray-400 text-xs mt-2" numberOfLines={3}>
               {snapshot.name}
             </Text>
           ) : null}

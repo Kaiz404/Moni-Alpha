@@ -30,6 +30,7 @@ import { getCategoryNameRows } from '@/lib/supabase/categories';
 import { getWallets, deleteWallet } from '@/lib/supabase/wallets';
 import { getWalletBalances } from '@/lib/supabase/balances';
 import { deleteTransaction, getTransactions } from '@/lib/supabase/transactions';
+import { transactionDelta, formatTransferLabel } from '@/lib/supabase/transaction-balance';
 import { SyncStatusIndicator } from '@/components/sync-status-indicator';
 import type { ICarouselInstance } from "react-native-reanimated-carousel";
 import Carousel from "react-native-reanimated-carousel";
@@ -45,6 +46,7 @@ import Animated, {
 type WalletTx = {
   id: string;
   walletId: string;
+  transferToWalletId?: string | null;
   amount: number;
   type: 'income' | 'expense' | 'transfer';
   categoryId?: string | null;
@@ -199,8 +201,17 @@ export default function WalletsScreen() {
     let running = initial;
     const points: { x: Date; y: number }[] = [];
     points.push({ x: new Date(sorted[0].transactionDate), y: Number(running.toFixed(2)) });
+    const walletId = focusedWallet.id;
     for (const tx of sorted) {
-      const delta = tx.type === 'income' ? tx.amount : -tx.amount;
+      const delta = transactionDelta(
+        {
+          wallet_id: tx.walletId,
+          transfer_to_wallet_id: tx.transferToWalletId,
+          amount: tx.amount,
+          type: tx.type,
+        },
+        walletId,
+      );
       running += delta;
       points.push({ x: new Date(tx.transactionDate), y: Number(running.toFixed(2)) });
     }
@@ -658,35 +669,46 @@ export default function WalletsScreen() {
               </Link>
             </View>
             {transactions.map((item) => {
-              const canEdit = item.type === 'income' || item.type === 'expense';
+              const isIncome = item.type === 'income';
+              const isTransfer = item.type === 'transfer';
+              const title = isTransfer
+                ? formatTransferLabel(
+                    {
+                      wallet_id: item.walletId,
+                      transfer_to_wallet_id: item.transferToWalletId,
+                      type: item.type,
+                    },
+                    Object.fromEntries(wallets.map((w) => [w.id, w.name ?? 'Wallet'])),
+                    focusedWallet?.id,
+                  )
+                : item.merchant || item.description || item.type;
+              const amountClass = isTransfer
+                ? 'text-sky-600 dark:text-sky-400'
+                : isIncome
+                  ? 'text-green-600 dark:text-green-400'
+                  : 'text-red-500 dark:text-red-400';
               return (
                 <Pressable
                   key={item.id}
-                  accessibilityRole={canEdit ? 'button' : undefined}
-                  accessibilityHint={canEdit ? 'Opens transaction details' : undefined}
+                  accessibilityRole="button"
+                  accessibilityHint="Opens transaction details"
                   onPress={() => {
-                    if (canEdit) {
-                      router.push({ pathname: '/transaction/[id]', params: { id: item.id } });
-                    }
+                    router.push({ pathname: '/transaction/[id]', params: { id: item.id } });
                   }}
-                  style={({ pressed }) => (pressed && canEdit ? { opacity: 0.92 } : undefined)}
+                  style={({ pressed }) => (pressed ? { opacity: 0.92 } : undefined)}
                   className="mb-2 rounded-xl border border-slate-300 bg-white p-3 shadow-sm dark:border-slate-700 dark:bg-slate-800">
                   <View className="flex-row items-start justify-between gap-2">
                     <View className="min-w-0 flex-1 pr-1">
                       <View className="flex-row items-baseline gap-1 flex-wrap">
-                        <Text
-                          className={`text-base font-semibold ${item.type === 'income' ? 'text-green-600 dark:text-green-400' : 'text-red-500 dark:text-red-400'}`}
-                        >
-                          {item.type === 'income' ? '+' : '-'}
+                        <Text className={`text-base font-semibold ${amountClass}`}>
+                          {isTransfer ? '' : isIncome ? '+' : '-'}
                           {item.amount.toFixed(2)}
                         </Text>
                         <Text className="text-xs text-slate-500 dark:text-slate-400">
                           {focusedWallet?.currency ?? 'USD'}
                         </Text>
                       </View>
-                      <Text className="text-base text-slate-900 dark:text-white">
-                        {item.merchant || item.description || item.type}
-                      </Text>
+                      <Text className="text-base text-slate-900 dark:text-white">{title}</Text>
                       <Text className="text-xs text-slate-600 dark:text-slate-400">
                         {new Date(item.transactionDate).toLocaleDateString()}
                       </Text>

@@ -40,6 +40,7 @@ function sumByType(
 function countInRange(txs: TxForMetrics[], startMs: number, endMs: number): number {
   let n = 0;
   for (const tx of txs) {
+    if (tx.type === 'transfer') continue;
     if (!inRange(tx.transactionDate, startMs, endMs)) continue;
     n += 1;
   }

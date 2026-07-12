@@ -83,7 +83,10 @@ export const updateTransactionSchema = z.object({
   locationLongitude: z.number().min(-180).max(180).optional().nullable(),
   locationName: z.string().max(200).optional().nullable(),
   tagIds: z.array(z.string().uuid()).optional(),
-});
+}).refine(
+  (data) => data.type !== 'transfer' || data.transferToWalletId,
+  { message: 'Transfer must have target wallet', path: ['transferToWalletId'] }
+);
 
 // Transaction list params schema
 export const transactionListParamsSchema = z.object({

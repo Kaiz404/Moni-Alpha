@@ -39,8 +39,9 @@ export default function EditTransactionScreen() {
   const [wallets, setWallets] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
   const [walletId, setWalletId] = useState('');
+  const [transferToWalletId, setTransferToWalletId] = useState('');
   const [amount, setAmount] = useState('');
-  const [type, setType] = useState<'income' | 'expense'>('expense');
+  const [type, setType] = useState<'income' | 'expense' | 'transfer'>('expense');
   const [categoryId, setCategoryId] = useState('');
   const [merchant, setMerchant] = useState('');
   const [description, setDescription] = useState('');
@@ -109,8 +110,9 @@ export default function EditTransactionScreen() {
         setMapExpanded(true);
 
         setWalletId(tx.walletId);
+        setTransferToWalletId(tx.transferToWalletId ?? '');
         setAmount(tx.amount.toFixed(2));
-        if (tx.type === 'income' || tx.type === 'expense') {
+        if (tx.type === 'income' || tx.type === 'expense' || tx.type === 'transfer') {
           setType(tx.type);
         } else {
           setType('expense');
@@ -137,8 +139,13 @@ export default function EditTransactionScreen() {
     getCategories(type).then(setCategories);
   }, [user, type, isTransfer]);
 
+  const destinationWallets = useMemo(
+    () => wallets.filter((w) => w.id !== walletId),
+    [wallets, walletId],
+  );
+
   const handleSubmit = useCallback(async () => {
-    if (!user || !txId || isTransfer) return;
+    if (!user || !txId) return;
 
     const parsedAmount = parseFloat(amount);
     if (Number.isNaN(parsedAmount) || parsedAmount <= 0) {
@@ -148,21 +155,64 @@ export default function EditTransactionScreen() {
 
     setLoading(true);
     try {
-      await updateTransaction(txId, {
-        walletId,
-        amount: parsedAmount,
-        type,
-        categoryId: categoryId || null,
-        merchant: merchant.trim() || null,
-        description: description.trim() || null,
-      });
+      if (isTransfer) {
+        if (!transferToWalletId) {
+          Alert.alert('Error', 'Select a destination wallet.');
+          return;
+        }
+        if (walletId === transferToWalletId) {
+          Alert.alert('Error', 'Source and destination wallets must differ.');
+          return;
+        }
+        const fromWallet = wallets.find((w) => w.id === walletId);
+        const toWallet = wallets.find((w) => w.id === transferToWalletId);
+        if (fromWallet && toWallet) {
+          const fromCur = (fromWallet.currency ?? 'USD').toUpperCase();
+          const toCur = (toWallet.currency ?? 'USD').toUpperCase();
+          if (fromCur !== toCur) {
+            Alert.alert('Error', 'Transfers require both wallets to use the same currency.');
+            return;
+          }
+        }
+        await updateTransaction(txId, {
+          walletId,
+          transferToWalletId,
+          amount: parsedAmount,
+          type: 'transfer',
+          categoryId: null,
+          merchant: null,
+          description: description.trim() || null,
+        });
+      } else {
+        await updateTransaction(txId, {
+          walletId,
+          amount: parsedAmount,
+          type,
+          categoryId: categoryId || null,
+          merchant: merchant.trim() || null,
+          description: description.trim() || null,
+          transferToWalletId: null,
+        });
+      }
       router.back();
     } catch (e) {
       Alert.alert('Error', e instanceof Error ? e.message : 'Failed to update transaction');
     } finally {
       setLoading(false);
     }
-  }, [user, txId, isTransfer, walletId, amount, type, categoryId, merchant, description]);
+  }, [
+    user,
+    txId,
+    isTransfer,
+    walletId,
+    transferToWalletId,
+    amount,
+    type,
+    categoryId,
+    merchant,
+    description,
+    wallets,
+  ]);
 
   if (!txId) {
     return (
@@ -234,24 +284,23 @@ export default function EditTransactionScreen() {
             </View>
 
             {isTransfer ? (
-              <View className="mb-4 rounded-xl border border-amber-200/80 bg-amber-50 px-3 py-3 dark:border-amber-700/50 dark:bg-amber-950/40">
-                <Text className="text-sm text-amber-900 dark:text-amber-100">
-                  Transfers can’t be edited here. Delete and recreate if you need to change them.
+              <View className="mb-4 rounded-xl border border-blue-200/80 bg-blue-50 px-3 py-3 dark:border-blue-700/50 dark:bg-blue-950/40">
+                <Text className="text-sm text-blue-900 dark:text-blue-100">
+                  Transfer between your wallets — does not affect your overall net worth.
                 </Text>
               </View>
             ) : null}
 
             <Text className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
-              Wallet
+              {isTransfer ? 'From wallet' : 'Wallet'}
             </Text>
             <View className="mb-4 flex-row flex-wrap gap-1.5">
               {wallets.map((w) => (
                 <TouchableOpacity
                   key={w.id}
-                  className={`${chipBase} ${walletId === w.id ? chipActive : ''} ${isTransfer ? 'opacity-50' : ''}`}
-                  onPress={() => !isTransfer && setWalletId(w.id)}
-                  activeOpacity={0.85}
-                  disabled={isTransfer}>
+                  className={`${chipBase} ${walletId === w.id ? chipActive : ''}`}
+                  onPress={() => setWalletId(w.id)}
+                  activeOpacity={0.85}>
                   <Text
                     className={`text-sm ${walletId === w.id ? 'font-semibold text-[#4f54c4] dark:text-indigo-200' : 'text-slate-800 dark:text-slate-100'}`}
                     numberOfLines={1}>
@@ -261,6 +310,46 @@ export default function EditTransactionScreen() {
               ))}
             </View>
 
+            {isTransfer ? (
+              <>
+                <Text className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                  To wallet
+                </Text>
+                <View className="mb-4 flex-row flex-wrap gap-1.5">
+                  {destinationWallets.map((w) => (
+                    <TouchableOpacity
+                      key={w.id}
+                      className={`${chipBase} ${transferToWalletId === w.id ? chipActive : ''}`}
+                      onPress={() => setTransferToWalletId(w.id)}
+                      activeOpacity={0.85}>
+                      <Text
+                        className={`text-sm ${transferToWalletId === w.id ? 'font-semibold text-[#4f54c4] dark:text-indigo-200' : 'text-slate-800 dark:text-slate-100'}`}
+                        numberOfLines={1}>
+                        {w.icon} {w.name}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </>
+            ) : null}
+
+            {isTransfer ? (
+              <View className="mb-4 flex-row gap-3">
+                <View className="flex-1 min-w-[120px]">
+                  <Text className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                    Amount
+                  </Text>
+                  <TextInput
+                    className={`text-base ${inputClass}`}
+                    placeholder="0.00"
+                    placeholderTextColor="#9CA3AF"
+                    value={amount}
+                    onChangeText={setAmount}
+                    keyboardType="decimal-pad"
+                  />
+                </View>
+              </View>
+            ) : (
             <View className="mb-4 flex-row gap-3">
               <View className="flex-1 min-w-[140px]">
                 <Text className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
@@ -294,17 +383,19 @@ export default function EditTransactionScreen() {
                   Amount
                 </Text>
                 <TextInput
-                  className={`text-base ${inputClass} ${isTransfer ? 'opacity-50' : ''}`}
+                  className={`text-base ${inputClass}`}
                   placeholder="0.00"
                   placeholderTextColor="#9CA3AF"
                   value={amount}
                   onChangeText={setAmount}
                   keyboardType="decimal-pad"
-                  editable={!isTransfer}
                 />
               </View>
             </View>
+            )}
 
+            {!isTransfer ? (
+            <>
             <Text className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
               Category
             </Text>
@@ -312,10 +403,9 @@ export default function EditTransactionScreen() {
               {categories.map((c) => (
                 <TouchableOpacity
                   key={c.id}
-                  className={`${chipBase} ${categoryId === c.id ? chipActive : ''} ${isTransfer ? 'opacity-50' : ''}`}
-                  onPress={() => !isTransfer && setCategoryId(c.id)}
-                  activeOpacity={0.85}
-                  disabled={isTransfer}>
+                  className={`${chipBase} ${categoryId === c.id ? chipActive : ''}`}
+                  onPress={() => setCategoryId(c.id)}
+                  activeOpacity={0.85}>
                   <Text
                     className={`text-xs ${categoryId === c.id ? 'font-semibold text-[#4f54c4] dark:text-indigo-200' : 'text-slate-800 dark:text-slate-100'}`}
                     numberOfLines={1}>
@@ -332,13 +422,14 @@ export default function EditTransactionScreen() {
               <Text className="text-[10px] text-slate-400 dark:text-slate-500">optional</Text>
             </View>
             <TextInput
-              className={`mb-3 text-sm ${inputClass} ${isTransfer ? 'opacity-50' : ''}`}
+              className={`mb-3 text-sm ${inputClass}`}
               placeholder="Store or payee"
               placeholderTextColor="#9CA3AF"
               value={merchant}
               onChangeText={setMerchant}
-              editable={!isTransfer}
             />
+            </>
+            ) : null}
 
             <View className="mb-1.5 flex-row items-baseline gap-1">
               <Text className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
@@ -347,14 +438,13 @@ export default function EditTransactionScreen() {
               <Text className="text-[10px] text-slate-400 dark:text-slate-500">optional</Text>
             </View>
             <TextInput
-              className={`mb-1 min-h-[72px] text-sm ${inputClass} ${isTransfer ? 'opacity-50' : ''}`}
+              className={`mb-1 min-h-[72px] text-sm ${inputClass}`}
               placeholder="Notes"
               placeholderTextColor="#9CA3AF"
               value={description}
               onChangeText={setDescription}
               multiline
               textAlignVertical="top"
-              editable={!isTransfer}
             />
 
             <View className=" bg-[#C9BEFF] pt-2 dark:bg-gray-900">
@@ -413,37 +503,24 @@ export default function EditTransactionScreen() {
             </View>
           </ScrollView>
 
-          {!isTransfer ? (
-            <View
-              className="border-t border-slate-400/20 bg-[#C9BEFF] px-4 pt-3 dark:border-slate-600/30 dark:bg-gray-900"
-              style={{ paddingBottom: Math.max(insets.bottom, 12) }}>
-              <TouchableOpacity
-                className={`flex-row items-center justify-center gap-2 rounded-xl bg-[#6367FF] py-3.5 dark:bg-blue-600 ${loading ? 'opacity-60' : ''}`}
-                onPress={handleSubmit}
-                disabled={loading}
-                activeOpacity={0.88}>
-                {loading ? (
-                  <Text className="text-base font-semibold text-white">Saving…</Text>
-                ) : (
-                  <>
-                    <MaterialIcons name="check" size={20} color="#ffffff" />
-                    <Text className="text-base font-semibold text-white">Save changes</Text>
-                  </>
-                )}
-              </TouchableOpacity>
-            </View>
-          ) : (
-            <View
-              className="border-t border-slate-400/20 bg-[#C9BEFF] px-4 pt-3 dark:border-slate-600/30 dark:bg-gray-900"
-              style={{ paddingBottom: Math.max(insets.bottom, 12) }}>
-              <TouchableOpacity
-                className="flex-row items-center justify-center gap-2 rounded-xl bg-slate-600 py-3.5 dark:bg-slate-700"
-                onPress={() => router.back()}
-                activeOpacity={0.88}>
-                <Text className="text-base font-semibold text-white">Close</Text>
-              </TouchableOpacity>
-            </View>
-          )}
+          <View
+            className="border-t border-slate-400/20 bg-[#C9BEFF] px-4 pt-3 dark:border-slate-600/30 dark:bg-gray-900"
+            style={{ paddingBottom: Math.max(insets.bottom, 12) }}>
+            <TouchableOpacity
+              className={`flex-row items-center justify-center gap-2 rounded-xl bg-[#6367FF] py-3.5 dark:bg-blue-600 ${loading ? 'opacity-60' : ''}`}
+              onPress={handleSubmit}
+              disabled={loading}
+              activeOpacity={0.88}>
+              {loading ? (
+                <Text className="text-base font-semibold text-white">Saving…</Text>
+              ) : (
+                <>
+                  <MaterialIcons name="check" size={20} color="#ffffff" />
+                  <Text className="text-base font-semibold text-white">Save changes</Text>
+                </>
+              )}
+            </TouchableOpacity>
+          </View>
         </View>
       </KeyboardAvoidingView>
     </View>

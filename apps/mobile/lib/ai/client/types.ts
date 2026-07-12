@@ -16,14 +16,17 @@ export type AiWalletContext = {
 
 export type ExtractedTransaction = {
   amount: number;
-  type: 'income' | 'expense';
+  type: 'income' | 'expense' | 'transfer';
   currency: string;
   merchant: string | null;
   description: string | null;
   walletHint: string | null;
   categoryHint: string | null;
-  /** Resolved wallet id when the backend is confident; otherwise null. */
+  /** Resolved source wallet id when the backend is confident; otherwise null. */
   walletId: string | null;
+  transferToWalletHint: string | null;
+  /** Resolved destination wallet id for transfers; otherwise null. */
+  transferToWalletId: string | null;
   confidence: number;
   reasoning: string;
 };

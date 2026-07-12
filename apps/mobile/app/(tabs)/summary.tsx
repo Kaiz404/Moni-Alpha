@@ -245,7 +245,7 @@ export default function SummaryScreen() {
       }
 
       if (tx.type === 'income') deltaByDay[key] += tx.amount;
-      if (tx.type === 'expense') deltaByDay[key] -= tx.amount;
+      else if (tx.type === 'expense') deltaByDay[key] -= tx.amount;
     });
 
     const keys = Object.keys(deltaByDay).sort();

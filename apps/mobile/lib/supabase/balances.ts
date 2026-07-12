@@ -1,5 +1,11 @@
 import { transactions$, wallets$ } from '@/lib/store';
 import { getRecordValues } from '@/lib/store/helpers';
+import {
+  isTransactionRelevantToWallet,
+  parseTxAmount,
+  transactionDelta,
+  type TransactionBalanceRow,
+} from '@/lib/supabase/transaction-balance';
 
 export async function getWalletBalance(walletId: string): Promise<number> {
   const wallet = getRecordValues<{
@@ -9,18 +15,16 @@ export async function getWalletBalance(walletId: string): Promise<number> {
 
   if (!wallet) throw new Error('Wallet not found');
 
-  const initialBalance = parseFloat(String(wallet.initial_balance ?? '0'));
+  const initialBalance = parseTxAmount(wallet.initial_balance);
 
-  const txs = getRecordValues<{
-    wallet_id: string | null;
-    amount: string | number | null;
-    type: string | null;
-  }>(transactions$).filter((t) => t.wallet_id === walletId);
+  const txs = getRecordValues<TransactionBalanceRow>(transactions$).filter((t) =>
+    isTransactionRelevantToWallet(t, walletId),
+  );
 
-  const transactionBalance = txs.reduce((total, tx) => {
-    const amount = parseFloat(String(tx.amount ?? '0'));
-    return tx.type === 'income' ? total + amount : total - amount;
-  }, 0);
+  const transactionBalance = txs.reduce(
+    (total, tx) => total + transactionDelta(tx, walletId),
+    0,
+  );
 
   return initialBalance + transactionBalance;
 }

@@ -30,6 +30,8 @@ Env: copy `.env.example` to `.env` (Supabase publishable key, AI backend URL, Go
 
 Input (chat text, receipt photo, notification) → MMKV queue → background processor → Go backend (`EXPO_PUBLIC_AI_API_URL`) → `proposed_transactions` → review modal. Details: [docs/AI.md](../../docs/AI.md).
 
+**Transfers:** manual entry via New Transaction → Transfer (from/to wallet pickers), or natural language in Moni Agent (e.g. "transfer 200 from Cash to Maybank"). Transfers are excluded from income/expense analytics.
+
 ## Tests
 
 ```bash

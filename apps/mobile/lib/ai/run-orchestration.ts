@@ -73,13 +73,19 @@ function proposalFromExtraction(
     aiConfidence: extraction.confidence,
     walletId: extraction.walletId,
     walletHint: extraction.walletHint,
+    transferToWalletId: extraction.transferToWalletId,
+    transferToWalletHint: extraction.transferToWalletHint,
     amount: extraction.amount,
     currency: extraction.currency || 'MYR',
     type: extraction.type,
     description:
       extraction.description ??
-      (extraction.type === 'income' ? 'Income' : 'Expense'),
-    merchant: extraction.merchant,
+      (extraction.type === 'income'
+        ? 'Income'
+        : extraction.type === 'transfer'
+          ? 'Transfer'
+          : 'Expense'),
+    merchant: extraction.type === 'transfer' ? null : extraction.merchant,
     categoryId: null,
     categoryHint: extraction.categoryHint,
     transactionDate: new Date().toISOString(),

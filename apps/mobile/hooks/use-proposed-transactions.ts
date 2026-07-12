@@ -17,7 +17,7 @@ export function useProposedTransactions() {
     setIsLoading(true);
     setError(null);
     try {
-      const pending = await getProposedTransactions('pending');
+      const pending = await getProposedTransactions();
       setProposals(pending);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to load proposals');
@@ -33,8 +33,11 @@ export function useProposedTransactions() {
   );
 
   const approve = useCallback(
-    async (proposal: ProposedTransaction, walletId: string) => {
-      await approveProposedTransaction(proposal, walletId);
+    async (
+      proposal: ProposedTransaction,
+      wallets: { walletId: string; transferToWalletId?: string | null },
+    ) => {
+      await approveProposedTransaction(proposal, wallets);
       setProposals((prev) => prev.filter((p) => p.id !== proposal.id));
     },
     [],

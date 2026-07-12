@@ -1,29 +1,51 @@
 package extract
 
 import (
-	"context"
+	"encoding/json"
 	"fmt"
 	"regexp"
 	"strings"
-	"time"
-
-	"github.com/kaiz404/moni/backend/internal/groq"
 )
 
-// ResolveWallet implements the priority ladder from the original on-device
-// pipeline: deterministic matching first, LLM only as the last step.
+// FormatWalletsForPrompt serializes the client's wallet list for injection
+// into extraction prompts as AVAILABLE_WALLETS.
+func FormatWalletsForPrompt(wallets []WalletContext) string {
+	if len(wallets) == 0 {
+		return "AVAILABLE_WALLETS: []"
+	}
+	type entry struct {
+		ID       string  `json:"id"`
+		Name     string  `json:"name"`
+		Type     *string `json:"type,omitempty"`
+		Currency *string `json:"currency,omitempty"`
+	}
+	list := make([]entry, len(wallets))
+	for i, w := range wallets {
+		list[i] = entry{ID: w.ID, Name: w.Name, Type: w.Type, Currency: w.Currency}
+	}
+	b, err := json.Marshal(list)
+	if err != nil {
+		return "AVAILABLE_WALLETS: []"
+	}
+	return fmt.Sprintf("AVAILABLE_WALLETS: %s", string(b))
+}
+
+// ResolveWallet picks a wallet id from the extraction model output and
+// client-provided list. The model's wallet_id is preferred when valid;
+// deterministic hint matching is the fallback when the model is unsure.
 //
 //  1. Only one wallet -> auto-select
-//  2. Effective hint = merge(walletHint, user context / notification text)
-//  3. Whole-word wallet name match inside effective hint
-//  4. Substring match
-//  5. Heuristic token overlap
-//  6. LLM JSON {action, walletId, reason}
-//  7. nil (user picks in the review modal)
+//  2. Valid wallet_id from the model (must be in the provided list)
+//  3. Effective hint = merge(walletHint, user context / notification text)
+//  4. Whole-word wallet name match inside effective hint
+//  5. Substring match (hint contains wallet name)
+//  6. Reverse substring (wallet name contains hint, e.g. "bank" -> "Maybank")
+//  7. Wallet type matches wallet_hint (e.g. hint "bank" -> type "bank")
+//  8. Heuristic token overlap
+//  9. nil (user picks in the review modal)
 func ResolveWallet(
-	ctx context.Context,
-	client *groq.Client,
 	wallets []WalletContext,
+	llmWalletID *string,
 	walletHint *string,
 	extraContext string,
 ) *string {
@@ -32,6 +54,10 @@ func ResolveWallet(
 	}
 	if len(wallets) == 1 {
 		return &wallets[0].ID
+	}
+
+	if id := validateWalletID(wallets, llmWalletID); id != nil {
+		return id
 	}
 
 	hint := strings.TrimSpace(strings.ToLower(joinHint(walletHint, extraContext)))
@@ -46,11 +72,30 @@ func ResolveWallet(
 				return &wallets[i].ID
 			}
 		}
-		// Substring match.
+		// Substring match: hint contains wallet name.
 		for i := range wallets {
 			name := strings.ToLower(strings.TrimSpace(wallets[i].Name))
 			if name != "" && strings.Contains(hint, name) {
 				return &wallets[i].ID
+			}
+		}
+		// Reverse substring + type match use wallet_hint alone when set (avoids
+		// noisy matches from full user sentences like "deposited cash to bank").
+		shortHint := hintForShortMatch(walletHint, hint)
+		if shortHint != "" {
+			for i := range wallets {
+				name := strings.ToLower(strings.TrimSpace(wallets[i].Name))
+				if len(shortHint) >= 3 && name != "" && strings.Contains(name, shortHint) {
+					return &wallets[i].ID
+				}
+			}
+			for i := range wallets {
+				if wallets[i].Type == nil {
+					continue
+				}
+				if strings.EqualFold(strings.TrimSpace(*wallets[i].Type), shortHint) {
+					return &wallets[i].ID
+				}
 			}
 		}
 		// Token overlap: any wallet-name token (len >= 3) present in hint.
@@ -72,9 +117,21 @@ func ResolveWallet(
 		}
 	}
 
-	// LLM as last resort; failure means unresolved, never an error.
-	if id := resolveWalletLLM(ctx, client, wallets, hint); id != nil {
-		return id
+	return nil
+}
+
+func validateWalletID(wallets []WalletContext, id *string) *string {
+	if id == nil {
+		return nil
+	}
+	trimmed := strings.TrimSpace(*id)
+	if trimmed == "" {
+		return nil
+	}
+	for i := range wallets {
+		if wallets[i].ID == trimmed {
+			return &wallets[i].ID
+		}
 	}
 	return nil
 }
@@ -90,62 +147,21 @@ func joinHint(walletHint *string, extra string) string {
 	return strings.Join(parts, " ")
 }
 
+// hintForShortMatch prefers the model's wallet_hint for generic labels
+// ("bank", "cash") that should match wallet names/types, not the full sentence.
+func hintForShortMatch(walletHint *string, mergedHint string) string {
+	if walletHint != nil {
+		if t := strings.TrimSpace(strings.ToLower(*walletHint)); t != "" {
+			return t
+		}
+	}
+	return mergedHint
+}
+
 func tokenSet(s string) map[string]bool {
 	out := map[string]bool{}
 	for _, t := range regexp.MustCompile(`[a-z0-9]+`).FindAllString(s, -1) {
 		out[t] = true
 	}
 	return out
-}
-
-func resolveWalletLLM(
-	ctx context.Context,
-	client *groq.Client,
-	wallets []WalletContext,
-	hint string,
-) *string {
-	if client == nil || hint == "" {
-		return nil
-	}
-
-	list := make([]string, 0, len(wallets))
-	valid := map[string]bool{}
-	for _, w := range wallets {
-		t := ""
-		if w.Type != nil {
-			t = *w.Type
-		}
-		list = append(list, fmt.Sprintf(`{"id": %q, "name": %q, "type": %q}`, w.ID, w.Name, t))
-		valid[w.ID] = true
-	}
-
-	user := fmt.Sprintf("Available wallets:\n[%s]\n\nTransaction hint/context:\n%s",
-		strings.Join(list, ",\n"), hint)
-
-	var out struct {
-		Action   string  `json:"action"`
-		WalletID *string `json:"walletId"`
-		Reason   string  `json:"reason"`
-	}
-	err := client.CompleteJSON(ctx,
-		[]groq.Message{
-			{Role: "system", Content: walletResolutionPrompt},
-			{Role: "user", Content: user},
-		},
-		groq.Options{Model: groq.ModelTextFast, Temperature: 0, MaxTokens: 256},
-		&out,
-	)
-	if err != nil {
-		return nil
-	}
-	if out.Action == "create" && out.WalletID != nil && valid[*out.WalletID] {
-		return out.WalletID
-	}
-	return nil
-}
-
-// resolveCtx bounds the wallet-resolution LLM step so it can't stall a
-// live request.
-func resolveCtx(parent context.Context) (context.Context, context.CancelFunc) {
-	return context.WithTimeout(parent, 8*time.Second)
 }

@@ -1,7 +1,8 @@
 import { z } from 'zod';
 import { transactionTypeSchema } from './transaction';
 
-export const proposedTransactionStatusSchema = z.enum(['pending', 'approved', 'rejected']);
+/** Stored proposals are always unreviewed; approve/decline soft-deletes the row. */
+export const proposedTransactionStatusSchema = z.literal('pending');
 export const proposedTransactionSourceTypeSchema = z.enum(['notification', 'text', 'image']);
 
 export const proposedTransactionSchema = z.object({
@@ -24,6 +25,8 @@ export const proposedTransactionSchema = z.object({
   // Proposed transaction data (may be partial if AI isn't certain)
   walletId: z.string().uuid().nullable(),
   walletHint: z.string().nullable(),
+  transferToWalletId: z.string().uuid().nullable(),
+  transferToWalletHint: z.string().nullable(),
   amount: z.number().positive().nullable(),
   currency: z.string().length(3),
   type: transactionTypeSchema.nullable(),

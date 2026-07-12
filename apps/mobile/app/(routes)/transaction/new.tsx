@@ -18,7 +18,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import * as Location from 'expo-location';
 import { useAuth } from '@/lib/auth/auth-context';
-import { createTransaction } from '@/lib/supabase/transactions';
+import { createTransaction, createTransfer } from '@/lib/supabase/transactions';
 import { getWallets } from '@/lib/supabase/wallets';
 import { getCategories } from '@/lib/supabase/categories';
 import { createTransactionSchema } from '@repo/types';
@@ -39,8 +39,9 @@ export default function NewTransactionScreen() {
   const [wallets, setWallets] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
   const [walletId, setWalletId] = useState('');
+  const [transferToWalletId, setTransferToWalletId] = useState('');
   const [amount, setAmount] = useState('');
-  const [type, setType] = useState<'income' | 'expense'>('expense');
+  const [type, setType] = useState<'income' | 'expense' | 'transfer'>('expense');
   const [categoryId, setCategoryId] = useState('');
   const [merchant, setMerchant] = useState('');
   const [description, setDescription] = useState('');
@@ -113,7 +114,9 @@ export default function NewTransactionScreen() {
   useEffect(() => {
     if (!user) return;
     getWallets().then(setWallets);
-    getCategories(type).then(setCategories);
+    if (type !== 'transfer') {
+      getCategories(type).then(setCategories);
+    }
   }, [user, type]);
 
   useEffect(() => {
@@ -123,42 +126,70 @@ export default function NewTransactionScreen() {
       } else if (!walletId) {
         setWalletId(wallets[0].id);
       }
+      if (!transferToWalletId) {
+        const other = wallets.find((w) => w.id !== (paramWalletId ?? wallets[0].id));
+        if (other) setTransferToWalletId(other.id);
+      }
     }
   }, [wallets, paramWalletId]);
+
+  const destinationWallets = useMemo(
+    () => wallets.filter((w) => w.id !== walletId),
+    [wallets, walletId],
+  );
 
   const handleSubmit = async () => {
     if (!user || !walletId) return;
 
-    const locationPayload: {
-      locationLatitude?: number | null;
-      locationLongitude?: number | null;
-      locationName?: string | null;
-    } =
-      locationSnapshot != null
-        ? {
-            locationLatitude: locationSnapshot.latitude,
-            locationLongitude: locationSnapshot.longitude,
-            locationName: locationSnapshot.name,
-          }
-        : {};
-
-    const parsed = createTransactionSchema.safeParse({
-      walletId,
-      amount: parseFloat(amount) || 0,
-      type,
-      categoryId: categoryId || null,
-      merchant: merchant.trim() || null,
-      description: description.trim() || null,
-      transactionDate: new Date().toISOString(),
-      ...locationPayload,
-    });
-    if (!parsed.success) {
-      Alert.alert('Error', parsed.error.errors[0]?.message ?? 'Invalid input');
+    const parsedAmount = parseFloat(amount) || 0;
+    if (parsedAmount <= 0) {
+      Alert.alert('Error', 'Enter a valid positive amount.');
       return;
     }
+
     setLoading(true);
     try {
-      await createTransaction(parsed.data);
+      if (type === 'transfer') {
+        if (!transferToWalletId) {
+          Alert.alert('Error', 'Select a destination wallet.');
+          return;
+        }
+        await createTransfer({
+          fromWalletId: walletId,
+          toWalletId: transferToWalletId,
+          amount: parsedAmount,
+          description: description.trim() || null,
+        });
+      } else {
+        const locationPayload: {
+          locationLatitude?: number | null;
+          locationLongitude?: number | null;
+          locationName?: string | null;
+        } =
+          locationSnapshot != null
+            ? {
+                locationLatitude: locationSnapshot.latitude,
+                locationLongitude: locationSnapshot.longitude,
+                locationName: locationSnapshot.name,
+              }
+            : {};
+
+        const parsed = createTransactionSchema.safeParse({
+          walletId,
+          amount: parsedAmount,
+          type,
+          categoryId: categoryId || null,
+          merchant: merchant.trim() || null,
+          description: description.trim() || null,
+          transactionDate: new Date().toISOString(),
+          ...locationPayload,
+        });
+        if (!parsed.success) {
+          Alert.alert('Error', parsed.error.errors[0]?.message ?? 'Invalid input');
+          return;
+        }
+        await createTransaction(parsed.data);
+      }
       router.back();
     } catch (e) {
       Alert.alert('Error', e instanceof Error ? e.message : 'Failed to create transaction');
@@ -200,7 +231,7 @@ export default function NewTransactionScreen() {
             contentContainerClassName="px-4 pt-4 pb-2"
             showsVerticalScrollIndicator={false}>
           <Text className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
-            Wallet
+            {type === 'transfer' ? 'From wallet' : 'Wallet'}
           </Text>
           <View className="mb-4 flex-row flex-wrap gap-1.5">
             {wallets.map((w) => (
@@ -218,14 +249,37 @@ export default function NewTransactionScreen() {
             ))}
           </View>
 
+          {type === 'transfer' ? (
+            <>
+              <Text className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                To wallet
+              </Text>
+              <View className="mb-4 flex-row flex-wrap gap-1.5">
+                {destinationWallets.map((w) => (
+                  <TouchableOpacity
+                    key={w.id}
+                    className={`${chipBase} ${transferToWalletId === w.id ? chipActive : ''}`}
+                    onPress={() => setTransferToWalletId(w.id)}
+                    activeOpacity={0.85}>
+                    <Text
+                      className={`text-sm ${transferToWalletId === w.id ? 'font-semibold text-[#4f54c4] dark:text-indigo-200' : 'text-slate-800 dark:text-slate-100'}`}
+                      numberOfLines={1}>
+                      {w.icon} {w.name}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </>
+          ) : null}
+
           <View className="mb-4 flex-row gap-3">
             <View className="flex-1 min-w-[140px]">
               <Text className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
                 Type
               </Text>
-              <View className="flex-row gap-1.5">
+              <View className="flex-row flex-wrap gap-1.5">
                 <TouchableOpacity
-                  className={`flex-1 ${chipBase} items-center py-2 ${type === 'income' ? chipActive : ''}`}
+                  className={`flex-1 min-w-[30%] ${chipBase} items-center py-2 ${type === 'income' ? chipActive : ''}`}
                   onPress={() => setType('income')}
                   activeOpacity={0.85}>
                   <Text
@@ -234,12 +288,21 @@ export default function NewTransactionScreen() {
                   </Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                  className={`flex-1 ${chipBase} items-center py-2 ${type === 'expense' ? chipActive : ''}`}
+                  className={`flex-1 min-w-[30%] ${chipBase} items-center py-2 ${type === 'expense' ? chipActive : ''}`}
                   onPress={() => setType('expense')}
                   activeOpacity={0.85}>
                   <Text
                     className={`text-sm font-medium ${type === 'expense' ? 'text-[#4f54c4] dark:text-indigo-200' : 'text-slate-700 dark:text-slate-200'}`}>
                     Expense
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  className={`flex-1 min-w-[30%] ${chipBase} items-center py-2 ${type === 'transfer' ? chipActive : ''}`}
+                  onPress={() => setType('transfer')}
+                  activeOpacity={0.85}>
+                  <Text
+                    className={`text-sm font-medium ${type === 'transfer' ? 'text-[#4f54c4] dark:text-indigo-200' : 'text-slate-700 dark:text-slate-200'}`}>
+                    Transfer
                   </Text>
                 </TouchableOpacity>
               </View>
@@ -259,6 +322,8 @@ export default function NewTransactionScreen() {
             </View>
           </View>
 
+          {type !== 'transfer' ? (
+            <>
           <Text className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
             Category
           </Text>
@@ -291,6 +356,8 @@ export default function NewTransactionScreen() {
             value={merchant}
             onChangeText={setMerchant}
           />
+            </>
+          ) : null}
 
           <View className="mb-1.5 flex-row items-baseline gap-1">
             <Text className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
@@ -310,6 +377,8 @@ export default function NewTransactionScreen() {
           />
 
           <View className=" bg-[#C9BEFF] pt-2 dark:bg-gray-900">
+            {type !== 'transfer' ? (
+            <>
             {locationLoading ? (
               <View className="flex-row items-center gap-2">
                 <ActivityIndicator size="small" color="#6367FF" />
@@ -366,6 +435,12 @@ export default function NewTransactionScreen() {
                   </View>
                 ) : null}
               </View>
+            )}
+            </>
+            ) : (
+              <Text className="text-xs text-slate-600 dark:text-slate-400">
+                Transfers move money between your wallets without changing your overall net worth.
+              </Text>
             )}
           </View>
           </ScrollView>
