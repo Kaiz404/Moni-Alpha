@@ -1,6 +1,7 @@
 import { createMMKV } from 'react-native-mmkv';
 import { wallets$ } from '@/lib/store';
 import { getRecordValues, isActive } from '@/lib/store/helpers';
+import { curatedPackagesEquivalent } from '@/lib/notifications/notification-package-aliases';
 
 const storage = createMMKV({ id: 'moni-notification-links' });
 const LINKED_PACKAGES_KEY = 'linked_packages';
@@ -40,5 +41,7 @@ export function readLinkedPackagesFromCache(): string[] {
 
 export function isPackageLinkedInCache(packageName: string): boolean {
   if (!packageName || packageName === 'unknown') return false;
-  return readLinkedPackagesFromCache().includes(packageName);
+  return readLinkedPackagesFromCache().some((linked) =>
+    curatedPackagesEquivalent(linked, packageName),
+  );
 }

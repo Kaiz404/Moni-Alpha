@@ -1,4 +1,5 @@
 import type { AiWalletContext } from '@/lib/ai/client/types';
+import { curatedPackagesEquivalent } from '@/lib/notifications/notification-package-aliases';
 
 export type WalletNotificationLink = {
   id: string;
@@ -30,7 +31,9 @@ export function resolveNotificationCandidates(
   packageName: string,
   wallets: WalletNotificationLink[],
 ): NotificationCandidateResult {
-  const linked = wallets.filter((w) => w.notificationPackage === packageName);
+  const linked = wallets.filter(
+    (w) => w.notificationPackage && curatedPackagesEquivalent(w.notificationPackage, packageName),
+  );
   const candidates = linked.map(toAiWalletContext);
   return {
     candidates,

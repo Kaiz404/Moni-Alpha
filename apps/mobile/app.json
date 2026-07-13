@@ -65,6 +65,9 @@
       "typedRoutes": true,
       "reactCompiler": true
     },
+    "autolinking": {
+      "nativeModulesDir": "./modules"
+    },
     "extra": {
       "router": {},
       "eas": {

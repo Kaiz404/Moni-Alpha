@@ -13,6 +13,7 @@ if (Platform.OS === 'android') {
   const { captureLocationSnapshot } = require('./lib/location/location-snapshot');
   const { isPackageLinked } = require('./lib/notifications/linked-packages-cache.js');
   const { enrichNotificationPackage } = require('./lib/notifications/notification-package.js');
+  const { cacheNotificationAppIcon } = require('./lib/notifications/app-icon-cache.js');
 
   void RNAndroidNotificationListener;
 
@@ -52,6 +53,9 @@ if (Platform.OS === 'android') {
 
       // Always store in the full notifications list for the UI
       appendToList(notificationStorage, ALL_NOTIFICATIONS_KEY, enriched, MAX_STORED);
+      if (enriched.packageName && enriched.icon) {
+        cacheNotificationAppIcon(enriched.packageName, enriched.icon);
+      }
       const queueEligible = prefilterPassed && packageLinked;
       console.log(
         '[NotifCapture] stored',

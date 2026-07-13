@@ -3,6 +3,8 @@
  * Run: pnpm --filter moni test:notification-routing
  */
 
+import { curatedPackagesEquivalent } from '../lib/notifications/notification-package-aliases.core.js';
+
 function toAiWalletContext(wallet) {
   return {
     id: wallet.id,
@@ -14,7 +16,9 @@ function toAiWalletContext(wallet) {
 }
 
 function resolveNotificationCandidates(packageName, wallets) {
-  const linked = wallets.filter((w) => w.notificationPackage === packageName);
+  const linked = wallets.filter(
+    (w) => w.notificationPackage && curatedPackagesEquivalent(w.notificationPackage, packageName),
+  );
   const candidates = linked.map(toAiWalletContext);
   return {
     candidates,
@@ -78,14 +82,20 @@ console.log('notification-routing-suite\n');
 }
 
 {
-  const pkg = resolveNotificationPackageName({ app: 'Touch n Go', packageName: 'com.tngdigital.ewallet' });
-  assert('packageName takes precedence', pkg === 'com.tngdigital.ewallet');
+  const pkg = resolveNotificationPackageName({
+    app: 'Touch n Go',
+    packageName: 'my.com.tngdigital.ewallet',
+  });
+  assert('packageName takes precedence', pkg === 'my.com.tngdigital.ewallet');
 }
 
 {
-  const { candidates, lockedWalletId } = resolveNotificationCandidates('com.tngdigital.ewallet', wallets);
-  assert('single wallet: one candidate', candidates.length === 1);
-  assert('single wallet: locked id', lockedWalletId === 'w3');
+  const { candidates, lockedWalletId } = resolveNotificationCandidates(
+    'my.com.tngdigital.ewallet',
+    wallets,
+  );
+  assert('alias wallet link matches canonical notification package', candidates.length === 1);
+  assert('alias wallet link locks wallet', lockedWalletId === 'w3');
 }
 
 {

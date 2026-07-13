@@ -3,6 +3,7 @@
  * Written by linked-packages-cache.ts when wallets change.
  */
 const { createMMKV } = require('react-native-mmkv');
+const { curatedPackagesEquivalent } = require('./notification-package-aliases.core');
 
 const storage = createMMKV({ id: 'moni-notification-links' });
 const LINKED_PACKAGES_KEY = 'linked_packages';
@@ -20,7 +21,9 @@ function readLinkedPackages() {
 
 function isPackageLinked(packageName) {
   if (!packageName || packageName === 'unknown') return false;
-  return readLinkedPackages().includes(packageName);
+  return readLinkedPackages().some((linked) =>
+    curatedPackagesEquivalent(linked, packageName),
+  );
 }
 
 module.exports = {

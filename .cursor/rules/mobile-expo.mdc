@@ -38,7 +38,7 @@ Input → `processing-queue.ts` (MMKV) → `background-processor.ts` (Android FG
 
 - Client results are `{ status: 'ok' | 'skipped' | 'unavailable' }` — never throw across this boundary
 - Wire types in `lib/ai/client/types.ts` must match `apps/backend/internal/extract/types.go`
-- Notification prefilter is deterministic and on-device: `lib/notifications/notification-filter.js` (CommonJS — required by the headless task in `index.js` before expo-router loads). Wallet–app linking: `notification_package` on wallets + MMKV linked-package cache (`lib/notifications/linked-packages-cache.*`); unlinked apps are not queued.
+- Notification prefilter is deterministic and on-device: `lib/notifications/notification-filter.js` (CommonJS — required by the headless task in `index.js` before expo-router loads). Wallet–app linking: `notification_package` on wallets + MMKV linked-package cache; installed app labels/icons via local module `modules/moni-android-apps` (needs Android 11+ `<queries>` for launcher visibility — declared in the module manifest + `plugins/with-notification-listener-manifest.js`; rebuild the dev client after native/manifest changes).
 
 ## Routing (expo-router)
 

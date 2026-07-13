@@ -23,7 +23,7 @@ Env: copy `.env.example` to `.env` (Supabase publishable key, AI backend URL, Go
 | `lib/mmkv/` | MMKV instances: auth session, store cache, upload queue, UI preferences (theme) |
 | `lib/theme/` | Theme preference ↔ Uniwind (`light` / `dark` / `system`) |
 | `lib/ai/` | Processing queue, background processor, AI client (HTTP ↔ Go backend, mock fallback) |
-| `lib/notifications/` | Deterministic notification prefilter, package routing, linked-app MMKV cache (shared with headless task) |
+| `lib/notifications/` | Prefilter, package routing, linked-app MMKV cache, `moni-android-apps` (PackageManager + Android 11 `<queries>`) |
 | `lib/receipts/` | Local receipt image save + Storage upload queue |
 | `global.css` | Uniwind design tokens (brand + light/dark semantic colors) |
 | `index.js` | Android headless notification listener (registered before expo-router) |
@@ -36,7 +36,7 @@ Appearance: Profile → Appearance (`light` default; `system` follows the device
 
 ## AI
 
-Input (chat text, receipt photo, notification) → MMKV queue → background processor → Go backend (`EXPO_PUBLIC_AI_API_URL`) → `proposed_transactions` → review modal. **Android notifications:** link a banking app per wallet (wallet create/edit); only linked apps are queued; one wallet per app, many wallets may share an app (AI disambiguates via notification body + optional account hint). Details: [docs/AI.md](../../docs/AI.md).
+Input (chat text, receipt photo, notification) → MMKV queue → background processor → Go backend (`EXPO_PUBLIC_AI_API_URL`) → `proposed_transactions` → review modal. **Android notifications:** link a banking app per wallet (wallet create/edit); only linked apps are queued; one wallet per app, many wallets may share an app (AI disambiguates via notification body + optional account hint). Installed-app discovery needs a native rebuild whenever `moni-android-apps` or its `<queries>` package-visibility declarations change. Details: [docs/AI.md](../../docs/AI.md).
 
 **Transfers:** manual entry via New Transaction → Transfer (from/to wallet pickers), or natural language in Moni Agent (e.g. "transfer 200 from Cash to Maybank"). Transfers are excluded from income/expense analytics.
 

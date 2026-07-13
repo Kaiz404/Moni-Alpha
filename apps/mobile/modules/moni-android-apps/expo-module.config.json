@@ -1,0 +1,9 @@
+{
+  "platforms": ["apple", "android", "web"],
+  "apple": {
+    "modules": ["MoniAndroidAppsModule"]
+  },
+  "android": {
+    "modules": ["expo.modules.moniandroidapps.MoniAndroidAppsModule"]
+  }
+}
