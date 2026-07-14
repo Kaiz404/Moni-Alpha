@@ -16,7 +16,7 @@ Env: copy `.env.example` to `.env` (Supabase publishable key, AI backend URL, Go
 
 | Path | Role |
 | --- | --- |
-| `app/` | expo-router routes: `(auth)`, `(tabs)` (Wallets / Summary / Moni Agent / Profile), `(routes)` (wallet, transaction, budget, notifications, debug) |
+| `app/` | expo-router routes: `(auth)`, `(tabs)` (Wallets / Summary / Moni Agent / Profile), `(routes)` (wallet, transaction, budget, proposal, scan, notifications, debug) |
 | `lib/store/` | Legend-State synced observables — the data layer |
 | `lib/supabase/` | Supabase client (publishable key) + CRUD helpers over the store; profile preferences |
 | `lib/auth/` | Auth context (email/password + native Google Sign-In) |
@@ -26,12 +26,16 @@ Env: copy `.env.example` to `.env` (Supabase publishable key, AI backend URL, Go
 | `lib/ai/` | Processing queue, background processor, AI client (HTTP ↔ Go backend, mock fallback) |
 | `lib/notifications/` | Prefilter / package helpers: `*.core.js` (headless + Node tests) + thin `*.ts` re-exports; linked-app MMKV cache; `moni-android-apps` |
 | `lib/receipts/` | Local receipt image save + Storage upload queue |
+| `lib/transactions/draft-extras.ts` | Ephemeral (non-persisted) hand-off of merchant/description/location between the quick-add and "More details" transaction screens |
 | `global.css` | Uniwind design tokens (brand + light/dark semantic colors) |
+| `constants/wallet-card-styles.ts` | Curated gradient card presets for wallets (`wallets.card_style_id`) — append here to add a new style |
 | `index.js` | Android headless notification listener (registered before expo-router; requires `*.core.js`) |
 
 ## Theming
 
-Tokens are CSS-first in `global.css`. Prefer semantic classes (`bg-primary`, `text-foreground`, `bg-card`) and shared UI helpers under `components/ui/` (`BrandHeader`, `ScreenShell`, chips, `PrimaryButton`). For native APIs that need a color string, use `useThemeTokens()`. Change brand colors in `global.css` only — do not hardcode hex in screens.
+Tokens are CSS-first in `global.css`. Prefer semantic classes (`bg-primary`, `text-foreground`, `bg-card`) and shared UI helpers under `components/ui/` (`BrandHeader`, `ScreenShell`, chips, `PrimaryButton`, `GradientCard`). For native APIs that need a color string, use `useThemeTokens()`. Change brand colors in `global.css` only — do not hardcode hex in screens.
+
+Wallet cards render `GradientCard` (`expo-linear-gradient` + a grain texture overlay from `assets/images/grain.png`) driven by `wallet.cardStyleId` looked up in `constants/wallet-card-styles.ts`; the wallet forms let users pick a style, which also sets `wallet.color` to the style's flat swatch hex for charts/legends.
 
 Appearance: Profile → Appearance (`light` default; `system` follows the device). Persisted in MMKV via `lib/theme/preference.ts`.
 
@@ -39,7 +43,7 @@ Default wallet: Profile → Default wallet. Synced in `profiles.preferences.defa
 
 ## AI
 
-Input (chat text, receipt photo, notification) → MMKV queue → background processor → Go backend (`EXPO_PUBLIC_AI_API_URL`) → `proposed_transactions` → review modal. **Android notifications:** link a banking app per wallet (wallet create/edit); only linked apps are queued; one wallet per app, many wallets may share an app (AI disambiguates via notification body + optional account hint). Installed-app discovery needs a native rebuild whenever `moni-android-apps` or its `<queries>` package-visibility declarations change. Details: [docs/AI.md](../../docs/AI.md).
+Input (chat text, receipt photo, notification) → MMKV queue → background processor → Go backend (`EXPO_PUBLIC_AI_API_URL`) → `proposed_transactions` → review UI. **Capture entry points:** the Moni Agent tab (type, attach a photo, or hold-to-talk), and the floating tab-bar button — tap opens `app/(routes)/scan/receipt.tsx` (live camera viewfinder), long-press opens `app/(routes)/scan/listen.tsx` (record narration, review transcript, then send). Both feed the same queue as the Moni Agent tab. **Review UI:** `components/proposal-summary-sheet.tsx` shows a minimal amount/wallet/category popup for each pending proposal (Approve / Decline / "Edit details"); "Edit details" opens the full editable form at `app/(routes)/proposal/[id].tsx`. **Android notifications:** link a banking app per wallet (wallet create/edit); only linked apps are queued; one wallet per app, many wallets may share an app (AI disambiguates via notification body + optional account hint). Installed-app discovery needs a native rebuild whenever `moni-android-apps` or its `<queries>` package-visibility declarations change. Details: [docs/AI.md](../../docs/AI.md).
 
 **Transfers:** manual entry via New Transaction → Transfer (from/to wallet pickers), or natural language in Moni Agent (e.g. "transfer 200 from Cash to Maybank"). Transfers are excluded from income/expense analytics.
 

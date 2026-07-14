@@ -13,8 +13,10 @@ Input (chat text / receipt photo / notification)
   → Go backend                            apps/backend (Gin, stateless)
   → Groq
   → proposed_transactions (unreviewed)
-  → ProposalReviewModal → approve/decline (soft-delete proposal)
+  → ProposalSummarySheet (minimal popup) → Approve/Decline, or "Edit details" → app/(routes)/proposal/[id].tsx (full form) → approve/decline (soft-delete proposal)
 ```
+
+Capture entry points feeding the queue: the Moni Agent tab (text/photo/hold-to-talk), and the floating tab-bar button (tap → `app/(routes)/scan/receipt.tsx` camera; long-press → `app/(routes)/scan/listen.tsx` narration).
 
 If `EXPO_PUBLIC_AI_API_URL` is unset, the mobile client falls back to a mock that returns `unavailable` — AI features degrade cleanly.
 
@@ -47,7 +49,7 @@ type ExtractResult =
   | { status: "unavailable"; reason: string }; // backend model failure (mobile queue retries)
 ```
 
-`type` is `income` | `expense` | `transfer`. Transfers use `walletId` as the source wallet and `transferToWalletId` as the destination (either may be `null` for user completion in the review modal). Receipt and notification extraction remain income/expense only; **text** extraction detects transfers (e.g. "move 500 from Maybank to savings").
+`type` is `income` | `expense` | `transfer`. Transfers use `walletId` as the source wallet and `transferToWalletId` as the destination (either may be `null` for user completion in the review UI). Receipt and notification extraction remain income/expense only; **text** extraction detects transfers (e.g. "move 500 from Maybank to savings").
 
 Auth: `Authorization: Bearer <supabase-user-jwt>`, verified via JWKS (ES256). Errors: `{ error, details? }`.
 
@@ -77,8 +79,8 @@ All calls use Groq's OpenAI-compatible endpoint with `response_format: json_obje
   2. Only one wallet in candidate list → auto-select
   3. Valid `wallet_id` from the model (must be in the provided list)
   4. Fallback: merge `wallet_hint` + notification body → `accountHint` match → whole-word name match → substring → token overlap
-  5. `walletId = null` → mobile applies the user's **default wallet** from `profiles.preferences.default_wallet_id` when set (`lib/wallets/default-wallet.ts`); otherwise user picks in the review modal
-- **Currency** — text and receipt extraction do **not** ask the model for currency. Amount only; currency is taken from the resolved wallet (`lib/wallets/proposal-wallet.ts`). Receipts always land on the default wallet (user can switch wallet — and thus currency — in the review modal). Notifications extract currency from the bank message; if that currency does not match the default wallet, `walletId` stays null until the user picks a wallet in review.
+  5. `walletId = null` → mobile applies the user's **default wallet** from `profiles.preferences.default_wallet_id` when set (`lib/wallets/default-wallet.ts`); otherwise user picks in the review UI
+- **Currency** — text and receipt extraction do **not** ask the model for currency. Amount only; currency is taken from the resolved wallet (`lib/wallets/proposal-wallet.ts`). Receipts always land on the default wallet (user can switch wallet — and thus currency — in the review UI). Notifications extract currency from the bank message; if that currency does not match the default wallet, `walletId` stays null until the user picks a wallet in review.
 - For **transfers**, resolution runs twice: source (`wallet_id` + context) and destination (`transfer_to_wallet_id` + hint only).
 - **Text transfer patterns:** deposits ("deposited cash to bank"), withdrawals, top-ups, and explicit "from X to Y" moves are transfers between wallets in `AVAILABLE_WALLETS` — not income. The model uses wallet names/types to infer direction (e.g. cash → bank for deposits).
 - **Notification rule:** each wallet may link one Android app (`notification_package` on `wallets`). Notifications from unlinked apps are captured for debug but not queued. Candidate wallets are narrowed by package before extraction; ambiguous same-app wallets may create proposals with `walletId: null` for review (`run-extraction.ts`).

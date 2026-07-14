@@ -29,7 +29,7 @@ flowchart LR
 - **Mobile is a first-class Supabase client.** Legend-State observables (`apps/mobile/lib/store/index.ts`) sync directly to Postgres via `@legendapp/state/sync-plugins/supabase`, persisted locally in MMKV. Writes hit the local store first; sync is gated on the Supabase session and the local cache resets on sign-out. Soft deletes (`deleted` column) and `last-sync` change tracking.
 - **Mobile and web never talk to each other.** The Next.js app (`apps/web`) is a self-contained dashboard with its own API routes for its own pages. Anything both clients need lives in Supabase (data) or the Go backend (AI).
 - **The Go backend is stateless.** It verifies the caller's Supabase JWT against the project JWKS (ES256), calls Groq, and returns extraction results. It never touches the database — the mobile client inserts `proposed_transactions` rows itself.
-- **AI never writes to the ledger.** Every AI extraction becomes a `proposed_transactions` row that the user approves or declines in a review modal; the proposal is then soft-deleted and (on approve) a real transaction is created.
+- **AI never writes to the ledger.** Every AI extraction becomes a `proposed_transactions` row that the user approves or declines in a review UI (a minimal summary popup, with an optional full-detail page); the proposal is then soft-deleted and (on approve) a real transaction is created.
 - **Shared types via `@repo/types`.** Zod schemas are the single source of truth; TS types are inferred. The Go backend mirrors the wire contract from `apps/mobile/lib/ai/client/types.ts` (kept in sync by convention — see `docs/AI.md`).
 
 ## AI data flow
@@ -50,7 +50,10 @@ run-extraction.ts → AiClient (lib/ai/client) ──HTTP──► Go backend �
 proposed_transactions (unreviewed)
         │
         ▼
-ProposalReviewModal → approve → real transaction / decline → soft-delete
+ProposalSummarySheet (minimal popup) → approve → real transaction / decline → soft-delete
+        │ "Edit details"
+        ▼
+proposal/[id].tsx (full editable form) → approve/decline
 ```
 
 Android notifications are prefiltered on-device (`lib/notifications/notification-filter.core.js`: requires a money amount signal AND a transfer signal) before anything reaches the queue, so the backend only sees plausible candidates.

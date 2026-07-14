@@ -5,7 +5,7 @@ alwaysApply: true
 
 # Moni – Project Overview
 
-**Moni** is a local-first, privacy-focused personal finance app: wallets, transactions, analytics, and AI that turns natural language, receipt photos, and (Android) bank notifications into **reviewable transaction proposals** (`proposed_transactions` + review modal — AI never writes to the ledger directly).
+**Moni** is a local-first, privacy-focused personal finance app: wallets, transactions, analytics, and AI that turns natural language, receipt photos, and (Android) bank notifications into **reviewable transaction proposals** (`proposed_transactions` + a review UI — AI never writes to the ledger directly).
 
 ## Monorepo (Turborepo + pnpm)
 
