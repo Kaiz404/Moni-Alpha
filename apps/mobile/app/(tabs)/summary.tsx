@@ -9,7 +9,6 @@ import {
   View,
   useWindowDimensions,
 } from 'react-native';
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useFocusEffect, useRouter } from 'expo-router';
 import MapView, { Marker } from 'react-native-maps';
 import {
@@ -23,8 +22,9 @@ import {
   VictoryTheme,
 } from 'victory-native';
 
-import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
+import { GradientCard } from '@/components/ui/gradient-card';
+import { getWalletCardStyle } from '@/constants/wallet-card-styles';
 import { useTransactionPinmap, type TransactionPinPoint } from '@/hooks/use-transaction-heatmap';
 import { MoniFinanceAssistantSection } from '@/components/moni-finance-assistant-section';
 import {
@@ -43,6 +43,8 @@ import { getCategoryBudgets } from '@/lib/supabase/category-budgets';
 import { getTransactions } from '@/lib/supabase/transactions';
 import { getWallets } from '@/lib/supabase/wallets';
 import type { MoniFinanceAssistantV1 } from '@repo/types';
+
+const balanceCardStyle = getWalletCardStyle('emerald-grain');
 
 type TransactionItem = {
   id: string;
@@ -66,10 +68,8 @@ type WalletItem = {
 };
 
 export default function SummaryScreen() {
-  const colorScheme = useColorScheme();
   const tokens = useThemeTokens();
   const { width, height } = useWindowDimensions();
-  const isDark = colorScheme === 'dark';
   /** Full width inside ScrollView (p-16) + card (p-3 × 2). Charts were ~40% width and looked left-aligned. */
   const chartWidth = useMemo(() => {
     const scrollHorizontal = 32;
@@ -349,7 +349,7 @@ export default function SummaryScreen() {
   if (error) {
     return (
       <View className="flex-1 items-center justify-center bg-background px-4">
-        <Text className="text-center text-red-500">{error}</Text>
+        <Text className="text-center text-expense">{error}</Text>
       </View>
     );
   }
@@ -366,27 +366,24 @@ export default function SummaryScreen() {
 
   return (
     <ScrollView className="flex-1 bg-background" contentContainerStyle={{ padding: 16, paddingBottom: 48 }}>
-      <View className="flex-row items-center mb-4 pt-4">
-        <View className="w-9 h-9 rounded-xl bg-background-muted items-center justify-center">
-          <MaterialIcons name="bar-chart" size={20} color={tokens.primary} />
-        </View>
-        <Text className="ml-3 text-2xl font-bold text-foreground">Summary</Text>
+      <View className="mb-4 pt-4">
+        <Text className="text-2xl font-bold text-foreground">Summary</Text>
       </View>
 
-      <View className="mb-4 overflow-hidden rounded-2xl border border-primary/25 shadow-sm">
-        <View className="bg-primary px-4 py-3">
+      <View className="mb-4 overflow-hidden rounded-3xl border border-border">
+        <GradientCard cardStyle={balanceCardStyle} className="px-4 py-4">
           <Text className="text-xs font-semibold uppercase tracking-[0.06em] text-white/90">Wallet balances</Text>
-          <Text className="mt-1 text-2xl font-bold text-[#FAFAFA]">
+          <Text className="mt-1 text-2xl font-bold text-white">
             ${totalWalletBalance.toFixed(2)}
           </Text>
-          <Text className="text-xs text-[#FAFAFA]/80">
+          <Text className="text-xs text-white/80">
             {wallets.length === 0
               ? 'Add wallets to see your total here'
               : wallets.length === 1
                 ? 'Total across 1 wallet'
                 : `Total across ${wallets.length} wallets`}
           </Text>
-        </View>
+        </GradientCard>
         <View className="bg-card px-3 py-1">
           {walletRows.length === 0 ? (
             <View className="py-6 px-2">
@@ -399,7 +396,7 @@ export default function SummaryScreen() {
               <View
                 key={wallet.id}
                 className={`flex-row items-center justify-between py-3 px-1 ${
-                  index < walletRows.length - 1 ? 'border-b border-slate-200/90 dark:border-slate-600/80' : ''
+                  index < walletRows.length - 1 ? 'border-b border-border' : ''
                 }`}
               >
                 <View className="flex-row items-center flex-1 min-w-0 pr-2">
@@ -418,7 +415,7 @@ export default function SummaryScreen() {
                 </View>
                 <Text
                   className={`text-base font-bold shrink-0 ${
-                    balance < 0 ? 'text-red-600 dark:text-red-400' : 'text-foreground'
+                    balance < 0 ? 'text-expense' : 'text-foreground'
                   }`}
                 >
                   ${balance.toFixed(2)}
@@ -440,7 +437,7 @@ export default function SummaryScreen() {
         onManageBudgets={() => router.push('/budget/budgets')}
       />
 
-      <View className="mb-4 rounded-xl bg-card p-3">
+      <View className="mb-4 rounded-2xl border border-border bg-card p-3">
         <Text className="mb-2 text-base font-semibold text-foreground">Transaction Pinmap</Text>
         {pinmapLoading ? (
           <View className="h-56 items-center justify-center">
@@ -449,7 +446,7 @@ export default function SummaryScreen() {
           </View>
         ) : pinmapError ? (
           <View className="h-56 items-center justify-center px-3">
-            <Text className="text-center text-red-500">{pinmapError}</Text>
+            <Text className="text-center text-expense">{pinmapError}</Text>
           </View>
         ) : pinPoints.length === 0 ? (
           <View className="h-56 items-center justify-center px-3">
@@ -486,7 +483,7 @@ export default function SummaryScreen() {
         )}
       </View>
 
-      <View className="mb-4 items-center rounded-xl bg-card p-3">
+      <View className="mb-4 items-center rounded-2xl border border-border bg-card p-3">
         <Text className="mb-2 self-stretch text-base font-semibold text-foreground">Expense Categories Contribution</Text>
           <VictoryPie
             theme={chartTheme}
@@ -498,7 +495,7 @@ export default function SummaryScreen() {
             innerRadius={pieInnerRadius}
             padAngle={2}
             labels={() => ''}
-            style={{ labels: { fill: isDark ? '#f3f4f6' : '#111827', fontSize: 10, padding: 4 } }}
+            style={{ labels: { fill: tokens.foreground, fontSize: 10, padding: 4 } }}
           />
           <VictoryLegend
             width={chartWidth}
@@ -507,11 +504,11 @@ export default function SummaryScreen() {
             gutter={12}
             itemsPerRow={2}
             data={pieLegendData}
-            style={{ labels: { fill: isDark ? '#d1d5db' : '#374151', fontSize: 11 } }}
+            style={{ labels: { fill: tokens.muted, fontSize: 11 } }}
           />
       </View>
 
-        <View className="mb-4 items-center rounded-xl bg-card p-3">
+        <View className="mb-4 items-center rounded-2xl border border-border bg-card p-3">
           <Text className="mb-2 self-stretch text-base font-semibold text-foreground">Total Wallet Value Over Time</Text>
           <View style={{ position: 'relative', alignSelf: 'stretch' }}>
             {/* Use explicit padding so we can compute plot area offsets reliably */}
@@ -528,8 +525,8 @@ export default function SummaryScreen() {
                 label="Date"
                 tickFormat={(tick) => `${new Date(tick).getMonth() + 1}/${new Date(tick).getDate()}`}
                 style={{
-                  tickLabels: { fill: isDark ? '#d1d5db' : '#374151', fontSize: 10 },
-                  axisLabel: { fill: isDark ? '#d1d5db' : '#374151', fontSize: 11, padding: 28 },
+                  tickLabels: { fill: tokens.muted, fontSize: 10 },
+                  axisLabel: { fill: tokens.muted, fontSize: 11, padding: 28 },
                 }}
               />
               <VictoryAxis
@@ -537,9 +534,9 @@ export default function SummaryScreen() {
                 label="Total Value ($)"
                 tickFormat={(tick) => `$${Number(tick).toFixed(0)}`}
                 style={{
-                  tickLabels: { fill: isDark ? '#d1d5db' : '#374151', fontSize: 10 },
+                  tickLabels: { fill: tokens.muted, fontSize: 10 },
                   // move axis label further left so it doesn't overlap numeric ticks
-                  axisLabel: { fill: isDark ? '#d1d5db' : '#374151', fontSize: 11, padding: 56 },
+                  axisLabel: { fill: tokens.muted, fontSize: 11, padding: 56 },
                 }}
               />
               <VictoryLine
@@ -555,7 +552,7 @@ export default function SummaryScreen() {
           </View>
         </View>
 
-      <View className="items-center rounded-xl bg-card p-3">
+      <View className="items-center rounded-2xl border border-border bg-card p-3">
         <Text className="mb-2 self-stretch text-base font-semibold text-foreground"># of Transactions Involved</Text>
         <VictoryChart
           theme={chartTheme}
@@ -571,8 +568,8 @@ export default function SummaryScreen() {
           <VictoryAxis
             style={{
               // force tick labels to match wallet names and keep them readable on wide screens
-              tickLabels: { fill: isDark ? '#d1d5db' : '#374151', fontSize: 11, angle: -25, padding: 12 },
-              axisLabel: { fill: isDark ? '#d1d5db' : '#374151', fontSize: 11, padding: 36 },
+              tickLabels: { fill: tokens.muted, fontSize: 11, angle: -25, padding: 12 },
+              axisLabel: { fill: tokens.muted, fontSize: 11, padding: 36 },
               grid: { stroke: 'transparent' },
             }}
             tickValues={usageBarData.map((d) => d.x)}
@@ -582,8 +579,8 @@ export default function SummaryScreen() {
             dependentAxis
             label="Transaction Count"
             style={{
-              tickLabels: { fill: isDark ? '#d1d5db' : '#374151', fontSize: 10 },
-              axisLabel: { fill: isDark ? '#d1d5db' : '#374151', fontSize: 11, padding: 42 },
+              tickLabels: { fill: tokens.muted, fontSize: 10 },
+              axisLabel: { fill: tokens.muted, fontSize: 11, padding: 42 },
               grid: { stroke: 'transparent' },
             }}
           />

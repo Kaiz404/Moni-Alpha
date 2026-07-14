@@ -13,6 +13,9 @@ import {
 import { Link, router, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useAuth } from '@/lib/auth/auth-context';
+import { GradientCard } from '@/components/ui/gradient-card';
+import { getWalletCardStyle } from '@/constants/wallet-card-styles';
+import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { deleteTransaction, getTransactions } from '@/lib/supabase/transactions';
 import { formatTransferLabel } from '@/lib/supabase/transaction-balance';
 import { getWallets } from '@/lib/supabase/wallets';
@@ -73,7 +76,7 @@ function WalletPickerModal({
             wallets.map((w) => (
               <TouchableOpacity
                 key={w.id}
-                className="flex-row items-center py-3 border-b border-gray-100 dark:border-gray-800"
+                className="flex-row items-center py-3 border-b border-border"
                 onPress={() => onSelect(w.id)}>
                 <View className="flex-1">
                   <Text className="text-sm font-medium text-foreground">{w.name}</Text>
@@ -121,24 +124,22 @@ function ProposalCard({
   const isExpense = item.type === 'expense' || !item.type;
   const isTransfer = item.type === 'transfer';
   const displayCurrency = displayCurrencyForProposal(item, wallets, getDefaultWalletId());
+  const amountClass = isTransfer ? 'text-transfer' : isExpense ? 'text-expense' : 'text-income';
   return (
-    <View className="mb-2 rounded-xl border border-border bg-card p-4 shadow-sm">
+    <View className="mb-2 rounded-2xl border border-border bg-card p-4">
       <View className="flex-row items-center justify-between mb-1">
-        <Text className="text-xs font-semibold text-blue-600 dark:text-blue-400">
-          {item.sourceApp || 'Unknown app'}
+        <Text className="text-xs font-semibold text-primary">
+          {item.sourceApp || 'AI proposal'}
         </Text>
-        <Text className="text-xs text-muted">
-          {item.aiConfidence != null ? `${Math.round(item.aiConfidence * 100)}% confidence` : 'AI proposal'}
-        </Text>
+        <TouchableOpacity
+          onPress={() =>
+            router.push({ pathname: '/proposal/[id]', params: { id: item.id } } as any)
+          }
+          hitSlop={6}>
+          <Text className="text-xs font-semibold text-muted">Edit details</Text>
+        </TouchableOpacity>
       </View>
-      <Text
-        className={`text-xl font-bold ${
-          isTransfer
-            ? 'text-sky-600 dark:text-sky-400'
-            : isExpense
-              ? 'text-red-500 dark:text-red-400'
-              : 'text-green-600 dark:text-green-400'
-        }`}>
+      <Text className={`text-xl font-bold ${amountClass}`}>
         {isTransfer ? '' : isExpense ? '−' : '+'}
         {displayCurrency} {item.amount?.toFixed(2) ?? '—'}
       </Text>
@@ -147,13 +148,13 @@ function ProposalCard({
       </Text>
       <View className="flex-row gap-2 mt-3">
         <TouchableOpacity
-          className="flex-1 flex-row items-center justify-center gap-1 py-2.5 rounded-lg bg-green-600 dark:bg-green-700"
+          className="flex-1 flex-row items-center justify-center gap-1 py-2.5 rounded-xl bg-primary"
           onPress={() => onApprove(item)}>
-          <IconSymbol name="check" size={14} color="white" />
-          <Text className="text-white text-sm font-semibold">Approve</Text>
+          <IconSymbol name="check" size={14} color="#ffffff" />
+          <Text className="text-sm font-semibold text-primary-foreground">Approve</Text>
         </TouchableOpacity>
         <TouchableOpacity
-          className="flex-1 flex-row items-center justify-center gap-1 py-2.5 rounded-lg bg-background-muted"
+          className="flex-1 flex-row items-center justify-center gap-1 py-2.5 rounded-xl bg-background-muted"
           onPress={() => onReject(item.id)}>
           <IconSymbol name="close" size={14} color="#6b7280" />
           <Text className="text-foreground text-sm font-semibold">Reject</Text>
@@ -177,6 +178,7 @@ function formatMoney(amount: number, currency: string) {
 
 export default function TransactionsScreen() {
   const { user } = useAuth();
+  const tokens = useThemeTokens();
   const params = useLocalSearchParams<{ walletId?: string | string[] }>();
   const walletId = useMemo(() => {
     const w = params.walletId;
@@ -473,23 +475,23 @@ export default function TransactionsScreen() {
         showsVerticalScrollIndicator>
         <View className="px-4 pt-2 pb-4">
           {selectedWallet ? (
-            <View className="rounded-2xl border border-primary/40 bg-primary p-4">
+            <GradientCard cardStyle={getWalletCardStyle(selectedWallet.cardStyleId)} className="rounded-3xl p-4">
               <View className="flex-row items-start justify-between">
                 <View className="flex-row items-center flex-1">
-                  <View className="w-12 h-12 rounded-2xl items-center justify-center bg-white/25">
+                  <View className="w-12 h-12 rounded-2xl items-center justify-center bg-white/20">
                     <Text className="text-lg font-bold text-white">{selectedWallet.icon ?? 'W'}</Text>
                   </View>
                   <View className="ml-3 flex-1">
-                    <Text className="text-xs font-semibold uppercase tracking-wide text-white/90">
+                    <Text className="text-xs font-semibold uppercase tracking-wide text-white/80">
                       {selectedWallet.type ?? 'Wallet'}
                     </Text>
                     <Text className="text-xl font-bold text-white">{selectedWallet.name}</Text>
-                    <Text className="text-sm text-white/85">{selectedWallet.currency ?? 'USD'}</Text>
+                    <Text className="text-sm text-white/75">{selectedWallet.currency ?? 'USD'}</Text>
                   </View>
                 </View>
               </View>
               <View className="mt-4 border-t border-white/20 pt-4">
-                <Text className="text-xs font-medium text-white/80">Current balance</Text>
+                <Text className="text-xs font-medium text-white/75">Current balance</Text>
                 <Text className="text-2xl font-bold text-white mt-0.5">
                   {formatMoney(
                     Number(selectedWallet.currentBalance ?? selectedWallet.initialBalance ?? 0),
@@ -499,19 +501,19 @@ export default function TransactionsScreen() {
               </View>
               <View className="mt-4 flex-row gap-3">
                 <View className="flex-1 rounded-xl bg-white/15 px-3 py-2">
-                  <Text className="text-[11px] font-medium uppercase text-white/75">Total Income</Text>
-                  <Text className="text-base font-semibold text-emerald-200">
+                  <Text className="text-[11px] font-medium uppercase text-white/70">Total Income</Text>
+                  <Text className="text-base font-semibold text-white">
                     {formatMoney(listStats.income, currency)}
                   </Text>
                 </View>
                 <View className="flex-1 rounded-xl bg-white/15 px-3 py-2">
-                  <Text className="text-[11px] font-medium uppercase text-white/75">Total Expenses</Text>
-                  <Text className="text-base font-semibold text-rose-200">
+                  <Text className="text-[11px] font-medium uppercase text-white/70">Total Expenses</Text>
+                  <Text className="text-base font-semibold text-white">
                     {formatMoney(listStats.expense, currency)}
                   </Text>
                 </View>
               </View>
-            </View>
+            </GradientCard>
           ) : (
             <View className="rounded-2xl border border-border bg-card p-4">
               <Text className="text-sm font-medium text-muted">All wallets</Text>
@@ -525,13 +527,7 @@ export default function TransactionsScreen() {
           )}
         </View>
 
-        <View className="mt-1 rounded-t-2xl bg-primary-muted">
-          <View className="flex-row justify-between relative">
-            <View className="h-15 w-12 left-12 rounded-b-4xl border-b-4 border-l-4 border-r-4 border-border bg-primary-soft bottom-1" />
-            <View className="h-15 w-12 right-12 rounded-b-4xl border-b-4 border-l-4 border-r-4 border-border bg-primary-soft bottom-1" />
-          </View>
-
-          <View className="mt-1 rounded-t-2xl bg-background px-4 pt-6 pb-6">
+        <View className="mt-2 px-4 pb-6">
             {proposals.length > 0 ? (
               <View className="mb-4">
                 <View className="flex-row items-center justify-between mb-2">
@@ -574,7 +570,7 @@ export default function TransactionsScreen() {
             </View>
 
             {transactions.length === 0 ? (
-              <View className="mb-2 mt-1 rounded-xl border border-dashed border-border bg-card p-4 shadow-sm">
+              <View className="mb-2 mt-1 rounded-2xl border border-dashed border-border bg-card p-4">
                 <Text className="text-center text-sm text-muted">
                   No transactions yet. Tap + Add to create one.
                 </Text>
@@ -599,11 +595,7 @@ export default function TransactionsScreen() {
                         selectedWallet?.id,
                       )
                     : item.merchant || item.description || item.type;
-                const amountClass = isTransfer
-                  ? 'text-sky-600 dark:text-sky-400'
-                  : isIncome
-                    ? 'text-green-600 dark:text-green-400'
-                    : 'text-red-500 dark:text-red-400';
+                const amountClass = isTransfer ? 'text-transfer' : isIncome ? 'text-income' : 'text-expense';
                 return (
                   <Pressable
                     key={item.id}
@@ -613,7 +605,7 @@ export default function TransactionsScreen() {
                       router.push({ pathname: '/transaction/[id]', params: { id: item.id } });
                     }}
                     style={({ pressed }) => (pressed ? { opacity: 0.92 } : undefined)}
-                    className="mb-2 rounded-xl border border-border bg-card p-3 shadow-sm">
+                    className="mb-2 rounded-2xl border border-border bg-card p-3">
                     <View className="flex-row items-start justify-between gap-2">
                       <View className="flex-1 min-w-0 pr-1">
                         <Text className="text-base font-semibold text-foreground" numberOfLines={2}>
@@ -637,8 +629,8 @@ export default function TransactionsScreen() {
                             })}
                           </Text>
                           {isTransfer ? (
-                            <View className="rounded-full bg-sky-100 px-2 py-0.5 dark:bg-sky-900/50">
-                              <Text className="text-[11px] font-medium text-sky-700 dark:text-sky-200">
+                            <View className="rounded-full bg-transfer/15 px-2 py-0.5">
+                              <Text className="text-[11px] font-medium text-transfer">
                                 Transfer
                               </Text>
                             </View>
@@ -668,7 +660,7 @@ export default function TransactionsScreen() {
                             hitSlop={8}
                             onPress={() => handleDeleteTransaction(item.id)}
                             className="rounded p-1 active:opacity-70">
-                            <MaterialIcons name="delete-outline" size={18} color="#ef4444" />
+                            <MaterialIcons name="delete-outline" size={18} color={tokens.danger} />
                           </Pressable>
                         </View>
                         <Text className={`text-lg font-bold ${amountClass}`}>
@@ -684,7 +676,6 @@ export default function TransactionsScreen() {
                 );
               })
             )}
-          </View>
         </View>
       </ScrollView>
       <WalletPickerModal

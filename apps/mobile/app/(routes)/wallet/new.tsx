@@ -14,11 +14,11 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@/lib/auth/auth-context';
 import { createWallet, getWallets } from '@/lib/supabase/wallets';
 import { createWalletSchema } from '@repo/types';
+import { WALLET_TYPE_OPTIONS, type WalletKind } from '@/constants/wallet-form';
 import {
-  WALLET_ACCENT_COLORS,
-  WALLET_TYPE_OPTIONS,
-  type WalletKind,
-} from '@/constants/wallet-form';
+  WALLET_CARD_STYLES,
+  DEFAULT_WALLET_CARD_STYLE_ID,
+} from '@/constants/wallet-card-styles';
 import {
   WalletNotificationLinkSection,
   type WalletNotificationLinkValue,
@@ -27,6 +27,7 @@ import { BrandHeader } from '@/components/ui/brand-header';
 import { ScreenShell } from '@/components/ui/screen-shell';
 import { chipClass, chipTextClass } from '@/components/ui/chip';
 import { PrimaryButton } from '@/components/ui/primary-button';
+import { WalletCardStylePicker } from '@/components/wallet-card-style-picker';
 
 const inputClass =
   'rounded-xl border border-border bg-card px-3 py-2.5 text-foreground';
@@ -38,7 +39,7 @@ export default function NewWalletScreen() {
   const [type, setType] = useState<WalletKind>('bank');
   const [currency, setCurrency] = useState('USD');
   const [initialBalance, setInitialBalance] = useState('');
-  const [color, setColor] = useState(WALLET_ACCENT_COLORS[0]);
+  const [cardStyleId, setCardStyleId] = useState(DEFAULT_WALLET_CARD_STYLE_ID);
   const [loading, setLoading] = useState(false);
   const [notificationLink, setNotificationLink] = useState<WalletNotificationLinkValue>({
     notificationPackage: null,
@@ -64,13 +65,16 @@ export default function NewWalletScreen() {
 
   const handleSubmit = async () => {
     if (!user) return;
+    const style =
+      WALLET_CARD_STYLES.find((s) => s.id === cardStyleId) ?? WALLET_CARD_STYLES[0];
     const parsed = createWalletSchema.safeParse({
       name: name.trim(),
       type,
       currency: currency.trim().toUpperCase().slice(0, 3) || 'USD',
       initialBalance: parseFloat(initialBalance) || 0,
-      color,
+      color: style.swatchHex,
       icon: WALLET_TYPE_OPTIONS.find((t) => t.value === type)?.icon ?? '💰',
+      cardStyleId: style.id,
       notificationPackage: notificationLink.notificationPackage,
       notificationAppLabel: notificationLink.notificationAppLabel,
       notificationAccountHint: notificationLink.notificationAccountHint,
@@ -169,20 +173,9 @@ export default function NewWalletScreen() {
             />
 
             <Text className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-muted">
-              Accent color
+              Card style
             </Text>
-            <View className="mb-2 flex-row flex-wrap gap-2">
-              {WALLET_ACCENT_COLORS.map((c) => (
-                <TouchableOpacity
-                  key={c}
-                  onPress={() => setColor(c)}
-                  activeOpacity={0.85}
-                  className={`h-10 w-10 items-center justify-center rounded-full ${color === c ? 'border-2 border-primary' : 'border border-border'}`}
-                  style={{ backgroundColor: c }}
-                  accessibilityLabel={`Color ${c}`}
-                />
-              ))}
-            </View>
+            <WalletCardStylePicker value={cardStyleId} onChange={setCardStyleId} />
           </ScrollView>
 
           <View
