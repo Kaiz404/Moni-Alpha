@@ -1,43 +1,30 @@
-import { useState, useEffect, useMemo } from 'react';
-import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  Alert,
-  ScrollView,
-  KeyboardAvoidingView,
-  Platform,
-  ActivityIndicator,
-  StyleSheet,
-} from 'react-native';
-import MapView, { Marker } from 'react-native-maps';
-import { router, useLocalSearchParams } from 'expo-router';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Alert, ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import * as Location from 'expo-location';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useAuth } from '@/lib/auth/auth-context';
-import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { BrandHeader } from '@/components/ui/brand-header';
 import { ScreenShell } from '@/components/ui/screen-shell';
 import { chipClass, chipTextClass } from '@/components/ui/chip';
 import { PrimaryButton } from '@/components/ui/primary-button';
+import { NumericKeypad } from '@/components/ui/numeric-keypad';
 import { createTransaction, createTransfer } from '@/lib/supabase/transactions';
 import { getWallets } from '@/lib/supabase/wallets';
 import { getCategories } from '@/lib/supabase/categories';
 import { createTransactionSchema } from '@repo/types';
+import { getDraftExtras, hasDraftExtras, resetDraftExtras } from '@/lib/transactions/draft-extras';
 
-const inputClass =
-  'rounded-xl border border-border bg-card px-3 py-2.5 text-foreground';
+const QUICK_AMOUNTS = [10, 20, 50, 100, 500];
+const MAX_AMOUNT_LENGTH = 12;
 
 export default function NewTransactionScreen() {
   const { user } = useAuth();
   const insets = useSafeAreaInsets();
-  const tokens = useThemeTokens();
   const params = useLocalSearchParams<{ walletId?: string | string[] }>();
   const paramWalletId = useMemo(() => {
     const w = params.walletId;
-    if (Array.isArray(w)) return w[0];
-    return w;
+    return Array.isArray(w) ? w[0] : w;
   }, [params.walletId]);
 
   const [wallets, setWallets] = useState<any[]>([]);
@@ -47,73 +34,18 @@ export default function NewTransactionScreen() {
   const [amount, setAmount] = useState('');
   const [type, setType] = useState<'income' | 'expense' | 'transfer'>('expense');
   const [categoryId, setCategoryId] = useState('');
-  const [merchant, setMerchant] = useState('');
-  const [description, setDescription] = useState('');
   const [loading, setLoading] = useState(false);
-
-  const [locationSnapshot, setLocationSnapshot] = useState<{
-    latitude: number;
-    longitude: number;
-    name: string | null;
-  } | null>(null);
-  const [locationLoading, setLocationLoading] = useState(true);
-  const [locationUnavailable, setLocationUnavailable] = useState(false);
-  const [mapExpanded, setMapExpanded] = useState(false);
+  const [extras, setExtras] = useState(getDraftExtras());
 
   useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      setLocationLoading(true);
-      setLocationUnavailable(false);
-      try {
-        const permission = await Location.requestForegroundPermissionsAsync();
-        if (permission.status !== 'granted') {
-          if (!cancelled) {
-            setLocationSnapshot(null);
-            setLocationUnavailable(true);
-          }
-          return;
-        }
-        const current = await Location.getCurrentPositionAsync({
-          accuracy: Location.Accuracy.Balanced,
-        });
-
-        let locationName: string | null = null;
-        try {
-          const addresses = await Location.reverseGeocodeAsync({
-            latitude: current.coords.latitude,
-            longitude: current.coords.longitude,
-          });
-          const first = addresses[0];
-          if (first) {
-            locationName =
-              [first.name, first.street, first.city, first.region].filter(Boolean).join(', ').trim() ||
-              null;
-          }
-        } catch {
-          // keep coords without a label
-        }
-
-        if (!cancelled) {
-          setLocationSnapshot({
-            latitude: current.coords.latitude,
-            longitude: current.coords.longitude,
-            name: locationName,
-          });
-        }
-      } catch {
-        if (!cancelled) {
-          setLocationSnapshot(null);
-          setLocationUnavailable(true);
-        }
-      } finally {
-        if (!cancelled) setLocationLoading(false);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
+    resetDraftExtras();
   }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      setExtras(getDraftExtras());
+    }, []),
+  );
 
   useEffect(() => {
     if (!user) return;
@@ -125,13 +57,11 @@ export default function NewTransactionScreen() {
 
   useEffect(() => {
     if (wallets.length === 0) return;
-
     if (paramWalletId && wallets.some((w) => w.id === paramWalletId)) {
       setWalletId(paramWalletId);
     } else {
       setWalletId((current) => current || wallets[0].id);
     }
-
     setTransferToWalletId((current) => {
       if (current) return current;
       const other = wallets.find((w) => w.id !== (paramWalletId ?? wallets[0].id));
@@ -139,10 +69,26 @@ export default function NewTransactionScreen() {
     });
   }, [wallets, paramWalletId]);
 
-  const destinationWallets = useMemo(
-    () => wallets.filter((w) => w.id !== walletId),
-    [wallets, walletId],
-  );
+  const destinationWallets = useMemo(() => wallets.filter((w) => w.id !== walletId), [wallets, walletId]);
+  const selectedWallet = wallets.find((w) => w.id === walletId);
+  const currencySymbol = selectedWallet?.currency ?? 'USD';
+
+  const handleKeyPress = useCallback((key: string) => {
+    setAmount((prev) => {
+      if (key === '⌫') return prev.slice(0, -1);
+      if (key === '.' && prev.includes('.')) return prev;
+      if (prev.length >= MAX_AMOUNT_LENGTH) return prev;
+      if (key === '.' && prev.length === 0) return '0.';
+      return prev + key;
+    });
+  }, []);
+
+  const handleOpenDetails = useCallback(() => {
+    router.push({
+      pathname: '/transaction/new-details',
+      params: { type },
+    } as any);
+  }, [type]);
 
   const handleSubmit = async () => {
     if (!user || !walletId) return;
@@ -164,29 +110,24 @@ export default function NewTransactionScreen() {
           fromWalletId: walletId,
           toWalletId: transferToWalletId,
           amount: parsedAmount,
-          description: description.trim() || null,
+          description: extras.description.trim() || null,
         });
       } else {
-        const locationPayload: {
-          locationLatitude?: number | null;
-          locationLongitude?: number | null;
-          locationName?: string | null;
-        } =
-          locationSnapshot != null
-            ? {
-                locationLatitude: locationSnapshot.latitude,
-                locationLongitude: locationSnapshot.longitude,
-                locationName: locationSnapshot.name,
-              }
-            : {};
+        const locationPayload = extras.locationSnapshot
+          ? {
+              locationLatitude: extras.locationSnapshot.latitude,
+              locationLongitude: extras.locationSnapshot.longitude,
+              locationName: extras.locationSnapshot.name,
+            }
+          : {};
 
         const parsed = createTransactionSchema.safeParse({
           walletId,
           amount: parsedAmount,
           type,
           categoryId: categoryId || null,
-          merchant: merchant.trim() || null,
-          description: description.trim() || null,
+          merchant: extras.merchant.trim() || null,
+          description: extras.description.trim() || null,
           transactionDate: new Date().toISOString(),
           ...locationPayload,
         });
@@ -196,6 +137,7 @@ export default function NewTransactionScreen() {
         }
         await createTransaction(parsed.data);
       }
+      resetDraftExtras();
       router.back();
     } catch (e) {
       Alert.alert('Error', e instanceof Error ? e.message : 'Failed to create transaction');
@@ -204,241 +146,132 @@ export default function NewTransactionScreen() {
     }
   };
 
+  const actionLabel = type === 'income' ? 'Add income' : type === 'transfer' ? 'Add transfer' : 'Add expense';
+  const detailsAdded = hasDraftExtras(extras);
+
   return (
     <ScreenShell variant="canvas">
       <BrandHeader title="New Transaction" />
 
-      <KeyboardAvoidingView
+      <ScrollView
         className="flex-1"
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        keyboardVerticalOffset={0}>
-        <View className="flex-1">
-          <ScrollView
-            className="flex-1"
-            keyboardShouldPersistTaps="handled"
-            contentContainerClassName="px-4 pt-4 pb-2"
-            showsVerticalScrollIndicator={false}>
-            <Text className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-muted">
-              {type === 'transfer' ? 'From wallet' : 'Wallet'}
-            </Text>
+        keyboardShouldPersistTaps="handled"
+        contentContainerClassName="px-4 pt-4 pb-2"
+        showsVerticalScrollIndicator={false}>
+        <View className="mb-4 flex-row gap-1.5">
+          {(['expense', 'income', 'transfer'] as const).map((t) => (
+            <TouchableOpacity
+              key={t}
+              className={`${chipClass(type === t)} flex-1 items-center py-2.5`}
+              onPress={() => setType(t)}
+              activeOpacity={0.85}>
+              <Text className={`text-sm font-semibold capitalize ${chipTextClass(type === t)}`}>{t}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        <View className="mb-4 items-center py-2">
+          <Text className="text-sm text-muted">{currencySymbol}</Text>
+          <Text className="mt-1 text-5xl font-bold text-foreground" numberOfLines={1}>
+            {amount || '0'}
+          </Text>
+        </View>
+
+        <View className="mb-4 flex-row flex-wrap gap-1.5">
+          {QUICK_AMOUNTS.map((q) => (
+            <TouchableOpacity
+              key={q}
+              className="rounded-full border border-border bg-card px-3.5 py-1.5"
+              onPress={() => setAmount(String(q))}
+              activeOpacity={0.85}>
+              <Text className="text-xs font-semibold text-foreground">{q}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        <View className="mb-5">
+          <NumericKeypad onKeyPress={handleKeyPress} />
+        </View>
+
+        <Text className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-muted">
+          {type === 'transfer' ? 'From wallet' : 'Wallet'}
+        </Text>
+        <View className="mb-4 flex-row flex-wrap gap-1.5">
+          {wallets.map((w) => (
+            <TouchableOpacity
+              key={w.id}
+              className={chipClass(walletId === w.id)}
+              onPress={() => setWalletId(w.id)}
+              activeOpacity={0.85}>
+              <Text className={`text-sm ${chipTextClass(walletId === w.id)}`} numberOfLines={1}>
+                {w.icon} {w.name}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        {type === 'transfer' ? (
+          <>
+            <Text className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-muted">To wallet</Text>
             <View className="mb-4 flex-row flex-wrap gap-1.5">
-              {wallets.map((w) => (
+              {destinationWallets.map((w) => (
                 <TouchableOpacity
                   key={w.id}
-                  className={chipClass(walletId === w.id)}
-                  onPress={() => setWalletId(w.id)}
+                  className={chipClass(transferToWalletId === w.id)}
+                  onPress={() => setTransferToWalletId(w.id)}
                   activeOpacity={0.85}>
-                  <Text className={`text-sm ${chipTextClass(walletId === w.id)}`} numberOfLines={1}>
+                  <Text className={`text-sm ${chipTextClass(transferToWalletId === w.id)}`} numberOfLines={1}>
                     {w.icon} {w.name}
                   </Text>
                 </TouchableOpacity>
               ))}
             </View>
-
-            {type === 'transfer' ? (
-              <>
-                <Text className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-muted">
-                  To wallet
-                </Text>
-                <View className="mb-4 flex-row flex-wrap gap-1.5">
-                  {destinationWallets.map((w) => (
-                    <TouchableOpacity
-                      key={w.id}
-                      className={chipClass(transferToWalletId === w.id)}
-                      onPress={() => setTransferToWalletId(w.id)}
-                      activeOpacity={0.85}>
-                      <Text className={`text-sm ${chipTextClass(transferToWalletId === w.id)}`} numberOfLines={1}>
-                        {w.icon} {w.name}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              </>
-            ) : null}
-
-            <View className="mb-4 flex-row gap-3">
-              <View className="flex-1 min-w-[140px]">
-                <Text className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-muted">
-                  Type
-                </Text>
-                <View className="flex-row flex-wrap gap-1.5">
-                  <TouchableOpacity
-                    className={`${chipClass(type === 'income')} flex-1 min-w-[30%] items-center py-2`}
-                    onPress={() => setType('income')}
-                    activeOpacity={0.85}>
-                    <Text className={`text-sm font-medium ${chipTextClass(type === 'income')}`}>Income</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    className={`${chipClass(type === 'expense')} flex-1 min-w-[30%] items-center py-2`}
-                    onPress={() => setType('expense')}
-                    activeOpacity={0.85}>
-                    <Text className={`text-sm font-medium ${chipTextClass(type === 'expense')}`}>Expense</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    className={`${chipClass(type === 'transfer')} flex-1 min-w-[30%] items-center py-2`}
-                    onPress={() => setType('transfer')}
-                    activeOpacity={0.85}>
-                    <Text className={`text-sm font-medium ${chipTextClass(type === 'transfer')}`}>Transfer</Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-              <View className="flex-1 min-w-[120px]">
-                <Text className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-muted">
-                  Amount
-                </Text>
-                <TextInput
-                  className={`text-base ${inputClass}`}
-                  placeholder="0.00"
-                  placeholderTextColor="#9CA3AF"
-                  value={amount}
-                  onChangeText={setAmount}
-                  keyboardType="decimal-pad"
-                />
-              </View>
-            </View>
-
-            {type !== 'transfer' ? (
-              <>
-                <Text className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-muted">
-                  Category
-                </Text>
-                <View className="mb-4 flex-row flex-wrap gap-1.5">
-                  {categories.map((c) => (
-                    <TouchableOpacity
-                      key={c.id}
-                      className={chipClass(categoryId === c.id)}
-                      onPress={() => setCategoryId(c.id)}
-                      activeOpacity={0.85}>
-                      <Text className={`text-xs ${chipTextClass(categoryId === c.id)}`} numberOfLines={1}>
-                        {c.icon} {c.name}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-
-                <View className="mb-1.5 flex-row items-baseline gap-1">
-                  <Text className="text-xs font-semibold uppercase tracking-wide text-muted">
-                    Merchant
+          </>
+        ) : (
+          <>
+            <Text className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-muted">Category</Text>
+            <View className="mb-4 flex-row flex-wrap gap-1.5">
+              {categories.map((c) => (
+                <TouchableOpacity
+                  key={c.id}
+                  className={chipClass(categoryId === c.id)}
+                  onPress={() => setCategoryId(c.id)}
+                  activeOpacity={0.85}>
+                  <Text className={`text-xs ${chipTextClass(categoryId === c.id)}`} numberOfLines={1}>
+                    {c.icon} {c.name}
                   </Text>
-                  <Text className="text-[10px] text-muted">optional</Text>
-                </View>
-                <TextInput
-                  className={`mb-3 text-sm ${inputClass}`}
-                  placeholder="Store or payee"
-                  placeholderTextColor="#9CA3AF"
-                  value={merchant}
-                  onChangeText={setMerchant}
-                />
-              </>
-            ) : null}
-
-            <View className="mb-1.5 flex-row items-baseline gap-1">
-              <Text className="text-xs font-semibold uppercase tracking-wide text-muted">
-                Description
-              </Text>
-              <Text className="text-[10px] text-muted">optional</Text>
+                </TouchableOpacity>
+              ))}
             </View>
-            <TextInput
-              className={`mb-1 min-h-[72px] text-sm ${inputClass}`}
-              placeholder="Notes"
-              placeholderTextColor="#9CA3AF"
-              value={description}
-              onChangeText={setDescription}
-              multiline
-              textAlignVertical="top"
-            />
+          </>
+        )}
 
-            <View className="pt-2">
-              {type !== 'transfer' ? (
-                <>
-                  {locationLoading ? (
-                    <View className="flex-row items-center gap-2">
-                      <ActivityIndicator size="small" color={tokens.primary} />
-                      <Text className="text-xs text-muted">Finding transaction location…</Text>
-                    </View>
-                  ) : locationUnavailable || !locationSnapshot ? (
-                    <Text className="text-xs text-muted">
-                      Location unavailable. Enable location access to attach this transaction to where you are now.
-                    </Text>
-                  ) : (
-                    <View>
-                      <TouchableOpacity
-                        className="flex-row items-center justify-between py-1"
-                        onPress={() => setMapExpanded(!mapExpanded)}
-                        activeOpacity={0.7}
-                        accessibilityRole="button"
-                        accessibilityLabel={mapExpanded ? 'Hide map' : 'Show map'}>
-                        <Text className="text-xs font-semibold uppercase tracking-wide text-muted">
-                          Transaction location {mapExpanded ? '▲' : '▼'}
-                        </Text>
-                      </TouchableOpacity>
-                      {locationSnapshot.name ? (
-                        <Text className="mb-1 text-xs text-muted" numberOfLines={mapExpanded ? 4 : 2}>
-                          {locationSnapshot.name}
-                        </Text>
-                      ) : null}
-                      {mapExpanded ? (
-                        <View
-                          className="mt-1 overflow-hidden rounded-xl border border-border bg-card"
-                          style={styles.locationMapBox}>
-                          <MapView
-                            style={styles.locationMap}
-                            initialRegion={{
-                              latitude: locationSnapshot.latitude,
-                              longitude: locationSnapshot.longitude,
-                              latitudeDelta: 0.006,
-                              longitudeDelta: 0.006,
-                            }}
-                            provider="google"
-                            scrollEnabled={false}
-                            zoomEnabled={false}
-                            rotateEnabled={false}
-                            pitchEnabled={false}>
-                            <Marker
-                              coordinate={{
-                                latitude: locationSnapshot.latitude,
-                                longitude: locationSnapshot.longitude,
-                              }}
-                              pinColor={tokens.primary}
-                            />
-                          </MapView>
-                        </View>
-                      ) : null}
-                    </View>
-                  )}
-                </>
-              ) : (
-                <Text className="text-xs text-muted">
-                  Transfers move money between your wallets without changing your overall net worth.
-                </Text>
-              )}
-            </View>
-          </ScrollView>
-
-          <View
-            className="border-t border-border bg-canvas px-4 pt-3"
-            style={{ paddingBottom: Math.max(insets.bottom, 12) }}>
-            <PrimaryButton
-              label="Create transaction"
-              loading={loading}
-              loadingLabel="Creating..."
-              icon="check"
-              onPress={handleSubmit}
-              disabled={loading}
-            />
+        <TouchableOpacity
+          onPress={handleOpenDetails}
+          className="mb-4 flex-row items-center justify-between rounded-xl border border-dashed border-border bg-card px-4 py-3"
+          activeOpacity={0.85}>
+          <View className="flex-row items-center gap-2">
+            <MaterialIcons name="tune" size={18} color="#6b7280" />
+            <Text className="text-sm font-medium text-foreground">
+              {detailsAdded ? 'More details added' : 'Add more details'}
+            </Text>
           </View>
-        </View>
-      </KeyboardAvoidingView>
+          <MaterialIcons name="chevron-right" size={20} color="#9ca3af" />
+        </TouchableOpacity>
+      </ScrollView>
+
+      <View
+        className="border-t border-border bg-canvas px-4 pt-3"
+        style={{ paddingBottom: Math.max(insets.bottom, 12) }}>
+        <PrimaryButton
+          label={actionLabel}
+          loading={loading}
+          loadingLabel="Adding..."
+          icon="check"
+          onPress={handleSubmit}
+          disabled={loading}
+        />
+      </View>
     </ScreenShell>
   );
 }
-
-const styles = StyleSheet.create({
-  locationMapBox: {
-    height: 200,
-    width: '100%',
-  },
-  locationMap: {
-    ...StyleSheet.absoluteFillObject,
-  },
-});
