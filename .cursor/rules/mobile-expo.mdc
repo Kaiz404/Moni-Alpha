@@ -34,7 +34,7 @@ New synced table checklist: migration adds `created_at`/`updated_at`/`deleted` +
 
 ## AI pipeline (lib/ai/)
 
-Input → `processing-queue.ts` (MMKV) → `background-processor.ts` (Android FG service) → `run-extraction.ts` → `lib/ai/client` (HTTP → Go backend when `EXPO_PUBLIC_AI_API_URL` set, mock otherwise) → `proposed_transactions` → review modal.
+Input → `processing-queue.ts` (MMKV) → `background-processor.ts` (Android FG service) → `run-extraction.ts` → `lib/ai/client` (HTTP → Go backend when `EXPO_PUBLIC_AI_API_URL` set, mock otherwise) → `proposed_transactions` → review modal. Chat tab also routes finance Q&A via `lib/ai/chat/` → `/v1/chat/analyze`.
 
 - Client results are `{ status: 'ok' | 'skipped' | 'unavailable' }` — never throw across this boundary
 - Wire types in `lib/ai/client/types.ts` must match `apps/backend/internal/extract/types.go`
@@ -42,7 +42,7 @@ Input → `processing-queue.ts` (MMKV) → `background-processor.ts` (Android FG
 
 ## Routing (expo-router)
 
-`app/(auth)` unauthenticated; `app/(tabs)` main tabs (Wallets / Summary / Moni Agent / Profile); `app/(routes)` stack screens. Auth guard in `app/_layout.tsx`.
+`app/(auth)` unauthenticated; `app/(tabs)` main tabs (Wallets / Summary / Chat / Profile); `app/(routes)` stack screens. Auth guard in `app/_layout.tsx`.
 
 ## Styling (Uniwind)
 

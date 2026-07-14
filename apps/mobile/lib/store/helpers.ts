@@ -15,12 +15,22 @@ export function getRecordValues<T extends Record<string, unknown>>(
   );
 }
 
+/** True when the table snapshot already has a non-deleted row for `id`. */
+export function hasRow(table$: Observable<any>, id: string): boolean {
+  const snapshot = table$.peek() as Record<string, { deleted?: boolean } | undefined> | null;
+  const row = snapshot?.[id];
+  return row != null && typeof row === 'object' && !row.deleted;
+}
+
 /** Patch a synced row by id (Legend-State child observable). */
 export function patchRow(
   table$: Observable<any>,
   id: string,
   patch: Record<string, unknown>,
 ): void {
+  if (!hasRow(table$, id)) {
+    throw new Error(`Cannot patch missing row: ${id}`);
+  }
   const row$ = table$[id] as { assign?: (value: Record<string, unknown>) => void } | undefined;
   if (!row$?.assign) {
     throw new Error(`Cannot patch missing row: ${id}`);

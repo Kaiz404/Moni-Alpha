@@ -12,13 +12,13 @@ import type { AiClient } from './types';
 export type {
   AiClient,
   AiWalletContext,
+  ChatAnalyzeRequest,
+  ChatAnalyzeResult,
   ExtractedTransaction,
   ExtractImageRequest,
   ExtractNotificationRequest,
   ExtractResult,
   ExtractTextRequest,
-  FinanceAssistantApiResult,
-  FinanceAssistantRequest,
 } from './types';
 
 export {

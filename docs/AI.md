@@ -1,11 +1,13 @@
 # AI Pipeline
 
-Moni turns natural language, receipt photos, and (on Android) bank notifications into **reviewable transaction proposals**. Inference runs on the Go backend (`apps/backend`) against Groq; nothing is committed to the ledger without user approval.
+Moni turns natural language, receipt photos, and (on Android) bank notifications into **reviewable transaction proposals**. The Chat tab also answers finance questions using pre-aggregated metrics. Inference runs on the Go backend (`apps/backend`) against Groq; nothing is committed to the ledger without user approval.
 
 ## Flow
 
+### Transaction extraction (queue)
+
 ```
-Input (chat text / receipt photo / notification)
+Input (chat text / receipt photo / notification / FAB scan)
   → MMKV processing queue                 apps/mobile/lib/ai/processing-queue.ts
   → background processor (Android FG svc) apps/mobile/lib/ai/background-processor.ts
   → run-extraction                        apps/mobile/lib/ai/run-extraction.ts
@@ -13,16 +15,28 @@ Input (chat text / receipt photo / notification)
   → Go backend                            apps/backend (Gin, stateless)
   → Groq
   → proposed_transactions (unreviewed)
-  → ProposalSummarySheet (minimal popup) → Approve/Decline, or "Edit details" → app/(routes)/proposal/[id].tsx (full form) → approve/decline (soft-delete proposal)
+  → ProposalSummarySheet (minimal popup) → Approve/Decline, or "Edit details" → app/(routes)/proposal/[id].tsx
 ```
 
-Capture entry points feeding the queue: the Moni Agent tab (text/photo/hold-to-talk), and the floating tab-bar button (tap → `app/(routes)/scan/receipt.tsx` camera; long-press → `app/(routes)/scan/listen.tsx` narration).
+### Chat tab (conversational)
+
+```
+User message (text / inline expo-camera photo / hold-to-talk)
+  → lib/ai/chat/orchestrator.ts (heuristic routing)
+  → extract path: run-extraction (sync for text) or processing queue (images)
+  → analyze path: build snapshot on-device → POST /v1/chat/analyze → prose reply in thread
+  → extract skipped → auto-retry analyze → clarify with quick-reply chips if both fail
+```
+
+Chat sessions: MMKV (`lib/ai/chat/messages.ts`), rolling ~6 message pairs sent as API history, 24h idle expiry, "New chat" reset.
+
+Capture entry points feeding the **extraction queue** (silent — not shown in Chat thread): floating tab-bar button (tap → `app/(routes)/scan/receipt.tsx` camera; long-press → `app/(routes)/scan/listen.tsx` narration).
 
 If `EXPO_PUBLIC_AI_API_URL` is unset, the mobile client falls back to a mock that returns `unavailable` — AI features degrade cleanly.
 
 ## Wire contract
 
-Defined in `apps/mobile/lib/ai/client/types.ts` and mirrored by Go structs in `apps/backend/internal/extract/types.go`. **These two files must be kept in sync manually.**
+Defined in `apps/mobile/lib/ai/client/types.ts`. Extraction structs mirror `apps/backend/internal/extract/types.go`; chat analyze mirrors `apps/backend/internal/chat/types.go`. **Keep these in sync manually.**
 
 Every extract endpoint returns:
 
@@ -49,6 +63,16 @@ type ExtractResult =
   | { status: "unavailable"; reason: string }; // backend model failure (mobile queue retries)
 ```
 
+Chat analyze (`POST /v1/chat/analyze`):
+
+```ts
+// Request
+{ message: string; snapshot: FinanceAssistantToolSnapshot; history?: { role: "user"|"assistant"; content: string }[] }
+
+// Response
+{ status: "ok"; reply: string; modelId: string } | { status: "unavailable"; reason: string }
+```
+
 `type` is `income` | `expense` | `transfer`. Transfers use `walletId` as the source wallet and `transferToWalletId` as the destination (either may be `null` for user completion in the review UI). Receipt and notification extraction remain income/expense only; **text** extraction detects transfers (e.g. "move 500 from Maybank to savings").
 
 Auth: `Authorization: Bearer <supabase-user-jwt>`, verified via JWKS (ES256). Errors: `{ error, details? }`.
@@ -60,7 +84,7 @@ Auth: `Authorization: Bearer <supabase-user-jwt>`, verified via JWKS (ES256). Er
 | Text extraction (live)     | `/v1/extract/text`               | `llama-3.1-8b-instant`, fallback `llama-3.3-70b-versatile` | Fastest inference + highest free/dev-tier request ceiling (14.4K RPD); fallback covers unparseable output |
 | Receipt images (live)      | `/v1/extract/image`              | `meta-llama/llama-4-scout-17b-16e-instruct`                | Groq's vision model; 30K TPM absorbs image-token cost                                                     |
 | Notifications (background) | `/v1/extract/notification`       | `llama-3.1-8b-instant`                                     | Cheap + efficient; latency doesn't matter, honors long 429 retry waits                                    |
-| Finance assistant          | `/v1/insights/finance-assistant` | `llama-3.3-70b-versatile`                                  | Low volume, better prose; 3 agents run in parallel                                                        |
+| Chat finance analysis      | `/v1/chat/analyze`               | `llama-3.3-70b-versatile`                                  | Concise prose; snapshot context keeps tokens bounded                                                      |
 
 All calls use Groq's OpenAI-compatible endpoint with `response_format: json_object`, temperature ≤ 0.4, and Go-side JSON validation (`groq.CompleteJSON` strips fences and rejects malformed output).
 
@@ -73,7 +97,7 @@ All calls use Groq's OpenAI-compatible endpoint with `response_format: json_obje
 
 ## Extraction pipeline details
 
-- **Prompts** live in `apps/backend/internal/extract/prompts.go` and `internal/insights/prompts.go` (ported from the former on-device pipeline; git history has `apps/mobile/lib/ai/BACKEND_AI.md` if you need the archaeology).
+- **Prompts** live in `apps/backend/internal/extract/prompts.go` and `internal/chat/prompts.go`.
 - **Wallet selection** — the client's `wallets[]` is injected into every extraction user message as `AVAILABLE_WALLETS` (JSON array of `{id, name, type?, currency?, accountHint?}`). The extraction model returns `wallet_id` / `transfer_to_wallet_id` directly; the backend validates ids against the provided list (`internal/extract/wallet_resolver.go`):
   1. Client-locked wallet when exactly one wallet is linked to the notification app (`lockedWalletId`)
   2. Only one wallet in candidate list → auto-select
@@ -87,6 +111,15 @@ All calls use Groq's OpenAI-compatible endpoint with `response_format: json_obje
 - **Notification prefilter stays on-device** (`apps/mobile/lib/notifications/notification-filter.core.js`): requires a money-amount signal AND a transfer signal before an LLM ever sees it. Test suite: `pnpm --filter moni test:notification-detection`.
 - **Receipt images:** mobile downscales/compresses (`lib/ai/client/image-payload.ts`), sends base64 for local files or the URL if already uploaded to the `receipts` Storage bucket. Backend extracts amount, merchant, and description only; mobile assigns the default wallet and its currency.
 
-## Insights
+## Chat routing (on-device)
 
-The mobile app computes deterministic metric snapshots (`lib/ai/insights/*-metrics.ts`) so models only ever see pre-aggregated numbers — never raw transactions. The backend runs three agents in parallel (Trend Strategist, Budget Advisor, Spending Story) and returns a `moni_finance_assistant_v1` payload validated against `@repo/types` (`ai-insight.ts`). Mobile falls back to deterministic copy when the backend is unavailable.
+Heuristic-first — no LLM call for most messages:
+
+| Input | Route |
+| ----- | ----- |
+| Photo attached | Always extract |
+| Question-like text (`?`, how/what/am I, analyze/review/budget) without amount | Analyze |
+| Amount/merchant patterns | Extract |
+| Default text | Extract → if `skipped`, retry analyze → if both fail, clarify with chips |
+
+Snapshot builder: `lib/ai/snapshot/finance-metrics.ts` (deterministic metrics from transactions + budgets — never raw tx rows sent to the model).

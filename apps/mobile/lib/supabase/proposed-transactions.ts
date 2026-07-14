@@ -1,5 +1,5 @@
 import { proposedTransactions$ } from '@/lib/store';
-import { getRecordValues, patchRow } from '@/lib/store/helpers';
+import { getRecordValues, hasRow, patchRow } from '@/lib/store/helpers';
 import { getUserId } from '@/lib/supabase/client';
 import { randomUUID } from 'expo-crypto';
 import type { CreateProposedTransaction, ProposedTransaction } from '@repo/types';
@@ -71,22 +71,46 @@ function rowToProposedTransaction(row: ProposedRow): ProposedTransaction {
   };
 }
 
-/** All non-deleted rows are unreviewed proposals awaiting user action. */
+function isReviewableRow(row: ProposedRow): boolean {
+  const amount = row.amount != null ? parseFloat(String(row.amount)) : NaN;
+  return Number.isFinite(amount) && amount > 0 && !!row.type;
+}
+
+/** All non-deleted rows with a usable amount are unreviewed proposals awaiting user action. */
 export async function getProposedTransactions(): Promise<ProposedTransaction[]> {
-  const rows = getRecordValues<ProposedRow>(proposedTransactions$);
+  const rows = getRecordValues<ProposedRow>(proposedTransactions$).filter(isReviewableRow);
 
   rows.sort((a, b) => (b.created_at ?? '').localeCompare(a.created_at ?? ''));
 
   return rows.map(rowToProposedTransaction);
 }
 
+/** Soft-delete stub rows left by image-upload races (no amount/type). Safe to call on startup. */
+export async function pruneIncompleteProposals(): Promise<number> {
+  const rows = getRecordValues<ProposedRow>(proposedTransactions$);
+  let pruned = 0;
+
+  for (const row of rows) {
+    if (isReviewableRow(row)) continue;
+    try {
+      await deleteProposedTransaction(row.id);
+      pruned++;
+    } catch {
+      // row already removed
+    }
+  }
+
+  return pruned;
+}
+
 export async function createProposedTransaction(
   data: CreateProposedTransaction,
+  options?: { id?: string },
 ): Promise<ProposedTransaction> {
   const userId = await getUserId();
   if (!userId) throw new Error('User ID required');
 
-  const id = randomUUID();
+  const id = options?.id ?? randomUUID();
 
   proposedTransactions$[id].set({
     id,
@@ -165,12 +189,16 @@ export async function rejectProposedTransaction(id: string): Promise<void> {
   await deleteProposedTransaction(id);
 }
 
-export async function updateProposalImageUri(id: string, remoteUrl: string): Promise<void> {
+export async function updateProposalImageUri(id: string, remoteUrl: string): Promise<boolean> {
+  // Image uploads can finish before extraction creates the proposal row — skip until then.
+  if (!hasRow(proposedTransactions$, id)) return false;
+
   patchRow(proposedTransactions$, id, {
     source_image_uri: remoteUrl,
     updated_at: new Date().toISOString(),
   });
   emitProposedTransactionsChanged();
+  return true;
 }
 
 export async function deleteProposedTransaction(id: string): Promise<void> {

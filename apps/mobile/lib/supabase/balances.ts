@@ -30,10 +30,32 @@ export async function getWalletBalance(walletId: string): Promise<number> {
 }
 
 export async function getWalletBalances(walletIds: string[]): Promise<Record<string, number>> {
-  const balances: Record<string, number> = {};
+  if (walletIds.length === 0) return {};
+
+  const walletIdSet = new Set(walletIds);
+  const initials: Record<string, number> = {};
+  const walletRows = getRecordValues<{
+    id: string;
+    initial_balance: string | number | null;
+  }>(wallets$);
 
   for (const walletId of walletIds) {
-    balances[walletId] = await getWalletBalance(walletId);
+    const wallet = walletRows.find((w) => w.id === walletId);
+    initials[walletId] = wallet ? parseTxAmount(wallet.initial_balance) : 0;
+  }
+
+  const balances = { ...initials };
+  const txs = getRecordValues<TransactionBalanceRow>(transactions$);
+
+  for (const tx of txs) {
+    const walletId = tx.wallet_id;
+    if (walletId && walletIdSet.has(walletId)) {
+      balances[walletId] = (balances[walletId] ?? 0) + transactionDelta(tx, walletId);
+    }
+    const transferTo = tx.transfer_to_wallet_id;
+    if (transferTo && walletIdSet.has(transferTo)) {
+      balances[transferTo] = (balances[transferTo] ?? 0) + transactionDelta(tx, transferTo);
+    }
   }
 
   return balances;

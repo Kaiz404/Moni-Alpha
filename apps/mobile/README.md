@@ -16,7 +16,7 @@ Env: copy `.env.example` to `.env` (Supabase publishable key, AI backend URL, Go
 
 | Path | Role |
 | --- | --- |
-| `app/` | expo-router routes: `(auth)`, `(tabs)` (Wallets / Summary / Moni Agent / Profile), `(routes)` (wallet, transaction, budget, proposal, scan, notifications, debug) |
+| `app/` | expo-router routes: `(auth)`, `(tabs)` (Wallets / Summary / Chat / Profile), `(routes)` (wallet, transaction, budget, proposal, scan, notifications, debug) |
 | `lib/store/` | Legend-State synced observables — the data layer |
 | `lib/supabase/` | Supabase client (publishable key) + CRUD helpers over the store; profile preferences |
 | `lib/auth/` | Auth context (email/password + native Google Sign-In) |
@@ -43,9 +43,13 @@ Default wallet: Profile → Default wallet. Synced in `profiles.preferences.defa
 
 ## AI
 
-Input (chat text, receipt photo, notification) → MMKV queue → background processor → Go backend (`EXPO_PUBLIC_AI_API_URL`) → `proposed_transactions` → review UI. **Capture entry points:** the Moni Agent tab (type, attach a photo, or hold-to-talk), and the floating tab-bar button — tap opens `app/(routes)/scan/receipt.tsx` (live camera viewfinder), long-press opens `app/(routes)/scan/listen.tsx` (record narration, review transcript, then send). Both feed the same queue as the Moni Agent tab. **Review UI:** `components/proposal-summary-sheet.tsx` shows a minimal amount/wallet/category popup for each pending proposal (Approve / Decline / "Edit details"); "Edit details" opens the full editable form at `app/(routes)/proposal/[id].tsx`. **Android notifications:** link a banking app per wallet (wallet create/edit); only linked apps are queued; one wallet per app, many wallets may share an app (AI disambiguates via notification body + optional account hint). Installed-app discovery needs a native rebuild whenever `moni-android-apps` or its `<queries>` package-visibility declarations change. Details: [docs/AI.md](../../docs/AI.md).
+**Chat tab** (`app/(tabs)/chat.tsx`): conversational back-and-forth — log transactions (text, inline `expo-camera`, hold-to-talk), ask finance questions (heuristic routing → `/v1/chat/analyze`), session history in MMKV (`lib/ai/chat/`) with rolling context window and 24h idle expiry.
 
-**Transfers:** manual entry via New Transaction → Transfer (from/to wallet pickers), or natural language in Moni Agent (e.g. "transfer 200 from Cash to Maybank"). Transfers are excluded from income/expense analytics.
+**Extraction queue** (background): MMKV queue → background processor → Go backend → `proposed_transactions` → review UI. **Silent capture entry points** (not shown in Chat thread): floating tab-bar button — tap opens `app/(routes)/scan/receipt.tsx` (live camera), long-press opens `app/(routes)/scan/listen.tsx` (narration). **Review UI:** `components/proposal-summary-sheet.tsx` shows a minimal popup for each pending proposal (Approve / Decline / "Edit details"); full form at `app/(routes)/proposal/[id].tsx`. **Android notifications:** link a banking app per wallet; only linked apps are queued. Details: [docs/AI.md](../../docs/AI.md).
+
+**Summary tab:** charts, tables, and budget data only — no AI analysis.
+
+**Transfers:** manual entry via New Transaction → Transfer, or natural language in Chat (e.g. "transfer 200 from Cash to Maybank"). Transfers are excluded from income/expense analytics.
 
 ## Tests
 

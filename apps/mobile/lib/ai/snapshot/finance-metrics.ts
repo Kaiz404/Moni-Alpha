@@ -1,30 +1,29 @@
 /**
- * Deterministic inputs for Moni Finance Assistant (multi-agent insights).
+ * Deterministic finance metrics snapshot for chat analysis.
  */
 import {
   buildBudgetCoachSnapshot,
   type BudgetCoachToolSnapshot,
   type BudgetRow,
-} from './budget-coach-metrics';
-import { buildInsightMetricSnapshot, type InsightMetricSnapshot, type TxForMetrics } from './insight-metrics';
+} from '../insights/budget-coach-metrics';
+import {
+  buildInsightMetricSnapshot,
+  type InsightMetricSnapshot,
+  type TxForMetrics,
+} from '../insights/insight-metrics';
 
-export type { BudgetRow };
+export type { BudgetRow, TxForMetrics };
 
 export type CalendarMonthTrendSnapshot = {
   currencyHint: string;
   currentMonthKey: string;
   previousMonthKey: string;
-  /** Expenses from 1st of current month through now */
   expenseCurrentMonthToDate: number;
-  /** Full previous calendar month expenses */
   expensePreviousCalendarMonth: number;
   dayOfMonthNow: number;
   daysInCurrentMonth: number;
-  /** Avg daily spend in current month so far */
   avgDailyExpenseCurrentMonth: number;
-  /** Previous month total / days in that month */
   avgDailyExpensePreviousMonth: number;
-  /** pct change: current month-to-date run-rate vs previous month daily average * days elapsed — simplified: compare totals with note in prompt */
   pctExpenseChangeVsPreviousFullMonth: number | null;
 };
 
@@ -33,7 +32,6 @@ export type SpendingStorySnapshot = {
   periodLabel: string;
   topCategories: { name: string; amount: number; sharePct: number }[];
   topMerchants: { name: string; amount: number; sharePct: number }[];
-  /** 0–1 Herfindahl on category shares — higher = more concentrated */
   categoryConcentration: number;
   expenseTransactionCount: number;
 };
@@ -183,8 +181,4 @@ export function buildFinanceAssistantToolSnapshot(
     budgetCoach,
     spendingStory,
   };
-}
-
-export function stableFinanceAssistantSnapshotString(s: FinanceAssistantToolSnapshot): string {
-  return JSON.stringify(s);
 }

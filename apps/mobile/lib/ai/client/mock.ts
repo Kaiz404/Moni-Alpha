@@ -6,12 +6,12 @@
 import { AI_UNAVAILABLE_REASON } from './config';
 import type {
   AiClient,
+  ChatAnalyzeRequest,
+  ChatAnalyzeResult,
   ExtractImageRequest,
   ExtractNotificationRequest,
   ExtractResult,
   ExtractTextRequest,
-  FinanceAssistantApiResult,
-  FinanceAssistantRequest,
 } from './types';
 
 const TAG = '[AiClient/mock]';
@@ -54,12 +54,11 @@ export const mockAiClient: AiClient = {
     });
   },
 
-  async generateFinanceAssistant(
-    req: FinanceAssistantRequest,
-  ): Promise<FinanceAssistantApiResult> {
+  async analyzeFinances(req: ChatAnalyzeRequest): Promise<ChatAnalyzeResult> {
     await simulateNetwork(300);
-    console.log(TAG, 'POST /v1/insights/finance-assistant', {
-      monthKey: req.snapshot.calendarMonth?.currentMonthKey,
+    console.log(TAG, 'POST /v1/chat/analyze', {
+      messageLength: req.message.length,
+      historyLength: req.history?.length ?? 0,
     });
     return { status: 'unavailable', reason: AI_UNAVAILABLE_REASON };
   },

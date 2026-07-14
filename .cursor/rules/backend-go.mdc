@@ -16,7 +16,7 @@ internal/config/    env loading (SUPABASE_URL, GROQ_API_KEY)
 internal/auth/      JWKS ES256 verification (lestrrat-go/jwx) + per-user rate limit
 internal/groq/      HTTP client, model constants, JSON-mode helpers
 internal/extract/   text/image/notification extraction + wallet ladder + prompts
-internal/insights/  finance assistant (3 parallel agents)
+internal/chat/      finance Q&A from pre-aggregated snapshot
 ```
 
 ## Conventions

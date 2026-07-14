@@ -22,6 +22,7 @@ import { getPendingCount } from "@/lib/ai/processing-queue";
 import { startBackgroundProcessor } from "@/lib/ai/background-processor";
 import { QueryProvider } from "@/lib/query/query-client";
 import { drainImageUploadQueue } from "@/lib/receipts/upload-queue";
+import { pruneIncompleteProposals } from "@/lib/supabase/proposed-transactions";
 import { applyStoredThemePreference } from "@/lib/theme/preference";
 
 applyStoredThemePreference();
@@ -75,6 +76,7 @@ export default function RootLayout() {
 
   // Drain pending image uploads whenever the app comes to foreground
   useEffect(() => {
+    pruneIncompleteProposals().catch(() => {});
     drainImageUploadQueue().catch(() => {});
 
     const sub = AppState.addEventListener("change", (nextState) => {

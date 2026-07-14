@@ -55,8 +55,12 @@ export async function drainImageUploadQueue(): Promise<number> {
         item.proposalId,
       );
       if (remoteUrl) {
-        await updateProposalImageUri(item.proposalId, remoteUrl);
-        uploaded++;
+        const linked = await updateProposalImageUri(item.proposalId, remoteUrl);
+        if (linked) {
+          uploaded++;
+        } else {
+          remaining.push(item);
+        }
       } else {
         remaining.push(item);
       }

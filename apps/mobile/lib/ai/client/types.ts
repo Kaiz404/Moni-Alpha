@@ -4,8 +4,10 @@
  */
 
 import type { RawNotification } from '@/lib/ai/notification-types';
-import type { MoniFinanceAssistantV1 } from '@repo/types';
-import type { FinanceAssistantToolSnapshot } from '@/lib/ai/insights/finance-assistant-metrics';
+import type { ChatAnalyzeResult, ChatHistoryMessage } from '@repo/types';
+import type { FinanceAssistantToolSnapshot } from '@/lib/ai/snapshot/finance-metrics';
+
+export type { ChatAnalyzeResult, ChatHistoryMessage };
 
 export type AiWalletContext = {
   id: string;
@@ -62,13 +64,11 @@ export type ExtractResult =
   | { status: 'skipped'; reason: string }
   | { status: 'unavailable'; reason: string };
 
-export type FinanceAssistantRequest = {
+export type ChatAnalyzeRequest = {
+  message: string;
   snapshot: FinanceAssistantToolSnapshot;
+  history?: ChatHistoryMessage[];
 };
-
-export type FinanceAssistantApiResult =
-  | { status: 'ok'; result: MoniFinanceAssistantV1; modelId: string }
-  | { status: 'unavailable'; reason: string };
 
 /**
  * Client interface for the Go AI backend.
@@ -78,7 +78,5 @@ export interface AiClient {
   extractFromText(req: ExtractTextRequest): Promise<ExtractResult>;
   extractFromImage(req: ExtractImageRequest): Promise<ExtractResult>;
   extractFromNotification(req: ExtractNotificationRequest): Promise<ExtractResult>;
-  generateFinanceAssistant(
-    req: FinanceAssistantRequest,
-  ): Promise<FinanceAssistantApiResult>;
+  analyzeFinances(req: ChatAnalyzeRequest): Promise<ChatAnalyzeResult>;
 }

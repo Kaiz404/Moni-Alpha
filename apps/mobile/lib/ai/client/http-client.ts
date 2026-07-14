@@ -6,13 +6,13 @@ import { AI_API_BASE_URL, AI_BACKEND_CONFIGURED, AI_UNAVAILABLE_REASON } from '.
 import { buildImagePayload } from './image-payload';
 import type {
   AiClient,
+  ChatAnalyzeRequest,
+  ChatAnalyzeResult,
   ExtractImageRequest,
   ExtractImageWireRequest,
   ExtractNotificationRequest,
   ExtractResult,
   ExtractTextRequest,
-  FinanceAssistantApiResult,
-  FinanceAssistantRequest,
 } from './types';
 
 async function getAccessToken(): Promise<string | null> {
@@ -107,14 +107,9 @@ export const httpAiClient: AiClient = {
     }
   },
 
-  async generateFinanceAssistant(
-    req: FinanceAssistantRequest,
-  ): Promise<FinanceAssistantApiResult> {
+  async analyzeFinances(req: ChatAnalyzeRequest): Promise<ChatAnalyzeResult> {
     try {
-      const data = await postJson<FinanceAssistantApiResult>(
-        '/v1/insights/finance-assistant',
-        req,
-      );
+      const data = await postJson<ChatAnalyzeResult>('/v1/chat/analyze', req);
       if (data?.status === 'ok' || data?.status === 'unavailable') return data;
       return { status: 'unavailable', reason: 'Unexpected AI backend response' };
     } catch (e) {

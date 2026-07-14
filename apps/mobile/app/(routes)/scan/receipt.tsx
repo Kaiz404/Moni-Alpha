@@ -16,7 +16,7 @@ import { captureLocationSnapshot } from '@/lib/location/location-snapshot';
 
 const TAG = '[Moni/Scan]';
 
-/** Queues a captured/picked receipt image through the same pipeline as the Moni Agent tab. */
+/** Queues a captured/picked receipt image through the same extraction pipeline as the Chat tab. */
 async function queueReceiptImage(uri: string) {
   const id = randomUUID();
   const createdAt = new Date().toISOString();

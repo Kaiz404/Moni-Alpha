@@ -1,4 +1,4 @@
-package insights
+package chat
 
 import (
 	"net/http"
@@ -15,14 +15,18 @@ func NewHandler(svc *Service) *Handler {
 }
 
 func (h *Handler) Register(r gin.IRoutes) {
-	r.POST("/insights/finance-assistant", h.financeAssistant)
+	r.POST("/chat/analyze", h.analyze)
 }
 
-func (h *Handler) financeAssistant(c *gin.Context) {
-	var req Request
+func (h *Handler) analyze(c *gin.Context) {
+	var req AnalyzeRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body", "details": err.Error()})
 		return
 	}
-	c.JSON(http.StatusOK, h.svc.Generate(c.Request.Context(), req))
+	if err := ValidateSnapshot(req.Snapshot); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid snapshot", "details": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, h.svc.Analyze(c.Request.Context(), req))
 }

@@ -6,15 +6,15 @@ Stateless inference gateway: receives AI requests from the mobile app, routes th
 
 All `/v1` routes require `Authorization: Bearer <supabase-user-jwt>`.
 
-| Method | Path | Purpose | Model |
-| --- | --- | --- | --- |
-| GET | `/healthz` | Liveness (no auth) | — |
-| POST | `/v1/extract/text` | Transaction from free text | `llama-3.1-8b-instant` (fallback `llama-3.3-70b-versatile`) |
-| POST | `/v1/extract/image` | Transaction from receipt image (base64 or URL) | `meta-llama/llama-4-scout-17b-16e-instruct` |
-| POST | `/v1/extract/notification` | Transaction from Android notification | `llama-3.1-8b-instant` |
-| POST | `/v1/insights/finance-assistant` | 3-agent finance insights | `llama-3.3-70b-versatile` |
+| Method | Path                       | Purpose                                          | Model                                                       |
+| ------ | -------------------------- | ------------------------------------------------ | ----------------------------------------------------------- |
+| GET    | `/healthz`                 | Liveness (no auth)                               | —                                                           |
+| POST   | `/v1/extract/text`         | Transaction from free text                       | `llama-3.1-8b-instant` (fallback `llama-3.3-70b-versatile`) |
+| POST   | `/v1/extract/image`        | Transaction from receipt image (base64 or URL)   | `meta-llama/llama-4-scout-17b-16e-instruct`                 |
+| POST   | `/v1/extract/notification` | Transaction from Android notification            | `llama-3.1-8b-instant`                                      |
+| POST   | `/v1/chat/analyze`         | Concise finance Q&A from pre-aggregated snapshot | `llama-3.3-70b-versatile`                                   |
 
-Extraction responses are a discriminated union: `{ status: "ok", extraction }`, `{ status: "skipped", reason }`, or `{ status: "unavailable", reason }`. Errors use `{ error, details? }`. The wire contract mirrors `apps/mobile/lib/ai/client/types.ts`.
+Extraction responses are a discriminated union: `{ status: "ok", extraction }`, `{ status: "skipped", reason }`, or `{ status: "unavailable", reason }`. Chat analyze returns `{ status: "ok", reply, modelId }` or `{ status: "unavailable", reason }`. Errors use `{ error, details? }`. The wire contract mirrors `apps/mobile/lib/ai/client/types.ts`.
 
 ## Auth
 
@@ -69,4 +69,4 @@ Then set `EXPO_PUBLIC_AI_API_URL` in `apps/mobile/.env` to the Cloud Run URL.
 
 ## Model allocation rationale
 
-See [docs/AI.md](../../docs/AI.md) for latency/cost/rate-limit analysis. Short version: live UX flows (text, receipts) use the fastest models with tight retry windows and fail fast to `unavailable` (the mobile queue retries); notification processing tolerates longer 429 waits; insights favor prose quality over speed.
+See [docs/AI.md](../../docs/AI.md) for latency/cost/rate-limit analysis. Short version: live UX flows (text, receipts) use the fastest models with tight retry windows and fail fast to `unavailable` (the mobile queue retries); notification processing tolerates longer 429 waits; chat analysis favors concise prose over speed.

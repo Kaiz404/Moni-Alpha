@@ -1,5 +1,5 @@
 // Moni AI backend: stateless Gin service that routes mobile AI requests
-// (text, receipt images, notifications, insights) to Groq. Auth is a
+// (text, receipt images, notifications, chat analysis) to Groq. Auth is a
 // Supabase user JWT verified against the project JWKS; no database access.
 package main
 
@@ -16,9 +16,9 @@ import (
 
 	"github.com/kaiz404/moni/backend/internal/auth"
 	"github.com/kaiz404/moni/backend/internal/config"
+	"github.com/kaiz404/moni/backend/internal/chat"
 	"github.com/kaiz404/moni/backend/internal/extract"
 	"github.com/kaiz404/moni/backend/internal/groq"
-	"github.com/kaiz404/moni/backend/internal/insights"
 )
 
 func main() {
@@ -37,7 +37,7 @@ func main() {
 
 	groqClient := groq.NewClient(cfg.GroqAPIKey, cfg.GroqBaseURL)
 	extractHandler := extract.NewHandler(extract.NewService(groqClient))
-	insightsHandler := insights.NewHandler(insights.NewService(groqClient))
+	chatHandler := chat.NewHandler(chat.NewService(groqClient))
 
 	// 20 AI requests/min per user (burst 8) is generous for one person and
 	// keeps a single abusive client from draining the org-level Groq quota.
@@ -55,7 +55,7 @@ func main() {
 
 	v1 := r.Group("/v1", verifier.Middleware(), limiter.Middleware())
 	extractHandler.Register(v1)
-	insightsHandler.Register(v1)
+	chatHandler.Register(v1)
 
 	srv := &http.Server{
 		Addr:              ":" + cfg.Port,

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Platform,
@@ -26,23 +26,9 @@ import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { GradientCard } from '@/components/ui/gradient-card';
 import { getWalletCardStyle } from '@/constants/wallet-card-styles';
 import { useTransactionPinmap, type TransactionPinPoint } from '@/hooks/use-transaction-heatmap';
-import { MoniFinanceAssistantSection } from '@/components/moni-finance-assistant-section';
-import {
-  computeFinanceAssistantInputHash,
-  runFinanceAssistant,
-} from '@/lib/ai/insights/finance-assistant';
-import type { TxForMetrics } from '@/lib/ai/insights/insight-metrics';
 import { getCategoryNameRows } from '@/lib/supabase/categories';
-import {
-  AI_INSIGHT_CONTEXT_GLOBAL,
-  AI_INSIGHT_FEATURE_MONI_FINANCE_ASSISTANT,
-  getAiInsightSlot,
-  upsertAiInsight,
-} from '@/lib/supabase/ai-insights';
-import { getCategoryBudgets } from '@/lib/supabase/category-budgets';
 import { getTransactions } from '@/lib/supabase/transactions';
 import { getWallets } from '@/lib/supabase/wallets';
-import type { MoniFinanceAssistantV1 } from '@repo/types';
 
 const balanceCardStyle = getWalletCardStyle('emerald-grain');
 
@@ -92,23 +78,15 @@ export default function SummaryScreen() {
   const [categoryMap, setCategoryMap] = useState<Record<string, string>>({});
   const [selectedPin] = useState<TransactionPinPoint | null>(null);
 
-  const [financeInsight, setFinanceInsight] = useState<MoniFinanceAssistantV1 | null>(null);
-  const [budgetRows, setBudgetRows] = useState<{ categoryId: string; amount: number }[]>([]);
-  const [storedInsightHash, setStoredInsightHash] = useState<string | null>(null);
-  const [liveInputHash, setLiveInputHash] = useState<string | null>(null);
-  const [insightGenerating, setInsightGenerating] = useState(false);
-  const [insightError, setInsightError] = useState<string | null>(null);
-
   const loadData = useCallback(async () => {
     setLoading(true);
     setError(null);
 
     try {
-      const [txData, walletData, categoryRows, budgets] = await Promise.all([
+      const [txData, walletData, categoryRows] = await Promise.all([
         getTransactions(undefined, 8000),
         getWallets(),
         getCategoryNameRows(),
-        getCategoryBudgets(),
       ]);
 
       setTransactions(txData as TransactionItem[]);
@@ -118,19 +96,6 @@ export default function SummaryScreen() {
           categoryRows.map((row) => [row.id, row.name ?? 'Uncategorized'])
         )
       );
-      setBudgetRows(budgets.map((b) => ({ categoryId: b.categoryId, amount: b.amount })));
-
-      const row = await getAiInsightSlot(AI_INSIGHT_FEATURE_MONI_FINANCE_ASSISTANT, AI_INSIGHT_CONTEXT_GLOBAL);
-      if (row?.status === 'ready' && row.result?.schema === 'moni_finance_assistant_v1') {
-        setFinanceInsight(row.result);
-        setStoredInsightHash(row.inputHash);
-      } else if (!row) {
-        setFinanceInsight(null);
-        setStoredInsightHash(null);
-      } else {
-        // Keep showing the last successful run; only replace when user taps Regenerate or DB has a ready row.
-        setStoredInsightHash(row.inputHash ?? null);
-      }
     } catch (e) {
       console.error('Error loading summary data:', e);
       setError(e instanceof Error ? e.message : 'Failed to load summary data');
@@ -138,69 +103,6 @@ export default function SummaryScreen() {
       setLoading(false);
     }
   }, []);
-
-  const currencyHint = useMemo(
-    () => wallets[0]?.currency?.trim() || 'USD',
-    [wallets],
-  );
-
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      if (!transactions.length && !wallets.length) {
-        setLiveInputHash(null);
-        return;
-      }
-      const txs: TxForMetrics[] = transactions.map((t) => ({
-        amount: t.amount,
-        type: t.type,
-        categoryId: t.categoryId,
-        merchant: t.merchant ?? null,
-        transactionDate: t.transactionDate,
-      }));
-      const { inputHash } = await computeFinanceAssistantInputHash(txs, categoryMap, budgetRows, currencyHint);
-      if (!cancelled) setLiveInputHash(inputHash);
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [transactions, categoryMap, currencyHint, wallets.length, budgetRows]);
-
-  const insightStale =
-    storedInsightHash != null &&
-    liveInputHash != null &&
-    storedInsightHash !== liveInputHash;
-
-  const generateInsights = useCallback(async () => {
-    setInsightError(null);
-    setInsightGenerating(true);
-    try {
-      const txs: TxForMetrics[] = transactions.map((t) => ({
-        amount: t.amount,
-        type: t.type,
-        categoryId: t.categoryId,
-        merchant: t.merchant ?? null,
-        transactionDate: t.transactionDate,
-      }));
-      const out = await runFinanceAssistant(txs, categoryMap, budgetRows, currencyHint);
-      setFinanceInsight(out.result);
-      setStoredInsightHash(out.inputHash);
-      await upsertAiInsight({
-        featureKey: AI_INSIGHT_FEATURE_MONI_FINANCE_ASSISTANT,
-        contextKey: AI_INSIGHT_CONTEXT_GLOBAL,
-        inputHash: out.inputHash,
-        status: 'ready',
-        toolSnapshot: out.snapshot,
-        result: out.result,
-        errorMessage: null,
-        modelId: out.trace.modelId,
-      });
-    } catch (e) {
-      setInsightError(e instanceof Error ? e.message : 'Could not generate insights');
-    } finally {
-      setInsightGenerating(false);
-    }
-  }, [transactions, categoryMap, currencyHint, budgetRows]);
 
   useFocusEffect(
     useCallback(() => {
@@ -425,17 +327,6 @@ export default function SummaryScreen() {
           )}
         </View>
       </View>
-
-      <MoniFinanceAssistantSection
-        insight={financeInsight}
-        generating={insightGenerating}
-        stale={insightStale}
-        errorMessage={insightError}
-        onRegenerate={generateInsights}
-        disabled={loading}
-        hasBudgetsConfigured={budgetRows.length > 0}
-        onManageBudgets={() => router.push('/budget/budgets')}
-      />
 
       <View className="mb-4 rounded-2xl border border-border bg-card p-3">
         <Text className="mb-2 text-base font-semibold text-foreground">Transaction Pinmap</Text>

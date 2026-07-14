@@ -126,12 +126,12 @@ function proposalFromExtraction(
 
 async function persistProposal(
   proposal: CreateProposedTransaction,
+  proposalId: string,
   locationSnapshot: LocationSnapshot | null | undefined,
   logger?: TraceLogger,
 ): Promise<RunExtractionResult> {
   try {
-    const created = await createProposedTransaction(proposal);
-    const proposalId = (created as { id?: string })?.id;
+    const created = await createProposedTransaction(proposal, { id: proposalId });
     if (proposalId && locationSnapshot) {
       saveProposalLocationSnapshot(proposalId, locationSnapshot);
     }
@@ -145,7 +145,7 @@ async function persistProposal(
       created: true,
       skipped: false,
       reason: `Created from ${proposal.sourceType}`,
-      proposalId,
+      proposalId: created.id,
     };
   } catch (e) {
     const message = e instanceof Error ? e.message : String(e);
@@ -196,6 +196,7 @@ export async function runExtraction(
               wallets,
               defaultWalletId,
             ),
+            item.id,
             item.locationSnapshot,
             logger,
           );
@@ -225,6 +226,7 @@ export async function runExtraction(
               defaultWalletId,
               { forceDefaultWallet: true },
             ),
+            item.id,
             item.locationSnapshot,
             logger,
           );
@@ -280,6 +282,7 @@ export async function runExtraction(
               defaultWalletId,
               { currencyFromWallet: false },
             ),
+            item.id,
             item.locationSnapshot,
             logger,
           );
