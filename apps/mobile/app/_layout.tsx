@@ -14,7 +14,7 @@ import { useUniwind } from "uniwind";
 import "../global.css";
 
 import { AuthGuard } from "@/components/auth-guard";
-import { ProposalReviewModal } from "@/components/proposal-review-modal";
+import { ProposalSummarySheet } from "@/components/proposal-summary-sheet";
 import { StoreSyncActivator } from "@/components/store-sync-activator";
 import { useThemeTokens } from "@/hooks/use-theme-tokens";
 import { AuthProvider } from "@/lib/auth/auth-context";
@@ -101,7 +101,7 @@ export default function RootLayout() {
               />
               <Stack.Screen name="budgets" options={{ headerShown: false }} />
             </Stack>
-            <ProposalReviewModal />
+            <ProposalSummarySheet />
           </AuthGuard>
           <StatusBar style={theme === "dark" ? "light" : "dark"} />
         </AuthProvider>
