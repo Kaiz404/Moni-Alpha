@@ -38,6 +38,13 @@ export function ProposalSummarySheet() {
   const proposalsRef = useRef(proposals);
   proposalsRef.current = proposals;
   const appStateRef = useRef(AppState.currentState);
+  /** IDs removed locally while delete/approve syncs — prevents reload races from re-showing the sheet. */
+  const handledIdsRef = useRef(new Set<string>());
+
+  const withoutHandled = useCallback(
+    (rows: ProposedTransaction[]) => rows.filter((p) => !handledIdsRef.current.has(p.id)),
+    [],
+  );
 
   const loadData = useCallback(async () => {
     const quietRefresh = proposalsRef.current.length > 0;
@@ -48,7 +55,7 @@ export function ProposalSummarySheet() {
         getWallets(),
         getCategoryNameRows(),
       ]);
-      setProposals(pending);
+      setProposals(withoutHandled(pending));
       setWallets(
         ws.map((w) => ({
           id: w.id,
@@ -65,7 +72,7 @@ export function ProposalSummarySheet() {
     } finally {
       if (!quietRefresh) setIsLoading(false);
     }
-  }, []);
+  }, [withoutHandled]);
 
   useEffect(() => {
     loadData();
@@ -107,35 +114,42 @@ export function ProposalSummarySheet() {
     : current?.categoryHint ?? null;
   const canQuickApprove = !isTransfer && !!resolvedWalletId;
 
-  const handleDismiss = useCallback(() => {
-    setProposals((prev) => prev.slice(1));
+  const removeProposal = useCallback((id: string) => {
+    handledIdsRef.current.add(id);
+    setProposals((prev) => prev.filter((p) => p.id !== id));
   }, []);
 
   const handleReject = useCallback(async () => {
     if (!current || isActioning) return;
+    const id = current.id;
+    removeProposal(id);
     setIsActioning(true);
     try {
-      await rejectProposedTransaction(current.id);
-      handleDismiss();
+      await rejectProposedTransaction(id);
     } catch (e) {
+      handledIdsRef.current.delete(id);
       console.error('[ProposalSummary] reject error:', e);
+      await loadData();
     } finally {
       setIsActioning(false);
     }
-  }, [current, isActioning, handleDismiss]);
+  }, [current, isActioning, removeProposal, loadData]);
 
   const handleApprove = useCallback(async () => {
     if (!current || isActioning || !resolvedWalletId) return;
+    const id = current.id;
+    removeProposal(id);
     setIsActioning(true);
     try {
       await approveProposedTransaction(current, { walletId: resolvedWalletId });
-      handleDismiss();
     } catch (e) {
+      handledIdsRef.current.delete(id);
       console.error('[ProposalSummary] approve error:', e);
+      await loadData();
     } finally {
       setIsActioning(false);
     }
-  }, [current, isActioning, resolvedWalletId, handleDismiss]);
+  }, [current, isActioning, resolvedWalletId, removeProposal, loadData]);
 
   const handleEditDetails = useCallback(() => {
     if (!current) return;
@@ -150,9 +164,9 @@ export function ProposalSummarySheet() {
     (isTransfer ? 'Transfer' : isIncome ? 'Income' : 'Expense');
 
   return (
-    <Modal visible={visible} transparent animationType="slide" statusBarTranslucent onRequestClose={handleDismiss}>
+    <Modal visible={visible} transparent animationType="slide" statusBarTranslucent onRequestClose={handleReject}>
       <View className="flex-1 justify-end bg-black/40">
-        <Pressable className="flex-1" onPress={handleDismiss} accessibilityLabel="Dismiss" />
+        <View className="flex-1" accessibilityElementsHidden importantForAccessibility="no-hide-descendants" />
         <View className="rounded-t-3xl bg-background px-6 pb-8 pt-5">
           <View className="mb-4 flex-row items-center gap-2">
             <View className="h-8 w-8 items-center justify-center rounded-full bg-background-muted">

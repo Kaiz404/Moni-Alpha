@@ -174,10 +174,12 @@ export async function updateProposalImageUri(id: string, remoteUrl: string): Pro
 }
 
 export async function deleteProposedTransaction(id: string): Promise<void> {
-  patchRow(proposedTransactions$, id, {
-    deleted: true,
-    updated_at: new Date().toISOString(),
-  });
+  const row$ = proposedTransactions$[id] as { delete?: () => void } | undefined;
+  if (!row$?.delete) {
+    throw new Error(`Cannot delete missing proposal: ${id}`);
+  }
+  // Legend-State soft-delete: marks deleted, removes from the observable, and syncs.
+  row$.delete();
   clearProposalLocationSnapshot(id);
   emitProposedTransactionsChanged();
 }
