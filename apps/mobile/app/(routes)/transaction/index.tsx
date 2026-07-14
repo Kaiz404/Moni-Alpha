@@ -16,7 +16,11 @@ import { useAuth } from '@/lib/auth/auth-context';
 import { deleteTransaction, getTransactions } from '@/lib/supabase/transactions';
 import { formatTransferLabel } from '@/lib/supabase/transaction-balance';
 import { getWallets } from '@/lib/supabase/wallets';
-import { resolveDefaultWalletId } from '@/lib/wallets/default-wallet';
+import { getDefaultWalletId } from '@/lib/wallets/default-wallet';
+import {
+  displayCurrencyForProposal,
+  resolveInitialWalletId,
+} from '@/lib/wallets/proposal-wallet';
 import { useProposedTransactions } from '@/hooks/use-proposed-transactions';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { getCategoryNameRows } from '@/lib/supabase/categories';
@@ -105,15 +109,18 @@ type TxRow = {
 
 function ProposalCard({
   item,
+  wallets,
   onApprove,
   onReject,
 }: {
   item: ProposedTransaction;
+  wallets: WalletItem[];
   onApprove: (p: ProposedTransaction) => void;
   onReject: (id: string) => void;
 }) {
   const isExpense = item.type === 'expense' || !item.type;
   const isTransfer = item.type === 'transfer';
+  const displayCurrency = displayCurrencyForProposal(item, wallets, getDefaultWalletId());
   return (
     <View className="mb-2 rounded-xl border border-border bg-card p-4 shadow-sm">
       <View className="flex-row items-center justify-between mb-1">
@@ -133,7 +140,7 @@ function ProposalCard({
               : 'text-green-600 dark:text-green-400'
         }`}>
         {isTransfer ? '' : isExpense ? '−' : '+'}
-        {item.currency ?? ''} {item.amount?.toFixed(2) ?? '—'}
+        {displayCurrency} {item.amount?.toFixed(2) ?? '—'}
       </Text>
       <Text className="mt-1 text-sm text-foreground" numberOfLines={1}>
         {item.merchant || item.description || item.type || 'Transaction'}
@@ -327,21 +334,16 @@ export default function TransactionsScreen() {
         return;
       }
 
-      if (proposal.walletId) {
-        try {
-          await approve(proposal, { walletId: proposal.walletId });
-          Alert.alert('Approved', 'Transaction has been added to your records.');
-        } catch (e) {
-          Alert.alert('Error', e instanceof Error ? e.message : 'Failed to approve');
-        }
-        return;
-      }
-
       const walletOptions = await fetchWallets();
-      const defaultWalletId = resolveDefaultWalletId(walletOptions);
-      if (defaultWalletId) {
+      const options = mapWalletOptions(walletOptions);
+      const initialWalletId = resolveInitialWalletId(
+        proposal,
+        options,
+        getDefaultWalletId(),
+      );
+      if (initialWalletId) {
         try {
-          await approve(proposal, { walletId: defaultWalletId });
+          await approve(proposal, { walletId: initialWalletId });
           Alert.alert('Approved', 'Transaction has been added to your records.');
         } catch (e) {
           Alert.alert('Error', e instanceof Error ? e.message : 'Failed to approve');
@@ -349,7 +351,7 @@ export default function TransactionsScreen() {
         return;
       }
 
-      setWalletPickerWallets(mapWalletOptions(walletOptions));
+      setWalletPickerWallets(options);
       setWalletPickerFlow({ proposal, step: 'single' });
       setWalletPickerVisible(true);
     },
@@ -542,6 +544,7 @@ export default function TransactionsScreen() {
                   <ProposalCard
                     key={p.id}
                     item={p}
+                    wallets={mapWalletOptions(wallets)}
                     onApprove={handleApprove}
                     onReject={handleReject}
                   />

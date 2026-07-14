@@ -52,7 +52,6 @@ Required:
 
 Best-effort (infer if possible, null if not):
 - type: "income", "expense", or "transfer"
-- currency: 3-letter ISO code (default "MYR" if unclear)
 - merchant: business/person/app name (null for transfers between own accounts)
 - description: short summary of what the transaction is
 - wallet_id: id from AVAILABLE_WALLETS for the source wallet (expenses, income, transfers)
@@ -64,7 +63,7 @@ Best-effort (infer if possible, null if not):
 - reasoning: one short sentence explaining your extraction
 
 Rules:
-1. Return ONLY valid JSON with keys: amount, type, currency, merchant, description, wallet_id, wallet_hint, transfer_to_wallet_id, transfer_to_wallet_hint, category_hint, confidence, reasoning.
+1. Return ONLY valid JSON with keys: amount, type, merchant, description, wallet_id, wallet_hint, transfer_to_wallet_id, transfer_to_wallet_hint, category_hint, confidence, reasoning. Do not include currency — the app uses each wallet's currency.
 2. If the user says "spent", "paid", "bought", or sent money to a person/merchant -> type is "expense".
 3. If the user says "received", "earned", "got paid" from an external payer -> type is "income".
 4. If the user moves money between their own accounts -> type is "transfer" and set wallet_id + transfer_to_wallet_id (or hints when unsure). This includes deposits, withdrawals, top-ups, and explicit "from X to Y" moves — see transfer rules below.
@@ -83,23 +82,19 @@ Required:
 
 Best-effort (infer if possible, null if not):
 - type: "income" or "expense" (receipts are usually "expense")
-- currency: 3-letter ISO code
 - merchant: the store/business name from the receipt
 - description: 2-4 sentences: what category of purchase this is, main items or departments, quantities or notable lines if readable. Avoid generic one-word answers.
-- wallet_id: id from AVAILABLE_WALLETS for how the user paid
-- wallet_hint: payment method text when wallet_id is null (e.g. "Visa ending 4242")
 - category_hint: spending category (food, groceries, transport, health, entertainment, utilities, etc.)
 - confidence: number 0-1
 - reasoning: one short sentence explaining what you read from the receipt
 
 Rules:
-1. Return ONLY valid JSON with keys: amount, type, currency, merchant, description, wallet_id, wallet_hint, category_hint, confidence, reasoning.
+1. Return ONLY valid JSON with keys: amount, type, merchant, description, category_hint, confidence, reasoning. Do not include currency or wallet fields — the app assigns the user's default wallet and its currency.
 2. Prefer the final amount paid (including tax) — "Grand total", "Total due", "Payment amount", "Amount paid", "NETT TOTAL", "AMOUNT PAYABLE" — over subtotal before tax.
 3. If both a subtotal and a larger tax-inclusive total appear, use the TAX-INCLUSIVE / FINAL total — NOT the pre-tax subtotal.
 4. The merchant name is usually at the top of the receipt.
 5. Default type to "expense" for receipts.
-6. If a user message states how they paid and the receipt does not contradict it, pick the matching wallet_id from AVAILABLE_WALLETS.
-7. Ignore unrelated numbers (change given, loyalty points, unit prices without a clear line total).` + walletSelectionRules
+6. Ignore unrelated numbers (change given, loyalty points, unit prices without a clear line total).`
 
 const notificationDetectionPrompt = `You are a strict notification transaction detector for a personal finance app.
 

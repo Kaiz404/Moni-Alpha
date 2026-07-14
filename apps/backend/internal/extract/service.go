@@ -16,7 +16,14 @@ func NewService(client *groq.Client) *Service {
 	return &Service{groq: client}
 }
 
-const defaultCurrency = "MYR"
+const defaultCurrency = "USD"
+
+type currencyMode int
+
+const (
+	currencyFromWallet currencyMode = iota
+	currencyFromLLM
+)
 
 func walletPreamble(wallets []WalletContext) string {
 	return FormatWalletsForPrompt(wallets) + "\n\n"
@@ -49,7 +56,7 @@ func (s *Service) FromText(ctx context.Context, req TextRequest) Result {
 		return Skipped("No transaction amount found in text")
 	}
 
-	return OK(s.finalize(out, req.Wallets, req.Text, 0.85, nil))
+	return OK(s.finalize(out, req.Wallets, req.Text, 0.85, nil, currencyFromWallet, false))
 }
 
 // FromImage extracts a transaction from a receipt image. Accepts a public
@@ -67,7 +74,7 @@ func (s *Service) FromImage(ctx context.Context, req ImageRequest) Result {
 		return Skipped("No image data provided — upload the receipt or include base64")
 	}
 
-	userText := walletPreamble(req.Wallets) + "Extract the transaction from this receipt."
+	userText := "Extract the transaction from this receipt."
 	if strings.TrimSpace(req.UserContext) != "" {
 		userText += "\nUser message: " + req.UserContext
 	}
@@ -92,7 +99,7 @@ func (s *Service) FromImage(ctx context.Context, req ImageRequest) Result {
 		return Skipped("Could not read a payable amount from the receipt")
 	}
 
-	return OK(s.finalize(out, req.Wallets, req.UserContext, 0.8, nil))
+	return OK(s.finalize(out, req.Wallets, req.UserContext, 0.8, nil, currencyFromWallet, true))
 }
 
 // FromNotification classifies and extracts a transaction from an Android
@@ -141,7 +148,7 @@ func (s *Service) FromNotification(ctx context.Context, req NotificationRequest)
 		Reasoning:    out.Reasoning,
 	}
 	extraCtx := req.Notification.PackageNameForRouting() + " " + combined
-	return OK(s.finalize(ex, req.Wallets, extraCtx, 0.7, req.LockedWalletID))
+	return OK(s.finalize(ex, req.Wallets, extraCtx, 0.7, req.LockedWalletID, currencyFromLLM, false))
 }
 
 // finalize normalizes LLM output and resolves the wallet.
@@ -151,15 +158,12 @@ func (s *Service) finalize(
 	extraContext string,
 	defaultConfidence float64,
 	lockedWalletID *string,
+	currMode currencyMode,
+	skipWalletInference bool,
 ) Extraction {
 	txType := strings.ToLower(strings.TrimSpace(out.Type))
 	if txType != "income" && txType != "expense" && txType != "transfer" {
 		txType = "expense"
-	}
-
-	currency := strings.ToUpper(strings.TrimSpace(out.Currency))
-	if len(currency) != 3 {
-		currency = defaultCurrency
 	}
 
 	confidence := defaultConfidence
@@ -172,11 +176,16 @@ func (s *Service) finalize(
 		reasoning = "Extracted by Moni AI backend"
 	}
 
-	walletID := ResolveWalletWithLock(wallets, lockedWalletID, out.WalletID, out.WalletHint, extraContext)
+	var walletID *string
+	if skipWalletInference {
+		walletID = nil
+	} else {
+		walletID = ResolveWalletWithLock(wallets, lockedWalletID, out.WalletID, out.WalletHint, extraContext)
+	}
 
 	var transferToWalletID *string
 	transferHint := emptyToNil(out.TransferToWalletHint)
-	if txType == "transfer" {
+	if txType == "transfer" && !skipWalletInference {
 		transferToWalletID = ResolveWallet(wallets, out.TransferToWalletID, transferHint, "")
 		if walletID != nil && transferToWalletID != nil && *walletID == *transferToWalletID {
 			transferToWalletID = nil
@@ -189,6 +198,8 @@ func (s *Service) finalize(
 		merchant = nil
 		categoryHint = nil
 	}
+
+	currency := resolveCurrency(currMode, out.Currency, wallets, walletID)
 
 	return Extraction{
 		Amount:               *out.Amount,
@@ -204,6 +215,24 @@ func (s *Service) finalize(
 		Confidence:           confidence,
 		Reasoning:            reasoning,
 	}
+}
+
+func resolveCurrency(mode currencyMode, llmCurrency string, wallets []WalletContext, walletID *string) string {
+	if mode == currencyFromWallet {
+		if c := CurrencyForWallet(wallets, walletID); c != "" {
+			return c
+		}
+		return defaultCurrency
+	}
+
+	currency := strings.ToUpper(strings.TrimSpace(llmCurrency))
+	if len(currency) == 3 {
+		return currency
+	}
+	if c := CurrencyForWallet(wallets, walletID); c != "" {
+		return c
+	}
+	return defaultCurrency
 }
 
 func emptyToNil(s *string) *string {

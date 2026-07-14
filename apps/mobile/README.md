@@ -22,7 +22,7 @@ Env: copy `.env.example` to `.env` (Supabase publishable key, AI backend URL, Go
 | `lib/auth/` | Auth context (email/password + native Google Sign-In) |
 | `lib/mmkv/` | MMKV instances: auth session, store cache, upload queue, UI preferences (theme, default wallet) |
 | `lib/theme/` | Theme preference ↔ Uniwind (`light` / `dark` / `system`) |
-| `lib/wallets/` | Default wallet preference (`profiles.preferences.default_wallet_id`, MMKV cache) for AI fallback |
+| `lib/wallets/` | Default wallet preference (`profiles.preferences.default_wallet_id`, MMKV cache) and proposal wallet/currency resolution for AI |
 | `lib/ai/` | Processing queue, background processor, AI client (HTTP ↔ Go backend, mock fallback) |
 | `lib/notifications/` | Prefilter, package routing, linked-app MMKV cache, `moni-android-apps` (PackageManager + Android 11 `<queries>`) |
 | `lib/receipts/` | Local receipt image save + Storage upload queue |
@@ -35,7 +35,7 @@ Tokens are CSS-first in `global.css`. Prefer semantic classes (`bg-primary`, `te
 
 Appearance: Profile → Appearance (`light` default; `system` follows the device). Persisted in MMKV via `lib/theme/preference.ts`.
 
-Default wallet: Profile → Default wallet. Synced in `profiles.preferences.default_wallet_id`; cached locally for background AI. When AI cannot infer a wallet (text, receipt, or notification), proposals use this wallet.
+Default wallet: Profile → Default wallet. Synced in `profiles.preferences.default_wallet_id`; cached locally for background AI. Text/receipt proposals use this wallet when AI cannot infer one (receipts always). Currency on proposals follows the selected wallet — change wallet in review to change currency.
 
 ## AI
 

@@ -13,10 +13,11 @@ import { passesTransactionPrefilter } from '@/lib/ai/notification-types';
 import { resolveNotificationPackageName, enrichNotificationPackage } from '@/lib/notifications/notification-package';
 import { resolveNotificationCandidates } from '@/lib/notifications/notification-routing';
 import type { RawNotification } from '@/lib/ai/notification-types';
+import { getDefaultWalletId } from '@/lib/wallets/default-wallet';
 import {
-  getDefaultWalletId,
-  resolveDefaultWalletId,
-} from '@/lib/wallets/default-wallet';
+  FALLBACK_CURRENCY,
+  finalizeProposalWallet,
+} from '@/lib/wallets/proposal-wallet';
 
 export type TraceEvent = {
   stage: 'extraction' | 'extractor' | 'creator';
@@ -76,17 +77,6 @@ async function loadWalletsForNotificationRouting() {
   }));
 }
 
-function applyDefaultWallet(
-  proposal: CreateProposedTransaction,
-  candidateWallets: readonly { id: string }[],
-  defaultWalletId: string | null,
-): CreateProposedTransaction {
-  if (proposal.walletId) return proposal;
-  const resolved = resolveDefaultWalletId(candidateWallets, defaultWalletId);
-  if (!resolved) return proposal;
-  return { ...proposal, walletId: resolved };
-}
-
 function proposalFromExtraction(
   source: {
     sourceType: 'text' | 'image' | 'notification';
@@ -114,7 +104,10 @@ function proposalFromExtraction(
     transferToWalletId: extraction.transferToWalletId,
     transferToWalletHint: extraction.transferToWalletHint,
     amount: extraction.amount,
-    currency: extraction.currency || 'MYR',
+    currency:
+      source.sourceType === 'notification'
+        ? extraction.currency || FALLBACK_CURRENCY
+        : FALLBACK_CURRENCY,
     type: extraction.type,
     description:
       extraction.description ??
@@ -145,6 +138,7 @@ async function persistProposal(
     trace(logger, 'creator', 'created', {
       proposalId,
       walletId: proposal.walletId,
+      currency: proposal.currency,
       sourceType: proposal.sourceType,
     });
     return {
@@ -194,7 +188,7 @@ export async function runExtraction(
         const mapped = mapClientResult(result, logger);
         if ('status' in mapped && mapped.status === 'ok') {
           return persistProposal(
-            applyDefaultWallet(
+            finalizeProposalWallet(
               proposalFromExtraction(
                 { sourceType: 'text', sourceText: item.text },
                 mapped.extraction,
@@ -218,7 +212,7 @@ export async function runExtraction(
         const mapped = mapClientResult(result, logger);
         if ('status' in mapped && mapped.status === 'ok') {
           return persistProposal(
-            applyDefaultWallet(
+            finalizeProposalWallet(
               proposalFromExtraction(
                 {
                   sourceType: 'image',
@@ -229,6 +223,7 @@ export async function runExtraction(
               ),
               wallets,
               defaultWalletId,
+              { forceDefaultWallet: true },
             ),
             item.locationSnapshot,
             logger,
@@ -270,7 +265,7 @@ export async function runExtraction(
         const mapped = mapClientResult(result, logger);
         if ('status' in mapped && mapped.status === 'ok') {
           return persistProposal(
-            applyDefaultWallet(
+            finalizeProposalWallet(
               proposalFromExtraction(
                 {
                   sourceType: 'notification',
@@ -283,6 +278,7 @@ export async function runExtraction(
               ),
               candidates,
               defaultWalletId,
+              { currencyFromWallet: false },
             ),
             item.locationSnapshot,
             logger,

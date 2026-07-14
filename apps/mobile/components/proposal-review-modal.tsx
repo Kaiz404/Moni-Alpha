@@ -24,7 +24,11 @@ import {
 import { PROPOSED_TRANSACTIONS_CHANGED } from '@/lib/proposals/proposed-transactions-events';
 import { getProposalLocationSnapshot } from '@/lib/ai/proposal-location-cache';
 import { getWallets } from '@/lib/supabase/wallets';
-import { resolveDefaultWalletId } from '@/lib/wallets/default-wallet';
+import { getDefaultWalletId } from '@/lib/wallets/default-wallet';
+import {
+  displayCurrencyForProposal,
+  resolveInitialWalletId,
+} from '@/lib/wallets/proposal-wallet';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 
 type WalletOption = {
@@ -257,8 +261,8 @@ function ProposalForm({
       ? new Date(proposal.transactionDate).toISOString().split('T')[0]
       : new Date().toISOString().split('T')[0],
   );
-  const [selectedWalletId, setSelectedWalletId] = useState<string | null>(
-    proposal.walletId ?? resolveDefaultWalletId(wallets),
+  const [selectedWalletId, setSelectedWalletId] = useState<string | null>(() =>
+    resolveInitialWalletId(proposal, wallets, getDefaultWalletId()),
   );
   const [selectedTransferToWalletId, setSelectedTransferToWalletId] = useState<string | null>(
     proposal.transferToWalletId,
@@ -282,7 +286,7 @@ function ProposalForm({
         ? new Date(proposal.transactionDate).toISOString().split('T')[0]
         : new Date().toISOString().split('T')[0],
     );
-    setSelectedWalletId(proposal.walletId ?? resolveDefaultWalletId(wallets));
+    setSelectedWalletId(resolveInitialWalletId(proposal, wallets, getDefaultWalletId()));
     setSelectedTransferToWalletId(proposal.transferToWalletId);
     setShowWalletPicker(false);
     setShowTransferToPicker(false);
@@ -297,6 +301,11 @@ function ProposalForm({
 
   const selectedWallet = wallets.find((w) => w.id === selectedWalletId);
   const selectedTransferToWallet = wallets.find((w) => w.id === selectedTransferToWalletId);
+  const displayCurrency = displayCurrencyForProposal(
+    { walletId: selectedWalletId, currency: proposal.currency },
+    wallets,
+    getDefaultWalletId(),
+  );
   const amountColor = isTransfer ? tokens.transfer : txType === 'expense' ? tokens.expense : tokens.income;
   const sourceLabel = {
     text: '💬 From text input',
@@ -396,14 +405,17 @@ function ProposalForm({
       </View>
 
       <FieldRow label="Amount">
-        <TextInput
-          className="flex-1 rounded-lg border border-border bg-card px-3 py-2 text-right text-base font-semibold"
-          style={{ color: amountColor }}
-          value={amount}
-          onChangeText={setAmount}
-          keyboardType="decimal-pad"
-          selectTextOnFocus
-        />
+        <View className="flex-1 flex-row items-center justify-end gap-2">
+          <Text className="text-sm font-semibold text-muted">{displayCurrency}</Text>
+          <TextInput
+            className="min-w-[96px] flex-1 rounded-lg border border-border bg-card px-3 py-2 text-right text-base font-semibold"
+            style={{ color: amountColor }}
+            value={amount}
+            onChangeText={setAmount}
+            keyboardType="decimal-pad"
+            selectTextOnFocus
+          />
+        </View>
       </FieldRow>
 
       <FieldRow label={isTransfer ? 'From wallet' : 'Wallet'}>

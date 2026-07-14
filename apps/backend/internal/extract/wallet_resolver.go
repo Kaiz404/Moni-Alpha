@@ -196,3 +196,24 @@ func tokenSet(s string) map[string]bool {
 	}
 	return out
 }
+
+// CurrencyForWallet returns the 3-letter ISO code for a wallet id in the client list.
+func CurrencyForWallet(wallets []WalletContext, walletID *string) string {
+	if walletID == nil {
+		return ""
+	}
+	for i := range wallets {
+		if wallets[i].ID != *walletID {
+			continue
+		}
+		if wallets[i].Currency == nil {
+			return ""
+		}
+		c := strings.ToUpper(strings.TrimSpace(*wallets[i].Currency))
+		if len(c) == 3 {
+			return c
+		}
+		return ""
+	}
+	return ""
+}
