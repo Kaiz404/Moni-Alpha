@@ -13,7 +13,8 @@
       "bundleIdentifier": "com.anonymous.moni",
       "infoPlist": {
         "NSSpeechRecognitionUsageDescription": "Allow $(PRODUCT_NAME) to use speech recognition.",
-        "NSMicrophoneUsageDescription": "Allow $(PRODUCT_NAME) to use the microphone."
+        "NSMicrophoneUsageDescription": "Allow $(PRODUCT_NAME) to use the microphone.",
+        "NSCameraUsageDescription": "Allow $(PRODUCT_NAME) to use the camera to scan receipts."
       }
     },
     "android": {
@@ -24,7 +25,8 @@
       "permissions": [
         "android.permission.RECORD_AUDIO",
         "android.permission.ACCESS_COARSE_LOCATION",
-        "android.permission.ACCESS_FINE_LOCATION"
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.CAMERA"
       ]
     },
     "web": {
@@ -42,6 +44,12 @@
       ],
       "./plugins/with-notification-listener-manifest",
       "expo-speech-recognition",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Allow $(PRODUCT_NAME) to use the camera to scan receipts."
+        }
+      ],
       [
         "expo-location",
         {

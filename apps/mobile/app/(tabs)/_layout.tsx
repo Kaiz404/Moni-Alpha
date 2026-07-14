@@ -2,9 +2,9 @@ import { Tabs } from 'expo-router';
 import React from 'react';
 import { View } from 'react-native';
 
-import { HapticTab } from '@/components/haptic-tab';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { SyncStatusIndicator } from '@/components/sync-status-indicator';
+import { TabBar } from '@/components/nav/tab-bar';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 
 export default function TabLayout() {
@@ -12,6 +12,7 @@ export default function TabLayout() {
 
   return (
     <Tabs
+      tabBar={(props) => <TabBar {...props} />}
       screenOptions={{
         tabBarActiveTintColor: tokens.accent,
         tabBarInactiveTintColor: tokens.muted,
@@ -21,7 +22,6 @@ export default function TabLayout() {
             <SyncStatusIndicator />
           </View>
         ),
-        tabBarButton: HapticTab,
       }}>
       <Tabs.Screen
         name="index"
