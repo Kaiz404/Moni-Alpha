@@ -38,6 +38,7 @@ export async function GET(
         currentBalance: parseFloat(data.current_balance),
         color: data.color,
         icon: data.icon,
+        cardStyleId: data.card_style_id,
         isActive: data.is_active,
         displayOrder: data.display_order,
         createdAt: data.created_at,
@@ -73,6 +74,7 @@ export async function PUT(
     if (updates.currency !== undefined) updateData.currency = updates.currency;
     if (updates.color !== undefined) updateData.color = updates.color;
     if (updates.icon !== undefined) updateData.icon = updates.icon;
+    if (updates.cardStyleId !== undefined) updateData.card_style_id = updates.cardStyleId;
     if (updates.isActive !== undefined) updateData.is_active = updates.isActive;
     if (updates.displayOrder !== undefined) updateData.display_order = updates.displayOrder;
 
@@ -98,6 +100,7 @@ export async function PUT(
         initialBalance: parseFloat(data.initial_balance),
         color: data.color,
         icon: data.icon,
+        cardStyleId: data.card_style_id,
         isActive: data.is_active,
         displayOrder: data.display_order,
         createdAt: data.created_at,

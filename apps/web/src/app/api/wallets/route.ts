@@ -34,6 +34,7 @@ export async function GET(request: NextRequest) {
         currentBalance: parseFloat(w.current_balance),
         color: w.color,
         icon: w.icon,
+        cardStyleId: w.card_style_id,
         isActive: w.is_active,
         displayOrder: w.display_order,
         createdAt: w.created_at,
@@ -69,6 +70,7 @@ export async function POST(request: NextRequest) {
         initial_balance: validated.initialBalance,
         color: validated.color,
         icon: validated.icon,
+        card_style_id: validated.cardStyleId,
         display_order: 0,
       })
       .select()
@@ -88,6 +90,7 @@ export async function POST(request: NextRequest) {
         initialBalance: parseFloat(data.initial_balance),
         color: data.color,
         icon: data.icon,
+        cardStyleId: data.card_style_id,
         isActive: data.is_active,
         displayOrder: data.display_order,
         createdAt: data.created_at,

@@ -7,6 +7,7 @@ import { getUserId } from '@/lib/supabase/client';
 import { getWalletBalances } from '@/lib/supabase/balances';
 import { refreshLinkedPackagesFromStore } from '@/lib/notifications/linked-packages-cache';
 import { clearDefaultWalletIfDeleted } from '@/lib/wallets/default-wallet';
+import { DEFAULT_WALLET_CARD_STYLE_ID } from '@/constants/wallet-card-styles';
 import type { CreateWallet, UpdateWallet } from '@repo/types';
 import { randomUUID } from 'expo-crypto';
 
@@ -19,6 +20,7 @@ type WalletRow = {
   initial_balance: string | number | null;
   color: string | null;
   icon: string | null;
+  card_style_id: string | null;
   is_active: boolean | number | null;
   display_order: number | null;
   notification_package: string | null;
@@ -41,6 +43,7 @@ function mapWalletRow(w: WalletRow, currentBalance?: number) {
     currentBalance: currentBalance ?? initial,
     color: w.color,
     icon: w.icon,
+    cardStyleId: w.card_style_id ?? DEFAULT_WALLET_CARD_STYLE_ID,
     isActive: isActive(w.is_active),
     displayOrder: w.display_order ?? 0,
     notificationPackage: w.notification_package ?? null,
@@ -93,6 +96,7 @@ export async function createWallet(data: CreateWallet) {
     initial_balance: data.initialBalance ?? 0,
     color: data.color,
     icon: data.icon,
+    card_style_id: data.cardStyleId ?? DEFAULT_WALLET_CARD_STYLE_ID,
     notification_package: data.notificationPackage ?? null,
     notification_app_label: data.notificationAppLabel ?? null,
     notification_account_hint: data.notificationAccountHint ?? null,
@@ -118,6 +122,7 @@ export async function updateWallet(id: string, data: UpdateWallet) {
   if (data.currency !== undefined) patch.currency = data.currency;
   if (data.color !== undefined) patch.color = data.color;
   if (data.icon !== undefined) patch.icon = data.icon;
+  if (data.cardStyleId !== undefined) patch.card_style_id = data.cardStyleId;
   if (data.initialBalance !== undefined) patch.initial_balance = data.initialBalance;
   if (data.notificationPackage !== undefined) patch.notification_package = data.notificationPackage;
   if (data.notificationAppLabel !== undefined) patch.notification_app_label = data.notificationAppLabel;

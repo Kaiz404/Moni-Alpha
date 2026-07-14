@@ -40,6 +40,7 @@ export default function WalletsPage() {
     initialBalance: 0,
     color: '#2563eb',
     icon: '🏦',
+    cardStyleId: 'emerald-grain',
   });
 
   const { data: walletData, isLoading, error } = useWallets();
@@ -58,6 +59,7 @@ export default function WalletsPage() {
       initialBalance: 0,
       color: '#2563eb',
       icon: '🏦',
+      cardStyleId: 'emerald-grain',
     });
     setEditing(null);
     setModal('create');
@@ -72,6 +74,7 @@ export default function WalletsPage() {
       initialBalance: w.initialBalance,
       color: w.color,
       icon: w.icon,
+      cardStyleId: w.cardStyleId,
     });
     setModal('edit');
   };
