@@ -1,6 +1,8 @@
 /**
  * MMKV cache of Android app icons (base64 data URIs) keyed by package name.
  * Populated from notification capture when the native listener includes an icon.
+ *
+ * CommonJS — required by the headless task in index.js before TS loads.
  */
 const { createMMKV } = require('react-native-mmkv');
 

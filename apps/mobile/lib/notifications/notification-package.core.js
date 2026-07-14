@@ -1,4 +1,10 @@
-/** CommonJS mirror for the headless task in index.js (loads before TS). */
+/**
+ * Canonical Android package name for notification routing.
+ * react-native-android-notification-listener sets `app` to sbn.getPackageName().
+ *
+ * CommonJS — required by the headless task in index.js and Node test suites.
+ */
+
 function resolveNotificationPackageName(notification) {
   if (notification.packageName && String(notification.packageName).trim()) {
     return String(notification.packageName).trim();

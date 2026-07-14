@@ -2,7 +2,7 @@
  * Canonical Android package IDs + legacy aliases for curated finance apps.
  * Keep in sync with constants/notification-apps.ts (aliases array on each entry).
  *
- * Used by headless JS (index.js, linked-packages-cache.js) before TS loads.
+ * Used by headless JS (index.js, linked-packages-cache.core.js) before TS loads.
  */
 
 /** @type {Array<{ canonical: string, aliases?: string[] }>} */

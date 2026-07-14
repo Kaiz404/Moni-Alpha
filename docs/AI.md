@@ -26,11 +26,25 @@ Every extract endpoint returns:
 
 ```ts
 type ExtractResult =
-  | { status: 'ok'; extraction: { amount, type, currency, merchant, description,
-      walletHint, categoryHint, walletId, transferToWalletHint, transferToWalletId,
-      confidence, reasoning } }
-  | { status: 'skipped'; reason: string }      // input isn't a transaction
-  | { status: 'unavailable'; reason: string }  // backend model failure (mobile queue retries)
+  | {
+      status: "ok";
+      extraction: {
+        amount;
+        type;
+        currency;
+        merchant;
+        description;
+        walletHint;
+        categoryHint;
+        walletId;
+        transferToWalletHint;
+        transferToWalletId;
+        confidence;
+        reasoning;
+      };
+    }
+  | { status: "skipped"; reason: string } // input isn't a transaction
+  | { status: "unavailable"; reason: string }; // backend model failure (mobile queue retries)
 ```
 
 `type` is `income` | `expense` | `transfer`. Transfers use `walletId` as the source wallet and `transferToWalletId` as the destination (either may be `null` for user completion in the review modal). Receipt and notification extraction remain income/expense only; **text** extraction detects transfers (e.g. "move 500 from Maybank to savings").
@@ -39,12 +53,12 @@ Auth: `Authorization: Bearer <supabase-user-jwt>`, verified via JWKS (ES256). Er
 
 ## Model allocation
 
-| Flow | Endpoint | Model | Why |
-| --- | --- | --- | --- |
-| Text extraction (live) | `/v1/extract/text` | `llama-3.1-8b-instant`, fallback `llama-3.3-70b-versatile` | Fastest inference + highest free/dev-tier request ceiling (14.4K RPD); fallback covers unparseable output |
-| Receipt images (live) | `/v1/extract/image` | `meta-llama/llama-4-scout-17b-16e-instruct` | Groq's vision model; 30K TPM absorbs image-token cost |
-| Notifications (background) | `/v1/extract/notification` | `llama-3.1-8b-instant` | Cheap + efficient; latency doesn't matter, honors long 429 retry waits |
-| Finance assistant | `/v1/insights/finance-assistant` | `llama-3.3-70b-versatile` | Low volume, better prose; 3 agents run in parallel |
+| Flow                       | Endpoint                         | Model                                                      | Why                                                                                                       |
+| -------------------------- | -------------------------------- | ---------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| Text extraction (live)     | `/v1/extract/text`               | `llama-3.1-8b-instant`, fallback `llama-3.3-70b-versatile` | Fastest inference + highest free/dev-tier request ceiling (14.4K RPD); fallback covers unparseable output |
+| Receipt images (live)      | `/v1/extract/image`              | `meta-llama/llama-4-scout-17b-16e-instruct`                | Groq's vision model; 30K TPM absorbs image-token cost                                                     |
+| Notifications (background) | `/v1/extract/notification`       | `llama-3.1-8b-instant`                                     | Cheap + efficient; latency doesn't matter, honors long 429 retry waits                                    |
+| Finance assistant          | `/v1/insights/finance-assistant` | `llama-3.3-70b-versatile`                                  | Low volume, better prose; 3 agents run in parallel                                                        |
 
 All calls use Groq's OpenAI-compatible endpoint with `response_format: json_object`, temperature ≤ 0.4, and Go-side JSON validation (`groq.CompleteJSON` strips fences and rejects malformed output).
 
@@ -68,7 +82,7 @@ All calls use Groq's OpenAI-compatible endpoint with `response_format: json_obje
 - For **transfers**, resolution runs twice: source (`wallet_id` + context) and destination (`transfer_to_wallet_id` + hint only).
 - **Text transfer patterns:** deposits ("deposited cash to bank"), withdrawals, top-ups, and explicit "from X to Y" moves are transfers between wallets in `AVAILABLE_WALLETS` — not income. The model uses wallet names/types to infer direction (e.g. cash → bank for deposits).
 - **Notification rule:** each wallet may link one Android app (`notification_package` on `wallets`). Notifications from unlinked apps are captured for debug but not queued. Candidate wallets are narrowed by package before extraction; ambiguous same-app wallets may create proposals with `walletId: null` for review (`run-extraction.ts`).
-- **Notification prefilter stays on-device** (`apps/mobile/lib/notifications/notification-filter.js`): requires a money-amount signal AND a transfer signal before an LLM ever sees it. Test suite: `pnpm --filter moni test:notification-detection`.
+- **Notification prefilter stays on-device** (`apps/mobile/lib/notifications/notification-filter.core.js`): requires a money-amount signal AND a transfer signal before an LLM ever sees it. Test suite: `pnpm --filter moni test:notification-detection`.
 - **Receipt images:** mobile downscales/compresses (`lib/ai/client/image-payload.ts`), sends base64 for local files or the URL if already uploaded to the `receipts` Storage bucket. Backend extracts amount, merchant, and description only; mobile assigns the default wallet and its currency.
 
 ## Insights

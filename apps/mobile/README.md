@@ -24,10 +24,10 @@ Env: copy `.env.example` to `.env` (Supabase publishable key, AI backend URL, Go
 | `lib/theme/` | Theme preference ↔ Uniwind (`light` / `dark` / `system`) |
 | `lib/wallets/` | Default wallet preference (`profiles.preferences.default_wallet_id`, MMKV cache) and proposal wallet/currency resolution for AI |
 | `lib/ai/` | Processing queue, background processor, AI client (HTTP ↔ Go backend, mock fallback) |
-| `lib/notifications/` | Prefilter, package routing, linked-app MMKV cache, `moni-android-apps` (PackageManager + Android 11 `<queries>`) |
+| `lib/notifications/` | Prefilter / package helpers: `*.core.js` (headless + Node tests) + thin `*.ts` re-exports; linked-app MMKV cache; `moni-android-apps` |
 | `lib/receipts/` | Local receipt image save + Storage upload queue |
 | `global.css` | Uniwind design tokens (brand + light/dark semantic colors) |
-| `index.js` | Android headless notification listener (registered before expo-router) |
+| `index.js` | Android headless notification listener (registered before expo-router; requires `*.core.js`) |
 
 ## Theming
 

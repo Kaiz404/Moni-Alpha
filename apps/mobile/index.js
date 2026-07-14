@@ -8,12 +8,12 @@ if (Platform.OS === 'android') {
   const { createMMKV } = require('react-native-mmkv');
   const {
     passesNotificationTransactionPrefilter,
-  } = require('./lib/notifications/notification-filter');
+  } = require('./lib/notifications/notification-filter.core');
   const { startBackgroundProcessor } = require('./lib/ai/background-processor');
   const { captureLocationSnapshot } = require('./lib/location/location-snapshot');
-  const { isPackageLinked } = require('./lib/notifications/linked-packages-cache.js');
-  const { enrichNotificationPackage } = require('./lib/notifications/notification-package.js');
-  const { cacheNotificationAppIcon } = require('./lib/notifications/app-icon-cache.js');
+  const { isPackageLinked } = require('./lib/notifications/linked-packages-cache.core');
+  const { enrichNotificationPackage } = require('./lib/notifications/notification-package.core');
+  const { cacheNotificationAppIcon } = require('./lib/notifications/app-icon-cache.core');
 
   void RNAndroidNotificationListener;
 

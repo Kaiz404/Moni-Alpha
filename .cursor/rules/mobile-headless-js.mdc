@@ -1,0 +1,26 @@
+---
+description: Headless notification helpers — *.core.js + thin *.ts, never dual implementations
+globs: apps/mobile/lib/notifications/**,apps/mobile/index.js,apps/mobile/scripts/*notification*
+alwaysApply: false
+---
+
+# Headless notification modules (`*.core.js`)
+
+Android capture registers in `apps/mobile/index.js` **before** expo-router. That entry and Node suites (`scripts/*-suite.mjs`) `require()` plain CommonJS — do not duplicate the same logic in TypeScript.
+
+## Pattern
+
+| File | Role |
+| --- | --- |
+| `foo.core.js` | **Only** implementation — CommonJS `module.exports` |
+| `foo.ts` | Thin typed re-export / facade for `@/lib/notifications/foo`; app-only extras allowed here |
+
+- `index.js` and suites: `require('…/*.core')` or `…/*.core.js`
+- App/TS: import the `.ts` module (no `.core` in the path)
+- Keep `.core.js` free of Legend-State, expo-router, and UI imports
+
+## Anti-patterns
+
+- `foo.js` + `foo.ts` with the same algorithms
+- Naming the CommonJS file `foo.js` next to `foo.ts` (ambiguous Metro/TS resolve) — always `foo.core.js`
+- Putting store/UI-only code in `.core.js` — e.g. `refreshLinkedPackagesFromStore` stays in `.ts`; headless reads stay in `.core.js`

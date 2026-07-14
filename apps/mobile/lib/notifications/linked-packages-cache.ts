@@ -1,10 +1,11 @@
-import { createMMKV } from 'react-native-mmkv';
 import { wallets$ } from '@/lib/store';
 import { getRecordValues, isActive } from '@/lib/store/helpers';
-import { curatedPackagesEquivalent } from '@/lib/notifications/notification-package-aliases';
+import { writeLinkedPackages } from './linked-packages-cache.core.js';
 
-const storage = createMMKV({ id: 'moni-notification-links' });
-const LINKED_PACKAGES_KEY = 'linked_packages';
+export {
+  isPackageLinked as isPackageLinkedInCache,
+  readLinkedPackages as readLinkedPackagesFromCache,
+} from './linked-packages-cache.core.js';
 
 type WalletRow = {
   notification_package?: string | null;
@@ -22,26 +23,6 @@ export function refreshLinkedPackagesFromStore(): string[] {
         .filter((p): p is string => Boolean(p)),
     ),
   ];
-  storage.set(LINKED_PACKAGES_KEY, JSON.stringify(packages));
+  writeLinkedPackages(packages);
   return packages;
-}
-
-export function readLinkedPackagesFromCache(): string[] {
-  try {
-    const raw = storage.getString(LINKED_PACKAGES_KEY);
-    if (!raw) return [];
-    const parsed = JSON.parse(raw) as unknown;
-    return Array.isArray(parsed)
-      ? parsed.filter((p): p is string => typeof p === 'string' && Boolean(p))
-      : [];
-  } catch {
-    return [];
-  }
-}
-
-export function isPackageLinkedInCache(packageName: string): boolean {
-  if (!packageName || packageName === 'unknown') return false;
-  return readLinkedPackagesFromCache().some((linked) =>
-    curatedPackagesEquivalent(linked, packageName),
-  );
 }

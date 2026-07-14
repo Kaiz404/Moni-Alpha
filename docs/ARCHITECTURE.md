@@ -53,7 +53,7 @@ proposed_transactions (unreviewed)
 ProposalReviewModal → approve → real transaction / decline → soft-delete
 ```
 
-Android notifications are prefiltered on-device (`lib/notifications/notification-filter.js`: requires a money amount signal AND a transfer signal) before anything reaches the queue, so the backend only sees plausible candidates.
+Android notifications are prefiltered on-device (`lib/notifications/notification-filter.core.js`: requires a money amount signal AND a transfer signal) before anything reaches the queue, so the backend only sees plausible candidates.
 
 ## Auth
 

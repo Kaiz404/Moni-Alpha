@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
 
 const require = createRequire(import.meta.url);
-const { passesNotificationTransactionPrefilter } = require('../lib/notifications/notification-filter.js');
+const { passesNotificationTransactionPrefilter } = require('../lib/notifications/notification-filter.core.js');
 
 const txApps = [
   'Kuda Bank',

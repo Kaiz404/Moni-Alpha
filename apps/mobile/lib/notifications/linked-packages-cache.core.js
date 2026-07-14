@@ -1,6 +1,8 @@
 /**
  * MMKV snapshot of linked Android package names for the headless notification task.
  * Written by linked-packages-cache.ts when wallets change.
+ *
+ * CommonJS — required by the headless task in index.js before TS loads.
  */
 const { createMMKV } = require('react-native-mmkv');
 const { curatedPackagesEquivalent } = require('./notification-package-aliases.core');
@@ -26,7 +28,13 @@ function isPackageLinked(packageName) {
   );
 }
 
+function writeLinkedPackages(packages) {
+  storage.set(LINKED_PACKAGES_KEY, JSON.stringify(packages));
+}
+
 module.exports = {
   isPackageLinked,
   readLinkedPackages,
+  writeLinkedPackages,
+  LINKED_PACKAGES_KEY,
 };
