@@ -5,6 +5,8 @@ export const userPreferencesSchema = z.object({
   currency: z.string().length(3).default('USD'),
   theme: z.enum(['light', 'dark', 'system']).default('system'),
   notifications_enabled: z.boolean().default(true),
+  /** Primary wallet for AI fallback when inference cannot pick one. Synced via profiles. */
+  default_wallet_id: z.string().uuid().nullable().optional(),
 });
 
 // Profile schema

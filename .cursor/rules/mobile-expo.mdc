@@ -30,7 +30,7 @@ New synced table checklist: migration adds `created_at`/`updated_at`/`deleted` +
 - `auth` — Supabase session storage (client uses `EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY`)
 - `legend-store` — observable persistence
 - `image-uploads` — receipt upload queue
-- `preferences` — local UI prefs (theme: light / dark / system)
+- `preferences` — local UI prefs (theme: light / dark / system; default wallet id cache for AI fallback)
 
 ## AI pipeline (lib/ai/)
 

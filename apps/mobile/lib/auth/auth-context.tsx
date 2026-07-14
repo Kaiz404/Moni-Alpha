@@ -9,6 +9,7 @@ import {
   signInWithGoogleNative,
   signOutGoogleNative,
 } from '@/lib/auth/google-signin';
+import { clearDefaultWalletCache } from '@/lib/wallets/default-wallet';
 
 type AuthContextType = {
   user: User | null;
@@ -93,6 +94,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signOut = async () => {
     authReady$.set(false);
+    clearDefaultWalletCache();
     await clearStore();
     await signOutGoogleNative();
     await supabase.auth.signOut();

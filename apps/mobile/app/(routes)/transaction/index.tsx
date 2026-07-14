@@ -16,6 +16,7 @@ import { useAuth } from '@/lib/auth/auth-context';
 import { deleteTransaction, getTransactions } from '@/lib/supabase/transactions';
 import { formatTransferLabel } from '@/lib/supabase/transaction-balance';
 import { getWallets } from '@/lib/supabase/wallets';
+import { resolveDefaultWalletId } from '@/lib/wallets/default-wallet';
 import { useProposedTransactions } from '@/hooks/use-proposed-transactions';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { getCategoryNameRows } from '@/lib/supabase/categories';
@@ -337,6 +338,17 @@ export default function TransactionsScreen() {
       }
 
       const walletOptions = await fetchWallets();
+      const defaultWalletId = resolveDefaultWalletId(walletOptions);
+      if (defaultWalletId) {
+        try {
+          await approve(proposal, { walletId: defaultWalletId });
+          Alert.alert('Approved', 'Transaction has been added to your records.');
+        } catch (e) {
+          Alert.alert('Error', e instanceof Error ? e.message : 'Failed to approve');
+        }
+        return;
+      }
+
       setWalletPickerWallets(mapWalletOptions(walletOptions));
       setWalletPickerFlow({ proposal, step: 'single' });
       setWalletPickerVisible(true);

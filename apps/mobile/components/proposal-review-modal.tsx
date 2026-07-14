@@ -24,6 +24,7 @@ import {
 import { PROPOSED_TRANSACTIONS_CHANGED } from '@/lib/proposals/proposed-transactions-events';
 import { getProposalLocationSnapshot } from '@/lib/ai/proposal-location-cache';
 import { getWallets } from '@/lib/supabase/wallets';
+import { resolveDefaultWalletId } from '@/lib/wallets/default-wallet';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 
 type WalletOption = {
@@ -256,7 +257,9 @@ function ProposalForm({
       ? new Date(proposal.transactionDate).toISOString().split('T')[0]
       : new Date().toISOString().split('T')[0],
   );
-  const [selectedWalletId, setSelectedWalletId] = useState<string | null>(proposal.walletId);
+  const [selectedWalletId, setSelectedWalletId] = useState<string | null>(
+    proposal.walletId ?? resolveDefaultWalletId(wallets),
+  );
   const [selectedTransferToWalletId, setSelectedTransferToWalletId] = useState<string | null>(
     proposal.transferToWalletId,
   );
@@ -279,11 +282,11 @@ function ProposalForm({
         ? new Date(proposal.transactionDate).toISOString().split('T')[0]
         : new Date().toISOString().split('T')[0],
     );
-    setSelectedWalletId(proposal.walletId);
+    setSelectedWalletId(proposal.walletId ?? resolveDefaultWalletId(wallets));
     setSelectedTransferToWalletId(proposal.transferToWalletId);
     setShowWalletPicker(false);
     setShowTransferToPicker(false);
-  }, [proposal]);
+  }, [proposal, wallets]);
 
   useEffect(() => {
     if (!isTransfer) return;

@@ -10,7 +10,8 @@
     "web": "expo start --web",
     "lint": "expo lint",
     "test:notification-detection": "node ./scripts/notification-detection-suite.mjs",
-    "test:notification-routing": "node ./scripts/notification-routing-suite.mjs"
+    "test:notification-routing": "node ./scripts/notification-routing-suite.mjs",
+    "test:default-wallet": "node ./scripts/default-wallet-suite.mjs"
   },
   "dependencies": {
     "@expo/config-plugins": "~54.0.4",

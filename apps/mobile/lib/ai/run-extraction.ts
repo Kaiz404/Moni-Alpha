@@ -13,6 +13,10 @@ import { passesTransactionPrefilter } from '@/lib/ai/notification-types';
 import { resolveNotificationPackageName, enrichNotificationPackage } from '@/lib/notifications/notification-package';
 import { resolveNotificationCandidates } from '@/lib/notifications/notification-routing';
 import type { RawNotification } from '@/lib/ai/notification-types';
+import {
+  getDefaultWalletId,
+  resolveDefaultWalletId,
+} from '@/lib/wallets/default-wallet';
 
 export type TraceEvent = {
   stage: 'extraction' | 'extractor' | 'creator';
@@ -70,6 +74,17 @@ async function loadWalletsForNotificationRouting() {
     notificationAppLabel: w.notificationAppLabel ?? null,
     notificationAccountHint: w.notificationAccountHint ?? null,
   }));
+}
+
+function applyDefaultWallet(
+  proposal: CreateProposedTransaction,
+  candidateWallets: readonly { id: string }[],
+  defaultWalletId: string | null,
+): CreateProposedTransaction {
+  if (proposal.walletId) return proposal;
+  const resolved = resolveDefaultWalletId(candidateWallets, defaultWalletId);
+  if (!resolved) return proposal;
+  return { ...proposal, walletId: resolved };
 }
 
 function proposalFromExtraction(
@@ -170,6 +185,7 @@ export async function runExtraction(
   trace(logger, 'extraction', 'start', { type: item.type, id: item.id });
 
   try {
+    const defaultWalletId = getDefaultWalletId();
     const wallets = await loadWalletContext();
 
     switch (item.type) {
@@ -178,9 +194,13 @@ export async function runExtraction(
         const mapped = mapClientResult(result, logger);
         if ('status' in mapped && mapped.status === 'ok') {
           return persistProposal(
-            proposalFromExtraction(
-              { sourceType: 'text', sourceText: item.text },
-              mapped.extraction,
+            applyDefaultWallet(
+              proposalFromExtraction(
+                { sourceType: 'text', sourceText: item.text },
+                mapped.extraction,
+              ),
+              wallets,
+              defaultWalletId,
             ),
             item.locationSnapshot,
             logger,
@@ -198,13 +218,17 @@ export async function runExtraction(
         const mapped = mapClientResult(result, logger);
         if ('status' in mapped && mapped.status === 'ok') {
           return persistProposal(
-            proposalFromExtraction(
-              {
-                sourceType: 'image',
-                sourceText: item.userContext ?? null,
-                sourceImageUri: item.imageUri,
-              },
-              mapped.extraction,
+            applyDefaultWallet(
+              proposalFromExtraction(
+                {
+                  sourceType: 'image',
+                  sourceText: item.userContext ?? null,
+                  sourceImageUri: item.imageUri,
+                },
+                mapped.extraction,
+              ),
+              wallets,
+              defaultWalletId,
             ),
             item.locationSnapshot,
             logger,
@@ -246,15 +270,19 @@ export async function runExtraction(
         const mapped = mapClientResult(result, logger);
         if ('status' in mapped && mapped.status === 'ok') {
           return persistProposal(
-            proposalFromExtraction(
-              {
-                sourceType: 'notification',
-                sourceApp: n.packageName || n.app,
-                notificationTitle: n.title,
-                notificationBody: n.bigText || n.text || null,
-                notificationReceivedAt: n.receivedAt,
-              },
-              mapped.extraction,
+            applyDefaultWallet(
+              proposalFromExtraction(
+                {
+                  sourceType: 'notification',
+                  sourceApp: n.packageName || n.app,
+                  notificationTitle: n.title,
+                  notificationBody: n.bigText || n.text || null,
+                  notificationReceivedAt: n.receivedAt,
+                },
+                mapped.extraction,
+              ),
+              candidates,
+              defaultWalletId,
             ),
             item.locationSnapshot,
             logger,

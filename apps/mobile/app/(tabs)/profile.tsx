@@ -15,6 +15,7 @@ import { ExpoSpeechRecognitionModule } from 'expo-speech-recognition';
 import { useAuth } from '@/lib/auth/auth-context';
 import { SyncStatus } from '@/components/sync-status';
 import { ThemePreferencePicker } from '@/components/theme-preference-picker';
+import { DefaultWalletPicker } from '@/components/default-wallet-picker';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { useNotificationListener } from '@/hooks/use-notification-listener';
 
@@ -381,6 +382,14 @@ export default function ProfileScreen() {
           <View className="mt-6">
             <ProfileSectionTitle>Appearance</ProfileSectionTitle>
             <ThemePreferencePicker />
+          </View>
+
+          <View className="mt-6">
+            <ProfileSectionTitle>Default wallet</ProfileSectionTitle>
+            <Text className="mb-3 text-xs text-muted">
+              Used when AI cannot infer a wallet from text, receipts, or notifications.
+            </Text>
+            <DefaultWalletPicker />
           </View>
 
           <View className="mt-6">

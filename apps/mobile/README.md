@@ -18,10 +18,11 @@ Env: copy `.env.example` to `.env` (Supabase publishable key, AI backend URL, Go
 | --- | --- |
 | `app/` | expo-router routes: `(auth)`, `(tabs)` (Wallets / Summary / Moni Agent / Profile), `(routes)` (wallet, transaction, budget, notifications, debug) |
 | `lib/store/` | Legend-State synced observables — the data layer |
-| `lib/supabase/` | Supabase client (publishable key) + CRUD helpers over the store |
+| `lib/supabase/` | Supabase client (publishable key) + CRUD helpers over the store; profile preferences |
 | `lib/auth/` | Auth context (email/password + native Google Sign-In) |
-| `lib/mmkv/` | MMKV instances: auth session, store cache, upload queue, UI preferences (theme) |
+| `lib/mmkv/` | MMKV instances: auth session, store cache, upload queue, UI preferences (theme, default wallet) |
 | `lib/theme/` | Theme preference ↔ Uniwind (`light` / `dark` / `system`) |
+| `lib/wallets/` | Default wallet preference (`profiles.preferences.default_wallet_id`, MMKV cache) for AI fallback |
 | `lib/ai/` | Processing queue, background processor, AI client (HTTP ↔ Go backend, mock fallback) |
 | `lib/notifications/` | Prefilter, package routing, linked-app MMKV cache, `moni-android-apps` (PackageManager + Android 11 `<queries>`) |
 | `lib/receipts/` | Local receipt image save + Storage upload queue |
@@ -33,6 +34,8 @@ Env: copy `.env.example` to `.env` (Supabase publishable key, AI backend URL, Go
 Tokens are CSS-first in `global.css`. Prefer semantic classes (`bg-primary`, `text-foreground`, `bg-card`) and shared UI helpers under `components/ui/` (`BrandHeader`, `ScreenShell`, chips, `PrimaryButton`). For native APIs that need a color string, use `useThemeTokens()`. Change brand colors in `global.css` only — do not hardcode hex in screens.
 
 Appearance: Profile → Appearance (`light` default; `system` follows the device). Persisted in MMKV via `lib/theme/preference.ts`.
+
+Default wallet: Profile → Default wallet. Synced in `profiles.preferences.default_wallet_id`; cached locally for background AI. When AI cannot infer a wallet (text, receipt, or notification), proposals use this wallet.
 
 ## AI
 

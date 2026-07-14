@@ -4,6 +4,7 @@ import { useAuth } from '@/lib/auth/auth-context';
 import { authReady$ } from '@/lib/store/auth-sync';
 import { ALL_STORE_OBSERVABLES, enableStoreSync, wallets$ } from '@/lib/store';
 import { refreshLinkedPackagesFromStore } from '@/lib/notifications/linked-packages-cache';
+import { syncDefaultWalletFromProfile } from '@/lib/wallets/default-wallet';
 
 /**
  * Keeps synced table roots observed (required for Legend-State remote sync)
@@ -25,6 +26,7 @@ export function StoreSyncActivator() {
     authReady$.set(true);
     void enableStoreSync({ fullReset: true });
     refreshLinkedPackagesFromStore();
+    void syncDefaultWalletFromProfile().catch(() => {});
 
     const walletsDispose = observe(() => {
       wallets$.get();

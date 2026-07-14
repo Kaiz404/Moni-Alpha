@@ -6,6 +6,7 @@ import { getRecordValues, isActive, patchRow } from '@/lib/store/helpers';
 import { getUserId } from '@/lib/supabase/client';
 import { getWalletBalances } from '@/lib/supabase/balances';
 import { refreshLinkedPackagesFromStore } from '@/lib/notifications/linked-packages-cache';
+import { clearDefaultWalletIfDeleted } from '@/lib/wallets/default-wallet';
 import type { CreateWallet, UpdateWallet } from '@repo/types';
 import { randomUUID } from 'expo-crypto';
 
@@ -143,5 +144,6 @@ export async function deleteWallet(id: string) {
   }
 
   patchRow(wallets$, id, { deleted: true, updated_at: now });
+  await clearDefaultWalletIfDeleted(id);
   refreshLinkedPackagesFromStore();
 }
