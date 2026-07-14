@@ -24,14 +24,17 @@
 @layer theme {
   :root {
     @variant light {
+      /* Neutral surfaces stay near-white so the green accent is the one strong color moment */
       --color-background: #ffffff;
-      --color-background-muted: #f4faf7;
-      --color-canvas: #e8f5ef;
+      --color-background-muted: #f7f7f6;
+      --color-canvas: #f5f6f5;
       --color-card: #ffffff;
-      --color-foreground: #0f172a;
-      --color-muted: #64748b;
-      --color-border: #d8e5de;
-      --color-border-subtle: #e8f0ec;
+      --color-surface-1: #fafafa;
+      --color-surface-2: #f0f0ef;
+      --color-foreground: #111111;
+      --color-muted: #6b7280;
+      --color-border: #e6e7e5;
+      --color-border-subtle: #eef0ee;
 
       --color-primary: #059669;
       --color-primary-soft: #10b981;
@@ -49,14 +52,17 @@
     }
 
     @variant dark {
-      --color-background: #0b1210;
-      --color-background-muted: #111a17;
-      --color-canvas: #0f1a16;
-      --color-card: #1a2420;
-      --color-foreground: #ecfdf5;
-      --color-muted: #94a3b8;
-      --color-border: #2d3b35;
-      --color-border-subtle: #1e2a25;
+      /* Neutral surfaces go near-black (not green-tinted) so the accent still pops */
+      --color-background: #0a0a0a;
+      --color-background-muted: #121212;
+      --color-canvas: #0d0d0d;
+      --color-card: #161616;
+      --color-surface-1: #141414;
+      --color-surface-2: #1c1c1c;
+      --color-foreground: #fafafa;
+      --color-muted: #a1a1aa;
+      --color-border: #272727;
+      --color-border-subtle: #1f1f1f;
 
       --color-primary: #10b981;
       --color-primary-soft: #34d399;

@@ -21,7 +21,7 @@ export function PrimaryButton({
 
   return (
     <TouchableOpacity
-      className={`flex-row items-center justify-center gap-2 rounded-xl bg-primary py-3.5 ${isDisabled ? 'opacity-60' : ''} ${className ?? ''}`}
+      className={`flex-row items-center justify-center gap-2 rounded-2xl bg-primary py-3.5 ${isDisabled ? 'opacity-60' : ''} ${className ?? ''}`}
       disabled={isDisabled}
       activeOpacity={0.88}
       {...props}>
