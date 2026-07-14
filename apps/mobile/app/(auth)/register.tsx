@@ -2,15 +2,18 @@ import { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, Alert, ScrollView } from 'react-native';
 import { Link, router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useAuth } from '@/lib/auth/auth-context';
 import { GoogleSignInButton } from '@/components/google-sign-in-button';
 import { ScreenShell } from '@/components/ui/screen-shell';
+import { useThemeTokens } from '@/hooks/use-theme-tokens';
 
 const inputClassName =
-  'rounded-lg border border-border bg-card p-3 text-base text-foreground';
+  'rounded-2xl border border-border bg-card p-3.5 text-base text-foreground';
 
 export default function RegisterScreen() {
   const { signUp } = useAuth();
+  const tokens = useThemeTokens();
   const insets = useSafeAreaInsets();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -39,31 +42,22 @@ export default function RegisterScreen() {
   };
 
   return (
-    <ScreenShell variant="canvas">
-      <View
-        style={{ paddingTop: Math.max(insets.top, 12) }}
-        className="rounded-b-2xl border border-transparent bg-primary shadow-xl/50 shadow-primary">
-        <View className="flex-row items-start gap-3 px-4 pb-6">
-          <Link href={'/(auth)/login' as any} asChild>
-            <TouchableOpacity className="mt-1 h-10 w-10 items-center justify-center rounded-2xl bg-primary-soft">
-              <Text className="text-lg font-semibold text-primary-foreground">‹</Text>
-            </TouchableOpacity>
-          </Link>
-          <View className="flex-1 pr-2">
-            <Text className="text-2xl font-bold text-primary-foreground">Join Moni</Text>
-            <Text className="mt-2 text-base leading-6 text-primary-foreground/90">
-              Create a profile to sync wallets and transactions securely. Same local-first privacy as the rest of the app.
-            </Text>
-          </View>
-        </View>
+    <ScreenShell variant="default">
+      <View style={{ paddingTop: Math.max(insets.top, 24) }} className="flex-row items-center gap-3 px-6 pb-2">
+        <Link href={'/(auth)/login' as any} asChild>
+          <TouchableOpacity className="h-10 w-10 items-center justify-center rounded-full bg-background-muted">
+            <MaterialIcons name="arrow-back" size={20} color={tokens.foreground} />
+          </TouchableOpacity>
+        </Link>
       </View>
 
       <ScrollView
         className="flex-1 px-6 pt-6"
         keyboardShouldPersistTaps="handled"
         contentContainerStyle={{ paddingBottom: 32 }}>
-        <Text className="mb-6 text-xl font-semibold text-foreground">
-          Create account
+        <Text className="text-3xl font-bold text-foreground">Join Moni</Text>
+        <Text className="mb-8 mt-2 text-base leading-6 text-muted">
+          Create a profile to sync wallets and transactions securely — same local-first privacy as the rest of the app.
         </Text>
 
         <Text className="mb-2 text-sm font-medium text-foreground">
@@ -106,7 +100,7 @@ export default function RegisterScreen() {
         />
 
         <TouchableOpacity
-          className={`mt-2 items-center rounded-lg bg-primary p-3.5 ${loading ? 'opacity-60' : ''}`}
+          className={`mt-2 items-center rounded-2xl bg-primary p-3.5 ${loading ? 'opacity-60' : ''}`}
           onPress={handleRegister}
           disabled={loading}>
           <Text className="text-base font-semibold text-primary-foreground">

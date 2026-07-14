@@ -5,9 +5,12 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@/lib/auth/auth-context';
 import { GoogleSignInButton } from '@/components/google-sign-in-button';
 import { ScreenShell } from '@/components/ui/screen-shell';
+import { GradientCard } from '@/components/ui/gradient-card';
+import { getWalletCardStyle } from '@/constants/wallet-card-styles';
 
 const inputClassName =
-  'rounded-lg border border-border bg-card p-3 text-base text-foreground';
+  'rounded-2xl border border-border bg-card p-3.5 text-base text-foreground';
+const brandMark = getWalletCardStyle('emerald-grain');
 
 export default function LoginScreen() {
   const { signIn } = useAuth();
@@ -35,26 +38,21 @@ export default function LoginScreen() {
   };
 
   return (
-    <ScreenShell variant="canvas">
-      <View
-        style={{ paddingTop: Math.max(insets.top, 12) }}
-        className="rounded-b-2xl border border-transparent bg-primary px-6 pb-8 shadow-xl/50 shadow-primary">
-        <Text className="text-3xl font-bold text-primary-foreground">Moni</Text>
-        <Text className="mt-2 text-base leading-6 text-primary-foreground/90">
-          Wallets, spending, and on-device AI—organized in one place. Local-first so your finances stay on your device.
-        </Text>
+    <ScreenShell variant="default">
+      <View style={{ paddingTop: Math.max(insets.top, 24) }} className="px-6 pb-2">
+        <GradientCard cardStyle={brandMark} className="h-14 w-14 items-center justify-center rounded-2xl">
+          <Text className="text-2xl font-bold text-white">M</Text>
+        </GradientCard>
       </View>
 
       <ScrollView
         className="flex-1 px-6 pt-6"
         keyboardShouldPersistTaps="handled"
         contentContainerStyle={{ paddingBottom: 32 }}>
-        <View className="mb-6">
-          <Text className="text-xl font-semibold text-foreground">
-            Sign in
-          </Text>
-          <Text className="mt-1 text-sm text-muted">
-            Welcome back. Use the email and password for your account.
+        <View className="mb-8">
+          <Text className="text-3xl font-bold text-foreground">Welcome back</Text>
+          <Text className="mt-2 text-base leading-6 text-muted">
+            Sign in to pick up where you left off — your wallets stay local-first and private.
           </Text>
           {showVerifyEmailHint ? (
             <View className="mt-4 rounded-xl border border-primary/40 bg-primary-muted px-4 py-3">
@@ -96,7 +94,7 @@ export default function LoginScreen() {
         />
 
         <TouchableOpacity
-          className={`mt-2 items-center rounded-lg bg-primary p-3.5 ${loading ? 'opacity-60' : ''}`}
+          className={`mt-2 items-center rounded-2xl bg-primary p-3.5 ${loading ? 'opacity-60' : ''}`}
           onPress={handleLogin}
           disabled={loading}>
           <Text className="text-base font-semibold text-primary-foreground">

@@ -134,7 +134,7 @@ export default function BudgetsScreen() {
                 categories.map((c) => (
                   <View
                     key={c.id}
-                    className="mb-3 rounded-xl border border-border bg-card p-3">
+                    className="mb-3 rounded-2xl border border-border bg-card p-3">
                     <Text className="text-base font-semibold text-foreground">
                       {c.name}
                     </Text>

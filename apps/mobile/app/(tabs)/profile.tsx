@@ -18,6 +18,10 @@ import { ThemePreferencePicker } from '@/components/theme-preference-picker';
 import { DefaultWalletPicker } from '@/components/default-wallet-picker';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { useNotificationListener } from '@/hooks/use-notification-listener';
+import { GradientCard } from '@/components/ui/gradient-card';
+import { getWalletCardStyle } from '@/constants/wallet-card-styles';
+
+const avatarStyle = getWalletCardStyle('emerald-grain');
 
 function ProfileSectionTitle({ children }: { children: string }) {
   return (
@@ -51,7 +55,7 @@ function SettingsRow({
     <Pressable
       onPress={onPress}
       disabled={disabled}
-      className={`mb-2 flex-row items-center rounded-xl border border-border bg-card p-3.5 shadow-sm active:opacity-90 ${disabled ? 'opacity-50' : ''}`}>
+      className={`mb-2 flex-row items-center rounded-2xl border border-border bg-card p-3.5 active:opacity-90 ${disabled ? 'opacity-50' : ''}`}>
       <View
         className={`h-11 w-11 items-center justify-center rounded-2xl ${iconBgClassName}`}
         style={iconBgColor ? { backgroundColor: iconBgColor } : undefined}>
@@ -106,7 +110,7 @@ function PermissionColumn({
 }) {
   return (
     <View
-      className={`rounded-xl border border-border bg-card p-3 shadow-sm ${widthClassName}`}>
+      className={`rounded-2xl border border-border bg-card p-3 ${widthClassName}`}>
       <View
         className="mx-auto h-9 w-9 items-center justify-center rounded-xl"
         style={{ backgroundColor: iconTint }}>
@@ -125,8 +129,8 @@ function PermissionColumn({
       {muted ? (
         <Text className="mt-2 text-center text-[10px] text-muted">—</Text>
       ) : granted ? (
-        <View className="mt-2 rounded-lg bg-emerald-500/15 py-2 dark:bg-emerald-500/20">
-          <Text className="text-center text-[10px] font-semibold text-emerald-700 dark:text-emerald-400">
+        <View className="mt-2 rounded-lg bg-success/15 py-2">
+          <Text className="text-center text-[10px] font-semibold text-success">
             On
           </Text>
         </View>
@@ -257,35 +261,30 @@ export default function ProfileScreen() {
         className="flex-1"
         contentContainerClassName="grow pb-10"
         showsVerticalScrollIndicator>
-        <View className="px-4 pt-4 pb-2 flex-row items-center justify-between">
-          <View className="flex-row items-center mt-4">
-            <View className="h-9 w-9 items-center justify-center rounded-xl bg-background-muted">
-              <MaterialIcons name="person" size={22} color={tokens.primary} />
-            </View>
-            <Text className="ml-3 text-2xl font-bold text-foreground">Profile</Text>
-          </View>
+        <View className="px-4 pt-6 pb-4">
+          <Text className="text-2xl font-bold text-foreground">Profile</Text>
         </View>
 
         <View className="px-4 pb-4">
-          <View className="overflow-hidden rounded-2xl border border-primary/40 bg-primary p-4">
+          <View className="overflow-hidden rounded-3xl border border-border bg-card p-4">
             <View className="flex-row items-center">
-              <View className="h-14 w-14 items-center justify-center rounded-2xl bg-white/25">
+              <GradientCard cardStyle={avatarStyle} className="h-14 w-14 items-center justify-center rounded-2xl">
                 <Text className="text-2xl font-bold text-white">{userInitial}</Text>
-              </View>
+              </GradientCard>
               <View className="ml-3 flex-1 min-w-0">
-                <Text className="text-xs font-semibold uppercase tracking-wide text-white/90">
+                <Text className="text-xs font-semibold uppercase tracking-wide text-muted">
                   Signed in
                 </Text>
                 {user?.email ? (
-                  <Text className="mt-0.5 text-base font-bold text-white" numberOfLines={2}>
+                  <Text className="mt-0.5 text-base font-bold text-foreground" numberOfLines={2}>
                     {user.email}
                   </Text>
                 ) : (
-                  <Text className="mt-0.5 text-base font-semibold text-white/90">Not signed in</Text>
+                  <Text className="mt-0.5 text-base font-semibold text-muted">Not signed in</Text>
                 )}
               </View>
             </View>
-            <Text className="mt-3 text-xs text-white/80">
+            <Text className="mt-3 text-xs text-muted">
               Manage sync, permissions, and account settings below.
             </Text>
           </View>
@@ -293,7 +292,7 @@ export default function ProfileScreen() {
 
         <View className="px-4 pt-2 pb-6">
           <ProfileSectionTitle>Sync</ProfileSectionTitle>
-          <SyncStatus className="mb-4 rounded-xl border border-border shadow-sm" />
+          <SyncStatus className="mb-4 rounded-2xl border border-border" />
 
           <ProfileSectionTitle>Permissions</ProfileSectionTitle>
           <Text className="mb-3 text-xs text-muted">
@@ -396,7 +395,8 @@ export default function ProfileScreen() {
             <ProfileSectionTitle>Shortcuts</ProfileSectionTitle>
             <SettingsRow
               icon="account-balance-wallet"
-              iconBgClassName="bg-emerald-600"
+              iconBgClassName=""
+              iconBgColor={tokens.primary}
               title="Category budgets"
               subtitle="Monthly caps per category (all wallets) for AI coaching"
               onPress={openBudgets}
@@ -419,11 +419,11 @@ export default function ProfileScreen() {
           </View>
 
           <TouchableOpacity
-            className="mt-6 flex-row items-center justify-center rounded-xl border border-red-200 bg-red-50 py-3.5 dark:border-red-500/40 dark:bg-red-950/50"
+            className="mt-6 flex-row items-center justify-center rounded-2xl border border-danger/30 bg-danger/10 py-3.5"
             onPress={handleSignOut}
             activeOpacity={0.85}>
-            <MaterialIcons name="logout" size={20} color="#dc2626" />
-            <Text className="ml-2 text-base font-semibold text-red-600 dark:text-red-400">
+            <MaterialIcons name="logout" size={20} color={tokens.danger} />
+            <Text className="ml-2 text-base font-semibold text-danger">
               Sign out
             </Text>
           </TouchableOpacity>

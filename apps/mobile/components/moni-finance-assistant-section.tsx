@@ -148,7 +148,7 @@ export function MoniFinanceAssistantSection({
         ) : null}
 
         {errorMessage ? (
-          <Text className="text-sm text-red-600 dark:text-red-400 mb-2">{errorMessage}</Text>
+          <Text className="text-sm text-danger mb-2">{errorMessage}</Text>
         ) : null}
 
         {!insight?.insights?.length && !generating ? (

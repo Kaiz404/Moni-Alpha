@@ -22,16 +22,16 @@ function NotificationCard({
   const isLinked = item.packageLinked ?? isPackageLinkedInCache(packageName);
 
   return (
-    <View className="mb-3 rounded-xl border border-border bg-card p-4 shadow-sm">
+    <View className="mb-3 rounded-2xl border border-border bg-card p-4">
       <View className="flex-row items-center justify-between mb-2">
         <View className="flex-row items-center flex-1 mr-2">
           <View
             className={`w-2 h-2 rounded-full mr-2 ${
               isPrefilterPassed && isLinked
-                ? 'bg-green-500'
+                ? 'bg-success'
                 : isPrefilterPassed
-                  ? 'bg-amber-400'
-                  : 'bg-blue-400'
+                  ? 'bg-warning'
+                  : 'bg-transfer'
             }`}
           />
           <Text className="text-xs font-semibold text-foreground flex-1" numberOfLines={1}>
@@ -43,17 +43,17 @@ function NotificationCard({
           <View
             className={`self-start mr-2 px-2 py-0.5 rounded-full ${
               isPrefilterPassed && isLinked
-                ? 'bg-green-100 dark:bg-green-900'
+                ? 'bg-success/15'
                 : isPrefilterPassed
-                  ? 'bg-amber-100 dark:bg-amber-900'
+                  ? 'bg-warning/15'
                   : 'bg-background-muted'
             }`}>
             <Text
               className={`text-[11px] font-semibold ${
                 isPrefilterPassed && isLinked
-                  ? 'text-green-700 dark:text-green-300'
+                  ? 'text-success'
                   : isPrefilterPassed
-                    ? 'text-amber-800 dark:text-amber-200'
+                    ? 'text-warning'
                     : 'text-muted'
               }`}>
               {isPrefilterPassed && isLinked
@@ -130,7 +130,7 @@ export default function NotificationsScreen() {
         </Text>
         {notifications.length > 0 && (
           <TouchableOpacity onPress={handleClearAll}>
-            <Text className="text-xs text-red-500 dark:text-red-400 font-medium">Clear all</Text>
+            <Text className="text-xs font-medium text-danger">Clear all</Text>
           </TouchableOpacity>
         )}
       </View>
