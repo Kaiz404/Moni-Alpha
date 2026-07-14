@@ -47,7 +47,7 @@ export function CaptureButton() {
         <GradientCard
           cardStyle={captureCardStyle}
           className="h-16 w-16 items-center justify-center rounded-full border-[3px] border-background">
-          <MaterialIcons name="camera-alt" size={26} color="#ffffff" />
+          <MaterialIcons name="add" size={30} color="#ffffff" />
         </GradientCard>
       </Pressable>
     </View>
