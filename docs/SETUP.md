@@ -5,7 +5,7 @@
 - Node.js >= 18, pnpm 9 (`corepack enable`)
 - Go >= 1.26 (for `apps/backend`)
 - Supabase CLI (`npx supabase`) logged in and linked to the project
-- Android Studio / Xcode for native mobile builds (the app uses native modules — Expo Go is not enough; use a dev client: `pnpm --filter moni android`)
+- **Android dev client** — native modules (camera, notifications, Google Sign-In); Expo Go is not enough. Local build: `cd apps/mobile && npx expo run:android`. Cloud build: `pnpm --filter moni android` (EAS). On Windows, use **WSL2** for local Android builds ([toolchain below](#wsl-android-toolchain); day-to-day workflow in [apps/mobile/README.md](../apps/mobile/README.md)).
 
 ## Install
 
@@ -56,11 +56,44 @@ SUPABASE_URL=https://<project-ref>.supabase.co
 GROQ_API_KEY=gsk_...                # console.groq.com/keys
 ```
 
+## WSL Android toolchain
+
+For local Android builds on Windows, clone the repo into the WSL filesystem (`~/Moni`, not `/mnt/c/...`) and run all install/prebuild/Gradle commands from WSL.
+
+```bash
+# packages (Ubuntu)
+sudo apt install -y build-essential openjdk-17-jdk unzip wget git curl usbutils
+
+# Android command-line tools → ~/Android/Sdk (see Expo prebuild output for platform/NDK versions)
+mkdir -p ~/Android/Sdk/cmdline-tools
+# download + unzip google commandlinetools-linux zip → ~/Android/Sdk/cmdline-tools/latest
+
+# ~/.bashrc
+export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
+export ANDROID_HOME=$HOME/Android/Sdk
+export PATH=$PATH:$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools
+
+sdkmanager --licenses
+sdkmanager "platform-tools" "platforms;android-36" "build-tools;36.0.0" "ndk;27.1.12297006" "cmake;3.31.6"
+```
+
+**USB phone:** install [usbipd-win](https://learn.microsoft.com/en-us/windows/wsl/connect-usb) on Windows; each session: `usbipd attach --wsl --busid <ID>`. One-time udev rule in WSL:
+
+```bash
+sudo tee /etc/udev/rules.d/51-android.rules << 'EOF'
+SUBSYSTEM=="usb", ENV{DEVTYPE}=="usb_device", MODE="0666", GROUP="plugdev"
+EOF
+sudo udevadm control --reload-rules && sudo udevadm trigger
+```
+
+Verify with `adb devices` (`device`, not `no permissions`). Some OEMs (e.g. Xiaomi) also need **Install via USB** in Developer options.
+
 ## Run
 
 ```bash
 pnpm dev                        # everything via turbo
-pnpm --filter moni dev          # mobile (Expo)
+pnpm --filter moni dev          # mobile Metro (terminal 1)
+cd apps/mobile && npx expo run:android   # local dev client install/rebuild (terminal 2, when needed)
 pnpm --filter backend dev       # Go AI backend on :8080
 pnpm --filter web dev           # Next.js dashboard on :3000
 ```
@@ -87,7 +120,7 @@ The mobile heatmap (`apps/mobile/app/heatmap.tsx`) renders transaction locations
 }]
 ```
 
-3. Rebuild the dev client (`pnpm --filter moni android`). A grey/blank map means a missing or wrongly restricted key.
+3. Rebuild the dev client (`npx expo run:android` locally, or `pnpm --filter moni android` on EAS). A grey/blank map means a missing or wrongly restricted key.
 
 Location capture itself is handled by `expo-location` (permissions configured via the plugin); transactions store `location_latitude` / `location_longitude` / `location_name`.
 
@@ -100,7 +133,7 @@ Native Google auth uses `@react-native-google-signin/google-signin` + `supabase.
 1. **OAuth consent screen** — External, with test users while in Testing.
 2. **Web application** OAuth client — client ID + secret go in **Supabase Dashboard → Auth → Providers → Google** (same as web app).
 3. **Android** OAuth client — package `com.anonymous.moni`, SHA-1 from the keystore that signed the installed build:
-   - Local `pnpm --filter moni android`: `apps/mobile/android/app/debug.keystore`
+   - Local `npx expo run:android`: `apps/mobile/android/app/debug.keystore`
    - **EAS builds**: `npx eas credentials -p android` (different SHA-1 — register both in GCP if you use both)
 
 4. **iOS** OAuth client (when building iOS) — bundle ID `com.anonymous.moni`; set `EXPO_PUBLIC_GOOGLE_IOS_URL_SCHEME` to the reversed client ID.
@@ -118,7 +151,7 @@ EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID=<web-client-id>.apps.googleusercontent.com
 # EXPO_PUBLIC_GOOGLE_IOS_URL_SCHEME=com.googleusercontent.apps.<ios-client-prefix>
 ```
 
-After changing native config or env, rebuild: `pnpm --filter moni android`.
+After changing native config or env, rebuild: `npx expo run:android` (local) or `pnpm --filter moni android` (EAS).
 
 ## Android notification listener
 

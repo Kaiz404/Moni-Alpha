@@ -28,7 +28,7 @@ pnpm --filter backend dev      # Go AI backend (:8080)
 pnpm --filter web dev          # web dashboard (:3000)
 ```
 
-Requires Node >= 18, pnpm 9, Go >= 1.26. Mobile needs a native dev client (`pnpm --filter moni android`) — Expo Go doesn't support the native modules.
+Requires Node >= 18, pnpm 9, Go >= 1.26. Mobile needs a native dev client (`npx expo run:android` locally, or `pnpm --filter moni android` via EAS) — Expo Go doesn't support the native modules. On Windows, build Android from WSL — see [apps/mobile/README.md](apps/mobile/README.md).
 
 ## Documentation
 

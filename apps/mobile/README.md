@@ -6,11 +6,57 @@ Primary Moni client: Expo SDK 54 + expo-router, offline-first via Legend-State o
 
 ```bash
 pnpm install                # repo root
-pnpm --filter moni dev      # Metro / Expo
-pnpm --filter moni android  # native dev client (required — Expo Go won't work)
+pnpm --filter moni dev      # Metro / Expo (terminal 1)
 ```
 
 Env: copy `.env.example` to `.env` (Supabase publishable key, AI backend URL, Google web client ID — see [docs/SETUP.md](../../docs/SETUP.md)).
+
+This app uses native modules (camera, notifications, Google Sign-In) — **Expo Go will not work**. Use a dev client:
+
+| Build | Command |
+| --- | --- |
+| **Local (WSL / macOS / Linux)** | `cd apps/mobile && npx expo run:android` |
+| **EAS cloud** | `pnpm --filter moni android` |
+
+Rebuild the dev client when you change `app.json` plugins, native deps, or `modules/moni-android-apps`. JS-only changes just need Metro + reload.
+
+### Android dev client on WSL (recommended on Windows)
+
+Clone and build on the **WSL Linux filesystem** (e.g. `~/Moni`), not `/mnt/c/...` — Windows paths break Gradle autolinking and hit path-length limits. Open the repo in Cursor via **Connect to WSL**.
+
+**One-time setup** (toolchain, SDK, env vars): [docs/SETUP.md § WSL Android toolchain](../../docs/SETUP.md#wsl-android-toolchain).
+
+**First native project** (or after switching from a Windows checkout):
+
+```bash
+cd apps/mobile
+rm -rf android
+npx expo prebuild --platform android --clean
+```
+
+**Install / rebuild dev client** (phone connected — see below):
+
+```bash
+npx expo run:android
+# or reinstall an existing APK:
+adb install -r android/app/build/outputs/apk/debug/app-debug.apk
+```
+
+**Day-to-day:**
+
+```bash
+# terminal 1 — from repo root
+pnpm --filter moni dev
+
+# terminal 2 — only when native deps / app.json plugins change
+cd apps/mobile && npx expo run:android
+```
+
+**Physical device (USB):** WSL2 does not see USB directly. On Windows (admin PowerShell): `usbipd list` → `usbipd bind --busid <ID>` → `usbipd attach --wsl --busid <ID>`. In WSL: `adb devices` must show `device` (not `no permissions` — udev rules in SETUP). MIUI/Xiaomi: enable **Install via USB** in Developer options.
+
+**Metro over USB:** if the dev client cannot reach Metro (`failed to connect … port 8081`), run `adb reverse tcp:8081 tcp:8081` before opening the app.
+
+Do not mix Windows and WSL `expo prebuild` / Gradle — `android/build/generated/autolinking/autolinking.json` must use Linux paths (`/home/...`), not `C:\...`.
 
 ## Map
 
@@ -49,7 +95,7 @@ Default wallet: Profile → Default wallet. Synced in `profiles.preferences.defa
 
 **Extraction queue** (background): MMKV queue → background processor → Go backend → `proposed_transactions` → review UI. **Silent capture entry points** (not shown in Chat thread): floating tab-bar button — tap opens `app/(routes)/scan/receipt.tsx` (live camera), long-press opens `app/(routes)/scan/listen.tsx` (narration). **Review UI:** `components/proposal-summary-sheet.tsx` shows a minimal popup for each pending proposal (Approve / Decline / "Edit details"); full form at `app/(routes)/proposal/[id].tsx`. **Android notifications:** link a banking app per wallet; only linked apps are queued. Details: [docs/AI.md](../../docs/AI.md).
 
-**Receipt camera** (`components/receipt/receipt-camera.tsx`, shared by the FAB scan screen and the chat inline camera): react-native-vision-camera **v4** (not v5 — see below) + `react-native-fast-opencv` frame processor detects the receipt quad live; a `react-native-svg` overlay draws brand corner brackets and gates the shutter on ~500ms of stable detection. On capture (or gallery pick), the same quad-detection + perspective-crop + grayscale/contrast "document scan" filter runs in a `react-native-worklets-core` worklet, resized to a single ≤1024px JPEG. No quad found → hard reject, nothing is queued or uploaded. Android `minSdkVersion` 26 (HardwareBuffers). **Native deps changed → rebuild the dev client** (`pnpm --filter moni android`).
+**Receipt camera** (`components/receipt/receipt-camera.tsx`, shared by the FAB scan screen and the chat inline camera): react-native-vision-camera **v4** (not v5 — see below) + `react-native-fast-opencv` frame processor detects the receipt quad live; a `react-native-svg` overlay draws brand corner brackets and gates the shutter on ~500ms of stable detection. On capture (or gallery pick), the same quad-detection + perspective-crop + grayscale/contrast "document scan" filter runs in a `react-native-worklets-core` worklet, resized to a single ≤1024px JPEG. No quad found → hard reject, nothing is queued or uploaded. Android `minSdkVersion` 26 (HardwareBuffers). **Native deps changed → rebuild the dev client** (`npx expo run:android`).
 
 **Summary tab:** charts, tables, and budget data only — no AI analysis.
 
