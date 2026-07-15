@@ -13,7 +13,7 @@ import {
 import { router, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@/lib/auth/auth-context';
-import { getWalletById, getWallets, updateWallet } from '@/lib/supabase/wallets';
+import { deleteWallet, getWalletById, getWallets, updateWallet } from '@/lib/supabase/wallets';
 import { updateWalletSchema } from '@repo/types';
 import { WALLET_TYPE_OPTIONS, type WalletKind } from '@/constants/wallet-form';
 import {
@@ -144,6 +144,32 @@ export default function EditWalletScreen() {
       );
     });
   }, [user, walletId, notificationLink.notificationPackage]);
+
+  const handleDelete = useCallback(() => {
+    if (!walletId) return;
+    Alert.alert(
+      'Delete wallet',
+      'This will permanently delete this wallet and all related transactions. This cannot be undone. Continue?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await deleteWallet(walletId);
+              router.replace('/(tabs)' as never);
+            } catch (e) {
+              Alert.alert(
+                'Delete failed',
+                e instanceof Error ? e.message : 'Could not delete wallet. Please try again.',
+              );
+            }
+          },
+        },
+      ],
+    );
+  }, [walletId]);
 
   const handleSubmit = useCallback(async () => {
     if (!user || !walletId) return;
@@ -320,6 +346,14 @@ export default function EditWalletScreen() {
               onPress={handleSubmit}
               disabled={loading}
             />
+            <TouchableOpacity
+              onPress={handleDelete}
+              disabled={loading}
+              className="mt-3 items-center rounded-xl border border-destructive/40 py-3 active:opacity-80"
+              accessibilityRole="button"
+              accessibilityLabel="Delete wallet">
+              <Text className="text-sm font-semibold text-destructive">Delete wallet</Text>
+            </TouchableOpacity>
           </View>
         </View>
       </KeyboardAvoidingView>
