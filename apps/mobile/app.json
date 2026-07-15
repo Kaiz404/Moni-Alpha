@@ -53,12 +53,6 @@
       "./plugins/with-notification-listener-manifest",
       "expo-speech-recognition",
       [
-        "react-native-vision-camera",
-        {
-          "cameraPermissionText": "Allow $(PRODUCT_NAME) to use the camera to scan receipts."
-        }
-      ],
-      [
         "expo-location",
         {
           "locationAlwaysAndWhenInUsePermission": "Allow $(PRODUCT_NAME) to access your location for transaction tracking."

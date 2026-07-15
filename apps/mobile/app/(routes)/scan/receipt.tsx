@@ -13,8 +13,7 @@ const TAG = '[Moni/Scan]';
 
 /**
  * Queues a processed receipt image through the same extraction pipeline as the Chat tab.
- * Only ever called with a `ReceiptCamera`-processed URI — a rejected/no-quad capture never
- * reaches this function, so it never hits `/v1/extract/image`.
+ * Only called after a successful ML Kit scan + normalize on Android.
  */
 async function queueReceiptImage(uri: string) {
   const id = randomUUID();

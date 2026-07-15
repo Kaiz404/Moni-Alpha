@@ -42,7 +42,10 @@ app-example
 /ios
 /android
 
-# Local Expo module Gradle outputs (e.g. modules/moni-android-apps)
+# Local Expo module Gradle / native outputs (e.g. modules/moni-android-apps, modules/moni-document-scanner)
 modules/**/android/build/
 modules/**/android/.gradle/
+modules/**/android/.cxx/
 modules/**/android/local.properties
+modules/**/node_modules/
+modules/**/pnpm-lock.yaml

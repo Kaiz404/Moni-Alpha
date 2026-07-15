@@ -6,9 +6,8 @@ import { supabase } from '@/lib/supabase/client';
 
 /**
  * Longer edge cap for on-device VL / native vision — avoids OOM and timeouts on huge photos.
- * `ReceiptCamera` (components/receipt/receipt-camera.tsx) already crops + document-scan-filters
- * + resizes every camera/gallery image to this size before it ever reaches `saveImageLocally`,
- * so this resize is normally a no-op; it stays as a defensive fallback for any other caller.
+ * ML Kit scans are normalized to this size in `normalize-scan.ts` before save/upload;
+ * this resize is a defensive fallback for any other caller.
  */
 export const VISION_MAX_EDGE_PX = 1024;
 

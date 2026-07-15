@@ -6,10 +6,8 @@ import { Image } from 'react-native';
 import * as ImageManipulator from 'expo-image-manipulator';
 
 /**
- * `ReceiptCamera` (components/receipt/receipt-camera.tsx) already crops + document-scan-filters
- * + resizes every camera/gallery image to ~1024px max edge before it reaches this payload
- * builder — this cap only kicks in as a defensive fallback, so we never upscale a
- * smaller-than-this source.
+ * ML Kit scans are normalized to ~1024px max edge in `normalize-scan.ts` before they reach
+ * this payload builder — this cap only kicks in as a defensive fallback.
  */
 const MAX_EDGE_FALLBACK_PX = 1024;
 const JPEG_QUALITY = 0.7;

@@ -1,0 +1,11 @@
+# Local install from `pnpm install --ignore-workspace` during nitrogen setup
+node_modules/
+pnpm-lock.yaml
+
+# Android native build outputs
+android/build/
+android/.gradle/
+android/.cxx/
+android/local.properties
+
+# nitrogen/generated/ is committed on purpose (regenerate with `pnpm nitrogen` after editing *.nitro.ts)

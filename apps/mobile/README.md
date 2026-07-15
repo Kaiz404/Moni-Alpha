@@ -18,7 +18,7 @@ This app uses native modules (camera, notifications, Google Sign-In) — **Expo 
 | **Local (WSL / macOS / Linux)** | `cd apps/mobile && npx expo run:android` |
 | **EAS cloud** | `pnpm --filter moni android` |
 
-Rebuild the dev client when you change `app.json` plugins, native deps, or `modules/moni-android-apps`. JS-only changes just need Metro + reload.
+Rebuild the dev client when you change `app.json` plugins, native deps, or local modules (`modules/moni-android-apps`, `modules/moni-document-scanner`).
 
 ### Android dev client on WSL (recommended on Windows)
 
@@ -71,7 +71,7 @@ Do not mix Windows and WSL `expo prebuild` / Gradle — `android/build/generated
 | `lib/wallets/` | Default wallet preference (`profiles.preferences.default_wallet_id`, MMKV cache), proposal wallet/currency resolution for AI, homepage wallet aggregation helpers (`home-aggregation.ts`) |
 | `lib/ai/` | Processing queue, background processor, AI client (HTTP ↔ Go backend, mock fallback) |
 | `lib/notifications/` | Prefilter / package helpers: `*.core.js` (headless + Node tests) + thin `*.ts` re-exports; linked-app MMKV cache; `moni-android-apps` |
-| `lib/receipts/` | Receipt quad detection, perspective-crop + document-scan preprocessing, local image save, Storage upload queue |
+| `lib/receipts/` | ML Kit scan normalization, local image save, Storage upload queue |
 | `lib/transactions/draft-extras.ts` | Ephemeral (non-persisted) hand-off of merchant/description/location between the quick-add and "More details" transaction screens |
 | `global.css` | Uniwind design tokens (brand + light/dark semantic colors) |
 | `constants/wallet-card-styles.ts` | Curated gradient card presets for wallets (`wallets.card_style_id`) — append here to add a new style |
@@ -95,7 +95,7 @@ Default wallet: Profile → Default wallet. Synced in `profiles.preferences.defa
 
 **Extraction queue** (background): MMKV queue → background processor → Go backend → `proposed_transactions` → review UI. **Silent capture entry points** (not shown in Chat thread): floating tab-bar button — tap opens `app/(routes)/scan/receipt.tsx` (live camera), long-press opens `app/(routes)/scan/listen.tsx` (narration). **Review UI:** `components/proposal-summary-sheet.tsx` shows a minimal popup for each pending proposal (Approve / Decline / "Edit details"); full form at `app/(routes)/proposal/[id].tsx`. **Android notifications:** link a banking app per wallet; only linked apps are queued. Details: [docs/AI.md](../../docs/AI.md).
 
-**Receipt camera** (`components/receipt/receipt-camera.tsx`, shared by the FAB scan screen and the chat inline camera): react-native-vision-camera **v4** (not v5 — see below) + `react-native-fast-opencv` frame processor detects the receipt quad live; a `react-native-svg` overlay draws brand corner brackets and gates the shutter on ~500ms of stable detection. On capture (or gallery pick), the same quad-detection + perspective-crop + grayscale/contrast "document scan" filter runs in a `react-native-worklets-core` worklet, resized to a single ≤1024px JPEG. No quad found → hard reject, nothing is queued or uploaded. Android `minSdkVersion` 26 (HardwareBuffers). **Native deps changed → rebuild the dev client** (`npx expo run:android`).
+**Receipt camera** (`components/receipt/receipt-camera.tsx`): **Android only** — local Nitro module `modules/moni-document-scanner` launches Google ML Kit's native document scanner (`SCANNER_MODE_FULL`: auto edge-detect, auto-capture, gallery import). Returns a cropped JPEG → `lib/receipts/normalize-scan.ts` copies to cache and caps longest edge at 1024px. Requires Google Play Services; first launch may download the ML Kit model. Other platforms show an unsupported screen. **Rebuild dev client** after native module changes (`npx expo run:android`).
 
 **Summary tab:** charts, tables, and budget data only — no AI analysis.
 

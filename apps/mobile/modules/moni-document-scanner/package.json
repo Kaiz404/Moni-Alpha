@@ -1,0 +1,23 @@
+{
+  "name": "moni-document-scanner",
+  "version": "1.0.0",
+  "main": "index.ts",
+  "types": "index.ts",
+  "scripts": {
+    "nitrogen": "nitrogen"
+  },
+  "react-native": {
+    "android": {
+      "packageName": "com.margelo.nitro.monidocumentscanner"
+    }
+  },
+  "peerDependencies": {
+    "react": "*",
+    "react-native": "*",
+    "react-native-nitro-modules": "*"
+  },
+  "devDependencies": {
+    "nitrogen": "^0.35.9",
+    "react-native-nitro-modules": "^0.35.9"
+  }
+}

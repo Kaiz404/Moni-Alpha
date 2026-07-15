@@ -1,0 +1,19 @@
+{
+  "cxxNamespace": ["monidocumentscanner"],
+  "ios": {
+    "iosModuleName": "MoniDocumentScanner"
+  },
+  "android": {
+    "androidNamespace": ["monidocumentscanner"],
+    "androidCxxLibName": "monidocumentscanner"
+  },
+  "autolinking": {
+    "MoniDocumentScanner": {
+      "android": {
+        "language": "kotlin",
+        "implementationClassName": "MoniDocumentScanner"
+      }
+    }
+  },
+  "ignorePaths": ["node_modules"]
+}
