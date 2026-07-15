@@ -1,7 +1,7 @@
 import { useRef } from 'react';
 import { Pressable, View } from 'react-native';
-import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
+import { hapticVoiceStart } from '@/lib/haptics';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { GradientCard } from '@/components/ui/gradient-card';
 import { getWalletCardStyle } from '@/constants/wallet-card-styles';
@@ -33,7 +33,7 @@ export function CaptureButton() {
         }}
         onLongPress={() => {
           longPressTriggeredRef.current = true;
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+          hapticVoiceStart();
           router.push('/scan/listen' as any);
         }}
         style={{

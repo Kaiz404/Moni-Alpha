@@ -9,6 +9,7 @@ import { Image } from 'expo-image';
 
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { IconSymbol } from '@/components/ui/icon-symbol';
+import { hapticVoiceStart, hapticVoiceStop } from '@/lib/haptics';
 
 type ChatInputBarProps = {
   input: string;
@@ -96,8 +97,14 @@ export function ChatInputBar({
             style={{
               backgroundColor: isSpeechRecognizing ? tokens.danger : tokens.primary,
             }}
-            onPressIn={onPressInMic}
-            onPressOut={onPressOutMic}
+            onPressIn={() => {
+              hapticVoiceStart();
+              onPressInMic();
+            }}
+            onPressOut={() => {
+              hapticVoiceStop();
+              onPressOutMic();
+            }}
             accessibilityLabel={isSpeechRecognizing ? 'Listening' : 'Hold to speak'}
           >
             <IconSymbol name="mic" size={24} color="#ffffff" />
