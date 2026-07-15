@@ -95,7 +95,7 @@ export async function saveImageLocally(sourceUri: string): Promise<string> {
   const filename = `${randomUUID()}.${ext}`;
   const sourceFile = new File(processedUri);
   const destinationFile = new File(RECEIPTS_DIR, filename);
-  sourceFile.copy(destinationFile);
+  await sourceFile.copy(destinationFile);
   return destinationFile.uri;
 }
 

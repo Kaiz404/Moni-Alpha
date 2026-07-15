@@ -10,7 +10,7 @@ import {
   Platform,
 } from 'react-native';
 import { Image } from 'expo-image';
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import MaterialIcons from '@react-native-vector-icons/material-icons';
 import {
   groupCuratedAppsByRegion,
   labelForNotificationPackage,

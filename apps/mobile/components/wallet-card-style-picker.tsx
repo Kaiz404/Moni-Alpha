@@ -1,5 +1,5 @@
 import { Pressable, Text, View } from 'react-native';
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import MaterialIcons from '@react-native-vector-icons/material-icons';
 import { GradientCard } from '@/components/ui/gradient-card';
 import { WALLET_CARD_STYLES } from '@/constants/wallet-card-styles';
 

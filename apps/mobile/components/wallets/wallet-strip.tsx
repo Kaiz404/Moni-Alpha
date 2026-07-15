@@ -1,5 +1,5 @@
 import { FlatList, Pressable, Text, TouchableOpacity, View } from 'react-native';
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import MaterialIcons from '@react-native-vector-icons/material-icons';
 import { router } from 'expo-router';
 
 import { GradientCard } from '@/components/ui/gradient-card';

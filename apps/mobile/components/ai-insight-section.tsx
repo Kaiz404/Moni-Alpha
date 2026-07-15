@@ -1,5 +1,5 @@
 import { ActivityIndicator, Pressable, Text, TouchableOpacity, View } from 'react-native';
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import MaterialIcons from '@react-native-vector-icons/material-icons';
 import type { BudgetCoachCardsV1, SummaryInsightCardsV1 } from '@repo/types';
 
 type InsightPayload = BudgetCoachCardsV1 | SummaryInsightCardsV1 | null;

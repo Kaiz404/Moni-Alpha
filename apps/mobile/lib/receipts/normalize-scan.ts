@@ -10,6 +10,6 @@ import { resizeImageToVisionMax } from './images';
 export async function normalizeScanUri(sourceUri: string): Promise<string> {
   const destination = new File(Paths.cache, `${randomUUID()}.jpg`);
   const source = new File(sourceUri);
-  source.copy(destination);
+  await source.copy(destination);
   return resizeImageToVisionMax(destination.uri);
 }

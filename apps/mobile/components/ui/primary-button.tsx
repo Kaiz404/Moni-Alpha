@@ -1,5 +1,5 @@
 import { Text, TouchableOpacity, type TouchableOpacityProps } from 'react-native';
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import MaterialIcons from '@react-native-vector-icons/material-icons';
 
 type PrimaryButtonProps = TouchableOpacityProps & {
   label: string;

@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Keyboard, Platform, Pressable, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
-import type { NavigationRoute, ParamListBase } from '@react-navigation/native';
+import type { BottomTabBarProps } from 'expo-router/js-tabs';
+import type { NavigationRoute, ParamListBase } from 'expo-router/react-navigation';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { CaptureButton } from '@/components/nav/capture-button';
 

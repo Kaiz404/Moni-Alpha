@@ -12,7 +12,7 @@ import {
   View,
   useWindowDimensions,
 } from 'react-native';
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import MaterialIcons from '@react-native-vector-icons/material-icons';
 import { Link, router, useFocusEffect } from 'expo-router';
 import {
   VictoryAxis,

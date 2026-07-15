@@ -23,6 +23,14 @@ const googleSignInPlugin: [string, { iosUrlScheme: string }] | string =
 export default {
   expo: {
     ...base,
-    plugins: [...(base.plugins ?? []), googleSignInPlugin],
+    plugins: [
+      ...(base.plugins ?? []),
+      'expo-font',
+      'expo-image',
+      'expo-secure-store',
+      'expo-status-bar',
+      'expo-web-browser',
+      googleSignInPlugin,
+    ],
   },
 } satisfies { expo: ExpoConfig };

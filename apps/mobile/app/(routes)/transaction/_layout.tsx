@@ -1,6 +1,6 @@
 import { Stack, router } from 'expo-router';
 import { Pressable, View } from 'react-native';
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import MaterialIcons from '@react-native-vector-icons/material-icons';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { SyncStatusIndicator } from '@/components/sync-status-indicator';
 

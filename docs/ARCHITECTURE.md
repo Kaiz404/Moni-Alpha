@@ -74,7 +74,7 @@ Android notifications are prefiltered on-device (`lib/notifications/notification
 ## Monorepo layout
 
 ```
-apps/mobile/      Expo SDK 54 + expo-router — primary client
+apps/mobile/      Expo SDK 57 + expo-router — primary client
 apps/backend/     Go + Gin AI gateway (see apps/backend/README.md)
 apps/web/         Next.js 16 dashboard — isolated, deprioritized
 packages/types/   @repo/types — Zod schemas + inferred TS types

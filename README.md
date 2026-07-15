@@ -44,7 +44,7 @@ Requires Node >= 18, pnpm 9, Go >= 1.26. Mobile needs a native dev client (`npx 
 
 | | |
 | --- | --- |
-| Mobile | Expo SDK 54, expo-router, Legend-State + MMKV, Uniwind (Tailwind), Reanimated |
+| Mobile | Expo SDK 57, expo-router, Legend-State + MMKV, Uniwind (Tailwind), Reanimated |
 | AI backend | Go 1.26, Gin, Groq (Llama 3.1/3.3 + Llama 4 Scout vision) |
 | Data | Supabase (Postgres, Auth with ES256 JWTs, Storage, Realtime) |
 | Web | Next.js 16 App Router, Tailwind, TanStack Query |

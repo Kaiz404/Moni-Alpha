@@ -1,11 +1,11 @@
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import MaterialIcons from '@react-native-vector-icons/material-icons';
 import { ComponentProps } from 'react';
 import { OpaqueColorValue, type StyleProp, type TextStyle } from 'react-native';
 
 type IconSymbolName = ComponentProps<typeof MaterialIcons>['name'];
 
 /**
- * Cross-platform icon wrapper backed by Expo vector icons.
+ * Cross-platform icon wrapper (Material Icons on Android; SF Symbols on iOS).
  */
 export function IconSymbol({
   name,

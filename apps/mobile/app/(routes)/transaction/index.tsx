@@ -11,7 +11,7 @@ import {
   Pressable,
 } from 'react-native';
 import { Link, router, useLocalSearchParams, useFocusEffect } from 'expo-router';
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import MaterialIcons from '@react-native-vector-icons/material-icons';
 import { useAuth } from '@/lib/auth/auth-context';
 import { GradientCard } from '@/components/ui/gradient-card';
 import { getWalletCardStyle } from '@/constants/wallet-card-styles';

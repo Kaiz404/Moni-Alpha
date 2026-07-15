@@ -10,7 +10,7 @@ alwaysApply: true
 ## Monorepo (Turborepo + pnpm)
 
 ```
-apps/mobile/      Expo SDK 54 + expo-router — PRIMARY client (focus)
+apps/mobile/      Expo SDK 57 + expo-router — PRIMARY client (focus)
 apps/backend/     Go + Gin AI gateway → Groq (focus)
 apps/web/         Next.js 16 dashboard — ISOLATED, deprioritized
 packages/types/   @repo/types — Zod schemas + inferred TS types

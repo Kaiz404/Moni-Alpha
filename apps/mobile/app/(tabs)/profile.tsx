@@ -7,7 +7,7 @@ import {
   ScrollView,
   Pressable,
 } from 'react-native';
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import MaterialIcons from '@react-native-vector-icons/material-icons';
 import { router, useFocusEffect } from 'expo-router';
 import * as Location from 'expo-location';
 import * as ImagePicker from 'expo-image-picker';

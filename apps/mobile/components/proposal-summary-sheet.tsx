@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, AppState, DeviceEventEmitter, Modal, Pressable, Text, View } from 'react-native';
 import { usePathname, router } from 'expo-router';
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import MaterialIcons from '@react-native-vector-icons/material-icons';
 import type { ProposedTransaction } from '@repo/types';
 import {
   getProposedTransactions,

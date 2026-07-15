@@ -7,7 +7,6 @@
     "icon": "./assets/images/icon.png",
     "scheme": "moni",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.anonymous.moni",
@@ -19,7 +18,6 @@
     },
     "android": {
       "softwareKeyboardLayoutMode": "pan",
-      "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
       "package": "com.anonymous.moni",
       "permissions": [
@@ -74,9 +72,6 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
-    },
-    "autolinking": {
-      "nativeModulesDir": "./modules"
     },
     "extra": {
       "router": {},
