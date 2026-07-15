@@ -14,6 +14,7 @@ import { useUniwind } from "uniwind";
 import "../global.css";
 
 import { AuthGuard } from "@/components/auth-guard";
+import { FabReceiptProcessingOverlay } from "@/components/receipt/fab-receipt-processing-overlay";
 import { ProposalSummarySheet } from "@/components/proposal-summary-sheet";
 import { StoreSyncActivator } from "@/components/store-sync-activator";
 import { useThemeTokens } from "@/hooks/use-theme-tokens";
@@ -103,6 +104,7 @@ export default function RootLayout() {
               />
               <Stack.Screen name="budgets" options={{ headerShown: false }} />
             </Stack>
+            <FabReceiptProcessingOverlay />
             <ProposalSummarySheet />
           </AuthGuard>
           <StatusBar style={theme === "dark" ? "light" : "dark"} />

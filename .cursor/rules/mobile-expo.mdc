@@ -57,4 +57,4 @@ Tailwind via Uniwind `className` — **not** NativeWind. Design tokens live in `
 
 ## Receipt camera (Android)
 
-`components/receipt/receipt-camera.tsx` (FAB scan + chat inline camera) uses `modules/moni-document-scanner` (Nitro) → Google ML Kit native document scanner. Post-scan: `lib/receipts/normalize-scan.ts` (copy + 1024px cap). **Android only** — other platforms show an unsupported message. Requires Google Play Services; rebuild dev client after native module changes (`npx expo run:android`).
+`lib/receipts/scan-receipt.ts` (FAB + Chat camera) calls `modules/moni-document-scanner` (Nitro) → Google ML Kit native document scanner directly — no intermediate React screen on Android. Post-scan: `lib/receipts/normalize-scan.ts` (copy + 1024px cap). **Android only** — iOS shows an alert. Requires Google Play Services; rebuild dev client after native module changes (`npx expo run:android`).

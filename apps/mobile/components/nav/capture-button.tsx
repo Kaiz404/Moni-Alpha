@@ -1,10 +1,11 @@
 import { useRef } from 'react';
-import { Pressable, View } from 'react-native';
+import { Platform, Pressable, View } from 'react-native';
 import { router } from 'expo-router';
 import { hapticVoiceStart } from '@/lib/haptics';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { GradientCard } from '@/components/ui/gradient-card';
 import { getWalletCardStyle } from '@/constants/wallet-card-styles';
+import { runFabReceiptScan } from '@/lib/receipts/scan-receipt';
 
 const captureCardStyle = getWalletCardStyle('emerald-grain');
 
@@ -29,7 +30,11 @@ export function CaptureButton() {
         }}
         onPress={() => {
           if (longPressTriggeredRef.current) return;
-          router.push('/scan/receipt' as any);
+          if (Platform.OS !== 'android') {
+            router.push('/scan/receipt' as any);
+            return;
+          }
+          void runFabReceiptScan();
         }}
         onLongPress={() => {
           longPressTriggeredRef.current = true;

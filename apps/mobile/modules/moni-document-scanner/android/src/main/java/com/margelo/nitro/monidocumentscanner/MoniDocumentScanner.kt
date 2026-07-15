@@ -1,6 +1,7 @@
 package com.margelo.nitro.monidocumentscanner
 
 import android.app.Activity
+import android.app.ActivityOptions
 import android.content.Intent
 import android.content.IntentSender
 import com.facebook.proguard.annotations.DoNotStrip
@@ -65,6 +66,7 @@ class MoniDocumentScanner : HybridMoniDocumentScannerSpec(), ActivityEventListen
       .getStartScanIntent(activity)
       .addOnSuccessListener { intentSender: IntentSender ->
         try {
+          val launchOptions = ActivityOptions.makeCustomAnimation(activity, 0, 0).toBundle()
           activity.startIntentSenderForResult(
             intentSender,
             SCAN_REQUEST_CODE,
@@ -72,6 +74,7 @@ class MoniDocumentScanner : HybridMoniDocumentScannerSpec(), ActivityEventListen
             0,
             0,
             0,
+            launchOptions,
           )
         } catch (e: IntentSender.SendIntentException) {
           pendingPromise?.reject(e)
@@ -96,6 +99,8 @@ class MoniDocumentScanner : HybridMoniDocumentScannerSpec(), ActivityEventListen
 
     val promise = pendingPromise ?: return
     pendingPromise = null
+    @Suppress("DEPRECATION")
+    activity.overridePendingTransition(0, 0)
 
     if (resultCode != Activity.RESULT_OK) {
       promise.reject(Exception("User cancelled the scan (resultCode=$resultCode)."))

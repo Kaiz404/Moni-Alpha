@@ -17,10 +17,10 @@ import {
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { MessageBubble } from '@/components/chat/message-bubble';
 import { ChatInputBar, ChatEmptyState } from '@/components/chat/chat-input-bar';
-import { InlineCamera } from '@/components/chat/inline-camera';
 import type { ChatMessage, QuickReplyOption } from '@/lib/ai/chat/messages';
 import { handleQuickReply, sendChatMessage } from '@/lib/ai/chat/orchestrator';
 import { getOrRefreshSession, startNewChatSession } from '@/lib/ai/chat/sessions';
+import { scanAndNormalizeReceipt } from '@/lib/receipts/scan-receipt';
 
 const TAG = '[Moni/Chat]';
 
@@ -32,7 +32,6 @@ export default function ChatScreen() {
   const [attachedImage, setAttachedImage] = useState<string | null>(null);
   const [isSpeechRecognizing, setIsSpeechRecognizing] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [cameraVisible, setCameraVisible] = useState(false);
 
   const flatListRef = useRef<FlatList>(null);
   const sendGuardRef = useRef(false);
@@ -208,18 +207,17 @@ export default function ChatScreen() {
         onChangeText={setInput}
         attachedImage={attachedImage}
         onRemoveImage={() => setAttachedImage(null)}
-        onOpenCamera={() => setCameraVisible(true)}
+        onOpenCamera={() => {
+          void (async () => {
+            const uri = await scanAndNormalizeReceipt();
+            if (uri) setAttachedImage(uri);
+          })();
+        }}
         onSend={handleSend}
         isSpeechRecognizing={isSpeechRecognizing}
         onPressInMic={startSpeech}
         onPressOutMic={stopSpeech}
         bottomPad={bottomPad}
-      />
-
-      <InlineCamera
-        visible={cameraVisible}
-        onClose={() => setCameraVisible(false)}
-        onCapture={(uri) => setAttachedImage(uri)}
       />
     </KeyboardAvoidingView>
   );

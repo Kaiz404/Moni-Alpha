@@ -5,7 +5,12 @@ export default function ScanLayout() {
     <Stack>
       <Stack.Screen
         name="receipt"
-        options={{ headerShown: false, presentation: 'fullScreenModal', animation: 'slide_from_bottom' }}
+        options={{
+          headerShown: false,
+          presentation: 'transparentModal',
+          animation: 'fade',
+          contentStyle: { backgroundColor: 'transparent' },
+        }}
       />
       <Stack.Screen
         name="listen"

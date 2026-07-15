@@ -14,6 +14,10 @@ import { getCategoryNameRows } from '@/lib/supabase/categories';
 import { getDefaultWalletId } from '@/lib/wallets/default-wallet';
 import { displayCurrencyForProposal, resolveInitialWalletId } from '@/lib/wallets/proposal-wallet';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
+import {
+  getFabReceiptProcessingProposalId,
+  stopFabReceiptProcessing,
+} from '@/lib/receipts/fab-receipt-processing';
 
 type WalletOption = { id: string; name: string; type: string; currency: string };
 
@@ -95,6 +99,14 @@ export function ProposalSummarySheet() {
   /** Hide while the full detail page is open to avoid a native Modal covering the pushed route. */
   const suppressed = pathname.startsWith('/proposal');
   const visible = proposals.length > 0 && !isLoading && !!current && !suppressed;
+
+  useEffect(() => {
+    if (!visible || !current) return;
+    const pendingFabProposalId = getFabReceiptProcessingProposalId();
+    if (pendingFabProposalId && pendingFabProposalId === current.id) {
+      stopFabReceiptProcessing();
+    }
+  }, [visible, current?.id]);
 
   const resolvedWalletId = useMemo(() => {
     if (!current) return null;
