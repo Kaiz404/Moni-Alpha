@@ -4,8 +4,13 @@ import { randomUUID } from 'expo-crypto';
 import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
 import { supabase } from '@/lib/supabase/client';
 
-/** Longer edge cap for on-device VL / native vision — avoids OOM and timeouts on huge photos. */
-export const VISION_MAX_EDGE_PX = 700;
+/**
+ * Longer edge cap for on-device VL / native vision — avoids OOM and timeouts on huge photos.
+ * `ReceiptCamera` (components/receipt/receipt-camera.tsx) already crops + document-scan-filters
+ * + resizes every camera/gallery image to this size before it ever reaches `saveImageLocally`,
+ * so this resize is normally a no-op; it stays as a defensive fallback for any other caller.
+ */
+export const VISION_MAX_EDGE_PX = 1024;
 
 /** Avoid spamming the console when the Supabase project has no `receipts` bucket yet. */
 let receiptsBucketMissingLogged = false;

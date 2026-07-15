@@ -55,4 +55,11 @@ Tailwind via Uniwind `className` — **not** NativeWind. Design tokens live in `
 - Theme preference: `lib/theme/preference.ts` → `Uniwind.setTheme('light' | 'dark' | 'system')`; default **light**
 - Shared chrome: `components/ui/brand-header`, `screen-shell`, `chip`, `primary-button`
 
-Native modules in use → always test with a dev client (`pnpm --filter moni android`), never Expo Go.
+## Receipt camera (native stack)
+
+`components/receipt/receipt-camera.tsx` (shared by FAB scan + chat inline camera) uses `react-native-vision-camera` **v4.x**, `react-native-fast-opencv`, `vision-camera-resize-plugin`, `react-native-svg` (live quad overlay), and `react-native-worklets-core` (frame-processor + still-image worklet runtime — separate from Reanimated's `react-native-worklets`, both coexist fine). Do **not** use `useSkiaFrameProcessor` on new architecture — it relies on Vision Camera's internal Skia canvas (`onLayout` removed in Skia 2.2+). Android `minSdkVersion` 26 via `expo-build-properties`.
+
+- **Never upgrade `react-native-vision-camera` to v5+** without also replacing `react-native-fast-opencv`: v5 rewrote Frame Processors onto Nitro Modules, which is a different, incompatible architecture from fast-opencv's JSI-based integration (mixing them caused a native `HybridPreviewViewProps`/`RawValue` Fabric crash). v4 is the last version fast-opencv and the resize plugin are built for.
+- Detection/crop logic lives in `lib/receipts/detect-core.ts` (shared quad-finding, used by both the live overlay and the still-image path) and `lib/receipts/preprocess.ts` (perspective crop + document-scan filter, runs inside a `useWorklet('default', ...)` context — fast-opencv's bindings only exist on Worklet runtimes, never the plain JS thread).
+
+Native modules in use → always test with a dev client (`pnpm --filter moni android`), never Expo Go. Rebuild the dev client after adding or upgrading native camera/OCR deps.

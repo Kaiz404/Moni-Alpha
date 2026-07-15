@@ -21,7 +21,7 @@ Input (chat text / receipt photo / notification / FAB scan)
 ### Chat tab (conversational)
 
 ```
-User message (text / inline expo-camera photo / hold-to-talk)
+User message (text / inline receipt-camera photo / hold-to-talk)
   → lib/ai/chat/orchestrator.ts (heuristic routing)
   → extract path: run-extraction (sync for text) or processing queue (images)
   → analyze path: build snapshot on-device → POST /v1/chat/analyze → prose reply in thread
@@ -93,7 +93,7 @@ All calls use Groq's OpenAI-compatible endpoint with `response_format: json_obje
 - Limits are **per organization**, not per key. Developer tier ≈ 10x free-tier limits; free tier is ~30 RPM which is not enough for production.
 - The backend rate-limits per user (20 req/min, burst 8) so one client can't drain the org quota.
 - Live flows retry a 429 only within a short window (3–5s) then return `unavailable`; the mobile queue retries later. Notifications wait up to 30s.
-- Cost: `llama-3.1-8b-instant` ≈ $0.05/M input tokens. At 1000 users doing a few extractions/day this is low single-digit dollars per month; receipts (vision) dominate but stay cheap because images are downscaled to ≤1280px JPEG on-device before upload.
+- Cost: `llama-3.1-8b-instant` ≈ $0.05/M input tokens. At 1000 users doing a few extractions/day this is low single-digit dollars per month; receipts (vision) dominate but stay cheap because the client already perspective-crops + grayscale/contrast-filters + downscales to a single ≤1024px JPEG on-device before it's ever sent.
 
 ## Extraction pipeline details
 
@@ -109,7 +109,7 @@ All calls use Groq's OpenAI-compatible endpoint with `response_format: json_obje
 - **Text transfer patterns:** deposits ("deposited cash to bank"), withdrawals, top-ups, and explicit "from X to Y" moves are transfers between wallets in `AVAILABLE_WALLETS` — not income. The model uses wallet names/types to infer direction (e.g. cash → bank for deposits).
 - **Notification rule:** each wallet may link one Android app (`notification_package` on `wallets`). Notifications from unlinked apps are captured for debug but not queued. Candidate wallets are narrowed by package before extraction; ambiguous same-app wallets may create proposals with `walletId: null` for review (`run-extraction.ts`).
 - **Notification prefilter stays on-device** (`apps/mobile/lib/notifications/notification-filter.core.js`): requires a money-amount signal AND a transfer signal before an LLM ever sees it. Test suite: `pnpm --filter moni test:notification-detection`.
-- **Receipt images:** mobile downscales/compresses (`lib/ai/client/image-payload.ts`), sends base64 for local files or the URL if already uploaded to the `receipts` Storage bucket. Backend extracts amount, merchant, and description only; mobile assigns the default wallet and its currency.
+- **Receipt images:** `components/receipt/receipt-camera.tsx` detects the receipt quad (OpenCV contours), perspective-crops, and applies a grayscale/contrast "document scan" filter client-side — the same ≤1024px JPEG is stored, uploaded, and sent to the model. `lib/ai/client/image-payload.ts` only base64-encodes (with a defensive downscale fallback) and sends the URL instead if already uploaded to the `receipts` Storage bucket. No detected quad → capture is rejected before it ever reaches the queue or this endpoint. Backend extracts amount, merchant, and description only; mobile assigns the default wallet and its currency.
 
 ## Chat routing (on-device)
 

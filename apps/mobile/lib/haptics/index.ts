@@ -2,7 +2,7 @@ import * as Haptics from 'expo-haptics';
 
 /** Hold-to-speak or long-press voice capture started. */
 export function hapticVoiceStart(): void {
-  void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+  void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 }
 
 /** Hold-to-speak released. */

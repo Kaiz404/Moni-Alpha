@@ -34,6 +34,14 @@
       "favicon": "./assets/images/favicon.png"
     },
     "plugins": [
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "minSdkVersion": 26
+          }
+        }
+      ],
       "expo-router",
       [
         "react-native-maps",
@@ -45,9 +53,9 @@
       "./plugins/with-notification-listener-manifest",
       "expo-speech-recognition",
       [
-        "expo-camera",
+        "react-native-vision-camera",
         {
-          "cameraPermission": "Allow $(PRODUCT_NAME) to use the camera to scan receipts."
+          "cameraPermissionText": "Allow $(PRODUCT_NAME) to use the camera to scan receipts."
         }
       ],
       [
@@ -79,9 +87,9 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "a87e1561-eeaa-41ab-b758-eea4243b4b48"
+        "projectId": "d87a003d-1cc2-4aea-9fc3-497325c5703b"
       }
     },
-    "owner": "kaiz827s-organization"
+    "owner": "kaiz404"
   }
 }
