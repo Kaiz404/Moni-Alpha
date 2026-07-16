@@ -147,24 +147,3 @@ export async function upsertAiInsight(args: {
     ...payload,
   });
 }
-
-/** @deprecated Use upsertAiInsight with AI_INSIGHT_FEATURE_SUMMARY */
-export async function upsertSummaryInsightCards(args: {
-  inputHash: string;
-  status: 'ready' | 'error';
-  toolSnapshot: unknown;
-  result: AiInsightResult | null;
-  errorMessage?: string | null;
-  modelId: string | null;
-}): Promise<void> {
-  return upsertAiInsight({
-    featureKey: AI_INSIGHT_FEATURE_SUMMARY,
-    contextKey: AI_INSIGHT_CONTEXT_GLOBAL,
-    inputHash: args.inputHash,
-    status: args.status,
-    toolSnapshot: args.toolSnapshot,
-    result: args.result,
-    errorMessage: args.errorMessage,
-    modelId: args.modelId,
-  });
-}

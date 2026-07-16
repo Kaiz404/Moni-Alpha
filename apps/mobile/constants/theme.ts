@@ -26,31 +26,6 @@ export const ThemeFallbacks = {
   chart: ['#059669', '#0d9488', '#0284c7', '#7c3aed', '#db2777', '#d97706'] as const,
 } as const;
 
-/**
- * @deprecated Prefer semantic Uniwind classes (`bg-background`, `text-foreground`)
- * or `useThemeTokens()`. Kept for gradual migration of ThemedText/ThemedView.
- */
-export const Colors = {
-  light: {
-    text: ThemeFallbacks.foreground,
-    background: ThemeFallbacks.background,
-    tint: ThemeFallbacks.primary,
-    accent: ThemeFallbacks.accent,
-    icon: ThemeFallbacks.muted,
-    tabIconDefault: ThemeFallbacks.muted,
-    tabIconSelected: ThemeFallbacks.primary,
-  },
-  dark: {
-    text: ThemeFallbacks.foregroundDark,
-    background: ThemeFallbacks.backgroundDark,
-    tint: ThemeFallbacks.primarySoft,
-    accent: ThemeFallbacks.accent,
-    icon: ThemeFallbacks.mutedDark,
-    tabIconDefault: ThemeFallbacks.mutedDark,
-    tabIconSelected: ThemeFallbacks.primarySoft,
-  },
-};
-
 export const Fonts = Platform.select({
   ios: {
     sans: 'system-ui',

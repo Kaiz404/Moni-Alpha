@@ -98,11 +98,6 @@ export default function RootLayout() {
             <Stack screenOptions={{ headerShown: false }}>
               <Stack.Screen name="(auth)" options={{ headerShown: false }} />
               <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-              <Stack.Screen
-                name="modal"
-                options={{ presentation: "modal", title: "Modal", headerShown: false }}
-              />
-              <Stack.Screen name="budgets" options={{ headerShown: false }} />
             </Stack>
             <FabReceiptProcessingOverlay />
             <ProposalSummarySheet />
