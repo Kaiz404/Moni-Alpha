@@ -1,42 +1,32 @@
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
   Pressable,
-  ScrollView,
-  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
-import MapView, { Marker } from 'react-native-maps';
 import { Image } from 'expo-image';
-import { router, useLocalSearchParams } from 'expo-router';
 import type { ProposedTransaction } from '@repo/types';
-import { BrandHeader } from '@/components/ui/brand-header';
-import { ScreenShell } from '@/components/ui/screen-shell';
+
+import { AiReasoningSection } from '@/components/proposal/ai-reasoning-section';
+import { FieldRow } from '@/components/proposal/field-row';
+import { ProposalLocationSection } from '@/components/proposal/proposal-location-section';
 import { chipClass, chipTextClass } from '@/components/ui/chip';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
-import { getProposalLocationSnapshot } from '@/lib/ai/proposal-location-cache';
 import {
   isoToLocalDateInput,
-  localDateInputToIso,
   parseLocalDateInput,
 } from '@/lib/dates/local-date-input';
-import {
-  approveProposedTransaction,
-  getProposedTransactions,
-  rejectProposedTransaction,
-} from '@/lib/supabase/proposed-transactions';
-import { getWallets } from '@/lib/supabase/wallets';
 import { getDefaultWalletId } from '@/lib/wallets/default-wallet';
 import {
   displayCurrencyForProposal,
   resolveInitialWalletId,
 } from '@/lib/wallets/proposal-wallet';
 
-type WalletOption = {
+export type WalletOption = {
   id: string;
   name: string;
   type: string;
@@ -44,171 +34,14 @@ type WalletOption = {
 };
 
 const TX_TYPES = ['expense', 'income', 'transfer'] as const;
-type TxType = (typeof TX_TYPES)[number];
+export type TxType = (typeof TX_TYPES)[number];
 
-function normalizeTxType(type: ProposedTransaction['type']): TxType {
+export function normalizeTxType(type: ProposedTransaction['type']): TxType {
   if (type === 'income' || type === 'expense' || type === 'transfer') return type;
   return 'expense';
 }
 
-export default function ProposalDetailScreen() {
-  const tokens = useThemeTokens();
-  const params = useLocalSearchParams<{ id?: string | string[] }>();
-  const proposalId = useMemo(() => {
-    const x = params.id;
-    return Array.isArray(x) ? x[0] : x;
-  }, [params.id]);
-
-  const [proposal, setProposal] = useState<ProposedTransaction | null>(null);
-  const [wallets, setWallets] = useState<WalletOption[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [loadError, setLoadError] = useState<string | null>(null);
-  const [isActioning, setIsActioning] = useState(false);
-
-  const loadData = useCallback(async () => {
-    if (!proposalId) {
-      setLoadError('Proposal not found.');
-      setIsLoading(false);
-      return;
-    }
-
-    setIsLoading(true);
-    setLoadError(null);
-    try {
-      const [pending, ws] = await Promise.all([getProposedTransactions(), getWallets()]);
-      const found = pending.find((p) => p.id === proposalId) ?? null;
-      setProposal(found);
-      setWallets(
-        ws.map((w) => ({
-          id: w.id,
-          name: w.name ?? 'Wallet',
-          type: w.type ?? 'other',
-          currency: w.currency ?? 'MYR',
-        })),
-      );
-      if (!found) setLoadError('Proposal not found or already reviewed.');
-    } catch (e) {
-      setLoadError(e instanceof Error ? e.message : 'Failed to load proposal.');
-    } finally {
-      setIsLoading(false);
-    }
-  }, [proposalId]);
-
-  useEffect(() => {
-    void loadData();
-  }, [loadData]);
-
-  const handleApprove = useCallback(
-    async (edited: EditedFields) => {
-      if (!proposal || isActioning) return;
-
-      const effectiveType = edited.type ?? proposal.type ?? 'expense';
-      const walletId = edited.walletId ?? proposal.walletId;
-      const transferToWalletId = edited.transferToWalletId ?? proposal.transferToWalletId;
-
-      if (!walletId) {
-        Alert.alert('Cannot approve', 'Select a source wallet.');
-        return;
-      }
-
-      if (effectiveType === 'transfer') {
-        if (!transferToWalletId) {
-          Alert.alert('Cannot approve', 'Select a destination wallet for this transfer.');
-          return;
-        }
-        if (walletId === transferToWalletId) {
-          Alert.alert('Cannot approve', 'Source and destination wallets must differ.');
-          return;
-        }
-        const fromWallet = wallets.find((w) => w.id === walletId);
-        const toWallet = wallets.find((w) => w.id === transferToWalletId);
-        if (fromWallet && toWallet && fromWallet.currency.toUpperCase() !== toWallet.currency.toUpperCase()) {
-          Alert.alert('Cannot approve', 'Transfers require both wallets to use the same currency.');
-          return;
-        }
-      }
-
-      const transactionDateIso = edited.date
-        ? localDateInputToIso(edited.date)
-        : proposal.transactionDate;
-      if (edited.date && !transactionDateIso) {
-        Alert.alert('Cannot approve', 'Enter a valid date (YYYY-MM-DD).');
-        return;
-      }
-
-      setIsActioning(true);
-      try {
-        const updatedProposal: ProposedTransaction = {
-          ...proposal,
-          amount: edited.amount,
-          type: effectiveType,
-          merchant: effectiveType === 'transfer' ? null : edited.merchant || null,
-          description: edited.description || null,
-          transactionDate: transactionDateIso,
-        };
-
-        await approveProposedTransaction(updatedProposal, {
-          walletId,
-          transferToWalletId: effectiveType === 'transfer' ? transferToWalletId : null,
-        });
-        router.back();
-      } catch (e) {
-        const message = e instanceof Error ? e.message : 'Failed to approve';
-        console.error('[ProposalDetail] approve error:', e);
-        Alert.alert('Error', message);
-      } finally {
-        setIsActioning(false);
-      }
-    },
-    [proposal, isActioning, wallets],
-  );
-
-  const handleReject = useCallback(async () => {
-    if (!proposal || isActioning) return;
-    setIsActioning(true);
-    try {
-      await rejectProposedTransaction(proposal.id);
-      router.back();
-    } catch (e) {
-      const message = e instanceof Error ? e.message : 'Failed to reject';
-      console.error('[ProposalDetail] reject error:', e);
-      Alert.alert('Error', message);
-    } finally {
-      setIsActioning(false);
-    }
-  }, [proposal, isActioning]);
-
-  return (
-    <ScreenShell variant="canvas">
-      <BrandHeader title="Review proposal" />
-      {isLoading ? (
-        <View className="flex-1 items-center justify-center">
-          <ActivityIndicator size="large" color={tokens.primary} />
-        </View>
-      ) : loadError || !proposal ? (
-        <View className="flex-1 items-center justify-center px-6">
-          <Text className="text-center text-base text-muted">{loadError ?? 'Proposal not found.'}</Text>
-        </View>
-      ) : (
-        <ScrollView
-          className="flex-1"
-          contentContainerClassName="px-4 pb-8 pt-4"
-          showsVerticalScrollIndicator={false}
-        >
-          <ProposalForm
-            proposal={proposal}
-            wallets={wallets}
-            isActioning={isActioning}
-            onApprove={handleApprove}
-            onReject={handleReject}
-          />
-        </ScrollView>
-      )}
-    </ScreenShell>
-  );
-}
-
-type EditedFields = {
+export type EditedFields = {
   amount: number;
   type: TxType;
   walletId: string | null;
@@ -218,7 +51,7 @@ type EditedFields = {
   date: string;
 };
 
-function ProposalForm({
+export function ProposalForm({
   proposal,
   wallets,
   isActioning,
@@ -486,7 +319,7 @@ function ProposalForm({
       </FieldRow>
 
       {proposal.aiReasoning ? (
-        <AIReasoningSection reasoning={proposal.aiReasoning} confidence={proposal.aiConfidence} />
+        <AiReasoningSection reasoning={proposal.aiReasoning} confidence={proposal.aiConfidence} />
       ) : null}
 
       <View className="mt-6 flex-row gap-3">
@@ -519,108 +352,3 @@ function ProposalForm({
   );
 }
 
-function FieldRow({ label, children }: { label: string; children: ReactNode }) {
-  return (
-    <View className="mb-3 flex-row items-center">
-      <Text className="w-24 text-sm text-muted">{label}</Text>
-      {children}
-    </View>
-  );
-}
-
-function ProposalLocationSection({ proposalId }: { proposalId: string }) {
-  const tokens = useThemeTokens();
-  const [expanded, setExpanded] = useState(false);
-  const snapshot = useMemo(() => getProposalLocationSnapshot(proposalId), [proposalId]);
-
-  const region = useMemo(() => {
-    if (!snapshot) return null;
-    return {
-      latitude: snapshot.latitude,
-      longitude: snapshot.longitude,
-      latitudeDelta: 0.006,
-      longitudeDelta: 0.006,
-    };
-  }, [snapshot]);
-
-  if (!snapshot || !region) return null;
-
-  return (
-    <View className="mb-4">
-      <TouchableOpacity
-        className="flex-row items-center"
-        onPress={() => setExpanded(!expanded)}
-        activeOpacity={0.7}>
-        <Text className="text-xs font-semibold uppercase tracking-wider text-muted">
-          Captured location {expanded ? '▲' : '▼'}
-        </Text>
-      </TouchableOpacity>
-      {expanded ? (
-        <View className="mt-2">
-          <View
-            className="overflow-hidden rounded-2xl border border-border bg-background-muted"
-            style={styles.locationMapBox}>
-            <MapView
-              style={styles.locationMap}
-              initialRegion={region}
-              provider="google"
-              scrollEnabled={false}
-              zoomEnabled={false}
-              rotateEnabled={false}
-              pitchEnabled={false}>
-              <Marker
-                coordinate={{
-                  latitude: snapshot.latitude,
-                  longitude: snapshot.longitude,
-                }}
-                pinColor={tokens.primary}
-              />
-            </MapView>
-          </View>
-          {snapshot.name ? (
-            <Text className="mt-2 text-xs text-muted" numberOfLines={3}>
-              {snapshot.name}
-            </Text>
-          ) : null}
-        </View>
-      ) : null}
-    </View>
-  );
-}
-
-function AIReasoningSection({
-  reasoning,
-  confidence,
-}: {
-  reasoning: string;
-  confidence: number | null;
-}) {
-  const [expanded, setExpanded] = useState(false);
-
-  return (
-    <View className="mt-4">
-      <TouchableOpacity
-        className="flex-row items-center"
-        onPress={() => setExpanded(!expanded)}
-        activeOpacity={0.7}>
-        <Text className="text-xs font-medium text-muted">AI analysis {expanded ? '▲' : '▼'}</Text>
-        {confidence !== null ? (
-          <View className="ml-2 rounded bg-background-muted px-2 py-0.5">
-            <Text className="text-xs text-muted">{Math.round(confidence * 100)}% confidence</Text>
-          </View>
-        ) : null}
-      </TouchableOpacity>
-      {expanded ? <Text className="mt-2 text-xs leading-4 text-muted">{reasoning}</Text> : null}
-    </View>
-  );
-}
-
-const styles = StyleSheet.create({
-  locationMapBox: {
-    height: 200,
-    width: '100%',
-  },
-  locationMap: {
-    ...StyleSheet.absoluteFillObject,
-  },
-});

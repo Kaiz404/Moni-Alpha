@@ -8,15 +8,7 @@ import {
   ExpoSpeechRecognitionModule,
   useSpeechRecognitionEvent,
 } from 'expo-speech-recognition';
-import Animated, {
-  useAnimatedStyle,
-  useSharedValue,
-  withRepeat,
-  withTiming,
-  Easing,
-  cancelAnimation,
-} from 'react-native-reanimated';
-
+import { PulsingOrb } from '@/components/scan/pulsing-orb';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { enqueue, type ProcessingQueueItem } from '@/lib/ai/processing-queue';
 import { startBackgroundProcessor } from '@/lib/ai/background-processor';
@@ -25,45 +17,6 @@ import { captureLocationSnapshot } from '@/lib/location/location-snapshot';
 const TAG = '[Moni/Listen]';
 
 type Phase = 'listening' | 'review' | 'sending';
-
-function PulsingOrb({ active }: { active: boolean }) {
-  const tokens = useThemeTokens();
-  const pulse = useSharedValue(0);
-
-  useEffect(() => {
-    if (active) {
-      pulse.value = withRepeat(
-        withTiming(1, { duration: 1100, easing: Easing.inOut(Easing.ease) }),
-        -1,
-        true,
-      );
-    } else {
-      cancelAnimation(pulse);
-      pulse.value = withTiming(0, { duration: 200 });
-    }
-  }, [active, pulse]);
-
-  const ringStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: 1 + pulse.value * 0.35 }],
-    opacity: 0.35 - pulse.value * 0.25,
-  }));
-
-  return (
-    <View className="items-center justify-center" style={{ height: 160, width: 160 }}>
-      <Animated.View
-        style={[
-          { position: 'absolute', height: 160, width: 160, borderRadius: 80, backgroundColor: tokens.primary },
-          ringStyle,
-        ]}
-      />
-      <View
-        className="items-center justify-center rounded-full"
-        style={{ height: 104, width: 104, backgroundColor: tokens.primary }}>
-        <MaterialIcons name="mic" size={40} color="#ffffff" />
-      </View>
-    </View>
-  );
-}
 
 export default function ScanListenScreen() {
   const insets = useSafeAreaInsets();

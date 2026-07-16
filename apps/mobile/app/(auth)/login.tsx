@@ -3,7 +3,7 @@ import { View, Text, TextInput, TouchableOpacity, Alert, ScrollView } from 'reac
 import { Link, router, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@/lib/auth/auth-context';
-import { GoogleSignInButton } from '@/components/google-sign-in-button';
+import { GoogleSignInButton } from '@/components/auth/google-sign-in-button';
 import { ScreenShell } from '@/components/ui/screen-shell';
 import { GradientCard } from '@/components/ui/gradient-card';
 import { getWalletCardStyle } from '@/constants/wallet-card-styles';

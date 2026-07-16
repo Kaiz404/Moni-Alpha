@@ -22,12 +22,12 @@ import {
 import {
   WalletNotificationLinkSection,
   type WalletNotificationLinkValue,
-} from '@/components/wallet-notification-link-section';
+} from '@/components/wallets/wallet-notification-link-section';
 import { BrandHeader } from '@/components/ui/brand-header';
 import { ScreenShell } from '@/components/ui/screen-shell';
 import { chipClass, chipTextClass } from '@/components/ui/chip';
 import { PrimaryButton } from '@/components/ui/primary-button';
-import { WalletCardStylePicker } from '@/components/wallet-card-style-picker';
+import { WalletCardStylePicker } from '@/components/wallets/wallet-card-style-picker';
 
 const inputClass =
   'rounded-xl border border-border bg-card px-3 py-2.5 text-foreground';

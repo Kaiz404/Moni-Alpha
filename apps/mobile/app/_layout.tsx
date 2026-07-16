@@ -13,10 +13,10 @@ import { useUniwind } from "uniwind";
 
 import "../global.css";
 
-import { AuthGuard } from "@/components/auth-guard";
+import { AuthGuard } from "@/components/providers/auth-guard";
 import { FabReceiptProcessingOverlay } from "@/components/receipt/fab-receipt-processing-overlay";
-import { ProposalSummarySheet } from "@/components/proposal-summary-sheet";
-import { StoreSyncActivator } from "@/components/store-sync-activator";
+import { ProposalSummarySheet } from "@/components/proposal/proposal-summary-sheet";
+import { StoreSyncActivator } from "@/components/providers/store-sync-activator";
 import { useThemeTokens } from "@/hooks/use-theme-tokens";
 import { AuthProvider } from "@/lib/auth/auth-context";
 import { getPendingCount } from "@/lib/ai/processing-queue";

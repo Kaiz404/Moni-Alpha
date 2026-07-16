@@ -42,7 +42,7 @@ Input → `processing-queue.ts` (MMKV) → `background-processor.ts` (Android FG
 
 ## Routing (expo-router)
 
-`app/(auth)` unauthenticated; `app/(tabs)` main tabs (Wallets / Summary / Chat / Profile); `app/(routes)` stack screens. Auth guard in `app/_layout.tsx`.
+`app/(auth)` unauthenticated; `app/(tabs)` main tabs (Wallets / Summary / Chat / Profile); root Stack feature screens (`wallet`, `transaction`, `proposal`, `budget`, `scan`, `notifications`, `debug`, `heatmap`). Auth guard in `app/_layout.tsx`. Custom JS `Tabs` + FAB tab bar (not NativeTabs).
 
 ## Styling (Uniwind)
 

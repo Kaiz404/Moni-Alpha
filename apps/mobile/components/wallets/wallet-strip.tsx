@@ -57,7 +57,7 @@ export function WalletStrip({
               className="rounded-2xl border border-dashed border-border bg-card p-3"
             >
               <TouchableOpacity
-                onPress={() => router.push('/(routes)/wallet/new' as never)}
+                onPress={() => router.push('/wallet/new' as never)}
                 activeOpacity={0.85}
                 className="flex-1 items-center justify-center"
               >

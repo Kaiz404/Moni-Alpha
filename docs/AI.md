@@ -15,7 +15,7 @@ Input (chat text / receipt photo / notification / FAB scan)
   → Go backend                            apps/backend (Gin, stateless)
   → Groq
   → proposed_transactions (unreviewed)
-  → ProposalSummarySheet (minimal popup) → Approve/Decline, or "Edit details" → app/(routes)/proposal/[id].tsx
+  → ProposalSummarySheet (minimal popup) → Approve/Decline, or "Edit details" → `app/proposal/[id].tsx`
 ```
 
 ### Chat tab (conversational)
@@ -30,7 +30,7 @@ User message (text / inline receipt-camera photo / hold-to-talk)
 
 Chat sessions: MMKV (`lib/ai/chat/messages.ts`), rolling ~6 message pairs sent as API history, 24h idle expiry, "New chat" reset.
 
-Capture entry points feeding the **extraction queue** (silent — not shown in Chat thread): floating tab-bar button (tap → `app/(routes)/scan/receipt.tsx` camera; long-press → `app/(routes)/scan/listen.tsx` narration).
+Capture entry points feeding the **extraction queue** (silent — not shown in Chat thread): floating tab-bar button (tap → `app/scan/receipt.tsx` camera; long-press → `app/scan/listen.tsx` narration).
 
 If `EXPO_PUBLIC_AI_API_URL` is unset, the mobile client falls back to a mock that returns `unavailable` — AI features degrade cleanly.
 

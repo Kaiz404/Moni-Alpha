@@ -1,11 +1,10 @@
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   View,
   Text,
   TouchableOpacity,
   Platform,
   ScrollView,
-  Pressable,
 } from 'react-native';
 import MaterialIcons from '@react-native-vector-icons/material-icons';
 import { router, useFocusEffect } from 'expo-router';
@@ -13,9 +12,12 @@ import * as Location from 'expo-location';
 import * as ImagePicker from 'expo-image-picker';
 import { ExpoSpeechRecognitionModule } from 'expo-speech-recognition';
 import { useAuth } from '@/lib/auth/auth-context';
-import { SyncStatus } from '@/components/sync-status';
-import { ThemePreferencePicker } from '@/components/theme-preference-picker';
-import { DefaultWalletPicker } from '@/components/default-wallet-picker';
+import { SyncStatus } from '@/components/providers/sync-status';
+import { ThemePreferencePicker } from '@/components/profile/theme-preference-picker';
+import { DefaultWalletPicker } from '@/components/profile/default-wallet-picker';
+import { PermissionColumn } from '@/components/profile/permission-column';
+import { ProfileSectionTitle } from '@/components/profile/profile-section-title';
+import { SettingsRow } from '@/components/profile/settings-row';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { useNotificationListener } from '@/hooks/use-notification-listener';
 import { GradientCard } from '@/components/ui/gradient-card';
@@ -23,138 +25,10 @@ import { getWalletCardStyle } from '@/constants/wallet-card-styles';
 
 const avatarStyle = getWalletCardStyle('emerald-grain');
 
-function ProfileSectionTitle({ children }: { children: string }) {
-  return (
-    <Text className="mb-2 text-xs font-bold uppercase tracking-wider text-muted">
-      {children}
-    </Text>
-  );
-}
-
-function SettingsRow({
-  icon,
-  iconBgClassName,
-  iconBgColor,
-  title,
-  subtitle,
-  onPress,
-  right,
-  disabled,
-}: {
-  icon: keyof typeof MaterialIcons.glyphMap;
-  iconBgClassName: string;
-  iconBgColor?: string;
-  title: string;
-  subtitle?: string;
-  onPress: () => void;
-  right?: ReactNode;
-  disabled?: boolean;
-}) {
-  const tokens = useThemeTokens();
-  return (
-    <Pressable
-      onPress={onPress}
-      disabled={disabled}
-      className={`mb-2 flex-row items-center rounded-2xl border border-border bg-card p-3.5 active:opacity-90 ${disabled ? 'opacity-50' : ''}`}>
-      <View
-        className={`h-11 w-11 items-center justify-center rounded-2xl ${iconBgClassName}`}
-        style={iconBgColor ? { backgroundColor: iconBgColor } : undefined}>
-        <MaterialIcons name={icon} size={22} color="#fff" />
-      </View>
-      <View className="ml-3 flex-1 min-w-0">
-        <Text className="text-base font-semibold text-foreground" numberOfLines={1}>
-          {title}
-        </Text>
-        {subtitle ? (
-          <Text className="mt-0.5 text-xs text-muted" numberOfLines={2}>
-            {subtitle}
-          </Text>
-        ) : null}
-      </View>
-      {right ?? <MaterialIcons name="chevron-right" size={22} color={tokens.muted} />}
-    </Pressable>
-  );
-}
-
 function mapSpeechPermissionStatus(result: { granted: boolean; status?: string }) {
   if (result.granted) return 'granted';
   if (result.status === 'denied' || result.status === 'undetermined') return result.status;
   return 'undetermined';
-}
-
-function PermissionColumn({
-  title,
-  statusLabel,
-  granted,
-  actionLabel,
-  onAction,
-  actionDisabled,
-  icon,
-  iconTint,
-  muted,
-  showAction,
-  widthClassName = 'flex-1 min-w-0',
-}: {
-  title: string;
-  statusLabel: string;
-  granted?: boolean;
-  actionLabel?: string;
-  onAction?: () => void;
-  actionDisabled?: boolean;
-  icon: keyof typeof MaterialIcons.glyphMap;
-  iconTint: string;
-  muted?: boolean;
-  showAction: boolean;
-  /** e.g. `w-[48%]` when using a 2×2 grid */
-  widthClassName?: string;
-}) {
-  return (
-    <View
-      className={`rounded-2xl border border-border bg-card p-3 ${widthClassName}`}>
-      <View
-        className="mx-auto h-9 w-9 items-center justify-center rounded-xl"
-        style={{ backgroundColor: iconTint }}>
-        <MaterialIcons name={icon} size={20} color="#fff" />
-      </View>
-      <Text
-        className="mt-2 text-center text-xs font-semibold text-foreground"
-        numberOfLines={2}>
-        {title}
-      </Text>
-      <Text
-        className="mt-1 text-center text-[10px] leading-tight text-muted"
-        numberOfLines={2}>
-        {statusLabel}
-      </Text>
-      {muted ? (
-        <Text className="mt-2 text-center text-[10px] text-muted">—</Text>
-      ) : granted ? (
-        <View className="mt-2 rounded-lg bg-success/15 py-2">
-          <Text className="text-center text-[10px] font-semibold text-success">
-            On
-          </Text>
-        </View>
-      ) : showAction && actionLabel && onAction ? (
-        <TouchableOpacity
-          className="mt-2 rounded-lg bg-primary px-1.5 py-2"
-          onPress={onAction}
-          disabled={actionDisabled}
-          activeOpacity={0.85}>
-          <Text
-            className="text-center text-[10px] font-semibold leading-tight text-white"
-            numberOfLines={2}>
-            {actionLabel}
-          </Text>
-        </TouchableOpacity>
-      ) : (
-        <View className="mt-2 rounded-lg bg-background-muted py-2">
-          <Text className="text-center text-[10px] font-semibold text-muted">
-            Off
-          </Text>
-        </View>
-      )}
-    </View>
-  );
 }
 
 export default function ProfileScreen() {
@@ -200,7 +74,7 @@ export default function ProfileScreen() {
   }, []);
 
   const openBudgets = useCallback(() => {
-    router.push('/budget/budgets' as any);
+    router.push('/budget' as any);
   }, []);
 
   const refreshPermissionStatus = useCallback(async () => {

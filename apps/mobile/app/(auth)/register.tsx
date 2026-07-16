@@ -4,7 +4,7 @@ import { Link, router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MaterialIcons from '@react-native-vector-icons/material-icons';
 import { useAuth } from '@/lib/auth/auth-context';
-import { GoogleSignInButton } from '@/components/google-sign-in-button';
+import { GoogleSignInButton } from '@/components/auth/google-sign-in-button';
 import { ScreenShell } from '@/components/ui/screen-shell';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 

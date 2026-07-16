@@ -43,7 +43,7 @@ import {
   type HomeWalletTx,
   type WalletTxBundle,
 } from '@/lib/wallets/home-aggregation';
-import { SyncStatusIndicator } from '@/components/sync-status-indicator';
+import { SyncStatusIndicator } from '@/components/providers/sync-status-indicator';
 import { WalletStrip } from '@/components/wallets/wallet-strip';
 import { chipClass, chipTextClass } from '@/components/ui/chip';
 

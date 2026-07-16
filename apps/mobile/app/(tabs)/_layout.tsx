@@ -3,7 +3,7 @@ import React from 'react';
 import { View } from 'react-native';
 
 import { IconSymbol } from '@/components/ui/icon-symbol';
-import { SyncStatusIndicator } from '@/components/sync-status-indicator';
+import { SyncStatusIndicator } from '@/components/providers/sync-status-indicator';
 import { TabBar } from '@/components/nav/tab-bar';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 

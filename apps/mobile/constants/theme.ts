@@ -4,8 +4,6 @@
  * Prefer `useThemeTokens()` / `useCSSVariable` in components.
  */
 
-import { Platform } from 'react-native';
-
 /** Fallback hex when CSS variables are not yet resolved (SSR / first paint). */
 export const ThemeFallbacks = {
   primary: '#059669',
@@ -25,24 +23,3 @@ export const ThemeFallbacks = {
   transfer: '#0284c7',
   chart: ['#059669', '#0d9488', '#0284c7', '#7c3aed', '#db2777', '#d97706'] as const,
 } as const;
-
-export const Fonts = Platform.select({
-  ios: {
-    sans: 'system-ui',
-    serif: 'ui-serif',
-    rounded: 'ui-rounded',
-    mono: 'ui-monospace',
-  },
-  default: {
-    sans: 'normal',
-    serif: 'serif',
-    rounded: 'normal',
-    mono: 'monospace',
-  },
-  web: {
-    sans: "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
-    serif: "Georgia, 'Times New Roman', serif",
-    rounded: "'SF Pro Rounded', 'Hiragino Maru Gothic ProN', Meiryo, 'MS PGothic', sans-serif",
-    mono: "SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace",
-  },
-});

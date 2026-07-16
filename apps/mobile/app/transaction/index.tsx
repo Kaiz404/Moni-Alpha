@@ -6,7 +6,6 @@ import {
   TouchableOpacity,
   RefreshControl,
   Alert,
-  Modal,
   ActivityIndicator,
   Pressable,
 } from 'react-native';
@@ -20,12 +19,11 @@ import { deleteTransaction, getTransactions } from '@/lib/supabase/transactions'
 import { formatTransferLabel } from '@/lib/supabase/transaction-balance';
 import { getWallets } from '@/lib/supabase/wallets';
 import { getDefaultWalletId } from '@/lib/wallets/default-wallet';
-import {
-  displayCurrencyForProposal,
-  resolveInitialWalletId,
-} from '@/lib/wallets/proposal-wallet';
+import { resolveInitialWalletId } from '@/lib/wallets/proposal-wallet';
 import { useProposedTransactions } from '@/hooks/use-proposed-transactions';
 import { IconSymbol } from '@/components/ui/icon-symbol';
+import { ProposalCard } from '@/components/transaction/proposal-card';
+import { WalletPickerModal } from '@/components/transaction/wallet-picker-modal';
 import { getCategoryNameRows } from '@/lib/supabase/categories';
 import type { ProposedTransaction } from '@repo/types';
 
@@ -46,122 +44,6 @@ function walletPickerTitle(flow: WalletPickerFlow | null): string {
   if (flow.step === 'single') return 'Select wallet for this transaction';
   if (flow.step === 'transfer-source') return 'Select source wallet';
   return 'Select destination wallet';
-}
-
-function WalletPickerModal({
-  visible,
-  title,
-  wallets,
-  onSelect,
-  onCancel,
-}: {
-  visible: boolean;
-  title: string;
-  wallets: WalletItem[];
-  onSelect: (walletId: string) => void;
-  onCancel: () => void;
-}) {
-  return (
-    <Modal visible={visible} transparent animationType="slide">
-      <View className="flex-1 justify-end bg-black/50">
-        <View className="rounded-t-2xl bg-background p-6 pb-10">
-          <Text className="mb-4 text-base font-semibold text-foreground">
-            {title}
-          </Text>
-          {wallets.length === 0 ? (
-            <Text className="text-sm text-muted mb-4">
-              Add another wallet to complete this transfer.
-            </Text>
-          ) : (
-            wallets.map((w) => (
-              <TouchableOpacity
-                key={w.id}
-                className="flex-row items-center py-3 border-b border-border"
-                onPress={() => onSelect(w.id)}>
-                <View className="flex-1">
-                  <Text className="text-sm font-medium text-foreground">{w.name}</Text>
-                  <Text className="text-xs text-muted">{w.currency}</Text>
-                </View>
-                <IconSymbol name="chevron-right" size={16} color="#9ca3af" />
-              </TouchableOpacity>
-            ))
-          )}
-          <TouchableOpacity
-            className="mt-4 py-3 items-center rounded-lg bg-background-muted"
-            onPress={onCancel}>
-            <Text className="text-sm font-medium text-foreground">Cancel</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-    </Modal>
-  );
-}
-
-type TxRow = {
-  id: string;
-  walletId: string;
-  transferToWalletId?: string | null;
-  amount: number;
-  type: string;
-  categoryId?: string | null;
-  merchant?: string | null;
-  description?: string | null;
-  notes?: string | null;
-  transactionDate: string;
-};
-
-function ProposalCard({
-  item,
-  wallets,
-  onApprove,
-  onReject,
-}: {
-  item: ProposedTransaction;
-  wallets: WalletItem[];
-  onApprove: (p: ProposedTransaction) => void;
-  onReject: (id: string) => void;
-}) {
-  const isExpense = item.type === 'expense' || !item.type;
-  const isTransfer = item.type === 'transfer';
-  const displayCurrency = displayCurrencyForProposal(item, wallets, getDefaultWalletId());
-  const amountClass = isTransfer ? 'text-transfer' : isExpense ? 'text-expense' : 'text-income';
-  return (
-    <View className="mb-2 rounded-2xl border border-border bg-card p-4">
-      <View className="flex-row items-center justify-between mb-1">
-        <Text className="text-xs font-semibold text-primary">
-          {item.sourceApp || 'AI proposal'}
-        </Text>
-        <TouchableOpacity
-          onPress={() =>
-            router.push({ pathname: '/proposal/[id]', params: { id: item.id } } as any)
-          }
-          hitSlop={6}>
-          <Text className="text-xs font-semibold text-muted">Edit details</Text>
-        </TouchableOpacity>
-      </View>
-      <Text className={`text-xl font-bold ${amountClass}`}>
-        {isTransfer ? '' : isExpense ? '−' : '+'}
-        {displayCurrency} {item.amount?.toFixed(2) ?? '—'}
-      </Text>
-      <Text className="mt-1 text-sm text-foreground" numberOfLines={1}>
-        {item.merchant || item.description || item.type || 'Transaction'}
-      </Text>
-      <View className="flex-row gap-2 mt-3">
-        <TouchableOpacity
-          className="flex-1 flex-row items-center justify-center gap-1 py-2.5 rounded-xl bg-primary"
-          onPress={() => onApprove(item)}>
-          <IconSymbol name="check" size={14} color="#ffffff" />
-          <Text className="text-sm font-semibold text-primary-foreground">Approve</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          className="flex-1 flex-row items-center justify-center gap-1 py-2.5 rounded-xl bg-background-muted"
-          onPress={() => onReject(item.id)}>
-          <IconSymbol name="close" size={14} color="#6b7280" />
-          <Text className="text-foreground text-sm font-semibold">Reject</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
-  );
 }
 
 function formatMoney(amount: number, currency: string) {

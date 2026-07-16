@@ -62,7 +62,8 @@ Do not mix Windows and WSL `expo prebuild` / Gradle — `android/build/generated
 
 | Path | Role |
 | --- | --- |
-| `app/` | expo-router routes: `(auth)`, `(tabs)` (Wallets / Summary / Chat / Profile), `(routes)` (wallet, transaction, budget, proposal, scan, notifications, debug) |
+| `app/` | expo-router: `(auth)`, `(tabs)` (Wallets / Summary / Chat / Profile), root Stack features (`wallet`, `transaction`, `proposal`, `budget`, `scan`, `notifications`, `debug`, `heatmap`) |
+| `components/` | Domain UI (`ui/`, `nav/`, `providers/`, `auth/`, `wallets/`, `summary/`, `chat/`, `profile/`, `transaction/`, `proposal/`, `scan/`, `insights/`, `debug/`, `receipt/`) — keep screens thin; no co-location under `app/` |
 | `lib/store/` | Legend-State synced observables — the data layer |
 | `lib/supabase/` | Supabase client (publishable key) + CRUD helpers over the store; profile preferences |
 | `lib/auth/` | Auth context (email/password + native Google Sign-In) |
@@ -77,6 +78,7 @@ Do not mix Windows and WSL `expo prebuild` / Gradle — `android/build/generated
 | `constants/wallet-card-styles.ts` | Curated gradient card presets for wallets (`wallets.card_style_id`) — append here to add a new style |
 | `index.js` | Android headless notification listener (registered before expo-router; requires `*.core.js`) |
 
+**Routes (short URLs):** `/budget`, `/notifications`, `/debug`, `/heatmap`, `/wallet/...`, `/transaction/...`, `/proposal/[id]`, `/scan/...`. Shared feature screens sit on the root Stack (not per-tab stacks). Tabs use a custom JS tab bar + FAB (not NativeTabs).
 ## Theming
 
 Tokens are CSS-first in `global.css`. Prefer semantic classes (`bg-primary`, `text-foreground`, `bg-card`) and shared UI helpers under `components/ui/` (`BrandHeader`, `ScreenShell`, chips, `PrimaryButton`, `GradientCard`). For native APIs that need a color string, use `useThemeTokens()`. Change brand colors in `global.css` only — do not hardcode hex in screens.
@@ -93,7 +95,7 @@ Default wallet: Profile → Default wallet. Synced in `profiles.preferences.defa
 
 **Chat tab** (`app/(tabs)/chat.tsx`): conversational back-and-forth — log transactions (text, inline receipt camera, hold-to-talk), ask finance questions (heuristic routing → `/v1/chat/analyze`), session history in MMKV (`lib/ai/chat/`) with rolling context window and 24h idle expiry.
 
-**Extraction queue** (background): MMKV queue → background processor → Go backend → `proposed_transactions` → review UI. **Silent capture entry points** (not shown in Chat thread): floating tab-bar button — tap launches ML Kit receipt scan in-place (`lib/receipts/scan-receipt.ts`), long-press opens `app/(routes)/scan/listen.tsx` (narration). **Review UI:** `components/proposal-summary-sheet.tsx` shows a minimal popup for each pending proposal (Approve / Decline / "Edit details"); full form at `app/(routes)/proposal/[id].tsx`. **Android notifications:** link a banking app per wallet; only linked apps are queued. Details: [docs/AI.md](../../docs/AI.md).
+**Extraction queue** (background): MMKV queue → background processor → Go backend → `proposed_transactions` → review UI. **Silent capture entry points** (not shown in Chat thread): floating tab-bar button — tap launches ML Kit receipt scan in-place (`lib/receipts/scan-receipt.ts`), long-press opens `app/scan/listen.tsx` (narration). **Review UI:** `components/proposal/proposal-summary-sheet.tsx` shows a minimal popup for each pending proposal (Approve / Decline / "Edit details"); full form at `app/proposal/[id].tsx`. **Android notifications:** link a banking app per wallet; only linked apps are queued. Details: [docs/AI.md](../../docs/AI.md).
 
 **Receipt scan** (`lib/receipts/scan-receipt.ts`): **Android only** — FAB and Chat camera call `scanAndNormalizeReceipt()` directly (no intermediate screen); `modules/moni-document-scanner` launches Google ML Kit (`SCANNER_MODE_FULL`). Post-scan: `normalize-scan.ts` copies to cache and caps longest edge at 1024px → `queueReceiptImage()` for extraction. iOS uses `/scan/receipt` as a transparent fallback route. Requires Google Play Services; **rebuild dev client** after native module changes (`npx expo run:android`).
 
