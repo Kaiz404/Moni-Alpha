@@ -190,7 +190,11 @@ export default function ProposalDetailScreen() {
           <Text className="text-center text-base text-muted">{loadError ?? 'Proposal not found.'}</Text>
         </View>
       ) : (
-        <ScrollView className="flex-1" contentContainerClassName="px-4 pb-8 pt-4">
+        <ScrollView
+          className="flex-1"
+          contentContainerClassName="px-4 pb-8 pt-4"
+          showsVerticalScrollIndicator={false}
+        >
           <ProposalForm
             proposal={proposal}
             wallets={wallets}
@@ -429,9 +433,8 @@ function ProposalForm({
                 destinationWallets.map((w) => (
                   <Pressable
                     key={w.id}
-                    className={`border-b border-border px-4 py-3 ${
-                      w.id === selectedTransferToWalletId ? 'bg-primary-muted' : ''
-                    }`}
+                    className={`border-b border-border px-4 py-3 ${w.id === selectedTransferToWalletId ? 'bg-primary-muted' : ''
+                      }`}
                     onPress={() => {
                       setSelectedTransferToWalletId(w.id);
                       setShowTransferToPicker(false);

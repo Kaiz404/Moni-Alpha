@@ -69,7 +69,7 @@ export default function BudgetsScreen() {
   }, []);
 
   useEffect(() => {
-    load().catch(() => {});
+    load().catch(() => { });
   }, [load]);
 
   const saveBudget = async (categoryId: string) => {
@@ -119,7 +119,8 @@ export default function BudgetsScreen() {
           <ScrollView
             className="flex-1 bg-background"
             contentContainerStyle={{ paddingBottom: insets.bottom + 24 }}
-            keyboardShouldPersistTaps="handled">
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}>
             <View className="px-4 pt-4">
               <Text className="mb-4 text-sm leading-5 text-muted">
                 Monthly limits apply to <Text className="font-bold text-foreground">all wallets</Text> combined. The

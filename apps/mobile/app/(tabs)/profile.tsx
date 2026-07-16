@@ -215,7 +215,7 @@ export default function ProfileScreen() {
   }, []);
 
   useEffect(() => {
-    refreshPermissionStatus().catch(() => {});
+    refreshPermissionStatus().catch(() => { });
   }, [refreshPermissionStatus]);
 
   const requestLocationAccess = useCallback(async () => {
@@ -260,7 +260,7 @@ export default function ProfileScreen() {
       <ScrollView
         className="flex-1"
         contentContainerClassName="grow pb-10"
-        showsVerticalScrollIndicator>
+        showsVerticalScrollIndicator={false}>
         <View className="px-4 pt-6 pb-4">
           <Text className="text-2xl font-bold text-foreground">Profile</Text>
         </View>

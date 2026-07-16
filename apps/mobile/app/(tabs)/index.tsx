@@ -348,6 +348,7 @@ export default function WalletsScreen() {
         nestedScrollEnabled
         className="flex-1"
         contentContainerStyle={{ paddingBottom: 0, flexGrow: 1 }}
+        showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
         <View className="flex-row items-start justify-between px-4 pb-1 pt-2">
@@ -462,14 +463,14 @@ export default function WalletsScreen() {
             const txCurrency = walletCurrencyMap[item.walletId] ?? 'USD';
             const title = isTransfer
               ? formatTransferLabel(
-                  {
-                    wallet_id: item.walletId,
-                    transfer_to_wallet_id: item.transferToWalletId,
-                    type: item.type,
-                  },
-                  walletNames,
-                  singleViewingWalletId,
-                )
+                {
+                  wallet_id: item.walletId,
+                  transfer_to_wallet_id: item.transferToWalletId,
+                  type: item.type,
+                },
+                walletNames,
+                singleViewingWalletId,
+              )
               : item.merchant || item.description || item.type;
             const amountClass = isTransfer
               ? 'text-transfer'

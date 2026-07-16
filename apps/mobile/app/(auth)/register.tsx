@@ -54,6 +54,7 @@ export default function RegisterScreen() {
       <ScrollView
         className="flex-1 px-6 pt-6"
         keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 32 }}>
         <Text className="text-3xl font-bold text-foreground">Join Moni</Text>
         <Text className="mb-8 mt-2 text-base leading-6 text-muted">
@@ -111,8 +112,8 @@ export default function RegisterScreen() {
         <GoogleSignInButton
           disabled={loading}
           onError={(message) => Alert.alert('Google sign in failed', message, [{ text: 'OK' }], {
-          cancelable: true,
-        })}
+            cancelable: true,
+          })}
         />
 
         <Link href={'/(auth)/login' as any} asChild>

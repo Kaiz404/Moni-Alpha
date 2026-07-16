@@ -48,6 +48,7 @@ export default function LoginScreen() {
       <ScrollView
         className="flex-1 px-6 pt-6"
         keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 32 }}>
         <View className="mb-8">
           <Text className="text-3xl font-bold text-foreground">Welcome back</Text>
@@ -105,8 +106,8 @@ export default function LoginScreen() {
         <GoogleSignInButton
           disabled={loading}
           onError={(message) => Alert.alert('Google sign in failed', message, [{ text: 'OK' }], {
-          cancelable: true,
-        })}
+            cancelable: true,
+          })}
         />
 
         <Link href={'/(auth)/register' as any} asChild>

@@ -294,6 +294,7 @@ export default function DebugPage() {
       <ScrollView
         ref={scrollRef}
         contentContainerClassName="pb-20"
+        showsVerticalScrollIndicator={false}
         onContentSizeChange={() => scrollRef.current?.scrollToEnd({ animated: true })}
       >
         <View className="px-3 pt-4 pb-2">

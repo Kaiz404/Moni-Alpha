@@ -35,11 +35,11 @@ type WalletPickerFlow =
   | { proposal: ProposedTransaction; step: 'single' }
   | { proposal: ProposedTransaction; step: 'transfer-source' }
   | {
-      proposal: ProposedTransaction;
-      step: 'transfer-destination';
-      sourceWalletId: string;
-      sourceCurrency: string;
-    };
+    proposal: ProposedTransaction;
+    step: 'transfer-destination';
+    sourceWalletId: string;
+    sourceCurrency: string;
+  };
 
 function walletPickerTitle(flow: WalletPickerFlow | null): string {
   if (!flow) return 'Select wallet for this transaction';
@@ -472,7 +472,7 @@ export default function TransactionsScreen() {
         className="flex-1"
         contentContainerClassName="grow"
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-        showsVerticalScrollIndicator>
+        showsVerticalScrollIndicator={false}>
         <View className="px-4 pt-2 pb-4">
           {selectedWallet ? (
             <GradientCard cardStyle={getWalletCardStyle(selectedWallet.cardStyleId)} className="rounded-3xl p-4">
@@ -528,154 +528,154 @@ export default function TransactionsScreen() {
         </View>
 
         <View className="mt-2 px-4 pb-6">
-            {proposals.length > 0 ? (
-              <View className="mb-4">
-                <View className="flex-row items-center justify-between mb-2">
-                  <Text className="text-xs font-bold uppercase tracking-wider text-muted">
-                    Pending Proposals
-                  </Text>
-                  {proposalsLoading ? <ActivityIndicator size="small" color="#6b7280" /> : null}
-                </View>
-                {proposals.map((p) => (
-                  <ProposalCard
-                    key={p.id}
-                    item={p}
-                    wallets={mapWalletOptions(wallets)}
-                    onApprove={handleApprove}
-                    onReject={handleReject}
-                  />
-                ))}
-              </View>
-            ) : null}
-
-            <View className="flex-row justify-between items-center mb-2">
-              <View className="flex-1 mr-2">
-                <Text className="text-sm font-semibold text-foreground">
-                  Recent transactions
+          {proposals.length > 0 ? (
+            <View className="mb-4">
+              <View className="flex-row items-center justify-between mb-2">
+                <Text className="text-xs font-bold uppercase tracking-wider text-muted">
+                  Pending Proposals
                 </Text>
-                {/* <Text className="text-sm font-semibold text-foreground">
+                {proposalsLoading ? <ActivityIndicator size="small" color="#6b7280" /> : null}
+              </View>
+              {proposals.map((p) => (
+                <ProposalCard
+                  key={p.id}
+                  item={p}
+                  wallets={mapWalletOptions(wallets)}
+                  onApprove={handleApprove}
+                  onReject={handleReject}
+                />
+              ))}
+            </View>
+          ) : null}
+
+          <View className="flex-row justify-between items-center mb-2">
+            <View className="flex-1 mr-2">
+              <Text className="text-sm font-semibold text-foreground">
+                Recent transactions
+              </Text>
+              {/* <Text className="text-sm font-semibold text-foreground">
                   {walletId ? `${selectedWallet?.name ?? 'Wallet'}` : 'All transactions'}
                 </Text> */}
-                <Text className="mt-0.5 text-xs text-muted">
-                  {walletId ? 'Recorded in this wallet' : 'Across every wallet'}
-                </Text>
-              </View>
-              <Link
-                href={(walletId ? `/transaction/new?walletId=${walletId}` : '/transaction/new') as any}
-                asChild>
-                <TouchableOpacity className="rounded-lg bg-primary px-4 py-2">
-                  <Text className="text-white font-semibold">+ Add</Text>
-                </TouchableOpacity>
-              </Link>
+              <Text className="mt-0.5 text-xs text-muted">
+                {walletId ? 'Recorded in this wallet' : 'Across every wallet'}
+              </Text>
             </View>
+            <Link
+              href={(walletId ? `/transaction/new?walletId=${walletId}` : '/transaction/new') as any}
+              asChild>
+              <TouchableOpacity className="rounded-lg bg-primary px-4 py-2">
+                <Text className="text-white font-semibold">+ Add</Text>
+              </TouchableOpacity>
+            </Link>
+          </View>
 
-            {transactions.length === 0 ? (
-              <View className="mb-2 mt-1 rounded-2xl border border-dashed border-border bg-card p-4">
-                <Text className="text-center text-sm text-muted">
-                  No transactions yet. Tap + Add to create one.
-                </Text>
-              </View>
-            ) : (
-              transactions.map((item) => {
-                const isIncome = item.type === 'income';
-                const isTransfer = item.type === 'transfer';
-                const categoryLabel = item.categoryId ? categoryMap[item.categoryId] : null;
-                const canEdit = true;
-                const title =
-                  isTransfer
-                    ? formatTransferLabel(
-                        {
-                          wallet_id: item.walletId,
-                          transfer_to_wallet_id: item.transferToWalletId,
-                          type: item.type,
-                        },
-                        Object.fromEntries(
-                          Object.entries(walletMap as Record<string, any>).map(([id, w]) => [id, w?.name ?? 'Wallet']),
-                        ),
-                        selectedWallet?.id,
-                      )
-                    : item.merchant || item.description || item.type;
-                const amountClass = isTransfer ? 'text-transfer' : isIncome ? 'text-income' : 'text-expense';
-                return (
-                  <Pressable
-                    key={item.id}
-                    accessibilityRole="button"
-                    accessibilityHint="Opens transaction details"
-                    onPress={() => {
-                      router.push({ pathname: '/transaction/[id]', params: { id: item.id } });
-                    }}
-                    style={({ pressed }) => (pressed ? { opacity: 0.92 } : undefined)}
-                    className="mb-2 rounded-2xl border border-border bg-card p-3">
-                    <View className="flex-row items-start justify-between gap-2">
-                      <View className="flex-1 min-w-0 pr-1">
-                        <Text className="text-base font-semibold text-foreground" numberOfLines={2}>
-                          {title}
+          {transactions.length === 0 ? (
+            <View className="mb-2 mt-1 rounded-2xl border border-dashed border-border bg-card p-4">
+              <Text className="text-center text-sm text-muted">
+                No transactions yet. Tap + Add to create one.
+              </Text>
+            </View>
+          ) : (
+            transactions.map((item) => {
+              const isIncome = item.type === 'income';
+              const isTransfer = item.type === 'transfer';
+              const categoryLabel = item.categoryId ? categoryMap[item.categoryId] : null;
+              const canEdit = true;
+              const title =
+                isTransfer
+                  ? formatTransferLabel(
+                    {
+                      wallet_id: item.walletId,
+                      transfer_to_wallet_id: item.transferToWalletId,
+                      type: item.type,
+                    },
+                    Object.fromEntries(
+                      Object.entries(walletMap as Record<string, any>).map(([id, w]) => [id, w?.name ?? 'Wallet']),
+                    ),
+                    selectedWallet?.id,
+                  )
+                  : item.merchant || item.description || item.type;
+              const amountClass = isTransfer ? 'text-transfer' : isIncome ? 'text-income' : 'text-expense';
+              return (
+                <Pressable
+                  key={item.id}
+                  accessibilityRole="button"
+                  accessibilityHint="Opens transaction details"
+                  onPress={() => {
+                    router.push({ pathname: '/transaction/[id]', params: { id: item.id } });
+                  }}
+                  style={({ pressed }) => (pressed ? { opacity: 0.92 } : undefined)}
+                  className="mb-2 rounded-2xl border border-border bg-card p-3">
+                  <View className="flex-row items-start justify-between gap-2">
+                    <View className="flex-1 min-w-0 pr-1">
+                      <Text className="text-base font-semibold text-foreground" numberOfLines={2}>
+                        {title}
+                      </Text>
+                      {!isTransfer && item.description && item.merchant ? (
+                        <Text className="text-sm text-muted mt-0.5" numberOfLines={2}>
+                          {item.description}
                         </Text>
-                        {!isTransfer && item.description && item.merchant ? (
-                          <Text className="text-sm text-muted mt-0.5" numberOfLines={2}>
-                            {item.description}
-                          </Text>
-                        ) : null}
-                        {isTransfer && item.description ? (
-                          <Text className="text-sm text-muted mt-0.5" numberOfLines={2}>
-                            {item.description}
-                          </Text>
-                        ) : null}
-                        <View className="flex-row flex-wrap items-center gap-x-2 gap-y-1 mt-2">
-                          <Text className="text-xs text-muted">
-                            {new Date(item.transactionDate).toLocaleString(undefined, {
-                              dateStyle: 'medium',
-                              timeStyle: 'short',
-                            })}
-                          </Text>
-                          {isTransfer ? (
-                            <View className="rounded-full bg-transfer/15 px-2 py-0.5">
-                              <Text className="text-[11px] font-medium text-transfer">
-                                Transfer
-                              </Text>
-                            </View>
-                          ) : categoryLabel ? (
-                            <View className="rounded-full bg-background-muted px-2 py-0.5">
-                              <Text className="text-[11px] font-medium text-foreground">
-                                {categoryLabel}
-                              </Text>
-                            </View>
-                          ) : null}
-                          {!isTransfer ? (
-                            <Text className="text-xs text-muted">
-                              {walletMap[item.walletId]?.name ?? 'Wallet'}
+                      ) : null}
+                      {isTransfer && item.description ? (
+                        <Text className="text-sm text-muted mt-0.5" numberOfLines={2}>
+                          {item.description}
+                        </Text>
+                      ) : null}
+                      <View className="flex-row flex-wrap items-center gap-x-2 gap-y-1 mt-2">
+                        <Text className="text-xs text-muted">
+                          {new Date(item.transactionDate).toLocaleString(undefined, {
+                            dateStyle: 'medium',
+                            timeStyle: 'short',
+                          })}
+                        </Text>
+                        {isTransfer ? (
+                          <View className="rounded-full bg-transfer/15 px-2 py-0.5">
+                            <Text className="text-[11px] font-medium text-transfer">
+                              Transfer
                             </Text>
-                          ) : null}
-                        </View>
-                        {item.notes ? (
-                          <Text className="text-xs text-muted mt-1 italic" numberOfLines={2}>
-                            {item.notes}
+                          </View>
+                        ) : categoryLabel ? (
+                          <View className="rounded-full bg-background-muted px-2 py-0.5">
+                            <Text className="text-[11px] font-medium text-foreground">
+                              {categoryLabel}
+                            </Text>
+                          </View>
+                        ) : null}
+                        {!isTransfer ? (
+                          <Text className="text-xs text-muted">
+                            {walletMap[item.walletId]?.name ?? 'Wallet'}
                           </Text>
                         ) : null}
                       </View>
-                      <View className="items-end shrink-0">
-                        <View className="mb-1 flex-row items-center gap-0.5">
-                          <Pressable
-                            accessibilityLabel="Delete transaction"
-                            hitSlop={8}
-                            onPress={() => handleDeleteTransaction(item.id)}
-                            className="rounded p-1 active:opacity-70">
-                            <MaterialIcons name="delete-outline" size={18} color={tokens.danger} />
-                          </Pressable>
-                        </View>
-                        <Text className={`text-lg font-bold ${amountClass}`}>
-                          {isTransfer ? '' : isIncome ? '+' : '−'}
-                          {item.amount.toFixed(2)}
+                      {item.notes ? (
+                        <Text className="text-xs text-muted mt-1 italic" numberOfLines={2}>
+                          {item.notes}
                         </Text>
-                        <Text className="mt-0.5 text-xs text-muted">
-                          {walletMap[item.walletId]?.currency ?? 'USD'}
-                        </Text>
-                      </View>
+                      ) : null}
                     </View>
-                  </Pressable>
-                );
-              })
-            )}
+                    <View className="items-end shrink-0">
+                      <View className="mb-1 flex-row items-center gap-0.5">
+                        <Pressable
+                          accessibilityLabel="Delete transaction"
+                          hitSlop={8}
+                          onPress={() => handleDeleteTransaction(item.id)}
+                          className="rounded p-1 active:opacity-70">
+                          <MaterialIcons name="delete-outline" size={18} color={tokens.danger} />
+                        </Pressable>
+                      </View>
+                      <Text className={`text-lg font-bold ${amountClass}`}>
+                        {isTransfer ? '' : isIncome ? '+' : '−'}
+                        {item.amount.toFixed(2)}
+                      </Text>
+                      <Text className="mt-0.5 text-xs text-muted">
+                        {walletMap[item.walletId]?.currency ?? 'USD'}
+                      </Text>
+                    </View>
+                  </View>
+                </Pressable>
+              );
+            })
+          )}
         </View>
       </ScrollView>
       <WalletPickerModal
