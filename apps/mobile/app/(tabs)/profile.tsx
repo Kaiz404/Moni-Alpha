@@ -11,6 +11,7 @@ import { router, useFocusEffect } from 'expo-router';
 import * as Location from 'expo-location';
 import * as ImagePicker from 'expo-image-picker';
 import { ExpoSpeechRecognitionModule } from 'expo-speech-recognition';
+import { prepareOfflineSpeechModel } from '@/lib/speech/speech-recognition';
 import { useAuth } from '@/lib/auth/auth-context';
 import { SyncStatus } from '@/components/providers/sync-status';
 import { ThemePreferencePicker } from '@/components/profile/theme-preference-picker';
@@ -117,6 +118,9 @@ export default function ProfileScreen() {
     try {
       const result = await ExpoSpeechRecognitionModule.requestPermissionsAsync();
       setMicStatus(mapSpeechPermissionStatus(result));
+      if (result.granted) {
+        await prepareOfflineSpeechModel({ allowDialog: true });
+      }
     } finally {
       setIsRequestingMic(false);
     }

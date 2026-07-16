@@ -8,7 +8,14 @@ import {
   ExpoSpeechRecognitionModule,
   useSpeechRecognitionEvent,
 } from 'expo-speech-recognition';
+import type { ExpoSpeechRecognitionResultEvent } from 'expo-speech-recognition';
 import { PulsingOrb } from '@/components/scan/pulsing-orb';
+import {
+  buildSpeechRecognitionOptions,
+  ensureSpeechPermissions,
+  getTranscriptFromResult,
+  prepareOfflineSpeechModel,
+} from '@/lib/speech/speech-recognition';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { enqueue, type ProcessingQueueItem } from '@/lib/ai/processing-queue';
 import { startBackgroundProcessor } from '@/lib/ai/background-processor';
@@ -24,20 +31,22 @@ export default function ScanListenScreen() {
   const [phase, setPhase] = useState<Phase>('listening');
   const [transcript, setTranscript] = useState('');
   const startedRef = useRef(false);
+  const committedTranscriptRef = useRef('');
 
   const start = useCallback(async () => {
     try {
-      const perms = await ExpoSpeechRecognitionModule.getPermissionsAsync();
-      if (!perms.granted) {
-        const req = await ExpoSpeechRecognitionModule.requestPermissionsAsync();
-        if (!req.granted) {
-          Alert.alert('Permission needed', 'Microphone permission is required to narrate a transaction.');
-          router.back();
-          return;
-        }
+      const granted = await ensureSpeechPermissions();
+      if (!granted) {
+        Alert.alert('Permission needed', 'Microphone permission is required to narrate a transaction.');
+        router.back();
+        return;
       }
+
+      await prepareOfflineSpeechModel({ allowDialog: true });
+
+      committedTranscriptRef.current = '';
       startedRef.current = true;
-      ExpoSpeechRecognitionModule.start({ lang: 'en-US', interimResults: true, continuous: true });
+      ExpoSpeechRecognitionModule.start(buildSpeechRecognitionOptions());
     } catch (e) {
       console.warn(TAG, 'Failed to start speech recognition:', e);
       router.back();
@@ -57,9 +66,19 @@ export default function ScanListenScreen() {
     };
   }, [start]);
 
-  useSpeechRecognitionEvent('result', (event: any) => {
-    const text: string = event?.results?.[0]?.transcript ?? '';
-    if (text) setTranscript(text);
+  useSpeechRecognitionEvent('result', (event: ExpoSpeechRecognitionResultEvent) => {
+    const text = getTranscriptFromResult(event);
+    if (!text) return;
+
+    if (event.isFinal) {
+      const committed = committedTranscriptRef.current;
+      committedTranscriptRef.current = committed ? `${committed} ${text}` : text;
+      setTranscript(committedTranscriptRef.current);
+      return;
+    }
+
+    const committed = committedTranscriptRef.current;
+    setTranscript(committed ? `${committed} ${text}` : text);
   });
 
   useSpeechRecognitionEvent('error', () => {
@@ -157,6 +176,7 @@ export default function ScanListenScreen() {
             <Pressable
               onPress={() => {
                 setTranscript('');
+                committedTranscriptRef.current = '';
                 setPhase('listening');
                 start();
               }}

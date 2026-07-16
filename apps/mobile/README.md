@@ -73,6 +73,7 @@ Do not mix Windows and WSL `expo prebuild` / Gradle — `android/build/generated
 | `lib/ai/` | Processing queue, background processor, AI client (HTTP ↔ Go backend, mock fallback) |
 | `lib/notifications/` | Prefilter / package helpers: `*.core.js` (headless + Node tests) + thin `*.ts` re-exports; linked-app MMKV cache; `moni-android-apps` |
 | `lib/receipts/` | ML Kit scan normalization, local image save, Storage upload queue |
+| `lib/speech/` | Shared on-device speech recognition options, permissions, offline model prep |
 | `lib/transactions/draft-extras.ts` | Ephemeral (non-persisted) hand-off of merchant/description/location between the quick-add and "More details" transaction screens |
 | `global.css` | Uniwind design tokens (brand + light/dark semantic colors) |
 | `constants/wallet-card-styles.ts` | Curated gradient card presets for wallets (`wallets.card_style_id`) — append here to add a new style |
@@ -93,7 +94,7 @@ Default wallet: Profile → Default wallet. Synced in `profiles.preferences.defa
 
 ## AI
 
-**Chat tab** (`app/(tabs)/chat.tsx`): conversational back-and-forth — log transactions (text, inline receipt camera, hold-to-talk), ask finance questions (heuristic routing → `/v1/chat/analyze`), session history in MMKV (`lib/ai/chat/`) with rolling context window and 24h idle expiry.
+**Chat tab** (`app/(tabs)/chat.tsx`): conversational back-and-forth — log transactions (text, inline receipt camera, hold-to-talk), ask finance questions (heuristic routing → `/v1/chat/analyze`), session history in MMKV (`lib/ai/chat/`) with rolling context window and 24h idle expiry. Hold-to-talk uses `expo-speech-recognition` with shared on-device options in `lib/speech/speech-recognition.ts` (continuous, punctuation, finance biasing).
 
 **Extraction queue** (background): MMKV queue → background processor → Go backend → `proposed_transactions` → review UI. **Silent capture entry points** (not shown in Chat thread): floating tab-bar button — tap launches ML Kit receipt scan in-place (`lib/receipts/scan-receipt.ts`), long-press opens `app/scan/listen.tsx` (narration). **Review UI:** `components/proposal/proposal-summary-sheet.tsx` shows a minimal popup for each pending proposal (Approve / Decline / "Edit details"); full form at `app/proposal/[id].tsx`. **Android notifications:** link a banking app per wallet; only linked apps are queued. Details: [docs/AI.md](../../docs/AI.md).
 

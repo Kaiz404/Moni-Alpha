@@ -25,6 +25,7 @@ import { QueryProvider } from "@/lib/query/query-client";
 import { drainImageUploadQueue } from "@/lib/receipts/upload-queue";
 import { pruneIncompleteProposals } from "@/lib/supabase/proposed-transactions";
 import { applyStoredThemePreference } from "@/lib/theme/preference";
+import { prepareOfflineSpeechModel } from "@/lib/speech/speech-recognition";
 
 applyStoredThemePreference();
 
@@ -79,10 +80,12 @@ export default function RootLayout() {
   useEffect(() => {
     pruneIncompleteProposals().catch(() => {});
     drainImageUploadQueue().catch(() => {});
+    prepareOfflineSpeechModel().catch(() => {});
 
     const sub = AppState.addEventListener("change", (nextState) => {
       if (uploadAppState.current.match(/inactive|background/) && nextState === "active") {
         drainImageUploadQueue().catch(() => {});
+        prepareOfflineSpeechModel().catch(() => {});
       }
       uploadAppState.current = nextState;
     });

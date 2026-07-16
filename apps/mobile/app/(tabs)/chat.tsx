@@ -13,8 +13,16 @@ import {
   ExpoSpeechRecognitionModule,
   useSpeechRecognitionEvent,
 } from 'expo-speech-recognition';
+import type { ExpoSpeechRecognitionResultEvent } from 'expo-speech-recognition';
 
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
+import {
+  buildSpeechRecognitionOptions,
+  ensureSpeechPermissions,
+  getTranscriptFromResult,
+  mergeTranscriptWithBase,
+  prepareOfflineSpeechModel,
+} from '@/lib/speech/speech-recognition';
 import { MessageBubble } from '@/components/chat/message-bubble';
 import { ChatInputBar, ChatEmptyState } from '@/components/chat/chat-input-bar';
 import type { ChatMessage, QuickReplyOption } from '@/lib/ai/chat/messages';
@@ -70,31 +78,24 @@ export default function ChatScreen() {
     setIsSpeechRecognizing(false);
   });
 
-  useSpeechRecognitionEvent('result', (event: { results?: { transcript?: string }[] }) => {
-    const transcript: string = event?.results?.[0]?.transcript ?? '';
-    const text = transcript.trim();
+  useSpeechRecognitionEvent('result', (event: ExpoSpeechRecognitionResultEvent) => {
+    const text = getTranscriptFromResult(event);
     if (!text) return;
-    const base = speechBaseRef.current ?? '';
-    const prefix = base.trim().length ? `${base.trimEnd()} ` : '';
-    setInput(prefix + text);
+    setInput(mergeTranscriptWithBase(speechBaseRef.current ?? '', text));
   });
 
   const startSpeech = useCallback(async () => {
     if (speechActiveRef.current) return;
     try {
-      const perms = await ExpoSpeechRecognitionModule.getPermissionsAsync();
-      if (!perms.granted) {
-        const req = await ExpoSpeechRecognitionModule.requestPermissionsAsync();
-        if (!req.granted) return;
-      }
+      const granted = await ensureSpeechPermissions();
+      if (!granted) return;
+
+      await prepareOfflineSpeechModel({ allowDialog: true });
+
       speechBaseRef.current = input;
       speechActiveRef.current = true;
       setIsSpeechRecognizing(true);
-      ExpoSpeechRecognitionModule.start({
-        lang: 'en-US',
-        interimResults: true,
-        continuous: false,
-      });
+      ExpoSpeechRecognitionModule.start(buildSpeechRecognitionOptions());
     } catch {
       speechActiveRef.current = false;
       setIsSpeechRecognizing(false);
@@ -103,10 +104,10 @@ export default function ChatScreen() {
 
   const stopSpeech = useCallback(() => {
     if (!speechActiveRef.current) return;
-    speechActiveRef.current = false;
     try {
       ExpoSpeechRecognitionModule.stop();
     } catch {
+      speechActiveRef.current = false;
       setIsSpeechRecognizing(false);
     }
   }, []);
