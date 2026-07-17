@@ -4,7 +4,7 @@
  */
 import type { TxForMetrics } from './insight-metrics';
 
-export type BudgetRow = { categoryId: string; amount: number };
+export type BudgetRow = { categoryId: string; currency: string; amount: number };
 
 /** Merchant text → rough spend style (keyword heuristics, not LLM). */
 function classifyMerchantLine(merchant: string | null | undefined): 'dining_out' | 'grocery' | 'other' {
@@ -29,6 +29,7 @@ function inCalendarMonth(isoDate: string, y: number, monthIndex0: number): boole
 export type BudgetCategoryMetric = {
   categoryId: string;
   categoryName: string;
+  currency: string;
   budgetAmount: number;
   spentTotal: number;
   pctOfBudget: number | null;
@@ -57,7 +58,7 @@ export function buildBudgetCoachSnapshot(
   currencyHint: string,
   now: Date = new Date(),
 ): BudgetCoachToolSnapshot {
-  const sortedBudgets = [...budgets].sort((a, b) => a.categoryId.localeCompare(b.categoryId));
+  const sortedBudgets = [...budgets].sort((a, b) => `${a.currency}:${a.categoryId}`.localeCompare(`${b.currency}:${b.categoryId}`));
 
   const y = now.getFullYear();
   const m = now.getMonth();
@@ -76,7 +77,7 @@ export function buildBudgetCoachSnapshot(
   > = {};
 
   for (const b of sortedBudgets) {
-    byCat[b.categoryId] = {
+    byCat[`${b.categoryId}:${b.currency.toUpperCase()}`] = {
       total: 0,
       dining: 0,
       grocery: 0,
@@ -87,14 +88,15 @@ export function buildBudgetCoachSnapshot(
   }
 
   for (const tx of transactions) {
-    if (tx.type !== 'expense') continue;
+    if (tx.type !== 'expense' || tx.analysisExcluded) continue;
     const cid = tx.categoryId ?? '';
-    if (!cid || !byCat[cid]) continue;
+    const key = `${cid}:${(tx.currency ?? currencyHint).toUpperCase()}`;
+    if (!cid || !byCat[key]) continue;
     if (!inCalendarMonth(tx.transactionDate, y, m)) continue;
 
     const amt = Math.round(tx.amount * 100) / 100;
     const bucket = classifyMerchantLine(tx.merchant);
-    const o = byCat[cid];
+    const o = byCat[key];
     o.total += amt;
     o.count += 1;
     if (bucket === 'dining_out') o.dining += amt;
@@ -107,7 +109,7 @@ export function buildBudgetCoachSnapshot(
 
   const categories: BudgetCategoryMetric[] = sortedBudgets.map((b) => {
     const name = categoryMap[b.categoryId] ?? 'Category';
-    const o = byCat[b.categoryId];
+    const o = byCat[`${b.categoryId}:${b.currency.toUpperCase()}`];
     const spent = Math.round(o.total * 100) / 100;
     const budgetAmount = Math.round(b.amount * 100) / 100;
     const pct = budgetAmount > 0 ? Math.round((spent / budgetAmount) * 1000) / 10 : null;
@@ -122,6 +124,7 @@ export function buildBudgetCoachSnapshot(
     return {
       categoryId: b.categoryId,
       categoryName: name,
+      currency: b.currency.toUpperCase(),
       budgetAmount,
       spentTotal: spent,
       pctOfBudget: pct,

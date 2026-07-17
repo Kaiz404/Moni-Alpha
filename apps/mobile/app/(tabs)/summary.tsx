@@ -29,6 +29,8 @@ import { useTransactionPinmap, type TransactionPinPoint } from '@/hooks/use-tran
 import { getCategoryNameRows } from '@/lib/supabase/categories';
 import { getTransactions } from '@/lib/supabase/transactions';
 import { getWallets } from '@/lib/supabase/wallets';
+import { getDebtActivities, getDebts, outstandingDebtBalance } from '@/lib/supabase/debts';
+import type { Debt, DebtActivity } from '@repo/types';
 
 const balanceCardStyle = getWalletCardStyle('emerald-grain');
 
@@ -37,7 +39,9 @@ type TransactionItem = {
   walletId: string;
   transferToWalletId?: string | null;
   amount: number;
+  currency: string;
   type: 'income' | 'expense' | 'transfer';
+  analysisExcluded?: boolean;
   categoryId?: string | null;
   merchant?: string | null;
   transactionDate: string;
@@ -75,6 +79,8 @@ export default function SummaryScreen() {
   const [error, setError] = useState<string | null>(null);
   const [transactions, setTransactions] = useState<TransactionItem[]>([]);
   const [wallets, setWallets] = useState<WalletItem[]>([]);
+  const [debts, setDebts] = useState<Debt[]>([]);
+  const [debtActivities, setDebtActivities] = useState<DebtActivity[]>([]);
   const [categoryMap, setCategoryMap] = useState<Record<string, string>>({});
   const [selectedPin] = useState<TransactionPinPoint | null>(null);
 
@@ -83,10 +89,12 @@ export default function SummaryScreen() {
     setError(null);
 
     try {
-      const [txData, walletData, categoryRows] = await Promise.all([
+      const [txData, walletData, categoryRows, debtRows, activityRows] = await Promise.all([
         getTransactions(undefined, 8000),
         getWallets(),
         getCategoryNameRows(),
+        getDebts(),
+        getDebtActivities(),
       ]);
 
       setTransactions(txData as TransactionItem[]);
@@ -96,6 +104,8 @@ export default function SummaryScreen() {
           categoryRows.map((row) => [row.id, row.name ?? 'Uncategorized'])
         )
       );
+      setDebts(debtRows);
+      setDebtActivities(activityRows);
     } catch (e) {
       console.error('Error loading summary data:', e);
       setError(e instanceof Error ? e.message : 'Failed to load summary data');
@@ -114,7 +124,7 @@ export default function SummaryScreen() {
     const totals: Record<string, number> = {};
 
     transactions.forEach((tx) => {
-      if (tx.type !== 'expense') return;
+      if (tx.type !== 'expense' || tx.analysisExcluded) return;
 
       const categoryName = tx.categoryId ? categoryMap[tx.categoryId] ?? 'Uncategorized' : 'Uncategorized';
       totals[categoryName] = (totals[categoryName] ?? 0) + tx.amount;
@@ -239,12 +249,20 @@ export default function SummaryScreen() {
     [walletRows]
   );
 
+  const netWorthByCurrency = useMemo(() => {
+    const totals: Record<string, { cash: number; receivable: number; payable: number }> = {};
+    for (const wallet of wallets) { const currency = (wallet.currency ?? 'USD').toUpperCase(); const row = totals[currency] ??= { cash: 0, receivable: 0, payable: 0 }; row.cash += wallet.currentBalance ?? wallet.initialBalance ?? 0; }
+    for (const debt of debts) { const currency = debt.currency; const row = totals[currency] ??= { cash: 0, receivable: 0, payable: 0 }; const balance = outstandingDebtBalance(debtActivities.filter((activity) => activity.debtId === debt.id)); if (debt.direction === 'owed_to_me') row.receivable += balance; else row.payable += balance; }
+    return Object.entries(totals).sort(([a], [b]) => a.localeCompare(b));
+  }, [wallets, debts, debtActivities]);
+
   if (loading) {
     return (
       <View className="flex-1 items-center justify-center bg-background">
         <ActivityIndicator size="large" color={tokens.primary} />
         <Text className="mt-3 text-muted">Loading summary...</Text>
       </View>
+
     );
   }
 
@@ -328,6 +346,12 @@ export default function SummaryScreen() {
             ))
           )}
         </View>
+      </View>
+
+      <View className="mb-4 rounded-2xl border border-border bg-card p-3">
+        <Text className="text-base font-semibold text-foreground">Cash and net worth</Text>
+        <Text className="mt-1 text-xs text-muted">Currencies are kept separate; debts do not count as spending.</Text>
+        {netWorthByCurrency.map(([currency, values]) => <View key={currency} className="mt-3 border-t border-border pt-3"><View className="flex-row justify-between"><Text className="font-semibold text-foreground">{currency}</Text><Text className="font-bold text-foreground">{currency} {(values.cash + values.receivable - values.payable).toFixed(2)}</Text></View><Text className="mt-1 text-xs text-muted">Cash {values.cash.toFixed(2)} · Owed to you {values.receivable.toFixed(2)} · You owe {values.payable.toFixed(2)}</Text></View>)}
       </View>
 
       <View className="mb-4 rounded-2xl border border-border bg-card p-3">

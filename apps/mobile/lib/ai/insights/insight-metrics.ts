@@ -5,6 +5,8 @@
 
 export type TxForMetrics = {
   amount: number;
+  currency?: string | null;
+  analysisExcluded?: boolean;
   type: 'income' | 'expense' | 'transfer';
   categoryId?: string | null;
   merchant?: string | null;
@@ -30,6 +32,7 @@ function sumByType(
 ): number {
   let s = 0;
   for (const tx of txs) {
+    if (tx.analysisExcluded) continue;
     if (tx.type !== type) continue;
     if (!inRange(tx.transactionDate, startMs, endMs)) continue;
     s += tx.amount;
@@ -40,7 +43,7 @@ function sumByType(
 function countInRange(txs: TxForMetrics[], startMs: number, endMs: number): number {
   let n = 0;
   for (const tx of txs) {
-    if (tx.type === 'transfer') continue;
+    if (tx.type === 'transfer' || tx.analysisExcluded) continue;
     if (!inRange(tx.transactionDate, startMs, endMs)) continue;
     n += 1;
   }
@@ -55,7 +58,7 @@ function groupExpenseBy(
 ): Record<string, number> {
   const acc: Record<string, number> = {};
   for (const tx of txs) {
-    if (tx.type !== 'expense') continue;
+    if (tx.type !== 'expense' || tx.analysisExcluded) continue;
     if (!inRange(tx.transactionDate, startMs, endMs)) continue;
     const k = keyFn(tx);
     acc[k] = (acc[k] ?? 0) + tx.amount;
@@ -83,7 +86,7 @@ function largestExpense(
 } | null {
   let best: TxForMetrics | null = null;
   for (const tx of txs) {
-    if (tx.type !== 'expense') continue;
+    if (tx.type !== 'expense' || tx.analysisExcluded) continue;
     if (!inRange(tx.transactionDate, startMs, endMs)) continue;
     if (!best || tx.amount > best.amount) best = tx;
   }

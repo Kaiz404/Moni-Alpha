@@ -34,3 +34,11 @@ export async function updateProfilePreferences(
   if (error) throw error;
   return userPreferencesSchema.parse(data?.preferences ?? merged);
 }
+
+export async function ensureFinanceTimezone(): Promise<string> {
+  const current = await getProfilePreferences();
+  if (current.finance_timezone) return current.finance_timezone;
+  const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+  await updateProfilePreferences({ finance_timezone: timezone });
+  return timezone;
+}

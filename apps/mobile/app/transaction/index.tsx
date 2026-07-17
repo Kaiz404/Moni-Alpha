@@ -28,6 +28,7 @@ import { getCategoryNameRows } from '@/lib/supabase/categories';
 import type { ProposedTransaction } from '@repo/types';
 
 type WalletItem = { id: string; name: string; currency: string };
+type TxRow = { id: string; walletId: string; transferToWalletId: string | null; amount: number; currency: string; type: 'income' | 'expense' | 'transfer'; categoryId: string | null; merchant: string | null; description: string | null; notes: string | null; transactionDate: string; debtActivityId: string | null; analysisExcluded: boolean };
 
 type WalletPickerFlow =
   | { proposal: ProposedTransaction; step: 'single' }
@@ -61,12 +62,15 @@ function formatMoney(amount: number, currency: string) {
 export default function TransactionsScreen() {
   const { user } = useAuth();
   const tokens = useThemeTokens();
-  const params = useLocalSearchParams<{ walletId?: string | string[] }>();
+  const params = useLocalSearchParams<{ walletId?: string | string[]; categoryId?: string | string[]; currency?: string | string[]; month?: string | string[] }>();
   const walletId = useMemo(() => {
     const w = params.walletId;
     if (Array.isArray(w)) return w[0];
     return w;
   }, [params.walletId]);
+  const categoryId = useMemo(() => Array.isArray(params.categoryId) ? params.categoryId[0] : params.categoryId, [params.categoryId]);
+  const currencyFilter = useMemo(() => Array.isArray(params.currency) ? params.currency[0] : params.currency, [params.currency]);
+  const monthFilter = useMemo(() => Array.isArray(params.month) ? params.month[0] : params.month, [params.month]);
 
   const [transactions, setTransactions] = useState<TxRow[]>([]);
   const [wallets, setWallets] = useState<any[]>([]);
@@ -94,7 +98,7 @@ export default function TransactionsScreen() {
         getCategoryNameRows(),
       ]);
 
-      setTransactions(txData as TxRow[]);
+      setTransactions((txData as TxRow[]).filter((tx) => (!categoryId || tx.categoryId === categoryId) && (!currencyFilter || tx.currency === currencyFilter) && (!monthFilter || tx.transactionDate.slice(0, 7) === monthFilter)));
       setWallets(walletData);
       setCategoryMap(
         Object.fromEntries(categoryRows.map((row) => [row.id, row.name ?? 'Uncategorized'])),
@@ -102,7 +106,7 @@ export default function TransactionsScreen() {
     } catch (error) {
       console.error('Error loading transactions:', error);
     }
-  }, [user, walletId]);
+  }, [user, walletId, categoryId, currencyFilter, monthFilter]);
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -312,6 +316,8 @@ export default function TransactionsScreen() {
 
   const handleReject = useCallback(
     (id: string) => {
+      const debtActivityId = transactions.find((transaction) => transaction.id === id)?.debtActivityId;
+      if (debtActivityId) { router.push('/debts' as any); return; }
       Alert.alert('Reject proposal', 'This will discard the AI-proposed transaction.', [
         { text: 'Cancel', style: 'cancel' },
         { text: 'Reject', style: 'destructive', onPress: () => reject(id) },
@@ -343,7 +349,7 @@ export default function TransactionsScreen() {
         ],
       );
     },
-    [loadData, reloadProposals],
+    [loadData, reloadProposals, transactions],
   );
 
   const currency = selectedWallet?.currency ?? 'USD';
@@ -462,7 +468,6 @@ export default function TransactionsScreen() {
               const isIncome = item.type === 'income';
               const isTransfer = item.type === 'transfer';
               const categoryLabel = item.categoryId ? categoryMap[item.categoryId] : null;
-              const canEdit = true;
               const title =
                 isTransfer
                   ? formatTransferLabel(
@@ -483,9 +488,7 @@ export default function TransactionsScreen() {
                   key={item.id}
                   accessibilityRole="button"
                   accessibilityHint="Opens transaction details"
-                  onPress={() => {
-                    router.push({ pathname: '/transaction/[id]', params: { id: item.id } });
-                  }}
+                  onPress={() => { router.push(item.debtActivityId ? '/debts' as any : { pathname: '/transaction/[id]', params: { id: item.id } }); }}
                   style={({ pressed }) => (pressed ? { opacity: 0.92 } : undefined)}
                   className="mb-2 rounded-2xl border border-border bg-card p-3">
                   <View className="flex-row items-start justify-between gap-2">
@@ -516,6 +519,8 @@ export default function TransactionsScreen() {
                               Transfer
                             </Text>
                           </View>
+                        ) : item.debtActivityId ? (
+                          <View className="rounded-full bg-primary/15 px-2 py-0.5"><Text className="text-[11px] font-medium text-primary">Debt</Text></View>
                         ) : categoryLabel ? (
                           <View className="rounded-full bg-background-muted px-2 py-0.5">
                             <Text className="text-[11px] font-medium text-foreground">

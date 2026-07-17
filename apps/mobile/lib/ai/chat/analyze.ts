@@ -31,11 +31,14 @@ export async function analyzeUserFinances(
     const currencyHint = walletData[0]?.currency?.trim() || 'USD';
     const budgetRows: BudgetRow[] = budgets.map((b) => ({
       categoryId: b.categoryId,
+      currency: b.currency,
       amount: b.amount,
     }));
 
     const txs: TxForMetrics[] = txData.map((t) => ({
       amount: t.amount,
+      currency: t.currency,
+      analysisExcluded: t.analysisExcluded,
       type: (t.type ?? 'expense') as TxForMetrics['type'],
       categoryId: t.categoryId,
       merchant: t.merchant ?? null,

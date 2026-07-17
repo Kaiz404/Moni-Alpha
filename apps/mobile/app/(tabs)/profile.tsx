@@ -78,6 +78,10 @@ export default function ProfileScreen() {
     router.push('/budget' as any);
   }, []);
 
+  const openDebts = useCallback(() => {
+    router.push('/debts' as any);
+  }, []);
+
   const refreshPermissionStatus = useCallback(async () => {
     const [locationPerm, cameraPerm, micPerm] = await Promise.all([
       Location.getForegroundPermissionsAsync(),
@@ -278,6 +282,14 @@ export default function ProfileScreen() {
               title="Category budgets"
               subtitle="Monthly caps per category (all wallets) for AI coaching"
               onPress={openBudgets}
+            />
+            <SettingsRow
+              icon="group"
+              iconBgClassName=""
+              iconBgColor={tokens.primary}
+              title="Debts"
+              subtitle="Track money you owe and money owed to you"
+              onPress={openDebts}
             />
             <SettingsRow
               icon="notifications"

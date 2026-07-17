@@ -25,6 +25,7 @@ type TransactionRow = TransactionBalanceRow & {
   location_longitude?: string | number | null;
   location_name?: string | null;
   description?: string | null;
+  analysis_excluded?: boolean | number | null;
 };
 
 export type SummaryWallet = {
@@ -119,7 +120,7 @@ export function buildPieData(
   const totals: Record<string, number> = {};
 
   for (const tx of transactionRows) {
-    if (tx.type !== 'expense') continue;
+    if (tx.type !== 'expense' || tx.analysis_excluded === true || tx.analysis_excluded === 1) continue;
     const amount = parseTxAmount(tx.amount);
     const categoryName = tx.category_id
       ? categoryMap[tx.category_id] ?? 'Uncategorized'

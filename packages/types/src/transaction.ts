@@ -17,12 +17,17 @@ export const transactionSchema = z.object({
   userId: z.string().uuid(),
   walletId: z.string().uuid(),
   amount: z.number().positive(),
+  /** Immutable snapshot of the source wallet currency. */
+  currency: z.string().length(3),
   type: transactionTypeSchema,
   categoryId: z.string().uuid().nullable(),
   
   // Transfer fields
   transferToWalletId: z.string().uuid().nullable(),
   linkedTransactionId: z.string().uuid().nullable(),
+  /** Cash movement is real, but should not be treated as personal spending. */
+  analysisExcluded: z.boolean(),
+  debtActivityId: z.string().uuid().nullable(),
   
   // Details
   description: z.string().max(500).nullable(),
@@ -53,6 +58,8 @@ export const createTransactionSchema = z.object({
   walletId: z.string().uuid(),
   amount: z.number().positive(),
   type: transactionTypeSchema,
+  analysisExcluded: z.boolean().optional(),
+  debtActivityId: z.string().uuid().optional().nullable(),
   categoryId: z.string().uuid().optional().nullable(),
   transferToWalletId: z.string().uuid().optional().nullable(),
   description: z.string().max(500).optional().nullable(),
@@ -73,6 +80,7 @@ export const updateTransactionSchema = z.object({
   walletId: z.string().uuid().optional(),
   amount: z.number().positive().optional(),
   type: transactionTypeSchema.optional(),
+  analysisExcluded: z.boolean().optional(),
   categoryId: z.string().uuid().optional().nullable(),
   transferToWalletId: z.string().uuid().optional().nullable(),
   description: z.string().max(500).optional().nullable(),

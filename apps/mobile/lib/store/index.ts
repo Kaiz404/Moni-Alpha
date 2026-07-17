@@ -50,6 +50,8 @@ export const categories$ = observable(syncTable('categories'));
 export const tags$ = observable(syncTable('tags'));
 export const transactionTags$ = observable(syncTable('transaction_tags'));
 export const categoryBudgets$ = observable(syncTable('category_budgets'));
+export const debts$ = observable(syncTable('debts'));
+export const debtActivities$ = observable(syncTable('debt_activities'));
 export const aiInsights$ = observable(syncTable('ai_insights'));
 export const proposedTransactions$ = observable(syncTable('proposed_transactions'));
 
@@ -60,6 +62,8 @@ export const ALL_STORE_OBSERVABLES: Observable<any>[] = [
   tags$,
   transactionTags$,
   categoryBudgets$,
+  debts$,
+  debtActivities$,
   aiInsights$,
   proposedTransactions$,
 ];

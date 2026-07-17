@@ -8,6 +8,7 @@ type BudgetRow = {
   id: string;
   user_id: string | null;
   category_id: string | null;
+  currency: string | null;
   amount: string | number | null;
   period: string | null;
   created_at: string | null;
@@ -20,6 +21,7 @@ function rowToBudget(row: BudgetRow): CategoryBudget {
     id: row.id,
     userId: row.user_id ?? '',
     categoryId: row.category_id ?? '',
+    currency: (row.currency ?? 'USD').toUpperCase(),
     amount: parseFloat(String(row.amount ?? '0')),
     period: (row.period as CategoryBudget['period']) ?? 'monthly',
     createdAt: row.created_at ?? '',
@@ -38,6 +40,7 @@ export async function getCategoryBudgets(): Promise<CategoryBudget[]> {
 
 export async function upsertCategoryBudget(
   categoryId: string,
+  currency: string,
   amount: number,
 ): Promise<CategoryBudget> {
   const userId = await getUserId();
@@ -45,7 +48,7 @@ export async function upsertCategoryBudget(
 
   const now = new Date().toISOString();
   const existing = getRecordValues<BudgetRow>(categoryBudgets$).find(
-    (r) => r.user_id === userId && r.category_id === categoryId,
+    (r) => r.user_id === userId && r.category_id === categoryId && r.currency === currency.toUpperCase(),
   );
 
   if (existing?.id) {
@@ -63,6 +66,7 @@ export async function upsertCategoryBudget(
     id,
     user_id: userId,
     category_id: categoryId,
+    currency: currency.toUpperCase(),
     amount,
     period: 'monthly',
     deleted: false,
@@ -73,12 +77,12 @@ export async function upsertCategoryBudget(
   return rowToBudget(row);
 }
 
-export async function deleteCategoryBudget(categoryId: string): Promise<void> {
+export async function deleteCategoryBudget(categoryId: string, currency: string): Promise<void> {
   const userId = await getUserId();
   if (!userId) throw new Error('Not authenticated');
 
   const existing = getRecordValues<BudgetRow>(categoryBudgets$).find(
-    (r) => r.user_id === userId && r.category_id === categoryId,
+    (r) => r.user_id === userId && r.category_id === categoryId && r.currency === currency.toUpperCase(),
   );
   if (!existing) return;
 

@@ -13,10 +13,10 @@ Env: copy `.env.example` to `.env` (Supabase publishable key, AI backend URL, Go
 
 This app uses native modules (camera, notifications, Google Sign-In) — **Expo Go will not work**. Use a dev client:
 
-| Build | Command |
-| --- | --- |
+| Build                           | Command                                  |
+| ------------------------------- | ---------------------------------------- |
 | **Local (WSL / macOS / Linux)** | `cd apps/mobile && npx expo run:android` |
-| **EAS cloud** | `pnpm --filter moni android` |
+| **EAS cloud**                   | `pnpm --filter moni android`             |
 
 Rebuild the dev client when you change `app.json` plugins, native deps, or local modules (`modules/moni-android-apps`, `modules/moni-document-scanner`).
 
@@ -60,26 +60,27 @@ Do not mix Windows and WSL `expo prebuild` / Gradle — `android/build/generated
 
 ## Map
 
-| Path | Role |
-| --- | --- |
-| `app/` | expo-router: `(auth)`, `(tabs)` (Wallets / Summary / Chat / Profile), root Stack features (`wallet`, `transaction`, `proposal`, `budget`, `scan`, `notifications`, `debug`, `heatmap`) |
-| `components/` | Domain UI (`ui/`, `nav/`, `providers/`, `auth/`, `wallets/`, `summary/`, `chat/`, `profile/`, `transaction/`, `proposal/`, `scan/`, `insights/`, `debug/`, `receipt/`) — keep screens thin; no co-location under `app/` |
-| `lib/store/` | Legend-State synced observables — the data layer |
-| `lib/supabase/` | Supabase client (publishable key) + CRUD helpers over the store; profile preferences |
-| `lib/auth/` | Auth context (email/password + native Google Sign-In) |
-| `lib/mmkv/` | MMKV instances: auth session, store cache, upload queue, UI preferences (theme, default wallet) |
-| `lib/theme/` | Theme preference ↔ Uniwind (`light` / `dark` / `system`) |
-| `lib/wallets/` | Default wallet preference (`profiles.preferences.default_wallet_id`, MMKV cache), proposal wallet/currency resolution for AI, homepage wallet aggregation helpers (`home-aggregation.ts`) |
-| `lib/ai/` | Processing queue, background processor, AI client (HTTP ↔ Go backend, mock fallback) |
-| `lib/notifications/` | Prefilter / package helpers: `*.core.js` (headless + Node tests) + thin `*.ts` re-exports; linked-app MMKV cache; `moni-android-apps` |
-| `lib/receipts/` | ML Kit scan normalization, local image save, Storage upload queue |
-| `lib/speech/` | Shared on-device speech recognition options, permissions, offline model prep |
-| `lib/transactions/draft-extras.ts` | Ephemeral (non-persisted) hand-off of merchant/description/location between the quick-add and "More details" transaction screens |
-| `global.css` | Uniwind design tokens (brand + light/dark semantic colors) |
-| `constants/wallet-card-styles.ts` | Curated gradient card presets for wallets (`wallets.card_style_id`) — append here to add a new style |
-| `index.js` | Android headless notification listener (registered before expo-router; requires `*.core.js`) |
+| Path                               | Role                                                                                                                                                                                                                    |
+| ---------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `app/`                             | expo-router: `(auth)`, `(tabs)` (Wallets / Summary / Chat / Profile), root Stack features (`wallet`, `transaction`, `proposal`, `budget`, `debt`, `scan`, `notifications`, `debug`, `heatmap`)                          |
+| `components/`                      | Domain UI (`ui/`, `nav/`, `providers/`, `auth/`, `wallets/`, `summary/`, `chat/`, `profile/`, `transaction/`, `proposal/`, `scan/`, `insights/`, `debug/`, `receipt/`) — keep screens thin; no co-location under `app/` |
+| `lib/store/`                       | Legend-State synced observables — the data layer                                                                                                                                                                        |
+| `lib/supabase/`                    | Supabase client (publishable key) + CRUD helpers over the store; profile preferences                                                                                                                                    |
+| `lib/auth/`                        | Auth context (email/password + native Google Sign-In)                                                                                                                                                                   |
+| `lib/mmkv/`                        | MMKV instances: auth session, store cache, upload queue, UI preferences (theme, default wallet)                                                                                                                         |
+| `lib/theme/`                       | Theme preference ↔ Uniwind (`light` / `dark` / `system`)                                                                                                                                                                |
+| `lib/wallets/`                     | Default wallet preference (`profiles.preferences.default_wallet_id`, MMKV cache), proposal wallet/currency resolution for AI, homepage wallet aggregation helpers (`home-aggregation.ts`)                               |
+| `lib/ai/`                          | Processing queue, background processor, AI client (HTTP ↔ Go backend, mock fallback)                                                                                                                                    |
+| `lib/notifications/`               | Prefilter / package helpers: `*.core.js` (headless + Node tests) + thin `*.ts` re-exports; linked-app MMKV cache; `moni-android-apps`                                                                                   |
+| `lib/receipts/`                    | ML Kit scan normalization, local image save, Storage upload queue                                                                                                                                                       |
+| `lib/speech/`                      | Shared on-device speech recognition options, permissions, offline model prep                                                                                                                                            |
+| `lib/transactions/draft-extras.ts` | Ephemeral (non-persisted) hand-off of merchant/description/location between the quick-add and "More details" transaction screens                                                                                        |
+| `global.css`                       | Uniwind design tokens (brand + light/dark semantic colors)                                                                                                                                                              |
+| `constants/wallet-card-styles.ts`  | Curated gradient card presets for wallets (`wallets.card_style_id`) — append here to add a new style                                                                                                                    |
+| `index.js`                         | Android headless notification listener (registered before expo-router; requires `*.core.js`)                                                                                                                            |
 
-**Routes (short URLs):** `/budget`, `/notifications`, `/debug`, `/heatmap`, `/wallet/...`, `/transaction/...`, `/proposal/[id]`, `/scan/...`. Shared feature screens sit on the root Stack (not per-tab stacks). Tabs use a custom JS tab bar + FAB (not NativeTabs).
+**Routes (short URLs):** `/budget`, `/debts`, `/debt/...`, `/notifications`, `/debug`, `/heatmap`, `/wallet/...`, `/transaction/...`, `/proposal/[id]`, `/scan/...`. Shared feature screens sit on the root Stack (not per-tab stacks). Tabs use a custom JS tab bar + FAB (not NativeTabs).
+
 ## Theming
 
 Tokens are CSS-first in `global.css`. Prefer semantic classes (`bg-primary`, `text-foreground`, `bg-card`) and shared UI helpers under `components/ui/` (`BrandHeader`, `ScreenShell`, chips, `PrimaryButton`, `GradientCard`). For native APIs that need a color string, use `useThemeTokens()`. Change brand colors in `global.css` only — do not hardcode hex in screens.
@@ -101,6 +102,8 @@ Default wallet: Profile → Default wallet. Synced in `profiles.preferences.defa
 **Receipt scan** (`lib/receipts/scan-receipt.ts`): **Android only** — FAB and Chat camera call `scanAndNormalizeReceipt()` directly (no intermediate screen); `modules/moni-document-scanner` launches Google ML Kit (`SCANNER_MODE_FULL`). Post-scan: `normalize-scan.ts` copies to cache and caps longest edge at 1024px → `queueReceiptImage()` for extraction. iOS uses `/scan/receipt` as a transparent fallback route. Requires Google Play Services; **rebuild dev client** after native module changes (`npx expo run:android`).
 
 **Summary tab:** charts, tables, and budget data only — no AI analysis.
+
+**Budgets and debts:** monthly category caps are scoped per currency and calculated from categorized expense transactions in the user's finance timezone. Person-to-person debt activity creates linked cash transactions but is excluded from spending/category analysis; Summary shows cash, receivables, payables, and net worth separately by currency.
 
 **Transfers:** manual entry via New Transaction → Transfer, or natural language in Chat (e.g. "transfer 200 from Cash to Maybank"). Transfers are excluded from income/expense analytics.
 

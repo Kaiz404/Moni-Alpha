@@ -393,6 +393,14 @@ export default function WalletsScreen() {
         </View>
 
         <View className="mt-4 px-4 pb-8">
+          <Link href={'/debts' as any} asChild>
+            <TouchableOpacity className="mb-4 rounded-2xl border border-border bg-card p-4" activeOpacity={0.85}>
+              <View className="flex-row items-center justify-between">
+                <View><Text className="text-base font-semibold text-foreground">Debts</Text><Text className="mt-1 text-sm text-muted">Track money owed without changing your spending analysis.</Text></View>
+                <Text className="text-lg font-bold text-primary">›</Text>
+              </View>
+            </TouchableOpacity>
+          </Link>
           {wallets.length > 0 && hasSvgViewManager ? (
             <View className="mb-6 rounded-3xl border border-border bg-card p-4">
               <View className="flex-row items-center justify-between">

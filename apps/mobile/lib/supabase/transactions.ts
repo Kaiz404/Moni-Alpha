@@ -12,7 +12,10 @@ type TransactionRow = {
   user_id: string | null;
   wallet_id: string | null;
   amount: string | number | null;
+  currency: string | null;
   type: string | null;
+  analysis_excluded?: boolean | number | null;
+  debt_activity_id?: string | null;
   category_id: string | null;
   transfer_to_wallet_id: string | null;
   linked_transaction_id: string | null;
@@ -58,7 +61,10 @@ function mapTransactionRow(t: TransactionRow) {
     userId: t.user_id ?? '',
     walletId: t.wallet_id ?? '',
     amount: parseFloat(String(t.amount ?? '0')),
+    currency: (t.currency ?? 'USD').toUpperCase(),
     type: t.type,
+    analysisExcluded: t.analysis_excluded === true || t.analysis_excluded === 1,
+    debtActivityId: t.debt_activity_id ?? null,
     categoryId: t.category_id,
     transferToWalletId: t.transfer_to_wallet_id,
     linkedTransactionId: t.linked_transaction_id,
@@ -95,6 +101,10 @@ export async function getTransactionById(id: string) {
 }
 
 export async function updateTransaction(id: string, data: UpdateTransaction) {
+  const current = await getTransactionById(id);
+  if (current?.debtActivityId) {
+    throw new Error('Debt-linked transactions must be changed from the debt activity.');
+  }
   const parsed = updateTransactionSchema.safeParse(data);
   if (!parsed.success) {
     throw new Error(parsed.error.errors[0]?.message ?? 'Invalid update');
@@ -108,6 +118,7 @@ export async function updateTransaction(id: string, data: UpdateTransaction) {
   if (p.walletId !== undefined) patch.wallet_id = p.walletId;
   if (p.amount !== undefined) patch.amount = p.amount;
   if (p.type !== undefined) patch.type = p.type;
+  if (p.analysisExcluded !== undefined) patch.analysis_excluded = p.analysisExcluded;
   if (p.categoryId !== undefined) patch.category_id = p.categoryId;
   if (p.transferToWalletId !== undefined) patch.transfer_to_wallet_id = p.transferToWalletId;
   if (p.description !== undefined) patch.description = p.description;
@@ -117,6 +128,12 @@ export async function updateTransaction(id: string, data: UpdateTransaction) {
   if (p.locationLatitude !== undefined) patch.location_latitude = p.locationLatitude;
   if (p.locationLongitude !== undefined) patch.location_longitude = p.locationLongitude;
   if (p.locationName !== undefined) patch.location_name = p.locationName;
+
+  if (p.walletId !== undefined) {
+    const wallet = getRecordValues<{ id: string; currency: string | null }>(wallets$).find((w) => w.id === p.walletId);
+    if (!wallet) throw new Error('Wallet not found');
+    patch.currency = (wallet.currency ?? 'USD').toUpperCase();
+  }
 
   patchRow(transactions$, id, patch);
 
@@ -180,7 +197,10 @@ export async function createTransaction(data: CreateTransaction) {
     user_id: userId,
     wallet_id: data.walletId,
     amount: data.amount,
+    currency: (getRecordValues<{ id: string; currency: string | null }>(wallets$).find((w) => w.id === data.walletId)?.currency ?? 'USD').toUpperCase(),
     type: data.type,
+    analysis_excluded: data.analysisExcluded ?? false,
+    debt_activity_id: data.debtActivityId ?? null,
     category_id: data.categoryId || null,
     transfer_to_wallet_id: data.transferToWalletId || null,
     linked_transaction_id: null,

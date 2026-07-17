@@ -76,6 +76,10 @@ export default function EditTransactionScreen() {
           setLoadingTx(false);
           return;
         }
+        if (tx.debtActivityId) {
+          router.replace('/debts' as any);
+          return;
+        }
         setWallets(walletList);
 
         const transfer = tx.type === 'transfer';

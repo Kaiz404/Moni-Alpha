@@ -52,7 +52,7 @@ function sumExpenseInRange(
 ): number {
   let s = 0;
   for (const tx of txs) {
-    if (tx.type !== 'expense') continue;
+    if (tx.type !== 'expense' || tx.analysisExcluded) continue;
     const t = new Date(tx.transactionDate).getTime();
     if (t >= startMs && t <= endMs) s += tx.amount;
   }
@@ -134,7 +134,7 @@ export function buildSpendingStorySnapshot(
   const startMs = endMs - 30 * 86400000;
   const catShares: Record<string, number> = {};
   for (const tx of transactions) {
-    if (tx.type !== 'expense') continue;
+    if (tx.type !== 'expense' || tx.analysisExcluded) continue;
     const t = new Date(tx.transactionDate).getTime();
     if (t < startMs || t >= endMs) continue;
     const name =
@@ -146,7 +146,7 @@ export function buildSpendingStorySnapshot(
 
   let expenseTx = 0;
   for (const tx of transactions) {
-    if (tx.type !== 'expense') continue;
+    if (tx.type !== 'expense' || tx.analysisExcluded) continue;
     const t = new Date(tx.transactionDate).getTime();
     if (t >= startMs && t < endMs) expenseTx += 1;
   }

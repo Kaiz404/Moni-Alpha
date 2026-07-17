@@ -24,6 +24,7 @@ import { startBackgroundProcessor } from "@/lib/ai/background-processor";
 import { QueryProvider } from "@/lib/query/query-client";
 import { drainImageUploadQueue } from "@/lib/receipts/upload-queue";
 import { pruneIncompleteProposals } from "@/lib/supabase/proposed-transactions";
+import { reconcileDebtTransactions } from "@/lib/supabase/debts";
 import { applyStoredThemePreference } from "@/lib/theme/preference";
 import { prepareOfflineSpeechModel } from "@/lib/speech/speech-recognition";
 
@@ -79,12 +80,14 @@ export default function RootLayout() {
   // Drain pending image uploads whenever the app comes to foreground
   useEffect(() => {
     pruneIncompleteProposals().catch(() => {});
+    reconcileDebtTransactions().catch(() => {});
     drainImageUploadQueue().catch(() => {});
     prepareOfflineSpeechModel().catch(() => {});
 
     const sub = AppState.addEventListener("change", (nextState) => {
       if (uploadAppState.current.match(/inactive|background/) && nextState === "active") {
         drainImageUploadQueue().catch(() => {});
+        reconcileDebtTransactions().catch(() => {});
         prepareOfflineSpeechModel().catch(() => {});
       }
       uploadAppState.current = nextState;

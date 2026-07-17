@@ -11,6 +11,7 @@ export type HomeWalletTx = {
   transactionDate: string;
   merchant?: string | null;
   description?: string | null;
+  analysisExcluded?: boolean;
 };
 
 export type WalletTxBundle = { recent: HomeWalletTx[]; chart: HomeWalletTx[] };
@@ -109,7 +110,7 @@ export function groupExpensesByCategory(
 ): { x: string; y: number }[] {
   const totals: Record<string, number> = {};
   txs.forEach((tx) => {
-    if (tx.type !== 'expense') return;
+    if (tx.type !== 'expense' || tx.analysisExcluded) return;
     const categoryName = tx.categoryId
       ? (categoryMap[tx.categoryId] ?? 'Uncategorized')
       : 'Uncategorized';
@@ -210,7 +211,7 @@ export function expenseTotalsByCurrency(
 ): Record<string, number> {
   const totals: Record<string, number> = {};
   for (const tx of txs) {
-    if (tx.type !== 'expense') continue;
+    if (tx.type !== 'expense' || tx.analysisExcluded) continue;
     const cur = (walletCurrencyMap[tx.walletId] ?? 'USD').toUpperCase();
     totals[cur] = (totals[cur] ?? 0) + tx.amount;
   }
