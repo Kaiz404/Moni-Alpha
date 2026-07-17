@@ -3,6 +3,7 @@
  * All inference lives on the Go service (apps/backend); see docs/AI.md.
  */
 import type { CreateProposedTransaction } from '@repo/types';
+import { decimalToMinor } from '@repo/types';
 import { getWallets } from '@/lib/supabase/wallets';
 import { createProposedTransaction } from '@/lib/supabase/proposed-transactions';
 import { getAiClient, type AiWalletContext, type ExtractResult } from '@/lib/ai/client';
@@ -103,7 +104,7 @@ function proposalFromExtraction(
     walletHint: extraction.walletHint,
     transferToWalletId: extraction.transferToWalletId,
     transferToWalletHint: extraction.transferToWalletHint,
-    amount: extraction.amount,
+    amountMinor: extraction.amount == null ? null : decimalToMinor(extraction.amount),
     currency:
       source.sourceType === 'notification'
         ? extraction.currency || FALLBACK_CURRENCY

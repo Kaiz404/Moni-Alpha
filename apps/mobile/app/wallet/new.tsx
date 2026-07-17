@@ -14,6 +14,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@/lib/auth/auth-context';
 import { createWallet, getWallets } from '@/lib/supabase/wallets';
 import { createWalletSchema } from '@repo/types';
+import { decimalToMinor } from '@repo/types';
 import { WALLET_TYPE_OPTIONS, type WalletKind } from '@/constants/wallet-form';
 import {
   WALLET_CARD_STYLES,
@@ -24,6 +25,7 @@ import {
   type WalletNotificationLinkValue,
 } from '@/components/wallets/wallet-notification-link-section';
 import { BrandHeader } from '@/components/ui/brand-header';
+import { AmountInput } from '@/components/finance/amount-input';
 import { ScreenShell } from '@/components/ui/screen-shell';
 import { chipClass, chipTextClass } from '@/components/ui/chip';
 import { PrimaryButton } from '@/components/ui/primary-button';
@@ -71,7 +73,7 @@ export default function NewWalletScreen() {
       name: name.trim(),
       type,
       currency: currency.trim().toUpperCase().slice(0, 3) || 'USD',
-      initialBalance: parseFloat(initialBalance) || 0,
+      initialBalanceMinor: decimalToMinor(initialBalance || '0'),
       color: style.swatchHex,
       icon: WALLET_TYPE_OPTIONS.find((t) => t.value === type)?.icon ?? '💰',
       cardStyleId: style.id,
@@ -155,13 +157,13 @@ export default function NewWalletScreen() {
                 <Text className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-muted">
                   Initial balance
                 </Text>
-                <TextInput
+                <AmountInput
                   className={`text-base ${inputClass}`}
                   placeholder="0.00"
                   placeholderTextColor="#9CA3AF"
                   value={initialBalance}
-                  onChangeText={setInitialBalance}
-                  keyboardType="decimal-pad"
+                  onChangeValue={setInitialBalance}
+                  currency={currency}
                 />
               </View>
             </View>

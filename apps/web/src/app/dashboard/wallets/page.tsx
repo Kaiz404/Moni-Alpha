@@ -7,7 +7,7 @@ import {
   useUpdateWallet,
   useDeleteWallet,
 } from '@/lib/hooks';
-import type { Wallet, CreateWallet } from '@repo/types';
+import { decimalToMinor, formatMinorAmount, minorToDecimal, type Wallet, type CreateWallet } from '@repo/types';
 
 const WALLET_TYPES = ['bank', 'cash', 'credit', 'debit', 'ewallet', 'investment', 'other'] as const;
 const WALLET_ICONS: Record<string, string> = {
@@ -37,7 +37,7 @@ export default function WalletsPage() {
     name: '',
     type: 'bank',
     currency: 'USD',
-    initialBalance: 0,
+    initialBalanceMinor: decimalToMinor(0),
     color: '#2563eb',
     icon: '🏦',
     cardStyleId: 'emerald-grain',
@@ -56,7 +56,7 @@ export default function WalletsPage() {
       name: '',
       type: 'bank',
       currency: 'USD',
-      initialBalance: 0,
+      initialBalanceMinor: decimalToMinor(0),
       color: '#2563eb',
       icon: '🏦',
       cardStyleId: 'emerald-grain',
@@ -71,7 +71,7 @@ export default function WalletsPage() {
       name: w.name,
       type: w.type,
       currency: 'USD',
-      initialBalance: w.initialBalance,
+      initialBalanceMinor: w.initialBalanceMinor,
       color: w.color,
       icon: w.icon,
       cardStyleId: w.cardStyleId,
@@ -144,7 +144,7 @@ export default function WalletsPage() {
                   </td>
                   <td>{WALLET_TYPE_LABELS[w.type as (typeof WALLET_TYPES)[number]] ?? w.type}</td>
                   <td>
-                    ${(w.currentBalance ?? w.initialBalance).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                    {formatMinorAmount(w.currentBalanceMinor ?? w.initialBalanceMinor, w.currency)}
                   </td>
                   <td>{w.currency}</td>
                   <td>
@@ -206,9 +206,9 @@ export default function WalletsPage() {
                   <input
                     type="number"
                     step="0.01"
-                    value={form.initialBalance}
+                  value={minorToDecimal(form.initialBalanceMinor)}
                     onChange={(e) =>
-                      setForm((f) => ({ ...f, initialBalance: parseFloat(e.target.value) || 0 }))
+                      setForm((f) => ({ ...f, initialBalanceMinor: decimalToMinor(e.target.value || '0') }))
                     }
                   />
                 </div>

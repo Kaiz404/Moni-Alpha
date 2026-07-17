@@ -1,6 +1,6 @@
 import { Text, TouchableOpacity, View } from 'react-native';
 import { router } from 'expo-router';
-import type { ProposedTransaction } from '@repo/types';
+import { formatMinorAmount, type ProposedTransaction } from '@repo/types';
 
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { getDefaultWalletId } from '@/lib/wallets/default-wallet';
@@ -37,7 +37,7 @@ export function ProposalCard({ item, wallets, onApprove, onReject }: ProposalCar
       </View>
       <Text className={`text-xl font-bold ${amountClass}`}>
         {isTransfer ? '' : isExpense ? '−' : '+'}
-        {displayCurrency} {item.amount?.toFixed(2) ?? '—'}
+        {item.amountMinor != null ? formatMinorAmount(item.amountMinor, displayCurrency) : '—'}
       </Text>
       <Text className="mt-1 text-sm text-foreground" numberOfLines={1}>
         {item.merchant || item.description || item.type || 'Transaction'}

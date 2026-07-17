@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { transactionTypeSchema } from './transaction';
+import { currencyCodeSchema, positiveMinorAmountSchema } from './money';
 
 /** Stored proposals are always unreviewed; approve/decline soft-deletes the row. */
 export const proposedTransactionStatusSchema = z.literal('pending');
@@ -27,8 +28,8 @@ export const proposedTransactionSchema = z.object({
   walletHint: z.string().nullable(),
   transferToWalletId: z.string().uuid().nullable(),
   transferToWalletHint: z.string().nullable(),
-  amount: z.number().positive().nullable(),
-  currency: z.string().length(3),
+  amountMinor: positiveMinorAmountSchema.nullable(),
+  currency: currencyCodeSchema,
   type: transactionTypeSchema.nullable(),
   description: z.string().nullable(),
   merchant: z.string().nullable(),

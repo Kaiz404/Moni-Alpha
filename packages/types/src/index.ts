@@ -10,3 +10,5 @@ export * from './proposed-transaction';
 export * from './ai-insight';
 export * from './chat';
 export * from './category-budget';
+export * from './debt';
+export * from './money';

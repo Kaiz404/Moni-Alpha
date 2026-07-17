@@ -176,8 +176,11 @@ export type Database = {
       transactions: {
         Row: {
           amount: number
+          analysis_excluded: boolean
           category_id: string | null
           created_at: string
+          currency: string
+          debt_activity_id: string | null
           description: string | null
           id: string
           linked_transaction_id: string | null
@@ -197,8 +200,11 @@ export type Database = {
         }
         Insert: {
           amount: number
+          analysis_excluded?: boolean
           category_id?: string | null
           created_at?: string
+          currency: string
+          debt_activity_id?: string | null
           description?: string | null
           id?: string
           linked_transaction_id?: string | null
@@ -218,8 +224,11 @@ export type Database = {
         }
         Update: {
           amount?: number
+          analysis_excluded?: boolean
           category_id?: string | null
           created_at?: string
+          currency?: string
+          debt_activity_id?: string | null
           description?: string | null
           id?: string
           linked_transaction_id?: string | null

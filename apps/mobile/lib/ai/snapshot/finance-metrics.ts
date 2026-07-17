@@ -11,6 +11,7 @@ import {
   type InsightMetricSnapshot,
   type TxForMetrics,
 } from '../insights/insight-metrics';
+import { addMinor, minorToNumber, type MinorAmount } from '@repo/types';
 
 export type { BudgetRow, TxForMetrics };
 
@@ -36,8 +37,7 @@ export type SpendingStorySnapshot = {
   expenseTransactionCount: number;
 };
 
-export type FinanceAssistantToolSnapshot = {
-  schema: 'finance_assistant_tool_v1';
+export type FinanceAssistantCurrencySnapshot = {
   generatedAt: string;
   rolling30: InsightMetricSnapshot;
   calendarMonth: CalendarMonthTrendSnapshot;
@@ -45,18 +45,25 @@ export type FinanceAssistantToolSnapshot = {
   spendingStory: SpendingStorySnapshot;
 };
 
+/** Chat payload: every metric is scoped to exactly one currency. */
+export type FinanceAssistantToolSnapshot = {
+  schema: 'finance_assistant_tool_v2';
+  generatedAt: string;
+  currencies: Record<string, FinanceAssistantCurrencySnapshot>;
+};
+
 function sumExpenseInRange(
   txs: TxForMetrics[],
   startMs: number,
   endMs: number,
-): number {
-  let s = 0;
+): MinorAmount {
+  let s = 0 as MinorAmount;
   for (const tx of txs) {
-    if (tx.type !== 'expense') continue;
+    if (tx.type !== 'expense' || tx.analysisExcluded) continue;
     const t = new Date(tx.transactionDate).getTime();
-    if (t >= startMs && t <= endMs) s += tx.amount;
+    if (t >= startMs && t <= endMs) s = addMinor(s, tx.amountMinor);
   }
-  return Math.round(s * 100) / 100;
+  return s;
 }
 
 export function buildCalendarMonthTrendSnapshot(
@@ -75,8 +82,10 @@ export function buildCalendarMonthTrendSnapshot(
   const startPrev = new Date(prev.y, prev.m, 1).getTime();
   const endPrev = new Date(prev.y, prev.m + 1, 0, 23, 59, 59, 999).getTime();
 
-  const expenseCurrentMonthToDate = sumExpenseInRange(transactions, startCurr, endNow);
-  const expensePreviousCalendarMonth = sumExpenseInRange(transactions, startPrev, endPrev);
+  const expenseCurrentMonthToDateMinor = sumExpenseInRange(transactions, startCurr, endNow);
+  const expensePreviousCalendarMonthMinor = sumExpenseInRange(transactions, startPrev, endPrev);
+  const expenseCurrentMonthToDate = minorToNumber(expenseCurrentMonthToDateMinor);
+  const expensePreviousCalendarMonth = minorToNumber(expensePreviousCalendarMonthMinor);
 
   const dayOfMonthNow = now.getDate();
   const daysInCurrentMonth = new Date(y, m + 1, 0).getDate();
@@ -132,21 +141,21 @@ export function buildSpendingStorySnapshot(
   }));
   const endMs = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1).getTime();
   const startMs = endMs - 30 * 86400000;
-  const catShares: Record<string, number> = {};
+  const catShares: Record<string, MinorAmount> = {};
   for (const tx of transactions) {
-    if (tx.type !== 'expense') continue;
+    if (tx.type !== 'expense' || tx.analysisExcluded) continue;
     const t = new Date(tx.transactionDate).getTime();
     if (t < startMs || t >= endMs) continue;
     const name =
       tx.categoryId && categoryMap[tx.categoryId] ? categoryMap[tx.categoryId] : 'Uncategorized';
-    catShares[name] = (catShares[name] ?? 0) + tx.amount;
+    catShares[name] = addMinor(catShares[name] ?? 0, tx.amountMinor);
   }
-  const shares = Object.values(catShares).map((a) => a / total);
+  const shares = Object.values(catShares).map((amountMinor) => minorToNumber(amountMinor) / total);
   const hhi = shares.reduce((s, p) => s + p * p, 0);
 
   let expenseTx = 0;
   for (const tx of transactions) {
-    if (tx.type !== 'expense') continue;
+    if (tx.type !== 'expense' || tx.analysisExcluded) continue;
     const t = new Date(tx.transactionDate).getTime();
     if (t >= startMs && t < endMs) expenseTx += 1;
   }
@@ -161,24 +170,40 @@ export function buildSpendingStorySnapshot(
   };
 }
 
-export function buildFinanceAssistantToolSnapshot(
+function buildFinanceAssistantCurrencySnapshot(
   transactions: TxForMetrics[],
   categoryMap: Record<string, string>,
   budgets: BudgetRow[],
   currencyHint: string,
   now: Date = new Date(),
-): FinanceAssistantToolSnapshot {
+): FinanceAssistantCurrencySnapshot {
   const rolling30 = buildInsightMetricSnapshot(transactions, categoryMap, currencyHint, now);
   const calendarMonth = buildCalendarMonthTrendSnapshot(transactions, currencyHint, now);
   const budgetCoach = buildBudgetCoachSnapshot(transactions, categoryMap, budgets, currencyHint, now);
   const spendingStory = buildSpendingStorySnapshot(transactions, categoryMap, currencyHint, now);
 
   return {
-    schema: 'finance_assistant_tool_v1',
     generatedAt: now.toISOString(),
     rolling30,
     calendarMonth,
     budgetCoach,
     spendingStory,
   };
+}
+
+export function buildFinanceAssistantToolSnapshotByCurrency(
+  transactions: TxForMetrics[],
+  categoryMap: Record<string, string>,
+  budgets: BudgetRow[],
+  now: Date = new Date(),
+): FinanceAssistantToolSnapshot {
+  const currencies = new Set([...transactions.map((transaction) => (transaction.currency ?? 'USD').toUpperCase()), ...budgets.map((budget) => budget.currency.toUpperCase())]);
+  const snapshots = Object.fromEntries([...currencies].sort().map((currency) => [currency, buildFinanceAssistantCurrencySnapshot(
+    transactions.filter((transaction) => (transaction.currency ?? 'USD').toUpperCase() === currency),
+    categoryMap,
+    budgets.filter((budget) => budget.currency.toUpperCase() === currency),
+    currency,
+    now,
+  )]));
+  return { schema: 'finance_assistant_tool_v2', generatedAt: now.toISOString(), currencies: snapshots };
 }

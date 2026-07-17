@@ -1,5 +1,5 @@
 import { randomUUID } from 'expo-crypto';
-import type { CategoryBudget } from '@repo/types';
+import { decimalToMinor, minorToDecimal, type CategoryBudget, type MinorAmount } from '@repo/types';
 import { categoryBudgets$ } from '@/lib/store';
 import { getRecordValues, patchRow } from '@/lib/store/helpers';
 import { getUserId } from '@/lib/supabase/client';
@@ -8,6 +8,7 @@ type BudgetRow = {
   id: string;
   user_id: string | null;
   category_id: string | null;
+  currency: string | null;
   amount: string | number | null;
   period: string | null;
   created_at: string | null;
@@ -20,7 +21,8 @@ function rowToBudget(row: BudgetRow): CategoryBudget {
     id: row.id,
     userId: row.user_id ?? '',
     categoryId: row.category_id ?? '',
-    amount: parseFloat(String(row.amount ?? '0')),
+    currency: (row.currency ?? 'USD').toUpperCase(),
+    amountMinor: decimalToMinor(row.amount),
     period: (row.period as CategoryBudget['period']) ?? 'monthly',
     createdAt: row.created_at ?? '',
     updatedAt: row.updated_at ?? '',
@@ -38,19 +40,20 @@ export async function getCategoryBudgets(): Promise<CategoryBudget[]> {
 
 export async function upsertCategoryBudget(
   categoryId: string,
-  amount: number,
+  currency: string,
+  amountMinor: MinorAmount,
 ): Promise<CategoryBudget> {
   const userId = await getUserId();
   if (!userId) throw new Error('Not authenticated');
 
   const now = new Date().toISOString();
   const existing = getRecordValues<BudgetRow>(categoryBudgets$).find(
-    (r) => r.user_id === userId && r.category_id === categoryId,
+    (r) => r.user_id === userId && r.category_id === categoryId && r.currency === currency.toUpperCase(),
   );
 
   if (existing?.id) {
     patchRow(categoryBudgets$, existing.id, {
-      amount,
+      amount: minorToDecimal(amountMinor),
       updated_at: now,
     });
     const row = getRecordValues<BudgetRow>(categoryBudgets$).find((r) => r.id === existing.id);
@@ -63,7 +66,8 @@ export async function upsertCategoryBudget(
     id,
     user_id: userId,
     category_id: categoryId,
-    amount,
+    currency: currency.toUpperCase(),
+    amount: minorToDecimal(amountMinor),
     period: 'monthly',
     deleted: false,
   });
@@ -73,12 +77,12 @@ export async function upsertCategoryBudget(
   return rowToBudget(row);
 }
 
-export async function deleteCategoryBudget(categoryId: string): Promise<void> {
+export async function deleteCategoryBudget(categoryId: string, currency: string): Promise<void> {
   const userId = await getUserId();
   if (!userId) throw new Error('Not authenticated');
 
   const existing = getRecordValues<BudgetRow>(categoryBudgets$).find(
-    (r) => r.user_id === userId && r.category_id === categoryId,
+    (r) => r.user_id === userId && r.category_id === categoryId && r.currency === currency.toUpperCase(),
   );
   if (!existing) return;
 

@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { currencyCodeSchema, minorAmountSchema } from './money';
 
 /** Android package name pattern (e.g. com.maybank2u.life). */
 export const androidPackageSchema = z
@@ -22,9 +23,9 @@ export const walletSchema = z.object({
   userId: z.string().uuid(),
   name: z.string().min(1).max(100),
   type: walletTypeSchema,
-  currency: z.string().length(3),
-  initialBalance: z.number(),
-  currentBalance: z.number().optional(),
+  currency: currencyCodeSchema,
+  initialBalanceMinor: minorAmountSchema,
+  currentBalanceMinor: minorAmountSchema.optional(),
   color: z.string().regex(/^#[0-9A-Fa-f]{6}$/),
   icon: z.string(),
   /** Id of a gradient preset in apps/mobile/constants/wallet-card-styles.ts. */
@@ -42,8 +43,8 @@ export const walletSchema = z.object({
 export const createWalletSchema = z.object({
   name: z.string().min(1).max(100),
   type: walletTypeSchema,
-  currency: z.string().length(3).default('USD'),
-  initialBalance: z.number().default(0),
+  currency: currencyCodeSchema.default('USD'),
+  initialBalanceMinor: minorAmountSchema.default(0),
   color: z.string().regex(/^#[0-9A-Fa-f]{6}$/),
   icon: z.string(),
   cardStyleId: z.string().min(1).default('emerald-grain'),
@@ -56,8 +57,8 @@ export const createWalletSchema = z.object({
 export const updateWalletSchema = z.object({
   name: z.string().min(1).max(100).optional(),
   type: walletTypeSchema.optional(),
-  currency: z.string().length(3).optional(),
-  initialBalance: z.number().optional(),
+  currency: currencyCodeSchema.optional(),
+  initialBalanceMinor: minorAmountSchema.optional(),
   color: z.string().regex(/^#[0-9A-Fa-f]{6}$/).optional(),
   icon: z.string().optional(),
   cardStyleId: z.string().min(1).optional(),
@@ -91,7 +92,7 @@ export type WalletListResponse = {
 
 export type WalletBalanceResponse = {
   walletId: string;
-  initialBalance: number;
-  currentBalance: number;
+  initialBalanceMinor: number;
+  currentBalanceMinor: number;
   currency: string;
 };

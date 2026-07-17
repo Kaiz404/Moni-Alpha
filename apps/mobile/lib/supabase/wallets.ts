@@ -8,7 +8,8 @@ import { getWalletBalances } from '@/lib/supabase/balances';
 import { refreshLinkedPackagesFromStore } from '@/lib/notifications/linked-packages-cache';
 import { clearDefaultWalletIfDeleted } from '@/lib/wallets/default-wallet';
 import { DEFAULT_WALLET_CARD_STYLE_ID } from '@/constants/wallet-card-styles';
-import type { CreateWallet, UpdateWallet } from '@repo/types';
+import type { CreateWallet, UpdateWallet, MinorAmount } from '@repo/types';
+import { decimalToMinor, minorToDecimal } from '@repo/types';
 import { randomUUID } from 'expo-crypto';
 
 type WalletRow = {
@@ -31,16 +32,17 @@ type WalletRow = {
   deleted?: boolean;
 };
 
-function mapWalletRow(w: WalletRow, currentBalance?: number) {
-  const initial = parseFloat(String(w.initial_balance ?? '0'));
+function mapWalletRow(w: WalletRow, currentBalanceMinor?: MinorAmount) {
+  const initialMinor = decimalToMinor(w.initial_balance);
+  const balanceMinor = currentBalanceMinor ?? initialMinor;
   return {
     id: w.id,
     userId: w.user_id ?? '',
     name: w.name ?? '',
     type: w.type,
     currency: w.currency,
-    initialBalance: initial,
-    currentBalance: currentBalance ?? initial,
+    initialBalanceMinor: initialMinor,
+    currentBalanceMinor: balanceMinor,
     color: w.color,
     icon: w.icon,
     cardStyleId: w.card_style_id ?? DEFAULT_WALLET_CARD_STYLE_ID,
@@ -65,7 +67,7 @@ export async function getWallets() {
   const walletIds = wallets.map((w) => w.id);
   const balances = await getWalletBalances(walletIds);
 
-  return wallets.map((w) => mapWalletRow(w, balances[w.id] ?? parseFloat(String(w.initial_balance ?? '0'))));
+  return wallets.map((w) => mapWalletRow(w, balances[w.id] ?? decimalToMinor(w.initial_balance)));
 }
 
 export async function getWalletById(id: string) {
@@ -78,7 +80,7 @@ export async function getWalletById(id: string) {
   if (!w) return null;
 
   const balances = await getWalletBalances([w.id]);
-  return mapWalletRow(w, balances[w.id] ?? parseFloat(String(w.initial_balance ?? '0')));
+  return mapWalletRow(w, balances[w.id] ?? decimalToMinor(w.initial_balance));
 }
 
 export async function createWallet(data: CreateWallet) {
@@ -93,7 +95,7 @@ export async function createWallet(data: CreateWallet) {
     name: data.name,
     type: data.type,
     currency: data.currency ?? 'USD',
-    initial_balance: data.initialBalance ?? 0,
+    initial_balance: minorToDecimal(data.initialBalanceMinor),
     color: data.color,
     icon: data.icon,
     card_style_id: data.cardStyleId ?? DEFAULT_WALLET_CARD_STYLE_ID,
@@ -123,7 +125,7 @@ export async function updateWallet(id: string, data: UpdateWallet) {
   if (data.color !== undefined) patch.color = data.color;
   if (data.icon !== undefined) patch.icon = data.icon;
   if (data.cardStyleId !== undefined) patch.card_style_id = data.cardStyleId;
-  if (data.initialBalance !== undefined) patch.initial_balance = data.initialBalance;
+  if (data.initialBalanceMinor !== undefined) patch.initial_balance = minorToDecimal(data.initialBalanceMinor);
   if (data.notificationPackage !== undefined) patch.notification_package = data.notificationPackage;
   if (data.notificationAppLabel !== undefined) patch.notification_app_label = data.notificationAppLabel;
   if (data.notificationAccountHint !== undefined) {

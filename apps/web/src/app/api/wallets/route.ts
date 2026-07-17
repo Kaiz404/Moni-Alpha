@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import { createWalletSchema, type WalletListResponse, type WalletResponse } from '@repo/types';
+import { createWalletSchema, decimalToMinor, minorToDecimal, type WalletListResponse, type WalletResponse } from '@repo/types';
 import { handleApiError, unauthorized } from '@/lib/api/errors';
 
 export async function GET(request: NextRequest) {
@@ -30,8 +30,8 @@ export async function GET(request: NextRequest) {
         name: w.name,
         type: w.type,
         currency: w.currency,
-        initialBalance: parseFloat(w.initial_balance),
-        currentBalance: parseFloat(w.current_balance),
+        initialBalanceMinor: decimalToMinor(w.initial_balance),
+        currentBalanceMinor: decimalToMinor(w.current_balance),
         color: w.color,
         icon: w.icon,
         cardStyleId: w.card_style_id,
@@ -67,7 +67,7 @@ export async function POST(request: NextRequest) {
         name: validated.name,
         type: validated.type,
         currency: validated.currency,
-        initial_balance: validated.initialBalance,
+        initial_balance: minorToDecimal(validated.initialBalanceMinor),
         color: validated.color,
         icon: validated.icon,
         card_style_id: validated.cardStyleId,
@@ -87,7 +87,7 @@ export async function POST(request: NextRequest) {
         name: data.name,
         type: data.type,
         currency: data.currency,
-        initialBalance: parseFloat(data.initial_balance),
+        initialBalanceMinor: decimalToMinor(data.initial_balance),
         color: data.color,
         icon: data.icon,
         cardStyleId: data.card_style_id,

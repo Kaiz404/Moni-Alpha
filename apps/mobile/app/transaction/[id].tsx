@@ -20,9 +20,11 @@ import { getWallets } from '@/lib/supabase/wallets';
 import { getCategories } from '@/lib/supabase/categories';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { BrandHeader } from '@/components/ui/brand-header';
+import { AmountInput } from '@/components/finance/amount-input';
 import { ScreenShell } from '@/components/ui/screen-shell';
 import { chipClass, chipTextClass } from '@/components/ui/chip';
 import { PrimaryButton } from '@/components/ui/primary-button';
+import { minorToDecimal, parseAmountInput } from '@/lib/finance/money';
 
 const inputClass =
   'rounded-xl border border-border bg-card px-3 py-2.5 text-foreground';
@@ -76,6 +78,10 @@ export default function EditTransactionScreen() {
           setLoadingTx(false);
           return;
         }
+        if (tx.debtActivityId) {
+          router.replace('/debts' as any);
+          return;
+        }
         setWallets(walletList);
 
         const transfer = tx.type === 'transfer';
@@ -111,7 +117,7 @@ export default function EditTransactionScreen() {
 
         setWalletId(tx.walletId);
         setTransferToWalletId(tx.transferToWalletId ?? '');
-        setAmount(tx.amount.toFixed(2));
+        setAmount(minorToDecimal(tx.amountMinor));
         if (tx.type === 'income' || tx.type === 'expense' || tx.type === 'transfer') {
           setType(tx.type);
         } else {
@@ -136,7 +142,7 @@ export default function EditTransactionScreen() {
 
   useEffect(() => {
     if (!user || isTransfer) return;
-    getCategories(type).then(setCategories);
+    getCategories(type === 'income' ? 'income' : 'expense').then(setCategories);
   }, [user, type, isTransfer]);
 
   const destinationWallets = useMemo(
@@ -147,8 +153,10 @@ export default function EditTransactionScreen() {
   const handleSubmit = useCallback(async () => {
     if (!user || !txId) return;
 
-    const parsedAmount = parseFloat(amount);
-    if (Number.isNaN(parsedAmount) || parsedAmount <= 0) {
+    let amountMinor: ReturnType<typeof parseAmountInput>;
+    try {
+      amountMinor = parseAmountInput(amount);
+    } catch {
       Alert.alert('Error', 'Enter a valid positive amount.');
       return;
     }
@@ -177,7 +185,7 @@ export default function EditTransactionScreen() {
         await updateTransaction(txId, {
           walletId,
           transferToWalletId,
-          amount: parsedAmount,
+          amountMinor,
           type: 'transfer',
           categoryId: null,
           merchant: null,
@@ -186,7 +194,7 @@ export default function EditTransactionScreen() {
       } else {
         await updateTransaction(txId, {
           walletId,
-          amount: parsedAmount,
+          amountMinor,
           type,
           categoryId: categoryId || null,
           merchant: merchant.trim() || null,
@@ -323,13 +331,13 @@ export default function EditTransactionScreen() {
                   <Text className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-muted">
                     Amount
                   </Text>
-                  <TextInput
+                  <AmountInput
                     className={`text-base ${inputClass}`}
                     placeholder="0.00"
                     placeholderTextColor="#9CA3AF"
                     value={amount}
-                    onChangeText={setAmount}
-                    keyboardType="decimal-pad"
+                    onChangeValue={setAmount}
+                    currency={wallets.find((wallet) => wallet.id === walletId)?.currency}
                   />
                 </View>
               </View>
@@ -364,13 +372,13 @@ export default function EditTransactionScreen() {
                   <Text className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-muted">
                     Amount
                   </Text>
-                  <TextInput
+                  <AmountInput
                     className={`text-base ${inputClass}`}
                     placeholder="0.00"
                     placeholderTextColor="#9CA3AF"
                     value={amount}
-                    onChangeText={setAmount}
-                    keyboardType="decimal-pad"
+                    onChangeValue={setAmount}
+                    currency={wallets.find((wallet) => wallet.id === walletId)?.currency}
                   />
                 </View>
               </View>

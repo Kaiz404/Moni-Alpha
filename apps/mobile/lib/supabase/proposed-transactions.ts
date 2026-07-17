@@ -2,7 +2,7 @@ import { proposedTransactions$ } from '@/lib/store';
 import { getRecordValues, hasRow, patchRow } from '@/lib/store/helpers';
 import { getUserId } from '@/lib/supabase/client';
 import { randomUUID } from 'expo-crypto';
-import type { CreateProposedTransaction, ProposedTransaction } from '@repo/types';
+import { decimalToMinor, minorToDecimal, type CreateProposedTransaction, type ProposedTransaction } from '@repo/types';
 import { createTransaction } from './transactions';
 import {
   getProposalLocationSnapshot,
@@ -57,7 +57,7 @@ function rowToProposedTransaction(row: ProposedRow): ProposedTransaction {
     walletHint: row.wallet_hint,
     transferToWalletId: row.transfer_to_wallet_id,
     transferToWalletHint: row.transfer_to_wallet_hint,
-    amount: row.amount != null ? parseFloat(String(row.amount)) : null,
+    amountMinor: row.amount != null ? decimalToMinor(row.amount) : null,
     currency: row.currency ?? 'USD',
     type: row.type as ProposedTransaction['type'],
     description: row.description,
@@ -72,8 +72,12 @@ function rowToProposedTransaction(row: ProposedRow): ProposedTransaction {
 }
 
 function isReviewableRow(row: ProposedRow): boolean {
-  const amount = row.amount != null ? parseFloat(String(row.amount)) : NaN;
-  return Number.isFinite(amount) && amount > 0 && !!row.type;
+  if (row.amount == null || !row.type) return false;
+  try {
+    return decimalToMinor(row.amount) > 0;
+  } catch {
+    return false;
+  }
 }
 
 /** All non-deleted rows with a usable amount are unreviewed proposals awaiting user action. */
@@ -128,7 +132,7 @@ export async function createProposedTransaction(
     wallet_hint: data.walletHint ?? null,
     transfer_to_wallet_id: data.transferToWalletId ?? null,
     transfer_to_wallet_hint: data.transferToWalletHint ?? null,
-    amount: data.amount ?? null,
+    amount: data.amountMinor == null ? null : minorToDecimal(data.amountMinor),
     currency: data.currency ?? 'USD',
     type: data.type ?? null,
     description: data.description ?? null,
@@ -151,7 +155,7 @@ export async function approveProposedTransaction(
   proposal: ProposedTransaction,
   wallets: { walletId: string; transferToWalletId?: string | null },
 ): Promise<void> {
-  if (!proposal.amount || !proposal.type) {
+  if (!proposal.amountMinor || !proposal.type) {
     throw new Error('Cannot approve: amount or type is missing');
   }
 
@@ -170,7 +174,7 @@ export async function approveProposedTransaction(
 
   await createTransaction({
     walletId,
-    amount: proposal.amount,
+    amountMinor: proposal.amountMinor,
     type: proposal.type,
     transferToWalletId: proposal.type === 'transfer' ? transferToWalletId : null,
     categoryId: proposal.categoryId ?? null,

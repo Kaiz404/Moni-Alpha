@@ -7,6 +7,8 @@ export const userPreferencesSchema = z.object({
   notifications_enabled: z.boolean().default(true),
   /** Primary wallet for AI fallback when inference cannot pick one. Synced via profiles. */
   default_wallet_id: z.string().uuid().nullable().optional(),
+  /** IANA timezone used for budget month boundaries and debt due states. */
+  finance_timezone: z.string().min(1).max(100).optional(),
 });
 
 // Profile schema

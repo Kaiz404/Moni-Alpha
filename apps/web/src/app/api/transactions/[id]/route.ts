@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import {
   updateTransactionSchema,
+  decimalToMinor,
+  minorToDecimal,
   type TransactionResponse,
 } from '@repo/types';
 import { handleApiError, unauthorized, notFound } from '@/lib/api/errors';
@@ -24,7 +26,7 @@ export async function PUT(
 
     const updateData: Record<string, unknown> = {};
     if (updates.walletId !== undefined) updateData.wallet_id = updates.walletId;
-    if (updates.amount !== undefined) updateData.amount = updates.amount;
+    if (updates.amountMinor !== undefined) updateData.amount = minorToDecimal(updates.amountMinor);
     if (updates.type !== undefined) updateData.type = updates.type;
     if (updates.categoryId !== undefined) updateData.category_id = updates.categoryId;
     if (updates.transferToWalletId !== undefined)
@@ -41,6 +43,14 @@ export async function PUT(
     if (updates.locationName !== undefined)
       updateData.location_name = updates.locationName;
 
+    const sourceWalletId = updates.walletId ?? (await supabase.from('transactions').select('wallet_id').eq('id', id).eq('user_id', user.id).single()).data?.wallet_id;
+    const { data: wallet } = sourceWalletId ? await supabase.from('wallets').select('currency').eq('id', sourceWalletId).eq('user_id', user.id).single() : { data: null };
+    if (!wallet) return notFound('Wallet not found');
+    if (updates.walletId !== undefined) updateData.currency = wallet.currency;
+    if ((updates.type === 'transfer' || updates.transferToWalletId) && updates.transferToWalletId) {
+      const { data: destination } = await supabase.from('wallets').select('currency').eq('id', updates.transferToWalletId).eq('user_id', user.id).single();
+      if (!destination || destination.currency !== wallet.currency) return NextResponse.json({ error: 'Transfers require matching wallet currencies' }, { status: 400 });
+    }
     const { data, error } = await supabase
       .from('transactions')
       .update(updateData)
@@ -76,8 +86,11 @@ export async function PUT(
         id: data.id,
         userId: data.user_id,
         walletId: data.wallet_id,
-        amount: parseFloat(data.amount),
+        amountMinor: decimalToMinor(data.amount),
+        currency: (data as typeof data & { currency?: string | null }).currency ?? wallet.currency,
         type: data.type,
+        analysisExcluded: Boolean((data as typeof data & { analysis_excluded?: boolean | number | null }).analysis_excluded),
+        debtActivityId: (data as typeof data & { debt_activity_id?: string | null }).debt_activity_id ?? null,
         categoryId: data.category_id,
         transferToWalletId: data.transfer_to_wallet_id,
         linkedTransactionId: data.linked_transaction_id,

@@ -13,13 +13,14 @@ import type {
   Transaction,
   CreateTransaction,
 } from '@repo/types';
+import { decimalToMinor, formatMinorAmount, minorToDecimal } from '@repo/types';
 
 export default function TransactionsPage() {
   const [modal, setModal] = useState<'create' | 'edit' | null>(null);
   const [editing, setEditing] = useState<Transaction | null>(null);
   const [form, setForm] = useState<CreateTransaction>({
     walletId: '',
-    amount: 0,
+    amountMinor: decimalToMinor(0),
     type: 'expense',
     description: '',
     transactionDate: new Date().toISOString().slice(0, 16),
@@ -46,7 +47,7 @@ export default function TransactionsPage() {
   const openCreate = () => {
     setForm({
       walletId: wallets[0]?.id ?? '',
-      amount: 0,
+      amountMinor: decimalToMinor(0),
       type: 'expense',
       description: '',
       transactionDate: new Date().toISOString().slice(0, 16),
@@ -59,7 +60,7 @@ export default function TransactionsPage() {
     setEditing(t);
     setForm({
       walletId: t.walletId,
-      amount: t.amount,
+      amountMinor: t.amountMinor,
       type: t.type,
       categoryId: t.categoryId,
       description: t.description ?? '',
@@ -69,9 +70,9 @@ export default function TransactionsPage() {
   };
 
   const formatDate = (d: string) => new Date(d).toLocaleDateString();
-  const formatAmount = (amount: number, type: string) => {
-    const n = type === 'expense' ? -amount : amount;
-    return `${n >= 0 ? '+' : ''}$${Math.abs(n).toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
+  const formatAmount = (amountMinor: number, currency: string, type: string) => {
+    const prefix = type === 'expense' ? '−' : '+';
+    return `${prefix}${formatMinorAmount(amountMinor, currency)}`;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -81,7 +82,7 @@ export default function TransactionsPage() {
     const payload: CreateTransaction = {
       ...form,
       walletId,
-      amount: Number(form.amount),
+      amountMinor: form.amountMinor,
       transactionDate: new Date(form.transactionDate!).toISOString(),
       categoryId: form.categoryId || null,
       description: form.description || null,
@@ -94,7 +95,7 @@ export default function TransactionsPage() {
           id: editing.id,
           payload: {
             walletId: payload.walletId,
-            amount: payload.amount,
+            amountMinor: payload.amountMinor,
             type: payload.type,
             categoryId: payload.categoryId,
             description: payload.description,
@@ -158,7 +159,7 @@ export default function TransactionsPage() {
                   <td>{t.description || t.merchant || '—'}</td>
                   <td>{t.type}</td>
                   <td className={t.type === 'expense' ? 'negative' : 'positive'}>
-                    {formatAmount(t.amount, t.type)}
+                    {formatAmount(t.amountMinor, t.currency, t.type)}
                   </td>
                   <td>
                     <button onClick={() => openEdit(t)} className="btn btn-secondary btn-sm" style={{ marginRight: '0.5rem' }}>
@@ -220,9 +221,9 @@ export default function TransactionsPage() {
                   type="number"
                   step="0.01"
                   min="0"
-                  value={form.amount || ''}
+                  value={minorToDecimal(form.amountMinor)}
                   onChange={(e) =>
-                    setForm((f) => ({ ...f, amount: parseFloat(e.target.value) || 0 }))
+                    setForm((f) => ({ ...f, amountMinor: decimalToMinor(e.target.value || '0') }))
                   }
                   required
                 />

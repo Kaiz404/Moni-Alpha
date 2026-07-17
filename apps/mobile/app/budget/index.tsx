@@ -1,172 +1,129 @@
-import { useCallback, useEffect, useState } from 'react';
-import {
-  ActivityIndicator,
-  Alert,
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  ScrollView,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
+import { useEffect, useMemo, useState } from 'react';
+import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
 import { router } from 'expo-router';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useThemeTokens } from '@/hooks/use-theme-tokens';
+import { useValue } from '@legendapp/state/react';
+import { AmountInput } from '@/components/finance/amount-input';
+import { FinanceState } from '@/components/finance/finance-state';
 import { BrandHeader } from '@/components/ui/brand-header';
-import { ScreenShell } from '@/components/ui/screen-shell';
 import { PrimaryButton } from '@/components/ui/primary-button';
-import { getExpenseCategoriesForBudgets } from '@/lib/supabase/categories';
-import {
-  deleteCategoryBudget,
-  getCategoryBudgets,
-  upsertCategoryBudget,
-} from '@/lib/supabase/category-budgets';
+import { ScreenShell } from '@/components/ui/screen-shell';
+import { useAuth } from '@/lib/auth/auth-context';
+import { formatMinorAmount, minorToDecimal, parseAmountInput } from '@/lib/finance/money';
+import { budgetProgress$, expenseCategories$, walletsForUser$ } from '@/lib/finance/selectors';
+import { deleteCategoryBudget, upsertCategoryBudget } from '@/lib/supabase/category-budgets';
+import { ensureFinanceTimezone } from '@/lib/supabase/profile';
 
-type CatRow = { id: string; name: string; color: string | null };
+const keyFor = (categoryId: string, currency: string) => `${categoryId}:${currency}`;
 
 export default function BudgetsScreen() {
-  const insets = useSafeAreaInsets();
-  const tokens = useThemeTokens();
-  const [loading, setLoading] = useState(true);
-  const [categories, setCategories] = useState<CatRow[]>([]);
-  const [amountDraft, setAmountDraft] = useState<Record<string, string>>({});
-  const [savingId, setSavingId] = useState<string | null>(null);
+  const { user } = useAuth();
+  const [timezone, setTimezone] = useState('UTC');
+  const [managing, setManaging] = useState(false);
+  const [drafts, setDrafts] = useState<Record<string, string>>({});
+  const [saving, setSaving] = useState<string | null>(null);
+  const categories = useValue(expenseCategories$(user?.id ?? null));
+  const wallets = useValue(walletsForUser$(user?.id ?? null));
+  const progress = useValue(budgetProgress$(user?.id ?? null, timezone));
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    try {
-      const [catRows, budgets] = await Promise.all([
-        getExpenseCategoriesForBudgets(),
-        getCategoryBudgets(),
-      ]);
-
-      setCategories(
-        catRows.map((c) => ({
-          id: c.id,
-          name: c.name,
-          color: c.color,
-        })),
-      );
-
-      const draft: Record<string, string> = {};
-      for (const b of budgets) {
-        draft[b.categoryId] = String(b.amount);
-      }
-      for (const c of catRows) {
-        if (draft[c.id] === undefined) draft[c.id] = '';
-      }
-      setAmountDraft(draft);
-    } catch (e) {
-      console.error('[BudgetsScreen] load failed', e);
-      Alert.alert(
-        'Could not load',
-        e instanceof Error ? e.message : 'Check sync and try again.',
-      );
-    } finally {
-      setLoading(false);
-    }
+  useEffect(() => {
+    void ensureFinanceTimezone().then(setTimezone).catch(() => {});
   }, []);
 
   useEffect(() => {
-    load().catch(() => { });
-  }, [load]);
-
-  const saveBudget = async (categoryId: string) => {
-    const raw = (amountDraft[categoryId] ?? '').trim();
-    if (raw === '') {
-      setSavingId(categoryId);
-      try {
-        await deleteCategoryBudget(categoryId);
-        await load();
-      } catch (e) {
-        Alert.alert('Could not clear budget', e instanceof Error ? e.message : 'Unknown error');
-      } finally {
-        setSavingId(null);
+    setDrafts((current) => {
+      const next = { ...current };
+      for (const row of progress) {
+        const key = keyFor(row.categoryId, row.currency);
+        if (row.budgetAmountMinor !== null && next[key] === undefined) {
+          next[key] = minorToDecimal(row.budgetAmountMinor);
+        }
       }
-      return;
-    }
+      return next;
+    });
+  }, [progress]);
 
-    const n = parseFloat(raw.replace(/,/g, ''));
-    if (Number.isNaN(n) || n <= 0) {
-      Alert.alert('Invalid amount', 'Enter a positive number or leave empty to remove the budget.');
-      return;
-    }
+  const currencies = useMemo(
+    () => [...new Set([...wallets.map((wallet) => wallet.currency), ...progress.map((row) => row.currency)])].sort(),
+    [progress, wallets],
+  );
+  const grouped = useMemo(
+    () => Object.entries(progress.reduce<Record<string, typeof progress>>((all, row) => {
+      (all[row.currency] ??= []).push(row);
+      return all;
+    }, {})).sort(([a], [b]) => a.localeCompare(b)),
+    [progress],
+  );
 
-    setSavingId(categoryId);
+  const save = async (categoryId: string, currency: string) => {
+    const id = keyFor(categoryId, currency);
+    setSaving(id);
     try {
-      await upsertCategoryBudget(categoryId, n);
-      await load();
-    } catch (e) {
-      Alert.alert('Could not save', e instanceof Error ? e.message : 'Unknown error');
+      const raw = (drafts[id] ?? '').trim();
+      if (!raw) await deleteCategoryBudget(categoryId, currency);
+      else await upsertCategoryBudget(categoryId, currency, parseAmountInput(raw));
+    } catch (error) {
+      Alert.alert('Could not save budget', error instanceof Error ? error.message : 'Unknown error');
     } finally {
-      setSavingId(null);
+      setSaving(null);
     }
   };
 
   return (
     <ScreenShell>
-      <BrandHeader title="Category budgets" />
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        className="flex-1"
-        keyboardVerticalOffset={0}>
-        {loading ? (
-          <View className="flex-1 items-center justify-center bg-background">
-            <ActivityIndicator size="large" color={tokens.primary} />
+      <BrandHeader title="Budgets" />
+      <ScrollView className="flex-1 bg-background" contentContainerClassName="p-4">
+        <View className="mb-4 flex-row items-center justify-between">
+          <View>
+            <Text className="text-xl font-bold text-foreground">This month</Text>
+            <Text className="mt-1 text-sm text-muted">Only categorized spending counts. Debt and transfers are excluded.</Text>
           </View>
-        ) : (
-          <ScrollView
-            className="flex-1 bg-background"
-            contentContainerStyle={{ paddingBottom: insets.bottom + 24 }}
-            keyboardShouldPersistTaps="handled"
-            showsVerticalScrollIndicator={false}>
-            <View className="px-4 pt-4">
-              <Text className="mb-4 text-sm leading-5 text-muted">
-                Monthly limits apply to <Text className="font-bold text-foreground">all wallets</Text> combined. The
-                budget coach compares this month&apos;s expenses (by category) to these caps.
-              </Text>
+          <Pressable className="rounded-lg border border-border px-3 py-2" onPress={() => setManaging((value) => !value)}>
+            <Text className="font-semibold text-primary">{managing ? 'Done' : 'Manage'}</Text>
+          </Pressable>
+        </View>
 
-              {categories.length === 0 ? (
-                <Text className="py-8 text-center text-[15px] text-muted">
-                  No expense categories available.
-                </Text>
-              ) : (
-                categories.map((c) => (
-                  <View
-                    key={c.id}
-                    className="mb-3 rounded-2xl border border-border bg-card p-3">
-                    <Text className="text-base font-semibold text-foreground">
-                      {c.name}
-                    </Text>
-                    <View className="mt-2 flex-row items-center gap-2">
-                      <TextInput
-                        className="flex-1 rounded-lg border border-border bg-background px-3 py-2.5 text-base text-foreground"
-                        placeholder="Monthly budget (empty = none)"
-                        placeholderTextColor="#94a3b8"
-                        keyboardType="decimal-pad"
-                        value={amountDraft[c.id] ?? ''}
-                        onChangeText={(t) => setAmountDraft((prev) => ({ ...prev, [c.id]: t }))}
+        {managing ? (
+          currencies.length === 0 ? <Text className="py-8 text-center text-muted">Add a wallet before setting a cap.</Text> : currencies.map((currency) => (
+            <View key={currency} className="mb-5">
+              <Text className="mb-2 text-base font-bold text-foreground">{currency} monthly caps</Text>
+              {categories.map((category) => {
+                const id = keyFor(category.id, currency);
+                return (
+                  <View key={id} className="mb-2 rounded-xl border border-border bg-card p-3">
+                    <Text className="font-semibold text-foreground">{category.name}</Text>
+                    <View className="mt-2 flex-row gap-2">
+                      <AmountInput
+                        className="rounded-lg border border-border bg-background px-3 py-2 text-foreground"
+                        placeholder="No cap"
+                        value={drafts[id] ?? ''}
+                        onChangeValue={(value) => setDrafts((old) => ({ ...old, [id]: value }))}
+                        currency={currency}
                       />
-                      {savingId === c.id ? (
-                        <View className="min-w-[88px] items-center justify-center rounded-lg bg-primary px-4 py-3">
-                          <ActivityIndicator color="#ffffff" />
-                        </View>
-                      ) : (
-                        <PrimaryButton
-                          label="Save"
-                          className="min-w-[88px] px-4 py-3"
-                          onPress={() => saveBudget(c.id)}
-                        />
-                      )}
+                      <PrimaryButton label={saving === id ? 'Saving…' : 'Save'} disabled={saving === id} className="px-4" onPress={() => save(category.id, currency)} />
                     </View>
                   </View>
-                ))
-              )}
+                );
+              })}
             </View>
-          </ScrollView>
-        )}
-      </KeyboardAvoidingView>
+          ))
+        ) : grouped.length === 0 ? (
+          <FinanceState title="No budget activity yet" detail="Set a cap or add a categorized expense to get started." />
+        ) : grouped.map(([currency, rows]) => (
+          <View key={currency} className="mb-5">
+            <Text className="mb-2 text-base font-bold text-foreground">{currency}</Text>
+            {rows.map((row) => (
+              <Pressable key={keyFor(row.categoryId, currency)} onPress={() => router.push({ pathname: '/transaction', params: { categoryId: row.categoryId, currency, month: new Date().toISOString().slice(0, 7) } } as any)} className="mb-2 rounded-2xl border border-border bg-card p-3">
+                <View className="flex-row justify-between">
+                  <Text className="font-semibold text-foreground">{row.categoryName}</Text>
+                  <Text className={row.status === 'over' ? 'font-bold text-expense' : row.status === 'near_limit' ? 'font-bold text-warning' : 'font-bold text-foreground'}>{row.budgetAmountMinor === null ? 'Unbudgeted' : `${row.percentage}%`}</Text>
+                </View>
+                <Text className="mt-1 text-sm text-muted">{formatMinorAmount(row.spentMinor, currency)} spent{row.budgetAmountMinor === null ? '' : ` of ${formatMinorAmount(row.budgetAmountMinor, currency)}`}</Text>
+                {row.remainingMinor !== null ? <Text className={row.remainingMinor < 0 ? 'mt-1 text-sm text-expense' : 'mt-1 text-sm text-muted'}>{row.remainingMinor < 0 ? `${formatMinorAmount(-Number(row.remainingMinor), currency)} over` : `${formatMinorAmount(row.remainingMinor, currency)} left`}</Text> : null}
+              </Pressable>
+            ))}
+          </View>
+        ))}
+      </ScrollView>
     </ScreenShell>
   );
 }
