@@ -23,8 +23,13 @@ export default function TransactionLayout() {
               accessibilityRole="button"
               accessibilityLabel="Go back"
               hitSlop={12}
-              className="ml-1 p-1 active:opacity-70">
-              <MaterialIcons name="arrow-back" size={24} color={tokens.foreground} />
+              className="ml-1 p-1 active:opacity-70"
+            >
+              <MaterialIcons
+                name="arrow-back"
+                size={24}
+                color={tokens.foreground}
+              />
             </Pressable>
           ),
           headerRight: () => (
@@ -34,9 +39,18 @@ export default function TransactionLayout() {
           ),
         }}
       />
-      <Stack.Screen name="new" options={{ title: 'New Transaction', headerShown: false }} />
-      <Stack.Screen name="new-details" options={{ title: 'More Details', headerShown: false }} />
-      <Stack.Screen name="[id]" options={{ title: 'Edit Transaction', headerShown: false }} />
+      <Stack.Screen
+        name="new"
+        options={{ title: 'New Transaction', headerShown: false }}
+      />
+      <Stack.Screen
+        name="new-details"
+        options={{ title: 'More Details', headerShown: false }}
+      />
+      <Stack.Screen
+        name="[id]"
+        options={{ title: 'Edit Transaction', headerShown: false }}
+      />
     </Stack>
   );
 }

@@ -96,7 +96,10 @@ async function processingTask(taskData?: { delay?: number }) {
       }
 
       console.log(TAG, '\u{2502}');
-      console.log(TAG, `\u{251C}\u{2500}\u{2500} Item #${processedCount + 1}: ${item.type} ${preview}`);
+      console.log(
+        TAG,
+        `\u{251C}\u{2500}\u{2500} Item #${processedCount + 1}: ${item.type} ${preview}`,
+      );
       console.log(TAG, `\u{2502}  id: ${item.id}`);
 
       const itemStart = Date.now();

@@ -9,7 +9,7 @@ export async function POST(request: NextRequest) {
     const { email, password, displayName } = signUpSchema.parse(body);
 
     const supabase = await createClient();
-    
+
     // Sign up user
     const { data, error } = await supabase.auth.signUp({
       email,
@@ -26,24 +26,19 @@ export async function POST(request: NextRequest) {
     }
 
     if (!data.user || !data.session) {
-      return NextResponse.json(
-        { error: 'Failed to create user' },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: 'Failed to create user' }, { status: 500 });
     }
 
     // Create profile
-    const { error: profileError } = await supabase
-      .from('profiles')
-      .insert({
-        id: data.user.id,
-        display_name: displayName,
-        preferences: {
-          currency: 'USD',
-          theme: 'system',
-          notifications_enabled: true,
-        },
-      });
+    const { error: profileError } = await supabase.from('profiles').insert({
+      id: data.user.id,
+      display_name: displayName,
+      preferences: {
+        currency: 'USD',
+        theme: 'system',
+        notifications_enabled: true,
+      },
+    });
 
     if (profileError) {
       console.error('Profile creation error:', profileError);

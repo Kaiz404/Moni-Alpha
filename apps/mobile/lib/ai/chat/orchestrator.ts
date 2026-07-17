@@ -9,12 +9,7 @@ import { enqueueImageUpload } from '@/lib/receipts/upload-queue';
 import { getUserId } from '@/lib/supabase/client';
 
 import { analyzeUserFinances } from './analyze';
-import {
-  appendMessage,
-  updateMessage,
-  type ChatMessage,
-  type QuickReplyOption,
-} from './messages';
+import { appendMessage, updateMessage, type ChatMessage, type QuickReplyOption } from './messages';
 import { resolveRoute, type ForcedIntent } from './routing';
 
 export type SendChatInput = {
@@ -37,8 +32,7 @@ export type SendChatCallbacks = {
 const EXTRACT_ACK = "Got it — I'll let you know when it's ready to review.";
 const EXTRACT_ACK_PROCESSING = 'Processing your transaction…';
 const IMAGE_ACK = 'Got it — processing your receipt. Review when ready.';
-const CLARIFY_TEXT =
-  'Did you want to log a transaction or ask about your finances?';
+const CLARIFY_TEXT = 'Did you want to log a transaction or ask about your finances?';
 
 function emit(cb: SendChatCallbacks, messages: ChatMessage[]) {
   cb.onSessionUpdate({ messages });

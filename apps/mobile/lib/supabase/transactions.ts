@@ -73,7 +73,8 @@ function mapTransactionRow(t: TransactionRow) {
     notes: t.notes,
     transactionDate: toDateSortKey(t.transaction_date) || toDateSortKey(t.created_at),
     locationLatitude: t.location_latitude != null ? parseFloat(String(t.location_latitude)) : null,
-    locationLongitude: t.location_longitude != null ? parseFloat(String(t.location_longitude)) : null,
+    locationLongitude:
+      t.location_longitude != null ? parseFloat(String(t.location_longitude)) : null,
     locationName: t.location_name,
     receiptImageUrl: t.receipt_image_url,
     metadata,
@@ -85,10 +86,15 @@ function mapTransactionRow(t: TransactionRow) {
 export async function getTransactions(walletId?: string, limit: number = 100) {
   let rows = getRecordValues<TransactionRow>(transactions$);
 
-  rows.sort((a, b) => toDateSortKey(b.transaction_date).localeCompare(toDateSortKey(a.transaction_date)));
+  rows.sort((a, b) =>
+    toDateSortKey(b.transaction_date).localeCompare(toDateSortKey(a.transaction_date)),
+  );
   const transactions = rows.map(mapTransactionRow);
-  return (walletId ? transactions.filter((transaction) => isTransactionRelevantToWallet(transaction, walletId)) : transactions)
-    .slice(0, limit);
+  return (
+    walletId
+      ? transactions.filter((transaction) => isTransactionRelevantToWallet(transaction, walletId))
+      : transactions
+  ).slice(0, limit);
 }
 
 export async function getTransactionById(id: string) {
@@ -127,7 +133,10 @@ export async function updateTransaction(id: string, data: UpdateTransaction) {
   if (p.locationName !== undefined) patch.location_name = p.locationName;
 
   if (p.walletId !== undefined) {
-    const wallet = getRecordValues<{ id: string; currency: string | null }>(wallets$).find((w) => w.id === p.walletId);
+    const wallet = getRecordValues<{
+      id: string;
+      currency: string | null;
+    }>(wallets$).find((w) => w.id === p.walletId);
     if (!wallet) throw new Error('Wallet not found');
     patch.currency = (wallet.currency ?? 'USD').toUpperCase();
   }
@@ -194,7 +203,11 @@ export async function createTransaction(data: CreateTransaction) {
     user_id: userId,
     wallet_id: data.walletId,
     amount: minorToDecimal(data.amountMinor),
-    currency: (getRecordValues<{ id: string; currency: string | null }>(wallets$).find((w) => w.id === data.walletId)?.currency ?? 'USD').toUpperCase(),
+    currency: (
+      getRecordValues<{ id: string; currency: string | null }>(wallets$).find(
+        (w) => w.id === data.walletId,
+      )?.currency ?? 'USD'
+    ).toUpperCase(),
     type: data.type,
     analysis_excluded: data.analysisExcluded ?? false,
     debt_activity_id: data.debtActivityId ?? null,
@@ -233,7 +246,10 @@ export async function createTransfer(data: {
     throw new Error('Amount must be positive');
   }
 
-  const wallets = getRecordValues<{ id: string; currency: string | null }>(wallets$);
+  const wallets = getRecordValues<{
+    id: string;
+    currency: string | null;
+  }>(wallets$);
   const fromWallet = wallets.find((w) => w.id === data.fromWalletId);
   const toWallet = wallets.find((w) => w.id === data.toWalletId);
 

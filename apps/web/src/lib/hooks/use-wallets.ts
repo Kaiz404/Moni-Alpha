@@ -13,8 +13,7 @@ export function useWallets() {
 export function useCreateWallet() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (payload: CreateWallet) =>
-      api.post('/api/wallets', payload),
+    mutationFn: (payload: CreateWallet) => api.post('/api/wallets', payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.wallets });
       queryClient.invalidateQueries({ queryKey: queryKeys.overview });
@@ -25,17 +24,14 @@ export function useCreateWallet() {
 export function useUpdateWallet() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({
-      id,
-      payload,
-    }: {
-      id: string;
-      payload: Partial<CreateWallet>;
-    }) => api.put(`/api/wallets/${id}`, payload),
+    mutationFn: ({ id, payload }: { id: string; payload: Partial<CreateWallet> }) =>
+      api.put(`/api/wallets/${id}`, payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.wallets });
       queryClient.invalidateQueries({ queryKey: queryKeys.overview });
-      queryClient.invalidateQueries({ queryKey: queryKeys.transactions() });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.transactions(),
+      });
     },
   });
 }
@@ -47,7 +43,9 @@ export function useDeleteWallet() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.wallets });
       queryClient.invalidateQueries({ queryKey: queryKeys.overview });
-      queryClient.invalidateQueries({ queryKey: queryKeys.transactions() });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.transactions(),
+      });
     },
   });
 }

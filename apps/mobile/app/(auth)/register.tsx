@@ -1,5 +1,12 @@
 import { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, Alert, ScrollView } from 'react-native';
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  Alert,
+  ScrollView,
+} from 'react-native';
 import { Link, router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MaterialIcons from '@react-native-vector-icons/material-icons';
@@ -30,7 +37,11 @@ export default function RegisterScreen() {
       return;
     }
     setLoading(true);
-    const { error, session } = await signUp(email.trim(), password, displayName.trim());
+    const { error, session } = await signUp(
+      email.trim(),
+      password,
+      displayName.trim(),
+    );
     setLoading(false);
     if (error) {
       Alert.alert('Registration failed', error.message);
@@ -43,10 +54,20 @@ export default function RegisterScreen() {
 
   return (
     <ScreenShell variant="default">
-      <View style={{ paddingTop: Math.max(insets.top, 24) }} className="flex-row items-center gap-3 px-6 pb-2">
-        <Link href={'/(auth)/login' as any} asChild>
+      <View
+        style={{ paddingTop: Math.max(insets.top, 24) }}
+        className="flex-row items-center gap-3 px-6 pb-2"
+      >
+        <Link
+          href={'/(auth)/login' as any}
+          asChild
+        >
           <TouchableOpacity className="h-10 w-10 items-center justify-center rounded-full bg-background-muted">
-            <MaterialIcons name="arrow-back" size={20} color={tokens.foreground} />
+            <MaterialIcons
+              name="arrow-back"
+              size={20}
+              color={tokens.foreground}
+            />
           </TouchableOpacity>
         </Link>
       </View>
@@ -55,10 +76,14 @@ export default function RegisterScreen() {
         className="flex-1 px-6 pt-6"
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 32 }}>
-        <Text className="text-3xl font-bold text-foreground">Join Moni</Text>
+        contentContainerStyle={{ paddingBottom: 32 }}
+      >
+        <Text className="text-3xl font-bold text-foreground">
+          Join Moni
+        </Text>
         <Text className="mb-8 mt-2 text-base leading-6 text-muted">
-          Create a profile to sync wallets and transactions securely — same local-first privacy as the rest of the app.
+          Create a profile to sync wallets and transactions securely —
+          same local-first privacy as the rest of the app.
         </Text>
 
         <Text className="mb-2 text-sm font-medium text-foreground">
@@ -103,7 +128,8 @@ export default function RegisterScreen() {
         <TouchableOpacity
           className={`mt-2 items-center rounded-2xl bg-primary p-3.5 ${loading ? 'opacity-60' : ''}`}
           onPress={handleRegister}
-          disabled={loading}>
+          disabled={loading}
+        >
           <Text className="text-base font-semibold text-primary-foreground">
             {loading ? 'Creating account...' : 'Sign up'}
           </Text>
@@ -111,12 +137,22 @@ export default function RegisterScreen() {
 
         <GoogleSignInButton
           disabled={loading}
-          onError={(message) => Alert.alert('Google sign in failed', message, [{ text: 'OK' }], {
-            cancelable: true,
-          })}
+          onError={(message) =>
+            Alert.alert(
+              'Google sign in failed',
+              message,
+              [{ text: 'OK' }],
+              {
+                cancelable: true,
+              },
+            )
+          }
         />
 
-        <Link href={'/(auth)/login' as any} asChild>
+        <Link
+          href={'/(auth)/login' as any}
+          asChild
+        >
           <TouchableOpacity className="mt-8 items-center py-2">
             <Text className="text-sm font-medium text-primary">
               Already have an account? Sign in

@@ -8,19 +8,19 @@ import { financeProjection$ } from '@/lib/finance/projection';
 import { getUserId } from '@/lib/supabase/client';
 import { exportHistoryForApi } from './messages';
 
-export type AnalyzeFinancesResult =
-  | { ok: true; reply: string }
-  | { ok: false; reason: string };
+export type AnalyzeFinancesResult = { ok: true; reply: string } | { ok: false; reason: string };
 
-export async function analyzeUserFinances(
-  message: string,
-): Promise<AnalyzeFinancesResult> {
+export async function analyzeUserFinances(message: string): Promise<AnalyzeFinancesResult> {
   try {
     const userId = await getUserId();
     if (!userId) return { ok: false, reason: 'Not authenticated' };
     const projection = financeProjection$.peek();
-    const transactions = Object.values(projection.transactionsById).filter((transaction) => transaction.userId === userId);
-    const budgets = Object.values(projection.budgetsById).filter((budget) => budget.userId === userId);
+    const transactions = Object.values(projection.transactionsById).filter(
+      (transaction) => transaction.userId === userId,
+    );
+    const budgets = Object.values(projection.budgetsById).filter(
+      (budget) => budget.userId === userId,
+    );
 
     const categoryMap = Object.fromEntries(
       Object.values(projection.categoriesById)
@@ -43,11 +43,7 @@ export async function analyzeUserFinances(
       transactionDate: t.transactionDate,
     }));
 
-    const snapshot = buildFinanceAssistantToolSnapshotByCurrency(
-      txs,
-      categoryMap,
-      budgetRows,
-    );
+    const snapshot = buildFinanceAssistantToolSnapshotByCurrency(txs, categoryMap, budgetRows);
 
     const result = await getAiClient().analyzeFinances({
       message,

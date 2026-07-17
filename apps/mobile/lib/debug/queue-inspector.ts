@@ -72,5 +72,8 @@ export async function pruneQueue(log: LogFn): Promise<DebugTestResult> {
   const after = getAll().length;
   const removed = before - after;
   log(`Pruned ${removed} items (entire queue cleared)`);
-  return { success: true, summary: `${removed} items removed (queue cleared)` };
+  return {
+    success: true,
+    summary: `${removed} items removed (queue cleared)`,
+  };
 }

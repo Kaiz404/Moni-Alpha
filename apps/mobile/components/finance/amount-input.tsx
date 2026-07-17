@@ -1,7 +1,10 @@
 import type { TextInputProps } from 'react-native';
 import { Text, TextInput, View } from 'react-native';
 
-type AmountInputProps = Omit<TextInputProps, 'keyboardType' | 'onChangeText' | 'value'> & {
+type AmountInputProps = Omit<
+  TextInputProps,
+  'keyboardType' | 'onChangeText' | 'value'
+> & {
   value: string;
   onChangeValue: (value: string) => void;
   currency?: string | null;
@@ -29,7 +32,11 @@ export function AmountInput({
         keyboardType="decimal-pad"
         placeholder={props.placeholder ?? '0.00'}
       />
-      {currency ? <Text className="text-xs font-semibold text-muted">{currency.toUpperCase()}</Text> : null}
+      {currency ? (
+        <Text className="text-xs font-semibold text-muted">
+          {currency.toUpperCase()}
+        </Text>
+      ) : null}
     </View>
   );
 }

@@ -1,13 +1,23 @@
 import { computed, type Observable } from '@legendapp/state';
 import { addMinor, subtractMinor, type CurrencyCode, type MinorAmount } from '@repo/types';
 import { dayKeyInTimezone, monthKeyInTimezone } from './dates';
-import { isTransactionRelevantToWallet, outstandingDebtBalanceMinor, transactionDeltaMinor } from './ledger';
+import {
+  isTransactionRelevantToWallet,
+  outstandingDebtBalanceMinor,
+  transactionDeltaMinor,
+} from './ledger';
 import { financeProjection$ } from './projection';
 import type { FinanceDebt, FinanceProposal, FinanceTransaction, FinanceWallet } from './types';
 
-export type CurrencyTotal = { currency: CurrencyCode; amountMinor: MinorAmount };
+export type CurrencyTotal = {
+  currency: CurrencyCode;
+  amountMinor: MinorAmount;
+};
 export type FinanceChartPoint = { x: Date; yMinor: MinorAmount };
-export type CurrencyLine = { currency: CurrencyCode; points: FinanceChartPoint[] };
+export type CurrencyLine = {
+  currency: CurrencyCode;
+  points: FinanceChartPoint[];
+};
 export type FinancePinPoint = {
   latitude: number;
   longitude: number;
@@ -31,7 +41,11 @@ function values<T>(record: Record<string, T>): T[] {
   return Object.values(record);
 }
 
-function cacheComputed<T>(cache: Map<string, Observable<T>>, key: string, build: () => T): Observable<T> {
+function cacheComputed<T>(
+  cache: Map<string, Observable<T>>,
+  key: string,
+  build: () => T,
+): Observable<T> {
   let selector$ = cache.get(key);
   if (!selector$) {
     selector$ = computed(build as () => any) as unknown as Observable<T>;
@@ -44,7 +58,11 @@ function sortTransactions(transactions: FinanceTransaction[]): FinanceTransactio
   return [...transactions].sort((a, b) => b.transactionDate.localeCompare(a.transactionDate));
 }
 
-function addCurrencyTotal(totals: Map<CurrencyCode, MinorAmount>, currency: CurrencyCode, amountMinor: MinorAmount): void {
+function addCurrencyTotal(
+  totals: Map<CurrencyCode, MinorAmount>,
+  currency: CurrencyCode,
+  amountMinor: MinorAmount,
+): void {
   totals.set(currency, addMinor(totals.get(currency) ?? 0, amountMinor));
 }
 
@@ -65,7 +83,11 @@ export function walletsForUser$(userId: string | null): Observable<FinanceWallet
 
 const walletByIdCache = new Map<string, Observable<FinanceWallet | null>>();
 export function walletById$(walletId: string): Observable<FinanceWallet | null> {
-  return cacheComputed(walletByIdCache, walletId, () => financeProjection$.walletsById[walletId].get() ?? null);
+  return cacheComputed(
+    walletByIdCache,
+    walletId,
+    () => financeProjection$.walletsById[walletId].get() ?? null,
+  );
 }
 
 const balanceCache = new Map<string, Observable<MinorAmount>>();
@@ -85,7 +107,9 @@ export function walletBalanceMinor$(walletId: string): Observable<MinorAmount> {
 }
 
 const walletBalancesCache = new Map<string, Observable<Record<string, MinorAmount>>>();
-export function walletBalancesMinor$(userId: string | null): Observable<Record<string, MinorAmount>> {
+export function walletBalancesMinor$(
+  userId: string | null,
+): Observable<Record<string, MinorAmount>> {
   return cacheComputed(walletBalancesCache, userId ?? 'anonymous', () => {
     const wallets = walletsForUser$(userId).get();
     const output: Record<string, MinorAmount> = {};
@@ -107,7 +131,7 @@ export function transactions$(filter: TransactionFilter): Observable<FinanceTran
   const key = JSON.stringify(filter);
   return cacheComputed(transactionListCache, key, () => {
     const ids = filter.walletId
-      ? financeProjection$.transactionsByWallet[filter.walletId].get() ?? []
+      ? (financeProjection$.transactionsByWallet[filter.walletId].get() ?? [])
       : Object.keys(financeProjection$.transactionsById.get());
     const rows: FinanceTransaction[] = [];
     for (const id of ids) {
@@ -125,7 +149,11 @@ export function transactions$(filter: TransactionFilter): Observable<FinanceTran
 
 const transactionByIdCache = new Map<string, Observable<FinanceTransaction | null>>();
 export function transactionById$(transactionId: string): Observable<FinanceTransaction | null> {
-  return cacheComputed(transactionByIdCache, transactionId, () => financeProjection$.transactionsById[transactionId].get() ?? null);
+  return cacheComputed(
+    transactionByIdCache,
+    transactionId,
+    () => financeProjection$.transactionsById[transactionId].get() ?? null,
+  );
 }
 
 const categoryMapCache = new Map<string, Observable<Record<string, string>>>();
@@ -133,19 +161,34 @@ export function categoryNameMap$(userId: string | null): Observable<Record<strin
   return cacheComputed(categoryMapCache, userId ?? 'anonymous', () => {
     const map: Record<string, string> = {};
     for (const category of values(financeProjection$.categoriesById.get())) {
-      if (category.isActive && (category.userId === null || category.userId === userId)) map[category.id] = category.name;
+      if (category.isActive && (category.userId === null || category.userId === userId))
+        map[category.id] = category.name;
     }
     return map;
   });
 }
 
-const expenseCategoriesCache = new Map<string, Observable<Array<{ id: string; name: string; color: string | null }>>>();
-export function expenseCategories$(userId: string | null): Observable<Array<{ id: string; name: string; color: string | null }>> {
+const expenseCategoriesCache = new Map<
+  string,
+  Observable<Array<{ id: string; name: string; color: string | null }>>
+>();
+export function expenseCategories$(
+  userId: string | null,
+): Observable<Array<{ id: string; name: string; color: string | null }>> {
   return cacheComputed(expenseCategoriesCache, userId ?? 'anonymous', () =>
     values(financeProjection$.categoriesById.get())
-      .filter((category) => category.isActive && category.type === 'expense' && (category.userId === null || category.userId === userId))
+      .filter(
+        (category) =>
+          category.isActive &&
+          category.type === 'expense' &&
+          (category.userId === null || category.userId === userId),
+      )
       .sort((a, b) => a.displayOrder - b.displayOrder || a.name.localeCompare(b.name))
-      .map((category) => ({ id: category.id, name: category.name, color: category.color })),
+      .map((category) => ({
+        id: category.id,
+        name: category.name,
+        color: category.color,
+      })),
   );
 }
 
@@ -157,7 +200,9 @@ function categoryExpensesByCurrency(
   for (const transaction of transactions) {
     if (transaction.type !== 'expense' || transaction.analysisExcluded) continue;
     const totals = byCurrency.get(transaction.currency) ?? new Map<string, MinorAmount>();
-    const name = transaction.categoryId ? categories[transaction.categoryId] ?? 'Uncategorized' : 'Uncategorized';
+    const name = transaction.categoryId
+      ? (categories[transaction.categoryId] ?? 'Uncategorized')
+      : 'Uncategorized';
     totals.set(name, addMinor(totals.get(name) ?? 0, transaction.amountMinor));
     byCurrency.set(transaction.currency, totals);
   }
@@ -169,21 +214,37 @@ function categoryExpensesByCurrency(
       if (entries.length <= 6) return [currency, entries];
       return [
         currency,
-        [...entries.slice(0, 5), { x: 'Other', yMinor: addMinor(...entries.slice(5).map((entry) => entry.yMinor)) }],
+        [
+          ...entries.slice(0, 5),
+          {
+            x: 'Other',
+            yMinor: addMinor(...entries.slice(5).map((entry) => entry.yMinor)),
+          },
+        ],
       ];
     }),
   );
 }
 
-function balanceLinesByCurrency(wallets: FinanceWallet[], transactions: FinanceTransaction[]): CurrencyLine[] {
+function balanceLinesByCurrency(
+  wallets: FinanceWallet[],
+  transactions: FinanceTransaction[],
+): CurrencyLine[] {
   const byCurrency = new Map<CurrencyCode, FinanceWallet[]>();
-  for (const wallet of wallets) byCurrency.set(wallet.currency, [...(byCurrency.get(wallet.currency) ?? []), wallet]);
+  for (const wallet of wallets)
+    byCurrency.set(wallet.currency, [...(byCurrency.get(wallet.currency) ?? []), wallet]);
   const output: CurrencyLine[] = [];
   for (const [currency, group] of byCurrency) {
     const walletIds = new Set(group.map((wallet) => wallet.id));
     let running = addMinor(...group.map((wallet) => wallet.initialBalanceMinor));
     const relevant = [...transactions]
-      .filter((transaction) => transaction.currency === currency && (walletIds.has(transaction.walletId) || (transaction.transferToWalletId !== null && walletIds.has(transaction.transferToWalletId))))
+      .filter(
+        (transaction) =>
+          transaction.currency === currency &&
+          (walletIds.has(transaction.walletId) ||
+            (transaction.transferToWalletId !== null &&
+              walletIds.has(transaction.transferToWalletId))),
+      )
       .sort((a, b) => a.transactionDate.localeCompare(b.transactionDate));
     const points: FinanceChartPoint[] = [];
     if (!relevant.length) points.push({ x: new Date(), yMinor: running });
@@ -191,7 +252,10 @@ function balanceLinesByCurrency(wallets: FinanceWallet[], transactions: FinanceT
       for (const walletId of transactionWalletIds(transaction).filter((id) => walletIds.has(id))) {
         running = addMinor(running, transactionDeltaMinor(transaction, walletId));
       }
-      points.push({ x: new Date(transaction.transactionDate), yMinor: running });
+      points.push({
+        x: new Date(transaction.transactionDate),
+        yMinor: running,
+      });
     }
     output.push({ currency, points });
   }
@@ -199,18 +263,23 @@ function balanceLinesByCurrency(wallets: FinanceWallet[], transactions: FinanceT
 }
 
 function transactionWalletIds(transaction: FinanceTransaction): string[] {
-  return [...new Set([transaction.walletId, transaction.transferToWalletId].filter(Boolean) as string[])];
+  return [
+    ...new Set([transaction.walletId, transaction.transferToWalletId].filter(Boolean) as string[]),
+  ];
 }
 
-const overviewCache = new Map<string, Observable<{
-  wallets: FinanceWallet[];
-  balancesByWallet: Record<string, MinorAmount>;
-  balanceTotals: CurrencyTotal[];
-  transactions: FinanceTransaction[];
-  categoryNames: Record<string, string>;
-  categoryExpensesByCurrency: Record<string, Array<{ x: string; yMinor: MinorAmount }>>;
-  balanceLines: CurrencyLine[];
-}>>();
+const overviewCache = new Map<
+  string,
+  Observable<{
+    wallets: FinanceWallet[];
+    balancesByWallet: Record<string, MinorAmount>;
+    balanceTotals: CurrencyTotal[];
+    transactions: FinanceTransaction[];
+    categoryNames: Record<string, string>;
+    categoryExpensesByCurrency: Record<string, Array<{ x: string; yMinor: MinorAmount }>>;
+    balanceLines: CurrencyLine[];
+  }>
+>();
 export function financeOverview$(userId: string | null): Observable<{
   wallets: FinanceWallet[];
   balancesByWallet: Record<string, MinorAmount>;
@@ -226,7 +295,8 @@ export function financeOverview$(userId: string | null): Observable<{
     const transactions = transactions$({ userId }).get();
     const categoryNames = categoryNameMap$(userId).get();
     const totals = new Map<CurrencyCode, MinorAmount>();
-    for (const wallet of wallets) addCurrencyTotal(totals, wallet.currency, balancesByWallet[wallet.id] ?? 0 as MinorAmount);
+    for (const wallet of wallets)
+      addCurrencyTotal(totals, wallet.currency, balancesByWallet[wallet.id] ?? (0 as MinorAmount));
     return {
       wallets,
       balancesByWallet,
@@ -240,28 +310,40 @@ export function financeOverview$(userId: string | null): Observable<{
 }
 
 const budgetCache = new Map<string, Observable<BudgetProgress[]>>();
-export function budgetProgress$(userId: string | null, timezone: string): Observable<BudgetProgress[]> {
+export function budgetProgress$(
+  userId: string | null,
+  timezone: string,
+): Observable<BudgetProgress[]> {
   return cacheComputed(budgetCache, `${userId ?? 'anonymous'}:${timezone}`, () => {
     const categories = categoryNameMap$(userId).get();
-    const budgets = values(financeProjection$.budgetsById.get()).filter((budget) => budget.userId === userId);
+    const budgets = values(financeProjection$.budgetsById.get()).filter(
+      (budget) => budget.userId === userId,
+    );
     const transactions = transactions$({ userId }).get();
     const month = monthKeyInTimezone(new Date(), timezone);
     const spent = new Map<string, MinorAmount>();
     for (const transaction of transactions) {
-      if (transaction.type !== 'expense' || transaction.analysisExcluded || !transaction.categoryId) continue;
+      if (transaction.type !== 'expense' || transaction.analysisExcluded || !transaction.categoryId)
+        continue;
       if (monthKeyInTimezone(transaction.transactionDate, timezone) !== month) continue;
       const key = `${transaction.categoryId}:${transaction.currency}`;
       spent.set(key, addMinor(spent.get(key) ?? 0, transaction.amountMinor));
     }
-    const budgetByKey = new Map(budgets.map((budget) => [`${budget.categoryId}:${budget.currency}`, budget]));
+    const budgetByKey = new Map(
+      budgets.map((budget) => [`${budget.categoryId}:${budget.currency}`, budget]),
+    );
     return [...new Set([...spent.keys(), ...budgetByKey.keys()])]
       .map((key) => {
         const [categoryId, currency] = key.split(':') as [string, CurrencyCode];
         const budget = budgetByKey.get(key);
         const spentMinor = spent.get(key) ?? (0 as MinorAmount);
         const budgetAmountMinor = budget?.amountMinor ?? null;
-        const remainingMinor = budgetAmountMinor === null ? null : subtractMinor(budgetAmountMinor, spentMinor);
-        const percentage = budgetAmountMinor === null || budgetAmountMinor === 0 ? null : Math.round((Number(spentMinor) / Number(budgetAmountMinor)) * 1000) / 10;
+        const remainingMinor =
+          budgetAmountMinor === null ? null : subtractMinor(budgetAmountMinor, spentMinor);
+        const percentage =
+          budgetAmountMinor === null || budgetAmountMinor === 0
+            ? null
+            : Math.round((Number(spentMinor) / Number(budgetAmountMinor)) * 1000) / 10;
         return {
           categoryId,
           categoryName: categories[categoryId] ?? 'Uncategorized',
@@ -270,15 +352,31 @@ export function budgetProgress$(userId: string | null, timezone: string): Observ
           spentMinor,
           remainingMinor,
           percentage,
-          status: budgetAmountMinor === null ? 'unbudgeted' : Number(spentMinor) > Number(budgetAmountMinor) ? 'over' : Number(spentMinor) >= Number(budgetAmountMinor) * 0.75 ? 'near_limit' : 'on_track',
+          status:
+            budgetAmountMinor === null
+              ? 'unbudgeted'
+              : Number(spentMinor) > Number(budgetAmountMinor)
+                ? 'over'
+                : Number(spentMinor) >= Number(budgetAmountMinor) * 0.75
+                  ? 'near_limit'
+                  : 'on_track',
         } satisfies BudgetProgress;
       })
-      .sort((a, b) => (b.percentage ?? -1) - (a.percentage ?? -1) || Number(b.spentMinor) - Number(a.spentMinor));
+      .sort(
+        (a, b) =>
+          (b.percentage ?? -1) - (a.percentage ?? -1) ||
+          Number(b.spentMinor) - Number(a.spentMinor),
+      );
   });
 }
 
-const debtsCache = new Map<string, Observable<Array<{ debt: FinanceDebt; balanceMinor: MinorAmount }>>>();
-export function debtsWithBalance$(userId: string | null): Observable<Array<{ debt: FinanceDebt; balanceMinor: MinorAmount }>> {
+const debtsCache = new Map<
+  string,
+  Observable<Array<{ debt: FinanceDebt; balanceMinor: MinorAmount }>>
+>();
+export function debtsWithBalance$(
+  userId: string | null,
+): Observable<Array<{ debt: FinanceDebt; balanceMinor: MinorAmount }>> {
   return cacheComputed(debtsCache, userId ?? 'anonymous', () => {
     return values(financeProjection$.debtsById.get())
       .filter((debt) => debt.userId === userId)
@@ -293,33 +391,95 @@ export function debtsWithBalance$(userId: string | null): Observable<Array<{ deb
   });
 }
 
-const netWorthCache = new Map<string, Observable<Array<{ currency: CurrencyCode; cashMinor: MinorAmount; receivableMinor: MinorAmount; payableMinor: MinorAmount; netWorthMinor: MinorAmount }>>>();
-export function netWorthByCurrency$(userId: string | null): Observable<Array<{ currency: CurrencyCode; cashMinor: MinorAmount; receivableMinor: MinorAmount; payableMinor: MinorAmount; netWorthMinor: MinorAmount }>> {
+const netWorthCache = new Map<
+  string,
+  Observable<
+    Array<{
+      currency: CurrencyCode;
+      cashMinor: MinorAmount;
+      receivableMinor: MinorAmount;
+      payableMinor: MinorAmount;
+      netWorthMinor: MinorAmount;
+    }>
+  >
+>();
+export function netWorthByCurrency$(userId: string | null): Observable<
+  Array<{
+    currency: CurrencyCode;
+    cashMinor: MinorAmount;
+    receivableMinor: MinorAmount;
+    payableMinor: MinorAmount;
+    netWorthMinor: MinorAmount;
+  }>
+> {
   return cacheComputed(netWorthCache, userId ?? 'anonymous', () => {
-    const totals = new Map<CurrencyCode, { cashMinor: MinorAmount; receivableMinor: MinorAmount; payableMinor: MinorAmount }>();
+    const totals = new Map<
+      CurrencyCode,
+      {
+        cashMinor: MinorAmount;
+        receivableMinor: MinorAmount;
+        payableMinor: MinorAmount;
+      }
+    >();
     for (const wallet of walletsForUser$(userId).get()) {
-      const total = totals.get(wallet.currency) ?? { cashMinor: 0 as MinorAmount, receivableMinor: 0 as MinorAmount, payableMinor: 0 as MinorAmount };
+      const total = totals.get(wallet.currency) ?? {
+        cashMinor: 0 as MinorAmount,
+        receivableMinor: 0 as MinorAmount,
+        payableMinor: 0 as MinorAmount,
+      };
       total.cashMinor = addMinor(total.cashMinor, walletBalanceMinor$(wallet.id).get());
       totals.set(wallet.currency, total);
     }
     for (const { debt, balanceMinor } of debtsWithBalance$(userId).get()) {
-      const total = totals.get(debt.currency) ?? { cashMinor: 0 as MinorAmount, receivableMinor: 0 as MinorAmount, payableMinor: 0 as MinorAmount };
-      if (debt.direction === 'owed_to_me') total.receivableMinor = addMinor(total.receivableMinor, balanceMinor);
+      const total = totals.get(debt.currency) ?? {
+        cashMinor: 0 as MinorAmount,
+        receivableMinor: 0 as MinorAmount,
+        payableMinor: 0 as MinorAmount,
+      };
+      if (debt.direction === 'owed_to_me')
+        total.receivableMinor = addMinor(total.receivableMinor, balanceMinor);
       else total.payableMinor = addMinor(total.payableMinor, balanceMinor);
       totals.set(debt.currency, total);
     }
-    return [...totals.entries()].map(([currency, total]) => ({
-      currency,
-      ...total,
-      netWorthMinor: subtractMinor(addMinor(total.cashMinor, total.receivableMinor), total.payableMinor),
-    })).sort((a, b) => a.currency.localeCompare(b.currency));
+    return [...totals.entries()]
+      .map(([currency, total]) => ({
+        currency,
+        ...total,
+        netWorthMinor: subtractMinor(
+          addMinor(total.cashMinor, total.receivableMinor),
+          total.payableMinor,
+        ),
+      }))
+      .sort((a, b) => a.currency.localeCompare(b.currency));
   });
 }
 
-const pinCache = new Map<string, Observable<{ pinPoints: FinancePinPoint[]; mapRegion: { latitude: number; longitude: number; latitudeDelta: number; longitudeDelta: number } }>>();
-export function pinmap$(userId: string | null): Observable<{ pinPoints: FinancePinPoint[]; mapRegion: { latitude: number; longitude: number; latitudeDelta: number; longitudeDelta: number } }> {
+const pinCache = new Map<
+  string,
+  Observable<{
+    pinPoints: FinancePinPoint[];
+    mapRegion: {
+      latitude: number;
+      longitude: number;
+      latitudeDelta: number;
+      longitudeDelta: number;
+    };
+  }>
+>();
+export function pinmap$(userId: string | null): Observable<{
+  pinPoints: FinancePinPoint[];
+  mapRegion: {
+    latitude: number;
+    longitude: number;
+    latitudeDelta: number;
+    longitudeDelta: number;
+  };
+}> {
   return cacheComputed(pinCache, userId ?? 'anonymous', () => {
-    const locations = new Map<string, FinancePinPoint & { totals: Map<CurrencyCode, MinorAmount> }>();
+    const locations = new Map<
+      string,
+      FinancePinPoint & { totals: Map<CurrencyCode, MinorAmount> }
+    >();
     for (const transaction of transactions$({ userId }).get()) {
       if (transaction.locationLatitude === null || transaction.locationLongitude === null) continue;
       const key = `${transaction.locationLatitude.toFixed(4)},${transaction.locationLongitude.toFixed(4)}`;
@@ -336,8 +496,20 @@ export function pinmap$(userId: string | null): Observable<{ pinPoints: FinanceP
       addCurrencyTotal(existing.totals, transaction.currency, transaction.amountMinor);
       locations.set(key, existing);
     }
-    const pinPoints = [...locations.values()].map(({ totals, ...point }) => ({ ...point, amountsByCurrency: currencyTotals(totals) }));
-    if (!pinPoints.length) return { pinPoints, mapRegion: { latitude: 0, longitude: 0, latitudeDelta: 180, longitudeDelta: 360 } };
+    const pinPoints = [...locations.values()].map(({ totals, ...point }) => ({
+      ...point,
+      amountsByCurrency: currencyTotals(totals),
+    }));
+    if (!pinPoints.length)
+      return {
+        pinPoints,
+        mapRegion: {
+          latitude: 0,
+          longitude: 0,
+          latitudeDelta: 180,
+          longitudeDelta: 360,
+        },
+      };
     const latitudes = pinPoints.map((point) => point.latitude);
     const longitudes = pinPoints.map((point) => point.longitude);
     return {
@@ -356,7 +528,10 @@ const proposalsCache = new Map<string, Observable<FinanceProposal[]>>();
 export function pendingProposals$(userId: string | null) {
   return cacheComputed(proposalsCache, userId ?? 'anonymous', () =>
     values(financeProjection$.proposalsById.get())
-      .filter((proposal) => proposal.userId === userId && proposal.amountMinor !== null && proposal.type !== null)
+      .filter(
+        (proposal) =>
+          proposal.userId === userId && proposal.amountMinor !== null && proposal.type !== null,
+      )
       .sort((a, b) => b.createdAt.localeCompare(a.createdAt)),
   );
 }

@@ -11,9 +11,21 @@ export const THEME_PREFERENCE_OPTIONS: {
   label: string;
   subtitle: string;
 }[] = [
-  { value: 'light', label: 'Light', subtitle: 'Always use light appearance' },
-  { value: 'dark', label: 'Dark', subtitle: 'Always use dark appearance' },
-  { value: 'system', label: 'System', subtitle: 'Match device light/dark setting' },
+  {
+    value: 'light',
+    label: 'Light',
+    subtitle: 'Always use light appearance',
+  },
+  {
+    value: 'dark',
+    label: 'Dark',
+    subtitle: 'Always use dark appearance',
+  },
+  {
+    value: 'system',
+    label: 'System',
+    subtitle: 'Match device light/dark setting',
+  },
 ];
 
 const DEFAULT_PREFERENCE: ThemePreference = 'light';

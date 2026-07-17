@@ -1,14 +1,26 @@
 import { useMemo, useState } from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import {
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { getProposalLocationSnapshot } from '@/lib/ai/proposal-location-cache';
 
-export function ProposalLocationSection({ proposalId }: { proposalId: string }) {
+export function ProposalLocationSection({
+  proposalId,
+}: {
+  proposalId: string;
+}) {
   const tokens = useThemeTokens();
   const [expanded, setExpanded] = useState(false);
-  const snapshot = useMemo(() => getProposalLocationSnapshot(proposalId), [proposalId]);
+  const snapshot = useMemo(
+    () => getProposalLocationSnapshot(proposalId),
+    [proposalId],
+  );
 
   const region = useMemo(() => {
     if (!snapshot) return null;
@@ -27,7 +39,8 @@ export function ProposalLocationSection({ proposalId }: { proposalId: string }) 
       <TouchableOpacity
         className="flex-row items-center"
         onPress={() => setExpanded(!expanded)}
-        activeOpacity={0.7}>
+        activeOpacity={0.7}
+      >
         <Text className="text-xs font-semibold uppercase tracking-wider text-muted">
           Captured location {expanded ? '▲' : '▼'}
         </Text>
@@ -36,7 +49,8 @@ export function ProposalLocationSection({ proposalId }: { proposalId: string }) 
         <View className="mt-2">
           <View
             className="overflow-hidden rounded-2xl border border-border bg-background-muted"
-            style={styles.locationMapBox}>
+            style={styles.locationMapBox}
+          >
             <MapView
               style={styles.locationMap}
               initialRegion={region}
@@ -44,7 +58,8 @@ export function ProposalLocationSection({ proposalId }: { proposalId: string }) 
               scrollEnabled={false}
               zoomEnabled={false}
               rotateEnabled={false}
-              pitchEnabled={false}>
+              pitchEnabled={false}
+            >
               <Marker
                 coordinate={{
                   latitude: snapshot.latitude,
@@ -55,7 +70,10 @@ export function ProposalLocationSection({ proposalId }: { proposalId: string }) 
             </MapView>
           </View>
           {snapshot.name ? (
-            <Text className="mt-2 text-xs text-muted" numberOfLines={3}>
+            <Text
+              className="mt-2 text-xs text-muted"
+              numberOfLines={3}
+            >
               {snapshot.name}
             </Text>
           ) : null}

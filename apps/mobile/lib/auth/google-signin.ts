@@ -35,12 +35,17 @@ export async function signInWithGoogleNative(): Promise<GoogleSignInResult> {
 
   try {
     if (Platform.OS === 'android') {
-      await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
+      await GoogleSignin.hasPlayServices({
+        showPlayServicesUpdateDialog: true,
+      });
     }
 
     const response = await GoogleSignin.signIn();
     if (isCancelledResponse(response)) {
-      return { error: new Error('Sign in cancelled'), cancelled: true };
+      return {
+        error: new Error('Sign in cancelled'),
+        cancelled: true,
+      };
     }
     if (!isSuccessResponse(response)) {
       return { error: new Error('Google Sign-In failed') };
@@ -54,7 +59,7 @@ export async function signInWithGoogleNative(): Promise<GoogleSignInResult> {
     if (!idToken) {
       return {
         error: new Error(
-          'No Google ID token received. Ensure EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID is the Web OAuth client ID.'
+          'No Google ID token received. Ensure EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID is the Web OAuth client ID.',
         ),
       };
     }
@@ -72,10 +77,14 @@ export async function signInWithGoogleNative(): Promise<GoogleSignInResult> {
         return { error: new Error('Sign in already in progress') };
       }
       if (err.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
-        return { error: new Error('Google Play Services are not available') };
+        return {
+          error: new Error('Google Play Services are not available'),
+        };
       }
     }
-    return { error: err instanceof Error ? err : new Error('Google Sign-In failed') };
+    return {
+      error: err instanceof Error ? err : new Error('Google Sign-In failed'),
+    };
   }
 }
 

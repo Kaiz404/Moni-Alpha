@@ -12,7 +12,10 @@ type QuickReplyChipsProps = {
   onSelect: (option: QuickReplyOption) => void;
 };
 
-export function QuickReplyChips({ options, onSelect }: QuickReplyChipsProps) {
+export function QuickReplyChips({
+  options,
+  onSelect,
+}: QuickReplyChipsProps) {
   return (
     <View className="mt-3 flex-row flex-wrap gap-2">
       {options.map((option) => (
@@ -21,7 +24,9 @@ export function QuickReplyChips({ options, onSelect }: QuickReplyChipsProps) {
           onPress={() => onSelect(option)}
           className="rounded-full border border-primary/40 bg-primary-muted px-3 py-1.5"
         >
-          <Text className="text-sm font-medium text-primary">{LABELS[option]}</Text>
+          <Text className="text-sm font-medium text-primary">
+            {LABELS[option]}
+          </Text>
         </Pressable>
       ))}
     </View>

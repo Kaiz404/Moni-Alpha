@@ -9,11 +9,12 @@ import {
   useUpdateTransaction,
   useDeleteTransaction,
 } from '@/lib/hooks';
-import type {
-  Transaction,
-  CreateTransaction,
+import type { Transaction, CreateTransaction } from '@repo/types';
+import {
+  decimalToMinor,
+  formatMinorAmount,
+  minorToDecimal,
 } from '@repo/types';
-import { decimalToMinor, formatMinorAmount, minorToDecimal } from '@repo/types';
 
 export default function TransactionsPage() {
   const [modal, setModal] = useState<'create' | 'edit' | null>(null);
@@ -26,7 +27,11 @@ export default function TransactionsPage() {
     transactionDate: new Date().toISOString().slice(0, 16),
   } as CreateTransaction);
 
-  const { data: txData, isLoading: txLoading, error: txError } = useTransactions({ limit: 100 });
+  const {
+    data: txData,
+    isLoading: txLoading,
+    error: txError,
+  } = useTransactions({ limit: 100 });
   const { data: walletData, isLoading: walletLoading } = useWallets();
   const { data: categoryData } = useCategories();
 
@@ -38,11 +43,23 @@ export default function TransactionsPage() {
   const wallets = walletData?.wallets ?? [];
   const categories = categoryData?.categories ?? [];
 
-  const walletsForSelect = wallets.map((w) => ({ id: w.id, name: w.name }));
-  const categoriesForSelect = categories.map((c) => ({ id: c.id, name: c.name, type: c.type }));
+  const walletsForSelect = wallets.map((w) => ({
+    id: w.id,
+    name: w.name,
+  }));
+  const categoriesForSelect = categories.map((c) => ({
+    id: c.id,
+    name: c.name,
+    type: c.type,
+  }));
 
   const isLoading = txLoading || walletLoading;
-  const error = txError?.message ?? createMutation.error?.message ?? updateMutation.error?.message ?? deleteMutation.error?.message ?? '';
+  const error =
+    txError?.message ??
+    createMutation.error?.message ??
+    updateMutation.error?.message ??
+    deleteMutation.error?.message ??
+    '';
 
   const openCreate = () => {
     setForm({
@@ -70,7 +87,11 @@ export default function TransactionsPage() {
   };
 
   const formatDate = (d: string) => new Date(d).toLocaleDateString();
-  const formatAmount = (amountMinor: number, currency: string, type: string) => {
+  const formatAmount = (
+    amountMinor: number,
+    currency: string,
+    type: string,
+  ) => {
     const prefix = type === 'expense' ? '−' : '+';
     return `${prefix}${formatMinorAmount(amountMinor, currency)}`;
   };
@@ -119,8 +140,12 @@ export default function TransactionsPage() {
     }
   };
 
-  const expenseCategories = categoriesForSelect.filter((c) => c.type === 'expense');
-  const incomeCategories = categoriesForSelect.filter((c) => c.type === 'income');
+  const expenseCategories = categoriesForSelect.filter(
+    (c) => c.type === 'expense',
+  );
+  const incomeCategories = categoriesForSelect.filter(
+    (c) => c.type === 'income',
+  );
 
   if (isLoading) return <p>Loading transactions...</p>;
   if (error) return <p className="auth-error">Error: {error}</p>;
@@ -129,13 +154,20 @@ export default function TransactionsPage() {
     <>
       <div className="dashboard-header">
         <h1>Transactions</h1>
-        <button onClick={openCreate} className="btn btn-primary" disabled={wallets.length === 0}>
+        <button
+          onClick={openCreate}
+          className="btn btn-primary"
+          disabled={wallets.length === 0}
+        >
           Add transaction
         </button>
       </div>
 
       {wallets.length === 0 && (
-        <p className="auth-error" style={{ marginBottom: '1rem' }}>
+        <p
+          className="auth-error"
+          style={{ marginBottom: '1rem' }}
+        >
           Create a wallet first before adding transactions.
         </p>
       )}
@@ -158,14 +190,25 @@ export default function TransactionsPage() {
                   <td>{formatDate(t.transactionDate)}</td>
                   <td>{t.description || t.merchant || '—'}</td>
                   <td>{t.type}</td>
-                  <td className={t.type === 'expense' ? 'negative' : 'positive'}>
+                  <td
+                    className={
+                      t.type === 'expense' ? 'negative' : 'positive'
+                    }
+                  >
                     {formatAmount(t.amountMinor, t.currency, t.type)}
                   </td>
                   <td>
-                    <button onClick={() => openEdit(t)} className="btn btn-secondary btn-sm" style={{ marginRight: '0.5rem' }}>
+                    <button
+                      onClick={() => openEdit(t)}
+                      className="btn btn-secondary btn-sm"
+                      style={{ marginRight: '0.5rem' }}
+                    >
                       Edit
                     </button>
-                    <button onClick={() => handleDelete(t.id)} className="btn btn-danger btn-sm">
+                    <button
+                      onClick={() => handleDelete(t.id)}
+                      className="btn btn-danger btn-sm"
+                    >
                       Delete
                     </button>
                   </td>
@@ -175,26 +218,50 @@ export default function TransactionsPage() {
           </table>
         </div>
         {transactions.length === 0 && (
-          <p style={{ color: 'color-mix(in srgb, var(--foreground) 60%, transparent)', margin: 0 }}>
+          <p
+            style={{
+              color:
+                'color-mix(in srgb, var(--foreground) 60%, transparent)',
+              margin: 0,
+            }}
+          >
             No transactions yet.
           </p>
         )}
       </div>
 
       {modal && (
-        <div className="modal-overlay" onClick={() => setModal(null)}>
-          <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <h3>{modal === 'create' ? 'Add transaction' : 'Edit transaction'}</h3>
+        <div
+          className="modal-overlay"
+          onClick={() => setModal(null)}
+        >
+          <div
+            className="modal"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3>
+              {modal === 'create'
+                ? 'Add transaction'
+                : 'Edit transaction'}
+            </h3>
             <form onSubmit={handleSubmit}>
               <div className="form-row">
                 <label>Wallet</label>
                 <select
                   value={form.walletId}
-                  onChange={(e) => setForm((f) => ({ ...f, walletId: e.target.value }))}
+                  onChange={(e) =>
+                    setForm((f) => ({
+                      ...f,
+                      walletId: e.target.value,
+                    }))
+                  }
                   required
                 >
                   {walletsForSelect.map((w) => (
-                    <option key={w.id} value={w.id}>
+                    <option
+                      key={w.id}
+                      value={w.id}
+                    >
                       {w.name}
                     </option>
                   ))}
@@ -207,7 +274,8 @@ export default function TransactionsPage() {
                   onChange={(e) =>
                     setForm((f) => ({
                       ...f,
-                      type: e.target.value as CreateTransaction['type'],
+                      type: e.target
+                        .value as CreateTransaction['type'],
                     }))
                   }
                 >
@@ -223,7 +291,12 @@ export default function TransactionsPage() {
                   min="0"
                   value={minorToDecimal(form.amountMinor)}
                   onChange={(e) =>
-                    setForm((f) => ({ ...f, amountMinor: decimalToMinor(e.target.value || '0') }))
+                    setForm((f) => ({
+                      ...f,
+                      amountMinor: decimalToMinor(
+                        e.target.value || '0',
+                      ),
+                    }))
                   }
                   required
                 />
@@ -240,8 +313,14 @@ export default function TransactionsPage() {
                   }
                 >
                   <option value="">—</option>
-                  {(form.type === 'expense' ? expenseCategories : incomeCategories).map((c) => (
-                    <option key={c.id} value={c.id}>
+                  {(form.type === 'expense'
+                    ? expenseCategories
+                    : incomeCategories
+                  ).map((c) => (
+                    <option
+                      key={c.id}
+                      value={c.id}
+                    >
                       {c.name}
                     </option>
                   ))}
@@ -251,7 +330,12 @@ export default function TransactionsPage() {
                 <label>Description</label>
                 <input
                   value={form.description ?? ''}
-                  onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
+                  onChange={(e) =>
+                    setForm((f) => ({
+                      ...f,
+                      description: e.target.value,
+                    }))
+                  }
                   placeholder="Optional"
                 />
               </div>
@@ -261,16 +345,30 @@ export default function TransactionsPage() {
                   type="datetime-local"
                   value={form.transactionDate ?? ''}
                   onChange={(e) =>
-                    setForm((f) => ({ ...f, transactionDate: e.target.value }))
+                    setForm((f) => ({
+                      ...f,
+                      transactionDate: e.target.value,
+                    }))
                   }
                   required
                 />
               </div>
               <div className="form-actions">
-                <button type="button" onClick={() => setModal(null)} className="btn btn-secondary">
+                <button
+                  type="button"
+                  onClick={() => setModal(null)}
+                  className="btn btn-secondary"
+                >
                   Cancel
                 </button>
-                <button type="submit" className="btn btn-primary" disabled={createMutation.isPending || updateMutation.isPending}>
+                <button
+                  type="submit"
+                  className="btn btn-primary"
+                  disabled={
+                    createMutation.isPending ||
+                    updateMutation.isPending
+                  }
+                >
                   {modal === 'create' ? 'Create' : 'Save'}
                 </button>
               </div>

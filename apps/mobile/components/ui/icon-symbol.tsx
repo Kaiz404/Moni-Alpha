@@ -1,6 +1,10 @@
 import MaterialIcons from '@react-native-vector-icons/material-icons';
 import { ComponentProps } from 'react';
-import { OpaqueColorValue, type StyleProp, type TextStyle } from 'react-native';
+import {
+  OpaqueColorValue,
+  type StyleProp,
+  type TextStyle,
+} from 'react-native';
 
 type IconSymbolName = ComponentProps<typeof MaterialIcons>['name'];
 
@@ -18,5 +22,12 @@ export function IconSymbol({
   color: string | OpaqueColorValue;
   style?: StyleProp<TextStyle>;
 }) {
-  return <MaterialIcons color={color} size={size} name={name} style={style} />;
+  return (
+    <MaterialIcons
+      color={color}
+      size={size}
+      name={name}
+      style={style}
+    />
+  );
 }

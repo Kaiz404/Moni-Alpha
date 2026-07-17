@@ -12,10 +12,7 @@ import * as ImageManipulator from 'expo-image-manipulator';
 const MAX_EDGE_FALLBACK_PX = 1024;
 const JPEG_QUALITY = 0.7;
 
-export type ImagePayload =
-  | { imageUrl: string }
-  | { imageBase64: string }
-  | null;
+export type ImagePayload = { imageUrl: string } | { imageBase64: string } | null;
 
 function getImageSize(uri: string): Promise<{ width: number; height: number }> {
   return new Promise((resolve, reject) => {
@@ -40,7 +37,14 @@ export async function buildImagePayload(imageUri: string): Promise<ImagePayload>
     const { width, height } = await getImageSize(uri);
     const actions =
       Math.max(width, height) > MAX_EDGE_FALLBACK_PX
-        ? [{ resize: width >= height ? { width: MAX_EDGE_FALLBACK_PX } : { height: MAX_EDGE_FALLBACK_PX } }]
+        ? [
+            {
+              resize:
+                width >= height
+                  ? { width: MAX_EDGE_FALLBACK_PX }
+                  : { height: MAX_EDGE_FALLBACK_PX },
+            },
+          ]
         : [];
 
     const result = await ImageManipulator.manipulateAsync(uri, actions, {

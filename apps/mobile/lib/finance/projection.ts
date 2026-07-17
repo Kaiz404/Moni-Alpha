@@ -1,5 +1,13 @@
 import { batch, observable, type Observable } from '@legendapp/state';
-import { categoryBudgets$, categories$, debtActivities$, debts$, proposedTransactions$, transactions$, wallets$ } from '@/lib/store';
+import {
+  categoryBudgets$,
+  categories$,
+  debtActivities$,
+  debts$,
+  proposedTransactions$,
+  transactions$,
+  wallets$,
+} from '@/lib/store';
 import {
   toFinanceBudget,
   toFinanceCategory,
@@ -40,8 +48,12 @@ function sortedInsert(ids: string[], id: string, dateForId: (id: string) => stri
   return without.sort((a, b) => dateForId(b).localeCompare(dateForId(a)));
 }
 
-function transactionWalletIds(transaction: Pick<FinanceTransaction, 'walletId' | 'transferToWalletId'>): string[] {
-  return [...new Set([transaction.walletId, transaction.transferToWalletId].filter(Boolean) as string[])];
+function transactionWalletIds(
+  transaction: Pick<FinanceTransaction, 'walletId' | 'transferToWalletId'>,
+): string[] {
+  return [
+    ...new Set([transaction.walletId, transaction.transferToWalletId].filter(Boolean) as string[]),
+  ];
 }
 
 function activityDebtIds(activity: Pick<FinanceDebtActivity, 'debtId'>): string[] {
@@ -66,17 +78,27 @@ function upsertTransaction(id: string, next: FinanceTransaction | null): void {
   }
   financeProjection$.transactionsById[id].set(next);
   for (const walletId of transactionWalletIds(next)) {
-    const existing = (financeProjection$.transactionsByWallet[walletId].peek() as string[] | undefined) ?? [];
+    const existing =
+      (financeProjection$.transactionsByWallet[walletId].peek() as string[] | undefined) ?? [];
     financeProjection$.transactionsByWallet[walletId].set(
-      sortedInsert(existing, id, (transactionId) =>
-        (financeProjection$.transactionsById[transactionId].peek() as FinanceTransaction | undefined)?.transactionDate ?? '',
+      sortedInsert(
+        existing,
+        id,
+        (transactionId) =>
+          (
+            financeProjection$.transactionsById[transactionId].peek() as
+              | FinanceTransaction
+              | undefined
+          )?.transactionDate ?? '',
       ),
     );
   }
 }
 
 function upsertDebtActivity(id: string, next: FinanceDebtActivity | null): void {
-  const previous = financeProjection$.debtActivitiesById[id].peek() as FinanceDebtActivity | undefined;
+  const previous = financeProjection$.debtActivitiesById[id].peek() as
+    | FinanceDebtActivity
+    | undefined;
   for (const debtId of previous ? activityDebtIds(previous) : []) {
     removeIndexEntry(financeProjection$.debtActivityIdsByDebt, debtId, id);
   }
@@ -85,10 +107,18 @@ function upsertDebtActivity(id: string, next: FinanceDebtActivity | null): void 
     return;
   }
   financeProjection$.debtActivitiesById[id].set(next);
-  const existing = (financeProjection$.debtActivityIdsByDebt[next.debtId].peek() as string[] | undefined) ?? [];
+  const existing =
+    (financeProjection$.debtActivityIdsByDebt[next.debtId].peek() as string[] | undefined) ?? [];
   financeProjection$.debtActivityIdsByDebt[next.debtId].set(
-    sortedInsert(existing, id, (activityId) =>
-      (financeProjection$.debtActivitiesById[activityId].peek() as FinanceDebtActivity | undefined)?.activityDate ?? '',
+    sortedInsert(
+      existing,
+      id,
+      (activityId) =>
+        (
+          financeProjection$.debtActivitiesById[activityId].peek() as
+            | FinanceDebtActivity
+            | undefined
+        )?.activityDate ?? '',
     ),
   );
 }

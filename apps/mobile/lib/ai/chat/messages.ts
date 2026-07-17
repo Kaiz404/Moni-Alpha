@@ -71,7 +71,10 @@ export function ensureActiveSession(): ChatSession {
 }
 
 export function touchSession(session: ChatSession): ChatSession {
-  const updated = { ...session, lastActiveAt: new Date().toISOString() };
+  const updated = {
+    ...session,
+    lastActiveAt: new Date().toISOString(),
+  };
   writeSession(updated);
   return updated;
 }
@@ -87,17 +90,12 @@ export function appendMessage(message: ChatMessage): ChatSession {
   return updated;
 }
 
-export function updateMessage(
-  messageId: string,
-  patch: Partial<ChatMessage>,
-): ChatSession {
+export function updateMessage(messageId: string, patch: Partial<ChatMessage>): ChatSession {
   const session = ensureActiveSession();
   const updated: ChatSession = {
     ...session,
     lastActiveAt: new Date().toISOString(),
-    messages: session.messages.map((m) =>
-      m.id === messageId ? { ...m, ...patch } : m,
-    ),
+    messages: session.messages.map((m) => (m.id === messageId ? { ...m, ...patch } : m)),
   };
   writeSession(updated);
   return updated;
@@ -120,19 +118,13 @@ export function exportHistoryForApi(maxPairs = 6): ChatHistoryMessage[] {
   if (!session) return [];
 
   const eligible = session.messages.filter(
-    (m) =>
-      m.kind === 'user_text' ||
-      m.kind === 'user_image' ||
-      m.kind === 'assistant_text',
+    (m) => m.kind === 'user_text' || m.kind === 'user_image' || m.kind === 'assistant_text',
   );
 
   const history: ChatHistoryMessage[] = [];
   for (const m of eligible) {
     if (m.kind === 'user_text' || m.kind === 'user_image') {
-      const text =
-        m.kind === 'user_image'
-          ? m.content || '[Receipt photo attached]'
-          : m.content;
+      const text = m.kind === 'user_image' ? m.content || '[Receipt photo attached]' : m.content;
       history.push({ role: 'user', content: text });
     } else if (m.kind === 'assistant_text') {
       history.push({ role: 'assistant', content: m.content });

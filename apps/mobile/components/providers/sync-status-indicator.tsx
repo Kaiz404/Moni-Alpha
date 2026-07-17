@@ -9,7 +9,12 @@ export function SyncStatusIndicator() {
     const state = syncState(transactions$).get();
     const pendingSets = state.numPendingSets ?? 0;
     const pendingGets = state.numPendingGets ?? 0;
-    const isSyncing = Boolean(state.isGetting || state.isSetting || pendingSets > 0 || pendingGets > 0);
+    const isSyncing = Boolean(
+      state.isGetting ||
+      state.isSetting ||
+      pendingSets > 0 ||
+      pendingGets > 0,
+    );
     const isLoaded = state.isPersistLoaded && state.isLoaded;
     const hasError = Boolean(state.error);
 
@@ -46,9 +51,15 @@ export function SyncStatusIndicator() {
   });
 
   return (
-    <View className={`flex-row items-center px-3 py-1 ${statusInfo.bgColor} rounded-full`}>
-      <View className={`w-2 h-2 ${statusInfo.dotColor} rounded-full mr-2`} />
-      <Text className={`text-xs font-medium ${statusInfo.textColor}`}>{statusInfo.text}</Text>
+    <View
+      className={`flex-row items-center px-3 py-1 ${statusInfo.bgColor} rounded-full`}
+    >
+      <View
+        className={`w-2 h-2 ${statusInfo.dotColor} rounded-full mr-2`}
+      />
+      <Text className={`text-xs font-medium ${statusInfo.textColor}`}>
+        {statusInfo.text}
+      </Text>
     </View>
   );
 }

@@ -14,7 +14,11 @@ export default function ScanLayout() {
       />
       <Stack.Screen
         name="listen"
-        options={{ headerShown: false, presentation: 'fullScreenModal', animation: 'slide_from_bottom' }}
+        options={{
+          headerShown: false,
+          presentation: 'fullScreenModal',
+          animation: 'slide_from_bottom',
+        }}
       />
     </Stack>
   );

@@ -31,7 +31,10 @@ export const createCategorySchema = z.object({
 export const updateCategorySchema = z.object({
   name: z.string().min(1).max(100).optional(),
   icon: z.string().optional(),
-  color: z.string().regex(/^#[0-9A-Fa-f]{6}$/).optional(),
+  color: z
+    .string()
+    .regex(/^#[0-9A-Fa-f]{6}$/)
+    .optional(),
   parentId: z.string().uuid().nullable().optional(),
   isActive: z.boolean().optional(),
   displayOrder: z.number().int().nonnegative().optional(),

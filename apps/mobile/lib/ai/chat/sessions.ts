@@ -1,8 +1,4 @@
-import {
-  createNewSession,
-  getActiveSession,
-  type ChatSession,
-} from './messages';
+import { createNewSession, getActiveSession, type ChatSession } from './messages';
 
 const SESSION_IDLE_MS = 24 * 60 * 60 * 1000;
 

@@ -102,6 +102,7 @@ Useful checks:
 
 ```bash
 turbo run lint check-types                      # whole repo
+pnpm format:check                               # Prettier (run `pnpm format` to fix)
 pnpm --filter backend test                      # Go tests
 pnpm --filter moni test:notification-detection  # notification prefilter suite
 ```
@@ -114,10 +115,13 @@ The mobile heatmap (`apps/mobile/app/heatmap.tsx`) renders transaction locations
 2. Add the keys to the `react-native-maps` plugin config in `apps/mobile/app.json`:
 
 ```json
-["react-native-maps", {
-  "iosGoogleMapsApiKey": "<ios-key>",
-  "androidGoogleMapsApiKey": "<android-key>"
-}]
+[
+  "react-native-maps",
+  {
+    "iosGoogleMapsApiKey": "<ios-key>",
+    "androidGoogleMapsApiKey": "<android-key>"
+  }
+]
 ```
 
 3. Rebuild the dev client (`npx expo run:android` locally, or `pnpm --filter moni android` on EAS). A grey/blank map means a missing or wrongly restricted key.

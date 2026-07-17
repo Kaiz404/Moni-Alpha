@@ -21,20 +21,18 @@ export function useTransactions(params?: Partial<TransactionListParams>) {
 
   return useQuery({
     queryKey: queryKeys.transactions(params),
-    queryFn: () =>
-      api.get<TransactionListResponse>(
-        `/api/transactions${query ? `?${query}` : ''}`
-      ),
+    queryFn: () => api.get<TransactionListResponse>(`/api/transactions${query ? `?${query}` : ''}`),
   });
 }
 
 export function useCreateTransaction() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (payload: CreateTransaction) =>
-      api.post('/api/transactions', payload),
+    mutationFn: (payload: CreateTransaction) => api.post('/api/transactions', payload),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.transactions() });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.transactions(),
+      });
       queryClient.invalidateQueries({ queryKey: queryKeys.overview });
       queryClient.invalidateQueries({ queryKey: queryKeys.wallets });
     },
@@ -44,15 +42,12 @@ export function useCreateTransaction() {
 export function useUpdateTransaction() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({
-      id,
-      payload,
-    }: {
-      id: string;
-      payload: UpdateTransaction;
-    }) => api.put(`/api/transactions/${id}`, payload),
+    mutationFn: ({ id, payload }: { id: string; payload: UpdateTransaction }) =>
+      api.put(`/api/transactions/${id}`, payload),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.transactions() });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.transactions(),
+      });
       queryClient.invalidateQueries({ queryKey: queryKeys.overview });
       queryClient.invalidateQueries({ queryKey: queryKeys.wallets });
     },
@@ -64,7 +59,9 @@ export function useDeleteTransaction() {
   return useMutation({
     mutationFn: (id: string) => api.delete(`/api/transactions/${id}`),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.transactions() });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.transactions(),
+      });
       queryClient.invalidateQueries({ queryKey: queryKeys.overview });
       queryClient.invalidateQueries({ queryKey: queryKeys.wallets });
     },

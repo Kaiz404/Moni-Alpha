@@ -1,4 +1,9 @@
-import React, { useState, useRef, useCallback, useEffect } from 'react';
+import React, {
+  useState,
+  useRef,
+  useCallback,
+  useEffect,
+} from 'react';
 import {
   View,
   Text,
@@ -24,10 +29,22 @@ import {
   prepareOfflineSpeechModel,
 } from '@/lib/speech/speech-recognition';
 import { MessageBubble } from '@/components/chat/message-bubble';
-import { ChatInputBar, ChatEmptyState } from '@/components/chat/chat-input-bar';
-import type { ChatMessage, QuickReplyOption } from '@/lib/ai/chat/messages';
-import { handleQuickReply, sendChatMessage } from '@/lib/ai/chat/orchestrator';
-import { getOrRefreshSession, startNewChatSession } from '@/lib/ai/chat/sessions';
+import {
+  ChatInputBar,
+  ChatEmptyState,
+} from '@/components/chat/chat-input-bar';
+import type {
+  ChatMessage,
+  QuickReplyOption,
+} from '@/lib/ai/chat/messages';
+import {
+  handleQuickReply,
+  sendChatMessage,
+} from '@/lib/ai/chat/orchestrator';
+import {
+  getOrRefreshSession,
+  startNewChatSession,
+} from '@/lib/ai/chat/sessions';
 import { scanAndNormalizeReceipt } from '@/lib/receipts/scan-receipt';
 
 const TAG = '[Moni/Chat]';
@@ -37,8 +54,11 @@ export default function ChatScreen() {
   const insets = useSafeAreaInsets();
 
   const [input, setInput] = useState('');
-  const [attachedImage, setAttachedImage] = useState<string | null>(null);
-  const [isSpeechRecognizing, setIsSpeechRecognizing] = useState(false);
+  const [attachedImage, setAttachedImage] = useState<string | null>(
+    null,
+  );
+  const [isSpeechRecognizing, setIsSpeechRecognizing] =
+    useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
 
   const flatListRef = useRef<FlatList>(null);
@@ -78,11 +98,16 @@ export default function ChatScreen() {
     setIsSpeechRecognizing(false);
   });
 
-  useSpeechRecognitionEvent('result', (event: ExpoSpeechRecognitionResultEvent) => {
-    const text = getTranscriptFromResult(event);
-    if (!text) return;
-    setInput(mergeTranscriptWithBase(speechBaseRef.current ?? '', text));
-  });
+  useSpeechRecognitionEvent(
+    'result',
+    (event: ExpoSpeechRecognitionResultEvent) => {
+      const text = getTranscriptFromResult(event);
+      if (!text) return;
+      setInput(
+        mergeTranscriptWithBase(speechBaseRef.current ?? '', text),
+      );
+    },
+  );
 
   const startSpeech = useCallback(async () => {
     if (speechActiveRef.current) return;
@@ -95,7 +120,9 @@ export default function ChatScreen() {
       speechBaseRef.current = input;
       speechActiveRef.current = true;
       setIsSpeechRecognizing(true);
-      ExpoSpeechRecognitionModule.start(buildSpeechRecognitionOptions());
+      ExpoSpeechRecognitionModule.start(
+        buildSpeechRecognitionOptions(),
+      );
     } catch {
       speechActiveRef.current = false;
       setIsSpeechRecognizing(false);
@@ -114,7 +141,11 @@ export default function ChatScreen() {
 
   const sessionCallbacks = useCallback(
     () => ({
-      onSessionUpdate: ({ messages: next }: { messages: ChatMessage[] }) => {
+      onSessionUpdate: ({
+        messages: next,
+      }: {
+        messages: ChatMessage[];
+      }) => {
         setMessages(next);
       },
     }),
@@ -132,7 +163,10 @@ export default function ChatScreen() {
     setInput('');
     setAttachedImage(null);
 
-    void sendChatMessage({ text, imageUri: pickedImage }, sessionCallbacks())
+    void sendChatMessage(
+      { text, imageUri: pickedImage },
+      sessionCallbacks(),
+    )
       .catch((e) => {
         console.warn(TAG, 'send failed:', e);
       })
@@ -171,13 +205,17 @@ export default function ChatScreen() {
       style={{ flex: 1 }}
     >
       <View className="flex-row items-center justify-between px-6 pt-5 pb-2">
-        <Text className="mt-5 text-2xl font-bold text-foreground">Chat</Text>
+        <Text className="mt-5 text-2xl font-bold text-foreground">
+          Chat
+        </Text>
         <Pressable
           onPress={handleNewChat}
           className="mt-5 rounded-full border border-border bg-card px-3 py-1.5"
           hitSlop={8}
         >
-          <Text className="text-sm font-medium text-primary">New chat</Text>
+          <Text className="text-sm font-medium text-primary">
+            New chat
+          </Text>
         </Pressable>
       </View>
 
@@ -188,14 +226,19 @@ export default function ChatScreen() {
             data={messages}
             keyExtractor={(item) => item.id}
             renderItem={({ item }) => (
-              <MessageBubble message={item} onQuickReply={handleQuickReplySelect} />
+              <MessageBubble
+                message={item}
+                onQuickReply={handleQuickReplySelect}
+              />
             )}
             contentContainerStyle={{
               paddingHorizontal: 8,
               paddingBottom: 8,
               flexGrow: 1,
             }}
-            ListEmptyComponent={<ChatEmptyState primary={tokens.primary} />}
+            ListEmptyComponent={
+              <ChatEmptyState primary={tokens.primary} />
+            }
             onContentSizeChange={() =>
               flatListRef.current?.scrollToEnd({ animated: true })
             }

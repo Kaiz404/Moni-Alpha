@@ -2,7 +2,11 @@ import { useEffect } from 'react';
 import { useRouter, useSegments } from 'expo-router';
 import { useAuth } from '@/lib/auth/auth-context';
 
-export function AuthGuard({ children }: { children: React.ReactNode }) {
+export function AuthGuard({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   const { user, isLoading } = useAuth();
   const router = useRouter();
   const segments = useSegments();

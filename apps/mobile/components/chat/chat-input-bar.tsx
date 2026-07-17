@@ -53,7 +53,10 @@ export function ChatInputBar({
               style={{ width: 56, height: 56, borderRadius: 8 }}
               contentFit="cover"
             />
-            <Text className="ml-3 flex-1 text-sm text-muted" numberOfLines={1}>
+            <Text
+              className="ml-3 flex-1 text-sm text-muted"
+              numberOfLines={1}
+            >
               Receipt attached
             </Text>
             <Pressable
@@ -61,7 +64,11 @@ export function ChatInputBar({
               className="h-9 w-9 items-center justify-center"
               hitSlop={8}
             >
-              <IconSymbol name="close" size={22} color={tokens.muted} />
+              <IconSymbol
+                name="close"
+                size={22}
+                color={tokens.muted}
+              />
             </Pressable>
           </View>
         </View>
@@ -75,7 +82,11 @@ export function ChatInputBar({
           className="mr-2 h-11 w-11 items-center justify-center rounded-full bg-card"
           onPress={onOpenCamera}
         >
-          <IconSymbol name="photo-camera" size={24} color={tokens.primary} />
+          <IconSymbol
+            name="photo-camera"
+            size={24}
+            color={tokens.primary}
+          />
         </Pressable>
 
         <TextInput
@@ -95,7 +106,9 @@ export function ChatInputBar({
           <Pressable
             className="h-11 w-11 items-center justify-center rounded-full"
             style={{
-              backgroundColor: isSpeechRecognizing ? tokens.danger : tokens.primary,
+              backgroundColor: isSpeechRecognizing
+                ? tokens.danger
+                : tokens.primary,
             }}
             onPressIn={() => {
               hapticVoiceStart();
@@ -105,9 +118,15 @@ export function ChatInputBar({
               hapticVoiceStop();
               onPressOutMic();
             }}
-            accessibilityLabel={isSpeechRecognizing ? 'Listening' : 'Hold to speak'}
+            accessibilityLabel={
+              isSpeechRecognizing ? 'Listening' : 'Hold to speak'
+            }
           >
-            <IconSymbol name="mic" size={24} color="#ffffff" />
+            <IconSymbol
+              name="mic"
+              size={24}
+              color="#ffffff"
+            />
           </Pressable>
         ) : (
           <TouchableOpacity
@@ -117,7 +136,11 @@ export function ChatInputBar({
             disabled={!hasContent || isSpeechRecognizing}
             activeOpacity={0.7}
           >
-            <IconSymbol name="send" size={22} color="#ffffff" />
+            <IconSymbol
+              name="send"
+              size={22}
+              color="#ffffff"
+            />
           </TouchableOpacity>
         )}
       </View>
@@ -131,7 +154,7 @@ type ChatEmptyStateProps = {
 
 export function ChatEmptyState({ primary }: ChatEmptyStateProps) {
   const suggestions = [
-    "Coffee $5 at Starbucks",
+    'Coffee $5 at Starbucks',
     'How much did I spend on food this month?',
     'Am I over budget on dining?',
     'Or snap a photo of your receipt',
@@ -143,9 +166,15 @@ export function ChatEmptyState({ primary }: ChatEmptyStateProps) {
         className="mb-4 h-16 w-16 items-center justify-center rounded-full"
         style={{ backgroundColor: `${primary}33` }}
       >
-        <IconSymbol name="chat-bubble-outline" size={36} color={primary} />
+        <IconSymbol
+          name="chat-bubble-outline"
+          size={36}
+          color={primary}
+        />
       </View>
-      <Text className="mb-2 text-xl font-semibold text-foreground">Chat with Moni</Text>
+      <Text className="mb-2 text-xl font-semibold text-foreground">
+        Chat with Moni
+      </Text>
       <Text className="mb-8 text-center text-sm leading-5 text-muted">
         Log transactions, scan receipts, or ask about your finances.
       </Text>
@@ -154,7 +183,10 @@ export function ChatEmptyState({ primary }: ChatEmptyStateProps) {
       </Text>
       <View className="w-full">
         {suggestions.map((s) => (
-          <View key={s} className="mb-2 rounded-xl border border-border bg-card px-4 py-3">
+          <View
+            key={s}
+            className="mb-2 rounded-xl border border-border bg-card px-4 py-3"
+          >
             <Text className="text-sm text-foreground">{s}</Text>
           </View>
         ))}

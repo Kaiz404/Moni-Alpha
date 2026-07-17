@@ -1,0 +1,12 @@
+node_modules
+dist
+.next
+.expo
+build
+coverage
+pnpm-lock.yaml
+**/.turbo
+apps/mobile/android
+apps/mobile/ios
+apps/mobile/modules/**/android
+apps/mobile/modules/**/ios

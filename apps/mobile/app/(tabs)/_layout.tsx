@@ -22,26 +22,45 @@ export default function TabLayout() {
             <SyncStatusIndicator />
           </View>
         ),
-      }}>
+      }}
+    >
       <Tabs.Screen
         name="index"
         options={{
           title: 'Wallets',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="credit-card" color={color} />,
+          tabBarIcon: ({ color }) => (
+            <IconSymbol
+              size={28}
+              name="credit-card"
+              color={color}
+            />
+          ),
         }}
       />
       <Tabs.Screen
         name="summary"
         options={{
           title: 'Summary',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="bar-chart" color={color} />,
+          tabBarIcon: ({ color }) => (
+            <IconSymbol
+              size={28}
+              name="bar-chart"
+              color={color}
+            />
+          ),
         }}
       />
       <Tabs.Screen
         name="chat"
         options={{
           title: 'Chat',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="chat-bubble-outline" color={color} />,
+          tabBarIcon: ({ color }) => (
+            <IconSymbol
+              size={28}
+              name="chat-bubble-outline"
+              color={color}
+            />
+          ),
           tabBarHideOnKeyboard: true,
         }}
       />
@@ -49,7 +68,13 @@ export default function TabLayout() {
         name="profile"
         options={{
           title: 'Profile',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="person" color={color} />,
+          tabBarIcon: ({ color }) => (
+            <IconSymbol
+              size={28}
+              name="person"
+              color={color}
+            />
+          ),
         }}
       />
     </Tabs>

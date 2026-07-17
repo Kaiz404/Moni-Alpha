@@ -1,5 +1,15 @@
 import { memo, useMemo, useState } from 'react';
-import { Alert, FlatList, Pressable, RefreshControl, ScrollView, Text, TouchableOpacity, View, useWindowDimensions } from 'react-native';
+import {
+  Alert,
+  FlatList,
+  Pressable,
+  RefreshControl,
+  ScrollView,
+  Text,
+  TouchableOpacity,
+  View,
+  useWindowDimensions,
+} from 'react-native';
 import { Link, router } from 'expo-router';
 import { useValue } from '@legendapp/state/react';
 import MaterialIcons from '@react-native-vector-icons/material-icons';
@@ -9,15 +19,84 @@ import { SyncStatusIndicator } from '@/components/providers/sync-status-indicato
 import { GradientCard } from '@/components/ui/gradient-card';
 import { getWalletCardStyle } from '@/constants/wallet-card-styles';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
-import { formatMinorAmount, minorToNumber } from '@/lib/finance/money';
-import { financeOverview$, walletBalanceMinor$, walletById$ } from '@/lib/finance/selectors';
+import {
+  formatMinorAmount,
+  minorToNumber,
+} from '@/lib/finance/money';
+import {
+  financeOverview$,
+  walletBalanceMinor$,
+  walletById$,
+} from '@/lib/finance/selectors';
 import { deleteTransaction } from '@/lib/supabase/transactions';
 
-const WalletCard = memo(function WalletCard({ walletId, selected, onToggle }: { walletId: string; selected: boolean; onToggle: (id: string) => void }) {
+const WalletCard = memo(function WalletCard({
+  walletId,
+  selected,
+  onToggle,
+}: {
+  walletId: string;
+  selected: boolean;
+  onToggle: (id: string) => void;
+}) {
   const wallet = useValue(walletById$(walletId));
   const balanceMinor = useValue(walletBalanceMinor$(walletId));
   if (!wallet) return null;
-  return <Pressable onPress={() => onToggle(wallet.id)} className="mr-3" style={{ width: 150 }}><GradientCard cardStyle={getWalletCardStyle(wallet.cardStyleId ?? undefined)} className={`rounded-2xl p-3 ${selected ? 'border-2 border-primary' : ''}`}><View className="flex-row justify-between"><Text className="text-sm font-bold text-white">{wallet.icon ?? 'W'}</Text><Pressable hitSlop={8} onPress={() => router.push({ pathname: '/wallet/[id]', params: { id: wallet.id } } as any)}><MaterialIcons name="chevron-right" size={18} color="#fff" /></Pressable></View><View className="mt-7"><Text className="text-xs text-white/75" numberOfLines={1}>{wallet.type}</Text><Text className="text-sm font-bold text-white" numberOfLines={1}>{wallet.name}</Text><Text className="mt-1 text-sm font-bold text-white" numberOfLines={1}>{formatMinorAmount(balanceMinor, wallet.currency)}</Text></View></GradientCard></Pressable>;
+  return (
+    <Pressable
+      onPress={() => onToggle(wallet.id)}
+      className="mr-3"
+      style={{ width: 150 }}
+    >
+      <GradientCard
+        cardStyle={getWalletCardStyle(
+          wallet.cardStyleId ?? undefined,
+        )}
+        className={`rounded-2xl p-3 ${selected ? 'border-2 border-primary' : ''}`}
+      >
+        <View className="flex-row justify-between">
+          <Text className="text-sm font-bold text-white">
+            {wallet.icon ?? 'W'}
+          </Text>
+          <Pressable
+            hitSlop={8}
+            onPress={() =>
+              router.push({
+                pathname: '/wallet/[id]',
+                params: { id: wallet.id },
+              } as any)
+            }
+          >
+            <MaterialIcons
+              name="chevron-right"
+              size={18}
+              color="#fff"
+            />
+          </Pressable>
+        </View>
+        <View className="mt-7">
+          <Text
+            className="text-xs text-white/75"
+            numberOfLines={1}
+          >
+            {wallet.type}
+          </Text>
+          <Text
+            className="text-sm font-bold text-white"
+            numberOfLines={1}
+          >
+            {wallet.name}
+          </Text>
+          <Text
+            className="mt-1 text-sm font-bold text-white"
+            numberOfLines={1}
+          >
+            {formatMinorAmount(balanceMinor, wallet.currency)}
+          </Text>
+        </View>
+      </GradientCard>
+    </Pressable>
+  );
 });
 
 export default function WalletsScreen() {
@@ -27,13 +106,273 @@ export default function WalletsScreen() {
   const overview = useValue(financeOverview$(user?.id ?? null));
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [refreshing, setRefreshing] = useState(false);
-  const activeWalletIds = useMemo(() => selected.size ? selected : new Set(overview.wallets.map((wallet) => wallet.id)), [selected, overview.wallets]);
-  const walletIds = useMemo(() => overview.wallets.map((wallet) => wallet.id), [overview.wallets]);
-  const recent = useMemo(() => overview.transactions.filter((transaction) => activeWalletIds.has(transaction.walletId) || (transaction.transferToWalletId !== null && activeWalletIds.has(transaction.transferToWalletId))).slice(0, 5), [overview.transactions, activeWalletIds]);
-  const totals = useMemo(() => overview.balanceTotals.filter((total) => overview.wallets.some((wallet) => wallet.currency === total.currency && activeWalletIds.has(wallet.id))), [overview.balanceTotals, overview.wallets, activeWalletIds]);
-  const pieDataByCurrency = useMemo(() => Object.entries(overview.categoryExpensesByCurrency).map(([currency, rows]) => ({ currency, data: rows.map((row) => ({ x: row.x, y: minorToNumber(row.yMinor) })) })), [overview.categoryExpensesByCurrency]);
-  const toggle = (id: string) => setSelected((current) => { const next = new Set(current); if (!next.delete(id)) next.add(id); return next.size === overview.wallets.length ? new Set() : next; });
-  const refresh = async () => { setRefreshing(true); await new Promise<void>((resolve) => requestAnimationFrame(() => resolve())); setRefreshing(false); };
-  const remove = (id: string) => Alert.alert('Delete transaction', 'This will remove the transaction from your records.', [{ text: 'Cancel', style: 'cancel' }, { text: 'Delete', style: 'destructive', onPress: () => void deleteTransaction(id) }]);
-  return <View className="flex-1 bg-background pt-5"><ScrollView refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} />} showsVerticalScrollIndicator={false} contentContainerClassName="pb-10"><View className="flex-row items-start justify-between px-4 pb-2"><View><Text className="text-sm text-muted">Your money</Text><Text className="text-2xl font-bold text-foreground">Wallets</Text></View><SyncStatusIndicator /></View><View className="px-4"><Text className="text-xs font-semibold uppercase tracking-wide text-muted">Balances</Text>{totals.map((total) => <Text key={total.currency} className="mt-1 text-3xl font-bold text-foreground">{formatMinorAmount(total.amountMinor, total.currency)}</Text>)}</View><View className="mt-4"><FlatList horizontal data={walletIds} renderItem={({ item }) => <WalletCard walletId={item} selected={activeWalletIds.has(item)} onToggle={toggle} />} keyExtractor={(item) => item} contentContainerStyle={{ paddingHorizontal: 16 }} ListFooterComponent={<Link href="/wallet/new" asChild><Pressable className="items-center justify-center rounded-2xl border border-dashed border-border bg-card" style={{ width: 110, height: 132 }}><MaterialIcons name="add" size={22} color={tokens.primary} /><Text className="mt-1 text-xs text-muted">Add wallet</Text></Pressable></Link>} /></View><View className="mt-5 px-4">{pieDataByCurrency.map(({ currency, data }) => <View key={currency} className="mb-4 rounded-2xl border border-border bg-card p-4"><View className="flex-row items-center justify-between"><Text className="text-base font-semibold text-foreground">Spending by category · {currency}</Text><Link href="/summary" asChild><TouchableOpacity><Text className="text-xs font-semibold text-primary">Analytics</Text></TouchableOpacity></Link></View><VictoryPie theme={VictoryTheme.material} width={Math.max(width - 48, 280)} height={230} data={data.length ? data : [{ x: 'No expenses', y: 1 }]} colorScale={[...tokens.chart]} innerRadius={40} labels={() => ''} /></View>)}<View className="mb-3 flex-row items-center justify-between"><Text className="text-base font-semibold text-foreground">Recent transactions</Text><Link href="/transaction" asChild><TouchableOpacity><Text className="text-xs font-semibold text-primary">See all</Text></TouchableOpacity></Link></View>{recent.length === 0 ? <View className="rounded-2xl border border-dashed border-border p-5"><Text className="text-center text-sm text-muted">No transactions yet.</Text></View> : recent.map((transaction) => { const isTransfer = transaction.type === 'transfer'; const sign = isTransfer ? '' : transaction.type === 'income' ? '+' : '−'; const color = isTransfer ? 'text-transfer' : transaction.type === 'income' ? 'text-income' : 'text-expense'; return <Pressable key={transaction.id} className="mb-2 rounded-2xl border border-border bg-card p-3" onPress={() => router.push(transaction.debtActivityId ? '/debts' as any : { pathname: '/transaction/[id]', params: { id: transaction.id } } as any)}><View className="flex-row justify-between"><View className="flex-1 pr-2"><Text className="font-semibold text-foreground" numberOfLines={1}>{transaction.merchant ?? transaction.description ?? transaction.type}</Text><Text className="mt-1 text-xs text-muted">{new Date(transaction.transactionDate).toLocaleDateString()}</Text></View><View className="items-end"><Pressable hitSlop={8} onPress={() => remove(transaction.id)}><MaterialIcons name="delete-outline" size={17} color={tokens.danger} /></Pressable><Text className={`mt-1 font-bold ${color}`}>{sign}{formatMinorAmount(transaction.amountMinor, transaction.currency)}</Text></View></View></Pressable>; })}</View></ScrollView></View>;
+  const activeWalletIds = useMemo(
+    () =>
+      selected.size
+        ? selected
+        : new Set(overview.wallets.map((wallet) => wallet.id)),
+    [selected, overview.wallets],
+  );
+  const walletIds = useMemo(
+    () => overview.wallets.map((wallet) => wallet.id),
+    [overview.wallets],
+  );
+  const recent = useMemo(
+    () =>
+      overview.transactions
+        .filter(
+          (transaction) =>
+            activeWalletIds.has(transaction.walletId) ||
+            (transaction.transferToWalletId !== null &&
+              activeWalletIds.has(transaction.transferToWalletId)),
+        )
+        .slice(0, 5),
+    [overview.transactions, activeWalletIds],
+  );
+  const totals = useMemo(
+    () =>
+      overview.balanceTotals.filter((total) =>
+        overview.wallets.some(
+          (wallet) =>
+            wallet.currency === total.currency &&
+            activeWalletIds.has(wallet.id),
+        ),
+      ),
+    [overview.balanceTotals, overview.wallets, activeWalletIds],
+  );
+  const pieDataByCurrency = useMemo(
+    () =>
+      Object.entries(overview.categoryExpensesByCurrency).map(
+        ([currency, rows]) => ({
+          currency,
+          data: rows.map((row) => ({
+            x: row.x,
+            y: minorToNumber(row.yMinor),
+          })),
+        }),
+      ),
+    [overview.categoryExpensesByCurrency],
+  );
+  const toggle = (id: string) =>
+    setSelected((current) => {
+      const next = new Set(current);
+      if (!next.delete(id)) next.add(id);
+      return next.size === overview.wallets.length ? new Set() : next;
+    });
+  const refresh = async () => {
+    setRefreshing(true);
+    await new Promise<void>((resolve) =>
+      requestAnimationFrame(() => resolve()),
+    );
+    setRefreshing(false);
+  };
+  const remove = (id: string) =>
+    Alert.alert(
+      'Delete transaction',
+      'This will remove the transaction from your records.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: () => void deleteTransaction(id),
+        },
+      ],
+    );
+  return (
+    <View className="flex-1 bg-background pt-5">
+      <ScrollView
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={refresh}
+          />
+        }
+        showsVerticalScrollIndicator={false}
+        contentContainerClassName="pb-10"
+      >
+        <View className="flex-row items-start justify-between px-4 pb-2">
+          <View>
+            <Text className="text-sm text-muted">Your money</Text>
+            <Text className="text-2xl font-bold text-foreground">
+              Wallets
+            </Text>
+          </View>
+          <SyncStatusIndicator />
+        </View>
+        <View className="px-4">
+          <Text className="text-xs font-semibold uppercase tracking-wide text-muted">
+            Balances
+          </Text>
+          {totals.map((total) => (
+            <Text
+              key={total.currency}
+              className="mt-1 text-3xl font-bold text-foreground"
+            >
+              {formatMinorAmount(total.amountMinor, total.currency)}
+            </Text>
+          ))}
+        </View>
+        <View className="mt-4">
+          <FlatList
+            horizontal
+            data={walletIds}
+            renderItem={({ item }) => (
+              <WalletCard
+                walletId={item}
+                selected={activeWalletIds.has(item)}
+                onToggle={toggle}
+              />
+            )}
+            keyExtractor={(item) => item}
+            contentContainerStyle={{ paddingHorizontal: 16 }}
+            ListFooterComponent={
+              <Link
+                href="/wallet/new"
+                asChild
+              >
+                <Pressable
+                  className="items-center justify-center rounded-2xl border border-dashed border-border bg-card"
+                  style={{ width: 110, height: 132 }}
+                >
+                  <MaterialIcons
+                    name="add"
+                    size={22}
+                    color={tokens.primary}
+                  />
+                  <Text className="mt-1 text-xs text-muted">
+                    Add wallet
+                  </Text>
+                </Pressable>
+              </Link>
+            }
+          />
+        </View>
+        <View className="mt-5 px-4">
+          {pieDataByCurrency.map(({ currency, data }) => (
+            <View
+              key={currency}
+              className="mb-4 rounded-2xl border border-border bg-card p-4"
+            >
+              <View className="flex-row items-center justify-between">
+                <Text className="text-base font-semibold text-foreground">
+                  Spending by category · {currency}
+                </Text>
+                <Link
+                  href="/summary"
+                  asChild
+                >
+                  <TouchableOpacity>
+                    <Text className="text-xs font-semibold text-primary">
+                      Analytics
+                    </Text>
+                  </TouchableOpacity>
+                </Link>
+              </View>
+              <VictoryPie
+                theme={VictoryTheme.material}
+                width={Math.max(width - 48, 280)}
+                height={230}
+                data={
+                  data.length ? data : [{ x: 'No expenses', y: 1 }]
+                }
+                colorScale={[...tokens.chart]}
+                innerRadius={40}
+                labels={() => ''}
+              />
+            </View>
+          ))}
+          <View className="mb-3 flex-row items-center justify-between">
+            <Text className="text-base font-semibold text-foreground">
+              Recent transactions
+            </Text>
+            <Link
+              href="/transaction"
+              asChild
+            >
+              <TouchableOpacity>
+                <Text className="text-xs font-semibold text-primary">
+                  See all
+                </Text>
+              </TouchableOpacity>
+            </Link>
+          </View>
+          {recent.length === 0 ? (
+            <View className="rounded-2xl border border-dashed border-border p-5">
+              <Text className="text-center text-sm text-muted">
+                No transactions yet.
+              </Text>
+            </View>
+          ) : (
+            recent.map((transaction) => {
+              const isTransfer = transaction.type === 'transfer';
+              const sign = isTransfer
+                ? ''
+                : transaction.type === 'income'
+                  ? '+'
+                  : '−';
+              const color = isTransfer
+                ? 'text-transfer'
+                : transaction.type === 'income'
+                  ? 'text-income'
+                  : 'text-expense';
+              return (
+                <Pressable
+                  key={transaction.id}
+                  className="mb-2 rounded-2xl border border-border bg-card p-3"
+                  onPress={() =>
+                    router.push(
+                      transaction.debtActivityId
+                        ? ('/debts' as any)
+                        : ({
+                            pathname: '/transaction/[id]',
+                            params: { id: transaction.id },
+                          } as any),
+                    )
+                  }
+                >
+                  <View className="flex-row justify-between">
+                    <View className="flex-1 pr-2">
+                      <Text
+                        className="font-semibold text-foreground"
+                        numberOfLines={1}
+                      >
+                        {transaction.merchant ??
+                          transaction.description ??
+                          transaction.type}
+                      </Text>
+                      <Text className="mt-1 text-xs text-muted">
+                        {new Date(
+                          transaction.transactionDate,
+                        ).toLocaleDateString()}
+                      </Text>
+                    </View>
+                    <View className="items-end">
+                      <Pressable
+                        hitSlop={8}
+                        onPress={() => remove(transaction.id)}
+                      >
+                        <MaterialIcons
+                          name="delete-outline"
+                          size={17}
+                          color={tokens.danger}
+                        />
+                      </Pressable>
+                      <Text className={`mt-1 font-bold ${color}`}>
+                        {sign}
+                        {formatMinorAmount(
+                          transaction.amountMinor,
+                          transaction.currency,
+                        )}
+                      </Text>
+                    </View>
+                  </View>
+                </Pressable>
+              );
+            })
+          )}
+        </View>
+      </ScrollView>
+    </View>
+  );
 }

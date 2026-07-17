@@ -10,7 +10,10 @@ type FabReceiptProcessingState = {
   proposalId: string | null;
 };
 
-let state: FabReceiptProcessingState = { active: false, proposalId: null };
+let state: FabReceiptProcessingState = {
+  active: false,
+  proposalId: null,
+};
 const listeners = new Set<() => void>();
 
 function notify() {

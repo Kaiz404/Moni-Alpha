@@ -1,4 +1,9 @@
-import type { ScanOptions, ScanResult, ScannedPage, ScannerMode } from './MoniDocumentScanner.nitro';
+import type {
+  ScanOptions,
+  ScanResult,
+  ScannedPage,
+  ScannerMode,
+} from './MoniDocumentScanner.nitro';
 
 export type { ScanOptions, ScanResult, ScannedPage, ScannerMode };
 

@@ -2,7 +2,11 @@ import { useEffect } from 'react';
 import { observe } from '@legendapp/state';
 import { useAuth } from '@/lib/auth/auth-context';
 import { authReady$ } from '@/lib/store/auth-sync';
-import { ALL_STORE_OBSERVABLES, enableStoreSync, wallets$ } from '@/lib/store';
+import {
+  ALL_STORE_OBSERVABLES,
+  enableStoreSync,
+  wallets$,
+} from '@/lib/store';
 import { startFinanceProjection } from '@/lib/finance/projection';
 import { repairFinanceIntegrity } from '@/lib/finance/integrity';
 import { reconcileDebtTransactions } from '@/lib/supabase/debts';
@@ -29,14 +33,16 @@ export function StoreSyncActivator() {
     );
 
     authReady$.set(true);
-    void enableStoreSync({ fullReset: true }).then(() => {
-      if (cancelled) return;
-      stopProjection = startFinanceProjection();
-      repairFinanceIntegrity();
-      // A previous offline write may have made the debt activity before its cash
-      // mirror. This is a post-sync repair, never a read-side effect.
-      void reconcileDebtTransactions().catch(() => {});
-    }).catch(() => {});
+    void enableStoreSync({ fullReset: true })
+      .then(() => {
+        if (cancelled) return;
+        stopProjection = startFinanceProjection();
+        repairFinanceIntegrity();
+        // A previous offline write may have made the debt activity before its cash
+        // mirror. This is a post-sync repair, never a read-side effect.
+        void reconcileDebtTransactions().catch(() => {});
+      })
+      .catch(() => {});
     refreshLinkedPackagesFromStore();
     void syncDefaultWalletFromProfile().catch(() => {});
 

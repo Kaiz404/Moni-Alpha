@@ -1,16 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import { decimalToMinor, minorToDecimal, updateWalletSchema, type WalletResponse } from '@repo/types';
+import {
+  decimalToMinor,
+  minorToDecimal,
+  updateWalletSchema,
+  type WalletResponse,
+} from '@repo/types';
 import { handleApiError, unauthorized, notFound } from '@/lib/api/errors';
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
     const supabase = await createClient(request);
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
 
     if (authError || !user) {
       return unauthorized();
@@ -52,14 +57,14 @@ export async function GET(
   }
 }
 
-export async function PUT(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
     const supabase = await createClient(request);
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
 
     if (authError || !user) {
       return unauthorized();
@@ -77,7 +82,8 @@ export async function PUT(
     if (updates.cardStyleId !== undefined) updateData.card_style_id = updates.cardStyleId;
     if (updates.isActive !== undefined) updateData.is_active = updates.isActive;
     if (updates.displayOrder !== undefined) updateData.display_order = updates.displayOrder;
-    if (updates.initialBalanceMinor !== undefined) updateData.initial_balance = minorToDecimal(updates.initialBalanceMinor);
+    if (updates.initialBalanceMinor !== undefined)
+      updateData.initial_balance = minorToDecimal(updates.initialBalanceMinor);
 
     const { data, error } = await supabase
       .from('wallets')
@@ -117,12 +123,15 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const { id } = await params;
     const supabase = await createClient(request);
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
 
     if (authError || !user) {
       return unauthorized();

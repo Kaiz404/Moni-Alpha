@@ -30,10 +30,7 @@ export type NotificationQueueItem = QueueItemBase & {
   notification: RawNotification;
 };
 
-export type ProcessingQueueItem =
-  | TextQueueItem
-  | ImageQueueItem
-  | NotificationQueueItem;
+export type ProcessingQueueItem = TextQueueItem | ImageQueueItem | NotificationQueueItem;
 
 // ─── Queue operations ────────────────────────────────────────────────────────
 

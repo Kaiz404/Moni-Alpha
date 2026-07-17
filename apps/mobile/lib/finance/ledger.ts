@@ -6,8 +6,10 @@ export function transactionDeltaMinor(
   transaction: Pick<FinanceTransaction, 'walletId' | 'transferToWalletId' | 'amountMinor' | 'type'>,
   walletId: string,
 ): MinorAmount {
-  if (transaction.type === 'income' && transaction.walletId === walletId) return transaction.amountMinor;
-  if (transaction.type === 'expense' && transaction.walletId === walletId) return subtractMinor(0, transaction.amountMinor);
+  if (transaction.type === 'income' && transaction.walletId === walletId)
+    return transaction.amountMinor;
+  if (transaction.type === 'expense' && transaction.walletId === walletId)
+    return subtractMinor(0, transaction.amountMinor);
   if (transaction.type === 'transfer') {
     if (transaction.walletId === walletId) return subtractMinor(0, transaction.amountMinor);
     if (transaction.transferToWalletId === walletId) return transaction.amountMinor;
@@ -27,9 +29,7 @@ export function outstandingDebtBalanceMinor(
 ): MinorAmount {
   return addMinor(
     ...activities.map((activity) =>
-      activity.kind === 'principal'
-        ? activity.amountMinor
-        : subtractMinor(0, activity.amountMinor),
+      activity.kind === 'principal' ? activity.amountMinor : subtractMinor(0, activity.amountMinor),
     ),
   );
 }

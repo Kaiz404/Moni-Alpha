@@ -48,7 +48,10 @@ export default function RegisterPage() {
         <h1>Moni</h1>
         <p className="auth-subtitle">Create your account</p>
 
-        <form onSubmit={handleSubmit} className="auth-form">
+        <form
+          onSubmit={handleSubmit}
+          className="auth-form"
+        >
           {error && <div className="auth-error">{error}</div>}
           <div className="auth-field">
             <label htmlFor="displayName">Display name</label>
@@ -87,7 +90,11 @@ export default function RegisterPage() {
               placeholder="At least 8 characters"
             />
           </div>
-          <button type="submit" className="auth-submit" disabled={loading}>
+          <button
+            type="submit"
+            className="auth-submit"
+            disabled={loading}
+          >
             {loading ? 'Creating account...' : 'Create account'}
           </button>
         </form>

@@ -1,5 +1,12 @@
 import { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, Alert, ScrollView } from 'react-native';
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  Alert,
+  ScrollView,
+} from 'react-native';
 import { Link, router, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@/lib/auth/auth-context';
@@ -15,7 +22,9 @@ const brandMark = getWalletCardStyle('emerald-grain');
 export default function LoginScreen() {
   const { signIn } = useAuth();
   const insets = useSafeAreaInsets();
-  const { verifyEmail } = useLocalSearchParams<{ verifyEmail?: string }>();
+  const { verifyEmail } = useLocalSearchParams<{
+    verifyEmail?: string;
+  }>();
   const showVerifyEmailHint =
     verifyEmail === '1' || verifyEmail === 'true';
   const [email, setEmail] = useState('');
@@ -39,8 +48,14 @@ export default function LoginScreen() {
 
   return (
     <ScreenShell variant="default">
-      <View style={{ paddingTop: Math.max(insets.top, 24) }} className="px-6 pb-2">
-        <GradientCard cardStyle={brandMark} className="h-14 w-14 items-center justify-center rounded-2xl">
+      <View
+        style={{ paddingTop: Math.max(insets.top, 24) }}
+        className="px-6 pb-2"
+      >
+        <GradientCard
+          cardStyle={brandMark}
+          className="h-14 w-14 items-center justify-center rounded-2xl"
+        >
           <Text className="text-2xl font-bold text-white">M</Text>
         </GradientCard>
       </View>
@@ -49,11 +64,15 @@ export default function LoginScreen() {
         className="flex-1 px-6 pt-6"
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 32 }}>
+        contentContainerStyle={{ paddingBottom: 32 }}
+      >
         <View className="mb-8">
-          <Text className="text-3xl font-bold text-foreground">Welcome back</Text>
+          <Text className="text-3xl font-bold text-foreground">
+            Welcome back
+          </Text>
           <Text className="mt-2 text-base leading-6 text-muted">
-            Sign in to pick up where you left off — your wallets stay local-first and private.
+            Sign in to pick up where you left off — your wallets stay
+            local-first and private.
           </Text>
           {showVerifyEmailHint ? (
             <View className="mt-4 rounded-xl border border-primary/40 bg-primary-muted px-4 py-3">
@@ -61,7 +80,8 @@ export default function LoginScreen() {
                 Confirm your email
               </Text>
               <Text className="mt-1 text-sm leading-5 text-foreground">
-                We sent you a link. Open it to verify your address, then sign in below.
+                We sent you a link. Open it to verify your address,
+                then sign in below.
               </Text>
             </View>
           ) : null}
@@ -97,7 +117,8 @@ export default function LoginScreen() {
         <TouchableOpacity
           className={`mt-2 items-center rounded-2xl bg-primary p-3.5 ${loading ? 'opacity-60' : ''}`}
           onPress={handleLogin}
-          disabled={loading}>
+          disabled={loading}
+        >
           <Text className="text-base font-semibold text-primary-foreground">
             {loading ? 'Signing in...' : 'Sign in'}
           </Text>
@@ -105,12 +126,22 @@ export default function LoginScreen() {
 
         <GoogleSignInButton
           disabled={loading}
-          onError={(message) => Alert.alert('Google sign in failed', message, [{ text: 'OK' }], {
-            cancelable: true,
-          })}
+          onError={(message) =>
+            Alert.alert(
+              'Google sign in failed',
+              message,
+              [{ text: 'OK' }],
+              {
+                cancelable: true,
+              },
+            )
+          }
         />
 
-        <Link href={'/(auth)/register' as any} asChild>
+        <Link
+          href={'/(auth)/register' as any}
+          asChild
+        >
           <TouchableOpacity className="mt-8 items-center py-2">
             <Text className="text-sm font-medium text-primary">
               Don&apos;t have an account? Sign up

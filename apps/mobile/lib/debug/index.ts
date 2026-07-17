@@ -8,17 +8,9 @@ export {
   type NotificationDiagnostics,
 } from './notification-debug';
 
-export {
-  runQueueInspection,
-  pruneQueue,
-  getQueueSnapshot,
-} from './queue-inspector';
+export { runQueueInspection, pruneQueue, getQueueSnapshot } from './queue-inspector';
 
-export {
-  PROCESS_LABELS,
-  useCapturedProcessLogs,
-  type ProcessId,
-} from './process-monitor';
+export { PROCESS_LABELS, useCapturedProcessLogs, type ProcessId } from './process-monitor';
 
 export {
   getNotificationProcessSnapshot,

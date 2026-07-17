@@ -1,0 +1,16 @@
+{
+  "singleQuote": true,
+  "semi": true,
+  "trailingComma": "all",
+  "printWidth": 70,
+  "tabWidth": 2,
+  "singleAttributePerLine": true,
+  "overrides": [
+    {
+      "files": ["**/*.ts"],
+      "options": {
+        "printWidth": 100
+      }
+    }
+  ]
+}

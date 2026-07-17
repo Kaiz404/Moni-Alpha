@@ -1,7 +1,4 @@
-import {
-  wallets$,
-  transactions$,
-} from '@/lib/store';
+import { wallets$, transactions$ } from '@/lib/store';
 import { getRecordValues, isActive, patchRow } from '@/lib/store/helpers';
 import { getUserId } from '@/lib/supabase/client';
 import { getWalletBalances } from '@/lib/supabase/balances';
@@ -125,9 +122,11 @@ export async function updateWallet(id: string, data: UpdateWallet) {
   if (data.color !== undefined) patch.color = data.color;
   if (data.icon !== undefined) patch.icon = data.icon;
   if (data.cardStyleId !== undefined) patch.card_style_id = data.cardStyleId;
-  if (data.initialBalanceMinor !== undefined) patch.initial_balance = minorToDecimal(data.initialBalanceMinor);
+  if (data.initialBalanceMinor !== undefined)
+    patch.initial_balance = minorToDecimal(data.initialBalanceMinor);
   if (data.notificationPackage !== undefined) patch.notification_package = data.notificationPackage;
-  if (data.notificationAppLabel !== undefined) patch.notification_app_label = data.notificationAppLabel;
+  if (data.notificationAppLabel !== undefined)
+    patch.notification_app_label = data.notificationAppLabel;
   if (data.notificationAccountHint !== undefined) {
     patch.notification_account_hint = data.notificationAccountHint;
   }
@@ -144,9 +143,15 @@ export async function updateWallet(id: string, data: UpdateWallet) {
 export async function deleteWallet(id: string) {
   const now = new Date().toISOString();
 
-  for (const tx of getRecordValues<{ id: string; wallet_id: string | null }>(transactions$)) {
+  for (const tx of getRecordValues<{
+    id: string;
+    wallet_id: string | null;
+  }>(transactions$)) {
     if (tx.wallet_id === id) {
-      patchRow(transactions$, tx.id, { deleted: true, updated_at: now });
+      patchRow(transactions$, tx.id, {
+        deleted: true,
+        updated_at: now,
+      });
     }
   }
 

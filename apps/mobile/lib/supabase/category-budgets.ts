@@ -48,7 +48,8 @@ export async function upsertCategoryBudget(
 
   const now = new Date().toISOString();
   const existing = getRecordValues<BudgetRow>(categoryBudgets$).find(
-    (r) => r.user_id === userId && r.category_id === categoryId && r.currency === currency.toUpperCase(),
+    (r) =>
+      r.user_id === userId && r.category_id === categoryId && r.currency === currency.toUpperCase(),
   );
 
   if (existing?.id) {
@@ -82,7 +83,8 @@ export async function deleteCategoryBudget(categoryId: string, currency: string)
   if (!userId) throw new Error('Not authenticated');
 
   const existing = getRecordValues<BudgetRow>(categoryBudgets$).find(
-    (r) => r.user_id === userId && r.category_id === categoryId && r.currency === currency.toUpperCase(),
+    (r) =>
+      r.user_id === userId && r.category_id === categoryId && r.currency === currency.toUpperCase(),
   );
   if (!existing) return;
 

@@ -15,5 +15,7 @@ export function resolveNotificationPackageName(notification: {
 export function enrichNotificationPackage<T extends { app?: string; packageName?: string }>(
   notification: T,
 ): T & { packageName: string } {
-  return enrichNotificationPackageCore(notification) as T & { packageName: string };
+  return enrichNotificationPackageCore(notification) as T & {
+    packageName: string;
+  };
 }

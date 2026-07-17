@@ -25,16 +25,26 @@ export function ThemePreferencePicker() {
             onPress={() => select(option.value)}
             className={`flex-row items-center px-3.5 py-3 active:opacity-90 ${
               index > 0 ? 'border-t border-border' : ''
-            }`}>
+            }`}
+          >
             <View className="flex-1 min-w-0 pr-3">
-              <Text className="text-base font-semibold text-foreground">{option.label}</Text>
-              <Text className="mt-0.5 text-xs text-muted">{option.subtitle}</Text>
+              <Text className="text-base font-semibold text-foreground">
+                {option.label}
+              </Text>
+              <Text className="mt-0.5 text-xs text-muted">
+                {option.subtitle}
+              </Text>
             </View>
             <View
               className={`h-5 w-5 items-center justify-center rounded-full border-2 ${
-                selected ? 'border-primary bg-primary' : 'border-border bg-card'
-              }`}>
-              {selected ? <View className="h-2 w-2 rounded-full bg-primary-foreground" /> : null}
+                selected
+                  ? 'border-primary bg-primary'
+                  : 'border-border bg-card'
+              }`}
+            >
+              {selected ? (
+                <View className="h-2 w-2 rounded-full bg-primary-foreground" />
+              ) : null}
             </View>
           </Pressable>
         );

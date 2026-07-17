@@ -7,9 +7,23 @@ import {
   useUpdateWallet,
   useDeleteWallet,
 } from '@/lib/hooks';
-import { decimalToMinor, formatMinorAmount, minorToDecimal, type Wallet, type CreateWallet } from '@repo/types';
+import {
+  decimalToMinor,
+  formatMinorAmount,
+  minorToDecimal,
+  type Wallet,
+  type CreateWallet,
+} from '@repo/types';
 
-const WALLET_TYPES = ['bank', 'cash', 'credit', 'debit', 'ewallet', 'investment', 'other'] as const;
+const WALLET_TYPES = [
+  'bank',
+  'cash',
+  'credit',
+  'debit',
+  'ewallet',
+  'investment',
+  'other',
+] as const;
 const WALLET_ICONS: Record<string, string> = {
   bank: '🏦',
   cash: '💵',
@@ -20,7 +34,10 @@ const WALLET_ICONS: Record<string, string> = {
   other: '💰',
 };
 /** UI labels (internal type stays `ewallet` for API/schema compatibility). */
-const WALLET_TYPE_LABELS: Record<(typeof WALLET_TYPES)[number], string> = {
+const WALLET_TYPE_LABELS: Record<
+  (typeof WALLET_TYPES)[number],
+  string
+> = {
   bank: 'Bank',
   cash: 'Cash',
   credit: 'Credit',
@@ -49,7 +66,12 @@ export default function WalletsPage() {
   const deleteMutation = useDeleteWallet();
 
   const wallets = walletData?.wallets ?? [];
-  const displayError = error?.message ?? createMutation.error?.message ?? updateMutation.error?.message ?? deleteMutation.error?.message ?? '';
+  const displayError =
+    error?.message ??
+    createMutation.error?.message ??
+    updateMutation.error?.message ??
+    deleteMutation.error?.message ??
+    '';
 
   const openCreate = () => {
     setForm({
@@ -103,7 +125,8 @@ export default function WalletsPage() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Delete this wallet? It will be deactivated.')) return;
+    if (!confirm('Delete this wallet? It will be deactivated.'))
+      return;
     try {
       await deleteMutation.mutateAsync(id);
     } catch {
@@ -112,13 +135,17 @@ export default function WalletsPage() {
   };
 
   if (isLoading) return <p>Loading wallets...</p>;
-  if (displayError) return <p className="auth-error">Error: {displayError}</p>;
+  if (displayError)
+    return <p className="auth-error">Error: {displayError}</p>;
 
   return (
     <>
       <div className="dashboard-header">
         <h1>Wallets</h1>
-        <button onClick={openCreate} className="btn btn-primary">
+        <button
+          onClick={openCreate}
+          className="btn btn-primary"
+        >
           Add wallet
         </button>
       </div>
@@ -139,19 +166,35 @@ export default function WalletsPage() {
               {wallets.map((w) => (
                 <tr key={w.id}>
                   <td>
-                    <span style={{ marginRight: '0.5rem' }}>{w.icon}</span>
+                    <span style={{ marginRight: '0.5rem' }}>
+                      {w.icon}
+                    </span>
                     {w.name}
                   </td>
-                  <td>{WALLET_TYPE_LABELS[w.type as (typeof WALLET_TYPES)[number]] ?? w.type}</td>
                   <td>
-                    {formatMinorAmount(w.currentBalanceMinor ?? w.initialBalanceMinor, w.currency)}
+                    {WALLET_TYPE_LABELS[
+                      w.type as (typeof WALLET_TYPES)[number]
+                    ] ?? w.type}
+                  </td>
+                  <td>
+                    {formatMinorAmount(
+                      w.currentBalanceMinor ?? w.initialBalanceMinor,
+                      w.currency,
+                    )}
                   </td>
                   <td>{w.currency}</td>
                   <td>
-                    <button onClick={() => openEdit(w)} className="btn btn-secondary btn-sm" style={{ marginRight: '0.5rem' }}>
+                    <button
+                      onClick={() => openEdit(w)}
+                      className="btn btn-secondary btn-sm"
+                      style={{ marginRight: '0.5rem' }}
+                    >
                       Edit
                     </button>
-                    <button onClick={() => handleDelete(w.id)} className="btn btn-danger btn-sm">
+                    <button
+                      onClick={() => handleDelete(w.id)}
+                      className="btn btn-danger btn-sm"
+                    >
                       Delete
                     </button>
                   </td>
@@ -161,22 +204,38 @@ export default function WalletsPage() {
           </table>
         </div>
         {wallets.length === 0 && (
-          <p style={{ color: 'color-mix(in srgb, var(--foreground) 60%, transparent)', margin: 0 }}>
+          <p
+            style={{
+              color:
+                'color-mix(in srgb, var(--foreground) 60%, transparent)',
+              margin: 0,
+            }}
+          >
             No wallets yet. Create one to get started.
           </p>
         )}
       </div>
 
       {modal && (
-        <div className="modal-overlay" onClick={() => setModal(null)}>
-          <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <h3>{modal === 'create' ? 'Add wallet' : 'Edit wallet'}</h3>
+        <div
+          className="modal-overlay"
+          onClick={() => setModal(null)}
+        >
+          <div
+            className="modal"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3>
+              {modal === 'create' ? 'Add wallet' : 'Edit wallet'}
+            </h3>
             <form onSubmit={handleSubmit}>
               <div className="form-row">
                 <label>Name</label>
                 <input
                   value={form.name}
-                  onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, name: e.target.value }))
+                  }
                   required
                   placeholder="e.g. Main Bank"
                 />
@@ -194,7 +253,10 @@ export default function WalletsPage() {
                   }
                 >
                   {WALLET_TYPES.map((t) => (
-                    <option key={t} value={t}>
+                    <option
+                      key={t}
+                      value={t}
+                    >
                       {WALLET_TYPE_LABELS[t]}
                     </option>
                   ))}
@@ -206,9 +268,14 @@ export default function WalletsPage() {
                   <input
                     type="number"
                     step="0.01"
-                  value={minorToDecimal(form.initialBalanceMinor)}
+                    value={minorToDecimal(form.initialBalanceMinor)}
                     onChange={(e) =>
-                      setForm((f) => ({ ...f, initialBalanceMinor: decimalToMinor(e.target.value || '0') }))
+                      setForm((f) => ({
+                        ...f,
+                        initialBalanceMinor: decimalToMinor(
+                          e.target.value || '0',
+                        ),
+                      }))
                     }
                   />
                 </div>
@@ -218,15 +285,32 @@ export default function WalletsPage() {
                 <input
                   type="color"
                   value={form.color}
-                  onChange={(e) => setForm((f) => ({ ...f, color: e.target.value }))}
-                  style={{ width: '60px', height: '36px', padding: 2 }}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, color: e.target.value }))
+                  }
+                  style={{
+                    width: '60px',
+                    height: '36px',
+                    padding: 2,
+                  }}
                 />
               </div>
               <div className="form-actions">
-                <button type="button" onClick={() => setModal(null)} className="btn btn-secondary">
+                <button
+                  type="button"
+                  onClick={() => setModal(null)}
+                  className="btn btn-secondary"
+                >
                   Cancel
                 </button>
-                <button type="submit" className="btn btn-primary" disabled={createMutation.isPending || updateMutation.isPending}>
+                <button
+                  type="submit"
+                  className="btn btn-primary"
+                  disabled={
+                    createMutation.isPending ||
+                    updateMutation.isPending
+                  }
+                >
                   {modal === 'create' ? 'Create' : 'Save'}
                 </button>
               </div>

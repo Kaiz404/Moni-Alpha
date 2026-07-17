@@ -2,7 +2,12 @@ import { proposedTransactions$ } from '@/lib/store';
 import { getRecordValues, hasRow, patchRow } from '@/lib/store/helpers';
 import { getUserId } from '@/lib/supabase/client';
 import { randomUUID } from 'expo-crypto';
-import { decimalToMinor, minorToDecimal, type CreateProposedTransaction, type ProposedTransaction } from '@repo/types';
+import {
+  decimalToMinor,
+  minorToDecimal,
+  type CreateProposedTransaction,
+  type ProposedTransaction,
+} from '@repo/types';
 import { createTransaction } from './transactions';
 import {
   getProposalLocationSnapshot,
@@ -160,8 +165,7 @@ export async function approveProposedTransaction(
   }
 
   const walletId = wallets.walletId;
-  const transferToWalletId =
-    wallets.transferToWalletId ?? proposal.transferToWalletId ?? null;
+  const transferToWalletId = wallets.transferToWalletId ?? proposal.transferToWalletId ?? null;
 
   if (proposal.type === 'transfer' && !transferToWalletId) {
     throw new Error('Cannot approve transfer: destination wallet is required');

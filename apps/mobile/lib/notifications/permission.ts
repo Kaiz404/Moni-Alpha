@@ -21,9 +21,8 @@ export async function readNotificationListenerPermission(): Promise<Notification
   if (Platform.OS !== 'android') return 'unavailable';
 
   try {
-    const { default: RNAndroidNotificationListener } = await import(
-      'react-native-android-notification-listener'
-    );
+    const { default: RNAndroidNotificationListener } =
+      await import('react-native-android-notification-listener');
     const raw = await RNAndroidNotificationListener.getPermissionStatus();
     return normalizeStatus(raw);
   } catch {

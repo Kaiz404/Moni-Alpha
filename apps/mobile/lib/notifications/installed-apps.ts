@@ -1,13 +1,8 @@
 import { Platform } from 'react-native';
-import MoniAndroidApps, {
-  isMoniAndroidAppsNativeAvailable,
-} from '../../modules/moni-android-apps';
+import MoniAndroidApps, { isMoniAndroidAppsNativeAvailable } from '../../modules/moni-android-apps';
 import type { InstalledAppInfo } from '../../modules/moni-android-apps';
 import { allCuratedProbePackages } from '@/lib/notifications/notification-package-aliases';
-import {
-  allPackagesForApp,
-  findCuratedAppByPackage,
-} from '@/constants/notification-apps';
+import { allPackagesForApp, findCuratedAppByPackage } from '@/constants/notification-apps';
 import { cacheNotificationAppIcon } from '@/lib/notifications/app-icon-cache';
 
 export type { InstalledAppInfo };
@@ -118,9 +113,7 @@ export function clearInstalledAppsCache(): void {
   loadPromise = null;
 }
 
-export async function getInstalledAppInfo(
-  packageName: string,
-): Promise<InstalledAppInfo | null> {
+export async function getInstalledAppInfo(packageName: string): Promise<InstalledAppInfo | null> {
   if (Platform.OS !== 'android' || !packageName.trim()) return null;
 
   const map = await loadInstalledAppsMap();

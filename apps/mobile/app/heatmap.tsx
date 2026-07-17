@@ -1,19 +1,36 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, ActivityIndicator, Text, Linking, Platform, Pressable } from 'react-native';
+import {
+  View,
+  StyleSheet,
+  ActivityIndicator,
+  Text,
+  Linking,
+  Platform,
+  Pressable,
+} from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
-import { useTransactionPinmap, type TransactionPinPoint } from '@/hooks/use-transaction-heatmap';
+import {
+  useTransactionPinmap,
+  type TransactionPinPoint,
+} from '@/hooks/use-transaction-heatmap';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { formatMinorAmount } from '@/lib/finance/money';
 
 export default function HeatmapScreen() {
-  const { pinPoints, mapRegion, isLoading, error } = useTransactionPinmap();
+  const { pinPoints, mapRegion, isLoading, error } =
+    useTransactionPinmap();
   const tokens = useThemeTokens();
   const [isMapReady, setIsMapReady] = useState(false);
-  const [selectedPin, setSelectedPin] = useState<TransactionPinPoint | null>(null);
-  
+  const [selectedPin, setSelectedPin] =
+    useState<TransactionPinPoint | null>(null);
+
   const mapRef = React.useRef<MapView>(null);
 
-  const openInMaps = async (latitude: number, longitude: number, locationName: string) => {
+  const openInMaps = async (
+    latitude: number,
+    longitude: number,
+    locationName: string,
+  ) => {
     const encodedLabel = encodeURIComponent(locationName);
     const latLng = `${latitude},${longitude}`;
 
@@ -39,7 +56,10 @@ export default function HeatmapScreen() {
   if (!isMapReady && isLoading) {
     return (
       <View className="flex-1 items-center justify-center bg-background">
-        <ActivityIndicator size="large" color={tokens.primary} />
+        <ActivityIndicator
+          size="large"
+          color={tokens.primary}
+        />
         <Text className="mt-3 text-base text-foreground">
           Loading transaction locations...
         </Text>
@@ -61,8 +81,8 @@ export default function HeatmapScreen() {
     return (
       <View className="flex-1 items-center justify-center bg-background">
         <Text className="px-5 text-center text-base text-muted">
-          No transactions with location data found.
-          Start adding locations to your transactions!
+          No transactions with location data found. Start adding
+          locations to your transactions!
         </Text>
       </View>
     );
@@ -80,7 +100,10 @@ export default function HeatmapScreen() {
         {pinPoints.map((point, index) => (
           <Marker
             key={`${point.latitude}-${point.longitude}-${index}`}
-            coordinate={{ latitude: point.latitude, longitude: point.longitude }}
+            coordinate={{
+              latitude: point.latitude,
+              longitude: point.longitude,
+            }}
             pinColor={tokens.primary}
             onSelect={() => setSelectedPin(point)}
             onPress={() => setSelectedPin(point)}
@@ -108,20 +131,43 @@ export default function HeatmapScreen() {
       ) : null}
 
       {selectedPin ? (
-        <View style={styles.bottomCard} className="rounded-xl bg-card p-3.5">
+        <View
+          style={styles.bottomCard}
+          className="rounded-xl bg-card p-3.5"
+        >
           <Pressable
-            style={[styles.closeButton, { backgroundColor: `${tokens.muted}33` }]}
+            style={[
+              styles.closeButton,
+              { backgroundColor: `${tokens.muted}33` },
+            ]}
             onPress={() => setSelectedPin(null)}
           >
-            <Text style={[styles.closeButtonText, { color: tokens.foreground }]}>✕</Text>
+            <Text
+              style={[
+                styles.closeButtonText,
+                { color: tokens.foreground },
+              ]}
+            >
+              ✕
+            </Text>
           </Pressable>
           <Text className="mb-1.5 pr-7 text-[15px] font-bold text-foreground">
             {selectedPin.locationName}
           </Text>
-          <Text className="mb-1 text-xs text-foreground">Description: {selectedPin.description}</Text>
-          <Text className="mb-1 text-xs text-foreground">Amount: {selectedPin.amountsByCurrency.map(({ currency, amountMinor }) => formatMinorAmount(amountMinor, currency)).join(' · ')}</Text>
+          <Text className="mb-1 text-xs text-foreground">
+            Description: {selectedPin.description}
+          </Text>
+          <Text className="mb-1 text-xs text-foreground">
+            Amount:{' '}
+            {selectedPin.amountsByCurrency
+              .map(({ currency, amountMinor }) =>
+                formatMinorAmount(amountMinor, currency),
+              )
+              .join(' · ')}
+          </Text>
           <Text className="mb-1 text-xs text-muted">
-            {selectedPin.transactionCount} transaction(s) at this location
+            {selectedPin.transactionCount} transaction(s) at this
+            location
           </Text>
 
           <Pressable
@@ -129,10 +175,18 @@ export default function HeatmapScreen() {
               styles.navigateButton,
               { opacity: pressed ? 0.85 : 1 },
             ]}
-            onPress={() => openInMaps(selectedPin.latitude, selectedPin.longitude, selectedPin.locationName)}
+            onPress={() =>
+              openInMaps(
+                selectedPin.latitude,
+                selectedPin.longitude,
+                selectedPin.locationName,
+              )
+            }
             className="bg-primary"
           >
-            <Text className="text-[13px] font-semibold text-primary-foreground">Open in Map App</Text>
+            <Text className="text-[13px] font-semibold text-primary-foreground">
+              Open in Map App
+            </Text>
           </Pressable>
         </View>
       ) : null}

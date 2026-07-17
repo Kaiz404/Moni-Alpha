@@ -22,6 +22,8 @@ export function parseAmountInput(value: string): MinorAmount {
 }
 
 export function normalizeCurrency(value: unknown, fallback: CurrencyCode = 'USD'): CurrencyCode {
-  const currency = String(value ?? '').trim().toUpperCase();
+  const currency = String(value ?? '')
+    .trim()
+    .toUpperCase();
   return /^[A-Z]{3}$/.test(currency) ? (currency as CurrencyCode) : fallback;
 }

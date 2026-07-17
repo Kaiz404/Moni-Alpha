@@ -62,10 +62,12 @@ a {
   width: 100%;
   max-width: 400px;
   background: var(--background);
-  border: 1px solid color-mix(in srgb, var(--foreground) 15%, transparent);
+  border: 1px solid
+    color-mix(in srgb, var(--foreground) 15%, transparent);
   border-radius: 12px;
   padding: 2rem;
-  box-shadow: 0 4px 24px color-mix(in srgb, var(--foreground) 8%, transparent);
+  box-shadow: 0 4px 24px
+    color-mix(in srgb, var(--foreground) 8%, transparent);
 }
 
 .auth-card h1 {
@@ -107,7 +109,8 @@ a {
 
 .auth-field input {
   padding: 0.625rem 0.875rem;
-  border: 1px solid color-mix(in srgb, var(--foreground) 20%, transparent);
+  border: 1px solid
+    color-mix(in srgb, var(--foreground) 20%, transparent);
   border-radius: 8px;
   font-size: 1rem;
   background: var(--background);
@@ -165,7 +168,8 @@ a {
 .auth-submit.auth-google {
   background: transparent;
   color: var(--foreground);
-  border: 1px solid color-mix(in srgb, var(--foreground) 25%, transparent);
+  border: 1px solid
+    color-mix(in srgb, var(--foreground) 25%, transparent);
 }
 
 .auth-submit.auth-google:hover:not(:disabled) {
@@ -199,7 +203,8 @@ a {
   display: flex;
   flex-direction: column;
   background: color-mix(in srgb, var(--foreground) 5%, transparent);
-  border-right: 1px solid color-mix(in srgb, var(--foreground) 10%, transparent);
+  border-right: 1px solid
+    color-mix(in srgb, var(--foreground) 10%, transparent);
   padding: 1.5rem 0;
 }
 
@@ -220,7 +225,9 @@ a {
   padding: 0.625rem 1.5rem;
   font-size: 0.95rem;
   color: color-mix(in srgb, var(--foreground) 70%, transparent);
-  transition: color 0.2s, background 0.2s;
+  transition:
+    color 0.2s,
+    background 0.2s;
 }
 
 .dashboard-nav a:hover {
@@ -228,7 +235,7 @@ a {
   background: color-mix(in srgb, var(--foreground) 8%, transparent);
 }
 
-.dashboard-nav a[data-active="true"] {
+.dashboard-nav a[data-active='true'] {
   color: #2563eb;
   font-weight: 500;
   background: color-mix(in srgb, #2563eb 10%, transparent);
@@ -260,7 +267,9 @@ a {
   font-weight: 500;
   cursor: pointer;
   border: none;
-  transition: background 0.2s, color 0.2s;
+  transition:
+    background 0.2s,
+    color 0.2s;
 }
 
 .btn-primary {
@@ -297,7 +306,8 @@ a {
 
 .card {
   background: var(--background);
-  border: 1px solid color-mix(in srgb, var(--foreground) 10%, transparent);
+  border: 1px solid
+    color-mix(in srgb, var(--foreground) 10%, transparent);
   border-radius: 12px;
   padding: 1.5rem;
   margin-bottom: 1.5rem;
@@ -349,10 +359,12 @@ table {
   border-collapse: collapse;
 }
 
-th, td {
+th,
+td {
   padding: 0.75rem 1rem;
   text-align: left;
-  border-bottom: 1px solid color-mix(in srgb, var(--foreground) 10%, transparent);
+  border-bottom: 1px solid
+    color-mix(in srgb, var(--foreground) 10%, transparent);
 }
 
 th {
@@ -407,7 +419,8 @@ tr:hover td {
 .form-row input,
 .form-row select {
   padding: 0.5rem 0.75rem;
-  border: 1px solid color-mix(in srgb, var(--foreground) 20%, transparent);
+  border: 1px solid
+    color-mix(in srgb, var(--foreground) 20%, transparent);
   border-radius: 6px;
   font-size: 0.95rem;
 }

@@ -59,7 +59,10 @@ export const updateWalletSchema = z.object({
   type: walletTypeSchema.optional(),
   currency: currencyCodeSchema.optional(),
   initialBalanceMinor: minorAmountSchema.optional(),
-  color: z.string().regex(/^#[0-9A-Fa-f]{6}$/).optional(),
+  color: z
+    .string()
+    .regex(/^#[0-9A-Fa-f]{6}$/)
+    .optional(),
   icon: z.string().optional(),
   cardStyleId: z.string().min(1).optional(),
   isActive: z.boolean().optional(),

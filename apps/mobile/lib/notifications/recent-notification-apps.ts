@@ -33,8 +33,7 @@ export function listRecentNotificationApps(limit = 20): RecentNotificationApp[] 
       const existing = byPackage.get(packageName);
       const receivedAt = item.receivedAt ?? '';
       const iconUri =
-        (item.icon?.startsWith('data:image') ? item.icon : null) ??
-        getCachedAppIcon(packageName);
+        (item.icon?.startsWith('data:image') ? item.icon : null) ?? getCachedAppIcon(packageName);
       if (!existing || receivedAt > existing.lastSeenAt) {
         byPackage.set(packageName, {
           packageName,

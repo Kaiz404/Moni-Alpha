@@ -27,10 +27,7 @@ export function localDateInputToIso(value: string): string | null {
 }
 
 /** Best-effort YYYY-MM-DD from an ISO datetime string. */
-export function isoToLocalDateInput(
-  iso: string | null | undefined,
-  fallback = new Date(),
-): string {
+export function isoToLocalDateInput(iso: string | null | undefined, fallback = new Date()): string {
   if (!iso) return fallback.toISOString().split('T')[0];
   const parsed = new Date(iso);
   if (Number.isNaN(parsed.getTime())) return fallback.toISOString().split('T')[0];

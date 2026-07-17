@@ -25,10 +25,8 @@ export async function captureLocationSnapshot(): Promise<LocationSnapshot | null
       const first = addresses[0];
       if (first) {
         locationName =
-          [first.name, first.street, first.city, first.region]
-            .filter(Boolean)
-            .join(', ')
-            .trim() || null;
+          [first.name, first.street, first.city, first.region].filter(Boolean).join(', ').trim() ||
+          null;
       }
     } catch {
       // Reverse geocode is best effort only.

@@ -1,14 +1,14 @@
-import type { Metadata } from "next";
-import { Inter } from "next/font/google";
-import "./globals.css";
-import { AuthProvider } from "@/lib/auth/auth-context";
-import { QueryProvider } from "@/lib/query/query-client";
+import type { Metadata } from 'next';
+import { Inter } from 'next/font/google';
+import './globals.css';
+import { AuthProvider } from '@/lib/auth/auth-context';
+import { QueryProvider } from '@/lib/query/query-client';
 
-const inter = Inter({ subsets: ["latin"] });
+const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: "Moni - Personal Finance",
-  description: "Privacy-focused personal finance management",
+  title: 'Moni - Personal Finance',
+  description: 'Privacy-focused personal finance management',
 };
 
 export default function RootLayout({

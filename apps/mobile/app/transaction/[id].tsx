@@ -15,7 +15,10 @@ import MapView, { Marker } from 'react-native-maps';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@/lib/auth/auth-context';
-import { getTransactionById, updateTransaction } from '@/lib/supabase/transactions';
+import {
+  getTransactionById,
+  updateTransaction,
+} from '@/lib/supabase/transactions';
 import { getWallets } from '@/lib/supabase/wallets';
 import { getCategories } from '@/lib/supabase/categories';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
@@ -24,7 +27,10 @@ import { AmountInput } from '@/components/finance/amount-input';
 import { ScreenShell } from '@/components/ui/screen-shell';
 import { chipClass, chipTextClass } from '@/components/ui/chip';
 import { PrimaryButton } from '@/components/ui/primary-button';
-import { minorToDecimal, parseAmountInput } from '@/lib/finance/money';
+import {
+  minorToDecimal,
+  parseAmountInput,
+} from '@/lib/finance/money';
 
 const inputClass =
   'rounded-xl border border-border bg-card px-3 py-2.5 text-foreground';
@@ -47,14 +53,18 @@ export default function EditTransactionScreen() {
   const [walletId, setWalletId] = useState('');
   const [transferToWalletId, setTransferToWalletId] = useState('');
   const [amount, setAmount] = useState('');
-  const [type, setType] = useState<'income' | 'expense' | 'transfer'>('expense');
+  const [type, setType] = useState<'income' | 'expense' | 'transfer'>(
+    'expense',
+  );
   const [categoryId, setCategoryId] = useState('');
   const [merchant, setMerchant] = useState('');
   const [description, setDescription] = useState('');
   const [loading, setLoading] = useState(false);
 
   const [readOnlyDate, setReadOnlyDate] = useState('');
-  const [readOnlyLocation, setReadOnlyLocation] = useState<string | null>(null);
+  const [readOnlyLocation, setReadOnlyLocation] = useState<
+    string | null
+  >(null);
   const [savedLocationCoords, setSavedLocationCoords] = useState<{
     latitude: number;
     longitude: number;
@@ -71,7 +81,10 @@ export default function EditTransactionScreen() {
       setLoadingTx(true);
       setLoadError(null);
       try {
-        const [tx, walletList] = await Promise.all([getTransactionById(txId), getWallets()]);
+        const [tx, walletList] = await Promise.all([
+          getTransactionById(txId),
+          getWallets(),
+        ]);
         if (cancelled) return;
         if (!tx) {
           setLoadError('Transaction not found.');
@@ -118,7 +131,11 @@ export default function EditTransactionScreen() {
         setWalletId(tx.walletId);
         setTransferToWalletId(tx.transferToWalletId ?? '');
         setAmount(minorToDecimal(tx.amountMinor));
-        if (tx.type === 'income' || tx.type === 'expense' || tx.type === 'transfer') {
+        if (
+          tx.type === 'income' ||
+          tx.type === 'expense' ||
+          tx.type === 'transfer'
+        ) {
           setType(tx.type);
         } else {
           setType('expense');
@@ -128,7 +145,11 @@ export default function EditTransactionScreen() {
         setDescription(tx.description ?? tx.notes ?? '');
       } catch (e) {
         if (!cancelled) {
-          setLoadError(e instanceof Error ? e.message : 'Failed to load transaction');
+          setLoadError(
+            e instanceof Error
+              ? e.message
+              : 'Failed to load transaction',
+          );
         }
       } finally {
         if (!cancelled) setLoadingTx(false);
@@ -142,7 +163,9 @@ export default function EditTransactionScreen() {
 
   useEffect(() => {
     if (!user || isTransfer) return;
-    getCategories(type === 'income' ? 'income' : 'expense').then(setCategories);
+    getCategories(type === 'income' ? 'income' : 'expense').then(
+      setCategories,
+    );
   }, [user, type, isTransfer]);
 
   const destinationWallets = useMemo(
@@ -169,16 +192,26 @@ export default function EditTransactionScreen() {
           return;
         }
         if (walletId === transferToWalletId) {
-          Alert.alert('Error', 'Source and destination wallets must differ.');
+          Alert.alert(
+            'Error',
+            'Source and destination wallets must differ.',
+          );
           return;
         }
         const fromWallet = wallets.find((w) => w.id === walletId);
-        const toWallet = wallets.find((w) => w.id === transferToWalletId);
+        const toWallet = wallets.find(
+          (w) => w.id === transferToWalletId,
+        );
         if (fromWallet && toWallet) {
-          const fromCur = (fromWallet.currency ?? 'USD').toUpperCase();
+          const fromCur = (
+            fromWallet.currency ?? 'USD'
+          ).toUpperCase();
           const toCur = (toWallet.currency ?? 'USD').toUpperCase();
           if (fromCur !== toCur) {
-            Alert.alert('Error', 'Transfers require both wallets to use the same currency.');
+            Alert.alert(
+              'Error',
+              'Transfers require both wallets to use the same currency.',
+            );
             return;
           }
         }
@@ -204,7 +237,12 @@ export default function EditTransactionScreen() {
       }
       router.back();
     } catch (e) {
-      Alert.alert('Error', e instanceof Error ? e.message : 'Failed to update transaction');
+      Alert.alert(
+        'Error',
+        e instanceof Error
+          ? e.message
+          : 'Failed to update transaction',
+      );
     } finally {
       setLoading(false);
     }
@@ -236,7 +274,10 @@ export default function EditTransactionScreen() {
     return (
       <ScreenShell variant="canvas">
         <View className="flex-1 items-center justify-center">
-          <ActivityIndicator size="large" color={tokens.primary} />
+          <ActivityIndicator
+            size="large"
+            color={tokens.primary}
+          />
         </View>
       </ScreenShell>
     );
@@ -246,8 +287,13 @@ export default function EditTransactionScreen() {
     return (
       <ScreenShell variant="canvas">
         <View className="flex-1 justify-center px-6">
-          <Text className="mb-4 text-center text-foreground">{loadError}</Text>
-          <PrimaryButton label="Go back" onPress={() => router.back()} />
+          <Text className="mb-4 text-center text-foreground">
+            {loadError}
+          </Text>
+          <PrimaryButton
+            label="Go back"
+            onPress={() => router.back()}
+          />
         </View>
       </ScreenShell>
     );
@@ -260,18 +306,22 @@ export default function EditTransactionScreen() {
       <KeyboardAvoidingView
         className="flex-1"
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        keyboardVerticalOffset={0}>
+        keyboardVerticalOffset={0}
+      >
         <View className="flex-1">
           <ScrollView
             className="flex-1"
             keyboardShouldPersistTaps="handled"
             contentContainerClassName="px-4 pt-4 pb-2"
-            showsVerticalScrollIndicator={false}>
+            showsVerticalScrollIndicator={false}
+          >
             <View className="mb-4 rounded-xl bg-card px-3 py-2.5">
               <Text className="text-[10px] font-semibold uppercase tracking-wide text-muted">
                 Date &amp; time
               </Text>
-              <Text className="text-sm text-foreground">{readOnlyDate}</Text>
+              <Text className="text-sm text-foreground">
+                {readOnlyDate}
+              </Text>
               {readOnlyLocation ? (
                 <Text className="mt-1 text-xs text-muted">
                   Location: {readOnlyLocation}
@@ -282,7 +332,8 @@ export default function EditTransactionScreen() {
             {isTransfer ? (
               <View className="mb-4 rounded-xl border border-primary/40 bg-primary-muted px-3 py-3">
                 <Text className="text-sm text-foreground">
-                  Transfer between your wallets — does not affect your overall net worth.
+                  Transfer between your wallets — does not affect your
+                  overall net worth.
                 </Text>
               </View>
             ) : null}
@@ -296,8 +347,12 @@ export default function EditTransactionScreen() {
                   key={w.id}
                   className={chipClass(walletId === w.id)}
                   onPress={() => setWalletId(w.id)}
-                  activeOpacity={0.85}>
-                  <Text className={`text-sm ${chipTextClass(walletId === w.id)}`} numberOfLines={1}>
+                  activeOpacity={0.85}
+                >
+                  <Text
+                    className={`text-sm ${chipTextClass(walletId === w.id)}`}
+                    numberOfLines={1}
+                  >
                     {w.icon} {w.name}
                   </Text>
                 </TouchableOpacity>
@@ -313,10 +368,16 @@ export default function EditTransactionScreen() {
                   {destinationWallets.map((w) => (
                     <TouchableOpacity
                       key={w.id}
-                      className={chipClass(transferToWalletId === w.id)}
+                      className={chipClass(
+                        transferToWalletId === w.id,
+                      )}
                       onPress={() => setTransferToWalletId(w.id)}
-                      activeOpacity={0.85}>
-                      <Text className={`text-sm ${chipTextClass(transferToWalletId === w.id)}`} numberOfLines={1}>
+                      activeOpacity={0.85}
+                    >
+                      <Text
+                        className={`text-sm ${chipTextClass(transferToWalletId === w.id)}`}
+                        numberOfLines={1}
+                      >
                         {w.icon} {w.name}
                       </Text>
                     </TouchableOpacity>
@@ -337,7 +398,10 @@ export default function EditTransactionScreen() {
                     placeholderTextColor="#9CA3AF"
                     value={amount}
                     onChangeValue={setAmount}
-                    currency={wallets.find((wallet) => wallet.id === walletId)?.currency}
+                    currency={
+                      wallets.find((wallet) => wallet.id === walletId)
+                        ?.currency
+                    }
                   />
                 </View>
               </View>
@@ -352,17 +416,25 @@ export default function EditTransactionScreen() {
                       className={`${chipClass(type === 'income')} flex-1 items-center py-2 ${isTransfer ? 'opacity-50' : ''}`}
                       onPress={() => !isTransfer && setType('income')}
                       activeOpacity={0.85}
-                      disabled={isTransfer}>
-                      <Text className={`text-sm font-medium ${chipTextClass(type === 'income')}`}>
+                      disabled={isTransfer}
+                    >
+                      <Text
+                        className={`text-sm font-medium ${chipTextClass(type === 'income')}`}
+                      >
                         Income
                       </Text>
                     </TouchableOpacity>
                     <TouchableOpacity
                       className={`${chipClass(type === 'expense')} flex-1 items-center py-2 ${isTransfer ? 'opacity-50' : ''}`}
-                      onPress={() => !isTransfer && setType('expense')}
+                      onPress={() =>
+                        !isTransfer && setType('expense')
+                      }
                       activeOpacity={0.85}
-                      disabled={isTransfer}>
-                      <Text className={`text-sm font-medium ${chipTextClass(type === 'expense')}`}>
+                      disabled={isTransfer}
+                    >
+                      <Text
+                        className={`text-sm font-medium ${chipTextClass(type === 'expense')}`}
+                      >
                         Expense
                       </Text>
                     </TouchableOpacity>
@@ -378,7 +450,10 @@ export default function EditTransactionScreen() {
                     placeholderTextColor="#9CA3AF"
                     value={amount}
                     onChangeValue={setAmount}
-                    currency={wallets.find((wallet) => wallet.id === walletId)?.currency}
+                    currency={
+                      wallets.find((wallet) => wallet.id === walletId)
+                        ?.currency
+                    }
                   />
                 </View>
               </View>
@@ -395,8 +470,12 @@ export default function EditTransactionScreen() {
                       key={c.id}
                       className={chipClass(categoryId === c.id)}
                       onPress={() => setCategoryId(c.id)}
-                      activeOpacity={0.85}>
-                      <Text className={`text-xs ${chipTextClass(categoryId === c.id)}`} numberOfLines={1}>
+                      activeOpacity={0.85}
+                    >
+                      <Text
+                        className={`text-xs ${chipTextClass(categoryId === c.id)}`}
+                        numberOfLines={1}
+                      >
                         {c.icon} {c.name}
                       </Text>
                     </TouchableOpacity>
@@ -407,7 +486,9 @@ export default function EditTransactionScreen() {
                   <Text className="text-xs font-semibold uppercase tracking-wide text-muted">
                     Merchant
                   </Text>
-                  <Text className="text-[10px] text-muted">optional</Text>
+                  <Text className="text-[10px] text-muted">
+                    optional
+                  </Text>
                 </View>
                 <TextInput
                   className={`mb-3 text-sm ${inputClass}`}
@@ -447,20 +528,27 @@ export default function EditTransactionScreen() {
                     onPress={() => setMapExpanded(!mapExpanded)}
                     activeOpacity={0.7}
                     accessibilityRole="button"
-                    accessibilityLabel={mapExpanded ? 'Hide map' : 'Show map'}>
+                    accessibilityLabel={
+                      mapExpanded ? 'Hide map' : 'Show map'
+                    }
+                  >
                     <Text className="text-xs font-semibold uppercase tracking-wide text-muted">
                       Transaction location {mapExpanded ? '▲' : '▼'}
                     </Text>
                   </TouchableOpacity>
                   {savedLocationCoords.name ? (
-                    <Text className="mb-1 text-xs text-muted" numberOfLines={mapExpanded ? 4 : 2}>
+                    <Text
+                      className="mb-1 text-xs text-muted"
+                      numberOfLines={mapExpanded ? 4 : 2}
+                    >
                       {savedLocationCoords.name}
                     </Text>
                   ) : null}
                   {mapExpanded ? (
                     <View
                       className="mt-1 overflow-hidden rounded-xl border border-border bg-card"
-                      style={styles.locationMapBox}>
+                      style={styles.locationMapBox}
+                    >
                       <MapView
                         style={styles.locationMap}
                         initialRegion={{
@@ -473,7 +561,8 @@ export default function EditTransactionScreen() {
                         scrollEnabled={false}
                         zoomEnabled={false}
                         rotateEnabled={false}
-                        pitchEnabled={false}>
+                        pitchEnabled={false}
+                      >
                         <Marker
                           coordinate={{
                             latitude: savedLocationCoords.latitude,
@@ -491,7 +580,8 @@ export default function EditTransactionScreen() {
 
           <View
             className="border-t border-border bg-canvas px-4 pt-3"
-            style={{ paddingBottom: Math.max(insets.bottom, 12) }}>
+            style={{ paddingBottom: Math.max(insets.bottom, 12) }}
+          >
             <PrimaryButton
               label="Save changes"
               loading={loading}

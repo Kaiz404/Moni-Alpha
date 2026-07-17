@@ -13,7 +13,9 @@ export function SummaryPinmap() {
   if (pinPoints.length === 0) {
     return (
       <View className="h-56 items-center justify-center px-3">
-        <Text className="text-center text-muted">No transaction locations available yet.</Text>
+        <Text className="text-center text-muted">
+          No transaction locations available yet.
+        </Text>
       </View>
     );
   }
@@ -29,7 +31,10 @@ export function SummaryPinmap() {
         {pinPoints.map((point, index) => (
           <Marker
             key={`${point.latitude}-${point.longitude}-${index}`}
-            coordinate={{ latitude: point.latitude, longitude: point.longitude }}
+            coordinate={{
+              latitude: point.latitude,
+              longitude: point.longitude,
+            }}
             pinColor={tokens.primary}
           />
         ))}

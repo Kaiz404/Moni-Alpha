@@ -1,8 +1,5 @@
 import { preferencesMMKV } from '@/lib/mmkv/preferences';
-import {
-  getProfilePreferences,
-  updateProfilePreferences,
-} from '@/lib/supabase/profile';
+import { getProfilePreferences, updateProfilePreferences } from '@/lib/supabase/profile';
 
 export const DEFAULT_WALLET_ID_KEY = 'default-wallet-id';
 

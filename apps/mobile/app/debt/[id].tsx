@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from 'react';
 import {
   Alert,
   Pressable,
@@ -6,13 +6,17 @@ import {
   Text,
   TextInput,
   View,
-} from "react-native";
-import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
-import { BrandHeader } from "@/components/ui/brand-header";
+} from 'react-native';
+import {
+  router,
+  useFocusEffect,
+  useLocalSearchParams,
+} from 'expo-router';
+import { BrandHeader } from '@/components/ui/brand-header';
 import { AmountInput } from '@/components/finance/amount-input';
-import { PrimaryButton } from "@/components/ui/primary-button";
-import { ScreenShell } from "@/components/ui/screen-shell";
-import { useThemeTokens } from "@/hooks/use-theme-tokens";
+import { PrimaryButton } from '@/components/ui/primary-button';
+import { ScreenShell } from '@/components/ui/screen-shell';
+import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import {
   addDebtPrincipal,
   debtDueState,
@@ -22,15 +26,19 @@ import {
   outstandingDebtBalance,
   repayDebt,
   writeOffDebt,
-} from "@/lib/supabase/debts";
-import { getWallets } from "@/lib/supabase/wallets";
-import type { Debt, DebtActivity } from "@repo/types";
-import { formatMinorAmount, parseAmountInput, type MinorAmount } from '@/lib/finance/money';
+} from '@/lib/supabase/debts';
+import { getWallets } from '@/lib/supabase/wallets';
+import type { Debt, DebtActivity } from '@repo/types';
+import {
+  formatMinorAmount,
+  parseAmountInput,
+  type MinorAmount,
+} from '@/lib/finance/money';
 
 const money = (currency: string, amountMinor: MinorAmount) =>
   formatMinorAmount(amountMinor, currency);
 const normalizeCurrency = (currency: unknown) =>
-  String(currency ?? "USD")
+  String(currency ?? 'USD')
     .trim()
     .toUpperCase();
 export default function DebtDetailScreen() {
@@ -40,9 +48,11 @@ export default function DebtDetailScreen() {
   const [debt, setDebt] = useState<Debt | null>(null);
   const [activities, setActivities] = useState<DebtActivity[]>([]);
   const [wallets, setWallets] = useState<WalletItem[]>([]);
-  const [action, setAction] = useState<"principal" | "repayment" | null>(null);
-  const [amount, setAmount] = useState("");
-  const [walletId, setWalletId] = useState("");
+  const [action, setAction] = useState<
+    'principal' | 'repayment' | null
+  >(null);
+  const [amount, setAmount] = useState('');
+  const [walletId, setWalletId] = useState('');
   const [saving, setSaving] = useState(false);
   const load = useCallback(async () => {
     if (!id) return;
@@ -56,7 +66,7 @@ export default function DebtDetailScreen() {
         (wallet) =>
           normalizeCurrency(wallet.currency) ===
           normalizeCurrency(item?.currency),
-      )?.id ?? "";
+      )?.id ?? '';
     setDebt(item);
     setActivities(events);
     setWallets(walletRows);
@@ -91,13 +101,16 @@ export default function DebtDetailScreen() {
     );
   const matchingWallets = wallets.filter(
     (wallet) =>
-      normalizeCurrency(wallet.currency) === normalizeCurrency(debt.currency),
+      normalizeCurrency(wallet.currency) ===
+      normalizeCurrency(debt.currency),
   );
-  const openCashAction = (nextAction: "principal" | "repayment") => {
+  const openCashAction = (nextAction: 'principal' | 'repayment') => {
     const selectedIsEligible = matchingWallets.some(
       (wallet) => wallet.id === walletId,
     );
-    setWalletId(selectedIsEligible ? walletId : (matchingWallets[0]?.id ?? ""));
+    setWalletId(
+      selectedIsEligible ? walletId : (matchingWallets[0]?.id ?? ''),
+    );
     setAction(nextAction);
   };
   const submit = async () => {
@@ -108,7 +121,7 @@ export default function DebtDetailScreen() {
       : matchingWallets[0]?.id;
     if (!selectedWalletId) {
       Alert.alert(
-        "No matching wallet",
+        'No matching wallet',
         `Add or reactivate a ${debt.currency} wallet before recording a cash debt activity.`,
       );
       return;
@@ -116,16 +129,25 @@ export default function DebtDetailScreen() {
     try {
       setSaving(true);
       if (!action) return;
-      if (action === "principal")
-        await addDebtPrincipal(debt, parseAmountInput(amount), selectedWalletId);
-      else await repayDebt(debt, parseAmountInput(amount), selectedWalletId);
+      if (action === 'principal')
+        await addDebtPrincipal(
+          debt,
+          parseAmountInput(amount),
+          selectedWalletId,
+        );
+      else
+        await repayDebt(
+          debt,
+          parseAmountInput(amount),
+          selectedWalletId,
+        );
       setAction(null);
-      setAmount("");
+      setAmount('');
       await load();
     } catch (error) {
       Alert.alert(
-        "Could not save activity",
-        error instanceof Error ? error.message : "Unknown error",
+        'Could not save activity',
+        error instanceof Error ? error.message : 'Unknown error',
       );
     } finally {
       setSaving(false);
@@ -133,18 +155,18 @@ export default function DebtDetailScreen() {
   };
   const writeOff = () =>
     Alert.alert(
-      "Write off debt?",
+      'Write off debt?',
       `This records ${money(debt.currency, balance)} as non-cash settled.`,
       [
-        { text: "Cancel", style: "cancel" },
+        { text: 'Cancel', style: 'cancel' },
         {
-          text: "Write off",
-          style: "destructive",
+          text: 'Write off',
+          style: 'destructive',
           onPress: () =>
             writeOffDebt(debt)
               .then(load)
               .catch((error) =>
-                Alert.alert("Could not write off", error.message),
+                Alert.alert('Could not write off', error.message),
               ),
         },
       ],
@@ -158,24 +180,28 @@ export default function DebtDetailScreen() {
       >
         <View className="mb-4 rounded-2xl bg-card p-4">
           <Text className="text-sm text-muted">
-            {debt.direction === "owed_to_me" ? "They owe you" : "You owe them"}{" "}
-            · {debtDueState(debt, balance).replace("_", " ")}
+            {debt.direction === 'owed_to_me'
+              ? 'They owe you'
+              : 'You owe them'}{' '}
+            · {debtDueState(debt, balance).replace('_', ' ')}
           </Text>
           <Text className="mt-1 text-3xl font-bold text-foreground">
             {money(debt.currency, balance)}
           </Text>
           {debt.dueDate ? (
-            <Text className="mt-1 text-sm text-muted">Due {debt.dueDate}</Text>
+            <Text className="mt-1 text-sm text-muted">
+              Due {debt.dueDate}
+            </Text>
           ) : null}
         </View>
         {action ? (
           <View className="mb-4 rounded-2xl border border-border bg-card p-3">
             <Text className="font-bold text-foreground">
-              {action === "principal"
-                ? debt.direction === "owed_to_me"
-                  ? "Lend more"
-                  : "Borrow more"
-                : "Record repayment"}
+              {action === 'principal'
+                ? debt.direction === 'owed_to_me'
+                  ? 'Lend more'
+                  : 'Borrow more'
+                : 'Record repayment'}
             </Text>
             <AmountInput
               value={amount}
@@ -190,14 +216,14 @@ export default function DebtDetailScreen() {
                 {matchingWallets.map((wallet) => (
                   <Pressable
                     key={wallet.id}
-                    className={`rounded-lg px-3 py-2 ${walletId === wallet.id ? "bg-primary" : "border border-border"}`}
+                    className={`rounded-lg px-3 py-2 ${walletId === wallet.id ? 'bg-primary' : 'border border-border'}`}
                     onPress={() => setWalletId(wallet.id)}
                   >
                     <Text
                       className={
                         walletId === wallet.id
-                          ? "text-primary-foreground"
-                          : "text-foreground"
+                          ? 'text-primary-foreground'
+                          : 'text-foreground'
                       }
                     >
                       {wallet.name}
@@ -208,8 +234,8 @@ export default function DebtDetailScreen() {
             ) : (
               <View className="mt-3 rounded-lg bg-danger/10 p-3">
                 <Text className="text-sm text-danger">
-                  No active {debt.currency} wallet is available. Add or
-                  reactivate one, then try again.
+                  No active {debt.currency} wallet is available. Add
+                  or reactivate one, then try again.
                 </Text>
               </View>
             )}
@@ -232,20 +258,25 @@ export default function DebtDetailScreen() {
           <View className="mb-4 flex-row gap-2">
             <PrimaryButton
               label={
-                debt.direction === "owed_to_me" ? "Lend more" : "Borrow more"
+                debt.direction === 'owed_to_me'
+                  ? 'Lend more'
+                  : 'Borrow more'
               }
               className="flex-1"
-              onPress={() => openCashAction("principal")}
+              onPress={() => openCashAction('principal')}
             />
             <PrimaryButton
               label="Repayment"
               className="flex-1"
-              onPress={() => openCashAction("repayment")}
+              onPress={() => openCashAction('repayment')}
             />
           </View>
         )}
         {balance > 0 ? (
-          <Pressable className="mb-4 self-start" onPress={writeOff}>
+          <Pressable
+            className="mb-4 self-start"
+            onPress={writeOff}
+          >
             <Text className="font-semibold text-expense">
               Write off remaining balance
             </Text>
@@ -261,27 +292,27 @@ export default function DebtDetailScreen() {
           >
             <View className="flex-row justify-between">
               <Text className="font-semibold text-foreground">
-                {item.kind.replace("_", " ")}
+                {item.kind.replace('_', ' ')}
               </Text>
               <Text className="font-semibold text-foreground">
                 {money(debt.currency, item.amountMinor)}
               </Text>
             </View>
             <Text className="mt-1 text-sm text-muted">
-              {new Date(item.activityDate).toLocaleDateString()}{" "}
-              {item.walletId ? "· Cash wallet" : "· Non-cash"}
+              {new Date(item.activityDate).toLocaleDateString()}{' '}
+              {item.walletId ? '· Cash wallet' : '· Non-cash'}
             </Text>
             <Pressable
               className="mt-2 self-start"
               onPress={() =>
                 Alert.alert(
-                  "Remove activity?",
-                  "The linked wallet transaction will also be removed.",
+                  'Remove activity?',
+                  'The linked wallet transaction will also be removed.',
                   [
-                    { text: "Cancel", style: "cancel" },
+                    { text: 'Cancel', style: 'cancel' },
                     {
-                      text: "Remove",
-                      style: "destructive",
+                      text: 'Remove',
+                      style: 'destructive',
                       onPress: () =>
                         deleteDebtActivity(debt, item.id).then(load),
                     },

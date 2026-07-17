@@ -6,10 +6,5 @@ export {
   useUpdateTransaction,
   useDeleteTransaction,
 } from './use-transactions';
-export {
-  useWallets,
-  useCreateWallet,
-  useUpdateWallet,
-  useDeleteWallet,
-} from './use-wallets';
+export { useWallets, useCreateWallet, useUpdateWallet, useDeleteWallet } from './use-wallets';
 export { useCategories } from './use-categories';

@@ -16,7 +16,10 @@ export function useProposedTransactions() {
   const approve = useCallback(
     async (
       proposal: ProposedTransaction,
-      wallets: { walletId: string; transferToWalletId?: string | null },
+      wallets: {
+        walletId: string;
+        transferToWalletId?: string | null;
+      },
     ) => {
       await approveProposedTransaction(proposal, wallets);
     },

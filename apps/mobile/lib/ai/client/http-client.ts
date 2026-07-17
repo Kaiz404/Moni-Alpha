@@ -55,15 +55,13 @@ async function postJson<T>(path: string, body: unknown): Promise<T> {
 }
 
 function asExtractResult(data: unknown): ExtractResult {
-  if (
-    data &&
-    typeof data === 'object' &&
-    'status' in data &&
-    (data as ExtractResult).status
-  ) {
+  if (data && typeof data === 'object' && 'status' in data && (data as ExtractResult).status) {
     return data as ExtractResult;
   }
-  return { status: 'unavailable', reason: 'Unexpected AI backend response' };
+  return {
+    status: 'unavailable',
+    reason: 'Unexpected AI backend response',
+  };
 }
 
 export const httpAiClient: AiClient = {
@@ -82,7 +80,10 @@ export const httpAiClient: AiClient = {
     try {
       const payload = await buildImagePayload(req.imageUri);
       if (!payload) {
-        return { status: 'skipped', reason: 'Could not read the receipt image' };
+        return {
+          status: 'skipped',
+          reason: 'Could not read the receipt image',
+        };
       }
       const wireReq: ExtractImageWireRequest = { ...req, ...payload };
       return asExtractResult(await postJson('/v1/extract/image', wireReq));
@@ -94,9 +95,7 @@ export const httpAiClient: AiClient = {
     }
   },
 
-  async extractFromNotification(
-    req: ExtractNotificationRequest,
-  ): Promise<ExtractResult> {
+  async extractFromNotification(req: ExtractNotificationRequest): Promise<ExtractResult> {
     try {
       return asExtractResult(await postJson('/v1/extract/notification', req));
     } catch (e) {
@@ -111,7 +110,10 @@ export const httpAiClient: AiClient = {
     try {
       const data = await postJson<ChatAnalyzeResult>('/v1/chat/analyze', req);
       if (data?.status === 'ok' || data?.status === 'unavailable') return data;
-      return { status: 'unavailable', reason: 'Unexpected AI backend response' };
+      return {
+        status: 'unavailable',
+        reason: 'Unexpected AI backend response',
+      };
     } catch (e) {
       return {
         status: 'unavailable',

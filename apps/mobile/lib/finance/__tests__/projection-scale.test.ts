@@ -36,15 +36,53 @@ it('keeps a 10k-transaction wallet query on its wallet index', () => {
   }
   const projection: FinanceProjection = {
     walletsById: {
-      wallet_1: { id: 'wallet_1', userId: 'user_1', name: 'Primary', type: 'bank', currency: 'USD', initialBalanceMinor: decimalToMinor('10000'), color: null, icon: null, cardStyleId: null, isActive: true, displayOrder: 0 },
-      wallet_2: { id: 'wallet_2', userId: 'user_1', name: 'Secondary', type: 'bank', currency: 'USD', initialBalanceMinor: decimalToMinor('10000'), color: null, icon: null, cardStyleId: null, isActive: true, displayOrder: 1 },
+      wallet_1: {
+        id: 'wallet_1',
+        userId: 'user_1',
+        name: 'Primary',
+        type: 'bank',
+        currency: 'USD',
+        initialBalanceMinor: decimalToMinor('10000'),
+        color: null,
+        icon: null,
+        cardStyleId: null,
+        isActive: true,
+        displayOrder: 0,
+      },
+      wallet_2: {
+        id: 'wallet_2',
+        userId: 'user_1',
+        name: 'Secondary',
+        type: 'bank',
+        currency: 'USD',
+        initialBalanceMinor: decimalToMinor('10000'),
+        color: null,
+        icon: null,
+        cardStyleId: null,
+        isActive: true,
+        displayOrder: 1,
+      },
     },
     transactionsById,
-    transactionsByWallet: { wallet_1: firstWalletIds, wallet_2: secondWalletIds },
-    categoriesById: {}, budgetsById: {}, debtsById: {}, debtActivitiesById: {}, debtActivityIdsByDebt: {}, proposalsById: {},
+    transactionsByWallet: {
+      wallet_1: firstWalletIds,
+      wallet_2: secondWalletIds,
+    },
+    categoriesById: {},
+    budgetsById: {},
+    debtsById: {},
+    debtActivitiesById: {},
+    debtActivityIdsByDebt: {},
+    proposalsById: {},
   };
   financeProjection$.set(projection);
 
-  expect(transactions$({ userId: 'user_1', walletId: 'wallet_1', limit: 25 }).get()).toHaveLength(25);
+  expect(
+    transactions$({
+      userId: 'user_1',
+      walletId: 'wallet_1',
+      limit: 25,
+    }).get(),
+  ).toHaveLength(25);
   expect(walletBalanceMinor$('wallet_1').get()).toBe(500_000);
 });

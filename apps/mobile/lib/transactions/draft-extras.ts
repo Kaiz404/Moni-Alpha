@@ -8,10 +8,18 @@
 export type TransactionDraftExtras = {
   merchant: string;
   description: string;
-  locationSnapshot: { latitude: number; longitude: number; name: string | null } | null;
+  locationSnapshot: {
+    latitude: number;
+    longitude: number;
+    name: string | null;
+  } | null;
 };
 
-const EMPTY: TransactionDraftExtras = { merchant: '', description: '', locationSnapshot: null };
+const EMPTY: TransactionDraftExtras = {
+  merchant: '',
+  description: '',
+  locationSnapshot: null,
+};
 
 let current: TransactionDraftExtras = { ...EMPTY };
 

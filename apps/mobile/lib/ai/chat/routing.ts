@@ -26,11 +26,7 @@ export function classifyTextIntent(text: string, hasImage: boolean): RouteIntent
 
 export type ForcedIntent = 'extract' | 'analyze';
 
-export function resolveRoute(
-  text: string,
-  hasImage: boolean,
-  forced?: ForcedIntent,
-): RouteIntent {
+export function resolveRoute(text: string, hasImage: boolean, forced?: ForcedIntent): RouteIntent {
   if (forced === 'extract') return 'extract';
   if (forced === 'analyze') return 'analyze';
   return classifyTextIntent(text, hasImage);

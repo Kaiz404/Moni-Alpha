@@ -19,7 +19,14 @@ export function CaptureButton() {
   return (
     <View
       pointerEvents="box-none"
-      style={{ position: 'absolute', top: -28, left: 0, right: 0, alignItems: 'center', zIndex: 10 }}
+      style={{
+        position: 'absolute',
+        top: -28,
+        left: 0,
+        right: 0,
+        alignItems: 'center',
+        zIndex: 10,
+      }}
     >
       <Pressable
         accessibilityRole="button"
@@ -51,8 +58,13 @@ export function CaptureButton() {
       >
         <GradientCard
           cardStyle={captureCardStyle}
-          className="h-16 w-16 items-center justify-center rounded-full border-[3px] border-background">
-          <MaterialIcons name="add" size={30} color="#ffffff" />
+          className="h-16 w-16 items-center justify-center rounded-full border-[3px] border-background"
+        >
+          <MaterialIcons
+            name="add"
+            size={30}
+            color="#ffffff"
+          />
         </GradientCard>
       </Pressable>
     </View>

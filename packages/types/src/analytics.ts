@@ -1,14 +1,7 @@
 import { z } from 'zod';
 
 // Analytics time period enum
-export const analyticsPeriodSchema = z.enum([
-  'day',
-  'week',
-  'month',
-  'quarter',
-  'year',
-  'all',
-]);
+export const analyticsPeriodSchema = z.enum(['day', 'week', 'month', 'quarter', 'year', 'all']);
 
 // Overview stats response
 export const overviewStatsSchema = z.object({
@@ -17,12 +10,14 @@ export const overviewStatsSchema = z.object({
   netCashFlow: z.number(),
   totalBalance: z.number(),
   transactionCount: z.number(),
-  topCategory: z.object({
-    id: z.string().uuid(),
-    name: z.string(),
-    amount: z.number(),
-    percentage: z.number(),
-  }).nullable(),
+  topCategory: z
+    .object({
+      id: z.string().uuid(),
+      name: z.string(),
+      amount: z.number(),
+      percentage: z.number(),
+    })
+    .nullable(),
   compared: z.object({
     income: z.object({
       amount: z.number(),

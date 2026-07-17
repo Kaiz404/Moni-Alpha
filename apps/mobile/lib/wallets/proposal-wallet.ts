@@ -45,8 +45,7 @@ export function displayCurrencyForProposal(
 ): string {
   const proposalCur = normalizeCurrency(proposal.currency);
   const walletCur =
-    currencyForWallet(wallets, proposal.walletId) ??
-    currencyForWallet(wallets, defaultWalletId);
+    currencyForWallet(wallets, proposal.walletId) ?? currencyForWallet(wallets, defaultWalletId);
 
   if (walletCur && proposalCur && walletCur === proposalCur) {
     return walletCur;

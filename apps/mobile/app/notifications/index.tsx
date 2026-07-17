@@ -1,6 +1,13 @@
 import React, { useCallback, useState } from 'react';
 import { Stack, useFocusEffect } from 'expo-router';
-import { View, Text, FlatList, TouchableOpacity, RefreshControl, Alert } from 'react-native';
+import {
+  View,
+  Text,
+  FlatList,
+  TouchableOpacity,
+  RefreshControl,
+  Alert,
+} from 'react-native';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { useNotificationListener } from '@/hooks/use-notification-listener';
 import type { CapturedNotification } from '@/hooks/use-notification-listener';
@@ -15,11 +22,17 @@ function NotificationCard({
   onDismiss: (id: string) => void;
 }) {
   const displayTitle = item.titleBig || item.title || '(no title)';
-  const displayBody = item.bigText || item.text || item.subText || item.summaryText || '(no content)';
+  const displayBody =
+    item.bigText ||
+    item.text ||
+    item.subText ||
+    item.summaryText ||
+    '(no content)';
   const received = new Date(item.receivedAt);
   const isPrefilterPassed = !!item.prefilterPassed;
   const packageName = resolveNotificationPackageName(item);
-  const isLinked = item.packageLinked ?? isPackageLinkedInCache(packageName);
+  const isLinked =
+    item.packageLinked ?? isPackageLinkedInCache(packageName);
 
   return (
     <View className="mb-3 rounded-2xl border border-border bg-card p-4">
@@ -34,7 +47,10 @@ function NotificationCard({
                   : 'bg-transfer'
             }`}
           />
-          <Text className="text-xs font-semibold text-foreground flex-1" numberOfLines={1}>
+          <Text
+            className="text-xs font-semibold text-foreground flex-1"
+            numberOfLines={1}
+          >
             {item.app || packageName || 'Unknown app'}
           </Text>
         </View>
@@ -47,7 +63,8 @@ function NotificationCard({
                 : isPrefilterPassed
                   ? 'bg-warning/15'
                   : 'bg-background-muted'
-            }`}>
+            }`}
+          >
             <Text
               className={`text-[11px] font-semibold ${
                 isPrefilterPassed && isLinked
@@ -55,7 +72,8 @@ function NotificationCard({
                   : isPrefilterPassed
                     ? 'text-warning'
                     : 'text-muted'
-              }`}>
+              }`}
+            >
               {isPrefilterPassed && isLinked
                 ? 'Queued'
                 : isPrefilterPassed
@@ -63,29 +81,39 @@ function NotificationCard({
                   : 'Ignored'}
             </Text>
           </View>
-          
+
           <View className="flex-row items-center gap-2">
             <Text className="text-xs text-muted">
-              {received.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+              {received.toLocaleTimeString([], {
+                hour: '2-digit',
+                minute: '2-digit',
+              })}
             </Text>
             <TouchableOpacity
               onPress={() => onDismiss(item.id)}
-              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-              <IconSymbol name="close" size={12} color="#9ca3af" />
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
+              <IconSymbol
+                name="close"
+                size={12}
+                color="#9ca3af"
+              />
             </TouchableOpacity>
           </View>
-
-
         </View>
       </View>
 
-
-      <Text className="mb-1 text-sm font-semibold text-foreground" numberOfLines={2}>
+      <Text
+        className="mb-1 text-sm font-semibold text-foreground"
+        numberOfLines={2}
+      >
         {displayTitle}
       </Text>
 
-      
-      <Text className="text-sm text-muted" numberOfLines={3}>
+      <Text
+        className="text-sm text-muted"
+        numberOfLines={3}
+      >
         {displayBody}
       </Text>
     </View>
@@ -93,12 +121,8 @@ function NotificationCard({
 }
 
 export default function NotificationsScreen() {
-  const {
-    notifications,
-    refresh,
-    clearAll,
-    clearOne,
-  } = useNotificationListener();
+  const { notifications, refresh, clearAll, clearOne } =
+    useNotificationListener();
   const [refreshing, setRefreshing] = useState(false);
 
   useFocusEffect(
@@ -114,15 +138,25 @@ export default function NotificationsScreen() {
   }, [refresh]);
 
   const handleClearAll = useCallback(() => {
-    Alert.alert('Clear all notifications', 'Remove all stored notifications?', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Clear all', style: 'destructive', onPress: clearAll },
-    ]);
+    Alert.alert(
+      'Clear all notifications',
+      'Remove all stored notifications?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Clear all',
+          style: 'destructive',
+          onPress: clearAll,
+        },
+      ],
+    );
   }, [clearAll]);
 
   return (
     <View className="flex-1 bg-background p-4">
-      <Stack.Screen options={{ headerShown: true, title: 'Notifications' }} />
+      <Stack.Screen
+        options={{ headerShown: true, title: 'Notifications' }}
+      />
 
       <View className="mb-3 flex-row items-center justify-between">
         <Text className="text-xs font-semibold uppercase tracking-wider text-muted">
@@ -130,7 +164,9 @@ export default function NotificationsScreen() {
         </Text>
         {notifications.length > 0 && (
           <TouchableOpacity onPress={handleClearAll}>
-            <Text className="text-xs font-medium text-danger">Clear all</Text>
+            <Text className="text-xs font-medium text-danger">
+              Clear all
+            </Text>
           </TouchableOpacity>
         )}
       </View>
@@ -138,8 +174,18 @@ export default function NotificationsScreen() {
       <FlatList
         data={notifications}
         keyExtractor={(item) => item.id}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-        renderItem={({ item }) => <NotificationCard item={item} onDismiss={clearOne} />}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+          />
+        }
+        renderItem={({ item }) => (
+          <NotificationCard
+            item={item}
+            onDismiss={clearOne}
+          />
+        )}
         ListEmptyComponent={
           <View className="items-center py-8">
             <Text className="text-sm text-muted">

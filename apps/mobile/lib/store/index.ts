@@ -4,10 +4,7 @@
  * auth session storage (`lib/mmkv/auth`) or receipt upload queue (`lib/mmkv/image-uploads`).
  */
 import { observable, syncState, when, type Observable } from '@legendapp/state';
-import {
-  configureSyncedSupabase,
-  syncedSupabase,
-} from '@legendapp/state/sync-plugins/supabase';
+import { configureSyncedSupabase, syncedSupabase } from '@legendapp/state/sync-plugins/supabase';
 import { legendMMKV, legendPersistPlugin } from '@/lib/mmkv/legend-store';
 import { supabase } from '@/lib/supabase/client';
 import { randomUUID } from 'expo-crypto';

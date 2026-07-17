@@ -1,8 +1,4 @@
-import {
-  decimalToMinor,
-  formatMinorAmount,
-  minorToDecimal,
-} from '@repo/types';
+import { decimalToMinor, formatMinorAmount, minorToDecimal } from '@repo/types';
 import { outstandingDebtBalanceMinor, transactionDeltaMinor } from '../ledger';
 
 describe('minor-unit money', () => {
@@ -18,16 +14,23 @@ describe('minor-unit money', () => {
   });
 
   it('uses the transaction direction for each transfer endpoint', () => {
-    const transfer = { walletId: 'from', transferToWalletId: 'to', amountMinor: 2500 as any, type: 'transfer' as const };
+    const transfer = {
+      walletId: 'from',
+      transferToWalletId: 'to',
+      amountMinor: 2500 as any,
+      type: 'transfer' as const,
+    };
     expect(transactionDeltaMinor(transfer, 'from')).toBe(-2500);
     expect(transactionDeltaMinor(transfer, 'to')).toBe(2500);
   });
 
   it('keeps debt principal and settlement activity exact', () => {
-    expect(outstandingDebtBalanceMinor([
-      { kind: 'principal', amountMinor: 10005 as any },
-      { kind: 'repayment', amountMinor: 5000 as any },
-    ])).toBe(5005);
+    expect(
+      outstandingDebtBalanceMinor([
+        { kind: 'principal', amountMinor: 10005 as any },
+        { kind: 'repayment', amountMinor: 5000 as any },
+      ]),
+    ).toBe(5005);
   });
 
   it('formats only at the render boundary', () => {

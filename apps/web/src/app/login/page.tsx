@@ -28,7 +28,10 @@ export default function LoginPage() {
 
     try {
       const supabase = createClient();
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
 
       if (error) {
         setError(error.message);
@@ -67,7 +70,10 @@ export default function LoginPage() {
         <h1>Moni</h1>
         <p className="auth-subtitle">Sign in to your account</p>
 
-        <form onSubmit={handleSubmit} className="auth-form">
+        <form
+          onSubmit={handleSubmit}
+          className="auth-form"
+        >
           {error && <div className="auth-error">{error}</div>}
           <div className="auth-field">
             <label htmlFor="email">Email</label>
@@ -86,14 +92,18 @@ export default function LoginPage() {
             <input
               id="password"
               type="password"
-              value={password} 
+              value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
               autoComplete="current-password"
               minLength={8}
             />
           </div>
-          <button type="submit" className="auth-submit" disabled={loading}>
+          <button
+            type="submit"
+            className="auth-submit"
+            disabled={loading}
+          >
             {loading ? 'Signing in...' : 'Sign in'}
           </button>
 

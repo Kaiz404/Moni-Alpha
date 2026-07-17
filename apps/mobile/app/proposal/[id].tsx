@@ -1,5 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Alert, ScrollView, Text, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Alert,
+  ScrollView,
+  Text,
+  View,
+} from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import type { ProposedTransaction } from '@repo/types';
 
@@ -27,7 +33,8 @@ export default function ProposalDetailScreen() {
     return Array.isArray(x) ? x[0] : x;
   }, [params.id]);
 
-  const [proposal, setProposal] = useState<ProposedTransaction | null>(null);
+  const [proposal, setProposal] =
+    useState<ProposedTransaction | null>(null);
   const [wallets, setWallets] = useState<WalletOption[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -43,7 +50,10 @@ export default function ProposalDetailScreen() {
     setIsLoading(true);
     setLoadError(null);
     try {
-      const [pending, ws] = await Promise.all([getProposedTransactions(), getWallets()]);
+      const [pending, ws] = await Promise.all([
+        getProposedTransactions(),
+        getWallets(),
+      ]);
       const found = pending.find((p) => p.id === proposalId) ?? null;
       setProposal(found);
       setWallets(
@@ -54,9 +64,12 @@ export default function ProposalDetailScreen() {
           currency: w.currency ?? 'MYR',
         })),
       );
-      if (!found) setLoadError('Proposal not found or already reviewed.');
+      if (!found)
+        setLoadError('Proposal not found or already reviewed.');
     } catch (e) {
-      setLoadError(e instanceof Error ? e.message : 'Failed to load proposal.');
+      setLoadError(
+        e instanceof Error ? e.message : 'Failed to load proposal.',
+      );
     } finally {
       setIsLoading(false);
     }
@@ -72,7 +85,8 @@ export default function ProposalDetailScreen() {
 
       const effectiveType = edited.type ?? proposal.type ?? 'expense';
       const walletId = edited.walletId ?? proposal.walletId;
-      const transferToWalletId = edited.transferToWalletId ?? proposal.transferToWalletId;
+      const transferToWalletId =
+        edited.transferToWalletId ?? proposal.transferToWalletId;
 
       if (!walletId) {
         Alert.alert('Cannot approve', 'Select a source wallet.');
@@ -81,17 +95,33 @@ export default function ProposalDetailScreen() {
 
       if (effectiveType === 'transfer') {
         if (!transferToWalletId) {
-          Alert.alert('Cannot approve', 'Select a destination wallet for this transfer.');
+          Alert.alert(
+            'Cannot approve',
+            'Select a destination wallet for this transfer.',
+          );
           return;
         }
         if (walletId === transferToWalletId) {
-          Alert.alert('Cannot approve', 'Source and destination wallets must differ.');
+          Alert.alert(
+            'Cannot approve',
+            'Source and destination wallets must differ.',
+          );
           return;
         }
         const fromWallet = wallets.find((w) => w.id === walletId);
-        const toWallet = wallets.find((w) => w.id === transferToWalletId);
-        if (fromWallet && toWallet && fromWallet.currency.toUpperCase() !== toWallet.currency.toUpperCase()) {
-          Alert.alert('Cannot approve', 'Transfers require both wallets to use the same currency.');
+        const toWallet = wallets.find(
+          (w) => w.id === transferToWalletId,
+        );
+        if (
+          fromWallet &&
+          toWallet &&
+          fromWallet.currency.toUpperCase() !==
+            toWallet.currency.toUpperCase()
+        ) {
+          Alert.alert(
+            'Cannot approve',
+            'Transfers require both wallets to use the same currency.',
+          );
           return;
         }
       }
@@ -100,7 +130,10 @@ export default function ProposalDetailScreen() {
         ? localDateInputToIso(edited.date)
         : proposal.transactionDate;
       if (edited.date && !transactionDateIso) {
-        Alert.alert('Cannot approve', 'Enter a valid date (YYYY-MM-DD).');
+        Alert.alert(
+          'Cannot approve',
+          'Enter a valid date (YYYY-MM-DD).',
+        );
         return;
       }
 
@@ -110,18 +143,23 @@ export default function ProposalDetailScreen() {
           ...proposal,
           amountMinor: edited.amountMinor,
           type: effectiveType,
-          merchant: effectiveType === 'transfer' ? null : edited.merchant || null,
+          merchant:
+            effectiveType === 'transfer'
+              ? null
+              : edited.merchant || null,
           description: edited.description || null,
           transactionDate: transactionDateIso,
         };
 
         await approveProposedTransaction(updatedProposal, {
           walletId,
-          transferToWalletId: effectiveType === 'transfer' ? transferToWalletId : null,
+          transferToWalletId:
+            effectiveType === 'transfer' ? transferToWalletId : null,
         });
         router.back();
       } catch (e) {
-        const message = e instanceof Error ? e.message : 'Failed to approve';
+        const message =
+          e instanceof Error ? e.message : 'Failed to approve';
         console.error('[ProposalDetail] approve error:', e);
         Alert.alert('Error', message);
       } finally {
@@ -138,7 +176,8 @@ export default function ProposalDetailScreen() {
       await rejectProposedTransaction(proposal.id);
       router.back();
     } catch (e) {
-      const message = e instanceof Error ? e.message : 'Failed to reject';
+      const message =
+        e instanceof Error ? e.message : 'Failed to reject';
       console.error('[ProposalDetail] reject error:', e);
       Alert.alert('Error', message);
     } finally {
@@ -151,11 +190,16 @@ export default function ProposalDetailScreen() {
       <BrandHeader title="Review proposal" />
       {isLoading ? (
         <View className="flex-1 items-center justify-center">
-          <ActivityIndicator size="large" color={tokens.primary} />
+          <ActivityIndicator
+            size="large"
+            color={tokens.primary}
+          />
         </View>
       ) : loadError || !proposal ? (
         <View className="flex-1 items-center justify-center px-6">
-          <Text className="text-center text-base text-muted">{loadError ?? 'Proposal not found.'}</Text>
+          <Text className="text-center text-base text-muted">
+            {loadError ?? 'Proposal not found.'}
+          </Text>
         </View>
       ) : (
         <ScrollView

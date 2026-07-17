@@ -63,7 +63,10 @@ export async function getCategories(type?: 'income' | 'expense') {
 /** Minimal category rows for name maps in list/chart screens. */
 export async function getCategoryNameRows(): Promise<Array<{ id: string; name: string | null }>> {
   const userId = await getUserId();
-  return getAllCategoryRows(userId).map((c) => ({ id: c.id, name: c.name }));
+  return getAllCategoryRows(userId).map((c) => ({
+    id: c.id,
+    name: c.name,
+  }));
 }
 
 /** Expense categories (system + user) for budget screens. */

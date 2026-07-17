@@ -1,4 +1,9 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+} from 'react';
 import type { Session, User } from '@supabase/supabase-js';
 import { signInSchema, signUpSchema } from '@repo/types';
 import { supabase } from '@/lib/supabase/client';
@@ -15,19 +20,31 @@ type AuthContextType = {
   user: User | null;
   session: Session | null;
   isLoading: boolean;
-  signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
+  signIn: (
+    email: string,
+    password: string,
+  ) => Promise<{ error: Error | null }>;
   signUp: (
     email: string,
     password: string,
-    displayName: string
+    displayName: string,
   ) => Promise<{ error: Error | null; session: Session | null }>;
-  signInWithGoogle: () => Promise<{ error: Error | null; cancelled?: boolean }>;
+  signInWithGoogle: () => Promise<{
+    error: Error | null;
+    cancelled?: boolean;
+  }>;
   signOut: () => Promise<void>;
 };
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const AuthContext = createContext<AuthContextType | undefined>(
+  undefined,
+);
 
-export function AuthProvider({ children }: { children: React.ReactNode }) {
+export function AuthProvider({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -55,7 +72,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signIn = async (email: string, password: string) => {
     const parsed = signInSchema.safeParse({ email, password });
     if (!parsed.success) {
-      return { error: new Error(parsed.error.errors[0]?.message ?? 'Invalid input') };
+      return {
+        error: new Error(
+          parsed.error.errors[0]?.message ?? 'Invalid input',
+        ),
+      };
     }
     const { error } = await supabase.auth.signInWithPassword({
       email: parsed.data.email,
@@ -64,11 +85,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return { error: error ? new Error(error.message) : null };
   };
 
-  const signUp = async (email: string, password: string, displayName: string) => {
-    const parsed = signUpSchema.safeParse({ email, password, displayName });
+  const signUp = async (
+    email: string,
+    password: string,
+    displayName: string,
+  ) => {
+    const parsed = signUpSchema.safeParse({
+      email,
+      password,
+      displayName,
+    });
     if (!parsed.success) {
       return {
-        error: new Error(parsed.error.errors[0]?.message ?? 'Invalid input'),
+        error: new Error(
+          parsed.error.errors[0]?.message ?? 'Invalid input',
+        ),
         session: null,
       };
     }
@@ -77,12 +108,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       password: parsed.data.password,
       options: { data: { display_name: parsed.data.displayName } },
     });
-    if (error) return { error: new Error(error.message), session: null };
+    if (error)
+      return { error: new Error(error.message), session: null };
     if (data.user) {
       await supabase.from('profiles').insert({
         id: data.user.id,
         display_name: parsed.data.displayName,
-        preferences: { currency: 'USD', theme: 'system', notifications_enabled: true },
+        preferences: {
+          currency: 'USD',
+          theme: 'system',
+          notifications_enabled: true,
+        },
       });
     }
     return { error: null, session: data.session ?? null };
@@ -102,7 +138,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <AuthContext.Provider
-      value={{ user, session, isLoading, signIn, signUp, signInWithGoogle, signOut }}
+      value={{
+        user,
+        session,
+        isLoading,
+        signIn,
+        signUp,
+        signInWithGoogle,
+        signOut,
+      }}
     >
       {children}
     </AuthContext.Provider>

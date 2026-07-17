@@ -1,7 +1,10 @@
 import { useEffect } from 'react';
 import { router } from 'expo-router';
 
-import { queueReceiptImage, scanAndNormalizeReceipt } from '@/lib/receipts/scan-receipt';
+import {
+  queueReceiptImage,
+  scanAndNormalizeReceipt,
+} from '@/lib/receipts/scan-receipt';
 
 const TAG = '[Moni/Scan]';
 

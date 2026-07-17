@@ -63,11 +63,16 @@ function useDebugButtons(): GridButton[] {
 export default function DebugPage() {
   const buttons = useDebugButtons();
   const [runningId, setRunningId] = useState<string | null>(null);
-  const [lastResult, setLastResult] = useState<{ id: string; result: DebugTestResult } | null>(null);
+  const [lastResult, setLastResult] = useState<{
+    id: string;
+    result: DebugTestResult;
+  } | null>(null);
   const [logLines, setLogLines] = useState<string[]>([]);
-  const [selectedProcessLog, setSelectedProcessLog] = useState<ProcessId>('debug-log');
+  const [selectedProcessLog, setSelectedProcessLog] =
+    useState<ProcessId>('debug-log');
   const scrollRef = useRef<ScrollView>(null);
-  const { clearCapturedLogs, getFormattedLogs } = useCapturedProcessLogs();
+  const { clearCapturedLogs, getFormattedLogs } =
+    useCapturedProcessLogs();
 
   const uiLocked = runningId !== null;
 
@@ -82,7 +87,10 @@ export default function DebugPage() {
     clearCapturedLogs();
   }, [clearCapturedLogs]);
 
-  const selectedProcessLogs = getFormattedLogs(selectedProcessLog, 160);
+  const selectedProcessLogs = getFormattedLogs(
+    selectedProcessLog,
+    160,
+  );
 
   const handlePress = useCallback(
     async (btn: GridButton) => {
@@ -114,12 +122,17 @@ export default function DebugPage() {
         ref={scrollRef}
         contentContainerClassName="pb-20"
         showsVerticalScrollIndicator={false}
-        onContentSizeChange={() => scrollRef.current?.scrollToEnd({ animated: true })}
+        onContentSizeChange={() =>
+          scrollRef.current?.scrollToEnd({ animated: true })
+        }
       >
         <View className="px-3 pt-4 pb-2">
-          <Text className="text-white text-lg font-bold">Debug Panel</Text>
+          <Text className="text-white text-lg font-bold">
+            Debug Panel
+          </Text>
           <Text className="text-zinc-500 text-xs mt-1">
-            Tools for testing notification capture and the AI processing queue.
+            Tools for testing notification capture and the AI
+            processing queue.
           </Text>
         </View>
 
@@ -131,21 +144,33 @@ export default function DebugPage() {
             const isDisabled = uiLocked && !isRunning;
 
             return (
-              <View key={btn.id} className="w-1/3 p-1">
+              <View
+                key={btn.id}
+                className="w-1/3 p-1"
+              >
                 <TouchableOpacity
                   onPress={() => handlePress(btn)}
                   disabled={isDisabled}
                   activeOpacity={0.7}
                   className="rounded-xl p-3 min-h-[80px] justify-between"
                   style={{
-                    backgroundColor: isDisabled ? '#1a1a1a' : `${btn.color}18`,
+                    backgroundColor: isDisabled
+                      ? '#1a1a1a'
+                      : `${btn.color}18`,
                     borderWidth: 1,
-                    borderColor: isRunning ? btn.color : isDisabled ? '#222' : `${btn.color}40`,
+                    borderColor: isRunning
+                      ? btn.color
+                      : isDisabled
+                        ? '#222'
+                        : `${btn.color}40`,
                     opacity: isDisabled ? 0.4 : 1,
                   }}
                 >
                   {isRunning ? (
-                    <ActivityIndicator size="small" color={btn.color} />
+                    <ActivityIndicator
+                      size="small"
+                      color={btn.color}
+                    />
                   ) : (
                     <View
                       className="w-2 h-2 rounded-full mb-1"
@@ -176,46 +201,72 @@ export default function DebugPage() {
           <View
             className="mx-4 mt-3 rounded-lg px-3 py-2"
             style={{
-              backgroundColor: lastResult.result.success ? '#052e1680' : '#2a040480',
+              backgroundColor: lastResult.result.success
+                ? '#052e1680'
+                : '#2a040480',
               borderWidth: 1,
-              borderColor: lastResult.result.success ? '#16a34a50' : '#dc262650',
+              borderColor: lastResult.result.success
+                ? '#16a34a50'
+                : '#dc262650',
             }}
           >
             <Text
               className="text-xs font-bold"
-              style={{ color: lastResult.result.success ? '#4ade80' : '#fca5a5' }}
+              style={{
+                color: lastResult.result.success
+                  ? '#4ade80'
+                  : '#fca5a5',
+              }}
             >
-              {lastResult.result.success ? 'PASS' : 'FAIL'} — {lastResult.result.summary}
+              {lastResult.result.success ? 'PASS' : 'FAIL'} —{' '}
+              {lastResult.result.summary}
             </Text>
           </View>
         )}
 
         <View className="mx-4 mt-4">
           <View className="flex-row justify-between items-center mb-2">
-            <Text className="text-zinc-400 text-xs font-semibold">Live logs</Text>
+            <Text className="text-zinc-400 text-xs font-semibold">
+              Live logs
+            </Text>
             <TouchableOpacity onPress={clearLog}>
-              <Text className="text-zinc-600 text-xs">Clear All Logs</Text>
+              <Text className="text-zinc-600 text-xs">
+                Clear All Logs
+              </Text>
             </TouchableOpacity>
           </View>
           <View className="flex-row flex-wrap gap-2">
-            {(Object.keys(PROCESS_LABELS) as ProcessId[]).map((id) => (
-              <TouchableOpacity
-                key={id}
-                onPress={() => setSelectedProcessLog(id)}
-                className="rounded-md px-2.5 py-1.5 border"
-                style={{
-                  borderColor: selectedProcessLog === id ? '#3b82f6' : '#3f3f46',
-                  backgroundColor: selectedProcessLog === id ? '#1e3a8a55' : '#18181b',
-                }}
-              >
-                <Text
-                  className="text-[10px]"
-                  style={{ color: selectedProcessLog === id ? '#93c5fd' : '#a1a1aa' }}
+            {(Object.keys(PROCESS_LABELS) as ProcessId[]).map(
+              (id) => (
+                <TouchableOpacity
+                  key={id}
+                  onPress={() => setSelectedProcessLog(id)}
+                  className="rounded-md px-2.5 py-1.5 border"
+                  style={{
+                    borderColor:
+                      selectedProcessLog === id
+                        ? '#3b82f6'
+                        : '#3f3f46',
+                    backgroundColor:
+                      selectedProcessLog === id
+                        ? '#1e3a8a55'
+                        : '#18181b',
+                  }}
                 >
-                  {PROCESS_LABELS[id]}
-                </Text>
-              </TouchableOpacity>
-            ))}
+                  <Text
+                    className="text-[10px]"
+                    style={{
+                      color:
+                        selectedProcessLog === id
+                          ? '#93c5fd'
+                          : '#a1a1aa',
+                    }}
+                  >
+                    {PROCESS_LABELS[id]}
+                  </Text>
+                </TouchableOpacity>
+              ),
+            )}
           </View>
         </View>
         {(selectedProcessLogs.length > 0 || logLines.length > 0) && (
@@ -226,7 +277,10 @@ export default function DebugPage() {
               </Text>
             </View>
             <View className="bg-zinc-950 rounded-lg border border-zinc-800 p-3">
-              {(selectedProcessLogs.length > 0 ? selectedProcessLogs : logLines).map((line, i) => (
+              {(selectedProcessLogs.length > 0
+                ? selectedProcessLogs
+                : logLines
+              ).map((line, i) => (
                 <Text
                   key={i}
                   className="text-[11px] leading-4 font-mono"
@@ -235,9 +289,12 @@ export default function DebugPage() {
                       ? '#60a5fa'
                       : line.startsWith('---')
                         ? '#a78bfa'
-                        : line.includes('FAIL') || line.includes('failed') || line.includes('ERROR')
+                        : line.includes('FAIL') ||
+                            line.includes('failed') ||
+                            line.includes('ERROR')
                           ? '#fca5a5'
-                          : line.includes('PASS') || line.includes('success')
+                          : line.includes('PASS') ||
+                              line.includes('success')
                             ? '#4ade80'
                             : '#d4d4d8',
                   }}

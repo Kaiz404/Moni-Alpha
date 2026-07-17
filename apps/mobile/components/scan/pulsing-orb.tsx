@@ -19,7 +19,10 @@ export function PulsingOrb({ active }: { active: boolean }) {
   useEffect(() => {
     if (active) {
       pulse.value = withRepeat(
-        withTiming(1, { duration: 1100, easing: Easing.inOut(Easing.ease) }),
+        withTiming(1, {
+          duration: 1100,
+          easing: Easing.inOut(Easing.ease),
+        }),
         -1,
         true,
       );
@@ -35,7 +38,10 @@ export function PulsingOrb({ active }: { active: boolean }) {
   }));
 
   return (
-    <View className="items-center justify-center" style={{ height: 160, width: 160 }}>
+    <View
+      className="items-center justify-center"
+      style={{ height: 160, width: 160 }}
+    >
       <Animated.View
         style={[
           {
@@ -50,8 +56,17 @@ export function PulsingOrb({ active }: { active: boolean }) {
       />
       <View
         className="items-center justify-center rounded-full"
-        style={{ height: 104, width: 104, backgroundColor: tokens.primary }}>
-        <MaterialIcons name="mic" size={40} color="#ffffff" />
+        style={{
+          height: 104,
+          width: 104,
+          backgroundColor: tokens.primary,
+        }}
+      >
+        <MaterialIcons
+          name="mic"
+          size={40}
+          color="#ffffff"
+        />
       </View>
     </View>
   );

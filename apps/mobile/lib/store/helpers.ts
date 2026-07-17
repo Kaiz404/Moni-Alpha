@@ -5,13 +5,12 @@ export function isActive(value: unknown): boolean {
   return value === true || value === 1 || value === '1';
 }
 
-export function getRecordValues<T extends Record<string, unknown>>(
-  obs$: Observable<any>,
-): T[] {
+export function getRecordValues<T extends Record<string, unknown>>(obs$: Observable<any>): T[] {
   const raw = obs$.get();
   if (!raw || typeof raw !== 'object') return [];
   return Object.values(raw).filter(
-    (row): row is T => row != null && typeof row === 'object' && !(row as { deleted?: boolean }).deleted,
+    (row): row is T =>
+      row != null && typeof row === 'object' && !(row as { deleted?: boolean }).deleted,
   );
 }
 

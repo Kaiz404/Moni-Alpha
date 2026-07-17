@@ -69,11 +69,10 @@ export async function resizeImageToVisionMax(sourceUri: string): Promise<string>
   } catch (e) {
     console.warn('[ReceiptImages] resizeImageToVisionMax failed, trying width-only fallback:', e);
     try {
-      const result = await manipulateAsync(
-        sourceUri,
-        [{ resize: { width: VISION_MAX_EDGE_PX } }],
-        { compress: 0.88, format: SaveFormat.JPEG },
-      );
+      const result = await manipulateAsync(sourceUri, [{ resize: { width: VISION_MAX_EDGE_PX } }], {
+        compress: 0.88,
+        format: SaveFormat.JPEG,
+      });
       return result.uri;
     } catch (e2) {
       console.warn('[ReceiptImages] resize fallback failed, using original:', e2);
@@ -120,12 +119,10 @@ export async function uploadReceiptImage(
     const storagePath = `${userId}/${proposalId}.${ext}`;
     const bytes = await localFile.bytes();
 
-    const { error } = await supabase.storage
-      .from('receipts')
-      .upload(storagePath, bytes, {
-        contentType: EXT_TO_MIME[ext] ?? 'image/jpeg',
-        upsert: true,
-      });
+    const { error } = await supabase.storage.from('receipts').upload(storagePath, bytes, {
+      contentType: EXT_TO_MIME[ext] ?? 'image/jpeg',
+      upsert: true,
+    });
 
     if (error) {
       const msg = error.message ?? String(error);
@@ -147,9 +144,7 @@ export async function uploadReceiptImage(
       return null;
     }
 
-    const { data } = supabase.storage
-      .from('receipts')
-      .getPublicUrl(storagePath);
+    const { data } = supabase.storage.from('receipts').getPublicUrl(storagePath);
 
     return data.publicUrl;
   } catch (e) {

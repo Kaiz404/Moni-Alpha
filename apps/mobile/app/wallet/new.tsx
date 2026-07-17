@@ -15,7 +15,10 @@ import { useAuth } from '@/lib/auth/auth-context';
 import { createWallet, getWallets } from '@/lib/supabase/wallets';
 import { createWalletSchema } from '@repo/types';
 import { decimalToMinor } from '@repo/types';
-import { WALLET_TYPE_OPTIONS, type WalletKind } from '@/constants/wallet-form';
+import {
+  WALLET_TYPE_OPTIONS,
+  type WalletKind,
+} from '@/constants/wallet-form';
 import {
   WALLET_CARD_STYLES,
   DEFAULT_WALLET_CARD_STYLE_ID,
@@ -41,14 +44,18 @@ export default function NewWalletScreen() {
   const [type, setType] = useState<WalletKind>('bank');
   const [currency, setCurrency] = useState('USD');
   const [initialBalance, setInitialBalance] = useState('');
-  const [cardStyleId, setCardStyleId] = useState(DEFAULT_WALLET_CARD_STYLE_ID);
+  const [cardStyleId, setCardStyleId] = useState(
+    DEFAULT_WALLET_CARD_STYLE_ID,
+  );
   const [loading, setLoading] = useState(false);
-  const [notificationLink, setNotificationLink] = useState<WalletNotificationLinkValue>({
-    notificationPackage: null,
-    notificationAppLabel: null,
-    notificationAccountHint: null,
-  });
-  const [sharedPackageWalletNames, setSharedPackageWalletNames] = useState<string[]>([]);
+  const [notificationLink, setNotificationLink] =
+    useState<WalletNotificationLinkValue>({
+      notificationPackage: null,
+      notificationAppLabel: null,
+      notificationAccountHint: null,
+    });
+  const [sharedPackageWalletNames, setSharedPackageWalletNames] =
+    useState<string[]>([]);
 
   useEffect(() => {
     if (!user) return;
@@ -59,7 +66,11 @@ export default function NewWalletScreen() {
       }
       setSharedPackageWalletNames(
         wallets
-          .filter((w) => w.notificationPackage === notificationLink.notificationPackage)
+          .filter(
+            (w) =>
+              w.notificationPackage ===
+              notificationLink.notificationPackage,
+          )
           .map((w) => w.name),
       );
     });
@@ -68,21 +79,28 @@ export default function NewWalletScreen() {
   const handleSubmit = async () => {
     if (!user) return;
     const style =
-      WALLET_CARD_STYLES.find((s) => s.id === cardStyleId) ?? WALLET_CARD_STYLES[0];
+      WALLET_CARD_STYLES.find((s) => s.id === cardStyleId) ??
+      WALLET_CARD_STYLES[0];
     const parsed = createWalletSchema.safeParse({
       name: name.trim(),
       type,
       currency: currency.trim().toUpperCase().slice(0, 3) || 'USD',
       initialBalanceMinor: decimalToMinor(initialBalance || '0'),
       color: style.swatchHex,
-      icon: WALLET_TYPE_OPTIONS.find((t) => t.value === type)?.icon ?? '💰',
+      icon:
+        WALLET_TYPE_OPTIONS.find((t) => t.value === type)?.icon ??
+        '💰',
       cardStyleId: style.id,
       notificationPackage: notificationLink.notificationPackage,
       notificationAppLabel: notificationLink.notificationAppLabel,
-      notificationAccountHint: notificationLink.notificationAccountHint,
+      notificationAccountHint:
+        notificationLink.notificationAccountHint,
     });
     if (!parsed.success) {
-      Alert.alert('Error', parsed.error.errors[0]?.message ?? 'Invalid input');
+      Alert.alert(
+        'Error',
+        parsed.error.errors[0]?.message ?? 'Invalid input',
+      );
       return;
     }
     setLoading(true);
@@ -90,7 +108,10 @@ export default function NewWalletScreen() {
       await createWallet(parsed.data);
       router.back();
     } catch (e) {
-      Alert.alert('Error', e instanceof Error ? e.message : 'Failed to create wallet');
+      Alert.alert(
+        'Error',
+        e instanceof Error ? e.message : 'Failed to create wallet',
+      );
     } finally {
       setLoading(false);
     }
@@ -103,13 +124,15 @@ export default function NewWalletScreen() {
       <KeyboardAvoidingView
         className="flex-1"
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        keyboardVerticalOffset={0}>
+        keyboardVerticalOffset={0}
+      >
         <View className="flex-1">
           <ScrollView
             className="flex-1"
             keyboardShouldPersistTaps="handled"
             contentContainerClassName="px-4 pt-4 pb-2"
-            showsVerticalScrollIndicator={false}>
+            showsVerticalScrollIndicator={false}
+          >
             <Text className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-muted">
               Name
             </Text>
@@ -130,8 +153,12 @@ export default function NewWalletScreen() {
                   key={t.value}
                   className={chipClass(type === t.value)}
                   onPress={() => setType(t.value)}
-                  activeOpacity={0.85}>
-                  <Text className={`text-xs ${chipTextClass(type === t.value)}`} numberOfLines={1}>
+                  activeOpacity={0.85}
+                >
+                  <Text
+                    className={`text-xs ${chipTextClass(type === t.value)}`}
+                    numberOfLines={1}
+                  >
                     {t.icon} {t.label}
                   </Text>
                 </TouchableOpacity>
@@ -177,12 +204,16 @@ export default function NewWalletScreen() {
             <Text className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-muted">
               Card style
             </Text>
-            <WalletCardStylePicker value={cardStyleId} onChange={setCardStyleId} />
+            <WalletCardStylePicker
+              value={cardStyleId}
+              onChange={setCardStyleId}
+            />
           </ScrollView>
 
           <View
             className="border-t border-border bg-canvas px-4 pt-3"
-            style={{ paddingBottom: Math.max(insets.bottom, 12) }}>
+            style={{ paddingBottom: Math.max(insets.bottom, 12) }}
+          >
             <PrimaryButton
               label="Create wallet"
               loading={loading}

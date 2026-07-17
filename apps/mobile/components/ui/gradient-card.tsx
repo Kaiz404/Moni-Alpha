@@ -1,4 +1,9 @@
-import { Image, StyleSheet, View, type ViewProps } from 'react-native';
+import {
+  Image,
+  StyleSheet,
+  View,
+  type ViewProps,
+} from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import type { WalletCardStyle } from '@/constants/wallet-card-styles';
 
@@ -42,7 +47,11 @@ export function GradientCard({
   const { start, end } = angleToPoints(cardStyle.angle);
 
   return (
-    <View className={`overflow-hidden ${className ?? ''}`} style={style} {...props}>
+    <View
+      className={`overflow-hidden ${className ?? ''}`}
+      style={style}
+      {...props}
+    >
       <LinearGradient
         colors={cardStyle.colors}
         start={start}
@@ -60,7 +69,10 @@ export function GradientCard({
       <Image
         source={require('@/assets/images/grain.png')}
         resizeMode="cover"
-        style={[StyleSheet.absoluteFill, { opacity: GRAIN_OPACITY[cardStyle.grain] }]}
+        style={[
+          StyleSheet.absoluteFill,
+          { opacity: GRAIN_OPACITY[cardStyle.grain] },
+        ]}
       />
       {children}
     </View>

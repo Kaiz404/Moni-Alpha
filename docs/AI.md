@@ -43,7 +43,7 @@ Every extract endpoint returns:
 ```ts
 type ExtractResult =
   | {
-      status: "ok";
+      status: 'ok';
       extraction: {
         amount;
         type;
@@ -59,8 +59,8 @@ type ExtractResult =
         reasoning;
       };
     }
-  | { status: "skipped"; reason: string } // input isn't a transaction
-  | { status: "unavailable"; reason: string }; // backend model failure (mobile queue retries)
+  | { status: 'skipped'; reason: string } // input isn't a transaction
+  | { status: 'unavailable'; reason: string }; // backend model failure (mobile queue retries)
 ```
 
 Chat analyze (`POST /v1/chat/analyze`):
@@ -79,12 +79,12 @@ Auth: `Authorization: Bearer <supabase-user-jwt>`, verified via JWKS (ES256). Er
 
 ## Model allocation
 
-| Flow                       | Endpoint                         | Model                                                      | Why                                                                                                       |
-| -------------------------- | -------------------------------- | ---------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
-| Text extraction (live)     | `/v1/extract/text`               | `llama-3.1-8b-instant`, fallback `llama-3.3-70b-versatile` | Fastest inference + highest free/dev-tier request ceiling (14.4K RPD); fallback covers unparseable output |
-| Receipt images (live)      | `/v1/extract/image`              | `meta-llama/llama-4-scout-17b-16e-instruct`                | Groq's vision model; 30K TPM absorbs image-token cost                                                     |
-| Notifications (background) | `/v1/extract/notification`       | `llama-3.1-8b-instant`                                     | Cheap + efficient; latency doesn't matter, honors long 429 retry waits                                    |
-| Chat finance analysis      | `/v1/chat/analyze`               | `llama-3.3-70b-versatile`                                  | Concise prose; snapshot context keeps tokens bounded                                                      |
+| Flow                       | Endpoint                   | Model                                                      | Why                                                                                                       |
+| -------------------------- | -------------------------- | ---------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| Text extraction (live)     | `/v1/extract/text`         | `llama-3.1-8b-instant`, fallback `llama-3.3-70b-versatile` | Fastest inference + highest free/dev-tier request ceiling (14.4K RPD); fallback covers unparseable output |
+| Receipt images (live)      | `/v1/extract/image`        | `meta-llama/llama-4-scout-17b-16e-instruct`                | Groq's vision model; 30K TPM absorbs image-token cost                                                     |
+| Notifications (background) | `/v1/extract/notification` | `llama-3.1-8b-instant`                                     | Cheap + efficient; latency doesn't matter, honors long 429 retry waits                                    |
+| Chat finance analysis      | `/v1/chat/analyze`         | `llama-3.3-70b-versatile`                                  | Concise prose; snapshot context keeps tokens bounded                                                      |
 
 All calls use Groq's OpenAI-compatible endpoint with `response_format: json_object`, temperature ≤ 0.4, and Go-side JSON validation (`groq.CompleteJSON` strips fences and rejects malformed output).
 
@@ -115,11 +115,11 @@ All calls use Groq's OpenAI-compatible endpoint with `response_format: json_obje
 
 Heuristic-first — no LLM call for most messages:
 
-| Input | Route |
-| ----- | ----- |
-| Photo attached | Always extract |
-| Question-like text (`?`, how/what/am I, analyze/review/budget) without amount | Analyze |
-| Amount/merchant patterns | Extract |
-| Default text | Extract → if `skipped`, retry analyze → if both fail, clarify with chips |
+| Input                                                                         | Route                                                                    |
+| ----------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| Photo attached                                                                | Always extract                                                           |
+| Question-like text (`?`, how/what/am I, analyze/review/budget) without amount | Analyze                                                                  |
+| Amount/merchant patterns                                                      | Extract                                                                  |
+| Default text                                                                  | Extract → if `skipped`, retry analyze → if both fail, clarify with chips |
 
 Snapshot builder: `lib/ai/snapshot/finance-metrics.ts` (deterministic metrics from transactions + budgets — never raw tx rows sent to the model). Each snapshot is keyed by ISO currency; mobile and the chat prompt must never sum, compare, or infer a first/default currency across keys.

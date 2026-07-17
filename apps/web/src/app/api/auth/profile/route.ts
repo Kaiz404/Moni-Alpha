@@ -6,17 +6,16 @@ import { handleApiError, unauthorized } from '@/lib/api/errors';
 export async function GET(request: NextRequest) {
   try {
     const supabase = await createClient(request);
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
 
     if (authError || !user) {
       return unauthorized();
     }
 
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', user.id)
-      .single();
+    const { data, error } = await supabase.from('profiles').select('*').eq('id', user.id).single();
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
@@ -42,7 +41,10 @@ export async function GET(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     const supabase = await createClient(request);
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
 
     if (authError || !user) {
       return unauthorized();

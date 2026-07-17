@@ -9,7 +9,10 @@ import {
   View,
 } from 'react-native';
 import { Image } from 'expo-image';
-import { minorToDecimal, type ProposedTransaction } from '@repo/types';
+import {
+  minorToDecimal,
+  type ProposedTransaction,
+} from '@repo/types';
 
 import { AiReasoningSection } from '@/components/proposal/ai-reasoning-section';
 import { FieldRow } from '@/components/proposal/field-row';
@@ -37,8 +40,11 @@ export type WalletOption = {
 const TX_TYPES = ['expense', 'income', 'transfer'] as const;
 export type TxType = (typeof TX_TYPES)[number];
 
-export function normalizeTxType(type: ProposedTransaction['type']): TxType {
-  if (type === 'income' || type === 'expense' || type === 'transfer') return type;
+export function normalizeTxType(
+  type: ProposedTransaction['type'],
+): TxType {
+  if (type === 'income' || type === 'expense' || type === 'transfer')
+    return type;
   return 'expense';
 }
 
@@ -66,19 +72,31 @@ export function ProposalForm({
   onReject: () => void;
 }) {
   const tokens = useThemeTokens();
-  const [txType, setTxType] = useState<TxType>(normalizeTxType(proposal.type));
-  const [amount, setAmount] = useState(proposal.amountMinor != null ? minorToDecimal(proposal.amountMinor) : '0.00');
+  const [txType, setTxType] = useState<TxType>(
+    normalizeTxType(proposal.type),
+  );
+  const [amount, setAmount] = useState(
+    proposal.amountMinor != null
+      ? minorToDecimal(proposal.amountMinor)
+      : '0.00',
+  );
   const [merchant, setMerchant] = useState(proposal.merchant ?? '');
-  const [description, setDescription] = useState(proposal.description ?? '');
-  const [date, setDate] = useState(() => isoToLocalDateInput(proposal.transactionDate));
-  const [selectedWalletId, setSelectedWalletId] = useState<string | null>(() =>
+  const [description, setDescription] = useState(
+    proposal.description ?? '',
+  );
+  const [date, setDate] = useState(() =>
+    isoToLocalDateInput(proposal.transactionDate),
+  );
+  const [selectedWalletId, setSelectedWalletId] = useState<
+    string | null
+  >(() =>
     resolveInitialWalletId(proposal, wallets, getDefaultWalletId()),
   );
-  const [selectedTransferToWalletId, setSelectedTransferToWalletId] = useState<string | null>(
-    proposal.transferToWalletId,
-  );
+  const [selectedTransferToWalletId, setSelectedTransferToWalletId] =
+    useState<string | null>(proposal.transferToWalletId);
   const [showWalletPicker, setShowWalletPicker] = useState(false);
-  const [showTransferToPicker, setShowTransferToPicker] = useState(false);
+  const [showTransferToPicker, setShowTransferToPicker] =
+    useState(false);
 
   const isTransfer = txType === 'transfer';
   const destinationWallets = useMemo(
@@ -88,11 +106,17 @@ export function ProposalForm({
 
   useEffect(() => {
     setTxType(normalizeTxType(proposal.type));
-    setAmount(proposal.amountMinor != null ? minorToDecimal(proposal.amountMinor) : '0.00');
+    setAmount(
+      proposal.amountMinor != null
+        ? minorToDecimal(proposal.amountMinor)
+        : '0.00',
+    );
     setMerchant(proposal.merchant ?? '');
     setDescription(proposal.description ?? '');
     setDate(isoToLocalDateInput(proposal.transactionDate));
-    setSelectedWalletId(resolveInitialWalletId(proposal, wallets, getDefaultWalletId()));
+    setSelectedWalletId(
+      resolveInitialWalletId(proposal, wallets, getDefaultWalletId()),
+    );
     setSelectedTransferToWalletId(proposal.transferToWalletId);
     setShowWalletPicker(false);
     setShowTransferToPicker(false);
@@ -100,26 +124,39 @@ export function ProposalForm({
 
   useEffect(() => {
     if (!isTransfer) return;
-    if (selectedTransferToWalletId && selectedTransferToWalletId === selectedWalletId) {
+    if (
+      selectedTransferToWalletId &&
+      selectedTransferToWalletId === selectedWalletId
+    ) {
       setSelectedTransferToWalletId(null);
     }
   }, [isTransfer, selectedWalletId, selectedTransferToWalletId]);
 
-  const selectedWallet = wallets.find((w) => w.id === selectedWalletId);
-  const selectedTransferToWallet = wallets.find((w) => w.id === selectedTransferToWalletId);
+  const selectedWallet = wallets.find(
+    (w) => w.id === selectedWalletId,
+  );
+  const selectedTransferToWallet = wallets.find(
+    (w) => w.id === selectedTransferToWalletId,
+  );
   const displayCurrency = displayCurrencyForProposal(
     { walletId: selectedWalletId, currency: proposal.currency },
     wallets,
     getDefaultWalletId(),
   );
-  const amountColor = isTransfer ? tokens.transfer : txType === 'expense' ? tokens.expense : tokens.income;
+  const amountColor = isTransfer
+    ? tokens.transfer
+    : txType === 'expense'
+      ? tokens.expense
+      : tokens.income;
   const sourceLabel = {
     text: 'From text input',
     image: 'From receipt photo',
     notification: `From ${proposal.sourceApp ?? 'notification'}`,
   }[proposal.sourceType ?? 'notification'];
 
-  const canApprove = !!selectedWalletId && (!isTransfer || !!selectedTransferToWalletId);
+  const canApprove =
+    !!selectedWalletId &&
+    (!isTransfer || !!selectedTransferToWalletId);
 
   const handleApprovePress = () => {
     let amountMinor: ReturnType<typeof parseAmountInput>;
@@ -130,24 +167,35 @@ export function ProposalForm({
       return;
     }
     if (!parseLocalDateInput(date)) {
-      Alert.alert('Cannot approve', 'Enter a valid date (YYYY-MM-DD).');
+      Alert.alert(
+        'Cannot approve',
+        'Enter a valid date (YYYY-MM-DD).',
+      );
       return;
     }
     if (!selectedWalletId) {
       setShowWalletPicker(true);
-      Alert.alert('Select wallet', isTransfer ? 'Choose the source wallet.' : 'Choose a wallet.');
+      Alert.alert(
+        'Select wallet',
+        isTransfer ? 'Choose the source wallet.' : 'Choose a wallet.',
+      );
       return;
     }
     if (isTransfer && !selectedTransferToWalletId) {
       setShowTransferToPicker(true);
-      Alert.alert('Select wallet', 'Choose the destination wallet for this transfer.');
+      Alert.alert(
+        'Select wallet',
+        'Choose the destination wallet for this transfer.',
+      );
       return;
     }
     onApprove({
       amountMinor,
       type: txType,
       walletId: selectedWalletId,
-      transferToWalletId: isTransfer ? selectedTransferToWalletId : null,
+      transferToWalletId: isTransfer
+        ? selectedTransferToWalletId
+        : null,
       merchant,
       description,
       date,
@@ -159,19 +207,31 @@ export function ProposalForm({
       <View className="mb-4 rounded-2xl bg-background-muted px-4 py-3">
         <Text className="text-sm text-muted">{sourceLabel}</Text>
         {proposal.sourceText ? (
-          <Text className="mt-1 text-sm text-foreground" numberOfLines={3}>
+          <Text
+            className="mt-1 text-sm text-foreground"
+            numberOfLines={3}
+          >
             &ldquo;{proposal.sourceText}&rdquo;
           </Text>
         ) : null}
         {proposal.sourceImageUri ? (
           <Image
             source={{ uri: proposal.sourceImageUri }}
-            style={{ width: '100%', height: 160, borderRadius: 12, marginTop: 8 }}
+            style={{
+              width: '100%',
+              height: 160,
+              borderRadius: 12,
+              marginTop: 8,
+            }}
             contentFit="cover"
           />
         ) : null}
-        {proposal.sourceType === 'notification' && proposal.notificationBody ? (
-          <Text className="mt-1 text-sm text-foreground" numberOfLines={3}>
+        {proposal.sourceType === 'notification' &&
+        proposal.notificationBody ? (
+          <Text
+            className="mt-1 text-sm text-foreground"
+            numberOfLines={3}
+          >
             {proposal.notificationTitle}: {proposal.notificationBody}
           </Text>
         ) : null}
@@ -188,15 +248,22 @@ export function ProposalForm({
             key={t}
             className={`${chipClass(txType === t)} flex-1 items-center py-2.5`}
             onPress={() => setTxType(t)}
-            activeOpacity={0.85}>
-            <Text className={`text-sm font-semibold capitalize ${chipTextClass(txType === t)}`}>{t}</Text>
+            activeOpacity={0.85}
+          >
+            <Text
+              className={`text-sm font-semibold capitalize ${chipTextClass(txType === t)}`}
+            >
+              {t}
+            </Text>
           </TouchableOpacity>
         ))}
       </View>
 
       <FieldRow label="Amount">
         <View className="flex-1 flex-row items-center justify-end gap-2">
-          <Text className="text-sm font-semibold text-muted">{displayCurrency}</Text>
+          <Text className="text-sm font-semibold text-muted">
+            {displayCurrency}
+          </Text>
           <TextInput
             className="min-w-[96px] flex-1 rounded-xl border border-border bg-card px-3 py-2 text-right text-base font-semibold"
             style={{ color: amountColor }}
@@ -215,8 +282,11 @@ export function ProposalForm({
             setShowTransferToPicker(false);
             setShowWalletPicker(!showWalletPicker);
           }}
-          activeOpacity={0.7}>
-          <Text className={`text-sm ${selectedWallet ? 'text-foreground' : 'text-muted'}`}>
+          activeOpacity={0.7}
+        >
+          <Text
+            className={`text-sm ${selectedWallet ? 'text-foreground' : 'text-muted'}`}
+          >
             {selectedWallet?.name ?? 'Select wallet...'}
           </Text>
           <Text className="ml-2 text-xs text-muted">▼</Text>
@@ -232,8 +302,11 @@ export function ProposalForm({
               onPress={() => {
                 setSelectedWalletId(w.id);
                 setShowWalletPicker(false);
-              }}>
-              <Text className="text-sm font-medium text-foreground">{w.name}</Text>
+              }}
+            >
+              <Text className="text-sm font-medium text-foreground">
+                {w.name}
+              </Text>
               <Text className="text-xs capitalize text-muted">
                 {w.type} · {w.currency}
               </Text>
@@ -251,9 +324,13 @@ export function ProposalForm({
                 setShowWalletPicker(false);
                 setShowTransferToPicker(!showTransferToPicker);
               }}
-              activeOpacity={0.7}>
-              <Text className={`text-sm ${selectedTransferToWallet ? 'text-foreground' : 'text-muted'}`}>
-                {selectedTransferToWallet?.name ?? 'Select destination...'}
+              activeOpacity={0.7}
+            >
+              <Text
+                className={`text-sm ${selectedTransferToWallet ? 'text-foreground' : 'text-muted'}`}
+              >
+                {selectedTransferToWallet?.name ??
+                  'Select destination...'}
               </Text>
               <Text className="ml-2 text-xs text-muted">▼</Text>
             </TouchableOpacity>
@@ -269,13 +346,19 @@ export function ProposalForm({
                 destinationWallets.map((w) => (
                   <Pressable
                     key={w.id}
-                    className={`border-b border-border px-4 py-3 ${w.id === selectedTransferToWalletId ? 'bg-primary-muted' : ''
-                      }`}
+                    className={`border-b border-border px-4 py-3 ${
+                      w.id === selectedTransferToWalletId
+                        ? 'bg-primary-muted'
+                        : ''
+                    }`}
                     onPress={() => {
                       setSelectedTransferToWalletId(w.id);
                       setShowTransferToPicker(false);
-                    }}>
-                    <Text className="text-sm font-medium text-foreground">{w.name}</Text>
+                    }}
+                  >
+                    <Text className="text-sm font-medium text-foreground">
+                      {w.name}
+                    </Text>
                     <Text className="text-xs capitalize text-muted">
                       {w.type} · {w.currency}
                     </Text>
@@ -322,7 +405,10 @@ export function ProposalForm({
       </FieldRow>
 
       {proposal.aiReasoning ? (
-        <AiReasoningSection reasoning={proposal.aiReasoning} confidence={proposal.aiConfidence} />
+        <AiReasoningSection
+          reasoning={proposal.aiReasoning}
+          confidence={proposal.aiConfidence}
+        />
       ) : null}
 
       <View className="mt-6 flex-row gap-3">
@@ -330,23 +416,37 @@ export function ProposalForm({
           className="flex-1 items-center rounded-xl border border-border bg-card py-4"
           onPress={onReject}
           disabled={isActioning}
-          activeOpacity={0.7}>
+          activeOpacity={0.7}
+        >
           {isActioning ? (
-            <ActivityIndicator size="small" color={tokens.muted} />
+            <ActivityIndicator
+              size="small"
+              color={tokens.muted}
+            />
           ) : (
-            <Text className="text-base font-semibold text-foreground">Decline</Text>
+            <Text className="text-base font-semibold text-foreground">
+              Decline
+            </Text>
           )}
         </TouchableOpacity>
         <TouchableOpacity
           className={`flex-1 items-center rounded-xl py-4 ${canApprove ? 'bg-primary' : 'bg-primary/60'}`}
           onPress={handleApprovePress}
           disabled={isActioning}
-          activeOpacity={0.7}>
+          activeOpacity={0.7}
+        >
           {isActioning ? (
-            <ActivityIndicator size="small" color={tokens.primaryForeground} />
+            <ActivityIndicator
+              size="small"
+              color={tokens.primaryForeground}
+            />
           ) : (
             <Text className="text-base font-semibold text-primary-foreground">
-              {canApprove ? 'Approve' : isTransfer ? 'Select wallets' : 'Select wallet'}
+              {canApprove
+                ? 'Approve'
+                : isTransfer
+                  ? 'Select wallets'
+                  : 'Select wallet'}
             </Text>
           )}
         </TouchableOpacity>
@@ -354,4 +454,3 @@ export function ProposalForm({
     </View>
   );
 }
-

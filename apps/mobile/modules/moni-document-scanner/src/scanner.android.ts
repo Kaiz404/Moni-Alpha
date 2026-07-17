@@ -1,6 +1,12 @@
 import { NitroModules } from 'react-native-nitro-modules';
 
-import type { MoniDocumentScanner, ScanOptions, ScanResult, ScannedPage, ScannerMode } from './MoniDocumentScanner.nitro';
+import type {
+  MoniDocumentScanner,
+  ScanOptions,
+  ScanResult,
+  ScannedPage,
+  ScannerMode,
+} from './MoniDocumentScanner.nitro';
 
 export type { ScanOptions, ScanResult, ScannedPage, ScannerMode };
 

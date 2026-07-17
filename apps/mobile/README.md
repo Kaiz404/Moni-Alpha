@@ -20,6 +20,10 @@ This app uses native modules (camera, notifications, Google Sign-In) — **Expo 
 
 Rebuild the dev client when you change `app.json` plugins, native deps, or local modules (`modules/moni-android-apps`, `modules/moni-document-scanner`).
 
+### Code style
+
+Formatting is enforced with [Prettier](https://prettier.io/) (repo-root `.prettierrc`: `printWidth` 70 for `.tsx`, 100 for `.ts` so screens wrap label text while hooks keep one-line `useState`). Run `pnpm format` / `pnpm format:check` from the repo root.
+
 ### Android dev client on WSL (recommended on Windows)
 
 Clone and build on the **WSL Linux filesystem** (e.g. `~/Moni`), not `/mnt/c/...` — Windows paths break Gradle autolinking and hit path-length limits. Open the repo in Cursor via **Connect to WSL**.
@@ -64,13 +68,13 @@ Do not mix Windows and WSL `expo prebuild` / Gradle — `android/build/generated
 | ---------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `app/`                             | expo-router: `(auth)`, `(tabs)` (Wallets / Summary / Chat / Profile), root Stack features (`wallet`, `transaction`, `proposal`, `budget`, `debt`, `scan`, `notifications`, `debug`, `heatmap`)                          |
 | `components/`                      | Domain UI (`ui/`, `nav/`, `providers/`, `auth/`, `wallets/`, `summary/`, `chat/`, `profile/`, `transaction/`, `proposal/`, `scan/`, `insights/`, `debug/`, `receipt/`) — keep screens thin; no co-location under `app/` |
-| `lib/store/`                       | Legend-State synced observables — persisted source rows and command write targets                                                                                                                                        |
-| `lib/finance/`                     | Non-persisted normalized finance projection, exact minor-unit helpers, integrity repair, and cached Legend selectors for cards, charts, lists, budgets, debts, heatmap, and AI snapshots                            |
+| `lib/store/`                       | Legend-State synced observables — persisted source rows and command write targets                                                                                                                                       |
+| `lib/finance/`                     | Non-persisted normalized finance projection, exact minor-unit helpers, integrity repair, and cached Legend selectors for cards, charts, lists, budgets, debts, heatmap, and AI snapshots                                |
 | `lib/supabase/`                    | Supabase client (publishable key) + CRUD helpers over the store; profile preferences                                                                                                                                    |
 | `lib/auth/`                        | Auth context (email/password + native Google Sign-In)                                                                                                                                                                   |
 | `lib/mmkv/`                        | MMKV instances: auth session, store cache, upload queue, UI preferences (theme, default wallet)                                                                                                                         |
 | `lib/theme/`                       | Theme preference ↔ Uniwind (`light` / `dark` / `system`)                                                                                                                                                                |
-| `lib/wallets/`                     | Default wallet preference (`profiles.preferences.default_wallet_id`, MMKV cache) and proposal wallet/currency resolution for AI                                                                                           |
+| `lib/wallets/`                     | Default wallet preference (`profiles.preferences.default_wallet_id`, MMKV cache) and proposal wallet/currency resolution for AI                                                                                         |
 | `lib/ai/`                          | Processing queue, background processor, AI client (HTTP ↔ Go backend, mock fallback)                                                                                                                                    |
 | `lib/notifications/`               | Prefilter / package helpers: `*.core.js` (headless + Node tests) + thin `*.ts` re-exports; linked-app MMKV cache; `moni-android-apps`                                                                                   |
 | `lib/receipts/`                    | ML Kit scan normalization, local image save, Storage upload queue                                                                                                                                                       |

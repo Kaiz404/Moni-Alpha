@@ -90,10 +90,7 @@ export async function getAiInsightSlot(
   if (!userId) return null;
 
   const row = getRecordValues<InsightDbRow>(aiInsights$).find(
-    (r) =>
-      r.user_id === userId &&
-      r.feature_key === featureKey &&
-      r.context_key === contextKey,
+    (r) => r.user_id === userId && r.feature_key === featureKey && r.context_key === contextKey,
   );
   return row ? rowToInsight(row) : null;
 }

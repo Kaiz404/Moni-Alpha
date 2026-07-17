@@ -25,12 +25,7 @@ type StoredNotification = {
   summaryText?: string;
 };
 
-export type NotificationQueueStatus =
-  | 'not_queued'
-  | 'pending'
-  | 'processing'
-  | 'done'
-  | 'error';
+export type NotificationQueueStatus = 'not_queued' | 'pending' | 'processing' | 'done' | 'error';
 
 export type NotificationProcessSnapshot = {
   running: boolean;
@@ -72,8 +67,7 @@ function readCapturedNotifications(): StoredNotification[] {
 }
 
 function notificationPreview(n: StoredNotification): string {
-  const body =
-    n.bigText || n.text || n.subText || n.summaryText || n.titleBig || n.title || '';
+  const body = n.bigText || n.text || n.subText || n.summaryText || n.titleBig || n.title || '';
   return body.slice(0, 80) || '(empty)';
 }
 

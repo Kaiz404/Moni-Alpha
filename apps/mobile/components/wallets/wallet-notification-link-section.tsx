@@ -54,12 +54,17 @@ function resolveAppRow(
   return {
     ...app,
     label: native?.label ?? app.label,
-    iconUri:
-      native?.iconUri ?? getCachedAppIcon(app.packageName),
+    iconUri: native?.iconUri ?? getCachedAppIcon(app.packageName),
   };
 }
 
-function AppIcon({ iconUri, size = 20 }: { iconUri: string | null; size?: number }) {
+function AppIcon({
+  iconUri,
+  size = 20,
+}: {
+  iconUri: string | null;
+  size?: number;
+}) {
   const tokens = useThemeTokens();
   if (iconUri) {
     return (
@@ -74,8 +79,13 @@ function AppIcon({ iconUri, size = 20 }: { iconUri: string | null; size?: number
   return (
     <View
       className="items-center justify-center rounded-md bg-background-muted"
-      style={{ width: size, height: size }}>
-      <MaterialIcons name="account-balance-wallet" size={size - 6} color={tokens.muted} />
+      style={{ width: size, height: size }}
+    >
+      <MaterialIcons
+        name="account-balance-wallet"
+        size={size - 6}
+        color={tokens.muted}
+      />
     </View>
   );
 }
@@ -92,20 +102,38 @@ function AppPickerRow({
   return (
     <TouchableOpacity
       className={`mb-1.5 flex-row items-center gap-2 rounded-xl border px-3 py-2.5 ${
-        selected ? 'border-primary bg-primary/5' : 'border-border bg-card'
+        selected
+          ? 'border-primary bg-primary/5'
+          : 'border-border bg-card'
       }`}
       onPress={onPress}
-      activeOpacity={0.85}>
-      <AppIcon iconUri={app.iconUri} size={24} />
+      activeOpacity={0.85}
+    >
+      <AppIcon
+        iconUri={app.iconUri}
+        size={24}
+      />
       <View className="min-w-0 flex-1">
-        <Text className="text-sm font-medium text-foreground" numberOfLines={1}>
+        <Text
+          className="text-sm font-medium text-foreground"
+          numberOfLines={1}
+        >
           {app.label}
         </Text>
-        <Text className="text-[10px] text-muted" numberOfLines={1}>
+        <Text
+          className="text-[10px] text-muted"
+          numberOfLines={1}
+        >
           {app.packageName}
         </Text>
       </View>
-      {selected ? <MaterialIcons name="check-circle" size={18} color="#059669" /> : null}
+      {selected ? (
+        <MaterialIcons
+          name="check-circle"
+          size={18}
+          color="#059669"
+        />
+      ) : null}
     </TouchableOpacity>
   );
 }
@@ -126,7 +154,10 @@ function buildPickerData(installed: Map<string, InstalledAppInfo>): {
       packageName: r.packageName,
       label: native?.label ?? r.label,
       region: 'MY' as NotificationAppOption['region'],
-      iconUri: native?.iconUri ?? r.iconUri ?? getCachedAppIcon(r.packageName),
+      iconUri:
+        native?.iconUri ??
+        r.iconUri ??
+        getCachedAppIcon(r.packageName),
     };
   });
 
@@ -138,9 +169,15 @@ function buildPickerData(installed: Map<string, InstalledAppInfo>): {
       title: section.title,
       apps: section.apps
         .map((app) => {
-          const installedPackage = resolveInstalledPackageForCurated(installed, app);
+          const installedPackage = resolveInstalledPackageForCurated(
+            installed,
+            app,
+          );
           if (!installedPackage) return null;
-          return resolveAppRow({ ...app, packageName: installedPackage }, installed);
+          return resolveAppRow(
+            { ...app, packageName: installedPackage },
+            installed,
+          );
         })
         .filter((app): app is AppRow => app != null),
     }))
@@ -158,9 +195,15 @@ export function WalletNotificationLinkSection({
   const [manualPackage, setManualPackage] = useState('');
   const [showManual, setShowManual] = useState(false);
   const [showCurated, setShowCurated] = useState(true);
-  const [installed, setInstalled] = useState<Map<string, InstalledAppInfo>>(new Map());
-  const [loadingInstalled, setLoadingInstalled] = useState(Platform.OS === 'android');
-  const [selectedIcon, setSelectedIcon] = useState<string | null>(null);
+  const [installed, setInstalled] = useState<
+    Map<string, InstalledAppInfo>
+  >(new Map());
+  const [loadingInstalled, setLoadingInstalled] = useState(
+    Platform.OS === 'android',
+  );
+  const [selectedIcon, setSelectedIcon] = useState<string | null>(
+    null,
+  );
 
   useEffect(() => {
     if (Platform.OS !== 'android') {
@@ -190,12 +233,20 @@ export function WalletNotificationLinkSection({
       setSelectedIcon(native.iconUri);
       return;
     }
-    void getInstalledAppInfo(value.notificationPackage).then((info) => {
-      setSelectedIcon(info?.iconUri ?? getCachedAppIcon(value.notificationPackage!));
-    });
+    void getInstalledAppInfo(value.notificationPackage).then(
+      (info) => {
+        setSelectedIcon(
+          info?.iconUri ??
+            getCachedAppIcon(value.notificationPackage!),
+        );
+      },
+    );
   }, [value.notificationPackage, installed]);
 
-  const pickerData = useMemo(() => buildPickerData(installed), [installed]);
+  const pickerData = useMemo(
+    () => buildPickerData(installed),
+    [installed],
+  );
 
   const selectApp = useCallback(
     (app: Pick<AppRow, 'packageName' | 'label'>) => {
@@ -220,7 +271,10 @@ export function WalletNotificationLinkSection({
   const applyManualPackage = async () => {
     const pkg = manualPackage.trim();
     if (!pkg) return;
-    if (Platform.OS === 'android' && isMoniAndroidAppsNativeAvailable()) {
+    if (
+      Platform.OS === 'android' &&
+      isMoniAndroidAppsNativeAvailable()
+    ) {
       const info = await getInstalledAppInfo(pkg);
       if (!info) {
         Alert.alert(
@@ -247,11 +301,14 @@ export function WalletNotificationLinkSection({
 
   const selectedLabel =
     value.notificationAppLabel ||
-    (value.notificationPackage ? labelForNotificationPackage(value.notificationPackage) : null);
+    (value.notificationPackage
+      ? labelForNotificationPackage(value.notificationPackage)
+      : null);
 
   const installedCount = installed.size;
   const hasInstalledFinanceApps =
-    pickerData.recent.length > 0 || pickerData.curatedSections.some((s) => s.apps.length > 0);
+    pickerData.recent.length > 0 ||
+    pickerData.curatedSections.some((s) => s.apps.length > 0);
 
   return (
     <View className="mb-4">
@@ -259,30 +316,46 @@ export function WalletNotificationLinkSection({
         Banking app (Android)
       </Text>
       <Text className="mb-3 text-[11px] leading-4 text-muted">
-        Only apps installed on this device are shown. Labels and icons come from Android directly.
+        Only apps installed on this device are shown. Labels and icons
+        come from Android directly.
       </Text>
 
       {selectedLabel ? (
         <View className="mb-3 flex-row items-center gap-3 rounded-xl border border-border bg-card px-3 py-2.5">
-          <AppIcon iconUri={selectedIcon} size={32} />
+          <AppIcon
+            iconUri={selectedIcon}
+            size={32}
+          />
           <View className="min-w-0 flex-1">
-            <Text className="text-sm font-semibold text-foreground">{selectedLabel}</Text>
+            <Text className="text-sm font-semibold text-foreground">
+              {selectedLabel}
+            </Text>
             {value.notificationPackage ? (
-              <Text className="mt-0.5 text-[10px] text-muted" numberOfLines={1}>
+              <Text
+                className="mt-0.5 text-[10px] text-muted"
+                numberOfLines={1}
+              >
                 {value.notificationPackage}
               </Text>
             ) : null}
           </View>
-          <TouchableOpacity onPress={clearApp} activeOpacity={0.85}>
-            <Text className="text-xs font-semibold text-primary">Remove</Text>
+          <TouchableOpacity
+            onPress={clearApp}
+            activeOpacity={0.85}
+          >
+            <Text className="text-xs font-semibold text-primary">
+              Remove
+            </Text>
           </TouchableOpacity>
         </View>
       ) : null}
 
-      {sharedPackageWalletNames.length > 0 && value.notificationPackage ? (
+      {sharedPackageWalletNames.length > 0 &&
+      value.notificationPackage ? (
         <View className="mb-3 rounded-xl bg-background-muted px-3 py-2">
           <Text className="text-[11px] leading-4 text-muted">
-            {selectedLabel} is also linked to {sharedPackageWalletNames.join(', ')}. Moni will use
+            {selectedLabel} is also linked to{' '}
+            {sharedPackageWalletNames.join(', ')}. Moni will use
             notification details to pick the right wallet when needed.
           </Text>
         </View>
@@ -295,7 +368,9 @@ export function WalletNotificationLinkSection({
       {loadingInstalled ? (
         <View className="mb-3 items-center py-6">
           <ActivityIndicator color={tokens.primary} />
-          <Text className="mt-2 text-xs text-muted">Loading installed apps…</Text>
+          <Text className="mt-2 text-xs text-muted">
+            Loading installed apps…
+          </Text>
         </View>
       ) : Platform.OS !== 'android' ? (
         <View className="mb-3 rounded-xl bg-background-muted px-3 py-2">
@@ -306,9 +381,13 @@ export function WalletNotificationLinkSection({
       ) : !isMoniAndroidAppsNativeAvailable() ? (
         <View className="mb-3 rounded-xl bg-background-muted px-3 py-2">
           <Text className="text-[11px] leading-4 text-muted">
-            Installed-app detection needs a native rebuild. Stop Metro, then run{' '}
-            <Text className="font-semibold">pnpm --filter moni android</Text> and reopen the
-            app. Until then you can still enter a package name manually if you know it.
+            Installed-app detection needs a native rebuild. Stop
+            Metro, then run{' '}
+            <Text className="font-semibold">
+              pnpm --filter moni android
+            </Text>{' '}
+            and reopen the app. Until then you can still enter a
+            package name manually if you know it.
           </Text>
         </View>
       ) : !hasInstalledFinanceApps ? (
@@ -320,10 +399,16 @@ export function WalletNotificationLinkSection({
           </Text>
         </View>
       ) : (
-        <ScrollView className="max-h-72" nestedScrollEnabled showsVerticalScrollIndicator={false}>
+        <ScrollView
+          className="max-h-72"
+          nestedScrollEnabled
+          showsVerticalScrollIndicator={false}
+        >
           {pickerData.recent.length > 0 ? (
             <View className="mb-3">
-              <Text className="mb-1.5 text-xs font-semibold text-foreground">Recently seen</Text>
+              <Text className="mb-1.5 text-xs font-semibold text-foreground">
+                Recently seen
+              </Text>
               <Text className="mb-2 text-[10px] text-muted">
                 Installed apps that sent notifications on this device.
               </Text>
@@ -331,7 +416,9 @@ export function WalletNotificationLinkSection({
                 <AppPickerRow
                   key={app.packageName}
                   app={app}
-                  selected={value.notificationPackage === app.packageName}
+                  selected={
+                    value.notificationPackage === app.packageName
+                  }
                   onPress={() => selectApp(app)}
                 />
               ))}
@@ -341,8 +428,11 @@ export function WalletNotificationLinkSection({
           <TouchableOpacity
             onPress={() => setShowCurated((v) => !v)}
             className="mb-2 flex-row items-center justify-between"
-            activeOpacity={0.85}>
-            <Text className="text-xs font-semibold text-foreground">Installed banking apps</Text>
+            activeOpacity={0.85}
+          >
+            <Text className="text-xs font-semibold text-foreground">
+              Installed banking apps
+            </Text>
             <MaterialIcons
               name={showCurated ? 'expand-less' : 'expand-more'}
               size={20}
@@ -352,13 +442,20 @@ export function WalletNotificationLinkSection({
 
           {showCurated
             ? pickerData.curatedSections.map((section) => (
-                <View key={section.region} className="mb-3">
-                  <Text className="mb-1.5 text-xs font-semibold text-muted">{section.title}</Text>
+                <View
+                  key={section.region}
+                  className="mb-3"
+                >
+                  <Text className="mb-1.5 text-xs font-semibold text-muted">
+                    {section.title}
+                  </Text>
                   {section.apps.map((app) => (
                     <AppPickerRow
                       key={app.packageName}
                       app={app}
-                      selected={value.notificationPackage === app.packageName}
+                      selected={
+                        value.notificationPackage === app.packageName
+                      }
                       onPress={() => selectApp(app)}
                     />
                   ))}
@@ -371,9 +468,12 @@ export function WalletNotificationLinkSection({
       <TouchableOpacity
         onPress={() => setShowManual((v) => !v)}
         className="mb-2 mt-1 self-start"
-        activeOpacity={0.85}>
+        activeOpacity={0.85}
+      >
         <Text className="text-xs font-semibold text-primary">
-          {showManual ? 'Hide manual entry' : 'Enter package name manually'}
+          {showManual
+            ? 'Hide manual entry'
+            : 'Enter package name manually'}
         </Text>
       </TouchableOpacity>
 
@@ -391,8 +491,11 @@ export function WalletNotificationLinkSection({
           <TouchableOpacity
             onPress={() => void applyManualPackage()}
             className="rounded-xl bg-primary px-3 py-2.5"
-            activeOpacity={0.85}>
-            <Text className="text-xs font-semibold text-primary-foreground">Add</Text>
+            activeOpacity={0.85}
+          >
+            <Text className="text-xs font-semibold text-primary-foreground">
+              Add
+            </Text>
           </TouchableOpacity>
         </View>
       ) : null}
@@ -401,8 +504,8 @@ export function WalletNotificationLinkSection({
         Account hint (optional)
       </Text>
       <Text className="mb-2 text-[11px] leading-4 text-muted">
-        How this account appears in alerts — e.g. Savings, ****4521. Helps when multiple wallets use
-        the same app.
+        How this account appears in alerts — e.g. Savings, ****4521.
+        Helps when multiple wallets use the same app.
       </Text>
       <TextInput
         className={`text-base ${inputClass}`}

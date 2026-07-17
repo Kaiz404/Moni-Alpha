@@ -21,11 +21,7 @@ export type {
   ExtractTextRequest,
 } from './types';
 
-export {
-  AI_API_BASE_URL,
-  AI_BACKEND_CONFIGURED,
-  AI_UNAVAILABLE_REASON,
-} from './config';
+export { AI_API_BASE_URL, AI_BACKEND_CONFIGURED, AI_UNAVAILABLE_REASON } from './config';
 
 /** Active client — mock until the Go backend URL is configured. */
 export function getAiClient(): AiClient {

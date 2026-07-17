@@ -6,7 +6,10 @@ import { handleApiError, unauthorized } from '@/lib/api/errors';
 export async function GET(request: NextRequest) {
   try {
     const supabase = await createClient(request);
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
 
     if (authError || !user) {
       return unauthorized();
@@ -38,13 +41,25 @@ export async function GET(request: NextRequest) {
       .lte('transaction_date', endOfLastMonth);
 
     // Calculate current month stats
-    const totalIncome = currentTxs?.filter(t => t.type === 'income').reduce((sum, t) => sum + parseFloat(t.amount), 0) || 0;
-    const totalExpenses = currentTxs?.filter(t => t.type === 'expense').reduce((sum, t) => sum + parseFloat(t.amount), 0) || 0;
+    const totalIncome =
+      currentTxs
+        ?.filter((t) => t.type === 'income')
+        .reduce((sum, t) => sum + parseFloat(t.amount), 0) || 0;
+    const totalExpenses =
+      currentTxs
+        ?.filter((t) => t.type === 'expense')
+        .reduce((sum, t) => sum + parseFloat(t.amount), 0) || 0;
     const netCashFlow = totalIncome - totalExpenses;
 
     // Calculate last month stats
-    const lastMonthIncome = lastMonthTxs?.filter(t => t.type === 'income').reduce((sum, t) => sum + parseFloat(t.amount), 0) || 0;
-    const lastMonthExpenses = lastMonthTxs?.filter(t => t.type === 'expense').reduce((sum, t) => sum + parseFloat(t.amount), 0) || 0;
+    const lastMonthIncome =
+      lastMonthTxs
+        ?.filter((t) => t.type === 'income')
+        .reduce((sum, t) => sum + parseFloat(t.amount), 0) || 0;
+    const lastMonthExpenses =
+      lastMonthTxs
+        ?.filter((t) => t.type === 'expense')
+        .reduce((sum, t) => sum + parseFloat(t.amount), 0) || 0;
 
     // Get total balance from wallets
     const { data: wallets } = await supabase
@@ -66,11 +81,15 @@ export async function GET(request: NextRequest) {
         compared: {
           income: {
             amount: totalIncome - lastMonthIncome,
-            percentage: lastMonthIncome > 0 ? ((totalIncome - lastMonthIncome) / lastMonthIncome) * 100 : 0,
+            percentage:
+              lastMonthIncome > 0 ? ((totalIncome - lastMonthIncome) / lastMonthIncome) * 100 : 0,
           },
           expenses: {
             amount: totalExpenses - lastMonthExpenses,
-            percentage: lastMonthExpenses > 0 ? ((totalExpenses - lastMonthExpenses) / lastMonthExpenses) * 100 : 0,
+            percentage:
+              lastMonthExpenses > 0
+                ? ((totalExpenses - lastMonthExpenses) / lastMonthExpenses) * 100
+                : 0,
           },
         },
       },

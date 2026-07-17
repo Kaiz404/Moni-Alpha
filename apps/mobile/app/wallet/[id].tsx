@@ -13,11 +13,19 @@ import {
 import { router, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@/lib/auth/auth-context';
-import { deleteWallet, getWalletById, getWallets, updateWallet } from '@/lib/supabase/wallets';
+import {
+  deleteWallet,
+  getWalletById,
+  getWallets,
+  updateWallet,
+} from '@/lib/supabase/wallets';
 import { updateWalletSchema } from '@repo/types';
 import { decimalToMinor, minorToDecimal } from '@repo/types';
 import { formatMinorAmount } from '@/lib/finance/money';
-import { WALLET_TYPE_OPTIONS, type WalletKind } from '@/constants/wallet-form';
+import {
+  WALLET_TYPE_OPTIONS,
+  type WalletKind,
+} from '@/constants/wallet-form';
 import {
   WALLET_CARD_STYLES,
   DEFAULT_WALLET_CARD_STYLE_ID,
@@ -54,17 +62,21 @@ export default function EditWalletScreen() {
   const [type, setType] = useState<WalletKind>('bank');
   const [currency, setCurrency] = useState('USD');
   const [initialBalance, setInitialBalance] = useState('');
-  const [cardStyleId, setCardStyleId] = useState(DEFAULT_WALLET_CARD_STYLE_ID);
+  const [cardStyleId, setCardStyleId] = useState(
+    DEFAULT_WALLET_CARD_STYLE_ID,
+  );
   const [loading, setLoading] = useState(false);
 
   const [readOnlyBalance, setReadOnlyBalance] = useState('');
   const [readOnlyUpdated, setReadOnlyUpdated] = useState('');
-  const [notificationLink, setNotificationLink] = useState<WalletNotificationLinkValue>({
-    notificationPackage: null,
-    notificationAppLabel: null,
-    notificationAccountHint: null,
-  });
-  const [sharedPackageWalletNames, setSharedPackageWalletNames] = useState<string[]>([]);
+  const [notificationLink, setNotificationLink] =
+    useState<WalletNotificationLinkValue>({
+      notificationPackage: null,
+      notificationAppLabel: null,
+      notificationAccountHint: null,
+    });
+  const [sharedPackageWalletNames, setSharedPackageWalletNames] =
+    useState<string[]>([]);
 
   useEffect(() => {
     if (!user || !walletId) return;
@@ -83,13 +95,17 @@ export default function EditWalletScreen() {
         }
         setName(w.name ?? '');
         setType(
-          WALLET_TYPE_OPTIONS.find((o) => o.value === w.type)?.value ?? 'bank',
+          WALLET_TYPE_OPTIONS.find((o) => o.value === w.type)
+            ?.value ?? 'bank',
         );
         setCurrency(w.currency ?? 'USD');
         setInitialBalance(minorToDecimal(w.initialBalanceMinor));
         setCardStyleId(w.cardStyleId || DEFAULT_WALLET_CARD_STYLE_ID);
         setReadOnlyBalance(
-          formatMinorAmount(w.currentBalanceMinor, w.currency ?? 'USD'),
+          formatMinorAmount(
+            w.currentBalanceMinor,
+            w.currency ?? 'USD',
+          ),
         );
         setReadOnlyUpdated(
           w.updatedAt
@@ -111,14 +127,17 @@ export default function EditWalletScreen() {
               .filter(
                 (row) =>
                   row.id !== walletId &&
-                  row.notificationPackage === (w.notificationPackage ?? null),
+                  row.notificationPackage ===
+                    (w.notificationPackage ?? null),
               )
               .map((row) => row.name),
           );
         }
       } catch (e) {
         if (!cancelled) {
-          setLoadError(e instanceof Error ? e.message : 'Failed to load wallet');
+          setLoadError(
+            e instanceof Error ? e.message : 'Failed to load wallet',
+          );
         }
       } finally {
         if (!cancelled) setLoadingWallet(false);
@@ -141,7 +160,9 @@ export default function EditWalletScreen() {
         wallets
           .filter(
             (w) =>
-              w.id !== walletId && w.notificationPackage === notificationLink.notificationPackage,
+              w.id !== walletId &&
+              w.notificationPackage ===
+                notificationLink.notificationPackage,
           )
           .map((w) => w.name),
       );
@@ -165,7 +186,9 @@ export default function EditWalletScreen() {
             } catch (e) {
               Alert.alert(
                 'Delete failed',
-                e instanceof Error ? e.message : 'Could not delete wallet. Please try again.',
+                e instanceof Error
+                  ? e.message
+                  : 'Could not delete wallet. Please try again.',
               );
             }
           },
@@ -179,21 +202,28 @@ export default function EditWalletScreen() {
 
     const cur = currency.trim().toUpperCase().slice(0, 3) || 'USD';
     const style =
-      WALLET_CARD_STYLES.find((s) => s.id === cardStyleId) ?? WALLET_CARD_STYLES[0];
+      WALLET_CARD_STYLES.find((s) => s.id === cardStyleId) ??
+      WALLET_CARD_STYLES[0];
     const parsed = updateWalletSchema.safeParse({
       name: name.trim(),
       type,
       currency: cur,
       initialBalanceMinor: decimalToMinor(initialBalance || '0'),
       color: style.swatchHex,
-      icon: WALLET_TYPE_OPTIONS.find((t) => t.value === type)?.icon ?? '💰',
+      icon:
+        WALLET_TYPE_OPTIONS.find((t) => t.value === type)?.icon ??
+        '💰',
       cardStyleId: style.id,
       notificationPackage: notificationLink.notificationPackage,
       notificationAppLabel: notificationLink.notificationAppLabel,
-      notificationAccountHint: notificationLink.notificationAccountHint,
+      notificationAccountHint:
+        notificationLink.notificationAccountHint,
     });
     if (!parsed.success) {
-      Alert.alert('Error', parsed.error.errors[0]?.message ?? 'Invalid input');
+      Alert.alert(
+        'Error',
+        parsed.error.errors[0]?.message ?? 'Invalid input',
+      );
       return;
     }
 
@@ -202,11 +232,23 @@ export default function EditWalletScreen() {
       await updateWallet(walletId, parsed.data);
       router.back();
     } catch (e) {
-      Alert.alert('Error', e instanceof Error ? e.message : 'Failed to update wallet');
+      Alert.alert(
+        'Error',
+        e instanceof Error ? e.message : 'Failed to update wallet',
+      );
     } finally {
       setLoading(false);
     }
-  }, [user, walletId, name, type, currency, initialBalance, cardStyleId, notificationLink]);
+  }, [
+    user,
+    walletId,
+    name,
+    type,
+    currency,
+    initialBalance,
+    cardStyleId,
+    notificationLink,
+  ]);
 
   if (!walletId) {
     return (
@@ -222,7 +264,10 @@ export default function EditWalletScreen() {
     return (
       <ScreenShell variant="canvas">
         <View className="flex-1 items-center justify-center">
-          <ActivityIndicator size="large" color={tokens.primary} />
+          <ActivityIndicator
+            size="large"
+            color={tokens.primary}
+          />
         </View>
       </ScreenShell>
     );
@@ -232,8 +277,13 @@ export default function EditWalletScreen() {
     return (
       <ScreenShell variant="canvas">
         <View className="flex-1 justify-center px-6">
-          <Text className="mb-4 text-center text-foreground">{loadError}</Text>
-          <PrimaryButton label="Go back" onPress={() => router.back()} />
+          <Text className="mb-4 text-center text-foreground">
+            {loadError}
+          </Text>
+          <PrimaryButton
+            label="Go back"
+            onPress={() => router.back()}
+          />
         </View>
       </ScreenShell>
     );
@@ -246,13 +296,15 @@ export default function EditWalletScreen() {
       <KeyboardAvoidingView
         className="flex-1"
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        keyboardVerticalOffset={0}>
+        keyboardVerticalOffset={0}
+      >
         <View className="flex-1">
           <ScrollView
             className="flex-1"
             keyboardShouldPersistTaps="handled"
             contentContainerClassName="px-4 pt-4 pb-2"
-            showsVerticalScrollIndicator={false}>
+            showsVerticalScrollIndicator={false}
+          >
             <View className="mb-4 rounded-xl bg-card px-3 py-2.5">
               <Text className="text-[10px] font-semibold uppercase tracking-wide text-muted">
                 Current balance
@@ -285,8 +337,12 @@ export default function EditWalletScreen() {
                   key={t.value}
                   className={chipClass(type === t.value)}
                   onPress={() => setType(t.value)}
-                  activeOpacity={0.85}>
-                  <Text className={`text-xs ${chipTextClass(type === t.value)}`} numberOfLines={1}>
+                  activeOpacity={0.85}
+                >
+                  <Text
+                    className={`text-xs ${chipTextClass(type === t.value)}`}
+                    numberOfLines={1}
+                  >
                     {t.icon} {t.label}
                   </Text>
                 </TouchableOpacity>
@@ -323,7 +379,8 @@ export default function EditWalletScreen() {
               </View>
             </View>
             <Text className="mb-3 text-[11px] text-muted">
-              Changing initial balance updates how running balance is calculated from your transactions.
+              Changing initial balance updates how running balance is
+              calculated from your transactions.
             </Text>
 
             <WalletNotificationLinkSection
@@ -335,12 +392,16 @@ export default function EditWalletScreen() {
             <Text className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-muted">
               Card style
             </Text>
-            <WalletCardStylePicker value={cardStyleId} onChange={setCardStyleId} />
+            <WalletCardStylePicker
+              value={cardStyleId}
+              onChange={setCardStyleId}
+            />
           </ScrollView>
 
           <View
             className="border-t border-border bg-canvas px-4 pt-3"
-            style={{ paddingBottom: Math.max(insets.bottom, 12) }}>
+            style={{ paddingBottom: Math.max(insets.bottom, 12) }}
+          >
             <PrimaryButton
               label="Save changes"
               loading={loading}
@@ -354,8 +415,11 @@ export default function EditWalletScreen() {
               disabled={loading}
               className="mt-3 items-center rounded-xl border border-destructive/40 py-3 active:opacity-80"
               accessibilityRole="button"
-              accessibilityLabel="Delete wallet">
-              <Text className="text-sm font-semibold text-destructive">Delete wallet</Text>
+              accessibilityLabel="Delete wallet"
+            >
+              <Text className="text-sm font-semibold text-destructive">
+                Delete wallet
+              </Text>
             </TouchableOpacity>
           </View>
         </View>

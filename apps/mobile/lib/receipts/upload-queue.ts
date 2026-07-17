@@ -49,11 +49,7 @@ export async function drainImageUploadQueue(): Promise<number> {
 
   for (const item of queue) {
     try {
-      const remoteUrl = await uploadReceiptImage(
-        item.localUri,
-        item.userId,
-        item.proposalId,
-      );
+      const remoteUrl = await uploadReceiptImage(item.localUri, item.userId, item.proposalId);
       if (remoteUrl) {
         const linked = await updateProposalImageUri(item.proposalId, remoteUrl);
         if (linked) {

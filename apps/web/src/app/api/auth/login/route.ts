@@ -9,7 +9,7 @@ export async function POST(request: NextRequest) {
     const { email, password } = signInSchema.parse(body);
 
     const supabase = await createClient();
-    
+
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
@@ -20,10 +20,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (!data.user || !data.session) {
-      return NextResponse.json(
-        { error: 'Failed to authenticate' },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: 'Failed to authenticate' }, { status: 401 });
     }
 
     const response: AuthResponse = {

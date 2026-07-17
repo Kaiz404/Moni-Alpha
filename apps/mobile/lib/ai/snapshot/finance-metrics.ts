@@ -52,11 +52,7 @@ export type FinanceAssistantToolSnapshot = {
   currencies: Record<string, FinanceAssistantCurrencySnapshot>;
 };
 
-function sumExpenseInRange(
-  txs: TxForMetrics[],
-  startMs: number,
-  endMs: number,
-): MinorAmount {
+function sumExpenseInRange(txs: TxForMetrics[], startMs: number, endMs: number): MinorAmount {
   let s = 0 as MinorAmount;
   for (const tx of txs) {
     if (tx.type !== 'expense' || tx.analysisExcluded) continue;
@@ -100,11 +96,11 @@ export function buildCalendarMonthTrendSnapshot(
 
   let pctExpenseChangeVsPreviousFullMonth: number | null = null;
   if (expensePreviousCalendarMonth > 0) {
-    const projected =
-      avgDailyExpenseCurrentMonth * daysInCurrentMonth || expenseCurrentMonthToDate;
+    const projected = avgDailyExpenseCurrentMonth * daysInCurrentMonth || expenseCurrentMonthToDate;
     pctExpenseChangeVsPreviousFullMonth =
-      Math.round(((projected - expensePreviousCalendarMonth) / expensePreviousCalendarMonth) * 1000) /
-      10;
+      Math.round(
+        ((projected - expensePreviousCalendarMonth) / expensePreviousCalendarMonth) * 1000,
+      ) / 10;
   } else if (expenseCurrentMonthToDate > 0) {
     pctExpenseChangeVsPreviousFullMonth = 100;
   }
@@ -179,7 +175,13 @@ function buildFinanceAssistantCurrencySnapshot(
 ): FinanceAssistantCurrencySnapshot {
   const rolling30 = buildInsightMetricSnapshot(transactions, categoryMap, currencyHint, now);
   const calendarMonth = buildCalendarMonthTrendSnapshot(transactions, currencyHint, now);
-  const budgetCoach = buildBudgetCoachSnapshot(transactions, categoryMap, budgets, currencyHint, now);
+  const budgetCoach = buildBudgetCoachSnapshot(
+    transactions,
+    categoryMap,
+    budgets,
+    currencyHint,
+    now,
+  );
   const spendingStory = buildSpendingStorySnapshot(transactions, categoryMap, currencyHint, now);
 
   return {
@@ -197,13 +199,27 @@ export function buildFinanceAssistantToolSnapshotByCurrency(
   budgets: BudgetRow[],
   now: Date = new Date(),
 ): FinanceAssistantToolSnapshot {
-  const currencies = new Set([...transactions.map((transaction) => (transaction.currency ?? 'USD').toUpperCase()), ...budgets.map((budget) => budget.currency.toUpperCase())]);
-  const snapshots = Object.fromEntries([...currencies].sort().map((currency) => [currency, buildFinanceAssistantCurrencySnapshot(
-    transactions.filter((transaction) => (transaction.currency ?? 'USD').toUpperCase() === currency),
-    categoryMap,
-    budgets.filter((budget) => budget.currency.toUpperCase() === currency),
-    currency,
-    now,
-  )]));
-  return { schema: 'finance_assistant_tool_v2', generatedAt: now.toISOString(), currencies: snapshots };
+  const currencies = new Set([
+    ...transactions.map((transaction) => (transaction.currency ?? 'USD').toUpperCase()),
+    ...budgets.map((budget) => budget.currency.toUpperCase()),
+  ]);
+  const snapshots = Object.fromEntries(
+    [...currencies].sort().map((currency) => [
+      currency,
+      buildFinanceAssistantCurrencySnapshot(
+        transactions.filter(
+          (transaction) => (transaction.currency ?? 'USD').toUpperCase() === currency,
+        ),
+        categoryMap,
+        budgets.filter((budget) => budget.currency.toUpperCase() === currency),
+        currency,
+        now,
+      ),
+    ]),
+  );
+  return {
+    schema: 'finance_assistant_tool_v2',
+    generatedAt: now.toISOString(),
+    currencies: snapshots,
+  };
 }

@@ -13,5 +13,10 @@ export function ScreenShell({
   ...props
 }: ScreenShellProps) {
   const bg = variant === 'canvas' ? 'bg-canvas' : 'bg-background';
-  return <View className={`flex-1 ${bg} ${className ?? ''}`} {...props} />;
+  return (
+    <View
+      className={`flex-1 ${bg} ${className ?? ''}`}
+      {...props}
+    />
+  );
 }

@@ -11,14 +11,14 @@ import type { ProcessingQueueItem } from '@/lib/ai/processing-queue';
 import { saveProposalLocationSnapshot } from '@/lib/ai/proposal-location-cache';
 import type { LocationSnapshot } from '@/lib/location/location-snapshot';
 import { passesTransactionPrefilter } from '@/lib/ai/notification-types';
-import { resolveNotificationPackageName, enrichNotificationPackage } from '@/lib/notifications/notification-package';
+import {
+  resolveNotificationPackageName,
+  enrichNotificationPackage,
+} from '@/lib/notifications/notification-package';
 import { resolveNotificationCandidates } from '@/lib/notifications/notification-routing';
 import type { RawNotification } from '@/lib/ai/notification-types';
 import { getDefaultWalletId } from '@/lib/wallets/default-wallet';
-import {
-  FALLBACK_CURRENCY,
-  finalizeProposalWallet,
-} from '@/lib/wallets/proposal-wallet';
+import { FALLBACK_CURRENCY, finalizeProposalWallet } from '@/lib/wallets/proposal-wallet';
 
 export type TraceEvent = {
   stage: 'extraction' | 'extractor' | 'creator';
@@ -132,7 +132,9 @@ async function persistProposal(
   logger?: TraceLogger,
 ): Promise<RunExtractionResult> {
   try {
-    const created = await createProposedTransaction(proposal, { id: proposalId });
+    const created = await createProposedTransaction(proposal, {
+      id: proposalId,
+    });
     if (proposalId && locationSnapshot) {
       saveProposalLocationSnapshot(proposalId, locationSnapshot);
     }
@@ -151,7 +153,11 @@ async function persistProposal(
   } catch (e) {
     const message = e instanceof Error ? e.message : String(e);
     trace(logger, 'creator', 'error', { message });
-    return { created: false, skipped: true, reason: 'Failed to create proposal' };
+    return {
+      created: false,
+      skipped: true,
+      reason: 'Failed to create proposal',
+    };
   }
 }
 
@@ -166,7 +172,9 @@ function mapClientResult(
     });
     return result;
   }
-  trace(logger, 'extractor', result.status, { reason: result.reason });
+  trace(logger, 'extractor', result.status, {
+    reason: result.reason,
+  });
   return { created: false, skipped: true, reason: result.reason };
 }
 
@@ -177,7 +185,10 @@ export async function runExtraction(
   const logger = options?.trace;
   const client = getAiClient();
 
-  trace(logger, 'extraction', 'start', { type: item.type, id: item.id });
+  trace(logger, 'extraction', 'start', {
+    type: item.type,
+    id: item.id,
+  });
 
   try {
     const defaultWalletId = getDefaultWalletId();
@@ -185,7 +196,10 @@ export async function runExtraction(
 
     switch (item.type) {
       case 'text': {
-        const result = await client.extractFromText({ text: item.text, wallets });
+        const result = await client.extractFromText({
+          text: item.text,
+          wallets,
+        });
         const mapped = mapClientResult(result, logger);
         if ('status' in mapped && mapped.status === 'ok') {
           return persistProposal(
@@ -292,11 +306,19 @@ export async function runExtraction(
       }
 
       default:
-        return { created: false, skipped: true, reason: 'Unknown item type' };
+        return {
+          created: false,
+          skipped: true,
+          reason: 'Unknown item type',
+        };
     }
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     trace(logger, 'extraction', 'fatal-error', { message: msg });
-    return { created: false, skipped: true, reason: `Extraction error: ${msg}` };
+    return {
+      created: false,
+      skipped: true,
+      reason: `Extraction error: ${msg}`,
+    };
   }
 }

@@ -4,9 +4,7 @@
  */
 import type { CreateProposedTransaction } from '@repo/types';
 import { decimalToMinor } from '@repo/types';
-import {
-  buildNotificationContext,
-} from '@/lib/ai/notification-context';
+import { buildNotificationContext } from '@/lib/ai/notification-context';
 
 export type RawNotification = {
   id: string;

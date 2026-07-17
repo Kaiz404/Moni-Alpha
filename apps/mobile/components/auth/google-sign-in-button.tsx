@@ -9,7 +9,10 @@ type GoogleSignInButtonProps = {
   onError?: (message: string) => void;
 };
 
-export function GoogleSignInButton({ disabled, onError }: GoogleSignInButtonProps) {
+export function GoogleSignInButton({
+  disabled,
+  onError,
+}: GoogleSignInButtonProps) {
   const { signInWithGoogle } = useAuth();
   const [loading, setLoading] = useState(false);
 
@@ -47,7 +50,8 @@ export function GoogleSignInButton({ disabled, onError }: GoogleSignInButtonProp
         onPress={handlePress}
         disabled={loading || disabled}
         accessibilityRole="button"
-        accessibilityLabel="Continue with Google">
+        accessibilityLabel="Continue with Google"
+      >
         <Text className="text-lg leading-none text-primary">G</Text>
         <Text className="text-base font-semibold text-foreground">
           {loading ? 'Connecting...' : 'Continue with Google'}

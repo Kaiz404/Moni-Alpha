@@ -13,7 +13,12 @@ function useSyncStatus() {
     const state = syncState(transactions$).get();
     const pendingSets = state.numPendingSets ?? 0;
     const pendingGets = state.numPendingGets ?? 0;
-    const isSyncing = Boolean(state.isGetting || state.isSetting || pendingSets > 0 || pendingGets > 0);
+    const isSyncing = Boolean(
+      state.isGetting ||
+      state.isSetting ||
+      pendingSets > 0 ||
+      pendingGets > 0,
+    );
     const isLoaded = state.isPersistLoaded && state.isLoaded;
     const hasError = Boolean(state.error);
 
@@ -57,10 +62,7 @@ export function SyncStatus({ className }: SyncStatusProps = {}) {
 
   return (
     <View
-      className={[
-        'mb-6 rounded-lg bg-card p-4',
-        className ?? '',
-      ]
+      className={['mb-6 rounded-lg bg-card p-4', className ?? '']
         .filter(Boolean)
         .join(' ')}
     >
@@ -71,7 +73,11 @@ export function SyncStatus({ className }: SyncStatusProps = {}) {
       <View className="space-y-2">
         <View className="flex-row items-center justify-between">
           <Text className="text-sm text-muted">Status:</Text>
-          <Text className={`text-sm font-medium ${status.colorClass}`}>{status.text}</Text>
+          <Text
+            className={`text-sm font-medium ${status.colorClass}`}
+          >
+            {status.text}
+          </Text>
         </View>
 
         <View className="flex-row items-center justify-between">
@@ -83,18 +89,26 @@ export function SyncStatus({ className }: SyncStatusProps = {}) {
 
         <View className="flex-row items-center justify-between">
           <Text className="text-sm text-muted">Last Sync:</Text>
-          <Text className="text-sm text-foreground">{formatLastSyncTime()}</Text>
+          <Text className="text-sm text-foreground">
+            {formatLastSyncTime()}
+          </Text>
         </View>
 
         {syncMeta.pendingSets > 0 ? (
           <View className="flex-row items-center justify-between">
-            <Text className="text-sm text-muted">Pending uploads:</Text>
-            <Text className="text-sm text-foreground">{syncMeta.pendingSets}</Text>
+            <Text className="text-sm text-muted">
+              Pending uploads:
+            </Text>
+            <Text className="text-sm text-foreground">
+              {syncMeta.pendingSets}
+            </Text>
           </View>
         ) : null}
 
         {syncMeta.errorMessage ? (
-          <Text className="text-xs text-red-500 dark:text-red-400 mt-1">{syncMeta.errorMessage}</Text>
+          <Text className="text-xs text-red-500 dark:text-red-400 mt-1">
+            {syncMeta.errorMessage}
+          </Text>
         ) : null}
       </View>
     </View>

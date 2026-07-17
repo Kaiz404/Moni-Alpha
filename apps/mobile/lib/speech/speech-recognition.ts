@@ -51,7 +51,10 @@ export function getSpeechContextualStrings(): string[] {
     if (row?.name && !row.deleted) dynamic.push(row.name);
   }
 
-  const categories = categories$.peek() as Record<string, { name?: string; deleted?: boolean }> | null;
+  const categories = categories$.peek() as Record<
+    string,
+    { name?: string; deleted?: boolean }
+  > | null;
   for (const row of Object.values(categories ?? {})) {
     if (row?.name && !row.deleted) dynamic.push(row.name);
   }

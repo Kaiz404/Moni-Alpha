@@ -13,6 +13,7 @@ This skill provides a curated knowledge base of 60+ UI component patterns source
 ## When to Use This Skill
 
 Apply whenever the user asks to build, design, or generate:
+
 - Web pages, landing pages, marketing sites
 - SaaS dashboards, admin panels, settings pages
 - Forms, data tables, navigation structures
@@ -35,6 +36,7 @@ Every generated interface should feel **modern, minimal, and production-ready** 
 ### Quality Bar
 
 The output should match what you'd expect from a senior product designer at a top SaaS company:
+
 - Clean visual rhythm with intentional asymmetry
 - Obvious interactive affordances (hover, focus, active states)
 - Graceful edge cases (empty states, loading, error)
@@ -47,6 +49,7 @@ The output should match what you'd expect from a senior product designer at a to
 Read the user's request and determine which UI components are needed. Reference [components.md](components.md) to find each component by name or alias.
 
 Common mappings:
+
 - "navigation" → Header, Navigation, Breadcrumbs, Tabs
 - "form" → Form, Text input, Select, Checkbox, Radio button, Button
 - "data display" → Table, Card, List, Badge, Avatar
@@ -59,24 +62,28 @@ Common mappings:
 For each component in the interface, follow its best practices from the reference. Key rules that apply broadly:
 
 **Layout**
+
 - Single-column forms — faster to scan
 - Consistent vertical lanes in repeated rows (lists, tables)
 - Fixed-width slots for icons and actions, even when empty
 - Cards: media → title → meta → action hierarchy
 
 **Interaction**
+
 - Buttons: verb-first labels ("Save changes", not "Submit"), one primary per section
 - Modals: always provide X, Cancel, and Escape; trap focus; return focus on close
 - Toasts: auto-dismiss 4–6 s, allow manual dismiss, stack newest on top
 - Toggles: immediate effect only — use checkboxes in forms that require Save
 
 **Typography & Spacing**
+
 - Strict heading hierarchy (h1 → h2 → h3), one h1 per page
 - Minimum 44 px touch targets on mobile
 - Labels above inputs (vertical forms) or beside (horizontal)
 - Placeholder text as format hint, never as label replacement
 
 **States**
+
 - Empty states: illustration + helpful headline + primary CTA
 - Loading: skeleton screens > spinners (show after 300 ms delay)
 - Validation: inline on blur, not on every keystroke
@@ -87,26 +94,31 @@ For each component in the interface, follow its best practices from the referenc
 Select the style preset that best matches the user's intent, or ask if unclear:
 
 **Modern SaaS** (default)
+
 - Neutral palette, one strong accent
 - 8 px grid, generous white space
 - Clean, professional, spacious
 
 **Apple-level Minimal**
+
 - Near-monochrome, warm grays
 - Large type hierarchy, tight tracking on display text
 - Abundant white space, micro-interactions (150–250 ms ease-out)
 
 **Enterprise / Corporate**
+
 - Information-dense, well-defined regions
 - Compact spacing scale (4/8/12/16/24 px)
 - Robust form handling, fully keyboard-navigable
 
 **Creative / Portfolio**
+
 - Bold, expressive, strong visual personality
 - Asymmetric layouts, dramatic scale contrast
 - Editorial typography, vivid accent colors
 
 **Data Dashboard**
+
 - Data-dense, optimised for scannability
 - Consistent vertical alignment across rows
 - Clear metric hierarchy: KPI → trend → detail
@@ -129,23 +141,23 @@ Accessibility: Semantic HTML, ARIA where needed, focus management
 
 Below are the 15 most commonly needed components. For the full 60+ component reference with best practices, aliases, and layout examples, see [components.md](components.md).
 
-| Component | When to use | Key rule |
-|-----------|------------|----------|
-| **Button** | Trigger actions | Verb-first labels; one primary per section |
-| **Card** | Represent an entity | Media → title → meta → action; shadow OR border, not both |
-| **Modal** | Focused attention | Trap focus; X + Cancel + Escape to close |
-| **Navigation** | Page/section links | 5–7 items max; clear active state |
-| **Table** | Structured data | Sticky header; right-align numbers; sortable columns |
-| **Tabs** | Switch panels | 2–7 tabs; active indicator; accordion on mobile |
-| **Form** | Collect input | Single column; labels above; inline validation on blur |
-| **Toast** | Brief confirmation | Auto-dismiss 4–6 s; undo action for destructive ops |
-| **Alert** | Important status | Semantic colors + icon; max 2 sentences |
-| **Drawer** | Secondary panel | Right for detail, left for nav; 320–480 px desktop |
-| **Search input** | Find content | Cmd/Ctrl+K shortcut; debounce 200–300 ms |
-| **Empty state** | No data | Illustration + headline + CTA; positive framing |
-| **Skeleton** | Loading placeholder | Match actual layout shape; shimmer animation |
-| **Badge** | Status/metadata label | 1–2 words; pill shape for status; limited color palette |
-| **Dropdown menu** | Action/nav options | 7±2 items; destructive actions last in red |
+| Component         | When to use           | Key rule                                                  |
+| ----------------- | --------------------- | --------------------------------------------------------- |
+| **Button**        | Trigger actions       | Verb-first labels; one primary per section                |
+| **Card**          | Represent an entity   | Media → title → meta → action; shadow OR border, not both |
+| **Modal**         | Focused attention     | Trap focus; X + Cancel + Escape to close                  |
+| **Navigation**    | Page/section links    | 5–7 items max; clear active state                         |
+| **Table**         | Structured data       | Sticky header; right-align numbers; sortable columns      |
+| **Tabs**          | Switch panels         | 2–7 tabs; active indicator; accordion on mobile           |
+| **Form**          | Collect input         | Single column; labels above; inline validation on blur    |
+| **Toast**         | Brief confirmation    | Auto-dismiss 4–6 s; undo action for destructive ops       |
+| **Alert**         | Important status      | Semantic colors + icon; max 2 sentences                   |
+| **Drawer**        | Secondary panel       | Right for detail, left for nav; 320–480 px desktop        |
+| **Search input**  | Find content          | Cmd/Ctrl+K shortcut; debounce 200–300 ms                  |
+| **Empty state**   | No data               | Illustration + headline + CTA; positive framing           |
+| **Skeleton**      | Loading placeholder   | Match actual layout shape; shimmer animation              |
+| **Badge**         | Status/metadata label | 1–2 words; pill shape for status; limited color palette   |
+| **Dropdown menu** | Action/nav options    | 7±2 items; destructive actions last in red                |
 
 ## Anti-Patterns to Avoid
 

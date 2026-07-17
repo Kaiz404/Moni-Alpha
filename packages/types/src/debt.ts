@@ -1,13 +1,9 @@
-import { z } from "zod";
+import { z } from 'zod';
 import { currencyCodeSchema, positiveMinorAmountSchema } from './money';
 
-export const debtDirectionSchema = z.enum(["owed_to_me", "i_owe"]);
-export const debtStatusSchema = z.enum(["open", "settled", "written_off"]);
-export const debtActivityKindSchema = z.enum([
-  "principal",
-  "repayment",
-  "write_off",
-]);
+export const debtDirectionSchema = z.enum(['owed_to_me', 'i_owe']);
+export const debtStatusSchema = z.enum(['open', 'settled', 'written_off']);
+export const debtActivityKindSchema = z.enum(['principal', 'repayment', 'write_off']);
 
 export const debtSchema = z.object({
   id: z.string().uuid(),
@@ -47,7 +43,7 @@ export const createDebtInputSchema = z.object({
 });
 
 export const createDebtActivityInputSchema = z.object({
-  kind: z.enum(["principal", "repayment"]),
+  kind: z.enum(['principal', 'repayment']),
   amountMinor: positiveMinorAmountSchema,
   walletId: z.string().uuid(),
   note: z.string().max(1000).nullable().optional(),
@@ -60,6 +56,4 @@ export type DebtActivityKind = z.infer<typeof debtActivityKindSchema>;
 export type Debt = z.infer<typeof debtSchema>;
 export type DebtActivity = z.infer<typeof debtActivitySchema>;
 export type CreateDebtInput = z.infer<typeof createDebtInputSchema>;
-export type CreateDebtActivityInput = z.infer<
-  typeof createDebtActivityInputSchema
->;
+export type CreateDebtActivityInput = z.infer<typeof createDebtActivityInputSchema>;

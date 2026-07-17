@@ -40,9 +40,24 @@ export const NOTIFICATION_REGION_LABELS: Record<NotificationAppRegion, string> =
 
 const CURATED_NOTIFICATION_APPS_RAW: NotificationAppOption[] = [
   // Malaysia
-  { packageName: 'com.maybank2u.life', label: 'Maybank2u', region: 'MY', sortOrder: 1 },
-  { packageName: 'com.cimb.cimbocto', label: 'CIMB OCTO', region: 'MY', sortOrder: 2 },
-  { packageName: 'com.rhbgroup.rhbmobilebanking', label: 'RHB Mobile Banking', region: 'MY', sortOrder: 3 },
+  {
+    packageName: 'com.maybank2u.life',
+    label: 'Maybank2u',
+    region: 'MY',
+    sortOrder: 1,
+  },
+  {
+    packageName: 'com.cimb.cimbocto',
+    label: 'CIMB OCTO',
+    region: 'MY',
+    sortOrder: 2,
+  },
+  {
+    packageName: 'com.rhbgroup.rhbmobilebanking',
+    label: 'RHB Mobile Banking',
+    region: 'MY',
+    sortOrder: 3,
+  },
   {
     packageName: 'com.pbb.mypb',
     label: 'MyPB by Public Bank',
@@ -64,7 +79,12 @@ const CURATED_NOTIFICATION_APPS_RAW: NotificationAppOption[] = [
     sortOrder: 6,
     aliases: ['com.ambank.amonline'],
   },
-  { packageName: 'com.bankislam.bimbmobile', label: 'Bank Islam', region: 'MY', sortOrder: 7 },
+  {
+    packageName: 'com.bankislam.bimbmobile',
+    label: 'Bank Islam',
+    region: 'MY',
+    sortOrder: 7,
+  },
   {
     packageName: 'com.uob.mightymy',
     label: 'UOB TMRW',
@@ -108,15 +128,50 @@ const CURATED_NOTIFICATION_APPS_RAW: NotificationAppOption[] = [
     aliases: ['com.bigpay.mobile'],
   },
   // Singapore
-  { packageName: 'com.dbs.sg.dbsmbanking', label: 'DBS digibank', region: 'SG', sortOrder: 1 },
-  { packageName: 'com.dbs.dbspaylah', label: 'PayLah!', region: 'SG', sortOrder: 2 },
-  { packageName: 'com.ocbc.mobile', label: 'OCBC Digital', region: 'SG', sortOrder: 3 },
+  {
+    packageName: 'com.dbs.sg.dbsmbanking',
+    label: 'DBS digibank',
+    region: 'SG',
+    sortOrder: 1,
+  },
+  {
+    packageName: 'com.dbs.dbspaylah',
+    label: 'PayLah!',
+    region: 'SG',
+    sortOrder: 2,
+  },
+  {
+    packageName: 'com.ocbc.mobile',
+    label: 'OCBC Digital',
+    region: 'SG',
+    sortOrder: 3,
+  },
   // SEA (multi-country)
-  { packageName: 'com.grabtaxi.passenger', label: 'Grab', region: 'SEA', sortOrder: 1 },
+  {
+    packageName: 'com.grabtaxi.passenger',
+    label: 'Grab',
+    region: 'SEA',
+    sortOrder: 1,
+  },
   // India
-  { packageName: 'com.phonepe.app', label: 'PhonePe', region: 'IN', sortOrder: 1 },
-  { packageName: 'com.dreamplug.androidapp', label: 'CRED', region: 'IN', sortOrder: 2 },
-  { packageName: 'com.paytm.paytm', label: 'Paytm', region: 'IN', sortOrder: 3 },
+  {
+    packageName: 'com.phonepe.app',
+    label: 'PhonePe',
+    region: 'IN',
+    sortOrder: 1,
+  },
+  {
+    packageName: 'com.dreamplug.androidapp',
+    label: 'CRED',
+    region: 'IN',
+    sortOrder: 2,
+  },
+  {
+    packageName: 'com.paytm.paytm',
+    label: 'Paytm',
+    region: 'IN',
+    sortOrder: 3,
+  },
   // Global
   {
     packageName: 'com.google.android.apps.nbu.paisa.user',
@@ -139,8 +194,7 @@ export function dedupeCuratedApps(
     const regionRank = (r: NotificationAppRegion) => NOTIFICATION_REGION_ORDER.indexOf(r);
     const keepNew =
       regionRank(app.region) < regionRank(existing.region) ||
-      (app.region === existing.region &&
-        (app.sortOrder ?? 99) < (existing.sortOrder ?? 99));
+      (app.region === existing.region && (app.sortOrder ?? 99) < (existing.sortOrder ?? 99));
     if (keepNew) byPackage.set(app.packageName, app);
   }
   return [...byPackage.values()];

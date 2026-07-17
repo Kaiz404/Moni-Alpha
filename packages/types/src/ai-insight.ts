@@ -18,12 +18,7 @@ export const aiInsightContextKeySchema = z.string().min(1).max(256);
 
 export const aiInsightStatusSchema = z.enum(['pending', 'ready', 'error']);
 
-export const insightCardKindSchema = z.enum([
-  'savings_opportunity',
-  'risk',
-  'positive',
-  'neutral',
-]);
+export const insightCardKindSchema = z.enum(['savings_opportunity', 'risk', 'positive', 'neutral']);
 
 /** Payload stored in `result` for summary_insight_cards v1. */
 export const summaryInsightCardsV1Schema = z.object({

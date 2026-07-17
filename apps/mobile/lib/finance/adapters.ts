@@ -10,7 +10,10 @@ import type {
   FinanceWallet,
 } from './types';
 
-type RawRow = Record<string, unknown> & { id?: unknown; deleted?: unknown };
+type RawRow = Record<string, unknown> & {
+  id?: unknown;
+  deleted?: unknown;
+};
 
 function stringValue(value: unknown): string {
   return typeof value === 'string' ? value : value == null ? '' : String(value);
@@ -166,13 +169,15 @@ export function toFinanceDebtActivity(row: RawRow): FinanceDebtActivity | null {
 
 export function toFinanceProposal(row: RawRow): FinanceProposal | null {
   if (!isLiveRow(row)) return null;
-  const type = row.type === 'income' || row.type === 'expense' || row.type === 'transfer' ? row.type : null;
+  const type =
+    row.type === 'income' || row.type === 'expense' || row.type === 'transfer' ? row.type : null;
   const parsedAmount = row.amount == null ? null : amountMinor(row.amount);
   if (row.amount != null && parsedAmount === null) return null;
   return {
     id: row.id,
     userId: stringValue(row.user_id),
-    sourceType: row.source_type === 'text' || row.source_type === 'image' ? row.source_type : 'notification',
+    sourceType:
+      row.source_type === 'text' || row.source_type === 'image' ? row.source_type : 'notification',
     sourceApp: nullableString(row.source_app),
     sourceText: nullableString(row.source_text),
     sourceImageUri: nullableString(row.source_image_uri),

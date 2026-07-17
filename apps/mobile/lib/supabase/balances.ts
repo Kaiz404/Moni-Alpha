@@ -51,7 +51,7 @@ export async function getWalletBalances(walletIds: string[]): Promise<Record<str
 
   for (const walletId of walletIds) {
     const wallet = walletRows.find((w) => w.id === walletId);
-    initials[walletId] = wallet ? decimalToMinor(wallet.initial_balance) : 0 as MinorAmount;
+    initials[walletId] = wallet ? decimalToMinor(wallet.initial_balance) : (0 as MinorAmount);
   }
 
   const balances = { ...initials };
@@ -64,7 +64,10 @@ export async function getWalletBalances(walletIds: string[]): Promise<Record<str
     }
     const transferTo = tx.transferToWalletId;
     if (transferTo && walletIdSet.has(transferTo)) {
-      balances[transferTo] = addMinor(balances[transferTo] ?? 0, transactionDeltaMinor(tx, transferTo));
+      balances[transferTo] = addMinor(
+        balances[transferTo] ?? 0,
+        transactionDeltaMinor(tx, transferTo),
+      );
     }
   }
 

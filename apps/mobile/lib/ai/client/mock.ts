@@ -43,9 +43,7 @@ export const mockAiClient: AiClient = {
     });
   },
 
-  async extractFromNotification(
-    req: ExtractNotificationRequest,
-  ): Promise<ExtractResult> {
+  async extractFromNotification(req: ExtractNotificationRequest): Promise<ExtractResult> {
     await simulateNetwork();
     return unavailableExtract('/v1/extract/notification', {
       app: req.notification.app,

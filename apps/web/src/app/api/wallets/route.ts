@@ -1,12 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import { createWalletSchema, decimalToMinor, minorToDecimal, type WalletListResponse, type WalletResponse } from '@repo/types';
+import {
+  createWalletSchema,
+  decimalToMinor,
+  minorToDecimal,
+  type WalletListResponse,
+  type WalletResponse,
+} from '@repo/types';
 import { handleApiError, unauthorized } from '@/lib/api/errors';
 
 export async function GET(request: NextRequest) {
   try {
     const supabase = await createClient(request);
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
 
     if (authError || !user) {
       return unauthorized();
@@ -24,7 +33,7 @@ export async function GET(request: NextRequest) {
     }
 
     const response: WalletListResponse = {
-      wallets: (data || []).map(w => ({
+      wallets: (data || []).map((w) => ({
         id: w.id,
         userId: w.user_id,
         name: w.name,
@@ -51,7 +60,10 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient(request);
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
 
     if (authError || !user) {
       return unauthorized();

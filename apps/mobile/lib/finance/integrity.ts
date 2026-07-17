@@ -1,11 +1,24 @@
 import { batch, observable } from '@legendapp/state';
 import { decimalToMinor } from '@repo/types';
-import { categoryBudgets$, debtActivities$, debts$, proposedTransactions$, transactions$, wallets$ } from '@/lib/store';
+import {
+  categoryBudgets$,
+  debtActivities$,
+  debts$,
+  proposedTransactions$,
+  transactions$,
+  wallets$,
+} from '@/lib/store';
 import { getRecordValues, patchRow } from '@/lib/store/helpers';
 import { normalizeCurrency } from './money';
 
 export type FinanceIntegrityIssue = {
-  table: 'wallets' | 'transactions' | 'category_budgets' | 'debt_activities' | 'proposed_transactions' | 'debts';
+  table:
+    | 'wallets'
+    | 'transactions'
+    | 'category_budgets'
+    | 'debt_activities'
+    | 'proposed_transactions'
+    | 'debts';
   id: string;
   field: string;
   reason: string;
@@ -26,13 +39,25 @@ function invalidAmount(value: unknown): boolean {
 
 function inspectAmountRows(
   table: FinanceIntegrityIssue['table'],
-  rows: Array<{ id: string; amount?: unknown; initial_balance?: unknown }>,
+  rows: Array<{
+    id: string;
+    amount?: unknown;
+    initial_balance?: unknown;
+  }>,
   field: 'amount' | 'initial_balance',
 ): FinanceIntegrityIssue[] {
   return rows.flatMap((row) => {
     const value = field === 'amount' ? row.amount : row.initial_balance;
     return invalidAmount(value)
-      ? [{ table, id: row.id, field, reason: 'Invalid DECIMAL(12,2) value', repairable: false }]
+      ? [
+          {
+            table,
+            id: row.id,
+            field,
+            reason: 'Invalid DECIMAL(12,2) value',
+            repairable: false,
+          },
+        ]
       : [];
   });
 }
@@ -44,11 +69,26 @@ export function inspectFinanceIntegrity(): FinanceIntegrityIssue[] {
     ...inspectAmountRows('transactions', getRecordValues(transactions$), 'amount'),
     ...inspectAmountRows('category_budgets', getRecordValues(categoryBudgets$), 'amount'),
     ...inspectAmountRows('debt_activities', getRecordValues(debtActivities$), 'amount'),
-    ...inspectAmountRows('proposed_transactions', getRecordValues<{ id: string; amount?: unknown }>(proposedTransactions$).filter((row) => row.amount != null), 'amount'),
+    ...inspectAmountRows(
+      'proposed_transactions',
+      getRecordValues<{ id: string; amount?: unknown }>(proposedTransactions$).filter(
+        (row) => row.amount != null,
+      ),
+      'amount',
+    ),
   ];
-  for (const debt of getRecordValues<{ id: string; currency?: unknown }>(debts$)) {
+  for (const debt of getRecordValues<{
+    id: string;
+    currency?: unknown;
+  }>(debts$)) {
     if (!/^[A-Z]{3}$/.test(String(debt.currency ?? ''))) {
-      issues.push({ table: 'debts', id: debt.id, field: 'currency', reason: 'Missing or invalid ISO currency', repairable: true });
+      issues.push({
+        table: 'debts',
+        id: debt.id,
+        field: 'currency',
+        reason: 'Missing or invalid ISO currency',
+        repairable: true,
+      });
     }
   }
   return issues;
@@ -62,9 +102,15 @@ export function inspectFinanceIntegrity(): FinanceIntegrityIssue[] {
 export function repairFinanceIntegrity(): FinanceIntegrityIssue[] {
   const issues = inspectFinanceIntegrity();
   const walletCurrency = new Map(
-    getRecordValues<{ id: string; currency?: unknown }>(wallets$).map((wallet) => [wallet.id, normalizeCurrency(wallet.currency)]),
+    getRecordValues<{ id: string; currency?: unknown }>(wallets$).map((wallet) => [
+      wallet.id,
+      normalizeCurrency(wallet.currency),
+    ]),
   );
-  const activities = getRecordValues<{ debt_id?: string | null; wallet_id?: string | null }>(debtActivities$);
+  const activities = getRecordValues<{
+    debt_id?: string | null;
+    wallet_id?: string | null;
+  }>(debtActivities$);
   batch(() => {
     for (const issue of issues) {
       if (issue.table !== 'debts' || !issue.repairable) continue;
@@ -72,10 +118,16 @@ export function repairFinanceIntegrity(): FinanceIntegrityIssue[] {
         .filter((activity) => activity.debt_id === issue.id && activity.wallet_id)
         .map((activity) => walletCurrency.get(activity.wallet_id!))
         .find((value): value is ReturnType<typeof normalizeCurrency> => Boolean(value));
-      if (currency) patchRow(debts$, issue.id, { currency, updated_at: new Date().toISOString() });
+      if (currency)
+        patchRow(debts$, issue.id, {
+          currency,
+          updated_at: new Date().toISOString(),
+        });
     }
   });
-  const remaining = inspectFinanceIntegrity().filter((issue) => !(issue.table === 'debts' && issue.repairable));
+  const remaining = inspectFinanceIntegrity().filter(
+    (issue) => !(issue.table === 'debts' && issue.repairable),
+  );
   financeIntegrityIssues$.set(remaining);
   return remaining;
 }

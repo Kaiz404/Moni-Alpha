@@ -1,7 +1,9 @@
 import { z } from 'zod';
 
 /** ISO 4217 code stored alongside every money value. */
-export const currencyCodeSchema = z.string().regex(/^[A-Z]{3}$/, 'Use a three-letter ISO currency code');
+export const currencyCodeSchema = z
+  .string()
+  .regex(/^[A-Z]{3}$/, 'Use a three-letter ISO currency code');
 export type CurrencyCode = z.infer<typeof currencyCodeSchema>;
 
 /**
@@ -9,10 +11,20 @@ export type CurrencyCode = z.infer<typeof currencyCodeSchema>;
  * It deliberately has no decimal representation so application calculations do
  * not accumulate floating-point rounding errors.
  */
-export type MinorAmount = number & { readonly __minorAmount: 'MinorAmount' };
+export type MinorAmount = number & {
+  readonly __minorAmount: 'MinorAmount';
+};
 
-export const minorAmountSchema = z.number().int().nonnegative().transform((value) => value as MinorAmount);
-export const positiveMinorAmountSchema = z.number().int().positive().transform((value) => value as MinorAmount);
+export const minorAmountSchema = z
+  .number()
+  .int()
+  .nonnegative()
+  .transform((value) => value as MinorAmount);
+export const positiveMinorAmountSchema = z
+  .number()
+  .int()
+  .positive()
+  .transform((value) => value as MinorAmount);
 
 const MAX_MINOR_AMOUNT = 999_999_999_999;
 
@@ -55,7 +67,10 @@ export function addMinor(...values: Array<MinorAmount | number>): MinorAmount {
   return assertSafeMinor(values.reduce((sum, value) => sum + Number(value), 0));
 }
 
-export function subtractMinor(left: MinorAmount | number, right: MinorAmount | number): MinorAmount {
+export function subtractMinor(
+  left: MinorAmount | number,
+  right: MinorAmount | number,
+): MinorAmount {
   return assertSafeMinor(Number(left) - Number(right));
 }
 

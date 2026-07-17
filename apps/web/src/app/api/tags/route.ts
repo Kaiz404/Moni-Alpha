@@ -6,7 +6,10 @@ import { handleApiError, unauthorized } from '@/lib/api/errors';
 export async function GET(request: NextRequest) {
   try {
     const supabase = await createClient(request);
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
 
     if (authError || !user) {
       return unauthorized();
@@ -23,7 +26,7 @@ export async function GET(request: NextRequest) {
     }
 
     const response: TagListResponse = {
-      tags: (data || []).map(t => ({
+      tags: (data || []).map((t) => ({
         id: t.id,
         userId: t.user_id,
         name: t.name,
@@ -41,7 +44,10 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient(request);
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
 
     if (authError || !user) {
       return unauthorized();

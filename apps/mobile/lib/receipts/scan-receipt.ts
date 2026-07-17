@@ -79,7 +79,9 @@ export async function queueReceiptImage(uri: string): Promise<string> {
     // non-critical — upload queue will retry on its own
   }
 
-  startBackgroundProcessor().catch((e) => console.warn(TAG, 'Background processor start failed:', e));
+  startBackgroundProcessor().catch((e) =>
+    console.warn(TAG, 'Background processor start failed:', e),
+  );
   return id;
 }
 

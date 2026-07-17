@@ -103,7 +103,9 @@ function extractCounterpartyHint(text: string): string | null {
   return null;
 }
 
-export function buildNotificationContext(notification: RawNotificationForContext): NotificationLlmContext {
+export function buildNotificationContext(
+  notification: RawNotificationForContext,
+): NotificationLlmContext {
   const title = normalizeText(notification.titleBig || notification.title || '');
   const body = normalizeText(
     notification.bigText ||
