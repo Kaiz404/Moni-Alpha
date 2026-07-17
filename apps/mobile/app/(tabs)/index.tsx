@@ -177,7 +177,11 @@ export default function HomeScreen() {
   };
 
   return (
-    <SafeAreaView edges={['top']} className="flex-1 bg-canvas">
+    <SafeAreaView
+      edges={['top']}
+      className="flex-1 bg-canvas"
+      style={{ flex: 1 }}
+    >
       <ScrollView
         className="flex-1"
         contentContainerClassName="pb-32 pt-4"

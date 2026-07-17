@@ -176,7 +176,11 @@ export default function InsightsScreen() {
   );
 
   return (
-    <SafeAreaView edges={['top']} className="flex-1 bg-canvas">
+    <SafeAreaView
+      edges={['top']}
+      className="flex-1 bg-canvas"
+      style={{ flex: 1 }}
+    >
       <ScrollView
         className="flex-1"
         contentContainerClassName="px-5 pb-32 pt-4"
