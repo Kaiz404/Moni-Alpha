@@ -8,6 +8,7 @@ import {
 } from 'react-native';
 import MaterialIcons from '@react-native-vector-icons/material-icons';
 import { router, useFocusEffect } from 'expo-router';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Location from 'expo-location';
 import * as ImagePicker from 'expo-image-picker';
 import { ExpoSpeechRecognitionModule } from 'expo-speech-recognition';
@@ -152,7 +153,10 @@ export default function ProfileScreen() {
   };
 
   return (
-    <View className="flex-1 bg-background">
+    <SafeAreaView
+      edges={['top']}
+      className="flex-1 bg-background"
+    >
       <ScrollView
         className="flex-1"
         contentContainerClassName="grow pb-10"
@@ -375,6 +379,6 @@ export default function ProfileScreen() {
           </TouchableOpacity>
         </View>
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 }

@@ -1,5 +1,6 @@
 import React, { useCallback, useState } from 'react';
 import { Stack, useFocusEffect } from 'expo-router';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   View,
   Text,
@@ -153,7 +154,10 @@ export default function NotificationsScreen() {
   }, [clearAll]);
 
   return (
-    <View className="flex-1 bg-background p-4">
+    <SafeAreaView
+      edges={['bottom']}
+      className="flex-1 bg-background p-4"
+    >
       <Stack.Screen
         options={{ headerShown: true, title: 'Notifications' }}
       />
@@ -194,6 +198,6 @@ export default function NotificationsScreen() {
           </View>
         }
       />
-    </View>
+    </SafeAreaView>
   );
 }

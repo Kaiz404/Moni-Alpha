@@ -9,7 +9,10 @@ import {
 } from 'react-native';
 import { router } from 'expo-router';
 import { randomUUID } from 'expo-crypto';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from 'react-native-safe-area-context';
 import MaterialIcons from '@react-native-vector-icons/material-icons';
 import {
   ExpoSpeechRecognitionModule,
@@ -147,7 +150,8 @@ export default function ScanListenScreen() {
   }, [transcript]);
 
   return (
-    <View
+    <SafeAreaView
+      edges={['bottom']}
       className="flex-1 bg-background"
       style={{ paddingTop: insets.top }}
     >
@@ -248,6 +252,6 @@ export default function ScanListenScreen() {
           </View>
         </View>
       )}
-    </View>
+    </SafeAreaView>
   );
 }

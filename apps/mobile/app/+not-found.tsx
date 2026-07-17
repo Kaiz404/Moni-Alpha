@@ -1,5 +1,6 @@
 import { Link, Stack } from 'expo-router';
-import { Text, View } from 'react-native';
+import { Text } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function NotFoundScreen() {
   return (
@@ -7,7 +8,10 @@ export default function NotFoundScreen() {
       <Stack.Screen
         options={{ title: 'Not found', headerShown: true }}
       />
-      <View className="flex-1 items-center justify-center bg-background px-6">
+      <SafeAreaView
+        edges={['bottom']}
+        className="flex-1 items-center justify-center bg-background px-6"
+      >
         <Text className="mb-2 text-xl font-bold text-foreground">
           Screen not found
         </Text>
@@ -20,7 +24,7 @@ export default function NotFoundScreen() {
         >
           Go home
         </Link>
-      </View>
+      </SafeAreaView>
     </>
   );
 }

@@ -9,6 +9,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useEffect, useMemo, useRef } from 'react';
 import { AppState } from 'react-native';
 import 'react-native-reanimated';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useUniwind } from 'uniwind';
 
 import '../global.css';
@@ -99,27 +100,29 @@ export default function RootLayout() {
   }, []);
 
   return (
-    <QueryProvider>
-      <ThemeProvider value={navigationTheme}>
-        <AuthProvider>
-          <StoreSyncActivator />
-          <AuthGuard>
-            <Stack screenOptions={{ headerShown: false }}>
-              <Stack.Screen
-                name="(auth)"
-                options={{ headerShown: false }}
-              />
-              <Stack.Screen
-                name="(tabs)"
-                options={{ headerShown: false }}
-              />
-            </Stack>
-            <FabReceiptProcessingOverlay />
-            <ProposalSummarySheet />
-          </AuthGuard>
-          <StatusBar style={theme === 'dark' ? 'light' : 'dark'} />
-        </AuthProvider>
-      </ThemeProvider>
-    </QueryProvider>
+    <SafeAreaProvider>
+      <QueryProvider>
+        <ThemeProvider value={navigationTheme}>
+          <AuthProvider>
+            <StoreSyncActivator />
+            <AuthGuard>
+              <Stack screenOptions={{ headerShown: false }}>
+                <Stack.Screen
+                  name="(auth)"
+                  options={{ headerShown: false }}
+                />
+                <Stack.Screen
+                  name="(tabs)"
+                  options={{ headerShown: false }}
+                />
+              </Stack>
+              <FabReceiptProcessingOverlay />
+              <ProposalSummarySheet />
+            </AuthGuard>
+            <StatusBar style={theme === 'dark' ? 'light' : 'dark'} />
+          </AuthProvider>
+        </ThemeProvider>
+      </QueryProvider>
+    </SafeAreaProvider>
   );
 }

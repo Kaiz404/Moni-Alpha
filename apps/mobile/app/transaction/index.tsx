@@ -9,6 +9,7 @@ import {
   View,
 } from 'react-native';
 import { Link, router, useLocalSearchParams } from 'expo-router';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import MaterialIcons from '@react-native-vector-icons/material-icons';
 import { useValue } from '@legendapp/state/react';
 import { FinanceState } from '@/components/finance/finance-state';
@@ -111,7 +112,10 @@ export default function TransactionsScreen() {
     );
 
   return (
-    <View className="flex-1 bg-background">
+    <SafeAreaView
+      edges={['bottom']}
+      className="flex-1 bg-background"
+    >
       <ScrollView
         refreshControl={
           <RefreshControl
@@ -291,6 +295,6 @@ export default function TransactionsScreen() {
           })
         )}
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 }

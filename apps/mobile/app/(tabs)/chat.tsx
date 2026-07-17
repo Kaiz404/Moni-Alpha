@@ -13,7 +13,10 @@ import {
   Pressable,
 } from 'react-native';
 import { useFocusEffect } from 'expo-router';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from 'react-native-safe-area-context';
 import {
   ExpoSpeechRecognitionModule,
   useSpeechRecognitionEvent,
@@ -204,65 +207,70 @@ export default function ChatScreen() {
       keyboardVerticalOffset={Platform.OS === 'ios' ? insets.top : 0}
       style={{ flex: 1 }}
     >
-      <View className="flex-row items-center justify-between px-6 pt-5 pb-2">
-        <Text className="mt-5 text-2xl font-bold text-foreground">
-          Chat
-        </Text>
-        <Pressable
-          onPress={handleNewChat}
-          className="mt-5 rounded-full border border-border bg-card px-3 py-1.5"
-          hitSlop={8}
-        >
-          <Text className="text-sm font-medium text-primary">
-            New chat
+      <SafeAreaView
+        edges={['top']}
+        className="flex-1"
+      >
+        <View className="flex-row items-center justify-between px-6 pt-5 pb-2">
+          <Text className="mt-5 text-2xl font-bold text-foreground">
+            Chat
           </Text>
-        </Pressable>
-      </View>
-
-      <View className="mt-1 flex-1 overflow-hidden rounded-t-2xl bg-primary-muted">
-        <View className="flex-1 rounded-t-2xl bg-background px-3 pt-4 pb-2">
-          <FlatList
-            ref={flatListRef}
-            data={messages}
-            keyExtractor={(item) => item.id}
-            renderItem={({ item }) => (
-              <MessageBubble
-                message={item}
-                onQuickReply={handleQuickReplySelect}
-              />
-            )}
-            contentContainerStyle={{
-              paddingHorizontal: 8,
-              paddingBottom: 8,
-              flexGrow: 1,
-            }}
-            ListEmptyComponent={
-              <ChatEmptyState primary={tokens.primary} />
-            }
-            onContentSizeChange={() =>
-              flatListRef.current?.scrollToEnd({ animated: true })
-            }
-          />
+          <Pressable
+            onPress={handleNewChat}
+            className="mt-5 rounded-full border border-border bg-card px-3 py-1.5"
+            hitSlop={8}
+          >
+            <Text className="text-sm font-medium text-primary">
+              New chat
+            </Text>
+          </Pressable>
         </View>
-      </View>
 
-      <ChatInputBar
-        input={input}
-        onChangeText={setInput}
-        attachedImage={attachedImage}
-        onRemoveImage={() => setAttachedImage(null)}
-        onOpenCamera={() => {
-          void (async () => {
-            const uri = await scanAndNormalizeReceipt();
-            if (uri) setAttachedImage(uri);
-          })();
-        }}
-        onSend={handleSend}
-        isSpeechRecognizing={isSpeechRecognizing}
-        onPressInMic={startSpeech}
-        onPressOutMic={stopSpeech}
-        bottomPad={bottomPad}
-      />
+        <View className="mt-1 flex-1 overflow-hidden rounded-t-2xl bg-primary-muted">
+          <View className="flex-1 rounded-t-2xl bg-background px-3 pt-4 pb-2">
+            <FlatList
+              ref={flatListRef}
+              data={messages}
+              keyExtractor={(item) => item.id}
+              renderItem={({ item }) => (
+                <MessageBubble
+                  message={item}
+                  onQuickReply={handleQuickReplySelect}
+                />
+              )}
+              contentContainerStyle={{
+                paddingHorizontal: 8,
+                paddingBottom: 8,
+                flexGrow: 1,
+              }}
+              ListEmptyComponent={
+                <ChatEmptyState primary={tokens.primary} />
+              }
+              onContentSizeChange={() =>
+                flatListRef.current?.scrollToEnd({ animated: true })
+              }
+            />
+          </View>
+        </View>
+
+        <ChatInputBar
+          input={input}
+          onChangeText={setInput}
+          attachedImage={attachedImage}
+          onRemoveImage={() => setAttachedImage(null)}
+          onOpenCamera={() => {
+            void (async () => {
+              const uri = await scanAndNormalizeReceipt();
+              if (uri) setAttachedImage(uri);
+            })();
+          }}
+          onSend={handleSend}
+          isSpeechRecognizing={isSpeechRecognizing}
+          onPressInMic={startSpeech}
+          onPressOutMic={stopSpeech}
+          bottomPad={bottomPad}
+        />
+      </SafeAreaView>
     </KeyboardAvoidingView>
   );
 }

@@ -9,6 +9,7 @@ import {
   Pressable,
 } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   useTransactionPinmap,
   type TransactionPinPoint,
@@ -55,7 +56,7 @@ export default function HeatmapScreen() {
 
   if (!isMapReady && isLoading) {
     return (
-      <View className="flex-1 items-center justify-center bg-background">
+      <SafeAreaView className="flex-1 items-center justify-center bg-background">
         <ActivityIndicator
           size="large"
           color={tokens.primary}
@@ -63,33 +64,33 @@ export default function HeatmapScreen() {
         <Text className="mt-3 text-base text-foreground">
           Loading transaction locations...
         </Text>
-      </View>
+      </SafeAreaView>
     );
   }
 
   if (error) {
     return (
-      <View className="flex-1 items-center justify-center bg-background">
+      <SafeAreaView className="flex-1 items-center justify-center bg-background">
         <Text className="px-5 text-center text-base text-danger">
           Error: {error}
         </Text>
-      </View>
+      </SafeAreaView>
     );
   }
 
   if (pinPoints.length === 0) {
     return (
-      <View className="flex-1 items-center justify-center bg-background">
+      <SafeAreaView className="flex-1 items-center justify-center bg-background">
         <Text className="px-5 text-center text-base text-muted">
           No transactions with location data found. Start adding
           locations to your transactions!
         </Text>
-      </View>
+      </SafeAreaView>
     );
   }
 
   return (
-    <View className="flex-1 items-center justify-center bg-background">
+    <SafeAreaView className="flex-1 items-center justify-center bg-background">
       <MapView
         ref={mapRef}
         style={styles.map}
@@ -190,7 +191,7 @@ export default function HeatmapScreen() {
           </Pressable>
         </View>
       ) : null}
-    </View>
+    </SafeAreaView>
   );
 }
 

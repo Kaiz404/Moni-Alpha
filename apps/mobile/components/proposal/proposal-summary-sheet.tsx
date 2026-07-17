@@ -16,6 +16,7 @@ import {
 } from 'react-native';
 import { usePathname, router } from 'expo-router';
 import MaterialIcons from '@react-native-vector-icons/material-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   minorToDecimal,
   type ProposedTransaction,
@@ -61,6 +62,7 @@ const SOURCE_ICON: Record<
  */
 export function ProposalSummarySheet() {
   const tokens = useThemeTokens();
+  const insets = useSafeAreaInsets();
   const pathname = usePathname();
   const [proposals, setProposals] = useState<ProposedTransaction[]>(
     [],
@@ -260,7 +262,10 @@ export function ProposalSummarySheet() {
           accessibilityElementsHidden
           importantForAccessibility="no-hide-descendants"
         />
-        <View className="rounded-t-3xl bg-background px-6 pb-8 pt-5">
+        <View
+          className="rounded-t-3xl bg-background px-6 pt-5"
+          style={{ paddingBottom: Math.max(insets.bottom, 32) }}
+        >
           <View className="mb-4 flex-row items-center gap-2">
             <View className="h-8 w-8 items-center justify-center rounded-full bg-background-muted">
               <MaterialIcons

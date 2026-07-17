@@ -11,6 +11,7 @@ import {
   useWindowDimensions,
 } from 'react-native';
 import { Link, router } from 'expo-router';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useValue } from '@legendapp/state/react';
 import MaterialIcons from '@react-native-vector-icons/material-icons';
 import { VictoryPie, VictoryTheme } from 'victory-native';
@@ -180,7 +181,10 @@ export default function WalletsScreen() {
       ],
     );
   return (
-    <View className="flex-1 bg-background pt-5">
+    <SafeAreaView
+      edges={['top']}
+      className="flex-1 bg-background pt-5"
+    >
       <ScrollView
         refreshControl={
           <RefreshControl
@@ -373,6 +377,6 @@ export default function WalletsScreen() {
           )}
         </View>
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 }

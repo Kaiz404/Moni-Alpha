@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   runNotificationTests,
   runQueueInspection,
@@ -117,7 +118,7 @@ export default function DebugPage() {
   );
 
   return (
-    <View className="flex-1 bg-black">
+    <SafeAreaView className="flex-1 bg-black">
       <ScrollView
         ref={scrollRef}
         contentContainerClassName="pb-20"
@@ -307,6 +308,6 @@ export default function DebugPage() {
           </View>
         )}
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 }
