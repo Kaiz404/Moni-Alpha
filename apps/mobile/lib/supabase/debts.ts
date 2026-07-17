@@ -42,13 +42,20 @@ type ActivityRow = {
 const amountOf = (value: string | number | null | undefined) =>
   Number.parseFloat(String(value ?? 0)) || 0;
 
+function normalizeCurrency(value: unknown): string | null {
+  const currency = String(value ?? "")
+    .trim()
+    .toUpperCase();
+  return /^[A-Z]{3}$/.test(currency) ? currency : null;
+}
+
 function mapDebt(row: DebtRow): Debt {
   return {
     id: row.id,
     userId: row.user_id ?? "",
     counterpartyName: row.counterparty_name ?? "",
     direction: row.direction ?? "owed_to_me",
-    currency: (row.currency ?? "USD").trim().toUpperCase(),
+    currency: normalizeCurrency(row.currency) ?? "USD",
     dueDate: row.due_date,
     note: row.note,
     status: row.status ?? "open",
@@ -119,9 +126,34 @@ export function debtDueState(
 export async function getDebts(): Promise<Debt[]> {
   const userId = await getUserId();
   if (!userId) return [];
+  const activities = getRecordValues<ActivityRow>(debtActivities$);
+  const walletCurrencyById = new Map(
+    getRecordValues<{ id: string; currency: string | null }>(wallets$).map(
+      (wallet) => [wallet.id, normalizeCurrency(wallet.currency)],
+    ),
+  );
+
   return getRecordValues<DebtRow>(debts$)
     .filter((row) => row.user_id === userId)
-    .map(mapDebt);
+    .map((row) => {
+      const validCurrency = normalizeCurrency(row.currency);
+      if (validCurrency) return mapDebt(row);
+
+      // Older/offline rows can arrive malformed. Every cash debt starts with a
+      // linked wallet activity, which is the authoritative source for recovery.
+      const recovered = activities
+        .filter((activity) => activity.debt_id === row.id && activity.wallet_id)
+        .map((activity) => walletCurrencyById.get(activity.wallet_id ?? ""))
+        .find((currency): currency is string => Boolean(currency));
+      if (recovered) {
+        patchRow(debts$, row.id, {
+          currency: recovered,
+          updated_at: new Date().toISOString(),
+        });
+        return mapDebt({ ...row, currency: recovered });
+      }
+      return mapDebt(row);
+    });
 }
 
 export async function getDebtById(id: string): Promise<Debt | null> {
@@ -146,7 +178,9 @@ function walletCurrency(walletId: string): string {
     wallets$,
   ).find((item) => item.id === walletId);
   if (!wallet) throw new Error("Wallet not found");
-  return (wallet.currency ?? "USD").trim().toUpperCase();
+  const currency = normalizeCurrency(wallet.currency);
+  if (!currency) throw new Error("Wallet has an invalid currency code");
+  return currency;
 }
 
 function cashType(
