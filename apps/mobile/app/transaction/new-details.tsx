@@ -4,7 +4,6 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
@@ -14,15 +13,14 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Location from 'expo-location';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { BrandHeader } from '@/components/ui/brand-header';
+import { FormField } from '@/components/ui/form-field';
 import { ScreenShell } from '@/components/ui/screen-shell';
 import { PrimaryButton } from '@/components/ui/primary-button';
+import { Surface } from '@/components/ui/surface';
 import {
   getDraftExtras,
   setDraftExtras,
 } from '@/lib/transactions/draft-extras';
-
-const inputClass =
-  'rounded-xl border border-border bg-card px-3 py-2.5 text-foreground';
 
 /** Optional fields kept off the quick-add screen to avoid overloading it (Apple HIG: progressive disclosure). */
 export default function NewTransactionDetailsScreen() {
@@ -114,43 +112,36 @@ export default function NewTransactionDetailsScreen() {
         contentContainerClassName="px-4 pt-4 pb-2"
         showsVerticalScrollIndicator={false}
       >
-        {!isTransfer ? (
-          <>
-            <View className="mb-1.5 flex-row items-baseline gap-1">
-              <Text className="text-xs font-semibold uppercase tracking-wide text-muted">
-                Merchant
-              </Text>
-              <Text className="text-[10px] text-muted">optional</Text>
-            </View>
-            <TextInput
-              className={`mb-4 text-sm ${inputClass}`}
+        <Text className="text-2xl font-bold text-foreground">A little context</Text>
+        <Text className="mt-2 text-[15px] leading-5 text-muted">
+          Optional details help you recognize this entry later.
+        </Text>
+        <Surface className="mt-6 p-5">
+          {!isTransfer ? (
+            <FormField
+              label="Merchant"
+              hint="Optional"
               placeholder="Store or payee"
-              placeholderTextColor="#9CA3AF"
               value={merchant}
               onChangeText={setMerchant}
+              autoCapitalize="words"
             />
-          </>
-        ) : null}
-
-        <View className="mb-1.5 flex-row items-baseline gap-1">
-          <Text className="text-xs font-semibold uppercase tracking-wide text-muted">
-            Description
-          </Text>
-          <Text className="text-[10px] text-muted">optional</Text>
-        </View>
-        <TextInput
-          className={`mb-4 min-h-[72px] text-sm ${inputClass}`}
-          placeholder="Notes"
-          placeholderTextColor="#9CA3AF"
-          value={description}
-          onChangeText={setDescription}
-          multiline
-          textAlignVertical="top"
-        />
+          ) : null}
+          <FormField
+            label="Notes"
+            hint="Optional"
+            className="min-h-24 text-sm"
+            placeholder="Add a note"
+            value={description}
+            onChangeText={setDescription}
+            multiline
+            textAlignVertical="top"
+          />
+        </Surface>
 
         {!isTransfer ? (
           locationLoading ? (
-            <View className="flex-row items-center gap-2">
+            <Surface tone="muted" className="mt-6 flex-row items-center gap-3 p-4">
               <ActivityIndicator
                 size="small"
                 color={tokens.primary}
@@ -158,14 +149,16 @@ export default function NewTransactionDetailsScreen() {
               <Text className="text-xs text-muted">
                 Finding transaction location…
               </Text>
-            </View>
+            </Surface>
           ) : locationUnavailable || !locationSnapshot ? (
-            <Text className="text-xs text-muted">
-              Location unavailable. Enable location access to attach
-              this transaction to where you are now.
-            </Text>
+            <Surface tone="muted" className="mt-6 p-4">
+              <Text className="text-sm leading-5 text-muted">
+                Location unavailable. Enable location access to attach this
+                transaction to where you are now.
+              </Text>
+            </Surface>
           ) : (
-            <View>
+            <Surface className="mt-6 p-4">
               <TouchableOpacity
                 className="flex-row items-center justify-between py-1"
                 onPress={() => setMapExpanded(!mapExpanded)}
@@ -189,7 +182,7 @@ export default function NewTransactionDetailsScreen() {
               ) : null}
               {mapExpanded ? (
                 <View
-                  className="mt-1 overflow-hidden rounded-xl border border-border bg-card"
+                    className="mt-3 overflow-hidden rounded-2xl border border-border bg-card"
                   style={styles.locationMapBox}
                 >
                   <MapView
@@ -216,13 +209,15 @@ export default function NewTransactionDetailsScreen() {
                   </MapView>
                 </View>
               ) : null}
-            </View>
+            </Surface>
           )
         ) : (
-          <Text className="text-xs text-muted">
-            Transfers move money between your wallets without changing
-            your overall net worth.
-          </Text>
+          <Surface tone="muted" className="mt-6 p-4">
+            <Text className="text-sm leading-5 text-muted">
+              Transfers move money between your wallets without changing your
+              overall net worth.
+            </Text>
+          </Surface>
         )}
       </ScrollView>
 
@@ -242,5 +237,5 @@ export default function NewTransactionDetailsScreen() {
 
 const styles = StyleSheet.create({
   locationMapBox: { height: 200, width: '100%' },
-  locationMap: { ...StyleSheet.absoluteFillObject },
+  locationMap: { bottom: 0, left: 0, position: 'absolute', right: 0, top: 0 },
 });

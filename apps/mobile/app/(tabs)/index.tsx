@@ -1,35 +1,53 @@
 import { memo, useMemo, useState } from 'react';
 import {
-  Alert,
-  FlatList,
   Pressable,
   RefreshControl,
   ScrollView,
   Text,
-  TouchableOpacity,
   View,
-  useWindowDimensions,
 } from 'react-native';
-import { Link, router } from 'expo-router';
+import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useValue } from '@legendapp/state/react';
 import MaterialIcons from '@react-native-vector-icons/material-icons';
-import { VictoryPie, VictoryTheme } from 'victory-native';
-import { useAuth } from '@/lib/auth/auth-context';
+
+import { BudgetProgressBar } from '@/components/charts/budget-progress-bar';
 import { SyncStatusIndicator } from '@/components/providers/sync-status-indicator';
 import { GradientCard } from '@/components/ui/gradient-card';
 import { getWalletCardStyle } from '@/constants/wallet-card-styles';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
+import { useAuth } from '@/lib/auth/auth-context';
 import {
   formatMinorAmount,
-  minorToNumber,
 } from '@/lib/finance/money';
 import {
+  budgetProgress$,
+  debtsWithBalance$,
   financeOverview$,
+  netWorthByCurrency$,
+  pendingProposals$,
   walletBalanceMinor$,
   walletById$,
 } from '@/lib/finance/selectors';
-import { deleteTransaction } from '@/lib/supabase/transactions';
+
+function timeAwareGreeting(): string {
+  const hour = new Date().getHours();
+  if (hour < 12) return 'Good morning';
+  if (hour < 18) return 'Good afternoon';
+  return 'Good evening';
+}
+
+function displayName(value: string | null | undefined): string | null {
+  const trimmed = value?.trim();
+  return trimmed ? trimmed.split(/\s+/)[0] ?? null : null;
+}
+
+function transactionDateLabel(value: string): string {
+  return new Intl.DateTimeFormat(undefined, {
+    month: 'short',
+    day: 'numeric',
+  }).format(new Date(value));
+}
 
 const WalletCard = memo(function WalletCard({
   walletId,
@@ -47,50 +65,48 @@ const WalletCard = memo(function WalletCard({
     <Pressable
       onPress={() => onToggle(wallet.id)}
       className="mr-3"
-      style={{ width: 150 }}
+      style={{ width: 188 }}
+      accessibilityRole="button"
+      accessibilityState={{ selected }}
+      accessibilityLabel={`${wallet.name}, ${formatMinorAmount(balanceMinor, wallet.currency)}`}
     >
       <GradientCard
-        cardStyle={getWalletCardStyle(
-          wallet.cardStyleId ?? undefined,
-        )}
-        className={`rounded-2xl p-3 ${selected ? 'border-2 border-primary' : ''}`}
+        cardStyle={getWalletCardStyle(wallet.cardStyleId ?? undefined)}
+        className={`min-h-36 rounded-[22px] border p-4 ${selected ? 'border-2 border-primary' : 'border-white/20'}`}
       >
-        <View className="flex-row justify-between">
-          <Text className="text-sm font-bold text-white">
-            {wallet.icon ?? 'W'}
-          </Text>
+        <View className="flex-row items-start justify-between">
+          <View className="min-w-0 flex-1 pr-2">
+            <Text className="text-xs font-semibold text-white/80" numberOfLines={1}>
+              {wallet.type}
+            </Text>
+            <Text className="mt-1 text-base font-bold text-white" numberOfLines={1}>
+              {wallet.name}
+            </Text>
+          </View>
           <Pressable
-            hitSlop={8}
-            onPress={() =>
+            hitSlop={10}
+            className="h-9 w-9 items-center justify-center rounded-full bg-white/15"
+            onPress={(event) => {
+              event.stopPropagation();
               router.push({
                 pathname: '/wallet/[id]',
                 params: { id: wallet.id },
-              } as any)
-            }
+              } as any);
+            }}
+            accessibilityRole="button"
+            accessibilityLabel={`Edit ${wallet.name}`}
           >
-            <MaterialIcons
-              name="chevron-right"
-              size={18}
-              color="#fff"
-            />
+            <MaterialIcons name="chevron-right" size={19} color="#fff" />
           </Pressable>
         </View>
-        <View className="mt-7">
-          <Text
-            className="text-xs text-white/75"
-            numberOfLines={1}
-          >
-            {wallet.type}
+        <View className="mt-auto pt-7">
+          <Text className="text-xs font-medium text-white/75">
+            {wallet.currency}
           </Text>
           <Text
-            className="text-sm font-bold text-white"
+            className="mt-1 text-xl font-bold text-white"
             numberOfLines={1}
-          >
-            {wallet.name}
-          </Text>
-          <Text
-            className="mt-1 text-sm font-bold text-white"
-            numberOfLines={1}
+            style={{ fontVariant: ['tabular-nums'] }}
           >
             {formatMinorAmount(balanceMinor, wallet.currency)}
           </Text>
@@ -100,23 +116,30 @@ const WalletCard = memo(function WalletCard({
   );
 });
 
-export default function WalletsScreen() {
+export default function HomeScreen() {
   const { user } = useAuth();
   const tokens = useThemeTokens();
-  const { width } = useWindowDimensions();
+  const timezone = useMemo(
+    () => Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC',
+    [],
+  );
   const overview = useValue(financeOverview$(user?.id ?? null));
-  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const netWorth = useValue(netWorthByCurrency$(user?.id ?? null));
+  const budgetProgress = useValue(
+    budgetProgress$(user?.id ?? null, timezone),
+  );
+  const debts = useValue(debtsWithBalance$(user?.id ?? null));
+  const pendingProposals = useValue(pendingProposals$(user?.id ?? null));
+  const [selectedWalletIds, setSelectedWalletIds] = useState<Set<string>>(
+    new Set(),
+  );
   const [refreshing, setRefreshing] = useState(false);
   const activeWalletIds = useMemo(
     () =>
-      selected.size
-        ? selected
+      selectedWalletIds.size
+        ? selectedWalletIds
         : new Set(overview.wallets.map((wallet) => wallet.id)),
-    [selected, overview.wallets],
-  );
-  const walletIds = useMemo(
-    () => overview.wallets.map((wallet) => wallet.id),
-    [overview.wallets],
+    [overview.wallets, selectedWalletIds],
   );
   const recent = useMemo(
     () =>
@@ -128,38 +151,23 @@ export default function WalletsScreen() {
               activeWalletIds.has(transaction.transferToWalletId)),
         )
         .slice(0, 5),
-    [overview.transactions, activeWalletIds],
+    [activeWalletIds, overview.transactions],
   );
-  const totals = useMemo(
-    () =>
-      overview.balanceTotals.filter((total) =>
-        overview.wallets.some(
-          (wallet) =>
-            wallet.currency === total.currency &&
-            activeWalletIds.has(wallet.id),
-        ),
-      ),
-    [overview.balanceTotals, overview.wallets, activeWalletIds],
-  );
-  const pieDataByCurrency = useMemo(
-    () =>
-      Object.entries(overview.categoryExpensesByCurrency).map(
-        ([currency, rows]) => ({
-          currency,
-          data: rows.map((row) => ({
-            x: row.x,
-            y: minorToNumber(row.yMinor),
-          })),
-        }),
-      ),
-    [overview.categoryExpensesByCurrency],
-  );
-  const toggle = (id: string) =>
-    setSelected((current) => {
+  const visibleBudgets = budgetProgress.slice(0, 2);
+  const openDebts = debts
+    .filter(
+      ({ debt, balanceMinor }) =>
+        debt.status === 'open' && Number(balanceMinor) > 0,
+    )
+    .slice(0, 2);
+
+  const toggleWallet = (id: string) => {
+    setSelectedWalletIds((current) => {
       const next = new Set(current);
       if (!next.delete(id)) next.add(id);
       return next.size === overview.wallets.length ? new Set() : next;
     });
+  };
   const refresh = async () => {
     setRefreshing(true);
     await new Promise<void>((resolve) =>
@@ -167,179 +175,360 @@ export default function WalletsScreen() {
     );
     setRefreshing(false);
   };
-  const remove = (id: string) =>
-    Alert.alert(
-      'Delete transaction',
-      'This will remove the transaction from your records.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: () => void deleteTransaction(id),
-        },
-      ],
-    );
+
   return (
-    <SafeAreaView
-      edges={['top']}
-      className="flex-1 bg-background pt-5"
-      style={{ flex: 1 }}
-    >
+    <SafeAreaView edges={['top']} className="flex-1 bg-canvas">
       <ScrollView
+        className="flex-1"
+        contentContainerClassName="pb-32 pt-4"
         refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={refresh}
-          />
+          <RefreshControl refreshing={refreshing} onRefresh={refresh} />
         }
         showsVerticalScrollIndicator={false}
-        contentContainerClassName="pb-10"
       >
-        <View className="flex-row items-start justify-between px-4 pb-2">
-          <View>
-            <Text className="text-sm text-muted">Your money</Text>
-            <Text className="text-2xl font-bold text-foreground">
-              Wallets
-            </Text>
-          </View>
-          <SyncStatusIndicator />
-        </View>
-        <View className="px-4">
-          <Text className="text-xs font-semibold uppercase tracking-wide text-muted">
-            Balances
-          </Text>
-          {totals.map((total) => (
-            <Text
-              key={total.currency}
-              className="mt-1 text-3xl font-bold text-foreground"
-            >
-              {formatMinorAmount(total.amountMinor, total.currency)}
-            </Text>
-          ))}
-        </View>
-        <View className="mt-4">
-          <FlatList
-            horizontal
-            data={walletIds}
-            renderItem={({ item }) => (
-              <WalletCard
-                walletId={item}
-                selected={activeWalletIds.has(item)}
-                onToggle={toggle}
-              />
-            )}
-            keyExtractor={(item) => item}
-            contentContainerStyle={{ paddingHorizontal: 16 }}
-            ListFooterComponent={
-              <Link
-                href="/wallet/new"
-                asChild
-              >
-                <Pressable
-                  className="items-center justify-center rounded-2xl border border-dashed border-border bg-card"
-                  style={{ width: 110, height: 132 }}
-                >
-                  <MaterialIcons
-                    name="add"
-                    size={22}
-                    color={tokens.primary}
-                  />
-                  <Text className="mt-1 text-xs text-muted">
-                    Add wallet
-                  </Text>
-                </Pressable>
-              </Link>
-            }
-          />
-        </View>
-        <View className="mt-5 px-4">
-          {pieDataByCurrency.map(({ currency, data }) => (
-            <View
-              key={currency}
-              className="mb-4 rounded-2xl border border-border bg-card p-4"
-            >
-              <View className="flex-row items-center justify-between">
-                <Text className="text-base font-semibold text-foreground">
-                  Spending by category · {currency}
-                </Text>
-                <Link
-                  href="/summary"
-                  asChild
-                >
-                  <TouchableOpacity>
-                    <Text className="text-xs font-semibold text-primary">
-                      Analytics
-                    </Text>
-                  </TouchableOpacity>
-                </Link>
-              </View>
-              <VictoryPie
-                theme={VictoryTheme.material}
-                width={Math.max(width - 48, 280)}
-                height={230}
-                data={
-                  data.length ? data : [{ x: 'No expenses', y: 1 }]
-                }
-                colorScale={[...tokens.chart]}
-                innerRadius={40}
-                labels={() => ''}
-              />
-            </View>
-          ))}
-          <View className="mb-3 flex-row items-center justify-between">
-            <Text className="text-base font-semibold text-foreground">
-              Recent transactions
-            </Text>
-            <Link
-              href="/transaction"
-              asChild
-            >
-              <TouchableOpacity>
-                <Text className="text-xs font-semibold text-primary">
-                  See all
-                </Text>
-              </TouchableOpacity>
-            </Link>
-          </View>
-          {recent.length === 0 ? (
-            <View className="rounded-2xl border border-dashed border-border p-5">
-              <Text className="text-center text-sm text-muted">
-                No transactions yet.
+        <View className="px-5">
+          <View className="flex-row items-start justify-between">
+            <View className="flex-1 pr-3">
+              <Text className="text-sm font-semibold text-muted">
+                {timeAwareGreeting()}
+                {displayName(user?.user_metadata?.full_name) ||
+                displayName(user?.email)
+                  ? `, ${displayName(user?.user_metadata?.full_name) ?? displayName(user?.email)}`
+                  : ''}
+              </Text>
+              <Text className="mt-1 text-[28px] font-bold leading-9 text-foreground">
+                Your money, clearly
               </Text>
             </View>
-          ) : (
-            recent.map((transaction) => {
-              const isTransfer = transaction.type === 'transfer';
-              const sign = isTransfer
-                ? ''
-                : transaction.type === 'income'
-                  ? '+'
-                  : '−';
-              const color = isTransfer
-                ? 'text-transfer'
-                : transaction.type === 'income'
-                  ? 'text-income'
-                  : 'text-expense';
-              return (
-                <Pressable
-                  key={transaction.id}
-                  className="mb-2 rounded-2xl border border-border bg-card p-3"
-                  onPress={() =>
-                    router.push(
-                      transaction.debtActivityId
-                        ? ('/debts' as any)
-                        : ({
-                            pathname: '/transaction/[id]',
-                            params: { id: transaction.id },
-                          } as any),
-                    )
-                  }
-                >
-                  <View className="flex-row justify-between">
-                    <View className="flex-1 pr-2">
+            <View className="pt-1">
+              <SyncStatusIndicator />
+            </View>
+          </View>
+
+          {pendingProposals.length ? (
+            <Pressable
+              className="mt-5 flex-row items-center rounded-2xl bg-surface-1 px-4 py-3"
+              onPress={() =>
+                router.push({
+                  pathname: '/proposal/[id]',
+                  params: { id: pendingProposals[0]!.id },
+                } as any)
+              }
+              accessibilityRole="button"
+              accessibilityLabel={`${pendingProposals.length} transaction proposal${pendingProposals.length === 1 ? '' : 's'} ready for review`}
+            >
+              <View className="h-9 w-9 items-center justify-center rounded-full bg-primary-muted">
+                <MaterialIcons
+                  name="fact-check"
+                  size={19}
+                  color={tokens.primary}
+                />
+              </View>
+              <View className="ml-3 flex-1">
+                <Text className="text-sm font-bold text-foreground">
+                  {pendingProposals.length} ready to review
+                </Text>
+                <Text className="mt-0.5 text-xs text-muted">
+                  Confirm each record before it enters your ledger.
+                </Text>
+              </View>
+              <MaterialIcons
+                name="chevron-right"
+                size={21}
+                color={tokens.muted}
+              />
+            </Pressable>
+          ) : null}
+
+          <View className="mt-7 rounded-[28px] border border-border bg-card p-5">
+            <Text className="text-sm font-semibold text-muted">Net worth</Text>
+            {netWorth.length ? (
+              <View className="mt-2 gap-4">
+                {netWorth.map((row, index) => (
+                  <View key={row.currency}>
+                    <View className="flex-row items-baseline justify-between">
                       <Text
-                        className="font-semibold text-foreground"
+                        className={`${index === 0 ? 'text-[30px]' : 'text-xl'} font-bold leading-9 text-foreground`}
+                        style={{ fontVariant: ['tabular-nums'] }}
+                      >
+                        {formatMinorAmount(row.netWorthMinor, row.currency)}
+                      </Text>
+                      <Text className="text-sm font-semibold text-muted">
+                        {row.currency}
+                      </Text>
+                    </View>
+                    <Text className="mt-1 text-sm leading-5 text-muted">
+                      Cash {formatMinorAmount(row.cashMinor, row.currency)} · Owed to you {formatMinorAmount(row.receivableMinor, row.currency)} · You owe {formatMinorAmount(row.payableMinor, row.currency)}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            ) : (
+              <View className="mt-2">
+                <Text className="text-lg font-bold text-foreground">
+                  Add your first account
+                </Text>
+                <Text className="mt-1 text-sm leading-5 text-muted">
+                  Moni will always keep each native currency separate.
+                </Text>
+              </View>
+            )}
+            <Text className="mt-4 text-xs font-medium text-muted">
+              Native amounts only · Moni never fabricates a converted total.
+            </Text>
+          </View>
+        </View>
+
+        <View className="mt-7">
+          <View className="mb-3 flex-row items-center justify-between px-5">
+            <View>
+              <Text className="text-lg font-bold text-foreground">Accounts</Text>
+              <Text className="mt-1 text-sm text-muted">
+                Tap an account to filter recent activity.
+              </Text>
+            </View>
+            {selectedWalletIds.size ? (
+              <Pressable
+                className="min-h-11 justify-center px-2"
+                onPress={() => setSelectedWalletIds(new Set())}
+              >
+                <Text className="text-sm font-semibold text-primary">All accounts</Text>
+              </Pressable>
+            ) : null}
+          </View>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerClassName="px-5"
+          >
+            {overview.wallets.map((wallet) => (
+              <WalletCard
+                key={wallet.id}
+                walletId={wallet.id}
+                selected={activeWalletIds.has(wallet.id)}
+                onToggle={toggleWallet}
+              />
+            ))}
+            <Pressable
+              className="min-h-36 w-36 items-center justify-center rounded-[22px] border border-dashed border-border bg-card"
+              onPress={() => router.push('/wallet/new' as any)}
+              accessibilityRole="button"
+              accessibilityLabel="Add wallet"
+            >
+              <View className="h-10 w-10 items-center justify-center rounded-full bg-primary-muted">
+                <MaterialIcons name="add" size={22} color={tokens.primary} />
+              </View>
+              <Text className="mt-2 text-sm font-semibold text-foreground">
+                Add wallet
+              </Text>
+            </Pressable>
+          </ScrollView>
+        </View>
+
+        <View className="mt-8 px-5">
+          <View className="mb-3 flex-row items-center justify-between">
+            <View>
+              <Text className="text-lg font-bold text-foreground">Budget pulse</Text>
+              <Text className="mt-1 text-sm text-muted">
+                A quick read on this month’s planned spending.
+              </Text>
+            </View>
+            <Pressable
+              className="min-h-11 justify-center px-2"
+              onPress={() => router.push('/budget' as any)}
+            >
+              <Text className="text-sm font-semibold text-primary">Budgets</Text>
+            </Pressable>
+          </View>
+          {visibleBudgets.length ? (
+            <View className="overflow-hidden rounded-[22px] border border-border bg-card">
+              {visibleBudgets.map((budget, index) => {
+                const accent =
+                  budget.status === 'over'
+                    ? tokens.danger
+                    : (budget.categoryColor ?? tokens.primary);
+                return (
+                  <Pressable
+                    key={`${budget.categoryId}:${budget.currency}`}
+                    className={`px-4 py-4 ${index ? 'border-t border-border' : ''}`}
+                    onPress={() =>
+                      router.push({
+                        pathname: '/transaction',
+                        params: {
+                          categoryId: budget.categoryId,
+                          currency: budget.currency,
+                          month: new Date().toISOString().slice(0, 7),
+                        },
+                      } as any)
+                    }
+                  >
+                    <View className="flex-row items-center justify-between">
+                      <View className="min-w-0 flex-1 flex-row items-center pr-3">
+                        <View
+                          className="mr-2 h-9 w-9 items-center justify-center rounded-full"
+                          style={{ backgroundColor: `${accent}22` }}
+                        >
+                          <Text className="text-base">
+                            {budget.categoryIcon ?? '•'}
+                          </Text>
+                        </View>
+                        <View className="min-w-0 flex-1">
+                          <Text
+                            className="text-base font-semibold text-foreground"
+                            numberOfLines={1}
+                          >
+                            {budget.categoryName}
+                          </Text>
+                          <Text className="mt-0.5 text-xs text-muted">
+                            {budget.budgetAmountMinor === null
+                              ? 'No cap set'
+                              : `${formatMinorAmount(budget.spentMinor, budget.currency)} of ${formatMinorAmount(budget.budgetAmountMinor, budget.currency)} used`}
+                          </Text>
+                        </View>
+                      </View>
+                      <Text className="text-sm font-bold text-foreground">
+                        {budget.percentage === null ? '—' : `${budget.percentage}%`}
+                      </Text>
+                    </View>
+                    <View className="mt-3">
+                      <BudgetProgressBar
+                        percentage={budget.percentage}
+                        color={accent}
+                        label={
+                          budget.remainingMinor === null
+                            ? 'Set a cap to track remaining spending.'
+                            : budget.remainingMinor < 0
+                              ? `${formatMinorAmount(Math.abs(Number(budget.remainingMinor)), budget.currency)} over budget`
+                              : `${formatMinorAmount(budget.remainingMinor, budget.currency)} remaining`
+                        }
+                      />
+                    </View>
+                  </Pressable>
+                );
+              })}
+            </View>
+          ) : (
+            <Pressable
+              className="rounded-[22px] border border-dashed border-border px-5 py-6"
+              onPress={() => router.push('/budget' as any)}
+            >
+              <Text className="text-base font-semibold text-foreground">
+                Plan a monthly cap
+              </Text>
+              <Text className="mt-1 text-sm leading-5 text-muted">
+                Budgets make your remaining spending visible without changing any records.
+              </Text>
+            </Pressable>
+          )}
+        </View>
+
+        {openDebts.length ? (
+          <View className="mt-8 px-5">
+            <View className="mb-3 flex-row items-center justify-between">
+              <View>
+                <Text className="text-lg font-bold text-foreground">Debt pulse</Text>
+                <Text className="mt-1 text-sm text-muted">
+                  Keep shared money clear and explicit.
+                </Text>
+              </View>
+              <Pressable
+                className="min-h-11 justify-center px-2"
+                onPress={() => router.push('/debts' as any)}
+              >
+                <Text className="text-sm font-semibold text-primary">All debts</Text>
+              </Pressable>
+            </View>
+            <View className="overflow-hidden rounded-[22px] border border-border bg-card">
+              {openDebts.map(({ debt, balanceMinor }, index) => {
+                const owedToYou = debt.direction === 'owed_to_me';
+                return (
+                  <Pressable
+                    key={debt.id}
+                    className={`flex-row items-center justify-between px-4 py-4 ${index ? 'border-t border-border' : ''}`}
+                    onPress={() => router.push(`/debt/${debt.id}` as any)}
+                  >
+                    <View className="min-w-0 flex-1 pr-3">
+                      <Text className="text-base font-semibold text-foreground" numberOfLines={1}>
+                        {debt.counterpartyName}
+                      </Text>
+                      <Text className="mt-1 text-sm text-muted">
+                        {owedToYou ? 'Owed to you' : 'You owe'}
+                        {debt.dueDate ? ` · Due ${debt.dueDate}` : ''}
+                      </Text>
+                    </View>
+                    <Text
+                      className="text-base font-bold text-foreground"
+                      style={{ fontVariant: ['tabular-nums'] }}
+                    >
+                      {formatMinorAmount(balanceMinor, debt.currency)}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          </View>
+        ) : null}
+
+        <View className="mt-8 px-5">
+          <View className="mb-3 flex-row items-center justify-between">
+            <View>
+              <Text className="text-lg font-bold text-foreground">Recent activity</Text>
+              <Text className="mt-1 text-sm text-muted">
+                Your newest records, in their original currency.
+              </Text>
+            </View>
+            <Pressable
+              className="min-h-11 justify-center px-2"
+              onPress={() => router.push('/transaction' as any)}
+            >
+              <Text className="text-sm font-semibold text-primary">See all</Text>
+            </Pressable>
+          </View>
+          {recent.length ? (
+            <View className="overflow-hidden rounded-[22px] border border-border bg-card">
+              {recent.map((transaction, index) => {
+                const category = transaction.categoryId
+                  ? overview.categoriesById[transaction.categoryId]
+                  : null;
+                const isTransfer = transaction.type === 'transfer';
+                const sign = isTransfer
+                  ? ''
+                  : transaction.type === 'income'
+                    ? '+'
+                    : '−';
+                const amountClass = isTransfer
+                  ? 'text-transfer'
+                  : transaction.type === 'income'
+                    ? 'text-income'
+                    : 'text-expense';
+                return (
+                  <Pressable
+                    key={transaction.id}
+                    className={`flex-row items-center px-4 py-4 ${index ? 'border-t border-border' : ''}`}
+                    onPress={() =>
+                      router.push(
+                        transaction.debtActivityId
+                          ? ('/debts' as any)
+                          : ({
+                              pathname: '/transaction/[id]',
+                              params: { id: transaction.id },
+                            } as any),
+                      )
+                    }
+                  >
+                    <View
+                      className="mr-3 h-10 w-10 items-center justify-center rounded-full"
+                      style={{
+                        backgroundColor: category?.color
+                          ? `${category.color}22`
+                          : tokens.surface2,
+                      }}
+                    >
+                      <Text className="text-base">{category?.icon ?? '•'}</Text>
+                    </View>
+                    <View className="min-w-0 flex-1 pr-3">
+                      <Text
+                        className="text-base font-semibold text-foreground"
                         numberOfLines={1}
                       >
                         {transaction.merchant ??
@@ -347,34 +536,50 @@ export default function WalletsScreen() {
                           transaction.type}
                       </Text>
                       <Text className="mt-1 text-xs text-muted">
-                        {new Date(
-                          transaction.transactionDate,
-                        ).toLocaleDateString()}
+                        {category?.name ??
+                          (transaction.type === 'transfer'
+                            ? 'Transfer'
+                            : transaction.type === 'income'
+                              ? 'Income'
+                              : 'Expense')}{' '}
+                        · {transactionDateLabel(transaction.transactionDate)}
                       </Text>
                     </View>
                     <View className="items-end">
-                      <Pressable
-                        hitSlop={8}
-                        onPress={() => remove(transaction.id)}
+                      <Text
+                        className={`text-base font-bold ${amountClass}`}
+                        style={{ fontVariant: ['tabular-nums'] }}
                       >
-                        <MaterialIcons
-                          name="delete-outline"
-                          size={17}
-                          color={tokens.danger}
-                        />
-                      </Pressable>
-                      <Text className={`mt-1 font-bold ${color}`}>
                         {sign}
                         {formatMinorAmount(
                           transaction.amountMinor,
                           transaction.currency,
                         )}
                       </Text>
+                      <Text className="mt-1 text-xs text-muted">
+                        {transaction.type === 'transfer'
+                          ? 'Transfer'
+                          : transaction.type === 'income'
+                            ? 'Income'
+                            : 'Expense'}
+                      </Text>
                     </View>
-                  </View>
-                </Pressable>
-              );
-            })
+                  </Pressable>
+                );
+              })}
+            </View>
+          ) : (
+            <Pressable
+              className="rounded-[22px] border border-dashed border-border px-5 py-6"
+              onPress={() => router.push('/transaction/new' as any)}
+            >
+              <Text className="text-base font-semibold text-foreground">
+                Your activity will live here
+              </Text>
+              <Text className="mt-1 text-sm leading-5 text-muted">
+                Add a transaction yourself, or use Moni’s capture menu when you are ready.
+              </Text>
+            </Pressable>
           )}
         </View>
       </ScrollView>

@@ -7,6 +7,12 @@ import { captureLocationSnapshot } from '@/lib/location/location-snapshot';
 import { saveImageLocally } from '@/lib/receipts/images';
 import { enqueueImageUpload } from '@/lib/receipts/upload-queue';
 import { getUserId } from '@/lib/supabase/client';
+import {
+  beginImmediateProposalReview,
+  clearImmediateProposalReview,
+  completeImmediateProposalReview,
+} from '@/lib/proposals/immediate-review';
+import { waitForProposal } from '@/lib/proposals/proposal-wait';
 
 import { analyzeUserFinances } from './analyze';
 import { appendMessage, updateMessage, type ChatMessage, type QuickReplyOption } from './messages';
@@ -122,6 +128,12 @@ async function handleImageExtract(
   };
   enqueue(queueItem);
 
+  beginImmediateProposalReview(id, {
+    title: 'Reading your receipt…',
+    detail: 'Moni will show every detail before saving anything.',
+    icon: 'receipt',
+  });
+
   try {
     const userId = await getUserId();
     if (userId) {
@@ -132,6 +144,14 @@ async function handleImageExtract(
   }
 
   startBackgroundProcessor().catch(() => {});
+
+  void waitForProposal(id).then((result) => {
+    if (result === 'ready') {
+      completeImmediateProposalReview(id);
+      return;
+    }
+    clearImmediateProposalReview(id);
+  });
 
   const session = updateMessage(statusId, {
     kind: 'assistant_text',
@@ -148,8 +168,9 @@ async function handleTextExtract(
   skipFallback = false,
 ) {
   const locationSnapshot = await captureLocationSnapshot();
+  const proposalId = randomUUID();
   const queueItem: ProcessingQueueItem = {
-    id: randomUUID(),
+    id: proposalId,
     type: 'text',
     text,
     createdAt: new Date().toISOString(),
@@ -157,9 +178,16 @@ async function handleTextExtract(
     locationSnapshot,
   };
 
+  beginImmediateProposalReview(proposalId, {
+    title: 'Preparing your review…',
+    detail: 'Moni is checking the details you provided.',
+    icon: 'chat',
+  });
+
   const result = await runExtraction(queueItem);
 
   if (result.created) {
+    completeImmediateProposalReview(result.proposalId ?? proposalId);
     const session = updateMessage(statusId, {
       kind: 'assistant_text',
       content: EXTRACT_ACK,
@@ -170,11 +198,13 @@ async function handleTextExtract(
   }
 
   if (!skipFallback && result.skipped) {
+    clearImmediateProposalReview(proposalId);
     await handleAnalyze(text, statusId, callbacks, true);
     return;
   }
 
   if (result.skipped) {
+    clearImmediateProposalReview(proposalId);
     await showClarify(statusId, text, null, callbacks);
     return;
   }
@@ -184,6 +214,7 @@ async function handleTextExtract(
     content: result.reason || 'Could not process that message.',
     status: 'error',
   });
+  clearImmediateProposalReview(proposalId);
   emit(callbacks, session.messages);
 }
 

@@ -80,7 +80,7 @@ Do not mix Windows and WSL `expo prebuild` / Gradle — `android/build/generated
 | `lib/receipts/`                    | ML Kit scan normalization, local image save, Storage upload queue                                                                                                                                                       |
 | `lib/speech/`                      | Shared on-device speech recognition options, permissions, offline model prep                                                                                                                                            |
 | `lib/transactions/draft-extras.ts` | Ephemeral (non-persisted) hand-off of merchant/description/location between the quick-add and "More details" transaction screens                                                                                        |
-| `global.css`                       | Uniwind design tokens (brand + light/dark semantic colors)                                                                                                                                                              |
+| `global.css`                       | Uniwind semantic tokens (warm surfaces, mint anchor, states, categories, light/dark) — implementation of [`docs/DESIGN_SYSTEM.md`](../../docs/DESIGN_SYSTEM.md)                                                         |
 | `constants/wallet-card-styles.ts`  | Curated gradient card presets for wallets (`wallets.card_style_id`) — append here to add a new style                                                                                                                    |
 | `index.js`                         | Android headless notification listener (registered before expo-router; requires `*.core.js`)                                                                                                                            |
 
@@ -88,7 +88,7 @@ Do not mix Windows and WSL `expo prebuild` / Gradle — `android/build/generated
 
 ## Theming
 
-Tokens are CSS-first in `global.css`. Prefer semantic classes (`bg-primary`, `text-foreground`, `bg-card`) and shared UI helpers under `components/ui/` (`BrandHeader`, `ScreenShell`, chips, `PrimaryButton`, `GradientCard`). For native APIs that need a color string, use `useThemeTokens()`. Change brand colors in `global.css` only — do not hardcode hex in screens.
+[`docs/DESIGN_SYSTEM.md`](../../docs/DESIGN_SYSTEM.md) is the visual source of truth. Tokens are CSS-first in `global.css`; prefer semantic classes (`bg-canvas`, `bg-card`, `text-foreground`, `text-muted`, state/category tokens) and shared UI helpers under `components/ui/` (`BrandHeader`, `ScreenShell`, `Surface`, `FormField`, `IconAction`, `PrimaryButton`, `GradientCard`). For native APIs that need a color string, use `useThemeTokens()`. Change semantic tokens in `global.css` only — do not hardcode hex in screens.
 
 Wallet cards render `GradientCard` (`expo-linear-gradient` + a grain texture overlay from `assets/images/grain.png`) driven by `wallet.cardStyleId` looked up in `constants/wallet-card-styles.ts`; the wallet forms let users pick a style, which also sets `wallet.color` to the style's flat swatch hex for charts/legends.
 

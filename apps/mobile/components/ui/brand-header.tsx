@@ -1,8 +1,8 @@
 import { Pressable, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import MaterialIcons from '@react-native-vector-icons/material-icons';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
+import { IconSymbol } from './icon-symbol';
 
 type BrandHeaderProps = {
   title: string;
@@ -22,18 +22,18 @@ export function BrandHeader({
   return (
     <SafeAreaView
       edges={['top']}
-      className="bg-background"
+      className="bg-canvas"
     >
-      <View className="h-16 flex-row items-center border-b border-border bg-background pl-4 pr-5">
+      <View className="h-16 flex-row items-center border-b border-border-subtle bg-canvas pl-5 pr-5">
         {showBack ? (
           <Pressable
             onPress={handleBack}
             accessibilityRole="button"
             accessibilityLabel="Go back"
             hitSlop={10}
-            className="h-10 w-10 items-center justify-center rounded-full bg-background-muted active:opacity-80"
+            className="h-11 w-11 items-center justify-center rounded-full bg-card active:opacity-80"
           >
-            <MaterialIcons
+            <IconSymbol
               name="arrow-back"
               size={20}
               color={tokens.foreground}

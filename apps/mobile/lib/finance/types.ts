@@ -40,6 +40,8 @@ export type FinanceCategory = {
   id: string;
   userId: string | null;
   name: string;
+  /** Existing category metadata from the synced table; never inferred by a chart. */
+  icon: string | null;
   type: 'income' | 'expense' | null;
   color: string | null;
   isActive: boolean;

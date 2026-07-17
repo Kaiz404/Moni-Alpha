@@ -19,9 +19,10 @@ import { syncDefaultWalletFromProfile } from '@/lib/wallets/default-wallet';
  */
 export function StoreSyncActivator() {
   const { user } = useAuth();
+  const userId = user?.id;
 
   useEffect(() => {
-    if (!user) return;
+    if (!userId) return;
     let stopProjection: (() => void) | undefined;
     let cancelled = false;
 
@@ -59,7 +60,7 @@ export function StoreSyncActivator() {
         dispose();
       }
     };
-  }, [user?.id]);
+  }, [userId]);
 
   return null;
 }

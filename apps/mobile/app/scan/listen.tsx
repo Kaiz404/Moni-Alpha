@@ -33,6 +33,12 @@ import {
 } from '@/lib/ai/processing-queue';
 import { startBackgroundProcessor } from '@/lib/ai/background-processor';
 import { captureLocationSnapshot } from '@/lib/location/location-snapshot';
+import {
+  beginImmediateProposalReview,
+  clearImmediateProposalReview,
+  completeImmediateProposalReview,
+} from '@/lib/proposals/immediate-review';
+import { waitForProposal } from '@/lib/proposals/proposal-wait';
 
 const TAG = '[Moni/Listen]';
 
@@ -135,9 +141,21 @@ export default function ScanListenScreen() {
         locationSnapshot,
       };
       enqueue(queueItem);
+      beginImmediateProposalReview(queueItem.id, {
+        title: 'Preparing your review…',
+        detail: 'Moni is checking the transaction you described.',
+        icon: 'voice',
+      });
       startBackgroundProcessor().catch((e) =>
         console.warn(TAG, 'Background processor start failed:', e),
       );
+      void waitForProposal(queueItem.id).then((result) => {
+        if (result === 'ready') {
+          completeImmediateProposalReview(queueItem.id);
+          return;
+        }
+        clearImmediateProposalReview(queueItem.id);
+      });
       router.back();
     } catch (e) {
       console.error(TAG, 'Failed to queue narration:', e);

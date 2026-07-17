@@ -10,7 +10,6 @@ import {
   FlatList,
   KeyboardAvoidingView,
   Platform,
-  Pressable,
 } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import {
@@ -24,6 +23,8 @@ import {
 import type { ExpoSpeechRecognitionResultEvent } from 'expo-speech-recognition';
 
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
+import { IconAction } from '@/components/ui/icon-action';
+import { IconSymbol } from '@/components/ui/icon-symbol';
 import {
   buildSpeechRecognitionOptions,
   ensureSpeechPermissions,
@@ -213,46 +214,59 @@ export default function ChatScreen() {
         className="flex-1"
         style={{ flex: 1 }}
       >
-        <View className="flex-row items-center justify-between px-6 pt-4 pb-2">
-          <Text className="text-2xl font-bold text-foreground">
-            Chat
-          </Text>
-          <Pressable
+        <View className="flex-row items-center justify-between px-5 pb-3 pt-5">
+          <View className="flex-row items-center">
+            <View className="h-10 w-10 items-center justify-center rounded-2xl bg-primary-muted">
+              <IconSymbol
+                name="auto-awesome"
+                size={20}
+                color={tokens.primary}
+              />
+            </View>
+            <View className="ml-3">
+              <Text className="text-[22px] font-bold leading-7 text-foreground">
+                Chat with Moni
+              </Text>
+              <Text className="text-[13px] leading-[17px] text-muted">
+                Ask, understand, and review
+              </Text>
+            </View>
+          </View>
+          <IconAction
+            accessibilityLabel="Start a new conversation"
+            icon="edit"
             onPress={handleNewChat}
-            className="rounded-full border border-border bg-card px-3 py-1.5"
-            hitSlop={8}
-          >
-            <Text className="text-sm font-medium text-primary">
-              New chat
-            </Text>
-          </Pressable>
+            tone="default"
+          />
         </View>
 
-        <View className="mt-1 flex-1 overflow-hidden rounded-t-2xl bg-primary-muted">
-          <View className="flex-1 rounded-t-2xl bg-background px-3 pt-4 pb-2">
-            <FlatList
-              ref={flatListRef}
-              data={messages}
-              keyExtractor={(item) => item.id}
-              renderItem={({ item }) => (
-                <MessageBubble
-                  message={item}
-                  onQuickReply={handleQuickReplySelect}
-                />
-              )}
-              contentContainerStyle={{
-                paddingHorizontal: 8,
-                paddingBottom: 8,
-                flexGrow: 1,
-              }}
-              ListEmptyComponent={
-                <ChatEmptyState primary={tokens.primary} />
-              }
-              onContentSizeChange={() =>
-                flatListRef.current?.scrollToEnd({ animated: true })
-              }
-            />
-          </View>
+        <View className="flex-1">
+          <FlatList
+            ref={flatListRef}
+            data={messages}
+            keyExtractor={(item) => item.id}
+            renderItem={({ item }) => (
+              <MessageBubble
+                message={item}
+                onQuickReply={handleQuickReplySelect}
+              />
+            )}
+            contentContainerStyle={{
+              paddingHorizontal: 20,
+              paddingTop: 12,
+              paddingBottom: 16,
+              flexGrow: 1,
+            }}
+            ListEmptyComponent={
+              <ChatEmptyState
+                primary={tokens.primary}
+                onSuggestion={setInput}
+              />
+            }
+            onContentSizeChange={() =>
+              flatListRef.current?.scrollToEnd({ animated: true })
+            }
+          />
         </View>
 
         <ChatInputBar

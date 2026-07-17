@@ -1,49 +1,50 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
+  ActivityIndicator,
   Alert,
-  ScrollView,
   KeyboardAvoidingView,
   Platform,
-  ActivityIndicator,
+  ScrollView,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { decimalToMinor, updateWalletSchema } from '@repo/types';
+
+import { AmountInput } from '@/components/finance/amount-input';
+import { BrandHeader } from '@/components/ui/brand-header';
+import { chipClass, chipTextClass } from '@/components/ui/chip';
+import { FeedbackState } from '@/components/ui/feedback-state';
+import { FormField } from '@/components/ui/form-field';
+import { PrimaryButton } from '@/components/ui/primary-button';
+import { ScreenShell } from '@/components/ui/screen-shell';
+import { Surface } from '@/components/ui/surface';
+import {
+  WalletCardStylePicker,
+} from '@/components/wallets/wallet-card-style-picker';
+import {
+  WalletNotificationLinkSection,
+  type WalletNotificationLinkValue,
+} from '@/components/wallets/wallet-notification-link-section';
+import {
+  DEFAULT_WALLET_CARD_STYLE_ID,
+  WALLET_CARD_STYLES,
+} from '@/constants/wallet-card-styles';
+import {
+  WALLET_TYPE_OPTIONS,
+  type WalletKind,
+} from '@/constants/wallet-form';
+import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { useAuth } from '@/lib/auth/auth-context';
+import { formatMinorAmount, minorToDecimal } from '@/lib/finance/money';
 import {
   deleteWallet,
   getWalletById,
   getWallets,
   updateWallet,
 } from '@/lib/supabase/wallets';
-import { updateWalletSchema } from '@repo/types';
-import { decimalToMinor, minorToDecimal } from '@repo/types';
-import { formatMinorAmount } from '@/lib/finance/money';
-import {
-  WALLET_TYPE_OPTIONS,
-  type WalletKind,
-} from '@/constants/wallet-form';
-import {
-  WALLET_CARD_STYLES,
-  DEFAULT_WALLET_CARD_STYLE_ID,
-} from '@/constants/wallet-card-styles';
-import { useThemeTokens } from '@/hooks/use-theme-tokens';
-import { BrandHeader } from '@/components/ui/brand-header';
-import { AmountInput } from '@/components/finance/amount-input';
-import { ScreenShell } from '@/components/ui/screen-shell';
-import { chipClass, chipTextClass } from '@/components/ui/chip';
-import { PrimaryButton } from '@/components/ui/primary-button';
-import { WalletCardStylePicker } from '@/components/wallets/wallet-card-style-picker';
-import {
-  WalletNotificationLinkSection,
-  type WalletNotificationLinkValue,
-} from '@/components/wallets/wallet-notification-link-section';
-
-const inputClass =
-  'rounded-xl border border-border bg-card px-3 py-2.5 text-foreground';
 
 export default function EditWalletScreen() {
   const { user } = useAuth();
@@ -51,9 +52,8 @@ export default function EditWalletScreen() {
   const tokens = useThemeTokens();
   const params = useLocalSearchParams<{ id?: string | string[] }>();
   const walletId = useMemo(() => {
-    const x = params.id;
-    if (Array.isArray(x)) return x[0];
-    return x;
+    const value = params.id;
+    return Array.isArray(value) ? value[0] : value;
   }, [params.id]);
 
   const [loadingWallet, setLoadingWallet] = useState(true);
@@ -65,8 +65,7 @@ export default function EditWalletScreen() {
   const [cardStyleId, setCardStyleId] = useState(
     DEFAULT_WALLET_CARD_STYLE_ID,
   );
-  const [loading, setLoading] = useState(false);
-
+  const [saving, setSaving] = useState(false);
   const [readOnlyBalance, setReadOnlyBalance] = useState('');
   const [readOnlyUpdated, setReadOnlyUpdated] = useState('');
   const [notificationLink, setNotificationLink] =
@@ -82,61 +81,44 @@ export default function EditWalletScreen() {
     if (!user || !walletId) return;
     let cancelled = false;
 
-    (async () => {
+    void (async () => {
       setLoadingWallet(true);
       setLoadError(null);
       try {
-        const w = await getWalletById(walletId);
+        const wallet = await getWalletById(walletId);
         if (cancelled) return;
-        if (!w) {
-          setLoadError('Wallet not found.');
-          setLoadingWallet(false);
+        if (!wallet) {
+          setLoadError('This wallet is no longer available.');
           return;
         }
-        setName(w.name ?? '');
+        setName(wallet.name ?? '');
         setType(
-          WALLET_TYPE_OPTIONS.find((o) => o.value === w.type)
+          WALLET_TYPE_OPTIONS.find((option) => option.value === wallet.type)
             ?.value ?? 'bank',
         );
-        setCurrency(w.currency ?? 'USD');
-        setInitialBalance(minorToDecimal(w.initialBalanceMinor));
-        setCardStyleId(w.cardStyleId || DEFAULT_WALLET_CARD_STYLE_ID);
+        setCurrency(wallet.currency ?? 'USD');
+        setInitialBalance(minorToDecimal(wallet.initialBalanceMinor));
+        setCardStyleId(wallet.cardStyleId || DEFAULT_WALLET_CARD_STYLE_ID);
         setReadOnlyBalance(
-          formatMinorAmount(
-            w.currentBalanceMinor,
-            w.currency ?? 'USD',
-          ),
+          formatMinorAmount(wallet.currentBalanceMinor, wallet.currency ?? 'USD'),
         );
         setReadOnlyUpdated(
-          w.updatedAt
-            ? new Date(w.updatedAt).toLocaleString(undefined, {
+          wallet.updatedAt
+            ? new Date(wallet.updatedAt).toLocaleString(undefined, {
                 dateStyle: 'medium',
                 timeStyle: 'short',
               })
-            : '—',
+            : 'Not available',
         );
         setNotificationLink({
-          notificationPackage: w.notificationPackage ?? null,
-          notificationAppLabel: w.notificationAppLabel ?? null,
-          notificationAccountHint: w.notificationAccountHint ?? null,
+          notificationPackage: wallet.notificationPackage ?? null,
+          notificationAppLabel: wallet.notificationAppLabel ?? null,
+          notificationAccountHint: wallet.notificationAccountHint ?? null,
         });
-        const others = await getWallets();
-        if (!cancelled) {
-          setSharedPackageWalletNames(
-            others
-              .filter(
-                (row) =>
-                  row.id !== walletId &&
-                  row.notificationPackage ===
-                    (w.notificationPackage ?? null),
-              )
-              .map((row) => row.name),
-          );
-        }
-      } catch (e) {
+      } catch (error) {
         if (!cancelled) {
           setLoadError(
-            e instanceof Error ? e.message : 'Failed to load wallet',
+            error instanceof Error ? error.message : 'Could not load this wallet.',
           );
         }
       } finally {
@@ -159,36 +141,33 @@ export default function EditWalletScreen() {
       setSharedPackageWalletNames(
         wallets
           .filter(
-            (w) =>
-              w.id !== walletId &&
-              w.notificationPackage ===
-                notificationLink.notificationPackage,
+            (wallet) =>
+              wallet.id !== walletId &&
+              wallet.notificationPackage === notificationLink.notificationPackage,
           )
-          .map((w) => w.name),
+          .map((wallet) => wallet.name),
       );
     });
-  }, [user, walletId, notificationLink.notificationPackage]);
+  }, [notificationLink.notificationPackage, user, walletId]);
 
   const handleDelete = useCallback(() => {
     if (!walletId) return;
     Alert.alert(
-      'Delete wallet',
-      'This will permanently delete this wallet and all related transactions. This cannot be undone. Continue?',
+      'Delete wallet?',
+      'This permanently deletes this wallet and its related transactions. This cannot be undone.',
       [
         { text: 'Cancel', style: 'cancel' },
         {
-          text: 'Delete',
+          text: 'Delete wallet',
           style: 'destructive',
           onPress: async () => {
             try {
               await deleteWallet(walletId);
               router.replace('/(tabs)' as never);
-            } catch (e) {
+            } catch (error) {
               Alert.alert(
-                'Delete failed',
-                e instanceof Error
-                  ? e.message
-                  : 'Could not delete wallet. Please try again.',
+                'Could not delete wallet',
+                error instanceof Error ? error.message : 'Please try again.',
               );
             }
           },
@@ -199,63 +178,64 @@ export default function EditWalletScreen() {
 
   const handleSubmit = useCallback(async () => {
     if (!user || !walletId) return;
-
-    const cur = currency.trim().toUpperCase().slice(0, 3) || 'USD';
     const style =
-      WALLET_CARD_STYLES.find((s) => s.id === cardStyleId) ??
+      WALLET_CARD_STYLES.find((item) => item.id === cardStyleId) ??
       WALLET_CARD_STYLES[0];
     const parsed = updateWalletSchema.safeParse({
       name: name.trim(),
       type,
-      currency: cur,
+      currency: currency.trim().toUpperCase().slice(0, 3) || 'USD',
       initialBalanceMinor: decimalToMinor(initialBalance || '0'),
       color: style.swatchHex,
       icon:
-        WALLET_TYPE_OPTIONS.find((t) => t.value === type)?.icon ??
+        WALLET_TYPE_OPTIONS.find((item) => item.value === type)?.icon ??
         '💰',
       cardStyleId: style.id,
       notificationPackage: notificationLink.notificationPackage,
       notificationAppLabel: notificationLink.notificationAppLabel,
-      notificationAccountHint:
-        notificationLink.notificationAccountHint,
+      notificationAccountHint: notificationLink.notificationAccountHint,
     });
     if (!parsed.success) {
       Alert.alert(
-        'Error',
-        parsed.error.errors[0]?.message ?? 'Invalid input',
+        'Check this wallet',
+        parsed.error.errors[0]?.message ?? 'Enter a valid wallet.',
       );
       return;
     }
 
-    setLoading(true);
+    setSaving(true);
     try {
       await updateWallet(walletId, parsed.data);
       router.back();
-    } catch (e) {
+    } catch (error) {
       Alert.alert(
-        'Error',
-        e instanceof Error ? e.message : 'Failed to update wallet',
+        'Could not save wallet',
+        error instanceof Error ? error.message : 'Please try again.',
       );
     } finally {
-      setLoading(false);
+      setSaving(false);
     }
   }, [
-    user,
-    walletId,
-    name,
-    type,
+    cardStyleId,
     currency,
     initialBalance,
-    cardStyleId,
+    name,
     notificationLink,
+    type,
+    user,
+    walletId,
   ]);
 
   if (!walletId) {
     return (
       <ScreenShell variant="canvas">
-        <View className="flex-1 items-center justify-center">
-          <Text className="text-muted">Missing wallet.</Text>
-        </View>
+        <BrandHeader title="Wallet" />
+        <FeedbackState
+          className="flex-1"
+          description="Return to Accounts and choose a wallet to edit."
+          icon="account-balance-wallet"
+          title="Missing wallet"
+        />
       </ScreenShell>
     );
   }
@@ -263,11 +243,10 @@ export default function EditWalletScreen() {
   if (loadingWallet) {
     return (
       <ScreenShell variant="canvas">
+        <BrandHeader title="Wallet" />
         <View className="flex-1 items-center justify-center">
-          <ActivityIndicator
-            size="large"
-            color={tokens.primary}
-          />
+          <ActivityIndicator color={tokens.primary} size="large" />
+          <Text className="mt-3 text-sm text-muted">Loading wallet…</Text>
         </View>
       </ScreenShell>
     );
@@ -276,14 +255,16 @@ export default function EditWalletScreen() {
   if (loadError) {
     return (
       <ScreenShell variant="canvas">
-        <View className="flex-1 justify-center px-6">
-          <Text className="mb-4 text-center text-foreground">
-            {loadError}
-          </Text>
-          <PrimaryButton
-            label="Go back"
-            onPress={() => router.back()}
-          />
+        <BrandHeader title="Wallet" />
+        <FeedbackState
+          className="flex-1"
+          description={loadError}
+          icon="error-outline"
+          mode="error"
+          title="Couldn’t open this wallet"
+        />
+        <View className="px-5 pb-5">
+          <PrimaryButton label="Go back" onPress={() => router.back()} />
         </View>
       </ScreenShell>
     );
@@ -291,136 +272,143 @@ export default function EditWalletScreen() {
 
   return (
     <ScreenShell variant="canvas">
-      <BrandHeader title="Edit Wallet" />
-
+      <BrandHeader title="Edit wallet" />
       <KeyboardAvoidingView
         className="flex-1"
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        keyboardVerticalOffset={0}
       >
         <View className="flex-1">
           <ScrollView
             className="flex-1"
+            contentContainerClassName="px-5 pb-8 pt-6"
             keyboardShouldPersistTaps="handled"
-            contentContainerClassName="px-4 pt-4 pb-2"
             showsVerticalScrollIndicator={false}
           >
-            <View className="mb-4 rounded-xl bg-card px-3 py-2.5">
-              <Text className="text-[10px] font-semibold uppercase tracking-wide text-muted">
+            <Surface tone="tray" className="p-5">
+              <Text className="text-sm font-semibold text-primary">
                 Current balance
               </Text>
-              <Text className="text-base font-semibold text-foreground">
+              <Text className="mt-1 text-3xl font-bold text-foreground">
                 {readOnlyBalance}
               </Text>
-              <Text className="mt-1 text-[10px] text-muted">
-                Last updated {readOnlyUpdated}
+              <Text className="mt-2 text-xs leading-4 text-muted">
+                Updated {readOnlyUpdated}
               </Text>
-            </View>
+            </Surface>
 
-            <Text className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-muted">
-              Name
-            </Text>
-            <TextInput
-              className={`mb-4 text-base ${inputClass}`}
-              placeholder="Wallet name"
-              placeholderTextColor="#9CA3AF"
-              value={name}
-              onChangeText={setName}
-            />
+            <Surface className="mt-6 p-5">
+              <FormField
+                label="Wallet name"
+                placeholder="e.g. Everyday bank"
+                value={name}
+                onChangeText={setName}
+                autoCapitalize="words"
+              />
 
-            <Text className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-muted">
-              Type
-            </Text>
-            <View className="mb-4 flex-row flex-wrap gap-1.5">
-              {WALLET_TYPE_OPTIONS.map((t) => (
-                <TouchableOpacity
-                  key={t.value}
-                  className={chipClass(type === t.value)}
-                  onPress={() => setType(t.value)}
-                  activeOpacity={0.85}
-                >
-                  <Text
-                    className={`text-xs ${chipTextClass(type === t.value)}`}
-                    numberOfLines={1}
-                  >
-                    {t.icon} {t.label}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
+              <Text className="mb-2 text-[15px] font-semibold text-foreground">
+                Account type
+              </Text>
+              <View className="mb-5 flex-row flex-wrap gap-2">
+                {WALLET_TYPE_OPTIONS.map((option) => {
+                  const selected = type === option.value;
+                  return (
+                    <TouchableOpacity
+                      key={option.value}
+                      accessibilityRole="button"
+                      accessibilityState={{ selected }}
+                      activeOpacity={0.82}
+                      className={`${chipClass(selected)} min-h-11 justify-center px-3`}
+                      onPress={() => setType(option.value)}
+                    >
+                      <Text
+                        className={`text-sm ${chipTextClass(selected)}`}
+                        numberOfLines={1}
+                      >
+                        {option.icon} {option.label}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
 
-            <View className="mb-4 flex-row gap-3">
-              <View className="min-w-[100px] flex-1">
-                <Text className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-muted">
-                  Currency
-                </Text>
-                <TextInput
-                  className={`text-base ${inputClass}`}
+              <View className="flex-row gap-3">
+                <FormField
+                  containerClassName="flex-1"
+                  label="Currency"
                   placeholder="USD"
-                  placeholderTextColor="#9CA3AF"
                   value={currency}
                   onChangeText={setCurrency}
                   autoCapitalize="characters"
                   maxLength={3}
                 />
+                <View className="flex-1">
+                  <Text className="mb-2 text-[15px] font-semibold text-foreground">
+                    Starting balance
+                  </Text>
+                  <AmountInput
+                    accessibilityLabel="Starting balance"
+                    className="min-h-13 rounded-2xl border border-border bg-surface-2 px-4 py-3 text-right text-xl font-semibold text-foreground"
+                    currency={currency}
+                    onChangeValue={setInitialBalance}
+                    placeholder="0.00"
+                    placeholderTextColor={tokens.muted}
+                    value={initialBalance}
+                  />
+                  <Text className="mt-2 text-xs leading-4 text-muted">
+                    Changing this updates how the running balance is calculated.
+                  </Text>
+                </View>
               </View>
-              <View className="min-w-[120px] flex-1">
-                <Text className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-muted">
-                  Initial balance
-                </Text>
-                <AmountInput
-                  className={`text-base ${inputClass}`}
-                  placeholder="0.00"
-                  placeholderTextColor="#9CA3AF"
-                  value={initialBalance}
-                  onChangeValue={setInitialBalance}
-                  currency={currency}
-                />
-              </View>
-            </View>
-            <Text className="mb-3 text-[11px] text-muted">
-              Changing initial balance updates how running balance is
-              calculated from your transactions.
-            </Text>
+            </Surface>
 
+            <Text className="mb-2 mt-8 text-base font-bold text-foreground">
+              Recognition
+            </Text>
+            <WalletCardStylePicker
+              value={cardStyleId}
+              onChange={setCardStyleId}
+            />
+
+            <Text className="mb-2 mt-8 text-base font-bold text-foreground">
+              Notification source
+            </Text>
+            <Text className="mb-3 text-sm leading-5 text-muted">
+              Keep possible notification transactions tied to this account for
+              review. Nothing is added automatically.
+            </Text>
             <WalletNotificationLinkSection
               value={notificationLink}
               onChange={setNotificationLink}
               sharedPackageWalletNames={sharedPackageWalletNames}
             />
 
-            <Text className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-muted">
-              Card style
-            </Text>
-            <WalletCardStylePicker
-              value={cardStyleId}
-              onChange={setCardStyleId}
-            />
+            <View className="mt-10 border-t border-border-subtle pt-6">
+              <Text className="text-base font-bold text-foreground">
+                Danger zone
+              </Text>
+              <Text className="mt-1 text-sm leading-5 text-muted">
+                Deleting a wallet also deletes the related transactions.
+              </Text>
+              <PrimaryButton
+                className="mt-4"
+                label="Delete wallet"
+                variant="destructive"
+                onPress={handleDelete}
+              />
+            </View>
           </ScrollView>
 
           <View
-            className="border-t border-border bg-canvas px-4 pt-3"
+            className="border-t border-border-subtle bg-canvas px-5 pt-3"
             style={{ paddingBottom: Math.max(insets.bottom, 12) }}
           >
             <PrimaryButton
               label="Save changes"
-              loading={loading}
-              loadingLabel="Saving..."
+              loading={saving}
+              loadingLabel="Saving wallet…"
               icon="check"
               onPress={handleSubmit}
-              disabled={loading}
             />
-            <TouchableOpacity
-              onPress={handleDelete}
-              disabled={loading}
-              className="mt-3 items-center rounded-xl border border-destructive/40 py-3 active:opacity-80"
-              accessibilityRole="button"
-              accessibilityLabel="Delete wallet"
-            >
-              <Text className="text-sm font-semibold text-destructive">
-                Delete wallet
-              </Text>
-            </TouchableOpacity>
           </View>
         </View>
       </KeyboardAvoidingView>

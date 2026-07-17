@@ -108,6 +108,7 @@ export function toFinanceCategory(row: RawRow): FinanceCategory | null {
     id: row.id,
     userId: nullableString(row.user_id),
     name: stringValue(row.name) || 'Uncategorized',
+    icon: nullableString(row.icon),
     type,
     color: nullableString(row.color),
     isActive: active(row.is_active),

@@ -1,26 +1,16 @@
 import { useEffect } from 'react';
 import { router } from 'expo-router';
 
-import {
-  queueReceiptImage,
-  scanAndNormalizeReceipt,
-} from '@/lib/receipts/scan-receipt';
+import { runFabReceiptScan } from '@/lib/receipts/scan-receipt';
 
-const TAG = '[Moni/Scan]';
-
-/** iOS fallback route and deep-link entry — launches ML Kit without an intermediate screen. */
+/**
+ * Deep-link/fallback entry to the same explicit receipt-review flow used by
+ * the capture launcher. The scanner itself remains Android-native; unsupported
+ * platforms receive the existing clear availability message.
+ */
 export default function ScanReceiptScreen() {
   useEffect(() => {
-    void (async () => {
-      const uri = await scanAndNormalizeReceipt();
-      router.back();
-      if (!uri) return;
-      try {
-        await queueReceiptImage(uri);
-      } catch (e) {
-        console.warn(TAG, 'Failed to queue receipt:', e);
-      }
-    })();
+    void runFabReceiptScan().finally(() => router.back());
   }, []);
 
   return null;

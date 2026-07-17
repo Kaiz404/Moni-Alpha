@@ -4,16 +4,15 @@ import {
   Pressable,
   ScrollView,
   Text,
-  TextInput,
   View,
 } from 'react-native';
 import {
-  router,
   useFocusEffect,
   useLocalSearchParams,
 } from 'expo-router';
 import { BrandHeader } from '@/components/ui/brand-header';
 import { AmountInput } from '@/components/finance/amount-input';
+import { FeedbackState } from '@/components/ui/feedback-state';
 import { PrimaryButton } from '@/components/ui/primary-button';
 import { ScreenShell } from '@/components/ui/screen-shell';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
@@ -92,11 +91,14 @@ export default function DebtDetailScreen() {
   );
   if (!debt)
     return (
-      <ScreenShell>
+      <ScreenShell variant="canvas">
         <BrandHeader title="Debt" />
-        <View className="flex-1 items-center justify-center">
-          <Text className="text-muted">Debt not found.</Text>
-        </View>
+        <FeedbackState
+          className="flex-1"
+          description="Return to Debts and select a record to view."
+          icon="person-outline"
+          title="Debt not found"
+        />
       </ScreenShell>
     );
   const matchingWallets = wallets.filter(
@@ -172,11 +174,11 @@ export default function DebtDetailScreen() {
       ],
     );
   return (
-    <ScreenShell>
+    <ScreenShell variant="canvas">
       <BrandHeader title={debt.counterpartyName} />
       <ScrollView
-        className="flex-1 bg-background"
-        contentContainerClassName="p-4"
+        className="flex-1"
+        contentContainerClassName="px-5 pb-10 pt-6"
       >
         <View className="mb-4 rounded-2xl bg-card p-4">
           <Text className="text-sm text-muted">

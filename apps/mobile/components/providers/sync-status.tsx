@@ -23,15 +23,15 @@ function useSyncStatus() {
     const hasError = Boolean(state.error);
 
     if (hasError) {
-      return { text: 'Offline', colorClass: 'text-red-500' };
+      return { text: 'Offline', colorClass: 'text-danger' };
     }
     if (isSyncing) {
-      return { text: 'Syncing', colorClass: 'text-yellow-500' };
+      return { text: 'Syncing', colorClass: 'text-warning' };
     }
     if (isLoaded) {
-      return { text: 'Connected', colorClass: 'text-green-500' };
+      return { text: 'Connected', colorClass: 'text-success' };
     }
-    return { text: 'Loading', colorClass: 'text-yellow-500' };
+    return { text: 'Loading', colorClass: 'text-warning' };
   });
 }
 
@@ -62,7 +62,7 @@ export function SyncStatus({ className }: SyncStatusProps = {}) {
 
   return (
     <View
-      className={['mb-6 rounded-lg bg-card p-4', className ?? '']
+      className={['mb-6 rounded-[22px] border border-border bg-card p-4', className ?? '']
         .filter(Boolean)
         .join(' ')}
     >
@@ -70,7 +70,7 @@ export function SyncStatus({ className }: SyncStatusProps = {}) {
         Sync Status
       </Text>
 
-      <View className="space-y-2">
+      <View className="gap-2">
         <View className="flex-row items-center justify-between">
           <Text className="text-sm text-muted">Status:</Text>
           <Text
@@ -106,7 +106,7 @@ export function SyncStatus({ className }: SyncStatusProps = {}) {
         ) : null}
 
         {syncMeta.errorMessage ? (
-          <Text className="text-xs text-red-500 dark:text-red-400 mt-1">
+          <Text className="mt-1 text-xs text-danger">
             {syncMeta.errorMessage}
           </Text>
         ) : null}

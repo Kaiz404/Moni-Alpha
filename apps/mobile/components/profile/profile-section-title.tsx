@@ -6,7 +6,7 @@ export function ProfileSectionTitle({
   children: string;
 }) {
   return (
-    <Text className="mb-2 text-xs font-bold uppercase tracking-wider text-muted">
+    <Text className="mb-2 text-[13px] font-semibold text-muted">
       {children}
     </Text>
   );

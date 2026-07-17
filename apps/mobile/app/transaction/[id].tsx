@@ -2,7 +2,6 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   View,
   Text,
-  TextInput,
   TouchableOpacity,
   Alert,
   ScrollView,
@@ -26,14 +25,17 @@ import { BrandHeader } from '@/components/ui/brand-header';
 import { AmountInput } from '@/components/finance/amount-input';
 import { ScreenShell } from '@/components/ui/screen-shell';
 import { chipClass, chipTextClass } from '@/components/ui/chip';
+import { FeedbackState } from '@/components/ui/feedback-state';
+import { FormField } from '@/components/ui/form-field';
 import { PrimaryButton } from '@/components/ui/primary-button';
+import { Surface } from '@/components/ui/surface';
 import {
   minorToDecimal,
   parseAmountInput,
 } from '@/lib/finance/money';
 
 const inputClass =
-  'rounded-xl border border-border bg-card px-3 py-2.5 text-foreground';
+  'min-h-13 rounded-2xl border border-border bg-surface-2 px-4 py-3 text-foreground';
 
 export default function EditTransactionScreen() {
   const { user } = useAuth();
@@ -263,9 +265,13 @@ export default function EditTransactionScreen() {
   if (!txId) {
     return (
       <ScreenShell variant="canvas">
-        <View className="flex-1 items-center justify-center">
-          <Text className="text-muted">Missing transaction.</Text>
-        </View>
+        <BrandHeader title="Transaction" />
+        <FeedbackState
+          className="flex-1"
+          description="Return to activity and select a transaction to edit."
+          icon="receipt-long"
+          title="Missing transaction"
+        />
       </ScreenShell>
     );
   }
@@ -286,14 +292,16 @@ export default function EditTransactionScreen() {
   if (loadError) {
     return (
       <ScreenShell variant="canvas">
-        <View className="flex-1 justify-center px-6">
-          <Text className="mb-4 text-center text-foreground">
-            {loadError}
-          </Text>
-          <PrimaryButton
-            label="Go back"
-            onPress={() => router.back()}
-          />
+        <BrandHeader title="Transaction" />
+        <FeedbackState
+          className="flex-1"
+          description={loadError}
+          icon="error-outline"
+          mode="error"
+          title="Couldn’t open this transaction"
+        />
+        <View className="px-5 pb-5">
+          <PrimaryButton label="Go back" onPress={() => router.back()} />
         </View>
       </ScreenShell>
     );
@@ -315,11 +323,15 @@ export default function EditTransactionScreen() {
             contentContainerClassName="px-4 pt-4 pb-2"
             showsVerticalScrollIndicator={false}
           >
-            <View className="mb-4 rounded-xl bg-card px-3 py-2.5">
-              <Text className="text-[10px] font-semibold uppercase tracking-wide text-muted">
+            <Text className="text-2xl font-bold text-foreground">Edit transaction</Text>
+            <Text className="mt-2 text-[15px] leading-5 text-muted">
+              Amounts stay in the selected wallet’s currency.
+            </Text>
+            <Surface tone="muted" className="mb-6 mt-6 p-4">
+              <Text className="text-xs font-semibold uppercase tracking-wide text-muted">
                 Date &amp; time
               </Text>
-              <Text className="text-sm text-foreground">
+              <Text className="mt-1 text-sm font-semibold text-foreground">
                 {readOnlyDate}
               </Text>
               {readOnlyLocation ? (
@@ -327,15 +339,15 @@ export default function EditTransactionScreen() {
                   Location: {readOnlyLocation}
                 </Text>
               ) : null}
-            </View>
+            </Surface>
 
             {isTransfer ? (
-              <View className="mb-4 rounded-xl border border-primary/40 bg-primary-muted px-3 py-3">
-                <Text className="text-sm text-foreground">
+              <Surface tone="tray" className="mb-6 p-4">
+                <Text className="text-sm leading-5 text-foreground">
                   Transfer between your wallets — does not affect your
                   overall net worth.
                 </Text>
-              </View>
+              </Surface>
             ) : null}
 
             <Text className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-muted">
@@ -395,7 +407,7 @@ export default function EditTransactionScreen() {
                   <AmountInput
                     className={`text-base ${inputClass}`}
                     placeholder="0.00"
-                    placeholderTextColor="#9CA3AF"
+                    placeholderTextColor={tokens.muted}
                     value={amount}
                     onChangeValue={setAmount}
                     currency={
@@ -447,7 +459,7 @@ export default function EditTransactionScreen() {
                   <AmountInput
                     className={`text-base ${inputClass}`}
                     placeholder="0.00"
-                    placeholderTextColor="#9CA3AF"
+                    placeholderTextColor={tokens.muted}
                     value={amount}
                     onChangeValue={setAmount}
                     currency={
@@ -482,34 +494,22 @@ export default function EditTransactionScreen() {
                   ))}
                 </View>
 
-                <View className="mb-1.5 flex-row items-baseline gap-1">
-                  <Text className="text-xs font-semibold uppercase tracking-wide text-muted">
-                    Merchant
-                  </Text>
-                  <Text className="text-[10px] text-muted">
-                    optional
-                  </Text>
-                </View>
-                <TextInput
-                  className={`mb-3 text-sm ${inputClass}`}
+                <FormField
+                  label="Merchant"
+                  hint="Optional"
                   placeholder="Store or payee"
-                  placeholderTextColor="#9CA3AF"
                   value={merchant}
                   onChangeText={setMerchant}
+                  autoCapitalize="words"
                 />
               </>
             ) : null}
 
-            <View className="mb-1.5 flex-row items-baseline gap-1">
-              <Text className="text-xs font-semibold uppercase tracking-wide text-muted">
-                Description
-              </Text>
-              <Text className="text-[10px] text-muted">optional</Text>
-            </View>
-            <TextInput
-              className={`mb-1 min-h-[72px] text-sm ${inputClass}`}
-              placeholder="Notes"
-              placeholderTextColor="#9CA3AF"
+            <FormField
+              label="Notes"
+              hint="Optional"
+              className="min-h-24 text-sm"
+              placeholder="Add a note"
               value={description}
               onChangeText={setDescription}
               multiline
@@ -546,7 +546,7 @@ export default function EditTransactionScreen() {
                   ) : null}
                   {mapExpanded ? (
                     <View
-                      className="mt-1 overflow-hidden rounded-xl border border-border bg-card"
+                    className="mt-3 overflow-hidden rounded-2xl border border-border bg-card"
                       style={styles.locationMapBox}
                     >
                       <MapView
@@ -603,6 +603,10 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   locationMap: {
-    ...StyleSheet.absoluteFillObject,
+    bottom: 0,
+    left: 0,
+    position: 'absolute',
+    right: 0,
+    top: 0,
   },
 });

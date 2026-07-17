@@ -21,7 +21,7 @@ export function AuthGuard({
     } else if (user && inAuthGroup) {
       router.replace('/(tabs)' as any);
     }
-  }, [user, isLoading, segments]);
+  }, [user, isLoading, router, segments]);
 
   return <>{children}</>;
 }

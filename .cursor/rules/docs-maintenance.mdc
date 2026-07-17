@@ -17,6 +17,7 @@ Docs are lean and single-source-of-truth. When a change affects any area below, 
 | AI endpoints, models, prompts, rate limits, wire contract | `docs/AI.md` |
 | Backend endpoints/auth/deploy | `apps/backend/README.md` |
 | Mobile structure or data flow | `apps/mobile/README.md` |
+| Mobile visual language, semantic tokens, or component standards | `docs/DESIGN_SYSTEM.md` + `apps/mobile/README.md` |
 | Web dashboard | `apps/web/README.md` |
 | Supabase workflow/keys | `supabase/README.md` |
 

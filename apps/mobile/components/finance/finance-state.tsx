@@ -1,4 +1,5 @@
-import { Text, View } from 'react-native';
+import { FeedbackState } from '@/components/ui/feedback-state';
+import { Surface } from '@/components/ui/surface';
 
 type FinanceStateProps = {
   title: string;
@@ -12,23 +13,21 @@ export function FinanceState({
   detail,
   variant = 'empty',
 }: FinanceStateProps) {
-  const tone =
-    variant === 'error'
-      ? 'border-destructive/40 bg-danger/10'
-      : 'border-dashed border-border bg-card';
   return (
-    <View
-      className={`rounded-2xl border p-5 ${tone}`}
+    <Surface
+      tone={variant === 'error' ? 'muted' : 'default'}
+      className={
+        variant === 'error' ? 'border-danger/40 bg-danger/10' : ''
+      }
       accessibilityRole={variant === 'error' ? 'alert' : undefined}
     >
-      <Text className="text-center font-semibold text-foreground">
-        {title}
-      </Text>
-      {detail ? (
-        <Text className="mt-1 text-center text-sm text-muted">
-          {detail}
-        </Text>
-      ) : null}
-    </View>
+      <FeedbackState
+        title={title}
+        description={detail}
+        mode={variant}
+        icon={variant === 'error' ? 'error-outline' : 'receipt-long'}
+        className="py-8"
+      />
+    </Surface>
   );
 }

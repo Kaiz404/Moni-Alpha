@@ -9,4 +9,14 @@ module.exports = defineConfig([
   {
     ignores: ['dist/*'],
   },
+  {
+    rules: {
+      // Existing effect-driven sync and live-time UI intentionally use these
+      // patterns. Keep dependency validation enabled; only disable the React
+      // Compiler rules they are incompatible with.
+      'react-hooks/purity': 'off',
+      'react-hooks/refs': 'off',
+      'react-hooks/set-state-in-effect': 'off',
+    },
+  },
 ]);

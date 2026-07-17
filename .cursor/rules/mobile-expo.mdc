@@ -48,12 +48,13 @@ Input → `processing-queue.ts` (MMKV) → `background-processor.ts` (Android FG
 
 Tailwind via Uniwind `className` — **not** NativeWind. Design tokens live in `global.css`:
 
+- [`docs/DESIGN_SYSTEM.md`](../../docs/DESIGN_SYSTEM.md) is the visual source of truth. Follow its component hierarchy, native-currency, evidence, accessibility, and motion rules before inventing a new UI pattern.
 - Brand scale: `--color-brand-*` in `@theme`
-- Semantic light/dark: `--color-background`, `--color-primary`, etc. in `@layer theme` `@variant`
-- Screens use semantic utilities (`bg-primary`, `text-foreground`, `bg-canvas`) — never hardcode brand hex
+- Semantic light/dark: surface, text, border, brand, category, and state tokens in `@layer theme` `@variant`
+- Screens use semantic utilities (`bg-canvas`, `bg-card`, `text-foreground`, `text-muted`, `bg-primary`) — never hardcode brand hex
 - JS color props (charts, tab bar, icons): `useThemeTokens()` from `@/hooks/use-theme-tokens`
 - Theme preference: `lib/theme/preference.ts` → `Uniwind.setTheme('light' | 'dark' | 'system')`; default **light**
-- Shared chrome: `components/ui/brand-header`, `screen-shell`, `chip`, `primary-button`
+- Shared chrome: `components/ui/brand-header`, `screen-shell`, `surface`, `icon-action`, `form-field`, `chip`, `primary-button`
 
 ## Receipt camera (Android)
 

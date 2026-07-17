@@ -209,10 +209,10 @@ export default function HeatmapScreen() {
 
 const styles = StyleSheet.create({
   map: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
   },
   backdrop: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     backgroundColor: 'rgba(0, 0, 0, 0.12)',
   },
   bottomCard: {

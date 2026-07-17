@@ -5,11 +5,17 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import MaterialIcons from '@react-native-vector-icons/material-icons';
 import type {
   BudgetCoachCardsV1,
   SummaryInsightCardsV1,
 } from '@repo/types';
+
+import {
+  IconSymbol,
+  type IconSymbolName,
+} from '@/components/ui/icon-symbol';
+import { Surface } from '@/components/ui/surface';
+import { useThemeTokens } from '@/hooks/use-theme-tokens';
 
 type InsightPayload =
   | BudgetCoachCardsV1
@@ -27,41 +33,45 @@ type Props = {
   hasBudgetsConfigured?: boolean;
 };
 
-function kindStyles(
-  kind: NonNullable<InsightPayload>['cards'][number]['kind'],
-): {
-  border: string;
-  icon: keyof typeof MaterialIcons.glyphMap;
+type InsightStyle = {
+  surfaceClassName: string;
+  icon: IconSymbolName;
   iconColor: string;
-} {
+};
+
+function kindStyle(
+  kind: NonNullable<InsightPayload>['cards'][number]['kind'],
+  tokens: ReturnType<typeof useThemeTokens>,
+): InsightStyle {
   switch (kind) {
     case 'risk':
       return {
-        border: 'border-red-300 dark:border-red-600/80',
+        surfaceClassName: 'border-danger/40 bg-danger/10',
         icon: 'trending-up',
-        iconColor: '#dc2626',
+        iconColor: tokens.danger,
       };
     case 'positive':
       return {
-        border: 'border-emerald-300 dark:border-emerald-600/80',
+        surfaceClassName: 'border-primary/30 bg-primary-muted',
         icon: 'eco',
-        iconColor: '#059669',
+        iconColor: tokens.success,
       };
     case 'savings_opportunity':
       return {
-        border: 'border-amber-300 dark:border-amber-600/80',
+        surfaceClassName: 'border-warning/30 bg-accent-lemon/20',
         icon: 'account-balance',
-        iconColor: '#d97706',
+        iconColor: tokens.warning,
       };
     default:
       return {
-        border: 'border-slate-200 dark:border-slate-600',
+        surfaceClassName: 'border-border bg-surface-2',
         icon: 'insights',
-        iconColor: '#64748b',
+        iconColor: tokens.muted,
       };
   }
 }
 
+/** Evidence-led coaching only supplements the deterministic Insights story. */
 export function AiInsightSection({
   insight,
   generating,
@@ -72,17 +82,19 @@ export function AiInsightSection({
   onManageBudgets,
   hasBudgetsConfigured,
 }: Props) {
+  const tokens = useThemeTokens();
+
   return (
-    <View className="mb-4 overflow-hidden rounded-2xl border border-primary/40 bg-primary-muted">
+    <Surface tone="tray" className="mb-6 overflow-hidden">
       <View className="flex-row items-center justify-between bg-primary px-4 py-3">
-        <View className="flex-row items-center flex-1 min-w-0 pr-2">
-          <MaterialIcons
+        <View className="min-w-0 flex-1 flex-row items-center pr-3">
+          <IconSymbol
             name="auto-awesome"
-            size={22}
-            color="#e0e7ff"
+            size={20}
+            color={tokens.primaryForeground}
           />
           <Text
-            className="ml-2 text-base font-bold text-white"
+            className="ml-2 text-base font-bold text-primary-foreground"
             numberOfLines={1}
           >
             Budget coach
@@ -91,94 +103,93 @@ export function AiInsightSection({
         <TouchableOpacity
           onPress={onRefresh}
           disabled={disabled || generating}
-          className="flex-row items-center bg-white/20 px-3 py-1.5 rounded-full"
+          className="min-h-10 flex-row items-center rounded-full bg-primary-foreground/15 px-3"
           activeOpacity={0.85}
+          accessibilityRole="button"
+          accessibilityLabel="Refresh budget coach"
         >
           {generating ? (
             <ActivityIndicator
               size="small"
-              color="#e0e7ff"
+              color={tokens.primaryForeground}
             />
           ) : (
-            <MaterialIcons
+            <IconSymbol
               name="refresh"
-              size={18}
-              color="#e0e7ff"
+              size={17}
+              color={tokens.primaryForeground}
             />
           )}
-          <Text className="ml-1.5 text-xs font-semibold text-white">
-            {generating ? '…' : 'Refresh'}
+          <Text className="ml-1.5 text-xs font-bold text-primary-foreground">
+            {generating ? 'Working' : 'Refresh'}
           </Text>
         </TouchableOpacity>
       </View>
 
-      <View className="px-3 py-3">
+      <View className="px-4 py-4">
         {onManageBudgets ? (
           <Pressable
             onPress={onManageBudgets}
-            className="mb-2 flex-row items-center justify-between rounded-lg bg-card px-2 py-1.5"
+            className="mb-3 min-h-12 flex-row items-center justify-between rounded-2xl border border-border bg-card px-3 py-2"
+            accessibilityRole="button"
           >
-            <Text className="flex-1 pr-2 text-xs text-foreground">
+            <Text className="flex-1 pr-2 text-sm text-foreground">
               {hasBudgetsConfigured
                 ? 'Edit monthly category budgets'
-                : 'Set monthly budgets per category (all wallets)'}
+                : 'Set monthly category budgets'}
             </Text>
-            <MaterialIcons
+            <IconSymbol
               name="chevron-right"
-              size={18}
-              color="#64748b"
+              size={19}
+              color={tokens.muted}
             />
           </Pressable>
         ) : null}
 
         {stale && !generating ? (
-          <Text className="text-xs text-amber-800 dark:text-amber-200 mb-2">
-            Your data changed — refresh for updated coaching.
+          <Text className="mb-3 text-sm leading-5 text-warning">
+            Your data changed. Refresh for updated coaching.
           </Text>
         ) : null}
-
         {errorMessage ? (
-          <Text className="text-sm text-red-600 dark:text-red-400 mb-2">
+          <Text className="mb-3 text-sm leading-5 text-danger">
             {errorMessage}
           </Text>
         ) : null}
-
         {!insight?.cards?.length && !generating ? (
-          <Text className="text-sm text-muted leading-5">
-            Spending is analyzed against your category budgets for
-            this calendar month. The model suggests habits to save
-            money — numbers are computed on-device first.
+          <Text className="text-sm leading-5 text-muted">
+            Spending is compared with your category budgets for this
+            month. Amounts are calculated on this device first.
           </Text>
         ) : null}
-
         {generating && !insight?.cards?.length ? (
-          <View className="py-6 items-center">
-            <ActivityIndicator
-              size="large"
-              color="#6366f1"
-            />
-            <Text className="mt-2 text-sm text-muted">
-              Generating insights…
+          <View className="items-center py-7">
+            <ActivityIndicator size="large" color={tokens.primary} />
+            <Text className="mt-3 text-sm text-muted">
+              Preparing an evidence-led summary…
             </Text>
           </View>
         ) : null}
 
-        {insight?.cards?.map((card, i) => {
-          const st = kindStyles(card.kind);
+        {insight?.cards?.map((card, index) => {
+          const style = kindStyle(card.kind, tokens);
           return (
             <View
-              key={`${card.title}-${i}`}
-              className={`mb-2 rounded-xl border bg-card p-3 ${st.border}`}
+              key={[card.title, index].join('-')}
+              className={[
+                'mb-2 rounded-2xl border p-3',
+                style.surfaceClassName,
+              ].join(' ')}
             >
               <View className="flex-row items-start">
-                <MaterialIcons
-                  name={st.icon}
+                <IconSymbol
+                  name={style.icon}
                   size={20}
-                  color={st.iconColor}
-                  style={{ marginTop: 2 }}
+                  color={style.iconColor}
+                  style={{ marginTop: 1 }}
                 />
-                <View className="ml-2 flex-1 min-w-0">
-                  <Text className="text-sm font-semibold text-foreground">
+                <View className="ml-3 min-w-0 flex-1">
+                  <Text className="text-base font-bold text-foreground">
                     {card.title}
                   </Text>
                   <Text className="mt-1 text-sm leading-5 text-muted">
@@ -189,13 +200,12 @@ export function AiInsightSection({
             </View>
           );
         })}
-
         {insight?.disclaimer ? (
-          <Text className="text-[11px] text-muted mt-1 leading-4">
+          <Text className="mt-1 text-xs leading-4 text-muted">
             {insight.disclaimer}
           </Text>
         ) : null}
       </View>
-    </View>
+    </Surface>
   );
 }

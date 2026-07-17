@@ -1,104 +1,46 @@
-import { useEffect, useState } from 'react';
-import { DeviceEventEmitter } from 'react-native';
+/**
+ * Backwards-compatible receipt aliases for the user-initiated proposal
+ * presentation channel. Other capture sources (Chat and narration) use the
+ * source-neutral helpers in `lib/proposals` directly.
+ */
+import {
+  beginImmediateProposalReview,
+  clearImmediateProposalReview,
+  getImmediateProposalReview,
+  useImmediateProposalReview,
+} from '@/lib/proposals/immediate-review';
+import { waitForProposal, type ProposalWaitResult } from '@/lib/proposals/proposal-wait';
 
-import { getAll } from '@/lib/ai/processing-queue';
-import { PROPOSED_TRANSACTIONS_CHANGED } from '@/lib/proposals/proposed-transactions-events';
-import { getProposedTransactions } from '@/lib/supabase/proposed-transactions';
+const RECEIPT_COPY = {
+  title: 'Reading your receipt…',
+  detail: 'Moni will show every detail before saving anything.',
+  icon: 'receipt',
+} as const;
 
-type FabReceiptProcessingState = {
-  active: boolean;
-  proposalId: string | null;
-};
-
-let state: FabReceiptProcessingState = {
-  active: false,
-  proposalId: null,
-};
-const listeners = new Set<() => void>();
-
-function notify() {
-  listeners.forEach((listener) => listener());
-}
+export type ReceiptProposalWaitResult = ProposalWaitResult;
 
 export function startFabReceiptProcessing(proposalId: string) {
-  state = { active: true, proposalId };
-  notify();
+  beginImmediateProposalReview(proposalId, RECEIPT_COPY);
 }
 
 export function stopFabReceiptProcessing() {
-  if (!state.active) return;
-  state = { active: false, proposalId: null };
-  notify();
+  clearImmediateProposalReview();
 }
 
 export function getFabReceiptProcessingProposalId(): string | null {
-  return state.proposalId;
+  return getImmediateProposalReview().proposalId;
 }
 
 export function isFabReceiptProcessingActive(): boolean {
-  return state.active;
+  return getImmediateProposalReview().active;
 }
 
+/** React hook retained for the root processing overlay. */
 export function useFabReceiptProcessing() {
-  const [, bump] = useState(0);
-  useEffect(() => {
-    const listener = () => bump((n) => n + 1);
-    listeners.add(listener);
-    return () => {
-      listeners.delete(listener);
-    };
-  }, []);
-  return state;
+  return useImmediateProposalReview();
 }
 
-export type ReceiptProposalWaitResult = 'ready' | 'error' | 'timeout';
-
-/** Resolves when the queued receipt becomes a reviewable proposal or the queue item errors out. */
-export function waitForReceiptProposal(
-  proposalId: string,
-  timeoutMs = 120_000,
-): Promise<ReceiptProposalWaitResult> {
-  return new Promise((resolve) => {
-    const deadline = Date.now() + timeoutMs;
-    let settled = false;
-
-    const finish = (result: ReceiptProposalWaitResult) => {
-      if (settled) return;
-      settled = true;
-      sub.remove();
-      clearInterval(interval);
-      resolve(result);
-    };
-
-    const check = async () => {
-      try {
-        const proposals = await getProposedTransactions();
-        if (proposals.some((proposal) => proposal.id === proposalId)) {
-          finish('ready');
-          return;
-        }
-
-        const item = getAll().find((entry) => entry.id === proposalId);
-        if (item?.status === 'error') {
-          finish('error');
-          return;
-        }
-
-        if (Date.now() > deadline) {
-          finish('timeout');
-        }
-      } catch {
-        if (Date.now() > deadline) finish('timeout');
-      }
-    };
-
-    const sub = DeviceEventEmitter.addListener(PROPOSED_TRANSACTIONS_CHANGED, () => {
-      void check();
-    });
-    const interval = setInterval(() => {
-      void check();
-    }, 400);
-
-    void check();
-  });
+/** Kept for existing receipt callers; the generic helper works for every queue item. */
+export function waitForReceiptProposal(proposalId: string, timeoutMs = 120_000) {
+  return waitForProposal(proposalId, timeoutMs);
 }

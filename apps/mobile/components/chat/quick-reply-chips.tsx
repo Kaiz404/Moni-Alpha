@@ -1,9 +1,10 @@
-import { View, Pressable, Text } from 'react-native';
+import { Text, View } from 'react-native';
 
+import { TactilePressable } from '@/components/ui/tactile-pressable';
 import type { QuickReplyOption } from '@/lib/ai/chat/messages';
 
 const LABELS: Record<QuickReplyOption, string> = {
-  log_transaction: 'Log transaction',
+  log_transaction: 'Review transaction',
   analyze_finances: 'Analyze finances',
 };
 
@@ -12,22 +13,24 @@ type QuickReplyChipsProps = {
   onSelect: (option: QuickReplyOption) => void;
 };
 
+/** Explicit suggested actions, not decorative chat chips. */
 export function QuickReplyChips({
   options,
   onSelect,
 }: QuickReplyChipsProps) {
   return (
-    <View className="mt-3 flex-row flex-wrap gap-2">
+    <View className="mt-3 gap-2">
       {options.map((option) => (
-        <Pressable
+        <TactilePressable
           key={option}
           onPress={() => onSelect(option)}
-          className="rounded-full border border-primary/40 bg-primary-muted px-3 py-1.5"
+          className="self-start rounded-xl bg-primary-muted px-3 py-2"
+          accessibilityLabel={LABELS[option]}
         >
-          <Text className="text-sm font-medium text-primary">
+          <Text className="text-[13px] font-semibold text-primary">
             {LABELS[option]}
           </Text>
-        </Pressable>
+        </TactilePressable>
       ))}
     </View>
   );

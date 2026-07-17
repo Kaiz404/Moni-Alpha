@@ -1,5 +1,10 @@
 import { Text, TouchableOpacity, View } from 'react-native';
-import MaterialIcons from '@react-native-vector-icons/material-icons';
+
+import {
+  IconSymbol,
+  type IconSymbolName,
+} from '@/components/ui/icon-symbol';
+import { useThemeTokens } from '@/hooks/use-theme-tokens';
 
 type PermissionColumnProps = {
   title: string;
@@ -8,14 +13,15 @@ type PermissionColumnProps = {
   actionLabel?: string;
   onAction?: () => void;
   actionDisabled?: boolean;
-  icon: keyof typeof MaterialIcons.glyphMap;
+  icon: IconSymbolName;
   iconTint: string;
   muted?: boolean;
   showAction: boolean;
-  /** e.g. `w-[48%]` when using a 2×2 grid */
+  /** Supports legacy grid callers; Profile uses a full-width grouped row. */
   widthClassName?: string;
 };
 
+/** A readable permission cell for the Capture sources settings group. */
 export function PermissionColumn({
   title,
   statusLabel,
@@ -27,63 +33,68 @@ export function PermissionColumn({
   iconTint,
   muted,
   showAction,
-  widthClassName = 'flex-1 min-w-0',
+  widthClassName = 'w-full',
 }: PermissionColumnProps) {
+  const tokens = useThemeTokens();
+  const stateLabel = muted
+    ? 'Unavailable on this device'
+    : granted
+      ? 'Enabled'
+      : statusLabel;
+
   return (
     <View
-      className={`rounded-2xl border border-border bg-card p-3 ${widthClassName}`}
+      className={`min-h-18 flex-row items-center px-4 py-3.5 ${widthClassName}`}
     >
       <View
-        className="mx-auto h-9 w-9 items-center justify-center rounded-xl"
+        className="h-11 w-11 items-center justify-center rounded-2xl"
         style={{ backgroundColor: iconTint }}
       >
-        <MaterialIcons
+        <IconSymbol
           name={icon}
           size={20}
-          color="#fff"
+          color={tokens.primaryForeground}
         />
       </View>
-      <Text
-        className="mt-2 text-center text-xs font-semibold text-foreground"
-        numberOfLines={2}
-      >
-        {title}
-      </Text>
-      <Text
-        className="mt-1 text-center text-[10px] leading-tight text-muted"
-        numberOfLines={2}
-      >
-        {statusLabel}
-      </Text>
+      <View className="ml-3 flex-1 pr-3">
+        <Text
+          className="text-[17px] font-semibold text-foreground"
+          numberOfLines={1}
+        >
+          {title}
+        </Text>
+        <Text
+          className="mt-0.5 text-[13px] leading-[17px] text-muted"
+          numberOfLines={2}
+        >
+          {stateLabel}
+        </Text>
+      </View>
       {muted ? (
-        <Text className="mt-2 text-center text-[10px] text-muted">
-          —
+        <Text className="text-[13px] font-semibold text-muted">
+          Not available
         </Text>
       ) : granted ? (
-        <View className="mt-2 rounded-lg bg-success/15 py-2">
-          <Text className="text-center text-[10px] font-semibold text-success">
-            On
-          </Text>
+        <View className="rounded-xl bg-success/15 px-3 py-2">
+          <Text className="text-[13px] font-semibold text-success">On</Text>
         </View>
       ) : showAction && actionLabel && onAction ? (
         <TouchableOpacity
-          className="mt-2 rounded-lg bg-primary px-1.5 py-2"
+          className="rounded-xl bg-primary px-3 py-2"
           onPress={onAction}
           disabled={actionDisabled}
           activeOpacity={0.85}
         >
           <Text
-            className="text-center text-[10px] font-semibold leading-tight text-white"
-            numberOfLines={2}
+            className="text-center text-[13px] font-semibold text-primary-foreground"
+            numberOfLines={1}
           >
             {actionLabel}
           </Text>
         </TouchableOpacity>
       ) : (
-        <View className="mt-2 rounded-lg bg-background-muted py-2">
-          <Text className="text-center text-[10px] font-semibold text-muted">
-            Off
-          </Text>
+        <View className="rounded-xl bg-surface-2 px-3 py-2">
+          <Text className="text-[13px] font-semibold text-muted">Off</Text>
         </View>
       )}
     </View>

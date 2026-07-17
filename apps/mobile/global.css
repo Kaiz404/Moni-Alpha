@@ -2,91 +2,166 @@
 @import 'uniwind';
 
 /*
- * Moni design tokens (Uniwind / Tailwind v4).
- * Change brand colors here — screens should use semantic utilities
- * (bg-primary, text-foreground, bg-canvas, …), not raw hex.
+ * Moni visual language (Uniwind / Tailwind v4).
+ *
+ * Semantic utilities are the implementation contract: use `bg-canvas`,
+ * `bg-card`, `text-foreground`, `text-muted`, and state/category tokens
+ * instead of raw colours in screens. The starting palette and component
+ * rules are documented in docs/DESIGN_SYSTEM.md.
  */
 
 @theme {
-  /* Money-green brand scale */
-  --color-brand-50: #ecfdf5;
-  --color-brand-100: #d1fae5;
-  --color-brand-200: #a7f3d0;
-  --color-brand-300: #6ee7b7;
-  --color-brand-400: #34d399;
-  --color-brand-500: #10b981;
-  --color-brand-600: #059669;
-  --color-brand-700: #047857;
-  --color-brand-800: #065f46;
-  --color-brand-900: #064e3b;
+  /* A restrained mint scale for utility states that need a shade ramp. */
+  --color-brand-50: #f0faf1;
+  --color-brand-100: #dcefe0;
+  --color-brand-200: #b9dfc0;
+  --color-brand-300: #8ecf9d;
+  --color-brand-400: #68b97b;
+  --color-brand-500: #438e5a;
+  --color-brand-600: #236b47;
+  --color-brand-700: #1d593c;
+  --color-brand-800: #174831;
+  --color-brand-900: #103322;
+
+  /* Explicit shape and rhythm tokens from the design system. */
+  --radius-moni-sm: 10px;
+  --radius-moni-md: 16px;
+  --radius-moni-lg: 22px;
+  --radius-moni-xl: 28px;
+  --spacing-moni-1: 4px;
+  --spacing-moni-2: 8px;
+  --spacing-moni-3: 12px;
+  --spacing-moni-4: 16px;
+  --spacing-moni-5: 20px;
+  --spacing-moni-6: 24px;
+  --spacing-moni-8: 32px;
+  --spacing-moni-10: 40px;
 }
 
 @layer theme {
   :root {
     @variant light {
-      /* Neutral surfaces stay near-white so the green accent is the one strong color moment */
+      /* Warm, matte foundations. */
       --color-background: #ffffff;
-      --color-background-muted: #f7f7f6;
-      --color-canvas: #f5f6f5;
+      --color-background-muted: #f7f7f2;
+      --color-canvas: #f7f7f2;
       --color-card: #ffffff;
-      --color-surface-1: #fafafa;
-      --color-surface-2: #f0f0ef;
-      --color-foreground: #111111;
-      --color-muted: #6b7280;
-      --color-border: #e6e7e5;
-      --color-border-subtle: #eef0ee;
+      --color-surface-1: #ffffff;
+      --color-surface-2: #eff0ea;
+      --color-surface-raised: #ffffff;
+      --color-surface-tray: #dcefe0;
 
-      --color-primary: #059669;
-      --color-primary-soft: #10b981;
+      --color-foreground: #1e211e;
+      --color-muted: #60665e;
+      --color-muted-strong: #454b44;
+      --color-inverse: #f7f7f2;
+      --color-border: #dee1d9;
+      --color-border-subtle: #e9ebe5;
+      --color-border-strong: #c9cdc3;
+
+      /* Brand and selective expressive accents. */
+      --color-primary: #236b47;
+      --color-primary-soft: #8ecf9d;
       --color-primary-foreground: #ffffff;
-      --color-primary-muted: #d1fae5;
-      --color-accent: #10b981;
-      --color-surface-tray: #a7f3d0;
+      --color-primary-muted: #dcefe0;
+      --color-accent: #8ecf9d;
+      --color-accent-lilac: #c9b7f4;
+      --color-accent-peach: #f7c6a8;
+      --color-accent-lemon: #f1dc78;
+      --color-accent-coral: #f19a91;
+      --color-accent-aqua: #9cd9d1;
+      --color-brand-mint: #8ecf9d;
+      --color-brand-mint-ink: #236b47;
 
-      --color-danger: #dc2626;
-      --color-success: #059669;
-      --color-warning: #d97706;
-      --color-income: #059669;
-      --color-expense: #dc2626;
-      --color-transfer: #0284c7;
+      /* Financial states: always pair with label/icon in the UI. */
+      --color-success: #236b47;
+      --color-danger: #b9413d;
+      --color-warning: #8a5b13;
+      --color-income: #236b47;
+      --color-expense: #b9413d;
+      --color-transfer: #277b85;
+      --color-state-pending: #7660ad;
+      --color-state-attention: #8a5b13;
+      --color-state-approved: #236b47;
+      --color-state-destructive: #b9413d;
+
+      /* Stable category memory aids. */
+      --color-category-food: #d46f64;
+      --color-category-transport: #4f9a92;
+      --color-category-shopping: #9a7fd1;
+      --color-category-home: #d59a45;
+      --color-category-health: #61a777;
+      --color-category-entertainment: #b67eaa;
+      --color-category-income: #438e5a;
+      --color-category-other: #7b8179;
+
+      /* Chart colours intentionally mirror the category palette. */
+      --color-chart-1: #438e5a;
+      --color-chart-2: #4f9a92;
+      --color-chart-3: #9a7fd1;
+      --color-chart-4: #d59a45;
+      --color-chart-5: #d46f64;
+      --color-chart-6: #b67eaa;
     }
 
     @variant dark {
-      /* Neutral surfaces go near-black (not green-tinted) so the accent still pops */
-      --color-background: #0a0a0a;
-      --color-background-muted: #121212;
-      --color-canvas: #0d0d0d;
-      --color-card: #161616;
-      --color-surface-1: #141414;
-      --color-surface-2: #1c1c1c;
-      --color-foreground: #fafafa;
-      --color-muted: #a1a1aa;
-      --color-border: #272727;
-      --color-border-subtle: #1f1f1f;
+      /* Carbon surfaces retain a warm, readable hierarchy. */
+      --color-background: #1d1f1c;
+      --color-background-muted: #181a17;
+      --color-canvas: #141513;
+      --color-card: #1d1f1c;
+      --color-surface-1: #1d1f1c;
+      --color-surface-2: #282a27;
+      --color-surface-raised: #262925;
+      --color-surface-tray: #263b2c;
 
-      --color-primary: #10b981;
-      --color-primary-soft: #34d399;
-      --color-primary-foreground: #ecfdf5;
-      --color-primary-muted: #064e3b;
-      --color-accent: #34d399;
-      --color-surface-tray: #065f46;
+      --color-foreground: #f4f5ef;
+      --color-muted: #b9bdb5;
+      --color-muted-strong: #d2d5cc;
+      --color-inverse: #1d1f1c;
+      --color-border: #343732;
+      --color-border-subtle: #2a2d28;
+      --color-border-strong: #50544c;
 
-      --color-danger: #f87171;
-      --color-success: #34d399;
-      --color-warning: #fbbf24;
-      --color-income: #34d399;
-      --color-expense: #f87171;
-      --color-transfer: #38bdf8;
+      --color-primary: #a9e8b5;
+      --color-primary-soft: #79c98a;
+      --color-primary-foreground: #17351f;
+      --color-primary-muted: #263b2c;
+      --color-accent: #79c98a;
+      --color-accent-lilac: #bda7ef;
+      --color-accent-peach: #e9a77f;
+      --color-accent-lemon: #d9bc4d;
+      --color-accent-coral: #e98780;
+      --color-accent-aqua: #7dc7be;
+      --color-brand-mint: #79c98a;
+      --color-brand-mint-ink: #a9e8b5;
+
+      --color-success: #a9e8b5;
+      --color-danger: #f3a39d;
+      --color-warning: #efd279;
+      --color-income: #a9e8b5;
+      --color-expense: #f3a39d;
+      --color-transfer: #91d5cf;
+      --color-state-pending: #c8b8f4;
+      --color-state-attention: #efd279;
+      --color-state-approved: #a9e8b5;
+      --color-state-destructive: #f3a39d;
+
+      --color-category-food: #ec9c92;
+      --color-category-transport: #8fd2ca;
+      --color-category-shopping: #c7b4f0;
+      --color-category-home: #e9bd6b;
+      --color-category-health: #96d4a6;
+      --color-category-entertainment: #d5a6cb;
+      --color-category-income: #a9e8b5;
+      --color-category-other: #b9bdb5;
+
+      --color-chart-1: #a9e8b5;
+      --color-chart-2: #8fd2ca;
+      --color-chart-3: #c7b4f0;
+      --color-chart-4: #e9bd6b;
+      --color-chart-5: #ec9c92;
+      --color-chart-6: #d5a6cb;
     }
   }
-}
-
-/* Always available to useCSSVariable (charts, tab bar, maps, ActivityIndicator) */
-@theme static {
-  --color-chart-1: #059669;
-  --color-chart-2: #0d9488;
-  --color-chart-3: #0284c7;
-  --color-chart-4: #7c3aed;
-  --color-chart-5: #db2777;
-  --color-chart-6: #d97706;
 }

@@ -6,7 +6,6 @@ import {
   useState,
 } from 'react';
 import {
-  ActivityIndicator,
   AppState,
   DeviceEventEmitter,
   Modal,
@@ -16,372 +15,210 @@ import {
 } from 'react-native';
 import { usePathname, router } from 'expo-router';
 import MaterialIcons from '@react-native-vector-icons/material-icons';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   minorToDecimal,
   type ProposedTransaction,
 } from '@repo/types';
-import {
-  getProposedTransactions,
-  approveProposedTransaction,
-  rejectProposedTransaction,
-} from '@/lib/supabase/proposed-transactions';
-import { PROPOSED_TRANSACTIONS_CHANGED } from '@/lib/proposals/proposed-transactions-events';
-import { getWallets } from '@/lib/supabase/wallets';
-import { getCategoryNameRows } from '@/lib/supabase/categories';
-import { getDefaultWalletId } from '@/lib/wallets/default-wallet';
-import {
-  displayCurrencyForProposal,
-  resolveInitialWalletId,
-} from '@/lib/wallets/proposal-wallet';
+
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
+import { PROPOSED_TRANSACTIONS_CHANGED } from '@/lib/proposals/proposed-transactions-events';
 import {
-  getFabReceiptProcessingProposalId,
-  stopFabReceiptProcessing,
-} from '@/lib/receipts/fab-receipt-processing';
-
-type WalletOption = {
-  id: string;
-  name: string;
-  type: string;
-  currency: string;
-};
-
-const SOURCE_ICON: Record<
-  string,
-  keyof typeof MaterialIcons.glyphMap
-> = {
-  text: 'chat-bubble-outline',
-  image: 'photo-camera',
-  notification: 'notifications-none',
-};
+  proposalPresentationForSource,
+  quietReviewCopy,
+} from '@/lib/proposals/presentation-policy';
+import { getProposedTransactions } from '@/lib/supabase/proposed-transactions';
 
 /**
- * Minimal "here's what Moni found" popup shown after AI extraction finishes.
- * Kept intentionally light — full editing lives at /proposal/[id].
+ * Quiet notification-only entry to the review queue. User-initiated receipt
+ * and Chat proposals bypass this sheet and open the full review artifact once
+ * their transparent processing state is complete.
  */
 export function ProposalSummarySheet() {
   const tokens = useThemeTokens();
-  const insets = useSafeAreaInsets();
   const pathname = usePathname();
   const [proposals, setProposals] = useState<ProposedTransaction[]>(
     [],
   );
-  const [wallets, setWallets] = useState<WalletOption[]>([]);
-  const [categoryNames, setCategoryNames] = useState<
-    Record<string, string>
-  >({});
   const [isLoading, setIsLoading] = useState(true);
-  const [isActioning, setIsActioning] = useState(false);
-  const proposalsRef = useRef(proposals);
-  proposalsRef.current = proposals;
-  const appStateRef = useRef(AppState.currentState);
-  /** IDs removed locally while delete/approve syncs — prevents reload races from re-showing the sheet. */
-  const handledIdsRef = useRef(new Set<string>());
+  const deferredIds = useRef(new Set<string>());
+  const appState = useRef(AppState.currentState);
 
-  const withoutHandled = useCallback(
-    (rows: ProposedTransaction[]) =>
-      rows.filter((p) => !handledIdsRef.current.has(p.id)),
-    [],
-  );
-
-  const loadData = useCallback(async () => {
-    const quietRefresh = proposalsRef.current.length > 0;
-    if (!quietRefresh) setIsLoading(true);
+  const load = useCallback(async () => {
     try {
-      const [pending, ws, categoryRows] = await Promise.all([
-        getProposedTransactions(),
-        getWallets(),
-        getCategoryNameRows(),
-      ]);
-      setProposals(withoutHandled(pending));
-      setWallets(
-        ws.map((w) => ({
-          id: w.id,
-          name: w.name ?? 'Wallet',
-          type: w.type ?? 'other',
-          currency: w.currency ?? 'MYR',
-        })),
-      );
-      setCategoryNames(
-        Object.fromEntries(
-          categoryRows.map((row) => [
-            row.id,
-            row.name ?? 'Uncategorized',
-          ]),
+      const pending = await getProposedTransactions();
+      setProposals(
+        pending.filter(
+          (proposal) =>
+            proposalPresentationForSource(proposal.sourceType) ===
+            'quiet',
         ),
       );
-    } catch (e) {
-      console.warn('[ProposalSummary] load error:', e);
+    } catch (error) {
+      console.warn('[ProposalSummary] failed to load queue', error);
     } finally {
-      if (!quietRefresh) setIsLoading(false);
+      setIsLoading(false);
     }
-  }, [withoutHandled]);
-
-  useEffect(() => {
-    loadData();
-  }, [loadData]);
-
-  useEffect(() => {
-    const sub = DeviceEventEmitter.addListener(
-      PROPOSED_TRANSACTIONS_CHANGED,
-      () => loadData(),
-    );
-    return () => sub.remove();
-  }, [loadData]);
-
-  useEffect(() => {
-    const sub = AppState.addEventListener('change', (next) => {
-      if (
-        appStateRef.current.match(/inactive|background/) &&
-        next === 'active'
-      )
-        loadData();
-      appStateRef.current = next;
-    });
-    return () => sub.remove();
-  }, [loadData]);
-
-  const current = proposals[0];
-  /** Hide while the full detail page is open to avoid a native Modal covering the pushed route. */
-  const suppressed = pathname.startsWith('/proposal');
-  const visible =
-    proposals.length > 0 && !isLoading && !!current && !suppressed;
-
-  useEffect(() => {
-    if (!visible || !current) return;
-    const pendingFabProposalId = getFabReceiptProcessingProposalId();
-    if (pendingFabProposalId && pendingFabProposalId === current.id) {
-      stopFabReceiptProcessing();
-    }
-  }, [visible, current?.id]);
-
-  const resolvedWalletId = useMemo(() => {
-    if (!current) return null;
-    return resolveInitialWalletId(
-      current,
-      wallets,
-      getDefaultWalletId(),
-    );
-  }, [current, wallets]);
-
-  const resolvedWallet = wallets.find(
-    (w) => w.id === resolvedWalletId,
-  );
-  const displayCurrency = current
-    ? displayCurrencyForProposal(
-        { walletId: resolvedWalletId, currency: current.currency },
-        wallets,
-        getDefaultWalletId(),
-      )
-    : '';
-
-  const isTransfer = current?.type === 'transfer';
-  const isIncome = current?.type === 'income';
-  const amountColor = isTransfer
-    ? tokens.transfer
-    : isIncome
-      ? tokens.income
-      : tokens.expense;
-  const categoryLabel = current?.categoryId
-    ? categoryNames[current.categoryId]
-    : (current?.categoryHint ?? null);
-  const canQuickApprove = !isTransfer && !!resolvedWalletId;
-
-  const removeProposal = useCallback((id: string) => {
-    handledIdsRef.current.add(id);
-    setProposals((prev) => prev.filter((p) => p.id !== id));
   }, []);
 
-  const handleReject = useCallback(async () => {
-    if (!current || isActioning) return;
-    const id = current.id;
-    removeProposal(id);
-    setIsActioning(true);
-    try {
-      await rejectProposedTransaction(id);
-    } catch (e) {
-      handledIdsRef.current.delete(id);
-      console.error('[ProposalSummary] reject error:', e);
-      await loadData();
-    } finally {
-      setIsActioning(false);
-    }
-  }, [current, isActioning, removeProposal, loadData]);
+  useEffect(() => {
+    void load();
+    const change = DeviceEventEmitter.addListener(
+      PROPOSED_TRANSACTIONS_CHANGED,
+      () => void load(),
+    );
+    const subscription = AppState.addEventListener(
+      'change',
+      (nextState) => {
+        if (
+          appState.current.match(/inactive|background/) &&
+          nextState === 'active'
+        ) {
+          deferredIds.current.clear();
+          void load();
+        }
+        appState.current = nextState;
+      },
+    );
+    return () => {
+      change.remove();
+      subscription.remove();
+    };
+  }, [load]);
 
-  const handleApprove = useCallback(async () => {
-    if (!current || isActioning || !resolvedWalletId) return;
-    const id = current.id;
-    removeProposal(id);
-    setIsActioning(true);
-    try {
-      await approveProposedTransaction(current, {
-        walletId: resolvedWalletId,
-      });
-    } catch (e) {
-      handledIdsRef.current.delete(id);
-      console.error('[ProposalSummary] approve error:', e);
-      await loadData();
-    } finally {
-      setIsActioning(false);
-    }
-  }, [
-    current,
-    isActioning,
-    resolvedWalletId,
-    removeProposal,
-    loadData,
-  ]);
+  const current = useMemo(
+    () =>
+      proposals.find(
+        (proposal) => !deferredIds.current.has(proposal.id),
+      ),
+    [proposals],
+  );
+  const suppressed = pathname.startsWith('/proposal');
+  const visible = !isLoading && !!current && !suppressed;
 
-  const handleEditDetails = useCallback(() => {
+  const defer = useCallback(() => {
+    if (!current) return;
+    deferredIds.current.add(current.id);
+    setProposals((existing) => [...existing]);
+  }, [current]);
+
+  const review = useCallback(() => {
     if (!current) return;
     router.push({
       pathname: '/proposal/[id]',
       params: { id: current.id },
-    } as any);
+    } as never);
   }, [current]);
 
-  if (!visible) return null;
+  if (!visible || !current) return null;
 
+  const copy = quietReviewCopy(proposals.length);
   const title =
-    (isTransfer ? null : current.merchant) ||
-    current.description ||
-    (isTransfer ? 'Transfer' : isIncome ? 'Income' : 'Expense');
+    current.merchant ?? current.description ?? 'Transaction';
+  const direction =
+    current.type === 'income'
+      ? 'Income'
+      : current.type === 'transfer'
+        ? 'Transfer'
+        : 'Expense';
+  const amountColor =
+    current.type === 'income'
+      ? tokens.income
+      : current.type === 'transfer'
+        ? tokens.transfer
+        : tokens.expense;
 
   return (
     <Modal
-      visible={visible}
+      visible
       transparent
       animationType="slide"
       statusBarTranslucent
-      onRequestClose={handleReject}
+      onRequestClose={defer}
     >
-      <View className="flex-1 justify-end bg-black/40">
-        <View
+      <View className="flex-1 justify-end bg-foreground/15">
+        <Pressable
           className="flex-1"
-          accessibilityElementsHidden
-          importantForAccessibility="no-hide-descendants"
+          onPress={defer}
+          accessibilityRole="button"
+          accessibilityLabel="Review this later"
         />
-        <View
-          className="rounded-t-3xl bg-background px-6 pt-5"
-          style={{ paddingBottom: Math.max(insets.bottom, 32) }}
-        >
-          <View className="mb-4 flex-row items-center gap-2">
-            <View className="h-8 w-8 items-center justify-center rounded-full bg-background-muted">
+        <View className="rounded-t-[28px] border-t border-border bg-card px-6 pb-8 pt-4">
+          <View className="mb-5 h-1.5 w-10 self-center rounded-full bg-border" />
+          <View className="flex-row items-start gap-3">
+            <View className="h-11 w-11 items-center justify-center rounded-full bg-primary-muted">
               <MaterialIcons
-                name={
-                  SOURCE_ICON[current.sourceType ?? 'notification']
-                }
-                size={16}
-                color={tokens.muted}
+                name="notifications-none"
+                size={22}
+                color={tokens.primary}
               />
             </View>
-            <Text className="flex-1 text-sm font-medium text-muted">
-              Moni found a transaction
-            </Text>
-            {proposals.length > 1 ? (
-              <View className="rounded-full bg-background-muted px-2 py-0.5">
-                <Text className="text-xs text-muted">
-                  +{proposals.length - 1} more
-                </Text>
-              </View>
-            ) : null}
-          </View>
-
-          <Text
-            className="text-sm text-muted"
-            numberOfLines={1}
-          >
-            {title}
-          </Text>
-          <View className="mt-1 flex-row items-baseline gap-2">
-            <Text
-              className="text-4xl font-bold"
-              style={{ color: amountColor }}
-            >
-              {isTransfer ? '' : isIncome ? '+' : '-'}
-              {current.amountMinor == null
-                ? '—'
-                : minorToDecimal(current.amountMinor)}
-            </Text>
-            <Text className="text-base font-medium text-muted">
-              {displayCurrency}
-            </Text>
-          </View>
-
-          <View className="mt-4 flex-row items-center gap-2">
-            <View className="flex-row items-center gap-1.5 rounded-full bg-background-muted px-3 py-1.5">
-              <MaterialIcons
-                name="account-balance-wallet"
-                size={14}
-                color={tokens.muted}
-              />
-              <Text className="text-xs font-medium text-foreground">
-                {resolvedWallet?.name ?? 'Choose wallet'}
+            <View className="flex-1">
+              <Text className="text-base font-bold text-foreground">
+                Review a notification capture
+              </Text>
+              <Text className="mt-1 text-sm leading-5 text-muted">
+                Moni found a possible transaction. Nothing is saved
+                until you approve it.
               </Text>
             </View>
-            {categoryLabel ? (
-              <View className="flex-row items-center gap-1.5 rounded-full bg-background-muted px-3 py-1.5">
-                <MaterialIcons
-                  name="sell"
-                  size={14}
-                  color={tokens.muted}
-                />
-                <Text className="text-xs font-medium text-foreground">
-                  {categoryLabel}
-                </Text>
-              </View>
-            ) : null}
           </View>
 
           <Pressable
-            onPress={handleEditDetails}
-            className="mt-4 self-start"
-            hitSlop={6}
+            onPress={review}
+            className="mt-5 rounded-[22px] border border-border bg-background-muted px-4 py-4"
+            accessibilityRole="button"
+            accessibilityLabel={`Review ${title}`}
           >
-            <Text className="text-sm font-semibold text-primary">
-              Edit details
-            </Text>
+            <View className="flex-row items-start justify-between gap-3">
+              <View className="min-w-0 flex-1">
+                <Text className="text-xs font-semibold uppercase tracking-wide text-muted">
+                  {direction} from{' '}
+                  {current.sourceApp ?? 'notification'}
+                </Text>
+                <Text
+                  className="mt-1 text-base font-bold text-foreground"
+                  numberOfLines={1}
+                >
+                  {title}
+                </Text>
+              </View>
+              <View className="items-end">
+                <Text
+                  className="text-lg font-bold"
+                  style={{ color: amountColor }}
+                >
+                  {current.amountMinor == null
+                    ? '—'
+                    : minorToDecimal(current.amountMinor)}
+                </Text>
+                <Text className="mt-0.5 text-xs font-semibold text-muted">
+                  {current.currency}
+                </Text>
+              </View>
+            </View>
           </Pressable>
 
-          <View className="mt-5 flex-row gap-3">
+          <Text className="mt-3 text-center text-xs text-muted">
+            {copy.queueLabel}
+          </Text>
+          <View className="mt-4 flex-row gap-3">
             <Pressable
-              onPress={handleReject}
-              disabled={isActioning}
-              className="flex-1 items-center rounded-xl border border-border bg-card py-3.5"
+              onPress={defer}
+              className="flex-1 items-center justify-center rounded-2xl border border-border bg-card py-3.5"
+              accessibilityRole="button"
             >
-              {isActioning ? (
-                <ActivityIndicator
-                  size="small"
-                  color={tokens.muted}
-                />
-              ) : (
-                <Text className="text-base font-semibold text-foreground">
-                  Decline
-                </Text>
-              )}
+              <Text className="text-base font-semibold text-foreground">
+                {copy.secondaryLabel}
+              </Text>
             </Pressable>
             <Pressable
-              onPress={
-                canQuickApprove ? handleApprove : handleEditDetails
-              }
-              disabled={isActioning}
-              className={`flex-1 items-center rounded-xl py-3.5 ${canQuickApprove ? 'bg-primary' : 'bg-primary/60'}`}
+              onPress={review}
+              className="flex-1 items-center justify-center rounded-2xl bg-primary py-3.5"
+              accessibilityRole="button"
             >
-              {isActioning ? (
-                <ActivityIndicator
-                  size="small"
-                  color={tokens.primaryForeground}
-                />
-              ) : (
-                <Text className="text-base font-semibold text-primary-foreground">
-                  {canQuickApprove
-                    ? 'Approve'
-                    : isTransfer
-                      ? 'Choose wallets'
-                      : 'Choose wallet'}
-                </Text>
-              )}
+              <Text className="text-base font-semibold text-primary-foreground">
+                {copy.primaryLabel}
+              </Text>
             </Pressable>
           </View>
         </View>

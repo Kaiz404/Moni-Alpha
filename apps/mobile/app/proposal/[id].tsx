@@ -13,6 +13,7 @@ import { BrandHeader } from '@/components/ui/brand-header';
 import { ScreenShell } from '@/components/ui/screen-shell';
 import {
   ProposalForm,
+  type CategoryOption,
   type EditedFields,
   type WalletOption,
 } from '@/components/proposal/proposal-form';
@@ -24,6 +25,7 @@ import {
   rejectProposedTransaction,
 } from '@/lib/supabase/proposed-transactions';
 import { getWallets } from '@/lib/supabase/wallets';
+import { getCategories } from '@/lib/supabase/categories';
 
 export default function ProposalDetailScreen() {
   const tokens = useThemeTokens();
@@ -36,6 +38,7 @@ export default function ProposalDetailScreen() {
   const [proposal, setProposal] =
     useState<ProposedTransaction | null>(null);
   const [wallets, setWallets] = useState<WalletOption[]>([]);
+  const [categories, setCategories] = useState<CategoryOption[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [isActioning, setIsActioning] = useState(false);
@@ -50,9 +53,10 @@ export default function ProposalDetailScreen() {
     setIsLoading(true);
     setLoadError(null);
     try {
-      const [pending, ws] = await Promise.all([
+      const [pending, ws, categoryRows] = await Promise.all([
         getProposedTransactions(),
         getWallets(),
+        getCategories(),
       ]);
       const found = pending.find((p) => p.id === proposalId) ?? null;
       setProposal(found);
@@ -62,6 +66,14 @@ export default function ProposalDetailScreen() {
           name: w.name ?? 'Wallet',
           type: w.type ?? 'other',
           currency: w.currency ?? 'MYR',
+        })),
+      );
+      setCategories(
+        categoryRows.map((category) => ({
+          id: category.id,
+          name: category.name ?? 'Category',
+          icon: category.icon,
+          type: category.type,
         })),
       );
       if (!found)
@@ -148,6 +160,8 @@ export default function ProposalDetailScreen() {
               ? null
               : edited.merchant || null,
           description: edited.description || null,
+          categoryId:
+            effectiveType === 'transfer' ? null : edited.categoryId,
           transactionDate: transactionDateIso,
         };
 
@@ -210,6 +224,7 @@ export default function ProposalDetailScreen() {
           <ProposalForm
             proposal={proposal}
             wallets={wallets}
+            categories={categories}
             isActioning={isActioning}
             onApprove={handleApprove}
             onReject={handleReject}

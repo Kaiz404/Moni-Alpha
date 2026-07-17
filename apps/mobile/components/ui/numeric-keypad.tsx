@@ -1,6 +1,6 @@
 import { Pressable, Text, View } from 'react-native';
-import MaterialIcons from '@react-native-vector-icons/material-icons';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
+import { IconSymbol } from './icon-symbol';
 
 const ROWS = [
   ['1', '2', '3'],
@@ -31,11 +31,11 @@ export function NumericKeypad({ onKeyPress }: NumericKeypadProps) {
               accessibilityLabel={
                 key === '⌫' ? 'Backspace' : `Digit ${key}`
               }
-              className="flex-1 items-center justify-center rounded-2xl bg-card active:bg-background-muted"
+              className="flex-1 items-center justify-center rounded-2xl border border-border-subtle bg-card active:bg-surface-2"
               style={{ height: 60 }}
             >
               {key === '⌫' ? (
-                <MaterialIcons
+                <IconSymbol
                   name="backspace"
                   size={22}
                   color={tokens.muted}

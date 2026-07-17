@@ -1,66 +1,53 @@
-import { useMemo } from 'react';
 import { Text, View } from 'react-native';
-import {
-  VictoryAxis,
-  VictoryChart,
-  VictoryLegend,
-  VictoryLine,
-  VictoryPie,
-  VictoryTheme,
-} from 'victory-native';
-import type { MinorAmount } from '@/lib/finance/money';
 
+import { DonutChart } from '@/components/charts/donut-chart';
+import { LineChart } from '@/components/charts/line-chart';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
-import { minorToNumber } from '@/lib/finance/money';
-import type { CurrencyLine } from '@/lib/finance/selectors';
+import {
+  formatMinorAmount,
+  minorToNumber,
+  type CurrencyCode,
+} from '@/lib/finance/money';
+import type {
+  CategoryExpense,
+  CurrencyLine,
+} from '@/lib/finance/selectors';
 
 type CategoryExpenseChartProps = {
   currency: string;
-  entries: { x: string; yMinor: MinorAmount }[];
+  entries: CategoryExpense[];
   chartWidth: number;
 };
 
+/** Compatibility composition used by legacy callers; charts are SVG-only. */
 export function CategoryExpenseChart({
   currency,
   entries,
-  chartWidth,
 }: CategoryExpenseChartProps) {
   const tokens = useThemeTokens();
-  const chartTheme = useMemo(() => VictoryTheme.material, []);
-  const data = entries.map(({ x, yMinor }) => ({
-    x,
-    y: minorToNumber(yMinor),
-  }));
-  const chartData = data.length ? data : [{ x: 'No expenses', y: 1 }];
-  const total = data.reduce((sum, item) => sum + item.y, 0) || 1;
-
   return (
-    <View className="mb-4 items-center rounded-2xl border border-border bg-card p-3">
-      <Text className="mb-2 self-stretch text-base font-semibold text-foreground">
+    <View className="mb-4 rounded-[22px] border border-border bg-card p-4">
+      <Text className="text-base font-semibold text-foreground">
         Expense categories · {currency}
       </Text>
-      <VictoryPie
-        theme={chartTheme}
-        width={chartWidth}
-        height={260}
-        data={chartData}
-        colorScale={[...tokens.chart]}
-        innerRadius={44}
-        padAngle={2}
-        labels={() => ''}
-      />
-      <VictoryLegend
-        width={chartWidth}
-        height={72}
-        orientation="horizontal"
-        itemsPerRow={2}
-        gutter={12}
-        data={chartData.slice(0, 6).map((item, index) => ({
-          name: `${item.x} (${Math.round((item.y / total) * 100)}%)`,
-          symbol: { fill: tokens.chart[index % tokens.chart.length] },
-        }))}
-        style={{ labels: { fill: tokens.muted, fontSize: 11 } }}
-      />
+      <View className="mt-2">
+        <DonutChart
+          data={entries.map((entry, index) => ({
+            id: entry.categoryId ?? `uncategorized-${index}`,
+            label: entry.name,
+            value: minorToNumber(entry.yMinor),
+            color: entry.color,
+            icon: entry.icon,
+          }))}
+          colors={tokens.chart}
+          surfaceColor={tokens.card}
+          borderColor={tokens.border}
+          mutedColor={tokens.muted}
+          valueLabel={(value) =>
+            formatMinorAmount(Math.round(value * 100), currency as CurrencyCode)
+          }
+        />
+      </View>
     </View>
   );
 }
@@ -70,47 +57,42 @@ type BalanceLineChartProps = {
   chartWidth: number;
 };
 
+/** Compatibility trend used by legacy callers; selection is handled by LineChart. */
 export function BalanceLineChart({
   line,
   chartWidth,
 }: BalanceLineChartProps) {
   const tokens = useThemeTokens();
-  const chartTheme = useMemo(() => VictoryTheme.material, []);
-  const { currency, points } = line;
-
   return (
-    <View className="mb-4 rounded-2xl border border-border bg-card p-3">
-      <Text className="mb-2 text-base font-semibold text-foreground">
-        Balance over time · {currency}
+    <View className="mb-4 rounded-[22px] border border-border bg-card p-4">
+      <Text className="text-base font-semibold text-foreground">
+        Balance over time · {line.currency}
       </Text>
-      <VictoryChart
-        theme={chartTheme}
-        width={chartWidth}
-        height={260}
-        padding={{ top: 12, bottom: 45, left: 62, right: 20 }}
-        scale={{ x: 'time', y: 'linear' }}
-      >
-        <VictoryAxis
-          tickFormat={(tick) =>
-            `${new Date(tick).getMonth() + 1}/${new Date(tick).getDate()}`
-          }
-          style={{ tickLabels: { fill: tokens.muted, fontSize: 10 } }}
-        />
-        <VictoryAxis
-          dependentAxis
-          tickFormat={(tick) =>
-            `${currency} ${Number(tick).toFixed(0)}`
-          }
-          style={{ tickLabels: { fill: tokens.muted, fontSize: 9 } }}
-        />
-        <VictoryLine
-          data={points.map((point) => ({
-            x: point.x,
-            y: minorToNumber(point.yMinor),
+      <View className="mt-3">
+        <LineChart
+          data={line.points.map((point, index) => ({
+            id: `${point.x.toISOString()}-${index}`,
+            date: point.x,
+            value: minorToNumber(point.yMinor),
           }))}
-          style={{ data: { stroke: tokens.primary, strokeWidth: 3 } }}
+          width={chartWidth}
+          strokeColor={tokens.primary}
+          gridColor={tokens.border}
+          surfaceColor={tokens.card}
+          valueLabel={(value) =>
+            formatMinorAmount(
+              Math.round(value * 100),
+              line.currency as CurrencyCode,
+            )
+          }
+          dateLabel={(date) =>
+            new Intl.DateTimeFormat(undefined, {
+              month: 'short',
+              day: 'numeric',
+            }).format(date)
+          }
         />
-      </VictoryChart>
+      </View>
     </View>
   );
 }

@@ -1,29 +1,31 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-  View,
-  Text,
-  TouchableOpacity,
   Platform,
   ScrollView,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
-import MaterialIcons from '@react-native-vector-icons/material-icons';
 import { router, useFocusEffect } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Location from 'expo-location';
 import * as ImagePicker from 'expo-image-picker';
 import { ExpoSpeechRecognitionModule } from 'expo-speech-recognition';
-import { prepareOfflineSpeechModel } from '@/lib/speech/speech-recognition';
-import { useAuth } from '@/lib/auth/auth-context';
+
 import { SyncStatus } from '@/components/providers/sync-status';
-import { ThemePreferencePicker } from '@/components/profile/theme-preference-picker';
 import { DefaultWalletPicker } from '@/components/profile/default-wallet-picker';
 import { PermissionColumn } from '@/components/profile/permission-column';
 import { ProfileSectionTitle } from '@/components/profile/profile-section-title';
 import { SettingsRow } from '@/components/profile/settings-row';
+import { ThemePreferencePicker } from '@/components/profile/theme-preference-picker';
+import { GradientCard } from '@/components/ui/gradient-card';
+import { IconSymbol } from '@/components/ui/icon-symbol';
+import { Surface } from '@/components/ui/surface';
+import { getWalletCardStyle } from '@/constants/wallet-card-styles';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { useNotificationListener } from '@/hooks/use-notification-listener';
-import { GradientCard } from '@/components/ui/gradient-card';
-import { getWalletCardStyle } from '@/constants/wallet-card-styles';
+import { useAuth } from '@/lib/auth/auth-context';
+import { prepareOfflineSpeechModel } from '@/lib/speech/speech-recognition';
 
 const avatarStyle = getWalletCardStyle('emerald-grain');
 
@@ -32,9 +34,16 @@ function mapSpeechPermissionStatus(result: {
   status?: string;
 }) {
   if (result.granted) return 'granted';
-  if (result.status === 'denied' || result.status === 'undetermined')
+  if (result.status === 'denied' || result.status === 'undetermined') {
     return result.status;
+  }
   return 'undetermined';
+}
+
+function SettingsGroup({ children }: { children: React.ReactNode }) {
+  return (
+    <Surface className="overflow-hidden rounded-[22px]">{children}</Surface>
+  );
 }
 
 export default function ProfileScreen() {
@@ -55,21 +64,21 @@ export default function ProfileScreen() {
     useState(false);
   const [isRequestingCamera, setIsRequestingCamera] = useState(false);
   const [isRequestingMic, setIsRequestingMic] = useState(false);
+
   const isAndroid = Platform.OS === 'android';
   const isAuthorized = permissionStatus === 'authorized';
+  const isLocationGranted = locationStatus === 'granted';
+  const isCameraGranted = cameraStatus === 'granted';
+  const isMicGranted = micStatus === 'granted';
 
   useFocusEffect(
     useCallback(() => {
       checkPermission();
     }, [checkPermission]),
   );
-  const isLocationGranted = locationStatus === 'granted';
-  const isCameraGranted = cameraStatus === 'granted';
-  const isMicGranted = micStatus === 'granted';
 
   const userInitial = useMemo(() => {
-    const email = user?.email ?? '';
-    const ch = email.charAt(0).toUpperCase();
+    const ch = (user?.email ?? '').charAt(0).toUpperCase();
     return ch || '?';
   }, [user?.email]);
 
@@ -77,22 +86,6 @@ export default function ProfileScreen() {
     await signOut();
     router.replace('/(auth)/login' as any);
   };
-
-  const openNotifications = useCallback(() => {
-    router.push('/notifications' as any);
-  }, []);
-
-  const openDebugPanel = useCallback(() => {
-    router.push('/debug' as any);
-  }, []);
-
-  const openBudgets = useCallback(() => {
-    router.push('/budget' as any);
-  }, []);
-
-  const openDebts = useCallback(() => {
-    router.push('/debts' as any);
-  }, []);
 
   const refreshPermissionStatus = useCallback(async () => {
     const [locationPerm, cameraPerm, micPerm] = await Promise.all([
@@ -106,14 +99,13 @@ export default function ProfileScreen() {
   }, []);
 
   useEffect(() => {
-    refreshPermissionStatus().catch(() => {});
+    void refreshPermissionStatus();
   }, [refreshPermissionStatus]);
 
   const requestLocationAccess = useCallback(async () => {
     setIsRequestingLocation(true);
     try {
-      const result =
-        await Location.requestForegroundPermissionsAsync();
+      const result = await Location.requestForegroundPermissionsAsync();
       setLocationStatus(result.status);
     } finally {
       setIsRequestingLocation(false);
@@ -123,8 +115,7 @@ export default function ProfileScreen() {
   const requestCameraAccess = useCallback(async () => {
     setIsRequestingCamera(true);
     try {
-      const result =
-        await ImagePicker.requestCameraPermissionsAsync();
+      const result = await ImagePicker.requestCameraPermissionsAsync();
       setCameraStatus(result.status);
     } finally {
       setIsRequestingCamera(false);
@@ -149,81 +140,108 @@ export default function ProfileScreen() {
     if (status === 'granted') return 'Enabled';
     if (status === 'denied') return 'Denied';
     if (status === 'undetermined') return 'Not requested';
-    return 'Unknown';
+    return 'Checking access';
   };
 
   return (
     <SafeAreaView
       edges={['top']}
-      className="flex-1 bg-background"
+      className="flex-1 bg-canvas"
       style={{ flex: 1 }}
     >
       <ScrollView
         className="flex-1"
-        contentContainerClassName="grow pb-10"
+        contentContainerClassName="pb-12"
         showsVerticalScrollIndicator={false}
       >
-        <View className="px-4 pt-6 pb-4">
-          <Text className="text-2xl font-bold text-foreground">
+        <View className="px-5 pb-5 pt-6">
+          <Text className="text-[28px] font-bold leading-[34px] text-foreground">
             Profile
+          </Text>
+          <Text className="mt-1 text-[15px] leading-5 text-muted">
+            Shape how Moni works for you.
           </Text>
         </View>
 
-        <View className="px-4 pb-4">
-          <View className="overflow-hidden rounded-3xl border border-border bg-card p-4">
+        <View className="px-5">
+          <Surface className="p-4">
             <View className="flex-row items-center">
               <GradientCard
                 cardStyle={avatarStyle}
                 className="h-14 w-14 items-center justify-center rounded-2xl"
               >
-                <Text className="text-2xl font-bold text-white">
+                <Text className="text-2xl font-bold text-primary-foreground">
                   {userInitial}
                 </Text>
               </GradientCard>
-              <View className="ml-3 flex-1 min-w-0">
-                <Text className="text-xs font-semibold uppercase tracking-wide text-muted">
-                  Signed in
+              <View className="ml-3 flex-1">
+                <Text className="text-[13px] font-semibold text-muted">
+                  Your Moni account
                 </Text>
-                {user?.email ? (
-                  <Text
-                    className="mt-0.5 text-base font-bold text-foreground"
-                    numberOfLines={2}
-                  >
-                    {user.email}
-                  </Text>
-                ) : (
-                  <Text className="mt-0.5 text-base font-semibold text-muted">
-                    Not signed in
-                  </Text>
-                )}
+                <Text
+                  className="mt-0.5 text-[17px] font-bold text-foreground"
+                  numberOfLines={2}
+                >
+                  {user?.email ?? 'Not signed in'}
+                </Text>
               </View>
             </View>
-            <Text className="mt-3 text-xs text-muted">
-              Manage sync, permissions, and account settings below.
+            <Text className="mt-3 text-[13px] leading-[17px] text-muted">
+              Your data stays available locally while Moni synchronizes when
+              a connection is available.
             </Text>
-          </View>
+          </Surface>
         </View>
 
-        <View className="px-4 pt-2 pb-6">
-          <ProfileSectionTitle>Sync</ProfileSectionTitle>
-          <SyncStatus className="mb-4 rounded-2xl border border-border" />
-
-          <ProfileSectionTitle>Permissions</ProfileSectionTitle>
-          <Text className="mb-3 text-xs text-muted">
-            Grant access so Moni can read bank/wallet alerts (Android
-            notification access), use location, scan receipts, and use
-            voice input in chat.
+        <View className="mt-8 px-5">
+          <ProfileSectionTitle>Accounts & wallets</ProfileSectionTitle>
+          <SyncStatus className="mb-4 rounded-[22px] border border-border" />
+          <Text className="mb-3 text-[13px] leading-[17px] text-muted">
+            Choose the wallet Moni should use when a receipt, message, or
+            notification does not identify one.
           </Text>
-          <View className="flex-row flex-wrap gap-2">
+          <DefaultWalletPicker />
+        </View>
+
+        <View className="mt-6 px-5">
+          <ProfileSectionTitle>Money setup</ProfileSectionTitle>
+          <SettingsGroup>
+            <SettingsRow
+              icon="account-balance-wallet"
+              iconBgClassName="bg-primary-muted"
+              iconColor={tokens.primary}
+              title="Category budgets"
+              subtitle="Set monthly caps per category and currency"
+              onPress={() => router.push('/budget' as any)}
+            />
+            <SettingsRow
+              icon="group"
+              iconBgClassName="bg-accent-aqua/40"
+              iconColor={tokens.transfer}
+              title="Debts"
+              subtitle="Track what you owe and what others owe you"
+              onPress={() => router.push('/debts' as any)}
+              showDivider={false}
+            />
+          </SettingsGroup>
+        </View>
+
+        <View className="mt-6 px-5">
+          <ProfileSectionTitle>Capture sources</ProfileSectionTitle>
+          <Text className="mb-3 text-[13px] leading-[17px] text-muted">
+            Permissions make scanning, voice capture, and linked bank alerts
+            available. You can change them any time.
+          </Text>
+          <SettingsGroup>
             {!isAndroid ? (
               <PermissionColumn
-                title="Notifications"
+                title="Notification access"
                 statusLabel="Android only"
                 icon="notifications-off"
-                iconTint="#94a3b8"
+                iconTint={tokens.surface2}
                 muted
                 showAction={false}
-                widthClassName="w-[48%]"
+                widthClassName=""
               />
             ) : (
               <PermissionColumn
@@ -234,25 +252,23 @@ export default function ProfileScreen() {
                     : permissionStatus === 'denied'
                       ? 'Off'
                       : isCheckingPermission
-                        ? 'Checking…'
+                        ? 'Checking access'
                         : 'Off'
                 }
                 granted={isAuthorized}
                 actionLabel={
                   !isAuthorized
                     ? isCheckingPermission
-                      ? '…'
-                      : 'Open settings'
+                      ? 'Checking'
+                      : 'Enable'
                     : undefined
                 }
-                onAction={
-                  !isAuthorized ? requestPermission : undefined
-                }
+                onAction={!isAuthorized ? requestPermission : undefined}
                 actionDisabled={isCheckingPermission}
                 icon="notifications-active"
-                iconTint={tokens.primary}
+                iconTint={tokens.accents.lilac}
                 showAction={!isAuthorized}
-                widthClassName="w-[48%]"
+                widthClassName="border-b border-border-subtle"
               />
             )}
             <PermissionColumn
@@ -262,18 +278,16 @@ export default function ProfileScreen() {
               actionLabel={
                 !isLocationGranted
                   ? isRequestingLocation
-                    ? '…'
+                    ? 'Checking'
                     : 'Enable'
                   : undefined
               }
-              onAction={
-                !isLocationGranted ? requestLocationAccess : undefined
-              }
+              onAction={!isLocationGranted ? requestLocationAccess : undefined}
               actionDisabled={isRequestingLocation}
               icon="location-on"
-              iconTint="#0ea5e9"
+              iconTint={tokens.accents.aqua}
               showAction={!isLocationGranted}
-              widthClassName="w-[48%]"
+              widthClassName="border-b border-border-subtle"
             />
             <PermissionColumn
               title="Camera"
@@ -282,18 +296,16 @@ export default function ProfileScreen() {
               actionLabel={
                 !isCameraGranted
                   ? isRequestingCamera
-                    ? '…'
+                    ? 'Checking'
                     : 'Enable'
                   : undefined
               }
-              onAction={
-                !isCameraGranted ? requestCameraAccess : undefined
-              }
+              onAction={!isCameraGranted ? requestCameraAccess : undefined}
               actionDisabled={isRequestingCamera}
               icon="photo-camera"
-              iconTint="#6366f1"
+              iconTint={tokens.accents.peach}
               showAction={!isCameraGranted}
-              widthClassName="w-[48%]"
+              widthClassName="border-b border-border-subtle"
             />
             <PermissionColumn
               title="Microphone"
@@ -302,79 +314,69 @@ export default function ProfileScreen() {
               actionLabel={
                 !isMicGranted
                   ? isRequestingMic
-                    ? '…'
+                    ? 'Checking'
                     : 'Enable'
                   : undefined
               }
               onAction={!isMicGranted ? requestMicAccess : undefined}
               actionDisabled={isRequestingMic}
               icon="mic"
-              iconTint="#a855f7"
+              iconTint={tokens.accents.lilac}
               showAction={!isMicGranted}
-              widthClassName="w-[48%]"
+              widthClassName=""
             />
-          </View>
+          </SettingsGroup>
+        </View>
 
-          <View className="mt-6">
-            <ProfileSectionTitle>Appearance</ProfileSectionTitle>
-            <ThemePreferencePicker />
-          </View>
+        <View className="mt-6 px-5">
+          <ProfileSectionTitle>Appearance</ProfileSectionTitle>
+          <ThemePreferencePicker />
+        </View>
 
-          <View className="mt-6">
-            <ProfileSectionTitle>Default wallet</ProfileSectionTitle>
-            <Text className="mb-3 text-xs text-muted">
-              Used when AI cannot infer a wallet from text, receipts,
-              or notifications.
-            </Text>
-            <DefaultWalletPicker />
-          </View>
-
-          <View className="mt-6">
-            <ProfileSectionTitle>Shortcuts</ProfileSectionTitle>
-            <SettingsRow
-              icon="account-balance-wallet"
-              iconBgClassName=""
-              iconBgColor={tokens.primary}
-              title="Category budgets"
-              subtitle="Monthly caps per category (all wallets) for AI coaching"
-              onPress={openBudgets}
-            />
-            <SettingsRow
-              icon="group"
-              iconBgClassName=""
-              iconBgColor={tokens.primary}
-              title="Debts"
-              subtitle="Track money you owe and money owed to you"
-              onPress={openDebts}
-            />
+        <View className="mt-6 px-5">
+          <ProfileSectionTitle>Privacy & local data</ProfileSectionTitle>
+          <SettingsGroup>
             <SettingsRow
               icon="notifications"
-              iconBgClassName=""
-              iconBgColor={tokens.primary}
-              title="Notifications"
-              subtitle="View captured notification history"
-              onPress={openNotifications}
+              iconBgClassName="bg-accent-lilac/40"
+              iconColor={tokens.states.pending}
+              title="Captured notifications"
+              subtitle="Review the alerts Moni has stored on this device"
+              onPress={() => router.push('/notifications' as any)}
+              showDivider={false}
             />
+          </SettingsGroup>
+        </View>
+
+        <View className="mt-6 px-5">
+          <ProfileSectionTitle>Developer</ProfileSectionTitle>
+          <SettingsGroup>
             <SettingsRow
               icon="bug-report"
-              iconBgClassName="bg-muted"
+              iconBgClassName="bg-surface-2"
+              iconColor={tokens.muted}
               title="Debug panel"
               subtitle="Diagnostics and developer tools"
-              onPress={openDebugPanel}
+              onPress={() => router.push('/debug' as any)}
+              showDivider={false}
             />
-          </View>
+          </SettingsGroup>
+        </View>
 
+        <View className="mt-8 px-5">
           <TouchableOpacity
-            className="mt-6 flex-row items-center justify-center rounded-2xl border border-danger/30 bg-danger/10 py-3.5"
+            className="min-h-13 flex-row items-center justify-center rounded-2xl bg-danger/10 px-4 py-3.5"
             onPress={handleSignOut}
-            activeOpacity={0.85}
+            activeOpacity={0.8}
+            accessibilityRole="button"
+            accessibilityLabel="Sign out"
           >
-            <MaterialIcons
+            <IconSymbol
               name="logout"
               size={20}
               color={tokens.danger}
             />
-            <Text className="ml-2 text-base font-semibold text-danger">
+            <Text className="ml-2 text-base font-bold text-danger">
               Sign out
             </Text>
           </TouchableOpacity>

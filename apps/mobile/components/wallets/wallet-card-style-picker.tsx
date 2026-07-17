@@ -1,28 +1,34 @@
-import { Pressable, Text, View } from 'react-native';
-import MaterialIcons from '@react-native-vector-icons/material-icons';
+import { Text, View } from 'react-native';
+
 import { GradientCard } from '@/components/ui/gradient-card';
+import { IconSymbol } from '@/components/ui/icon-symbol';
+import { TactilePressable } from '@/components/ui/tactile-pressable';
 import { WALLET_CARD_STYLES } from '@/constants/wallet-card-styles';
+import { useThemeTokens } from '@/hooks/use-theme-tokens';
 
 type WalletCardStylePickerProps = {
   value: string;
   onChange: (id: string) => void;
 };
 
-/** Grid of live gradient previews for choosing a wallet's card style. */
+/** Curated wallet identities remain distinct without resembling payment cards. */
 export function WalletCardStylePicker({
   value,
   onChange,
 }: WalletCardStylePickerProps) {
+  const tokens = useThemeTokens();
+
   return (
-    <View className="mb-2 flex-row flex-wrap gap-3">
+    <View className="mb-3 flex-row flex-wrap gap-3">
       {WALLET_CARD_STYLES.map((style) => {
         const selected = style.id === value;
         return (
-          <Pressable
+          <TactilePressable
             key={style.id}
             onPress={() => onChange(style.id)}
-            accessibilityRole="button"
-            accessibilityLabel={`${style.label} card style`}
+            accessibilityLabel={['Choose', style.label, 'wallet style'].join(
+              ' ',
+            )}
             className="items-center"
             style={{ width: 76 }}
           >
@@ -33,7 +39,7 @@ export function WalletCardStylePicker({
                 selected
                   ? {
                       borderWidth: 2.5,
-                      borderColor: '#ffffff',
+                      borderColor: tokens.card,
                       elevation: 4,
                     }
                   : undefined
@@ -41,21 +47,25 @@ export function WalletCardStylePicker({
             >
               {selected ? (
                 <View className="rounded-full bg-black/25 p-1">
-                  <MaterialIcons
+                  <IconSymbol
                     name="check"
                     size={16}
-                    color="#ffffff"
+                    color={tokens.primaryForeground}
                   />
                 </View>
               ) : null}
             </GradientCard>
             <Text
-              className={`mt-1.5 text-[11px] ${selected ? 'font-semibold text-foreground' : 'text-muted'}`}
+              className={
+                selected
+                  ? 'mt-1.5 text-[11px] font-semibold text-foreground'
+                  : 'mt-1.5 text-[11px] text-muted'
+              }
               numberOfLines={1}
             >
               {style.label}
             </Text>
-          </Pressable>
+          </TactilePressable>
         );
       })}
     </View>

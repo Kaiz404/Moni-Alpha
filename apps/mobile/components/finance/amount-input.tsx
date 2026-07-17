@@ -1,6 +1,8 @@
 import type { TextInputProps } from 'react-native';
 import { Text, TextInput, View } from 'react-native';
 
+import { useThemeTokens } from '@/hooks/use-theme-tokens';
+
 type AmountInputProps = Omit<
   TextInputProps,
   'keyboardType' | 'onChangeText' | 'value'
@@ -19,24 +21,33 @@ export function AmountInput({
   value,
   onChangeValue,
   currency,
-  className = 'rounded-xl border border-border bg-card px-3 py-3 text-foreground',
+  className,
   ...props
 }: AmountInputProps) {
+  const tokens = useThemeTokens();
+
   return (
-    <View className="flex-row items-center gap-2">
-      <TextInput
-        {...props}
-        className={`flex-1 ${className}`}
-        value={value}
-        onChangeText={onChangeValue}
-        keyboardType="decimal-pad"
-        placeholder={props.placeholder ?? '0.00'}
-      />
-      {currency ? (
-        <Text className="text-xs font-semibold text-muted">
-          {currency.toUpperCase()}
-        </Text>
-      ) : null}
+    <View className="rounded-[16px] border border-border bg-surface-2 px-4 py-2">
+      <View className="flex-row items-baseline gap-2">
+        <TextInput
+          {...props}
+          accessibilityLabel={props.accessibilityLabel ?? 'Amount'}
+          className={`min-h-13 flex-1 py-1 text-right text-[28px] font-bold leading-8 text-foreground ${className ?? ''}`}
+          value={value}
+          onChangeText={onChangeValue}
+          keyboardType="decimal-pad"
+          placeholder={props.placeholder ?? '0.00'}
+          placeholderTextColor={
+            props.placeholderTextColor ?? tokens.muted
+          }
+          textAlign="right"
+        />
+        {currency ? (
+          <Text className="pb-1 text-xs font-bold tracking-wide text-muted">
+            {currency.toUpperCase()}
+          </Text>
+        ) : null}
+      </View>
     </View>
   );
 }

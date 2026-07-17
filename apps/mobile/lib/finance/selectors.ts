@@ -1,13 +1,18 @@
 import { computed, type Observable } from '@legendapp/state';
 import { addMinor, subtractMinor, type CurrencyCode, type MinorAmount } from '@repo/types';
-import { dayKeyInTimezone, monthKeyInTimezone } from './dates';
+import { monthKeyInTimezone } from './dates';
 import {
-  isTransactionRelevantToWallet,
   outstandingDebtBalanceMinor,
   transactionDeltaMinor,
 } from './ledger';
 import { financeProjection$ } from './projection';
-import type { FinanceDebt, FinanceProposal, FinanceTransaction, FinanceWallet } from './types';
+import type {
+  FinanceCategory,
+  FinanceDebt,
+  FinanceProposal,
+  FinanceTransaction,
+  FinanceWallet,
+} from './types';
 
 export type CurrencyTotal = {
   currency: CurrencyCode;
@@ -29,12 +34,25 @@ export type FinancePinPoint = {
 export type BudgetProgress = {
   categoryId: string;
   categoryName: string;
+  categoryIcon: string | null;
+  categoryColor: string | null;
   currency: CurrencyCode;
   budgetAmountMinor: MinorAmount | null;
   spentMinor: MinorAmount;
   remainingMinor: MinorAmount | null;
   percentage: number | null;
   status: 'unbudgeted' | 'on_track' | 'near_limit' | 'over';
+};
+
+/** Category metadata is carried into charts rather than recreated in views. */
+export type CategoryExpense = {
+  categoryId: string | null;
+  name: string;
+  icon: string | null;
+  color: string | null;
+  /** Compatibility fields for existing finance/AI consumers. */
+  x: string;
+  yMinor: MinorAmount;
 };
 
 function values<T>(record: Record<string, T>): T[] {
@@ -170,11 +188,11 @@ export function categoryNameMap$(userId: string | null): Observable<Record<strin
 
 const expenseCategoriesCache = new Map<
   string,
-  Observable<Array<{ id: string; name: string; color: string | null }>>
+  Observable<Array<{ id: string; name: string; icon: string | null; color: string | null }>>
 >();
 export function expenseCategories$(
   userId: string | null,
-): Observable<Array<{ id: string; name: string; color: string | null }>> {
+): Observable<Array<{ id: string; name: string; icon: string | null; color: string | null }>> {
   return cacheComputed(expenseCategoriesCache, userId ?? 'anonymous', () =>
     values(financeProjection$.categoriesById.get())
       .filter(
@@ -187,29 +205,41 @@ export function expenseCategories$(
       .map((category) => ({
         id: category.id,
         name: category.name,
+        icon: category.icon,
         color: category.color,
       })),
   );
 }
 
-function categoryExpensesByCurrency(
+export function categoryExpensesByCurrency(
   transactions: FinanceTransaction[],
-  categories: Record<string, string>,
-): Record<string, Array<{ x: string; yMinor: MinorAmount }>> {
-  const byCurrency = new Map<CurrencyCode, Map<string, MinorAmount>>();
+  categories: Record<string, FinanceCategory>,
+): Record<string, CategoryExpense[]> {
+  const byCurrency = new Map<CurrencyCode, Map<string, CategoryExpense>>();
   for (const transaction of transactions) {
     if (transaction.type !== 'expense' || transaction.analysisExcluded) continue;
-    const totals = byCurrency.get(transaction.currency) ?? new Map<string, MinorAmount>();
-    const name = transaction.categoryId
-      ? (categories[transaction.categoryId] ?? 'Uncategorized')
-      : 'Uncategorized';
-    totals.set(name, addMinor(totals.get(name) ?? 0, transaction.amountMinor));
+    const totals =
+      byCurrency.get(transaction.currency) ?? new Map<string, CategoryExpense>();
+    const category = transaction.categoryId ? categories[transaction.categoryId] : null;
+    const key = category?.id ?? '__uncategorized';
+    const previous = totals.get(key);
+    totals.set(key, {
+      categoryId: category?.id ?? null,
+      name: category?.name ?? 'Uncategorized',
+      icon: category?.icon ?? null,
+      color: category?.color ?? null,
+      x: category?.name ?? 'Uncategorized',
+      yMinor: addMinor(
+        previous?.yMinor ?? (0 as MinorAmount),
+        transaction.amountMinor,
+      ),
+    });
     byCurrency.set(transaction.currency, totals);
   }
   return Object.fromEntries(
     [...byCurrency.entries()].map(([currency, totals]) => {
       const entries = [...totals.entries()]
-        .map(([x, yMinor]) => ({ x, yMinor }))
+        .map(([, entry]) => entry)
         .sort((a, b) => Number(b.yMinor) - Number(a.yMinor));
       if (entries.length <= 6) return [currency, entries];
       return [
@@ -217,6 +247,10 @@ function categoryExpensesByCurrency(
         [
           ...entries.slice(0, 5),
           {
+            categoryId: null,
+            name: 'Other',
+            icon: null,
+            color: null,
             x: 'Other',
             yMinor: addMinor(...entries.slice(5).map((entry) => entry.yMinor)),
           },
@@ -276,7 +310,8 @@ const overviewCache = new Map<
     balanceTotals: CurrencyTotal[];
     transactions: FinanceTransaction[];
     categoryNames: Record<string, string>;
-    categoryExpensesByCurrency: Record<string, Array<{ x: string; yMinor: MinorAmount }>>;
+    categoriesById: Record<string, FinanceCategory>;
+    categoryExpensesByCurrency: Record<string, CategoryExpense[]>;
     balanceLines: CurrencyLine[];
   }>
 >();
@@ -286,7 +321,8 @@ export function financeOverview$(userId: string | null): Observable<{
   balanceTotals: CurrencyTotal[];
   transactions: FinanceTransaction[];
   categoryNames: Record<string, string>;
-  categoryExpensesByCurrency: Record<string, Array<{ x: string; yMinor: MinorAmount }>>;
+  categoriesById: Record<string, FinanceCategory>;
+  categoryExpensesByCurrency: Record<string, CategoryExpense[]>;
   balanceLines: CurrencyLine[];
 }> {
   return cacheComputed(overviewCache, userId ?? 'anonymous', () => {
@@ -294,6 +330,15 @@ export function financeOverview$(userId: string | null): Observable<{
     const balancesByWallet = walletBalancesMinor$(userId).get();
     const transactions = transactions$({ userId }).get();
     const categoryNames = categoryNameMap$(userId).get();
+    const categoriesById = Object.fromEntries(
+      values(financeProjection$.categoriesById.get())
+        .filter(
+          (category) =>
+            category.isActive &&
+            (category.userId === null || category.userId === userId),
+        )
+        .map((category) => [category.id, category]),
+    );
     const totals = new Map<CurrencyCode, MinorAmount>();
     for (const wallet of wallets)
       addCurrencyTotal(totals, wallet.currency, balancesByWallet[wallet.id] ?? (0 as MinorAmount));
@@ -303,7 +348,11 @@ export function financeOverview$(userId: string | null): Observable<{
       balanceTotals: currencyTotals(totals),
       transactions,
       categoryNames,
-      categoryExpensesByCurrency: categoryExpensesByCurrency(transactions, categoryNames),
+      categoriesById,
+      categoryExpensesByCurrency: categoryExpensesByCurrency(
+        transactions,
+        categoriesById,
+      ),
       balanceLines: balanceLinesByCurrency(wallets, transactions),
     };
   });
@@ -315,7 +364,15 @@ export function budgetProgress$(
   timezone: string,
 ): Observable<BudgetProgress[]> {
   return cacheComputed(budgetCache, `${userId ?? 'anonymous'}:${timezone}`, () => {
-    const categories = categoryNameMap$(userId).get();
+    const categories = Object.fromEntries(
+      values(financeProjection$.categoriesById.get())
+        .filter(
+          (category) =>
+            category.isActive &&
+            (category.userId === null || category.userId === userId),
+        )
+        .map((category) => [category.id, category]),
+    );
     const budgets = values(financeProjection$.budgetsById.get()).filter(
       (budget) => budget.userId === userId,
     );
@@ -346,7 +403,9 @@ export function budgetProgress$(
             : Math.round((Number(spentMinor) / Number(budgetAmountMinor)) * 1000) / 10;
         return {
           categoryId,
-          categoryName: categories[categoryId] ?? 'Uncategorized',
+          categoryName: categories[categoryId]?.name ?? 'Uncategorized',
+          categoryIcon: categories[categoryId]?.icon ?? null,
+          categoryColor: categories[categoryId]?.color ?? null,
           currency,
           budgetAmountMinor,
           spentMinor,

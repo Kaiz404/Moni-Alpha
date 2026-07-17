@@ -1,27 +1,33 @@
 import MaterialIcons from '@react-native-vector-icons/material-icons';
-import { ComponentProps } from 'react';
-import {
-  OpaqueColorValue,
-  type StyleProp,
-  type TextStyle,
+import type { ComponentProps } from 'react';
+import type {
+  ColorValue,
+  StyleProp,
+  TextStyle,
 } from 'react-native';
 
-type IconSymbolName = ComponentProps<typeof MaterialIcons>['name'];
+/** The icon-name contract follows the installed Material Icons package. */
+export type IconSymbolName = ComponentProps<
+  typeof MaterialIcons
+>['name'];
+
+type IconSymbolProps = {
+  name: IconSymbolName;
+  size?: number;
+  color: ColorValue;
+  style?: StyleProp<TextStyle>;
+};
 
 /**
- * Cross-platform icon wrapper (Material Icons on Android; SF Symbols on iOS).
+ * Moni's single icon boundary. Screens should use this instead of importing
+ * vector-icon packages directly so icon naming and visual weight stay stable.
  */
 export function IconSymbol({
   name,
   size = 24,
   color,
   style,
-}: {
-  name: IconSymbolName;
-  size?: number;
-  color: string | OpaqueColorValue;
-  style?: StyleProp<TextStyle>;
-}) {
+}: IconSymbolProps) {
   return (
     <MaterialIcons
       color={color}

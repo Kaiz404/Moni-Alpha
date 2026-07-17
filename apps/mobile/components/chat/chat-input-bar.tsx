@@ -1,14 +1,11 @@
-import {
-  View,
-  TextInput,
-  Pressable,
-  TouchableOpacity,
-  Text,
-} from 'react-native';
+import { Pressable, Text, TextInput, View } from 'react-native';
 import { Image } from 'expo-image';
 
-import { useThemeTokens } from '@/hooks/use-theme-tokens';
+import { IconAction } from '@/components/ui/icon-action';
 import { IconSymbol } from '@/components/ui/icon-symbol';
+import { Surface } from '@/components/ui/surface';
+import { TactilePressable } from '@/components/ui/tactile-pressable';
+import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { hapticVoiceStart, hapticVoiceStop } from '@/lib/haptics';
 
 type ChatInputBarProps = {
@@ -24,6 +21,7 @@ type ChatInputBarProps = {
   bottomPad: number;
 };
 
+/** Quiet, touch-friendly composer with text, receipt, and voice entry. */
 export function ChatInputBar({
   input,
   onChangeText,
@@ -40,57 +38,57 @@ export function ChatInputBar({
   const hasContent = input.trim().length > 0 || !!attachedImage;
   const showMicMode = isSpeechRecognizing || !hasContent;
   const inputPlaceholder = isSpeechRecognizing
-    ? 'Listening… speak now'
-    : 'Message Moni…';
+    ? 'Listeningâ€¦ speak naturally'
+    : 'Ask or add a transaction';
 
   return (
-    <>
+    <View className="border-t border-border-subtle bg-canvas px-5 pt-2">
       {attachedImage ? (
-        <View className="px-4 pb-2 pt-1">
-          <View className="flex-row items-center rounded-xl border border-border bg-card p-2 shadow-sm">
-            <Image
-              source={{ uri: attachedImage }}
-              style={{ width: 56, height: 56, borderRadius: 8 }}
-              contentFit="cover"
-            />
-            <Text
-              className="ml-3 flex-1 text-sm text-muted"
-              numberOfLines={1}
-            >
-              Receipt attached
+        <Surface className="mb-2 flex-row items-center rounded-2xl p-2" tone="muted">
+          <Image
+            source={{ uri: attachedImage }}
+            style={{ width: 56, height: 56, borderRadius: 12 }}
+            contentFit="cover"
+          />
+          <View className="ml-3 flex-1">
+            <Text className="text-[15px] font-semibold text-foreground">
+              Receipt ready to review
             </Text>
-            <Pressable
-              onPress={onRemoveImage}
-              className="h-9 w-9 items-center justify-center"
-              hitSlop={8}
-            >
-              <IconSymbol
-                name="close"
-                size={22}
-                color={tokens.muted}
-              />
-            </Pressable>
+            <Text className="mt-0.5 text-[13px] text-muted">
+              Send it when you&apos;re ready.
+            </Text>
           </View>
+          <IconAction
+            accessibilityLabel="Remove attached receipt"
+            icon="close"
+            onPress={onRemoveImage}
+            tone="default"
+          />
+        </Surface>
+      ) : null}
+
+      {isSpeechRecognizing ? (
+        <View className="mb-2 flex-row items-center rounded-2xl bg-primary-muted px-4 py-2.5">
+          <View className="h-2 w-2 rounded-full bg-primary" />
+          <Text className="ml-2 flex-1 text-[13px] font-semibold text-primary">
+            Listeningâ€¦ release the microphone when you&apos;re done
+          </Text>
         </View>
       ) : null}
 
       <View
-        className="flex-row items-end border-t border-border bg-background px-4 pt-2"
+        className="flex-row items-end"
         style={{ paddingBottom: bottomPad }}
       >
-        <Pressable
-          className="mr-2 h-11 w-11 items-center justify-center rounded-full bg-card"
+        <IconAction
+          accessibilityLabel="Attach a receipt photo"
+          icon="photo-camera"
           onPress={onOpenCamera}
-        >
-          <IconSymbol
-            name="photo-camera"
-            size={24}
-            color={tokens.primary}
-          />
-        </Pressable>
+          tone="accent"
+        />
 
         <TextInput
-          className="mr-2 max-h-28 flex-1 rounded-2xl border border-border bg-card px-4 py-3 text-base text-foreground"
+          className="ml-2 mr-2 min-h-11 max-h-30 flex-1 rounded-2xl border border-border bg-card px-4 py-2.5 text-base leading-5 text-foreground"
           placeholder={inputPlaceholder}
           placeholderTextColor={tokens.muted}
           value={input}
@@ -100,14 +98,15 @@ export function ChatInputBar({
           returnKeyType="send"
           blurOnSubmit
           onSubmitEditing={onSend}
+          accessibilityLabel="Message Moni"
         />
 
         {showMicMode ? (
-          <Pressable
+          <TactilePressable
             className="h-11 w-11 items-center justify-center rounded-full"
             style={{
               backgroundColor: isSpeechRecognizing
-                ? tokens.danger
+                ? tokens.accents.lilac
                 : tokens.primary,
             }}
             onPressIn={() => {
@@ -119,76 +118,87 @@ export function ChatInputBar({
               onPressOutMic();
             }}
             accessibilityLabel={
-              isSpeechRecognizing ? 'Listening' : 'Hold to speak'
+              isSpeechRecognizing
+                ? 'Listening. Release to stop recording'
+                : 'Hold to speak to Moni'
             }
+            accessibilityHint="Hold while speaking, then release to add your words"
           >
             <IconSymbol
               name="mic"
-              size={24}
-              color="#ffffff"
+              size={22}
+              color={
+                isSpeechRecognizing ? tokens.foreground : tokens.primaryForeground
+              }
             />
-          </Pressable>
+          </TactilePressable>
         ) : (
-          <TouchableOpacity
-            className="h-11 w-11 items-center justify-center rounded-full"
-            style={{ backgroundColor: tokens.primary }}
+          <TactilePressable
+            className="h-11 w-11 items-center justify-center rounded-full bg-primary"
             onPress={onSend}
             disabled={!hasContent || isSpeechRecognizing}
-            activeOpacity={0.7}
+            accessibilityLabel="Send message"
           >
             <IconSymbol
-              name="send"
+              name="arrow-upward"
               size={22}
-              color="#ffffff"
+              color={tokens.primaryForeground}
             />
-          </TouchableOpacity>
+          </TactilePressable>
         )}
       </View>
-    </>
+    </View>
   );
 }
 
 type ChatEmptyStateProps = {
   primary: string;
+  onSuggestion?: (text: string) => void;
 };
 
-export function ChatEmptyState({ primary }: ChatEmptyStateProps) {
+/** Companion cue and useful, data-safe starting prompts for a new chat. */
+export function ChatEmptyState({
+  primary,
+  onSuggestion,
+}: ChatEmptyStateProps) {
   const suggestions = [
-    'Coffee $5 at Starbucks',
     'How much did I spend on food this month?',
-    'Am I over budget on dining?',
-    'Or snap a photo of your receipt',
+    'Help me set a budget for dining',
+    'Add a coffee for $5',
   ];
 
   return (
-    <View className="items-center px-4 py-12">
+    <View className="flex-1 items-center justify-center px-5 py-12">
       <View
-        className="mb-4 h-16 w-16 items-center justify-center rounded-full"
-        style={{ backgroundColor: `${primary}33` }}
+        className="mb-5 h-16 w-16 items-center justify-center rounded-full"
+        style={{ backgroundColor: `${primary}26` }}
       >
         <IconSymbol
-          name="chat-bubble-outline"
-          size={36}
+          name="auto-awesome"
+          size={30}
           color={primary}
         />
       </View>
-      <Text className="mb-2 text-xl font-semibold text-foreground">
-        Chat with Moni
+      <Text className="text-center text-[22px] font-bold leading-7 text-foreground">
+        A clearer view of your money
       </Text>
-      <Text className="mb-8 text-center text-sm leading-5 text-muted">
-        Log transactions, scan receipts, or ask about your finances.
+      <Text className="mt-2 max-w-sm text-center text-[15px] leading-[22px] text-muted">
+        Ask Moni a question, describe a transaction, or attach a receipt.
+        You&apos;ll always review changes before they&apos;re added.
       </Text>
-      <Text className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted">
-        Try asking
-      </Text>
-      <View className="w-full">
-        {suggestions.map((s) => (
-          <View
-            key={s}
-            className="mb-2 rounded-xl border border-border bg-card px-4 py-3"
+      <View className="mt-7 w-full max-w-md gap-2">
+        {suggestions.map((suggestion) => (
+          <Pressable
+            key={suggestion}
+            onPress={() => onSuggestion?.(suggestion)}
+            disabled={!onSuggestion}
+            className="rounded-2xl border border-border bg-card px-4 py-3.5 active:bg-surface-2"
+            accessibilityRole="button"
           >
-            <Text className="text-sm text-foreground">{s}</Text>
-          </View>
+            <Text className="text-[15px] font-medium text-foreground">
+              {suggestion}
+            </Text>
+          </Pressable>
         ))}
       </View>
     </View>

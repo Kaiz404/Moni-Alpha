@@ -92,7 +92,7 @@ export function DefaultWalletPicker() {
 
   if (loading) {
     return (
-      <View className="mb-2 items-center justify-center rounded-xl border border-border bg-card py-6">
+      <View className="mb-2 items-center justify-center rounded-[22px] border border-border bg-card py-6">
         <ActivityIndicator color={tokens.primary} />
       </View>
     );
@@ -100,7 +100,7 @@ export function DefaultWalletPicker() {
 
   if (wallets.length === 0) {
     return (
-      <View className="mb-2 rounded-xl border border-border bg-card px-3.5 py-3">
+      <View className="mb-2 rounded-[22px] border border-border bg-card px-4 py-4">
         <Text className="text-sm text-muted">
           Add a wallet first to set a default.
         </Text>
@@ -126,7 +126,7 @@ export function DefaultWalletPicker() {
   ];
 
   return (
-    <View className="mb-2 overflow-hidden rounded-xl border border-border bg-card">
+    <View className="mb-2 overflow-hidden rounded-[22px] border border-border bg-card">
       {options.map((option, index) => {
         const selected = selectedId === option.id;
         return (
@@ -134,15 +134,15 @@ export function DefaultWalletPicker() {
             key={option.id ?? 'none'}
             onPress={() => select(option.id)}
             disabled={saving}
-            className={`flex-row items-center px-3.5 py-3 active:opacity-90 ${
+            className={`min-h-18 flex-row items-center px-4 py-3.5 active:bg-surface-2 ${
               index > 0 ? 'border-t border-border' : ''
             } ${saving ? 'opacity-70' : ''}`}
           >
             <View className="flex-1 min-w-0 pr-3">
-              <Text className="text-base font-semibold text-foreground">
+              <Text className="text-[17px] font-semibold text-foreground">
                 {option.label}
               </Text>
-              <Text className="mt-0.5 text-xs text-muted">
+              <Text className="mt-0.5 text-[13px] text-muted">
                 {option.subtitle}
               </Text>
             </View>

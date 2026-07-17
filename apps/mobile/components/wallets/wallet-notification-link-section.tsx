@@ -10,7 +10,6 @@ import {
   Platform,
 } from 'react-native';
 import { Image } from 'expo-image';
-import MaterialIcons from '@react-native-vector-icons/material-icons';
 import {
   groupCuratedAppsByRegion,
   labelForNotificationPackage,
@@ -26,6 +25,7 @@ import {
 } from '@/lib/notifications/installed-apps';
 import { listRecentNotificationApps } from '@/lib/notifications/recent-notification-apps';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
+import { IconSymbol } from '@/components/ui/icon-symbol';
 
 const inputClass =
   'rounded-xl border border-border bg-card px-3 py-2.5 text-foreground';
@@ -81,7 +81,7 @@ function AppIcon({
       className="items-center justify-center rounded-md bg-background-muted"
       style={{ width: size, height: size }}
     >
-      <MaterialIcons
+      <IconSymbol
         name="account-balance-wallet"
         size={size - 6}
         color={tokens.muted}
@@ -99,6 +99,8 @@ function AppPickerRow({
   selected: boolean;
   onPress: () => void;
 }) {
+  const tokens = useThemeTokens();
+
   return (
     <TouchableOpacity
       className={`mb-1.5 flex-row items-center gap-2 rounded-xl border px-3 py-2.5 ${
@@ -128,10 +130,10 @@ function AppPickerRow({
         </Text>
       </View>
       {selected ? (
-        <MaterialIcons
+        <IconSymbol
           name="check-circle"
           size={18}
-          color="#059669"
+          color={tokens.success}
         />
       ) : null}
     </TouchableOpacity>
@@ -433,10 +435,10 @@ export function WalletNotificationLinkSection({
             <Text className="text-xs font-semibold text-foreground">
               Installed banking apps
             </Text>
-            <MaterialIcons
+            <IconSymbol
               name={showCurated ? 'expand-less' : 'expand-more'}
               size={20}
-              color="#64748b"
+              color={tokens.muted}
             />
           </TouchableOpacity>
 
@@ -482,7 +484,7 @@ export function WalletNotificationLinkSection({
           <TextInput
             className={`flex-1 text-sm ${inputClass}`}
             placeholder="com.bank.app"
-            placeholderTextColor="#9CA3AF"
+            placeholderTextColor={tokens.muted}
             value={manualPackage}
             onChangeText={setManualPackage}
             autoCapitalize="none"
@@ -510,7 +512,7 @@ export function WalletNotificationLinkSection({
       <TextInput
         className={`text-base ${inputClass}`}
         placeholder="Savings, ****4521, …"
-        placeholderTextColor="#9CA3AF"
+        placeholderTextColor={tokens.muted}
         value={value.notificationAccountHint ?? ''}
         onChangeText={(text) =>
           onChange({

@@ -7,6 +7,8 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { BrandHeader } from '@/components/ui/brand-header';
+import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import {
   runNotificationTests,
   runQueueInspection,
@@ -24,7 +26,7 @@ type GridButton = {
   id: string;
   label: string;
   description: string;
-  color: string;
+  tone: 'pending' | 'attention' | 'transfer' | 'muted';
   run: (log: LogFn) => Promise<DebugTestResult>;
 };
 
@@ -34,28 +36,28 @@ function useDebugButtons(): GridButton[] {
       id: 'simulate-capture',
       label: 'Simulate Capture',
       description: 'Write a test notification to MMKV',
-      color: '#8b5cf6',
+      tone: 'pending',
       run: injectTestNotificationCapture,
     },
     {
       id: 'notif-test',
       label: 'Notification Test',
       description: 'Run 4 classification test cases',
-      color: '#f59e0b',
+      tone: 'attention',
       run: runNotificationTests,
     },
     {
       id: 'queue-inspect',
       label: 'Queue Inspector',
       description: 'View processing queue state',
-      color: '#06b6d4',
+      tone: 'transfer',
       run: runQueueInspection,
     },
     {
       id: 'queue-prune',
       label: 'Prune Queue',
       description: 'Clear all queue items',
-      color: '#64748b',
+      tone: 'muted',
       run: pruneQueue,
     },
   ];
@@ -63,6 +65,7 @@ function useDebugButtons(): GridButton[] {
 
 export default function DebugPage() {
   const buttons = useDebugButtons();
+  const tokens = useThemeTokens();
   const [runningId, setRunningId] = useState<string | null>(null);
   const [lastResult, setLastResult] = useState<{
     id: string;
@@ -76,6 +79,12 @@ export default function DebugPage() {
     useCapturedProcessLogs();
 
   const uiLocked = runningId !== null;
+  const buttonColor = {
+    pending: tokens.states.pending,
+    attention: tokens.states.attention,
+    transfer: tokens.transfer,
+    muted: tokens.muted,
+  } as const;
 
   const log: LogFn = useCallback((message: string) => {
     setLogLines((prev) => [...prev, message]);
@@ -119,7 +128,7 @@ export default function DebugPage() {
 
   return (
     <SafeAreaView
-      className="flex-1 bg-black"
+      className="flex-1 bg-canvas"
       style={{ flex: 1 }}
     >
       <ScrollView
@@ -130,11 +139,9 @@ export default function DebugPage() {
           scrollRef.current?.scrollToEnd({ animated: true })
         }
       >
-        <View className="px-3 pt-4 pb-2">
-          <Text className="text-white text-lg font-bold">
-            Debug Panel
-          </Text>
-          <Text className="text-zinc-500 text-xs mt-1">
+        <BrandHeader title="Debug tools" />
+        <View className="px-5 pt-4 pb-2">
+          <Text className="text-xs leading-4 text-muted">
             Tools for testing notification capture and the AI
             processing queue.
           </Text>
@@ -146,51 +153,60 @@ export default function DebugPage() {
           {buttons.map((btn) => {
             const isRunning = runningId === btn.id;
             const isDisabled = uiLocked && !isRunning;
+            const color = buttonColor[btn.tone];
 
             return (
               <View
                 key={btn.id}
-                className="w-1/3 p-1"
+                className="w-1/2 p-1"
               >
                 <TouchableOpacity
                   onPress={() => handlePress(btn)}
                   disabled={isDisabled}
                   activeOpacity={0.7}
-                  className="rounded-xl p-3 min-h-[80px] justify-between"
+                  className="min-h-28 justify-between rounded-2xl border bg-card p-3"
                   style={{
                     backgroundColor: isDisabled
-                      ? '#1a1a1a'
-                      : `${btn.color}18`,
+                      ? tokens.surface2
+                      : color + '18',
                     borderWidth: 1,
                     borderColor: isRunning
-                      ? btn.color
+                      ? color
                       : isDisabled
-                        ? '#222'
-                        : `${btn.color}40`,
+                        ? tokens.borderSubtle
+                        : color + '40',
                     opacity: isDisabled ? 0.4 : 1,
                   }}
                 >
                   {isRunning ? (
                     <ActivityIndicator
                       size="small"
-                      color={btn.color}
+                      color={color}
                     />
                   ) : (
                     <View
                       className="w-2 h-2 rounded-full mb-1"
-                      style={{ backgroundColor: btn.color }}
+                      style={{ backgroundColor: color }}
                     />
                   )}
                   <Text
                     className="text-xs font-semibold mt-1"
-                    style={{ color: isDisabled ? '#555' : '#e2e8f0' }}
+                    style={{
+                      color: isDisabled
+                        ? tokens.muted
+                        : tokens.foreground,
+                    }}
                     numberOfLines={1}
                   >
                     {btn.label}
                   </Text>
                   <Text
                     className="text-[10px] mt-0.5"
-                    style={{ color: isDisabled ? '#444' : '#94a3b8' }}
+                    style={{
+                      color: isDisabled
+                        ? tokens.muted
+                        : tokens.muted,
+                    }}
                     numberOfLines={2}
                   >
                     {btn.description}
@@ -203,23 +219,18 @@ export default function DebugPage() {
 
         {lastResult && (
           <View
-            className="mx-4 mt-3 rounded-lg px-3 py-2"
-            style={{
-              backgroundColor: lastResult.result.success
-                ? '#052e1680'
-                : '#2a040480',
-              borderWidth: 1,
-              borderColor: lastResult.result.success
-                ? '#16a34a50'
-                : '#dc262650',
-            }}
+            className={
+              lastResult.result.success
+                ? 'mx-5 mt-3 rounded-2xl border border-primary/30 bg-primary-muted px-4 py-3'
+                : 'mx-5 mt-3 rounded-2xl border border-danger/30 bg-danger/10 px-4 py-3'
+            }
           >
             <Text
               className="text-xs font-bold"
               style={{
                 color: lastResult.result.success
-                  ? '#4ade80'
-                  : '#fca5a5',
+                  ? tokens.success
+                  : tokens.danger,
               }}
             >
               {lastResult.result.success ? 'PASS' : 'FAIL'} —{' '}
@@ -228,13 +239,13 @@ export default function DebugPage() {
           </View>
         )}
 
-        <View className="mx-4 mt-4">
+        <View className="mx-5 mt-5">
           <View className="flex-row justify-between items-center mb-2">
-            <Text className="text-zinc-400 text-xs font-semibold">
+            <Text className="text-xs font-bold text-foreground">
               Live logs
             </Text>
             <TouchableOpacity onPress={clearLog}>
-              <Text className="text-zinc-600 text-xs">
+              <Text className="text-xs font-semibold text-primary">
                 Clear All Logs
               </Text>
             </TouchableOpacity>
@@ -245,16 +256,16 @@ export default function DebugPage() {
                 <TouchableOpacity
                   key={id}
                   onPress={() => setSelectedProcessLog(id)}
-                  className="rounded-md px-2.5 py-1.5 border"
+                  className="rounded-xl border px-3 py-2"
                   style={{
                     borderColor:
                       selectedProcessLog === id
-                        ? '#3b82f6'
-                        : '#3f3f46',
+                        ? tokens.primary
+                        : tokens.border,
                     backgroundColor:
                       selectedProcessLog === id
-                        ? '#1e3a8a55'
-                        : '#18181b',
+                        ? tokens.primaryMuted
+                        : tokens.card,
                   }}
                 >
                   <Text
@@ -262,8 +273,8 @@ export default function DebugPage() {
                     style={{
                       color:
                         selectedProcessLog === id
-                          ? '#93c5fd'
-                          : '#a1a1aa',
+                        ? tokens.primary
+                        : tokens.muted,
                     }}
                   >
                     {PROCESS_LABELS[id]}
@@ -274,13 +285,13 @@ export default function DebugPage() {
           </View>
         </View>
         {(selectedProcessLogs.length > 0 || logLines.length > 0) && (
-          <View className="mx-4 mt-3">
+          <View className="mx-5 mt-3">
             <View className="flex-row justify-between items-center mb-1">
-              <Text className="text-zinc-500 text-xs font-semibold">
+              <Text className="text-xs font-bold text-muted">
                 {PROCESS_LABELS[selectedProcessLog]} console
               </Text>
             </View>
-            <View className="bg-zinc-950 rounded-lg border border-zinc-800 p-3">
+            <View className="rounded-2xl border border-border bg-surface-2 p-3">
               {(selectedProcessLogs.length > 0
                 ? selectedProcessLogs
                 : logLines
@@ -290,17 +301,17 @@ export default function DebugPage() {
                   className="text-[11px] leading-4 font-mono"
                   style={{
                     color: line.startsWith('===')
-                      ? '#60a5fa'
+                      ? tokens.transfer
                       : line.startsWith('---')
-                        ? '#a78bfa'
+                        ? tokens.states.pending
                         : line.includes('FAIL') ||
                             line.includes('failed') ||
                             line.includes('ERROR')
-                          ? '#fca5a5'
+                          ? tokens.danger
                           : line.includes('PASS') ||
                               line.includes('success')
-                            ? '#4ade80'
-                            : '#d4d4d8',
+                            ? tokens.success
+                            : tokens.foreground,
                   }}
                   selectable
                 >

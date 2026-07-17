@@ -18,6 +18,7 @@ import { AiReasoningSection } from '@/components/proposal/ai-reasoning-section';
 import { FieldRow } from '@/components/proposal/field-row';
 import { ProposalLocationSection } from '@/components/proposal/proposal-location-section';
 import { chipClass, chipTextClass } from '@/components/ui/chip';
+import { Surface } from '@/components/ui/surface';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { parseAmountInput } from '@/lib/finance/money';
 import {
@@ -37,6 +38,13 @@ export type WalletOption = {
   currency: string;
 };
 
+export type CategoryOption = {
+  id: string;
+  name: string;
+  icon: string | null;
+  type: string | null;
+};
+
 const TX_TYPES = ['expense', 'income', 'transfer'] as const;
 export type TxType = (typeof TX_TYPES)[number];
 
@@ -53,6 +61,7 @@ export type EditedFields = {
   type: TxType;
   walletId: string | null;
   transferToWalletId: string | null;
+  categoryId: string | null;
   merchant: string;
   description: string;
   date: string;
@@ -61,12 +70,14 @@ export type EditedFields = {
 export function ProposalForm({
   proposal,
   wallets,
+  categories,
   isActioning,
   onApprove,
   onReject,
 }: {
   proposal: ProposedTransaction;
   wallets: WalletOption[];
+  categories: CategoryOption[];
   isActioning: boolean;
   onApprove: (edited: EditedFields) => void;
   onReject: () => void;
@@ -94,9 +105,13 @@ export function ProposalForm({
   );
   const [selectedTransferToWalletId, setSelectedTransferToWalletId] =
     useState<string | null>(proposal.transferToWalletId);
+  const [selectedCategoryId, setSelectedCategoryId] = useState<
+    string | null
+  >(proposal.categoryId);
   const [showWalletPicker, setShowWalletPicker] = useState(false);
   const [showTransferToPicker, setShowTransferToPicker] =
     useState(false);
+  const [showCategoryPicker, setShowCategoryPicker] = useState(false);
 
   const isTransfer = txType === 'transfer';
   const destinationWallets = useMemo(
@@ -118,8 +133,10 @@ export function ProposalForm({
       resolveInitialWalletId(proposal, wallets, getDefaultWalletId()),
     );
     setSelectedTransferToWalletId(proposal.transferToWalletId);
+    setSelectedCategoryId(proposal.categoryId);
     setShowWalletPicker(false);
     setShowTransferToPicker(false);
+    setShowCategoryPicker(false);
   }, [proposal, wallets]);
 
   useEffect(() => {
@@ -138,6 +155,18 @@ export function ProposalForm({
   const selectedTransferToWallet = wallets.find(
     (w) => w.id === selectedTransferToWalletId,
   );
+  const categoryOptions = useMemo(
+    () =>
+      categories.filter((category) =>
+        txType === 'income'
+          ? category.type === 'income'
+          : category.type === 'expense',
+      ),
+    [categories, txType],
+  );
+  const selectedCategory = categoryOptions.find(
+    (category) => category.id === selectedCategoryId,
+  );
   const displayCurrency = displayCurrencyForProposal(
     { walletId: selectedWalletId, currency: proposal.currency },
     wallets,
@@ -153,6 +182,12 @@ export function ProposalForm({
     image: 'From receipt photo',
     notification: `From ${proposal.sourceApp ?? 'notification'}`,
   }[proposal.sourceType ?? 'notification'];
+  const sourceTitle =
+    proposal.sourceType === 'image'
+      ? 'Receipt capture'
+      : proposal.sourceType === 'text'
+        ? 'From Moni chat'
+        : 'Notification capture';
 
   const canApprove =
     !!selectedWalletId &&
@@ -196,6 +231,7 @@ export function ProposalForm({
       transferToWalletId: isTransfer
         ? selectedTransferToWalletId
         : null,
+      categoryId: isTransfer ? null : selectedCategoryId,
       merchant,
       description,
       date,
@@ -203,41 +239,35 @@ export function ProposalForm({
   };
 
   return (
-    <View>
-      <View className="mb-4 rounded-2xl bg-background-muted px-4 py-3">
-        <Text className="text-sm text-muted">{sourceLabel}</Text>
+    <View accessibilityLabel="Transaction proposal review">
+      <Surface
+        tone="muted"
+        className="mb-5 px-4 py-4"
+      >
+        <Text className="text-xs font-semibold uppercase tracking-wide text-muted">
+          {sourceTitle}
+        </Text>
+        <Text className="mt-1 text-base font-bold text-foreground">
+          {sourceLabel}
+        </Text>
         {proposal.sourceText ? (
           <Text
-            className="mt-1 text-sm text-foreground"
-            numberOfLines={3}
+            className="mt-2 text-sm leading-5 text-muted"
+            numberOfLines={2}
           >
             &ldquo;{proposal.sourceText}&rdquo;
           </Text>
         ) : null}
-        {proposal.sourceImageUri ? (
-          <Image
-            source={{ uri: proposal.sourceImageUri }}
-            style={{
-              width: '100%',
-              height: 160,
-              borderRadius: 12,
-              marginTop: 8,
-            }}
-            contentFit="cover"
-          />
-        ) : null}
         {proposal.sourceType === 'notification' &&
         proposal.notificationBody ? (
           <Text
-            className="mt-1 text-sm text-foreground"
-            numberOfLines={3}
+            className="mt-2 text-sm leading-5 text-muted"
+            numberOfLines={2}
           >
             {proposal.notificationTitle}: {proposal.notificationBody}
           </Text>
         ) : null}
-      </View>
-
-      <ProposalLocationSection proposalId={proposal.id} />
+      </Surface>
 
       <Text className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted">
         Transaction type
@@ -259,13 +289,17 @@ export function ProposalForm({
         ))}
       </View>
 
-      <FieldRow label="Amount">
-        <View className="flex-1 flex-row items-center justify-end gap-2">
-          <Text className="text-sm font-semibold text-muted">
+      <View className="mb-5 border-b border-border-subtle pb-5">
+        <Text className="text-xs font-semibold uppercase tracking-wide text-muted">
+          Proposed amount
+        </Text>
+        <View className="mt-2 flex-row items-end justify-between gap-3">
+          <Text className="pb-3 text-sm font-semibold text-muted">
             {displayCurrency}
           </Text>
           <TextInput
-            className="min-w-[96px] flex-1 rounded-xl border border-border bg-card px-3 py-2 text-right text-base font-semibold"
+            accessibilityLabel="Amount"
+            className="min-w-[120px] flex-1 border-b border-border bg-transparent px-1 py-1 text-right text-4xl font-bold"
             style={{ color: amountColor }}
             value={amount}
             onChangeText={setAmount}
@@ -273,11 +307,11 @@ export function ProposalForm({
             selectTextOnFocus
           />
         </View>
-      </FieldRow>
+      </View>
 
       <FieldRow label={isTransfer ? 'From wallet' : 'Wallet'}>
         <TouchableOpacity
-          className="flex-1 flex-row items-center justify-end rounded-xl border border-border bg-card px-3 py-2"
+          className="flex-1 flex-row items-center justify-end rounded-2xl border border-border bg-card px-3 py-3"
           onPress={() => {
             setShowTransferToPicker(false);
             setShowWalletPicker(!showWalletPicker);
@@ -294,7 +328,7 @@ export function ProposalForm({
       </FieldRow>
 
       {showWalletPicker ? (
-        <View className="mb-4 overflow-hidden rounded-2xl border border-border bg-card">
+        <Surface className="mb-4 overflow-hidden rounded-[22px]">
           {wallets.map((w) => (
             <Pressable
               key={w.id}
@@ -312,14 +346,14 @@ export function ProposalForm({
               </Text>
             </Pressable>
           ))}
-        </View>
+        </Surface>
       ) : null}
 
       {isTransfer ? (
         <>
           <FieldRow label="To wallet">
             <TouchableOpacity
-              className="flex-1 flex-row items-center justify-end rounded-xl border border-border bg-card px-3 py-2"
+              className="flex-1 flex-row items-center justify-end rounded-2xl border border-border bg-card px-3 py-3"
               onPress={() => {
                 setShowWalletPicker(false);
                 setShowTransferToPicker(!showTransferToPicker);
@@ -337,7 +371,7 @@ export function ProposalForm({
           </FieldRow>
 
           {showTransferToPicker ? (
-            <View className="mb-4 overflow-hidden rounded-2xl border border-border bg-card">
+            <Surface className="mb-4 overflow-hidden rounded-[22px]">
               {destinationWallets.length === 0 ? (
                 <Text className="px-4 py-3 text-sm text-muted">
                   Add another wallet to complete this transfer.
@@ -365,7 +399,61 @@ export function ProposalForm({
                   </Pressable>
                 ))
               )}
-            </View>
+            </Surface>
+          ) : null}
+        </>
+      ) : null}
+
+      {!isTransfer ? (
+        <>
+          <FieldRow label="Category">
+            <TouchableOpacity
+              className="flex-1 flex-row items-center justify-end rounded-2xl border border-border bg-card px-3 py-3"
+              onPress={() => {
+                setShowWalletPicker(false);
+                setShowTransferToPicker(false);
+                setShowCategoryPicker(!showCategoryPicker);
+              }}
+              activeOpacity={0.7}
+            >
+              <Text
+                className={`text-sm ${selectedCategory ? 'text-foreground' : 'text-muted'}`}
+              >
+                {selectedCategory
+                  ? `${selectedCategory.icon ?? '•'} ${selectedCategory.name}`
+                  : (proposal.categoryHint ?? 'Select category...')}
+              </Text>
+              <Text className="ml-2 text-xs text-muted">▼</Text>
+            </TouchableOpacity>
+          </FieldRow>
+
+          {showCategoryPicker ? (
+            <Surface className="mb-4 overflow-hidden rounded-[22px]">
+              {categoryOptions.length === 0 ? (
+                <Text className="px-4 py-3 text-sm text-muted">
+                  No matching categories are available yet.
+                </Text>
+              ) : (
+                categoryOptions.map((category) => (
+                  <Pressable
+                    key={category.id}
+                    className={`border-b border-border px-4 py-3 ${
+                      category.id === selectedCategoryId
+                        ? 'bg-primary-muted'
+                        : ''
+                    }`}
+                    onPress={() => {
+                      setSelectedCategoryId(category.id);
+                      setShowCategoryPicker(false);
+                    }}
+                  >
+                    <Text className="text-sm font-medium text-foreground">
+                      {category.icon ?? '•'} {category.name}
+                    </Text>
+                  </Pressable>
+                ))
+              )}
+            </Surface>
           ) : null}
         </>
       ) : null}
@@ -373,7 +461,8 @@ export function ProposalForm({
       {!isTransfer ? (
         <FieldRow label="Merchant">
           <TextInput
-            className="flex-1 rounded-xl border border-border bg-card px-3 py-2 text-right text-sm text-foreground"
+            accessibilityLabel="Merchant"
+            className="flex-1 rounded-2xl border border-border bg-card px-3 py-3 text-right text-sm text-foreground"
             value={merchant}
             onChangeText={setMerchant}
             placeholder="optional"
@@ -384,7 +473,8 @@ export function ProposalForm({
 
       <FieldRow label="Description">
         <TextInput
-          className="flex-1 rounded-xl border border-border bg-card px-3 py-2 text-right text-sm text-foreground"
+          accessibilityLabel="Description"
+          className="flex-1 rounded-2xl border border-border bg-card px-3 py-3 text-right text-sm text-foreground"
           value={description}
           onChangeText={setDescription}
           placeholder="optional"
@@ -394,7 +484,8 @@ export function ProposalForm({
 
       <FieldRow label="Date">
         <TextInput
-          className="flex-1 rounded-xl border border-border bg-card px-3 py-2 text-right text-sm text-foreground"
+          accessibilityLabel="Transaction date"
+          className="flex-1 rounded-2xl border border-border bg-card px-3 py-3 text-right text-sm text-foreground"
           value={date}
           onChangeText={setDate}
           placeholder="YYYY-MM-DD"
@@ -410,6 +501,22 @@ export function ProposalForm({
           confidence={proposal.aiConfidence}
         />
       ) : null}
+
+      {proposal.sourceImageUri ? (
+        <View className="mt-5">
+          <Text className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted">
+            Receipt evidence
+          </Text>
+          <Image
+            source={{ uri: proposal.sourceImageUri }}
+            style={{ width: '100%', height: 180, borderRadius: 22 }}
+            contentFit="cover"
+            accessibilityLabel="Receipt image evidence"
+          />
+        </View>
+      ) : null}
+
+      <ProposalLocationSection proposalId={proposal.id} />
 
       <View className="mt-6 flex-row gap-3">
         <TouchableOpacity

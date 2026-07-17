@@ -8,10 +8,11 @@ import { captureLocationSnapshot } from '@/lib/location/location-snapshot';
 import { getUserId } from '@/lib/supabase/client';
 
 import {
-  startFabReceiptProcessing,
-  stopFabReceiptProcessing,
-  waitForReceiptProposal,
-} from './fab-receipt-processing';
+  beginImmediateProposalReview,
+  clearImmediateProposalReview,
+  completeImmediateProposalReview,
+} from '@/lib/proposals/immediate-review';
+import { waitForProposal } from '@/lib/proposals/proposal-wait';
 import { saveImageLocally } from './images';
 import { normalizeScanUri } from './normalize-scan';
 import { enqueueImageUpload } from './upload-queue';
@@ -93,16 +94,24 @@ export async function runFabReceiptScan(): Promise<void> {
   let proposalId: string | null = null;
   try {
     proposalId = await queueReceiptImage(uri);
-    startFabReceiptProcessing(proposalId);
+    beginImmediateProposalReview(proposalId, {
+      title: 'Reading your receipt…',
+      detail: 'Moni will show every detail before saving anything.',
+      icon: 'receipt',
+    });
 
-    const result = await waitForReceiptProposal(proposalId);
+    const result = await waitForProposal(proposalId);
+    if (result === 'ready') {
+      completeImmediateProposalReview(proposalId);
+      return;
+    }
     if (result === 'error' || result === 'timeout') {
-      stopFabReceiptProcessing();
+      clearImmediateProposalReview(proposalId);
       Alert.alert("Couldn't read receipt", 'Please try again.');
     }
   } catch (e) {
     console.warn(TAG, 'Failed to queue receipt:', e);
-    stopFabReceiptProcessing();
+    clearImmediateProposalReview(proposalId ?? undefined);
     Alert.alert("Couldn't read receipt", 'Please try again.');
   }
 }
