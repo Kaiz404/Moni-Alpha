@@ -20,6 +20,7 @@ export function ScreenShell({
   className,
   variant = 'default',
   edges = ['bottom'],
+  style,
   ...props
 }: ScreenShellProps) {
   const bg = variant === 'canvas' ? 'bg-canvas' : 'bg-background';
@@ -27,6 +28,7 @@ export function ScreenShell({
     <SafeAreaView
       edges={edges}
       className={`flex-1 ${bg} ${className ?? ''}`}
+      style={[{ flex: 1 }, style]}
       {...props}
     />
   );

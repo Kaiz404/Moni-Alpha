@@ -11,6 +11,7 @@ export default function NotFoundScreen() {
       <SafeAreaView
         edges={['bottom']}
         className="flex-1 items-center justify-center bg-background px-6"
+        style={{ flex: 1 }}
       >
         <Text className="mb-2 text-xl font-bold text-foreground">
           Screen not found

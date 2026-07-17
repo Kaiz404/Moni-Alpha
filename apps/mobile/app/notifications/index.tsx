@@ -157,6 +157,7 @@ export default function NotificationsScreen() {
     <SafeAreaView
       edges={['bottom']}
       className="flex-1 bg-background p-4"
+      style={{ flex: 1 }}
     >
       <Stack.Screen
         options={{ headerShown: true, title: 'Notifications' }}

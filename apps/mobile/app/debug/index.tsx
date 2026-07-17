@@ -118,7 +118,10 @@ export default function DebugPage() {
   );
 
   return (
-    <SafeAreaView className="flex-1 bg-black">
+    <SafeAreaView
+      className="flex-1 bg-black"
+      style={{ flex: 1 }}
+    >
       <ScrollView
         ref={scrollRef}
         contentContainerClassName="pb-20"

@@ -115,6 +115,7 @@ export default function TransactionsScreen() {
     <SafeAreaView
       edges={['bottom']}
       className="flex-1 bg-background"
+      style={{ flex: 1 }}
     >
       <ScrollView
         refreshControl={

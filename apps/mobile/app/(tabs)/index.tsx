@@ -184,6 +184,7 @@ export default function WalletsScreen() {
     <SafeAreaView
       edges={['top']}
       className="flex-1 bg-background pt-5"
+      style={{ flex: 1 }}
     >
       <ScrollView
         refreshControl={

@@ -45,6 +45,7 @@ export default function SummaryScreen() {
     <SafeAreaView
       edges={['top']}
       className="flex-1 bg-background"
+      style={{ flex: 1 }}
     >
       <ScrollView
         className="flex-1"

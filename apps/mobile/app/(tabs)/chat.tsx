@@ -198,7 +198,8 @@ export default function ChatScreen() {
     [sessionCallbacks],
   );
 
-  const bottomPad = Math.max(insets.bottom, 5) + 20;
+  // The custom tab bar already reserves the system bottom inset.
+  const bottomPad = 12;
 
   return (
     <KeyboardAvoidingView
@@ -210,14 +211,15 @@ export default function ChatScreen() {
       <SafeAreaView
         edges={['top']}
         className="flex-1"
+        style={{ flex: 1 }}
       >
-        <View className="flex-row items-center justify-between px-6 pt-5 pb-2">
-          <Text className="mt-5 text-2xl font-bold text-foreground">
+        <View className="flex-row items-center justify-between px-6 pt-4 pb-2">
+          <Text className="text-2xl font-bold text-foreground">
             Chat
           </Text>
           <Pressable
             onPress={handleNewChat}
-            className="mt-5 rounded-full border border-border bg-card px-3 py-1.5"
+            className="rounded-full border border-border bg-card px-3 py-1.5"
             hitSlop={8}
           >
             <Text className="text-sm font-medium text-primary">

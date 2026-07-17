@@ -153,7 +153,7 @@ export default function ScanListenScreen() {
     <SafeAreaView
       edges={['bottom']}
       className="flex-1 bg-background"
-      style={{ paddingTop: insets.top }}
+      style={{ flex: 1, paddingTop: insets.top }}
     >
       <View className="flex-row items-center justify-between px-4 py-3">
         <Pressable

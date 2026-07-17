@@ -56,7 +56,10 @@ export default function HeatmapScreen() {
 
   if (!isMapReady && isLoading) {
     return (
-      <SafeAreaView className="flex-1 items-center justify-center bg-background">
+      <SafeAreaView
+        className="flex-1 items-center justify-center bg-background"
+        style={{ flex: 1 }}
+      >
         <ActivityIndicator
           size="large"
           color={tokens.primary}
@@ -70,7 +73,10 @@ export default function HeatmapScreen() {
 
   if (error) {
     return (
-      <SafeAreaView className="flex-1 items-center justify-center bg-background">
+      <SafeAreaView
+        className="flex-1 items-center justify-center bg-background"
+        style={{ flex: 1 }}
+      >
         <Text className="px-5 text-center text-base text-danger">
           Error: {error}
         </Text>
@@ -80,7 +86,10 @@ export default function HeatmapScreen() {
 
   if (pinPoints.length === 0) {
     return (
-      <SafeAreaView className="flex-1 items-center justify-center bg-background">
+      <SafeAreaView
+        className="flex-1 items-center justify-center bg-background"
+        style={{ flex: 1 }}
+      >
         <Text className="px-5 text-center text-base text-muted">
           No transactions with location data found. Start adding
           locations to your transactions!
@@ -90,7 +99,10 @@ export default function HeatmapScreen() {
   }
 
   return (
-    <SafeAreaView className="flex-1 items-center justify-center bg-background">
+    <SafeAreaView
+      className="flex-1 items-center justify-center bg-background"
+      style={{ flex: 1 }}
+    >
       <MapView
         ref={mapRef}
         style={styles.map}
