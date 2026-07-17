@@ -1,5 +1,5 @@
 import { randomUUID } from 'expo-crypto';
-import type { CategoryBudget } from '@repo/types';
+import { decimalToMinor, minorToDecimal, type CategoryBudget, type MinorAmount } from '@repo/types';
 import { categoryBudgets$ } from '@/lib/store';
 import { getRecordValues, patchRow } from '@/lib/store/helpers';
 import { getUserId } from '@/lib/supabase/client';
@@ -22,7 +22,7 @@ function rowToBudget(row: BudgetRow): CategoryBudget {
     userId: row.user_id ?? '',
     categoryId: row.category_id ?? '',
     currency: (row.currency ?? 'USD').toUpperCase(),
-    amount: parseFloat(String(row.amount ?? '0')),
+    amountMinor: decimalToMinor(row.amount),
     period: (row.period as CategoryBudget['period']) ?? 'monthly',
     createdAt: row.created_at ?? '',
     updatedAt: row.updated_at ?? '',
@@ -41,7 +41,7 @@ export async function getCategoryBudgets(): Promise<CategoryBudget[]> {
 export async function upsertCategoryBudget(
   categoryId: string,
   currency: string,
-  amount: number,
+  amountMinor: MinorAmount,
 ): Promise<CategoryBudget> {
   const userId = await getUserId();
   if (!userId) throw new Error('Not authenticated');
@@ -53,7 +53,7 @@ export async function upsertCategoryBudget(
 
   if (existing?.id) {
     patchRow(categoryBudgets$, existing.id, {
-      amount,
+      amount: minorToDecimal(amountMinor),
       updated_at: now,
     });
     const row = getRecordValues<BudgetRow>(categoryBudgets$).find((r) => r.id === existing.id);
@@ -67,7 +67,7 @@ export async function upsertCategoryBudget(
     user_id: userId,
     category_id: categoryId,
     currency: currency.toUpperCase(),
-    amount,
+    amount: minorToDecimal(amountMinor),
     period: 'monthly',
     deleted: false,
   });

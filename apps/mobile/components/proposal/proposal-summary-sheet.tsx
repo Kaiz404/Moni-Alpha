@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, AppState, DeviceEventEmitter, Modal, Pressable, Text, View } from 'react-native';
 import { usePathname, router } from 'expo-router';
 import MaterialIcons from '@react-native-vector-icons/material-icons';
-import type { ProposedTransaction } from '@repo/types';
+import { minorToDecimal, type ProposedTransaction } from '@repo/types';
 import {
   getProposedTransactions,
   approveProposedTransaction,
@@ -202,7 +202,7 @@ export function ProposalSummarySheet() {
           <View className="mt-1 flex-row items-baseline gap-2">
             <Text className="text-4xl font-bold" style={{ color: amountColor }}>
               {isTransfer ? '' : isIncome ? '+' : '-'}
-              {(current.amount ?? 0).toFixed(2)}
+              {current.amountMinor == null ? '—' : minorToDecimal(current.amountMinor)}
             </Text>
             <Text className="text-base font-medium text-muted">{displayCurrency}</Text>
           </View>

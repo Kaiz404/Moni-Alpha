@@ -108,7 +108,7 @@ export default function ProposalDetailScreen() {
       try {
         const updatedProposal: ProposedTransaction = {
           ...proposal,
-          amount: edited.amount,
+          amountMinor: edited.amountMinor,
           type: effectiveType,
           merchant: effectiveType === 'transfer' ? null : edited.merchant || null,
           description: edited.description || null,

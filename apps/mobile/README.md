@@ -64,12 +64,13 @@ Do not mix Windows and WSL `expo prebuild` / Gradle — `android/build/generated
 | ---------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `app/`                             | expo-router: `(auth)`, `(tabs)` (Wallets / Summary / Chat / Profile), root Stack features (`wallet`, `transaction`, `proposal`, `budget`, `debt`, `scan`, `notifications`, `debug`, `heatmap`)                          |
 | `components/`                      | Domain UI (`ui/`, `nav/`, `providers/`, `auth/`, `wallets/`, `summary/`, `chat/`, `profile/`, `transaction/`, `proposal/`, `scan/`, `insights/`, `debug/`, `receipt/`) — keep screens thin; no co-location under `app/` |
-| `lib/store/`                       | Legend-State synced observables — the data layer                                                                                                                                                                        |
+| `lib/store/`                       | Legend-State synced observables — persisted source rows and command write targets                                                                                                                                        |
+| `lib/finance/`                     | Non-persisted normalized finance projection, exact minor-unit helpers, integrity repair, and cached Legend selectors for cards, charts, lists, budgets, debts, heatmap, and AI snapshots                            |
 | `lib/supabase/`                    | Supabase client (publishable key) + CRUD helpers over the store; profile preferences                                                                                                                                    |
 | `lib/auth/`                        | Auth context (email/password + native Google Sign-In)                                                                                                                                                                   |
 | `lib/mmkv/`                        | MMKV instances: auth session, store cache, upload queue, UI preferences (theme, default wallet)                                                                                                                         |
 | `lib/theme/`                       | Theme preference ↔ Uniwind (`light` / `dark` / `system`)                                                                                                                                                                |
-| `lib/wallets/`                     | Default wallet preference (`profiles.preferences.default_wallet_id`, MMKV cache), proposal wallet/currency resolution for AI, homepage wallet aggregation helpers (`home-aggregation.ts`)                               |
+| `lib/wallets/`                     | Default wallet preference (`profiles.preferences.default_wallet_id`, MMKV cache) and proposal wallet/currency resolution for AI                                                                                           |
 | `lib/ai/`                          | Processing queue, background processor, AI client (HTTP ↔ Go backend, mock fallback)                                                                                                                                    |
 | `lib/notifications/`               | Prefilter / package helpers: `*.core.js` (headless + Node tests) + thin `*.ts` re-exports; linked-app MMKV cache; `moni-android-apps`                                                                                   |
 | `lib/receipts/`                    | ML Kit scan normalization, local image save, Storage upload queue                                                                                                                                                       |
@@ -91,7 +92,7 @@ Appearance: Profile → Appearance (`light` default; `system` follows the device
 
 Default wallet: Profile → Default wallet. Synced in `profiles.preferences.default_wallet_id`; cached locally for background AI. Text/receipt proposals use this wallet when AI cannot infer one (receipts always). Currency on proposals follows the selected wallet — change wallet in review to change currency.
 
-**Wallets tab (home):** horizontal compact wallet strip (~2.5 cards visible); **Add wallet** card at the end. Default view aggregates charts and recent transactions across all wallets (preloaded per-wallet cache). Tap a card to multi-select filter; **All wallets** chip resets to aggregated view. Top-right chevron on each card opens wallet edit (`/wallet/[id]`). Mixed currencies: amounts labeled per wallet currency; chart totals split per currency.
+**Wallets tab (home):** horizontal compact wallet strip (~2.5 cards visible); **Add wallet** card at the end. The view is driven by narrow finance selectors, so each wallet card observes only its wallet and balance. Tap a card to multi-select filter; **All wallets** chip resets to aggregated view. Top-right chevron on each card opens wallet edit (`/wallet/[id]`). Mixed currencies: totals, pies, and history remain separate per currency.
 
 ## AI
 
@@ -112,5 +113,6 @@ Default wallet: Profile → Default wallet. Synced in `profiles.preferences.defa
 ```bash
 pnpm --filter moni test:notification-detection   # 1000-case prefilter suite
 pnpm --filter moni test:notification-routing     # wallet candidate routing (no LLM)
+pnpm --filter moni test                          # finance unit/reactivity tests
 npx tsc --noEmit                                 # typecheck (run in apps/mobile)
 ```

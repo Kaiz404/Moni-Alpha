@@ -9,13 +9,14 @@ import {
   View,
 } from 'react-native';
 import { Image } from 'expo-image';
-import type { ProposedTransaction } from '@repo/types';
+import { minorToDecimal, type ProposedTransaction } from '@repo/types';
 
 import { AiReasoningSection } from '@/components/proposal/ai-reasoning-section';
 import { FieldRow } from '@/components/proposal/field-row';
 import { ProposalLocationSection } from '@/components/proposal/proposal-location-section';
 import { chipClass, chipTextClass } from '@/components/ui/chip';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
+import { parseAmountInput } from '@/lib/finance/money';
 import {
   isoToLocalDateInput,
   parseLocalDateInput,
@@ -42,7 +43,7 @@ export function normalizeTxType(type: ProposedTransaction['type']): TxType {
 }
 
 export type EditedFields = {
-  amount: number;
+  amountMinor: ReturnType<typeof parseAmountInput>;
   type: TxType;
   walletId: string | null;
   transferToWalletId: string | null;
@@ -66,7 +67,7 @@ export function ProposalForm({
 }) {
   const tokens = useThemeTokens();
   const [txType, setTxType] = useState<TxType>(normalizeTxType(proposal.type));
-  const [amount, setAmount] = useState(proposal.amount?.toFixed(2) ?? '0.00');
+  const [amount, setAmount] = useState(proposal.amountMinor != null ? minorToDecimal(proposal.amountMinor) : '0.00');
   const [merchant, setMerchant] = useState(proposal.merchant ?? '');
   const [description, setDescription] = useState(proposal.description ?? '');
   const [date, setDate] = useState(() => isoToLocalDateInput(proposal.transactionDate));
@@ -87,7 +88,7 @@ export function ProposalForm({
 
   useEffect(() => {
     setTxType(normalizeTxType(proposal.type));
-    setAmount(proposal.amount?.toFixed(2) ?? '0.00');
+    setAmount(proposal.amountMinor != null ? minorToDecimal(proposal.amountMinor) : '0.00');
     setMerchant(proposal.merchant ?? '');
     setDescription(proposal.description ?? '');
     setDate(isoToLocalDateInput(proposal.transactionDate));
@@ -121,8 +122,10 @@ export function ProposalForm({
   const canApprove = !!selectedWalletId && (!isTransfer || !!selectedTransferToWalletId);
 
   const handleApprovePress = () => {
-    const parsedAmount = parseFloat(amount);
-    if (Number.isNaN(parsedAmount) || parsedAmount <= 0) {
+    let amountMinor: ReturnType<typeof parseAmountInput>;
+    try {
+      amountMinor = parseAmountInput(amount);
+    } catch {
       Alert.alert('Cannot approve', 'Enter a valid positive amount.');
       return;
     }
@@ -141,7 +144,7 @@ export function ProposalForm({
       return;
     }
     onApprove({
-      amount: parsedAmount,
+      amountMinor,
       type: txType,
       walletId: selectedWalletId,
       transferToWalletId: isTransfer ? selectedTransferToWalletId : null,

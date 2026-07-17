@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { currencyCodeSchema, positiveMinorAmountSchema } from './money';
 
 export const debtDirectionSchema = z.enum(["owed_to_me", "i_owe"]);
 export const debtStatusSchema = z.enum(["open", "settled", "written_off"]);
@@ -13,7 +14,7 @@ export const debtSchema = z.object({
   userId: z.string().uuid(),
   counterpartyName: z.string().min(1).max(120),
   direction: debtDirectionSchema,
-  currency: z.string().length(3),
+  currency: currencyCodeSchema,
   dueDate: z.string().date().nullable(),
   note: z.string().max(1000).nullable(),
   status: debtStatusSchema,
@@ -26,7 +27,7 @@ export const debtActivitySchema = z.object({
   userId: z.string().uuid(),
   debtId: z.string().uuid(),
   kind: debtActivityKindSchema,
-  amount: z.number().positive(),
+  amountMinor: positiveMinorAmountSchema,
   activityDate: z.string().datetime(),
   walletId: z.string().uuid().nullable(),
   cashTransactionId: z.string().uuid().nullable(),
@@ -38,7 +39,7 @@ export const debtActivitySchema = z.object({
 export const createDebtInputSchema = z.object({
   counterpartyName: z.string().trim().min(1).max(120),
   direction: debtDirectionSchema,
-  amount: z.number().positive(),
+  amountMinor: positiveMinorAmountSchema,
   walletId: z.string().uuid(),
   dueDate: z.string().date().nullable().optional(),
   note: z.string().max(1000).nullable().optional(),
@@ -47,7 +48,7 @@ export const createDebtInputSchema = z.object({
 
 export const createDebtActivityInputSchema = z.object({
   kind: z.enum(["principal", "repayment"]),
-  amount: z.number().positive(),
+  amountMinor: positiveMinorAmountSchema,
   walletId: z.string().uuid(),
   note: z.string().max(1000).nullable().optional(),
   activityDate: z.string().datetime().optional(),

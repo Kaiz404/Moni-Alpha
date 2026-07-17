@@ -15,6 +15,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@/lib/auth/auth-context';
 import { deleteWallet, getWalletById, getWallets, updateWallet } from '@/lib/supabase/wallets';
 import { updateWalletSchema } from '@repo/types';
+import { decimalToMinor, minorToDecimal } from '@repo/types';
+import { formatMinorAmount } from '@/lib/finance/money';
 import { WALLET_TYPE_OPTIONS, type WalletKind } from '@/constants/wallet-form';
 import {
   WALLET_CARD_STYLES,
@@ -22,6 +24,7 @@ import {
 } from '@/constants/wallet-card-styles';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { BrandHeader } from '@/components/ui/brand-header';
+import { AmountInput } from '@/components/finance/amount-input';
 import { ScreenShell } from '@/components/ui/screen-shell';
 import { chipClass, chipTextClass } from '@/components/ui/chip';
 import { PrimaryButton } from '@/components/ui/primary-button';
@@ -83,10 +86,10 @@ export default function EditWalletScreen() {
           WALLET_TYPE_OPTIONS.find((o) => o.value === w.type)?.value ?? 'bank',
         );
         setCurrency(w.currency ?? 'USD');
-        setInitialBalance(w.initialBalance.toFixed(2));
+        setInitialBalance(minorToDecimal(w.initialBalanceMinor));
         setCardStyleId(w.cardStyleId || DEFAULT_WALLET_CARD_STYLE_ID);
         setReadOnlyBalance(
-          `${w.currency ?? 'USD'} ${w.currentBalance.toFixed(2)}`,
+          formatMinorAmount(w.currentBalanceMinor, w.currency ?? 'USD'),
         );
         setReadOnlyUpdated(
           w.updatedAt
@@ -181,7 +184,7 @@ export default function EditWalletScreen() {
       name: name.trim(),
       type,
       currency: cur,
-      initialBalance: parseFloat(initialBalance) || 0,
+      initialBalanceMinor: decimalToMinor(initialBalance || '0'),
       color: style.swatchHex,
       icon: WALLET_TYPE_OPTIONS.find((t) => t.value === type)?.icon ?? '💰',
       cardStyleId: style.id,
@@ -309,13 +312,13 @@ export default function EditWalletScreen() {
                 <Text className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-muted">
                   Initial balance
                 </Text>
-                <TextInput
+                <AmountInput
                   className={`text-base ${inputClass}`}
                   placeholder="0.00"
                   placeholderTextColor="#9CA3AF"
                   value={initialBalance}
-                  onChangeText={setInitialBalance}
-                  keyboardType="decimal-pad"
+                  onChangeValue={setInitialBalance}
+                  currency={currency}
                 />
               </View>
             </View>

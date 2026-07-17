@@ -13,6 +13,7 @@ import { createTransaction, createTransfer } from '@/lib/supabase/transactions';
 import { getWallets } from '@/lib/supabase/wallets';
 import { getCategories } from '@/lib/supabase/categories';
 import { createTransactionSchema } from '@repo/types';
+import { parseAmountInput } from '@/lib/finance/money';
 import { getDraftExtras, hasDraftExtras, resetDraftExtras } from '@/lib/transactions/draft-extras';
 
 const QUICK_AMOUNTS = [10, 20, 50, 100, 500];
@@ -93,8 +94,10 @@ export default function NewTransactionScreen() {
   const handleSubmit = async () => {
     if (!user || !walletId) return;
 
-    const parsedAmount = parseFloat(amount) || 0;
-    if (parsedAmount <= 0) {
+    let amountMinor: ReturnType<typeof parseAmountInput>;
+    try {
+      amountMinor = parseAmountInput(amount);
+    } catch {
       Alert.alert('Error', 'Enter a valid positive amount.');
       return;
     }
@@ -109,7 +112,7 @@ export default function NewTransactionScreen() {
         await createTransfer({
           fromWalletId: walletId,
           toWalletId: transferToWalletId,
-          amount: parsedAmount,
+          amountMinor,
           description: extras.description.trim() || null,
         });
       } else {
@@ -123,7 +126,7 @@ export default function NewTransactionScreen() {
 
         const parsed = createTransactionSchema.safeParse({
           walletId,
-          amount: parsedAmount,
+          amountMinor,
           type,
           categoryId: categoryId || null,
           merchant: extras.merchant.trim() || null,

@@ -3,6 +3,7 @@
  * Classification / extraction now go through the AI backend client.
  */
 import type { CreateProposedTransaction } from '@repo/types';
+import { decimalToMinor } from '@repo/types';
 import {
   buildNotificationContext,
 } from '@/lib/ai/notification-context';
@@ -92,7 +93,7 @@ export function buildPotentialTransaction(
     walletHint: result.walletHint,
     transferToWalletId: null,
     transferToWalletHint: null,
-    amount: result.amount,
+    amountMinor: result.amount == null ? null : decimalToMinor(result.amount),
     currency: result.currency,
     type: normalizedType,
     description: result.description,

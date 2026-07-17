@@ -3,6 +3,7 @@ import { View, StyleSheet, ActivityIndicator, Text, Linking, Platform, Pressable
 import MapView, { Marker } from 'react-native-maps';
 import { useTransactionPinmap, type TransactionPinPoint } from '@/hooks/use-transaction-heatmap';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
+import { formatMinorAmount } from '@/lib/finance/money';
 
 export default function HeatmapScreen() {
   const { pinPoints, mapRegion, isLoading, error } = useTransactionPinmap();
@@ -118,7 +119,7 @@ export default function HeatmapScreen() {
             {selectedPin.locationName}
           </Text>
           <Text className="mb-1 text-xs text-foreground">Description: {selectedPin.description}</Text>
-          <Text className="mb-1 text-xs text-foreground">Amount: ${selectedPin.amount.toFixed(2)}</Text>
+          <Text className="mb-1 text-xs text-foreground">Amount: {selectedPin.amountsByCurrency.map(({ currency, amountMinor }) => formatMinorAmount(amountMinor, currency)).join(' · ')}</Text>
           <Text className="mb-1 text-xs text-muted">
             {selectedPin.transactionCount} transaction(s) at this location
           </Text>

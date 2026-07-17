@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import type { Pagination } from './api';
+import { currencyCodeSchema, positiveMinorAmountSchema } from './money';
 
 // Transaction type enum
 export const transactionTypeSchema = z.enum(['income', 'expense', 'transfer']);
@@ -16,9 +17,9 @@ export const transactionSchema = z.object({
   id: z.string().uuid(),
   userId: z.string().uuid(),
   walletId: z.string().uuid(),
-  amount: z.number().positive(),
+  amountMinor: positiveMinorAmountSchema,
   /** Immutable snapshot of the source wallet currency. */
-  currency: z.string().length(3),
+  currency: currencyCodeSchema,
   type: transactionTypeSchema,
   categoryId: z.string().uuid().nullable(),
   
@@ -56,7 +57,7 @@ export const transactionSchema = z.object({
 // Create transaction schema
 export const createTransactionSchema = z.object({
   walletId: z.string().uuid(),
-  amount: z.number().positive(),
+  amountMinor: positiveMinorAmountSchema,
   type: transactionTypeSchema,
   analysisExcluded: z.boolean().optional(),
   debtActivityId: z.string().uuid().optional().nullable(),
@@ -78,7 +79,7 @@ export const createTransactionSchema = z.object({
 // Update transaction schema
 export const updateTransactionSchema = z.object({
   walletId: z.string().uuid().optional(),
-  amount: z.number().positive().optional(),
+  amountMinor: positiveMinorAmountSchema.optional(),
   type: transactionTypeSchema.optional(),
   analysisExcluded: z.boolean().optional(),
   categoryId: z.string().uuid().optional().nullable(),
@@ -103,8 +104,8 @@ export const transactionListParamsSchema = z.object({
   type: transactionTypeSchema.optional(),
   startDate: z.string().datetime().optional(),
   endDate: z.string().datetime().optional(),
-  minAmount: z.number().optional(),
-  maxAmount: z.number().optional(),
+  minAmountMinor: z.number().int().nonnegative().optional(),
+  maxAmountMinor: z.number().int().nonnegative().optional(),
   search: z.string().optional(),
   tagIds: z.array(z.string().uuid()).optional(),
   page: z.number().int().positive().default(1),

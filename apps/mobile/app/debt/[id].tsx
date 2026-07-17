@@ -9,6 +9,7 @@ import {
 } from "react-native";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { BrandHeader } from "@/components/ui/brand-header";
+import { AmountInput } from '@/components/finance/amount-input';
 import { PrimaryButton } from "@/components/ui/primary-button";
 import { ScreenShell } from "@/components/ui/screen-shell";
 import { useThemeTokens } from "@/hooks/use-theme-tokens";
@@ -24,9 +25,10 @@ import {
 } from "@/lib/supabase/debts";
 import { getWallets } from "@/lib/supabase/wallets";
 import type { Debt, DebtActivity } from "@repo/types";
+import { formatMinorAmount, parseAmountInput, type MinorAmount } from '@/lib/finance/money';
 
-const money = (currency: string, amount: number) =>
-  `${currency} ${amount.toFixed(2)}`;
+const money = (currency: string, amountMinor: MinorAmount) =>
+  formatMinorAmount(amountMinor, currency);
 const normalizeCurrency = (currency: unknown) =>
   String(currency ?? "USD")
     .trim()
@@ -115,8 +117,8 @@ export default function DebtDetailScreen() {
       setSaving(true);
       if (!action) return;
       if (action === "principal")
-        await addDebtPrincipal(debt, Number(amount), selectedWalletId);
-      else await repayDebt(debt, Number(amount), selectedWalletId);
+        await addDebtPrincipal(debt, parseAmountInput(amount), selectedWalletId);
+      else await repayDebt(debt, parseAmountInput(amount), selectedWalletId);
       setAction(null);
       setAmount("");
       await load();
@@ -175,13 +177,13 @@ export default function DebtDetailScreen() {
                   : "Borrow more"
                 : "Record repayment"}
             </Text>
-            <TextInput
+            <AmountInput
               value={amount}
-              onChangeText={setAmount}
-              keyboardType="decimal-pad"
+              onChangeValue={setAmount}
               placeholder="Amount"
               placeholderTextColor={tokens.muted}
               className="mt-3 rounded-lg border border-border bg-background px-3 py-2 text-foreground"
+              currency={debt.currency}
             />
             {matchingWallets.length ? (
               <View className="mt-2 flex-row flex-wrap gap-2">
@@ -262,7 +264,7 @@ export default function DebtDetailScreen() {
                 {item.kind.replace("_", " ")}
               </Text>
               <Text className="font-semibold text-foreground">
-                {money(debt.currency, item.amount)}
+                {money(debt.currency, item.amountMinor)}
               </Text>
             </View>
             <Text className="mt-1 text-sm text-muted">

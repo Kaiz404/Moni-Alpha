@@ -1,9 +1,9 @@
 import { transactions$, wallets$ } from '@/lib/store';
 import { getRecordValues, patchRow } from '@/lib/store/helpers';
 import { getUserId } from '@/lib/supabase/client';
-import { isTransactionRelevantToWallet } from '@/lib/supabase/transaction-balance';
+import { isTransactionRelevantToWallet } from '@/lib/finance/ledger';
 import type { CreateTransaction, UpdateTransaction } from '@repo/types';
-import { updateTransactionSchema } from '@repo/types';
+import { decimalToMinor, minorToDecimal, updateTransactionSchema } from '@repo/types';
 import { randomUUID } from 'expo-crypto';
 import * as Location from 'expo-location';
 
@@ -60,7 +60,7 @@ function mapTransactionRow(t: TransactionRow) {
     id: t.id,
     userId: t.user_id ?? '',
     walletId: t.wallet_id ?? '',
-    amount: parseFloat(String(t.amount ?? '0')),
+    amountMinor: decimalToMinor(t.amount),
     currency: (t.currency ?? 'USD').toUpperCase(),
     type: t.type,
     analysisExcluded: t.analysis_excluded === true || t.analysis_excluded === 1,
@@ -85,13 +85,10 @@ function mapTransactionRow(t: TransactionRow) {
 export async function getTransactions(walletId?: string, limit: number = 100) {
   let rows = getRecordValues<TransactionRow>(transactions$);
 
-  if (walletId) {
-    rows = rows.filter((t) => isTransactionRelevantToWallet(t, walletId));
-  }
-
   rows.sort((a, b) => toDateSortKey(b.transaction_date).localeCompare(toDateSortKey(a.transaction_date)));
-
-  return rows.slice(0, limit).map(mapTransactionRow);
+  const transactions = rows.map(mapTransactionRow);
+  return (walletId ? transactions.filter((transaction) => isTransactionRelevantToWallet(transaction, walletId)) : transactions)
+    .slice(0, limit);
 }
 
 export async function getTransactionById(id: string) {
@@ -116,7 +113,7 @@ export async function updateTransaction(id: string, data: UpdateTransaction) {
   };
 
   if (p.walletId !== undefined) patch.wallet_id = p.walletId;
-  if (p.amount !== undefined) patch.amount = p.amount;
+  if (p.amountMinor !== undefined) patch.amount = minorToDecimal(p.amountMinor);
   if (p.type !== undefined) patch.type = p.type;
   if (p.analysisExcluded !== undefined) patch.analysis_excluded = p.analysisExcluded;
   if (p.categoryId !== undefined) patch.category_id = p.categoryId;
@@ -196,7 +193,7 @@ export async function createTransaction(data: CreateTransaction) {
     id,
     user_id: userId,
     wallet_id: data.walletId,
-    amount: data.amount,
+    amount: minorToDecimal(data.amountMinor),
     currency: (getRecordValues<{ id: string; currency: string | null }>(wallets$).find((w) => w.id === data.walletId)?.currency ?? 'USD').toUpperCase(),
     type: data.type,
     analysis_excluded: data.analysisExcluded ?? false,
@@ -224,7 +221,7 @@ export async function createTransaction(data: CreateTransaction) {
 export async function createTransfer(data: {
   fromWalletId: string;
   toWalletId: string;
-  amount: number;
+  amountMinor: number;
   description?: string | null;
   notes?: string | null;
   transactionDate?: string;
@@ -232,7 +229,7 @@ export async function createTransfer(data: {
   if (data.fromWalletId === data.toWalletId) {
     throw new Error('Source and destination wallets must differ');
   }
-  if (data.amount <= 0) {
+  if (!Number.isInteger(data.amountMinor) || data.amountMinor <= 0) {
     throw new Error('Amount must be positive');
   }
 
@@ -252,7 +249,7 @@ export async function createTransfer(data: {
   return createTransaction({
     walletId: data.fromWalletId,
     transferToWalletId: data.toWalletId,
-    amount: data.amount,
+    amountMinor: data.amountMinor as CreateTransaction['amountMinor'],
     type: 'transfer',
     categoryId: null,
     description: data.description ?? null,

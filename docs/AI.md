@@ -67,7 +67,7 @@ Chat analyze (`POST /v1/chat/analyze`):
 
 ```ts
 // Request
-{ message: string; snapshot: FinanceAssistantToolSnapshot; history?: { role: "user"|"assistant"; content: string }[] }
+{ message: string; snapshot: { schema: "finance_assistant_tool_v2"; generatedAt: string; currencies: Record<ISO4217, FinanceAssistantCurrencySnapshot> }; history?: { role: "user"|"assistant"; content: string }[] }
 
 // Response
 { status: "ok"; reply: string; modelId: string } | { status: "unavailable"; reason: string }
@@ -122,4 +122,4 @@ Heuristic-first — no LLM call for most messages:
 | Amount/merchant patterns | Extract |
 | Default text | Extract → if `skipped`, retry analyze → if both fail, clarify with chips |
 
-Snapshot builder: `lib/ai/snapshot/finance-metrics.ts` (deterministic metrics from transactions + budgets — never raw tx rows sent to the model).
+Snapshot builder: `lib/ai/snapshot/finance-metrics.ts` (deterministic metrics from transactions + budgets — never raw tx rows sent to the model). Each snapshot is keyed by ISO currency; mobile and the chat prompt must never sum, compare, or infer a first/default currency across keys.

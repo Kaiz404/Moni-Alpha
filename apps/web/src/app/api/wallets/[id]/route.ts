@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import { updateWalletSchema, type WalletResponse } from '@repo/types';
+import { decimalToMinor, minorToDecimal, updateWalletSchema, type WalletResponse } from '@repo/types';
 import { handleApiError, unauthorized, notFound } from '@/lib/api/errors';
 
 export async function GET(
@@ -34,8 +34,8 @@ export async function GET(
         name: data.name,
         type: data.type,
         currency: data.currency,
-        initialBalance: parseFloat(data.initial_balance),
-        currentBalance: parseFloat(data.current_balance),
+        initialBalanceMinor: decimalToMinor(data.initial_balance),
+        currentBalanceMinor: decimalToMinor(data.current_balance),
         color: data.color,
         icon: data.icon,
         cardStyleId: data.card_style_id,
@@ -77,6 +77,7 @@ export async function PUT(
     if (updates.cardStyleId !== undefined) updateData.card_style_id = updates.cardStyleId;
     if (updates.isActive !== undefined) updateData.is_active = updates.isActive;
     if (updates.displayOrder !== undefined) updateData.display_order = updates.displayOrder;
+    if (updates.initialBalanceMinor !== undefined) updateData.initial_balance = minorToDecimal(updates.initialBalanceMinor);
 
     const { data, error } = await supabase
       .from('wallets')
@@ -97,7 +98,7 @@ export async function PUT(
         name: data.name,
         type: data.type,
         currency: data.currency,
-        initialBalance: parseFloat(data.initial_balance),
+        initialBalanceMinor: decimalToMinor(data.initial_balance),
         color: data.color,
         icon: data.icon,
         cardStyleId: data.card_style_id,

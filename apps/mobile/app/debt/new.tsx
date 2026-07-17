@@ -9,12 +9,14 @@ import {
 } from "react-native";
 import { router } from "expo-router";
 import { BrandHeader } from "@/components/ui/brand-header";
+import { AmountInput } from '@/components/finance/amount-input';
 import { PrimaryButton } from "@/components/ui/primary-button";
 import { ScreenShell } from "@/components/ui/screen-shell";
 import { useThemeTokens } from "@/hooks/use-theme-tokens";
 import { createDebt } from "@/lib/supabase/debts";
 import { getWallets } from "@/lib/supabase/wallets";
 import type { DebtDirection } from "@repo/types";
+import { parseAmountInput } from '@/lib/finance/money';
 
 export default function NewDebtScreen() {
   const tokens = useThemeTokens();
@@ -40,7 +42,7 @@ export default function NewDebtScreen() {
       await createDebt({
         counterpartyName: name,
         direction,
-        amount: Number(amount),
+        amountMinor: parseAmountInput(amount),
         walletId,
         dueDate: dueDate || null,
       });
@@ -89,13 +91,13 @@ export default function NewDebtScreen() {
         <Text className="mb-1 text-sm font-semibold text-foreground">
           Amount
         </Text>
-        <TextInput
+        <AmountInput
           value={amount}
-          onChangeText={setAmount}
-          keyboardType="decimal-pad"
+          onChangeValue={setAmount}
           placeholder="0.00"
           placeholderTextColor={tokens.muted}
           className="mb-4 rounded-xl border border-border bg-card px-3 py-3 text-foreground"
+          currency={wallets.find((wallet) => wallet.id === walletId)?.currency}
         />
         <Text className="mb-2 text-sm font-semibold text-foreground">
           Cash wallet

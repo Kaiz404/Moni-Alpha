@@ -1,13 +1,11 @@
 import { getAiClient } from '@/lib/ai/client';
-import { getCategoryBudgets } from '@/lib/supabase/category-budgets';
-import { getCategoryNameRows } from '@/lib/supabase/categories';
-import { getTransactions } from '@/lib/supabase/transactions';
-import { getWallets } from '@/lib/supabase/wallets';
 import {
-  buildFinanceAssistantToolSnapshot,
+  buildFinanceAssistantToolSnapshotByCurrency,
   type BudgetRow,
   type TxForMetrics,
 } from '@/lib/ai/snapshot/finance-metrics';
+import { financeProjection$ } from '@/lib/finance/projection';
+import { getUserId } from '@/lib/supabase/client';
 import { exportHistoryForApi } from './messages';
 
 export type AnalyzeFinancesResult =
@@ -18,25 +16,25 @@ export async function analyzeUserFinances(
   message: string,
 ): Promise<AnalyzeFinancesResult> {
   try {
-    const [txData, walletData, categoryRows, budgets] = await Promise.all([
-      getTransactions(undefined, 8000),
-      getWallets(),
-      getCategoryNameRows(),
-      getCategoryBudgets(),
-    ]);
+    const userId = await getUserId();
+    if (!userId) return { ok: false, reason: 'Not authenticated' };
+    const projection = financeProjection$.peek();
+    const transactions = Object.values(projection.transactionsById).filter((transaction) => transaction.userId === userId);
+    const budgets = Object.values(projection.budgetsById).filter((budget) => budget.userId === userId);
 
     const categoryMap = Object.fromEntries(
-      categoryRows.map((row) => [row.id, row.name ?? 'Uncategorized']),
+      Object.values(projection.categoriesById)
+        .filter((category) => category.userId === null || category.userId === userId)
+        .map((category) => [category.id, category.name]),
     );
-    const currencyHint = walletData[0]?.currency?.trim() || 'USD';
     const budgetRows: BudgetRow[] = budgets.map((b) => ({
       categoryId: b.categoryId,
       currency: b.currency,
-      amount: b.amount,
+      amountMinor: b.amountMinor,
     }));
 
-    const txs: TxForMetrics[] = txData.map((t) => ({
-      amount: t.amount,
+    const txs: TxForMetrics[] = transactions.map((t) => ({
+      amountMinor: t.amountMinor,
       currency: t.currency,
       analysisExcluded: t.analysisExcluded,
       type: (t.type ?? 'expense') as TxForMetrics['type'],
@@ -45,11 +43,10 @@ export async function analyzeUserFinances(
       transactionDate: t.transactionDate,
     }));
 
-    const snapshot = buildFinanceAssistantToolSnapshot(
+    const snapshot = buildFinanceAssistantToolSnapshotByCurrency(
       txs,
       categoryMap,
       budgetRows,
-      currencyHint,
     );
 
     const result = await getAiClient().analyzeFinances({
