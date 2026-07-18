@@ -29,16 +29,20 @@ if (androidGoogleMapsApiKey) {
 if (iosGoogleMapsApiKey) {
   googleMapsConfig.iosGoogleMapsApiKey = iosGoogleMapsApiKey;
 }
+const googleMapsPlugin: [string, Record<string, string>] = [
+  'react-native-maps',
+  googleMapsConfig,
+];
+const basePluginsWithoutGoogleMaps = (base.plugins ?? []).filter(
+  (plugin) => !(Array.isArray(plugin) && plugin[0] === 'react-native-maps'),
+);
 
 export default {
   expo: {
     ...base,
     plugins: [
-      ...(base.plugins ?? []).map((plugin) =>
-        Array.isArray(plugin) && plugin[0] === 'react-native-maps'
-          ? ['react-native-maps', googleMapsConfig]
-          : plugin,
-      ),
+      ...basePluginsWithoutGoogleMaps,
+      googleMapsPlugin,
       'expo-font',
       'expo-image',
       'expo-secure-store',
