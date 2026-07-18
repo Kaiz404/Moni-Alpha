@@ -1,6 +1,6 @@
 import { z } from 'zod';
-import { transactionTypeSchema } from './transaction';
-import { currencyCodeSchema, positiveMinorAmountSchema } from './money';
+import { transactionTypeSchema } from './transaction.js';
+import { currencyCodeSchema, positiveMinorAmountSchema } from './money.js';
 
 /** Stored proposals are always unreviewed; approve/decline soft-deletes the row. */
 export const proposedTransactionStatusSchema = z.literal('pending');

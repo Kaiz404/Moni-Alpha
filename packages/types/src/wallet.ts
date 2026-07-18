@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { currencyCodeSchema, minorAmountSchema } from './money';
+import { currencyCodeSchema, minorAmountSchema } from './money.js';
 
 /** Android package name pattern (e.g. com.maybank2u.life). */
 export const androidPackageSchema = z
