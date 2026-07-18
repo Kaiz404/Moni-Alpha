@@ -14,17 +14,31 @@ function googleIosUrlScheme(): string | undefined {
 
 const base = appJson.expo as ExpoConfig;
 const iosUrlScheme = googleIosUrlScheme();
+const androidGoogleMapsApiKey = process.env.ANDROID_GOOGLE_MAPS_API_KEY?.trim();
+const iosGoogleMapsApiKey = process.env.IOS_GOOGLE_MAPS_API_KEY?.trim();
 
 const googleSignInPlugin: [string, { iosUrlScheme: string }] | string =
   iosUrlScheme != null
     ? ['@react-native-google-signin/google-signin', { iosUrlScheme }]
     : '@react-native-google-signin/google-signin';
 
+const googleMapsConfig: Record<string, string> = {};
+if (androidGoogleMapsApiKey) {
+  googleMapsConfig.androidGoogleMapsApiKey = androidGoogleMapsApiKey;
+}
+if (iosGoogleMapsApiKey) {
+  googleMapsConfig.iosGoogleMapsApiKey = iosGoogleMapsApiKey;
+}
+
 export default {
   expo: {
     ...base,
     plugins: [
-      ...(base.plugins ?? []),
+      ...(base.plugins ?? []).map((plugin) =>
+        Array.isArray(plugin) && plugin[0] === 'react-native-maps'
+          ? ['react-native-maps', googleMapsConfig]
+          : plugin,
+      ),
       'expo-font',
       'expo-image',
       'expo-secure-store',

@@ -41,13 +41,7 @@
         }
       ],
       "expo-router",
-      [
-        "react-native-maps",
-        {
-          "iosGoogleMapsApiKey": "AIzaSyAsS70ARqJsU4OJGNmxP04DD171Yc6aMWU",
-          "androidGoogleMapsApiKey": "AIzaSyAsS70ARqJsU4OJGNmxP04DD171Yc6aMWU"
-        }
-      ],
+      "react-native-maps",
       "./plugins/with-notification-listener-manifest",
       "expo-speech-recognition",
       [

@@ -18,7 +18,7 @@ Mobile and web never talk to each other; shared needs go through Supabase (data)
 pnpm install
 
 # fill in env files (see docs/SETUP.md)
-cp apps/mobile/.env.example apps/mobile/.env
+cp apps/mobile/.env.example apps/mobile/.env.local
 cp apps/web/.env.example apps/web/.env
 cp apps/backend/.env.example apps/backend/.env
 
@@ -28,7 +28,16 @@ pnpm --filter backend dev      # Go AI backend (:8080)
 pnpm --filter web dev          # web dashboard (:3000)
 ```
 
-Requires Node >= 18, pnpm 9, Go >= 1.26. Mobile needs a native dev client (`npx expo run:android` locally, or `pnpm --filter moni android` via EAS) — Expo Go doesn't support the native modules. On Windows, build Android from WSL — see [apps/mobile/README.md](apps/mobile/README.md).
+Requires Node >= 18, pnpm 9, Go >= 1.26. Mobile needs a native dev client (`npx expo run:android` locally, or GitHub Actions for CI APKs) — Expo Go doesn't support the native modules. On Windows, build Android from WSL — see [apps/mobile/README.md](apps/mobile/README.md).
+
+## Development workflow
+
+`main` is releasable, but direct pushes are allowed. Normal work uses short-lived branches and PRs:
+
+- Branches: `feat/<name>`, `fix/<name>`, or `chore/<name>`.
+- Commits follow Conventional Commits (for example, `feat: add receipt scan`). PRs merge with merge commits and are deleted after merge.
+- GitHub Actions runs lint, typechecks, and a debug Android build on every PR and push to `main`. These checks are advisory; investigate failures before the next release.
+- Successful `main` and manually dispatched runs upload a debug APK for seven days. It is a development build and needs Metro; a standalone tester build comes later through Google Play Internal Testing. See [docs/SETUP.md](docs/SETUP.md#github-actions-android-ci).
 
 ## Documentation
 

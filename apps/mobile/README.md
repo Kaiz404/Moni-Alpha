@@ -9,14 +9,16 @@ pnpm install                # repo root
 pnpm --filter moni dev      # Metro / Expo (terminal 1)
 ```
 
-Env: copy `.env.example` to `.env` (Supabase publishable key, AI backend URL, Google web client ID — see [docs/SETUP.md](../../docs/SETUP.md)).
+Env: copy `.env.example` to `.env.local` (Supabase publishable key, AI backend URL, Google web client ID, Maps SDK key — see [docs/SETUP.md](../../docs/SETUP.md)).
 
 This app uses native modules (camera, notifications, Google Sign-In) — **Expo Go will not work**. Use a dev client:
 
 | Build                           | Command                                  |
 | ------------------------------- | ---------------------------------------- |
 | **Local (WSL / macOS / Linux)** | `cd apps/mobile && npx expo run:android` |
-| **EAS cloud**                   | `pnpm --filter moni android`             |
+| **GitHub Actions**              | Push a branch or run the CI workflow manually |
+
+GitHub Actions creates a debug APK without EAS on every PR and `main` push. Download the APK from the workflow run for successful `main` or manual builds; it is retained for seven days. See [docs/SETUP.md](../../docs/SETUP.md#github-actions-android-ci).
 
 Rebuild the dev client when you change `app.json` plugins, native deps, or local modules (`modules/moni-android-apps`, `modules/moni-document-scanner`).
 
