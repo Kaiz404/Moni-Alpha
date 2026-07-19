@@ -31,7 +31,7 @@ JWT signing must be on the **ES256 asymmetric key** (Dashboard → Settings → 
 
 ## Environment files
 
-### `apps/mobile/.env.local`
+### `apps/mobile/.env`
 
 ```bash
 EXPO_PUBLIC_SUPABASE_URL=https://<project-ref>.supabase.co
@@ -116,7 +116,7 @@ pnpm --filter moni test:notification-detection  # notification prefilter suite
 The mobile heatmap (`apps/mobile/app/heatmap.tsx`) renders transaction locations on Google Maps.
 
 1. In [Google Cloud Console](https://console.cloud.google.com/), enable **Maps SDK for Android** and **Maps SDK for iOS**; create one API key per platform, restricted to the app's package name / bundle ID.
-2. Put `ANDROID_GOOGLE_MAPS_API_KEY` (and, when needed, `IOS_GOOGLE_MAPS_API_KEY`) in `apps/mobile/.env.local`. `app.config.ts` injects the keys into the native `react-native-maps` configuration during prebuild.
+2. Put `ANDROID_GOOGLE_MAPS_API_KEY` (and, when needed, `IOS_GOOGLE_MAPS_API_KEY`) in `apps/mobile/.env`. `app.config.ts` injects the keys into the native `react-native-maps` configuration during prebuild.
 3. Rebuild the dev client (`npx expo run:android` locally). A grey/blank map means a missing or wrongly restricted key.
 
 The Android key is recoverable from an installed APK, so protect it with Google Cloud restrictions: enable only Maps SDK for Android, restrict to package `com.anonymous.moni`, and add the SHA-1 fingerprints for every signing certificate used to build the app.
@@ -142,7 +142,7 @@ Native Google auth uses `@react-native-google-signin/google-signin` + `supabase.
 - Enable Google provider with the **Web** client ID and secret.
 - For native mobile sign-in, enable **Skip nonce check** on the hosted project (Dashboard → Auth → Google). Local `supabase/config.toml` has `skip_nonce_check = false` — change to `true` if you test Google auth against local Supabase.
 
-### Mobile env (`apps/mobile/.env.local`)
+### Mobile env (`apps/mobile/.env`)
 
 ```bash
 EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID=<web-client-id>.apps.googleusercontent.com

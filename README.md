@@ -18,7 +18,7 @@ Mobile and web never talk to each other; shared needs go through Supabase (data)
 pnpm install
 
 # fill in env files (see docs/SETUP.md)
-cp apps/mobile/.env.example apps/mobile/.env.local
+cp apps/mobile/.env.example apps/mobile/.env
 cp apps/web/.env.example apps/web/.env
 cp apps/backend/.env.example apps/backend/.env
 

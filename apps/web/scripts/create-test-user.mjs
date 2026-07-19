@@ -17,11 +17,9 @@ import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const envPath = ['../.env.local', '../.env']
-  .map((p) => resolve(__dirname, p))
-  .find((p) => existsSync(p));
-if (!envPath) {
-  console.error('No .env.local or .env found in apps/web');
+const envPath = resolve(__dirname, '../.env');
+if (!existsSync(envPath)) {
+  console.error('No .env found in apps/web');
   process.exit(1);
 }
 const env = Object.fromEntries(
@@ -38,7 +36,7 @@ const supabaseUrl = env.NEXT_PUBLIC_SUPABASE_URL;
 const secretKey = env.SUPABASE_SECRET_KEY;
 
 if (!supabaseUrl || !secretKey) {
-  console.error('Missing SUPABASE_SECRET_KEY or NEXT_PUBLIC_SUPABASE_URL in .env.local');
+  console.error('Missing SUPABASE_SECRET_KEY or NEXT_PUBLIC_SUPABASE_URL in .env');
   process.exit(1);
 }
 

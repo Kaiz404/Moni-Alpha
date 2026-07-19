@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { currencyCodeSchema, positiveMinorAmountSchema } from './money.js';
+import { currencyCodeSchema, positiveMinorAmountSchema } from './money';
 
 export const debtDirectionSchema = z.enum(['owed_to_me', 'i_owe']);
 export const debtStatusSchema = z.enum(['open', 'settled', 'written_off']);

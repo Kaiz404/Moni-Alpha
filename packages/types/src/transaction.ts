@@ -1,6 +1,6 @@
 import { z } from 'zod';
-import type { Pagination } from './api.js';
-import { currencyCodeSchema, positiveMinorAmountSchema } from './money.js';
+import type { Pagination } from './api';
+import { currencyCodeSchema, positiveMinorAmountSchema } from './money';
 
 // Transaction type enum
 export const transactionTypeSchema = z.enum(['income', 'expense', 'transfer']);

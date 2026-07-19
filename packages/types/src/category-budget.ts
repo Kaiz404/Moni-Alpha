@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { currencyCodeSchema, positiveMinorAmountSchema } from './money.js';
+import { currencyCodeSchema, positiveMinorAmountSchema } from './money';
 
 export const categoryBudgetPeriodSchema = z.literal('monthly');
 

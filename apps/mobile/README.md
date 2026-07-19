@@ -9,7 +9,7 @@ pnpm install                # repo root
 pnpm --filter moni dev      # Metro / Expo (terminal 1)
 ```
 
-Env: copy `.env.example` to `.env.local` (Supabase publishable key, AI backend URL, Google web client ID, Maps SDK key — see [docs/SETUP.md](../../docs/SETUP.md)).
+Env: copy `.env.example` to `.env` (Supabase publishable key, AI backend URL, Google web client ID, Maps SDK key — see [docs/SETUP.md](../../docs/SETUP.md)).
 
 This app uses native modules (camera, notifications, Google Sign-In) — **Expo Go will not work**. Use a dev client:
 
