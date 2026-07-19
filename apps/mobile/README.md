@@ -13,9 +13,9 @@ Env: copy `.env.example` to `.env.local` (Supabase publishable key, AI backend U
 
 This app uses native modules (camera, notifications, Google Sign-In) — **Expo Go will not work**. Use a dev client:
 
-| Build                           | Command                                  |
-| ------------------------------- | ---------------------------------------- |
-| **Local (WSL / macOS / Linux)** | `cd apps/mobile && npx expo run:android` |
+| Build                           | Command                                       |
+| ------------------------------- | --------------------------------------------- |
+| **Local (WSL / macOS / Linux)** | `cd apps/mobile && npx expo run:android`      |
 | **GitHub Actions**              | Push a branch or run the CI workflow manually |
 
 GitHub Actions creates a debug APK without EAS on every PR and `main` push. Download the APK from the workflow run for successful `main` or manual builds; it is retained for seven days. See [docs/SETUP.md](../../docs/SETUP.md#github-actions-android-ci).
@@ -92,7 +92,7 @@ Do not mix Windows and WSL `expo prebuild` / Gradle — `android/build/generated
 
 [`docs/DESIGN_SYSTEM.md`](../../docs/DESIGN_SYSTEM.md) is the visual source of truth. Tokens are CSS-first in `global.css`; prefer semantic classes (`bg-canvas`, `bg-card`, `text-foreground`, `text-muted`, state/category tokens) and shared UI helpers under `components/ui/` (`BrandHeader`, `ScreenShell`, `Surface`, `FormField`, `IconAction`, `PrimaryButton`, `GradientCard`). For native APIs that need a color string, use `useThemeTokens()`. Change semantic tokens in `global.css` only — do not hardcode hex in screens.
 
-Wallet cards render `GradientCard` (`expo-linear-gradient` + a grain texture overlay from `assets/images/grain.png`) driven by `wallet.cardStyleId` looked up in `constants/wallet-card-styles.ts`; the wallet forms let users pick a style, which also sets `wallet.color` to the style's flat swatch hex for charts/legends.
+Wallet cards render `GradientCard` with clean, Figma-aligned pastel gradients driven by `wallet.cardStyleId` looked up in `constants/wallet-card-styles.ts`; the wallet forms let users pick a style, which also sets `wallet.color` to the style's flat swatch hex for charts/legends. Cards do not use a grain texture overlay.
 
 Appearance: Profile → Appearance (`light` default; `system` follows the device). Persisted in MMKV via `lib/theme/preference.ts`.
 

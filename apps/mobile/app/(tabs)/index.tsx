@@ -17,9 +17,7 @@ import { GradientCard } from '@/components/ui/gradient-card';
 import { getWalletCardStyle } from '@/constants/wallet-card-styles';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { useAuth } from '@/lib/auth/auth-context';
-import {
-  formatMinorAmount,
-} from '@/lib/finance/money';
+import { formatMinorAmount } from '@/lib/finance/money';
 import {
   budgetProgress$,
   debtsWithBalance$,
@@ -37,9 +35,11 @@ function timeAwareGreeting(): string {
   return 'Good evening';
 }
 
-function displayName(value: string | null | undefined): string | null {
+function displayName(
+  value: string | null | undefined,
+): string | null {
   const trimmed = value?.trim();
-  return trimmed ? trimmed.split(/\s+/)[0] ?? null : null;
+  return trimmed ? (trimmed.split(/\s+/)[0] ?? null) : null;
 }
 
 function transactionDateLabel(value: string): string {
@@ -61,6 +61,9 @@ const WalletCard = memo(function WalletCard({
   const wallet = useValue(walletById$(walletId));
   const balanceMinor = useValue(walletBalanceMinor$(walletId));
   if (!wallet) return null;
+  const cardStyle = getWalletCardStyle(
+    wallet.cardStyleId ?? undefined,
+  );
   return (
     <Pressable
       onPress={() => onToggle(wallet.id)}
@@ -71,21 +74,30 @@ const WalletCard = memo(function WalletCard({
       accessibilityLabel={`${wallet.name}, ${formatMinorAmount(balanceMinor, wallet.currency)}`}
     >
       <GradientCard
-        cardStyle={getWalletCardStyle(wallet.cardStyleId ?? undefined)}
+        cardStyle={cardStyle}
         className={`min-h-36 rounded-[22px] border p-4 ${selected ? 'border-2 border-primary' : 'border-white/20'}`}
       >
         <View className="flex-row items-start justify-between">
           <View className="min-w-0 flex-1 pr-2">
-            <Text className="text-xs font-semibold text-white/80" numberOfLines={1}>
+            <Text
+              className="text-xs font-semibold"
+              style={{ color: cardStyle.contentMutedColor }}
+              numberOfLines={1}
+            >
               {wallet.type}
             </Text>
-            <Text className="mt-1 text-base font-bold text-white" numberOfLines={1}>
+            <Text
+              className="mt-1 text-base font-bold"
+              style={{ color: cardStyle.contentColor }}
+              numberOfLines={1}
+            >
               {wallet.name}
             </Text>
           </View>
           <Pressable
             hitSlop={10}
-            className="h-9 w-9 items-center justify-center rounded-full bg-white/15"
+            className="h-9 w-9 items-center justify-center rounded-full"
+            style={{ backgroundColor: cardStyle.actionOverlayColor }}
             onPress={(event) => {
               event.stopPropagation();
               router.push({
@@ -96,17 +108,27 @@ const WalletCard = memo(function WalletCard({
             accessibilityRole="button"
             accessibilityLabel={`Edit ${wallet.name}`}
           >
-            <MaterialIcons name="chevron-right" size={19} color="#fff" />
+            <MaterialIcons
+              name="chevron-right"
+              size={19}
+              color={cardStyle.contentColor}
+            />
           </Pressable>
         </View>
         <View className="mt-auto pt-7">
-          <Text className="text-xs font-medium text-white/75">
+          <Text
+            className="text-xs font-medium"
+            style={{ color: cardStyle.contentMutedColor }}
+          >
             {wallet.currency}
           </Text>
           <Text
-            className="mt-1 text-xl font-bold text-white"
+            className="mt-1 text-xl font-bold"
             numberOfLines={1}
-            style={{ fontVariant: ['tabular-nums'] }}
+            style={{
+              color: cardStyle.contentColor,
+              fontVariant: ['tabular-nums'],
+            }}
           >
             {formatMinorAmount(balanceMinor, wallet.currency)}
           </Text>
@@ -129,10 +151,12 @@ export default function HomeScreen() {
     budgetProgress$(user?.id ?? null, timezone),
   );
   const debts = useValue(debtsWithBalance$(user?.id ?? null));
-  const pendingProposals = useValue(pendingProposals$(user?.id ?? null));
-  const [selectedWalletIds, setSelectedWalletIds] = useState<Set<string>>(
-    new Set(),
+  const pendingProposals = useValue(
+    pendingProposals$(user?.id ?? null),
   );
+  const [selectedWalletIds, setSelectedWalletIds] = useState<
+    Set<string>
+  >(new Set());
   const [refreshing, setRefreshing] = useState(false);
   const activeWalletIds = useMemo(
     () =>
@@ -186,7 +210,10 @@ export default function HomeScreen() {
         className="flex-1"
         contentContainerClassName="pb-32 pt-4"
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={refresh} />
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={refresh}
+          />
         }
         showsVerticalScrollIndicator={false}
       >
@@ -245,7 +272,9 @@ export default function HomeScreen() {
           ) : null}
 
           <View className="mt-7 rounded-[28px] border border-border bg-card p-5">
-            <Text className="text-sm font-semibold text-muted">Net worth</Text>
+            <Text className="text-sm font-semibold text-muted">
+              Net worth
+            </Text>
             {netWorth.length ? (
               <View className="mt-2 gap-4">
                 {netWorth.map((row, index) => (
@@ -255,14 +284,28 @@ export default function HomeScreen() {
                         className={`${index === 0 ? 'text-[30px]' : 'text-xl'} font-bold leading-9 text-foreground`}
                         style={{ fontVariant: ['tabular-nums'] }}
                       >
-                        {formatMinorAmount(row.netWorthMinor, row.currency)}
+                        {formatMinorAmount(
+                          row.netWorthMinor,
+                          row.currency,
+                        )}
                       </Text>
                       <Text className="text-sm font-semibold text-muted">
                         {row.currency}
                       </Text>
                     </View>
                     <Text className="mt-1 text-sm leading-5 text-muted">
-                      Cash {formatMinorAmount(row.cashMinor, row.currency)} · Owed to you {formatMinorAmount(row.receivableMinor, row.currency)} · You owe {formatMinorAmount(row.payableMinor, row.currency)}
+                      Cash{' '}
+                      {formatMinorAmount(row.cashMinor, row.currency)}{' '}
+                      · Owed to you{' '}
+                      {formatMinorAmount(
+                        row.receivableMinor,
+                        row.currency,
+                      )}{' '}
+                      · You owe{' '}
+                      {formatMinorAmount(
+                        row.payableMinor,
+                        row.currency,
+                      )}
                     </Text>
                   </View>
                 ))}
@@ -278,7 +321,8 @@ export default function HomeScreen() {
               </View>
             )}
             <Text className="mt-4 text-xs font-medium text-muted">
-              Native amounts only · Moni never fabricates a converted total.
+              Native amounts only · Moni never fabricates a converted
+              total.
             </Text>
           </View>
         </View>
@@ -286,7 +330,9 @@ export default function HomeScreen() {
         <View className="mt-7">
           <View className="mb-3 flex-row items-center justify-between px-5">
             <View>
-              <Text className="text-lg font-bold text-foreground">Accounts</Text>
+              <Text className="text-lg font-bold text-foreground">
+                Accounts
+              </Text>
               <Text className="mt-1 text-sm text-muted">
                 Tap an account to filter recent activity.
               </Text>
@@ -296,7 +342,9 @@ export default function HomeScreen() {
                 className="min-h-11 justify-center px-2"
                 onPress={() => setSelectedWalletIds(new Set())}
               >
-                <Text className="text-sm font-semibold text-primary">All accounts</Text>
+                <Text className="text-sm font-semibold text-primary">
+                  All accounts
+                </Text>
               </Pressable>
             ) : null}
           </View>
@@ -320,7 +368,11 @@ export default function HomeScreen() {
               accessibilityLabel="Add wallet"
             >
               <View className="h-10 w-10 items-center justify-center rounded-full bg-primary-muted">
-                <MaterialIcons name="add" size={22} color={tokens.primary} />
+                <MaterialIcons
+                  name="add"
+                  size={22}
+                  color={tokens.primary}
+                />
               </View>
               <Text className="mt-2 text-sm font-semibold text-foreground">
                 Add wallet
@@ -332,7 +384,9 @@ export default function HomeScreen() {
         <View className="mt-8 px-5">
           <View className="mb-3 flex-row items-center justify-between">
             <View>
-              <Text className="text-lg font-bold text-foreground">Budget pulse</Text>
+              <Text className="text-lg font-bold text-foreground">
+                Budget pulse
+              </Text>
               <Text className="mt-1 text-sm text-muted">
                 A quick read on this month’s planned spending.
               </Text>
@@ -341,7 +395,9 @@ export default function HomeScreen() {
               className="min-h-11 justify-center px-2"
               onPress={() => router.push('/budget' as any)}
             >
-              <Text className="text-sm font-semibold text-primary">Budgets</Text>
+              <Text className="text-sm font-semibold text-primary">
+                Budgets
+              </Text>
             </Pressable>
           </View>
           {visibleBudgets.length ? (
@@ -391,7 +447,9 @@ export default function HomeScreen() {
                         </View>
                       </View>
                       <Text className="text-sm font-bold text-foreground">
-                        {budget.percentage === null ? '—' : `${budget.percentage}%`}
+                        {budget.percentage === null
+                          ? '—'
+                          : `${budget.percentage}%`}
                       </Text>
                     </View>
                     <View className="mt-3">
@@ -420,7 +478,8 @@ export default function HomeScreen() {
                 Plan a monthly cap
               </Text>
               <Text className="mt-1 text-sm leading-5 text-muted">
-                Budgets make your remaining spending visible without changing any records.
+                Budgets make your remaining spending visible without
+                changing any records.
               </Text>
             </Pressable>
           )}
@@ -430,7 +489,9 @@ export default function HomeScreen() {
           <View className="mt-8 px-5">
             <View className="mb-3 flex-row items-center justify-between">
               <View>
-                <Text className="text-lg font-bold text-foreground">Debt pulse</Text>
+                <Text className="text-lg font-bold text-foreground">
+                  Debt pulse
+                </Text>
                 <Text className="mt-1 text-sm text-muted">
                   Keep shared money clear and explicit.
                 </Text>
@@ -439,7 +500,9 @@ export default function HomeScreen() {
                 className="min-h-11 justify-center px-2"
                 onPress={() => router.push('/debts' as any)}
               >
-                <Text className="text-sm font-semibold text-primary">All debts</Text>
+                <Text className="text-sm font-semibold text-primary">
+                  All debts
+                </Text>
               </Pressable>
             </View>
             <View className="overflow-hidden rounded-[22px] border border-border bg-card">
@@ -449,10 +512,15 @@ export default function HomeScreen() {
                   <Pressable
                     key={debt.id}
                     className={`flex-row items-center justify-between px-4 py-4 ${index ? 'border-t border-border' : ''}`}
-                    onPress={() => router.push(`/debt/${debt.id}` as any)}
+                    onPress={() =>
+                      router.push(`/debt/${debt.id}` as any)
+                    }
                   >
                     <View className="min-w-0 flex-1 pr-3">
-                      <Text className="text-base font-semibold text-foreground" numberOfLines={1}>
+                      <Text
+                        className="text-base font-semibold text-foreground"
+                        numberOfLines={1}
+                      >
                         {debt.counterpartyName}
                       </Text>
                       <Text className="mt-1 text-sm text-muted">
@@ -476,7 +544,9 @@ export default function HomeScreen() {
         <View className="mt-8 px-5">
           <View className="mb-3 flex-row items-center justify-between">
             <View>
-              <Text className="text-lg font-bold text-foreground">Recent activity</Text>
+              <Text className="text-lg font-bold text-foreground">
+                Recent activity
+              </Text>
               <Text className="mt-1 text-sm text-muted">
                 Your newest records, in their original currency.
               </Text>
@@ -485,7 +555,9 @@ export default function HomeScreen() {
               className="min-h-11 justify-center px-2"
               onPress={() => router.push('/transaction' as any)}
             >
-              <Text className="text-sm font-semibold text-primary">See all</Text>
+              <Text className="text-sm font-semibold text-primary">
+                See all
+              </Text>
             </Pressable>
           </View>
           {recent.length ? (
@@ -528,7 +600,9 @@ export default function HomeScreen() {
                           : tokens.surface2,
                       }}
                     >
-                      <Text className="text-base">{category?.icon ?? '•'}</Text>
+                      <Text className="text-base">
+                        {category?.icon ?? '•'}
+                      </Text>
                     </View>
                     <View className="min-w-0 flex-1 pr-3">
                       <Text
@@ -546,7 +620,10 @@ export default function HomeScreen() {
                             : transaction.type === 'income'
                               ? 'Income'
                               : 'Expense')}{' '}
-                        · {transactionDateLabel(transaction.transactionDate)}
+                        ·{' '}
+                        {transactionDateLabel(
+                          transaction.transactionDate,
+                        )}
                       </Text>
                     </View>
                     <View className="items-end">
@@ -581,7 +658,8 @@ export default function HomeScreen() {
                 Your activity will live here
               </Text>
               <Text className="mt-1 text-sm leading-5 text-muted">
-                Add a transaction yourself, or use Moni’s capture menu when you are ready.
+                Add a transaction yourself, or use Moni’s capture menu
+                when you are ready.
               </Text>
             </Pressable>
           )}

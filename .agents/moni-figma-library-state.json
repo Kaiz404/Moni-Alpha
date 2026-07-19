@@ -1,0 +1,35 @@
+{
+  "runId": "moni-mobile-library-v1",
+  "fileKey": "vitdKuC19WK7Uss5q3pKWV",
+  "phase": "complete",
+  "step": "qa-complete",
+  "entities": {
+    "collections": {
+      "primitives": "VariableCollectionId:100:2",
+      "color": "VariableCollectionId:100:3",
+      "layout": "VariableCollectionId:100:4"
+    },
+    "variables": {
+      "primitiveCount": 57,
+      "semanticColorCount": 32,
+      "layoutTokenCount": 14
+    },
+    "styles": {
+      "text": ["Display", "Title/1", "Title/2", "Headline", "Body", "Callout", "Label", "Caption", "Numeric/Display"],
+      "effect": "Elevation/Floating"
+    },
+    "section": "104:2",
+    "components": {
+      "Button": "112:10",
+      "FAB": "113:19",
+      "Amount Field": "115:2",
+      "Filter Chip": "115:11",
+      "Wallet Card": "116:2",
+      "Budget Progress Row": "116:6",
+      "Proposal Review Card": "116:11",
+      "Transaction Row": "117:2",
+      "Bottom Tab Bar": "116:18"
+    }
+  },
+  "completedSteps": ["phase0", "phase1", "phase2", "phase3", "phase4"]
+}

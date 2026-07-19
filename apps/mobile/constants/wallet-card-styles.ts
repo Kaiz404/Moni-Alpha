@@ -1,5 +1,5 @@
 /**
- * Curated, colour-theory-balanced wallet card gradients.
+ * Curated wallet card gradients aligned to the Moni pastel palette.
  *
  * This list is the single place designers/devs extend when adding a new
  * card style — appending an entry here immediately makes it selectable in
@@ -15,74 +15,82 @@ export type WalletCardStyle = {
   angle: number;
   /** Flat hex used for charts/legends/small dots where a gradient can't render. */
   swatchHex: string;
-  /** Grain overlay opacity bucket — darker gradients read well with more grain. */
-  grain: 'subtle' | 'medium';
+  /** Accessible foreground colours for this pastel surface. */
+  contentColor: string;
+  contentMutedColor: string;
+  actionOverlayColor: string;
 };
+
+const PASTEL_CONTENT = {
+  contentColor: '#1E211E',
+  contentMutedColor: '#454B44',
+  actionOverlayColor: 'rgba(30, 33, 30, 0.12)',
+} as const;
 
 export const WALLET_CARD_STYLES: WalletCardStyle[] = [
   {
     id: 'emerald-grain',
-    label: 'Emerald',
-    colors: ['#0f766e', '#22c55e'],
+    label: 'Mint',
+    colors: ['#DCEFE0', '#8ECF9D'],
     angle: 135,
-    swatchHex: '#059669',
-    grain: 'medium',
+    swatchHex: '#8ECF9D',
+    ...PASTEL_CONTENT,
   },
   {
     id: 'citrus-pop',
-    label: 'Citrus',
-    colors: ['#f59e0b', '#fde047'],
+    label: 'Lemon',
+    colors: ['#F7F7F2', '#F1DC78'],
     angle: 135,
-    swatchHex: '#d97706',
-    grain: 'subtle',
+    swatchHex: '#F1DC78',
+    ...PASTEL_CONTENT,
   },
   {
     id: 'coral-bloom',
     label: 'Coral',
-    colors: ['#be123c', '#fb7185'],
+    colors: ['#F7F7F2', '#F19A91'],
     angle: 135,
-    swatchHex: '#db2777',
-    grain: 'subtle',
+    swatchHex: '#F19A91',
+    ...PASTEL_CONTENT,
   },
   {
     id: 'ocean-deep',
-    label: 'Ocean',
-    colors: ['#075985', '#38bdf8'],
+    label: 'Aqua',
+    colors: ['#F7F7F2', '#9CD9D1'],
     angle: 135,
-    swatchHex: '#0284c7',
-    grain: 'medium',
+    swatchHex: '#9CD9D1',
+    ...PASTEL_CONTENT,
   },
   {
     id: 'violet-dusk',
-    label: 'Violet',
-    colors: ['#5b21b6', '#a78bfa'],
+    label: 'Lilac',
+    colors: ['#F7F7F2', '#C9B7F4'],
     angle: 135,
-    swatchHex: '#7c3aed',
-    grain: 'subtle',
+    swatchHex: '#C9B7F4',
+    ...PASTEL_CONTENT,
   },
   {
     id: 'midnight-mint',
-    label: 'Midnight',
-    colors: ['#020617', '#0f766e'],
+    label: 'Mint shade',
+    colors: ['#EFF0EA', '#8ECF9D'],
     angle: 160,
-    swatchHex: '#0a0a0a',
-    grain: 'medium',
+    swatchHex: '#236B47',
+    ...PASTEL_CONTENT,
   },
   {
     id: 'rose-quartz',
-    label: 'Rose',
-    colors: ['#9d174d', '#f472b6'],
+    label: 'Peach',
+    colors: ['#F7F7F2', '#F7C6A8'],
     angle: 135,
-    swatchHex: '#db2777',
-    grain: 'subtle',
+    swatchHex: '#F7C6A8',
+    ...PASTEL_CONTENT,
   },
   {
     id: 'slate-steel',
-    label: 'Slate',
-    colors: ['#1e293b', '#64748b'],
+    label: 'Neutral',
+    colors: ['#F7F7F2', '#EFF0EA'],
     angle: 150,
-    swatchHex: '#334155',
-    grain: 'medium',
+    swatchHex: '#7B8179',
+    ...PASTEL_CONTENT,
   },
 ];
 

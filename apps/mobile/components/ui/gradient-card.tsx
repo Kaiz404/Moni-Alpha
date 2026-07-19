@@ -1,16 +1,6 @@
-import {
-  Image,
-  StyleSheet,
-  View,
-  type ViewProps,
-} from 'react-native';
+import { StyleSheet, View, type ViewProps } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import type { WalletCardStyle } from '@/constants/wallet-card-styles';
-
-const GRAIN_OPACITY: Record<WalletCardStyle['grain'], number> = {
-  subtle: 0.05,
-  medium: 0.09,
-};
 
 /** Converts a CSS-style gradient angle (0deg = up, clockwise) to unit-square start/end points. */
 function angleToPoints(angle: number) {
@@ -32,9 +22,8 @@ type GradientCardProps = ViewProps & {
 };
 
 /**
- * Grainy gradient surface used for wallet cards and select hero panels.
- * Grain is a pre-rendered noise asset (RN has no native blend-mode/noise support),
- * layered at low opacity on top of the LinearGradient.
+ * Soft gradient surface used for wallet cards and select hero panels.
+ * Texture is intentionally omitted so pastel wallet identities remain clean.
  */
 export function GradientCard({
   cardStyle,
@@ -66,14 +55,6 @@ export function GradientCard({
           style={StyleSheet.absoluteFill}
         />
       ) : null}
-      <Image
-        source={require('@/assets/images/grain.png')}
-        resizeMode="cover"
-        style={[
-          StyleSheet.absoluteFill,
-          { opacity: GRAIN_OPACITY[cardStyle.grain] },
-        ]}
-      />
       {children}
     </View>
   );

@@ -329,6 +329,8 @@ Each wallet item includes:
 - restrained category/account accent
 - optional last-synced or manual indicator
 
+Use the Moni mint, lilac, peach, lemon, coral, aqua, and neutral palette for wallet identity. Gradients may gently pair a matte neutral with one of those accents, but do not use a grain mask or payment-card-like texture. Ensure wallet labels and native balances use an accessible foreground chosen for the selected surface.
+
 Never mimic real payment cards unless users need a real card identifier. The visual job is balance recognition, not faux banking branding.
 
 ### 7.5 Budget pulse and category progress
