@@ -272,7 +272,7 @@ export default function HomeScreen() {
             </Pressable>
           ) : null}
 
-          <Surface smoothing="hero" className="mt-7 p-5">
+          <Surface tone="tray" smoothing="hero" className="mt-7 p-5">
             <Text className="text-sm font-semibold text-muted">
               Net worth
             </Text>
@@ -367,7 +367,7 @@ export default function HomeScreen() {
               accessibilityRole="button"
               accessibilityLabel="Add wallet"
             >
-              <Surface className="min-h-36 w-36 items-center justify-center">
+              <Surface tone="aqua" className="min-h-36 w-36 items-center justify-center">
                 <View className="h-10 w-10 items-center justify-center rounded-full bg-primary-muted">
                   <MaterialIcons
                     name="add"
@@ -403,7 +403,7 @@ export default function HomeScreen() {
             </Pressable>
           </View>
           {visibleBudgets.length ? (
-            <Surface className="overflow-hidden">
+            <Surface tone="lemon" className="overflow-hidden">
               {visibleBudgets.map((budget, index) => {
                 const accent =
                   budget.status === 'over'
@@ -507,7 +507,7 @@ export default function HomeScreen() {
                 </Text>
               </Pressable>
             </View>
-            <Surface className="overflow-hidden">
+            <Surface tone="lilac" className="overflow-hidden">
               {openDebts.map(({ debt, balanceMinor }, index) => {
                 const owedToYou = debt.direction === 'owed_to_me';
                 return (
@@ -563,7 +563,7 @@ export default function HomeScreen() {
             </Pressable>
           </View>
           {recent.length ? (
-            <Surface className="overflow-hidden">
+            <Surface tone="aqua" className="overflow-hidden">
               {recent.map((transaction, index) => {
                 const category = transaction.categoryId
                   ? overview.categoriesById[transaction.categoryId]

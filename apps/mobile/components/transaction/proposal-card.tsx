@@ -44,7 +44,7 @@ export function ProposalCard({
       : 'text-income';
 
   return (
-    <Surface className="mb-3 p-4">
+    <Surface tone="lilac" className="mb-3 p-4">
       <View className="mb-3 flex-row items-start justify-between gap-3">
         <View className="min-w-0 flex-1">
           <Text className="text-xs font-bold uppercase tracking-wide text-primary">

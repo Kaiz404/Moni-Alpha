@@ -301,8 +301,9 @@ export default function InsightsScreen() {
             </ScrollView>
 
             <Surface
+              tone="peach"
               smoothing="hero"
-              className="mb-6 rounded-[28px] p-5"
+              className="mb-6 rounded-moni-xl p-5"
             >
               <Text className="text-sm font-semibold text-muted">
                 Where did your money go?
@@ -338,7 +339,7 @@ export default function InsightsScreen() {
             </Surface>
 
             <Surface
-              tone="muted"
+              tone="lemon"
               smoothing="hero"
               className="mb-6 rounded-[28px] p-5"
             >
@@ -360,6 +361,7 @@ export default function InsightsScreen() {
             </Surface>
 
             <Surface
+              tone="aqua"
               smoothing="hero"
               className="mb-6 rounded-[28px] p-5"
             >
@@ -442,7 +444,7 @@ export default function InsightsScreen() {
                 </Pressable>
               </View>
               {selectedBudgetRows.length ? (
-                <Surface className="px-4 py-1">
+                <Surface tone="lemon" className="px-4 py-1">
                   {selectedBudgetRows.map((row) => {
                     const rowKey = `${row.categoryId}:${row.currency}`;
                     const expanded = selectedBudget === rowKey;
@@ -541,6 +543,7 @@ export default function InsightsScreen() {
             </View>
 
             <Surface
+              tone="lilac"
               smoothing="hero"
               className="mb-6 rounded-[28px] p-5"
             >
@@ -616,6 +619,7 @@ export default function InsightsScreen() {
             </Surface>
 
             <Surface
+              tone="tray"
               smoothing="hero"
               className="mb-6 rounded-[28px] p-5"
             >
@@ -669,7 +673,7 @@ export default function InsightsScreen() {
               accessibilityRole="button"
               accessibilityLabel="Open transaction pinmap"
             >
-              <Surface tone="muted" className="mb-2 flex-row items-center p-4">
+              <Surface tone="aqua" className="mb-2 flex-row items-center p-4">
                 <View className="h-11 w-11 items-center justify-center rounded-full bg-primary-muted">
                   <MaterialIcons
                     name="place"

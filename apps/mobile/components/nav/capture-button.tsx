@@ -108,7 +108,7 @@ function CaptureMenuItem({
         accessibilityLabel={action.label}
         accessibilityHint={action.detail}
       >
-        <Surface className="mb-3 min-h-16 flex-row items-center px-4 py-3">
+        <Surface tone="aqua" className="mb-3 min-h-16 flex-row items-center px-4 py-3">
           <View className="h-11 w-11 items-center justify-center rounded-full bg-primary-muted">
             <MaterialIcons
               name={action.icon}

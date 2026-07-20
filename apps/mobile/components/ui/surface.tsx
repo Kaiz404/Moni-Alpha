@@ -1,7 +1,16 @@
 import type { ComponentProps } from 'react';
 import { SquircleView, squircleSmoothing } from './squircle-view';
 
-export type SurfaceTone = 'default' | 'muted' | 'raised' | 'tray';
+export type SurfaceTone =
+  | 'default'
+  | 'muted'
+  | 'raised'
+  | 'tray'
+  | 'aqua'
+  | 'lilac'
+  | 'peach'
+  | 'lemon'
+  | 'coral';
 export type SurfaceSmoothing = 'card' | 'hero';
 
 type SurfaceProps = ComponentProps<typeof SquircleView> & {
@@ -16,6 +25,11 @@ const toneClass: Record<SurfaceTone, string> = {
   muted: 'bg-surface-2',
   raised: 'bg-surface-raised',
   tray: 'bg-surface-tray',
+  aqua: 'bg-accent-aqua/20',
+  lilac: 'bg-accent-lilac/20',
+  peach: 'bg-accent-peach/20',
+  lemon: 'bg-accent-lemon/20',
+  coral: 'bg-accent-coral/20',
 };
 
 /**
@@ -23,6 +37,7 @@ const toneClass: Record<SurfaceTone, string> = {
  *
  * Regular cards use continuous 22pt corners. Opt into the more pronounced
  * `hero` curve for a wallet, large summary, or other feature-sized surface.
+ * Accent tones are for standalone feature panels, never dense repeated rows.
  */
 export function Surface({
   className,

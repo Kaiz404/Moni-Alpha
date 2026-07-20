@@ -201,6 +201,7 @@ Content surfaces are matte. Establish depth with tonal separation, whitespace, a
 - Base background: near-white/near-black with **1–2% tactile grain or fog** where technically practical.
 - Light hierarchy: warm ivory canvas → bright white primary surface → muted inset surface only for a genuine contained group. Dark mode follows the same relationship with charcoal canvas → lifted charcoal surface → muted inset.
 - Default card: opaque, borderless primary surface. Use 12–24pt of visible canvas around it and a meaningful surface-color difference to establish the edge.
+- Expressive feature card: use a low-tint semantic surface (`mint`, `aqua`, `lilac`, `peach`, or `lemon`) when a card introduces a distinct financial story, drill-down, or action. The tint replaces the old decorative outline; keep dense repeated rows neutral and keep the tint low enough that values and actions remain primary.
 - Borders are exceptions: focused inputs, selected controls, drag targets, deliberate dividers, and high-contrast accessibility fallbacks. Never use a border simply to make a card visible.
 - Raised transient element: a short soft shadow plus surface lift; reserve it for FAB menus, sheets, and active draggable controls.
 - Glass/translucency: permitted only in navigation/transient controls where contrast is preserved. Never put core financial content inside decorative glass.

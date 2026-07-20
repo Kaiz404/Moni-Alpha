@@ -164,7 +164,7 @@ export default function ProfileScreen() {
         </View>
 
         <View className="px-5">
-          <Surface className="p-4">
+          <Surface tone="aqua" className="p-4">
             <View className="flex-row items-center">
               <GradientCard
                 cardStyle={avatarStyle}
