@@ -13,7 +13,7 @@
 @theme {
   /* A restrained mint scale for utility states that need a shade ramp. */
   --color-brand-50: #f0faf1;
-  --color-brand-100: #dcefe0;
+  --color-brand-100: #c8e6d4;
   --color-brand-200: #b9dfc0;
   --color-brand-300: #8ecf9d;
   --color-brand-400: #68b97b;
@@ -47,9 +47,9 @@
       --color-canvas: #f7f7f2;
       --color-card: #ffffff;
       --color-surface-1: #ffffff;
-      --color-surface-2: #eff0ea;
+      --color-surface-2: #e5e9dc;
       --color-surface-raised: #ffffff;
-      --color-surface-tray: #dcefe0;
+      --color-surface-tray: #c8e6d4;
 
       --color-foreground: #1e211e;
       --color-muted: #60665e;
@@ -63,13 +63,13 @@
       --color-primary: #236b47;
       --color-primary-soft: #8ecf9d;
       --color-primary-foreground: #ffffff;
-      --color-primary-muted: #dcefe0;
+      --color-primary-muted: #c8e6d4;
       --color-accent: #8ecf9d;
-      --color-accent-lilac: #c9b7f4;
-      --color-accent-peach: #f7c6a8;
-      --color-accent-lemon: #f1dc78;
-      --color-accent-coral: #f19a91;
-      --color-accent-aqua: #9cd9d1;
+      --color-accent-lilac: #b39ae8;
+      --color-accent-peach: #f0ad85;
+      --color-accent-lemon: #e8cf50;
+      --color-accent-coral: #e87d72;
+      --color-accent-aqua: #72cec4;
       --color-brand-mint: #8ecf9d;
       --color-brand-mint-ink: #236b47;
 
@@ -111,9 +111,9 @@
       --color-canvas: #141513;
       --color-card: #1d1f1c;
       --color-surface-1: #1d1f1c;
-      --color-surface-2: #282a27;
+      --color-surface-2: #2a2e28;
       --color-surface-raised: #262925;
-      --color-surface-tray: #263b2c;
+      --color-surface-tray: #2a4535;
 
       --color-foreground: #f4f5ef;
       --color-muted: #b9bdb5;
@@ -126,13 +126,13 @@
       --color-primary: #a9e8b5;
       --color-primary-soft: #79c98a;
       --color-primary-foreground: #17351f;
-      --color-primary-muted: #263b2c;
+      --color-primary-muted: #2a4535;
       --color-accent: #79c98a;
-      --color-accent-lilac: #bda7ef;
-      --color-accent-peach: #e9a77f;
-      --color-accent-lemon: #d9bc4d;
-      --color-accent-coral: #e98780;
-      --color-accent-aqua: #7dc7be;
+      --color-accent-lilac: #a888f0;
+      --color-accent-peach: #e09060;
+      --color-accent-lemon: #d4ad35;
+      --color-accent-coral: #e06860;
+      --color-accent-aqua: #5cbdb2;
       --color-brand-mint: #79c98a;
       --color-brand-mint-ink: #a9e8b5;
 

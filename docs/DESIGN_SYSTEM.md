@@ -249,17 +249,17 @@ Exact contrast-adjusted variants must be verified in both themes; hexes below ar
 | ------------- | -------------------- | ------------------- | ----------------------------------- |
 | Canvas        | `#F7F7F2`            | `#141513`           | warm off-white / carbon background  |
 | Surface       | `#FFFFFF`            | `#1D1F1C`           | cards, grouped content              |
-| Surface muted | `#EFF0EA`            | `#282A27`           | secondary fills, input background   |
+| Surface muted | `#E5E9DC`            | `#2A2E28`           | secondary fills, input background   |
 | Ink primary   | `#1E211E`            | `#F4F5EF`           | primary text, key amounts           |
 | Ink secondary | `#60665E`            | `#B9BDB5`           | supporting text                     |
 | Divider       | `#DEE1D9`            | `#343732`           | hairlines                           |
 | Brand mint    | `#8ECF9D`            | `#79C98A`           | positive/action anchor              |
 | Mint deep     | `#236B47`            | `#A9E8B5`           | text/icon on mint-adjacent surfaces |
-| Lilac         | `#C9B7F4`            | `#BDA7EF`           | discovery/voice/category accent     |
-| Peach         | `#F7C6A8`            | `#E9A77F`           | warmth/attention/category accent    |
-| Lemon         | `#F1DC78`            | `#D9BC4D`           | highlight/progress/category accent  |
-| Coral         | `#F19A91`            | `#E98780`           | spending/attention/category accent  |
-| Aqua          | `#9CD9D1`            | `#7DC7BE`           | account/category accent             |
+| Lilac         | `#B39AE8`            | `#A888F0`           | discovery/voice/category accent     |
+| Peach         | `#F0AD85`            | `#E09060`           | warmth/attention/category accent    |
+| Lemon         | `#E8CF50`            | `#D4AD35`           | highlight/progress/category accent  |
+| Coral         | `#E87D72`            | `#E06860`           | spending/attention/category accent  |
+| Aqua          | `#72CEC4`            | `#5CBDB2`           | account/category accent             |
 
 ### 6.2 Semantic color
 

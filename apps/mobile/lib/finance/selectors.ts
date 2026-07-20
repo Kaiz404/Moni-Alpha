@@ -260,7 +260,7 @@ export function categoryExpensesByCurrency(
   );
 }
 
-function balanceLinesByCurrency(
+export function balanceLinesByCurrency(
   wallets: FinanceWallet[],
   transactions: FinanceTransaction[],
 ): CurrencyLine[] {

@@ -12,10 +12,11 @@ import { useValue } from '@legendapp/state/react';
 import MaterialIcons from '@react-native-vector-icons/material-icons';
 
 import { BudgetProgressBar } from '@/components/charts/budget-progress-bar';
-import { SyncStatusIndicator } from '@/components/providers/sync-status-indicator';
+import { IconSymbol } from '@/components/ui/icon-symbol';
 import { GradientCard } from '@/components/ui/gradient-card';
 import { Surface } from '@/components/ui/surface';
 import { getWalletCardStyle } from '@/constants/wallet-card-styles';
+import { resolveWalletIcon } from '@/constants/wallet-form';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { useAuth } from '@/lib/auth/auth-context';
 import { formatMinorAmount } from '@/lib/finance/money';
@@ -52,12 +53,8 @@ function transactionDateLabel(value: string): string {
 
 const WalletCard = memo(function WalletCard({
   walletId,
-  selected,
-  onToggle,
 }: {
   walletId: string;
-  selected: boolean;
-  onToggle: (id: string) => void;
 }) {
   const wallet = useValue(walletById$(walletId));
   const balanceMinor = useValue(walletBalanceMinor$(walletId));
@@ -67,62 +64,44 @@ const WalletCard = memo(function WalletCard({
   );
   return (
     <Pressable
-      onPress={() => onToggle(wallet.id)}
-      className="mr-3"
-      style={{ width: 188 }}
+      onPress={() =>
+        router.push({
+          pathname: '/wallet/[id]',
+          params: { id: wallet.id },
+        } as any)
+      }
+      className="mr-2"
+      style={{ width: 150 }}
       accessibilityRole="button"
-      accessibilityState={{ selected }}
-      accessibilityLabel={`${wallet.name}, ${formatMinorAmount(balanceMinor, wallet.currency)}`}
+      accessibilityLabel={`Open ${wallet.name}, ${formatMinorAmount(balanceMinor, wallet.currency)}`}
     >
       <GradientCard
         cardStyle={cardStyle}
-        className={`min-h-36 p-4 ${selected ? 'border-2 border-primary' : ''}`}
+        className="w-full flex-col justify-between p-4"
       >
+        <View
+          pointerEvents="none"
+          className="absolute -bottom-0 -right-3"
+          style={{ opacity: 0.18 }}
+        >
+          <IconSymbol
+            name={resolveWalletIcon(undefined, wallet.type)}
+            size={60}
+            color={cardStyle.contentColor}
+          />
+        </View>
         <View className="flex-row items-start justify-between">
           <View className="min-w-0 flex-1 pr-2">
             <Text
-              className="text-xs font-semibold"
-              style={{ color: cardStyle.contentMutedColor }}
-              numberOfLines={1}
-            >
-              {wallet.type}
-            </Text>
-            <Text
-              className="mt-1 text-base font-bold"
+              className="text-base font-bold"
               style={{ color: cardStyle.contentColor }}
               numberOfLines={1}
             >
               {wallet.name}
             </Text>
           </View>
-          <Pressable
-            hitSlop={10}
-            className="h-9 w-9 items-center justify-center rounded-full"
-            style={{ backgroundColor: cardStyle.actionOverlayColor }}
-            onPress={(event) => {
-              event.stopPropagation();
-              router.push({
-                pathname: '/wallet/[id]',
-                params: { id: wallet.id },
-              } as any);
-            }}
-            accessibilityRole="button"
-            accessibilityLabel={`Edit ${wallet.name}`}
-          >
-            <MaterialIcons
-              name="chevron-right"
-              size={19}
-              color={cardStyle.contentColor}
-            />
-          </Pressable>
         </View>
-        <View className="mt-auto pt-7">
-          <Text
-            className="text-xs font-medium"
-            style={{ color: cardStyle.contentMutedColor }}
-          >
-            {wallet.currency}
-          </Text>
+        <View className="mt-auto pt-2">
           <Text
             className="mt-1 text-xl font-bold"
             numberOfLines={1}
@@ -155,28 +134,10 @@ export default function HomeScreen() {
   const pendingProposals = useValue(
     pendingProposals$(user?.id ?? null),
   );
-  const [selectedWalletIds, setSelectedWalletIds] = useState<
-    Set<string>
-  >(new Set());
   const [refreshing, setRefreshing] = useState(false);
-  const activeWalletIds = useMemo(
-    () =>
-      selectedWalletIds.size
-        ? selectedWalletIds
-        : new Set(overview.wallets.map((wallet) => wallet.id)),
-    [overview.wallets, selectedWalletIds],
-  );
   const recent = useMemo(
-    () =>
-      overview.transactions
-        .filter(
-          (transaction) =>
-            activeWalletIds.has(transaction.walletId) ||
-            (transaction.transferToWalletId !== null &&
-              activeWalletIds.has(transaction.transferToWalletId)),
-        )
-        .slice(0, 5),
-    [activeWalletIds, overview.transactions],
+    () => overview.transactions.slice(0, 5),
+    [overview.transactions],
   );
   const visibleBudgets = budgetProgress.slice(0, 2);
   const openDebts = debts
@@ -186,13 +147,6 @@ export default function HomeScreen() {
     )
     .slice(0, 2);
 
-  const toggleWallet = (id: string) => {
-    setSelectedWalletIds((current) => {
-      const next = new Set(current);
-      if (!next.delete(id)) next.add(id);
-      return next.size === overview.wallets.length ? new Set() : next;
-    });
-  };
   const refresh = async () => {
     setRefreshing(true);
     await new Promise<void>((resolve) =>
@@ -209,7 +163,7 @@ export default function HomeScreen() {
     >
       <ScrollView
         className="flex-1"
-        contentContainerClassName="pb-32 pt-4"
+        contentContainerClassName="pb-12 pt-4"
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -228,12 +182,6 @@ export default function HomeScreen() {
                   ? `, ${displayName(user?.user_metadata?.full_name) ?? displayName(user?.email)}`
                   : ''}
               </Text>
-              <Text className="mt-1 text-[28px] font-bold leading-9 text-foreground">
-                Your money, clearly
-              </Text>
-            </View>
-            <View className="pt-1">
-              <SyncStatusIndicator />
             </View>
           </View>
 
@@ -272,7 +220,11 @@ export default function HomeScreen() {
             </Pressable>
           ) : null}
 
-          <Surface tone="tray" smoothing="hero" className="mt-7 p-5">
+          <Surface
+            tone="tray"
+            smoothing="hero"
+            className="mt-7 p-5"
+          >
             <Text className="text-sm font-semibold text-muted">
               Net worth
             </Text>
@@ -321,33 +273,28 @@ export default function HomeScreen() {
                 </Text>
               </View>
             )}
-            <Text className="mt-4 text-xs font-medium text-muted">
-              Native amounts only · Moni never fabricates a converted
-              total.
-            </Text>
           </Surface>
         </View>
 
-        <View className="mt-7">
-          <View className="mb-3 flex-row items-center justify-between px-5">
+        <View className="mt-4">
+          <View className="mb-1 flex-row items-center justify-between px-5">
             <View>
               <Text className="text-lg font-bold text-foreground">
-                Accounts
-              </Text>
-              <Text className="mt-1 text-sm text-muted">
-                Tap an account to filter recent activity.
+                Wallets
               </Text>
             </View>
-            {selectedWalletIds.size ? (
-              <Pressable
-                className="min-h-11 justify-center px-2"
-                onPress={() => setSelectedWalletIds(new Set())}
-              >
-                <Text className="text-sm font-semibold text-primary">
-                  All accounts
-                </Text>
-              </Pressable>
-            ) : null}
+            <Pressable
+              className="h-11 w-11 items-center justify-center"
+              onPress={() => router.push('/wallet/new' as any)}
+              accessibilityRole="button"
+              accessibilityLabel="Add wallet"
+            >
+              <MaterialIcons
+                name="add"
+                size={22}
+                color={tokens.primary}
+              />
+            </Pressable>
           </View>
           <ScrollView
             horizontal
@@ -358,52 +305,35 @@ export default function HomeScreen() {
               <WalletCard
                 key={wallet.id}
                 walletId={wallet.id}
-                selected={activeWalletIds.has(wallet.id)}
-                onToggle={toggleWallet}
               />
             ))}
-            <Pressable
-              onPress={() => router.push('/wallet/new' as any)}
-              accessibilityRole="button"
-              accessibilityLabel="Add wallet"
-            >
-              <Surface tone="aqua" className="min-h-36 w-36 items-center justify-center">
-                <View className="h-10 w-10 items-center justify-center rounded-full bg-primary-muted">
-                  <MaterialIcons
-                    name="add"
-                    size={22}
-                    color={tokens.primary}
-                  />
-                </View>
-                <Text className="mt-2 text-sm font-semibold text-foreground">
-                  Add wallet
-                </Text>
-              </Surface>
-            </Pressable>
           </ScrollView>
         </View>
 
-        <View className="mt-8 px-5">
-          <View className="mb-3 flex-row items-center justify-between">
+        <View className="mt-4 px-5">
+          <View className="flex-row items-center justify-between">
             <View>
               <Text className="text-lg font-bold text-foreground">
-                Budget pulse
-              </Text>
-              <Text className="mt-1 text-sm text-muted">
-                A quick read on this month’s planned spending.
+                Budgets
               </Text>
             </View>
             <Pressable
               className="min-h-11 justify-center px-2"
               onPress={() => router.push('/budget' as any)}
             >
-              <Text className="text-sm font-semibold text-primary">
-                Budgets
-              </Text>
+              <MaterialIcons
+                name="chevron-right"
+                size={20}
+                color={tokens.primary}
+                accessibilityLabel="Go to Budgets"
+              />
             </Pressable>
           </View>
           {visibleBudgets.length ? (
-            <Surface tone="lemon" className="overflow-hidden">
+            <Surface
+              tone="lemon"
+              className="overflow-hidden"
+            >
               {visibleBudgets.map((budget, index) => {
                 const accent =
                   budget.status === 'over'
@@ -488,26 +418,29 @@ export default function HomeScreen() {
         </View>
 
         {openDebts.length ? (
-          <View className="mt-8 px-5">
-            <View className="mb-3 flex-row items-center justify-between">
+          <View className="mt-4 px-5">
+            <View className="flex-row items-center justify-between">
               <View>
                 <Text className="text-lg font-bold text-foreground">
                   Debt pulse
-                </Text>
-                <Text className="mt-1 text-sm text-muted">
-                  Keep shared money clear and explicit.
                 </Text>
               </View>
               <Pressable
                 className="min-h-11 justify-center px-2"
                 onPress={() => router.push('/debts' as any)}
               >
-                <Text className="text-sm font-semibold text-primary">
-                  All debts
-                </Text>
+                <MaterialIcons
+                  name="chevron-right"
+                  size={20}
+                  color={tokens.primary}
+                  accessibilityLabel="Go to Debt Pulse"
+                />
               </Pressable>
             </View>
-            <Surface tone="lilac" className="overflow-hidden">
+            <Surface
+              tone="lilac"
+              className="overflow-hidden"
+            >
               {openDebts.map(({ debt, balanceMinor }, index) => {
                 const owedToYou = debt.direction === 'owed_to_me';
                 return (
@@ -543,27 +476,30 @@ export default function HomeScreen() {
           </View>
         ) : null}
 
-        <View className="mt-8 px-5">
-          <View className="mb-3 flex-row items-center justify-between">
+        <View className="mt-4 px-5">
+          <View className="flex-row items-center justify-between">
             <View>
               <Text className="text-lg font-bold text-foreground">
                 Recent activity
-              </Text>
-              <Text className="mt-1 text-sm text-muted">
-                Your newest records, in their original currency.
               </Text>
             </View>
             <Pressable
               className="min-h-11 justify-center px-2"
               onPress={() => router.push('/transaction' as any)}
             >
-              <Text className="text-sm font-semibold text-primary">
-                See all
-              </Text>
+              <MaterialIcons
+                name="chevron-right"
+                size={20}
+                color={tokens.primary}
+                accessibilityLabel="Go to Recent Activity"
+              />
             </Pressable>
           </View>
           {recent.length ? (
-            <Surface tone="aqua" className="overflow-hidden">
+            <Surface
+              tone="aqua"
+              className="overflow-hidden"
+            >
               {recent.map((transaction, index) => {
                 const category = transaction.categoryId
                   ? overview.categoriesById[transaction.categoryId]

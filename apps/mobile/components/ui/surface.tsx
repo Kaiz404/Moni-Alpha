@@ -25,11 +25,11 @@ const toneClass: Record<SurfaceTone, string> = {
   muted: 'bg-surface-2',
   raised: 'bg-surface-raised',
   tray: 'bg-surface-tray',
-  aqua: 'bg-accent-aqua/20',
-  lilac: 'bg-accent-lilac/20',
-  peach: 'bg-accent-peach/20',
-  lemon: 'bg-accent-lemon/20',
-  coral: 'bg-accent-coral/20',
+  aqua: 'bg-accent-aqua/30',
+  lilac: 'bg-accent-lilac/30',
+  peach: 'bg-accent-peach/30',
+  lemon: 'bg-accent-lemon/30',
+  coral: 'bg-accent-coral/30',
 };
 
 /**

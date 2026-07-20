@@ -34,7 +34,7 @@ export function SyncStatusIndicator() {
     offline: 'bg-danger/10 text-danger',
     syncing: 'bg-primary-muted text-primary',
     online: 'bg-primary-muted text-success',
-    loading: 'bg-accent-lemon/20 text-warning',
+    loading: 'bg-accent-lemon/30 text-warning',
   };
   const dotByTone: Record<SyncTone, string> = {
     offline: 'bg-danger',

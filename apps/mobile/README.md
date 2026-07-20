@@ -98,7 +98,7 @@ Appearance: Profile → Appearance (`light` default; `system` follows the device
 
 Default wallet: Profile → Default wallet. Synced in `profiles.preferences.default_wallet_id`; cached locally for background AI. Text/receipt proposals use this wallet when AI cannot infer one (receipts always). Currency on proposals follows the selected wallet — change wallet in review to change currency.
 
-**Wallets tab (home):** horizontal compact wallet strip (~2.5 cards visible); **Add wallet** card at the end. The view is driven by narrow finance selectors, so each wallet card observes only its wallet and balance. Tap a card to multi-select filter; **All wallets** chip resets to aggregated view. Top-right chevron on each card opens wallet edit (`/wallet/[id]`). Mixed currencies: totals, pies, and history remain separate per currency.
+**Wallets tab (home):** horizontal compact wallet strip (~2.5 cards visible); the header plus opens wallet creation. The view is driven by narrow finance selectors, so each wallet card observes only its wallet and balance; tap a card to open it. **Insights:** wallet chips multi-select the wallets included in spending, trend, and activity charts; **All wallets** resets the aggregate view. Mixed currencies: totals, pies, and history remain separate per currency.
 
 ## AI
 

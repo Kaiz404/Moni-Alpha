@@ -29,6 +29,7 @@ import {
 } from '@/lib/finance/dates';
 import {
   categoryExpensesByCurrency,
+  balanceLinesByCurrency,
   budgetProgress$,
   financeOverview$,
 } from '@/lib/finance/selectors';
@@ -79,11 +80,47 @@ export default function InsightsScreen() {
   const [selectedBudget, setSelectedBudget] = useState<string | null>(
     null,
   );
+  const [selectedWalletIds, setSelectedWalletIds] = useState<
+    Set<string>
+  >(new Set());
+  const activeWalletIds = useMemo(
+    () =>
+      selectedWalletIds.size
+        ? selectedWalletIds
+        : new Set(overview.wallets.map((wallet) => wallet.id)),
+    [overview.wallets, selectedWalletIds],
+  );
+  const selectedWallets = useMemo(
+    () =>
+      overview.wallets.filter((wallet) =>
+        activeWalletIds.has(wallet.id),
+      ),
+    [activeWalletIds, overview.wallets],
+  );
+  const selectedTransactions = useMemo(
+    () =>
+      overview.transactions.filter(
+        (transaction) =>
+          activeWalletIds.has(transaction.walletId) ||
+          (transaction.transferToWalletId !== null &&
+            activeWalletIds.has(transaction.transferToWalletId)),
+      ),
+    [activeWalletIds, overview.transactions],
+  );
+  const toggleWallet = (walletId: string) => {
+    setSelectedWalletIds((current) => {
+      const next = new Set(current);
+      if (!next.delete(walletId)) next.add(walletId);
+      return next.size === overview.wallets.length ? new Set() : next;
+    });
+    setSelectedDate(null);
+    setSelectedBudget(null);
+  };
 
   const monthlyExpenses = useMemo(
     () =>
       categoryExpensesByCurrency(
-        overview.transactions.filter(
+        selectedTransactions.filter(
           (transaction) =>
             monthKeyInTimezone(
               transaction.transactionDate,
@@ -95,14 +132,14 @@ export default function InsightsScreen() {
     [
       currentMonth,
       overview.categoriesById,
-      overview.transactions,
+      selectedTransactions,
       timezone,
     ],
   );
   const previousExpenses = useMemo(
     () =>
       categoryExpensesByCurrency(
-        overview.transactions.filter(
+        selectedTransactions.filter(
           (transaction) =>
             monthKeyInTimezone(
               transaction.transactionDate,
@@ -114,7 +151,7 @@ export default function InsightsScreen() {
     [
       currentMonth,
       overview.categoriesById,
-      overview.transactions,
+      selectedTransactions,
       timezone,
     ],
   );
@@ -122,18 +159,11 @@ export default function InsightsScreen() {
     () =>
       [
         ...new Set([
-          ...overview.balanceTotals.map((row) => row.currency),
+          ...selectedWallets.map((wallet) => wallet.currency),
           ...Object.keys(monthlyExpenses),
-          ...overview.balanceLines.map((line) => line.currency),
-          ...budgetProgress.map((row) => row.currency),
         ]),
       ].sort(),
-    [
-      budgetProgress,
-      monthlyExpenses,
-      overview.balanceLines,
-      overview.balanceTotals,
-    ],
+    [monthlyExpenses, selectedWallets],
   );
   const currency = currencies.includes(currencyPreference ?? '')
     ? currencyPreference!
@@ -157,7 +187,12 @@ export default function InsightsScreen() {
     previousTotal,
     leadingCategoryName: categoryEntries[0]?.name ?? null,
   });
-  const balanceLine = overview.balanceLines.find(
+  const selectedBalanceLines = useMemo(
+    () =>
+      balanceLinesByCurrency(selectedWallets, selectedTransactions),
+    [selectedTransactions, selectedWallets],
+  );
+  const balanceLine = selectedBalanceLines.find(
     (line) => line.currency === currency,
   );
   const trendData = useMemo(() => {
@@ -176,7 +211,7 @@ export default function InsightsScreen() {
   );
   const activityTransactions = useMemo(
     () =>
-      overview.transactions.filter(
+      selectedTransactions.filter(
         (transaction) =>
           transaction.currency === currency &&
           transaction.type === 'expense' &&
@@ -186,7 +221,7 @@ export default function InsightsScreen() {
             timezone,
           ) === currentMonth,
       ),
-    [currency, currentMonth, overview.transactions, timezone],
+    [currency, currentMonth, selectedTransactions, timezone],
   );
   const activityDays = useMemo(() => {
     const days = new Map<
@@ -218,7 +253,7 @@ export default function InsightsScreen() {
           selectedDate,
       )
     : [];
-  const currencyWallets = overview.wallets.filter(
+  const currencyWallets = selectedWallets.filter(
     (wallet) => wallet.currency === currency,
   );
 
@@ -299,6 +334,56 @@ export default function InsightsScreen() {
                 );
               })}
             </ScrollView>
+
+            <View className="mb-6">
+              <View className="mb-2 flex-row items-center justify-between">
+                <Text className="text-sm font-semibold text-muted">
+                  Wallets
+                </Text>
+                {selectedWalletIds.size ? (
+                  <Pressable
+                    className="min-h-10 justify-center px-2"
+                    onPress={() => {
+                      setSelectedWalletIds(new Set());
+                      setSelectedDate(null);
+                      setSelectedBudget(null);
+                    }}
+                    accessibilityRole="button"
+                    accessibilityLabel="Show insights for all wallets"
+                  >
+                    <Text className="text-sm font-semibold text-primary">
+                      All wallets
+                    </Text>
+                  </Pressable>
+                ) : null}
+              </View>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                className="-mx-5"
+                contentContainerClassName="gap-2 px-5"
+              >
+                {overview.wallets.map((wallet) => {
+                  const selected = activeWalletIds.has(wallet.id);
+                  return (
+                    <Pressable
+                      key={wallet.id}
+                      className={`min-h-10 rounded-full px-3 py-2 ${selected ? 'bg-primary-muted' : 'bg-card'}`}
+                      onPress={() => toggleWallet(wallet.id)}
+                      accessibilityRole="checkbox"
+                      accessibilityState={{ checked: selected }}
+                      accessibilityLabel={`Include ${wallet.name} in insights`}
+                    >
+                      <Text
+                        className={`text-sm font-semibold ${selected ? 'text-primary' : 'text-foreground'}`}
+                      >
+                        {wallet.name}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </ScrollView>
+            </View>
 
             <Surface
               tone="peach"

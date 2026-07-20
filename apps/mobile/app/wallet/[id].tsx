@@ -9,11 +9,12 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import type { ColorValue } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { decimalToMinor, updateWalletSchema } from '@repo/types';
 
-import { AmountInput } from '@/components/finance/amount-input';
+import { StartingBalanceField } from '@/components/finance/starting-balance-field';
 import { BrandHeader } from '@/components/ui/brand-header';
 import { chipClass, chipTextClass } from '@/components/ui/chip';
 import { FeedbackState } from '@/components/ui/feedback-state';
@@ -32,12 +33,15 @@ import {
   DEFAULT_WALLET_CARD_STYLE_ID,
   WALLET_CARD_STYLES,
 } from '@/constants/wallet-card-styles';
+import { WalletIcon } from '@/components/wallets/wallet-icon';
 import {
+  getWalletTypeIcon,
   WALLET_TYPE_OPTIONS,
   type WalletKind,
 } from '@/constants/wallet-form';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { useAuth } from '@/lib/auth/auth-context';
+import { formatTimeAgo } from '@/lib/dates/relative-time';
 import { formatMinorAmount, minorToDecimal } from '@/lib/finance/money';
 import {
   deleteWallet,
@@ -103,12 +107,7 @@ export default function EditWalletScreen() {
           formatMinorAmount(wallet.currentBalanceMinor, wallet.currency ?? 'USD'),
         );
         setReadOnlyUpdated(
-          wallet.updatedAt
-            ? new Date(wallet.updatedAt).toLocaleString(undefined, {
-                dateStyle: 'medium',
-                timeStyle: 'short',
-              })
-            : 'Not available',
+          formatTimeAgo(wallet.updatedAt, { fallback: 'Not available' }),
         );
         setNotificationLink({
           notificationPackage: wallet.notificationPackage ?? null,
@@ -187,9 +186,7 @@ export default function EditWalletScreen() {
       currency: currency.trim().toUpperCase().slice(0, 3) || 'USD',
       initialBalanceMinor: decimalToMinor(initialBalance || '0'),
       color: style.swatchHex,
-      icon:
-        WALLET_TYPE_OPTIONS.find((item) => item.value === type)?.icon ??
-        '💰',
+      icon: getWalletTypeIcon(type),
       cardStyleId: style.id,
       notificationPackage: notificationLink.notificationPackage,
       notificationAppLabel: notificationLink.notificationAppLabel,
@@ -311,54 +308,43 @@ export default function EditWalletScreen() {
               <View className="mb-5 flex-row flex-wrap gap-2">
                 {WALLET_TYPE_OPTIONS.map((option) => {
                   const selected = type === option.value;
+                  const iconColor: ColorValue = selected
+                    ? tokens.primary
+                    : tokens.foreground;
                   return (
                     <TouchableOpacity
                       key={option.value}
                       accessibilityRole="button"
                       accessibilityState={{ selected }}
                       activeOpacity={0.82}
-                      className={`${chipClass(selected)} min-h-11 justify-center px-3`}
+                      className={`${chipClass(selected)} justify-center px-3 rounded-full`}
                       onPress={() => setType(option.value)}
                     >
-                      <Text
-                        className={`text-sm ${chipTextClass(selected)}`}
-                        numberOfLines={1}
-                      >
-                        {option.icon} {option.label}
-                      </Text>
+                      <View className="flex-row items-center gap-1.5">
+                        <WalletIcon
+                          color={iconColor}
+                          icon={option.icon}
+                          size={16}
+                        />
+                        <Text
+                          className={`text-sm ${chipTextClass(selected)}`}
+                          numberOfLines={1}
+                        >
+                          {option.label}
+                        </Text>
+                      </View>
                     </TouchableOpacity>
                   );
                 })}
               </View>
 
-              <View className="flex-row gap-3">
-                <FormField
-                  containerClassName="flex-1"
-                  label="Currency"
-                  placeholder="USD"
-                  value={currency}
-                  onChangeText={setCurrency}
-                  autoCapitalize="characters"
-                  maxLength={3}
-                />
-                <View className="flex-1">
-                  <Text className="mb-2 text-[15px] font-semibold text-foreground">
-                    Starting balance
-                  </Text>
-                  <AmountInput
-                    accessibilityLabel="Starting balance"
-                    className="min-h-13 px-4 py-3 text-right text-xl font-semibold text-foreground"
-                    currency={currency}
-                    onChangeValue={setInitialBalance}
-                    placeholder="0.00"
-                    placeholderTextColor={tokens.muted}
-                    value={initialBalance}
-                  />
-                  <Text className="mt-2 text-xs leading-4 text-muted">
-                    Changing this updates how the running balance is calculated.
-                  </Text>
-                </View>
-              </View>
+              <StartingBalanceField
+                currency={currency}
+                hint="Changing this updates how the running balance is calculated."
+                onChangeValue={setInitialBalance}
+                onCurrencyChange={setCurrency}
+                value={initialBalance}
+              />
             </Surface>
 
             <Text className="mb-2 mt-8 text-base font-bold text-foreground">

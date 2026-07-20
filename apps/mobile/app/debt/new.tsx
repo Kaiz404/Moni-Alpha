@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
+import type { ColorValue } from 'react-native';
 import { router } from 'expo-router';
 import type { DebtDirection } from '@repo/types';
 
@@ -10,6 +11,7 @@ import { FormField } from '@/components/ui/form-field';
 import { PrimaryButton } from '@/components/ui/primary-button';
 import { ScreenShell } from '@/components/ui/screen-shell';
 import { Surface } from '@/components/ui/surface';
+import { WalletIcon } from '@/components/wallets/wallet-icon';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { parseAmountInput } from '@/lib/finance/money';
 import { createDebt } from '@/lib/supabase/debts';
@@ -144,6 +146,9 @@ export default function NewDebtScreen() {
           <View className="flex-row flex-wrap gap-2">
             {wallets.map((wallet) => {
               const selected = walletId === wallet.id;
+              const iconColor: ColorValue = selected
+                ? tokens.primary
+                : tokens.foreground;
               return (
                 <Pressable
                   key={wallet.id}
@@ -152,9 +157,17 @@ export default function NewDebtScreen() {
                   className={`min-h-11 justify-center rounded-xl px-3 ${selected ? owedToMe ? 'border border-primary bg-primary-muted' : 'border border-warning bg-warning/10' : 'bg-card'}`}
                   onPress={() => setWalletId(wallet.id)}
                 >
-                  <Text className={`text-sm font-semibold ${selected && owedToMe ? 'text-primary' : 'text-foreground'}`}>
-                    {wallet.icon} {wallet.name} · {wallet.currency}
-                  </Text>
+                  <View className="flex-row items-center gap-1.5">
+                    <WalletIcon
+                      color={iconColor}
+                      icon={wallet.icon}
+                      size={16}
+                      type={wallet.type}
+                    />
+                    <Text className={`text-sm font-semibold ${selected && owedToMe ? 'text-primary' : 'text-foreground'}`}>
+                      {wallet.name} · {wallet.currency}
+                    </Text>
+                  </View>
                 </Pressable>
               );
             })}

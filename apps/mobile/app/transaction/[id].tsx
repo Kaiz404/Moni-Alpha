@@ -10,6 +10,7 @@ import {
   ActivityIndicator,
   StyleSheet,
 } from 'react-native';
+import type { ColorValue } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -28,6 +29,7 @@ import { chipClass, chipTextClass } from '@/components/ui/chip';
 import { FeedbackState } from '@/components/ui/feedback-state';
 import { FormField } from '@/components/ui/form-field';
 import { PrimaryButton } from '@/components/ui/primary-button';
+import { WalletIcon } from '@/components/wallets/wallet-icon';
 import { Surface } from '@/components/ui/surface';
 import {
   minorToDecimal,
@@ -354,21 +356,35 @@ export default function EditTransactionScreen() {
               {isTransfer ? 'From wallet' : 'Wallet'}
             </Text>
             <View className="mb-4 flex-row flex-wrap gap-1.5">
-              {wallets.map((w) => (
-                <TouchableOpacity
-                  key={w.id}
-                  className={chipClass(walletId === w.id)}
-                  onPress={() => setWalletId(w.id)}
-                  activeOpacity={0.85}
-                >
-                  <Text
-                    className={`text-sm ${chipTextClass(walletId === w.id)}`}
-                    numberOfLines={1}
+              {wallets.map((w) => {
+                const selected = walletId === w.id;
+                const iconColor: ColorValue = selected
+                  ? tokens.primary
+                  : tokens.foreground;
+                return (
+                  <TouchableOpacity
+                    key={w.id}
+                    className={chipClass(walletId === w.id)}
+                    onPress={() => setWalletId(w.id)}
+                    activeOpacity={0.85}
                   >
-                    {w.icon} {w.name}
-                  </Text>
-                </TouchableOpacity>
-              ))}
+                    <View className="flex-row items-center gap-1.5">
+                      <WalletIcon
+                        color={iconColor}
+                        icon={w.icon}
+                        size={16}
+                        type={w.type}
+                      />
+                      <Text
+                        className={`text-sm ${chipTextClass(walletId === w.id)}`}
+                        numberOfLines={1}
+                      >
+                        {w.name}
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
             </View>
 
             {isTransfer ? (
@@ -377,23 +393,37 @@ export default function EditTransactionScreen() {
                   To wallet
                 </Text>
                 <View className="mb-4 flex-row flex-wrap gap-1.5">
-                  {destinationWallets.map((w) => (
-                    <TouchableOpacity
-                      key={w.id}
-                      className={chipClass(
-                        transferToWalletId === w.id,
-                      )}
-                      onPress={() => setTransferToWalletId(w.id)}
-                      activeOpacity={0.85}
-                    >
-                      <Text
-                        className={`text-sm ${chipTextClass(transferToWalletId === w.id)}`}
-                        numberOfLines={1}
+                  {destinationWallets.map((w) => {
+                    const selected = transferToWalletId === w.id;
+                    const iconColor: ColorValue = selected
+                      ? tokens.primary
+                      : tokens.foreground;
+                    return (
+                      <TouchableOpacity
+                        key={w.id}
+                        className={chipClass(
+                          transferToWalletId === w.id,
+                        )}
+                        onPress={() => setTransferToWalletId(w.id)}
+                        activeOpacity={0.85}
                       >
-                        {w.icon} {w.name}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
+                        <View className="flex-row items-center gap-1.5">
+                          <WalletIcon
+                            color={iconColor}
+                            icon={w.icon}
+                            size={16}
+                            type={w.type}
+                          />
+                          <Text
+                            className={`text-sm ${chipTextClass(transferToWalletId === w.id)}`}
+                            numberOfLines={1}
+                          >
+                            {w.name}
+                          </Text>
+                        </View>
+                      </TouchableOpacity>
+                    );
+                  })}
                 </View>
               </>
             ) : null}

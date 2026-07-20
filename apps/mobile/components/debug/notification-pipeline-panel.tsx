@@ -10,16 +10,26 @@ import {
   useNotificationMonitor,
 } from '@/lib/debug';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
+import {
+  formatTimeAgo,
+  getElapsedMs,
+  MS_HOUR,
+} from '@/lib/dates/relative-time';
 
 export function formatRelativeTime(iso: string | null): string {
   if (!iso) return 'never';
-  const diff = Date.now() - new Date(iso).getTime();
-  if (diff < 60_000)
-    return `${Math.max(1, Math.round(diff / 1000))}s ago`;
-  if (diff < 3_600_000) return `${Math.round(diff / 60_000)}m ago`;
-  return new Date(iso).toLocaleTimeString([], {
-    hour: '2-digit',
-    minute: '2-digit',
+  const elapsed = getElapsedMs(iso);
+  if (elapsed == null) return 'never';
+  if (elapsed >= MS_HOUR) {
+    return new Date(iso).toLocaleTimeString([], {
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  }
+  return formatTimeAgo(iso, {
+    style: 'short',
+    includeSeconds: true,
+    fallback: 'never',
   });
 }
 
@@ -166,7 +176,7 @@ export function NotificationPipelinePanel() {
           Notification listener is Android-only.
         </Text>
       ) : recent.length === 0 ? (
-        <View className="mt-3 rounded-2xl border border-warning/30 bg-accent-lemon/20 px-3 py-2.5">
+        <View className="mt-3 rounded-2xl border border-warning/30 bg-accent-lemon/30 px-3 py-2.5">
           <Text className="text-xs font-semibold text-warning">
             No captures yet
           </Text>

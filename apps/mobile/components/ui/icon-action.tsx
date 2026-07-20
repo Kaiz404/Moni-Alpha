@@ -27,15 +27,12 @@ export function IconAction({
   const tokens = useThemeTokens();
   const appearance = {
     default: {
-      className: 'bg-surface-2',
       color: tokens.foreground,
     },
     accent: {
-      className: 'bg-primary-muted',
       color: tokens.primary,
     },
     danger: {
-      className: 'bg-danger/10',
       color: tokens.danger,
     },
   }[tone];
@@ -46,7 +43,7 @@ export function IconAction({
       onPress={onPress}
       disabled={disabled}
       hitSlop={6}
-      className={`h-11 w-11 items-center justify-center rounded-full ${appearance.className} ${
+      className={`h-11 w-11 items-center justify-center rounded-full ${
         disabled ? 'opacity-50' : ''
       }`}
       style={style}

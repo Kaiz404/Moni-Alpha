@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { TextInputProps } from 'react-native';
-import { Text, TextInput, View } from 'react-native';
+import { Pressable, Text, TextInput, View } from 'react-native';
 
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 
@@ -11,6 +11,7 @@ type AmountInputProps = Omit<
   value: string;
   onChangeValue: (value: string) => void;
   currency?: string | null;
+  onCurrencyPress?: () => void;
   className?: string;
 };
 
@@ -22,6 +23,7 @@ export function AmountInput({
   value,
   onChangeValue,
   currency,
+  onCurrencyPress,
   className,
   ...props
 }: AmountInputProps) {
@@ -57,9 +59,23 @@ export function AmountInput({
           textAlign="right"
         />
         {currency ? (
-          <Text className="pb-1 text-xs font-bold tracking-wide text-muted">
-            {currency.toUpperCase()}
-          </Text>
+          onCurrencyPress ? (
+            <Pressable
+              accessibilityLabel={`Change currency, currently ${currency.toUpperCase()}`}
+              accessibilityRole="button"
+              className="min-h-11 justify-center rounded-lg px-2 active:opacity-70"
+              hitSlop={8}
+              onPress={onCurrencyPress}
+            >
+              <Text className="pb-1 text-sm font-bold tracking-wide text-primary">
+                {currency.toUpperCase()}
+              </Text>
+            </Pressable>
+          ) : (
+            <Text className="pb-1 text-xs font-bold tracking-wide text-muted">
+              {currency.toUpperCase()}
+            </Text>
+          )
         ) : null}
       </View>
     </View>

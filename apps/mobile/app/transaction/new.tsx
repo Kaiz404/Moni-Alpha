@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Alert, ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import type { ColorValue } from 'react-native';
 import {
   router,
   useFocusEffect,
@@ -15,6 +16,7 @@ import { NumericKeypad } from '@/components/ui/numeric-keypad';
 import { PrimaryButton } from '@/components/ui/primary-button';
 import { ScreenShell } from '@/components/ui/screen-shell';
 import { Surface } from '@/components/ui/surface';
+import { WalletIcon } from '@/components/wallets/wallet-icon';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { useAuth } from '@/lib/auth/auth-context';
 import { parseAmountInput } from '@/lib/finance/money';
@@ -264,6 +266,9 @@ export default function NewTransactionScreen() {
             <View className="flex-row flex-wrap gap-2">
               {wallets.map((wallet) => {
                 const selected = wallet.id === walletId;
+                const iconColor: ColorValue = selected
+                  ? tokens.primary
+                  : tokens.foreground;
                 return (
                   <TouchableOpacity
                     key={wallet.id}
@@ -273,9 +278,17 @@ export default function NewTransactionScreen() {
                     className={`${chipClass(selected)} min-h-11 justify-center px-3`}
                     onPress={() => setWalletId(wallet.id)}
                   >
-                    <Text className={`text-sm ${chipTextClass(selected)}`} numberOfLines={1}>
-                      {wallet.icon} {wallet.name} · {wallet.currency}
-                    </Text>
+                    <View className="flex-row items-center gap-1.5">
+                      <WalletIcon
+                        color={iconColor}
+                        icon={wallet.icon}
+                        size={16}
+                        type={wallet.type}
+                      />
+                      <Text className={`text-sm ${chipTextClass(selected)}`} numberOfLines={1}>
+                        {wallet.name} · {wallet.currency}
+                      </Text>
+                    </View>
                   </TouchableOpacity>
                 );
               })}
@@ -290,6 +303,9 @@ export default function NewTransactionScreen() {
               <View className="flex-row flex-wrap gap-2">
                 {destinationWallets.map((wallet) => {
                   const selected = wallet.id === transferToWalletId;
+                  const iconColor: ColorValue = selected
+                    ? tokens.primary
+                    : tokens.foreground;
                   return (
                     <TouchableOpacity
                       key={wallet.id}
@@ -299,9 +315,17 @@ export default function NewTransactionScreen() {
                       className={`${chipClass(selected)} min-h-11 justify-center px-3`}
                       onPress={() => setTransferToWalletId(wallet.id)}
                     >
-                      <Text className={`text-sm ${chipTextClass(selected)}`} numberOfLines={1}>
-                        {wallet.icon} {wallet.name} · {wallet.currency}
-                      </Text>
+                      <View className="flex-row items-center gap-1.5">
+                        <WalletIcon
+                          color={iconColor}
+                          icon={wallet.icon}
+                          size={16}
+                          type={wallet.type}
+                        />
+                        <Text className={`text-sm ${chipTextClass(selected)}`} numberOfLines={1}>
+                          {wallet.name} · {wallet.currency}
+                        </Text>
+                      </View>
                     </TouchableOpacity>
                   );
                 })}

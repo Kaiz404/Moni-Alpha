@@ -58,7 +58,7 @@ function kindStyle(
       };
     case 'savings_opportunity':
       return {
-        surfaceClassName: 'bg-accent-lemon/20',
+        surfaceClassName: 'bg-accent-lemon/30',
         icon: 'account-balance',
         iconColor: tokens.warning,
       };

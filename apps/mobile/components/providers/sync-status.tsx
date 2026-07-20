@@ -4,6 +4,7 @@ import { syncState } from '@legendapp/state';
 import { useSelector } from '@legendapp/state/react';
 import { transactions$ } from '@/lib/store';
 import { Surface } from '@/components/ui/surface';
+import { formatTimeAgo } from '@/lib/dates/relative-time';
 
 type SyncStatusProps = {
   className?: string;
@@ -48,19 +49,6 @@ export function SyncStatus({ className }: SyncStatusProps = {}) {
     };
   });
 
-  const formatLastSyncTime = () => {
-    if (!syncMeta.lastSync) return 'Never';
-    const diffMs = Date.now() - syncMeta.lastSync;
-    const diffMinutes = Math.floor(diffMs / (1000 * 60));
-    const diffHours = Math.floor(diffMinutes / 60);
-    const diffDays = Math.floor(diffHours / 24);
-
-    if (diffMinutes < 1) return 'Just now';
-    if (diffMinutes < 60) return `${diffMinutes}m ago`;
-    if (diffHours < 24) return `${diffHours}h ago`;
-    return `${diffDays}d ago`;
-  };
-
   return (
     <Surface
       className={['mb-6 p-4', className ?? '']
@@ -91,7 +79,10 @@ export function SyncStatus({ className }: SyncStatusProps = {}) {
         <View className="flex-row items-center justify-between">
           <Text className="text-sm text-muted">Last Sync:</Text>
           <Text className="text-sm text-foreground">
-            {formatLastSyncTime()}
+            {formatTimeAgo(syncMeta.lastSync, {
+              style: 'short',
+              fallback: 'Never',
+            })}
           </Text>
         </View>
 
