@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { View } from 'react-native';
-import MaterialIcons from '@react-native-vector-icons/material-icons';
+import { MaterialDesignIcons } from '@react-native-vector-icons/material-design-icons';
 import Animated, {
   cancelAnimation,
   Easing,
@@ -62,8 +62,8 @@ export function PulsingOrb({ active }: { active: boolean }) {
           backgroundColor: tokens.primary,
         }}
       >
-        <MaterialIcons
-          name="mic"
+        <MaterialDesignIcons
+          name="microphone"
           size={40}
           color="#ffffff"
         />

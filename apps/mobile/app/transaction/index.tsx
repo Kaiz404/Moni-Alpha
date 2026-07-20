@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { Link, router, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import MaterialIcons from '@react-native-vector-icons/material-icons';
+import { MaterialDesignIcons } from '@react-native-vector-icons/material-design-icons';
 import { useValue } from '@legendapp/state/react';
 import { FinanceState } from '@/components/finance/finance-state';
 import { GradientCard } from '@/components/ui/gradient-card';
@@ -275,7 +275,7 @@ export default function TransactionsScreen() {
                       hitSlop={8}
                       onPress={() => remove(row.id)}
                     >
-                      <MaterialIcons
+                      <MaterialDesignIcons
                         name="delete-outline"
                         size={17}
                         color="#ef4444"

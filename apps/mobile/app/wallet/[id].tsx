@@ -22,9 +22,7 @@ import { FormField } from '@/components/ui/form-field';
 import { PrimaryButton } from '@/components/ui/primary-button';
 import { ScreenShell } from '@/components/ui/screen-shell';
 import { Surface } from '@/components/ui/surface';
-import {
-  WalletCardStylePicker,
-} from '@/components/wallets/wallet-card-style-picker';
+import { WalletCardStylePicker } from '@/components/wallets/wallet-card-style-picker';
 import {
   WalletNotificationLinkSection,
   type WalletNotificationLinkValue,
@@ -42,7 +40,10 @@ import {
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { useAuth } from '@/lib/auth/auth-context';
 import { formatTimeAgo } from '@/lib/dates/relative-time';
-import { formatMinorAmount, minorToDecimal } from '@/lib/finance/money';
+import {
+  formatMinorAmount,
+  minorToDecimal,
+} from '@/lib/finance/money';
 import {
   deleteWallet,
   getWalletById,
@@ -97,27 +98,38 @@ export default function EditWalletScreen() {
         }
         setName(wallet.name ?? '');
         setType(
-          WALLET_TYPE_OPTIONS.find((option) => option.value === wallet.type)
-            ?.value ?? 'bank',
+          WALLET_TYPE_OPTIONS.find(
+            (option) => option.value === wallet.type,
+          )?.value ?? 'bank',
         );
         setCurrency(wallet.currency ?? 'USD');
         setInitialBalance(minorToDecimal(wallet.initialBalanceMinor));
-        setCardStyleId(wallet.cardStyleId || DEFAULT_WALLET_CARD_STYLE_ID);
+        setCardStyleId(
+          wallet.cardStyleId || DEFAULT_WALLET_CARD_STYLE_ID,
+        );
         setReadOnlyBalance(
-          formatMinorAmount(wallet.currentBalanceMinor, wallet.currency ?? 'USD'),
+          formatMinorAmount(
+            wallet.currentBalanceMinor,
+            wallet.currency ?? 'USD',
+          ),
         );
         setReadOnlyUpdated(
-          formatTimeAgo(wallet.updatedAt, { fallback: 'Not available' }),
+          formatTimeAgo(wallet.updatedAt, {
+            fallback: 'Not available',
+          }),
         );
         setNotificationLink({
           notificationPackage: wallet.notificationPackage ?? null,
           notificationAppLabel: wallet.notificationAppLabel ?? null,
-          notificationAccountHint: wallet.notificationAccountHint ?? null,
+          notificationAccountHint:
+            wallet.notificationAccountHint ?? null,
         });
       } catch (error) {
         if (!cancelled) {
           setLoadError(
-            error instanceof Error ? error.message : 'Could not load this wallet.',
+            error instanceof Error
+              ? error.message
+              : 'Could not load this wallet.',
           );
         }
       } finally {
@@ -142,7 +154,8 @@ export default function EditWalletScreen() {
           .filter(
             (wallet) =>
               wallet.id !== walletId &&
-              wallet.notificationPackage === notificationLink.notificationPackage,
+              wallet.notificationPackage ===
+                notificationLink.notificationPackage,
           )
           .map((wallet) => wallet.name),
       );
@@ -166,7 +179,9 @@ export default function EditWalletScreen() {
             } catch (error) {
               Alert.alert(
                 'Could not delete wallet',
-                error instanceof Error ? error.message : 'Please try again.',
+                error instanceof Error
+                  ? error.message
+                  : 'Please try again.',
               );
             }
           },
@@ -190,7 +205,8 @@ export default function EditWalletScreen() {
       cardStyleId: style.id,
       notificationPackage: notificationLink.notificationPackage,
       notificationAppLabel: notificationLink.notificationAppLabel,
-      notificationAccountHint: notificationLink.notificationAccountHint,
+      notificationAccountHint:
+        notificationLink.notificationAccountHint,
     });
     if (!parsed.success) {
       Alert.alert(
@@ -230,7 +246,7 @@ export default function EditWalletScreen() {
         <FeedbackState
           className="flex-1"
           description="Return to Accounts and choose a wallet to edit."
-          icon="account-balance-wallet"
+          icon="wallet"
           title="Missing wallet"
         />
       </ScreenShell>
@@ -242,8 +258,13 @@ export default function EditWalletScreen() {
       <ScreenShell variant="canvas">
         <BrandHeader title="Wallet" />
         <View className="flex-1 items-center justify-center">
-          <ActivityIndicator color={tokens.primary} size="large" />
-          <Text className="mt-3 text-sm text-muted">Loading wallet…</Text>
+          <ActivityIndicator
+            color={tokens.primary}
+            size="large"
+          />
+          <Text className="mt-3 text-sm text-muted">
+            Loading wallet…
+          </Text>
         </View>
       </ScreenShell>
     );
@@ -256,12 +277,15 @@ export default function EditWalletScreen() {
         <FeedbackState
           className="flex-1"
           description={loadError}
-          icon="error-outline"
+          icon="alert-circle-outline"
           mode="error"
           title="Couldn’t open this wallet"
         />
         <View className="px-5 pb-5">
-          <PrimaryButton label="Go back" onPress={() => router.back()} />
+          <PrimaryButton
+            label="Go back"
+            onPress={() => router.back()}
+          />
         </View>
       </ScreenShell>
     );
@@ -281,7 +305,10 @@ export default function EditWalletScreen() {
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
           >
-            <Surface tone="tray" className="p-5">
+            <Surface
+              tone="tray"
+              className="p-5"
+            >
               <Text className="text-sm font-semibold text-primary">
                 Current balance
               </Text>
@@ -359,8 +386,8 @@ export default function EditWalletScreen() {
               Notification source
             </Text>
             <Text className="mb-3 text-sm leading-5 text-muted">
-              Keep possible notification transactions tied to this account for
-              review. Nothing is added automatically.
+              Keep possible notification transactions tied to this
+              account for review. Nothing is added automatically.
             </Text>
             <WalletNotificationLinkSection
               value={notificationLink}
@@ -373,7 +400,8 @@ export default function EditWalletScreen() {
                 Danger zone
               </Text>
               <Text className="mt-1 text-sm leading-5 text-muted">
-                Deleting a wallet also deletes the related transactions.
+                Deleting a wallet also deletes the related
+                transactions.
               </Text>
               <PrimaryButton
                 className="mt-4"

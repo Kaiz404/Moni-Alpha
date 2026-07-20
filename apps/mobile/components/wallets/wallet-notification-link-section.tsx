@@ -82,7 +82,7 @@ function AppIcon({
       style={{ width: size, height: size }}
     >
       <IconSymbol
-        name="account-balance-wallet"
+        name="wallet"
         size={size - 6}
         color={tokens.muted}
       />
@@ -104,9 +104,7 @@ function AppPickerRow({
   return (
     <TouchableOpacity
       className={`mb-1.5 flex-row items-center gap-2 rounded-xl px-3 py-2.5 ${
-        selected
-          ? 'border border-primary bg-primary/5'
-          : 'bg-card'
+        selected ? 'border border-primary bg-primary/5' : 'bg-card'
       }`}
       onPress={onPress}
       activeOpacity={0.85}
@@ -436,7 +434,7 @@ export function WalletNotificationLinkSection({
               Installed banking apps
             </Text>
             <IconSymbol
-              name={showCurated ? 'expand-less' : 'expand-more'}
+              name={showCurated ? 'chevron-up' : 'chevron-down'}
               size={20}
               color={tokens.muted}
             />

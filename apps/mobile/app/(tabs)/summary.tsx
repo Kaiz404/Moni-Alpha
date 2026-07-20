@@ -9,7 +9,7 @@ import {
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useValue } from '@legendapp/state/react';
-import MaterialIcons from '@react-native-vector-icons/material-icons';
+import { MaterialDesignIcons } from '@react-native-vector-icons/material-design-icons';
 
 import { ActivityCalendar } from '@/components/charts/activity-calendar';
 import { BudgetProgressBar } from '@/components/charts/budget-progress-bar';
@@ -429,8 +429,8 @@ export default function InsightsScreen() {
               className="mb-6 rounded-[28px] p-5"
             >
               <View className="flex-row items-start">
-                <MaterialIcons
-                  name="insights"
+                <MaterialDesignIcons
+                  name="chart-line"
                   size={20}
                   color={tokens.primary}
                 />
@@ -529,7 +529,10 @@ export default function InsightsScreen() {
                 </Pressable>
               </View>
               {selectedBudgetRows.length ? (
-                <Surface tone="lemon" className="px-4 py-1">
+                <Surface
+                  tone="lemon"
+                  className="px-4 py-1"
+                >
                   {selectedBudgetRows.map((row) => {
                     const rowKey = `${row.categoryId}:${row.currency}`;
                     const expanded = selectedBudget === rowKey;
@@ -618,7 +621,10 @@ export default function InsightsScreen() {
                   })}
                 </Surface>
               ) : (
-                <Surface tone="muted" className="px-5 py-6">
+                <Surface
+                  tone="muted"
+                  className="px-5 py-6"
+                >
                   <Text className="text-sm text-muted">
                     Set a budget or add a categorized expense to track
                     a pulse.
@@ -648,7 +654,10 @@ export default function InsightsScreen() {
                 />
               </View>
               {selectedDate ? (
-                <Surface tone="muted" className="mt-5 p-4">
+                <Surface
+                  tone="muted"
+                  className="mt-5 p-4"
+                >
                   <Text className="text-sm font-semibold text-foreground">
                     {new Intl.DateTimeFormat(undefined, {
                       weekday: 'long',
@@ -758,10 +767,13 @@ export default function InsightsScreen() {
               accessibilityRole="button"
               accessibilityLabel="Open transaction pinmap"
             >
-              <Surface tone="aqua" className="mb-2 flex-row items-center p-4">
+              <Surface
+                tone="aqua"
+                className="mb-2 flex-row items-center p-4"
+              >
                 <View className="h-11 w-11 items-center justify-center rounded-full bg-primary-muted">
-                  <MaterialIcons
-                    name="place"
+                  <MaterialDesignIcons
+                    name="map-marker"
                     size={22}
                     color={tokens.primary}
                   />
@@ -774,7 +786,7 @@ export default function InsightsScreen() {
                     Revisit the places behind your recorded activity.
                   </Text>
                 </View>
-                <MaterialIcons
+                <MaterialDesignIcons
                   name="chevron-right"
                   size={22}
                   color={tokens.muted}

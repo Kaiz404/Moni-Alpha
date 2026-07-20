@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { Modal, Pressable, Text, View } from 'react-native';
 import { router } from 'expo-router';
-import MaterialIcons from '@react-native-vector-icons/material-icons';
+import { MaterialDesignIcons } from '@react-native-vector-icons/material-design-icons';
 import Animated, {
   Easing,
   cancelAnimation,
@@ -107,10 +107,10 @@ export function FabReceiptProcessingOverlay() {
 
   const icon =
     copy.icon === 'chat'
-      ? 'chat-bubble-outline'
+      ? 'chat-outline'
       : copy.icon === 'voice'
-        ? 'mic-none'
-        : 'receipt-long';
+        ? 'microphone-outline'
+        : 'receipt-text';
 
   return (
     <Modal
@@ -128,7 +128,7 @@ export function FabReceiptProcessingOverlay() {
           className="w-full max-w-sm items-center rounded-[28px] px-7 py-8"
         >
           <View className="h-16 w-16 items-center justify-center rounded-full bg-primary-muted">
-            <MaterialIcons
+            <MaterialDesignIcons
               name={icon}
               size={31}
               color={tokens.primary}

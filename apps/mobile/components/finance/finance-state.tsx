@@ -25,7 +25,11 @@ export function FinanceState({
         title={title}
         description={detail}
         mode={variant}
-        icon={variant === 'error' ? 'error-outline' : 'receipt-long'}
+        icon={
+          variant === 'error'
+            ? 'alert-circle-outline'
+            : 'receipt-text'
+        }
         className="py-8"
       />
     </Surface>

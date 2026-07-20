@@ -44,7 +44,7 @@ export default function TabLayout() {
           tabBarIcon: ({ color }) => (
             <IconSymbol
               size={28}
-              name="bar-chart"
+              name="chart-bar"
               color={color}
             />
           ),
@@ -57,7 +57,7 @@ export default function TabLayout() {
           tabBarIcon: ({ color }) => (
             <IconSymbol
               size={28}
-              name="chat-bubble-outline"
+              name="chat-outline"
               color={color}
             />
           ),
@@ -71,7 +71,7 @@ export default function TabLayout() {
           tabBarIcon: ({ color }) => (
             <IconSymbol
               size={28}
-              name="person"
+              name="account"
               color={color}
             />
           ),

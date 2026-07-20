@@ -7,7 +7,7 @@ import {
 import { Modal, Platform, Pressable, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
-import MaterialIcons from '@react-native-vector-icons/material-icons';
+import { MaterialDesignIcons } from '@react-native-vector-icons/material-design-icons';
 import Animated, {
   Easing,
   interpolate,
@@ -30,7 +30,7 @@ type CaptureAction = {
   id: CaptureActionId;
   label: string;
   detail: string;
-  icon: ComponentProps<typeof MaterialIcons>['name'];
+  icon: ComponentProps<typeof MaterialDesignIcons>['name'];
 };
 
 const ACTIONS: readonly CaptureAction[] = [
@@ -38,25 +38,25 @@ const ACTIONS: readonly CaptureAction[] = [
     id: 'scan',
     label: 'Scan receipt',
     detail: 'Turn a receipt into a reviewable record',
-    icon: 'receipt-long',
+    icon: 'receipt-text',
   },
   {
     id: 'transaction',
     label: 'Add transaction',
     detail: 'Enter an expense, income, or transfer',
-    icon: 'add-card',
+    icon: 'credit-card-plus-outline',
   },
   {
     id: 'chat',
     label: 'Ask Moni',
     detail: 'Ask a question or describe a transaction',
-    icon: 'chat-bubble-outline',
+    icon: 'chat-outline',
   },
   {
     id: 'debt',
     label: 'Record debt',
     detail: 'Track money you owe or are owed',
-    icon: 'people-outline',
+    icon: 'account-group-outline',
   },
 ] as const;
 
@@ -108,9 +108,12 @@ function CaptureMenuItem({
         accessibilityLabel={action.label}
         accessibilityHint={action.detail}
       >
-        <Surface tone="aqua" className="mb-3 min-h-16 flex-row items-center px-4 py-3">
+        <Surface
+          tone="aqua"
+          className="mb-3 min-h-16 flex-row items-center px-4 py-3"
+        >
           <View className="h-11 w-11 items-center justify-center rounded-full bg-primary-muted">
-            <MaterialIcons
+            <MaterialDesignIcons
               name={action.icon}
               size={22}
               color={tokens.primary}
@@ -235,8 +238,8 @@ export function CaptureButton() {
         style={{ elevation: open ? 10 : 6 }}
       >
         <Animated.View style={fabStyle}>
-          <MaterialIcons
-            name="add"
+          <MaterialDesignIcons
+            name="plus"
             size={30}
             color={tokens.primaryForeground}
           />

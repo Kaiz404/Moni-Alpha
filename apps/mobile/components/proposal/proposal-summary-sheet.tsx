@@ -14,7 +14,7 @@ import {
   View,
 } from 'react-native';
 import { usePathname, router } from 'expo-router';
-import MaterialIcons from '@react-native-vector-icons/material-icons';
+import { MaterialDesignIcons } from '@react-native-vector-icons/material-design-icons';
 import {
   minorToDecimal,
   type ProposedTransaction,
@@ -150,8 +150,8 @@ export function ProposalSummarySheet() {
           <View className="mb-5 h-1.5 w-10 self-center rounded-full bg-border" />
           <View className="flex-row items-start gap-3">
             <View className="h-11 w-11 items-center justify-center rounded-full bg-primary-muted">
-              <MaterialIcons
-                name="notifications-none"
+              <MaterialDesignIcons
+                name="bell-outline"
                 size={22}
                 color={tokens.primary}
               />
@@ -173,7 +173,10 @@ export function ProposalSummarySheet() {
             accessibilityRole="button"
             accessibilityLabel={`Review ${title}`}
           >
-            <Surface tone="muted" className="flex-row items-start justify-between gap-3 px-4 py-4">
+            <Surface
+              tone="muted"
+              className="flex-row items-start justify-between gap-3 px-4 py-4"
+            >
               <View className="min-w-0 flex-1">
                 <Text className="text-xs font-semibold uppercase tracking-wide text-muted">
                   {direction} from{' '}

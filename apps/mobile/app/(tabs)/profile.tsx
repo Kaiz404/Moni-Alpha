@@ -34,7 +34,10 @@ function mapSpeechPermissionStatus(result: {
   status?: string;
 }) {
   if (result.granted) return 'granted';
-  if (result.status === 'denied' || result.status === 'undetermined') {
+  if (
+    result.status === 'denied' ||
+    result.status === 'undetermined'
+  ) {
     return result.status;
   }
   return 'undetermined';
@@ -42,7 +45,9 @@ function mapSpeechPermissionStatus(result: {
 
 function SettingsGroup({ children }: { children: React.ReactNode }) {
   return (
-    <Surface className="overflow-hidden rounded-[22px]">{children}</Surface>
+    <Surface className="overflow-hidden rounded-[22px]">
+      {children}
+    </Surface>
   );
 }
 
@@ -105,7 +110,8 @@ export default function ProfileScreen() {
   const requestLocationAccess = useCallback(async () => {
     setIsRequestingLocation(true);
     try {
-      const result = await Location.requestForegroundPermissionsAsync();
+      const result =
+        await Location.requestForegroundPermissionsAsync();
       setLocationStatus(result.status);
     } finally {
       setIsRequestingLocation(false);
@@ -115,7 +121,8 @@ export default function ProfileScreen() {
   const requestCameraAccess = useCallback(async () => {
     setIsRequestingCamera(true);
     try {
-      const result = await ImagePicker.requestCameraPermissionsAsync();
+      const result =
+        await ImagePicker.requestCameraPermissionsAsync();
       setCameraStatus(result.status);
     } finally {
       setIsRequestingCamera(false);
@@ -164,7 +171,10 @@ export default function ProfileScreen() {
         </View>
 
         <View className="px-5">
-          <Surface tone="aqua" className="p-4">
+          <Surface
+            tone="aqua"
+            className="p-4"
+          >
             <View className="flex-row items-center">
               <GradientCard
                 cardStyle={avatarStyle}
@@ -187,18 +197,20 @@ export default function ProfileScreen() {
               </View>
             </View>
             <Text className="mt-3 text-[13px] leading-[17px] text-muted">
-              Your data stays available locally while Moni synchronizes when
-              a connection is available.
+              Your data stays available locally while Moni
+              synchronizes when a connection is available.
             </Text>
           </Surface>
         </View>
 
         <View className="mt-8 px-5">
-          <ProfileSectionTitle>Accounts & wallets</ProfileSectionTitle>
+          <ProfileSectionTitle>
+            Accounts & wallets
+          </ProfileSectionTitle>
           <SyncStatus className="mb-4 rounded-[22px]" />
           <Text className="mb-3 text-[13px] leading-[17px] text-muted">
-            Choose the wallet Moni should use when a receipt, message, or
-            notification does not identify one.
+            Choose the wallet Moni should use when a receipt, message,
+            or notification does not identify one.
           </Text>
           <DefaultWalletPicker />
         </View>
@@ -207,7 +219,7 @@ export default function ProfileScreen() {
           <ProfileSectionTitle>Money setup</ProfileSectionTitle>
           <SettingsGroup>
             <SettingsRow
-              icon="account-balance-wallet"
+              icon="wallet"
               iconBgClassName="bg-primary-muted"
               iconColor={tokens.primary}
               title="Category budgets"
@@ -229,8 +241,8 @@ export default function ProfileScreen() {
         <View className="mt-6 px-5">
           <ProfileSectionTitle>Capture sources</ProfileSectionTitle>
           <Text className="mb-3 text-[13px] leading-[17px] text-muted">
-            Permissions make scanning, voice capture, and linked bank alerts
-            available. You can change them any time.
+            Permissions make scanning, voice capture, and linked bank
+            alerts available. You can change them any time.
           </Text>
           <SettingsGroup>
             {!isAndroid ? (
@@ -263,9 +275,11 @@ export default function ProfileScreen() {
                       : 'Enable'
                     : undefined
                 }
-                onAction={!isAuthorized ? requestPermission : undefined}
+                onAction={
+                  !isAuthorized ? requestPermission : undefined
+                }
                 actionDisabled={isCheckingPermission}
-                icon="notifications-active"
+                icon="bell-badge"
                 iconTint={tokens.accents.lilac}
                 showAction={!isAuthorized}
                 widthClassName="border-b border-border-subtle"
@@ -282,9 +296,11 @@ export default function ProfileScreen() {
                     : 'Enable'
                   : undefined
               }
-              onAction={!isLocationGranted ? requestLocationAccess : undefined}
+              onAction={
+                !isLocationGranted ? requestLocationAccess : undefined
+              }
               actionDisabled={isRequestingLocation}
-              icon="location-on"
+              icon="map-marker"
               iconTint={tokens.accents.aqua}
               showAction={!isLocationGranted}
               widthClassName="border-b border-border-subtle"
@@ -300,9 +316,11 @@ export default function ProfileScreen() {
                     : 'Enable'
                   : undefined
               }
-              onAction={!isCameraGranted ? requestCameraAccess : undefined}
+              onAction={
+                !isCameraGranted ? requestCameraAccess : undefined
+              }
               actionDisabled={isRequestingCamera}
-              icon="photo-camera"
+              icon="camera"
               iconTint={tokens.accents.peach}
               showAction={!isCameraGranted}
               widthClassName="border-b border-border-subtle"
@@ -334,7 +352,9 @@ export default function ProfileScreen() {
         </View>
 
         <View className="mt-6 px-5">
-          <ProfileSectionTitle>Privacy & local data</ProfileSectionTitle>
+          <ProfileSectionTitle>
+            Privacy & local data
+          </ProfileSectionTitle>
           <SettingsGroup>
             <SettingsRow
               icon="notifications"
@@ -352,7 +372,7 @@ export default function ProfileScreen() {
           <ProfileSectionTitle>Developer</ProfileSectionTitle>
           <SettingsGroup>
             <SettingsRow
-              icon="bug-report"
+              icon="bug-outline"
               iconBgClassName="bg-surface-2"
               iconColor={tokens.muted}
               title="Debug panel"

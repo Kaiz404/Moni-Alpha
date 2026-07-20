@@ -29,10 +29,7 @@ if (androidGoogleMapsApiKey) {
 if (iosGoogleMapsApiKey) {
   googleMapsConfig.iosGoogleMapsApiKey = iosGoogleMapsApiKey;
 }
-const googleMapsPlugin: [string, Record<string, string>] = [
-  'react-native-maps',
-  googleMapsConfig,
-];
+const googleMapsPlugin: [string, Record<string, string>] = ['react-native-maps', googleMapsConfig];
 const basePluginsWithoutGoogleMaps = (base.plugins ?? []).filter(
   (plugin) => !(Array.isArray(plugin) && plugin[0] === 'react-native-maps'),
 );
@@ -48,6 +45,10 @@ export default {
       'expo-secure-store',
       'expo-status-bar',
       'expo-web-browser',
+      '@react-native-vector-icons/ionicons',
+      '@react-native-vector-icons/feather',
+      '@react-native-vector-icons/fontawesome6',
+      '@react-native-vector-icons/material-design-icons',
       googleSignInPlugin,
     ],
   },

@@ -1,5 +1,11 @@
 import { useEffect, useState } from 'react';
-import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
+import {
+  Alert,
+  Pressable,
+  ScrollView,
+  Text,
+  View,
+} from 'react-native';
 import type { ColorValue } from 'react-native';
 import { router } from 'expo-router';
 import type { DebtDirection } from '@repo/types';
@@ -22,7 +28,8 @@ type Wallet = Awaited<ReturnType<typeof getWallets>>[number];
 export default function NewDebtScreen() {
   const tokens = useThemeTokens();
   const [name, setName] = useState('');
-  const [direction, setDirection] = useState<DebtDirection>('owed_to_me');
+  const [direction, setDirection] =
+    useState<DebtDirection>('owed_to_me');
   const [amount, setAmount] = useState('');
   const [wallets, setWallets] = useState<Wallet[]>([]);
   const [walletId, setWalletId] = useState('');
@@ -60,7 +67,9 @@ export default function NewDebtScreen() {
   };
 
   const owedToMe = direction === 'owed_to_me';
-  const selectedWallet = wallets.find((wallet) => wallet.id === walletId);
+  const selectedWallet = wallets.find(
+    (wallet) => wallet.id === walletId,
+  );
 
   return (
     <ScreenShell variant="canvas">
@@ -71,10 +80,13 @@ export default function NewDebtScreen() {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        <Text className="text-2xl font-bold text-foreground">Keep it clear</Text>
+        <Text className="text-2xl font-bold text-foreground">
+          Keep it clear
+        </Text>
         <Text className="mt-2 text-[15px] leading-5 text-muted">
-          Record who is involved, the native-currency amount, and an optional
-          due date. You stay in control of every later repayment.
+          Record who is involved, the native-currency amount, and an
+          optional due date. You stay in control of every later
+          repayment.
         </Text>
 
         <View className="mt-6 flex-row gap-2">
@@ -85,14 +97,20 @@ export default function NewDebtScreen() {
                 key={option}
                 accessibilityRole="button"
                 accessibilityState={{ selected }}
-                className={`min-h-14 flex-1 justify-center rounded-2xl px-4 ${selected ? option === 'owed_to_me' ? 'border border-primary bg-primary-muted' : 'border border-warning bg-warning/10' : 'bg-card'}`}
+                className={`min-h-14 flex-1 justify-center rounded-2xl px-4 ${selected ? (option === 'owed_to_me' ? 'border border-primary bg-primary-muted' : 'border border-warning bg-warning/10') : 'bg-card'}`}
                 onPress={() => setDirection(option)}
               >
-                <Text className={`text-center text-[15px] font-bold ${selected && option === 'owed_to_me' ? 'text-primary' : 'text-foreground'}`}>
-                  {option === 'owed_to_me' ? 'They owe me' : 'I owe them'}
+                <Text
+                  className={`text-center text-[15px] font-bold ${selected && option === 'owed_to_me' ? 'text-primary' : 'text-foreground'}`}
+                >
+                  {option === 'owed_to_me'
+                    ? 'They owe me'
+                    : 'I owe them'}
                 </Text>
                 <Text className="mt-1 text-center text-xs text-muted">
-                  {option === 'owed_to_me' ? 'You are owed' : 'You need to repay'}
+                  {option === 'owed_to_me'
+                    ? 'You are owed'
+                    : 'You need to repay'}
                 </Text>
               </Pressable>
             );
@@ -107,7 +125,9 @@ export default function NewDebtScreen() {
             onChangeText={setName}
             autoCapitalize="words"
           />
-          <Text className="mb-2 text-[15px] font-semibold text-foreground">Amount</Text>
+          <Text className="mb-2 text-[15px] font-semibold text-foreground">
+            Amount
+          </Text>
           <AmountInput
             accessibilityLabel="Debt amount"
             className="min-h-14 px-4 py-3 text-right text-2xl font-bold text-foreground"
@@ -118,7 +138,8 @@ export default function NewDebtScreen() {
             value={amount}
           />
           <Text className="mt-2 text-xs leading-4 text-muted">
-            Currency comes from the wallet selected below. Moni does not convert it.
+            Currency comes from the wallet selected below. Moni does
+            not convert it.
           </Text>
           <FormField
             containerClassName="mt-5"
@@ -131,15 +152,17 @@ export default function NewDebtScreen() {
           />
         </Surface>
 
-        <Text className="mb-2 mt-8 text-base font-bold text-foreground">Cash wallet</Text>
+        <Text className="mb-2 mt-8 text-base font-bold text-foreground">
+          Cash wallet
+        </Text>
         <Text className="mb-3 text-sm leading-5 text-muted">
-          This creates the matching cash entry in a wallet using the same
-          currency.
+          This creates the matching cash entry in a wallet using the
+          same currency.
         </Text>
         {wallets.length === 0 ? (
           <FeedbackState
             description="Add a wallet before recording a cash debt."
-            icon="account-balance-wallet"
+            icon="wallet"
             title="No wallet available"
           />
         ) : (
@@ -154,7 +177,7 @@ export default function NewDebtScreen() {
                   key={wallet.id}
                   accessibilityRole="button"
                   accessibilityState={{ selected }}
-                  className={`min-h-11 justify-center rounded-xl px-3 ${selected ? owedToMe ? 'border border-primary bg-primary-muted' : 'border border-warning bg-warning/10' : 'bg-card'}`}
+                  className={`min-h-11 justify-center rounded-xl px-3 ${selected ? (owedToMe ? 'border border-primary bg-primary-muted' : 'border border-warning bg-warning/10') : 'bg-card'}`}
                   onPress={() => setWalletId(wallet.id)}
                 >
                   <View className="flex-row items-center gap-1.5">
@@ -164,7 +187,9 @@ export default function NewDebtScreen() {
                       size={16}
                       type={wallet.type}
                     />
-                    <Text className={`text-sm font-semibold ${selected && owedToMe ? 'text-primary' : 'text-foreground'}`}>
+                    <Text
+                      className={`text-sm font-semibold ${selected && owedToMe ? 'text-primary' : 'text-foreground'}`}
+                    >
                       {wallet.name} · {wallet.currency}
                     </Text>
                   </View>
@@ -177,7 +202,11 @@ export default function NewDebtScreen() {
         <PrimaryButton
           className="mt-8"
           disabled={!walletId}
-          label={owedToMe ? 'Record money owed to me' : 'Record money I owe'}
+          label={
+            owedToMe
+              ? 'Record money owed to me'
+              : 'Record money I owe'
+          }
           loading={saving}
           loadingLabel="Saving debt…"
           onPress={submit}

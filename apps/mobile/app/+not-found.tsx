@@ -21,7 +21,7 @@ export default function NotFoundScreen() {
         <Surface className="w-full max-w-md items-center p-6">
           <View className="mb-4 h-14 w-14 items-center justify-center rounded-full bg-primary-muted">
             <IconSymbol
-              name="explore-off"
+              name="compass-off-outline"
               size={26}
               color={tokens.primary}
             />

@@ -53,19 +53,19 @@ function kindStyle(
     case 'positive':
       return {
         surfaceClassName: 'bg-primary-muted',
-        icon: 'eco',
+        icon: 'leaf',
         iconColor: tokens.success,
       };
     case 'savings_opportunity':
       return {
         surfaceClassName: 'bg-accent-lemon/30',
-        icon: 'account-balance',
+        icon: 'bank',
         iconColor: tokens.warning,
       };
     default:
       return {
         surfaceClassName: 'bg-surface-2',
-        icon: 'insights',
+        icon: 'chart-line',
         iconColor: tokens.muted,
       };
   }
@@ -85,11 +85,14 @@ export function AiInsightSection({
   const tokens = useThemeTokens();
 
   return (
-    <Surface tone="tray" className="mb-6 overflow-hidden">
+    <Surface
+      tone="tray"
+      className="mb-6 overflow-hidden"
+    >
       <View className="flex-row items-center justify-between bg-primary px-4 py-3">
         <View className="min-w-0 flex-1 flex-row items-center pr-3">
           <IconSymbol
-            name="auto-awesome"
+            name="auto-fix"
             size={20}
             color={tokens.primaryForeground}
           />
@@ -164,7 +167,10 @@ export function AiInsightSection({
         ) : null}
         {generating && !insight?.cards?.length ? (
           <View className="items-center py-7">
-            <ActivityIndicator size="large" color={tokens.primary} />
+            <ActivityIndicator
+              size="large"
+              color={tokens.primary}
+            />
             <Text className="mt-3 text-sm text-muted">
               Preparing an evidence-led summary…
             </Text>

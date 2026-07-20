@@ -3,10 +3,10 @@ import type { WalletType } from '@repo/types';
 import type { IconSymbolName } from '@/components/ui/icon-symbol';
 
 export const WALLET_TYPE_OPTIONS = [
-  { value: 'bank', label: 'Bank', icon: 'account-balance' },
-  { value: 'cash', label: 'Cash', icon: 'payments' },
+  { value: 'bank', label: 'Bank', icon: 'bank' },
+  { value: 'cash', label: 'Cash', icon: 'cash' },
   { value: 'credit', label: 'Credit', icon: 'credit-card' },
-  { value: 'debit', label: 'Debit', icon: 'payment' },
+  { value: 'debit', label: 'Debit', icon: 'credit-card-outline' },
   { value: 'ewallet', label: 'Digital wallet', icon: 'wallet' },
   { value: 'investment', label: 'Investment', icon: 'trending-up' },
 ] as const satisfies ReadonlyArray<{
@@ -17,7 +17,7 @@ export const WALLET_TYPE_OPTIONS = [
 
 export type WalletKind = (typeof WALLET_TYPE_OPTIONS)[number]['value'];
 
-const DEFAULT_WALLET_ICON: IconSymbolName = 'account-balance-wallet';
+const DEFAULT_WALLET_ICON: IconSymbolName = 'wallet';
 
 const WALLET_TYPE_ICON_BY_VALUE = Object.fromEntries(
   WALLET_TYPE_OPTIONS.map((option) => [option.value, option.icon]),
@@ -27,8 +27,8 @@ function isWalletType(value: string): value is WalletType {
   return value in WALLET_TYPE_ICON_BY_VALUE;
 }
 
-/** Stored wallet icons used to be emoji; treat non–icon-name values as legacy. */
-function isMaterialIconName(value: string): value is IconSymbolName {
+/** Stored wallet icons used to be emoji; treat non-icon-name values as legacy. */
+function isMaterialDesignIconName(value: string): value is IconSymbolName {
   return /^[a-z][a-z0-9-]*$/.test(value);
 }
 
@@ -40,7 +40,7 @@ export function resolveWalletIcon(
   icon: string | null | undefined,
   type?: string | null,
 ): IconSymbolName {
-  if (icon && isMaterialIconName(icon)) {
+  if (icon && isMaterialDesignIconName(icon)) {
     return icon;
   }
   if (type && isWalletType(type)) {

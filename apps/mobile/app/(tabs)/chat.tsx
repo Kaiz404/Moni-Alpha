@@ -218,7 +218,7 @@ export default function ChatScreen() {
           <View className="flex-row items-center">
             <View className="h-10 w-10 items-center justify-center rounded-2xl bg-primary-muted">
               <IconSymbol
-                name="auto-awesome"
+                name="auto-fix"
                 size={20}
                 color={tokens.primary}
               />

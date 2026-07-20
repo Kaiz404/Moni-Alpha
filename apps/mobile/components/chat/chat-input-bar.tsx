@@ -46,7 +46,10 @@ export function ChatInputBar({
   return (
     <View className="border-t border-border-subtle bg-canvas px-5 pt-2">
       {attachedImage ? (
-        <Surface className="mb-2 flex-row items-center rounded-2xl p-2" tone="muted">
+        <Surface
+          className="mb-2 flex-row items-center rounded-2xl p-2"
+          tone="muted"
+        >
           <Image
             source={{ uri: attachedImage }}
             style={{ width: 56, height: 56, borderRadius: 12 }}
@@ -84,7 +87,7 @@ export function ChatInputBar({
       >
         <IconAction
           accessibilityLabel="Attach a receipt photo"
-          icon="photo-camera"
+          icon="camera"
           onPress={onOpenCamera}
           tone="accent"
         />
@@ -131,10 +134,12 @@ export function ChatInputBar({
             accessibilityHint="Hold while speaking, then release to add your words"
           >
             <IconSymbol
-              name="mic"
+              name="microphone"
               size={22}
               color={
-                isSpeechRecognizing ? tokens.foreground : tokens.primaryForeground
+                isSpeechRecognizing
+                  ? tokens.foreground
+                  : tokens.primaryForeground
               }
             />
           </TactilePressable>
@@ -146,7 +151,7 @@ export function ChatInputBar({
             accessibilityLabel="Send message"
           >
             <IconSymbol
-              name="arrow-upward"
+              name="arrow-up"
               size={22}
               color={tokens.primaryForeground}
             />
@@ -180,7 +185,7 @@ export function ChatEmptyState({
         style={{ backgroundColor: `${primary}26` }}
       >
         <IconSymbol
-          name="auto-awesome"
+          name="auto-fix"
           size={30}
           color={primary}
         />
@@ -189,8 +194,9 @@ export function ChatEmptyState({
         A clearer view of your money
       </Text>
       <Text className="mt-2 max-w-sm text-center text-[15px] leading-[22px] text-muted">
-        Ask Moni a question, describe a transaction, or attach a receipt.
-        You&apos;ll always review changes before they&apos;re added.
+        Ask Moni a question, describe a transaction, or attach a
+        receipt. You&apos;ll always review changes before they&apos;re
+        added.
       </Text>
       <View className="mt-7 w-full max-w-md gap-2">
         {suggestions.map((suggestion) => (

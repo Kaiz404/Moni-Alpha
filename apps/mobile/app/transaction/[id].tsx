@@ -271,7 +271,7 @@ export default function EditTransactionScreen() {
         <FeedbackState
           className="flex-1"
           description="Return to activity and select a transaction to edit."
-          icon="receipt-long"
+          icon="receipt-text"
           title="Missing transaction"
         />
       </ScreenShell>
@@ -298,12 +298,15 @@ export default function EditTransactionScreen() {
         <FeedbackState
           className="flex-1"
           description={loadError}
-          icon="error-outline"
+          icon="alert-circle-outline"
           mode="error"
           title="Couldn’t open this transaction"
         />
         <View className="px-5 pb-5">
-          <PrimaryButton label="Go back" onPress={() => router.back()} />
+          <PrimaryButton
+            label="Go back"
+            onPress={() => router.back()}
+          />
         </View>
       </ScreenShell>
     );
@@ -325,11 +328,16 @@ export default function EditTransactionScreen() {
             contentContainerClassName="px-4 pt-4 pb-2"
             showsVerticalScrollIndicator={false}
           >
-            <Text className="text-2xl font-bold text-foreground">Edit transaction</Text>
+            <Text className="text-2xl font-bold text-foreground">
+              Edit transaction
+            </Text>
             <Text className="mt-2 text-[15px] leading-5 text-muted">
               Amounts stay in the selected wallet’s currency.
             </Text>
-            <Surface tone="muted" className="mb-6 mt-6 p-4">
+            <Surface
+              tone="muted"
+              className="mb-6 mt-6 p-4"
+            >
               <Text className="text-xs font-semibold uppercase tracking-wide text-muted">
                 Date &amp; time
               </Text>
@@ -344,7 +352,10 @@ export default function EditTransactionScreen() {
             </Surface>
 
             {isTransfer ? (
-              <Surface tone="tray" className="mb-6 p-4">
+              <Surface
+                tone="tray"
+                className="mb-6 p-4"
+              >
                 <Text className="text-sm leading-5 text-foreground">
                   Transfer between your wallets — does not affect your
                   overall net worth.

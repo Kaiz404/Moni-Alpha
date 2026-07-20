@@ -6,10 +6,7 @@ import {
   Text,
   View,
 } from 'react-native';
-import {
-  useFocusEffect,
-  useLocalSearchParams,
-} from 'expo-router';
+import { useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { BrandHeader } from '@/components/ui/brand-header';
 import { AmountInput } from '@/components/finance/amount-input';
 import { FeedbackState } from '@/components/ui/feedback-state';
@@ -97,7 +94,7 @@ export default function DebtDetailScreen() {
         <FeedbackState
           className="flex-1"
           description="Return to Debts and select a record to view."
-          icon="person-outline"
+          icon="account-outline"
           title="Debt not found"
         />
       </ScreenShell>
@@ -198,7 +195,10 @@ export default function DebtDetailScreen() {
           ) : null}
         </Surface>
         {action ? (
-          <Surface tone="raised" className="mb-4 p-3">
+          <Surface
+            tone="raised"
+            className="mb-4 p-3"
+          >
             <Text className="font-bold text-foreground">
               {action === 'principal'
                 ? debt.direction === 'owed_to_me'

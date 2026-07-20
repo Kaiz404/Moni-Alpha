@@ -1,5 +1,11 @@
 import { useState } from 'react';
-import { Alert, ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import {
+  Alert,
+  ScrollView,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import { Link, router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -20,11 +26,17 @@ export default function RegisterScreen() {
 
   const handleRegister = async () => {
     if (!email.trim() || !password || !displayName.trim()) {
-      Alert.alert('Add your details', 'Complete all three fields to continue.');
+      Alert.alert(
+        'Add your details',
+        'Complete all three fields to continue.',
+      );
       return;
     }
     if (password.length < 8) {
-      Alert.alert('Use a longer password', 'Your password needs at least 8 characters.');
+      Alert.alert(
+        'Use a longer password',
+        'Your password needs at least 8 characters.',
+      );
       return;
     }
     setLoading(true);
@@ -51,7 +63,7 @@ export default function RegisterScreen() {
       >
         <IconAction
           accessibilityLabel="Return to sign in"
-          icon="arrow-back"
+          icon="arrow-left"
           onPress={() => router.back()}
         />
       </View>
@@ -67,8 +79,8 @@ export default function RegisterScreen() {
             Start with a clearer view
           </Text>
           <Text className="mt-2 max-w-md text-[16px] leading-[22px] text-muted">
-            Create a Moni account to keep your personal finance setup in sync
-            while retaining a local-first experience.
+            Create a Moni account to keep your personal finance setup
+            in sync while retaining a local-first experience.
           </Text>
         </View>
 
@@ -109,13 +121,21 @@ export default function RegisterScreen() {
         <GoogleSignInButton
           disabled={loading}
           onError={(message) =>
-            Alert.alert('Google sign in failed', message, [{ text: 'OK' }], {
-              cancelable: true,
-            })
+            Alert.alert(
+              'Google sign in failed',
+              message,
+              [{ text: 'OK' }],
+              {
+                cancelable: true,
+              },
+            )
           }
         />
 
-        <Link href={'/(auth)/login' as any} asChild>
+        <Link
+          href={'/(auth)/login' as any}
+          asChild
+        >
           <TouchableOpacity
             className="mt-8 items-center py-3"
             accessibilityRole="button"

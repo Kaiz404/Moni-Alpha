@@ -1,6 +1,6 @@
 import { Stack, router } from 'expo-router';
 import { Pressable, View } from 'react-native';
-import MaterialIcons from '@react-native-vector-icons/material-icons';
+import { MaterialDesignIcons } from '@react-native-vector-icons/material-design-icons';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { SyncStatusIndicator } from '@/components/providers/sync-status-indicator';
 
@@ -25,8 +25,8 @@ export default function TransactionLayout() {
               hitSlop={12}
               className="ml-1 p-1 active:opacity-70"
             >
-              <MaterialIcons
-                name="arrow-back"
+              <MaterialDesignIcons
+                name="arrow-left"
                 size={24}
                 color={tokens.foreground}
               />

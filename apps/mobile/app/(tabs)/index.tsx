@@ -9,7 +9,7 @@ import {
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useValue } from '@legendapp/state/react';
-import MaterialIcons from '@react-native-vector-icons/material-icons';
+import { MaterialDesignIcons } from '@react-native-vector-icons/material-design-icons';
 
 import { BudgetProgressBar } from '@/components/charts/budget-progress-bar';
 import { IconSymbol } from '@/components/ui/icon-symbol';
@@ -20,6 +20,7 @@ import { resolveWalletIcon } from '@/constants/wallet-form';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { useAuth } from '@/lib/auth/auth-context';
 import { formatMinorAmount } from '@/lib/finance/money';
+import { resolveTransactionIcon } from '@/lib/transactions/icon';
 import {
   budgetProgress$,
   debtsWithBalance$,
@@ -198,8 +199,8 @@ export default function HomeScreen() {
               accessibilityLabel={`${pendingProposals.length} transaction proposal${pendingProposals.length === 1 ? '' : 's'} ready for review`}
             >
               <View className="h-9 w-9 items-center justify-center rounded-full bg-primary-muted">
-                <MaterialIcons
-                  name="fact-check"
+                <MaterialDesignIcons
+                  name="file-document-check"
                   size={19}
                   color={tokens.primary}
                 />
@@ -212,7 +213,7 @@ export default function HomeScreen() {
                   Confirm each record before it enters your ledger.
                 </Text>
               </View>
-              <MaterialIcons
+              <MaterialDesignIcons
                 name="chevron-right"
                 size={21}
                 color={tokens.muted}
@@ -289,8 +290,8 @@ export default function HomeScreen() {
               accessibilityRole="button"
               accessibilityLabel="Add wallet"
             >
-              <MaterialIcons
-                name="add"
+              <MaterialDesignIcons
+                name="plus"
                 size={22}
                 color={tokens.primary}
               />
@@ -321,7 +322,7 @@ export default function HomeScreen() {
               className="min-h-11 justify-center px-2"
               onPress={() => router.push('/budget' as any)}
             >
-              <MaterialIcons
+              <MaterialDesignIcons
                 name="chevron-right"
                 size={20}
                 color={tokens.primary}
@@ -429,7 +430,7 @@ export default function HomeScreen() {
                 className="min-h-11 justify-center px-2"
                 onPress={() => router.push('/debts' as any)}
               >
-                <MaterialIcons
+                <MaterialDesignIcons
                   name="chevron-right"
                   size={20}
                   color={tokens.primary}
@@ -487,7 +488,7 @@ export default function HomeScreen() {
               className="min-h-11 justify-center px-2"
               onPress={() => router.push('/transaction' as any)}
             >
-              <MaterialIcons
+              <MaterialDesignIcons
                 name="chevron-right"
                 size={20}
                 color={tokens.primary}
@@ -538,9 +539,14 @@ export default function HomeScreen() {
                           : tokens.surface2,
                       }}
                     >
-                      <Text className="text-base">
-                        {category?.icon ?? '•'}
-                      </Text>
+                      <IconSymbol
+                        name={resolveTransactionIcon(
+                          category?.icon,
+                          transaction.type,
+                        )}
+                        size={20}
+                        color={category?.color ?? tokens.muted}
+                      />
                     </View>
                     <View className="min-w-0 flex-1 pr-3">
                       <Text

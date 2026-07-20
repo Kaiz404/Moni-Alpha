@@ -13,7 +13,7 @@ import {
   SafeAreaView,
   useSafeAreaInsets,
 } from 'react-native-safe-area-context';
-import MaterialIcons from '@react-native-vector-icons/material-icons';
+import { MaterialDesignIcons } from '@react-native-vector-icons/material-design-icons';
 import {
   ExpoSpeechRecognitionModule,
   useSpeechRecognitionEvent,
@@ -179,7 +179,7 @@ export default function ScanListenScreen() {
           accessibilityLabel="Cancel"
           className="h-10 w-10 items-center justify-center rounded-full bg-background-muted"
         >
-          <MaterialIcons
+          <MaterialDesignIcons
             name="close"
             size={22}
             color={tokens.foreground}
@@ -213,7 +213,7 @@ export default function ScanListenScreen() {
               onPress={handleStop}
               className="mt-10 flex-row items-center gap-2 rounded-full bg-primary px-8 py-4"
             >
-              <MaterialIcons
+              <MaterialDesignIcons
                 name="stop"
                 size={20}
                 color="#ffffff"

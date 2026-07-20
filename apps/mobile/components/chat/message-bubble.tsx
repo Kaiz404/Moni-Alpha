@@ -25,11 +25,20 @@ export function MessageBubble({
   const tokens = useThemeTokens();
   const isUser = message.role === 'user';
 
-  if (message.kind === 'assistant_status' && message.status === 'processing') {
+  if (
+    message.kind === 'assistant_status' &&
+    message.status === 'processing'
+  ) {
     return (
-      <View className="mb-4 flex-row items-center" accessibilityLiveRegion="polite">
+      <View
+        className="mb-4 flex-row items-center"
+        accessibilityLiveRegion="polite"
+      >
         <View className="h-8 w-8 items-center justify-center rounded-full bg-primary-muted">
-          <ActivityIndicator size="small" color={tokens.primary} />
+          <ActivityIndicator
+            size="small"
+            color={tokens.primary}
+          />
         </View>
         <Text className="ml-2 text-[13px] font-medium text-muted">
           {message.content}
@@ -70,7 +79,7 @@ export function MessageBubble({
       <View className="mb-1 flex-row items-center">
         <View className="h-5 w-5 items-center justify-center rounded-full bg-primary-muted">
           <IconSymbol
-            name={isError ? 'info-outline' : 'auto-awesome'}
+            name={isError ? 'information-outline' : 'auto-fix'}
             size={12}
             color={isError ? tokens.danger : tokens.primary}
           />

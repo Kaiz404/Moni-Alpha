@@ -34,7 +34,7 @@ export function BrandHeader({
             className="h-11 w-11 items-center justify-center rounded-full bg-card active:opacity-80"
           >
             <IconSymbol
-              name="arrow-back"
+              name="arrow-left"
               size={20}
               color={tokens.foreground}
             />
