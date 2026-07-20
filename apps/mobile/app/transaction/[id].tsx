@@ -35,7 +35,7 @@ import {
 } from '@/lib/finance/money';
 
 const inputClass =
-  'min-h-13 rounded-2xl border border-border bg-surface-2 px-4 py-3 text-foreground';
+  'min-h-13 rounded-2xl bg-surface-2 px-4 py-3 text-foreground';
 
 export default function EditTransactionScreen() {
   const { user } = useAuth();
@@ -546,7 +546,7 @@ export default function EditTransactionScreen() {
                   ) : null}
                   {mapExpanded ? (
                     <View
-                    className="mt-3 overflow-hidden rounded-2xl border border-border bg-card"
+                      className="mt-3 overflow-hidden rounded-2xl bg-card"
                       style={styles.locationMapBox}
                     >
                       <MapView

@@ -103,10 +103,10 @@ function AppPickerRow({
 
   return (
     <TouchableOpacity
-      className={`mb-1.5 flex-row items-center gap-2 rounded-xl border px-3 py-2.5 ${
+      className={`mb-1.5 flex-row items-center gap-2 rounded-xl px-3 py-2.5 ${
         selected
-          ? 'border-primary bg-primary/5'
-          : 'border-border bg-card'
+          ? 'border border-primary bg-primary/5'
+          : 'bg-card'
       }`}
       onPress={onPress}
       activeOpacity={0.85}
@@ -323,7 +323,7 @@ export function WalletNotificationLinkSection({
       </Text>
 
       {selectedLabel ? (
-        <View className="mb-3 flex-row items-center gap-3 rounded-xl border border-border bg-card px-3 py-2.5">
+        <View className="mb-3 flex-row items-center gap-3 rounded-xl bg-card px-3 py-2.5">
           <AppIcon
             iconUri={selectedIcon}
             size={32}

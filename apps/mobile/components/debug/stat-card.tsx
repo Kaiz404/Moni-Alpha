@@ -9,7 +9,7 @@ export function StatCard({
   children: ReactNode;
 }) {
   return (
-    <View className="flex-1 rounded-2xl border border-border bg-surface-2 px-3 py-2.5">
+    <View className="flex-1 rounded-2xl bg-surface-2 px-3 py-2.5">
       <Text className="text-[10px] font-semibold uppercase tracking-wide text-muted">
         {label}
       </Text>

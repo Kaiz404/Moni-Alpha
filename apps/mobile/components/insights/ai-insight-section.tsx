@@ -46,25 +46,25 @@ function kindStyle(
   switch (kind) {
     case 'risk':
       return {
-        surfaceClassName: 'border-danger/40 bg-danger/10',
+        surfaceClassName: 'bg-danger/10',
         icon: 'trending-up',
         iconColor: tokens.danger,
       };
     case 'positive':
       return {
-        surfaceClassName: 'border-primary/30 bg-primary-muted',
+        surfaceClassName: 'bg-primary-muted',
         icon: 'eco',
         iconColor: tokens.success,
       };
     case 'savings_opportunity':
       return {
-        surfaceClassName: 'border-warning/30 bg-accent-lemon/20',
+        surfaceClassName: 'bg-accent-lemon/20',
         icon: 'account-balance',
         iconColor: tokens.warning,
       };
     default:
       return {
-        surfaceClassName: 'border-border bg-surface-2',
+        surfaceClassName: 'bg-surface-2',
         icon: 'insights',
         iconColor: tokens.muted,
       };
@@ -130,7 +130,7 @@ export function AiInsightSection({
         {onManageBudgets ? (
           <Pressable
             onPress={onManageBudgets}
-            className="mb-3 min-h-12 flex-row items-center justify-between rounded-2xl border border-border bg-card px-3 py-2"
+            className="mb-3 min-h-12 flex-row items-center justify-between rounded-2xl bg-card px-3 py-2 active:bg-surface-2"
             accessibilityRole="button"
           >
             <Text className="flex-1 pr-2 text-sm text-foreground">
@@ -177,7 +177,7 @@ export function AiInsightSection({
             <View
               key={[card.title, index].join('-')}
               className={[
-                'mb-2 rounded-2xl border p-3',
+                'mb-2 rounded-2xl p-3',
                 style.surfaceClassName,
               ].join(' ')}
             >

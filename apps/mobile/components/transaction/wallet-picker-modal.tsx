@@ -3,6 +3,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { IconAction } from '@/components/ui/icon-action';
 import { PrimaryButton } from '@/components/ui/primary-button';
+import { SquircleView, squircleSmoothing } from '@/components/ui/squircle-view';
 
 export type WalletPickerItem = {
   id: string;
@@ -34,10 +35,14 @@ export function WalletPickerModal({
       onRequestClose={onCancel}
     >
       <View className="flex-1 justify-end bg-black/40">
-        <SafeAreaView
-          edges={['bottom']}
-          className="rounded-t-[28px] border border-border bg-canvas px-5 pb-4 pt-3"
+        <SquircleView
+          className="overflow-hidden rounded-[28px] bg-canvas"
+          cornerSmoothing={squircleSmoothing.hero}
         >
+          <SafeAreaView
+            edges={['bottom']}
+            className="px-5 pb-4 pt-3"
+          >
           <View className="mb-4 h-1.5 w-10 self-center rounded-full bg-border" />
           <View className="mb-4 flex-row items-center justify-between gap-3">
             <Text className="flex-1 text-[22px] font-bold text-foreground">
@@ -58,7 +63,7 @@ export function WalletPickerModal({
             wallets.map((wallet) => (
               <TouchableOpacity
                 key={wallet.id}
-                className="mb-2 min-h-14 flex-row items-center rounded-2xl border border-border bg-card px-4 py-3"
+                className="mb-2 min-h-14 flex-row items-center rounded-2xl bg-card px-4 py-3"
                 onPress={() => onSelect(wallet.id)}
                 activeOpacity={0.85}
                 accessibilityRole="button"
@@ -87,7 +92,8 @@ export function WalletPickerModal({
             className="mt-3"
             onPress={onCancel}
           />
-        </SafeAreaView>
+          </SafeAreaView>
+        </SquircleView>
       </View>
     </Modal>
   );

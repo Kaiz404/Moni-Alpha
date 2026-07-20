@@ -14,6 +14,7 @@ import Animated, {
 } from 'react-native-reanimated';
 
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
+import { Surface } from '@/components/ui/surface';
 import {
   clearImmediateProposalReview,
   useImmediateProposalReview,
@@ -122,7 +123,10 @@ export function FabReceiptProcessingOverlay() {
       }
     >
       <View className="flex-1 items-center justify-center bg-foreground/15 px-7">
-        <View className="w-full max-w-sm items-center rounded-[28px] border border-border bg-card px-7 py-8">
+        <Surface
+          smoothing="hero"
+          className="w-full max-w-sm items-center rounded-[28px] px-7 py-8"
+        >
           <View className="h-16 w-16 items-center justify-center rounded-full bg-primary-muted">
             <MaterialIcons
               name={icon}
@@ -162,7 +166,7 @@ export function FabReceiptProcessingOverlay() {
               Continue in background
             </Text>
           </Pressable>
-        </View>
+        </Surface>
       </View>
     </Modal>
   );

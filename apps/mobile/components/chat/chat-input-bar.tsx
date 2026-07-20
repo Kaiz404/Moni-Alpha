@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Pressable, Text, TextInput, View } from 'react-native';
 import { Image } from 'expo-image';
 
@@ -35,6 +36,7 @@ export function ChatInputBar({
   bottomPad,
 }: ChatInputBarProps) {
   const tokens = useThemeTokens();
+  const [isInputFocused, setIsInputFocused] = useState(false);
   const hasContent = input.trim().length > 0 || !!attachedImage;
   const showMicMode = isSpeechRecognizing || !hasContent;
   const inputPlaceholder = isSpeechRecognizing
@@ -88,11 +90,15 @@ export function ChatInputBar({
         />
 
         <TextInput
-          className="ml-2 mr-2 min-h-11 max-h-30 flex-1 rounded-2xl border border-border bg-card px-4 py-2.5 text-base leading-5 text-foreground"
+          className={`ml-2 mr-2 min-h-11 max-h-30 flex-1 rounded-2xl bg-card px-4 py-2.5 text-base leading-5 text-foreground ${
+            isInputFocused ? 'border border-primary' : ''
+          }`}
           placeholder={inputPlaceholder}
           placeholderTextColor={tokens.muted}
           value={input}
           onChangeText={onChangeText}
+          onFocus={() => setIsInputFocused(true)}
+          onBlur={() => setIsInputFocused(false)}
           multiline
           editable={!isSpeechRecognizing}
           returnKeyType="send"
@@ -192,7 +198,7 @@ export function ChatEmptyState({
             key={suggestion}
             onPress={() => onSuggestion?.(suggestion)}
             disabled={!onSuggestion}
-            className="rounded-2xl border border-border bg-card px-4 py-3.5 active:bg-surface-2"
+            className="rounded-2xl bg-card px-4 py-3.5 active:bg-surface-2"
             accessibilityRole="button"
           >
             <Text className="text-[15px] font-medium text-foreground">

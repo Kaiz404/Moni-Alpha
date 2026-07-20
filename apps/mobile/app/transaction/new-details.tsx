@@ -182,7 +182,7 @@ export default function NewTransactionDetailsScreen() {
               ) : null}
               {mapExpanded ? (
                 <View
-                    className="mt-3 overflow-hidden rounded-2xl border border-border bg-card"
+                  className="mt-3 overflow-hidden rounded-2xl bg-card"
                   style={styles.locationMapBox}
                 >
                   <MapView

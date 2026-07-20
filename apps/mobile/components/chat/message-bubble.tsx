@@ -80,8 +80,8 @@ export function MessageBubble({
         </Text>
       </View>
       <View
-        className={`max-w-[88%] rounded-[22px] rounded-tl-md border px-4 py-3 ${
-          isError ? 'border-danger/25 bg-danger/10' : 'border-border bg-card'
+        className={`max-w-[88%] rounded-[22px] rounded-tl-md px-4 py-3 ${
+          isError ? 'bg-danger/10' : 'bg-card'
         }`}
       >
         <Text

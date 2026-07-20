@@ -3,6 +3,7 @@ import { View, Text } from 'react-native';
 import { syncState } from '@legendapp/state';
 import { useSelector } from '@legendapp/state/react';
 import { transactions$ } from '@/lib/store';
+import { Surface } from '@/components/ui/surface';
 
 type SyncStatusProps = {
   className?: string;
@@ -61,8 +62,8 @@ export function SyncStatus({ className }: SyncStatusProps = {}) {
   };
 
   return (
-    <View
-      className={['mb-6 rounded-[22px] border border-border bg-card p-4', className ?? '']
+    <Surface
+      className={['mb-6 p-4', className ?? '']
         .filter(Boolean)
         .join(' ')}
     >
@@ -111,6 +112,6 @@ export function SyncStatus({ className }: SyncStatusProps = {}) {
           </Text>
         ) : null}
       </View>
-    </View>
+    </Surface>
   );
 }

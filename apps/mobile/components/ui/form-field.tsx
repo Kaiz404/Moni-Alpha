@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import {
   Text,
   TextInput,
@@ -23,10 +24,13 @@ export function FormField({
   className,
   placeholderTextColor,
   accessibilityLabel,
+  onFocus,
+  onBlur,
   ...props
 }: FormFieldProps) {
   const tokens = useThemeTokens();
   const helper = error ?? hint;
+  const [isFocused, setIsFocused] = useState(false);
 
   return (
     <View className={`mb-4 ${containerClassName ?? ''}`}>
@@ -37,9 +41,21 @@ export function FormField({
         {...props}
         accessibilityLabel={accessibilityLabel ?? label}
         placeholderTextColor={placeholderTextColor ?? tokens.muted}
-        className={`min-h-13 rounded-2xl border bg-surface-2 px-4 py-3 text-base text-foreground ${
-          error ? 'border-danger' : 'border-border'
+        className={`min-h-13 rounded-2xl bg-surface-2 px-4 py-3 text-base text-foreground ${
+          error
+            ? 'border border-danger bg-danger/10'
+            : isFocused
+              ? 'border border-primary'
+              : ''
         } ${className ?? ''}`}
+        onFocus={(event) => {
+          setIsFocused(true);
+          onFocus?.(event);
+        }}
+        onBlur={(event) => {
+          setIsFocused(false);
+          onBlur?.(event);
+        }}
       />
       {helper ? (
         <Text

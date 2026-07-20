@@ -13,13 +13,20 @@ import MaterialIcons from '@react-native-vector-icons/material-icons';
 
 import { ActivityCalendar } from '@/components/charts/activity-calendar';
 import { BudgetProgressBar } from '@/components/charts/budget-progress-bar';
-import { buildMonthlyTakeaway, previousMonthKey } from '@/components/charts/chart-utils';
+import {
+  buildMonthlyTakeaway,
+  previousMonthKey,
+} from '@/components/charts/chart-utils';
 import { DonutChart } from '@/components/charts/donut-chart';
 import { LineChart } from '@/components/charts/line-chart';
 import { SyncStatusIndicator } from '@/components/providers/sync-status-indicator';
+import { Surface } from '@/components/ui/surface';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { useAuth } from '@/lib/auth/auth-context';
-import { dayKeyInTimezone, monthKeyInTimezone } from '@/lib/finance/dates';
+import {
+  dayKeyInTimezone,
+  monthKeyInTimezone,
+} from '@/lib/finance/dates';
 import {
   categoryExpensesByCurrency,
   budgetProgress$,
@@ -62,36 +69,54 @@ export default function InsightsScreen() {
   const budgetProgress = useValue(
     budgetProgress$(user?.id ?? null, timezone),
   );
-  const [currencyPreference, setCurrencyPreference] = useState<string | null>(
+  const [currencyPreference, setCurrencyPreference] = useState<
+    string | null
+  >(null);
+  const [timeframe, setTimeframe] = useState<Timeframe>('90D');
+  const [selectedDate, setSelectedDate] = useState<string | null>(
     null,
   );
-  const [timeframe, setTimeframe] = useState<Timeframe>('90D');
-  const [selectedDate, setSelectedDate] = useState<string | null>(null);
-  const [selectedBudget, setSelectedBudget] = useState<string | null>(null);
+  const [selectedBudget, setSelectedBudget] = useState<string | null>(
+    null,
+  );
 
   const monthlyExpenses = useMemo(
     () =>
       categoryExpensesByCurrency(
         overview.transactions.filter(
           (transaction) =>
-            monthKeyInTimezone(transaction.transactionDate, timezone) ===
-            currentMonth,
+            monthKeyInTimezone(
+              transaction.transactionDate,
+              timezone,
+            ) === currentMonth,
         ),
         overview.categoriesById,
       ),
-    [currentMonth, overview.categoriesById, overview.transactions, timezone],
+    [
+      currentMonth,
+      overview.categoriesById,
+      overview.transactions,
+      timezone,
+    ],
   );
   const previousExpenses = useMemo(
     () =>
       categoryExpensesByCurrency(
         overview.transactions.filter(
           (transaction) =>
-            monthKeyInTimezone(transaction.transactionDate, timezone) ===
-            previousMonthKey(currentMonth),
+            monthKeyInTimezone(
+              transaction.transactionDate,
+              timezone,
+            ) === previousMonthKey(currentMonth),
         ),
         overview.categoriesById,
       ),
-    [currentMonth, overview.categoriesById, overview.transactions, timezone],
+    [
+      currentMonth,
+      overview.categoriesById,
+      overview.transactions,
+      timezone,
+    ],
   );
   const currencies = useMemo(
     () =>
@@ -103,13 +128,22 @@ export default function InsightsScreen() {
           ...budgetProgress.map((row) => row.currency),
         ]),
       ].sort(),
-    [budgetProgress, monthlyExpenses, overview.balanceLines, overview.balanceTotals],
+    [
+      budgetProgress,
+      monthlyExpenses,
+      overview.balanceLines,
+      overview.balanceTotals,
+    ],
   );
   const currency = currencies.includes(currencyPreference ?? '')
     ? currencyPreference!
     : (currencies[0] ?? null);
-  const categoryEntries = currency ? monthlyExpenses[currency] ?? [] : [];
-  const previousEntries = currency ? previousExpenses[currency] ?? [] : [];
+  const categoryEntries = currency
+    ? (monthlyExpenses[currency] ?? [])
+    : [];
+  const previousEntries = currency
+    ? (previousExpenses[currency] ?? [])
+    : [];
   const categoryTotal = categoryEntries.reduce(
     (sum, entry) => sum + minorToNumber(entry.yMinor),
     0,
@@ -131,7 +165,9 @@ export default function InsightsScreen() {
     if (timeframe === 'All') return points;
     const days = timeframe === '30D' ? 30 : 90;
     const cutoff = Date.now() - days * 24 * 60 * 60 * 1000;
-    const scoped = points.filter((point) => point.x.getTime() >= cutoff);
+    const scoped = points.filter(
+      (point) => point.x.getTime() >= cutoff,
+    );
     return scoped.length ? scoped : points.slice(-1);
   }, [balanceLine?.points, timeframe]);
   const selectedBudgetRows = useMemo(
@@ -145,16 +181,27 @@ export default function InsightsScreen() {
           transaction.currency === currency &&
           transaction.type === 'expense' &&
           !transaction.analysisExcluded &&
-          monthKeyInTimezone(transaction.transactionDate, timezone) ===
-            currentMonth,
+          monthKeyInTimezone(
+            transaction.transactionDate,
+            timezone,
+          ) === currentMonth,
       ),
     [currency, currentMonth, overview.transactions, timezone],
   );
   const activityDays = useMemo(() => {
-    const days = new Map<string, { amount: number; transactionCount: number }>();
+    const days = new Map<
+      string,
+      { amount: number; transactionCount: number }
+    >();
     for (const transaction of activityTransactions) {
-      const key = dayKeyInTimezone(transaction.transactionDate, timezone);
-      const current = days.get(key) ?? { amount: 0, transactionCount: 0 };
+      const key = dayKeyInTimezone(
+        transaction.transactionDate,
+        timezone,
+      );
+      const current = days.get(key) ?? {
+        amount: 0,
+        transactionCount: 0,
+      };
       current.amount += minorToNumber(transaction.amountMinor);
       current.transactionCount += 1;
       days.set(key, current);
@@ -188,7 +235,9 @@ export default function InsightsScreen() {
       >
         <View className="mb-7 flex-row items-start justify-between">
           <View className="flex-1 pr-3">
-            <Text className="text-sm font-semibold text-muted">Patterns, not guesses</Text>
+            <Text className="text-sm font-semibold text-muted">
+              Patterns, not guesses
+            </Text>
             <Text className="mt-1 text-[28px] font-bold leading-9 text-foreground">
               Insights
             </Text>
@@ -199,13 +248,16 @@ export default function InsightsScreen() {
         </View>
 
         {!currency ? (
-          <View className="rounded-[28px] border border-dashed border-border bg-card px-5 py-8">
+          <Surface
+            smoothing="hero"
+            className="rounded-[28px] px-5 py-8"
+          >
             <Text className="text-lg font-bold text-foreground">
               Start with one wallet
             </Text>
             <Text className="mt-1 text-sm leading-5 text-muted">
-              Moni keeps currencies separate, so your insights will appear as
-              soon as you add a wallet and record activity.
+              Moni keeps currencies separate, so your insights will
+              appear as soon as you add a wallet and record activity.
             </Text>
             <Pressable
               className="mt-5 self-start rounded-2xl bg-primary px-4 py-3"
@@ -215,7 +267,7 @@ export default function InsightsScreen() {
                 Add a wallet
               </Text>
             </Pressable>
-          </View>
+          </Surface>
         ) : (
           <>
             <ScrollView
@@ -229,7 +281,7 @@ export default function InsightsScreen() {
                 return (
                   <Pressable
                     key={item}
-                    className={`min-h-11 rounded-full px-4 py-2.5 ${active ? 'bg-primary' : 'border border-border bg-card'}`}
+                    className={`min-h-11 rounded-full px-4 py-2.5 ${active ? 'bg-primary' : 'bg-card'}`}
                     onPress={() => {
                       setCurrencyPreference(item);
                       setSelectedDate(null);
@@ -248,7 +300,10 @@ export default function InsightsScreen() {
               })}
             </ScrollView>
 
-            <View className="mb-6 rounded-[28px] border border-border bg-card p-5">
+            <Surface
+              smoothing="hero"
+              className="mb-6 rounded-[28px] p-5"
+            >
               <Text className="text-sm font-semibold text-muted">
                 Where did your money go?
               </Text>
@@ -256,7 +311,9 @@ export default function InsightsScreen() {
                 <Text className="text-xl font-bold text-foreground">
                   {formatMonth(currentMonth)} spending
                 </Text>
-                <Text className="text-sm font-semibold text-muted">{currency}</Text>
+                <Text className="text-sm font-semibold text-muted">
+                  {currency}
+                </Text>
               </View>
               <View className="mt-2">
                 <DonutChart
@@ -269,16 +326,22 @@ export default function InsightsScreen() {
                   }))}
                   colors={tokens.chart}
                   surfaceColor={tokens.card}
-                  borderColor={tokens.border}
                   mutedColor={tokens.muted}
                   valueLabel={(value) =>
-                    formatMinorAmount(Math.round(value * 100), currencyText(currency))
+                    formatMinorAmount(
+                      Math.round(value * 100),
+                      currencyText(currency),
+                    )
                   }
                 />
               </View>
-            </View>
+            </Surface>
 
-            <View className="mb-6 rounded-[28px] border border-border bg-surface-1 p-5">
+            <Surface
+              tone="muted"
+              smoothing="hero"
+              className="mb-6 rounded-[28px] p-5"
+            >
               <View className="flex-row items-start">
                 <MaterialIcons
                   name="insights"
@@ -294,9 +357,12 @@ export default function InsightsScreen() {
                   </Text>
                 </View>
               </View>
-            </View>
+            </Surface>
 
-            <View className="mb-6 rounded-[28px] border border-border bg-card p-5">
+            <Surface
+              smoothing="hero"
+              className="mb-6 rounded-[28px] p-5"
+            >
               <View className="flex-row items-center justify-between">
                 <View>
                   <Text className="text-base font-bold text-foreground">
@@ -336,10 +402,13 @@ export default function InsightsScreen() {
                   }))}
                   width={Math.max(width - 80, 260)}
                   strokeColor={tokens.primary}
-                  gridColor={tokens.border}
+                  gridColor={tokens.surface2}
                   surfaceColor={tokens.card}
                   valueLabel={(value) =>
-                    formatMinorAmount(Math.round(value * 100), currencyText(currency))
+                    formatMinorAmount(
+                      Math.round(value * 100),
+                      currencyText(currency),
+                    )
                   }
                   dateLabel={(date) =>
                     new Intl.DateTimeFormat(undefined, {
@@ -349,7 +418,7 @@ export default function InsightsScreen() {
                   }
                 />
               </View>
-            </View>
+            </Surface>
 
             <View className="mb-6">
               <View className="mb-3 flex-row items-center justify-between">
@@ -367,12 +436,14 @@ export default function InsightsScreen() {
                   accessibilityRole="button"
                   accessibilityLabel="Manage budgets"
                 >
-                  <Text className="text-sm font-semibold text-primary">Manage</Text>
+                  <Text className="text-sm font-semibold text-primary">
+                    Manage
+                  </Text>
                 </Pressable>
               </View>
               {selectedBudgetRows.length ? (
-                <View className="overflow-hidden rounded-[22px] border border-border bg-card">
-                  {selectedBudgetRows.map((row, index) => {
+                <Surface className="px-4 py-1">
+                  {selectedBudgetRows.map((row) => {
                     const rowKey = `${row.categoryId}:${row.currency}`;
                     const expanded = selectedBudget === rowKey;
                     const accent =
@@ -386,7 +457,7 @@ export default function InsightsScreen() {
                     return (
                       <Pressable
                         key={rowKey}
-                        className={`px-4 py-4 ${index ? 'border-t border-border' : ''}`}
+                        className="py-4"
                         onPress={() =>
                           setSelectedBudget(expanded ? null : rowKey)
                         }
@@ -397,7 +468,9 @@ export default function InsightsScreen() {
                           <View className="min-w-0 flex-1 flex-row items-center pr-3">
                             <View
                               className="mr-2 h-9 w-9 items-center justify-center rounded-full"
-                              style={{ backgroundColor: `${accent}22` }}
+                              style={{
+                                backgroundColor: `${accent}22`,
+                              }}
                             >
                               <Text className="text-base">
                                 {row.categoryIcon ?? '•'}
@@ -416,7 +489,9 @@ export default function InsightsScreen() {
                             </View>
                           </View>
                           <Text className="text-sm font-bold text-foreground">
-                            {row.percentage === null ? '—' : `${row.percentage}%`}
+                            {row.percentage === null
+                              ? '—'
+                              : `${row.percentage}%`}
                           </Text>
                         </View>
                         {expanded ? (
@@ -454,22 +529,27 @@ export default function InsightsScreen() {
                       </Pressable>
                     );
                   })}
-                </View>
+                </Surface>
               ) : (
-                <View className="rounded-[22px] border border-dashed border-border px-5 py-6">
+                <Surface tone="muted" className="px-5 py-6">
                   <Text className="text-sm text-muted">
-                    Set a budget or add a categorized expense to track a pulse.
+                    Set a budget or add a categorized expense to track
+                    a pulse.
                   </Text>
-                </View>
+                </Surface>
               )}
             </View>
 
-            <View className="mb-6 rounded-[28px] border border-border bg-card p-5">
+            <Surface
+              smoothing="hero"
+              className="mb-6 rounded-[28px] p-5"
+            >
               <Text className="text-lg font-bold text-foreground">
                 Activity calendar
               </Text>
               <Text className="mt-1 text-sm text-muted">
-                Spending days in {formatMonth(currentMonth)} · {currency}
+                Spending days in {formatMonth(currentMonth)} ·{' '}
+                {currency}
               </Text>
               <View className="mt-5">
                 <ActivityCalendar
@@ -480,7 +560,7 @@ export default function InsightsScreen() {
                 />
               </View>
               {selectedDate ? (
-                <View className="mt-5 border-t border-border pt-4">
+                <Surface tone="muted" className="mt-5 p-4">
                   <Text className="text-sm font-semibold text-foreground">
                     {new Intl.DateTimeFormat(undefined, {
                       weekday: 'long',
@@ -490,47 +570,55 @@ export default function InsightsScreen() {
                     }).format(new Date(`${selectedDate}T00:00:00Z`))}
                   </Text>
                   {selectedActivityTransactions.length ? (
-                    selectedActivityTransactions.slice(0, 3).map((transaction) => (
-                      <Pressable
-                        key={transaction.id}
-                        className="mt-3 flex-row items-center justify-between"
-                        onPress={() =>
-                          router.push({
-                            pathname: '/transaction/[id]',
-                            params: { id: transaction.id },
-                          } as any)
-                        }
-                      >
-                        <Text
-                          className="flex-1 pr-3 text-sm font-medium text-foreground"
-                          numberOfLines={1}
+                    selectedActivityTransactions
+                      .slice(0, 3)
+                      .map((transaction) => (
+                        <Pressable
+                          key={transaction.id}
+                          className="mt-3 flex-row items-center justify-between"
+                          onPress={() =>
+                            router.push({
+                              pathname: '/transaction/[id]',
+                              params: { id: transaction.id },
+                            } as any)
+                          }
                         >
-                          {transaction.merchant ??
-                            transaction.description ??
-                            'Expense'}
-                        </Text>
-                        <Text
-                          className="text-sm font-bold text-foreground"
-                          style={{ fontVariant: ['tabular-nums'] }}
-                        >
-                          {formatMinorAmount(transaction.amountMinor, currencyText(currency))}
-                        </Text>
-                      </Pressable>
-                    ))
+                          <Text
+                            className="flex-1 pr-3 text-sm font-medium text-foreground"
+                            numberOfLines={1}
+                          >
+                            {transaction.merchant ??
+                              transaction.description ??
+                              'Expense'}
+                          </Text>
+                          <Text
+                            className="text-sm font-bold text-foreground"
+                            style={{ fontVariant: ['tabular-nums'] }}
+                          >
+                            {formatMinorAmount(
+                              transaction.amountMinor,
+                              currencyText(currency),
+                            )}
+                          </Text>
+                        </Pressable>
+                      ))
                   ) : (
                     <Text className="mt-2 text-sm text-muted">
                       No expenses recorded on this day.
                     </Text>
                   )}
-                </View>
+                </Surface>
               ) : (
                 <Text className="mt-4 text-sm text-muted">
                   Select a highlighted day to see its transactions.
                 </Text>
               )}
-            </View>
+            </Surface>
 
-            <View className="mb-6 rounded-[28px] border border-border bg-card p-5">
+            <Surface
+              smoothing="hero"
+              className="mb-6 rounded-[28px] p-5"
+            >
               <View className="flex-row items-center justify-between">
                 <View>
                   <Text className="text-lg font-bold text-foreground">
@@ -553,10 +641,15 @@ export default function InsightsScreen() {
                   }
                 >
                   <View className="min-w-0 flex-1 pr-3">
-                    <Text className="text-base font-semibold text-foreground" numberOfLines={1}>
+                    <Text
+                      className="text-base font-semibold text-foreground"
+                      numberOfLines={1}
+                    >
                       {wallet.name}
                     </Text>
-                    <Text className="mt-0.5 text-sm text-muted">{wallet.type}</Text>
+                    <Text className="mt-0.5 text-sm text-muted">
+                      {wallet.type}
+                    </Text>
                   </View>
                   <Text
                     className="text-base font-bold text-foreground"
@@ -569,26 +662,35 @@ export default function InsightsScreen() {
                   </Text>
                 </Pressable>
               ))}
-            </View>
+            </Surface>
 
             <Pressable
-              className="mb-2 flex-row items-center rounded-[22px] border border-border bg-surface-1 p-4"
               onPress={() => router.push('/heatmap' as any)}
               accessibilityRole="button"
               accessibilityLabel="Open transaction pinmap"
             >
-              <View className="h-11 w-11 items-center justify-center rounded-full bg-primary-muted">
-                <MaterialIcons name="place" size={22} color={tokens.primary} />
-              </View>
-              <View className="ml-3 flex-1">
-                <Text className="text-base font-bold text-foreground">
-                  Transaction pinmap
-                </Text>
-                <Text className="mt-1 text-sm text-muted">
-                  Revisit the places behind your recorded activity.
-                </Text>
-              </View>
-              <MaterialIcons name="chevron-right" size={22} color={tokens.muted} />
+              <Surface tone="muted" className="mb-2 flex-row items-center p-4">
+                <View className="h-11 w-11 items-center justify-center rounded-full bg-primary-muted">
+                  <MaterialIcons
+                    name="place"
+                    size={22}
+                    color={tokens.primary}
+                  />
+                </View>
+                <View className="ml-3 flex-1">
+                  <Text className="text-base font-bold text-foreground">
+                    Transaction pinmap
+                  </Text>
+                  <Text className="mt-1 text-sm text-muted">
+                    Revisit the places behind your recorded activity.
+                  </Text>
+                </View>
+                <MaterialIcons
+                  name="chevron-right"
+                  size={22}
+                  color={tokens.muted}
+                />
+              </Surface>
             </Pressable>
           </>
         )}

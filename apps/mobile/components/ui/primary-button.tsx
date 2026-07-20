@@ -33,7 +33,7 @@ export function PrimaryButton({
       icon: tokens.primaryForeground,
     },
     secondary: {
-      container: 'border border-border bg-card',
+      container: 'bg-surface-2',
       text: 'text-foreground',
       icon: tokens.foreground,
     },

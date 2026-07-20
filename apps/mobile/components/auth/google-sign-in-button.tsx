@@ -47,7 +47,7 @@ export function GoogleSignInButton({
       </View>
 
       <TactilePressable
-        className={`min-h-13 flex-row items-center justify-center gap-3 rounded-2xl border border-border bg-card px-4 py-3 ${loading || disabled ? 'opacity-60' : ''}`}
+        className={`min-h-13 flex-row items-center justify-center gap-3 rounded-2xl bg-card px-4 py-3 ${loading || disabled ? 'opacity-60' : ''}`}
         onPress={handlePress}
         disabled={loading || disabled}
         accessibilityRole="button"

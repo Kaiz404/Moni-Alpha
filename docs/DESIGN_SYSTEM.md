@@ -175,7 +175,7 @@ Use a **4-point base unit**. Default screen gutters are 20pt on compact phones; 
 
 ### 5.2 Shape
 
-The system is rounded and soft, not cartoonishly pill-shaped.
+The system is rounded and soft, not cartoonishly pill-shaped. Major surfaces should read as **continuous-corner squircles**, not as ordinary rounded rectangles with an oversized radius.
 
 | Token         | Value | Use                                   |
 | ------------- | ----: | ------------------------------------- |
@@ -187,12 +187,21 @@ The system is rounded and soft, not cartoonishly pill-shaped.
 
 Use pills sparingly: filter states, segmented controls, compact metadata, and the FAB label. Do not turn every card and button into a pill.
 
+#### Continuous-corner implementation
+
+- **Major surfaces only:** cards, wallet tiles, sheets, hero panels, and proposal artifacts use the shared `react-native-fast-squircle` primitive. Wrap it once at module scope with Uniwind so it accepts the same semantic `className` surface, spacing, and color utilities as a `View`.
+- `radius-lg` uses `cornerSmoothing: 0.65`; `radius-xl` uses `cornerSmoothing: 0.75`. The radius and smoothing travel together as one shape decision.
+- Rows, input interiors, chips, avatars, compact chart marks, and repeated list items remain ordinary Uniwind rounded views. Do not add a native squircle layer simply to every small rectangle.
+- Do not use SVG, masks, or per-frame calculated paths for standard surfaces. The chosen primitive preserves native View-like rendering and avoids a chart/list performance tax. It requires a rebuilt Expo development client; it is not an Expo Go-only feature.
+
 ### 5.3 Elevation and material
 
-Content surfaces are matte. Establish depth with tonal separation, thin hairlines, and restraint—not heavy shadows.
+Content surfaces are matte. Establish depth with tonal separation, whitespace, and restraint—not borders or heavy shadows.
 
 - Base background: near-white/near-black with **1–2% tactile grain or fog** where technically practical.
-- Default card: opaque surface with 1px low-contrast border; no permanent heavy shadow.
+- Light hierarchy: warm ivory canvas → bright white primary surface → muted inset surface only for a genuine contained group. Dark mode follows the same relationship with charcoal canvas → lifted charcoal surface → muted inset.
+- Default card: opaque, borderless primary surface. Use 12–24pt of visible canvas around it and a meaningful surface-color difference to establish the edge.
+- Borders are exceptions: focused inputs, selected controls, drag targets, deliberate dividers, and high-contrast accessibility fallbacks. Never use a border simply to make a card visible.
 - Raised transient element: a short soft shadow plus surface lift; reserve it for FAB menus, sheets, and active draggable controls.
 - Glass/translucency: permitted only in navigation/transient controls where contrast is preserved. Never put core financial content inside decorative glass.
 
@@ -329,6 +338,8 @@ Each wallet item includes:
 - restrained category/account accent
 - optional last-synced or manual indicator
 
+Treat each wallet as one borderless, squircle-edged balance island. Keep its metadata and any mini visual on the same surface; do not turn every internal grouping into a second card.
+
 Use the Moni mint, lilac, peach, lemon, coral, aqua, and neutral palette for wallet identity. Gradients may gently pair a matte neutral with one of those accents, but do not use a grain mask or payment-card-like texture. Ensure wallet labels and native balances use an accessible foreground chosen for the selected surface.
 
 Never mimic real payment cards unless users need a real card identifier. The visual job is balance recognition, not faux banking branding.
@@ -339,6 +350,7 @@ Never mimic real payment cards unless users need a real card identifier. The vis
 - On select, expand or navigate to a detail that states: “$186 of $300 used · 62%.” This follows the board’s desired category-percentage insight.
 - Use a progress line/ring only with its textual amount and percentage.
 - The warning threshold is contextual; do not make the whole card red at 80% by default.
+- The progress track sits directly within its parent surface. It does not receive a separate outlined container.
 
 ### 7.6 Transaction row
 
@@ -412,6 +424,8 @@ Charts exist to answer a question.
 | Wallet balance comparison    | “Where is my money held?”               | Preserve original currencies; do not compare incompatible currencies as a false total.          |
 
 Keep chart controls local and obvious: timeframe, category, wallet. Avoid chart walls. Pair every chart with one plain-language takeaway or drill-down path.
+
+Chart surfaces are borderless and quiet: use the parent surface plus spacing to frame them, a very low-tint category fill for contextual areas, and clearer pastel category hues only for active data marks, selected states, or legible segments. Avoid dark grids, boxed legends, and saturated decorative fills.
 
 ### 7.12 Chat and companion presence
 
@@ -570,6 +584,7 @@ brand.mint / brand.mint-ink
 category.food / category.transport / category.shopping …
 state.pending / state.attention / state.approved / state.destructive
 radius.sm / radius.md / radius.lg / radius.xl
+shape.squircle.smoothing-lg / shape.squircle.smoothing-xl
 space.1 … space.10
 motion.fast / motion.standard / motion.sheet
 ```

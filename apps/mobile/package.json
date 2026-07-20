@@ -55,6 +55,7 @@
     "react-native": "0.86.0",
     "react-native-android-notification-listener": "^5.0.1",
     "react-native-background-actions": "^4.0.1",
+    "react-native-fast-squircle": "^1.1.5",
     "react-native-gesture-handler": "~2.32.0",
     "react-native-maps": "^1.27.2",
     "react-native-mmkv": "4.3.2",

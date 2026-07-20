@@ -19,6 +19,7 @@ import Animated, {
 } from 'react-native-reanimated';
 
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
+import { Surface } from '@/components/ui/surface';
 import { runFabReceiptScan } from '@/lib/receipts/scan-receipt';
 import {
   captureActionDestination,
@@ -102,27 +103,28 @@ function CaptureMenuItem({
   return (
     <Animated.View style={animatedStyle}>
       <Pressable
-        className="mb-3 min-h-16 flex-row items-center rounded-[22px] border border-border bg-card px-4 py-3"
         onPress={onPress}
         accessibilityRole="button"
         accessibilityLabel={action.label}
         accessibilityHint={action.detail}
       >
-        <View className="h-11 w-11 items-center justify-center rounded-full bg-primary-muted">
-          <MaterialIcons
-            name={action.icon}
-            size={22}
-            color={tokens.primary}
-          />
-        </View>
-        <View className="ml-3 min-w-0 flex-1">
-          <Text className="text-base font-bold text-foreground">
-            {action.label}
-          </Text>
-          <Text className="mt-0.5 text-xs leading-4 text-muted">
-            {action.detail}
-          </Text>
-        </View>
+        <Surface className="mb-3 min-h-16 flex-row items-center px-4 py-3">
+          <View className="h-11 w-11 items-center justify-center rounded-full bg-primary-muted">
+            <MaterialIcons
+              name={action.icon}
+              size={22}
+              color={tokens.primary}
+            />
+          </View>
+          <View className="ml-3 min-w-0 flex-1">
+            <Text className="text-base font-bold text-foreground">
+              {action.label}
+            </Text>
+            <Text className="mt-0.5 text-xs leading-4 text-muted">
+              {action.detail}
+            </Text>
+          </View>
+        </Surface>
       </Pressable>
     </Animated.View>
   );

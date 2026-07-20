@@ -14,6 +14,7 @@ import MaterialIcons from '@react-native-vector-icons/material-icons';
 import { useValue } from '@legendapp/state/react';
 import { FinanceState } from '@/components/finance/finance-state';
 import { GradientCard } from '@/components/ui/gradient-card';
+import { Surface } from '@/components/ui/surface';
 import { getWalletCardStyle } from '@/constants/wallet-card-styles';
 import { useAuth } from '@/lib/auth/auth-context';
 import { formatMinorAmount } from '@/lib/finance/money';
@@ -161,14 +162,14 @@ export default function TransactionsScreen() {
               </View>
             </GradientCard>
           ) : (
-            <View className="rounded-2xl border border-border bg-card p-4">
+            <Surface className="p-4">
               <Text className="font-semibold text-foreground">
                 {rows.length} transactions
               </Text>
               <Text className="mt-1 text-sm text-muted">
                 All wallet currencies remain separate in analytics.
               </Text>
-            </View>
+            </Surface>
           )}
         </View>
 
@@ -180,7 +181,7 @@ export default function TransactionsScreen() {
             {proposals.map((proposal) => (
               <Pressable
                 key={proposal.id}
-                className="mb-2 rounded-2xl border border-border bg-card p-3"
+                className="mb-2 rounded-2xl bg-card p-3"
                 onPress={() =>
                   router.push({
                     pathname: '/proposal/[id]',
@@ -241,7 +242,7 @@ export default function TransactionsScreen() {
             return (
               <Pressable
                 key={row.id}
-                className="mb-2 rounded-2xl border border-border bg-card p-3"
+                className="mb-2 rounded-2xl bg-card p-3"
                 onPress={() =>
                   router.push(
                     row.debtActivityId

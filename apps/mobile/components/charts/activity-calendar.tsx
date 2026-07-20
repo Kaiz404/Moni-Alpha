@@ -38,10 +38,16 @@ export function ActivityCalendar({
   );
 
   return (
-    <View accessibilityRole="summary" accessibilityLabel={`Transaction activity for ${monthLabel(month)}`}>
+    <View
+      accessibilityRole="summary"
+      accessibilityLabel={`Transaction activity for ${monthLabel(month)}`}
+    >
       <View className="mb-2 flex-row">
         {WEEKDAYS.map((weekday, index) => (
-          <View key={`${weekday}-${index}`} className="flex-1 items-center">
+          <View
+            key={`${weekday}-${index}`}
+            className="flex-1 items-center"
+          >
             <Text className="text-[11px] font-semibold text-muted">
               {weekday}
             </Text>
@@ -50,17 +56,25 @@ export function ActivityCalendar({
       </View>
       <View className="gap-1.5">
         {weeks.map((week, weekIndex) => (
-          <View key={weekIndex} className="flex-row gap-1.5">
+          <View
+            key={weekIndex}
+            className="flex-row gap-1.5"
+          >
             {week.map((cell, dayIndex) => {
               if (!cell.dateKey || cell.day === null) {
-                return <View key={`blank-${dayIndex}`} className="aspect-square flex-1" />;
+                return (
+                  <View
+                    key={`blank-${dayIndex}`}
+                    className="aspect-square flex-1"
+                  />
+                );
               }
               const active = cell.transactionCount > 0;
               const selected = selectedDate === cell.dateKey;
               return (
                 <Pressable
                   key={cell.dateKey}
-                  className={`aspect-square flex-1 items-center justify-center overflow-hidden rounded-xl ${selected ? 'border-2 border-primary bg-primary-muted' : 'bg-surface-1'}`}
+                  className={`aspect-square flex-1 items-center justify-center overflow-hidden rounded-xl ${selected ? 'bg-primary' : 'bg-surface-2'}`}
                   onPress={() =>
                     onSelectDate(selected ? null : cell.dateKey)
                   }
@@ -80,13 +94,15 @@ export function ActivityCalendar({
                     />
                   ) : null}
                   <Text
-                    className={`text-xs font-semibold ${active || selected ? 'text-foreground' : 'text-muted'}`}
+                    className={`text-xs font-semibold ${selected ? 'text-primary-foreground' : active ? 'text-foreground' : 'text-muted'}`}
                     style={{ fontVariant: ['tabular-nums'] }}
                   >
                     {cell.day}
                   </Text>
                   {active ? (
-                    <View className="mt-0.5 h-1 w-1 rounded-full bg-foreground" />
+                    <View
+                      className={`mt-0.5 h-1 w-1 rounded-full ${selected ? 'bg-primary-foreground' : 'bg-foreground'}`}
+                    />
                   ) : null}
                 </Pressable>
               );

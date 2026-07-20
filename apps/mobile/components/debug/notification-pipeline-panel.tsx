@@ -1,6 +1,7 @@
 import { Text, TouchableOpacity, View } from 'react-native';
 
 import { StatCard } from '@/components/debug/stat-card';
+import { Surface } from '@/components/ui/surface';
 import {
   getNotificationDiagnostics,
   PERMISSION_COLORS,
@@ -45,7 +46,7 @@ export function NotificationPipelinePanel() {
       : 'Production build';
 
   return (
-    <View className="mx-5 mt-5 rounded-[22px] border border-border bg-card p-4">
+    <Surface className="mx-5 mt-5 p-4">
       <View className="flex-row items-center justify-between">
         <Text className="text-base font-bold text-foreground">
           Notification pipeline
@@ -109,7 +110,7 @@ export function NotificationPipelinePanel() {
         </View>
       </View>
 
-      <View className="mt-3 rounded-2xl border border-border bg-surface-2 px-3 py-2.5">
+      <View className="mt-3 rounded-2xl bg-surface-2 px-3 py-2.5">
         <View className="flex-row items-center justify-between">
           <Text className="text-xs text-muted">
             Queue (notifications only)
@@ -134,7 +135,7 @@ export function NotificationPipelinePanel() {
         </Text>
       </View>
 
-      <View className="mt-3 rounded-2xl border border-border bg-surface-2 px-3 py-2.5">
+      <View className="mt-3 rounded-2xl bg-surface-2 px-3 py-2.5">
         <Text className="text-xs text-muted">Native status</Text>
         <Text className="mt-0.5 text-sm font-mono font-medium text-foreground">
           {permissionStatus}
@@ -146,7 +147,7 @@ export function NotificationPipelinePanel() {
         </Text>
       </View>
 
-      <View className="mt-3 rounded-2xl border border-border bg-surface-2 px-3 py-2.5">
+      <View className="mt-3 rounded-2xl bg-surface-2 px-3 py-2.5">
         <Text className="text-xs text-muted">Build</Text>
         <Text
           className="text-sm font-medium mt-0.5"
@@ -186,7 +187,7 @@ export function NotificationPipelinePanel() {
           {recent.map((entry) => (
             <View
               key={entry.id}
-              className="mb-2 rounded-2xl border border-border bg-surface-2 px-3 py-2.5"
+              className="mb-2 rounded-2xl bg-surface-2 px-3 py-2.5"
             >
               <View className="flex-row items-start justify-between gap-2">
                 <Text
@@ -224,6 +225,6 @@ export function NotificationPipelinePanel() {
           ))}
         </View>
       )}
-    </View>
+    </Surface>
   );
 }

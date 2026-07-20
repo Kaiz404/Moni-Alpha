@@ -14,6 +14,7 @@ import MaterialIcons from '@react-native-vector-icons/material-icons';
 import { BudgetProgressBar } from '@/components/charts/budget-progress-bar';
 import { SyncStatusIndicator } from '@/components/providers/sync-status-indicator';
 import { GradientCard } from '@/components/ui/gradient-card';
+import { Surface } from '@/components/ui/surface';
 import { getWalletCardStyle } from '@/constants/wallet-card-styles';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { useAuth } from '@/lib/auth/auth-context';
@@ -75,7 +76,7 @@ const WalletCard = memo(function WalletCard({
     >
       <GradientCard
         cardStyle={cardStyle}
-        className={`min-h-36 rounded-[22px] border p-4 ${selected ? 'border-2 border-primary' : 'border-white/20'}`}
+        className={`min-h-36 p-4 ${selected ? 'border-2 border-primary' : ''}`}
       >
         <View className="flex-row items-start justify-between">
           <View className="min-w-0 flex-1 pr-2">
@@ -271,7 +272,7 @@ export default function HomeScreen() {
             </Pressable>
           ) : null}
 
-          <View className="mt-7 rounded-[28px] border border-border bg-card p-5">
+          <Surface smoothing="hero" className="mt-7 p-5">
             <Text className="text-sm font-semibold text-muted">
               Net worth
             </Text>
@@ -324,7 +325,7 @@ export default function HomeScreen() {
               Native amounts only · Moni never fabricates a converted
               total.
             </Text>
-          </View>
+          </Surface>
         </View>
 
         <View className="mt-7">
@@ -362,21 +363,22 @@ export default function HomeScreen() {
               />
             ))}
             <Pressable
-              className="min-h-36 w-36 items-center justify-center rounded-[22px] border border-dashed border-border bg-card"
               onPress={() => router.push('/wallet/new' as any)}
               accessibilityRole="button"
               accessibilityLabel="Add wallet"
             >
-              <View className="h-10 w-10 items-center justify-center rounded-full bg-primary-muted">
-                <MaterialIcons
-                  name="add"
-                  size={22}
-                  color={tokens.primary}
-                />
-              </View>
-              <Text className="mt-2 text-sm font-semibold text-foreground">
-                Add wallet
-              </Text>
+              <Surface className="min-h-36 w-36 items-center justify-center">
+                <View className="h-10 w-10 items-center justify-center rounded-full bg-primary-muted">
+                  <MaterialIcons
+                    name="add"
+                    size={22}
+                    color={tokens.primary}
+                  />
+                </View>
+                <Text className="mt-2 text-sm font-semibold text-foreground">
+                  Add wallet
+                </Text>
+              </Surface>
             </Pressable>
           </ScrollView>
         </View>
@@ -401,7 +403,7 @@ export default function HomeScreen() {
             </Pressable>
           </View>
           {visibleBudgets.length ? (
-            <View className="overflow-hidden rounded-[22px] border border-border bg-card">
+            <Surface className="overflow-hidden">
               {visibleBudgets.map((budget, index) => {
                 const accent =
                   budget.status === 'over'
@@ -468,10 +470,10 @@ export default function HomeScreen() {
                   </Pressable>
                 );
               })}
-            </View>
+            </Surface>
           ) : (
             <Pressable
-              className="rounded-[22px] border border-dashed border-border px-5 py-6"
+              className="rounded-[22px] bg-surface-2 px-5 py-6"
               onPress={() => router.push('/budget' as any)}
             >
               <Text className="text-base font-semibold text-foreground">
@@ -505,7 +507,7 @@ export default function HomeScreen() {
                 </Text>
               </Pressable>
             </View>
-            <View className="overflow-hidden rounded-[22px] border border-border bg-card">
+            <Surface className="overflow-hidden">
               {openDebts.map(({ debt, balanceMinor }, index) => {
                 const owedToYou = debt.direction === 'owed_to_me';
                 return (
@@ -537,7 +539,7 @@ export default function HomeScreen() {
                   </Pressable>
                 );
               })}
-            </View>
+            </Surface>
           </View>
         ) : null}
 
@@ -561,7 +563,7 @@ export default function HomeScreen() {
             </Pressable>
           </View>
           {recent.length ? (
-            <View className="overflow-hidden rounded-[22px] border border-border bg-card">
+            <Surface className="overflow-hidden">
               {recent.map((transaction, index) => {
                 const category = transaction.categoryId
                   ? overview.categoriesById[transaction.categoryId]
@@ -648,10 +650,10 @@ export default function HomeScreen() {
                   </Pressable>
                 );
               })}
-            </View>
+            </Surface>
           ) : (
             <Pressable
-              className="rounded-[22px] border border-dashed border-border px-5 py-6"
+              className="rounded-[22px] bg-surface-2 px-5 py-6"
               onPress={() => router.push('/transaction/new' as any)}
             >
               <Text className="text-base font-semibold text-foreground">

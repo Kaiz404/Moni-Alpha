@@ -6,6 +6,7 @@ import {
   setThemePreference,
   type ThemePreference,
 } from '@/lib/theme/preference';
+import { Surface } from '@/components/ui/surface';
 
 export function ThemePreferencePicker() {
   const { theme, hasAdaptiveThemes } = useUniwind();
@@ -16,7 +17,7 @@ export function ThemePreferencePicker() {
   };
 
   return (
-    <View className="mb-2 overflow-hidden rounded-[22px] border border-border bg-card">
+    <Surface className="mb-2 overflow-hidden">
       {THEME_PREFERENCE_OPTIONS.map((option, index) => {
         const selected = active === option.value;
         return (
@@ -49,6 +50,6 @@ export function ThemePreferencePicker() {
           </Pressable>
         );
       })}
-    </View>
+    </Surface>
   );
 }

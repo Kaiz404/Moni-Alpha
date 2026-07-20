@@ -15,6 +15,7 @@ import { AmountInput } from '@/components/finance/amount-input';
 import { FeedbackState } from '@/components/ui/feedback-state';
 import { PrimaryButton } from '@/components/ui/primary-button';
 import { ScreenShell } from '@/components/ui/screen-shell';
+import { Surface } from '@/components/ui/surface';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import {
   addDebtPrincipal,
@@ -180,7 +181,7 @@ export default function DebtDetailScreen() {
         className="flex-1"
         contentContainerClassName="px-5 pb-10 pt-6"
       >
-        <View className="mb-4 rounded-2xl bg-card p-4">
+        <Surface className="mb-4 p-4">
           <Text className="text-sm text-muted">
             {debt.direction === 'owed_to_me'
               ? 'They owe you'
@@ -195,9 +196,9 @@ export default function DebtDetailScreen() {
               Due {debt.dueDate}
             </Text>
           ) : null}
-        </View>
+        </Surface>
         {action ? (
-          <View className="mb-4 rounded-2xl border border-border bg-card p-3">
+          <Surface tone="raised" className="mb-4 p-3">
             <Text className="font-bold text-foreground">
               {action === 'principal'
                 ? debt.direction === 'owed_to_me'
@@ -218,7 +219,7 @@ export default function DebtDetailScreen() {
                 {matchingWallets.map((wallet) => (
                   <Pressable
                     key={wallet.id}
-                    className={`rounded-lg px-3 py-2 ${walletId === wallet.id ? 'bg-primary' : 'border border-border'}`}
+                    className={`rounded-lg px-3 py-2 ${walletId === wallet.id ? 'bg-primary' : 'bg-surface-2'}`}
                     onPress={() => setWalletId(wallet.id)}
                   >
                     <Text
@@ -255,7 +256,7 @@ export default function DebtDetailScreen() {
                 onPress={submit}
               />
             </View>
-          </View>
+          </Surface>
         ) : (
           <View className="mb-4 flex-row gap-2">
             <PrimaryButton
@@ -290,7 +291,7 @@ export default function DebtDetailScreen() {
         {activities.map((item) => (
           <View
             key={item.id}
-            className="mb-2 rounded-xl border border-border bg-card p-3"
+            className="mb-2 rounded-xl bg-card p-3"
           >
             <View className="flex-row justify-between">
               <Text className="font-semibold text-foreground">

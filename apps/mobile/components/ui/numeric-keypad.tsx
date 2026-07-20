@@ -31,7 +31,7 @@ export function NumericKeypad({ onKeyPress }: NumericKeypadProps) {
               accessibilityLabel={
                 key === '⌫' ? 'Backspace' : `Digit ${key}`
               }
-              className="flex-1 items-center justify-center rounded-2xl border border-border-subtle bg-card active:bg-surface-2"
+              className="flex-1 items-center justify-center rounded-2xl bg-card active:bg-surface-2"
               style={{ height: 60 }}
             >
               {key === '⌫' ? (

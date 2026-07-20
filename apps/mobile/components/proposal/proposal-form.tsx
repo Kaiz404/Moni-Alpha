@@ -112,6 +112,9 @@ export function ProposalForm({
   const [showTransferToPicker, setShowTransferToPicker] =
     useState(false);
   const [showCategoryPicker, setShowCategoryPicker] = useState(false);
+  const [focusedField, setFocusedField] = useState<
+    'merchant' | 'description' | 'date' | null
+  >(null);
 
   const isTransfer = txType === 'transfer';
   const destinationWallets = useMemo(
@@ -311,7 +314,7 @@ export function ProposalForm({
 
       <FieldRow label={isTransfer ? 'From wallet' : 'Wallet'}>
         <TouchableOpacity
-          className="flex-1 flex-row items-center justify-end rounded-2xl border border-border bg-card px-3 py-3"
+          className="flex-1 flex-row items-center justify-end rounded-2xl bg-surface-2 px-3 py-3"
           onPress={() => {
             setShowTransferToPicker(false);
             setShowWalletPicker(!showWalletPicker);
@@ -353,7 +356,7 @@ export function ProposalForm({
         <>
           <FieldRow label="To wallet">
             <TouchableOpacity
-              className="flex-1 flex-row items-center justify-end rounded-2xl border border-border bg-card px-3 py-3"
+              className="flex-1 flex-row items-center justify-end rounded-2xl bg-surface-2 px-3 py-3"
               onPress={() => {
                 setShowWalletPicker(false);
                 setShowTransferToPicker(!showTransferToPicker);
@@ -408,7 +411,7 @@ export function ProposalForm({
         <>
           <FieldRow label="Category">
             <TouchableOpacity
-              className="flex-1 flex-row items-center justify-end rounded-2xl border border-border bg-card px-3 py-3"
+              className="flex-1 flex-row items-center justify-end rounded-2xl bg-surface-2 px-3 py-3"
               onPress={() => {
                 setShowWalletPicker(false);
                 setShowTransferToPicker(false);
@@ -462,10 +465,14 @@ export function ProposalForm({
         <FieldRow label="Merchant">
           <TextInput
             accessibilityLabel="Merchant"
-            className="flex-1 rounded-2xl border border-border bg-card px-3 py-3 text-right text-sm text-foreground"
+            className={`flex-1 rounded-2xl bg-card px-3 py-3 text-right text-sm text-foreground ${
+              focusedField === 'merchant' ? 'border border-primary' : ''
+            }`}
             value={merchant}
             onChangeText={setMerchant}
             placeholder="optional"
+            onFocus={() => setFocusedField('merchant')}
+            onBlur={() => setFocusedField(null)}
             placeholderTextColor={tokens.muted}
           />
         </FieldRow>
@@ -474,10 +481,14 @@ export function ProposalForm({
       <FieldRow label="Description">
         <TextInput
           accessibilityLabel="Description"
-          className="flex-1 rounded-2xl border border-border bg-card px-3 py-3 text-right text-sm text-foreground"
+          className={`flex-1 rounded-2xl bg-card px-3 py-3 text-right text-sm text-foreground ${
+            focusedField === 'description' ? 'border border-primary' : ''
+          }`}
           value={description}
           onChangeText={setDescription}
           placeholder="optional"
+          onFocus={() => setFocusedField('description')}
+          onBlur={() => setFocusedField(null)}
           placeholderTextColor={tokens.muted}
         />
       </FieldRow>
@@ -485,10 +496,14 @@ export function ProposalForm({
       <FieldRow label="Date">
         <TextInput
           accessibilityLabel="Transaction date"
-          className="flex-1 rounded-2xl border border-border bg-card px-3 py-3 text-right text-sm text-foreground"
+          className={`flex-1 rounded-2xl bg-card px-3 py-3 text-right text-sm text-foreground ${
+            focusedField === 'date' ? 'border border-primary' : ''
+          }`}
           value={date}
           onChangeText={setDate}
           placeholder="YYYY-MM-DD"
+          onFocus={() => setFocusedField('date')}
+          onBlur={() => setFocusedField(null)}
           placeholderTextColor={tokens.muted}
           autoCapitalize="none"
           autoCorrect={false}
@@ -520,7 +535,7 @@ export function ProposalForm({
 
       <View className="mt-6 flex-row gap-3">
         <TouchableOpacity
-          className="flex-1 items-center rounded-xl border border-border bg-card py-4"
+          className="flex-1 items-center rounded-xl bg-surface-2 py-4"
           onPress={onReject}
           disabled={isActioning}
           activeOpacity={0.7}

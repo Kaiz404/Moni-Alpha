@@ -21,6 +21,7 @@ import {
 } from '@repo/types';
 
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
+import { Surface } from '@/components/ui/surface';
 import { PROPOSED_TRANSACTIONS_CHANGED } from '@/lib/proposals/proposed-transactions-events';
 import {
   proposalPresentationForSource,
@@ -142,7 +143,10 @@ export function ProposalSummarySheet() {
           accessibilityRole="button"
           accessibilityLabel="Review this later"
         />
-        <View className="rounded-t-[28px] border-t border-border bg-card px-6 pb-8 pt-4">
+        <Surface
+          smoothing="hero"
+          className="rounded-[28px] px-6 pb-8 pt-4"
+        >
           <View className="mb-5 h-1.5 w-10 self-center rounded-full bg-border" />
           <View className="flex-row items-start gap-3">
             <View className="h-11 w-11 items-center justify-center rounded-full bg-primary-muted">
@@ -165,11 +169,11 @@ export function ProposalSummarySheet() {
 
           <Pressable
             onPress={review}
-            className="mt-5 rounded-[22px] border border-border bg-background-muted px-4 py-4"
+            className="mt-5"
             accessibilityRole="button"
             accessibilityLabel={`Review ${title}`}
           >
-            <View className="flex-row items-start justify-between gap-3">
+            <Surface tone="muted" className="flex-row items-start justify-between gap-3 px-4 py-4">
               <View className="min-w-0 flex-1">
                 <Text className="text-xs font-semibold uppercase tracking-wide text-muted">
                   {direction} from{' '}
@@ -195,7 +199,7 @@ export function ProposalSummarySheet() {
                   {current.currency}
                 </Text>
               </View>
-            </View>
+            </Surface>
           </Pressable>
 
           <Text className="mt-3 text-center text-xs text-muted">
@@ -204,7 +208,7 @@ export function ProposalSummarySheet() {
           <View className="mt-4 flex-row gap-3">
             <Pressable
               onPress={defer}
-              className="flex-1 items-center justify-center rounded-2xl border border-border bg-card py-3.5"
+              className="flex-1 items-center justify-center rounded-2xl bg-surface-2 py-3.5"
               accessibilityRole="button"
             >
               <Text className="text-base font-semibold text-foreground">
@@ -221,7 +225,7 @@ export function ProposalSummarySheet() {
               </Text>
             </Pressable>
           </View>
-        </View>
+        </Surface>
       </View>
     </Modal>
   );

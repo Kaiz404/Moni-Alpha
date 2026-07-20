@@ -50,7 +50,7 @@ export default function DebtsScreen() {
                 key={option}
                 accessibilityRole="button"
                 accessibilityState={{ selected }}
-                className={`min-h-12 flex-1 justify-center rounded-2xl border px-3 ${selected ? option === 'owed_to_me' ? 'border-primary bg-primary-muted' : 'border-warning bg-warning/10' : 'border-border bg-card'}`}
+                className={`min-h-12 flex-1 justify-center rounded-2xl px-3 ${selected ? option === 'owed_to_me' ? 'border border-primary bg-primary-muted' : 'border border-warning bg-warning/10' : 'bg-card'}`}
                 onPress={() => setTab(option)}
               >
                 <Text className={`text-center text-[15px] font-bold ${selected && option === 'owed_to_me' ? 'text-primary' : 'text-foreground'}`}>

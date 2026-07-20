@@ -90,7 +90,7 @@ Do not mix Windows and WSL `expo prebuild` / Gradle — `android/build/generated
 
 ## Theming
 
-[`docs/DESIGN_SYSTEM.md`](../../docs/DESIGN_SYSTEM.md) is the visual source of truth. Tokens are CSS-first in `global.css`; prefer semantic classes (`bg-canvas`, `bg-card`, `text-foreground`, `text-muted`, state/category tokens) and shared UI helpers under `components/ui/` (`BrandHeader`, `ScreenShell`, `Surface`, `FormField`, `IconAction`, `PrimaryButton`, `GradientCard`). For native APIs that need a color string, use `useThemeTokens()`. Change semantic tokens in `global.css` only — do not hardcode hex in screens.
+[`docs/DESIGN_SYSTEM.md`](../../docs/DESIGN_SYSTEM.md) is the visual source of truth. Tokens are CSS-first in `global.css`; prefer semantic classes (`bg-canvas`, `bg-card`, `text-foreground`, `text-muted`, state/category tokens) and shared UI helpers under `components/ui/` (`BrandHeader`, `ScreenShell`, `Surface`, `FormField`, `IconAction`, `PrimaryButton`, `GradientCard`). `Surface` and `GradientCard` use the native `react-native-fast-squircle` view for major grouped surfaces; use the default 0.65 smoothing for cards and 0.75 only for feature-sized wallet or summary panels. For native APIs that need a color string, use `useThemeTokens()`. Change semantic tokens in `global.css` only — do not hardcode hex in screens.
 
 Wallet cards render `GradientCard` with clean, Figma-aligned pastel gradients driven by `wallet.cardStyleId` looked up in `constants/wallet-card-styles.ts`; the wallet forms let users pick a style, which also sets `wallet.color` to the style's flat swatch hex for charts/legends. Cards do not use a grain texture overlay.
 

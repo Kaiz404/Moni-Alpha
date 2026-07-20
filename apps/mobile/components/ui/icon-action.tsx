@@ -27,7 +27,7 @@ export function IconAction({
   const tokens = useThemeTokens();
   const appearance = {
     default: {
-      className: 'border border-border bg-card',
+      className: 'bg-surface-2',
       color: tokens.foreground,
     },
     accent: {

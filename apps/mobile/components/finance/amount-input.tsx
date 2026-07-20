@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import type { TextInputProps } from 'react-native';
 import { Text, TextInput, View } from 'react-native';
 
@@ -25,9 +26,14 @@ export function AmountInput({
   ...props
 }: AmountInputProps) {
   const tokens = useThemeTokens();
+  const [isFocused, setIsFocused] = useState(false);
 
   return (
-    <View className="rounded-[16px] border border-border bg-surface-2 px-4 py-2">
+    <View
+      className={`rounded-[16px] bg-surface-2 px-4 py-2 ${
+        isFocused ? 'border border-primary' : ''
+      }`}
+    >
       <View className="flex-row items-baseline gap-2">
         <TextInput
           {...props}
@@ -35,6 +41,14 @@ export function AmountInput({
           className={`min-h-13 flex-1 py-1 text-right text-[28px] font-bold leading-8 text-foreground ${className ?? ''}`}
           value={value}
           onChangeText={onChangeValue}
+          onFocus={(event) => {
+            setIsFocused(true);
+            props.onFocus?.(event);
+          }}
+          onBlur={(event) => {
+            setIsFocused(false);
+            props.onBlur?.(event);
+          }}
           keyboardType="decimal-pad"
           placeholder={props.placeholder ?? '0.00'}
           placeholderTextColor={

@@ -16,6 +16,7 @@ import {
 } from '@/hooks/use-transaction-heatmap';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { formatMinorAmount } from '@/lib/finance/money';
+import { Surface } from '@/components/ui/surface';
 
 export default function HeatmapScreen() {
   const { pinPoints, mapRegion, isLoading, error } =
@@ -124,7 +125,7 @@ export default function HeatmapScreen() {
         ))}
       </MapView>
 
-      <View className="absolute bottom-5 left-5 right-5 rounded-lg bg-card/95 p-3 shadow-sm">
+      <Surface tone="raised" className="absolute bottom-5 left-5 right-5 p-3">
         <Text className="mb-2 text-sm font-bold text-foreground">
           Pinmap
         </Text>
@@ -134,7 +135,7 @@ export default function HeatmapScreen() {
         <Text className="mt-1 text-xs text-muted">
           {pinPoints.length} pinned location(s)
         </Text>
-      </View>
+      </Surface>
 
       {selectedPin ? (
         <Pressable
@@ -144,9 +145,10 @@ export default function HeatmapScreen() {
       ) : null}
 
       {selectedPin ? (
-        <View
+        <Surface
+          tone="raised"
           style={styles.bottomCard}
-          className="rounded-xl bg-card p-3.5"
+          className="p-3.5"
         >
           <Pressable
             style={[
@@ -201,7 +203,7 @@ export default function HeatmapScreen() {
               Open in Map App
             </Text>
           </Pressable>
-        </View>
+        </Surface>
       ) : null}
     </SafeAreaView>
   );
@@ -220,6 +222,8 @@ const styles = StyleSheet.create({
     left: 16,
     right: 16,
     bottom: 96,
+    // This compact map detail card deliberately retains its original 12px
+    // radius instead of inheriting the standard 22px grouped-surface shape.
     borderRadius: 12,
     padding: 14,
     shadowColor: '#000',

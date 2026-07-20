@@ -1,6 +1,7 @@
-import { StyleSheet, View, type ViewProps } from 'react-native';
+import { StyleSheet, type ViewProps } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import type { WalletCardStyle } from '@/constants/wallet-card-styles';
+import { SquircleView, squircleSmoothing } from './squircle-view';
 
 /** Converts a CSS-style gradient angle (0deg = up, clockwise) to unit-square start/end points. */
 function angleToPoints(angle: number) {
@@ -22,7 +23,7 @@ type GradientCardProps = ViewProps & {
 };
 
 /**
- * Soft gradient surface used for wallet cards and select hero panels.
+ * Soft squircle surface used for wallet cards and select hero panels.
  * Texture is intentionally omitted so pastel wallet identities remain clean.
  */
 export function GradientCard({
@@ -36,8 +37,9 @@ export function GradientCard({
   const { start, end } = angleToPoints(cardStyle.angle);
 
   return (
-    <View
-      className={`overflow-hidden ${className ?? ''}`}
+    <SquircleView
+      className={`overflow-hidden rounded-[28px] ${className ?? ''}`}
+      cornerSmoothing={squircleSmoothing.hero}
       style={style}
       {...props}
     >
@@ -56,6 +58,6 @@ export function GradientCard({
         />
       ) : null}
       {children}
-    </View>
+    </SquircleView>
   );
 }

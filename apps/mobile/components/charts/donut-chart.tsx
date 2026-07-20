@@ -16,7 +16,6 @@ type DonutChartProps = {
   data: DonutDatum[];
   colors: readonly string[];
   surfaceColor: string;
-  borderColor: string;
   mutedColor: string;
   size?: number;
   valueLabel: (value: number) => string;
@@ -32,7 +31,6 @@ export function DonutChart({
   data,
   colors,
   surfaceColor,
-  borderColor,
   mutedColor,
   size = 208,
   valueLabel,
@@ -43,7 +41,9 @@ export function DonutChart({
     [data],
   );
   const segments = useMemo(() => buildDonutSegments(items), [items]);
-  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
+  const [selectedIndex, setSelectedIndex] = useState<number | null>(
+    null,
+  );
   const total = useMemo(
     () => items.reduce((sum, item) => sum + item.value, 0),
     [items],
@@ -53,7 +53,8 @@ export function DonutChart({
     selectedIndex !== null && selectedIndex < items.length
       ? selectedIndex
       : null;
-  const selected = activeIndex === null ? null : (items[activeIndex] ?? null);
+  const selected =
+    activeIndex === null ? null : (items[activeIndex] ?? null);
   const centerItem = selected ?? items[0] ?? null;
   const radius = size / 2 - 10;
   const iconRadius = radius * 0.66;
@@ -66,13 +67,10 @@ export function DonutChart({
   if (!items.length) {
     return (
       <View
-        className="items-center justify-center rounded-[22px] border border-dashed border-border bg-surface-1 px-5 py-8"
+        className="items-center justify-center rounded-[22px] bg-surface-2 px-5 py-8"
         accessibilityLabel="No expense categories to display"
       >
-        <View
-          className="mb-3 h-14 w-14 rounded-full border border-border"
-          style={{ backgroundColor: surfaceColor }}
-        />
+        <View className="mb-3 h-14 w-14 rounded-full bg-card" />
         <Text className="text-center text-base font-semibold text-foreground">
           Nothing to compare yet
         </Text>
@@ -96,7 +94,10 @@ export function DonutChart({
         >
           {segments.map((segment) => {
             const datum = items[segment.index]!;
-            const color = datum.color ?? colors[segment.index % colors.length] ?? mutedColor;
+            const color =
+              datum.color ??
+              colors[segment.index % colors.length] ??
+              mutedColor;
             const isSelected = activeIndex === segment.index;
             return (
               <Path
@@ -109,8 +110,10 @@ export function DonutChart({
                 )}
                 fill={color}
                 stroke={surfaceColor}
-                strokeWidth={isSelected ? 4 : 2}
-                opacity={activeIndex === null || isSelected ? 1 : 0.48}
+                strokeWidth={isSelected ? 5 : 3}
+                opacity={
+                  activeIndex === null || isSelected ? 1 : 0.48
+                }
                 onPress={() => select(segment.index)}
               />
             );
@@ -120,8 +123,6 @@ export function DonutChart({
             cy={size / 2}
             r={radius * 0.53}
             fill={surfaceColor}
-            stroke={borderColor}
-            strokeWidth={1}
           />
           {segments.map((segment) => {
             const datum = items[segment.index]!;
@@ -164,7 +165,8 @@ export function DonutChart({
           </Text>
           {selected && total > 0 ? (
             <Text className="mt-0.5 text-center text-[11px] font-medium text-muted">
-              {Math.round((selected.value / total) * 100)}% of spending
+              {Math.round((selected.value / total) * 100)}% of
+              spending
             </Text>
           ) : null}
         </View>
@@ -173,7 +175,10 @@ export function DonutChart({
       <View className="mt-4 gap-1">
         {items.slice(0, 6).map((datum, index) => {
           const percentage = Math.round((datum.value / total) * 100);
-          const color = datum.color ?? colors[index % colors.length] ?? mutedColor;
+          const color =
+            datum.color ??
+            colors[index % colors.length] ??
+            mutedColor;
           const isSelected = activeIndex === index;
           return (
             <Pressable
@@ -190,7 +195,9 @@ export function DonutChart({
                   style={{ backgroundColor: color }}
                 />
                 {datum.icon ? (
-                  <Text className="mr-1.5 text-base">{datum.icon}</Text>
+                  <Text className="mr-1.5 text-base">
+                    {datum.icon}
+                  </Text>
                 ) : null}
                 <Text
                   className="flex-1 text-sm font-medium text-foreground"

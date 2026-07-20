@@ -291,7 +291,7 @@ export default function DebugPage() {
                 {PROCESS_LABELS[selectedProcessLog]} console
               </Text>
             </View>
-            <View className="rounded-2xl border border-border bg-surface-2 p-3">
+            <View className="rounded-2xl bg-surface-2 p-3">
               {(selectedProcessLogs.length > 0
                 ? selectedProcessLogs
                 : logLines

@@ -58,7 +58,8 @@ export function LineChart({
   dateLabel,
 }: LineChartProps) {
   const ordered = useMemo(
-    () => [...data].sort((a, b) => a.date.getTime() - b.date.getTime()),
+    () =>
+      [...data].sort((a, b) => a.date.getTime() - b.date.getTime()),
     [data],
   );
   const projected = useMemo(
@@ -74,19 +75,25 @@ export function LineChart({
       ),
     [ordered, width],
   );
-  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
+  const [selectedIndex, setSelectedIndex] = useState<number | null>(
+    null,
+  );
 
   const activeIndex =
     selectedIndex !== null && selectedIndex < ordered.length
       ? selectedIndex
       : ordered.length - 1;
-  const selected = activeIndex >= 0 ? (ordered[activeIndex] ?? null) : null;
+  const selected =
+    activeIndex >= 0 ? (ordered[activeIndex] ?? null) : null;
   const selectedPoint =
     activeIndex >= 0 ? (projected[activeIndex] ?? null) : null;
-  const selectAt = useCallback((x: number) => {
-    const index = findNearestLinePointIndex(projected, x);
-    if (index !== null) setSelectedIndex(index);
-  }, [projected]);
+  const selectAt = useCallback(
+    (x: number) => {
+      const index = findNearestLinePointIndex(projected, x);
+      if (index !== null) setSelectedIndex(index);
+    },
+    [projected],
+  );
   const panResponder = useMemo(
     () =>
       PanResponder.create({
@@ -94,8 +101,10 @@ export function LineChart({
         onMoveShouldSetPanResponder: (_event, gesture) =>
           Math.abs(gesture.dx) > 4 &&
           Math.abs(gesture.dx) > Math.abs(gesture.dy),
-        onPanResponderGrant: (event) => selectAt(event.nativeEvent.locationX),
-        onPanResponderMove: (event) => selectAt(event.nativeEvent.locationX),
+        onPanResponderGrant: (event) =>
+          selectAt(event.nativeEvent.locationX),
+        onPanResponderMove: (event) =>
+          selectAt(event.nativeEvent.locationX),
       }),
     [selectAt],
   );
@@ -103,14 +112,15 @@ export function LineChart({
   if (!ordered.length) {
     return (
       <View
-        className="items-center justify-center rounded-[22px] border border-dashed border-border bg-surface-1 px-5 py-8"
+        className="items-center justify-center rounded-[22px] bg-surface-2 px-5 py-8"
         accessibilityLabel="No balance history to display"
       >
         <Text className="text-center text-base font-semibold text-foreground">
           Your trend will appear here
         </Text>
         <Text className="mt-1 text-center text-sm leading-5 text-muted">
-          Add transactions in this currency to build a balance history.
+          Add transactions in this currency to build a balance
+          history.
         </Text>
       </View>
     );
@@ -129,7 +139,9 @@ export function LineChart({
         accessibilityLabel="Balance trend. Tap or drag horizontally to inspect a date."
         accessibilityValue={
           selected
-            ? { text: `${dateLabel(selected.date)}, ${valueLabel(selected.value)}` }
+            ? {
+                text: `${dateLabel(selected.date)}, ${valueLabel(selected.value)}`,
+              }
             : undefined
         }
         {...panResponder.panHandlers}
@@ -140,8 +152,10 @@ export function LineChart({
           accessibilityElementsHidden
           importantForAccessibility="no-hide-descendants"
         >
-          {[0.25, 0.5, 0.75].map((ratio) => {
-            const y = PADDING.top + (HEIGHT - PADDING.top - PADDING.bottom) * ratio;
+          {[0.5].map((ratio) => {
+            const y =
+              PADDING.top +
+              (HEIGHT - PADDING.top - PADDING.bottom) * ratio;
             return (
               <Line
                 key={ratio}
@@ -151,6 +165,7 @@ export function LineChart({
                 y2={y}
                 stroke={gridColor}
                 strokeWidth={1}
+                opacity={0.7}
               />
             );
           })}
@@ -163,6 +178,7 @@ export function LineChart({
               stroke={gridColor}
               strokeWidth={1}
               strokeDasharray="3 4"
+              opacity={0.8}
             />
           ) : null}
           <Path
@@ -193,7 +209,7 @@ export function LineChart({
           </Text>
         </View>
       </Pressable>
-      <View className="mt-3 flex-row items-start justify-between rounded-2xl bg-surface-1 px-3 py-2.5">
+      <View className="mt-3 flex-row items-start justify-between rounded-2xl bg-surface-2 px-3 py-2.5">
         <View className="flex-1 pr-3">
           <Text className="text-xs font-semibold text-muted">
             {selected ? dateLabel(selected.date) : 'Selected date'}

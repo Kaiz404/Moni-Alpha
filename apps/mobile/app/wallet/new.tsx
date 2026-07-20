@@ -192,7 +192,7 @@ export default function NewWalletScreen() {
                   </Text>
                   <AmountInput
                     accessibilityLabel="Starting balance"
-                    className="min-h-13 rounded-2xl border border-border bg-surface-2 px-4 py-3 text-right text-xl font-semibold text-foreground"
+                    className="min-h-13 px-4 py-3 text-right text-xl font-semibold text-foreground"
                     currency={currency}
                     onChangeValue={setInitialBalance}
                     placeholder="0.00"

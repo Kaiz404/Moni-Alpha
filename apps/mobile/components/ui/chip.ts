@@ -1,8 +1,8 @@
 /** Shared chip class strings for selectable filters (wallet type, category, etc.). */
 
-export const chipBase = 'py-1.5 px-2.5 rounded-xl border border-border bg-card';
+export const chipBase = 'rounded-xl bg-surface-2 px-2.5 py-1.5';
 
-export const chipActive = 'border-primary bg-primary-muted';
+export const chipActive = 'bg-primary-muted';
 
 export const chipIdleText = 'text-foreground';
 

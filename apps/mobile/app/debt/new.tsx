@@ -83,7 +83,7 @@ export default function NewDebtScreen() {
                 key={option}
                 accessibilityRole="button"
                 accessibilityState={{ selected }}
-                className={`min-h-14 flex-1 justify-center rounded-2xl border px-4 ${selected ? option === 'owed_to_me' ? 'border-primary bg-primary-muted' : 'border-warning bg-warning/10' : 'border-border bg-card'}`}
+                className={`min-h-14 flex-1 justify-center rounded-2xl px-4 ${selected ? option === 'owed_to_me' ? 'border border-primary bg-primary-muted' : 'border border-warning bg-warning/10' : 'bg-card'}`}
                 onPress={() => setDirection(option)}
               >
                 <Text className={`text-center text-[15px] font-bold ${selected && option === 'owed_to_me' ? 'text-primary' : 'text-foreground'}`}>
@@ -108,7 +108,7 @@ export default function NewDebtScreen() {
           <Text className="mb-2 text-[15px] font-semibold text-foreground">Amount</Text>
           <AmountInput
             accessibilityLabel="Debt amount"
-            className="min-h-14 rounded-2xl border border-border bg-surface-2 px-4 py-3 text-right text-2xl font-bold text-foreground"
+            className="min-h-14 px-4 py-3 text-right text-2xl font-bold text-foreground"
             currency={selectedWallet?.currency}
             onChangeValue={setAmount}
             placeholder="0.00"
@@ -149,7 +149,7 @@ export default function NewDebtScreen() {
                   key={wallet.id}
                   accessibilityRole="button"
                   accessibilityState={{ selected }}
-                  className={`min-h-11 justify-center rounded-xl border px-3 ${selected ? owedToMe ? 'border-primary bg-primary-muted' : 'border-warning bg-warning/10' : 'border-border bg-card'}`}
+                  className={`min-h-11 justify-center rounded-xl px-3 ${selected ? owedToMe ? 'border border-primary bg-primary-muted' : 'border border-warning bg-warning/10' : 'bg-card'}`}
                   onPress={() => setWalletId(wallet.id)}
                 >
                   <Text className={`text-sm font-semibold ${selected && owedToMe ? 'text-primary' : 'text-foreground'}`}>

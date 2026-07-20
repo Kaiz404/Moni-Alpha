@@ -2,6 +2,7 @@ import { Text, View } from 'react-native';
 
 import { DonutChart } from '@/components/charts/donut-chart';
 import { LineChart } from '@/components/charts/line-chart';
+import { Surface } from '@/components/ui/surface';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import {
   formatMinorAmount,
@@ -26,7 +27,7 @@ export function CategoryExpenseChart({
 }: CategoryExpenseChartProps) {
   const tokens = useThemeTokens();
   return (
-    <View className="mb-4 rounded-[22px] border border-border bg-card p-4">
+    <Surface className="mb-4 p-4">
       <Text className="text-base font-semibold text-foreground">
         Expense categories · {currency}
       </Text>
@@ -41,14 +42,16 @@ export function CategoryExpenseChart({
           }))}
           colors={tokens.chart}
           surfaceColor={tokens.card}
-          borderColor={tokens.border}
           mutedColor={tokens.muted}
           valueLabel={(value) =>
-            formatMinorAmount(Math.round(value * 100), currency as CurrencyCode)
+            formatMinorAmount(
+              Math.round(value * 100),
+              currency as CurrencyCode,
+            )
           }
         />
       </View>
-    </View>
+    </Surface>
   );
 }
 
@@ -64,7 +67,7 @@ export function BalanceLineChart({
 }: BalanceLineChartProps) {
   const tokens = useThemeTokens();
   return (
-    <View className="mb-4 rounded-[22px] border border-border bg-card p-4">
+    <Surface className="mb-4 p-4">
       <Text className="text-base font-semibold text-foreground">
         Balance over time · {line.currency}
       </Text>
@@ -77,7 +80,7 @@ export function BalanceLineChart({
           }))}
           width={chartWidth}
           strokeColor={tokens.primary}
-          gridColor={tokens.border}
+          gridColor={tokens.surface2}
           surfaceColor={tokens.card}
           valueLabel={(value) =>
             formatMinorAmount(
@@ -93,6 +96,6 @@ export function BalanceLineChart({
           }
         />
       </View>
-    </View>
+    </Surface>
   );
 }

@@ -48,7 +48,7 @@ export function ProposalLocationSection({
       {expanded ? (
         <View className="mt-2">
           <View
-            className="overflow-hidden rounded-2xl border border-border bg-background-muted"
+            className="overflow-hidden rounded-2xl bg-background-muted"
             style={styles.locationMapBox}
           >
             <MapView

@@ -195,7 +195,7 @@ export default function ProfileScreen() {
 
         <View className="mt-8 px-5">
           <ProfileSectionTitle>Accounts & wallets</ProfileSectionTitle>
-          <SyncStatus className="mb-4 rounded-[22px] border border-border" />
+          <SyncStatus className="mb-4 rounded-[22px]" />
           <Text className="mb-3 text-[13px] leading-[17px] text-muted">
             Choose the wallet Moni should use when a receipt, message, or
             notification does not identify one.

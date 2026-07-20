@@ -252,7 +252,7 @@ export default function ScanListenScreen() {
                 setPhase('listening');
                 start();
               }}
-              className="flex-1 items-center rounded-xl border border-border bg-card py-3.5"
+              className="flex-1 items-center rounded-xl bg-surface-2 py-3.5"
             >
               <Text className="text-base font-semibold text-foreground">
                 Try again
