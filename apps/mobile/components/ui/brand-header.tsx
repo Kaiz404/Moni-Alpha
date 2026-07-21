@@ -34,7 +34,7 @@ export function BrandHeader({
             accessibilityRole="button"
             accessibilityLabel="Go back"
             hitSlop={10}
-            className="h-11 w-11 items-center justify-center rounded-full bg-card active:opacity-80"
+            className="h-11 w-11 items-center justify-center rounded-full active:opacity-80"
           >
             <IconSymbol
               name="arrow-left"
