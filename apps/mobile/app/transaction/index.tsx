@@ -13,7 +13,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialDesignIcons } from '@react-native-vector-icons/material-design-icons';
 import { useValue } from '@legendapp/state/react';
 import { FinanceState } from '@/components/finance/finance-state';
-import { GradientCard } from '@/components/ui/gradient-card';
+import { SolidWalletCard } from '@/components/ui/solid-wallet-card';
 import { Surface } from '@/components/ui/surface';
 import { getWalletCardStyle } from '@/constants/wallet-card-styles';
 import { useAuth } from '@/lib/auth/auth-context';
@@ -67,6 +67,9 @@ export default function TransactionsScreen() {
     walletId
       ? walletBalanceMinor$(walletId)
       : walletBalanceMinor$(''),
+  );
+  const selectedWalletStyle = getWalletCardStyle(
+    selectedWallet?.cardStyleId,
   );
   const [refreshing, setRefreshing] = useState(false);
   const walletNames = useMemo(
@@ -129,30 +132,40 @@ export default function TransactionsScreen() {
       >
         <View className="mb-4">
           {selectedWallet ? (
-            <GradientCard
-              cardStyle={getWalletCardStyle(
-                selectedWallet.cardStyleId ?? undefined,
-              )}
+            <SolidWalletCard
+              cardStyle={selectedWalletStyle}
               className="rounded-3xl p-4"
             >
-              <Text className="text-sm text-white/80">
+              <Text
+                className="text-sm"
+                style={{
+                  color: selectedWalletStyle.contentMutedColor,
+                }}
+              >
                 {selectedWallet.name}
               </Text>
-              <Text className="mt-1 text-2xl font-bold text-white">
+              <Text
+                className="mt-1 text-2xl font-bold"
+                style={{ color: selectedWalletStyle.contentColor }}
+              >
                 {formatMinorAmount(
                   selectedBalance,
                   selectedWallet.currency,
                 )}
               </Text>
               <View className="mt-3 flex-row gap-4">
-                <Text className="text-white">
+                <Text
+                  style={{ color: selectedWalletStyle.contentColor }}
+                >
                   +
                   {formatMinorAmount(
                     stats.income,
                     selectedWallet.currency,
                   )}
                 </Text>
-                <Text className="text-white">
+                <Text
+                  style={{ color: selectedWalletStyle.contentColor }}
+                >
                   −
                   {formatMinorAmount(
                     stats.expense,
@@ -160,7 +173,7 @@ export default function TransactionsScreen() {
                   )}
                 </Text>
               </View>
-            </GradientCard>
+            </SolidWalletCard>
           ) : (
             <Surface className="p-4">
               <Text className="font-semibold text-foreground">

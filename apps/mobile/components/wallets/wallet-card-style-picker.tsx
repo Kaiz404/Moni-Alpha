@@ -1,6 +1,6 @@
 import { Text, View } from 'react-native';
 
-import { GradientCard } from '@/components/ui/gradient-card';
+import { SolidWalletCard } from '@/components/ui/solid-wallet-card';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { TactilePressable } from '@/components/ui/tactile-pressable';
 import { WALLET_CARD_STYLES } from '@/constants/wallet-card-styles';
@@ -26,13 +26,15 @@ export function WalletCardStylePicker({
           <TactilePressable
             key={style.id}
             onPress={() => onChange(style.id)}
-            accessibilityLabel={['Choose', style.label, 'wallet style'].join(
-              ' ',
-            )}
+            accessibilityLabel={[
+              'Choose',
+              style.label,
+              'wallet style',
+            ].join(' ')}
             className="items-center"
             style={{ width: 76 }}
           >
-            <GradientCard
+            <SolidWalletCard
               cardStyle={style}
               className="h-16 w-16 items-center justify-center rounded-2xl"
               style={
@@ -54,7 +56,7 @@ export function WalletCardStylePicker({
                   />
                 </View>
               ) : null}
-            </GradientCard>
+            </SolidWalletCard>
             <Text
               className={
                 selected

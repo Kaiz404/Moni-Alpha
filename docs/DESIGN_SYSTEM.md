@@ -341,7 +341,7 @@ Each wallet item includes:
 
 Treat each wallet as one borderless, squircle-edged balance island. Keep its metadata and any mini visual on the same surface; do not turn every internal grouping into a second card.
 
-Use the Moni mint, lilac, peach, lemon, coral, aqua, and neutral palette for wallet identity. Gradients may gently pair a matte neutral with one of those accents, but do not use a grain mask or payment-card-like texture. Ensure wallet labels and native balances use an accessible foreground chosen for the selected surface.
+Use the Moni mint, lilac, peach, lemon, coral, aqua, and neutral palette as solid fills for wallet identity. Do not use gradients, grain masks, or payment-card-like textures. Ensure wallet labels and native balances use an accessible foreground chosen for the selected surface.
 
 Never mimic real payment cards unless users need a real card identifier. The visual job is balance recognition, not faux banking branding.
 

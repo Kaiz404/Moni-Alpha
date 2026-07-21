@@ -13,7 +13,7 @@ import { MaterialDesignIcons } from '@react-native-vector-icons/material-design-
 
 import { BudgetProgressBar } from '@/components/charts/budget-progress-bar';
 import { IconSymbol } from '@/components/ui/icon-symbol';
-import { GradientCard } from '@/components/ui/gradient-card';
+import { SolidWalletCard } from '@/components/ui/solid-wallet-card';
 import { Surface } from '@/components/ui/surface';
 import { getWalletCardStyle } from '@/constants/wallet-card-styles';
 import { resolveWalletIcon } from '@/constants/wallet-form';
@@ -76,7 +76,7 @@ const WalletCard = memo(function WalletCard({
       accessibilityRole="button"
       accessibilityLabel={`Open ${wallet.name}, ${formatMinorAmount(balanceMinor, wallet.currency)}`}
     >
-      <GradientCard
+      <SolidWalletCard
         cardStyle={cardStyle}
         className="w-full flex-col justify-between p-4"
       >
@@ -114,7 +114,7 @@ const WalletCard = memo(function WalletCard({
             {formatMinorAmount(balanceMinor, wallet.currency)}
           </Text>
         </View>
-      </GradientCard>
+      </SolidWalletCard>
     </Pressable>
   );
 });

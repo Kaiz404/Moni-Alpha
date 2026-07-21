@@ -1,5 +1,5 @@
 /**
- * Curated wallet card gradients aligned to the Moni pastel palette.
+ * Curated solid wallet card colors aligned to the Moni pastel palette.
  *
  * This list is the single place designers/devs extend when adding a new
  * card style — appending an entry here immediately makes it selectable in
@@ -10,6 +10,8 @@
 export type WalletCardStyle = {
   id: string;
   label: string;
+  /** Solid fill applied to wallet cards and their previews. */
+  backgroundColor: string;
   /** LinearGradient stops, applied top-left -> bottom-right by default. */
   colors: [string, string, ...string[]];
   angle: number;
@@ -31,6 +33,7 @@ export const WALLET_CARD_STYLES: WalletCardStyle[] = [
   {
     id: 'emerald-grain',
     label: 'Mint',
+    backgroundColor: '#8ECF9D',
     colors: ['#C8E6D4', '#8ECF9D'],
     angle: 135,
     swatchHex: '#8ECF9D',
@@ -39,6 +42,7 @@ export const WALLET_CARD_STYLES: WalletCardStyle[] = [
   {
     id: 'citrus-pop',
     label: 'Lemon',
+    backgroundColor: '#E8CF50',
     colors: ['#F7F7F2', '#E8CF50'],
     angle: 135,
     swatchHex: '#E8CF50',
@@ -47,6 +51,7 @@ export const WALLET_CARD_STYLES: WalletCardStyle[] = [
   {
     id: 'coral-bloom',
     label: 'Coral',
+    backgroundColor: '#E87D72',
     colors: ['#F7F7F2', '#E87D72'],
     angle: 135,
     swatchHex: '#E87D72',
@@ -55,6 +60,7 @@ export const WALLET_CARD_STYLES: WalletCardStyle[] = [
   {
     id: 'ocean-deep',
     label: 'Aqua',
+    backgroundColor: '#72CEC4',
     colors: ['#F7F7F2', '#72CEC4'],
     angle: 135,
     swatchHex: '#72CEC4',
@@ -63,6 +69,7 @@ export const WALLET_CARD_STYLES: WalletCardStyle[] = [
   {
     id: 'violet-dusk',
     label: 'Lilac',
+    backgroundColor: '#B39AE8',
     colors: ['#F7F7F2', '#B39AE8'],
     angle: 135,
     swatchHex: '#B39AE8',
@@ -71,14 +78,18 @@ export const WALLET_CARD_STYLES: WalletCardStyle[] = [
   {
     id: 'midnight-mint',
     label: 'Mint shade',
+    backgroundColor: '#236B47',
     colors: ['#E5E9DC', '#8ECF9D'],
     angle: 160,
     swatchHex: '#236B47',
-    ...PASTEL_CONTENT,
+    contentColor: '#F4F5EF',
+    contentMutedColor: '#E0EEE3',
+    actionOverlayColor: 'rgba(244, 245, 239, 0.16)',
   },
   {
     id: 'rose-quartz',
     label: 'Peach',
+    backgroundColor: '#F0AD85',
     colors: ['#F7F7F2', '#F0AD85'],
     angle: 135,
     swatchHex: '#F0AD85',
@@ -87,6 +98,7 @@ export const WALLET_CARD_STYLES: WalletCardStyle[] = [
   {
     id: 'slate-steel',
     label: 'Neutral',
+    backgroundColor: '#E5E9DC',
     colors: ['#F7F7F2', '#E5E9DC'],
     angle: 150,
     swatchHex: '#7B8179',

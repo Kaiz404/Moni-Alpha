@@ -1,9 +1,7 @@
 import { Text, View } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
-
-import { GradientCard } from '@/components/ui/gradient-card';
 import { IconAction } from '@/components/ui/icon-action';
 import { IconSymbol } from '@/components/ui/icon-symbol';
+import { SolidWalletCard } from '@/components/ui/solid-wallet-card';
 import { TactilePressable } from '@/components/ui/tactile-pressable';
 import {
   getWalletCardStyle,
@@ -52,7 +50,7 @@ export function WalletColorPickerContent({
         />
       </View>
 
-      <GradientCard
+      <SolidWalletCard
         cardStyle={style}
         className="h-44 w-full justify-between p-5"
       >
@@ -82,12 +80,12 @@ export function WalletColorPickerContent({
             0.00 {currency.trim().toUpperCase() || 'USD'}
           </Text>
         </View>
-      </GradientCard>
+      </SolidWalletCard>
 
       <Text className="mb-3 mt-6 text-sm font-semibold text-foreground">
         Color options
       </Text>
-      <View className="flex-row flex-wrap gap-x-3 gap-y-4">
+      <View className="flex-row flex-wrap">
         {WALLET_CARD_STYLES.map((item) => {
           const selected = item.id === value;
           return (
@@ -95,45 +93,29 @@ export function WalletColorPickerContent({
               key={item.id}
               accessibilityLabel={`Choose ${item.label} wallet color`}
               accessibilityState={{ selected }}
-              className="items-center"
+              className="mb-4 items-center"
               onPress={() => onChange(item.id)}
-              style={{ width: 68 }}
+              style={{ width: '25%' }}
             >
-              <View
-                className="h-14 w-14 items-center justify-center rounded-2xl"
-                style={
-                  selected
-                    ? {
-                        borderWidth: 2.5,
-                        borderColor: style.contentColor,
-                        elevation: 4,
-                        padding: 2,
-                      }
-                    : undefined
-                }
-              >
-                <LinearGradient
-                  colors={item.colors}
-                  end={{ x: 1, y: 1 }}
-                  start={{ x: 0, y: 0 }}
+              <View className="h-14 w-14 items-center justify-center rounded-2xl">
+                <View
                   style={{
                     alignItems: 'center',
+                    backgroundColor: item.backgroundColor,
                     borderRadius: 14,
-                    height: selected ? 47 : 56,
+                    height: 56,
                     justifyContent: 'center',
-                    width: selected ? 47 : 56,
+                    width: 56,
                   }}
                 >
                   {selected ? (
-                    <View className="rounded-full bg-black/20 p-1">
-                      <IconSymbol
-                        name="check"
-                        size={16}
-                        color={item.contentColor}
-                      />
-                    </View>
+                    <IconSymbol
+                      name="check"
+                      size={18}
+                      color={item.contentColor}
+                    />
                   ) : null}
-                </LinearGradient>
+                </View>
               </View>
               <Text
                 className={
