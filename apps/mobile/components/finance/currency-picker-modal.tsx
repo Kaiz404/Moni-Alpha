@@ -10,7 +10,10 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { CurrencyPickerContent } from '@/components/finance/currency-picker-content';
 import type { CurrencyOption } from '@/constants/currencies';
-import { SquircleView, squircleSmoothing } from '@/components/ui/squircle-view';
+import {
+  SquircleView,
+  squircleSmoothing,
+} from '@/components/ui/squircle-view';
 
 type CurrencyPickerModalProps = {
   visible: boolean;
@@ -42,11 +45,9 @@ export function CurrencyPickerModal({
 
   const handleSelect = useCallback(
     (option: CurrencyOption) => {
-      reset();
       onSelect(option.code);
-      onClose();
     },
-    [onClose, onSelect, reset],
+    [onSelect],
   );
 
   useEffect(() => {

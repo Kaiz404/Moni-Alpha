@@ -34,7 +34,7 @@ export function FormField({
 
   return (
     <View className={`mb-4 ${containerClassName ?? ''}`}>
-      <Text className="mb-2 text-[15px] font-semibold text-foreground">
+      <Text className="mb-2 text-base font-semibold text-foreground">
         {label}
       </Text>
       <TextInput

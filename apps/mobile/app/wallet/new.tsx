@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Alert,
   KeyboardAvoidingView,
@@ -8,27 +8,26 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import type { ColorValue } from 'react-native';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { createWalletSchema, decimalToMinor } from '@repo/types';
 
-import { StartingBalanceField } from '@/components/finance/starting-balance-field';
+import { AmountInput } from '@/components/finance/amount-input';
+import { CurrencyPickerModal } from '@/components/finance/currency-picker-modal';
 import { BrandHeader } from '@/components/ui/brand-header';
-import { chipClass, chipTextClass } from '@/components/ui/chip';
 import { FormField } from '@/components/ui/form-field';
 import { PrimaryButton } from '@/components/ui/primary-button';
 import { ScreenShell } from '@/components/ui/screen-shell';
 import { Surface } from '@/components/ui/surface';
-import {
-  WalletCardStylePicker,
-} from '@/components/wallets/wallet-card-style-picker';
+import { WalletColorPickerModal } from '@/components/wallets/wallet-color-picker-modal';
+import { WalletTypePickerModal } from '@/components/wallets/wallet-type-picker-modal';
 import {
   WalletNotificationLinkSection,
   type WalletNotificationLinkValue,
 } from '@/components/wallets/wallet-notification-link-section';
 import {
   DEFAULT_WALLET_CARD_STYLE_ID,
+  getWalletCardStyle,
   WALLET_CARD_STYLES,
 } from '@/constants/wallet-card-styles';
 import { WalletIcon } from '@/components/wallets/wallet-icon';
@@ -48,10 +47,14 @@ export default function NewWalletScreen() {
   const [name, setName] = useState('');
   const [type, setType] = useState<WalletKind>('bank');
   const [currency, setCurrency] = useState('USD');
-  const [initialBalance, setInitialBalance] = useState('');
+  const [currentBalance, setCurrentBalance] = useState('');
+  const [currencyPickerVisible, setCurrencyPickerVisible] =
+    useState(false);
   const [cardStyleId, setCardStyleId] = useState(
     DEFAULT_WALLET_CARD_STYLE_ID,
   );
+  const [colorPickerVisible, setColorPickerVisible] = useState(false);
+  const [typePickerVisible, setTypePickerVisible] = useState(false);
   const [loading, setLoading] = useState(false);
   const [notificationLink, setNotificationLink] =
     useState<WalletNotificationLinkValue>({
@@ -61,14 +64,25 @@ export default function NewWalletScreen() {
     });
   const [sharedPackageWalletNames, setSharedPackageWalletNames] =
     useState<string[]>([]);
+  const selectedCardStyle = useMemo(
+    () => getWalletCardStyle(cardStyleId),
+    [cardStyleId],
+  );
+  const selectedType = useMemo(
+    () =>
+      WALLET_TYPE_OPTIONS.find((option) => option.value === type) ??
+      WALLET_TYPE_OPTIONS[0],
+    [type],
+  );
 
   useEffect(() => {
     if (!user) return;
+    setSharedPackageWalletNames([]);
+    if (!notificationLink.notificationPackage) return;
+
+    let cancelled = false;
     void getWallets().then((wallets) => {
-      if (!notificationLink.notificationPackage) {
-        setSharedPackageWalletNames([]);
-        return;
-      }
+      if (cancelled) return;
       setSharedPackageWalletNames(
         wallets
           .filter(
@@ -79,7 +93,23 @@ export default function NewWalletScreen() {
           .map((wallet) => wallet.name),
       );
     });
+    return () => {
+      cancelled = true;
+    };
   }, [notificationLink.notificationPackage, user]);
+
+  const handleNotificationLinkChange = useCallback(
+    (next: WalletNotificationLinkValue) => {
+      if (
+        next.notificationPackage !==
+        notificationLink.notificationPackage
+      ) {
+        setSharedPackageWalletNames([]);
+      }
+      setNotificationLink(next);
+    },
+    [notificationLink.notificationPackage],
+  );
 
   const handleSubmit = async () => {
     if (!user) return;
@@ -90,13 +120,16 @@ export default function NewWalletScreen() {
       name: name.trim(),
       type,
       currency: currency.trim().toUpperCase().slice(0, 3) || 'USD',
-      initialBalanceMinor: decimalToMinor(initialBalance || '0'),
+      initialBalanceMinor: decimalToMinor(
+        currentBalance.trim().replace(/,/g, '') || '0',
+      ),
       color: style.swatchHex,
       icon: getWalletTypeIcon(type),
       cardStyleId: style.id,
       notificationPackage: notificationLink.notificationPackage,
       notificationAppLabel: notificationLink.notificationAppLabel,
-      notificationAccountHint: notificationLink.notificationAccountHint,
+      notificationAccountHint:
+        notificationLink.notificationAccountHint,
     });
     if (!parsed.success) {
       Alert.alert(
@@ -130,95 +163,103 @@ export default function NewWalletScreen() {
         <View className="flex-1">
           <ScrollView
             className="flex-1"
-            contentContainerClassName="px-5 pb-8 pt-6"
+            contentContainerClassName="px-5 pb-8"
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
           >
-            <Text className="text-2xl font-bold text-foreground">
-              Add an account
-            </Text>
-            <Text className="mt-2 max-w-md text-[15px] leading-5 text-muted">
-              Keep each balance in its original currency. You can update the
-              details whenever the account changes.
-            </Text>
-
-            <Surface className="mt-6 p-5">
-              <FormField
-                label="Wallet name"
-                placeholder="e.g. Everyday bank"
-                value={name}
-                onChangeText={setName}
-                autoCapitalize="words"
-              />
-
-              <Text className="mb-2 text-[15px] font-semibold text-foreground">
-                Account type
+            <Surface className="mt-6">
+              <Text className="mb-2 text-base font-semibold text-foreground">
+                Starting balance
               </Text>
-              <View className="mb-5 flex-row flex-wrap gap-2">
-                {WALLET_TYPE_OPTIONS.map((option) => {
-                  const selected = type === option.value;
-                  const iconColor: ColorValue = selected
-                    ? tokens.primary
-                    : tokens.foreground;
-                  return (
-                    <TouchableOpacity
-                      key={option.value}
-                      accessibilityRole="button"
-                      accessibilityState={{ selected }}
-                      activeOpacity={0.82}
-                      className={`${chipClass(selected)} justify-center px-3 rounded-full`}
-                      onPress={() => setType(option.value)}
-                    >
-                      <View className="flex-row items-center gap-1.5">
-                        <WalletIcon
-                          color={iconColor}
-                          icon={option.icon}
-                          size={16}
-                        />
-                        <Text
-                          className={`text-sm ${chipTextClass(selected)}`}
-                          numberOfLines={1}
-                        >
-                          {option.label}
-                        </Text>
-                      </View>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
-
-              <StartingBalanceField
+              <AmountInput
+                accessibilityLabel="Current balance"
+                className="px-0 text-right text-3xl"
                 currency={currency}
-                hint="This is not converted or combined with another currency."
-                onChangeValue={setInitialBalance}
-                onCurrencyChange={setCurrency}
-                value={initialBalance}
+                onChangeValue={setCurrentBalance}
+                onCurrencyPress={() => setCurrencyPickerVisible(true)}
+                placeholder="0.00"
+                value={currentBalance}
               />
             </Surface>
 
-            <Text className="mb-2 mt-8 text-base font-bold text-foreground">
-              Recognition
-            </Text>
-            <Text className="mb-3 text-sm leading-5 text-muted">
-              Choose a calm visual cue to make this account easy to spot.
-            </Text>
-            <WalletCardStylePicker
-              value={cardStyleId}
-              onChange={setCardStyleId}
-            />
+            <Surface className="mt-6">
+              <View className="flex-row gap-3">
+                <FormField
+                  containerClassName="mb-0 min-w-0 flex-1"
+                  label="Wallet name"
+                  placeholder="e.g. Everyday bank"
+                  value={name}
+                  onChangeText={setName}
+                  autoCapitalize="words"
+                />
+                <View style={{ width: 130 }}>
+                  <Text className="mb-2 text-base font-semibold text-foreground">
+                    Account type
+                  </Text>
+                  <TouchableOpacity
+                    accessibilityLabel="Choose account type"
+                    activeOpacity={0.82}
+                    className="min-h-13 flex-row items-center rounded-2xl bg-surface-2 px-3"
+                    onPress={() => setTypePickerVisible(true)}
+                  >
+                    <WalletIcon
+                      color={tokens.primary}
+                      icon={selectedType.icon}
+                      size={18}
+                    />
+                    <Text
+                      className="ml-2 min-w-0 flex-1 text-xs font-semibold text-foreground"
+                      numberOfLines={1}
+                    >
+                      {selectedType.label}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </Surface>
 
-            <Text className="mb-2 mt-8 text-base font-bold text-foreground">
-              Notification source
+            <Text className="mt-8 text-base font-bold text-foreground">
+              Color
             </Text>
-            <Text className="mb-3 text-sm leading-5 text-muted">
-              Optional. Linking an app only helps Moni route possible
-              transactions to this wallet for your review.
+            <Surface
+              tone="muted"
+              className="mt-3"
+            >
+              <TouchableOpacity
+                accessibilityLabel="Choose wallet color"
+                activeOpacity={0.82}
+                className="flex-row items-center rounded-2xl px-4 py-3.5"
+                onPress={() => setColorPickerVisible(true)}
+              >
+                <View
+                  className="mr-3 h-10 w-10 rounded-xl"
+                  style={{
+                    backgroundColor: selectedCardStyle.swatchHex,
+                  }}
+                />
+                <Text className="flex-1 text-sm font-semibold text-foreground">
+                  {selectedCardStyle.label}
+                </Text>
+                <Text className="text-sm font-semibold text-primary">
+                  Change
+                </Text>
+              </TouchableOpacity>
+            </Surface>
+
+            <Text className="mt-8 text-base font-bold text-foreground">
+              Notification link
             </Text>
-            <WalletNotificationLinkSection
-              value={notificationLink}
-              onChange={setNotificationLink}
-              sharedPackageWalletNames={sharedPackageWalletNames}
-            />
+            <Text className="mb-3 mt-1 text-sm leading-5 text-muted">
+              Link an app so possible transactions can be
+              automatically routed to this wallet.
+            </Text>
+            <Surface tone="muted">
+              <WalletNotificationLinkSection
+                value={notificationLink}
+                onChange={handleNotificationLinkChange}
+                sharedPackageWalletNames={sharedPackageWalletNames}
+              />
+            </Surface>
           </ScrollView>
 
           <View
@@ -235,6 +276,27 @@ export default function NewWalletScreen() {
           </View>
         </View>
       </KeyboardAvoidingView>
+      <WalletColorPickerModal
+        currency={currency}
+        name={name}
+        onChange={setCardStyleId}
+        onClose={() => setColorPickerVisible(false)}
+        type={type}
+        value={cardStyleId}
+        visible={colorPickerVisible}
+      />
+      <CurrencyPickerModal
+        onClose={() => setCurrencyPickerVisible(false)}
+        onSelect={setCurrency}
+        selectedCode={currency}
+        visible={currencyPickerVisible}
+      />
+      <WalletTypePickerModal
+        onChange={setType}
+        onClose={() => setTypePickerVisible(false)}
+        value={type}
+        visible={typePickerVisible}
+      />
     </ScreenShell>
   );
 }

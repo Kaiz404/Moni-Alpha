@@ -4,6 +4,14 @@ import { Pressable, Text, TextInput, View } from 'react-native';
 
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 
+function normalizeAmount(value: string): string {
+  const cleaned = value.trim().replace(/,/g, '');
+  if (!cleaned || cleaned === '-' || cleaned === '.') return '0.00';
+
+  const amount = Number(cleaned);
+  return Number.isFinite(amount) ? amount.toFixed(2) : value;
+}
+
 type AmountInputProps = Omit<
   TextInputProps,
   'keyboardType' | 'onChangeText' | 'value'
@@ -29,6 +37,7 @@ export function AmountInput({
 }: AmountInputProps) {
   const tokens = useThemeTokens();
   const [isFocused, setIsFocused] = useState(false);
+  const displayValue = isFocused ? value : normalizeAmount(value);
 
   return (
     <View
@@ -36,19 +45,22 @@ export function AmountInput({
         isFocused ? 'border border-primary' : ''
       }`}
     >
-      <View className="flex-row items-baseline gap-2">
+      <View className="flex-row items-center gap-2">
         <TextInput
           {...props}
           accessibilityLabel={props.accessibilityLabel ?? 'Amount'}
-          className={`min-h-13 flex-1 py-1 text-right text-[28px] font-bold leading-8 text-foreground ${className ?? ''}`}
-          value={value}
+          className={`min-h-13  pr-2 flex-1 text-right text-2xl font-bold leading-8 text-foreground ${className ?? ''}`}
+          value={displayValue}
           onChangeText={onChangeValue}
           onFocus={(event) => {
             setIsFocused(true);
+            const normalized = normalizeAmount(value);
+            if (normalized !== value) onChangeValue(normalized);
             props.onFocus?.(event);
           }}
           onBlur={(event) => {
             setIsFocused(false);
+            onChangeValue(normalizeAmount(value));
             props.onBlur?.(event);
           }}
           keyboardType="decimal-pad"
@@ -58,6 +70,7 @@ export function AmountInput({
           }
           textAlign="right"
         />
+        <View className="border-l border-primary/15 h-12" />
         {currency ? (
           onCurrencyPress ? (
             <Pressable
@@ -67,12 +80,12 @@ export function AmountInput({
               hitSlop={8}
               onPress={onCurrencyPress}
             >
-              <Text className="pb-1 text-sm font-bold tracking-wide text-primary">
+              <Text className="text-lg font-bold tracking-wide text-primary">
                 {currency.toUpperCase()}
               </Text>
             </Pressable>
           ) : (
-            <Text className="pb-1 text-xs font-bold tracking-wide text-muted">
+            <Text className="text-lg font-bold tracking-wide text-muted">
               {currency.toUpperCase()}
             </Text>
           )

@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -8,6 +9,7 @@ type BrandHeaderProps = {
   title: string;
   onBack?: () => void;
   showBack?: boolean;
+  rightAction?: ReactNode;
 };
 
 /** Minimal top bar used on form / stack screens — neutral background, one accent touch. */
@@ -15,6 +17,7 @@ export function BrandHeader({
   title,
   onBack,
   showBack = true,
+  rightAction,
 }: BrandHeaderProps) {
   const tokens = useThemeTokens();
   const handleBack = onBack ?? (() => router.back());
@@ -46,6 +49,9 @@ export function BrandHeader({
         >
           {title}
         </Text>
+        {rightAction ? (
+          <View className="-mr-1 ml-2">{rightAction}</View>
+        ) : null}
       </View>
     </SafeAreaView>
   );

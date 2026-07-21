@@ -1,6 +1,23 @@
-import { useState } from 'react';
-import { Modal, Text, TouchableOpacity, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useCallback, useRef, useState } from 'react';
+import {
+  Modal,
+  Text,
+  TouchableOpacity,
+  View,
+  useWindowDimensions,
+} from 'react-native';
+import {
+  Column,
+  Host,
+  ModalBottomSheet,
+  RNHostView,
+} from '@expo/ui/jetpack-compose';
+import type { ModalBottomSheetRef } from '@expo/ui/jetpack-compose';
+import {
+  height,
+  padding,
+  weight,
+} from '@expo/ui/jetpack-compose/modifiers';
 
 import {
   NotificationSourcePickerContent,
@@ -9,11 +26,8 @@ import {
   useNotificationSourceData,
   type WalletNotificationLinkValue,
 } from '@/components/wallets/notification-source-picker-content';
-import {
-  SquircleView,
-  squircleSmoothing,
-} from '@/components/ui/squircle-view';
 import { labelForNotificationPackage } from '@/constants/notification-apps';
+import { useThemeTokens } from '@/hooks/use-theme-tokens';
 
 export type { WalletNotificationLinkValue } from '@/components/wallets/notification-source-picker-content';
 
@@ -23,13 +37,14 @@ type Props = {
   sharedPackageWalletNames?: string[];
 };
 
-/** Notification source stays compact until its curated picker is needed. */
 export function WalletNotificationLinkSection({
   value,
   onChange,
   sharedPackageWalletNames = [],
 }: Props) {
-  const insets = useSafeAreaInsets();
+  const tokens = useThemeTokens();
+  const { height: windowHeight } = useWindowDimensions();
+  const sheetRef = useRef<ModalBottomSheetRef>(null);
   const [visible, setVisible] = useState(false);
   const data = useNotificationSourceData();
   const selectedLabel =
@@ -37,6 +52,11 @@ export function WalletNotificationLinkSection({
     (value.notificationPackage
       ? labelForNotificationPackage(value.notificationPackage)
       : null);
+
+  const dismiss = useCallback(async () => {
+    await sheetRef.current?.hide();
+    setVisible(false);
+  }, []);
 
   return (
     <View>
@@ -59,14 +79,6 @@ export function WalletNotificationLinkSection({
           <Text className="text-sm font-semibold text-foreground">
             {selectedLabel ?? 'No app selected'}
           </Text>
-          <Text
-            className="mt-0.5 text-xs text-muted"
-            numberOfLines={1}
-          >
-            {selectedLabel
-              ? 'Tap to change the linked app'
-              : 'Choose an installed banking app'}
-          </Text>
         </View>
         <Text className="text-sm font-semibold text-primary">
           Change
@@ -74,31 +86,45 @@ export function WalletNotificationLinkSection({
       </TouchableOpacity>
 
       <Modal
-        animationType="slide"
-        onRequestClose={() => setVisible(false)}
+        animationType="fade"
+        onRequestClose={dismiss}
+        statusBarTranslucent
         transparent
         visible={visible}
       >
-        <View className="flex-1 justify-end bg-black/40">
-          <SquircleView
-            className="max-h-[88%] overflow-hidden rounded-[28px] bg-canvas"
-            cornerSmoothing={squircleSmoothing.hero}
+        {visible ? (
+          <Host
+            matchContents
+            style={{ flex: 1 }}
           >
-            <View
-              className="px-5 pb-4 pt-3"
-              style={{ paddingBottom: Math.max(insets.bottom, 16) }}
+            <ModalBottomSheet
+              containerColor={tokens.canvas}
+              contentColor={tokens.foreground}
+              onDismissRequest={dismiss}
+              ref={sheetRef}
+              skipPartiallyExpanded
             >
-              <View className="mb-4 h-1.5 w-10 self-center rounded-full bg-border" />
-              <NotificationSourcePickerContent
-                {...data}
-                value={value}
-                onChange={onChange}
-                onClose={() => setVisible(false)}
-                sharedPackageWalletNames={sharedPackageWalletNames}
-              />
-            </View>
-          </SquircleView>
-        </View>
+              <Column
+                modifiers={[
+                  height(Math.round(windowHeight * 0.76)),
+                  padding(20, 12, 20, 20),
+                ]}
+              >
+                <RNHostView modifiers={[weight(1)]}>
+                  <NotificationSourcePickerContent
+                    {...data}
+                    value={value}
+                    onChange={onChange}
+                    onClose={() => void dismiss()}
+                    sharedPackageWalletNames={
+                      sharedPackageWalletNames
+                    }
+                  />
+                </RNHostView>
+              </Column>
+            </ModalBottomSheet>
+          </Host>
+        ) : null}
       </Modal>
     </View>
   );

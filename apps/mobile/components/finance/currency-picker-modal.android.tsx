@@ -41,7 +41,9 @@ export function CurrencyPickerModal({
 }: CurrencyPickerModalProps) {
   const tokens = useThemeTokens();
   const { height: windowHeight } = useWindowDimensions();
-  const sheetHeight = Math.round(windowHeight * SHEET_HEIGHT_FRACTION);
+  const sheetHeight = Math.round(
+    windowHeight * SHEET_HEIGHT_FRACTION,
+  );
   const sheetRef = useRef<ModalBottomSheetRef>(null);
   const [query, setQuery] = useState('');
   const normalizedSelected = selectedCode.trim().toUpperCase();
@@ -62,13 +64,10 @@ export function CurrencyPickerModal({
   }, [onClose, reset]);
 
   const handleSelect = useCallback(
-    async (option: CurrencyOption) => {
-      reset();
-      await sheetRef.current?.hide();
+    (option: CurrencyOption) => {
       onSelect(option.code);
-      onClose();
     },
-    [onClose, onSelect, reset],
+    [onSelect],
   );
 
   const handleSearchFocus = useCallback(() => {
@@ -84,7 +83,10 @@ export function CurrencyPickerModal({
       visible={visible}
     >
       {visible ? (
-        <Host matchContents style={{ flex: 1 }}>
+        <Host
+          matchContents
+          style={{ flex: 1 }}
+        >
           <ModalBottomSheet
             containerColor={tokens.canvas}
             contentColor={tokens.foreground}
