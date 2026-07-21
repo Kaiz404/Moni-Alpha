@@ -79,17 +79,26 @@ func (s *Service) FromImage(ctx context.Context, req ImageRequest) Result {
 		userText += "\nUser message: " + req.UserContext
 	}
 
+	// Qwen 3.6's JSON mode is most reliable with instructions in the user
+	// message and reasoning disabled. It still receives the same image_url
+	// payload as the retired Llama 4 Scout model.
 	messages := []groq.Message{
-		{Role: "system", Content: receiptExtractionPrompt},
 		{Role: "user", Content: []groq.ContentPart{
-			{Type: "text", Text: userText},
+			{Type: "text", Text: receiptExtractionPrompt + "\n\n" + userText},
 			{Type: "image_url", ImageURL: &groq.ImageURL{URL: imageURL}},
 		}},
 	}
 
 	var out llmExtraction
 	err := s.groq.CompleteJSON(ctx, messages,
-		groq.Options{Model: groq.ModelVision, Temperature: 0.2, MaxTokens: 1024, MaxRetryWait: 5 * time.Second},
+		groq.Options{
+			Model:           groq.ModelVision,
+			Temperature:     0.6,
+			MaxTokens:       1024,
+			ReasoningEffort: "none",
+			ReasoningFormat: "hidden",
+			MaxRetryWait:    5 * time.Second,
+		},
 		&out,
 	)
 	if err != nil {

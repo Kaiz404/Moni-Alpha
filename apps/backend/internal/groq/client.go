@@ -47,11 +47,13 @@ type Message struct {
 }
 
 type ChatRequest struct {
-	Model          string    `json:"model"`
-	Messages       []Message `json:"messages"`
-	Temperature    float64   `json:"temperature"`
-	MaxTokens      int       `json:"max_tokens,omitempty"`
-	ResponseFormat *struct {
+	Model           string    `json:"model"`
+	Messages        []Message `json:"messages"`
+	Temperature     float64   `json:"temperature"`
+	MaxTokens       int       `json:"max_tokens,omitempty"`
+	ReasoningEffort string    `json:"reasoning_effort,omitempty"`
+	ReasoningFormat string    `json:"reasoning_format,omitempty"`
+	ResponseFormat  *struct {
 		Type string `json:"type"`
 	} `json:"response_format,omitempty"`
 }
@@ -77,9 +79,11 @@ func (e *RateLimitedError) Error() string {
 }
 
 type Options struct {
-	Model       string
-	Temperature float64
-	MaxTokens   int
+	Model           string
+	Temperature     float64
+	MaxTokens       int
+	ReasoningEffort string
+	ReasoningFormat string
 	// JSONMode asks Groq for a JSON object response.
 	JSONMode bool
 	// MaxRetryWait caps how long a single 429 retry may wait; 0 disables
@@ -115,10 +119,12 @@ func asRateLimited(err error, target **RateLimitedError) bool {
 
 func (c *Client) completeOnce(ctx context.Context, messages []Message, opts Options) (string, error) {
 	reqBody := ChatRequest{
-		Model:       opts.Model,
-		Messages:    messages,
-		Temperature: opts.Temperature,
-		MaxTokens:   opts.MaxTokens,
+		Model:           opts.Model,
+		Messages:        messages,
+		Temperature:     opts.Temperature,
+		MaxTokens:       opts.MaxTokens,
+		ReasoningEffort: opts.ReasoningEffort,
+		ReasoningFormat: opts.ReasoningFormat,
 	}
 	if opts.JSONMode {
 		reqBody.ResponseFormat = &struct {

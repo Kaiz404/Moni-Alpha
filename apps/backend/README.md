@@ -10,7 +10,7 @@ All `/v1` routes require `Authorization: Bearer <supabase-user-jwt>`.
 | ------ | -------------------------- | ------------------------------------------------ | ----------------------------------------------------------- |
 | GET    | `/healthz`                 | Liveness (no auth)                               | —                                                           |
 | POST   | `/v1/extract/text`         | Transaction from free text                       | `llama-3.1-8b-instant` (fallback `llama-3.3-70b-versatile`) |
-| POST   | `/v1/extract/image`        | Transaction from receipt image (base64 or URL)   | `meta-llama/llama-4-scout-17b-16e-instruct`                 |
+| POST   | `/v1/extract/image`        | Transaction from receipt image (base64 or URL)   | `qwen/qwen3.6-27b`                                         |
 | POST   | `/v1/extract/notification` | Transaction from Android notification            | `llama-3.1-8b-instant`                                      |
 | POST   | `/v1/chat/analyze`         | Concise finance Q&A from pre-aggregated snapshot | `llama-3.3-70b-versatile`                                   |
 

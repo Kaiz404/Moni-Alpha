@@ -64,6 +64,42 @@ func TestCompleteJSON(t *testing.T) {
 	}
 }
 
+func TestCompleteJSONSendsQwenReasoningOptions(t *testing.T) {
+	var received ChatRequest
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if err := json.NewDecoder(r.Body).Decode(&received); err != nil {
+			t.Fatalf("decode request: %v", err)
+		}
+		json.NewEncoder(w).Encode(map[string]any{
+			"choices": []map[string]any{{"message": map[string]any{"content": `{"amount": 12.5}`}}},
+		})
+	}))
+	defer srv.Close()
+
+	client := NewClient("test-key", srv.URL)
+	var out struct {
+		Amount float64 `json:"amount"`
+	}
+	err := client.CompleteJSON(context.Background(),
+		[]Message{{Role: "user", Content: "Return JSON."}},
+		Options{
+			Model:           ModelVision,
+			ReasoningEffort: "none",
+			ReasoningFormat: "hidden",
+		},
+		&out,
+	)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if received.ReasoningEffort != "none" || received.ReasoningFormat != "hidden" {
+		t.Fatalf("missing Qwen reasoning options: %+v", received)
+	}
+	if received.ResponseFormat == nil || received.ResponseFormat.Type != "json_object" {
+		t.Fatalf("expected JSON object response format: %+v", received.ResponseFormat)
+	}
+}
+
 func TestRateLimitedNoRetryWindow(t *testing.T) {
 	srv := fakeGroq(t, "", http.StatusTooManyRequests)
 	defer srv.Close()

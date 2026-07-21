@@ -82,11 +82,11 @@ Auth: `Authorization: Bearer <supabase-user-jwt>`, verified via JWKS (ES256). Er
 | Flow                       | Endpoint                   | Model                                                      | Why                                                                                                       |
 | -------------------------- | -------------------------- | ---------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
 | Text extraction (live)     | `/v1/extract/text`         | `llama-3.1-8b-instant`, fallback `llama-3.3-70b-versatile` | Fastest inference + highest free/dev-tier request ceiling (14.4K RPD); fallback covers unparseable output |
-| Receipt images (live)      | `/v1/extract/image`        | `meta-llama/llama-4-scout-17b-16e-instruct`                | Groq's vision model; 30K TPM absorbs image-token cost                                                     |
+| Receipt images (live)      | `/v1/extract/image`        | `qwen/qwen3.6-27b`                                         | Vision + OCR with JSON mode; 8K TPM / 200K TPD on Groq Free                                               |
 | Notifications (background) | `/v1/extract/notification` | `llama-3.1-8b-instant`                                     | Cheap + efficient; latency doesn't matter, honors long 429 retry waits                                    |
 | Chat finance analysis      | `/v1/chat/analyze`         | `llama-3.3-70b-versatile`                                  | Concise prose; snapshot context keeps tokens bounded                                                      |
 
-All calls use Groq's OpenAI-compatible endpoint with `response_format: json_object`, temperature ≤ 0.4, and Go-side JSON validation (`groq.CompleteJSON` strips fences and rejects malformed output).
+All calls use Groq's OpenAI-compatible endpoint with `response_format: json_object` and Go-side JSON validation (`groq.CompleteJSON` strips fences and rejects malformed output). Qwen receipt calls disable reasoning, use hidden reasoning format, and put their instructions in the user message so JSON mode remains reliable.
 
 ### Rate limits and cost (Groq Developer tier, ~1000 users)
 
