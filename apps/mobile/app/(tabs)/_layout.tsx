@@ -2,9 +2,9 @@ import { Tabs } from 'expo-router';
 import React from 'react';
 import { View } from 'react-native';
 
-import { IconSymbol } from '@/components/ui/icon-symbol';
 import { SyncStatusIndicator } from '@/components/providers/sync-status-indicator';
 import { TabBar } from '@/components/nav/tab-bar';
+import { TabBarIcon } from '@/components/nav/tab-bar-icon';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 
 export default function TabLayout() {
@@ -28,11 +28,12 @@ export default function TabLayout() {
         name="index"
         options={{
           title: 'Home',
-          tabBarIcon: ({ color }) => (
-            <IconSymbol
-              size={28}
-              name="credit-card"
+          tabBarIcon: ({ color, focused }) => (
+            <TabBarIcon
               color={color}
+              focused={focused}
+              outline="credit-card-outline"
+              filled="credit-card"
             />
           ),
         }}
@@ -41,11 +42,12 @@ export default function TabLayout() {
         name="summary"
         options={{
           title: 'Insights',
-          tabBarIcon: ({ color }) => (
-            <IconSymbol
-              size={28}
-              name="chart-bar"
+          tabBarIcon: ({ color, focused }) => (
+            <TabBarIcon
               color={color}
+              focused={focused}
+              outline="chart-box-outline"
+              filled="chart-box"
             />
           ),
         }}
@@ -54,11 +56,12 @@ export default function TabLayout() {
         name="chat"
         options={{
           title: 'Chat',
-          tabBarIcon: ({ color }) => (
-            <IconSymbol
-              size={28}
-              name="chat-outline"
+          tabBarIcon: ({ color, focused }) => (
+            <TabBarIcon
               color={color}
+              focused={focused}
+              outline="chat-outline"
+              filled="chat"
             />
           ),
           tabBarHideOnKeyboard: true,
@@ -68,11 +71,12 @@ export default function TabLayout() {
         name="profile"
         options={{
           title: 'Profile',
-          tabBarIcon: ({ color }) => (
-            <IconSymbol
-              size={28}
-              name="account"
+          tabBarIcon: ({ color, focused }) => (
+            <TabBarIcon
               color={color}
+              focused={focused}
+              outline="account-outline"
+              filled="account"
             />
           ),
         }}

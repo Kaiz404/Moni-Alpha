@@ -199,8 +199,9 @@ export default function ChatScreen() {
     [sessionCallbacks],
   );
 
-  // The custom tab bar already reserves the system bottom inset.
-  const bottomPad = 12;
+  // The custom tab bar already reserves the system bottom inset; this extra
+  // space keeps composer controls comfortably clear of the lowered FAB.
+  const bottomPad = 20;
 
   return (
     <KeyboardAvoidingView

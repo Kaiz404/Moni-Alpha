@@ -13,10 +13,13 @@ import type {
   ParamListBase,
 } from 'expo-router/react-navigation';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
-import { CaptureButton } from '@/components/nav/capture-button';
+import {
+  CAPTURE_FAB_LAYOUT,
+  CaptureButton,
+} from '@/components/nav/capture-button';
 
-/** Matches `CaptureButton` width (`h-16 w-16`) so side tabs clear the FAB. */
-const CAPTURE_BUTTON_SLOT_WIDTH = 64;
+/** Matches `CaptureButton` width so side tabs clear the FAB. */
+const CAPTURE_BUTTON_SLOT_WIDTH = CAPTURE_FAB_LAYOUT.size;
 
 /**
  * Custom tab bar so a floating capture button can sit above the bar between
