@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { categoryIconSchema } from './category';
 
 // Analytics time period enum
 export const analyticsPeriodSchema = z.enum(['day', 'week', 'month', 'quarter', 'year', 'all']);
@@ -34,7 +35,7 @@ export const overviewStatsSchema = z.object({
 export const categorySpendingSchema = z.object({
   categoryId: z.string().uuid(),
   categoryName: z.string(),
-  categoryIcon: z.string(),
+  categoryIcon: categoryIconSchema,
   categoryColor: z.string(),
   amount: z.number(),
   percentage: z.number(),

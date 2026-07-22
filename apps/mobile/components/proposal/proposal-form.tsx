@@ -17,6 +17,7 @@ import {
 import { AiReasoningSection } from '@/components/proposal/ai-reasoning-section';
 import { FieldRow } from '@/components/proposal/field-row';
 import { ProposalLocationSection } from '@/components/proposal/proposal-location-section';
+import { CategoryIcon } from '@/components/categories/category-icon';
 import { chipClass, chipTextClass } from '@/components/ui/chip';
 import { Surface } from '@/components/ui/surface';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
@@ -419,13 +420,24 @@ export function ProposalForm({
               }}
               activeOpacity={0.7}
             >
-              <Text
-                className={`text-sm ${selectedCategory ? 'text-foreground' : 'text-muted'}`}
-              >
-                {selectedCategory
-                  ? `${selectedCategory.icon ?? '•'} ${selectedCategory.name}`
-                  : (proposal.categoryHint ?? 'Select category...')}
-              </Text>
+              <View className="flex-row items-center">
+                {selectedCategory ? (
+                  <View className="mr-2">
+                    <CategoryIcon
+                      color={tokens.primary}
+                      icon={selectedCategory.icon}
+                      size={16}
+                    />
+                  </View>
+                ) : null}
+                <Text
+                  className={`text-sm ${selectedCategory ? 'text-foreground' : 'text-muted'}`}
+                >
+                  {selectedCategory?.name ??
+                    proposal.categoryHint ??
+                    'Select category...'}
+                </Text>
+              </View>
               <Text className="ml-2 text-xs text-muted">▼</Text>
             </TouchableOpacity>
           </FieldRow>
@@ -450,9 +462,18 @@ export function ProposalForm({
                       setShowCategoryPicker(false);
                     }}
                   >
-                    <Text className="text-sm font-medium text-foreground">
-                      {category.icon ?? '•'} {category.name}
-                    </Text>
+                    <View className="flex-row items-center">
+                      <View className="mr-2">
+                        <CategoryIcon
+                          color={tokens.primary}
+                          icon={category.icon}
+                          size={17}
+                        />
+                      </View>
+                      <Text className="text-sm font-medium text-foreground">
+                        {category.name}
+                      </Text>
+                    </View>
                   </Pressable>
                 ))
               )}
@@ -466,7 +487,9 @@ export function ProposalForm({
           <TextInput
             accessibilityLabel="Merchant"
             className={`flex-1 rounded-2xl bg-card px-3 py-3 text-right text-sm text-foreground ${
-              focusedField === 'merchant' ? 'border border-primary' : ''
+              focusedField === 'merchant'
+                ? 'border border-primary'
+                : ''
             }`}
             value={merchant}
             onChangeText={setMerchant}
@@ -482,7 +505,9 @@ export function ProposalForm({
         <TextInput
           accessibilityLabel="Description"
           className={`flex-1 rounded-2xl bg-card px-3 py-3 text-right text-sm text-foreground ${
-            focusedField === 'description' ? 'border border-primary' : ''
+            focusedField === 'description'
+              ? 'border border-primary'
+              : ''
           }`}
           value={description}
           onChangeText={setDescription}

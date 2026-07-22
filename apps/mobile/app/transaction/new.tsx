@@ -1,5 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Alert, ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import {
+  Alert,
+  ScrollView,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import type { ColorValue } from 'react-native';
 import {
   router,
@@ -10,6 +16,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { createTransactionSchema } from '@repo/types';
 
 import { BrandHeader } from '@/components/ui/brand-header';
+import { CategoryIcon } from '@/components/categories/category-icon';
 import { chipClass, chipTextClass } from '@/components/ui/chip';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { NumericKeypad } from '@/components/ui/numeric-keypad';
@@ -49,7 +56,9 @@ export default function NewTransactionScreen() {
   const { user } = useAuth();
   const insets = useSafeAreaInsets();
   const tokens = useThemeTokens();
-  const params = useLocalSearchParams<{ walletId?: string | string[] }>();
+  const params = useLocalSearchParams<{
+    walletId?: string | string[];
+  }>();
   const paramWalletId = useMemo(() => {
     const value = params.walletId;
     return Array.isArray(value) ? value[0] : value;
@@ -78,24 +87,33 @@ export default function NewTransactionScreen() {
   useEffect(() => {
     if (!user) return;
     void getWallets().then(setWallets);
-    if (type !== 'transfer') void getCategories(type).then(setCategories);
+    if (type !== 'transfer')
+      void getCategories(type).then(setCategories);
   }, [type, user]);
 
   useEffect(() => {
     if (wallets.length === 0) return;
-    if (paramWalletId && wallets.some((wallet) => wallet.id === paramWalletId)) {
+    if (
+      paramWalletId &&
+      wallets.some((wallet) => wallet.id === paramWalletId)
+    ) {
       setWalletId(paramWalletId);
     } else {
       setWalletId((current) => current || wallets[0].id);
     }
     setTransferToWalletId((current) => {
       if (current) return current;
-      return wallets.find((wallet) => wallet.id !== (paramWalletId ?? wallets[0].id))
-        ?.id ?? '';
+      return (
+        wallets.find(
+          (wallet) => wallet.id !== (paramWalletId ?? wallets[0].id),
+        )?.id ?? ''
+      );
     });
   }, [paramWalletId, wallets]);
 
-  const selectedWallet = wallets.find((wallet) => wallet.id === walletId);
+  const selectedWallet = wallets.find(
+    (wallet) => wallet.id === walletId,
+  );
   const destinationWallets = useMemo(
     () => wallets.filter((wallet) => wallet.id !== walletId),
     [walletId, wallets],
@@ -112,7 +130,10 @@ export default function NewTransactionScreen() {
   }, []);
 
   const handleOpenDetails = useCallback(() => {
-    router.push({ pathname: '/transaction/new-details', params: { type } } as never);
+    router.push({
+      pathname: '/transaction/new-details',
+      params: { type },
+    } as never);
   }, [type]);
 
   const handleSubmit = async () => {
@@ -122,7 +143,10 @@ export default function NewTransactionScreen() {
     try {
       amountMinor = parseAmountInput(amount);
     } catch {
-      Alert.alert('Enter an amount', 'Use a positive amount to continue.');
+      Alert.alert(
+        'Enter an amount',
+        'Use a positive amount to continue.',
+      );
       return;
     }
 
@@ -130,7 +154,10 @@ export default function NewTransactionScreen() {
     try {
       if (type === 'transfer') {
         if (!transferToWalletId) {
-          Alert.alert('Choose a destination', 'Select another wallet for this transfer.');
+          Alert.alert(
+            'Choose a destination',
+            'Select another wallet for this transfer.',
+          );
           return;
         }
         await createTransfer({
@@ -196,39 +223,51 @@ export default function NewTransactionScreen() {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          <Text className="text-2xl font-bold text-foreground">What changed?</Text>
+          <Text className="text-2xl font-bold text-foreground">
+            What changed?
+          </Text>
           <Text className="mt-2 text-[15px] leading-5 text-muted">
-            Add it directly. Every amount stays in the selected wallet’s
-            currency.
+            Add it directly. Every amount stays in the selected
+            wallet’s currency.
           </Text>
 
           <View className="mt-6 flex-row gap-2">
-            {(['expense', 'income', 'transfer'] as const).map((option) => {
-              const selected = type === option;
-              return (
-                <TouchableOpacity
-                  key={option}
-                  accessibilityRole="button"
-                  accessibilityState={{ selected }}
-                  activeOpacity={0.82}
-                  className={`${chipClass(selected)} min-h-12 flex-1 items-center justify-center px-2`}
-                  onPress={() => setType(option)}
-                >
-                  <Text className={`text-sm font-semibold ${chipTextClass(selected)}`}>
-                    {transactionCopy[option]}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
+            {(['expense', 'income', 'transfer'] as const).map(
+              (option) => {
+                const selected = type === option;
+                return (
+                  <TouchableOpacity
+                    key={option}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected }}
+                    activeOpacity={0.82}
+                    className={`${chipClass(selected)} min-h-12 flex-1 items-center justify-center px-2`}
+                    onPress={() => setType(option)}
+                  >
+                    <Text
+                      className={`text-sm font-semibold ${chipTextClass(selected)}`}
+                    >
+                      {transactionCopy[option]}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              },
+            )}
           </View>
 
-          <Surface tone="raised" className="mt-6 items-center px-5 pb-5 pt-6">
-            <Text className="text-sm font-semibold text-muted">Amount</Text>
+          <Surface
+            tone="raised"
+            className="mt-6 items-center px-5 pb-5 pt-6"
+          >
+            <Text className="text-sm font-semibold text-muted">
+              Amount
+            </Text>
             <Text className="mt-2 text-center text-5xl font-bold text-foreground">
               {amount || '0'}
             </Text>
             <Text className="mt-2 text-sm font-semibold text-primary">
-              {selectedWallet?.currency?.toUpperCase() ?? 'Choose a wallet'}
+              {selectedWallet?.currency?.toUpperCase() ??
+                'Choose a wallet'}
             </Text>
             <View className="mt-6 flex-row flex-wrap justify-center gap-2">
               {QUICK_AMOUNTS.map((quickAmount) => (
@@ -255,11 +294,16 @@ export default function NewTransactionScreen() {
             {type === 'transfer' ? 'From wallet' : 'Paid from'}
           </Text>
           {wallets.length === 0 ? (
-            <Surface tone="muted" className="p-4">
-              <Text className="font-semibold text-foreground">No wallet yet</Text>
+            <Surface
+              tone="muted"
+              className="p-4"
+            >
+              <Text className="font-semibold text-foreground">
+                No wallet yet
+              </Text>
               <Text className="mt-1 text-sm leading-5 text-muted">
-                Add a wallet first so Moni can keep this transaction in the
-                right currency.
+                Add a wallet first so Moni can keep this transaction
+                in the right currency.
               </Text>
             </Surface>
           ) : (
@@ -285,7 +329,10 @@ export default function NewTransactionScreen() {
                         size={16}
                         type={wallet.type}
                       />
-                      <Text className={`text-sm ${chipTextClass(selected)}`} numberOfLines={1}>
+                      <Text
+                        className={`text-sm ${chipTextClass(selected)}`}
+                        numberOfLines={1}
+                      >
                         {wallet.name} · {wallet.currency}
                       </Text>
                     </View>
@@ -322,7 +369,10 @@ export default function NewTransactionScreen() {
                           size={16}
                           type={wallet.type}
                         />
-                        <Text className={`text-sm ${chipTextClass(selected)}`} numberOfLines={1}>
+                        <Text
+                          className={`text-sm ${chipTextClass(selected)}`}
+                          numberOfLines={1}
+                        >
                           {wallet.name} · {wallet.currency}
                         </Text>
                       </View>
@@ -331,8 +381,8 @@ export default function NewTransactionScreen() {
                 })}
               </View>
               <Text className="mt-3 text-sm leading-5 text-muted">
-                Transfers move money between wallets without changing your
-                overall net worth.
+                Transfers move money between wallets without changing
+                your overall net worth.
               </Text>
             </>
           ) : (
@@ -352,16 +402,31 @@ export default function NewTransactionScreen() {
                       className={`${chipClass(selected)} min-h-11 justify-center px-3`}
                       onPress={() => setCategoryId(category.id)}
                     >
-                      <Text className={`text-sm ${chipTextClass(selected)}`} numberOfLines={1}>
-                        {category.icon} {category.name}
-                      </Text>
+                      <View className="flex-row items-center gap-1.5">
+                        <CategoryIcon
+                          color={
+                            selected
+                              ? tokens.primary
+                              : (category.color ?? tokens.foreground)
+                          }
+                          icon={category.icon}
+                          size={16}
+                        />
+                        <Text
+                          className={`text-sm ${chipTextClass(selected)}`}
+                          numberOfLines={1}
+                        >
+                          {category.name}
+                        </Text>
+                      </View>
                     </TouchableOpacity>
                   );
                 })}
               </View>
               {categories.length === 0 ? (
                 <Text className="mt-2 text-sm text-muted">
-                  No categories are available for this transaction type.
+                  No categories are available for this transaction
+                  type.
                 </Text>
               ) : null}
             </>
@@ -375,18 +440,28 @@ export default function NewTransactionScreen() {
           >
             <View className="flex-1 flex-row items-center gap-3 pr-3">
               <View className="h-10 w-10 items-center justify-center rounded-full bg-primary-muted">
-                <IconSymbol color={tokens.primary} name="tune" size={20} />
+                <IconSymbol
+                  color={tokens.primary}
+                  name="tune"
+                  size={20}
+                />
               </View>
               <View className="flex-1">
                 <Text className="text-[15px] font-semibold text-foreground">
-                  {detailsAdded ? 'More details added' : 'Add details'}
+                  {detailsAdded
+                    ? 'More details added'
+                    : 'Add details'}
                 </Text>
                 <Text className="mt-1 text-sm text-muted">
                   Merchant, notes, and current location.
                 </Text>
               </View>
             </View>
-            <IconSymbol color={tokens.muted} name="chevron-right" size={22} />
+            <IconSymbol
+              color={tokens.muted}
+              name="chevron-right"
+              size={22}
+            />
           </TouchableOpacity>
         </ScrollView>
 

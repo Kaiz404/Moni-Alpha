@@ -80,7 +80,7 @@ export function CurrencyPickerHeader({
   const tokens = useThemeTokens();
 
   return (
-    <View className='px-4'>
+    <View className=''>
       <View className="mb-4 flex-row items-center justify-between gap-3">
         <Text className="flex-1 text-[22px] font-bold text-foreground">
           Choose currency

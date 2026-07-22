@@ -1,11 +1,10 @@
 import { Stack } from 'expo-router';
 
-export default function BudgetLayout() {
+export default function CategoriesLayout() {
   return (
     <Stack
       screenOptions={{
         headerShown: false,
-        contentStyle: { flex: 1 },
         animation: 'slide_from_right',
       }}
     >

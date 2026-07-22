@@ -219,6 +219,14 @@ export default function ProfileScreen() {
           <ProfileSectionTitle>Money setup</ProfileSectionTitle>
           <SettingsGroup>
             <SettingsRow
+              icon="shape-outline"
+              iconBgClassName="bg-accent-lilac/30"
+              iconColor={tokens.accents.lilac}
+              title="Categories"
+              subtitle="Preset and custom income and expense categories"
+              onPress={() => router.push('/categories' as any)}
+            />
+            <SettingsRow
               icon="wallet"
               iconBgClassName="bg-primary-muted"
               iconColor={tokens.primary}

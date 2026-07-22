@@ -1,5 +1,12 @@
+import { randomUUID } from 'expo-crypto';
+import {
+  createCategorySchema,
+  updateCategorySchema,
+  type CreateCategory,
+  type UpdateCategory,
+} from '@repo/types';
 import { categories$ } from '@/lib/store';
-import { getRecordValues, isActive } from '@/lib/store/helpers';
+import { getRecordValues, isActive, patchRow } from '@/lib/store/helpers';
 import { getUserId } from '@/lib/supabase/client';
 
 type CategoryRow = {
@@ -8,7 +15,6 @@ type CategoryRow = {
   name: string | null;
   icon: string | null;
   color: string | null;
-  parent_id: string | null;
   type: string | null;
   is_active: boolean | number | null;
   display_order: number | null;
@@ -24,7 +30,6 @@ function mapCategoryRow(c: CategoryRow) {
     name: c.name,
     icon: c.icon,
     color: c.color,
-    parentId: c.parent_id,
     type: c.type,
     isActive: isActive(c.is_active),
     displayOrder: c.display_order,
@@ -33,8 +38,10 @@ function mapCategoryRow(c: CategoryRow) {
   };
 }
 
-function getAllCategoryRows(userId: string | null): CategoryRow[] {
-  const merged = getRecordValues<CategoryRow>(categories$).filter((c) => isActive(c.is_active));
+function getAllCategoryRows(userId: string | null, includeArchived = false): CategoryRow[] {
+  const merged = getRecordValues<CategoryRow>(categories$).filter(
+    (c) => includeArchived || isActive(c.is_active),
+  );
 
   if (!userId) {
     return merged.filter((c) => c.user_id === null);
@@ -60,8 +67,67 @@ export async function getCategories(type?: 'income' | 'expense') {
   return categories.map(mapCategoryRow);
 }
 
+export async function createCategory(input: CreateCategory) {
+  const userId = await getUserId();
+  if (!userId) throw new Error('Not authenticated');
+  const category = createCategorySchema.parse(input);
+  const current = getAllCategoryRows(userId, true);
+  const duplicate = current.some(
+    (row) =>
+      isActive(row.is_active) &&
+      row.type === category.type &&
+      row.name?.trim().toLocaleLowerCase() === category.name.toLocaleLowerCase() &&
+      (row.user_id === null || row.user_id === userId),
+  );
+  if (duplicate) throw new Error('An active category with this name already exists.');
+
+  const displayOrder =
+    Math.max(
+      100,
+      ...current
+        .filter((row) => row.user_id === userId && row.type === category.type)
+        .map((row) => row.display_order ?? 0),
+    ) + 1;
+  const id = randomUUID();
+  categories$[id].set({
+    id,
+    user_id: userId,
+    name: category.name,
+    icon: category.icon,
+    color: category.color,
+    type: category.type,
+    is_active: true,
+    display_order: displayOrder,
+    deleted: false,
+  });
+  return id;
+}
+
+export async function updateCategory(categoryId: string, input: UpdateCategory): Promise<void> {
+  const userId = await getUserId();
+  if (!userId) throw new Error('Not authenticated');
+  const update = updateCategorySchema.parse(input);
+  const row = getRecordValues<CategoryRow>(categories$).find((item) => item.id === categoryId);
+  if (!row || row.user_id !== userId) throw new Error('Only custom categories can be changed.');
+  patchRow(categories$, categoryId, {
+    ...(update.name === undefined ? {} : { name: update.name }),
+    ...(update.icon === undefined ? {} : { icon: update.icon }),
+    ...(update.color === undefined ? {} : { color: update.color }),
+    ...(update.isActive === undefined ? {} : { is_active: update.isActive }),
+    updated_at: new Date().toISOString(),
+  });
+}
+
+export async function archiveCategory(categoryId: string): Promise<void> {
+  await updateCategory(categoryId, { isActive: false });
+}
+
+export async function restoreCategory(categoryId: string): Promise<void> {
+  await updateCategory(categoryId, { isActive: true });
+}
+
 /** Minimal category rows for name maps in list/chart screens. */
-export async function getCategoryNameRows(): Promise<Array<{ id: string; name: string | null }>> {
+export async function getCategoryNameRows(): Promise<{ id: string; name: string | null }[]> {
   const userId = await getUserId();
   return getAllCategoryRows(userId).map((c) => ({
     id: c.id,
@@ -71,7 +137,7 @@ export async function getCategoryNameRows(): Promise<Array<{ id: string; name: s
 
 /** Expense categories (system + user) for budget screens. */
 export async function getExpenseCategoriesForBudgets(): Promise<
-  Array<{ id: string; name: string; color: string | null }>
+  { id: string; name: string; color: string | null }[]
 > {
   const userId = await getUserId();
   if (!userId) return [];

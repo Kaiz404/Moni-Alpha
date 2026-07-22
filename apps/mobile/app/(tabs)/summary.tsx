@@ -12,7 +12,7 @@ import { useValue } from '@legendapp/state/react';
 import { MaterialDesignIcons } from '@react-native-vector-icons/material-design-icons';
 
 import { ActivityCalendar } from '@/components/charts/activity-calendar';
-import { BudgetProgressBar } from '@/components/charts/budget-progress-bar';
+import { BudgetProgressItem } from '@/components/budgets/budget-progress-item';
 import {
   buildMonthlyTakeaway,
   previousMonthKey,
@@ -536,67 +536,20 @@ export default function InsightsScreen() {
                   {selectedBudgetRows.map((row) => {
                     const rowKey = `${row.categoryId}:${row.currency}`;
                     const expanded = selectedBudget === rowKey;
-                    const accent =
-                      row.status === 'over'
-                        ? tokens.danger
-                        : (row.categoryColor ?? tokens.primary);
-                    const context =
-                      row.budgetAmountMinor === null
-                        ? 'No cap set'
-                        : `${formatMinorAmount(row.spentMinor, currencyText(currency))} of ${formatMinorAmount(row.budgetAmountMinor, currencyText(currency))} used`;
                     return (
                       <Pressable
                         key={rowKey}
-                        className="py-4"
                         onPress={() =>
                           setSelectedBudget(expanded ? null : rowKey)
                         }
                         accessibilityRole="button"
                         accessibilityState={{ expanded }}
                       >
-                        <View className="flex-row items-center justify-between">
-                          <View className="min-w-0 flex-1 flex-row items-center pr-3">
-                            <View
-                              className="mr-2 h-9 w-9 items-center justify-center rounded-full"
-                              style={{
-                                backgroundColor: `${accent}22`,
-                              }}
-                            >
-                              <Text className="text-base">
-                                {row.categoryIcon ?? '•'}
-                              </Text>
-                            </View>
-                            <View className="min-w-0 flex-1">
-                              <Text
-                                className="text-base font-semibold text-foreground"
-                                numberOfLines={1}
-                              >
-                                {row.categoryName}
-                              </Text>
-                              <Text className="mt-0.5 text-xs text-muted">
-                                {context}
-                              </Text>
-                            </View>
-                          </View>
-                          <Text className="text-sm font-bold text-foreground">
-                            {row.percentage === null
-                              ? '—'
-                              : `${row.percentage}%`}
-                          </Text>
-                        </View>
-                        {expanded ? (
-                          <View className="mt-4">
-                            <BudgetProgressBar
-                              percentage={row.percentage}
-                              color={accent}
-                              label={
-                                row.remainingMinor === null
-                                  ? 'Set a monthly cap to track remaining budget.'
-                                  : row.remainingMinor < 0
-                                    ? `${formatMinorAmount(Math.abs(Number(row.remainingMinor)), currencyText(currency))} over budget`
-                                    : `${formatMinorAmount(row.remainingMinor, currencyText(currency))} remaining`
-                              }
-                            />
+                        <BudgetProgressItem
+                          budget={row}
+                          padded={false}
+                        >
+                          {expanded ? (
                             <Pressable
                               className="mt-3 self-start"
                               onPress={() =>
@@ -614,8 +567,8 @@ export default function InsightsScreen() {
                                 View transactions
                               </Text>
                             </Pressable>
-                          </View>
-                        ) : null}
+                          ) : null}
+                        </BudgetProgressItem>
                       </Pressable>
                     );
                   })}

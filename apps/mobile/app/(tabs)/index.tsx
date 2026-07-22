@@ -11,7 +11,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useValue } from '@legendapp/state/react';
 import { MaterialDesignIcons } from '@react-native-vector-icons/material-design-icons';
 
-import { BudgetProgressBar } from '@/components/charts/budget-progress-bar';
+import { BudgetProgressItem } from '@/components/budgets/budget-progress-item';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { SolidWalletCard } from '@/components/ui/solid-wallet-card';
 import { Surface } from '@/components/ui/surface';
@@ -336,14 +336,10 @@ export default function HomeScreen() {
               className="overflow-hidden"
             >
               {visibleBudgets.map((budget, index) => {
-                const accent =
-                  budget.status === 'over'
-                    ? tokens.danger
-                    : (budget.categoryColor ?? tokens.primary);
                 return (
                   <Pressable
                     key={`${budget.categoryId}:${budget.currency}`}
-                    className={`px-4 py-4 ${index ? 'border-t border-border' : ''}`}
+                    className={index ? 'border-t border-border' : ''}
                     onPress={() =>
                       router.push({
                         pathname: '/transaction',
@@ -355,49 +351,7 @@ export default function HomeScreen() {
                       } as any)
                     }
                   >
-                    <View className="flex-row items-center justify-between">
-                      <View className="min-w-0 flex-1 flex-row items-center pr-3">
-                        <View
-                          className="mr-2 h-9 w-9 items-center justify-center rounded-full"
-                          style={{ backgroundColor: `${accent}22` }}
-                        >
-                          <Text className="text-base">
-                            {budget.categoryIcon ?? '•'}
-                          </Text>
-                        </View>
-                        <View className="min-w-0 flex-1">
-                          <Text
-                            className="text-base font-semibold text-foreground"
-                            numberOfLines={1}
-                          >
-                            {budget.categoryName}
-                          </Text>
-                          <Text className="mt-0.5 text-xs text-muted">
-                            {budget.budgetAmountMinor === null
-                              ? 'No cap set'
-                              : `${formatMinorAmount(budget.spentMinor, budget.currency)} of ${formatMinorAmount(budget.budgetAmountMinor, budget.currency)} used`}
-                          </Text>
-                        </View>
-                      </View>
-                      <Text className="text-sm font-bold text-foreground">
-                        {budget.percentage === null
-                          ? '—'
-                          : `${budget.percentage}%`}
-                      </Text>
-                    </View>
-                    <View className="mt-3">
-                      <BudgetProgressBar
-                        percentage={budget.percentage}
-                        color={accent}
-                        label={
-                          budget.remainingMinor === null
-                            ? 'Set a cap to track remaining spending.'
-                            : budget.remainingMinor < 0
-                              ? `${formatMinorAmount(Math.abs(Number(budget.remainingMinor)), budget.currency)} over budget`
-                              : `${formatMinorAmount(budget.remainingMinor, budget.currency)} remaining`
-                        }
-                      />
-                    </View>
+                    <BudgetProgressItem budget={budget} />
                   </Pressable>
                 );
               })}

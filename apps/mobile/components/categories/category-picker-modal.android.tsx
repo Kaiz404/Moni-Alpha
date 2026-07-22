@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useRef } from 'react';
 import { Modal, useWindowDimensions } from 'react-native';
 import {
   Column,
@@ -13,31 +13,32 @@ import {
   weight,
 } from '@expo/ui/jetpack-compose/modifiers';
 
-import { CurrencyPickerContent } from '@/components/finance/currency-picker-content';
+import { CategoryPickerContent } from './category-picker-content';
+import type { CategoryPickerItem } from './category-picker-modal';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 
-type CurrencyPickerModalProps = {
+type CategoryPickerModalProps = {
   visible: boolean;
-  selectedCode: string;
-  onSelect: (code: string) => void;
+  categories: CategoryPickerItem[];
+  suggested?: CategoryPickerItem[];
+  selectedId?: string | null;
+  title?: string;
+  onSelect: (category: CategoryPickerItem) => void;
   onClose: () => void;
+  onCreate?: () => void;
 };
 
-/** Android-native Expo UI sheet, consistent with the wallet pickers. */
-export function CurrencyPickerModal({
+/** Android-native Expo UI bottom sheet, matching the wallet pickers. */
+export function CategoryPickerModal({
   visible,
-  selectedCode,
-  onSelect,
   onClose,
-}: CurrencyPickerModalProps) {
+  ...props
+}: CategoryPickerModalProps) {
   const tokens = useThemeTokens();
   const { height: windowHeight } = useWindowDimensions();
   const sheetRef = useRef<ModalBottomSheetRef>(null);
-  const [query, setQuery] = useState('');
-
   const dismiss = useCallback(async () => {
     await sheetRef.current?.hide();
-    setQuery('');
     onClose();
   }, [onClose]);
 
@@ -68,12 +69,9 @@ export function CurrencyPickerModal({
               ]}
             >
               <RNHostView modifiers={[weight(1)]}>
-                <CurrencyPickerContent
+                <CategoryPickerContent
+                  {...props}
                   onClose={() => void dismiss()}
-                  onSelect={(option) => onSelect(option.code)}
-                  query={query}
-                  selectedCode={selectedCode}
-                  setQuery={setQuery}
                 />
               </RNHostView>
             </Column>

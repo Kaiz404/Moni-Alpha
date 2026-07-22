@@ -74,13 +74,11 @@ CREATE TABLE categories (
   name TEXT NOT NULL,
   icon TEXT NOT NULL,
   color TEXT NOT NULL,
-  parent_id UUID REFERENCES categories(id) ON DELETE SET NULL,
   type category_type NOT NULL,
   is_active BOOLEAN NOT NULL DEFAULT TRUE,
   display_order INTEGER NOT NULL DEFAULT 0,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  CONSTRAINT check_parent_not_self CHECK (parent_id != id)
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 -- Tags table
@@ -159,7 +157,6 @@ CREATE INDEX idx_wallets_updated_at ON wallets(updated_at DESC);
 
 -- Categories indexes
 CREATE INDEX idx_categories_user_id ON categories(user_id);
-CREATE INDEX idx_categories_parent_id ON categories(parent_id);
 CREATE INDEX idx_categories_type ON categories(type);
 CREATE INDEX idx_categories_user_type_active ON categories(user_id, type, is_active) WHERE is_active = TRUE;
 
@@ -339,27 +336,27 @@ GROUP BY w.id;
 
 -- Expense categories
 INSERT INTO categories (user_id, name, icon, color, type, display_order) VALUES
-(NULL, 'Food & Dining', '🍔', '#FF6B6B', 'expense', 1),
-(NULL, 'Transportation', '🚗', '#4ECDC4', 'expense', 2),
-(NULL, 'Housing', '🏠', '#45B7D1', 'expense', 3),
-(NULL, 'Entertainment', '🎬', '#FFA07A', 'expense', 4),
-(NULL, 'Shopping', '🛍️', '#DDA15E', 'expense', 5),
-(NULL, 'Healthcare', '🏥', '#BC6C25', 'expense', 6),
-(NULL, 'Work', '💼', '#606C38', 'expense', 7),
-(NULL, 'Education', '🎓', '#283618', 'expense', 8),
-(NULL, 'Travel', '✈️', '#6C757D', 'expense', 9),
-(NULL, 'Subscriptions', '📱', '#495057', 'expense', 10),
-(NULL, 'Gifts & Donations', '🎁', '#E63946', 'expense', 11),
-(NULL, 'Fees & Charges', '💳', '#F4A261', 'expense', 12),
-(NULL, 'Other Expenses', '📦', '#2A9D8F', 'expense', 13);
+(NULL, 'Food & Dining', 'silverware-fork-knife', '#F3B6B2', 'expense', 1),
+(NULL, 'Transportation', 'car', '#9FD8D5', 'expense', 2),
+(NULL, 'Housing', 'home-variant', '#B7D5F0', 'expense', 3),
+(NULL, 'Entertainment', 'movie-open', '#F5C397', 'expense', 4),
+(NULL, 'Shopping', 'shopping', '#E8C8A9', 'expense', 5),
+(NULL, 'Healthcare', 'heart-pulse', '#E9BCA8', 'expense', 6),
+(NULL, 'Work', 'briefcase', '#CAD5A5', 'expense', 7),
+(NULL, 'Education', 'school', '#B5CBA0', 'expense', 8),
+(NULL, 'Travel', 'airplane', '#B7C2D3', 'expense', 9),
+(NULL, 'Subscriptions', 'cellphone', '#BFC9D6', 'expense', 10),
+(NULL, 'Gifts & Donations', 'gift-outline', '#F4B7C1', 'expense', 11),
+(NULL, 'Fees & Charges', 'credit-card-outline', '#F1D0A9', 'expense', 12),
+(NULL, 'Other Expenses', 'package-variant', '#AAD8C6', 'expense', 13);
 
 -- Income categories
 INSERT INTO categories (user_id, name, icon, color, type, display_order) VALUES
-(NULL, 'Salary', '💰', '#06D6A0', 'income', 1),
-(NULL, 'Freelance', '💼', '#118AB2', 'income', 2),
-(NULL, 'Investment', '📈', '#073B4C', 'income', 3),
-(NULL, 'Gifts', '🎁', '#EF476F', 'income', 4),
-(NULL, 'Other Income', '💵', '#FFD166', 'income', 5);
+(NULL, 'Salary', 'cash', '#A8D6A0', 'income', 1),
+(NULL, 'Freelance', 'laptop', '#A6D8F0', 'income', 2),
+(NULL, 'Investment', 'chart-line', '#AEC5F5', 'income', 3),
+(NULL, 'Gifts', 'gift-outline', '#E4B1E4', 'income', 4),
+(NULL, 'Other Income', 'cash-plus', '#EAD978', 'income', 5);
 
 -- ============================================
 -- Comments

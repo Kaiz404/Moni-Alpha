@@ -277,7 +277,7 @@ Semantic colors communicate state, not moral judgment.
 
 ### 6.3 Category colors
 
-Each category gets one stable color and icon. Do not reassign colors per chart. Category hue may appear in a 12–16% tint for rows and cards, 100% saturation for chart segments, and a deep accessible companion for text/icon use.
+Each category gets one stable Material Design icon and pastel color. Do not use emoji or reassign colors per chart. Category hue may appear in a 12–16% tint for rows and cards, 100% saturation for chart segments, and a deep accessible companion for text/icon use. Preset pairs are fixed; custom categories select only from the curated icon and pastel grids.
 
 If two categories share nearby hues, differentiate them with icon silhouette and/or chart pattern in accessibility modes. Never use color alone to encode a debt direction, budget warning, or approval state.
 
@@ -347,9 +347,10 @@ Never mimic real payment cards unless users need a real card identifier. The vis
 
 ### 7.5 Budget pulse and category progress
 
-- A category row displays icon, name, used amount, remaining amount, and a clear progress treatment.
+- A category row displays its icon, name, a right-aligned percentage, and a clear progress treatment. Keep any remaining amount as supporting text below the track when needed.
 - On select, expand or navigate to a detail that states: “$186 of $300 used · 62%.” This follows the board’s desired category-percentage insight.
 - Use a progress line/ring only with its textual amount and percentage.
+- Budget progress fills retain the category color. Put the used amount at the left of the complete track and the percentage to the right of the category name; state any overage in explicit destructive text rather than recoloring the category.
 - The warning threshold is contextual; do not make the whole card red at 80% by default.
 - The progress track sits directly within its parent surface. It does not receive a separate outlined container.
 
@@ -403,7 +404,17 @@ Use one full-screen review at a time. Its visual rhythm:
 
 The background should be calm and mostly opaque. Do not place a dense modal atop an already busy Home dashboard.
 
-### 7.10 Processing state
+### 7.10 Modal pickers and sheets
+
+Use a sheet for a focused, reversible choice that preserves the form beneath it; use a dedicated page when the task has several fields or needs its own save action. There must be only one picker sheet open at a time.
+
+- Start with a concise title and an explicit close icon. On Android, native back, a swipe, or a tap outside may also dismiss the sheet when the platform permits it.
+- Repeated choices are full-width, comfortably tappable card rows: opaque `bg-card`, `rounded-2xl`, at least 56pt tall, 16pt horizontal padding, and an 8pt gap. The selected row uses `bg-primary-muted` plus a visible selected indicator.
+- A row may show a leading icon or color marker, but its text label remains the primary recognition cue. Use the same card treatment for the form control that opens the picker.
+- Selecting a value updates the form and selected state but does **not** close the sheet. Close only through the explicit close control or a native dismissal gesture/action; reset transient search state on dismissal.
+- Keep scrolling inside the sheet body. Android Expo UI sheets must give scrollable React Native content a bounded, weighted host rather than content-sized measurement.
+
+### 7.11 Processing state
 
 Processing must feel fast, transparent, and controlled.
 
@@ -412,7 +423,11 @@ Processing must feel fast, transparent, and controlled.
 - Notifications: background processing is not visually exposed until review; status lives in the queue if processing takes meaningfully long.
 - Never show fake precision (“99.7% certainty”) unless confidence changes the user’s decision.
 
-### 7.11 Charts and insights
+### Empty states
+
+For a screen with no content, render `FeedbackState` in a non-scrollable `flex-1` view centered both horizontally and vertically. Keep a scroll container only for populated content; use an in-list empty state only when the surrounding screen has meaningful content that must remain visible.
+
+### 7.12 Charts and insights
 
 Charts exist to answer a question.
 

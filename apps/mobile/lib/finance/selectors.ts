@@ -1,10 +1,9 @@
 import { computed, type Observable } from '@legendapp/state';
 import { addMinor, subtractMinor, type CurrencyCode, type MinorAmount } from '@repo/types';
+import { categories$ } from '@/lib/store';
+import { toFinanceCategory } from './adapters';
 import { monthKeyInTimezone } from './dates';
-import {
-  outstandingDebtBalanceMinor,
-  transactionDeltaMinor,
-} from './ledger';
+import { outstandingDebtBalanceMinor, transactionDeltaMinor } from './ledger';
 import { financeProjection$ } from './projection';
 import type {
   FinanceCategory,
@@ -36,6 +35,7 @@ export type BudgetProgress = {
   categoryName: string;
   categoryIcon: string | null;
   categoryColor: string | null;
+  categoryIsActive: boolean;
   currency: CurrencyCode;
   budgetAmountMinor: MinorAmount | null;
   spentMinor: MinorAmount;
@@ -57,6 +57,28 @@ export type CategoryExpense = {
 
 function values<T>(record: Record<string, T>): T[] {
   return Object.values(record);
+}
+
+/**
+ * Category selection is deliberately sourced from the synced category table,
+ * not the derived finance projection. This keeps system presets available to
+ * forms immediately after a full sync or catalogue reseed.
+ */
+function syncedCategoriesForUser(userId: string | null): FinanceCategory[] {
+  const rows = categories$.get() as Record<string, Record<string, unknown> | undefined>;
+  return Object.entries(rows)
+    .map(([key, row]) =>
+      row
+        ? toFinanceCategory({
+            ...row,
+            id: typeof row.id === 'string' ? row.id : key,
+          })
+        : null,
+    )
+    .filter(
+      (category): category is FinanceCategory =>
+        category !== null && (category.userId === null || category.userId === userId),
+    );
 }
 
 function cacheComputed<T>(
@@ -188,13 +210,13 @@ export function categoryNameMap$(userId: string | null): Observable<Record<strin
 
 const expenseCategoriesCache = new Map<
   string,
-  Observable<Array<{ id: string; name: string; icon: string | null; color: string | null }>>
+  Observable<{ id: string; name: string; icon: string | null; color: string | null }[]>
 >();
 export function expenseCategories$(
   userId: string | null,
-): Observable<Array<{ id: string; name: string; icon: string | null; color: string | null }>> {
+): Observable<{ id: string; name: string; icon: string | null; color: string | null }[]> {
   return cacheComputed(expenseCategoriesCache, userId ?? 'anonymous', () =>
-    values(financeProjection$.categoriesById.get())
+    syncedCategoriesForUser(userId)
       .filter(
         (category) =>
           category.isActive &&
@@ -211,6 +233,82 @@ export function expenseCategories$(
   );
 }
 
+const categoryListCache = new Map<
+  string,
+  Observable<
+    {
+      id: string;
+      userId: string | null;
+      name: string;
+      icon: string | null;
+      color: string | null;
+      type: 'income' | 'expense' | null;
+      isActive: boolean;
+    }[]
+  >
+>();
+
+export function categoriesForUser$(userId: string | null) {
+  return cacheComputed(categoryListCache, userId ?? 'anonymous', () =>
+    syncedCategoriesForUser(userId)
+      .sort(
+        (a, b) =>
+          a.type?.localeCompare(b.type ?? '') ||
+          a.displayOrder - b.displayOrder ||
+          a.name.localeCompare(b.name),
+      )
+      .map((category) => ({
+        id: category.id,
+        userId: category.userId,
+        name: category.name,
+        icon: category.icon,
+        color: category.color,
+        type: category.type,
+        isActive: category.isActive,
+      })),
+  );
+}
+
+const recentExpenseCategoriesCache = new Map<
+  string,
+  Observable<
+    {
+      id: string;
+      name: string;
+      icon: string | null;
+      color: string | null;
+    }[]
+  >
+>();
+
+/** Four most recently used active expense categories for the lightweight budget form. */
+export function recentExpenseCategories$(userId: string | null) {
+  return cacheComputed(recentExpenseCategoriesCache, userId ?? 'anonymous', () => {
+    const categories = Object.fromEntries(
+      syncedCategoriesForUser(userId).map((category) => [category.id, category]),
+    );
+    const seen = new Set<string>();
+    const recent = values(financeProjection$.transactionsById.get())
+      .filter((transaction) => transaction.userId === userId && transaction.type === 'expense')
+      .sort((a, b) => b.transactionDate.localeCompare(a.transactionDate));
+    const output: { id: string; name: string; icon: string | null; color: string | null }[] = [];
+    for (const transaction of recent) {
+      if (!transaction.categoryId || seen.has(transaction.categoryId)) continue;
+      const category = categories[transaction.categoryId];
+      if (!category || !category.isActive || category.type !== 'expense') continue;
+      seen.add(category.id);
+      output.push({
+        id: category.id,
+        name: category.name,
+        icon: category.icon,
+        color: category.color,
+      });
+      if (output.length === 4) break;
+    }
+    return output;
+  });
+}
+
 export function categoryExpensesByCurrency(
   transactions: FinanceTransaction[],
   categories: Record<string, FinanceCategory>,
@@ -218,8 +316,7 @@ export function categoryExpensesByCurrency(
   const byCurrency = new Map<CurrencyCode, Map<string, CategoryExpense>>();
   for (const transaction of transactions) {
     if (transaction.type !== 'expense' || transaction.analysisExcluded) continue;
-    const totals =
-      byCurrency.get(transaction.currency) ?? new Map<string, CategoryExpense>();
+    const totals = byCurrency.get(transaction.currency) ?? new Map<string, CategoryExpense>();
     const category = transaction.categoryId ? categories[transaction.categoryId] : null;
     const key = category?.id ?? '__uncategorized';
     const previous = totals.get(key);
@@ -229,10 +326,7 @@ export function categoryExpensesByCurrency(
       icon: category?.icon ?? null,
       color: category?.color ?? null,
       x: category?.name ?? 'Uncategorized',
-      yMinor: addMinor(
-        previous?.yMinor ?? (0 as MinorAmount),
-        transaction.amountMinor,
-      ),
+      yMinor: addMinor(previous?.yMinor ?? (0 as MinorAmount), transaction.amountMinor),
     });
     byCurrency.set(transaction.currency, totals);
   }
@@ -332,11 +426,7 @@ export function financeOverview$(userId: string | null): Observable<{
     const categoryNames = categoryNameMap$(userId).get();
     const categoriesById = Object.fromEntries(
       values(financeProjection$.categoriesById.get())
-        .filter(
-          (category) =>
-            category.isActive &&
-            (category.userId === null || category.userId === userId),
-        )
+        .filter((category) => category.userId === null || category.userId === userId)
         .map((category) => [category.id, category]),
     );
     const totals = new Map<CurrencyCode, MinorAmount>();
@@ -349,10 +439,7 @@ export function financeOverview$(userId: string | null): Observable<{
       transactions,
       categoryNames,
       categoriesById,
-      categoryExpensesByCurrency: categoryExpensesByCurrency(
-        transactions,
-        categoriesById,
-      ),
+      categoryExpensesByCurrency: categoryExpensesByCurrency(transactions, categoriesById),
       balanceLines: balanceLinesByCurrency(wallets, transactions),
     };
   });
@@ -366,11 +453,7 @@ export function budgetProgress$(
   return cacheComputed(budgetCache, `${userId ?? 'anonymous'}:${timezone}`, () => {
     const categories = Object.fromEntries(
       values(financeProjection$.categoriesById.get())
-        .filter(
-          (category) =>
-            category.isActive &&
-            (category.userId === null || category.userId === userId),
-        )
+        .filter((category) => category.userId === null || category.userId === userId)
         .map((category) => [category.id, category]),
     );
     const budgets = values(financeProjection$.budgetsById.get()).filter(
@@ -406,6 +489,7 @@ export function budgetProgress$(
           categoryName: categories[categoryId]?.name ?? 'Uncategorized',
           categoryIcon: categories[categoryId]?.icon ?? null,
           categoryColor: categories[categoryId]?.color ?? null,
+          categoryIsActive: categories[categoryId]?.isActive ?? false,
           currency,
           budgetAmountMinor,
           spentMinor,
@@ -431,11 +515,11 @@ export function budgetProgress$(
 
 const debtsCache = new Map<
   string,
-  Observable<Array<{ debt: FinanceDebt; balanceMinor: MinorAmount }>>
+  Observable<{ debt: FinanceDebt; balanceMinor: MinorAmount }[]>
 >();
 export function debtsWithBalance$(
   userId: string | null,
-): Observable<Array<{ debt: FinanceDebt; balanceMinor: MinorAmount }>> {
+): Observable<{ debt: FinanceDebt; balanceMinor: MinorAmount }[]> {
   return cacheComputed(debtsCache, userId ?? 'anonymous', () => {
     return values(financeProjection$.debtsById.get())
       .filter((debt) => debt.userId === userId)
@@ -453,23 +537,23 @@ export function debtsWithBalance$(
 const netWorthCache = new Map<
   string,
   Observable<
-    Array<{
+    {
       currency: CurrencyCode;
       cashMinor: MinorAmount;
       receivableMinor: MinorAmount;
       payableMinor: MinorAmount;
       netWorthMinor: MinorAmount;
-    }>
+    }[]
   >
 >();
 export function netWorthByCurrency$(userId: string | null): Observable<
-  Array<{
+  {
     currency: CurrencyCode;
     cashMinor: MinorAmount;
     receivableMinor: MinorAmount;
     payableMinor: MinorAmount;
     netWorthMinor: MinorAmount;
-  }>
+  }[]
 > {
   return cacheComputed(netWorthCache, userId ?? 'anonymous', () => {
     const totals = new Map<

@@ -51,22 +51,8 @@ export default function LoginScreen() {
 
   return (
     <ScreenShell variant="canvas">
-      <View
-        className="px-6"
-        style={{ paddingTop: Math.max(insets.top, 28) }}
-      >
-        <GradientCard
-          cardStyle={brandMark}
-          className="h-14 w-14 items-center justify-center rounded-2xl"
-        >
-          <Text className="text-2xl font-bold text-primary-foreground">
-            M
-          </Text>
-        </GradientCard>
-      </View>
-
       <ScrollView
-        className="flex-1 px-6 pt-8"
+        className="flex-1 px-6 pt-32"
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 36 }}

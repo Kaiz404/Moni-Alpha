@@ -1,7 +1,9 @@
-import { useMemo, useState } from 'react';
+import { Fragment, useMemo, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import Svg, { Circle, Path, Text as SvgText } from 'react-native-svg';
+import glyphMap from '@react-native-vector-icons/material-design-icons/glyphmaps/MaterialDesignIcons.json';
 
+import { CategoryIcon } from '@/components/categories/category-icon';
 import { arcPath, buildDonutSegments } from './chart-utils';
 
 export type DonutDatum = {
@@ -127,21 +129,37 @@ export function DonutChart({
           {segments.map((segment) => {
             const datum = items[segment.index]!;
             if (!datum.icon || segment.percentage < 0.1) return null;
+            const codepoint =
+              glyphMap[datum.icon as keyof typeof glyphMap];
+            if (!codepoint) return null;
             const iconX =
               size / 2 + iconRadius * Math.cos(segment.midAngle);
             const iconY =
               size / 2 + iconRadius * Math.sin(segment.midAngle) + 5;
             return (
-              <SvgText
-                key={`${datum.id}-icon`}
-                x={iconX}
-                y={iconY}
-                fontSize={14}
-                textAnchor="middle"
-                pointerEvents="none"
-              >
-                {datum.icon}
-              </SvgText>
+              <Fragment key={`${datum.id}-icon-group`}>
+                <Circle
+                  key={`${datum.id}-icon-badge`}
+                  cx={iconX}
+                  cy={iconY - 5}
+                  fill={surfaceColor}
+                  opacity={0.92}
+                  pointerEvents="none"
+                  r={11}
+                />
+                <SvgText
+                  key={`${datum.id}-icon`}
+                  x={iconX}
+                  y={iconY}
+                  fill={mutedColor}
+                  fontFamily="MaterialDesignIcons"
+                  fontSize={14}
+                  textAnchor="middle"
+                  pointerEvents="none"
+                >
+                  {String.fromCodePoint(codepoint)}
+                </SvgText>
+              </Fragment>
             );
           })}
         </Svg>
@@ -195,9 +213,13 @@ export function DonutChart({
                   style={{ backgroundColor: color }}
                 />
                 {datum.icon ? (
-                  <Text className="mr-1.5 text-base">
-                    {datum.icon}
-                  </Text>
+                  <View className="mr-1.5">
+                    <CategoryIcon
+                      color={color}
+                      icon={datum.icon}
+                      size={17}
+                    />
+                  </View>
                 ) : null}
                 <Text
                   className="flex-1 text-sm font-medium text-foreground"

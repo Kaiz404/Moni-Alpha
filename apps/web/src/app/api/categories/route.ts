@@ -39,7 +39,6 @@ export async function GET(request: NextRequest) {
         name: c.name,
         icon: c.icon,
         color: c.color,
-        parentId: c.parent_id,
         type: c.type,
         isActive: c.is_active,
         displayOrder: c.display_order,
@@ -76,7 +75,6 @@ export async function POST(request: NextRequest) {
         name: validated.name,
         icon: validated.icon,
         color: validated.color,
-        parent_id: validated.parentId || null,
         type: validated.type,
         display_order: 0,
       })
@@ -94,7 +92,6 @@ export async function POST(request: NextRequest) {
         name: data.name,
         icon: data.icon,
         color: data.color,
-        parentId: data.parent_id,
         type: data.type,
         isActive: data.is_active,
         displayOrder: data.display_order,

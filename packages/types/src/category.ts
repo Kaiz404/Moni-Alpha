@@ -1,16 +1,71 @@
 import { z } from 'zod';
 
-// Category type enum
 export const categoryTypeSchema = z.enum(['income', 'expense']);
+
+/** The only Material Design icons available for user-created categories. */
+export const categoryIconNames = [
+  'home-variant',
+  'silverware-fork-knife',
+  'coffee',
+  'shopping',
+  'tshirt-crew',
+  'car',
+  'train',
+  'airplane',
+  'briefcase',
+  'school',
+  'book-open-page-variant',
+  'heart-pulse',
+  'pill',
+  'movie-open',
+  'gamepad-variant-outline',
+  'music',
+  'cellphone',
+  'wifi',
+  'gift-outline',
+  'hand-coin',
+  'credit-card-outline',
+  'package-variant',
+  'cash',
+  'laptop',
+  'chart-line',
+  'cash-plus',
+] as const;
+
+export const categoryIconSchema = z.enum(categoryIconNames);
+
+/** Reusable light-pastel choices for user-created categories. */
+export const customCategoryColors = [
+  '#F2B8B5',
+  '#F4C58B',
+  '#EAD978',
+  '#BEDB8D',
+  '#A8D6A0',
+  '#8FD3C7',
+  '#A6D8F0',
+  '#AEC5F5',
+  '#C3B2EF',
+  '#E4B1E4',
+  '#F3B6CF',
+  '#F0C0B6',
+  '#D9C6A5',
+  '#C8D2A2',
+  '#B7C9C0',
+  '#C2CAD5',
+] as const;
+
+export const customCategoryColorSchema = z.enum(customCategoryColors);
+
+export type CategoryIconName = z.infer<typeof categoryIconSchema>;
+export type CustomCategoryColor = z.infer<typeof customCategoryColorSchema>;
 
 // Category schema
 export const categorySchema = z.object({
   id: z.string().uuid(),
-  userId: z.string().uuid().nullable(), // null for system categories
+  userId: z.string().uuid().nullable(),
   name: z.string().min(1).max(100),
-  icon: z.string(),
+  icon: categoryIconSchema,
   color: z.string().regex(/^#[0-9A-Fa-f]{6}$/),
-  parentId: z.string().uuid().nullable(),
   type: categoryTypeSchema,
   isActive: z.boolean(),
   displayOrder: z.number().int().nonnegative(),
@@ -18,24 +73,17 @@ export const categorySchema = z.object({
   updatedAt: z.string().datetime(),
 });
 
-// Create category schema (user-created only)
 export const createCategorySchema = z.object({
-  name: z.string().min(1).max(100),
-  icon: z.string(),
-  color: z.string().regex(/^#[0-9A-Fa-f]{6}$/),
-  parentId: z.string().uuid().nullable().optional(),
+  name: z.string().trim().min(1).max(100),
+  icon: categoryIconSchema,
+  color: customCategoryColorSchema,
   type: categoryTypeSchema,
 });
 
-// Update category schema
 export const updateCategorySchema = z.object({
-  name: z.string().min(1).max(100).optional(),
-  icon: z.string().optional(),
-  color: z
-    .string()
-    .regex(/^#[0-9A-Fa-f]{6}$/)
-    .optional(),
-  parentId: z.string().uuid().nullable().optional(),
+  name: z.string().trim().min(1).max(100).optional(),
+  icon: categoryIconSchema.optional(),
+  color: customCategoryColorSchema.optional(),
   isActive: z.boolean().optional(),
   displayOrder: z.number().int().nonnegative().optional(),
 });
