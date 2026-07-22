@@ -40,6 +40,7 @@ import {
 type CaptureAction = {
   id: CaptureActionId;
   label: string;
+  detail: string;
   icon: ComponentProps<typeof MaterialDesignIcons>['name'];
 };
 
@@ -47,12 +48,20 @@ const ACTIONS: readonly CaptureAction[] = [
   {
     id: 'scan',
     label: 'Scan receipt',
+    detail: 'Capture and review a receipt',
     icon: 'receipt-text',
   },
   {
-    id: 'transaction',
-    label: 'Add Manually',
-    icon: 'credit-card-plus-outline',
+    id: 'expense',
+    label: 'Add expense',
+    detail: 'Record money spent manually',
+    icon: 'minus-circle-outline',
+  },
+  {
+    id: 'income',
+    label: 'Add income',
+    detail: 'Record money received manually',
+    icon: 'plus-circle-outline',
   },
 ] as const;
 
@@ -488,7 +497,7 @@ export function CaptureButton() {
         accessibilityLabel={
           open ? 'Close capture menu' : 'Open capture menu'
         }
-        accessibilityHint="Choose scan receipt, add transaction"
+        accessibilityHint="Choose scan receipt, add expense, or add income"
         expanded={open}
         onPress={() => {
           setOpen((value) => !value);

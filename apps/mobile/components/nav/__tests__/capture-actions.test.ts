@@ -3,9 +3,8 @@ import { captureActionDestination } from '../capture-actions';
 describe('capture action destinations', () => {
   it.each([
     ['scan', '/scan/receipt'],
-    ['transaction', '/transaction/new'],
-    ['chat', '/(tabs)/chat'],
-    ['debt', '/debt/new'],
+    ['expense', '/transaction/new?type=expense'],
+    ['income', '/transaction/new?type=income'],
   ] as const)('routes %s to %s', (action, destination) => {
     expect(captureActionDestination(action)).toBe(destination);
   });

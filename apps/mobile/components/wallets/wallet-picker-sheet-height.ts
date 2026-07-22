@@ -1,4 +1,4 @@
-const HEADER_HEIGHT = 100;
+const HEADER_HEIGHT = 56;
 const ROW_HEIGHT = 64;
 const VERTICAL_PADDING = 44;
 const EMPTY_LIST_HEIGHT = 48;

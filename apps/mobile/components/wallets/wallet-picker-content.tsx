@@ -3,6 +3,7 @@ import { Pressable, ScrollView, Text, View } from 'react-native';
 import { IconAction } from '@/components/ui/icon-action';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { WalletIcon } from '@/components/wallets/wallet-icon';
+import { getWalletCardStyle } from '@/constants/wallet-card-styles';
 import { walletPickerScrollEnabled } from '@/components/wallets/wallet-picker-sheet-height';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 
@@ -12,13 +13,15 @@ export type WalletPickerItem = {
   currency: string;
   type: string | null;
   icon: string | null;
+  color: string | null;
+  cardStyleId: string | null;
 };
 
 type WalletPickerContentProps = {
   wallets: WalletPickerItem[];
   selectedId?: string | null;
   title?: string;
-  subtitle?: string;
+  emptyMessage?: string;
   onSelect: (wallet: WalletPickerItem) => void;
   onClose: () => void;
 };
@@ -28,7 +31,7 @@ export function WalletPickerContent({
   wallets,
   selectedId,
   title = 'Choose wallet',
-  subtitle = 'Pick the wallet for this transaction.',
+  emptyMessage = 'No wallets are available.',
   onSelect,
   onClose,
 }: WalletPickerContentProps) {
@@ -36,6 +39,8 @@ export function WalletPickerContent({
 
   const row = (wallet: WalletPickerItem) => {
     const selected = wallet.id === selectedId;
+    const cardStyle = getWalletCardStyle(wallet.cardStyleId);
+    const accent = wallet.color ?? cardStyle.swatchHex;
     return (
       <Pressable
         key={wallet.id}
@@ -46,9 +51,12 @@ export function WalletPickerContent({
         }`}
         onPress={() => onSelect(wallet)}
       >
-        <View className="mr-3 h-10 w-10 items-center justify-center rounded-full bg-background-muted">
+        <View
+          className="mr-3 h-10 w-10 items-center justify-center rounded-full"
+          style={{ backgroundColor: accent }}
+        >
           <WalletIcon
-            color={selected ? tokens.primary : tokens.foreground}
+            color={cardStyle.contentColor}
             icon={wallet.icon}
             size={20}
             type={wallet.type}
@@ -80,9 +88,6 @@ export function WalletPickerContent({
           <Text className="text-xl font-bold text-foreground">
             {title}
           </Text>
-          <Text className="mt-1 text-sm leading-5 text-muted">
-            {subtitle}
-          </Text>
         </View>
         <IconAction
           accessibilityLabel="Close wallet picker"
@@ -99,7 +104,7 @@ export function WalletPickerContent({
       >
         {wallets.length === 0 ? (
           <Text className="px-1 text-sm leading-5 text-muted">
-            Add another wallet to complete this transfer.
+            {emptyMessage}
           </Text>
         ) : (
           wallets.map(row)

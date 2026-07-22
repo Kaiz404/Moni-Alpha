@@ -46,13 +46,10 @@ export function TransactionDetailsSheetContent({
 
   return (
     <View className="flex-1">
-      <View className="flex-row items-start justify-between pb-3">
+      <View className="flex-row items-start justify-between">
         <View className="flex-1 pr-3">
           <Text className="text-xl font-bold text-foreground">
             More details
-          </Text>
-          <Text className="mt-1 text-sm leading-5 text-muted">
-            Optional context to recognize this entry later.
           </Text>
         </View>
         <IconAction

@@ -1,14 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import {
-  Alert,
-  Pressable,
-  Text,
-  View,
-} from 'react-native';
-import {
-  router,
-  useLocalSearchParams,
-} from 'expo-router';
+import { Alert, Pressable, Text, View } from 'react-native';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useValue } from '@legendapp/state/react';
 import { createTransactionSchema } from '@repo/types';
@@ -26,6 +18,7 @@ import { PrimaryButton } from '@/components/ui/primary-button';
 import { ScreenShell } from '@/components/ui/screen-shell';
 import { WalletIcon } from '@/components/wallets/wallet-icon';
 import { WalletPickerModal } from '@/components/wallets/wallet-picker-modal';
+import { getWalletCardStyle } from '@/constants/wallet-card-styles';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { useAuth } from '@/lib/auth/auth-context';
 import {
@@ -48,6 +41,10 @@ type Wallet = Awaited<ReturnType<typeof getWallets>>[number];
 type Category = Awaited<ReturnType<typeof getCategories>>[number];
 type TransactionKind = 'income' | 'expense' | 'transfer';
 
+function walletCurrency(wallet: Wallet): string {
+  return (wallet.currency ?? 'USD').toUpperCase();
+}
+
 const transactionCopy: Record<TransactionKind, string> = {
   expense: 'Expense',
   income: 'Income',
@@ -60,9 +57,10 @@ function hasDetails(
 ): boolean {
   return Boolean(
     value.merchant.trim() ||
-      value.description.trim() ||
-      (!isTransfer && value.locationSnapshot) ||
-      value.transactionDate !== isoToLocalDateInput(new Date().toISOString()),
+    value.description.trim() ||
+    (!isTransfer && value.locationSnapshot) ||
+    value.transactionDate !==
+      isoToLocalDateInput(new Date().toISOString()),
   );
 }
 
@@ -72,34 +70,49 @@ export default function NewTransactionScreen() {
   const tokens = useThemeTokens();
   const params = useLocalSearchParams<{
     walletId?: string | string[];
+    type?: string | string[];
   }>();
   const paramWalletId = useMemo(() => {
     const value = params.walletId;
     return Array.isArray(value) ? value[0] : value;
   }, [params.walletId]);
+  const paramTransactionType = useMemo(() => {
+    const value = Array.isArray(params.type)
+      ? params.type[0]
+      : params.type;
+    return value === 'income' || value === 'expense'
+      ? value
+      : undefined;
+  }, [params.type]);
 
   const [wallets, setWallets] = useState<Wallet[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [walletId, setWalletId] = useState('');
   const [transferToWalletId, setTransferToWalletId] = useState('');
   const [amount, setAmount] = useState('');
-  const [type, setType] = useState<TransactionKind>('expense');
+  const [type, setType] = useState<TransactionKind>(
+    paramTransactionType ?? 'expense',
+  );
   const [categoryId, setCategoryId] = useState('');
   const [saving, setSaving] = useState(false);
-  const [walletPickerVisible, setWalletPickerVisible] = useState(false);
+  const [walletPickerVisible, setWalletPickerVisible] =
+    useState(false);
   const [destinationPickerVisible, setDestinationPickerVisible] =
     useState(false);
   const [categoryPickerVisible, setCategoryPickerVisible] =
     useState(false);
   const [detailsVisible, setDetailsVisible] = useState(false);
-  const [details, setDetails] = useState<TransactionDetailsValue>(() => ({
-    merchant: '',
-    description: '',
-    transactionDate: isoToLocalDateInput(new Date().toISOString()),
-    locationSnapshot: null,
-  }));
+  const [details, setDetails] = useState<TransactionDetailsValue>(
+    () => ({
+      merchant: '',
+      description: '',
+      transactionDate: isoToLocalDateInput(new Date().toISOString()),
+      locationSnapshot: null,
+    }),
+  );
   const [locationLoading, setLocationLoading] = useState(true);
-  const [locationUnavailable, setLocationUnavailable] = useState(false);
+  const [locationUnavailable, setLocationUnavailable] =
+    useState(false);
 
   const suggestedCategories = useValue(
     recentExpenseCategories$(user?.id ?? null),
@@ -113,6 +126,10 @@ export default function NewTransactionScreen() {
   }, [type, user]);
 
   useEffect(() => {
+    if (paramTransactionType) setType(paramTransactionType);
+  }, [paramTransactionType]);
+
+  useEffect(() => {
     if (wallets.length === 0) return;
     if (
       paramWalletId &&
@@ -122,14 +139,6 @@ export default function NewTransactionScreen() {
     } else {
       setWalletId((current) => current || wallets[0].id);
     }
-    setTransferToWalletId((current) => {
-      if (current) return current;
-      return (
-        wallets.find(
-          (wallet) => wallet.id !== (paramWalletId ?? wallets[0].id),
-        )?.id ?? ''
-      );
-    });
   }, [paramWalletId, wallets]);
 
   useEffect(() => {
@@ -168,10 +177,32 @@ export default function NewTransactionScreen() {
   const selectedCategory = categories.find(
     (category) => category.id === categoryId,
   );
-  const destinationWallets = useMemo(
-    () => wallets.filter((wallet) => wallet.id !== walletId),
-    [walletId, wallets],
-  );
+  const sourceCurrency = selectedWallet
+    ? (selectedWallet.currency ?? 'USD').toUpperCase()
+    : null;
+  const destinationWallets = useMemo(() => {
+    const sourceWallet = wallets.find(
+      (wallet) => wallet.id === walletId,
+    );
+    if (!sourceWallet) return [];
+
+    const currency = walletCurrency(sourceWallet);
+    return wallets.filter(
+      (wallet) =>
+        wallet.id !== walletId && walletCurrency(wallet) === currency,
+    );
+  }, [walletId, wallets]);
+
+  useEffect(() => {
+    setTransferToWalletId((current) => {
+      if (
+        destinationWallets.some((wallet) => wallet.id === current)
+      ) {
+        return current;
+      }
+      return destinationWallets[0]?.id ?? '';
+    });
+  }, [destinationWallets]);
   const walletPickerItems = useMemo(
     () =>
       wallets.map((wallet) => ({
@@ -180,6 +211,8 @@ export default function NewTransactionScreen() {
         currency: wallet.currency ?? 'USD',
         type: wallet.type,
         icon: wallet.icon,
+        color: wallet.color,
+        cardStyleId: wallet.cardStyleId,
       })),
     [wallets],
   );
@@ -228,10 +261,13 @@ export default function NewTransactionScreen() {
     setSaving(true);
     try {
       if (type === 'transfer') {
-        if (!transferToWalletId) {
+        const hasCompatibleDestination = destinationWallets.some(
+          (wallet) => wallet.id === transferToWalletId,
+        );
+        if (!hasCompatibleDestination) {
           Alert.alert(
-            'Choose a destination',
-            'Select another wallet for this transfer.',
+            'Choose a matching wallet',
+            'Transfers are available only between wallets that share the same currency.',
           );
           return;
         }
@@ -290,6 +326,34 @@ export default function NewTransactionScreen() {
         : 'Add expense';
   const isTransfer = type === 'transfer';
   const detailsAdded = hasDetails(details, isTransfer);
+  const selectedWalletStyle = selectedWallet
+    ? getWalletCardStyle(selectedWallet.cardStyleId)
+    : null;
+  const destinationWalletStyle = selectedDestination
+    ? getWalletCardStyle(selectedDestination.cardStyleId)
+    : null;
+  const selectedWalletAccent =
+    selectedWallet?.color ??
+    selectedWalletStyle?.swatchHex ??
+    tokens.primary;
+  const destinationWalletAccent =
+    selectedDestination?.color ??
+    destinationWalletStyle?.swatchHex ??
+    tokens.transfer;
+  const categoryAccent =
+    selectedCategory?.color ?? tokens.accents.lilac;
+  const hasTransferDestination = destinationWallets.some(
+    (wallet) => wallet.id === transferToWalletId,
+  );
+  const amountPrefix =
+    type === 'income' ? '+' : type === 'expense' ? '−' : '';
+  const amountTone =
+    type === 'income'
+      ? 'text-income'
+      : type === 'expense'
+        ? 'text-expense'
+        : 'text-transfer';
+  const currency = selectedWallet?.currency?.toUpperCase();
 
   return (
     <ScreenShell variant="canvas">
@@ -321,17 +385,43 @@ export default function NewTransactionScreen() {
           )}
         </View>
 
-        <View className="flex-1 items-center justify-center">
-          <Text className="text-6xl font-bold tracking-tight text-foreground">
+        <View className="flex-1 items-center justify-center px-2">
+          <Text
+            className={`mt-2 text-6xl font-bold tracking-tight ${amountTone}`}
+            accessibilityLabel={`${amount || '0'}`}
+          >
+            {amountPrefix}
             {amount || '0'}
           </Text>
-          <Text className="mt-2 text-sm font-semibold text-primary">
-            {selectedWallet?.currency?.toUpperCase() ??
-              'Choose a wallet'}
-          </Text>
+          <View className="mt-4 items-center">
+            <Text className="text-sm font-bold text-foreground">
+              {currency ?? 'Choose a wallet'}
+            </Text>
+          </View>
         </View>
 
         <View className="pt-2">
+          <View className="mb-2 flex-row items-center justify-between px-1">
+            <Text className="text-xs font-bold uppercase tracking-wide text-muted">
+              Transaction details
+            </Text>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="More details"
+              className="min-h-9 flex-row items-center rounded-full bg-surface-2 px-3 active:opacity-85"
+              onPress={() => setDetailsVisible(true)}
+            >
+              <IconSymbol
+                color={tokens.foreground}
+                name="tune"
+                size={16}
+              />
+              <Text className="ml-1 text-xs font-bold text-foreground">
+                Details
+              </Text>
+            </Pressable>
+          </View>
+
           <View className="mb-3 flex-row items-stretch gap-2">
             <TransactionModifierChip
               accessibilityLabel={
@@ -340,10 +430,14 @@ export default function NewTransactionScreen() {
                   : `Paid from, ${selectedWallet?.name ?? 'not selected'}`
               }
               value={selectedWallet?.name ?? ''}
-              hint="Wallet"
+              hint={isTransfer ? 'From wallet' : 'Wallet'}
+              accentColor={selectedWalletAccent}
               leading={
                 <WalletIcon
-                  color={tokens.primary}
+                  color={
+                    selectedWalletStyle?.contentColor ??
+                    tokens.foreground
+                  }
                   icon={selectedWallet?.icon}
                   size={20}
                   type={selectedWallet?.type}
@@ -353,30 +447,42 @@ export default function NewTransactionScreen() {
             />
 
             {isTransfer ? (
-              <TransactionModifierChip
-                accessibilityLabel={`Move to, ${selectedDestination?.name ?? 'not selected'}`}
-                value={selectedDestination?.name ?? ''}
-                hint="To"
-                leading={
-                  <WalletIcon
-                    color={tokens.primary}
-                    icon={selectedDestination?.icon}
-                    size={20}
-                    type={selectedDestination?.type}
+              <>
+                <View className="w-7 items-center justify-center">
+                  <IconSymbol
+                    color={tokens.transfer}
+                    name="arrow-right"
+                    size={22}
                   />
-                }
-                onPress={() => setDestinationPickerVisible(true)}
-              />
+                </View>
+                <TransactionModifierChip
+                  accessibilityLabel={`Move to, ${selectedDestination?.name ?? 'not selected'}`}
+                  value={selectedDestination?.name ?? ''}
+                  hint="To wallet"
+                  accentColor={destinationWalletAccent}
+                  leading={
+                    <WalletIcon
+                      color={
+                        destinationWalletStyle?.contentColor ??
+                        tokens.foreground
+                      }
+                      icon={selectedDestination?.icon}
+                      size={20}
+                      type={selectedDestination?.type}
+                    />
+                  }
+                  onPress={() => setDestinationPickerVisible(true)}
+                />
+              </>
             ) : (
               <TransactionModifierChip
                 accessibilityLabel={`Category, ${selectedCategory?.name ?? 'not selected'}`}
                 value={selectedCategory?.name ?? ''}
                 hint="Category"
+                accentColor={categoryAccent}
                 leading={
                   <CategoryIcon
-                    color={
-                      selectedCategory?.color ?? tokens.muted
-                    }
+                    color={tokens.foreground}
                     icon={selectedCategory?.icon}
                     size={20}
                   />
@@ -384,28 +490,14 @@ export default function NewTransactionScreen() {
                 onPress={() => setCategoryPickerVisible(true)}
               />
             )}
-
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="More details"
-              className="relative min-h-[52px] w-[52px] items-center justify-center rounded-2xl bg-surface-2 active:opacity-85"
-              onPress={() => setDetailsVisible(true)}
-            >
-              <IconSymbol
-                color={tokens.foreground}
-                name="tune"
-                size={22}
-              />
-              {detailsAdded ? (
-                <View className="absolute right-2 top-2 h-2 w-2 rounded-full bg-primary" />
-              ) : null}
-            </Pressable>
           </View>
 
           <NumericKeypad onKeyPress={handleKeyPress} />
           <PrimaryButton
             className="mt-3"
-            disabled={!walletId}
+            disabled={
+              !walletId || (isTransfer && !hasTransferDestination)
+            }
             icon="check"
             label={actionLabel}
             loading={saving}
@@ -420,17 +512,8 @@ export default function NewTransactionScreen() {
         wallets={walletPickerItems}
         selectedId={walletId}
         title={isTransfer ? 'From wallet' : 'Paid from'}
-        subtitle="Pick the wallet for this transaction."
         onClose={() => setWalletPickerVisible(false)}
-        onSelect={(wallet) => {
-          setWalletId(wallet.id);
-          if (transferToWalletId === wallet.id) {
-            const next = destinationWallets.find(
-              (item) => item.id !== wallet.id,
-            );
-            setTransferToWalletId(next?.id ?? '');
-          }
-        }}
+        onSelect={(wallet) => setWalletId(wallet.id)}
       />
 
       <WalletPickerModal
@@ -441,10 +524,16 @@ export default function NewTransactionScreen() {
           currency: wallet.currency ?? 'USD',
           type: wallet.type,
           icon: wallet.icon,
+          color: wallet.color,
+          cardStyleId: wallet.cardStyleId,
         }))}
         selectedId={transferToWalletId}
         title="Move to"
-        subtitle="Choose the destination wallet for this transfer."
+        emptyMessage={
+          sourceCurrency
+            ? `No other ${sourceCurrency} wallets are available. Transfers require two wallets with the same currency.`
+            : 'Choose a source wallet first.'
+        }
         onClose={() => setDestinationPickerVisible(false)}
         onSelect={(wallet) => setTransferToWalletId(wallet.id)}
       />

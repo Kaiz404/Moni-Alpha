@@ -14,7 +14,7 @@ type WalletPickerModalProps = {
   wallets: WalletPickerItem[];
   selectedId?: string | null;
   title?: string;
-  subtitle?: string;
+  emptyMessage?: string;
   onSelect: (wallet: WalletPickerItem) => void;
   onClose: () => void;
 };
