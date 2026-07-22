@@ -51,19 +51,6 @@ const transactionCopy: Record<TransactionKind, string> = {
   transfer: 'Transfer',
 };
 
-function hasDetails(
-  value: TransactionDetailsValue,
-  isTransfer: boolean,
-): boolean {
-  return Boolean(
-    value.merchant.trim() ||
-    value.description.trim() ||
-    (!isTransfer && value.locationSnapshot) ||
-    value.transactionDate !==
-      isoToLocalDateInput(new Date().toISOString()),
-  );
-}
-
 export default function NewTransactionScreen() {
   const { user } = useAuth();
   const insets = useSafeAreaInsets();
@@ -130,14 +117,19 @@ export default function NewTransactionScreen() {
   }, [paramTransactionType]);
 
   useEffect(() => {
-    if (wallets.length === 0) return;
+    if (wallets.length === 0) {
+      setWalletId('');
+      return;
+    }
     if (
       paramWalletId &&
       wallets.some((wallet) => wallet.id === paramWalletId)
     ) {
       setWalletId(paramWalletId);
     } else {
-      setWalletId((current) => current || wallets[0].id);
+      setWalletId((current) =>
+        wallets.some((wallet) => wallet.id === current) ? current : '',
+      );
     }
   }, [paramWalletId, wallets]);
 
@@ -200,7 +192,7 @@ export default function NewTransactionScreen() {
       ) {
         return current;
       }
-      return destinationWallets[0]?.id ?? '';
+      return '';
     });
   }, [destinationWallets]);
   const walletPickerItems = useMemo(
@@ -325,7 +317,6 @@ export default function NewTransactionScreen() {
         ? 'Move money'
         : 'Add expense';
   const isTransfer = type === 'transfer';
-  const detailsAdded = hasDetails(details, isTransfer);
   const selectedWalletStyle = selectedWallet
     ? getWalletCardStyle(selectedWallet.cardStyleId)
     : null;
@@ -397,6 +388,11 @@ export default function NewTransactionScreen() {
             <Text className="text-sm font-bold text-foreground">
               {currency ?? 'Choose a wallet'}
             </Text>
+            <Text className="mt-1 text-xs font-medium text-muted">
+              {selectedWallet
+                ? 'Currency follows this wallet'
+                : 'Choose a wallet to set the currency'}
+            </Text>
           </View>
         </View>
 
@@ -433,15 +429,17 @@ export default function NewTransactionScreen() {
               hint={isTransfer ? 'From wallet' : 'Wallet'}
               accentColor={selectedWalletAccent}
               leading={
-                <WalletIcon
-                  color={
-                    selectedWalletStyle?.contentColor ??
-                    tokens.foreground
-                  }
-                  icon={selectedWallet?.icon}
-                  size={20}
-                  type={selectedWallet?.type}
-                />
+                selectedWallet ? (
+                  <WalletIcon
+                    color={
+                      selectedWalletStyle?.contentColor ??
+                      tokens.foreground
+                    }
+                    icon={selectedWallet.icon}
+                    size={20}
+                    type={selectedWallet.type}
+                  />
+                ) : undefined
               }
               onPress={() => setWalletPickerVisible(true)}
             />
@@ -461,15 +459,17 @@ export default function NewTransactionScreen() {
                   hint="To wallet"
                   accentColor={destinationWalletAccent}
                   leading={
-                    <WalletIcon
-                      color={
-                        destinationWalletStyle?.contentColor ??
-                        tokens.foreground
-                      }
-                      icon={selectedDestination?.icon}
-                      size={20}
-                      type={selectedDestination?.type}
-                    />
+                    selectedDestination ? (
+                      <WalletIcon
+                        color={
+                          destinationWalletStyle?.contentColor ??
+                          tokens.foreground
+                        }
+                        icon={selectedDestination.icon}
+                        size={20}
+                        type={selectedDestination.type}
+                      />
+                    ) : undefined
                   }
                   onPress={() => setDestinationPickerVisible(true)}
                 />
@@ -481,11 +481,13 @@ export default function NewTransactionScreen() {
                 hint="Category"
                 accentColor={categoryAccent}
                 leading={
-                  <CategoryIcon
-                    color={tokens.foreground}
-                    icon={selectedCategory?.icon}
-                    size={20}
-                  />
+                  selectedCategory ? (
+                    <CategoryIcon
+                      color={tokens.foreground}
+                      icon={selectedCategory.icon}
+                      size={20}
+                    />
+                  ) : undefined
                 }
                 onPress={() => setCategoryPickerVisible(true)}
               />
