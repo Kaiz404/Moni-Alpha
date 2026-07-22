@@ -11,7 +11,10 @@ import MapView, { Marker } from 'react-native-maps';
 
 import { FormField } from '@/components/ui/form-field';
 import { IconAction } from '@/components/ui/icon-action';
-import { PrimaryButton } from '@/components/ui/primary-button';
+import {
+  BOTTOM_SHEET_PRIMARY_ACTION_SPACE,
+  BottomSheetPrimaryAction,
+} from '@/components/ui/bottom-sheet-primary-action';
 import { Surface } from '@/components/ui/surface';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import type { TransactionLocationSnapshot } from '@/lib/transactions/prefetch-location';
@@ -61,7 +64,9 @@ export function TransactionDetailsSheetContent({
 
       <ScrollView
         className="flex-1"
-        contentContainerClassName="pb-3"
+        contentContainerStyle={{
+          paddingBottom: BOTTOM_SHEET_PRIMARY_ACTION_SPACE,
+        }}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
@@ -190,8 +195,7 @@ export function TransactionDetailsSheetContent({
         )}
       </ScrollView>
 
-      <PrimaryButton
-        className="mt-3"
+      <BottomSheetPrimaryAction
         icon="check"
         label="Done"
         onPress={onClose}

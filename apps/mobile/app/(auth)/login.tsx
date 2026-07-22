@@ -61,9 +61,6 @@ export default function LoginScreen() {
           <Text className="text-[28px] font-bold leading-[34px] text-foreground">
             Welcome back
           </Text>
-          <Text className="mt-2 max-w-md text-[16px] leading-[22px] text-muted">
-            Your wallets and recent activity are ready when you are.
-          </Text>
           {showVerifyEmailHint ? (
             <View className="mt-5 rounded-2xl bg-primary-muted px-4 py-3.5">
               <Text className="text-[15px] font-bold text-primary">

@@ -198,9 +198,6 @@ export function AiInsightSection({
                   <Text className="text-base font-bold text-foreground">
                     {card.title}
                   </Text>
-                  <Text className="mt-1 text-sm leading-5 text-muted">
-                    {card.body}
-                  </Text>
                 </View>
               </View>
             </View>

@@ -29,10 +29,6 @@ export default function NotFoundScreen() {
           <Text className="text-center text-[22px] font-bold text-foreground">
             This screen moved
           </Text>
-          <Text className="mt-2 text-center text-sm leading-5 text-muted">
-            The route is unavailable. Return to Home to keep tracking
-            your money.
-          </Text>
           <PrimaryButton
             label="Go to Home"
             className="mt-6 w-full"

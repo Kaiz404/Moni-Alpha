@@ -137,11 +137,6 @@ export function FabReceiptProcessingOverlay() {
           <Text className="mt-5 text-center text-xl font-bold text-foreground">
             {readyAt ? 'Ready for your review' : copy.title}
           </Text>
-          <Text className="mt-2 text-center text-sm leading-5 text-muted">
-            {readyAt
-              ? 'Nothing has been saved. Check the details first.'
-              : copy.detail}
-          </Text>
           <View
             className="mt-6 flex-row gap-2"
             accessibilityLabel="Processing"

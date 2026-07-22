@@ -2,6 +2,10 @@ import { Pressable, ScrollView, Text, View } from 'react-native';
 
 import { CategoryIcon } from '@/components/categories/category-icon';
 import { IconAction } from '@/components/ui/icon-action';
+import {
+  BOTTOM_SHEET_PRIMARY_ACTION_SPACE,
+  BottomSheetPrimaryAction,
+} from '@/components/ui/bottom-sheet-primary-action';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import type { CategoryPickerItem } from './category-picker-modal';
 
@@ -86,7 +90,9 @@ export function CategoryPickerContent({
       </View>
       <ScrollView
         className="flex-1"
-        contentContainerClassName="pb-3"
+        contentContainerStyle={{
+          paddingBottom: BOTTOM_SHEET_PRIMARY_ACTION_SPACE,
+        }}
         showsVerticalScrollIndicator={false}
       >
         {suggested.length ? (
@@ -120,6 +126,11 @@ export function CategoryPickerContent({
           </Pressable>
         ) : null}
       </ScrollView>
+      <BottomSheetPrimaryAction
+        icon="check"
+        label="Use category"
+        onPress={onClose}
+      />
     </View>
   );
 }

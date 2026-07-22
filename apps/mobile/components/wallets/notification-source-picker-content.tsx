@@ -22,6 +22,10 @@ import {
   type NotificationAppOption,
 } from '@/constants/notification-apps';
 import { IconAction } from '@/components/ui/icon-action';
+import {
+  BOTTOM_SHEET_PRIMARY_ACTION_SPACE,
+  BottomSheetPrimaryAction,
+} from '@/components/ui/bottom-sheet-primary-action';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { getCachedAppIcon } from '@/lib/notifications/app-icon-cache';
@@ -295,7 +299,9 @@ export function NotificationSourcePickerContent({
         </Text>
       ) : (
         <ScrollView
-          contentContainerStyle={{ paddingBottom: 24 }}
+          contentContainerStyle={{
+            paddingBottom: BOTTOM_SHEET_PRIMARY_ACTION_SPACE,
+          }}
           keyboardShouldPersistTaps="handled"
           nestedScrollEnabled
           showsVerticalScrollIndicator={false}
@@ -387,6 +393,11 @@ export function NotificationSourcePickerContent({
           ))}
         </ScrollView>
       )}
+      <BottomSheetPrimaryAction
+        icon="check"
+        label="Confirm source"
+        onPress={onClose}
+      />
     </View>
   );
 }

@@ -7,7 +7,11 @@ import {
   RNHostView,
 } from '@expo/ui/jetpack-compose';
 import type { ModalBottomSheetRef } from '@expo/ui/jetpack-compose';
-import { height, padding } from '@expo/ui/jetpack-compose/modifiers';
+import {
+  height,
+  padding,
+  weight,
+} from '@expo/ui/jetpack-compose/modifiers';
 
 import { WalletTypePickerContent } from './wallet-type-picker-content';
 import type { WalletKind } from '@/constants/wallet-form';
@@ -60,7 +64,7 @@ export function WalletTypePickerModal({
                 padding(20, 12, 20, 20),
               ]}
             >
-              <RNHostView matchContents>
+              <RNHostView modifiers={[weight(1)]}>
                 <WalletTypePickerContent
                   {...props}
                   onClose={() => void dismiss()}

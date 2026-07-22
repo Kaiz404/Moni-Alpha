@@ -193,11 +193,6 @@ export function ChatEmptyState({
       <Text className="text-center text-[22px] font-bold leading-7 text-foreground">
         A clearer view of your money
       </Text>
-      <Text className="mt-2 max-w-sm text-center text-[15px] leading-[22px] text-muted">
-        Ask Moni a question, describe a transaction, or attach a
-        receipt. You&apos;ll always review changes before they&apos;re
-        added.
-      </Text>
       <View className="mt-7 w-full max-w-md gap-2">
         {suggestions.map((suggestion) => (
           <Pressable

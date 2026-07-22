@@ -7,7 +7,11 @@ import {
   RNHostView,
 } from '@expo/ui/jetpack-compose';
 import type { ModalBottomSheetRef } from '@expo/ui/jetpack-compose';
-import { height, padding } from '@expo/ui/jetpack-compose/modifiers';
+import {
+  height,
+  padding,
+  weight,
+} from '@expo/ui/jetpack-compose/modifiers';
 
 import { WalletColorPickerContent } from './wallet-color-picker-content';
 import type { WalletKind } from '@/constants/wallet-form';
@@ -59,11 +63,11 @@ export function WalletColorPickerModal({
           >
             <Column
               modifiers={[
-                height(Math.round(windowHeight * 0.78)),
+                height(Math.round(windowHeight * 0.82)),
                 padding(20, 12, 20, 20),
               ]}
             >
-              <RNHostView matchContents>
+              <RNHostView modifiers={[weight(1)]}>
                 <WalletColorPickerContent
                   {...props}
                   onClose={() => void dismiss()}

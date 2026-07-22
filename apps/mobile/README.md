@@ -92,11 +92,11 @@ Do not mix Windows and WSL `expo prebuild` / Gradle — `android/build/generated
 
 [`docs/DESIGN_SYSTEM.md`](../../docs/DESIGN_SYSTEM.md) is the visual source of truth. Tokens are CSS-first in `global.css`; prefer semantic classes (`bg-canvas`, `bg-card`, `text-foreground`, `text-muted`, state/category tokens) and shared UI helpers under `components/ui/` (`BrandHeader`, `ScreenShell`, `Surface`, `FormField`, `IconAction`, `PrimaryButton`, `SolidWalletCard`). `Surface` and `SolidWalletCard` use the native `react-native-fast-squircle` view for major grouped surfaces; use the default 0.65 smoothing for cards and 0.75 only for feature-sized wallet or summary panels. For an expressive standalone panel, choose a low-tint `Surface` tone (`aqua`, `lilac`, `peach`, `lemon`, or `tray`) instead of adding a decorative border. For native APIs that need a color string, use `useThemeTokens()`. Change semantic tokens in `global.css` only — do not hardcode hex in screens.
 
-Use `IconSymbol` for app icons. Material Design Icons are the default; set `family` to use Ionicons, Feather, or Font Awesome 6 when required.
+Use `IconSymbol` for app icons. Material Design Icons are the default; set `family` to use Ionicons, Feather, or Font Awesome 6 when required. Titles and section headings stand alone; do not add subtitles beneath them.
 
 Wallet cards render `SolidWalletCard` with clean, Figma-aligned pastel fills driven by `wallet.cardStyleId` looked up in `constants/wallet-card-styles.ts`; the wallet forms use the same solid fills and set `wallet.color` to the style's flat swatch hex for charts/legends. Cards do not use a grain texture overlay.
 
-**Modal pickers:** use the shared picker sheet convention in [`docs/DESIGN_SYSTEM.md`](../../docs/DESIGN_SYSTEM.md#710-modal-pickers-and-sheets): one sheet at a time, explicit close plus native dismissal, card-style 56pt selection rows, and no auto-dismiss after a selection. Android Expo UI sheets with a scrollable React Native body use a bounded `Column` and weighted `RNHostView`.
+**Modal pickers:** use the shared picker sheet convention in [`docs/DESIGN_SYSTEM.md`](../../docs/DESIGN_SYSTEM.md#710-modal-pickers-and-sheets): one sheet at a time, explicit close plus native dismissal, card-style 56pt selection rows, and no auto-dismiss after a selection. Every sheet uses the fixed primary confirmation action; its scroll body reserves footer space. Android Expo UI sheets with a scrollable React Native body use a bounded `Column` and weighted `RNHostView`.
 
 Appearance: Profile → Appearance (`light` default; `system` follows the device). Persisted in MMKV via `lib/theme/preference.ts`.
 

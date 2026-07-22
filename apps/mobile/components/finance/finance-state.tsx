@@ -3,14 +3,12 @@ import { Surface } from '@/components/ui/surface';
 
 type FinanceStateProps = {
   title: string;
-  detail?: string;
   variant?: 'loading' | 'empty' | 'error';
 };
 
 /** Shared loading, empty, and error presentation for selector-backed finance lists. */
 export function FinanceState({
   title,
-  detail,
   variant = 'empty',
 }: FinanceStateProps) {
   return (
@@ -23,7 +21,6 @@ export function FinanceState({
     >
       <FeedbackState
         title={title}
-        description={detail}
         mode={variant}
         icon={
           variant === 'error'

@@ -228,9 +228,6 @@ export default function ChatScreen() {
               <Text className="text-[22px] font-bold leading-7 text-foreground">
                 Chat with Moni
               </Text>
-              <Text className="text-[13px] leading-[17px] text-muted">
-                Ask, understand, and review
-              </Text>
             </View>
           </View>
           <IconAction

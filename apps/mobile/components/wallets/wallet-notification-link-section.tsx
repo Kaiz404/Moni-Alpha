@@ -1,5 +1,11 @@
 import { useState } from 'react';
-import { Modal, Text, TouchableOpacity, View } from 'react-native';
+import {
+  Modal,
+  Text,
+  TouchableOpacity,
+  useWindowDimensions,
+  View,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import {
@@ -30,6 +36,7 @@ export function WalletNotificationLinkSection({
   sharedPackageWalletNames = [],
 }: Props) {
   const insets = useSafeAreaInsets();
+  const { height: windowHeight } = useWindowDimensions();
   const [visible, setVisible] = useState(false);
   const data = useNotificationSourceData();
   const selectedLabel =
@@ -83,6 +90,7 @@ export function WalletNotificationLinkSection({
           <SquircleView
             className="max-h-[88%] overflow-hidden rounded-[28px] bg-canvas"
             cornerSmoothing={squircleSmoothing.hero}
+            style={{ height: Math.round(windowHeight * 0.76) }}
           >
             <View
               className="px-5 pb-4 pt-3"

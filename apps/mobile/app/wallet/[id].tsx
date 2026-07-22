@@ -308,7 +308,6 @@ export default function EditWalletScreen() {
         <BrandHeader title="Wallet" />
         <FeedbackState
           className="flex-1"
-          description="Return to Accounts and choose a wallet to edit."
           icon="wallet"
           title="Missing wallet"
         />
@@ -339,7 +338,6 @@ export default function EditWalletScreen() {
         <BrandHeader title="Wallet" />
         <FeedbackState
           className="flex-1"
-          description={loadError}
           icon="alert-circle-outline"
           mode="error"
           title="Couldn’t open this wallet"
@@ -464,10 +462,6 @@ export default function EditWalletScreen() {
 
             <Text className="mt-8 text-base font-bold text-foreground">
               Notification link
-            </Text>
-            <Text className="mb-3 mt-1 text-sm leading-5 text-muted">
-              Link an app so possible transactions can be
-              automatically routed to this wallet.
             </Text>
             <Surface tone="muted">
               <WalletNotificationLinkSection

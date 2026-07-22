@@ -1,6 +1,7 @@
 const HEADER_HEIGHT = 56;
 const ROW_HEIGHT = 64;
 const VERTICAL_PADDING = 44;
+const PRIMARY_ACTION_SPACE = 80;
 const EMPTY_LIST_HEIGHT = 48;
 const MIN_HEIGHT = 220;
 const MAX_HEIGHT_RATIO = 0.78;
@@ -8,15 +9,9 @@ const MAX_HEIGHT_RATIO = 0.78;
 const SCROLL_THRESHOLD = 6;
 
 /** Bottom-sheet height that grows with wallet count, capped for long lists. */
-export function walletPickerSheetHeight(
-  walletCount: number,
-  windowHeight: number,
-): number {
-  const listHeight =
-    walletCount === 0
-      ? EMPTY_LIST_HEIGHT
-      : walletCount * ROW_HEIGHT;
-  const raw = HEADER_HEIGHT + listHeight + VERTICAL_PADDING;
+export function walletPickerSheetHeight(walletCount: number, windowHeight: number): number {
+  const listHeight = walletCount === 0 ? EMPTY_LIST_HEIGHT : walletCount * ROW_HEIGHT;
+  const raw = HEADER_HEIGHT + listHeight + VERTICAL_PADDING + PRIMARY_ACTION_SPACE;
   const max = Math.round(windowHeight * MAX_HEIGHT_RATIO);
   return Math.min(Math.max(raw, MIN_HEIGHT), max);
 }

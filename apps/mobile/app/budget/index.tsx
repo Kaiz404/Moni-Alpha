@@ -48,7 +48,6 @@ export default function BudgetsScreen() {
           <FeedbackState
             icon="piggy-bank"
             title="No budgets yet"
-            description="Add a monthly cap for the category you want to keep in view."
           />
         </View>
       ) : (

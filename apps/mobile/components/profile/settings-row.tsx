@@ -13,7 +13,6 @@ type SettingsRowProps = {
   iconBgColor?: string;
   iconColor?: string;
   title: string;
-  subtitle?: string;
   onPress: () => void;
   right?: ReactNode;
   disabled?: boolean;
@@ -26,7 +25,6 @@ export function SettingsRow({
   iconBgColor,
   iconColor,
   title,
-  subtitle,
   onPress,
   right,
   disabled,
@@ -61,14 +59,6 @@ export function SettingsRow({
         >
           {title}
         </Text>
-        {subtitle ? (
-          <Text
-            className="mt-0.5 text-[13px] leading-[17px] text-muted"
-            numberOfLines={2}
-          >
-            {subtitle}
-          </Text>
-        ) : null}
       </View>
       {right ?? (
         <IconSymbol

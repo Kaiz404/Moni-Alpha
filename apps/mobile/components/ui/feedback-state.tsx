@@ -5,7 +5,6 @@ import { IconSymbol, type IconSymbolName } from './icon-symbol';
 
 type FeedbackStateProps = {
   title: string;
-  description?: string;
   icon?: IconSymbolName;
   mode?: 'empty' | 'loading' | 'error';
   className?: string;
@@ -14,7 +13,6 @@ type FeedbackStateProps = {
 /** Calm empty/loading/error treatment for a full content area or list. */
 export function FeedbackState({
   title,
-  description,
   icon = 'inbox',
   mode = 'empty',
   className,
@@ -45,11 +43,6 @@ export function FeedbackState({
       <Text className="text-center text-lg font-bold text-foreground">
         {title}
       </Text>
-      {description ? (
-        <Text className="mt-2 max-w-sm text-center text-sm leading-5 text-muted">
-          {description}
-        </Text>
-      ) : null}
     </View>
   );
 }

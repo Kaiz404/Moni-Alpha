@@ -1,4 +1,4 @@
-import { Modal, View } from 'react-native';
+import { Modal, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { CategoryPickerContent } from './category-picker-content';
@@ -32,6 +32,7 @@ export function CategoryPickerModal({
   ...props
 }: CategoryPickerModalProps) {
   const insets = useSafeAreaInsets();
+  const { height: windowHeight } = useWindowDimensions();
   return (
     <Modal
       animationType="slide"
@@ -43,6 +44,7 @@ export function CategoryPickerModal({
         <SquircleView
           className="max-h-[82%] overflow-hidden rounded-[28px] bg-canvas"
           cornerSmoothing={squircleSmoothing.hero}
+          style={{ height: Math.round(windowHeight * 0.78) }}
         >
           <View
             className="max-h-full px-5 pb-3 pt-3"

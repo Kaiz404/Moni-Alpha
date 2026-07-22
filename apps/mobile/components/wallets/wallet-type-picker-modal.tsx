@@ -1,4 +1,4 @@
-import { Modal, View } from 'react-native';
+import { Modal, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import {
@@ -22,6 +22,7 @@ export function WalletTypePickerModal({
   ...props
 }: WalletTypePickerModalProps) {
   const insets = useSafeAreaInsets();
+  const { height: windowHeight } = useWindowDimensions();
 
   return (
     <Modal
@@ -34,6 +35,7 @@ export function WalletTypePickerModal({
         <SquircleView
           className="max-h-[82%] overflow-hidden rounded-[28px] bg-canvas"
           cornerSmoothing={squircleSmoothing.hero}
+          style={{ height: Math.round(windowHeight * 0.66) }}
         >
           <View
             className="pb-4 pt-3"

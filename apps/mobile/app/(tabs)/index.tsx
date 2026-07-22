@@ -209,9 +209,6 @@ export default function HomeScreen() {
                 <Text className="text-sm font-bold text-foreground">
                   {pendingProposals.length} ready to review
                 </Text>
-                <Text className="mt-0.5 text-xs text-muted">
-                  Confirm each record before it enters your ledger.
-                </Text>
               </View>
               <MaterialDesignIcons
                 name="chevron-right"
@@ -268,9 +265,6 @@ export default function HomeScreen() {
               <View className="mt-2">
                 <Text className="text-lg font-bold text-foreground">
                   Add your first account
-                </Text>
-                <Text className="mt-1 text-sm leading-5 text-muted">
-                  Moni will always keep each native currency separate.
                 </Text>
               </View>
             )}

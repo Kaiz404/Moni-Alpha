@@ -22,6 +22,7 @@ import {
 
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { Surface } from '@/components/ui/surface';
+import { PrimaryButton } from '@/components/ui/primary-button';
 import { PROPOSED_TRANSACTIONS_CHANGED } from '@/lib/proposals/proposed-transactions-events';
 import {
   proposalPresentationForSource,
@@ -145,7 +146,7 @@ export function ProposalSummarySheet() {
         />
         <Surface
           smoothing="hero"
-          className="rounded-[28px] px-6 pb-8 pt-4"
+          className="relative min-h-[400px] rounded-[28px] px-6 pb-24 pt-4"
         >
           <View className="mb-5 h-1.5 w-10 self-center rounded-full bg-border" />
           <View className="flex-row items-start gap-3">
@@ -159,10 +160,6 @@ export function ProposalSummarySheet() {
             <View className="flex-1">
               <Text className="text-base font-bold text-foreground">
                 Review a notification capture
-              </Text>
-              <Text className="mt-1 text-sm leading-5 text-muted">
-                Moni found a possible transaction. Nothing is saved
-                until you approve it.
               </Text>
             </View>
           </View>
@@ -208,26 +205,23 @@ export function ProposalSummarySheet() {
           <Text className="mt-3 text-center text-xs text-muted">
             {copy.queueLabel}
           </Text>
-          <View className="mt-4 flex-row gap-3">
+          <View className="mt-4">
             <Pressable
               onPress={defer}
-              className="flex-1 items-center justify-center rounded-2xl bg-surface-2 py-3.5"
+              className="items-center justify-center rounded-2xl bg-surface-2 py-3.5"
               accessibilityRole="button"
             >
               <Text className="text-base font-semibold text-foreground">
                 {copy.secondaryLabel}
               </Text>
             </Pressable>
-            <Pressable
-              onPress={review}
-              className="flex-1 items-center justify-center rounded-2xl bg-primary py-3.5"
-              accessibilityRole="button"
-            >
-              <Text className="text-base font-semibold text-primary-foreground">
-                {copy.primaryLabel}
-              </Text>
-            </Pressable>
           </View>
+          <PrimaryButton
+            className="absolute bottom-6 left-6 right-6"
+            icon="check"
+            label={copy.primaryLabel}
+            onPress={review}
+          />
         </Surface>
       </View>
     </Modal>

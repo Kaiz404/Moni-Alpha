@@ -32,9 +32,6 @@ export function ThemePreferencePicker() {
               <Text className="text-[17px] font-semibold text-foreground">
                 {option.label}
               </Text>
-              <Text className="mt-0.5 text-[13px] text-muted">
-                {option.subtitle}
-              </Text>
             </View>
             <View
               className={`h-5 w-5 items-center justify-center rounded-full border-2 ${

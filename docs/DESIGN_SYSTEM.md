@@ -225,6 +225,7 @@ Use the platform system font family where possible: SF-family behavior on iOS an
 - Use tabular/monospaced numerals for aligned financial lists and calendar values.
 - Let large amounts wrap or abbreviate predictably; never reduce type to preserve a layout.
 - Dynamic Type is mandatory. Critical cards must reflow vertically instead of clip.
+- Do not use subtitles beneath titles, section headings, sheet headings, or settings rows. A title stands on its own; keep essential instructions in the relevant control, state, or dedicated content instead.
 
 ### 5.5 Iconography
 
@@ -411,8 +412,8 @@ Use a sheet for a focused, reversible choice that preserves the form beneath it;
 - Start with a concise title and an explicit close icon. On Android, native back, a swipe, or a tap outside may also dismiss the sheet when the platform permits it.
 - Repeated choices are full-width, comfortably tappable card rows: opaque `bg-card`, `rounded-2xl`, at least 56pt tall, 16pt horizontal padding, and an 8pt gap. The selected row uses `bg-primary-muted` plus a visible selected indicator.
 - A row may show a leading icon or color marker, but its text label remains the primary recognition cue. Use the same card treatment for the form control that opens the picker.
-- Selecting a value updates the form and selected state but does **not** close the sheet. Close only through the explicit close control or a native dismissal gesture/action; reset transient search state on dismissal.
-- Keep scrolling inside the sheet body. Android Expo UI sheets must give scrollable React Native content a bounded, weighted host rather than content-sized measurement.
+- Selecting a value updates the form and selected state but does **not** close the sheet. A labeled primary confirmation action with a meaningful icon is fixed to the bottom of every sheet; it confirms the current state and closes the sheet. The close control and native dismissal gestures remain available; reset transient search state on dismissal.
+- Keep scrolling inside the sheet body. The primary action is absolutely positioned relative to the sheet, never inside its scroll container, and every scroll container reserves at least the action height plus its gap at the bottom so its final content remains reachable. Android Expo UI sheets must give scrollable React Native content a bounded, weighted host rather than content-sized measurement.
 
 ### 7.11 Processing state
 

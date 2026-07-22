@@ -45,14 +45,7 @@ export default function DebtsScreen() {
         contentContainerClassName="px-5 pb-10 pt-6"
         showsVerticalScrollIndicator={false}
       >
-        <Text className="text-2xl font-bold text-foreground">
-          People and balances
-        </Text>
-        <Text className="mt-2 text-[15px] leading-5 text-muted">
-          Keep money you lend and borrow clear without mixing it into
-          spending.
-        </Text>
-        <View className="mt-6 flex-row gap-2">
+        <View className="flex-row gap-2">
           {(['owed_to_me', 'i_owe'] as const).map((option) => {
             const selected = tab === option;
             return (
@@ -97,11 +90,6 @@ export default function DebtsScreen() {
         {shown.length === 0 ? (
           <FeedbackState
             className="mt-10"
-            description={
-              owedToMe
-                ? 'Record money you lend to someone.'
-                : 'Record money you borrow from someone.'
-            }
             icon="account-group-outline"
             title={
               owedToMe ? 'Nothing owed to you' : 'Nothing to repay'

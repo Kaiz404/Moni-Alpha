@@ -249,10 +249,6 @@ export default function NewWalletScreen() {
             <Text className="mt-8 text-base font-bold text-foreground">
               Notification link
             </Text>
-            <Text className="mb-3 mt-1 text-sm leading-5 text-muted">
-              Link an app so possible transactions can be
-              automatically routed to this wallet.
-            </Text>
             <Surface tone="muted">
               <WalletNotificationLinkSection
                 value={notificationLink}

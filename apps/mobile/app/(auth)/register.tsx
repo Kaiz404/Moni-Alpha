@@ -78,10 +78,6 @@ export default function RegisterScreen() {
           <Text className="text-[28px] font-bold leading-[34px] text-foreground">
             Start with a clearer view
           </Text>
-          <Text className="mt-2 max-w-md text-[16px] leading-[22px] text-muted">
-            Create a Moni account to keep your personal finance setup
-            in sync while retaining a local-first experience.
-          </Text>
         </View>
 
         <FormField

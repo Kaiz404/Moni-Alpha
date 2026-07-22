@@ -80,16 +80,7 @@ export default function NewDebtScreen() {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        <Text className="text-2xl font-bold text-foreground">
-          Keep it clear
-        </Text>
-        <Text className="mt-2 text-[15px] leading-5 text-muted">
-          Record who is involved, the native-currency amount, and an
-          optional due date. You stay in control of every later
-          repayment.
-        </Text>
-
-        <View className="mt-6 flex-row gap-2">
+        <View className="flex-row gap-2">
           {(['owed_to_me', 'i_owe'] as const).map((option) => {
             const selected = direction === option;
             return (
@@ -155,13 +146,8 @@ export default function NewDebtScreen() {
         <Text className="mb-2 mt-8 text-base font-bold text-foreground">
           Cash wallet
         </Text>
-        <Text className="mb-3 text-sm leading-5 text-muted">
-          This creates the matching cash entry in a wallet using the
-          same currency.
-        </Text>
         {wallets.length === 0 ? (
           <FeedbackState
-            description="Add a wallet before recording a cash debt."
             icon="wallet"
             title="No wallet available"
           />

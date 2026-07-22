@@ -1,4 +1,8 @@
-import { Text, View } from 'react-native';
+import { ScrollView, Text, View } from 'react-native';
+import {
+  BOTTOM_SHEET_PRIMARY_ACTION_SPACE,
+  BottomSheetPrimaryAction,
+} from '@/components/ui/bottom-sheet-primary-action';
 import { IconAction } from '@/components/ui/icon-action';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { SolidWalletCard } from '@/components/ui/solid-wallet-card';
@@ -33,104 +37,112 @@ export function WalletColorPickerContent({
   const previewName = name.trim() || 'Wallet name';
 
   return (
-    <View className="px-4">
+    <View className="flex-1 px-4">
       <View className="mb-5 flex-row items-center justify-between">
-        <View className="flex-1 pr-3">
-          <Text className="text-xl font-bold text-foreground">
-            Color
-          </Text>
-          <Text className="mt-1 text-sm leading-5 text-muted">
-            Choose a color that makes this wallet easy to spot.
-          </Text>
-        </View>
+        <Text className="flex-1 pr-3 text-xl font-bold text-foreground">
+          Color
+        </Text>
         <IconAction
           accessibilityLabel="Close color picker"
           icon="close"
           onPress={onClose}
         />
       </View>
-
-      <SolidWalletCard
-        cardStyle={style}
-        className="h-44 w-full justify-between p-5"
+      <ScrollView
+        className="flex-1"
+        contentContainerStyle={{
+          paddingBottom: BOTTOM_SHEET_PRIMARY_ACTION_SPACE,
+        }}
+        showsVerticalScrollIndicator={false}
       >
-        <View
-          pointerEvents="none"
-          className="absolute -bottom-1 -right-3"
-          style={{ opacity: 0.18 }}
+        <SolidWalletCard
+          cardStyle={style}
+          className="h-44 w-full justify-between p-5"
         >
-          <IconSymbol
-            name={resolveWalletIcon(undefined, type)}
-            size={78}
-            color={style.contentColor}
-          />
-        </View>
-        <Text
-          className="pr-12 text-lg font-bold"
-          numberOfLines={1}
-          style={{ color: style.contentColor }}
-        >
-          {previewName}
-        </Text>
-        <View>
+          <View
+            pointerEvents="none"
+            className="absolute -bottom-1 -right-3"
+            style={{ opacity: 0.18 }}
+          >
+            <IconSymbol
+              name={resolveWalletIcon(undefined, type)}
+              size={78}
+              color={style.contentColor}
+            />
+          </View>
           <Text
-            className="text-2xl font-bold"
+            className="pr-12 text-lg font-bold"
+            numberOfLines={1}
             style={{ color: style.contentColor }}
           >
-            0.00 {currency.trim().toUpperCase() || 'USD'}
+            {previewName}
           </Text>
-        </View>
-      </SolidWalletCard>
-
-      <Text className="mb-3 mt-6 text-sm font-semibold text-foreground">
-        Color options
-      </Text>
-      <View className="flex-row flex-wrap">
-        {WALLET_CARD_STYLES.map((item) => {
-          const selected = item.id === value;
-          return (
-            <TactilePressable
-              key={item.id}
-              accessibilityLabel={`Choose ${item.label} wallet color`}
-              accessibilityState={{ selected }}
-              className="mb-4 items-center"
-              onPress={() => onChange(item.id)}
-              style={{ width: '25%' }}
+          <View>
+            <Text
+              className="text-2xl font-bold"
+              style={{ color: style.contentColor }}
             >
-              <View className="h-14 w-14 items-center justify-center rounded-2xl">
-                <View
-                  style={{
-                    alignItems: 'center',
-                    backgroundColor: item.backgroundColor,
-                    borderRadius: 14,
-                    height: 56,
-                    justifyContent: 'center',
-                    width: 56,
-                  }}
-                >
-                  {selected ? (
-                    <IconSymbol
-                      name="check"
-                      size={18}
-                      color={item.contentColor}
-                    />
-                  ) : null}
-                </View>
-              </View>
-              <Text
-                className={
-                  selected
-                    ? 'mt-1.5 text-[11px] font-semibold text-foreground'
-                    : 'mt-1.5 text-[11px] text-muted'
-                }
-                numberOfLines={1}
+              0.00 {currency.trim().toUpperCase() || 'USD'}
+            </Text>
+          </View>
+        </SolidWalletCard>
+
+        <Text className="mb-3 mt-6 text-sm font-semibold text-foreground">
+          Color options
+        </Text>
+        <View className="flex-row flex-wrap">
+          {WALLET_CARD_STYLES.map((item) => {
+            const selected = item.id === value;
+            return (
+              <TactilePressable
+                key={item.id}
+                accessibilityLabel={`Choose ${item.label} wallet color`}
+                accessibilityState={{ selected }}
+                className="mb-4 items-center"
+                onPress={() => onChange(item.id)}
+                style={{ width: '25%' }}
               >
-                {item.label}
-              </Text>
-            </TactilePressable>
-          );
-        })}
-      </View>
+                <View className="h-14 w-14 items-center justify-center rounded-2xl">
+                  <View
+                    style={{
+                      alignItems: 'center',
+                      backgroundColor: item.backgroundColor,
+                      borderRadius: 14,
+                      height: 56,
+                      justifyContent: 'center',
+                      width: 56,
+                    }}
+                  >
+                    {selected ? (
+                      <IconSymbol
+                        name="check"
+                        size={18}
+                        color={item.contentColor}
+                      />
+                    ) : null}
+                  </View>
+                </View>
+                <Text
+                  className={
+                    selected
+                      ? 'mt-1.5 text-[11px] font-semibold text-foreground'
+                      : 'mt-1.5 text-[11px] text-muted'
+                  }
+                  numberOfLines={1}
+                >
+                  {item.label}
+                </Text>
+              </TactilePressable>
+            );
+          })}
+        </View>
+      </ScrollView>
+      <BottomSheetPrimaryAction
+        horizontalInset={16}
+        icon="check"
+        label="Use color"
+        onPress={onClose}
+      />
     </View>
   );
 }

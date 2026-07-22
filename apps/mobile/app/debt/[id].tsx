@@ -93,7 +93,6 @@ export default function DebtDetailScreen() {
         <BrandHeader title="Debt" />
         <FeedbackState
           className="flex-1"
-          description="Return to Debts and select a record to view."
           icon="account-outline"
           title="Debt not found"
         />

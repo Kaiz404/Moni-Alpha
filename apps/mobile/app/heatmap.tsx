@@ -132,9 +132,6 @@ export default function HeatmapScreen() {
         <Text className="mb-2 text-sm font-bold text-foreground">
           Pinmap
         </Text>
-        <Text className="mb-2 text-xs text-muted">
-          Tap a pin to view transaction details.
-        </Text>
         <Text className="mt-1 text-xs text-muted">
           {pinPoints.length} pinned location(s)
         </Text>

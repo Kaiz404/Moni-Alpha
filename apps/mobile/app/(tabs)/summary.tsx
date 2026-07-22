@@ -270,10 +270,7 @@ export default function InsightsScreen() {
       >
         <View className="mb-7 flex-row items-start justify-between">
           <View className="flex-1 pr-3">
-            <Text className="text-sm font-semibold text-muted">
-              Patterns, not guesses
-            </Text>
-            <Text className="mt-1 text-[28px] font-bold leading-9 text-foreground">
+            <Text className="text-[28px] font-bold leading-9 text-foreground">
               Insights
             </Text>
           </View>
@@ -289,10 +286,6 @@ export default function InsightsScreen() {
           >
             <Text className="text-lg font-bold text-foreground">
               Start with one wallet
-            </Text>
-            <Text className="mt-1 text-sm leading-5 text-muted">
-              Moni keeps currencies separate, so your insights will
-              appear as soon as you add a wallet and record activity.
             </Text>
             <Pressable
               className="mt-5 self-start rounded-2xl bg-primary px-4 py-3"
@@ -390,10 +383,7 @@ export default function InsightsScreen() {
               smoothing="hero"
               className="mb-6 rounded-moni-xl p-5"
             >
-              <Text className="text-sm font-semibold text-muted">
-                Where did your money go?
-              </Text>
-              <View className="mt-1 flex-row items-baseline justify-between">
+              <View className="flex-row items-baseline justify-between">
                 <Text className="text-xl font-bold text-foreground">
                   {formatMonth(currentMonth)} spending
                 </Text>
@@ -438,9 +428,6 @@ export default function InsightsScreen() {
                   <Text className="text-base font-bold text-foreground">
                     {takeaway.headline}
                   </Text>
-                  <Text className="mt-1 text-sm leading-5 text-muted">
-                    {takeaway.detail}
-                  </Text>
                 </View>
               </View>
             </Surface>
@@ -454,9 +441,6 @@ export default function InsightsScreen() {
                 <View>
                   <Text className="text-base font-bold text-foreground">
                     Balance trend
-                  </Text>
-                  <Text className="mt-1 text-sm text-muted">
-                    Tap or drag across the line to inspect a date.
                   </Text>
                 </View>
               </View>
@@ -512,9 +496,6 @@ export default function InsightsScreen() {
                 <View>
                   <Text className="text-lg font-bold text-foreground">
                     Budget pulse
-                  </Text>
-                  <Text className="mt-1 text-sm text-muted">
-                    Tap a category for the amount behind its progress.
                   </Text>
                 </View>
                 <Pressable
@@ -594,10 +575,6 @@ export default function InsightsScreen() {
               <Text className="text-lg font-bold text-foreground">
                 Activity calendar
               </Text>
-              <Text className="mt-1 text-sm text-muted">
-                Spending days in {formatMonth(currentMonth)} ·{' '}
-                {currency}
-              </Text>
               <View className="mt-5">
                 <ActivityCalendar
                   month={currentMonth}
@@ -675,9 +652,6 @@ export default function InsightsScreen() {
                   <Text className="text-lg font-bold text-foreground">
                     Where money sits
                   </Text>
-                  <Text className="mt-1 text-sm text-muted">
-                    Original {currency} balances only
-                  </Text>
                 </View>
               </View>
               {currencyWallets.map((wallet) => (
@@ -734,9 +708,6 @@ export default function InsightsScreen() {
                 <View className="ml-3 flex-1">
                   <Text className="text-base font-bold text-foreground">
                     Transaction pinmap
-                  </Text>
-                  <Text className="mt-1 text-sm text-muted">
-                    Revisit the places behind your recorded activity.
                   </Text>
                 </View>
                 <MaterialDesignIcons

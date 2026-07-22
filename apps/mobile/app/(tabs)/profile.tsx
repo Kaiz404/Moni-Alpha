@@ -165,9 +165,6 @@ export default function ProfileScreen() {
           <Text className="text-[28px] font-bold leading-[34px] text-foreground">
             Profile
           </Text>
-          <Text className="mt-1 text-[15px] leading-5 text-muted">
-            Shape how Moni works for you.
-          </Text>
         </View>
 
         <View className="px-5">
@@ -196,10 +193,6 @@ export default function ProfileScreen() {
                 </Text>
               </View>
             </View>
-            <Text className="mt-3 text-[13px] leading-[17px] text-muted">
-              Your data stays available locally while Moni
-              synchronizes when a connection is available.
-            </Text>
           </Surface>
         </View>
 
@@ -208,10 +201,6 @@ export default function ProfileScreen() {
             Accounts & wallets
           </ProfileSectionTitle>
           <SyncStatus className="mb-4 rounded-[22px]" />
-          <Text className="mb-3 text-[13px] leading-[17px] text-muted">
-            Choose the wallet Moni should use when a receipt, message,
-            or notification does not identify one.
-          </Text>
           <DefaultWalletPicker />
         </View>
 
@@ -223,7 +212,6 @@ export default function ProfileScreen() {
               iconBgClassName="bg-accent-lilac/30"
               iconColor={tokens.accents.lilac}
               title="Categories"
-              subtitle="Preset and custom income and expense categories"
               onPress={() => router.push('/categories' as any)}
             />
             <SettingsRow
@@ -231,7 +219,6 @@ export default function ProfileScreen() {
               iconBgClassName="bg-primary-muted"
               iconColor={tokens.primary}
               title="Category budgets"
-              subtitle="Set monthly caps per category and currency"
               onPress={() => router.push('/budget' as any)}
             />
             <SettingsRow
@@ -239,7 +226,6 @@ export default function ProfileScreen() {
               iconBgClassName="bg-accent-aqua/40"
               iconColor={tokens.transfer}
               title="Debts"
-              subtitle="Track what you owe and what others owe you"
               onPress={() => router.push('/debts' as any)}
               showDivider={false}
             />
@@ -248,10 +234,6 @@ export default function ProfileScreen() {
 
         <View className="mt-6 px-5">
           <ProfileSectionTitle>Capture sources</ProfileSectionTitle>
-          <Text className="mb-3 text-[13px] leading-[17px] text-muted">
-            Permissions make scanning, voice capture, and linked bank
-            alerts available. You can change them any time.
-          </Text>
           <SettingsGroup>
             {!isAndroid ? (
               <PermissionColumn
@@ -369,7 +351,6 @@ export default function ProfileScreen() {
               iconBgClassName="bg-accent-lilac/40"
               iconColor={tokens.states.pending}
               title="Captured notifications"
-              subtitle="Review the alerts Moni has stored on this device"
               onPress={() => router.push('/notifications' as any)}
               showDivider={false}
             />
@@ -384,7 +365,6 @@ export default function ProfileScreen() {
               iconBgClassName="bg-surface-2"
               iconColor={tokens.muted}
               title="Debug panel"
-              subtitle="Diagnostics and developer tools"
               onPress={() => router.push('/debug' as any)}
               showDivider={false}
             />

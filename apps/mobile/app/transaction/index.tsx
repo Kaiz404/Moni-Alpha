@@ -240,10 +240,7 @@ export default function TransactionsScreen() {
           </Link>
         </View>
         {rows.length === 0 ? (
-          <FinanceState
-            title="No transactions yet"
-            detail="Add an income, expense, or transfer to start your ledger."
-          />
+          <FinanceState title="No transactions yet" />
         ) : (
           rows.map((row) => {
             const transfer = row.type === 'transfer';

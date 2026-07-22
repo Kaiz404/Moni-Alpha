@@ -4,6 +4,7 @@ import {
   KeyboardAvoidingView,
   Modal,
   Platform,
+  useWindowDimensions,
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -30,6 +31,7 @@ export function CurrencyPickerModal({
   onClose,
 }: CurrencyPickerModalProps) {
   const insets = useSafeAreaInsets();
+  const { height: windowHeight } = useWindowDimensions();
   const [query, setQuery] = useState('');
   const [keyboardInset, setKeyboardInset] = useState(0);
 
@@ -89,6 +91,7 @@ export function CurrencyPickerModal({
         <SquircleView
           className="max-h-[85%] overflow-hidden rounded-[28px] bg-canvas"
           cornerSmoothing={squircleSmoothing.hero}
+          style={{ height: Math.round(windowHeight * 0.78) }}
         >
           <View
             className="flex-1 px-5 pb-4 pt-3"

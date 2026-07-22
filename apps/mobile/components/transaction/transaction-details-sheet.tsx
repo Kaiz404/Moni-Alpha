@@ -1,4 +1,4 @@
-import { Modal, View } from 'react-native';
+import { Modal, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import {
@@ -27,6 +27,7 @@ export function TransactionDetailsSheet({
   ...props
 }: TransactionDetailsSheetProps) {
   const insets = useSafeAreaInsets();
+  const { height: windowHeight } = useWindowDimensions();
 
   return (
     <Modal
@@ -39,6 +40,7 @@ export function TransactionDetailsSheet({
         <SquircleView
           className="max-h-[88%] overflow-hidden rounded-[28px] bg-canvas"
           cornerSmoothing={squircleSmoothing.hero}
+          style={{ height: Math.round(windowHeight * 0.82) }}
         >
           <View
             className="max-h-full px-5 pb-3 pt-3"

@@ -1,6 +1,10 @@
 import { Pressable, ScrollView, Text, View } from 'react-native';
 
 import { IconAction } from '@/components/ui/icon-action';
+import {
+  BOTTOM_SHEET_PRIMARY_ACTION_SPACE,
+  BottomSheetPrimaryAction,
+} from '@/components/ui/bottom-sheet-primary-action';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { WalletIcon } from '@/components/wallets/wallet-icon';
 import { getWalletCardStyle } from '@/constants/wallet-card-styles';
@@ -99,7 +103,9 @@ export function WalletPickerContent({
         className="flex-1"
         scrollEnabled={walletPickerScrollEnabled(wallets.length)}
         bounces={walletPickerScrollEnabled(wallets.length)}
-        contentContainerClassName="pb-3"
+        contentContainerStyle={{
+          paddingBottom: BOTTOM_SHEET_PRIMARY_ACTION_SPACE,
+        }}
         showsVerticalScrollIndicator={false}
       >
         {wallets.length === 0 ? (
@@ -110,6 +116,11 @@ export function WalletPickerContent({
           wallets.map(row)
         )}
       </ScrollView>
+      <BottomSheetPrimaryAction
+        icon="check"
+        label="Use wallet"
+        onPress={onClose}
+      />
     </View>
   );
 }

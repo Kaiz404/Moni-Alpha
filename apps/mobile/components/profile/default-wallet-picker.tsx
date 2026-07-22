@@ -112,17 +112,14 @@ export function DefaultWalletPicker() {
   const options: {
     id: string | null;
     label: string;
-    subtitle: string;
   }[] = [
     {
       id: null,
       label: 'None',
-      subtitle: 'AI will leave wallet unset when it cannot infer one',
     },
     ...wallets.map((w) => ({
       id: w.id,
       label: w.name,
-      subtitle: `${w.type} · ${w.currency}`,
     })),
   ];
 
@@ -142,9 +139,6 @@ export function DefaultWalletPicker() {
             <View className="flex-1 min-w-0 pr-3">
               <Text className="text-[17px] font-semibold text-foreground">
                 {option.label}
-              </Text>
-              <Text className="mt-0.5 text-[13px] text-muted">
-                {option.subtitle}
               </Text>
             </View>
             <View

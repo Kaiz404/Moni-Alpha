@@ -161,7 +161,6 @@ export default function NotificationsScreen() {
         ListEmptyComponent={
           <FeedbackState
             className="mt-10"
-            description="Captured notifications stay here until you clear them. Transactions are always reviewed separately."
             icon="bell-outline"
             title="No notifications captured"
           />
@@ -172,11 +171,7 @@ export default function NotificationsScreen() {
               <Text className="text-2xl font-bold text-foreground">
                 Capture log
               </Text>
-              <Text className="mt-2 text-[15px] leading-5 text-muted">
-                Raw notification evidence for receipt and transaction
-                review. Nothing is added to your ledger automatically.
-              </Text>
-              <Text className="mt-3 text-xs font-semibold text-muted">
+              <Text className="mt-2 text-xs font-semibold text-muted">
                 {notifications.length} of 50 stored
               </Text>
             </View>

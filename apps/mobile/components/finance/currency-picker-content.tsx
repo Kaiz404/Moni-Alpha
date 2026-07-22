@@ -14,6 +14,10 @@ import {
   type CurrencyOption,
 } from '@/constants/currencies';
 import { IconAction } from '@/components/ui/icon-action';
+import {
+  BOTTOM_SHEET_PRIMARY_ACTION_SPACE,
+  BottomSheetPrimaryAction,
+} from '@/components/ui/bottom-sheet-primary-action';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 
 export type CurrencyPickerSharedProps = {
@@ -130,7 +134,10 @@ export function CurrencyPickerOptionsList({
   if (nestedScrollEnabled) {
     return (
       <FlatList
-        contentContainerStyle={{ paddingBottom: keyboardInset }}
+        contentContainerStyle={{
+          paddingBottom:
+            keyboardInset + BOTTOM_SHEET_PRIMARY_ACTION_SPACE,
+        }}
         data={options}
         keyboardShouldPersistTaps="handled"
         keyExtractor={(item) => item.code}
@@ -144,7 +151,10 @@ export function CurrencyPickerOptionsList({
 
   return (
     <ScrollView
-      contentContainerStyle={{ paddingBottom: keyboardInset }}
+      contentContainerStyle={{
+        paddingBottom:
+          keyboardInset + BOTTOM_SHEET_PRIMARY_ACTION_SPACE,
+      }}
       keyboardShouldPersistTaps="handled"
       nestedScrollEnabled
       showsVerticalScrollIndicator={false}
@@ -195,6 +205,11 @@ export function CurrencyPickerContent({
         onSelect={onSelect}
         options={options}
         selectedCode={selectedCode}
+      />
+      <BottomSheetPrimaryAction
+        icon="check"
+        label="Use currency"
+        onPress={onClose}
       />
     </View>
   );

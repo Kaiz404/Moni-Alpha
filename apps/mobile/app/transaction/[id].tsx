@@ -270,7 +270,6 @@ export default function EditTransactionScreen() {
         <BrandHeader title="Transaction" />
         <FeedbackState
           className="flex-1"
-          description="Return to activity and select a transaction to edit."
           icon="receipt-text"
           title="Missing transaction"
         />
@@ -297,7 +296,6 @@ export default function EditTransactionScreen() {
         <BrandHeader title="Transaction" />
         <FeedbackState
           className="flex-1"
-          description={loadError}
           icon="alert-circle-outline"
           mode="error"
           title="Couldn’t open this transaction"
@@ -331,12 +329,9 @@ export default function EditTransactionScreen() {
             <Text className="text-2xl font-bold text-foreground">
               Edit transaction
             </Text>
-            <Text className="mt-2 text-[15px] leading-5 text-muted">
-              Amounts stay in the selected wallet’s currency.
-            </Text>
             <Surface
               tone="muted"
-              className="mb-6 mt-6 p-4"
+              className="mb-6 mt-4 p-4"
             >
               <Text className="text-xs font-semibold uppercase tracking-wide text-muted">
                 Date &amp; time
