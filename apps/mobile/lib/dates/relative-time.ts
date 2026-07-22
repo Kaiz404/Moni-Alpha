@@ -13,13 +13,9 @@ export type FormatTimeAgoOptions = {
   includeSeconds?: boolean;
 };
 
-export function getElapsedMs(
-  value: TimeAgoInput,
-  now = Date.now(),
-): number | null {
+export function getElapsedMs(value: TimeAgoInput, now = Date.now()): number | null {
   if (value == null || value === '') return null;
-  const timestamp =
-    typeof value === 'number' ? value : new Date(value).getTime();
+  const timestamp = typeof value === 'number' ? value : new Date(value).getTime();
   if (Number.isNaN(timestamp)) return null;
   return Math.max(0, now - timestamp);
 }
@@ -28,10 +24,7 @@ function pluralize(count: number, unit: string): string {
   return count === 1 ? unit : `${unit}s`;
 }
 
-export function formatTimeAgo(
-  value: TimeAgoInput,
-  options: FormatTimeAgoOptions = {},
-): string {
+export function formatTimeAgo(value: TimeAgoInput, options: FormatTimeAgoOptions = {}): string {
   const {
     now = Date.now(),
     fallback = 'Not available',

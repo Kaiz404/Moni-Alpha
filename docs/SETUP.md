@@ -162,14 +162,14 @@ Successful `main` and manually dispatched runs upload `app-debug.apk` as a seven
 
 In **Repository → Settings → Secrets and variables → Actions**, add:
 
-| Kind | Name | Purpose |
-| --- | --- | --- |
-| Secret | `ANDROID_GOOGLE_MAPS_API_KEY` | Injected into every Android CI build. Restrict it in Google Cloud; it is embedded in the APK. |
-| Secret | `ANDROID_DEBUG_KEYSTORE_BASE64` | A stable debug keystore so CI APKs have a stable SHA-1 for Maps restrictions. |
-| Variable | `EXPO_PUBLIC_SUPABASE_URL` | Mobile client configuration, when CI needs it. |
-| Variable | `EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Mobile client configuration, when CI needs it. |
-| Variable | `EXPO_PUBLIC_AI_API_URL` | Mobile client configuration, when CI needs it. |
-| Variable | `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` | Mobile client configuration, when CI needs it. |
+| Kind     | Name                                   | Purpose                                                                                       |
+| -------- | -------------------------------------- | --------------------------------------------------------------------------------------------- |
+| Secret   | `ANDROID_GOOGLE_MAPS_API_KEY`          | Injected into every Android CI build. Restrict it in Google Cloud; it is embedded in the APK. |
+| Secret   | `ANDROID_DEBUG_KEYSTORE_BASE64`        | A stable debug keystore so CI APKs have a stable SHA-1 for Maps restrictions.                 |
+| Variable | `EXPO_PUBLIC_SUPABASE_URL`             | Mobile client configuration, when CI needs it.                                                |
+| Variable | `EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Mobile client configuration, when CI needs it.                                                |
+| Variable | `EXPO_PUBLIC_AI_API_URL`               | Mobile client configuration, when CI needs it.                                                |
+| Variable | `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID`     | Mobile client configuration, when CI needs it.                                                |
 
 `EXPO_PUBLIC_*` values are compiled into the client app and must never contain private credentials. The Android workflow injects the listed variables so its generated app configuration matches local development.
 

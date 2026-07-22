@@ -41,7 +41,9 @@ export function StartingBalanceField({
         value={value}
       />
       {hint ? (
-        <Text className="mt-2 text-xs leading-4 text-muted">{hint}</Text>
+        <Text className="mt-2 text-xs leading-4 text-muted">
+          {hint}
+        </Text>
       ) : null}
       <CurrencyPickerModal
         onClose={() => setPickerVisible(false)}

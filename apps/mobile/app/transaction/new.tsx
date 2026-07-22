@@ -223,14 +223,6 @@ export default function NewTransactionScreen() {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          <Text className="text-2xl font-bold text-foreground">
-            What changed?
-          </Text>
-          <Text className="mt-2 text-[15px] leading-5 text-muted">
-            Add it directly. Every amount stays in the selected
-            wallet’s currency.
-          </Text>
-
           <View className="mt-6 flex-row gap-2">
             {(['expense', 'income', 'transfer'] as const).map(
               (option) => {

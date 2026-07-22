@@ -14,7 +14,9 @@ export type SquircleViewProps = FastSquircleViewProps & {
   className?: string;
 };
 
-export const SquircleView = withUniwind(FastSquircleView) as ComponentType<SquircleViewProps>;
+export const SquircleView = withUniwind(
+  FastSquircleView,
+) as ComponentType<SquircleViewProps>;
 
 /** Figma-aligned smoothing for regular and feature-sized Moni surfaces. */
 export const squircleSmoothing = {

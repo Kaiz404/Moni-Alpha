@@ -2,13 +2,8 @@ import { useCSSVariable } from 'uniwind';
 
 import { ThemeFallbacks } from '@/constants/theme';
 
-function asColor(
-  value: string | number | undefined,
-  fallback: string,
-): string {
-  return typeof value === 'string' && value.length > 0
-    ? value
-    : fallback;
+function asColor(value: string | number | undefined, fallback: string): string {
+  return typeof value === 'string' && value.length > 0 ? value : fallback;
 }
 
 /**
@@ -121,10 +116,7 @@ export function useThemeTokens() {
   return {
     primary: asColor(primary, ThemeFallbacks.primary),
     primarySoft: asColor(primarySoft, ThemeFallbacks.primarySoft),
-    primaryForeground: asColor(
-      primaryForeground,
-      ThemeFallbacks.primaryForeground,
-    ),
+    primaryForeground: asColor(primaryForeground, ThemeFallbacks.primaryForeground),
     primaryMuted: asColor(primaryMuted, ThemeFallbacks.primaryMuted),
     accent: asColor(accent, ThemeFallbacks.accent),
     accents: {
@@ -162,20 +154,11 @@ export function useThemeTokens() {
     },
     category: {
       food: asColor(categoryFood, ThemeFallbacks.category.food),
-      transport: asColor(
-        categoryTransport,
-        ThemeFallbacks.category.transport,
-      ),
-      shopping: asColor(
-        categoryShopping,
-        ThemeFallbacks.category.shopping,
-      ),
+      transport: asColor(categoryTransport, ThemeFallbacks.category.transport),
+      shopping: asColor(categoryShopping, ThemeFallbacks.category.shopping),
       home: asColor(categoryHome, ThemeFallbacks.category.home),
       health: asColor(categoryHealth, ThemeFallbacks.category.health),
-      entertainment: asColor(
-        categoryEntertainment,
-        ThemeFallbacks.category.entertainment,
-      ),
+      entertainment: asColor(categoryEntertainment, ThemeFallbacks.category.entertainment),
       income: asColor(categoryIncome, ThemeFallbacks.category.income),
       other: asColor(categoryOther, ThemeFallbacks.category.other),
     },

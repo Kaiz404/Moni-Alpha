@@ -52,9 +52,10 @@ export function SyncStatusIndicator() {
       accessibilityLabel={['Sync status:', status.text].join(' ')}
     >
       <View
-        className={['mr-2 h-2 w-2 rounded-full', dotByTone[status.tone]].join(
-          ' ',
-        )}
+        className={[
+          'mr-2 h-2 w-2 rounded-full',
+          dotByTone[status.tone],
+        ].join(' ')}
       />
       <Text className="text-xs font-semibold">{status.text}</Text>
     </View>

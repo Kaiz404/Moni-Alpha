@@ -125,7 +125,10 @@ export default function HeatmapScreen() {
         ))}
       </MapView>
 
-      <Surface tone="tray" className="absolute bottom-5 left-5 right-5 p-3">
+      <Surface
+        tone="tray"
+        className="absolute bottom-5 left-5 right-5 p-3"
+      >
         <Text className="mb-2 text-sm font-bold text-foreground">
           Pinmap
         </Text>

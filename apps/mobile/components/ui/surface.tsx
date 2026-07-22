@@ -49,7 +49,9 @@ export function Surface({
   return (
     <SquircleView
       className={`rounded-[22px] ${toneClass[tone]} ${className ?? ''}`}
-      cornerSmoothing={cornerSmoothing ?? squircleSmoothing[smoothing]}
+      cornerSmoothing={
+        cornerSmoothing ?? squircleSmoothing[smoothing]
+      }
       {...props}
     />
   );

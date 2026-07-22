@@ -175,7 +175,6 @@ export default function BudgetFormScreen() {
         contentContainerClassName="px-5"
         showsVerticalScrollIndicator={false}
       >
-        
         {existing ? (
           <Surface className="mt-7">
             <View className="flex-row items-center justify-between">

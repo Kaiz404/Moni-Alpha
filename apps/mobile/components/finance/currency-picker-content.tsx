@@ -56,7 +56,9 @@ function CurrencyOptionRow({
           <Text className="text-base font-semibold text-foreground">
             {item.code}
           </Text>
-          <Text className="mt-0.5 text-sm text-muted">{item.name}</Text>
+          <Text className="mt-0.5 text-sm text-muted">
+            {item.name}
+          </Text>
         </View>
       </View>
       {selected ? (
@@ -80,7 +82,7 @@ export function CurrencyPickerHeader({
   const tokens = useThemeTokens();
 
   return (
-    <View className=''>
+    <View className="">
       <View className="mb-4 flex-row items-center justify-between gap-3">
         <Text className="flex-1 text-[22px] font-bold text-foreground">
           Choose currency

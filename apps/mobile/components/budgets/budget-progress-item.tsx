@@ -52,7 +52,9 @@ export function BudgetProgressItem({
       <View className="flex-row items-center justify-between">
         <View className="h-11 min-w-0 flex-1 flex-row items-center">
           <View
-            className={'mr-2 h-11 w-11 items-center justify-center rounded-full'}
+            className={
+              'mr-2 h-11 w-11 items-center justify-center rounded-full'
+            }
             style={{
               backgroundColor: detailed ? `${accent}` : `${accent}`,
             }}
@@ -92,7 +94,7 @@ export function BudgetProgressItem({
                 {context}
               </Text>
             </View>
-            
+
             <BudgetProgressBar
               percentage={budget.percentage}
               color={accent}

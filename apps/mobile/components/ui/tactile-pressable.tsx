@@ -31,7 +31,9 @@ export function TactilePressable({
           typeof style === 'function' ? style(state) : style;
         return [
           supplied,
-          { opacity: state.pressed ? 0.82 : 1 } satisfies StyleProp<ViewStyle>,
+          {
+            opacity: state.pressed ? 0.82 : 1,
+          } satisfies StyleProp<ViewStyle>,
         ];
       }}
     />

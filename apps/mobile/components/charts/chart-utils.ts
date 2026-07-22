@@ -22,10 +22,7 @@ export function buildDonutSegments(
   values: DonutValue[],
   startAngle = -Math.PI / 2,
 ): DonutSegment[] {
-  const total = values.reduce(
-    (sum, item) => sum + Math.max(0, item.value),
-    0,
-  );
+  const total = values.reduce((sum, item) => sum + Math.max(0, item.value), 0);
   if (total <= 0) return [];
 
   let cursor = startAngle;
@@ -59,10 +56,7 @@ export function arcPath(
   return `M ${center} ${center} L ${startX} ${startY} A ${radius} ${radius} 0 ${largeArc} 1 ${endX} ${endY} Z`;
 }
 
-export function findDonutSegmentAtAngle(
-  segments: DonutSegment[],
-  angle: number,
-): number | null {
+export function findDonutSegmentAtAngle(segments: DonutSegment[], angle: number): number | null {
   const normalized = ((angle % TAU) + TAU) % TAU;
   for (const segment of segments) {
     const start = ((segment.startAngle % TAU) + TAU) % TAU;
@@ -124,10 +118,7 @@ export function projectLinePoints(
   }));
 }
 
-export function findNearestLinePointIndex(
-  points: ProjectedLinePoint[],
-  x: number,
-): number | null {
+export function findNearestLinePointIndex(points: ProjectedLinePoint[], x: number): number | null {
   if (!points.length) return null;
   let nearestIndex = 0;
   let nearestDistance = Number.POSITIVE_INFINITY;
@@ -155,10 +146,7 @@ export type CalendarCell = {
   intensity: number;
 };
 
-export function buildActivityCalendar(
-  month: string,
-  activities: ActivityDay[],
-): CalendarCell[] {
+export function buildActivityCalendar(month: string, activities: ActivityDay[]): CalendarCell[] {
   const parsed = /^(\d{4})-(\d{2})$/.exec(month);
   if (!parsed) return [];
   const year = Number(parsed[1]);

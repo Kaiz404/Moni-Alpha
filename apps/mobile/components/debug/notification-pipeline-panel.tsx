@@ -65,7 +65,9 @@ export function NotificationPipelinePanel() {
           onPress={refresh}
           hitSlop={8}
         >
-          <Text className="text-xs font-semibold text-primary">Refresh</Text>
+          <Text className="text-xs font-semibold text-primary">
+            Refresh
+          </Text>
         </TouchableOpacity>
       </View>
       <Text className="mt-1 text-xs leading-4 text-muted">

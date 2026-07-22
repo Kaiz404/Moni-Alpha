@@ -76,7 +76,9 @@ export function PermissionColumn({
         </Text>
       ) : granted ? (
         <View className="rounded-xl bg-success/15 px-3 py-2">
-          <Text className="text-[13px] font-semibold text-success">On</Text>
+          <Text className="text-[13px] font-semibold text-success">
+            On
+          </Text>
         </View>
       ) : showAction && actionLabel && onAction ? (
         <TouchableOpacity
@@ -94,7 +96,9 @@ export function PermissionColumn({
         </TouchableOpacity>
       ) : (
         <View className="rounded-xl bg-surface-2 px-3 py-2">
-          <Text className="text-[13px] font-semibold text-muted">Off</Text>
+          <Text className="text-[13px] font-semibold text-muted">
+            Off
+          </Text>
         </View>
       )}
     </View>

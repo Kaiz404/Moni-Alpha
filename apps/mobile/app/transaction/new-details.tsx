@@ -112,7 +112,9 @@ export default function NewTransactionDetailsScreen() {
         contentContainerClassName="px-4 pt-4 pb-2"
         showsVerticalScrollIndicator={false}
       >
-        <Text className="text-2xl font-bold text-foreground">A little context</Text>
+        <Text className="text-2xl font-bold text-foreground">
+          A little context
+        </Text>
         <Text className="mt-2 text-[15px] leading-5 text-muted">
           Optional details help you recognize this entry later.
         </Text>
@@ -141,7 +143,10 @@ export default function NewTransactionDetailsScreen() {
 
         {!isTransfer ? (
           locationLoading ? (
-            <Surface tone="muted" className="mt-6 flex-row items-center gap-3 p-4">
+            <Surface
+              tone="muted"
+              className="mt-6 flex-row items-center gap-3 p-4"
+            >
               <ActivityIndicator
                 size="small"
                 color={tokens.primary}
@@ -151,10 +156,13 @@ export default function NewTransactionDetailsScreen() {
               </Text>
             </Surface>
           ) : locationUnavailable || !locationSnapshot ? (
-            <Surface tone="muted" className="mt-6 p-4">
+            <Surface
+              tone="muted"
+              className="mt-6 p-4"
+            >
               <Text className="text-sm leading-5 text-muted">
-                Location unavailable. Enable location access to attach this
-                transaction to where you are now.
+                Location unavailable. Enable location access to attach
+                this transaction to where you are now.
               </Text>
             </Surface>
           ) : (
@@ -212,10 +220,13 @@ export default function NewTransactionDetailsScreen() {
             </Surface>
           )
         ) : (
-          <Surface tone="muted" className="mt-6 p-4">
+          <Surface
+            tone="muted"
+            className="mt-6 p-4"
+          >
             <Text className="text-sm leading-5 text-muted">
-              Transfers move money between your wallets without changing your
-              overall net worth.
+              Transfers move money between your wallets without
+              changing your overall net worth.
             </Text>
           </Surface>
         )}
@@ -237,5 +248,11 @@ export default function NewTransactionDetailsScreen() {
 
 const styles = StyleSheet.create({
   locationMapBox: { height: 200, width: '100%' },
-  locationMap: { bottom: 0, left: 0, position: 'absolute', right: 0, top: 0 },
+  locationMap: {
+    bottom: 0,
+    left: 0,
+    position: 'absolute',
+    right: 0,
+    top: 0,
+  },
 });

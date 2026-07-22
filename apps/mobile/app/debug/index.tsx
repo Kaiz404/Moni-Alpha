@@ -203,9 +203,7 @@ export default function DebugPage() {
                   <Text
                     className="text-[10px] mt-0.5"
                     style={{
-                      color: isDisabled
-                        ? tokens.muted
-                        : tokens.muted,
+                      color: isDisabled ? tokens.muted : tokens.muted,
                     }}
                     numberOfLines={2}
                   >
@@ -273,8 +271,8 @@ export default function DebugPage() {
                     style={{
                       color:
                         selectedProcessLog === id
-                        ? tokens.primary
-                        : tokens.muted,
+                          ? tokens.primary
+                          : tokens.muted,
                     }}
                   >
                     {PROCESS_LABELS[id]}

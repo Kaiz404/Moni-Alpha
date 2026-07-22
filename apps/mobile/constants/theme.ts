@@ -49,12 +49,5 @@ export const ThemeFallbacks = {
     income: '#438E5A',
     other: '#7B8179',
   },
-  chart: [
-    '#438E5A',
-    '#4F9A92',
-    '#9A7FD1',
-    '#D59A45',
-    '#D46F64',
-    '#B67EAA',
-  ] as const,
+  chart: ['#438E5A', '#4F9A92', '#9A7FD1', '#D59A45', '#D46F64', '#B67EAA'] as const,
 } as const;
