@@ -1,7 +1,7 @@
 import type { InstalledAppInfo } from './MoniAndroidApps.types';
 
 export default {
-  async getInstalledLauncherAppsAsync(): Promise<InstalledAppInfo[]> {
+  async getInstalledAppsAsync(_packageNames: string[]): Promise<InstalledAppInfo[]> {
     return [];
   },
   async getAppInfoAsync(): Promise<InstalledAppInfo | null> {

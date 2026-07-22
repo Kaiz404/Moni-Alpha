@@ -4,7 +4,7 @@ import { requireNativeModule } from 'expo';
 import type { InstalledAppInfo } from './MoniAndroidApps.types';
 
 const stub = {
-  async getInstalledLauncherAppsAsync(): Promise<InstalledAppInfo[]> {
+  async getInstalledAppsAsync(_packageNames: string[]): Promise<InstalledAppInfo[]> {
     return [];
   },
   async getAppInfoAsync(_packageName: string): Promise<InstalledAppInfo | null> {

@@ -1,13 +1,1 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
-  <!--
-    Android 11+ (targetSdk 30+) filters PackageManager results unless we declare
-    what we need to see. Without this, getInstalledLauncherAppsAsync returns a
-    near-empty list and curated banking apps look "not installed".
-  -->
-  <queries>
-    <intent>
-      <action android:name="android.intent.action.MAIN" />
-      <category android:name="android.intent.category.LAUNCHER" />
-    </intent>
-  </queries>
-</manifest>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" />

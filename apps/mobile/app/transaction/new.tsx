@@ -388,11 +388,6 @@ export default function NewTransactionScreen() {
             <Text className="text-sm font-bold text-foreground">
               {currency ?? 'Choose a wallet'}
             </Text>
-            <Text className="mt-1 text-xs font-medium text-muted">
-              {selectedWallet
-                ? 'Currency follows this wallet'
-                : 'Choose a wallet to set the currency'}
-            </Text>
           </View>
         </View>
 

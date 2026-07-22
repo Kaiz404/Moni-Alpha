@@ -6,19 +6,14 @@
  *  2. Adds `android:foregroundServiceType="dataSync"` to the
  *     react-native-background-actions service so it satisfies the Android 14+
  *     (SDK 34+) requirement for typed foreground services.
- *  3. Declares Android 11+ package visibility for listing launcher apps
- *     (wallet ↔ banking-app linker via moni-android-apps).
+ *  3. Declares Android 11+ package visibility for named curated banking-app
+ *     lookups (wallet ↔ banking-app linker via moni-android-apps).
  */
 const fs = require('fs');
 const path = require('path');
 const { withAndroidManifest } = require('expo/config-plugins');
 
 const BG_ACTIONS_SERVICE = 'com.asterinet.react.bgactions.RNBackgroundActionsTask';
-
-const LAUNCHER_QUERY_INTENT = {
-  action: [{ $: { 'android:name': 'android.intent.action.MAIN' } }],
-  category: [{ $: { 'android:name': 'android.intent.category.LAUNCHER' } }],
-};
 
 function readCuratedPackageNames() {
   try {
@@ -39,23 +34,6 @@ function readCuratedPackageNames() {
 
 function ensurePackageVisibility(manifestRoot) {
   manifestRoot.queries = manifestRoot.queries ?? [];
-
-  const alreadyHasLauncherIntent = manifestRoot.queries.some((block) =>
-    (block.intent ?? []).some((intent) => {
-      const actions = (intent.action ?? []).map((a) => a.$?.['android:name']);
-      const categories = (intent.category ?? []).map((c) => c.$?.['android:name']);
-      return (
-        actions.includes('android.intent.action.MAIN') &&
-        categories.includes('android.intent.category.LAUNCHER')
-      );
-    }),
-  );
-
-  if (!alreadyHasLauncherIntent) {
-    manifestRoot.queries.push({
-      intent: [LAUNCHER_QUERY_INTENT],
-    });
-  }
 
   const declaredPackages = new Set(
     manifestRoot.queries.flatMap((block) =>
@@ -80,8 +58,7 @@ module.exports = function withNotificationListenerManifest(config) {
     manifest.manifest.$['xmlns:tools'] = 'http://schemas.android.com/tools';
 
     // ── 3. Package visibility for installed banking-app discovery ────────────
-    // Without this, PackageManager.queryIntentActivities is filtered on API 30+
-    // and the wallet linker only sees a handful of apps (or none).
+    // Without this, named PackageManager lookups are filtered on API 30+.
     ensurePackageVisibility(manifest.manifest);
 
     const application = manifest.manifest.application?.[0];

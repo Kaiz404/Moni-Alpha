@@ -20,10 +20,12 @@ import {
 } from '@expo/ui/jetpack-compose/modifiers';
 
 import {
+  NotificationAccessRequired,
   NotificationSourcePickerContent,
   getNotificationAppIconUri,
   NotificationAppIcon,
   useNotificationSourceData,
+  useNotificationSourcePermission,
   type WalletNotificationLinkValue,
 } from '@/components/wallets/notification-source-picker-content';
 import { labelForNotificationPackage } from '@/constants/notification-apps';
@@ -46,7 +48,10 @@ export function WalletNotificationLinkSection({
   const { height: windowHeight } = useWindowDimensions();
   const sheetRef = useRef<ModalBottomSheetRef>(null);
   const [visible, setVisible] = useState(false);
-  const data = useNotificationSourceData();
+  const permission = useNotificationSourcePermission();
+  const data = useNotificationSourceData(
+    permission.notificationAccessEnabled,
+  );
   const selectedLabel =
     value.notificationAppLabel ||
     (value.notificationPackage
@@ -60,30 +65,36 @@ export function WalletNotificationLinkSection({
 
   return (
     <View>
-      <TouchableOpacity
-        accessibilityLabel="Choose notification source"
-        activeOpacity={0.82}
-        className="flex-row items-center rounded-2xl px-4 py-3.5"
-        onPress={() => setVisible(true)}
-      >
-        <View className="mr-3">
-          <NotificationAppIcon
-            iconUri={getNotificationAppIconUri(
-              value.notificationPackage,
-              data.installed,
-            )}
-            size={40}
-          />
-        </View>
-        <View className="min-w-0 flex-1">
-          <Text className="text-sm font-semibold text-foreground">
-            {selectedLabel ?? 'No app selected'}
+      {permission.notificationAccessEnabled ? (
+        <TouchableOpacity
+          accessibilityLabel="Choose notification source"
+          activeOpacity={0.82}
+          className="flex-row items-center rounded-2xl px-4 py-3.5"
+          onPress={() => setVisible(true)}
+        >
+          <View className="mr-3">
+            <NotificationAppIcon
+              iconUri={getNotificationAppIconUri(
+                value.notificationPackage,
+                data.installed,
+              )}
+              size={40}
+            />
+          </View>
+          <View className="min-w-0 flex-1">
+            <Text className="text-sm font-semibold text-foreground">
+              {selectedLabel ?? 'No app selected'}
+            </Text>
+          </View>
+          <Text className="text-sm font-semibold text-primary">
+            Change
           </Text>
-        </View>
-        <Text className="text-sm font-semibold text-primary">
-          Change
-        </Text>
-      </TouchableOpacity>
+        </TouchableOpacity>
+      ) : (
+        <NotificationAccessRequired
+          onPress={permission.openNotificationSettings}
+        />
+      )}
 
       <Modal
         animationType="fade"

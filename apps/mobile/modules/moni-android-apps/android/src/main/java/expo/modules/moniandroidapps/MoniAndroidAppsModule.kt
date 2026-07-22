@@ -1,6 +1,5 @@
 package expo.modules.moniandroidapps
 
-import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.Canvas
@@ -20,8 +19,8 @@ class MoniAndroidAppsModule : Module() {
   override fun definition() = ModuleDefinition {
     Name("MoniAndroidApps")
 
-    AsyncFunction("getInstalledLauncherAppsAsync") {
-      getInstalledLauncherApps()
+    AsyncFunction("getInstalledAppsAsync") { packageNames: List<String> ->
+      getInstalledApps(packageNames)
     }
 
     AsyncFunction("getAppInfoAsync") { packageName: String ->
@@ -29,50 +28,22 @@ class MoniAndroidAppsModule : Module() {
     }
   }
 
-  private fun getInstalledLauncherApps(): List<Map<String, Any?>> {
-    val pm = reactContext.packageManager
-    val intent = Intent(Intent.ACTION_MAIN, null).addCategory(Intent.CATEGORY_LAUNCHER)
+  /**
+   * Only return the package IDs the picker can display. A launcher-wide scan
+   * produces hundreds of base64 icon payloads and can stall the JS/UI thread.
+   */
+  private fun getInstalledApps(packageNames: List<String>): List<Map<String, Any?>> {
+    val apps = packageNames
+      .asSequence()
+      .map { it.trim() }
+      .filter { it.isNotEmpty() }
+      .distinct()
+      .mapNotNull { getAppInfo(it) }
+      .sortedBy { (it["label"] as String).lowercase() }
+      .toList()
 
-    @Suppress("DEPRECATION")
-    val resolves =
-      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-        pm.queryIntentActivities(
-          intent,
-          PackageManager.ResolveInfoFlags.of(PackageManager.MATCH_ALL.toLong()),
-        )
-      } else {
-        pm.queryIntentActivities(intent, PackageManager.MATCH_ALL)
-      }
-
-    Log.d(TAG, "queryIntentActivities returned ${resolves.size} launcher activities")
-
-    val seen = mutableSetOf<String>()
-    val out = mutableListOf<Map<String, Any?>>()
-
-    for (resolve in resolves) {
-      try {
-        val pkg = resolve.activityInfo?.packageName ?: continue
-        if (!seen.add(pkg)) continue
-
-        val appInfo = resolve.activityInfo.applicationInfo ?: continue
-        val label = pm.getApplicationLabel(appInfo).toString().trim()
-        if (label.isEmpty()) continue
-
-        out.add(
-          mapOf(
-            "packageName" to pkg,
-            "label" to label,
-            // Icons are optional — never fail the whole list for one bad drawable.
-            "iconUri" to drawableToDataUri(pm.getApplicationIcon(appInfo)),
-          ),
-        )
-      } catch (error: Exception) {
-        Log.w(TAG, "Skipping launcher app due to error", error)
-      }
-    }
-
-    Log.d(TAG, "Returning ${out.size} unique installed launcher apps")
-    return out.sortedBy { (it["label"] as String).lowercase() }
+    Log.d(TAG, "Returning ${apps.size} requested installed apps")
+    return apps
   }
 
   private fun getAppInfo(packageName: String): Map<String, Any?>? {

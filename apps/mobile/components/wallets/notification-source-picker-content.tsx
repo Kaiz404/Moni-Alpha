@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
+  AppState,
   Platform,
   ScrollView,
   Text,
@@ -25,10 +26,16 @@ import { IconSymbol } from '@/components/ui/icon-symbol';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { getCachedAppIcon } from '@/lib/notifications/app-icon-cache';
 import {
+  getCachedInstalledAppsMap,
   isMoniAndroidAppsNativeAvailable,
-  loadInstalledAppsMap,
+  preloadInstalledApps,
   type InstalledAppInfo,
 } from '@/lib/notifications/installed-apps';
+import {
+  openNotificationListenerSettings,
+  readNotificationListenerPermission,
+  type NotificationListenerPermission,
+} from '@/lib/notifications/permission';
 
 export type WalletNotificationLinkValue = {
   notificationPackage: string | null;
@@ -40,31 +47,32 @@ type AppRow = NotificationAppOption & { iconUri: string | null };
 
 const accountHintTransition = LinearTransition.duration(180);
 
-export function useNotificationSourceData() {
+export function useNotificationSourceData(
+  notificationAccessEnabled = true,
+) {
+  const cachedInstalled = getCachedInstalledAppsMap();
   const [installed, setInstalled] = useState<
     Map<string, InstalledAppInfo>
-  >(new Map());
-  const [loadingInstalled, setLoadingInstalled] = useState(
-    Platform.OS === 'android',
-  );
+  >(() => cachedInstalled ?? new Map());
 
   useEffect(() => {
-    if (Platform.OS !== 'android') {
-      setLoadingInstalled(false);
+    if (Platform.OS !== 'android' || !notificationAccessEnabled)
       return;
-    }
+
     let cancelled = false;
-    void loadInstalledAppsMap()
-      .then((apps) => {
-        if (!cancelled) setInstalled(apps);
-      })
-      .finally(() => {
-        if (!cancelled) setLoadingInstalled(false);
-      });
+    void preloadInstalledApps().then((apps) => {
+      if (!cancelled) setInstalled(apps);
+    });
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [notificationAccessEnabled]);
+
+  const resolvedInstalled = getCachedInstalledAppsMap() ?? installed;
+  const loadingInstalled =
+    notificationAccessEnabled &&
+    Platform.OS === 'android' &&
+    !getCachedInstalledAppsMap();
 
   const curatedSections = useMemo(
     () =>
@@ -74,11 +82,11 @@ export function useNotificationSourceData() {
           apps: section.apps
             .map((app) => {
               const packageName = resolveInstalledPackageForCurated(
-                installed,
+                resolvedInstalled,
                 app,
               );
               if (!packageName) return null;
-              const native = installed.get(packageName);
+              const native = resolvedInstalled.get(packageName);
               return {
                 ...app,
                 packageName,
@@ -90,10 +98,75 @@ export function useNotificationSourceData() {
             .filter((app): app is AppRow => app != null),
         }))
         .filter((section) => section.apps.length > 0),
-    [installed],
+    [resolvedInstalled],
   );
 
-  return { installed, loadingInstalled, curatedSections };
+  return {
+    installed: resolvedInstalled,
+    loadingInstalled,
+    curatedSections,
+  };
+}
+
+export function useNotificationSourcePermission() {
+  const [permission, setPermission] =
+    useState<NotificationListenerPermission>('unknown');
+
+  const refreshPermission = useCallback(async () => {
+    setPermission(await readNotificationListenerPermission());
+  }, []);
+
+  useEffect(() => {
+    void refreshPermission();
+    const subscription = AppState.addEventListener(
+      'change',
+      (state) => {
+        if (state === 'active') void refreshPermission();
+      },
+    );
+    return () => subscription.remove();
+  }, [refreshPermission]);
+
+  return {
+    notificationAccessEnabled: permission === 'authorized',
+    openNotificationSettings: openNotificationListenerSettings,
+  };
+}
+
+export function NotificationAccessRequired({
+  onPress,
+}: {
+  onPress: () => void;
+}) {
+  const tokens = useThemeTokens();
+
+  return (
+    <TouchableOpacity
+      accessibilityLabel="Enable notification access"
+      activeOpacity={0.82}
+      className="flex-row items-center rounded-2xl px-4 py-3.5"
+      onPress={onPress}
+    >
+      <View className="mr-3 h-10 w-10 items-center justify-center rounded-xl bg-primary/10">
+        <IconSymbol
+          name="bell-outline"
+          size={22}
+          color={tokens.primary}
+        />
+      </View>
+      <View className="min-w-0 flex-1">
+        <Text className="text-sm font-semibold text-foreground">
+          Enable notification access
+        </Text>
+        <Text className="mt-0.5 text-xs leading-4 text-muted">
+          Allow Moni to read banking alerts before linking an app.
+        </Text>
+      </View>
+      <Text className="ml-3 text-sm font-semibold text-primary">
+        Enable
+      </Text>
+    </TouchableOpacity>
+  );
 }
 
 export function getNotificationAppIconUri(

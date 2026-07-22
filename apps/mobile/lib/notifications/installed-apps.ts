@@ -37,39 +37,7 @@ function logNativeUnavailableOnce(): void {
   );
 }
 
-/**
- * After the launcher scan, probe curated finance packages individually.
- * Helps when a bank app is installed but was missed by the launcher query,
- * or when package visibility only allows named lookups.
- */
-async function mergeCuratedPackageProbes(
-  map: Map<string, InstalledAppInfo>,
-): Promise<Map<string, InstalledAppInfo>> {
-  if (!isMoniAndroidAppsNativeAvailable()) return map;
-
-  const missing = allCuratedProbePackages().filter((pkg) => !map.has(pkg));
-  if (missing.length === 0) return map;
-
-  const results = await Promise.all(
-    missing.map(async (packageName) => {
-      try {
-        return await MoniAndroidApps.getAppInfoAsync(packageName);
-      } catch {
-        return null;
-      }
-    }),
-  );
-
-  for (const info of results) {
-    if (!info?.packageName) continue;
-    const normalized = normalizeInstalled([info]);
-    const app = normalized.get(info.packageName);
-    if (app) map.set(app.packageName, app);
-  }
-  return map;
-}
-
-/** User-facing installed apps (launcher activities). Android only. */
+/** User-facing installed curated finance apps. Android only. */
 export async function loadInstalledAppsMap(): Promise<Map<string, InstalledAppInfo>> {
   if (Platform.OS !== 'android') {
     installedCache = new Map();
@@ -83,13 +51,10 @@ export async function loadInstalledAppsMap(): Promise<Map<string, InstalledAppIn
           logNativeUnavailableOnce();
           return new Map<string, InstalledAppInfo>();
         }
-        const apps = await MoniAndroidApps.getInstalledLauncherAppsAsync();
-        let map = normalizeInstalled(apps);
-        map = await mergeCuratedPackageProbes(map);
+        const apps = await MoniAndroidApps.getInstalledAppsAsync(allCuratedProbePackages());
+        const map = normalizeInstalled(apps);
         if (__DEV__) {
-          console.log(
-            `[installed-apps] Loaded ${map.size} installed apps (${apps.length} from launcher query)`,
-          );
+          console.log(`[installed-apps] Loaded ${map.size} installed curated apps`);
         }
         return map;
       } catch (error) {
@@ -106,6 +71,15 @@ export async function loadInstalledAppsMap(): Promise<Map<string, InstalledAppIn
     });
   }
   return loadPromise;
+}
+
+/** Warm the shared installed-app cache after notification access is enabled. */
+export function preloadInstalledApps(): Promise<Map<string, InstalledAppInfo>> {
+  return loadInstalledAppsMap();
+}
+
+export function getCachedInstalledAppsMap(): Map<string, InstalledAppInfo> | null {
+  return installedCache;
 }
 
 export function clearInstalledAppsCache(): void {
