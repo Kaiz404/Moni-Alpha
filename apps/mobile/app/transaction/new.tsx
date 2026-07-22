@@ -1,31 +1,38 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Alert,
-  ScrollView,
+  Pressable,
   Text,
-  TouchableOpacity,
   View,
 } from 'react-native';
-import type { ColorValue } from 'react-native';
 import {
   router,
-  useFocusEffect,
   useLocalSearchParams,
 } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useValue } from '@legendapp/state/react';
 import { createTransactionSchema } from '@repo/types';
 
-import { BrandHeader } from '@/components/ui/brand-header';
 import { CategoryIcon } from '@/components/categories/category-icon';
+import { CategoryPickerModal } from '@/components/categories/category-picker-modal';
+import { TransactionDetailsSheet } from '@/components/transaction/transaction-details-sheet';
+import type { TransactionDetailsValue } from '@/components/transaction/transaction-details-sheet-content';
+import { TransactionModifierChip } from '@/components/transaction/transaction-selector-row';
+import { BrandHeader } from '@/components/ui/brand-header';
 import { chipClass, chipTextClass } from '@/components/ui/chip';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { NumericKeypad } from '@/components/ui/numeric-keypad';
 import { PrimaryButton } from '@/components/ui/primary-button';
 import { ScreenShell } from '@/components/ui/screen-shell';
-import { Surface } from '@/components/ui/surface';
 import { WalletIcon } from '@/components/wallets/wallet-icon';
+import { WalletPickerModal } from '@/components/wallets/wallet-picker-modal';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { useAuth } from '@/lib/auth/auth-context';
+import {
+  isoToLocalDateInput,
+  localDateInputToIso,
+} from '@/lib/dates/local-date-input';
+import { recentExpenseCategories$ } from '@/lib/finance/selectors';
 import { parseAmountInput } from '@/lib/finance/money';
 import { getCategories } from '@/lib/supabase/categories';
 import {
@@ -33,13 +40,8 @@ import {
   createTransfer,
 } from '@/lib/supabase/transactions';
 import { getWallets } from '@/lib/supabase/wallets';
-import {
-  getDraftExtras,
-  hasDraftExtras,
-  resetDraftExtras,
-} from '@/lib/transactions/draft-extras';
+import { prefetchTransactionLocation } from '@/lib/transactions/prefetch-location';
 
-const QUICK_AMOUNTS = [10, 20, 50, 100, 500];
 const MAX_AMOUNT_LENGTH = 12;
 
 type Wallet = Awaited<ReturnType<typeof getWallets>>[number];
@@ -51,6 +53,18 @@ const transactionCopy: Record<TransactionKind, string> = {
   income: 'Income',
   transfer: 'Transfer',
 };
+
+function hasDetails(
+  value: TransactionDetailsValue,
+  isTransfer: boolean,
+): boolean {
+  return Boolean(
+    value.merchant.trim() ||
+      value.description.trim() ||
+      (!isTransfer && value.locationSnapshot) ||
+      value.transactionDate !== isoToLocalDateInput(new Date().toISOString()),
+  );
+}
 
 export default function NewTransactionScreen() {
   const { user } = useAuth();
@@ -72,16 +86,23 @@ export default function NewTransactionScreen() {
   const [type, setType] = useState<TransactionKind>('expense');
   const [categoryId, setCategoryId] = useState('');
   const [saving, setSaving] = useState(false);
-  const [extras, setExtras] = useState(getDraftExtras());
+  const [walletPickerVisible, setWalletPickerVisible] = useState(false);
+  const [destinationPickerVisible, setDestinationPickerVisible] =
+    useState(false);
+  const [categoryPickerVisible, setCategoryPickerVisible] =
+    useState(false);
+  const [detailsVisible, setDetailsVisible] = useState(false);
+  const [details, setDetails] = useState<TransactionDetailsValue>(() => ({
+    merchant: '',
+    description: '',
+    transactionDate: isoToLocalDateInput(new Date().toISOString()),
+    locationSnapshot: null,
+  }));
+  const [locationLoading, setLocationLoading] = useState(true);
+  const [locationUnavailable, setLocationUnavailable] = useState(false);
 
-  useEffect(() => {
-    resetDraftExtras();
-  }, []);
-
-  useFocusEffect(
-    useCallback(() => {
-      setExtras(getDraftExtras());
-    }, []),
+  const suggestedCategories = useValue(
+    recentExpenseCategories$(user?.id ?? null),
   );
 
   useEffect(() => {
@@ -111,12 +132,66 @@ export default function NewTransactionScreen() {
     });
   }, [paramWalletId, wallets]);
 
+  useEffect(() => {
+    if (type === 'transfer') {
+      setLocationLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+    setLocationLoading(true);
+    setLocationUnavailable(false);
+    void prefetchTransactionLocation().then((snapshot) => {
+      if (cancelled) return;
+      if (snapshot) {
+        setDetails((current) => ({
+          ...current,
+          locationSnapshot: snapshot,
+        }));
+      } else {
+        setLocationUnavailable(true);
+      }
+      setLocationLoading(false);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [type]);
+
   const selectedWallet = wallets.find(
     (wallet) => wallet.id === walletId,
+  );
+  const selectedDestination = wallets.find(
+    (wallet) => wallet.id === transferToWalletId,
+  );
+  const selectedCategory = categories.find(
+    (category) => category.id === categoryId,
   );
   const destinationWallets = useMemo(
     () => wallets.filter((wallet) => wallet.id !== walletId),
     [walletId, wallets],
+  );
+  const walletPickerItems = useMemo(
+    () =>
+      wallets.map((wallet) => ({
+        id: wallet.id,
+        name: wallet.name,
+        currency: wallet.currency ?? 'USD',
+        type: wallet.type,
+        icon: wallet.icon,
+      })),
+    [wallets],
+  );
+  const categoryPickerItems = useMemo(
+    () =>
+      categories.map((category) => ({
+        id: category.id,
+        name: category.name ?? '',
+        icon: category.icon,
+        color: category.color,
+      })),
+    [categories],
   );
 
   const handleKeyPress = useCallback((key: string) => {
@@ -129,12 +204,12 @@ export default function NewTransactionScreen() {
     });
   }, []);
 
-  const handleOpenDetails = useCallback(() => {
-    router.push({
-      pathname: '/transaction/new-details',
-      params: { type },
-    } as never);
-  }, [type]);
+  const patchDetails = useCallback(
+    (patch: Partial<TransactionDetailsValue>) => {
+      setDetails((current) => ({ ...current, ...patch }));
+    },
+    [],
+  );
 
   const handleSubmit = async () => {
     if (!user || !walletId) return;
@@ -164,14 +239,17 @@ export default function NewTransactionScreen() {
           fromWalletId: walletId,
           toWalletId: transferToWalletId,
           amountMinor,
-          description: extras.description.trim() || null,
+          description: details.description.trim() || null,
         });
       } else {
-        const locationPayload = extras.locationSnapshot
+        const transactionDate =
+          localDateInputToIso(details.transactionDate) ??
+          new Date().toISOString();
+        const locationPayload = details.locationSnapshot
           ? {
-              locationLatitude: extras.locationSnapshot.latitude,
-              locationLongitude: extras.locationSnapshot.longitude,
-              locationName: extras.locationSnapshot.name,
+              locationLatitude: details.locationSnapshot.latitude,
+              locationLongitude: details.locationSnapshot.longitude,
+              locationName: details.locationSnapshot.name,
             }
           : {};
         const parsed = createTransactionSchema.safeParse({
@@ -179,9 +257,9 @@ export default function NewTransactionScreen() {
           amountMinor,
           type,
           categoryId: categoryId || null,
-          merchant: extras.merchant.trim() || null,
-          description: extras.description.trim() || null,
-          transactionDate: new Date().toISOString(),
+          merchant: details.merchant.trim() || null,
+          description: details.description.trim() || null,
+          transactionDate,
           ...locationPayload,
         });
         if (!parsed.success) {
@@ -193,7 +271,6 @@ export default function NewTransactionScreen() {
         }
         await createTransaction(parsed.data);
       }
-      resetDraftExtras();
       router.back();
     } catch (error) {
       Alert.alert(
@@ -211,257 +288,123 @@ export default function NewTransactionScreen() {
       : type === 'transfer'
         ? 'Move money'
         : 'Add expense';
-  const detailsAdded = hasDraftExtras(extras);
+  const isTransfer = type === 'transfer';
+  const detailsAdded = hasDetails(details, isTransfer);
 
   return (
     <ScreenShell variant="canvas">
       <BrandHeader title="New transaction" />
-      <View className="flex-1">
-        <ScrollView
-          className="flex-1"
-          contentContainerClassName="px-5 pb-8 pt-6"
-          keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}
-        >
-          <View className="mt-6 flex-row gap-2">
-            {(['expense', 'income', 'transfer'] as const).map(
-              (option) => {
-                const selected = type === option;
-                return (
-                  <TouchableOpacity
-                    key={option}
-                    accessibilityRole="button"
-                    accessibilityState={{ selected }}
-                    activeOpacity={0.82}
-                    className={`${chipClass(selected)} min-h-12 flex-1 items-center justify-center px-2`}
-                    onPress={() => setType(option)}
-                  >
-                    <Text
-                      className={`text-sm font-semibold ${chipTextClass(selected)}`}
-                    >
-                      {transactionCopy[option]}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              },
-            )}
-          </View>
-
-          <Surface
-            tone="raised"
-            className="mt-6 items-center px-5 pb-5 pt-6"
-          >
-            <Text className="text-sm font-semibold text-muted">
-              Amount
-            </Text>
-            <Text className="mt-2 text-center text-5xl font-bold text-foreground">
-              {amount || '0'}
-            </Text>
-            <Text className="mt-2 text-sm font-semibold text-primary">
-              {selectedWallet?.currency?.toUpperCase() ??
-                'Choose a wallet'}
-            </Text>
-            <View className="mt-6 flex-row flex-wrap justify-center gap-2">
-              {QUICK_AMOUNTS.map((quickAmount) => (
-                <TouchableOpacity
-                  key={quickAmount}
-                  accessibilityLabel={`Set amount to ${quickAmount}`}
-                  activeOpacity={0.82}
-                  className="min-h-10 rounded-full bg-card px-4 py-2"
-                  onPress={() => setAmount(String(quickAmount))}
+      <View
+        className="flex-1 px-5"
+        style={{ paddingBottom: Math.max(insets.bottom, 12) }}
+      >
+        <View className="mt-3 flex-row gap-2">
+          {(['expense', 'income', 'transfer'] as const).map(
+            (option) => {
+              const selected = type === option;
+              return (
+                <Pressable
+                  key={option}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected }}
+                  className={`${chipClass(selected)} min-h-10 flex-1 items-center justify-center px-2`}
+                  onPress={() => setType(option)}
                 >
-                  <Text className="text-sm font-semibold text-foreground">
-                    {quickAmount}
+                  <Text
+                    className={`text-sm font-semibold ${chipTextClass(selected)}`}
+                  >
+                    {transactionCopy[option]}
                   </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          </Surface>
+                </Pressable>
+              );
+            },
+          )}
+        </View>
 
-          <View className="mt-5">
-            <NumericKeypad onKeyPress={handleKeyPress} />
+        <View className="flex-1 items-center justify-center">
+          <Text className="text-6xl font-bold tracking-tight text-foreground">
+            {amount || '0'}
+          </Text>
+          <Text className="mt-2 text-sm font-semibold text-primary">
+            {selectedWallet?.currency?.toUpperCase() ??
+              'Choose a wallet'}
+          </Text>
+        </View>
+
+        <View className="pt-2">
+          <View className="mb-3 flex-row items-stretch gap-2">
+            <TransactionModifierChip
+              accessibilityLabel={
+                isTransfer
+                  ? `From wallet, ${selectedWallet?.name ?? 'not selected'}`
+                  : `Paid from, ${selectedWallet?.name ?? 'not selected'}`
+              }
+              value={selectedWallet?.name ?? ''}
+              hint="Wallet"
+              leading={
+                <WalletIcon
+                  color={tokens.primary}
+                  icon={selectedWallet?.icon}
+                  size={20}
+                  type={selectedWallet?.type}
+                />
+              }
+              onPress={() => setWalletPickerVisible(true)}
+            />
+
+            {isTransfer ? (
+              <TransactionModifierChip
+                accessibilityLabel={`Move to, ${selectedDestination?.name ?? 'not selected'}`}
+                value={selectedDestination?.name ?? ''}
+                hint="To"
+                leading={
+                  <WalletIcon
+                    color={tokens.primary}
+                    icon={selectedDestination?.icon}
+                    size={20}
+                    type={selectedDestination?.type}
+                  />
+                }
+                onPress={() => setDestinationPickerVisible(true)}
+              />
+            ) : (
+              <TransactionModifierChip
+                accessibilityLabel={`Category, ${selectedCategory?.name ?? 'not selected'}`}
+                value={selectedCategory?.name ?? ''}
+                hint="Category"
+                leading={
+                  <CategoryIcon
+                    color={
+                      selectedCategory?.color ?? tokens.muted
+                    }
+                    icon={selectedCategory?.icon}
+                    size={20}
+                  />
+                }
+                onPress={() => setCategoryPickerVisible(true)}
+              />
+            )}
+
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="More details"
+              className="relative min-h-[52px] w-[52px] items-center justify-center rounded-2xl bg-surface-2 active:opacity-85"
+              onPress={() => setDetailsVisible(true)}
+            >
+              <IconSymbol
+                color={tokens.foreground}
+                name="tune"
+                size={22}
+              />
+              {detailsAdded ? (
+                <View className="absolute right-2 top-2 h-2 w-2 rounded-full bg-primary" />
+              ) : null}
+            </Pressable>
           </View>
 
-          <Text className="mb-2 mt-8 text-base font-bold text-foreground">
-            {type === 'transfer' ? 'From wallet' : 'Paid from'}
-          </Text>
-          {wallets.length === 0 ? (
-            <Surface
-              tone="muted"
-              className="p-4"
-            >
-              <Text className="font-semibold text-foreground">
-                No wallet yet
-              </Text>
-              <Text className="mt-1 text-sm leading-5 text-muted">
-                Add a wallet first so Moni can keep this transaction
-                in the right currency.
-              </Text>
-            </Surface>
-          ) : (
-            <View className="flex-row flex-wrap gap-2">
-              {wallets.map((wallet) => {
-                const selected = wallet.id === walletId;
-                const iconColor: ColorValue = selected
-                  ? tokens.primary
-                  : tokens.foreground;
-                return (
-                  <TouchableOpacity
-                    key={wallet.id}
-                    accessibilityRole="button"
-                    accessibilityState={{ selected }}
-                    activeOpacity={0.82}
-                    className={`${chipClass(selected)} min-h-11 justify-center px-3`}
-                    onPress={() => setWalletId(wallet.id)}
-                  >
-                    <View className="flex-row items-center gap-1.5">
-                      <WalletIcon
-                        color={iconColor}
-                        icon={wallet.icon}
-                        size={16}
-                        type={wallet.type}
-                      />
-                      <Text
-                        className={`text-sm ${chipTextClass(selected)}`}
-                        numberOfLines={1}
-                      >
-                        {wallet.name} · {wallet.currency}
-                      </Text>
-                    </View>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-          )}
-
-          {type === 'transfer' ? (
-            <>
-              <Text className="mb-2 mt-7 text-base font-bold text-foreground">
-                Move to
-              </Text>
-              <View className="flex-row flex-wrap gap-2">
-                {destinationWallets.map((wallet) => {
-                  const selected = wallet.id === transferToWalletId;
-                  const iconColor: ColorValue = selected
-                    ? tokens.primary
-                    : tokens.foreground;
-                  return (
-                    <TouchableOpacity
-                      key={wallet.id}
-                      accessibilityRole="button"
-                      accessibilityState={{ selected }}
-                      activeOpacity={0.82}
-                      className={`${chipClass(selected)} min-h-11 justify-center px-3`}
-                      onPress={() => setTransferToWalletId(wallet.id)}
-                    >
-                      <View className="flex-row items-center gap-1.5">
-                        <WalletIcon
-                          color={iconColor}
-                          icon={wallet.icon}
-                          size={16}
-                          type={wallet.type}
-                        />
-                        <Text
-                          className={`text-sm ${chipTextClass(selected)}`}
-                          numberOfLines={1}
-                        >
-                          {wallet.name} · {wallet.currency}
-                        </Text>
-                      </View>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
-              <Text className="mt-3 text-sm leading-5 text-muted">
-                Transfers move money between wallets without changing
-                your overall net worth.
-              </Text>
-            </>
-          ) : (
-            <>
-              <Text className="mb-2 mt-7 text-base font-bold text-foreground">
-                Category
-              </Text>
-              <View className="flex-row flex-wrap gap-2">
-                {categories.map((category) => {
-                  const selected = category.id === categoryId;
-                  return (
-                    <TouchableOpacity
-                      key={category.id}
-                      accessibilityRole="button"
-                      accessibilityState={{ selected }}
-                      activeOpacity={0.82}
-                      className={`${chipClass(selected)} min-h-11 justify-center px-3`}
-                      onPress={() => setCategoryId(category.id)}
-                    >
-                      <View className="flex-row items-center gap-1.5">
-                        <CategoryIcon
-                          color={
-                            selected
-                              ? tokens.primary
-                              : (category.color ?? tokens.foreground)
-                          }
-                          icon={category.icon}
-                          size={16}
-                        />
-                        <Text
-                          className={`text-sm ${chipTextClass(selected)}`}
-                          numberOfLines={1}
-                        >
-                          {category.name}
-                        </Text>
-                      </View>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
-              {categories.length === 0 ? (
-                <Text className="mt-2 text-sm text-muted">
-                  No categories are available for this transaction
-                  type.
-                </Text>
-              ) : null}
-            </>
-          )}
-
-          <TouchableOpacity
-            accessibilityRole="button"
-            activeOpacity={0.82}
-            className="mt-8 flex-row items-center justify-between rounded-[22px] bg-card p-4"
-            onPress={handleOpenDetails}
-          >
-            <View className="flex-1 flex-row items-center gap-3 pr-3">
-              <View className="h-10 w-10 items-center justify-center rounded-full bg-primary-muted">
-                <IconSymbol
-                  color={tokens.primary}
-                  name="tune"
-                  size={20}
-                />
-              </View>
-              <View className="flex-1">
-                <Text className="text-[15px] font-semibold text-foreground">
-                  {detailsAdded
-                    ? 'More details added'
-                    : 'Add details'}
-                </Text>
-                <Text className="mt-1 text-sm text-muted">
-                  Merchant, notes, and current location.
-                </Text>
-              </View>
-            </View>
-            <IconSymbol
-              color={tokens.muted}
-              name="chevron-right"
-              size={22}
-            />
-          </TouchableOpacity>
-        </ScrollView>
-
-        <View
-          className="border-t border-border-subtle bg-canvas px-5 pt-3"
-          style={{ paddingBottom: Math.max(insets.bottom, 12) }}
-        >
+          <NumericKeypad onKeyPress={handleKeyPress} />
           <PrimaryButton
+            className="mt-3"
             disabled={!walletId}
             icon="check"
             label={actionLabel}
@@ -471,6 +414,66 @@ export default function NewTransactionScreen() {
           />
         </View>
       </View>
+
+      <WalletPickerModal
+        visible={walletPickerVisible}
+        wallets={walletPickerItems}
+        selectedId={walletId}
+        title={isTransfer ? 'From wallet' : 'Paid from'}
+        subtitle="Pick the wallet for this transaction."
+        onClose={() => setWalletPickerVisible(false)}
+        onSelect={(wallet) => {
+          setWalletId(wallet.id);
+          if (transferToWalletId === wallet.id) {
+            const next = destinationWallets.find(
+              (item) => item.id !== wallet.id,
+            );
+            setTransferToWalletId(next?.id ?? '');
+          }
+        }}
+      />
+
+      <WalletPickerModal
+        visible={destinationPickerVisible}
+        wallets={destinationWallets.map((wallet) => ({
+          id: wallet.id,
+          name: wallet.name,
+          currency: wallet.currency ?? 'USD',
+          type: wallet.type,
+          icon: wallet.icon,
+        }))}
+        selectedId={transferToWalletId}
+        title="Move to"
+        subtitle="Choose the destination wallet for this transfer."
+        onClose={() => setDestinationPickerVisible(false)}
+        onSelect={(wallet) => setTransferToWalletId(wallet.id)}
+      />
+
+      <CategoryPickerModal
+        visible={categoryPickerVisible}
+        categories={categoryPickerItems}
+        suggested={type === 'expense' ? suggestedCategories : []}
+        selectedId={categoryId}
+        title="Choose category"
+        onClose={() => setCategoryPickerVisible(false)}
+        onSelect={(category) => setCategoryId(category.id)}
+        onCreate={() => {
+          router.push({
+            pathname: '/categories/form',
+            params: { type, returnTo: '/transaction/new' },
+          } as never);
+        }}
+      />
+
+      <TransactionDetailsSheet
+        visible={detailsVisible}
+        isTransfer={isTransfer}
+        value={details}
+        locationLoading={locationLoading}
+        locationUnavailable={locationUnavailable}
+        onChange={patchDetails}
+        onClose={() => setDetailsVisible(false)}
+      />
     </ScreenShell>
   );
 }

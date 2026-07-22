@@ -72,13 +72,10 @@ export function CategoryPickerContent({
 
   return (
     <View className="flex-1">
-      <View className="flex-row items-start justify-between pb-3">
+      <View className="flex-row items-start justify-between">
         <View className="flex-1 pr-3">
           <Text className="text-xl font-bold text-foreground">
             {title}
-          </Text>
-          <Text className="mt-1 text-sm leading-5 text-muted">
-            Pick one clear category for this record.
           </Text>
         </View>
         <IconAction

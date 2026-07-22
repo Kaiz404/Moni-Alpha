@@ -44,10 +44,6 @@ export default function TransactionLayout() {
         options={{ title: 'New Transaction', headerShown: false }}
       />
       <Stack.Screen
-        name="new-details"
-        options={{ title: 'More Details', headerShown: false }}
-      />
-      <Stack.Screen
         name="[id]"
         options={{ title: 'Edit Transaction', headerShown: false }}
       />

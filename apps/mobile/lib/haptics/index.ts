@@ -9,3 +9,8 @@ export function hapticVoiceStart(): void {
 export function hapticVoiceStop(): void {
   void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
 }
+
+/** Custom numeric keypad key press. */
+export function hapticKeypadPress(): void {
+  void Haptics.selectionAsync();
+}
