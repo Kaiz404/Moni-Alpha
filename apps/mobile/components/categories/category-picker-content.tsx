@@ -60,9 +60,19 @@ export function CategoryPickerContent({
             size={20}
           />
         </View>
-        <Text className="flex-1 text-base font-semibold text-foreground">
-          {category.name}
-        </Text>
+        <View className="min-w-0 flex-1">
+          <Text className="text-base font-semibold text-foreground">
+            {category.name}
+          </Text>
+          {category.budgetUsage ? (
+            <Text
+              className="mt-0.5 text-xs font-medium text-muted"
+              numberOfLines={1}
+            >
+              {category.budgetUsage}
+            </Text>
+          ) : null}
+        </View>
         {selected ? (
           <CategoryIcon
             color={tokens.primary}

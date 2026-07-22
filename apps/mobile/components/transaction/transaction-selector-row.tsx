@@ -8,6 +8,7 @@ type TransactionModifierChipProps = {
   accessibilityLabel: string;
   value: string;
   hint?: string;
+  detail?: string;
   leading?: ReactNode;
   /** The wallet or category colour used to make the selected value recognisable. */
   accentColor?: string;
@@ -19,6 +20,7 @@ export function TransactionModifierChip({
   accessibilityLabel,
   value,
   hint = 'Choose',
+  detail,
   leading,
   accentColor,
   onPress,
@@ -66,6 +68,14 @@ export function TransactionModifierChip({
           size={18}
         />
       </View>
+      {detail && hasValue ? (
+        <Text
+          className="ml-10 mt-0.5 text-xs font-medium text-muted"
+          numberOfLines={1}
+        >
+          {detail}
+        </Text>
+      ) : null}
     </Pressable>
   );
 }

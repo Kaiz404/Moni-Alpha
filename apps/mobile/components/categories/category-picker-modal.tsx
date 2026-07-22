@@ -12,6 +12,7 @@ export type CategoryPickerItem = {
   name: string;
   icon: string | null;
   color: string | null;
+  budgetUsage?: string;
 };
 
 type CategoryPickerModalProps = {

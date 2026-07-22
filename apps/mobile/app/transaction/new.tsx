@@ -25,9 +25,16 @@ import {
   isoToLocalDateInput,
   localDateInputToIso,
 } from '@/lib/dates/local-date-input';
-import { recentExpenseCategories$ } from '@/lib/finance/selectors';
-import { parseAmountInput } from '@/lib/finance/money';
-import { getCategories } from '@/lib/supabase/categories';
+import {
+  budgetProgress$,
+  categoriesForUser$,
+  recentExpenseCategories$,
+} from '@/lib/finance/selectors';
+import {
+  formatMinorAmount,
+  parseAmountInput,
+} from '@/lib/finance/money';
+import { ensureFinanceTimezone } from '@/lib/supabase/profile';
 import {
   createTransaction,
   createTransfer,
@@ -38,7 +45,6 @@ import { prefetchTransactionLocation } from '@/lib/transactions/prefetch-locatio
 const MAX_AMOUNT_LENGTH = 12;
 
 type Wallet = Awaited<ReturnType<typeof getWallets>>[number];
-type Category = Awaited<ReturnType<typeof getCategories>>[number];
 type TransactionKind = 'income' | 'expense' | 'transfer';
 
 function walletCurrency(wallet: Wallet): string {
@@ -58,6 +64,7 @@ export default function NewTransactionScreen() {
   const params = useLocalSearchParams<{
     walletId?: string | string[];
     type?: string | string[];
+    categoryId?: string | string[];
   }>();
   const paramWalletId = useMemo(() => {
     const value = params.walletId;
@@ -71,9 +78,13 @@ export default function NewTransactionScreen() {
       ? value
       : undefined;
   }, [params.type]);
+  const paramCategoryId = useMemo(() => {
+    const value = params.categoryId;
+    return Array.isArray(value) ? value[0] : value;
+  }, [params.categoryId]);
 
   const [wallets, setWallets] = useState<Wallet[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
+  const [timezone, setTimezone] = useState('UTC');
   const [walletId, setWalletId] = useState('');
   const [transferToWalletId, setTransferToWalletId] = useState('');
   const [amount, setAmount] = useState('');
@@ -104,17 +115,35 @@ export default function NewTransactionScreen() {
   const suggestedCategories = useValue(
     recentExpenseCategories$(user?.id ?? null),
   );
+  const allCategories = useValue(
+    categoriesForUser$(user?.id ?? null),
+  );
+  const budgetProgress = useValue(
+    budgetProgress$(user?.id ?? null, timezone),
+  );
+  const categories = useMemo(
+    () =>
+      allCategories.filter(
+        (category) => category.isActive && category.type === type,
+      ),
+    [allCategories, type],
+  );
 
   useEffect(() => {
     if (!user) return;
     void getWallets().then(setWallets);
-    if (type !== 'transfer')
-      void getCategories(type).then(setCategories);
-  }, [type, user]);
+    void ensureFinanceTimezone()
+      .then(setTimezone)
+      .catch(() => {});
+  }, [user]);
 
   useEffect(() => {
     if (paramTransactionType) setType(paramTransactionType);
   }, [paramTransactionType]);
+
+  useEffect(() => {
+    if (paramCategoryId) setCategoryId(paramCategoryId);
+  }, [paramCategoryId]);
 
   useEffect(() => {
     if (wallets.length === 0) {
@@ -128,7 +157,9 @@ export default function NewTransactionScreen() {
       setWalletId(paramWalletId);
     } else {
       setWalletId((current) =>
-        wallets.some((wallet) => wallet.id === current) ? current : '',
+        wallets.some((wallet) => wallet.id === current)
+          ? current
+          : '',
       );
     }
   }, [paramWalletId, wallets]);
@@ -166,6 +197,9 @@ export default function NewTransactionScreen() {
   const selectedDestination = wallets.find(
     (wallet) => wallet.id === transferToWalletId,
   );
+  const selectedWalletCurrency = selectedWallet
+    ? walletCurrency(selectedWallet)
+    : null;
   const selectedCategory = categories.find(
     (category) => category.id === categoryId,
   );
@@ -208,15 +242,38 @@ export default function NewTransactionScreen() {
       })),
     [wallets],
   );
-  const categoryPickerItems = useMemo(
-    () =>
-      categories.map((category) => ({
-        id: category.id,
-        name: category.name ?? '',
-        icon: category.icon,
-        color: category.color,
-      })),
-    [categories],
+  const categoryPickerItems = categories.map((category) => {
+    const matchingBudget = selectedWalletCurrency
+      ? budgetProgress.find(
+          (budget) =>
+            budget.categoryId === category.id &&
+            budget.currency === selectedWalletCurrency,
+        )
+      : null;
+    const budgetAmountMinor = matchingBudget?.budgetAmountMinor;
+    const budgetUsage =
+      matchingBudget &&
+      budgetAmountMinor != null &&
+      matchingBudget.percentage !== null
+        ? `${formatMinorAmount(matchingBudget.spentMinor, matchingBudget.currency)} of ${formatMinorAmount(budgetAmountMinor, matchingBudget.currency)} used · ${Math.round(matchingBudget.percentage)}%`
+        : undefined;
+
+    return {
+      id: category.id,
+      name: category.name,
+      icon: category.icon,
+      color: category.color,
+      budgetUsage,
+    };
+  });
+  const categoryPickerItemsById = new Map(
+    categoryPickerItems.map((category) => [category.id, category]),
+  );
+  const suggestedCategoryPickerItems = suggestedCategories.flatMap(
+    (category) => {
+      const matchingCategory = categoryPickerItemsById.get(category.id);
+      return matchingCategory ? [matchingCategory] : [];
+    },
   );
 
   const handleKeyPress = useCallback((key: string) => {
@@ -538,7 +595,9 @@ export default function NewTransactionScreen() {
       <CategoryPickerModal
         visible={categoryPickerVisible}
         categories={categoryPickerItems}
-        suggested={type === 'expense' ? suggestedCategories : []}
+        suggested={
+          type === 'expense' ? suggestedCategoryPickerItems : []
+        }
         selectedId={categoryId}
         title="Choose category"
         onClose={() => setCategoryPickerVisible(false)}
