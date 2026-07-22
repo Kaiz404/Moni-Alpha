@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 export const categoryTypeSchema = z.enum(['income', 'expense']);
+export const categoryNameMaxLength = 20;
 
 /** The only Material Design icons available for user-created categories. */
 export const categoryIconNames = [
@@ -63,7 +64,7 @@ export type CustomCategoryColor = z.infer<typeof customCategoryColorSchema>;
 export const categorySchema = z.object({
   id: z.string().uuid(),
   userId: z.string().uuid().nullable(),
-  name: z.string().min(1).max(100),
+  name: z.string().min(1).max(categoryNameMaxLength),
   icon: categoryIconSchema,
   color: z.string().regex(/^#[0-9A-Fa-f]{6}$/),
   type: categoryTypeSchema,
@@ -74,14 +75,14 @@ export const categorySchema = z.object({
 });
 
 export const createCategorySchema = z.object({
-  name: z.string().trim().min(1).max(100),
+  name: z.string().trim().min(1).max(categoryNameMaxLength),
   icon: categoryIconSchema,
   color: customCategoryColorSchema,
   type: categoryTypeSchema,
 });
 
 export const updateCategorySchema = z.object({
-  name: z.string().trim().min(1).max(100).optional(),
+  name: z.string().trim().min(1).max(categoryNameMaxLength).optional(),
   icon: categoryIconSchema.optional(),
   color: customCategoryColorSchema.optional(),
   isActive: z.boolean().optional(),

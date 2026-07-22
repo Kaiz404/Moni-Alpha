@@ -107,7 +107,10 @@ export function CategoryPickerContent({
         {onCreate ? (
           <Pressable
             className="mt-3 min-h-13 flex-row items-center rounded-2xl bg-primary-muted px-4"
-            onPress={onCreate}
+            onPress={() => {
+              onCreate();
+              onClose();
+            }}
           >
             <CategoryIcon
               color={tokens.primary}

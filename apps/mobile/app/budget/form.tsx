@@ -11,6 +11,7 @@ import { useValue } from '@legendapp/state/react';
 
 import { CategoryIcon } from '@/components/categories/category-icon';
 import { CategoryPickerModal } from '@/components/categories/category-picker-modal';
+import { BudgetProgressBar } from '@/components/charts/budget-progress-bar';
 import { AmountInput } from '@/components/finance/amount-input';
 import { CurrencyPickerModal } from '@/components/finance/currency-picker-modal';
 import { BrandHeader } from '@/components/ui/brand-header';
@@ -78,6 +79,11 @@ export default function BudgetFormScreen() {
         row.currency === currency &&
         row.budgetAmountMinor !== null,
     ) ?? null;
+  const progressAccent = existing?.categoryColor ?? tokens.primary;
+  const progressLabel =
+    existing?.percentage === null
+      ? '—'
+      : `${Math.round(existing?.percentage ?? 0)}%`;
 
   useEffect(() => {
     void ensureFinanceTimezone()
@@ -169,6 +175,36 @@ export default function BudgetFormScreen() {
         contentContainerClassName="px-5"
         showsVerticalScrollIndicator={false}
       >
+        
+        {existing ? (
+          <Surface className="mt-7">
+            <View className="flex-row items-center justify-between">
+              <Text className="text-sm font-semibold text-foreground">
+                This month
+              </Text>
+              <Text
+                className={`text-xs font-semibold ${
+                  existing.status === 'over'
+                    ? 'text-danger'
+                    : 'text-muted'
+                }`}
+              >
+                {formatMinorAmount(existing.spentMinor, currency)} /{' '}
+                {formatMinorAmount(
+                  existing.budgetAmountMinor!,
+                  currency,
+                )}
+              </Text>
+            </View>
+            <View className="mt-3">
+              <BudgetProgressBar
+                color={progressAccent}
+                label={progressLabel}
+                percentage={existing.percentage}
+              />
+            </View>
+          </Surface>
+        ) : null}
         <Text className="mb-2 mt-7 text-sm font-semibold text-foreground">
           Category
         </Text>
@@ -217,25 +253,6 @@ export default function BudgetFormScreen() {
           placeholder="0.00"
           placeholderTextColor={tokens.muted}
         />
-        {existing ? (
-          <Surface
-            tone="muted"
-            className="mt-7 p-4"
-          >
-            <Text className="text-sm font-semibold text-foreground">
-              This month
-            </Text>
-            <Text className="mt-1 text-sm text-muted">
-              {formatMinorAmount(existing.spentMinor, currency)} spent
-              of{' '}
-              {formatMinorAmount(
-                existing.budgetAmountMinor!,
-                currency,
-              )}
-              .
-            </Text>
-          </Surface>
-        ) : null}
         <PrimaryButton
           className="mt-8"
           icon="check"
