@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import {
+import { 
+  Image,
   Platform,
   ScrollView,
   Text,
@@ -173,14 +174,22 @@ export default function ProfileScreen() {
             className="p-4"
           >
             <View className="flex-row items-center">
-              <GradientCard
-                cardStyle={avatarStyle}
-                className="h-14 w-14 items-center justify-center rounded-2xl"
-              >
-                <Text className="text-2xl font-bold text-primary-foreground">
-                  {userInitial}
-                </Text>
-              </GradientCard>
+              {user && user.user_metadata && user.user_metadata.avatar_url ? (
+                <Image
+                  source={{ uri: user.user_metadata.avatar_url }}
+                  className="h-14 w-14 rounded-2xl"
+                  alt="User profile picture"
+                />
+              ) : (
+                <GradientCard
+                  cardStyle={avatarStyle}
+                  className="h-14 w-14 items-center justify-center rounded-2xl"
+                >
+                  <Text className="text-2xl font-bold text-primary-foreground">
+                    {userInitial}
+                  </Text>
+                </GradientCard>
+              )}
               <View className="ml-3 flex-1">
                 <Text className="text-[13px] font-semibold text-muted">
                   Your Moni account
