@@ -1,5 +1,6 @@
 import { memo, useMemo, useState } from 'react';
 import {
+  Image,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -30,6 +31,9 @@ import {
   walletBalanceMinor$,
   walletById$,
 } from '@/lib/finance/selectors';
+import { GradientCard } from '@/components/ui/gradient-card';
+
+const avatarStyle = getWalletCardStyle('emerald-grain');
 
 function timeAwareGreeting(): string {
   const hour = new Date().getHours();
@@ -121,6 +125,12 @@ const WalletCard = memo(function WalletCard({
 
 export default function HomeScreen() {
   const { user } = useAuth();
+
+  const userInitial = useMemo(() => {
+    const ch = (user?.email ?? '').charAt(0).toUpperCase();
+    return ch || '?';
+  }, [user?.email]);
+
   const tokens = useThemeTokens();
   const timezone = useMemo(
     () => Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC',
@@ -175,6 +185,21 @@ export default function HomeScreen() {
       >
         <View className="px-5">
           <View className="flex-row items-start justify-between">
+            {user && user.user_metadata && user.user_metadata.avatar_url ? (
+              <Image
+                source={{ uri: user?.user_metadata?.avatar_url }}
+                className="h-12 w-12 rounded-full mr-3"
+              />
+            ) : (
+              <GradientCard
+                cardStyle={avatarStyle}
+                className="h-14 w-14 items-center justify-center rounded-2xl"
+              >
+                <Text className="text-2xl font-bold text-primary-foreground">
+                  {userInitial}
+                </Text>
+              </GradientCard>
+            )}
             <View className="flex-1 pr-3">
               <Text className="text-sm font-semibold text-muted">
                 {timeAwareGreeting()}
