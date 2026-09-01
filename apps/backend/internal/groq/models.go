@@ -1,16 +1,7 @@
 package groq
 
-// Model allocation (Groq Developer tier), chosen for Moni's constraints:
-// live UX flows need the fastest inference; notifications need efficiency.
-//
-//   - ModelTextFast: llama-3.1-8b-instant — fastest and cheapest, highest
-//     RPD ceiling. Used for live text extraction and notification extraction.
-//   - ModelTextQuality: llama-3.3-70b-versatile — fallback when the fast
-//     model returns unparseable output, and primary for insight prose.
-//   - ModelVision: Qwen 3.6 — Groq's multimodal OCR-capable model (8K TPM on
-//     Free), used for receipt image extraction.
 const (
-	ModelTextFast    = "llama-3.1-8b-instant"
-	ModelTextQuality = "llama-3.3-70b-versatile"
-	ModelVision      = "qwen/qwen3.6-27b"
+	ModelTextFast    = "openai/gpt-oss-20b"
+	ModelTextQuality = "qwen/qwen3.8-27b"
+	ModelVision      = "qwen/qwen3.8-27b"
 )
