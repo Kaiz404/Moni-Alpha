@@ -541,6 +541,7 @@ export default function HomeScreen() {
                         {transactionDateLabel(
                           transaction.transactionDate,
                         )}
+                        {transaction.autoAdded ? ' · Auto' : ''}
                       </Text>
                     </View>
                     <View className="items-end">

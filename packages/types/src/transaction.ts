@@ -74,6 +74,7 @@ export const createTransactionSchema = z
     locationLongitude: z.number().min(-180).max(180).optional().nullable(),
     locationName: z.string().max(200).optional().nullable(),
     tagIds: z.array(z.string().uuid()).optional(),
+    metadata: transactionMetadataSchema.optional(),
   })
   .refine((data) => data.type !== 'transfer' || data.transferToWalletId, {
     message: 'Transfer must have target wallet',

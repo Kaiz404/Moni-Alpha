@@ -278,6 +278,7 @@ export default function TransactionsScreen() {
                       {row.categoryId
                         ? ` · ${categories[row.categoryId] ?? 'Uncategorized'}`
                         : ''}
+                      {row.autoAdded ? ' · Auto' : ''}
                     </Text>
                   </View>
                   <View className="items-end">

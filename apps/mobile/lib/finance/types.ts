@@ -33,6 +33,8 @@ export type FinanceTransaction = {
   locationLatitude: number | null;
   locationLongitude: number | null;
   locationName: string | null;
+  /** Added from a routine notification without review. */
+  autoAdded: boolean;
   createdAt: string;
 };
 
