@@ -116,7 +116,7 @@ async function processingTask(taskData?: { delay?: number }) {
         if (result.created) {
           console.log(
             TAG,
-            `\u{2502}  \u{2705} Created proposal (${elapsed}ms)${result.proposalId ? ` id=${result.proposalId}` : ''}`,
+            `\u{2502}  \u{2705} ${result.reason} (${elapsed}ms) id=${result.transactionId ?? result.proposalId ?? '?'}`,
           );
           processedCount++;
           markDone(item.id);

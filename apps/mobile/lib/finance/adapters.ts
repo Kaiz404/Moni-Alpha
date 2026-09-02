@@ -30,6 +30,16 @@ function numberValue(value: unknown): number | null {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
+/** True when automation added the transaction without review (metadata.ai_suggested). */
+function autoAdded(metadata: unknown): boolean {
+  try {
+    const parsed = typeof metadata === 'string' ? JSON.parse(metadata) : metadata;
+    return (parsed as { ai_suggested?: unknown } | null)?.ai_suggested === true;
+  } catch {
+    return false;
+  }
+}
+
 function amountMinor(value: unknown) {
   try {
     return decimalToMinor(value as string | number | null | undefined);
@@ -97,6 +107,7 @@ export function toFinanceTransaction(row: RawRow): FinanceTransaction | null {
     locationLatitude: numberValue(row.location_latitude),
     locationLongitude: numberValue(row.location_longitude),
     locationName: nullableString(row.location_name),
+    autoAdded: autoAdded(row.metadata),
     createdAt: isoDate(row.created_at, transactionDate),
   };
 }

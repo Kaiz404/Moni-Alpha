@@ -1,6 +1,6 @@
 # Moni AI Backend (Go + Gin)
 
-Stateless inference gateway: receives AI requests from the mobile app, routes them to [Groq](https://console.groq.com), and returns normalized transaction extractions. It never touches the database — the mobile client inserts `proposed_transactions` itself and the user approves them in the review modal.
+Stateless inference gateway: receives AI requests from the mobile app, routes them to [Groq](https://console.groq.com), and returns normalized transaction extractions. It never touches the database — the mobile client decides on-device whether to insert a `proposed_transactions` row for review or, for routine notifications, a transaction directly.
 
 ## Endpoints
 

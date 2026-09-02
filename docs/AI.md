@@ -1,6 +1,6 @@
 # AI Pipeline
 
-Moni turns natural language, receipt photos, and (on Android) bank notifications into **reviewable transaction proposals**. The Chat tab also answers finance questions using pre-aggregated metrics. Inference runs on the Go backend (`apps/backend`) against Groq; nothing is committed to the ledger without user approval.
+Moni turns natural language, receipt photos, and (on Android) bank notifications into transactions. The Chat tab also answers finance questions using pre-aggregated metrics. Inference runs on the Go backend (`apps/backend`) against Groq; the client decides what needs review (see [Routine detection](#routine-detection)).
 
 ## Flow
 
@@ -14,7 +14,9 @@ Input (chat text / receipt photo / notification / FAB scan)
   → AiClient                              apps/mobile/lib/ai/client/
   → Go backend                            apps/backend (Gin, stateless)
   → Groq
-  → proposed_transactions (unreviewed)
+  → routine detection                     apps/mobile/lib/ai/routine.ts
+      routine notification → transactions (metadata.ai_suggested, shown as "Auto")
+      otherwise            → proposed_transactions (category/merchant prefilled from history)
   → ProposalSummarySheet (minimal popup) → Approve/Decline, or "Edit details" → `app/proposal/[id].tsx`
 ```
 
@@ -33,6 +35,15 @@ Chat sessions: MMKV (`lib/ai/chat/messages.ts`), rolling ~6 message pairs sent a
 Capture entry points feeding the **extraction queue** (silent — not shown in Chat thread): floating tab-bar button (tap → `app/scan/receipt.tsx` camera; long-press → `app/scan/listen.tsx` narration).
 
 If `EXPO_PUBLIC_AI_API_URL` is unset, the mobile client falls back to a mock that returns `unavailable` — AI features degrade cleanly.
+
+## Routine detection
+
+On-device and deterministic; the user's own transaction history is the model.
+
+- Similar = same type and currency, and the same merchant (ids and digits stripped), or for notifications within 100 m at a similar amount. Location is ignored for manual inputs: they are often logged away from where the money was spent.
+- The first transaction of a kind always goes to review. Afterwards the most recent similar transaction's category is prefilled.
+- A **notification** is added without review when the last (up to 3) similar transactions agree on one active category and the amount is at most 3x the largest of them. Correcting a category breaks the streak, so the next one returns to review until the last 3 agree again.
+- Transfers never auto-add. Notification transactions are dated when the notification arrived.
 
 ## Wire contract
 

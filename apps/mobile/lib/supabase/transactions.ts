@@ -5,7 +5,6 @@ import { isTransactionRelevantToWallet } from '@/lib/finance/ledger';
 import type { CreateTransaction, UpdateTransaction } from '@repo/types';
 import { decimalToMinor, minorToDecimal, updateTransactionSchema } from '@repo/types';
 import { randomUUID } from 'expo-crypto';
-import * as Location from 'expo-location';
 
 type TransactionRow = {
   id: string;
@@ -150,51 +149,6 @@ export async function createTransaction(data: CreateTransaction) {
   const userId = await getUserId();
   if (!userId) throw new Error('User ID required');
 
-  let resolvedLocationLatitude = data.locationLatitude ?? null;
-  let resolvedLocationLongitude = data.locationLongitude ?? null;
-  let resolvedLocationName = data.locationName ?? null;
-
-  const shouldCaptureLocation =
-    resolvedLocationLatitude === null ||
-    resolvedLocationLatitude === undefined ||
-    resolvedLocationLongitude === null ||
-    resolvedLocationLongitude === undefined;
-
-  if (shouldCaptureLocation) {
-    try {
-      const permission = await Location.requestForegroundPermissionsAsync();
-      if (permission.status === 'granted') {
-        const current = await Location.getCurrentPositionAsync({
-          accuracy: Location.Accuracy.Balanced,
-        });
-
-        resolvedLocationLatitude = current.coords.latitude;
-        resolvedLocationLongitude = current.coords.longitude;
-
-        if (!resolvedLocationName) {
-          try {
-            const addresses = await Location.reverseGeocodeAsync({
-              latitude: current.coords.latitude,
-              longitude: current.coords.longitude,
-            });
-            const first = addresses[0];
-            if (first) {
-              resolvedLocationName =
-                [first.name, first.street, first.city, first.region]
-                  .filter(Boolean)
-                  .join(', ')
-                  .trim() || null;
-            }
-          } catch {
-            // ignore geocode errors
-          }
-        }
-      }
-    } catch {
-      // ignore location errors
-    }
-  }
-
   const id = randomUUID();
   const transactionDate = data.transactionDate || new Date().toISOString();
 
@@ -218,11 +172,11 @@ export async function createTransaction(data: CreateTransaction) {
     merchant: data.merchant || null,
     notes: data.notes || null,
     transaction_date: transactionDate,
-    location_latitude: resolvedLocationLatitude,
-    location_longitude: resolvedLocationLongitude,
-    location_name: resolvedLocationName || null,
+    location_latitude: data.locationLatitude ?? null,
+    location_longitude: data.locationLongitude ?? null,
+    location_name: data.locationName || null,
     receipt_image_url: null,
-    metadata: {},
+    metadata: data.metadata ?? {},
     deleted: false,
   });
 

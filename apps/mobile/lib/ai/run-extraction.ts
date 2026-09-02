@@ -5,7 +5,10 @@
 import type { CreateProposedTransaction } from '@repo/types';
 import { decimalToMinor } from '@repo/types';
 import { getWallets } from '@/lib/supabase/wallets';
+import { getCategories } from '@/lib/supabase/categories';
+import { createTransaction, getTransactions } from '@/lib/supabase/transactions';
 import { createProposedTransaction } from '@/lib/supabase/proposed-transactions';
+import { matchRoutine } from '@/lib/ai/routine';
 import { getAiClient, type AiWalletContext, type ExtractResult } from '@/lib/ai/client';
 import type { ProcessingQueueItem } from '@/lib/ai/processing-queue';
 import { saveProposalLocationSnapshot } from '@/lib/ai/proposal-location-cache';
@@ -33,7 +36,12 @@ export type RunExtractionResult = {
   skipped: boolean;
   reason: string;
   proposalId?: string;
+  /** Set when a routine notification was added to the ledger without review. */
+  transactionId?: string;
 };
+
+/** How much recent history routine detection looks at. */
+const ROUTINE_HISTORY_LIMIT = 500;
 
 function trace(
   logger: TraceLogger | undefined,
@@ -120,18 +128,77 @@ function proposalFromExtraction(
     merchant: extraction.type === 'transfer' ? null : extraction.merchant,
     categoryId: null,
     categoryHint: extraction.categoryHint,
-    transactionDate: new Date().toISOString(),
+    // Notifications arrive when the payment happens; processing may lag behind.
+    transactionDate: source.notificationReceivedAt ?? new Date().toISOString(),
     status: 'pending',
   };
 }
 
+/**
+ * Prefills category and merchant from the user's own history. A routine notification (the user
+ * already categorized ones like it) is added straight to the ledger; everything else, and every
+ * manually entered input, becomes a proposal for review. Location only counts for notifications:
+ * it is captured when the payment happens, while manual entries are often logged elsewhere.
+ */
 async function persistProposal(
   proposal: CreateProposedTransaction,
   proposalId: string,
   locationSnapshot: LocationSnapshot | null | undefined,
   logger?: TraceLogger,
 ): Promise<RunExtractionResult> {
+  const automatic = proposal.sourceType === 'notification';
   try {
+    const [history, categories] = await Promise.all([
+      getTransactions(undefined, ROUTINE_HISTORY_LIMIT),
+      getCategories(),
+    ]);
+    const match = matchRoutine(
+      {
+        type: proposal.type,
+        currency: proposal.currency,
+        amountMinor: proposal.amountMinor,
+        merchant: proposal.merchant,
+        location: automatic ? (locationSnapshot ?? null) : null,
+      },
+      history,
+      new Set(categories.filter((c) => c.isActive).map((c) => c.id)),
+    );
+    proposal = {
+      ...proposal,
+      categoryId: proposal.categoryId ?? match.categoryId,
+      merchant: proposal.merchant ?? match.merchant,
+    };
+
+    const wallet = (await getWallets()).find((w) => w.id === proposal.walletId);
+    if (
+      automatic &&
+      match.routine &&
+      proposal.amountMinor &&
+      (proposal.type === 'income' || proposal.type === 'expense') &&
+      wallet?.currency?.toUpperCase() === proposal.currency
+    ) {
+      const transaction = await createTransaction({
+        walletId: wallet.id,
+        amountMinor: proposal.amountMinor,
+        type: proposal.type,
+        categoryId: proposal.categoryId,
+        description: proposal.description,
+        merchant: proposal.merchant,
+        transactionDate: proposal.transactionDate ?? undefined,
+        locationLatitude: locationSnapshot?.latitude ?? null,
+        locationLongitude: locationSnapshot?.longitude ?? null,
+        locationName: locationSnapshot?.name ?? null,
+        metadata: { ai_suggested: true, ai_confidence: proposal.aiConfidence ?? undefined },
+      });
+      trace(logger, 'creator', 'auto-added', { transactionId: transaction.id });
+      return {
+        created: true,
+        skipped: false,
+        reason: 'Added automatically (routine)',
+        transactionId: transaction.id,
+      };
+    }
+
     const created = await createProposedTransaction(proposal, {
       id: proposalId,
     });

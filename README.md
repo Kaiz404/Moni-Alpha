@@ -1,6 +1,6 @@
 # Moni
 
-Local-first, privacy-focused personal finance app. Track wallets and transactions, and let AI turn natural language, receipt photos, and (on Android) bank notifications into **reviewable transaction proposals** — nothing hits your ledger without your approval.
+Local-first, privacy-focused personal finance app. Track wallets and transactions, and let AI turn natural language, receipt photos, and (on Android) bank notifications into transactions. New kinds of spending are proposed for your review; routine bank notifications that match what you already categorized are added automatically and marked Auto.
 
 ## How it fits together
 
