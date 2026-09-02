@@ -20,3 +20,14 @@ Current rule map:
 - `packages/types/**`: `.cursor/rules/shared-types.mdc`
 
 When in doubt, prefer reading the relevant Cursor rule over guessing from memory.
+
+## pstack skills
+
+A core subset of [pstack](https://github.com/cursor/plugins/tree/main/pstack) (v0.15.13, commit `77526ff`, MIT) is vendored in `.cursor/skills/` (`poteto-mode`, `how`, `why`, `architect`, `tdd`, `unslop`, `no-comments`, `technical-writing`, `typescript-best-practices`, `create-verification-skill`, `show-me-your-work`, `arena`, `swarm`, `interrogate`, `principle-*`). `.claude/skills/` symlinks to the same directories; `.cursor/agents/` and `.claude/agents/` hold the `poteto-agent` and Comment Sicko subagents. To update, re-copy from upstream rather than editing in place.
+
+pstack is written for Cursor. Outside Cursor, translate:
+
+- `Task` subagent → your agent/subagent tool; `generalPurpose` → `general-purpose`, `explore` → `Explore`, `"Comment Sicko"` → `comment-sicko`.
+- `AskQuestion` → your structured question tool (e.g. `AskUserQuestion`).
+- Model slugs and `~/.cursor/rules/pstack-models.mdc` → treat every role as `inherit-parent` (omit the model). For multi-model panels, run the same number of subagents, varying models where the tool allows.
+- Skills not vendored here (`benchmark-checklist`, `reflect`, `correct`, `figure-it-out`, `blast-radius`, `setup-pstack`, and `cursor-team-kit`'s `deslop` / `control-ui` / `control-cli`) → skip that step and note `skip: not installed`.
