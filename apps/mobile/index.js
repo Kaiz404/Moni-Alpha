@@ -14,6 +14,7 @@ if (Platform.OS === 'android') {
   const { isPackageLinked } = require('./lib/notifications/linked-packages-cache.core');
   const { enrichNotificationPackage } = require('./lib/notifications/notification-package.core');
   const { cacheNotificationAppIcon } = require('./lib/notifications/app-icon-cache.core');
+  const { isRepeatedNotification } = require('./lib/notifications/notification-repeat.core');
 
   void RNAndroidNotificationListener;
 
@@ -24,9 +25,13 @@ if (Platform.OS === 'android') {
   const UNIFIED_QUEUE_KEY = 'unified_processing_queue';
   const MAX_STORED = 50;
 
-  function appendToList(storage, key, item, max) {
+  function readList(storage, key) {
     const existing = storage.getString(key);
-    const list = existing ? JSON.parse(existing) : [];
+    return existing ? JSON.parse(existing) : [];
+  }
+
+  function appendToList(storage, key, item, max) {
+    const list = readList(storage, key);
     list.unshift(item);
     storage.set(key, JSON.stringify(list.slice(0, max)));
   }
@@ -43,12 +48,19 @@ if (Platform.OS === 'android') {
       const withPackage = enrichNotificationPackage(parsed);
       const prefilterPassed = passesNotificationTransactionPrefilter(withPackage);
       const packageLinked = isPackageLinked(withPackage.packageName);
+      const nowMs = Date.now();
+      const repeated = isRepeatedNotification(
+        readList(notificationStorage, ALL_NOTIFICATIONS_KEY),
+        withPackage,
+        nowMs,
+      );
       const enriched = {
         ...withPackage,
-        id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-        receivedAt: new Date().toISOString(),
+        id: `${nowMs}-${Math.random().toString(36).slice(2, 7)}`,
+        receivedAt: new Date(nowMs).toISOString(),
         prefilterPassed,
         packageLinked,
+        repeated,
       };
 
       // Always store in the full notifications list for the UI
@@ -56,11 +68,17 @@ if (Platform.OS === 'android') {
       if (enriched.packageName && enriched.icon) {
         cacheNotificationAppIcon(enriched.packageName, enriched.icon);
       }
-      const queueEligible = prefilterPassed && packageLinked;
+      const queueEligible = prefilterPassed && packageLinked && !repeated;
       console.log(
         '[NotifCapture] stored',
         enriched.packageName ?? enriched.app ?? 'unknown',
-        queueEligible ? 'queued' : prefilterPassed ? 'unlinked' : 'ignored',
+        queueEligible
+          ? 'queued'
+          : !prefilterPassed
+            ? 'ignored'
+            : !packageLinked
+              ? 'unlinked'
+              : 'repeat',
       );
 
       // Queue only linked-app notifications that pass the prefilter
