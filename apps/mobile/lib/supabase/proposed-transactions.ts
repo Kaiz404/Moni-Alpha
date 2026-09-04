@@ -1,4 +1,4 @@
-import { proposedTransactions$ } from '@/lib/store';
+import { proposedTransactions$, transactions$ } from '@/lib/store';
 import { getRecordValues, hasRow, patchRow } from '@/lib/store/helpers';
 import { getUserId } from '@/lib/supabase/client';
 import { randomUUID } from 'expo-crypto';
@@ -8,7 +8,8 @@ import {
   type CreateProposedTransaction,
   type ProposedTransaction,
 } from '@repo/types';
-import { createTransaction } from './transactions';
+import { createTransaction, getTransactions } from './transactions';
+import { findDuplicate, type DuplicateMatch, type LedgerEntry } from '@/lib/ai/duplicates';
 import {
   getProposalLocationSnapshot,
   clearProposalLocationSnapshot,
@@ -218,4 +219,106 @@ export async function deleteProposedTransaction(id: string): Promise<void> {
   row$.delete();
   clearProposalLocationSnapshot(id);
   emitProposedTransactionsChanged();
+}
+
+function ledgerType(type: string | null): LedgerEntry['type'] {
+  return type === 'income' || type === 'expense' || type === 'transfer' ? type : null;
+}
+
+function proposalLedgerEntry(
+  id: string,
+  proposal: Pick<
+    CreateProposedTransaction,
+    'type' | 'walletId' | 'currency' | 'amountMinor' | 'merchant' | 'transactionDate'
+  >,
+): LedgerEntry {
+  return {
+    id,
+    kind: 'proposal',
+    type: ledgerType(proposal.type ?? null),
+    walletId: proposal.walletId ?? null,
+    currency: (proposal.currency ?? 'USD').toUpperCase(),
+    amountMinor: proposal.amountMinor ?? null,
+    merchant: proposal.merchant ?? null,
+    at: proposal.transactionDate ?? '',
+  };
+}
+
+/** Recent ledger rows plus pending proposals, for duplicate detection. */
+export async function getLedgerEntries(): Promise<LedgerEntry[]> {
+  const [transactions, proposals] = await Promise.all([
+    getTransactions(undefined, 500),
+    getProposedTransactions(),
+  ]);
+  return [
+    ...transactions
+      .filter((t) => !t.debtActivityId && !t.analysisExcluded)
+      .map(
+        (t): LedgerEntry => ({
+          id: t.id,
+          kind: 'transaction',
+          type: ledgerType(t.type),
+          walletId: t.walletId || null,
+          currency: t.currency,
+          amountMinor: t.amountMinor,
+          merchant: t.merchant,
+          at: t.transactionDate,
+        }),
+      ),
+    ...proposals.map((p) => proposalLedgerEntry(p.id, p)),
+  ];
+}
+
+export async function findProposalDuplicate(
+  id: string,
+  proposal: Parameters<typeof proposalLedgerEntry>[1],
+): Promise<DuplicateMatch | null> {
+  return findDuplicate(proposalLedgerEntry(id, proposal), await getLedgerEntries());
+}
+
+function missingFields(
+  row: Record<string, unknown> | undefined,
+  values: Record<string, unknown>,
+): Record<string, unknown> {
+  return Object.fromEntries(
+    Object.entries(values).filter(([key, value]) => value != null && row?.[key] == null),
+  );
+}
+
+/**
+ * Applies a user-confirmed duplicate resolution: the proposal is folded into its target and
+ * removed. Every write sets values, so re-running after a crash converges.
+ */
+export async function resolveDuplicate(
+  proposal: ProposedTransaction,
+  match: DuplicateMatch,
+): Promise<void> {
+  const { target } = match;
+  const table$ = target.kind === 'transaction' ? transactions$ : proposedTransactions$;
+  const now = new Date().toISOString();
+
+  if (match.kind === 'same_purchase') {
+    const imageUrl = proposal.sourceImageUri?.startsWith('http') ? proposal.sourceImageUri : null;
+    const row = getRecordValues<Record<string, unknown>>(table$).find((r) => r.id === target.id);
+    const fill = missingFields(row, {
+      category_id: proposal.categoryId,
+      merchant: proposal.merchant,
+      [target.kind === 'transaction' ? 'receipt_image_url' : 'source_image_uri']: imageUrl,
+    });
+    if (Object.keys(fill).length > 0) {
+      patchRow(table$, target.id, { ...fill, updated_at: now });
+    }
+  } else {
+    patchRow(table$, target.id, {
+      type: 'transfer',
+      wallet_id: match.fromWalletId,
+      transfer_to_wallet_id: match.toWalletId,
+      ...(target.kind === 'transaction' ? { category_id: null } : {}),
+      updated_at: now,
+    });
+  }
+
+  if (hasRow(proposedTransactions$, proposal.id)) {
+    await deleteProposedTransaction(proposal.id);
+  }
 }

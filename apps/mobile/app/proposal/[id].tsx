@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  Pressable,
   ScrollView,
   Text,
   View,
@@ -18,11 +19,18 @@ import {
   type WalletOption,
 } from '@/components/proposal/proposal-form';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
-import { localDateInputToIso } from '@/lib/dates/local-date-input';
+import {
+  isoToLocalDateInput,
+  localDateInputToIso,
+} from '@/lib/dates/local-date-input';
+import { formatMinorAmount } from '@/lib/finance/money';
+import type { DuplicateMatch } from '@/lib/ai/duplicates';
 import {
   approveProposedTransaction,
+  findProposalDuplicate,
   getProposedTransactions,
   rejectProposedTransaction,
+  resolveDuplicate,
 } from '@/lib/supabase/proposed-transactions';
 import { getWallets } from '@/lib/supabase/wallets';
 import { getCategories } from '@/lib/supabase/categories';
@@ -42,6 +50,9 @@ export default function ProposalDetailScreen() {
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [isActioning, setIsActioning] = useState(false);
+  const [duplicate, setDuplicate] = useState<DuplicateMatch | null>(
+    null,
+  );
 
   const loadData = useCallback(async () => {
     if (!proposalId) {
@@ -60,6 +71,9 @@ export default function ProposalDetailScreen() {
       ]);
       const found = pending.find((p) => p.id === proposalId) ?? null;
       setProposal(found);
+      setDuplicate(
+        found ? await findProposalDuplicate(found.id, found) : null,
+      );
       setWallets(
         ws.map((w) => ({
           id: w.id,
@@ -199,6 +213,22 @@ export default function ProposalDetailScreen() {
     }
   }, [proposal, isActioning]);
 
+  const handleMerge = useCallback(async () => {
+    if (!proposal || !duplicate || isActioning) return;
+    setIsActioning(true);
+    try {
+      await resolveDuplicate(proposal, duplicate);
+      router.back();
+    } catch (e) {
+      const message =
+        e instanceof Error ? e.message : 'Failed to merge';
+      console.error('[ProposalDetail] merge error:', e);
+      Alert.alert('Error', message);
+    } finally {
+      setIsActioning(false);
+    }
+  }, [proposal, duplicate, isActioning]);
+
   return (
     <ScreenShell variant="canvas">
       <BrandHeader title="Review proposal" />
@@ -221,6 +251,27 @@ export default function ProposalDetailScreen() {
           contentContainerClassName="px-4 pb-8 pt-4"
           showsVerticalScrollIndicator={false}
         >
+          {duplicate ? (
+            <View className="mb-4 gap-3 rounded-2xl bg-card p-4">
+              <Text className="text-sm text-foreground">
+                {duplicate.kind === 'same_purchase'
+                  ? `You may already have this: ${duplicate.target.merchant ?? proposal.description ?? 'Transaction'} ${formatMinorAmount(duplicate.target.amountMinor ?? 0, duplicate.target.currency)} on ${isoToLocalDateInput(duplicate.target.at)}.`
+                  : 'Matches money arriving in another wallet. Likely a transfer between your wallets.'}
+              </Text>
+              <Pressable
+                onPress={handleMerge}
+                disabled={isActioning}
+                className="items-center rounded-2xl bg-surface-2 py-3"
+                accessibilityRole="button"
+              >
+                <Text className="text-sm font-semibold text-foreground">
+                  {duplicate.kind === 'same_purchase'
+                    ? 'Same purchase · merge'
+                    : 'Combine into transfer'}
+                </Text>
+              </Pressable>
+            </View>
+          ) : null}
           <ProposalForm
             proposal={proposal}
             wallets={wallets}

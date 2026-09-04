@@ -45,6 +45,18 @@ On-device and deterministic; the user's own transaction history is the model.
 - A **notification** is added without review when the last (up to 3) similar transactions agree on one active category and the amount is at most 3x the largest of them. Correcting a category breaks the streak, so the next one returns to review until the last 3 agree again.
 - Transfers never auto-add. Notification transactions are dated when the notification arrived.
 
+## Duplicate detection
+
+One payment often reaches Moni twice. `apps/mobile/lib/ai/duplicates.ts` is a pure matcher over recent transactions and pending proposals; nothing is stored, and nothing merges without a tap.
+
+| Kind | Rule | Resolution |
+| --- | --- | --- |
+| Re-posted notification | Same app, title and text within 2 min | Not queued (`lib/notifications/notification-repeat.core.js`) |
+| `same_purchase` | Same type, currency and exact amount within 12 h; merchants share a word (company suffixes like "Sdn Bhd" ignored) or one is unknown | Review shows "Same purchase · merge": fills the existing row's missing category, merchant and receipt, then drops the proposal |
+| `transfer_pair` | Expense in one wallet and income in another, same currency and exact amount within 10 min | Review shows "Combine into transfer": rewrites the existing row as one transfer, then drops the proposal |
+
+A possible duplicate is never auto-added. Saving a manual entry that matches an existing purchase asks "Add anyway?".
+
 ## Wire contract
 
 Defined in `apps/mobile/lib/ai/client/types.ts`. Extraction structs mirror `apps/backend/internal/extract/types.go`; chat analyze mirrors `apps/backend/internal/chat/types.go`. **Keep these in sync manually.**
