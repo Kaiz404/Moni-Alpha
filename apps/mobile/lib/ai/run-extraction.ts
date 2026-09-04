@@ -7,7 +7,10 @@ import { decimalToMinor } from '@repo/types';
 import { getWallets } from '@/lib/supabase/wallets';
 import { getCategories } from '@/lib/supabase/categories';
 import { createTransaction, getTransactions } from '@/lib/supabase/transactions';
-import { createProposedTransaction } from '@/lib/supabase/proposed-transactions';
+import {
+  createProposedTransaction,
+  findProposalDuplicate,
+} from '@/lib/supabase/proposed-transactions';
 import { matchRoutine } from '@/lib/ai/routine';
 import { getAiClient, type AiWalletContext, type ExtractResult } from '@/lib/ai/client';
 import type { ProcessingQueueItem } from '@/lib/ai/processing-queue';
@@ -169,9 +172,13 @@ async function persistProposal(
       merchant: proposal.merchant ?? match.merchant,
     };
 
+    const duplicate = await findProposalDuplicate(proposalId, proposal);
+    if (duplicate) trace(logger, 'creator', 'duplicate', { kind: duplicate.kind });
+
     const wallet = (await getWallets()).find((w) => w.id === proposal.walletId);
     if (
       automatic &&
+      !duplicate &&
       match.routine &&
       proposal.amountMinor &&
       (proposal.type === 'income' || proposal.type === 'expense') &&

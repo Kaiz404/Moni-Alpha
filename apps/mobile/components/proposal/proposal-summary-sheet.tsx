@@ -28,7 +28,10 @@ import {
   proposalPresentationForSource,
   quietReviewCopy,
 } from '@/lib/proposals/presentation-policy';
-import { getProposedTransactions } from '@/lib/supabase/proposed-transactions';
+import {
+  findProposalDuplicate,
+  getProposedTransactions,
+} from '@/lib/supabase/proposed-transactions';
 
 /**
  * Quiet notification-only entry to the review queue. User-initiated receipt
@@ -94,6 +97,17 @@ export function ProposalSummarySheet() {
       ),
     [proposals],
   );
+  const [duplicateOf, setDuplicateOf] = useState<string | null>(null);
+  useEffect(() => {
+    if (!current) return;
+    let live = true;
+    void findProposalDuplicate(current.id, current).then((match) => {
+      if (live) setDuplicateOf(match ? current.id : null);
+    });
+    return () => {
+      live = false;
+    };
+  }, [current]);
   const suppressed = pathname.startsWith('/proposal');
   const visible = !isLoading && !!current && !suppressed;
 
@@ -202,6 +216,11 @@ export function ProposalSummarySheet() {
             </Surface>
           </Pressable>
 
+          {duplicateOf === current.id ? (
+            <Text className="mt-3 text-center text-xs text-muted">
+              Possible duplicate. Open details to merge.
+            </Text>
+          ) : null}
           <Text className="mt-3 text-center text-xs text-muted">
             {copy.queueLabel}
           </Text>

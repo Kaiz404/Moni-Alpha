@@ -34,7 +34,9 @@ import {
   formatMinorAmount,
   parseAmountInput,
 } from '@/lib/finance/money';
+import { findDuplicate } from '@/lib/ai/duplicates';
 import { ensureFinanceTimezone } from '@/lib/supabase/profile';
+import { getLedgerEntries } from '@/lib/supabase/proposed-transactions';
 import {
   createTransaction,
   createTransfer,
@@ -46,6 +48,24 @@ const MAX_AMOUNT_LENGTH = 12;
 
 type Wallet = Awaited<ReturnType<typeof getWallets>>[number];
 type TransactionKind = 'income' | 'expense' | 'transfer';
+
+function confirmAddAnyway(message: string): Promise<boolean> {
+  return new Promise((resolve) =>
+    Alert.alert(
+      'Possible duplicate',
+      message,
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+          onPress: () => resolve(false),
+        },
+        { text: 'Add anyway', onPress: () => resolve(true) },
+      ],
+      { cancelable: true, onDismiss: () => resolve(false) },
+    ),
+  );
+}
 
 function walletCurrency(wallet: Wallet): string {
   return (wallet.currency ?? 'USD').toUpperCase();
@@ -327,9 +347,14 @@ export default function NewTransactionScreen() {
           description: details.description.trim() || null,
         });
       } else {
+        // The form has no time field: keep the real time when the date is left as today,
+        // so duplicate and routine matching can line it up with the bank notification.
         const transactionDate =
-          localDateInputToIso(details.transactionDate) ??
-          new Date().toISOString();
+          details.transactionDate ===
+          isoToLocalDateInput(new Date().toISOString())
+            ? new Date().toISOString()
+            : (localDateInputToIso(details.transactionDate) ??
+              new Date().toISOString());
         const locationPayload = details.locationSnapshot
           ? {
               locationLatitude: details.locationSnapshot.latitude,
@@ -352,6 +377,27 @@ export default function NewTransactionScreen() {
             'Check this transaction',
             parsed.error.errors[0]?.message ?? 'Enter valid details.',
           );
+          return;
+        }
+        const duplicate = findDuplicate(
+          {
+            id: 'draft',
+            kind: 'transaction',
+            type,
+            walletId,
+            currency: selectedWalletCurrency ?? 'USD',
+            amountMinor,
+            merchant: parsed.data.merchant ?? null,
+            at: transactionDate,
+          },
+          await getLedgerEntries(),
+        );
+        if (
+          duplicate?.kind === 'same_purchase' &&
+          !(await confirmAddAnyway(
+            `You already have ${[formatMinorAmount(amountMinor, selectedWalletCurrency ?? 'USD'), duplicate.target.merchant].filter(Boolean).join(' ')} on ${isoToLocalDateInput(duplicate.target.at)}. Add anyway?`,
+          ))
+        ) {
           return;
         }
         await createTransaction(parsed.data);
