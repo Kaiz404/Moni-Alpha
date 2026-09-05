@@ -53,9 +53,9 @@ One payment often reaches Moni twice. `apps/mobile/lib/ai/duplicates.ts` is a pu
 | --- | --- | --- |
 | Re-posted notification | Same app, title and text within 2 min | Not queued (`lib/notifications/notification-repeat.core.js`) |
 | `same_purchase` | Same type, currency and exact amount within 12 h; merchants share a word (company suffixes like "Sdn Bhd" ignored) or one is unknown | Review shows "Same purchase · merge": fills the existing row's missing category, merchant and receipt, then drops the proposal |
-| `transfer_pair` | Expense in one wallet and income in another, same currency and exact amount within 10 min | Review shows "Combine into transfer": rewrites the existing row as one transfer, then drops the proposal |
+| `transfer_pair` | Expense in one wallet and income in another, same currency and exact amount within 10 min | When a notification completes the pair, combined automatically (`combineIntoTransfer`): the existing row becomes one transfer, marked Auto if already in the ledger. Otherwise review shows "Combine into transfer" |
 
-A possible duplicate is never auto-added. Saving a manual entry that matches an existing purchase asks "Add anyway?".
+A possible `same_purchase` duplicate is never auto-added. Saving a manual entry that matches an existing purchase asks "Add anyway?".
 
 ## Wire contract
 

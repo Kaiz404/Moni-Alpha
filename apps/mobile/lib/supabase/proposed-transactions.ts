@@ -286,6 +286,43 @@ function missingFields(
 }
 
 /**
+ * Rewrites the target of a transfer pair as one transfer between the two wallets. Runs
+ * automatically when a notification completes the pair, so a combined ledger row is marked
+ * auto-added. Value-setting only, so running it twice converges.
+ */
+export function combineIntoTransfer(
+  match: Extract<DuplicateMatch, { kind: 'transfer_pair' }>,
+): void {
+  const { target } = match;
+  const transfer = {
+    type: 'transfer',
+    wallet_id: match.fromWalletId,
+    transfer_to_wallet_id: match.toWalletId,
+    updated_at: new Date().toISOString(),
+  };
+  if (target.kind === 'proposal') {
+    patchRow(proposedTransactions$, target.id, transfer);
+    emitProposedTransactionsChanged();
+    return;
+  }
+  const row = getRecordValues<{ id: string; metadata: unknown }>(transactions$).find(
+    (r) => r.id === target.id,
+  );
+  let metadata: object = {};
+  try {
+    const raw = typeof row?.metadata === 'string' ? JSON.parse(row.metadata) : row?.metadata;
+    if (raw && typeof raw === 'object') metadata = raw;
+  } catch {
+    // Unreadable metadata is replaced rather than blocking the combine.
+  }
+  patchRow(transactions$, target.id, {
+    ...transfer,
+    category_id: null,
+    metadata: { ...metadata, ai_suggested: true },
+  });
+}
+
+/**
  * Applies a user-confirmed duplicate resolution: the proposal is folded into its target and
  * removed. Every write sets values, so re-running after a crash converges.
  */
@@ -309,13 +346,7 @@ export async function resolveDuplicate(
       patchRow(table$, target.id, { ...fill, updated_at: now });
     }
   } else {
-    patchRow(table$, target.id, {
-      type: 'transfer',
-      wallet_id: match.fromWalletId,
-      transfer_to_wallet_id: match.toWalletId,
-      ...(target.kind === 'transaction' ? { category_id: null } : {}),
-      updated_at: now,
-    });
+    combineIntoTransfer(match);
   }
 
   if (hasRow(proposedTransactions$, proposal.id)) {
