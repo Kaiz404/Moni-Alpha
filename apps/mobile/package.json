@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "node ./scripts/adb-reverse.mjs && expo start --localhost",
     "start": "node ./scripts/adb-reverse.mjs && expo start --localhost",
+    "dev:tailscale": "node ./scripts/dev-tailscale.mjs",
     "android": "node ./scripts/adb-reverse.mjs && REACT_NATIVE_PACKAGER_HOSTNAME=localhost expo run:android",
     "ios": "expo run:ios",
     "web": "expo start --web",
