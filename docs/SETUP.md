@@ -97,6 +97,7 @@ Verify with `adb devices` (`device`, not `no permissions`). Some OEMs (e.g. Xiao
 ```bash
 pnpm dev                        # everything via turbo
 pnpm --filter moni dev          # mobile Metro (terminal 1)
+pnpm --filter moni dev:tailscale # Metro for a phone on your tailnet: open http://<tailscale-ip>:8081 in the dev build (WSL needs networkingMode=mirrored)
 cd apps/mobile && npx expo run:android   # local dev client install/rebuild (terminal 2, when needed)
 pnpm --filter backend dev       # Go AI backend on :8080
 pnpm --filter web dev           # Next.js dashboard on :3000
