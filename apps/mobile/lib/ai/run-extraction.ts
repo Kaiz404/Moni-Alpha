@@ -9,6 +9,7 @@ import { getCategories } from '@/lib/supabase/categories';
 import { createTransaction, getTransactions } from '@/lib/supabase/transactions';
 import {
   createProposedTransaction,
+  combineIntoTransfer,
   findProposalDuplicate,
 } from '@/lib/supabase/proposed-transactions';
 import { matchRoutine } from '@/lib/ai/routine';
@@ -174,6 +175,25 @@ async function persistProposal(
 
     const duplicate = await findProposalDuplicate(proposalId, proposal);
     if (duplicate) trace(logger, 'creator', 'duplicate', { kind: duplicate.kind });
+
+    // Two notifications seconds apart, opposite directions, two of the user's own wallets:
+    // one transfer, combined without review.
+    if (automatic && duplicate?.kind === 'transfer_pair') {
+      combineIntoTransfer(duplicate);
+      return duplicate.target.kind === 'transaction'
+        ? {
+            created: true,
+            skipped: false,
+            reason: 'Combined into transfer',
+            transactionId: duplicate.target.id,
+          }
+        : {
+            created: true,
+            skipped: false,
+            reason: 'Combined into transfer',
+            proposalId: duplicate.target.id,
+          };
+    }
 
     const wallet = (await getWallets()).find((w) => w.id === proposal.walletId);
     if (
