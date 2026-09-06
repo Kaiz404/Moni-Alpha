@@ -2,6 +2,7 @@ package extract
 
 import (
 	"context"
+	"regexp"
 	"strings"
 	"time"
 
@@ -17,6 +18,11 @@ func NewService(client *groq.Client) *Service {
 }
 
 const defaultCurrency = "USD"
+
+// One-time codes often quote the amount they authorize ("TAC ... for a transfer of RM 300"),
+// and the model has classified them as payments despite the prompt. A real payment
+// notification never asks the user to keep a code secret, so these never reach the model.
+var oneTimeCode = regexp.MustCompile(`(?i)\b(otp|tac|one[- ]time (password|pin|code)|verification code|security code|do not share|don'?t share|jangan kongsi)\b`)
 
 type currencyMode int
 
@@ -119,17 +125,24 @@ func (s *Service) FromNotification(ctx context.Context, req NotificationRequest)
 		return Skipped("Empty notification")
 	}
 
+	if oneTimeCode.MatchString(combined) {
+		return Skipped("One-time code, not a transaction")
+	}
+
 	user := walletPreamble(req.Wallets) + "App: " + req.Notification.PackageNameForRouting() + "\nNotification: " + combined
+	messages := []groq.Message{
+		{Role: "system", Content: notificationDetectionPrompt},
+		{Role: "user", Content: user},
+	}
+	opts := groq.Options{Model: groq.ModelTextFast, Temperature: 0, MaxTokens: 512, MaxRetryWait: 30 * time.Second}
 
 	var out llmNotificationResult
-	err := s.groq.CompleteJSON(ctx,
-		[]groq.Message{
-			{Role: "system", Content: notificationDetectionPrompt},
-			{Role: "user", Content: user},
-		},
-		groq.Options{Model: groq.ModelTextFast, Temperature: 0, MaxTokens: 512, MaxRetryWait: 30 * time.Second},
-		&out,
-	)
+	err := s.groq.CompleteJSON(ctx, messages, opts, &out)
+	if err != nil {
+		// The fast model intermittently fails Groq's JSON validation; one quality-model retry.
+		out, opts.Model = llmNotificationResult{}, groq.ModelTextQuality
+		err = s.groq.CompleteJSON(ctx, messages, opts, &out)
+	}
 	if err != nil {
 		return Unavailable("Notification analysis failed: " + err.Error())
 	}

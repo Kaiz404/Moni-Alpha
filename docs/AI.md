@@ -49,11 +49,11 @@ On-device and deterministic; the user's own transaction history is the model.
 
 One payment often reaches Moni twice. `apps/mobile/lib/ai/duplicates.ts` is a pure matcher over recent transactions and pending proposals; nothing is stored, and nothing merges without a tap.
 
-| Kind | Rule | Resolution |
-| --- | --- | --- |
-| Re-posted notification | Same app, title and text within 2 min | Not queued (`lib/notifications/notification-repeat.core.js`) |
-| `same_purchase` | Same type, currency and exact amount within 12 h; merchants share a word (company suffixes like "Sdn Bhd" ignored) or one is unknown | Review shows "Same purchase · merge": fills the existing row's missing category, merchant and receipt, then drops the proposal |
-| `transfer_pair` | Expense in one wallet and income in another, same currency and exact amount within 10 min | When a notification completes the pair, combined automatically (`combineIntoTransfer`): the existing row becomes one transfer, marked Auto if already in the ledger. Otherwise review shows "Combine into transfer" |
+| Kind                   | Rule                                                                                                                                 | Resolution                                                                                                                                                                                                          |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Re-posted notification | Same app, title and text within 2 min                                                                                                | Not queued (`lib/notifications/notification-repeat.core.js`)                                                                                                                                                        |
+| `same_purchase`        | Same type, currency and exact amount within 12 h; merchants share a word (company suffixes like "Sdn Bhd" ignored) or one is unknown | Review shows "Same purchase · merge": fills the existing row's missing category, merchant and receipt, then drops the proposal                                                                                      |
+| `transfer_pair`        | Expense in one wallet and income in another, same currency and exact amount within 10 min                                            | When a notification completes the pair, combined automatically (`combineIntoTransfer`): the existing row becomes one transfer, marked Auto if already in the ledger. Otherwise review shows "Combine into transfer" |
 
 A possible `same_purchase` duplicate is never auto-added. Saving a manual entry that matches an existing purchase asks "Add anyway?".
 
@@ -102,12 +102,14 @@ Auth: `Authorization: Bearer <supabase-user-jwt>`, verified via JWKS (ES256). Er
 
 ## Model allocation
 
-| Flow                       | Endpoint                   | Model                                                      | Why                                                                                                       |
-| -------------------------- | -------------------------- | ---------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
-| Text extraction (live)     | `/v1/extract/text`         | `llama-3.1-8b-instant`, fallback `llama-3.3-70b-versatile` | Fastest inference + highest free/dev-tier request ceiling (14.4K RPD); fallback covers unparseable output |
-| Receipt images (live)      | `/v1/extract/image`        | `qwen/qwen3.6-27b`                                         | Vision + OCR with JSON mode; 8K TPM / 200K TPD on Groq Free                                               |
-| Notifications (background) | `/v1/extract/notification` | `llama-3.1-8b-instant`                                     | Cheap + efficient; latency doesn't matter, honors long 429 retry waits                                    |
-| Chat finance analysis      | `/v1/chat/analyze`         | `llama-3.3-70b-versatile`                                  | Concise prose; snapshot context keeps tokens bounded                                                      |
+Source of truth: `apps/backend/internal/groq/models.go`. `pnpm --filter backend test:live` fails if the key cannot use any of them.
+
+| Flow                       | Endpoint                   | Model                                             | Why                                                                                                                                                                                                                          |
+| -------------------------- | -------------------------- | ------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Text extraction (live)     | `/v1/extract/text`         | `openai/gpt-oss-20b`, fallback `qwen/qwen3.8-27b` | Fast; fallback covers unparseable output                                                                                                                                                                                     |
+| Receipt images (live)      | `/v1/extract/image`        | `qwen/qwen3.8-27b`                                | Vision + OCR with JSON mode; the tightest per-minute limit on Groq Free                                                                                                                                                      |
+| Notifications (background) | `/v1/extract/notification` | `openai/gpt-oss-20b`, fallback `qwen/qwen3.8-27b` | Latency doesn't matter, honors long 429 waits; fallback covers intermittent JSON-validation failures. One-time codes (OTP/TAC, "do not share") are skipped before any model call because the model has read them as payments |
+| Chat finance analysis      | `/v1/chat/analyze`         | `qwen/qwen3.8-27b`                                | Concise prose; snapshot context keeps tokens bounded                                                                                                                                                                         |
 
 All calls use Groq's OpenAI-compatible endpoint with `response_format: json_object` and Go-side JSON validation (`groq.CompleteJSON` strips fences and rejects malformed output). Qwen receipt calls disable reasoning, use hidden reasoning format, and put their instructions in the user message so JSON mode remains reliable.
 
@@ -116,7 +118,7 @@ All calls use Groq's OpenAI-compatible endpoint with `response_format: json_obje
 - Limits are **per organization**, not per key. Developer tier ≈ 10x free-tier limits; free tier is ~30 RPM which is not enough for production.
 - The backend rate-limits per user (20 req/min, burst 8) so one client can't drain the org quota.
 - Live flows retry a 429 only within a short window (3–5s) then return `unavailable`; the mobile queue retries later. Notifications wait up to 30s.
-- Cost: `llama-3.1-8b-instant` ≈ $0.05/M input tokens. At 1000 users doing a few extractions/day this is low single-digit dollars per month; receipts (vision) dominate but stay cheap because the client already perspective-crops + grayscale/contrast-filters + downscales to a single ≤1024px JPEG on-device before it's ever sent.
+- Cost: most calls go to the fast model (`openai/gpt-oss-20b`). At 1000 users doing a few extractions/day this is low single-digit dollars per month; receipts (vision) dominate but stay cheap because the client already perspective-crops + grayscale/contrast-filters + downscales to a single ≤1024px JPEG on-device before it's ever sent.
 
 ## Extraction pipeline details
 

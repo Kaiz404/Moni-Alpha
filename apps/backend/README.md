@@ -6,13 +6,13 @@ Stateless inference gateway: receives AI requests from the mobile app, routes th
 
 All `/v1` routes require `Authorization: Bearer <supabase-user-jwt>`.
 
-| Method | Path                       | Purpose                                          | Model                                                       |
-| ------ | -------------------------- | ------------------------------------------------ | ----------------------------------------------------------- |
-| GET    | `/healthz`                 | Liveness (no auth)                               | —                                                           |
-| POST   | `/v1/extract/text`         | Transaction from free text                       | `llama-3.1-8b-instant` (fallback `llama-3.3-70b-versatile`) |
-| POST   | `/v1/extract/image`        | Transaction from receipt image (base64 or URL)   | `qwen/qwen3.6-27b`                                          |
-| POST   | `/v1/extract/notification` | Transaction from Android notification            | `llama-3.1-8b-instant`                                      |
-| POST   | `/v1/chat/analyze`         | Concise finance Q&A from pre-aggregated snapshot | `llama-3.3-70b-versatile`                                   |
+| Method | Path                       | Purpose                                          | Model                                              |
+| ------ | -------------------------- | ------------------------------------------------ | -------------------------------------------------- |
+| GET    | `/healthz`                 | Liveness (no auth)                               | —                                                  |
+| POST   | `/v1/extract/text`         | Transaction from free text                       | `openai/gpt-oss-20b` (fallback `qwen/qwen3.8-27b`) |
+| POST   | `/v1/extract/image`        | Transaction from receipt image (base64 or URL)   | `qwen/qwen3.8-27b`                                 |
+| POST   | `/v1/extract/notification` | Transaction from Android notification            | `openai/gpt-oss-20b` (fallback `qwen/qwen3.8-27b`) |
+| POST   | `/v1/chat/analyze`         | Concise finance Q&A from pre-aggregated snapshot | `qwen/qwen3.8-27b`                                 |
 
 Extraction responses are a discriminated union: `{ status: "ok", extraction }`, `{ status: "skipped", reason }`, or `{ status: "unavailable", reason }`. Chat analyze returns `{ status: "ok", reply, modelId }` or `{ status: "unavailable", reason }`. Errors use `{ error, details? }`. The wire contract mirrors `apps/mobile/lib/ai/client/types.ts`.
 
