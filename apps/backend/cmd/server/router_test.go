@@ -315,10 +315,51 @@ func TestExtractNotificationUsesCurrencyFromNotification(t *testing.T) {
 }
 
 func TestExtractNotificationSkipsNonTransactions(t *testing.T) {
-	s := newTestServer(t, nil, ok(`{"is_transaction":false,"reasoning":"one-time password"}`))
-	_, res := s.post(t, "/v1/extract/notification", notificationBody("Your TAC is 123456"))
-	if res["status"] != "skipped" || res["reason"] != "one-time password" {
+	s := newTestServer(t, nil, ok(`{"is_transaction":false,"reasoning":"balance snapshot"}`))
+	_, res := s.post(t, "/v1/extract/notification", notificationBody("Your available balance is RM 1,204.50"))
+	if res["status"] != "skipped" || res["reason"] != "balance snapshot" {
 		t.Fatalf("got %v", res)
+	}
+}
+
+func TestExtractNotificationSkipsOneTimeCodesWithoutCallingGroq(t *testing.T) {
+	s := newTestServer(t, nil)
+	for _, text := range []string{
+		"Your TAC is 482913 for a transfer of RM 300.00. Do not share this code with anyone.",
+		"Maybank2u Secure TAC: approve RM 1,250.00 to ALI BIN ABU",
+		"OTP 551203 for your RM 89.90 purchase. Don't share it.",
+		"Kod pengesahan anda 774410 untuk RM 50.00. Jangan kongsi kod ini.",
+	} {
+		_, res := s.post(t, "/v1/extract/notification", notificationBody(text))
+		if res["status"] != "skipped" {
+			t.Errorf("%q: got %v", text, res)
+		}
+	}
+	if len(s.groq.requests) != 0 {
+		t.Fatalf("one-time codes reached Groq: %d", len(s.groq.requests))
+	}
+}
+
+func TestExtractNotificationKeepsPurchasesThatMentionContact(t *testing.T) {
+	s := newTestServer(t, nil, ok(`{"is_transaction":true,"amount":23.9,"currency":"MYR","type":"expense","confidence":0.9,"reasoning":"card"}`))
+	_, res := s.post(t, "/v1/extract/notification",
+		notificationBody("Card purchase RM 23.90 at FamilyMart. Contact 1300-88-6688 if this was not you."))
+	if res["status"] != "ok" {
+		t.Fatalf("got %v", res)
+	}
+}
+
+func TestExtractNotificationFallsBackToQualityModel(t *testing.T) {
+	s := newTestServer(t, nil,
+		groqReply{http.StatusBadRequest, "Failed to generate JSON. Please adjust your prompt."},
+		ok(`{"is_transaction":true,"amount":15,"currency":"MYR","type":"income","confidence":0.9,"reasoning":"received"}`))
+	_, res := s.post(t, "/v1/extract/notification", notificationBody("ALI BIN ABU has transferred RM 15.00 to you."))
+	if ex := extraction(t, res); ex["amount"] != 15.0 || ex["type"] != "income" {
+		t.Fatalf("got %v", ex)
+	}
+	want := []string{groq.ModelTextFast, groq.ModelTextQuality}
+	if got := s.groq.models(); strings.Join(got, ",") != strings.Join(want, ",") {
+		t.Fatalf("models = %v, want %v", got, want)
 	}
 }
 
