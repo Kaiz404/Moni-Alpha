@@ -49,6 +49,10 @@ go test ./...
 go vet ./...
 ```
 
+`go test ./...` is offline: `cmd/server/router_test.go` drives every endpoint through the real router (`newRouter`) with a local JWKS (`internal/auth/authtest`) and a fake Groq server, covering auth, validation, `ok`/`skipped`/`unavailable`, model fallback and the per-user rate limit.
+
+`pnpm test:live` (or `MONI_LIVE_TESTS=1 go test ./cmd/server -run Live -v`) calls the real Groq API with `.env`'s `GROQ_API_KEY`: it checks the key serves every model in `internal/groq/models.go`, then extracts from text, four notifications, the `cmd/server/testdata/receipt.png` receipt, and answers a chat question. Run it after changing models, prompts or keys.
+
 ## Deploy (Google Cloud Run)
 
 Scale-to-zero keeps this free/cheap at ~1000 users; the app tolerates cold starts because AI work is queued on-device.

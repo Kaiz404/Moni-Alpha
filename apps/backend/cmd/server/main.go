@@ -16,8 +16,6 @@ import (
 
 	"github.com/kaiz404/moni/backend/internal/auth"
 	"github.com/kaiz404/moni/backend/internal/config"
-	"github.com/kaiz404/moni/backend/internal/chat"
-	"github.com/kaiz404/moni/backend/internal/extract"
 	"github.com/kaiz404/moni/backend/internal/groq"
 )
 
@@ -35,10 +33,6 @@ func main() {
 		log.Fatalf("auth: failed to initialize JWKS verifier: %v", err)
 	}
 
-	groqClient := groq.NewClient(cfg.GroqAPIKey, cfg.GroqBaseURL)
-	extractHandler := extract.NewHandler(extract.NewService(groqClient))
-	chatHandler := chat.NewHandler(chat.NewService(groqClient))
-
 	// 20 AI requests/min per user (burst 8) is generous for one person and
 	// keeps a single abusive client from draining the org-level Groq quota.
 	limiter := auth.NewRateLimiter(20, 8)
@@ -46,20 +40,9 @@ func main() {
 	if os.Getenv("GIN_MODE") == "" {
 		gin.SetMode(gin.ReleaseMode)
 	}
-	r := gin.New()
-	r.Use(gin.Recovery(), gin.Logger())
-
-	r.GET("/healthz", func(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{"status": "ok"})
-	})
-
-	v1 := r.Group("/v1", verifier.Middleware(), limiter.Middleware())
-	extractHandler.Register(v1)
-	chatHandler.Register(v1)
-
 	srv := &http.Server{
 		Addr:              ":" + cfg.Port,
-		Handler:           r,
+		Handler:           newRouter(verifier, limiter, groq.NewClient(cfg.GroqAPIKey, cfg.GroqBaseURL)),
 		ReadHeaderTimeout: 10 * time.Second,
 	}
 
