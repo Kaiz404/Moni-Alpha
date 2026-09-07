@@ -9,12 +9,18 @@ import (
 	"github.com/kaiz404/moni/backend/internal/groq"
 )
 
+// Models picks the model for each call; the benchmark swaps in candidates.
+type Models struct {
+	Fast, Quality, Vision string
+}
+
 type Service struct {
-	groq *groq.Client
+	groq   *groq.Client
+	models Models
 }
 
 func NewService(client *groq.Client) *Service {
-	return &Service{groq: client}
+	return &Service{groq: client, models: Models{Fast: groq.ModelTextFast, Quality: groq.ModelTextQuality, Vision: groq.ModelVision}}
 }
 
 const defaultCurrency = "USD"
@@ -45,13 +51,13 @@ func (s *Service) FromText(ctx context.Context, req TextRequest) Result {
 
 	var out llmExtraction
 	err := s.groq.CompleteJSON(ctx, messages,
-		groq.Options{Model: groq.ModelTextFast, Temperature: 0.2, MaxTokens: 512, MaxRetryWait: 3 * time.Second},
+		groq.Options{Model: s.models.Fast, Temperature: 0.2, MaxTokens: 512, MaxRetryWait: 3 * time.Second},
 		&out,
 	)
 	if err != nil {
 		// One fallback attempt on the quality model.
 		err = s.groq.CompleteJSON(ctx, messages,
-			groq.Options{Model: groq.ModelTextQuality, Temperature: 0.2, MaxTokens: 512},
+			groq.Options{Model: s.models.Quality, Temperature: 0.2, MaxTokens: 512},
 			&out,
 		)
 	}
@@ -98,7 +104,7 @@ func (s *Service) FromImage(ctx context.Context, req ImageRequest) Result {
 	var out llmExtraction
 	err := s.groq.CompleteJSON(ctx, messages,
 		groq.Options{
-			Model:           groq.ModelVision,
+			Model:           s.models.Vision,
 			Temperature:     0.6,
 			MaxTokens:       1024,
 			ReasoningEffort: "none",
@@ -134,13 +140,13 @@ func (s *Service) FromNotification(ctx context.Context, req NotificationRequest)
 		{Role: "system", Content: notificationDetectionPrompt},
 		{Role: "user", Content: user},
 	}
-	opts := groq.Options{Model: groq.ModelTextFast, Temperature: 0, MaxTokens: 512, MaxRetryWait: 30 * time.Second}
+	opts := groq.Options{Model: s.models.Fast, Temperature: 0, MaxTokens: 512, MaxRetryWait: 30 * time.Second}
 
 	var out llmNotificationResult
 	err := s.groq.CompleteJSON(ctx, messages, opts, &out)
 	if err != nil {
 		// The fast model intermittently fails Groq's JSON validation; one quality-model retry.
-		out, opts.Model = llmNotificationResult{}, groq.ModelTextQuality
+		out, opts.Model = llmNotificationResult{}, s.models.Quality
 		err = s.groq.CompleteJSON(ctx, messages, opts, &out)
 	}
 	if err != nil {
