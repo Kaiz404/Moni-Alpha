@@ -35,16 +35,13 @@ type benchProvider struct {
 var benchGroq = &benchProvider{name: "groq", baseURL: "https://api.groq.com/openai/v1", keyEnv: "GROQ_API_KEY", pace: 2500 * time.Millisecond}
 
 // OpenRouter takes reasoning as one object, not Groq's reasoning_effort/reasoning_format.
+// Even "low" effort spent the whole 512-token budget thinking on qwen3.7-flash, so reasoning is off.
 // require_parameters keeps requests off upstream hosts that would silently drop JSON mode.
 var benchOpenRouter = &benchProvider{name: "openrouter", baseURL: "https://openrouter.ai/api/v1", keyEnv: "OPENROUTER_API_KEY",
 	rewrite: func(body map[string]any) {
-		reasoning := map[string]any{"effort": "low", "exclude": true}
-		if body["reasoning_effort"] == "none" {
-			reasoning = map[string]any{"enabled": false}
-		}
 		delete(body, "reasoning_effort")
 		delete(body, "reasoning_format")
-		body["reasoning"] = reasoning
+		body["reasoning"] = map[string]any{"enabled": false}
 		body["provider"] = map[string]any{"require_parameters": true}
 		body["usage"] = map[string]any{"include": true}
 	},
@@ -288,6 +285,9 @@ func (o benchOutcome) cost() (cost float64, outTokens int) {
 }
 
 // runCase retries a case whose only problem was a 429, so free-tier quotas don't count as model errors.
+// benchRateLimited outcomes say nothing about the model, so pass rates leave them out.
+const benchRateLimited = "rate limited"
+
 func runCase(ctx context.Context, s *Service, rewrite func(map[string]any), c benchCase, images map[string]string) benchOutcome {
 	o := benchOutcome{c: c}
 	for try := 0; ; try++ {
@@ -302,6 +302,11 @@ func runCase(ctx context.Context, s *Service, rewrite func(map[string]any), c be
 		wait := 20 * time.Second
 		if secs, err := strconv.Atoi(call.attempts[len(call.attempts)-1].retryAfter); err == nil {
 			wait = time.Duration(secs+1) * time.Second
+		}
+		// A long retry-after is a daily quota; waiting it out stalled a full run for over an hour.
+		if wait > time.Minute {
+			o.failure, o.reason = benchRateLimited, "retry after "+wait.String()
+			return o
 		}
 		time.Sleep(wait)
 	}
@@ -405,7 +410,7 @@ func TestBenchModels(t *testing.T) {
 func benchReport(targets []benchTarget, results [][]benchOutcome, runs int) string {
 	var b strings.Builder
 	fmt.Fprintf(&b, "# LLM benchmark %s\n\n%d cases x %d runs. Pass means every labelled field matched.\n", time.Now().Format("2006-01-02 15:04"), len(benchCases), runs)
-	b.WriteString("Retries counts extra calls the fallback made (bad JSON, HTTP errors). 429 waits are excluded from latency and accuracy.\n\n")
+	b.WriteString("Retries counts extra calls the fallback made (bad JSON, HTTP errors). 429 waits are excluded from latency; cases Groq would not serve within a minute are listed as rate limited and excluded from accuracy.\n\n")
 	b.WriteString("| Provider | Model | Pass | Text | Notif | Image | Retries | 429s | p50 | p95 | Out tok | $/1k calls |\n")
 	b.WriteString("|---|---|---|---|---|---|---|---|---|---|---|---|\n")
 	for i, tg := range targets {
@@ -413,7 +418,7 @@ func benchReport(targets []benchTarget, results [][]benchOutcome, runs int) stri
 		pass := func(kind benchKind) string {
 			n, ok := 0, 0
 			for _, o := range outs {
-				if kind == "" || o.c.kind == kind {
+				if (kind == "" || o.c.kind == kind) && o.failure != benchRateLimited {
 					n++
 					if o.failure == "" {
 						ok++
@@ -423,12 +428,17 @@ func benchReport(targets []benchTarget, results [][]benchOutcome, runs int) stri
 			if n == 0 {
 				return "n/a"
 			}
+			if kind == "" {
+				return fmt.Sprintf("%.0f%% of %d", 100*float64(ok)/float64(n), n)
+			}
 			return fmt.Sprintf("%.0f%%", 100*float64(ok)/float64(n))
 		}
 		var lat []time.Duration
 		retries, limited, outTok, cost := 0, 0, 0, 0.0
 		for _, o := range outs {
-			lat = append(lat, o.latency)
+			if o.failure != benchRateLimited {
+				lat = append(lat, o.latency)
+			}
 			retries += o.retries()
 			limited += o.rateLimited
 			c, tok := o.cost()
