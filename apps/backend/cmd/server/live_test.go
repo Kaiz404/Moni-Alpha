@@ -15,28 +15,28 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/kaiz404/moni/backend/internal/auth"
 	"github.com/kaiz404/moni/backend/internal/auth/authtest"
-	"github.com/kaiz404/moni/backend/internal/groq"
+	"github.com/kaiz404/moni/backend/internal/llm"
 )
 
-// Live tests call the real Groq API through the full router (local JWKS stands in for Supabase).
-// Opt in with MONI_LIVE_TESTS=1 and GROQ_API_KEY set: `pnpm --filter backend test:live`.
+// Live tests call the real OpenRouter API through the full router (local JWKS stands in for Supabase).
+// Opt in with MONI_LIVE_TESTS=1 and OPENROUTER_API_KEY set: `pnpm --filter backend test:live`.
 // Inputs are unambiguous so assertions stay loose enough to survive model variance.
 
-func groqBaseURL() string {
-	if u := os.Getenv("GROQ_BASE_URL"); u != "" {
+func liveBaseURL() string {
+	if u := os.Getenv("OPENROUTER_BASE_URL"); u != "" {
 		return u
 	}
-	return "https://api.groq.com/openai/v1"
+	return "https://openrouter.ai/api/v1"
 }
 
 func requireLive(t *testing.T) string {
 	t.Helper()
 	if os.Getenv("MONI_LIVE_TESTS") != "1" {
-		t.Skip("set MONI_LIVE_TESTS=1 to call the real Groq API")
+		t.Skip("set MONI_LIVE_TESTS=1 to call the real OpenRouter API")
 	}
-	key := os.Getenv("GROQ_API_KEY")
+	key := os.Getenv("OPENROUTER_API_KEY")
 	if key == "" {
-		t.Fatal("MONI_LIVE_TESTS=1 but GROQ_API_KEY is empty")
+		t.Fatal("MONI_LIVE_TESTS=1 but OPENROUTER_API_KEY is empty")
 	}
 	return key
 }
@@ -51,7 +51,7 @@ func newLiveServer(t *testing.T) *testServer {
 		t.Fatal(err)
 	}
 	return &testServer{
-		handler: newRouter(verifier, auth.NewRateLimiter(600, 100), groq.NewClient(key, groqBaseURL())),
+		handler: newRouter(verifier, auth.NewRateLimiter(600, 100), llm.NewClient(key, liveBaseURL())),
 		token: func(sub string) string {
 			return authtest.SignToken(t, priv, sub, time.Now().Add(time.Hour))
 		},
@@ -70,10 +70,10 @@ func liveExtraction(t *testing.T, res map[string]any, amount float64, txType str
 	return ex
 }
 
-// Catches a revoked key or a model id Groq no longer serves before any extraction runs.
-func TestLiveGroqKeyServesConfiguredModels(t *testing.T) {
+// Catches a model id OpenRouter no longer serves before any extraction runs.
+func TestLiveModelIsServed(t *testing.T) {
 	key := requireLive(t)
-	req, _ := http.NewRequest(http.MethodGet, groqBaseURL()+"/models", nil)
+	req, _ := http.NewRequest(http.MethodGet, liveBaseURL()+"/models", nil)
 	req.Header.Set("Authorization", "Bearer "+key)
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
@@ -96,10 +96,8 @@ func TestLiveGroqKeyServesConfiguredModels(t *testing.T) {
 	for _, m := range body.Data {
 		served[m.ID] = true
 	}
-	for _, model := range []string{groq.ModelTextFast, groq.ModelTextQuality, groq.ModelVision} {
-		if !served[model] {
-			t.Errorf("model %q is not served for this key", model)
-		}
+	if !served[llm.Model] {
+		t.Errorf("model %q is not served", llm.Model)
 	}
 }
 

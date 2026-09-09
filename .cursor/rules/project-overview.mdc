@@ -11,7 +11,7 @@ alwaysApply: true
 
 ```
 apps/mobile/      Expo SDK 57 + expo-router — PRIMARY client (focus)
-apps/backend/     Go + Gin AI gateway → Groq (focus)
+apps/backend/     Go + Gin AI gateway → OpenRouter (focus)
 apps/web/         Next.js 16 dashboard — ISOLATED, deprioritized
 packages/types/   @repo/types — Zod schemas + inferred TS types
 supabase/         Migrations, RLS, storage
@@ -24,7 +24,7 @@ Run: `pnpm --filter moni dev` / `pnpm --filter backend dev` / `pnpm --filter web
 
 - **Mobile syncs directly to Supabase** via Legend-State (`apps/mobile/lib/store/index.ts`) with MMKV persistence and soft deletes. There is NO PowerSync, NO SQLite/Drizzle, NO local LLM — do not reintroduce them.
 - **Mobile and web never talk to each other.** Web's API routes serve only the web dashboard. Shared needs go through Supabase (data) or the Go backend (AI).
-- **Go backend is stateless**: verifies Supabase user JWTs via JWKS (ES256), calls Groq, returns extractions. No database access.
+- **Go backend is stateless**: verifies Supabase user JWTs via JWKS (ES256), calls OpenRouter, returns extractions. No database access.
 - **Supabase keys**: new system only — `sb_publishable_...` in clients, `sb_secret_...` server-side. Never use legacy anon/service_role keys.
 - **AI wire contract**: `apps/mobile/lib/ai/client/types.ts` ↔ `apps/backend/internal/extract/types.go` must stay in sync manually.
 
@@ -34,4 +34,4 @@ Run: `pnpm --filter moni dev` / `pnpm --filter backend dev` / `pnpm --filter web
 - Auth: Supabase JWT Bearer tokens; ES256 asymmetric signing
 - Error responses: `{ error: string; details?: any }`
 - Money: `DECIMAL(12,2)`, 3-letter ISO currency; UUID primary keys
-- Designed for ~1000 users at minimal cost (Supabase free tier, Groq Developer tier, Cloud Run scale-to-zero)
+- Designed for ~1000 users at minimal cost (Supabase free tier, OpenRouter pay-per-token, Cloud Run scale-to-zero)

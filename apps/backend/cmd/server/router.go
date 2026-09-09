@@ -7,11 +7,11 @@ import (
 	"github.com/kaiz404/moni/backend/internal/auth"
 	"github.com/kaiz404/moni/backend/internal/chat"
 	"github.com/kaiz404/moni/backend/internal/extract"
-	"github.com/kaiz404/moni/backend/internal/groq"
+	"github.com/kaiz404/moni/backend/internal/llm"
 )
 
 // newRouter wires every route behind its middleware. main and the endpoint tests share it.
-func newRouter(verifier *auth.Verifier, limiter *auth.RateLimiter, groqClient *groq.Client) *gin.Engine {
+func newRouter(verifier *auth.Verifier, limiter *auth.RateLimiter, llmClient *llm.Client) *gin.Engine {
 	r := gin.New()
 	r.Use(gin.Recovery(), gin.Logger())
 
@@ -20,7 +20,7 @@ func newRouter(verifier *auth.Verifier, limiter *auth.RateLimiter, groqClient *g
 	})
 
 	v1 := r.Group("/v1", verifier.Middleware(), limiter.Middleware())
-	extract.NewHandler(extract.NewService(groqClient)).Register(v1)
-	chat.NewHandler(chat.NewService(groqClient)).Register(v1)
+	extract.NewHandler(extract.NewService(llmClient)).Register(v1)
+	chat.NewHandler(chat.NewService(llmClient)).Register(v1)
 	return r
 }

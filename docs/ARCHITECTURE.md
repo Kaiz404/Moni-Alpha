@@ -14,11 +14,11 @@ flowchart LR
     authmw[JWKS ES256 auth]
     router[Model routing]
   end
-  groq[Groq API]
+  llm[OpenRouter API]
   supa[(Supabase: Postgres + Auth + Storage)]
   web[Next.js dashboard isolated]
 
-  chat -->|"Bearer user JWT"| authmw --> router --> groq
+  chat -->|"Bearer user JWT"| authmw --> router --> llm
   legend <-->|"publishable key + user JWT"| supa
   web <-->|"own API routes"| supa
   authmw -.->|"JWKS fetch"| supa
@@ -30,7 +30,7 @@ flowchart LR
 - **Finance reads are projected, not refetched per screen.** `apps/mobile/lib/finance/` adapts synced rows into a non-persisted normalized projection, then exposes cached Legend `computed` selectors for cards, charts, lists, budgets, debts, and AI snapshots. Components subscribe only to their selector; commands remain the only place that mutate synced stores.
 - **Money is integer minor units in application contracts.** `@repo/types` exposes branded `MinorAmount` fields (`amountMinor`, `initialBalanceMinor`, and similar). Decimal conversion occurs only at database, form, and external AI/API boundaries. Aggregates and charts retain their ISO currency key; they never combine currencies.
 - **Mobile and web never talk to each other.** The Next.js app (`apps/web`) is a self-contained dashboard with its own API routes for its own pages. Anything both clients need lives in Supabase (data) or the Go backend (AI).
-- **The Go backend is stateless.** It verifies the caller's Supabase JWT against the project JWKS (ES256), calls Groq, and returns extraction results. It never touches the database — the mobile client inserts `proposed_transactions` rows itself.
+- **The Go backend is stateless.** It verifies the caller's Supabase JWT against the project JWKS (ES256), calls OpenRouter, and returns extraction results. It never touches the database — the mobile client inserts `proposed_transactions` rows itself.
 - **AI writes to the ledger only for routine notifications.** An extraction becomes a `proposed_transactions` row that the user approves or declines in a review UI (a minimal summary popup, with an optional full-detail page) unless it is a bank notification matching the user's own recent, consistently categorized history; those are added directly with `metadata.ai_suggested = true`. A notification that completes an own-wallet transfer pair (`lib/ai/duplicates.ts`) is combined with its other half into one transfer automatically. Manual inputs (text, voice, receipts) always go to review. Learning is the transaction history itself; there is no separate model or table.
 - **Shared types via `@repo/types`.** Zod schemas are the single source of truth; TS types are inferred. The Go backend mirrors the wire contract from `apps/mobile/lib/ai/client/types.ts` (kept in sync by convention — see `docs/AI.md`).
 
@@ -46,7 +46,7 @@ MMKV processing queue (lib/ai/processing-queue.ts)
 background-processor.ts (Android foreground service)
         │
         ▼
-run-extraction.ts → AiClient (lib/ai/client) ──HTTP──► Go backend ──► Groq
+run-extraction.ts → AiClient (lib/ai/client) ──HTTP──► Go backend ──► OpenRouter
         │
         ▼
 proposed_transactions (unreviewed)
@@ -91,5 +91,5 @@ Turborepo orchestrates everything, including Go: `apps/backend/package.json` she
 Designed for a solo developer targeting ~1000 users at minimal cost:
 
 - Supabase free tier (Postgres, auth, storage, realtime)
-- Groq Developer tier (pay-per-token; low single-digit $/month at this scale — see `docs/AI.md`)
+- OpenRouter pay-per-token credit (`deepseek-v4.1-flash`; cost estimate in `docs/AI.md`)
 - Go backend on Cloud Run with scale-to-zero (free tier covers this traffic)

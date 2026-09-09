@@ -57,7 +57,7 @@ SUPABASE_SECRET_KEY=sb_secret_...   # server-side scripts only
 
 ```bash
 SUPABASE_URL=https://<project-ref>.supabase.co
-GROQ_API_KEY=gsk_...                # console.groq.com/keys
+OPENROUTER_API_KEY=sk-or-...         # openrouter.ai/keys
 ```
 
 ## WSL Android toolchain

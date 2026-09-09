@@ -1,5 +1,5 @@
 // Moni AI backend: stateless Gin service that routes mobile AI requests
-// (text, receipt images, notifications, chat analysis) to Groq. Auth is a
+// (text, receipt images, notifications, chat analysis) to OpenRouter. Auth is a
 // Supabase user JWT verified against the project JWKS; no database access.
 package main
 
@@ -16,7 +16,7 @@ import (
 
 	"github.com/kaiz404/moni/backend/internal/auth"
 	"github.com/kaiz404/moni/backend/internal/config"
-	"github.com/kaiz404/moni/backend/internal/groq"
+	"github.com/kaiz404/moni/backend/internal/llm"
 )
 
 func main() {
@@ -34,7 +34,7 @@ func main() {
 	}
 
 	// 20 AI requests/min per user (burst 8) is generous for one person and
-	// keeps a single abusive client from draining the org-level Groq quota.
+	// keeps a single abusive client from draining the shared OpenRouter credit.
 	limiter := auth.NewRateLimiter(20, 8)
 
 	if os.Getenv("GIN_MODE") == "" {
@@ -42,7 +42,7 @@ func main() {
 	}
 	srv := &http.Server{
 		Addr:              ":" + cfg.Port,
-		Handler:           newRouter(verifier, limiter, groq.NewClient(cfg.GroqAPIKey, cfg.GroqBaseURL)),
+		Handler:           newRouter(verifier, limiter, llm.NewClient(cfg.OpenRouterAPIKey, cfg.OpenRouterBaseURL)),
 		ReadHeaderTimeout: 10 * time.Second,
 	}
 
