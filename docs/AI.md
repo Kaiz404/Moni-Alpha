@@ -120,6 +120,39 @@ All calls use Groq's OpenAI-compatible endpoint with `response_format: json_obje
 - Live flows retry a 429 only within a short window (3–5s) then return `unavailable`; the mobile queue retries later. Notifications wait up to 30s.
 - Cost: most calls go to the fast model (`openai/gpt-oss-20b`). At 1000 users doing a few extractions/day this is low single-digit dollars per month; receipts (vision) dominate but stay cheap because the client already perspective-crops + grayscale/contrast-filters + downscales to a single ≤1024px JPEG on-device before it's ever sent.
 
+### Model benchmark (2026-10-07)
+
+`pnpm --filter backend bench:llm` runs 29 labelled Malaysian cases (11 text, 14 notifications, 4 synthetic receipts) through the production extraction service per candidate model and writes a scorecard to `apps/backend/bench-results/` (gitignored). Setup, flags and the model list are in `apps/backend/README.md`. A pass means amount, type and every labelled field (currency, merchant, wallets) matched, or that a non-transaction was skipped. OpenRouter calls ran with reasoning disabled; even low effort used the whole 512-token budget on `qwen3.7-flash`.
+
+Full run, 3 runs per case, before the notification prompt accepted payments from any app:
+
+| Provider   | Model                          | Pass | Receipts | p50  | p95   | $ / 1k calls |
+| ---------- | ------------------------------ | ---- | -------- | ---- | ----- | ------------ |
+| OpenRouter | `deepseek/deepseek-v4.1-flash` | 100% | 100%     | 1.6s | 3.1s  | 0.128        |
+| OpenRouter | `qwen/qwen3.7-flash`           | 100% | 100%     | 2.3s | 5.2s  | 0.033        |
+| OpenRouter | `deepseek/deepseek-v4-flash`   | 100% | no image | 2.2s | 6.5s  | 0.080        |
+| OpenRouter | `moonshotai/kimi-k2.5`         | 100% | 100%     | 3.5s | 6.8s  | 0.587        |
+| OpenRouter | `xiaomi/mimo-v2.6-flash`       | 98%  | 100%     | 4.2s | 14.3s | 0.088        |
+| OpenRouter | `qwen/qwen3.8-flash`           | 98%  | 92%      | 3.3s | 8.4s  | 0.105        |
+| OpenRouter | `bytedance-seed/seed-2.0-mini` | 95%  | 92%      | 1.0s | 1.8s  | 0.158        |
+| OpenRouter | `minimax/minimax-m3`           | 95%  | 92%      | 2.7s | 7.0s  | 0.273        |
+| OpenRouter | `qwen/qwen3.8-27b`             | 95%  | 100%     | 2.5s | 4.7s  | 0.440        |
+| Groq Free  | `openai/gpt-oss-120b`          | 96%  | no image | 1.2s | 1.8s  | free         |
+| Groq Free  | `openai/gpt-oss-20b`           | 93%  | no image | 0.9s | 1.8s  | free         |
+| Groq Free  | `qwen/qwen3.8-27b`             | none | none     |      |       | free         |
+| OpenRouter | `z-ai/glm-5.3-flash`           | none | none     |      |       |              |
+
+After the prompt change, `deepseek-v4.1-flash`, `qwen3.7-flash`, `seed-2.0-mini`, `minimax-m3` and `mimo-v2.6-flash` passed all 87 checks, and `gpt-oss-120b` passed all 50 that Groq served.
+
+Findings:
+
+- **Groq Free can't carry production traffic.** Around 24 requests a minute across three models drew `retry-after` waits of 3 to 17 minutes. `qwen3.8-27b`, which serves receipts, chat and the notification fallback, answered 1 of 87 cases within a minute.
+- **The old notification prompt dropped online payments.** It required a bank, fintech, payment or wallet app, so every model skipped Lazada refunds and most skipped GrabFood payments. Any app confirming a completed payment or refund now counts.
+- **Remaining model errors were receipt JSON.** `qwen3.8-flash`, `seed-2.0-mini` and `minimax-m3` each returned unparseable receipt JSON once in three runs.
+- **`glm-5.3-flash` requires reasoning.** OpenRouter rejects reasoning-off requests; testing it means raising the 512-token budget.
+- **Best fits.** `deepseek-v4.1-flash` for one model across every flow (tightest p95). `qwen3.7-flash` for the lowest cost at about a quarter of the price. Rough estimate at 1000 users and 30 extractions a day: about $115 a month on DeepSeek, $30 on Qwen.
+- **Limits.** The cases are too easy to rank the top models, and the receipts are clean synthetic images. Real phone photos and real notifications would separate them.
+
 ## Extraction pipeline details
 
 - **Prompts** live in `apps/backend/internal/extract/prompts.go` and `internal/chat/prompts.go`.
