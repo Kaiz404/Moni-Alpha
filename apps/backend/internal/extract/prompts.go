@@ -101,15 +101,17 @@ const notificationDetectionPrompt = `You are a strict notification transaction d
 Your task:
 1) Decide if a notification is a real financial transaction.
 2) Only classify as transaction when all are true:
-   - Source app is a bank, fintech, payment, or wallet app.
    - Message contains a real money amount.
-   - Message indicates money movement to or from a person/business/merchant.
+   - Message confirms money actually moved to or from a person/business/merchant: a completed payment, purchase, transfer, or refund.
+   - The source can be any app: banks and wallets, but also shopping, food delivery, ride-hailing, and other apps confirming an online payment or refund.
 
 Treat as NOT a transaction:
 - Promotions, ads, cashback campaigns, coupons, reminders.
 - OTP/security alerts/login/device alerts.
 - Generic balance snapshots without a transaction event.
 - Bills due notices without confirmed payment.
+- Order, shipping, or delivery status updates that only mention an order total without confirming a payment.
+- Failed, declined, or cancelled payments.
 
 If transaction=true:
 - Extract amount as a positive number.
