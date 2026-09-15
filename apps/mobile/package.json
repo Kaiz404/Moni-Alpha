@@ -15,6 +15,7 @@
     "format:check": "prettier --check \"**/*.{ts,tsx}\"",
     "test": "jest --runInBand",
     "bench:chat": "jest --runInBand lib/ai/chat/__tests__/chat-bench.test.ts",
+    "bench:chat:live": "node ./scripts/chat-bench-live.mjs",
     "test:notification-detection": "node ./scripts/notification-detection-suite.mjs",
     "test:notification-routing": "node ./scripts/notification-routing-suite.mjs",
     "test:default-wallet": "node ./scripts/default-wallet-suite.mjs"

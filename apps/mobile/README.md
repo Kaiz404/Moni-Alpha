@@ -125,5 +125,6 @@ pnpm --filter moni test:notification-detection   # 1000-case prefilter suite
 pnpm --filter moni test:notification-routing     # wallet candidate routing (no LLM)
 pnpm --filter moni test                          # finance unit/reactivity tests
 pnpm --filter moni bench:chat                    # offline chat grounding bench (fixture ledger, 22 cases)
+pnpm --filter moni bench:chat:live               # same questions through the real backend + model (needs apps/backend/.env)
 npx tsc --noEmit                                 # typecheck (run in apps/mobile)
 ```
