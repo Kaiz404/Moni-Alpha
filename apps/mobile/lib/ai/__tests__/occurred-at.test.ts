@@ -20,9 +20,8 @@ describe('resolveOccurredAt', () => {
     expect(resolveOccurredAt('2026-07-15', now)).toBe(new Date(2026, 6, 15, 12).toISOString());
   });
 
-  it('clamps dates older than 90 days', () => {
-    const earliest = new Date(now.getTime() - 90 * 86400000).toISOString();
-    expect(resolveOccurredAt('2025-10-12', now)).toBe(earliest);
+  it('falls back to now for dates older than 90 days', () => {
+    expect(resolveOccurredAt('2025-10-12', now)).toBe(now.toISOString());
     expect(resolveOccurredAt('2026-07-14', now)).toBe(new Date(2026, 6, 14, 12).toISOString());
   });
 });

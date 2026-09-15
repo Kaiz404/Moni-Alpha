@@ -27,7 +27,7 @@ type Extraction struct {
 	Confidence           float64 `json:"confidence"`
 	Reasoning            string  `json:"reasoning"`
 	// OccurredAt is a local calendar date (YYYY-MM-DD) for text and receipts; null when
-	// the input names none. The client clamps it and treats null as "now".
+	// the input names none. The client falls back to "now" for null, future or over-90-day dates.
 	OccurredAt *string `json:"occurredAt"`
 }
 

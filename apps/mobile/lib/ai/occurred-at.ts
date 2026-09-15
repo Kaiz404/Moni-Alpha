@@ -30,8 +30,8 @@ export function extractDateContext(now: Date): ExtractDateContext {
 
 /**
  * Turns the model's local `YYYY-MM-DD` into the transaction timestamp. Today, missing,
- * invalid, or future dates become `now`; past dates land at local noon, no further back
- * than 90 days.
+ * invalid, future, or older-than-90-day dates become `now`; other past dates land at local
+ * noon. A pinned boundary date would look plausible and always be wrong.
  */
 export function resolveOccurredAt(occurredAt: string | null | undefined, now: Date): string {
   const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(occurredAt?.trim() ?? '');
@@ -44,5 +44,5 @@ export function resolveOccurredAt(occurredAt: string | null | undefined, now: Da
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   if (date.getTime() >= today.getTime()) return now.toISOString();
   const earliest = new Date(now.getTime() - MAX_BACKDATE_DAYS * DAY_MS);
-  return (date < earliest ? earliest : date).toISOString();
+  return date < earliest ? now.toISOString() : date.toISOString();
 }
