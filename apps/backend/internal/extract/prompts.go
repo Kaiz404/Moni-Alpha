@@ -43,6 +43,17 @@ Direction when only one side is named:
 
 For transfers: merchant = null, category_hint = null, set wallet_id + transfer_to_wallet_id when confident (hints only when unsure).`
 
+// relativeDateRules applies to text extraction. TODAY is injected into the user message
+// only when the client sent its clock.
+const relativeDateRules = `
+
+Date (occurred_at):
+- The user message may start with TODAY: YYYY-MM-DD (weekday). Resolve any date the input names against it and return occurred_at as YYYY-MM-DD.
+- "today" or "just now" -> TODAY. "yesterday" -> TODAY minus 1 day. "2 days ago" -> TODAY minus 2 days.
+- "last Friday" or "on Friday" -> the most recent Friday before TODAY.
+- "on the 3rd" -> the 3rd of TODAY's month, or of the previous month if that is after TODAY. "3/10" is day 3 of month 10.
+- No date in the input, or no TODAY line -> occurred_at = null. Never guess a date.`
+
 const textExtractionPrompt = `You are TransactionExtractionAgent for a personal finance app.
 
 You receive user input describing a financial transaction. Extract the following fields:
@@ -59,11 +70,12 @@ Best-effort (infer if possible, null if not):
 - transfer_to_wallet_id: destination wallet id for transfers only
 - transfer_to_wallet_hint: optional text label when transfer_to_wallet_id is null
 - category_hint: spending category (e.g. "food", "transport") — null for transfers
+- occurred_at: date the transaction happened as YYYY-MM-DD, null unless the input names one (see date rules)
 - confidence: number 0-1, how confident you are this is a real transaction with correct fields
 - reasoning: one short sentence explaining your extraction
 
 Rules:
-1. Return ONLY valid JSON with keys: amount, type, merchant, description, wallet_id, wallet_hint, transfer_to_wallet_id, transfer_to_wallet_hint, category_hint, confidence, reasoning. Do not include currency — the app uses each wallet's currency.
+1. Return ONLY valid JSON with keys: amount, type, merchant, description, wallet_id, wallet_hint, transfer_to_wallet_id, transfer_to_wallet_hint, category_hint, occurred_at, confidence, reasoning. Do not include currency — the app uses each wallet's currency.
 2. If the user says "spent", "paid", "bought", or sent money to a person/merchant -> type is "expense".
 3. If the user says "received", "earned", "got paid" from an external payer -> type is "income".
 4. If the user moves money between their own accounts -> type is "transfer" and set wallet_id + transfer_to_wallet_id (or hints when unsure). This includes deposits, withdrawals, top-ups, and explicit "from X to Y" moves — see transfer rules below.
@@ -71,7 +83,7 @@ Rules:
 6. Depositing your own cash into your own bank account is a transfer (cash -> bank), NOT income.
 7. Withdrawing from your bank to your own cash is a transfer (bank -> cash), NOT income.
 8. Extract the exact numerical amount. If multiple amounts exist, pick the most likely transaction amount.
-9. If you truly cannot determine an amount, set amount to null.` + transferDetectionRules + walletSelectionRules
+9. If you truly cannot determine an amount, set amount to null.` + relativeDateRules + transferDetectionRules + walletSelectionRules
 
 const receiptExtractionPrompt = `You are ReceiptExtractionAgent for a personal finance app.
 
@@ -85,16 +97,18 @@ Best-effort (infer if possible, null if not):
 - merchant: the store/business name from the receipt
 - description: 2-4 sentences: what category of purchase this is, main items or departments, quantities or notable lines if readable. Avoid generic one-word answers.
 - category_hint: spending category (food, groceries, transport, health, entertainment, utilities, etc.)
+- occurred_at: the purchase date printed on the receipt as YYYY-MM-DD; null if unreadable or if the message has no TODAY line
 - confidence: number 0-1
 - reasoning: one short sentence explaining what you read from the receipt
 
 Rules:
-1. Return ONLY valid JSON with keys: amount, type, merchant, description, category_hint, confidence, reasoning. Do not include currency or wallet fields — the app assigns the user's default wallet and its currency.
+1. Return ONLY valid JSON with keys: amount, type, merchant, description, category_hint, occurred_at, confidence, reasoning. Do not include currency or wallet fields — the app assigns the user's default wallet and its currency.
 2. Prefer the final amount paid (including tax) — "Grand total", "Total due", "Payment amount", "Amount paid", "NETT TOTAL", "AMOUNT PAYABLE" — over subtotal before tax.
 3. If both a subtotal and a larger tax-inclusive total appear, use the TAX-INCLUSIVE / FINAL total — NOT the pre-tax subtotal.
 4. The merchant name is usually at the top of the receipt.
 5. Default type to "expense" for receipts.
-6. Ignore unrelated numbers (change given, loyalty points, unit prices without a clear line total).`
+6. Ignore unrelated numbers (change given, loyalty points, unit prices without a clear line total).
+7. Receipt dates are usually day first (DD/MM/YYYY or DD-MM-YY). Use TODAY to pick the century for two-digit years. If the user message names a different date ("this was yesterday"), resolve it against TODAY instead.`
 
 const notificationDetectionPrompt = `You are a strict notification transaction detector for a personal finance app.
 

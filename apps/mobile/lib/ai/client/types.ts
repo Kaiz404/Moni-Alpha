@@ -33,14 +33,24 @@ export type ExtractedTransaction = {
   transferToWalletId: string | null;
   confidence: number;
   reasoning: string;
+  /** Local date (YYYY-MM-DD) the input names, text and receipts only. Clamp before use. */
+  occurredAt?: string | null;
 };
 
-export type ExtractTextRequest = {
+/** Anchors relative dates; the backend returns no `occurredAt` without it. */
+export type ExtractDateContext = {
+  /** Device local time, RFC 3339 with UTC offset. */
+  clientNow?: string;
+  /** IANA zone, e.g. `Asia/Kuala_Lumpur`. */
+  timezone?: string;
+};
+
+export type ExtractTextRequest = ExtractDateContext & {
   text: string;
   wallets: AiWalletContext[];
 };
 
-export type ExtractImageRequest = {
+export type ExtractImageRequest = ExtractDateContext & {
   imageUri: string;
   userContext?: string;
   wallets: AiWalletContext[];

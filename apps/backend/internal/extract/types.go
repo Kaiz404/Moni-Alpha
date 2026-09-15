@@ -14,18 +14,21 @@ type WalletContext struct {
 
 // Extraction is a normalized transaction candidate.
 type Extraction struct {
-	Amount               float64  `json:"amount"`
-	Type                 string   `json:"type"` // "income" | "expense" | "transfer"
-	Currency             string   `json:"currency"`
-	Merchant             *string  `json:"merchant"`
-	Description          *string  `json:"description"`
-	WalletHint           *string  `json:"walletHint"`
-	CategoryHint         *string  `json:"categoryHint"`
-	WalletID             *string  `json:"walletId"`
-	TransferToWalletHint *string  `json:"transferToWalletHint"`
-	TransferToWalletID   *string  `json:"transferToWalletId"`
-	Confidence           float64  `json:"confidence"`
-	Reasoning            string   `json:"reasoning"`
+	Amount               float64 `json:"amount"`
+	Type                 string  `json:"type"` // "income" | "expense" | "transfer"
+	Currency             string  `json:"currency"`
+	Merchant             *string `json:"merchant"`
+	Description          *string `json:"description"`
+	WalletHint           *string `json:"walletHint"`
+	CategoryHint         *string `json:"categoryHint"`
+	WalletID             *string `json:"walletId"`
+	TransferToWalletHint *string `json:"transferToWalletHint"`
+	TransferToWalletID   *string `json:"transferToWalletId"`
+	Confidence           float64 `json:"confidence"`
+	Reasoning            string  `json:"reasoning"`
+	// OccurredAt is a local calendar date (YYYY-MM-DD) for text and receipts; null when
+	// the input names none. The client clamps it and treats null as "now".
+	OccurredAt *string `json:"occurredAt"`
 }
 
 // Result is the discriminated union the mobile client consumes.
@@ -41,9 +44,18 @@ func Unavailable(reason string) Result {
 	return Result{Status: "unavailable", Reason: reason}
 }
 
+// DateContext anchors relative dates. Older clients omit it and get no occurredAt.
+type DateContext struct {
+	// ClientNow is the device's local time as RFC 3339 with its UTC offset.
+	ClientNow string `json:"clientNow"`
+	// Timezone is the device's IANA zone, e.g. "Asia/Kuala_Lumpur".
+	Timezone string `json:"timezone"`
+}
+
 type TextRequest struct {
 	Text    string          `json:"text" binding:"required"`
 	Wallets []WalletContext `json:"wallets"`
+	DateContext
 }
 
 type ImageRequest struct {
@@ -55,6 +67,7 @@ type ImageRequest struct {
 	ImageURI    string          `json:"imageUri"`
 	UserContext string          `json:"userContext"`
 	Wallets     []WalletContext `json:"wallets"`
+	DateContext
 }
 
 // RawNotification mirrors the mobile RawNotification shape.
@@ -117,6 +130,7 @@ type llmExtraction struct {
 	CategoryHint         *string  `json:"category_hint"`
 	Confidence           *float64 `json:"confidence"`
 	Reasoning            string   `json:"reasoning"`
+	OccurredAt           *string  `json:"occurred_at"`
 }
 
 // llmNotificationResult matches the notification detection schema.

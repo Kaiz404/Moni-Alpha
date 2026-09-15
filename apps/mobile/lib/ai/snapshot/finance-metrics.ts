@@ -15,6 +15,25 @@ import { addMinor, minorToNumber, type MinorAmount } from '@repo/types';
 
 export type { BudgetRow, TxForMetrics };
 
+export type ProposalForMetrics = {
+  amountMinor: MinorAmount | null;
+  currency?: string | null;
+  type: 'income' | 'expense' | 'transfer';
+};
+
+/** Logged but not yet reviewed, so absent from every other total. */
+export type PendingProposalsSnapshot = {
+  count: number;
+  expenseTotal: number;
+  incomeTotal: number;
+};
+
+/** Average daily spend is too noisy to compare before this day of the month. */
+export const PACE_MIN_DAY_OF_MONTH = 7;
+
+/** Above this share of month-to-date spend, one bill (rent) would read as a fast daily pace. */
+export const PACE_MAX_SINGLE_EXPENSE_SHARE = 0.5;
+
 export type CalendarMonthTrendSnapshot = {
   currencyHint: string;
   currentMonthKey: string;
@@ -25,7 +44,8 @@ export type CalendarMonthTrendSnapshot = {
   daysInCurrentMonth: number;
   avgDailyExpenseCurrentMonth: number;
   avgDailyExpensePreviousMonth: number;
-  pctExpenseChangeVsPreviousFullMonth: number | null;
+  /** Average daily spend so far vs last month's. Not a forecast; null before day 7 or when one bill dominates. */
+  dailyPaceVsPreviousMonthPct: number | null;
 };
 
 export type SpendingStorySnapshot = {
@@ -43,11 +63,12 @@ export type FinanceAssistantCurrencySnapshot = {
   calendarMonth: CalendarMonthTrendSnapshot;
   budgetCoach: BudgetCoachToolSnapshot;
   spendingStory: SpendingStorySnapshot;
+  pendingProposals: PendingProposalsSnapshot;
 };
 
 /** Chat payload: every metric is scoped to exactly one currency. */
 export type FinanceAssistantToolSnapshot = {
-  schema: 'finance_assistant_tool_v2';
+  schema: 'finance_assistant_tool_v3';
   generatedAt: string;
   currencies: Record<string, FinanceAssistantCurrencySnapshot>;
 };
@@ -60,6 +81,16 @@ function sumExpenseInRange(txs: TxForMetrics[], startMs: number, endMs: number):
     if (t >= startMs && t <= endMs) s = addMinor(s, tx.amountMinor);
   }
   return s;
+}
+
+function largestExpenseInRange(txs: TxForMetrics[], startMs: number, endMs: number): number {
+  let largest = 0;
+  for (const tx of txs) {
+    if (tx.type !== 'expense' || tx.analysisExcluded) continue;
+    const t = new Date(tx.transactionDate).getTime();
+    if (t >= startMs && t <= endMs) largest = Math.max(largest, Number(tx.amountMinor));
+  }
+  return largest;
 }
 
 export function buildCalendarMonthTrendSnapshot(
@@ -94,19 +125,23 @@ export function buildCalendarMonthTrendSnapshot(
       ? Math.round((expensePreviousCalendarMonth / daysInPrevMonth) * 100) / 100
       : 0;
 
-  let pctExpenseChangeVsPreviousFullMonth: number | null = null;
-  if (expensePreviousCalendarMonth > 0) {
-    const projected = avgDailyExpenseCurrentMonth * daysInCurrentMonth || expenseCurrentMonthToDate;
-    pctExpenseChangeVsPreviousFullMonth =
-      Math.round(
-        ((projected - expensePreviousCalendarMonth) / expensePreviousCalendarMonth) * 1000,
-      ) / 10;
-  } else if (expenseCurrentMonthToDate > 0) {
-    pctExpenseChangeVsPreviousFullMonth = 100;
-  }
+  const oneBillDominates =
+    largestExpenseInRange(transactions, startCurr, endNow) >
+    Number(expenseCurrentMonthToDateMinor) * PACE_MAX_SINGLE_EXPENSE_SHARE;
+  const dailyPaceVsPreviousMonthPct =
+    dayOfMonthNow >= PACE_MIN_DAY_OF_MONTH &&
+    expensePreviousCalendarMonthMinor > 0 &&
+    !oneBillDominates
+      ? Math.round(
+          ((Number(expenseCurrentMonthToDateMinor) * daysInPrevMonth) /
+            (Number(expensePreviousCalendarMonthMinor) * dayOfMonthNow) -
+            1) *
+            1000,
+        ) / 10
+      : null;
 
   return {
-    currencyHint: currencyHint || 'USD',
+    currencyHint,
     currentMonthKey,
     previousMonthKey,
     expenseCurrentMonthToDate,
@@ -115,7 +150,7 @@ export function buildCalendarMonthTrendSnapshot(
     daysInCurrentMonth,
     avgDailyExpenseCurrentMonth,
     avgDailyExpensePreviousMonth,
-    pctExpenseChangeVsPreviousFullMonth,
+    dailyPaceVsPreviousMonthPct,
   };
 }
 
@@ -157,7 +192,7 @@ export function buildSpendingStorySnapshot(
   }
 
   return {
-    currencyHint: currencyHint || 'USD',
+    currencyHint,
     periodLabel: `last ${rolling.periodDays} days`,
     topCategories,
     topMerchants,
@@ -166,10 +201,28 @@ export function buildSpendingStorySnapshot(
   };
 }
 
+export function buildPendingProposalsSnapshot(
+  proposals: ProposalForMetrics[],
+): PendingProposalsSnapshot {
+  let expense = 0 as MinorAmount;
+  let income = 0 as MinorAmount;
+  for (const proposal of proposals) {
+    if (proposal.amountMinor === null) continue;
+    if (proposal.type === 'expense') expense = addMinor(expense, proposal.amountMinor);
+    if (proposal.type === 'income') income = addMinor(income, proposal.amountMinor);
+  }
+  return {
+    count: proposals.length,
+    expenseTotal: minorToNumber(expense),
+    incomeTotal: minorToNumber(income),
+  };
+}
+
 function buildFinanceAssistantCurrencySnapshot(
   transactions: TxForMetrics[],
   categoryMap: Record<string, string>,
   budgets: BudgetRow[],
+  proposals: ProposalForMetrics[],
   currencyHint: string,
   now: Date = new Date(),
 ): FinanceAssistantCurrencySnapshot {
@@ -190,35 +243,52 @@ function buildFinanceAssistantCurrencySnapshot(
     calendarMonth,
     budgetCoach,
     spendingStory,
+    pendingProposals: buildPendingProposalsSnapshot(proposals),
   };
+}
+
+function currencyOf(row: { currency?: string | null }): string | null {
+  return row.currency?.trim().toUpperCase() || null;
+}
+
+/** Rows without a currency are dropped: guessing one would file the money under the wrong key. */
+function withCurrency<T extends { currency?: string | null }>(rows: T[], label: string): T[] {
+  const kept = rows.filter((row) => currencyOf(row) !== null);
+  if (kept.length < rows.length) {
+    console.warn(
+      `[finance-metrics] skipped ${rows.length - kept.length} ${label} without currency`,
+    );
+  }
+  return kept;
 }
 
 export function buildFinanceAssistantToolSnapshotByCurrency(
   transactions: TxForMetrics[],
   categoryMap: Record<string, string>,
   budgets: BudgetRow[],
+  proposals: ProposalForMetrics[] = [],
   now: Date = new Date(),
 ): FinanceAssistantToolSnapshot {
-  const currencies = new Set([
-    ...transactions.map((transaction) => (transaction.currency ?? 'USD').toUpperCase()),
-    ...budgets.map((budget) => budget.currency.toUpperCase()),
-  ]);
+  const txs = withCurrency(transactions, 'transactions');
+  const pending = withCurrency(proposals, 'pending proposals');
+  const currencies = new Set(
+    [...txs, ...budgets, ...pending].map(currencyOf).filter((c): c is string => c !== null),
+  );
   const snapshots = Object.fromEntries(
     [...currencies].sort().map((currency) => [
       currency,
       buildFinanceAssistantCurrencySnapshot(
-        transactions.filter(
-          (transaction) => (transaction.currency ?? 'USD').toUpperCase() === currency,
-        ),
+        txs.filter((transaction) => currencyOf(transaction) === currency),
         categoryMap,
-        budgets.filter((budget) => budget.currency.toUpperCase() === currency),
+        budgets.filter((budget) => currencyOf(budget) === currency),
+        pending.filter((proposal) => currencyOf(proposal) === currency),
         currency,
         now,
       ),
     ]),
   );
   return {
-    schema: 'finance_assistant_tool_v2',
+    schema: 'finance_assistant_tool_v3',
     generatedAt: now.toISOString(),
     currencies: snapshots,
   };

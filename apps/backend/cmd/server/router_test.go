@@ -221,6 +221,43 @@ func TestExtractTextReturnsWalletResolvedExtraction(t *testing.T) {
 	}
 }
 
+func TestExtractTextResolvesDatesAgainstTheClientClock(t *testing.T) {
+	reply := `{"amount":15,"type":"expense","merchant":"Grab","occurred_at":"2026-10-11","confidence":0.9,"reasoning":"ride"}`
+	s := newTestServer(t, nil, ok(reply))
+	_, res := s.post(t, "/v1/extract/text", map[string]any{
+		"text": "grab 15 yesterday", "wallets": wallets,
+		"clientNow": "2026-10-12T00:30:00+08:00", "timezone": "Asia/Kuala_Lumpur",
+	})
+	if ex := extraction(t, res); ex["occurredAt"] != "2026-10-11" {
+		t.Fatalf("occurredAt = %v, want 2026-10-11", ex["occurredAt"])
+	}
+	if prompt := s.llm.promptText(0); !strings.Contains(prompt, "TODAY: 2026-10-12 (Monday), timezone Asia/Kuala_Lumpur") {
+		t.Fatalf("prompt lacks the device's local day: %s", prompt)
+	}
+}
+
+func TestExtractTextWithoutClientClockReturnsNoDate(t *testing.T) {
+	for name, reply := range map[string]string{
+		"old client":   `{"amount":15,"type":"expense","occurred_at":"2026-10-11","reasoning":"ride"}`,
+		"invalid date": `{"amount":15,"type":"expense","occurred_at":"last friday","reasoning":"ride"}`,
+	} {
+		t.Run(name, func(t *testing.T) {
+			s := newTestServer(t, nil, ok(reply))
+			body := map[string]any{"text": "grab 15 yesterday", "wallets": wallets}
+			if name == "invalid date" {
+				body["clientNow"] = "2026-10-12T09:00:00+08:00"
+			}
+			_, res := s.post(t, "/v1/extract/text", body)
+			if ex := extraction(t, res); ex["occurredAt"] != nil {
+				t.Fatalf("occurredAt = %v, want null", ex["occurredAt"])
+			}
+			if name == "old client" && strings.Contains(s.llm.promptText(0), "TODAY: 20") {
+				t.Fatal("prompt claims a TODAY the client never sent")
+			}
+		})
+	}
+}
+
 func TestExtractTextRetriesOnce(t *testing.T) {
 	s := newTestServer(t, nil,
 		llmReply{http.StatusInternalServerError, "overloaded"},

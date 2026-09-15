@@ -2,6 +2,7 @@ import { getAiClient } from '@/lib/ai/client';
 import {
   buildFinanceAssistantToolSnapshotByCurrency,
   type BudgetRow,
+  type ProposalForMetrics,
   type TxForMetrics,
 } from '@/lib/ai/snapshot/finance-metrics';
 import { financeProjection$ } from '@/lib/finance/projection';
@@ -43,7 +44,29 @@ export async function analyzeUserFinances(message: string): Promise<AnalyzeFinan
       transactionDate: t.transactionDate,
     }));
 
-    const snapshot = buildFinanceAssistantToolSnapshotByCurrency(txs, categoryMap, budgetRows);
+    // A proposal's currency is its wallet's; text and receipt proposals without one carry a placeholder.
+    const proposals: ProposalForMetrics[] = Object.values(projection.proposalsById).flatMap((p) =>
+      p.userId === userId && p.type
+        ? [
+            {
+              amountMinor: p.amountMinor,
+              currency: p.walletId
+                ? (projection.walletsById[p.walletId]?.currency ?? null)
+                : p.sourceType === 'notification'
+                  ? p.currency
+                  : null,
+              type: p.type,
+            },
+          ]
+        : [],
+    );
+
+    const snapshot = buildFinanceAssistantToolSnapshotByCurrency(
+      txs,
+      categoryMap,
+      budgetRows,
+      proposals,
+    );
 
     const result = await getAiClient().analyzeFinances({
       message,

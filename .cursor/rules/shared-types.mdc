@@ -71,7 +71,7 @@ packages/types/src/
 ├── user.ts
 ├── analytics.ts              - Dashboard overview response types
 ├── proposed-transaction.ts   - AI proposal schemas
-├── ai-insight.ts             - Insight card / finance assistant payload schemas
+├── chat.ts                   - Chat analyze request/response schemas
 └── category-budget.ts        - Budget schemas
 ```
 

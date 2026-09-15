@@ -1,10 +1,18 @@
 export type RouteIntent = 'extract' | 'analyze' | 'ambiguous';
 
 const ANALYSIS_START =
-  /^(how|what|why|when|where|am i|did i|should i|can i|is my|are my|analyze|review|compare|trend|budget|spending|over budget|under budget)\b/i;
+  /^(how|what|why|when|where|which|who|am i|did i|do i|have i|should i|can i|could i|is my|are my|is there|are there|will|would|show|list|tell me|summari[sz]e|explain|analy[sz]e|review|compare|trend|budget|spending|over budget|under budget|forecast)\b/i;
 
-const TRANSACTION_SIGNAL =
-  /\$\s*\d|(?:^|\s)\d+(?:\.\d{1,2})?\s*(?:rm|usd|myr|sgd|eur|gbp)\b|\b(paid|bought|spent at|transfer to|transfer from|deposit|withdraw|top up|top-up)\b/i;
+/** Topics that only make sense as questions, even when the message also names an amount. */
+const ANALYSIS_TOPIC =
+  /\b(afford|forecast|payday|pay day|subscriptions?|owe|owing|on track|run out|left to spend|overspen(d|t|ding))\b/i;
+
+const CURRENCY = '(?:rm|usd|myr|sgd|eur|gbp)';
+
+const TRANSACTION_SIGNAL = new RegExp(
+  String.raw`\$\s*\d|\b${CURRENCY}\s?\d|(?:^|\s)\d+(?:\.\d{1,2})?\s*${CURRENCY}\b|\b(paid|bought|spent at|transfer to|transfer from|deposit|withdraw|top up|top-up)\b`,
+  'i',
+);
 
 /**
  * Heuristic intent routing — images always extract; no LLM call.
@@ -14,12 +22,13 @@ export function classifyTextIntent(text: string, hasImage: boolean): RouteIntent
   if (hasImage) return 'extract';
   if (!trimmed) return 'ambiguous';
 
-  const hasQuestion = trimmed.includes('?') || ANALYSIS_START.test(trimmed);
+  const asks = trimmed.includes('?') || ANALYSIS_START.test(trimmed);
+  const topic = ANALYSIS_TOPIC.test(trimmed);
   const hasTransactionSignal = TRANSACTION_SIGNAL.test(trimmed);
 
-  if (hasQuestion && !hasTransactionSignal) return 'analyze';
-  if (hasTransactionSignal && !hasQuestion) return 'extract';
-  if (hasQuestion && hasTransactionSignal) return 'ambiguous';
+  if (asks && (topic || !hasTransactionSignal)) return 'analyze';
+  if (hasTransactionSignal) return asks ? 'ambiguous' : 'extract';
+  if (topic) return 'analyze';
 
   return 'extract';
 }

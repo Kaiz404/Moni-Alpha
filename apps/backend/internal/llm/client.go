@@ -6,6 +6,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -69,11 +70,15 @@ type chatResponse struct {
 		Message struct {
 			Content string `json:"content"`
 		} `json:"message"`
+		FinishReason string `json:"finish_reason"`
 	} `json:"choices"`
 	Error *struct {
 		Message string `json:"message"`
 	} `json:"error"`
 }
+
+// ErrTruncated means the model hit max_tokens before finishing its answer.
+var ErrTruncated = errors.New("llm: output truncated at max_tokens")
 
 // RateLimitedError signals a 429 with the suggested wait.
 type RateLimitedError struct {
@@ -95,8 +100,18 @@ type Options struct {
 	MaxRetryWait time.Duration
 }
 
-// Complete runs one chat completion and returns the raw text content.
+// Complete runs one chat completion and returns the raw text content. Output cut
+// off at max_tokens is retried once with double the budget.
 func (c *Client) Complete(ctx context.Context, messages []Message, opts Options) (string, error) {
+	content, err := c.completeWithRateLimitRetry(ctx, messages, opts)
+	if errors.Is(err, ErrTruncated) && opts.MaxTokens > 0 {
+		opts.MaxTokens *= 2
+		return c.completeWithRateLimitRetry(ctx, messages, opts)
+	}
+	return content, err
+}
+
+func (c *Client) completeWithRateLimitRetry(ctx context.Context, messages []Message, opts Options) (string, error) {
 	content, err := c.completeOnce(ctx, messages, opts)
 	if err == nil {
 		return content, nil
@@ -182,6 +197,9 @@ func (c *Client) completeOnce(ctx context.Context, messages []Message, opts Opti
 	}
 	if len(parsed.Choices) == 0 {
 		return "", fmt.Errorf("llm: empty choices")
+	}
+	if parsed.Choices[0].FinishReason == "length" {
+		return "", ErrTruncated
 	}
 	return parsed.Choices[0].Message.Content, nil
 }

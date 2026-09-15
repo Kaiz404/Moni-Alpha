@@ -15,6 +15,7 @@ import {
 import { matchRoutine } from '@/lib/ai/routine';
 import { getAiClient, type AiWalletContext, type ExtractResult } from '@/lib/ai/client';
 import type { ProcessingQueueItem } from '@/lib/ai/processing-queue';
+import { extractDateContext, resolveOccurredAt } from '@/lib/ai/occurred-at';
 import { saveProposalLocationSnapshot } from '@/lib/ai/proposal-location-cache';
 import type { LocationSnapshot } from '@/lib/location/location-snapshot';
 import { passesTransactionPrefilter } from '@/lib/ai/notification-types';
@@ -99,6 +100,8 @@ function proposalFromExtraction(
     notificationTitle?: string | null;
     notificationBody?: string | null;
     notificationReceivedAt?: string | null;
+    /** When the user captured the input; relative dates resolve against it. */
+    capturedAt: Date;
   },
   extraction: Extract<ExtractResult, { status: 'ok' }>['extraction'],
 ): CreateProposedTransaction {
@@ -133,7 +136,8 @@ function proposalFromExtraction(
     categoryId: null,
     categoryHint: extraction.categoryHint,
     // Notifications arrive when the payment happens; processing may lag behind.
-    transactionDate: source.notificationReceivedAt ?? new Date().toISOString(),
+    transactionDate:
+      source.notificationReceivedAt ?? resolveOccurredAt(extraction.occurredAt, source.capturedAt),
     status: 'pending',
   };
 }
@@ -272,6 +276,12 @@ function mapClientResult(
   return { created: false, skipped: true, reason: result.reason };
 }
 
+function capturedAtOf(item: ProcessingQueueItem): Date {
+  const created = new Date(item.createdAt);
+  const now = new Date();
+  return Number.isNaN(created.getTime()) || created > now ? now : created;
+}
+
 export async function runExtraction(
   item: ProcessingQueueItem,
   options?: { trace?: TraceLogger },
@@ -287,19 +297,21 @@ export async function runExtraction(
   try {
     const defaultWalletId = getDefaultWalletId();
     const wallets = await loadWalletContext();
+    const capturedAt = capturedAtOf(item);
 
     switch (item.type) {
       case 'text': {
         const result = await client.extractFromText({
           text: item.text,
           wallets,
+          ...extractDateContext(capturedAt),
         });
         const mapped = mapClientResult(result, logger);
         if ('status' in mapped && mapped.status === 'ok') {
           return persistProposal(
             finalizeProposalWallet(
               proposalFromExtraction(
-                { sourceType: 'text', sourceText: item.text },
+                { sourceType: 'text', sourceText: item.text, capturedAt },
                 mapped.extraction,
               ),
               wallets,
@@ -318,6 +330,7 @@ export async function runExtraction(
           imageUri: item.imageUri,
           userContext: item.userContext,
           wallets,
+          ...extractDateContext(capturedAt),
         });
         const mapped = mapClientResult(result, logger);
         if ('status' in mapped && mapped.status === 'ok') {
@@ -328,6 +341,7 @@ export async function runExtraction(
                   sourceType: 'image',
                   sourceText: item.userContext ?? null,
                   sourceImageUri: item.imageUri,
+                  capturedAt,
                 },
                 mapped.extraction,
               ),
@@ -384,6 +398,7 @@ export async function runExtraction(
                   notificationTitle: n.title,
                   notificationBody: n.bigText || n.text || null,
                   notificationReceivedAt: n.receivedAt,
+                  capturedAt,
                 },
                 mapped.extraction,
               ),

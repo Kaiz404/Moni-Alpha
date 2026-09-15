@@ -47,7 +47,7 @@ func (s *Service) Analyze(ctx context.Context, req AnalyzeRequest) AnalyzeResult
 		Reply string `json:"reply"`
 	}
 	err := s.llm.CompleteJSON(ctx, messages,
-		llm.Options{Model: llm.Model, Temperature: 0.35, MaxTokens: 500, MaxRetryWait: 10 * time.Second},
+		llm.Options{Model: llm.Model, Temperature: 0.35, MaxTokens: 900, MaxRetryWait: 10 * time.Second},
 		&out,
 	)
 	if err != nil {

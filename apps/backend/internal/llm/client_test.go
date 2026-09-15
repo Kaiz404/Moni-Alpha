@@ -3,6 +3,7 @@ package llm
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -107,5 +108,49 @@ func TestRateLimitedNoRetryWindow(t *testing.T) {
 	}
 	if _, ok := err.(*RateLimitedError); !ok {
 		t.Fatalf("expected RateLimitedError, got %T: %v", err, err)
+	}
+}
+
+func TestTruncatedOutputRetriesOnceWithDoubleBudget(t *testing.T) {
+	var budgets []float64
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var req map[string]any
+		json.NewDecoder(r.Body).Decode(&req)
+		budgets = append(budgets, req["max_tokens"].(float64))
+		choice := map[string]any{"message": map[string]any{"content": `{"reply":"cut`}, "finish_reason": "length"}
+		if len(budgets) == 2 {
+			choice = map[string]any{"message": map[string]any{"content": `{"reply":"done"}`}, "finish_reason": "stop"}
+		}
+		json.NewEncoder(w).Encode(map[string]any{"choices": []any{choice}})
+	}))
+	defer srv.Close()
+
+	var out struct {
+		Reply string `json:"reply"`
+	}
+	err := NewClient("test-key", srv.URL).CompleteJSON(context.Background(),
+		[]Message{{Role: "user", Content: "hi"}}, Options{Model: Model, MaxTokens: 900}, &out)
+	if err != nil || out.Reply != "done" {
+		t.Fatalf("got %+v, %v", out, err)
+	}
+	if len(budgets) != 2 || budgets[0] != 900 || budgets[1] != 1800 {
+		t.Fatalf("max_tokens per call = %v, want [900 1800]", budgets)
+	}
+}
+
+func TestTruncatedTwiceReturnsErrTruncated(t *testing.T) {
+	calls := 0
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		calls++
+		json.NewEncoder(w).Encode(map[string]any{"choices": []any{
+			map[string]any{"message": map[string]any{"content": `{"reply":"cut`}, "finish_reason": "length"},
+		}})
+	}))
+	defer srv.Close()
+
+	_, err := NewClient("test-key", srv.URL).Complete(context.Background(),
+		[]Message{{Role: "user", Content: "hi"}}, Options{Model: Model, MaxTokens: 100})
+	if !errors.Is(err, ErrTruncated) || calls != 2 {
+		t.Fatalf("got %v after %d calls, want ErrTruncated after 2", err, calls)
 	}
 }

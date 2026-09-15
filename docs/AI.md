@@ -30,7 +30,7 @@ User message (text / inline receipt-camera photo / hold-to-talk)
   → extract skipped → auto-retry analyze → clarify with quick-reply chips if both fail
 ```
 
-Chat sessions: MMKV (`lib/ai/chat/messages.ts`), rolling ~6 message pairs sent as API history, 24h idle expiry, "New chat" reset.
+Chat sessions: MMKV (`lib/ai/chat/messages.ts`), 24h idle expiry, "New chat" reset. API history is the last 6 question/answer pairs whose answer was a successful analysis, each prefixed with its local `[HH:MM]`; extraction acks and errors are never sent. Failures show a short message by category (not configured, offline, rate-limited, signed out, other), never the backend reason.
 
 Capture entry points feeding the **extraction queue** (silent — not shown in Chat thread): floating tab-bar button (tap → `app/scan/receipt.tsx` camera; long-press → `app/scan/listen.tsx` narration).
 
@@ -80,6 +80,7 @@ type ExtractResult =
         transferToWalletId;
         confidence;
         reasoning;
+        occurredAt; // YYYY-MM-DD or null; text and receipts only
       };
     }
   | { status: 'skipped'; reason: string } // input isn't a transaction
@@ -90,11 +91,13 @@ Chat analyze (`POST /v1/chat/analyze`):
 
 ```ts
 // Request
-{ message: string; snapshot: { schema: "finance_assistant_tool_v2"; generatedAt: string; currencies: Record<ISO4217, FinanceAssistantCurrencySnapshot> }; history?: { role: "user"|"assistant"; content: string }[] }
+{ message: string; snapshot: { schema: "finance_assistant_tool_v3"; generatedAt: string; currencies: Record<ISO4217, FinanceAssistantCurrencySnapshot> }; history?: { role: "user"|"assistant"; content: string }[] }
 
 // Response
 { status: "ok"; reply: string; modelId: string } | { status: "unavailable"; reason: string }
 ```
+
+Text and image requests also carry optional `clientNow` (device local time, RFC 3339 with offset) and `timezone` (IANA). Without them the backend sends no `TODAY` line and returns `occurredAt: null`, so older clients keep working.
 
 `type` is `income` | `expense` | `transfer`. Transfers use `walletId` as the source wallet and `transferToWalletId` as the destination (either may be `null` for user completion in the review UI). Receipt and notification extraction remain income/expense only; **text** extraction detects transfers (e.g. "move 500 from Maybank to savings").
 
@@ -111,7 +114,7 @@ Every flow uses `deepseek/deepseek-v4.1-flash` on OpenRouter, chosen by the benc
 | Notifications (background) | `/v1/extract/notification` | One retry; 429 waits up to 30s. One-time codes (OTP/TAC, "do not share") are skipped before any model call because a model has read them as payments |
 | Chat finance analysis      | `/v1/chat/analyze`         | No retry; 429 waits up to 10s; snapshot context keeps tokens bounded                                                                                 |
 
-Every request asks for `response_format: json_object`, disables reasoning (even low effort used the whole token budget before the JSON in the benchmark), and sets `provider.require_parameters` so OpenRouter only routes to upstream hosts that honour JSON mode. `llm.CompleteJSON` strips fences and rejects malformed output.
+Every request asks for `response_format: json_object`, disables reasoning (even low effort used the whole token budget before the JSON in the benchmark), and sets `provider.require_parameters` so OpenRouter only routes to upstream hosts that honour JSON mode. `llm.CompleteJSON` strips fences and rejects malformed output. A reply cut off at `max_tokens` (`finish_reason: length`) is retried once with double the budget; each attempt keeps the flow's 429 wait cap. The extraction bad-JSON retry skips truncated replies, so a flow makes at most 2 calls. Budgets: chat 900 tokens, text 768, notifications 512, receipts 1024. Receipts run at temperature 0.1.
 
 ### Rate limits and cost (~1000 users)
 
@@ -163,6 +166,7 @@ Findings:
   4. Fallback: merge `wallet_hint` + notification body → `accountHint` match → whole-word name match → substring → token overlap
   5. `walletId = null` → mobile applies the user's **default wallet** from `profiles.preferences.default_wallet_id` when set (`lib/wallets/default-wallet.ts`); otherwise user picks in the review UI
 - **Currency** — text and receipt extraction do **not** ask the model for currency. Amount only; currency is taken from the resolved wallet (`lib/wallets/proposal-wallet.ts`). Receipts always land on the default wallet (user can switch wallet — and thus currency — in the review UI). Notifications extract currency from the bank message; if that currency does not match the default wallet, `walletId` stays null until the user picks a wallet in review.
+- **Dates** — text and receipt prompts get `TODAY: YYYY-MM-DD (weekday), timezone …` from the client clock and return `occurred_at` for "yesterday", "last Friday", "on the 3rd" or a printed receipt date. The backend only checks the format; `lib/ai/occurred-at.ts` turns it into the transaction date: today, missing, invalid or future → the capture time; past days → local noon, at most 90 days back. Notifications keep their arrival time.
 - For **transfers**, resolution runs twice: source (`wallet_id` + context) and destination (`transfer_to_wallet_id` + hint only).
 - **Text transfer patterns:** deposits ("deposited cash to bank"), withdrawals, top-ups, and explicit "from X to Y" moves are transfers between wallets in `AVAILABLE_WALLETS` — not income. The model uses wallet names/types to infer direction (e.g. cash → bank for deposits).
 - **Notification rule:** each wallet may link one Android app (`notification_package` on `wallets`). Notifications from unlinked apps are captured for debug but not queued. Candidate wallets are narrowed by package before extraction; ambiguous same-app wallets may create proposals with `walletId: null` for review (`run-extraction.ts`).
@@ -173,11 +177,16 @@ Findings:
 
 Heuristic-first — no LLM call for most messages:
 
-| Input                                                                         | Route                                                                    |
-| ----------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
-| Photo attached                                                                | Always extract                                                           |
-| Question-like text (`?`, how/what/am I, analyze/review/budget) without amount | Analyze                                                                  |
-| Amount/merchant patterns                                                      | Extract                                                                  |
-| Default text                                                                  | Extract → if `skipped`, retry analyze → if both fail, clarify with chips |
+| Input                                                                        | Route                                                                    |
+| ---------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| Photo attached                                                               | Always extract                                                           |
+| Question-like text (`?`, how/what/am I/show/list/will/…) without amount      | Analyze                                                                  |
+| Question about afford/forecast/payday/subscriptions/owe, even with an amount | Analyze                                                                  |
+| Amount (`RM12`, `RM 12`, `12 rm`, `$12`) or merchant verbs                   | Extract; with a question → clarify chips                                 |
+| Default text                                                                 | Extract → if `skipped`, retry analyze → if both fail, clarify with chips |
 
-Snapshot builder: `lib/ai/snapshot/finance-metrics.ts` (deterministic metrics from transactions + budgets — never raw tx rows sent to the model). Each snapshot is keyed by ISO currency; mobile and the chat prompt must never sum, compare, or infer a first/default currency across keys.
+Table test: `lib/ai/chat/__tests__/routing.test.ts`.
+
+Snapshot builder: `lib/ai/snapshot/finance-metrics.ts` (deterministic metrics from transactions, budgets and pending proposals — never raw tx rows sent to the model). Each snapshot is keyed by ISO currency; mobile and the chat prompt must never sum, compare, or infer a first/default currency across keys. Rows without a currency are skipped and logged, never defaulted. `pendingProposals` is a count plus expense and income totals per currency; a proposal takes its wallet's currency, and text and receipt proposals without a wallet are left out because their currency is a placeholder. `calendarMonth.dailyPaceVsPreviousMonthPct` compares average daily spend with last month and is `null` before day 7 and while one expense is over half of month-to-date spend, so rent on day 1 never reads as a forecast. `rolling30.deltas.*PctVsPrior` is `null` when the prior 30 days are empty.
+
+**Chat bench** (`pnpm --filter moni bench:chat`, offline, part of `pnpm --filter moni test`): a fixed MYR/SGD/USD ledger with rent on day 1, a refund and a transfer (`lib/ai/chat/bench/fixture.ts`), 22 questions with the snapshot facts each answer rests on (`cases.ts`), and a grounding checker (`grounding.ts`) that fails a reply citing a number not derivable from one currency's snapshot, or a sum across currencies. No live-model run yet; the checker is what one would score.

@@ -1,4 +1,4 @@
-/** Deterministic finance metrics for AI insight cards. The LLM only narrates this snapshot. */
+/** Deterministic rolling-window metrics for the chat snapshot. The LLM only narrates them. */
 import { addMinor, minorToNumber, subtractMinor, type MinorAmount } from '@repo/types';
 
 export type TxForMetrics = {
@@ -110,7 +110,7 @@ function largestExpense(
 }
 
 function pctDelta(current: MinorAmount, prior: MinorAmount): number | null {
-  if (prior <= 0) return current <= 0 ? null : 100;
+  if (prior <= 0) return null;
   return Math.round(((Number(current) - Number(prior)) / Number(prior)) * 1000) / 10;
 }
 
@@ -178,7 +178,7 @@ export function buildInsightMetricSnapshot(
 
   return {
     periodDays: PERIOD_DAYS,
-    currencyHint: currencyHint || 'USD',
+    currencyHint,
     generatedAt: now.toISOString(),
     current: {
       startIso: new Date(currentStartMs).toISOString(),
@@ -208,8 +208,4 @@ export function buildInsightMetricSnapshot(
       savingsMargin,
     },
   };
-}
-
-export function stableSnapshotString(snapshot: InsightMetricSnapshot): string {
-  return JSON.stringify(snapshot);
 }

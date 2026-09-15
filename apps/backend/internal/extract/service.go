@@ -2,6 +2,7 @@ package extract
 
 import (
 	"context"
+	"errors"
 	"regexp"
 	"strings"
 	"time"
@@ -36,23 +37,51 @@ func walletPreamble(wallets []WalletContext) string {
 	return FormatWalletsForPrompt(wallets) + "\n\n"
 }
 
+var ianaZone = regexp.MustCompile(`^[A-Za-z0-9_+\-/]{1,64}$`)
+
+// todayLine anchors relative dates ("yesterday", "last Friday") to the device's own day.
+// Empty for clients that send no clock, so the model returns no occurred_at.
+func todayLine(dc DateContext) string {
+	now, err := time.Parse(time.RFC3339, strings.TrimSpace(dc.ClientNow))
+	if err != nil {
+		return ""
+	}
+	line := "TODAY: " + now.Format("2006-01-02 (Monday)")
+	if tz := strings.TrimSpace(dc.Timezone); ianaZone.MatchString(tz) {
+		line += ", timezone " + tz
+	}
+	return line + "\n\n"
+}
+
+func occurredAt(raw *string, dc DateContext) *string {
+	if raw == nil || todayLine(dc) == "" {
+		return nil
+	}
+	date, err := time.Parse(time.DateOnly, strings.TrimSpace(*raw))
+	if err != nil {
+		return nil
+	}
+	s := date.Format(time.DateOnly)
+	return &s
+}
+
 // FromText extracts a transaction from free-form user text.
 // Live UX flow: one retry, no long 429 waits.
 func (s *Service) FromText(ctx context.Context, req TextRequest) Result {
 	messages := []llm.Message{
 		{Role: "system", Content: textExtractionPrompt},
-		{Role: "user", Content: walletPreamble(req.Wallets) + req.Text},
+		{Role: "user", Content: walletPreamble(req.Wallets) + todayLine(req.DateContext) + req.Text},
 	}
 
 	var out llmExtraction
 	err := s.llm.CompleteJSON(ctx, messages,
-		llm.Options{Model: s.model, Temperature: 0.2, MaxTokens: 512, MaxRetryWait: 3 * time.Second},
+		llm.Options{Model: s.model, Temperature: 0.2, MaxTokens: 768, MaxRetryWait: 3 * time.Second},
 		&out,
 	)
-	if err != nil {
+	if err != nil && !errors.Is(err, llm.ErrTruncated) {
 		// JSON-mode output is occasionally unparseable; one retry.
 		err = s.llm.CompleteJSON(ctx, messages,
-			llm.Options{Model: s.model, Temperature: 0.2, MaxTokens: 512},
+			llm.Options{Model: s.model, Temperature: 0.2, MaxTokens: 768},
 			&out,
 		)
 	}
@@ -63,7 +92,9 @@ func (s *Service) FromText(ctx context.Context, req TextRequest) Result {
 		return Skipped("No transaction amount found in text")
 	}
 
-	return OK(s.finalize(out, req.Wallets, req.Text, 0.85, nil, currencyFromWallet, false))
+	ex := s.finalize(out, req.Wallets, req.Text, 0.85, nil, currencyFromWallet, false)
+	ex.OccurredAt = occurredAt(out.OccurredAt, req.DateContext)
+	return OK(ex)
 }
 
 // FromImage extracts a transaction from a receipt image. Accepts a public
@@ -81,7 +112,7 @@ func (s *Service) FromImage(ctx context.Context, req ImageRequest) Result {
 		return Skipped("No image data provided — upload the receipt or include base64")
 	}
 
-	userText := "Extract the transaction from this receipt."
+	userText := todayLine(req.DateContext) + "Extract the transaction from this receipt."
 	if strings.TrimSpace(req.UserContext) != "" {
 		userText += "\nUser message: " + req.UserContext
 	}
@@ -97,7 +128,7 @@ func (s *Service) FromImage(ctx context.Context, req ImageRequest) Result {
 	err := s.llm.CompleteJSON(ctx, messages,
 		llm.Options{
 			Model:        s.model,
-			Temperature:  0.6,
+			Temperature:  0.1,
 			MaxTokens:    1024,
 			MaxRetryWait: 5 * time.Second,
 		},
@@ -110,7 +141,9 @@ func (s *Service) FromImage(ctx context.Context, req ImageRequest) Result {
 		return Skipped("Could not read a payable amount from the receipt")
 	}
 
-	return OK(s.finalize(out, req.Wallets, req.UserContext, 0.8, nil, currencyFromWallet, true))
+	ex := s.finalize(out, req.Wallets, req.UserContext, 0.8, nil, currencyFromWallet, true)
+	ex.OccurredAt = occurredAt(out.OccurredAt, req.DateContext)
+	return OK(ex)
 }
 
 // FromNotification classifies and extracts a transaction from an Android
@@ -134,7 +167,7 @@ func (s *Service) FromNotification(ctx context.Context, req NotificationRequest)
 
 	var out llmNotificationResult
 	err := s.llm.CompleteJSON(ctx, messages, opts, &out)
-	if err != nil {
+	if err != nil && !errors.Is(err, llm.ErrTruncated) {
 		// JSON-mode output is occasionally unparseable; one retry.
 		out = llmNotificationResult{}
 		err = s.llm.CompleteJSON(ctx, messages, opts, &out)

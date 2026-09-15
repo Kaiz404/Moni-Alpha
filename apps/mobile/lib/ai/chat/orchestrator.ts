@@ -1,6 +1,7 @@
 import { randomUUID } from 'expo-crypto';
 
 import { startBackgroundProcessor } from '@/lib/ai/background-processor';
+import { AI_UNAVAILABLE_REASON } from '@/lib/ai/client';
 import { enqueue, type ProcessingQueueItem } from '@/lib/ai/processing-queue';
 import { runExtraction } from '@/lib/ai/run-extraction';
 import { captureLocationSnapshot } from '@/lib/location/location-snapshot';
@@ -42,6 +43,22 @@ const CLARIFY_TEXT = 'Did you want to log a transaction or ask about your financ
 
 function emit(cb: SendChatCallbacks, messages: ChatMessage[]) {
   cb.onSessionUpdate({ messages });
+}
+
+/** Raw backend reasons stay in the log; the thread only ever shows these. */
+function friendlyFailure(reason: string): string {
+  console.warn('[chat] failed:', reason);
+  if (reason === AI_UNAVAILABLE_REASON) return "Moni's AI isn't connected in this build yet.";
+  if (/network request failed|failed to fetch|timed? ?out/i.test(reason)) {
+    return "I couldn't reach Moni's AI. Check your connection and try again.";
+  }
+  if (/rate limit|too many/i.test(reason)) {
+    return "I'm getting a lot of requests right now. Try again in a minute.";
+  }
+  if (/not authenticated|invalid or expired token|missing bearer/i.test(reason)) {
+    return 'Please sign in again, then try once more.';
+  }
+  return 'Something went wrong on my side. Please try again.';
 }
 
 export async function sendChatMessage(
@@ -96,10 +113,9 @@ export async function sendChatMessage(
 
     await handleTextExtract(text, statusId, callbacks, input.forcedIntent === 'analyze');
   } catch (e) {
-    const reason = e instanceof Error ? e.message : 'Something went wrong';
     session = updateMessage(statusId, {
       kind: 'assistant_text',
-      content: reason,
+      content: friendlyFailure(e instanceof Error ? e.message : String(e)),
       status: 'error',
     });
     emit(callbacks, session.messages);
@@ -211,7 +227,7 @@ async function handleTextExtract(
 
   const session = updateMessage(statusId, {
     kind: 'assistant_text',
-    content: result.reason || 'Could not process that message.',
+    content: friendlyFailure(result.reason),
     status: 'error',
   });
   clearImmediateProposalReview(proposalId);
@@ -231,6 +247,7 @@ async function handleAnalyze(
       kind: 'assistant_text',
       content: analysis.reply,
       status: 'done',
+      analysis: true,
     });
     emit(callbacks, session.messages);
     return;
@@ -243,7 +260,7 @@ async function handleAnalyze(
 
   const session = updateMessage(statusId, {
     kind: 'assistant_text',
-    content: analysis.reason,
+    content: friendlyFailure(analysis.reason),
     status: 'error',
   });
   emit(callbacks, session.messages);

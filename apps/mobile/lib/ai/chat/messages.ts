@@ -26,6 +26,8 @@ export type ChatMessage = {
   pendingContext?: string;
   pendingImageUri?: string;
   status?: 'processing' | 'done' | 'error';
+  /** Set on successful /v1/chat/analyze replies — the only assistant turns sent back as history. */
+  analysis?: boolean;
 };
 
 export type ChatSession = {
@@ -112,25 +114,35 @@ export function replaceSessionMessages(messages: ChatMessage[]): ChatSession {
   return updated;
 }
 
-/** Last N user/assistant pairs for API context (rolling window). */
+function timePrefix(iso: string): string {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return '';
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `[${pad(date.getHours())}:${pad(date.getMinutes())}] `;
+}
+
+/**
+ * Last N question/answer pairs for API context. Only successful analysis replies count, so
+ * extraction acks and error text never reach the model; each turn carries its local send time.
+ */
 export function exportHistoryForApi(maxPairs = 6): ChatHistoryMessage[] {
   const session = readSession();
   if (!session) return [];
 
-  const eligible = session.messages.filter(
-    (m) => m.kind === 'user_text' || m.kind === 'user_image' || m.kind === 'assistant_text',
-  );
-
   const history: ChatHistoryMessage[] = [];
-  for (const m of eligible) {
+  let question: ChatMessage | null = null;
+  for (const m of session.messages) {
     if (m.kind === 'user_text' || m.kind === 'user_image') {
-      const text = m.kind === 'user_image' ? m.content || '[Receipt photo attached]' : m.content;
-      history.push({ role: 'user', content: text });
-    } else if (m.kind === 'assistant_text') {
-      history.push({ role: 'assistant', content: m.content });
+      question = m;
+    } else if (m.kind === 'assistant_text' && m.analysis && m.status === 'done' && question) {
+      const text = question.content || '[Receipt photo attached]';
+      history.push(
+        { role: 'user', content: timePrefix(question.createdAt) + text },
+        { role: 'assistant', content: timePrefix(m.createdAt) + m.content },
+      );
+      question = null;
     }
   }
 
-  const maxMessages = maxPairs * 2;
-  return history.slice(-maxMessages);
+  return history.slice(-maxPairs * 2);
 }

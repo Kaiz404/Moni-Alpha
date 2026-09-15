@@ -1,7 +1,13 @@
 package extract
 
 import (
+	"context"
+	"encoding/json"
+	"net/http"
+	"net/http/httptest"
 	"testing"
+
+	"github.com/kaiz404/moni/backend/internal/llm"
 )
 
 func TestFinalizeTransferResolvesBothWallets(t *testing.T) {
@@ -180,5 +186,26 @@ func TestFinalizeReceiptSkipsWalletInference(t *testing.T) {
 	}
 	if got.Currency != "USD" {
 		t.Fatalf("currency = %q, want USD fallback when wallet unset", got.Currency)
+	}
+}
+
+func TestTruncatedOutputSkipsTheBadJSONRetry(t *testing.T) {
+	calls := 0
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		calls++
+		json.NewEncoder(w).Encode(map[string]any{"choices": []any{
+			map[string]any{"message": map[string]any{"content": `{"amount":`}, "finish_reason": "length"},
+		}})
+	}))
+	defer srv.Close()
+	s := NewService(llm.NewClient("test-key", srv.URL))
+
+	if got := s.FromText(context.Background(), TextRequest{Text: "lunch 12"}); got.Status != "unavailable" || calls != 2 {
+		t.Fatalf("text: status %q after %d calls, want unavailable after 2", got.Status, calls)
+	}
+	calls = 0
+	note := NotificationRequest{Notification: RawNotification{Text: "You paid RM12 to Mamak"}}
+	if got := s.FromNotification(context.Background(), note); got.Status != "unavailable" || calls != 2 {
+		t.Fatalf("notification: status %q after %d calls, want unavailable after 2", got.Status, calls)
 	}
 }

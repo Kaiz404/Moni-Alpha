@@ -145,12 +145,8 @@ export function buildBudgetCoachSnapshot(
   return {
     schema: 'budget_coach_tool_v1',
     monthKey: `${year}-${String(month + 1).padStart(2, '0')}`,
-    currencyHint: currencyHint || 'USD',
+    currencyHint,
     generatedAt: now.toISOString(),
     categories,
   };
-}
-
-export function stableBudgetCoachSnapshotString(snapshot: BudgetCoachToolSnapshot): string {
-  return JSON.stringify(snapshot);
 }
