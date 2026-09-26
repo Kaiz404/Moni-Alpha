@@ -33,6 +33,7 @@ import {
   prepareOfflineSpeechModel,
 } from '@/lib/speech/speech-recognition';
 import { MessageBubble } from '@/components/chat/message-bubble';
+import { ConfirmBalanceCard } from '@/components/wallets/confirm-balance-card';
 import {
   ChatInputBar,
   ChatEmptyState,
@@ -255,6 +256,9 @@ export default function ChatScreen() {
               paddingBottom: 16,
               flexGrow: 1,
             }}
+            ListHeaderComponent={
+              <ConfirmBalanceCard className="mb-3" />
+            }
             ListEmptyComponent={
               <ChatEmptyState
                 primary={tokens.primary}

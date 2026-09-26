@@ -1,8 +1,9 @@
 import { decimalToMinor } from '@repo/types';
 import { gigLedger } from '@/lib/ai/chat/bench/fixture';
+import { walletsNeedingConfirmation } from '../confirmation';
 import { backtestForecast, forecastCurrency, type FactsWallet } from '../forecast';
 import { detectRecurring, pickPayday, type FactsTransaction } from '../recurring';
-import { salariedLedger, tx, wallet } from './synthetic-ledger';
+import { BANK, EWALLET, salariedLedger, tx, wallet } from './synthetic-ledger';
 
 const NOW = new Date(2026, 9, 12, 10);
 const confirmed = (daysAgo: number) => new Date(NOW.getTime() - daysAgo * 86_400_000).toISOString();
@@ -199,6 +200,27 @@ describe('forecastCurrency', () => {
       wallet({ id: 'card', type: 'credit', initialBalanceMinor: decimalToMinor('0') }),
     ]);
     expect(result.status === 'ready' && result.startBalance).toBe(8415.3);
+  });
+
+  it('shows once every wallet the confirm prompt lists is confirmed', () => {
+    const { wallets, transactions } = salariedLedger();
+    const stale = wallets.map((w) => ({ ...w, balanceConfirmedAt: confirmed(40) }));
+    expect(forecast(transactions, stale)).toMatchObject({
+      status: 'insufficient',
+      reasons: ['wallet balances not confirmed recently'],
+    });
+
+    const asked = new Set(
+      walletsNeedingConfirmation(stale, transactions, NOW).map((w) => w.wallet.id),
+    );
+    expect([...asked]).toEqual([BANK, EWALLET]);
+    const stamped = stale.map((w) =>
+      asked.has(w.id) ? { ...w, balanceConfirmedAt: NOW.toISOString() } : w,
+    );
+    expect(forecast(transactions, stamped)).toMatchObject({
+      status: 'ready',
+      balanceConfirmedDaysAgo: 0,
+    });
   });
 });
 

@@ -13,6 +13,7 @@ import { useValue } from '@legendapp/state/react';
 import { MaterialDesignIcons } from '@react-native-vector-icons/material-design-icons';
 
 import { BudgetProgressItem } from '@/components/budgets/budget-progress-item';
+import { ConfirmBalanceCard } from '@/components/wallets/confirm-balance-card';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { SolidWalletCard } from '@/components/ui/solid-wallet-card';
 import { Surface } from '@/components/ui/surface';
@@ -210,6 +211,8 @@ export default function HomeScreen() {
               </Text>
             </View>
           </View>
+
+          <ConfirmBalanceCard className="mt-5" />
 
           {pendingProposals.length ? (
             <Pressable

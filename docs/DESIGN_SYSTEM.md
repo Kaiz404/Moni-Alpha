@@ -346,6 +346,8 @@ Use the Moni mint, lilac, peach, lemon, coral, aqua, and neutral palette as soli
 
 Never mimic real payment cards unless users need a real card identifier. The visual job is balance recognition, not faux banking branding.
 
+**Balance check.** When a stale balance blocks the forecast, Home and Chat open with one peach card, “Confirm balances to unlock your forecast”, listing each wallet with its native balance and two actions: **Yes, that’s right** (the row fades out) and **Fix it** (opens the wallet). It always offers **Not now**, which snoozes it for a week; it never becomes a permanent card.
+
 ### 7.5 Budget pulse and category progress
 
 - A category row displays its icon, name, a right-aligned percentage, and a clear progress treatment. Keep any remaining amount as supporting text below the track when needed.

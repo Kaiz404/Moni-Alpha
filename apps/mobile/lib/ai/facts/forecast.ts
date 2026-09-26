@@ -107,7 +107,7 @@ function quantile(sorted: number[], q: number): number {
 }
 
 /** Liquid wallets holding money or used in the lookback; a dormant empty one needs no confirming. */
-function inUseWallets(
+export function inUseWallets(
   liquid: FactsWallet[],
   transactions: FactsTransaction[],
   now: Date,
@@ -121,15 +121,22 @@ function inUseWallets(
   return liquid.filter((w) => active.has(w.id) || balanceMinor([w], transactions, now) !== 0);
 }
 
+/** Days since the first income or expense; transfers and debt activity don't count. */
+export function historyDays(transactions: readonly FactsTransaction[], today: number): number {
+  const flowDays = transactions.filter(isCashFlow).map((tx) => dayNumber(tx.transactionDate));
+  return flowDays.length ? today - Math.min(...flowDays) : 0;
+}
+
+export function confirmedDaysAgo(wallet: FactsWallet, today: number): number | null {
+  return wallet.balanceConfirmedAt ? today - dayNumber(wallet.balanceConfirmedAt) : null;
+}
+
 function basisFor(
   liquid: FactsWallet[],
   inUse: FactsWallet[],
   transactions: FactsTransaction[],
   today: number,
 ): ForecastBasis {
-  const flowDays = transactions.filter(isCashFlow).map((tx) => dayNumber(tx.transactionDate));
-  const historyDays = flowDays.length ? today - Math.min(...flowDays) : 0;
-
   const ids = new Set(liquid.map((w) => w.id));
   const from = today - LOOKBACK_DAYS;
   let logged = 0;
@@ -143,13 +150,15 @@ function basisFor(
   const coveragePct =
     logged + corrected === 0 ? 100 : Math.round((logged / (logged + corrected)) * 100);
 
-  const ages = inUse.map((w) =>
-    w.balanceConfirmedAt ? today - dayNumber(w.balanceConfirmedAt) : null,
-  );
+  const ages = inUse.map((w) => confirmedDaysAgo(w, today));
   const balanceConfirmedDaysAgo =
     ages.length && ages.every((age) => age !== null) ? Math.max(...(ages as number[])) : null;
 
-  return { historyDays, coveragePct, balanceConfirmedDaysAgo };
+  return {
+    historyDays: historyDays(transactions, today),
+    coveragePct,
+    balanceConfirmedDaysAgo,
+  };
 }
 
 /** Income outside `trustedKeys` over the lookback, as a share of spending over it. */

@@ -144,6 +144,12 @@ export async function updateWallet(id: string, data: UpdateWallet) {
   return mapWalletRow(updated);
 }
 
+/** The user saw this wallet's balance and says it is still right. */
+export function confirmWalletBalance(id: string): void {
+  const now = new Date().toISOString();
+  patchRow(wallets$, id, { balance_confirmed_at: now, updated_at: now });
+}
+
 export async function deleteWallet(id: string) {
   const now = new Date().toISOString();
 

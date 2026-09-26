@@ -10,6 +10,11 @@ export function hapticVoiceStop(): void {
   void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
 }
 
+/** A wallet balance confirmed as still right. */
+export function hapticBalanceConfirmed(): void {
+  void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+}
+
 /** Custom numeric keypad key press. */
 export function hapticKeypadPress(): void {
   void Haptics.selectionAsync();
