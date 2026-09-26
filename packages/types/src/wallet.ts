@@ -35,6 +35,8 @@ export const walletSchema = z.object({
   notificationPackage: z.string().nullable().optional(),
   notificationAppLabel: z.string().nullable().optional(),
   notificationAccountHint: z.string().max(100).nullable().optional(),
+  /** When the user last saw and saved this wallet's current balance; gates the chat forecast. */
+  balanceConfirmedAt: z.string().datetime().nullable().optional(),
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
 });
@@ -70,6 +72,7 @@ export const updateWalletSchema = z.object({
   notificationPackage: androidPackageSchema.nullable().optional(),
   notificationAppLabel: z.string().max(100).nullable().optional(),
   notificationAccountHint: z.string().max(100).nullable().optional(),
+  balanceConfirmedAt: z.string().datetime().optional(),
 });
 
 // Reorder wallets schema

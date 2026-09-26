@@ -78,6 +78,7 @@ export function toFinanceWallet(row: RawRow): FinanceWallet | null {
     cardStyleId: nullableString(row.card_style_id),
     isActive: active(row.is_active),
     displayOrder: Number(row.display_order ?? 0) || 0,
+    balanceConfirmedAt: isoDate(row.balance_confirmed_at) || null,
   };
 }
 

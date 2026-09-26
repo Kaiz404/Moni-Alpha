@@ -4,28 +4,30 @@
  * questions through the real chat service in between.
  */
 import fs from 'node:fs';
-import { CHAT_BENCH_CASES, scoreReply } from '@/lib/ai/chat/bench/cases';
-import { buildBenchSnapshot } from '@/lib/ai/chat/bench/fixture';
+import { benchSnapshot, CHAT_BENCH_CASES, scoreReply } from '@/lib/ai/chat/bench/cases';
 
 const exportPath = process.env.MONI_CHAT_BENCH_EXPORT;
 const repliesPath = process.env.MONI_CHAT_BENCH_REPLIES;
 
-(exportPath ? it : it.skip)('exports the questions and snapshot for the live run', () => {
-  const questions = CHAT_BENCH_CASES.map(({ id, question }) => ({ id, question }));
-  fs.writeFileSync(exportPath!, JSON.stringify({ snapshot: buildBenchSnapshot(), questions }));
+(exportPath ? it : it.skip)('exports the questions and their snapshots for the live run', () => {
+  const questions = CHAT_BENCH_CASES.map((c) => ({
+    id: c.id,
+    question: c.question,
+    snapshot: benchSnapshot(c),
+  }));
+  fs.writeFileSync(exportPath!, JSON.stringify({ questions }));
 });
 
 (repliesPath ? it : it.skip)('scores the live replies', () => {
   const { replies } = JSON.parse(fs.readFileSync(repliesPath!, 'utf8')) as {
     replies: Record<string, { status: string; reply?: string; reason?: string }>;
   };
-  const snapshot = buildBenchSnapshot();
   const failures: string[] = [];
   for (const c of CHAT_BENCH_CASES) {
     const answer = replies[c.id];
     const issues =
       answer?.status === 'ok'
-        ? scoreReply(c, snapshot, answer.reply ?? '')
+        ? scoreReply(c, benchSnapshot(c), answer.reply ?? '')
         : [`no reply (${answer?.status ?? 'missing'}: ${answer?.reason ?? ''})`];
     if (issues.length > 0)
       failures.push(`${c.id}: ${issues.join('; ')}\n    reply: ${answer?.reply}`);

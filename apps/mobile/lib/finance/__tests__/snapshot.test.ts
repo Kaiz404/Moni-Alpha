@@ -31,7 +31,7 @@ describe('currency-scoped chat snapshot', () => {
       {},
       [],
     );
-    expect(snapshot.schema).toBe('finance_assistant_tool_v3');
+    expect(snapshot.schema).toBe('finance_assistant_tool_v4');
     expect(Object.keys(snapshot.currencies)).toEqual(['SGD', 'USD']);
     expect(snapshot.currencies.USD.rolling30.current.expenseTotal).toBe(10);
     expect(snapshot.currencies.SGD.rolling30.current.expenseTotal).toBe(20);

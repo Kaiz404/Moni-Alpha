@@ -1,4 +1,4 @@
-import { CHAT_BENCH_CASES, factValue, scoreReply } from '@/lib/ai/chat/bench/cases';
+import { benchSnapshot, CHAT_BENCH_CASES, factValue, scoreReply } from '@/lib/ai/chat/bench/cases';
 import { buildBenchSnapshot } from '@/lib/ai/chat/bench/fixture';
 import { checkGrounding, citedNumbers } from '@/lib/ai/chat/bench/grounding';
 
@@ -6,9 +6,9 @@ const snapshot = buildBenchSnapshot();
 const benchCase = (id: string) => CHAT_BENCH_CASES.find((c) => c.id === id)!;
 
 describe('chat bench fixture', () => {
-  it('holds 22 cases', () => {
-    expect(CHAT_BENCH_CASES).toHaveLength(22);
-    expect(new Set(CHAT_BENCH_CASES.map((c) => c.id)).size).toBe(22);
+  it('holds 31 cases', () => {
+    expect(CHAT_BENCH_CASES).toHaveLength(31);
+    expect(new Set(CHAT_BENCH_CASES.map((c) => c.id)).size).toBe(31);
   });
 
   it('keeps MYR, SGD and USD apart and leaves the transfer out of spending', () => {
@@ -17,14 +17,16 @@ describe('chat bench fixture', () => {
   });
 
   describe.each(CHAT_BENCH_CASES)('$id', (c) => {
+    const caseSnapshot = benchSnapshot(c);
+
     it('snapshot holds the pinned facts', () => {
       for (const fact of c.facts) {
-        expect([fact.path, factValue(snapshot, fact)]).toEqual([fact.path, fact.value]);
+        expect([fact.path, factValue(caseSnapshot, fact)]).toEqual([fact.path, fact.value]);
       }
     });
 
     it('reference answer scores clean', () => {
-      expect(scoreReply(c, snapshot, c.reference)).toEqual([]);
+      expect(scoreReply(c, caseSnapshot, c.reference)).toEqual([]);
     });
   });
 });
@@ -38,6 +40,13 @@ describe('grounding checker', () => {
       { value: 6.5, currency: 'SGD', percent: false },
       { value: 12, currency: 'MYR', percent: false },
       { value: 31.1, currency: null, percent: true },
+    ]);
+  });
+
+  it('reads amounts between 1900 and 2099 as money, not years', () => {
+    expect(citedNumbers('In 2026 you kept 2031.6 MYR and RM 2,045.')).toEqual([
+      { value: 2031.6, currency: 'MYR', percent: false },
+      { value: 2045, currency: 'MYR', percent: false },
     ]);
   });
 
@@ -58,15 +67,22 @@ describe('grounding checker', () => {
   });
 
   it('accepts rounding and same-currency differences', () => {
-    expect(
-      checkGrounding('About MYR 1,873 so far, MYR 122 more than September.', snapshot),
-    ).toEqual([]);
+    expect(checkGrounding('About MYR 1,873 so far, MYR 67 more than September.', snapshot)).toEqual(
+      [],
+    );
   });
 
   it('fails a reply that skips the pinned facts or answers without the data', () => {
-    expect(scoreReply(benchCase('afford'), snapshot, 'Yes, RM800 is fine.')).toEqual([
+    expect(scoreReply(benchCase('sgd-forecast'), snapshot, 'Yes, your SGD will last.')).toEqual([
       'answered without the data',
     ]);
+    expect(
+      scoreReply(
+        benchCase('afford'),
+        buildBenchSnapshot('default', 'Can I afford RM800?'),
+        'Yes, RM800 is fine.',
+      ),
+    ).toEqual(['missing MYR facts.forecast.afford.worstCaseAfter']);
     expect(scoreReply(benchCase('grocery-budget'), snapshot, 'Groceries look fine.')).toEqual([
       'missing MYR budgetCoach.categories.1.spentTotal',
       'missing MYR budgetCoach.categories.1.pctOfBudget',

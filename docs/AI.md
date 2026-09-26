@@ -57,6 +57,18 @@ One payment often reaches Moni twice. `apps/mobile/lib/ai/duplicates.ts` is a pu
 
 A possible `same_purchase` duplicate is never auto-added. Saving a manual entry that matches an existing purchase asks "Add anyway?".
 
+## Finance facts
+
+Chat answers balance, payday, subscription and affordability questions from facts computed on-device (`apps/mobile/lib/ai/facts/`), one block per currency in the snapshot. Nothing is stored except the user's verdicts; the model narrates and never computes.
+
+- **Balance**: cash, bank, debit and e-wallet wallets (opening balance plus ledger); credit cards are left out.
+- **Recurring series**: one series per currency, type and merchant (`merchantKey`). It needs 3 payments in a row on a weekly (6–8 days), biweekly (12–16) or monthly (27–34) cadence, with amounts within 20% of the median (2% for weekly and biweekly spending, so weekly groceries are not a bill). It ends once a payment is 3–5 days overdue. Transfers, balance adjustments and debt mirrors are ignored. Kind is income, subscription (Subscriptions or Entertainment category) or bill.
+- **Overrides**: `recurring_overrides` rows hide a dismissed series and mark a confirmed one as certain, optionally fixing its kind, amount and day of month.
+- **Payday**: the confirmed income series, else the most regular monthly one.
+- **Forecast** to payday, else month end: balance − bills due before it + trusted income before it − day-to-day spend. Day-to-day spend excludes recurring series; its light, typical and heavy cases are the P10, P50 and P90 of spend in 7-day windows (shorter when the horizon is) over the last 8 weeks. Shown only with ≥45 days of history, the balance of every liquid wallet in use (holding money or used in the last 8 weeks) confirmed within 30 days (`wallets.balance_confirmed_at`), logged coverage ≥70% (logged spending over logged spending plus balance corrections that lowered a balance, last 8 weeks), a positive balance, without a payday no more unscheduled income than 20% of spending, and a range no wider than 40% of the balance. Otherwise it is `insufficient` with reasons, and the model says what it can't see.
+- **Afford**: when the question asks about affording ("afford", "can I buy/spend", "should I buy", "enough for"), its amount (`RM800`, or a bare number) is subtracted on-device; the reply is yes only if the worst case stays ≥ 0.
+- **Backtest** (`backtestForecast`, CI only): replaying 10 synthetic six-month salaried ledgers day by day put the real balance before payday inside the range 86% of the time (80% over 20 ledgers, worst ledger 53%). P25/P75 managed 60% (50% over 20): an interquartile range holds about half the outcomes by construction. Real accuracy needs replay over real ledgers.
+
 ## Wire contract
 
 Defined in `apps/mobile/lib/ai/client/types.ts`. Extraction structs mirror `apps/backend/internal/extract/types.go`; chat analyze mirrors `apps/backend/internal/chat/types.go`. **Keep these in sync manually.**
@@ -91,7 +103,7 @@ Chat analyze (`POST /v1/chat/analyze`):
 
 ```ts
 // Request
-{ message: string; snapshot: { schema: "finance_assistant_tool_v3"; generatedAt: string; currencies: Record<ISO4217, FinanceAssistantCurrencySnapshot> }; history?: { role: "user"|"assistant"; content: string }[] }
+{ message: string; snapshot: { schema: "finance_assistant_tool_v4"; generatedAt: string; currencies: Record<ISO4217, FinanceAssistantCurrencySnapshot> }; history?: { role: "user"|"assistant"; content: string }[] }
 
 // Response
 { status: "ok"; reply: string; modelId: string } | { status: "unavailable"; reason: string }
@@ -187,6 +199,6 @@ Heuristic-first — no LLM call for most messages:
 
 Table test: `lib/ai/chat/__tests__/routing.test.ts`.
 
-Snapshot builder: `lib/ai/snapshot/finance-metrics.ts` (deterministic metrics from transactions, budgets and pending proposals — never raw tx rows sent to the model). Each snapshot is keyed by ISO currency; mobile and the chat prompt must never sum, compare, or infer a first/default currency across keys. Rows without a currency are skipped and logged, never defaulted. `pendingProposals` is a count plus expense and income totals per currency; a proposal takes its wallet's currency, and text and receipt proposals without a wallet are left out because their currency is a placeholder. `calendarMonth.dailyPaceVsPreviousMonthPct` compares average daily spend with last month and is `null` before day 7 and while one expense is over half of month-to-date spend, so rent on day 1 never reads as a forecast. `rolling30.deltas.*PctVsPrior` is `null` when the prior 30 days are empty.
+Snapshot builder: `lib/ai/snapshot/finance-metrics.ts` (deterministic metrics from transactions, budgets and pending proposals, plus [finance facts](#finance-facts) — never raw tx rows sent to the model). Each snapshot is keyed by ISO currency; mobile and the chat prompt must never sum, compare, or infer a first/default currency across keys. Rows without a currency are skipped and logged, never defaulted. `pendingProposals` is a count plus expense and income totals per currency; a proposal takes its wallet's currency, and text and receipt proposals without a wallet are left out because their currency is a placeholder. `calendarMonth.dailyPaceVsPreviousMonthPct` compares average daily spend with last month and is `null` before day 7 and while one expense is over half of month-to-date spend, so rent on day 1 never reads as a forecast. `rolling30.deltas.*PctVsPrior` is `null` when the prior 30 days are empty.
 
-**Chat bench** (`pnpm --filter moni bench:chat`, offline, part of `pnpm --filter moni test`): a fixed MYR/SGD/USD ledger with rent on day 1, a refund and a transfer (`lib/ai/chat/bench/fixture.ts`), 22 questions with the snapshot facts each answer rests on (`cases.ts`), and a grounding checker (`grounding.ts`) that fails a reply citing a number not derivable from one currency's snapshot, or a sum across currencies. `pnpm --filter moni bench:chat:live` sends the same questions through the real chat service and model (needs `apps/backend/.env`) and scores the replies with that checker plus style gates (at most 150 words, no leaked field names like "null" or "snapshot"); run it after changing the chat prompt, snapshot or model.
+**Chat bench** (`pnpm --filter moni bench:chat`, offline, part of `pnpm --filter moni test`): a fixed MYR/SGD/USD ledger with rent on day 1, a refund, a transfer, MYR salary, rent and Netflix series with confirmed balances, a stale SGD balance and irregular USD freelance income, plus generated salaried and gig-worker MYR ledgers with daily spending (`lib/ai/chat/bench/fixture.ts`), 31 questions with the snapshot facts each answer rests on (`cases.ts`; each question gets its own snapshot so an asked amount reaches the forecast, as in `analyze.ts`), and a grounding checker (`grounding.ts`) that fails a reply citing a number not derivable from one currency's snapshot, or a sum across currencies. `pnpm --filter moni bench:chat:live` sends the same questions through the real chat service and model (needs `apps/backend/.env`) and scores the replies with that checker plus style gates (at most 150 words, no leaked field names like "null" or "snapshot"); run it after changing the chat prompt, snapshot or model.

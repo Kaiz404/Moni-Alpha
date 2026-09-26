@@ -50,6 +50,7 @@ export const categoryBudgets$ = observable(syncTable('category_budgets'));
 export const debts$ = observable(syncTable('debts'));
 export const debtActivities$ = observable(syncTable('debt_activities'));
 export const proposedTransactions$ = observable(syncTable('proposed_transactions'));
+export const recurringOverrides$ = observable(syncTable('recurring_overrides'));
 
 export const ALL_STORE_OBSERVABLES: Observable<any>[] = [
   wallets$,
@@ -61,6 +62,7 @@ export const ALL_STORE_OBSERVABLES: Observable<any>[] = [
   debts$,
   debtActivities$,
   proposedTransactions$,
+  recurringOverrides$,
 ];
 
 /**

@@ -1,4 +1,5 @@
 import { getAiClient } from '@/lib/ai/client';
+import { buildFinanceFactsByCurrency, parseAskedAmount } from '@/lib/ai/facts';
 import {
   buildFinanceAssistantToolSnapshotByCurrency,
   type BudgetRow,
@@ -7,6 +8,7 @@ import {
 } from '@/lib/ai/snapshot/finance-metrics';
 import { financeProjection$ } from '@/lib/finance/projection';
 import { getUserId } from '@/lib/supabase/client';
+import { listRecurringOverrides } from '@/lib/supabase/recurring-overrides';
 import { exportHistoryForApi } from './messages';
 
 export type AnalyzeFinancesResult = { ok: true; reply: string } | { ok: false; reason: string };
@@ -61,11 +63,24 @@ export async function analyzeUserFinances(message: string): Promise<AnalyzeFinan
         : [],
     );
 
+    const now = new Date();
+    const facts = buildFinanceFactsByCurrency(
+      {
+        wallets: Object.values(projection.walletsById).filter((w) => w.userId === userId),
+        transactions,
+        overrides: listRecurringOverrides(userId),
+        categoryNames: categoryMap,
+        askedAmount: parseAskedAmount(message),
+      },
+      now,
+    );
     const snapshot = buildFinanceAssistantToolSnapshotByCurrency(
       txs,
       categoryMap,
       budgetRows,
       proposals,
+      now,
+      facts,
     );
 
     const result = await getAiClient().analyzeFinances({

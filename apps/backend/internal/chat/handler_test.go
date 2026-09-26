@@ -30,7 +30,7 @@ func TestAnalyzeInvalidBody(t *testing.T) {
 }
 
 func TestValidateSnapshot(t *testing.T) {
-	if err := ValidateSnapshot(json.RawMessage(`{"schema":"finance_assistant_tool_v3"}`)); err != nil {
+	if err := ValidateSnapshot(json.RawMessage(`{"schema":"finance_assistant_tool_v4"}`)); err != nil {
 		t.Fatalf("expected valid snapshot: %v", err)
 	}
 	if err := ValidateSnapshot(json.RawMessage(`not-json`)); err == nil {

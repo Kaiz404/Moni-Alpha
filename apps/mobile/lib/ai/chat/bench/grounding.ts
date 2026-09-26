@@ -38,7 +38,7 @@ const DATE_LIKE = new RegExp(
     String.raw`\b\d{1,2}(?:st|nd|rd|th)\b`,
     String.raw`\b(?:${MONTHS})\s+\d{1,2}\b`,
     String.raw`\b\d{1,2}\s+(?:${MONTHS})\b`,
-    String.raw`\b(?:19|20)\d{2}\b`,
+    String.raw`(?<![\d,.])\b(?:19|20)\d{2}\b(?![.,]\d)`,
   ].join('|'),
   'gi',
 );

@@ -106,7 +106,7 @@ Default wallet: Profile → Default wallet. Synced in `profiles.preferences.defa
 
 ## AI
 
-**Chat tab** (`app/(tabs)/chat.tsx`): conversational back-and-forth — log transactions (text, inline receipt camera, hold-to-talk), ask finance questions (heuristic routing → `/v1/chat/analyze`), session history in MMKV (`lib/ai/chat/`) with 24h idle expiry; only answered analysis turns go back to the model as context. Hold-to-talk uses `expo-speech-recognition` with shared on-device options in `lib/speech/speech-recognition.ts` (continuous, punctuation, finance biasing).
+**Chat tab** (`app/(tabs)/chat.tsx`): conversational back-and-forth — log transactions (text, inline receipt camera, hold-to-talk), ask finance questions (heuristic routing → `/v1/chat/analyze` with a snapshot from `lib/ai/snapshot/` plus per-currency facts from `lib/ai/facts/`: liquid balance, recurring series and payday from `recurring.ts`, forecast and afford check from `forecast.ts`; user confirm/dismiss verdicts sync via `recurringOverrides$` and `lib/supabase/recurring-overrides.ts`, and saving the wallet screen stamps `balance_confirmed_at`), session history in MMKV (`lib/ai/chat/`) with 24h idle expiry; only answered analysis turns go back to the model as context. Hold-to-talk uses `expo-speech-recognition` with shared on-device options in `lib/speech/speech-recognition.ts` (continuous, punctuation, finance biasing).
 
 **Extraction queue** (background): MMKV queue → background processor → Go backend → `lib/ai/routine.ts` (routine notifications → `transactions` with `metadata.ai_suggested`, shown as "Auto"; everything else → `proposed_transactions` with category prefilled) → review UI. Possible duplicates (`lib/ai/duplicates.ts`, derived on read) never auto-add; a notification completing an own-wallet transfer pair is combined automatically (`combineIntoTransfer`); otherwise the review screen offers merge / combine-into-transfer via `resolveDuplicate` in `lib/supabase/proposed-transactions.ts`. Manual entries dated today keep their real time. **Silent capture entry points** (not shown in Chat thread): floating tab-bar button — tap launches ML Kit receipt scan in-place (`lib/receipts/scan-receipt.ts`), long-press opens `app/scan/listen.tsx` (narration). **Review UI:** `components/proposal/proposal-summary-sheet.tsx` shows a minimal popup for each pending proposal (Approve / Decline / "Edit details"); full form at `app/proposal/[id].tsx`. **Android notifications:** link a banking app per wallet; only linked apps are queued, and an identical re-post within 2 minutes is stored but not queued (`lib/notifications/notification-repeat.core.js`). Details: [docs/AI.md](../../docs/AI.md).
 
@@ -124,7 +124,7 @@ Default wallet: Profile → Default wallet. Synced in `profiles.preferences.defa
 pnpm --filter moni test:notification-detection   # 1000-case prefilter suite
 pnpm --filter moni test:notification-routing     # wallet candidate routing (no LLM)
 pnpm --filter moni test                          # finance unit/reactivity tests
-pnpm --filter moni bench:chat                    # offline chat grounding bench (fixture ledger, 22 cases)
+pnpm --filter moni bench:chat                    # offline chat grounding bench (fixture ledgers, 31 cases)
 pnpm --filter moni bench:chat:live               # same questions through the real backend + model (needs apps/backend/.env)
 npx tsc --noEmit                                 # typecheck (run in apps/mobile)
 ```

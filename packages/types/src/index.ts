@@ -10,4 +10,5 @@ export * from './proposed-transaction';
 export * from './chat';
 export * from './category-budget';
 export * from './debt';
+export * from './recurring-override';
 export * from './money';

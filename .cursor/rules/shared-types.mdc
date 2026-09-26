@@ -72,6 +72,7 @@ packages/types/src/
 ├── analytics.ts              - Dashboard overview response types
 ├── proposed-transaction.ts   - AI proposal schemas
 ├── chat.ts                   - Chat analyze request/response schemas
+├── recurring-override.ts     - User confirm/dismiss verdicts on detected recurring series
 └── category-budget.ts        - Budget schemas
 ```
 

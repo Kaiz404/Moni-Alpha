@@ -12,6 +12,7 @@ import {
   type TxForMetrics,
 } from '../insights/insight-metrics';
 import { addMinor, minorToNumber, type MinorAmount } from '@repo/types';
+import type { FinanceFacts } from '../facts';
 
 export type { BudgetRow, TxForMetrics };
 
@@ -64,11 +65,13 @@ export type FinanceAssistantCurrencySnapshot = {
   budgetCoach: BudgetCoachToolSnapshot;
   spendingStory: SpendingStorySnapshot;
   pendingProposals: PendingProposalsSnapshot;
+  /** Balances, recurring series, payday and forecast; absent when the caller has no ledger facts. */
+  facts?: FinanceFacts;
 };
 
 /** Chat payload: every metric is scoped to exactly one currency. */
 export type FinanceAssistantToolSnapshot = {
-  schema: 'finance_assistant_tool_v3';
+  schema: 'finance_assistant_tool_v4';
   generatedAt: string;
   currencies: Record<string, FinanceAssistantCurrencySnapshot>;
 };
@@ -223,6 +226,7 @@ function buildFinanceAssistantCurrencySnapshot(
   categoryMap: Record<string, string>,
   budgets: BudgetRow[],
   proposals: ProposalForMetrics[],
+  facts: FinanceFacts | undefined,
   currencyHint: string,
   now: Date = new Date(),
 ): FinanceAssistantCurrencySnapshot {
@@ -244,6 +248,7 @@ function buildFinanceAssistantCurrencySnapshot(
     budgetCoach,
     spendingStory,
     pendingProposals: buildPendingProposalsSnapshot(proposals),
+    ...(facts ? { facts } : {}),
   };
 }
 
@@ -268,11 +273,15 @@ export function buildFinanceAssistantToolSnapshotByCurrency(
   budgets: BudgetRow[],
   proposals: ProposalForMetrics[] = [],
   now: Date = new Date(),
+  facts: Record<string, FinanceFacts> = {},
 ): FinanceAssistantToolSnapshot {
   const txs = withCurrency(transactions, 'transactions');
   const pending = withCurrency(proposals, 'pending proposals');
   const currencies = new Set(
-    [...txs, ...budgets, ...pending].map(currencyOf).filter((c): c is string => c !== null),
+    [...txs, ...budgets, ...pending]
+      .map(currencyOf)
+      .filter((c): c is string => c !== null)
+      .concat(Object.keys(facts)),
   );
   const snapshots = Object.fromEntries(
     [...currencies].sort().map((currency) => [
@@ -282,13 +291,14 @@ export function buildFinanceAssistantToolSnapshotByCurrency(
         categoryMap,
         budgets.filter((budget) => currencyOf(budget) === currency),
         pending.filter((proposal) => currencyOf(proposal) === currency),
+        facts[currency],
         currency,
         now,
       ),
     ]),
   );
   return {
-    schema: 'finance_assistant_tool_v3',
+    schema: 'finance_assistant_tool_v4',
     generatedAt: now.toISOString(),
     currencies: snapshots,
   };

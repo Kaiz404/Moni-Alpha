@@ -12,6 +12,8 @@ export type FinanceWallet = {
   cardStyleId: string | null;
   isActive: boolean;
   displayOrder: number;
+  /** Last time the user saw and saved this balance; creation counts. */
+  balanceConfirmedAt: string | null;
 };
 
 export type FinanceTransaction = {

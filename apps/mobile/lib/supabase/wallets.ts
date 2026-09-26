@@ -24,6 +24,7 @@ type WalletRow = {
   notification_package: string | null;
   notification_app_label: string | null;
   notification_account_hint: string | null;
+  balance_confirmed_at?: string | null;
   created_at: string | null;
   updated_at: string | null;
   deleted?: boolean;
@@ -48,6 +49,7 @@ function mapWalletRow(w: WalletRow, currentBalanceMinor?: MinorAmount) {
     notificationPackage: w.notification_package ?? null,
     notificationAppLabel: w.notification_app_label ?? null,
     notificationAccountHint: w.notification_account_hint ?? null,
+    balanceConfirmedAt: w.balance_confirmed_at ?? null,
     createdAt: w.created_at ?? w.updated_at ?? '',
     updatedAt: w.updated_at ?? w.created_at ?? '',
   };
@@ -99,6 +101,7 @@ export async function createWallet(data: CreateWallet) {
     notification_package: data.notificationPackage ?? null,
     notification_app_label: data.notificationAppLabel ?? null,
     notification_account_hint: data.notificationAccountHint ?? null,
+    balance_confirmed_at: new Date().toISOString(),
     is_active: true,
     display_order: 0,
     deleted: false,
@@ -130,6 +133,7 @@ export async function updateWallet(id: string, data: UpdateWallet) {
   if (data.notificationAccountHint !== undefined) {
     patch.notification_account_hint = data.notificationAccountHint;
   }
+  if (data.balanceConfirmedAt !== undefined) patch.balance_confirmed_at = data.balanceConfirmedAt;
 
   patchRow(wallets$, id, patch);
   refreshLinkedPackagesFromStore();

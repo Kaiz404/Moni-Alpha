@@ -250,6 +250,7 @@ export default function EditWalletScreen() {
       notificationAppLabel: notificationLink.notificationAppLabel,
       notificationAccountHint:
         notificationLink.notificationAccountHint,
+      balanceConfirmedAt: new Date().toISOString(),
     });
     if (!parsed.success) {
       Alert.alert(

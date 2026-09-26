@@ -19,10 +19,10 @@ func TestLiveChatBench(t *testing.T) {
 		t.Fatal(err)
 	}
 	var bench struct {
-		Snapshot  json.RawMessage `json:"snapshot"`
 		Questions []struct {
-			ID       string `json:"id"`
-			Question string `json:"question"`
+			ID       string          `json:"id"`
+			Question string          `json:"question"`
+			Snapshot json.RawMessage `json:"snapshot"`
 		} `json:"questions"`
 	}
 	if err := json.Unmarshal(raw, &bench); err != nil {
@@ -31,7 +31,7 @@ func TestLiveChatBench(t *testing.T) {
 	s := newLiveServer(t)
 	replies := map[string]map[string]any{}
 	for _, q := range bench.Questions {
-		_, res := s.post(t, "/v1/chat/analyze", map[string]any{"message": q.Question, "snapshot": bench.Snapshot})
+		_, res := s.post(t, "/v1/chat/analyze", map[string]any{"message": q.Question, "snapshot": q.Snapshot})
 		replies[q.ID] = res
 	}
 	data, err := json.Marshal(map[string]any{"replies": replies})

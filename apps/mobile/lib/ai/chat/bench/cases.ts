@@ -5,12 +5,18 @@
  * would be scored the same way.
  */
 import type { FinanceAssistantToolSnapshot } from '@/lib/ai/snapshot/finance-metrics';
+import { buildBenchSnapshot, type BenchFixture } from './fixture';
 import { checkGrounding, citedNumbers, matches } from './grounding';
 
-export type BenchFact = { currency: string; path: string; value: number | string | null };
+export type BenchFact = {
+  currency: string;
+  path: string;
+  value: number | string | boolean | null;
+};
 
 export type ChatBenchCase = {
   id: string;
+  fixture?: BenchFixture;
   question: string;
   facts: BenchFact[];
   refuse?: boolean;
@@ -20,7 +26,13 @@ export type ChatBenchCase = {
 const REFUSAL =
   /\b(can't|cannot|can not|don't have|don't see|doesn't|isn't|aren't|not able|unable|not available|no fair|no reliable|not tracked|no data)\b/i;
 const MAX_REPLY_WORDS = 150;
-const INTERNAL_NAME = /\bnull\b|\bsnapshot\b|calendarMonth|rolling30|pendingProposals|dailyPace/i;
+const INTERNAL_NAME =
+  /\bnull\b|\bsnapshot\b|calendarMonth|rolling30|pendingProposals|dailyPace|endBalance|needsConfirm|fitsWorstCase|worstCaseAfter|likelyAfter|changeLast30Days/i;
+
+/** The snapshot the app would send with this question. */
+export function benchSnapshot(benchCase: ChatBenchCase): FinanceAssistantToolSnapshot {
+  return buildBenchSnapshot(benchCase.fixture, benchCase.question);
+}
 
 export function factValue(snapshot: FinanceAssistantToolSnapshot, fact: BenchFact): unknown {
   return fact.path
@@ -42,11 +54,13 @@ export function scoreReply(
   );
   const cited = citedNumbers(reply);
   for (const { currency, path, value } of benchCase.facts) {
-    if (value === null) continue;
+    if (value === null || typeof value === 'boolean') continue;
     const quoted =
       typeof value === 'string'
         ? reply.toLowerCase().includes(value.toLowerCase())
-        : cited.some((n) => (n.currency ?? currency) === currency && matches(n.value, value));
+        : cited.some(
+            (n) => (n.currency ?? currency) === currency && matches(n.value, Math.abs(value)),
+          );
     if (!quoted) failures.push(`missing ${currency} ${path}`);
   }
   if (benchCase.refuse && !REFUSAL.test(reply)) failures.push('answered without the data');
@@ -73,8 +87,8 @@ export const CHAT_BENCH_CASES: ChatBenchCase[] = [
   {
     id: 'previous-month',
     question: 'What did I spend last month?',
-    facts: [{ currency: MYR, path: 'calendarMonth.expensePreviousCalendarMonth', value: 1750.6 }],
-    reference: 'In September you spent RM 1,750.60.',
+    facts: [{ currency: MYR, path: 'calendarMonth.expensePreviousCalendarMonth', value: 1805.6 }],
+    reference: 'In September you spent RM 1,805.60.',
   },
   {
     id: 'rent-day-one-pace',
@@ -158,8 +172,8 @@ export const CHAT_BENCH_CASES: ChatBenchCase[] = [
   {
     id: 'vs-prior-30',
     question: 'Am I spending more than before?',
-    facts: [{ currency: MYR, path: 'rolling30.deltas.expensePctVsPrior', value: 41.6 }],
-    reference: 'Yes: MYR spending is up 41.6% on the previous 30 days.',
+    facts: [{ currency: MYR, path: 'rolling30.deltas.expensePctVsPrior', value: 36.6 }],
+    reference: 'Yes: MYR spending is up 36.6% on the previous 30 days.',
   },
   {
     id: 'transfer-not-spending',
@@ -198,26 +212,111 @@ export const CHAT_BENCH_CASES: ChatBenchCase[] = [
   {
     id: 'subscriptions',
     question: 'What subscriptions am I paying for?',
-    refuse: true,
-    facts: [],
+    facts: [
+      { currency: MYR, path: 'facts.recurring.2.name', value: 'Netflix' },
+      { currency: MYR, path: 'facts.recurring.2.amount', value: 55 },
+    ],
     reference:
-      'I cannot detect recurring payments yet, so I cannot list your subscriptions. Tagging them would help.',
+      'You pay Netflix RM 55 a month, next due on 10 November. Your other regular payment is rent of RM 1,500 to Landlord.',
   },
   {
     id: 'afford',
     question: 'Can I afford RM800?',
-    refuse: true,
-    facts: [],
+    facts: [{ currency: MYR, path: 'facts.forecast.afford.worstCaseAfter', value: 7552.96 }],
     reference:
-      'I cannot see your wallet balances, so I cannot tell whether RM800 fits. Check the balance of the wallet you would pay from.',
+      'Yes. Even if your spending runs high, you would still have about RM 7,552.96 left before your salary on 25 October. This is informational, not financial advice.',
   },
   {
     id: 'payday',
     question: 'Will I make it to payday?',
+    facts: [
+      { currency: MYR, path: 'facts.forecast.endBalance.low', value: 8352.96 },
+      { currency: MYR, path: 'facts.forecast.endBalance.high', value: 8751.5 },
+    ],
+    reference:
+      'Yes. Before your salary on 25 October you should have between RM 8,352.96 and RM 8,751.50 in your cash and bank accounts.',
+  },
+  {
+    id: 'next-payday',
+    question: 'When is my next payday?',
+    facts: [{ currency: MYR, path: 'facts.payday.amount', value: 4500 }],
+    reference: 'Your salary of RM 4,500 from Acme Sdn Bhd looks due on 25 October.',
+  },
+  {
+    id: 'afford-too-much',
+    question: 'Can I afford RM9000?',
+    facts: [
+      { currency: MYR, path: 'facts.forecast.startBalance', value: 8751.5 },
+      { currency: MYR, path: 'facts.forecast.afford.fitsWorstCase', value: false },
+      { currency: MYR, path: 'facts.forecast.afford.worstCaseAfter', value: -647.04 },
+    ],
+    reference:
+      'No. You have RM 8,751.50 in cash and bank accounts, so RM9000 could leave you about RM 647.04 short before payday. This is informational, not financial advice.',
+  },
+  {
+    id: 'balance-lower',
+    question: 'Why is my balance lower than I expected?',
+    facts: [
+      { currency: MYR, path: 'facts.balances.liquid', value: 8751.5 },
+      { currency: MYR, path: 'facts.balances.changeLast30Days', value: 2466.5 },
+    ],
+    reference:
+      'Over the last 30 days it actually rose: your cash and bank balance is RM 8,751.50, up RM 2,466.50. The biggest payment was rent of RM 1,500 on 1 October.',
+  },
+  {
+    id: 'sgd-forecast',
+    question: 'Will my SGD last until the end of the month?',
     refuse: true,
     facts: [],
     reference:
-      'I cannot see your balances or when your salary arrives, so I cannot tell. Your wallet screen shows current balances.',
+      "I can't forecast your SGD yet: there is not enough SGD history and its balance hasn't been confirmed recently. Confirming the balance on the wallet screen would help.",
+  },
+  {
+    id: 'usd-month-end',
+    question: 'How much USD will I have at the end of the month?',
+    refuse: true,
+    facts: [{ currency: 'USD', path: 'facts.balances.liquid', value: 1407.01 }],
+    reference:
+      "I can't forecast your USD to month end: your freelance income arrives without a regular payday. You have USD 1,407.01 now.",
+  },
+  {
+    id: 'gig-payday',
+    question: 'When will my next USD freelance payment arrive?',
+    refuse: true,
+    facts: [{ currency: 'USD', path: 'facts.payday', value: null }],
+    reference:
+      "I can't tell: your Upwork payments arrive at irregular times and amounts, so there is no regular USD payday to predict.",
+  },
+  {
+    id: 'salaried-afford-3000',
+    fixture: 'salaried',
+    question: 'Can I afford a RM3,000 laptop?',
+    facts: [
+      { currency: MYR, path: 'facts.forecast.afford.fitsWorstCase', value: false },
+      { currency: MYR, path: 'facts.forecast.afford.worstCaseAfter', value: -122.33 },
+    ],
+    reference:
+      'Not safely. After a RM3,000 laptop you would most likely have RM 88.32 left before your salary on 25 October, and if spending runs high you could be RM 122.33 short. This is informational, not financial advice.',
+  },
+  {
+    id: 'salaried-bills-before-payday',
+    fixture: 'salaried',
+    question: 'Which bills are due before payday?',
+    facts: [
+      { currency: MYR, path: 'facts.forecast.bills.0.amount', value: 99.85 },
+      { currency: MYR, path: 'facts.forecast.bills.1.amount', value: 129 },
+    ],
+    reference:
+      'Two: TNB about RM 99.85 on 15 October and Unifi RM 129 on 18 October, RM 228.85 together. Rent is next due on 1 November, after payday.',
+  },
+  {
+    id: 'gig-afford',
+    fixture: 'gig',
+    question: 'Can I afford RM300 this week?',
+    refuse: true,
+    facts: [{ currency: MYR, path: 'facts.balances.liquid', value: 4403.15 }],
+    reference:
+      "I can't say for sure: your payouts arrive without a regular payday, so there is no range to check RM300 against. You have RM 4,403.15 in Touch n Go now, and rent of RM 650 is due on 1 November. This is informational, not financial advice.",
   },
   {
     id: 'debts',
