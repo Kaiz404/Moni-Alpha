@@ -17,7 +17,10 @@ export type ChatBenchCase = {
   reference: string;
 };
 
-const REFUSAL = /\b(can't|cannot|don't have|don't see|not able)\b/i;
+const REFUSAL =
+  /\b(can't|cannot|can not|don't have|don't see|doesn't|isn't|aren't|not able|unable|not available|no fair|no reliable|not tracked|no data)\b/i;
+const MAX_REPLY_WORDS = 150;
+const INTERNAL_NAME = /\bnull\b|\bsnapshot\b|calendarMonth|rolling30|pendingProposals|dailyPace/i;
 
 export function factValue(snapshot: FinanceAssistantToolSnapshot, fact: BenchFact): unknown {
   return fact.path
@@ -28,7 +31,7 @@ export function factValue(snapshot: FinanceAssistantToolSnapshot, fact: BenchFac
     );
 }
 
-/** Empty when the reply is grounded, quotes every pinned fact, and refuses when it must. */
+/** Empty when the reply is grounded, quotes every pinned fact, refuses when it must, and reads like chat. */
 export function scoreReply(
   benchCase: ChatBenchCase,
   snapshot: FinanceAssistantToolSnapshot,
@@ -47,6 +50,9 @@ export function scoreReply(
     if (!quoted) failures.push(`missing ${currency} ${path}`);
   }
   if (benchCase.refuse && !REFUSAL.test(reply)) failures.push('answered without the data');
+  const words = reply.trim().split(/\s+/).length;
+  if (words > MAX_REPLY_WORDS) failures.push(`too long: ${words} words`);
+  if (INTERNAL_NAME.test(reply)) failures.push('leaks an internal field name');
   return failures;
 }
 
@@ -171,10 +177,7 @@ export const CHAT_BENCH_CASES: ChatBenchCase[] = [
   {
     id: 'pending',
     question: 'Did you count the lunch I just logged?',
-    facts: [
-      { currency: MYR, path: 'pendingProposals.count', value: 1 },
-      { currency: MYR, path: 'pendingProposals.expenseTotal', value: 12 },
-    ],
+    facts: [{ currency: MYR, path: 'pendingProposals.expenseTotal', value: 12 }],
     reference:
       'Not yet. 1 logged expense of RM 12 is waiting for your review, and it is not in the totals until you approve it.',
   },
