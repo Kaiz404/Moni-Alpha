@@ -8,12 +8,12 @@ import (
 	"testing"
 
 	"github.com/gin-gonic/gin"
-	"github.com/kaiz404/moni/backend/internal/groq"
+	"github.com/kaiz404/moni/backend/internal/llm"
 )
 
 func TestAnalyzeInvalidBody(t *testing.T) {
 	gin.SetMode(gin.TestMode)
-	svc := NewService(groq.NewClient("test", "http://example.com"))
+	svc := NewService(llm.NewClient("test", "http://example.com"))
 	h := NewHandler(svc)
 
 	r := gin.New()

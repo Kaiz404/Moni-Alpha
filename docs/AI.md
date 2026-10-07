@@ -1,6 +1,6 @@
 # AI Pipeline
 
-Moni turns natural language, receipt photos, and (on Android) bank notifications into transactions. The Chat tab also answers finance questions using pre-aggregated metrics. Inference runs on the Go backend (`apps/backend`) against Groq; the client decides what needs review (see [Routine detection](#routine-detection)).
+Moni turns natural language, receipt photos, and (on Android) bank notifications into transactions. The Chat tab also answers finance questions using pre-aggregated metrics. Inference runs on the Go backend (`apps/backend`) against OpenRouter; the client decides what needs review (see [Routine detection](#routine-detection)).
 
 ## Flow
 
@@ -13,7 +13,7 @@ Input (chat text / receipt photo / notification / FAB scan)
   → run-extraction                        apps/mobile/lib/ai/run-extraction.ts
   → AiClient                              apps/mobile/lib/ai/client/
   → Go backend                            apps/backend (Gin, stateless)
-  → Groq
+  → OpenRouter
   → routine detection                     apps/mobile/lib/ai/routine.ts
       routine notification → transactions (metadata.ai_suggested, shown as "Auto")
       otherwise            → proposed_transactions (category/merchant prefilled from history)
@@ -102,23 +102,23 @@ Auth: `Authorization: Bearer <supabase-user-jwt>`, verified via JWKS (ES256). Er
 
 ## Model allocation
 
-Source of truth: `apps/backend/internal/groq/models.go`. `pnpm --filter backend test:live` fails if the key cannot use any of them.
+Every flow uses `deepseek/deepseek-v4.1-flash` on OpenRouter, chosen by the benchmark below. Source of truth: `llm.Model` in `apps/backend/internal/llm/models.go`; `pnpm --filter backend test:live` fails if OpenRouter stops serving it.
 
-| Flow                       | Endpoint                   | Model                                             | Why                                                                                                                                                                                                                          |
-| -------------------------- | -------------------------- | ------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Text extraction (live)     | `/v1/extract/text`         | `openai/gpt-oss-20b`, fallback `qwen/qwen3.8-27b` | Fast; fallback covers unparseable output                                                                                                                                                                                     |
-| Receipt images (live)      | `/v1/extract/image`        | `qwen/qwen3.8-27b`                                | Vision + OCR with JSON mode; the tightest per-minute limit on Groq Free                                                                                                                                                      |
-| Notifications (background) | `/v1/extract/notification` | `openai/gpt-oss-20b`, fallback `qwen/qwen3.8-27b` | Latency doesn't matter, honors long 429 waits; fallback covers intermittent JSON-validation failures. One-time codes (OTP/TAC, "do not share") are skipped before any model call because the model has read them as payments |
-| Chat finance analysis      | `/v1/chat/analyze`         | `qwen/qwen3.8-27b`                                | Concise prose; snapshot context keeps tokens bounded                                                                                                                                                                         |
+| Flow                       | Endpoint                   | Retry and 429 behaviour                                                                                                                              |
+| -------------------------- | -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Text extraction (live)     | `/v1/extract/text`         | One retry on unparseable output; 429 waits up to 3s                                                                                                  |
+| Receipt images (live)      | `/v1/extract/image`        | No retry; 429 waits up to 5s                                                                                                                         |
+| Notifications (background) | `/v1/extract/notification` | One retry; 429 waits up to 30s. One-time codes (OTP/TAC, "do not share") are skipped before any model call because a model has read them as payments |
+| Chat finance analysis      | `/v1/chat/analyze`         | No retry; 429 waits up to 10s; snapshot context keeps tokens bounded                                                                                 |
 
-All calls use Groq's OpenAI-compatible endpoint with `response_format: json_object` and Go-side JSON validation (`groq.CompleteJSON` strips fences and rejects malformed output). Qwen receipt calls disable reasoning, use hidden reasoning format, and put their instructions in the user message so JSON mode remains reliable.
+Every request asks for `response_format: json_object`, disables reasoning (even low effort used the whole token budget before the JSON in the benchmark), and sets `provider.require_parameters` so OpenRouter only routes to upstream hosts that honour JSON mode. `llm.CompleteJSON` strips fences and rejects malformed output.
 
-### Rate limits and cost (Groq Developer tier, ~1000 users)
+### Rate limits and cost (~1000 users)
 
-- Limits are **per organization**, not per key. Developer tier ≈ 10x free-tier limits; free tier is ~30 RPM which is not enough for production.
-- The backend rate-limits per user (20 req/min, burst 8) so one client can't drain the org quota.
-- Live flows retry a 429 only within a short window (3–5s) then return `unavailable`; the mobile queue retries later. Notifications wait up to 30s.
-- Cost: most calls go to the fast model (`openai/gpt-oss-20b`). At 1000 users doing a few extractions/day this is low single-digit dollars per month; receipts (vision) dominate but stay cheap because the client already perspective-crops + grayscale/contrast-filters + downscales to a single ≤1024px JPEG on-device before it's ever sent.
+- OpenRouter bills prepaid credit per token; it has no tight per-minute limits on paid models.
+- The backend rate-limits per user (20 req/min, burst 8) so one client can't drain the shared credit.
+- Live flows return `unavailable` after a short 429 window; notifications wait up to 30s.
+- Cost: about $0.12 per 1000 extractions in the benchmark, roughly $115 a month at 1000 users doing 30 a day. Receipts stay cheap because the client crops, filters and downscales to a single ≤1024px JPEG on-device before sending.
 
 ### Model benchmark (2026-10-07)
 

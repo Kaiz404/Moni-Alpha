@@ -1,4 +1,4 @@
-package groq
+package llm
 
 import (
 	"context"
@@ -25,7 +25,7 @@ func TestExtractJSON(t *testing.T) {
 	}
 }
 
-func fakeGroq(t *testing.T, content string, status int) *httptest.Server {
+func fakeLLM(t *testing.T, content string, status int) *httptest.Server {
 	t.Helper()
 	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/chat/completions" {
@@ -45,7 +45,7 @@ func fakeGroq(t *testing.T, content string, status int) *httptest.Server {
 }
 
 func TestCompleteJSON(t *testing.T) {
-	srv := fakeGroq(t, `{"amount": 12.5, "type": "expense"}`, http.StatusOK)
+	srv := fakeLLM(t, `{"amount": 12.5, "type": "expense"}`, http.StatusOK)
 	defer srv.Close()
 
 	client := NewClient("test-key", srv.URL)
@@ -55,7 +55,7 @@ func TestCompleteJSON(t *testing.T) {
 	}
 	err := client.CompleteJSON(context.Background(),
 		[]Message{{Role: "user", Content: "hi"}},
-		Options{Model: ModelTextFast}, &out)
+		Options{Model: Model}, &out)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -64,8 +64,8 @@ func TestCompleteJSON(t *testing.T) {
 	}
 }
 
-func TestCompleteJSONSendsQwenReasoningOptions(t *testing.T) {
-	var received ChatRequest
+func TestCompleteJSONAsksOpenRouterForJSONWithoutReasoning(t *testing.T) {
+	var received map[string]any
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if err := json.NewDecoder(r.Body).Decode(&received); err != nil {
 			t.Fatalf("decode request: %v", err)
@@ -76,38 +76,32 @@ func TestCompleteJSONSendsQwenReasoningOptions(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	client := NewClient("test-key", srv.URL)
 	var out struct {
 		Amount float64 `json:"amount"`
 	}
-	err := client.CompleteJSON(context.Background(),
-		[]Message{{Role: "user", Content: "Return JSON."}},
-		Options{
-			Model:           ModelVision,
-			ReasoningEffort: "none",
-			ReasoningFormat: "hidden",
-		},
-		&out,
-	)
+	err := NewClient("test-key", srv.URL).CompleteJSON(context.Background(),
+		[]Message{{Role: "user", Content: "Return JSON."}}, Options{Model: Model}, &out)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if received.ReasoningEffort != "none" || received.ReasoningFormat != "hidden" {
-		t.Fatalf("missing Qwen reasoning options: %+v", received)
-	}
-	if received.ResponseFormat == nil || received.ResponseFormat.Type != "json_object" {
-		t.Fatalf("expected JSON object response format: %+v", received.ResponseFormat)
+	got, _ := json.Marshal(map[string]any{
+		"model": received["model"], "response_format": received["response_format"],
+		"reasoning": received["reasoning"], "provider": received["provider"],
+	})
+	want := `{"model":"deepseek/deepseek-v4.1-flash","provider":{"require_parameters":true},"reasoning":{"enabled":false},"response_format":{"type":"json_object"}}`
+	if string(got) != want {
+		t.Fatalf("request = %s, want %s", got, want)
 	}
 }
 
 func TestRateLimitedNoRetryWindow(t *testing.T) {
-	srv := fakeGroq(t, "", http.StatusTooManyRequests)
+	srv := fakeLLM(t, "", http.StatusTooManyRequests)
 	defer srv.Close()
 
 	client := NewClient("test-key", srv.URL)
 	_, err := client.Complete(context.Background(),
 		[]Message{{Role: "user", Content: "hi"}},
-		Options{Model: ModelTextFast}) // MaxRetryWait 0 => fail fast
+		Options{Model: Model}) // MaxRetryWait 0 => fail fast
 	if err == nil {
 		t.Fatal("expected rate limit error")
 	}

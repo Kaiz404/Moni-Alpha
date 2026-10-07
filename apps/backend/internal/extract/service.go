@@ -6,21 +6,16 @@ import (
 	"strings"
 	"time"
 
-	"github.com/kaiz404/moni/backend/internal/groq"
+	"github.com/kaiz404/moni/backend/internal/llm"
 )
 
-// Models picks the model for each call; the benchmark swaps in candidates.
-type Models struct {
-	Fast, Quality, Vision string
-}
-
 type Service struct {
-	groq   *groq.Client
-	models Models
+	llm   *llm.Client
+	model string
 }
 
-func NewService(client *groq.Client) *Service {
-	return &Service{groq: client, models: Models{Fast: groq.ModelTextFast, Quality: groq.ModelTextQuality, Vision: groq.ModelVision}}
+func NewService(client *llm.Client) *Service {
+	return &Service{llm: client, model: llm.Model}
 }
 
 const defaultCurrency = "USD"
@@ -42,22 +37,22 @@ func walletPreamble(wallets []WalletContext) string {
 }
 
 // FromText extracts a transaction from free-form user text.
-// Live UX flow: fast model, quality fallback, no long 429 waits.
+// Live UX flow: one retry, no long 429 waits.
 func (s *Service) FromText(ctx context.Context, req TextRequest) Result {
-	messages := []groq.Message{
+	messages := []llm.Message{
 		{Role: "system", Content: textExtractionPrompt},
 		{Role: "user", Content: walletPreamble(req.Wallets) + req.Text},
 	}
 
 	var out llmExtraction
-	err := s.groq.CompleteJSON(ctx, messages,
-		groq.Options{Model: s.models.Fast, Temperature: 0.2, MaxTokens: 512, MaxRetryWait: 3 * time.Second},
+	err := s.llm.CompleteJSON(ctx, messages,
+		llm.Options{Model: s.model, Temperature: 0.2, MaxTokens: 512, MaxRetryWait: 3 * time.Second},
 		&out,
 	)
 	if err != nil {
-		// One fallback attempt on the quality model.
-		err = s.groq.CompleteJSON(ctx, messages,
-			groq.Options{Model: s.models.Quality, Temperature: 0.2, MaxTokens: 512},
+		// JSON-mode output is occasionally unparseable; one retry.
+		err = s.llm.CompleteJSON(ctx, messages,
+			llm.Options{Model: s.model, Temperature: 0.2, MaxTokens: 512},
 			&out,
 		)
 	}
@@ -91,25 +86,20 @@ func (s *Service) FromImage(ctx context.Context, req ImageRequest) Result {
 		userText += "\nUser message: " + req.UserContext
 	}
 
-	// Qwen 3.6's JSON mode is most reliable with instructions in the user
-	// message and reasoning disabled. It still receives the same image_url
-	// payload as the retired Llama 4 Scout model.
-	messages := []groq.Message{
-		{Role: "user", Content: []groq.ContentPart{
+	messages := []llm.Message{
+		{Role: "user", Content: []llm.ContentPart{
 			{Type: "text", Text: receiptExtractionPrompt + "\n\n" + userText},
-			{Type: "image_url", ImageURL: &groq.ImageURL{URL: imageURL}},
+			{Type: "image_url", ImageURL: &llm.ImageURL{URL: imageURL}},
 		}},
 	}
 
 	var out llmExtraction
-	err := s.groq.CompleteJSON(ctx, messages,
-		groq.Options{
-			Model:           s.models.Vision,
-			Temperature:     0.6,
-			MaxTokens:       1024,
-			ReasoningEffort: "none",
-			ReasoningFormat: "hidden",
-			MaxRetryWait:    5 * time.Second,
+	err := s.llm.CompleteJSON(ctx, messages,
+		llm.Options{
+			Model:        s.model,
+			Temperature:  0.6,
+			MaxTokens:    1024,
+			MaxRetryWait: 5 * time.Second,
 		},
 		&out,
 	)
@@ -136,18 +126,18 @@ func (s *Service) FromNotification(ctx context.Context, req NotificationRequest)
 	}
 
 	user := walletPreamble(req.Wallets) + "App: " + req.Notification.PackageNameForRouting() + "\nNotification: " + combined
-	messages := []groq.Message{
+	messages := []llm.Message{
 		{Role: "system", Content: notificationDetectionPrompt},
 		{Role: "user", Content: user},
 	}
-	opts := groq.Options{Model: s.models.Fast, Temperature: 0, MaxTokens: 512, MaxRetryWait: 30 * time.Second}
+	opts := llm.Options{Model: s.model, Temperature: 0, MaxTokens: 512, MaxRetryWait: 30 * time.Second}
 
 	var out llmNotificationResult
-	err := s.groq.CompleteJSON(ctx, messages, opts, &out)
+	err := s.llm.CompleteJSON(ctx, messages, opts, &out)
 	if err != nil {
-		// The fast model intermittently fails Groq's JSON validation; one quality-model retry.
-		out, opts.Model = llmNotificationResult{}, s.models.Quality
-		err = s.groq.CompleteJSON(ctx, messages, opts, &out)
+		// JSON-mode output is occasionally unparseable; one retry.
+		out = llmNotificationResult{}
+		err = s.llm.CompleteJSON(ctx, messages, opts, &out)
 	}
 	if err != nil {
 		return Unavailable("Notification analysis failed: " + err.Error())

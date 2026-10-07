@@ -7,15 +7,15 @@ import (
 	"strings"
 	"time"
 
-	"github.com/kaiz404/moni/backend/internal/groq"
+	"github.com/kaiz404/moni/backend/internal/llm"
 )
 
 type Service struct {
-	groq *groq.Client
+	llm *llm.Client
 }
 
-func NewService(client *groq.Client) *Service {
-	return &Service{groq: client}
+func NewService(client *llm.Client) *Service {
+	return &Service{llm: client}
 }
 
 func (s *Service) Analyze(ctx context.Context, req AnalyzeRequest) AnalyzeResult {
@@ -32,22 +32,22 @@ func (s *Service) Analyze(ctx context.Context, req AnalyzeRequest) AnalyzeResult
 	userContent.WriteString("\n\nUSER_QUESTION:\n")
 	userContent.WriteString(strings.TrimSpace(req.Message))
 
-	messages := []groq.Message{{Role: "system", Content: analyzeSystemPrompt}}
+	messages := []llm.Message{{Role: "system", Content: analyzeSystemPrompt}}
 	for _, h := range req.History {
 		role := strings.TrimSpace(h.Role)
 		content := strings.TrimSpace(h.Content)
 		if content == "" || (role != "user" && role != "assistant") {
 			continue
 		}
-		messages = append(messages, groq.Message{Role: role, Content: content})
+		messages = append(messages, llm.Message{Role: role, Content: content})
 	}
-	messages = append(messages, groq.Message{Role: "user", Content: userContent.String()})
+	messages = append(messages, llm.Message{Role: "user", Content: userContent.String()})
 
 	var out struct {
 		Reply string `json:"reply"`
 	}
-	err := s.groq.CompleteJSON(ctx, messages,
-		groq.Options{Model: groq.ModelTextQuality, Temperature: 0.35, MaxTokens: 500, MaxRetryWait: 10 * time.Second},
+	err := s.llm.CompleteJSON(ctx, messages,
+		llm.Options{Model: llm.Model, Temperature: 0.35, MaxTokens: 500, MaxRetryWait: 10 * time.Second},
 		&out,
 	)
 	if err != nil {
@@ -62,7 +62,7 @@ func (s *Service) Analyze(ctx context.Context, req AnalyzeRequest) AnalyzeResult
 	return AnalyzeResult{
 		Status:  "ok",
 		Reply:   clamp(reply, 2000),
-		ModelID: groq.ModelTextQuality,
+		ModelID: llm.Model,
 	}
 }
 

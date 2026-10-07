@@ -15,33 +15,33 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/kaiz404/moni/backend/internal/auth"
 	"github.com/kaiz404/moni/backend/internal/auth/authtest"
-	"github.com/kaiz404/moni/backend/internal/groq"
+	"github.com/kaiz404/moni/backend/internal/llm"
 )
 
-// groqReply is one scripted response from the fake Groq server.
-type groqReply struct {
+// llmReply is one scripted response from the fake OpenRouter server.
+type llmReply struct {
 	status  int
 	content string
 }
 
-func ok(content string) groqReply { return groqReply{http.StatusOK, content} }
+func ok(content string) llmReply { return llmReply{http.StatusOK, content} }
 
-// fakeGroq plays scripted replies in order and records every request it receives.
-type fakeGroq struct {
+// fakeLLM plays scripted replies in order and records every request it receives.
+type fakeLLM struct {
 	mu       sync.Mutex
-	replies  []groqReply
+	replies  []llmReply
 	requests []map[string]any
 	headers  []http.Header
 }
 
-func (f *fakeGroq) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (f *fakeLLM) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	var body map[string]any
 	json.NewDecoder(r.Body).Decode(&body)
 
 	f.mu.Lock()
 	f.requests = append(f.requests, body)
 	f.headers = append(f.headers, r.Header.Clone())
-	reply := groqReply{http.StatusInternalServerError, ""}
+	reply := llmReply{http.StatusInternalServerError, ""}
 	if len(f.replies) > 0 {
 		reply, f.replies = f.replies[0], f.replies[1:]
 	}
@@ -58,7 +58,7 @@ func (f *fakeGroq) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func (f *fakeGroq) models() []string {
+func (f *fakeLLM) models() []string {
 	out := make([]string, len(f.requests))
 	for i, req := range f.requests {
 		out[i], _ = req["model"].(string)
@@ -67,18 +67,18 @@ func (f *fakeGroq) models() []string {
 }
 
 // promptText joins every text the backend sent to the model, for asserting what it saw.
-func (f *fakeGroq) promptText(i int) string {
+func (f *fakeLLM) promptText(i int) string {
 	raw, _ := json.Marshal(f.requests[i]["messages"])
 	return string(raw)
 }
 
 type testServer struct {
 	handler http.Handler
-	groq    *fakeGroq
+	llm     *fakeLLM
 	token   func(sub string) string
 }
 
-func newTestServer(t *testing.T, limiter *auth.RateLimiter, replies ...groqReply) *testServer {
+func newTestServer(t *testing.T, limiter *auth.RateLimiter, replies ...llmReply) *testServer {
 	t.Helper()
 	gin.SetMode(gin.TestMode)
 	gin.DefaultWriter = io.Discard
@@ -87,15 +87,15 @@ func newTestServer(t *testing.T, limiter *auth.RateLimiter, replies ...groqReply
 	if err != nil {
 		t.Fatal(err)
 	}
-	fake := &fakeGroq{replies: replies}
-	groqSrv := httptest.NewServer(fake)
-	t.Cleanup(groqSrv.Close)
+	fake := &fakeLLM{replies: replies}
+	llmSrv := httptest.NewServer(fake)
+	t.Cleanup(llmSrv.Close)
 	if limiter == nil {
 		limiter = auth.NewRateLimiter(600, 100)
 	}
 	return &testServer{
-		handler: newRouter(verifier, limiter, groq.NewClient("test-key", groqSrv.URL)),
-		groq:    fake,
+		handler: newRouter(verifier, limiter, llm.NewClient("test-key", llmSrv.URL)),
+		llm:     fake,
 		token: func(sub string) string {
 			return authtest.SignToken(t, priv, sub, time.Now().Add(time.Hour))
 		},
@@ -168,12 +168,12 @@ func TestV1RoutesRejectMissingOrInvalidTokens(t *testing.T) {
 			}
 		}
 	}
-	if len(s.groq.requests) != 0 {
-		t.Fatalf("unauthenticated requests reached Groq: %d", len(s.groq.requests))
+	if len(s.llm.requests) != 0 {
+		t.Fatalf("unauthenticated requests reached the provider: %d", len(s.llm.requests))
 	}
 }
 
-func TestInvalidBodiesReturn400WithoutCallingGroq(t *testing.T) {
+func TestInvalidBodiesReturn400WithoutCallingProvider(t *testing.T) {
 	s := newTestServer(t, nil)
 	cases := []struct{ route, body string }{
 		{"/v1/extract/text", `{}`},
@@ -189,8 +189,8 @@ func TestInvalidBodiesReturn400WithoutCallingGroq(t *testing.T) {
 			t.Errorf("%s %.40s: got %d %v", c.route, c.body, code, body)
 		}
 	}
-	if len(s.groq.requests) != 0 {
-		t.Fatalf("invalid requests reached Groq: %d", len(s.groq.requests))
+	if len(s.llm.requests) != 0 {
+		t.Fatalf("invalid requests reached the provider: %d", len(s.llm.requests))
 	}
 }
 
@@ -210,34 +210,33 @@ func TestExtractTextReturnsWalletResolvedExtraction(t *testing.T) {
 			t.Errorf("%s = %v, want %v", k, ex[k], v)
 		}
 	}
-	if got := s.groq.models(); len(got) != 1 || got[0] != groq.ModelTextFast {
-		t.Errorf("models = %v, want [%s]", got, groq.ModelTextFast)
+	if got := s.llm.models(); len(got) != 1 || got[0] != llm.Model {
+		t.Errorf("models = %v, want [%s]", got, llm.Model)
 	}
-	if !strings.Contains(s.groq.promptText(0), "w-maybank") {
+	if !strings.Contains(s.llm.promptText(0), "w-maybank") {
 		t.Error("prompt did not include the wallet list")
 	}
-	if auth := s.groq.headers[0].Get("Authorization"); auth != "Bearer test-key" {
-		t.Errorf("Groq Authorization = %q", auth)
+	if auth := s.llm.headers[0].Get("Authorization"); auth != "Bearer test-key" {
+		t.Errorf("provider Authorization = %q", auth)
 	}
 }
 
-func TestExtractTextFallsBackToQualityModel(t *testing.T) {
+func TestExtractTextRetriesOnce(t *testing.T) {
 	s := newTestServer(t, nil,
-		groqReply{http.StatusInternalServerError, "overloaded"},
+		llmReply{http.StatusInternalServerError, "overloaded"},
 		ok(`{"amount":8,"type":"expense","merchant":"Grab","confidence":0.8,"reasoning":"ride"}`))
 
 	_, res := s.post(t, "/v1/extract/text", map[string]any{"text": "grab 8", "wallets": wallets})
 	if res["status"] != "ok" {
 		t.Fatalf("got %v", res)
 	}
-	want := []string{groq.ModelTextFast, groq.ModelTextQuality}
-	if got := s.groq.models(); strings.Join(got, ",") != strings.Join(want, ",") {
-		t.Fatalf("models = %v, want %v", got, want)
+	if got := s.llm.models(); len(got) != 2 {
+		t.Fatalf("models = %v, want one retry", got)
 	}
 }
 
-func TestExtractTextUnavailableWhenGroqRejectsTheKey(t *testing.T) {
-	invalid := groqReply{http.StatusUnauthorized, "Invalid API Key"}
+func TestExtractTextUnavailableWhenProviderRejectsTheKey(t *testing.T) {
+	invalid := llmReply{http.StatusUnauthorized, "Invalid API Key"}
 	s := newTestServer(t, nil, invalid, invalid)
 
 	code, res := s.post(t, "/v1/extract/text", map[string]any{"text": "lunch 12", "wallets": wallets})
@@ -245,7 +244,7 @@ func TestExtractTextUnavailableWhenGroqRejectsTheKey(t *testing.T) {
 		t.Fatalf("got %d %v", code, res)
 	}
 	if reason, _ := res["reason"].(string); !strings.Contains(reason, "Invalid API Key") {
-		t.Fatalf("reason %q does not surface the Groq error", reason)
+		t.Fatalf("reason %q does not surface the provider error", reason)
 	}
 }
 
@@ -269,14 +268,14 @@ func TestExtractImageSendsVisionRequest(t *testing.T) {
 			if ex := extraction(t, res); ex["amount"] != 12.5 || ex["merchant"] != "FamilyMart KLCC" {
 				t.Fatalf("got %v", ex)
 			}
-			if got := s.groq.models(); len(got) != 1 || got[0] != groq.ModelVision {
+			if got := s.llm.models(); len(got) != 1 || got[0] != llm.Model {
 				t.Fatalf("models = %v", got)
 			}
 			wantURL := "data:image/jpeg;base64,aGVsbG8="
 			if name == "url" {
 				wantURL = "https://example.com/r.jpg"
 			}
-			if !strings.Contains(s.groq.promptText(0), wantURL) {
+			if !strings.Contains(s.llm.promptText(0), wantURL) {
 				t.Fatalf("image_url %q not sent", wantURL)
 			}
 		})
@@ -286,8 +285,8 @@ func TestExtractImageSendsVisionRequest(t *testing.T) {
 func TestExtractImageWithoutImageIsSkipped(t *testing.T) {
 	s := newTestServer(t, nil)
 	_, res := s.post(t, "/v1/extract/image", map[string]any{"wallets": wallets})
-	if res["status"] != "skipped" || len(s.groq.requests) != 0 {
-		t.Fatalf("got %v with %d Groq calls", res, len(s.groq.requests))
+	if res["status"] != "skipped" || len(s.llm.requests) != 0 {
+		t.Fatalf("got %v with %d provider calls", res, len(s.llm.requests))
 	}
 }
 
@@ -309,7 +308,7 @@ func TestExtractNotificationUsesCurrencyFromNotification(t *testing.T) {
 	if ex["currency"] != "SGD" || ex["walletId"] != "w-maybank" || ex["amount"] != 45.0 {
 		t.Fatalf("got %v", ex)
 	}
-	if !strings.Contains(s.groq.promptText(0), "com.maybank2u.life") {
+	if !strings.Contains(s.llm.promptText(0), "com.maybank2u.life") {
 		t.Error("prompt did not include the source app")
 	}
 }
@@ -322,7 +321,7 @@ func TestExtractNotificationSkipsNonTransactions(t *testing.T) {
 	}
 }
 
-func TestExtractNotificationSkipsOneTimeCodesWithoutCallingGroq(t *testing.T) {
+func TestExtractNotificationSkipsOneTimeCodesWithoutCallingProvider(t *testing.T) {
 	s := newTestServer(t, nil)
 	for _, text := range []string{
 		"Your TAC is 482913 for a transfer of RM 300.00. Do not share this code with anyone.",
@@ -335,8 +334,8 @@ func TestExtractNotificationSkipsOneTimeCodesWithoutCallingGroq(t *testing.T) {
 			t.Errorf("%q: got %v", text, res)
 		}
 	}
-	if len(s.groq.requests) != 0 {
-		t.Fatalf("one-time codes reached Groq: %d", len(s.groq.requests))
+	if len(s.llm.requests) != 0 {
+		t.Fatalf("one-time codes reached the provider: %d", len(s.llm.requests))
 	}
 }
 
@@ -349,27 +348,26 @@ func TestExtractNotificationKeepsPurchasesThatMentionContact(t *testing.T) {
 	}
 }
 
-func TestExtractNotificationFallsBackToQualityModel(t *testing.T) {
+func TestExtractNotificationRetriesOnce(t *testing.T) {
 	s := newTestServer(t, nil,
-		groqReply{http.StatusBadRequest, "Failed to generate JSON. Please adjust your prompt."},
+		llmReply{http.StatusBadRequest, "Failed to generate JSON. Please adjust your prompt."},
 		ok(`{"is_transaction":true,"amount":15,"currency":"MYR","type":"income","confidence":0.9,"reasoning":"received"}`))
 	_, res := s.post(t, "/v1/extract/notification", notificationBody("ALI BIN ABU has transferred RM 15.00 to you."))
 	if ex := extraction(t, res); ex["amount"] != 15.0 || ex["type"] != "income" {
 		t.Fatalf("got %v", ex)
 	}
-	want := []string{groq.ModelTextFast, groq.ModelTextQuality}
-	if got := s.groq.models(); strings.Join(got, ",") != strings.Join(want, ",") {
-		t.Fatalf("models = %v, want %v", got, want)
+	if got := s.llm.models(); len(got) != 2 {
+		t.Fatalf("models = %v, want one retry", got)
 	}
 }
 
-func TestExtractNotificationWithoutTextSkipsGroq(t *testing.T) {
+func TestExtractNotificationWithoutTextSkipsProvider(t *testing.T) {
 	s := newTestServer(t, nil)
 	_, res := s.post(t, "/v1/extract/notification", map[string]any{
 		"notification": map[string]any{"packageName": "com.maybank2u.life"}, "wallets": wallets,
 	})
-	if res["status"] != "skipped" || len(s.groq.requests) != 0 {
-		t.Fatalf("got %v with %d Groq calls", res, len(s.groq.requests))
+	if res["status"] != "skipped" || len(s.llm.requests) != 0 {
+		t.Fatalf("got %v with %d provider calls", res, len(s.llm.requests))
 	}
 }
 
@@ -380,16 +378,16 @@ func TestChatAnalyzeRepliesWithHistory(t *testing.T) {
 		"snapshot": map[string]any{"currency": "MYR", "food": 420},
 		"history":  []map[string]string{{"role": "user", "content": "hi"}, {"role": "assistant", "content": "hello"}},
 	})
-	if res["status"] != "ok" || res["reply"] != "You spent RM 420 on food this month." || res["modelId"] != groq.ModelTextQuality {
+	if res["status"] != "ok" || res["reply"] != "You spent RM 420 on food this month." || res["modelId"] != llm.Model {
 		t.Fatalf("got %v", res)
 	}
-	if msgs, _ := s.groq.requests[0]["messages"].([]any); len(msgs) != 4 {
+	if msgs, _ := s.llm.requests[0]["messages"].([]any); len(msgs) != 4 {
 		t.Fatalf("sent %d messages, want system + 2 history + question", len(msgs))
 	}
 }
 
-func TestChatAnalyzeUnavailableWhenGroqFails(t *testing.T) {
-	s := newTestServer(t, nil, groqReply{http.StatusInternalServerError, "down"})
+func TestChatAnalyzeUnavailableWhenProviderFails(t *testing.T) {
+	s := newTestServer(t, nil, llmReply{http.StatusInternalServerError, "down"})
 	code, res := s.post(t, "/v1/chat/analyze", map[string]any{"message": "hi", "snapshot": map[string]any{}})
 	if code != http.StatusOK || res["status"] != "unavailable" {
 		t.Fatalf("got %d %v", code, res)

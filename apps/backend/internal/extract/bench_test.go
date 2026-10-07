@@ -18,7 +18,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/kaiz404/moni/backend/internal/groq"
+	"github.com/kaiz404/moni/backend/internal/llm"
 )
 
 // TestBenchModels runs every labelled case through the production Service once per candidate
@@ -32,17 +32,21 @@ type benchProvider struct {
 	rewrite               func(body map[string]any)
 }
 
-var benchGroq = &benchProvider{name: "groq", baseURL: "https://api.groq.com/openai/v1", keyEnv: "GROQ_API_KEY", pace: 2500 * time.Millisecond}
+// The client speaks OpenRouter; Groq rejects its reasoning and provider objects and
+// takes reasoning_effort instead, which only its Qwen models accept as "none".
+var benchGroq = &benchProvider{name: "groq", baseURL: "https://api.groq.com/openai/v1", keyEnv: "GROQ_API_KEY", pace: 2500 * time.Millisecond,
+	rewrite: func(body map[string]any) {
+		delete(body, "reasoning")
+		delete(body, "provider")
+		if model, _ := body["model"].(string); strings.HasPrefix(model, "qwen/") {
+			body["reasoning_effort"], body["reasoning_format"] = "none", "hidden"
+		}
+	},
+}
 
-// OpenRouter takes reasoning as one object, not Groq's reasoning_effort/reasoning_format.
-// Even "low" effort spent the whole 512-token budget thinking on qwen3.7-flash, so reasoning is off.
-// require_parameters keeps requests off upstream hosts that would silently drop JSON mode.
+// usage.include makes OpenRouter report each call's cost.
 var benchOpenRouter = &benchProvider{name: "openrouter", baseURL: "https://openrouter.ai/api/v1", keyEnv: "OPENROUTER_API_KEY",
 	rewrite: func(body map[string]any) {
-		delete(body, "reasoning_effort")
-		delete(body, "reasoning_format")
-		body["reasoning"] = map[string]any{"enabled": false}
-		body["provider"] = map[string]any{"require_parameters": true}
 		body["usage"] = map[string]any{"include": true}
 	},
 }
@@ -376,10 +380,7 @@ func TestBenchModels(t *testing.T) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			s := &Service{
-				groq:   groq.NewClient(os.Getenv(tg.provider.keyEnv), tg.provider.baseURL),
-				models: Models{Fast: tg.model, Quality: tg.model, Vision: tg.model},
-			}
+			s := &Service{llm: llm.NewClient(os.Getenv(tg.provider.keyEnv), tg.provider.baseURL), model: tg.model}
 			for range runs {
 				for _, c := range benchCases {
 					if c.kind == kindImage && !tg.vision {

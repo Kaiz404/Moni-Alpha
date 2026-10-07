@@ -12,10 +12,10 @@ type Config struct {
 	Port string
 	// SupabaseURL is the project base URL, e.g. https://xyz.supabase.co
 	SupabaseURL string
-	// GroqAPIKey authenticates against the Groq API.
-	GroqAPIKey string
-	// GroqBaseURL allows overriding the Groq endpoint (tests).
-	GroqBaseURL string
+	// OpenRouterAPIKey authenticates against OpenRouter.
+	OpenRouterAPIKey string
+	// OpenRouterBaseURL allows overriding the OpenRouter endpoint.
+	OpenRouterBaseURL string
 }
 
 func (c Config) JWKSURL() string {
@@ -24,16 +24,16 @@ func (c Config) JWKSURL() string {
 
 func Load() (Config, error) {
 	cfg := Config{
-		Port:        getenv("PORT", "8080"),
-		SupabaseURL: os.Getenv("SUPABASE_URL"),
-		GroqAPIKey:  os.Getenv("GROQ_API_KEY"),
-		GroqBaseURL: getenv("GROQ_BASE_URL", "https://api.groq.com/openai/v1"),
+		Port:              getenv("PORT", "8080"),
+		SupabaseURL:       os.Getenv("SUPABASE_URL"),
+		OpenRouterAPIKey:  os.Getenv("OPENROUTER_API_KEY"),
+		OpenRouterBaseURL: getenv("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1"),
 	}
 	if cfg.SupabaseURL == "" {
 		return cfg, fmt.Errorf("SUPABASE_URL is required")
 	}
-	if cfg.GroqAPIKey == "" {
-		return cfg, fmt.Errorf("GROQ_API_KEY is required")
+	if cfg.OpenRouterAPIKey == "" {
+		return cfg, fmt.Errorf("OPENROUTER_API_KEY is required")
 	}
 	return cfg, nil
 }

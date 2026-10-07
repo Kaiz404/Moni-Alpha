@@ -1,6 +1,6 @@
-// Package groq is a minimal client for Groq's OpenAI-compatible chat
-// completions API with JSON-mode output, 429 handling, and model fallback.
-package groq
+// Package llm is a minimal client for OpenRouter's OpenAI-compatible chat
+// completions API with JSON-mode output and 429 handling.
+package llm
 
 import (
 	"bytes"
@@ -47,15 +47,21 @@ type Message struct {
 }
 
 type ChatRequest struct {
-	Model           string    `json:"model"`
-	Messages        []Message `json:"messages"`
-	Temperature     float64   `json:"temperature"`
-	MaxTokens       int       `json:"max_tokens,omitempty"`
-	ReasoningEffort string    `json:"reasoning_effort,omitempty"`
-	ReasoningFormat string    `json:"reasoning_format,omitempty"`
-	ResponseFormat  *struct {
+	Model          string    `json:"model"`
+	Messages       []Message `json:"messages"`
+	Temperature    float64   `json:"temperature"`
+	MaxTokens      int       `json:"max_tokens,omitempty"`
+	ResponseFormat *struct {
 		Type string `json:"type"`
 	} `json:"response_format,omitempty"`
+	// Reasoning is off: even low effort spent the whole token budget before the JSON in the benchmark.
+	Reasoning struct {
+		Enabled bool `json:"enabled"`
+	} `json:"reasoning"`
+	// RequireParameters keeps requests off upstream hosts that would silently ignore JSON mode.
+	Provider struct {
+		RequireParameters bool `json:"require_parameters"`
+	} `json:"provider"`
 }
 
 type chatResponse struct {
@@ -69,22 +75,20 @@ type chatResponse struct {
 	} `json:"error"`
 }
 
-// RateLimitedError signals a Groq 429 with the suggested wait.
+// RateLimitedError signals a 429 with the suggested wait.
 type RateLimitedError struct {
 	RetryAfter time.Duration
 }
 
 func (e *RateLimitedError) Error() string {
-	return fmt.Sprintf("groq rate limited, retry after %s", e.RetryAfter)
+	return fmt.Sprintf("llm rate limited, retry after %s", e.RetryAfter)
 }
 
 type Options struct {
-	Model           string
-	Temperature     float64
-	MaxTokens       int
-	ReasoningEffort string
-	ReasoningFormat string
-	// JSONMode asks Groq for a JSON object response.
+	Model       string
+	Temperature float64
+	MaxTokens   int
+	// JSONMode asks for a JSON object response.
 	JSONMode bool
 	// MaxRetryWait caps how long a single 429 retry may wait; 0 disables
 	// the retry entirely (fail fast for latency-sensitive flows).
@@ -119,13 +123,12 @@ func asRateLimited(err error, target **RateLimitedError) bool {
 
 func (c *Client) completeOnce(ctx context.Context, messages []Message, opts Options) (string, error) {
 	reqBody := ChatRequest{
-		Model:           opts.Model,
-		Messages:        messages,
-		Temperature:     opts.Temperature,
-		MaxTokens:       opts.MaxTokens,
-		ReasoningEffort: opts.ReasoningEffort,
-		ReasoningFormat: opts.ReasoningFormat,
+		Model:       opts.Model,
+		Messages:    messages,
+		Temperature: opts.Temperature,
+		MaxTokens:   opts.MaxTokens,
 	}
+	reqBody.Provider.RequireParameters = true
 	if opts.JSONMode {
 		reqBody.ResponseFormat = &struct {
 			Type string `json:"type"`
@@ -168,17 +171,17 @@ func (c *Client) completeOnce(ctx context.Context, messages []Message, opts Opti
 	if res.StatusCode != http.StatusOK {
 		var parsed chatResponse
 		if json.Unmarshal(body, &parsed) == nil && parsed.Error != nil {
-			return "", fmt.Errorf("groq %d: %s", res.StatusCode, parsed.Error.Message)
+			return "", fmt.Errorf("llm %d: %s", res.StatusCode, parsed.Error.Message)
 		}
-		return "", fmt.Errorf("groq %d: %s", res.StatusCode, truncate(string(body), 200))
+		return "", fmt.Errorf("llm %d: %s", res.StatusCode, truncate(string(body), 200))
 	}
 
 	var parsed chatResponse
 	if err := json.Unmarshal(body, &parsed); err != nil {
-		return "", fmt.Errorf("groq: invalid response body: %w", err)
+		return "", fmt.Errorf("llm: invalid response body: %w", err)
 	}
 	if len(parsed.Choices) == 0 {
-		return "", fmt.Errorf("groq: empty choices")
+		return "", fmt.Errorf("llm: empty choices")
 	}
 	return parsed.Choices[0].Message.Content, nil
 }
@@ -193,7 +196,7 @@ func (c *Client) CompleteJSON(ctx context.Context, messages []Message, opts Opti
 	}
 	cleaned := ExtractJSON(content)
 	if err := json.Unmarshal([]byte(cleaned), out); err != nil {
-		return fmt.Errorf("groq: model returned invalid JSON: %w", err)
+		return fmt.Errorf("llm: model returned invalid JSON: %w", err)
 	}
 	return nil
 }
