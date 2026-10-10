@@ -94,7 +94,7 @@ func newTestServer(t *testing.T, limiter *auth.RateLimiter, replies ...llmReply)
 		limiter = auth.NewRateLimiter(600, 100)
 	}
 	return &testServer{
-		handler: newRouter(verifier, limiter, llm.NewClient("test-key", llmSrv.URL)),
+		handler: newRouter(verifier, limiter, auth.NewRateLimiter(6000, 1000), llm.NewClient("test-key", llmSrv.URL)),
 		llm:     fake,
 		token: func(sub string) string {
 			return authtest.SignToken(t, priv, sub, time.Now().Add(time.Hour))
@@ -447,5 +447,60 @@ func TestRateLimitIsPerUser(t *testing.T) {
 	}
 	if code, _, _ := s.call(t, http.MethodPost, "/v1/chat/analyze", bob, body); code == http.StatusTooManyRequests {
 		t.Fatal("another user was limited by alice's budget")
+	}
+}
+
+func newLimitedServer(t *testing.T, user, ip *auth.RateLimiter) http.Handler {
+	t.Helper()
+	gin.SetMode(gin.TestMode)
+	gin.DefaultWriter = io.Discard
+	_, jwks := authtest.KeyAndJWKS(t)
+	verifier, err := auth.NewVerifier(context.Background(), jwks.URL)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return newRouter(verifier, user, ip, llm.NewClient("test-key", "http://127.0.0.1:0"))
+}
+
+func TestOversizeBodyIs413(t *testing.T) {
+	s := newTestServer(t, nil)
+	big := `{"message":"` + strings.Repeat("a", maxBodyBytes) + `"}`
+	code, _, res := s.call(t, http.MethodPost, "/v1/chat/analyze", s.token("user-1"), big)
+	if code != http.StatusRequestEntityTooLarge || res["error"] == nil {
+		t.Fatalf("got %d %v", code, res)
+	}
+}
+
+func TestIPLimitRunsBeforeAuthAndIgnoresSpoofedXFF(t *testing.T) {
+	h := newLimitedServer(t, auth.NewRateLimiter(600, 100), auth.NewRateLimiter(1, 2))
+	send := func(xff string) *httptest.ResponseRecorder {
+		req := httptest.NewRequest(http.MethodPost, "/v1/chat/analyze", strings.NewReader("{}"))
+		req.Header.Set("X-Forwarded-For", xff)
+		rec := httptest.NewRecorder()
+		h.ServeHTTP(rec, req)
+		return rec
+	}
+	for i, xff := range []string{"1.1.1.1, 203.0.113.7", "2.2.2.2, 203.0.113.7"} {
+		if rec := send(xff); rec.Code != http.StatusUnauthorized {
+			t.Fatalf("request %d: got %d, want 401 inside the burst", i+1, rec.Code)
+		}
+	}
+	rec := send("3.3.3.3, 203.0.113.7")
+	if rec.Code != http.StatusTooManyRequests || rec.Header().Get("Retry-After") != "10" || !strings.Contains(rec.Body.String(), `"error"`) {
+		t.Fatalf("got %d %s", rec.Code, rec.Body.String())
+	}
+	if rec := send("3.3.3.3, 198.51.100.9"); rec.Code != http.StatusUnauthorized {
+		t.Fatalf("a different client IP was limited: %d", rec.Code)
+	}
+}
+
+func TestHealthzIsNotRateLimited(t *testing.T) {
+	h := newLimitedServer(t, auth.NewRateLimiter(600, 100), auth.NewRateLimiter(1, 1))
+	for i := 0; i < 5; i++ {
+		rec := httptest.NewRecorder()
+		h.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/healthz", nil))
+		if rec.Code != http.StatusOK {
+			t.Fatalf("request %d: got %d", i+1, rec.Code)
+		}
 	}
 }

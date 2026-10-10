@@ -36,14 +36,18 @@ func main() {
 	// 20 AI requests/min per user (burst 8) is generous for one person and
 	// keeps a single abusive client from draining the shared OpenRouter credit.
 	limiter := auth.NewRateLimiter(20, 8)
+	ipLimiter := auth.NewRateLimiter(120, 30)
 
 	if os.Getenv("GIN_MODE") == "" {
 		gin.SetMode(gin.ReleaseMode)
 	}
 	srv := &http.Server{
 		Addr:              ":" + cfg.Port,
-		Handler:           newRouter(verifier, limiter, llm.NewClient(cfg.OpenRouterAPIKey, cfg.OpenRouterBaseURL)),
+		Handler:           newRouter(verifier, limiter, ipLimiter, llm.NewClient(cfg.OpenRouterAPIKey, cfg.OpenRouterBaseURL)),
 		ReadHeaderTimeout: 10 * time.Second,
+		ReadTimeout:       30 * time.Second,
+		WriteTimeout:      90 * time.Second,
+		IdleTimeout:       120 * time.Second,
 	}
 
 	go func() {

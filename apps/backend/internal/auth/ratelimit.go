@@ -9,7 +9,7 @@ import (
 	"golang.org/x/time/rate"
 )
 
-// RateLimiter keeps an in-memory token bucket per user. Good enough for a
+// RateLimiter keeps an in-memory token bucket per key (user id or client IP). Good enough for a
 // single Cloud Run instance at ~1000 users; revisit if scaled out.
 type RateLimiter struct {
 	mu       sync.Mutex
@@ -24,7 +24,7 @@ type userBucket struct {
 	seen    time.Time
 }
 
-// NewRateLimiter allows `perMinute` requests per user with the given burst.
+// NewRateLimiter allows `perMinute` requests per key with the given burst.
 func NewRateLimiter(perMinute int, burst int) *RateLimiter {
 	rl := &RateLimiter{
 		buckets:  make(map[string]*userBucket),
@@ -36,13 +36,13 @@ func NewRateLimiter(perMinute int, burst int) *RateLimiter {
 	return rl
 }
 
-func (rl *RateLimiter) allow(userID string) bool {
+func (rl *RateLimiter) allow(key string) bool {
 	rl.mu.Lock()
 	defer rl.mu.Unlock()
-	b, ok := rl.buckets[userID]
+	b, ok := rl.buckets[key]
 	if !ok {
 		b = &userBucket{limiter: rate.NewLimiter(rl.rps, rl.burst)}
-		rl.buckets[userID] = b
+		rl.buckets[key] = b
 	}
 	b.seen = time.Now()
 	return b.limiter.Allow()
@@ -63,16 +63,20 @@ func (rl *RateLimiter) cleanupLoop() {
 
 // Middleware rejects requests over the per-user budget with 429.
 func (rl *RateLimiter) Middleware() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		userID := UserID(c)
-		if userID == "" {
-			userID = c.ClientIP()
+	return rl.MiddlewareBy(func(c *gin.Context) string {
+		if userID := UserID(c); userID != "" {
+			return userID
 		}
-		if !rl.allow(userID) {
+		return c.ClientIP()
+	}, "Too many AI requests — try again shortly")
+}
+
+// MiddlewareBy rejects requests over the budget of key(c) with 429 and message.
+func (rl *RateLimiter) MiddlewareBy(key func(*gin.Context) string, message string) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		if !rl.allow(key(c)) {
 			c.Header("Retry-After", "10")
-			c.AbortWithStatusJSON(http.StatusTooManyRequests, gin.H{
-				"error": "Too many AI requests — try again shortly",
-			})
+			c.AbortWithStatusJSON(http.StatusTooManyRequests, gin.H{"error": message})
 			return
 		}
 		c.Next()
