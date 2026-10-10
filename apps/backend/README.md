@@ -62,14 +62,18 @@ Scale-to-zero keeps this free/cheap at ~1000 users; the app tolerates cold start
 ```bash
 gcloud run deploy moni-ai-backend \
   --source apps/backend \
-  --region asia-southeast1 \
+  --region asia-southeast3 \
   --allow-unauthenticated \
   --set-env-vars SUPABASE_URL=https://<project-ref>.supabase.co \
   --set-secrets OPENROUTER_API_KEY=openrouter-api-key:latest \
-  --memory 256Mi --cpu 1 --max-instances 2
+  --memory 256Mi --cpu 1 --max-instances 1
 ```
 
 (`--allow-unauthenticated` is required because the app does its own JWT auth; store `OPENROUTER_API_KEY` in Secret Manager.)
+
+`asia-southeast3` (Bangkok) is a Tier 1 region, the cheapest one near Malaysia (Kuala Lumpur isn't available on Cloud Run). `--max-instances 1` keeps the in-memory rate limiter correct.
+
+After the first deploy, pushes to `main` that touch `apps/backend/**` redeploy automatically: the `Moni-Backend` Cloud Build trigger runs the root `cloudbuild.yaml`, which builds this Dockerfile and runs `gcloud run deploy --image`, keeping the env vars and secret above.
 
 Then set `EXPO_PUBLIC_AI_API_URL` in `apps/mobile/.env` to the Cloud Run URL.
 
