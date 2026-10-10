@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: moni-ai-backend
+    runtime: docker
+    plan: free
+    region: singapore
+    rootDir: apps/backend
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /healthz
+    autoDeploy: true
+    envVars:
+      - key: SUPABASE_URL
+        sync: false
+      - key: OPENROUTER_API_KEY
+        sync: false
