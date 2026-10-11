@@ -41,13 +41,14 @@ Requires Node >= 18, pnpm 9, Go >= 1.26. Mobile needs a native dev client (`npx 
 
 ## Documentation
 
-| Doc                                              | Covers                                        |
-| ------------------------------------------------ | --------------------------------------------- |
-| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)     | System design, data flows, core decisions     |
-| [docs/SETUP.md](docs/SETUP.md)                   | Environment setup, env vars, Google Maps keys |
-| [docs/DATABASE.md](docs/DATABASE.md)             | Schema, RLS, sync columns, storage            |
-| [docs/AI.md](docs/AI.md)                         | AI pipeline, model allocation, prompts, costs |
-| [apps/backend/README.md](apps/backend/README.md) | Backend endpoints, auth, Cloud Run deploy     |
+| Doc                                                                                        | Covers                                               |
+| ------------------------------------------------------------------------------------------ | ---------------------------------------------------- |
+| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)                                               | System design, data flows, core decisions            |
+| [docs/SETUP.md](docs/SETUP.md)                                                             | Environment setup, env vars, Google Maps keys        |
+| [docs/DATABASE.md](docs/DATABASE.md)                                                       | Schema, RLS, sync columns, storage                   |
+| [docs/AI.md](docs/AI.md)                                                                   | AI pipeline, model allocation, prompts, costs        |
+| [docs/research/competitor-reviews-2026-10.md](docs/research/competitor-reviews-2026-10.md) | Competitor review and market research (October 2026) |
+| [apps/backend/README.md](apps/backend/README.md)                                           | Backend endpoints, auth, Cloud Run deploy            |
 
 ## Stack
 

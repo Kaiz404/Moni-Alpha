@@ -15,7 +15,7 @@ apps/backend/     Go + Gin AI gateway → OpenRouter (focus)
 apps/web/         Next.js 16 dashboard — ISOLATED, deprioritized
 packages/types/   @repo/types — Zod schemas + inferred TS types
 supabase/         Migrations, RLS, storage
-docs/             ARCHITECTURE / SETUP / DATABASE / AI
+docs/             ARCHITECTURE / SETUP / DATABASE / AI / research
 ```
 
 Run: `pnpm --filter moni dev` / `pnpm --filter backend dev` / `pnpm --filter web dev`. Go integrates with turbo via package.json scripts (`go run` / `go vet` / `go test`).
@@ -35,3 +35,7 @@ Run: `pnpm --filter moni dev` / `pnpm --filter backend dev` / `pnpm --filter web
 - Error responses: `{ error: string; details?: any }`
 - Money: `DECIMAL(12,2)`, 3-letter ISO currency; UUID primary keys
 - Designed for ~1000 users at minimal cost (Supabase free tier, OpenRouter pay-per-token, Cloud Run scale-to-zero)
+
+## Product research
+
+Before you plan features, pricing, onboarding, or AI behavior, read `docs/research/competitor-reviews-2026-10.md`. It summarizes about 30k competitor app-store reviews and research on the Malaysian market (October 2026), and states what they imply for Moni.
