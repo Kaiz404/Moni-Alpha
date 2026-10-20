@@ -2,11 +2,12 @@
 set -euo pipefail
 source "$(dirname "${BASH_SOURCE[0]}")/env.sh"
 
-if (($# > 1)) || [[ -n ${1:-} && $1 != ?*:[0-9]* ]]; then
-  echo "usage: connect.sh [host:port]" >&2
+if (($# > 1)) || [[ ${1:-} == *:* && $1 != ?*:[0-9]* ]]; then
+  echo "usage: connect.sh [host[:port]]" >&2
   exit 2
 fi
 serial=${1:-$MONI_DEVICE_SERIAL}
+[[ $serial == *:* ]] || serial+=:5555
 
 state() { adb -s "$serial" get-state 2>/dev/null || true; }
 

@@ -53,25 +53,37 @@ if ! flock -n 9; then
     exit 5
   fi
 fi
+{ tail -n 199 "$owner" 2>/dev/null; echo "$(date -Iseconds) $$ $pr $lane"; } >"$owner.tmp" && mv "$owner.tmp" "$owner"
 operator_hold
-echo "$(date -Iseconds) $$ $pr $lane" >>"$owner"
 echo "device lock taken by $$ $pr $lane" >&2
 
-# Children must not inherit fd 9: a daemon they spawn, such as the adb
-# server, would otherwise keep the lock after this script exits.
+# The lane inherits fd 9, so the lock frees only when every lane process has
+# exited. The adb server starts here, and bin/adb on PATH closes fd 9, so a
+# server that restarts inside the lane never holds the lock.
 if $doctor; then
   "$here/doctor.sh" 9>&- >&2 || exit 6
 fi
+adb start-server >&2 || echo "adb start-server failed" >&2
 export ANDROID_SERIAL=$MONI_DEVICE_SERIAL MONI_DEVICE_LOCK_HOLDER=$$
 
-# The command runs in its own process group, so a signal to this script stops
-# the whole lane before the lock frees. Only kill -9 can orphan it.
-exec 8<&0
-setsid "$@" <&8 8<&- 9>&- &
+child=""
+stop() {
+  if [[ -n $child ]]; then
+    kill -TERM -- "-$child" 2>/dev/null || true
+    for _ in {1..100}; do
+      kill -0 -- "-$child" 2>/dev/null || exit "$1"
+      sleep 0.1
+    done
+    kill -KILL -- "-$child" 2>/dev/null || true
+  fi
+  exit "$1"
+}
+trap 'stop 129' HUP
+trap 'stop 130' INT
+trap 'stop 143' TERM
+{ exec 8<&0; } 2>/dev/null || exec 8</dev/null
+setsid "$@" <&8 8<&- &
 child=$!
-trap 'kill -TERM -- "-$child" 2>/dev/null' TERM INT HUP
-while :; do
-  rc=0
-  wait "$child" || rc=$?
-  kill -0 "$child" 2>/dev/null || exit "$rc"
-done
+rc=0
+wait "$child" || rc=$?
+exit "$rc"

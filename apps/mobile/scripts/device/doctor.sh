@@ -39,7 +39,7 @@ adb_version=$(adb version 2>/dev/null | sed -n 's/^Version \([0-9.]*\).*/\1/p')
 [[ $adb_version == 37.* ]]
 verdict $? "adb ${adb_version:-missing}"
 
-java_major=$(java -version 2>&1 | sed -n '1s/.*version "\([0-9]*\).*/\1/p')
+java_major=$(java -version 2>&1 | sed -n 's/.*version "\([0-9]*\).*/\1/p' | head -n 1)
 ((${java_major:-0} >= 17))
 verdict $? "java ${java_major:-missing}"
 
@@ -53,7 +53,7 @@ if $toolchain; then
   verdict $? "tailscale $MONI_TAILSCALE"
 fi
 
-netstat=$(timeout 10 /mnt/c/Windows/System32/netstat.exe -ano -p tcp 2>&1)
+netstat=$(timeout 10 "$MONI_NETSTAT" -ano -p tcp 2>&1)
 netstat_rc=$?
 windows_adb=$(tr -d '\r' <<<"$netstat" | awk '$2 ~ /:5037$/ && $4 == "LISTENING" { print $5; exit }')
 if ((netstat_rc != 0)); then
@@ -97,7 +97,7 @@ else
 fi
 
 wait "$maestro_pid"
-maestro_version=$(tail -n 1 "$maestro_out")
+maestro_version=$(grep -xE '[0-9]+\.[0-9]+\.[0-9]+' "$maestro_out" | head -n 1)
 [[ $maestro_version == 2.11.0 ]]
 verdict $? "maestro ${maestro_version:-missing}"
 

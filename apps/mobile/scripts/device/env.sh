@@ -23,9 +23,11 @@ unset moni_node_bin
 export ANDROID_HOME=${ANDROID_HOME:-$HOME/Android/Sdk}
 moni_path_prepend "$HOME/.maestro/bin"
 moni_path_prepend "$ANDROID_HOME/platform-tools"
+moni_path_prepend "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/bin"
 export PATH
 
 export MONI_TAILSCALE=${MONI_TAILSCALE:-$(command -v tailscale.exe || echo "/mnt/c/Program Files/Tailscale/tailscale.exe")}
+export MONI_NETSTAT=${MONI_NETSTAT:-/mnt/c/Windows/System32/netstat.exe}
 export MONI_DEVICE_NAME=${MONI_DEVICE_NAME:-redmi-note-13-pro-5g}
 export MONI_DEVICE_STATE_DIR=${MONI_DEVICE_STATE_DIR:-$HOME/.local/share/moni-device}
 mkdir -p "$MONI_DEVICE_STATE_DIR"
@@ -37,4 +39,5 @@ moni_saved_serial() {
   echo "${saved:-100.127.128.74:5555}"
 }
 moni_is_exported MONI_DEVICE_SERIAL && [[ -n $MONI_DEVICE_SERIAL ]] || MONI_DEVICE_SERIAL=$(moni_saved_serial)
+[[ $MONI_DEVICE_SERIAL == *:* ]] || MONI_DEVICE_SERIAL+=:5555
 MONI_DEVICE_HOST=${MONI_DEVICE_SERIAL%:*}
