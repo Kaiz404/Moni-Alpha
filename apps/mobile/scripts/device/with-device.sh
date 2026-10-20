@@ -11,14 +11,27 @@ usage() {
 pr=${MONI_PR_ID:--} lane=${MONI_LANE:--} doctor=true
 while (($#)); do
   case $1 in
-    --pr) pr=${2:?} && shift 2 ;;
-    --lane) lane=${2:?} && shift 2 ;;
-    --skip-doctor) doctor=false && shift ;;
-    --) shift && break ;;
+    --pr | --lane)
+      (($# >= 2)) || usage
+      [[ $1 == --pr ]] && pr=$2 || lane=$2
+      shift 2
+      ;;
+    --skip-doctor)
+      doctor=false
+      shift
+      ;;
+    --)
+      shift
+      break
+      ;;
     *) usage ;;
   esac
 done
 (($#)) || usage
+
+if [[ -n ${MONI_DEVICE_LOCK_HOLDER:-} ]] && kill -0 "$MONI_DEVICE_LOCK_HOLDER" 2>/dev/null; then
+  exec "$@"
+fi
 
 hold=$MONI_DEVICE_STATE_DIR/hold
 lock=$MONI_DEVICE_STATE_DIR/redmi.lock
@@ -49,4 +62,16 @@ echo "device lock taken by $$ $pr $lane" >&2
 if $doctor; then
   "$here/doctor.sh" 9>&- >&2 || exit 6
 fi
-"$@" 9>&-
+export ANDROID_SERIAL=$MONI_DEVICE_SERIAL MONI_DEVICE_LOCK_HOLDER=$$
+
+# The command runs in its own process group, so a signal to this script stops
+# the whole lane before the lock frees. Only kill -9 can orphan it.
+exec 8<&0
+setsid "$@" <&8 8<&- 9>&- &
+child=$!
+trap 'kill -TERM -- "-$child" 2>/dev/null' TERM INT HUP
+while :; do
+  rc=0
+  wait "$child" || rc=$?
+  kill -0 "$child" 2>/dev/null || exit "$rc"
+done
