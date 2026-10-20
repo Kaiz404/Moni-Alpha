@@ -77,7 +77,7 @@ release="" hyperos=""
 if [[ -n $windows_adb ]]; then
   verdict 1 "device not checked while Windows adb holds port 5037"
 else
-  device_state=$(dev get-state 2>/dev/null)
+  device_state=$(adb -s "$MONI_DEVICE_SERIAL" get-state 2>/dev/null)
   if [[ $device_state != device ]]; then
     verdict 1 "device $MONI_DEVICE_SERIAL ${device_state:-not connected}, run connect.sh"
   else

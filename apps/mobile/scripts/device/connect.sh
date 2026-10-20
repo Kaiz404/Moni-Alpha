@@ -8,7 +8,7 @@ if (($# > 1)) || [[ -n ${1:-} && $1 != ?*:[0-9]* ]]; then
 fi
 serial=${1:-$MONI_DEVICE_SERIAL}
 
-state() { timeout 10 adb -s "$serial" get-state 2>/dev/null || true; }
+state() { adb -s "$serial" get-state 2>/dev/null || true; }
 
 ready() {
   local s
