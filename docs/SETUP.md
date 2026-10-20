@@ -92,6 +92,27 @@ sudo udevadm control --reload-rules && sudo udevadm trigger
 
 Verify with `adb devices` (`device`, not `no permissions`). Some OEMs (e.g. Xiaomi) also need **Install via USB** in Developer options.
 
+### Phone over Tailscale
+
+The device scripts in `apps/mobile/scripts/device/` reach the phone over Tailscale. Day-to-day use is in [apps/mobile/README.md § Drive the phone over Tailscale](../apps/mobile/README.md#drive-the-phone-over-tailscale).
+
+In WSL, install these tools:
+
+- nvm with node 22: `nvm install 22`. `env.sh` runs `corepack enable` once, so `pnpm` resolves inside WSL and not to the Windows shim under `/mnt/c/`.
+- Maestro 2.11.0: `curl -fsSL https://get.maestro.mobile.dev | MAESTRO_VERSION=2.11.0 bash`.
+- JDK 17 and adb 37 from `platform-tools`, as in the toolchain above.
+
+On Windows, run Tailscale and set `networkingMode=mirrored` under `[wsl2]` in `%UserProfile%\.wslconfig`, so WSL shares the tailnet.
+
+On the phone, do these steps once:
+
+1. In **Developer options**, turn on **USB debugging**, **USB debugging (Security settings)**, **Install via USB**, and **Wireless debugging**. HyperOS needs the security setting for injected input.
+2. In **Wireless debugging**, tap **Pair device with pairing code**. In WSL, run `adb pair <ip>:<pairing-port>` with the address the dialog shows, then enter the code.
+3. In the Tailscale app, set battery use to **No restrictions** and turn on **Autostart**.
+4. In the Tailscale admin console, turn on **Send files** so `taildrop.sh` works.
+
+After each reboot, or each time Wireless debugging turns on again, Android picks a new port. Turn on **Wireless debugging**, read the port, and run `apps/mobile/scripts/device/connect.sh 100.127.128.74:<port>`.
+
 ## Run
 
 ```bash

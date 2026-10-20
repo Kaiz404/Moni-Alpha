@@ -64,6 +64,45 @@ cd apps/mobile && npx expo run:android
 
 Do not mix Windows and WSL `expo prebuild` / Gradle — `android/build/generated/autolinking/autolinking.json` must use Linux paths (`/home/...`), not `C:\...`.
 
+### Drive the phone over Tailscale
+
+The scripts in `scripts/device/` let an agent or a person drive a phone from WSL over Tailscale, with no USB cable. They default to the owner's Redmi Note 13 Pro 5G, Tailscale name `redmi-note-13-pro-5g` at `100.127.128.74`. Set up the toolchain and the phone once, per [docs/SETUP.md § Phone over Tailscale](../../docs/SETUP.md#phone-over-tailscale).
+
+Android shows the adb port under **Developer options > Wireless debugging > IP address & Port**. The port changes each time Wireless debugging turns on and after every reboot. Connect once with the current port:
+
+```bash
+source apps/mobile/scripts/device/env.sh
+apps/mobile/scripts/device/connect.sh 100.127.128.74:40945
+apps/mobile/scripts/device/doctor.sh
+```
+
+The last line of `doctor.sh` is `OK device 100.127.128.74:40945 android 16 hyperos OS3.0`.
+
+`connect.sh` saves the serial it reached in `~/.local/share/moni-device/serial`, so later scripts and `connect.sh` with no argument use the same port. Each script resolves the serial in this order: an exported `MONI_DEVICE_SERIAL`, the saved serial, then `100.127.128.74:5555`.
+
+Run each phone command through `with-device.sh`. It waits for the device lock, so only one lane uses the phone at a time. Then it runs `doctor.sh` and the command:
+
+```bash
+apps/mobile/scripts/device/with-device.sh --pr v1 --lane smoke -- apps/mobile/scripts/device/screenshot.sh /tmp/home.png
+```
+
+The scripts and their exit codes:
+
+- `env.sh` puts nvm node 22, corepack `pnpm`, `$ANDROID_HOME/platform-tools`, and Maestro first on `PATH`, and sets `MONI_DEVICE_SERIAL`. Source it from bash.
+- `connect.sh [host:port]` runs `adb connect` up to three times and saves the serial once the state is `device`. It exits 0 when connected and 3 when adb is down.
+- `doctor.sh [--toolchain]` checks the hold file, adb 37, Java 17 or later, a Windows adb server on port 5037, Tailscale status and ping, the device state, a wake key without `SecurityException`, a battery above 30 percent, and Maestro 2.11.0. It sends the wake key and changes nothing else. `--toolchain` also prints the tool paths and fails when one resolves under `/mnt/`. It exits 0 when every check passes and 1 otherwise.
+- `with-device.sh [--pr <id>] [--lane <name>] [--skip-doctor] -- <command>` waits up to 45 minutes for `redmi.lock`, appends the holder to `redmi.owner`, runs `doctor.sh`, then runs the command. Use `--skip-doctor` to run `connect.sh` under the lock. It exits 4 on an operator hold, 5 when the lock wait times out, 6 when `doctor.sh` fails, and otherwise with the command's code.
+- `screenshot.sh <out.png>` saves a screenshot as a PNG. It exits 1 when the phone returns no PNG.
+- `taildrop.sh <file>` sends a file to the phone with Taildrop, for when adb is down.
+
+The lock, the owner log, and the saved serial live in `~/.local/share/moni-device/`. To keep agents off the phone while you use it, run `touch ~/.local/share/moni-device/hold`. Delete the file to let them back on.
+
+`doctor.sh` prints `note keyguard showing` when the phone is locked. The scripts never unlock the phone, so unlock it before a lane drives an app.
+
+Keep the Windows adb server stopped. With mirrored networking, Windows and WSL share `127.0.0.1:5037`, so only one adb server can run. If `doctor.sh` reports `port-5037 held by Windows`, run `adb.exe kill-server` on Windows, then `connect.sh` in WSL.
+
+To test the scripts, run `bash apps/mobile/scripts/device/test/device-scripts.test.sh`. The tests need the WSL toolchain above but not the phone.
+
 ## Map
 
 | Path                              | Role                                                                                                                                                                                                                                |
