@@ -69,7 +69,7 @@ verdict $? "tailscale-ping $MONI_DEVICE_HOST"
 
 release="" hyperos=""
 if [[ -n $windows_adb ]]; then
-  verdict 1 "device skipped so the WSL adb client does not kill the Windows server"
+  verdict 1 "device not checked while Windows adb holds port 5037"
 else
   device_state=$(adb -s "$MONI_DEVICE_SERIAL" get-state 2>/dev/null)
   if [[ $device_state != device ]]; then
@@ -82,6 +82,9 @@ else
     battery=$(adb -s "$MONI_DEVICE_SERIAL" shell dumpsys battery | tr -d '\r' | awk '$1 == "level:" { print $2 }')
     ((${battery:-0} > 30))
     verdict $? "battery ${battery:-unknown}%"
+    if adb -s "$MONI_DEVICE_SERIAL" shell dumpsys window policy | grep -q 'showing=true'; then
+      echo "note keyguard showing, unlock the phone before a lane drives an app"
+    fi
     release=$(adb -s "$MONI_DEVICE_SERIAL" shell getprop ro.build.version.release | tr -d '\r')
     hyperos=$(adb -s "$MONI_DEVICE_SERIAL" shell getprop ro.mi.os.version.name | tr -d '\r')
   fi
