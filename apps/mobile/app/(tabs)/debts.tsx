@@ -1,165 +1,176 @@
-import { useMemo, useState } from 'react';
-import { Pressable, ScrollView, View } from 'react-native';
-import { useTabBarClearance } from '@/components/nav/tab-bar';
-import { Text } from '@/components/ui/text';
 import { router } from 'expo-router';
-import { useValue } from '@legendapp/state/react';
+import { useState } from 'react';
+import { ScrollView, View } from 'react-native';
+
+import { ComingUp } from '@/components/debts/coming-up';
+import { SIDE_WORDS } from '@/components/debts/debt-words';
+import { NetPosition } from '@/components/debts/net-position';
+import { PersonRow } from '@/components/debts/person-row';
+import { SettledList } from '@/components/debts/settled-list';
+import { useDebtSummary } from '@/components/debts/use-debts';
+import { useTabBarClearance } from '@/components/nav/tab-bar';
+import { SyncBanner } from '@/components/providers/sync-banner';
 import { EmptyTile } from '@/components/ui/empty-tile';
-import { useAuth } from '@/lib/auth/auth-context';
-import { formatMinorAmount } from '@/lib/finance/money';
-import { debtsWithBalance$ } from '@/lib/finance/selectors';
-import { debtDueState } from '@/lib/supabase/debts';
-import { Button } from '@/components/ui/button';
-import { tid } from '@/lib/test-ids';
+import { IconSymbol } from '@/components/ui/icon-symbol';
+import { ListCard } from '@/components/ui/list-card';
 import { Page } from '@/components/ui/page';
+import { Press } from '@/components/ui/press';
+import { Text } from '@/components/ui/text';
+import { useThemeTokens } from '@/hooks/use-theme-tokens';
+import type { DebtSide } from '@/lib/finance/debt-summary';
+import { tid } from '@/lib/test-ids';
+
+const recordDebt = () => router.push('/debt/new');
 
 export default function DebtsScreen() {
-  const { user } = useAuth();
+  const tokens = useThemeTokens();
   const clearance = useTabBarClearance();
-  const debts = useValue(debtsWithBalance$(user?.id ?? null));
-  const [tab, setTab] = useState<'owed_to_me' | 'i_owe'>(
-    'owed_to_me',
-  );
-  const shown = useMemo(
-    () => debts.filter(({ debt }) => debt.direction === tab),
-    [debts, tab],
-  );
-  const totals = useMemo(() => {
-    const values = new Map<string, number>();
-    for (const { debt, balanceMinor } of shown) {
-      values.set(
-        debt.currency,
-        (values.get(debt.currency) ?? 0) + Number(balanceMinor),
-      );
-    }
-    return [...values.entries()].sort(([a], [b]) =>
-      a.localeCompare(b),
-    );
-  }, [shown]);
-  const owedToMe = tab === 'owed_to_me';
+  const summary = useDebtSummary();
+  const [filter, setFilter] = useState<DebtSide | null>(null);
+  const [showClosed, setShowClosed] = useState<boolean | null>(null);
+  const empty =
+    summary.open.length === 0 && summary.closed.length === 0;
+  const allSettled = summary.open.length === 0 && !empty;
+  const people = filter
+    ? summary.open.filter((line) => line.debt.direction === filter)
+    : summary.open;
 
   return (
     <Page
       screen="debts"
       kind="tabRoot"
       title="Debts"
+      trailing={
+        empty ? null : (
+          <Press
+            testID={tid('debts', 'record-debt')}
+            radius={{ rest: 22, pressed: 16 }}
+            pressedClassName="bg-hairline"
+            className="h-11 flex-row items-center gap-1.5 bg-sand pl-3.5 pr-[18px]"
+            onPress={recordDebt}
+          >
+            <IconSymbol
+              name="plus"
+              size={20}
+              color={tokens.foreground}
+            />
+            <Text className="text-[15px] leading-[21px] font-display-semibold text-foreground">
+              Record a debt
+            </Text>
+          </Press>
+        )
+      }
     >
       <ScrollView
         className="flex-1"
-        contentContainerClassName="px-5 pt-6"
+        contentContainerClassName="gap-4 px-5"
         contentContainerStyle={{ paddingBottom: clearance }}
         showsVerticalScrollIndicator={false}
       >
-        <View className="flex-row gap-2">
-          {(['owed_to_me', 'i_owe'] as const).map((option) => {
-            const selected = tab === option;
-            return (
-              <Pressable
-                testID={tid('debts', 'set-tab', option)}
-                key={option}
-                accessibilityRole="button"
-                accessibilityState={{ selected }}
-                className={`min-h-12 flex-1 justify-center rounded-2xl px-3 ${selected ? (option === 'owed_to_me' ? 'border border-primary bg-primary-muted' : 'border border-warning bg-warning/10') : 'bg-card'}`}
-                onPress={() => setTab(option)}
-              >
-                <Text
-                  className={`text-center text-[15px] font-display-bold ${selected && option === 'owed_to_me' ? 'text-primary' : 'text-foreground'}`}
-                >
-                  {option === 'owed_to_me' ? 'Owed to me' : 'I owe'}
-                </Text>
-              </Pressable>
-            );
-          })}
-        </View>
-
-        {totals.length > 0 ? (
-          <View
-            className={`rounded-card mt-6 p-5 ${owedToMe ? 'bg-sand-light' : 'bg-sand'} overflow-hidden`}
-          >
-            <Text
-              className={`text-sm font-display-semibold ${owedToMe ? 'text-primary' : 'text-warning'}`}
-            >
-              {owedToMe ? 'You are owed' : 'You need to repay'}
-            </Text>
-            {totals.map(([currency, amount]) => (
-              <Text
-                key={currency}
-                className="mt-2 text-2xl font-display-bold text-foreground"
-              >
-                {formatMinorAmount(amount, currency)}
-              </Text>
-            ))}
-          </View>
-        ) : null}
-
-        {shown.length === 0 ? (
+        <SyncBanner screen="debts" />
+        {empty ? (
           <EmptyTile
-            className="mt-6"
-            icon="account-group-outline"
-            title={
-              owedToMe ? 'Nothing owed to you' : 'Nothing to repay'
-            }
-            body="Add who owes you, or who you owe, and Moni keeps the tally."
+            icon="handshake-outline"
+            title="No debts yet"
+            body="Lent a friend money, or they covered you? Note it here. Moni shows who owes who."
+            action={{
+              testID: tid('debts', 'empty', 'record-debt'),
+              label: 'Record a debt',
+              icon: 'plus',
+              onPress: recordDebt,
+            }}
           />
         ) : (
-          <View className="mt-7">
-            {shown.map(({ debt, balanceMinor }) => {
-              const dueState = debtDueState(
-                debt,
-                balanceMinor,
-              ).replace('_', ' ');
-              return (
-                <Pressable
-                  testID={tid('debts', 'debt', debt.id)}
-                  key={debt.id}
-                  accessibilityRole="button"
-                  className="mb-3"
-                  onPress={() =>
-                    router.push(`/debt/${debt.id}` as never)
-                  }
+          <>
+            <NetPosition
+              summary={summary}
+              filter={filter}
+              onFilter={setFilter}
+            />
+            <ComingUp rows={summary.comingUp} />
+            <View className="gap-2 pt-1">
+              <View className="min-h-9 flex-row items-center justify-between">
+                <Text
+                  variant="sectionTitle"
+                  className="text-foreground"
+                  accessibilityRole="header"
                 >
-                  <View className="rounded-card bg-card p-4 overflow-hidden">
-                    <View className="flex-row items-start justify-between gap-3">
-                      <View className="flex-1">
-                        <Text
-                          className="text-[16px] font-display-bold text-foreground"
-                          numberOfLines={1}
-                        >
-                          {debt.counterpartyName}
-                        </Text>
-                        <Text
-                          className={`mt-1 text-sm font-display-semibold ${owedToMe ? 'text-primary' : 'text-warning'}`}
-                        >
-                          {owedToMe ? 'Owed to you' : 'You owe'} ·{' '}
-                          {dueState}
-                        </Text>
-                        {debt.dueDate ? (
-                          <Text className="mt-2 text-sm text-muted">
-                            Due {debt.dueDate}
-                          </Text>
-                        ) : null}
-                      </View>
-                      <Text className="text-right text-base font-display-bold text-foreground">
-                        {formatMinorAmount(
-                          balanceMinor,
-                          debt.currency,
-                        )}
-                      </Text>
-                    </View>
-                  </View>
-                </Pressable>
-              );
-            })}
-          </View>
+                  {filter ? SIDE_WORDS[filter].tile : 'People'}
+                </Text>
+                {filter ? (
+                  <Press
+                    testID={tid('debts', 'show-everyone')}
+                    hitSlop={4}
+                    className="h-9 flex-row items-center gap-0.5 rounded-full"
+                    onPress={() => setFilter(null)}
+                  >
+                    <Text className="text-[15px] leading-[21px] font-display-semibold text-deep-mint">
+                      Show everyone
+                    </Text>
+                    <IconSymbol
+                      name="close"
+                      size={18}
+                      color={tokens.deepMint}
+                    />
+                  </Press>
+                ) : null}
+              </View>
+              {allSettled ? (
+                <AllSettledTile />
+              ) : people.length > 0 ? (
+                <ListCard>
+                  {people.map((line) => (
+                    <PersonRow
+                      key={line.debt.id}
+                      line={line}
+                    />
+                  ))}
+                </ListCard>
+              ) : (
+                <Text
+                  variant="body"
+                  className="px-1 text-muted"
+                >
+                  Nobody here right now.
+                </Text>
+              )}
+              <SettledList
+                lines={summary.closed}
+                open={showClosed ?? allSettled}
+                onToggle={() =>
+                  setShowClosed(!(showClosed ?? allSettled))
+                }
+              />
+            </View>
+          </>
         )}
-        <Button
-          testID={tid('debts', 'record-debt')}
-          className="mt-8"
-          icon="plus"
-          label="Record debt"
-          onPress={() => router.push('/debt/new' as never)}
-        />
       </ScrollView>
     </Page>
+  );
+}
+
+function AllSettledTile() {
+  const tokens = useThemeTokens();
+  return (
+    <View className="flex-row items-center gap-3.5 rounded-tile border-[1.5px] border-dashed border-border-strong p-[18px]">
+      <View className="h-[42px] w-[42px] items-center justify-center rounded-full bg-primary-muted">
+        <IconSymbol
+          name="check-bold"
+          size={20}
+          color={tokens.states.approved}
+        />
+      </View>
+      <View className="min-w-0 flex-1 gap-0.5">
+        <Text
+          variant="cardTitle"
+          className="text-foreground"
+        >
+          Nobody owes anybody
+        </Text>
+        <Text className="text-[14px] leading-[20px] text-ink-2">
+          Every debt is paid back. They stay under Settled.
+        </Text>
+      </View>
+    </View>
   );
 }
