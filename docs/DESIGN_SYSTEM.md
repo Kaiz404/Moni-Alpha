@@ -353,6 +353,12 @@ Never mimic real payment cards unless users need a real card identifier. The vis
 - Delete from the hold menu opens the confirm sheet the detail page uses ("Delete this transaction?", **Keep it** first, then **Delete**), as `V2A-ActivityMenu` draws it, and soft-deletes on **Delete**. It shows no toast: a deleted row drops out of the synced store once the delete syncs back, so an Undo could not restore it.
 - `components/ui/banner.tsx`: the capsule under the header that says what happened and what happens next. `SyncBanner` shows the Lemon "Couldn't sync N changes. It's safe on this phone." with Retry when sync fails, and nothing while sync works.
 
+### 7.6c In-place edit and transaction detail (v2)
+
+- `components/transaction/in-place-field.tsx` (tokens.md "In-place edit"): `InPlaceField` shows the value with a 32 Sand pencil 8 after it; tapping either swaps in a Paper field with a 2 Ink border (amount 64 tall with the signed currency prefix, name 52, note multiline), a Sand cancel circle, and an Ink save circle, on the system keyboard (decimal pad for amounts). `InPlaceGroup` keeps one field open at a time. Android back, the keyboard closing, or a tap outside cancels, so the page's ScrollView needs `keyboardShouldPersistTaps="handled"`. The page shows the "… saved" toast with **Undo** after each save.
+- Transaction detail (`app/transaction/[id].tsx`, `V2A-TxnDetail`): name and date line, the amount, the 2 × 2 tiles (Category and Wallet open the picker sheets, Type confirms a switch between expense and income, Source reads Manual, Voice, Moni, Notification, or Camera and links a notification to the Capture log), the budget line for a budgeted category this month, the full-width note, the place, receipt, and same-merchant rows, and a visible **Delete transaction** that opens the confirm sheet. No ⋯ and no Tags. A notification row's name edit saves a merchant name for every payment from that raw merchant.
+- Categories (`app/categories/`, `V2A-Categories`, `V2A-CategoryForm`): Expenses | Income, Yours, the presets with this month against the budget and a running-total spark, and Archived with **Restore**. The form has the name with its count, the icon grid, the colour swatches, and **Archive category** when editing.
+
 ### 7.7 Transaction proposal artifact
 
 This is Moni’s signature trust component. It is a **financial review artifact**, closer to a receipt or invoice than a chatbot bubble.
