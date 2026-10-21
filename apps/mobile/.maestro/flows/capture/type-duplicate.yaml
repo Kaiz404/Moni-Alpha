@@ -1,0 +1,63 @@
+# C1 duplicate: typing an amount and shop already saved or waiting in the last
+# three days opens "Looks like a duplicate" with its three ways on.
+# Needs the default seed, which holds RM23.40 at GRAB*FOOD from yesterday.
+# Run: scripts/device/with-device.sh --lane c1 -- maestro test .maestro/flows/capture/type-duplicate.yaml
+appId: com.anonymous.moni.e2e
+name: C1 Type it duplicate
+tags:
+  - c1
+  - needs-default-seed
+---
+- launchApp
+- extendedWaitUntil:
+    visible:
+      id: home.avatar
+    timeout: 15000
+- tapOn:
+    id: nav.plus
+- tapOn:
+    id: nav.chooser.type
+- tapOn:
+    id: capture.key.2
+- tapOn:
+    id: capture.key.3
+- tapOn:
+    id: capture.key.point
+- tapOn:
+    id: capture.key.4
+- tapOn:
+    id: capture.note
+- inputText: GRAB*FOOD
+- hideKeyboard
+- tapOn:
+    id: capture.submit
+- assertVisible: Looks like a duplicate
+- assertVisible:
+    id: capture.duplicate.review
+- assertVisible:
+    id: capture.duplicate.add-anyway
+- assertVisible:
+    id: capture.duplicate.change-amount
+- takeScreenshot: c1-l7-duplicate
+
+# Change the amount clears it and keeps the page.
+- tapOn:
+    id: capture.duplicate.change-amount
+- assertNotVisible: Looks like a duplicate
+- assertVisible: −RM0
+
+# Add mine anyway saves the second row.
+- tapOn:
+    id: capture.key.2
+- tapOn:
+    id: capture.key.3
+- tapOn:
+    id: capture.key.point
+- tapOn:
+    id: capture.key.4
+- tapOn:
+    id: capture.submit
+- tapOn:
+    id: capture.duplicate.add-anyway
+- assertVisible:
+    id: home.avatar

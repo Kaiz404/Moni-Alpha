@@ -1,70 +1,84 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Alert, TextInput, View } from 'react-native';
-import { Text } from '@/components/ui/text';
-import { router, useLocalSearchParams } from 'expo-router';
 import { useValue } from '@legendapp/state/react';
-import { createTransactionSchema } from '@repo/types';
+import { createTransactionSchema, type MinorAmount } from '@repo/types';
+import { router, useLocalSearchParams } from 'expo-router';
+import { useEffect, useMemo, useState } from 'react';
+import { Alert, TextInput, View } from 'react-native';
 
+import { AmountPage } from '@/components/capture/amount-page';
+import {
+  DuplicateSheet,
+  type DuplicateHit,
+} from '@/components/capture/duplicate-sheet';
+import { FieldBubble } from '@/components/capture/field-bubble';
 import { CategoryIcon } from '@/components/categories/category-icon';
-import { NumericKeypad } from '@/components/ui/numeric-keypad';
+import { IconSymbol } from '@/components/ui/icon-symbol';
 import { PickerField } from '@/components/ui/picker-field';
 import { Segmented } from '@/components/ui/segmented';
+import { Text } from '@/components/ui/text';
 import { WalletIcon } from '@/components/wallets/wallet-icon';
-import { getWalletCardStyle } from '@/constants/wallet-card-styles';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
+import type { LedgerEntry } from '@/lib/ai/duplicates';
 import { useAuth } from '@/lib/auth/auth-context';
-import { dayLabel, formatDay } from '@/lib/dates/day-label';
+import { readAmount } from '@/lib/capture/amount-input';
+import { amountSentence } from '@/lib/capture/amount-sentence';
+import {
+  duplicateCopy,
+  findTypedDuplicate,
+} from '@/lib/capture/type-duplicate';
+import { dayLabel } from '@/lib/dates/day-label';
 import {
   localDateInputToIso,
   toLocalDateInput,
 } from '@/lib/dates/local-date-input';
+import { useMainCurrency } from '@/lib/finance/main-currency';
 import {
   budgetProgress$,
   categoriesForUser$,
   recentExpenseCategories$,
+  transactions$,
+  walletsForUser$,
 } from '@/lib/finance/selectors';
-import { formatMoney } from '@/lib/finance/format-money';
-import { parseAmountInput } from '@/lib/finance/money';
-import { findDuplicate } from '@/lib/ai/duplicates';
+import { financeProjection$ } from '@/lib/finance/projection';
+import type { FinanceWallet } from '@/lib/finance/types';
+import { approve } from '@/lib/haptics';
+import { toCategoryTiles } from '@/lib/sheet/category-tiles';
+import { openSheet, type WalletOption } from '@/lib/sheet/sheet-store';
 import { ensureFinanceTimezone } from '@/lib/supabase/profile';
 import { getLedgerEntries } from '@/lib/supabase/proposed-transactions';
 import {
   createTransaction,
   createTransfer,
 } from '@/lib/supabase/transactions';
-import { getWallets } from '@/lib/supabase/wallets';
-import { toCategoryTiles } from '@/lib/sheet/category-tiles';
-import {
-  openSheet,
-  type WalletOption,
-} from '@/lib/sheet/sheet-store';
-import { useMainCurrency } from '@/lib/finance/main-currency';
+import { tid } from '@/lib/test-ids';
 import {
   prefetchTransactionLocation,
   type TransactionLocationSnapshot,
 } from '@/lib/transactions/prefetch-location';
-import { Button } from '@/components/ui/button';
-import { tid } from '@/lib/test-ids';
-import { Page } from '@/components/ui/page';
+import { proposalRow, transactionRow } from '@/lib/transactions/row';
+import { resolveDefaultWalletId } from '@/lib/wallets/default-wallet';
 
-const MAX_AMOUNT_LENGTH = 12;
+type Kind = 'expense' | 'income' | 'transfer';
 
-type Wallet = Awaited<ReturnType<typeof getWallets>>[number];
-type TransactionKind = 'income' | 'expense' | 'transfer';
-
-type Details = {
-  merchant: string;
-  description: string;
-  /** Local YYYY-MM-DD. */
-  transactionDate: string;
-  locationSnapshot: TransactionLocationSnapshot | null;
+const COPY: Record<Kind, { tab: string; title: string; save: string }> = {
+  expense: { tab: 'Expense', title: 'New expense', save: 'Add expense' },
+  income: { tab: 'Income', title: 'New income', save: 'Add income' },
+  transfer: {
+    tab: 'Transfer',
+    title: 'New transfer',
+    save: 'Add transfer',
+  },
 };
 
-function toWalletOption(wallet: Wallet): WalletOption {
+const KINDS = ['expense', 'income', 'transfer'] as const;
+
+const first = (value: string | string[] | undefined) =>
+  Array.isArray(value) ? value[0] : value;
+
+function walletOption(wallet: FinanceWallet): WalletOption {
   return {
     id: wallet.id,
     name: wallet.name,
-    currency: wallet.currency ?? 'USD',
+    currency: wallet.currency,
     type: wallet.type,
     icon: wallet.icon,
     color: wallet.color,
@@ -72,18 +86,10 @@ function toWalletOption(wallet: Wallet): WalletOption {
   };
 }
 
-function walletCurrency(wallet: Wallet): string {
-  return (wallet.currency ?? 'USD').toUpperCase();
-}
-
-const transactionCopy: Record<TransactionKind, string> = {
-  expense: 'Expense',
-  income: 'Income',
-  transfer: 'Transfer',
-};
-
-export default function NewTransactionScreen() {
+/** V2A-CaptureType: Type it, the amount page for a new expense, income or transfer. */
+export default function TypeItScreen() {
   const { user } = useAuth();
+  const userId = user?.id ?? null;
   const tokens = useThemeTokens();
   const mainCurrency = useMainCurrency();
   const params = useLocalSearchParams<{
@@ -91,280 +97,274 @@ export default function NewTransactionScreen() {
     type?: string | string[];
     categoryId?: string | string[];
   }>();
-  const paramWalletId = useMemo(() => {
-    const value = params.walletId;
-    return Array.isArray(value) ? value[0] : value;
-  }, [params.walletId]);
-  const paramTransactionType = useMemo(() => {
-    const value = Array.isArray(params.type)
-      ? params.type[0]
-      : params.type;
-    return value === 'income' || value === 'expense'
-      ? value
-      : undefined;
-  }, [params.type]);
-  const paramCategoryId = useMemo(() => {
-    const value = params.categoryId;
-    return Array.isArray(value) ? value[0] : value;
-  }, [params.categoryId]);
+  const paramType = first(params.type);
 
-  const [wallets, setWallets] = useState<Wallet[]>([]);
+  const [kind, setKind] = useState<Kind>(
+    paramType === 'income' ? 'income' : 'expense',
+  );
+  const [typed, setTyped] = useState('');
+  const [categoryId, setCategoryId] = useState<string | null>(
+    first(params.categoryId) ?? null,
+  );
+  const [walletId, setWalletId] = useState<string | null>(null);
+  const [toWalletId, setToWalletId] = useState<string | null>(null);
+  const [date, setDate] = useState(() => toLocalDateInput(new Date()));
+  const [note, setNote] = useState('');
+  const [location, setLocation] =
+    useState<TransactionLocationSnapshot | null>(null);
   const [timezone, setTimezone] = useState('UTC');
-  const [walletId, setWalletId] = useState('');
-  const [transferToWalletId, setTransferToWalletId] = useState('');
-  const [amount, setAmount] = useState('');
-  const [type, setType] = useState<TransactionKind>(
-    paramTransactionType ?? 'expense',
-  );
-  const [categoryId, setCategoryId] = useState('');
   const [saving, setSaving] = useState(false);
-  const [details, setDetails] = useState<Details>(() => ({
-    merchant: '',
-    description: '',
-    transactionDate: toLocalDateInput(new Date()),
-    locationSnapshot: null,
-  }));
+  const [duplicate, setDuplicate] = useState<{
+    hit: DuplicateHit;
+    targetId: string;
+    targetKind: LedgerEntry['kind'];
+    open: boolean;
+  } | null>(null);
 
-  const suggestedCategories = useValue(
-    recentExpenseCategories$(user?.id ?? null),
-  );
-  const allCategories = useValue(
-    categoriesForUser$(user?.id ?? null),
-  );
-  const budgetProgress = useValue(
-    budgetProgress$(user?.id ?? null, timezone),
+  const allWallets = useValue(walletsForUser$(userId));
+  const allCategories = useValue(categoriesForUser$(userId));
+  const recentCategories = useValue(recentExpenseCategories$(userId));
+  const budgetProgress = useValue(budgetProgress$(userId, timezone));
+  const transactions = useValue(transactions$({ userId }));
+
+  const wallets = useMemo(
+    () => allWallets.filter((wallet) => wallet.currency === mainCurrency),
+    [allWallets, mainCurrency],
   );
   const categories = useMemo(
     () =>
       allCategories.filter(
-        (category) => category.isActive && category.type === type,
+        (category) => category.isActive && category.type === kind,
       ),
-    [allCategories, type],
+    [allCategories, kind],
   );
+  const wallet = wallets.find((item) => item.id === walletId) ?? null;
+  const toWallet =
+    wallets.find((item) => item.id === toWalletId && item.id !== walletId) ??
+    null;
+  const category =
+    categories.find((item) => item.id === categoryId) ?? null;
+  const amount = readAmount(typed);
 
   useEffect(() => {
-    if (!user) return;
-    void getWallets().then(setWallets);
     void ensureFinanceTimezone()
       .then(setTimezone)
       .catch(() => {});
-  }, [user]);
+    void prefetchTransactionLocation().then(setLocation);
+  }, []);
 
   useEffect(() => {
-    if (paramTransactionType) setType(paramTransactionType);
-  }, [paramTransactionType]);
-
-  useEffect(() => {
-    if (paramCategoryId) setCategoryId(paramCategoryId);
-  }, [paramCategoryId]);
-
-  useEffect(() => {
-    if (wallets.length === 0) {
-      setWalletId('');
-      return;
-    }
-    if (
-      paramWalletId &&
-      wallets.some((wallet) => wallet.id === paramWalletId)
-    ) {
-      setWalletId(paramWalletId);
-    } else {
-      setWalletId((current) =>
-        wallets.some((wallet) => wallet.id === current)
-          ? current
-          : '',
-      );
-    }
-  }, [paramWalletId, wallets]);
-
-  useEffect(() => {
-    if (type === 'transfer') return;
-
-    let cancelled = false;
-    void prefetchTransactionLocation().then((snapshot) => {
-      if (cancelled || !snapshot) return;
-      setDetails((current) => ({
-        ...current,
-        locationSnapshot: snapshot,
-      }));
-    });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [type]);
-
-  const selectedWallet = wallets.find(
-    (wallet) => wallet.id === walletId,
-  );
-  const selectedDestination = wallets.find(
-    (wallet) => wallet.id === transferToWalletId,
-  );
-  const selectedWalletCurrency = selectedWallet
-    ? walletCurrency(selectedWallet)
-    : null;
-  const selectedCategory = categories.find(
-    (category) => category.id === categoryId,
-  );
-  const sourceCurrency = selectedWallet
-    ? (selectedWallet.currency ?? 'USD').toUpperCase()
-    : null;
-  const destinationWallets = useMemo(() => {
-    const sourceWallet = wallets.find(
-      (wallet) => wallet.id === walletId,
+    if (walletId && wallets.some((item) => item.id === walletId)) return;
+    const asked = first(params.walletId);
+    setWalletId(
+      (asked && wallets.some((item) => item.id === asked) ? asked : null) ??
+        resolveDefaultWalletId(wallets) ??
+        wallets[0]?.id ??
+        null,
     );
-    if (!sourceWallet) return [];
-
-    const currency = walletCurrency(sourceWallet);
-    return wallets.filter(
-      (wallet) =>
-        wallet.id !== walletId && walletCurrency(wallet) === currency,
-    );
-  }, [walletId, wallets]);
+  }, [params.walletId, walletId, wallets]);
 
   useEffect(() => {
-    setTransferToWalletId((current) => {
-      if (
-        destinationWallets.some((wallet) => wallet.id === current)
-      ) {
-        return current;
-      }
-      return '';
-    });
-  }, [destinationWallets]);
-  const categoryCurrency = selectedWalletCurrency ?? mainCurrency;
+    if (categoryId || kind !== 'expense') return;
+    const recent = recentCategories[0]?.id;
+    if (recent) setCategoryId(recent);
+  }, [categoryId, kind, recentCategories]);
 
-  const pickWallet = async (role: 'source' | 'destination') => {
-    const destination = role === 'destination';
-    const pick = await openSheet({
+  const sentence = useMemo(() => {
+    if (kind === 'transfer') {
+      return amountSentence({ kind, currency: mainCurrency });
+    }
+    if (kind === 'income') {
+      const month = date.slice(0, 7);
+      const incomeThisMonthMinor = transactions
+        .filter(
+          (row) =>
+            row.type === 'income' &&
+            row.currency === mainCurrency &&
+            toLocalDateInput(new Date(row.transactionDate)).startsWith(month),
+        )
+        .reduce((sum, row) => sum + row.amountMinor, 0) as MinorAmount;
+      return amountSentence({
+        kind,
+        amountMinor: amount.minor,
+        currency: mainCurrency,
+        incomeThisMonthMinor,
+      });
+    }
+    const progress = budgetProgress.find(
+      (row) =>
+        row.categoryId === category?.id && row.currency === mainCurrency,
+    );
+    return amountSentence({
+      kind,
+      amountMinor: amount.minor,
+      currency: mainCurrency,
+      category: category
+        ? {
+            name: category.name,
+            budgetMinor: progress?.budgetAmountMinor ?? null,
+            spentMinor: progress?.spentMinor ?? (0 as MinorAmount),
+          }
+        : null,
+    });
+  }, [
+    amount.minor,
+    budgetProgress,
+    category,
+    date,
+    kind,
+    mainCurrency,
+    transactions,
+  ]);
+
+  const changeKind = (next: Kind) => {
+    setKind(next);
+    setCategoryId(null);
+  };
+
+  const pickWallet = async (role: 'from' | 'to') => {
+    const picked = await openSheet({
       kind: 'wallet',
-      title: destination
-        ? 'Move to'
-        : isTransfer
-          ? 'From wallet'
-          : 'Paid from',
-      wallets: (destination ? destinationWallets : wallets).map(
-        toWalletOption,
-      ),
-      selectedId: destination
-        ? transferToWalletId || null
-        : walletId || null,
-      emptyMessage: destination
-        ? sourceCurrency
-          ? `No other ${sourceCurrency} wallet yet. Transfers need two wallets in the same currency.`
-          : 'Choose a source wallet first.'
-        : undefined,
+      title:
+        role === 'to'
+          ? 'To'
+          : kind === 'transfer'
+            ? 'From'
+            : kind === 'income'
+              ? 'Paid into'
+              : 'Paid with',
+      wallets: wallets
+        .filter((item) => role === 'from' || item.id !== walletId)
+        .map(walletOption),
+      selectedId: role === 'to' ? toWalletId : walletId,
+      emptyMessage:
+        role === 'to'
+          ? 'Transfers need a second wallet in your main currency.'
+          : undefined,
     });
-    if (!pick?.walletId) return;
-    if (destination) setTransferToWalletId(pick.walletId);
-    else setWalletId(pick.walletId);
+    if (!picked?.walletId) return;
+    if (role === 'to') setToWalletId(picked.walletId);
+    else setWalletId(picked.walletId);
   };
 
   const pickCategory = async () => {
     const picked = await openSheet({
       kind: 'category',
       title: 'Choose category',
-      currency: categoryCurrency,
+      currency: mainCurrency,
       categories: toCategoryTiles(
         categories,
         budgetProgress,
-        categoryCurrency,
-        type === 'expense'
-          ? suggestedCategories.map((category) => category.id)
-          : [],
+        mainCurrency,
+        kind === 'expense' ? recentCategories.map((item) => item.id) : [],
       ),
-      selectedId: categoryId || null,
+      selectedId: categoryId,
       onCreate: () =>
         router.push({
           pathname: '/categories/form',
-          params: { type, returnTo: '/transaction/new' },
-        } as never),
+          params: { type: kind, returnTo: '/transaction/new' },
+        }),
     });
     if (picked) setCategoryId(picked);
   };
 
   const pickDate = async () => {
-    const picked = await openSheet({
-      kind: 'date',
-      selected: details.transactionDate,
-    });
-    if (picked)
-      setDetails((current) => ({
-        ...current,
-        transactionDate: picked,
-      }));
+    const picked = await openSheet({ kind: 'date', selected: date });
+    if (picked) setDate(picked);
   };
 
-  const handleKeyPress = useCallback((key: string) => {
-    setAmount((previous) => {
-      if (key === '⌫') return previous.slice(0, -1);
-      if (key === '.' && previous.includes('.')) return previous;
-      if (previous.length >= MAX_AMOUNT_LENGTH) return previous;
-      if (key === '.' && previous.length === 0) return '0.';
-      return previous + key;
+  /** The page has no time field: today keeps the real time, so duplicates line up with alerts. */
+  const transactionDate =
+    date === toLocalDateInput(new Date())
+      ? new Date().toISOString()
+      : (localDateInputToIso(date) ?? new Date().toISOString());
+
+  const findRepeat = async (): Promise<boolean> => {
+    if (!wallet || kind === 'transfer') return false;
+    const target = findTypedDuplicate(
+      {
+        id: 'draft',
+        kind: 'transaction',
+        type: kind,
+        walletId: wallet.id,
+        currency: wallet.currency,
+        amountMinor: amount.minor,
+        merchant: note.trim() || null,
+        at: transactionDate,
+      },
+      await getLedgerEntries(),
+    );
+    if (!target) return false;
+    const projection = financeProjection$.get();
+    const lookups = {
+      categoriesById: projection.categoriesById,
+      walletNames: Object.fromEntries(
+        allWallets.map((item) => [item.id, item.name]),
+      ),
+    };
+    const proposal =
+      target.kind === 'proposal' ? projection.proposalsById[target.id] : null;
+    const saved =
+      target.kind === 'transaction'
+        ? projection.transactionsById[target.id]
+        : null;
+    const row = proposal
+      ? proposalRow(proposal, lookups)
+      : saved
+        ? transactionRow(saved, lookups)
+        : null;
+    if (!row) return false;
+    const copy = duplicateCopy({
+      kind: target.kind,
+      amountMinor: amount.minor,
+      currency: wallet.currency,
+      merchant: target.merchant,
+      at: target.at,
+      walletName: target.walletId
+        ? (lookups.walletNames[target.walletId] ?? null)
+        : null,
+      fromNotification: proposal?.sourceType === 'notification',
     });
-  }, []);
+    setDuplicate({
+      hit: { ...copy, row },
+      targetId: target.id,
+      targetKind: target.kind,
+      open: true,
+    });
+    return true;
+  };
 
-  const handleSubmit = async () => {
-    if (!user || !walletId) return;
-
-    let amountMinor: ReturnType<typeof parseAmountInput>;
-    try {
-      amountMinor = parseAmountInput(amount);
-    } catch {
-      Alert.alert(
-        'Enter an amount',
-        'Use a positive amount to continue.',
-      );
-      return;
-    }
-
+  const save = async ({ checkRepeat }: { checkRepeat: boolean }) => {
+    if (!wallet || amount.minor <= 0) return;
     setSaving(true);
     try {
-      if (type === 'transfer') {
-        const hasCompatibleDestination = destinationWallets.some(
-          (wallet) => wallet.id === transferToWalletId,
-        );
-        if (!hasCompatibleDestination) {
-          Alert.alert(
-            'Choose a matching wallet',
-            'Transfers are available only between wallets that share the same currency.',
-          );
-          return;
-        }
+      if (kind === 'transfer') {
+        if (!toWallet) return;
         await createTransfer(
           {
-            fromWalletId: walletId,
-            toWalletId: transferToWalletId,
-            amountMinor,
-            description: details.description.trim() || null,
+            fromWalletId: wallet.id,
+            toWalletId: toWallet.id,
+            amountMinor: amount.minor,
+            description: note.trim() || null,
+            transactionDate,
           },
           'manual',
         );
       } else {
-        // The form has no time field: keep the real time when the date is left as today,
-        // so duplicate and routine matching can line it up with the bank notification.
-        const transactionDate =
-          details.transactionDate === toLocalDateInput(new Date())
-            ? new Date().toISOString()
-            : (localDateInputToIso(details.transactionDate) ??
-              new Date().toISOString());
-        const locationPayload = details.locationSnapshot
-          ? {
-              locationLatitude: details.locationSnapshot.latitude,
-              locationLongitude: details.locationSnapshot.longitude,
-              locationName: details.locationSnapshot.name,
-            }
-          : {};
         const parsed = createTransactionSchema.safeParse({
-          walletId,
-          amountMinor,
-          type,
-          categoryId: categoryId || null,
-          merchant: details.merchant.trim() || null,
-          description: details.description.trim() || null,
+          walletId: wallet.id,
+          amountMinor: amount.minor,
+          type: kind,
+          categoryId: category?.id ?? null,
+          merchant: note.trim() || null,
           transactionDate,
-          ...locationPayload,
+          ...(location
+            ? {
+                locationLatitude: location.latitude,
+                locationLongitude: location.longitude,
+                locationName: location.name,
+              }
+            : {}),
         });
         if (!parsed.success) {
           Alert.alert(
@@ -373,37 +373,14 @@ export default function NewTransactionScreen() {
           );
           return;
         }
-        const duplicate = findDuplicate(
-          {
-            id: 'draft',
-            kind: 'transaction',
-            type,
-            walletId,
-            currency: selectedWalletCurrency ?? 'USD',
-            amountMinor,
-            merchant: parsed.data.merchant ?? null,
-            at: transactionDate,
-          },
-          await getLedgerEntries(),
-        );
-        if (
-          duplicate?.kind === 'same_purchase' &&
-          !(await openSheet({
-            kind: 'confirm',
-            title: 'Maybe a duplicate',
-            message: `You already have ${[duplicate.target.merchant, formatMoney(amountMinor, selectedWalletCurrency ?? 'USD')].filter(Boolean).join(' ')} on ${formatDay(duplicate.target.at)}.`,
-            confirmLabel: 'Add mine anyway',
-            cancelLabel: 'Change it',
-          }))
-        ) {
-          return;
-        }
+        if (checkRepeat && (await findRepeat())) return;
         await createTransaction(parsed.data, 'manual');
       }
+      approve();
       router.back();
     } catch (error) {
       Alert.alert(
-        'Could not add transaction',
+        'Could not add this',
         error instanceof Error ? error.message : 'Please try again.',
       );
     } finally {
@@ -411,218 +388,187 @@ export default function NewTransactionScreen() {
     }
   };
 
-  const actionLabel =
-    type === 'income'
-      ? 'Add income'
-      : type === 'transfer'
-        ? 'Move money'
-        : 'Add expense';
-  const isTransfer = type === 'transfer';
-  const selectedWalletStyle = selectedWallet
-    ? getWalletCardStyle(selectedWallet.cardStyleId)
-    : null;
-  const destinationWalletStyle = selectedDestination
-    ? getWalletCardStyle(selectedDestination.cardStyleId)
-    : null;
-  const selectedWalletAccent =
-    selectedWallet?.color ??
-    selectedWalletStyle?.swatchHex ??
-    tokens.primary;
-  const destinationWalletAccent =
-    selectedDestination?.color ??
-    destinationWalletStyle?.swatchHex ??
-    tokens.transfer;
-  const categoryAccent =
-    selectedCategory?.color ?? tokens.accents.lilac;
-  const hasTransferDestination = destinationWallets.some(
-    (wallet) => wallet.id === transferToWalletId,
+  const closeDuplicate = () =>
+    setDuplicate((current) => current && { ...current, open: false });
+
+  const walletBubble = (item: FinanceWallet | null) =>
+    item ? (
+      <FieldBubble color={item.color ?? tokens.card}>
+        <WalletIcon
+          icon={item.icon}
+          type={item.type}
+          size={18}
+          color={tokens.onPastel}
+        />
+      </FieldBubble>
+    ) : undefined;
+
+  const dateField = (
+    <PickerField
+      testID={tid('capture', 'date')}
+      className="flex-1"
+      label="Date"
+      value={dayLabel(date)}
+      leading={
+        <FieldBubble color={tokens.card}>
+          <IconSymbol
+            name="calendar-blank-outline"
+            size={18}
+            color={tokens.foreground}
+          />
+        </FieldBubble>
+      }
+      onPress={() => void pickDate()}
+    />
   );
-  const amountPrefix =
-    type === 'income' ? '+' : type === 'expense' ? '−' : '';
-  const amountTone =
-    type === 'income'
-      ? 'text-income'
-      : type === 'expense'
-        ? 'text-expense'
-        : 'text-transfer';
-  const currency = selectedWallet?.currency?.toUpperCase();
+
+  const noteField = (
+    <View className="h-16 flex-1 flex-row items-center gap-2.5 rounded-field bg-sand px-3.5">
+      <FieldBubble color={tokens.card}>
+        <IconSymbol
+          name="pencil-outline"
+          size={18}
+          color={tokens.foreground}
+        />
+      </FieldBubble>
+      <View className="min-w-0 flex-1">
+        <Text className="text-[13px] leading-[18px] text-muted">
+          Shop or note
+        </Text>
+        <TextInput
+          testID={tid('capture', 'note')}
+          accessibilityLabel="Shop or note"
+          autoCapitalize="words"
+          className="p-0 text-base leading-[22px] font-display-semibold text-foreground"
+          placeholder="Optional"
+          placeholderTextColor={tokens.muted}
+          value={note}
+          onChangeText={setNote}
+        />
+      </View>
+    </View>
+  );
+
+  const ready =
+    amount.minor > 0 && !!wallet && (kind !== 'transfer' || !!toWallet);
 
   return (
-    <Page
-      screen="capture"
-      kind="pushed"
-      title="New transaction"
-    >
-      <View
-        className="flex-1 px-5"
-        style={{ paddingBottom: 12 }}
-      >
-        <View className="mt-3">
+    <>
+      <AmountPage
+        screen="capture"
+        header="task"
+        title={COPY[kind].title}
+        typed={typed}
+        onTyped={setTyped}
+        currency={wallet?.currency ?? mainCurrency}
+        direction={kind === 'transfer' ? 'neutral' : kind}
+        sentence={sentence}
+        control={
           <Segmented
             screen="capture"
-            name="set-type"
+            name="type"
             accessibilityLabel="Transaction type"
-            options={(['expense', 'income', 'transfer'] as const).map(
-              (option) => ({
-                value: option,
-                label: transactionCopy[option],
-              }),
-            )}
-            value={type}
-            onChange={setType}
+            options={KINDS.map((value) => ({
+              value,
+              label: COPY[value].tab,
+            }))}
+            value={kind}
+            onChange={changeKind}
           />
-        </View>
-
-        <View className="flex-1 items-center justify-center px-2">
-          <Text
-            className={`mt-2 text-6xl font-display-bold tracking-tight ${amountTone}`}
-            accessibilityLabel={`${amount || '0'}`}
-          >
-            {amountPrefix}
-            {amount || '0'}
-          </Text>
-          <View className="mt-4 items-center">
-            <Text className="text-sm font-display-bold text-foreground">
-              {currency ?? 'Choose a wallet'}
-            </Text>
-          </View>
-        </View>
-
-        <View className="gap-2 pt-2">
-          <View className="flex-row gap-2">
+        }
+        action={{
+          label: COPY[kind].save,
+          onPress: () => void save({ checkRepeat: true }),
+          loading: saving,
+          loadingLabel: 'Saving',
+          disabled: !ready,
+        }}
+      >
+        {kind === 'transfer' ? (
+          <>
             <PickerField
               testID={tid('capture', 'wallet')}
-              className="flex-1"
-              label={isTransfer ? 'From wallet' : 'Paid from'}
-              value={selectedWallet?.name ?? ''}
+              label="From"
+              value={wallet?.name ?? ''}
+              leading={walletBubble(wallet)}
+              onPress={() => void pickWallet('from')}
+            />
+            <PickerField
+              testID={tid('capture', 'to-wallet')}
+              label="To"
+              value={toWallet?.name ?? ''}
+              leading={walletBubble(toWallet)}
+              onPress={() => void pickWallet('to')}
+            />
+            <View className="flex-row gap-2">
+              {dateField}
+              {noteField}
+            </View>
+          </>
+        ) : (
+          <>
+            <PickerField
+              testID={tid('capture', 'category')}
+              label="Category"
+              value={category?.name ?? ''}
               leading={
-                selectedWallet ? (
-                  <View
-                    className="h-8 w-8 items-center justify-center rounded-full"
-                    style={{ backgroundColor: selectedWalletAccent }}
-                  >
-                    <WalletIcon
-                      color={
-                        selectedWalletStyle?.contentColor ??
-                        tokens.foreground
-                      }
-                      icon={selectedWallet.icon}
+                category ? (
+                  <FieldBubble color={category.color ?? tokens.card}>
+                    <CategoryIcon
+                      icon={category.icon}
                       size={18}
-                      type={selectedWallet.type}
+                      color={tokens.onPastel}
                     />
-                  </View>
+                  </FieldBubble>
                 ) : undefined
               }
-              onPress={() => void pickWallet('source')}
+              onPress={() => void pickCategory()}
             />
-            {isTransfer ? (
+            <View className="flex-row gap-2">
               <PickerField
-                testID={tid('capture', 'destination')}
+                testID={tid('capture', 'wallet')}
                 className="flex-1"
-                label="Move to"
-                value={selectedDestination?.name ?? ''}
-                leading={
-                  selectedDestination ? (
-                    <View
-                      className="h-8 w-8 items-center justify-center rounded-full"
-                      style={{
-                        backgroundColor: destinationWalletAccent,
-                      }}
-                    >
-                      <WalletIcon
-                        color={
-                          destinationWalletStyle?.contentColor ??
-                          tokens.foreground
-                        }
-                        icon={selectedDestination.icon}
-                        size={18}
-                        type={selectedDestination.type}
-                      />
-                    </View>
-                  ) : undefined
-                }
-                onPress={() => void pickWallet('destination')}
+                label={kind === 'income' ? 'Into' : 'Paid with'}
+                value={wallet?.name ?? ''}
+                leading={walletBubble(wallet)}
+                onPress={() => void pickWallet('from')}
               />
-            ) : (
-              <PickerField
-                testID={tid('capture', 'category')}
-                className="flex-1"
-                label="Category"
-                value={selectedCategory?.name ?? ''}
-                leading={
-                  selectedCategory ? (
-                    <View
-                      className="h-8 w-8 items-center justify-center rounded-full"
-                      style={{ backgroundColor: categoryAccent }}
-                    >
-                      <CategoryIcon
-                        color={tokens.onPastel}
-                        icon={selectedCategory.icon}
-                        size={18}
-                      />
-                    </View>
-                  ) : undefined
-                }
-                onPress={() => void pickCategory()}
-              />
-            )}
-          </View>
-
-          <View className="flex-row gap-2">
-            <View className="h-16 flex-1 justify-center rounded-field bg-sand px-3.5">
-              <Text className="text-[13px] leading-[18px] text-muted">
-                {isTransfer ? 'Note' : 'Shop or note'}
-              </Text>
-              <TextInput
-                testID={tid(
-                  'capture',
-                  isTransfer ? 'note' : 'merchant',
-                )}
-                accessibilityLabel={
-                  isTransfer ? 'Note' : 'Shop or note'
-                }
-                autoCapitalize="words"
-                className="p-0 text-base font-display-semibold text-foreground"
-                placeholder="Optional"
-                placeholderTextColor={tokens.muted}
-                value={
-                  isTransfer ? details.description : details.merchant
-                }
-                onChangeText={(text) =>
-                  setDetails((current) =>
-                    isTransfer
-                      ? { ...current, description: text }
-                      : { ...current, merchant: text },
-                  )
-                }
-              />
+              {dateField}
             </View>
-            {isTransfer ? null : (
-              <PickerField
-                testID={tid('capture', 'date')}
-                className="w-36"
-                label="Date"
-                value={dayLabel(details.transactionDate)}
-                onPress={() => void pickDate()}
-              />
-            )}
-          </View>
-
-          <NumericKeypad onKeyPress={handleKeyPress} />
-          <Button
-            testID={tid('capture', 'submit')}
-            className="mt-1"
-            disabled={
-              !walletId || (isTransfer && !hasTransferDestination)
-            }
-            icon="check"
-            label={actionLabel}
-            loading={saving}
-            loadingLabel="Saving transaction…"
-            onPress={handleSubmit}
-          />
-        </View>
-      </View>
-    </Page>
+            {noteField}
+          </>
+        )}
+      </AmountPage>
+      {duplicate ? (
+        <DuplicateSheet
+          hit={duplicate.hit}
+          open={duplicate.open}
+          onDismiss={closeDuplicate}
+          onExited={() => setDuplicate(null)}
+          onReview={() => {
+            closeDuplicate();
+            router.replace(
+              duplicate.targetKind === 'proposal'
+                ? {
+                    pathname: '/proposal/[id]',
+                    params: { id: duplicate.targetId },
+                  }
+                : {
+                    pathname: '/transaction/[id]',
+                    params: { id: duplicate.targetId },
+                  },
+            );
+          }}
+          onAddAnyway={() => {
+            closeDuplicate();
+            void save({ checkRepeat: false });
+          }}
+          onChangeAmount={() => {
+            closeDuplicate();
+            setTyped('');
+          }}
+        />
+      ) : null}
+    </>
   );
 }

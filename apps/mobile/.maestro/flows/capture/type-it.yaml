@@ -1,0 +1,111 @@
+# C1 Type it: the + chooser slides in the amount page; keypad, pickers, save.
+# Needs a signed-in e2e build with a main-currency wallet.
+# Run: scripts/device/with-device.sh --lane c1 -- maestro test .maestro/flows/capture/type-it.yaml
+appId: com.anonymous.moni.e2e
+name: C1 Type it
+tags:
+  - c1
+  - needs-default-seed
+---
+- launchApp
+- extendedWaitUntil:
+    visible:
+      id: home.avatar
+    timeout: 15000
+
+# Start from Activity so the save proves the page returns to its origin.
+- tapOn:
+    id: nav.tab.activity
+- tapOn:
+    id: nav.plus
+- tapOn:
+    id: nav.chooser.type
+- assertVisible: New expense
+- assertVisible:
+    id: capture.key.1
+- assertNotVisible:
+    id: nav.tab.index
+- takeScreenshot: c1-l2-pair
+
+# Each key adds one character; the amount reads with U+2212.
+- tapOn:
+    id: capture.key.4
+- tapOn:
+    id: capture.key.5
+- tapOn:
+    id: capture.key.point
+- tapOn:
+    id: capture.key.9
+- tapOn:
+    id: capture.key.0
+- tapOn:
+    id: capture.key.7
+- assertVisible: −RM45.90
+- takeScreenshot: c1-l10-minus
+- tapOn:
+    id: capture.key.back
+- tapOn:
+    id: capture.key.back
+- tapOn:
+    id: capture.key.back
+- tapOn:
+    id: capture.key.back
+- tapOn:
+    id: capture.key.back
+- tapOn:
+    id: capture.key.back
+- assertVisible: −RM0
+
+# Transfer shows From and To and its own sentence.
+- tapOn: Transfer
+- assertVisible: New transfer
+- assertVisible:
+    id: capture.to-wallet
+- assertVisible: .*Spending stays the same.*
+- takeScreenshot: c1-l5-transfer
+- tapOn: Income
+- assertVisible: New income
+- tapOn: Expense
+
+# The wallet picker lists main-currency wallets only.
+- tapOn:
+    id: capture.wallet
+- assertVisible: Paid with
+- assertNotVisible: Wise USD
+- takeScreenshot: c1-l6-wallets
+- pressKey: Back
+
+# RM12.50 at Tesco, saved, lands back on Activity with the row on top.
+- tapOn:
+    id: capture.key.1
+- tapOn:
+    id: capture.key.2
+- tapOn:
+    id: capture.key.point
+- tapOn:
+    id: capture.key.5
+- tapOn:
+    id: capture.key.0
+- tapOn:
+    id: capture.note
+- inputText: Tesco
+- hideKeyboard
+- tapOn:
+    id: capture.submit
+- assertVisible:
+    id: activity.ask-moni
+- assertVisible: Tesco
+- takeScreenshot: c1-l8-origin
+
+# Back with a typed amount closes the page and writes nothing.
+- tapOn:
+    id: nav.plus
+- tapOn:
+    id: nav.chooser.type
+- tapOn:
+    id: capture.key.7
+- pressKey: Back
+- assertVisible:
+    id: activity.ask-moni
+- assertNotVisible: −RM7.00
+- takeScreenshot: c1-l9-back

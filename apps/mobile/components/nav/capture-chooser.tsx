@@ -29,7 +29,6 @@ type Choice = {
   icon: IconSymbolName;
   bubble: string;
   glyph: 'onPastel' | 'moniGlyph';
-  /** Until C1, C2 and H2 build the capture pages, each row opens the closest v1 page. */
   href: Href;
 };
 
@@ -76,7 +75,11 @@ const ROWS_TO_CLOSE = 23;
 /** The sheet's own bottom padding above the inset. */
 const SHEET_BOTTOM_PADDING = 20;
 
-/** The + opens the chooser; a picked row closes it and pushes that row's page. */
+/**
+ * The + opens the chooser. A pick settles the sheet, which starts its drop, and
+ * the push follows in the same task, so the page slides in while the sheet
+ * falls (V2A-CaptureFlow-VA) with no frame of the bare origin between them.
+ */
 export async function openCaptureChooser() {
   const choice = await openSheet({ kind: 'chooser' });
   if (choice) router.push(CHOICES[choice].href);
