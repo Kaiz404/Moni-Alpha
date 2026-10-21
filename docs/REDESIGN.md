@@ -74,12 +74,12 @@ Checked 21 Oct 2026. These need data or product work before their screens can be
 
 | Designed | Today | Needed |
 | --- | --- | --- |
-| Bills list with due dates, "Add a bill" | Recurring series detected on device (`lib/ai/facts/recurring.ts`, `recurring_overrides`), used only by the chat forecast | A bills model or promote recurring series; screens |
+| Bills list with due dates, "Add a bill" | `selectUpcomingBills` (`lib/finance/bills.ts`) lists this month's bills from detected recurring series and confirmed `recurring_overrides` | Screens (B1, B2) |
 | "Don't ask about similar" | Routine auto-add is a heuristic (`lib/ai/routine.ts`); no stored rules | Auto-add rule storage, list and "Ask again" in Capture sources |
-| Source tile (Manual, Voice, Moni, Notification, Camera) | Only `proposed_transactions.source_type`; `transactions` has no source | A source field on transactions |
+| Source tile (Manual, Voice, Moni, Notification, Camera) | `transactions.metadata.source`, written at every creation site; older rows have none and read as Manual | Voice and live-camera approvals write their own source (C2); the tile (A2) |
 | Merchant names | Not modelled | Alias table (raw alert merchant → name) |
-| Balance correction | `wallet/[id].tsx` adds a "Balance adjustment" income/expense with `analysisExcluded` | A distinct correction type or flag; UI per `V2H-WalletDetail` |
-| Main currency | `preferences.currency` exists, unused | Setting UI and focused-page filtering |
+| Balance correction | `createBalanceCorrection` writes the "Balance adjustment" with `analysisExcluded` and `metadata.kind: balance_correction` | UI per `V2H-WalletDetail` (K2) |
+| Main currency | `preferences.currency` (default `MYR`), read by `useMainCurrency()` | Setting UI and focused-page filtering |
 | Per-app "Record where I spend" | Location always captured (`lib/location/location-snapshot.ts`) | Per-wallet / per-package flag |
 | Capture log statuses | Computed at render ("Queued for review" etc.) | Stored status per notification; v2 wording |
 | Review history, Not mine / Later | `proposed_transactions` rows are deleted after review; reject only | Later (snooze) state; decide whether to keep history |
