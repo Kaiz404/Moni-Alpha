@@ -1,66 +1,48 @@
-import { useState } from 'react';
 import { Platform, View } from 'react-native';
+
+import { Button } from '@/components/ui/button';
 import { Text } from '@/components/ui/text';
-import { router } from 'expo-router';
-import { useAuth } from '@/lib/auth/auth-context';
 import { isGoogleSignInConfigured } from '@/lib/auth/google-signin';
-import { Press } from '@/components/ui/press';
 import { tid } from '@/lib/test-ids';
 
 type GoogleSignInButtonProps = {
-  disabled?: boolean;
-  onError?: (message: string) => void;
+  onPress: () => void;
+  busy: boolean;
+  disabled: boolean;
 };
 
+/** The "or" rule and the Sand **Continue with Google** capsule; hidden where Google sign-in is not set up. */
 export function GoogleSignInButton({
+  onPress,
+  busy,
   disabled,
-  onError,
 }: GoogleSignInButtonProps) {
-  const { signInWithGoogle } = useAuth();
-  const [loading, setLoading] = useState(false);
-
-  if (Platform.OS === 'web' || !isGoogleSignInConfigured()) {
-    return null;
-  }
-
-  const handlePress = async () => {
-    setLoading(true);
-    const { error, cancelled } = await signInWithGoogle();
-    setLoading(false);
-
-    if (error) {
-      if (!cancelled) {
-        onError?.(error.message);
-      }
-      return;
-    }
-
-    router.replace('/(tabs)' as any);
-  };
-
+  if (Platform.OS === 'web' || !isGoogleSignInConfigured()) return null;
   return (
-    <View className="mt-4">
-      <View className="my-4 flex-row items-center gap-3">
-        <View className="h-px flex-1 bg-border" />
-        <Text className="text-xs font-display-semibold uppercase tracking-wide text-muted">
+    <>
+      <View
+        className="flex-row items-center gap-3"
+        importantForAccessibility="no-hide-descendants"
+      >
+        <View className="h-[1.5px] flex-1 bg-hairline" />
+        <Text
+          variant="meta"
+          className="text-muted"
+        >
           or
         </Text>
-        <View className="h-px flex-1 bg-border" />
+        <View className="h-[1.5px] flex-1 bg-hairline" />
       </View>
-
-      <Press
+      <Button
         testID={tid('auth', 'continue-with-google')}
-        className={`min-h-13 flex-row items-center justify-center gap-3 rounded-2xl bg-card px-4 py-3 ${loading || disabled ? 'opacity-60' : ''}`}
-        onPress={handlePress}
-        disabled={loading || disabled}
-        accessibilityRole="button"
-        accessibilityLabel="Continue with Google"
-      >
-        <Text className="text-lg leading-none text-primary">G</Text>
-        <Text className="text-base font-display-semibold text-foreground">
-          {loading ? 'Connecting...' : 'Continue with Google'}
-        </Text>
-      </Press>
-    </View>
+        variant="secondary"
+        icon="google"
+        label="Continue with Google"
+        loading={busy}
+        loadingLabel="Opening Google…"
+        disabled={disabled}
+        onPress={onPress}
+      />
+    </>
   );
 }

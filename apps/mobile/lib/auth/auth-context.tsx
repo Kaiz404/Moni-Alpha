@@ -110,17 +110,6 @@ export function AuthProvider({
     });
     if (error)
       return { error: new Error(error.message), session: null };
-    if (data.user) {
-      await supabase.from('profiles').insert({
-        id: data.user.id,
-        display_name: parsed.data.displayName,
-        preferences: {
-          currency: 'USD',
-          theme: 'system',
-          notifications_enabled: true,
-        },
-      });
-    }
     return { error: null, session: data.session ?? null };
   };
 
