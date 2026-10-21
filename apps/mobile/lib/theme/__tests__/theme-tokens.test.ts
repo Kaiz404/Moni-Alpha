@@ -22,131 +22,92 @@ function variantBlock(variant: 'light' | 'dark') {
   return globalCss.slice(start, globalCss.indexOf('}', start));
 }
 
-const v1HookNames = [
-  'primary',
-  'primary-soft',
-  'primary-foreground',
-  'primary-muted',
-  'accent',
-  'accent-lilac',
-  'accent-peach',
-  'accent-lemon',
-  'accent-coral',
-  'accent-aqua',
-  'background',
-  'canvas',
-  'foreground',
-  'muted',
-  'muted-strong',
-  'inverse',
-  'border',
-  'border-subtle',
-  'border-strong',
-  'card',
-  'surface-1',
-  'surface-2',
-  'surface-raised',
-  'surface-tray',
-  'danger',
-  'warning',
-  'success',
-  'income',
-  'expense',
-  'transfer',
-  'state-pending',
-  'state-attention',
-  'state-approved',
-  'state-destructive',
-  'category-food',
-  'category-transport',
-  'category-shopping',
-  'category-home',
-  'category-health',
-  'category-entertainment',
-  'category-income',
-  'category-other',
-  'chart-1',
-  'chart-2',
-  'chart-3',
-  'chart-4',
-  'chart-5',
-  'chart-6',
-];
+function leafValues(value: unknown): unknown[] {
+  if (value !== null && typeof value === 'object') {
+    return Object.values(value).flatMap(leafValues);
+  }
+  return [value];
+}
 
 describe('generated theme tokens', () => {
-  it('copies canvas from both global.css variants', () => {
-    expect(variantBlock('light')).toContain('--color-canvas: #f7f7f2;');
-    expect(variantBlock('dark')).toContain('--color-canvas: #141513;');
-    expect(lightThemeTokens.canvas).toBe('#f7f7f2');
-    expect(darkThemeTokens.canvas).toBe('#141513');
-  });
-
-  it('names every token the v1 hook read, plus the three it skipped', () => {
-    expect(themeTokenNames).toEqual(expect.arrayContaining(v1HookNames));
-    expect(themeTokenNames.filter((name) => !v1HookNames.includes(name))).toEqual([
-      'background-muted',
-      'brand-mint',
-      'brand-mint-ink',
-    ]);
-    expect(themeTokenNames).toHaveLength(v1HookNames.length + 3);
+  it('copies the v2 Cream canvas and the V2F-Dark ground from global.css', () => {
+    expect(variantBlock('light')).toContain('--color-canvas: #f6f2e9;');
+    expect(variantBlock('dark')).toContain('--color-canvas: #161512;');
+    expect(lightThemeTokens.canvas).toBe('#f6f2e9');
+    expect(darkThemeTokens.canvas).toBe('#161512');
   });
 });
 
 describe('useThemeTokens', () => {
-  it('falls back to the v1 light values when Uniwind resolves nothing', () => {
+  it('reads every generated token exactly once', () => {
+    mockedUseCSSVariable.mockReturnValue(themeTokenNames.map((name) => `--color-${name}`));
+    const { result } = renderHook(() => useThemeTokens());
+
+    expect(leafValues(result.current).sort()).toEqual(
+      themeTokenNames.map((name) => `--color-${name}`).sort(),
+    );
+  });
+
+  it('falls back to the v2 light values when Uniwind resolves nothing', () => {
     mockedUseCSSVariable.mockReturnValue(themeTokenNames.map(() => undefined));
     const { result } = renderHook(() => useThemeTokens());
 
     expect(result.current).toEqual({
-      primary: '#236b47',
-      primarySoft: '#8ecf9d',
-      primaryForeground: '#ffffff',
-      primaryMuted: '#c8e6d4',
+      primary: '#17181a',
+      primaryForeground: '#fffdf8',
+      primaryMuted: '#d3eed9',
       accent: '#8ecf9d',
       accents: {
-        lilac: '#b39ae8',
-        peach: '#f0ad85',
-        lemon: '#e8cf50',
-        coral: '#e87d72',
-        aqua: '#72cec4',
+        lilac: '#c9b6f0',
+        peach: '#f5be98',
+        lemon: '#f2dc72',
+        coral: '#f1a399',
+        aqua: '#9fdcd3',
       },
-      background: '#ffffff',
-      canvas: '#f7f7f2',
-      foreground: '#1e211e',
-      muted: '#60665e',
-      mutedStrong: '#454b44',
-      inverse: '#f7f7f2',
-      border: '#dee1d9',
-      borderSubtle: '#e9ebe5',
-      borderStrong: '#c9cdc3',
-      card: '#ffffff',
-      surface1: '#ffffff',
-      surface2: '#e5e9dc',
-      surfaceRaised: '#ffffff',
-      surfaceTray: '#c8e6d4',
-      danger: '#b9413d',
-      warning: '#8a5b13',
+      background: '#f6f2e9',
+      backgroundMuted: '#ece5d6',
+      canvas: '#f6f2e9',
+      foreground: '#17181a',
+      muted: '#6b665c',
+      border: '#ddd5c5',
+      borderSubtle: '#efe8da',
+      borderStrong: '#a9a397',
+      card: '#fffdf8',
+      surface1: '#fffdf8',
+      surface2: '#ece5d6',
+      surfaceRaised: '#fffdf8',
+      surfaceTray: '#efe8da',
+      danger: '#b23e35',
+      warning: '#6b5410',
       success: '#236b47',
       income: '#236b47',
-      expense: '#b9413d',
-      transfer: '#277b85',
+      expense: '#17181a',
+      transfer: '#6b665c',
       states: {
-        pending: '#7660ad',
-        attention: '#8a5b13',
-        approved: '#236b47',
-        destructive: '#b9413d',
+        pending: '#3e3654',
+        attention: '#6b5410',
+        approved: '#174831',
+        destructive: '#8e2f28',
       },
-      category: {
-        food: '#d46f64',
-        transport: '#4f9a92',
-        shopping: '#9a7fd1',
-        home: '#d59a45',
-        health: '#61a777',
-        entertainment: '#b67eaa',
-        income: '#438e5a',
-        other: '#7b8179',
-      },
-      chart: ['#438e5a', '#4f9a92', '#9a7fd1', '#d59a45', '#d46f64', '#b67eaa'],
+      chart: ['#a9ddb5', '#9fc4e8', '#c9b6f0', '#f2dc72', '#f1a399', '#f5be98'],
+      sand: '#ece5d6',
+      sandLight: '#efe8da',
+      hairline: '#ddd5c5',
+      track: '#ece5d6',
+      ink2: '#4a463e',
+      inactive: '#a9a397',
+      tabBar: '#17181a',
+      onPastel: '#17181a',
+      deepMint: '#236b47',
+      mint: '#a9ddb5',
+      mintKey: '#8ecf9d',
+      lemon: '#f2dc72',
+      lilac: '#c9b6f0',
+      peach: '#f5be98',
+      coral: '#f1a399',
+      sky: '#9fc4e8',
+      aqua: '#9fdcd3',
+      over: '#b23e35',
     });
   });
 
@@ -154,17 +115,20 @@ describe('useThemeTokens', () => {
     mockedUseCSSVariable.mockReturnValue(themeTokenNames.map((name) => darkThemeTokens[name]));
     const { result } = renderHook(() => useThemeTokens());
 
-    expect(result.current.canvas).toBe('#141513');
-    expect(result.current.primary).toBe('#a9e8b5');
-    expect(result.current.states.pending).toBe('#c8b8f4');
-    expect(result.current.category.food).toBe('#ec9c92');
+    expect(result.current.canvas).toBe('#161512');
+    expect(result.current.card).toBe('#211f1b');
+    expect(result.current.foreground).toBe('#f3eee3');
+    expect(result.current.primary).toBe('#ede6d8');
+    expect(result.current.onPastel).toBe('#17181a');
+    expect(result.current.tabBar).toBe('#2a2823');
+    expect(result.current.states.pending).toBe('#cfbff3');
     expect(result.current.chart).toEqual([
-      '#a9e8b5',
-      '#8fd2ca',
-      '#c7b4f0',
-      '#e9bd6b',
-      '#ec9c92',
-      '#d5a6cb',
+      '#8fc79d',
+      '#86aed6',
+      '#b29de0',
+      '#e0c85e',
+      '#de8b80',
+      '#e3a47e',
     ]);
   });
 });

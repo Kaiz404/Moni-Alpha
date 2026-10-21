@@ -381,7 +381,7 @@ export default function InsightsScreen() {
             <Surface
               tone="peach"
               smoothing="hero"
-              className="mb-6 rounded-moni-xl p-5"
+              className="mb-6 rounded-card p-5"
             >
               <View className="flex-row items-baseline justify-between">
                 <Text className="text-xl font-bold text-foreground">

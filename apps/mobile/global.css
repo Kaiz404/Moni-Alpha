@@ -2,166 +2,168 @@
 @import 'uniwind';
 
 /*
- * Moni visual language (Uniwind / Tailwind v4).
+ * Moni visual language, Redesign v2 "Cream & Capsule" (Uniwind / Tailwind v4).
  *
  * Semantic utilities are the implementation contract: use `bg-canvas`,
- * `bg-card`, `text-foreground`, `text-muted`, and state/category tokens
- * instead of raw colours in screens. The starting palette and component
- * rules are documented in docs/DESIGN_SYSTEM.md.
+ * `bg-card`, `text-foreground`, `text-muted`, and the v2 roles (`bg-sand`,
+ * `text-ink-2`, `bg-mint`, ...) instead of raw colours in screens. Values come
+ * from docs/redesign/tokens.md (light) and the V2F-Dark board (dark).
+ * constants/theme-tokens.generated.ts is generated from this file.
  */
 
 @theme {
-  /* A restrained mint scale for utility states that need a shade ramp. */
-  --color-brand-50: #f0faf1;
-  --color-brand-100: #c8e6d4;
-  --color-brand-200: #b9dfc0;
-  --color-brand-300: #8ecf9d;
-  --color-brand-400: #68b97b;
-  --color-brand-500: #438e5a;
-  --color-brand-600: #236b47;
-  --color-brand-700: #1d593c;
-  --color-brand-800: #174831;
-  --color-brand-900: #103322;
+  /* Funnel Display, one static file per weight (Android picks fonts by family). */
+  --font-display: FunnelDisplay_400Regular;
+  --font-display-semibold: FunnelDisplay_600SemiBold;
+  --font-display-bold: FunnelDisplay_700Bold;
 
-  /* Explicit shape and rhythm tokens from the design system. */
-  --radius-moni-sm: 10px;
-  --radius-moni-md: 16px;
-  --radius-moni-lg: 22px;
-  --radius-moni-xl: 28px;
-  --spacing-moni-1: 4px;
-  --spacing-moni-2: 8px;
-  --spacing-moni-3: 12px;
-  --spacing-moni-4: 16px;
-  --spacing-moni-5: 20px;
-  --spacing-moni-6: 24px;
-  --spacing-moni-8: 32px;
-  --spacing-moni-10: 40px;
+  /* Capsules use rounded-full. */
+  --radius-card: 26px;
+  --radius-tile: 22px;
+  --radius-field: 16px;
+  --radius-sheet: 32px;
+
+  --spacing-screen: 20px;
+  --spacing-section: 24px;
+  --spacing-card: 18px;
+  --spacing-bubble: 42px;
+  --spacing-touch: 44px;
 }
 
 @layer theme {
   :root {
     @variant light {
-      /* Warm, matte foundations. */
-      --color-background: #ffffff;
-      --color-background-muted: #f7f7f2;
-      --color-canvas: #f7f7f2;
-      --color-card: #ffffff;
-      --color-surface-1: #ffffff;
-      --color-surface-2: #e5e9dc;
-      --color-surface-raised: #ffffff;
-      --color-surface-tray: #c8e6d4;
+      /* v1 names, mapped to their v2 roles. */
+      --color-background: #f6f2e9;
+      --color-background-muted: #ece5d6;
+      --color-canvas: #f6f2e9;
+      --color-card: #fffdf8;
+      --color-surface-1: #fffdf8;
+      --color-surface-2: #ece5d6;
+      --color-surface-raised: #fffdf8;
+      --color-surface-tray: #efe8da;
 
-      --color-foreground: #1e211e;
-      --color-muted: #60665e;
-      --color-muted-strong: #454b44;
-      --color-inverse: #f7f7f2;
-      --color-border: #dee1d9;
-      --color-border-subtle: #e9ebe5;
-      --color-border-strong: #c9cdc3;
+      --color-foreground: #17181a;
+      --color-muted: #6b665c;
+      --color-border: #ddd5c5;
+      --color-border-subtle: #efe8da;
+      --color-border-strong: #a9a397;
 
-      /* Brand and selective expressive accents. */
-      --color-primary: #236b47;
-      --color-primary-soft: #8ecf9d;
-      --color-primary-foreground: #ffffff;
-      --color-primary-muted: #c8e6d4;
+      /* Primary is the ink role: primary buttons, the Moni button. */
+      --color-primary: #17181a;
+      --color-primary-foreground: #fffdf8;
+      --color-primary-muted: #d3eed9;
       --color-accent: #8ecf9d;
-      --color-accent-lilac: #b39ae8;
-      --color-accent-peach: #f0ad85;
-      --color-accent-lemon: #e8cf50;
-      --color-accent-coral: #e87d72;
-      --color-accent-aqua: #72cec4;
-      --color-brand-mint: #8ecf9d;
-      --color-brand-mint-ink: #236b47;
+      --color-accent-lilac: #c9b6f0;
+      --color-accent-peach: #f5be98;
+      --color-accent-lemon: #f2dc72;
+      --color-accent-coral: #f1a399;
+      --color-accent-aqua: #9fdcd3;
 
-      /* Financial states: always pair with label/icon in the UI. */
+      /* Expenses are ink; only money in is coloured. */
       --color-success: #236b47;
-      --color-danger: #b9413d;
-      --color-warning: #8a5b13;
+      --color-danger: #b23e35;
+      --color-warning: #6b5410;
       --color-income: #236b47;
-      --color-expense: #b9413d;
-      --color-transfer: #277b85;
-      --color-state-pending: #7660ad;
-      --color-state-attention: #8a5b13;
-      --color-state-approved: #236b47;
-      --color-state-destructive: #b9413d;
+      --color-expense: #17181a;
+      --color-transfer: #6b665c;
+      --color-state-pending: #3e3654;
+      --color-state-attention: #6b5410;
+      --color-state-approved: #174831;
+      --color-state-destructive: #8e2f28;
 
-      /* Stable category memory aids. */
-      --color-category-food: #d46f64;
-      --color-category-transport: #4f9a92;
-      --color-category-shopping: #9a7fd1;
-      --color-category-home: #d59a45;
-      --color-category-health: #61a777;
-      --color-category-entertainment: #b67eaa;
-      --color-category-income: #438e5a;
-      --color-category-other: #7b8179;
+      --color-chart-1: #a9ddb5;
+      --color-chart-2: #9fc4e8;
+      --color-chart-3: #c9b6f0;
+      --color-chart-4: #f2dc72;
+      --color-chart-5: #f1a399;
+      --color-chart-6: #f5be98;
 
-      /* Chart colours intentionally mirror the category palette. */
-      --color-chart-1: #438e5a;
-      --color-chart-2: #4f9a92;
-      --color-chart-3: #9a7fd1;
-      --color-chart-4: #d59a45;
-      --color-chart-5: #d46f64;
-      --color-chart-6: #b67eaa;
+      /* v2 roles with no v1 name. */
+      --color-sand: #ece5d6;
+      --color-sand-light: #efe8da;
+      --color-hairline: #ddd5c5;
+      --color-track: #ece5d6;
+      --color-ink-2: #4a463e;
+      --color-inactive: #a9a397;
+      --color-tab-bar: #17181a;
+      --color-on-pastel: #17181a;
+      --color-deep-mint: #236b47;
+      --color-mint: #a9ddb5;
+      --color-mint-key: #8ecf9d;
+      --color-lemon: #f2dc72;
+      --color-lilac: #c9b6f0;
+      --color-peach: #f5be98;
+      --color-coral: #f1a399;
+      --color-sky: #9fc4e8;
+      --color-aqua: #9fdcd3;
+      --color-over: #b23e35;
     }
 
     @variant dark {
-      /* Carbon surfaces retain a warm, readable hierarchy. */
-      --color-background: #1d1f1c;
-      --color-background-muted: #181a17;
-      --color-canvas: #141513;
-      --color-card: #1d1f1c;
-      --color-surface-1: #1d1f1c;
-      --color-surface-2: #2a2e28;
-      --color-surface-raised: #262925;
-      --color-surface-tray: #2a4535;
+      /* Warm near-black grounds; pastels deepen a step and keep ink text. */
+      --color-background: #161512;
+      --color-background-muted: #2c2924;
+      --color-canvas: #161512;
+      --color-card: #211f1b;
+      --color-surface-1: #211f1b;
+      --color-surface-2: #2c2924;
+      --color-surface-raised: #211f1b;
+      --color-surface-tray: #26241f;
 
-      --color-foreground: #f4f5ef;
-      --color-muted: #b9bdb5;
-      --color-muted-strong: #d2d5cc;
-      --color-inverse: #1d1f1c;
-      --color-border: #343732;
-      --color-border-subtle: #2a2d28;
-      --color-border-strong: #50544c;
+      --color-foreground: #f3eee3;
+      --color-muted: #a39c8e;
+      --color-border: #3a362f;
+      --color-border-subtle: #26241f;
+      --color-border-strong: #9d968a;
 
-      --color-primary: #a9e8b5;
-      --color-primary-soft: #79c98a;
-      --color-primary-foreground: #17351f;
-      --color-primary-muted: #2a4535;
-      --color-accent: #79c98a;
-      --color-accent-lilac: #a888f0;
-      --color-accent-peach: #e09060;
-      --color-accent-lemon: #d4ad35;
-      --color-accent-coral: #e06860;
-      --color-accent-aqua: #5cbdb2;
-      --color-brand-mint: #79c98a;
-      --color-brand-mint-ink: #a9e8b5;
+      /* The ink role flips to cream. */
+      --color-primary: #ede6d8;
+      --color-primary-foreground: #17181a;
+      --color-primary-muted: #1e3828;
+      --color-accent: #8ecf9d;
+      --color-accent-lilac: #b29de0;
+      --color-accent-peach: #e3a47e;
+      --color-accent-lemon: #e0c85e;
+      --color-accent-coral: #de8b80;
+      --color-accent-aqua: #82c7bd;
 
-      --color-success: #a9e8b5;
-      --color-danger: #f3a39d;
-      --color-warning: #efd279;
-      --color-income: #a9e8b5;
-      --color-expense: #f3a39d;
-      --color-transfer: #91d5cf;
-      --color-state-pending: #c8b8f4;
-      --color-state-attention: #efd279;
-      --color-state-approved: #a9e8b5;
-      --color-state-destructive: #f3a39d;
+      --color-success: #7fcf98;
+      --color-danger: #f0897e;
+      --color-warning: #edd36e;
+      --color-income: #7fcf98;
+      --color-expense: #f3eee3;
+      --color-transfer: #a39c8e;
+      --color-state-pending: #cfbff3;
+      --color-state-attention: #edd36e;
+      --color-state-approved: #9fe0b3;
+      --color-state-destructive: #f6a79e;
 
-      --color-category-food: #ec9c92;
-      --color-category-transport: #8fd2ca;
-      --color-category-shopping: #c7b4f0;
-      --color-category-home: #e9bd6b;
-      --color-category-health: #96d4a6;
-      --color-category-entertainment: #d5a6cb;
-      --color-category-income: #a9e8b5;
-      --color-category-other: #b9bdb5;
+      --color-chart-1: #8fc79d;
+      --color-chart-2: #86aed6;
+      --color-chart-3: #b29de0;
+      --color-chart-4: #e0c85e;
+      --color-chart-5: #de8b80;
+      --color-chart-6: #e3a47e;
 
-      --color-chart-1: #a9e8b5;
-      --color-chart-2: #8fd2ca;
-      --color-chart-3: #c7b4f0;
-      --color-chart-4: #e9bd6b;
-      --color-chart-5: #ec9c92;
-      --color-chart-6: #d5a6cb;
+      --color-sand: #2c2924;
+      --color-sand-light: #26241f;
+      --color-hairline: #3a362f;
+      --color-track: #26241f;
+      --color-ink-2: #c7c0b2;
+      --color-inactive: #9d968a;
+      --color-tab-bar: #2a2823;
+      --color-on-pastel: #17181a;
+      --color-deep-mint: #7fcf98;
+      --color-mint: #8fc79d;
+      --color-mint-key: #8ecf9d;
+      --color-lemon: #e0c85e;
+      --color-lilac: #b29de0;
+      --color-peach: #e3a47e;
+      --color-coral: #de8b80;
+      --color-sky: #86aed6;
+      --color-aqua: #82c7bd;
+      --color-over: #f0897e;
     }
   }
 }
