@@ -33,6 +33,11 @@ module.exports = defineConfig([
               message:
                 "Import Text from '@/components/ui/text' so it renders in Funnel Display. scripts/codemods/text-to-v2.mjs rewrites the import and the font-* weight classes.",
             },
+            {
+              name: 'expo-haptics',
+              message:
+                "Call the moment functions in '@/lib/haptics' (keypadTap, approve, notMine, ...) so every haptic follows the tokens.md table.",
+            },
           ],
         },
       ],

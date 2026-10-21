@@ -14,7 +14,6 @@ import {
 } from 'react-native';
 import { Text } from '@/components/ui/text';
 import { router } from 'expo-router';
-import * as Haptics from 'expo-haptics';
 import { MaterialDesignIcons } from '@react-native-vector-icons/material-design-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
@@ -389,7 +388,6 @@ export function CaptureButton() {
   const chooseAction = useCallback(
     (id: CaptureActionId) => {
       setOpen(false);
-      void Haptics.selectionAsync();
 
       setTimeout(
         () => {
@@ -501,7 +499,6 @@ export function CaptureButton() {
         expanded={open}
         onPress={() => {
           setOpen((value) => !value);
-          void Haptics.selectionAsync();
         }}
         animatedStyle={fabStyle}
         iconColor={tokens.primary}

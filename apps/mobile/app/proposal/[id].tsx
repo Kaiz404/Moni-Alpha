@@ -34,6 +34,7 @@ import {
 } from '@/lib/supabase/proposed-transactions';
 import { getWallets } from '@/lib/supabase/wallets';
 import { getCategories } from '@/lib/supabase/categories';
+import { approve, notMine } from '@/lib/haptics';
 
 export default function ProposalDetailScreen() {
   const tokens = useThemeTokens();
@@ -184,6 +185,7 @@ export default function ProposalDetailScreen() {
           transferToWalletId:
             effectiveType === 'transfer' ? transferToWalletId : null,
         });
+        approve();
         router.back();
       } catch (e) {
         const message =
@@ -202,6 +204,7 @@ export default function ProposalDetailScreen() {
     setIsActioning(true);
     try {
       await rejectProposedTransaction(proposal.id);
+      notMine();
       router.back();
     } catch (e) {
       const message =

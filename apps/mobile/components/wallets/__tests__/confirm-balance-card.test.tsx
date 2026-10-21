@@ -6,7 +6,7 @@ import {
 import { router } from 'expo-router';
 import { formatMinorAmount } from '@/lib/finance/money';
 import { financeProjection$ } from '@/lib/finance/projection';
-import { hapticBalanceConfirmed } from '@/lib/haptics';
+import { approve } from '@/lib/haptics';
 import { confirmWalletBalance } from '@/lib/supabase/wallets';
 import {
   NOW,
@@ -32,7 +32,7 @@ jest.mock('react-native-reanimated', () =>
 );
 jest.mock('expo-router', () => ({ router: { push: jest.fn() } }));
 jest.mock('@/lib/haptics', () => ({
-  hapticBalanceConfirmed: jest.fn(),
+  approve: jest.fn(),
 }));
 jest.mock('@/lib/supabase/wallets', () => ({
   confirmWalletBalance: jest.fn((id: string) => {
@@ -88,7 +88,7 @@ describe('ConfirmBalanceCard', () => {
 
     fireEvent.press(screen.getByLabelText(/^Yes, Maybank is /));
     expect(confirmWalletBalance).toHaveBeenCalledWith('maybank');
-    expect(hapticBalanceConfirmed).toHaveBeenCalled();
+    expect(approve).toHaveBeenCalled();
     expect(screen.queryByText('Maybank')).toBeNull();
     expect(screen.getByText('DBS')).toBeTruthy();
   });

@@ -10,7 +10,7 @@ import { PrimaryButton } from '@/components/ui/primary-button';
 import { Surface } from '@/components/ui/surface';
 import { TactilePressable } from '@/components/ui/tactile-pressable';
 import { formatMinorAmount } from '@/lib/finance/money';
-import { hapticBalanceConfirmed } from '@/lib/haptics';
+import { approve } from '@/lib/haptics';
 import { confirmWalletBalance } from '@/lib/supabase/wallets';
 import { useBalanceConfirmation } from '@/lib/wallets/balance-confirmation';
 
@@ -99,7 +99,7 @@ export function ConfirmBalanceCard({
                     label="Yes, that’s right"
                     accessibilityLabel={`Yes, ${wallet.name} is ${balance}`}
                     onPress={() => {
-                      hapticBalanceConfirmed();
+                      approve();
                       confirmWalletBalance(wallet.id);
                     }}
                   />

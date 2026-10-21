@@ -8,7 +8,7 @@ import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Surface } from '@/components/ui/surface';
 import { TactilePressable } from '@/components/ui/tactile-pressable';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
-import { hapticVoiceStart, hapticVoiceStop } from '@/lib/haptics';
+import { toggleOff, toggleOn } from '@/lib/haptics';
 
 type ChatInputBarProps = {
   input: string;
@@ -120,11 +120,11 @@ export function ChatInputBar({
                 : tokens.primary,
             }}
             onPressIn={() => {
-              hapticVoiceStart();
+              toggleOn();
               onPressInMic();
             }}
             onPressOut={() => {
-              hapticVoiceStop();
+              toggleOff();
               onPressOutMic();
             }}
             accessibilityLabel={

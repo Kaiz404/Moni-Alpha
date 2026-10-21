@@ -1,7 +1,7 @@
 import { Pressable, View } from 'react-native';
 import { Text } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
-import { hapticKeypadPress } from '@/lib/haptics';
+import { keypadTap } from '@/lib/haptics';
 import { IconSymbol } from './icon-symbol';
 
 const ROWS = [
@@ -25,7 +25,7 @@ export function NumericKeypad({
   const tokens = useThemeTokens();
 
   const handlePress = (key: string) => {
-    hapticKeypadPress();
+    keypadTap();
     onKeyPress(key);
   };
 
