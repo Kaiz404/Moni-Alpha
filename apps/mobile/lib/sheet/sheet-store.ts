@@ -61,6 +61,8 @@ type Sheets = {
   /** Dates are local `YYYY-MM-DD`. */
   date: { request: { selected: string }; result: string };
   chooser: { request: object; result: CaptureChoice };
+  /** The Budget tab's month chooser; months are `YYYY-MM`. */
+  month: { request: { months: { month: string; name: string; meta: string }[]; selected: string }; result: string };
   confirm: {
     request: {
       title: string;

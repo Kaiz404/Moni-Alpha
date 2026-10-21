@@ -10,6 +10,8 @@ export const userPreferencesSchema = z.object({
   default_wallet_id: z.string().uuid().nullable().optional(),
   /** IANA timezone used for budget month boundaries and debt due states. */
   finance_timezone: z.string().min(1).max(100).optional(),
+  /** The month's total budget in the main currency, whole units; null falls back to the sum of category budgets. */
+  monthly_budget: z.number().int().positive().nullable().optional(),
 });
 
 // Profile schema

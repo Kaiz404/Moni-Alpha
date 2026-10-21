@@ -1,0 +1,166 @@
+import { useState } from 'react';
+import { View } from 'react-native';
+import Svg, { Circle, Rect } from 'react-native-svg';
+
+import { IconSymbol } from '@/components/ui/icon-symbol';
+import { Press } from '@/components/ui/press';
+import { Text } from '@/components/ui/text';
+import { useThemeTokens } from '@/hooks/use-theme-tokens';
+import type { SpendPlace } from '@/lib/finance/budget-month';
+import { formatMoney } from '@/lib/finance/format-money';
+import { tid } from '@/lib/test-ids';
+
+const HEIGHT = 132;
+const PAD = 24;
+const MAX_BUBBLES = 12;
+const LABELS = 3;
+
+type MapTeaserProps = {
+  places: readonly SpendPlace[];
+  expenses: number;
+  withPlace: number;
+  monthName: string;
+  currency: string;
+  onOpen: () => void;
+};
+
+/**
+ * "Where you spend" on the Budget tab: the month's places as bubbles sized
+ * by spend, the three biggest named. The whole card opens the map.
+ */
+export function MapTeaser({
+  places,
+  expenses,
+  withPlace,
+  monthName,
+  currency,
+  onOpen,
+}: MapTeaserProps) {
+  const tokens = useThemeTokens();
+  const [width, setWidth] = useState(0);
+  const shown = places.slice(0, MAX_BUBBLES);
+  const lats = shown.map((place) => place.latitude);
+  const lngs = shown.map((place) => place.longitude);
+  const [minLat, maxLat] = [Math.min(...lats), Math.max(...lats)];
+  const [minLng, maxLng] = [Math.min(...lngs), Math.max(...lngs)];
+  const biggest = Number(shown[0]?.spentMinor ?? 1);
+  const point = (place: SpendPlace) => ({
+    x: PAD + ((place.longitude - minLng) / (maxLng - minLng || 1)) * (width - PAD * 2 || 1),
+    y: PAD + ((maxLat - place.latitude) / (maxLat - minLat || 1)) * (HEIGHT - PAD * 2),
+    r: 8 + 13 * Math.sqrt(Number(place.spentMinor) / biggest),
+  });
+  const single = shown.length === 1;
+  const whole = (value: number) => formatMoney(value, currency, { whole: true });
+  const caption = expenses
+    ? `${places.length === 1 ? '1 place' : `${places.length} places`} · ${withPlace} of ${expenses} expenses had a place`
+    : `Nothing spent in ${monthName} yet`;
+  const label = shown.length
+    ? `Where you spend. Biggest: ${shown
+        .slice(0, LABELS)
+        .map((place) => `${place.name} ${formatMoney(place.spentMinor, currency)}`)
+        .join(', ')}. Open the map`
+    : 'Where you spend. Open the map';
+
+  return (
+    <Press
+      testID={tid('budget', 'open-map')}
+      accessibilityLabel={label}
+      onPress={onOpen}
+      className="gap-2.5 rounded-card bg-card px-[18px] py-3.5"
+    >
+      <View className="flex-row items-center justify-between">
+        <Text
+          variant="cardTitle"
+          className="text-foreground"
+        >
+          Where you spend
+        </Text>
+        <View className="flex-row items-center gap-0.5">
+          <Text className="text-[15px] leading-[21px] font-display-semibold text-deep-mint">
+            Open map
+          </Text>
+          <IconSymbol
+            name="chevron-right"
+            size={18}
+            color={tokens.deepMint}
+          />
+        </View>
+      </View>
+      <View
+        className="overflow-hidden rounded-field bg-sand-light"
+        style={{ height: HEIGHT }}
+        onLayout={(event) => setWidth(event.nativeEvent.layout.width)}
+      >
+        {width > 0 && shown.length ? (
+          <>
+            <Svg
+              width={width}
+              height={HEIGHT}
+            >
+              <Rect
+                x={0}
+                y={HEIGHT * 0.55}
+                width={width}
+                height={6}
+                fill={tokens.card}
+              />
+              <Rect
+                x={width * 0.42}
+                y={0}
+                width={5}
+                height={HEIGHT}
+                fill={tokens.card}
+              />
+              {[...shown].reverse().map((place, index) => {
+                const at = single ? { x: width / 2, y: HEIGHT / 2, r: 18 } : point(place);
+                return (
+                  <Circle
+                    key={index}
+                    cx={at.x}
+                    cy={at.y}
+                    r={at.r}
+                    fill={tokens.coral}
+                    fillOpacity={0.78}
+                    stroke={tokens.foreground}
+                    strokeWidth={1.5}
+                  />
+                );
+              })}
+            </Svg>
+            {shown.slice(0, LABELS).map((place, index) => {
+              const at = single ? { x: width / 2, y: HEIGHT / 2, r: 18 } : point(place);
+              const text = `${place.name} · ${whole(Number(place.spentMinor))}`;
+              const chipWidth = Math.min(width - 16, 12 + text.length * 7);
+              const below = at.y < HEIGHT / 2;
+              return (
+                <View
+                  key={index}
+                  pointerEvents="none"
+                  className="absolute h-6 justify-center rounded-full bg-card px-2.5"
+                  style={{
+                    left: Math.max(8, Math.min(width - chipWidth - 8, at.x - chipWidth / 2)),
+                    top: Math.max(6, Math.min(HEIGHT - 30, below ? at.y + at.r + 4 : at.y - at.r - 28)),
+                    maxWidth: width - 16,
+                  }}
+                >
+                  <Text
+                    className="text-[12px] font-display-bold text-foreground"
+                    numberOfLines={1}
+                  >
+                    {text}
+                  </Text>
+                </View>
+              );
+            })}
+          </>
+        ) : null}
+      </View>
+      <Text
+        variant="meta"
+        className="text-muted"
+      >
+        {caption}
+      </Text>
+    </Press>
+  );
+}

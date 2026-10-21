@@ -2,6 +2,20 @@ import type { RecurringOverride, UpcomingBill } from '@repo/types';
 import { addMonths, dayKey, dayNumber, nextMonthStart } from '@/lib/ai/facts/days';
 import { detectRecurring, seriesKey, type FactsTransaction } from '@/lib/ai/facts/recurring';
 
+/** Each series' latest payment, for the wallet it pays from and the category it lands in. */
+export function lastPaymentBySeries<T extends FactsTransaction>(
+  transactions: readonly T[],
+): Map<string, T> {
+  const latest = new Map<string, T>();
+  for (const tx of transactions) {
+    const key = seriesKey(tx);
+    if (!key) continue;
+    const current = latest.get(key);
+    if (!current || tx.transactionDate > current.transactionDate) latest.set(key, tx);
+  }
+  return latest;
+}
+
 export function selectUpcomingBills(
   now: Date,
   transactions: readonly FactsTransaction[],

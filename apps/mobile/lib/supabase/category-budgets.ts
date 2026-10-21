@@ -1,8 +1,15 @@
 import { randomUUID } from 'expo-crypto';
-import { decimalToMinor, minorToDecimal, type CategoryBudget, type MinorAmount } from '@repo/types';
-import { categoryBudgets$ } from '@/lib/store';
+import {
+  decimalToMinor,
+  minorToDecimal,
+  userPreferencesSchema,
+  type CategoryBudget,
+  type MinorAmount,
+} from '@repo/types';
+import { categoryBudgets$, profilePreferences$ } from '@/lib/store';
 import { getRecordValues, patchRow } from '@/lib/store/helpers';
 import { getUserId } from '@/lib/supabase/client';
+import { updateProfilePreferences } from '@/lib/supabase/profile';
 
 type BudgetRow = {
   id: string;
@@ -47,14 +54,21 @@ export async function upsertCategoryBudget(
   if (!userId) throw new Error('Not authenticated');
 
   const now = new Date().toISOString();
-  const existing = getRecordValues<BudgetRow>(categoryBudgets$).find(
+  // The table is unique on (user, category, currency) across soft-deleted rows, so a removed budget is revived.
+  const existing = Object.values(
+    (categoryBudgets$.peek() ?? {}) as Record<string, BudgetRow | undefined>,
+  ).find(
     (r) =>
-      r.user_id === userId && r.category_id === categoryId && r.currency === currency.toUpperCase(),
+      r?.user_id === userId &&
+      r.category_id === categoryId &&
+      r.currency === currency.toUpperCase(),
   );
 
   if (existing?.id) {
-    patchRow(categoryBudgets$, existing.id, {
+    categoryBudgets$[existing.id].set({
+      ...existing,
       amount: minorToDecimal(amountMinor),
+      deleted: false,
       updated_at: now,
     });
     const row = getRecordValues<BudgetRow>(categoryBudgets$).find((r) => r.id === existing.id);
@@ -76,6 +90,16 @@ export async function upsertCategoryBudget(
   const row = getRecordValues<BudgetRow>(categoryBudgets$).find((r) => r.id === id);
   if (!row) throw new Error('Failed to create budget');
   return rowToBudget(row);
+}
+
+/**
+ * The month's total budget in the main currency, whole units, or null to fall
+ * back to the sum of category budgets. Shows at once; the profile saves behind it.
+ */
+export async function setMonthlyBudget(total: number | null): Promise<void> {
+  const current = profilePreferences$.peek() ?? userPreferencesSchema.parse({});
+  profilePreferences$.set({ ...current, monthly_budget: total });
+  await updateProfilePreferences({ monthly_budget: total });
 }
 
 export async function deleteCategoryBudget(categoryId: string, currency: string): Promise<void> {
