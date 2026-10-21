@@ -7,8 +7,10 @@ import {
   ScrollView,
 } from 'react-native';
 
+import { useNow } from '@/components/budget/use-budget';
 import { NotFound } from '@/components/ui/empty-tile';
 import { Page } from '@/components/ui/page';
+import { WalletBalanceChart } from '@/components/wallets/wallet-balance-chart';
 import { WalletHero } from '@/components/wallets/wallet-hero';
 import { WalletMenu } from '@/components/wallets/wallet-menu';
 import {
@@ -50,6 +52,7 @@ export default function WalletScreen() {
   const proposals = useValue(pendingProposals$(userId));
   const wallets = useValue(walletsForUser$(userId));
   const categories = useValue(categoriesForUser$(userId));
+  const now = useNow();
 
   const lookups = useMemo<RowLookups>(
     () => ({
@@ -133,6 +136,11 @@ export default function WalletScreen() {
             balanceMinor={balanceMinor}
             link={link}
             initialEdit={params.edit === 'balance' ? 'balance' : null}
+          />
+          <WalletBalanceChart
+            wallet={wallet}
+            transactions={transactions}
+            now={now}
           />
           <ReviewStrip
             proposals={waiting}

@@ -22,7 +22,7 @@ import type { BalanceMonth, SpendingMonth } from '@/lib/finance/activity-series'
 import { formatMoney } from '@/lib/finance/format-money';
 import { scrubStep } from '@/lib/haptics';
 import { springs } from '@/lib/motion/tokens';
-import { tid } from '@/lib/test-ids';
+import { tid, type Screen } from '@/lib/test-ids';
 
 export type ActivityChartMode = 'spending' | 'balance';
 
@@ -139,7 +139,7 @@ export function ActivityChart(props: ActivityChartProps) {
   );
 }
 
-function Legend({ spend, paced }: { spend: boolean; paced: boolean }) {
+export function Legend({ spend, paced }: { spend: boolean; paced: boolean }) {
   const tokens = useThemeTokens();
   return (
     <View className="flex-row items-center justify-between gap-2">
@@ -408,7 +408,22 @@ function Bar({
   );
 }
 
-function BalancePlot({ balance, currency, selectedDay, onSelectDay, width, month, now }: PlotProps) {
+type BalancePlotProps = Pick<
+  ActivityChartProps,
+  'balance' | 'currency' | 'selectedDay' | 'onSelectDay' | 'now'
+> & { width: number; month: string; screen?: Screen };
+
+/** Closing balance per day across the month; the wallet page draws it for one wallet. */
+export function BalancePlot({
+  balance,
+  currency,
+  selectedDay,
+  onSelectDay,
+  width,
+  month,
+  now,
+  screen = 'activity',
+}: BalancePlotProps) {
   const tokens = useThemeTokens();
   const { days, daysInMonth } = balance;
   const values = days.map((d) => d.balanceMinor);
@@ -516,7 +531,7 @@ function BalancePlot({ balance, currency, selectedDay, onSelectDay, width, month
         {days.map((day, index) => (
           <Press
             key={day.key}
-            testID={tid('activity', 'chart', 'day', day.key)}
+            testID={tid(screen, 'chart', 'day', day.key)}
             accessibilityLabel={`${dayLabel(day.key, now)}, closing balance ${formatMoney(day.balanceMinor, currency)}`}
             accessibilityState={{ selected: day.key === selectedDay }}
             pressedScale={1}

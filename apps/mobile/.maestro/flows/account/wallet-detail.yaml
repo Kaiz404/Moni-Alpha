@@ -42,6 +42,8 @@ tags:
 - assertVisible:
     id: wallet.balance-not-right
 - assertVisible: Checked today
+- assertVisible: 'Same as on 1 .*'
+- assertVisible: Tap or drag
 - assertVisible: Transactions
 - scrollUntilVisible:
     element:
