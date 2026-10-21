@@ -139,7 +139,7 @@ export function ChatInputBar({
               size={22}
               color={
                 isSpeechRecognizing
-                  ? tokens.foreground
+                  ? tokens.onPastel
                   : tokens.primaryForeground
               }
             />

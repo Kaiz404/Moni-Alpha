@@ -486,7 +486,7 @@ export function CaptureButton() {
               accessibilityLabel="Close capture menu"
               onPress={() => setOpen(false)}
               animatedStyle={fabStyle}
-              iconColor={tokens.primary}
+              iconColor={tokens.onPastel}
             />
           </View>
         </View>
@@ -501,7 +501,7 @@ export function CaptureButton() {
           setOpen((value) => !value);
         }}
         animatedStyle={fabStyle}
-        iconColor={tokens.primary}
+        iconColor={tokens.onPastel}
       />
     </View>
   );
