@@ -329,24 +329,30 @@ Never mimic real payment cards unless users need a real card identifier. The vis
 
 **Balance check.** When a stale balance blocks the forecast, Home and Chat open with one peach card, “Confirm balances to unlock your forecast”, listing each wallet with its native balance and two actions: **Yes, that’s right** (the row fades out) and **Fix it** (opens the wallet). It always offers **Not now**, which snoozes it for a week; it never becomes a permanent card.
 
-### 7.5 Budget pulse and category progress
+### 7.5 Budget pulse and category progress (v2)
 
-- A category row displays its icon, name, a right-aligned percentage, and a clear progress treatment. Keep any remaining amount as supporting text below the track when needed.
-- On select, expand or navigate to a detail that states: “$186 of $300 used · 62%.” This follows the board’s desired category-percentage insight.
-- Use a progress line/ring only with its textual amount and percentage.
-- Budget progress fills retain the category color. Put the used amount at the left of the complete track and the percentage to the right of the category name; state any overage in explicit destructive text rather than recoloring the category.
-- The warning threshold is contextual; do not make the whole card red at 80% by default.
-- The progress track sits directly within its parent surface. It does not receive a separate outlined container.
+- One progress style: `components/ui/progress-bar.tsx`. Sand track, Ink 2 fill of spent ÷ budget, and the label "RM114 left" beside the category name. At 75% the label turns attention brown. Over budget the track fills in Coral and the label says "RM20 over" in Over text. Nothing draws past the track; there is no pace tick and no split fill. Heights: 8 in rows, 4 in picker tiles, 12 on the category page hero.
+- Forward-looking money (left, over, budgets) is whole units rounded down; `formatWholeMoney` in `lib/finance/display.ts`.
+- `BudgetProgressItem` is a category's tint bubble plus the bar; a category with no budget shows what was spent instead.
+- Status pills (`components/ui/status-pill.tsx`) come in the 30-tall `block` form with a dot (On track, Near the limit, Over, To review) and the 20-tall `row` form that leads a row's meta (Auto, To review). Never add a pill that repeats a number already on screen.
 
-### 7.6 Transaction row
+### 7.6 Lists and rows (v2)
 
-**Leading:** category icon in a low-tint color circle.  
-**Middle:** merchant/description and secondary category/source/date.  
-**Trailing:** native amount, debit/credit direction, and optional compact review state.
+- `components/ui/list-card.tsx`: `ListCard` is the Paper list card (radius 26, 6 top and bottom, no dividers); `ListSection` puts a caps label over one, as day groups and settings sections do.
+- `components/ui/transaction-row.tsx`: the 66-tall `TransactionRow`. Tint bubble from the category's own colour, title, meta, amount. No chevron and no ⋯: the whole row opens the detail. Meta reads "Category · Wallet" in day-grouped lists (`grouped`) and "Date · Wallet" elsewhere; transfers read "Maybank → Touch 'n Go" with no sign in Meta. Expenses use U+2212 (`−RM45.90`), income `+RM4,200.00` in Deep mint. A pending capture has a dashed bubble, the To review pill, and an unsigned Ink 2 amount. `lib/transactions/row.ts` maps a transaction or proposal to the row's data.
+- `components/ui/nav-row.tsx`: `NavRow` for rows that open a page (settings, wallets, people, bills): optional bubble, title, optional value in Ink 2, then chevron-right 20 in Meta.
+- Hold (`components/ui/hold-menu.tsx`, V2A-ActivityMenu): pass `onHold` to a `TransactionRow`. Press feedback at 0 ms, a Bloom fill grows from the finger from 250 ms, and at 500 ms the hold commits with the `holdCommit` haptic. A release in between, or a drift over 10 px, cancels and opens nothing; a release inside 250 ms is a tap. `HoldMenu` lifts the row to 1.02 over a 16% dim and springs a 220-wide Paper menu out of the finger on the `sheet` spring: Edit category, Change wallet, Delete (Over text). TalkBack reaches it as the row's "Quick actions" action. `HoldHint` shows "Hold a row for quick actions" above the list until its ✕ or the first hold. Long press only repeats controls the detail page shows.
 
-- Merchant name is the most important text after the amount.
-- Avoid unexplained plus/minus coloring; include “Expense”, “Income”, “Transfer”, or directional icon when needed.
-- Rows are direct, list-like, and comfortably tappable—not individual floating cards.
+### 7.6a Chips and segmented controls (v2)
+
+- `components/ui/chip.tsx`: 36-tall capsule with a 44 hit area for filters and picks; Sand, pressed Hairline, selected Ink with cream text, disabled Sand light.
+- `components/ui/segmented.tsx`: one of a few fixed options (type, appearance). A 44 Sand track with an Ink pill that slides on the `control` spring; a change plays `scrubStep`. Segment testIDs are `<screen>.<name>.<value>`.
+
+### 7.6b Toasts and banners (v2)
+
+- `lib/toast/toast-store.ts` holds at most one toast. `showToast({ text, tone, undo, commit })` shows it for 5 s; Undo runs `undo`, and leaving any other way (timeout, a newer toast, the app going to the background) runs `commit`. `components/ui/toast.tsx` mounts `ToastHost` once in `app/_layout.tsx`: an Ink capsule at least 56 tall, Mint check (or a grey bin for `removed`), cream 14/19 text, and Undo on the pressed-Ink fill. It rises 8 on the `sheet` spring, 20 above the bottom inset.
+- Delete from a list goes through `deleteWithUndo` (`lib/transactions/delete-with-undo.ts`): the row hides at once and is soft-deleted only when its "Deleted …" toast leaves without Undo, because the synced store drops a deleted row as soon as the delete syncs back.
+- `components/ui/banner.tsx`: the capsule under the header that says what happened and what happens next. `SyncBanner` shows the Lemon "Couldn't sync N changes. It's safe on this phone." with Retry when sync fails, and nothing while sync works.
 
 ### 7.7 Transaction proposal artifact
 
@@ -407,9 +413,11 @@ Processing must feel fast, transparent, and controlled.
 - Notifications: background processing is not visually exposed until review; status lives in the queue if processing takes meaningfully long.
 - Never show fake precision (“99.7% certainty”) unless confidence changes the user’s decision.
 
-### Empty states
+### Empty, loading, and missing states (v2, V2F-States)
 
-For a screen with no content, render `FeedbackState` in a non-scrollable `flex-1` view centered both horizontally and vertically. Keep a scroll container only for populated content; use an in-list empty state only when the surrounding screen has meaningful content that must remain visible.
+- Empty list: `EmptyTile` (`components/ui/empty-tile.tsx`), a dashed outline tile with one icon, a title, one sentence that says what to do, and at most one action.
+- Missing or failed page: `NotFound` from the same file, centred icon, title, and what it means ("This spend isn't here any more").
+- Loading: `Skeleton` (`components/ui/skeleton.tsx`), static Sand-light rows shaped like the real ones. It appears only after 300 ms and never shimmers; nothing loops where balances show.
 
 ### 7.12 Charts and insights
 

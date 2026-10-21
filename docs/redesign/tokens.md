@@ -63,7 +63,7 @@ Dark (`V2F-Dark`): Ground #161512 · Raised #211F1B (cards) · Fill #2C2924 (San
 - Transaction row 66 tall: 42 tint bubble, title 16/600 one line, meta 13 Meta, amount 16/600. No chevron, no ⋯; the whole row opens the detail. Meta: "Category · Wallet" in day-grouped lists, otherwise "Date · Wallet". Transfers "Maybank → Touch 'n Go". "Auto" pill (20 tall Sand, 12/700 Ink 2) first in the meta. Pending: dashed bubble, "To review" pill, unsigned amount in Ink 2.
 - Navigation row (settings, lists of places): trailing value 15 Ink 2, then chevron-right 20 Meta.
 - Press: fill Sand light, scale 0.97 on the press spring, release on control.
-- Hold (500 ms; bloom from the finger from 250 ms, Confirm haptic, row lifts 1.02): menu Paper radius 22, 220 wide, items 44 tall: Edit category, Change wallet, Delete (Over text). Nothing else. A one-time hint chip "Hold a row for quick actions" teaches it.
+- Hold (500 ms; bloom from the finger from 250 ms in #E3D8C2 (`bloom`; dark #3A362F is not on a board), Confirm haptic, row lifts 1.02): menu Paper radius 22, 220 wide, items 44 tall: Edit category, Change wallet, Delete (Over text). Nothing else. A one-time hint chip "Hold a row for quick actions" teaches it.
 
 ## In-place edit (existing values on detail pages)
 
@@ -71,7 +71,7 @@ Dark (`V2F-Dark`): Ground #161512 · Raised #211F1B (cards) · Fill #2C2924 (San
 - Field: Paper, 2 ink border, radius 16. Amount 64 tall (sign + "RM" 28/700 Meta, digits 40/44 700). Name 52 tall, 18/600.
 - Then cancel (44 Sand circle, close) and save (44 Ink circle, check). One field at a time; the rest of the page stays at full opacity; back or tapping outside cancels.
 - The phone's own keyboard (numeric for amounts). Never a custom keypad or a sheet holding one.
-- Saved toast: Ink capsule ≥ 56 tall, check-circle Mint, text 14/19 cream, Undo button (Mint text). 5 s.
+- Saved toast: Ink capsule ≥ 56 tall, check-circle Mint, text 14/19 cream, Undo button (Mint text, `on-ink-positive`; dark #236B47 on the light capsule is not on a board). 5 s.
 - New money (a capture, a repayment, lending more, a new bill or debt) uses the full amount page instead (keypad page that slides in from the right). A fixed set (category, wallet, date) uses a picker sheet.
 
 ## Sheets

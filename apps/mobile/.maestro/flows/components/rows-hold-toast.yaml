@@ -1,0 +1,52 @@
+# Needs a signed-in e2e build with the default seed (V4): rows in Food & Dining, a Cash wallet, Transport RM20 over.
+appId: com.anonymous.moni.e2e
+name: F4 rows, hold menu, delete with Undo, nav rows
+tags:
+  - f4
+---
+- launchApp
+- tapOn:
+    id: home.transactions
+- extendedWaitUntil:
+    visible:
+      id: 'activity\.transaction\..*'
+    timeout: 15000
+- takeScreenshot: f4-l1-rows
+- assertVisible:
+    text: Hold a row for quick actions
+    optional: true
+- longPressOn:
+    id: 'activity\.transaction\..*'
+    index: 0
+- assertVisible:
+    id: activity.hold.edit-category
+- assertVisible: Edit category
+- assertVisible: Change wallet
+- assertVisible: Delete
+- takeScreenshot: f4-l2-hold-menu
+- tapOn:
+    id: activity.hold.delete
+- assertVisible: 'Deleted .*'
+- takeScreenshot: f4-l3-toast
+- tapOn:
+    id: nav.toast.undo
+- assertNotVisible: 'Deleted .*'
+- assertNotVisible: Hold a row for quick actions
+- longPressOn:
+    id: 'activity\.transaction\..*'
+    index: 0
+- tapOn:
+    id: activity.hold.change-wallet
+- tapOn: Cash
+- assertVisible: '.* · Cash'
+- takeScreenshot: f4-l4-changed-wallet
+- back
+- tapOn:
+    id: home.avatar
+- assertVisible:
+    id: profile.row.categories
+- tapOn:
+    id: profile.theme.dark
+- takeScreenshot: f4-l6-nav-rows-dark
+- tapOn:
+    id: profile.theme.light
