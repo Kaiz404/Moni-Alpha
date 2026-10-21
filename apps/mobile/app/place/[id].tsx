@@ -170,7 +170,7 @@ export default function PlaceScreen() {
             proposals={pendingHere}
             nameOf={nameOf}
             walletName={(walletId) => (walletId ? (lookups.walletNames[walletId] ?? null) : null)}
-            onReview={(proposal) => router.push({ pathname: '/proposal/[id]', params: { id: proposal.id } })}
+            onReview={(proposal) => router.push({ pathname: '/review', params: { id: proposal.id } })}
           />
           <WhatYouBought
             categories={place.categories}

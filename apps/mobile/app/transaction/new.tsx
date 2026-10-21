@@ -550,7 +550,7 @@ export default function TypeItScreen() {
             router.replace(
               duplicate.targetKind === 'proposal'
                 ? {
-                    pathname: '/proposal/[id]',
+                    pathname: '/review',
                     params: { id: duplicate.targetId },
                   }
                 : {
