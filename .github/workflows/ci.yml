@@ -32,6 +32,7 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm lint
       - run: pnpm check-types
+      - run: pnpm --filter moni lint:unreferenced
 
   android-debug:
     name: Android debug build
