@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+# with-device.sh holds the device lock on fd 9. An adb server that starts from
+# this call is a daemon and would keep the lock until the server dies.
+exec "$ANDROID_HOME/platform-tools/adb" "$@" 9>&-
