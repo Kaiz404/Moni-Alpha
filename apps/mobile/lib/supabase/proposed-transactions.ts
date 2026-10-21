@@ -228,23 +228,27 @@ export async function approveProposedTransaction(
     locationName: earlyLocation?.name ?? null,
   }, TRANSACTION_SOURCE_BY_PROPOSAL_SOURCE[proposal.sourceType]);
 
-  closeProposal(proposal.id, 'approved');
+  closeProposal(proposal, 'approved');
   await deleteProposedTransaction(proposal.id);
 }
 
 export async function rejectProposedTransaction(id: string): Promise<void> {
-  closeProposal(id, 'rejected');
+  const row = proposedTransactions$[id].peek() as ProposedRow | undefined;
+  if (row) closeProposal(rowToProposedTransaction(row), 'rejected');
   await deleteProposedTransaction(id);
 }
 
-/**
- * Stamps the review outcome on the row before its soft delete, so the server keeps it. A
- * notification proposal shares its id with its capture log entry.
- */
-function closeProposal(id: string, status: 'approved' | 'rejected'): void {
-  markCaptureStatus(id, status === 'approved' ? 'added' : 'ignored');
-  if (!hasRow(proposedTransactions$, id)) return;
-  patchRow(proposedTransactions$, id, { status, updated_at: new Date().toISOString() });
+/** Stamps the review outcome on the row before its soft delete, so the server keeps it. */
+function closeProposal(
+  proposal: Pick<ProposedTransaction, 'id' | 'sourceType'>,
+  status: 'approved' | 'rejected',
+): void {
+  if (proposal.sourceType === 'notification') {
+    // run-extraction stores a notification's proposal under the id of its capture log entry.
+    markCaptureStatus(proposal.id, status === 'approved' ? 'added' : 'ignored');
+  }
+  if (!hasRow(proposedTransactions$, proposal.id)) return;
+  patchRow(proposedTransactions$, proposal.id, { status, updated_at: new Date().toISOString() });
 }
 
 export async function updateProposalImageUri(id: string, remoteUrl: string): Promise<boolean> {

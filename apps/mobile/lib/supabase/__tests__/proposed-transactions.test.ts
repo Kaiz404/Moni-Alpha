@@ -8,6 +8,7 @@ import {
 
 jest.mock('expo-crypto', () => ({ randomUUID: () => 'id' }));
 jest.mock('@/lib/supabase/client', () => ({ getUserId: async () => 'user-1' }));
+jest.mock('@/lib/notifications/capture-status', () => ({ markCaptureStatus: jest.fn() }));
 jest.mock('@/lib/store', () => {
   const { observable } = jest.requireActual('@legendapp/state');
   return {
@@ -20,6 +21,9 @@ jest.mock('@/lib/store', () => {
 
 const { proposedTransactions$ } = jest.requireMock('@/lib/store') as {
   proposedTransactions$: Observable<Record<string, Record<string, unknown>>>;
+};
+const { markCaptureStatus } = jest.requireMock('@/lib/notifications/capture-status') as {
+  markCaptureStatus: jest.Mock;
 };
 
 const NOW = new Date('2026-10-14T10:00:00.000Z');
@@ -87,5 +91,16 @@ describe('Not mine', () => {
     expect(await getProposedTransactions(NOW)).not.toContainEqual(
       expect.objectContaining({ id: 'p2' }),
     );
+  });
+
+  it('marks the capture log entry of a notification proposal Ignored', async () => {
+    markCaptureStatus.mockClear();
+    seed('from-alert', {});
+    seed('from-chat', { source_type: 'text' });
+
+    await rejectProposedTransaction('from-alert');
+    await rejectProposedTransaction('from-chat');
+
+    expect(markCaptureStatus.mock.calls).toEqual([['from-alert', 'ignored']]);
   });
 });
