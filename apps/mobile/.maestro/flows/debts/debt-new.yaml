@@ -41,7 +41,7 @@ tags:
     id: debts.key.0
 - assertVisible: Hana will owe you RM50.00
 - tapOn:
-    id: debts.amount.save
+    id: debts.submit
 - assertVisible: RM50.00
 - tapOn:
     id: debts.new.note

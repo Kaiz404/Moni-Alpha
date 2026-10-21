@@ -52,6 +52,9 @@ export function pressAmountKey(typed: string, key: AmountKey): string {
   return whole.length < MAX_WHOLE_DIGITS ? typed + key : typed;
 }
 
+/** The line under an amount; `over` reads in Over text. */
+export type AmountSentence = { text: string; tone: 'plain' | 'over' };
+
 export type AmountReading = {
   /** Thousands commas, and the typed decimals as typed: `1,250.5`. Empty input reads `0`. */
   display: string;
@@ -59,12 +62,14 @@ export type AmountReading = {
   minor: MinorAmount;
 };
 
+/** A trailing point counts as nothing after it: `20.` is 20. */
 export function readAmount(typed: string): AmountReading {
   const [whole, decimals] = typed.split('.');
   const grouped = Number(whole || '0').toLocaleString('en-US');
+  const number = typed.replace(/\.$/, '') || '0';
   return {
     display: decimals === undefined ? grouped : `${grouped}.${decimals}`,
-    value: Number(typed || '0'),
-    minor: decimalToMinor(typed || '0'),
+    value: Number(number),
+    minor: decimalToMinor(number),
   };
 }

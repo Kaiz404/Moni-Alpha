@@ -383,11 +383,11 @@ This is Moni’s signature trust component. It is a **financial review artifact*
 
 ### 7.8 Amount page (v2)
 
-New money uses one full page, `components/capture/amount-page.tsx` (`V2P-AmountPage`); existing values edit in place.
+New money uses one full page, `components/amount/amount-page.tsx` (`V2P-AmountPage`): Type it, Record a debt, a repayment and lending more. Existing values edit in place.
 
 - The amount is the centred hero (64/700, 52/700 once decimals are typed) with the sign and symbol: `−RM45.90`, `+RM100`, transfers unsigned in Meta. One sentence under it says what the amount does, in Over text when it passes a budget.
 - Picker fields and the note sit under the amount. The Paper keypad (56 tall keys, `Keyboard_Tap` on each) and one 56 primary button stay at the bottom.
-- `lib/capture/amount-input.ts` is the keypad's pure reducer: nine digits before the point, two after.
+- `lib/amount/amount-input.ts` is the keypad's pure reducer: nine digits before the point, two after. A suggested amount (`prefilled`) is replaced by the first key.
 - No arithmetic and no currency switch on the page. The wallet sets the currency; Type it lists main-currency wallets only.
 
 ### 7.9 Full-screen proposal review

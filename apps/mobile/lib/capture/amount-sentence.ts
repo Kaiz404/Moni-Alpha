@@ -1,8 +1,8 @@
 import type { MinorAmount } from '@repo/types';
 
+import type { AmountSentence } from '@/lib/amount/amount-input';
 import { currencySymbol, formatMoney } from '@/lib/finance/format-money';
 
-export type AmountSentence = { text: string; tone: 'plain' | 'over' };
 
 export type AmountSentenceInput =
   | {

@@ -2,8 +2,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { TextInput, View } from 'react-native';
 
-import { typedMinor } from '@/components/debts/typed-amount';
-import { AmountPage } from '@/components/debts/amount-page';
+import { AmountPage } from '@/components/amount/amount-page';
 import {
   pickDebtWallet,
   useDebtWallets,
@@ -33,6 +32,7 @@ import {
   getDebtById,
   repayDebt,
 } from '@/lib/supabase/debts';
+import { readAmount } from '@/lib/amount/amount-input';
 import { tid } from '@/lib/test-ids';
 import { minorToDecimal } from '@repo/types';
 
@@ -57,22 +57,30 @@ function NewDebtAmount() {
   const draft = useNewDebtDraft();
   const currency = useMainCurrency();
   const [typed, setTyped] = useState(draft.amount);
-  const amountMinor = typedMinor(typed);
+  const amountMinor = readAmount(typed).minor;
   const name =
     draft.name.trim() ||
     (draft.direction === 'i_owe' ? 'them' : 'They');
   const words = SIDE_WORDS[draft.direction];
   return (
     <AmountPage
+      screen="debts"
+      header="pushed"
+      direction="plain"
       title="Amount"
       currency={currency}
       typed={typed}
-      onType={setTyped}
-      sentence={
-        amountMinor > 0
-          ? words.owesAfter(name, formatMoney(amountMinor, currency))
-          : 'How much?'
-      }
+      onTyped={setTyped}
+      sentence={{
+        text:
+          amountMinor > 0
+            ? words.owesAfter(
+                name,
+                formatMoney(amountMinor, currency),
+              )
+            : 'How much?',
+        tone: 'plain',
+      }}
       action={{
         label: 'Done',
         disabled: amountMinor <= 0,
@@ -147,7 +155,7 @@ function DebtMoneyForm({
   const [note, setNote] = useState('');
   const [saving, setSaving] = useState(false);
 
-  const amountMinor = typedMinor(typed);
+  const amountMinor = readAmount(typed).minor;
   const money = (minor: number) => formatMoney(minor, currency);
   const repay = mode === 'repay';
   const over = repay && amountMinor > balanceMinor;
@@ -224,19 +232,68 @@ function DebtMoneyForm({
     }
   };
 
+  const fields = (
+    <View className="gap-3">
+      <View className="flex-row gap-2">
+        <PickerField
+          testID={tid('debts', 'amount', 'wallet')}
+          className="flex-1"
+          label={walletLabel}
+          value={wallet?.name ?? ''}
+          onPress={async () => {
+            const picked = await pickDebtWallet(
+              walletLabel,
+              wallets,
+              walletId,
+              currency,
+            );
+            if (picked) setWalletId(picked);
+          }}
+        />
+        <View className="h-16 flex-1 justify-center rounded-field bg-sand px-3.5">
+          <Text className="text-[13px] leading-[18px] text-muted">
+            Note
+          </Text>
+          <TextInput
+            testID={tid('debts', 'amount', 'note')}
+            accessibilityLabel="Note"
+            className="h-[22px] p-0 font-display-semibold text-base text-foreground"
+            placeholder={debt.note ?? 'What for?'}
+            placeholderTextColor={tokens.muted}
+            value={note}
+            onChangeText={setNote}
+            maxLength={1000}
+          />
+        </View>
+      </View>
+      <View className="flex-row flex-wrap gap-2">
+        {chips.map((chip) => (
+          <Chip
+            key={chip.label}
+            testID={tid('debts', 'amount', 'chip', chip.minor)}
+            label={chip.label}
+            onPress={() => suggest(chip.minor)}
+          />
+        ))}
+      </View>
+    </View>
+  );
+
   return (
     <AmountPage
+      screen="debts"
+      header="pushed"
+      direction="plain"
       title={repay ? words.repayTitle(name) : words.moreTitle(name)}
       currency={currency}
       typed={typed}
       prefilled={prefilled}
-      onType={(next) => {
+      onTyped={(next) => {
         setTyped(next);
         setPrefilled(false);
       }}
-      sentence={sentence}
-      over={over}
-      top={
+      sentence={{ text: sentence, tone: over ? 'over' : 'plain' }}
+      control={
         balanceMinor > 0 ? (
           <Segmented
             screen="debts"
@@ -261,52 +318,6 @@ function DebtMoneyForm({
           />
         ) : null
       }
-      fields={
-        <View className="gap-3">
-          <View className="flex-row gap-2">
-            <PickerField
-              testID={tid('debts', 'amount', 'wallet')}
-              className="flex-1"
-              label={walletLabel}
-              value={wallet?.name ?? ''}
-              onPress={async () => {
-                const picked = await pickDebtWallet(
-                  walletLabel,
-                  wallets,
-                  walletId,
-                  currency,
-                );
-                if (picked) setWalletId(picked);
-              }}
-            />
-            <View className="h-16 flex-1 justify-center rounded-field bg-sand px-3.5">
-              <Text className="text-[13px] leading-[18px] text-muted">
-                Note
-              </Text>
-              <TextInput
-                testID={tid('debts', 'amount', 'note')}
-                accessibilityLabel="Note"
-                className="h-[22px] p-0 font-display-semibold text-base text-foreground"
-                placeholder={debt.note ?? 'What for?'}
-                placeholderTextColor={tokens.muted}
-                value={note}
-                onChangeText={setNote}
-                maxLength={1000}
-              />
-            </View>
-          </View>
-          <View className="flex-row flex-wrap gap-2">
-            {chips.map((chip) => (
-              <Chip
-                key={chip.label}
-                testID={tid('debts', 'amount', 'chip', chip.minor)}
-                label={chip.label}
-                onPress={() => suggest(chip.minor)}
-              />
-            ))}
-          </View>
-        </View>
-      }
       hint={
         walletAfter !== null && wallet
           ? `${money(walletAfter)} ${leaves ? 'left in' : 'in'} ${wallet.name} after this`
@@ -322,6 +333,8 @@ function DebtMoneyForm({
         disabled: saving || !walletId || amountMinor <= 0 || over,
         onPress: () => void save(),
       }}
-    />
+    >
+      {fields}
+    </AmountPage>
   );
 }

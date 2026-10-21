@@ -4,7 +4,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { Alert, TextInput, View } from 'react-native';
 
-import { AmountPage } from '@/components/capture/amount-page';
+import { AmountPage } from '@/components/amount/amount-page';
 import {
   DuplicateSheet,
   type DuplicateHit,
@@ -19,7 +19,7 @@ import { WalletIcon } from '@/components/wallets/wallet-icon';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import type { LedgerEntry } from '@/lib/ai/duplicates';
 import { useAuth } from '@/lib/auth/auth-context';
-import { readAmount } from '@/lib/capture/amount-input';
+import { readAmount } from '@/lib/amount/amount-input';
 import { amountSentence } from '@/lib/capture/amount-sentence';
 import {
   duplicateCopy,
@@ -461,7 +461,7 @@ export default function TypeItScreen() {
         typed={typed}
         onTyped={setTyped}
         currency={wallet?.currency ?? mainCurrency}
-        direction={kind === 'transfer' ? 'neutral' : kind}
+        direction={kind}
         sentence={sentence}
         control={
           <Segmented

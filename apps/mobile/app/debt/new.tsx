@@ -6,7 +6,6 @@ import {
   dueLabel,
   DueDateSheet,
 } from '@/components/debt/due-date-sheet';
-import { typedMinor } from '@/components/debts/typed-amount';
 import {
   pickDebtWallet,
   useDebtWallets,
@@ -36,6 +35,7 @@ import {
   getDebtById,
   updateDebt,
 } from '@/lib/supabase/debts';
+import { readAmount } from '@/lib/amount/amount-input';
 import { tid } from '@/lib/test-ids';
 import { showToast } from '@/lib/toast/toast-store';
 
@@ -90,7 +90,7 @@ export default function NewDebtScreen() {
       ? draft.walletId
       : (wallets[0]?.id ?? null);
   const wallet = wallets.find((item) => item.id === walletId);
-  const amountMinor = typedMinor(draft.amount);
+  const amountMinor = readAmount(draft.amount).minor;
   const amount = formatMoney(amountMinor, currency);
   const ready =
     who.length > 0 && amountMinor > 0 && walletId !== null;

@@ -2,7 +2,7 @@ import {
   pressAmountKey,
   readAmount,
   type AmountKey,
-} from '@/lib/capture/amount-input';
+} from '@/lib/amount/amount-input';
 
 const type = (keys: AmountKey[], from = '') =>
   keys.reduce(pressAmountKey, from);
@@ -31,6 +31,14 @@ describe('amount input', () => {
   it('groups thousands and reads an empty amount as 0', () => {
     expect(readAmount('1250.5').display).toBe('1,250.5');
     expect(readAmount('')).toEqual({ display: '0', value: 0, minor: 0 });
+  });
+
+  it('reads a trailing point as the whole amount', () => {
+    expect(readAmount(type(['2', '0', '.']))).toEqual({
+      display: '20.',
+      value: 20,
+      minor: 2000,
+    });
   });
 
   it('starts a lone point as 0. and replaces a leading zero', () => {
