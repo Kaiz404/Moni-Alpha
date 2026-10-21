@@ -24,6 +24,7 @@ function transaction(overrides: Partial<FinanceTransaction>): FinanceTransaction
     locationLongitude: null,
     locationName: null,
     autoAdded: false,
+    balanceCorrection: false,
     createdAt: '2026-10-14T06:00:00.000Z',
     ...overrides,
   };
