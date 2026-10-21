@@ -103,6 +103,22 @@ Keep the Windows adb server stopped. With mirrored networking, Windows and WSL s
 
 To test the scripts, run `bash apps/mobile/scripts/device/test/device-scripts.test.sh`. The tests need the WSL toolchain above but not the phone.
 
+### The e2e APK
+
+Agents test a release build named **Moni E2E**, package `com.anonymous.moni.e2e` and scheme `moni-e2e`, that installs beside the daily `com.anonymous.moni` app and runs without Metro. `APP_VARIANT=e2e` switches `app.config.ts` to that name, package, and scheme. Without the variable the config is the daily app's.
+
+```bash
+apps/mobile/scripts/device/build-apk.sh          # prints: built <key> <apk> in <n> s, or cached <key> <apk>
+apps/mobile/scripts/device/with-device.sh --pr v3 --lane smoke -- apps/mobile/scripts/device/install.sh <key>
+```
+
+- `build-apk.sh [--clean-prebuild] [--allow-main]` builds the arm64 release APK and copies it to `~/.cache/moni-apk/<key>/app-release.apk` with a `build.json` that records the SHA, the byte count, and the build seconds. The key is the `HEAD` SHA, or `<sha>-dirty-<hash>` when `apps/mobile`, `packages`, or the lockfile has changes. A key that is already cached with the same env returns at once. The script runs `expo prebuild --clean` only when the Expo native fingerprint differs from the one saved in `android/.moni-fingerprint`, so a JS-only change goes straight to Gradle. It refuses to run in the main checkout, where prebuild would rewrite your `android/` folder, unless you pass `--allow-main`. It exits 3 on that refusal.
+- The build reads `.env.e2e`, then `.env`, from this worktree and then from the main checkout, and the first value it reads for a key wins. `EXPO_PUBLIC_AI_API_URL` defaults to empty, so the e2e app uses the mock AI client. Copy `.env.e2e.example` to `.env.e2e` to point the build at the e2e Supabase project. Until that project exists, the build uses the project in `.env`.
+- `install.sh <key>` installs only `com.anonymous.moni.e2e` and exits 3 for any other package. It skips the install when `/data/local/tmp/moni-e2e.sha` on the phone already holds the key, then grants each of the camera, microphone, location, and notification permissions that the APK requests. The app does not request `POST_NOTIFICATIONS` today, so the script skips it.
+- `perf.sh --sha <key> [--flow <flow.yaml>] [--out perf.json] [--runs 10]` installs the key, then writes `coldStartMs`, the median `TotalTime` of `am start -W` after `am force-stop`, with `apkBytes` and `bundleBytes`. With `--flow`, it also runs the Maestro flow and records `jankyPct`, `p50Ms`, `p90Ms`, and `p95Ms` from `dumpsys gfxinfo`. It exits 7 when the battery is above 40 C.
+- `perf-compare.mjs base.json head.json --rule <metric>=<limit>` prints one line per metric and exits 1 when a rule fails. A limit of `N` caps the head value, `+N` caps the increase, and `+N%` caps the increase relative to the base.
+- `screenrecord.sh <seconds> <out.mp4>` records the screen for up to 180 s and pulls the MP4.
+
 ## Map
 
 | Path                              | Role                                                                                                                                                                                                                                |

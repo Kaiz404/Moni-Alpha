@@ -12,7 +12,20 @@ function googleIosUrlScheme(): string | undefined {
   return `com.googleusercontent.apps.${clientPrefix}`;
 }
 
-const base = appJson.expo as ExpoConfig;
+const daily = appJson.expo as ExpoConfig;
+const e2eId = 'com.anonymous.moni.e2e';
+// The e2e build installs beside the daily app, so it needs its own package and
+// scheme; a shared `moni://` would make Android ask which app opens the link.
+const base: ExpoConfig =
+  process.env.APP_VARIANT === 'e2e'
+    ? {
+        ...daily,
+        name: 'Moni E2E',
+        scheme: 'moni-e2e',
+        android: { ...daily.android, package: e2eId },
+        ios: { ...daily.ios, bundleIdentifier: e2eId },
+      }
+    : daily;
 const iosUrlScheme = googleIosUrlScheme();
 const androidGoogleMapsApiKey = process.env.ANDROID_GOOGLE_MAPS_API_KEY?.trim();
 const iosGoogleMapsApiKey = process.env.IOS_GOOGLE_MAPS_API_KEY?.trim();

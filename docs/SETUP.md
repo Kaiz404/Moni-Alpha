@@ -45,6 +45,10 @@ ANDROID_GOOGLE_MAPS_API_KEY=<android-maps-key>
 # IOS_GOOGLE_MAPS_API_KEY=<ios-maps-key>
 ```
 
+### `apps/mobile/.env.e2e`
+
+Optional. The e2e APK that `apps/mobile/scripts/device/build-apk.sh` builds reads this file before `.env`, and a key that this file leaves out comes from `.env`. Copy `apps/mobile/.env.e2e.example` and put the `moni-e2e` Supabase project's URL and keys in it. Keep `EXPO_PUBLIC_AI_API_URL` empty, so the e2e app uses the mock AI client.
+
 ### `apps/web/.env`
 
 ```bash

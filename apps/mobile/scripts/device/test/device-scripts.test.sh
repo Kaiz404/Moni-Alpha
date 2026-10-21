@@ -189,5 +189,59 @@ rc=$?
 out=$(toolchain_pnpm "$tmp/wsl-bin")
 [[ $out == *"ok   pnpm $tmp/wsl-bin/pnpm"* ]] && pass "doctor --toolchain accepts a WSL pnpm" || fail "doctor --toolchain on WSL pnpm: $(grep pnpm <<<"$out")"
 
+mkdir -p "$tmp/apks/daily-key"
+touch "$tmp/apks/daily-key/app-release.apk"
+printf '#!/bin/sh\necho com.anonymous.moni\n' >"$tmp/stub-bin/aapt2"
+chmod +x "$tmp/stub-bin/aapt2"
+out=$(MONI_APK_CACHE=$tmp/apks MONI_AAPT2=$tmp/stub-bin/aapt2 "$dir/install.sh" daily-key 2>&1)
+expect "install.sh exits 3 for an APK whose package is com.anonymous.moni" 3 $?
+[[ $out == *"installs only com.anonymous.moni.e2e"* ]] && pass "install.sh names the package it refused" || fail "install.sh refusal: $out"
+
+repo=$tmp/repo
+mkdir -p "$repo/apps/mobile/scripts" "$tmp/build-bin"
+cp -r "$dir" "$repo/apps/mobile/scripts/device"
+echo android/ >"$repo/.gitignore"
+git -C "$repo" init -q
+git -C "$repo" add -A
+git -C "$repo" -c user.name=t -c user.email=t@t commit -qm init
+out=$("$repo/apps/mobile/scripts/device/build-apk.sh" 2>&1)
+expect "build-apk.sh exits 3 in the main checkout" 3 $?
+[[ $out == *"refuses to run in the main checkout"* ]] && pass "build-apk.sh says why it refused" || fail "build-apk.sh main refusal: $out"
+
+git -C "$repo" worktree add -q "$tmp/wt" 2>/dev/null
+printf '#!/bin/sh\necho fake-fingerprint\n' >"$tmp/build-bin/node"
+printf '#!/bin/sh\ncase "$*" in *prebuild*) mkdir -p android; printf "#!/bin/sh\\nmkdir -p app/build/outputs/apk/release\\necho apk >app/build/outputs/apk/release/app-release.apk\\n" >android/gradlew; chmod +x android/gradlew ;; esac\n' >"$tmp/build-bin/npx"
+chmod +x "$tmp/build-bin/"*
+build() { env NVM_DIR="$tmp/no-nvm" PATH="$tmp/build-bin:/usr/bin:/bin" MONI_APK_CACHE="$tmp/apk-cache" "$tmp/wt/apps/mobile/scripts/device/build-apk.sh" 2>/dev/null; }
+head_sha=$(git -C "$tmp/wt" rev-parse HEAD)
+out=$(build)
+expect "build-apk.sh in a worktree builds and caches the APK under the SHA" "built $head_sha $tmp/apk-cache/$head_sha/app-release.apk in" "${out% * s}"
+start=$(now_ms)
+out=$(build)
+rc=$?
+elapsed=$(($(now_ms) - start))
+expect "a second build-apk.sh for the same SHA is a cache hit" "0 cached $head_sha $tmp/apk-cache/$head_sha/app-release.apk" "$rc $out"
+((elapsed < 5000)) && pass "the cache hit took ${elapsed} ms" || fail "the cache hit took ${elapsed} ms"
+echo "// edit" >>"$tmp/wt/apps/mobile/scripts/device/perf-compare.mjs"
+out=$(build)
+[[ $out == "built $head_sha-dirty-"* ]] && pass "a dirty tree builds under <sha>-dirty-<hash>" || fail "dirty build: $out"
+
+with_env() { env -u ANDROID_HOME bash -c 'source "$1/env.sh" 2>/dev/null; shift; exec "$@"' _ "$dir" "$@"; }
+echo '{"coldStartMs": 1000, "apkBytes": 100}' >"$tmp/base.json"
+echo '{"coldStartMs": 1150, "apkBytes": 100}' >"$tmp/head.json"
+out=$(with_env node "$dir/perf-compare.mjs" "$tmp/base.json" "$tmp/head.json" --rule coldStartMs=+10% --rule apkBytes=100 2>&1)
+expect "perf-compare.mjs exits 1 when a rule fails" 1 $?
+expect "perf-compare.mjs prints one line per metric" "coldStartMs base 1000 head 1150 delta +150 (+15.0%) FAIL rule +10%
+apkBytes base 100 head 100 delta +0 (+0.0%) ok rule 100" "$out"
+with_env node "$dir/perf-compare.mjs" "$tmp/base.json" "$tmp/head.json" --rule coldStartMs=+200 >/dev/null 2>&1
+expect "perf-compare.mjs exits 0 when every rule passes" 0 $?
+
+expo_config() {
+  (cd "$dir/../.." && with_env npx expo config --type public --json 2>/dev/null) |
+    with_env node -e 'const c = JSON.parse(require("fs").readFileSync(0, "utf8")); console.log(c.android.package, c.scheme, c.name)'
+}
+expect "APP_VARIANT=e2e gives the e2e package, scheme, and name" "com.anonymous.moni.e2e moni-e2e Moni E2E" "$(APP_VARIANT=e2e expo_config)"
+expect "without APP_VARIANT the config keeps the daily package and scheme" "com.anonymous.moni moni Moni" "$(expo_config)"
+
 echo "$failures failed"
 ((failures == 0))
