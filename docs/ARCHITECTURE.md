@@ -52,10 +52,7 @@ run-extraction.ts → AiClient (lib/ai/client) ──HTTP──► Go backend �
 proposed_transactions (unreviewed)
         │
         ▼
-ProposalSummarySheet (minimal popup) → approve → real transaction / decline → soft-delete
-        │ "Edit details"
-        ▼
-proposal/[id].tsx (full editable form) → approve/decline
+Review deck (app/review.tsx) → Approve → real transaction / Not mine → rejected, soft-delete / Later → snoozed
 ```
 
 Android notifications are prefiltered on-device (`lib/notifications/notification-filter.core.js`: requires a money amount signal AND a transfer signal) before anything reaches the queue, so the backend only sees plausible candidates.

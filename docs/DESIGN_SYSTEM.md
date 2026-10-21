@@ -135,15 +135,7 @@ The + opens the "Add a transaction" sheet (`components/nav/capture-chooser.tsx`,
 
 ### Review queue policy
 
-Moni has two proposal channels with intentionally different interruption levels.
-
-| Source                                          | Delivery                     | Review behavior                                                                                                                                                                 |
-| ----------------------------------------------- | ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Scan a receipt, Say it                          | Immediate and user-initiated | No proposal. A reading state, then a check page whose **Approve** writes the ledger row.                                                                                        |
-| Chat-created record                             | Immediate and user-initiated | Show a brief processing screen, then enter the full-screen proposal review in context.                                                                                          |
-| Background notification parsing                 | Quiet and queued             | Do not interrupt the user while processing. On a later app open, offer the newest review as a focused overlay when appropriate; keep remaining items in a compact review queue. |
-
-Never show multiple review popups in a sequence. Review one, then offer “2 more to review” with **Continue** and **Later**. A quiet review indicator can live in the Home header or activity area; it must not become a permanent dashboard card.
+Captures wait in one place, the Review deck (`app/review.tsx`). Home's review block and Activity's To review rows push it with the capture's id, which goes first. Scan a receipt and Say it approve on their own check page and never wait here; Moni chat captures show a short processing step, then their review in context. Background notification captures never interrupt inside the app: nothing pops up on open. AI never writes to the ledger without Approve.
 
 ---
 
@@ -360,26 +352,15 @@ Never mimic real payment cards unless users need a real card identifier. The vis
 - Transaction detail (`app/transaction/[id].tsx`, `V2A-TxnDetail`): name and date line, the amount, the 2 × 2 tiles (Category and Wallet open the picker sheets, Type confirms a switch between expense and income, Source reads Manual, Voice, Moni, Notification, or Camera and links a notification to the Capture log), the budget line for a budgeted category this month, the full-width note, the place, receipt, and same-merchant rows, and a visible **Delete transaction** that opens the confirm sheet. No ⋯ and no Tags. A notification row's name edit saves a merchant name for every payment from that raw merchant.
 - Categories (`app/categories/`, `V2A-Categories`, `V2A-CategoryForm`): Expenses | Income, Yours, the presets with this month against the budget and a running-total spark, and Archived with **Restore**. The form has the name with its count, the icon grid, the colour swatches, and **Archive category** when editing.
 
-### 7.7 Transaction proposal artifact
+### 7.7 Review card deck
 
-This is Moni’s signature trust component. It is a **financial review artifact**, closer to a receipt or invoice than a chatbot bubble.
+The signature trust component (`XA-Review`; values in [`redesign/tokens.md`](redesign/tokens.md#approvals-review-card)). One Paper card at a time, with a blank Sand light card at scale 0.96 under it (D7). `components/review/`:
 
-#### Structure
+- `review-card.tsx`: source row ("Maybank alert", time, a pill only for facts the app knows: Needs a wallet, Maybe a duplicate), the alert quoted exactly, merchant and amount with pencils (`in-place-edit.tsx`, the system keyboard), category and wallet chips that open the picker sheets, the evidence line, "Don't ask about similar" (notification captures), and the result pill (`result-pill.tsx`, "Food & Dining: RM76 left after this").
+- `deck.tsx`: `Gesture.Pan` on the UI thread, 1:1 drag with up to 8° tilt; release decides on the projected position x + 0.5·v at 40% of the card (`swipeIntent` in `lib/proposals/review-card-state.ts`): right Approve, left Not mine, down Later. Crossing the threshold fires Toggle_On once; Approve fires Confirm, Not mine Reject. The pan is off while a field edits or a decision saves. Three equal 52-tall buttons, Not mine · Later · Approve, do the same; without a wallet Approve reads "Pick a wallet" and opens the picker. `edge-cues.tsx` fills "Not mine", "Approve" and "Later" as the card moves their way.
+- `caught-up.tsx`: the last card ends on "All caught up" with this session's results from memory (D6) and a Capture log link; an empty queue shows "Nothing to review".
 
-1. Source/evidence header: “From receipt”, “From notification”, “From Moni chat”, with confidence only if it is meaningful and explainable.
-2. Main amount and currency.
-3. Merchant, date, category, wallet, and notes as editable fields.
-4. Small evidence preview: receipt thumbnail or notification excerpt. It may expand to the image only; do not force a transcription view.
-5. Clear actions: **Approve**, **Modify**, **Decline**.
-6. Optional contextual note: “This would use 62% of Dining.”
-
-#### Behavior
-
-- User-initiated sources: show `Processing your receipt…` or equivalent for a short, honest interval, then transition to full-screen review.
-- Background notification sources: queue silently; do not surprise the user with a sequence of full-screen approvals.
-- Approve should show an immediate confirmation state and return the user to the prior context.
-- Modify opens an editable sheet with prefilled values; it does not destroy the source context.
-- Decline must be easy and nonjudgmental. Offer a low-friction reason only if it helps improve future parsing; never guilt the user.
+Toasts: "Approved GRAB −RM12.00" and "1 not mine" with Undo, "Saved for later". The card state is the `ReviewCardState` union (`idle`, `dragging`, three armed states, `editing`, `needsInput`, `saving`, `error`) with one reducer.
 
 ### 7.8 Amount page (v2)
 
@@ -389,18 +370,6 @@ New money uses one full page, `components/amount/amount-page.tsx` (`V2P-AmountPa
 - Picker fields and the note sit under the amount. The Paper keypad (56 tall keys, `Keyboard_Tap` on each) and one 56 primary button stay at the bottom.
 - `lib/amount/amount-input.ts` is the keypad's pure reducer: nine digits before the point, two after. A suggested amount (`prefilled`) is replaced by the first key.
 - No arithmetic and no currency switch on the page. The wallet sets the currency; Type it lists main-currency wallets only.
-
-### 7.9 Full-screen proposal review
-
-Use one full-screen review at a time. Its visual rhythm:
-
-1. Compact source/processing context.
-2. Large amount.
-3. Receipt-like detail group.
-4. Budget or account effect, only when useful.
-5. Fixed bottom action area: secondary decline, tertiary modify, primary approve.
-
-The background should be calm and mostly opaque. Do not place a dense modal atop an already busy Home dashboard.
 
 ### 7.10 Modal pickers and sheets
 

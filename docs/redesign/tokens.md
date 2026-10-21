@@ -102,7 +102,7 @@ All inside a Paper card (radius 26, padding 14 18), plot 314 × 150, axis column
 ## Approvals (Review card)
 
 - Paper card radius 26: source row (bubble, "Maybank alert", time, "Usual for you" pill), quoted alert text, merchant and amount each with a pencil (in place), category and wallet chips (picker sheets), evidence line, "Don't ask about similar" checkbox (22 box, radius 6), result pill ("Food & Dining: RM76.80 left after this").
-- Three equal 52-tall buttons: Not mine · Later · Approve (Mint). Swipe right Approve (Confirm), left Not mine (Reject), down Later; Toggle_On at 40% projected. Edge cues "Not mine" left, "Approve" right. No peek of the next card.
+- Three equal 52-tall buttons: Not mine · Later · Approve (Mint). Swipe right Approve (Confirm), left Not mine (Reject), down Later; Toggle_On at 40% projected. Edge cues "Not mine" left, "Approve" right. Under the top card, a blank card at scale 0.96 with no content (D7); it grows to 1 as the top card leaves.
 
 ## Motion
 

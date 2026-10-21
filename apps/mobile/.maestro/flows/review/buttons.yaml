@@ -1,0 +1,72 @@
+# R1 lanes 8 and 10: the buttons clear the queue and the deck ends on All caught up.
+# Needs a signed-in e2e build and exactly three pending captures, one of them with no wallet
+# (the Moni chat parking capture in the board sample).
+# Run: scripts/device/with-device.sh --lane r1 -- maestro test .maestro/flows/review/buttons.yaml
+appId: com.anonymous.moni.e2e
+name: R1 Review deck buttons
+tags:
+  - r1
+  - needs-pending-proposals
+---
+- launchApp
+- extendedWaitUntil:
+    visible:
+      id: home.avatar
+    timeout: 15000
+- openLink: moni-e2e://review
+- extendedWaitUntil:
+    visible:
+      id: review.card
+    timeout: 10000
+- assertVisible:
+    id: review.not-mine
+- assertVisible:
+    id: review.later
+- assertVisible:
+    id: review.approve
+
+- tapOn:
+    id: review.not-mine
+- extendedWaitUntil:
+    visible: 1 not mine
+    timeout: 3000
+
+# A capture with no wallet asks for one; nothing is written until it is picked.
+- runFlow:
+    when:
+      visible: Needs a wallet
+    commands:
+      - tapOn:
+          id: review.approve
+      - assertVisible: Which wallet?
+      - takeScreenshot: r1-l8-needs-wallet
+      - tapOn:
+          id: 'sheet\.option\..*'
+          index: 0
+      - assertNotVisible: Needs a wallet
+
+- tapOn:
+    id: review.approve
+- extendedWaitUntil:
+    visible: 'Approved .*'
+    timeout: 3000
+
+- runFlow:
+    when:
+      visible:
+        id: review.card
+    commands:
+      - tapOn:
+          id: review.approve
+
+- extendedWaitUntil:
+    visible: All caught up
+    timeout: 5000
+- assertVisible:
+    id: review.capture-log
+- assertVisible: '.* approved, 1 not mine.*'
+- takeScreenshot: r1-l10-caught-up
+- tapOn:
+    id: review.capture-log
+- assertVisible:
+    id: profile.back

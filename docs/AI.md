@@ -17,7 +17,7 @@ Input (chat text / receipt photo / notification / + chooser scan or voice)
   → routine detection                     apps/mobile/lib/ai/routine.ts
       routine notification → transactions (metadata.ai_suggested, shown as "Auto")
       otherwise            → proposed_transactions (category/merchant prefilled from history)
-  → ProposalSummarySheet (minimal popup) → Approve/Decline, or "Edit details" → `app/proposal/[id].tsx`
+  → Review deck (`app/review.tsx`) → Approve / Not mine / Later
 ```
 
 ### Moni chat (conversational)
@@ -47,13 +47,13 @@ On-device and deterministic; the user's own transaction history is the model.
 
 ## Duplicate detection
 
-One payment often reaches Moni twice. `apps/mobile/lib/ai/duplicates.ts` is a pure matcher over recent transactions and pending proposals; nothing is stored, and nothing merges without a tap.
+One payment often reaches Moni twice. `apps/mobile/lib/ai/duplicates.ts` is a pure matcher over recent transactions and pending proposals; nothing is stored. The Review card shows the match as "Maybe a duplicate"; Not mine drops the capture.
 
 | Kind                   | Rule                                                                                                                                 | Resolution                                                                                                                                                                                                          |
 | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Re-posted notification | Same app, title and text within 2 min                                                                                                | Not queued (`lib/notifications/notification-repeat.core.js`)                                                                                                                                                        |
-| `same_purchase`        | Same type, currency and exact amount within 12 h; merchants share a word (company suffixes like "Sdn Bhd" ignored) or one is unknown | Review shows "Same purchase · merge": fills the existing row's missing category, merchant and receipt, then drops the proposal                                                                                      |
-| `transfer_pair`        | Expense in one wallet and income in another, same currency and exact amount within 10 min                                            | When a notification completes the pair, combined automatically (`combineIntoTransfer`): the existing row becomes one transfer, marked Auto if already in the ledger. Otherwise review shows "Combine into transfer" |
+| `same_purchase`        | Same type, currency and exact amount within 12 h; merchants share a word (company suffixes like "Sdn Bhd" ignored) or one is unknown | The Review card warns "Maybe a duplicate" and names the existing row                                                                                                                                                 |
+| `transfer_pair`        | Expense in one wallet and income in another, same currency and exact amount within 10 min                                            | When a notification completes the pair, combined automatically (`combineIntoTransfer`): the existing row becomes one transfer, marked Auto if already in the ledger. Otherwise the Review card warns "Maybe a duplicate"         |
 
 A possible `same_purchase` duplicate is never auto-added. Saving a manual entry that matches an existing purchase asks "Add anyway?".
 
