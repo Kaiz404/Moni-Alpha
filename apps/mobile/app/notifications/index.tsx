@@ -3,7 +3,7 @@ import { FlatList, RefreshControl, View } from 'react-native';
 import { Text } from '@/components/ui/text';
 import { useFocusEffect } from 'expo-router';
 import { IconSymbol } from '@/components/ui/icon-symbol';
-import { FeedbackState } from '@/components/ui/feedback-state';
+import { EmptyTile } from '@/components/ui/empty-tile';
 import type { CapturedNotification } from '@/hooks/use-notification-listener';
 import { useNotificationListener } from '@/hooks/use-notification-listener';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
@@ -153,10 +153,11 @@ export default function NotificationsScreen() {
         data={notifications}
         keyExtractor={(item) => item.id}
         ListEmptyComponent={
-          <FeedbackState
-            className="mt-10"
+          <EmptyTile
+            className="mt-6"
             icon="bell-outline"
             title="No notifications captured"
+            body="Link a bank app to a wallet and Moni lists the alerts it reads here."
           />
         }
         ListHeaderComponent={

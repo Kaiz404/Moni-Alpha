@@ -6,7 +6,7 @@ import { router } from 'expo-router';
 import type { DebtDirection } from '@repo/types';
 
 import { AmountInput } from '@/components/finance/amount-input';
-import { FeedbackState } from '@/components/ui/feedback-state';
+import { EmptyTile } from '@/components/ui/empty-tile';
 import { FormField } from '@/components/ui/form-field';
 import { WalletIcon } from '@/components/wallets/wallet-icon';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
@@ -147,9 +147,10 @@ export default function NewDebtScreen() {
           Cash wallet
         </Text>
         {wallets.length === 0 ? (
-          <FeedbackState
+          <EmptyTile
             icon="wallet"
-            title="No wallet available"
+            title="No wallet yet"
+            body="Add a wallet first, then record the debt against it."
           />
         ) : (
           <View className="flex-row flex-wrap gap-2">

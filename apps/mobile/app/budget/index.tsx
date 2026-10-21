@@ -4,7 +4,7 @@ import { router } from 'expo-router';
 import { useValue } from '@legendapp/state/react';
 
 import { BudgetProgressItem } from '@/components/budgets/budget-progress-item';
-import { FeedbackState } from '@/components/ui/feedback-state';
+import { EmptyTile } from '@/components/ui/empty-tile';
 import { useAuth } from '@/lib/auth/auth-context';
 import { budgetProgress$ } from '@/lib/finance/selectors';
 import { ensureFinanceTimezone } from '@/lib/supabase/profile';
@@ -45,9 +45,10 @@ export default function BudgetsScreen() {
     >
       {!budgets.length ? (
         <View className="flex-1 items-center justify-center px-5">
-          <FeedbackState
+          <EmptyTile
             icon="piggy-bank"
             title="No budgets yet"
+            body="Set a monthly cap for a category and Moni shows what is left of it."
           />
         </View>
       ) : (

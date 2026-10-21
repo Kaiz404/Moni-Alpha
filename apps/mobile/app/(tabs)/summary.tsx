@@ -19,7 +19,7 @@ import {
 } from '@/components/charts/chart-utils';
 import { DonutChart } from '@/components/charts/donut-chart';
 import { LineChart } from '@/components/charts/line-chart';
-import { SyncStatusIndicator } from '@/components/providers/sync-status-indicator';
+import { SyncBanner } from '@/components/providers/sync-banner';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { useAuth } from '@/lib/auth/auth-context';
 import {
@@ -262,13 +262,16 @@ export default function InsightsScreen() {
       screen="budget"
       kind="tabRoot"
       title="Insights"
-      trailing={<SyncStatusIndicator />}
     >
       <ScrollView
         className="flex-1"
         contentContainerClassName="px-5 pb-32 pt-4"
         showsVerticalScrollIndicator={false}
       >
+        <SyncBanner
+          screen="budget"
+          className="mb-4"
+        />
         {!currency ? (
           <View className="bg-card rounded-[28px] px-5 py-8">
             <Text className="text-lg font-display-bold text-foreground">

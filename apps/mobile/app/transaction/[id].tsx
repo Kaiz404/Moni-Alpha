@@ -28,7 +28,7 @@ import { getCategories } from '@/lib/supabase/categories';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { AmountInput } from '@/components/finance/amount-input';
 import { Segmented } from '@/components/ui/segmented';
-import { FeedbackState } from '@/components/ui/feedback-state';
+import { NotFound } from '@/components/ui/empty-tile';
 import { FormField } from '@/components/ui/form-field';
 import { PickerField } from '@/components/ui/picker-field';
 import {
@@ -330,10 +330,10 @@ export default function EditTransactionScreen() {
         kind="pushed"
         title="Transaction"
       >
-        <FeedbackState
-          className="flex-1"
+        <NotFound
           icon="receipt-text"
-          title="Missing transaction"
+          title="This spend isn't here any more"
+          body="It may have been deleted on another phone. Your totals already leave it out."
         />
       </Page>
     );
@@ -362,11 +362,9 @@ export default function EditTransactionScreen() {
         kind="pushed"
         title="Transaction"
       >
-        <FeedbackState
-          className="flex-1"
+        <NotFound
           icon="alert-circle-outline"
-          mode="error"
-          title="Couldn’t open this transaction"
+          title="Couldn't open this transaction"
         />
         <View className="px-5 pb-5">
           <Button

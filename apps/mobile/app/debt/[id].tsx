@@ -3,7 +3,7 @@ import { Alert, Pressable, ScrollView, View } from 'react-native';
 import { Text } from '@/components/ui/text';
 import { useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { AmountInput } from '@/components/finance/amount-input';
-import { FeedbackState } from '@/components/ui/feedback-state';
+import { NotFound } from '@/components/ui/empty-tile';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import {
   addDebtPrincipal,
@@ -89,10 +89,10 @@ export default function DebtDetailScreen() {
         kind="pushed"
         title="Debt"
       >
-        <FeedbackState
-          className="flex-1"
+        <NotFound
           icon="account-outline"
-          title="Debt not found"
+          title="This debt isn't here any more"
+          body="It may have been deleted on another phone."
         />
       </Page>
     );

@@ -10,7 +10,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { syncState } from '@legendapp/state';
 import { useSelector, useValue } from '@legendapp/state/react';
 import { Page } from '@/components/ui/page';
-import { SyncStatusIndicator } from '@/components/providers/sync-status-indicator';
+import { SyncBanner } from '@/components/providers/sync-banner';
 import { EmptyTile } from '@/components/ui/empty-tile';
 import { HeaderIconButton } from '@/components/ui/header-icon-button';
 import {
@@ -260,21 +260,18 @@ export default function TransactionsScreen() {
       kind="pushed"
       title="Transactions"
       trailing={
-        <>
-          <SyncStatusIndicator />
-          <HeaderIconButton
-            testID={tid('activity', 'add')}
-            icon="plus"
-            accessibilityLabel="Add a transaction"
-            onPress={() =>
-              router.push(
-                (walletId
-                  ? `/transaction/new?walletId=${walletId}`
-                  : '/transaction/new') as never,
-              )
-            }
-          />
-        </>
+        <HeaderIconButton
+          testID={tid('activity', 'add')}
+          icon="plus"
+          accessibilityLabel="Add a transaction"
+          onPress={() =>
+            router.push(
+              (walletId
+                ? `/transaction/new?walletId=${walletId}`
+                : '/transaction/new') as never,
+            )
+          }
+        />
       }
     >
       <ScrollView
@@ -286,6 +283,7 @@ export default function TransactionsScreen() {
         }
         contentContainerClassName="gap-section px-screen pb-8"
       >
+        <SyncBanner screen="activity" />
         {selectedWallet ? (
           <SolidWalletCard
             cardStyle={selectedWalletStyle}

@@ -3,7 +3,7 @@ import { Pressable, ScrollView, View } from 'react-native';
 import { Text } from '@/components/ui/text';
 import { router } from 'expo-router';
 import { useValue } from '@legendapp/state/react';
-import { FeedbackState } from '@/components/ui/feedback-state';
+import { EmptyTile } from '@/components/ui/empty-tile';
 import { useAuth } from '@/lib/auth/auth-context';
 import { formatMinorAmount } from '@/lib/finance/money';
 import { debtsWithBalance$ } from '@/lib/finance/selectors';
@@ -90,12 +90,13 @@ export default function DebtsScreen() {
         ) : null}
 
         {shown.length === 0 ? (
-          <FeedbackState
-            className="mt-10"
+          <EmptyTile
+            className="mt-6"
             icon="account-group-outline"
             title={
               owedToMe ? 'Nothing owed to you' : 'Nothing to repay'
             }
+            body="Add who owes you, or who you owe, and Moni keeps the tally."
           />
         ) : (
           <View className="mt-7">

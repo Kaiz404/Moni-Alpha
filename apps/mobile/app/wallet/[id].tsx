@@ -17,7 +17,7 @@ import {
 } from '@repo/types';
 
 import { AmountInput } from '@/components/finance/amount-input';
-import { FeedbackState } from '@/components/ui/feedback-state';
+import { NotFound } from '@/components/ui/empty-tile';
 import { FormField } from '@/components/ui/form-field';
 import { PickerField } from '@/components/ui/picker-field';
 import { WalletColourSwatches } from '@/components/wallets/wallet-colour-swatches';
@@ -296,10 +296,10 @@ export default function EditWalletScreen() {
         kind="pushed"
         title="Wallet"
       >
-        <FeedbackState
-          className="flex-1"
+        <NotFound
           icon="wallet"
-          title="Missing wallet"
+          title="This wallet isn't here any more"
+          body="It may have been deleted on another phone."
         />
       </Page>
     );
@@ -332,11 +332,9 @@ export default function EditWalletScreen() {
         kind="pushed"
         title="Wallet"
       >
-        <FeedbackState
-          className="flex-1"
+        <NotFound
           icon="alert-circle-outline"
-          mode="error"
-          title="Couldn’t open this wallet"
+          title="Couldn't open this wallet"
         />
         <View className="px-5 pb-5">
           <Button

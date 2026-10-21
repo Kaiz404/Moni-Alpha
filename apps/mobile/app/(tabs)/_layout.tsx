@@ -1,8 +1,6 @@
 import { Tabs } from 'expo-router';
 import React from 'react';
-import { View } from 'react-native';
 
-import { SyncStatusIndicator } from '@/components/providers/sync-status-indicator';
 import { TabBar } from '@/components/nav/tab-bar';
 import { TabBarIcon } from '@/components/nav/tab-bar-icon';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
@@ -17,11 +15,6 @@ export default function TabLayout() {
         tabBarActiveTintColor: tokens.accent,
         tabBarInactiveTintColor: tokens.muted,
         headerShown: false,
-        headerRight: () => (
-          <View className="mr-4">
-            <SyncStatusIndicator />
-          </View>
-        ),
       }}
     >
       <Tabs.Screen
