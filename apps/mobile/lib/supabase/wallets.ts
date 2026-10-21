@@ -1,4 +1,4 @@
-import { wallets$, transactions$ } from '@/lib/store';
+import { assertTableMigrated, wallets$, transactions$ } from '@/lib/store';
 import { getRecordValues, isActive, patchRow } from '@/lib/store/helpers';
 import { getUserId } from '@/lib/supabase/client';
 import { getWalletBalances } from '@/lib/supabase/balances';
@@ -25,6 +25,7 @@ type WalletRow = {
   notification_app_label: string | null;
   notification_account_hint: string | null;
   balance_confirmed_at?: string | null;
+  record_location?: boolean | null;
   created_at: string | null;
   updated_at: string | null;
   deleted?: boolean;
@@ -50,6 +51,7 @@ function mapWalletRow(w: WalletRow, currentBalanceMinor?: MinorAmount) {
     notificationAppLabel: w.notification_app_label ?? null,
     notificationAccountHint: w.notification_account_hint ?? null,
     balanceConfirmedAt: w.balance_confirmed_at ?? null,
+    recordLocation: w.record_location !== false,
     createdAt: w.created_at ?? w.updated_at ?? '',
     updatedAt: w.updated_at ?? w.created_at ?? '',
   };
@@ -134,6 +136,12 @@ export async function updateWallet(id: string, data: UpdateWallet) {
     patch.notification_account_hint = data.notificationAccountHint;
   }
   if (data.balanceConfirmedAt !== undefined) patch.balance_confirmed_at = data.balanceConfirmedAt;
+  if (data.recordLocation !== undefined) {
+    // The column ships in the migration that creates merchant_aliases; an unknown column would
+    // fail every later sync of this wallet row.
+    assertTableMigrated('merchant_aliases');
+    patch.record_location = data.recordLocation;
+  }
 
   patchRow(wallets$, id, patch);
   refreshLinkedPackagesFromStore();

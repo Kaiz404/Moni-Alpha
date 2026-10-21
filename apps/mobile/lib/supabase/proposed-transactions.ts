@@ -18,6 +18,7 @@ import {
   clearProposalLocationSnapshot,
 } from '@/lib/ai/proposal-location-cache';
 import { emitProposedTransactionsChanged } from '@/lib/proposals/proposed-transactions-events';
+import { markCaptureStatus } from '@/lib/notifications/capture-status';
 
 type ProposedRow = {
   id: string;
@@ -241,8 +242,12 @@ export async function rejectProposedTransaction(id: string): Promise<void> {
   await deleteProposedTransaction(id);
 }
 
-/** Stamps the review outcome on the row before its soft delete, so the server keeps it. */
+/**
+ * Stamps the review outcome on the row before its soft delete, so the server keeps it. A
+ * notification proposal shares its id with its capture log entry.
+ */
 function closeProposal(id: string, status: 'approved' | 'rejected'): void {
+  markCaptureStatus(id, status === 'approved' ? 'added' : 'ignored');
   if (!hasRow(proposedTransactions$, id)) return;
   patchRow(proposedTransactions$, id, { status, updated_at: new Date().toISOString() });
 }

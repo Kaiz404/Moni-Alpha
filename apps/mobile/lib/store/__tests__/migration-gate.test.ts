@@ -81,6 +81,8 @@ const INPUT = {
   categoryId: '00000000-0000-4000-8000-00000000000c',
 };
 
+const callsFor = (table: string) => mockServer.calls.filter((call) => call.endsWith(` ${table}`));
+
 async function settle() {
   for (let i = 0; i < 5; i += 1) await new Promise((resolve) => setTimeout(resolve, 20));
 }
@@ -98,9 +100,8 @@ describe('a synced table whose migration is not on the server yet', () => {
     await enableStoreSync({ fullReset: true });
     await settle();
 
-    expect(mockServer.calls.filter((call) => call.endsWith(' auto_add_rules'))).toEqual([
-      'probe auto_add_rules',
-    ]);
+    expect(callsFor('auto_add_rules')).toEqual(['probe auto_add_rules']);
+    expect(callsFor('merchant_aliases')).toEqual(['probe merchant_aliases']);
     expect(mockServer.calls).toContain('list wallets');
     expect(wallets$.peek()).toEqual({});
     expect(errors).not.toHaveBeenCalled();
@@ -116,13 +117,18 @@ describe('a synced table whose migration is not on the server yet', () => {
     await createAutoAddRule(kedai);
     await settle();
 
-    expect(mockServer.calls).toEqual([
-      'probe auto_add_rules',
-      'subscribe auto_add_rules',
-      ...mockServer.calls.slice(2, -1),
-      'insert auto_add_rules',
-    ]);
-    expect(mockServer.calls).toContain('list auto_add_rules');
+    const ruleCalls = callsFor('auto_add_rules');
+    expect(new Set(ruleCalls)).toEqual(
+      new Set([
+        'probe auto_add_rules',
+        'subscribe auto_add_rules',
+        'list auto_add_rules',
+        'insert auto_add_rules',
+      ]),
+    );
+    expect(ruleCalls[0]).toBe('probe auto_add_rules');
+    expect(ruleCalls.at(-1)).toBe('insert auto_add_rules');
+    expect(callsFor('merchant_aliases')).toEqual(['probe merchant_aliases']);
     expect(Object.keys(autoAddRules$.peek() ?? {}).sort()).toEqual(['generated-id', 'rule-1']);
 
     mockServer.calls.length = 0;

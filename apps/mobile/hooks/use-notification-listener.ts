@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { AppState, Platform } from 'react-native';
 import { createMMKV } from 'react-native-mmkv';
+import type { CapturedNotificationStatus } from '@repo/types';
 import {
   openNotificationListenerSettings,
   readNotificationListenerPermission,
@@ -25,6 +26,8 @@ export type CapturedNotification = {
   bigText: string;
   extraInfoText: string;
   groupedMessages: Array<{ title: string; text: string }>;
+  /** Missing on entries captured before statuses existed: show them as Ignored. */
+  status?: CapturedNotificationStatus;
 };
 
 const STORAGE_KEY = 'captured_notifications';

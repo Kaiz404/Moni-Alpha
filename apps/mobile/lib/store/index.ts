@@ -60,7 +60,7 @@ export const recurringOverrides$ = observable(syncTable('recurring_overrides'));
  * pushes migrations by hand). Until a probe finds the table, its sync neither reads, subscribes
  * nor writes. A found table is remembered, so the probe runs once per install.
  */
-const MIGRATION_GATED_TABLES = ['auto_add_rules'] as const;
+const MIGRATION_GATED_TABLES = ['auto_add_rules', 'merchant_aliases'] as const;
 export type MigrationGatedTable = (typeof MIGRATION_GATED_TABLES)[number];
 const tableFound$ = observable<Partial<Record<MigrationGatedTable, boolean>>>({});
 const TABLE_FOUND_KEY_PREFIX = 'table-found:';
@@ -96,6 +96,7 @@ async function probeMigrationGatedTables(): Promise<void> {
 }
 
 export const autoAddRules$ = observable(syncTableOnceMigrated('auto_add_rules'));
+export const merchantAliases$ = observable(syncTableOnceMigrated('merchant_aliases'));
 
 /** The signed-in profile's preferences. Read-only here: profiles are not a synced table. */
 export const profilePreferences$ = observable<UserPreferences | undefined>(
@@ -118,6 +119,7 @@ export const ALL_STORE_OBSERVABLES: Observable<any>[] = [
   proposedTransactions$,
   recurringOverrides$,
   autoAddRules$,
+  merchantAliases$,
   profilePreferences$,
 ];
 

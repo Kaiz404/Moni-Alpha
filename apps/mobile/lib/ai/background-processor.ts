@@ -13,6 +13,10 @@ import {
   getPendingCount,
 } from './processing-queue';
 import { runExtraction } from './run-extraction';
+import {
+  captureStatusAfterExtraction,
+  markCaptureStatus,
+} from '@/lib/notifications/capture-status';
 
 const TAG = '[BGProc]';
 const NOTIF_TAG = '[NotifProc]';
@@ -112,6 +116,9 @@ async function processingTask(taskData?: { delay?: number }) {
         });
 
         const elapsed = Date.now() - itemStart;
+        if (item.type === 'notification') {
+          markCaptureStatus(item.id, captureStatusAfterExtraction(result));
+        }
 
         if (result.created) {
           console.log(
@@ -129,6 +136,7 @@ async function processingTask(taskData?: { delay?: number }) {
         const elapsed = Date.now() - itemStart;
         console.error(TAG, `\u{2502}  \u{274C} Error (${elapsed}ms):`, e);
         markError(item.id);
+        if (item.type === 'notification') markCaptureStatus(item.id, 'ignored');
       }
 
       await new Promise((r) => setTimeout(r, 200));

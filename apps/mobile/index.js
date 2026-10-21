@@ -11,7 +11,11 @@ if (Platform.OS === 'android') {
   } = require('./lib/notifications/notification-filter.core');
   const { startBackgroundProcessor } = require('./lib/ai/background-processor');
   const { captureLocationSnapshot } = require('./lib/location/location-snapshot');
-  const { isPackageLinked } = require('./lib/notifications/linked-packages-cache.core');
+  const {
+    isPackageLinked,
+    isLocationRecordedForPackage,
+  } = require('./lib/notifications/linked-packages-cache.core');
+  const { captureStatusAtIntake } = require('./lib/notifications/capture-status.core');
   const { enrichNotificationPackage } = require('./lib/notifications/notification-package.core');
   const { cacheNotificationAppIcon } = require('./lib/notifications/app-icon-cache.core');
   const { isRepeatedNotification } = require('./lib/notifications/notification-repeat.core');
@@ -61,6 +65,7 @@ if (Platform.OS === 'android') {
         prefilterPassed,
         packageLinked,
         repeated,
+        status: captureStatusAtIntake({ prefilterPassed, packageLinked, repeated }),
       };
 
       // Always store in the full notifications list for the UI
@@ -85,7 +90,9 @@ if (Platform.OS === 'android') {
       if (queueEligible) {
         let locationSnapshot = null;
         try {
-          locationSnapshot = await captureLocationSnapshot();
+          if (isLocationRecordedForPackage(enriched.packageName)) {
+            locationSnapshot = await captureLocationSnapshot();
+          }
         } catch {
           // Location is best-effort in headless context (no UI for permission prompts).
         }
