@@ -12,7 +12,9 @@ import { Page } from '@/components/ui/page';
 import { useValue } from '@legendapp/state/react';
 import { MaterialDesignIcons } from '@react-native-vector-icons/material-design-icons';
 
-import { BudgetProgressItem } from '@/components/budgets/budget-progress-item';
+import { SpentCard } from '@/components/home/spent-card';
+import { useSpentSummary } from '@/components/home/use-spent-summary';
+import { useMainCurrency } from '@/lib/finance/main-currency';
 import { ConfirmBalanceCard } from '@/components/wallets/confirm-balance-card';
 import { EmptyTile } from '@/components/ui/empty-tile';
 import { IconSymbol } from '@/components/ui/icon-symbol';
@@ -29,7 +31,6 @@ import {
   type RowLookups,
 } from '@/lib/transactions/row';
 import {
-  budgetProgress$,
   debtsWithBalance$,
   financeOverview$,
   netWorthByCurrency$,
@@ -145,15 +146,10 @@ export default function HomeScreen() {
     : timeAwareGreeting();
 
   const tokens = useThemeTokens();
-  const timezone = useMemo(
-    () => Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC',
-    [],
-  );
   const overview = useValue(financeOverview$(user?.id ?? null));
   const netWorth = useValue(netWorthByCurrency$(user?.id ?? null));
-  const budgetProgress = useValue(
-    budgetProgress$(user?.id ?? null, timezone),
-  );
+  const currency = useMainCurrency();
+  const spent = useSpentSummary(user?.id ?? null, currency);
   const debts = useValue(debtsWithBalance$(user?.id ?? null));
   const pendingProposals = useValue(
     pendingProposals$(user?.id ?? null),
@@ -172,7 +168,6 @@ export default function HomeScreen() {
     }),
     [overview.categoriesById, overview.wallets],
   );
-  const visibleBudgets = budgetProgress.slice(0, 2);
   const openDebts = debts
     .filter(
       ({ debt, balanceMinor }) =>
@@ -330,68 +325,10 @@ export default function HomeScreen() {
         </View>
 
         <View className="mt-4 px-5">
-          <View className="flex-row items-center justify-between">
-            <View>
-              <Text className="text-lg font-display-bold text-foreground">
-                Budgets
-              </Text>
-            </View>
-            <Pressable
-              testID={tid('home', 'budgets')}
-              className="min-h-11 justify-center px-2"
-              onPress={() => router.push('/budget/list')}
-            >
-              <MaterialDesignIcons
-                name="chevron-right"
-                size={20}
-                color={tokens.primary}
-                accessibilityLabel="Go to Budgets"
-              />
-            </Pressable>
-          </View>
-          {visibleBudgets.length ? (
-            <View className="rounded-card bg-accent-lemon/30 overflow-hidden">
-              {visibleBudgets.map((budget, index) => {
-                return (
-                  <Pressable
-                    testID={tid(
-                      'home',
-                      'budget',
-                      `${budget.categoryId}:${budget.currency}`,
-                    )}
-                    key={`${budget.categoryId}:${budget.currency}`}
-                    className={index ? 'border-t border-border' : ''}
-                    onPress={() =>
-                      router.push({
-                        pathname: '/activity',
-                        params: {
-                          categoryId: budget.categoryId,
-                          currency: budget.currency,
-                          month: new Date().toISOString().slice(0, 7),
-                        },
-                      })
-                    }
-                  >
-                    <BudgetProgressItem budget={budget} />
-                  </Pressable>
-                );
-              })}
-            </View>
-          ) : (
-            <Pressable
-              testID={tid('home', 'plan-a-monthly')}
-              className="rounded-[22px] bg-surface-2 px-5 py-6"
-              onPress={() => router.push('/budget/list')}
-            >
-              <Text className="text-base font-display-semibold text-foreground">
-                Plan a monthly cap
-              </Text>
-              <Text className="mt-1 text-sm leading-5 text-muted">
-                Budgets make your remaining spending visible without
-                changing any records.
-              </Text>
-            </Pressable>
-          )}
+          <SpentCard
+            summary={spent}
+            currency={currency}
+          />
         </View>
 
         {openDebts.length ? (

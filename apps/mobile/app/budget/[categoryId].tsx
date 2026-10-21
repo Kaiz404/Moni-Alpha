@@ -16,6 +16,7 @@ import {
 import { MerchantList } from '@/components/budget/merchant-list';
 import { useBudgetData } from '@/components/budget/use-budget';
 import { PaceChart } from '@/components/charts/pace-chart';
+import { monthFromKey } from '@/components/charts/pace-geometry';
 import { Button } from '@/components/ui/button';
 import { NotFound } from '@/components/ui/empty-tile';
 import { HeaderIconButton } from '@/components/ui/header-icon-button';
@@ -94,9 +95,12 @@ export default function CategoryBudgetScreen() {
       ),
     [data.transactions, month, currency, params.categoryId],
   );
-  const series = useMemo(() => {
+  const { series, chartSeries } = useMemo(() => {
     const { daily, throughDay } = dailySpend(spend, month, now);
-    return cumulativeSpend(daily, throughDay);
+    return {
+      series: cumulativeSpend(daily, throughDay),
+      chartSeries: { month: monthFromKey(month), values: daily.slice(0, throughDay) },
+    };
   }, [spend, month, now]);
   const spentMinor = series[series.length - 1] ?? (0 as MinorAmount);
   const { merchants, count: merchantCount } = useMemo(
@@ -407,9 +411,7 @@ export default function CategoryBudgetScreen() {
           <PaceChart
             screen="budget"
             mode="pace"
-            series={series}
-            daysInMonth={daysInMonth(month)}
-            month={month}
+            series={chartSeries}
             budget={budgetMinor}
             currency={currency}
             endsToday={isCurrent}

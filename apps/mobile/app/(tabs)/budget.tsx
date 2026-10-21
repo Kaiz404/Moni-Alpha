@@ -14,6 +14,7 @@ import {
   useBudgetMonth,
 } from '@/components/budget/use-budget';
 import { PaceChart } from '@/components/charts/pace-chart';
+import { monthFromKey } from '@/components/charts/pace-geometry';
 import { openCaptureChooser } from '@/components/nav/capture-chooser';
 import { useTabBarClearance } from '@/components/nav/tab-bar';
 import { SyncBanner } from '@/components/providers/sync-banner';
@@ -291,9 +292,10 @@ function MonthView({
           <PaceChart
             screen="budget"
             mode="pace"
-            series={budget.cumulative}
-            daysInMonth={budget.daysInMonth}
-            month={budget.month}
+            series={{
+              month: monthFromKey(budget.month),
+              values: budget.daily.slice(0, budget.throughDay),
+            }}
             budget={budget.budgetMinor}
             currency={currency}
             endsToday={budget.isCurrent}
