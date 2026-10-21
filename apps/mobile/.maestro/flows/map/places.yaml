@@ -1,0 +1,54 @@
+# M1 map: pins, the fixed place card, range and category filters, Top places.
+# Needs a signed-in e2e build, location granted, and located expenses this month.
+# The map tiles stay blank until O6 adds com.anonymous.moni.e2e to the Maps key.
+# Run: scripts/device/with-device.sh --lane m1 -- maestro test .maestro/flows/map/places.yaml
+appId: com.anonymous.moni.e2e
+name: M1 places
+tags:
+  - m1
+  - needs-default-seed
+---
+- launchApp
+- extendedWaitUntil:
+    visible:
+      id: home.avatar
+    timeout: 15000
+- openLink: moni-e2e://map
+- extendedWaitUntil:
+    visible: Where you spend
+    timeout: 10000
+- assertVisible:
+    id: map.places.back
+- assertVisible:
+    id: map.places.fit
+- assertVisible:
+    id: map.range.month
+- assertVisible:
+    id: map.category.all
+- assertVisible:
+    id: map.place-card.open
+- assertVisible: See this place
+- takeScreenshot: m1-l2-pair
+
+# The card is part of the sheet: it stays after a fit and a range change.
+- tapOn:
+    id: map.places.fit
+- assertVisible:
+    id: map.place-card.open
+- tapOn:
+    id: map.range.week
+- tapOn:
+    id: map.range.month
+- assertVisible:
+    id: map.place-card.open
+- takeScreenshot: m1-l4-filter
+
+# The grabber lifts the sheet to just under the header.
+- tapOn:
+    id: map.sheet.grabber
+- assertVisible: Top places
+- takeScreenshot: m1-top-places
+- tapOn:
+    id: map.sheet.grabber
+- tapOn:
+    id: map.places.back

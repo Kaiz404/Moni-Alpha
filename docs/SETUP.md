@@ -140,9 +140,9 @@ pnpm --filter backend test                      # Go tests
 pnpm --filter moni test:notification-detection  # notification prefilter suite
 ```
 
-## Google Maps (heatmap feature)
+## Google Maps (spending map)
 
-The mobile heatmap (`apps/mobile/app/heatmap.tsx`) renders transaction locations on Google Maps.
+The spending map (`apps/mobile/app/map.tsx`, `place/[id].tsx`) renders transaction locations on Google Maps. The e2e build (`com.anonymous.moni.e2e`) needs its own package and SHA-1 on a restricted key, or its map stays blank.
 
 1. In [Google Cloud Console](https://console.cloud.google.com/), enable **Maps SDK for Android** and **Maps SDK for iOS**; create one API key per platform, restricted to the app's package name / bundle ID.
 2. Put `ANDROID_GOOGLE_MAPS_API_KEY` (and, when needed, `IOS_GOOGLE_MAPS_API_KEY`) in `apps/mobile/.env`. `app.config.ts` injects the keys into the native `react-native-maps` configuration during prebuild.

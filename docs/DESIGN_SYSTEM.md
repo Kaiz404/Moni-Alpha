@@ -485,6 +485,15 @@ Vary composition across insight screens; do not duplicate the Home layout with m
 
 Use grouped settings cells, not dashboard cards. Organize into Accounts & wallets, Currencies, Categories, Capture sources, Privacy & local data, Appearance, and Accessibility.
 
+### Where you spend (v2, `XM-Places`, `XM-Detail`, `XM-Empty`)
+
+1. The map fills the top half in the board's warm map style, with the header floating over a cream fade. Pins are Paper capsules (category bubble, whole-ringgit total); pins that would overlap merge and show a count; the selected place's pin turns Ink.
+2. A cream sheet starts over the map's bottom edge. Its grabber drags or taps it up to just under the header; the map keeps its own pan and pinch.
+3. In the sheet: the range segmented control (This week, this month, last month), category chips, then the selected place as a fixed card in its top category's colour with **See this place**. It is part of the page and cannot be swiped away. "Top places" lists every place, largest first.
+4. The place page has a static map strip, the "Spent here" hero, "Your top place", captures pinned here that wait for review (kept out of the totals), "What you bought" as one split bar, a Moni noticed card when a merchant is a regular, the payments, and **See these in Activity**.
+5. With no located expenses the sheet shows the XM-Empty state: **Add an expense**, or **Turn location back on** when location is denied. With places and location denied, the places stay and one line offers to turn it back on.
+6. Main currency only; other currencies never reach the map.
+
 ---
 
 ## 9. Motion language

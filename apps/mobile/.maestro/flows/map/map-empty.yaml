@@ -1,0 +1,34 @@
+# M1 empty map (XM-Empty): no places yet, or location off.
+# Needs a signed-in e2e build with no located expenses (the empty seed).
+# Run: scripts/device/with-device.sh --lane m1 -- maestro test .maestro/flows/map/map-empty.yaml
+appId: com.anonymous.moni.e2e
+name: M1 map empty
+tags:
+  - m1
+  - needs-empty-seed
+---
+- launchApp
+- extendedWaitUntil:
+    visible:
+      id: home.avatar
+    timeout: 15000
+- openLink: moni-e2e://map
+- extendedWaitUntil:
+    visible: Where you spend
+    timeout: 10000
+- assertVisible:
+    id: map.empty.past-expense
+- runFlow:
+    when:
+      visible:
+        id: map.empty.add-expense
+    commands:
+      - assertVisible: No places yet
+      - takeScreenshot: m1-l8-empty
+- runFlow:
+    when:
+      visible:
+        id: map.empty.turn-on-location
+    commands:
+      - assertVisible: You turned off location
+      - takeScreenshot: m1-l9-location-off

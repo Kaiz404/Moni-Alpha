@@ -1,0 +1,41 @@
+# M1 place page: See this place, the payments, and See these in Activity.
+# Needs a signed-in e2e build and located expenses this month.
+# Run: scripts/device/with-device.sh --lane m1 -- maestro test .maestro/flows/map/place.yaml
+appId: com.anonymous.moni.e2e
+name: M1 place
+tags:
+  - m1
+  - needs-default-seed
+---
+- launchApp
+- extendedWaitUntil:
+    visible:
+      id: home.avatar
+    timeout: 15000
+- openLink: moni-e2e://map
+- extendedWaitUntil:
+    visible:
+      id: map.place-card.open
+    timeout: 10000
+- tapOn:
+    id: map.place-card.open
+- extendedWaitUntil:
+    visible:
+      id: map.place.back
+    timeout: 5000
+- assertVisible:
+    id: map.place.directions
+- assertVisible: What you bought
+- takeScreenshot: m1-l5-place
+- scrollUntilVisible:
+    element:
+      id: map.place.see-in-activity
+- assertVisible: Payments
+- assertVisible: Newest first
+- tapOn:
+    id: map.place.see-in-activity
+- extendedWaitUntil:
+    visible:
+      id: activity.ask-moni
+    timeout: 5000
+- takeScreenshot: m1-l6-activity
