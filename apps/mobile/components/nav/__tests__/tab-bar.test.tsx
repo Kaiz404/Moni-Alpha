@@ -3,9 +3,11 @@ import {
   render,
   screen,
 } from '@testing-library/react-native';
+import { existsSync } from 'node:fs';
+import { join } from 'node:path';
 import type { BottomTabBarProps } from 'expo-router/js-tabs';
 
-import { TabBar } from '@/components/nav/tab-bar';
+import { TabBar, TABS } from '@/components/nav/tab-bar';
 
 jest.mock('uniwind', () => ({
   useCSSVariable: (names: string[]) => names.map(() => undefined),
@@ -82,5 +84,17 @@ describe('TabBar', () => {
       canPreventDefault: true,
     });
     expect(navigation.navigate).not.toHaveBeenCalled();
+  });
+
+  it('owns its URL: no root folder index shares a tab name', () => {
+    const app = join(__dirname, '../../../app');
+    expect(
+      TABS.filter(
+        (tab) =>
+          tab.name !== 'index' &&
+          (existsSync(join(app, tab.name, 'index.tsx')) ||
+            existsSync(join(app, `${tab.name}.tsx`))),
+      ).map((tab) => tab.name),
+    ).toEqual([]);
   });
 });
