@@ -75,17 +75,14 @@ Checked 21 Oct 2026. These need data or product work before their screens can be
 | Designed | Today | Needed |
 | --- | --- | --- |
 | Bills list with due dates, "Add a bill" | `selectUpcomingBills` (`lib/finance/bills.ts`) lists this month's bills from detected recurring series and confirmed `recurring_overrides` | Screens (B1, B2) |
-| "Don't ask about similar" | `auto_add_rules` (`createAutoAddRule`, `deleteAutoAddRule` for "Ask again"); `matchRoutine` applies a matching rule before the history heuristic | The Review action (R1), list and "Ask again" in Capture sources (K3) |
+| "Don't ask about similar" | `auto_add_rules` (`createAutoAddRule`, `deleteAutoAddRule` for "Ask again"); `matchRoutine` applies a matching rule before the history heuristic | The Review action (R1) |
 | Source tile (Manual, Voice, Moni, Notification, Camera) | `transactions.metadata.source`, written at every creation site; older rows have none and read as Manual | Voice and live-camera approvals write their own source (C2); the tile (A2) |
-| Merchant names | `merchant_aliases` (`nameMerchant`); `merchantName(raw, aliases)` in `lib/finance/merchant-name.ts` resolves a row's name | Rows on Home, Activity, wallet pages and Review read names through it; the Merchant names page (K3) |
-| Balance correction | `correctBalance` (`lib/wallets/balance-correction.ts`) builds the "Balance correction" row with `analysisExcluded` and `metadata.kind: balance_correction`; `createBalanceCorrection` writes it from the wallet page (K2) | Nothing |
+| Merchant names | `merchant_aliases` (`nameMerchant`); `merchantName(raw, aliases)` in `lib/finance/merchant-name.ts` resolves a row's name | Rows on Home, Activity, wallet pages and Review read names through it |
 | Main currency | `preferences.currency` (default `MYR`), read by `useMainCurrency()`, set from Profile (K1) | Focused-page filtering |
-| Per-app "Record where I spend" | `wallets.record_location`; the headless listener skips the location snapshot for an app whose linked wallets all have it off | The Capture sources toggle (K3) |
-| Capture log statuses | Stored on each capture log entry (`capturedNotificationStatusSchema`, `lib/notifications/capture-status.core.js`); older entries read as Ignored | The Capture log (K3) reads the stored status; v2 wording |
 | Review history, Not mine / Later | `laterProposedTransaction` snoozes (`later`, `snoozed_until`); approve and Not mine stamp `approved` / `rejected` before the soft delete | The card deck (R1); whether to show history stays an owner decision |
 | Chat generative cards, draft cards, one thread per day | Message kinds: text, image, status, clarify chips | New message kinds and renderers |
 
-Already supported: debts with repayments and write-off, monthly category budgets, multi-currency wallets, balance check-in, proposal review, routine auto-add, notification linking per wallet, transaction location, receipt scan (ML Kit), voice capture, custom categories, the spending map (`react-native-maps`), SVG charts, Funnel Display (400/600/700), the six motion tokens, and the haptics table.
+Already supported: debts with repayments and write-off, monthly category budgets, multi-currency wallets, balance check-in, proposal review, routine auto-add, notification linking per wallet, transaction location, receipt scan (ML Kit), voice capture, custom categories, the spending map (`react-native-maps`), SVG charts, Funnel Display (400/600/700), the six motion tokens, the haptics table, balance correction (`correctBalance`), location from notifications per banking app, and stored capture log statuses.
 
 ## Open owner decisions (do not decide alone)
 

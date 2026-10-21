@@ -502,6 +502,12 @@ One page for both modes: the "Moni" word and "Know what's safe to spend.", a Sig
 5. With no located expenses the sheet shows the XM-Empty state: **Add an expense**, or **Turn location back on** when location is denied. With places and location denied, the places stay and one line offers to turn it back on.
 6. Main currency only; other currencies never reach the map.
 
+### Merchant names, Capture sources, and Capture log (v2)
+
+- **Merchant names** (`V2H-Merchants`): To name lists bank codes with three or more payments and no name; Named lists the rest. The pencil edits the name in place (Paper field, cancel, save) and offers Moni's guess. Save and Forget this name confirm with a toast and Undo.
+- **Capture sources** (`V2H-Permissions`): one switch per phone permission. Moni cannot revoke a permission, so the switch asks while Android still allows it and opens Settings otherwise. Location from notifications nests one switch per linked banking app. Revoked notification access replaces its row with the permission-denied card from `V2F-States`. ADDED WITHOUT ASKING lists auto-add rules with Ask again and Undo.
+- **Capture log** (`V2A-NotifLog`, `V2A-NotifLogEmpty`): day groups, filter chips only for statuses present, the alert text as sent, one status pill in glossary words, and one next step per entry (Review it, See transaction, Link the app to a wallet). Three days show before Show N older. The empty state points at notification access and explains each status.
+
 ---
 
 ## 9. Motion language
