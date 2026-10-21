@@ -50,6 +50,10 @@ tags:
       id: wallet.capture-log
 - assertVisible:
     id: wallet.alerts
+- scrollUntilVisible:
+    element:
+      id: wallet.default
+- assertVisible: Use as default
 - takeScreenshot: k2-l2-pair
 - scrollUntilVisible:
     element:

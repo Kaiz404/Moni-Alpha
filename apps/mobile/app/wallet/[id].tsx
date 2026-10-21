@@ -16,6 +16,7 @@ import { WalletMenu } from '@/components/wallets/wallet-menu';
 import {
   ReviewStrip,
   WalletAlerts,
+  WalletDefault,
   WalletTransactions,
 } from '@/components/wallets/wallet-sections';
 import { useAuth } from '@/lib/auth/auth-context';
@@ -155,6 +156,7 @@ export default function WalletScreen() {
             wallet={wallet}
             link={link}
           />
+          <WalletDefault wallet={wallet} />
         </ScrollView>
       </KeyboardAvoidingView>
     </Page>

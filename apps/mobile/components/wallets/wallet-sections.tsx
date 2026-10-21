@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { AppState, Platform, View } from 'react-native';
 import { addMinor, type MinorAmount } from '@repo/types';
 
+import { Toggle } from '@/components/budget/toggle';
 import {
   IconSymbol,
   type IconSymbolName,
@@ -26,10 +27,12 @@ import {
 import { openSheet } from '@/lib/sheet/sheet-store';
 import { updateWallet } from '@/lib/supabase/wallets';
 import { tid, type TestId } from '@/lib/test-ids';
+import { showToast } from '@/lib/toast/toast-store';
 import {
   transactionRow,
   type RowLookups,
 } from '@/lib/transactions/row';
+import { getDefaultWalletId, setDefaultWalletId } from '@/lib/wallets/default-wallet';
 import type { WalletAlertLink } from '@/lib/wallets/wallet-link';
 import {
   formatDayTotal,
@@ -329,5 +332,58 @@ export function WalletAlerts({
         />
       </ListCard>
     </View>
+  );
+}
+
+/**
+ * "Use as default": the wallet Moni falls back to when a capture names none. Not on
+ * V2H-WalletDetail; it replaces v1 Profile's default-wallet picker, which K1 removed.
+ */
+export function WalletDefault({ wallet }: { wallet: FinanceWallet }) {
+  const tokens = useThemeTokens();
+  const [isDefault, setIsDefault] = useState(() => getDefaultWalletId() === wallet.id);
+
+  const change = async (next: boolean) => {
+    setIsDefault(next);
+    try {
+      await setDefaultWalletId(next ? wallet.id : null);
+    } catch {
+      setIsDefault(!next);
+      showToast({ text: "Couldn't save that. Try again.", tone: 'removed' });
+    }
+  };
+
+  return (
+    <ListCard>
+      <View className="min-h-[66px] flex-row items-center gap-3.5 py-3 pl-[18px] pr-3.5">
+        <View className="h-[42px] w-[42px] items-center justify-center rounded-full bg-lemon">
+          <IconSymbol
+            name="star-outline"
+            size={20}
+            color={tokens.onPastel}
+          />
+        </View>
+        <View className="min-w-0 flex-1">
+          <Text
+            variant="rowTitle"
+            className="text-foreground"
+          >
+            Use as default
+          </Text>
+          <Text
+            variant="meta"
+            className="text-muted"
+          >
+            For captures that name no wallet
+          </Text>
+        </View>
+        <Toggle
+          testID={tid('wallet', 'default')}
+          accessibilityLabel={`Use ${wallet.name} as the default wallet`}
+          value={isDefault}
+          onChange={(next) => void change(next)}
+        />
+      </View>
+    </ListCard>
   );
 }
