@@ -1,58 +1,63 @@
-import { useEffect, useMemo, useState } from 'react';
-import {
-  Alert,
-  RefreshControl,
-  ScrollView,
-  View,
-} from 'react-native';
-import { useTabBarClearance } from '@/components/nav/tab-bar';
-import { Text } from '@/components/ui/text';
-import { router, useLocalSearchParams } from 'expo-router';
 import { syncState } from '@legendapp/state';
 import { useSelector, useValue } from '@legendapp/state/react';
-import { Page } from '@/components/ui/page';
+import { router } from 'expo-router';
+import { useEffect, useMemo, useState } from 'react';
+import { Alert, ScrollView, View } from 'react-native';
+
+import { DayGroup } from '@/components/activity/day-group';
+import { FilterChips } from '@/components/activity/filter-chips';
+import { ReviewStrip } from '@/components/activity/review-strip';
+import { SearchField } from '@/components/activity/search-field';
+import {
+  ActivityChart,
+  type ActivityChartMode,
+} from '@/components/charts/activity-chart';
+import { useTabBarClearance } from '@/components/nav/tab-bar';
 import { SyncBanner } from '@/components/providers/sync-banner';
 import { EmptyTile } from '@/components/ui/empty-tile';
-import {
-  HeaderIconButton,
-  MoniButton,
-} from '@/components/ui/header-icon-button';
+import { MoniButton } from '@/components/ui/header-icon-button';
 import {
   HoldHint,
   HoldMenu,
   type HoldAction,
   type HoldAnchor,
 } from '@/components/ui/hold-menu';
-import { ListSection } from '@/components/ui/list-card';
+import { IconSymbol } from '@/components/ui/icon-symbol';
+import { Page } from '@/components/ui/page';
+import { Press } from '@/components/ui/press';
 import { Skeleton } from '@/components/ui/skeleton';
-import { SolidWalletCard } from '@/components/ui/solid-wallet-card';
+import { Text } from '@/components/ui/text';
 import {
   TransactionRow,
   TransactionRowBody,
   rowAmount,
   rowMeta,
 } from '@/components/ui/transaction-row';
-import { getWalletCardStyle } from '@/constants/wallet-card-styles';
+import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { useAuth } from '@/lib/auth/auth-context';
-import { formatDate, formatDayHeading } from '@/lib/dates/day-label';
-import { toLocalDateInput } from '@/lib/dates/local-date-input';
+import { dayLabel, formatDate, formatDayHeading } from '@/lib/dates/day-label';
 import {
-  formatMoney,
-  formatSignedMoney,
-} from '@/lib/finance/format-money';
+  filterActivity,
+  groupActivityDays,
+  type ActivityDay,
+  type ActivityKind,
+} from '@/lib/finance/activity-filter';
+import { balanceMonth, spendingMonth } from '@/lib/finance/activity-series';
+import { formatMoney } from '@/lib/finance/format-money';
+import { useMainCurrency } from '@/lib/finance/main-currency';
+import { merchantName } from '@/lib/finance/merchant-name';
 import {
   budgetProgress$,
   categoriesForUser$,
   pendingProposals$,
   transactions$,
-  walletBalanceMinor$,
-  walletById$,
   walletsForUser$,
 } from '@/lib/finance/selectors';
 import type { FinanceTransaction } from '@/lib/finance/types';
 import { toCategoryTiles } from '@/lib/sheet/category-tiles';
 import { openSheet } from '@/lib/sheet/sheet-store';
 import { transactions$ as transactionTable$ } from '@/lib/store';
+import { listMerchantAliases } from '@/lib/supabase/merchant-aliases';
 import { ensureFinanceTimezone } from '@/lib/supabase/profile';
 import {
   deleteTransaction,
@@ -60,11 +65,13 @@ import {
 } from '@/lib/supabase/transactions';
 import { tid } from '@/lib/test-ids';
 import {
-  proposalRow,
   transactionRow,
   type RowLookups,
   type TransactionRowData,
 } from '@/lib/transactions/row';
+
+const FIRST_DAYS = 5;
+const MORE_DAYS = 10;
 
 type Held = {
   transaction: FinanceTransaction;
@@ -72,53 +79,49 @@ type Held = {
   anchor: HoldAnchor;
 };
 
-function firstParam(value: string | string[] | undefined) {
-  return Array.isArray(value) ? value[0] : value;
-}
-
 function holdable(transaction: FinanceTransaction) {
   return (
     transaction.type !== 'transfer' && !transaction.debtActivityId
   );
 }
 
-export default function TransactionsScreen() {
+function dayTotal(day: ActivityDay, currency: string) {
+  return [
+    day.spentMinor > 0
+      ? `−${formatMoney(day.spentMinor, currency)}`
+      : null,
+    day.inMinor > 0 ? `+${formatMoney(day.inMinor, currency)}` : null,
+  ]
+    .filter(Boolean)
+    .join(' · ');
+}
+
+export default function ActivityScreen() {
   const { user } = useAuth();
+  const tokens = useThemeTokens();
   const clearance = useTabBarClearance();
   const userId = user?.id ?? null;
-  const params = useLocalSearchParams<{
-    walletId?: string | string[];
-    categoryId?: string | string[];
-    currency?: string | string[];
-    month?: string | string[];
-  }>();
-  const walletId = firstParam(params.walletId);
-  const rows = useValue(
-    transactions$({
-      userId,
-      walletId,
-      categoryId: firstParam(params.categoryId),
-      currency: firstParam(params.currency),
-      month: firstParam(params.month),
-    }),
-  );
+  const currency = useMainCurrency();
+  const all = useValue(transactions$({ userId }));
   const wallets = useValue(walletsForUser$(userId));
   const categories = useValue(categoriesForUser$(userId));
   const proposals = useValue(pendingProposals$(userId));
+  const aliases = useValue(() =>
+    userId ? listMerchantAliases(userId) : [],
+  );
   const loaded = useSelector(
     () => syncState(transactionTable$).get().isPersistLoaded,
   );
-  const selectedWallet = useValue(walletById$(walletId ?? ''));
-  const selectedBalance = useValue(
-    walletBalanceMinor$(walletId ?? ''),
-  );
-  const selectedWalletStyle = getWalletCardStyle(
-    selectedWallet?.cardStyleId,
-  );
-  const [refreshing, setRefreshing] = useState(false);
-  const [held, setHeld] = useState<Held | null>(null);
   const [timezone, setTimezone] = useState('UTC');
   const progress = useValue(budgetProgress$(userId, timezone));
+  const [mode, setMode] = useState<ActivityChartMode>('spending');
+  const [query, setQuery] = useState('');
+  const [kind, setKind] = useState<ActivityKind>('all');
+  const [walletId, setWalletId] = useState<string | null>(null);
+  const [day, setDay] = useState<string | null>(null);
+  const [shownDays, setShownDays] = useState(FIRST_DAYS);
+  const [held, setHeld] = useState<Held | null>(null);
+  const now = new Date();
 
   useEffect(() => {
     void ensureFinanceTimezone()
@@ -137,50 +140,67 @@ export default function TransactionsScreen() {
     }),
     [categories, wallets],
   );
-  const days = useMemo(() => {
-    const groups: {
-      key: string;
-      label: string;
-      items: FinanceTransaction[];
-    }[] = [];
-    for (const transaction of rows) {
-      const key = toLocalDateInput(
-        new Date(transaction.transactionDate),
-      );
-      const last = groups.at(-1);
-      if (last?.key === key) last.items.push(transaction);
-      else
-        groups.push({
-          key,
-          label: formatDayHeading(transaction.transactionDate),
-          items: [transaction],
-        });
-    }
-    return groups;
-  }, [rows]);
-  const stats = useMemo(
+  const named = useMemo(
     () =>
-      rows.reduce(
-        (all, row) => ({
-          income:
-            all.income +
-            (row.type === 'income' ? Number(row.amountMinor) : 0),
-          expense:
-            all.expense +
-            (row.type === 'expense' ? Number(row.amountMinor) : 0),
-        }),
-        { income: 0, expense: 0 },
+      all.map((transaction) =>
+        transaction.merchant
+          ? {
+              ...transaction,
+              merchant: merchantName(transaction.merchant, aliases),
+            }
+          : transaction,
       ),
-    [rows],
+    [all, aliases],
   );
-
-  const onRefresh = async () => {
-    setRefreshing(true);
-    await new Promise<void>((resolve) =>
-      requestAnimationFrame(() => resolve()),
+  const inCurrency = useMemo(
+    () => named.filter((transaction) => transaction.currency === currency),
+    [named, currency],
+  );
+  const days = useMemo(
+    () =>
+      groupActivityDays(
+        filterActivity(named, {
+          query,
+          walletId,
+          mainCurrency: currency,
+          kind,
+          day,
+          categoryNames: Object.fromEntries(
+            categories.map((category) => [category.id, category.name]),
+          ),
+        }),
+      ),
+    [named, query, walletId, currency, kind, day, categories],
+  );
+  const budgetMinor = useMemo(() => {
+    const budgets = progress.filter(
+      (row) => row.currency === currency && row.budgetAmountMinor !== null,
     );
-    setRefreshing(false);
-  };
+    return budgets.length
+      ? budgets.reduce((sum, row) => sum + Number(row.budgetAmountMinor), 0)
+      : null;
+  }, [progress, currency]);
+  const today = now.toDateString();
+  const spending = useMemo(
+    () => spendingMonth(inCurrency, budgetMinor, currency, new Date()),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- recompute when the day turns over
+    [inCurrency, budgetMinor, currency, today],
+  );
+  const balance = useMemo(
+    () => balanceMonth(wallets, all, currency, new Date()),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- recompute when the day turns over
+    [wallets, all, currency, today],
+  );
+  const reviewTotal = proposals
+    .filter((proposal) => proposal.currency === currency)
+    .reduce((sum, proposal) => sum + Number(proposal.amountMinor ?? 0), 0);
+  const mainWallets = wallets.filter(
+    (wallet) => wallet.currency === currency,
+  );
+  const walletName =
+    mainWallets.find((wallet) => wallet.id === walletId)?.name ?? null;
+  const visible = day ? days : days.slice(0, shownDays);
+  const earlier = Math.min(MORE_DAYS, days.length - visible.length);
 
   const save = (
     id: string,
@@ -235,6 +255,25 @@ export default function TransactionsScreen() {
       save(transaction.id, { walletId: picked.walletId });
   };
 
+  const pickWallet = async () => {
+    const picked = await openSheet({
+      kind: 'wallet',
+      title: 'Show wallet',
+      wallets: mainWallets.map((wallet) => ({
+        id: wallet.id,
+        name: wallet.name,
+        currency: wallet.currency,
+        type: wallet.type,
+        icon: wallet.icon,
+        color: wallet.color,
+        cardStyleId: wallet.cardStyleId,
+      })),
+      selectedId: walletId,
+      noneLabel: 'All wallets',
+    });
+    if (picked) setWalletId(picked.walletId);
+  };
+
   const remove = async (
     transaction: FinanceTransaction,
     row: TransactionRowData,
@@ -265,14 +304,17 @@ export default function TransactionsScreen() {
   };
 
   const open = (transaction: FinanceTransaction) =>
-    router.push(
-      transaction.debtActivityId
-        ? ('/debts' as never)
-        : ({
-            pathname: '/transaction/[id]',
-            params: { id: transaction.id },
-          } as never),
-    );
+    transaction.debtActivityId
+      ? router.navigate('/debts')
+      : router.push({
+          pathname: '/transaction/[id]',
+          params: { id: transaction.id },
+        });
+
+  const dayRows = days.reduce(
+    (sum, group) => sum + group.transactions.length,
+    0,
+  );
 
   return (
     <Page
@@ -281,18 +323,20 @@ export default function TransactionsScreen() {
       title="Activity"
       trailing={
         <>
-          <HeaderIconButton
-            testID={tid('activity', 'add')}
-            icon="plus"
-            accessibilityLabel="Add a transaction"
-            onPress={() =>
-              router.push(
-                (walletId
-                  ? `/transaction/new?walletId=${walletId}`
-                  : '/transaction/new') as never,
-              )
-            }
-          />
+          {proposals.length ? (
+            <ReviewStrip
+              count={proposals.length}
+              amount={
+                reviewTotal > 0 ? formatMoney(reviewTotal, currency) : null
+              }
+              onPress={() =>
+                router.push({
+                  pathname: '/proposal/[id]',
+                  params: { id: proposals[0].id },
+                })
+              }
+            />
+          ) : null}
           <MoniButton
             testID={tid('activity', 'ask-moni')}
             onPress={() => router.push('/chat')}
@@ -301,122 +345,144 @@ export default function TransactionsScreen() {
       }
     >
       <ScrollView
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-          />
-        }
-        contentContainerClassName="gap-section px-screen"
+        keyboardShouldPersistTaps="handled"
+        contentContainerClassName="gap-4 px-screen"
         contentContainerStyle={{ paddingBottom: clearance }}
       >
         <SyncBanner screen="activity" />
-        {selectedWallet ? (
-          <SolidWalletCard
-            cardStyle={selectedWalletStyle}
-            className="rounded-3xl p-4"
-          >
-            <Text
-              className="text-sm"
-              style={{ color: selectedWalletStyle.contentMutedColor }}
-            >
-              {selectedWallet.name}
-            </Text>
-            <Text
-              className="mt-1 text-2xl font-display-bold"
-              style={{ color: selectedWalletStyle.contentColor }}
-            >
-              {formatMoney(selectedBalance, selectedWallet.currency)}
-            </Text>
-            <View className="mt-3 flex-row gap-4">
-              <Text
-                style={{ color: selectedWalletStyle.contentColor }}
-              >
-                {formatSignedMoney(
-                  'income',
-                  stats.income,
-                  selectedWallet.currency,
-                )}
-              </Text>
-              <Text
-                style={{ color: selectedWalletStyle.contentColor }}
-              >
-                {formatSignedMoney(
-                  'expense',
-                  stats.expense,
-                  selectedWallet.currency,
-                )}
-              </Text>
-            </View>
-          </SolidWalletCard>
-        ) : null}
-
-        {proposals.length ? (
-          <ListSection label="To review">
-            {proposals.map((proposal) => (
-              <TransactionRow
-                key={proposal.id}
-                testID={tid('activity', 'proposal', proposal.id)}
-                row={proposalRow(proposal, lookups)}
-                metaLead="date"
-                onPress={() =>
-                  router.push({
-                    pathname: '/proposal/[id]',
-                    params: { id: proposal.id },
-                  } as never)
-                }
-              />
-            ))}
-          </ListSection>
-        ) : null}
-
         {!loaded ? (
           <Skeleton rows={4} />
-        ) : days.length === 0 ? (
+        ) : inCurrency.length === 0 ? (
           <EmptyTile
             icon="format-list-bulleted"
             title="No spending yet"
             body="Add your first spend with + or link a bank app so Moni catches them for you."
             action={{
-              testID: tid('activity', 'empty', 'add'),
-              label: 'Add a spend',
-              icon: 'plus',
-              onPress: () => router.push('/transaction/new' as never),
+              testID: tid('activity', 'empty', 'link'),
+              label: 'Link a bank app',
+              icon: 'bank-outline',
+              onPress: () => router.push('/notifications'),
             }}
           />
         ) : (
-          <View className="gap-section">
+          <>
+            <ActivityChart
+              mode={mode}
+              onModeChange={setMode}
+              spending={spending}
+              balance={balance}
+              currency={currency}
+              selectedDay={day}
+              onSelectDay={setDay}
+              now={now}
+            />
+            {day ? (
+              <View className="flex-row items-center justify-between gap-3 px-1">
+                <Text variant="rowTitle" className="text-foreground">
+                  {`${dayLabel(day, now)} · ${dayRows} ${dayRows === 1 ? 'transaction' : 'transactions'}`}
+                </Text>
+                <Press
+                  testID={tid('activity', 'whole-month')}
+                  onPress={() => setDay(null)}
+                  radius={{ rest: 18, pressed: 16 }}
+                  pressedClassName="bg-hairline"
+                  className="h-9 flex-row items-center gap-1 bg-sand px-3.5"
+                >
+                  <Text className="text-[14px] leading-[19px] font-display-semibold text-foreground">
+                    Whole month
+                  </Text>
+                  <IconSymbol
+                    name="close"
+                    size={16}
+                    color={tokens.foreground}
+                  />
+                </Press>
+              </View>
+            ) : null}
+            <SearchField
+              value={query}
+              onChange={setQuery}
+            />
+            <FilterChips
+              kind={kind}
+              onKind={setKind}
+              walletName={walletName}
+              onWallet={() => void pickWallet()}
+            />
             <HoldHint screen="activity" />
-            {days.map((day) => (
-              <ListSection
-                key={day.key}
-                label={day.label}
+            {visible.length === 0 ? (
+              <EmptyTile
+                icon="magnify-close"
+                title={
+                  query.trim()
+                    ? `No matches for "${query.trim()}"`
+                    : day
+                      ? 'Nothing like that on this day'
+                      : 'Nothing matches'
+                }
+                body={
+                  query.trim()
+                    ? 'Try a merchant, a category or an amount like 18.90.'
+                    : 'Try another filter or day.'
+                }
+              />
+            ) : (
+              <View className="gap-section">
+                {visible.map((group) => (
+                  <DayGroup
+                    key={group.key}
+                    label={formatDayHeading(
+                      group.transactions[0].transactionDate,
+                      now,
+                    )}
+                    total={dayTotal(group, currency)}
+                  >
+                    {group.transactions.map((transaction) => {
+                      const row = transactionRow(transaction, lookups);
+                      return (
+                        <TransactionRow
+                          key={transaction.id}
+                          testID={tid(
+                            'activity',
+                            'transaction',
+                            transaction.id,
+                          )}
+                          row={row}
+                          metaLead="category"
+                          now={now}
+                          onPress={() => open(transaction)}
+                          onHold={
+                            holdable(transaction)
+                              ? (anchor) =>
+                                  setHeld({ transaction, row, anchor })
+                              : undefined
+                          }
+                        />
+                      );
+                    })}
+                  </DayGroup>
+                ))}
+              </View>
+            )}
+            {earlier > 0 ? (
+              <Press
+                testID={tid('activity', 'show-more')}
+                onPress={() => setShownDays(visible.length + MORE_DAYS)}
+                radius={{ rest: 22, pressed: 16 }}
+                pressedClassName="bg-hairline"
+                className="h-11 flex-row items-center gap-1.5 self-center bg-sand px-[18px]"
               >
-                {day.items.map((transaction) => {
-                  const row = transactionRow(transaction, lookups);
-                  return (
-                    <TransactionRow
-                      key={transaction.id}
-                      testID={tid(
-                        'activity',
-                        'transaction',
-                        transaction.id,
-                      )}
-                      row={row}
-                      metaLead="category"
-                      onPress={() => open(transaction)}
-                      onHold={
-                        holdable(transaction)
-                          ? (anchor) =>
-                              setHeld({ transaction, row, anchor })
-                          : undefined
-                      }
-                    />
-                  );
-                })}
-              </ListSection>
-            ))}
-          </View>
+                <Text className="text-[15px] leading-[21px] font-display-semibold text-foreground">
+                  {`Show ${earlier} earlier ${earlier === 1 ? 'day' : 'days'}`}
+                </Text>
+                <IconSymbol
+                  name="chevron-down"
+                  size={18}
+                  color={tokens.foreground}
+                />
+              </Press>
+            ) : null}
+          </>
         )}
       </ScrollView>
 

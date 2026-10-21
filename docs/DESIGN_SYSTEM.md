@@ -123,7 +123,7 @@ v2 (N1). Four tabs and the + in the centre cell: Home · Activity · ( + ) · Bu
 | Tab          | Job                                                      | Core contents                                                                                                                             |
 | ------------ | -------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
 | **Home**     | The present: what matters today and what needs attention | Net worth, the spent card, the ask box, the review block, recent activity. The avatar pushes Profile; the Moni button pushes Moni chat.   |
-| **Activity** | What happened                                            | Transaction history with search and the hold menu. Its Moni button pushes Moni chat.                                                      |
+| **Activity** | What happened                                            | The Spending / Balance chart, search, type and wallet chips, day groups with the hold menu, the To review capsule, and the Moni button.   |
 | **Budget**   | The month against the plan                               | Month chart and calendar, budgets, bills.                                                                                                 |
 | **Debts**    | Money between people                                     | Net position, people, record and settle a debt.                                                                                           |
 
@@ -433,6 +433,8 @@ Charts exist to answer a question.
 Keep chart controls local and obvious: timeframe, category, wallet. Avoid chart walls. Pair every chart with one plain-language takeaway or drill-down path.
 
 Chart surfaces are borderless and quiet: use the parent surface plus spacing to frame them, a very low-tint category fill for contextual areas, and clearer pastel category hues only for active data marks, selected states, or legible segments. Avoid dark grids, boxed legends, and saturated decorative fills.
+
+Activity chart (v2, `components/charts/activity-chart.tsx`, `V2A-Activity`): a Paper card with the month's caps label and a Spending | Balance segmented toggle. Spending draws one Ink bar per day so far, the part above even pace in Coral, even pace as a dashed Ink line with its label on the axis, and today on a Sand-light band with a dashed segment for safe to spend a day; without a main-currency budget it drops even pace and that legend. Balance draws the closing balance of the main-currency wallets across the whole month; its axis does not start at 0, and the accessibility label says so. Tapping a bar or a point (dragging on Balance) moves the Ink callout and narrows the list to that day, with **Whole month** to clear it. Bars grow 14 ms apart and the line draws in on the `value` spring, once per app session.
 
 ### 7.12 Chat and companion presence
 

@@ -1,0 +1,31 @@
+# A1 hold menu per V2A-ActivityMenu: hold a row, Edit category to Food & Dining.
+# Run: scripts/device/with-device.sh --lane a1 -- maestro test .maestro/flows/activity/activity-hold.yaml
+appId: com.anonymous.moni.e2e
+name: A1 Activity hold menu
+tags:
+  - a1
+  - needs-default-seed
+---
+- launchApp
+- tapOn:
+    id: nav.tab.activity
+- extendedWaitUntil:
+    visible:
+      id: 'activity\.transaction\..*'
+    timeout: 15000
+- tapOn:
+    id: activity.filter.expense
+- longPressOn:
+    id: 'activity\.transaction\..*'
+    index: 0
+- assertVisible:
+    id: activity.hold.edit-category
+- assertVisible: Change wallet
+- assertVisible: Delete
+- takeScreenshot: a1-hold-menu
+- tapOn:
+    id: activity.hold.edit-category
+- assertVisible: Edit category
+- tapOn: 'Food.*'
+- assertVisible: 'Food.* · .*'
+- takeScreenshot: a1-edit-category

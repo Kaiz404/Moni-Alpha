@@ -1,0 +1,77 @@
+# A1 Activity tab: chart card, Spending and Balance toggle, a bar pick, wallet chip, Show more.
+# Run: scripts/device/with-device.sh --lane a1 -- maestro test .maestro/flows/activity/activity.yaml
+appId: com.anonymous.moni.e2e
+name: A1 Activity tab
+tags:
+  - a1
+  - needs-default-seed
+---
+- launchApp
+- tapOn:
+    id: nav.tab.activity
+- extendedWaitUntil:
+    visible:
+      id: 'activity\.transaction\..*'
+    timeout: 15000
+- assertVisible:
+    id: activity.chart-mode.spending
+- assertVisible: 'Spent in .*'
+- assertVisible: 'Today · .*'
+- takeScreenshot: a1-activity
+
+- tapOn:
+    id: activity.chart-mode.balance
+- assertVisible: 'Balance'
+- assertVisible: '.* wallets, closing balance each day'
+- takeScreenshot: a1-balance
+- tapOn:
+    id: activity.chart-mode.spending
+
+- tapOn:
+    id: 'activity\.chart\.day\..*'
+    index: 0
+- assertVisible:
+    id: activity.whole-month
+- assertVisible: '.* · \d+ transactions?'
+- takeScreenshot: a1-day
+- tapOn:
+    id: activity.whole-month
+- assertNotVisible:
+    id: activity.whole-month
+
+- tapOn:
+    id: activity.filter.wallet
+- tapOn: "Touch 'n Go"
+- assertVisible:
+    id: activity.filter.wallet
+    text: "Touch 'n Go"
+- takeScreenshot: a1-wallet-chip
+- tapOn:
+    id: activity.filter.wallet
+- tapOn: All wallets
+
+- tapOn:
+    id: activity.filter.transfer
+- takeScreenshot: a1-transfers
+- tapOn:
+    id: activity.filter.all
+
+- scrollUntilVisible:
+    element:
+      id: activity.show-more
+    direction: DOWN
+    optional: true
+- tapOn:
+    id: activity.show-more
+    optional: true
+- takeScreenshot: a1-show-more
+
+- scrollUntilVisible:
+    element:
+      id: activity.ask-moni
+    direction: UP
+- tapOn:
+    id: activity.ask-moni
+- assertNotVisible:
+    id: nav.tab.activity
+- takeScreenshot: a1-moni

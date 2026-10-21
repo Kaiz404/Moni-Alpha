@@ -1,0 +1,112 @@
+import type { CurrencyCode, MinorAmount } from '@repo/types';
+
+import { balanceMonth, spendingMonth } from '@/lib/finance/activity-series';
+import type { FinanceTransaction, FinanceWallet } from '@/lib/finance/types';
+
+const MYR = 'MYR' as CurrencyCode;
+const now = new Date(2026, 9, 3, 14, 6);
+
+function txn(
+  date: Date,
+  type: FinanceTransaction['type'],
+  amountMinor: number,
+  over: Partial<FinanceTransaction> = {},
+): FinanceTransaction {
+  return {
+    id: `${date.toISOString()}-${amountMinor}`,
+    userId: 'kai',
+    walletId: 'maybank',
+    amountMinor: amountMinor as MinorAmount,
+    currency: MYR,
+    type,
+    analysisExcluded: false,
+    debtActivityId: null,
+    categoryId: null,
+    transferToWalletId: null,
+    linkedTransactionId: null,
+    description: null,
+    merchant: null,
+    notes: null,
+    transactionDate: date.toISOString(),
+    locationLatitude: null,
+    locationLongitude: null,
+    locationName: null,
+    autoAdded: false,
+    createdAt: date.toISOString(),
+    ...over,
+  };
+}
+
+function wallet(id: string, currency: string, initial: number): FinanceWallet {
+  return {
+    id,
+    userId: 'kai',
+    name: id,
+    type: 'bank',
+    currency: currency as CurrencyCode,
+    initialBalanceMinor: initial as MinorAmount,
+    color: null,
+    icon: null,
+    cardStyleId: null,
+    isActive: true,
+    displayOrder: 0,
+    balanceConfirmedAt: null,
+  };
+}
+
+describe('spendingMonth', () => {
+  it('sums each day so far, compares with last month by now, and paces a RM1,800 budget', () => {
+    const month = spendingMonth(
+      [
+        txn(new Date(2026, 9, 1, 12), 'expense', 1250),
+        txn(new Date(2026, 9, 3, 9), 'expense', 4590),
+        txn(new Date(2026, 9, 3, 10), 'expense', 5000, { analysisExcluded: true }),
+        txn(new Date(2026, 9, 2, 10), 'expense', 4000, { debtActivityId: 'mei' }),
+        txn(new Date(2026, 9, 1, 9), 'income', 420000),
+        txn(new Date(2026, 8, 2, 9), 'expense', 9000),
+        txn(new Date(2026, 8, 20, 9), 'expense', 7000),
+        txn(new Date(2026, 9, 2, 9), 'expense', 1000, { currency: 'USD' as CurrencyCode }),
+      ],
+      180000,
+      MYR,
+      now,
+    );
+    expect(month).toEqual({
+      days: [
+        { key: '2026-10-01', day: 1, spentMinor: 1250 },
+        { key: '2026-10-02', day: 2, spentMinor: 0 },
+        { key: '2026-10-03', day: 3, spentMinor: 4590 },
+      ],
+      daysInMonth: 31,
+      spentMinor: 5840,
+      inMinor: 420000,
+      lastMonthByNowMinor: 9000,
+      evenPaceMinor: 5806,
+      safeToSpendMinor: 6005,
+    });
+  });
+
+  it('has no even pace without a budget', () => {
+    const month = spendingMonth([], null, MYR, now);
+    expect([month.evenPaceMinor, month.safeToSpendMinor]).toEqual([null, null]);
+  });
+});
+
+describe('balanceMonth', () => {
+  it('carries the opening balance into closing balances of the MYR wallets only', () => {
+    const month = balanceMonth(
+      [wallet('maybank', 'MYR', 300000), wallet('cash', 'MYR', 5000), wallet('wise', 'USD', 12000)],
+      [
+        txn(new Date(2026, 8, 28, 9), 'expense', 10000),
+        txn(new Date(2026, 9, 1, 9), 'expense', 2000),
+        txn(new Date(2026, 9, 3, 9), 'transfer', 10000, { transferToWalletId: 'cash' }),
+        txn(new Date(2026, 9, 3, 9), 'income', 500, { walletId: 'cash' }),
+        txn(new Date(2026, 9, 2, 9), 'expense', 700, { walletId: 'wise' }),
+      ],
+      MYR,
+      now,
+    );
+    expect(month.days.map((day) => day.balanceMinor)).toEqual([293000, 293000, 293500]);
+    expect(month.daysInMonth).toBe(31);
+  });
+});

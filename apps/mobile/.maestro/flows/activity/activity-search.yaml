@@ -1,0 +1,31 @@
+# A1 search: typing grab leaves only Grab rows; a miss shows the no-matches tile.
+# Run: scripts/device/with-device.sh --lane a1 -- maestro test .maestro/flows/activity/activity-search.yaml
+appId: com.anonymous.moni.e2e
+name: A1 Activity search
+tags:
+  - a1
+  - needs-default-seed
+---
+- launchApp
+- tapOn:
+    id: nav.tab.activity
+- extendedWaitUntil:
+    visible:
+      id: activity.search
+    timeout: 15000
+- tapOn:
+    id: activity.search
+- inputText: grab
+- hideKeyboard
+- assertVisible: '(?i)grab.*'
+- assertNotVisible: 'Shell'
+- assertNotVisible: 'Kopitiam'
+- takeScreenshot: a1-search-grab
+- tapOn:
+    id: activity.search.clear
+- inputText: zzqx
+- hideKeyboard
+- assertVisible: 'No matches for "zzqx"'
+- takeScreenshot: a1-search-empty
+- tapOn:
+    id: activity.search.clear

@@ -1,0 +1,42 @@
+# A1 perf probe: open Activity, load more days, and scroll the list down and back.
+# Run: scripts/device/perf.sh --sha <sha> --flow .maestro/flows/perf/scroll-activity.yaml
+appId: com.anonymous.moni.e2e
+name: A1 scroll Activity
+tags:
+  - a1
+  - perf
+  - needs-heavy-seed
+---
+- launchApp
+- tapOn:
+    id: nav.tab.activity
+- extendedWaitUntil:
+    visible:
+      id: 'activity\.transaction\..*'
+    timeout: 15000
+- scrollUntilVisible:
+    element:
+      id: activity.show-more
+    direction: DOWN
+    optional: true
+- tapOn:
+    id: activity.show-more
+    optional: true
+- swipe:
+    direction: UP
+    duration: 400
+- swipe:
+    direction: UP
+    duration: 400
+- swipe:
+    direction: UP
+    duration: 400
+- swipe:
+    direction: DOWN
+    duration: 400
+- swipe:
+    direction: DOWN
+    duration: 400
+- swipe:
+    direction: DOWN
+    duration: 400
