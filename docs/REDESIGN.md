@@ -75,14 +75,14 @@ Checked 21 Oct 2026. These need data or product work before their screens can be
 | Designed | Today | Needed |
 | --- | --- | --- |
 | Bills list with due dates, "Add a bill" | `selectUpcomingBills` (`lib/finance/bills.ts`) lists this month's bills from detected recurring series and confirmed `recurring_overrides` | Screens (B1, B2) |
-| "Don't ask about similar" | Routine auto-add is a heuristic (`lib/ai/routine.ts`); no stored rules | Auto-add rule storage, list and "Ask again" in Capture sources |
+| "Don't ask about similar" | `auto_add_rules` (`createAutoAddRule`, `deleteAutoAddRule` for "Ask again"); `matchRoutine` applies a matching rule before the history heuristic | The Review action (R1), list and "Ask again" in Capture sources (K3) |
 | Source tile (Manual, Voice, Moni, Notification, Camera) | `transactions.metadata.source`, written at every creation site; older rows have none and read as Manual | Voice and live-camera approvals write their own source (C2); the tile (A2) |
 | Merchant names | Not modelled | Alias table (raw alert merchant → name) |
 | Balance correction | `createBalanceCorrection` writes the "Balance adjustment" with `analysisExcluded` and `metadata.kind: balance_correction` | UI per `V2H-WalletDetail` (K2) |
 | Main currency | `preferences.currency` (default `MYR`), read by `useMainCurrency()` | Setting UI and focused-page filtering |
 | Per-app "Record where I spend" | Location always captured (`lib/location/location-snapshot.ts`) | Per-wallet / per-package flag |
 | Capture log statuses | Computed at render ("Queued for review" etc.) | Stored status per notification; v2 wording |
-| Review history, Not mine / Later | `proposed_transactions` rows are deleted after review; reject only | Later (snooze) state; decide whether to keep history |
+| Review history, Not mine / Later | `laterProposedTransaction` snoozes (`later`, `snoozed_until`); approve and Not mine stamp `approved` / `rejected` before the soft delete | The card deck (R1); whether to show history stays an owner decision |
 | Chat generative cards, draft cards, one thread per day | Message kinds: text, image, status, clarify chips | New message kinds and renderers |
 | Funnel Display | No custom fonts loaded | `@expo-google-fonts/funnel-display` (static 300–800) |
 | Springs | Reanimated timing only; no `withSpring` | The six spring tokens as shared constants |
