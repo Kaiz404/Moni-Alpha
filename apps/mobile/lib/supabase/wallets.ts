@@ -151,10 +151,9 @@ export async function updateWallet(id: string, data: UpdateWallet) {
   return mapWalletRow(updated);
 }
 
-/** The user saw this wallet's balance and says it is still right. */
-export function confirmWalletBalance(id: string): void {
-  const now = new Date().toISOString();
-  patchRow(wallets$, id, { balance_confirmed_at: now, updated_at: now });
+/** The user saw this wallet's balance and says it is still right. Undo passes back the earlier time. */
+export function confirmWalletBalance(id: string, at: string | null = new Date().toISOString()): void {
+  patchRow(wallets$, id, { balance_confirmed_at: at, updated_at: new Date().toISOString() });
 }
 
 export async function deleteWallet(id: string) {

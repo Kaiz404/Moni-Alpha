@@ -182,7 +182,9 @@ export function WalletForm({
         setSaving(false);
         Alert.alert(
           'Could not create wallet',
-          error instanceof Error ? error.message : 'Please try again.',
+          error instanceof Error
+            ? error.message
+            : 'Please try again.',
         );
       }
       return;
@@ -257,7 +259,11 @@ export function WalletForm({
                 className="text-muted"
                 numberOfLines={1}
               >
-                {walletMeta(values.type, values.currency, values.link)}
+                {walletMeta(
+                  values.type,
+                  values.currency,
+                  values.link,
+                )}
               </Text>
             </View>
           </View>

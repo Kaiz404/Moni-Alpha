@@ -46,10 +46,12 @@ export default function EditWalletScreen() {
       initial={{
         name: wallet.name,
         type:
-          WALLET_TYPE_OPTIONS.find((option) => option.value === wallet.type)
-            ?.value ?? 'bank',
+          WALLET_TYPE_OPTIONS.find(
+            (option) => option.value === wallet.type,
+          )?.value ?? 'bank',
         currency: wallet.currency,
-        cardStyleId: wallet.cardStyleId ?? DEFAULT_WALLET_CARD_STYLE_ID,
+        cardStyleId:
+          wallet.cardStyleId ?? DEFAULT_WALLET_CARD_STYLE_ID,
         link,
       }}
     />
