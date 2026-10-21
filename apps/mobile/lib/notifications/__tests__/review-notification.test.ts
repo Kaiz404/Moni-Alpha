@@ -1,14 +1,11 @@
 import type { Observable } from '@legendapp/state';
+import { Platform } from 'react-native';
 
 import {
   handleReviewNotificationTask,
   postReviewNotification,
 } from '../review-notification';
 
-jest.mock('react-native', () => ({
-  Platform: { OS: 'android' },
-  DeviceEventEmitter: { emit: jest.fn() },
-}));
 let mockNextId = 0;
 jest.mock('expo-crypto', () => ({
   randomUUID: () => `00000000-0000-4000-8000-${String(++mockNextId).padStart(12, '0')}`,
@@ -92,6 +89,10 @@ async function tap(actionIdentifier: string, data: Record<string, unknown>) {
 const ledger = () =>
   Object.values(store.transactions$.peek()).filter((row) => row.deleted === false);
 const lastShown = () => notifications.scheduleNotificationAsync.mock.calls.at(-1)?.[0];
+
+beforeAll(() => {
+  Platform.OS = 'android';
+});
 
 beforeEach(() => {
   jest.useFakeTimers();
