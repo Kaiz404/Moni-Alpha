@@ -1,6 +1,7 @@
 import type { MinorAmount } from '@repo/types';
 
 import { findDuplicate, type LedgerEntry } from '@/lib/ai/duplicates';
+import { clockTime } from '@/lib/capture/clock-time';
 import { formatDay } from '@/lib/dates/day-label';
 import { formatMoney } from '@/lib/finance/format-money';
 
@@ -22,12 +23,6 @@ export function findTypedDuplicate(
     samePurchaseWindowMs: TYPED_DUPLICATE_WINDOW_MS,
   });
   return match?.kind === 'same_purchase' ? match.target : null;
-}
-
-function clock(date: Date): string {
-  const hours = date.getHours();
-  const minutes = String(date.getMinutes()).padStart(2, '0');
-  return `${hours % 12 || 12}:${minutes} ${hours < 12 ? 'am' : 'pm'}`;
 }
 
 export type DuplicateCopy = { title: string; message: string };
@@ -55,8 +50,8 @@ export function duplicateCopy(
   const day = formatDay(at, now);
   const when =
     day === 'Today'
-      ? `at ${clock(at)}`
-      : `${day === 'Yesterday' ? 'yesterday' : `on ${day}`} at ${clock(at)}`;
+      ? `at ${clockTime(at)}`
+      : `${day === 'Yesterday' ? 'yesterday' : `on ${day}`} at ${clockTime(at)}`;
   const twice = 'Adding this too would count it twice.';
   if (target.kind === 'proposal') {
     const from =
