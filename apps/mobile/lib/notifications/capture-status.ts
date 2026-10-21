@@ -14,6 +14,10 @@ export function captureStatusAfterExtraction(result: {
   return afterExtraction(result) as CapturedNotificationStatus;
 }
 
-export function markCaptureStatus(id: string, status: CapturedNotificationStatus): void {
-  setCaptureStatus(notificationStorage, id, status);
+export function markCaptureStatus(
+  id: string,
+  status: CapturedNotificationStatus,
+  transactionId?: string,
+): void {
+  setCaptureStatus(notificationStorage, id, status, transactionId);
 }

@@ -117,7 +117,7 @@ async function processingTask(taskData?: { delay?: number }) {
 
         const elapsed = Date.now() - itemStart;
         if (item.type === 'notification') {
-          markCaptureStatus(item.id, captureStatusAfterExtraction(result));
+          markCaptureStatus(item.id, captureStatusAfterExtraction(result), result.transactionId);
         }
 
         if (result.created) {

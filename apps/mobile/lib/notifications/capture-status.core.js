@@ -12,7 +12,8 @@ function captureStatusAfterExtraction(result) {
   return 'ignored';
 }
 
-function setCaptureStatus(storage, id, status) {
+/** `transactionId` links an added entry to its ledger row for "See transaction". */
+function setCaptureStatus(storage, id, status, transactionId) {
   let list;
   try {
     list = JSON.parse(storage.getString(CAPTURED_NOTIFICATIONS_KEY) || '[]');
@@ -22,6 +23,7 @@ function setCaptureStatus(storage, id, status) {
   const entry = Array.isArray(list) ? list.find((item) => item && item.id === id) : undefined;
   if (!entry) return false;
   entry.status = status;
+  if (transactionId) entry.transactionId = transactionId;
   storage.set(CAPTURED_NOTIFICATIONS_KEY, JSON.stringify(list));
   return true;
 }

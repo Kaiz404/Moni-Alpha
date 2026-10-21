@@ -214,7 +214,7 @@ export async function approveProposedTransaction(
 
   const earlyLocation = getProposalLocationSnapshot(proposal.id);
 
-  await createTransaction({
+  const transaction = await createTransaction({
     walletId,
     amountMinor: proposal.amountMinor,
     type: proposal.type,
@@ -228,7 +228,7 @@ export async function approveProposedTransaction(
     locationName: earlyLocation?.name ?? null,
   }, TRANSACTION_SOURCE_BY_PROPOSAL_SOURCE[proposal.sourceType]);
 
-  closeProposal(proposal, 'approved');
+  closeProposal(proposal, 'approved', transaction.id);
   await deleteProposedTransaction(proposal.id);
 }
 
@@ -242,10 +242,12 @@ export async function rejectProposedTransaction(id: string): Promise<void> {
 function closeProposal(
   proposal: Pick<ProposedTransaction, 'id' | 'sourceType'>,
   status: 'approved' | 'rejected',
+  transactionId?: string,
 ): void {
   if (proposal.sourceType === 'notification') {
     // run-extraction stores a notification's proposal under the id of its capture log entry.
-    markCaptureStatus(proposal.id, status === 'approved' ? 'added' : 'ignored');
+    if (status === 'approved') markCaptureStatus(proposal.id, 'added', transactionId);
+    else markCaptureStatus(proposal.id, 'ignored');
   }
   if (!hasRow(proposedTransactions$, proposal.id)) return;
   patchRow(proposedTransactions$, proposal.id, { status, updated_at: new Date().toISOString() });

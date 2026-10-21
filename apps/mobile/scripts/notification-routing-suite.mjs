@@ -122,8 +122,9 @@ console.log('notification-routing-suite\n');
     getString: (key) => entries.get(key),
     set: (key, value) => entries.set(key, value),
   };
-  const stored = (id) =>
-    JSON.parse(storage.getString(CAPTURED_NOTIFICATIONS_KEY)).find((n) => n.id === id).status;
+  const entry = (id) =>
+    JSON.parse(storage.getString(CAPTURED_NOTIFICATIONS_KEY)).find((n) => n.id === id);
+  const stored = (id) => entry(id).status;
   const capture = (id, packageName, prefilterPassed = true) => {
     const { candidates } = resolveNotificationCandidates(packageName, wallets);
     const list = JSON.parse(storage.getString(CAPTURED_NOTIFICATIONS_KEY) ?? '[]');
@@ -141,12 +142,14 @@ console.log('notification-routing-suite\n');
 
   capture('grab', 'com.maybank2u.life');
   assert('linked alert waits for extraction', stored('grab') === 'waiting_for_review');
-  setCaptureStatus(storage, 'grab', captureStatusAfterExtraction({ transactionId: 'tx-1' }));
+  setCaptureStatus(storage, 'grab', captureStatusAfterExtraction({ transactionId: 'tx-1' }), 'tx-1');
   assert('linked routine alert stored as auto_added', stored('grab') === 'auto_added');
+  assert('auto-added entry links its transaction', entry('grab').transactionId === 'tx-1');
 
   capture('kedai', 'com.tngdigital.ewallet');
   setCaptureStatus(storage, 'kedai', captureStatusAfterExtraction({ proposalId: 'kedai' }));
   assert('linked new alert stored as waiting_for_review', stored('kedai') === 'waiting_for_review');
+  assert('waiting entry has no transaction link', entry('kedai').transactionId === undefined);
 
   capture('unknown', 'com.unknown.app');
   assert('unlinked package stored as not_linked', stored('unknown') === 'not_linked');

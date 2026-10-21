@@ -27,6 +27,8 @@ export type CapturedNotification = {
   extraInfoText: string;
   groupedMessages: Array<{ title: string; text: string }>;
   status: CapturedNotificationStatus;
+  /** The ledger row an Added or Auto-added entry became. */
+  transactionId?: string;
 };
 
 /** Entries captured before statuses existed have none. */
