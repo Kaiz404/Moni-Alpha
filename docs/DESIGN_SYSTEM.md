@@ -440,12 +440,12 @@ Chat is a dedicated capability, not the application’s control center.
 
 ### 7.13 Debt component
 
-Show direction explicitly:
+v2 (D1, boards `V2P-Debts`, `V2P-DebtDetail`, `V2P-DebtNew`, `V2P-DebtSettle`, `V2P-DebtsEmpty`). Debts show only in the main currency and never sum across currencies.
 
-- **You owe** — warm attentive peach/coral accent, relationship/person, amount, due date, and repayment progress.
-- **Owed to you** — cool mint/aqua accent, same information model.
-
-Do not turn either state into an error by default. Escalate only actual overdue/urgent states with clear copy and accessible iconography.
+- **Debts tab.** Header **Record a debt** (Sand capsule). A Mint hero with the net position in whole ringgit and two Paper tiles, **Owed to you** and **You owe**; a tile filters the people list in place and turns Ink (D5). A Lemon **Coming up** block lists each open debt with a due date: **Pay** for money you owe, **Remind** for money owed to you, then "Reminded today". **People** rows: pastel initial tile, "Lent Sun 27 Sep", 2-decimal balance with "owes you" in deep mint or "you owe" in ink. **Settled and written off** is a hairline capsule with a count that opens the closed debts. No debts at all shows the dashed empty tile.
+- **Debt page.** Name and note edit in place; the due date opens a picker sheet. An open debt shows the caps direction line, the amount hero, a repaid bar, **Record repayment** and **Lend more** / **Borrow more**, then **Paid back in full** / **I paid it all** and **Remind** as deep-mint text buttons. A paid debt turns into the Mint "All square" card; a written-off one shows RM0.00. **Write off** is a destructive capsule behind the confirm sheet (**Keep it**, **Write off**). Every change toasts with Undo.
+- **New money** (a repayment, lending more, a new debt's amount) uses the amount page: the hero amount, one sentence on where the debt ends up, the wallet and note fields, quick amounts, the Paper keypad, and one primary action.
+- Remind opens the Android share sheet with a prefilled message; Moni sends nothing itself. Debt colour never carries direction alone: the words "owes you" and "you owe" always appear.
 
 ---
 

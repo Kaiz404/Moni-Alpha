@@ -1,0 +1,55 @@
+# D1 Record a debt: Hana owes me RM50, lent from the first MYR wallet.
+# Needs a signed-in e2e build with at least one MYR wallet and no open debt with Hana.
+# Run: scripts/device/with-device.sh --lane d1 -- maestro test .maestro/flows/debts/debt-new.yaml
+appId: com.anonymous.moni.e2e
+name: D1 record a debt
+tags:
+  - d1
+---
+- launchApp
+- extendedWaitUntil:
+    visible:
+      id: nav.tab.debts
+    timeout: 15000
+- tapOn:
+    id: nav.tab.debts
+- runFlow:
+    when:
+      visible:
+        id: debts.empty.record-debt
+    commands:
+      - tapOn:
+          id: debts.empty.record-debt
+- runFlow:
+    when:
+      visible:
+        id: debts.record-debt
+    commands:
+      - tapOn:
+          id: debts.record-debt
+- assertVisible: Add who and an amount
+- tapOn:
+    id: debts.new.person
+- inputText: Hana
+- hideKeyboard
+- assertVisible: Hana owes me
+- tapOn:
+    id: debts.new.amount
+- tapOn:
+    id: debts.key.5
+- tapOn:
+    id: debts.key.0
+- assertVisible: Hana will owe you RM50.00
+- tapOn:
+    id: debts.amount.save
+- assertVisible: RM50.00
+- tapOn:
+    id: debts.new.note
+- inputText: Lunch
+- hideKeyboard
+- takeScreenshot: d1-l5-new-form
+- tapOn:
+    id: debts.new.record
+- assertVisible: People
+- assertVisible: Hana
+- takeScreenshot: d1-l5-new

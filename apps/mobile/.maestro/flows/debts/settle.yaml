@@ -1,0 +1,27 @@
+# D1 settle: Paid back in full squares Hana's debt, and it moves to Settled.
+# Run after repay.yaml: scripts/device/with-device.sh --lane d1 -- maestro test .maestro/flows/debts/settle.yaml
+appId: com.anonymous.moni.e2e
+name: D1 settle a debt
+tags:
+  - d1
+---
+- launchApp
+- extendedWaitUntil:
+    visible:
+      id: nav.tab.debts
+    timeout: 15000
+- tapOn:
+    id: nav.tab.debts
+- tapOn: Hana
+- tapOn:
+    id: debts.settle
+- assertVisible: All square with Hana
+- assertVisible: Paid in full
+- assertVisible: Undo
+- takeScreenshot: d1-l6-settled
+- tapOn:
+    id: debts.done
+- tapOn:
+    id: debts.settled.toggle
+- assertVisible: Settled · Lunch
+- takeScreenshot: d1-l6-settled-list

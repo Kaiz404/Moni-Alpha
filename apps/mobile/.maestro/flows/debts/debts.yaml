@@ -1,0 +1,34 @@
+# D1 Debts tab: the hero tiles filter the people list in place (D5), and a
+# person row opens the debt page. Needs at least one open debt owed to the user.
+# Run: scripts/device/with-device.sh --lane d1 -- maestro test .maestro/flows/debts/debts.yaml
+appId: com.anonymous.moni.e2e
+name: D1 Debts tab
+tags:
+  - d1
+---
+- launchApp
+- extendedWaitUntil:
+    visible:
+      id: nav.tab.debts
+    timeout: 15000
+- tapOn:
+    id: nav.tab.debts
+- assertVisible:
+    id: debts.record-debt
+- assertVisible:
+    id: debts.tile.owed-to-me
+- takeScreenshot: d1-l2-pair
+- tapOn:
+    id: debts.tile.owed-to-me
+- assertVisible: Show everyone
+- assertVisible: owes you
+- assertNotVisible: you owe
+- takeScreenshot: d1-l3-filter
+- tapOn:
+    id: debts.show-everyone
+- assertVisible: People
+- tapOn:
+    id: debts\.person\..*
+    index: 0
+- assertVisible: History
+- takeScreenshot: d1-l4-person

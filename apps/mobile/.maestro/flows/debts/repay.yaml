@@ -1,0 +1,33 @@
+# D1 repayment: Hana pays back RM20 of the RM50 from debt-new.yaml.
+# Run after debt-new.yaml: scripts/device/with-device.sh --lane d1 -- maestro test .maestro/flows/debts/repay.yaml
+appId: com.anonymous.moni.e2e
+name: D1 record a repayment
+tags:
+  - d1
+---
+- launchApp
+- extendedWaitUntil:
+    visible:
+      id: nav.tab.debts
+    timeout: 15000
+- tapOn:
+    id: nav.tab.debts
+- tapOn: Hana
+- assertVisible: HANA OWES YOU
+- assertVisible: RM50.00
+- tapOn:
+    id: debts.record-repayment
+- assertVisible: Hana paid you back
+- assertVisible: That settles it. Hana will owe you nothing
+# The suggested full amount is replaced by the first key.
+- tapOn:
+    id: debts.key.2
+- tapOn:
+    id: debts.key.0
+- assertVisible: Hana will still owe you RM30.00
+- tapOn:
+    id: debts.amount.save
+- assertVisible: Recorded RM20.00
+- assertVisible: RM30.00
+- assertVisible: RM20.00 of RM50.00 paid back
+- takeScreenshot: d1-l1-repaid
