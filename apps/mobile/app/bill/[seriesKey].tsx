@@ -37,7 +37,7 @@ import {
   monthSpend,
 } from '@/lib/finance/budget-month';
 import { formatMoney } from '@/lib/finance/format-money';
-import { reminderAt } from '@/lib/notifications/bill-reminder';
+import { ensureBillReminderPermission, reminderAt } from '@/lib/notifications/bill-reminder';
 import { openSheet } from '@/lib/sheet/sheet-store';
 import { autoAddRules$, wallets$ } from '@/lib/store';
 import { getRecordValues } from '@/lib/store/helpers';
@@ -319,10 +319,12 @@ export default function BillScreen() {
       categoryId: override?.categoryId ?? null,
     });
   };
-  const setRemind = (next: boolean) =>
-    save({ remind: next }, next ? 'Reminder on' : 'Reminder off', {
+  const setRemind = (next: boolean) => {
+    if (next) void ensureBillReminderPermission().catch(() => {});
+    return save({ remind: next }, next ? 'Reminder on' : 'Reminder off', {
       remind: remindOn,
     });
+  };
   const setAutoAdd = async (next: boolean) => {
     try {
       if (!next && rule) deleteAutoAddRule(rule.id);

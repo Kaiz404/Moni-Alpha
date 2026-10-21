@@ -7,6 +7,7 @@ import React, {
 import type { Session, User } from '@supabase/supabase-js';
 import { signInSchema, signUpSchema } from '@repo/types';
 import { supabase } from '@/lib/supabase/client';
+import { syncBillReminders } from '@/lib/notifications/bill-reminder';
 import { clearStore } from '@/lib/store';
 import { authReady$, initAuthReadySync } from '@/lib/store/auth-sync';
 import {
@@ -120,6 +121,7 @@ export function AuthProvider({
   const signOut = async () => {
     authReady$.set(false);
     clearDefaultWalletCache();
+    await syncBillReminders([]).catch(() => {});
     await clearStore();
     await signOutGoogleNative();
     await supabase.auth.signOut();
