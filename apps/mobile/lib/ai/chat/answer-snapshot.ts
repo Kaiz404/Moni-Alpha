@@ -1,49 +1,56 @@
+import { decimalToMinor, type MinorAmount } from '@repo/types';
+
 import { selectUpcomingBills } from '@/lib/finance/bills';
+import { buildBudgetMonth, monthKey } from '@/lib/finance/budget-month';
 import { selectMainCurrency } from '@/lib/finance/main-currency';
 import { financeProjection$ } from '@/lib/finance/projection';
-import { budgetProgress$, debtsWithBalance$, transactions$ } from '@/lib/finance/selectors';
-import { selectSpentSummary } from '@/lib/finance/spent-summary';
+import { debtsWithBalance$, transactions$ } from '@/lib/finance/selectors';
 import { profilePreferences$ } from '@/lib/store';
 import { listRecurringOverrides } from '@/lib/supabase/recurring-overrides';
 
 import type { AnswerSnapshot } from './answer-cards';
-import { financeTimezone } from './sessions';
 
 /** This month in the main currency, read from the ledger the moment a question is asked. */
 export function buildAnswerSnapshot(userId: string, now: Date = new Date()): AnswerSnapshot {
-  const currency = selectMainCurrency(profilePreferences$.peek());
+  const preferences = profilePreferences$.peek();
+  const currency = selectMainCurrency(preferences);
   const transactions = transactions$({ userId }).peek();
-  const summary = selectSpentSummary({
+  const projection = financeProjection$.peek();
+  const month = buildBudgetMonth({
+    month: monthKey(now),
     now,
     currency,
     transactions,
-    budgets: Object.values(financeProjection$.budgetsById.peek()).filter(
-      (budget) => budget.userId === userId,
+    categories: Object.values(projection.categoriesById).filter(
+      (category) =>
+        (category.userId === null || category.userId === userId) &&
+        category.isActive &&
+        category.type !== 'income',
     ),
+    budgets: Object.values(projection.budgetsById).filter((budget) => budget.userId === userId),
+    monthlyTotalMinor:
+      preferences?.monthly_budget == null
+        ? null
+        : (decimalToMinor(preferences.monthly_budget) as MinorAmount),
     bills: selectUpcomingBills(now, transactions, listRecurringOverrides(userId)),
-    debts: debtsWithBalance$(userId)
-      .peek()
-      .map(({ debt, balanceMinor }) => ({ debt, balanceMinor: Number(balanceMinor) })),
+    debts: debtsWithBalance$(userId).peek(),
   });
   return {
     currency,
-    categories: budgetProgress$(userId, financeTimezone())
-      .peek()
-      .filter((row) => row.currency === currency && row.categoryIsActive)
-      .map((row) => ({
-        id: row.categoryId,
-        name: row.categoryName,
-        spent: Number(row.spentMinor),
-        budget: row.budgetAmountMinor === null ? null : Number(row.budgetAmountMinor),
-      })),
+    categories: [...month.budgeted, ...month.unbudgeted].map((category) => ({
+      id: category.categoryId,
+      name: category.name,
+      spent: Number(category.spentMinor),
+      budget: category.budgetMinor === null ? null : Number(category.budgetMinor),
+    })),
     month: {
-      spent: summary.spentMinor,
-      budget: summary.budgetMinor,
-      left: summary.leftMinor,
-      daysLeft: summary.daysLeft,
-      perDay: summary.perDayMinor,
+      spent: Number(month.spentMinor),
+      budget: month.budgetMinor === null ? null : Number(month.budgetMinor),
+      left: month.left ? Number(month.left.leftMinor) : null,
+      daysLeft: month.left?.daysLeft ?? month.daysInMonth - now.getDate() + 1,
+      perDay: month.left && month.left.perDayMinor > 0 ? Number(month.left.perDayMinor) : null,
     },
-    bills: summary.bills.map((bill) => ({
+    bills: month.billsDue.map((bill) => ({
       seriesKey: bill.seriesKey,
       name: bill.name,
       amount: Number(bill.amountMinor),

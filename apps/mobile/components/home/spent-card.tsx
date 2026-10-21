@@ -4,13 +4,14 @@ import Svg, { Circle, Line, Rect } from 'react-native-svg';
 
 import { ChartToggle } from '@/components/charts/chart-toggle';
 import { PaceChart } from '@/components/charts/pace-chart';
-import { daysInMonth, monthName } from '@/components/charts/pace-geometry';
+import { monthFromKey, monthName } from '@/components/charts/pace-geometry';
 import { Text } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { currencySymbol, formatMoney } from '@/lib/finance/format-money';
 import { tid } from '@/lib/test-ids';
 
-import { leftLine, type SpentSummary } from '@/lib/finance/spent-summary';
+import type { BudgetMonth } from '@/lib/finance/budget-month';
+import { leftLine } from '@/lib/finance/spent-summary';
 
 type Mode = 'pace' | 'daily';
 
@@ -21,19 +22,20 @@ const MODES = [
 
 /** "Spent in October": spent of budget, what's left, and the Pace / Daily chart. */
 export function SpentCard({
-  summary,
+  month,
   currency,
   after,
 }: {
-  summary: SpentSummary;
+  month: BudgetMonth;
   currency: string;
   /** D1 label when no bills strip carries it: "RM40 to Mei". */
   after?: string | null;
 }) {
   const [mode, setMode] = useState<Mode>('pace');
-  const empty = summary.spentMinor === 0 && summary.budgetMinor === null;
-  const line = leftLine(summary, currency, after);
-  const name = monthName(summary.month);
+  const empty = month.spentMinor === 0 && month.budgetMinor === null;
+  const line = month.left ? leftLine(month.left, currency, after) : null;
+  const chartMonth = monthFromKey(month.month);
+  const name = monthName(chartMonth);
 
   return (
     <View
@@ -61,12 +63,12 @@ export function SpentCard({
           className={`text-[32px] leading-9 font-display-bold ${empty ? 'text-muted' : 'text-foreground'}`}
           style={{ fontVariant: ['tabular-nums'] }}
         >
-          {formatMoney(summary.spentMinor, currency)}
-          {summary.budgetMinor !== null || empty ? (
+          {formatMoney(month.spentMinor, currency)}
+          {month.budgetMinor !== null || empty ? (
             <Text
               className={`text-[17px] leading-[22px] font-display-semibold ${empty ? 'text-muted' : 'text-ink-2'}`}
             >
-              {` of ${summary.budgetMinor === null ? `${currencySymbol(currency)}–` : formatMoney(summary.budgetMinor, currency, { whole: true })}`}
+              {` of ${month.budgetMinor === null ? `${currencySymbol(currency)}–` : formatMoney(month.budgetMinor, currency, { whole: true })}`}
             </Text>
           ) : null}
         </Text>
@@ -83,8 +85,8 @@ export function SpentCard({
       {empty ? (
         <EmptyChart
           mode={mode}
-          today={summary.daily.length}
-          days={daysInMonth(summary.month)}
+          today={month.throughDay}
+          days={month.daysInMonth}
           monthShort={name.slice(0, 3)}
           currency={currency}
         />
@@ -92,10 +94,10 @@ export function SpentCard({
         <PaceChart
           screen="home"
           mode={mode}
-          series={{ month: summary.month, values: summary.daily }}
-          budget={summary.budgetMinor}
+          series={{ month: chartMonth, values: month.daily.slice(0, month.throughDay) }}
+          budget={month.budgetMinor}
           currency={currency}
-          safePerDay={summary.perDayMinor}
+          safePerDay={month.left && month.left.perDayMinor > 0 ? month.left.perDayMinor : null}
         />
       )}
     </View>

@@ -12,8 +12,9 @@ import { RecentList } from '@/components/home/recent-list';
 import { ReviewBlock } from '@/components/home/review-block';
 import { SetupTiles, type SetupStep } from '@/components/home/setup-tiles';
 import { SpentCard } from '@/components/home/spent-card';
+import { useBudgetData } from '@/components/budget/use-budget';
+import { buildBudgetMonth, monthKey } from '@/lib/finance/budget-month';
 import { debtPhrase } from '@/lib/finance/spent-summary';
-import { useSpentSummary } from '@/components/home/use-spent-summary';
 import { openCaptureChooser } from '@/components/nav/capture-chooser';
 import { useTabBarClearance } from '@/components/nav/tab-bar';
 import { SyncBanner } from '@/components/providers/sync-banner';
@@ -68,7 +69,9 @@ export default function HomeScreen() {
   const now = new Date();
 
   const overview = useValue(financeOverview$(userId));
-  const spent = useSpentSummary(userId, currency);
+  const budgetData = useBudgetData();
+  // The Budget tab's own month model, so Home's "left" always matches it (D1).
+  const month = buildBudgetMonth({ ...budgetData, month: monthKey(budgetData.now) });
   const proposals = useValue(pendingProposals$(userId));
   const aliases = useValue(() => (userId ? listMerchantAliases(userId) : []));
   const alertsLinked = useValue(() =>
@@ -128,22 +131,22 @@ export default function HomeScreen() {
       key: 'budget',
       title: `Set ${monthLong(now)}'s budget`,
       body: 'This draws your spending chart',
-      done: spent.budgetMinor !== null,
-      onPress: () => router.push('/budget/form'),
+      done: month.budgetMinor !== null,
+      onPress: () => router.push('/budget/edit'),
     },
     {
       key: 'alerts',
       title: 'Let Moni read bank alerts',
       body: 'Optional. Spending lands here by itself',
       done: alertsLinked,
-      onPress: () => router.push('/notifications'),
+      onPress: () => router.push('/capture-sources'),
     },
   ];
   const showSetup =
     overview.transactions.length === 0 && steps.some((step) => !step.done);
-  const debtsLabel = spent.bills.length
+  const debtsLabel = month.billsDue.length
     ? null
-    : debtPhrase(spent.debtsDue, currency);
+    : debtPhrase(month.left?.debtsDue ?? [], currency);
 
   const refresh = async () => {
     setRefreshing(true);
@@ -191,7 +194,7 @@ export default function HomeScreen() {
           />
           {showSetup ? <SetupTiles steps={steps} /> : null}
           <SpentCard
-            summary={spent}
+            month={month}
             currency={currency}
             after={debtsLabel}
           />
@@ -223,15 +226,20 @@ export default function HomeScreen() {
                 testID: tid('home', 'bills', 'add'),
                 label: 'Add a bill',
                 icon: 'plus',
-                onPress: () => router.navigate('/budget'),
+                onPress: () => router.push('/bill/new'),
               }}
             />
           ) : (
             <BillsStrip
-              summary={spent}
+              month={month}
               currency={currency}
               now={now}
-              onPress={() => router.navigate('/budget')}
+              onPress={() =>
+                router.push({
+                  pathname: '/bill/[seriesKey]',
+                  params: { seriesKey: month.billsDue[0]!.seriesKey },
+                })
+              }
             />
           )}
           <CheckInCard currency={currency} />

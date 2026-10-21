@@ -217,9 +217,9 @@ export function AnswerCard({ message }: { message: CardMessage }) {
             label={categoryName}
             primary={false}
             onPress={() =>
-              router.dismissTo({
-                pathname: '/activity',
-                params: { categoryId: card.categoryId, currency },
+              router.push({
+                pathname: '/budget/[categoryId]',
+                params: { categoryId: card.categoryId },
               })
             }
           />
