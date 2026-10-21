@@ -216,7 +216,7 @@ export default function ScanListenScreen() {
               <MaterialDesignIcons
                 name="stop"
                 size={20}
-                color="#ffffff"
+                color={tokens.primaryForeground}
               />
               <Text className="text-base font-display-semibold text-primary-foreground">
                 Done speaking

@@ -65,7 +65,7 @@ export function PulsingOrb({ active }: { active: boolean }) {
         <MaterialDesignIcons
           name="microphone"
           size={40}
-          color="#ffffff"
+          color={tokens.primaryForeground}
         />
       </View>
     </View>
