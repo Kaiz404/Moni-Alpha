@@ -17,7 +17,7 @@ const SCREEN_BY_PATH = [
   [/^app\/budget\//, 'budget'],
   [/^app\/proposal\//, 'review'],
   [/^app\/(notifications|debug)\//, 'profile'],
-  [/^app\/heatmap\.tsx$/, 'map'],
+  [/^app\/(map\.tsx|place\/)/, 'map'],
   [/^app\/scan\//, 'capture'],
   [/^app\//, 'nav'],
   [/^components\/(categories|finance)\/.*picker/, 'sheet'],

@@ -22,14 +22,6 @@ export type CurrencyLine = {
   currency: CurrencyCode;
   points: FinanceChartPoint[];
 };
-export type FinancePinPoint = {
-  latitude: number;
-  longitude: number;
-  transactionCount: number;
-  locationName: string;
-  description: string;
-  amountsByCurrency: CurrencyTotal[];
-};
 export type BudgetProgress = {
   categoryId: string;
   categoryName: string;
@@ -594,76 +586,6 @@ export function netWorthByCurrency$(userId: string | null): Observable<
         ),
       }))
       .sort((a, b) => a.currency.localeCompare(b.currency));
-  });
-}
-
-const pinCache = new Map<
-  string,
-  Observable<{
-    pinPoints: FinancePinPoint[];
-    mapRegion: {
-      latitude: number;
-      longitude: number;
-      latitudeDelta: number;
-      longitudeDelta: number;
-    };
-  }>
->();
-export function pinmap$(userId: string | null): Observable<{
-  pinPoints: FinancePinPoint[];
-  mapRegion: {
-    latitude: number;
-    longitude: number;
-    latitudeDelta: number;
-    longitudeDelta: number;
-  };
-}> {
-  return cacheComputed(pinCache, userId ?? 'anonymous', () => {
-    const locations = new Map<
-      string,
-      FinancePinPoint & { totals: Map<CurrencyCode, MinorAmount> }
-    >();
-    for (const transaction of transactions$({ userId }).get()) {
-      if (transaction.locationLatitude === null || transaction.locationLongitude === null) continue;
-      const key = `${transaction.locationLatitude.toFixed(4)},${transaction.locationLongitude.toFixed(4)}`;
-      const existing = locations.get(key) ?? {
-        latitude: transaction.locationLatitude,
-        longitude: transaction.locationLongitude,
-        transactionCount: 0,
-        locationName: transaction.locationName ?? 'Saved transaction location',
-        description: transaction.description ?? transaction.merchant ?? 'No description',
-        amountsByCurrency: [],
-        totals: new Map<CurrencyCode, MinorAmount>(),
-      };
-      existing.transactionCount += 1;
-      addCurrencyTotal(existing.totals, transaction.currency, transaction.amountMinor);
-      locations.set(key, existing);
-    }
-    const pinPoints = [...locations.values()].map(({ totals, ...point }) => ({
-      ...point,
-      amountsByCurrency: currencyTotals(totals),
-    }));
-    if (!pinPoints.length)
-      return {
-        pinPoints,
-        mapRegion: {
-          latitude: 0,
-          longitude: 0,
-          latitudeDelta: 180,
-          longitudeDelta: 360,
-        },
-      };
-    const latitudes = pinPoints.map((point) => point.latitude);
-    const longitudes = pinPoints.map((point) => point.longitude);
-    return {
-      pinPoints,
-      mapRegion: {
-        latitude: (Math.min(...latitudes) + Math.max(...latitudes)) / 2,
-        longitude: (Math.min(...longitudes) + Math.max(...longitudes)) / 2,
-        latitudeDelta: Math.max(Math.max(...latitudes) - Math.min(...latitudes), 0.1) * 1.2,
-        longitudeDelta: Math.max(Math.max(...longitudes) - Math.min(...longitudes), 0.1) * 1.2,
-      },
-    };
   });
 }
 

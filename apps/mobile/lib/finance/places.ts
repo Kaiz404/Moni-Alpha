@@ -274,7 +274,7 @@ export function placeRegular(place: Place): PlaceRegular | null {
 export type Region = LatLng & { latitudeDelta: number; longitudeDelta: number };
 
 /** A region that frames every point with some margin, or null with none. */
-export function regionFor(points: readonly LatLng[]): Region | null {
+export function regionFor(points: readonly LatLng[], minDelta = 0.02): Region | null {
   if (!points.length) return null;
   const lats = points.map((point) => point.latitude);
   const lngs = points.map((point) => point.longitude);
@@ -282,8 +282,8 @@ export function regionFor(points: readonly LatLng[]): Region | null {
   return {
     latitude: (minLat + maxLat) / 2,
     longitude: (minLng + maxLng) / 2,
-    latitudeDelta: Math.max((maxLat - minLat) * 1.4, 0.02),
-    longitudeDelta: Math.max((maxLng - minLng) * 1.4, 0.02),
+    latitudeDelta: Math.max((maxLat - minLat) * 1.4, minDelta),
+    longitudeDelta: Math.max((maxLng - minLng) * 1.4, minDelta),
   };
 }
 
