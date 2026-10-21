@@ -6,8 +6,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { Text } from '@/components/ui/text';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { BrandHeader } from '@/components/ui/brand-header';
+import { Page } from '@/components/ui/page';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import {
   runNotificationTests,
@@ -127,9 +126,10 @@ export default function DebugPage() {
   );
 
   return (
-    <SafeAreaView
-      className="flex-1 bg-canvas"
-      style={{ flex: 1 }}
+    <Page
+      screen="profile"
+      kind="pushed"
+      title="Debug tools"
     >
       <ScrollView
         ref={scrollRef}
@@ -139,7 +139,6 @@ export default function DebugPage() {
           scrollRef.current?.scrollToEnd({ animated: true })
         }
       >
-        <BrandHeader title="Debug tools" />
         <View className="px-5 pt-4 pb-2">
           <Text className="text-xs leading-4 text-muted">
             Tools for testing notification capture and the AI
@@ -320,6 +319,6 @@ export default function DebugPage() {
           </View>
         )}
       </ScrollView>
-    </SafeAreaView>
+    </Page>
   );
 }

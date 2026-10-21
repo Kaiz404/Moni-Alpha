@@ -15,10 +15,6 @@ import {
   useNotificationSourceData,
   type WalletNotificationLinkValue,
 } from '@/components/wallets/notification-source-picker-content';
-import {
-  SquircleView,
-  squircleSmoothing,
-} from '@/components/ui/squircle-view';
 import { labelForNotificationPackage } from '@/constants/notification-apps';
 
 export type { WalletNotificationLinkValue } from '@/components/wallets/notification-source-picker-content';
@@ -87,9 +83,8 @@ export function WalletNotificationLinkSection({
         visible={visible}
       >
         <View className="flex-1 justify-end bg-black/40">
-          <SquircleView
+          <View
             className="max-h-[88%] overflow-hidden rounded-[28px] bg-canvas"
-            cornerSmoothing={squircleSmoothing.hero}
             style={{ height: Math.round(windowHeight * 0.76) }}
           >
             <View
@@ -105,7 +100,7 @@ export function WalletNotificationLinkSection({
                 sharedPackageWalletNames={sharedPackageWalletNames}
               />
             </View>
-          </SquircleView>
+          </View>
         </View>
       </Modal>
     </View>

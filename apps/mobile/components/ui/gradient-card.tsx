@@ -1,7 +1,6 @@
-import { StyleSheet, type ViewProps } from 'react-native';
+import { View, StyleSheet, type ViewProps } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import type { WalletCardStyle } from '@/constants/wallet-card-styles';
-import { SquircleView, squircleSmoothing } from './squircle-view';
 
 /** Converts a CSS-style gradient angle (0deg = up, clockwise) to unit-square start/end points. */
 function angleToPoints(angle: number) {
@@ -37,9 +36,8 @@ export function GradientCard({
   const { start, end } = angleToPoints(cardStyle.angle);
 
   return (
-    <SquircleView
+    <View
       className={`overflow-hidden rounded-[28px] ${className ?? ''}`}
-      cornerSmoothing={squircleSmoothing.hero}
       style={style}
       {...props}
     >
@@ -58,6 +56,6 @@ export function GradientCard({
         />
       ) : null}
       {children}
-    </SquircleView>
+    </View>
   );
 }

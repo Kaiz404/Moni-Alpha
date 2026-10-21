@@ -9,10 +9,7 @@ import {
 import { Text } from '@/components/ui/text';
 import { router } from 'expo-router';
 import { randomUUID } from 'expo-crypto';
-import {
-  SafeAreaView,
-  useSafeAreaInsets,
-} from 'react-native-safe-area-context';
+import { Page } from '@/components/ui/page';
 import { MaterialDesignIcons } from '@react-native-vector-icons/material-design-icons';
 import {
   ExpoSpeechRecognitionModule,
@@ -45,7 +42,6 @@ const TAG = '[Moni/Listen]';
 type Phase = 'listening' | 'review' | 'sending';
 
 export default function ScanListenScreen() {
-  const insets = useSafeAreaInsets();
   const tokens = useThemeTokens();
   const [phase, setPhase] = useState<Phase>('listening');
   const [transcript, setTranscript] = useState('');
@@ -168,29 +164,11 @@ export default function ScanListenScreen() {
   }, [transcript]);
 
   return (
-    <SafeAreaView
-      edges={['bottom']}
-      className="flex-1 bg-background"
-      style={{ flex: 1, paddingTop: insets.top }}
+    <Page
+      screen="capture"
+      kind="task"
+      title="Narrate a transaction"
     >
-      <View className="flex-row items-center justify-between px-4 py-3">
-        <Pressable
-          onPress={() => router.back()}
-          accessibilityLabel="Cancel"
-          className="h-10 w-10 items-center justify-center rounded-full bg-background-muted"
-        >
-          <MaterialDesignIcons
-            name="close"
-            size={22}
-            color={tokens.foreground}
-          />
-        </Pressable>
-        <Text className="text-sm font-display-semibold text-foreground">
-          Narrate a transaction
-        </Text>
-        <View className="h-10 w-10" />
-      </View>
-
       {phase !== 'review' ? (
         <View className="flex-1 items-center justify-center px-8">
           <PulsingOrb active={phase === 'listening'} />
@@ -270,6 +248,6 @@ export default function ScanListenScreen() {
           </View>
         </View>
       )}
-    </SafeAreaView>
+    </Page>
   );
 }

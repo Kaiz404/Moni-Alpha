@@ -5,14 +5,13 @@ import Animated, {
   FadeOut,
   LinearTransition,
 } from 'react-native-reanimated';
-
-import { PrimaryButton } from '@/components/ui/primary-button';
-import { Surface } from '@/components/ui/surface';
-import { TactilePressable } from '@/components/ui/tactile-pressable';
 import { formatMinorAmount } from '@/lib/finance/money';
 import { approve } from '@/lib/haptics';
 import { confirmWalletBalance } from '@/lib/supabase/wallets';
 import { useBalanceConfirmation } from '@/lib/wallets/balance-confirmation';
+import { Press } from '@/components/ui/press';
+import { tid } from '@/lib/test-ids';
+import { Button } from '@/components/ui/button';
 
 const rowTransition = LinearTransition.duration(200);
 
@@ -35,10 +34,7 @@ export function ConfirmBalanceCard({
       exiting={FadeOut.duration(180)}
       className={className}
     >
-      <Surface
-        tone="peach"
-        className="overflow-hidden"
-      >
+      <View className="rounded-card bg-accent-peach/30 overflow-hidden">
         <View className="flex-row items-start justify-between pl-4 pr-1 pt-3">
           <Text
             className="flex-1 pt-2.5 text-base font-display-bold text-foreground"
@@ -46,7 +42,8 @@ export function ConfirmBalanceCard({
           >
             Confirm balances to unlock your forecast
           </Text>
-          <TactilePressable
+          <Press
+            testID={tid('wallet', 'not-now-ask')}
             className="min-h-11 justify-center px-3"
             onPress={dismiss}
             accessibilityLabel="Not now, ask again in a week"
@@ -54,7 +51,7 @@ export function ConfirmBalanceCard({
             <Text className="text-sm font-display-semibold text-muted">
               Not now
             </Text>
-          </TactilePressable>
+          </Press>
         </View>
         {wallets.map(
           ({ wallet, balanceMinor, daysSinceConfirmed }) => {
@@ -93,9 +90,10 @@ export function ConfirmBalanceCard({
                   </Text>
                 </View>
                 <View className="mt-3 flex-row gap-2">
-                  <PrimaryButton
+                  <Button
+                    testID={tid('wallet', 'yes-thats-right')}
                     className="flex-1"
-                    variant="quiet"
+                    variant="secondary"
                     label="Yes, that’s right"
                     accessibilityLabel={`Yes, ${wallet.name} is ${balance}`}
                     onPress={() => {
@@ -103,7 +101,8 @@ export function ConfirmBalanceCard({
                       confirmWalletBalance(wallet.id);
                     }}
                   />
-                  <PrimaryButton
+                  <Button
+                    testID={tid('wallet', 'fix-it')}
                     variant="secondary"
                     label="Fix it"
                     accessibilityLabel={`Fix the ${wallet.name} balance`}
@@ -119,7 +118,7 @@ export function ConfirmBalanceCard({
             );
           },
         )}
-      </Surface>
+      </View>
     </Animated.View>
   );
 }

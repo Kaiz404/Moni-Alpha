@@ -12,10 +12,11 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { GoogleSignInButton } from '@/components/auth/google-sign-in-button';
 import { FormField } from '@/components/ui/form-field';
 import { GradientCard } from '@/components/ui/gradient-card';
-import { PrimaryButton } from '@/components/ui/primary-button';
-import { ScreenShell } from '@/components/ui/screen-shell';
 import { getWalletCardStyle } from '@/constants/wallet-card-styles';
 import { useAuth } from '@/lib/auth/auth-context';
+import { Button } from '@/components/ui/button';
+import { tid } from '@/lib/test-ids';
+import { Page } from '@/components/ui/page';
 
 const brandMark = getWalletCardStyle('emerald-grain');
 
@@ -50,9 +51,12 @@ export default function LoginScreen() {
   };
 
   return (
-    <ScreenShell variant="canvas">
+    <Page
+      screen="auth"
+      kind="bare"
+    >
       <ScrollView
-        className="flex-1 px-6 pt-32"
+        className="flex-1 px-5"
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 36 }}
@@ -91,7 +95,8 @@ export default function LoginScreen() {
           autoComplete="password"
         />
 
-        <PrimaryButton
+        <Button
+          testID={tid('auth', 'sign-in')}
           label="Sign in"
           loading={loading}
           loadingLabel="Signing in..."
@@ -126,6 +131,6 @@ export default function LoginScreen() {
           </TouchableOpacity>
         </Link>
       </ScrollView>
-    </ScreenShell>
+    </Page>
   );
 }

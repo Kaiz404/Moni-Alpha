@@ -8,7 +8,7 @@ import {
 } from 'react-native';
 import { Text } from '@/components/ui/text';
 import { router, useFocusEffect } from 'expo-router';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { Page } from '@/components/ui/page';
 import * as Location from 'expo-location';
 import * as ImagePicker from 'expo-image-picker';
 import { ExpoSpeechRecognitionModule } from 'expo-speech-recognition';
@@ -21,7 +21,6 @@ import { SettingsRow } from '@/components/profile/settings-row';
 import { ThemePreferencePicker } from '@/components/profile/theme-preference-picker';
 import { GradientCard } from '@/components/ui/gradient-card';
 import { IconSymbol } from '@/components/ui/icon-symbol';
-import { Surface } from '@/components/ui/surface';
 import { getWalletCardStyle } from '@/constants/wallet-card-styles';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { useNotificationListener } from '@/hooks/use-notification-listener';
@@ -46,9 +45,9 @@ function mapSpeechPermissionStatus(result: {
 
 function SettingsGroup({ children }: { children: React.ReactNode }) {
   return (
-    <Surface className="overflow-hidden rounded-[22px]">
+    <View className="bg-card overflow-hidden rounded-[22px]">
       {children}
-    </Surface>
+    </View>
   );
 }
 
@@ -152,29 +151,22 @@ export default function ProfileScreen() {
   };
 
   return (
-    <SafeAreaView
-      edges={['top']}
-      className="flex-1 bg-canvas"
-      style={{ flex: 1 }}
+    <Page
+      screen="profile"
+      kind="tabRoot"
+      title="Profile"
     >
       <ScrollView
         className="flex-1"
         contentContainerClassName="pb-12"
         showsVerticalScrollIndicator={false}
       >
-        <View className="px-5 pb-5 pt-6">
-          <Text className="text-[28px] font-display-bold leading-[34px] text-foreground">
-            Profile
-          </Text>
-        </View>
-
         <View className="px-5">
-          <Surface
-            tone="aqua"
-            className="p-4"
-          >
+          <View className="rounded-card bg-accent-aqua/30 p-4">
             <View className="flex-row items-center">
-              {user && user.user_metadata && user.user_metadata.avatar_url ? (
+              {user &&
+              user.user_metadata &&
+              user.user_metadata.avatar_url ? (
                 <Image
                   source={{ uri: user.user_metadata.avatar_url }}
                   className="h-14 w-14 rounded-2xl"
@@ -202,7 +194,7 @@ export default function ProfileScreen() {
                 </Text>
               </View>
             </View>
-          </Surface>
+          </View>
         </View>
 
         <View className="mt-8 px-5">
@@ -399,6 +391,6 @@ export default function ProfileScreen() {
           </TouchableOpacity>
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </Page>
   );
 }

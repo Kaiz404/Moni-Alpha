@@ -4,10 +4,8 @@ import {
   BOTTOM_SHEET_PRIMARY_ACTION_SPACE,
   BottomSheetPrimaryAction,
 } from '@/components/ui/bottom-sheet-primary-action';
-import { IconAction } from '@/components/ui/icon-action';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { SolidWalletCard } from '@/components/ui/solid-wallet-card';
-import { TactilePressable } from '@/components/ui/tactile-pressable';
 import {
   getWalletCardStyle,
   WALLET_CARD_STYLES,
@@ -16,6 +14,9 @@ import {
   resolveWalletIcon,
   type WalletKind,
 } from '@/constants/wallet-form';
+import { HeaderIconButton } from '@/components/ui/header-icon-button';
+import { tid } from '@/lib/test-ids';
+import { Press } from '@/components/ui/press';
 
 type WalletColorPickerContentProps = {
   value: string;
@@ -43,7 +44,8 @@ export function WalletColorPickerContent({
         <Text className="flex-1 pr-3 text-xl font-display-bold text-foreground">
           Color
         </Text>
-        <IconAction
+        <HeaderIconButton
+          testID={tid('sheet', 'close-color-picker')}
           accessibilityLabel="Close color picker"
           icon="close"
           onPress={onClose}
@@ -95,7 +97,8 @@ export function WalletColorPickerContent({
           {WALLET_CARD_STYLES.map((item) => {
             const selected = item.id === value;
             return (
-              <TactilePressable
+              <Press
+                testID={tid('sheet', 'choose', item.id)}
                 key={item.id}
                 accessibilityLabel={`Choose ${item.label} wallet color`}
                 accessibilityState={{ selected }}
@@ -133,12 +136,13 @@ export function WalletColorPickerContent({
                 >
                   {item.label}
                 </Text>
-              </TactilePressable>
+              </Press>
             );
           })}
         </View>
       </ScrollView>
       <BottomSheetPrimaryAction
+        testID={tid('sheet', 'confirm')}
         horizontalInset={16}
         icon="check"
         label="Use color"

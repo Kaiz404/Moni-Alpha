@@ -1,8 +1,8 @@
 import { View } from 'react-native';
 import { Text } from '@/components/ui/text';
-
-import { TactilePressable } from '@/components/ui/tactile-pressable';
 import type { QuickReplyOption } from '@/lib/ai/chat/messages';
+import { Press } from '@/components/ui/press';
+import { tid } from '@/lib/test-ids';
 
 const LABELS: Record<QuickReplyOption, string> = {
   log_transaction: 'Review transaction',
@@ -22,7 +22,9 @@ export function QuickReplyChips({
   return (
     <View className="mt-3 gap-2">
       {options.map((option) => (
-        <TactilePressable
+        <Press
+          testID={tid('chat', 'select', option)}
+          pressedClassName="bg-hairline"
           key={option}
           onPress={() => onSelect(option)}
           className="self-start rounded-xl bg-primary-muted px-3 py-2"
@@ -31,7 +33,7 @@ export function QuickReplyChips({
           <Text className="text-[13px] font-display-semibold text-primary">
             {LABELS[option]}
           </Text>
-        </TactilePressable>
+        </Press>
       ))}
     </View>
   );

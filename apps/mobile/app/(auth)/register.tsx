@@ -7,18 +7,16 @@ import {
 } from 'react-native';
 import { Text } from '@/components/ui/text';
 import { Link, router } from 'expo-router';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { GoogleSignInButton } from '@/components/auth/google-sign-in-button';
 import { FormField } from '@/components/ui/form-field';
-import { IconAction } from '@/components/ui/icon-action';
-import { PrimaryButton } from '@/components/ui/primary-button';
-import { ScreenShell } from '@/components/ui/screen-shell';
 import { useAuth } from '@/lib/auth/auth-context';
+import { tid } from '@/lib/test-ids';
+import { Button } from '@/components/ui/button';
+import { Page } from '@/components/ui/page';
 
 export default function RegisterScreen() {
   const { signUp } = useAuth();
-  const insets = useSafeAreaInsets();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [displayName, setDisplayName] = useState('');
@@ -56,20 +54,13 @@ export default function RegisterScreen() {
   };
 
   return (
-    <ScreenShell variant="canvas">
-      <View
-        className="px-5"
-        style={{ paddingTop: Math.max(insets.top, 20) }}
-      >
-        <IconAction
-          accessibilityLabel="Return to sign in"
-          icon="arrow-left"
-          onPress={() => router.back()}
-        />
-      </View>
-
+    <Page
+      screen="auth"
+      kind="pushed"
+      title="Create account"
+    >
       <ScrollView
-        className="flex-1 px-6 pt-7"
+        className="flex-1 px-5"
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 36 }}
@@ -107,7 +98,8 @@ export default function RegisterScreen() {
           autoComplete="password-new"
         />
 
-        <PrimaryButton
+        <Button
+          testID={tid('auth', 'create-account')}
           label="Create account"
           loading={loading}
           loadingLabel="Creating accountâ€¦"
@@ -142,6 +134,6 @@ export default function RegisterScreen() {
           </TouchableOpacity>
         </Link>
       </ScrollView>
-    </ScreenShell>
+    </Page>
   );
 }

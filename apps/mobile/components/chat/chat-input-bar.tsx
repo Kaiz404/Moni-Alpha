@@ -2,13 +2,12 @@ import { useState } from 'react';
 import { Pressable, TextInput, View } from 'react-native';
 import { Text } from '@/components/ui/text';
 import { Image } from 'expo-image';
-
-import { IconAction } from '@/components/ui/icon-action';
 import { IconSymbol } from '@/components/ui/icon-symbol';
-import { Surface } from '@/components/ui/surface';
-import { TactilePressable } from '@/components/ui/tactile-pressable';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { toggleOff, toggleOn } from '@/lib/haptics';
+import { HeaderIconButton } from '@/components/ui/header-icon-button';
+import { tid } from '@/lib/test-ids';
+import { Press } from '@/components/ui/press';
 
 type ChatInputBarProps = {
   input: string;
@@ -47,10 +46,7 @@ export function ChatInputBar({
   return (
     <View className="border-t border-border-subtle bg-canvas px-5 pt-2">
       {attachedImage ? (
-        <Surface
-          className="mb-2 flex-row items-center rounded-2xl p-2"
-          tone="muted"
-        >
+        <View className="bg-sand mb-2 flex-row items-center rounded-2xl p-2">
           <Image
             source={{ uri: attachedImage }}
             style={{ width: 56, height: 56, borderRadius: 12 }}
@@ -64,13 +60,13 @@ export function ChatInputBar({
               Send it when you&apos;re ready.
             </Text>
           </View>
-          <IconAction
+          <HeaderIconButton
+            testID={tid('chat', 'remove-attached-receipt')}
             accessibilityLabel="Remove attached receipt"
             icon="close"
             onPress={onRemoveImage}
-            tone="default"
           />
-        </Surface>
+        </View>
       ) : null}
 
       {isSpeechRecognizing ? (
@@ -86,11 +82,11 @@ export function ChatInputBar({
         className="flex-row items-end"
         style={{ paddingBottom: bottomPad }}
       >
-        <IconAction
+        <HeaderIconButton
+          testID={tid('chat', 'attach-a-receipt')}
           accessibilityLabel="Attach a receipt photo"
           icon="camera"
           onPress={onOpenCamera}
-          tone="accent"
         />
 
         <TextInput
@@ -112,7 +108,9 @@ export function ChatInputBar({
         />
 
         {showMicMode ? (
-          <TactilePressable
+          <Press
+            testID={tid('chat', 'mic')}
+            pressedClassName="bg-primary-pressed"
             className="h-11 w-11 items-center justify-center rounded-full"
             style={{
               backgroundColor: isSpeechRecognizing
@@ -143,9 +141,11 @@ export function ChatInputBar({
                   : tokens.primaryForeground
               }
             />
-          </TactilePressable>
+          </Press>
         ) : (
-          <TactilePressable
+          <Press
+            testID={tid('chat', 'send-message')}
+            pressedClassName="bg-primary-pressed"
             className="h-11 w-11 items-center justify-center rounded-full bg-primary"
             onPress={onSend}
             disabled={!hasContent || isSpeechRecognizing}
@@ -156,7 +156,7 @@ export function ChatInputBar({
               size={22}
               color={tokens.primaryForeground}
             />
-          </TactilePressable>
+          </Press>
         )}
       </View>
     </View>

@@ -19,7 +19,6 @@ import { FieldRow } from '@/components/proposal/field-row';
 import { ProposalLocationSection } from '@/components/proposal/proposal-location-section';
 import { CategoryIcon } from '@/components/categories/category-icon';
 import { chipClass, chipTextClass } from '@/components/ui/chip';
-import { Surface } from '@/components/ui/surface';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { parseAmountInput } from '@/lib/finance/money';
 import {
@@ -244,10 +243,7 @@ export function ProposalForm({
 
   return (
     <View accessibilityLabel="Transaction proposal review">
-      <Surface
-        tone="muted"
-        className="mb-5 px-4 py-4"
-      >
+      <View className="rounded-card bg-sand mb-5 px-4 py-4">
         <Text className="text-xs font-display-semibold uppercase tracking-wide text-muted">
           {sourceTitle}
         </Text>
@@ -271,7 +267,7 @@ export function ProposalForm({
             {proposal.notificationTitle}: {proposal.notificationBody}
           </Text>
         ) : null}
-      </Surface>
+      </View>
 
       <Text className="mb-2 text-xs font-display-semibold uppercase tracking-wider text-muted">
         Transaction type
@@ -332,7 +328,7 @@ export function ProposalForm({
       </FieldRow>
 
       {showWalletPicker ? (
-        <Surface className="mb-4 overflow-hidden rounded-[22px]">
+        <View className="bg-card mb-4 overflow-hidden rounded-[22px]">
           {wallets.map((w) => (
             <Pressable
               key={w.id}
@@ -350,7 +346,7 @@ export function ProposalForm({
               </Text>
             </Pressable>
           ))}
-        </Surface>
+        </View>
       ) : null}
 
       {isTransfer ? (
@@ -375,7 +371,7 @@ export function ProposalForm({
           </FieldRow>
 
           {showTransferToPicker ? (
-            <Surface className="mb-4 overflow-hidden rounded-[22px]">
+            <View className="bg-card mb-4 overflow-hidden rounded-[22px]">
               {destinationWallets.length === 0 ? (
                 <Text className="px-4 py-3 text-sm text-muted">
                   Add another wallet to complete this transfer.
@@ -403,7 +399,7 @@ export function ProposalForm({
                   </Pressable>
                 ))
               )}
-            </Surface>
+            </View>
           ) : null}
         </>
       ) : null}
@@ -443,7 +439,7 @@ export function ProposalForm({
           </FieldRow>
 
           {showCategoryPicker ? (
-            <Surface className="mb-4 overflow-hidden rounded-[22px]">
+            <View className="bg-card mb-4 overflow-hidden rounded-[22px]">
               {categoryOptions.length === 0 ? (
                 <Text className="px-4 py-3 text-sm text-muted">
                   No matching categories are available yet.
@@ -477,7 +473,7 @@ export function ProposalForm({
                   </Pressable>
                 ))
               )}
-            </Surface>
+            </View>
           ) : null}
         </>
       ) : null}

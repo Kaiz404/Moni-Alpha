@@ -21,8 +21,6 @@ import {
 } from '@repo/types';
 
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
-import { Surface } from '@/components/ui/surface';
-import { PrimaryButton } from '@/components/ui/primary-button';
 import { PROPOSED_TRANSACTIONS_CHANGED } from '@/lib/proposals/proposed-transactions-events';
 import {
   proposalPresentationForSource,
@@ -32,6 +30,8 @@ import {
   findProposalDuplicate,
   getProposedTransactions,
 } from '@/lib/supabase/proposed-transactions';
+import { Button } from '@/components/ui/button';
+import { tid } from '@/lib/test-ids';
 
 /**
  * Quiet notification-only entry to the review queue. User-initiated receipt
@@ -158,10 +158,7 @@ export function ProposalSummarySheet() {
           accessibilityRole="button"
           accessibilityLabel="Review this later"
         />
-        <Surface
-          smoothing="hero"
-          className="relative min-h-[400px] rounded-[28px] px-6 pb-24 pt-4"
-        >
+        <View className="bg-card relative min-h-[400px] rounded-[28px] px-6 pb-24 pt-4">
           <View className="mb-5 h-1.5 w-10 self-center rounded-full bg-border" />
           <View className="flex-row items-start gap-3">
             <View className="h-11 w-11 items-center justify-center rounded-full bg-primary-muted">
@@ -184,10 +181,7 @@ export function ProposalSummarySheet() {
             accessibilityRole="button"
             accessibilityLabel={`Review ${title}`}
           >
-            <Surface
-              tone="muted"
-              className="flex-row items-start justify-between gap-3 px-4 py-4"
-            >
+            <View className="rounded-card bg-sand flex-row items-start justify-between gap-3 px-4 py-4">
               <View className="min-w-0 flex-1">
                 <Text className="text-xs font-display-semibold uppercase tracking-wide text-muted">
                   {direction} from{' '}
@@ -213,7 +207,7 @@ export function ProposalSummarySheet() {
                   {current.currency}
                 </Text>
               </View>
-            </Surface>
+            </View>
           </Pressable>
 
           {duplicateOf === current.id ? (
@@ -235,13 +229,14 @@ export function ProposalSummarySheet() {
               </Text>
             </Pressable>
           </View>
-          <PrimaryButton
+          <Button
+            testID={tid('review', 'review')}
             className="absolute bottom-6 left-6 right-6"
             icon="check"
             label={copy.primaryLabel}
             onPress={review}
           />
-        </Surface>
+        </View>
       </View>
     </Modal>
   );

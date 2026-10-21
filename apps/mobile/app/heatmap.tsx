@@ -9,14 +9,13 @@ import {
 } from 'react-native';
 import { Text } from '@/components/ui/text';
 import MapView, { Marker } from 'react-native-maps';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { Page } from '@/components/ui/page';
 import {
   useTransactionPinmap,
   type TransactionPinPoint,
 } from '@/hooks/use-transaction-heatmap';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { formatMinorAmount } from '@/lib/finance/money';
-import { Surface } from '@/components/ui/surface';
 
 export default function HeatmapScreen() {
   const { pinPoints, mapRegion, isLoading, error } =
@@ -57,52 +56,62 @@ export default function HeatmapScreen() {
 
   if (!isMapReady && isLoading) {
     return (
-      <SafeAreaView
-        className="flex-1 items-center justify-center bg-background"
-        style={{ flex: 1 }}
+      <Page
+        screen="map"
+        kind="pushed"
+        title="Where you spend"
       >
-        <ActivityIndicator
-          size="large"
-          color={tokens.primary}
-        />
-        <Text className="mt-3 text-base text-foreground">
-          Loading transaction locations...
-        </Text>
-      </SafeAreaView>
+        <View className="flex-1 items-center justify-center">
+          <ActivityIndicator
+            size="large"
+            color={tokens.primary}
+          />
+          <Text className="mt-3 text-base text-foreground">
+            Loading transaction locations...
+          </Text>
+        </View>
+      </Page>
     );
   }
 
   if (error) {
     return (
-      <SafeAreaView
-        className="flex-1 items-center justify-center bg-background"
-        style={{ flex: 1 }}
+      <Page
+        screen="map"
+        kind="pushed"
+        title="Where you spend"
       >
-        <Text className="px-5 text-center text-base text-danger">
-          Error: {error}
-        </Text>
-      </SafeAreaView>
+        <View className="flex-1 items-center justify-center">
+          <Text className="px-5 text-center text-base text-danger">
+            Error: {error}
+          </Text>
+        </View>
+      </Page>
     );
   }
 
   if (pinPoints.length === 0) {
     return (
-      <SafeAreaView
-        className="flex-1 items-center justify-center bg-background"
-        style={{ flex: 1 }}
+      <Page
+        screen="map"
+        kind="pushed"
+        title="Where you spend"
       >
-        <Text className="px-5 text-center text-base text-muted">
-          No transactions with location data found. Start adding
-          locations to your transactions!
-        </Text>
-      </SafeAreaView>
+        <View className="flex-1 items-center justify-center">
+          <Text className="px-5 text-center text-base text-muted">
+            No transactions with location data found. Start adding
+            locations to your transactions!
+          </Text>
+        </View>
+      </Page>
     );
   }
 
   return (
-    <SafeAreaView
-      className="flex-1 items-center justify-center bg-background"
-      style={{ flex: 1 }}
+    <Page
+      screen="map"
+      kind="pushed"
+      title="Where you spend"
     >
       <MapView
         ref={mapRef}
@@ -125,17 +134,14 @@ export default function HeatmapScreen() {
         ))}
       </MapView>
 
-      <Surface
-        tone="tray"
-        className="absolute bottom-5 left-5 right-5 p-3"
-      >
+      <View className="rounded-card bg-sand-light absolute bottom-5 left-5 right-5 p-3">
         <Text className="mb-2 text-sm font-display-bold text-foreground">
           Pinmap
         </Text>
         <Text className="mt-1 text-xs text-muted">
           {pinPoints.length} pinned location(s)
         </Text>
-      </Surface>
+      </View>
 
       {selectedPin ? (
         <Pressable
@@ -145,10 +151,9 @@ export default function HeatmapScreen() {
       ) : null}
 
       {selectedPin ? (
-        <Surface
-          tone="aqua"
+        <View
           style={styles.bottomCard}
-          className="p-3.5"
+          className="rounded-card bg-accent-aqua/30 p-3.5"
         >
           <Pressable
             style={[
@@ -203,9 +208,9 @@ export default function HeatmapScreen() {
               Open in Map App
             </Text>
           </Pressable>
-        </Surface>
+        </View>
       ) : null}
-    </SafeAreaView>
+    </Page>
   );
 }
 

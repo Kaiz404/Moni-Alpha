@@ -22,19 +22,18 @@ import {
 import { getWallets } from '@/lib/supabase/wallets';
 import { getCategories } from '@/lib/supabase/categories';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
-import { BrandHeader } from '@/components/ui/brand-header';
 import { AmountInput } from '@/components/finance/amount-input';
-import { ScreenShell } from '@/components/ui/screen-shell';
 import { chipClass, chipTextClass } from '@/components/ui/chip';
 import { FeedbackState } from '@/components/ui/feedback-state';
 import { FormField } from '@/components/ui/form-field';
-import { PrimaryButton } from '@/components/ui/primary-button';
 import { WalletIcon } from '@/components/wallets/wallet-icon';
-import { Surface } from '@/components/ui/surface';
 import {
   minorToDecimal,
   parseAmountInput,
 } from '@/lib/finance/money';
+import { Button } from '@/components/ui/button';
+import { tid } from '@/lib/test-ids';
+import { Page } from '@/components/ui/page';
 
 const inputClass =
   'min-h-13 rounded-2xl bg-surface-2 px-4 py-3 text-foreground';
@@ -266,34 +265,43 @@ export default function EditTransactionScreen() {
 
   if (!txId) {
     return (
-      <ScreenShell variant="canvas">
-        <BrandHeader title="Transaction" />
+      <Page
+        screen="txn"
+        kind="pushed"
+        title="Transaction"
+      >
         <FeedbackState
           className="flex-1"
           icon="receipt-text"
           title="Missing transaction"
         />
-      </ScreenShell>
+      </Page>
     );
   }
 
   if (loadingTx) {
     return (
-      <ScreenShell variant="canvas">
+      <Page
+        screen="txn"
+        kind="bare"
+      >
         <View className="flex-1 items-center justify-center">
           <ActivityIndicator
             size="large"
             color={tokens.primary}
           />
         </View>
-      </ScreenShell>
+      </Page>
     );
   }
 
   if (loadError) {
     return (
-      <ScreenShell variant="canvas">
-        <BrandHeader title="Transaction" />
+      <Page
+        screen="txn"
+        kind="pushed"
+        title="Transaction"
+      >
         <FeedbackState
           className="flex-1"
           icon="alert-circle-outline"
@@ -301,19 +309,22 @@ export default function EditTransactionScreen() {
           title="Couldn’t open this transaction"
         />
         <View className="px-5 pb-5">
-          <PrimaryButton
+          <Button
+            testID={tid('txn', 'go-back')}
             label="Go back"
             onPress={() => router.back()}
           />
         </View>
-      </ScreenShell>
+      </Page>
     );
   }
 
   return (
-    <ScreenShell variant="canvas">
-      <BrandHeader title="Edit Transaction" />
-
+    <Page
+      screen="txn"
+      kind="pushed"
+      title="Edit Transaction"
+    >
       <KeyboardAvoidingView
         className="flex-1"
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -329,10 +340,7 @@ export default function EditTransactionScreen() {
             <Text className="text-2xl font-display-bold text-foreground">
               Edit transaction
             </Text>
-            <Surface
-              tone="muted"
-              className="mb-6 mt-4 p-4"
-            >
+            <View className="rounded-card bg-sand mb-6 mt-4 p-4">
               <Text className="text-xs font-display-semibold uppercase tracking-wide text-muted">
                 Date &amp; time
               </Text>
@@ -344,18 +352,15 @@ export default function EditTransactionScreen() {
                   Location: {readOnlyLocation}
                 </Text>
               ) : null}
-            </Surface>
+            </View>
 
             {isTransfer ? (
-              <Surface
-                tone="tray"
-                className="mb-6 p-4"
-              >
+              <View className="rounded-card bg-sand-light mb-6 p-4">
                 <Text className="text-sm leading-5 text-foreground">
                   Transfer between your wallets — does not affect your
                   overall net worth.
                 </Text>
-              </Surface>
+              </View>
             ) : null}
 
             <Text className="mb-1.5 text-xs font-display-semibold uppercase tracking-wide text-muted">
@@ -618,7 +623,8 @@ export default function EditTransactionScreen() {
             className="border-t border-border bg-canvas px-4 pt-3"
             style={{ paddingBottom: Math.max(insets.bottom, 12) }}
           >
-            <PrimaryButton
+            <Button
+              testID={tid('txn', 'save-changes')}
               label="Save changes"
               loading={loading}
               loadingLabel="Saving..."
@@ -629,7 +635,7 @@ export default function EditTransactionScreen() {
           </View>
         </View>
       </KeyboardAvoidingView>
-    </ScreenShell>
+    </Page>
   );
 }
 

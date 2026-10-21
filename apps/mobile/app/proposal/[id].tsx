@@ -9,9 +9,6 @@ import {
 import { Text } from '@/components/ui/text';
 import { router, useLocalSearchParams } from 'expo-router';
 import type { ProposedTransaction } from '@repo/types';
-
-import { BrandHeader } from '@/components/ui/brand-header';
-import { ScreenShell } from '@/components/ui/screen-shell';
 import {
   ProposalForm,
   type CategoryOption,
@@ -35,6 +32,7 @@ import {
 import { getWallets } from '@/lib/supabase/wallets';
 import { getCategories } from '@/lib/supabase/categories';
 import { approve, notMine } from '@/lib/haptics';
+import { Page } from '@/components/ui/page';
 
 export default function ProposalDetailScreen() {
   const tokens = useThemeTokens();
@@ -233,8 +231,11 @@ export default function ProposalDetailScreen() {
   }, [proposal, duplicate, isActioning]);
 
   return (
-    <ScreenShell variant="canvas">
-      <BrandHeader title="Review proposal" />
+    <Page
+      screen="review"
+      kind="task"
+      title="Review proposal"
+    >
       {isLoading ? (
         <View className="flex-1 items-center justify-center">
           <ActivityIndicator
@@ -285,6 +286,6 @@ export default function ProposalDetailScreen() {
           />
         </ScrollView>
       )}
-    </ScreenShell>
+    </Page>
   );
 }

@@ -3,16 +3,14 @@ import { Pressable, ScrollView, View } from 'react-native';
 import { Text } from '@/components/ui/text';
 import { router } from 'expo-router';
 import { useValue } from '@legendapp/state/react';
-
-import { BrandHeader } from '@/components/ui/brand-header';
 import { FeedbackState } from '@/components/ui/feedback-state';
-import { PrimaryButton } from '@/components/ui/primary-button';
-import { ScreenShell } from '@/components/ui/screen-shell';
-import { Surface } from '@/components/ui/surface';
 import { useAuth } from '@/lib/auth/auth-context';
 import { formatMinorAmount } from '@/lib/finance/money';
 import { debtsWithBalance$ } from '@/lib/finance/selectors';
 import { debtDueState } from '@/lib/supabase/debts';
+import { Button } from '@/components/ui/button';
+import { tid } from '@/lib/test-ids';
+import { Page } from '@/components/ui/page';
 
 export default function DebtsScreen() {
   const { user } = useAuth();
@@ -39,8 +37,11 @@ export default function DebtsScreen() {
   const owedToMe = tab === 'owed_to_me';
 
   return (
-    <ScreenShell variant="canvas">
-      <BrandHeader title="Debts" />
+    <Page
+      screen="debts"
+      kind="pushed"
+      title="Debts"
+    >
       <ScrollView
         className="flex-1"
         contentContainerClassName="px-5 pb-10 pt-6"
@@ -68,9 +69,8 @@ export default function DebtsScreen() {
         </View>
 
         {totals.length > 0 ? (
-          <Surface
-            tone={owedToMe ? 'tray' : 'muted'}
-            className="mt-6 p-5"
+          <View
+            className={`rounded-card mt-6 p-5 ${owedToMe ? 'bg-sand-light' : 'bg-sand'}`}
           >
             <Text
               className={`text-sm font-display-semibold ${owedToMe ? 'text-primary' : 'text-warning'}`}
@@ -85,7 +85,7 @@ export default function DebtsScreen() {
                 {formatMinorAmount(amount, currency)}
               </Text>
             ))}
-          </Surface>
+          </View>
         ) : null}
 
         {shown.length === 0 ? (
@@ -112,7 +112,7 @@ export default function DebtsScreen() {
                     router.push(`/debt/${debt.id}` as never)
                   }
                 >
-                  <Surface className="p-4">
+                  <View className="rounded-card bg-card p-4">
                     <View className="flex-row items-start justify-between gap-3">
                       <View className="flex-1">
                         <Text
@@ -140,19 +140,20 @@ export default function DebtsScreen() {
                         )}
                       </Text>
                     </View>
-                  </Surface>
+                  </View>
                 </Pressable>
               );
             })}
           </View>
         )}
-        <PrimaryButton
+        <Button
+          testID={tid('debts', 'record-debt')}
           className="mt-8"
           icon="plus"
           label="Record debt"
           onPress={() => router.push('/debt/new' as never)}
         />
       </ScrollView>
-    </ScreenShell>
+    </Page>
   );
 }

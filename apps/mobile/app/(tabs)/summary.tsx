@@ -7,7 +7,7 @@ import {
 } from 'react-native';
 import { Text } from '@/components/ui/text';
 import { router } from 'expo-router';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { Page } from '@/components/ui/page';
 import { useValue } from '@legendapp/state/react';
 import { MaterialDesignIcons } from '@react-native-vector-icons/material-design-icons';
 
@@ -20,7 +20,6 @@ import {
 import { DonutChart } from '@/components/charts/donut-chart';
 import { LineChart } from '@/components/charts/line-chart';
 import { SyncStatusIndicator } from '@/components/providers/sync-status-indicator';
-import { Surface } from '@/components/ui/surface';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { useAuth } from '@/lib/auth/auth-context';
 import {
@@ -258,32 +257,19 @@ export default function InsightsScreen() {
   );
 
   return (
-    <SafeAreaView
-      edges={['top']}
-      className="flex-1 bg-canvas"
-      style={{ flex: 1 }}
+    <Page
+      screen="budget"
+      kind="tabRoot"
+      title="Insights"
+      trailing={<SyncStatusIndicator />}
     >
       <ScrollView
         className="flex-1"
         contentContainerClassName="px-5 pb-32 pt-4"
         showsVerticalScrollIndicator={false}
       >
-        <View className="mb-7 flex-row items-start justify-between">
-          <View className="flex-1 pr-3">
-            <Text className="text-[28px] font-display-bold leading-9 text-foreground">
-              Insights
-            </Text>
-          </View>
-          <View className="pt-1">
-            <SyncStatusIndicator />
-          </View>
-        </View>
-
         {!currency ? (
-          <Surface
-            smoothing="hero"
-            className="rounded-[28px] px-5 py-8"
-          >
+          <View className="bg-card rounded-[28px] px-5 py-8">
             <Text className="text-lg font-display-bold text-foreground">
               Start with one wallet
             </Text>
@@ -295,7 +281,7 @@ export default function InsightsScreen() {
                 Add a wallet
               </Text>
             </Pressable>
-          </Surface>
+          </View>
         ) : (
           <>
             <ScrollView
@@ -378,11 +364,7 @@ export default function InsightsScreen() {
               </ScrollView>
             </View>
 
-            <Surface
-              tone="peach"
-              smoothing="hero"
-              className="mb-6 rounded-card p-5"
-            >
+            <View className="bg-accent-peach/30 mb-6 rounded-card p-5">
               <View className="flex-row items-baseline justify-between">
                 <Text className="text-xl font-display-bold text-foreground">
                   {formatMonth(currentMonth)} spending
@@ -411,13 +393,9 @@ export default function InsightsScreen() {
                   }
                 />
               </View>
-            </Surface>
+            </View>
 
-            <Surface
-              tone="lemon"
-              smoothing="hero"
-              className="mb-6 rounded-[28px] p-5"
-            >
+            <View className="bg-accent-lemon/30 mb-6 rounded-[28px] p-5">
               <View className="flex-row items-start">
                 <MaterialDesignIcons
                   name="chart-line"
@@ -430,13 +408,9 @@ export default function InsightsScreen() {
                   </Text>
                 </View>
               </View>
-            </Surface>
+            </View>
 
-            <Surface
-              tone="aqua"
-              smoothing="hero"
-              className="mb-6 rounded-[28px] p-5"
-            >
+            <View className="bg-accent-aqua/30 mb-6 rounded-[28px] p-5">
               <View className="flex-row items-center justify-between">
                 <View>
                   <Text className="text-base font-display-bold text-foreground">
@@ -489,7 +463,7 @@ export default function InsightsScreen() {
                   }
                 />
               </View>
-            </Surface>
+            </View>
 
             <View className="mb-6">
               <View className="mb-3 flex-row items-center justify-between">
@@ -510,10 +484,7 @@ export default function InsightsScreen() {
                 </Pressable>
               </View>
               {selectedBudgetRows.length ? (
-                <Surface
-                  tone="lemon"
-                  className="px-4 py-1"
-                >
+                <View className="rounded-card bg-accent-lemon/30 px-4 py-1">
                   {selectedBudgetRows.map((row) => {
                     const rowKey = `${row.categoryId}:${row.currency}`;
                     const expanded = selectedBudget === rowKey;
@@ -553,25 +524,18 @@ export default function InsightsScreen() {
                       </Pressable>
                     );
                   })}
-                </Surface>
+                </View>
               ) : (
-                <Surface
-                  tone="muted"
-                  className="px-5 py-6"
-                >
+                <View className="rounded-card bg-sand px-5 py-6">
                   <Text className="text-sm text-muted">
                     Set a budget or add a categorized expense to track
                     a pulse.
                   </Text>
-                </Surface>
+                </View>
               )}
             </View>
 
-            <Surface
-              tone="lilac"
-              smoothing="hero"
-              className="mb-6 rounded-[28px] p-5"
-            >
+            <View className="bg-accent-lilac/30 mb-6 rounded-[28px] p-5">
               <Text className="text-lg font-display-bold text-foreground">
                 Activity calendar
               </Text>
@@ -584,10 +548,7 @@ export default function InsightsScreen() {
                 />
               </View>
               {selectedDate ? (
-                <Surface
-                  tone="muted"
-                  className="mt-5 p-4"
-                >
+                <View className="rounded-card bg-sand mt-5 p-4">
                   <Text className="text-sm font-display-semibold text-foreground">
                     {new Intl.DateTimeFormat(undefined, {
                       weekday: 'long',
@@ -634,19 +595,15 @@ export default function InsightsScreen() {
                       No expenses recorded on this day.
                     </Text>
                   )}
-                </Surface>
+                </View>
               ) : (
                 <Text className="mt-4 text-sm text-muted">
                   Select a highlighted day to see its transactions.
                 </Text>
               )}
-            </Surface>
+            </View>
 
-            <Surface
-              tone="tray"
-              smoothing="hero"
-              className="mb-6 rounded-[28px] p-5"
-            >
+            <View className="bg-sand-light mb-6 rounded-[28px] p-5">
               <View className="flex-row items-center justify-between">
                 <View>
                   <Text className="text-lg font-display-bold text-foreground">
@@ -687,17 +644,14 @@ export default function InsightsScreen() {
                   </Text>
                 </Pressable>
               ))}
-            </Surface>
+            </View>
 
             <Pressable
               onPress={() => router.push('/heatmap' as any)}
               accessibilityRole="button"
               accessibilityLabel="Open transaction pinmap"
             >
-              <Surface
-                tone="aqua"
-                className="mb-2 flex-row items-center p-4"
-              >
+              <View className="rounded-card bg-accent-aqua/30 mb-2 flex-row items-center p-4">
                 <View className="h-11 w-11 items-center justify-center rounded-full bg-primary-muted">
                   <MaterialDesignIcons
                     name="map-marker"
@@ -715,11 +669,11 @@ export default function InsightsScreen() {
                   size={22}
                   color={tokens.muted}
                 />
-              </Surface>
+              </View>
             </Pressable>
           </>
         )}
       </ScrollView>
-    </SafeAreaView>
+    </Page>
   );
 }

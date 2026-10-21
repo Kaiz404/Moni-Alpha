@@ -11,12 +11,9 @@ import { CategoryPickerModal } from '@/components/categories/category-picker-mod
 import { TransactionDetailsSheet } from '@/components/transaction/transaction-details-sheet';
 import type { TransactionDetailsValue } from '@/components/transaction/transaction-details-sheet-content';
 import { TransactionModifierChip } from '@/components/transaction/transaction-selector-row';
-import { BrandHeader } from '@/components/ui/brand-header';
 import { chipClass, chipTextClass } from '@/components/ui/chip';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { NumericKeypad } from '@/components/ui/numeric-keypad';
-import { PrimaryButton } from '@/components/ui/primary-button';
-import { ScreenShell } from '@/components/ui/screen-shell';
 import { WalletIcon } from '@/components/wallets/wallet-icon';
 import { WalletPickerModal } from '@/components/wallets/wallet-picker-modal';
 import { getWalletCardStyle } from '@/constants/wallet-card-styles';
@@ -44,6 +41,9 @@ import {
 } from '@/lib/supabase/transactions';
 import { getWallets } from '@/lib/supabase/wallets';
 import { prefetchTransactionLocation } from '@/lib/transactions/prefetch-location';
+import { Button } from '@/components/ui/button';
+import { tid } from '@/lib/test-ids';
+import { Page } from '@/components/ui/page';
 
 const MAX_AMOUNT_LENGTH = 12;
 
@@ -292,7 +292,9 @@ export default function NewTransactionScreen() {
   );
   const suggestedCategoryPickerItems = suggestedCategories.flatMap(
     (category) => {
-      const matchingCategory = categoryPickerItemsById.get(category.id);
+      const matchingCategory = categoryPickerItemsById.get(
+        category.id,
+      );
       return matchingCategory ? [matchingCategory] : [];
     },
   );
@@ -341,12 +343,15 @@ export default function NewTransactionScreen() {
           );
           return;
         }
-        await createTransfer({
-          fromWalletId: walletId,
-          toWalletId: transferToWalletId,
-          amountMinor,
-          description: details.description.trim() || null,
-        }, 'manual');
+        await createTransfer(
+          {
+            fromWalletId: walletId,
+            toWalletId: transferToWalletId,
+            amountMinor,
+            description: details.description.trim() || null,
+          },
+          'manual',
+        );
       } else {
         // The form has no time field: keep the real time when the date is left as today,
         // so duplicate and routine matching can line it up with the bank notification.
@@ -451,8 +456,11 @@ export default function NewTransactionScreen() {
   const currency = selectedWallet?.currency?.toUpperCase();
 
   return (
-    <ScreenShell variant="canvas">
-      <BrandHeader title="New transaction" />
+    <Page
+      screen="capture"
+      kind="pushed"
+      title="New transaction"
+    >
       <View
         className="flex-1 px-5"
         style={{ paddingBottom: Math.max(insets.bottom, 12) }}
@@ -594,7 +602,8 @@ export default function NewTransactionScreen() {
           </View>
 
           <NumericKeypad onKeyPress={handleKeyPress} />
-          <PrimaryButton
+          <Button
+            testID={tid('capture', 'submit')}
             className="mt-3"
             disabled={
               !walletId || (isTransfer && !hasTransferDestination)
@@ -666,6 +675,6 @@ export default function NewTransactionScreen() {
         onChange={patchDetails}
         onClose={() => setDetailsVisible(false)}
       />
-    </ScreenShell>
+    </Page>
   );
 }

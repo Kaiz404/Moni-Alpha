@@ -7,7 +7,11 @@ import {
   RNHostView,
 } from '@expo/ui/jetpack-compose';
 import type { ModalBottomSheetRef } from '@expo/ui/jetpack-compose';
-import { height, padding, weight } from '@expo/ui/jetpack-compose/modifiers';
+import {
+  height,
+  padding,
+  weight,
+} from '@expo/ui/jetpack-compose/modifiers';
 
 import { WalletPickerContent } from './wallet-picker-content';
 import type { WalletPickerItem } from './wallet-picker-content';

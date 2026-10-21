@@ -2,9 +2,10 @@ import { useState } from 'react';
 import { Platform, View } from 'react-native';
 import { Text } from '@/components/ui/text';
 import { router } from 'expo-router';
-import { TactilePressable } from '@/components/ui/tactile-pressable';
 import { useAuth } from '@/lib/auth/auth-context';
 import { isGoogleSignInConfigured } from '@/lib/auth/google-signin';
+import { Press } from '@/components/ui/press';
+import { tid } from '@/lib/test-ids';
 
 type GoogleSignInButtonProps = {
   disabled?: boolean;
@@ -47,7 +48,8 @@ export function GoogleSignInButton({
         <View className="h-px flex-1 bg-border" />
       </View>
 
-      <TactilePressable
+      <Press
+        testID={tid('auth', 'continue-with-google')}
         className={`min-h-13 flex-row items-center justify-center gap-3 rounded-2xl bg-card px-4 py-3 ${loading || disabled ? 'opacity-60' : ''}`}
         onPress={handlePress}
         disabled={loading || disabled}
@@ -58,7 +60,7 @@ export function GoogleSignInButton({
         <Text className="text-base font-display-semibold text-foreground">
           {loading ? 'Connecting...' : 'Continue with Google'}
         </Text>
-      </TactilePressable>
+      </Press>
     </View>
   );
 }

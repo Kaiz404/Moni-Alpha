@@ -23,12 +23,7 @@ import {
 
 import { BudgetProgressItem } from '@/components/budgets/budget-progress-item';
 import { CategoryIcon } from '@/components/categories/category-icon';
-import { BrandHeader } from '@/components/ui/brand-header';
 import { FormField } from '@/components/ui/form-field';
-import { PrimaryButton } from '@/components/ui/primary-button';
-import { ScreenShell } from '@/components/ui/screen-shell';
-import { Surface } from '@/components/ui/surface';
-import { TactilePressable } from '@/components/ui/tactile-pressable';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { useAuth } from '@/lib/auth/auth-context';
 import {
@@ -39,6 +34,10 @@ import {
   createCategory,
   updateCategory,
 } from '@/lib/supabase/categories';
+import { Press } from '@/components/ui/press';
+import { tid } from '@/lib/test-ids';
+import { Button } from '@/components/ui/button';
+import { Page } from '@/components/ui/page';
 
 const iconColumns = Array.from(
   { length: Math.ceil(categoryIconNames.length / 2) },
@@ -161,10 +160,11 @@ export default function CategoryFormScreen() {
   };
 
   return (
-    <ScreenShell variant="canvas">
-      <BrandHeader
-        title={existing ? 'Edit category' : `New ${type} category`}
-      />
+    <Page
+      screen="activity"
+      kind="pushed"
+      title={existing ? 'Edit category' : `New ${type} category`}
+    >
       <KeyboardAvoidingView
         className="flex-1"
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -181,17 +181,17 @@ export default function CategoryFormScreen() {
             <Text className="mt-6 text-base font-display-bold text-foreground">
               Preview
             </Text>
-            <Surface
-              className="mt-3"
+            <View
+              className="rounded-card bg-card mt-3"
               style={{ backgroundColor: `${color}33` }}
             >
               <BudgetProgressItem
                 budget={previewBudget}
                 variant="compact"
               />
-            </Surface>
+            </View>
 
-            <Surface className="mt-6">
+            <View className="rounded-card bg-card mt-6">
               <FormField
                 autoCapitalize="words"
                 containerClassName="mb-0"
@@ -203,15 +203,12 @@ export default function CategoryFormScreen() {
                 ref={nameInputRef}
                 value={name}
               />
-            </Surface>
+            </View>
 
             <Text className="mt-4 text-base font-display-bold text-foreground">
               Icon
             </Text>
-            <Surface
-              tone="muted"
-              className="mt-3 p-3"
-            >
+            <View className="rounded-card bg-sand mt-3 p-3">
               <ScrollView
                 horizontal
                 decelerationRate="fast"
@@ -230,7 +227,8 @@ export default function CategoryFormScreen() {
                     {column.map((item) => {
                       const selected = item === icon;
                       return (
-                        <TactilePressable
+                        <Press
+                          testID={tid('activity', 'icon', item)}
                           key={item}
                           accessibilityLabel={`Choose ${item} icon`}
                           accessibilityState={{ selected }}
@@ -253,21 +251,18 @@ export default function CategoryFormScreen() {
                               size={22}
                             />
                           </View>
-                        </TactilePressable>
+                        </Press>
                       );
                     })}
                   </View>
                 ))}
               </ScrollView>
-            </Surface>
+            </View>
 
             <Text className="mt-4 text-base font-display-bold text-foreground">
               Color
             </Text>
-            <Surface
-              tone="muted"
-              className="mt-3 p-3"
-            >
+            <View className="rounded-card bg-sand mt-3 p-3">
               <ScrollView
                 horizontal
                 decelerationRate="fast"
@@ -286,7 +281,8 @@ export default function CategoryFormScreen() {
                     {column.map((item) => {
                       const selected = item === color;
                       return (
-                        <TactilePressable
+                        <Press
+                          testID={tid('activity', 'color', item)}
                           key={item}
                           accessibilityLabel={`Choose category color ${item}`}
                           accessibilityState={{ selected }}
@@ -308,20 +304,21 @@ export default function CategoryFormScreen() {
                               />
                             ) : null}
                           </View>
-                        </TactilePressable>
+                        </Press>
                       );
                     })}
                   </View>
                 ))}
               </ScrollView>
-            </Surface>
+            </View>
           </ScrollView>
 
           <View
             className="border-t border-border-subtle bg-canvas px-5 pt-3"
             style={{ paddingBottom: Math.max(insets.bottom, 12) }}
           >
-            <PrimaryButton
+            <Button
+              testID={tid('activity', 'save-changes')}
               icon="check"
               label={existing ? 'Save changes' : 'Create category'}
               loading={saving}
@@ -334,6 +331,6 @@ export default function CategoryFormScreen() {
           </View>
         </View>
       </KeyboardAvoidingView>
-    </ScreenShell>
+    </Page>
   );
 }

@@ -2,18 +2,16 @@ import { useCallback, useState } from 'react';
 import { Alert, FlatList, RefreshControl, View } from 'react-native';
 import { Text } from '@/components/ui/text';
 import { useFocusEffect } from 'expo-router';
-
-import { IconAction } from '@/components/ui/icon-action';
 import { IconSymbol } from '@/components/ui/icon-symbol';
-import { ScreenShell } from '@/components/ui/screen-shell';
-import { Surface } from '@/components/ui/surface';
-import { BrandHeader } from '@/components/ui/brand-header';
 import { FeedbackState } from '@/components/ui/feedback-state';
 import type { CapturedNotification } from '@/hooks/use-notification-listener';
 import { useNotificationListener } from '@/hooks/use-notification-listener';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { isPackageLinkedInCache } from '@/lib/notifications/linked-packages-cache';
 import { resolveNotificationPackageName } from '@/lib/notifications/notification-package';
+import { HeaderIconButton } from '@/components/ui/header-icon-button';
+import { tid } from '@/lib/test-ids';
+import { Page } from '@/components/ui/page';
 
 function NotificationRow({
   item,
@@ -55,7 +53,7 @@ function NotificationRow({
         : 'bg-border-strong';
 
   return (
-    <Surface className="mb-3 p-4">
+    <View className="rounded-card bg-card mb-3 p-4">
       <View className="flex-row items-start gap-3">
         <View
           className={`mt-1.5 h-2.5 w-2.5 rounded-full ${markerClass}`}
@@ -75,10 +73,10 @@ function NotificationRow({
                 {state}
               </Text>
             </View>
-            <IconAction
+            <HeaderIconButton
+              testID={tid('profile', 'dismiss-notification')}
               accessibilityLabel="Dismiss notification"
               icon="close"
-              size={18}
               onPress={() => onDismiss(item.id)}
             />
           </View>
@@ -109,7 +107,7 @@ function NotificationRow({
           </View>
         </View>
       </View>
-    </Surface>
+    </View>
   );
 }
 
@@ -146,8 +144,11 @@ export default function NotificationsScreen() {
   }, [clearAll]);
 
   return (
-    <ScreenShell variant="canvas">
-      <BrandHeader title="Notifications" />
+    <Page
+      screen="profile"
+      kind="pushed"
+      title="Notifications"
+    >
       <FlatList
         className="flex-1"
         contentContainerClassName="px-5 pb-10 pt-6"
@@ -171,10 +172,10 @@ export default function NotificationsScreen() {
               </Text>
             </View>
             {notifications.length > 0 ? (
-              <IconAction
+              <HeaderIconButton
+                testID={tid('profile', 'clear-all-stored')}
                 accessibilityLabel="Clear all stored notifications"
                 icon="delete-outline"
-                tone="danger"
                 onPress={handleClearAll}
               />
             ) : null}
@@ -193,6 +194,6 @@ export default function NotificationsScreen() {
           />
         )}
       />
-    </ScreenShell>
+    </Page>
   );
 }

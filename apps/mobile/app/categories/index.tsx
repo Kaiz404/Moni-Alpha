@@ -4,10 +4,6 @@ import { router } from 'expo-router';
 import { useValue } from '@legendapp/state/react';
 
 import { CategoryIcon } from '@/components/categories/category-icon';
-import { BrandHeader } from '@/components/ui/brand-header';
-import { IconAction } from '@/components/ui/icon-action';
-import { ScreenShell } from '@/components/ui/screen-shell';
-import { Surface } from '@/components/ui/surface';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { useAuth } from '@/lib/auth/auth-context';
 import { categoriesForUser$ } from '@/lib/finance/selectors';
@@ -15,6 +11,9 @@ import {
   archiveCategory,
   restoreCategory,
 } from '@/lib/supabase/categories';
+import { HeaderIconButton } from '@/components/ui/header-icon-button';
+import { tid } from '@/lib/test-ids';
+import { Page } from '@/components/ui/page';
 
 export default function CategoriesScreen() {
   const { user } = useAuth();
@@ -65,7 +64,7 @@ export default function CategoriesScreen() {
           </Text>
         </Pressable>
       </View>
-      <Surface className="overflow-hidden">
+      <View className="rounded-card bg-card overflow-hidden">
         {active
           .filter((category) => category.type === type)
           .map((category, index) => {
@@ -103,7 +102,8 @@ export default function CategoriesScreen() {
                   {category.name}
                 </Text>
                 {custom ? (
-                  <IconAction
+                  <HeaderIconButton
+                    testID={tid('activity', 'archive')}
                     accessibilityLabel={`Archive ${category.name}`}
                     icon="archive-outline"
                     onPress={() =>
@@ -118,13 +118,16 @@ export default function CategoriesScreen() {
               </Pressable>
             );
           })}
-      </Surface>
+      </View>
     </View>
   );
 
   return (
-    <ScreenShell variant="canvas">
-      <BrandHeader title="Categories" />
+    <Page
+      screen="activity"
+      kind="pushed"
+      title="Categories"
+    >
       <ScrollView
         className="flex-1"
         contentContainerClassName="px-5 pb-10 pt-4"
@@ -141,7 +144,7 @@ export default function CategoriesScreen() {
             <Text className="mb-3 text-lg font-display-bold text-foreground">
               Archived
             </Text>
-            <Surface className="overflow-hidden">
+            <View className="rounded-card bg-card overflow-hidden">
               {archived.map((category, index) => (
                 <Pressable
                   key={category.id}
@@ -168,10 +171,10 @@ export default function CategoriesScreen() {
                   </Text>
                 </Pressable>
               ))}
-            </Surface>
+            </View>
           </View>
         ) : null}
       </ScrollView>
-    </ScreenShell>
+    </Page>
   );
 }

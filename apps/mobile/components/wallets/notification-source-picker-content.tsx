@@ -21,7 +21,6 @@ import {
   resolveInstalledPackageForCurated,
   type NotificationAppOption,
 } from '@/constants/notification-apps';
-import { IconAction } from '@/components/ui/icon-action';
 import {
   BOTTOM_SHEET_PRIMARY_ACTION_SPACE,
   BottomSheetPrimaryAction,
@@ -40,6 +39,8 @@ import {
   readNotificationListenerPermission,
   type NotificationListenerPermission,
 } from '@/lib/notifications/permission';
+import { HeaderIconButton } from '@/components/ui/header-icon-button';
+import { tid } from '@/lib/test-ids';
 
 export type WalletNotificationLinkValue = {
   notificationPackage: string | null;
@@ -266,7 +267,8 @@ export function NotificationSourcePickerContent({
             Notification source
           </Text>
         </View>
-        <IconAction
+        <HeaderIconButton
+          testID={tid('sheet', 'close-notification-source')}
           accessibilityLabel="Close notification source picker"
           icon="close"
           onPress={onClose}
@@ -394,6 +396,7 @@ export function NotificationSourcePickerContent({
         </ScrollView>
       )}
       <BottomSheetPrimaryAction
+        testID={tid('sheet', 'confirm')}
         icon="check"
         label="Confirm source"
         onPress={onClose}

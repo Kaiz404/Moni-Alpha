@@ -2,13 +2,14 @@ import { Pressable, ScrollView, View } from 'react-native';
 import { Text } from '@/components/ui/text';
 
 import { CategoryIcon } from '@/components/categories/category-icon';
-import { IconAction } from '@/components/ui/icon-action';
 import {
   BOTTOM_SHEET_PRIMARY_ACTION_SPACE,
   BottomSheetPrimaryAction,
 } from '@/components/ui/bottom-sheet-primary-action';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import type { CategoryPickerItem } from './category-picker-modal';
+import { HeaderIconButton } from '@/components/ui/header-icon-button';
+import { tid } from '@/lib/test-ids';
 
 type CategoryPickerContentProps = {
   categories: CategoryPickerItem[];
@@ -93,7 +94,8 @@ export function CategoryPickerContent({
             {title}
           </Text>
         </View>
-        <IconAction
+        <HeaderIconButton
+          testID={tid('sheet', 'close-category-picker')}
           accessibilityLabel="Close category picker"
           icon="close"
           onPress={onClose}
@@ -138,6 +140,7 @@ export function CategoryPickerContent({
         ) : null}
       </ScrollView>
       <BottomSheetPrimaryAction
+        testID={tid('sheet', 'confirm')}
         icon="check"
         label="Use category"
         onPress={onClose}

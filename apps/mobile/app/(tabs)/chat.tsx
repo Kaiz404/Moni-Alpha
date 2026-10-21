@@ -10,12 +10,9 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
-import { Text } from '@/components/ui/text';
 import { useFocusEffect } from 'expo-router';
-import {
-  SafeAreaView,
-  useSafeAreaInsets,
-} from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Page } from '@/components/ui/page';
 import {
   ExpoSpeechRecognitionModule,
   useSpeechRecognitionEvent,
@@ -23,8 +20,6 @@ import {
 import type { ExpoSpeechRecognitionResultEvent } from 'expo-speech-recognition';
 
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
-import { IconAction } from '@/components/ui/icon-action';
-import { IconSymbol } from '@/components/ui/icon-symbol';
 import {
   buildSpeechRecognitionOptions,
   ensureSpeechPermissions,
@@ -51,6 +46,8 @@ import {
   startNewChatSession,
 } from '@/lib/ai/chat/sessions';
 import { scanAndNormalizeReceipt } from '@/lib/receipts/scan-receipt';
+import { HeaderIconButton } from '@/components/ui/header-icon-button';
+import { tid } from '@/lib/test-ids';
 
 const TAG = '[Moni/Chat]';
 
@@ -211,34 +208,19 @@ export default function ChatScreen() {
       keyboardVerticalOffset={Platform.OS === 'ios' ? insets.top : 0}
       style={{ flex: 1 }}
     >
-      <SafeAreaView
-        edges={['top']}
-        className="flex-1"
-        style={{ flex: 1 }}
-      >
-        <View className="flex-row items-center justify-between px-5 pb-3 pt-5">
-          <View className="flex-row items-center">
-            <View className="h-10 w-10 items-center justify-center rounded-2xl bg-primary-muted">
-              <IconSymbol
-                name="auto-fix"
-                size={20}
-                color={tokens.primary}
-              />
-            </View>
-            <View className="ml-3">
-              <Text className="text-[22px] font-display-bold leading-7 text-foreground">
-                Chat with Moni
-              </Text>
-            </View>
-          </View>
-          <IconAction
+      <Page
+        screen="chat"
+        kind="tabRoot"
+        title="Moni chat"
+        trailing={
+          <HeaderIconButton
+            testID={tid('chat', 'new-thread')}
             accessibilityLabel="Start a new conversation"
-            icon="edit"
+            icon="pencil-outline"
             onPress={handleNewChat}
-            tone="default"
           />
-        </View>
-
+        }
+      >
         <View className="flex-1">
           <FlatList
             ref={flatListRef}
@@ -288,7 +270,7 @@ export default function ChatScreen() {
           onPressOutMic={stopSpeech}
           bottomPad={bottomPad}
         />
-      </SafeAreaView>
+      </Page>
     </KeyboardAvoidingView>
   );
 }

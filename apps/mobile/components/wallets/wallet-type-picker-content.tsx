@@ -1,7 +1,5 @@
 import { ScrollView, TouchableOpacity, View } from 'react-native';
 import { Text } from '@/components/ui/text';
-
-import { IconAction } from '@/components/ui/icon-action';
 import {
   BOTTOM_SHEET_PRIMARY_ACTION_SPACE,
   BottomSheetPrimaryAction,
@@ -13,6 +11,8 @@ import {
   type WalletKind,
 } from '@/constants/wallet-form';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
+import { HeaderIconButton } from '@/components/ui/header-icon-button';
+import { tid } from '@/lib/test-ids';
 
 type WalletTypePickerContentProps = {
   value: WalletKind;
@@ -33,7 +33,8 @@ export function WalletTypePickerContent({
         <Text className="flex-1 pr-3 text-xl font-display-bold text-foreground">
           Account type
         </Text>
-        <IconAction
+        <HeaderIconButton
+          testID={tid('sheet', 'close-account-type')}
           accessibilityLabel="Close account type picker"
           icon="close"
           onPress={onClose}
@@ -87,6 +88,7 @@ export function WalletTypePickerContent({
         </View>
       </ScrollView>
       <BottomSheetPrimaryAction
+        testID={tid('sheet', 'confirm')}
         horizontalInset={16}
         icon="check"
         label="Use account type"

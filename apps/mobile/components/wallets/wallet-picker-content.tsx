@@ -1,7 +1,5 @@
 import { Pressable, ScrollView, View } from 'react-native';
 import { Text } from '@/components/ui/text';
-
-import { IconAction } from '@/components/ui/icon-action';
 import {
   BOTTOM_SHEET_PRIMARY_ACTION_SPACE,
   BottomSheetPrimaryAction,
@@ -11,6 +9,8 @@ import { WalletIcon } from '@/components/wallets/wallet-icon';
 import { getWalletCardStyle } from '@/constants/wallet-card-styles';
 import { walletPickerScrollEnabled } from '@/components/wallets/wallet-picker-sheet-height';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
+import { HeaderIconButton } from '@/components/ui/header-icon-button';
+import { tid } from '@/lib/test-ids';
 
 export type WalletPickerItem = {
   id: string;
@@ -94,7 +94,8 @@ export function WalletPickerContent({
             {title}
           </Text>
         </View>
-        <IconAction
+        <HeaderIconButton
+          testID={tid('sheet', 'close-wallet-picker')}
           accessibilityLabel="Close wallet picker"
           icon="close"
           onPress={onClose}
@@ -118,6 +119,7 @@ export function WalletPickerContent({
         )}
       </ScrollView>
       <BottomSheetPrimaryAction
+        testID={tid('sheet', 'confirm')}
         icon="check"
         label="Use wallet"
         onPress={onClose}

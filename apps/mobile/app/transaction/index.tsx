@@ -9,12 +9,12 @@ import {
 } from 'react-native';
 import { Text } from '@/components/ui/text';
 import { Link, router, useLocalSearchParams } from 'expo-router';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { Page } from '@/components/ui/page';
+import { SyncStatusIndicator } from '@/components/providers/sync-status-indicator';
 import { MaterialDesignIcons } from '@react-native-vector-icons/material-design-icons';
 import { useValue } from '@legendapp/state/react';
 import { FinanceState } from '@/components/finance/finance-state';
 import { SolidWalletCard } from '@/components/ui/solid-wallet-card';
-import { Surface } from '@/components/ui/surface';
 import { getWalletCardStyle } from '@/constants/wallet-card-styles';
 import { useAuth } from '@/lib/auth/auth-context';
 import { formatMinorAmount } from '@/lib/finance/money';
@@ -116,10 +116,11 @@ export default function TransactionsScreen() {
     );
 
   return (
-    <SafeAreaView
-      edges={['bottom']}
-      className="flex-1 bg-background"
-      style={{ flex: 1 }}
+    <Page
+      screen="activity"
+      kind="pushed"
+      title="Transactions"
+      trailing={<SyncStatusIndicator />}
     >
       <ScrollView
         refreshControl={
@@ -175,14 +176,14 @@ export default function TransactionsScreen() {
               </View>
             </SolidWalletCard>
           ) : (
-            <Surface className="p-4">
+            <View className="rounded-card bg-card p-4">
               <Text className="font-display-semibold text-foreground">
                 {rows.length} transactions
               </Text>
               <Text className="mt-1 text-sm text-muted">
                 All wallet currencies remain separate in analytics.
               </Text>
-            </Surface>
+            </View>
           )}
         </View>
 
@@ -310,6 +311,6 @@ export default function TransactionsScreen() {
           })
         )}
       </ScrollView>
-    </SafeAreaView>
+    </Page>
   );
 }

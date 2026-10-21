@@ -24,12 +24,6 @@ jest.mock('uniwind', () => ({
   useCSSVariable: (names: string[]) => names.map(() => undefined),
   withUniwind: <T,>(component: T) => component,
 }));
-jest.mock('react-native-worklets', () =>
-  jest.requireActual('react-native-worklets/src/mock'),
-);
-jest.mock('react-native-reanimated', () =>
-  jest.requireActual('react-native-reanimated/mock'),
-);
 jest.mock('expo-router', () => ({ router: { push: jest.fn() } }));
 jest.mock('@/lib/haptics', () => ({
   approve: jest.fn(),

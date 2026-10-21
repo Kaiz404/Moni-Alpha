@@ -14,11 +14,7 @@ import { createWalletSchema, decimalToMinor } from '@repo/types';
 
 import { AmountInput } from '@/components/finance/amount-input';
 import { CurrencyPickerModal } from '@/components/finance/currency-picker-modal';
-import { BrandHeader } from '@/components/ui/brand-header';
 import { FormField } from '@/components/ui/form-field';
-import { PrimaryButton } from '@/components/ui/primary-button';
-import { ScreenShell } from '@/components/ui/screen-shell';
-import { Surface } from '@/components/ui/surface';
 import { WalletColorPickerModal } from '@/components/wallets/wallet-color-picker-modal';
 import { WalletTypePickerModal } from '@/components/wallets/wallet-type-picker-modal';
 import {
@@ -39,6 +35,9 @@ import {
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { useAuth } from '@/lib/auth/auth-context';
 import { createWallet, getWallets } from '@/lib/supabase/wallets';
+import { Button } from '@/components/ui/button';
+import { tid } from '@/lib/test-ids';
+import { Page } from '@/components/ui/page';
 
 export default function NewWalletScreen() {
   const { user } = useAuth();
@@ -154,8 +153,11 @@ export default function NewWalletScreen() {
   };
 
   return (
-    <ScreenShell variant="canvas">
-      <BrandHeader title="New wallet" />
+    <Page
+      screen="wallet"
+      kind="pushed"
+      title="New wallet"
+    >
       <KeyboardAvoidingView
         className="flex-1"
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -167,7 +169,7 @@ export default function NewWalletScreen() {
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
           >
-            <Surface className="mt-6">
+            <View className="rounded-card bg-card mt-6">
               <Text className="mb-2 text-base font-display-semibold text-foreground">
                 Starting balance
               </Text>
@@ -180,9 +182,9 @@ export default function NewWalletScreen() {
                 placeholder="0.00"
                 value={currentBalance}
               />
-            </Surface>
+            </View>
 
-            <Surface className="mt-6">
+            <View className="rounded-card bg-card mt-6">
               <View className="flex-row gap-3">
                 <FormField
                   containerClassName="mb-0 min-w-0 flex-1"
@@ -216,15 +218,12 @@ export default function NewWalletScreen() {
                   </TouchableOpacity>
                 </View>
               </View>
-            </Surface>
+            </View>
 
             <Text className="mt-8 text-base font-display-bold text-foreground">
               Color
             </Text>
-            <Surface
-              tone="muted"
-              className="mt-3"
-            >
+            <View className="rounded-card bg-sand mt-3">
               <TouchableOpacity
                 accessibilityLabel="Choose wallet color"
                 activeOpacity={0.82}
@@ -244,25 +243,26 @@ export default function NewWalletScreen() {
                   Change
                 </Text>
               </TouchableOpacity>
-            </Surface>
+            </View>
 
             <Text className="mt-8 text-base font-display-bold text-foreground">
               Notification link
             </Text>
-            <Surface tone="muted">
+            <View className="rounded-card bg-sand">
               <WalletNotificationLinkSection
                 value={notificationLink}
                 onChange={handleNotificationLinkChange}
                 sharedPackageWalletNames={sharedPackageWalletNames}
               />
-            </Surface>
+            </View>
           </ScrollView>
 
           <View
             className="border-t border-border-subtle bg-canvas px-5 pt-3"
             style={{ paddingBottom: Math.max(insets.bottom, 12) }}
           >
-            <PrimaryButton
+            <Button
+              testID={tid('wallet', 'create-wallet')}
               label="Create wallet"
               loading={loading}
               loadingLabel="Creating wallet…"
@@ -293,6 +293,6 @@ export default function NewWalletScreen() {
         value={type}
         visible={typePickerVisible}
       />
-    </ScreenShell>
+    </Page>
   );
 }

@@ -1,5 +1,5 @@
 import { FeedbackState } from '@/components/ui/feedback-state';
-import { Surface } from '@/components/ui/surface';
+import { View } from 'react-native';
 
 type FinanceStateProps = {
   title: string;
@@ -12,11 +12,8 @@ export function FinanceState({
   variant = 'empty',
 }: FinanceStateProps) {
   return (
-    <Surface
-      tone={variant === 'error' ? 'muted' : 'default'}
-      className={
-        variant === 'error' ? 'border-danger/40 bg-danger/10' : ''
-      }
+    <View
+      className={`rounded-card ${variant === 'error' ? 'border-danger/40 bg-sand' : 'bg-card'}`}
       accessibilityRole={variant === 'error' ? 'alert' : undefined}
     >
       <FeedbackState
@@ -29,6 +26,6 @@ export function FinanceState({
         }
         className="py-8"
       />
-    </Surface>
+    </View>
   );
 }

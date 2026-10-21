@@ -2,10 +2,6 @@ import { Modal, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { CategoryPickerContent } from './category-picker-content';
-import {
-  SquircleView,
-  squircleSmoothing,
-} from '@/components/ui/squircle-view';
 
 export type CategoryPickerItem = {
   id: string;
@@ -42,9 +38,8 @@ export function CategoryPickerModal({
       visible={visible}
     >
       <View className="flex-1 justify-end bg-black/40">
-        <SquircleView
+        <View
           className="max-h-[82%] overflow-hidden rounded-[28px] bg-canvas"
-          cornerSmoothing={squircleSmoothing.hero}
           style={{ height: Math.round(windowHeight * 0.78) }}
         >
           <View
@@ -57,7 +52,7 @@ export function CategoryPickerModal({
               onClose={onClose}
             />
           </View>
-        </SquircleView>
+        </View>
       </View>
     </Modal>
   );

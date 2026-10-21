@@ -9,11 +9,6 @@ import { CategoryPickerModal } from '@/components/categories/category-picker-mod
 import { BudgetProgressBar } from '@/components/charts/budget-progress-bar';
 import { AmountInput } from '@/components/finance/amount-input';
 import { CurrencyPickerModal } from '@/components/finance/currency-picker-modal';
-import { BrandHeader } from '@/components/ui/brand-header';
-import { IconAction } from '@/components/ui/icon-action';
-import { PrimaryButton } from '@/components/ui/primary-button';
-import { ScreenShell } from '@/components/ui/screen-shell';
-import { Surface } from '@/components/ui/surface';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { useAuth } from '@/lib/auth/auth-context';
 import {
@@ -32,6 +27,10 @@ import {
   upsertCategoryBudget,
 } from '@/lib/supabase/category-budgets';
 import { ensureFinanceTimezone } from '@/lib/supabase/profile';
+import { HeaderIconButton } from '@/components/ui/header-icon-button';
+import { tid } from '@/lib/test-ids';
+import { Button } from '@/components/ui/button';
+import { Page } from '@/components/ui/page';
 
 export default function BudgetFormScreen() {
   const params = useLocalSearchParams<{
@@ -151,27 +150,28 @@ export default function BudgetFormScreen() {
   }, [currency, existing, selected]);
 
   return (
-    <ScreenShell variant="canvas">
-      <BrandHeader
-        title={existing ? 'Edit budget' : 'New budget'}
-        rightAction={
-          existing ? (
-            <IconAction
-              accessibilityLabel="Delete budget"
-              icon="trash-can-outline"
-              onPress={handleDelete}
-              tone="danger"
-            />
-          ) : null
-        }
-      />
+    <Page
+      screen="budget"
+      kind="pushed"
+      title={existing ? 'Edit budget' : 'New budget'}
+      trailing={
+        existing ? (
+          <HeaderIconButton
+            testID={tid('budget', 'delete-budget')}
+            accessibilityLabel="Delete budget"
+            icon="trash-can-outline"
+            onPress={handleDelete}
+          />
+        ) : null
+      }
+    >
       <ScrollView
         className="flex-1"
         contentContainerClassName="px-5"
         showsVerticalScrollIndicator={false}
       >
         {existing ? (
-          <Surface className="mt-7">
+          <View className="rounded-card bg-card mt-7">
             <View className="flex-row items-center justify-between">
               <Text className="text-sm font-display-semibold text-foreground">
                 This month
@@ -197,7 +197,7 @@ export default function BudgetFormScreen() {
                 percentage={existing.percentage}
               />
             </View>
-          </Surface>
+          </View>
         ) : null}
         <Text className="mb-2 mt-7 text-sm font-display-semibold text-foreground">
           Category
@@ -247,7 +247,8 @@ export default function BudgetFormScreen() {
           placeholder="0.00"
           placeholderTextColor={tokens.muted}
         />
-        <PrimaryButton
+        <Button
+          testID={tid('budget', 'save-changes')}
           className="mt-8"
           icon="check"
           label={existing ? 'Save changes' : 'Create budget'}
@@ -281,6 +282,6 @@ export default function BudgetFormScreen() {
           setCurrency(code);
         }}
       />
-    </ScreenShell>
+    </Page>
   );
 }

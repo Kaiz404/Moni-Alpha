@@ -1,4 +1,4 @@
-# v1 files with a Pressable, TextInput, Switch that has no tid() testID. They may stay until rebuilt.
+# v1 files with a Pressable, TextInput, Switch, Press, Button, HeaderIconButton, MoniButton that has no tid() testID. They may stay until rebuilt.
 # The list only shrinks. Regenerate: pnpm --filter moni lint:test-ids --write
 app/(tabs)/index.tsx
 app/(tabs)/summary.tsx
@@ -11,7 +11,6 @@ app/debts.tsx
 app/heatmap.tsx
 app/proposal/[id].tsx
 app/scan/listen.tsx
-app/transaction/_layout.tsx
 app/transaction/index.tsx
 app/transaction/new.tsx
 components/categories/category-picker-content.tsx

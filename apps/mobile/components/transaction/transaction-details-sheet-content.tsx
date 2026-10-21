@@ -10,14 +10,14 @@ import { Text } from '@/components/ui/text';
 import MapView, { Marker } from 'react-native-maps';
 
 import { FormField } from '@/components/ui/form-field';
-import { IconAction } from '@/components/ui/icon-action';
 import {
   BOTTOM_SHEET_PRIMARY_ACTION_SPACE,
   BottomSheetPrimaryAction,
 } from '@/components/ui/bottom-sheet-primary-action';
-import { Surface } from '@/components/ui/surface';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import type { TransactionLocationSnapshot } from '@/lib/transactions/prefetch-location';
+import { HeaderIconButton } from '@/components/ui/header-icon-button';
+import { tid } from '@/lib/test-ids';
 
 export type TransactionDetailsValue = {
   merchant: string;
@@ -55,7 +55,8 @@ export function TransactionDetailsSheetContent({
             More details
           </Text>
         </View>
-        <IconAction
+        <HeaderIconButton
+          testID={tid('txn', 'close-details-sheet')}
           accessibilityLabel="Close details sheet"
           icon="close"
           onPress={onClose}
@@ -70,7 +71,7 @@ export function TransactionDetailsSheetContent({
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        <Surface className="p-4">
+        <View className="rounded-card bg-card p-4">
           {!isTransfer ? (
             <FormField
               label="Merchant"
@@ -102,14 +103,11 @@ export function TransactionDetailsSheetContent({
             autoCapitalize="none"
             autoCorrect={false}
           />
-        </Surface>
+        </View>
 
         {!isTransfer ? (
           locationLoading ? (
-            <Surface
-              tone="muted"
-              className="mt-4 flex-row items-center gap-3 p-4"
-            >
+            <View className="rounded-card bg-sand mt-4 flex-row items-center gap-3 p-4">
               <ActivityIndicator
                 size="small"
                 color={tokens.primary}
@@ -117,19 +115,16 @@ export function TransactionDetailsSheetContent({
               <Text className="text-xs text-muted">
                 Finding transaction location…
               </Text>
-            </Surface>
+            </View>
           ) : locationUnavailable || !value.locationSnapshot ? (
-            <Surface
-              tone="muted"
-              className="mt-4 p-4"
-            >
+            <View className="rounded-card bg-sand mt-4 p-4">
               <Text className="text-sm leading-5 text-muted">
                 Location unavailable. Enable location access to attach
                 this transaction to where you are now.
               </Text>
-            </Surface>
+            </View>
           ) : (
-            <Surface className="mt-4 p-4">
+            <View className="rounded-card bg-card mt-4 p-4">
               <TouchableOpacity
                 className="flex-row items-center justify-between py-1"
                 onPress={() => setMapExpanded(!mapExpanded)}
@@ -180,22 +175,20 @@ export function TransactionDetailsSheetContent({
                   </MapView>
                 </View>
               ) : null}
-            </Surface>
+            </View>
           )
         ) : (
-          <Surface
-            tone="muted"
-            className="mt-4 p-4"
-          >
+          <View className="rounded-card bg-sand mt-4 p-4">
             <Text className="text-sm leading-5 text-muted">
               Transfers move money between your wallets without
               changing your overall net worth.
             </Text>
-          </Surface>
+          </View>
         )}
       </ScrollView>
 
       <BottomSheetPrimaryAction
+        testID={tid('sheet', 'confirm')}
         icon="check"
         label="Done"
         onPress={onClose}

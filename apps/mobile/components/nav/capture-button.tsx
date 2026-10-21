@@ -29,7 +29,6 @@ import Animated, {
 } from 'react-native-reanimated';
 
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
-import { Surface } from '@/components/ui/surface';
 import { runFabReceiptScan } from '@/lib/receipts/scan-receipt';
 import {
   captureActionDestination,
@@ -143,9 +142,8 @@ function CaptureMenuItem({
         accessibilityHint={action.detail}
       >
         {({ pressed }) => (
-          <Surface
-            tone="default"
-            className="mb-3 min-h-16 flex-row items-center px-4 py-3"
+          <View
+            className="rounded-card bg-card mb-3 min-h-16 flex-row items-center px-4 py-3"
             style={{
               backgroundColor: pressed
                 ? tokens.primaryMuted
@@ -164,7 +162,7 @@ function CaptureMenuItem({
                 {action.label}
               </Text>
             </View>
-          </Surface>
+          </View>
         )}
       </Pressable>
     </Animated.View>
@@ -443,9 +441,7 @@ export function CaptureButton() {
             className="w-full self-center"
             style={[{ maxWidth: 420 }, menuPanelStyle]}
           >
-            <Surface
-              smoothing="hero"
-              tone="raised"
+            <View
               className="rounded-[28px] px-3 pt-3 bg-primary"
               style={{
                 paddingBottom: FAB_MENU_SHAPE.panelBottomPadding,
@@ -460,7 +456,7 @@ export function CaptureButton() {
                   onPress={() => chooseAction(action.id)}
                 />
               ))}
-            </Surface>
+            </View>
             <FabMenuNotch
               width={panelWidth}
               color={tokens.primary}

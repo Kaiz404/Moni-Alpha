@@ -4,7 +4,6 @@ import { Text } from '@/components/ui/text';
 import { syncState } from '@legendapp/state';
 import { useSelector } from '@legendapp/state/react';
 import { transactions$ } from '@/lib/store';
-import { Surface } from '@/components/ui/surface';
 import { formatTimeAgo } from '@/lib/dates/relative-time';
 
 type SyncStatusProps = {
@@ -51,10 +50,10 @@ export function SyncStatus({ className }: SyncStatusProps = {}) {
   });
 
   return (
-    <Surface
-      className={['mb-6 p-4', className ?? '']
+    <View
+      className={`rounded-card bg-card ${['mb-6 p-4', className ?? '']
         .filter(Boolean)
-        .join(' ')}
+        .join(' ')}`}
     >
       <Text className="mb-3 text-lg font-display-semibold text-foreground">
         Sync Status
@@ -104,6 +103,6 @@ export function SyncStatus({ className }: SyncStatusProps = {}) {
           </Text>
         ) : null}
       </View>
-    </Surface>
+    </View>
   );
 }

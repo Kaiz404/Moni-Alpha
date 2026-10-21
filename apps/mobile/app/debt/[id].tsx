@@ -2,12 +2,8 @@ import { useCallback, useMemo, useState } from 'react';
 import { Alert, Pressable, ScrollView, View } from 'react-native';
 import { Text } from '@/components/ui/text';
 import { useFocusEffect, useLocalSearchParams } from 'expo-router';
-import { BrandHeader } from '@/components/ui/brand-header';
 import { AmountInput } from '@/components/finance/amount-input';
 import { FeedbackState } from '@/components/ui/feedback-state';
-import { PrimaryButton } from '@/components/ui/primary-button';
-import { ScreenShell } from '@/components/ui/screen-shell';
-import { Surface } from '@/components/ui/surface';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import {
   addDebtPrincipal,
@@ -26,6 +22,9 @@ import {
   parseAmountInput,
   type MinorAmount,
 } from '@/lib/finance/money';
+import { Button } from '@/components/ui/button';
+import { tid } from '@/lib/test-ids';
+import { Page } from '@/components/ui/page';
 
 const money = (currency: string, amountMinor: MinorAmount) =>
   formatMinorAmount(amountMinor, currency);
@@ -84,14 +83,17 @@ export default function DebtDetailScreen() {
   );
   if (!debt)
     return (
-      <ScreenShell variant="canvas">
-        <BrandHeader title="Debt" />
+      <Page
+        screen="debts"
+        kind="pushed"
+        title="Debt"
+      >
         <FeedbackState
           className="flex-1"
           icon="account-outline"
           title="Debt not found"
         />
-      </ScreenShell>
+      </Page>
     );
   const matchingWallets = wallets.filter(
     (wallet) =>
@@ -166,13 +168,16 @@ export default function DebtDetailScreen() {
       ],
     );
   return (
-    <ScreenShell variant="canvas">
-      <BrandHeader title={debt.counterpartyName} />
+    <Page
+      screen="debts"
+      kind="pushed"
+      title={debt.counterpartyName}
+    >
       <ScrollView
         className="flex-1"
         contentContainerClassName="px-5 pb-10 pt-6"
       >
-        <Surface className="mb-4 p-4">
+        <View className="rounded-card bg-card mb-4 p-4">
           <Text className="text-sm text-muted">
             {debt.direction === 'owed_to_me'
               ? 'They owe you'
@@ -187,12 +192,9 @@ export default function DebtDetailScreen() {
               Due {debt.dueDate}
             </Text>
           ) : null}
-        </Surface>
+        </View>
         {action ? (
-          <Surface
-            tone="raised"
-            className="mb-4 p-3"
-          >
+          <View className="rounded-card bg-card mb-4 p-3">
             <Text className="font-display-bold text-foreground">
               {action === 'principal'
                 ? debt.direction === 'owed_to_me'
@@ -237,12 +239,15 @@ export default function DebtDetailScreen() {
               </View>
             )}
             <View className="mt-3 flex-row gap-2">
-              <PrimaryButton
+              <Button
+                testID={tid('debts', 'cancel')}
+                variant="secondary"
                 label="Cancel"
-                className="flex-1 bg-card"
+                className="flex-1"
                 onPress={() => setAction(null)}
               />
-              <PrimaryButton
+              <Button
+                testID={tid('debts', 'save')}
                 label="Save"
                 loading={saving}
                 disabled={!matchingWallets.length || saving}
@@ -250,10 +255,11 @@ export default function DebtDetailScreen() {
                 onPress={submit}
               />
             </View>
-          </Surface>
+          </View>
         ) : (
           <View className="mb-4 flex-row gap-2">
-            <PrimaryButton
+            <Button
+              testID={tid('debts', 'lend-more')}
               label={
                 debt.direction === 'owed_to_me'
                   ? 'Lend more'
@@ -262,7 +268,8 @@ export default function DebtDetailScreen() {
               className="flex-1"
               onPress={() => openCashAction('principal')}
             />
-            <PrimaryButton
+            <Button
+              testID={tid('debts', 'repayment')}
               label="Repayment"
               className="flex-1"
               onPress={() => openCashAction('repayment')}
@@ -322,6 +329,6 @@ export default function DebtDetailScreen() {
           </View>
         ))}
       </ScrollView>
-    </ScreenShell>
+    </Page>
   );
 }

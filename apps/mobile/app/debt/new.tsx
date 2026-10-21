@@ -6,17 +6,16 @@ import { router } from 'expo-router';
 import type { DebtDirection } from '@repo/types';
 
 import { AmountInput } from '@/components/finance/amount-input';
-import { BrandHeader } from '@/components/ui/brand-header';
 import { FeedbackState } from '@/components/ui/feedback-state';
 import { FormField } from '@/components/ui/form-field';
-import { PrimaryButton } from '@/components/ui/primary-button';
-import { ScreenShell } from '@/components/ui/screen-shell';
-import { Surface } from '@/components/ui/surface';
 import { WalletIcon } from '@/components/wallets/wallet-icon';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { parseAmountInput } from '@/lib/finance/money';
 import { createDebt } from '@/lib/supabase/debts';
 import { getWallets } from '@/lib/supabase/wallets';
+import { Button } from '@/components/ui/button';
+import { tid } from '@/lib/test-ids';
+import { Page } from '@/components/ui/page';
 
 type Wallet = Awaited<ReturnType<typeof getWallets>>[number];
 
@@ -67,8 +66,11 @@ export default function NewDebtScreen() {
   );
 
   return (
-    <ScreenShell variant="canvas">
-      <BrandHeader title="Record debt" />
+    <Page
+      screen="debts"
+      kind="pushed"
+      title="Record debt"
+    >
       <ScrollView
         className="flex-1"
         contentContainerClassName="px-5 pb-10 pt-6"
@@ -103,7 +105,7 @@ export default function NewDebtScreen() {
           })}
         </View>
 
-        <Surface className="mt-6 p-5">
+        <View className="rounded-card bg-card mt-6 p-5">
           <FormField
             label="Person"
             placeholder="e.g. Alex"
@@ -136,7 +138,7 @@ export default function NewDebtScreen() {
             onChangeText={setDueDate}
             autoCapitalize="none"
           />
-        </Surface>
+        </View>
 
         <Text className="mb-2 mt-8 text-base font-display-bold text-foreground">
           Cash wallet
@@ -180,7 +182,8 @@ export default function NewDebtScreen() {
           </View>
         )}
 
-        <PrimaryButton
+        <Button
+          testID={tid('debts', 'record-money-owed')}
           className="mt-8"
           disabled={!walletId}
           label={
@@ -193,6 +196,6 @@ export default function NewDebtScreen() {
           onPress={submit}
         />
       </ScrollView>
-    </ScreenShell>
+    </Page>
   );
 }

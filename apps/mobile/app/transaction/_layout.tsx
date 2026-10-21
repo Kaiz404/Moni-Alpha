@@ -1,51 +1,19 @@
-import { Stack, router } from 'expo-router';
-import { Pressable, View } from 'react-native';
-import { MaterialDesignIcons } from '@react-native-vector-icons/material-design-icons';
-import { useThemeTokens } from '@/hooks/use-theme-tokens';
-import { SyncStatusIndicator } from '@/components/providers/sync-status-indicator';
+import { Stack } from 'expo-router';
 
 export default function TransactionLayout() {
-  const tokens = useThemeTokens();
-
   return (
-    <Stack>
+    <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen
         name="index"
-        options={{
-          title: 'Transactions',
-          headerShown: true,
-          headerStyle: { backgroundColor: tokens.background },
-          headerTintColor: tokens.foreground,
-          headerShadowVisible: true,
-          headerLeft: () => (
-            <Pressable
-              onPress={() => router.back()}
-              accessibilityRole="button"
-              accessibilityLabel="Go back"
-              hitSlop={12}
-              className="ml-1 p-1 active:opacity-70"
-            >
-              <MaterialDesignIcons
-                name="arrow-left"
-                size={24}
-                color={tokens.foreground}
-              />
-            </Pressable>
-          ),
-          headerRight: () => (
-            <View className="mr-2">
-              <SyncStatusIndicator />
-            </View>
-          ),
-        }}
+        options={{ title: 'Transactions' }}
       />
       <Stack.Screen
         name="new"
-        options={{ title: 'New Transaction', headerShown: false }}
+        options={{ title: 'New Transaction' }}
       />
       <Stack.Screen
         name="[id]"
-        options={{ title: 'Edit Transaction', headerShown: false }}
+        options={{ title: 'Edit Transaction' }}
       />
     </Stack>
   );

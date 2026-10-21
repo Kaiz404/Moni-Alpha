@@ -13,12 +13,13 @@ import {
   filterCurrencyOptions,
   type CurrencyOption,
 } from '@/constants/currencies';
-import { IconAction } from '@/components/ui/icon-action';
 import {
   BOTTOM_SHEET_PRIMARY_ACTION_SPACE,
   BottomSheetPrimaryAction,
 } from '@/components/ui/bottom-sheet-primary-action';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
+import { HeaderIconButton } from '@/components/ui/header-icon-button';
+import { tid } from '@/lib/test-ids';
 
 export type CurrencyPickerSharedProps = {
   keyboardInset?: number;
@@ -91,11 +92,11 @@ export function CurrencyPickerHeader({
         <Text className="flex-1 text-[22px] font-display-bold text-foreground">
           Choose currency
         </Text>
-        <IconAction
+        <HeaderIconButton
+          testID={tid('sheet', 'close-currency-picker')}
           accessibilityLabel="Close currency picker"
           icon="close"
           onPress={onClose}
-          size={20}
         />
       </View>
 
@@ -207,6 +208,7 @@ export function CurrencyPickerContent({
         selectedCode={selectedCode}
       />
       <BottomSheetPrimaryAction
+        testID={tid('sheet', 'confirm')}
         icon="check"
         label="Use currency"
         onPress={onClose}

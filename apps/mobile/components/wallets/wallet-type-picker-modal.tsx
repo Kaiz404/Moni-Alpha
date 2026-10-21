@@ -1,10 +1,5 @@
 import { Modal, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-
-import {
-  SquircleView,
-  squircleSmoothing,
-} from '@/components/ui/squircle-view';
 import { WalletTypePickerContent } from './wallet-type-picker-content';
 import type { WalletKind } from '@/constants/wallet-form';
 
@@ -32,9 +27,8 @@ export function WalletTypePickerModal({
       visible={visible}
     >
       <View className="flex-1 justify-end bg-black/40">
-        <SquircleView
+        <View
           className="max-h-[82%] overflow-hidden rounded-[28px] bg-canvas"
-          cornerSmoothing={squircleSmoothing.hero}
           style={{ height: Math.round(windowHeight * 0.66) }}
         >
           <View
@@ -47,7 +41,7 @@ export function WalletTypePickerModal({
               onClose={onClose}
             />
           </View>
-        </SquircleView>
+        </View>
       </View>
     </Modal>
   );

@@ -1,6 +1,5 @@
 import { memo, useMemo, useState } from 'react';
 import {
-  Image,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -8,7 +7,7 @@ import {
 } from 'react-native';
 import { Text } from '@/components/ui/text';
 import { router } from 'expo-router';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { Page } from '@/components/ui/page';
 import { useValue } from '@legendapp/state/react';
 import { MaterialDesignIcons } from '@react-native-vector-icons/material-design-icons';
 
@@ -16,7 +15,6 @@ import { BudgetProgressItem } from '@/components/budgets/budget-progress-item';
 import { ConfirmBalanceCard } from '@/components/wallets/confirm-balance-card';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { SolidWalletCard } from '@/components/ui/solid-wallet-card';
-import { Surface } from '@/components/ui/surface';
 import { getWalletCardStyle } from '@/constants/wallet-card-styles';
 import { resolveWalletIcon } from '@/constants/wallet-form';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
@@ -32,15 +30,19 @@ import {
   walletBalanceMinor$,
   walletById$,
 } from '@/lib/finance/selectors';
-import { GradientCard } from '@/components/ui/gradient-card';
-
-const avatarStyle = getWalletCardStyle('emerald-grain');
 
 function timeAwareGreeting(): string {
   const hour = new Date().getHours();
-  if (hour < 12) return 'Good morning';
-  if (hour < 18) return 'Good afternoon';
-  return 'Good evening';
+  if (hour < 12) return 'Morning';
+  if (hour < 18) return 'Afternoon';
+  return 'Evening';
+}
+
+/** "Wednesday, 14 Oct", as the Home header draws it. */
+function headerDate(date: Date): string {
+  const part = (options: Intl.DateTimeFormatOptions) =>
+    new Intl.DateTimeFormat('en-GB', options).format(date);
+  return `${part({ weekday: 'long' })}, ${part({ day: 'numeric' })} ${part({ month: 'short' })}`;
 }
 
 function displayName(
@@ -132,6 +134,13 @@ export default function HomeScreen() {
     return ch || '?';
   }, [user?.email]);
 
+  const name =
+    displayName(user?.user_metadata?.full_name) ??
+    displayName(user?.email);
+  const greeting = name
+    ? `${timeAwareGreeting()}, ${name}`
+    : timeAwareGreeting();
+
   const tokens = useThemeTokens();
   const timezone = useMemo(
     () => Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC',
@@ -168,14 +177,18 @@ export default function HomeScreen() {
   };
 
   return (
-    <SafeAreaView
-      edges={['top']}
-      className="flex-1 bg-canvas"
-      style={{ flex: 1 }}
+    <Page
+      screen="home"
+      kind="home"
+      initial={userInitial}
+      date={headerDate(new Date())}
+      greeting={greeting}
+      onAvatarPress={() => router.push('/(tabs)/profile')}
+      onAskMoni={() => router.push('/(tabs)/chat')}
     >
       <ScrollView
         className="flex-1"
-        contentContainerClassName="pb-12 pt-4"
+        contentContainerClassName="pb-12"
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -185,34 +198,7 @@ export default function HomeScreen() {
         showsVerticalScrollIndicator={false}
       >
         <View className="px-5">
-          <View className="flex-row items-start justify-between">
-            {user && user.user_metadata && user.user_metadata.avatar_url ? (
-              <Image
-                source={{ uri: user?.user_metadata?.avatar_url }}
-                className="h-12 w-12 rounded-full mr-3"
-              />
-            ) : (
-              <GradientCard
-                cardStyle={avatarStyle}
-                className="h-14 w-14 items-center justify-center rounded-2xl"
-              >
-                <Text className="text-2xl font-display-bold text-primary-foreground">
-                  {userInitial}
-                </Text>
-              </GradientCard>
-            )}
-            <View className="flex-1 pr-3">
-              <Text className="text-sm font-display-semibold text-muted">
-                {timeAwareGreeting()}
-                {displayName(user?.user_metadata?.full_name) ||
-                displayName(user?.email)
-                  ? `, ${displayName(user?.user_metadata?.full_name) ?? displayName(user?.email)}`
-                  : ''}
-              </Text>
-            </View>
-          </View>
-
-          <ConfirmBalanceCard className="mt-5" />
+          <ConfirmBalanceCard />
 
           {pendingProposals.length ? (
             <Pressable
@@ -246,11 +232,7 @@ export default function HomeScreen() {
             </Pressable>
           ) : null}
 
-          <Surface
-            tone="tray"
-            smoothing="hero"
-            className="mt-7 p-5"
-          >
+          <View className="rounded-card bg-sand-light mt-7 p-5">
             <Text className="text-sm font-display-semibold text-muted">
               Net worth
             </Text>
@@ -296,7 +278,7 @@ export default function HomeScreen() {
                 </Text>
               </View>
             )}
-          </Surface>
+          </View>
         </View>
 
         <View className="mt-4">
@@ -353,10 +335,7 @@ export default function HomeScreen() {
             </Pressable>
           </View>
           {visibleBudgets.length ? (
-            <Surface
-              tone="lemon"
-              className="overflow-hidden"
-            >
+            <View className="rounded-card bg-accent-lemon/30 overflow-hidden">
               {visibleBudgets.map((budget, index) => {
                 return (
                   <Pressable
@@ -377,7 +356,7 @@ export default function HomeScreen() {
                   </Pressable>
                 );
               })}
-            </Surface>
+            </View>
           ) : (
             <Pressable
               className="rounded-[22px] bg-surface-2 px-5 py-6"
@@ -414,10 +393,7 @@ export default function HomeScreen() {
                 />
               </Pressable>
             </View>
-            <Surface
-              tone="lilac"
-              className="overflow-hidden"
-            >
+            <View className="rounded-card bg-accent-lilac/30 overflow-hidden">
               {openDebts.map(({ debt, balanceMinor }, index) => {
                 const owedToYou = debt.direction === 'owed_to_me';
                 return (
@@ -449,7 +425,7 @@ export default function HomeScreen() {
                   </Pressable>
                 );
               })}
-            </Surface>
+            </View>
           </View>
         ) : null}
 
@@ -473,10 +449,7 @@ export default function HomeScreen() {
             </Pressable>
           </View>
           {recent.length ? (
-            <Surface
-              tone="aqua"
-              className="overflow-hidden"
-            >
+            <View className="rounded-card bg-accent-aqua/30 overflow-hidden">
               {recent.map((transaction, index) => {
                 const category = transaction.categoryId
                   ? overview.categoriesById[transaction.categoryId]
@@ -569,7 +542,7 @@ export default function HomeScreen() {
                   </Pressable>
                 );
               })}
-            </Surface>
+            </View>
           ) : (
             <Pressable
               className="rounded-[22px] bg-surface-2 px-5 py-6"
@@ -586,6 +559,6 @@ export default function HomeScreen() {
           )}
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </Page>
   );
 }

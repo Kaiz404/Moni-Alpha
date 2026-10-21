@@ -14,7 +14,6 @@ import {
   syncDefaultWalletFromProfile,
 } from '@/lib/wallets/default-wallet';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
-import { Surface } from '@/components/ui/surface';
 
 type WalletRow = {
   id: string;
@@ -93,19 +92,19 @@ export function DefaultWalletPicker() {
 
   if (loading) {
     return (
-      <Surface className="mb-2 items-center justify-center py-6">
+      <View className="rounded-card bg-card mb-2 items-center justify-center py-6">
         <ActivityIndicator color={tokens.primary} />
-      </Surface>
+      </View>
     );
   }
 
   if (wallets.length === 0) {
     return (
-      <Surface className="mb-2 px-4 py-4">
+      <View className="rounded-card bg-card mb-2 px-4 py-4">
         <Text className="text-sm text-muted">
           Add a wallet first to set a default.
         </Text>
-      </Surface>
+      </View>
     );
   }
 
@@ -124,7 +123,7 @@ export function DefaultWalletPicker() {
   ];
 
   return (
-    <Surface className="mb-2 overflow-hidden">
+    <View className="rounded-card bg-card mb-2 overflow-hidden">
       {options.map((option, index) => {
         const selected = selectedId === option.id;
         return (
@@ -155,6 +154,6 @@ export function DefaultWalletPicker() {
           </Pressable>
         );
       })}
-    </Surface>
+    </View>
   );
 }

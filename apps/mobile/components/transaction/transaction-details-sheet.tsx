@@ -1,10 +1,5 @@
 import { Modal, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-
-import {
-  SquircleView,
-  squircleSmoothing,
-} from '@/components/ui/squircle-view';
 import {
   TransactionDetailsSheetContent,
   type TransactionDetailsValue,
@@ -37,9 +32,8 @@ export function TransactionDetailsSheet({
       visible={visible}
     >
       <View className="flex-1 justify-end bg-black/40">
-        <SquircleView
+        <View
           className="max-h-[88%] overflow-hidden rounded-[28px] bg-canvas"
-          cornerSmoothing={squircleSmoothing.hero}
           style={{ height: Math.round(windowHeight * 0.82) }}
         >
           <View
@@ -52,7 +46,7 @@ export function TransactionDetailsSheet({
               onClose={onClose}
             />
           </View>
-        </SquircleView>
+        </View>
       </View>
     </Modal>
   );

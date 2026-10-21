@@ -4,14 +4,13 @@ import { router } from 'expo-router';
 import { useValue } from '@legendapp/state/react';
 
 import { BudgetProgressItem } from '@/components/budgets/budget-progress-item';
-import { BrandHeader } from '@/components/ui/brand-header';
 import { FeedbackState } from '@/components/ui/feedback-state';
-import { IconAction } from '@/components/ui/icon-action';
-import { ScreenShell } from '@/components/ui/screen-shell';
-import { Surface } from '@/components/ui/surface';
 import { useAuth } from '@/lib/auth/auth-context';
 import { budgetProgress$ } from '@/lib/finance/selectors';
 import { ensureFinanceTimezone } from '@/lib/supabase/profile';
+import { HeaderIconButton } from '@/components/ui/header-icon-button';
+import { tid } from '@/lib/test-ids';
+import { Page } from '@/components/ui/page';
 
 export default function BudgetsScreen() {
   const { user } = useAuth();
@@ -31,18 +30,19 @@ export default function BudgetsScreen() {
   }, []);
 
   return (
-    <ScreenShell variant="canvas">
-      <BrandHeader
-        title="Monthly Budgets"
-        rightAction={
-          <IconAction
-            accessibilityLabel="Add budget"
-            icon="plus"
-            tone="accent"
-            onPress={() => router.push('/budget/form' as never)}
-          />
-        }
-      />
+    <Page
+      screen="budget"
+      kind="pushed"
+      title="Monthly Budgets"
+      trailing={
+        <HeaderIconButton
+          testID={tid('budget', 'add-budget')}
+          accessibilityLabel="Add budget"
+          icon="plus"
+          onPress={() => router.push('/budget/form' as never)}
+        />
+      }
+    >
       {!budgets.length ? (
         <View className="flex-1 items-center justify-center px-5">
           <FeedbackState
@@ -74,19 +74,19 @@ export default function BudgetsScreen() {
                     } as never)
                   }
                 >
-                  <Surface>
+                  <View className="rounded-card bg-card">
                     <BudgetProgressItem
                       budget={row}
                       variant="detailed"
                       showArchived
                     />
-                  </Surface>
+                  </View>
                 </Pressable>
               );
             })}
           </View>
         </ScrollView>
       )}
-    </ScreenShell>
+    </Page>
   );
 }

@@ -2,7 +2,6 @@ import { TouchableOpacity, View } from 'react-native';
 import { Text } from '@/components/ui/text';
 
 import { StatCard } from '@/components/debug/stat-card';
-import { Surface } from '@/components/ui/surface';
 import {
   getNotificationDiagnostics,
   PERMISSION_COLORS,
@@ -57,7 +56,7 @@ export function NotificationPipelinePanel() {
       : 'Production build';
 
   return (
-    <Surface className="mx-5 mt-5 p-4">
+    <View className="rounded-card bg-card mx-5 mt-5 p-4">
       <View className="flex-row items-center justify-between">
         <Text className="text-base font-display-bold text-foreground">
           Notification pipeline
@@ -238,6 +237,6 @@ export function NotificationPipelinePanel() {
           ))}
         </View>
       )}
-    </Surface>
+    </View>
   );
 }
