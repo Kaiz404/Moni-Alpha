@@ -1,3 +1,5 @@
+import { parseLocalDateInput } from '@/lib/dates/local-date-input';
+
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
@@ -10,7 +12,7 @@ function relativeDay(date: Date, now: Date): 'Today' | 'Yesterday' | null {
   return days === 0 ? 'Today' : days === 1 ? 'Yesterday' : null;
 }
 
-export function formatDate(value: string | Date, now: Date = new Date()): string {
+function formatDate(value: string | Date, now: Date = new Date()): string {
   const date = typeof value === 'string' ? new Date(value) : value;
   const label = `${WEEKDAYS[date.getDay()]} ${date.getDate()} ${MONTHS[date.getMonth()]}`;
   return date.getFullYear() === now.getFullYear() ? label : `${label} ${date.getFullYear()}`;
@@ -27,9 +29,8 @@ export function formatDayHeading(value: string | Date, now: Date = new Date()): 
   return relative ? `${relative} · ${formatDate(date, now)}` : formatDate(date, now);
 }
 
-export function localDayKey(value: string | Date): string {
-  const date = typeof value === 'string' ? new Date(value) : value;
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${date.getFullYear()}-${month}-${day}`;
+/** Glossary day label for a local `YYYY-MM-DD`; anything unparseable comes back as is. */
+export function dayLabel(value: string, now: Date = new Date()): string {
+  const date = parseLocalDateInput(value);
+  return date ? formatDay(date, now) : value;
 }

@@ -13,8 +13,8 @@ import { WalletIcon } from '@/components/wallets/wallet-icon';
 import { getWalletCardStyle } from '@/constants/wallet-card-styles';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { useAuth } from '@/lib/auth/auth-context';
+import { dayLabel, formatDay } from '@/lib/dates/day-label';
 import {
-  dayLabel,
   localDateInputToIso,
   toLocalDateInput,
 } from '@/lib/dates/local-date-input';
@@ -391,7 +391,7 @@ export default function NewTransactionScreen() {
           !(await openSheet({
             kind: 'confirm',
             title: 'Maybe a duplicate',
-            message: `You already have ${[duplicate.target.merchant, formatMoney(amountMinor, selectedWalletCurrency ?? 'USD')].filter(Boolean).join(' ')} on ${dayLabel(toLocalDateInput(new Date(duplicate.target.at)))}.`,
+            message: `You already have ${[duplicate.target.merchant, formatMoney(amountMinor, selectedWalletCurrency ?? 'USD')].filter(Boolean).join(' ')} on ${formatDay(duplicate.target.at)}.`,
             confirmLabel: 'Add mine anyway',
             cancelLabel: 'Change it',
           }))

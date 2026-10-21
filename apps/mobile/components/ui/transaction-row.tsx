@@ -11,7 +11,7 @@ import { Press } from '@/components/ui/press';
 import { StatusPill } from '@/components/ui/status-pill';
 import { Text } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
-import { formatDay } from '@/lib/finance/display';
+import { formatDay } from '@/lib/dates/day-label';
 import {
   formatMoney,
   formatSignedMoney,

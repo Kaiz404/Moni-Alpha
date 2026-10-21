@@ -40,16 +40,3 @@ export function toLocalDateInput(date: Date): string {
   const day = String(date.getDate()).padStart(2, '0');
   return `${date.getFullYear()}-${month}-${day}`;
 }
-
-const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-
-/** Glossary day label for a YYYY-MM-DD: "Today", "Yesterday", else "Wed 14 Oct". */
-export function dayLabel(value: string, today = new Date()): string {
-  const date = parseLocalDateInput(value);
-  if (!date) return value;
-  const yesterday = new Date(today.getFullYear(), today.getMonth(), today.getDate() - 1);
-  if (value === toLocalDateInput(today)) return 'Today';
-  if (value === toLocalDateInput(yesterday)) return 'Yesterday';
-  return `${WEEKDAYS[date.getDay()]} ${date.getDate()} ${MONTHS[date.getMonth()]}`;
-}

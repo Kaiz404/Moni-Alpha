@@ -20,10 +20,8 @@ import {
 import { getWalletCardStyle } from '@/constants/wallet-card-styles';
 import { WALLET_TYPE_OPTIONS } from '@/constants/wallet-form';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
-import {
-  dayLabel,
-  toLocalDateInput,
-} from '@/lib/dates/local-date-input';
+import { dayLabel } from '@/lib/dates/day-label';
+import { toLocalDateInput } from '@/lib/dates/local-date-input';
 import { useMainCurrency } from '@/lib/finance/main-currency';
 import { currencySymbol } from '@/lib/finance/format-money';
 import type {

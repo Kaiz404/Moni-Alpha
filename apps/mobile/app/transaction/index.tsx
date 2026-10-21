@@ -30,10 +30,8 @@ import {
 } from '@/components/ui/transaction-row';
 import { getWalletCardStyle } from '@/constants/wallet-card-styles';
 import { useAuth } from '@/lib/auth/auth-context';
-import {
-  formatDayHeading,
-  localDayKey,
-} from '@/lib/finance/display';
+import { formatDayHeading } from '@/lib/dates/day-label';
+import { toLocalDateInput } from '@/lib/dates/local-date-input';
 import {
   formatMoney,
   formatSignedMoney,
@@ -144,7 +142,9 @@ export default function TransactionsScreen() {
     }[] = [];
     for (const transaction of rows) {
       if (hidden.has(transaction.id)) continue;
-      const key = localDayKey(transaction.transactionDate);
+      const key = toLocalDateInput(
+        new Date(transaction.transactionDate),
+      );
       const last = groups.at(-1);
       if (last?.key === key) last.items.push(transaction);
       else
