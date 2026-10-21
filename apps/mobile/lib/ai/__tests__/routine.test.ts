@@ -51,8 +51,7 @@ describe('matchRoutine', () => {
 
   it('adds automatically once a same-merchant transaction was categorized', () => {
     expect(matchRoutine(candidate, [tx({})], active)).toEqual({
-      kind: 'auto',
-      walletId: null,
+      kind: 'streak',
       categoryId: FOOD,
       merchant: 'FamilyMart KLCC',
     });
@@ -74,7 +73,7 @@ describe('matchRoutine', () => {
       tx({ categoryId: TRANSPORT }),
       tx({}),
     ];
-    expect(matchRoutine(candidate, history, active).kind).toBe('auto');
+    expect(matchRoutine(candidate, history, active).kind).toBe('streak');
   });
 
   it('reviews an amount far above the usual spend', () => {
@@ -104,7 +103,7 @@ describe('matchRoutine', () => {
     const here = { latitude: 3.1579, longitude: 101.7116 };
     const history = [tx({ merchant: null, locationLatitude: 3.1582, locationLongitude: 101.7118 })];
     const unnamed = { ...candidate, merchant: null, location: here };
-    expect(matchRoutine({ ...unnamed, amountMinor: 1300 }, history, active).kind).toBe('auto');
+    expect(matchRoutine({ ...unnamed, amountMinor: 1300 }, history, active).kind).toBe('streak');
     expect(matchRoutine({ ...unnamed, amountMinor: 5000 }, history, active).categoryId).toBe(null);
     expect(matchRoutine({ ...unnamed, location: null }, history, active).categoryId).toBe(null);
   });
@@ -129,10 +128,9 @@ describe('matchRoutine with auto-add rules', () => {
 
   it("adds a notification a rule covers to the rule's wallet and category", () => {
     expect(matchRoutine(grabAlert, [], active, [grabRule])).toEqual({
-      kind: 'auto',
+      kind: 'rule',
       walletId: 'wallet-maybank',
       categoryId: TRANSPORT,
-      merchant: null,
     });
   });
 

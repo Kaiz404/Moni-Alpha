@@ -42,13 +42,9 @@ export type RoutineRule = Pick<
   'merchantKey' | 'sourceApp' | 'walletId' | 'categoryId'
 >;
 
-/**
- * `auto` adds the transaction without review: from a rule (which names the wallet) or from a
- * streak of agreeing history (`walletId` null keeps the extracted wallet). `proposal` goes to
- * review with the category of the latest similar transaction prefilled.
- */
 export type RoutineMatch =
-  | { kind: 'auto'; walletId: string | null; categoryId: string; merchant: string | null }
+  | { kind: 'rule'; walletId: string; categoryId: string }
+  | { kind: 'streak'; categoryId: string; merchant: string | null }
   | { kind: 'proposal'; categoryId: string | null; merchant: string | null };
 
 /**
@@ -133,7 +129,7 @@ export function matchRoutine(
       activeCategoryIds.has(r.categoryId),
   );
   if (rule && candidate.sourceApp && key) {
-    return { kind: 'auto', walletId: rule.walletId, categoryId: rule.categoryId, merchant: null };
+    return { kind: 'rule', walletId: rule.walletId, categoryId: rule.categoryId };
   }
 
   const recent: RoutineHistoryTransaction[] = [];
@@ -150,6 +146,6 @@ export function matchRoutine(
   const inNorm = !!candidate.amountMinor && candidate.amountMinor <= largest * OUTLIER_FACTOR;
 
   return agrees && inNorm
-    ? { kind: 'auto', walletId: null, categoryId: latest.categoryId, merchant: latest.merchant }
+    ? { kind: 'streak', categoryId: latest.categoryId, merchant: latest.merchant }
     : { kind: 'proposal', categoryId: latest.categoryId, merchant: latest.merchant };
 }

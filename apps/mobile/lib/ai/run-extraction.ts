@@ -184,9 +184,9 @@ async function persistProposal(
     );
     proposal = {
       ...proposal,
-      walletId: (match.kind === 'auto' && match.walletId) || proposal.walletId,
+      walletId: match.kind === 'rule' ? match.walletId : proposal.walletId,
       categoryId: proposal.categoryId ?? match.categoryId,
-      merchant: proposal.merchant ?? match.merchant,
+      merchant: proposal.merchant ?? (match.kind === 'rule' ? null : match.merchant),
     };
 
     const duplicate = await findProposalDuplicate(proposalId, proposal);
@@ -215,7 +215,7 @@ async function persistProposal(
     if (
       automatic &&
       !duplicate &&
-      match.kind === 'auto' &&
+      match.kind !== 'proposal' &&
       proposal.amountMinor &&
       (proposal.type === 'income' || proposal.type === 'expense') &&
       wallet?.currency?.toUpperCase() === proposal.currency
