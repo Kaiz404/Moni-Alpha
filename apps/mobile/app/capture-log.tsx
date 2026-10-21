@@ -37,7 +37,7 @@ function entryAction(item: CaptureLogItem, wallets: readonly LinkedWallet[]): Lo
       return {
         testID: tid('capture-log', 'entry', item.id, 'review'),
         label: 'Review it',
-        onPress: () => router.push({ pathname: '/proposal/[id]', params: { id: item.id } }),
+        onPress: () => router.push({ pathname: '/review', params: { id: item.id } }),
       };
     case 'added':
     case 'auto_added': {

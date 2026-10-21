@@ -134,7 +134,7 @@ export function ReviewStrip({
         meta={`${formatMoney(waiting, currency)} isn't in this balance yet`}
         onPress={() =>
           router.push({
-            pathname: '/proposal/[id]',
+            pathname: '/review',
             params: { id: first.id },
           })
         }

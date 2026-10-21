@@ -3,8 +3,7 @@ import { useState } from 'react';
 import { TextInput, View } from 'react-native';
 
 import { DueDaySheet } from '@/components/budget/due-day-sheet';
-import { AmountPage } from '@/components/debts/amount-page';
-import { typedMinor } from '@/components/debts/typed-amount';
+import { AmountPage } from '@/components/amount/amount-page';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { PickerField } from '@/components/ui/picker-field';
 import { Press } from '@/components/ui/press';
@@ -18,6 +17,7 @@ import {
   formatMoney,
 } from '@/lib/finance/format-money';
 import { useMainCurrency } from '@/lib/finance/main-currency';
+import { readAmount } from '@/lib/amount/amount-input';
 import {
   addBill,
   billSeriesKey,
@@ -46,7 +46,7 @@ export default function NewBillScreen() {
   const [saving, setSaving] = useState(false);
   const [dueOpen, setDueOpen] = useState(false);
 
-  const amountMinor = typedMinor(typed);
+  const amountMinor = readAmount(typed).minor;
   const named = billSeriesKey(name, currency) !== null;
   const ready = amountMinor > 0 && named && due !== null && !saving;
   const label =
@@ -87,20 +87,25 @@ export default function NewBillScreen() {
   return (
     <View className="flex-1">
       <AmountPage
+        screen="budget"
+        header="pushed"
+        direction="plain"
         title="New bill"
         currency={currency}
         typed={typed}
         prefilled={chipped}
-        onType={(next) => {
+        onTyped={(next) => {
           setChipped(false);
           setTyped(next);
         }}
-        sentence={
-          amountMinor > 0
-            ? `${formatMoney(amountMinor, currency)} ${often === 'monthly' ? 'every month' : 'one time'}, on the due date`
-            : 'How much is it each time?'
-        }
-        top={
+        sentence={{
+          text:
+            amountMinor > 0
+              ? `${formatMoney(amountMinor, currency)} ${often === 'monthly' ? 'every month' : 'one time'}, on the due date`
+              : 'How much is it each time?',
+          tone: 'plain',
+        }}
+        control={
           <Segmented
             screen="budget"
             name="bill-often"
@@ -110,70 +115,67 @@ export default function NewBillScreen() {
             accessibilityLabel="How often"
           />
         }
-        fields={
-          <View className="gap-3">
-            <View className="flex-row gap-2">
-              <View className="h-16 flex-1 justify-center rounded-field bg-sand px-3.5">
-                <Text className="text-[13px] leading-[18px] text-muted">
-                  Bill name
-                </Text>
-                <TextInput
-                  testID={tid('budget', 'bill-new', 'name')}
-                  accessibilityLabel="Bill name"
-                  value={name}
-                  onChangeText={(text) => setName(text.slice(0, 30))}
-                  placeholder="e.g. Unifi fibre"
-                  placeholderTextColor={tokens.muted}
-                  autoCapitalize="words"
-                  returnKeyType="done"
-                  className="p-0 font-display-semibold text-[16px] leading-[22px] text-foreground"
-                />
-              </View>
-              <PickerField
-                testID={tid('budget', 'bill-new', 'due')}
-                label="Due"
-                value={
-                  due
-                    ? formatDate(
-                        parseLocalDateInput(due) ?? new Date(),
-                      )
-                    : ''
-                }
-                className="flex-1"
-                leading={
-                  <IconSymbol
-                    name="calendar-blank"
-                    size={18}
-                    color={due ? tokens.foreground : tokens.muted}
-                  />
-                }
-                onPress={() => setDueOpen(true)}
+        action={{ label, disabled: !ready, onPress: submit }}
+      >
+        <View className="gap-3">
+          <View className="flex-row gap-2">
+            <View className="h-16 flex-1 justify-center rounded-field bg-sand px-3.5">
+              <Text className="text-[13px] leading-[18px] text-muted">
+                Bill name
+              </Text>
+              <TextInput
+                testID={tid('budget', 'bill-new', 'name')}
+                accessibilityLabel="Bill name"
+                value={name}
+                onChangeText={(text) => setName(text.slice(0, 30))}
+                placeholder="e.g. Unifi fibre"
+                placeholderTextColor={tokens.muted}
+                autoCapitalize="words"
+                returnKeyType="done"
+                className="p-0 font-display-semibold text-[16px] leading-[22px] text-foreground"
               />
             </View>
-            <View className="flex-row gap-2">
-              {CHIPS.map((chip) => (
-                <Press
-                  key={chip}
-                  testID={tid('budget', 'bill-new', 'chip', chip)}
-                  accessibilityLabel={`${currencySymbol(currency)}${chip}`}
-                  radius={{ rest: 18, pressed: 14 }}
-                  pressedClassName="bg-hairline"
-                  className="h-9 justify-center bg-sand px-3.5"
-                  onPress={() => {
-                    setTyped(`${chip}.00`);
-                    setChipped(true);
-                  }}
-                >
-                  <Text className="text-[14px] font-display-semibold text-foreground">
-                    {`${currencySymbol(currency)}${chip}`}
-                  </Text>
-                </Press>
-              ))}
-            </View>
+            <PickerField
+              testID={tid('budget', 'bill-new', 'due')}
+              label="Due"
+              value={
+                due
+                  ? formatDate(parseLocalDateInput(due) ?? new Date())
+                  : ''
+              }
+              className="flex-1"
+              leading={
+                <IconSymbol
+                  name="calendar-blank"
+                  size={18}
+                  color={due ? tokens.foreground : tokens.muted}
+                />
+              }
+              onPress={() => setDueOpen(true)}
+            />
           </View>
-        }
-        action={{ label, disabled: !ready, onPress: submit }}
-      />
+          <View className="flex-row gap-2">
+            {CHIPS.map((chip) => (
+              <Press
+                key={chip}
+                testID={tid('budget', 'bill-new', 'chip', chip)}
+                accessibilityLabel={`${currencySymbol(currency)}${chip}`}
+                radius={{ rest: 18, pressed: 14 }}
+                pressedClassName="bg-hairline"
+                className="h-9 justify-center bg-sand px-3.5"
+                onPress={() => {
+                  setTyped(`${chip}.00`);
+                  setChipped(true);
+                }}
+              >
+                <Text className="text-[14px] font-display-semibold text-foreground">
+                  {`${currencySymbol(currency)}${chip}`}
+                </Text>
+              </Press>
+            ))}
+          </View>
+        </View>
+      </AmountPage>
       <DueDaySheet
         open={dueOpen}
         selected={due}

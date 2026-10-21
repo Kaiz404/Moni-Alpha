@@ -475,7 +475,7 @@ export default function CategoryBudgetScreen() {
                   now={now}
                   onPress={() =>
                     router.push({
-                      pathname: '/proposal/[id]',
+                      pathname: '/review',
                       params: { id: proposal.id },
                     })
                   }

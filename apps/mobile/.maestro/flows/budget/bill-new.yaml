@@ -22,11 +22,11 @@ tags:
 - assertVisible: How much is it each time?
 - assertVisible: Add an amount
 - tapOn:
-    id: debts.key.1
+    id: budget.key.1
 - tapOn:
-    id: debts.key.2
+    id: budget.key.2
 - tapOn:
-    id: debts.key.9
+    id: budget.key.9
 - assertVisible: RM129.00 every month, on the due date
 - tapOn:
     id: budget.bill-new.name
@@ -41,7 +41,7 @@ tags:
 - assertVisible: Add bill RM129.00
 - takeScreenshot: b2-l6-amount-page
 - tapOn:
-    id: debts.amount.save
+    id: budget.submit
 - assertVisible:
     id: budget.month
 - scrollUntilVisible:
