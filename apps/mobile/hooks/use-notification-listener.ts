@@ -26,7 +26,11 @@ export type CapturedNotification = {
   bigText: string;
   extraInfoText: string;
   groupedMessages: Array<{ title: string; text: string }>;
-  /** Missing on entries captured before statuses existed: show them as Ignored. */
+  status: CapturedNotificationStatus;
+};
+
+/** Entries captured before statuses existed have none. */
+type StoredNotification = Omit<CapturedNotification, 'status'> & {
   status?: CapturedNotificationStatus;
 };
 
@@ -37,7 +41,8 @@ const notificationStorage = createMMKV({ id: 'moni-notifications' });
 function readStoredNotifications(): CapturedNotification[] {
   try {
     const raw = notificationStorage.getString(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : [];
+    const stored: StoredNotification[] = raw ? JSON.parse(raw) : [];
+    return stored.map((entry) => ({ ...entry, status: entry.status ?? 'ignored' }));
   } catch {
     return [];
   }
