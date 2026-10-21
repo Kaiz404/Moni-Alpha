@@ -1,700 +1,294 @@
-import { useMemo, useState } from 'react';
-import {
-  Pressable,
-  ScrollView,
-  View,
-  useWindowDimensions,
-} from 'react-native';
-import { useTabBarClearance } from '@/components/nav/tab-bar';
-import { Text } from '@/components/ui/text';
 import { router } from 'expo-router';
-import { Page } from '@/components/ui/page';
-import { useValue } from '@legendapp/state/react';
-import { MaterialDesignIcons } from '@react-native-vector-icons/material-design-icons';
+import { useMemo, useState } from 'react';
+import { ScrollView, View } from 'react-native';
 
-import { ActivityCalendar } from '@/components/charts/activity-calendar';
-import { BudgetProgressItem } from '@/components/budgets/budget-progress-item';
-import { Chip } from '@/components/ui/chip';
-import {
-  buildMonthlyTakeaway,
-  previousMonthKey,
-} from '@/components/charts/chart-utils';
-import { DonutChart } from '@/components/charts/donut-chart';
-import { LineChart } from '@/components/charts/line-chart';
+import { BillsList, type BillLook } from '@/components/budget/bills-list';
+import { BudgetRings } from '@/components/budget/budget-rings';
+import { CalendarView } from '@/components/budget/calendar-view';
+import { MapTeaser } from '@/components/budget/map-teaser';
+import { useBudgetData, useBudgetMonth } from '@/components/budget/use-budget';
+import { PaceChart } from '@/components/charts/pace-chart';
+import { openCaptureChooser } from '@/components/nav/capture-chooser';
+import { useTabBarClearance } from '@/components/nav/tab-bar';
 import { SyncBanner } from '@/components/providers/sync-banner';
+import { EmptyTile } from '@/components/ui/empty-tile';
+import { IconSymbol } from '@/components/ui/icon-symbol';
+import { Page } from '@/components/ui/page';
+import { Press } from '@/components/ui/press';
+import { Segmented } from '@/components/ui/segmented';
+import { Text } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
-import { useAuth } from '@/lib/auth/auth-context';
+import { lastPaymentBySeries } from '@/lib/finance/bills';
 import {
-  dayKeyInTimezone,
-  monthKeyInTimezone,
-} from '@/lib/finance/dates';
-import {
-  categoryExpensesByCurrency,
-  balanceLinesByCurrency,
-  budgetProgress$,
-  financeOverview$,
-} from '@/lib/finance/selectors';
-import {
-  formatMinorAmount,
-  minorToNumber,
-  type CurrencyCode,
-} from '@/lib/finance/money';
+  leftSentence,
+  monthKey,
+  monthName,
+  monthShort,
+  spendMonths,
+  spendPlaces,
+  type BudgetMonth,
+} from '@/lib/finance/budget-month';
+import { formatMoney } from '@/lib/finance/format-money';
+import { openSheet } from '@/lib/sheet/sheet-store';
 import { tid } from '@/lib/test-ids';
 
-type Timeframe = '30D' | '90D' | 'All';
+type View_ = 'month' | 'calendar';
 
-function formatMonth(month: string): string {
-  const [year, monthNumber] = month.split('-').map(Number);
-  return new Intl.DateTimeFormat(undefined, {
-    month: 'long',
-    year: 'numeric',
-    timeZone: 'UTC',
-  }).format(new Date(Date.UTC(year, monthNumber - 1, 1)));
-}
-
-function currencyText(value: string): CurrencyCode {
-  return value as CurrencyCode;
-}
+const VIEWS = [
+  { value: 'month', label: 'Month' },
+  { value: 'calendar', label: 'Calendar' },
+] as const;
 
 export default function BudgetScreen() {
-  const { user } = useAuth();
-  const clearance = useTabBarClearance();
-  const { width } = useWindowDimensions();
   const tokens = useThemeTokens();
-  const timezone = useMemo(
-    () => Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC',
-    [],
+  const clearance = useTabBarClearance();
+  const data = useBudgetData();
+  const current = monthKey(data.now);
+  const [chosen, setChosen] = useState<string | null>(null);
+  const month = chosen ?? current;
+  const [view, setView] = useState<View_>('month');
+  const budget = useBudgetMonth(data, month);
+  const months = useMemo(
+    () => spendMonths(data.transactions, data.currency, data.now),
+    [data.transactions, data.currency, data.now],
   );
-  const currentMonth = useMemo(
-    () => monthKeyInTimezone(new Date(), timezone),
-    [timezone],
+  const categoriesById = useMemo(
+    () => Object.fromEntries(data.categories.map((category) => [category.id, category])),
+    [data.categories],
   );
-  const overview = useValue(financeOverview$(user?.id ?? null));
-  const budgetProgress = useValue(
-    budgetProgress$(user?.id ?? null, timezone),
-  );
-  const [currencyPreference, setCurrencyPreference] = useState<
-    string | null
-  >(null);
-  const [timeframe, setTimeframe] = useState<Timeframe>('90D');
-  const [selectedDate, setSelectedDate] = useState<string | null>(
-    null,
-  );
-  const [selectedBudget, setSelectedBudget] = useState<string | null>(
-    null,
-  );
-  const [selectedWalletIds, setSelectedWalletIds] = useState<
-    Set<string>
-  >(new Set());
-  const activeWalletIds = useMemo(
-    () =>
-      selectedWalletIds.size
-        ? selectedWalletIds
-        : new Set(overview.wallets.map((wallet) => wallet.id)),
-    [overview.wallets, selectedWalletIds],
-  );
-  const selectedWallets = useMemo(
-    () =>
-      overview.wallets.filter((wallet) =>
-        activeWalletIds.has(wallet.id),
-      ),
-    [activeWalletIds, overview.wallets],
-  );
-  const selectedTransactions = useMemo(
-    () =>
-      overview.transactions.filter(
-        (transaction) =>
-          activeWalletIds.has(transaction.walletId) ||
-          (transaction.transferToWalletId !== null &&
-            activeWalletIds.has(transaction.transferToWalletId)),
-      ),
-    [activeWalletIds, overview.transactions],
-  );
-  const toggleWallet = (walletId: string) => {
-    setSelectedWalletIds((current) => {
-      const next = new Set(current);
-      if (!next.delete(walletId)) next.add(walletId);
-      return next.size === overview.wallets.length ? new Set() : next;
-    });
-    setSelectedDate(null);
-    setSelectedBudget(null);
-  };
 
-  const monthlyExpenses = useMemo(
-    () =>
-      categoryExpensesByCurrency(
-        selectedTransactions.filter(
-          (transaction) =>
-            monthKeyInTimezone(
-              transaction.transactionDate,
-              timezone,
-            ) === currentMonth,
-        ),
-        overview.categoriesById,
-      ),
-    [
-      currentMonth,
-      overview.categoriesById,
-      selectedTransactions,
-      timezone,
-    ],
-  );
-  const previousExpenses = useMemo(
-    () =>
-      categoryExpensesByCurrency(
-        selectedTransactions.filter(
-          (transaction) =>
-            monthKeyInTimezone(
-              transaction.transactionDate,
-              timezone,
-            ) === previousMonthKey(currentMonth),
-        ),
-        overview.categoriesById,
-      ),
-    [
-      currentMonth,
-      overview.categoriesById,
-      selectedTransactions,
-      timezone,
-    ],
-  );
-  const currencies = useMemo(
-    () =>
-      [
-        ...new Set([
-          ...selectedWallets.map((wallet) => wallet.currency),
-          ...Object.keys(monthlyExpenses),
-        ]),
-      ].sort(),
-    [monthlyExpenses, selectedWallets],
-  );
-  const currency = currencies.includes(currencyPreference ?? '')
-    ? currencyPreference!
-    : (currencies[0] ?? null);
-  const categoryEntries = currency
-    ? (monthlyExpenses[currency] ?? [])
-    : [];
-  const previousEntries = currency
-    ? (previousExpenses[currency] ?? [])
-    : [];
-  const categoryTotal = categoryEntries.reduce(
-    (sum, entry) => sum + minorToNumber(entry.yMinor),
-    0,
-  );
-  const previousTotal = previousEntries.reduce(
-    (sum, entry) => sum + minorToNumber(entry.yMinor),
-    0,
-  );
-  const takeaway = buildMonthlyTakeaway({
-    total: categoryTotal,
-    previousTotal,
-    leadingCategoryName: categoryEntries[0]?.name ?? null,
-  });
-  const selectedBalanceLines = useMemo(
-    () =>
-      balanceLinesByCurrency(selectedWallets, selectedTransactions),
-    [selectedTransactions, selectedWallets],
-  );
-  const balanceLine = selectedBalanceLines.find(
-    (line) => line.currency === currency,
-  );
-  const trendData = useMemo(() => {
-    const points = balanceLine?.points ?? [];
-    if (timeframe === 'All') return points;
-    const days = timeframe === '30D' ? 30 : 90;
-    const cutoff = Date.now() - days * 24 * 60 * 60 * 1000;
-    const scoped = points.filter(
-      (point) => point.x.getTime() >= cutoff,
-    );
-    return scoped.length ? scoped : points.slice(-1);
-  }, [balanceLine?.points, timeframe]);
-  const selectedBudgetRows = useMemo(
-    () => budgetProgress.filter((row) => row.currency === currency),
-    [budgetProgress, currency],
-  );
-  const activityTransactions = useMemo(
-    () =>
-      selectedTransactions.filter(
-        (transaction) =>
-          transaction.currency === currency &&
-          transaction.type === 'expense' &&
-          !transaction.analysisExcluded &&
-          monthKeyInTimezone(
-            transaction.transactionDate,
-            timezone,
-          ) === currentMonth,
-      ),
-    [currency, currentMonth, selectedTransactions, timezone],
-  );
-  const activityDays = useMemo(() => {
-    const days = new Map<
-      string,
-      { amount: number; transactionCount: number }
-    >();
-    for (const transaction of activityTransactions) {
-      const key = dayKeyInTimezone(
-        transaction.transactionDate,
-        timezone,
-      );
-      const current = days.get(key) ?? {
-        amount: 0,
-        transactionCount: 0,
-      };
-      current.amount += minorToNumber(transaction.amountMinor);
-      current.transactionCount += 1;
-      days.set(key, current);
-    }
-    return [...days.entries()].map(([dateKey, value]) => ({
-      dateKey,
-      ...value,
-    }));
-  }, [activityTransactions, timezone]);
-  const selectedActivityTransactions = selectedDate
-    ? activityTransactions.filter(
-        (transaction) =>
-          dayKeyInTimezone(transaction.transactionDate, timezone) ===
-          selectedDate,
-      )
-    : [];
-  const currencyWallets = selectedWallets.filter(
-    (wallet) => wallet.currency === currency,
-  );
+  const chooseMonth = async () => {
+    const picked = await openSheet({
+      kind: 'month',
+      selected: month,
+      months: months.map((item) => {
+        const [year] = item.month.split('-');
+        const spent = formatMoney(item.spentMinor, data.currency);
+        return {
+          month: item.month,
+          name: `${monthName(item.month)} ${year}`,
+          meta: item.month === current ? `${spent} so far` : `${spent} spent`,
+        };
+      }),
+    });
+    if (picked) setChosen(picked === current ? null : picked);
+  };
 
   return (
     <Page
       screen="budget"
       kind="tabRoot"
       title="Budget"
+      trailing={
+        data.wallets.length ? (
+          <Press
+            testID={tid('budget', 'month')}
+            onPress={chooseMonth}
+            accessibilityLabel={`Month: ${monthName(month)} ${month.slice(0, 4)}. Change month`}
+            accessibilityHint="Opens a picker"
+            radius={{ rest: 22, pressed: 16 }}
+            pressedClassName="bg-hairline"
+            className="h-11 flex-row items-center gap-1 bg-sand pl-4 pr-3"
+          >
+            <Text className="text-[15px] leading-[21px] font-display-semibold text-foreground">
+              {monthName(month)}
+            </Text>
+            <IconSymbol
+              name="chevron-down"
+              size={18}
+              color={tokens.foreground}
+            />
+          </Press>
+        ) : null
+      }
     >
       <ScrollView
         className="flex-1"
-        contentContainerClassName="px-5 pt-4"
+        contentContainerClassName="gap-3 px-5"
         contentContainerStyle={{ paddingBottom: clearance }}
         showsVerticalScrollIndicator={false}
       >
-        <SyncBanner
-          screen="budget"
-          className="mb-4"
-        />
-        {!currency ? (
-          <View className="bg-card rounded-[28px] px-5 py-8">
-            <Text className="text-lg font-display-bold text-foreground">
-              Start with one wallet
-            </Text>
-            <Pressable
-              testID={tid('budget', 'add-a-wallet')}
-              className="mt-5 self-start rounded-2xl bg-primary px-4 py-3"
-              onPress={() => router.push('/wallet/new' as any)}
-            >
-              <Text className="font-display-semibold text-primary-foreground">
-                Add a wallet
-              </Text>
-            </Pressable>
-          </View>
+        <SyncBanner screen="budget" />
+        {!data.wallets.length ? (
+          <EmptyTile
+            icon="wallet-outline"
+            title="Start with one wallet"
+            body="A bank account, an e-wallet or the cash in your pocket."
+            action={{
+              testID: tid('budget', 'add-a-wallet'),
+              label: 'Add a wallet',
+              icon: 'plus',
+              onPress: () => router.push('/wallet/new'),
+            }}
+          />
         ) : (
           <>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              className="mb-5 -mx-5"
-              contentContainerClassName="gap-2 px-5"
-            >
-              {currencies.map((item) => (
-                <Chip
-                  key={item}
-                  testID={tid(
-                    'budget',
-                    'set-currency-preference',
-                    item,
-                  )}
-                  label={item}
-                  selected={item === currency}
-                  onPress={() => {
-                    setCurrencyPreference(item);
-                    setSelectedDate(null);
-                    setSelectedBudget(null);
-                  }}
-                />
-              ))}
-            </ScrollView>
-
-            <View className="mb-6">
-              <View className="mb-2 flex-row items-center justify-between">
-                <Text className="text-sm font-display-semibold text-muted">
-                  Wallets
-                </Text>
-                {selectedWalletIds.size ? (
-                  <Pressable
-                    testID={tid('budget', 'show-insights-for')}
-                    className="min-h-10 justify-center px-2"
-                    onPress={() => {
-                      setSelectedWalletIds(new Set());
-                      setSelectedDate(null);
-                      setSelectedBudget(null);
-                    }}
-                    accessibilityRole="button"
-                    accessibilityLabel="Show insights for all wallets"
-                  >
-                    <Text className="text-sm font-display-semibold text-primary">
-                      All wallets
-                    </Text>
-                  </Pressable>
-                ) : null}
-              </View>
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                className="-mx-5"
-                contentContainerClassName="gap-2 px-5"
-              >
-                {overview.wallets.map((wallet) => {
-                  const selected = activeWalletIds.has(wallet.id);
-                  return (
-                    <Pressable
-                      testID={tid('budget', 'include', wallet.id)}
-                      key={wallet.id}
-                      className={`min-h-10 rounded-full px-3 py-2 ${selected ? 'bg-primary-muted' : 'bg-card'}`}
-                      onPress={() => toggleWallet(wallet.id)}
-                      accessibilityRole="checkbox"
-                      accessibilityState={{ checked: selected }}
-                      accessibilityLabel={`Include ${wallet.name} in insights`}
-                    >
-                      <Text
-                        className={`text-sm font-display-semibold ${selected ? 'text-primary' : 'text-foreground'}`}
-                      >
-                        {wallet.name}
-                      </Text>
-                    </Pressable>
-                  );
-                })}
-              </ScrollView>
-            </View>
-
-            <View className="bg-accent-peach/30 mb-6 rounded-card p-5">
-              <View className="flex-row items-baseline justify-between">
-                <Text className="text-xl font-display-bold text-foreground">
-                  {formatMonth(currentMonth)} spending
-                </Text>
-                <Text className="text-sm font-display-semibold text-muted">
-                  {currency}
-                </Text>
-              </View>
-              <View className="mt-2">
-                <DonutChart
-                  data={categoryEntries.map((entry, index) => ({
-                    id: entry.categoryId ?? `uncategorized-${index}`,
-                    label: entry.name,
-                    value: minorToNumber(entry.yMinor),
-                    color: entry.color,
-                    icon: entry.icon,
-                  }))}
-                  colors={tokens.chart}
-                  surfaceColor={tokens.card}
-                  mutedColor={tokens.muted}
-                  valueLabel={(value) =>
-                    formatMinorAmount(
-                      Math.round(value * 100),
-                      currencyText(currency),
-                    )
-                  }
-                />
-              </View>
-            </View>
-
-            <View className="bg-accent-lemon/30 mb-6 rounded-[28px] p-5">
-              <View className="flex-row items-start">
-                <MaterialDesignIcons
-                  name="chart-line"
-                  size={20}
-                  color={tokens.primary}
-                />
-                <View className="ml-2 flex-1">
-                  <Text className="text-base font-display-bold text-foreground">
-                    {takeaway.headline}
-                  </Text>
-                </View>
-              </View>
-            </View>
-
-            <View className="bg-accent-aqua/30 mb-6 rounded-[28px] p-5">
-              <View className="flex-row items-center justify-between">
-                <View>
-                  <Text className="text-base font-display-bold text-foreground">
-                    Balance trend
-                  </Text>
-                </View>
-              </View>
-              <View className="mt-4 flex-row gap-2">
-                {(['30D', '90D', 'All'] as const).map((option) => {
-                  const active = option === timeframe;
-                  return (
-                    <Pressable
-                      testID={tid('budget', 'set-timeframe', option)}
-                      key={option}
-                      className={`min-h-10 rounded-full px-3 py-2 ${active ? 'bg-primary-muted' : 'bg-surface-2'}`}
-                      onPress={() => setTimeframe(option)}
-                      accessibilityRole="tab"
-                      accessibilityState={{ selected: active }}
-                    >
-                      <Text
-                        className={`text-sm font-display-semibold ${active ? 'text-primary' : 'text-muted'}`}
-                      >
-                        {option}
-                      </Text>
-                    </Pressable>
-                  );
-                })}
-              </View>
-              <View className="mt-4">
-                <LineChart
-                  data={trendData.map((point, index) => ({
-                    id: `${point.x.toISOString()}-${index}`,
-                    date: point.x,
-                    value: minorToNumber(point.yMinor),
-                  }))}
-                  width={Math.max(width - 80, 260)}
-                  strokeColor={tokens.primary}
-                  gridColor={tokens.surface2}
-                  surfaceColor={tokens.card}
-                  valueLabel={(value) =>
-                    formatMinorAmount(
-                      Math.round(value * 100),
-                      currencyText(currency),
-                    )
-                  }
-                  dateLabel={(date) =>
-                    new Intl.DateTimeFormat(undefined, {
-                      month: 'short',
-                      day: 'numeric',
-                    }).format(date)
-                  }
-                />
-              </View>
-            </View>
-
-            <View className="mb-6">
-              <View className="mb-3 flex-row items-center justify-between">
-                <View>
-                  <Text className="text-lg font-display-bold text-foreground">
-                    Budget pulse
-                  </Text>
-                </View>
-                <Pressable
-                  testID={tid('budget', 'manage-budgets')}
-                  className="min-h-11 items-center justify-center rounded-full px-2"
-                  onPress={() => router.push('/budget/list')}
-                  accessibilityRole="button"
-                  accessibilityLabel="Manage budgets"
-                >
-                  <Text className="text-sm font-display-semibold text-primary">
-                    Manage
-                  </Text>
-                </Pressable>
-              </View>
-              {selectedBudgetRows.length ? (
-                <View className="rounded-card bg-accent-lemon/30 py-1 overflow-hidden">
-                  {selectedBudgetRows.map((row) => {
-                    const rowKey = `${row.categoryId}:${row.currency}`;
-                    const expanded = selectedBudget === rowKey;
-                    return (
-                      <Pressable
-                        testID={tid(
-                          'budget',
-                          'set-selected-budget',
-                          rowKey,
-                        )}
-                        key={rowKey}
-                        onPress={() =>
-                          setSelectedBudget(expanded ? null : rowKey)
-                        }
-                        accessibilityRole="button"
-                        accessibilityState={{ expanded }}
-                      >
-                        <BudgetProgressItem budget={row}>
-                          {expanded ? (
-                            <Pressable
-                              testID={tid(
-                                'budget',
-                                'view-transactions',
-                              )}
-                              className="mt-3 self-start"
-                              onPress={() =>
-                                router.push({
-                                  pathname: '/activity',
-                                  params: {
-                                    categoryId: row.categoryId,
-                                    currency,
-                                    month: currentMonth,
-                                  },
-                                })
-                              }
-                            >
-                              <Text className="text-sm font-display-semibold text-primary">
-                                View transactions
-                              </Text>
-                            </Pressable>
-                          ) : null}
-                        </BudgetProgressItem>
-                      </Pressable>
-                    );
-                  })}
-                </View>
-              ) : (
-                <View className="rounded-card bg-sand px-5 py-6 overflow-hidden">
-                  <Text className="text-sm text-muted">
-                    Set a budget or add a categorized expense to track
-                    a pulse.
-                  </Text>
-                </View>
-              )}
-            </View>
-
-            <View className="bg-accent-lilac/30 mb-6 rounded-[28px] p-5">
-              <Text className="text-lg font-display-bold text-foreground">
-                Activity calendar
-              </Text>
-              <View className="mt-5">
-                <ActivityCalendar
-                  month={currentMonth}
-                  activities={activityDays}
-                  selectedDate={selectedDate}
-                  onSelectDate={setSelectedDate}
-                />
-              </View>
-              {selectedDate ? (
-                <View className="rounded-card bg-sand mt-5 p-4 overflow-hidden">
-                  <Text className="text-sm font-display-semibold text-foreground">
-                    {new Intl.DateTimeFormat(undefined, {
-                      weekday: 'long',
-                      month: 'long',
-                      day: 'numeric',
-                      timeZone: 'UTC',
-                    }).format(new Date(`${selectedDate}T00:00:00Z`))}
-                  </Text>
-                  {selectedActivityTransactions.length ? (
-                    selectedActivityTransactions
-                      .slice(0, 3)
-                      .map((transaction) => (
-                        <Pressable
-                          testID={tid(
-                            'budget',
-                            'transaction',
-                            transaction.id,
-                          )}
-                          key={transaction.id}
-                          className="mt-3 flex-row items-center justify-between"
-                          onPress={() =>
-                            router.push({
-                              pathname: '/transaction/[id]',
-                              params: { id: transaction.id },
-                            } as any)
-                          }
-                        >
-                          <Text
-                            className="flex-1 pr-3 text-sm font-display-semibold text-foreground"
-                            numberOfLines={1}
-                          >
-                            {transaction.merchant ??
-                              transaction.description ??
-                              'Expense'}
-                          </Text>
-                          <Text
-                            className="text-sm font-display-bold text-foreground"
-                            style={{ fontVariant: ['tabular-nums'] }}
-                          >
-                            {formatMinorAmount(
-                              transaction.amountMinor,
-                              currencyText(currency),
-                            )}
-                          </Text>
-                        </Pressable>
-                      ))
-                  ) : (
-                    <Text className="mt-2 text-sm text-muted">
-                      No expenses recorded on this day.
-                    </Text>
-                  )}
-                </View>
-              ) : (
-                <Text className="mt-4 text-sm text-muted">
-                  Select a highlighted day to see its transactions.
-                </Text>
-              )}
-            </View>
-
-            <View className="bg-sand-light mb-6 rounded-[28px] p-5">
-              <View className="flex-row items-center justify-between">
-                <View>
-                  <Text className="text-lg font-display-bold text-foreground">
-                    Where money sits
-                  </Text>
-                </View>
-              </View>
-              {currencyWallets.map((wallet) => (
-                <Pressable
-                  testID={tid('budget', 'wallet', wallet.id)}
-                  key={wallet.id}
-                  className="mt-4 flex-row items-center justify-between"
-                  onPress={() =>
-                    router.push({
-                      pathname: '/wallet/[id]',
-                      params: { id: wallet.id },
-                    } as any)
-                  }
-                >
-                  <View className="min-w-0 flex-1 pr-3">
-                    <Text
-                      className="text-base font-display-semibold text-foreground"
-                      numberOfLines={1}
-                    >
-                      {wallet.name}
-                    </Text>
-                    <Text className="mt-0.5 text-sm text-muted">
-                      {wallet.type}
-                    </Text>
-                  </View>
-                  <Text
-                    className="text-base font-display-bold text-foreground"
-                    style={{ fontVariant: ['tabular-nums'] }}
-                  >
-                    {formatMinorAmount(
-                      overview.balancesByWallet[wallet.id] ?? 0,
-                      currencyText(currency),
-                    )}
-                  </Text>
-                </Pressable>
-              ))}
-            </View>
-
-            <Pressable
-              testID={tid('budget', 'open-transaction-pinmap')}
-              onPress={() => router.push('/heatmap' as any)}
-              accessibilityRole="button"
-              accessibilityLabel="Open transaction pinmap"
-            >
-              <View className="rounded-card bg-accent-aqua/30 mb-2 flex-row items-center p-4 overflow-hidden">
-                <View className="h-11 w-11 items-center justify-center rounded-full bg-primary-muted">
-                  <MaterialDesignIcons
-                    name="map-marker"
-                    size={22}
-                    color={tokens.primary}
-                  />
-                </View>
-                <View className="ml-3 flex-1">
-                  <Text className="text-base font-display-bold text-foreground">
-                    Transaction pinmap
-                  </Text>
-                </View>
-                <MaterialDesignIcons
-                  name="chevron-right"
-                  size={22}
-                  color={tokens.muted}
-                />
-              </View>
-            </Pressable>
+            <Segmented
+              screen="budget"
+              name="view"
+              options={VIEWS}
+              value={view}
+              onChange={setView}
+              accessibilityLabel="Budget view"
+            />
+            {view === 'month' ? (
+              <MonthView
+                budget={budget}
+                data={data}
+                monthsSpent={months}
+              />
+            ) : (
+              <CalendarView
+                month={budget}
+                transactions={data.transactions}
+                categoriesById={categoriesById}
+                walletNames={data.walletNames}
+                bills={data.bills}
+                now={data.now}
+              />
+            )}
           </>
         )}
       </ScrollView>
     </Page>
+  );
+}
+
+function MonthView({
+  budget,
+  data,
+  monthsSpent,
+}: {
+  budget: BudgetMonth;
+  data: ReturnType<typeof useBudgetData>;
+  monthsSpent: { month: string; spentMinor: number }[];
+}) {
+  const { currency } = budget;
+  const name = monthName(budget.month);
+  const sentence = leftSentence(budget);
+  const places = useMemo(
+    () => spendPlaces(data.transactions, budget.month, currency),
+    [data.transactions, budget.month, currency],
+  );
+  const looks = useMemo(() => {
+    const latest = lastPaymentBySeries(data.transactions);
+    const categories = Object.fromEntries(data.categories.map((category) => [category.id, category]));
+    const result: Record<string, BillLook> = {};
+    for (const bill of budget.billsDue) {
+      const payment = latest.get(bill.seriesKey);
+      const category = payment?.categoryId ? categories[payment.categoryId] : undefined;
+      result[bill.seriesKey] = {
+        wallet: payment ? (data.walletNames[payment.walletId] ?? null) : null,
+        icon: category?.icon ?? null,
+        color: category?.color ?? null,
+      };
+    }
+    return result;
+  }, [budget.billsDue, data.transactions, data.categories, data.walletNames]);
+
+  const history = monthsSpent.filter((item) => item.month < budget.month).slice(0, 3);
+  const emptyBody =
+    history.length === 3
+      ? `You spent about ${formatMoney(
+          history.reduce((sum, item) => sum + item.spentMinor, 0) / 3,
+          currency,
+          { whole: true },
+        )} a month from ${monthName(history[2].month)} to ${monthName(history[0].month)}. Set budgets and Moni starts each category from there.`
+      : 'Set a budget for each category and this tab shows what is left as you spend.';
+  const firstExpense = budget.isCurrent && budget.spentMinor === 0;
+
+  return (
+    <View className="gap-3">
+      {firstExpense ? (
+        <EmptyTile
+          icon="chart-box"
+          title="Your line starts with one expense"
+          body="Add one with the +, or let Moni read your bank alerts. The chart and the calendar fill in as you spend."
+          action={{
+            testID: tid('budget', 'add-expense'),
+            label: 'Add an expense',
+            icon: 'plus',
+            onPress: () => void openCaptureChooser(),
+          }}
+        />
+      ) : (
+        <View
+          accessibilityLabel={`Spent in ${name}`}
+          className="gap-2 rounded-card bg-card px-[18px] py-3.5"
+        >
+          <Text
+            variant="caps"
+            className="text-muted"
+          >
+            {`Spent in ${name}`}
+          </Text>
+          <View>
+            <Text
+              testID={tid('budget', 'spent')}
+              className="text-[32px] leading-9 font-display-bold text-foreground"
+              style={{ fontVariant: ['tabular-nums'] }}
+            >
+              {formatMoney(budget.spentMinor, currency)}
+              {budget.budgetMinor !== null ? (
+                <Text className="text-[17px] leading-[22px] font-display-semibold text-ink-2">
+                  {` of ${formatMoney(budget.budgetMinor, currency, { whole: true })}`}
+                </Text>
+              ) : null}
+            </Text>
+            {sentence ? (
+              <Text
+                testID={tid('budget', 'left')}
+                variant="meta"
+                className="text-ink-2"
+                style={{ fontVariant: ['tabular-nums'] }}
+              >
+                {sentence}
+              </Text>
+            ) : null}
+          </View>
+          <PaceChart
+            screen="budget"
+            mode="pace"
+            series={budget.cumulative}
+            daysInMonth={budget.daysInMonth}
+            month={budget.month}
+            budget={budget.budgetMinor}
+            currency={currency}
+            endsToday={budget.isCurrent}
+            what={`Spent so far in ${name}`}
+          />
+        </View>
+      )}
+      <View className="mt-2">
+        <BudgetRings
+          budgeted={budget.budgeted}
+          unbudgeted={budget.unbudgeted}
+          currency={currency}
+          month={budget.month}
+          emptyBody={emptyBody}
+        />
+      </View>
+      {budget.isCurrent ? (
+        <View className="mt-2">
+          <BillsList
+            bills={budget.billsDue}
+            looks={looks}
+            now={data.now}
+            currency={currency}
+            monthEnd={`${budget.daysInMonth} ${monthShort(budget.month)}`}
+          />
+        </View>
+      ) : null}
+      <View className="mt-2">
+        <MapTeaser
+          places={places.places}
+          expenses={places.expenses}
+          withPlace={places.withPlace}
+          monthName={name}
+          currency={currency}
+          onOpen={() => router.push('/heatmap')}
+        />
+      </View>
+    </View>
   );
 }
