@@ -21,12 +21,6 @@ import {
   type NotificationListenerPermission,
 } from '@/lib/notifications/permission';
 
-export type WalletNotificationLinkValue = {
-  notificationPackage: string | null;
-  notificationAppLabel: string | null;
-  notificationAccountHint: string | null;
-};
-
 export type InstalledBankApp = {
   packageName: string;
   label: string;

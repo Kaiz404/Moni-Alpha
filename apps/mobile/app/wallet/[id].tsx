@@ -21,10 +21,8 @@ import { NotFound } from '@/components/ui/empty-tile';
 import { FormField } from '@/components/ui/form-field';
 import { PickerField } from '@/components/ui/picker-field';
 import { WalletColourSwatches } from '@/components/wallets/wallet-colour-swatches';
-import {
-  WalletNotificationLinkSection,
-  type WalletNotificationLinkValue,
-} from '@/components/wallets/wallet-notification-link-section';
+import { WalletNotificationLinkSection } from '@/components/wallets/wallet-notification-link-section';
+import type { WalletAlertLink as WalletNotificationLinkValue } from '@/lib/wallets/wallet-link';
 import {
   DEFAULT_WALLET_CARD_STYLE_ID,
   WALLET_CARD_STYLES,

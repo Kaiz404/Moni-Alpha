@@ -4,7 +4,6 @@ import { getUserId } from '@/lib/supabase/client';
 import { isTransactionRelevantToWallet } from '@/lib/finance/ledger';
 import type {
   CreateTransaction,
-  MinorAmount,
   TransactionSource,
   UpdateTransaction,
 } from '@repo/types';

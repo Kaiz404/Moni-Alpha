@@ -64,7 +64,7 @@ name: sheets
 # Wallet form: currency search with the keyboard up, type and colour.
 - openLink: moni-e2e://wallet/new
 - tapOn:
-    id: txn.change-currency-currently
+    id: wallet.currency
 - assertVisible: Currency
 - tapOn:
     id: sheet.search

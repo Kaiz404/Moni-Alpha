@@ -10,18 +10,16 @@ import {
   NotificationAppIcon,
   useNotificationSourceData,
   useNotificationSourcePermission,
-  type WalletNotificationLinkValue,
 } from '@/components/wallets/notification-source';
 import { labelForNotificationPackage } from '@/constants/notification-apps';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { openSheet } from '@/lib/sheet/sheet-store';
 import { tid } from '@/lib/test-ids';
-
-export type { WalletNotificationLinkValue } from '@/components/wallets/notification-source';
+import type { WalletAlertLink } from '@/lib/wallets/wallet-link';
 
 type Props = {
-  value: WalletNotificationLinkValue;
-  onChange: (next: WalletNotificationLinkValue) => void;
+  value: WalletAlertLink;
+  onChange: (next: WalletAlertLink) => void;
   sharedPackageWalletNames?: string[];
 };
 
