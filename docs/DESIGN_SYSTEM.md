@@ -285,16 +285,16 @@ v2 (N1). The values are in [`redesign/tokens.md`](redesign/tokens.md#navigation)
 
 ### 7.3 Hero net-worth block
 
-Home begins with the user’s financial orientation, not an AI alert.
+Home begins with the user’s financial orientation, not an AI alert. v2 (`V2H-Home`), top to bottom:
 
-Contents:
+- **Net worth**: the sum of main-currency wallets only, amount hero 52. Tapping it opens Wallets. Other currencies never appear on Home.
+- **Spent in October** card: spent of the month's budget, then "RM443 left for 18 days · RM24 a day". What's left subtracts bills still due and money owed to a person by month end (D1); the bills strip names it ("RM240.80 set aside for bills and RM40 to Mei"), or the left line does when there is no bill ("after RM40 to Mei"). Pace / Daily toggle over the shared chart (7.12).
+- The ask box and the Moni header button both open Moni chat (D4).
+- The Lilac review block appears only while captures wait.
+- Recent: three main-currency rows and **See all**; the bills strip; the Lemon check-in for one stale main-currency balance (**That's right**, **Fix it**, **Not now**, each answer with **Undo**).
+- First run (`V2H-HomeFirstRun`, no wallets and no transactions): "Welcome to Moni", the three setup steps on Mint, the chart's empty shape with a hint, and empty tiles for transactions and bills. The setup steps stay until the user has a transaction.
 
-- “Net worth” label, large primary number, native currency context.
-- A discreet visibility toggle.
-- Difference/trend only when it has an understood comparison period (e.g., “+$280 this month”).
-- A compact account-balance visual immediately below or attached: segmented bar, stacked mini bars, or a wallet carousel showing cash, bank, e-wallet, and other accounts.
-
-Do not force a converted aggregate across currencies. When accounts span currencies, show an `Accounts` summary with each original amount and currency. If a net-worth aggregate cannot be honestly calculated, explain the scope rather than fabricating one.
+Do not force a converted aggregate across currencies. Wallets (`V2H-Wallets`) lists the main currency first with its closing-balance line, then each other currency in its own section with the "Kept apart" note.
 
 ### 7.4 Wallet/account cards
 
@@ -313,7 +313,7 @@ Use the Moni mint, lilac, peach, lemon, coral, aqua, and neutral palette as soli
 
 Never mimic real payment cards unless users need a real card identifier. The visual job is balance recognition, not faux banking branding.
 
-**Balance check.** When a stale balance blocks the forecast, Home and Chat open with one peach card, “Confirm balances to unlock your forecast”, listing each wallet with its native balance and two actions: **Yes, that’s right** (the row fades out) and **Fix it** (opens the wallet). It always offers **Not now**, which snoozes it for a week; it never becomes a permanent card.
+**Balance check.** When a stale main-currency balance blocks the forecast, Home shows the Lemon check-in for one wallet, "Is Maybank Savings still RM2,281.80?": **That's right** stamps it, **Fix it** opens the wallet page in its balance edit, and **Not now** snoozes every check-in for a week. Each answer leaves one line with **Undo** for a few seconds; it never becomes a permanent card.
 
 **Wallet page (v2, `V2H-WalletDetail`).** A pushed page titled "Wallet" with a ⋯ menu (Edit wallet, Delete wallet). The wallet's name and its BALANCE (amount hero, the wallet's own currency, never converted) each edit in place: tap the value or its pencil, type with the phone keyboard, then ✕ or ✓; one field at a time, and Android back cancels. "Last checked … · **Balance not right?**" opens the balance field with a live line ("Moni adds a −RM3.60 balance correction. Not counted as spending or income."). Saving writes one **Balance correction** row (income or expense of the difference, kept out of budgets and spending) and shows the toast "Correction −RM3.60 added" with **Undo**; saving the same balance only marks it checked. Every list shows a correction as "Balance correction · Not in budgets" on a Lemon bubble. Below the hero, in order: the balance chart (main-currency wallets only; it lands with the Activity chart), "N captures to review" when captures wait for this wallet, Transactions grouped by day with a day total and **All N** into Activity, and ALERTS (Alerts from, Capture log). Deleting the wallet closes the page.
 
@@ -413,6 +413,8 @@ Keep chart controls local and obvious: timeframe, category, wallet. Avoid chart 
 Chart surfaces are borderless and quiet: use the parent surface plus spacing to frame them, a very low-tint category fill for contextual areas, and clearer pastel category hues only for active data marks, selected states, or legible segments. Avoid dark grids, boxed legends, and saturated decorative fills.
 
 Activity chart (v2, `components/charts/activity-chart.tsx`, `V2A-Activity`): a Paper card with the month's caps label and a Spending | Balance segmented toggle. Spending draws one Ink bar per day so far, the part above even pace in Coral, even pace as a dashed Ink line with its label on the axis, and today on a Sand-light band with a dashed segment for safe to spend a day; without a main-currency budget it drops even pace and that legend. Balance draws the closing balance of the main-currency wallets across the whole month; its axis does not start at 0, and the accessibility label says so. Tapping a bar or a point (dragging on Balance) moves the Ink callout and narrows the list to that day, with **Whole month** to clear it. Bars grow 14 ms apart and the line draws in on the `value` spring, once per app session.
+
+v2: `components/charts/pace-chart.tsx` draws the three tokens.md line and bar charts from one `series` of per-day values: `pace` (spent against the budget, with even pace), `daily` (one bar a day, Coral above even pace, today's safe-to-spend segment) and `balance` (closing balance, axis not from zero). One callout, a scrub that snaps per day with `scrubStep`, draw-in once per mode, and no projection line or readout row. `chart-toggle.tsx` is the 36-tall card toggle.
 
 ### 7.12 Chat and companion presence
 

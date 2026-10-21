@@ -1,0 +1,66 @@
+# H1 Home: every V2H-Home block in order, then Wallets from Net worth.
+# Needs a signed-in e2e build with at least one main-currency wallet and spending.
+# Run: scripts/device/with-device.sh --lane h1 -- maestro test .maestro/flows/home/home.yaml
+appId: com.anonymous.moni.e2e
+name: H1 Home blocks
+tags:
+  - h1
+  - needs-default-seed
+---
+- launchApp
+- extendedWaitUntil:
+    visible:
+      id: home.avatar
+    timeout: 15000
+- assertVisible:
+    id: home.ask-moni
+- assertVisible:
+    id: home.net-worth.amount
+- assertVisible:
+    id: home.spent.amount
+- assertVisible:
+    id: home.chart.pace
+- assertVisible:
+    id: home.chart.plot
+- assertVisible:
+    id: home.ask-box
+- takeScreenshot: h1-l1-home
+- scrollUntilVisible:
+    element:
+      text: Recent
+- takeScreenshot: h1-l1-home-recent
+
+# Toggle Daily and back.
+- scrollUntilVisible:
+    element:
+      id: home.chart.daily
+    direction: UP
+- tapOn:
+    id: home.chart.daily
+- assertVisible: Tap a bar
+- takeScreenshot: h1-l4-daily
+- tapOn:
+    id: home.chart.pace
+- assertVisible: Tap or drag
+
+# Net worth opens Wallets.
+- tapOn:
+    id: home.net-worth
+- assertVisible:
+    id: wallet.list.net-worth
+- assertVisible: Wallets
+- takeScreenshot: h1-l3-wallets
+- tapOn:
+    id: wallet.back
+- assertVisible:
+    id: home.avatar
+
+# The ask box opens Moni chat.
+- tapOn:
+    id: home.ask-box
+- assertVisible:
+    id: chat.back
+- tapOn:
+    id: chat.back
+- assertVisible:
+    id: home.avatar

@@ -1,47 +1,39 @@
-import { memo, useMemo, useState } from 'react';
-import {
-  Pressable,
-  RefreshControl,
-  ScrollView,
-  View,
-} from 'react-native';
-import { useTabBarClearance } from '@/components/nav/tab-bar';
-import { Text } from '@/components/ui/text';
-import { router } from 'expo-router';
-import { Page } from '@/components/ui/page';
+import { syncState } from '@legendapp/state';
 import { useValue } from '@legendapp/state/react';
-import { MaterialDesignIcons } from '@react-native-vector-icons/material-design-icons';
+import { router } from 'expo-router';
+import { useEffect, useMemo, useState } from 'react';
+import { RefreshControl, ScrollView, View } from 'react-native';
 
+import { AskBox } from '@/components/home/ask-box';
+import { BillsStrip } from '@/components/home/bills-strip';
+import { CheckInCard } from '@/components/home/check-in-card';
+import { NetWorth } from '@/components/home/net-worth';
+import { RecentList } from '@/components/home/recent-list';
+import { ReviewBlock } from '@/components/home/review-block';
+import { SetupTiles, type SetupStep } from '@/components/home/setup-tiles';
 import { SpentCard } from '@/components/home/spent-card';
+import { debtPhrase } from '@/components/home/spent-summary';
 import { useSpentSummary } from '@/components/home/use-spent-summary';
-import { useMainCurrency } from '@/lib/finance/main-currency';
-import { ConfirmBalanceCard } from '@/components/wallets/confirm-balance-card';
+import { openCaptureChooser } from '@/components/nav/capture-chooser';
+import { useTabBarClearance } from '@/components/nav/tab-bar';
+import { SyncBanner } from '@/components/providers/sync-banner';
 import { EmptyTile } from '@/components/ui/empty-tile';
-import { IconSymbol } from '@/components/ui/icon-symbol';
-import { ListCard } from '@/components/ui/list-card';
-import { TransactionRow } from '@/components/ui/transaction-row';
-import { SolidWalletCard } from '@/components/ui/solid-wallet-card';
-import { getWalletCardStyle } from '@/constants/wallet-card-styles';
-import { resolveWalletIcon } from '@/constants/wallet-form';
-import { useThemeTokens } from '@/hooks/use-theme-tokens';
+import { Page } from '@/components/ui/page';
+import { SKELETON_DELAY_MS } from '@/components/ui/skeleton';
 import { useAuth } from '@/lib/auth/auth-context';
-import { formatMinorAmount } from '@/lib/finance/money';
-import {
-  transactionRow,
-  type RowLookups,
-} from '@/lib/transactions/row';
-import {
-  debtsWithBalance$,
-  financeOverview$,
-  netWorthByCurrency$,
-  pendingProposals$,
-  walletBalanceMinor$,
-  walletById$,
-} from '@/lib/finance/selectors';
+import { useMainCurrency } from '@/lib/finance/main-currency';
+import { merchantName } from '@/lib/finance/merchant-name';
+import { financeOverview$, pendingProposals$ } from '@/lib/finance/selectors';
+import type { FinanceTransaction } from '@/lib/finance/types';
+import { wallets$ } from '@/lib/store';
+import { getRecordValues } from '@/lib/store/helpers';
+import { listMerchantAliases } from '@/lib/supabase/merchant-aliases';
+import { isAwaitingReview } from '@/lib/supabase/proposed-transactions';
 import { tid } from '@/lib/test-ids';
+import type { RowLookups } from '@/lib/transactions/row';
 
-function timeAwareGreeting(): string {
-  const hour = new Date().getHours();
+function timeAwareGreeting(now: Date): string {
+  const hour = now.getHours();
   if (hour < 12) return 'Morning';
   if (hour < 18) return 'Afternoon';
   return 'Evening';
@@ -54,110 +46,66 @@ function headerDate(date: Date): string {
   return `${part({ weekday: 'long' })}, ${part({ day: 'numeric' })} ${part({ month: 'short' })}`;
 }
 
-function displayName(
-  value: string | null | undefined,
-): string | null {
+function firstName(value: string | null | undefined): string | null {
   const trimmed = value?.trim();
   return trimmed ? (trimmed.split(/\s+/)[0] ?? null) : null;
 }
 
-const WalletCard = memo(function WalletCard({
-  walletId,
-}: {
-  walletId: string;
-}) {
-  const wallet = useValue(walletById$(walletId));
-  const balanceMinor = useValue(walletBalanceMinor$(walletId));
-  if (!wallet) return null;
-  const cardStyle = getWalletCardStyle(
-    wallet.cardStyleId ?? undefined,
-  );
-  return (
-    <Pressable
-      testID={tid('home', 'wallet', walletId)}
-      onPress={() =>
-        router.push({
-          pathname: '/wallet/[id]',
-          params: { id: wallet.id },
-        } as any)
-      }
-      className="mr-2"
-      style={{ width: 150 }}
-      accessibilityRole="button"
-      accessibilityLabel={`Open ${wallet.name}, ${formatMinorAmount(balanceMinor, wallet.currency)}`}
-    >
-      <SolidWalletCard
-        cardStyle={cardStyle}
-        className="w-full flex-col justify-between p-4"
-      >
-        <View
-          pointerEvents="none"
-          className="absolute -bottom-0 -right-3"
-          style={{ opacity: 0.18 }}
-        >
-          <IconSymbol
-            name={resolveWalletIcon(undefined, wallet.type)}
-            size={60}
-            color={cardStyle.contentColor}
-          />
-        </View>
-        <View className="flex-row items-start justify-between">
-          <View className="min-w-0 flex-1 pr-2">
-            <Text
-              className="text-base font-display-bold"
-              style={{ color: cardStyle.contentColor }}
-              numberOfLines={1}
-            >
-              {wallet.name}
-            </Text>
-          </View>
-        </View>
-        <View className="mt-auto pt-2">
-          <Text
-            className="mt-1 text-xl font-display-bold"
-            numberOfLines={1}
-            style={{
-              color: cardStyle.contentColor,
-              fontVariant: ['tabular-nums'],
-            }}
-          >
-            {formatMinorAmount(balanceMinor, wallet.currency)}
-          </Text>
-        </View>
-      </SolidWalletCard>
-    </Pressable>
-  );
-});
+function openTransaction(transaction: FinanceTransaction) {
+  if (transaction.debtActivityId) router.navigate('/debts');
+  else
+    router.push({
+      pathname: '/transaction/[id]',
+      params: { id: transaction.id },
+    });
+}
 
 export default function HomeScreen() {
   const { user } = useAuth();
+  const userId = user?.id ?? null;
   const clearance = useTabBarClearance();
-
-  const userInitial = useMemo(() => {
-    const ch = (user?.email ?? '').charAt(0).toUpperCase();
-    return ch || '?';
-  }, [user?.email]);
-
-  const name =
-    displayName(user?.user_metadata?.full_name) ??
-    displayName(user?.email);
-  const greeting = name
-    ? `${timeAwareGreeting()}, ${name}`
-    : timeAwareGreeting();
-
-  const tokens = useThemeTokens();
-  const overview = useValue(financeOverview$(user?.id ?? null));
-  const netWorth = useValue(netWorthByCurrency$(user?.id ?? null));
   const currency = useMainCurrency();
-  const spent = useSpentSummary(user?.id ?? null, currency);
-  const debts = useValue(debtsWithBalance$(user?.id ?? null));
-  const pendingProposals = useValue(
-    pendingProposals$(user?.id ?? null),
+  const now = new Date();
+
+  const overview = useValue(financeOverview$(userId));
+  const spent = useSpentSummary(userId, currency);
+  const proposals = useValue(pendingProposals$(userId));
+  const aliases = useValue(() => (userId ? listMerchantAliases(userId) : []));
+  const alertsLinked = useValue(() =>
+    getRecordValues<{ deleted?: boolean; notification_package: string | null }>(
+      wallets$,
+    ).some((wallet) => !wallet.deleted && wallet.notification_package),
+  );
+  const firstSync = useValue(
+    () => !syncState(wallets$).isLoaded.get(),
   );
   const [refreshing, setRefreshing] = useState(false);
+
+  const name =
+    firstName(user?.user_metadata?.full_name) ?? firstName(user?.email);
+  const initial = (name ?? user?.email ?? '?').charAt(0).toUpperCase();
+  const mainWallets = overview.wallets.filter(
+    (wallet) => wallet.currency === currency,
+  );
+  const netWorthMinor = mainWallets.reduce(
+    (sum, wallet) => sum + Number(overview.balancesByWallet[wallet.id] ?? 0),
+    0,
+  );
+  const firstRun =
+    overview.wallets.length === 0 && overview.transactions.length === 0;
+  const waiting = proposals.filter((proposal) =>
+    isAwaitingReview(proposal, now),
+  );
   const recent = useMemo(
-    () => overview.transactions.slice(0, 5),
-    [overview.transactions],
+    () =>
+      overview.transactions
+        .filter((transaction) => transaction.currency === currency)
+        .slice(0, 3)
+        .map((transaction) => ({
+          ...transaction,
+          merchant: merchantName(transaction.merchant, aliases),
+        })),
+    [overview.transactions, currency, aliases],
   );
   const lookups = useMemo<RowLookups>(
     () => ({
@@ -168,12 +116,34 @@ export default function HomeScreen() {
     }),
     [overview.categoriesById, overview.wallets],
   );
-  const openDebts = debts
-    .filter(
-      ({ debt, balanceMinor }) =>
-        debt.status === 'open' && Number(balanceMinor) > 0,
-    )
-    .slice(0, 2);
+  const steps: SetupStep[] = [
+    {
+      key: 'wallet',
+      title: 'Add a wallet',
+      body: 'Bank, cash, e-wallet or card',
+      done: overview.wallets.length > 0,
+      onPress: () => router.push('/wallet/new'),
+    },
+    {
+      key: 'budget',
+      title: `Set ${monthLong(now)}'s budget`,
+      body: 'This draws your spending chart',
+      done: spent.budgetMinor !== null,
+      onPress: () => router.push('/budget/form'),
+    },
+    {
+      key: 'alerts',
+      title: 'Let Moni read bank alerts',
+      body: 'Optional. Spending lands here by itself',
+      done: alertsLinked,
+      onPress: () => router.push('/notifications'),
+    },
+  ];
+  const showSetup =
+    overview.transactions.length === 0 && steps.some((step) => !step.done);
+  const debtsLabel = spent.bills.length
+    ? null
+    : debtPhrase(spent.debtsDue, currency);
 
   const refresh = async () => {
     setRefreshing(true);
@@ -187,265 +157,117 @@ export default function HomeScreen() {
     <Page
       screen="home"
       kind="home"
-      initial={userInitial}
-      date={headerDate(new Date())}
-      greeting={greeting}
+      initial={initial}
+      date={headerDate(now)}
+      greeting={
+        firstRun
+          ? `Welcome to Moni${name ? `, ${name}` : ''}`
+          : `${timeAwareGreeting(now)}${name ? `, ${name}` : ''}`
+      }
       onAvatarPress={() => router.push('/profile')}
       onAskMoni={() => router.push('/chat')}
     >
-      <ScrollView
-        className="flex-1"
-        contentContainerStyle={{ paddingBottom: clearance }}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={refresh}
+      {firstSync && firstRun ? (
+        <HomeSkeleton />
+      ) : (
+        <ScrollView
+          className="flex-1"
+          contentContainerClassName="gap-3 px-5"
+          contentContainerStyle={{ paddingBottom: clearance }}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={refresh}
+            />
+          }
+          showsVerticalScrollIndicator={false}
+        >
+          <SyncBanner screen="home" />
+          <NetWorth
+            amountMinor={netWorthMinor}
+            currency={currency}
+            firstRun={firstRun}
+            onPress={() => router.push('/wallets')}
           />
-        }
-        showsVerticalScrollIndicator={false}
-      >
-        <View className="px-5">
-          <ConfirmBalanceCard />
-
-          {pendingProposals.length ? (
-            <Pressable
-              testID={tid('home', 'proposal')}
-              className="mt-5 flex-row items-center rounded-2xl bg-surface-1 px-4 py-3"
-              onPress={() =>
-                router.push({
-                  pathname: '/review',
-                  params: { id: pendingProposals[0]!.id },
-                })
-              }
-              accessibilityRole="button"
-              accessibilityLabel={`${pendingProposals.length} transaction proposal${pendingProposals.length === 1 ? '' : 's'} ready for review`}
-            >
-              <View className="h-9 w-9 items-center justify-center rounded-full bg-primary-muted">
-                <MaterialDesignIcons
-                  name="file-document-check"
-                  size={19}
-                  color={tokens.primary}
-                />
-              </View>
-              <View className="ml-3 flex-1">
-                <Text className="text-sm font-display-bold text-foreground">
-                  {pendingProposals.length} ready to review
-                </Text>
-              </View>
-              <MaterialDesignIcons
-                name="chevron-right"
-                size={21}
-                color={tokens.muted}
-              />
-            </Pressable>
-          ) : null}
-
-          <View className="rounded-card bg-sand-light mt-7 p-5 overflow-hidden">
-            <Text className="text-sm font-display-semibold text-muted">
-              Net worth
-            </Text>
-            {netWorth.length ? (
-              <View className="mt-2 gap-4">
-                {netWorth.map((row, index) => (
-                  <View key={row.currency}>
-                    <View className="flex-row items-baseline justify-between">
-                      <Text
-                        className={`${index === 0 ? 'text-[30px]' : 'text-xl'} font-display-bold leading-9 text-foreground`}
-                        style={{ fontVariant: ['tabular-nums'] }}
-                      >
-                        {formatMinorAmount(
-                          row.netWorthMinor,
-                          row.currency,
-                        )}
-                      </Text>
-                      <Text className="text-sm font-display-semibold text-muted">
-                        {row.currency}
-                      </Text>
-                    </View>
-                    <Text className="mt-1 text-sm leading-5 text-muted">
-                      Cash{' '}
-                      {formatMinorAmount(row.cashMinor, row.currency)}{' '}
-                      · Owed to you{' '}
-                      {formatMinorAmount(
-                        row.receivableMinor,
-                        row.currency,
-                      )}{' '}
-                      · You owe{' '}
-                      {formatMinorAmount(
-                        row.payableMinor,
-                        row.currency,
-                      )}
-                    </Text>
-                  </View>
-                ))}
-              </View>
-            ) : (
-              <View className="mt-2">
-                <Text className="text-lg font-display-bold text-foreground">
-                  Add your first account
-                </Text>
-              </View>
-            )}
-          </View>
-        </View>
-
-        <View className="mt-4">
-          <View className="mb-1 flex-row items-center justify-between px-5">
-            <View>
-              <Text className="text-lg font-display-bold text-foreground">
-                Wallets
-              </Text>
-            </View>
-            <Pressable
-              testID={tid('home', 'add-wallet')}
-              className="h-11 w-11 items-center justify-center"
-              onPress={() => router.push('/wallet/new' as any)}
-              accessibilityRole="button"
-              accessibilityLabel="Add wallet"
-            >
-              <MaterialDesignIcons
-                name="plus"
-                size={22}
-                color={tokens.primary}
-              />
-            </Pressable>
-          </View>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerClassName="px-5"
-          >
-            {overview.wallets.map((wallet) => (
-              <WalletCard
-                key={wallet.id}
-                walletId={wallet.id}
-              />
-            ))}
-          </ScrollView>
-        </View>
-
-        <View className="mt-4 px-5">
+          {showSetup ? <SetupTiles steps={steps} /> : null}
           <SpentCard
             summary={spent}
             currency={currency}
+            after={debtsLabel}
           />
-        </View>
-
-        {openDebts.length ? (
-          <View className="mt-4 px-5">
-            <View className="flex-row items-center justify-between">
-              <View>
-                <Text className="text-lg font-display-bold text-foreground">
-                  Debt pulse
-                </Text>
-              </View>
-              <Pressable
-                testID={tid('home', 'debts')}
-                className="min-h-11 justify-center px-2"
-                onPress={() => router.push('/debts')}
-              >
-                <MaterialDesignIcons
-                  name="chevron-right"
-                  size={20}
-                  color={tokens.primary}
-                  accessibilityLabel="Go to Debt Pulse"
-                />
-              </Pressable>
-            </View>
-            <View className="rounded-card bg-accent-lilac/30 overflow-hidden">
-              {openDebts.map(({ debt, balanceMinor }, index) => {
-                const owedToYou = debt.direction === 'owed_to_me';
-                return (
-                  <Pressable
-                    testID={tid('home', 'debt', debt.id)}
-                    key={debt.id}
-                    className={`flex-row items-center justify-between px-4 py-4 ${index ? 'border-t border-border' : ''}`}
-                    onPress={() =>
-                      router.push(`/debt/${debt.id}` as any)
-                    }
-                  >
-                    <View className="min-w-0 flex-1 pr-3">
-                      <Text
-                        className="text-base font-display-semibold text-foreground"
-                        numberOfLines={1}
-                      >
-                        {debt.counterpartyName}
-                      </Text>
-                      <Text className="mt-1 text-sm text-muted">
-                        {owedToYou ? 'Owed to you' : 'You owe'}
-                        {debt.dueDate ? ` · Due ${debt.dueDate}` : ''}
-                      </Text>
-                    </View>
-                    <Text
-                      className="text-base font-display-bold text-foreground"
-                      style={{ fontVariant: ['tabular-nums'] }}
-                    >
-                      {formatMinorAmount(balanceMinor, debt.currency)}
-                    </Text>
-                  </Pressable>
-                );
-              })}
-            </View>
-          </View>
-        ) : null}
-
-        <View className="mt-4 px-5">
-          <View className="flex-row items-center justify-between">
-            <View>
-              <Text className="text-lg font-display-bold text-foreground">
-                Recent activity
-              </Text>
-            </View>
-            <Pressable
-              testID={tid('home', 'transactions')}
-              className="min-h-11 justify-center px-2"
-              onPress={() => router.push('/activity')}
-            >
-              <MaterialDesignIcons
-                name="chevron-right"
-                size={20}
-                color={tokens.primary}
-                accessibilityLabel="Go to Recent Activity"
-              />
-            </Pressable>
-          </View>
-          {recent.length ? (
-            <ListCard>
-              {recent.map((transaction) => (
-                <TransactionRow
-                  key={transaction.id}
-                  testID={tid('home', 'transaction', transaction.id)}
-                  row={transactionRow(transaction, lookups)}
-                  metaLead="date"
-                  onPress={() =>
-                    router.push(
-                      transaction.debtActivityId
-                        ? ('/debts' as never)
-                        : ({
-                            pathname: '/transaction/[id]',
-                            params: { id: transaction.id },
-                          } as never),
-                    )
-                  }
-                />
-              ))}
-            </ListCard>
-          ) : (
+          <AskBox onPress={() => router.push('/chat')} />
+          <ReviewBlock
+            proposals={waiting}
+            currency={currency}
+            onPress={() =>
+              router.push({
+                pathname: '/proposal/[id]',
+                params: { id: waiting[0]!.id },
+              })
+            }
+          />
+          <View className="h-1" />
+          <RecentList
+            transactions={recent}
+            lookups={lookups}
+            onOpen={openTransaction}
+            onSeeAll={() => router.navigate('/activity')}
+            onAdd={() => void openCaptureChooser()}
+          />
+          {firstRun ? (
             <EmptyTile
-              icon="format-list-bulleted"
-              title="No spending yet"
-              body="Add your first spend with + or link a bank app so Moni catches them for you."
+              icon="calendar-clock"
+              title="No bills yet"
+              body="Each bill shows here a few days before it's due."
               action={{
-                testID: tid('home', 'activity-empty'),
-                label: 'Add a spend',
+                testID: tid('home', 'bills', 'add'),
+                label: 'Add a bill',
                 icon: 'plus',
-                onPress: () =>
-                  router.push('/transaction/new' as never),
+                onPress: () => router.navigate('/budget'),
               }}
             />
+          ) : (
+            <BillsStrip
+              summary={spent}
+              currency={currency}
+              now={now}
+              onPress={() => router.navigate('/budget')}
+            />
           )}
-        </View>
-      </ScrollView>
+          <CheckInCard currency={currency} />
+        </ScrollView>
+      )}
     </Page>
+  );
+}
+
+function monthLong(date: Date): string {
+  return date.toLocaleDateString('en-GB', { month: 'long' });
+}
+
+/** First sync on a new phone only, after 300 ms; shapes follow the real layout. */
+function HomeSkeleton() {
+  const [shown, setShown] = useState(false);
+  useEffect(() => {
+    const timer = setTimeout(() => setShown(true), SKELETON_DELAY_MS);
+    return () => clearTimeout(timer);
+  }, []);
+  if (!shown) return null;
+  return (
+    <View
+      accessibilityRole="progressbar"
+      accessibilityLabel="Loading"
+      className="gap-3 px-5"
+    >
+      <View className="h-3 w-24 rounded-full bg-sand-light" />
+      <View className="h-12 w-56 rounded-full bg-sand-light" />
+      <View className="h-[300px] rounded-card bg-card p-[18px]">
+        <View className="h-3 w-32 rounded-full bg-sand-light" />
+        <View className="mt-4 h-8 w-44 rounded-full bg-sand-light" />
+        <View className="mt-4 flex-1 rounded-tile bg-sand-light" />
+      </View>
+      <View className="h-12 rounded-full bg-card" />
+      <View className="h-[200px] rounded-card bg-card" />
+    </View>
   );
 }

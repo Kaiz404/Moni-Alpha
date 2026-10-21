@@ -23,6 +23,8 @@ const dismissedUntil$ = observable(
 export function useBalanceConfirmation(): {
   wallets: WalletToConfirm<FinanceWallet>[];
   dismiss: () => void;
+  /** Undo for "Not now". */
+  restore: () => void;
 } {
   const { user } = useAuth();
   const userId = user?.id ?? null;
@@ -47,5 +49,10 @@ export function useBalanceConfirmation(): {
     dismissedUntil$.set(until);
   }, []);
 
-  return { wallets: Date.now() < dismissedUntil ? [] : due, dismiss };
+  const restore = useCallback(() => {
+    preferencesMMKV.set(BALANCE_CONFIRMATION_DISMISSED_KEY, '');
+    dismissedUntil$.set(0);
+  }, []);
+
+  return { wallets: Date.now() < dismissedUntil ? [] : due, dismiss, restore };
 }

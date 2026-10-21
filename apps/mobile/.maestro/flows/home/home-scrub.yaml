@@ -1,0 +1,30 @@
+# H1 Home scrub: drag across the Pace chart; the callout follows a day.
+# Run: scripts/device/with-device.sh --lane h1 -- maestro test .maestro/flows/home/home-scrub.yaml
+appId: com.anonymous.moni.e2e
+name: H1 Home scrub
+tags:
+  - h1
+  - needs-default-seed
+---
+- launchApp
+- extendedWaitUntil:
+    visible:
+      id: home.chart.plot
+    timeout: 15000
+- assertVisible:
+    id: home.chart.callout
+- swipe:
+    from:
+      id: home.chart.plot
+    direction: LEFT
+    duration: 1200
+- assertVisible:
+    id: home.chart.callout
+- assertVisible:
+    text: 'By .*'
+- takeScreenshot: h1-l5-scrub
+- tapOn:
+    id: home.chart.plot
+    point: 20%,50%
+- assertVisible:
+    text: 'By .*'

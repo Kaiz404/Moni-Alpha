@@ -1,0 +1,45 @@
+# H1 Home first run: a user with no wallets and no transactions.
+# Needs the empty seed.
+# Run: scripts/device/with-device.sh --lane h1 -- maestro test .maestro/flows/home/home-first-run.yaml
+appId: com.anonymous.moni.e2e
+name: H1 Home first run
+tags:
+  - h1
+  - needs-empty-seed
+---
+- launchApp
+- extendedWaitUntil:
+    visible:
+      id: home.avatar
+    timeout: 15000
+- assertVisible: 'Welcome to Moni.*'
+- assertVisible: Add a wallet and Moni adds up what you have.
+- assertVisible:
+    id: home.setup.wallet
+- assertVisible:
+    id: home.setup.budget
+- assertVisible:
+    id: home.setup.alerts
+- assertVisible: Your spending draws a line here, day by day, against an even pace.
+- takeScreenshot: h1-l8-first-run
+- scrollUntilVisible:
+    element:
+      text: No bills yet
+- assertVisible: No transactions yet
+
+# Each setup tile opens its page.
+- scrollUntilVisible:
+    element:
+      id: home.setup.wallet
+    direction: UP
+- tapOn:
+    id: home.setup.wallet
+- back
+- tapOn:
+    id: home.setup.budget
+- back
+- tapOn:
+    id: home.setup.alerts
+- back
+- assertVisible:
+    id: home.avatar
