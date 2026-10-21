@@ -1,7 +1,10 @@
+import type { MinorAmount } from '@repo/types';
 import { render, screen } from '@testing-library/react-native';
 import { StyleSheet } from 'react-native';
 
 import { ProgressBar } from '@/components/ui/progress-bar';
+
+const sen = (minor: number) => minor as MinorAmount;
 
 function fill() {
   const node = screen.getByRole('progressbar').children[0];
@@ -18,8 +21,8 @@ describe('ProgressBar', () => {
     render(
       <ProgressBar
         title="Transport"
-        spentMinor={12000}
-        budgetMinor={10000}
+        spentMinor={sen(12000)}
+        budgetMinor={sen(10000)}
         currency="MYR"
       />,
     );
@@ -34,8 +37,8 @@ describe('ProgressBar', () => {
   it('fills spent over budget and says what is left, rounded down', () => {
     render(
       <ProgressBar
-        spentMinor={7850}
-        budgetMinor={10000}
+        spentMinor={sen(7850)}
+        budgetMinor={sen(10000)}
         currency="MYR"
       />,
     );

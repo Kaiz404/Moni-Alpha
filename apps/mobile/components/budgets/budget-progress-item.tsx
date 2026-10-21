@@ -5,7 +5,7 @@ import type { IconSymbolName } from '@/components/ui/icon-symbol';
 import { ProgressBar } from '@/components/ui/progress-bar';
 import { Text } from '@/components/ui/text';
 import { TintBubble } from '@/components/ui/transaction-row';
-import { formatMoney } from '@/lib/finance/display';
+import { formatMoney } from '@/lib/finance/format-money';
 import type { BudgetProgress } from '@/lib/finance/selectors';
 
 type BudgetProgressItemProps = {

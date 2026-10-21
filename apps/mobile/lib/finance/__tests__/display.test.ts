@@ -1,32 +1,8 @@
 import {
   formatDay,
   formatDayHeading,
-  formatMoney,
-  formatSignedMoney,
-  formatWholeMoney,
   localDayKey,
 } from '@/lib/finance/display';
-
-describe('money display', () => {
-  it('writes ringgit with no space and thousands commas', () => {
-    expect(formatMoney(111620, 'MYR')).toBe('RM1,116.20');
-  });
-
-  it('signs expenses with U+2212 and income with a plus, and leaves transfers unsigned', () => {
-    expect(formatSignedMoney('expense', 4590, 'MYR')).toBe('−RM45.90');
-    expect(formatSignedMoney('income', 420000, 'MYR')).toBe('+RM4,200.00');
-    expect(formatSignedMoney('transfer', 10000, 'MYR')).toBe('RM100.00');
-  });
-
-  it('keeps another currency in its own symbol', () => {
-    expect(formatMoney(12000, 'USD')).toBe('$120.00');
-  });
-
-  it('rounds forward-looking money down to whole units', () => {
-    expect(formatWholeMoney(2099, 'MYR')).toBe('RM20');
-    expect(formatWholeMoney(-2099, 'MYR')).toBe('RM20');
-  });
-});
 
 describe('day display', () => {
   const now = new Date(2026, 9, 14, 14, 6);

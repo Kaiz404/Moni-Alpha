@@ -41,3 +41,15 @@ export function formatMoney(
       });
   return `${value < 0 ? MINUS : ''}${currencySymbol(currency)}${digits}`;
 }
+
+export type MoneyDirection = 'expense' | 'income' | 'transfer';
+
+/** A transaction amount: U+2212 for expenses, a plus for income, transfers unsigned. */
+export function formatSignedMoney(
+  direction: MoneyDirection,
+  amount: MinorAmount | number,
+  currency: string,
+): string {
+  const sign = direction === 'expense' ? MINUS : direction === 'income' ? '+' : '';
+  return `${sign}${formatMoney(Math.abs(Number(amount)), currency)}`;
+}

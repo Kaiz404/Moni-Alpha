@@ -2,47 +2,20 @@ import type { CurrencyCode, MinorAmount } from '@repo/types';
 import { View } from 'react-native';
 
 import { Text } from '@/components/ui/text';
-import { formatWholeMoney } from '@/lib/finance/display';
-
-export type BudgetMeter = {
-  fillPct: number;
-  tone: 'calm' | 'near' | 'over';
-  label: string;
-};
-
-export function budgetMeter(
-  spentMinor: MinorAmount | number,
-  budgetMinor: MinorAmount | number,
-  currency: CurrencyCode | string,
-): BudgetMeter {
-  const spent = Number(spentMinor);
-  const budget = Number(budgetMinor);
-  if (spent > budget) {
-    return {
-      fillPct: 100,
-      tone: 'over',
-      label: `${formatWholeMoney(spent - budget, currency)} over`,
-    };
-  }
-  const fillPct = budget > 0 ? (spent / budget) * 100 : 0;
-  return {
-    fillPct,
-    tone: fillPct >= 75 ? 'near' : 'calm',
-    label: `${formatWholeMoney(budget - spent, currency)} left`,
-  };
-}
+import { budgetNote, type BudgetNote } from '@/lib/finance/budget-note';
 
 const heights = { tile: 4, row: 8, hero: 12 } as const;
 
-const labelTone: Record<BudgetMeter['tone'], string> = {
-  calm: 'font-display-semibold text-foreground',
+const labelTone: Record<BudgetNote['tone'], string> = {
+  plain: 'font-display-semibold text-foreground',
+  quiet: 'font-display-semibold text-foreground',
   near: 'font-display-semibold text-state-attention',
   over: 'font-display-bold text-over',
 };
 
 type ProgressBarProps = {
-  spentMinor: MinorAmount | number;
-  budgetMinor: MinorAmount | number;
+  spentMinor: MinorAmount;
+  budgetMinor: MinorAmount;
   currency: CurrencyCode | string;
   title?: string;
   size?: keyof typeof heights;
@@ -55,7 +28,8 @@ export function ProgressBar({
   title,
   size = 'row',
 }: ProgressBarProps) {
-  const meter = budgetMeter(spentMinor, budgetMinor, currency);
+  const meter = budgetNote(spentMinor, budgetMinor, currency);
+  const fillPct = (meter.ratio ?? 0) * 100;
   return (
     <View className="gap-2">
       <View className="flex-row items-center justify-between gap-3">
@@ -83,14 +57,14 @@ export function ProgressBar({
         accessibilityValue={{
           min: 0,
           max: 100,
-          now: Math.round(meter.fillPct),
+          now: Math.round(fillPct),
         }}
         className="overflow-hidden rounded-full bg-track"
         style={{ height: heights[size] }}
       >
         <View
           className={`absolute inset-y-0 left-0 rounded-full ${meter.tone === 'over' ? 'bg-coral' : 'bg-ink-2'}`}
-          style={{ width: `${meter.fillPct}%` }}
+          style={{ width: `${fillPct}%` }}
         />
       </View>
     </View>

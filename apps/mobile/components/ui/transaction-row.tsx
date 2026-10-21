@@ -11,11 +11,11 @@ import { Press } from '@/components/ui/press';
 import { StatusPill } from '@/components/ui/status-pill';
 import { Text } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
+import { formatDay } from '@/lib/finance/display';
 import {
-  formatDay,
   formatMoney,
   formatSignedMoney,
-} from '@/lib/finance/display';
+} from '@/lib/finance/format-money';
 import type { TestId } from '@/lib/test-ids';
 import type { TransactionRowData } from '@/lib/transactions/row';
 

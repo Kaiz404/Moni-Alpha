@@ -332,7 +332,7 @@ Never mimic real payment cards unless users need a real card identifier. The vis
 ### 7.5 Budget pulse and category progress (v2)
 
 - One progress style: `components/ui/progress-bar.tsx`. Sand track, Ink 2 fill of spent ÷ budget, and the label "RM114 left" beside the category name. At 75% the label turns attention brown. Over budget the track fills in Coral and the label says "RM20 over" in Over text. Nothing draws past the track; there is no pace tick and no split fill. Heights: 8 in rows, 4 in picker tiles, 12 on the category page hero.
-- Forward-looking money (left, over, budgets) is whole units rounded down; `formatWholeMoney` in `lib/finance/display.ts`.
+- Money goes through `lib/finance/format-money.ts`: `formatMoney` (`RM45.90`, U+2212 for negatives, `{ whole: true }` for forward-looking money rounded down) and `formatSignedMoney` for transaction amounts. The bar's label comes from `budgetNote` in `lib/finance/budget-note.ts`, the same label the category picker tiles show.
 - `BudgetProgressItem` is a category's tint bubble plus the bar; a category with no budget shows what was spent instead.
 - Status pills (`components/ui/status-pill.tsx`) come in the 30-tall `standalone` variant with a dot (On track, Near the limit, Over, To review) and the 20-tall `inline` variant that leads a row's meta (Auto, To review). Never add a pill that repeats a number already on screen.
 

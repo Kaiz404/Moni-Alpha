@@ -32,9 +32,12 @@ import { getWalletCardStyle } from '@/constants/wallet-card-styles';
 import { useAuth } from '@/lib/auth/auth-context';
 import {
   formatDayHeading,
-  formatMoney,
   localDayKey,
 } from '@/lib/finance/display';
+import {
+  formatMoney,
+  formatSignedMoney,
+} from '@/lib/finance/format-money';
 import {
   budgetProgress$,
   categoriesForUser$,
@@ -304,13 +307,20 @@ export default function TransactionsScreen() {
               <Text
                 style={{ color: selectedWalletStyle.contentColor }}
               >
-                +{formatMoney(stats.income, selectedWallet.currency)}
+                {formatSignedMoney(
+                  'income',
+                  stats.income,
+                  selectedWallet.currency,
+                )}
               </Text>
               <Text
                 style={{ color: selectedWalletStyle.contentColor }}
               >
-                {'−'}
-                {formatMoney(stats.expense, selectedWallet.currency)}
+                {formatSignedMoney(
+                  'expense',
+                  stats.expense,
+                  selectedWallet.currency,
+                )}
               </Text>
             </View>
           </SolidWalletCard>
