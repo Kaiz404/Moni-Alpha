@@ -49,6 +49,7 @@ export function expense(id: string, date: string, over: Partial<FinanceTransacti
     locationLongitude: null,
     locationName: null,
     autoAdded: false,
+    balanceCorrection: false,
     createdAt: date,
     ...over,
   } satisfies FinanceTransaction;

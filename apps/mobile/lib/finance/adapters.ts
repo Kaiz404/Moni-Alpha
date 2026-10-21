@@ -30,13 +30,12 @@ function numberValue(value: unknown): number | null {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
-/** True when automation added the transaction without review (metadata.ai_suggested). */
-function autoAdded(metadata: unknown): boolean {
+function metadataObject(metadata: unknown): Record<string, unknown> {
   try {
     const parsed = typeof metadata === 'string' ? JSON.parse(metadata) : metadata;
-    return (parsed as { ai_suggested?: unknown } | null)?.ai_suggested === true;
+    return parsed && typeof parsed === 'object' ? (parsed as Record<string, unknown>) : {};
   } catch {
-    return false;
+    return {};
   }
 }
 
@@ -89,6 +88,7 @@ export function toFinanceTransaction(row: RawRow): FinanceTransaction | null {
   const transactionDate = isoDate(row.transaction_date, isoDate(row.created_at));
   const parsedAmount = amountMinor(row.amount);
   if (!transactionDate || parsedAmount === null) return null;
+  const metadata = metadataObject(row.metadata);
   return {
     id: row.id,
     userId: stringValue(row.user_id),
@@ -108,7 +108,8 @@ export function toFinanceTransaction(row: RawRow): FinanceTransaction | null {
     locationLatitude: numberValue(row.location_latitude),
     locationLongitude: numberValue(row.location_longitude),
     locationName: nullableString(row.location_name),
-    autoAdded: autoAdded(row.metadata),
+    autoAdded: metadata.ai_suggested === true,
+    balanceCorrection: metadata.kind === 'balance_correction',
     createdAt: isoDate(row.created_at, transactionDate),
   };
 }

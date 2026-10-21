@@ -2,6 +2,10 @@ import type { CurrencyCode, MinorAmount } from '@repo/types';
 
 import type { FinanceProposal, FinanceTransaction } from '@/lib/finance/types';
 import { resolveTransactionIcon, type TransactionIconName } from '@/lib/transactions/icon';
+import { BALANCE_CORRECTION_TITLE } from '@/lib/wallets/balance-correction';
+
+/** tokens.md Lemon: the balance correction bubble on every list. */
+const LEMON = '#F2DC72';
 
 type RowBase = {
   title: string;
@@ -52,6 +56,18 @@ export function transactionRow(
       wallet,
       toWallet,
       autoAdded: transaction.autoAdded,
+    };
+  }
+  if (transaction.balanceCorrection) {
+    return {
+      ...base,
+      title: BALANCE_CORRECTION_TITLE,
+      icon: 'scale-balance',
+      color: LEMON,
+      kind: transaction.type,
+      category: 'Not in budgets',
+      wallet,
+      autoAdded: false,
     };
   }
   return {

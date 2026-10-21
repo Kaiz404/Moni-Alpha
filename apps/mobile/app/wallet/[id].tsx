@@ -39,8 +39,9 @@ import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { openSheet } from '@/lib/sheet/sheet-store';
 import { useAuth } from '@/lib/auth/auth-context';
 import { formatTimeAgo } from '@/lib/dates/relative-time';
-import { minorToDecimal } from '@/lib/finance/money';
+import { minorToDecimal, minorToNumber } from '@/lib/finance/money';
 import { createBalanceCorrection } from '@/lib/supabase/transactions';
+import { correctBalance } from '@/lib/wallets/balance-correction';
 import {
   deleteWallet,
   getWalletById,
@@ -263,11 +264,12 @@ export default function EditWalletScreen() {
     setSaving(true);
     try {
       await updateWallet(walletId, parsed.data);
-      await createBalanceCorrection(
-        walletId,
-        currentBalanceMinor,
-        targetBalanceMinor,
+      const correction = correctBalance(
+        { balance: minorToNumber(currentBalanceMinor) },
+        minorToNumber(targetBalanceMinor),
       );
+      if (correction)
+        await createBalanceCorrection(walletId, correction);
       router.back();
     } catch (error) {
       Alert.alert(
@@ -386,7 +388,7 @@ export default function EditWalletScreen() {
                 value={currentBalance}
               />
               <Text className="mt-2 text-xs leading-4 text-muted">
-                Saving records the difference as a balance adjustment.{' '}
+                Saving records the difference as a balance correction.{' '}
                 {'\n'}
                 Updated {readOnlyUpdated}
               </Text>

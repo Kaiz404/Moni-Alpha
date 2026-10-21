@@ -1,6 +1,7 @@
 import type { Observable } from '@legendapp/state';
 import type { MinorAmount, ProposedTransaction } from '@repo/types';
 import { approveProposedTransaction } from '../proposed-transactions';
+import { correctBalance } from '@/lib/wallets/balance-correction';
 import { createBalanceCorrection, createTransaction } from '../transactions';
 
 let mockNextId = 0;
@@ -33,12 +34,15 @@ describe('transaction source', () => {
   });
 
   it('marks a balance correction and keeps it out of analysis', async () => {
-    const created = await createBalanceCorrection('w1', 5000 as MinorAmount, 4200 as MinorAmount);
-    expect(created).toMatchObject({ type: 'expense', amountMinor: 800, analysisExcluded: true });
-    expect(metadataOf(created!.id)).toEqual({ source: 'manual', kind: 'balance_correction' });
-    expect(await createBalanceCorrection('w1', 5000 as MinorAmount, 5000 as MinorAmount)).toBe(
-      null,
-    );
+    const created = await createBalanceCorrection('w1', correctBalance({ balance: 50 }, 42)!);
+    expect(created).toMatchObject({
+      type: 'expense',
+      amountMinor: 800,
+      analysisExcluded: true,
+      description: 'Balance correction',
+      currency: 'MYR',
+    });
+    expect(metadataOf(created.id)).toEqual({ source: 'manual', kind: 'balance_correction' });
   });
 
   it.each([

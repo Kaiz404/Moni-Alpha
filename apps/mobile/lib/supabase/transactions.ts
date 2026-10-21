@@ -10,6 +10,7 @@ import type {
 } from '@repo/types';
 import { decimalToMinor, minorToDecimal, updateTransactionSchema } from '@repo/types';
 import { randomUUID } from 'expo-crypto';
+import type { BalanceCorrection } from '@/lib/wallets/balance-correction';
 
 type TransactionRow = {
   id: string;
@@ -234,26 +235,10 @@ export async function createTransfer(data: {
   }, source);
 }
 
-export async function createBalanceCorrection(
-  walletId: string,
-  currentBalanceMinor: MinorAmount,
-  targetBalanceMinor: MinorAmount,
-) {
-  const differenceMinor = Math.abs(targetBalanceMinor - currentBalanceMinor);
-  if (differenceMinor === 0) return null;
+/** Writes the row `correctBalance` built. Returns the created transaction so the caller can undo it. */
+export async function createBalanceCorrection(walletId: string, correction: BalanceCorrection) {
   return createTransaction(
-    {
-      walletId,
-      amountMinor: differenceMinor as MinorAmount,
-      type: targetBalanceMinor > currentBalanceMinor ? 'income' : 'expense',
-      categoryId: null,
-      merchant: null,
-      description: 'Balance adjustment',
-      notes: 'Created while updating the wallet balance.',
-      analysisExcluded: true,
-      transactionDate: new Date().toISOString(),
-      metadata: { kind: 'balance_correction' },
-    },
+    { ...correction, walletId, transactionDate: new Date().toISOString() },
     'manual',
   );
 }

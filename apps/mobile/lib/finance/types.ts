@@ -37,6 +37,8 @@ export type FinanceTransaction = {
   locationName: string | null;
   /** Added from a routine notification without review. */
   autoAdded: boolean;
+  /** A wallet balance fix (metadata.kind balance_correction): kept out of budgets and spending. */
+  balanceCorrection: boolean;
   createdAt: string;
 };
 
