@@ -1,117 +1,64 @@
 import type { ReactNode } from 'react';
 import { View } from 'react-native';
-import { Text } from '@/components/ui/text';
 
-import { CategoryIcon } from '@/components/categories/category-icon';
-import { BudgetProgressBar } from '@/components/charts/budget-progress-bar';
-import { useThemeTokens } from '@/hooks/use-theme-tokens';
-import { formatMinorAmount } from '@/lib/finance/money';
+import type { IconSymbolName } from '@/components/ui/icon-symbol';
+import { ProgressBar } from '@/components/ui/progress-bar';
+import { Text } from '@/components/ui/text';
+import { TintBubble } from '@/components/ui/transaction-row';
+import { formatMoney } from '@/lib/finance/display';
 import type { BudgetProgress } from '@/lib/finance/selectors';
 
 type BudgetProgressItemProps = {
   budget: BudgetProgress;
-  variant?: 'compact' | 'detailed';
   showArchived?: boolean;
-  padded?: boolean;
   children?: ReactNode;
 };
 
 /**
- * Shared budget category presentation for Home, Summary, and the Budget screen.
- * Parents provide navigation and expansion behavior so the item stays reusable.
+ * One category's spending this month: its bubble, then the one progress bar
+ * against its budget, or what was spent when it has no budget. Parents own
+ * navigation and expansion.
  */
 export function BudgetProgressItem({
   budget,
-  variant = 'compact',
   showArchived = false,
-  padded = true,
   children,
 }: BudgetProgressItemProps) {
-  const tokens = useThemeTokens();
-  const accent = budget.categoryColor ?? tokens.primary;
-  const detailed = variant === 'detailed';
-  const over = budget.status === 'over';
-  const context =
-    budget.budgetAmountMinor === null
-      ? 'No cap set'
-      : `(${formatMinorAmount(budget.spentMinor, budget.currency)} / ${formatMinorAmount(budget.budgetAmountMinor, budget.currency)})`;
-  const percentageLabel =
-    budget.percentage === null
-      ? '—'
-      : `${Math.round(budget.percentage)}%`;
-  const overAmountLabel =
-    over && budget.remainingMinor !== null
-      ? ` · ${formatMinorAmount(Math.abs(Number(budget.remainingMinor)), budget.currency)} over`
-      : null;
-  const remainingMinor =
-    detailed && !over ? budget.remainingMinor : null;
-
+  const title =
+    showArchived && !budget.categoryIsActive
+      ? `${budget.categoryName} · Archived`
+      : budget.categoryName;
   return (
-    <View
-      className={detailed ? 'p-4' : padded ? 'px-4 py-4' : 'py-4'}
-    >
-      <View className="flex-row items-center justify-between">
-        <View className="h-11 min-w-0 flex-1 flex-row items-center">
-          <View
-            className={
-              'mr-2 h-11 w-11 items-center justify-center rounded-full'
-            }
-            style={{
-              backgroundColor: detailed ? `${accent}` : `${accent}`,
-            }}
-          >
-            <CategoryIcon
-              color={tokens.foreground}
-              icon={budget.categoryIcon}
-              size={detailed ? 21 : 18}
-            />
+    <View className="flex-row items-center gap-3.5 px-[18px] py-3">
+      <TintBubble
+        icon={
+          (budget.categoryIcon || 'shape-outline') as IconSymbolName
+        }
+        color={budget.categoryColor}
+      />
+      <View className="min-w-0 flex-1">
+        {budget.budgetAmountMinor === null ? (
+          <View className="flex-row items-center justify-between gap-3">
+            <Text
+              variant="rowTitle"
+              className="min-w-0 flex-1 text-foreground"
+              numberOfLines={1}
+            >
+              {title}
+            </Text>
+            <Text className="text-[13px] leading-[18px] font-display-semibold text-muted">
+              {formatMoney(budget.spentMinor, budget.currency)} spent
+            </Text>
           </View>
-          <View className="h-full min-w-0 flex-1 items-stretch justify-between">
-            <View className="flex-row items-center justify-between">
-              <Text
-                className={
-                  detailed
-                    ? `text-[15px] font-display-semibold ${over ? 'text-danger' : 'text-foreground'}`
-                    : `text-base font-display-semibold ${over ? 'text-danger' : 'text-foreground'}`
-                }
-                numberOfLines={1}
-              >
-                {budget.categoryName}
-                {overAmountLabel ? (
-                  <Text className="text-xs font-display-semibold text-danger">
-                    {overAmountLabel}
-                  </Text>
-                ) : null}
-                {showArchived && !budget.categoryIsActive ? (
-                  <Text className="ml-2 text-xs font-display-semibold text-muted">
-                    Archived
-                  </Text>
-                ) : null}
-              </Text>
-
-              <Text
-                className={`text-xs font-display-semibold ${over ? 'text-danger' : 'text-muted'}`}
-              >
-                {context}
-              </Text>
-            </View>
-
-            <BudgetProgressBar
-              percentage={budget.percentage}
-              color={accent}
-              label={percentageLabel}
-            />
-          </View>
-        </View>
-        <View className="ml-3 flex-row items-center gap-2">
-          {detailed ? (
-            <CategoryIcon
-              color={tokens.muted}
-              icon="chevron-right"
-              size={21}
-            />
-          ) : null}
-        </View>
+        ) : (
+          <ProgressBar
+            title={title}
+            spentMinor={budget.spentMinor}
+            budgetMinor={budget.budgetAmountMinor}
+            currency={budget.currency}
+          />
+        )}
+        {children}
       </View>
     </View>
   );

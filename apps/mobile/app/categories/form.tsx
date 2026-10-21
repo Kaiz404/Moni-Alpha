@@ -185,10 +185,7 @@ export default function CategoryFormScreen() {
               className="rounded-card bg-card mt-3 overflow-hidden"
               style={{ backgroundColor: `${color}33` }}
             >
-              <BudgetProgressItem
-                budget={previewBudget}
-                variant="compact"
-              />
+              <BudgetProgressItem budget={previewBudget} />
             </View>
 
             <View className="rounded-card bg-card mt-6 overflow-hidden">

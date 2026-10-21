@@ -3,7 +3,10 @@ import Animated from 'react-native-reanimated';
 import { useUniwind } from 'uniwind';
 
 import { useHold, type HoldAnchor } from '@/components/ui/hold-menu';
-import { IconSymbol } from '@/components/ui/icon-symbol';
+import {
+  IconSymbol,
+  type IconSymbolName,
+} from '@/components/ui/icon-symbol';
 import { Press } from '@/components/ui/press';
 import { StatusPill } from '@/components/ui/status-pill';
 import { Text } from '@/components/ui/text';
@@ -164,8 +167,6 @@ export function TransactionRowBody({
 
 function RowBubble({ row }: { row: TransactionRowData }) {
   const tokens = useThemeTokens();
-  const { theme } = useUniwind();
-  const dark = theme === 'dark';
   if (row.kind === 'pending') {
     return (
       <View
@@ -180,24 +181,37 @@ function RowBubble({ row }: { row: TransactionRowData }) {
       </View>
     );
   }
-  const tinted = row.kind !== 'transfer' && row.color;
+  return (
+    <TintBubble
+      icon={row.icon}
+      color={row.kind === 'transfer' ? null : row.color}
+    />
+  );
+}
+
+/** The 42 bubble tinted from a category's own colour, or Sand when it has none. */
+export function TintBubble({
+  icon,
+  color,
+}: {
+  icon: IconSymbolName;
+  color: string | null;
+}) {
+  const tokens = useThemeTokens();
+  const dark = useUniwind().theme === 'dark';
   return (
     <View
-      className={`h-[42px] w-[42px] items-center justify-center rounded-full ${tinted ? '' : 'bg-sand'}`}
+      className={`h-[42px] w-[42px] items-center justify-center rounded-full ${color ? '' : 'bg-sand'}`}
       style={
-        tinted
-          ? { backgroundColor: `${row.color}${dark ? '38' : '73'}` }
+        color
+          ? { backgroundColor: `${color}${dark ? '38' : '73'}` }
           : undefined
       }
     >
       <IconSymbol
-        name={row.icon}
+        name={icon}
         size={20}
-        color={
-          tinted && dark
-            ? (row.color ?? tokens.foreground)
-            : tokens.foreground
-        }
+        color={color && dark ? color : tokens.foreground}
       />
     </View>
   );

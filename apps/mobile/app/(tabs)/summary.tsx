@@ -495,7 +495,7 @@ export default function InsightsScreen() {
                 </Pressable>
               </View>
               {selectedBudgetRows.length ? (
-                <View className="rounded-card bg-accent-lemon/30 px-4 py-1 overflow-hidden">
+                <View className="rounded-card bg-accent-lemon/30 py-1 overflow-hidden">
                   {selectedBudgetRows.map((row) => {
                     const rowKey = `${row.categoryId}:${row.currency}`;
                     const expanded = selectedBudget === rowKey;
@@ -513,10 +513,7 @@ export default function InsightsScreen() {
                         accessibilityRole="button"
                         accessibilityState={{ expanded }}
                       >
-                        <BudgetProgressItem
-                          budget={row}
-                          padded={false}
-                        >
+                        <BudgetProgressItem budget={row}>
                           {expanded ? (
                             <Pressable
                               testID={tid(

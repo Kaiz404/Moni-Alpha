@@ -82,7 +82,6 @@ export default function BudgetsScreen() {
                   <View className="rounded-card bg-card overflow-hidden">
                     <BudgetProgressItem
                       budget={row}
-                      variant="detailed"
                       showArchived
                     />
                   </View>

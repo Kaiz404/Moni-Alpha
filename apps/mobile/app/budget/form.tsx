@@ -5,13 +5,12 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useValue } from '@legendapp/state/react';
 
 import { CategoryIcon } from '@/components/categories/category-icon';
-import { BudgetProgressBar } from '@/components/charts/budget-progress-bar';
+import { ProgressBar } from '@/components/ui/progress-bar';
 import { AmountInput } from '@/components/finance/amount-input';
 import { PickerField } from '@/components/ui/picker-field';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { useAuth } from '@/lib/auth/auth-context';
 import {
-  formatMinorAmount,
   minorToDecimal,
   parseAmountInput,
 } from '@/lib/finance/money';
@@ -71,11 +70,6 @@ export default function BudgetFormScreen() {
         row.currency === currency &&
         row.budgetAmountMinor !== null,
     ) ?? null;
-  const progressAccent = existing?.categoryColor ?? tokens.primary;
-  const progressLabel =
-    existing?.percentage === null
-      ? '—'
-      : `${Math.round(existing?.percentage ?? 0)}%`;
 
   useEffect(() => {
     void ensureFinanceTimezone()
@@ -191,33 +185,14 @@ export default function BudgetFormScreen() {
         contentContainerClassName="px-5"
         showsVerticalScrollIndicator={false}
       >
-        {existing ? (
-          <View className="rounded-card bg-card mt-7 overflow-hidden">
-            <View className="flex-row items-center justify-between">
-              <Text className="text-sm font-display-semibold text-foreground">
-                This month
-              </Text>
-              <Text
-                className={`text-xs font-display-semibold ${
-                  existing.status === 'over'
-                    ? 'text-danger'
-                    : 'text-muted'
-                }`}
-              >
-                {formatMinorAmount(existing.spentMinor, currency)} /{' '}
-                {formatMinorAmount(
-                  existing.budgetAmountMinor!,
-                  currency,
-                )}
-              </Text>
-            </View>
-            <View className="mt-3">
-              <BudgetProgressBar
-                color={progressAccent}
-                label={progressLabel}
-                percentage={existing.percentage}
-              />
-            </View>
+        {existing?.budgetAmountMinor != null ? (
+          <View className="mt-7 rounded-card bg-card p-card">
+            <ProgressBar
+              title="This month"
+              spentMinor={existing.spentMinor}
+              budgetMinor={existing.budgetAmountMinor}
+              currency={currency}
+            />
           </View>
         ) : null}
         <PickerField
