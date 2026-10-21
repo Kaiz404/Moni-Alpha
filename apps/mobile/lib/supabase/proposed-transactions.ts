@@ -118,8 +118,13 @@ export function isAwaitingReview(
   return !proposal.snoozedUntil || Date.parse(proposal.snoozedUntil) <= now.getTime();
 }
 
-export async function getProposedTransactions(now = new Date()): Promise<ProposedTransaction[]> {
+/** Captures waiting for a decision, newest first. Reads the store, so it is safe in a reactive selector. */
+export function listAwaitingReview(now = new Date()): ProposedTransaction[] {
   return readUnreviewedProposals().filter((proposal) => isAwaitingReview(proposal, now));
+}
+
+export async function getProposedTransactions(now = new Date()): Promise<ProposedTransaction[]> {
+  return listAwaitingReview(now);
 }
 
 export function laterProposedTransaction(id: string, until: Date): void {
@@ -197,7 +202,7 @@ export async function createProposedTransaction(
 export async function approveProposedTransaction(
   proposal: ProposedTransaction,
   wallets: { walletId: string; transferToWalletId?: string | null },
-): Promise<void> {
+): Promise<string> {
   if (!proposal.amountMinor || !proposal.type) {
     throw new Error('Cannot approve: amount or type is missing');
   }
@@ -230,6 +235,7 @@ export async function approveProposedTransaction(
 
   closeProposal(proposal, 'approved', transaction.id);
   await deleteProposedTransaction(proposal.id);
+  return transaction.id;
 }
 
 export async function rejectProposedTransaction(id: string): Promise<void> {
