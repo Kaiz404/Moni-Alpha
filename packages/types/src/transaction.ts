@@ -5,12 +5,18 @@ import { currencyCodeSchema, positiveMinorAmountSchema } from './money';
 // Transaction type enum
 export const transactionTypeSchema = z.enum(['income', 'expense', 'transfer']);
 
+/** How a ledger row was captured. Rows written before sources existed have none: show them as manual. */
+export const transactionSourceSchema = z.enum(['manual', 'voice', 'moni', 'notification', 'camera']);
+
 // Transaction metadata schema
 export const transactionMetadataSchema = z
   .object({
     ai_suggested: z.boolean().optional(),
     ai_confidence: z.number().min(0).max(1).optional(),
     tags: z.array(z.string()).optional(),
+    source: transactionSourceSchema.optional(),
+    /** A wallet balance fix; always paired with analysisExcluded. */
+    kind: z.literal('balance_correction').optional(),
   })
   .passthrough(); // Allow additional properties for future use
 
@@ -123,6 +129,7 @@ export const transactionListParamsSchema = z.object({
 
 // Type inference
 export type TransactionType = z.infer<typeof transactionTypeSchema>;
+export type TransactionSource = z.infer<typeof transactionSourceSchema>;
 export type TransactionMetadata = z.infer<typeof transactionMetadataSchema>;
 export type Transaction = z.infer<typeof transactionSchema>;
 export type CreateTransaction = z.infer<typeof createTransactionSchema>;

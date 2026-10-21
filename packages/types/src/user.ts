@@ -2,7 +2,8 @@ import { z } from 'zod';
 
 // User preferences schema
 export const userPreferencesSchema = z.object({
-  currency: z.string().length(3).default('USD'),
+  /** Main currency: the one totals and the Budget tab count in. */
+  currency: z.string().length(3).default('MYR'),
   theme: z.enum(['light', 'dark', 'system']).default('system'),
   notifications_enabled: z.boolean().default(true),
   /** Primary wallet for AI fallback when inference cannot pick one. Synced via profiles. */

@@ -12,3 +12,4 @@ export * from './category-budget';
 export * from './debt';
 export * from './recurring-override';
 export * from './money';
+export * from './bill';
