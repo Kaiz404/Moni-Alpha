@@ -1,0 +1,77 @@
+# K3 Capture sources: phone access, location per banking app, rules added without asking, links.
+# Needs a signed-in e2e build. The location and Ask again steps run when Maybank is linked and a GRAB auto-add rule exists.
+# Ask again is undone at the end so the flow can run twice; lane 7 skips the Undo.
+# Run: scripts/device/with-device.sh --lane k3 -- maestro test .maestro/flows/account/capture-sources.yaml
+appId: com.anonymous.moni.e2e
+name: K3 capture sources
+tags:
+  - k3
+---
+- launchApp
+- extendedWaitUntil:
+    visible:
+      id: home.avatar
+    timeout: 15000
+- tapOn:
+    id: home.avatar
+- scrollUntilVisible:
+    element:
+      id: profile.row.bank-notifications
+- tapOn:
+    id: profile.row.bank-notifications
+- assertVisible: Capture sources
+- assertVisible: Moni works without any of these.*
+- takeScreenshot: k3-l9-sources
+
+# Notification access revoked: the denied state replaces the row.
+- runFlow:
+    when:
+      visible:
+        id: sources.notifications.open-settings
+    commands:
+      - assertVisible: Moni can't see bank notifications
+      - assertVisible:
+          id: sources.notifications.by-hand
+      - takeScreenshot: k3-l10-denied
+
+# Location from Maybank notifications, off and back on.
+- runFlow:
+    when:
+      visible:
+        id: sources.location.maybank
+    commands:
+      - tapOn:
+          id: sources.location.maybank
+      - assertVisible: Off · .*
+      - takeScreenshot: k3-l8-location-off
+      - tapOn:
+          id: sources.location.maybank
+
+# Ask again on the GRAB rule, then Undo.
+- scrollUntilVisible:
+    element:
+      text: Added without asking
+- runFlow:
+    when:
+      visible:
+        id: sources.rule.grab.ask-again
+    commands:
+      - tapOn:
+          id: sources.rule.grab.ask-again
+      - assertVisible: Moni will ask about .* again
+      - takeScreenshot: k3-l7-ask-again
+      - tapOn:
+          id: nav.toast.undo
+      - assertVisible:
+          id: sources.rule.grab.ask-again
+
+- scrollUntilVisible:
+    element:
+      id: sources.capture-log
+- tapOn:
+    id: sources.capture-log
+- assertVisible: Capture log
+- tapOn:
+    id: capture-log.back
+- tapOn:
+    id: sources.back
