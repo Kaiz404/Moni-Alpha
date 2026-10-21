@@ -30,7 +30,7 @@ import {
 } from '@/components/ui/transaction-row';
 import { getWalletCardStyle } from '@/constants/wallet-card-styles';
 import { useAuth } from '@/lib/auth/auth-context';
-import { formatDayHeading } from '@/lib/dates/day-label';
+import { formatDate, formatDayHeading } from '@/lib/dates/day-label';
 import { toLocalDateInput } from '@/lib/dates/local-date-input';
 import {
   formatMoney,
@@ -50,12 +50,11 @@ import { toCategoryTiles } from '@/lib/sheet/category-tiles';
 import { openSheet } from '@/lib/sheet/sheet-store';
 import { transactions$ as transactionTable$ } from '@/lib/store';
 import { ensureFinanceTimezone } from '@/lib/supabase/profile';
-import { updateTransaction } from '@/lib/supabase/transactions';
-import { tid } from '@/lib/test-ids';
 import {
-  deleteWithUndo,
-  useHiddenTransactionIds,
-} from '@/lib/transactions/delete-with-undo';
+  deleteTransaction,
+  updateTransaction,
+} from '@/lib/supabase/transactions';
+import { tid } from '@/lib/test-ids';
 import {
   proposalRow,
   transactionRow,
@@ -104,7 +103,6 @@ export default function TransactionsScreen() {
   const loaded = useSelector(
     () => syncState(transactionTable$).get().isPersistLoaded,
   );
-  const hidden = useHiddenTransactionIds();
   const selectedWallet = useValue(walletById$(walletId ?? ''));
   const selectedBalance = useValue(
     walletBalanceMinor$(walletId ?? ''),
@@ -141,7 +139,6 @@ export default function TransactionsScreen() {
       items: FinanceTransaction[];
     }[] = [];
     for (const transaction of rows) {
-      if (hidden.has(transaction.id)) continue;
       const key = toLocalDateInput(
         new Date(transaction.transactionDate),
       );
@@ -155,7 +152,7 @@ export default function TransactionsScreen() {
         });
     }
     return groups;
-  }, [rows, hidden]);
+  }, [rows]);
   const stats = useMemo(
     () =>
       rows.reduce(
@@ -233,15 +230,30 @@ export default function TransactionsScreen() {
       save(transaction.id, { walletId: picked.walletId });
   };
 
+  const remove = async (
+    transaction: FinanceTransaction,
+    row: TransactionRowData,
+  ) => {
+    const month = new Date(row.date).toLocaleDateString('en-US', {
+      month: 'long',
+    });
+    const category = 'category' in row ? row.category : null;
+    const confirmed = await openSheet({
+      kind: 'confirm',
+      title: 'Delete this transaction?',
+      message: `${row.title} ${formatMoney(row.amountMinor, row.currency)} on ${formatDate(row.date)} comes out of ${month}${category ? ` and out of ${category}` : ''}.`,
+      confirmLabel: 'Delete',
+      cancelLabel: 'Keep it',
+      destructive: true,
+    });
+    if (confirmed) void deleteTransaction(transaction.id);
+  };
+
   const act = (action: HoldAction) => {
     if (!held) return;
     const { transaction, row } = held;
     setHeld(null);
-    if (action === 'delete')
-      deleteWithUndo(
-        transaction.id,
-        `Deleted ${row.title} ${rowAmount(row)}`,
-      );
+    if (action === 'delete') void remove(transaction, row);
     else if (action === 'editCategory') void editCategory(transaction);
     else void changeWallet(transaction);
   };

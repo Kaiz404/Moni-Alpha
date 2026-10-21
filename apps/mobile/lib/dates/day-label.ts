@@ -12,7 +12,7 @@ function relativeDay(date: Date, now: Date): 'Today' | 'Yesterday' | null {
   return days === 0 ? 'Today' : days === 1 ? 'Yesterday' : null;
 }
 
-function formatDate(value: string | Date, now: Date = new Date()): string {
+export function formatDate(value: string | Date, now: Date = new Date()): string {
   const date = typeof value === 'string' ? new Date(value) : value;
   const label = `${WEEKDAYS[date.getDay()]} ${date.getDate()} ${MONTHS[date.getMonth()]}`;
   return date.getFullYear() === now.getFullYear() ? label : `${label} ${date.getFullYear()}`;

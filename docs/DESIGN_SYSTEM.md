@@ -351,7 +351,7 @@ Never mimic real payment cards unless users need a real card identifier. The vis
 ### 7.6b Toasts and banners (v2)
 
 - `lib/toast/toast-store.ts` holds at most one toast. `showToast({ text, tone, undo, commit })` shows it for 5 s; Undo runs `undo`, and leaving any other way (timeout, a newer toast, the app going to the background) runs `commit`. `components/ui/toast.tsx` mounts `ToastHost` once in `app/_layout.tsx`: an Ink capsule at least 56 tall, Mint check (or a grey bin for `removed`), cream 14/19 text, and Undo on the pressed-Ink fill. It rises 8 on the `sheet` spring, 20 above the bottom inset.
-- Delete from a list goes through `deleteWithUndo` (`lib/transactions/delete-with-undo.ts`): the row hides at once and is soft-deleted only when its "Deleted …" toast leaves without Undo, because the synced store drops a deleted row as soon as the delete syncs back.
+- Delete from the hold menu opens the confirm sheet the detail page uses ("Delete this transaction?", **Keep it** first, then **Delete**), as `V2A-ActivityMenu` draws it, and soft-deletes on **Delete**. It shows no toast: a deleted row drops out of the synced store once the delete syncs back, so an Undo could not restore it.
 - `components/ui/banner.tsx`: the capsule under the header that says what happened and what happens next. `SyncBanner` shows the Lemon "Couldn't sync N changes. It's safe on this phone." with Retry when sync fails, and nothing while sync works.
 
 ### 7.7 Transaction proposal artifact

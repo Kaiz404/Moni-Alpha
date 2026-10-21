@@ -1,5 +1,5 @@
 appId: com.anonymous.moni.e2e
-name: F4 rows, hold menu, delete with Undo, nav rows
+name: F4 rows, hold menu, delete confirm, nav rows
 tags:
   - f4
   - needs-default-seed
@@ -26,11 +26,11 @@ tags:
 - takeScreenshot: f4-l2-hold-menu
 - tapOn:
     id: activity.hold.delete
-- assertVisible: 'Deleted .*'
-- takeScreenshot: f4-l3-toast
+- assertVisible: Delete this transaction?
+- takeScreenshot: f4-l3-delete-confirm
 - tapOn:
-    id: nav.toast.undo
-- assertNotVisible: 'Deleted .*'
+    id: sheet.cancel
+- assertNotVisible: Delete this transaction?
 - assertNotVisible: Hold a row for quick actions
 - longPressOn:
     id: 'activity\.transaction\..*'
@@ -40,6 +40,15 @@ tags:
 - tapOn: Cash
 - assertVisible: '.* · Cash'
 - takeScreenshot: f4-l4-changed-wallet
+- longPressOn:
+    id: 'activity\.transaction\..*'
+    index: 0
+- tapOn:
+    id: activity.hold.delete
+- tapOn:
+    id: sheet.confirm
+- assertNotVisible: Delete this transaction?
+- takeScreenshot: f4-l3-deleted
 - back
 - tapOn:
     id: home.avatar
