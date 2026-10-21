@@ -31,7 +31,7 @@ flowchart LR
 - **Money is integer minor units in application contracts.** `@repo/types` exposes branded `MinorAmount` fields (`amountMinor`, `initialBalanceMinor`, and similar). Decimal conversion occurs only at database, form, and external AI/API boundaries. Aggregates and charts retain their ISO currency key; they never combine currencies.
 - **Mobile and web never talk to each other.** The Next.js app (`apps/web`) is a self-contained dashboard with its own API routes for its own pages. Anything both clients need lives in Supabase (data) or the Go backend (AI).
 - **The Go backend is stateless.** It verifies the caller's Supabase JWT against the project JWKS (ES256), calls OpenRouter, and returns extraction results. It never touches the database — the mobile client inserts `proposed_transactions` rows itself.
-- **AI writes to the ledger only for routine notifications.** An extraction becomes a `proposed_transactions` row that the user approves or declines in a review UI (a minimal summary popup, with an optional full-detail page) unless it is a bank notification matching the user's own recent, consistently categorized history; those are added directly with `metadata.ai_suggested = true`. A notification that completes an own-wallet transfer pair (`lib/ai/duplicates.ts`) is combined with its other half into one transfer automatically. Manual inputs (text, voice, receipts) always go to review. Learning is the transaction history itself; there is no separate model or table.
+- **AI writes to the ledger only for routine notifications.** An extraction becomes a `proposed_transactions` row that the user approves, marks Not mine, or saves for Later in the Review deck or from its Android notification unless it is a bank notification matching the user's own recent, consistently categorized history; those are added directly with `metadata.ai_suggested = true`. A notification that completes an own-wallet transfer pair (`lib/ai/duplicates.ts`) is combined with its other half into one transfer automatically. Manual inputs (text, voice, receipts) always go to review. Learning is the transaction history itself; there is no separate model or table.
 - **Shared types via `@repo/types`.** Zod schemas are the single source of truth; TS types are inferred. The Go backend mirrors the wire contract from `apps/mobile/lib/ai/client/types.ts` (kept in sync by convention — see `docs/AI.md`).
 
 ## AI data flow
@@ -53,7 +53,10 @@ proposed_transactions (unreviewed)
         │
         ▼
 Review deck (app/review.tsx) → Approve → real transaction / Not mine → rejected, soft-delete / Later → snoozed
+   or the Android review notification (Not mine · Later · Approve), handled headless
 ```
+
+A new notification capture also posts a Moni notification with the same three actions. An action tap runs in a headless task (expo-task-manager, registered in `index.js`) even with the app killed: it turns store sync on for the signed-in session, runs the same `lib/proposals/review-actions.ts` the deck uses, and waits for Supabase before the task ends. Nothing reaches the ledger without Approve.
 
 Android notifications are prefiltered on-device (`lib/notifications/notification-filter.core.js`: requires a money amount signal AND a transfer signal) before anything reaches the queue, so the backend only sees plausible candidates.
 

@@ -135,7 +135,7 @@ The + opens the "Add a transaction" sheet (`components/nav/capture-chooser.tsx`,
 
 ### Review queue policy
 
-Captures wait in one place, the Review deck (`app/review.tsx`). Home's review block and Activity's To review rows push it with the capture's id, which goes first. Scan a receipt and Say it approve on their own check page and never wait here; Moni chat captures show a short processing step, then their review in context. Background notification captures never interrupt inside the app: nothing pops up on open. AI never writes to the ledger without Approve.
+Captures wait in one place, the Review deck (`app/review.tsx`). Home's review block and Activity's To review rows push it with the capture's id, which goes first. Scan a receipt and Say it approve on their own check page and never wait here; Moni chat captures show a short processing step, then their review in context. Background notification captures never interrupt inside the app: nothing pops up on open. On Android each one posts a notification (`XA-Notification`): the source as title ("Maybank alert"), "GRAB · RM12.00", the category, and Not mine · Later · Approve, which work without opening Moni. Approve turns it into "Approved" with Undo and Don't ask about similar for 8 s; a tap on the body opens the deck on that capture. Only the first alert after install is heads-up. AI never writes to the ledger without Approve.
 
 ---
 
