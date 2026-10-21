@@ -193,8 +193,8 @@ export default function HomeScreen() {
       initial={userInitial}
       date={headerDate(new Date())}
       greeting={greeting}
-      onAvatarPress={() => router.push('/(tabs)/profile')}
-      onAskMoni={() => router.push('/(tabs)/chat')}
+      onAvatarPress={() => router.push('/profile')}
+      onAskMoni={() => router.push('/chat')}
     >
       <ScrollView
         className="flex-1"
@@ -337,7 +337,7 @@ export default function HomeScreen() {
             <Pressable
               testID={tid('home', 'budgets')}
               className="min-h-11 justify-center px-2"
-              onPress={() => router.push('/budget' as any)}
+              onPress={() => router.push('/budget/list')}
             >
               <MaterialDesignIcons
                 name="chevron-right"
@@ -361,13 +361,13 @@ export default function HomeScreen() {
                     className={index ? 'border-t border-border' : ''}
                     onPress={() =>
                       router.push({
-                        pathname: '/transaction',
+                        pathname: '/activity',
                         params: {
                           categoryId: budget.categoryId,
                           currency: budget.currency,
                           month: new Date().toISOString().slice(0, 7),
                         },
-                      } as any)
+                      })
                     }
                   >
                     <BudgetProgressItem budget={budget} />
@@ -379,7 +379,7 @@ export default function HomeScreen() {
             <Pressable
               testID={tid('home', 'plan-a-monthly')}
               className="rounded-[22px] bg-surface-2 px-5 py-6"
-              onPress={() => router.push('/budget' as any)}
+              onPress={() => router.push('/budget/list')}
             >
               <Text className="text-base font-display-semibold text-foreground">
                 Plan a monthly cap
@@ -403,7 +403,7 @@ export default function HomeScreen() {
               <Pressable
                 testID={tid('home', 'debts')}
                 className="min-h-11 justify-center px-2"
-                onPress={() => router.push('/debts' as any)}
+                onPress={() => router.push('/debts')}
               >
                 <MaterialDesignIcons
                   name="chevron-right"
@@ -460,7 +460,7 @@ export default function HomeScreen() {
             <Pressable
               testID={tid('home', 'transactions')}
               className="min-h-11 justify-center px-2"
-              onPress={() => router.push('/transaction' as any)}
+              onPress={() => router.push('/activity')}
             >
               <MaterialDesignIcons
                 name="chevron-right"

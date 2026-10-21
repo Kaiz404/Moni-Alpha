@@ -39,7 +39,7 @@ export default function DebtsScreen() {
   return (
     <Page
       screen="debts"
-      kind="pushed"
+      kind="tabRoot"
       title="Debts"
     >
       <ScrollView

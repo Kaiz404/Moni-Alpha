@@ -25,16 +25,30 @@ export default function TabLayout() {
             <TabBarIcon
               color={color}
               focused={focused}
-              outline="credit-card-outline"
-              filled="credit-card"
+              outline="home-outline"
+              filled="home"
             />
           ),
         }}
       />
       <Tabs.Screen
-        name="summary"
+        name="activity"
         options={{
-          title: 'Insights',
+          title: 'Activity',
+          tabBarIcon: ({ color, focused }) => (
+            <TabBarIcon
+              color={color}
+              focused={focused}
+              outline="receipt-text-outline"
+              filled="receipt-text"
+            />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="budget"
+        options={{
+          title: 'Budget',
           tabBarIcon: ({ color, focused }) => (
             <TabBarIcon
               color={color}
@@ -46,30 +60,15 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="chat"
+        name="debts"
         options={{
-          title: 'Chat',
+          title: 'Debts',
           tabBarIcon: ({ color, focused }) => (
             <TabBarIcon
               color={color}
               focused={focused}
-              outline="chat-outline"
-              filled="chat"
-            />
-          ),
-          tabBarHideOnKeyboard: true,
-        }}
-      />
-      <Tabs.Screen
-        name="profile"
-        options={{
-          title: 'Profile',
-          tabBarIcon: ({ color, focused }) => (
-            <TabBarIcon
-              color={color}
-              focused={focused}
-              outline="account-outline"
-              filled="account"
+              outline="handshake-outline"
+              filled="handshake"
             />
           ),
         }}

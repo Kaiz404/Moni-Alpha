@@ -210,7 +210,7 @@ export default function ChatScreen() {
     >
       <Page
         screen="chat"
-        kind="tabRoot"
+        kind="pushed"
         title="Moni chat"
         trailing={
           <HeaderIconButton

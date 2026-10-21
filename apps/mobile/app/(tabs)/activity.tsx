@@ -271,8 +271,8 @@ export default function TransactionsScreen() {
   return (
     <Page
       screen="activity"
-      kind="pushed"
-      title="Transactions"
+      kind="tabRoot"
+      title="Activity"
       trailing={
         <HeaderIconButton
           testID={tid('activity', 'add')}

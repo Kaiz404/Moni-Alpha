@@ -9,7 +9,7 @@ export default function BudgetLayout() {
         animation: 'slide_from_right',
       }}
     >
-      <Stack.Screen name="index" />
+      <Stack.Screen name="list" />
       <Stack.Screen name="form" />
     </Stack>
   );

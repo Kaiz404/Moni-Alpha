@@ -49,7 +49,7 @@ export default function NewDebtScreen() {
         walletId,
         dueDate: dueDate || null,
       });
-      router.replace('/debts' as never);
+      router.replace('/debts');
     } catch (error) {
       Alert.alert(
         'Could not record debt',

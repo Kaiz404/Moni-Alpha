@@ -55,7 +55,7 @@ function currencyText(value: string): CurrencyCode {
   return value as CurrencyCode;
 }
 
-export default function InsightsScreen() {
+export default function BudgetScreen() {
   const { user } = useAuth();
   const { width } = useWindowDimensions();
   const tokens = useThemeTokens();
@@ -262,7 +262,7 @@ export default function InsightsScreen() {
     <Page
       screen="budget"
       kind="tabRoot"
-      title="Insights"
+      title="Budget"
     >
       <ScrollView
         className="flex-1"
@@ -475,7 +475,7 @@ export default function InsightsScreen() {
                 <Pressable
                   testID={tid('budget', 'manage-budgets')}
                   className="min-h-11 items-center justify-center rounded-full px-2"
-                  onPress={() => router.push('/budget' as any)}
+                  onPress={() => router.push('/budget/list')}
                   accessibilityRole="button"
                   accessibilityLabel="Manage budgets"
                 >
@@ -513,13 +513,13 @@ export default function InsightsScreen() {
                               className="mt-3 self-start"
                               onPress={() =>
                                 router.push({
-                                  pathname: '/transaction',
+                                  pathname: '/activity',
                                   params: {
                                     categoryId: row.categoryId,
                                     currency,
                                     month: currentMonth,
                                   },
-                                } as any)
+                                })
                               }
                             >
                               <Text className="text-sm font-display-semibold text-primary">

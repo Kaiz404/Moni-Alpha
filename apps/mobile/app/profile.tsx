@@ -147,7 +147,7 @@ export default function ProfileScreen() {
   return (
     <Page
       screen="profile"
-      kind="tabRoot"
+      kind="pushed"
       title="Profile"
     >
       <ScrollView
@@ -214,14 +214,14 @@ export default function ProfileScreen() {
               icon="wallet"
               tint="mint"
               title="Category budgets"
-              onPress={() => router.push('/budget' as never)}
+              onPress={() => router.push('/budget/list')}
             />
             <NavRow
               testID={tid('profile', 'row', 'Debts')}
               icon="account-group-outline"
               tint="aqua"
               title="Debts"
-              onPress={() => router.push('/debts' as never)}
+              onPress={() => router.push('/debts')}
             />
           </ListCard>
         </View>

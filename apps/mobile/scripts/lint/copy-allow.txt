@@ -1,9 +1,7 @@
 # v1 copy that breaks docs/redesign/glossary.md and may stay until its screen is rebuilt.
 # Entries are `<file>: <term>: <text>`. The list only shrinks.
 # Regenerate: pnpm --filter moni lint:copy --write
-app/(tabs)/_layout.tsx: Insights: Insights
 app/(tabs)/index.tsx: Plan: Plan a monthly cap
-app/(tabs)/summary.tsx: Insights: Insights
 app/proposal/[id].tsx: Merge: Same purchase · merge
 components/proposal/proposal-form.tsx: Decline: Decline
 components/proposal/proposal-summary-sheet.tsx: Duplicate: Possible duplicate. Open details to merge.
