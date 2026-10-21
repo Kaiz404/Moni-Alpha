@@ -694,7 +694,7 @@ export function ReviewDeck({ session }: { session: ReviewSession }) {
     if (!results.length) {
       return (
         <View className="px-5 pt-2">
-          <NothingToReview onCaptureLog={() => router.push('/notifications')} />
+          <NothingToReview onCaptureLog={() => router.push('/capture-log')} />
         </View>
       );
     }
@@ -735,7 +735,7 @@ export function ReviewDeck({ session }: { session: ReviewSession }) {
         <CaughtUp
           sentence={sentence}
           rows={rows}
-          onCaptureLog={() => router.push('/notifications')}
+          onCaptureLog={() => router.push('/capture-log')}
         />
         <Press
           testID={tid('review', 'home')}

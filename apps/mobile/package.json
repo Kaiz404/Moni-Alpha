@@ -12,7 +12,7 @@
     "lint": "expo lint",
     "lint:copy": "node scripts/lint/check-copy.mjs",
     "lint:test-ids": "node scripts/lint/check-test-ids.mjs",
-    "check-types": "tsc --noEmit",
+    "check-types": "node scripts/gen-route-types.mjs && tsc --noEmit",
     "format": "prettier --write \"**/*.{ts,tsx}\"",
     "format:check": "prettier --check \"**/*.{ts,tsx}\"",
     "test": "node --test \"scripts/lint/*.test.mjs\" && jest --runInBand",

@@ -6,7 +6,7 @@ import {
   type CategoryIconName,
   type CustomCategoryColor,
 } from '@repo/types';
-import { router, useLocalSearchParams, type Href } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import {
   Alert,
@@ -89,11 +89,11 @@ export default function CategoryFormScreen() {
   const swatch = Math.floor((width - 40 - GAP * 7) / 8);
 
   const leave = (id: string) => {
-    if (params.returnTo)
+    if (params.returnTo === '/transaction/new')
       router.dismissTo({
-        pathname: params.returnTo,
+        pathname: '/transaction/new',
         params: { categoryId: id },
-      } as Href);
+      });
     else router.back();
   };
 

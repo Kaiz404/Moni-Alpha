@@ -34,7 +34,7 @@ export default function NotFoundScreen() {
               testID={tid('nav', 'go-to-home')}
               label="Go to Home"
               className="mt-6 w-full"
-              onPress={() => router.replace('/(tabs)' as any)}
+              onPress={() => router.replace('/(tabs)')}
             />
           </View>
         </View>
