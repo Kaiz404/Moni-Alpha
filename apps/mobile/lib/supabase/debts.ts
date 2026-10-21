@@ -317,6 +317,26 @@ export async function createDebt(data: {
   return debt;
 }
 
+/** In-place edits on the debt page. Money never changes here; it moves through activities. */
+export function updateDebt(
+  id: string,
+  patch: {
+    counterpartyName?: string;
+    note?: string | null;
+    dueDate?: string | null;
+  },
+): void {
+  const row: Record<string, unknown> = { updated_at: new Date().toISOString() };
+  if (patch.counterpartyName !== undefined) {
+    const name = patch.counterpartyName.trim();
+    if (!name) throw new Error('Enter a name');
+    row.counterparty_name = name.slice(0, 120);
+  }
+  if (patch.note !== undefined) row.note = patch.note?.trim() || null;
+  if (patch.dueDate !== undefined) row.due_date = patch.dueDate;
+  patchRow(debts$, id, row);
+}
+
 export async function addDebtPrincipal(
   debt: Debt,
   amountMinor: MinorAmount,

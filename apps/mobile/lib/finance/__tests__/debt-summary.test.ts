@@ -87,9 +87,7 @@ describe('summarizeDebts', () => {
       MYR,
     );
 
-    expect(
-      summary.closed.map((line) => [line.debt.id, line.state, line.principalMinor]),
-    ).toEqual([
+    expect(summary.closed.map((line) => [line.debt.id, line.state, line.principalMinor])).toEqual([
       ['Ravi', 'written_off', 6000],
       ['Hana', 'settled', 2500],
     ]);

@@ -1,9 +1,4 @@
-import {
-  addMinor,
-  subtractMinor,
-  type CurrencyCode,
-  type MinorAmount,
-} from '@repo/types';
+import { addMinor, subtractMinor, type CurrencyCode, type MinorAmount } from '@repo/types';
 
 import { parseLocalDateInput } from '@/lib/dates/local-date-input';
 import type { FinanceDebt, FinanceDebtActivity } from './types';
@@ -50,28 +45,18 @@ export type DebtSummary = {
 const sum = (amounts: MinorAmount[]) => addMinor(0, ...amounts);
 
 /** Null until the debt's first principal has arrived (a half-synced debt shows nowhere). */
-export function describeDebt(
-  debt: FinanceDebt,
-  activities: readonly Activity[],
-): DebtLine | null {
+export function describeDebt(debt: FinanceDebt, activities: readonly Activity[]): DebtLine | null {
   const own = activities
     .filter((activity) => activity.debtId === debt.id)
     .sort((a, b) => a.activityDate.localeCompare(b.activityDate));
   const of = (kind: Activity['kind']) =>
-    sum(
-      own
-        .filter((activity) => activity.kind === kind)
-        .map((activity) => activity.amountMinor),
-    );
+    sum(own.filter((activity) => activity.kind === kind).map((activity) => activity.amountMinor));
   const first = own.find((activity) => activity.kind === 'principal');
   if (!first) return null;
   const principalMinor = of('principal');
   const repaidMinor = of('repayment');
   const writtenOffMinor = of('write_off');
-  const balanceMinor = subtractMinor(
-    principalMinor,
-    addMinor(repaidMinor, writtenOffMinor),
-  );
+  const balanceMinor = subtractMinor(principalMinor, addMinor(repaidMinor, writtenOffMinor));
   const state: DebtState =
     balanceMinor > 0 ? 'open' : writtenOffMinor > 0 ? 'written_off' : 'settled';
   return {
@@ -96,8 +81,7 @@ export function daysUntil(dueDate: string, now: Date): number | null {
 function byDueThenName(a: DebtLine, b: DebtLine): number {
   const due = (line: DebtLine) => line.debt.dueDate ?? '9999-12-31';
   return (
-    due(a).localeCompare(due(b)) ||
-    a.debt.counterpartyName.localeCompare(b.debt.counterpartyName)
+    due(a).localeCompare(due(b)) || a.debt.counterpartyName.localeCompare(b.debt.counterpartyName)
   );
 }
 
@@ -117,11 +101,7 @@ export function summarizeDebts(
     .filter((line): line is DebtLine => line !== null);
   const open = lines.filter((line) => line.state === 'open').sort(byDueThenName);
   const total = (side: DebtSide) =>
-    sum(
-      open
-        .filter((line) => line.debt.direction === side)
-        .map((line) => line.balanceMinor),
-    );
+    sum(open.filter((line) => line.debt.direction === side).map((line) => line.balanceMinor));
   const owedToMeMinor = total('owed_to_me');
   const iOweMinor = total('i_owe');
   const comingUp = open.flatMap((line): ComingUpRow[] => {
