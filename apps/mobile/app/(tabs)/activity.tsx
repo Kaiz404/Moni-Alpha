@@ -2,7 +2,7 @@ import { syncState } from '@legendapp/state';
 import { useSelector, useValue } from '@legendapp/state/react';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
-import { Alert, ScrollView, View } from 'react-native';
+import { ScrollView, View } from 'react-native';
 
 import { DayGroup } from '@/components/activity/day-group';
 import { useBudgetData, useBudgetMonth } from '@/components/budget/use-budget';
@@ -17,26 +17,17 @@ import { useTabBarClearance } from '@/components/nav/tab-bar';
 import { SyncBanner } from '@/components/providers/sync-banner';
 import { EmptyTile } from '@/components/ui/empty-tile';
 import { MoniButton } from '@/components/ui/header-icon-button';
-import {
-  HoldHint,
-  HoldMenu,
-  type HoldAction,
-  type HoldAnchor,
-} from '@/components/ui/hold-menu';
+import { useTransactionHold } from '@/components/transaction/use-transaction-hold';
+import { HoldHint } from '@/components/ui/hold-menu';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Page } from '@/components/ui/page';
 import { Press } from '@/components/ui/press';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Text } from '@/components/ui/text';
-import {
-  TransactionRow,
-  TransactionRowBody,
-  rowAmount,
-  rowMeta,
-} from '@/components/ui/transaction-row';
+import { TransactionRow } from '@/components/ui/transaction-row';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { useAuth } from '@/lib/auth/auth-context';
-import { dayLabel, formatDate, formatDayHeading } from '@/lib/dates/day-label';
+import { dayLabel, formatDayHeading } from '@/lib/dates/day-label';
 import { toLocalDateInput } from '@/lib/dates/local-date-input';
 import {
   filterActivity,
@@ -51,28 +42,17 @@ import { useMainCurrency } from '@/lib/finance/main-currency';
 import { merchantName } from '@/lib/finance/merchant-name';
 import { groupPlaces, placeRange } from '@/lib/finance/places';
 import {
-  budgetProgress$,
   categoriesForUser$,
   pendingProposals$,
   transactions$,
   walletsForUser$,
 } from '@/lib/finance/selectors';
 import type { FinanceTransaction } from '@/lib/finance/types';
-import { toCategoryTiles } from '@/lib/sheet/category-tiles';
 import { openSheet } from '@/lib/sheet/sheet-store';
 import { transactions$ as transactionTable$ } from '@/lib/store';
 import { listMerchantAliases } from '@/lib/supabase/merchant-aliases';
-import { ensureFinanceTimezone } from '@/lib/supabase/profile';
-import {
-  deleteTransaction,
-  updateTransaction,
-} from '@/lib/supabase/transactions';
 import { tid } from '@/lib/test-ids';
-import {
-  transactionRow,
-  type RowLookups,
-  type TransactionRowData,
-} from '@/lib/transactions/row';
+import { transactionRow, type RowLookups } from '@/lib/transactions/row';
 
 const FIRST_DAYS = 5;
 const MORE_DAYS = 10;
@@ -80,20 +60,6 @@ const MORE_DAYS = 10;
 function dayOf(key: string): Date {
   const [year, month, day] = key.split('-').map(Number);
   return new Date(year, month - 1, day);
-}
-
-type Held = {
-  transaction: FinanceTransaction;
-  row: TransactionRowData;
-  anchor: HoldAnchor;
-};
-
-function holdable(transaction: FinanceTransaction) {
-  return (
-    transaction.type !== 'transfer' &&
-    !transaction.debtActivityId &&
-    !transaction.balanceCorrection
-  );
 }
 
 function dayTotal(day: ActivityDay, currency: string) {
@@ -123,8 +89,7 @@ export default function ActivityScreen() {
   const loaded = useSelector(
     () => syncState(transactionTable$).get().isPersistLoaded,
   );
-  const [timezone, setTimezone] = useState('UTC');
-  const progress = useValue(budgetProgress$(userId, timezone));
+  const hold = useTransactionHold('activity');
   const budgetData = useBudgetData();
   // Home's and Budget's own month model, so "safe to spend a day" matches theirs (D1).
   const budgetMonth = useBudgetMonth(budgetData, monthKey(budgetData.now));
@@ -140,7 +105,6 @@ export default function ActivityScreen() {
   const [walletId, setWalletId] = useState<string | null>(null);
   const [day, setDay] = useState<string | null>(null);
   const [shownDays, setShownDays] = useState(FIRST_DAYS);
-  const [held, setHeld] = useState<Held | null>(null);
   const now = new Date();
 
   // A link from another page replaces whatever filters were left, then clears its params so the same link works again.
@@ -154,12 +118,6 @@ export default function ActivityScreen() {
     setDay(null);
     router.setParams({ q: undefined, placeId: undefined, range: undefined });
   }, [params]);
-
-  useEffect(() => {
-    void ensureFinanceTimezone()
-      .then(setTimezone)
-      .catch(() => {});
-  }, []);
 
   const lookups = useMemo<RowLookups>(
     () => ({
@@ -234,59 +192,6 @@ export default function ActivityScreen() {
   const visible = day ? days : days.slice(0, shownDays);
   const earlier = Math.min(MORE_DAYS, days.length - visible.length);
 
-  const save = (
-    id: string,
-    change: { categoryId: string } | { walletId: string },
-  ) => {
-    updateTransaction(id, change).catch((error: unknown) =>
-      Alert.alert(
-        'Not saved',
-        error instanceof Error ? error.message : 'Try again.',
-      ),
-    );
-  };
-
-  const editCategory = async (transaction: FinanceTransaction) => {
-    const picked = await openSheet({
-      kind: 'category',
-      title: 'Edit category',
-      currency: transaction.currency,
-      categories: toCategoryTiles(
-        categories.filter(
-          (category) =>
-            category.isActive && category.type === transaction.type,
-        ),
-        progress,
-        transaction.currency,
-      ),
-      selectedId: transaction.categoryId,
-    });
-    if (picked && picked !== transaction.categoryId)
-      save(transaction.id, { categoryId: picked });
-  };
-
-  const changeWallet = async (transaction: FinanceTransaction) => {
-    const picked = await openSheet({
-      kind: 'wallet',
-      title: 'Change wallet',
-      wallets: wallets
-        .filter((wallet) => wallet.currency === transaction.currency)
-        .map((wallet) => ({
-          id: wallet.id,
-          name: wallet.name,
-          currency: wallet.currency,
-          type: wallet.type,
-          icon: wallet.icon,
-          color: wallet.color,
-          cardStyleId: wallet.cardStyleId,
-        })),
-      selectedId: transaction.walletId,
-      emptyMessage: 'No other wallet uses this currency.',
-    });
-    if (picked?.walletId && picked.walletId !== transaction.walletId)
-      save(transaction.id, { walletId: picked.walletId });
-  };
-
   const pickWallet = async () => {
     const picked = await openSheet({
       kind: 'wallet',
@@ -304,35 +209,6 @@ export default function ActivityScreen() {
       noneLabel: 'All wallets',
     });
     if (picked) setWalletId(picked.walletId);
-  };
-
-  const remove = async (
-    transaction: FinanceTransaction,
-    row: TransactionRowData,
-  ) => {
-    const month = new Date(row.date).toLocaleDateString('en-US', {
-      month: 'long',
-    });
-    const category = 'category' in row ? row.category : null;
-    const confirmed = await openSheet({
-      kind: 'confirm',
-      title: 'Delete this transaction?',
-      message: `${row.title} ${formatMoney(row.amountMinor, row.currency)} on ${formatDate(row.date)} comes out of ${month}${category ? ` and out of ${category}` : ''}.`,
-      confirmLabel: 'Delete',
-      cancelLabel: 'Keep it',
-      destructive: true,
-    });
-    if (confirmed) void deleteTransaction(transaction.id);
-  };
-
-  const act = (action: HoldAction) => {
-    if (!held) return;
-    const { transaction, row } = held;
-    setHeld(null);
-    if (action === 'delete') void remove(transaction, row);
-    else if (action === 'editCategory')
-      void editCategory(transaction);
-    else void changeWallet(transaction);
   };
 
   const open = (transaction: FinanceTransaction) =>
@@ -485,12 +361,7 @@ export default function ActivityScreen() {
                           metaLead="category"
                           now={now}
                           onPress={() => open(transaction)}
-                          onHold={
-                            holdable(transaction)
-                              ? (anchor) =>
-                                  setHeld({ transaction, row, anchor })
-                              : undefined
-                          }
+                          onHold={hold.holdFor(transaction, row)}
                         />
                       );
                     })}
@@ -520,22 +391,7 @@ export default function ActivityScreen() {
         )}
       </ScrollView>
 
-      <HoldMenu
-        screen="activity"
-        anchor={held?.anchor ?? null}
-        rowTitle={held?.row.title ?? ''}
-        liftedRow={
-          held ? (
-            <TransactionRowBody
-              row={held.row}
-              meta={rowMeta(held.row, 'category')}
-              amount={rowAmount(held.row)}
-            />
-          ) : null
-        }
-        onAction={act}
-        onClose={() => setHeld(null)}
-      />
+      {hold.menu}
     </Page>
   );
 }

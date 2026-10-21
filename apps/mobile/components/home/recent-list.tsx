@@ -5,13 +5,14 @@ import { IconSymbol } from '@/components/ui/icon-symbol';
 import { ListCard } from '@/components/ui/list-card';
 import { Press } from '@/components/ui/press';
 import { Text } from '@/components/ui/text';
+import { useTransactionHold } from '@/components/transaction/use-transaction-hold';
 import { TransactionRow } from '@/components/ui/transaction-row';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import type { FinanceTransaction } from '@/lib/finance/types';
 import { tid } from '@/lib/test-ids';
 import { transactionRow, type RowLookups } from '@/lib/transactions/row';
 
-/** "Recent": the newest three rows and See all, or the first-run empty tile. */
+/** "Recent": the newest three rows (press and hold for the row menu) and See all, or the first-run empty tile. */
 export function RecentList({
   transactions,
   lookups,
@@ -26,6 +27,7 @@ export function RecentList({
   onAdd: () => void;
 }) {
   const tokens = useThemeTokens();
+  const hold = useTransactionHold('home');
   return (
     <View className="gap-2">
       <View className="flex-row items-center justify-between">
@@ -54,15 +56,19 @@ export function RecentList({
       </View>
       {transactions.length ? (
         <ListCard>
-          {transactions.map((transaction) => (
-            <TransactionRow
-              key={transaction.id}
-              testID={tid('home', 'recent', 'row', transaction.id)}
-              row={transactionRow(transaction, lookups)}
-              metaLead="date"
-              onPress={() => onOpen(transaction)}
-            />
-          ))}
+          {transactions.map((transaction) => {
+            const row = transactionRow(transaction, lookups);
+            return (
+              <TransactionRow
+                key={transaction.id}
+                testID={tid('home', 'recent', 'row', transaction.id)}
+                row={row}
+                metaLead="date"
+                onPress={() => onOpen(transaction)}
+                onHold={hold.holdFor(transaction, row)}
+              />
+            );
+          })}
         </ListCard>
       ) : (
         <EmptyTile
@@ -77,6 +83,7 @@ export function RecentList({
           }}
         />
       )}
+      {hold.menu}
     </View>
   );
 }

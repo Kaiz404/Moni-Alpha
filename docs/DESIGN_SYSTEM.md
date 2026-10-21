@@ -291,7 +291,7 @@ Home begins with the user’s financial orientation, not an AI alert. v2 (`V2H-H
 - **Spent in October** card: spent of the month's budget, then "RM443 left for 18 days · RM24 a day". What's left subtracts bills still due and money owed to a person by month end (D1); the bills strip names it ("RM240.80 set aside for bills and RM40 to Mei"), or the left line does when there is no bill ("after RM40 to Mei"). Pace / Daily toggle over the shared chart (7.12).
 - The ask box and the Moni header button both open Moni chat (D4).
 - The Lilac review block appears only while captures wait.
-- Recent: three main-currency rows and **See all**; the bills strip; the Lemon check-in for one stale main-currency balance (**That's right**, **Fix it**, **Not now**, each answer with **Undo**).
+- Recent: three main-currency rows (press and hold for Edit category, Change wallet, Delete) and **See all**; the bills strip; the Lemon check-in for one stale main-currency balance (**That's right**, **Fix it**, **Not now**, each answer with **Undo**).
 - First run (`V2H-HomeFirstRun`, no wallets and no transactions): "Welcome to Moni", the three setup steps on Mint, the chart's empty shape with a hint, and empty tiles for transactions and bills. The setup steps stay until the user has a transaction.
 
 Do not force a converted aggregate across currencies. Wallets (`V2H-Wallets`) lists the main currency first with its closing-balance line, then each other currency in its own section with the "Kept apart" note.
