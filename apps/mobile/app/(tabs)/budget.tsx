@@ -24,15 +24,16 @@ import {
   monthKey,
   monthName,
   monthShort,
+  monthSpend,
   spendMonths,
-  spendPlaces,
   type BudgetMonth,
 } from '@/lib/finance/budget-month';
 import { formatMoney } from '@/lib/finance/format-money';
+import { groupPlaces } from '@/lib/finance/places';
 import { openSheet } from '@/lib/sheet/sheet-store';
 import { tid } from '@/lib/test-ids';
 
-type View_ = 'month' | 'calendar';
+type BudgetView = 'month' | 'calendar';
 
 const VIEWS = [
   { value: 'month', label: 'Month' },
@@ -46,7 +47,7 @@ export default function BudgetScreen() {
   const current = monthKey(data.now);
   const [chosen, setChosen] = useState<string | null>(null);
   const month = chosen ?? current;
-  const [view, setView] = useState<View_>('month');
+  const [view, setView] = useState<BudgetView>('month');
   const budget = useBudgetMonth(data, month);
   const months = useMemo(
     () => spendMonths(data.transactions, data.currency, data.now),
@@ -166,10 +167,16 @@ function MonthView({
   const { currency } = budget;
   const name = monthName(budget.month);
   const sentence = leftSentence(budget);
-  const places = useMemo(
-    () => spendPlaces(data.transactions, budget.month, currency),
-    [data.transactions, budget.month, currency],
-  );
+  const places = useMemo(() => {
+    const range = { from: `${budget.month}-01`, to: `${budget.month}-${budget.daysInMonth}` };
+    const spend = monthSpend(data.transactions, budget.month, currency);
+    return {
+      places: groupPlaces(data.transactions, { currency, range }),
+      expenses: spend.length,
+      withPlace: spend.filter((row) => row.locationLatitude !== null && row.locationLongitude !== null)
+        .length,
+    };
+  }, [data.transactions, budget.month, budget.daysInMonth, currency]);
   const looks = useMemo(() => {
     const latest = lastPaymentBySeries(data.transactions);
     const categories = Object.fromEntries(data.categories.map((category) => [category.id, category]));
@@ -286,7 +293,7 @@ function MonthView({
           withPlace={places.withPlace}
           monthName={name}
           currency={currency}
-          onOpen={() => router.push('/heatmap')}
+          onOpen={() => router.push('/map')}
         />
       </View>
     </View>

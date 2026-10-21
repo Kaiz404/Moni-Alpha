@@ -6,7 +6,7 @@ import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Press } from '@/components/ui/press';
 import { Text } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
-import type { SpendPlace } from '@/lib/finance/budget-month';
+import type { Place } from '@/lib/finance/places';
 import { formatMoney } from '@/lib/finance/format-money';
 import { tid } from '@/lib/test-ids';
 
@@ -16,7 +16,7 @@ const MAX_BUBBLES = 12;
 const LABELS = 3;
 
 type MapTeaserProps = {
-  places: readonly SpendPlace[];
+  places: readonly Place[];
   expenses: number;
   withPlace: number;
   monthName: string;
@@ -43,11 +43,11 @@ export function MapTeaser({
   const lngs = shown.map((place) => place.longitude);
   const [minLat, maxLat] = [Math.min(...lats), Math.max(...lats)];
   const [minLng, maxLng] = [Math.min(...lngs), Math.max(...lngs)];
-  const biggest = Number(shown[0]?.spentMinor ?? 1);
-  const point = (place: SpendPlace) => ({
+  const biggest = Number(shown[0]?.totalMinor ?? 1);
+  const point = (place: Place) => ({
     x: PAD + ((place.longitude - minLng) / (maxLng - minLng || 1)) * (width - PAD * 2 || 1),
     y: PAD + ((maxLat - place.latitude) / (maxLat - minLat || 1)) * (HEIGHT - PAD * 2),
-    r: 8 + 13 * Math.sqrt(Number(place.spentMinor) / biggest),
+    r: 8 + 13 * Math.sqrt(Number(place.totalMinor) / biggest),
   });
   const single = shown.length === 1;
   const whole = (value: number) => formatMoney(value, currency, { whole: true });
@@ -57,7 +57,7 @@ export function MapTeaser({
   const label = shown.length
     ? `Where you spend. Biggest: ${shown
         .slice(0, LABELS)
-        .map((place) => `${place.name} ${formatMoney(place.spentMinor, currency)}`)
+        .map((place) => `${place.name} ${formatMoney(place.totalMinor, currency)}`)
         .join(', ')}. Open the map`
     : 'Where you spend. Open the map';
 
@@ -129,7 +129,7 @@ export function MapTeaser({
             </Svg>
             {shown.slice(0, LABELS).map((place, index) => {
               const at = single ? { x: width / 2, y: HEIGHT / 2, r: 18 } : point(place);
-              const text = `${place.name} · ${whole(Number(place.spentMinor))}`;
+              const text = `${place.name} · ${whole(Number(place.totalMinor))}`;
               const chipWidth = Math.min(width - 16, 12 + text.length * 7);
               const below = at.y < HEIGHT / 2;
               return (

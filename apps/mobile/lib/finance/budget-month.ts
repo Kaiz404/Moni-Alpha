@@ -371,46 +371,6 @@ export function dayOfMonth(transaction: Pick<FinanceTransaction, 'transactionDat
   return localDay(transaction.transactionDate).day;
 }
 
-export type SpendPlace = {
-  name: string;
-  latitude: number;
-  longitude: number;
-  spentMinor: MinorAmount;
-};
-
-/** Where a month's spending happened, about 100 m apart, biggest first. */
-export function spendPlaces(
-  transactions: readonly FinanceTransaction[],
-  month: MonthKey,
-  currency: CurrencyCode,
-): { places: SpendPlace[]; expenses: number; withPlace: number } {
-  const places = new Map<string, SpendPlace>();
-  let expenses = 0;
-  let withPlace = 0;
-  for (const transaction of transactions) {
-    if (!countsAsSpend(transaction, currency)) continue;
-    if (localDay(transaction.transactionDate).month !== month) continue;
-    expenses += 1;
-    const { locationLatitude: latitude, locationLongitude: longitude } = transaction;
-    if (latitude === null || longitude === null) continue;
-    withPlace += 1;
-    const key = `${latitude.toFixed(3)},${longitude.toFixed(3)}`;
-    const place = places.get(key) ?? {
-      name: transaction.locationName ?? transaction.merchant ?? 'A place',
-      latitude,
-      longitude,
-      spentMinor: 0 as MinorAmount,
-    };
-    place.spentMinor = (place.spentMinor + Number(transaction.amountMinor)) as MinorAmount;
-    places.set(key, place);
-  }
-  return {
-    places: [...places.values()].sort((a, b) => b.spentMinor - a.spentMinor),
-    expenses,
-    withPlace,
-  };
-}
-
 const MONTH_NAMES = [
   'January',
   'February',
