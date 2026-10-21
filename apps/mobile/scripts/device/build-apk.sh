@@ -83,16 +83,19 @@ fi
 
 start=$SECONDS
 cd "$mobile"
-fingerprint=$(node -e '
-  const expo = require.resolve("expo/package.json", { paths: [process.argv[1]] });
-  const { createFingerprintAsync } = require(require.resolve("@expo/fingerprint", { paths: [expo] }));
-  createFingerprintAsync(process.argv[1], { platforms: ["android"] }).then((f) => console.log(f.hash));
-' "$mobile")
+native_fingerprint() {
+  node -e '
+    const expo = require.resolve("expo/package.json", { paths: [process.argv[1]] });
+    const { createFingerprintAsync } = require(require.resolve("@expo/fingerprint", { paths: [expo] }));
+    createFingerprintAsync(process.argv[1], { platforms: ["android"] }).then((f) => console.log(f.hash));
+  ' "$mobile"
+}
 prebuild=false
-if $clean_prebuild || [[ $(cat android/.moni-fingerprint 2>/dev/null) != "$fingerprint" ]]; then
+# The fingerprint changes when android/ first appears, so it is saved after prebuild.
+if $clean_prebuild || [[ $(cat android/.moni-fingerprint 2>/dev/null) != "$(native_fingerprint)" ]]; then
   prebuild=true
   npx expo prebuild --platform android --clean --no-install
-  echo "$fingerprint" >android/.moni-fingerprint
+  native_fingerprint >android/.moni-fingerprint
 fi
 (cd android && ./gradlew assembleRelease -PreactNativeArchitectures=arm64-v8a --build-cache)
 seconds=$((SECONDS - start))
