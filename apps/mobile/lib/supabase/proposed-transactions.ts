@@ -1,4 +1,4 @@
-import { proposedTransactions$, transactions$ } from '@/lib/store';
+import { assertTableMigrated, proposedTransactions$, transactions$ } from '@/lib/store';
 import { getRecordValues, hasRow, patchRow } from '@/lib/store/helpers';
 import { getUserId } from '@/lib/supabase/client';
 import { randomUUID } from 'expo-crypto';
@@ -126,8 +126,12 @@ export async function getProposedTransactions(now = new Date()): Promise<Propose
   return readUnreviewedProposals().filter((proposal) => isAwaitingReview(proposal, now));
 }
 
-/** "Later": hide the proposal from review until `until`. */
+/**
+ * "Later": hide the proposal from review until `until`. The `later` status and `snoozed_until`
+ * ship with auto_add_rules; before that migration the old CHECK would fail this row's sync.
+ */
 export function laterProposedTransaction(id: string, until: Date): void {
+  assertTableMigrated('auto_add_rules');
   patchRow(proposedTransactions$, id, {
     status: 'later',
     snoozed_until: until.toISOString(),

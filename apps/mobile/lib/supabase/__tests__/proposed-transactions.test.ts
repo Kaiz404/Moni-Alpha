@@ -14,6 +14,7 @@ jest.mock('@/lib/store', () => {
     wallets$: observable({}),
     transactions$: observable({}),
     proposedTransactions$: observable({}),
+    assertTableMigrated: () => {},
   };
 });
 

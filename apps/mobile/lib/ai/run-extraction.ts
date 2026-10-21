@@ -164,7 +164,9 @@ async function persistProposal(
       getWallets(),
       getUserId(),
     ]);
-    const walletIds = new Set(wallets.map((w) => w.id));
+    const sameCurrencyWalletIds = new Set(
+      wallets.filter((w) => w.currency?.toUpperCase() === proposal.currency).map((w) => w.id),
+    );
     const match = matchRoutine(
       {
         type: proposal.type,
@@ -177,7 +179,7 @@ async function persistProposal(
       history,
       new Set(categories.filter((c) => c.isActive).map((c) => c.id)),
       automatic && userId
-        ? listAutoAddRules(userId).filter((rule) => walletIds.has(rule.walletId))
+        ? listAutoAddRules(userId).filter((rule) => sameCurrencyWalletIds.has(rule.walletId))
         : [],
     );
     proposal = {
