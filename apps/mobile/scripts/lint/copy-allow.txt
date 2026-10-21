@@ -2,7 +2,3 @@
 # Entries are `<file>: <term>: <text>`. The list only shrinks.
 # Regenerate: pnpm --filter moni lint:copy --write
 app/(tabs)/index.tsx: Plan: Plan a monthly cap
-app/proposal/[id].tsx: Merge: Same purchase · merge
-components/proposal/proposal-form.tsx: Decline: Decline
-components/proposal/proposal-summary-sheet.tsx: Duplicate: Possible duplicate. Open details to merge.
-components/proposal/proposal-summary-sheet.tsx: Merge: Possible duplicate. Open details to merge.

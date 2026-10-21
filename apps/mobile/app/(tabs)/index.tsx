@@ -218,9 +218,9 @@ export default function HomeScreen() {
               className="mt-5 flex-row items-center rounded-2xl bg-surface-1 px-4 py-3"
               onPress={() =>
                 router.push({
-                  pathname: '/proposal/[id]',
+                  pathname: '/review',
                   params: { id: pendingProposals[0]!.id },
-                } as any)
+                })
               }
               accessibilityRole="button"
               accessibilityLabel={`${pendingProposals.length} transaction proposal${pendingProposals.length === 1 ? '' : 's'} ready for review`}

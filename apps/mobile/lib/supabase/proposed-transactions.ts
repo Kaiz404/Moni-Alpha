@@ -334,15 +334,6 @@ export async function findProposalDuplicate(
   return findDuplicate(proposalLedgerEntry(id, proposal), await getLedgerEntries());
 }
 
-function missingFields(
-  row: Record<string, unknown> | undefined,
-  values: Record<string, unknown>,
-): Record<string, unknown> {
-  return Object.fromEntries(
-    Object.entries(values).filter(([key, value]) => value != null && row?.[key] == null),
-  );
-}
-
 /**
  * Rewrites the target of a transfer pair as one transfer between the two wallets. Runs
  * automatically when a notification completes the pair, so a combined ledger row is marked
@@ -378,36 +369,4 @@ export function combineIntoTransfer(
     category_id: null,
     metadata: { ...metadata, ai_suggested: true },
   });
-}
-
-/**
- * Applies a user-confirmed duplicate resolution: the proposal is folded into its target and
- * removed. Every write sets values, so re-running after a crash converges.
- */
-export async function resolveDuplicate(
-  proposal: ProposedTransaction,
-  match: DuplicateMatch,
-): Promise<void> {
-  const { target } = match;
-  const table$ = target.kind === 'transaction' ? transactions$ : proposedTransactions$;
-  const now = new Date().toISOString();
-
-  if (match.kind === 'same_purchase') {
-    const imageUrl = proposal.sourceImageUri?.startsWith('http') ? proposal.sourceImageUri : null;
-    const row = getRecordValues<Record<string, unknown>>(table$).find((r) => r.id === target.id);
-    const fill = missingFields(row, {
-      category_id: proposal.categoryId,
-      merchant: proposal.merchant,
-      [target.kind === 'transaction' ? 'receipt_image_url' : 'source_image_uri']: imageUrl,
-    });
-    if (Object.keys(fill).length > 0) {
-      patchRow(table$, target.id, { ...fill, updated_at: now });
-    }
-  } else {
-    combineIntoTransfer(match);
-  }
-
-  if (hasRow(proposedTransactions$, proposal.id)) {
-    await deleteProposedTransaction(proposal.id);
-  }
 }

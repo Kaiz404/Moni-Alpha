@@ -366,7 +366,7 @@ export default function ActivityScreen() {
               }
               onPress={() =>
                 router.push({
-                  pathname: '/proposal/[id]',
+                  pathname: '/review',
                   params: { id: proposals[0].id },
                 })
               }
