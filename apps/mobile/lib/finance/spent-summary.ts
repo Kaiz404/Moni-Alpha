@@ -1,14 +1,18 @@
 import type { UpcomingBill } from '@repo/types';
 
-import { daysInMonth, type ChartMonth } from '@/components/charts/pace-geometry';
+import { formatDate } from '@/lib/dates/day-label';
+import { parseLocalDateInput } from '@/lib/dates/local-date-input';
 import { formatMoney } from '@/lib/finance/format-money';
 import type { FinanceBudget, FinanceDebt, FinanceTransaction } from '@/lib/finance/types';
+
+/** A calendar month; `month` is 0 for January. */
+export type CalendarMonth = { year: number; month: number };
 
 export type DebtDue = { name: string; amountMinor: number };
 
 /** This month in the main currency: what the spent card and the bills strip read. */
 export type SpentSummary = {
-  month: ChartMonth;
+  month: CalendarMonth;
   /** Spend per day, minor units, day 1 to today. */
   daily: number[];
   spentMinor: number;
@@ -49,7 +53,7 @@ export function selectSpentSummary({
 }): SpentSummary {
   const month = { year: now.getFullYear(), month: now.getMonth() };
   const today = now.getDate();
-  const length = daysInMonth(month);
+  const length = new Date(month.year, month.month + 1, 0).getDate();
   const todayKey = localKey(now);
   const monthEndKey = localKey(new Date(month.year, month.month, length));
 
@@ -144,4 +148,13 @@ export function leftLine(
   return perDayMinor === null
     ? `${whole(leftMinor)} left for ${days}`
     : `${whole(leftMinor)} left for ${days} · ${whole(perDayMinor)} a day`;
+}
+
+/** "today", "tomorrow", or "on Fri 16 Oct" for a local YYYY-MM-DD. */
+export function dueWhen(dueDate: string, now: Date): string {
+  const due = parseLocalDateInput(dueDate);
+  if (!due) return `on ${dueDate}`;
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const days = Math.round((due.getTime() - today.getTime()) / 86_400_000);
+  return days <= 0 ? 'today' : days === 1 ? 'tomorrow' : `on ${formatDate(due, now)}`;
 }

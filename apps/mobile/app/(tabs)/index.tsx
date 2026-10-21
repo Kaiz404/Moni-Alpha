@@ -12,7 +12,7 @@ import { RecentList } from '@/components/home/recent-list';
 import { ReviewBlock } from '@/components/home/review-block';
 import { SetupTiles, type SetupStep } from '@/components/home/setup-tiles';
 import { SpentCard } from '@/components/home/spent-card';
-import { debtPhrase } from '@/components/home/spent-summary';
+import { debtPhrase } from '@/lib/finance/spent-summary';
 import { useSpentSummary } from '@/components/home/use-spent-summary';
 import { openCaptureChooser } from '@/components/nav/capture-chooser';
 import { useTabBarClearance } from '@/components/nav/tab-bar';

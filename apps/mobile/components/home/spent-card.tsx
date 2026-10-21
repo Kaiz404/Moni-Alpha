@@ -10,7 +10,7 @@ import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { currencySymbol, formatMoney } from '@/lib/finance/format-money';
 import { tid } from '@/lib/test-ids';
 
-import { leftLine, type SpentSummary } from './spent-summary';
+import { leftLine, type SpentSummary } from '@/lib/finance/spent-summary';
 
 type Mode = 'pace' | 'daily';
 

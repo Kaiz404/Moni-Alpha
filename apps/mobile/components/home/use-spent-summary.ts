@@ -6,7 +6,7 @@ import { financeProjection$ } from '@/lib/finance/projection';
 import { debtsWithBalance$, transactions$ } from '@/lib/finance/selectors';
 import { listRecurringOverrides } from '@/lib/supabase/recurring-overrides';
 
-import { selectSpentSummary, type SpentSummary } from './spent-summary';
+import { selectSpentSummary, type SpentSummary } from '@/lib/finance/spent-summary';
 
 export function useSpentSummary(userId: string | null, currency: string): SpentSummary {
   const transactions = useValue(transactions$({ userId }));

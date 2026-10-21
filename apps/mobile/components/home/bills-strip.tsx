@@ -5,20 +5,10 @@ import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Press } from '@/components/ui/press';
 import { Text } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
-import { formatDate } from '@/lib/dates/day-label';
-import { parseLocalDateInput } from '@/lib/dates/local-date-input';
 import { formatMoney } from '@/lib/finance/format-money';
 import { tid } from '@/lib/test-ids';
 
-import { debtPhrase, type SpentSummary } from './spent-summary';
-
-function dueWhen(dueDate: string, now: Date): string {
-  const due = parseLocalDateInput(dueDate);
-  if (!due) return `on ${dueDate}`;
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const days = Math.round((due.getTime() - today.getTime()) / 86_400_000);
-  return days <= 0 ? 'today' : days === 1 ? 'tomorrow' : `on ${formatDate(due, now)}`;
-}
+import { debtPhrase, dueWhen, type SpentSummary } from '@/lib/finance/spent-summary';
 
 /** The next bill due and what is set aside for the rest of the month (D1 names debts due here). */
 export function BillsStrip({
