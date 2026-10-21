@@ -140,7 +140,7 @@ export function BillsList({
           return onOpen ? (
             <Press
               key={bill.seriesKey}
-              testID={tid('budget', 'bill', bill.name)}
+              testID={tid('budget', 'bills', 'row', bill.name)}
               accessibilityLabel={`${bill.name}, ${amount}, ${due.text}${look?.wallet ? `, from ${look.wallet}` : ''}`}
               onPress={() => onOpen(bill)}
               className="min-h-[66px] flex-row items-center gap-3.5 py-3 pl-[18px] pr-3"
