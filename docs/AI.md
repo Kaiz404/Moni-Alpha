@@ -1,13 +1,13 @@
 # AI Pipeline
 
-Moni turns natural language, receipt photos, and (on Android) bank notifications into transactions. The Chat tab also answers finance questions using pre-aggregated metrics. Inference runs on the Go backend (`apps/backend`) against OpenRouter; the client decides what needs review (see [Routine detection](#routine-detection)).
+Moni turns natural language, receipt photos, and (on Android) bank notifications into transactions. Moni chat (a pushed page) also answers finance questions using pre-aggregated metrics. Inference runs on the Go backend (`apps/backend`) against OpenRouter; the client decides what needs review (see [Routine detection](#routine-detection)).
 
 ## Flow
 
 ### Transaction extraction (queue)
 
 ```
-Input (chat text / receipt photo / notification / FAB scan)
+Input (chat text / receipt photo / notification / + chooser scan or voice)
   → MMKV processing queue                 apps/mobile/lib/ai/processing-queue.ts
   → background processor (Android FG svc) apps/mobile/lib/ai/background-processor.ts
   → run-extraction                        apps/mobile/lib/ai/run-extraction.ts
@@ -20,7 +20,7 @@ Input (chat text / receipt photo / notification / FAB scan)
   → ProposalSummarySheet (minimal popup) → Approve/Decline, or "Edit details" → `app/proposal/[id].tsx`
 ```
 
-### Chat tab (conversational)
+### Moni chat (conversational)
 
 ```
 User message (text / inline receipt-camera photo / hold-to-talk)
@@ -32,7 +32,7 @@ User message (text / inline receipt-camera photo / hold-to-talk)
 
 Chat sessions: MMKV (`lib/ai/chat/messages.ts`), 24h idle expiry, "New chat" reset. API history is the last 6 question/answer pairs whose answer was a successful analysis, each prefixed with its local `[HH:MM]`; extraction acks and errors are never sent. Failures show a short message by category (not configured, offline, rate-limited, signed out, other), never the backend reason.
 
-Capture entry points feeding the **extraction queue** (silent — not shown in Chat thread): floating tab-bar button (tap → `app/scan/receipt.tsx` camera; long-press → `app/scan/listen.tsx` narration).
+Capture entry points feeding the **extraction queue** (silent — not shown in Chat thread): the tab bar's + chooser (Scan a receipt → `app/scan/receipt.tsx` camera; Say it → `app/scan/listen.tsx` narration).
 
 If `EXPO_PUBLIC_AI_API_URL` is unset, the mobile client falls back to a mock that returns `unavailable` — AI features degrade cleanly.
 

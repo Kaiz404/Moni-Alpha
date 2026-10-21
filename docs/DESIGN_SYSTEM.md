@@ -118,25 +118,20 @@ The board is reference material, not a component library. Inspect it for intent 
 
 ### Primary tabs
 
-Use four stable bottom tabs. A tab navigates; it does not execute an action.
+v2 (N1). Four tabs and the + in the centre cell: Home · Activity · ( + ) · Budget · Debts. A tab navigates; the + is an action, never the active cell.
 
 | Tab          | Job                                                      | Core contents                                                                                                                             |
 | ------------ | -------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
-| **Home**     | The present: what matters today and what needs attention | Net worth presentation, wallet/account balances, safe-to-spend/budget pulse, upcoming obligations, recent activity, subtle review access. |
-| **Insights** | The past and patterns: understand money                  | Transaction history, category drill-down, budget progress, calendar, monthly analysis, trend and composition charts.                      |
-| **Chat**     | Ask, explain, draft, and create with Moni                | Financial questions, record creation, planning assistance; every consequential output becomes a review card.                              |
-| **Profile**  | Set up and maintain the system                           | Accounts/wallets, currencies, categories, notification sources, privacy/local-first controls, appearance, accessibility.                  |
+| **Home**     | The present: what matters today and what needs attention | Net worth, the spent card, the ask box, the review block, recent activity. The avatar pushes Profile; the Moni button pushes Moni chat.   |
+| **Activity** | What happened                                            | Transaction history with search and the hold menu. Its Moni button pushes Moni chat.                                                      |
+| **Budget**   | The month against the plan                               | Month chart and calendar, budgets, bills.                                                                                                 |
+| **Debts**    | Money between people                                     | Net position, people, record and settle a debt.                                                                                           |
 
-### Central FAB
+Moni chat and Profile are pushed pages with no tab bar, as is every other root Stack page.
 
-The FAB is a global action launcher, not a fifth tab. It opens with a short spring into a vertical/radial action menu:
+### The + chooser
 
-1. **Scan receipt**
-2. **Add transaction**
-3. **Ask Moni** — voice/text capture, entering Chat with context
-4. **Record debt**
-
-Use labels; do not rely on icon recognition. The menu closes on selection or an explicit dismiss. On Android, respect back; on iOS, a tap outside or downward drag dismisses it.
+The + opens the "Add a transaction" sheet (`components/nav/capture-chooser.tsx`, sheet kind `chooser`): **Type it**, **Scan a receipt**, **Say it**, **Ask Moni**. The scrim covers the tab bar; the + stays above it, turned into the close button. A picked row closes the sheet and pushes its page from the right. Android back, the scrim, and the × close it.
 
 ### Review queue policy
 
@@ -196,7 +191,7 @@ Content surfaces are matte. Establish depth with tonal separation, whitespace, a
 - Default card: opaque, borderless primary surface. Use 12–24pt of visible canvas around it and a meaningful surface-color difference to establish the edge.
 - Expressive feature card: use a low-tint semantic surface (`mint`, `aqua`, `lilac`, `peach`, or `lemon`) when a card introduces a distinct financial story, drill-down, or action. The tint replaces the old decorative outline; keep dense repeated rows neutral and keep the tint low enough that values and actions remain primary.
 - Borders are exceptions: focused inputs, selected controls, drag targets, deliberate dividers, and high-contrast accessibility fallbacks. Never use a border simply to make a card visible.
-- Raised transient element: a short soft shadow plus surface lift; reserve it for FAB menus, sheets, and active draggable controls.
+- Raised transient element: a short soft shadow plus surface lift; reserve it for the floating tab bar, sheets, and active draggable controls.
 - Glass/translucency: permitted only in navigation/transient controls where contrast is preserved. Never put core financial content inside decorative glass.
 
 ### 5.4 Typography
@@ -241,7 +236,7 @@ The v1 semantic names that screens already use now carry v2 values:
 | `income`, `success`            | Deep mint `#236B47` / Money in `#7FCF98`    |
 | `danger`                       | Over text `#B23E35` / `#F0897E`             |
 
-v2 roles with no v1 name: `sand`, `sand-light`, `hairline`, `track`, `ink-2`, `inactive`, `tab-bar`, `on-pastel`, `deep-mint`, `mint`, `mint-key`, `lemon`, `lilac`, `peach`, `coral`, `sky`, `aqua`, `over`. New screens use these; F2 to F4 move the v1 names over and delete them.
+v2 roles with no v1 name: `sand`, `sand-light`, `hairline`, `track`, `ink-2`, `inactive`, `tab-bar`, `on-tab-bar`, `on-pastel`, `deep-mint`, `mint`, `mint-key`, `mint-key-pressed`, `lemon`, `lilac`, `peach`, `coral`, `sky`, `aqua`, `over`. New screens use these; F2 to F4 move the v1 names over and delete them.
 
 ### 6.2 Semantic color
 
@@ -282,20 +277,18 @@ Avoid high-saturation multi-color gradients behind important numbers, animated g
 
 ### 7.1 Bottom tab bar
 
-- Fixed four-item navigation: Home, Insights, Chat, Profile.
-- Visually stable across top-level screens; preserve each tab’s navigation state.
-- Label and icon always appear together. Active tab uses brand/deep mint or high-contrast ink; inactive is muted.
-- The central FAB floats above/between the middle tabs without being mistaken for a tab.
-- Use material/translucency only if the content remains legible beneath it and increased-contrast settings can fall back to opaque.
+v2 (N1). The values are in [`redesign/tokens.md`](redesign/tokens.md#navigation).
 
-### 7.2 FAB and action menu
+- A floating Ink pill (`components/nav/tab-bar.tsx`): 12 from the sides, 26 from the bottom (or 8 above a taller system bar), 64 tall, five equal cells. Tab roots keep 120 of bottom padding so their last row clears it.
+- The open tab's icon and label are cream; the others are `inactive`. Nothing slides between cells, and tab roots swap with a 150 ms cross-fade. A pressed cell scales to 0.94 with a 12% cream layer.
+- TalkBack reads Home, Activity, Add a transaction, Budget, Debts; the open tab reads selected.
+- The bar shows on the four tab roots only. Pushed pages, Moni chat, and capture pages have none, and any sheet covers it.
 
-- Circle: 56–60pt visual diameter, 44pt minimum tap target is insufficient here; make it comfortably touchable.
-- Default fill: brand mint with deep ink icon. Dark mode may use a light mint or high-contrast surface.
-- On activation: button rotates/morphs subtly to close state; action items emerge with 40–70ms stagger and short spring.
-- Action items: icon, short label, optional tinted round container. No more than four.
-- Voice action has a small lilac/mint accent; scan action has a camera/document cue.
-- Reduce Motion: replace expansion spring with a 150–200ms opacity and scale fade.
+### 7.2 The + button
+
+- `components/nav/plus-button.tsx`: a 60 Mint key circle 16 above the pill inside a 72 ring in the ground colour, plus glyph 28 in ink. Pressed: radius 30 to 20, scale 0.97, `mint-key-pressed`.
+- It opens the chooser. The chooser draws its own + at the same spot above the scrim and turns it 45° on the `control` spring into the ×; Reduce Motion swaps it without turning.
+- No haptic on the + or a tab switch: the screen change is the feedback.
 
 ### 7.3 Hero net-worth block
 
@@ -398,7 +391,7 @@ The background should be calm and mostly opaque. Do not place a dense modal atop
 
 v2 (F3). One sheet host serves every sheet; the values are in [`redesign/tokens.md`](redesign/tokens.md#sheets). Use a sheet for a quick pick from a fixed set (category, wallet, currency, wallet type, date, the linked banking app) or to confirm a destructive action. A task with several fields gets its own page.
 
-- Open a sheet with `openSheet(request)` from `lib/sheet/sheet-store.ts`. The request is one typed union (`category`, `wallet`, `currency`, `walletType`, `notificationApp`, `date`, `confirm`), and the promise resolves to that kind's result, or `null` when the user dismisses it. Only one sheet is open at a time; a second `openSheet` resolves the first to `null`.
+- Open a sheet with `openSheet(request)` from `lib/sheet/sheet-store.ts`. The request is one typed union (`category`, `wallet`, `currency`, `walletType`, `notificationApp`, `date`, `chooser`, `confirm`), and the promise resolves to that kind's result, or `null` when the user dismisses it. Only one sheet is open at a time; a second `openSheet` resolves the first to `null`.
 - The sheet is Cream with a 32 top radius, a 36 × 5 Hairline grabber, a 22/26 title, and a scrim of `rgba(23,24,26,0.32)` over the page **and the tab bar**. It rises on the `sheet` spring and follows the finger 1:1 from its header; a release whose projected position passes 40% of its height closes it. The scrim, Android back, and a picker's 44 close also close it. Reduce Motion turns the rise into a 180 ms fade.
 - Pickers close on pick and carry no pinned action. Options are rows in a Paper list card (42 bubble, 16/22 name, 13/18 Meta line, radio mark). The category picker is the `V2A-CategoryPick` grid: a 52 search field, three columns of Paper tiles with a 4 progress bar and "RM100 left", "RM20 over", or what was spent.
 - A confirm sheet fits its content and pins two 56 actions split 50/50, the safe one first ("Keep it", then "Delete" in the destructive fill). Use it instead of `Alert.alert` for any destructive choice.
@@ -466,7 +459,7 @@ Do not turn either state into an error by default. Escalate only actual overdue/
 4. Budget pulse / safe-to-spend summary.
 5. Upcoming obligation or debt snapshot, when relevant.
 6. Recent activity list.
-7. FAB remains readily discoverable.
+7. The + remains readily discoverable.
 
 Home must remain useful when there are no pending proposals. Do not reserve a large empty review area.
 
@@ -502,7 +495,7 @@ Motion must communicate cause and effect, preserve spatial orientation, and feel
 
 | Moment                 | Motion                                         | Intent                               |
 | ---------------------- | ---------------------------------------------- | ------------------------------------ |
-| FAB opens              | short spring + 40–70ms action-item stagger     | reveal a focused action set          |
+| + opens the chooser    | glyph turns 45° on `control`, sheet rises on `sheet` | reveal a focused action set     |
 | Tap/click              | `Press`: scale 0.97 and pressed fill on finger-down | confirm the interface received input |
 | Receipt processing     | subtle progress/wave/gradient movement         | show active work without fake drama  |
 | Proposal enters review | source context visually resolves into artifact | reinforce provenance                 |
@@ -561,7 +554,7 @@ Moni’s system must remain perceivable, adaptable, and comfortable. This aligns
 
 Use a consistent Moni visual system, while retaining native affordances:
 
-- iOS: sheet gestures and hierarchy should feel at home; use tab navigation consistently. Apple explicitly distinguishes tab bars for top-level navigation from actions, so Moni’s FAB remains outside the tab model. See [Apple HIG: Tab bars](https://developer.apple.com/design/human-interface-guidelines/tab-bars).
+- iOS: sheet gestures and hierarchy should feel at home; use tab navigation consistently. Apple explicitly distinguishes tab bars for top-level navigation from actions, so Moni’s + remains outside the tab model. See [Apple HIG: Tab bars](https://developer.apple.com/design/human-interface-guidelines/tab-bars).
 - Android: preserve clear back navigation, visible touch feedback, and Material-like state clarity without turning the UI into a generic Material template.
 
 ---
