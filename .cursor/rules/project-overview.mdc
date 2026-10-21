@@ -36,6 +36,10 @@ Run: `pnpm --filter moni dev` / `pnpm --filter backend dev` / `pnpm --filter web
 - Money: `DECIMAL(12,2)`, 3-letter ISO currency; UUID primary keys
 - Designed for ~1000 users at minimal cost (Supabase free tier, OpenRouter pay-per-token, Cloud Run scale-to-zero)
 
+## Redesign v2
+
+The mobile app is being rebuilt to a new design kept on a claude.ai design canvas. Before building or changing any mobile screen, read `docs/REDESIGN.md`: which canvas boards to build and which to ignore, the target navigation (Home · Activity · + · Budget · Debts; Moni chat as a pushed page), the rules every screen follows, the code gaps, and the open owner decisions. Values and words: `docs/redesign/tokens.md`, `docs/redesign/glossary.md`.
+
 ## Product research
 
 Before you plan features, pricing, onboarding, or AI behavior, read `docs/research/competitor-reviews-2026-10.md`. It summarizes about 30k competitor app-store reviews and research on the Malaysian market (October 2026), and states what they imply for Moni.

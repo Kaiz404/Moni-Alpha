@@ -69,7 +69,7 @@ Android notifications are prefiltered on-device (`lib/notifications/notification
 ## Mobile theming (Uniwind)
 
 - Styling is Tailwind via **Uniwind** (`className`).
-- [`DESIGN_SYSTEM.md`](DESIGN_SYSTEM.md) is the mobile visual source of truth. Its semantic light/dark tokens live in `apps/mobile/global.css`; screens use `bg-canvas`, `bg-card`, `text-foreground`, and category/state utilities rather than raw hex.
+- [`DESIGN_SYSTEM.md`](DESIGN_SYSTEM.md) is the v1 mobile visual source of truth; the v2 redesign in progress is specified in [`REDESIGN.md`](REDESIGN.md). Its semantic light/dark tokens live in `apps/mobile/global.css`; screens use `bg-canvas`, `bg-card`, `text-foreground`, and category/state utilities rather than raw hex.
 - Appearance preference (`light` default, plus `dark` / `system`) is stored in MMKV (`lib/mmkv/preferences.ts`) and applied with `Uniwind.setTheme` (`lib/theme/preference.ts`). Profile → Appearance.
 - JS-only color consumers (tab bar, charts, map pins) use `useThemeTokens()` / `useCSSVariable`.
 

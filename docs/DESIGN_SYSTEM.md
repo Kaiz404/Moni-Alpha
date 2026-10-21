@@ -1,7 +1,7 @@
 # Moni Design Language
 
 **Version:** 1.0  
-**Status:** product direction and agent reference  
+**Status:** v1, the design the app ships today. **Redesign v2 is replacing it:** read [`REDESIGN.md`](REDESIGN.md) before building or changing any screen. Its principles below still hold; where its visual rules conflict with v2, v2 wins for new work, and this file is rewritten section by section as v2 screens ship.  
 **Product:** Moni — local-first, AI-assisted budget tracking  
 **Audience:** designers, product engineers, and AI agents creating Moni screens, flows, or components
 
@@ -26,7 +26,7 @@ The product promise is simple: Moni reduces the effort of tracking expenses from
 
 ### Platform mode
 
-Moni is **cross-platform premium neutral**, built with Expo React Native and NativeWind/Tailwind bindings, with an iOS-quality visual bar and Android-quality expressive feedback.
+Moni is **cross-platform premium neutral**, built with Expo React Native and Uniwind (Tailwind) bindings, with an iOS-quality visual bar and Android-quality expressive feedback.
 
 - Keep the information hierarchy, safe-area rhythm, sheets, typography, and tab navigation calm and iOS-like.
 - Use Android-style expressive motion principles: responsive touch feedback, clear state changes, purposeful transitions, and visible system status.

@@ -48,7 +48,8 @@ Input → `processing-queue.ts` (MMKV) → `background-processor.ts` (Android FG
 
 Tailwind via Uniwind `className` — **not** NativeWind. Design tokens live in `global.css`:
 
-- [`docs/DESIGN_SYSTEM.md`](../../docs/DESIGN_SYSTEM.md) is the visual source of truth. Follow its component hierarchy, native-currency, evidence, accessibility, and motion rules before inventing a new UI pattern.
+- **Redesign v2 is in progress.** Before building or changing any screen, read [`docs/REDESIGN.md`](../../docs/REDESIGN.md): the canvas boards to build, [`docs/redesign/tokens.md`](../../docs/redesign/tokens.md) and [`docs/redesign/glossary.md`](../../docs/redesign/glossary.md). For new work it overrides the visual rules below.
+- [`docs/DESIGN_SYSTEM.md`](../../docs/DESIGN_SYSTEM.md) is the v1 visual source of truth. Follow its component hierarchy, native-currency, evidence, accessibility, and motion rules before inventing a new UI pattern.
 - Brand scale: `--color-brand-*` in `@theme`
 - Semantic light/dark: surface, text, border, brand, category, and state tokens in `@layer theme` `@variant`
 - Screens use semantic utilities (`bg-canvas`, `bg-card`, `text-foreground`, `text-muted`, `bg-primary`) — never hardcode brand hex
