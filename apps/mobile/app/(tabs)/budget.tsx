@@ -283,6 +283,10 @@ function MonthView({
             now={data.now}
             currency={currency}
             monthEnd={`${budget.daysInMonth} ${monthShort(budget.month)}`}
+            onOpen={(bill) =>
+              router.push({ pathname: '/bill/[seriesKey]', params: { seriesKey: bill.seriesKey } })
+            }
+            onAdd={() => router.push('/bill/new')}
           />
         </View>
       ) : null}

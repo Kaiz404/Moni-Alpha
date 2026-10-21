@@ -372,6 +372,9 @@ export default function CategoryBudgetScreen() {
               now={now}
               currency={currency}
               monthEnd={`${daysInMonth(month)} ${monthShort(month)}`}
+              onOpen={(bill) =>
+                router.push({ pathname: '/bill/[seriesKey]', params: { seriesKey: bill.seriesKey } })
+              }
             />
           </View>
         ) : null}
