@@ -107,7 +107,7 @@ tags:
 - tapOn:
     id: profile.back
 
-# Say it opens the v1 listening page.
+# Say it opens the listening page.
 - tapOn:
     id: nav.plus
 - tapOn:

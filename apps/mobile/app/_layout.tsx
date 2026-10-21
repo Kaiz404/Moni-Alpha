@@ -17,7 +17,6 @@ import { useUniwind } from 'uniwind';
 import '../global.css';
 
 import { AuthGuard } from '@/components/providers/auth-guard';
-import { FabReceiptProcessingOverlay } from '@/components/receipt/fab-receipt-processing-overlay';
 import { ProposalSummarySheet } from '@/components/proposal/proposal-summary-sheet';
 import { StoreSyncActivator } from '@/components/providers/store-sync-activator';
 import { SheetHost } from '@/components/ui/sheet/sheet-host';
@@ -153,17 +152,8 @@ export default function RootLayout() {
                   name="(tabs)"
                   options={{ animation: 'fade' }}
                 />
-                <Stack.Screen
-                  name="scan/receipt"
-                  options={{
-                    presentation: 'transparentModal',
-                    animation: 'fade',
-                    contentStyle: { backgroundColor: 'transparent' },
-                  }}
-                />
               </Stack>
               <SheetHost />
-              <FabReceiptProcessingOverlay />
               <ProposalSummarySheet />
             </AuthGuard>
             <ToastHost />

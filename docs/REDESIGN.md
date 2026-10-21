@@ -76,7 +76,7 @@ Checked 21 Oct 2026. These need data or product work before their screens can be
 | --- | --- | --- |
 | Bills list with due dates, "Add a bill" | `selectUpcomingBills` (`lib/finance/bills.ts`) lists this month's bills, skipped and paid ones included; bill pages edit `recurring_overrides` | Remind's scheduled notification needs R2's library |
 | "Don't ask about similar" | `auto_add_rules` (`createAutoAddRule`, `deleteAutoAddRule` for "Ask again"); `matchRoutine` applies a matching rule before the history heuristic | The Review action (R1), list and "Ask again" in Capture sources (K3) |
-| Source tile (Manual, Voice, Moni, Notification, Camera) | `transactions.metadata.source`, written at every creation site; older rows have none and read as Manual | Voice and live-camera approvals write their own source (C2); the tile (A2) |
+| Source tile (Manual, Voice, Moni, Notification, Camera) | `transactions.metadata.source`, written at every creation site (Say it and Scan a receipt approvals write `voice` and `camera`); older rows have none and read as Manual | The tile (A2) |
 | Merchant names | `merchant_aliases` (`nameMerchant`); `merchantName(raw, aliases)` in `lib/finance/merchant-name.ts` resolves a row's name | Rows on Home, Activity, wallet pages and Review read names through it |
 | Main currency | `preferences.currency` (default `MYR`), read by `useMainCurrency()`, set from Profile (K1) | Focused-page filtering |
 | Review history, Not mine / Later | `laterProposedTransaction` snoozes (`later`, `snoozed_until`); approve and Not mine stamp `approved` / `rejected` before the soft delete | The card deck (R1); whether to show history stays an owner decision |

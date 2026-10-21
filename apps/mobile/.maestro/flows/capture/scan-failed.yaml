@@ -1,0 +1,44 @@
+# C2 Scan a receipt, failed: a blank receipt has no total, so nothing is added
+# and the page offers the tips, Try again and Type it instead.
+# Needs the AI backend and the fixture on the phone:
+#   adb push .maestro/fixtures/receipt-blank.png /sdcard/Pictures/
+#   adb shell am broadcast -a android.intent.action.MEDIA_SCANNER_SCAN_FILE -d file:///sdcard/Pictures/receipt-blank.png
+# Run: scripts/device/with-device.sh --lane c2 -- maestro test .maestro/flows/capture/scan-failed.yaml
+appId: com.anonymous.moni.e2e
+name: C2 Scan a receipt failed
+tags:
+  - c2
+  - needs-ai
+---
+- launchApp
+- extendedWaitUntil:
+    visible:
+      id: home.avatar
+    timeout: 15000
+- tapOn:
+    id: nav.plus
+- tapOn:
+    id: nav.chooser.scan
+- extendedWaitUntil:
+    visible:
+      text: (?i).*import.*
+    timeout: 10000
+- tapOn:
+    text: (?i).*import.*
+- tapOn:
+    text: receipt-blank.png
+- tapOn:
+    text: (?i)(save|done)
+- extendedWaitUntil:
+    visible: Moni couldn't find a total
+    timeout: 20000
+- assertVisible: Nothing was added.
+- assertVisible: Good light, no shadow
+- assertVisible:
+    id: capture.failed.retry
+- assertVisible:
+    id: capture.failed.type-it
+- takeScreenshot: c2-l4-failed
+- tapOn:
+    id: capture.failed.type-it
+- assertVisible: New expense

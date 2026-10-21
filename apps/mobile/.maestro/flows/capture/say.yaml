@@ -1,0 +1,52 @@
+# C2 Say it: the listening page counts and shows Done speaking; after speech
+# the heard card shows the shop and amount with pencils and Approve.
+# The heard half needs someone (or parking.wav from the PC speaker, the
+# Appendix A experiment) to say "paid 6 ringgit parking at KLCC" while the
+# page listens, plus the AI backend. Grant the mic first:
+#   adb shell pm grant com.anonymous.moni.e2e android.permission.RECORD_AUDIO
+# Run: scripts/device/with-device.sh --lane c2 -- maestro test .maestro/flows/capture/say.yaml
+appId: com.anonymous.moni.e2e
+name: C2 Say it
+tags:
+  - c2
+  - needs-speech
+  - needs-ai
+---
+- launchApp
+- extendedWaitUntil:
+    visible:
+      id: home.avatar
+    timeout: 15000
+- tapOn:
+    id: nav.plus
+- tapOn:
+    id: nav.chooser.say
+- assertVisible:
+    id: capture.done-speaking
+- assertVisible: Say the shop, the amount and how you paid.
+- extendedWaitUntil:
+    visible: 0:04
+    timeout: 8000
+- takeScreenshot: c2-l7-listening
+
+# Speech happens here; give it time, then finish.
+- extendedWaitUntil:
+    visible: .*parking.*
+    timeout: 20000
+- tapOn:
+    id: capture.done-speaking
+- extendedWaitUntil:
+    visible: Check and approve
+    timeout: 20000
+- assertVisible:
+    id: capture.quote
+- assertVisible:
+    id: capture.shop.edit
+- assertVisible:
+    id: capture.amount.edit
+- assertVisible: −RM6.00
+- takeScreenshot: c2-l8-heard
+- tapOn:
+    id: capture.approve
+- assertVisible: It counts in your totals now.
+- takeScreenshot: c2-l9-voice-added

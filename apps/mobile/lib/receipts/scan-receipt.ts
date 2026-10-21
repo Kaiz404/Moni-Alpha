@@ -1,21 +1,7 @@
 import { Alert, Platform } from 'react-native';
-import { randomUUID } from 'expo-crypto';
 import { scanDocument } from 'moni-document-scanner';
 
-import { startBackgroundProcessor } from '@/lib/ai/background-processor';
-import { enqueue, type ProcessingQueueItem } from '@/lib/ai/processing-queue';
-import { captureLocationSnapshot } from '@/lib/location/location-snapshot';
-import { getUserId } from '@/lib/supabase/client';
-
-import {
-  beginImmediateProposalReview,
-  clearImmediateProposalReview,
-  completeImmediateProposalReview,
-} from '@/lib/proposals/immediate-review';
-import { waitForProposal } from '@/lib/proposals/proposal-wait';
-import { saveImageLocally } from './images';
 import { normalizeScanUri } from './normalize-scan';
-import { enqueueImageUpload } from './upload-queue';
 
 const TAG = '[ScanReceipt]';
 
@@ -51,67 +37,5 @@ export async function scanAndNormalizeReceipt(): Promise<string | null> {
     console.warn(TAG, 'scan failed:', e);
     Alert.alert("Couldn't scan receipt", 'Please try again.');
     return null;
-  }
-}
-
-/** Queues a processed receipt image through the AI extraction pipeline. Returns the proposal id. */
-export async function queueReceiptImage(uri: string): Promise<string> {
-  const id = randomUUID();
-  const createdAt = new Date().toISOString();
-  const [locationSnapshot, localUri] = await Promise.all([
-    captureLocationSnapshot(),
-    saveImageLocally(uri),
-  ]);
-
-  const queueItem: ProcessingQueueItem = {
-    id,
-    type: 'image',
-    imageUri: localUri,
-    createdAt,
-    status: 'pending',
-    locationSnapshot,
-  };
-  enqueue(queueItem);
-
-  try {
-    const userId = await getUserId();
-    if (userId) enqueueImageUpload({ proposalId: id, localUri, userId });
-  } catch {
-    // non-critical — upload queue will retry on its own
-  }
-
-  startBackgroundProcessor().catch((e) =>
-    console.warn(TAG, 'Background processor start failed:', e),
-  );
-  return id;
-}
-
-/** FAB-only flow: scan → queue → show processing overlay until the proposal sheet appears. */
-export async function runFabReceiptScan(): Promise<void> {
-  const uri = await scanAndNormalizeReceipt();
-  if (!uri) return;
-
-  let proposalId: string | null = null;
-  try {
-    proposalId = await queueReceiptImage(uri);
-    beginImmediateProposalReview(proposalId, {
-      title: 'Reading your receipt…',
-      detail: 'Moni will show every detail before saving anything.',
-      icon: 'receipt',
-    });
-
-    const result = await waitForProposal(proposalId);
-    if (result === 'ready') {
-      completeImmediateProposalReview(proposalId);
-      return;
-    }
-    if (result === 'error' || result === 'timeout') {
-      clearImmediateProposalReview(proposalId);
-      Alert.alert("Couldn't read receipt", 'Please try again.');
-    }
-  } catch (e) {
-    console.warn(TAG, 'Failed to queue receipt:', e);
-    clearImmediateProposalReview(proposalId ?? undefined);
-    Alert.alert("Couldn't read receipt", 'Please try again.');
   }
 }

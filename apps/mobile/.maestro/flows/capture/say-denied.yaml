@@ -1,0 +1,30 @@
+# C2 Say it, denied: with the microphone revoked the page says so and Type it
+# instead opens the amount page. Revoke first:
+#   adb shell pm revoke com.anonymous.moni.e2e android.permission.RECORD_AUDIO
+# Android may show its own permission prompt; the flow denies it.
+# Run: scripts/device/with-device.sh --lane c2 -- maestro test .maestro/flows/capture/say-denied.yaml
+appId: com.anonymous.moni.e2e
+name: C2 Say it denied
+tags:
+  - c2
+---
+- launchApp
+- extendedWaitUntil:
+    visible:
+      id: home.avatar
+    timeout: 15000
+- tapOn:
+    id: nav.plus
+- tapOn:
+    id: nav.chooser.say
+- tapOn:
+    text: (?i)(don.t allow|deny)
+    optional: true
+- assertVisible: Moni can't hear you yet
+- assertVisible: Microphone is off for Moni
+- assertVisible:
+    id: capture.turn-on-mic
+- takeScreenshot: c2-l6-denied
+- tapOn:
+    id: capture.denied.type-it
+- assertVisible: New expense

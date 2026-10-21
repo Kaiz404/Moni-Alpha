@@ -1,0 +1,73 @@
+# C2 Scan a receipt: the ML Kit scanner imports the mamak receipt from the
+# gallery, Moni reads it, the check page approves it to the ledger.
+# Needs the AI backend (EXPO_PUBLIC_AI_API_URL) and the fixture on the phone:
+#   adb push .maestro/fixtures/receipt-mamak.png /sdcard/Pictures/
+#   adb shell am broadcast -a android.intent.action.MEDIA_SCANNER_SCAN_FILE -d file:///sdcard/Pictures/receipt-mamak.png
+# The scanner's import control is Google's UI; its label is the Appendix A
+# experiment's finding and may need updating after `maestro hierarchy`.
+# Run: scripts/device/with-device.sh --lane c2 -- maestro test .maestro/flows/capture/scan.yaml
+appId: com.anonymous.moni.e2e
+name: C2 Scan a receipt
+tags:
+  - c2
+  - needs-default-seed
+  - needs-ai
+---
+- launchApp
+- extendedWaitUntil:
+    visible:
+      id: home.avatar
+    timeout: 15000
+- tapOn:
+    id: nav.plus
+- tapOn:
+    id: nav.chooser.scan
+
+# Google's scanner: import the fixture, accept the page.
+- extendedWaitUntil:
+    visible:
+      text: (?i).*import.*
+    timeout: 10000
+- tapOn:
+    text: (?i).*import.*
+- tapOn:
+    text: receipt-mamak.png
+- tapOn:
+    text: (?i)(save|done)
+
+# Reading, then the result card.
+- extendedWaitUntil:
+    visible: Check and approve
+    timeout: 20000
+- assertVisible:
+    id: capture.result.amount
+- assertVisible:
+    id: capture.result.category
+- assertVisible:
+    id: capture.result.wallet
+- assertVisible:
+    id: capture.evidence
+- takeScreenshot: c2-l2-pair
+
+# Edit the amount in place before approving.
+- tapOn:
+    id: capture.amount.edit
+- eraseText: 10
+- inputText: '16.30'
+- tapOn:
+    id: capture.amount.save
+- assertVisible: −RM16.30
+- takeScreenshot: c2-l5-edit
+
+- tapOn:
+    id: capture.approve
+- assertVisible: It counts in your totals now.
+- assertVisible:
+    id: capture.added.home
+- assertVisible:
+    id: capture.added.another
+- takeScreenshot: c2-l3-added
+- tapOn:
+    id: capture.added.home
+- assertVisible:
+    id: home.avatar

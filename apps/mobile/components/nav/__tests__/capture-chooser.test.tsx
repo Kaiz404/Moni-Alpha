@@ -76,7 +76,7 @@ describe('capture chooser', () => {
     await flush();
     await chosen;
 
-    expect(router.push).toHaveBeenCalledWith('/scan/listen');
+    expect(router.push).toHaveBeenCalledWith('/capture/say');
     expect(getOpenSheet()).toBeNull();
   });
 

@@ -45,14 +45,14 @@ const CHOICES = {
     icon: 'line-scan',
     bubble: 'bg-peach',
     glyph: 'onPastel',
-    href: '/scan/receipt',
+    href: '/capture/scan',
   },
   say: {
     label: 'Say it',
     icon: 'microphone',
     bubble: 'bg-sky',
     glyph: 'onPastel',
-    href: '/scan/listen',
+    href: '/capture/say',
   },
   ask: {
     label: 'Ask Moni',
