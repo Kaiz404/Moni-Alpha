@@ -32,6 +32,7 @@ function txn(
     locationLongitude: null,
     locationName: null,
     autoAdded: false,
+    balanceCorrection: false,
     createdAt: date.toISOString(),
     ...over,
   };

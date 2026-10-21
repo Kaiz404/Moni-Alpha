@@ -65,6 +65,8 @@ import {
 import { tid } from '@/lib/test-ids';
 import { showToast } from '@/lib/toast/toast-store';
 import { resolveTransactionIcon } from '@/lib/transactions/icon';
+import { BALANCE_CORRECTION_TITLE } from '@/lib/wallets/balance-correction';
+import { useThemeTokens } from '@/hooks/use-theme-tokens';
 
 type RawRow = {
   metadata?: unknown;
@@ -124,6 +126,7 @@ export default function TransactionDetailScreen() {
 
 function Detail({ transaction: tx }: { transaction: FinanceTransaction }) {
   const { user } = useAuth();
+  const tokens = useThemeTokens();
   const userId = user?.id ?? null;
   const wallets = useValue(walletsForUser$(userId));
   const categories = useValue(categoriesForUser$(userId));
@@ -154,7 +157,10 @@ function Detail({ transaction: tx }: { transaction: FinanceTransaction }) {
     wallets.find((w) => w.id === tx.transferToWalletId) ?? null;
   const transfer = tx.type === 'transfer';
   const alert = source === 'notification' && tx.merchant !== null;
-  const title = transfer
+  const correction = tx.balanceCorrection;
+  const title = correction
+    ? BALANCE_CORRECTION_TITLE
+    : transfer
     ? (tx.description ?? 'Transfer')
     : (merchantName(tx.merchant, aliases) ??
       tx.description ??
@@ -344,6 +350,14 @@ function Detail({ transaction: tx }: { transaction: FinanceTransaction }) {
           dot: wallet?.color,
           action: { kind: 'pick', onPress: () => void pickWallet('from') },
         }
+      : correction
+      ? {
+          name: 'category',
+          label: 'Category',
+          value: 'Not in budgets',
+          icon: 'scale-balance',
+          action: null,
+        }
       : {
           name: 'category',
           label: 'Category',
@@ -372,9 +386,10 @@ function Detail({ transaction: tx }: { transaction: FinanceTransaction }) {
       name: 'type',
       label: 'Type',
       value: transfer ? 'Transfer' : tx.type === 'income' ? 'Income' : 'Expense',
-      action: transfer
-        ? null
-        : { kind: 'pick', onPress: () => void changeType() },
+      action:
+        transfer || correction
+          ? null
+          : { kind: 'pick', onPress: () => void changeType() },
     },
     {
       name: 'source',
@@ -383,7 +398,7 @@ function Detail({ transaction: tx }: { transaction: FinanceTransaction }) {
       icon: sourceIcon(source),
       action:
         source === 'notification'
-          ? { kind: 'link', onPress: () => router.push('/notifications') }
+          ? { kind: 'link', onPress: () => router.push('/capture-log') }
           : null,
     },
   ];
@@ -442,10 +457,28 @@ function Detail({ transaction: tx }: { transaction: FinanceTransaction }) {
         >
           <View className="flex-row items-start gap-3">
             <TintBubble
-              icon={resolveTransactionIcon(category?.icon, tx.type)}
-              color={transfer ? null : (category?.color ?? null)}
+              icon={
+                correction
+                  ? 'scale-balance'
+                  : resolveTransactionIcon(category?.icon, tx.type)
+              }
+              color={
+                correction
+                  ? tokens.lemon
+                  : transfer
+                    ? null
+                    : (category?.color ?? null)
+              }
             />
             <View className="min-w-0 flex-1 gap-0.5">
+              {correction ? (
+                <Text
+                  variant="sectionTitle"
+                  className="text-foreground"
+                >
+                  {title}
+                </Text>
+              ) : (
               <InPlaceField
                 screen="txn"
                 name="merchant"
@@ -468,6 +501,7 @@ function Detail({ transaction: tx }: { transaction: FinanceTransaction }) {
                   {title}
                 </Text>
               </InPlaceField>
+              )}
               <Text
                 variant="meta"
                 className="text-muted"

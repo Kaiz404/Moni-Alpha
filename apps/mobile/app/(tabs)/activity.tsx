@@ -88,7 +88,9 @@ type Held = {
 
 function holdable(transaction: FinanceTransaction) {
   return (
-    transaction.type !== 'transfer' && !transaction.debtActivityId
+    transaction.type !== 'transfer' &&
+    !transaction.debtActivityId &&
+    !transaction.balanceCorrection
   );
 }
 
@@ -394,7 +396,7 @@ export default function ActivityScreen() {
               testID: tid('activity', 'empty', 'link'),
               label: 'Link a bank app',
               icon: 'bank-outline',
-              onPress: () => router.push('/notifications'),
+              onPress: () => router.push('/capture-sources'),
             }}
           />
         ) : (
