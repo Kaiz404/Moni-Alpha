@@ -371,6 +371,7 @@ export function NotificationSourcePickerContent({
                           proposals to the right wallet.
                         </Text>
                         <TextInput
+                          testID={tid('sheet', 'account-hint-e')}
                           autoCapitalize="words"
                           className="rounded-xl border border-border bg-card px-3 py-2 text-sm text-foreground"
                           onChangeText={(notificationAccountHint) =>

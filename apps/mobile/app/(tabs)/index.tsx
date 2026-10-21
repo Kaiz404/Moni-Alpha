@@ -30,6 +30,7 @@ import {
   walletBalanceMinor$,
   walletById$,
 } from '@/lib/finance/selectors';
+import { tid } from '@/lib/test-ids';
 
 function timeAwareGreeting(): string {
   const hour = new Date().getHours();
@@ -72,6 +73,7 @@ const WalletCard = memo(function WalletCard({
   );
   return (
     <Pressable
+      testID={tid('home', 'wallet', walletId)}
       onPress={() =>
         router.push({
           pathname: '/wallet/[id]',
@@ -202,6 +204,7 @@ export default function HomeScreen() {
 
           {pendingProposals.length ? (
             <Pressable
+              testID={tid('home', 'proposal')}
               className="mt-5 flex-row items-center rounded-2xl bg-surface-1 px-4 py-3"
               onPress={() =>
                 router.push({
@@ -289,6 +292,7 @@ export default function HomeScreen() {
               </Text>
             </View>
             <Pressable
+              testID={tid('home', 'add-wallet')}
               className="h-11 w-11 items-center justify-center"
               onPress={() => router.push('/wallet/new' as any)}
               accessibilityRole="button"
@@ -323,6 +327,7 @@ export default function HomeScreen() {
               </Text>
             </View>
             <Pressable
+              testID={tid('home', 'budgets')}
               className="min-h-11 justify-center px-2"
               onPress={() => router.push('/budget' as any)}
             >
@@ -339,6 +344,11 @@ export default function HomeScreen() {
               {visibleBudgets.map((budget, index) => {
                 return (
                   <Pressable
+                    testID={tid(
+                      'home',
+                      'budget',
+                      `${budget.categoryId}:${budget.currency}`,
+                    )}
                     key={`${budget.categoryId}:${budget.currency}`}
                     className={index ? 'border-t border-border' : ''}
                     onPress={() =>
@@ -359,6 +369,7 @@ export default function HomeScreen() {
             </View>
           ) : (
             <Pressable
+              testID={tid('home', 'plan-a-monthly')}
               className="rounded-[22px] bg-surface-2 px-5 py-6"
               onPress={() => router.push('/budget' as any)}
             >
@@ -382,6 +393,7 @@ export default function HomeScreen() {
                 </Text>
               </View>
               <Pressable
+                testID={tid('home', 'debts')}
                 className="min-h-11 justify-center px-2"
                 onPress={() => router.push('/debts' as any)}
               >
@@ -398,6 +410,7 @@ export default function HomeScreen() {
                 const owedToYou = debt.direction === 'owed_to_me';
                 return (
                   <Pressable
+                    testID={tid('home', 'debt', debt.id)}
                     key={debt.id}
                     className={`flex-row items-center justify-between px-4 py-4 ${index ? 'border-t border-border' : ''}`}
                     onPress={() =>
@@ -437,6 +450,7 @@ export default function HomeScreen() {
               </Text>
             </View>
             <Pressable
+              testID={tid('home', 'transactions')}
               className="min-h-11 justify-center px-2"
               onPress={() => router.push('/transaction' as any)}
             >
@@ -467,6 +481,11 @@ export default function HomeScreen() {
                     : 'text-expense';
                 return (
                   <Pressable
+                    testID={tid(
+                      'home',
+                      'transaction',
+                      transaction.id,
+                    )}
                     key={transaction.id}
                     className={`flex-row items-center px-4 py-4 ${index ? 'border-t border-border' : ''}`}
                     onPress={() =>
@@ -545,6 +564,7 @@ export default function HomeScreen() {
             </View>
           ) : (
             <Pressable
+              testID={tid('home', 'activity-empty')}
               className="rounded-[22px] bg-surface-2 px-5 py-6"
               onPress={() => router.push('/transaction/new' as any)}
             >

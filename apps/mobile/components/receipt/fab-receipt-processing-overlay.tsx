@@ -19,6 +19,7 @@ import {
   clearImmediateProposalReview,
   useImmediateProposalReview,
 } from '@/lib/proposals/immediate-review';
+import { tid } from '@/lib/test-ids';
 
 const MIN_PROCESSING_DURATION_MS = 520;
 
@@ -147,6 +148,7 @@ export function FabReceiptProcessingOverlay() {
             ))}
           </View>
           <Pressable
+            testID={tid('capture', 'continue-processing-in')}
             className="mt-6 rounded-full px-4 py-2"
             onPress={() =>
               clearImmediateProposalReview(proposalId ?? undefined)

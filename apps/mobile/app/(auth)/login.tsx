@@ -78,6 +78,7 @@ export default function LoginScreen() {
         </View>
 
         <FormField
+          testID={tid('auth', 'email')}
           label="Email"
           placeholder="you@example.com"
           value={email}
@@ -87,6 +88,7 @@ export default function LoginScreen() {
           autoComplete="email"
         />
         <FormField
+          testID={tid('auth', 'password')}
           label="Password"
           placeholder="Your password"
           value={password}

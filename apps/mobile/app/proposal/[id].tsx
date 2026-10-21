@@ -33,6 +33,7 @@ import { getWallets } from '@/lib/supabase/wallets';
 import { getCategories } from '@/lib/supabase/categories';
 import { approve, notMine } from '@/lib/haptics';
 import { Page } from '@/components/ui/page';
+import { tid } from '@/lib/test-ids';
 
 export default function ProposalDetailScreen() {
   const tokens = useThemeTokens();
@@ -263,6 +264,7 @@ export default function ProposalDetailScreen() {
                   : 'Matches money arriving in another wallet. Likely a transfer between your wallets.'}
               </Text>
               <Pressable
+                testID={tid('review', 'merge')}
                 onPress={handleMerge}
                 disabled={isActioning}
                 className="items-center rounded-2xl bg-surface-2 py-3"

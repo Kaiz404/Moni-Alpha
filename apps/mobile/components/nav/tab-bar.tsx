@@ -12,6 +12,7 @@ import {
   CAPTURE_FAB_LAYOUT,
   CaptureButton,
 } from '@/components/nav/capture-button';
+import { tid } from '@/lib/test-ids';
 
 /** Matches `CaptureButton` width so side tabs clear the FAB. */
 const CAPTURE_BUTTON_SLOT_WIDTH = CAPTURE_FAB_LAYOUT.size;
@@ -79,6 +80,7 @@ export function TabBar({
 
     return (
       <Pressable
+        testID={tid('nav', 'tab', route.name)}
         key={route.key}
         accessibilityRole="button"
         accessibilityState={isFocused ? { selected: true } : {}}

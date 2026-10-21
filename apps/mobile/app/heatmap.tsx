@@ -16,6 +16,7 @@ import {
 } from '@/hooks/use-transaction-heatmap';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { formatMinorAmount } from '@/lib/finance/money';
+import { tid } from '@/lib/test-ids';
 
 export default function HeatmapScreen() {
   const { pinPoints, mapRegion, isLoading, error } =
@@ -145,6 +146,7 @@ export default function HeatmapScreen() {
 
       {selectedPin ? (
         <Pressable
+          testID={tid('map', 'pin')}
           style={styles.backdrop}
           onPress={() => setSelectedPin(null)}
         />
@@ -156,6 +158,7 @@ export default function HeatmapScreen() {
           className="rounded-card bg-accent-aqua/30 p-3.5"
         >
           <Pressable
+            testID={tid('map', 'close-pin')}
             style={[
               styles.closeButton,
               { backgroundColor: `${tokens.muted}33` },
@@ -191,6 +194,7 @@ export default function HeatmapScreen() {
           </Text>
 
           <Pressable
+            testID={tid('map', 'open-in-map')}
             style={({ pressed }) => [
               styles.navigateButton,
               { opacity: pressed ? 0.85 : 1 },

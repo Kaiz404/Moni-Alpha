@@ -72,6 +72,7 @@ export default function RegisterScreen() {
         </View>
 
         <FormField
+          testID={tid('auth', 'name')}
           label="Name"
           placeholder="How should Moni greet you?"
           value={displayName}
@@ -80,6 +81,7 @@ export default function RegisterScreen() {
           autoComplete="name"
         />
         <FormField
+          testID={tid('auth', 'email')}
           label="Email"
           placeholder="you@example.com"
           value={email}
@@ -89,6 +91,7 @@ export default function RegisterScreen() {
           autoComplete="email"
         />
         <FormField
+          testID={tid('auth', 'password')}
           label="Password"
           hint="At least 8 characters"
           placeholder="Choose a password"

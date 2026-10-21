@@ -34,6 +34,7 @@ import {
   captureActionDestination,
   type CaptureActionId,
 } from './capture-actions';
+import { tid } from '@/lib/test-ids';
 
 type CaptureAction = {
   id: CaptureActionId;
@@ -136,6 +137,7 @@ function CaptureMenuItem({
   return (
     <Animated.View style={animatedStyle}>
       <Pressable
+        testID={tid('nav', 'capture', action.id)}
         onPress={onPress}
         accessibilityRole="button"
         accessibilityLabel={action.label}
@@ -186,6 +188,7 @@ function CaptureFab({
 }) {
   return (
     <Pressable
+      testID={tid('nav', 'capture')}
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel}
       accessibilityHint={accessibilityHint}
@@ -432,6 +435,7 @@ export function CaptureButton() {
           style={{ paddingBottom: windowHeight - panelBottom }}
         >
           <Pressable
+            testID={tid('nav', 'close-capture-menu')}
             className="absolute inset-0"
             onPress={() => setOpen(false)}
             accessibilityRole="button"

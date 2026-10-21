@@ -74,6 +74,7 @@ export function TransactionDetailsSheetContent({
         <View className="rounded-card bg-card p-4">
           {!isTransfer ? (
             <FormField
+              testID={tid('txn', 'merchant')}
               label="Merchant"
               hint="Optional"
               placeholder="Store or payee"
@@ -83,6 +84,7 @@ export function TransactionDetailsSheetContent({
             />
           ) : null}
           <FormField
+            testID={tid('txn', 'notes')}
             label="Notes"
             hint="Optional"
             className="min-h-20 text-sm"
@@ -93,6 +95,7 @@ export function TransactionDetailsSheetContent({
             textAlignVertical="top"
           />
           <FormField
+            testID={tid('txn', 'date')}
             label="Date"
             hint="YYYY-MM-DD"
             placeholder="YYYY-MM-DD"

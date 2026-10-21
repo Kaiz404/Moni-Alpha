@@ -3,8 +3,10 @@ import { TextInput, View, type TextInputProps } from 'react-native';
 import { Text } from '@/components/ui/text';
 
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
+import type { TestId } from '@/lib/test-ids';
 
-type FormFieldProps = TextInputProps & {
+type FormFieldProps = Omit<TextInputProps, 'testID'> & {
+  testID: TestId;
   label: string;
   hint?: string;
   error?: string;
@@ -15,6 +17,7 @@ type FormFieldProps = TextInputProps & {
 export const FormField = forwardRef<TextInput, FormFieldProps>(
   function FormField(
     {
+      testID,
       label,
       hint,
       error,
@@ -40,6 +43,7 @@ export const FormField = forwardRef<TextInput, FormFieldProps>(
         <TextInput
           {...props}
           ref={ref}
+          testID={testID}
           accessibilityLabel={accessibilityLabel ?? label}
           placeholderTextColor={placeholderTextColor ?? tokens.muted}
           className={`min-h-13 rounded-2xl bg-surface-2 px-4 py-3 text-base text-foreground ${

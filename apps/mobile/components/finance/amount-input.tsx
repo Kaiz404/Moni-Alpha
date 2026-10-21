@@ -4,6 +4,7 @@ import { Pressable, TextInput, View } from 'react-native';
 import { Text } from '@/components/ui/text';
 
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
+import { tid } from '@/lib/test-ids';
 
 function normalizeAmount(value: string): string {
   const cleaned = value.trim().replace(/,/g, '');
@@ -48,6 +49,7 @@ export function AmountInput({
     >
       <View className="flex-row items-center gap-2">
         <TextInput
+          testID={tid('txn', 'amount')}
           {...props}
           accessibilityLabel={props.accessibilityLabel ?? 'Amount'}
           className={`min-h-13  pr-2 flex-1 text-right text-2xl font-display-bold leading-8 text-foreground ${className ?? ''}`}
@@ -75,6 +77,7 @@ export function AmountInput({
         {currency ? (
           onCurrencyPress ? (
             <Pressable
+              testID={tid('txn', 'change-currency-currently')}
               accessibilityLabel={`Change currency, currently ${currency.toUpperCase()}`}
               accessibilityRole="button"
               className="min-h-11 justify-center rounded-lg px-2 active:opacity-70"

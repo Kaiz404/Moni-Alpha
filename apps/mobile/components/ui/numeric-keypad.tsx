@@ -3,6 +3,7 @@ import { Text } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { keypadTap } from '@/lib/haptics';
 import { IconSymbol } from './icon-symbol';
+import { tid } from '@/lib/test-ids';
 
 const ROWS = [
   ['1', '2', '3'],
@@ -38,6 +39,7 @@ export function NumericKeypad({
         >
           {row.map((key) => (
             <Pressable
+              testID={tid('capture', 'key', key)}
               key={key}
               onPress={() => handlePress(key)}
               accessibilityLabel={

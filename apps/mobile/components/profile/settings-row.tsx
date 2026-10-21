@@ -7,6 +7,7 @@ import {
   IconSymbol,
   type IconSymbolName,
 } from '@/components/ui/icon-symbol';
+import { tid } from '@/lib/test-ids';
 
 type SettingsRowProps = {
   icon: IconSymbolName;
@@ -34,6 +35,7 @@ export function SettingsRow({
   const tokens = useThemeTokens();
   return (
     <Pressable
+      testID={tid('profile', 'row', title)}
       onPress={onPress}
       disabled={disabled}
       accessibilityRole="button"

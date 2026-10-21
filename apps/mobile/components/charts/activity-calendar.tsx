@@ -5,6 +5,7 @@ import {
   buildActivityCalendar,
   type ActivityDay,
 } from './chart-utils';
+import { tid } from '@/lib/test-ids';
 
 type ActivityCalendarProps = {
   month: string;
@@ -74,6 +75,7 @@ export function ActivityCalendar({
               const selected = selectedDate === cell.dateKey;
               return (
                 <Pressable
+                  testID={tid('budget', 'select-date', cell.dateKey)}
                   key={cell.dateKey}
                   className={`aspect-square flex-1 items-center justify-center overflow-hidden rounded-xl ${selected ? 'bg-primary' : 'bg-surface-2'}`}
                   onPress={() =>

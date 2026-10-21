@@ -203,6 +203,7 @@ export default function BudgetFormScreen() {
           Category
         </Text>
         <Pressable
+          testID={tid('budget', 'set-picker-visible')}
           className="min-h-14 flex-row items-center rounded-2xl bg-surface-2 px-4 py-3 active:opacity-85"
           onPress={() => setPickerVisible(true)}
         >

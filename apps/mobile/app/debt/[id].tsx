@@ -214,6 +214,7 @@ export default function DebtDetailScreen() {
               <View className="mt-2 flex-row flex-wrap gap-2">
                 {matchingWallets.map((wallet) => (
                   <Pressable
+                    testID={tid('debts', 'set-wallet-id', wallet.id)}
                     key={wallet.id}
                     className={`rounded-lg px-3 py-2 ${walletId === wallet.id ? 'bg-primary' : 'bg-surface-2'}`}
                     onPress={() => setWalletId(wallet.id)}
@@ -278,6 +279,7 @@ export default function DebtDetailScreen() {
         )}
         {balance > 0 ? (
           <Pressable
+            testID={tid('debts', 'write-off-remaining')}
             className="mb-4 self-start"
             onPress={writeOff}
           >
@@ -307,6 +309,7 @@ export default function DebtDetailScreen() {
               {item.walletId ? '· Cash wallet' : '· Non-cash'}
             </Text>
             <Pressable
+              testID={tid('debts', 'remove')}
               className="mt-2 self-start"
               onPress={() =>
                 Alert.alert(

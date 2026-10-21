@@ -6,6 +6,7 @@ import glyphMap from '@react-native-vector-icons/material-design-icons/glyphmaps
 
 import { CategoryIcon } from '@/components/categories/category-icon';
 import { arcPath, buildDonutSegments } from './chart-utils';
+import { tid } from '@/lib/test-ids';
 
 export type DonutDatum = {
   id: string;
@@ -201,6 +202,7 @@ export function DonutChart({
           const isSelected = activeIndex === index;
           return (
             <Pressable
+              testID={tid('budget', 'select', datum.id)}
               key={datum.id}
               className={`min-h-11 flex-row items-center justify-between rounded-xl px-2 py-1.5 ${isSelected ? 'bg-surface-2' : ''}`}
               onPress={() => select(isSelected ? null : index)}

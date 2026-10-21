@@ -7,6 +7,7 @@ import {
   setThemePreference,
   type ThemePreference,
 } from '@/lib/theme/preference';
+import { tid } from '@/lib/test-ids';
 
 export function ThemePreferencePicker() {
   const { theme, hasAdaptiveThemes } = useUniwind();
@@ -22,6 +23,7 @@ export function ThemePreferencePicker() {
         const selected = active === option.value;
         return (
           <Pressable
+            testID={tid('profile', 'select', option.value)}
             key={option.value}
             onPress={() => select(option.value)}
             className={`min-h-18 flex-row items-center px-4 py-3.5 active:bg-surface-2 ${

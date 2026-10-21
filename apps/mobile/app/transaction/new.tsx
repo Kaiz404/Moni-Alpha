@@ -471,6 +471,7 @@ export default function NewTransactionScreen() {
               const selected = type === option;
               return (
                 <Pressable
+                  testID={tid('capture', 'set-type', option)}
                   key={option}
                   accessibilityRole="button"
                   accessibilityState={{ selected }}
@@ -509,6 +510,7 @@ export default function NewTransactionScreen() {
               Transaction details
             </Text>
             <Pressable
+              testID={tid('capture', 'more-details')}
               accessibilityRole="button"
               accessibilityLabel="More details"
               className="min-h-9 flex-row items-center rounded-full bg-surface-2 px-3 active:opacity-85"

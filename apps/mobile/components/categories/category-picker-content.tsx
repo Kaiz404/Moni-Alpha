@@ -44,6 +44,7 @@ export function CategoryPickerContent({
     const accent = category.color ?? tokens.primary;
     return (
       <Pressable
+        testID={tid('sheet', 'select', category.id)}
         key={category.id}
         accessibilityRole="button"
         accessibilityState={{ selected }}
@@ -122,6 +123,7 @@ export function CategoryPickerContent({
         {remaining.map(row)}
         {onCreate ? (
           <Pressable
+            testID={tid('sheet', 'create-category')}
             className="mt-3 min-h-13 flex-row items-center rounded-2xl bg-primary-muted px-4"
             onPress={() => {
               onCreate();

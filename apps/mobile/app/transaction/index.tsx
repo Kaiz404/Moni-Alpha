@@ -27,6 +27,7 @@ import {
   walletsForUser$,
 } from '@/lib/finance/selectors';
 import { deleteTransaction } from '@/lib/supabase/transactions';
+import { tid } from '@/lib/test-ids';
 
 export default function TransactionsScreen() {
   const { user } = useAuth();
@@ -194,6 +195,7 @@ export default function TransactionsScreen() {
             </Text>
             {proposals.map((proposal) => (
               <Pressable
+                testID={tid('activity', 'proposal', proposal.id)}
                 key={proposal.id}
                 className="mb-2 rounded-2xl bg-card p-3"
                 onPress={() =>
@@ -254,6 +256,7 @@ export default function TransactionsScreen() {
                 : '−';
             return (
               <Pressable
+                testID={tid('activity', 'transaction', row.id)}
                 key={row.id}
                 className="mb-2 rounded-2xl bg-card p-3"
                 onPress={() =>
@@ -286,6 +289,7 @@ export default function TransactionsScreen() {
                   </View>
                   <View className="items-end">
                     <Pressable
+                      testID={tid('activity', 'remove')}
                       hitSlop={8}
                       onPress={() => remove(row.id)}
                     >

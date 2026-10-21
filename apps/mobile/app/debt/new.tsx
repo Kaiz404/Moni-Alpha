@@ -82,6 +82,7 @@ export default function NewDebtScreen() {
             const selected = direction === option;
             return (
               <Pressable
+                testID={tid('debts', 'set-direction', option)}
                 key={option}
                 accessibilityRole="button"
                 accessibilityState={{ selected }}
@@ -107,6 +108,7 @@ export default function NewDebtScreen() {
 
         <View className="rounded-card bg-card mt-6 p-5">
           <FormField
+            testID={tid('debts', 'person')}
             label="Person"
             placeholder="e.g. Alex"
             value={name}
@@ -130,6 +132,7 @@ export default function NewDebtScreen() {
             not convert it.
           </Text>
           <FormField
+            testID={tid('debts', 'due-date')}
             containerClassName="mt-5"
             label="Due date"
             hint="Optional · YYYY-MM-DD"
@@ -157,6 +160,7 @@ export default function NewDebtScreen() {
                 : tokens.foreground;
               return (
                 <Pressable
+                  testID={tid('debts', 'set-wallet-id', wallet.id)}
                   key={wallet.id}
                   accessibilityRole="button"
                   accessibilityState={{ selected }}

@@ -46,6 +46,7 @@ export default function CategoriesScreen() {
           {title}
         </Text>
         <Pressable
+          testID={tid('activity', 'add')}
           className="min-h-11 flex-row items-center px-2"
           onPress={() =>
             router.push({
@@ -72,6 +73,7 @@ export default function CategoriesScreen() {
             const custom = category.userId === user?.id;
             return (
               <Pressable
+                testID={tid('activity', 'edit', category.id)}
                 key={category.id}
                 className={`min-h-15 flex-row items-center px-4 ${index ? 'border-t border-border-subtle' : ''}`}
                 onPress={() =>
@@ -147,6 +149,7 @@ export default function CategoriesScreen() {
             <View className="rounded-card bg-card overflow-hidden">
               {archived.map((category, index) => (
                 <Pressable
+                  testID={tid('activity', 'restore', category.id)}
                   key={category.id}
                   className={`min-h-15 flex-row items-center px-4 ${index ? 'border-t border-border-subtle' : ''}`}
                   onPress={() => void restoreCategory(category.id)}

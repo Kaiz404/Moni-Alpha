@@ -28,6 +28,7 @@ export const CONTROLS = [
   'Button',
   'HeaderIconButton',
   'MoniButton',
+  'FormField',
 ];
 
 // A component that wraps a control passes its own testID prop through, typed as TestId, so the

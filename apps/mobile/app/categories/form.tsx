@@ -193,6 +193,7 @@ export default function CategoryFormScreen() {
 
             <View className="rounded-card bg-card mt-6">
               <FormField
+                testID={tid('activity', 'category-name')}
                 autoCapitalize="words"
                 containerClassName="mb-0"
                 hint={`${name.length} / ${categoryNameMaxLength} characters`}

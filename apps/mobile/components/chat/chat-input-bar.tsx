@@ -90,6 +90,7 @@ export function ChatInputBar({
         />
 
         <TextInput
+          testID={tid('chat', 'message-moni')}
           className={`ml-2 mr-2 min-h-11 max-h-30 flex-1 rounded-2xl bg-card px-4 py-2.5 text-base leading-5 text-foreground ${
             isInputFocused ? 'border border-primary' : ''
           }`}
@@ -197,6 +198,7 @@ export function ChatEmptyState({
       <View className="mt-7 w-full max-w-md gap-2">
         {suggestions.map((suggestion) => (
           <Pressable
+            testID={tid('chat', 'suggestion', suggestion)}
             key={suggestion}
             onPress={() => onSuggestion?.(suggestion)}
             disabled={!onSuggestion}

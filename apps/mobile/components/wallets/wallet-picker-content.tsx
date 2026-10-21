@@ -48,6 +48,7 @@ export function WalletPickerContent({
     const accent = wallet.color ?? cardStyle.swatchHex;
     return (
       <Pressable
+        testID={tid('sheet', 'select', wallet.id)}
         key={wallet.id}
         accessibilityRole="button"
         accessibilityState={{ selected }}

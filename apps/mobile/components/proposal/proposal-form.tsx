@@ -30,6 +30,7 @@ import {
   displayCurrencyForProposal,
   resolveInitialWalletId,
 } from '@/lib/wallets/proposal-wallet';
+import { tid } from '@/lib/test-ids';
 
 export type WalletOption = {
   id: string;
@@ -298,6 +299,7 @@ export function ProposalForm({
             {displayCurrency}
           </Text>
           <TextInput
+            testID={tid('review', 'amount')}
             accessibilityLabel="Amount"
             className="min-w-[120px] flex-1 border-b border-border bg-transparent px-1 py-1 text-right text-4xl font-display-bold"
             style={{ color: amountColor }}
@@ -331,6 +333,7 @@ export function ProposalForm({
         <View className="bg-card mb-4 overflow-hidden rounded-[22px]">
           {wallets.map((w) => (
             <Pressable
+              testID={tid('review', 'set-selected-wallet', w.id)}
               key={w.id}
               className={`border-b border-border px-4 py-3 ${w.id === selectedWalletId ? 'bg-primary-muted' : ''}`}
               onPress={() => {
@@ -379,6 +382,11 @@ export function ProposalForm({
               ) : (
                 destinationWallets.map((w) => (
                   <Pressable
+                    testID={tid(
+                      'review',
+                      'set-selected-transfer',
+                      w.id,
+                    )}
                     key={w.id}
                     className={`border-b border-border px-4 py-3 ${
                       w.id === selectedTransferToWalletId
@@ -447,6 +455,11 @@ export function ProposalForm({
               ) : (
                 categoryOptions.map((category) => (
                   <Pressable
+                    testID={tid(
+                      'review',
+                      'set-selected-category',
+                      category.id,
+                    )}
                     key={category.id}
                     className={`border-b border-border px-4 py-3 ${
                       category.id === selectedCategoryId
@@ -481,6 +494,7 @@ export function ProposalForm({
       {!isTransfer ? (
         <FieldRow label="Merchant">
           <TextInput
+            testID={tid('review', 'merchant')}
             accessibilityLabel="Merchant"
             className={`flex-1 rounded-2xl bg-card px-3 py-3 text-right text-sm text-foreground ${
               focusedField === 'merchant'
@@ -499,6 +513,7 @@ export function ProposalForm({
 
       <FieldRow label="Description">
         <TextInput
+          testID={tid('review', 'description')}
           accessibilityLabel="Description"
           className={`flex-1 rounded-2xl bg-card px-3 py-3 text-right text-sm text-foreground ${
             focusedField === 'description'
@@ -516,6 +531,7 @@ export function ProposalForm({
 
       <FieldRow label="Date">
         <TextInput
+          testID={tid('review', 'transaction-date')}
           accessibilityLabel="Transaction date"
           className={`flex-1 rounded-2xl bg-card px-3 py-3 text-right text-sm text-foreground ${
             focusedField === 'date' ? 'border border-primary' : ''

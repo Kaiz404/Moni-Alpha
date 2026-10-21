@@ -54,12 +54,20 @@ export function kebab(text) {
 
 function firstText(node) {
   if (!node) return null;
-  if (ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node))
+  if (
+    ts.isStringLiteral(node) ||
+    ts.isNoSubstitutionTemplateLiteral(node)
+  )
     return node.text;
   if (ts.isTemplateExpression(node)) return node.head.text || null;
   if (ts.isJsxText(node)) return node.text.trim() || null;
-  if (ts.isConditionalExpression(node)) return firstText(node.whenTrue);
-  if (ts.isJsxOpeningElement(node) || ts.isJsxSelfClosingElement(node)) return null;
+  if (ts.isConditionalExpression(node))
+    return firstText(node.whenTrue);
+  if (
+    ts.isJsxOpeningElement(node) ||
+    ts.isJsxSelfClosingElement(node)
+  )
+    return null;
   let found = null;
   node.forEachChild((child) => {
     found ??= firstText(child);
@@ -88,12 +96,14 @@ function handlerName(element) {
   if (!expression) return null;
   let name = null;
   if (ts.isIdentifier(expression)) name = expression.text;
-  else if (ts.isPropertyAccessExpression(expression)) name = expression.name.text;
+  else if (ts.isPropertyAccessExpression(expression))
+    name = expression.name.text;
   else if (ts.isArrowFunction(expression)) {
     const body = ts.isBlock(expression.body)
       ? expression.body.statements[0]?.expression
       : expression.body;
-    const call = body && (ts.isVoidExpression(body) ? body.expression : body);
+    const call =
+      body && (ts.isVoidExpression(body) ? body.expression : body);
     if (call && ts.isCallExpression(call)) {
       const callee = call.expression;
       name = ts.isIdentifier(callee)
@@ -103,7 +113,13 @@ function handlerName(element) {
           : null;
       if (name === 'push' || name === 'navigate') {
         const target = firstText(call.arguments[0]);
-        if (target) return kebab(target.split('/').filter((s) => s && !s.startsWith('[')).join(' '));
+        if (target)
+          return kebab(
+            target
+              .split('/')
+              .filter((s) => s && !s.startsWith('['))
+              .join(' '),
+          );
       }
     }
   }
@@ -111,11 +127,23 @@ function handlerName(element) {
   return kebab(name.replace(/^(handle|on)(?=[A-Z])/, ''));
 }
 
+// Only text the control itself shows: its own JSX text, or a direct <Text> holding plain text.
+// Deeper strings sit in branches and nested rows and name the wrong thing.
 function childText(element) {
   if (!ts.isJsxElement(element)) return null;
   for (const child of element.children) {
-    const text = firstText(child);
-    if (text) return text;
+    if (ts.isJsxText(child) && child.text.trim())
+      return child.text.trim();
+    if (
+      ts.isJsxElement(child) &&
+      child.openingElement.tagName.getText() === 'Text' &&
+      child.children.every((c) => ts.isJsxText(c)) &&
+      child.children.some((c) => c.text.trim())
+    )
+      return child.children
+        .map((c) => c.text)
+        .join(' ')
+        .trim();
   }
   return null;
 }
@@ -127,17 +155,21 @@ export function partsFor(element, fallback) {
     attributeText(element, 'accessibilityLabel') ??
     attributeText(element, 'placeholder') ??
     childText(element);
-  const part = (words && kebab(words)) || handlerName(element) || fallback;
+  const part =
+    (words && kebab(words)) || handlerName(element) || fallback;
   const key = attribute(element, 'key')?.initializer;
   const keyExpression =
-    key && ts.isJsxExpression(key) && key.expression ? key.expression.getText() : null;
+    key && ts.isJsxExpression(key) && key.expression
+      ? key.expression.getText()
+      : null;
   return { part, keyExpression };
 }
 
 /** Formats `tid('screen', 'part', key)`, making `part` unique within `used`. */
 export function tidCall(screen, { part, keyExpression }, used) {
   let unique = part;
-  for (let n = 2; used.has(`${unique}|${keyExpression}`); n += 1) unique = `${part}-${n}`;
+  for (let n = 2; used.has(`${unique}|${keyExpression}`); n += 1)
+    unique = `${part}-${n}`;
   used.add(`${unique}|${keyExpression}`);
   const args = [`'${screen}'`, `'${unique}'`];
   if (keyExpression) args.push(keyExpression);

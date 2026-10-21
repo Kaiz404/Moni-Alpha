@@ -60,6 +60,11 @@ export default function BudgetsScreen() {
             {budgets.map((row) => {
               return (
                 <Pressable
+                  testID={tid(
+                    'budget',
+                    'edit',
+                    `${row.categoryId}:${row.currency}`,
+                  )}
                   key={`${row.categoryId}:${row.currency}`}
                   className="mb-3"
                   accessibilityRole="button"

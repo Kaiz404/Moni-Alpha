@@ -396,6 +396,7 @@ export default function EditWalletScreen() {
             <View className="rounded-card bg-card mt-6">
               <View className="flex-row gap-3">
                 <FormField
+                  testID={tid('wallet', 'wallet-name')}
                   containerClassName="mb-0 min-w-0 flex-1"
                   label="Wallet name"
                   placeholder="e.g. Everyday bank"

@@ -4,6 +4,7 @@ import { Text } from '@/components/ui/text';
 
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
+import { tid } from '@/lib/test-ids';
 
 type TransactionModifierChipProps = {
   accessibilityLabel: string;
@@ -31,6 +32,7 @@ export function TransactionModifierChip({
 
   return (
     <Pressable
+      testID={tid('txn', 'modifier', accessibilityLabel)}
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel}
       className="min-h-[76px] flex-1 justify-center rounded-2xl bg-surface-2 px-3 py-2 active:opacity-85"

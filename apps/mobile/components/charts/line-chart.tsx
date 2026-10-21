@@ -8,6 +8,7 @@ import {
   projectLinePoints,
   type ChartPadding,
 } from './chart-utils';
+import { tid } from '@/lib/test-ids';
 
 export type LineChartDatum = {
   id: string;
@@ -134,6 +135,7 @@ export function LineChart({
   return (
     <View>
       <Pressable
+        testID={tid('budget', 'balance-trend-tap')}
         className="overflow-hidden rounded-[22px]"
         onPress={(event) => selectAt(event.nativeEvent.locationX)}
         accessibilityRole="adjustable"

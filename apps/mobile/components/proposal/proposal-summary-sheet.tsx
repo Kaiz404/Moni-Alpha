@@ -153,6 +153,7 @@ export function ProposalSummarySheet() {
     >
       <View className="flex-1 justify-end bg-foreground/15">
         <Pressable
+          testID={tid('review', 'review-this-later')}
           className="flex-1"
           onPress={defer}
           accessibilityRole="button"
@@ -176,6 +177,7 @@ export function ProposalSummarySheet() {
           </View>
 
           <Pressable
+            testID={tid('review', 'review')}
             onPress={review}
             className="mt-5"
             accessibilityRole="button"
@@ -220,6 +222,7 @@ export function ProposalSummarySheet() {
           </Text>
           <View className="mt-4">
             <Pressable
+              testID={tid('review', 'defer')}
               onPress={defer}
               className="items-center justify-center rounded-2xl bg-surface-2 py-3.5"
               accessibilityRole="button"

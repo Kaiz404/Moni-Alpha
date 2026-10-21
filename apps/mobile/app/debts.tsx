@@ -52,6 +52,7 @@ export default function DebtsScreen() {
             const selected = tab === option;
             return (
               <Pressable
+                testID={tid('debts', 'set-tab', option)}
                 key={option}
                 accessibilityRole="button"
                 accessibilityState={{ selected }}
@@ -105,6 +106,7 @@ export default function DebtsScreen() {
               ).replace('_', ' ');
               return (
                 <Pressable
+                  testID={tid('debts', 'debt', debt.id)}
                   key={debt.id}
                   accessibilityRole="button"
                   className="mb-3"

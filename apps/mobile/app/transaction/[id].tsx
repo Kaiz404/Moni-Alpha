@@ -536,6 +536,7 @@ export default function EditTransactionScreen() {
                 </View>
 
                 <FormField
+                  testID={tid('txn', 'merchant')}
                   label="Merchant"
                   hint="Optional"
                   placeholder="Store or payee"
@@ -547,6 +548,7 @@ export default function EditTransactionScreen() {
             ) : null}
 
             <FormField
+              testID={tid('txn', 'notes')}
               label="Notes"
               hint="Optional"
               className="min-h-24 text-sm"

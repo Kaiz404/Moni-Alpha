@@ -49,6 +49,7 @@ function CurrencyOptionRow({
 }) {
   return (
     <Pressable
+      testID={tid('sheet', 'currency', item.code)}
       accessibilityRole="button"
       accessibilityState={{ selected }}
       className={`mb-2 min-h-14 flex-row items-center rounded-2xl px-4 py-3 active:opacity-85 ${
@@ -101,6 +102,7 @@ export function CurrencyPickerHeader({
       </View>
 
       <TextInput
+        testID={tid('sheet', 'search-currencies')}
         accessibilityLabel="Search currencies"
         autoCapitalize="none"
         autoCorrect={false}

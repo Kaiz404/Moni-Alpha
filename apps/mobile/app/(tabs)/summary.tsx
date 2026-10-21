@@ -37,6 +37,7 @@ import {
   minorToNumber,
   type CurrencyCode,
 } from '@/lib/finance/money';
+import { tid } from '@/lib/test-ids';
 
 type Timeframe = '30D' | '90D' | 'All';
 
@@ -274,6 +275,7 @@ export default function InsightsScreen() {
               Start with one wallet
             </Text>
             <Pressable
+              testID={tid('budget', 'add-a-wallet')}
               className="mt-5 self-start rounded-2xl bg-primary px-4 py-3"
               onPress={() => router.push('/wallet/new' as any)}
             >
@@ -294,6 +296,11 @@ export default function InsightsScreen() {
                 const active = item === currency;
                 return (
                   <Pressable
+                    testID={tid(
+                      'budget',
+                      'set-currency-preference',
+                      item,
+                    )}
                     key={item}
                     className={`min-h-11 rounded-full px-4 py-2.5 ${active ? 'bg-primary' : 'bg-card'}`}
                     onPress={() => {
@@ -321,6 +328,7 @@ export default function InsightsScreen() {
                 </Text>
                 {selectedWalletIds.size ? (
                   <Pressable
+                    testID={tid('budget', 'show-insights-for')}
                     className="min-h-10 justify-center px-2"
                     onPress={() => {
                       setSelectedWalletIds(new Set());
@@ -346,6 +354,7 @@ export default function InsightsScreen() {
                   const selected = activeWalletIds.has(wallet.id);
                   return (
                     <Pressable
+                      testID={tid('budget', 'include', wallet.id)}
                       key={wallet.id}
                       className={`min-h-10 rounded-full px-3 py-2 ${selected ? 'bg-primary-muted' : 'bg-card'}`}
                       onPress={() => toggleWallet(wallet.id)}
@@ -423,6 +432,7 @@ export default function InsightsScreen() {
                   const active = option === timeframe;
                   return (
                     <Pressable
+                      testID={tid('budget', 'set-timeframe', option)}
                       key={option}
                       className={`min-h-10 rounded-full px-3 py-2 ${active ? 'bg-primary-muted' : 'bg-surface-2'}`}
                       onPress={() => setTimeframe(option)}
@@ -473,6 +483,7 @@ export default function InsightsScreen() {
                   </Text>
                 </View>
                 <Pressable
+                  testID={tid('budget', 'manage-budgets')}
                   className="min-h-11 items-center justify-center rounded-full px-2"
                   onPress={() => router.push('/budget' as any)}
                   accessibilityRole="button"
@@ -490,6 +501,11 @@ export default function InsightsScreen() {
                     const expanded = selectedBudget === rowKey;
                     return (
                       <Pressable
+                        testID={tid(
+                          'budget',
+                          'set-selected-budget',
+                          rowKey,
+                        )}
                         key={rowKey}
                         onPress={() =>
                           setSelectedBudget(expanded ? null : rowKey)
@@ -503,6 +519,10 @@ export default function InsightsScreen() {
                         >
                           {expanded ? (
                             <Pressable
+                              testID={tid(
+                                'budget',
+                                'view-transactions',
+                              )}
                               className="mt-3 self-start"
                               onPress={() =>
                                 router.push({
@@ -562,6 +582,11 @@ export default function InsightsScreen() {
                       .slice(0, 3)
                       .map((transaction) => (
                         <Pressable
+                          testID={tid(
+                            'budget',
+                            'transaction',
+                            transaction.id,
+                          )}
                           key={transaction.id}
                           className="mt-3 flex-row items-center justify-between"
                           onPress={() =>
@@ -613,6 +638,7 @@ export default function InsightsScreen() {
               </View>
               {currencyWallets.map((wallet) => (
                 <Pressable
+                  testID={tid('budget', 'wallet', wallet.id)}
                   key={wallet.id}
                   className="mt-4 flex-row items-center justify-between"
                   onPress={() =>
@@ -647,6 +673,7 @@ export default function InsightsScreen() {
             </View>
 
             <Pressable
+              testID={tid('budget', 'open-transaction-pinmap')}
               onPress={() => router.push('/heatmap' as any)}
               accessibilityRole="button"
               accessibilityLabel="Open transaction pinmap"

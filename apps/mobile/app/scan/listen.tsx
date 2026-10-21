@@ -36,6 +36,7 @@ import {
   completeImmediateProposalReview,
 } from '@/lib/proposals/immediate-review';
 import { waitForProposal } from '@/lib/proposals/proposal-wait';
+import { tid } from '@/lib/test-ids';
 
 const TAG = '[Moni/Listen]';
 
@@ -188,6 +189,7 @@ export default function ScanListenScreen() {
 
           {phase === 'listening' ? (
             <Pressable
+              testID={tid('capture', 'done-speaking')}
               onPress={handleStop}
               className="mt-10 flex-row items-center gap-2 rounded-full bg-primary px-8 py-4"
             >
@@ -213,6 +215,7 @@ export default function ScanListenScreen() {
             Review before sending
           </Text>
           <TextInput
+            testID={tid('capture', 'what-did-you')}
             className="min-h-[120px] rounded-2xl border border-border bg-card p-4 text-base text-foreground"
             value={transcript}
             onChangeText={setTranscript}
@@ -224,6 +227,7 @@ export default function ScanListenScreen() {
 
           <View className="mt-6 flex-row gap-3">
             <Pressable
+              testID={tid('capture', 'try-again')}
               onPress={() => {
                 setTranscript('');
                 committedTranscriptRef.current = '';
@@ -237,6 +241,7 @@ export default function ScanListenScreen() {
               </Text>
             </Pressable>
             <Pressable
+              testID={tid('capture', 'send')}
               onPress={handleSend}
               disabled={!transcript.trim()}
               className={`flex-1 items-center rounded-xl py-3.5 ${transcript.trim() ? 'bg-primary' : 'bg-primary/50'}`}

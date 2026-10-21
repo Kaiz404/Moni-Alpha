@@ -14,6 +14,7 @@ import {
   syncDefaultWalletFromProfile,
 } from '@/lib/wallets/default-wallet';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
+import { tid } from '@/lib/test-ids';
 
 type WalletRow = {
   id: string;
@@ -128,6 +129,7 @@ export function DefaultWalletPicker() {
         const selected = selectedId === option.id;
         return (
           <Pressable
+            testID={tid('profile', 'select', option.id ?? 'none')}
             key={option.id ?? 'none'}
             onPress={() => select(option.id)}
             disabled={saving}
