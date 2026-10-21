@@ -8,19 +8,12 @@ import type { TestId } from '@/lib/test-ids';
 
 type BannerProps = {
   tone: 'offline' | 'syncError';
-  /** The bold lead, such as "You're offline." */
   title: string;
-  /** What happens next, such as "Changes save here and sync later." */
   body?: string;
   action?: { testID: TestId; label: string; onPress: () => void };
-  /** Layout only, such as a margin. */
   className?: string;
 };
 
-/**
- * The capsule under the header that says what happened and what happens next
- * (V2F-States). Offline is Sand; a sync error is Lemon with a Retry.
- */
 export function Banner({
   tone,
   title,

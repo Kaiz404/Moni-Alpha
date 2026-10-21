@@ -5,10 +5,6 @@ import { Banner } from '@/components/ui/banner';
 import { transactions$ } from '@/lib/store';
 import { tid, type Screen } from '@/lib/test-ids';
 
-/**
- * Says so when changes could not sync, with a Retry. Nothing shows while
- * sync works: a healthy sync is not news.
- */
 export function SyncBanner({
   screen,
   className,

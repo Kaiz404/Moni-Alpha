@@ -477,7 +477,7 @@ export default function HomeScreen() {
                   key={transaction.id}
                   testID={tid('home', 'transaction', transaction.id)}
                   row={transactionRow(transaction, lookups)}
-                  grouped={false}
+                  metaLead="date"
                   onPress={() =>
                     router.push(
                       transaction.debtActivityId

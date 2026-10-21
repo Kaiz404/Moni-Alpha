@@ -1,6 +1,5 @@
 import { minorToNumber, type CurrencyCode, type MinorAmount } from '@repo/types';
 
-/** U+2212, the only minus the glossary allows before money. */
 export const MINUS = '−';
 
 const grouped = (digits: number) =>
@@ -28,10 +27,6 @@ function currencySymbol(currency: CurrencyCode | string): string {
   }
 }
 
-/**
- * Money that exists (balances, transactions, spent), unsigned: `RM1,116.20`,
- * `$120.00`. No space after RM; other currencies keep their own symbol.
- */
 export function formatMoney(
   amountMinor: MinorAmount | number,
   currency: CurrencyCode | string,
@@ -39,7 +34,6 @@ export function formatMoney(
   return `${currencySymbol(currency)}${exact.format(Math.abs(minorToNumber(amountMinor)))}`;
 }
 
-/** Forward-looking money (left, over, budgets) in whole units, rounded down: `RM20`. */
 export function formatWholeMoney(
   amountMinor: MinorAmount | number,
   currency: CurrencyCode | string,
@@ -49,7 +43,6 @@ export function formatWholeMoney(
 
 export type MoneyDirection = 'expense' | 'income' | 'transfer';
 
-/** `−RM45.90` for an expense, `+RM4,200.00` for income, unsigned for a transfer. */
 export function formatSignedMoney(
   direction: MoneyDirection,
   amountMinor: MinorAmount | number,
@@ -71,27 +64,23 @@ function relativeDay(date: Date, now: Date): 'Today' | 'Yesterday' | null {
   return days === 0 ? 'Today' : days === 1 ? 'Yesterday' : null;
 }
 
-/** Day first, in local time: `Wed 14 Oct`, and the year once it differs from now. */
 export function formatDate(value: string | Date, now: Date = new Date()): string {
   const date = typeof value === 'string' ? new Date(value) : value;
   const label = `${WEEKDAYS[date.getDay()]} ${date.getDate()} ${MONTHS[date.getMonth()]}`;
   return date.getFullYear() === now.getFullYear() ? label : `${label} ${date.getFullYear()}`;
 }
 
-/** `Today`, `Yesterday`, or the date: what a row's meta shows. */
 export function formatDay(value: string | Date, now: Date = new Date()): string {
   const date = typeof value === 'string' ? new Date(value) : value;
   return relativeDay(date, now) ?? formatDate(date, now);
 }
 
-/** A day group's label: `Today · Wed 14 Oct`, or the date alone. */
 export function formatDayHeading(value: string | Date, now: Date = new Date()): string {
   const date = typeof value === 'string' ? new Date(value) : value;
   const relative = relativeDay(date, now);
   return relative ? `${relative} · ${formatDate(date, now)}` : formatDate(date, now);
 }
 
-/** Local calendar day key for grouping rows: `2026-10-14`. */
 export function localDayKey(value: string | Date): string {
   const date = typeof value === 'string' ? new Date(value) : value;
   const month = String(date.getMonth() + 1).padStart(2, '0');

@@ -72,7 +72,6 @@ function firstParam(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] : value;
 }
 
-/** Plain income and expense rows take the hold menu; transfers and debt rows change on their own pages. */
 function holdable(transaction: FinanceTransaction) {
   return (
     transaction.type !== 'transfer' && !transaction.debtActivityId
@@ -324,7 +323,7 @@ export default function TransactionsScreen() {
                 key={proposal.id}
                 testID={tid('activity', 'proposal', proposal.id)}
                 row={proposalRow(proposal, lookups)}
-                grouped={false}
+                metaLead="date"
                 onPress={() =>
                   router.push({
                     pathname: '/proposal/[id]',
@@ -369,7 +368,7 @@ export default function TransactionsScreen() {
                         transaction.id,
                       )}
                       row={row}
-                      grouped
+                      metaLead="category"
                       onPress={() => open(transaction)}
                       onHold={
                         holdable(transaction)
@@ -389,12 +388,12 @@ export default function TransactionsScreen() {
       <HoldMenu
         screen="activity"
         anchor={held?.anchor ?? null}
-        name={held?.row.title ?? ''}
-        preview={
+        rowTitle={held?.row.title ?? ''}
+        liftedRow={
           held ? (
             <TransactionRowBody
               row={held.row}
-              meta={rowMeta(held.row, true)}
+              meta={rowMeta(held.row, 'category')}
               amount={rowAmount(held.row)}
             />
           ) : null

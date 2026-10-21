@@ -50,15 +50,8 @@ type HeldTouch = {
   cancelled: boolean;
 };
 
-/** Where the finger held, and the held row's frame, both in window coordinates. */
 export type HoldAnchor = { x: number; y: number; frame: Frame };
 
-/**
- * Hold on a row (V2A-ActivityMenu). Press feedback comes from `Press` at 0 ms;
- * from 250 ms a fill blooms from the finger; at 500 ms the hold commits with
- * the Confirm haptic. A release between 250 and 500 ms, or a drift past 10 px,
- * cancels, and nothing opens.
- */
 export function useHold(
   onHold: ((anchor: HoldAnchor) => void) | undefined,
 ) {
@@ -144,15 +137,13 @@ export function useHold(
           );
       },
     },
-    /** A release after the bloom started is a cancelled hold, not a tap. */
-    isTap: () => {
+    releasedBeforeBloom: () => {
       const held = touch.current;
       return (
         !held ||
         (!held.cancelled && Date.now() - held.at < HOLD_BLOOM_MS)
       );
     },
-    /** TalkBack's "Quick actions" opens the menu from the row's centre. */
     openFromCenter: () =>
       ref.current?.measureInWindow((x, y, width, height) =>
         onHold({
@@ -200,19 +191,12 @@ const LIFT_SHADOW = {
 type HoldMenuProps = {
   screen: Screen;
   anchor: HoldAnchor | null;
-  /** The held row, drawn lifted above the dimmed page. */
-  preview: ReactNode;
-  /** The row's name, for "Quick actions for GRAB*FOOD". */
-  name: string;
+  liftedRow: ReactNode;
+  rowTitle: string;
   onAction: (action: HoldAction) => void;
   onClose: () => void;
 };
 
-/**
- * The menu a committed hold opens: the row lifts to 1.02 above a 16% dim and a
- * 220-wide Paper menu springs out from the finger with Edit category, Change
- * wallet, and Delete. Tapping outside or Android back closes it.
- */
 export function HoldMenu({
   anchor,
   onClose,
@@ -241,8 +225,8 @@ export function HoldMenu({
 function HoldMenuLayer({
   screen,
   anchor,
-  preview,
-  name,
+  liftedRow,
+  rowTitle,
   onAction,
   onClose,
 }: HoldMenuProps & { anchor: HoldAnchor }) {
@@ -313,11 +297,11 @@ function HoldMenuLayer({
           liftStyle,
         ]}
       >
-        {preview}
+        {liftedRow}
       </Animated.View>
       <Animated.View
         accessibilityRole="menu"
-        accessibilityLabel={`Quick actions for ${name}`}
+        accessibilityLabel={`Quick actions for ${rowTitle}`}
         className="absolute rounded-tile bg-card py-1.5"
         style={[
           {
@@ -381,10 +365,6 @@ function subscribeHint(listener: () => void) {
   };
 }
 
-/**
- * "Hold a row for quick actions", shown above the list until its ✕ or the
- * first hold, then never again.
- */
 export function HoldHint({ screen }: { screen: Screen }) {
   const seen = useSyncExternalStore(subscribeHint, readHintSeen);
   const tokens = useThemeTokens();

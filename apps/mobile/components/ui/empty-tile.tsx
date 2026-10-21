@@ -12,9 +12,7 @@ import type { TestId } from '@/lib/test-ids';
 type EmptyTileProps = {
   icon: IconSymbolName;
   title: string;
-  /** One sentence that says what to do. */
   body: string;
-  /** At most one action. */
   action?: {
     testID: TestId;
     label: string;
@@ -24,7 +22,6 @@ type EmptyTileProps = {
   className?: string;
 };
 
-/** The dashed outline tile for an empty list: one icon, one sentence, at most one action. */
 export function EmptyTile({
   icon,
   title,
@@ -77,7 +74,6 @@ export function EmptyTile({
   );
 }
 
-/** A page whose thing is gone or failed to open: icon, title, and what it means. */
 export function NotFound({
   icon,
   title,

@@ -32,7 +32,6 @@ const SHADOW = {
   shadowOffset: { width: 0, height: 12 },
 };
 
-/** Mounted once above the root Stack; shows the toast from `showToast`. */
 export function ToastHost() {
   const toast = useToast();
   const insets = useSafeAreaInsets();

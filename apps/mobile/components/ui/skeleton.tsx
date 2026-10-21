@@ -3,13 +3,8 @@ import { View } from 'react-native';
 
 import { ListCard } from '@/components/ui/list-card';
 
-/** Loading shows only when it takes longer than this, so fast opens never flash. */
 export const SKELETON_DELAY_MS = 300;
 
-/**
- * Static Sand-light rows shaped like transaction rows (V2F-States). No
- * shimmer: nothing loops where balances show.
- */
 export function Skeleton({ rows = 3 }: { rows?: number }) {
   const [shown, setShown] = useState(false);
   useEffect(() => {

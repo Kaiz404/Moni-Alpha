@@ -9,11 +9,9 @@ type RowBase = {
   amountMinor: MinorAmount;
   currency: CurrencyCode;
   icon: TransactionIconName;
-  /** The category's own colour; rows never pick a colour of their own. */
   color: string | null;
 };
 
-/** What one transaction row shows. A pending capture is not in totals and carries no sign. */
 export type TransactionRowData = RowBase &
   (
     | {

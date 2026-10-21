@@ -36,12 +36,10 @@ type NavRowProps = {
   onPress: () => void;
   icon?: IconSymbolName;
   tint?: BubbleTint;
-  /** Trailing value in Ink 2, such as "4 wallets". */
   value?: string;
   disabled?: boolean;
 };
 
-/** A row that opens another page (settings, wallets, people, bills): optional value, then a chevron. */
 export function NavRow({
   testID,
   title,

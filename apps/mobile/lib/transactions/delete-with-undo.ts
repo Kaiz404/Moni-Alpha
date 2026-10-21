@@ -17,11 +17,7 @@ function reveal(id: string) {
   setHidden(next);
 }
 
-/**
- * Hides the row at once and soft-deletes it only when the "Deleted" toast
- * leaves without Undo. The synced store drops a row as soon as its delete
- * syncs back, so an Undo after that could not restore it.
- */
+/** Hides the row at once and soft-deletes it only when the "Deleted" toast leaves without Undo. */
 export function deleteWithUndo(id: string, text: string): void {
   setHidden(new Set(hidden).add(id));
   showToast({
@@ -41,7 +37,6 @@ function subscribe(listener: () => void) {
   };
 }
 
-/** Rows deleted from a list whose toast is still up. Lists leave them out. */
 export function useHiddenTransactionIds(): ReadonlySet<string> {
   return useSyncExternalStore(subscribe, () => hidden);
 }

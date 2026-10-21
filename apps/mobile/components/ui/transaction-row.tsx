@@ -19,28 +19,29 @@ import {
 import type { TestId } from '@/lib/test-ids';
 import type { TransactionRowData } from '@/lib/transactions/row';
 
+export type MetaLead = 'category' | 'date';
+
 export type TransactionRowProps = {
   testID: TestId;
   row: TransactionRowData;
-  /** Day-grouped lists read "Category · Wallet"; other lists "Date · Wallet". */
-  grouped: boolean;
+  metaLead: MetaLead;
   onPress: () => void;
-  /** Turns on the hold menu for this row. */
   onHold?: (anchor: HoldAnchor) => void;
   now?: Date;
 };
 
 export function rowMeta(
   row: TransactionRowData,
-  grouped: boolean,
+  metaLead: MetaLead,
   now?: Date,
 ): string {
   if (row.kind === 'transfer')
     return `${row.wallet} → ${row.toWallet}`;
-  const lead = grouped
-    ? (row.category ??
-      (row.kind === 'income' ? 'Income' : 'No category'))
-    : formatDay(row.date, now);
+  const lead =
+    metaLead === 'category'
+      ? (row.category ??
+        (row.kind === 'income' ? 'Income' : 'No category'))
+      : formatDay(row.date, now);
   return `${lead} · ${row.wallet ?? 'no wallet yet'}`;
 }
 
@@ -57,20 +58,16 @@ const amountTone: Record<TransactionRowData['kind'], string> = {
   pending: 'text-ink-2',
 };
 
-/**
- * The 66-tall transaction row: tint bubble, title, meta, amount. No chevron and
- * no ⋯; the whole row opens the detail, and a hold opens quick actions.
- */
 export function TransactionRow({
   testID,
   row,
-  grouped,
+  metaLead,
   onPress,
   onHold,
   now,
 }: TransactionRowProps) {
   const hold = useHold(onHold);
-  const meta = rowMeta(row, grouped, now);
+  const meta = rowMeta(row, metaLead, now);
   const amount = rowAmount(row);
   return (
     <View
@@ -89,7 +86,7 @@ export function TransactionRow({
           hold ? () => hold.openFromCenter() : undefined
         }
         onPress={() => {
-          if (!hold || hold.isTap()) onPress();
+          if (!hold || hold.releasedBeforeBloom()) onPress();
         }}
         {...hold?.pressProps}
       >
@@ -110,7 +107,6 @@ export function TransactionRow({
   );
 }
 
-/** The row's content without its press, as the hold menu lifts it. */
 export function TransactionRowBody({
   row,
   meta,
@@ -136,13 +132,13 @@ export function TransactionRowBody({
             <StatusPill
               tone="review"
               label="To review"
-              size="row"
+              variant="inline"
             />
           ) : row.autoAdded ? (
             <StatusPill
               tone="auto"
               label="Auto"
-              size="row"
+              variant="inline"
             />
           ) : null}
           <Text
@@ -189,7 +185,6 @@ function RowBubble({ row }: { row: TransactionRowData }) {
   );
 }
 
-/** The 42 bubble tinted from a category's own colour, or Sand when it has none. */
 export function TintBubble({
   icon,
   color,

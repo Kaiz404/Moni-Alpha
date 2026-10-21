@@ -3,7 +3,6 @@ import { View } from 'react-native';
 
 import { Text } from '@/components/ui/text';
 
-/** Paper list card: radius 26, 6 top and bottom, no borders or dividers. */
 export function ListCard({
   children,
   className,
@@ -20,7 +19,6 @@ export function ListCard({
   );
 }
 
-/** A caps label over its list card, as day groups and settings sections draw it. */
 export function ListSection({
   label,
   children,

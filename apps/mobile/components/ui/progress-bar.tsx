@@ -4,12 +4,9 @@ import { View } from 'react-native';
 import { Text } from '@/components/ui/text';
 import { formatWholeMoney } from '@/lib/finance/display';
 
-/** Spent against a budget, the one way every bar reads it. */
 export type BudgetMeter = {
-  /** Share of the track to fill, 0 to 100. Never past the track. */
   fillPct: number;
   tone: 'calm' | 'near' | 'over';
-  /** "RM114 left" or "RM20 over", whole units rounded down. */
   label: string;
 };
 
@@ -47,17 +44,10 @@ type ProgressBarProps = {
   spentMinor: MinorAmount | number;
   budgetMinor: MinorAmount | number;
   currency: CurrencyCode | string;
-  /** Category name on the label row; leave out for a bare bar with its label. */
   title?: string;
-  /** 8 in rows, 4 in picker tiles, 12 on the category page hero. */
   size?: keyof typeof heights;
 };
 
-/**
- * The one progress style: Sand track, Ink 2 fill of spent ÷ budget. Over
- * budget fills the track in Coral and says "RMx over"; nothing draws past the
- * track, and there is no pace tick.
- */
 export function ProgressBar({
   spentMinor,
   budgetMinor,

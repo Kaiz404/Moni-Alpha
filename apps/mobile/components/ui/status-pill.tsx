@@ -36,21 +36,17 @@ const tones: Record<
   },
 };
 
-/**
- * `row` is the 20-tall pill that leads a row's meta ("Auto", "To review").
- * `block` is the 30-tall pill with a dot that stands on its own.
- */
 export function StatusPill({
   tone,
   label,
-  size = 'block',
+  variant = 'standalone',
 }: {
   tone: StatusTone;
   label: string;
-  size?: 'row' | 'block';
+  variant?: 'inline' | 'standalone';
 }) {
   const look = tones[tone];
-  if (size === 'row') {
+  if (variant === 'inline') {
     return (
       <View
         className={`h-5 justify-center rounded-full px-2 ${look.fill}`}

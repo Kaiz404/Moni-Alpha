@@ -14,11 +14,6 @@ type BudgetProgressItemProps = {
   children?: ReactNode;
 };
 
-/**
- * One category's spending this month: its bubble, then the one progress bar
- * against its budget, or what was spent when it has no budget. Parents own
- * navigation and expansion.
- */
 export function BudgetProgressItem({
   budget,
   showArchived = false,

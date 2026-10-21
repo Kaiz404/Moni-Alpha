@@ -15,7 +15,6 @@ import { tid, type Screen } from '@/lib/test-ids';
 const INSET = 4;
 
 type SegmentedProps<T extends string> = {
-  /** Segment testIDs are `<screen>.<name>.<value>`. */
   screen: Screen;
   name: string;
   options: readonly { value: T; label: string }[];
@@ -25,7 +24,6 @@ type SegmentedProps<T extends string> = {
   disabled?: boolean;
 };
 
-/** A 44 Sand track whose Ink pill slides to the chosen segment on the `control` spring. */
 export function Segmented<T extends string>({
   screen,
   name,

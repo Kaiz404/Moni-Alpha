@@ -1,8 +1,8 @@
-# Needs a signed-in e2e build with the default seed (V4): rows in Food & Dining, a Cash wallet, Transport RM20 over.
 appId: com.anonymous.moni.e2e
 name: F4 rows, hold menu, delete with Undo, nav rows
 tags:
   - f4
+  - needs-default-seed
 ---
 - launchApp
 - tapOn:

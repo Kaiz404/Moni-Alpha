@@ -16,7 +16,6 @@ type ChipProps = {
   icon?: IconSymbolName;
 };
 
-/** A 36-tall capsule for filters and picks, with a 44 hit area. Selected is Ink. */
 export function Chip({
   testID,
   label,

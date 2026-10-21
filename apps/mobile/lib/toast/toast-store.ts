@@ -6,11 +6,8 @@ export type ToastTone = 'done' | 'removed';
 
 export type ToastRequest = {
   text: string;
-  /** `removed` draws the grey glyph of a delete; `done` the Mint check. */
   tone?: ToastTone;
-  /** Shows the Undo button; runs instead of `commit`. */
   undo?: () => void;
-  /** Runs once when the toast leaves without Undo: it timed out, a newer toast replaced it, or the app went to the background. */
   commit?: () => void;
 };
 
@@ -36,7 +33,6 @@ function settle(outcome: 'undo' | 'commit') {
   else leaving.commit?.();
 }
 
-/** Shows one Ink capsule for 5 s. A newer toast replaces it, which commits the old one. */
 export function showToast(request: ToastRequest): void {
   settle('commit');
   const toast: ShownToast = { ...request, tone: request.tone ?? 'done', id: nextId++ };

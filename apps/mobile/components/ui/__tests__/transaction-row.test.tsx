@@ -37,7 +37,7 @@ describe('TransactionRow', () => {
       <TransactionRow
         testID={tid('activity', 'row', 'grab')}
         row={grab}
-        grouped
+        metaLead="category"
         onPress={onPress}
         now={now}
       />,
@@ -53,7 +53,7 @@ describe('TransactionRow', () => {
       <TransactionRow
         testID={tid('home', 'recent', 'row', 'grab')}
         row={{ ...grab, autoAdded: true }}
-        grouped={false}
+        metaLead="date"
         onPress={() => {}}
         now={now}
       />,
@@ -77,7 +77,7 @@ describe('TransactionRow', () => {
           category: 'Transport',
           wallet: null,
         }}
-        grouped={false}
+        metaLead="date"
         onPress={() => {}}
         now={now}
       />,
@@ -99,7 +99,7 @@ describe('TransactionRow hold', () => {
       <TransactionRow
         testID={tid('activity', 'row', 'grab')}
         row={grab}
-        grouped
+        metaLead="category"
         onPress={onPress}
         onHold={() => {}}
         now={now}
