@@ -46,10 +46,8 @@ export function billReminders(
 export const BILL_REMINDER_CHANNEL = 'bill-reminders';
 const ID_PREFIX = 'bill:';
 
-/** A bill reminder the phone already holds; `at` is what was scheduled, read from its data. */
 export type ScheduledBillReminder = { id: string; at: string | null; title: string; body: string };
 
-/** What to cancel and what to (re)schedule so the phone holds exactly `wanted`. */
 export function billReminderChanges(
   wanted: readonly BillReminder[],
   scheduled: readonly ScheduledBillReminder[],
@@ -75,10 +73,7 @@ export function billReminderChanges(
 
 let syncing: Promise<void> = Promise.resolve();
 
-/**
- * Makes the scheduled bill reminders match `wanted`. Running it again with the same list
- * changes nothing, and an empty list cancels them all (Remind off, Stop tracking, sign out).
- */
+/** An empty list cancels every bill reminder. */
 export function syncBillReminders(wanted: readonly BillReminder[]): Promise<void> {
   syncing = syncing
     .catch(() => {})
@@ -115,7 +110,7 @@ export function syncBillReminders(wanted: readonly BillReminder[]): Promise<void
   return syncing;
 }
 
-/** Android 13+ needs POST_NOTIFICATIONS before a reminder can show. Asked when Remind turns on. */
+/** Android 13+ needs POST_NOTIFICATIONS before a reminder can show. */
 export async function ensureBillReminderPermission(): Promise<void> {
   const current = await Notifications.getPermissionsAsync();
   if (current.granted || !current.canAskAgain) return;

@@ -26,7 +26,6 @@ type Held = {
   anchor: HoldAnchor;
 };
 
-/** Transfers, debt cash and balance corrections open their own pages instead. */
 function holdable(transaction: FinanceTransaction) {
   return (
     transaction.type !== 'transfer' &&
@@ -35,10 +34,6 @@ function holdable(transaction: FinanceTransaction) {
   );
 }
 
-/**
- * Press and hold on a transaction row: Edit category, Change wallet, Delete. `holdFor` gives a
- * row its `onHold`, and `menu` renders the one menu for the screen.
- */
 export function useTransactionHold(screen: Screen): {
   holdFor: (
     transaction: FinanceTransaction,

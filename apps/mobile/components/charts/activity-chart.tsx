@@ -413,7 +413,6 @@ type BalancePlotProps = Pick<
   'balance' | 'currency' | 'selectedDay' | 'onSelectDay' | 'now'
 > & { width: number; month: string; screen?: Screen };
 
-/** Closing balance per day across the month; the wallet page draws it for one wallet. */
 export function BalancePlot({
   balance,
   currency,

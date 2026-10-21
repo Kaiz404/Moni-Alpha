@@ -38,10 +38,7 @@ import { resolveTransactionIcon } from '@/lib/transactions/icon';
 type DraftMessage = Extract<ChatMessage, { kind: 'assistant_draft' }>;
 type Field = 'merchant' | 'amount';
 
-/**
- * A chat capture as the compact Review card: edit in place, then Not mine, Later, or Approve.
- * The decisions are the Review deck's own (`lib/proposals/review-actions.ts`).
- */
+/** A chat capture as the compact Review card: edit in place, then Not mine, Later, or Approve. */
 export function DraftCard({ message }: { message: DraftMessage }) {
   const tokens = useThemeTokens();
   const { user } = useAuth();

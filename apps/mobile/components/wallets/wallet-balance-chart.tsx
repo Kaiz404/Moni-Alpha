@@ -8,7 +8,6 @@ import { monthKey, monthName } from '@/lib/finance/budget-month';
 import { formatMoney, formatSignedMoney } from '@/lib/finance/format-money';
 import type { FinanceTransaction, FinanceWallet } from '@/lib/finance/types';
 
-/** This month's money in, out, and moved for one wallet; balance corrections are none of them. */
 export function walletMonthFlows(
   wallet: Pick<FinanceWallet, 'id'>,
   transactions: readonly FinanceTransaction[],
@@ -33,7 +32,6 @@ export function walletMonthFlows(
   return { inMinor, outMinor, movedMinor };
 }
 
-/** V2H-WalletDetail's month card: the change since the 1st, in / out / moved, and the balance line. */
 export function WalletBalanceChart({
   wallet,
   transactions,
@@ -41,7 +39,6 @@ export function WalletBalanceChart({
 }: {
   wallet: FinanceWallet;
   transactions: readonly FinanceTransaction[];
-  /** Stable between renders (`useNow`), so the series is not rebuilt on every render. */
   now: Date;
 }) {
   const [width, setWidth] = useState(314);

@@ -335,10 +335,6 @@ export function WalletAlerts({
   );
 }
 
-/**
- * "Use as default": the wallet Moni falls back to when a capture names none. Not on
- * V2H-WalletDetail; it replaces v1 Profile's default-wallet picker, which K1 removed.
- */
 export function WalletDefault({ wallet }: { wallet: FinanceWallet }) {
   const tokens = useThemeTokens();
   const [isDefault, setIsDefault] = useState(() => getDefaultWalletId() === wallet.id);

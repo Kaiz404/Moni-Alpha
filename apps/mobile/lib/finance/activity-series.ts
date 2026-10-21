@@ -14,9 +14,7 @@ export type SpendingMonth = {
   inMinor: number;
   /** Spent last month from the 1st to the same day number. */
   lastMonthByNowMinor: number;
-  /** The Budget tab's even pace; null without a budget. */
   evenPaceMinor: number | null;
-  /** The Budget tab's "a day" from what is left after bills and debts due (D1); null without a budget. */
   safeToSpendMinor: number | null;
 };
 
@@ -46,7 +44,6 @@ function isSpending(transaction: FinanceTransaction, currency: CurrencyCode): bo
   );
 }
 
-/** `budget` is this month's `buildBudgetMonth`, so Activity's pace matches Home and Budget. */
 export function spendingMonth(
   transactions: readonly FinanceTransaction[],
   budget: Pick<BudgetMonth, 'evenPaceMinor' | 'left'>,

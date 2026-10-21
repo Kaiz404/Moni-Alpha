@@ -8,7 +8,6 @@ import { setTransactionReceipt } from '@/lib/supabase/transactions';
 
 const QUEUE_KEY = 'pending_image_uploads';
 
-/** A receipt photo waiting to upload, and the row its URL goes on once it does. */
 type PendingUpload = {
   target: 'proposal' | 'transaction';
   id: string;
@@ -16,18 +15,20 @@ type PendingUpload = {
   userId: string;
 };
 
-/** Before transactions could own an upload, every item named its proposal as `proposalId`. */
-type StoredUpload = PendingUpload | { proposalId: string; localUri: string; userId: string };
+/** Queued by builds from before an upload could target a transaction. */
+type LegacyProposalUpload = { proposalId: string; localUri: string; userId: string };
+
+function fromLegacy(item: LegacyProposalUpload): PendingUpload {
+  return { target: 'proposal', id: item.proposalId, localUri: item.localUri, userId: item.userId };
+}
+
+const uploadKey = (item: PendingUpload) => `${item.localUri}|${item.target}|${item.id}`;
 
 function readQueue(): PendingUpload[] {
   try {
     const raw = imageUploadMMKV.getString(QUEUE_KEY);
-    const stored: StoredUpload[] = raw ? JSON.parse(raw) : [];
-    return stored.map((item) =>
-      'proposalId' in item
-        ? { target: 'proposal', id: item.proposalId, localUri: item.localUri, userId: item.userId }
-        : item,
-    );
+    const stored: (PendingUpload | LegacyProposalUpload)[] = raw ? JSON.parse(raw) : [];
+    return stored.map((item) => ('proposalId' in item ? fromLegacy(item) : item));
   } catch {
     return [];
   }
@@ -45,10 +46,7 @@ export function getPendingUploadCount(): number {
   return readQueue().length;
 }
 
-/**
- * Keeps a capture's receipt photo on the transaction Approve wrote: an uploaded URL is linked
- * now, and a photo still waiting to upload is linked to the transaction when it lands.
- */
+/** Moves a capture's receipt photo, uploaded or still queued, onto the transaction Approve wrote. */
 export function keepProposalReceipt(
   proposal: Pick<ProposedTransaction, 'id' | 'sourceImageUri'>,
   transactionId: string,
@@ -67,7 +65,6 @@ export function keepProposalReceipt(
   void drainImageUploadQueue().catch(() => {});
 }
 
-/** Keeps a scanned receipt with the transaction a live capture just wrote. */
 export async function keepScannedReceipt(imageUri: string, transactionId: string): Promise<void> {
   const userId = await getUserId();
   if (!userId) return;
@@ -86,13 +83,6 @@ async function link(item: PendingUpload, remoteUrl: string): Promise<boolean> {
   return true;
 }
 
-/**
- * Attempt to upload all pending receipt images to Supabase Storage.
- * Successfully uploaded items are removed from the queue and their
- * proposal or transaction is updated with the remote URL.
- *
- * Safe to call frequently -- skips silently if queue is empty.
- */
 export async function drainImageUploadQueue(): Promise<number> {
   const queue = readQueue();
   if (queue.length === 0) return 0;
@@ -109,15 +99,14 @@ export async function drainImageUploadQueue(): Promise<number> {
     try {
       const remoteUrl = await uploadReceiptImage(item.localUri, item.userId, item.id);
       if (remoteUrl && (await link(item, remoteUrl))) done.add(item);
-    } catch {
-      // Stays queued for the next foreground.
-    }
+    } catch {}
   }
-
-  // Items queued or retargeted while this drain ran are kept as they now stand.
-  const finished = new Set([...done].map((item) => `${item.localUri}|${item.target}|${item.id}`));
-  writeQueue(
-    readQueue().filter((item) => !finished.has(`${item.localUri}|${item.target}|${item.id}`)),
-  );
+  removeUploaded(done);
   return done.size;
+}
+
+/** Re-reads the queue, so items queued or retargeted during a drain survive it. */
+function removeUploaded(done: ReadonlySet<PendingUpload>): void {
+  const uploaded = new Set([...done].map(uploadKey));
+  writeQueue(readQueue().filter((item) => !uploaded.has(uploadKey(item))));
 }

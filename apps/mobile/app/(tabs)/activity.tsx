@@ -91,7 +91,6 @@ export default function ActivityScreen() {
   );
   const hold = useTransactionHold('activity');
   const budgetData = useBudgetData();
-  // Home's and Budget's own month model, so "safe to spend a day" matches theirs (D1).
   const budgetMonth = useBudgetMonth(budgetData, monthKey(budgetData.now));
   const [mode, setMode] = useState<ActivityChartMode>('spending');
   const params = useLocalSearchParams<{

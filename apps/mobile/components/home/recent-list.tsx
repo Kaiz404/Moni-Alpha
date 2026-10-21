@@ -12,7 +12,7 @@ import type { FinanceTransaction } from '@/lib/finance/types';
 import { tid } from '@/lib/test-ids';
 import { transactionRow, type RowLookups } from '@/lib/transactions/row';
 
-/** "Recent": the newest three rows (press and hold for the row menu) and See all, or the first-run empty tile. */
+/** "Recent": the newest three rows and See all, or the first-run empty tile. */
 export function RecentList({
   transactions,
   lookups,
