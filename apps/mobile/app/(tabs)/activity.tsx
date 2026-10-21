@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Alert, ScrollView, View } from 'react-native';
 
 import { DayGroup } from '@/components/activity/day-group';
+import { useBudgetData, useBudgetMonth } from '@/components/budget/use-budget';
 import { FilterChips } from '@/components/activity/filter-chips';
 import { ReviewStrip } from '@/components/activity/review-strip';
 import { SearchField } from '@/components/activity/search-field';
@@ -44,6 +45,7 @@ import {
   type ActivityKind,
 } from '@/lib/finance/activity-filter';
 import { balanceMonth, spendingMonth } from '@/lib/finance/activity-series';
+import { monthKey } from '@/lib/finance/budget-month';
 import { formatMoney } from '@/lib/finance/format-money';
 import { useMainCurrency } from '@/lib/finance/main-currency';
 import { merchantName } from '@/lib/finance/merchant-name';
@@ -123,6 +125,9 @@ export default function ActivityScreen() {
   );
   const [timezone, setTimezone] = useState('UTC');
   const progress = useValue(budgetProgress$(userId, timezone));
+  const budgetData = useBudgetData();
+  // Home's and Budget's own month model, so "safe to spend a day" matches theirs (D1).
+  const budgetMonth = useBudgetMonth(budgetData, monthKey(budgetData.now));
   const [mode, setMode] = useState<ActivityChartMode>('spending');
   const params = useLocalSearchParams<{
     q?: string;
@@ -209,18 +214,10 @@ export default function ActivityScreen() {
       ),
     [named, shownPlace, query, walletId, currency, kind, day, categories],
   );
-  const budgetMinor = useMemo(() => {
-    const budgets = progress.filter(
-      (row) => row.currency === currency && row.budgetAmountMinor !== null,
-    );
-    return budgets.length
-      ? budgets.reduce((sum, row) => sum + Number(row.budgetAmountMinor), 0)
-      : null;
-  }, [progress, currency]);
   const todayKey = toLocalDateInput(now);
   const spending = useMemo(
-    () => spendingMonth(inCurrency, budgetMinor, currency, dayOf(todayKey)),
-    [inCurrency, budgetMinor, currency, todayKey],
+    () => spendingMonth(inCurrency, budgetMonth, currency, dayOf(todayKey)),
+    [inCurrency, budgetMonth, currency, todayKey],
   );
   const balance = useMemo(
     () => balanceMonth(wallets, all, currency, dayOf(todayKey)),

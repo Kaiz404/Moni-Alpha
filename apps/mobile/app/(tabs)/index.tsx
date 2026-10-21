@@ -12,8 +12,8 @@ import { RecentList } from '@/components/home/recent-list';
 import { ReviewBlock } from '@/components/home/review-block';
 import { SetupTiles, type SetupStep } from '@/components/home/setup-tiles';
 import { SpentCard } from '@/components/home/spent-card';
-import { useBudgetData } from '@/components/budget/use-budget';
-import { buildBudgetMonth, monthKey } from '@/lib/finance/budget-month';
+import { useBudgetData, useBudgetMonth } from '@/components/budget/use-budget';
+import { monthKey } from '@/lib/finance/budget-month';
 import { debtPhrase } from '@/lib/finance/spent-summary';
 import { openCaptureChooser } from '@/components/nav/capture-chooser';
 import { useTabBarClearance } from '@/components/nav/tab-bar';
@@ -71,7 +71,7 @@ export default function HomeScreen() {
   const overview = useValue(financeOverview$(userId));
   const budgetData = useBudgetData();
   // The Budget tab's own month model, so Home's "left" always matches it (D1).
-  const month = buildBudgetMonth({ ...budgetData, month: monthKey(budgetData.now) });
+  const month = useBudgetMonth(budgetData, monthKey(budgetData.now));
   const proposals = useValue(pendingProposals$(userId));
   const aliases = useValue(() => (userId ? listMerchantAliases(userId) : []));
   const alertsLinked = useValue(() =>

@@ -1,6 +1,7 @@
 import type { CurrencyCode } from '@repo/types';
 
 import { toLocalDateInput } from '@/lib/dates/local-date-input';
+import type { BudgetMonth } from '@/lib/finance/budget-month';
 import { transactionDeltaMinor } from '@/lib/finance/ledger';
 import type { FinanceTransaction, FinanceWallet } from '@/lib/finance/types';
 
@@ -13,9 +14,9 @@ export type SpendingMonth = {
   inMinor: number;
   /** Spent last month from the 1st to the same day number. */
   lastMonthByNowMinor: number;
-  /** Main-currency budgets ÷ days in the month; null without a budget. */
+  /** The Budget tab's even pace; null without a budget. */
   evenPaceMinor: number | null;
-  /** What the budgets leave ÷ days left, today included; null without a budget. */
+  /** The Budget tab's "a day" from what is left after bills and debts due (D1); null without a budget. */
   safeToSpendMinor: number | null;
 };
 
@@ -45,9 +46,10 @@ function isSpending(transaction: FinanceTransaction, currency: CurrencyCode): bo
   );
 }
 
+/** `budget` is this month's `buildBudgetMonth`, so Activity's pace matches Home and Budget. */
 export function spendingMonth(
   transactions: readonly FinanceTransaction[],
-  budgetMinor: number | null,
+  budget: Pick<BudgetMonth, 'evenPaceMinor' | 'left'>,
   currency: CurrencyCode,
   now: Date,
 ): SpendingMonth {
@@ -77,19 +79,14 @@ export function spendingMonth(
     else if (key >= lastMonthStart && key <= lastMonthKey)
       lastMonthByNowMinor += Number(transaction.amountMinor);
   }
-  const spentMinor = days.reduce((sum, day) => sum + day.spentMinor, 0);
-  const budgeted = budgetMinor !== null && budgetMinor > 0;
-  const daysLeft = daysInMonth - now.getDate() + 1;
   return {
     days,
     daysInMonth,
-    spentMinor,
+    spentMinor: days.reduce((sum, day) => sum + day.spentMinor, 0),
     inMinor,
     lastMonthByNowMinor,
-    evenPaceMinor: budgeted ? Math.floor(budgetMinor / daysInMonth) : null,
-    safeToSpendMinor: budgeted
-      ? Math.max(0, Math.floor((budgetMinor - spentMinor) / daysLeft))
-      : null,
+    evenPaceMinor: budget.evenPaceMinor,
+    safeToSpendMinor: budget.left?.perDayMinor ?? null,
   };
 }
 

@@ -1,11 +1,14 @@
 import type { CurrencyCode, MinorAmount, UpcomingBill } from '@repo/types';
 
+import { spendingMonth } from '../activity-series';
 import {
   buildBudgetMonth,
   leftSentence,
   spendMonths,
   type BudgetMonthInput,
 } from '../budget-month';
+import { formatMoney } from '../format-money';
+import { leftLine } from '../spent-summary';
 import type { FinanceBudget, FinanceCategory, FinanceDebt, FinanceTransaction } from '../types';
 
 const MYR = 'MYR' as CurrencyCode;
@@ -135,6 +138,19 @@ describe('buildBudgetMonth', () => {
     expect(leftSentence(month)).toBe(
       'RM443 left for 18 days after bills and RM40 to Mei · RM24 a day',
     );
+  });
+
+  it('gives Home, Budget and Activity the same RM24 a day after bills and debts due (D1)', () => {
+    const input = october();
+    const month = buildBudgetMonth(input);
+    const home = leftLine(month.left!, 'MYR');
+    const budgetTab = leftSentence(month);
+    const activity = spendingMonth(input.transactions, month, MYR, WED_14_OCT);
+
+    expect(home).toBe('RM443 left for 18 days · RM24 a day');
+    expect(budgetTab).toBe('RM443 left for 18 days after bills and RM40 to Mei · RM24 a day');
+    expect(formatMoney(activity.safeToSpendMinor!, 'MYR', { whole: true })).toBe('RM24');
+    expect(activity.evenPaceMinor).toBe(month.evenPaceMinor);
   });
 
   it('draws the line to today and adds up each day', () => {

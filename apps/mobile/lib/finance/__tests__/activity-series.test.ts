@@ -55,8 +55,19 @@ function wallet(id: string, currency: string, initial: number): FinanceWallet {
   };
 }
 
+const paced = {
+  evenPaceMinor: 5806 as MinorAmount,
+  left: {
+    leftMinor: 156000 as MinorAmount,
+    daysLeft: 29,
+    perDayMinor: 5300 as MinorAmount,
+    billsMinor: 0 as MinorAmount,
+    debtsDue: [],
+  },
+};
+
 describe('spendingMonth', () => {
-  it('sums each day so far, compares with last month by now, and paces a RM1,800 budget', () => {
+  it("sums each day so far, compares with last month by now, and takes the Budget tab's pace", () => {
     const month = spendingMonth(
       [
         txn(new Date(2026, 9, 1, 12), 'expense', 1250),
@@ -68,7 +79,7 @@ describe('spendingMonth', () => {
         txn(new Date(2026, 8, 20, 9), 'expense', 7000),
         txn(new Date(2026, 9, 2, 9), 'expense', 1000, { currency: 'USD' as CurrencyCode }),
       ],
-      180000,
+      paced,
       MYR,
       now,
     );
@@ -83,12 +94,12 @@ describe('spendingMonth', () => {
       inMinor: 420000,
       lastMonthByNowMinor: 9000,
       evenPaceMinor: 5806,
-      safeToSpendMinor: 6005,
+      safeToSpendMinor: 5300,
     });
   });
 
   it('has no even pace without a budget', () => {
-    const month = spendingMonth([], null, MYR, now);
+    const month = spendingMonth([], { evenPaceMinor: null, left: null }, MYR, now);
     expect([month.evenPaceMinor, month.safeToSpendMinor]).toEqual([null, null]);
   });
 });
