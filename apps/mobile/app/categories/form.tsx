@@ -1,334 +1,287 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
-import {
-  Alert,
-  Keyboard,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  TextInput,
-  View,
-} from 'react-native';
-import { Text } from '@/components/ui/text';
-import { router, useLocalSearchParams } from 'expo-router';
 import { useValue } from '@legendapp/state/react';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   categoryIconNames,
   categoryNameMaxLength,
   customCategoryColors,
-  decimalToMinor,
   type CategoryIconName,
   type CustomCategoryColor,
 } from '@repo/types';
+import { router, useLocalSearchParams, type Href } from 'expo-router';
+import { useEffect, useRef, useState } from 'react';
+import {
+  Alert,
+  ScrollView,
+  TextInput,
+  useWindowDimensions,
+  View,
+} from 'react-native';
 
-import { BudgetProgressItem } from '@/components/budgets/budget-progress-item';
-import { CategoryIcon } from '@/components/categories/category-icon';
-import { FormField } from '@/components/ui/form-field';
+import { Button } from '@/components/ui/button';
+import { IconSymbol } from '@/components/ui/icon-symbol';
+import { Page } from '@/components/ui/page';
+import { Press } from '@/components/ui/press';
+import { Segmented } from '@/components/ui/segmented';
+import { Text } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { useAuth } from '@/lib/auth/auth-context';
+import { categoriesForUser$ } from '@/lib/finance/selectors';
+import { openSheet } from '@/lib/sheet/sheet-store';
 import {
-  categoriesForUser$,
-  type BudgetProgress,
-} from '@/lib/finance/selectors';
-import {
+  archiveCategory,
   createCategory,
   updateCategory,
 } from '@/lib/supabase/categories';
-import { Press } from '@/components/ui/press';
 import { tid } from '@/lib/test-ids';
-import { Button } from '@/components/ui/button';
-import { Page } from '@/components/ui/page';
 
-const iconColumns = Array.from(
-  { length: Math.ceil(categoryIconNames.length / 2) },
-  (_, index) => categoryIconNames.slice(index * 2, index * 2 + 2),
-);
-const colorColumns = Array.from(
-  { length: Math.ceil(customCategoryColors.length / 2) },
-  (_, index) => customCategoryColors.slice(index * 2, index * 2 + 2),
-);
-const pickerColumnWidth = 56;
+type Kind = 'expense' | 'income';
+
+const KINDS = [
+  { value: 'expense', label: 'Expense' },
+  { value: 'income', label: 'Income' },
+] as const;
+const GAP = 8;
+
+function isIcon(value: string | null | undefined): value is CategoryIconName {
+  return (categoryIconNames as readonly string[]).includes(value ?? '');
+}
+
+function isColour(value: string | null | undefined): value is CustomCategoryColor {
+  return (customCategoryColors as readonly string[]).includes(value ?? '');
+}
 
 export default function CategoryFormScreen() {
   const params = useLocalSearchParams<{
     id?: string;
-    type?: 'income' | 'expense';
+    type?: Kind;
     returnTo?: string;
   }>();
   const { user } = useAuth();
-  const insets = useSafeAreaInsets();
   const tokens = useThemeTokens();
+  const { width } = useWindowDimensions();
   const categories = useValue(categoriesForUser$(user?.id ?? null));
-  const existing = useMemo(
-    () =>
-      categories.find(
-        (category) =>
-          category.id === params.id && category.userId === user?.id,
-      ) ?? null,
-    [categories, params.id, user?.id],
+  const existing =
+    categories.find(
+      (category) => category.id === params.id && category.userId === user?.id,
+    ) ?? null;
+  const [kind, setKind] = useState<Kind>(
+    existing?.type === 'income' || params.type === 'income' ? 'income' : 'expense',
   );
-  const type =
-    existing?.type === 'income' || params.type === 'income'
-      ? 'income'
-      : 'expense';
   const [name, setName] = useState(existing?.name ?? '');
   const [icon, setIcon] = useState<CategoryIconName>(
-    (existing?.icon as CategoryIconName) ?? 'package-variant',
+    isIcon(existing?.icon) ? existing.icon : 'package-variant',
   );
-  const [color, setColor] = useState<CustomCategoryColor>(
-    (existing?.color as CustomCategoryColor) ??
-      customCategoryColors[0],
+  const [colour, setColour] = useState<CustomCategoryColor>(
+    isColour(existing?.color) ? existing.color : customCategoryColors[8],
   );
   const [saving, setSaving] = useState(false);
-  const nameInputRef = useRef<TextInput>(null);
-  const [previewStats] = useState(() => {
-    const budgetDollars = 200 + Math.floor(Math.random() * 301);
-    const percentage = 35 + Math.floor(Math.random() * 46);
-    const spentDollars = Math.round(
-      (budgetDollars * percentage) / 100,
-    );
-
-    return {
-      budgetAmountMinor: decimalToMinor(budgetDollars),
-      percentage: Math.round((spentDollars / budgetDollars) * 100),
-      remainingMinor: decimalToMinor(budgetDollars - spentDollars),
-      spentMinor: decimalToMinor(spentDollars),
-    };
-  });
-  const hydratedEditFields = useRef(false);
-
-  const blurNameInput = () => nameInputRef.current?.blur();
-
-  const previewBudget = useMemo<BudgetProgress>(
-    () => ({
-      budgetAmountMinor: previewStats.budgetAmountMinor,
-      categoryColor: color,
-      categoryIcon: icon,
-      categoryId: existing?.id ?? 'category-preview',
-      categoryIsActive: true,
-      categoryName: name.trim() || 'Category name',
-      currency: 'USD',
-      percentage: previewStats.percentage,
-      remainingMinor: previewStats.remainingMinor,
-      spentMinor: previewStats.spentMinor,
-      status: 'on_track',
-    }),
-    [color, existing?.id, icon, name, previewStats],
-  );
-
+  const hydrated = useRef(existing !== null);
   useEffect(() => {
-    if (!existing || hydratedEditFields.current) return;
+    if (!existing || hydrated.current) return;
+    hydrated.current = true;
+    setKind(existing.type === 'income' ? 'income' : 'expense');
     setName(existing.name);
-    setIcon(existing.icon as CategoryIconName);
-    setColor(existing.color as CustomCategoryColor);
-    hydratedEditFields.current = true;
+    if (isIcon(existing.icon)) setIcon(existing.icon);
+    if (isColour(existing.color)) setColour(existing.color);
   }, [existing]);
+  const named = name.trim().length > 0;
+  const iconSize = Math.floor((width - 40 - GAP * 6) / 7);
+  const swatch = Math.floor((width - 40 - GAP * 7) / 8);
 
-  useEffect(() => {
-    const subscription = Keyboard.addListener(
-      'keyboardDidHide',
-      () => {
-        nameInputRef.current?.blur();
-      },
-    );
-    return () => subscription.remove();
-  }, []);
+  const leave = (id: string) => {
+    if (params.returnTo)
+      router.dismissTo({
+        pathname: params.returnTo,
+        params: { categoryId: id },
+      } as Href);
+    else router.back();
+  };
 
   const save = async () => {
+    if (!named) return;
     setSaving(true);
     try {
-      const id = existing
-        ? (await updateCategory(existing.id, { name, icon, color }),
-          existing.id)
-        : await createCategory({ name, icon, color, type });
-      if (params.returnTo) {
-        // Return to the already-open form so a category created from a budget
-        // does not add a second budget form above this screen in the stack.
-        router.dismissTo({
-          pathname: params.returnTo as any,
-          params: { categoryId: id },
-        } as never);
-      } else router.back();
+      if (existing) {
+        await updateCategory(existing.id, { name, icon, color: colour });
+        leave(existing.id);
+      } else leave(await createCategory({ name, icon, color: colour, type: kind }));
     } catch (error) {
       Alert.alert(
-        'Could not save category',
-        error instanceof Error ? error.message : 'Please try again.',
+        'Not saved',
+        error instanceof Error ? error.message : 'Try again.',
       );
     } finally {
       setSaving(false);
     }
   };
 
+  const archive = async () => {
+    if (!existing) return;
+    const confirmed = await openSheet({
+      kind: 'confirm',
+      title: `Archive ${existing.name}?`,
+      message: 'It is hidden from new transactions. Rows already filed under it keep it.',
+      confirmLabel: 'Archive',
+      cancelLabel: 'Keep it',
+      destructive: true,
+    });
+    if (!confirmed) return;
+    await archiveCategory(existing.id).catch((error: unknown) =>
+      Alert.alert('Not saved', error instanceof Error ? error.message : 'Try again.'),
+    );
+    router.back();
+  };
+
   return (
     <Page
       screen="activity"
       kind="pushed"
-      title={existing ? 'Edit category' : `New ${type} category`}
+      title={existing ? 'Edit category' : 'New category'}
     >
-      <KeyboardAvoidingView
-        className="flex-1"
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      <ScrollView
+        keyboardShouldPersistTaps="handled"
+        contentContainerClassName="gap-5 px-screen pb-6"
       >
-        <View className="flex-1">
-          <ScrollView
-            className="flex-1"
-            contentContainerClassName="px-5 pb-8"
-            keyboardDismissMode="on-drag"
-            keyboardShouldPersistTaps="handled"
-            onScrollBeginDrag={blurNameInput}
-            showsVerticalScrollIndicator={false}
-          >
-            <Text className="mt-6 text-base font-display-bold text-foreground">
-              Preview
-            </Text>
+        {existing ? null : (
+          <Segmented
+            screen="activity"
+            name="category-kind"
+            options={KINDS}
+            value={kind}
+            onChange={setKind}
+            accessibilityLabel="Category type"
+          />
+        )}
+        <View className="gap-2">
+          <Text variant="caps" className="text-muted">
+            Name
+          </Text>
+          <View className="h-[60px] flex-row items-center gap-3 rounded-tile border-[1.5px] border-foreground bg-card pl-2 pr-4">
             <View
-              className="rounded-card bg-card mt-3 overflow-hidden"
-              style={{ backgroundColor: `${color}33` }}
+              className="h-[42px] w-[42px] items-center justify-center rounded-full"
+              style={{ backgroundColor: colour }}
             >
-              <BudgetProgressItem budget={previewBudget} />
+              <IconSymbol name={icon} size={20} color={tokens.onPastel} />
             </View>
-
-            <View className="rounded-card bg-card mt-6 overflow-hidden">
-              <FormField
-                testID={tid('activity', 'category-name')}
-                autoCapitalize="words"
-                containerClassName="mb-0"
-                hint={`${name.length} / ${categoryNameMaxLength} characters`}
-                label="Category name"
-                maxLength={categoryNameMaxLength}
-                onChangeText={setName}
-                placeholder="e.g. Pet care"
-                ref={nameInputRef}
-                value={name}
-              />
-            </View>
-
-            <Text className="mt-4 text-base font-display-bold text-foreground">
-              Icon
-            </Text>
-            <View className="rounded-card bg-sand mt-3 p-3 overflow-hidden">
-              <ScrollView
-                horizontal
-                decelerationRate="fast"
-                directionalLockEnabled
-                nestedScrollEnabled
-                onScrollBeginDrag={blurNameInput}
-                showsHorizontalScrollIndicator={false}
-                snapToAlignment="start"
-                snapToInterval={pickerColumnWidth}
-              >
-                {iconColumns.map((column, columnIndex) => (
-                  <View
-                    key={`icon-column-${columnIndex}`}
-                    className="mr-2 gap-2"
-                  >
-                    {column.map((item) => {
-                      const selected = item === icon;
-                      return (
-                        <Press
-                          testID={tid('activity', 'icon', item)}
-                          key={item}
-                          accessibilityLabel={`Choose ${item} icon`}
-                          accessibilityState={{ selected }}
-                          className="h-12 w-12 items-center justify-center rounded-2xl"
-                          onPress={() => {
-                            blurNameInput();
-                            setIcon(item);
-                          }}
-                        >
-                          <View
-                            className={`h-12 w-12 items-center justify-center rounded-2xl ${selected ? 'bg-primary-muted' : 'bg-card'}`}
-                          >
-                            <CategoryIcon
-                              color={
-                                selected
-                                  ? tokens.primary
-                                  : tokens.muted
-                              }
-                              icon={item}
-                              size={22}
-                            />
-                          </View>
-                        </Press>
-                      );
-                    })}
-                  </View>
-                ))}
-              </ScrollView>
-            </View>
-
-            <Text className="mt-4 text-base font-display-bold text-foreground">
-              Color
-            </Text>
-            <View className="rounded-card bg-sand mt-3 p-3 overflow-hidden">
-              <ScrollView
-                horizontal
-                decelerationRate="fast"
-                directionalLockEnabled
-                nestedScrollEnabled
-                onScrollBeginDrag={blurNameInput}
-                showsHorizontalScrollIndicator={false}
-                snapToAlignment="start"
-                snapToInterval={pickerColumnWidth}
-              >
-                {colorColumns.map((column, columnIndex) => (
-                  <View
-                    key={`color-column-${columnIndex}`}
-                    className="mr-2 gap-2"
-                  >
-                    {column.map((item) => {
-                      const selected = item === color;
-                      return (
-                        <Press
-                          testID={tid('activity', 'color', item)}
-                          key={item}
-                          accessibilityLabel={`Choose category color ${item}`}
-                          accessibilityState={{ selected }}
-                          className="h-12 w-12 items-center justify-center rounded-2xl"
-                          onPress={() => {
-                            blurNameInput();
-                            setColor(item);
-                          }}
-                        >
-                          <View
-                            className={`h-12 w-12 items-center justify-center rounded-2xl ${selected ? 'border-2 border-foreground' : ''}`}
-                            style={{ backgroundColor: item }}
-                          >
-                            {selected ? (
-                              <CategoryIcon
-                                color={tokens.foreground}
-                                icon="check"
-                                size={20}
-                              />
-                            ) : null}
-                          </View>
-                        </Press>
-                      );
-                    })}
-                  </View>
-                ))}
-              </ScrollView>
-            </View>
-          </ScrollView>
-
-          <View
-            className="border-t border-border-subtle bg-canvas px-5 pt-3"
-            style={{ paddingBottom: Math.max(insets.bottom, 12) }}
-          >
-            <Button
-              testID={tid('activity', 'save-changes')}
-              icon="check"
-              label={existing ? 'Save changes' : 'Create category'}
-              loading={saving}
-              loadingLabel="Saving category…"
-              onPress={() => {
-                blurNameInput();
-                void save();
-              }}
+            <TextInput
+              testID={tid('activity', 'category-form', 'name')}
+              accessibilityLabel="Name"
+              value={name}
+              onChangeText={(text) => setName(text.slice(0, categoryNameMaxLength))}
+              maxLength={categoryNameMaxLength}
+              placeholder="e.g. Pet care"
+              placeholderTextColor={tokens.muted}
+              returnKeyType="done"
+              className="h-full min-w-0 flex-1 font-display-semibold text-[17px] text-foreground"
             />
+            <Text
+              variant="meta"
+              className={name.length >= categoryNameMaxLength ? 'text-state-destructive' : 'text-muted'}
+              style={{ fontVariant: ['tabular-nums'] }}
+            >
+              {`${name.length} / ${categoryNameMaxLength}`}
+            </Text>
+          </View>
+          <Text variant="meta" className="text-muted">
+            {named ? 'Shows like this in lists and charts' : 'Give it a name to save'}
+          </Text>
+        </View>
+
+        <View className="gap-2">
+          <Text variant="caps" className="text-muted">
+            Icon
+          </Text>
+          <View
+            accessibilityLabel="Icon"
+            className="flex-row flex-wrap"
+            style={{ gap: GAP }}
+          >
+            {categoryIconNames.map((glyph) => {
+              const selected = glyph === icon;
+              return (
+                <Press
+                  key={glyph}
+                  testID={tid('activity', 'category-form', 'icon', glyph)}
+                  accessibilityLabel={`Icon ${glyph.replaceAll('-', ' ')}`}
+                  accessibilityState={{ selected }}
+                  pressedClassName={selected ? 'bg-primary-pressed' : 'bg-sand-light'}
+                  className={`items-center justify-center rounded-[14px] ${selected ? 'bg-primary' : 'bg-card'}`}
+                  style={{ width: iconSize, height: iconSize }}
+                  onPress={() => setIcon(glyph)}
+                >
+                  <IconSymbol
+                    name={glyph}
+                    size={22}
+                    color={selected ? tokens.primaryForeground : tokens.foreground}
+                  />
+                </Press>
+              );
+            })}
           </View>
         </View>
-      </KeyboardAvoidingView>
+
+        <View className="gap-2">
+          <Text variant="caps" className="text-muted">
+            Colour
+          </Text>
+          <View
+            accessibilityLabel="Colour"
+            className="flex-row flex-wrap"
+            style={{ gap: GAP }}
+          >
+            {customCategoryColors.map((hex, index) => {
+              const selected = hex === colour;
+              return (
+                <Press
+                  key={hex}
+                  testID={tid('activity', 'category-form', 'colour', index)}
+                  accessibilityLabel={`Colour ${hex}`}
+                  accessibilityState={{ selected }}
+                  pressedScale={0.94}
+                  pressedClassName="bg-transparent"
+                  className={`items-center justify-center rounded-full ${selected ? 'border-2 border-foreground' : ''}`}
+                  style={{ width: swatch, height: swatch }}
+                  onPress={() => setColour(hex)}
+                >
+                  <View
+                    className="items-center justify-center rounded-full"
+                    style={{
+                      width: selected ? swatch - 8 : swatch,
+                      height: selected ? swatch - 8 : swatch,
+                      backgroundColor: hex,
+                    }}
+                  >
+                    {selected ? (
+                      <IconSymbol name="check" size={18} color={tokens.onPastel} />
+                    ) : null}
+                  </View>
+                </Press>
+              );
+            })}
+          </View>
+        </View>
+
+        {existing ? (
+          <Button
+            testID={tid('activity', 'category-form', 'archive')}
+            variant="tertiary"
+            icon="archive-outline"
+            label="Archive category"
+            className="self-start"
+            onPress={() => void archive()}
+          />
+        ) : null}
+      </ScrollView>
+      <View className="border-t border-sand-light px-screen pt-3">
+        <Button
+          testID={tid('activity', 'category-form', 'save')}
+          icon="check"
+          label={existing ? 'Save changes' : 'Create category'}
+          loading={saving}
+          disabled={!named}
+          pinned
+          onPress={() => void save()}
+        />
+      </View>
     </Page>
   );
 }

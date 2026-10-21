@@ -1,0 +1,54 @@
+# A2 categories per V2A-Categories and V2A-CategoryForm: create Pets, archive it, restore it.
+# Run: scripts/device/with-device.sh --lane a2 -- maestro test .maestro/flows/activity/categories.yaml
+appId: com.anonymous.moni.e2e
+name: A2 categories
+tags:
+  - a2
+  - needs-default-seed
+---
+- launchApp
+- extendedWaitUntil:
+    visible:
+      id: home.avatar
+    timeout: 15000
+- tapOn:
+    id: home.avatar
+- scrollUntilVisible:
+    element:
+      id: profile.row.categories
+    direction: DOWN
+- tapOn:
+    id: profile.row.categories
+- assertVisible: Categories
+- assertVisible: 'Presets · since .*'
+- takeScreenshot: a2-categories
+
+- tapOn:
+    id: activity.categories.new
+- assertVisible: New category
+- tapOn:
+    id: activity.category-form.name
+- inputText: Pets
+- hideKeyboard
+- tapOn:
+    id: activity.category-form.icon.heart-pulse
+- tapOn:
+    id: activity.category-form.colour.1
+- takeScreenshot: a2-new-category
+- tapOn:
+    id: activity.category-form.save
+- assertVisible: Pets
+
+- tapOn: Pets
+- assertVisible: Edit category
+- tapOn:
+    id: activity.category-form.archive
+- tapOn:
+    id: sheet.confirm
+- assertVisible: 'Archived · hidden from new transactions'
+- takeScreenshot: a2-archived
+- tapOn:
+    id: 'activity\.categories\.restore\..*'
+    index: 0
+- assertNotVisible: 'Archived · hidden from new transactions'
+- takeScreenshot: a2-restored
