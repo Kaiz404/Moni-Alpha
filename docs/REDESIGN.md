@@ -36,7 +36,7 @@ If a board contradicts these docs, the board is newer only if it was published a
 | Review | `XA-Review`, `XA-Notification` (`XA-Compare` is the record of the decision) | The review card deck (swipe right Approve, left Not mine, down Later), approving from the Android notification | `proposal/[id].tsx` |
 | Budget tab | `V2P-InsightsMonth` (tab root, title "Budget"), `V2P-InsightsCalendar`, `V2P-BudgetDetail`, `V2P-InsightsStates`, `V2P-BudgetEdit`, `V2P-BillDetail`, `V2P-AmountPage`, `V2P-PlanStates` | Month chart and calendar, budgets (rings), bills list, the one category page, editing caps, bills, the amount page for new money | `(tabs)/summary.tsx`, `budget/*` |
 | Debts tab | `V2P-Debts`, `V2P-DebtDetail`, `V2P-DebtNew`, `V2P-DebtsEmpty`, `V2P-DebtSettle` | Debts as a tab: net position, coming up, people, per-person page, record a debt, settle | `debts.tsx`, `debt/*` |
-| Map | `XM-Places`, `XM-Detail`, `XM-Empty` | Where you spend (fixed place card), place detail, empty and location-off | `heatmap.tsx`, `components/summary/summary-pinmap.tsx` |
+| Map | `XM-Places`, `XM-Detail`, `XM-Empty` | Where you spend (fixed place card), place detail, empty and location-off | `heatmap.tsx` |
 | Type | `XB-Type` | Decision record: Funnel Display for everything | font loading |
 
 Board titles on the canvas say which variant is the chosen one. Ignore any board not in this table.
