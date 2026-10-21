@@ -4,9 +4,12 @@
  * auth session storage (`lib/mmkv/auth`) or receipt upload queue (`lib/mmkv/image-uploads`).
  */
 import { observable, syncState, when, type Observable } from '@legendapp/state';
+import { synced } from '@legendapp/state/sync';
 import { configureSyncedSupabase, syncedSupabase } from '@legendapp/state/sync-plugins/supabase';
+import type { UserPreferences } from '@repo/types';
 import { legendMMKV, legendPersistPlugin } from '@/lib/mmkv/legend-store';
 import { supabase } from '@/lib/supabase/client';
+import { getProfilePreferences } from '@/lib/supabase/profile';
 import { randomUUID } from 'expo-crypto';
 import { authReady$ } from '@/lib/store/auth-sync';
 
@@ -52,6 +55,15 @@ export const debtActivities$ = observable(syncTable('debt_activities'));
 export const proposedTransactions$ = observable(syncTable('proposed_transactions'));
 export const recurringOverrides$ = observable(syncTable('recurring_overrides'));
 
+/** The signed-in profile's preferences. Read-only here: profiles are not a synced table. */
+export const profilePreferences$ = observable<UserPreferences | undefined>(
+  synced({
+    get: getProfilePreferences,
+    persist: { name: 'profile_preferences', ...persistOptions },
+    waitFor: waitForAuth,
+  }),
+);
+
 export const ALL_STORE_OBSERVABLES: Observable<any>[] = [
   wallets$,
   transactions$,
@@ -63,6 +75,7 @@ export const ALL_STORE_OBSERVABLES: Observable<any>[] = [
   debtActivities$,
   proposedTransactions$,
   recurringOverrides$,
+  profilePreferences$,
 ];
 
 /**

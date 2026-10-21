@@ -7,6 +7,8 @@ import {
   minorToDecimal,
   type CreateProposedTransaction,
   type ProposedTransaction,
+  type ProposedTransactionSourceType,
+  type TransactionSource,
 } from '@repo/types';
 import { createTransaction, getTransactions } from './transactions';
 import { findDuplicate, type DuplicateMatch, type LedgerEntry } from '@/lib/ai/duplicates';
@@ -44,6 +46,16 @@ type ProposedRow = {
   created_at: string | null;
   updated_at: string | null;
   deleted?: boolean;
+};
+
+/** Chat text proposals come from Moni; voice and live camera approvals pass their own source. */
+const TRANSACTION_SOURCE_BY_PROPOSAL_SOURCE: Record<
+  ProposedTransactionSourceType,
+  TransactionSource
+> = {
+  notification: 'notification',
+  text: 'moni',
+  image: 'camera',
 };
 
 function rowToProposedTransaction(row: ProposedRow): ProposedTransaction {
@@ -189,7 +201,7 @@ export async function approveProposedTransaction(
     locationLatitude: earlyLocation?.latitude ?? null,
     locationLongitude: earlyLocation?.longitude ?? null,
     locationName: earlyLocation?.name ?? null,
-  });
+  }, TRANSACTION_SOURCE_BY_PROPOSAL_SOURCE[proposal.sourceType]);
 
   await deleteProposedTransaction(proposal.id);
 }

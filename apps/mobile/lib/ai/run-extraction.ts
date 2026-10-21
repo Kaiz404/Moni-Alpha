@@ -220,7 +220,7 @@ async function persistProposal(
         locationLongitude: locationSnapshot?.longitude ?? null,
         locationName: locationSnapshot?.name ?? null,
         metadata: { ai_suggested: true, ai_confidence: proposal.aiConfidence ?? undefined },
-      });
+      }, 'notification');
       trace(logger, 'creator', 'auto-added', { transactionId: transaction.id });
       return {
         created: true,

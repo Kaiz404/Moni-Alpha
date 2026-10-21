@@ -2,7 +2,12 @@ import { transactions$, wallets$ } from '@/lib/store';
 import { getRecordValues, patchRow } from '@/lib/store/helpers';
 import { getUserId } from '@/lib/supabase/client';
 import { isTransactionRelevantToWallet } from '@/lib/finance/ledger';
-import type { CreateTransaction, UpdateTransaction } from '@repo/types';
+import type {
+  CreateTransaction,
+  MinorAmount,
+  TransactionSource,
+  UpdateTransaction,
+} from '@repo/types';
 import { decimalToMinor, minorToDecimal, updateTransactionSchema } from '@repo/types';
 import { randomUUID } from 'expo-crypto';
 
@@ -145,7 +150,7 @@ export async function updateTransaction(id: string, data: UpdateTransaction) {
   return getTransactionById(id);
 }
 
-export async function createTransaction(data: CreateTransaction) {
+export async function createTransaction(data: CreateTransaction, source: TransactionSource) {
   const userId = await getUserId();
   if (!userId) throw new Error('User ID required');
 
@@ -176,7 +181,7 @@ export async function createTransaction(data: CreateTransaction) {
     location_longitude: data.locationLongitude ?? null,
     location_name: data.locationName || null,
     receipt_image_url: null,
-    metadata: data.metadata ?? {},
+    metadata: { ...data.metadata, source },
     deleted: false,
   });
 
@@ -192,7 +197,7 @@ export async function createTransfer(data: {
   description?: string | null;
   notes?: string | null;
   transactionDate?: string;
-}) {
+}, source: TransactionSource) {
   if (data.fromWalletId === data.toWalletId) {
     throw new Error('Source and destination wallets must differ');
   }
@@ -226,7 +231,35 @@ export async function createTransfer(data: {
     merchant: null,
     notes: data.notes ?? null,
     transactionDate: data.transactionDate,
-  });
+  }, source);
+}
+
+/**
+ * Moves a wallet's balance to the amount the user says it holds. The difference is real cash
+ * movement but not spending or income, so it stays out of analysis.
+ */
+export async function createBalanceCorrection(
+  walletId: string,
+  currentBalanceMinor: MinorAmount,
+  targetBalanceMinor: MinorAmount,
+) {
+  const differenceMinor = Math.abs(targetBalanceMinor - currentBalanceMinor);
+  if (differenceMinor === 0) return null;
+  return createTransaction(
+    {
+      walletId,
+      amountMinor: differenceMinor as MinorAmount,
+      type: targetBalanceMinor > currentBalanceMinor ? 'income' : 'expense',
+      categoryId: null,
+      merchant: null,
+      description: 'Balance adjustment',
+      notes: 'Created while updating the wallet balance.',
+      analysisExcluded: true,
+      transactionDate: new Date().toISOString(),
+      metadata: { kind: 'balance_correction' },
+    },
+    'manual',
+  );
 }
 
 export async function deleteTransaction(id: string) {

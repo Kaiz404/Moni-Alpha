@@ -345,7 +345,7 @@ export default function NewTransactionScreen() {
           toWalletId: transferToWalletId,
           amountMinor,
           description: details.description.trim() || null,
-        });
+        }, 'manual');
       } else {
         // The form has no time field: keep the real time when the date is left as today,
         // so duplicate and routine matching can line it up with the bank notification.
@@ -400,7 +400,7 @@ export default function NewTransactionScreen() {
         ) {
           return;
         }
-        await createTransaction(parsed.data);
+        await createTransaction(parsed.data, 'manual');
       }
       router.back();
     } catch (error) {

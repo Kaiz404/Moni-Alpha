@@ -47,7 +47,7 @@ import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { useAuth } from '@/lib/auth/auth-context';
 import { formatTimeAgo } from '@/lib/dates/relative-time';
 import { minorToDecimal } from '@/lib/finance/money';
-import { createTransaction } from '@/lib/supabase/transactions';
+import { createBalanceCorrection } from '@/lib/supabase/transactions';
 import {
   deleteWallet,
   getWalletById,
@@ -263,25 +263,11 @@ export default function EditWalletScreen() {
     setSaving(true);
     try {
       await updateWallet(walletId, parsed.data);
-      const differenceMinor = Math.abs(
-        Number(targetBalanceMinor) - Number(currentBalanceMinor),
-      ) as MinorAmount;
-      if (differenceMinor > 0) {
-        await createTransaction({
-          walletId,
-          amountMinor: differenceMinor,
-          type:
-            targetBalanceMinor > currentBalanceMinor
-              ? 'income'
-              : 'expense',
-          categoryId: null,
-          merchant: null,
-          description: 'Balance adjustment',
-          notes: 'Created while updating the wallet balance.',
-          analysisExcluded: true,
-          transactionDate: new Date().toISOString(),
-        });
-      }
+      await createBalanceCorrection(
+        walletId,
+        currentBalanceMinor,
+        targetBalanceMinor,
+      );
       router.back();
     } catch (error) {
       Alert.alert(
