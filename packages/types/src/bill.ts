@@ -13,6 +13,9 @@ export const upcomingBillSchema = z.object({
   /** Local calendar date, YYYY-MM-DD. */
   dueDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   status: upcomingBillStatusSchema,
+  /** The wallet it pays from and its category: the user's pick, else the last payment's. */
+  walletId: z.string().nullable(),
+  categoryId: z.string().nullable(),
 });
 
 export type UpcomingBillStatus = z.infer<typeof upcomingBillStatusSchema>;

@@ -63,7 +63,11 @@ const GATED_MIGRATIONS = {
   review_later_and_auto_add_rules: 'auto_add_rules',
   merchant_aliases_and_wallet_location: 'merchant_aliases',
 } as const;
-export type GatedMigration = keyof typeof GATED_MIGRATIONS;
+/** Migrations that only add columns, each with one column that proves it ran. */
+const GATED_COLUMNS = {
+  recurring_override_bills: 'recurring_overrides.skip_period',
+} as const;
+export type GatedMigration = keyof typeof GATED_MIGRATIONS | keyof typeof GATED_COLUMNS;
 const migrationFound$ = observable<Partial<Record<GatedMigration, boolean>>>({});
 const TABLE_FOUND_KEY_PREFIX = 'table-found:';
 
@@ -77,19 +81,20 @@ export function assertMigrated(migration: GatedMigration): void {
   }
 }
 
-function syncTableOnceMigrated(migration: GatedMigration) {
+function syncTableOnceMigrated(migration: keyof typeof GATED_MIGRATIONS) {
   const ready$ = observable(() => authReady$.get() && migrationFound$[migration].get() === true);
   return syncTable(GATED_MIGRATIONS[migration], { waitFor: ready$, waitForSet: () => ready$ });
 }
 
 async function probeGatedMigrations(): Promise<void> {
   await Promise.all(
-    Object.entries(GATED_MIGRATIONS).map(async ([migration, table]) => {
+    Object.entries({ ...GATED_MIGRATIONS, ...GATED_COLUMNS }).map(async ([migration, probe]) => {
       const found$ = migrationFound$[migration as GatedMigration];
       if (found$.peek()) return;
-      const key = TABLE_FOUND_KEY_PREFIX + table;
+      const key = TABLE_FOUND_KEY_PREFIX + probe;
       if (!legendMMKV.getBoolean(key)) {
-        const { error } = await supabase.from(table).select('id').limit(1);
+        const [table, column = 'id'] = probe.split('.');
+        const { error } = await supabase.from(table).select(column).limit(1);
         if (error) return;
         legendMMKV.set(key, true);
       }

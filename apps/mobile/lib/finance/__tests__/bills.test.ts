@@ -1,5 +1,5 @@
 import type { MinorAmount, RecurringOverride } from '@repo/types';
-import { tx } from '@/lib/ai/facts/__tests__/synthetic-ledger';
+import { BANK, tx } from '@/lib/ai/facts/__tests__/synthetic-ledger';
 import { selectUpcomingBills } from '../bills';
 
 const WED_14_OCT = new Date(2026, 9, 14, 10);
@@ -33,6 +33,8 @@ describe('selectUpcomingBills', () => {
         currency: 'MYR',
         dueDate: '2026-10-15',
         status: 'due',
+        walletId: BANK,
+        categoryId: null,
       },
     ]);
   });
@@ -51,6 +53,8 @@ describe('selectUpcomingBills', () => {
         currency: 'MYR',
         dueDate: '2026-10-20',
         status: 'due',
+        walletId: null,
+        categoryId: null,
       },
     ]);
   });
@@ -66,5 +70,54 @@ describe('selectUpcomingBills', () => {
       ],
     );
     expect(bills).toEqual([]);
+  });
+
+  it('skips a bill for the month its skipPeriod names', () => {
+    const [bill] = selectUpcomingBills(WED_14_OCT, netflix([7, 8, 9]), [
+      override({ seriesKey: 'MYR|expense|netflix', kind: 'subscription', skipPeriod: '2026-10' }),
+    ]);
+    expect(bill).toMatchObject({ seriesKey: 'MYR|expense|netflix', status: 'skipped' });
+  });
+
+  it('dates a bill with no payments on its expected day', () => {
+    const [bill] = selectUpcomingBills(WED_14_OCT, [], [override({ expectedDay: 20 })]);
+    expect(bill.dueDate).toBe('2026-10-20');
+  });
+
+  it('marks a bill the user added paid once a payment under its name lands this month', () => {
+    const [bill] = selectUpcomingBills(
+      WED_14_OCT,
+      [tx(on(10, 14), 'expense', '129.00', 'Unifi')],
+      [override({ name: 'Unifi fibre' })],
+    );
+    expect(bill).toMatchObject({ name: 'Unifi fibre', status: 'paid', walletId: BANK });
+  });
+
+  it('shows a bill due once only in its own month', () => {
+    const once = override({ dueOnce: '2026-11-03', expectedDay: 3 });
+    expect(selectUpcomingBills(WED_14_OCT, [], [once])).toEqual([]);
+    expect(selectUpcomingBills(new Date(2026, 10, 1, 9), [], [once])).toMatchObject([
+      { dueDate: '2026-11-03', status: 'due' },
+    ]);
+  });
+
+  it('uses the name, amount and wallet the user gave a detected bill', () => {
+    const [bill] = selectUpcomingBills(WED_14_OCT, netflix([7, 8, 9]), [
+      override({
+        seriesKey: 'MYR|expense|netflix',
+        kind: 'subscription',
+        name: 'Netflix Premium',
+        expectedAmountMinor: 6290 as MinorAmount,
+        expectedDay: 15,
+        walletId: 'wallet-2',
+      }),
+    ]);
+    expect(bill).toMatchObject({
+      name: 'Netflix Premium',
+      amountMinor: 6290,
+      dueDate: '2026-10-15',
+      walletId: 'wallet-2',
+      status: 'due',
+    });
   });
 });
