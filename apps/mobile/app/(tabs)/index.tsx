@@ -204,7 +204,7 @@ export default function HomeScreen() {
             currency={currency}
             onPress={() =>
               router.push({
-                pathname: '/proposal/[id]',
+                pathname: '/review',
                 params: { id: waiting[0]!.id },
               })
             }

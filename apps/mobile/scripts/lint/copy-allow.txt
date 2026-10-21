@@ -1,4 +1,3 @@
 # v1 copy that breaks docs/redesign/glossary.md and may stay until its screen is rebuilt.
 # Entries are `<file>: <term>: <text>`. The list only shrinks.
 # Regenerate: pnpm --filter moni lint:copy --write
-app/(tabs)/index.tsx: Plan: Plan a monthly cap

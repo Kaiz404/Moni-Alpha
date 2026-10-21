@@ -181,7 +181,7 @@ export default function ChatScreen() {
       return;
     }
     const first = proposals.find((proposal) => isAwaitingReview(proposal, new Date()));
-    if (first) router.push({ pathname: '/proposal/[id]', params: { id: first.id } });
+    if (first) router.push({ pathname: '/review', params: { id: first.id } });
   };
 
   const hidden = unfolded ? 0 : Math.min(folded.current, messages.length);
