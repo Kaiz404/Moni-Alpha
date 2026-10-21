@@ -331,6 +331,8 @@ Never mimic real payment cards unless users need a real card identifier. The vis
 - One progress style: `components/ui/progress-bar.tsx`. Sand track, Ink 2 fill of spent ÷ budget, and the label "RM114 left" beside the category name. At 75% the label turns attention brown. Over budget the track fills in Coral and the label says "RM20 over" in Over text. Nothing draws past the track; there is no pace tick and no split fill. Heights: 8 in rows, 4 in picker tiles, 12 on the category page hero.
 - Money goes through `lib/finance/format-money.ts`: `formatMoney` (`RM45.90`, U+2212 for negatives, `{ whole: true }` for forward-looking money rounded down) and `formatSignedMoney` for transaction amounts. The bar's label comes from `budgetNote` in `lib/finance/budget-note.ts`, the same label the category picker tiles show.
 - `BudgetProgressItem` is a category's tint bubble plus the bar; a category with no budget shows what was spent instead.
+- Rings are the Budget tab root's progress (D2), `components/budget/ring.tsx`: a 44 box, stroke 5, Sand track, Ink 2 sweep from 12 o'clock on the `value` spring, the tint bubble inside, and "RM100 left" under it. Over budget the ring is full Coral and says "RM20 over". A category spent with no budget gets a dashed ring and what was spent. Everywhere else uses the bar.
+- Existing values edit in place (`components/budget/in-place-field.tsx`): a Paper field with a 2 ink border on the system keyboard, then × and ✓; ✓ stays off until the value is valid, and the save toast offers Undo. New money (Add a bill) uses the amount page.
 - Status pills (`components/ui/status-pill.tsx`) come in the 30-tall `standalone` variant with a dot (On track, Near the limit, Over, To review) and the 20-tall `inline` variant that leads a row's meta (Auto, To review). Never add a pill that repeats a number already on screen.
 
 ### 7.6 Lists and rows (v2)
@@ -467,15 +469,15 @@ v2 (D1, boards `V2P-Debts`, `V2P-DebtDetail`, `V2P-DebtNew`, `V2P-DebtSettle`, `
 
 Home must remain useful when there are no pending proposals. Do not reserve a large empty review area.
 
-### Insights
+### Budget (v2)
 
-1. Title and local timeframe selector.
-2. One primary answer card—monthly spending, cash flow, or category composition.
-3. Activity/transaction drill-down.
-4. Budget/category section with selectable progress details.
-5. Calendar and monthly-analysis modules as lower content or dedicated routes.
+1. Title "Budget" with the month chooser (a Sand capsule that opens the `month` sheet), then Month | Calendar.
+2. Month: the "Spent in October" card with the pace chart (`components/charts/pace-chart.tsx`) and what is left after bills and debts due (D1), the ring grid with the **Edit** link (D9) and "No budget yet", the bills still due with **Add a bill**, and the "Where you spend" teaser that opens `/map`.
+3. Calendar: days coloured Under, 1.5×, 2× or Over 2× against even pace (`calendarHeat`), a dot on bill due days, the picked day's rows, and top merchants.
+4. One page per category (`/budget/[categoryId]`): spent of the budget on the 12 bar, the monthly budget in place, its chart, bills, transactions with pending "To review" rows, and top merchants. **Edit budgets** (`/budget/edit`) edits the monthly total and every cap in place and saves them together.
+5. A bill page (`/bill/[seriesKey]`): name and amount in place, Mark paid, Skip this month, due day, wallet and category pickers, Remind and Auto-add switches, history, and Stop tracking.
 
-Vary composition across insight screens; do not duplicate the Home layout with more charts.
+Debts never appear on the Budget tab beyond the D1 label ("after bills and RM40 to Mei").
 
 ### Chat
 
