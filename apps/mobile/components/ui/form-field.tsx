@@ -1,9 +1,5 @@
 import { forwardRef, useState } from 'react';
-import {
-  TextInput,
-  View,
-  type TextInputProps,
-} from 'react-native';
+import { TextInput, View, type TextInputProps } from 'react-native';
 import { Text } from '@/components/ui/text';
 
 import { useThemeTokens } from '@/hooks/use-theme-tokens';

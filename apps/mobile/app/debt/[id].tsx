@@ -1,10 +1,5 @@
 import { useCallback, useMemo, useState } from 'react';
-import {
-  Alert,
-  Pressable,
-  ScrollView,
-  View,
-} from 'react-native';
+import { Alert, Pressable, ScrollView, View } from 'react-native';
 import { Text } from '@/components/ui/text';
 import { useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { BrandHeader } from '@/components/ui/brand-header';

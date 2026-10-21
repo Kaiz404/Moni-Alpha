@@ -1,10 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import {
-  Alert,
-  Pressable,
-  ScrollView,
-  View,
-} from 'react-native';
+import { Alert, Pressable, ScrollView, View } from 'react-native';
 import { Text } from '@/components/ui/text';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useValue } from '@legendapp/state/react';

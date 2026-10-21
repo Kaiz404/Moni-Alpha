@@ -1,10 +1,5 @@
 import { useEffect, useState } from 'react';
-import {
-  Keyboard,
-  Platform,
-  Pressable,
-  View,
-} from 'react-native';
+import { Keyboard, Platform, Pressable, View } from 'react-native';
 import { Text } from '@/components/ui/text';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { BottomTabBarProps } from 'expo-router/js-tabs';
@@ -97,7 +92,9 @@ export function TabBar({
           size: 26,
         })}
         <Text
-          className={isFocused ? 'font-display-bold' : 'font-display-semibold'}
+          className={
+            isFocused ? 'font-display-bold' : 'font-display-semibold'
+          }
           style={{ fontSize: 11, color }}
         >
           {label}

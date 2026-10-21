@@ -58,7 +58,9 @@ export function SyncStatusIndicator() {
           dotByTone[status.tone],
         ].join(' ')}
       />
-      <Text className="text-xs font-display-semibold">{status.text}</Text>
+      <Text className="text-xs font-display-semibold">
+        {status.text}
+      </Text>
     </View>
   );
 }

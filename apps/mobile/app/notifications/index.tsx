@@ -1,10 +1,5 @@
 import { useCallback, useState } from 'react';
-import {
-  Alert,
-  FlatList,
-  RefreshControl,
-  View,
-} from 'react-native';
+import { Alert, FlatList, RefreshControl, View } from 'react-native';
 import { Text } from '@/components/ui/text';
 import { useFocusEffect } from 'expo-router';
 

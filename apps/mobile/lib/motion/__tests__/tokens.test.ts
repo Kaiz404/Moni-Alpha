@@ -6,7 +6,15 @@ import {
   type SpringToken,
 } from '@/lib/motion/tokens';
 
-function overshoot({ stiffness, damping, mass }: { stiffness: number; damping: number; mass: number }) {
+function overshoot({
+  stiffness,
+  damping,
+  mass,
+}: {
+  stiffness: number;
+  damping: number;
+  mass: number;
+}) {
   const ratio = damping / (2 * Math.sqrt(stiffness * mass));
   return ratio >= 1 ? 0 : Math.exp((-Math.PI * ratio) / Math.sqrt(1 - ratio * ratio));
 }
@@ -35,7 +43,8 @@ describe('motion tokens', () => {
 
   it('commits a slow drag past 40% and a short fast fling', () => {
     const width = 390;
-    const commits = (x: number, v: number) => projectedPosition(x, v) / width > FLING_COMMIT_THRESHOLD;
+    const commits = (x: number, v: number) =>
+      projectedPosition(x, v) / width > FLING_COMMIT_THRESHOLD;
 
     expect(projectedPosition(100, 400)).toBe(300);
     expect(commits(170, 0)).toBe(true);

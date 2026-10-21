@@ -235,7 +235,9 @@ export default function TransactionsScreen() {
             asChild
           >
             <TouchableOpacity className="rounded-lg bg-primary px-4 py-2">
-              <Text className="font-display-semibold text-white">+ Add</Text>
+              <Text className="font-display-semibold text-white">
+                + Add
+              </Text>
             </TouchableOpacity>
           </Link>
         </View>

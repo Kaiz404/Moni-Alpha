@@ -57,7 +57,9 @@ export function PrimaryButton({
       {...props}
     >
       {loading ? (
-        <Text className={`text-base font-display-bold ${styles.text}`}>
+        <Text
+          className={`text-base font-display-bold ${styles.text}`}
+        >
           {loadingLabel ?? 'Please wait…'}
         </Text>
       ) : (
@@ -69,7 +71,9 @@ export function PrimaryButton({
               color={styles.icon}
             />
           ) : null}
-          <Text className={`text-base font-display-bold ${styles.text}`}>
+          <Text
+            className={`text-base font-display-bold ${styles.text}`}
+          >
             {label}
           </Text>
         </>

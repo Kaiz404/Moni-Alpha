@@ -1,9 +1,5 @@
 import { useMemo, useState } from 'react';
-import {
-  StyleSheet,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+import { StyleSheet, TouchableOpacity, View } from 'react-native';
 import { Text } from '@/components/ui/text';
 import MapView, { Marker } from 'react-native-maps';
 

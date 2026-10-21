@@ -1,8 +1,4 @@
-import {
-  ScrollView,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+import { ScrollView, TouchableOpacity, View } from 'react-native';
 import { Text } from '@/components/ui/text';
 
 import { IconAction } from '@/components/ui/icon-action';

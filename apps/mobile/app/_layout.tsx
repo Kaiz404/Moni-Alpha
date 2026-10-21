@@ -60,10 +60,22 @@ export default function RootLayout() {
         notification: tokens.danger,
       },
       fonts: {
-        regular: { fontFamily: 'FunnelDisplay_400Regular', fontWeight: '400' },
-        medium: { fontFamily: 'FunnelDisplay_600SemiBold', fontWeight: '600' },
-        bold: { fontFamily: 'FunnelDisplay_700Bold', fontWeight: '700' },
-        heavy: { fontFamily: 'FunnelDisplay_700Bold', fontWeight: '700' },
+        regular: {
+          fontFamily: 'FunnelDisplay_400Regular',
+          fontWeight: '400',
+        },
+        medium: {
+          fontFamily: 'FunnelDisplay_600SemiBold',
+          fontWeight: '600',
+        },
+        bold: {
+          fontFamily: 'FunnelDisplay_700Bold',
+          fontWeight: '700',
+        },
+        heavy: {
+          fontFamily: 'FunnelDisplay_700Bold',
+          fontWeight: '700',
+        },
       },
     };
   }, [theme, tokens]);
