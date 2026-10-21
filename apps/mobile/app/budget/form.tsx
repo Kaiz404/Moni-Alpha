@@ -1,14 +1,13 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Alert, Pressable, ScrollView, View } from 'react-native';
+import { Alert, ScrollView, View } from 'react-native';
 import { Text } from '@/components/ui/text';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useValue } from '@legendapp/state/react';
 
 import { CategoryIcon } from '@/components/categories/category-icon';
-import { CategoryPickerModal } from '@/components/categories/category-picker-modal';
 import { BudgetProgressBar } from '@/components/charts/budget-progress-bar';
 import { AmountInput } from '@/components/finance/amount-input';
-import { CurrencyPickerModal } from '@/components/finance/currency-picker-modal';
+import { PickerField } from '@/components/ui/picker-field';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { useAuth } from '@/lib/auth/auth-context';
 import {
@@ -27,6 +26,8 @@ import {
   upsertCategoryBudget,
 } from '@/lib/supabase/category-budgets';
 import { ensureFinanceTimezone } from '@/lib/supabase/profile';
+import { toCategoryTiles } from '@/lib/sheet/category-tiles';
+import { openSheet } from '@/lib/sheet/sheet-store';
 import { HeaderIconButton } from '@/components/ui/header-icon-button';
 import { tid } from '@/lib/test-ids';
 import { Button } from '@/components/ui/button';
@@ -47,9 +48,6 @@ export default function BudgetFormScreen() {
     params.currency?.toUpperCase() ?? 'USD',
   );
   const [amount, setAmount] = useState('');
-  const [pickerVisible, setPickerVisible] = useState(false);
-  const [currencyPickerVisible, setCurrencyPickerVisible] =
-    useState(false);
   const [saving, setSaving] = useState(false);
   const categories = useValue(expenseCategories$(user?.id ?? null));
   const suggested = useValue(
@@ -99,9 +97,35 @@ export default function BudgetFormScreen() {
     if (!currency && currencies[0]) setCurrency(currencies[0]);
   }, [currencies, currency]);
 
+  const pickCategory = async () => {
+    const picked = await openSheet({
+      kind: 'category',
+      title: 'Choose category',
+      currency,
+      categories: toCategoryTiles(
+        categories,
+        progress,
+        currency,
+        suggested.map((category) => category.id),
+      ),
+      selectedId: categoryId || null,
+      onCreate: () =>
+        router.push({
+          pathname: '/categories/form',
+          params: { type: 'expense', returnTo: '/budget/form' },
+        } as never),
+    });
+    if (picked) setCategoryId(picked);
+  };
+
+  const pickCurrency = async () => {
+    const picked = await openSheet({ kind: 'currency', selected: currency });
+    if (picked) setCurrency(picked);
+  };
+
   const save = async () => {
     if (!selected) {
-      setPickerVisible(true);
+      void pickCategory();
       return;
     }
     try {
@@ -121,32 +145,26 @@ export default function BudgetFormScreen() {
     }
   };
 
-  const handleDelete = useCallback(() => {
+  const handleDelete = useCallback(async () => {
     if (!existing || !selected) return;
-    Alert.alert(
-      'Delete budget?',
-      'This removes the monthly cap for this category. You can set it again any time.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete budget',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await deleteCategoryBudget(selected.id, currency);
-              router.back();
-            } catch (error) {
-              Alert.alert(
-                'Could not delete budget',
-                error instanceof Error
-                  ? error.message
-                  : 'Please try again.',
-              );
-            }
-          },
-        },
-      ],
-    );
+    const confirmed = await openSheet({
+      kind: 'confirm',
+      title: 'Delete this budget?',
+      message: `${selected.name} loses its monthly cap. You can set it again any time.`,
+      confirmLabel: 'Delete',
+      cancelLabel: 'Keep it',
+      destructive: true,
+    });
+    if (!confirmed) return;
+    try {
+      await deleteCategoryBudget(selected.id, currency);
+      router.back();
+    } catch (error) {
+      Alert.alert(
+        'Could not delete budget',
+        error instanceof Error ? error.message : 'Please try again.',
+      );
+    }
   }, [currency, existing, selected]);
 
   return (
@@ -160,7 +178,7 @@ export default function BudgetFormScreen() {
             testID={tid('budget', 'delete-budget')}
             accessibilityLabel="Delete budget"
             icon="trash-can-outline"
-            onPress={handleDelete}
+            onPress={() => void handleDelete()}
           />
         ) : null
       }
@@ -199,50 +217,34 @@ export default function BudgetFormScreen() {
             </View>
           </View>
         ) : null}
-        <Text className="mb-2 mt-7 text-sm font-display-semibold text-foreground">
-          Category
-        </Text>
-        <Pressable
-          testID={tid('budget', 'set-picker-visible')}
-          className="min-h-14 flex-row items-center rounded-2xl bg-surface-2 px-4 py-3 active:opacity-85"
-          onPress={() => setPickerVisible(true)}
-        >
-          {selected ? (
-            <>
+        <PickerField
+          testID={tid('budget', 'category')}
+          className="mt-7"
+          label="Category"
+          value={selected?.name ?? ''}
+          leading={
+            selected ? (
               <View
-                className="mr-3 h-10 w-10 items-center justify-center rounded-full"
-                style={{
-                  backgroundColor: `${selected.color ?? tokens.primary}`,
-                }}
+                className="h-8 w-8 items-center justify-center rounded-full bg-sand"
+                style={selected.color ? { backgroundColor: selected.color } : undefined}
               >
                 <CategoryIcon
-                  color={tokens.foreground}
+                  color={tokens.onPastel}
                   icon={selected.icon}
-                  size={20}
+                  size={18}
                 />
               </View>
-              <Text className="flex-1 text-base font-display-semibold text-foreground">
-                {selected.name}
-              </Text>
-            </>
-          ) : (
-            <Text className="flex-1 text-base text-muted">
-              Choose a category
-            </Text>
-          )}
-          <CategoryIcon
-            color={tokens.muted}
-            icon="pencil-outline"
-            size={22}
-          />
-        </Pressable>
+            ) : undefined
+          }
+          onPress={() => void pickCategory()}
+        />
         <Text className="mb-2 mt-7 text-sm font-display-semibold text-foreground">
           Monthly cap
         </Text>
         <AmountInput
           className="min-h-14 rounded-2xl px-4 text-right text-xl font-display-bold text-foreground"
           currency={currency}
-          onCurrencyPress={() => setCurrencyPickerVisible(true)}
+          onCurrencyPress={() => void pickCurrency()}
           value={amount}
           onChangeValue={setAmount}
           placeholder="0.00"
@@ -258,31 +260,6 @@ export default function BudgetFormScreen() {
           onPress={() => void save()}
         />
       </ScrollView>
-      <CategoryPickerModal
-        visible={pickerVisible}
-        categories={categories}
-        suggested={suggested}
-        selectedId={categoryId}
-        title="Choose budget category"
-        onClose={() => setPickerVisible(false)}
-        onSelect={(category) => {
-          setCategoryId(category.id);
-        }}
-        onCreate={() => {
-          router.push({
-            pathname: '/categories/form',
-            params: { type: 'expense', returnTo: '/budget/form' },
-          } as never);
-        }}
-      />
-      <CurrencyPickerModal
-        visible={currencyPickerVisible}
-        selectedCode={currency}
-        onClose={() => setCurrencyPickerVisible(false)}
-        onSelect={(code) => {
-          setCurrency(code);
-        }}
-      />
     </Page>
   );
 }

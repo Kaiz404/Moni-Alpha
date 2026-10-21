@@ -8,4 +8,3 @@ app/proposal/[id].tsx: Merge: Same purchase · merge
 components/proposal/proposal-form.tsx: Decline: Decline
 components/proposal/proposal-summary-sheet.tsx: Duplicate: Possible duplicate. Open details to merge.
 components/proposal/proposal-summary-sheet.tsx: Merge: Possible duplicate. Open details to merge.
-components/transaction/transaction-details-sheet-content.tsx: Move money: Transfers move money between your wallets without changing your overall net worth.

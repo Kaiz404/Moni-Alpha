@@ -5,7 +5,6 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-  TouchableOpacity,
   View,
 } from 'react-native';
 import { Text } from '@/components/ui/text';
@@ -18,18 +17,16 @@ import {
 } from '@repo/types';
 
 import { AmountInput } from '@/components/finance/amount-input';
-import { CurrencyPickerModal } from '@/components/finance/currency-picker-modal';
 import { FeedbackState } from '@/components/ui/feedback-state';
 import { FormField } from '@/components/ui/form-field';
-import { WalletColorPickerModal } from '@/components/wallets/wallet-color-picker-modal';
-import { WalletTypePickerModal } from '@/components/wallets/wallet-type-picker-modal';
+import { PickerField } from '@/components/ui/picker-field';
+import { WalletColourSwatches } from '@/components/wallets/wallet-colour-swatches';
 import {
   WalletNotificationLinkSection,
   type WalletNotificationLinkValue,
 } from '@/components/wallets/wallet-notification-link-section';
 import {
   DEFAULT_WALLET_CARD_STYLE_ID,
-  getWalletCardStyle,
   WALLET_CARD_STYLES,
 } from '@/constants/wallet-card-styles';
 import { WalletIcon } from '@/components/wallets/wallet-icon';
@@ -39,6 +36,7 @@ import {
   type WalletKind,
 } from '@/constants/wallet-form';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
+import { openSheet } from '@/lib/sheet/sheet-store';
 import { useAuth } from '@/lib/auth/auth-context';
 import { formatTimeAgo } from '@/lib/dates/relative-time';
 import { minorToDecimal } from '@/lib/finance/money';
@@ -72,13 +70,9 @@ export default function EditWalletScreen() {
   const [currentBalance, setCurrentBalance] = useState('');
   const [currentBalanceMinor, setCurrentBalanceMinor] =
     useState<MinorAmount>(0 as MinorAmount);
-  const [currencyPickerVisible, setCurrencyPickerVisible] =
-    useState(false);
   const [cardStyleId, setCardStyleId] = useState(
     DEFAULT_WALLET_CARD_STYLE_ID,
   );
-  const [colorPickerVisible, setColorPickerVisible] = useState(false);
-  const [typePickerVisible, setTypePickerVisible] = useState(false);
   const [saving, setSaving] = useState(false);
   const [readOnlyUpdated, setReadOnlyUpdated] = useState('');
   const [notificationLink, setNotificationLink] =
@@ -89,16 +83,22 @@ export default function EditWalletScreen() {
     });
   const [sharedPackageWalletNames, setSharedPackageWalletNames] =
     useState<string[]>([]);
-  const selectedCardStyle = useMemo(
-    () => getWalletCardStyle(cardStyleId),
-    [cardStyleId],
-  );
   const selectedType = useMemo(
     () =>
       WALLET_TYPE_OPTIONS.find((option) => option.value === type) ??
       WALLET_TYPE_OPTIONS[0],
     [type],
   );
+
+  const pickType = async () => {
+    const picked = await openSheet({ kind: 'walletType', selected: type });
+    if (picked) setType(picked);
+  };
+
+  const pickCurrency = async () => {
+    const picked = await openSheet({ kind: 'currency', selected: currency });
+    if (picked) setCurrency(picked);
+  };
 
   useEffect(() => {
     if (!user || !walletId) return;
@@ -192,33 +192,28 @@ export default function EditWalletScreen() {
     [notificationLink.notificationPackage],
   );
 
-  const handleDelete = useCallback(() => {
+  const handleDelete = useCallback(async () => {
     if (!walletId) return;
-    Alert.alert(
-      'Delete wallet?',
-      'This permanently deletes this wallet and its related transactions. This cannot be undone.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete wallet',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await deleteWallet(walletId);
-              router.replace('/(tabs)' as never);
-            } catch (error) {
-              Alert.alert(
-                'Could not delete wallet',
-                error instanceof Error
-                  ? error.message
-                  : 'Please try again.',
-              );
-            }
-          },
-        },
-      ],
-    );
-  }, [walletId]);
+    const confirmed = await openSheet({
+      kind: 'confirm',
+      title: `Delete ${name.trim() || 'this wallet'}?`,
+      message:
+        "Its transactions go too, and your totals change. This can't be undone.",
+      confirmLabel: 'Delete',
+      cancelLabel: 'Keep it',
+      destructive: true,
+    });
+    if (!confirmed) return;
+    try {
+      await deleteWallet(walletId);
+      router.replace('/(tabs)' as never);
+    } catch (error) {
+      Alert.alert(
+        'Could not delete wallet',
+        error instanceof Error ? error.message : 'Please try again.',
+      );
+    }
+  }, [name, walletId]);
 
   const handleSubmit = useCallback(async () => {
     if (!user || !walletId) return;
@@ -358,7 +353,7 @@ export default function EditWalletScreen() {
           testID={tid('wallet', 'delete-wallet')}
           accessibilityLabel="Delete wallet"
           icon="trash-can-outline"
-          onPress={handleDelete}
+          onPress={() => void handleDelete()}
         />
       }
     >
@@ -382,7 +377,7 @@ export default function EditWalletScreen() {
                 className="px-0 text-right text-3xl"
                 currency={currency}
                 onChangeValue={setCurrentBalance}
-                onCurrencyPress={() => setCurrencyPickerVisible(true)}
+                onCurrencyPress={() => void pickCurrency()}
                 placeholder="0.00"
                 value={currentBalance}
               />
@@ -404,61 +399,31 @@ export default function EditWalletScreen() {
                   onChangeText={setName}
                   autoCapitalize="words"
                 />
-                <View style={{ width: 130 }}>
-                  <Text className="mb-2 text-base font-display-semibold text-foreground">
-                    Account type
-                  </Text>
-                  <TouchableOpacity
-                    accessibilityLabel="Choose account type"
-                    activeOpacity={0.82}
-                    className="min-h-13 flex-row items-center rounded-2xl bg-surface-2 px-3"
-                    onPress={() => setTypePickerVisible(true)}
-                  >
+                <PickerField
+                  testID={tid('wallet', 'type')}
+                  className="mt-7 w-36"
+                  label="Type"
+                  value={selectedType.label}
+                  leading={
                     <WalletIcon
-                      color={tokens.primary}
+                      color={tokens.foreground}
                       icon={selectedType.icon}
-                      size={18}
+                      size={20}
                     />
-                    <Text
-                      className="ml-2 min-w-0 flex-1 text-xs font-display-semibold text-foreground"
-                      numberOfLines={1}
-                    >
-                      {selectedType.label}
-                    </Text>
-                  </TouchableOpacity>
-                </View>
+                  }
+                  onPress={() => void pickType()}
+                />
               </View>
             </View>
 
-            <Text className="mt-8 text-base font-display-bold text-foreground">
-              Color
-            </Text>
-            <View className="rounded-card bg-sand mt-3 overflow-hidden">
-              <TouchableOpacity
-                accessibilityLabel="Choose wallet color"
-                activeOpacity={0.82}
-                className="flex-row items-center rounded-2xl px-4 py-3.5"
-                onPress={() => setColorPickerVisible(true)}
-              >
-                <View
-                  className="mr-3 h-10 w-10 rounded-xl"
-                  style={{
-                    backgroundColor: selectedCardStyle.swatchHex,
-                  }}
-                />
-                <Text className="flex-1 text-sm font-display-semibold text-foreground">
-                  {selectedCardStyle.label}
-                </Text>
-                <Text className="text-sm font-display-semibold text-primary">
-                  Change
-                </Text>
-              </TouchableOpacity>
+            <View className="mt-6">
+              <WalletColourSwatches
+                value={cardStyleId}
+                onChange={setCardStyleId}
+              />
             </View>
 
-            <Text className="mt-8 text-base font-display-bold text-foreground">
-              Notification link
-            </Text>
-            <View className="rounded-card bg-sand overflow-hidden">
+            <View className="mt-6">
               <WalletNotificationLinkSection
                 value={notificationLink}
                 onChange={handleNotificationLinkChange}
@@ -482,27 +447,6 @@ export default function EditWalletScreen() {
           </View>
         </View>
       </KeyboardAvoidingView>
-      <WalletColorPickerModal
-        currency={currency}
-        name={name}
-        onChange={setCardStyleId}
-        onClose={() => setColorPickerVisible(false)}
-        type={type}
-        value={cardStyleId}
-        visible={colorPickerVisible}
-      />
-      <CurrencyPickerModal
-        onClose={() => setCurrencyPickerVisible(false)}
-        onSelect={setCurrency}
-        selectedCode={currency}
-        visible={currencyPickerVisible}
-      />
-      <WalletTypePickerModal
-        onChange={setType}
-        onClose={() => setTypePickerVisible(false)}
-        value={type}
-        visible={typePickerVisible}
-      />
     </Page>
   );
 }

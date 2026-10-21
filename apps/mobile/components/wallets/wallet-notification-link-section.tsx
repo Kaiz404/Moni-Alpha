@@ -1,23 +1,23 @@
-import { useState } from 'react';
-import {
-  Modal,
-  TouchableOpacity,
-  useWindowDimensions,
-  View,
-} from 'react-native';
-import { Text } from '@/components/ui/text';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { View } from 'react-native';
 
+import { FormField } from '@/components/ui/form-field';
+import { PickerField } from '@/components/ui/picker-field';
+import { Press } from '@/components/ui/press';
+import { Text } from '@/components/ui/text';
+import { IconSymbol } from '@/components/ui/icon-symbol';
 import {
-  NotificationSourcePickerContent,
   getNotificationAppIconUri,
   NotificationAppIcon,
   useNotificationSourceData,
+  useNotificationSourcePermission,
   type WalletNotificationLinkValue,
-} from '@/components/wallets/notification-source-picker-content';
+} from '@/components/wallets/notification-source';
 import { labelForNotificationPackage } from '@/constants/notification-apps';
+import { useThemeTokens } from '@/hooks/use-theme-tokens';
+import { openSheet } from '@/lib/sheet/sheet-store';
+import { tid } from '@/lib/test-ids';
 
-export type { WalletNotificationLinkValue } from '@/components/wallets/notification-source-picker-content';
+export type { WalletNotificationLinkValue } from '@/components/wallets/notification-source';
 
 type Props = {
   value: WalletNotificationLinkValue;
@@ -25,84 +25,85 @@ type Props = {
   sharedPackageWalletNames?: string[];
 };
 
-/** Notification source stays compact until its curated picker is needed. */
+/** "Alerts from": the banking app whose notifications become this wallet's captures. */
 export function WalletNotificationLinkSection({
   value,
   onChange,
   sharedPackageWalletNames = [],
 }: Props) {
-  const insets = useSafeAreaInsets();
-  const { height: windowHeight } = useWindowDimensions();
-  const [visible, setVisible] = useState(false);
-  const data = useNotificationSourceData();
+  const tokens = useThemeTokens();
+  const permission = useNotificationSourcePermission();
+  const { installed } = useNotificationSourceData();
   const selectedLabel =
     value.notificationAppLabel ||
     (value.notificationPackage
       ? labelForNotificationPackage(value.notificationPackage)
       : null);
 
-  return (
-    <View>
-      <TouchableOpacity
-        accessibilityLabel="Choose notification source"
-        activeOpacity={0.82}
-        className="flex-row items-center rounded-2xl px-4 py-3.5"
-        onPress={() => setVisible(true)}
+  if (!permission.notificationAccessEnabled) {
+    return (
+      <Press
+        testID={tid('wallet', 'enable-notification-access')}
+        accessibilityLabel="Let Moni read bank alerts"
+        pressedClassName="bg-hairline"
+        className="flex-row items-center gap-3 rounded-field bg-sand px-3.5 py-3"
+        onPress={permission.openNotificationSettings}
       >
-        <View className="mr-3">
-          <NotificationAppIcon
-            iconUri={getNotificationAppIconUri(
-              value.notificationPackage,
-              data.installed,
-            )}
-            size={40}
-          />
-        </View>
+        <IconSymbol name="bell-outline" size={22} color={tokens.foreground} />
         <View className="min-w-0 flex-1">
-          <Text className="text-sm font-display-semibold text-foreground">
-            {selectedLabel ?? 'No app selected'}
+          <Text className="text-base font-display-semibold text-foreground">
+            Let Moni read bank alerts
           </Text>
-          <Text
-            className="mt-0.5 text-xs text-muted"
-            numberOfLines={1}
-          >
-            {selectedLabel
-              ? 'Tap to change the linked app'
-              : 'Choose an installed banking app'}
+          <Text className="text-[13px] leading-[18px] text-muted">
+            Turn on notification access before linking an app.
           </Text>
         </View>
-        <Text className="text-sm font-display-semibold text-primary">
-          Change
-        </Text>
-      </TouchableOpacity>
+      </Press>
+    );
+  }
 
-      <Modal
-        animationType="slide"
-        onRequestClose={() => setVisible(false)}
-        transparent
-        visible={visible}
-      >
-        <View className="flex-1 justify-end bg-black/40">
-          <View
-            className="max-h-[88%] overflow-hidden rounded-[28px] bg-canvas"
-            style={{ height: Math.round(windowHeight * 0.76) }}
-          >
-            <View
-              className="px-5 pb-4 pt-3"
-              style={{ paddingBottom: Math.max(insets.bottom, 16) }}
-            >
-              <View className="mb-4 h-1.5 w-10 self-center rounded-full bg-border" />
-              <NotificationSourcePickerContent
-                {...data}
-                value={value}
-                onChange={onChange}
-                onClose={() => setVisible(false)}
-                sharedPackageWalletNames={sharedPackageWalletNames}
-              />
-            </View>
-          </View>
-        </View>
-      </Modal>
+  const pickApp = async () => {
+    const pick = await openSheet({
+      kind: 'notificationApp',
+      selected: value.notificationPackage,
+    });
+    if (!pick) return;
+    onChange({
+      notificationPackage: pick.app?.packageName ?? null,
+      notificationAppLabel: pick.app?.label ?? null,
+      notificationAccountHint: pick.app ? value.notificationAccountHint : null,
+    });
+  };
+
+  return (
+    <View className="gap-2">
+      <PickerField
+        testID={tid('wallet', 'alerts-from')}
+        label="Alerts from"
+        value={selectedLabel ?? "Don't link"}
+        leading={
+          value.notificationPackage ? (
+            <NotificationAppIcon
+              iconUri={getNotificationAppIconUri(value.notificationPackage, installed)}
+              size={32}
+            />
+          ) : undefined
+        }
+        onPress={() => void pickApp()}
+      />
+      {value.notificationPackage && sharedPackageWalletNames.length > 0 ? (
+        <FormField
+          testID={tid('wallet', 'account-hint')}
+          label="Account hint"
+          hint={`${selectedLabel ?? 'This app'} also sends alerts for ${sharedPackageWalletNames.join(', ')}. A hint such as Savings or ****4521 tells Moni which wallet an alert is for.`}
+          autoCapitalize="words"
+          placeholder="Savings or ****4521"
+          value={value.notificationAccountHint ?? ''}
+          onChangeText={(hint) =>
+            onChange({ ...value, notificationAccountHint: hint.trim() ? hint : null })
+          }
+        />
+      ) : null}
     </View>
   );
 }

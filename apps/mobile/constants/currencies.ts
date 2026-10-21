@@ -69,20 +69,3 @@ export function resolveCurrencyOption(code: string): CurrencyOption {
     }
   );
 }
-
-export function filterCurrencyOptions(query: string, selectedCode?: string): CurrencyOption[] {
-  const normalizedQuery = query.trim().toLowerCase();
-  const selected = selectedCode?.trim().toUpperCase();
-  const base =
-    selected && !CURRENCY_BY_CODE.has(selected)
-      ? [resolveCurrencyOption(selected), ...CURRENCY_OPTIONS]
-      : CURRENCY_OPTIONS;
-
-  if (!normalizedQuery) return base;
-
-  return base.filter(
-    (option) =>
-      option.code.toLowerCase().includes(normalizedQuery) ||
-      option.name.toLowerCase().includes(normalizedQuery),
-  );
-}

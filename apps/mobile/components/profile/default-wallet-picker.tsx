@@ -1,10 +1,5 @@
 import { useCallback, useState } from 'react';
-import {
-  View,
-  Pressable,
-  ActivityIndicator,
-  Alert,
-} from 'react-native';
+import { View, ActivityIndicator, Alert } from 'react-native';
 import { Text } from '@/components/ui/text';
 import { useFocusEffect } from 'expo-router';
 import { getWallets } from '@/lib/supabase/wallets';
@@ -14,6 +9,8 @@ import {
   syncDefaultWalletFromProfile,
 } from '@/lib/wallets/default-wallet';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
+import { PickerField } from '@/components/ui/picker-field';
+import { openSheet } from '@/lib/sheet/sheet-store';
 import { tid } from '@/lib/test-ids';
 
 type WalletRow = {
@@ -109,53 +106,34 @@ export function DefaultWalletPicker() {
     );
   }
 
-  const options: {
-    id: string | null;
-    label: string;
-  }[] = [
-    {
-      id: null,
-      label: 'None',
-    },
-    ...wallets.map((w) => ({
-      id: w.id,
-      label: w.name,
-    })),
-  ];
+  const selected = wallets.find((wallet) => wallet.id === selectedId);
+
+  const pick = async () => {
+    const choice = await openSheet({
+      kind: 'wallet',
+      title: 'Default wallet',
+      wallets: wallets.map((wallet) => ({
+        id: wallet.id,
+        name: wallet.name,
+        currency: wallet.currency,
+        type: wallet.type,
+        icon: null,
+        color: null,
+        cardStyleId: null,
+      })),
+      selectedId,
+      noneLabel: 'None',
+    });
+    if (choice) void select(choice.walletId);
+  };
 
   return (
-    <View className="rounded-card bg-card mb-2 overflow-hidden">
-      {options.map((option, index) => {
-        const selected = selectedId === option.id;
-        return (
-          <Pressable
-            testID={tid('profile', 'select', option.id ?? 'none')}
-            key={option.id ?? 'none'}
-            onPress={() => select(option.id)}
-            disabled={saving}
-            className={`min-h-18 flex-row items-center px-4 py-3.5 active:bg-surface-2 ${
-              index > 0 ? 'border-t border-border' : ''
-            } ${saving ? 'opacity-70' : ''}`}
-          >
-            <View className="flex-1 min-w-0 pr-3">
-              <Text className="text-[17px] font-display-semibold text-foreground">
-                {option.label}
-              </Text>
-            </View>
-            <View
-              className={`h-5 w-5 items-center justify-center rounded-full border-2 ${
-                selected
-                  ? 'border-primary bg-primary'
-                  : 'border-border bg-card'
-              }`}
-            >
-              {selected ? (
-                <View className="h-2 w-2 rounded-full bg-primary-foreground" />
-              ) : null}
-            </View>
-          </Pressable>
-        );
-      })}
-    </View>
+    <PickerField
+      testID={tid('profile', 'default-wallet')}
+      className="mb-2"
+      label="Default wallet"
+      value={selected?.name ?? 'None'}
+      onPress={() => void pick()}
+    />
   );
 }

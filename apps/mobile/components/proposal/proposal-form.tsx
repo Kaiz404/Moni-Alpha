@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useValue } from '@legendapp/state/react';
 import {
   ActivityIndicator,
   Alert,
-  Pressable,
   TextInput,
   TouchableOpacity,
   View,
@@ -19,8 +19,14 @@ import { FieldRow } from '@/components/proposal/field-row';
 import { ProposalLocationSection } from '@/components/proposal/proposal-location-section';
 import { CategoryIcon } from '@/components/categories/category-icon';
 import { chipClass, chipTextClass } from '@/components/ui/chip';
+import { PickerField } from '@/components/ui/picker-field';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
+import { useAuth } from '@/lib/auth/auth-context';
 import { parseAmountInput } from '@/lib/finance/money';
+import { budgetProgress$ } from '@/lib/finance/selectors';
+import { toCategoryTiles } from '@/lib/sheet/category-tiles';
+import { openSheet } from '@/lib/sheet/sheet-store';
+import { ensureFinanceTimezone } from '@/lib/supabase/profile';
 import {
   isoToLocalDateInput,
   parseLocalDateInput,
@@ -43,6 +49,7 @@ export type CategoryOption = {
   id: string;
   name: string;
   icon: string | null;
+  color: string | null;
   type: string | null;
 };
 
@@ -84,6 +91,9 @@ export function ProposalForm({
   onReject: () => void;
 }) {
   const tokens = useThemeTokens();
+  const { user } = useAuth();
+  const [timezone, setTimezone] = useState('UTC');
+  const progress = useValue(budgetProgress$(user?.id ?? null, timezone));
   const [txType, setTxType] = useState<TxType>(
     normalizeTxType(proposal.type),
   );
@@ -109,10 +119,6 @@ export function ProposalForm({
   const [selectedCategoryId, setSelectedCategoryId] = useState<
     string | null
   >(proposal.categoryId);
-  const [showWalletPicker, setShowWalletPicker] = useState(false);
-  const [showTransferToPicker, setShowTransferToPicker] =
-    useState(false);
-  const [showCategoryPicker, setShowCategoryPicker] = useState(false);
   const [focusedField, setFocusedField] = useState<
     'merchant' | 'description' | 'date' | null
   >(null);
@@ -138,10 +144,13 @@ export function ProposalForm({
     );
     setSelectedTransferToWalletId(proposal.transferToWalletId);
     setSelectedCategoryId(proposal.categoryId);
-    setShowWalletPicker(false);
-    setShowTransferToPicker(false);
-    setShowCategoryPicker(false);
   }, [proposal, wallets]);
+
+  useEffect(() => {
+    void ensureFinanceTimezone()
+      .then(setTimezone)
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     if (!isTransfer) return;
@@ -193,6 +202,38 @@ export function ProposalForm({
         ? 'From Moni chat'
         : 'Notification capture';
 
+  const pickWallet = async (role: 'source' | 'destination') => {
+    const destination = role === 'destination';
+    const pick = await openSheet({
+      kind: 'wallet',
+      title: destination ? 'Move to' : isTransfer ? 'From wallet' : 'Paid from',
+      wallets: (destination ? destinationWallets : wallets).map((wallet) => ({
+        ...wallet,
+        icon: null,
+        color: null,
+        cardStyleId: null,
+      })),
+      selectedId: destination ? selectedTransferToWalletId : selectedWalletId,
+      emptyMessage: destination
+        ? 'Add another wallet to complete this transfer.'
+        : undefined,
+    });
+    if (!pick?.walletId) return;
+    if (destination) setSelectedTransferToWalletId(pick.walletId);
+    else setSelectedWalletId(pick.walletId);
+  };
+
+  const pickCategory = async () => {
+    const picked = await openSheet({
+      kind: 'category',
+      title: 'Choose category',
+      currency: displayCurrency,
+      categories: toCategoryTiles(categoryOptions, progress, displayCurrency),
+      selectedId: selectedCategoryId,
+    });
+    if (picked) setSelectedCategoryId(picked);
+  };
+
   const canApprove =
     !!selectedWalletId &&
     (!isTransfer || !!selectedTransferToWalletId);
@@ -213,19 +254,11 @@ export function ProposalForm({
       return;
     }
     if (!selectedWalletId) {
-      setShowWalletPicker(true);
-      Alert.alert(
-        'Select wallet',
-        isTransfer ? 'Choose the source wallet.' : 'Choose a wallet.',
-      );
+      void pickWallet('source');
       return;
     }
     if (isTransfer && !selectedTransferToWalletId) {
-      setShowTransferToPicker(true);
-      Alert.alert(
-        'Select wallet',
-        'Choose the destination wallet for this transfer.',
-      );
+      void pickWallet('destination');
       return;
     }
     onApprove({
@@ -311,185 +344,38 @@ export function ProposalForm({
         </View>
       </View>
 
-      <FieldRow label={isTransfer ? 'From wallet' : 'Wallet'}>
-        <TouchableOpacity
-          className="flex-1 flex-row items-center justify-end rounded-2xl bg-surface-2 px-3 py-3"
-          onPress={() => {
-            setShowTransferToPicker(false);
-            setShowWalletPicker(!showWalletPicker);
-          }}
-          activeOpacity={0.7}
-        >
-          <Text
-            className={`text-sm ${selectedWallet ? 'text-foreground' : 'text-muted'}`}
-          >
-            {selectedWallet?.name ?? 'Select wallet...'}
-          </Text>
-          <Text className="ml-2 text-xs text-muted">▼</Text>
-        </TouchableOpacity>
-      </FieldRow>
-
-      {showWalletPicker ? (
-        <View className="bg-card mb-4 overflow-hidden rounded-[22px]">
-          {wallets.map((w) => (
-            <Pressable
-              testID={tid('review', 'set-selected-wallet', w.id)}
-              key={w.id}
-              className={`border-b border-border px-4 py-3 ${w.id === selectedWalletId ? 'bg-primary-muted' : ''}`}
-              onPress={() => {
-                setSelectedWalletId(w.id);
-                setShowWalletPicker(false);
-              }}
-            >
-              <Text className="text-sm font-display-semibold text-foreground">
-                {w.name}
-              </Text>
-              <Text className="text-xs capitalize text-muted">
-                {w.type} · {w.currency}
-              </Text>
-            </Pressable>
-          ))}
-        </View>
-      ) : null}
-
-      {isTransfer ? (
-        <>
-          <FieldRow label="To wallet">
-            <TouchableOpacity
-              className="flex-1 flex-row items-center justify-end rounded-2xl bg-surface-2 px-3 py-3"
-              onPress={() => {
-                setShowWalletPicker(false);
-                setShowTransferToPicker(!showTransferToPicker);
-              }}
-              activeOpacity={0.7}
-            >
-              <Text
-                className={`text-sm ${selectedTransferToWallet ? 'text-foreground' : 'text-muted'}`}
-              >
-                {selectedTransferToWallet?.name ??
-                  'Select destination...'}
-              </Text>
-              <Text className="ml-2 text-xs text-muted">▼</Text>
-            </TouchableOpacity>
-          </FieldRow>
-
-          {showTransferToPicker ? (
-            <View className="bg-card mb-4 overflow-hidden rounded-[22px]">
-              {destinationWallets.length === 0 ? (
-                <Text className="px-4 py-3 text-sm text-muted">
-                  Add another wallet to complete this transfer.
-                </Text>
-              ) : (
-                destinationWallets.map((w) => (
-                  <Pressable
-                    testID={tid(
-                      'review',
-                      'set-selected-transfer',
-                      w.id,
-                    )}
-                    key={w.id}
-                    className={`border-b border-border px-4 py-3 ${
-                      w.id === selectedTransferToWalletId
-                        ? 'bg-primary-muted'
-                        : ''
-                    }`}
-                    onPress={() => {
-                      setSelectedTransferToWalletId(w.id);
-                      setShowTransferToPicker(false);
-                    }}
-                  >
-                    <Text className="text-sm font-display-semibold text-foreground">
-                      {w.name}
-                    </Text>
-                    <Text className="text-xs capitalize text-muted">
-                      {w.type} · {w.currency}
-                    </Text>
-                  </Pressable>
-                ))
-              )}
-            </View>
-          ) : null}
-        </>
-      ) : null}
-
-      {!isTransfer ? (
-        <>
-          <FieldRow label="Category">
-            <TouchableOpacity
-              className="flex-1 flex-row items-center justify-end rounded-2xl bg-surface-2 px-3 py-3"
-              onPress={() => {
-                setShowWalletPicker(false);
-                setShowTransferToPicker(false);
-                setShowCategoryPicker(!showCategoryPicker);
-              }}
-              activeOpacity={0.7}
-            >
-              <View className="flex-row items-center">
-                {selectedCategory ? (
-                  <View className="mr-2">
-                    <CategoryIcon
-                      color={tokens.primary}
-                      icon={selectedCategory.icon}
-                      size={16}
-                    />
-                  </View>
-                ) : null}
-                <Text
-                  className={`text-sm ${selectedCategory ? 'text-foreground' : 'text-muted'}`}
-                >
-                  {selectedCategory?.name ??
-                    proposal.categoryHint ??
-                    'Select category...'}
-                </Text>
-              </View>
-              <Text className="ml-2 text-xs text-muted">▼</Text>
-            </TouchableOpacity>
-          </FieldRow>
-
-          {showCategoryPicker ? (
-            <View className="bg-card mb-4 overflow-hidden rounded-[22px]">
-              {categoryOptions.length === 0 ? (
-                <Text className="px-4 py-3 text-sm text-muted">
-                  No matching categories are available yet.
-                </Text>
-              ) : (
-                categoryOptions.map((category) => (
-                  <Pressable
-                    testID={tid(
-                      'review',
-                      'set-selected-category',
-                      category.id,
-                    )}
-                    key={category.id}
-                    className={`border-b border-border px-4 py-3 ${
-                      category.id === selectedCategoryId
-                        ? 'bg-primary-muted'
-                        : ''
-                    }`}
-                    onPress={() => {
-                      setSelectedCategoryId(category.id);
-                      setShowCategoryPicker(false);
-                    }}
-                  >
-                    <View className="flex-row items-center">
-                      <View className="mr-2">
-                        <CategoryIcon
-                          color={tokens.primary}
-                          icon={category.icon}
-                          size={17}
-                        />
-                      </View>
-                      <Text className="text-sm font-display-semibold text-foreground">
-                        {category.name}
-                      </Text>
-                    </View>
-                  </Pressable>
-                ))
-              )}
-            </View>
-          ) : null}
-        </>
-      ) : null}
+      <View className="mb-4 gap-2">
+        <PickerField
+          testID={tid('review', 'wallet')}
+          label={isTransfer ? 'From wallet' : 'Paid from'}
+          value={selectedWallet?.name ?? ''}
+          onPress={() => void pickWallet('source')}
+        />
+        {isTransfer ? (
+          <PickerField
+            testID={tid('review', 'destination')}
+            label="Move to"
+            value={selectedTransferToWallet?.name ?? ''}
+            onPress={() => void pickWallet('destination')}
+          />
+        ) : (
+          <PickerField
+            testID={tid('review', 'category')}
+            label="Category"
+            value={selectedCategory?.name ?? proposal.categoryHint ?? ''}
+            leading={
+              selectedCategory ? (
+                <CategoryIcon
+                  color={tokens.foreground}
+                  icon={selectedCategory.icon}
+                  size={20}
+                />
+              ) : undefined
+            }
+            onPress={() => void pickCategory()}
+          />
+        )}
+      </View>
 
       {!isTransfer ? (
         <FieldRow label="Merchant">

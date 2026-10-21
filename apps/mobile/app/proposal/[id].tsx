@@ -87,6 +87,7 @@ export default function ProposalDetailScreen() {
           id: category.id,
           name: category.name ?? 'Category',
           icon: category.icon,
+          color: category.color ?? null,
           type: category.type,
         })),
       );

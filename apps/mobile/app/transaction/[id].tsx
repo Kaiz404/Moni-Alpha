@@ -10,11 +10,15 @@ import {
   StyleSheet,
 } from 'react-native';
 import { Text } from '@/components/ui/text';
-import type { ColorValue } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useValue } from '@legendapp/state/react';
 import { useAuth } from '@/lib/auth/auth-context';
+import { budgetProgress$ } from '@/lib/finance/selectors';
+import { toCategoryTiles } from '@/lib/sheet/category-tiles';
+import { openSheet } from '@/lib/sheet/sheet-store';
+import { ensureFinanceTimezone } from '@/lib/supabase/profile';
 import {
   getTransactionById,
   updateTransaction,
@@ -26,7 +30,7 @@ import { AmountInput } from '@/components/finance/amount-input';
 import { chipClass, chipTextClass } from '@/components/ui/chip';
 import { FeedbackState } from '@/components/ui/feedback-state';
 import { FormField } from '@/components/ui/form-field';
-import { WalletIcon } from '@/components/wallets/wallet-icon';
+import { PickerField } from '@/components/ui/picker-field';
 import {
   minorToDecimal,
   parseAmountInput,
@@ -75,6 +79,14 @@ export default function EditTransactionScreen() {
   } | null>(null);
   const [mapExpanded, setMapExpanded] = useState(true);
   const [isTransfer, setIsTransfer] = useState(false);
+  const [timezone, setTimezone] = useState('UTC');
+  const progress = useValue(budgetProgress$(user?.id ?? null, timezone));
+
+  useEffect(() => {
+    void ensureFinanceTimezone()
+      .then(setTimezone)
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     if (!user || !txId) return;
@@ -175,6 +187,44 @@ export default function EditTransactionScreen() {
     () => wallets.filter((w) => w.id !== walletId),
     [wallets, walletId],
   );
+
+  const walletOptions = (list: any[]) =>
+    list.map((wallet) => ({
+      id: wallet.id,
+      name: wallet.name,
+      currency: wallet.currency ?? 'USD',
+      type: wallet.type ?? null,
+      icon: wallet.icon ?? null,
+      color: wallet.color ?? null,
+      cardStyleId: wallet.cardStyleId ?? null,
+    }));
+
+  const pickWallet = async (role: 'source' | 'destination') => {
+    const destination = role === 'destination';
+    const pick = await openSheet({
+      kind: 'wallet',
+      title: destination ? 'Move to' : isTransfer ? 'From wallet' : 'Paid from',
+      wallets: walletOptions(destination ? destinationWallets : wallets),
+      selectedId: (destination ? transferToWalletId : walletId) || null,
+    });
+    if (!pick?.walletId) return;
+    if (destination) setTransferToWalletId(pick.walletId);
+    else setWalletId(pick.walletId);
+  };
+
+  const pickCategory = async () => {
+    const currency = (
+      wallets.find((wallet) => wallet.id === walletId)?.currency ?? 'USD'
+    ).toUpperCase();
+    const picked = await openSheet({
+      kind: 'category',
+      title: 'Choose category',
+      currency,
+      categories: toCategoryTiles(categories, progress, currency),
+      selectedId: categoryId || null,
+    });
+    if (picked) setCategoryId(picked);
+  };
 
   const handleSubmit = useCallback(async () => {
     if (!user || !txId) return;
@@ -363,81 +413,24 @@ export default function EditTransactionScreen() {
               </View>
             ) : null}
 
-            <Text className="mb-1.5 text-xs font-display-semibold uppercase tracking-wide text-muted">
-              {isTransfer ? 'From wallet' : 'Wallet'}
-            </Text>
-            <View className="mb-4 flex-row flex-wrap gap-1.5">
-              {wallets.map((w) => {
-                const selected = walletId === w.id;
-                const iconColor: ColorValue = selected
-                  ? tokens.primary
-                  : tokens.foreground;
-                return (
-                  <TouchableOpacity
-                    key={w.id}
-                    className={chipClass(walletId === w.id)}
-                    onPress={() => setWalletId(w.id)}
-                    activeOpacity={0.85}
-                  >
-                    <View className="flex-row items-center gap-1.5">
-                      <WalletIcon
-                        color={iconColor}
-                        icon={w.icon}
-                        size={16}
-                        type={w.type}
-                      />
-                      <Text
-                        className={`text-sm ${chipTextClass(walletId === w.id)}`}
-                        numberOfLines={1}
-                      >
-                        {w.name}
-                      </Text>
-                    </View>
-                  </TouchableOpacity>
-                );
-              })}
+            <View className="mb-4 gap-2">
+              <PickerField
+                testID={tid('txn', 'wallet')}
+                label={isTransfer ? 'From wallet' : 'Paid from'}
+                value={wallets.find((w) => w.id === walletId)?.name ?? ''}
+                onPress={() => void pickWallet('source')}
+              />
+              {isTransfer ? (
+                <PickerField
+                  testID={tid('txn', 'destination')}
+                  label="Move to"
+                  value={
+                    wallets.find((w) => w.id === transferToWalletId)?.name ?? ''
+                  }
+                  onPress={() => void pickWallet('destination')}
+                />
+              ) : null}
             </View>
-
-            {isTransfer ? (
-              <>
-                <Text className="mb-1.5 text-xs font-display-semibold uppercase tracking-wide text-muted">
-                  To wallet
-                </Text>
-                <View className="mb-4 flex-row flex-wrap gap-1.5">
-                  {destinationWallets.map((w) => {
-                    const selected = transferToWalletId === w.id;
-                    const iconColor: ColorValue = selected
-                      ? tokens.primary
-                      : tokens.foreground;
-                    return (
-                      <TouchableOpacity
-                        key={w.id}
-                        className={chipClass(
-                          transferToWalletId === w.id,
-                        )}
-                        onPress={() => setTransferToWalletId(w.id)}
-                        activeOpacity={0.85}
-                      >
-                        <View className="flex-row items-center gap-1.5">
-                          <WalletIcon
-                            color={iconColor}
-                            icon={w.icon}
-                            size={16}
-                            type={w.type}
-                          />
-                          <Text
-                            className={`text-sm ${chipTextClass(transferToWalletId === w.id)}`}
-                            numberOfLines={1}
-                          >
-                            {w.name}
-                          </Text>
-                        </View>
-                      </TouchableOpacity>
-                    );
-                  })}
-                </View>
-              </>
-            ) : null}
 
             {isTransfer ? (
               <View className="mb-4 flex-row gap-3">
@@ -514,26 +507,13 @@ export default function EditTransactionScreen() {
 
             {!isTransfer ? (
               <>
-                <Text className="mb-1.5 text-xs font-display-semibold uppercase tracking-wide text-muted">
-                  Category
-                </Text>
-                <View className="mb-4 flex-row flex-wrap gap-1.5">
-                  {categories.map((c) => (
-                    <TouchableOpacity
-                      key={c.id}
-                      className={chipClass(categoryId === c.id)}
-                      onPress={() => setCategoryId(c.id)}
-                      activeOpacity={0.85}
-                    >
-                      <Text
-                        className={`text-xs ${chipTextClass(categoryId === c.id)}`}
-                        numberOfLines={1}
-                      >
-                        {c.icon} {c.name}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
+                <PickerField
+                  testID={tid('txn', 'category')}
+                  className="mb-4"
+                  label="Category"
+                  value={categories.find((c) => c.id === categoryId)?.name ?? ''}
+                  onPress={() => void pickCategory()}
+                />
 
                 <FormField
                   testID={tid('txn', 'merchant')}
