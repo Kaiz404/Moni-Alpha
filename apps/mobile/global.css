@@ -1,15 +1,7 @@
 @import 'tailwindcss';
 @import 'uniwind';
 
-/*
- * Moni visual language, Redesign v2 "Cream & Capsule" (Uniwind / Tailwind v4).
- *
- * Semantic utilities are the implementation contract: use `bg-canvas`,
- * `bg-card`, `text-foreground`, `text-muted`, and the v2 roles (`bg-sand`,
- * `text-ink-2`, `bg-mint`, ...) instead of raw colours in screens. Values come
- * from docs/redesign/tokens.md (light) and the V2F-Dark board (dark).
- * constants/theme-tokens.generated.ts is generated from this file.
- */
+/* Light values from docs/redesign/tokens.md, dark from the V2F-Dark board. */
 
 @theme {
   /* Funnel Display, one static file per weight (Android picks fonts by family). */
@@ -17,7 +9,6 @@
   --font-display-semibold: FunnelDisplay_600SemiBold;
   --font-display-bold: FunnelDisplay_700Bold;
 
-  /* Capsules use rounded-full. */
   --radius-card: 26px;
   --radius-tile: 22px;
   --radius-field: 16px;
@@ -33,7 +24,6 @@
 @layer theme {
   :root {
     @variant light {
-      /* v1 names, mapped to their v2 roles. */
       --color-background: #f6f2e9;
       --color-background-muted: #ece5d6;
       --color-canvas: #f6f2e9;
@@ -49,7 +39,6 @@
       --color-border-subtle: #efe8da;
       --color-border-strong: #a9a397;
 
-      /* Primary is the ink role: primary buttons, the Moni button. */
       --color-primary: #17181a;
       --color-primary-foreground: #fffdf8;
       --color-primary-muted: #d3eed9;
@@ -60,7 +49,6 @@
       --color-accent-coral: #f1a399;
       --color-accent-aqua: #9fdcd3;
 
-      /* Expenses are ink; only money in is coloured. */
       --color-success: #236b47;
       --color-danger: #b23e35;
       --color-warning: #6b5410;
@@ -79,7 +67,6 @@
       --color-chart-5: #f1a399;
       --color-chart-6: #f5be98;
 
-      /* v2 roles with no v1 name. */
       --color-sand: #ece5d6;
       --color-sand-light: #efe8da;
       --color-hairline: #ddd5c5;
@@ -101,7 +88,6 @@
     }
 
     @variant dark {
-      /* Warm near-black grounds; pastels deepen a step and keep ink text. */
       --color-background: #161512;
       --color-background-muted: #2c2924;
       --color-canvas: #161512;
@@ -117,7 +103,6 @@
       --color-border-subtle: #26241f;
       --color-border-strong: #9d968a;
 
-      /* The ink role flips to cream. */
       --color-primary: #ede6d8;
       --color-primary-foreground: #17181a;
       --color-primary-muted: #1e3828;

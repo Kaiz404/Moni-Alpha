@@ -1,11 +1,7 @@
 import * as Haptics from 'expo-haptics';
 import { Platform } from 'react-native';
 
-/**
- * One function per moment in the tokens.md haptics table. Fire on the same
- * frame as the visual, at most once per user action, and never as the only
- * feedback. From a worklet, call through scheduleOnRN.
- */
+// From a worklet, call these through scheduleOnRN.
 function fire(android: Haptics.AndroidHaptics, ios?: () => Promise<void>): void {
   if (Platform.OS === 'android') void Haptics.performAndroidHapticsAsync(android);
   else if (ios) void ios();
@@ -22,7 +18,7 @@ export const approve = () =>
 
 export const notMine = () => fire(Haptics.AndroidHaptics.Reject, lightImpact);
 
-/** A swipe crosses the 40% commit threshold. */
+/** A swipe crosses the commit threshold. */
 export const thresholdOn = () => fire(Haptics.AndroidHaptics.Toggle_On, lightImpact);
 
 /** A swipe falls back under the commit threshold. */
@@ -35,7 +31,6 @@ export const toggleOn = () => fire(Haptics.AndroidHaptics.Toggle_On, Haptics.sel
 
 export const toggleOff = () => fire(Haptics.AndroidHaptics.Toggle_Off, Haptics.selectionAsync);
 
-/** A row hold commits at 500 ms. */
 export const holdCommit = () =>
   fire(Haptics.AndroidHaptics.Confirm, () =>
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium),

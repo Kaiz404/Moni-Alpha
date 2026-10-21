@@ -1,10 +1,8 @@
 #!/usr/bin/env node
 /**
- * Moves app/ and components/ onto the Funnel Display Text:
- * - imports Text from '@/components/ui/text' instead of 'react-native'
- * - rewrites Tailwind weight classes to the family that carries that weight,
- *   because Android picks a custom font file by family name, not fontWeight.
- * Safe to rerun. Run: node scripts/codemods/text-to-v2.mjs [--check]
+ * Weight classes become font families because Android picks a custom font
+ * file by family name, not fontWeight.
+ * Run: node scripts/codemods/text-to-v2.mjs [--check]
  */
 import { readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { dirname, join, relative, resolve } from 'node:path';

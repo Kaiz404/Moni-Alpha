@@ -1,11 +1,6 @@
 import type { WithSpringConfig } from 'react-native-reanimated';
 
-/**
- * The v2 motion tokens (docs/redesign/tokens.md, V2F-Motion): five springs
- * for `withSpring`, plus `drag`, which is no spring. Containers may bounce;
- * anything that encodes money uses `value`. Reanimated already defaults
- * `reduceMotion` to `ReduceMotion.System`.
- */
+// No reduceMotion field: Reanimated already defaults it to ReduceMotion.System.
 export const springs = {
   /** Press squish, colour, digit roll. */
   press: { stiffness: 1600, damping: 80, mass: 1 },
@@ -30,7 +25,7 @@ export const drag = { ratio: 1 } as const;
 /** A fling commits when its projected position passes this share of the travel. */
 export const FLING_COMMIT_THRESHOLD = 0.4;
 
-/** Where a released element would come to rest: x + 0.5·v (v in px/s). */
+/** v in px/s. */
 export function projectedPosition(position: number, velocity: number): number {
   'worklet';
   return position + 0.5 * velocity;

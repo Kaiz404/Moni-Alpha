@@ -8,7 +8,6 @@ import {
   type TextStyle,
 } from 'react-native';
 
-/** Font files keyed by family name; the keys match `--font-display*` in global.css. */
 export const textFonts = {
   FunnelDisplay_400Regular,
   FunnelDisplay_600SemiBold,
@@ -78,7 +77,7 @@ export type TextProps = RNTextProps & { variant?: TextVariant };
 
 const familyClass = /(^|\s)font-display(-semibold|-bold)?(\s|$)/;
 
-// A nested Text inherits its parent's family unless it names its own.
+// React Native nested Text inherits its parent's style, so a default family here would override a bold parent.
 const InsideText = createContext(false);
 
 /**
