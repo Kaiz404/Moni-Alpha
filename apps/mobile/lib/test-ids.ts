@@ -12,6 +12,7 @@ export type Screen =
   | 'profile'
   | 'wallet'
   | 'sheet'
+  | 'merchants' | 'sources' | 'capture-log'
   | 'map';
 
 export type TestId = `${Screen}.${string}`;

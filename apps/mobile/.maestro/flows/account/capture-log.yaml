@@ -1,0 +1,69 @@
+# K3 Capture log: day groups, filter chips, glossary statuses, and the empty state.
+# Needs a signed-in e2e build. Post alerts first for the filled log; with none it checks the empty state.
+# Run: scripts/device/with-device.sh --lane k3 -- maestro test .maestro/flows/account/capture-log.yaml
+appId: com.anonymous.moni.e2e
+name: K3 capture log
+tags:
+  - k3
+---
+- launchApp
+- extendedWaitUntil:
+    visible:
+      id: home.avatar
+    timeout: 15000
+- tapOn:
+    id: home.avatar
+- scrollUntilVisible:
+    element:
+      id: profile.row.capture-log
+- tapOn:
+    id: profile.row.capture-log
+- assertVisible: Capture log
+- assertNotVisible: Queued
+- assertNotVisible: Queued for review
+
+# A filled log: All plus one chip per status present.
+- runFlow:
+    when:
+      visible:
+        id: capture-log.filter.all
+    commands:
+      - takeScreenshot: k3-l1-log
+      - runFlow:
+          when:
+            visible:
+              id: capture-log.filter.waiting-for-review
+          commands:
+            - tapOn:
+                id: capture-log.filter.waiting-for-review
+            - assertVisible: Review it
+            - takeScreenshot: k3-l3-filter
+            - tapOn:
+                id: capture-log.filter.all
+      - runFlow:
+          when:
+            visible:
+              id: capture-log.show-older
+          commands:
+            - tapOn:
+                id: capture-log.show-older
+            - assertNotVisible:
+                id: capture-log.show-older
+
+# The empty log explains each status and points at notification access.
+- runFlow:
+    when:
+      visible:
+        id: capture-log.check-access
+    commands:
+      - assertVisible: Nothing captured yet
+      - assertVisible: What each status means
+      - takeScreenshot: k3-l4-empty
+      - tapOn:
+          id: capture-log.check-access
+      - assertVisible: Capture sources
+      - tapOn:
+          id: sources.back
+
+- tapOn:
+    id: capture-log.back
