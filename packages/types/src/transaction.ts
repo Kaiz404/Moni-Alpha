@@ -6,7 +6,13 @@ import { currencyCodeSchema, positiveMinorAmountSchema } from './money';
 export const transactionTypeSchema = z.enum(['income', 'expense', 'transfer']);
 
 /** How a ledger row was captured. Rows written before sources existed have none: show them as manual. */
-export const transactionSourceSchema = z.enum(['manual', 'voice', 'moni', 'notification', 'camera']);
+export const transactionSourceSchema = z.enum([
+  'manual',
+  'voice',
+  'moni',
+  'notification',
+  'camera',
+]);
 
 // Transaction metadata schema
 export const transactionMetadataSchema = z
@@ -20,47 +26,58 @@ export const transactionMetadataSchema = z
   })
   .passthrough(); // Allow additional properties for future use
 
+const isBalanceCorrectionExcluded = (data: {
+  analysisExcluded?: boolean;
+  metadata?: { kind?: 'balance_correction' };
+}) => data.metadata?.kind !== 'balance_correction' || data.analysisExcluded === true;
+const balanceCorrectionExcludedError = {
+  message: 'A balance correction must be excluded from analysis',
+  path: ['analysisExcluded'],
+};
+
 // Transaction schema
-export const transactionSchema = z.object({
-  id: z.string().uuid(),
-  userId: z.string().uuid(),
-  walletId: z.string().uuid(),
-  amountMinor: positiveMinorAmountSchema,
-  /** Immutable snapshot of the source wallet currency. */
-  currency: currencyCodeSchema,
-  type: transactionTypeSchema,
-  categoryId: z.string().uuid().nullable(),
+export const transactionSchema = z
+  .object({
+    id: z.string().uuid(),
+    userId: z.string().uuid(),
+    walletId: z.string().uuid(),
+    amountMinor: positiveMinorAmountSchema,
+    /** Immutable snapshot of the source wallet currency. */
+    currency: currencyCodeSchema,
+    type: transactionTypeSchema,
+    categoryId: z.string().uuid().nullable(),
 
-  // Transfer fields
-  transferToWalletId: z.string().uuid().nullable(),
-  linkedTransactionId: z.string().uuid().nullable(),
-  /** Cash movement is real, but should not be treated as personal spending. */
-  analysisExcluded: z.boolean(),
-  debtActivityId: z.string().uuid().nullable(),
+    // Transfer fields
+    transferToWalletId: z.string().uuid().nullable(),
+    linkedTransactionId: z.string().uuid().nullable(),
+    /** Cash movement is real, but should not be treated as personal spending. */
+    analysisExcluded: z.boolean(),
+    debtActivityId: z.string().uuid().nullable(),
 
-  // Details
-  description: z.string().max(500).nullable(),
-  merchant: z.string().max(200).nullable(),
-  notes: z.string().max(1000).nullable(),
+    // Details
+    description: z.string().max(500).nullable(),
+    merchant: z.string().max(200).nullable(),
+    notes: z.string().max(1000).nullable(),
 
-  // Temporal
-  transactionDate: z.string().datetime(),
+    // Temporal
+    transactionDate: z.string().datetime(),
 
-  // Location
-  locationLatitude: z.number().min(-90).max(90).nullable(),
-  locationLongitude: z.number().min(-180).max(180).nullable(),
-  locationName: z.string().max(200).nullable(),
+    // Location
+    locationLatitude: z.number().min(-90).max(90).nullable(),
+    locationLongitude: z.number().min(-180).max(180).nullable(),
+    locationName: z.string().max(200).nullable(),
 
-  // Receipt
-  receiptImageUrl: z.string().url().nullable(),
+    // Receipt
+    receiptImageUrl: z.string().url().nullable(),
 
-  // Metadata
-  metadata: transactionMetadataSchema,
+    // Metadata
+    metadata: transactionMetadataSchema,
 
-  // Timestamps
-  createdAt: z.string().datetime(),
-  updatedAt: z.string().datetime(),
-});
+    // Timestamps
+    createdAt: z.string().datetime(),
+    updatedAt: z.string().datetime(),
+  })
+  .refine(isBalanceCorrectionExcluded, balanceCorrectionExcludedError);
 
 // Create transaction schema
 export const createTransactionSchema = z
@@ -85,7 +102,8 @@ export const createTransactionSchema = z
   .refine((data) => data.type !== 'transfer' || data.transferToWalletId, {
     message: 'Transfer must have target wallet',
     path: ['transferToWalletId'],
-  });
+  })
+  .refine(isBalanceCorrectionExcluded, balanceCorrectionExcludedError);
 
 // Update transaction schema
 export const updateTransactionSchema = z
