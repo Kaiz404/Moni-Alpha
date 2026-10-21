@@ -1,7 +1,7 @@
 import { randomUUID } from 'expo-crypto';
 import { merchantAliasSchema, type MerchantAlias } from '@repo/types';
 import { assertMigrated, merchantAliases$ } from '@/lib/store';
-import { getRecordValues } from '@/lib/store/helpers';
+import { getRecordValues, patchRow } from '@/lib/store/helpers';
 import { getUserId } from '@/lib/supabase/client';
 
 export type MerchantAliasRow = {
@@ -71,4 +71,16 @@ export async function nameMerchant(rawKey: string, displayName: string): Promise
     display_name: data.displayName,
     deleted: false,
   });
+}
+
+/** "Forget this name": soft-deletes every alias for the key, including other devices' copies. */
+export async function forgetMerchantName(rawKey: string): Promise<void> {
+  assertMigrated('merchant_aliases_and_wallet_location');
+  const userId = await getUserId();
+  if (!userId) throw new Error('Not authenticated');
+  const updatedAt = new Date().toISOString();
+  for (const row of getRecordValues<MerchantAliasRow>(merchantAliases$)) {
+    if (row.user_id !== userId || row.raw_key !== rawKey) continue;
+    patchRow(merchantAliases$, row.id, { deleted: true, updated_at: updatedAt });
+  }
 }

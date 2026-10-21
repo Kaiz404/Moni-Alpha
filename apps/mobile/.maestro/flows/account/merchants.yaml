@@ -1,0 +1,59 @@
+# K3 Merchant names: name a code in place, then forget a name and undo it.
+# Needs a signed-in e2e build on a project with the merchant_aliases migration (O7 for production).
+# Seed three or more alerts from one code (GRAB*FOOD) so it shows under To name.
+# Run: scripts/device/with-device.sh --lane k3 -- maestro test .maestro/flows/account/merchants.yaml
+appId: com.anonymous.moni.e2e
+name: K3 merchant names
+tags:
+  - k3
+---
+- launchApp
+- extendedWaitUntil:
+    visible:
+      id: home.avatar
+    timeout: 15000
+- tapOn:
+    id: home.avatar
+- scrollUntilVisible:
+    element:
+      id: profile.row.merchant-names
+- tapOn:
+    id: profile.row.merchant-names
+- assertVisible: Merchant names
+- takeScreenshot: k3-merchants
+
+# Name the first code in place.
+- runFlow:
+    when:
+      visible:
+        id: merchants\.to-name\..*\.edit
+    commands:
+      - tapOn:
+          id: merchants\.to-name\..*\.edit
+          index: 0
+      - assertVisible: What is it?
+      - inputText: Grab Food
+      - tapOn:
+          id: merchants\.to-name\..*\.save
+      - assertVisible: .* is now Grab Food
+      - takeScreenshot: k3-l5-named
+
+# Forget a name, then bring it back with Undo.
+- runFlow:
+    when:
+      visible:
+        id: merchants\.named\..*\.edit
+    commands:
+      - tapOn:
+          id: merchants\.named\..*\.edit
+          index: 0
+      - tapOn:
+          id: merchants\.named\..*\.forget
+      - assertVisible: Name forgotten
+      - takeScreenshot: k3-l6-forget
+      - tapOn:
+          id: nav.toast.undo
+      - assertNotVisible: Name forgotten
+
+- tapOn:
+    id: merchants.back

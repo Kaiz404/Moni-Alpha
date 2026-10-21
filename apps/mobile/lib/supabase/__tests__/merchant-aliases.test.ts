@@ -1,5 +1,5 @@
 import type { Observable } from '@legendapp/state';
-import { listMerchantAliases, nameMerchant } from '../merchant-aliases';
+import { forgetMerchantName, listMerchantAliases, nameMerchant } from '../merchant-aliases';
 
 let mockNextId = 0;
 jest.mock('expo-crypto', () => ({ randomUUID: () => `alias-${++mockNextId}` }));
@@ -36,5 +36,26 @@ describe('nameMerchant', () => {
 
   it('refuses a blank name', async () => {
     await expect(nameMerchant('kedai abc', '  ')).rejects.toThrow();
+  });
+});
+
+describe('forgetMerchantName', () => {
+  it('soft-deletes the alias, and naming it again brings the same row back', async () => {
+    await nameMerchant('shell', 'Shell');
+    const [id] = Object.entries(merchantAliases$.peek()).find(
+      ([, row]) => row.raw_key === 'shell',
+    )!;
+
+    await forgetMerchantName('shell');
+
+    expect(merchantAliases$.peek()[id]).toMatchObject({ deleted: true });
+    expect(listMerchantAliases('user-1').map((alias) => alias.rawKey)).not.toContain('shell');
+
+    await nameMerchant('shell', 'Shell');
+
+    expect(merchantAliases$.peek()[id]).toMatchObject({ deleted: false });
+    expect(listMerchantAliases('user-1')).toContainEqual(
+      expect.objectContaining({ id, rawKey: 'shell', displayName: 'Shell' }),
+    );
   });
 });
