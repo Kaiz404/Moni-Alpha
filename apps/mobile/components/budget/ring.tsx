@@ -101,7 +101,8 @@ export function Ring({
   }, [state.sweep, sweep]);
 
   const arc = useAnimatedProps(() => ({
-    strokeDashoffset: CIRCUMFERENCE * (1 - Math.min(1, Math.max(0, sweep.get()))),
+    strokeDashoffset:
+      CIRCUMFERENCE * (1 - Math.min(1, Math.max(0, sweep.get()))),
   }));
 
   const spent = formatMoney(spentMinor, currency);
@@ -115,7 +116,11 @@ export function Ring({
       testID={testID}
       onPress={onPress}
       accessibilityLabel={label}
-      accessibilityValue={{ min: 0, max: 100, now: Math.round(state.sweep * 100) }}
+      accessibilityValue={{
+        min: 0,
+        max: 100,
+        now: Math.round(state.sweep * 100),
+      }}
       className="min-h-[78px] items-center gap-1 rounded-field pt-0.5"
     >
       <View style={{ width: BOX, height: BOX }}>
@@ -129,7 +134,9 @@ export function Ring({
             cx={BOX / 2}
             cy={BOX / 2}
             r={16}
-            fill={color ? `${color}${dark ? '38' : '73'}` : tokens.sand}
+            fill={
+              color ? `${color}${dark ? '38' : '73'}` : tokens.sand
+            }
           />
           {state.tone === 'unbudgeted' ? (
             <Circle
@@ -156,7 +163,9 @@ export function Ring({
                 cy={BOX / 2}
                 r={RADIUS}
                 fill="none"
-                stroke={state.tone === 'over' ? tokens.coral : tokens.ink2}
+                stroke={
+                  state.tone === 'over' ? tokens.coral : tokens.ink2
+                }
                 strokeWidth={STROKE}
                 strokeLinecap="round"
                 strokeDasharray={`${CIRCUMFERENCE} ${CIRCUMFERENCE}`}

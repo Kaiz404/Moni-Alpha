@@ -134,8 +134,7 @@ export function buildBudgetMonth(input: BudgetMonthInput): BudgetMonth {
   const { month, now, currency } = input;
   const spend = input.transactions.filter(
     (transaction) =>
-      countsAsSpend(transaction, currency) &&
-      localDay(transaction.transactionDate).month === month,
+      countsAsSpend(transaction, currency) && localDay(transaction.transactionDate).month === month,
   );
   const { daily, throughDay, isCurrent } = dailySpend(spend, month, now);
   const cumulative = cumulativeSpend(daily, throughDay);
@@ -156,7 +155,9 @@ export function buildBudgetMonth(input: BudgetMonthInput): BudgetMonth {
   const budgets = input.budgets.filter(
     (budget) => budget.currency === currency && categoriesById.has(budget.categoryId),
   );
-  const budgetByCategory = new Map(budgets.map((budget) => [budget.categoryId, budget.amountMinor]));
+  const budgetByCategory = new Map(
+    budgets.map((budget) => [budget.categoryId, budget.amountMinor]),
+  );
   const toSpend = (category: FinanceCategory): CategorySpend => ({
     categoryId: category.id,
     name: category.name,

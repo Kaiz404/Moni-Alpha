@@ -100,8 +100,7 @@ export function selectUpcomingBills(
     if (override.status !== 'confirmed' || bills.has(override.seriesKey)) continue;
     if (override.kind !== 'bill' && override.kind !== 'subscription') continue;
     if (!override.expectedDay || !override.expectedAmountMinor) continue;
-    if (override.dueOnce && !inMonth(dayNumber(new Date(`${override.dueOnce}T12:00:00`))))
-      continue;
+    if (override.dueOnce && !inMonth(dayNumber(new Date(`${override.dueOnce}T12:00:00`)))) continue;
     bills.set(override.seriesKey, {
       ...bill(
         override.seriesKey,

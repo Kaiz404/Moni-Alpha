@@ -55,7 +55,13 @@ function RingGrid({
 }
 
 /** "Budgets" on the tab root: a ring per budget, then categories spent with no budget yet. */
-export function BudgetRings({ budgeted, unbudgeted, currency, month, emptyBody }: BudgetRingsProps) {
+export function BudgetRings({
+  budgeted,
+  unbudgeted,
+  currency,
+  month,
+  emptyBody,
+}: BudgetRingsProps) {
   const openEdit = () => router.push('/budget/edit');
   return (
     <View className="gap-2">

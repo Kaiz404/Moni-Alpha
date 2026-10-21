@@ -1,5 +1,9 @@
 import { useEffect } from 'react';
-import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+} from 'react-native-reanimated';
 
 import { Press } from '@/components/ui/press';
 import { toggleOff, toggleOn } from '@/lib/haptics';

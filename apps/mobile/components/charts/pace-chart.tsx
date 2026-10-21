@@ -1,6 +1,12 @@
 import type { MinorAmount } from '@repo/types';
 import { useFocusEffect } from 'expo-router';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { View } from 'react-native';
 import {
   Gesture,
@@ -54,7 +60,8 @@ export type PaceChartProps = {
 /** A round step so the top gridline reads cleanly: RM160, RM1,800. */
 function niceTop(value: number): number {
   if (value <= 0) return 10000;
-  const step = 10 ** Math.max(2, Math.floor(Math.log10(value)) - 1) * 4;
+  const step =
+    10 ** Math.max(2, Math.floor(Math.log10(value)) - 1) * 4;
   return Math.ceil(value / step) * step;
 }
 
@@ -96,19 +103,33 @@ export function PaceChart({
 
   const spent = Number(series[lastDay] ?? 0);
   const over = budget !== null && spent > budget;
-  const top = budget === null ? niceTop(spent) : over ? niceTop(spent) : Number(budget);
+  const top =
+    budget === null
+      ? niceTop(spent)
+      : over
+        ? niceTop(spent)
+        : Number(budget);
   const right = Math.max(width - RIGHT_INSET, PLOT_LEFT + 1);
   const x = useCallback(
-    (day: number) => PLOT_LEFT + (day * (right - PLOT_LEFT)) / daysInMonth,
+    (day: number) =>
+      PLOT_LEFT + (day * (right - PLOT_LEFT)) / daysInMonth,
     [right, daysInMonth],
   );
-  const y = useCallback((value: number) => BASE_Y - (value / top) * (BASE_Y - TOP_Y), [top]);
+  const y = useCallback(
+    (value: number) => BASE_Y - (value / top) * (BASE_Y - TOP_Y),
+    [top],
+  );
 
   const geometry = useMemo(() => {
-    const points = series.map((value, day) => [x(day), y(Number(value))] as const);
+    const points = series.map(
+      (value, day) => [x(day), y(Number(value))] as const,
+    );
     let length = 0;
     for (let i = 1; i < points.length; i += 1)
-      length += Math.hypot(points[i][0] - points[i - 1][0], points[i][1] - points[i - 1][1]);
+      length += Math.hypot(
+        points[i][0] - points[i - 1][0],
+        points[i][1] - points[i - 1][1],
+      );
     return {
       line: points.map(([px, py]) => `${px},${py}`).join(' '),
       area: `M${PLOT_LEFT},${BASE_Y} ${points.map(([px, py]) => `L${px},${py}`).join(' ')} L${x(lastDay)},${BASE_Y} Z`,
@@ -121,9 +142,12 @@ export function PaceChart({
     drawn.set(withSpring(1, springs.value));
   }, [drawn]);
   const lineProps = useAnimatedProps(() => ({
-    strokeDashoffset: geometry.length * (1 - Math.min(1, drawn.get())),
+    strokeDashoffset:
+      geometry.length * (1 - Math.min(1, drawn.get())),
   }));
-  const areaProps = useAnimatedProps(() => ({ fillOpacity: 0.8 * Math.min(1, drawn.get()) }));
+  const areaProps = useAnimatedProps(() => ({
+    fillOpacity: 0.8 * Math.min(1, drawn.get()),
+  }));
 
   const step = (right - PLOT_LEFT) / daysInMonth;
   const shown = useRef(selected);
@@ -137,7 +161,10 @@ export function PaceChart({
   const scrub = useMemo(() => {
     const toDay = (px: number) => {
       'worklet';
-      return Math.min(lastDay, Math.max(1, Math.round((px - PLOT_LEFT) / step)));
+      return Math.min(
+        lastDay,
+        Math.max(1, Math.round((px - PLOT_LEFT) / step)),
+      );
     };
     const pan = Gesture.Pan()
       .activeOffsetX([-6, 6])
@@ -157,10 +184,15 @@ export function PaceChart({
   const budgetY = budget === null ? TOP_Y : y(Number(budget));
   const selectedX = x(selected);
   const selectedY = y(Number(series[selected] ?? 0));
-  const calloutLeft = Math.max(AXIS, Math.min(width - CALLOUT_W, selectedX - CALLOUT_W / 2));
-  const whole = (value: number) => formatMoney(value, currency, { whole: true });
+  const calloutLeft = Math.max(
+    AXIS,
+    Math.min(width - CALLOUT_W, selectedX - CALLOUT_W / 2),
+  );
+  const whole = (value: number) =>
+    formatMoney(value, currency, { whole: true });
   const atEnd = selected === lastDay;
-  const calloutDate = atEnd && endsToday ? 'By today' : dayDate(month, selected);
+  const calloutDate =
+    atEnd && endsToday ? 'By today' : dayDate(month, selected);
   const monthName = dayDate(month, 1).split(' ')[2];
 
   const label = `${what}, ${formatMoney(spent, currency)} ${endsToday ? 'by today' : 'in all'}${
@@ -181,12 +213,21 @@ export function PaceChart({
         accessibilityValue={{
           text: `${calloutDate}, ${formatMoney(Number(series[selected] ?? 0), currency)} so far`,
         }}
-        accessibilityActions={[{ name: 'increment' }, { name: 'decrement' }]}
+        accessibilityActions={[
+          { name: 'increment' },
+          { name: 'decrement' },
+        ]}
         onAccessibilityAction={(event) =>
           pick(
             Math.min(
               lastDay,
-              Math.max(1, selected + (event.nativeEvent.actionName === 'increment' ? 1 : -1)),
+              Math.max(
+                1,
+                selected +
+                  (event.nativeEvent.actionName === 'increment'
+                    ? 1
+                    : -1),
+              ),
             ),
           )
         }
@@ -293,7 +334,11 @@ export function PaceChart({
                 </Svg>
                 <AxisLabel
                   top={36}
-                  text={budget !== null && !over ? whole(Number(budget)) : whole(top)}
+                  text={
+                    budget !== null && !over
+                      ? whole(Number(budget))
+                      : whole(top)
+                  }
                   budget={budget !== null && !over}
                 />
                 <AxisLabel
@@ -322,7 +367,12 @@ export function PaceChart({
                 <View
                   pointerEvents="none"
                   className="absolute items-center justify-center rounded-full bg-primary"
-                  style={{ left: selectedX - 14, top: 132, width: 28, height: 20 }}
+                  style={{
+                    left: selectedX - 14,
+                    top: 132,
+                    width: 28,
+                    height: 20,
+                  }}
                 >
                   <IconSymbol
                     name="arrow-left-right"
@@ -333,7 +383,11 @@ export function PaceChart({
                 <View
                   pointerEvents="none"
                   className="absolute top-0 items-center justify-center rounded-[12px] bg-primary"
-                  style={{ left: calloutLeft, width: CALLOUT_W, height: 38 }}
+                  style={{
+                    left: calloutLeft,
+                    width: CALLOUT_W,
+                    height: 38,
+                  }}
                 >
                   <Text className="text-[12px] leading-[15px] text-primary-foreground opacity-90">
                     {calloutDate}
@@ -342,7 +396,10 @@ export function PaceChart({
                     className="text-[14px] leading-[18px] font-display-bold text-primary-foreground"
                     style={{ fontVariant: ['tabular-nums'] }}
                   >
-                    {formatMoney(Number(series[selected] ?? 0), currency)}
+                    {formatMoney(
+                      Number(series[selected] ?? 0),
+                      currency,
+                    )}
                   </Text>
                 </View>
               </View>
@@ -379,7 +436,9 @@ export function PaceChart({
         <View className="flex-row items-center gap-2.5">
           <View className="flex-row items-center gap-1">
             <View className="h-[3px] w-3.5 rounded-full bg-primary" />
-            <Text className="text-[12px] leading-4 text-muted">Spent</Text>
+            <Text className="text-[12px] leading-4 text-muted">
+              Spent
+            </Text>
           </View>
           {budget !== null ? (
             <View className="flex-row items-center gap-1">
@@ -391,7 +450,9 @@ export function PaceChart({
                   />
                 ))}
               </View>
-              <Text className="text-[12px] leading-4 text-muted">Even pace</Text>
+              <Text className="text-[12px] leading-4 text-muted">
+                Even pace
+              </Text>
             </View>
           ) : null}
         </View>
@@ -401,14 +462,24 @@ export function PaceChart({
             size={16}
             color={tokens.muted}
           />
-          <Text className="text-[12px] leading-4 text-muted">Tap or drag</Text>
+          <Text className="text-[12px] leading-4 text-muted">
+            Tap or drag
+          </Text>
         </View>
       </View>
     </View>
   );
 }
 
-function AxisLabel({ top, text, budget = false }: { top: number; text: string; budget?: boolean }) {
+function AxisLabel({
+  top,
+  text,
+  budget = false,
+}: {
+  top: number;
+  text: string;
+  budget?: boolean;
+}) {
   return (
     <Text
       className={`absolute left-0 text-right text-[12px] leading-4 ${budget ? 'font-display-bold text-deep-mint' : 'text-muted'}`}

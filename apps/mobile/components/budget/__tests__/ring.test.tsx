@@ -1,5 +1,9 @@
 import type { MinorAmount } from '@repo/types';
-import { fireEvent, render, screen } from '@testing-library/react-native';
+import {
+  fireEvent,
+  render,
+  screen,
+} from '@testing-library/react-native';
 
 import { Ring } from '@/components/budget/ring';
 
@@ -24,7 +28,10 @@ function renderRing(spent: number, budget: number | null) {
       onPress={onPress}
     />,
   );
-  return { ring: screen.getByTestId('budget.ring.transport'), onPress };
+  return {
+    ring: screen.getByTestId('budget.ring.transport'),
+    onPress,
+  };
 }
 
 describe('Ring', () => {
@@ -51,6 +58,8 @@ describe('Ring', () => {
     const { ring } = renderRing(96.5, null);
     expect(screen.getByText('RM96.50')).toBeTruthy();
     expect(screen.getByText('spent')).toBeTruthy();
-    expect(ring.props.accessibilityLabel).toBe('Transport, RM96.50 spent, no budget yet');
+    expect(ring.props.accessibilityLabel).toBe(
+      'Transport, RM96.50 spent, no budget yet',
+    );
   });
 });

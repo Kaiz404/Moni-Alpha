@@ -4,7 +4,12 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useMemo, useState, type ReactNode } from 'react';
 import { ScrollView, View } from 'react-native';
 
-import { InPlaceField, Pencil, parseDraft } from '@/components/budget/in-place-field';
+import { DueDaySheet } from '@/components/budget/due-day-sheet';
+import {
+  InPlaceField,
+  Pencil,
+  parseDraft,
+} from '@/components/budget/in-place-field';
 import { Toggle } from '@/components/budget/toggle';
 import { useBudgetData } from '@/components/budget/use-budget';
 import { Button } from '@/components/ui/button';
@@ -14,13 +19,23 @@ import { ListCard } from '@/components/ui/list-card';
 import { Page } from '@/components/ui/page';
 import { PickerField } from '@/components/ui/picker-field';
 import { Text } from '@/components/ui/text';
-import { TintBubble, TransactionRow } from '@/components/ui/transaction-row';
+import {
+  TintBubble,
+  TransactionRow,
+} from '@/components/ui/transaction-row';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { merchantKey } from '@/lib/ai/routine';
 import { formatDate } from '@/lib/dates/day-label';
-import { parseLocalDateInput, toLocalDateInput } from '@/lib/dates/local-date-input';
+import {
+  parseLocalDateInput,
+  toLocalDateInput,
+} from '@/lib/dates/local-date-input';
 import { billPayments } from '@/lib/finance/bills';
-import { monthKey, monthName, monthSpend } from '@/lib/finance/budget-month';
+import {
+  monthKey,
+  monthName,
+  monthSpend,
+} from '@/lib/finance/budget-month';
 import { formatMoney } from '@/lib/finance/format-money';
 import { reminderAt } from '@/lib/notifications/bill-reminder';
 import { openSheet } from '@/lib/sheet/sheet-store';
@@ -31,8 +46,14 @@ import {
   deleteAutoAddRule,
   type AutoAddRuleRow,
 } from '@/lib/supabase/auto-add-rules';
-import { updateBill, type BillPatch } from '@/lib/supabase/recurring-overrides';
-import { createTransaction, deleteTransaction } from '@/lib/supabase/transactions';
+import {
+  updateBill,
+  type BillPatch,
+} from '@/lib/supabase/recurring-overrides';
+import {
+  createTransaction,
+  deleteTransaction,
+} from '@/lib/supabase/transactions';
 import { tid } from '@/lib/test-ids';
 import { showToast } from '@/lib/toast/toast-store';
 import { resolveTransactionIcon } from '@/lib/transactions/icon';
@@ -47,12 +68,22 @@ type Editing = 'name' | 'amount' | null;
 /** The same day of the month after a `YYYY-MM-DD`, clamped to that month's length. */
 function nextMonthDay(dueDate: string): Date {
   const due = parseLocalDateInput(dueDate) ?? new Date();
-  const length = new Date(due.getFullYear(), due.getMonth() + 2, 0).getDate();
-  return new Date(due.getFullYear(), due.getMonth() + 1, Math.min(due.getDate(), length));
+  const length = new Date(
+    due.getFullYear(),
+    due.getMonth() + 2,
+    0,
+  ).getDate();
+  return new Date(
+    due.getFullYear(),
+    due.getMonth() + 1,
+    Math.min(due.getDate(), length),
+  );
 }
 
 function errorText(error: unknown): string {
-  return error instanceof Error ? error.message : "Couldn't save that.";
+  return error instanceof Error
+    ? error.message
+    : "Couldn't save that.";
 }
 
 /** `V2P-BillDetail`: one bill, its name and amount in place, its schedule, and its payments. */
@@ -61,24 +92,36 @@ export default function BillScreen() {
   const { seriesKey } = useLocalSearchParams<{ seriesKey: string }>();
   const data = useBudgetData();
   const { now, currency } = data;
-  const bill = data.bills.find((item) => item.seriesKey === seriesKey);
-  const override = data.overrides.find((item) => item.seriesKey === seriesKey);
+  const bill = data.bills.find(
+    (item) => item.seriesKey === seriesKey,
+  );
+  const override = data.overrides.find(
+    (item) => item.seriesKey === seriesKey,
+  );
   const [editing, setEditing] = useState<Editing>(null);
   const [draft, setDraft] = useState('');
+  const [dueOpen, setDueOpen] = useState(false);
   const payments = useMemo(
-    () => (seriesKey ? billPayments(data.transactions, seriesKey) : []),
+    () =>
+      seriesKey ? billPayments(data.transactions, seriesKey) : [],
     [data.transactions, seriesKey],
   );
   const rules = useValue(() =>
     getRecordValues<AutoAddRuleRow>(autoAddRules$).filter(
-      (rule) => rule.user_id === data.userId && rule.merchant_key === seriesKey?.split('|')[2],
+      (rule) =>
+        rule.user_id === data.userId &&
+        rule.merchant_key === seriesKey?.split('|')[2],
     ),
   );
   const linkedApps = useValue(() =>
     Object.fromEntries(
-      getRecordValues<{ id: string; notification_package: string | null }>(wallets$).map(
-        (wallet) => [wallet.id, wallet.notification_package],
-      ),
+      getRecordValues<{
+        id: string;
+        notification_package: string | null;
+      }>(wallets$).map((wallet) => [
+        wallet.id,
+        wallet.notification_package,
+      ]),
     ),
   );
 
@@ -97,52 +140,82 @@ export default function BillScreen() {
       </Page>
     );
 
-  const mainWallets = data.wallets.filter((wallet) => wallet.currency === bill.currency);
+  const mainWallets = data.wallets.filter(
+    (wallet) => wallet.currency === bill.currency,
+  );
   const walletId =
-    bill.walletId && mainWallets.some((wallet) => wallet.id === bill.walletId)
+    bill.walletId &&
+    mainWallets.some((wallet) => wallet.id === bill.walletId)
       ? bill.walletId
-      : (resolveDefaultWalletId(mainWallets) ?? mainWallets[0]?.id ?? null);
+      : (resolveDefaultWalletId(mainWallets) ??
+        mainWallets[0]?.id ??
+        null);
   const wallet = data.wallets.find((item) => item.id === walletId);
-  const category = data.categories.find((item) => item.id === bill.categoryId);
+  const category = data.categories.find(
+    (item) => item.id === bill.categoryId,
+  );
   const once = Boolean(override?.dueOnce);
   const open = bill.status === 'due';
   const period = monthKey(now);
   const nextDue =
-    open || once ? (parseLocalDateInput(bill.dueDate) ?? now) : nextMonthDay(bill.dueDate);
+    open || once
+      ? (parseLocalDateInput(bill.dueDate) ?? now)
+      : nextMonthDay(bill.dueDate);
   const remindOn = override?.remind === true;
   const reminder = reminderAt(toLocalDateInput(nextDue));
   const sourceApp = walletId ? linkedApps[walletId] : null;
   const rule = rules.find((item) => item.source_app === sourceApp);
   const typedAmount = parseDraft(draft, true);
   const amountMinor =
-    typedAmount === null ? null : (Math.round(typedAmount * 100) as MinorAmount);
+    typedAmount === null
+      ? null
+      : (Math.round(typedAmount * 100) as MinorAmount);
   const nameOk = draft.trim().length > 0 && draft.trim().length <= 30;
   const lookup = {
-    categoriesById: Object.fromEntries(data.categories.map((item) => [item.id, item])),
+    categoriesById: Object.fromEntries(
+      data.categories.map((item) => [item.id, item]),
+    ),
     walletNames: data.walletNames,
   };
 
-  const save = async (patch: BillPatch, toast: string, undo: BillPatch) => {
+  const save = async (
+    patch: BillPatch,
+    toast: string,
+    undo: BillPatch,
+  ) => {
     try {
       await updateBill(bill, patch);
-      showToast({ text: toast, undo: () => void updateBill(bill, undo) });
+      showToast({
+        text: toast,
+        undo: () => void updateBill(bill, undo),
+      });
     } catch (error) {
       showToast({ text: errorText(error), tone: 'removed' });
     }
   };
   const start = (field: Exclude<Editing, null>) => {
     setEditing(field);
-    setDraft(field === 'name' ? bill.name : (bill.amountMinor / 100).toFixed(2));
+    setDraft(
+      field === 'name'
+        ? bill.name
+        : (bill.amountMinor / 100).toFixed(2),
+    );
   };
   const commit = async () => {
     const field = editing;
     setEditing(null);
     if (field === 'name' && nameOk)
-      await save({ name: draft.trim() }, 'Name saved', { name: override?.name ?? null });
-    if (field === 'amount' && amountMinor !== null)
-      await save({ expectedAmountMinor: amountMinor }, 'Amount saved', {
-        expectedAmountMinor: bill.amountMinor,
+      await save({ name: draft.trim() }, 'Name saved', {
+        name: override?.name ?? null,
       });
+    if (field === 'amount' && amountMinor !== null)
+      await save(
+        { expectedAmountMinor: amountMinor },
+        'Amount saved',
+        {
+          expectedAmountMinor: bill.amountMinor,
+        },
+      );
   };
 
   const markPaid = async () => {
@@ -152,7 +225,10 @@ export default function BillScreen() {
     }
     const lastMerchant = payments[0]?.merchant;
     const merchant =
-      lastMerchant ?? (merchantKey(bill.name) === seriesKey.split('|')[2] ? bill.name : seriesKey.split('|')[2]);
+      lastMerchant ??
+      (merchantKey(bill.name) === seriesKey.split('|')[2]
+        ? bill.name
+        : seriesKey.split('|')[2]);
     const paid = await createTransaction(
       {
         walletId,
@@ -173,15 +249,18 @@ export default function BillScreen() {
     save({ skipPeriod: period }, `${monthName(period)} skipped`, {
       skipPeriod: override?.skipPeriod ?? null,
     });
-  const pickDue = async () => {
-    const picked = await openSheet({ kind: 'date', selected: toLocalDateInput(nextDue) });
-    if (!picked) return;
+  const pickDue = async (picked: string) => {
+    setDueOpen(false);
+    const day = Number(picked.slice(8));
+    const was = Number(bill.dueDate.slice(8));
     await save(
-      once ? { dueOnce: picked, expectedDay: Number(picked.slice(8)) } : { expectedDay: Number(picked.slice(8)) },
+      once
+        ? { dueOnce: picked, expectedDay: day }
+        : { expectedDay: day },
       `Due ${formatDate(parseLocalDateInput(picked) ?? now, now)}`,
       once
-        ? { dueOnce: override?.dueOnce ?? null, expectedDay: Number(bill.dueDate.slice(8)) }
-        : { expectedDay: Number(bill.dueDate.slice(8)) },
+        ? { dueOnce: override?.dueOnce ?? null, expectedDay: was }
+        : { expectedDay: was },
     );
   };
   const pickWallet = async () => {
@@ -209,7 +288,10 @@ export default function BillScreen() {
     const spent = new Map<string, number>();
     for (const row of monthSpend(data.transactions, period, currency))
       if (row.categoryId)
-        spent.set(row.categoryId, (spent.get(row.categoryId) ?? 0) + Number(row.amountMinor));
+        spent.set(
+          row.categoryId,
+          (spent.get(row.categoryId) ?? 0) + Number(row.amountMinor),
+        );
     const picked = await openSheet({
       kind: 'category',
       title: 'Category',
@@ -222,18 +304,25 @@ export default function BillScreen() {
         color: item.color,
         spentMinor: (spent.get(item.id) ?? 0) as MinorAmount,
         budgetMinor:
-          data.budgets.find((budget) => budget.categoryId === item.id && budget.currency === currency)
-            ?.amountMinor ?? null,
+          data.budgets.find(
+            (budget) =>
+              budget.categoryId === item.id &&
+              budget.currency === currency,
+          )?.amountMinor ?? null,
       })),
     });
     if (!picked || picked === bill.categoryId) return;
-    const name = data.categories.find((item) => item.id === picked)?.name ?? 'Category';
+    const name =
+      data.categories.find((item) => item.id === picked)?.name ??
+      'Category';
     await save({ categoryId: picked }, `Category is ${name}`, {
       categoryId: override?.categoryId ?? null,
     });
   };
   const setRemind = (next: boolean) =>
-    save({ remind: next }, next ? 'Reminder on' : 'Reminder off', { remind: remindOn });
+    save({ remind: next }, next ? 'Reminder on' : 'Reminder off', {
+      remind: remindOn,
+    });
   const setAutoAdd = async (next: boolean) => {
     try {
       if (!next && rule) deleteAutoAddRule(rule.id);
@@ -252,7 +341,8 @@ export default function BillScreen() {
     const confirmed = await openSheet({
       kind: 'confirm',
       title: `Stop tracking ${bill.name}?`,
-      message: 'It leaves your bills. Payments already recorded stay in Activity.',
+      message:
+        'It leaves your bills. Payments already recorded stay in Activity.',
       confirmLabel: 'Stop tracking',
       destructive: true,
     });
@@ -271,301 +361,332 @@ export default function BillScreen() {
   };
 
   const skippedRow = bill.status === 'skipped';
-  const history = payments.slice(0, skippedRow ? HISTORY_ROWS - 1 : HISTORY_ROWS);
-  const bubbleIcon = resolveTransactionIcon(category?.icon ?? 'repeat', 'expense');
+  const history = payments.slice(
+    0,
+    skippedRow ? HISTORY_ROWS - 1 : HISTORY_ROWS,
+  );
+  const bubbleIcon = resolveTransactionIcon(
+    category?.icon ?? 'repeat',
+    'expense',
+  );
 
   return (
-    <Page
-      screen="budget"
-      kind="pushed"
-      title="Bill"
-    >
-      <ScrollView
-        className="flex-1"
-        contentContainerClassName="gap-4 px-5 pb-8"
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
+    <View className="flex-1">
+      <Page
+        screen="budget"
+        kind="pushed"
+        title="Bill"
       >
-        <View className="gap-3">
-          {editing === 'name' ? (
-            <InPlaceField
-              screen="budget"
-              name="bill-name"
-              accessibilityLabel="Bill name, editing"
-              value={draft}
-              onChangeText={setDraft}
-              onCancel={() => setEditing(null)}
-              onSave={commit}
-              canSave={nameOk}
-              maxLength={30}
-            >
-              {nameOk ? null : (
-                <Text
-                  variant="meta"
-                  className="text-muted"
-                >
-                  A name needs 1 to 30 letters.
-                </Text>
-              )}
-            </InPlaceField>
-          ) : (
-            <View className="flex-row items-center gap-3">
-              <View className="h-[52px] w-[52px] items-center justify-center">
-                <TintBubble
-                  icon={bubbleIcon}
-                  color={category?.color ?? null}
-                />
-              </View>
-              <View className="min-w-0 flex-1">
-                <View className="flex-row items-center gap-2">
+        <ScrollView
+          className="flex-1"
+          contentContainerClassName="gap-4 px-5 pb-8"
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          <View className="gap-3">
+            {editing === 'name' ? (
+              <InPlaceField
+                screen="budget"
+                name="bill-name"
+                accessibilityLabel="Bill name, editing"
+                value={draft}
+                onChangeText={setDraft}
+                onCancel={() => setEditing(null)}
+                onSave={commit}
+                canSave={nameOk}
+                maxLength={30}
+              >
+                {nameOk ? null : (
                   <Text
-                    testID={tid('budget', 'bill', 'name')}
-                    variant="sectionTitle"
-                    className="flex-shrink text-foreground"
-                    numberOfLines={1}
+                    variant="meta"
+                    className="text-muted"
                   >
-                    {bill.name}
+                    A name needs 1 to 30 letters.
                   </Text>
-                  {editing ? null : (
-                    <Pencil
-                      testID={tid('budget', 'bill', 'edit-name')}
-                      accessibilityLabel="Edit name"
-                      onPress={() => start('name')}
-                    />
-                  )}
-                </View>
-                <Text
-                  variant="meta"
-                  className="text-muted"
-                >
-                  {once ? 'Bill · just once' : 'Bill · every month'}
-                </Text>
-              </View>
-            </View>
-          )}
-          {editing === 'amount' ? (
-            <InPlaceField
-              screen="budget"
-              name="bill-amount"
-              accessibilityLabel="Bill amount, editing"
-              currency={bill.currency}
-              decimals
-              value={draft}
-              onChangeText={setDraft}
-              onCancel={() => setEditing(null)}
-              onSave={commit}
-              canSave={amountMinor !== null}
-            >
-              <Text
-                variant="meta"
-                className="text-muted"
-              >
-                {amountMinor === null
-                  ? `Type an amount above ${formatMoney(0, bill.currency, { whole: true })}.`
-                  : `From ${formatDate(nextDue, now)} on. Past payments stay as they were.`}
-              </Text>
-            </InPlaceField>
-          ) : (
-            <View className="flex-row items-center gap-2">
-              <Text
-                testID={tid('budget', 'bill', 'amount')}
-                variant="amountHero"
-                className="text-foreground"
-                style={{ fontVariant: ['tabular-nums'] }}
-              >
-                {formatMoney(bill.amountMinor, bill.currency)}
-              </Text>
-              {editing ? null : (
-                <Pencil
-                  testID={tid('budget', 'bill', 'edit-amount')}
-                  accessibilityLabel="Edit amount"
-                  onPress={() => start('amount')}
-                />
-              )}
-            </View>
-          )}
-          {open ? (
-            <View className="flex-row gap-2">
-              <Button
-                testID={tid('budget', 'bill', 'mark-paid')}
-                label="Mark paid"
-                icon="check"
-                className="flex-1"
-                onPress={markPaid}
-              />
-              <Button
-                testID={tid('budget', 'bill', 'skip')}
-                variant="secondary"
-                label={`Skip ${monthName(period)}`}
-                className="flex-1"
-                onPress={skip}
-              />
-            </View>
-          ) : null}
-        </View>
-
-        <View className="gap-2">
-          <View className="flex-row gap-2">
-            <PickerField
-              testID={tid('budget', 'bill', 'due')}
-              label={once ? 'Due · once' : 'Next due · monthly'}
-              value={formatDate(nextDue, now)}
-              className="flex-1"
-              leading={
-                <IconSymbol
-                  name="calendar-blank"
-                  size={18}
-                  color={tokens.foreground}
-                />
-              }
-              onPress={pickDue}
-            />
-            <PickerField
-              testID={tid('budget', 'bill', 'wallet')}
-              label="Pays from"
-              value={wallet?.name ?? ''}
-              className="flex-1"
-              onPress={pickWallet}
-            />
-          </View>
-          <PickerField
-            testID={tid('budget', 'bill', 'category')}
-            label="Category"
-            value={category?.name ?? ''}
-            leading={
-              category ? (
-                <IconSymbol
-                  name={bubbleIcon}
-                  size={18}
-                  color={tokens.foreground}
-                />
-              ) : undefined
-            }
-            onPress={pickCategory}
-          />
-        </View>
-
-        <ListCard>
-          <SwitchRow
-            icon="bell-outline"
-            title="Remind me"
-            meta={remindOn && reminder ? `1 day before, ${REMINDER_TIME}` : 'Off'}
-          >
-            <Toggle
-              testID={tid('budget', 'bill', 'remind')}
-              accessibilityLabel="Remind me"
-              value={remindOn}
-              onChange={setRemind}
-            />
-          </SwitchRow>
-          <SwitchRow
-            icon="auto-fix"
-            title="Auto-add bank alerts"
-            meta={
-              rule
-                ? 'Added for you, marked Auto'
-                : sourceApp
-                  ? 'You approve each alert'
-                  : `Link ${wallet?.name ?? 'the wallet'} to its banking app first`
-            }
-          >
-            <Toggle
-              testID={tid('budget', 'bill', 'auto-add')}
-              accessibilityLabel="Auto-add bank alerts"
-              value={Boolean(rule)}
-              disabled={!rule && (!sourceApp || !bill.categoryId)}
-              onChange={setAutoAdd}
-            />
-          </SwitchRow>
-        </ListCard>
-
-        {history.length || skippedRow ? (
-          <View className="gap-2.5 pt-2">
-            <View className="flex-row items-center justify-between">
-              <Text
-                variant="sectionTitle"
-                className="text-foreground"
-                accessibilityRole="header"
-              >
-                History
-              </Text>
-              {payments.length > history.length ? (
-                <Button
-                  testID={tid('budget', 'bill', 'see-all')}
-                  variant="tertiary"
-                  label="See all"
-                  icon="chevron-right"
-                  onPress={() =>
-                    router.dismissTo({
-                      pathname: '/activity',
-                      params: bill.categoryId ? { categoryId: bill.categoryId } : {},
-                    })
-                  }
-                />
-              ) : null}
-            </View>
-            <ListCard>
-              {skippedRow ? (
-                <View
-                  accessible
-                  accessibilityLabel={`${bill.name}, skipped in ${monthName(period)}`}
-                  className="h-[66px] flex-row items-center gap-3.5 px-[18px]"
-                >
+                )}
+              </InPlaceField>
+            ) : (
+              <View className="flex-row items-center gap-3">
+                <View className="h-[52px] w-[52px] items-center justify-center">
                   <TintBubble
                     icon={bubbleIcon}
                     color={category?.color ?? null}
                   />
-                  <View className="min-w-0 flex-1">
+                </View>
+                <View className="min-w-0 flex-1">
+                  <View className="flex-row items-center gap-2">
                     <Text
-                      variant="rowTitle"
-                      className="text-foreground"
+                      testID={tid('budget', 'bill', 'name')}
+                      variant="sectionTitle"
+                      className="flex-shrink text-foreground"
                       numberOfLines={1}
                     >
                       {bill.name}
                     </Text>
-                    <Text
-                      variant="meta"
-                      className="text-muted"
-                    >
-                      {`Skipped · ${monthName(period)}`}
-                    </Text>
+                    {editing ? null : (
+                      <Pencil
+                        testID={tid('budget', 'bill', 'edit-name')}
+                        accessibilityLabel="Edit name"
+                        onPress={() => start('name')}
+                      />
+                    )}
                   </View>
                   <Text
-                    variant="rowTitle"
+                    variant="meta"
                     className="text-muted"
                   >
-                    {formatMoney(0, bill.currency)}
+                    {once ? 'Bill · just once' : 'Bill · every month'}
                   </Text>
                 </View>
-              ) : null}
-              {history.map((payment) => (
-                <TransactionRow
-                  key={payment.id}
-                  testID={tid('budget', 'bill', 'payment', payment.id)}
-                  row={{ ...transactionRow(payment, lookup), title: bill.name }}
-                  metaLead="date"
-                  now={now}
-                  onPress={() =>
-                    router.push({ pathname: '/transaction/[id]', params: { id: payment.id } })
-                  }
+              </View>
+            )}
+            {editing === 'amount' ? (
+              <InPlaceField
+                screen="budget"
+                name="bill-amount"
+                accessibilityLabel="Bill amount, editing"
+                currency={bill.currency}
+                decimals
+                value={draft}
+                onChangeText={setDraft}
+                onCancel={() => setEditing(null)}
+                onSave={commit}
+                canSave={amountMinor !== null}
+              >
+                <Text
+                  variant="meta"
+                  className="text-muted"
+                >
+                  {amountMinor === null
+                    ? `Type an amount above ${formatMoney(0, bill.currency, { whole: true })}.`
+                    : `From ${formatDate(nextDue, now)} on. Past payments stay as they were.`}
+                </Text>
+              </InPlaceField>
+            ) : (
+              <View className="flex-row items-center gap-2">
+                <Text
+                  testID={tid('budget', 'bill', 'amount')}
+                  variant="amountHero"
+                  className="text-foreground"
+                  style={{ fontVariant: ['tabular-nums'] }}
+                >
+                  {formatMoney(bill.amountMinor, bill.currency)}
+                </Text>
+                {editing ? null : (
+                  <Pencil
+                    testID={tid('budget', 'bill', 'edit-amount')}
+                    accessibilityLabel="Edit amount"
+                    onPress={() => start('amount')}
+                  />
+                )}
+              </View>
+            )}
+            {open ? (
+              <View className="flex-row gap-2">
+                <Button
+                  testID={tid('budget', 'bill', 'mark-paid')}
+                  label="Mark paid"
+                  icon="check"
+                  className="flex-1"
+                  onPress={markPaid}
                 />
-              ))}
-            </ListCard>
+                <Button
+                  testID={tid('budget', 'bill', 'skip')}
+                  variant="secondary"
+                  label={`Skip ${monthName(period)}`}
+                  className="flex-1"
+                  onPress={skip}
+                />
+              </View>
+            ) : null}
           </View>
-        ) : null}
 
-        <Button
-          testID={tid('budget', 'bill', 'stop')}
-          variant="destructive"
-          icon="trash-can-outline"
-          label={`Stop tracking ${bill.name}`}
-          onPress={stop}
-        />
-      </ScrollView>
-    </Page>
+          <View className="gap-2">
+            <View className="flex-row gap-2">
+              <PickerField
+                testID={tid('budget', 'bill', 'due')}
+                label={once ? 'Due · once' : 'Next due · monthly'}
+                value={formatDate(nextDue, now)}
+                className="flex-1"
+                leading={
+                  <IconSymbol
+                    name="calendar-blank"
+                    size={18}
+                    color={tokens.foreground}
+                  />
+                }
+                onPress={() => setDueOpen(true)}
+              />
+              <PickerField
+                testID={tid('budget', 'bill', 'wallet')}
+                label="Pays from"
+                value={wallet?.name ?? ''}
+                className="flex-1"
+                onPress={pickWallet}
+              />
+            </View>
+            <PickerField
+              testID={tid('budget', 'bill', 'category')}
+              label="Category"
+              value={category?.name ?? ''}
+              leading={
+                category ? (
+                  <IconSymbol
+                    name={bubbleIcon}
+                    size={18}
+                    color={tokens.foreground}
+                  />
+                ) : undefined
+              }
+              onPress={pickCategory}
+            />
+          </View>
+
+          <ListCard>
+            <SwitchRow
+              icon="bell-outline"
+              title="Remind me"
+              meta={
+                remindOn && reminder
+                  ? `1 day before, ${REMINDER_TIME}`
+                  : 'Off'
+              }
+            >
+              <Toggle
+                testID={tid('budget', 'bill', 'remind')}
+                accessibilityLabel="Remind me"
+                value={remindOn}
+                onChange={setRemind}
+              />
+            </SwitchRow>
+            <SwitchRow
+              icon="auto-fix"
+              title="Auto-add bank alerts"
+              meta={
+                rule
+                  ? 'Added for you, marked Auto'
+                  : sourceApp
+                    ? 'You approve each alert'
+                    : `Link ${wallet?.name ?? 'the wallet'} to its banking app first`
+              }
+            >
+              <Toggle
+                testID={tid('budget', 'bill', 'auto-add')}
+                accessibilityLabel="Auto-add bank alerts"
+                value={Boolean(rule)}
+                disabled={!rule && (!sourceApp || !bill.categoryId)}
+                onChange={setAutoAdd}
+              />
+            </SwitchRow>
+          </ListCard>
+
+          {history.length || skippedRow ? (
+            <View className="gap-2.5 pt-2">
+              <View className="flex-row items-center justify-between">
+                <Text
+                  variant="sectionTitle"
+                  className="text-foreground"
+                  accessibilityRole="header"
+                >
+                  History
+                </Text>
+                {payments.length > history.length ? (
+                  <Button
+                    testID={tid('budget', 'bill', 'see-all')}
+                    variant="tertiary"
+                    label="See all"
+                    icon="chevron-right"
+                    onPress={() =>
+                      router.dismissTo({
+                        pathname: '/activity',
+                        params: bill.categoryId
+                          ? { categoryId: bill.categoryId }
+                          : {},
+                      })
+                    }
+                  />
+                ) : null}
+              </View>
+              <ListCard>
+                {skippedRow ? (
+                  <View
+                    accessible
+                    accessibilityLabel={`${bill.name}, skipped in ${monthName(period)}`}
+                    className="h-[66px] flex-row items-center gap-3.5 px-[18px]"
+                  >
+                    <TintBubble
+                      icon={bubbleIcon}
+                      color={category?.color ?? null}
+                    />
+                    <View className="min-w-0 flex-1">
+                      <Text
+                        variant="rowTitle"
+                        className="text-foreground"
+                        numberOfLines={1}
+                      >
+                        {bill.name}
+                      </Text>
+                      <Text
+                        variant="meta"
+                        className="text-muted"
+                      >
+                        {`Skipped · ${monthName(period)}`}
+                      </Text>
+                    </View>
+                    <Text
+                      variant="rowTitle"
+                      className="text-muted"
+                    >
+                      {formatMoney(0, bill.currency)}
+                    </Text>
+                  </View>
+                ) : null}
+                {history.map((payment) => (
+                  <TransactionRow
+                    key={payment.id}
+                    testID={tid(
+                      'budget',
+                      'bill',
+                      'payment',
+                      payment.id,
+                    )}
+                    row={{
+                      ...transactionRow(payment, lookup),
+                      title: bill.name,
+                    }}
+                    metaLead="date"
+                    now={now}
+                    onPress={() =>
+                      router.push({
+                        pathname: '/transaction/[id]',
+                        params: { id: payment.id },
+                      })
+                    }
+                  />
+                ))}
+              </ListCard>
+            </View>
+          ) : null}
+
+          <Button
+            testID={tid('budget', 'bill', 'stop')}
+            variant="destructive"
+            icon="trash-can-outline"
+            label={`Stop tracking ${bill.name}`}
+            onPress={stop}
+          />
+        </ScrollView>
+      </Page>
+      <DueDaySheet
+        open={dueOpen}
+        selected={toLocalDateInput(nextDue)}
+        monthly={!once}
+        onPick={pickDue}
+        onDismiss={() => setDueOpen(false)}
+      />
+    </View>
   );
 }
-
 
 function SwitchRow({
   icon,
@@ -606,4 +727,3 @@ function SwitchRow({
     </View>
   );
 }
-

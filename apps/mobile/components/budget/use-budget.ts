@@ -52,10 +52,7 @@ export function useBudgetData() {
   const monthlyTotal = useValue(() => profilePreferences$.get()?.monthly_budget ?? null);
   const overrides = useValue(() =>
     userId
-      ? selectRecurringOverrides(
-          getRecordValues<RecurringOverrideRow>(recurringOverrides$),
-          userId,
-        )
+      ? selectRecurringOverrides(getRecordValues<RecurringOverrideRow>(recurringOverrides$), userId)
       : [],
   );
   const bills = useMemo(
@@ -75,8 +72,7 @@ export function useBudgetData() {
     walletNames,
     categories,
     budgets,
-    monthlyTotalMinor:
-      monthlyTotal === null ? null : (decimalToMinor(monthlyTotal) as MinorAmount),
+    monthlyTotalMinor: monthlyTotal === null ? null : (decimalToMinor(monthlyTotal) as MinorAmount),
     overrides,
     bills,
     debts,

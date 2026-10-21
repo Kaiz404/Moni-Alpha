@@ -45,19 +45,29 @@ export function MapTeaser({
   const [minLng, maxLng] = [Math.min(...lngs), Math.max(...lngs)];
   const biggest = Number(shown[0]?.totalMinor ?? 1);
   const point = (place: Place) => ({
-    x: PAD + ((place.longitude - minLng) / (maxLng - minLng || 1)) * (width - PAD * 2 || 1),
-    y: PAD + ((maxLat - place.latitude) / (maxLat - minLat || 1)) * (HEIGHT - PAD * 2),
+    x:
+      PAD +
+      ((place.longitude - minLng) / (maxLng - minLng || 1)) *
+        (width - PAD * 2 || 1),
+    y:
+      PAD +
+      ((maxLat - place.latitude) / (maxLat - minLat || 1)) *
+        (HEIGHT - PAD * 2),
     r: 8 + 13 * Math.sqrt(Number(place.totalMinor) / biggest),
   });
   const single = shown.length === 1;
-  const whole = (value: number) => formatMoney(value, currency, { whole: true });
+  const whole = (value: number) =>
+    formatMoney(value, currency, { whole: true });
   const caption = expenses
     ? `${places.length === 1 ? '1 place' : `${places.length} places`} · ${withPlace} of ${expenses} expenses had a place`
     : `Nothing spent in ${monthName} yet`;
   const label = shown.length
     ? `Where you spend. Biggest: ${shown
         .slice(0, LABELS)
-        .map((place) => `${place.name} ${formatMoney(place.totalMinor, currency)}`)
+        .map(
+          (place) =>
+            `${place.name} ${formatMoney(place.totalMinor, currency)}`,
+        )
         .join(', ')}. Open the map`
     : 'Where you spend. Open the map';
 
@@ -112,7 +122,9 @@ export function MapTeaser({
                 fill={tokens.card}
               />
               {[...shown].reverse().map((place, index) => {
-                const at = single ? { x: width / 2, y: HEIGHT / 2, r: 18 } : point(place);
+                const at = single
+                  ? { x: width / 2, y: HEIGHT / 2, r: 18 }
+                  : point(place);
                 return (
                   <Circle
                     key={index}
@@ -128,9 +140,14 @@ export function MapTeaser({
               })}
             </Svg>
             {shown.slice(0, LABELS).map((place, index) => {
-              const at = single ? { x: width / 2, y: HEIGHT / 2, r: 18 } : point(place);
+              const at = single
+                ? { x: width / 2, y: HEIGHT / 2, r: 18 }
+                : point(place);
               const text = `${place.name} · ${whole(Number(place.totalMinor))}`;
-              const chipWidth = Math.min(width - 16, 12 + text.length * 7);
+              const chipWidth = Math.min(
+                width - 16,
+                12 + text.length * 7,
+              );
               const below = at.y < HEIGHT / 2;
               return (
                 <View
@@ -138,8 +155,20 @@ export function MapTeaser({
                   pointerEvents="none"
                   className="absolute h-6 justify-center rounded-full bg-card px-2.5"
                   style={{
-                    left: Math.max(8, Math.min(width - chipWidth - 8, at.x - chipWidth / 2)),
-                    top: Math.max(6, Math.min(HEIGHT - 30, below ? at.y + at.r + 4 : at.y - at.r - 28)),
+                    left: Math.max(
+                      8,
+                      Math.min(
+                        width - chipWidth - 8,
+                        at.x - chipWidth / 2,
+                      ),
+                    ),
+                    top: Math.max(
+                      6,
+                      Math.min(
+                        HEIGHT - 30,
+                        below ? at.y + at.r + 4 : at.y - at.r - 28,
+                      ),
+                    ),
                     maxWidth: width - 16,
                   }}
                 >

@@ -4,8 +4,15 @@ import { useMemo, useState } from 'react';
 import { ScrollView, View } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
 
-import { InPlaceField, Pencil, parseDraft } from '@/components/budget/in-place-field';
-import { useBudgetData, useBudgetMonth } from '@/components/budget/use-budget';
+import {
+  InPlaceField,
+  Pencil,
+  parseDraft,
+} from '@/components/budget/in-place-field';
+import {
+  useBudgetData,
+  useBudgetMonth,
+} from '@/components/budget/use-budget';
 import { Button } from '@/components/ui/button';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { ListCard } from '@/components/ui/list-card';
@@ -16,7 +23,10 @@ import { TintBubble } from '@/components/ui/transaction-row';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { monthKey, monthName } from '@/lib/finance/budget-month';
 import { formatMoney } from '@/lib/finance/format-money';
-import { setMonthlyBudget, upsertCategoryBudget } from '@/lib/supabase/category-budgets';
+import {
+  setMonthlyBudget,
+  upsertCategoryBudget,
+} from '@/lib/supabase/category-budgets';
 import { tid } from '@/lib/test-ids';
 import { showToast } from '@/lib/toast/toast-store';
 import { resolveTransactionIcon } from '@/lib/transactions/icon';
@@ -44,11 +54,17 @@ export default function EditBudgetsScreen() {
       Object.fromEntries(
         data.budgets
           .filter((budget) => budget.currency === currency)
-          .map((budget) => [budget.categoryId, wholeOf(budget.amountMinor)]),
+          .map((budget) => [
+            budget.categoryId,
+            wholeOf(budget.amountMinor),
+          ]),
       ),
     [data.budgets, currency],
   );
-  const savedTotal = data.monthlyTotalMinor === null ? null : wholeOf(data.monthlyTotalMinor);
+  const savedTotal =
+    data.monthlyTotalMinor === null
+      ? null
+      : wholeOf(data.monthlyTotalMinor);
   const [caps, setCaps] = useState<Record<string, number>>(saved);
   const [total, setTotal] = useState<number | null>(savedTotal);
   const [editing, setEditing] = useState<string | null>(null);
@@ -58,26 +74,51 @@ export default function EditBudgetsScreen() {
   const spentByCategory = useMemo(
     () =>
       Object.fromEntries(
-        [...month.budgeted, ...month.unbudgeted].map((row) => [row.categoryId, row.spentMinor]),
+        [...month.budgeted, ...month.unbudgeted].map((row) => [
+          row.categoryId,
+          row.spentMinor,
+        ]),
       ),
     [month.budgeted, month.unbudgeted],
   );
   const typed = parseDraft(draft, false);
   const live = (id: string) =>
-    editing === id && typed !== null ? typed : id === TOTAL ? (total ?? 0) : (caps[id] ?? 0);
-  const rows = data.categories.filter((category) => category.id in caps);
+    editing === id && typed !== null
+      ? typed
+      : id === TOTAL
+        ? (total ?? 0)
+        : (caps[id] ?? 0);
+  const rows = data.categories.filter(
+    (category) => category.id in caps,
+  );
   const extras = data.categories
     .filter((category) => !(category.id in caps))
-    .sort((a, b) => (spentByCategory[b.id] ?? 0) - (spentByCategory[a.id] ?? 0));
-  const sum = rows.reduce((acc, category) => acc + live(category.id), 0);
-  const liveTotal = total === null && editing !== TOTAL ? sum : live(TOTAL);
-  const whole = (value: number) => formatMoney(value * 100, currency, { whole: true });
-  const spent = (id: string) => formatMoney(spentByCategory[id] ?? 0, currency);
-  const counted = rows.filter((category) => live(category.id) > 0).length;
+    .sort(
+      (a, b) =>
+        (spentByCategory[b.id] ?? 0) - (spentByCategory[a.id] ?? 0),
+    );
+  const sum = rows.reduce(
+    (acc, category) => acc + live(category.id),
+    0,
+  );
+  const liveTotal =
+    total === null && editing !== TOTAL ? sum : live(TOTAL);
+  const whole = (value: number) =>
+    formatMoney(value * 100, currency, { whole: true });
+  const spent = (id: string) =>
+    formatMoney(spentByCategory[id] ?? 0, currency);
+  const counted = rows.filter(
+    (category) => live(category.id) > 0,
+  ).length;
   const thisMonth = monthName(monthKey(data.now));
 
   const scale = Math.max(liveTotal, sum, 1);
-  const arcs: { id: string; color: string; dash: string; offset: number }[] = [];
+  const arcs: {
+    id: string;
+    color: string;
+    dash: string;
+    offset: number;
+  }[] = [];
   for (let i = 0, at = 0; i < rows.length; i += 1) {
     const length = (live(rows[i].id) / scale) * DONUT_C;
     if (length <= 0) continue;
@@ -122,12 +163,21 @@ export default function EditBudgetsScreen() {
   const saveAll = async () => {
     setSaving(true);
     try {
-      const changed = Object.entries(caps).filter(([id, cap]) => cap > 0 && saved[id] !== cap);
+      const changed = Object.entries(caps).filter(
+        ([id, cap]) => cap > 0 && saved[id] !== cap,
+      );
       for (const [id, cap] of changed)
-        await upsertCategoryBudget(id, currency, (cap * 100) as MinorAmount);
+        await upsertCategoryBudget(
+          id,
+          currency,
+          (cap * 100) as MinorAmount,
+        );
       if (total !== savedTotal) await setMonthlyBudget(total);
       showToast({
-        text: counted === 1 ? '1 budget saved' : `${counted} budgets saved`,
+        text:
+          counted === 1
+            ? '1 budget saved'
+            : `${counted} budgets saved`,
       });
       router.back();
     } finally {
@@ -197,7 +247,10 @@ export default function EditBudgetsScreen() {
               accessible
               accessibilityRole="image"
               accessibilityLabel={`The ${whole(liveTotal)} monthly total: ${rows
-                .map((category) => `${category.name} ${whole(live(category.id))}`)
+                .map(
+                  (category) =>
+                    `${category.name} ${whole(live(category.id))}`,
+                )
                 .join(', ')}. ${status.pill}.`}
             >
               <Svg
@@ -265,12 +318,17 @@ export default function EditBudgetsScreen() {
               {rows.map((category) => {
                 const cap = caps[category.id];
                 const was = saved[category.id];
-                const leftMinor = live(category.id) * 100 - Number(spentByCategory[category.id] ?? 0);
+                const leftMinor =
+                  live(category.id) * 100 -
+                  Number(spentByCategory[category.id] ?? 0);
                 return (
                   <View key={category.id}>
                     <View className="min-h-[66px] flex-row items-center gap-3.5 py-3 pl-[18px] pr-3">
                       <TintBubble
-                        icon={resolveTransactionIcon(category.icon, 'expense')}
+                        icon={resolveTransactionIcon(
+                          category.icon,
+                          'expense',
+                        )}
                         color={category.color}
                       />
                       <View className="min-w-0 flex-1">
@@ -292,7 +350,12 @@ export default function EditBudgetsScreen() {
                       {editing === category.id ? null : (
                         <>
                           <Press
-                            testID={tid('budget', 'edit', 'cap-value', category.name)}
+                            testID={tid(
+                              'budget',
+                              'edit',
+                              'cap-value',
+                              category.name,
+                            )}
                             accessibilityLabel={`${category.name} budget ${whole(cap)}. Edit`}
                             disabled={editing !== null}
                             pressedClassName="bg-transparent"
@@ -302,14 +365,21 @@ export default function EditBudgetsScreen() {
                             <Text
                               variant="rowTitle"
                               className="text-foreground"
-                              style={{ fontVariant: ['tabular-nums'] }}
+                              style={{
+                                fontVariant: ['tabular-nums'],
+                              }}
                             >
                               {whole(cap)}
                             </Text>
                           </Press>
                           {editing ? null : (
                             <Pencil
-                              testID={tid('budget', 'edit', 'cap', category.name)}
+                              testID={tid(
+                                'budget',
+                                'edit',
+                                'cap',
+                                category.name,
+                              )}
                               accessibilityLabel={`Edit ${category.name} budget, ${whole(cap)}`}
                               onPress={() => start(category.id, cap)}
                             />
@@ -332,7 +402,11 @@ export default function EditBudgetsScreen() {
                         >
                           <Text
                             variant="meta"
-                            className={typed !== null && leftMinor < 0 ? 'text-over' : 'text-muted'}
+                            className={
+                              typed !== null && leftMinor < 0
+                                ? 'text-over'
+                                : 'text-muted'
+                            }
                           >
                             {typed === null
                               ? `Type an amount above ${whole(0)}.`
@@ -366,7 +440,10 @@ export default function EditBudgetsScreen() {
                   className="min-h-[66px] flex-row items-center gap-3.5 py-3 pl-[18px] pr-3"
                 >
                   <TintBubble
-                    icon={resolveTransactionIcon(category.icon, 'expense')}
+                    icon={resolveTransactionIcon(
+                      category.icon,
+                      'expense',
+                    )}
                     color={category.color}
                   />
                   <View className="min-w-0 flex-1">
@@ -386,7 +463,12 @@ export default function EditBudgetsScreen() {
                     </Text>
                   </View>
                   <Press
-                    testID={tid('budget', 'edit', 'set', category.name)}
+                    testID={tid(
+                      'budget',
+                      'edit',
+                      'set',
+                      category.name,
+                    )}
                     accessibilityLabel={`Set a budget for ${category.name}`}
                     disabled={editing !== null}
                     radius={{ rest: 22, pressed: 16 }}
@@ -402,7 +484,9 @@ export default function EditBudgetsScreen() {
                       size={18}
                       color={tokens.foreground}
                     />
-                    <Text className="text-[14px] font-display-semibold text-foreground">Set</Text>
+                    <Text className="text-[14px] font-display-semibold text-foreground">
+                      Set
+                    </Text>
                   </Press>
                 </View>
               ))}
@@ -413,7 +497,11 @@ export default function EditBudgetsScreen() {
       <View className="border-t-[1.5px] border-sand bg-canvas px-5 pb-[26px] pt-3">
         <Button
           testID={tid('budget', 'edit', 'save')}
-          label={counted === 1 ? 'Save 1 budget' : `Save ${counted} budgets`}
+          label={
+            counted === 1
+              ? 'Save 1 budget'
+              : `Save ${counted} budgets`
+          }
           pinned
           loading={saving}
           loadingLabel="Saving"

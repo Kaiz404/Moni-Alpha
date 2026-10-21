@@ -11,7 +11,10 @@ import { tid, type Screen } from '@/lib/test-ids';
 const MAX_WHOLE = 100_000;
 
 /** Parse what the user typed: a positive amount under RM100,000, whole or to two decimals. */
-export function parseDraft(draft: string, decimals: boolean): number | null {
+export function parseDraft(
+  draft: string,
+  decimals: boolean,
+): number | null {
   const pattern = decimals ? /^\d+(\.\d{0,2})?$/ : /^\d+$/;
   if (!pattern.test(draft.trim())) return null;
   const value = Number(draft);
@@ -74,11 +77,19 @@ export function InPlaceField({
             onChangeText={(text) =>
               onChangeText(
                 amount
-                  ? text.replace(decimals ? /[^0-9.]/g : /[^0-9]/g, '').slice(0, decimals ? 8 : 5)
+                  ? text
+                      .replace(decimals ? /[^0-9.]/g : /[^0-9]/g, '')
+                      .slice(0, decimals ? 8 : 5)
                   : text.slice(0, maxLength),
               )
             }
-            keyboardType={amount ? (decimals ? 'decimal-pad' : 'number-pad') : 'default'}
+            keyboardType={
+              amount
+                ? decimals
+                  ? 'decimal-pad'
+                  : 'number-pad'
+                : 'default'
+            }
             returnKeyType="done"
             onSubmitEditing={() => canSave && onSave()}
             selectionColor={tokens.foreground}

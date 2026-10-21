@@ -13,11 +13,20 @@ type MerchantListProps = {
   note?: string;
   currency: string;
   walletNames: Record<string, string>;
-  look: (merchant: MerchantSpend) => { icon: string | null; color: string | null };
+  look: (merchant: MerchantSpend) => {
+    icon: string | null;
+    color: string | null;
+  };
 };
 
 /** "Top merchants": who got the most of this spending, with payment counts. */
-export function MerchantList({ merchants, note, currency, walletNames, look }: MerchantListProps) {
+export function MerchantList({
+  merchants,
+  note,
+  currency,
+  walletNames,
+  look,
+}: MerchantListProps) {
   if (!merchants.length) return null;
   return (
     <View className="gap-2">

@@ -4,8 +4,15 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { ScrollView, View } from 'react-native';
 
-import { BillsList, type BillLook } from '@/components/budget/bills-list';
-import { InPlaceField, Pencil, parseDraft } from '@/components/budget/in-place-field';
+import {
+  BillsList,
+  type BillLook,
+} from '@/components/budget/bills-list';
+import {
+  InPlaceField,
+  Pencil,
+  parseDraft,
+} from '@/components/budget/in-place-field';
 import { MerchantList } from '@/components/budget/merchant-list';
 import { useBudgetData } from '@/components/budget/use-budget';
 import { PaceChart } from '@/components/charts/pace-chart';
@@ -16,7 +23,10 @@ import { ListCard } from '@/components/ui/list-card';
 import { Page } from '@/components/ui/page';
 import { ProgressBar } from '@/components/ui/progress-bar';
 import { Text } from '@/components/ui/text';
-import { TintBubble, TransactionRow } from '@/components/ui/transaction-row';
+import {
+  TintBubble,
+  TransactionRow,
+} from '@/components/ui/transaction-row';
 import { dayLabel } from '@/lib/dates/day-label';
 import { lastPaymentBySeries } from '@/lib/finance/bills';
 import { budgetNote } from '@/lib/finance/budget-note';
@@ -33,7 +43,10 @@ import {
 import { formatMoney } from '@/lib/finance/format-money';
 import { pendingProposals$ } from '@/lib/finance/selectors';
 import { openSheet } from '@/lib/sheet/sheet-store';
-import { deleteCategoryBudget, upsertCategoryBudget } from '@/lib/supabase/category-budgets';
+import {
+  deleteCategoryBudget,
+  upsertCategoryBudget,
+} from '@/lib/supabase/category-budgets';
 import { tid } from '@/lib/test-ids';
 import { showToast } from '@/lib/toast/toast-store';
 import { resolveTransactionIcon } from '@/lib/transactions/icon';
@@ -50,22 +63,35 @@ const leftTone = {
 
 /** The one page per category (`V2P-BudgetDetail`): its month, its budget in place, its rows. */
 export default function CategoryBudgetScreen() {
-  const params = useLocalSearchParams<{ categoryId: string; month?: string }>();
+  const params = useLocalSearchParams<{
+    categoryId: string;
+    month?: string;
+  }>();
   const data = useBudgetData();
   const { currency, now } = data;
   const month = params.month ?? monthKey(now);
   const isCurrent = month === monthKey(now);
-  const category = data.categories.find((item) => item.id === params.categoryId);
+  const category = data.categories.find(
+    (item) => item.id === params.categoryId,
+  );
   const budgetMinor =
     data.budgets.find(
-      (budget) => budget.categoryId === params.categoryId && budget.currency === currency,
+      (budget) =>
+        budget.categoryId === params.categoryId &&
+        budget.currency === currency,
     )?.amountMinor ?? null;
   const proposals = useValue(pendingProposals$(data.userId));
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState('');
 
   const spend = useMemo(
-    () => monthSpend(data.transactions, month, currency, params.categoryId),
+    () =>
+      monthSpend(
+        data.transactions,
+        month,
+        currency,
+        params.categoryId,
+      ),
     [data.transactions, month, currency, params.categoryId],
   );
   const series = useMemo(() => {
@@ -73,18 +99,27 @@ export default function CategoryBudgetScreen() {
     return cumulativeSpend(daily, throughDay);
   }, [spend, month, now]);
   const spentMinor = series[series.length - 1] ?? (0 as MinorAmount);
-  const { merchants, count: merchantCount } = useMemo(() => topMerchants(spend, 3), [spend]);
+  const { merchants, count: merchantCount } = useMemo(
+    () => topMerchants(spend, 3),
+    [spend],
+  );
   const pending = proposals.filter(
     (proposal) =>
-      proposal.categoryId === params.categoryId && proposal.currency === currency && isCurrent,
+      proposal.categoryId === params.categoryId &&
+      proposal.currency === currency &&
+      isCurrent,
   );
-  const latest = useMemo(() => lastPaymentBySeries(data.transactions), [data.transactions]);
+  const latest = useMemo(
+    () => lastPaymentBySeries(data.transactions),
+    [data.transactions],
+  );
   const bills = isCurrent
     ? data.bills.filter(
         (bill) =>
           bill.status === 'due' &&
           bill.currency === currency &&
-          latest.get(bill.seriesKey)?.categoryId === params.categoryId,
+          latest.get(bill.seriesKey)?.categoryId ===
+            params.categoryId,
       )
     : [];
 
@@ -106,8 +141,12 @@ export default function CategoryBudgetScreen() {
   const name = monthName(month);
   const look = { icon: category.icon, color: category.color };
   const typed = parseDraft(draft, false);
-  const typedMinor = typed === null ? null : ((typed * 100) as MinorAmount);
-  const note = budgetMinor === null ? null : budgetNote(spentMinor, budgetMinor, currency);
+  const typedMinor =
+    typed === null ? null : ((typed * 100) as MinorAmount);
+  const note =
+    budgetMinor === null
+      ? null
+      : budgetNote(spentMinor, budgetMinor, currency);
   const daysLeft = daysInMonth(month) - now.getDate() + 1;
   const bubbleIcon = resolveTransactionIcon(category.icon, 'expense');
   const billLooks: Record<string, BillLook> = Object.fromEntries(
@@ -116,7 +155,9 @@ export default function CategoryBudgetScreen() {
       return [
         bill.seriesKey,
         {
-          wallet: payment ? (data.walletNames[payment.walletId] ?? null) : null,
+          wallet: payment
+            ? (data.walletNames[payment.walletId] ?? null)
+            : null,
           ...look,
         },
       ];
@@ -128,7 +169,11 @@ export default function CategoryBudgetScreen() {
   };
 
   const startEdit = () => {
-    setDraft(budgetMinor === null ? '' : String(Math.floor(budgetMinor / 100)));
+    setDraft(
+      budgetMinor === null
+        ? ''
+        : String(Math.floor(budgetMinor / 100)),
+    );
     setEditing(true);
   };
   const save = async () => {
@@ -149,7 +194,8 @@ export default function CategoryBudgetScreen() {
     const confirmed = await openSheet({
       kind: 'confirm',
       title: `Remove the ${category.name} budget?`,
-      message: 'Spending in this category still counts toward the month.',
+      message:
+        'Spending in this category still counts toward the month.',
       confirmLabel: 'Remove budget',
       destructive: true,
     });
@@ -158,7 +204,8 @@ export default function CategoryBudgetScreen() {
     showToast({
       text: `${category.name} budget removed`,
       tone: 'removed',
-      undo: () => void upsertCategoryBudget(category.id, currency, budgetMinor),
+      undo: () =>
+        void upsertCategoryBudget(category.id, currency, budgetMinor),
     });
   };
 
@@ -230,7 +277,9 @@ export default function CategoryBudgetScreen() {
                 </Text>
                 {isCurrent ? (
                   <Text className="text-[15px] leading-5 text-muted">
-                    {daysLeft === 1 ? '1 day left' : `${daysLeft} days left`}
+                    {daysLeft === 1
+                      ? '1 day left'
+                      : `${daysLeft} days left`}
                   </Text>
                 ) : null}
               </View>
@@ -292,7 +341,9 @@ export default function CategoryBudgetScreen() {
               <Button
                 testID={tid('budget', 'category', 'budget-value')}
                 variant="tertiary"
-                label={formatMoney(budgetMinor, currency, { whole: true })}
+                label={formatMoney(budgetMinor, currency, {
+                  whole: true,
+                })}
                 accessibilityLabel={`Monthly budget ${formatMoney(budgetMinor, currency, { whole: true })}. Edit`}
                 className="px-1"
                 onPress={startEdit}
@@ -348,7 +399,9 @@ export default function CategoryBudgetScreen() {
               variant="meta"
               className="text-muted"
             >
-              {spend.length === 1 ? '1 payment' : `${spend.length} payments`}
+              {spend.length === 1
+                ? '1 payment'
+                : `${spend.length} payments`}
             </Text>
           </View>
           <PaceChart
@@ -373,7 +426,10 @@ export default function CategoryBudgetScreen() {
               currency={currency}
               monthEnd={`${daysInMonth(month)} ${monthShort(month)}`}
               onOpen={(bill) =>
-                router.push({ pathname: '/bill/[seriesKey]', params: { seriesKey: bill.seriesKey } })
+                router.push({
+                  pathname: '/bill/[seriesKey]',
+                  params: { seriesKey: bill.seriesKey },
+                })
               }
             />
           </View>
@@ -408,24 +464,40 @@ export default function CategoryBudgetScreen() {
               {pending.map((proposal) => (
                 <TransactionRow
                   key={proposal.id}
-                  testID={tid('budget', 'category', 'pending', proposal.id)}
+                  testID={tid(
+                    'budget',
+                    'category',
+                    'pending',
+                    proposal.id,
+                  )}
                   row={proposalRow(proposal, lookup)}
                   metaLead="date"
                   now={now}
                   onPress={() =>
-                    router.push({ pathname: '/proposal/[id]', params: { id: proposal.id } })
+                    router.push({
+                      pathname: '/proposal/[id]',
+                      params: { id: proposal.id },
+                    })
                   }
                 />
               ))}
               {spend.slice(0, SHOWN_ROWS).map((transaction) => (
                 <TransactionRow
                   key={transaction.id}
-                  testID={tid('budget', 'category', 'row', transaction.id)}
+                  testID={tid(
+                    'budget',
+                    'category',
+                    'row',
+                    transaction.id,
+                  )}
                   row={transactionRow(transaction, lookup)}
                   metaLead="date"
                   now={now}
                   onPress={() =>
-                    router.push({ pathname: '/transaction/[id]', params: { id: transaction.id } })
+                    router.push({
+                      pathname: '/transaction/[id]',
+                      params: { id: transaction.id },
+                    })
                   }
                 />
               ))}
@@ -436,7 +508,11 @@ export default function CategoryBudgetScreen() {
         <View className="mt-1.5">
           <MerchantList
             merchants={merchants}
-            note={merchantCount === 1 ? '1 merchant' : `${merchantCount} merchants`}
+            note={
+              merchantCount === 1
+                ? '1 merchant'
+                : `${merchantCount} merchants`
+            }
             currency={currency}
             walletNames={data.walletNames}
             look={() => look}

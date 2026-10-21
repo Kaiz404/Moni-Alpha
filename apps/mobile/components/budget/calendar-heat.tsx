@@ -2,12 +2,23 @@ import { View } from 'react-native';
 
 import { Press } from '@/components/ui/press';
 import { Text } from '@/components/ui/text';
-import type { HeatBucket, HeatDay } from '@/lib/finance/calendar-heat';
+import type {
+  HeatBucket,
+  HeatDay,
+} from '@/lib/finance/calendar-heat';
 import { formatMoney } from '@/lib/finance/format-money';
 import { tid } from '@/lib/test-ids';
 
 const WEEKDAY_INITIALS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
-const WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+const WEEKDAYS = [
+  'Sunday',
+  'Monday',
+  'Tuesday',
+  'Wednesday',
+  'Thursday',
+  'Friday',
+  'Saturday',
+];
 
 const fills: Record<HeatBucket, string> = {
   under: 'bg-mint',
@@ -52,12 +63,17 @@ export function CalendarHeat({
 }: CalendarHeatProps) {
   const [year, number] = month.split('-').map(Number);
   const offset = new Date(year, number - 1, 1).getDay();
-  const cells: (HeatDay | null)[] = [...Array.from({ length: offset }, () => null), ...days];
+  const cells: (HeatDay | null)[] = [
+    ...Array.from({ length: offset }, () => null),
+    ...days,
+  ];
   while (cells.length % 7) cells.push(null);
   const weeks = Array.from({ length: cells.length / 7 }, (_, week) =>
     cells.slice(week * 7, week * 7 + 7),
   );
-  const colored = days.some((day) => day.bucket !== 'plain' && day.bucket !== 'future');
+  const colored = days.some(
+    (day) => day.bucket !== 'plain' && day.bucket !== 'future',
+  );
 
   return (
     <View
@@ -116,13 +132,19 @@ export function CalendarHeat({
               key={item.label}
               className="flex-row items-center gap-1"
             >
-              <View className={`h-2.5 w-2.5 rounded-full ${item.fill}`} />
-              <Text className="text-[12px] leading-4 text-ink-2">{item.label}</Text>
+              <View
+                className={`h-2.5 w-2.5 rounded-full ${item.fill}`}
+              />
+              <Text className="text-[12px] leading-4 text-ink-2">
+                {item.label}
+              </Text>
             </View>
           ))}
           <View className="flex-row items-center gap-1">
             <View className="h-1.5 w-1.5 rounded-full bg-primary" />
-            <Text className="text-[12px] leading-4 text-ink-2">Due</Text>
+            <Text className="text-[12px] leading-4 text-ink-2">
+              Due
+            </Text>
           </View>
         </View>
       ) : null}
@@ -150,7 +172,8 @@ function DayCell({
   onSelect: (day: number) => void;
 }) {
   const [year, number] = month.split('-').map(Number);
-  const weekday = WEEKDAYS[new Date(year, number - 1, day.day).getDay()];
+  const weekday =
+    WEEKDAYS[new Date(year, number - 1, day.day).getDay()];
   const spent = day.spentMinor === null ? 0 : Number(day.spentMinor);
   const label = [
     `${weekday} ${day.day} ${monthName}`,
@@ -174,7 +197,11 @@ function DayCell({
       pressedClassName="bg-sand-light"
       className={`h-11 flex-1 items-center justify-center rounded-[14px] ${selected ? 'bg-primary' : fills[day.bucket]} ${today && !selected ? 'border-2 border-primary' : ''}`}
     >
-      <Text className={`text-[13px] leading-4 font-display-bold ${ink}`}>{day.day}</Text>
+      <Text
+        className={`text-[13px] leading-4 font-display-bold ${ink}`}
+      >
+        {day.day}
+      </Text>
       {spent > 0 ? (
         <Text
           className={`text-[12px] leading-[14px] ${selected ? 'text-primary-foreground' : 'text-ink-2'}`}

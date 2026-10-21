@@ -2,11 +2,17 @@ import { router } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { ScrollView, View } from 'react-native';
 
-import { BillsList, type BillLook } from '@/components/budget/bills-list';
+import {
+  BillsList,
+  type BillLook,
+} from '@/components/budget/bills-list';
 import { BudgetRings } from '@/components/budget/budget-rings';
 import { CalendarView } from '@/components/budget/calendar-view';
 import { MapTeaser } from '@/components/budget/map-teaser';
-import { useBudgetData, useBudgetMonth } from '@/components/budget/use-budget';
+import {
+  useBudgetData,
+  useBudgetMonth,
+} from '@/components/budget/use-budget';
 import { PaceChart } from '@/components/charts/pace-chart';
 import { openCaptureChooser } from '@/components/nav/capture-chooser';
 import { useTabBarClearance } from '@/components/nav/tab-bar';
@@ -54,7 +60,10 @@ export default function BudgetScreen() {
     [data.transactions, data.currency, data.now],
   );
   const categoriesById = useMemo(
-    () => Object.fromEntries(data.categories.map((category) => [category.id, category])),
+    () =>
+      Object.fromEntries(
+        data.categories.map((category) => [category.id, category]),
+      ),
     [data.categories],
   );
 
@@ -68,7 +77,10 @@ export default function BudgetScreen() {
         return {
           month: item.month,
           name: `${monthName(item.month)} ${year}`,
-          meta: item.month === current ? `${spent} so far` : `${spent} spent`,
+          meta:
+            item.month === current
+              ? `${spent} so far`
+              : `${spent} spent`,
         };
       }),
     });
@@ -168,32 +180,55 @@ function MonthView({
   const name = monthName(budget.month);
   const sentence = leftSentence(budget);
   const places = useMemo(() => {
-    const range = { from: `${budget.month}-01`, to: `${budget.month}-${budget.daysInMonth}` };
-    const spend = monthSpend(data.transactions, budget.month, currency);
+    const range = {
+      from: `${budget.month}-01`,
+      to: `${budget.month}-${budget.daysInMonth}`,
+    };
+    const spend = monthSpend(
+      data.transactions,
+      budget.month,
+      currency,
+    );
     return {
       places: groupPlaces(data.transactions, { currency, range }),
       expenses: spend.length,
-      withPlace: spend.filter((row) => row.locationLatitude !== null && row.locationLongitude !== null)
-        .length,
+      withPlace: spend.filter(
+        (row) =>
+          row.locationLatitude !== null &&
+          row.locationLongitude !== null,
+      ).length,
     };
   }, [data.transactions, budget.month, budget.daysInMonth, currency]);
   const looks = useMemo(() => {
     const latest = lastPaymentBySeries(data.transactions);
-    const categories = Object.fromEntries(data.categories.map((category) => [category.id, category]));
+    const categories = Object.fromEntries(
+      data.categories.map((category) => [category.id, category]),
+    );
     const result: Record<string, BillLook> = {};
     for (const bill of budget.billsDue) {
       const payment = latest.get(bill.seriesKey);
-      const category = payment?.categoryId ? categories[payment.categoryId] : undefined;
+      const category = payment?.categoryId
+        ? categories[payment.categoryId]
+        : undefined;
       result[bill.seriesKey] = {
-        wallet: payment ? (data.walletNames[payment.walletId] ?? null) : null,
+        wallet: payment
+          ? (data.walletNames[payment.walletId] ?? null)
+          : null,
         icon: category?.icon ?? null,
         color: category?.color ?? null,
       };
     }
     return result;
-  }, [budget.billsDue, data.transactions, data.categories, data.walletNames]);
+  }, [
+    budget.billsDue,
+    data.transactions,
+    data.categories,
+    data.walletNames,
+  ]);
 
-  const history = monthsSpent.filter((item) => item.month < budget.month).slice(0, 3);
+  const history = monthsSpent
+    .filter((item) => item.month < budget.month)
+    .slice(0, 3);
   const emptyBody =
     history.length === 3
       ? `You spent about ${formatMoney(
@@ -284,7 +319,10 @@ function MonthView({
             currency={currency}
             monthEnd={`${budget.daysInMonth} ${monthShort(budget.month)}`}
             onOpen={(bill) =>
-              router.push({ pathname: '/bill/[seriesKey]', params: { seriesKey: bill.seriesKey } })
+              router.push({
+                pathname: '/bill/[seriesKey]',
+                params: { seriesKey: bill.seriesKey },
+              })
             }
             onAdd={() => router.push('/bill/new')}
           />

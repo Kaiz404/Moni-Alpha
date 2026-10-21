@@ -6,12 +6,7 @@ import {
   spendMonths,
   type BudgetMonthInput,
 } from '../budget-month';
-import type {
-  FinanceBudget,
-  FinanceCategory,
-  FinanceDebt,
-  FinanceTransaction,
-} from '../types';
+import type { FinanceBudget, FinanceCategory, FinanceDebt, FinanceTransaction } from '../types';
 
 const MYR = 'MYR' as CurrencyCode;
 const WED_14_OCT = new Date(2026, 9, 14, 14, 6);

@@ -18,7 +18,10 @@ import {
   type BudgetMonth,
 } from '@/lib/finance/budget-month';
 import { formatMoney } from '@/lib/finance/format-money';
-import type { FinanceCategory, FinanceTransaction } from '@/lib/finance/types';
+import type {
+  FinanceCategory,
+  FinanceTransaction,
+} from '@/lib/finance/types';
 import { tid } from '@/lib/test-ids';
 import { transactionRow } from '@/lib/transactions/row';
 
@@ -44,8 +47,12 @@ export function CalendarView({
 }: CalendarViewProps) {
   const { currency, evenPaceMinor } = month;
   const today = month.isCurrent ? now.getDate() : null;
-  const [picked, setPicked] = useState<{ month: string; day: number } | null>(null);
-  const selected = picked?.month === month.month ? picked.day : month.throughDay;
+  const [picked, setPicked] = useState<{
+    month: string;
+    day: number;
+  } | null>(null);
+  const selected =
+    picked?.month === month.month ? picked.day : month.throughDay;
   const spend = useMemo(
     () => monthSpend(transactions, month.month, currency),
     [transactions, month.month, currency],
@@ -53,7 +60,11 @@ export function CalendarView({
   const billByDay = useMemo(() => {
     const byDay: Record<number, UpcomingBill> = {};
     for (const bill of month.isCurrent ? bills : []) {
-      if (bill.status !== 'due' || !bill.dueDate.startsWith(month.month)) continue;
+      if (
+        bill.status !== 'due' ||
+        !bill.dueDate.startsWith(month.month)
+      )
+        continue;
       byDay[Number(bill.dueDate.slice(8))] ??= bill;
     }
     return byDay;
@@ -63,7 +74,8 @@ export function CalendarView({
       calendarHeat(
         month.daily.map((spentMinor, index) => ({
           day: index + 1,
-          spentMinor: index + 1 <= month.throughDay ? spentMinor : null,
+          spentMinor:
+            index + 1 <= month.throughDay ? spentMinor : null,
           billDue: Boolean(billByDay[index + 1]),
         })),
         evenPaceMinor,
@@ -72,15 +84,23 @@ export function CalendarView({
   );
   const short = monthShort(month.month);
   const [year, number] = month.month.split('-').map(Number);
-  const weekday = WEEKDAYS[new Date(year, number - 1, selected).getDay()];
+  const weekday =
+    WEEKDAYS[new Date(year, number - 1, selected).getDay()];
   const title = `${selected === today ? 'Today, ' : ''}${weekday} ${selected} ${short}`;
-  const rows = spend.filter((transaction) => dayOfMonth(transaction) === selected);
+  const rows = spend.filter(
+    (transaction) => dayOfMonth(transaction) === selected,
+  );
   const daySpent = Number(month.daily[selected - 1] ?? 0);
-  const whole = (value: number) => formatMoney(value, currency, { whole: true });
+  const whole = (value: number) =>
+    formatMoney(value, currency, { whole: true });
   const atOrUnder = days.filter(
-    (day) => day.spentMinor !== null && (day.bucket === 'under' || day.bucket === 'plain'),
+    (day) =>
+      day.spentMinor !== null &&
+      (day.bucket === 'under' || day.bucket === 'plain'),
   ).length;
-  const counted = days.filter((day) => day.spentMinor !== null).length;
+  const counted = days.filter(
+    (day) => day.spentMinor !== null,
+  ).length;
   const bill = billByDay[selected];
   const paceNote =
     evenPaceMinor === null
@@ -88,12 +108,22 @@ export function CalendarView({
       : daySpent <= evenPaceMinor
         ? `${formatMoney(evenPaceMinor - daySpent, currency)} under even pace`
         : `${formatMoney(daySpent - evenPaceMinor, currency)} over even pace`;
-  const { merchants } = useMemo(() => topMerchants(spend, 4), [spend]);
+  const { merchants } = useMemo(
+    () => topMerchants(spend, 4),
+    [spend],
+  );
   const lookup = { categoriesById, walletNames };
   const lastCategory = (name: string) => {
-    const transaction = spend.find((item) => (item.merchant ?? item.description) === name);
-    const category = transaction?.categoryId ? categoriesById[transaction.categoryId] : undefined;
-    return { icon: category?.icon ?? null, color: category?.color ?? null };
+    const transaction = spend.find(
+      (item) => (item.merchant ?? item.description) === name,
+    );
+    const category = transaction?.categoryId
+      ? categoriesById[transaction.categoryId]
+      : undefined;
+    return {
+      icon: category?.icon ?? null,
+      color: category?.color ?? null,
+    };
   };
 
   return (
@@ -148,7 +178,12 @@ export function CalendarView({
               variant="meta"
               className="-mt-1 text-ink-2"
             >
-              {[rows.length === 1 ? '1 payment' : `${rows.length} payments`, paceNote]
+              {[
+                rows.length === 1
+                  ? '1 payment'
+                  : `${rows.length} payments`,
+                paceNote,
+              ]
                 .filter(Boolean)
                 .join(' · ')}
             </Text>
@@ -188,7 +223,9 @@ export function CalendarView({
               >
                 {`Budget has set this aside, so it is already out of your ${whole(Math.max(0, month.left.leftMinor))} left.`}
               </Text>
-            ) : evenPaceMinor !== null && today !== null && selected >= today ? (
+            ) : evenPaceMinor !== null &&
+              today !== null &&
+              selected >= today ? (
               <Text
                 variant="meta"
                 className="text-ink-2"

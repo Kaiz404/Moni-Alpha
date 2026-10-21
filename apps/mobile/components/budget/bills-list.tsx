@@ -21,10 +21,19 @@ export type BillLook = {
 type DueTone = 'late' | 'soon' | 'plain';
 
 /** "Tomorrow", "8 days left": how far off a due date is, counted in local days. */
-export function dueLabel(dueDate: string, now: Date): { text: string; tone: DueTone } {
+export function dueLabel(
+  dueDate: string,
+  now: Date,
+): { text: string; tone: DueTone } {
   const due = parseLocalDateInput(dueDate) ?? now;
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const days = Math.round((due.getTime() - today.getTime()) / 86_400_000);
+  const today = new Date(
+    now.getFullYear(),
+    now.getMonth(),
+    now.getDate(),
+  );
+  const days = Math.round(
+    (due.getTime() - today.getTime()) / 86_400_000,
+  );
   if (days < 0) return { text: 'Overdue', tone: 'late' };
   if (days === 0) return { text: 'Today', tone: 'soon' };
   if (days === 1) return { text: 'Tomorrow', tone: 'soon' };
@@ -49,9 +58,20 @@ type BillsListProps = {
 };
 
 /** The Bills block on the Budget tab: what is still due this month, soonest first. */
-export function BillsList({ bills, looks, now, currency, monthEnd, onOpen, onAdd }: BillsListProps) {
+export function BillsList({
+  bills,
+  looks,
+  now,
+  currency,
+  monthEnd,
+  onOpen,
+  onAdd,
+}: BillsListProps) {
   const tokens = useThemeTokens();
-  const total = bills.reduce((sum, bill) => sum + Number(bill.amountMinor), 0);
+  const total = bills.reduce(
+    (sum, bill) => sum + Number(bill.amountMinor),
+    0,
+  );
   if (!bills.length && !onAdd) return null;
   return (
     <View className="gap-2">
@@ -81,7 +101,10 @@ export function BillsList({ bills, looks, now, currency, monthEnd, onOpen, onAdd
           const body = (
             <>
               <TintBubble
-                icon={resolveTransactionIcon(look?.icon ?? 'repeat', 'expense')}
+                icon={resolveTransactionIcon(
+                  look?.icon ?? 'repeat',
+                  'expense',
+                )}
                 color={look?.color ?? null}
               />
               <View className="min-w-0 flex-1">
@@ -97,7 +120,11 @@ export function BillsList({ bills, looks, now, currency, monthEnd, onOpen, onAdd
                   className="text-muted"
                   numberOfLines={1}
                 >
-                  <Text className={`font-display-bold ${toneClass[due.tone]}`}>{due.text}</Text>
+                  <Text
+                    className={`font-display-bold ${toneClass[due.tone]}`}
+                  >
+                    {due.text}
+                  </Text>
                   {look?.wallet ? ` · ${look.wallet}` : ''}
                 </Text>
               </View>
