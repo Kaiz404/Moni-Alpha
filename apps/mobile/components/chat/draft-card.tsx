@@ -128,7 +128,12 @@ export function DraftCard({ message }: { message: DraftMessage }) {
           : () => {
               setUndoable(false);
               setShown(null);
-              void undo(outcome).then(() => replaceMessage(day, message.id, draft));
+              undo(outcome)
+                .then(() => replaceMessage(day, message.id, draft))
+                .catch(() => {
+                  setShown(done);
+                  showToast({ text: "Couldn't undo that.", tone: 'removed' });
+                });
             },
       commit: () => setUndoable(false),
     });

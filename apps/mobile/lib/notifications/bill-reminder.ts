@@ -90,7 +90,9 @@ export function syncBillReminders(wanted: readonly BillReminder[]): Promise<void
           body: request.content.body ?? '',
         }),
       );
-      const { cancel, schedule } = billReminderChanges(wanted, scheduled);
+      // `wanted` may be planned from a clock that went stale while the app slept.
+      const upcoming = wanted.filter((reminder) => reminder.at.getTime() > Date.now());
+      const { cancel, schedule } = billReminderChanges(upcoming, scheduled);
       for (const id of cancel) await Notifications.cancelScheduledNotificationAsync(id);
       for (const reminder of schedule)
         await Notifications.scheduleNotificationAsync({

@@ -2,7 +2,11 @@ import type { Observable } from '@legendapp/state';
 import type { MinorAmount } from '@repo/types';
 
 import { approve, later, laterUntil, notMine, undo } from '../review-actions';
-import { drainImageUploadQueue, enqueueImageUpload } from '@/lib/receipts/upload-queue';
+import {
+  drainImageUploadQueue,
+  enqueueImageUpload,
+  getPendingUploadCount,
+} from '@/lib/receipts/upload-queue';
 import { listAwaitingReview } from '@/lib/supabase/proposed-transactions';
 
 let mockNextId = 0;
@@ -147,6 +151,27 @@ describe('approve', () => {
         receipt_image_url: `https://cdn.test/receipts/user-1/${result.outcome.transactionId}.jpg`,
       }),
     ]);
+  });
+
+  it('keeps a still-uploading photo across Approve, Undo and Approve, and drops the undone one', async () => {
+    const local = 'file:///receipts/p1.jpg';
+    const proposal = seed('p1', { source_type: 'image', source_image_uri: local });
+    enqueueImageUpload({ target: 'proposal', id: 'p1', localUri: local, userId: 'user-1' });
+
+    const first = await approve(proposal);
+    if (first.status !== 'done') throw new Error(first.status);
+    await undo(first.outcome);
+    const second = await approve(proposal);
+    if (second.status !== 'done') throw new Error(second.status);
+    await drainImageUploadQueue();
+
+    expect(ledger()).toEqual([
+      expect.objectContaining({
+        id: second.outcome.transactionId,
+        receipt_image_url: `https://cdn.test/receipts/user-1/${second.outcome.transactionId}.jpg`,
+      }),
+    ]);
+    expect(getPendingUploadCount()).toBe(0);
   });
 
   it('Undo removes the ledger row and the rule, and the capture waits for review again', async () => {

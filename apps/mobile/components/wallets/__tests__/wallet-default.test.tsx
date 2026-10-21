@@ -29,4 +29,14 @@ describe('WalletDefault', () => {
     expect(getDefaultWalletId()).toBeNull();
     expect(updateProfilePreferences).toHaveBeenLastCalledWith({ default_wallet_id: null });
   });
+
+  it('keeps the old default when saving fails', async () => {
+    jest.mocked(updateProfilePreferences).mockRejectedValueOnce(new Error('offline'));
+    render(<WalletDefault wallet={financeWallet()} />);
+
+    await act(async () => fireEvent.press(screen.getByTestId('wallet.default')));
+
+    expect(getDefaultWalletId()).toBeNull();
+    expect(screen.getByTestId('wallet.default')).not.toBeChecked();
+  });
 });

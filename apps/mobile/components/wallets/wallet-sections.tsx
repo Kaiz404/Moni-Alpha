@@ -32,7 +32,11 @@ import {
   transactionRow,
   type RowLookups,
 } from '@/lib/transactions/row';
-import { getDefaultWalletId, setDefaultWalletId } from '@/lib/wallets/default-wallet';
+import {
+  cacheDefaultWalletId,
+  getDefaultWalletId,
+  setDefaultWalletId,
+} from '@/lib/wallets/default-wallet';
 import type { WalletAlertLink } from '@/lib/wallets/wallet-link';
 import {
   formatDayTotal,
@@ -340,10 +344,12 @@ export function WalletDefault({ wallet }: { wallet: FinanceWallet }) {
   const [isDefault, setIsDefault] = useState(() => getDefaultWalletId() === wallet.id);
 
   const change = async (next: boolean) => {
+    const before = getDefaultWalletId();
     setIsDefault(next);
     try {
       await setDefaultWalletId(next ? wallet.id : null);
     } catch {
+      cacheDefaultWalletId(before);
       setIsDefault(!next);
       showToast({ text: "Couldn't save that. Try again.", tone: 'removed' });
     }

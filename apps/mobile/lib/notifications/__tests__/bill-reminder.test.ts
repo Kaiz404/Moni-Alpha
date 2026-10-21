@@ -90,7 +90,9 @@ describe('syncBillReminders', () => {
       content: { title: 'Maybank alert', body: 'GRAB', data: {} },
     });
     jest.clearAllMocks();
+    jest.spyOn(Date, 'now').mockReturnValue(WED_14_OCT.getTime());
   });
+  afterEach(() => jest.restoreAllMocks());
 
   it('schedules a reminder once however many times it runs', async () => {
     const wanted = billReminders([bill({ dueDate: '2026-10-22' })], on, WED_14_OCT);
@@ -112,6 +114,17 @@ describe('syncBillReminders', () => {
     const held = notifications.held.get('bill:MYR|expense|netflix');
     expect(held?.content.data).toEqual({ kind: 'bill', at: new Date(2026, 9, 24, 9).toISOString() });
     expect(notifications.held.size).toBe(2);
+  });
+
+  it('never schedules a reminder whose time passed while the plan was stale', async () => {
+    const plannedMondayMorning = billReminders(
+      [bill({ dueDate: '2026-10-15' })],
+      on,
+      new Date(2026, 9, 13, 8),
+    );
+    await syncBillReminders(plannedMondayMorning);
+
+    expect(notifications.scheduleNotificationAsync).not.toHaveBeenCalled();
   });
 
   it('cancels it on Remind off or Stop tracking and leaves other notifications alone', async () => {

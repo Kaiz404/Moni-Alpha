@@ -2,6 +2,8 @@ import type { ProposedTransaction } from '@repo/types';
 
 import { imageUploadMMKV } from '@/lib/mmkv/image-uploads';
 import { saveImageLocally, uploadReceiptImage } from '@/lib/receipts/images';
+import { transactions$ } from '@/lib/store';
+import { hasRow } from '@/lib/store/helpers';
 import { getUserId } from '@/lib/supabase/client';
 import { updateProposalImageUri } from '@/lib/supabase/proposed-transactions';
 import { setTransactionReceipt } from '@/lib/supabase/transactions';
@@ -48,19 +50,26 @@ export function getPendingUploadCount(): number {
 
 /** Moves a capture's receipt photo, uploaded or still queued, onto the transaction Approve wrote. */
 export function keepProposalReceipt(
-  proposal: Pick<ProposedTransaction, 'id' | 'sourceImageUri'>,
+  proposal: Pick<ProposedTransaction, 'id' | 'sourceImageUri' | 'userId'>,
   transactionId: string,
 ): void {
-  if (proposal.sourceImageUri?.startsWith('http')) {
-    setTransactionReceipt(transactionId, proposal.sourceImageUri);
+  const uri = proposal.sourceImageUri;
+  if (!uri) return;
+  if (uri.startsWith('http')) {
+    setTransactionReceipt(transactionId, uri);
     return;
   }
+  const queue = readQueue();
+  const queued = queue.some((item) => item.target === 'proposal' && item.id === proposal.id);
+  // After an Undo the photo's earlier item points at the deleted transaction, so queue it again.
   writeQueue(
-    readQueue().map((item) =>
-      item.target === 'proposal' && item.id === proposal.id
-        ? { ...item, target: 'transaction', id: transactionId }
-        : item,
-    ),
+    queued
+      ? queue.map((item) =>
+          item.target === 'proposal' && item.id === proposal.id
+            ? { ...item, target: 'transaction', id: transactionId }
+            : item,
+        )
+      : [...queue, { target: 'transaction', id: transactionId, localUri: uri, userId: proposal.userId }],
   );
   void drainImageUploadQueue().catch(() => {});
 }
@@ -77,9 +86,10 @@ export async function keepScannedReceipt(imageUri: string, transactionId: string
   await drainImageUploadQueue();
 }
 
+/** True once the item needs no more tries: linked, or its transaction was deleted. */
 async function link(item: PendingUpload, remoteUrl: string): Promise<boolean> {
   if (item.target === 'proposal') return updateProposalImageUri(item.id, remoteUrl);
-  setTransactionReceipt(item.id, remoteUrl);
+  if (hasRow(transactions$, item.id)) setTransactionReceipt(item.id, remoteUrl);
   return true;
 }
 
