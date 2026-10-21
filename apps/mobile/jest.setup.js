@@ -1,5 +1,7 @@
-process.env.EXPO_PUBLIC_SUPABASE_URL ??= 'https://example.supabase.co';
-process.env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY ??= 'sb_publishable_test';
+process.env.EXPO_PUBLIC_SUPABASE_URL ??=
+  'https://example.supabase.co';
+process.env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY ??=
+  'sb_publishable_test';
 
 jest.mock('react-native-mmkv', () => ({
   createMMKV: jest.fn(() => {
@@ -21,4 +23,13 @@ jest.mock('react-native-mmkv', () => ({
       },
     };
   }),
+}));
+
+// Reanimated's mock leaves useReducedMotion out; Press reads it.
+jest.mock('react-native-worklets', () =>
+  require('react-native-worklets/src/mock'),
+);
+jest.mock('react-native-reanimated', () => ({
+  ...require('react-native-reanimated/mock'),
+  useReducedMotion: () => false,
 }));

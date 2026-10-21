@@ -20,7 +20,15 @@ const EXEMPT_PATH = join(
 
 // JSX elements that must carry a testID built by tid() from lib/test-ids.ts. Add each v2 control
 // here as it lands.
-export const CONTROLS = ['Pressable', 'TextInput', 'Switch'];
+export const CONTROLS = [
+  'Pressable',
+  'TextInput',
+  'Switch',
+  'Press',
+  'Button',
+  'HeaderIconButton',
+  'MoniButton',
+];
 
 // A component that wraps a control passes its own testID prop through, typed as TestId, so the
 // caller's tid() reaches the native view.

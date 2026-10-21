@@ -85,6 +85,11 @@
       --color-sky: #9fc4e8;
       --color-aqua: #9fdcd3;
       --color-over: #b23e35;
+      --color-primary-pressed: #2e2f33;
+      --color-mint-pressed: #9ad3a8;
+      --color-destructive-fill: #f9d5d0;
+      --color-destructive-pressed: #f3c3bc;
+      --color-moni-glyph: #c9b6f0;
     }
 
     @variant dark {
@@ -149,6 +154,11 @@
       --color-sky: #86aed6;
       --color-aqua: #82c7bd;
       --color-over: #f0897e;
+      --color-primary-pressed: #d6cebf;
+      --color-mint-pressed: #80b98f;
+      --color-destructive-fill: #43231f;
+      --color-destructive-pressed: #532c27;
+      --color-moni-glyph: #4b3a80;
     }
   }
 }

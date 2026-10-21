@@ -108,6 +108,11 @@ describe('useThemeTokens', () => {
       sky: '#9fc4e8',
       aqua: '#9fdcd3',
       over: '#b23e35',
+      primaryPressed: '#2e2f33',
+      mintPressed: '#9ad3a8',
+      destructiveFill: '#f9d5d0',
+      destructivePressed: '#f3c3bc',
+      moniGlyph: '#c9b6f0',
     });
   });
 

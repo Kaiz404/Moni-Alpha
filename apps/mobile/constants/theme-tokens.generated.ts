@@ -57,6 +57,11 @@ export const themeTokenNames = [
   'sky',
   'aqua',
   'over',
+  'primary-pressed',
+  'mint-pressed',
+  'destructive-fill',
+  'destructive-pressed',
+  'moni-glyph',
 ] as const;
 
 export type ThemeTokenName = (typeof themeTokenNames)[number];
@@ -118,6 +123,11 @@ export const lightThemeTokens: Record<ThemeTokenName, string> = {
   sky: '#9fc4e8',
   aqua: '#9fdcd3',
   over: '#b23e35',
+  'primary-pressed': '#2e2f33',
+  'mint-pressed': '#9ad3a8',
+  'destructive-fill': '#f9d5d0',
+  'destructive-pressed': '#f3c3bc',
+  'moni-glyph': '#c9b6f0',
 };
 
 export const darkThemeTokens: Record<ThemeTokenName, string> = {
@@ -177,4 +187,9 @@ export const darkThemeTokens: Record<ThemeTokenName, string> = {
   sky: '#86aed6',
   aqua: '#82c7bd',
   over: '#f0897e',
+  'primary-pressed': '#d6cebf',
+  'mint-pressed': '#80b98f',
+  'destructive-fill': '#43231f',
+  'destructive-pressed': '#532c27',
+  'moni-glyph': '#4b3a80',
 };

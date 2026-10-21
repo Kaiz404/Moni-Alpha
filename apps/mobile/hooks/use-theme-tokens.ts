@@ -79,5 +79,10 @@ export function useThemeTokens() {
     sky: t.sky,
     aqua: t.aqua,
     over: t.over,
+    primaryPressed: t['primary-pressed'],
+    mintPressed: t['mint-pressed'],
+    destructiveFill: t['destructive-fill'],
+    destructivePressed: t['destructive-pressed'],
+    moniGlyph: t['moni-glyph'],
   };
 }
