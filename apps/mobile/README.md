@@ -162,8 +162,16 @@ Default wallet: Profile → Default wallet. Synced in `profiles.preferences.defa
 ```bash
 pnpm --filter moni test:notification-detection   # 1000-case prefilter suite
 pnpm --filter moni test:notification-routing     # wallet candidate routing (no LLM)
-pnpm --filter moni test                          # finance unit/reactivity tests
+pnpm --filter moni test                          # scripts/lint tests (node --test), then Jest
+pnpm --filter moni lint:copy                     # glossary words and money/date formats in UI copy
+pnpm --filter moni lint:test-ids                 # every Pressable, TextInput, Switch has a tid() testID
 pnpm --filter moni bench:chat                    # offline chat grounding bench (fixture ledgers, 31 cases)
 pnpm --filter moni bench:chat:live               # same questions through the real backend + model (needs apps/backend/.env)
 npx tsc --noEmit                                 # typecheck (run in apps/mobile)
 ```
+
+CI runs `pnpm test` (Jest here, `go test ./...` in the backend) in the `Tests` job, and both lints in `Lint and typecheck`.
+
+- **Copy lint.** `scripts/lint/check-copy.mjs` reads JSX text and the strings that flow into JSX children or a display prop (`title`, `label`, `accessibilityLabel`, and other names ending in label, title, text, placeholder, hint, message, description, caption, heading, or alt) under `app/` and `components/`. It tests them against `copy-rules.mjs`, the words and formats `docs/redesign/glossary.md` bans.
+- **testID lint.** `scripts/lint/check-test-ids.mjs` requires `testID={tid(...)}` from `lib/test-ids.ts`, or a pass-through of the wrapper's own `testID` prop, on each JSX element in its `CONTROLS` list.
+- **Ratchet lists.** `copy-allow.txt` and `test-id-exempt.txt` hold the v1 hits and files that may stay until rebuilt. A check fails on a new hit, on a listed entry that no longer hits (`stale`), and on a list longer than its copy at `LINT_BASE_REF` (CI sets it to the PR base or the previous push; it defaults to `origin/main`). After you fix or delete v1 code, regenerate a list with `--write`, for example `pnpm --filter moni lint:test-ids --write`, and commit it.

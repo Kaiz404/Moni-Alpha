@@ -128,6 +128,9 @@ Useful checks:
 
 ```bash
 turbo run lint check-types                      # whole repo
+pnpm test                                       # Jest (mobile) and Go tests via turbo
+pnpm --filter moni lint:copy                    # glossary copy lint
+pnpm --filter moni lint:test-ids                # testID lint
 pnpm format:check                               # Prettier (run `pnpm format` to fix)
 pnpm --filter backend test                      # Go tests
 pnpm --filter moni test:notification-detection  # notification prefilter suite
@@ -176,7 +179,7 @@ After changing native config or env, rebuild: `npx expo run:android` locally or 
 
 ## GitHub Actions Android CI
 
-The repository workflow is intentionally advisory: it runs lint and typechecks for the monorepo, then generates the Expo Android project and runs Gradle `assembleDebug` on every PR and `main` push. A failed check does not block merging, but resolve it before the next release.
+The repository workflow is intentionally advisory. On every PR and `main` push it runs three jobs: `Lint and typecheck` (lint, typecheck, and the mobile copy and testID lints), `Tests` (`pnpm test`: Jest and `go test ./...`), and `Android debug build`, which generates the Expo Android project and runs Gradle `assembleDebug`. A failed check does not block merging, but resolve it before the next release.
 
 Successful `main` and manually dispatched runs upload `app-debug.apk` as a seven-day Actions artifact. PR builds verify compilation but do not publish an APK. This is a development APK, so it needs Metro; a standalone tester build is deferred until the signed Google Play Internal Testing AAB exists.
 

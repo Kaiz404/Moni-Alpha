@@ -56,6 +56,8 @@ Tailwind via Uniwind `className` — **not** NativeWind. Design tokens live in `
 - JS color props (charts, tab bar, icons): `useThemeTokens()` from `@/hooks/use-theme-tokens`
 - Theme preference: `lib/theme/preference.ts` → `Uniwind.setTheme('light' | 'dark' | 'system')`; default **light**
 - Shared chrome: `components/ui/brand-header`, `screen-shell`, `surface`, `icon-action`, `form-field`, `chip`, `primary-button`
+- Every `Pressable`, `TextInput`, `Switch`, and v2 control gets `testID={tid('<screen>', ...parts)}` from `lib/test-ids.ts`; `pnpm --filter moni lint:test-ids` enforces it in CI.
+- UI copy follows `docs/redesign/glossary.md`; `pnpm --filter moni lint:copy` fails on a banned word or format, and fixed v1 hits come off `scripts/lint/copy-allow.txt` (`--write` regenerates it).
 
 ## Receipt camera (Android)
 

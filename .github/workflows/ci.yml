@@ -18,8 +18,12 @@ jobs:
   quality:
     name: Lint and typecheck
     runs-on: ubuntu-latest
+    env:
+      LINT_BASE_REF: ${{ github.event.pull_request.base.sha || github.event.before }}
     steps:
       - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v6
         with:
@@ -34,6 +38,25 @@ jobs:
       - run: pnpm check-types
       - run: pnpm --filter moni lint:unreferenced
       - run: pnpm --filter moni lint:tokens
+      - run: pnpm --filter moni lint:copy
+      - run: pnpm --filter moni lint:test-ids
+
+  test:
+    name: Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: pnpm
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: apps/backend/go.mod
+          cache-dependency-path: apps/backend/go.sum
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm test
 
   android-debug:
     name: Android debug build
