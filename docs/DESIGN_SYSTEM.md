@@ -166,7 +166,7 @@ Use Tailwind's 4-point scale (`p-1` = 4) plus the v2 named spacing in `global.cs
 
 ### 5.2 Shape
 
-The system is rounded and soft, not cartoonishly pill-shaped. Major surfaces should read as **continuous-corner squircles**, not as ordinary rounded rectangles with an oversized radius.
+The system is rounded and soft, not cartoonishly pill-shaped. Surfaces are plain Uniwind rounded views on the v2 radii below; there is no squircle layer.
 
 v2 radii (`global.css` `@theme`, values in [`redesign/tokens.md`](redesign/tokens.md)):
 
@@ -180,12 +180,12 @@ v2 radii (`global.css` `@theme`, values in [`redesign/tokens.md`](redesign/token
 
 Use pills sparingly: filter states, segmented controls, compact metadata, and the FAB label. Do not turn every card and button into a pill.
 
-#### Continuous-corner implementation
+#### Page chrome and controls (v2)
 
-- **Major surfaces only:** cards, wallet tiles, sheets, hero panels, and proposal artifacts use the shared `react-native-fast-squircle` primitive. Wrap it once at module scope with Uniwind so it accepts the same semantic `className` surface, spacing, and color utilities as a `View`.
-- `radius-lg` uses `cornerSmoothing: 0.65`; `radius-xl` uses `cornerSmoothing: 0.75`. The radius and smoothing travel together as one shape decision.
-- Rows, input interiors, chips, avatars, compact chart marks, and repeated list items remain ordinary Uniwind rounded views. Do not add a native squircle layer simply to every small rectangle.
-- Do not use SVG, masks, or per-frame calculated paths for standard surfaces. The chosen primitive preserves native View-like rendering and avoids a chart/list performance tax. It requires a rebuilt Expo development client; it is not an Expo Go-only feature.
+- `components/ui/page.tsx`: every full-screen page renders `Page` with a `screen` (the testID prefix) and one header `kind`. `home` draws the 44 Mint avatar, date over greeting, and the Moni button; `tabRoot` a 28/32 title with up to two trailing buttons; `pushed` a back circle and an 18/22 title; `task` a close circle, title, and optional subtitle; `bare` no header row (sign-in). It applies the real top inset, a 44 header row with 20 sides, and starts content 12 below it.
+- `components/ui/press.tsx`: the press primitive. Scale 0.97 on the `press` spring at finger-down, a pressed fill (`pressedClassName`, default Sand light) fading in, release on `control`; `radius` morphs capsule corners to 16. Reduce Motion keeps only the fill fade. Its `testID` is a required `TestId`.
+- `components/ui/button.tsx`: `Button` with `variant` `primary` (Ink), `secondary` (Sand), `tertiary` (Deep mint text, 44 tall), `approve` (Mint, Approve haptic), `notMine` (Sand, Not mine haptic), `destructive` (destructive fill); 52 tall, `loading` shows a spinner and `loadingLabel`, `disabled` turns Sand light with Meta text.
+- `components/ui/header-icon-button.tsx`: `HeaderIconButton` (44 circle, 1.5 Hairline, pressed Sand) for every header action, and `MoniButton` (44 Ink circle, `creation` glyph, "Ask Moni") on Home and Activity only.
 
 ### 5.3 Elevation and material
 
@@ -495,7 +495,7 @@ Motion must communicate cause and effect, preserve spatial orientation, and feel
 | Moment                 | Motion                                         | Intent                               |
 | ---------------------- | ---------------------------------------------- | ------------------------------------ |
 | FAB opens              | short spring + 40–70ms action-item stagger     | reveal a focused action set          |
-| Tap/click              | immediate scale/tint feedback                  | confirm the interface received input |
+| Tap/click              | `Press`: scale 0.97 and pressed fill on finger-down | confirm the interface received input |
 | Receipt processing     | subtle progress/wave/gradient movement         | show active work without fake drama  |
 | Proposal enters review | source context visually resolves into artifact | reinforce provenance                 |
 | Sheet opening          | anchored rise, light scrim                     | retain context                       |

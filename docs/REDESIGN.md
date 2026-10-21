@@ -2,7 +2,7 @@
 
 The mobile app is being rebuilt to the **Redesign v2** design on the claude.ai design canvas. This file tells an implementing agent where the design lives, which boards are final, what to ignore, what the code does not support yet, and what is still the owner's call.
 
-**Status (21 Oct 2026):** design rounds 1–6 done (canvas version 150). Foundations F1 landed: v2 colour tokens (light and dark), Funnel Display through `components/ui/text`, spring tokens in `lib/motion/tokens.ts`, and the haptics table in `lib/haptics`. Screens still use the v1 layouts and components from [`DESIGN_SYSTEM.md`](DESIGN_SYSTEM.md), now in v2 colours and type.
+**Status (21 Oct 2026):** design rounds 1–6 done (canvas version 150). Foundations F1 landed: v2 colour tokens (light and dark), Funnel Display through `components/ui/text`, spring tokens in `lib/motion/tokens.ts`, and the haptics table in `lib/haptics`. F2 landed: `Press`, `Button`, `HeaderIconButton`, `MoniButton`, and `Page` replace the v1 chrome, so every screen has its v2 header and every button is a v2 capsule. Screen bodies still use the v1 layouts and components from [`DESIGN_SYSTEM.md`](DESIGN_SYSTEM.md), now in v2 colours and type.
 
 ## Authority
 

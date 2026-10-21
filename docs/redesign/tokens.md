@@ -47,6 +47,7 @@ Dark (`V2F-Dark`): Ground #161512 · Raised #211F1B (cards) · Fill #2C2924 (San
 - Tab root title 28/32 700. Home header instead: 44 avatar (radius 16, Mint, initial 18/700) + date (13 Meta) over greeting (16/600), Moni button trailing.
 - Pushed page: back = 44 circle, 1.5 Hairline border, chevron-left 22 ink; title 18/22 700 left-aligned; up to two trailing header buttons.
 - Header icon button: 44 circle, 1.5 Hairline border, glyph 20 ink; pressed Sand fill, scale 0.97.
+- Pressed fills, one step darker (`V2F-Components` Buttons): Ink #2E2F33, Sand to Hairline, Mint #9AD3A8, destructive fill #F9D5D0 to #F3C3BC (text #8E2F28), Paper rows to Sand light. Dark: destructive fill #43231F; the dark pressed fills (#D6CEBF, #80B98F, #532C27) are not on a board. The Moni glyph is #4B3A80 on the dark cream circle.
 - ⋯ only in a header, only when the screen has secondary actions. Never on rows or cards. Transaction detail has none.
 - Moni button: 44 Ink circle, `creation` 22 Lilac, Home and Activity headers only, trailing-most, label "Ask Moni". The only ink icon button.
 

@@ -9,7 +9,7 @@ type SolidWalletCardProps = ViewProps & {
   className?: string;
 };
 
-/** Solid, squircle-edged surface for wallet balances and wallet-style previews. */
+/** Solid rounded surface for wallet balances and wallet-style previews. */
 export function SolidWalletCard({
   cardStyle,
   className,

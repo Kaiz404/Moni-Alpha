@@ -22,7 +22,7 @@ type GradientCardProps = ViewProps & {
 };
 
 /**
- * Soft squircle surface used for wallet cards and select hero panels.
+ * Soft rounded surface used for wallet cards and select hero panels.
  * Texture is intentionally omitted so pastel wallet identities remain clean.
  */
 export function GradientCard({

@@ -29,9 +29,7 @@ components/proposal/proposal-form.tsx
 components/proposal/proposal-summary-sheet.tsx
 components/receipt/fab-receipt-processing-overlay.tsx
 components/transaction/transaction-selector-row.tsx
-components/ui/brand-header.tsx
 components/ui/form-field.tsx
 components/ui/numeric-keypad.tsx
-components/ui/tactile-pressable.tsx
 components/wallets/notification-source-picker-content.tsx
 components/wallets/wallet-picker-content.tsx
