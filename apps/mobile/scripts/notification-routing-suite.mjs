@@ -4,6 +4,12 @@
  */
 
 import { curatedPackagesEquivalent } from '../lib/notifications/notification-package-aliases.core.js';
+import {
+  CAPTURED_NOTIFICATIONS_KEY,
+  captureStatusAfterExtraction,
+  captureStatusAtIntake,
+  setCaptureStatus,
+} from '../lib/notifications/capture-status.core.js';
 
 function toAiWalletContext(wallet) {
   return {
@@ -108,6 +114,47 @@ console.log('notification-routing-suite\n');
 {
   const { candidates } = resolveNotificationCandidates('com.unknown.app', wallets);
   assert('unlinked package: zero candidates', candidates.length === 0);
+}
+
+{
+  const entries = new Map();
+  const storage = {
+    getString: (key) => entries.get(key),
+    set: (key, value) => entries.set(key, value),
+  };
+  const stored = (id) =>
+    JSON.parse(storage.getString(CAPTURED_NOTIFICATIONS_KEY)).find((n) => n.id === id).status;
+  const capture = (id, packageName, prefilterPassed = true) => {
+    const { candidates } = resolveNotificationCandidates(packageName, wallets);
+    const list = JSON.parse(storage.getString(CAPTURED_NOTIFICATIONS_KEY) ?? '[]');
+    list.unshift({
+      id,
+      packageName,
+      status: captureStatusAtIntake({
+        prefilterPassed,
+        packageLinked: candidates.length > 0,
+        repeated: false,
+      }),
+    });
+    storage.set(CAPTURED_NOTIFICATIONS_KEY, JSON.stringify(list));
+  };
+
+  capture('grab', 'com.maybank2u.life');
+  assert('linked alert waits for extraction', stored('grab') === 'waiting_for_review');
+  setCaptureStatus(storage, 'grab', captureStatusAfterExtraction({ transactionId: 'tx-1' }));
+  assert('linked routine alert stored as auto_added', stored('grab') === 'auto_added');
+
+  capture('kedai', 'com.tngdigital.ewallet');
+  setCaptureStatus(storage, 'kedai', captureStatusAfterExtraction({ proposalId: 'kedai' }));
+  assert('linked new alert stored as waiting_for_review', stored('kedai') === 'waiting_for_review');
+
+  capture('unknown', 'com.unknown.app');
+  assert('unlinked package stored as not_linked', stored('unknown') === 'not_linked');
+
+  capture('promo', 'com.maybank2u.life', false);
+  assert('prefilter miss stored as ignored', stored('promo') === 'ignored');
+
+  assert('aged-out entry is left alone', setCaptureStatus(storage, 'gone', 'added') === false);
 }
 
 console.log(`\n${passed} passed, ${failed} failed`);

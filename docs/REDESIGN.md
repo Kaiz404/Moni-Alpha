@@ -77,11 +77,11 @@ Checked 21 Oct 2026. These need data or product work before their screens can be
 | Bills list with due dates, "Add a bill" | `selectUpcomingBills` (`lib/finance/bills.ts`) lists this month's bills from detected recurring series and confirmed `recurring_overrides` | Screens (B1, B2) |
 | "Don't ask about similar" | `auto_add_rules` (`createAutoAddRule`, `deleteAutoAddRule` for "Ask again"); `matchRoutine` applies a matching rule before the history heuristic | The Review action (R1), list and "Ask again" in Capture sources (K3) |
 | Source tile (Manual, Voice, Moni, Notification, Camera) | `transactions.metadata.source`, written at every creation site; older rows have none and read as Manual | Voice and live-camera approvals write their own source (C2); the tile (A2) |
-| Merchant names | Not modelled | Alias table (raw alert merchant → name) |
+| Merchant names | `merchant_aliases` (`nameMerchant`); `merchantName(raw, aliases)` in `lib/finance/merchant-name.ts` resolves a row's name | Rows on Home, Activity, wallet pages and Review read names through it; the Merchant names page (K3) |
 | Balance correction | `createBalanceCorrection` writes the "Balance adjustment" with `analysisExcluded` and `metadata.kind: balance_correction` | UI per `V2H-WalletDetail` (K2) |
 | Main currency | `preferences.currency` (default `MYR`), read by `useMainCurrency()` | Setting UI and focused-page filtering |
-| Per-app "Record where I spend" | Location always captured (`lib/location/location-snapshot.ts`) | Per-wallet / per-package flag |
-| Capture log statuses | Computed at render ("Queued for review" etc.) | Stored status per notification; v2 wording |
+| Per-app "Record where I spend" | `wallets.record_location`; the headless listener skips the location snapshot for an app whose linked wallets all have it off | The Capture sources toggle (K3) |
+| Capture log statuses | Stored on each capture log entry (`capturedNotificationStatusSchema`, `lib/notifications/capture-status.core.js`); older entries read as Ignored | The Capture log (K3) reads the stored status; v2 wording |
 | Review history, Not mine / Later | `laterProposedTransaction` snoozes (`later`, `snoozed_until`); approve and Not mine stamp `approved` / `rejected` before the soft delete | The card deck (R1); whether to show history stays an owner decision |
 | Chat generative cards, draft cards, one thread per day | Message kinds: text, image, status, clarify chips | New message kinds and renderers |
 | Funnel Display | No custom fonts loaded | `@expo-google-fonts/funnel-display` (static 300–800) |
