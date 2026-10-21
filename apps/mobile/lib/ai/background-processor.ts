@@ -4,6 +4,7 @@
  *
  * Inference is delegated to the AI backend client (mock until Go service exists).
  */
+import { resolveScheme } from 'expo-linking';
 import BackgroundService from 'react-native-background-actions';
 import {
   peekPending,
@@ -53,7 +54,6 @@ const BACKGROUND_OPTIONS = {
     type: 'mipmap',
   },
   color: '#4F46E5',
-  linkingURI: 'moni://',
   parameters: {
     delay: 500,
   },
@@ -177,7 +177,10 @@ export async function startBackgroundProcessor(): Promise<void> {
   isRunning = true;
 
   try {
-    await BackgroundService.start(processingTask, BACKGROUND_OPTIONS);
+    await BackgroundService.start(processingTask, {
+      ...BACKGROUND_OPTIONS,
+      linkingURI: `${resolveScheme({})}://`,
+    });
     console.log(TAG, 'Background service started');
   } catch (e) {
     console.error(TAG, 'Failed to start background service:', e);
