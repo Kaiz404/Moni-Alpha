@@ -10,7 +10,6 @@ export function selectMainCurrency(
   return (preferences?.currency || DEFAULT_MAIN_CURRENCY).toUpperCase() as CurrencyCode;
 }
 
-/** The currency totals count in. Persisted, so it holds through a cold start offline. */
 export function useMainCurrency(): CurrencyCode {
   return useValue(() => selectMainCurrency(profilePreferences$.get()));
 }

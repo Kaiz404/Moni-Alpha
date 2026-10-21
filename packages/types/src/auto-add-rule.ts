@@ -1,6 +1,5 @@
 import { z } from 'zod';
 
-/** Lowercase letters and spaces: the key `merchantKey` in apps/mobile/lib/ai/routine.ts builds. */
 export const merchantKeySchema = z.string().regex(/^[a-z]+( [a-z]+)*$/, 'Invalid merchant key');
 
 /**

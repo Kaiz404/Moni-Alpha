@@ -14,7 +14,6 @@ export function captureStatusAfterExtraction(result: {
   return afterExtraction(result) as CapturedNotificationStatus;
 }
 
-/** Stores what became of a captured notification; a no-op once it has left the log. */
 export function markCaptureStatus(id: string, status: CapturedNotificationStatus): void {
   setCaptureStatus(notificationStorage, id, status);
 }

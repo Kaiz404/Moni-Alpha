@@ -41,7 +41,6 @@ export function listMerchantAliases(userId: string): MerchantAlias[] {
   return selectMerchantAliases(getRecordValues<MerchantAliasRow>(merchantAliases$), userId);
 }
 
-/** Names every merchant with this key; naming it again renames this device's row. */
 export async function nameMerchant(rawKey: string, displayName: string): Promise<void> {
   assertTableMigrated('merchant_aliases');
   const userId = await getUserId();

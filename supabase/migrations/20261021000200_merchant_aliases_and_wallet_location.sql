@@ -1,6 +1,3 @@
--- Merchant names the user gives raw alert merchants, and a per-wallet switch for recording where
--- notification payments happen. Both are additive; builds that predate them ignore them.
-
 CREATE TABLE public.merchant_aliases (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -23,6 +20,4 @@ CREATE POLICY "Users can manage own merchant aliases" ON public.merchant_aliases
 
 ALTER PUBLICATION supabase_realtime ADD TABLE public.merchant_aliases;
 
--- The app writes this column only once it has found merchant_aliases, which this same migration
--- creates.
 ALTER TABLE public.wallets ADD COLUMN record_location BOOLEAN NOT NULL DEFAULT true;

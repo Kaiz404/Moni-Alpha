@@ -234,10 +234,6 @@ export async function createTransfer(data: {
   }, source);
 }
 
-/**
- * Moves a wallet's balance to the amount the user says it holds. The difference is real cash
- * movement but not spending or income, so it stays out of analysis.
- */
 export async function createBalanceCorrection(
   walletId: string,
   currentBalanceMinor: MinorAmount,

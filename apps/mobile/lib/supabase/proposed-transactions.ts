@@ -51,7 +51,6 @@ type ProposedRow = {
   deleted?: boolean;
 };
 
-/** Chat text proposals come from Moni; voice and live camera approvals pass their own source. */
 const TRANSACTION_SOURCE_BY_PROPOSAL_SOURCE: Record<
   ProposedTransactionSourceType,
   TransactionSource
@@ -102,7 +101,6 @@ function isReviewableRow(row: ProposedRow): boolean {
   }
 }
 
-/** Pending ones, and ones the user put off with Later: the user still owes them a decision. */
 function readUnreviewedProposals(): ProposedTransaction[] {
   return getRecordValues<ProposedRow>(proposedTransactions$)
     .filter(isReviewableRow)
@@ -111,7 +109,6 @@ function readUnreviewedProposals(): ProposedTransaction[] {
     .filter((proposal) => proposal.status === 'pending' || proposal.status === 'later');
 }
 
-/** A Later proposal comes back for review once its snooze has passed. */
 export function isAwaitingReview(
   proposal: Pick<ProposedTransaction, 'status' | 'snoozedUntil'>,
   now: Date,
@@ -121,15 +118,10 @@ export function isAwaitingReview(
   return !proposal.snoozedUntil || Date.parse(proposal.snoozedUntil) <= now.getTime();
 }
 
-/** Proposals to review now, newest first. */
 export async function getProposedTransactions(now = new Date()): Promise<ProposedTransaction[]> {
   return readUnreviewedProposals().filter((proposal) => isAwaitingReview(proposal, now));
 }
 
-/**
- * "Later": hide the proposal from review until `until`. The `later` status and `snoozed_until`
- * ship with auto_add_rules; before that migration the old CHECK would fail this row's sync.
- */
 export function laterProposedTransaction(id: string, until: Date): void {
   assertTableMigrated('auto_add_rules');
   patchRow(proposedTransactions$, id, {
@@ -240,7 +232,6 @@ export async function approveProposedTransaction(
   await deleteProposedTransaction(proposal.id);
 }
 
-/** "Not mine". */
 export async function rejectProposedTransaction(id: string): Promise<void> {
   closeProposal(id, 'rejected');
   await deleteProposedTransaction(id);
@@ -302,7 +293,6 @@ function proposalLedgerEntry(
   };
 }
 
-/** Recent ledger rows plus unreviewed proposals (snoozed ones too), for duplicate detection. */
 export async function getLedgerEntries(): Promise<LedgerEntry[]> {
   const transactions = await getTransactions(undefined, 500);
   const proposals = readUnreviewedProposals();

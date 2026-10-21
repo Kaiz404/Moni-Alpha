@@ -4,8 +4,7 @@
  *
  * The first transaction of a kind always goes to review. Once the user has categorized one like
  * it, later ones are prefilled; routine notifications are added to the ledger directly.
- * Correcting a category breaks the streak, so the next one goes back to review. An auto-add rule
- * ("Don't ask about similar") adds a matching notification directly, before history is consulted.
+ * Correcting a category breaks the streak, so the next one goes back to review.
  */
 import type { AutoAddRule } from '@repo/types';
 
@@ -35,7 +34,6 @@ export type RoutineCandidate = {
   merchant: string | null;
   /** Only pass a location captured when the payment happened (notifications), never entry-time. */
   location: { latitude: number; longitude: number } | null;
-  /** The notification's app; auto-add rules match on it. Null for anything the user entered. */
   sourceApp: string | null;
 };
 
@@ -114,7 +112,6 @@ function isSimilar(
 }
 
 /**
- * Auto-add rules win; otherwise the user's own history decides.
  * @param history newest first. Transfers, balance adjustments and debt-linked rows are ignored.
  * @param activeCategoryIds a category the user archived is never applied automatically.
  * @param rules the user's "Don't ask about similar" rules, for wallets that still exist.

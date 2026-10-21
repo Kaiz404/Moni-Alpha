@@ -33,7 +33,6 @@ function isPackageLinked(packageName) {
   );
 }
 
-/** False only when every wallet linked to this app has "Record where I spend" off. */
 function isLocationRecordedForPackage(packageName) {
   if (!packageName || packageName === 'unknown') return true;
   return !readPackages(LOCATION_OFF_PACKAGES_KEY).some((off) =>

@@ -1,7 +1,6 @@
 import type { MerchantAlias } from '@repo/types';
 import { merchantKey } from '@/lib/ai/routine';
 
-/** The name the user gave this merchant, else the raw text from the alert or entry. */
 export function merchantName(
   raw: string | null,
   aliases: readonly Pick<MerchantAlias, 'rawKey' | 'displayName'>[],

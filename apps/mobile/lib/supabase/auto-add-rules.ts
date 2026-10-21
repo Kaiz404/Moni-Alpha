@@ -54,7 +54,6 @@ export function listAutoAddRules(userId: string): AutoAddRule[] {
   return selectAutoAddRules(getRecordValues<AutoAddRuleRow>(autoAddRules$), userId);
 }
 
-/** "Don't ask about similar": reuses this device's row for the same app and merchant. */
 export async function createAutoAddRule(input: CreateAutoAddRuleInput): Promise<void> {
   assertTableMigrated('auto_add_rules');
   const userId = await getUserId();
@@ -89,7 +88,6 @@ export async function createAutoAddRule(input: CreateAutoAddRuleInput): Promise<
   autoAddRules$[id].set({ id, user_id: userId, ...fields, deleted: false });
 }
 
-/** "Ask again": alerts like this one go back to review. */
 export function deleteAutoAddRule(id: string): void {
   patchRow(autoAddRules$, id, { deleted: true, updated_at: new Date().toISOString() });
 }

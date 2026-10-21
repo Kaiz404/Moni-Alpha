@@ -2,11 +2,6 @@ import type { RecurringOverride, UpcomingBill } from '@repo/types';
 import { addMonths, dayKey, dayNumber, nextMonthStart } from '@/lib/ai/facts/days';
 import { detectRecurring, seriesKey, type FactsTransaction } from '@/lib/ai/facts/recurring';
 
-/**
- * Bills and subscriptions expected this month: detected expense series plus bills the user
- * confirmed without enough history to detect. A series still due this month is `due` (even when
- * late); one already paid this month is `paid`.
- */
 export function selectUpcomingBills(
   now: Date,
   transactions: readonly FactsTransaction[],

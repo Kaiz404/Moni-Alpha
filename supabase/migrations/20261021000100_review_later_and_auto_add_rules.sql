@@ -1,7 +1,3 @@
--- Review deck: "Later" snoozes a proposal until snoozed_until, and "Don't ask about similar"
--- stores an auto-add rule. Both are additive: builds that predate them ignore the new column and
--- table, and show a 'later' row as pending.
-
 ALTER TABLE public.proposed_transactions DROP CONSTRAINT proposed_transactions_status_check;
 ALTER TABLE public.proposed_transactions ADD CONSTRAINT proposed_transactions_status_check
   CHECK (status IN ('pending', 'later', 'rejected', 'approved'));
