@@ -11,6 +11,7 @@ import {
   type CaptureSource,
 } from '@/lib/capture/capture-stage';
 import { readCapture } from '@/lib/capture/read-capture';
+import { keepScannedReceipt } from '@/lib/receipts/upload-queue';
 import { useMainCurrency } from '@/lib/finance/main-currency';
 import {
   categoriesForUser$,
@@ -57,7 +58,9 @@ export function useCaptureFlow(source: CaptureSource) {
     setApproving(true);
     try {
       const draft = { ...stage.draft, walletId: stage.draft.walletId };
-      await approveCapture(draft, source);
+      const transaction = await approveCapture(draft, source);
+      if (transaction && stage.quote.source === 'camera')
+        void keepScannedReceipt(stage.quote.imageUri, transaction.id).catch(() => {});
       const category = categories.find((item) => item.id === draft.categoryId);
       setAdded({
         kind: draft.kind,

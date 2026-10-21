@@ -123,7 +123,7 @@ async function extractImage(imageUri: string, caption: string, turn: Turn) {
   try {
     const userId = await getUserId();
     if (userId && queueItem.imageUri)
-      enqueueImageUpload({ proposalId: id, localUri: queueItem.imageUri, userId });
+      enqueueImageUpload({ target: 'proposal', id, localUri: queueItem.imageUri, userId });
   } catch {
     // The receipt photo uploads later; the draft does not wait for it.
   }

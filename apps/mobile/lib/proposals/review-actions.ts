@@ -4,6 +4,7 @@ import type { DuplicateMatch } from '@/lib/ai/duplicates';
 import { merchantKey } from '@/lib/ai/routine';
 import { markCaptureStatus } from '@/lib/notifications/capture-status';
 import { emitProposedTransactionsChanged } from '@/lib/proposals/proposed-transactions-events';
+import { keepProposalReceipt } from '@/lib/receipts/upload-queue';
 import { proposedTransactions$, wallets$ } from '@/lib/store';
 import { getRecordValues, patchRow } from '@/lib/store/helpers';
 import {
@@ -148,6 +149,7 @@ export async function approve(
       walletId: next.walletId,
       transferToWalletId: next.transferToWalletId,
     });
+    keepProposalReceipt(next, transactionId);
     const ruleAdded = edits.similar ? await addSimilarRule(next) : false;
     return {
       status: 'done',

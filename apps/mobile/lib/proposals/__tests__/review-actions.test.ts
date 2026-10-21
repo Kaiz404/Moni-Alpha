@@ -2,12 +2,18 @@ import type { Observable } from '@legendapp/state';
 import type { MinorAmount } from '@repo/types';
 
 import { approve, later, laterUntil, notMine, undo } from '../review-actions';
+import { drainImageUploadQueue, enqueueImageUpload } from '@/lib/receipts/upload-queue';
 import { listAwaitingReview } from '@/lib/supabase/proposed-transactions';
 
 let mockNextId = 0;
 jest.mock('expo-crypto', () => ({ randomUUID: () => `id-${++mockNextId}` }));
 jest.mock('@/lib/supabase/client', () => ({ getUserId: async () => 'user-1' }));
 jest.mock('@/lib/notifications/capture-status', () => ({ markCaptureStatus: jest.fn() }));
+jest.mock('@/lib/receipts/images', () => ({
+  saveImageLocally: jest.fn(),
+  uploadReceiptImage: async (_local: string, userId: string, id: string) =>
+    `https://cdn.test/receipts/${userId}/${id}.jpg`,
+}));
 jest.mock('@/lib/store', () => {
   const { observable } = jest.requireActual('@legendapp/state');
   return {
@@ -109,6 +115,36 @@ describe('approve', () => {
         wallet_id: MAYBANK,
         category_id: FOOD,
         deleted: false,
+      }),
+    ]);
+  });
+
+  it('keeps an uploaded receipt photo on the approved transaction', async () => {
+    const photo = 'https://cdn.test/receipts/user-1/p1.jpg';
+    const proposal = seed('p1', { source_type: 'image', source_image_uri: photo });
+
+    await approve(proposal);
+
+    expect(ledger()).toEqual([expect.objectContaining({ receipt_image_url: photo })]);
+  });
+
+  it('links a receipt photo that was still uploading to the transaction once it lands', async () => {
+    const proposal = seed('p1', { source_type: 'image', source_image_uri: 'file:///receipts/p1.jpg' });
+    enqueueImageUpload({
+      target: 'proposal',
+      id: 'p1',
+      localUri: 'file:///receipts/p1.jpg',
+      userId: 'user-1',
+    });
+
+    const result = await approve(proposal);
+    if (result.status !== 'done') throw new Error(result.status);
+    await drainImageUploadQueue();
+
+    expect(ledger()).toEqual([
+      expect.objectContaining({
+        id: result.outcome.transactionId,
+        receipt_image_url: `https://cdn.test/receipts/user-1/${result.outcome.transactionId}.jpg`,
       }),
     ]);
   });

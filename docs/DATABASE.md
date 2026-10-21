@@ -51,7 +51,7 @@ When adding a synced table: add those columns, enable RLS + realtime, then regis
 
 ## Storage
 
-Bucket `receipts` (`supabase/migrations/20260323000000_storage_receipts_bucket.sql`): receipt images uploaded as `{userId}/{proposalId}.jpg`. Mobile saves locally first, uploads via a background queue (`apps/mobile/lib/receipts/upload-queue.ts`), then updates the proposal's `source_image_uri` to the remote URL.
+Bucket `receipts` (`supabase/migrations/20260323000000_storage_receipts_bucket.sql`): receipt images uploaded as `{userId}/{proposalId}.jpg`. Mobile saves locally first, uploads via a background queue (`apps/mobile/lib/receipts/upload-queue.ts`), then sets the remote URL on the proposal's `source_image_uri` or, once approved, the transaction's `receipt_image_url` (path `{userId}/{transactionId}.jpg` for those).
 
 ## Applying changes
 
