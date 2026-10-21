@@ -5,6 +5,8 @@ import {
   type Theme,
 } from 'expo-router/react-navigation';
 import { Stack } from 'expo-router';
+import { useFonts } from 'expo-font';
+import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useMemo, useRef } from 'react';
 import { AppState } from 'react-native';
@@ -18,6 +20,7 @@ import { AuthGuard } from '@/components/providers/auth-guard';
 import { FabReceiptProcessingOverlay } from '@/components/receipt/fab-receipt-processing-overlay';
 import { ProposalSummarySheet } from '@/components/proposal/proposal-summary-sheet';
 import { StoreSyncActivator } from '@/components/providers/store-sync-activator';
+import { textFonts } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { AuthProvider } from '@/lib/auth/auth-context';
 import { getPendingCount } from '@/lib/ai/processing-queue';
@@ -29,6 +32,7 @@ import { applyStoredThemePreference } from '@/lib/theme/preference';
 import { prepareOfflineSpeechModel } from '@/lib/speech/speech-recognition';
 
 applyStoredThemePreference();
+void SplashScreen.preventAutoHideAsync();
 
 export const unstable_settings = {
   anchor: '(tabs)',
@@ -37,6 +41,8 @@ export const unstable_settings = {
 export default function RootLayout() {
   const { theme } = useUniwind();
   const tokens = useThemeTokens();
+  const [fontsLoaded, fontError] = useFonts(textFonts);
+  const fontsSettled = fontsLoaded || fontError !== null;
   const processorAppState = useRef(AppState.currentState);
   const uploadAppState = useRef(AppState.currentState);
 
@@ -52,6 +58,12 @@ export default function RootLayout() {
         text: tokens.foreground,
         border: tokens.border,
         notification: tokens.danger,
+      },
+      fonts: {
+        regular: { fontFamily: 'FunnelDisplay_400Regular', fontWeight: '400' },
+        medium: { fontFamily: 'FunnelDisplay_600SemiBold', fontWeight: '600' },
+        bold: { fontFamily: 'FunnelDisplay_700Bold', fontWeight: '700' },
+        heavy: { fontFamily: 'FunnelDisplay_700Bold', fontWeight: '700' },
       },
     };
   }, [theme, tokens]);
@@ -98,6 +110,12 @@ export default function RootLayout() {
     });
     return () => sub.remove();
   }, []);
+
+  useEffect(() => {
+    if (fontsSettled) void SplashScreen.hideAsync();
+  }, [fontsSettled]);
+
+  if (!fontsSettled) return null;
 
   return (
     <SafeAreaProvider>
