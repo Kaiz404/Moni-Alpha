@@ -17,6 +17,7 @@ import { useUniwind } from 'uniwind';
 import '../global.css';
 
 import { AuthGuard } from '@/components/providers/auth-guard';
+import { ReviewNotificationTaps } from '@/components/review/notification-taps';
 import { StoreSyncActivator } from '@/components/providers/store-sync-activator';
 import { SheetHost } from '@/components/ui/sheet/sheet-host';
 import { textFonts } from '@/components/ui/text';
@@ -153,6 +154,7 @@ export default function RootLayout() {
                 />
               </Stack>
               <SheetHost />
+              <ReviewNotificationTaps />
             </AuthGuard>
             <ToastHost />
             <StatusBar style={theme === 'dark' ? 'light' : 'dark'} />

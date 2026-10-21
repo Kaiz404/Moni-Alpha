@@ -18,6 +18,7 @@ import {
   captureStatusAfterExtraction,
   markCaptureStatus,
 } from '@/lib/notifications/capture-status';
+import { postReviewNotification } from '@/lib/notifications/review-notification';
 
 const TAG = '[BGProc]';
 const NOTIF_TAG = '[NotifProc]';
@@ -118,6 +119,9 @@ async function processingTask(taskData?: { delay?: number }) {
         const elapsed = Date.now() - itemStart;
         if (item.type === 'notification') {
           markCaptureStatus(item.id, captureStatusAfterExtraction(result), result.transactionId);
+          if (result.proposalId && !result.transactionId) {
+            await postReviewNotification(result.proposalId);
+          }
         }
 
         if (result.created) {

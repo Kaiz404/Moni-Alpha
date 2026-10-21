@@ -43,6 +43,12 @@
       "expo-router",
       "react-native-maps",
       "./plugins/with-notification-listener-manifest",
+      [
+        "expo-notifications",
+        {
+          "color": "#17181A"
+        }
+      ],
       "expo-speech-recognition",
       [
         "expo-location",

@@ -158,6 +158,14 @@ export async function approve(
   }
 }
 
+export type ApprovedOutcome = Extract<ReviewOutcome, { action: 'approve' }>;
+
+/** "Don't ask about similar" after Approve, from the Approved notification. */
+export async function dontAskAboutSimilar(outcome: ApprovedOutcome): Promise<ApprovedOutcome> {
+  if (outcome.ruleAdded) return outcome;
+  return { ...outcome, ruleAdded: await addSimilarRule(outcome.proposal) };
+}
+
 /** Stamps the capture `rejected`, then soft-deletes it (D6: no stored history). */
 export async function notMine(proposal: ProposedTransaction): Promise<ReviewResult> {
   const row = snapshotRow(proposal.id);

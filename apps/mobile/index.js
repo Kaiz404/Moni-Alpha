@@ -19,6 +19,9 @@ if (Platform.OS === 'android') {
   const { enrichNotificationPackage } = require('./lib/notifications/notification-package.core');
   const { cacheNotificationAppIcon } = require('./lib/notifications/app-icon-cache.core');
   const { isRepeatedNotification } = require('./lib/notifications/notification-repeat.core');
+  const { REVIEW_TASK, isOwnNotification } = require('./lib/notifications/review-notification.core');
+  const TaskManager = require('expo-task-manager');
+  const Notifications = require('expo-notifications');
 
   void RNAndroidNotificationListener;
 
@@ -50,6 +53,7 @@ if (Platform.OS === 'android') {
       const parsed =
         typeof notification === 'string' ? JSON.parse(notification) : notification;
       const withPackage = enrichNotificationPackage(parsed);
+      if (isOwnNotification(withPackage.packageName)) return;
       const prefilterPassed = passesNotificationTransactionPrefilter(withPackage);
       const packageLinked = isPackageLinked(withPackage.packageName);
       const nowMs = Date.now();
@@ -122,6 +126,15 @@ if (Platform.OS === 'android') {
     RNAndroidNotificationListenerHeadlessJsName,
     () => headlessNotificationListener,
   );
+
+  // Not mine, Later and Approve on Moni's review notification, with the app in the background
+  // or killed. The handler loads the store and review-actions only when a tap arrives.
+  TaskManager.defineTask(REVIEW_TASK, (body) =>
+    require('./lib/notifications/review-notification').handleReviewNotificationTask(body),
+  );
+  Notifications.registerTaskAsync(REVIEW_TASK).catch((e) => {
+    console.error('[ReviewNotif] task not registered:', e?.message ?? e);
+  });
 }
 
 import 'expo-router/entry';

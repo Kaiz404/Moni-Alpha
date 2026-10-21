@@ -1,0 +1,49 @@
+# R2 lanes 2, 3, 4 and 8: the Moni review notification in the shade.
+# Needs a signed-in e2e build with notification access, Maybank linked to com.android.shell, and
+# a bank alert posted first, so the capture is waiting:
+#   scripts/device/with-device.sh --lane r2 -- adb shell cmd notification post -S bigtext \
+#     -t Maybank r2-grab "MAYBANK: You've spent RM12.00 at GRAB on 14/10 12:41."
+# Run: scripts/device/with-device.sh --lane r2 -- maestro test .maestro/flows/review/notification.yaml
+appId: com.anonymous.moni.e2e
+name: R2 approve from the notification
+tags:
+  - r2
+  - needs-posted-alert
+---
+- pressKey: Home
+- swipe:
+    start: 50%, 1%
+    end: 50%, 75%
+    duration: 400
+- extendedWaitUntil:
+    visible: '.*alert'
+    timeout: 20000
+- assertVisible: 'GRAB · RM12\.00'
+- assertVisible: Not mine
+- assertVisible: Later
+- assertVisible: Approve
+- takeScreenshot: r2-l2-shade
+
+- tapOn: Approve
+- extendedWaitUntil:
+    visible: Approved
+    timeout: 5000
+- assertVisible: Undo
+- assertVisible: "Don't ask about similar"
+- takeScreenshot: r2-l3-approved
+
+# Undo within 8 s brings the capture back with its three actions.
+- tapOn: Undo
+- extendedWaitUntil:
+    visible: Approve
+    timeout: 5000
+- takeScreenshot: r2-l4-undo
+
+# A tap on the body opens the deck on that capture.
+- tapOn: 'GRAB · RM12\.00'
+- extendedWaitUntil:
+    visible:
+      id: review.card
+    timeout: 15000
+- assertVisible: GRAB
+- takeScreenshot: r2-l8-sheet
