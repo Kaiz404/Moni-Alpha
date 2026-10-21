@@ -13,3 +13,4 @@ export * from './debt';
 export * from './recurring-override';
 export * from './money';
 export * from './bill';
+export * from './auto-add-rule';

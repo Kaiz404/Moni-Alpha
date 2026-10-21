@@ -2,8 +2,11 @@ import { z } from 'zod';
 import { transactionTypeSchema } from './transaction';
 import { currencyCodeSchema, positiveMinorAmountSchema } from './money';
 
-/** Stored proposals are always unreviewed; approve/decline soft-deletes the row. */
-export const proposedTransactionStatusSchema = z.literal('pending');
+/**
+ * `pending` and `later` are unreviewed; a `later` row comes back once `snoozedUntil` passes.
+ * Approve and Not mine stamp their status, then soft-delete the row.
+ */
+export const proposedTransactionStatusSchema = z.enum(['pending', 'later', 'rejected', 'approved']);
 export const proposedTransactionSourceTypeSchema = z.enum(['notification', 'text', 'image']);
 
 export const proposedTransactionSchema = z.object({
@@ -38,6 +41,7 @@ export const proposedTransactionSchema = z.object({
   transactionDate: z.string().datetime().nullable(),
 
   status: proposedTransactionStatusSchema,
+  snoozedUntil: z.string().datetime().nullable().optional(),
 
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
