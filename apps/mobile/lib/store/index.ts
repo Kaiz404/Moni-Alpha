@@ -55,6 +55,48 @@ export const debtActivities$ = observable(syncTable('debt_activities'));
 export const proposedTransactions$ = observable(syncTable('proposed_transactions'));
 export const recurringOverrides$ = observable(syncTable('recurring_overrides'));
 
+/**
+ * Tables whose migration can reach the server after the build that syncs them (the operator
+ * pushes migrations by hand). Until a probe finds the table, its sync neither reads, subscribes
+ * nor writes. A found table is remembered, so the probe runs once per install.
+ */
+const MIGRATION_GATED_TABLES = ['auto_add_rules'] as const;
+export type MigrationGatedTable = (typeof MIGRATION_GATED_TABLES)[number];
+const tableFound$ = observable<Partial<Record<MigrationGatedTable, boolean>>>({});
+const TABLE_FOUND_KEY_PREFIX = 'table-found:';
+
+/**
+ * Writers check this first: a row written before the table exists would be dropped by the first
+ * full pull, because Legend-State only keeps pending rows the server already returns.
+ */
+export function assertTableMigrated(table: MigrationGatedTable): void {
+  if (tableFound$[table].peek() !== true) {
+    throw new Error('Moni needs a server update before it can save this. Try again later.');
+  }
+}
+
+function syncTableOnceMigrated(collection: MigrationGatedTable) {
+  const ready$ = observable(() => authReady$.get() && tableFound$[collection].get() === true);
+  return syncTable(collection, { waitFor: ready$, waitForSet: () => ready$ });
+}
+
+async function probeMigrationGatedTables(): Promise<void> {
+  await Promise.all(
+    MIGRATION_GATED_TABLES.map(async (table) => {
+      if (tableFound$[table].peek()) return;
+      const key = TABLE_FOUND_KEY_PREFIX + table;
+      if (!legendMMKV.getBoolean(key)) {
+        const { error } = await supabase.from(table).select('id').limit(1);
+        if (error) return;
+        legendMMKV.set(key, true);
+      }
+      tableFound$[table].set(true);
+    }),
+  );
+}
+
+export const autoAddRules$ = observable(syncTableOnceMigrated('auto_add_rules'));
+
 /** The signed-in profile's preferences. Read-only here: profiles are not a synced table. */
 export const profilePreferences$ = observable<UserPreferences | undefined>(
   synced({
@@ -75,6 +117,7 @@ export const ALL_STORE_OBSERVABLES: Observable<any>[] = [
   debtActivities$,
   proposedTransactions$,
   recurringOverrides$,
+  autoAddRules$,
   profilePreferences$,
 ];
 
@@ -115,6 +158,7 @@ export async function enableStoreSync(options: { fullReset?: boolean } = {}): Pr
   if (!authReady$.get()) return;
 
   runOneTimeCreateRepair();
+  await probeMigrationGatedTables();
 
   const forceFullPull = options.fullReset ?? false;
 

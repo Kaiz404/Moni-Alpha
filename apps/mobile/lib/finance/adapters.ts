@@ -1,4 +1,4 @@
-import { decimalToMinor } from '@repo/types';
+import { decimalToMinor, proposedTransactionStatusSchema } from '@repo/types';
 import { normalizeCurrency } from './money';
 import type {
   FinanceBudget,
@@ -213,6 +213,7 @@ export function toFinanceProposal(row: RawRow): FinanceProposal | null {
     transactionDate: nullableString(row.transaction_date),
     createdAt: isoDate(row.created_at),
     updatedAt: isoDate(row.updated_at, isoDate(row.created_at)),
-    status: 'pending',
+    status: proposedTransactionStatusSchema.catch('pending').parse(row.status),
+    snoozedUntil: nullableString(row.snoozed_until),
   };
 }

@@ -5,6 +5,7 @@ import { randomUUID } from 'expo-crypto';
 import {
   decimalToMinor,
   minorToDecimal,
+  proposedTransactionStatusSchema,
   type CreateProposedTransaction,
   type ProposedTransaction,
   type ProposedTransactionSourceType,
@@ -43,6 +44,7 @@ type ProposedRow = {
   category_hint: string | null;
   transaction_date: string | null;
   status: string | null;
+  snoozed_until?: string | null;
   created_at: string | null;
   updated_at: string | null;
   deleted?: boolean;
@@ -83,7 +85,8 @@ function rowToProposedTransaction(row: ProposedRow): ProposedTransaction {
     categoryId: row.category_id,
     categoryHint: row.category_hint,
     transactionDate: row.transaction_date,
-    status: 'pending',
+    status: proposedTransactionStatusSchema.catch('pending').parse(row.status),
+    snoozedUntil: row.snoozed_until ?? null,
     createdAt: row.created_at ?? '',
     updatedAt: row.updated_at ?? '',
   };
@@ -98,13 +101,38 @@ function isReviewableRow(row: ProposedRow): boolean {
   }
 }
 
-/** All non-deleted rows with a usable amount are unreviewed proposals awaiting user action. */
-export async function getProposedTransactions(): Promise<ProposedTransaction[]> {
-  const rows = getRecordValues<ProposedRow>(proposedTransactions$).filter(isReviewableRow);
+/** Pending ones, and ones the user put off with Later: the user still owes them a decision. */
+function readUnreviewedProposals(): ProposedTransaction[] {
+  return getRecordValues<ProposedRow>(proposedTransactions$)
+    .filter(isReviewableRow)
+    .sort((a, b) => (b.created_at ?? '').localeCompare(a.created_at ?? ''))
+    .map(rowToProposedTransaction)
+    .filter((proposal) => proposal.status === 'pending' || proposal.status === 'later');
+}
 
-  rows.sort((a, b) => (b.created_at ?? '').localeCompare(a.created_at ?? ''));
+/** A Later proposal comes back for review once its snooze has passed. */
+export function isAwaitingReview(
+  proposal: Pick<ProposedTransaction, 'status' | 'snoozedUntil'>,
+  now: Date,
+): boolean {
+  if (proposal.status === 'pending') return true;
+  if (proposal.status !== 'later') return false;
+  return !proposal.snoozedUntil || Date.parse(proposal.snoozedUntil) <= now.getTime();
+}
 
-  return rows.map(rowToProposedTransaction);
+/** Proposals to review now, newest first. */
+export async function getProposedTransactions(now = new Date()): Promise<ProposedTransaction[]> {
+  return readUnreviewedProposals().filter((proposal) => isAwaitingReview(proposal, now));
+}
+
+/** "Later": hide the proposal from review until `until`. */
+export function laterProposedTransaction(id: string, until: Date): void {
+  patchRow(proposedTransactions$, id, {
+    status: 'later',
+    snoozed_until: until.toISOString(),
+    updated_at: new Date().toISOString(),
+  });
+  emitProposedTransactionsChanged();
 }
 
 /** Soft-delete stub rows left by image-upload races (no amount/type). Safe to call on startup. */
@@ -203,11 +231,20 @@ export async function approveProposedTransaction(
     locationName: earlyLocation?.name ?? null,
   }, TRANSACTION_SOURCE_BY_PROPOSAL_SOURCE[proposal.sourceType]);
 
+  closeProposal(proposal.id, 'approved');
   await deleteProposedTransaction(proposal.id);
 }
 
+/** "Not mine". */
 export async function rejectProposedTransaction(id: string): Promise<void> {
+  closeProposal(id, 'rejected');
   await deleteProposedTransaction(id);
+}
+
+/** Stamps the review outcome on the row before its soft delete, so the server keeps it. */
+function closeProposal(id: string, status: 'approved' | 'rejected'): void {
+  if (!hasRow(proposedTransactions$, id)) return;
+  patchRow(proposedTransactions$, id, { status, updated_at: new Date().toISOString() });
 }
 
 export async function updateProposalImageUri(id: string, remoteUrl: string): Promise<boolean> {
@@ -256,12 +293,10 @@ function proposalLedgerEntry(
   };
 }
 
-/** Recent ledger rows plus pending proposals, for duplicate detection. */
+/** Recent ledger rows plus unreviewed proposals (snoozed ones too), for duplicate detection. */
 export async function getLedgerEntries(): Promise<LedgerEntry[]> {
-  const [transactions, proposals] = await Promise.all([
-    getTransactions(undefined, 500),
-    getProposedTransactions(),
-  ]);
+  const transactions = await getTransactions(undefined, 500);
+  const proposals = readUnreviewedProposals();
   return [
     ...transactions
       .filter((t) => !t.debtActivityId && !t.analysisExcluded)

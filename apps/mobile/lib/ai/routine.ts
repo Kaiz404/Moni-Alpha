@@ -4,8 +4,10 @@
  *
  * The first transaction of a kind always goes to review. Once the user has categorized one like
  * it, later ones are prefilled; routine notifications are added to the ledger directly.
- * Correcting a category breaks the streak, so the next one goes back to review.
+ * Correcting a category breaks the streak, so the next one goes back to review. An auto-add rule
+ * ("Don't ask about similar") adds a matching notification directly, before history is consulted.
  */
+import type { AutoAddRule } from '@repo/types';
 
 /** Recent matches that must agree on one category before a transaction is added automatically. */
 const STREAK = 3;
@@ -33,20 +35,35 @@ export type RoutineCandidate = {
   merchant: string | null;
   /** Only pass a location captured when the payment happened (notifications), never entry-time. */
   location: { latitude: number; longitude: number } | null;
+  /** The notification's app; auto-add rules match on it. Null for anything the user entered. */
+  sourceApp: string | null;
 };
 
-export type RoutineMatch = {
-  /** Category of the most recent similar transaction, for prefilling. */
-  categoryId: string | null;
-  merchant: string | null;
-  /** True when the transaction is routine enough to add without review. */
-  routine: boolean;
-};
+export type RoutineRule = Pick<
+  AutoAddRule,
+  'merchantKey' | 'sourceApp' | 'walletId' | 'categoryId'
+>;
 
-/** Drops id-like tokens (any digit), then keeps letters: "GRAB* A-12XY" and "Grab A-98QZ" become "grab". */
+/**
+ * `auto` adds the transaction without review: from a rule (which names the wallet) or from a
+ * streak of agreeing history (`walletId` null keeps the extracted wallet). `proposal` goes to
+ * review with the category of the latest similar transaction prefilled.
+ */
+export type RoutineMatch =
+  | { kind: 'auto'; walletId: string | null; categoryId: string; merchant: string | null }
+  | { kind: 'proposal'; categoryId: string | null; merchant: string | null };
+
+/**
+ * Drops id-like tokens (any digit), then keeps letters: "GRAB* A-12XY" and "Grab A-98QZ" become
+ * "grab". Card processors write "GRAB*1234 KL": a reference right after the star means the
+ * merchant is the part before it.
+ */
 export function merchantKey(merchant: string | null): string | null {
-  const key = (merchant ?? '')
-    .toLowerCase()
+  const text = (merchant ?? '').toLowerCase();
+  const star = text.indexOf('*');
+  const afterStar = star < 0 ? '' : (text.slice(star + 1).trim().split(/\s+/)[0] ?? '');
+  const name = star > 0 && /\d/.test(afterStar) ? text.slice(0, star) : text.replace(/\*/g, ' ');
+  const key = name
     .split(/\s+/)
     .filter((token) => !/\d/.test(token))
     .join(' ')
@@ -97,18 +114,31 @@ function isSimilar(
 }
 
 /**
+ * Auto-add rules win; otherwise the user's own history decides.
  * @param history newest first. Transfers, balance adjustments and debt-linked rows are ignored.
  * @param activeCategoryIds a category the user archived is never applied automatically.
+ * @param rules the user's "Don't ask about similar" rules, for wallets that still exist.
  */
 export function matchRoutine(
   candidate: RoutineCandidate,
   history: readonly RoutineHistoryTransaction[],
   activeCategoryIds: ReadonlySet<string>,
+  rules: readonly RoutineRule[] = [],
 ): RoutineMatch {
-  const none = { categoryId: null, merchant: null, routine: false };
+  const none: RoutineMatch = { kind: 'proposal', categoryId: null, merchant: null };
   if (candidate.type !== 'income' && candidate.type !== 'expense') return none;
 
   const key = merchantKey(candidate.merchant);
+  const rule = rules.find(
+    (r) =>
+      r.sourceApp === candidate.sourceApp &&
+      r.merchantKey === key &&
+      activeCategoryIds.has(r.categoryId),
+  );
+  if (rule && candidate.sourceApp && key) {
+    return { kind: 'auto', walletId: rule.walletId, categoryId: rule.categoryId, merchant: null };
+  }
+
   const recent: RoutineHistoryTransaction[] = [];
   for (const tx of history) {
     if (!tx.categoryId || tx.analysisExcluded || tx.debtActivityId) continue;
@@ -122,9 +152,7 @@ export function matchRoutine(
   const largest = Math.max(...recent.map((tx) => tx.amountMinor));
   const inNorm = !!candidate.amountMinor && candidate.amountMinor <= largest * OUTLIER_FACTOR;
 
-  return {
-    categoryId: latest.categoryId,
-    merchant: latest.merchant,
-    routine: agrees && inNorm,
-  };
+  return agrees && inNorm
+    ? { kind: 'auto', walletId: null, categoryId: latest.categoryId, merchant: latest.merchant }
+    : { kind: 'proposal', categoryId: latest.categoryId, merchant: latest.merchant };
 }

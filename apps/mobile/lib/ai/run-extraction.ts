@@ -13,6 +13,8 @@ import {
   findProposalDuplicate,
 } from '@/lib/supabase/proposed-transactions';
 import { matchRoutine } from '@/lib/ai/routine';
+import { listAutoAddRules } from '@/lib/supabase/auto-add-rules';
+import { getUserId } from '@/lib/supabase/client';
 import { getAiClient, type AiWalletContext, type ExtractResult } from '@/lib/ai/client';
 import type { ProcessingQueueItem } from '@/lib/ai/processing-queue';
 import { extractDateContext, resolveOccurredAt } from '@/lib/ai/occurred-at';
@@ -156,10 +158,13 @@ async function persistProposal(
 ): Promise<RunExtractionResult> {
   const automatic = proposal.sourceType === 'notification';
   try {
-    const [history, categories] = await Promise.all([
+    const [history, categories, wallets, userId] = await Promise.all([
       getTransactions(undefined, ROUTINE_HISTORY_LIMIT),
       getCategories(),
+      getWallets(),
+      getUserId(),
     ]);
+    const walletIds = new Set(wallets.map((w) => w.id));
     const match = matchRoutine(
       {
         type: proposal.type,
@@ -167,12 +172,17 @@ async function persistProposal(
         amountMinor: proposal.amountMinor,
         merchant: proposal.merchant,
         location: automatic ? (locationSnapshot ?? null) : null,
+        sourceApp: automatic ? proposal.sourceApp : null,
       },
       history,
       new Set(categories.filter((c) => c.isActive).map((c) => c.id)),
+      automatic && userId
+        ? listAutoAddRules(userId).filter((rule) => walletIds.has(rule.walletId))
+        : [],
     );
     proposal = {
       ...proposal,
+      walletId: (match.kind === 'auto' && match.walletId) || proposal.walletId,
       categoryId: proposal.categoryId ?? match.categoryId,
       merchant: proposal.merchant ?? match.merchant,
     };
@@ -199,11 +209,11 @@ async function persistProposal(
           };
     }
 
-    const wallet = (await getWallets()).find((w) => w.id === proposal.walletId);
+    const wallet = wallets.find((w) => w.id === proposal.walletId);
     if (
       automatic &&
       !duplicate &&
-      match.routine &&
+      match.kind === 'auto' &&
       proposal.amountMinor &&
       (proposal.type === 'income' || proposal.type === 'expense') &&
       wallet?.currency?.toUpperCase() === proposal.currency
