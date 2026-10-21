@@ -1,147 +1,123 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import {
-  Image,
-  Platform,
-  ScrollView,
-  TouchableOpacity,
-  View,
-} from 'react-native';
-import { Text } from '@/components/ui/text';
-import { router, useFocusEffect } from 'expo-router';
-import { Page } from '@/components/ui/page';
-import * as Location from 'expo-location';
-import * as ImagePicker from 'expo-image-picker';
-import { ExpoSpeechRecognitionModule } from 'expo-speech-recognition';
+import { useValue } from '@legendapp/state/react';
+import type { User } from '@supabase/supabase-js';
+import { router } from 'expo-router';
+import { useState, type ReactNode } from 'react';
+import { ScrollView, View } from 'react-native';
 
-import { SyncStatus } from '@/components/providers/sync-status';
-import { DefaultWalletPicker } from '@/components/profile/default-wallet-picker';
-import { PermissionColumn } from '@/components/profile/permission-column';
-import { ProfileSectionTitle } from '@/components/profile/profile-section-title';
-import { ThemePreferencePicker } from '@/components/profile/theme-preference-picker';
-import { GradientCard } from '@/components/ui/gradient-card';
+import { ExportDataRow } from '@/components/profile/export-data-row';
+import { MainCurrencyRow } from '@/components/profile/main-currency-row';
+import { ProfileRow } from '@/components/profile/profile-row';
+import { usePermissionWords } from '@/components/profile/use-permission-words';
+import { Button } from '@/components/ui/button';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { ListCard } from '@/components/ui/list-card';
 import { NavRow } from '@/components/ui/nav-row';
-import { getWalletCardStyle } from '@/constants/wallet-card-styles';
+import { Page } from '@/components/ui/page';
+import { Press } from '@/components/ui/press';
+import { Segmented } from '@/components/ui/segmented';
+import { Text } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
-import { useNotificationListener } from '@/hooks/use-notification-listener';
 import { useAuth } from '@/lib/auth/auth-context';
-import { prepareOfflineSpeechModel } from '@/lib/speech/speech-recognition';
+import {
+  categoriesForUser$,
+  walletsForUser$,
+} from '@/lib/finance/selectors';
+import { wallets$ } from '@/lib/store';
+import { getRecordValues, isActive } from '@/lib/store/helpers';
+import { listMerchantAliases } from '@/lib/supabase/merchant-aliases';
 import { tid } from '@/lib/test-ids';
+import {
+  getThemePreference,
+  setThemePreference,
+  THEME_PREFERENCE_OPTIONS,
+  type ThemePreference,
+} from '@/lib/theme/preference';
 
-const avatarStyle = getWalletCardStyle('emerald-grain');
+function displayName(user: User | null): string {
+  const meta = user?.user_metadata ?? {};
+  const named = [meta.display_name, meta.full_name, meta.name].find(
+    (value): value is string =>
+      typeof value === 'string' && value.trim() !== '',
+  );
+  return named?.trim() ?? user?.email?.split('@')[0] ?? '';
+}
 
-function mapSpeechPermissionStatus(result: {
-  granted: boolean;
-  status?: string;
-}) {
-  if (result.granted) return 'granted';
-  if (
-    result.status === 'denied' ||
-    result.status === 'undetermined'
-  ) {
-    return result.status;
+function walletsMeta(currencies: readonly string[]): string {
+  const counts = new Map<string, number>();
+  for (const currency of currencies) {
+    counts.set(currency, (counts.get(currency) ?? 0) + 1);
   }
-  return 'undetermined';
+  return [...counts]
+    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+    .map(([currency, count]) => `${count} in ${currency}`)
+    .join(' · ');
+}
+
+function plural(count: number, one: string, many: string): string {
+  return `${count} ${count === 1 ? one : many}`;
+}
+
+function Section({
+  label,
+  link,
+  children,
+}: {
+  label: string;
+  link?: ReactNode;
+  children: ReactNode;
+}) {
+  return (
+    <View className="gap-2">
+      <View className="min-h-6 flex-row items-center justify-between px-1">
+        <Text
+          variant="caps"
+          className="text-muted"
+          accessibilityRole="header"
+        >
+          {label}
+        </Text>
+        {link}
+      </View>
+      <ListCard>{children}</ListCard>
+    </View>
+  );
 }
 
 export default function ProfileScreen() {
   const { user, signOut } = useAuth();
   const tokens = useThemeTokens();
-  const {
-    permissionStatus,
-    isCheckingPermission,
-    requestPermission,
-    checkPermission,
-  } = useNotificationListener();
-  const [locationStatus, setLocationStatus] =
-    useState<Location.PermissionStatus | null>(null);
-  const [cameraStatus, setCameraStatus] =
-    useState<ImagePicker.PermissionStatus | null>(null);
-  const [micStatus, setMicStatus] = useState<string | null>(null);
-  const [isRequestingLocation, setIsRequestingLocation] =
-    useState(false);
-  const [isRequestingCamera, setIsRequestingCamera] = useState(false);
-  const [isRequestingMic, setIsRequestingMic] = useState(false);
+  const userId = user?.id ?? null;
+  const name = displayName(user);
+  const google = user?.app_metadata?.provider === 'google';
+  const [theme, setTheme] = useState<ThemePreference>(getThemePreference);
+  const permissions = usePermissionWords();
 
-  const isAndroid = Platform.OS === 'android';
-  const isAuthorized = permissionStatus === 'authorized';
-  const isLocationGranted = locationStatus === 'granted';
-  const isCameraGranted = cameraStatus === 'granted';
-  const isMicGranted = micStatus === 'granted';
-
-  useFocusEffect(
-    useCallback(() => {
-      checkPermission();
-    }, [checkPermission]),
+  const wallets = useValue(walletsForUser$(userId));
+  const categoryCount = useValue(
+    () =>
+      categoriesForUser$(userId)
+        .get()
+        .filter((category) => category.isActive).length,
+  );
+  const namedCount = useValue(() =>
+    userId ? listMerchantAliases(userId).length : 0,
+  );
+  const linkedApps = useValue(
+    () =>
+      new Set(
+        getRecordValues<{ notification_package?: string | null; is_active?: unknown }>(
+          wallets$,
+        )
+          .filter((row) => isActive(row.is_active) && row.notification_package)
+          .map((row) => row.notification_package),
+      ).size,
   );
 
-  const userInitial = useMemo(() => {
-    const ch = (user?.email ?? '').charAt(0).toUpperCase();
-    return ch || '?';
-  }, [user?.email]);
+  const openSources = () => router.push('/notifications');
 
   const handleSignOut = async () => {
     await signOut();
-    router.replace('/(auth)/login' as any);
-  };
-
-  const refreshPermissionStatus = useCallback(async () => {
-    const [locationPerm, cameraPerm, micPerm] = await Promise.all([
-      Location.getForegroundPermissionsAsync(),
-      ImagePicker.getCameraPermissionsAsync(),
-      ExpoSpeechRecognitionModule.getPermissionsAsync(),
-    ]);
-    setLocationStatus(locationPerm.status);
-    setCameraStatus(cameraPerm.status);
-    setMicStatus(mapSpeechPermissionStatus(micPerm));
-  }, []);
-
-  useEffect(() => {
-    void refreshPermissionStatus();
-  }, [refreshPermissionStatus]);
-
-  const requestLocationAccess = useCallback(async () => {
-    setIsRequestingLocation(true);
-    try {
-      const result =
-        await Location.requestForegroundPermissionsAsync();
-      setLocationStatus(result.status);
-    } finally {
-      setIsRequestingLocation(false);
-    }
-  }, []);
-
-  const requestCameraAccess = useCallback(async () => {
-    setIsRequestingCamera(true);
-    try {
-      const result =
-        await ImagePicker.requestCameraPermissionsAsync();
-      setCameraStatus(result.status);
-    } finally {
-      setIsRequestingCamera(false);
-    }
-  }, []);
-
-  const requestMicAccess = useCallback(async () => {
-    setIsRequestingMic(true);
-    try {
-      const result =
-        await ExpoSpeechRecognitionModule.requestPermissionsAsync();
-      setMicStatus(mapSpeechPermissionStatus(result));
-      if (result.granted) {
-        await prepareOfflineSpeechModel({ allowDialog: true });
-      }
-    } finally {
-      setIsRequestingMic(false);
-    }
-  }, []);
-
-  const labelForStatus = (status: string | null) => {
-    if (status === 'granted') return 'Enabled';
-    if (status === 'denied') return 'Denied';
-    if (status === 'undetermined') return 'Not requested';
-    return 'Checking access';
+    router.replace('/(auth)/login');
   };
 
   return (
@@ -152,235 +128,188 @@ export default function ProfileScreen() {
     >
       <ScrollView
         className="flex-1"
-        contentContainerClassName="pb-12"
+        contentContainerClassName="gap-5 px-5 pb-10"
         showsVerticalScrollIndicator={false}
       >
-        <View className="px-5">
-          <View className="rounded-card bg-accent-aqua/30 p-4 overflow-hidden">
-            <View className="flex-row items-center">
-              {user &&
-              user.user_metadata &&
-              user.user_metadata.avatar_url ? (
-                <Image
-                  source={{ uri: user.user_metadata.avatar_url }}
-                  className="h-14 w-14 rounded-2xl"
-                  alt="User profile picture"
-                />
-              ) : (
-                <GradientCard
-                  cardStyle={avatarStyle}
-                  className="h-14 w-14 items-center justify-center rounded-2xl"
-                >
-                  <Text className="text-2xl font-display-bold text-primary-foreground">
-                    {userInitial}
-                  </Text>
-                </GradientCard>
-              )}
-              <View className="ml-3 flex-1">
-                <Text className="text-[13px] font-display-semibold text-muted">
-                  Your Moni account
-                </Text>
-                <Text
-                  className="mt-0.5 text-[17px] font-display-bold text-foreground"
-                  numberOfLines={2}
-                >
-                  {user?.email ?? 'Not signed in'}
-                </Text>
-              </View>
-            </View>
+        <View
+          className="flex-row items-center gap-3.5"
+          accessible
+          accessibilityLabel={[name, user?.email, google ? 'Google' : null]
+            .filter(Boolean)
+            .join(', ')}
+        >
+          <View className="h-14 w-14 items-center justify-center rounded-[20px] bg-mint">
+            <Text className="text-[24px] leading-[28px] font-display-bold text-on-pastel">
+              {(name.charAt(0) || '?').toUpperCase()}
+            </Text>
+          </View>
+          <View className="min-w-0 flex-1">
+            <Text
+              variant="sectionTitle"
+              className="text-foreground"
+              numberOfLines={1}
+            >
+              {name}
+            </Text>
+            <Text
+              variant="body"
+              className="text-ink-2"
+              numberOfLines={1}
+            >
+              {google ? `${user?.email} · Google` : user?.email}
+            </Text>
           </View>
         </View>
 
-        <View className="mt-8 px-5">
-          <ProfileSectionTitle>
-            Accounts & wallets
-          </ProfileSectionTitle>
-          <SyncStatus className="mb-4 rounded-[22px]" />
-          <DefaultWalletPicker />
-        </View>
+        <MainCurrencyRow />
 
-        <View className="mt-6 px-5">
-          <ProfileSectionTitle>Money setup</ProfileSectionTitle>
-          <ListCard>
-            <NavRow
-              testID={tid('profile', 'row', 'Categories')}
-              icon="shape-outline"
-              tint="lilac"
-              title="Categories"
-              onPress={() => router.push('/categories' as never)}
-            />
-            <NavRow
-              testID={tid('profile', 'row', 'Category budgets')}
-              icon="wallet"
-              tint="mint"
-              title="Category budgets"
-              onPress={() => router.push('/budget/list')}
-            />
-            <NavRow
-              testID={tid('profile', 'row', 'Debts')}
-              icon="account-group-outline"
-              tint="aqua"
-              title="Debts"
-              onPress={() => router.dismissTo('/debts')}
-            />
-          </ListCard>
-        </View>
-
-        <View className="mt-6 px-5">
-          <ProfileSectionTitle>Capture sources</ProfileSectionTitle>
-          <ListCard>
-            {!isAndroid ? (
-              <PermissionColumn
-                title="Notification access"
-                statusLabel="Android only"
-                icon="notifications-off"
-                iconTint={tokens.surface2}
-                muted
-                showAction={false}
-                widthClassName=""
-              />
-            ) : (
-              <PermissionColumn
-                title="Notification access"
-                statusLabel={
-                  isAuthorized
-                    ? 'Enabled'
-                    : permissionStatus === 'denied'
-                      ? 'Off'
-                      : isCheckingPermission
-                        ? 'Checking access'
-                        : 'Off'
-                }
-                granted={isAuthorized}
-                actionLabel={
-                  !isAuthorized
-                    ? isCheckingPermission
-                      ? 'Checking'
-                      : 'Enable'
-                    : undefined
-                }
-                onAction={
-                  !isAuthorized ? requestPermission : undefined
-                }
-                actionDisabled={isCheckingPermission}
-                icon="bell-badge"
-                iconTint={tokens.accents.lilac}
-                showAction={!isAuthorized}
-                widthClassName="border-b border-border-subtle"
-              />
-            )}
-            <PermissionColumn
-              title="Location"
-              statusLabel={labelForStatus(locationStatus)}
-              granted={isLocationGranted}
-              actionLabel={
-                !isLocationGranted
-                  ? isRequestingLocation
-                    ? 'Checking'
-                    : 'Enable'
-                  : undefined
-              }
-              onAction={
-                !isLocationGranted ? requestLocationAccess : undefined
-              }
-              actionDisabled={isRequestingLocation}
-              icon="map-marker"
-              iconTint={tokens.accents.aqua}
-              showAction={!isLocationGranted}
-              widthClassName="border-b border-border-subtle"
-            />
-            <PermissionColumn
-              title="Camera"
-              statusLabel={labelForStatus(cameraStatus)}
-              granted={isCameraGranted}
-              actionLabel={
-                !isCameraGranted
-                  ? isRequestingCamera
-                    ? 'Checking'
-                    : 'Enable'
-                  : undefined
-              }
-              onAction={
-                !isCameraGranted ? requestCameraAccess : undefined
-              }
-              actionDisabled={isRequestingCamera}
-              icon="camera"
-              iconTint={tokens.accents.peach}
-              showAction={!isCameraGranted}
-              widthClassName="border-b border-border-subtle"
-            />
-            <PermissionColumn
-              title="Microphone"
-              statusLabel={labelForStatus(micStatus)}
-              granted={isMicGranted}
-              actionLabel={
-                !isMicGranted
-                  ? isRequestingMic
-                    ? 'Checking'
-                    : 'Enable'
-                  : undefined
-              }
-              onAction={!isMicGranted ? requestMicAccess : undefined}
-              actionDisabled={isRequestingMic}
-              icon="mic"
-              iconTint={tokens.accents.lilac}
-              showAction={!isMicGranted}
-              widthClassName=""
-            />
-          </ListCard>
-        </View>
-
-        <View className="mt-6 px-5">
-          <ProfileSectionTitle>Appearance</ProfileSectionTitle>
-          <ThemePreferencePicker />
-        </View>
-
-        <View className="mt-6 px-5">
-          <ProfileSectionTitle>
-            Privacy & local data
-          </ProfileSectionTitle>
-          <ListCard>
-            <NavRow
-              testID={tid('profile', 'row', 'Captured notifications')}
-              icon="bell-outline"
-              tint="lilac"
-              title="Captured notifications"
-              onPress={() => router.push('/notifications' as never)}
-            />
-          </ListCard>
-        </View>
-
-        <View className="mt-6 px-5">
-          <ProfileSectionTitle>Developer</ProfileSectionTitle>
-          <ListCard>
-            <NavRow
-              testID={tid('profile', 'row', 'Debug panel')}
-              icon="bug-outline"
-              tint="sand"
-              title="Debug panel"
-              onPress={() => router.push('/debug' as never)}
-            />
-          </ListCard>
-        </View>
-
-        <View className="mt-8 px-5">
-          <TouchableOpacity
-            className="min-h-13 flex-row items-center justify-center rounded-2xl bg-danger/10 px-4 py-3.5"
-            onPress={handleSignOut}
-            activeOpacity={0.8}
-            accessibilityRole="button"
-            accessibilityLabel="Sign out"
+        <View className="gap-2">
+          <Text
+            variant="caps"
+            className="px-1 text-muted"
+            accessibilityRole="header"
           >
-            <IconSymbol
-              name="logout"
-              size={20}
-              color={tokens.danger}
-            />
-            <Text className="ml-2 text-base font-display-bold text-danger">
-              Sign out
-            </Text>
-          </TouchableOpacity>
+            APPEARANCE
+          </Text>
+          <Segmented
+            screen="profile"
+            name="appearance"
+            accessibilityLabel="Appearance"
+            options={THEME_PREFERENCE_OPTIONS}
+            value={theme}
+            onChange={(next) => {
+              setTheme(next);
+              setThemePreference(next);
+            }}
+          />
         </View>
+
+        <Section label="MONEY">
+          <ProfileRow
+            testID={tid('profile', 'row', 'wallets')}
+            icon="wallet"
+            tint="lemon"
+            title="Wallets"
+            meta={walletsMeta(wallets.map((wallet) => wallet.currency))}
+            value={String(wallets.length)}
+            chevron="right"
+            onPress={() => router.push('/wallets')}
+          />
+          <ProfileRow
+            testID={tid('profile', 'row', 'categories')}
+            icon="tag-outline"
+            tint="lilac"
+            title="Categories"
+            meta="Rename or add your own"
+            value={String(categoryCount)}
+            chevron="right"
+            onPress={() => router.push('/categories')}
+          />
+          <ProfileRow
+            testID={tid('profile', 'row', 'merchant-names')}
+            icon="store-edit-outline"
+            tint="peach"
+            title="Merchant names"
+            meta="Name the codes banks send"
+            value={`${namedCount} named`}
+            chevron="right"
+            onPress={() => router.push('/notifications')}
+          />
+        </Section>
+
+        <Section
+          label="CAPTURE SOURCES"
+          link={
+            <Press
+              testID={tid('profile', 'set-up')}
+              onPress={openSources}
+              accessibilityLabel="Set up capture sources"
+              className="-my-2.5 min-h-11 flex-row items-center gap-0.5 rounded-full pl-2"
+            >
+              <Text className="text-[15px] leading-5 font-display-semibold text-deep-mint">
+                Set up
+              </Text>
+              <IconSymbol
+                name="chevron-right"
+                size={18}
+                color={tokens.deepMint}
+              />
+            </Press>
+          }
+        >
+          <ProfileRow
+            testID={tid('profile', 'row', 'bank-notifications')}
+            icon="bell-outline"
+            tint="mint"
+            title="Bank notifications"
+            meta={plural(linkedApps, 'linked app', 'linked apps')}
+            value={permissions?.notifications}
+            chevron="right"
+            onPress={openSources}
+          />
+          <ProfileRow
+            testID={tid('profile', 'row', 'location')}
+            icon="map-marker"
+            tint="mint"
+            title="Location"
+            meta="From notifications"
+            value={permissions?.location}
+            chevron="right"
+            onPress={openSources}
+          />
+          <ProfileRow
+            testID={tid('profile', 'row', 'camera')}
+            icon="camera-outline"
+            tint="mint"
+            title="Camera"
+            meta="Scan receipts"
+            value={permissions?.camera}
+            chevron="right"
+            onPress={openSources}
+          />
+          <ProfileRow
+            testID={tid('profile', 'row', 'microphone')}
+            icon="microphone"
+            tint={permissions?.microphone === 'On' ? 'mint' : 'sand'}
+            title="Microphone"
+            meta="Say it instead of typing"
+            value={permissions?.microphone}
+            chevron="right"
+            onPress={openSources}
+          />
+        </Section>
+
+        <Section label="PRIVACY AND DATA">
+          <ProfileRow
+            testID={tid('profile', 'row', 'capture-log')}
+            icon="cellphone-message"
+            tint="lilac"
+            title="Capture log"
+            meta="Every alert Moni read, and what it did"
+            chevron="right"
+            onPress={() => router.push('/notifications')}
+          />
+          <ExportDataRow userId={userId} />
+        </Section>
+
+        {__DEV__ ? (
+          <Section label="DEVELOPER">
+            <NavRow
+              testID={tid('profile', 'row', 'debug')}
+              icon="bug-outline"
+              title="Debug panel"
+              onPress={() => router.push('/debug')}
+            />
+          </Section>
+        ) : null}
+
+        <Button
+          testID={tid('profile', 'sign-out')}
+          variant="secondary"
+          icon="logout"
+          label="Sign out"
+          onPress={() => void handleSignOut()}
+        />
       </ScrollView>
     </Page>
   );
