@@ -1,0 +1,84 @@
+# F3 sheet host. Needs a signed-in e2e build with at least one wallet.
+# Run: scripts/device/with-device.sh --lane f3 -- maestro test .maestro/sheets.yaml
+appId: com.anonymous.moni.e2e
+name: sheets
+---
+- launchApp
+- tapOn:
+    id: nav.capture
+- tapOn:
+    id: nav.capture.expense
+- assertVisible:
+    id: capture.category
+
+# Category grid: search narrows the tiles, tapping a tile saves and closes.
+- tapOn:
+    id: capture.category
+- assertVisible: Choose category
+- assertVisible:
+    id: sheet.search
+- tapOn:
+    id: sheet.search
+- inputText: Tra
+- hideKeyboard
+- takeScreenshot: f3-category-search
+- tapOn:
+    id: sheet\.category\..*
+    index: 0
+- assertNotVisible: Choose category
+
+# Wallet picker: the scrim covers the tab bar and a tap on it closes the sheet.
+- tapOn:
+    id: capture.wallet
+- assertVisible: Paid from
+- assertVisible:
+    id: sheet.scrim
+- takeScreenshot: f3-wallet-sheet
+- tapOn:
+    point: 50%,8%
+- assertNotVisible:
+    id: sheet.scrim
+
+# Android back closes the sheet and leaves the page.
+- tapOn:
+    id: capture.category
+- assertVisible: Choose category
+- pressKey: Back
+- assertNotVisible: Choose category
+- assertVisible:
+    id: capture.submit
+
+# Drag the grabber down past 40% of the sheet.
+- tapOn:
+    id: capture.date
+- assertVisible:
+    id: sheet.scrim
+- swipe:
+    start: 50%,22%
+    end: 50%,95%
+    duration: 400
+- assertNotVisible:
+    id: sheet.scrim
+- takeScreenshot: f3-drag-dismissed
+
+# Wallet form: currency search with the keyboard up, type and colour.
+- openLink: moni-e2e://wallet/new
+- tapOn:
+    id: txn.change-currency-currently
+- assertVisible: Currency
+- tapOn:
+    id: sheet.search
+- inputText: SGD
+- takeScreenshot: f3-currency-keyboard
+- tapOn:
+    id: sheet.option.sgd
+- assertVisible: SGD
+- tapOn:
+    id: wallet.type
+- tapOn:
+    id: sheet.option.cash
+- assertVisible: Cash
+- tapOn:
+    id: wallet\.colour\..*
+    index: 2
+- takeScreenshot: f3-wallet-form

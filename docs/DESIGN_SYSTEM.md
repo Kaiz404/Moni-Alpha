@@ -390,13 +390,13 @@ The background should be calm and mostly opaque. Do not place a dense modal atop
 
 ### 7.10 Modal pickers and sheets
 
-Use a sheet for a focused, reversible choice that preserves the form beneath it; use a dedicated page when the task has several fields or needs its own save action. There must be only one picker sheet open at a time.
+v2 (F3). One sheet host serves every sheet; the values are in [`redesign/tokens.md`](redesign/tokens.md#sheets). Use a sheet for a quick pick from a fixed set (category, wallet, currency, wallet type, date, the linked banking app) or to confirm a destructive action. A task with several fields gets its own page.
 
-- Start with a concise title and an explicit close icon. On Android, native back, a swipe, or a tap outside may also dismiss the sheet when the platform permits it.
-- Repeated choices are full-width, comfortably tappable card rows: opaque `bg-card`, `rounded-2xl`, at least 56pt tall, 16pt horizontal padding, and an 8pt gap. The selected row uses `bg-primary-muted` plus a visible selected indicator.
-- A row may show a leading icon or color marker, but its text label remains the primary recognition cue. Use the same card treatment for the form control that opens the picker.
-- Selecting a value updates the form and selected state but does **not** close the sheet. A labeled primary confirmation action with a meaningful icon is fixed to the bottom of every sheet; it confirms the current state and closes the sheet. The close control and native dismissal gestures remain available; reset transient search state on dismissal.
-- Keep scrolling inside the sheet body. The primary action is absolutely positioned relative to the sheet, never inside its scroll container, and every scroll container reserves at least the action height plus its gap at the bottom so its final content remains reachable. Android Expo UI sheets must give scrollable React Native content a bounded, weighted host rather than content-sized measurement.
+- Open a sheet with `openSheet(request)` from `lib/sheet/sheet-store.ts`. The request is one typed union (`category`, `wallet`, `currency`, `walletType`, `notificationApp`, `date`, `confirm`), and the promise resolves to that kind's result, or `null` when the user dismisses it. Only one sheet is open at a time; a second `openSheet` resolves the first to `null`.
+- The sheet is Cream with a 32 top radius, a 36 × 5 Hairline grabber, a 22/26 title, and a scrim of `rgba(23,24,26,0.32)` over the page **and the tab bar**. It rises on the `sheet` spring and follows the finger 1:1 from its header; a release whose projected position passes 40% of its height closes it. The scrim, Android back, and a picker's 44 close also close it. Reduce Motion turns the rise into a 180 ms fade.
+- Pickers close on pick and carry no pinned action. Options are rows in a Paper list card (42 bubble, 16/22 name, 13/18 Meta line, radio mark). The category picker is the `V2A-CategoryPick` grid: a 52 search field, three columns of Paper tiles with a 4 progress bar and "RM100 left", "RM20 over", or what was spent.
+- A confirm sheet fits its content and pins two 56 actions split 50/50, the safe one first ("Keep it", then "Delete" in the destructive fill). Use it instead of `Alert.alert` for any destructive choice.
+- The control that opens a picker is a `PickerField`: Sand, radius 16, 64 tall, label 13/18 over value 16/22 600, chevron-down.
 
 ### 7.11 Processing state
 
