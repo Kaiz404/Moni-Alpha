@@ -20,6 +20,7 @@ import {
   WalletTransactions,
 } from '@/components/wallets/wallet-sections';
 import { useAuth } from '@/lib/auth/auth-context';
+import { merchantName } from '@/lib/finance/merchant-name';
 import {
   categoriesForUser$,
   pendingProposals$,
@@ -28,6 +29,7 @@ import {
   walletById$,
   walletsForUser$,
 } from '@/lib/finance/selectors';
+import { listMerchantAliases } from '@/lib/supabase/merchant-aliases';
 import type { RowLookups } from '@/lib/transactions/row';
 import { confirmDeleteWallet } from '@/lib/wallets/delete-wallet';
 import { useWalletAlertLink } from '@/lib/wallets/wallet-link';
@@ -53,7 +55,17 @@ export default function WalletScreen() {
   const proposals = useValue(pendingProposals$(userId));
   const wallets = useValue(walletsForUser$(userId));
   const categories = useValue(categoriesForUser$(userId));
+  const aliases = useValue(() => (userId ? listMerchantAliases(userId) : []));
   const now = useNow();
+  const named = useMemo(
+    () =>
+      transactions.map((transaction) =>
+        transaction.merchant
+          ? { ...transaction, merchant: merchantName(transaction.merchant, aliases) }
+          : transaction,
+      ),
+    [transactions, aliases],
+  );
 
   const lookups = useMemo<RowLookups>(
     () => ({
@@ -149,7 +161,7 @@ export default function WalletScreen() {
           />
           <WalletTransactions
             wallet={wallet}
-            transactions={transactions}
+            transactions={named}
             lookups={lookups}
           />
           <WalletAlerts
