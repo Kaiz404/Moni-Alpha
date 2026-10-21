@@ -20,6 +20,7 @@ import { AuthGuard } from '@/components/providers/auth-guard';
 import { FabReceiptProcessingOverlay } from '@/components/receipt/fab-receipt-processing-overlay';
 import { ProposalSummarySheet } from '@/components/proposal/proposal-summary-sheet';
 import { StoreSyncActivator } from '@/components/providers/store-sync-activator';
+import { SheetHost } from '@/components/ui/sheet/sheet-host';
 import { textFonts } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { AuthProvider } from '@/lib/auth/auth-context';
@@ -146,6 +147,7 @@ export default function RootLayout() {
                   options={{ headerShown: false }}
                 />
               </Stack>
+              <SheetHost />
               <FabReceiptProcessingOverlay />
               <ProposalSummarySheet />
             </AuthGuard>

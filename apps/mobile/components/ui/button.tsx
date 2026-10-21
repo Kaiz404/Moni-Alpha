@@ -90,6 +90,8 @@ export type ButtonProps = {
   /** Layout only (margins, flex, width); the variant owns colour and size. */
   className?: string;
   accessibilityLabel?: string;
+  /** A sheet's pinned action is 56 tall. */
+  pinned?: boolean;
 };
 
 /** The v2 capsule: 52 tall (tertiary 44), 15/600 label, one variant per role. */
@@ -104,11 +106,12 @@ export function Button({
   disabled = false,
   className,
   accessibilityLabel,
+  pinned = false,
 }: ButtonProps) {
   const tokens = useThemeTokens();
   const look = looks[variant];
   const inactive = disabled || loading;
-  const height = look.tall ? 52 : 44;
+  const height = pinned ? 56 : look.tall ? 52 : 44;
   const ink = disabled ? tokens.muted : look.ink(tokens);
   const glyph = loading ? (
     <ActivityIndicator
