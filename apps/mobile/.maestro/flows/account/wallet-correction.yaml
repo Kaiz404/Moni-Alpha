@@ -1,0 +1,75 @@
+# K2 balance correction: RM63.60 to RM60.00 writes a −RM3.60 correction, and Undo removes it.
+# Needs a signed-in e2e build. Creates a "K2 Fix" cash wallet.
+# Opening the wallet taps its name where Home or the Wallets page lists it.
+# Run: scripts/device/with-device.sh --lane k2 -- maestro test .maestro/flows/account/wallet-correction.yaml
+appId: com.anonymous.moni.e2e
+name: K2 balance correction
+tags:
+  - k2
+---
+- launchApp
+- extendedWaitUntil:
+    visible:
+      id: home.avatar
+    timeout: 15000
+- openLink: moni-e2e://wallet/new
+- tapOn:
+    id: wallet.form.name
+- inputText: K2 Fix
+- tapOn:
+    id: wallet.type
+- tapOn:
+    id: sheet.option.cash
+- tapOn:
+    id: wallet.form.starting-balance
+- inputText: '63.60'
+- hideKeyboard
+- tapOn:
+    id: wallet.form.submit
+- scrollUntilVisible:
+    element:
+      text: K2 Fix
+- tapOn: K2 Fix
+- extendedWaitUntil:
+    visible:
+      id: wallet.balance
+    timeout: 10000
+- assertVisible: RM63.60
+
+# "Balance not right?" opens the field with the system keyboard and a live difference line.
+- tapOn:
+    id: wallet.balance-not-right
+- assertVisible:
+    id: wallet.balance.input
+- assertVisible: Type the cash you have.
+- eraseText: 12
+- inputText: '60'
+- assertVisible: Moni adds a −RM3.60 balance correction. Not counted as spending or income.
+- takeScreenshot: k2-correction-typing
+- tapOn:
+    id: wallet.balance.save
+
+# Lane 1 and You see. The balance reads RM60.00, the row and the toast appear.
+- assertVisible: Correction −RM3.60 added
+- assertVisible: RM60.00
+- assertVisible: Checked today
+- assertVisible: Balance correction
+- assertVisible: Not in budgets · K2 Fix
+- takeScreenshot: k2-l1-corrected
+
+# Lane 3. Undo removes the row and the balance returns.
+- tapOn:
+    id: nav.toast.undo
+- assertNotVisible: Balance correction
+- assertVisible: RM63.60
+- takeScreenshot: k2-l3-undo
+
+# A matching balance closes the field and writes nothing.
+- tapOn:
+    id: wallet.balance.pencil
+- assertVisible: Moni has RM63.60. Type what you count.
+- tapOn:
+    id: wallet.balance.save
+- assertNotVisible: Balance correction
+- assertVisible:
+    id: wallet.balance-not-right

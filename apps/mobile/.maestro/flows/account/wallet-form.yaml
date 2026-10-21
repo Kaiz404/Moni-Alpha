@@ -1,0 +1,71 @@
+# K2 wallet form: New wallet with type, starting balance and colour, then Alerts from on a bank.
+# Needs a signed-in e2e build. Leaves a "K2 Cash" wallet behind.
+# Run: scripts/device/with-device.sh --lane k2 -- maestro test .maestro/flows/account/wallet-form.yaml
+appId: com.anonymous.moni.e2e
+name: K2 wallet form
+tags:
+  - k2
+---
+- launchApp
+- extendedWaitUntil:
+    visible:
+      id: home.avatar
+    timeout: 15000
+
+# Lane 6. A cash wallet with a starting balance shows up once saved.
+- openLink: moni-e2e://wallet/new
+- assertVisible: New wallet
+- assertVisible:
+    id: wallet.close
+- assertVisible: Create wallet
+- tapOn:
+    id: wallet.form.name
+- inputText: K2 Cash
+- tapOn:
+    id: wallet.type
+- assertVisible: Wallet type
+- tapOn:
+    id: sheet.option.cash
+- assertVisible: Cash has no app. Add it with + or tell Moni.
+- assertNotVisible:
+    id: wallet.alerts-from
+- tapOn:
+    id: wallet.form.starting-balance
+- inputText: '63.60'
+- hideKeyboard
+- tapOn:
+    id: wallet.colour.coral-bloom
+- assertVisible: Cash · MYR
+- takeScreenshot: k2-form-new
+- tapOn:
+    id: wallet.form.submit
+- assertNotVisible: New wallet
+- scrollUntilVisible:
+    element:
+      text: K2 Cash
+- takeScreenshot: k2-l6-new
+
+# Lane 7. A bank wallet offers Alerts from, which opens the app picker sheet.
+- openLink: moni-e2e://wallet/new
+- tapOn:
+    id: wallet.currency
+- assertVisible: Currency
+- tapOn:
+    id: sheet.search
+- inputText: USD
+- tapOn:
+    id: sheet.option.usd
+- assertVisible: Bank · USD
+- tapOn:
+    id: wallet.alerts-from
+    optional: true
+- assertVisible:
+    text: Moni reads spending alerts only from the app you pick.
+    optional: true
+- takeScreenshot: k2-l7-app
+- tapOn:
+    id: sheet.scrim
+    optional: true
+- tapOn:
+    id: wallet.close
+- assertNotVisible: New wallet

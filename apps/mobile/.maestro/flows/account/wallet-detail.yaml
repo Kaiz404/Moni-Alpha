@@ -1,0 +1,97 @@
+# K2 wallet page: its blocks, rename in place with Undo, Edit wallet, and Delete wallet.
+# Needs a signed-in e2e build. Creates "K2 Detail" and deletes it at the end.
+# Opening the wallet taps its name where Home or the Wallets page lists it.
+# Run: scripts/device/with-device.sh --lane k2 -- maestro test .maestro/flows/account/wallet-detail.yaml
+appId: com.anonymous.moni.e2e
+name: K2 wallet page
+tags:
+  - k2
+---
+- launchApp
+- extendedWaitUntil:
+    visible:
+      id: home.avatar
+    timeout: 15000
+- openLink: moni-e2e://wallet/new
+- tapOn:
+    id: wallet.form.name
+- inputText: K2 Detail
+- tapOn:
+    id: wallet.form.starting-balance
+- inputText: '120.00'
+- hideKeyboard
+- tapOn:
+    id: wallet.form.submit
+- scrollUntilVisible:
+    element:
+      text: K2 Detail
+- tapOn: K2 Detail
+
+# Lane 2. The blocks in board order.
+- extendedWaitUntil:
+    visible:
+      id: wallet.balance
+    timeout: 10000
+- assertVisible:
+    id: wallet.back
+- assertVisible:
+    id: wallet.more
+- assertVisible:
+    id: wallet.name
+- assertVisible: RM120.00
+- assertVisible:
+    id: wallet.balance-not-right
+- assertVisible: Checked today
+- assertVisible: Transactions
+- scrollUntilVisible:
+    element:
+      id: wallet.capture-log
+- assertVisible:
+    id: wallet.alerts
+- takeScreenshot: k2-l2-pair
+- scrollUntilVisible:
+    element:
+      id: wallet.name
+    direction: UP
+
+# Lane 4. Rename in place, then Undo.
+- tapOn:
+    id: wallet.name.pencil
+- assertVisible: Only the name changes. Its transactions stay as they are.
+- eraseText: 20
+- inputText: K2 Renamed
+- tapOn:
+    id: wallet.name.save
+- assertVisible: Renamed to K2 Renamed
+- takeScreenshot: k2-l4-rename
+- tapOn:
+    id: nav.toast.undo
+- assertVisible: K2 Detail
+
+# Edit wallet opens the form with the currency locked.
+- tapOn:
+    id: wallet.more
+- tapOn:
+    id: wallet.menu.edit
+- assertVisible: Edit wallet
+- assertVisible: Save changes
+- assertVisible:
+    id: wallet.form.delete
+- takeScreenshot: k2-form-edit
+- tapOn:
+    id: wallet.close
+- assertVisible:
+    id: wallet.balance
+
+# Lane 8. Delete through the confirm sheet; the page closes.
+- tapOn:
+    id: wallet.more
+- tapOn:
+    id: wallet.menu.delete
+- assertVisible: Delete K2 Detail?
+- takeScreenshot: k2-l8-delete
+- tapOn:
+    id: sheet.confirm
+- assertNotVisible:
+    id: wallet.balance
+- assertNotVisible: K2 Detail
