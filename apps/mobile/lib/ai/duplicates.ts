@@ -48,9 +48,10 @@ function matchOne(
   candidate: LedgerEntry,
   entry: LedgerEntry,
   gapMs: number,
+  samePurchaseWindowMs: number,
 ): DuplicateMatch | null {
   if (entry.type === candidate.type) {
-    if (gapMs > SAME_PURCHASE_WINDOW_MS) return null;
+    if (gapMs > samePurchaseWindowMs) return null;
     if (!merchantsCompatible(candidate.merchant, entry.merchant)) return null;
     return { kind: 'same_purchase', target: entry };
   }
@@ -69,6 +70,7 @@ const isIncomeOrExpense = (entry: LedgerEntry) =>
 export function findDuplicate(
   candidate: LedgerEntry,
   existing: readonly LedgerEntry[],
+  { samePurchaseWindowMs = SAME_PURCHASE_WINDOW_MS }: { samePurchaseWindowMs?: number } = {},
 ): DuplicateMatch | null {
   if (!isIncomeOrExpense(candidate)) return null;
   const candidateAt = Date.parse(candidate.at);
@@ -80,7 +82,7 @@ export function findDuplicate(
     }
     const gapMs = Math.abs(Date.parse(entry.at) - candidateAt);
     if (Number.isNaN(gapMs) || (best && gapMs >= best.gapMs)) continue;
-    const match = matchOne(candidate, entry, gapMs);
+    const match = matchOne(candidate, entry, gapMs, samePurchaseWindowMs);
     if (match) best = { match, gapMs };
   }
   return best?.match ?? null;

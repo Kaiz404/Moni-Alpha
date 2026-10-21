@@ -131,7 +131,7 @@ Moni chat and Profile are pushed pages with no tab bar, as is every other root S
 
 ### The + chooser
 
-The + opens the "Add a transaction" sheet (`components/nav/capture-chooser.tsx`, sheet kind `chooser`): **Type it**, **Scan a receipt**, **Say it**, **Ask Moni**. The scrim covers the tab bar; the + stays above it, turned into the close button. A picked row closes the sheet and pushes its page from the right. Android back, the scrim, and the × close it.
+The + opens the "Add a transaction" sheet (`components/nav/capture-chooser.tsx`, sheet kind `chooser`): **Type it**, **Scan a receipt**, **Say it**, **Ask Moni**. The scrim covers the tab bar; the + stays above it, turned into the close button. A picked row closes the sheet and pushes its page from the right in the same frame, so the page slides in while the sheet drops. Android back, the scrim, and the × close it. **Type it** (`app/transaction/new.tsx`, `V2A-CaptureType`) is the amount page with Expense, Income and Transfer, Category, Paid with and Date pickers, and one "Shop or note" field; its × returns to the screen the + was pressed on. A typed expense that repeats a saved row or a waiting capture from the last 3 days (same amount, and the same shop or, with no shop, the same wallet) opens the duplicate sheet: **Review that one**, **Add mine anyway**, **Change the amount**.
 
 ### Review queue policy
 
@@ -380,12 +380,14 @@ This is Moni’s signature trust component. It is a **financial review artifact*
 - Modify opens an editable sheet with prefilled values; it does not destroy the source context.
 - Decline must be easy and nonjudgmental. Offer a low-friction reason only if it helps improve future parsing; never guilt the user.
 
-### 7.8 Amount field and calculator
+### 7.8 Amount page (v2)
 
-- Amount is a large, right-aligned numeric field with tabular figures.
-- Offer a calculator/keypad flow from manual entry and proposal modification.
-- Support arithmetic for quick calculations, but reveal the final evaluated value clearly.
-- Currency is explicit and editable; no automatic conversion.
+New money uses one full page, `components/capture/amount-page.tsx` (`V2P-AmountPage`); existing values edit in place.
+
+- The amount is the centred hero (64/700, 52/700 once decimals are typed) with the sign and symbol: `−RM45.90`, `+RM100`, transfers unsigned in Meta. One sentence under it says what the amount does, in Over text when it passes a budget.
+- Picker fields and the note sit under the amount. The Paper keypad (56 tall keys, `Keyboard_Tap` on each) and one 56 primary button stay at the bottom.
+- `lib/capture/amount-input.ts` is the keypad's pure reducer: nine digits before the point, two after.
+- No arithmetic and no currency switch on the page. The wallet sets the currency; Type it lists main-currency wallets only.
 
 ### 7.9 Full-screen proposal review
 
