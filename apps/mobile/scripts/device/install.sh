@@ -26,7 +26,11 @@ adb() { command adb -s "$MONI_DEVICE_SERIAL" "$@"; }
 if [[ $(adb shell cat "$marker" 2>/dev/null | tr -d '\r') == "$key" ]] && adb shell pm path "$package" | grep -q '^package:'; then
   echo "skipped install, $key is already on the phone"
 else
-  adb install -r -d "$apk"
+  limit=${MONI_INSTALL_TIMEOUT:-300}
+  if ! timeout "$limit" adb -s "$MONI_DEVICE_SERIAL" install -r -d "$apk"; then
+    echo "adb install failed or waited more than $limit s. Check the phone for a Google Play Protect or Install via USB prompt, which only the operator can answer." >&2
+    exit 4
+  fi
   adb shell "echo $key >$marker"
   echo "installed $key"
 fi
