@@ -2,7 +2,7 @@
 
 The mobile app is being rebuilt to the **Redesign v2** design on the claude.ai design canvas. This file tells an implementing agent where the design lives, which boards are final, what to ignore, what the code does not support yet, and what is still the owner's call.
 
-**Status (21 Oct 2026):** design rounds 1–6 done (canvas version 150). Foundations F1 landed: v2 colour tokens (light and dark), Funnel Display through `components/ui/text`, spring tokens in `lib/motion/tokens.ts`, and the haptics table in `lib/haptics`. F2 landed: `Press`, `Button`, `HeaderIconButton`, `MoniButton`, and `Page` replace the v1 chrome, so every screen has its v2 header and every button is a v2 capsule. F3 landed: one sheet host (`openSheet` in `lib/sheet/sheet-store.ts`) opens every picker and destructive confirm as a Cream sheet. F4 landed: v2 transaction rows with the hold menu, navigation rows, chips, segmented controls, the one progress bar, status pills, the toast host, the sync banner, skeletons, and empty tiles. Screen bodies still use the v1 layouts and components from [`DESIGN_SYSTEM.md`](DESIGN_SYSTEM.md), now in v2 colours and type.
+**Status (21 Oct 2026):** every v2 screen in "Build these" is built on `main`: foundations (F1–F4), navigation (N1), Home and Moni chat, Activity, Capture and Review, the Budget tab, Debts, Account, and the Map. The integration pass (X1) joined them up: typed routes are checked in CI, chat drafts use the Review deck's actions, Activity's safe to spend a day comes from the Budget month, the wallet page has its balance line and **Use as default**, bill reminders are scheduled, scanned receipt photos are kept, and Home's recent rows have the hold menu. Device verification on the phone is pending the operator. The owner decisions D1–D11 below are still open; each screen builds its default.
 
 ## Authority
 
@@ -70,30 +70,48 @@ Values are in `redesign/tokens.md`, words in `redesign/glossary.md`.
 
 ## Code gaps (designed but not supported yet)
 
-Checked 21 Oct 2026. These need data or product work before their screens can be built; add Zod schemas in `packages/types` and migrations first (see [`DATABASE.md`](DATABASE.md)).
+Checked 21 Oct 2026. Every row is built; new data work adds Zod schemas in `packages/types` and migrations first (see [`DATABASE.md`](DATABASE.md)).
 
-| Designed | Today | Needed |
+| Designed | Built on | Status |
 | --- | --- | --- |
-| Bills list with due dates, "Add a bill" | `selectUpcomingBills` (`lib/finance/bills.ts`) lists this month's bills, skipped and paid ones included; bill pages edit `recurring_overrides` | Remind's scheduled notification needs R2's library |
-| "Don't ask about similar" | `auto_add_rules` (`createAutoAddRule`, `deleteAutoAddRule` for "Ask again"); `matchRoutine` applies a matching rule before the history heuristic | The Review action (R1), list and "Ask again" in Capture sources (K3) |
-| Source tile (Manual, Voice, Moni, Notification, Camera) | `transactions.metadata.source`, written at every creation site (Say it and Scan a receipt approvals write `voice` and `camera`); older rows have none and read as Manual | The tile (A2) |
-| Merchant names | `merchant_aliases` (`nameMerchant`); `merchantName(raw, aliases)` in `lib/finance/merchant-name.ts` resolves a row's name | Rows on Home, Activity, wallet pages and Review read names through it |
-| Main currency | `preferences.currency` (default `MYR`), read by `useMainCurrency()`, set from Profile (K1) | Focused-page filtering |
-| Review history, Not mine / Later | `laterProposedTransaction` snoozes (`later`, `snoozed_until`); approve and Not mine stamp `approved` / `rejected` before the soft delete | The card deck (R1); whether to show history stays an owner decision |
-| Chat generative cards, draft cards, one thread per day | Message kinds: text, image, status, clarify chips | New message kinds and renderers |
+| Bills list with due dates, "Add a bill" | `selectUpcomingBills` (`lib/finance/bills.ts`); bill pages edit `recurring_overrides`; Remind schedules through `syncBillReminders` | Done. A bill due on the 1st gets no reminder yet |
+| "Don't ask about similar" | `auto_add_rules`; `matchRoutine` applies a rule before the history heuristic | Done: Review (R1), list and "Ask again" in Capture sources (K3) |
+| Source tile (Manual, Voice, Moni, Notification, Camera) | `transactions.metadata.source`; older rows read as Manual | Done (A2) |
+| Merchant names | `merchantName(raw, aliases)` in `lib/finance/merchant-name.ts` | Done on Home, Activity, wallet pages and Review |
+| Main currency | `preferences.currency`, `useMainCurrency()`, set from Profile | Done on every focused page |
+| Review history, Not mine / Later | `later`, `snoozed_until`; Approve and Not mine stamp a status before the soft delete | Deck done (R1); history stays D6 |
+| Chat generative cards, draft cards, one thread per day | Message kinds in `lib/ai/chat/messages.ts` | Done (H2) |
 
 Already supported: debts with repayments and write-off, monthly category budgets, multi-currency wallets, balance check-in, proposal review, routine auto-add, notification linking per wallet, transaction location, receipt scan (ML Kit), voice capture, custom categories, the spending map (`react-native-maps`), SVG charts, Funnel Display (400/600/700), the six motion tokens, the haptics table, balance correction (`correctBalance`), location from notifications per banking app, and stored capture log statuses.
 
 ## Open owner decisions (do not decide alone)
 
-- Should "left this month" subtract debts due (RM40 to Mei) now that debts have their own tab? Boards subtract and label it.
-- Budget tab: rings (current) or bars for budgets.
-- Brand: logo and mascot (Sprig and Miso are the latest candidates); whether reactions exist and can be turned off; a logging streak needs a day count the app does not keep.
-- Home: keep both the ask box and the Moni header button?
-- Debts hero tiles filter in place or open a filtered page; whether Nudge uses the Android share sheet or Moni sends it.
-- Review: is approved / not-mine history kept?
+The app builds the default for each. [`redesign/PLAN.md`](redesign/PLAN.md) ("Operator actions and owner decisions") gives the full wording.
 
-Implement the boards as drawn while these are open, and list the affected spots in your PR.
+- D1. "Left this month" subtracts bills and debts due, labelled "after bills and RM40 to Mei" (Home, Budget, and Activity's safe to spend a day).
+- D2. Budgets show as rings on the Budget tab.
+- D3. No logo, mascot, reactions, or logging streak.
+- D4. Home keeps both the ask box and the Moni header button.
+- D5. Debts hero tiles filter in place; Remind opens the Android share sheet.
+- D6. Review keeps no stored history; "All caught up" lists this session's results.
+- D7. The Review deck shows a blank card at scale 0.96 under the top card.
+- D8. Motion has six tokens: five springs and `drag`.
+- D9. The Budget tab keeps the "Edit" link beside Budgets as the way into `V2P-BudgetEdit` (canvas thread 8cd5c2da asks to remove it).
+- D10. The dev-only `debug/` route stays, reachable from Profile in `__DEV__` builds.
+- D11. Scan a receipt uses the ML Kit document scanner instead of the in-app camera that `V2A-CaptureScan` draws.
+
+## Where the app differs from a board
+
+The screen tracks reported these differences in their handoffs. Each waits for the owner to accept it or ask for the board.
+
+- Map: the range control offers This week, the month, and last month where the board has a custom range; the empty state's action is **Add an expense**.
+- Debts: recording a debt with no wallet, and debt reminders.
+- Type it: the sentence under the amount.
+- The + chooser: the sheet sits over the incoming page while it slides in.
+- Budget: the Edit link beside Budgets stays (D9).
+- Budget calendar: the day cut-offs.
+- Scan a receipt: the ML Kit scanner (D11).
+- Wallet page: **Use as default** is an addition. It sets the wallet captures fall back to, which v1 set on Profile.
 
 ## Suggested build order
 
