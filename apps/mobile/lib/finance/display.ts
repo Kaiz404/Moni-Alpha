@@ -66,14 +66,29 @@ function startOfDay(date: Date): number {
   return new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
 }
 
-/** Day first, in local time: `Today`, `Yesterday`, `Wed 14 Oct`, and the year once it differs. */
-export function formatDay(value: string | Date, now: Date = new Date()): string {
-  const date = typeof value === 'string' ? new Date(value) : value;
+function relativeDay(date: Date, now: Date): 'Today' | 'Yesterday' | null {
   const days = Math.round((startOfDay(now) - startOfDay(date)) / 86_400_000);
-  if (days === 0) return 'Today';
-  if (days === 1) return 'Yesterday';
+  return days === 0 ? 'Today' : days === 1 ? 'Yesterday' : null;
+}
+
+/** Day first, in local time: `Wed 14 Oct`, and the year once it differs from now. */
+export function formatDate(value: string | Date, now: Date = new Date()): string {
+  const date = typeof value === 'string' ? new Date(value) : value;
   const label = `${WEEKDAYS[date.getDay()]} ${date.getDate()} ${MONTHS[date.getMonth()]}`;
   return date.getFullYear() === now.getFullYear() ? label : `${label} ${date.getFullYear()}`;
+}
+
+/** `Today`, `Yesterday`, or the date: what a row's meta shows. */
+export function formatDay(value: string | Date, now: Date = new Date()): string {
+  const date = typeof value === 'string' ? new Date(value) : value;
+  return relativeDay(date, now) ?? formatDate(date, now);
+}
+
+/** A day group's label: `Today · Wed 14 Oct`, or the date alone. */
+export function formatDayHeading(value: string | Date, now: Date = new Date()): string {
+  const date = typeof value === 'string' ? new Date(value) : value;
+  const relative = relativeDay(date, now);
+  return relative ? `${relative} · ${formatDate(date, now)}` : formatDate(date, now);
 }
 
 /** Local calendar day key for grouping rows: `2026-10-14`. */

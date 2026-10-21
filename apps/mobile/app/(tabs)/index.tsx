@@ -13,14 +13,20 @@ import { MaterialDesignIcons } from '@react-native-vector-icons/material-design-
 
 import { BudgetProgressItem } from '@/components/budgets/budget-progress-item';
 import { ConfirmBalanceCard } from '@/components/wallets/confirm-balance-card';
+import { EmptyTile } from '@/components/ui/empty-tile';
 import { IconSymbol } from '@/components/ui/icon-symbol';
+import { ListCard } from '@/components/ui/list-card';
+import { TransactionRow } from '@/components/ui/transaction-row';
 import { SolidWalletCard } from '@/components/ui/solid-wallet-card';
 import { getWalletCardStyle } from '@/constants/wallet-card-styles';
 import { resolveWalletIcon } from '@/constants/wallet-form';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { useAuth } from '@/lib/auth/auth-context';
 import { formatMinorAmount } from '@/lib/finance/money';
-import { resolveTransactionIcon } from '@/lib/transactions/icon';
+import {
+  transactionRow,
+  type RowLookups,
+} from '@/lib/transactions/row';
 import {
   budgetProgress$,
   debtsWithBalance$,
@@ -51,13 +57,6 @@ function displayName(
 ): string | null {
   const trimmed = value?.trim();
   return trimmed ? (trimmed.split(/\s+/)[0] ?? null) : null;
-}
-
-function transactionDateLabel(value: string): string {
-  return new Intl.DateTimeFormat(undefined, {
-    month: 'short',
-    day: 'numeric',
-  }).format(new Date(value));
 }
 
 const WalletCard = memo(function WalletCard({
@@ -161,6 +160,15 @@ export default function HomeScreen() {
   const recent = useMemo(
     () => overview.transactions.slice(0, 5),
     [overview.transactions],
+  );
+  const lookups = useMemo<RowLookups>(
+    () => ({
+      categoriesById: overview.categoriesById,
+      walletNames: Object.fromEntries(
+        overview.wallets.map((wallet) => [wallet.id, wallet.name]),
+      ),
+    }),
+    [overview.categoriesById, overview.wallets],
   );
   const visibleBudgets = budgetProgress.slice(0, 2);
   const openDebts = debts
@@ -463,119 +471,39 @@ export default function HomeScreen() {
             </Pressable>
           </View>
           {recent.length ? (
-            <View className="rounded-card bg-accent-aqua/30 overflow-hidden">
-              {recent.map((transaction, index) => {
-                const category = transaction.categoryId
-                  ? overview.categoriesById[transaction.categoryId]
-                  : null;
-                const isTransfer = transaction.type === 'transfer';
-                const sign = isTransfer
-                  ? ''
-                  : transaction.type === 'income'
-                    ? '+'
-                    : '−';
-                const amountClass = isTransfer
-                  ? 'text-transfer'
-                  : transaction.type === 'income'
-                    ? 'text-income'
-                    : 'text-expense';
-                return (
-                  <Pressable
-                    testID={tid(
-                      'home',
-                      'transaction',
-                      transaction.id,
-                    )}
-                    key={transaction.id}
-                    className={`flex-row items-center px-4 py-4 ${index ? 'border-t border-border' : ''}`}
-                    onPress={() =>
-                      router.push(
-                        transaction.debtActivityId
-                          ? ('/debts' as any)
-                          : ({
-                              pathname: '/transaction/[id]',
-                              params: { id: transaction.id },
-                            } as any),
-                      )
-                    }
-                  >
-                    <View
-                      className="mr-3 h-10 w-10 items-center justify-center rounded-full"
-                      style={{
-                        backgroundColor: category?.color
-                          ? `${category.color}22`
-                          : tokens.surface2,
-                      }}
-                    >
-                      <IconSymbol
-                        name={resolveTransactionIcon(
-                          category?.icon,
-                          transaction.type,
-                        )}
-                        size={20}
-                        color={category?.color ?? tokens.muted}
-                      />
-                    </View>
-                    <View className="min-w-0 flex-1 pr-3">
-                      <Text
-                        className="text-base font-display-semibold text-foreground"
-                        numberOfLines={1}
-                      >
-                        {transaction.merchant ??
-                          transaction.description ??
-                          transaction.type}
-                      </Text>
-                      <Text className="mt-1 text-xs text-muted">
-                        {category?.name ??
-                          (transaction.type === 'transfer'
-                            ? 'Transfer'
-                            : transaction.type === 'income'
-                              ? 'Income'
-                              : 'Expense')}{' '}
-                        ·{' '}
-                        {transactionDateLabel(
-                          transaction.transactionDate,
-                        )}
-                        {transaction.autoAdded ? ' · Auto' : ''}
-                      </Text>
-                    </View>
-                    <View className="items-end">
-                      <Text
-                        className={`text-base font-display-bold ${amountClass}`}
-                        style={{ fontVariant: ['tabular-nums'] }}
-                      >
-                        {sign}
-                        {formatMinorAmount(
-                          transaction.amountMinor,
-                          transaction.currency,
-                        )}
-                      </Text>
-                      <Text className="mt-1 text-xs text-muted">
-                        {transaction.type === 'transfer'
-                          ? 'Transfer'
-                          : transaction.type === 'income'
-                            ? 'Income'
-                            : 'Expense'}
-                      </Text>
-                    </View>
-                  </Pressable>
-                );
-              })}
-            </View>
+            <ListCard>
+              {recent.map((transaction) => (
+                <TransactionRow
+                  key={transaction.id}
+                  testID={tid('home', 'transaction', transaction.id)}
+                  row={transactionRow(transaction, lookups)}
+                  grouped={false}
+                  onPress={() =>
+                    router.push(
+                      transaction.debtActivityId
+                        ? ('/debts' as never)
+                        : ({
+                            pathname: '/transaction/[id]',
+                            params: { id: transaction.id },
+                          } as never),
+                    )
+                  }
+                />
+              ))}
+            </ListCard>
           ) : (
-            <Pressable
-              testID={tid('home', 'activity-empty')}
-              className="rounded-[22px] bg-surface-2 px-5 py-6"
-              onPress={() => router.push('/transaction/new' as any)}
-            >
-              <Text className="text-base font-display-semibold text-foreground">
-                Your activity will live here
-              </Text>
-              <Text className="mt-1 text-sm leading-5 text-muted">
-                Add a transaction yourself, or use Moni’s capture menu
-                when you are ready.
-              </Text>
-            </Pressable>
+            <EmptyTile
+              icon="format-list-bulleted"
+              title="No spending yet"
+              body="Add your first spend with + or link a bank app so Moni catches them for you."
+              action={{
+                testID: tid('home', 'activity-empty'),
+                label: 'Add a spend',
+                icon: 'plus',
+                onPress: () =>
+                  router.push('/transaction/new' as never),
+              }}
+            />
           )}
         </View>
       </ScrollView>

@@ -1,5 +1,6 @@
 import {
   formatDay,
+  formatDayHeading,
   formatMoney,
   formatSignedMoney,
   formatWholeMoney,
@@ -35,6 +36,11 @@ describe('day display', () => {
     expect(formatDay(new Date(2026, 9, 13, 23, 59), now)).toBe('Yesterday');
     expect(formatDay(new Date(2026, 8, 9, 12), now)).toBe('Wed 9 Sep');
     expect(formatDay(new Date(2025, 9, 14, 12), now)).toBe('Tue 14 Oct 2025');
+  });
+
+  it('heads a day group with the relative day and the date', () => {
+    expect(formatDayHeading(new Date(2026, 9, 14, 9), now)).toBe('Today · Wed 14 Oct');
+    expect(formatDayHeading(new Date(2026, 9, 12, 9), now)).toBe('Mon 12 Oct');
   });
 
   it('keys a row by its local calendar day', () => {
