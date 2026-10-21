@@ -157,16 +157,7 @@ Never show multiple review popups in a sequence. Review one, then offer “2 mor
 
 Use a **4-point base unit**. Default screen gutters are 20pt on compact phones; 24pt on large phones. Respect status, camera, home indicator, and bottom-navigation safe areas.
 
-| Token      | Value | Use                            |
-| ---------- | ----: | ------------------------------ |
-| `space-1`  |     4 | icon/text optical adjustment   |
-| `space-2`  |     8 | tight related elements         |
-| `space-3`  |    12 | field internals, list metadata |
-| `space-4`  |    16 | standard component padding     |
-| `space-5`  |    20 | screen gutter, grouped content |
-| `space-6`  |    24 | major section spacing          |
-| `space-8`  |    32 | major screen rhythm            |
-| `space-10` |    40 | hero-to-body separation        |
+Use Tailwind's 4-point scale (`p-1` = 4) plus the v2 named spacing in `global.css`: `screen` 20 (screen sides), `section` 24 (section gap), `card` 18 (card padding), `bubble` 42 (icon bubble), `touch` 44 (minimum touch target). Rows pad 12 × 18 (`py-3 px-card`).
 
 - Prefer a single clean content plane over nested cards.
 - Use one strong focal block per viewport, especially on Home and review screens.
@@ -177,13 +168,15 @@ Use a **4-point base unit**. Default screen gutters are 20pt on compact phones; 
 
 The system is rounded and soft, not cartoonishly pill-shaped. Major surfaces should read as **continuous-corner squircles**, not as ordinary rounded rectangles with an oversized radius.
 
-| Token         | Value | Use                                   |
-| ------------- | ----: | ------------------------------------- |
-| `radius-sm`   |    10 | compact chips, small thumbnail frames |
-| `radius-md`   |    16 | input fields, list-group containers   |
-| `radius-lg`   |    22 | cards, wallet tiles, sheets           |
-| `radius-xl`   |    28 | hero panels, large review artifacts   |
-| `radius-full` |   999 | avatar, FAB, icon button only         |
+v2 radii (`global.css` `@theme`, values in [`redesign/tokens.md`](redesign/tokens.md)):
+
+| Utility        | Value | Use                                          |
+| -------------- | ----: | -------------------------------------------- |
+| `rounded-full` |  9999 | capsule: buttons, chips, pills, tab items    |
+| `rounded-card` |    26 | list cards, chart cards                      |
+| `rounded-tile` |    22 | outline tiles, picker tiles, hold menu       |
+| `rounded-field`|    16 | inner elements, in-place edit fields         |
+| `rounded-sheet`|    32 | sheet top corners                            |
 
 Use pills sparingly: filter states, segmented controls, compact metadata, and the FAB label. Do not turn every card and button into a pill.
 
@@ -208,22 +201,12 @@ Content surfaces are matte. Establish depth with tonal separation, whitespace, a
 
 ### 5.4 Typography
 
-Use the platform system font family where possible: SF-family behavior on iOS and Roboto-family behavior on Android, locked to a shared scale and hierarchy.
+**v2: Funnel Display for everything** (decision `XB-Type`). The app loads the 400, 600, and 700 static files from `@expo-google-fonts/funnel-display` and holds the splash screen until they load. Android picks a custom font by family name, so each weight is its own family: `font-display` (400), `font-display-semibold` (600), `font-display-bold` (700). Do not use `font-medium`, `font-semibold`, or `font-bold`; they would make Android fake the weight.
 
-| Style           | Size / line |  Weight | Use                                                                |
-| --------------- | ----------- | ------: | ------------------------------------------------------------------ |
-| Display         | 34 / 40     |     700 | net worth, page hero; use sparingly                                |
-| Title 1         | 28 / 34     |     700 | major screen title                                                 |
-| Title 2         | 22 / 28     | 650–700 | card/section title                                                 |
-| Headline        | 17 / 22     |     650 | emphasis in rows and proposals                                     |
-| Body            | 16 / 22     | 400–500 | default explanatory content                                        |
-| Callout         | 15 / 20     |     500 | supporting financial context                                       |
-| Label           | 13 / 17     |     600 | metadata, chart keys, button support                               |
-| Caption         | 12 / 16     |     500 | timestamps and tertiary context; never essential information alone |
-| Numeric display | inherit     | 600–700 | use tabular figures when supported                                 |
+Every screen imports `Text` from `@/components/ui/text` (ESLint rejects the `react-native` import under `app/` and `components/`). `<Text variant="...">` sets family, size, and line height from the type scale in [`redesign/tokens.md`](redesign/tokens.md): `hero`, `amountHero`, `screenTitle`, `sectionTitle`, `cardTitle`, `rowTitle`, `body`, `meta`, `smallest`, `caps`. Without a variant, a `font-display*` class picks the weight and Regular is the default; nested text inherits.
 
-- Use tabular/monospaced numerals for aligned financial lists and calendar values.
-- Let large amounts wrap or abbreviate predictably; never reduce type to preserve a layout.
+- Funnel Display figures already align; add `tabular-nums` only where a fallback font might render.
+- Let large amounts wrap or abbreviate predictably; never reduce type to preserve a layout. Nothing below 12.
 - Dynamic Type is mandatory. Critical cards must reflow vertically instead of clip.
 - Do not use subtitles beneath titles, section headings, sheet headings, or settings rows. A title stands on its own; keep essential instructions in the relevant control, state, or dedicated content instead.
 
@@ -242,25 +225,23 @@ Use simple, warm line icons with rounded terminals and a consistent optical weig
 
 ### 6.1 Palette logic
 
-The palette is **neutral-led with disciplined pastels**. Mint is the brand anchor; violet/lilac, peach, lemon, coral, and aqua are semantic/category accents. A screen normally uses neutral surfaces plus one dominant expressive accent and at most two supporting category colors.
+**v2 "Cream & Capsule".** Cream ground, Paper cards, Ink text and primary buttons, and seven pastels that always carry ink text. Roles and hexes are in [`redesign/tokens.md`](redesign/tokens.md) (light) and the `V2F-Dark` board (dark: warm near-black grounds, deepened pastels, ink flips to cream). Category colours come from the category row, never from a screen.
 
-Exact contrast-adjusted variants must be verified in both themes; hexes below are starting points, not permission to ship low-contrast combinations.
+The v1 semantic names that screens already use now carry v2 values:
 
-| Role          | Light starting point | Dark starting point | Purpose                             |
-| ------------- | -------------------- | ------------------- | ----------------------------------- |
-| Canvas        | `#F7F7F2`            | `#141513`           | warm off-white / carbon background  |
-| Surface       | `#FFFFFF`            | `#1D1F1C`           | cards, grouped content              |
-| Surface muted | `#E5E9DC`            | `#2A2E28`           | secondary fills, input background   |
-| Ink primary   | `#1E211E`            | `#F4F5EF`           | primary text, key amounts           |
-| Ink secondary | `#60665E`            | `#B9BDB5`           | supporting text                     |
-| Divider       | `#DEE1D9`            | `#343732`           | hairlines                           |
-| Brand mint    | `#8ECF9D`            | `#79C98A`           | positive/action anchor              |
-| Mint deep     | `#236B47`            | `#A9E8B5`           | text/icon on mint-adjacent surfaces |
-| Lilac         | `#B39AE8`            | `#A888F0`           | discovery/voice/category accent     |
-| Peach         | `#F0AD85`            | `#E09060`           | warmth/attention/category accent    |
-| Lemon         | `#E8CF50`            | `#D4AD35`           | highlight/progress/category accent  |
-| Coral         | `#E87D72`            | `#E06860`           | spending/attention/category accent  |
-| Aqua          | `#72CEC4`            | `#5CBDB2`           | account/category accent             |
+| Utility                        | v2 role (light / dark)                      |
+| ------------------------------ | ------------------------------------------- |
+| `canvas`, `background`         | Cream `#F6F2E9` / Ground `#161512`          |
+| `card`, `surface-1`, `surface-raised` | Paper `#FFFDF8` / Raised `#211F1B`   |
+| `surface-2`, `background-muted`| Sand `#ECE5D6` / Fill `#2C2924`             |
+| `foreground`, `expense`        | Ink `#17181A` / Text `#F3EEE3`              |
+| `muted`, `transfer`            | Meta `#6B665C` / `#A39C8E`                  |
+| `border`                       | Hairline `#DDD5C5` / `#3A362F`              |
+| `primary` / `primary-foreground` | Ink on Paper / Contrast `#EDE6D8` with ink |
+| `income`, `success`            | Deep mint `#236B47` / Money in `#7FCF98`    |
+| `danger`                       | Over text `#B23E35` / `#F0897E`             |
+
+v2 roles with no v1 name: `sand`, `sand-light`, `hairline`, `track`, `ink-2`, `inactive`, `tab-bar`, `on-pastel`, `deep-mint`, `mint`, `mint-key`, `lemon`, `lilac`, `peach`, `coral`, `sky`, `aqua`, `over`. New screens use these; F2 to F4 move the v1 names over and delete them.
 
 ### 6.2 Semantic color
 
@@ -521,12 +502,11 @@ Motion must communicate cause and effect, preserve spatial orientation, and feel
 | Chart selection        | color/label emphasis and value reveal          | bind data point to explanation       |
 | Approve                | brief check/mint confirmation then return      | acknowledge deliberate completion    |
 
-### Timing guidance
+### Springs and haptics (v2)
 
-- Direct tap feedback: 80–120ms.
-- Small opacity/position transition: 160–220ms.
-- Sheet/full-screen presentation: 240–320ms.
-- Expressive spring: short, low overshoot; it must settle quickly.
+- `lib/motion/tokens.ts` holds the six motion tokens from [`redesign/tokens.md`](redesign/tokens.md): `springs.press`, `value`, `control`, `sheet`, `throw` (mass 1, for `withSpring`) and `drag` (1:1, no spring while held). Flings decide on `projectedPosition(x, v)` against `FLING_COMMIT_THRESHOLD` (40%). Containers may bounce; anything that encodes money uses `value`.
+- `lib/haptics` has one function per moment in the tokens.md haptics table: `keypadTap`, `approve`, `notMine`, `thresholdOn`, `thresholdOff`, `scrubStep`, `toggleOn`, `toggleOff`, `holdCommit`. Android plays the `AndroidHaptics` constant, iOS the table's equivalent. ESLint rejects `expo-haptics` imports under `app/` and `components/`.
+- Fire a haptic on the same frame as the visual, at most once per user action, and never as the only feedback. Pressing the + and choosing from it play none.
 - Continuous AI gradient: slow and low-contrast; never pulse urgently unless an error actually requires attention.
 
 ### Reduced Motion
@@ -545,7 +525,7 @@ When Reduce Motion is enabled:
 Light and dark mode are first-class siblings, not inverted afterthoughts.
 
 - Preserve semantic relationships and category identity across themes.
-- Dark mode uses charcoal surfaces, not pure black everywhere; reserve near-black for canvas/immersive capture states.
+- Dark mode uses the `V2F-Dark` warm near-blacks (Ground `#161512`, Raised `#211F1B`), never grey. Pastels deepen a step and keep ink text (`on-pastel`); the ink role (`primary`) flips to cream.
 - Lift muted text and dividers enough for readability; do not simply lower every opacity.
 - Pastel accents often need a deeper or brighter companion in dark mode to retain contrast.
 - Ensure receipt thumbnails, imported notification evidence, and charts remain interpretable in either theme.
@@ -596,16 +576,15 @@ When designing or implementing a Moni screen, agents should follow this order:
 Use semantic names such as:
 
 ```text
-bg.canvas / bg.surface / bg.surface-muted
-text.primary / text.secondary / text.inverse
-border.subtle / border.strong
-brand.mint / brand.mint-ink
-category.food / category.transport / category.shopping …
-state.pending / state.attention / state.approved / state.destructive
-radius.sm / radius.md / radius.lg / radius.xl
-shape.squircle.smoothing-lg / shape.squircle.smoothing-xl
-space.1 … space.10
-motion.fast / motion.standard / motion.sheet
+bg-canvas / bg-card / bg-sand / bg-sand-light
+text-foreground / text-ink-2 / text-muted / text-on-pastel
+border-hairline / bg-track / bg-tab-bar / text-inactive
+text-deep-mint / text-over / bg-mint / bg-lilac / bg-mint-key …
+state-pending / state-attention / state-approved / state-destructive
+rounded-card / rounded-tile / rounded-field / rounded-sheet / rounded-full
+p-screen / gap-section / p-card / size-bubble / size-touch
+font-display / font-display-semibold / font-display-bold
+springs.press / value / control / sheet / throw, drag
 ```
 
 Do not name UI tokens after a one-off visual result (`purpleCard`, `greenButton2`, `chartBlue`).

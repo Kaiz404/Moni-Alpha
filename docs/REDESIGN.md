@@ -2,7 +2,7 @@
 
 The mobile app is being rebuilt to the **Redesign v2** design on the claude.ai design canvas. This file tells an implementing agent where the design lives, which boards are final, what to ignore, what the code does not support yet, and what is still the owner's call.
 
-**Status (21 Oct 2026):** design rounds 1–6 done (canvas version 150). Implementation not started. The app still runs the v1 design in [`DESIGN_SYSTEM.md`](DESIGN_SYSTEM.md).
+**Status (21 Oct 2026):** design rounds 1–6 done (canvas version 150). Foundations F1 landed: v2 colour tokens (light and dark), Funnel Display through `components/ui/text`, spring tokens in `lib/motion/tokens.ts`, and the haptics table in `lib/haptics`. Screens still use the v1 layouts and components from [`DESIGN_SYSTEM.md`](DESIGN_SYSTEM.md), now in v2 colours and type.
 
 ## Authority
 
@@ -84,11 +84,8 @@ Checked 21 Oct 2026. These need data or product work before their screens can be
 | Capture log statuses | Stored on each capture log entry (`capturedNotificationStatusSchema`, `lib/notifications/capture-status.core.js`); older entries read as Ignored | The Capture log (K3) reads the stored status; v2 wording |
 | Review history, Not mine / Later | `laterProposedTransaction` snoozes (`later`, `snoozed_until`); approve and Not mine stamp `approved` / `rejected` before the soft delete | The card deck (R1); whether to show history stays an owner decision |
 | Chat generative cards, draft cards, one thread per day | Message kinds: text, image, status, clarify chips | New message kinds and renderers |
-| Funnel Display | No custom fonts loaded | `@expo-google-fonts/funnel-display` (static 300–800) |
-| Springs | Reanimated timing only; no `withSpring` | The six spring tokens as shared constants |
-| Haptics | Four helpers in `lib/haptics` | The full haptics table |
 
-Already supported: debts with repayments and write-off, monthly category budgets, multi-currency wallets, balance check-in, proposal review, routine auto-add, notification linking per wallet, transaction location, receipt scan (ML Kit), voice capture, custom categories, the spending map (`react-native-maps`), SVG charts.
+Already supported: debts with repayments and write-off, monthly category budgets, multi-currency wallets, balance check-in, proposal review, routine auto-add, notification linking per wallet, transaction location, receipt scan (ML Kit), voice capture, custom categories, the spending map (`react-native-maps`), SVG charts, Funnel Display (400/600/700), the six motion tokens, and the haptics table.
 
 ## Open owner decisions (do not decide alone)
 

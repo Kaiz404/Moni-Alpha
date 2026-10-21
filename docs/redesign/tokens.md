@@ -28,6 +28,8 @@ The measured values behind the canvas boards `V2F-Components`, `V2F-Bible` and `
 
 Pastels always carry ink text. Category colours come from the category, never from a screen.
 
+Dark (`V2F-Dark`): Ground #161512 · Raised #211F1B (cards) · Fill #2C2924 (Sand) · Track #26241F (Sand light, tracks) · Hairline #3A362F · Tab pill #2A2823 · Text #F3EEE3 · Text 2 #C7C0B2 · Meta #A39C8E · Inactive #9D968A · Contrast #EDE6D8 (the ink role: primary buttons, AI cards) · Money in #7FCF98 · Over #F0897E · Mint key #8ECF9D. Pastels deepen and keep #17181A text: Mint #8FC79D, Lemon #E0C85E, Lilac #B29DE0, Peach #E3A47E, Coral #DE8B80, Sky #86AED6, Aqua #82C7BD. `apps/mobile/global.css` holds both themes under the same names.
+
 ## Type
 
 - One family: **Funnel Display** (300–800) for display, numbers, body and labels. Its figures already align; add `tabular-nums` only where a font fallback might not.
