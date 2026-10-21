@@ -6,7 +6,6 @@ import { Text } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { tid } from '@/lib/test-ids';
 
-/** The Lilac "To review" capsule in the Activity header. */
 export function ReviewStrip({
   count,
   amount,

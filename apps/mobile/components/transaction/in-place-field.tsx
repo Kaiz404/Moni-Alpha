@@ -1,8 +1,9 @@
 import {
   createContext,
+  useCallback,
   useContext,
   useEffect,
-  useRef,
+  useMemo,
   useState,
   type ReactNode,
 } from 'react';
@@ -24,18 +25,40 @@ const EditingContext = createContext<Editing | null>(null);
 
 function useEditing(): Editing {
   const [editing, setEditing] = useState<string | null>(null);
-  const current = useRef(editing);
-  current.current = editing;
-  return {
-    editing,
-    begin: setEditing,
-    end: (name) => {
-      if (current.current === name) setEditing(null);
-    },
-  };
+  const end = useCallback(
+    (name: string) => setEditing((current) => (current === name ? null : current)),
+    [],
+  );
+  return useMemo(() => ({ editing, begin: setEditing, end }), [editing, end]);
 }
 
-/** Holds which field edits: opening one closes the other. */
+/**
+ * Back, or the keyboard closing after this field opened it, cancels. Moving from one
+ * field to another can close and reopen the keyboard, so a hide before this field's
+ * own show does not count.
+ */
+function useCancelOnDismiss(active: boolean, cancel: () => void) {
+  useEffect(() => {
+    if (!active) return;
+    let shown = false;
+    const show = Keyboard.addListener('keyboardDidShow', () => {
+      shown = true;
+    });
+    const hide = Keyboard.addListener('keyboardDidHide', () => {
+      if (shown) cancel();
+    });
+    const back = BackHandler.addEventListener('hardwareBackPress', () => {
+      cancel();
+      return true;
+    });
+    return () => {
+      show.remove();
+      hide.remove();
+      back.remove();
+    };
+  }, [active, cancel]);
+}
+
 export function InPlaceGroup({ children }: { children: ReactNode }) {
   return <EditingContext.Provider value={useEditing()}>{children}</EditingContext.Provider>;
 }
@@ -46,9 +69,7 @@ type Shared = {
   /** Lowercase noun for TalkBack: "Edit amount". */
   label: string;
   hint?: string;
-  /** The resting value; tapping it also starts the edit. */
   children: ReactNode;
-  /** The note shows its pencil only once it has text. */
   pencil?: boolean;
 };
 
@@ -86,28 +107,8 @@ export function InPlaceField(props: InPlaceFieldProps) {
   const [draft, setDraft] = useState(initial);
 
   const { end } = group;
-  useEffect(() => {
-    if (!editing) return;
-    const cancel = () => end(name);
-    // Moving from one field to another can close and reopen the keyboard; only a hide after this field's own show cancels.
-    let shown = false;
-    const show = Keyboard.addListener('keyboardDidShow', () => {
-      shown = true;
-    });
-    const hide = Keyboard.addListener('keyboardDidHide', () => {
-      if (shown) cancel();
-    });
-    const back = BackHandler.addEventListener('hardwareBackPress', () => {
-      cancel();
-      return true;
-    });
-    return () => {
-      show.remove();
-      hide.remove();
-      back.remove();
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- `end` reads a ref, so a new closure each render is the same function
-  }, [editing, name]);
+  const cancel = useCallback(() => end(name), [end, name]);
+  useCancelOnDismiss(editing, cancel);
 
   const begin = () => {
     setDraft(initial);

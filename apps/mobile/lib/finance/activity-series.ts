@@ -4,7 +4,6 @@ import { toLocalDateInput } from '@/lib/dates/local-date-input';
 import { transactionDeltaMinor } from '@/lib/finance/ledger';
 import type { FinanceTransaction, FinanceWallet } from '@/lib/finance/types';
 
-/** One chart column: a local day of this month, from the 1st to today. */
 export type MonthDay<V extends string> = { key: string; day: number } & Record<V, number>;
 
 export type SpendingMonth = {
@@ -125,7 +124,6 @@ export function categoryMonths(
   return daily;
 }
 
-/** Closing balance of the main-currency wallets on each day from the 1st to today. */
 export function balanceMonth(
   wallets: readonly FinanceWallet[],
   transactions: readonly FinanceTransaction[],

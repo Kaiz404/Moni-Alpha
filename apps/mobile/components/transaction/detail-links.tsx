@@ -50,7 +50,6 @@ function LinkRow({ link }: { link: DetailLink }) {
   );
 }
 
-/** Place, receipt, and same-merchant rows on the detail page. */
 export function DetailLinks({ links }: { links: DetailLink[] }) {
   return (
     <ListCard>
@@ -61,7 +60,6 @@ export function DetailLinks({ links }: { links: DetailLink[] }) {
   );
 }
 
-/** The receipt row: opens the slip, or picks a photo and keeps it with the transaction. */
 export function useReceiptLink(
   transactionId: string,
   userId: string | null,

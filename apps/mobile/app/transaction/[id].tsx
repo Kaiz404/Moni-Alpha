@@ -41,6 +41,7 @@ import {
   formatSignedMoney,
 } from '@/lib/finance/format-money';
 import { merchantName } from '@/lib/finance/merchant-name';
+import { groupPlaces, placeLabel } from '@/lib/finance/places';
 import {
   budgetProgress$,
   categoriesForUser$,
@@ -84,7 +85,6 @@ function notSaved(error: unknown) {
   );
 }
 
-/** Writes a change, then offers Undo that writes the previous values back. */
 function saveWithUndo(
   id: string,
   label: string,
@@ -174,18 +174,29 @@ function Detail({ transaction: tx }: { transaction: FinanceTransaction }) {
             row.budgetAmountMinor !== null,
         )
       : undefined;
+  const monthOf = (iso: string) => toLocalDateInput(new Date(iso)).slice(0, 7);
   const sameMerchant = useMemo(() => {
     if (!tx.merchant || transfer) return [];
-    const month = tx.transactionDate.slice(0, 7);
+    const month = monthOf(tx.transactionDate);
     const key = tx.merchant.toLowerCase();
     return all.filter(
       (row) =>
         row.merchant?.toLowerCase() === key &&
         row.currency === tx.currency &&
         row.type === tx.type &&
-        row.transactionDate.slice(0, 7) === month,
+        monthOf(row.transactionDate) === month,
     );
   }, [all, tx, transfer]);
+  const place = useMemo(
+    () =>
+      tx.locationLatitude === null
+        ? null
+        : (groupPlaces(all, { currency: tx.currency }).find((candidate) =>
+            candidate.transactions.some((row) => row.id === tx.id),
+          ) ?? null),
+    [all, tx.id, tx.currency, tx.locationLatitude],
+  );
+  const label = place ?? placeLabel(tx.locationName);
   const receipt = useReceiptLink(
     tx.id,
     userId,
@@ -382,11 +393,14 @@ function Detail({ transaction: tx }: { transaction: FinanceTransaction }) {
       ? [
           {
             name: 'place',
-            title: tx.locationName ?? 'Where you paid',
-            meta: 'Open the map',
+            title: label?.name ?? 'Where you paid',
+            meta: [label?.area, 'open map'].filter(Boolean).join(' · '),
             icon: 'map-marker-outline',
             trailing: 'chevron-right',
-            onPress: () => router.push('/heatmap'),
+            onPress: () =>
+              place
+                ? router.push({ pathname: '/place/[id]', params: { id: place.id } })
+                : router.push('/map'),
           } satisfies DetailLink,
         ]
       : []),
@@ -395,7 +409,7 @@ function Detail({ transaction: tx }: { transaction: FinanceTransaction }) {
       ? [
           {
             name: 'same-merchant',
-            title: `${title}, ${sameMerchant.length} times this month`,
+            title: `${title}, ${sameMerchant.length} times ${thisMonth ? 'this month' : `in ${new Date(tx.transactionDate).toLocaleDateString('en-US', { month: 'long' })}`}`,
             meta: `${formatMoney(
               sameMerchant.reduce(
                 (sum, row) => sum + Number(row.amountMinor),
@@ -408,7 +422,7 @@ function Detail({ transaction: tx }: { transaction: FinanceTransaction }) {
             onPress: () =>
               router.dismissTo({
                 pathname: '/activity',
-                params: { q: tx.merchant ?? title },
+                params: { q: title },
               }),
           } satisfies DetailLink,
         ]

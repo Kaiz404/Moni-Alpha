@@ -42,7 +42,6 @@ export type Tile = {
   label: string;
   value: string;
   icon?: IconSymbolName;
-  /** A wallet's colour dot before the value. */
   dot?: string | null;
   /** `pick` opens a picker sheet (Sand, chevron down); `link` opens a page (Paper, chevron right). */
   action: { kind: 'pick' | 'link'; onPress: () => void } | null;
@@ -92,7 +91,6 @@ function DetailTile({ tile }: { tile: Tile }) {
   );
 }
 
-/** The 2 × 2 grid under the amount: what the row is, where it sits, and where it came from. */
 export function DetailTiles({ tiles }: { tiles: [Tile, Tile, Tile, Tile] }) {
   return (
     <View className="gap-2">

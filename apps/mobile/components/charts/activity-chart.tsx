@@ -48,9 +48,8 @@ const MODES = [
   { value: 'balance', label: 'Balance' },
 ] as const;
 
-// Bars grow and the line draws in on the first open of a session only.
-let barsGrown = false;
-let lineDrawn = false;
+let barsGrownThisSession = false;
+let lineDrawnThisSession = false;
 
 const MONTHS = [
   'January', 'February', 'March', 'April', 'May', 'June',
@@ -263,9 +262,9 @@ function SpendingPlot({ spending, currency, selectedDay, onSelectDay, width, mon
   const paceY = evenPaceMinor === null ? null : y(evenPaceMinor);
   const underPace = evenPaceMinor === null ? 0 : days.filter((d) => d.spentMinor <= evenPaceMinor).length;
   const reduceMotion = useReducedMotion();
-  const animate = !barsGrown && !reduceMotion;
+  const animate = !barsGrownThisSession && !reduceMotion;
   useEffect(() => {
-    barsGrown = true;
+    barsGrownThisSession = true;
   }, []);
 
   const guideTop = selected
@@ -431,9 +430,9 @@ function BalancePlot({ balance, currency, selectedDay, onSelectDay, width, month
   const selected = days[at];
   const scrubbed = useSharedValue(at);
   const reduceMotion = useReducedMotion();
-  const reveal = useSharedValue(lineDrawn || reduceMotion ? 1 : 0);
+  const reveal = useSharedValue(lineDrawnThisSession || reduceMotion ? 1 : 0);
   useEffect(() => {
-    lineDrawn = true;
+    lineDrawnThisSession = true;
     reveal.set(withSpring(1, springs.value));
   }, [reveal]);
   useEffect(() => {

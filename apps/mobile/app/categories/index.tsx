@@ -1,6 +1,6 @@
 import { useValue } from '@legendapp/state/react';
 import { router } from 'expo-router';
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { Alert, ScrollView, View } from 'react-native';
 
 import { CategorySpark } from '@/components/categories/category-spark';
@@ -14,6 +14,7 @@ import { Text } from '@/components/ui/text';
 import { TintBubble } from '@/components/ui/transaction-row';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { useAuth } from '@/lib/auth/auth-context';
+import { toLocalDateInput } from '@/lib/dates/local-date-input';
 import { categoryMonths } from '@/lib/finance/activity-series';
 import { formatMoney } from '@/lib/finance/format-money';
 import { useMainCurrency } from '@/lib/finance/main-currency';
@@ -29,6 +30,11 @@ import { tid } from '@/lib/test-ids';
 import { resolveTransactionIcon } from '@/lib/transactions/icon';
 
 type Kind = 'expense' | 'income';
+
+function dayOf(key: string): Date {
+  const [year, month, day] = key.split('-').map(Number);
+  return new Date(year, month - 1, day);
+}
 type Category = Pick<FinanceCategory, 'id' | 'name' | 'icon' | 'color' | 'type'>;
 
 const KINDS = [
@@ -96,8 +102,8 @@ export default function CategoriesScreen() {
   const [timezone, setTimezone] = useState('UTC');
   const progress = useValue(budgetProgress$(userId, timezone));
   const [kind, setKind] = useState<Kind>('expense');
-  const now = new Date();
-  const today = now.toDateString();
+  const todayKey = toLocalDateInput(new Date());
+  const today = dayOf(todayKey);
 
   useEffect(() => {
     void ensureFinanceTimezone()
@@ -105,20 +111,13 @@ export default function CategoriesScreen() {
       .catch(() => {});
   }, []);
 
-  const months = useMemo(
-    () => categoryMonths(all, currency, new Date()),
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- recompute when the day turns over
-    [all, currency, today],
-  );
-  const filed = useMemo(
-    () => new Set(all.map((row) => row.categoryId).filter(Boolean)),
-    [all],
-  );
+  const months = categoryMonths(all, currency, today);
+  const filed = new Set(all.map((row) => row.categoryId).filter(Boolean));
   const ofKind = categories.filter((category) => category.type === kind);
   const mine = ofKind.filter((c) => c.userId === userId && c.isActive);
   const presets = ofKind.filter((c) => c.userId === null && c.isActive);
   const archived = ofKind.filter((c) => c.userId === userId && !c.isActive);
-  const since = `1 ${now.toLocaleDateString('en-US', { month: 'short' })}`;
+  const since = `1 ${today.toLocaleDateString('en-US', { month: 'short' })}`;
 
   const spent = (category: Category) =>
     months[category.id]?.at(-1) ?? 0;

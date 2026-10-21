@@ -36,6 +36,7 @@ import {
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { useAuth } from '@/lib/auth/auth-context';
 import { dayLabel, formatDate, formatDayHeading } from '@/lib/dates/day-label';
+import { toLocalDateInput } from '@/lib/dates/local-date-input';
 import {
   filterActivity,
   groupActivityDays,
@@ -73,6 +74,11 @@ import {
 
 const FIRST_DAYS = 5;
 const MORE_DAYS = 10;
+
+function dayOf(key: string): Date {
+  const [year, month, day] = key.split('-').map(Number);
+  return new Date(year, month - 1, day);
+}
 
 type Held = {
   transaction: FinanceTransaction;
@@ -121,9 +127,8 @@ export default function ActivityScreen() {
     placeId?: string;
     range?: string;
   }>();
-  const { q } = params;
-  const [placeId, setPlaceId] = useState(params.placeId ?? null);
-  const [query, setQuery] = useState(q ?? '');
+  const [place, setPlace] = useState<{ id: string; range: string | null } | null>(null);
+  const [query, setQuery] = useState('');
   const [kind, setKind] = useState<ActivityKind>('all');
   const [walletId, setWalletId] = useState<string | null>(null);
   const [day, setDay] = useState<string | null>(null);
@@ -131,13 +136,17 @@ export default function ActivityScreen() {
   const [held, setHeld] = useState<Held | null>(null);
   const now = new Date();
 
+  // A link from another page replaces whatever filters were left, then clears its params so the same link works again.
   useEffect(() => {
-    if (q) setQuery(q);
-  }, [q]);
-
-  useEffect(() => {
-    if (params.placeId) setPlaceId(params.placeId);
-  }, [params.placeId]);
+    const { q, placeId, range } = params;
+    if (!q && !placeId) return;
+    setQuery(q ?? '');
+    setPlace(placeId ? { id: placeId, range: range ?? null } : null);
+    setKind('all');
+    setWalletId(null);
+    setDay(null);
+    router.setParams({ q: undefined, placeId: undefined, range: undefined });
+  }, [params]);
 
   useEffect(() => {
     void ensureFinanceTimezone()
@@ -172,20 +181,20 @@ export default function ActivityScreen() {
     () => named.filter((transaction) => transaction.currency === currency),
     [named, currency],
   );
-  const place = useMemo(
+  const shownPlace = useMemo(
     () =>
-      placeId
+      place
         ? (groupPlaces(named, {
             currency,
-            range: params.range ? placeRange(params.range, new Date()) : null,
-          }).find((candidate) => candidate.id === placeId) ?? null)
+            range: place.range ? placeRange(place.range, new Date()) : null,
+          }).find((candidate) => candidate.id === place.id) ?? null)
         : null,
-    [named, placeId, currency, params.range],
+    [named, place, currency],
   );
   const days = useMemo(
     () =>
       groupActivityDays(
-        filterActivity(place ? place.transactions : named, {
+        filterActivity(shownPlace ? shownPlace.transactions : named, {
           query,
           walletId,
           mainCurrency: currency,
@@ -196,7 +205,7 @@ export default function ActivityScreen() {
           ),
         }),
       ),
-    [named, place, query, walletId, currency, kind, day, categories],
+    [named, shownPlace, query, walletId, currency, kind, day, categories],
   );
   const budgetMinor = useMemo(() => {
     const budgets = progress.filter(
@@ -206,16 +215,14 @@ export default function ActivityScreen() {
       ? budgets.reduce((sum, row) => sum + Number(row.budgetAmountMinor), 0)
       : null;
   }, [progress, currency]);
-  const today = now.toDateString();
+  const todayKey = toLocalDateInput(now);
   const spending = useMemo(
-    () => spendingMonth(inCurrency, budgetMinor, currency, new Date()),
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- recompute when the day turns over
-    [inCurrency, budgetMinor, currency, today],
+    () => spendingMonth(inCurrency, budgetMinor, currency, dayOf(todayKey)),
+    [inCurrency, budgetMinor, currency, todayKey],
   );
   const balance = useMemo(
-    () => balanceMonth(wallets, all, currency, new Date()),
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- recompute when the day turns over
-    [wallets, all, currency, today],
+    () => balanceMonth(wallets, all, currency, dayOf(todayKey)),
+    [wallets, all, currency, todayKey],
   );
   const reviewTotal = proposals
     .filter((proposal) => proposal.currency === currency)
@@ -433,8 +440,8 @@ export default function ActivityScreen() {
               kind={kind}
               onKind={setKind}
               walletName={walletName}
-              placeName={place?.name ?? null}
-              onClearPlace={() => setPlaceId(null)}
+              placeName={shownPlace?.name ?? null}
+              onClearPlace={() => setPlace(null)}
               onWallet={() => void pickWallet()}
             />
             <HoldHint screen="activity" />

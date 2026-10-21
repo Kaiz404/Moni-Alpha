@@ -84,6 +84,7 @@ export default function CategoryFormScreen() {
     if (isColour(existing.color)) setColour(existing.color);
   }, [existing]);
   const named = name.trim().length > 0;
+  const waiting = Boolean(params.id) && !existing;
   const iconSize = Math.floor((width - 40 - GAP * 6) / 7);
   const swatch = Math.floor((width - 40 - GAP * 7) / 8);
 
@@ -125,23 +126,25 @@ export default function CategoryFormScreen() {
       destructive: true,
     });
     if (!confirmed) return;
-    await archiveCategory(existing.id).catch((error: unknown) =>
-      Alert.alert('Not saved', error instanceof Error ? error.message : 'Try again.'),
-    );
-    router.back();
+    try {
+      await archiveCategory(existing.id);
+      router.back();
+    } catch (error) {
+      Alert.alert('Not saved', error instanceof Error ? error.message : 'Try again.');
+    }
   };
 
   return (
     <Page
       screen="activity"
       kind="pushed"
-      title={existing ? 'Edit category' : 'New category'}
+      title={existing || params.id ? 'Edit category' : 'New category'}
     >
       <ScrollView
         keyboardShouldPersistTaps="handled"
         contentContainerClassName="gap-5 px-screen pb-6"
       >
-        {existing ? null : (
+        {existing || params.id ? null : (
           <Segmented
             screen="activity"
             name="category-kind"
@@ -277,7 +280,7 @@ export default function CategoryFormScreen() {
           icon="check"
           label={existing ? 'Save changes' : 'Create category'}
           loading={saving}
-          disabled={!named}
+          disabled={!named || waiting}
           pinned
           onPress={() => void save()}
         />

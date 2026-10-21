@@ -4,7 +4,6 @@ import { Text } from '@/components/ui/text';
 import { formatMoney } from '@/lib/finance/format-money';
 import type { BudgetProgress } from '@/lib/finance/selectors';
 
-/** "Transport · RM20 over its RM120 budget" for a budgeted category this month. */
 export function BudgetLine({ budget }: { budget: BudgetProgress }) {
   if (budget.budgetAmountMinor === null || budget.remainingMinor === null) return null;
   const over = Number(budget.remainingMinor) < 0;

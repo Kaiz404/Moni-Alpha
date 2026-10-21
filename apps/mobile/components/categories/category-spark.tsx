@@ -5,7 +5,6 @@ import { useThemeTokens } from '@/hooks/use-theme-tokens';
 const W = 72;
 const H = 28;
 
-/** The month so far as a running total, in the category's colour. */
 export function CategorySpark({ totals, color }: { totals: number[]; color: string | null }) {
   const tokens = useThemeTokens();
   const top = Math.max(1, ...totals);
