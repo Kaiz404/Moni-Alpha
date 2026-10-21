@@ -1,0 +1,72 @@
+# B1 Budget tab root (V2P-InsightsMonth): spent card with the pace chart, budgets, bills, map teaser, month chooser.
+# Needs a signed-in e2e build with at least one MYR wallet and some spending this month.
+# Run: scripts/device/with-device.sh --lane b1 -- maestro test .maestro/flows/budget/month.yaml
+appId: com.anonymous.moni.e2e
+name: B1 budget month
+tags:
+  - b1
+---
+- launchApp
+- extendedWaitUntil:
+    visible:
+      id: nav.tab.budget
+    timeout: 15000
+- tapOn:
+    id: nav.tab.budget
+- assertVisible: Budget
+- assertVisible:
+    id: budget.view.month
+- assertVisible:
+    id: budget.month
+- assertVisible:
+    id: budget.pace-chart
+- assertVisible:
+    id: budget.spent
+- assertNotVisible: Insights
+- takeScreenshot: b1-l2-pair
+- runFlow:
+    when:
+      visible:
+        id: budget.left
+    commands:
+      - takeScreenshot: b1-l3-left
+- scrollUntilVisible:
+    element: Budgets
+- runFlow:
+    when:
+      visible:
+        id: budget.edit-budgets
+    commands:
+      - assertVisible: Edit
+- scrollUntilVisible:
+    element:
+      id: budget.open-map
+- takeScreenshot: b1-l2-pair-bottom
+- tapOn:
+    id: budget.open-map
+- extendedWaitUntil:
+    visible: Where you spend
+    timeout: 10000
+- takeScreenshot: b1-l9-map
+- back
+- scrollUntilVisible:
+    element:
+      id: budget.month
+    direction: UP
+
+# The month chooser lists this month first; picking another redraws the tab.
+- tapOn:
+    id: budget.month
+- assertVisible: Choose month
+- takeScreenshot: b1-l5-month-sheet
+- runFlow:
+    when:
+      visible:
+        id: sheet\.option\.\d{4}-\d{2}
+        index: 1
+    commands:
+      - tapOn:
+          id: sheet\.option\.\d{4}-\d{2}
+          index: 1
+      - assertNotVisible: Choose month
+      - takeScreenshot: b1-l5-september

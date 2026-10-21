@@ -1,0 +1,46 @@
+# B1 category page (V2P-BudgetDetail): open a ring, edit its monthly budget in place, undo.
+# Needs a signed-in e2e build with at least one category budget in MYR.
+# Run: scripts/device/with-device.sh --lane b1 -- maestro test .maestro/flows/budget/category.yaml
+appId: com.anonymous.moni.e2e
+name: B1 budget category
+tags:
+  - b1
+---
+- launchApp
+- extendedWaitUntil:
+    visible:
+      id: nav.tab.budget
+    timeout: 15000
+- tapOn:
+    id: nav.tab.budget
+- scrollUntilVisible:
+    element:
+      id: budget\.ring\..*
+- tapOn:
+    id: budget\.ring\..*
+    index: 0
+- assertVisible:
+    id: budget.back
+- assertVisible:
+    id: budget.category.spent
+- assertVisible: Spent in .*
+- assertVisible:
+    id: budget.pace-chart
+- takeScreenshot: b1-l6-category
+- assertVisible:
+    id: budget.category.edit-budget
+- tapOn:
+    id: budget.category.edit-budget
+- assertVisible:
+    id: budget.category-budget.input
+- eraseText: 10
+- inputText: '200'
+- tapOn:
+    id: budget.category-budget.save
+- assertVisible: .*budget is RM200 from .*
+- takeScreenshot: b1-l7-edit
+- tapOn: Undo
+- tapOn:
+    id: budget.back
+- assertVisible:
+    id: budget.month

@@ -1,0 +1,49 @@
+# B2 Add a bill (V2P-AmountPage, New bill): Unifi fibre at RM129, due in a few days, every month.
+# Needs a signed-in e2e build with at least one MYR wallet and the bills migration pushed.
+# Run: scripts/device/with-device.sh --lane b2 -- maestro test .maestro/flows/budget/bill-new.yaml
+appId: com.anonymous.moni.e2e
+name: B2 add a bill
+tags:
+  - b2
+---
+- launchApp
+- extendedWaitUntil:
+    visible:
+      id: nav.tab.budget
+    timeout: 15000
+- tapOn:
+    id: nav.tab.budget
+- scrollUntilVisible:
+    element:
+      id: budget.add-bill
+- tapOn:
+    id: budget.add-bill
+- assertVisible: New bill
+- assertVisible: How much is it each time?
+- assertVisible: Add an amount
+- tapOn:
+    id: debts.key.1
+- tapOn:
+    id: debts.key.2
+- tapOn:
+    id: debts.key.9
+- assertVisible: RM129.00 every month, on the due date
+- tapOn:
+    id: budget.bill-new.name
+- inputText: Unifi fibre
+- hideKeyboard
+- tapOn:
+    id: budget.bill-new.due
+- assertVisible: Due date
+- tapOn:
+    id: sheet\.option\..*
+    index: 6
+- assertVisible: Add bill RM129.00
+- takeScreenshot: b2-l6-amount-page
+- tapOn:
+    id: debts.amount.save
+- assertVisible:
+    id: budget.month
+- scrollUntilVisible:
+    element: Unifi fibre
+- takeScreenshot: b2-l6-new-bill

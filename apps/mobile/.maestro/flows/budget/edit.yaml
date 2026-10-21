@@ -1,0 +1,60 @@
+# B1 Edit budgets (V2P-BudgetEdit): the monthly total and caps in place, then Save.
+# Needs a signed-in e2e build with at least one MYR wallet and an expense category without a budget.
+# Run: scripts/device/with-device.sh --lane b1 -- maestro test .maestro/flows/budget/edit.yaml
+appId: com.anonymous.moni.e2e
+name: B1 edit budgets
+tags:
+  - b1
+---
+- launchApp
+- extendedWaitUntil:
+    visible:
+      id: nav.tab.budget
+    timeout: 15000
+- tapOn:
+    id: nav.tab.budget
+- scrollUntilVisible:
+    element: Budgets
+- runFlow:
+    when:
+      visible:
+        id: budget.edit-budgets
+    commands:
+      - tapOn:
+          id: budget.edit-budgets
+- runFlow:
+    when:
+      visible:
+        id: budget.set-budgets
+    commands:
+      - tapOn:
+          id: budget.set-budgets
+- assertVisible: Edit budgets
+- assertVisible: Monthly total
+- takeScreenshot: b1-l8-budget-edit
+- tapOn:
+    id: budget.edit.edit-total
+- assertVisible:
+    id: budget.total.input
+- eraseText: 10
+- inputText: '1800'
+- tapOn:
+    id: budget.total.save
+- assertVisible: RM1,800
+- scrollUntilVisible:
+    element:
+      id: budget\.edit\.set\..*
+- tapOn:
+    id: budget\.edit\.set\..*
+    index: 0
+- assertVisible:
+    id: budget.cap.input
+- inputText: '150'
+- tapOn:
+    id: budget.cap.save
+- tapOn:
+    id: budget.edit.save
+- assertVisible: .*saved
+- assertVisible:
+    id: budget.month
+- takeScreenshot: b1-l8-new-ring

@@ -1,0 +1,43 @@
+# B2 bill page (V2P-BillDetail): open a bill from the Budget tab, skip this month, undo.
+# Needs a signed-in e2e build with a bill due this month (the seeded Netflix) and the bills migration pushed.
+# Run: scripts/device/with-device.sh --lane b2 -- maestro test .maestro/flows/budget/bill.yaml
+appId: com.anonymous.moni.e2e
+name: B2 bill page
+tags:
+  - b2
+---
+- launchApp
+- extendedWaitUntil:
+    visible:
+      id: nav.tab.budget
+    timeout: 15000
+- tapOn:
+    id: nav.tab.budget
+- scrollUntilVisible:
+    element:
+      id: budget\.bills\.row\..*
+- takeScreenshot: b2-l1-bills
+- tapOn:
+    id: budget\.bills\.row\..*
+    index: 0
+- assertVisible: Bill
+- assertVisible:
+    id: budget.bill.amount
+- assertVisible:
+    id: budget.bill.mark-paid
+- assertVisible:
+    id: budget.bill.remind
+- takeScreenshot: b2-l2-pair
+- tapOn:
+    id: budget.bill.skip
+- assertVisible: .* skipped
+- assertNotVisible:
+    id: budget.bill.mark-paid
+- takeScreenshot: b2-l3-skipped
+- tapOn: Undo
+- assertVisible:
+    id: budget.bill.mark-paid
+- tapOn:
+    id: budget.back
+- assertVisible:
+    id: budget.month
