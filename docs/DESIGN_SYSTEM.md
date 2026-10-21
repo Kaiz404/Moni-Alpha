@@ -610,6 +610,8 @@ motion.fast / motion.standard / motion.sheet
 
 Do not name UI tokens after a one-off visual result (`purpleCard`, `greenButton2`, `chartBlue`).
 
+Token values live only in `apps/mobile/global.css`. `pnpm --filter moni gen:tokens` copies the light and dark semantic colours into `constants/theme-tokens.generated.ts` for `useThemeTokens()`, and CI fails when that file is stale.
+
 ### Design-review checklist
 
 - Does the screen have one clear financial question or next action?

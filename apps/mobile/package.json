@@ -19,7 +19,9 @@
     "test:notification-detection": "node ./scripts/notification-detection-suite.mjs",
     "test:notification-routing": "node ./scripts/notification-routing-suite.mjs",
     "test:default-wallet": "node ./scripts/default-wallet-suite.mjs",
-    "lint:unreferenced": "node ./scripts/lint/find-unreferenced.mjs"
+    "lint:unreferenced": "node ./scripts/lint/find-unreferenced.mjs",
+    "gen:tokens": "node ./scripts/tokens/gen-theme-tokens.mjs",
+    "lint:tokens": "node ./scripts/tokens/gen-theme-tokens.mjs --check"
   },
   "dependencies": {
     "@expo/dom-webview": "~57.0.1",
