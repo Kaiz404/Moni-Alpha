@@ -5,6 +5,7 @@ import {
   ScrollView,
   View,
 } from 'react-native';
+import { useTabBarClearance } from '@/components/nav/tab-bar';
 import { Text } from '@/components/ui/text';
 import { router } from 'expo-router';
 import { Page } from '@/components/ui/page';
@@ -129,6 +130,7 @@ const WalletCard = memo(function WalletCard({
 
 export default function HomeScreen() {
   const { user } = useAuth();
+  const clearance = useTabBarClearance();
 
   const userInitial = useMemo(() => {
     const ch = (user?.email ?? '').charAt(0).toUpperCase();
@@ -198,7 +200,7 @@ export default function HomeScreen() {
     >
       <ScrollView
         className="flex-1"
-        contentContainerClassName="pb-[120px]"
+        contentContainerStyle={{ paddingBottom: clearance }}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}

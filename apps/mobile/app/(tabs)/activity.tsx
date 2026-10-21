@@ -5,6 +5,7 @@ import {
   ScrollView,
   View,
 } from 'react-native';
+import { useTabBarClearance } from '@/components/nav/tab-bar';
 import { Text } from '@/components/ui/text';
 import { router, useLocalSearchParams } from 'expo-router';
 import { syncState } from '@legendapp/state';
@@ -83,6 +84,7 @@ function holdable(transaction: FinanceTransaction) {
 
 export default function TransactionsScreen() {
   const { user } = useAuth();
+  const clearance = useTabBarClearance();
   const userId = user?.id ?? null;
   const params = useLocalSearchParams<{
     walletId?: string | string[];
@@ -257,7 +259,8 @@ export default function TransactionsScreen() {
     const { transaction, row } = held;
     setHeld(null);
     if (action === 'delete') void remove(transaction, row);
-    else if (action === 'editCategory') void editCategory(transaction);
+    else if (action === 'editCategory')
+      void editCategory(transaction);
     else void changeWallet(transaction);
   };
 
@@ -304,7 +307,8 @@ export default function TransactionsScreen() {
             onRefresh={onRefresh}
           />
         }
-        contentContainerClassName="gap-section px-screen pb-[120px]"
+        contentContainerClassName="gap-section px-screen"
+        contentContainerStyle={{ paddingBottom: clearance }}
       >
         <SyncBanner screen="activity" />
         {selectedWallet ? (
@@ -432,7 +436,6 @@ export default function TransactionsScreen() {
         onAction={act}
         onClose={() => setHeld(null)}
       />
-
     </Page>
   );
 }

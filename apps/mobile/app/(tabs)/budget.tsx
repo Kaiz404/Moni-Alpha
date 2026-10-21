@@ -5,6 +5,7 @@ import {
   View,
   useWindowDimensions,
 } from 'react-native';
+import { useTabBarClearance } from '@/components/nav/tab-bar';
 import { Text } from '@/components/ui/text';
 import { router } from 'expo-router';
 import { Page } from '@/components/ui/page';
@@ -57,6 +58,7 @@ function currencyText(value: string): CurrencyCode {
 
 export default function BudgetScreen() {
   const { user } = useAuth();
+  const clearance = useTabBarClearance();
   const { width } = useWindowDimensions();
   const tokens = useThemeTokens();
   const timezone = useMemo(
@@ -266,7 +268,8 @@ export default function BudgetScreen() {
     >
       <ScrollView
         className="flex-1"
-        contentContainerClassName="px-5 pb-[120px] pt-4"
+        contentContainerClassName="px-5 pt-4"
+        contentContainerStyle={{ paddingBottom: clearance }}
         showsVerticalScrollIndicator={false}
       >
         <SyncBanner
@@ -299,7 +302,11 @@ export default function BudgetScreen() {
               {currencies.map((item) => (
                 <Chip
                   key={item}
-                  testID={tid('budget', 'set-currency-preference', item)}
+                  testID={tid(
+                    'budget',
+                    'set-currency-preference',
+                    item,
+                  )}
                   label={item}
                   selected={item === currency}
                   onPress={() => {

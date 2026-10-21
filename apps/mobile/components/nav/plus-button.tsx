@@ -15,7 +15,7 @@ import type { TestId } from '@/lib/test-ids';
 
 export const TAB_BAR_HEIGHT = 64;
 const PLUS_SIZE = 60;
-const RING_SIZE = 72;
+export const RING_SIZE = 72;
 const PLUS_ABOVE_BAR = 16;
 /** The bar plus the part of the ringed + that rises above it. */
 export const TAB_BAR_REACH =

@@ -279,7 +279,7 @@ Avoid high-saturation multi-color gradients behind important numbers, animated g
 
 v2 (N1). The values are in [`redesign/tokens.md`](redesign/tokens.md#navigation).
 
-- A floating Ink pill (`components/nav/tab-bar.tsx`): 12 from the sides, 26 from the bottom (or 8 above a taller system bar), 64 tall, five equal cells. Tab roots keep 120 of bottom padding so their last row clears it.
+- A floating Ink pill (`components/nav/tab-bar.tsx`): 12 from the sides, 26 from the bottom (or 8 above a taller system bar), 64 tall, five equal cells. Tab roots pad their scroll content by `useTabBarClearance()` (120 with no system nav bar) so the last row clears it.
 - The open tab's icon and label are cream; the others are `inactive`. Nothing slides between cells, and tab roots swap with a 150 ms cross-fade. A pressed cell scales to 0.94 with a 12% cream layer.
 - TalkBack reads Home, Activity, Add a transaction, Budget, Debts; the open tab reads selected.
 - The bar shows on the four tab roots only. Pushed pages, Moni chat, and capture pages have none, and any sheet covers it.

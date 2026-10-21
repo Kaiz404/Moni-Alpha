@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
+import { useTabBarClearance } from '@/components/nav/tab-bar';
 import { Text } from '@/components/ui/text';
 import { router } from 'expo-router';
 import { useValue } from '@legendapp/state/react';
@@ -14,6 +15,7 @@ import { Page } from '@/components/ui/page';
 
 export default function DebtsScreen() {
   const { user } = useAuth();
+  const clearance = useTabBarClearance();
   const debts = useValue(debtsWithBalance$(user?.id ?? null));
   const [tab, setTab] = useState<'owed_to_me' | 'i_owe'>(
     'owed_to_me',
@@ -44,7 +46,8 @@ export default function DebtsScreen() {
     >
       <ScrollView
         className="flex-1"
-        contentContainerClassName="px-5 pb-[120px] pt-6"
+        contentContainerClassName="px-5 pt-6"
+        contentContainerStyle={{ paddingBottom: clearance }}
         showsVerticalScrollIndicator={false}
       >
         <View className="flex-row gap-2">

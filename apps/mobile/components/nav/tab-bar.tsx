@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { openCaptureChooser } from '@/components/nav/capture-chooser';
 import {
   PlusButton,
+  RING_SIZE,
   TAB_BAR_HEIGHT,
   TAB_BAR_REACH,
   tabBarBottom,
@@ -31,6 +32,15 @@ export const TABS = [
 }[];
 
 const PLUS_CELL = 2;
+
+/**
+ * Bottom padding for a tab root's scroll content: 120 on a phone with no
+ * system nav bar, as V2F-Nav draws it, and more above a taller one.
+ */
+export function useTabBarClearance() {
+  const insets = useSafeAreaInsets();
+  return tabBarBottom(insets.bottom) + TAB_BAR_REACH + 8;
+}
 
 /**
  * The floating Ink pill from V2F-Nav: five equal cells, the centre one holding
@@ -94,6 +104,7 @@ export function TabBar({ state, navigation }: BottomTabBarProps) {
     <View
       key="plus"
       className="flex-1 items-center self-start"
+      style={{ minWidth: RING_SIZE }}
     >
       <PlusButton
         testID={tid('nav', 'plus')}
