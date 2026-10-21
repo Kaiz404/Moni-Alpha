@@ -1,5 +1,5 @@
 # F3 sheet host. Needs a signed-in e2e build with at least one wallet.
-# Run: scripts/device/with-device.sh --lane f3 -- maestro test .maestro/sheets.yaml
+# Run: scripts/device/with-device.sh --lane f3 -- maestro test .maestro/flows/components/sheets.yaml
 appId: com.anonymous.moni.e2e
 name: sheets
 ---
