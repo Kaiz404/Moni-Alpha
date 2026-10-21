@@ -66,8 +66,8 @@ const tableFound$ = observable<Partial<Record<MigrationGatedTable, boolean>>>({}
 const TABLE_FOUND_KEY_PREFIX = 'table-found:';
 
 /**
- * Writers check this first: a row written before the table exists would be dropped by the first
- * full pull, because Legend-State only keeps pending rows the server already returns.
+ * Writers check this first: a row written while the table is gated is lost when the gate opens
+ * and the first full pull replaces the local value (seen in migration-gate.test.ts).
  */
 export function assertTableMigrated(table: MigrationGatedTable): void {
   if (tableFound$[table].peek() !== true) {
