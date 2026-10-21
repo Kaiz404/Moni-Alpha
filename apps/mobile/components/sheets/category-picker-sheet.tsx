@@ -4,11 +4,20 @@ import { ScrollView, View } from 'react-native';
 import { CategoryIcon } from '@/components/categories/category-icon';
 import { SheetSearchField } from '@/components/sheets/option-picker-sheet';
 import { Press } from '@/components/ui/press';
-import { Sheet, type SheetFrameProps } from '@/components/ui/sheet/sheet';
+import {
+  Sheet,
+  type SheetFrameProps,
+} from '@/components/ui/sheet/sheet';
 import { Text } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
-import { budgetNote, type BudgetNote } from '@/lib/finance/budget-note';
-import type { CategoryTile, SheetRequestOf } from '@/lib/sheet/sheet-store';
+import {
+  budgetNote,
+  type BudgetNote,
+} from '@/lib/finance/budget-note';
+import type {
+  CategoryTile,
+  SheetRequestOf,
+} from '@/lib/sheet/sheet-store';
 import { tid } from '@/lib/test-ids';
 
 type CategoryPickerSheetProps = SheetFrameProps & {
@@ -36,7 +45,11 @@ function Tile({
   onPick: () => void;
 }) {
   const tokens = useThemeTokens();
-  const note = budgetNote(tile.spentMinor, tile.budgetMinor, currency);
+  const note = budgetNote(
+    tile.spentMinor,
+    tile.budgetMinor,
+    currency,
+  );
   return (
     <Press
       testID={tid('sheet', 'category', tile.id)}
@@ -51,9 +64,15 @@ function Tile({
       >
         <View
           className="h-11 w-11 items-center justify-center rounded-full bg-sand"
-          style={tile.color ? { backgroundColor: tile.color } : undefined}
+          style={
+            tile.color ? { backgroundColor: tile.color } : undefined
+          }
         >
-          <CategoryIcon color={tokens.onPastel} icon={tile.icon} size={22} />
+          <CategoryIcon
+            color={tokens.onPastel}
+            icon={tile.icon}
+            size={22}
+          />
         </View>
       </View>
       <Text
@@ -97,16 +116,26 @@ export function CategoryPickerSheet({
       ),
     [request.categories, q],
   );
-  const cells: (CategoryTile | 'new')[] = request.onCreate ? [...tiles, 'new'] : tiles;
+  const cells: (CategoryTile | 'new')[] = request.onCreate
+    ? [...tiles, 'new']
+    : tiles;
   const rows: (CategoryTile | 'new' | null)[][] = [];
   for (let i = 0; i < cells.length; i += 3) {
-    const row: (CategoryTile | 'new' | null)[] = cells.slice(i, i + 3);
+    const row: (CategoryTile | 'new' | null)[] = cells.slice(
+      i,
+      i + 3,
+    );
     while (row.length < 3) row.push(null);
     rows.push(row);
   }
 
   return (
-    <Sheet {...frame} size="large" title={request.title} closeLabel="Close">
+    <Sheet
+      {...frame}
+      size="large"
+      title={request.title}
+      closeLabel="Close"
+    >
       <View className="pb-3">
         <SheetSearchField
           placeholder="Search categories"
@@ -121,10 +150,16 @@ export function CategoryPickerSheet({
         contentContainerClassName="gap-2 pb-3"
       >
         {rows.map((row, index) => (
-          <View key={index} className="flex-row gap-2">
+          <View
+            key={index}
+            className="flex-row gap-2"
+          >
             {row.map((cell, column) =>
               cell === null ? (
-                <View key={`empty-${column}`} className="flex-1" />
+                <View
+                  key={`empty-${column}`}
+                  className="flex-1"
+                />
               ) : cell === 'new' ? (
                 <Press
                   key="new"
@@ -133,7 +168,11 @@ export function CategoryPickerSheet({
                   onPress={onCreate}
                 >
                   <View className="h-11 w-11 items-center justify-center rounded-full bg-sand">
-                    <CategoryIcon color={tokens.foreground} icon="plus" size={22} />
+                    <CategoryIcon
+                      color={tokens.foreground}
+                      icon="plus"
+                      size={22}
+                    />
                   </View>
                   <Text className="text-center text-sm leading-[18px] font-display-semibold text-foreground">
                     New category

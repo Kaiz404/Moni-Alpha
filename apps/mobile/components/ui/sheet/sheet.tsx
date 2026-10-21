@@ -36,7 +36,10 @@ const REDUCED_FADE = { duration: 180 };
 function rubberband(overshoot: number, dimension: number) {
   'worklet';
   const k = 0.55;
-  return (overshoot * dimension * k) / (dimension + k * Math.abs(overshoot));
+  return (
+    (overshoot * dimension * k) /
+    (dimension + k * Math.abs(overshoot))
+  );
 }
 
 export type SheetProps = {
@@ -57,7 +60,10 @@ export type SheetProps = {
 };
 
 /** What the host hands every sheet: its lifecycle, not its content. */
-export type SheetFrameProps = Pick<SheetProps, 'open' | 'onDismiss' | 'onExited'>;
+export type SheetFrameProps = Pick<
+  SheetProps,
+  'open' | 'onDismiss' | 'onExited'
+>;
 
 /**
  * The one sheet surface from tokens.md: Cream, top radius 32, a 36 × 5
@@ -84,9 +90,11 @@ export function Sheet({
   const fade = useSharedValue(reduceMotion ? 0 : 1);
   const start = useSharedValue(0);
   const releaseVelocity = useSharedValue(0);
+  const closing = useSharedValue(false);
 
   useEffect(() => {
     if (open) return;
+    closing.set(true);
     if (reduceMotion) {
       fade.set(
         withTiming(0, REDUCED_FADE, (finished) => {
@@ -108,7 +116,16 @@ export function Sheet({
         },
       ),
     );
-  }, [open, reduceMotion, fade, offset, height, releaseVelocity, onExited]);
+  }, [
+    open,
+    reduceMotion,
+    fade,
+    offset,
+    height,
+    releaseVelocity,
+    closing,
+    onExited,
+  ]);
 
   const pan = useMemo(
     () =>
@@ -118,13 +135,24 @@ export function Sheet({
           start.set(offset.get());
         })
         .onUpdate((event) => {
+          // A sheet closed by back or the scrim mid-drag must keep its exit spring.
+          if (closing.get()) return;
           const next = start.get() + event.translationY;
-          offset.set(next >= 0 ? next : rubberband(next, height.get()));
+          offset.set(
+            next >= 0 ? next : rubberband(next, height.get()),
+          );
         })
         .onEnd((event) => {
+          if (closing.get()) return;
           const travel = height.get();
-          const landing = projectedPosition(offset.get(), event.velocityY);
-          if (travel > 0 && landing > travel * FLING_COMMIT_THRESHOLD) {
+          const landing = projectedPosition(
+            offset.get(),
+            event.velocityY,
+          );
+          if (
+            travel > 0 &&
+            landing > travel * FLING_COMMIT_THRESHOLD
+          ) {
             releaseVelocity.set(event.velocityY);
             scheduleOnRN(onDismiss);
             return;
@@ -132,17 +160,33 @@ export function Sheet({
           offset.set(
             reduceMotion
               ? withTiming(0, REDUCED_FADE)
-              : withSpring(0, { ...springs.sheet, velocity: event.velocityY }),
+              : withSpring(0, {
+                  ...springs.sheet,
+                  velocity: event.velocityY,
+                }),
           );
         }),
-    [height, offset, onDismiss, reduceMotion, releaseVelocity, start],
+    [
+      closing,
+      height,
+      offset,
+      onDismiss,
+      reduceMotion,
+      releaseVelocity,
+      start,
+    ],
   );
 
   const scrimStyle = useAnimatedStyle(() => {
     const h = height.get();
     const slide =
       h > 0
-        ? interpolate(offset.get(), [0, h], [1, 0], Extrapolation.CLAMP)
+        ? interpolate(
+            offset.get(),
+            [0, h],
+            [1, 0],
+            Extrapolation.CLAMP,
+          )
         : 0;
     return { opacity: reduceMotion ? fade.get() * slide : slide };
   });
@@ -153,14 +197,19 @@ export function Sheet({
 
   const sheetStyle = useAnimatedStyle(() => ({
     opacity: reduceMotion ? fade.get() : 1,
-    paddingBottom: 20 + Math.max(insets.bottom - keyboard.height.get(), 0),
+    paddingBottom:
+      20 + Math.max(insets.bottom - keyboard.height.get(), 0),
     transform: [{ translateY: offset.get() }],
   }));
 
   return (
     <GestureHandlerRootView style={StyleSheet.absoluteFill}>
       <Animated.View
-        style={[StyleSheet.absoluteFill, { backgroundColor: SCRIM }, scrimStyle]}
+        style={[
+          StyleSheet.absoluteFill,
+          { backgroundColor: SCRIM },
+          scrimStyle,
+        ]}
       >
         <Pressable
           testID={tid('sheet', 'scrim')}
@@ -232,7 +281,9 @@ export function Sheet({
           <View style={size === 'large' ? styles.large : styles.body}>
             {children}
           </View>
-          {actions ? <View className="flex-row gap-2 pt-5">{actions}</View> : null}
+          {actions ? (
+            <View className="flex-row gap-2 pt-5">{actions}</View>
+          ) : null}
         </Animated.View>
       </Animated.View>
     </GestureHandlerRootView>

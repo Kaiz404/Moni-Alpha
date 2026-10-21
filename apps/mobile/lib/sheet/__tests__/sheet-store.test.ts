@@ -1,8 +1,4 @@
-import {
-  dismissSheet,
-  getOpenSheet,
-  openSheet,
-} from '@/lib/sheet/sheet-store';
+import { dismissSheet, getOpenSheet, openSheet } from '@/lib/sheet/sheet-store';
 
 const deleteWallet = {
   kind: 'confirm',

@@ -32,20 +32,52 @@ function renderSheet(sheet: OpenSheet, frame: SheetFrameProps) {
         />
       );
     case 'wallet':
-      return <WalletSheet {...frame} request={sheet.request} onPick={sheet.settle} />;
+      return (
+        <WalletSheet
+          {...frame}
+          request={sheet.request}
+          onPick={sheet.settle}
+        />
+      );
     case 'currency':
-      return <CurrencySheet {...frame} request={sheet.request} onPick={sheet.settle} />;
+      return (
+        <CurrencySheet
+          {...frame}
+          request={sheet.request}
+          onPick={sheet.settle}
+        />
+      );
     case 'walletType':
-      return <WalletTypeSheet {...frame} request={sheet.request} onPick={sheet.settle} />;
+      return (
+        <WalletTypeSheet
+          {...frame}
+          request={sheet.request}
+          onPick={sheet.settle}
+        />
+      );
     case 'date':
-      return <DateSheet {...frame} request={sheet.request} onPick={sheet.settle} />;
+      return (
+        <DateSheet
+          {...frame}
+          request={sheet.request}
+          onPick={sheet.settle}
+        />
+      );
     case 'notificationApp':
       return (
-        <NotificationAppSheet {...frame} request={sheet.request} onPick={sheet.settle} />
+        <NotificationAppSheet
+          {...frame}
+          request={sheet.request}
+          onPick={sheet.settle}
+        />
       );
     case 'confirm':
       return (
-        <ConfirmSheet {...frame} request={sheet.request} onConfirm={() => sheet.settle(true)} />
+        <ConfirmSheet
+          {...frame}
+          request={sheet.request}
+          onConfirm={() => sheet.settle(true)}
+        />
       );
   }
 }
@@ -63,10 +95,13 @@ export function SheetHost() {
 
   useEffect(() => {
     if (!open) return;
-    const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
-      dismissSheet();
-      return true;
-    });
+    const subscription = BackHandler.addEventListener(
+      'hardwareBackPress',
+      () => {
+        dismissSheet();
+        return true;
+      },
+    );
     return () => subscription.remove();
   }, [open]);
 
@@ -77,8 +112,14 @@ export function SheetHost() {
   if (!shown) return null;
 
   return (
-    <View style={StyleSheet.absoluteFill} pointerEvents={open ? 'auto' : 'none'}>
-      <View key={shown.id} style={StyleSheet.absoluteFill}>
+    <View
+      style={StyleSheet.absoluteFill}
+      pointerEvents={open ? 'auto' : 'none'}
+    >
+      <View
+        key={shown.id}
+        style={StyleSheet.absoluteFill}
+      >
         {renderSheet(shown, {
           open: shown === open,
           onDismiss: dismissSheet,

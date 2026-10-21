@@ -119,7 +119,10 @@ export default function BudgetFormScreen() {
   };
 
   const pickCurrency = async () => {
-    const picked = await openSheet({ kind: 'currency', selected: currency });
+    const picked = await openSheet({
+      kind: 'currency',
+      selected: currency,
+    });
     if (picked) setCurrency(picked);
   };
 
@@ -226,7 +229,11 @@ export default function BudgetFormScreen() {
             selected ? (
               <View
                 className="h-8 w-8 items-center justify-center rounded-full bg-sand"
-                style={selected.color ? { backgroundColor: selected.color } : undefined}
+                style={
+                  selected.color
+                    ? { backgroundColor: selected.color }
+                    : undefined
+                }
               >
                 <CategoryIcon
                   color={tokens.onPastel}

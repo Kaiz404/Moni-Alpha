@@ -91,12 +91,18 @@ export default function EditWalletScreen() {
   );
 
   const pickType = async () => {
-    const picked = await openSheet({ kind: 'walletType', selected: type });
+    const picked = await openSheet({
+      kind: 'walletType',
+      selected: type,
+    });
     if (picked) setType(picked);
   };
 
   const pickCurrency = async () => {
-    const picked = await openSheet({ kind: 'currency', selected: currency });
+    const picked = await openSheet({
+      kind: 'currency',
+      selected: currency,
+    });
     if (picked) setCurrency(picked);
   };
 

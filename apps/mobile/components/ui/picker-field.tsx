@@ -15,6 +15,7 @@ type PickerFieldProps = {
   onPress: () => void;
   leading?: ReactNode;
   className?: string;
+  disabled?: boolean;
 };
 
 /**
@@ -28,6 +29,7 @@ export function PickerField({
   onPress,
   leading,
   className,
+  disabled = false,
 }: PickerFieldProps) {
   const tokens = useThemeTokens();
   const empty = value.trim().length === 0;
@@ -36,13 +38,18 @@ export function PickerField({
       testID={testID}
       accessibilityLabel={`${label}, ${empty ? 'not chosen' : value}`}
       accessibilityHint="Opens a picker"
+      accessibilityState={{ disabled }}
+      disabled={disabled}
       pressedClassName="bg-hairline"
       className={`h-16 flex-row items-center gap-2.5 rounded-field bg-sand px-3.5 ${className ?? ''}`}
       onPress={onPress}
     >
       {leading}
       <View className="min-w-0 flex-1">
-        <Text className="text-[13px] leading-[18px] text-muted" numberOfLines={1}>
+        <Text
+          className="text-[13px] leading-[18px] text-muted"
+          numberOfLines={1}
+        >
           {label}
         </Text>
         <Text
@@ -53,7 +60,11 @@ export function PickerField({
         </Text>
       </View>
       <View pointerEvents="none">
-        <IconSymbol name="chevron-down" size={20} color={tokens.foreground} />
+        <IconSymbol
+          name="chevron-down"
+          size={20}
+          color={tokens.foreground}
+        />
       </View>
     </Press>
   );

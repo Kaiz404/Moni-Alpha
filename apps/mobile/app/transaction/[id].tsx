@@ -80,7 +80,9 @@ export default function EditTransactionScreen() {
   const [mapExpanded, setMapExpanded] = useState(true);
   const [isTransfer, setIsTransfer] = useState(false);
   const [timezone, setTimezone] = useState('UTC');
-  const progress = useValue(budgetProgress$(user?.id ?? null, timezone));
+  const progress = useValue(
+    budgetProgress$(user?.id ?? null, timezone),
+  );
 
   useEffect(() => {
     void ensureFinanceTimezone()
@@ -203,9 +205,16 @@ export default function EditTransactionScreen() {
     const destination = role === 'destination';
     const pick = await openSheet({
       kind: 'wallet',
-      title: destination ? 'Move to' : isTransfer ? 'From wallet' : 'Paid from',
-      wallets: walletOptions(destination ? destinationWallets : wallets),
-      selectedId: (destination ? transferToWalletId : walletId) || null,
+      title: destination
+        ? 'Move to'
+        : isTransfer
+          ? 'From wallet'
+          : 'Paid from',
+      wallets: walletOptions(
+        destination ? destinationWallets : wallets,
+      ),
+      selectedId:
+        (destination ? transferToWalletId : walletId) || null,
     });
     if (!pick?.walletId) return;
     if (destination) setTransferToWalletId(pick.walletId);
@@ -214,7 +223,8 @@ export default function EditTransactionScreen() {
 
   const pickCategory = async () => {
     const currency = (
-      wallets.find((wallet) => wallet.id === walletId)?.currency ?? 'USD'
+      wallets.find((wallet) => wallet.id === walletId)?.currency ??
+      'USD'
     ).toUpperCase();
     const picked = await openSheet({
       kind: 'category',
@@ -417,7 +427,9 @@ export default function EditTransactionScreen() {
               <PickerField
                 testID={tid('txn', 'wallet')}
                 label={isTransfer ? 'From wallet' : 'Paid from'}
-                value={wallets.find((w) => w.id === walletId)?.name ?? ''}
+                value={
+                  wallets.find((w) => w.id === walletId)?.name ?? ''
+                }
                 onPress={() => void pickWallet('source')}
               />
               {isTransfer ? (
@@ -425,7 +437,8 @@ export default function EditTransactionScreen() {
                   testID={tid('txn', 'destination')}
                   label="Move to"
                   value={
-                    wallets.find((w) => w.id === transferToWalletId)?.name ?? ''
+                    wallets.find((w) => w.id === transferToWalletId)
+                      ?.name ?? ''
                   }
                   onPress={() => void pickWallet('destination')}
                 />
@@ -511,7 +524,10 @@ export default function EditTransactionScreen() {
                   testID={tid('txn', 'category')}
                   className="mb-4"
                   label="Category"
-                  value={categories.find((c) => c.id === categoryId)?.name ?? ''}
+                  value={
+                    categories.find((c) => c.id === categoryId)
+                      ?.name ?? ''
+                  }
                   onPress={() => void pickCategory()}
                 />
 

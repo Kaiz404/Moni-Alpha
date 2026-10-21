@@ -73,10 +73,7 @@ export type SheetKind = keyof Sheets;
 export type SheetRequest = {
   [K in SheetKind]: { kind: K } & Sheets[K]['request'];
 }[SheetKind];
-export type SheetRequestOf<K extends SheetKind> = Extract<
-  SheetRequest,
-  { kind: K }
->;
+export type SheetRequestOf<K extends SheetKind> = Extract<SheetRequest, { kind: K }>;
 export type SheetResult<K extends SheetKind> = Sheets[K]['result'];
 
 /** The one open sheet. `kind` sits at the top so narrowing it narrows `settle` too. */

@@ -34,7 +34,10 @@ import {
 } from '@/lib/supabase/transactions';
 import { getWallets } from '@/lib/supabase/wallets';
 import { toCategoryTiles } from '@/lib/sheet/category-tiles';
-import { openSheet, type WalletOption } from '@/lib/sheet/sheet-store';
+import {
+  openSheet,
+  type WalletOption,
+} from '@/lib/sheet/sheet-store';
 import { useMainCurrency } from '@/lib/finance/main-currency';
 import {
   prefetchTransactionLocation,
@@ -235,9 +238,17 @@ export default function NewTransactionScreen() {
     const destination = role === 'destination';
     const pick = await openSheet({
       kind: 'wallet',
-      title: destination ? 'Move to' : isTransfer ? 'From wallet' : 'Paid from',
-      wallets: (destination ? destinationWallets : wallets).map(toWalletOption),
-      selectedId: destination ? transferToWalletId || null : walletId || null,
+      title: destination
+        ? 'Move to'
+        : isTransfer
+          ? 'From wallet'
+          : 'Paid from',
+      wallets: (destination ? destinationWallets : wallets).map(
+        toWalletOption,
+      ),
+      selectedId: destination
+        ? transferToWalletId || null
+        : walletId || null,
       emptyMessage: destination
         ? sourceCurrency
           ? `No other ${sourceCurrency} wallet yet. Transfers need two wallets in the same currency.`
@@ -258,7 +269,9 @@ export default function NewTransactionScreen() {
         categories,
         budgetProgress,
         categoryCurrency,
-        type === 'expense' ? suggestedCategories.map((category) => category.id) : [],
+        type === 'expense'
+          ? suggestedCategories.map((category) => category.id)
+          : [],
       ),
       selectedId: categoryId || null,
       onCreate: () =>
@@ -275,7 +288,11 @@ export default function NewTransactionScreen() {
       kind: 'date',
       selected: details.transactionDate,
     });
-    if (picked) setDetails((current) => ({ ...current, transactionDate: picked }));
+    if (picked)
+      setDetails((current) => ({
+        ...current,
+        transactionDate: picked,
+      }));
   };
 
   const handleKeyPress = useCallback((key: string) => {
@@ -493,7 +510,10 @@ export default function NewTransactionScreen() {
                     style={{ backgroundColor: selectedWalletAccent }}
                   >
                     <WalletIcon
-                      color={selectedWalletStyle?.contentColor ?? tokens.foreground}
+                      color={
+                        selectedWalletStyle?.contentColor ??
+                        tokens.foreground
+                      }
                       icon={selectedWallet.icon}
                       size={18}
                       type={selectedWallet.type}
@@ -513,10 +533,15 @@ export default function NewTransactionScreen() {
                   selectedDestination ? (
                     <View
                       className="h-8 w-8 items-center justify-center rounded-full"
-                      style={{ backgroundColor: destinationWalletAccent }}
+                      style={{
+                        backgroundColor: destinationWalletAccent,
+                      }}
                     >
                       <WalletIcon
-                        color={destinationWalletStyle?.contentColor ?? tokens.foreground}
+                        color={
+                          destinationWalletStyle?.contentColor ??
+                          tokens.foreground
+                        }
                         icon={selectedDestination.icon}
                         size={18}
                         type={selectedDestination.type}
@@ -557,13 +582,20 @@ export default function NewTransactionScreen() {
                 {isTransfer ? 'Note' : 'Shop or note'}
               </Text>
               <TextInput
-                testID={tid('capture', isTransfer ? 'note' : 'merchant')}
-                accessibilityLabel={isTransfer ? 'Note' : 'Shop or note'}
+                testID={tid(
+                  'capture',
+                  isTransfer ? 'note' : 'merchant',
+                )}
+                accessibilityLabel={
+                  isTransfer ? 'Note' : 'Shop or note'
+                }
                 autoCapitalize="words"
                 className="p-0 text-base font-display-semibold text-foreground"
                 placeholder="Optional"
                 placeholderTextColor={tokens.muted}
-                value={isTransfer ? details.description : details.merchant}
+                value={
+                  isTransfer ? details.description : details.merchant
+                }
                 onChangeText={(text) =>
                   setDetails((current) =>
                     isTransfer

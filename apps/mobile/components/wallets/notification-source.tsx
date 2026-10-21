@@ -37,9 +37,9 @@ export type InstalledBankApp = {
 
 /** Curated banking apps installed on this phone, or why none can be listed. */
 export function useNotificationSourceData() {
-  const [installed, setInstalled] = useState<Map<string, InstalledAppInfo>>(
-    () => getCachedInstalledAppsMap() ?? new Map(),
-  );
+  const [installed, setInstalled] = useState<
+    Map<string, InstalledAppInfo>
+  >(() => getCachedInstalledAppsMap() ?? new Map());
 
   useEffect(() => {
     if (Platform.OS !== 'android') return;
@@ -53,13 +53,17 @@ export function useNotificationSourceData() {
   }, []);
 
   const resolved = getCachedInstalledAppsMap() ?? installed;
-  const loading = Platform.OS === 'android' && !getCachedInstalledAppsMap();
+  const loading =
+    Platform.OS === 'android' && !getCachedInstalledAppsMap();
 
   const apps = useMemo(
     () =>
       groupCuratedAppsByRegion().flatMap((section) =>
         section.apps.flatMap((app): InstalledBankApp[] => {
-          const packageName = resolveInstalledPackageForCurated(resolved, app);
+          const packageName = resolveInstalledPackageForCurated(
+            resolved,
+            app,
+          );
           if (!packageName) return [];
           const native = resolved.get(packageName);
           return [
@@ -67,7 +71,8 @@ export function useNotificationSourceData() {
               packageName,
               label: native?.label ?? app.label,
               region: section.title,
-              iconUri: native?.iconUri ?? getCachedAppIcon(packageName),
+              iconUri:
+                native?.iconUri ?? getCachedAppIcon(packageName),
             },
           ];
         }),
@@ -99,9 +104,12 @@ export function useNotificationSourcePermission() {
 
   useEffect(() => {
     void refresh();
-    const subscription = AppState.addEventListener('change', (state) => {
-      if (state === 'active') void refresh();
-    });
+    const subscription = AppState.addEventListener(
+      'change',
+      (state) => {
+        if (state === 'active') void refresh();
+      },
+    );
     return () => subscription.remove();
   }, [refresh]);
 
@@ -116,7 +124,10 @@ export function getNotificationAppIconUri(
   installed: Map<string, InstalledAppInfo>,
 ) {
   if (!packageName) return null;
-  return installed.get(packageName)?.iconUri ?? getCachedAppIcon(packageName);
+  return (
+    installed.get(packageName)?.iconUri ??
+    getCachedAppIcon(packageName)
+  );
 }
 
 export function NotificationAppIcon({
@@ -142,7 +153,11 @@ export function NotificationAppIcon({
       className="items-center justify-center rounded-full bg-sand"
       style={{ height: size, width: size }}
     >
-      <IconSymbol name="wallet" size={Math.max(16, size - 22)} color={tokens.muted} />
+      <IconSymbol
+        name="wallet"
+        size={Math.max(16, size - 22)}
+        color={tokens.muted}
+      />
     </View>
   );
 }

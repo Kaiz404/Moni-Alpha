@@ -93,7 +93,9 @@ export function ProposalForm({
   const tokens = useThemeTokens();
   const { user } = useAuth();
   const [timezone, setTimezone] = useState('UTC');
-  const progress = useValue(budgetProgress$(user?.id ?? null, timezone));
+  const progress = useValue(
+    budgetProgress$(user?.id ?? null, timezone),
+  );
   const [txType, setTxType] = useState<TxType>(
     normalizeTxType(proposal.type),
   );
@@ -206,14 +208,22 @@ export function ProposalForm({
     const destination = role === 'destination';
     const pick = await openSheet({
       kind: 'wallet',
-      title: destination ? 'Move to' : isTransfer ? 'From wallet' : 'Paid from',
-      wallets: (destination ? destinationWallets : wallets).map((wallet) => ({
-        ...wallet,
-        icon: null,
-        color: null,
-        cardStyleId: null,
-      })),
-      selectedId: destination ? selectedTransferToWalletId : selectedWalletId,
+      title: destination
+        ? 'Move to'
+        : isTransfer
+          ? 'From wallet'
+          : 'Paid from',
+      wallets: (destination ? destinationWallets : wallets).map(
+        (wallet) => ({
+          ...wallet,
+          icon: null,
+          color: null,
+          cardStyleId: null,
+        }),
+      ),
+      selectedId: destination
+        ? selectedTransferToWalletId
+        : selectedWalletId,
       emptyMessage: destination
         ? 'Add another wallet to complete this transfer.'
         : undefined,
@@ -228,7 +238,11 @@ export function ProposalForm({
       kind: 'category',
       title: 'Choose category',
       currency: displayCurrency,
-      categories: toCategoryTiles(categoryOptions, progress, displayCurrency),
+      categories: toCategoryTiles(
+        categoryOptions,
+        progress,
+        displayCurrency,
+      ),
       selectedId: selectedCategoryId,
     });
     if (picked) setSelectedCategoryId(picked);
@@ -362,7 +376,9 @@ export function ProposalForm({
           <PickerField
             testID={tid('review', 'category')}
             label="Category"
-            value={selectedCategory?.name ?? proposal.categoryHint ?? ''}
+            value={
+              selectedCategory?.name ?? proposal.categoryHint ?? ''
+            }
             leading={
               selectedCategory ? (
                 <CategoryIcon

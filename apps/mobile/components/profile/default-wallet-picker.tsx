@@ -133,6 +133,7 @@ export function DefaultWalletPicker() {
       className="mb-2"
       label="Default wallet"
       value={selected?.name ?? 'None'}
+      disabled={saving}
       onPress={() => void pick()}
     />
   );

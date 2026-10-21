@@ -162,7 +162,9 @@ export default function DebtDetailScreen() {
     if (!confirmed) return;
     writeOffDebt(debt)
       .then(load)
-      .catch((error) => Alert.alert('Could not write off', error.message));
+      .catch((error) =>
+        Alert.alert('Could not write off', error.message),
+      );
   };
   return (
     <Page
@@ -317,7 +319,8 @@ export default function DebtDetailScreen() {
                   cancelLabel: 'Keep it',
                   destructive: true,
                 });
-                if (confirmed) void deleteDebtActivity(debt, item.id).then(load);
+                if (confirmed)
+                  void deleteDebtActivity(debt, item.id).then(load);
               }}
             >
               <Text className="text-sm text-expense">Remove</Text>

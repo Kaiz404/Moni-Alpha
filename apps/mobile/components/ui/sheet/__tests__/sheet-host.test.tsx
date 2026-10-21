@@ -1,5 +1,10 @@
 import 'react-native-gesture-handler/jestSetup';
-import { act, fireEvent, render, screen } from '@testing-library/react-native';
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+} from '@testing-library/react-native';
 import type { MinorAmount } from '@repo/types';
 
 import { SheetHost } from '@/components/ui/sheet/sheet-host';
@@ -9,19 +14,33 @@ jest.mock('uniwind', () => ({
   useCSSVariable: (names: string[]) => names.map(() => undefined),
 }));
 jest.mock('react-native-safe-area-context', () => ({
-  useSafeAreaInsets: () => ({ top: 48, bottom: 24, left: 0, right: 0 }),
+  useSafeAreaInsets: () => ({
+    top: 48,
+    bottom: 24,
+    left: 0,
+    right: 0,
+  }),
 }));
 jest.mock('react-native-reanimated', () => ({
   ...jest.requireActual<object>('react-native-reanimated/mock'),
   useReducedMotion: () => false,
-  useAnimatedKeyboard: () => ({ height: { get: () => 0 }, state: { get: () => 0 } }),
+  useAnimatedKeyboard: () => ({
+    height: { get: () => 0 },
+    state: { get: () => 0 },
+  }),
 }));
 jest.mock('@/lib/finance/main-currency', () => ({
   useMainCurrency: () => 'MYR',
 }));
 
-const rm = (ringgit: number) => Math.round(ringgit * 100) as MinorAmount;
-const tile = (id: string, name: string, spent: number, budget: number | null) => ({
+const rm = (ringgit: number) =>
+  Math.round(ringgit * 100) as MinorAmount;
+const tile = (
+  id: string,
+  name: string,
+  spent: number,
+  budget: number | null,
+) => ({
   id,
   name,
   icon: null,

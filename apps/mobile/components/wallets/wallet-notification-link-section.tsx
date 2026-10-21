@@ -1,4 +1,4 @@
-import { View } from 'react-native';
+import { Platform, View } from 'react-native';
 
 import { FormField } from '@/components/ui/form-field';
 import { PickerField } from '@/components/ui/picker-field';
@@ -40,27 +40,35 @@ export function WalletNotificationLinkSection({
       ? labelForNotificationPackage(value.notificationPackage)
       : null);
 
-  if (!permission.notificationAccessEnabled) {
-    return (
-      <Press
-        testID={tid('wallet', 'enable-notification-access')}
-        accessibilityLabel="Let Moni read bank alerts"
-        pressedClassName="bg-hairline"
-        className="flex-row items-center gap-3 rounded-field bg-sand px-3.5 py-3"
-        onPress={permission.openNotificationSettings}
-      >
-        <IconSymbol name="bell-outline" size={22} color={tokens.foreground} />
-        <View className="min-w-0 flex-1">
-          <Text className="text-base font-display-semibold text-foreground">
-            Let Moni read bank alerts
-          </Text>
-          <Text className="text-[13px] leading-[18px] text-muted">
-            Turn on notification access before linking an app.
-          </Text>
-        </View>
-      </Press>
-    );
-  }
+  // iOS has no notification access, so the sheet itself explains that linking is Android-only.
+  const needsAccess =
+    Platform.OS === 'android' &&
+    !permission.notificationAccessEnabled;
+  const accessRow = needsAccess ? (
+    <Press
+      testID={tid('wallet', 'enable-notification-access')}
+      accessibilityLabel="Let Moni read bank alerts"
+      pressedClassName="bg-hairline"
+      className="flex-row items-center gap-3 rounded-field bg-sand px-3.5 py-3"
+      onPress={permission.openNotificationSettings}
+    >
+      <IconSymbol
+        name="bell-outline"
+        size={22}
+        color={tokens.foreground}
+      />
+      <View className="min-w-0 flex-1">
+        <Text className="text-base font-display-semibold text-foreground">
+          Let Moni read bank alerts
+        </Text>
+        <Text className="text-[13px] leading-[18px] text-muted">
+          Turn on notification access before linking an app.
+        </Text>
+      </View>
+    </Press>
+  ) : null;
+
+  if (needsAccess && !value.notificationPackage) return accessRow;
 
   const pickApp = async () => {
     const pick = await openSheet({
@@ -71,12 +79,15 @@ export function WalletNotificationLinkSection({
     onChange({
       notificationPackage: pick.app?.packageName ?? null,
       notificationAppLabel: pick.app?.label ?? null,
-      notificationAccountHint: pick.app ? value.notificationAccountHint : null,
+      notificationAccountHint: pick.app
+        ? value.notificationAccountHint
+        : null,
     });
   };
 
   return (
     <View className="gap-2">
+      {accessRow}
       <PickerField
         testID={tid('wallet', 'alerts-from')}
         label="Alerts from"
@@ -84,14 +95,18 @@ export function WalletNotificationLinkSection({
         leading={
           value.notificationPackage ? (
             <NotificationAppIcon
-              iconUri={getNotificationAppIconUri(value.notificationPackage, installed)}
+              iconUri={getNotificationAppIconUri(
+                value.notificationPackage,
+                installed,
+              )}
               size={32}
             />
           ) : undefined
         }
         onPress={() => void pickApp()}
       />
-      {value.notificationPackage && sharedPackageWalletNames.length > 0 ? (
+      {value.notificationPackage &&
+      sharedPackageWalletNames.length > 0 ? (
         <FormField
           testID={tid('wallet', 'account-hint')}
           label="Account hint"
@@ -100,7 +115,10 @@ export function WalletNotificationLinkSection({
           placeholder="Savings or ****4521"
           value={value.notificationAccountHint ?? ''}
           onChangeText={(hint) =>
-            onChange({ ...value, notificationAccountHint: hint.trim() ? hint : null })
+            onChange({
+              ...value,
+              notificationAccountHint: hint.trim() ? hint : null,
+            })
           }
         />
       ) : null}
