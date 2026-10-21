@@ -1,6 +1,5 @@
 import { useMemo, useState } from 'react';
 import {
-  Alert,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -27,6 +26,7 @@ import {
   walletsForUser$,
 } from '@/lib/finance/selectors';
 import { deleteTransaction } from '@/lib/supabase/transactions';
+import { openSheet } from '@/lib/sheet/sheet-store';
 import { tid } from '@/lib/test-ids';
 
 export default function TransactionsScreen() {
@@ -102,19 +102,17 @@ export default function TransactionsScreen() {
     );
     setRefreshing(false);
   };
-  const remove = (id: string) =>
-    Alert.alert(
-      'Delete transaction',
-      'This will remove the transaction from your records.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: () => void deleteTransaction(id),
-        },
-      ],
-    );
+  const remove = async (id: string) => {
+    const confirmed = await openSheet({
+      kind: 'confirm',
+      title: 'Delete this transaction?',
+      message: 'It comes out of your totals and budgets.',
+      confirmLabel: 'Delete',
+      cancelLabel: 'Keep it',
+      destructive: true,
+    });
+    if (confirmed) void deleteTransaction(id);
+  };
 
   return (
     <Page

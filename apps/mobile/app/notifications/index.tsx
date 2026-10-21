@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import { Alert, FlatList, RefreshControl, View } from 'react-native';
+import { FlatList, RefreshControl, View } from 'react-native';
 import { Text } from '@/components/ui/text';
 import { useFocusEffect } from 'expo-router';
 import { IconSymbol } from '@/components/ui/icon-symbol';
@@ -10,6 +10,7 @@ import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { isPackageLinkedInCache } from '@/lib/notifications/linked-packages-cache';
 import { resolveNotificationPackageName } from '@/lib/notifications/notification-package';
 import { HeaderIconButton } from '@/components/ui/header-icon-button';
+import { openSheet } from '@/lib/sheet/sheet-store';
 import { tid } from '@/lib/test-ids';
 import { Page } from '@/components/ui/page';
 
@@ -128,19 +129,16 @@ export default function NotificationsScreen() {
     setRefreshing(false);
   }, [refresh]);
 
-  const handleClearAll = useCallback(() => {
-    Alert.alert(
-      'Clear stored notifications?',
-      'This only removes locally stored raw notifications.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Clear all',
-          style: 'destructive',
-          onPress: clearAll,
-        },
-      ],
-    );
+  const handleClearAll = useCallback(async () => {
+    const confirmed = await openSheet({
+      kind: 'confirm',
+      title: 'Clear stored notifications?',
+      message: 'This removes only the raw alerts kept on this phone.',
+      confirmLabel: 'Clear all',
+      cancelLabel: 'Keep them',
+      destructive: true,
+    });
+    if (confirmed) clearAll();
   }, [clearAll]);
 
   return (

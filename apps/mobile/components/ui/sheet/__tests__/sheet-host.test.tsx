@@ -12,7 +12,7 @@ jest.mock('react-native-safe-area-context', () => ({
   useSafeAreaInsets: () => ({ top: 48, bottom: 24, left: 0, right: 0 }),
 }));
 jest.mock('react-native-reanimated', () => ({
-  ...require('react-native-reanimated/mock'),
+  ...jest.requireActual<object>('react-native-reanimated/mock'),
   useReducedMotion: () => false,
   useAnimatedKeyboard: () => ({ height: { get: () => 0 }, state: { get: () => 0 } }),
 }));

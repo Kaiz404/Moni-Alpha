@@ -23,6 +23,7 @@ import {
   type MinorAmount,
 } from '@/lib/finance/money';
 import { Button } from '@/components/ui/button';
+import { openSheet } from '@/lib/sheet/sheet-store';
 import { tid } from '@/lib/test-ids';
 import { Page } from '@/components/ui/page';
 
@@ -149,24 +150,20 @@ export default function DebtDetailScreen() {
       setSaving(false);
     }
   };
-  const writeOff = () =>
-    Alert.alert(
-      'Write off debt?',
-      `This records ${money(debt.currency, balance)} as non-cash settled.`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Write off',
-          style: 'destructive',
-          onPress: () =>
-            writeOffDebt(debt)
-              .then(load)
-              .catch((error) =>
-                Alert.alert('Could not write off', error.message),
-              ),
-        },
-      ],
-    );
+  const writeOff = async () => {
+    const confirmed = await openSheet({
+      kind: 'confirm',
+      title: 'Write off this debt?',
+      message: `This records ${money(debt.currency, balance)} as settled without money moving.`,
+      confirmLabel: 'Write off',
+      cancelLabel: 'Keep it',
+      destructive: true,
+    });
+    if (!confirmed) return;
+    writeOffDebt(debt)
+      .then(load)
+      .catch((error) => Alert.alert('Could not write off', error.message));
+  };
   return (
     <Page
       screen="debts"
@@ -311,21 +308,17 @@ export default function DebtDetailScreen() {
             <Pressable
               testID={tid('debts', 'remove', item.id)}
               className="mt-2 self-start"
-              onPress={() =>
-                Alert.alert(
-                  'Remove activity?',
-                  'The linked wallet transaction will also be removed.',
-                  [
-                    { text: 'Cancel', style: 'cancel' },
-                    {
-                      text: 'Remove',
-                      style: 'destructive',
-                      onPress: () =>
-                        deleteDebtActivity(debt, item.id).then(load),
-                    },
-                  ],
-                )
-              }
+              onPress={async () => {
+                const confirmed = await openSheet({
+                  kind: 'confirm',
+                  title: 'Remove this activity?',
+                  message: 'Its wallet transaction goes too.',
+                  confirmLabel: 'Remove',
+                  cancelLabel: 'Keep it',
+                  destructive: true,
+                });
+                if (confirmed) void deleteDebtActivity(debt, item.id).then(load);
+              }}
             >
               <Text className="text-sm text-expense">Remove</Text>
             </Pressable>

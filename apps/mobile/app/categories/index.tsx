@@ -1,4 +1,4 @@
-import { Alert, Pressable, ScrollView, View } from 'react-native';
+import { Pressable, ScrollView, View } from 'react-native';
 import { Text } from '@/components/ui/text';
 import { router } from 'expo-router';
 import { useValue } from '@legendapp/state/react';
@@ -12,6 +12,7 @@ import {
   restoreCategory,
 } from '@/lib/supabase/categories';
 import { HeaderIconButton } from '@/components/ui/header-icon-button';
+import { openSheet } from '@/lib/sheet/sheet-store';
 import { tid } from '@/lib/test-ids';
 import { Page } from '@/components/ui/page';
 
@@ -24,19 +25,16 @@ export default function CategoriesScreen() {
     (category) => !category.isActive && category.userId === user?.id,
   );
 
-  const archive = (id: string, name: string) => {
-    Alert.alert(
-      'Archive category?',
-      `${name} will be hidden from new transactions and budgets.`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Archive',
-          style: 'destructive',
-          onPress: () => void archiveCategory(id),
-        },
-      ],
-    );
+  const archive = async (id: string, name: string) => {
+    const confirmed = await openSheet({
+      kind: 'confirm',
+      title: `Archive ${name}?`,
+      message: 'It is hidden from new transactions and budgets.',
+      confirmLabel: 'Archive',
+      cancelLabel: 'Keep it',
+      destructive: true,
+    });
+    if (confirmed) void archiveCategory(id);
   };
 
   const section = (type: 'expense' | 'income', title: string) => (
