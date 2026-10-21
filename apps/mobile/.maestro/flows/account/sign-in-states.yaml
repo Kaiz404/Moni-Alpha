@@ -1,0 +1,60 @@
+# K1 sign-in states: mode toggle, password reveal, wrong details, Google did not finish.
+# Starts signed out. Ends signed in through the sign-in subflow.
+# Run: scripts/device/with-device.sh --lane k1 -- maestro test -e E2E_EMAIL=... -e E2E_PASSWORD=... .maestro/flows/account/sign-in-states.yaml
+appId: com.anonymous.moni.e2e
+name: K1 sign-in states
+tags:
+  - k1
+---
+- launchApp
+- extendedWaitUntil:
+    visible:
+      id: auth.email
+    timeout: 15000
+- assertVisible: Welcome back
+
+# Create account shows the name field and the 8-character hint.
+- tapOn:
+    id: auth.mode.create-account
+- assertVisible: Start with a clearer view
+- assertVisible:
+    id: auth.name
+- assertVisible: At least 8 characters
+- tapOn:
+    id: auth.swap-mode
+- assertVisible: Welcome back
+- assertNotVisible:
+    id: auth.name
+
+# A wrong password shows the wrong-details line and stays on the page.
+- tapOn:
+    id: auth.email
+- inputText: ${E2E_EMAIL}
+- tapOn:
+    id: auth.password
+- inputText: not-the-password
+- tapOn:
+    id: auth.password.reveal
+- assertVisible: not-the-password
+- hideKeyboard
+- tapOn:
+    id: auth.sign-in
+- extendedWaitUntil:
+    visible: "That email and password don't match. Check both and try again."
+    timeout: 15000
+- assertVisible:
+    id: auth.email
+- takeScreenshot: k1-l6-wrong
+
+# Pressing back in the Google sheet shows the did-not-finish state.
+- tapOn:
+    id: auth.continue-with-google
+- waitForAnimationToEnd
+- pressKey: Back
+- extendedWaitUntil:
+    visible: "Google sign-in didn't finish. Try again, or use your email and a password."
+    timeout: 15000
+- takeScreenshot: k1-l8-google-cancel
+
+- runFlow: ../../subflows/sign-in.yaml
+- takeScreenshot: k1-l1-signed-in

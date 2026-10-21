@@ -1,0 +1,25 @@
+# Signs in with email and password from a signed-out e2e build.
+# Pass E2E_EMAIL and E2E_PASSWORD with maestro test -e.
+appId: com.anonymous.moni.e2e
+---
+- extendedWaitUntil:
+    visible:
+      id: auth.email
+    timeout: 15000
+- tapOn:
+    id: auth.mode.sign-in
+- tapOn:
+    id: auth.email
+- eraseText: 80
+- inputText: ${E2E_EMAIL}
+- tapOn:
+    id: auth.password
+- eraseText: 80
+- inputText: ${E2E_PASSWORD}
+- hideKeyboard
+- tapOn:
+    id: auth.sign-in
+- extendedWaitUntil:
+    visible:
+      id: home.avatar
+    timeout: 20000

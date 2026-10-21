@@ -79,7 +79,7 @@ Checked 21 Oct 2026. These need data or product work before their screens can be
 | Source tile (Manual, Voice, Moni, Notification, Camera) | `transactions.metadata.source`, written at every creation site; older rows have none and read as Manual | Voice and live-camera approvals write their own source (C2); the tile (A2) |
 | Merchant names | `merchant_aliases` (`nameMerchant`); `merchantName(raw, aliases)` in `lib/finance/merchant-name.ts` resolves a row's name | Rows on Home, Activity, wallet pages and Review read names through it; the Merchant names page (K3) |
 | Balance correction | `createBalanceCorrection` writes the "Balance adjustment" with `analysisExcluded` and `metadata.kind: balance_correction` | UI per `V2H-WalletDetail` (K2) |
-| Main currency | `preferences.currency` (default `MYR`), read by `useMainCurrency()` | Setting UI and focused-page filtering |
+| Main currency | `preferences.currency` (default `MYR`), read by `useMainCurrency()`, set from Profile (K1) | Focused-page filtering |
 | Per-app "Record where I spend" | `wallets.record_location`; the headless listener skips the location snapshot for an app whose linked wallets all have it off | The Capture sources toggle (K3) |
 | Capture log statuses | Stored on each capture log entry (`capturedNotificationStatusSchema`, `lib/notifications/capture-status.core.js`); older entries read as Ignored | The Capture log (K3) reads the stored status; v2 wording |
 | Review history, Not mine / Later | `laterProposedTransaction` snoozes (`later`, `snoozed_until`); approve and Not mine stamp `approved` / `rejected` before the soft delete | The card deck (R1); whether to show history stays an owner decision |

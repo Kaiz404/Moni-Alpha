@@ -1,0 +1,87 @@
+# K1 Profile: rows in board order, main currency, appearance, the rows that open pages, sign out.
+# Needs a signed-in e2e build with the default seed. Signs out at the end and back in.
+# Run: scripts/device/with-device.sh --lane k1 -- maestro test -e E2E_EMAIL=... -e E2E_PASSWORD=... .maestro/flows/account/profile.yaml
+appId: com.anonymous.moni.e2e
+name: K1 Profile
+tags:
+  - k1
+  - needs-default-seed
+---
+- launchApp
+- extendedWaitUntil:
+    visible:
+      id: home.avatar
+    timeout: 15000
+- tapOn:
+    id: home.avatar
+- assertVisible:
+    id: profile.back
+- assertVisible:
+    id: profile.main-currency
+- assertVisible: APPEARANCE
+- assertVisible: MONEY
+- assertNotVisible: Budgets
+- takeScreenshot: k1-l2-pair
+
+# Main currency opens the currency sheet; picking SGD writes it, MYR puts it back.
+- tapOn:
+    id: profile.main-currency
+- assertVisible: Currency
+- tapOn: SGD · Singapore Dollar
+- assertVisible:
+    text: SGD
+    below:
+      id: profile.back
+- takeScreenshot: k1-l3-sgd
+- tapOn:
+    id: profile.main-currency
+- tapOn: MYR · Malaysian Ringgit
+- assertVisible: MYR
+
+# Appearance switches to dark and back to light.
+- tapOn:
+    id: profile.appearance.dark
+- takeScreenshot: k1-l4-dark
+- tapOn:
+    id: profile.appearance.light
+
+# Each MONEY and CAPTURE SOURCES row opens a page.
+- tapOn:
+    id: profile.row.categories
+- pressKey: Back
+- assertVisible:
+    id: profile.main-currency
+- tapOn:
+    id: profile.row.merchant-names
+- pressKey: Back
+- scrollUntilVisible:
+    element:
+      id: profile.row.bank-notifications
+- tapOn:
+    id: profile.row.bank-notifications
+- pressKey: Back
+- scrollUntilVisible:
+    element:
+      id: profile.row.capture-log
+- tapOn:
+    id: profile.row.capture-log
+- pressKey: Back
+- takeScreenshot: k1-l9-rows
+
+# The e2e build is a release build: no debug row.
+- scrollUntilVisible:
+    element:
+      id: profile.sign-out
+- assertNotVisible:
+    id: profile.row.debug
+- takeScreenshot: k1-l10-no-debug
+
+- tapOn:
+    id: profile.sign-out
+- extendedWaitUntil:
+    visible:
+      id: auth.email
+    timeout: 15000
+- assertVisible: Welcome back
+- takeScreenshot: k1-l5-signed-out
+- runFlow: ../../subflows/sign-in.yaml

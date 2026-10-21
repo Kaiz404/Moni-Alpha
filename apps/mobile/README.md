@@ -159,7 +159,13 @@ Wallet cards render `SolidWalletCard` with clean, Figma-aligned pastel fills dri
 
 Appearance: Profile → Appearance (`light` default; `system` follows the device). Persisted in MMKV via `lib/theme/preference.ts`.
 
-Default wallet: Profile → Default wallet. Synced in `profiles.preferences.default_wallet_id`; cached locally for background AI. Text/receipt proposals use this wallet when AI cannot infer one (receipts always). Currency on proposals follows the selected wallet — change wallet in review to change currency.
+Main currency: Profile → Main currency opens the `currency` sheet; `components/profile/main-currency-row.tsx` sets `profilePreferences$` at once and writes `preferences.currency` through `updateProfilePreferences`, restoring the old value if the write fails. `useMainCurrency()` reads it.
+
+Export data: Profile → Export data builds a CSV with `transactionsCsv` (`lib/transactions/export-csv.ts`) and writes `moni-YYYY-MM-DD.csv` to a folder the user picks through Android's file picker (`Directory.pickDirectoryAsync`).
+
+Sign in: `app/(auth)/login.tsx` holds sign in and account creation; `lib/auth/login-mode.ts` is the pure reducer that maps Supabase errors to the page's states (`Invalid login credentials` → wrong details, network failures → offline, a closed Google sheet → Google did not finish). The `handle_new_user` trigger creates the profile row on sign-up. `.maestro/subflows/sign-in.yaml` signs in with `E2E_EMAIL` and `E2E_PASSWORD`.
+
+Default wallet: synced in `profiles.preferences.default_wallet_id`; cached locally for background AI. Text/receipt proposals use this wallet when AI cannot infer one (receipts always). Profile has no picker for it since v2. Currency on proposals follows the selected wallet — change wallet in review to change currency.
 
 **Home tab:** horizontal compact wallet strip (~2.5 cards visible); the header plus opens wallet creation. The view is driven by narrow finance selectors, so each wallet card observes only its wallet and balance; tap a card to open it. **Budget tab:** wallet chips multi-select the wallets included in spending, trend, and activity charts; **All wallets** resets the aggregate view. Mixed currencies: totals, pies, and history remain separate per currency.
 

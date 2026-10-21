@@ -481,9 +481,13 @@ Vary composition across insight screens; do not duplicate the Home layout with m
 4. Composer with text/voice access.
 5. Consequential output enters the standard review experience.
 
-### Profile
+### Profile (v2, `V2H-Profile`)
 
-Use grouped settings cells, not dashboard cards. Organize into Accounts & wallets, Currencies, Categories, Capture sources, Privacy & local data, Appearance, and Accessibility.
+Grouped settings rows, not dashboard cards, in board order: the account (Mint initial, name, email and "Google" for a Google account), **Main currency** (opens the currency sheet, writes `preferences.currency`, with the note that focused pages show only it), APPEARANCE (Light, Dark, System), MONEY (Wallets, Categories, Merchant names), CAPTURE SOURCES with **Set up** (Bank notifications, Location, Camera, Microphone, each with On, Off or Not set up), PRIVACY AND DATA (Capture log, Export data as a CSV), then **Sign out**. Rows carry a 13 meta line and light pastel bubbles (`components/profile/profile-row.tsx`). Profile has no Budgets or Debts row. A Debug panel row shows only in development builds.
+
+### Sign in (v2, `V2H-Login`)
+
+One page for both modes: the "Moni" word and "Know what's safe to spend.", a Sign in / Create account toggle, the fields (Name only when creating an account, Email, Password with a reveal), the Ink primary, "or", the Sand **Continue with Google**, and a link that swaps the mode. One state at a time: wrong details (Over border and line under the fields), Confirm your email (Lilac card after creating an account), Google sign-in didn't finish (Lemon), and offline (outline). No logo mark (D3).
 
 ### Where you spend (v2, `XM-Places`, `XM-Detail`, `XM-Empty`)
 
