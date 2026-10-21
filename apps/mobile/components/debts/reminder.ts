@@ -36,6 +36,8 @@ export function reminderMessage(line: DebtLine, now = new Date()): string {
 /** D5: Moni can't send messages, so Remind hands a prefilled one to the Android share sheet. */
 export async function sendReminder(line: DebtLine): Promise<void> {
   const result = await Share.share({ message: reminderMessage(line) });
+  // Android resolves sharedAction even when the sheet is closed, so a
+  // cancelled share there still counts as reminded today.
   if (result.action === Share.dismissedAction) return;
   preferencesMMKV.set(KEY + line.debt.id, toLocalDateInput(new Date()));
   version += 1;

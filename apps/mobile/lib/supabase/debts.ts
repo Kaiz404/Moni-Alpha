@@ -132,6 +132,10 @@ export async function getDebtById(id: string): Promise<Debt | null> {
 export async function getDebtActivities(debtId?: string): Promise<DebtActivity[]> {
   const userId = await getUserId();
   if (!userId) return [];
+  return activitiesOf(userId, debtId);
+}
+
+function activitiesOf(userId: string, debtId?: string): DebtActivity[] {
   return getRecordValues<ActivityRow>(debtActivities$)
     .filter((row) => row.user_id === userId && (!debtId || row.debt_id === debtId))
     .map(mapActivity)
@@ -189,7 +193,10 @@ async function addActivity(
 ): Promise<DebtActivity> {
   if (!Number.isSafeInteger(data.amountMinor) || data.amountMinor <= 0)
     throw new Error('Amount must be positive');
-  const activities = await getDebtActivities(debt.id);
+  const userId = await getUserId();
+  if (!userId) throw new Error('Not authenticated');
+  // No await from this read to the batch below, so two quick taps can't both pass the balance check.
+  const activities = activitiesOf(userId, debt.id);
   const currentBalance = outstandingDebtBalance(activities);
   if ((data.kind === 'repayment' || data.kind === 'write_off') && data.amountMinor > currentBalance)
     throw new Error('Amount cannot exceed the outstanding balance');
@@ -198,8 +205,6 @@ async function addActivity(
   if (data.kind !== 'write_off' && !data.walletId) throw new Error('Select a wallet');
   if (data.walletId && walletCurrency(data.walletId) !== debt.currency)
     throw new Error(`Select a ${debt.currency} wallet`);
-  const userId = await getUserId();
-  if (!userId) throw new Error('Not authenticated');
   const now = new Date().toISOString();
   const id = randomUUID();
   const cashTransactionId = data.kind === 'write_off' ? null : randomUUID();

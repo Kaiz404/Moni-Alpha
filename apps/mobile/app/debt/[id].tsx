@@ -1,5 +1,5 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import { useCallback, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { ScrollView, View } from 'react-native';
 
 import { DebtHistory } from '@/components/debt/debt-history';
@@ -14,7 +14,7 @@ import {
 } from '@/components/debt/due-date-sheet';
 import { InlineEdit, Pencil } from '@/components/debt/inline-edit';
 import { useDebtWallets } from '@/components/debts/debt-wallets';
-import { SIDE_WORDS } from '@/components/debts/debt-words';
+import { dueWords, SIDE_WORDS } from '@/components/debts/debt-words';
 import { PersonAvatar } from '@/components/debts/person-avatar';
 import {
   sendReminder,
@@ -117,10 +117,12 @@ function DebtPage({
   const [editing, setEditing] = useState<Editing>(null);
   const [dueOpen, setDueOpen] = useState(false);
   const closeDue = useCallback(() => setDueOpen(false), []);
+  const settling = useRef(false);
   const open = state === 'open';
   const money = (minor: number) => formatMoney(minor, currency);
 
   const settle = async () => {
+    if (settling.current) return;
     const walletId =
       activities.find((activity) =>
         wallets.some((wallet) => wallet.id === activity.walletId),
@@ -133,6 +135,7 @@ function DebtPage({
       return;
     }
     approve();
+    settling.current = true;
     try {
       const stored = await getDebtById(id);
       if (!stored) throw new Error('This debt is gone');
@@ -147,6 +150,8 @@ function DebtPage({
       });
     } catch (error) {
       failed(error);
+    } finally {
+      settling.current = false;
     }
   };
 
@@ -178,7 +183,7 @@ function DebtPage({
     ? daysUntil(debt.dueDate, new Date())
     : null;
   const dueText = debt.dueDate
-    ? `${dueLabel(debt.dueDate)}${days !== null && days >= 0 ? ` · in ${days} ${days === 1 ? 'day' : 'days'}` : ''}`
+    ? `${dueLabel(debt.dueDate)}${days === null ? '' : ` · ${dueWords(days).toLowerCase()}`}`
     : 'No date';
 
   return (

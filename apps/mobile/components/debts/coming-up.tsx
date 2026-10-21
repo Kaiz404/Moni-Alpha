@@ -1,7 +1,7 @@
 import { router } from 'expo-router';
 import { View } from 'react-native';
 
-import { dueWords } from '@/components/debts/debt-words';
+import { debtMoney, dueWords } from '@/components/debts/debt-words';
 import {
   sendReminder,
   useRemindedToday,
@@ -12,7 +12,6 @@ import { Text } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { parseLocalDateInput } from '@/lib/dates/local-date-input';
 import type { ComingUpRow } from '@/lib/finance/debt-summary';
-import { formatMoney } from '@/lib/finance/format-money';
 import { tid } from '@/lib/test-ids';
 
 const WEEKDAYS = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
@@ -61,9 +60,7 @@ function Row({
     currency,
   } = line.debt;
   const due = parseLocalDateInput(dueDate);
-  const amount = formatMoney(line.balanceMinor, currency, {
-    whole: true,
-  });
+  const amount = debtMoney(line.balanceMinor, currency);
   const iOwe = direction === 'i_owe';
   const title = iOwe
     ? `Pay ${name} ${amount}`

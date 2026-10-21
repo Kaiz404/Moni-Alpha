@@ -1,6 +1,6 @@
 import { View } from 'react-native';
 
-import { SIDE_WORDS } from '@/components/debts/debt-words';
+import { debtMoney, SIDE_WORDS } from '@/components/debts/debt-words';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Press } from '@/components/ui/press';
 import { Text } from '@/components/ui/text';
@@ -9,7 +9,6 @@ import type {
   DebtSide,
   DebtSummary,
 } from '@/lib/finance/debt-summary';
-import { formatMoney } from '@/lib/finance/format-money';
 import { tid } from '@/lib/test-ids';
 
 const TILES = [
@@ -37,7 +36,9 @@ export function NetPosition({
       ? 'Overall, you are owed'
       : netMinor < 0
         ? 'Overall, you owe'
-        : 'Everyone is square';
+        : summary.owedToMeMinor > 0
+          ? 'Overall, you are even'
+          : 'Everyone is square';
   const totals = {
     owed_to_me: summary.owedToMeMinor,
     i_owe: summary.iOweMinor,
@@ -61,7 +62,7 @@ export function NetPosition({
           numberOfLines={1}
           adjustsFontSizeToFit
         >
-          {formatMoney(Math.abs(netMinor), currency, { whole: true })}
+          {debtMoney(Math.abs(netMinor), currency)}
         </Text>
       </View>
       <View className="flex-row gap-2">
@@ -70,9 +71,7 @@ export function NetPosition({
           const ink = on
             ? tokens.primaryForeground
             : tokens.foreground;
-          const amount = formatMoney(totals[side], currency, {
-            whole: true,
-          });
+          const amount = debtMoney(totals[side], currency);
           return (
             <Press
               key={side}

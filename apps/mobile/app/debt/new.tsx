@@ -118,7 +118,10 @@ export default function NewDebtScreen() {
           note,
         });
       }
-      showToast({ text: words.saved(who, amount) });
+      const owed = existing
+        ? formatMoney(existing.balanceMinor + amountMinor, currency)
+        : amount;
+      showToast({ text: words.saved(who, owed) });
       resetNewDebtDraft();
       router.back();
     } catch (error) {

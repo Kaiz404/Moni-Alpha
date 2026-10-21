@@ -28,22 +28,34 @@ function dueChoices(
   now: Date,
   current: string | null,
 ): { id: string; name: string; meta: string }[] {
-  const day = (offsetDays: number, offsetMonths = 0) =>
-    toLocalDateInput(
-      new Date(
-        now.getFullYear(),
-        now.getMonth() + offsetMonths,
-        now.getDate() + offsetDays,
+  const y = now.getFullYear();
+  const m = now.getMonth();
+  const daysIn = (month: number) =>
+    new Date(y, month + 1, 0).getDate();
+  const today = toLocalDateInput(now);
+  const candidates = [
+    {
+      id: toLocalDateInput(new Date(y, m, now.getDate() + 7)),
+      name: 'In a week',
+    },
+    {
+      id: toLocalDateInput(new Date(y, m, daysIn(m))),
+      name: 'End of month',
+    },
+    {
+      id: toLocalDateInput(
+        new Date(y, m + 1, Math.min(now.getDate(), daysIn(m + 1))),
       ),
-    );
-  const endOfMonth = toLocalDateInput(
-    new Date(now.getFullYear(), now.getMonth() + 1, 0),
-  );
-  const dated = [
-    { id: day(7), name: 'In a week' },
-    { id: endOfMonth, name: 'End of month' },
-    { id: day(0, 1), name: 'In a month' },
+      name: 'In a month',
+    },
   ];
+  const dated: { id: string; name: string }[] = [];
+  for (const choice of candidates)
+    if (
+      choice.id !== today &&
+      !dated.some((seen) => seen.id === choice.id)
+    )
+      dated.push(choice);
   if (current && !dated.some((choice) => choice.id === current))
     dated.unshift({ id: current, name: 'As agreed' });
   return [

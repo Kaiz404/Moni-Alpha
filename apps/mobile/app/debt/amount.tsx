@@ -58,7 +58,9 @@ function NewDebtAmount() {
   const currency = useMainCurrency();
   const [typed, setTyped] = useState(draft.amount);
   const amountMinor = typedMinor(typed);
-  const name = draft.name.trim() || 'They';
+  const name =
+    draft.name.trim() ||
+    (draft.direction === 'i_owe' ? 'them' : 'They');
   const words = SIDE_WORDS[draft.direction];
   return (
     <AmountPage
@@ -136,9 +138,12 @@ function DebtMoneyForm({
     setTyped(minor > 0 ? minorToDecimal(minor) : '');
     setPrefilled(minor > 0);
   };
-  const [walletId, setWalletId] = useState(
-    usual ?? wallets[0]?.id ?? null,
-  );
+  const [chosenWalletId, setWalletId] = useState<string | null>(null);
+  const walletId =
+    wallets.find((item) => item.id === chosenWalletId)?.id ??
+    usual ??
+    wallets[0]?.id ??
+    null;
   const [note, setNote] = useState('');
   const [saving, setSaving] = useState(false);
 

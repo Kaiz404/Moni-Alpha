@@ -1,3 +1,4 @@
+import { formatMoney } from '@/lib/finance/format-money';
 import type { DebtSide } from '@/lib/finance/debt-summary';
 
 /**
@@ -76,4 +77,9 @@ export function dueWords(daysLeft: number): string {
   if (daysLeft === 1) return 'Tomorrow';
   if (daysLeft === 0) return 'Today';
   return daysLeft === -1 ? '1 day late' : `${-daysLeft} days late`;
+}
+
+/** Money on the Debts tab: "RM110" when it is whole ringgit, "RM25.50" when it is not. */
+export function debtMoney(minor: number, currency: string): string {
+  return formatMoney(minor, currency, { whole: minor % 100 === 0 });
 }
