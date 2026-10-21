@@ -13,6 +13,7 @@ import { MaterialDesignIcons } from '@react-native-vector-icons/material-design-
 
 import { ActivityCalendar } from '@/components/charts/activity-calendar';
 import { BudgetProgressItem } from '@/components/budgets/budget-progress-item';
+import { Chip } from '@/components/ui/chip';
 import {
   buildMonthlyTakeaway,
   previousMonthKey,
@@ -295,33 +296,19 @@ export default function InsightsScreen() {
               className="mb-5 -mx-5"
               contentContainerClassName="gap-2 px-5"
             >
-              {currencies.map((item) => {
-                const active = item === currency;
-                return (
-                  <Pressable
-                    testID={tid(
-                      'budget',
-                      'set-currency-preference',
-                      item,
-                    )}
-                    key={item}
-                    className={`min-h-11 rounded-full px-4 py-2.5 ${active ? 'bg-primary' : 'bg-card'}`}
-                    onPress={() => {
-                      setCurrencyPreference(item);
-                      setSelectedDate(null);
-                      setSelectedBudget(null);
-                    }}
-                    accessibilityRole="tab"
-                    accessibilityState={{ selected: active }}
-                  >
-                    <Text
-                      className={`font-display-semibold ${active ? 'text-primary-foreground' : 'text-foreground'}`}
-                    >
-                      {item}
-                    </Text>
-                  </Pressable>
-                );
-              })}
+              {currencies.map((item) => (
+                <Chip
+                  key={item}
+                  testID={tid('budget', 'set-currency-preference', item)}
+                  label={item}
+                  selected={item === currency}
+                  onPress={() => {
+                    setCurrencyPreference(item);
+                    setSelectedDate(null);
+                    setSelectedBudget(null);
+                  }}
+                />
+              ))}
             </ScrollView>
 
             <View className="mb-6">
