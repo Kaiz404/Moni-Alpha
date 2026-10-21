@@ -105,7 +105,7 @@ export default function CategoriesScreen() {
                 </Text>
                 {custom ? (
                   <HeaderIconButton
-                    testID={tid('activity', 'archive')}
+                    testID={tid('activity', 'archive', category.id)}
                     accessibilityLabel={`Archive ${category.name}`}
                     icon="archive-outline"
                     onPress={() =>

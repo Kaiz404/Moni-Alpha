@@ -177,7 +177,7 @@ export default function TransactionsScreen() {
               </View>
             </SolidWalletCard>
           ) : (
-            <View className="rounded-card bg-card p-4">
+            <View className="rounded-card bg-card p-4 overflow-hidden">
               <Text className="font-display-semibold text-foreground">
                 {rows.length} transactions
               </Text>
@@ -289,7 +289,7 @@ export default function TransactionsScreen() {
                   </View>
                   <View className="items-end">
                     <Pressable
-                      testID={tid('activity', 'remove')}
+                      testID={tid('activity', 'remove', row.id)}
                       hitSlop={8}
                       onPress={() => remove(row.id)}
                     >

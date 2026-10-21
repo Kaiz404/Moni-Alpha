@@ -93,7 +93,7 @@ export function DefaultWalletPicker() {
 
   if (loading) {
     return (
-      <View className="rounded-card bg-card mb-2 items-center justify-center py-6">
+      <View className="rounded-card bg-card mb-2 items-center justify-center py-6 overflow-hidden">
         <ActivityIndicator color={tokens.primary} />
       </View>
     );
@@ -101,7 +101,7 @@ export function DefaultWalletPicker() {
 
   if (wallets.length === 0) {
     return (
-      <View className="rounded-card bg-card mb-2 px-4 py-4">
+      <View className="rounded-card bg-card mb-2 px-4 py-4 overflow-hidden">
         <Text className="text-sm text-muted">
           Add a wallet first to set a default.
         </Text>

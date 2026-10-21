@@ -373,7 +373,7 @@ export default function EditWalletScreen() {
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
           >
-            <View className="rounded-card bg-card">
+            <View className="rounded-card bg-card overflow-hidden">
               <Text className="mb-2 text-base font-display-semibold text-foreground">
                 Current balance
               </Text>
@@ -393,7 +393,7 @@ export default function EditWalletScreen() {
               </Text>
             </View>
 
-            <View className="rounded-card bg-card mt-6">
+            <View className="rounded-card bg-card mt-6 overflow-hidden">
               <View className="flex-row gap-3">
                 <FormField
                   testID={tid('wallet', 'wallet-name')}
@@ -433,7 +433,7 @@ export default function EditWalletScreen() {
             <Text className="mt-8 text-base font-display-bold text-foreground">
               Color
             </Text>
-            <View className="rounded-card bg-sand mt-3">
+            <View className="rounded-card bg-sand mt-3 overflow-hidden">
               <TouchableOpacity
                 accessibilityLabel="Choose wallet color"
                 activeOpacity={0.82}
@@ -458,7 +458,7 @@ export default function EditWalletScreen() {
             <Text className="mt-8 text-base font-display-bold text-foreground">
               Notification link
             </Text>
-            <View className="rounded-card bg-sand">
+            <View className="rounded-card bg-sand overflow-hidden">
               <WalletNotificationLinkSection
                 value={notificationLink}
                 onChange={handleNotificationLinkChange}

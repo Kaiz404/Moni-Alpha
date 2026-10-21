@@ -71,7 +71,7 @@ export function TransactionDetailsSheetContent({
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        <View className="rounded-card bg-card p-4">
+        <View className="rounded-card bg-card p-4 overflow-hidden">
           {!isTransfer ? (
             <FormField
               testID={tid('txn', 'merchant')}
@@ -110,7 +110,7 @@ export function TransactionDetailsSheetContent({
 
         {!isTransfer ? (
           locationLoading ? (
-            <View className="rounded-card bg-sand mt-4 flex-row items-center gap-3 p-4">
+            <View className="rounded-card bg-sand mt-4 flex-row items-center gap-3 p-4 overflow-hidden">
               <ActivityIndicator
                 size="small"
                 color={tokens.primary}
@@ -120,14 +120,14 @@ export function TransactionDetailsSheetContent({
               </Text>
             </View>
           ) : locationUnavailable || !value.locationSnapshot ? (
-            <View className="rounded-card bg-sand mt-4 p-4">
+            <View className="rounded-card bg-sand mt-4 p-4 overflow-hidden">
               <Text className="text-sm leading-5 text-muted">
                 Location unavailable. Enable location access to attach
                 this transaction to where you are now.
               </Text>
             </View>
           ) : (
-            <View className="rounded-card bg-card mt-4 p-4">
+            <View className="rounded-card bg-card mt-4 p-4 overflow-hidden">
               <TouchableOpacity
                 className="flex-row items-center justify-between py-1"
                 onPress={() => setMapExpanded(!mapExpanded)}
@@ -181,7 +181,7 @@ export function TransactionDetailsSheetContent({
             </View>
           )
         ) : (
-          <View className="rounded-card bg-sand mt-4 p-4">
+          <View className="rounded-card bg-sand mt-4 p-4 overflow-hidden">
             <Text className="text-sm leading-5 text-muted">
               Transfers move money between your wallets without
               changing your overall net worth.

@@ -91,7 +91,7 @@ export function ConfirmBalanceCard({
                 </View>
                 <View className="mt-3 flex-row gap-2">
                   <Button
-                    testID={tid('wallet', 'yes-thats-right')}
+                    testID={tid('wallet', 'confirm', wallet.id)}
                     className="flex-1"
                     variant="secondary"
                     label="Yes, that’s right"
@@ -102,7 +102,7 @@ export function ConfirmBalanceCard({
                     }}
                   />
                   <Button
-                    testID={tid('wallet', 'fix-it')}
+                    testID={tid('wallet', 'fix', wallet.id)}
                     variant="secondary"
                     label="Fix it"
                     accessibilityLabel={`Fix the ${wallet.name} balance`}

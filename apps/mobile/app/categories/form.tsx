@@ -182,7 +182,7 @@ export default function CategoryFormScreen() {
               Preview
             </Text>
             <View
-              className="rounded-card bg-card mt-3"
+              className="rounded-card bg-card mt-3 overflow-hidden"
               style={{ backgroundColor: `${color}33` }}
             >
               <BudgetProgressItem
@@ -191,7 +191,7 @@ export default function CategoryFormScreen() {
               />
             </View>
 
-            <View className="rounded-card bg-card mt-6">
+            <View className="rounded-card bg-card mt-6 overflow-hidden">
               <FormField
                 testID={tid('activity', 'category-name')}
                 autoCapitalize="words"
@@ -209,7 +209,7 @@ export default function CategoryFormScreen() {
             <Text className="mt-4 text-base font-display-bold text-foreground">
               Icon
             </Text>
-            <View className="rounded-card bg-sand mt-3 p-3">
+            <View className="rounded-card bg-sand mt-3 p-3 overflow-hidden">
               <ScrollView
                 horizontal
                 decelerationRate="fast"
@@ -263,7 +263,7 @@ export default function CategoryFormScreen() {
             <Text className="mt-4 text-base font-display-bold text-foreground">
               Color
             </Text>
-            <View className="rounded-card bg-sand mt-3 p-3">
+            <View className="rounded-card bg-sand mt-3 p-3 overflow-hidden">
               <ScrollView
                 horizontal
                 decelerationRate="fast"

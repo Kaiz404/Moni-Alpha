@@ -111,7 +111,11 @@ export function ChatInputBar({
         {showMicMode ? (
           <Press
             testID={tid('chat', 'mic')}
-            pressedClassName="bg-primary-pressed"
+            pressedClassName={
+              isSpeechRecognizing
+                ? 'bg-transparent'
+                : 'bg-primary-pressed'
+            }
             className="h-11 w-11 items-center justify-center rounded-full"
             style={{
               backgroundColor: isSpeechRecognizing

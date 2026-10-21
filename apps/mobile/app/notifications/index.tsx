@@ -74,7 +74,7 @@ function NotificationRow({
               </Text>
             </View>
             <HeaderIconButton
-              testID={tid('profile', 'dismiss-notification')}
+              testID={tid('profile', 'dismiss-notification', item.id)}
               accessibilityLabel="Dismiss notification"
               icon="close"
               onPress={() => onDismiss(item.id)}

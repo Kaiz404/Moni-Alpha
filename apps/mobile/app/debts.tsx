@@ -71,7 +71,7 @@ export default function DebtsScreen() {
 
         {totals.length > 0 ? (
           <View
-            className={`rounded-card mt-6 p-5 ${owedToMe ? 'bg-sand-light' : 'bg-sand'}`}
+            className={`rounded-card mt-6 p-5 ${owedToMe ? 'bg-sand-light' : 'bg-sand'} overflow-hidden`}
           >
             <Text
               className={`text-sm font-display-semibold ${owedToMe ? 'text-primary' : 'text-warning'}`}
@@ -114,7 +114,7 @@ export default function DebtsScreen() {
                     router.push(`/debt/${debt.id}` as never)
                   }
                 >
-                  <View className="rounded-card bg-card p-4">
+                  <View className="rounded-card bg-card p-4 overflow-hidden">
                     <View className="flex-row items-start justify-between gap-3">
                       <View className="flex-1">
                         <Text

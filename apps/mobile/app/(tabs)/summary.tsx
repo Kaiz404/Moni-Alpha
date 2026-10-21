@@ -495,7 +495,7 @@ export default function InsightsScreen() {
                 </Pressable>
               </View>
               {selectedBudgetRows.length ? (
-                <View className="rounded-card bg-accent-lemon/30 px-4 py-1">
+                <View className="rounded-card bg-accent-lemon/30 px-4 py-1 overflow-hidden">
                   {selectedBudgetRows.map((row) => {
                     const rowKey = `${row.categoryId}:${row.currency}`;
                     const expanded = selectedBudget === rowKey;
@@ -546,7 +546,7 @@ export default function InsightsScreen() {
                   })}
                 </View>
               ) : (
-                <View className="rounded-card bg-sand px-5 py-6">
+                <View className="rounded-card bg-sand px-5 py-6 overflow-hidden">
                   <Text className="text-sm text-muted">
                     Set a budget or add a categorized expense to track
                     a pulse.
@@ -568,7 +568,7 @@ export default function InsightsScreen() {
                 />
               </View>
               {selectedDate ? (
-                <View className="rounded-card bg-sand mt-5 p-4">
+                <View className="rounded-card bg-sand mt-5 p-4 overflow-hidden">
                   <Text className="text-sm font-display-semibold text-foreground">
                     {new Intl.DateTimeFormat(undefined, {
                       weekday: 'long',
@@ -678,7 +678,7 @@ export default function InsightsScreen() {
               accessibilityRole="button"
               accessibilityLabel="Open transaction pinmap"
             >
-              <View className="rounded-card bg-accent-aqua/30 mb-2 flex-row items-center p-4">
+              <View className="rounded-card bg-accent-aqua/30 mb-2 flex-row items-center p-4 overflow-hidden">
                 <View className="h-11 w-11 items-center justify-center rounded-full bg-primary-muted">
                   <MaterialDesignIcons
                     name="map-marker"

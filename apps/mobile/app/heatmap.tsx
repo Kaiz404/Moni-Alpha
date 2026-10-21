@@ -135,7 +135,7 @@ export default function HeatmapScreen() {
         ))}
       </MapView>
 
-      <View className="rounded-card bg-sand-light absolute bottom-5 left-5 right-5 p-3">
+      <View className="rounded-card bg-sand-light absolute bottom-5 left-5 right-5 p-3 overflow-hidden">
         <Text className="mb-2 text-sm font-display-bold text-foreground">
           Pinmap
         </Text>

@@ -157,12 +157,23 @@ export function partsFor(element, fallback) {
     childText(element);
   const part =
     (words && kebab(words)) || handlerName(element) || fallback;
-  const key = attribute(element, 'key')?.initializer;
-  const keyExpression =
-    key && ts.isJsxExpression(key) && key.expression
-      ? key.expression.getText()
-      : null;
-  return { part, keyExpression };
+  return { part, keyExpression: nearestKey(element) };
+}
+
+// A control inside a keyed row repeats once per row, so it takes the row's key.
+function nearestKey(element) {
+  for (
+    let node = element;
+    node && !ts.isFunctionLike(node);
+    node = node.parent
+  ) {
+    if (!ts.isJsxElement(node) && !ts.isJsxSelfClosingElement(node))
+      continue;
+    const key = attribute(node, 'key')?.initializer;
+    if (key && ts.isJsxExpression(key) && key.expression)
+      return key.expression.getText();
+  }
+  return null;
 }
 
 /** Formats `tid('screen', 'part', key)`, making `part` unique within `used`. */

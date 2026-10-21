@@ -340,7 +340,7 @@ export default function EditTransactionScreen() {
             <Text className="text-2xl font-display-bold text-foreground">
               Edit transaction
             </Text>
-            <View className="rounded-card bg-sand mb-6 mt-4 p-4">
+            <View className="rounded-card bg-sand mb-6 mt-4 p-4 overflow-hidden">
               <Text className="text-xs font-display-semibold uppercase tracking-wide text-muted">
                 Date &amp; time
               </Text>
@@ -355,7 +355,7 @@ export default function EditTransactionScreen() {
             </View>
 
             {isTransfer ? (
-              <View className="rounded-card bg-sand-light mb-6 p-4">
+              <View className="rounded-card bg-sand-light mb-6 p-4 overflow-hidden">
                 <Text className="text-sm leading-5 text-foreground">
                   Transfer between your wallets — does not affect your
                   overall net worth.

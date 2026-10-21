@@ -177,13 +177,13 @@ export function ProposalSummarySheet() {
           </View>
 
           <Pressable
-            testID={tid('review', 'review')}
+            testID={tid('review', 'open-capture')}
             onPress={review}
             className="mt-5"
             accessibilityRole="button"
             accessibilityLabel={`Review ${title}`}
           >
-            <View className="rounded-card bg-sand flex-row items-start justify-between gap-3 px-4 py-4">
+            <View className="rounded-card bg-sand flex-row items-start justify-between gap-3 px-4 py-4 overflow-hidden">
               <View className="min-w-0 flex-1">
                 <Text className="text-xs font-display-semibold uppercase tracking-wide text-muted">
                   {direction} from{' '}

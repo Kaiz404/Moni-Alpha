@@ -162,7 +162,7 @@ export default function ProfileScreen() {
         showsVerticalScrollIndicator={false}
       >
         <View className="px-5">
-          <View className="rounded-card bg-accent-aqua/30 p-4">
+          <View className="rounded-card bg-accent-aqua/30 p-4 overflow-hidden">
             <View className="flex-row items-center">
               {user &&
               user.user_metadata &&

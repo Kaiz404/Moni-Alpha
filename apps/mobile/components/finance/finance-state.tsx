@@ -13,7 +13,7 @@ export function FinanceState({
 }: FinanceStateProps) {
   return (
     <View
-      className={`rounded-card ${variant === 'error' ? 'border-danger/40 bg-sand' : 'bg-card'}`}
+      className={`rounded-card ${variant === 'error' ? 'bg-danger/10' : 'bg-card'}`}
       accessibilityRole={variant === 'error' ? 'alert' : undefined}
     >
       <FeedbackState

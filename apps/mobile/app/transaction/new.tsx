@@ -2,7 +2,6 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Alert, Pressable, View } from 'react-native';
 import { Text } from '@/components/ui/text';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useValue } from '@legendapp/state/react';
 import { createTransactionSchema } from '@repo/types';
 
@@ -80,7 +79,6 @@ const transactionCopy: Record<TransactionKind, string> = {
 
 export default function NewTransactionScreen() {
   const { user } = useAuth();
-  const insets = useSafeAreaInsets();
   const tokens = useThemeTokens();
   const params = useLocalSearchParams<{
     walletId?: string | string[];
@@ -463,7 +461,7 @@ export default function NewTransactionScreen() {
     >
       <View
         className="flex-1 px-5"
-        style={{ paddingBottom: Math.max(insets.bottom, 12) }}
+        style={{ paddingBottom: 12 }}
       >
         <View className="mt-3 flex-row gap-2">
           {(['expense', 'income', 'transfer'] as const).map(

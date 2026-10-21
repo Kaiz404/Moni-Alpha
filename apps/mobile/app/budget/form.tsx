@@ -171,7 +171,7 @@ export default function BudgetFormScreen() {
         showsVerticalScrollIndicator={false}
       >
         {existing ? (
-          <View className="rounded-card bg-card mt-7">
+          <View className="rounded-card bg-card mt-7 overflow-hidden">
             <View className="flex-row items-center justify-between">
               <Text className="text-sm font-display-semibold text-foreground">
                 This month

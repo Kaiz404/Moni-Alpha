@@ -145,7 +145,7 @@ function CaptureMenuItem({
       >
         {({ pressed }) => (
           <View
-            className="rounded-card bg-card mb-3 min-h-16 flex-row items-center px-4 py-3"
+            className="rounded-card bg-card mb-3 min-h-16 flex-row items-center px-4 py-3 overflow-hidden"
             style={{
               backgroundColor: pressed
                 ? tokens.primaryMuted

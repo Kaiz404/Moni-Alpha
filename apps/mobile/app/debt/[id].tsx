@@ -177,7 +177,7 @@ export default function DebtDetailScreen() {
         className="flex-1"
         contentContainerClassName="px-5 pb-10 pt-6"
       >
-        <View className="rounded-card bg-card mb-4 p-4">
+        <View className="rounded-card bg-card mb-4 p-4 overflow-hidden">
           <Text className="text-sm text-muted">
             {debt.direction === 'owed_to_me'
               ? 'They owe you'
@@ -194,7 +194,7 @@ export default function DebtDetailScreen() {
           ) : null}
         </View>
         {action ? (
-          <View className="rounded-card bg-card mb-4 p-3">
+          <View className="rounded-card bg-card mb-4 p-3 overflow-hidden">
             <Text className="font-display-bold text-foreground">
               {action === 'principal'
                 ? debt.direction === 'owed_to_me'
@@ -309,7 +309,7 @@ export default function DebtDetailScreen() {
               {item.walletId ? '· Cash wallet' : '· Non-cash'}
             </Text>
             <Pressable
-              testID={tid('debts', 'remove')}
+              testID={tid('debts', 'remove', item.id)}
               className="mt-2 self-start"
               onPress={() =>
                 Alert.alert(

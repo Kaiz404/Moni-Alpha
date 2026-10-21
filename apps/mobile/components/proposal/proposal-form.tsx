@@ -244,7 +244,7 @@ export function ProposalForm({
 
   return (
     <View accessibilityLabel="Transaction proposal review">
-      <View className="rounded-card bg-sand mb-5 px-4 py-4">
+      <View className="rounded-card bg-sand mb-5 px-4 py-4 overflow-hidden">
         <Text className="text-xs font-display-semibold uppercase tracking-wide text-muted">
           {sourceTitle}
         </Text>

@@ -106,7 +106,7 @@ export default function NewDebtScreen() {
           })}
         </View>
 
-        <View className="rounded-card bg-card mt-6 p-5">
+        <View className="rounded-card bg-card mt-6 p-5 overflow-hidden">
           <FormField
             testID={tid('debts', 'person')}
             label="Person"

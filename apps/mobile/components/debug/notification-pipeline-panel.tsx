@@ -56,7 +56,7 @@ export function NotificationPipelinePanel() {
       : 'Production build';
 
   return (
-    <View className="rounded-card bg-card mx-5 mt-5 p-4">
+    <View className="rounded-card bg-card mx-5 mt-5 p-4 overflow-hidden">
       <View className="flex-row items-center justify-between">
         <Text className="text-base font-display-bold text-foreground">
           Notification pipeline

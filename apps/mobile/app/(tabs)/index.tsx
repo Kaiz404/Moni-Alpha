@@ -235,7 +235,7 @@ export default function HomeScreen() {
             </Pressable>
           ) : null}
 
-          <View className="rounded-card bg-sand-light mt-7 p-5">
+          <View className="rounded-card bg-sand-light mt-7 p-5 overflow-hidden">
             <Text className="text-sm font-display-semibold text-muted">
               Net worth
             </Text>
