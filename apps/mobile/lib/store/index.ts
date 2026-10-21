@@ -55,43 +55,53 @@ export const debtActivities$ = observable(syncTable('debt_activities'));
 export const proposedTransactions$ = observable(syncTable('proposed_transactions'));
 export const recurringOverrides$ = observable(syncTable('recurring_overrides'));
 
-const MIGRATION_GATED_TABLES = ['auto_add_rules', 'merchant_aliases'] as const;
-export type MigrationGatedTable = (typeof MIGRATION_GATED_TABLES)[number];
-const tableFound$ = observable<Partial<Record<MigrationGatedTable, boolean>>>({});
+/**
+ * Migrations the operator can push after the build that needs them, each with a table it
+ * creates. Finding that table proves the whole migration ran.
+ */
+const GATED_MIGRATIONS = {
+  review_later_and_auto_add_rules: 'auto_add_rules',
+  merchant_aliases_and_wallet_location: 'merchant_aliases',
+} as const;
+export type GatedMigration = keyof typeof GATED_MIGRATIONS;
+const migrationFound$ = observable<Partial<Record<GatedMigration, boolean>>>({});
 const TABLE_FOUND_KEY_PREFIX = 'table-found:';
 
 /**
- * Writers check this first: a row written while the table is gated is lost when the gate opens
- * and the first full pull replaces the local value (seen in migration-gate.test.ts).
+ * Writers check this first: a row written while its table is gated never reaches the server and
+ * is gone once the gate opens (migration-gate.test.ts).
  */
-export function assertTableMigrated(table: MigrationGatedTable): void {
-  if (tableFound$[table].peek() !== true) {
+export function assertMigrated(migration: GatedMigration): void {
+  if (migrationFound$[migration].peek() !== true) {
     throw new Error('Moni needs a server update before it can save this. Try again later.');
   }
 }
 
-function syncTableOnceMigrated(collection: MigrationGatedTable) {
-  const ready$ = observable(() => authReady$.get() && tableFound$[collection].get() === true);
-  return syncTable(collection, { waitFor: ready$, waitForSet: () => ready$ });
+function syncTableOnceMigrated(migration: GatedMigration) {
+  const ready$ = observable(() => authReady$.get() && migrationFound$[migration].get() === true);
+  return syncTable(GATED_MIGRATIONS[migration], { waitFor: ready$, waitForSet: () => ready$ });
 }
 
-async function probeMigrationGatedTables(): Promise<void> {
+async function probeGatedMigrations(): Promise<void> {
   await Promise.all(
-    MIGRATION_GATED_TABLES.map(async (table) => {
-      if (tableFound$[table].peek()) return;
+    Object.entries(GATED_MIGRATIONS).map(async ([migration, table]) => {
+      const found$ = migrationFound$[migration as GatedMigration];
+      if (found$.peek()) return;
       const key = TABLE_FOUND_KEY_PREFIX + table;
       if (!legendMMKV.getBoolean(key)) {
         const { error } = await supabase.from(table).select('id').limit(1);
         if (error) return;
         legendMMKV.set(key, true);
       }
-      tableFound$[table].set(true);
+      found$.set(true);
     }),
   );
 }
 
-export const autoAddRules$ = observable(syncTableOnceMigrated('auto_add_rules'));
-export const merchantAliases$ = observable(syncTableOnceMigrated('merchant_aliases'));
+export const autoAddRules$ = observable(syncTableOnceMigrated('review_later_and_auto_add_rules'));
+export const merchantAliases$ = observable(
+  syncTableOnceMigrated('merchant_aliases_and_wallet_location'),
+);
 
 export const profilePreferences$ = observable<UserPreferences | undefined>(
   synced({
@@ -154,7 +164,7 @@ export async function enableStoreSync(options: { fullReset?: boolean } = {}): Pr
   if (!authReady$.get()) return;
 
   runOneTimeCreateRepair();
-  await probeMigrationGatedTables();
+  await probeGatedMigrations();
 
   const forceFullPull = options.fullReset ?? false;
 

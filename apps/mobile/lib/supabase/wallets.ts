@@ -1,4 +1,4 @@
-import { assertTableMigrated, wallets$, transactions$ } from '@/lib/store';
+import { assertMigrated, wallets$, transactions$ } from '@/lib/store';
 import { getRecordValues, isActive, patchRow } from '@/lib/store/helpers';
 import { getUserId } from '@/lib/supabase/client';
 import { getWalletBalances } from '@/lib/supabase/balances';
@@ -137,9 +137,8 @@ export async function updateWallet(id: string, data: UpdateWallet) {
   }
   if (data.balanceConfirmedAt !== undefined) patch.balance_confirmed_at = data.balanceConfirmedAt;
   if (data.recordLocation !== undefined) {
-    // The column ships in the migration that creates merchant_aliases; an unknown column would
-    // fail every later sync of this wallet row.
-    assertTableMigrated('merchant_aliases');
+    // Before the migration, an unknown column would fail every later sync of this wallet row.
+    assertMigrated('merchant_aliases_and_wallet_location');
     patch.record_location = data.recordLocation;
   }
 

@@ -4,7 +4,7 @@ import {
   type AutoAddRule,
   type CreateAutoAddRuleInput,
 } from '@repo/types';
-import { assertTableMigrated, autoAddRules$ } from '@/lib/store';
+import { assertMigrated, autoAddRules$ } from '@/lib/store';
 import { getRecordValues, patchRow } from '@/lib/store/helpers';
 import { getUserId } from '@/lib/supabase/client';
 
@@ -58,7 +58,7 @@ export function listAutoAddRules(userId: string): AutoAddRule[] {
 }
 
 export async function createAutoAddRule(input: CreateAutoAddRuleInput): Promise<void> {
-  assertTableMigrated('auto_add_rules');
+  assertMigrated('review_later_and_auto_add_rules');
   const userId = await getUserId();
   if (!userId) throw new Error('Not authenticated');
   const data = createAutoAddRuleInputSchema.parse(input);

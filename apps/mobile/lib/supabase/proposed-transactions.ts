@@ -1,4 +1,4 @@
-import { assertTableMigrated, proposedTransactions$, transactions$ } from '@/lib/store';
+import { assertMigrated, proposedTransactions$, transactions$ } from '@/lib/store';
 import { getRecordValues, hasRow, patchRow } from '@/lib/store/helpers';
 import { getUserId } from '@/lib/supabase/client';
 import { randomUUID } from 'expo-crypto';
@@ -123,7 +123,7 @@ export async function getProposedTransactions(now = new Date()): Promise<Propose
 }
 
 export function laterProposedTransaction(id: string, until: Date): void {
-  assertTableMigrated('auto_add_rules');
+  assertMigrated('review_later_and_auto_add_rules');
   patchRow(proposedTransactions$, id, {
     status: 'later',
     snoozed_until: until.toISOString(),

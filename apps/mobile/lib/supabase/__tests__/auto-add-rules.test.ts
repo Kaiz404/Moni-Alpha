@@ -6,7 +6,7 @@ jest.mock('expo-crypto', () => ({ randomUUID: () => `rule-${++mockNextId}` }));
 jest.mock('@/lib/supabase/client', () => ({ getUserId: async () => 'user-1' }));
 jest.mock('@/lib/store', () => {
   const { observable } = jest.requireActual('@legendapp/state');
-  return { autoAddRules$: observable({}), assertTableMigrated: () => {} };
+  return { autoAddRules$: observable({}), assertMigrated: () => {} };
 });
 
 const { autoAddRules$ } = jest.requireMock('@/lib/store') as {

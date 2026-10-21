@@ -6,7 +6,7 @@ jest.mock('expo-crypto', () => ({ randomUUID: () => `alias-${++mockNextId}` }));
 jest.mock('@/lib/supabase/client', () => ({ getUserId: async () => 'user-1' }));
 jest.mock('@/lib/store', () => {
   const { observable } = jest.requireActual('@legendapp/state');
-  return { merchantAliases$: observable({}), assertTableMigrated: () => {} };
+  return { merchantAliases$: observable({}), assertMigrated: () => {} };
 });
 
 const { merchantAliases$ } = jest.requireMock('@/lib/store') as {

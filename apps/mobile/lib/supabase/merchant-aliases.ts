@@ -1,6 +1,6 @@
 import { randomUUID } from 'expo-crypto';
 import { merchantAliasSchema, type MerchantAlias } from '@repo/types';
-import { assertTableMigrated, merchantAliases$ } from '@/lib/store';
+import { assertMigrated, merchantAliases$ } from '@/lib/store';
 import { getRecordValues } from '@/lib/store/helpers';
 import { getUserId } from '@/lib/supabase/client';
 
@@ -42,7 +42,7 @@ export function listMerchantAliases(userId: string): MerchantAlias[] {
 }
 
 export async function nameMerchant(rawKey: string, displayName: string): Promise<void> {
-  assertTableMigrated('merchant_aliases');
+  assertMigrated('merchant_aliases_and_wallet_location');
   const userId = await getUserId();
   if (!userId) throw new Error('Not authenticated');
   const data = merchantAliasSchema.pick({ rawKey: true, displayName: true }).parse({

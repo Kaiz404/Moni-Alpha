@@ -30,7 +30,7 @@ The Legend-State ↔ Supabase sync (`supabase/migrations/20260707000000_legend_s
 - `deleted boolean` — soft delete; clients filter `deleted = false`, hard deletes never happen from the app
 - Realtime publication enabled (postgres_changes)
 
-When adding a synced table: add those columns, enable RLS + realtime, then register a new observable in `apps/mobile/lib/store/index.ts`. If the build can ship before the migration is pushed, list the table in `MIGRATION_GATED_TABLES` there: its sync waits until a probe finds the table, and writers call `assertTableMigrated` first.
+When adding a synced table: add those columns, enable RLS + realtime, then register a new observable in `apps/mobile/lib/store/index.ts`. If the build can ship before the migration is pushed, list the migration and a table it creates in `GATED_MIGRATIONS` there: its tables sync once a probe finds that table, and writers call `assertMigrated` first.
 
 ## Conventions
 

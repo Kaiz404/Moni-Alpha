@@ -109,6 +109,7 @@ describe('a synced table whose migration is not on the server yet', () => {
     const kedai = { ...INPUT, merchantKey: 'kedai abc' };
     await expect(createAutoAddRule(kedai)).rejects.toThrow('needs a server update');
     expect(listAutoAddRules('user-1')).toEqual([]);
+    autoAddRules$['written-while-gated'].set({ ...RULE, id: 'written-while-gated' });
 
     mockServer.tables.set('auto_add_rules', [RULE]);
     mockServer.calls.length = 0;
@@ -130,6 +131,10 @@ describe('a synced table whose migration is not on the server yet', () => {
     expect(ruleCalls.at(-1)).toBe('insert auto_add_rules');
     expect(callsFor('merchant_aliases')).toEqual(['probe merchant_aliases']);
     expect(Object.keys(autoAddRules$.peek() ?? {}).sort()).toEqual(['generated-id', 'rule-1']);
+    expect(mockServer.tables.get('auto_add_rules')?.map((row) => row.id)).toEqual([
+      'rule-1',
+      'generated-id',
+    ]);
 
     mockServer.calls.length = 0;
     await enableStoreSync({ fullReset: true });
