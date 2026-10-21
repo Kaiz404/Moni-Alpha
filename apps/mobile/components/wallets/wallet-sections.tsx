@@ -325,7 +325,7 @@ export function WalletAlerts({
           tint="bg-lilac"
           title="Capture log"
           meta="Every alert and what happened"
-          onPress={() => router.push('/notifications')}
+          onPress={() => router.push('/capture-log')}
         />
       </ListCard>
     </View>

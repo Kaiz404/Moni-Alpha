@@ -303,7 +303,7 @@ export default function CaptureSourcesScreen() {
             tint="bg-primary-muted"
             title="Places"
             meta="Where your payments happened"
-            href="/heatmap"
+            href="/map"
           />
         </ListCard>
       </ScrollView>
