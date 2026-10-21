@@ -1,4 +1,5 @@
 import { useValue } from '@legendapp/state/react';
+import { router } from 'expo-router';
 import { useState } from 'react';
 import { TextInput, View } from 'react-native';
 
@@ -6,12 +7,6 @@ import { IconSymbol, type IconSymbolName } from '@/components/ui/icon-symbol';
 import { Press } from '@/components/ui/press';
 import { Text } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
-import {
-  approveDraft,
-  laterDraft,
-  notMineDraft,
-  type DraftEdits,
-} from '@/lib/ai/chat/draft-actions';
 import { replaceMessage, type ChatMessage, type DraftOutcome } from '@/lib/ai/chat/messages';
 import { financeTimezone, threadDay } from '@/lib/ai/chat/sessions';
 import { useAuth } from '@/lib/auth/auth-context';
@@ -23,28 +18,30 @@ import {
   categoriesForUser$,
   walletsForUser$,
 } from '@/lib/finance/selectors';
-import type { FinanceProposal } from '@/lib/finance/types';
-import { approve, notMine } from '@/lib/haptics';
+import * as haptics from '@/lib/haptics';
+import {
+  approve,
+  editedProposal,
+  later,
+  notMine,
+  undo,
+  type ReviewEdits,
+  type ReviewOutcome,
+  type ReviewResult,
+} from '@/lib/proposals/review-actions';
 import { toCategoryTiles } from '@/lib/sheet/category-tiles';
 import { openSheet } from '@/lib/sheet/sheet-store';
 import { tid } from '@/lib/test-ids';
 import { showToast, undoToast } from '@/lib/toast/toast-store';
 import { resolveTransactionIcon } from '@/lib/transactions/icon';
 
-
 type DraftMessage = Extract<ChatMessage, { kind: 'assistant_draft' }>;
 type Field = 'merchant' | 'amount';
 
-function initialEdits(proposal: FinanceProposal): DraftEdits {
-  return {
-    merchant: proposal.merchant ?? proposal.description,
-    amountMinor: proposal.amountMinor === null ? null : Number(proposal.amountMinor),
-    categoryId: proposal.categoryId,
-    walletId: proposal.walletId,
-  };
-}
-
-/** A chat capture as the compact Review card: edit in place, then Not mine, Later, or Approve. */
+/**
+ * A chat capture as the compact Review card: edit in place, then Not mine, Later, or Approve.
+ * The decisions are the Review deck's own (`lib/proposals/review-actions.ts`).
+ */
 export function DraftCard({ message }: { message: DraftMessage }) {
   const tokens = useThemeTokens();
   const { user } = useAuth();
@@ -56,17 +53,19 @@ export function DraftCard({ message }: { message: DraftMessage }) {
   // Empty until the category table has synced once.
   const categories = useValue(categoriesForUser$(userId)) ?? [];
   const progress = useValue(budgetProgress$(userId, financeTimezone()));
-  const [edits, setEdits] = useState<DraftEdits | null>(null);
+  const [edits, setEdits] = useState<ReviewEdits>({});
   const [editing, setEditing] = useState<Field | null>(null);
   const [field, setField] = useState('');
-  const [pending, setPending] = useState<DraftOutcome | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [undoable, setUndoable] = useState(false);
+  const [shown, setShown] = useState<DraftOutcome | null>(null);
 
-  const settled = pending ?? message.outcome ?? null;
+  const settled = shown ?? message.outcome ?? null;
   if (settled)
     return (
       <DoneRow
         outcome={settled}
-        undoable={pending !== null}
+        undoable={undoable}
         id={message.proposalId}
       />
     );
@@ -80,44 +79,61 @@ export function DraftCard({ message }: { message: DraftMessage }) {
       </Text>
     );
 
-  const current = edits ?? initialEdits(proposal);
-  const set = (patch: Partial<DraftEdits>) => setEdits({ ...current, ...patch });
+  const current = editedProposal(proposal, edits);
+  const set = (patch: ReviewEdits) => setEdits({ ...edits, ...patch });
   const currency = proposal.currency;
   const wallet = wallets.find((w) => w.id === current.walletId) ?? null;
   const category = categories.find((c) => c.id === current.categoryId) ?? null;
   const direction = proposal.type ?? 'expense';
   const amountText =
     current.amountMinor === null ? 'No amount' : formatSignedMoney(direction, current.amountMinor, currency);
-  const title = current.merchant ?? category?.name ?? 'Capture';
+  const title = current.merchant ?? proposal.description ?? category?.name ?? 'Capture';
 
   const budgetRow = progress.find(
     (row) => row.categoryId === current.categoryId && row.currency === currency,
   );
   const afterMinor =
     budgetRow?.budgetAmountMinor != null && direction === 'expense' && current.amountMinor
-      ? Number(budgetRow.budgetAmountMinor) - Number(budgetRow.spentMinor) - current.amountMinor
+      ? Number(budgetRow.budgetAmountMinor) - Number(budgetRow.spentMinor) - Number(current.amountMinor)
       : null;
 
   const day = threadDay(message.createdAt);
-  const settle = (outcome: DraftOutcome, toast: string, commit: () => Promise<void> | void) => {
+  const decide = async (
+    run: () => Promise<ReviewResult>,
+    view: (outcome: ReviewOutcome) => DraftOutcome,
+    toast: (outcome: ReviewOutcome) => string,
+  ) => {
+    if (busy) return;
     setEditing(null);
-    setPending(outcome);
+    setBusy(true);
+    const result = await run();
+    setBusy(false);
+    if (result.status === 'needsInput') {
+      router.push({ pathname: '/review', params: { id: proposal.id } });
+      return;
+    }
+    if (result.status === 'error') {
+      showToast({ text: result.message, tone: 'removed' });
+      return;
+    }
+    const { outcome } = result;
+    const { outcome: _, ...draft } = message;
+    const done = view(outcome);
+    setShown(done);
+    replaceMessage(day, message.id, { ...draft, outcome: done });
+    setUndoable(outcome.action !== 'later');
     showToast({
-      text: toast,
-      tone: outcome.kind === 'approved' ? 'done' : 'removed',
-      undo: () => setPending(null),
-      commit: () => {
-        void (async () => {
-          try {
-            await commit();
-            replaceMessage(day, message.id, { ...message, outcome });
-          } catch (error) {
-            console.warn('[chat] draft not saved', error);
-            setPending(null);
-            showToast({ text: "Couldn't save that. Try again.", tone: 'removed' });
-          }
-        })();
-      },
+      text: toast(outcome),
+      tone: outcome.action === 'approve' || outcome.action === 'later' ? 'done' : 'removed',
+      undo:
+        outcome.action === 'later'
+          ? undefined
+          : () => {
+              setUndoable(false);
+              setShown(null);
+              void undo(outcome).then(() => replaceMessage(day, message.id, draft));
+            },
+      commit: () => setUndoable(false),
     });
   };
 
@@ -159,11 +175,11 @@ export function DraftCard({ message }: { message: DraftMessage }) {
   const onApprove = async () => {
     const walletId = current.walletId ?? (await pickWallet());
     if (!walletId) return;
-    const edits = { ...current, walletId };
     const chosen = wallets.find((w) => w.id === walletId);
-    approve();
-    settle(
-      {
+    haptics.approve();
+    await decide(
+      () => approve(proposal, { ...edits, walletId }),
+      () => ({
         kind: 'approved',
         title: `Approved ${title} ${amountText}`,
         meta: [
@@ -174,20 +190,16 @@ export function DraftCard({ message }: { message: DraftMessage }) {
         ]
           .filter(Boolean)
           .join(' · '),
-      },
-      `Added ${amountText}`,
-      async () => {
-        const result = await approveDraft(proposal, edits);
-        if (result.status !== 'done') throw new Error(`needs ${result.field}`);
-      },
+      }),
+      () => `Added ${amountText}`,
     );
   };
 
   const save = () => {
-    if (editing === 'merchant') set({ merchant: field.trim() || current.merchant });
+    if (editing === 'merchant' && field.trim()) set({ merchant: field.trim() });
     if (editing === 'amount') {
       try {
-        set({ amountMinor: Number(parseAmountInput(field)) });
+        set({ amountMinor: parseAmountInput(field) });
       } catch {
         return;
       }
@@ -202,7 +214,7 @@ export function DraftCard({ message }: { message: DraftMessage }) {
         ? (current.merchant ?? '')
         : current.amountMinor === null
           ? ''
-          : (current.amountMinor / 100).toFixed(2),
+          : (Number(current.amountMinor) / 100).toFixed(2),
     );
   };
 
@@ -327,11 +339,11 @@ export function DraftCard({ message }: { message: DraftMessage }) {
           fill="bg-sand"
           accessibilityLabel="Not mine. Nothing gets added"
           onPress={() => {
-            notMine();
-            settle(
-              { kind: 'not_mine', title: '1 not mine', meta: 'Nothing was added' },
-              '1 not mine',
-              () => notMineDraft(proposal.id),
+            haptics.notMine();
+            void decide(
+              () => notMine(proposal),
+              () => ({ kind: 'not_mine', title: '1 not mine', meta: 'Nothing was added' }),
+              () => '1 not mine',
             );
           }}
         />
@@ -342,10 +354,10 @@ export function DraftCard({ message }: { message: DraftMessage }) {
           fill="bg-sand"
           accessibilityLabel="Later. It waits in Review"
           onPress={() =>
-            settle(
-              { kind: 'later', title: 'Saved for later', meta: 'It waits in Review, not counted yet' },
-              'Saved for later',
-              () => laterDraft(proposal.id),
+            void decide(
+              () => later(proposal),
+              () => ({ kind: 'later', title: 'Saved for later', meta: 'It waits in Review, not counted yet' }),
+              () => 'Saved for later',
             )
           }
         />

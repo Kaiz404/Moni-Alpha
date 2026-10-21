@@ -6,10 +6,12 @@ import { Text } from '@/components/ui/text';
 import { appendMessage, readThread, type ChatMessage } from '@/lib/ai/chat/messages';
 import { threadDay } from '@/lib/ai/chat/sessions';
 import { financeProjection$ } from '@/lib/finance/projection';
+import { proposedTransactions$ } from '@/lib/store';
 import {
   approveProposedTransaction,
   rejectProposedTransaction,
 } from '@/lib/supabase/proposed-transactions';
+import { deleteTransaction } from '@/lib/supabase/transactions';
 import { dismissToast, useToast } from '@/lib/toast/toast-store';
 import { USER, financeWallet, projection } from '@/lib/wallets/__tests__/balance-fixture';
 
@@ -20,11 +22,14 @@ jest.mock('uniwind', () => ({
   useCSSVariable: (names: string[]) => names.map(() => undefined),
 }));
 jest.mock('@/lib/haptics', () => ({ approve: jest.fn(), notMine: jest.fn() }));
+jest.mock('expo-router', () => ({ router: { push: jest.fn() } }));
 jest.mock('@/lib/supabase/proposed-transactions', () => ({
-  approveProposedTransaction: jest.fn(async () => {}),
+  approveProposedTransaction: jest.fn(async () => 't1'),
   rejectProposedTransaction: jest.fn(async () => {}),
   laterProposedTransaction: jest.fn(),
+  findProposalDuplicate: jest.fn(async () => null),
 }));
+jest.mock('@/lib/supabase/transactions', () => ({ deleteTransaction: jest.fn(async () => {}) }));
 
 const createdAt = new Date(2026, 9, 14, 13, 30).toISOString();
 
@@ -77,11 +82,18 @@ describe('DraftCard', () => {
       ...projection([financeWallet()]),
       proposalsById: { p1: parking },
     });
+    proposedTransactions$.p1.set({ id: 'p1', status: 'pending', deleted: false });
     appendMessage(draft);
   });
+  afterEach(() => act(() => dismissToast()));
 
-  it('shows the capture and approves the edited amount once the toast commits', async () => {
-    render(<DraftCard message={draft} />);
+  it('approves the edited amount through the Review actions and Undo takes it back', async () => {
+    render(
+      <>
+        <DraftCard message={draft} />
+        <ToastText />
+      </>,
+    );
     expect(screen.getByText('KLCC Parking')).toBeTruthy();
     expect(screen.getByTestId('chat.draft.amount-text')).toHaveTextContent('−RM6.00');
 
@@ -90,33 +102,35 @@ describe('DraftCard', () => {
     fireEvent.press(screen.getByTestId('chat.draft.save'));
     expect(screen.getByTestId('chat.draft.amount-text')).toHaveTextContent('−RM7.00');
 
-    fireEvent.press(screen.getByTestId('chat.draft.approve'));
-    expect(screen.getByTestId('chat.draft.done.p1')).toHaveTextContent(
-      'Approved KLCC Parking −RM7.00',
-    );
-    expect(approveProposedTransaction).not.toHaveBeenCalled();
-
-    await act(async () => dismissToast());
+    await act(async () => fireEvent.press(screen.getByTestId('chat.draft.approve')));
     expect(jest.mocked(approveProposedTransaction).mock.calls[0]?.[0]).toMatchObject({
       id: 'p1',
       amountMinor: 700,
       walletId: 'maybank',
     });
+    expect(screen.getByText('Added −RM7.00')).toBeTruthy();
     const stored = readThread(threadDay(createdAt)).messages.find((m) => m.id === 'm1');
-    expect(stored).toMatchObject({ outcome: { kind: 'approved' } });
+    expect(stored).toMatchObject({
+      outcome: { kind: 'approved', title: 'Approved KLCC Parking −RM7.00' },
+    });
+
+    await act(async () => fireEvent.press(screen.getByText('Undo')));
+    expect(deleteTransaction).toHaveBeenCalledWith('t1');
+    const undone = readThread(threadDay(createdAt)).messages.find((m) => m.id === 'm1');
+    expect(undone).not.toHaveProperty('outcome');
   });
 
-  it('says "1 not mine" and Undo brings the card back without rejecting', () => {
+  it('marks the capture not mine through the Review actions', async () => {
     render(
       <>
         <DraftCard message={draft} />
         <ToastText />
       </>,
     );
-    fireEvent.press(screen.getByTestId('chat.draft.not-mine'));
-    expect(screen.getAllByText('1 not mine').length).toBe(2);
-    fireEvent.press(screen.getByTestId('chat.draft.undo'));
-    expect(screen.getByTestId('chat.draft.approve')).toBeTruthy();
-    expect(rejectProposedTransaction).not.toHaveBeenCalled();
+    await act(async () => fireEvent.press(screen.getByTestId('chat.draft.not-mine')));
+    expect(rejectProposedTransaction).toHaveBeenCalledWith('p1');
+    expect(screen.getAllByText('1 not mine')).toHaveLength(2);
+    const stored = readThread(threadDay(createdAt)).messages.find((m) => m.id === 'm1');
+    expect(stored).toMatchObject({ outcome: { kind: 'not_mine' } });
   });
 });
