@@ -7,6 +7,22 @@ PR ids in stack order are V1, V2, V3, V4, S1, F1, F2, F3, F4, N1, G1, H1, A1, A2
 V is the verification scaffold. S subtracts. F lands foundations. N is the navigation shell. G is a data gap, schema first.
 H, A, C, R, B, D, K, and M are the screen areas Home and chat, Activity, Capture, Review, Budget, Debts, Account, and Map.
 
+## Fast execution mode (from 21 Oct 2026)
+
+The owner replaced the per-PR stack below with this mode after V1 landed. Where this section and the program checklist disagree, this section wins. Each PR section's Files, Build, You see, and Verify, unit boxes stay the spec.
+
+- Work lands on `main` as commits. There are no feature branches and no PRs. Each unit's agent works in its own git worktree and commits there. The coordinator verifies, rebases the commits onto `main`, and pushes. Agents never push.
+- Units run in parallel waves. A unit starts when its real dependencies have landed, not when the unit before it in the list has.
+  - Wave 1: V2, V3, S1, and G (G1, G2, and G3 as one data unit, schema, migration files, store, and helpers, with no screens).
+  - Wave 2: F1, and V4 once V3 has landed and the operator has done O4.
+  - Wave 3: F2, then F3 and F4 in parallel.
+  - Wave 4: N1.
+  - Wave 5, in parallel tracks: H1 and H2. A1 and A2. C1, C2, R1, and R2. B1 and B2. D1. K1, K2, and K3. M1.
+- The verification contract for one unit. Run the unit's **Verify, unit** boxes plus `pnpm lint`, `pnpm check-types`, and `pnpm test`. A unit that changes what the phone shows also builds the e2e APK with `apps/mobile/scripts/device/build-apk.sh` once V3 has landed, runs the Maestro flows it adds or touches through `with-device.sh`, and saves screenshots beside the board render. The ten-lane swarm, the per-unit perf block, and the per-unit review gate are dropped. The coordinator runs one independent check before landing, and a perf check (cold start, APK size, bundle size) once per wave.
+- The phone is one shared device. Only `with-device.sh` touches it, and agents keep their phone time short.
+- Migrations are committed as files only. Pushing them to a Supabase project is the operator's action (O4 and O7).
+- No commit carries a Co-Authored-By or "Generated with" line.
+
 ## How to read this
 
 One box is one unit of work. Every box names the evidence that checks it. A nested box is a sub-step of the box above it. Check a box only when its evidence exists, a file, a log line, a screenshot, a test run, or a SHA. The body is a how-to. The appendices explain and record.
