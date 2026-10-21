@@ -46,6 +46,7 @@ import { balanceMonth, spendingMonth } from '@/lib/finance/activity-series';
 import { formatMoney } from '@/lib/finance/format-money';
 import { useMainCurrency } from '@/lib/finance/main-currency';
 import { merchantName } from '@/lib/finance/merchant-name';
+import { groupPlaces, placeRange } from '@/lib/finance/places';
 import {
   budgetProgress$,
   categoriesForUser$,
@@ -115,7 +116,13 @@ export default function ActivityScreen() {
   const [timezone, setTimezone] = useState('UTC');
   const progress = useValue(budgetProgress$(userId, timezone));
   const [mode, setMode] = useState<ActivityChartMode>('spending');
-  const { q } = useLocalSearchParams<{ q?: string }>();
+  const params = useLocalSearchParams<{
+    q?: string;
+    placeId?: string;
+    range?: string;
+  }>();
+  const { q } = params;
+  const [placeId, setPlaceId] = useState(params.placeId ?? null);
   const [query, setQuery] = useState(q ?? '');
   const [kind, setKind] = useState<ActivityKind>('all');
   const [walletId, setWalletId] = useState<string | null>(null);
@@ -127,6 +134,10 @@ export default function ActivityScreen() {
   useEffect(() => {
     if (q) setQuery(q);
   }, [q]);
+
+  useEffect(() => {
+    if (params.placeId) setPlaceId(params.placeId);
+  }, [params.placeId]);
 
   useEffect(() => {
     void ensureFinanceTimezone()
@@ -161,10 +172,20 @@ export default function ActivityScreen() {
     () => named.filter((transaction) => transaction.currency === currency),
     [named, currency],
   );
+  const place = useMemo(
+    () =>
+      placeId
+        ? (groupPlaces(named, {
+            currency,
+            range: params.range ? placeRange(params.range, new Date()) : null,
+          }).find((candidate) => candidate.id === placeId) ?? null)
+        : null,
+    [named, placeId, currency, params.range],
+  );
   const days = useMemo(
     () =>
       groupActivityDays(
-        filterActivity(named, {
+        filterActivity(place ? place.transactions : named, {
           query,
           walletId,
           mainCurrency: currency,
@@ -175,7 +196,7 @@ export default function ActivityScreen() {
           ),
         }),
       ),
-    [named, query, walletId, currency, kind, day, categories],
+    [named, place, query, walletId, currency, kind, day, categories],
   );
   const budgetMinor = useMemo(() => {
     const budgets = progress.filter(
@@ -412,6 +433,8 @@ export default function ActivityScreen() {
               kind={kind}
               onKind={setKind}
               walletName={walletName}
+              placeName={place?.name ?? null}
+              onClearPlace={() => setPlaceId(null)}
               onWallet={() => void pickWallet()}
             />
             <HoldHint screen="activity" />

@@ -38,4 +38,6 @@ tags:
     visible:
       id: activity.ask-moni
     timeout: 5000
+- assertVisible:
+    id: activity.filter.place
 - takeScreenshot: m1-l6-activity

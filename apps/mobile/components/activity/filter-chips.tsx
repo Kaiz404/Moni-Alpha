@@ -16,12 +16,17 @@ export function FilterChips({
   onKind,
   walletName,
   onWallet,
+  placeName,
+  onClearPlace,
 }: {
   kind: ActivityKind;
   onKind: (kind: ActivityKind) => void;
   /** The chosen wallet, or null for every wallet. */
   walletName: string | null;
   onWallet: () => void;
+  /** The place the map sent the list to, shown first with a way to clear it. */
+  placeName: string | null;
+  onClearPlace: () => void;
 }) {
   return (
     <ScrollView
@@ -31,6 +36,15 @@ export function FilterChips({
       className="-mx-screen"
       contentContainerClassName="gap-2 px-screen"
     >
+      {placeName ? (
+        <Chip
+          testID={tid('activity', 'filter', 'place')}
+          label={placeName}
+          icon="close"
+          selected
+          onPress={onClearPlace}
+        />
+      ) : null}
       {KINDS.map((option) => (
         <Chip
           key={option.value}
