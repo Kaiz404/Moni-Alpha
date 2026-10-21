@@ -7,7 +7,12 @@ import { ScrollView, View } from 'react-native';
 import { ExportDataRow } from '@/components/profile/export-data-row';
 import { MainCurrencyRow } from '@/components/profile/main-currency-row';
 import { ProfileRow } from '@/components/profile/profile-row';
-import { usePermissionWords } from '@/components/profile/use-permission-words';
+import {
+  usePhoneAccess,
+  type AccessState,
+} from '@/components/capture-sources/use-phone-access';
+import { useLinkedApps } from '@/components/capture-sources/use-linked-apps';
+import { useMerchantNames } from '@/components/merchants/use-merchant-names';
 import { Button } from '@/components/ui/button';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { ListCard } from '@/components/ui/list-card';
@@ -22,9 +27,6 @@ import {
   categoriesForUser$,
   walletsForUser$,
 } from '@/lib/finance/selectors';
-import { wallets$ } from '@/lib/store';
-import { getRecordValues, isActive } from '@/lib/store/helpers';
-import { listMerchantAliases } from '@/lib/supabase/merchant-aliases';
 import { tid } from '@/lib/test-ids';
 import {
   getThemePreference,
@@ -52,6 +54,14 @@ function walletsMeta(currencies: readonly string[]): string {
     .map(([currency, count]) => `${count} in ${currency}`)
     .join(' · ');
 }
+
+const ACCESS_WORD: Record<AccessState, string | undefined> = {
+  checking: undefined,
+  on: 'On',
+  off: 'Off',
+  not_set_up: 'Not set up',
+  unavailable: 'Off',
+};
 
 function plural(count: number, one: string, many: string): string {
   return `${count} ${count === 1 ? one : many}`;
@@ -90,7 +100,9 @@ export default function ProfileScreen() {
   const name = displayName(user);
   const google = user?.app_metadata?.provider === 'google';
   const [theme, setTheme] = useState<ThemePreference>(getThemePreference);
-  const permissions = usePermissionWords();
+  const { access } = usePhoneAccess();
+  const { apps } = useLinkedApps();
+  const merchants = useMerchantNames();
 
   const wallets = useValue(walletsForUser$(userId));
   const categoryCount = useValue(
@@ -99,21 +111,8 @@ export default function ProfileScreen() {
         .get()
         .filter((category) => category.isActive).length,
   );
-  const namedCount = useValue(() =>
-    userId ? listMerchantAliases(userId).length : 0,
-  );
-  const linkedApps = useValue(
-    () =>
-      new Set(
-        getRecordValues<{ notification_package?: string | null; is_active?: unknown }>(
-          wallets$,
-        )
-          .filter((row) => isActive(row.is_active) && row.notification_package)
-          .map((row) => row.notification_package),
-      ).size,
-  );
 
-  const openSources = () => router.push('/notifications');
+  const openSources = () => router.push('/capture-sources');
 
   const handleSignOut = async () => {
     await signOut();
@@ -210,10 +209,14 @@ export default function ProfileScreen() {
             icon="store-edit-outline"
             tint="peach"
             title="Merchant names"
-            meta="Name the codes banks send"
-            value={`${namedCount} named`}
+            meta={
+              merchants.toName.length
+                ? plural(merchants.toName.length, 'bank code to name', 'bank codes to name')
+                : 'Name the codes banks send'
+            }
+            value={`${merchants.named.length} named`}
             chevron="right"
-            onPress={() => router.push('/notifications')}
+            onPress={() => router.push('/merchants')}
           />
         </Section>
 
@@ -242,8 +245,8 @@ export default function ProfileScreen() {
             icon="bell-outline"
             tint="mint"
             title="Bank notifications"
-            meta={plural(linkedApps, 'linked app', 'linked apps')}
-            value={permissions?.notifications}
+            meta={plural(apps.length, 'linked app', 'linked apps')}
+            value={ACCESS_WORD[access.notifications]}
             chevron="right"
             onPress={openSources}
           />
@@ -253,7 +256,7 @@ export default function ProfileScreen() {
             tint="mint"
             title="Location"
             meta="From notifications"
-            value={permissions?.location}
+            value={ACCESS_WORD[access.location]}
             chevron="right"
             onPress={openSources}
           />
@@ -263,17 +266,17 @@ export default function ProfileScreen() {
             tint="mint"
             title="Camera"
             meta="Scan receipts"
-            value={permissions?.camera}
+            value={ACCESS_WORD[access.camera]}
             chevron="right"
             onPress={openSources}
           />
           <ProfileRow
             testID={tid('profile', 'row', 'microphone')}
             icon="microphone"
-            tint={permissions?.microphone === 'On' ? 'mint' : 'sand'}
+            tint={access.microphone === 'on' ? 'mint' : 'sand'}
             title="Microphone"
             meta="Say it instead of typing"
-            value={permissions?.microphone}
+            value={ACCESS_WORD[access.microphone]}
             chevron="right"
             onPress={openSources}
           />
@@ -287,7 +290,7 @@ export default function ProfileScreen() {
             title="Capture log"
             meta="Every alert Moni read, and what it did"
             chevron="right"
-            onPress={() => router.push('/notifications')}
+            onPress={() => router.push('/capture-log')}
           />
           <ExportDataRow userId={userId} />
         </Section>

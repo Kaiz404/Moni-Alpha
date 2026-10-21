@@ -48,23 +48,31 @@ tags:
 # Each MONEY and CAPTURE SOURCES row opens a page.
 - tapOn:
     id: profile.row.categories
+- assertNotVisible:
+    id: profile.main-currency
 - pressKey: Back
 - assertVisible:
     id: profile.main-currency
 - tapOn:
     id: profile.row.merchant-names
+- assertVisible:
+    id: merchants.back
 - pressKey: Back
 - scrollUntilVisible:
     element:
       id: profile.row.bank-notifications
 - tapOn:
     id: profile.row.bank-notifications
+- assertVisible:
+    id: sources.back
 - pressKey: Back
 - scrollUntilVisible:
     element:
       id: profile.row.capture-log
 - tapOn:
     id: profile.row.capture-log
+- assertVisible:
+    id: capture-log.back
 - pressKey: Back
 - takeScreenshot: k1-l9-rows
 
