@@ -14,8 +14,8 @@ export type MerchantAliasRow = {
   deleted?: boolean;
 };
 
-/** One name per merchant key: offline devices can each write one, so the latest update wins. */
-export function selectMerchantAliases(
+/** Offline devices can each name the same merchant key. */
+function latestAliasPerMerchantKey(
   rows: readonly MerchantAliasRow[],
   userId: string,
 ): MerchantAlias[] {
@@ -38,7 +38,7 @@ export function selectMerchantAliases(
 }
 
 export function listMerchantAliases(userId: string): MerchantAlias[] {
-  return selectMerchantAliases(getRecordValues<MerchantAliasRow>(merchantAliases$), userId);
+  return latestAliasPerMerchantKey(getRecordValues<MerchantAliasRow>(merchantAliases$), userId);
 }
 
 export async function nameMerchant(rawKey: string, displayName: string): Promise<void> {

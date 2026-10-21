@@ -36,8 +36,11 @@ function rowToRule(row: AutoAddRuleRow): AutoAddRule {
   };
 }
 
-/** One rule per app and merchant: offline devices can each write one, so the latest update wins. */
-export function selectAutoAddRules(rows: readonly AutoAddRuleRow[], userId: string): AutoAddRule[] {
+/** Offline devices can each write a rule for the same app and merchant. */
+function latestRulePerAppAndMerchant(
+  rows: readonly AutoAddRuleRow[],
+  userId: string,
+): AutoAddRule[] {
   const latest = new Map<string, AutoAddRule>();
   for (const row of rows) {
     if (row.user_id !== userId || row.deleted) continue;
@@ -51,7 +54,7 @@ export function selectAutoAddRules(rows: readonly AutoAddRuleRow[], userId: stri
 }
 
 export function listAutoAddRules(userId: string): AutoAddRule[] {
-  return selectAutoAddRules(getRecordValues<AutoAddRuleRow>(autoAddRules$), userId);
+  return latestRulePerAppAndMerchant(getRecordValues<AutoAddRuleRow>(autoAddRules$), userId);
 }
 
 export async function createAutoAddRule(input: CreateAutoAddRuleInput): Promise<void> {
