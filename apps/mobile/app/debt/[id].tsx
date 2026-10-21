@@ -1,88 +1,54 @@
-import { useCallback, useMemo, useState } from 'react';
-import { Alert, Pressable, ScrollView, View } from 'react-native';
-import { Text } from '@/components/ui/text';
-import { useFocusEffect, useLocalSearchParams } from 'expo-router';
-import { AmountInput } from '@/components/finance/amount-input';
-import { NotFound } from '@/components/ui/empty-tile';
-import { useThemeTokens } from '@/hooks/use-theme-tokens';
+import { router, useLocalSearchParams } from 'expo-router';
+import { useCallback, useState } from 'react';
+import { ScrollView, View } from 'react-native';
+
+import { DebtHistory } from '@/components/debt/debt-history';
 import {
-  addDebtPrincipal,
-  debtDueState,
+  OpenStanding,
+  SquareCard,
+  WrittenOff,
+} from '@/components/debt/debt-standing';
+import {
+  dueLabel,
+  DueDateSheet,
+} from '@/components/debt/due-date-sheet';
+import { InlineEdit, Pencil } from '@/components/debt/inline-edit';
+import { useDebtWallets } from '@/components/debts/debt-wallets';
+import { SIDE_WORDS } from '@/components/debts/debt-words';
+import { PersonAvatar } from '@/components/debts/person-avatar';
+import {
+  sendReminder,
+  useRemindedToday,
+} from '@/components/debts/reminder';
+import { useDebt } from '@/components/debts/use-debts';
+import { SyncBanner } from '@/components/providers/sync-banner';
+import { NotFound } from '@/components/ui/empty-tile';
+import { IconSymbol } from '@/components/ui/icon-symbol';
+import { ListCard } from '@/components/ui/list-card';
+import { Page } from '@/components/ui/page';
+import { Press } from '@/components/ui/press';
+import { Text } from '@/components/ui/text';
+import { useThemeTokens } from '@/hooks/use-theme-tokens';
+import { formatDate } from '@/lib/dates/day-label';
+import { daysUntil, type DebtLine } from '@/lib/finance/debt-summary';
+import { formatMoney } from '@/lib/finance/format-money';
+import type { FinanceDebtActivity } from '@/lib/finance/types';
+import { approve } from '@/lib/haptics';
+import { openSheet } from '@/lib/sheet/sheet-store';
+import {
   deleteDebtActivity,
-  getDebtActivities,
   getDebtById,
-  outstandingDebtBalance,
   repayDebt,
+  updateDebt,
   writeOffDebt,
 } from '@/lib/supabase/debts';
-import { getWallets } from '@/lib/supabase/wallets';
-import type { Debt, DebtActivity } from '@repo/types';
-import {
-  formatMinorAmount,
-  parseAmountInput,
-  type MinorAmount,
-} from '@/lib/finance/money';
-import { Button } from '@/components/ui/button';
-import { openSheet } from '@/lib/sheet/sheet-store';
 import { tid } from '@/lib/test-ids';
-import { Page } from '@/components/ui/page';
+import { showToast } from '@/lib/toast/toast-store';
 
-const money = (currency: string, amountMinor: MinorAmount) =>
-  formatMinorAmount(amountMinor, currency);
-const normalizeCurrency = (currency: unknown) =>
-  String(currency ?? 'USD')
-    .trim()
-    .toUpperCase();
 export default function DebtDetailScreen() {
-  const tokens = useThemeTokens();
-  type WalletItem = Awaited<ReturnType<typeof getWallets>>[number];
   const { id } = useLocalSearchParams<{ id: string }>();
-  const [debt, setDebt] = useState<Debt | null>(null);
-  const [activities, setActivities] = useState<DebtActivity[]>([]);
-  const [wallets, setWallets] = useState<WalletItem[]>([]);
-  const [action, setAction] = useState<
-    'principal' | 'repayment' | null
-  >(null);
-  const [amount, setAmount] = useState('');
-  const [walletId, setWalletId] = useState('');
-  const [saving, setSaving] = useState(false);
-  const load = useCallback(async () => {
-    if (!id) return;
-    const [item, events, walletRows] = await Promise.all([
-      getDebtById(id),
-      getDebtActivities(id),
-      getWallets(),
-    ]);
-    const firstEligible =
-      walletRows.find(
-        (wallet) =>
-          normalizeCurrency(wallet.currency) ===
-          normalizeCurrency(item?.currency),
-      )?.id ?? '';
-    setDebt(item);
-    setActivities(events);
-    setWallets(walletRows);
-    setWalletId((old) =>
-      walletRows.some(
-        (wallet) =>
-          wallet.id === old &&
-          normalizeCurrency(wallet.currency) ===
-            normalizeCurrency(item?.currency),
-      )
-        ? old
-        : firstEligible,
-    );
-  }, [id]);
-  useFocusEffect(
-    useCallback(() => {
-      load().catch(() => {});
-    }, [load]),
-  );
-  const balance = useMemo(
-    () => outstandingDebtBalance(activities),
-    [activities],
-  );
-  if (!debt)
+  const { line, activities } = useDebt(id);
+  if (!line)
     return (
       <Page
         screen="debts"
@@ -90,244 +56,340 @@ export default function DebtDetailScreen() {
         title="Debt"
       >
         <NotFound
-          icon="account-outline"
+          icon="handshake-outline"
           title="This debt isn't here any more"
           body="It may have been deleted on another phone."
         />
       </Page>
     );
-  const matchingWallets = wallets.filter(
-    (wallet) =>
-      normalizeCurrency(wallet.currency) ===
-      normalizeCurrency(debt.currency),
+  return (
+    <DebtPage
+      line={line}
+      activities={activities}
+    />
   );
-  const openCashAction = (nextAction: 'principal' | 'repayment') => {
-    const selectedIsEligible = matchingWallets.some(
-      (wallet) => wallet.id === walletId,
-    );
-    setWalletId(
-      selectedIsEligible ? walletId : (matchingWallets[0]?.id ?? ''),
-    );
-    setAction(nextAction);
-  };
-  const submit = async () => {
-    const selectedWalletId = matchingWallets.some(
-      (wallet) => wallet.id === walletId,
-    )
-      ? walletId
-      : matchingWallets[0]?.id;
-    if (!selectedWalletId) {
-      Alert.alert(
-        'No matching wallet',
-        `Add or reactivate a ${debt.currency} wallet before recording a cash debt activity.`,
-      );
+}
+
+type Editing = 'name' | 'note' | null;
+
+function failed(error: unknown) {
+  showToast({
+    text:
+      error instanceof Error ? error.message : "Couldn't save that",
+    tone: 'removed',
+  });
+}
+
+/** Saves one field in place and offers Undo back to what it was. */
+function saveField(
+  id: string,
+  text: string,
+  patch: Parameters<typeof updateDebt>[1],
+  previous: Parameters<typeof updateDebt>[1],
+) {
+  try {
+    updateDebt(id, patch);
+    showToast({ text, undo: () => updateDebt(id, previous) });
+  } catch (error) {
+    failed(error);
+  }
+}
+
+function DebtPage({
+  line,
+  activities,
+}: {
+  line: DebtLine;
+  activities: FinanceDebtActivity[];
+}) {
+  const tokens = useThemeTokens();
+  const { debt, balanceMinor, state } = line;
+  const {
+    id,
+    counterpartyName: name,
+    direction,
+    currency,
+    note,
+  } = debt;
+  const words = SIDE_WORDS[direction];
+  const reminded = useRemindedToday();
+  const { wallets } = useDebtWallets(currency);
+  const [editing, setEditing] = useState<Editing>(null);
+  const [dueOpen, setDueOpen] = useState(false);
+  const closeDue = useCallback(() => setDueOpen(false), []);
+  const open = state === 'open';
+  const money = (minor: number) => formatMoney(minor, currency);
+
+  const settle = async () => {
+    const walletId =
+      activities.find((activity) =>
+        wallets.some((wallet) => wallet.id === activity.walletId),
+      )?.walletId ?? wallets[0]?.id;
+    if (!walletId) {
+      router.push({
+        pathname: '/debt/amount',
+        params: { id, mode: 'repay' },
+      });
       return;
     }
+    approve();
     try {
-      setSaving(true);
-      if (!action) return;
-      if (action === 'principal')
-        await addDebtPrincipal(
-          debt,
-          parseAmountInput(amount),
-          selectedWalletId,
-        );
-      else
-        await repayDebt(
-          debt,
-          parseAmountInput(amount),
-          selectedWalletId,
-        );
-      setAction(null);
-      setAmount('');
-      await load();
-    } catch (error) {
-      Alert.alert(
-        'Could not save activity',
-        error instanceof Error ? error.message : 'Unknown error',
+      const stored = await getDebtById(id);
+      if (!stored) throw new Error('This debt is gone');
+      const activity = await repayDebt(
+        stored,
+        balanceMinor,
+        walletId,
       );
-    } finally {
-      setSaving(false);
+      showToast({
+        text: `Recorded ${money(balanceMinor)}`,
+        undo: () => void deleteDebtActivity(stored, activity.id),
+      });
+    } catch (error) {
+      failed(error);
     }
   };
+
   const writeOff = async () => {
     const confirmed = await openSheet({
       kind: 'confirm',
-      title: 'Write off this debt?',
-      message: `This records ${money(debt.currency, balance)} as settled without money moving.`,
+      title: `Write off ${money(balanceMinor)}?`,
+      message: words.writeOffBody(name),
       confirmLabel: 'Write off',
       cancelLabel: 'Keep it',
       destructive: true,
     });
     if (!confirmed) return;
-    writeOffDebt(debt)
-      .then(load)
-      .catch((error) =>
-        Alert.alert('Could not write off', error.message),
-      );
+    try {
+      const stored = await getDebtById(id);
+      if (!stored) throw new Error('This debt is gone');
+      const activity = await writeOffDebt(stored);
+      showToast({
+        text: `Wrote off ${money(balanceMinor)}`,
+        tone: 'removed',
+        undo: () => void deleteDebtActivity(stored, activity.id),
+      });
+    } catch (error) {
+      failed(error);
+    }
   };
+
+  const days = debt.dueDate
+    ? daysUntil(debt.dueDate, new Date())
+    : null;
+  const dueText = debt.dueDate
+    ? `${dueLabel(debt.dueDate)}${days !== null && days >= 0 ? ` · in ${days} ${days === 1 ? 'day' : 'days'}` : ''}`
+    : 'No date';
+
   return (
-    <Page
-      screen="debts"
-      kind="pushed"
-      title={debt.counterpartyName}
-    >
-      <ScrollView
-        className="flex-1"
-        contentContainerClassName="px-5 pb-10 pt-6"
+    <View className="flex-1">
+      <Page
+        screen="debts"
+        kind="pushed"
+        title="Debt"
       >
-        <View className="rounded-card bg-card mb-4 p-4 overflow-hidden">
-          <Text className="text-sm text-muted">
-            {debt.direction === 'owed_to_me'
-              ? 'They owe you'
-              : 'You owe them'}{' '}
-            · {debtDueState(debt, balance).replace('_', ' ')}
-          </Text>
-          <Text className="mt-1 text-3xl font-display-bold text-foreground">
-            {money(debt.currency, balance)}
-          </Text>
-          {debt.dueDate ? (
-            <Text className="mt-1 text-sm text-muted">
-              Due {debt.dueDate}
-            </Text>
-          ) : null}
-        </View>
-        {action ? (
-          <View className="rounded-card bg-card mb-4 p-3 overflow-hidden">
-            <Text className="font-display-bold text-foreground">
-              {action === 'principal'
-                ? debt.direction === 'owed_to_me'
-                  ? 'Lend more'
-                  : 'Borrow more'
-                : 'Record repayment'}
-            </Text>
-            <AmountInput
-              value={amount}
-              onChangeValue={setAmount}
-              placeholder="Amount"
-              placeholderTextColor={tokens.muted}
-              className="mt-3 rounded-lg border border-border bg-background px-3 py-2 text-foreground"
-              currency={debt.currency}
+        <ScrollView
+          className="flex-1"
+          contentContainerClassName="gap-4 px-5 pb-10"
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          <SyncBanner screen="debts" />
+          {editing === 'name' ? (
+            <InlineEdit
+              name="name"
+              label="Name"
+              initial={name}
+              required
+              onCancel={() => setEditing(null)}
+              onSave={(value) => {
+                setEditing(null);
+                if (value !== name)
+                  saveField(
+                    id,
+                    'Name saved',
+                    { counterpartyName: value },
+                    { counterpartyName: name },
+                  );
+              }}
             />
-            {matchingWallets.length ? (
-              <View className="mt-2 flex-row flex-wrap gap-2">
-                {matchingWallets.map((wallet) => (
-                  <Pressable
-                    testID={tid('debts', 'set-wallet-id', wallet.id)}
-                    key={wallet.id}
-                    className={`rounded-lg px-3 py-2 ${walletId === wallet.id ? 'bg-primary' : 'bg-surface-2'}`}
-                    onPress={() => setWalletId(wallet.id)}
+          ) : (
+            <View className="flex-row items-center gap-3">
+              <PersonAvatar
+                name={name}
+                size={52}
+              />
+              <View className="min-w-0 flex-1">
+                <Press
+                  testID={tid('debts', 'edit-name')}
+                  accessibilityLabel={`Edit name, ${name}`}
+                  disabled={editing !== null}
+                  pressedClassName=""
+                  className="min-h-11 flex-row items-center gap-2 self-start"
+                  onPress={() => setEditing('name')}
+                >
+                  <Text
+                    variant="sectionTitle"
+                    className="shrink text-foreground"
+                    numberOfLines={1}
                   >
-                    <Text
-                      className={
-                        walletId === wallet.id
-                          ? 'text-primary-foreground'
-                          : 'text-foreground'
-                      }
-                    >
-                      {wallet.name}
-                    </Text>
-                  </Pressable>
-                ))}
-              </View>
-            ) : (
-              <View className="mt-3 rounded-lg bg-danger/10 p-3">
-                <Text className="text-sm text-danger">
-                  No active {debt.currency} wallet is available. Add
-                  or reactivate one, then try again.
+                    {name}
+                  </Text>
+                  {editing === null ? <Pencil /> : null}
+                </Press>
+                <Text
+                  variant="meta"
+                  className="-mt-2 text-muted"
+                >
+                  {words.started} {formatDate(line.startedAt)}
                 </Text>
               </View>
-            )}
-            <View className="mt-3 flex-row gap-2">
-              <Button
-                testID={tid('debts', 'cancel')}
-                variant="secondary"
-                label="Cancel"
-                className="flex-1"
-                onPress={() => setAction(null)}
-              />
-              <Button
-                testID={tid('debts', 'save')}
-                label="Save"
-                loading={saving}
-                disabled={!matchingWallets.length || saving}
-                className="flex-1"
-                onPress={submit}
-              />
             </View>
-          </View>
-        ) : (
-          <View className="mb-4 flex-row gap-2">
-            <Button
-              testID={tid('debts', 'lend-more')}
-              label={
-                debt.direction === 'owed_to_me'
-                  ? 'Lend more'
-                  : 'Borrow more'
-              }
-              className="flex-1"
-              onPress={() => openCashAction('principal')}
+          )}
+
+          {open ? (
+            <OpenStanding
+              line={line}
+              remindedToday={reminded(id)}
+              onSettle={() => void settle()}
+              onRemind={() => void sendReminder(line)}
             />
-            <Button
-              testID={tid('debts', 'repayment')}
-              label="Repayment"
-              className="flex-1"
-              onPress={() => openCashAction('repayment')}
-            />
-          </View>
-        )}
-        {balance > 0 ? (
-          <Pressable
-            testID={tid('debts', 'write-off-remaining')}
-            className="mb-4 self-start"
-            onPress={writeOff}
-          >
-            <Text className="font-display-semibold text-expense">
-              Write off remaining balance
-            </Text>
-          </Pressable>
-        ) : null}
-        <Text className="mb-2 text-base font-display-bold text-foreground">
-          Activity
-        </Text>
-        {activities.map((item) => (
-          <View
-            key={item.id}
-            className="mb-2 rounded-xl bg-card p-3"
-          >
-            <View className="flex-row justify-between">
-              <Text className="font-display-semibold text-foreground">
-                {item.kind.replace('_', ' ')}
-              </Text>
-              <Text className="font-display-semibold text-foreground">
-                {money(debt.currency, item.amountMinor)}
-              </Text>
-            </View>
-            <Text className="mt-1 text-sm text-muted">
-              {new Date(item.activityDate).toLocaleDateString()}{' '}
-              {item.walletId ? '· Cash wallet' : '· Non-cash'}
-            </Text>
-            <Pressable
-              testID={tid('debts', 'remove', item.id)}
-              className="mt-2 self-start"
-              onPress={async () => {
-                const confirmed = await openSheet({
-                  kind: 'confirm',
-                  title: 'Remove this activity?',
-                  message: 'Its wallet transaction goes too.',
-                  confirmLabel: 'Remove',
-                  cancelLabel: 'Keep it',
-                  destructive: true,
-                });
-                if (confirmed)
-                  void deleteDebtActivity(debt, item.id).then(load);
+          ) : state === 'settled' ? (
+            <SquareCard line={line} />
+          ) : (
+            <WrittenOff line={line} />
+          )}
+
+          {editing === 'note' ? (
+            <InlineEdit
+              name="note"
+              label="Note"
+              initial={note ?? ''}
+              placeholder="What is it for?"
+              onCancel={() => setEditing(null)}
+              onSave={(value) => {
+                setEditing(null);
+                if (value !== (note ?? ''))
+                  saveField(
+                    id,
+                    'Note saved',
+                    { note: value || null },
+                    { note },
+                  );
               }}
+            />
+          ) : (
+            <ListCard>
+              <Press
+                testID={tid('debts', 'edit-note')}
+                accessibilityLabel={`Edit note, ${note ?? 'no note'}`}
+                disabled={editing !== null}
+                className="flex-row items-center gap-3.5 px-[18px] py-3"
+                onPress={() => setEditing('note')}
+              >
+                <View className="h-[42px] w-[42px] items-center justify-center rounded-full bg-sand">
+                  <IconSymbol
+                    name="note-text-outline"
+                    size={20}
+                    color={tokens.foreground}
+                  />
+                </View>
+                <View className="min-w-0 flex-1">
+                  <Text
+                    variant="meta"
+                    className="text-muted"
+                  >
+                    Note
+                  </Text>
+                  <Text
+                    variant="rowTitle"
+                    className={
+                      note ? 'text-foreground' : 'text-muted'
+                    }
+                    numberOfLines={1}
+                  >
+                    {note ?? 'Add a note'}
+                  </Text>
+                </View>
+                {editing === null ? <Pencil /> : null}
+              </Press>
+            </ListCard>
+          )}
+
+          {open ? (
+            <Press
+              testID={tid('debts', 'due-date')}
+              accessibilityLabel={`Due date, ${dueText}`}
+              accessibilityHint="Opens a picker"
+              pressedClassName="bg-hairline"
+              className="h-16 justify-center gap-0.5 rounded-field bg-sand px-3.5"
+              onPress={() => setDueOpen(true)}
             >
-              <Text className="text-sm text-expense">Remove</Text>
-            </Pressable>
-          </View>
-        ))}
-      </ScrollView>
-    </Page>
+              <Text className="text-[13px] leading-[18px] text-muted">
+                Due date
+              </Text>
+              <View className="flex-row items-center gap-1.5">
+                <IconSymbol
+                  name="calendar-clock"
+                  size={18}
+                  color={tokens.foreground}
+                />
+                <Text
+                  variant="rowTitle"
+                  className="flex-1 text-foreground"
+                  numberOfLines={1}
+                >
+                  {dueText}
+                </Text>
+                <IconSymbol
+                  name="chevron-down"
+                  size={18}
+                  color={tokens.foreground}
+                />
+              </View>
+            </Press>
+          ) : null}
+
+          <DebtHistory
+            debt={debt}
+            activities={activities}
+          />
+
+          {open ? (
+            <Press
+              testID={tid('debts', 'write-off')}
+              radius={{ rest: 22, pressed: 16 }}
+              pressedClassName="bg-destructive-pressed"
+              className="h-11 flex-row items-center justify-center gap-2 self-center bg-destructive-fill px-[18px]"
+              onPress={() => void writeOff()}
+            >
+              <IconSymbol
+                name="cancel"
+                size={20}
+                color={tokens.states.destructive}
+              />
+              <Text className="text-[15px] leading-[21px] font-display-semibold text-state-destructive">
+                Write off {money(balanceMinor)}
+              </Text>
+            </Press>
+          ) : null}
+        </ScrollView>
+      </Page>
+      <DueDateSheet
+        open={dueOpen}
+        selected={debt.dueDate}
+        onDismiss={closeDue}
+        onPick={(dueDate) => {
+          setDueOpen(false);
+          if (dueDate !== debt.dueDate)
+            saveField(
+              id,
+              'Due date saved',
+              { dueDate },
+              { dueDate: debt.dueDate },
+            );
+        }}
+      />
+    </View>
   );
 }
