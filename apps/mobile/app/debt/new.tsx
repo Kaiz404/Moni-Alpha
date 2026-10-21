@@ -1,206 +1,321 @@
-import { useEffect, useState } from 'react';
-import { Alert, Pressable, ScrollView, View } from 'react-native';
-import { Text } from '@/components/ui/text';
-import type { ColorValue } from 'react-native';
 import { router } from 'expo-router';
-import type { DebtDirection } from '@repo/types';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { ScrollView, TextInput, View } from 'react-native';
 
-import { AmountInput } from '@/components/finance/amount-input';
-import { EmptyTile } from '@/components/ui/empty-tile';
-import { FormField } from '@/components/ui/form-field';
-import { WalletIcon } from '@/components/wallets/wallet-icon';
-import { useThemeTokens } from '@/hooks/use-theme-tokens';
-import { parseAmountInput } from '@/lib/finance/money';
-import { createDebt } from '@/lib/supabase/debts';
-import { getWallets } from '@/lib/supabase/wallets';
+import {
+  dueLabel,
+  DueDateSheet,
+} from '@/components/debt/due-date-sheet';
+import { typedMinor } from '@/components/debts/typed-amount';
+import {
+  pickDebtWallet,
+  useDebtWallets,
+} from '@/components/debts/debt-wallets';
+import { SIDE_WORDS } from '@/components/debts/debt-words';
+import {
+  editNewDebtDraft,
+  resetNewDebtDraft,
+  useNewDebtDraft,
+} from '@/components/debts/new-debt-draft';
+import { useDebtLines } from '@/components/debts/use-debts';
 import { Button } from '@/components/ui/button';
-import { tid } from '@/lib/test-ids';
+import { Chip } from '@/components/ui/chip';
+import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Page } from '@/components/ui/page';
+import { PickerField } from '@/components/ui/picker-field';
+import { Press } from '@/components/ui/press';
+import { Segmented } from '@/components/ui/segmented';
+import { Text } from '@/components/ui/text';
+import { useThemeTokens } from '@/hooks/use-theme-tokens';
+import { useMainCurrency } from '@/lib/finance/main-currency';
+import { formatMoney } from '@/lib/finance/format-money';
+import { approve } from '@/lib/haptics';
+import {
+  addDebtPrincipal,
+  createDebt,
+  getDebtById,
+  updateDebt,
+} from '@/lib/supabase/debts';
+import { tid } from '@/lib/test-ids';
+import { showToast } from '@/lib/toast/toast-store';
 
-type Wallet = Awaited<ReturnType<typeof getWallets>>[number];
+const sameName = (a: string, b: string) =>
+  a.trim().toLowerCase() === b.trim().toLowerCase();
 
 export default function NewDebtScreen() {
   const tokens = useThemeTokens();
-  const [name, setName] = useState('');
-  const [direction, setDirection] =
-    useState<DebtDirection>('owed_to_me');
-  const [amount, setAmount] = useState('');
-  const [wallets, setWallets] = useState<Wallet[]>([]);
-  const [walletId, setWalletId] = useState('');
-  const [dueDate, setDueDate] = useState('');
+  const currency = useMainCurrency();
+  const draft = useNewDebtDraft();
+  const lines = useDebtLines();
+  const { wallets } = useDebtWallets(currency);
+  const [dueOpen, setDueOpen] = useState(false);
   const [saving, setSaving] = useState(false);
+  const closeDue = useCallback(() => setDueOpen(false), []);
 
   useEffect(() => {
-    void getWallets()
-      .then((items) => {
-        setWallets(items);
-        setWalletId(items[0]?.id ?? '');
-      })
-      .catch(() => {});
+    resetNewDebtDraft();
   }, []);
 
+  const mine = useMemo(
+    () => lines.filter((line) => line.debt.currency === currency),
+    [lines, currency],
+  );
+  const recentPeople = useMemo(() => {
+    const names: string[] = [];
+    for (const line of [...mine].sort((a, b) =>
+      b.lastAt.localeCompare(a.lastAt),
+    ))
+      if (
+        !names.some((name) =>
+          sameName(name, line.debt.counterpartyName),
+        )
+      )
+        names.push(line.debt.counterpartyName);
+    return names.slice(0, 3);
+  }, [mine]);
+
+  const who = draft.name.trim();
+  const words = SIDE_WORDS[draft.direction];
+  const existing = who
+    ? mine.find(
+        (line) =>
+          line.state === 'open' &&
+          line.debt.direction === draft.direction &&
+          sameName(line.debt.counterpartyName, who),
+      )
+    : undefined;
+  const walletId =
+    draft.walletId &&
+    wallets.some((wallet) => wallet.id === draft.walletId)
+      ? draft.walletId
+      : (wallets[0]?.id ?? null);
+  const wallet = wallets.find((item) => item.id === walletId);
+  const amountMinor = typedMinor(draft.amount);
+  const amount = formatMoney(amountMinor, currency);
+  const ready =
+    who.length > 0 && amountMinor > 0 && walletId !== null;
+  const walletLabel = words.principalWallet;
+
   const submit = async () => {
+    if (!ready || !walletId) return;
+    approve();
+    setSaving(true);
     try {
-      setSaving(true);
-      await createDebt({
-        counterpartyName: name,
-        direction,
-        amountMinor: parseAmountInput(amount),
-        walletId,
-        dueDate: dueDate || null,
-      });
-      router.dismissTo('/debts');
+      const note = draft.note.trim() || null;
+      if (existing) {
+        const stored = await getDebtById(existing.debt.id);
+        if (!stored) throw new Error('This debt is gone');
+        await addDebtPrincipal(stored, amountMinor, walletId, note);
+        if (draft.dueDate)
+          updateDebt(stored.id, { dueDate: draft.dueDate });
+      } else {
+        await createDebt({
+          counterpartyName: who,
+          direction: draft.direction,
+          amountMinor,
+          walletId,
+          dueDate: draft.dueDate,
+          note,
+        });
+      }
+      showToast({ text: words.saved(who, amount) });
+      resetNewDebtDraft();
+      router.back();
     } catch (error) {
-      Alert.alert(
-        'Could not record debt',
-        error instanceof Error ? error.message : 'Please try again.',
-      );
-    } finally {
       setSaving(false);
+      showToast({
+        text:
+          error instanceof Error
+            ? error.message
+            : "Couldn't save that",
+        tone: 'removed',
+      });
     }
   };
 
-  const owedToMe = direction === 'owed_to_me';
-  const selectedWallet = wallets.find(
-    (wallet) => wallet.id === walletId,
-  );
-
   return (
-    <Page
-      screen="debts"
-      kind="pushed"
-      title="Record debt"
-    >
-      <ScrollView
-        className="flex-1"
-        contentContainerClassName="px-5 pb-10 pt-6"
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
+    <View className="flex-1">
+      <Page
+        screen="debts"
+        kind="pushed"
+        title="Record a debt"
       >
-        <View className="flex-row gap-2">
-          {(['owed_to_me', 'i_owe'] as const).map((option) => {
-            const selected = direction === option;
-            return (
-              <Pressable
-                testID={tid('debts', 'set-direction', option)}
-                key={option}
-                accessibilityRole="button"
-                accessibilityState={{ selected }}
-                className={`min-h-14 flex-1 justify-center rounded-2xl px-4 ${selected ? (option === 'owed_to_me' ? 'border border-primary bg-primary-muted' : 'border border-warning bg-warning/10') : 'bg-card'}`}
-                onPress={() => setDirection(option)}
+        <ScrollView
+          className="flex-1"
+          contentContainerClassName="gap-[18px] px-5 pb-6"
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          <View className="gap-2">
+            <Text className="text-[13px] leading-[18px] font-display-semibold text-foreground">
+              Who
+            </Text>
+            <TextInput
+              testID={tid('debts', 'new', 'person')}
+              accessibilityLabel="Who"
+              autoCapitalize="words"
+              autoComplete="name"
+              className="h-[52px] rounded-field bg-card px-4 font-display-semibold text-base text-foreground"
+              placeholder="Name"
+              placeholderTextColor={tokens.muted}
+              value={draft.name}
+              onChangeText={(name) => editNewDebtDraft({ name })}
+              maxLength={120}
+            />
+            {recentPeople.length > 0 ? (
+              <View
+                accessibilityLabel="Recent people"
+                className="flex-row flex-wrap gap-2"
               >
+                {recentPeople.map((name) => (
+                  <Chip
+                    key={name}
+                    testID={tid('debts', 'new', 'recent', name)}
+                    label={name}
+                    selected={sameName(name, who)}
+                    onPress={() => editNewDebtDraft({ name })}
+                  />
+                ))}
+              </View>
+            ) : null}
+            {existing ? (
+              <View className="flex-row items-center gap-1.5">
+                <IconSymbol
+                  name="information-outline"
+                  size={16}
+                  color={tokens.states.pending}
+                />
                 <Text
-                  className={`text-center text-[15px] font-display-bold ${selected && option === 'owed_to_me' ? 'text-primary' : 'text-foreground'}`}
+                  variant="meta"
+                  className="flex-1 text-state-pending"
                 >
-                  {option === 'owed_to_me'
-                    ? 'They owe me'
-                    : 'I owe them'}
+                  {words.existing(
+                    existing.debt.counterpartyName,
+                    formatMoney(existing.balanceMinor, currency),
+                  )}
                 </Text>
-                <Text className="mt-1 text-center text-xs text-muted">
-                  {option === 'owed_to_me'
-                    ? 'You are owed'
-                    : 'You need to repay'}
-                </Text>
-              </Pressable>
-            );
-          })}
-        </View>
-
-        <View className="rounded-card bg-card mt-6 p-5 overflow-hidden">
-          <FormField
-            testID={tid('debts', 'person')}
-            label="Person"
-            placeholder="e.g. Alex"
-            value={name}
-            onChangeText={setName}
-            autoCapitalize="words"
-          />
-          <Text className="mb-2 text-[15px] font-display-semibold text-foreground">
-            Amount
-          </Text>
-          <AmountInput
-            accessibilityLabel="Debt amount"
-            className="min-h-14 px-4 py-3 text-right text-2xl font-display-bold text-foreground"
-            currency={selectedWallet?.currency}
-            onChangeValue={setAmount}
-            placeholder="0.00"
-            placeholderTextColor={tokens.muted}
-            value={amount}
-          />
-          <Text className="mt-2 text-xs leading-4 text-muted">
-            Currency comes from the wallet selected below. Moni does
-            not convert it.
-          </Text>
-          <FormField
-            testID={tid('debts', 'due-date')}
-            containerClassName="mt-5"
-            label="Due date"
-            hint="Optional · YYYY-MM-DD"
-            placeholder="2026-08-01"
-            value={dueDate}
-            onChangeText={setDueDate}
-            autoCapitalize="none"
-          />
-        </View>
-
-        <Text className="mb-2 mt-8 text-base font-display-bold text-foreground">
-          Cash wallet
-        </Text>
-        {wallets.length === 0 ? (
-          <EmptyTile
-            icon="wallet"
-            title="No wallet yet"
-            body="Add a wallet first, then record the debt against it."
-          />
-        ) : (
-          <View className="flex-row flex-wrap gap-2">
-            {wallets.map((wallet) => {
-              const selected = walletId === wallet.id;
-              const iconColor: ColorValue = selected
-                ? tokens.primary
-                : tokens.foreground;
-              return (
-                <Pressable
-                  testID={tid('debts', 'set-wallet-id', wallet.id)}
-                  key={wallet.id}
-                  accessibilityRole="button"
-                  accessibilityState={{ selected }}
-                  className={`min-h-11 justify-center rounded-xl px-3 ${selected ? (owedToMe ? 'border border-primary bg-primary-muted' : 'border border-warning bg-warning/10') : 'bg-card'}`}
-                  onPress={() => setWalletId(wallet.id)}
-                >
-                  <View className="flex-row items-center gap-1.5">
-                    <WalletIcon
-                      color={iconColor}
-                      icon={wallet.icon}
-                      size={16}
-                      type={wallet.type}
-                    />
-                    <Text
-                      className={`text-sm font-display-semibold ${selected && owedToMe ? 'text-primary' : 'text-foreground'}`}
-                    >
-                      {wallet.name} · {wallet.currency}
-                    </Text>
-                  </View>
-                </Pressable>
-              );
-            })}
+              </View>
+            ) : null}
           </View>
-        )}
 
-        <Button
-          testID={tid('debts', 'record-money-owed')}
-          className="mt-8"
-          disabled={!walletId}
-          label={
-            owedToMe
-              ? 'Record money owed to me'
-              : 'Record money I owe'
-          }
-          loading={saving}
-          loadingLabel="Saving debt…"
-          onPress={submit}
-        />
-      </ScrollView>
-    </Page>
+          <Segmented
+            screen="debts"
+            name="direction"
+            accessibilityLabel="Who owes who"
+            value={draft.direction}
+            options={[
+              {
+                value: 'owed_to_me',
+                label: SIDE_WORDS.owed_to_me.segment(who),
+              },
+              {
+                value: 'i_owe',
+                label: SIDE_WORDS.i_owe.segment(who),
+              },
+            ]}
+            onChange={(direction) => editNewDebtDraft({ direction })}
+          />
+
+          <View className="gap-2">
+            <Text className="text-[13px] leading-[18px] font-display-semibold text-foreground">
+              Amount
+            </Text>
+            <Press
+              testID={tid('debts', 'new', 'amount')}
+              accessibilityLabel={`Amount, ${amountMinor > 0 ? amount : 'not entered'}`}
+              accessibilityHint="Opens the amount page"
+              radius={{ rest: 16, pressed: 16 }}
+              className="h-16 flex-row items-center gap-2 bg-card pl-4 pr-3.5"
+              onPress={() =>
+                router.push({
+                  pathname: '/debt/amount',
+                  params: { mode: 'new' },
+                })
+              }
+            >
+              <Text
+                className={`flex-1 font-display-bold ${amountMinor > 0 ? 'text-[32px] leading-[38px] text-foreground' : 'text-[20px] leading-[26px] text-muted'}`}
+                numberOfLines={1}
+              >
+                {amountMinor > 0 ? amount : 'Enter amount'}
+              </Text>
+              <IconSymbol
+                name="chevron-right"
+                size={20}
+                color={tokens.muted}
+              />
+            </Press>
+          </View>
+
+          <View className="flex-row gap-2">
+            <PickerField
+              testID={tid('debts', 'new', 'wallet')}
+              className="flex-1"
+              label={walletLabel}
+              value={wallet?.name ?? ''}
+              onPress={async () => {
+                const picked = await pickDebtWallet(
+                  walletLabel,
+                  wallets,
+                  walletId,
+                  currency,
+                );
+                if (picked) editNewDebtDraft({ walletId: picked });
+              }}
+            />
+            <PickerField
+              testID={tid('debts', 'new', 'due-date')}
+              className="flex-1"
+              label="Due date"
+              value={dueLabel(draft.dueDate)}
+              onPress={() => setDueOpen(true)}
+            />
+          </View>
+
+          <View className="gap-2">
+            <Text className="text-[13px] leading-[18px] font-display-semibold text-foreground">
+              Note
+            </Text>
+            <TextInput
+              testID={tid('debts', 'new', 'note')}
+              accessibilityLabel="Note"
+              className="h-[52px] rounded-field bg-card px-4 font-display-semibold text-base text-foreground"
+              placeholder="What is it for?"
+              placeholderTextColor={tokens.muted}
+              value={draft.note}
+              onChangeText={(note) => editNewDebtDraft({ note })}
+              maxLength={1000}
+            />
+          </View>
+        </ScrollView>
+        <View className="border-t-[1.5px] border-sand px-5 pb-5 pt-3">
+          <Button
+            testID={tid('debts', 'new', 'record')}
+            pinned
+            label={
+              wallets.length === 0
+                ? `Add a ${currency} wallet first`
+                : ready
+                  ? words.record(who, amount)
+                  : who
+                    ? 'Add an amount'
+                    : 'Add who and an amount'
+            }
+            disabled={!ready}
+            loading={saving}
+            onPress={() => void submit()}
+          />
+        </View>
+      </Page>
+      <DueDateSheet
+        open={dueOpen}
+        selected={draft.dueDate}
+        onDismiss={closeDue}
+        onPick={(dueDate) => {
+          setDueOpen(false);
+          editNewDebtDraft({ dueDate });
+        }}
+      />
+    </View>
   );
 }
