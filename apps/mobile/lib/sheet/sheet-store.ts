@@ -25,6 +25,9 @@ export type WalletOption = {
 
 export type NotificationApp = { packageName: string; label: string };
 
+/** The four rows of the + chooser. */
+export type CaptureChoice = 'type' | 'scan' | 'say' | 'ask';
+
 /** Each sheet kind: what the caller passes in, and what the sheet resolves to when the user picks. */
 type Sheets = {
   category: {
@@ -57,6 +60,7 @@ type Sheets = {
   };
   /** Dates are local `YYYY-MM-DD`. */
   date: { request: { selected: string }; result: string };
+  chooser: { request: object; result: CaptureChoice };
   confirm: {
     request: {
       title: string;

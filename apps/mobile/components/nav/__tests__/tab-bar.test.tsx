@@ -1,4 +1,8 @@
-import { fireEvent, render, screen } from '@testing-library/react-native';
+import {
+  fireEvent,
+  render,
+  screen,
+} from '@testing-library/react-native';
 import type { BottomTabBarProps } from 'expo-router/js-tabs';
 
 import { TabBar } from '@/components/nav/tab-bar';
@@ -7,7 +11,12 @@ jest.mock('uniwind', () => ({
   useCSSVariable: (names: string[]) => names.map(() => undefined),
 }));
 jest.mock('react-native-safe-area-context', () => ({
-  useSafeAreaInsets: () => ({ top: 48, bottom: 24, left: 0, right: 0 }),
+  useSafeAreaInsets: () => ({
+    top: 48,
+    bottom: 24,
+    left: 0,
+    right: 0,
+  }),
 }));
 jest.mock('expo-router', () => ({ router: { push: jest.fn() } }));
 
@@ -36,7 +45,13 @@ describe('TabBar', () => {
       screen
         .getAllByRole(/tab|button/)
         .map((node) => node.props.accessibilityLabel),
-    ).toEqual(['Home', 'Activity', 'Add a transaction', 'Budget', 'Debts']);
+    ).toEqual([
+      'Home',
+      'Activity',
+      'Add a transaction',
+      'Budget',
+      'Debts',
+    ]);
   });
 
   it('marks only the open tab selected', () => {
@@ -52,7 +67,10 @@ describe('TabBar', () => {
   it('navigates to a tab that is not open', () => {
     const navigation = renderBar(0);
     fireEvent.press(screen.getByTestId('nav.tab.debts'));
-    expect(navigation.navigate).toHaveBeenCalledWith('debts', undefined);
+    expect(navigation.navigate).toHaveBeenCalledWith(
+      'debts',
+      undefined,
+    );
   });
 
   it('does not navigate when the open tab is pressed again', () => {

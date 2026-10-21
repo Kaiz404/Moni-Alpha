@@ -5,9 +5,9 @@ name: sheets
 ---
 - launchApp
 - tapOn:
-    id: nav.capture
+    id: nav.plus
 - tapOn:
-    id: nav.capture.expense
+    id: nav.chooser.type
 - assertVisible:
     id: capture.category
 

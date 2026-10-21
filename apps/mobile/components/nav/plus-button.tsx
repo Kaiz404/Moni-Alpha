@@ -31,6 +31,11 @@ export function plusRingBottom(insetBottom: number) {
   return tabBarBottom(insetBottom) + TAB_BAR_REACH - RING_SIZE;
 }
 
+/** Top of the + circle, measured from the screen edge. */
+export function plusTop(insetBottom: number) {
+  return plusRingBottom(insetBottom) + (RING_SIZE + PLUS_SIZE) / 2;
+}
+
 type PlusButtonProps = {
   testID: TestId;
   /** Turns the plus 45° into the chooser's close button. */

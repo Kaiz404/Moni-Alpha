@@ -1,8 +1,8 @@
 import { View } from 'react-native';
-import { router } from 'expo-router';
 import type { BottomTabBarProps } from 'expo-router/js-tabs';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { openCaptureChooser } from '@/components/nav/capture-chooser';
 import {
   PlusButton,
   TAB_BAR_HEIGHT,
@@ -98,7 +98,7 @@ export function TabBar({ state, navigation }: BottomTabBarProps) {
       <PlusButton
         testID={tid('nav', 'plus')}
         open={false}
-        onPress={() => router.push('/transaction/new')}
+        onPress={() => void openCaptureChooser()}
       />
     </View>,
   );

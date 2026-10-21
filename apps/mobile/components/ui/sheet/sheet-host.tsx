@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { BackHandler, StyleSheet, View } from 'react-native';
 
+import { CaptureChooserSheet } from '@/components/nav/capture-chooser';
 import { CategoryPickerSheet } from '@/components/sheets/category-picker-sheet';
 import { ConfirmSheet } from '@/components/sheets/confirm-sheet';
 import {
@@ -68,6 +69,13 @@ function renderSheet(sheet: OpenSheet, frame: SheetFrameProps) {
         <NotificationAppSheet
           {...frame}
           request={sheet.request}
+          onPick={sheet.settle}
+        />
+      );
+    case 'chooser':
+      return (
+        <CaptureChooserSheet
+          {...frame}
           onPick={sheet.settle}
         />
       );

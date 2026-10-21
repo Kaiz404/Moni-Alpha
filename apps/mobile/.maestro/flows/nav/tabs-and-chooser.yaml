@@ -1,0 +1,141 @@
+# N1 shell: the five-slot tab bar, the + chooser, and the pushed pages.
+# Needs a signed-in e2e build. Debts expects the default seed.
+# Run: scripts/device/with-device.sh --lane n1 -- maestro test .maestro/flows/nav/tabs-and-chooser.yaml
+appId: com.anonymous.moni.e2e
+name: N1 tabs and chooser
+tags:
+  - n1
+  - needs-default-seed
+---
+- launchApp
+- extendedWaitUntil:
+    visible:
+      id: home.avatar
+    timeout: 15000
+- assertVisible:
+    id: nav.tab.index
+- assertVisible:
+    id: nav.plus
+
+# Each tab root opens from the bar.
+- tapOn:
+    id: nav.tab.activity
+- assertVisible:
+    id: activity.ask-moni
+- takeScreenshot: n1-l2-tab-activity
+- tapOn:
+    id: nav.tab.budget
+- assertVisible: Budget
+- assertNotVisible: Insights
+- takeScreenshot: n1-l7-budget
+- tapOn:
+    id: nav.tab.debts
+- takeScreenshot: n1-l6-debts
+- scrollUntilVisible:
+    element:
+      id: debts.record-debt
+- tapOn:
+    id: nav.tab.index
+- assertVisible:
+    id: home.avatar
+- takeScreenshot: n1-l2-tabs
+
+# The + opens the chooser over a scrim that covers the bar.
+- tapOn:
+    id: nav.plus
+- assertVisible: Add a transaction
+- assertVisible:
+    id: sheet.scrim
+- assertVisible:
+    id: nav.chooser.type
+- assertVisible:
+    id: nav.chooser.scan
+- assertVisible:
+    id: nav.chooser.say
+- assertVisible:
+    id: nav.chooser.ask
+- assertVisible:
+    id: nav.chooser.close
+- takeScreenshot: n1-l3-chooser
+
+# Android back closes the sheet and leaves Home in place.
+- pressKey: Back
+- assertNotVisible: Add a transaction
+- assertVisible:
+    id: home.avatar
+- takeScreenshot: n1-l9-back
+
+# The × closes it too.
+- tapOn:
+    id: nav.plus
+- tapOn:
+    id: nav.chooser.close
+- assertNotVisible: Add a transaction
+
+# Ask Moni pushes chat with no tab bar; back returns to Home.
+- tapOn:
+    id: nav.plus
+- tapOn:
+    id: nav.chooser.ask
+- assertVisible:
+    id: chat.back
+- assertNotVisible:
+    id: nav.tab.index
+- takeScreenshot: n1-l4-chat
+- tapOn:
+    id: chat.back
+- assertVisible:
+    id: home.avatar
+
+# The Home Moni button opens the same page.
+- tapOn:
+    id: home.ask-moni
+- assertVisible:
+    id: chat.back
+- pressKey: Back
+- assertVisible:
+    id: home.avatar
+
+# The avatar pushes Profile with no tab bar.
+- tapOn:
+    id: home.avatar
+- assertVisible:
+    id: profile.back
+- assertNotVisible:
+    id: nav.tab.index
+- takeScreenshot: n1-l5-profile
+- tapOn:
+    id: profile.back
+
+# Say it opens the v1 listening page.
+- tapOn:
+    id: nav.plus
+- tapOn:
+    id: nav.chooser.say
+- assertNotVisible: Add a transaction
+- assertNotVisible:
+    id: nav.tab.index
+- takeScreenshot: n1-l8-say
+- pressKey: Back
+- assertVisible:
+    id: nav.plus
+
+# Type it opens the v1 amount form.
+- tapOn:
+    id: nav.plus
+- tapOn:
+    id: nav.chooser.type
+- assertVisible:
+    id: capture.submit
+- pressKey: Back
+- assertVisible:
+    id: nav.plus
+
+# The chat deep link opens over the tabs; back lands on Home.
+- openLink: moni-e2e://chat
+- assertVisible:
+    id: chat.back
+- takeScreenshot: n1-l10-chat-link
+- pressKey: Back
+- assertVisible:
+    id: home.avatar

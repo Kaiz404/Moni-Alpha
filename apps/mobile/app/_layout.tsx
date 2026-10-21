@@ -153,6 +153,14 @@ export default function RootLayout() {
                   name="(tabs)"
                   options={{ animation: 'fade' }}
                 />
+                <Stack.Screen
+                  name="scan/receipt"
+                  options={{
+                    presentation: 'transparentModal',
+                    animation: 'fade',
+                    contentStyle: { backgroundColor: 'transparent' },
+                  }}
+                />
               </Stack>
               <SheetHost />
               <FabReceiptProcessingOverlay />

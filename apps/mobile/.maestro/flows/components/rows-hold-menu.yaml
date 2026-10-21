@@ -49,7 +49,8 @@ tags:
     id: sheet.confirm
 - assertNotVisible: Delete this transaction?
 - takeScreenshot: f4-l3-deleted
-- back
+- tapOn:
+    id: nav.tab.index
 - tapOn:
     id: home.avatar
 - assertVisible:
