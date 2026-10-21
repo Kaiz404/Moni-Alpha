@@ -17,15 +17,17 @@ import { SyncStatus } from '@/components/providers/sync-status';
 import { DefaultWalletPicker } from '@/components/profile/default-wallet-picker';
 import { PermissionColumn } from '@/components/profile/permission-column';
 import { ProfileSectionTitle } from '@/components/profile/profile-section-title';
-import { SettingsRow } from '@/components/profile/settings-row';
 import { ThemePreferencePicker } from '@/components/profile/theme-preference-picker';
 import { GradientCard } from '@/components/ui/gradient-card';
 import { IconSymbol } from '@/components/ui/icon-symbol';
+import { ListCard } from '@/components/ui/list-card';
+import { NavRow } from '@/components/ui/nav-row';
 import { getWalletCardStyle } from '@/constants/wallet-card-styles';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { useNotificationListener } from '@/hooks/use-notification-listener';
 import { useAuth } from '@/lib/auth/auth-context';
 import { prepareOfflineSpeechModel } from '@/lib/speech/speech-recognition';
+import { tid } from '@/lib/test-ids';
 
 const avatarStyle = getWalletCardStyle('emerald-grain');
 
@@ -41,14 +43,6 @@ function mapSpeechPermissionStatus(result: {
     return result.status;
   }
   return 'undetermined';
-}
-
-function SettingsGroup({ children }: { children: React.ReactNode }) {
-  return (
-    <View className="bg-card overflow-hidden rounded-[22px]">
-      {children}
-    </View>
-  );
 }
 
 export default function ProfileScreen() {
@@ -207,35 +201,34 @@ export default function ProfileScreen() {
 
         <View className="mt-6 px-5">
           <ProfileSectionTitle>Money setup</ProfileSectionTitle>
-          <SettingsGroup>
-            <SettingsRow
+          <ListCard>
+            <NavRow
+              testID={tid('profile', 'row', 'Categories')}
               icon="shape-outline"
-              iconBgClassName="bg-accent-lilac/30"
-              iconColor={tokens.accents.lilac}
+              tint="lilac"
               title="Categories"
-              onPress={() => router.push('/categories' as any)}
+              onPress={() => router.push('/categories' as never)}
             />
-            <SettingsRow
+            <NavRow
+              testID={tid('profile', 'row', 'Category budgets')}
               icon="wallet"
-              iconBgClassName="bg-primary-muted"
-              iconColor={tokens.primary}
+              tint="mint"
               title="Category budgets"
-              onPress={() => router.push('/budget' as any)}
+              onPress={() => router.push('/budget' as never)}
             />
-            <SettingsRow
-              icon="group"
-              iconBgClassName="bg-accent-aqua/40"
-              iconColor={tokens.transfer}
+            <NavRow
+              testID={tid('profile', 'row', 'Debts')}
+              icon="account-group-outline"
+              tint="aqua"
               title="Debts"
-              onPress={() => router.push('/debts' as any)}
-              showDivider={false}
+              onPress={() => router.push('/debts' as never)}
             />
-          </SettingsGroup>
+          </ListCard>
         </View>
 
         <View className="mt-6 px-5">
           <ProfileSectionTitle>Capture sources</ProfileSectionTitle>
-          <SettingsGroup>
+          <ListCard>
             {!isAndroid ? (
               <PermissionColumn
                 title="Notification access"
@@ -334,7 +327,7 @@ export default function ProfileScreen() {
               showAction={!isMicGranted}
               widthClassName=""
             />
-          </SettingsGroup>
+          </ListCard>
         </View>
 
         <View className="mt-6 px-5">
@@ -346,30 +339,28 @@ export default function ProfileScreen() {
           <ProfileSectionTitle>
             Privacy & local data
           </ProfileSectionTitle>
-          <SettingsGroup>
-            <SettingsRow
-              icon="notifications"
-              iconBgClassName="bg-accent-lilac/40"
-              iconColor={tokens.states.pending}
+          <ListCard>
+            <NavRow
+              testID={tid('profile', 'row', 'Captured notifications')}
+              icon="bell-outline"
+              tint="lilac"
               title="Captured notifications"
-              onPress={() => router.push('/notifications' as any)}
-              showDivider={false}
+              onPress={() => router.push('/notifications' as never)}
             />
-          </SettingsGroup>
+          </ListCard>
         </View>
 
         <View className="mt-6 px-5">
           <ProfileSectionTitle>Developer</ProfileSectionTitle>
-          <SettingsGroup>
-            <SettingsRow
+          <ListCard>
+            <NavRow
+              testID={tid('profile', 'row', 'Debug panel')}
               icon="bug-outline"
-              iconBgClassName="bg-surface-2"
-              iconColor={tokens.muted}
+              tint="sand"
               title="Debug panel"
-              onPress={() => router.push('/debug' as any)}
-              showDivider={false}
+              onPress={() => router.push('/debug' as never)}
             />
-          </SettingsGroup>
+          </ListCard>
         </View>
 
         <View className="mt-8 px-5">

@@ -27,7 +27,7 @@ import { getWallets } from '@/lib/supabase/wallets';
 import { getCategories } from '@/lib/supabase/categories';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { AmountInput } from '@/components/finance/amount-input';
-import { chipClass, chipTextClass } from '@/components/ui/chip';
+import { Segmented } from '@/components/ui/segmented';
 import { FeedbackState } from '@/components/ui/feedback-state';
 import { FormField } from '@/components/ui/form-field';
 import { PickerField } from '@/components/ui/picker-field';
@@ -470,34 +470,17 @@ export default function EditTransactionScreen() {
                   <Text className="mb-1.5 text-xs font-display-semibold uppercase tracking-wide text-muted">
                     Type
                   </Text>
-                  <View className="flex-row gap-1.5">
-                    <TouchableOpacity
-                      className={`${chipClass(type === 'income')} flex-1 items-center py-2 ${isTransfer ? 'opacity-50' : ''}`}
-                      onPress={() => !isTransfer && setType('income')}
-                      activeOpacity={0.85}
-                      disabled={isTransfer}
-                    >
-                      <Text
-                        className={`text-sm font-display-semibold ${chipTextClass(type === 'income')}`}
-                      >
-                        Income
-                      </Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      className={`${chipClass(type === 'expense')} flex-1 items-center py-2 ${isTransfer ? 'opacity-50' : ''}`}
-                      onPress={() =>
-                        !isTransfer && setType('expense')
-                      }
-                      activeOpacity={0.85}
-                      disabled={isTransfer}
-                    >
-                      <Text
-                        className={`text-sm font-display-semibold ${chipTextClass(type === 'expense')}`}
-                      >
-                        Expense
-                      </Text>
-                    </TouchableOpacity>
-                  </View>
+                  <Segmented
+                    screen="txn"
+                    name="type"
+                    accessibilityLabel="Type"
+                    options={[
+                      { value: 'income', label: 'Income' },
+                      { value: 'expense', label: 'Expense' },
+                    ]}
+                    value={type === 'income' ? 'income' : 'expense'}
+                    onChange={setType}
+                  />
                 </View>
                 <View className="flex-1 min-w-[120px]">
                   <Text className="mb-1.5 text-xs font-display-semibold uppercase tracking-wide text-muted">

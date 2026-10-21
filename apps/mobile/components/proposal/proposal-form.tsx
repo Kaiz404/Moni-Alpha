@@ -18,8 +18,8 @@ import { AiReasoningSection } from '@/components/proposal/ai-reasoning-section';
 import { FieldRow } from '@/components/proposal/field-row';
 import { ProposalLocationSection } from '@/components/proposal/proposal-location-section';
 import { CategoryIcon } from '@/components/categories/category-icon';
-import { chipClass, chipTextClass } from '@/components/ui/chip';
 import { PickerField } from '@/components/ui/picker-field';
+import { Segmented } from '@/components/ui/segmented';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { useAuth } from '@/lib/auth/auth-context';
 import { parseAmountInput } from '@/lib/finance/money';
@@ -55,6 +55,11 @@ export type CategoryOption = {
 
 const TX_TYPES = ['expense', 'income', 'transfer'] as const;
 export type TxType = (typeof TX_TYPES)[number];
+const TX_TYPE_LABELS: Record<TxType, string> = {
+  expense: 'Expense',
+  income: 'Income',
+  transfer: 'Transfer',
+};
 
 export function normalizeTxType(
   type: ProposedTransaction['type'],
@@ -320,21 +325,18 @@ export function ProposalForm({
       <Text className="mb-2 text-xs font-display-semibold uppercase tracking-wider text-muted">
         Transaction type
       </Text>
-      <View className="mb-4 flex-row gap-1.5">
-        {TX_TYPES.map((t) => (
-          <TouchableOpacity
-            key={t}
-            className={`${chipClass(txType === t)} flex-1 items-center py-2.5`}
-            onPress={() => setTxType(t)}
-            activeOpacity={0.85}
-          >
-            <Text
-              className={`text-sm font-display-semibold capitalize ${chipTextClass(txType === t)}`}
-            >
-              {t}
-            </Text>
-          </TouchableOpacity>
-        ))}
+      <View className="mb-4">
+        <Segmented
+          screen="review"
+          name="type"
+          accessibilityLabel="Transaction type"
+          options={TX_TYPES.map((t) => ({
+            value: t,
+            label: TX_TYPE_LABELS[t],
+          }))}
+          value={txType}
+          onChange={setTxType}
+        />
       </View>
 
       <View className="mb-5 border-b border-border-subtle pb-5">

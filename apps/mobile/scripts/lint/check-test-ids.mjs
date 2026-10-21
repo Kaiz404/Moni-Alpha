@@ -30,6 +30,9 @@ export const CONTROLS = [
   'MoniButton',
   'FormField',
   'PickerField',
+  'Chip',
+  'NavRow',
+  'TransactionRow',
 ];
 
 // A component that wraps a control passes its own testID prop through, typed as TestId, so the

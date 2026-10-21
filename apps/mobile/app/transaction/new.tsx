@@ -1,14 +1,14 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Alert, Pressable, TextInput, View } from 'react-native';
+import { Alert, TextInput, View } from 'react-native';
 import { Text } from '@/components/ui/text';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useValue } from '@legendapp/state/react';
 import { createTransactionSchema } from '@repo/types';
 
 import { CategoryIcon } from '@/components/categories/category-icon';
-import { chipClass, chipTextClass } from '@/components/ui/chip';
 import { NumericKeypad } from '@/components/ui/numeric-keypad';
 import { PickerField } from '@/components/ui/picker-field';
+import { Segmented } from '@/components/ui/segmented';
 import { WalletIcon } from '@/components/wallets/wallet-icon';
 import { getWalletCardStyle } from '@/constants/wallet-card-styles';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
@@ -457,28 +457,20 @@ export default function NewTransactionScreen() {
         className="flex-1 px-5"
         style={{ paddingBottom: 12 }}
       >
-        <View className="mt-3 flex-row gap-2">
-          {(['expense', 'income', 'transfer'] as const).map(
-            (option) => {
-              const selected = type === option;
-              return (
-                <Pressable
-                  testID={tid('capture', 'set-type', option)}
-                  key={option}
-                  accessibilityRole="button"
-                  accessibilityState={{ selected }}
-                  className={`${chipClass(selected)} min-h-10 flex-1 items-center justify-center px-2`}
-                  onPress={() => setType(option)}
-                >
-                  <Text
-                    className={`text-sm font-display-semibold ${chipTextClass(selected)}`}
-                  >
-                    {transactionCopy[option]}
-                  </Text>
-                </Pressable>
-              );
-            },
-          )}
+        <View className="mt-3">
+          <Segmented
+            screen="capture"
+            name="set-type"
+            accessibilityLabel="Transaction type"
+            options={(['expense', 'income', 'transfer'] as const).map(
+              (option) => ({
+                value: option,
+                label: transactionCopy[option],
+              }),
+            )}
+            value={type}
+            onChange={setType}
+          />
         </View>
 
         <View className="flex-1 items-center justify-center px-2">
