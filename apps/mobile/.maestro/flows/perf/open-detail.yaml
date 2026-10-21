@@ -1,0 +1,29 @@
+# A2 perf probe: row tap to the detail amount, then pencil tap to a focused input.
+# Run: scripts/device/perf.sh --sha <sha> --flow .maestro/flows/perf/open-detail.yaml
+appId: com.anonymous.moni.e2e
+name: A2 open detail
+tags:
+  - a2
+  - perf
+  - needs-default-seed
+---
+- launchApp
+- tapOn:
+    id: nav.tab.activity
+- extendedWaitUntil:
+    visible:
+      id: 'activity\.transaction\..*'
+    timeout: 15000
+- tapOn:
+    id: 'activity\.transaction\..*'
+    index: 0
+- extendedWaitUntil:
+    visible:
+      id: txn.amount.value
+    timeout: 5000
+- tapOn:
+    id: txn.amount.pencil
+- extendedWaitUntil:
+    visible:
+      id: txn.amount.input
+    timeout: 5000

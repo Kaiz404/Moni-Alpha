@@ -1,0 +1,53 @@
+# A2 in-place edits per V2A-TxnDetailEdit: amount on the numeric keyboard with Undo, a cancelled name, a category pick.
+# Run: scripts/device/with-device.sh --lane a2 -- maestro test .maestro/flows/activity/txn-edit.yaml
+appId: com.anonymous.moni.e2e
+name: A2 transaction in-place edits
+tags:
+  - a2
+  - needs-default-seed
+---
+- launchApp
+- tapOn:
+    id: nav.tab.activity
+- tapOn:
+    id: activity.filter.expense
+- extendedWaitUntil:
+    visible:
+      id: 'activity\.transaction\..*'
+    timeout: 15000
+- tapOn:
+    id: 'activity\.transaction\..*'
+    index: 0
+
+- tapOn:
+    id: txn.amount.pencil
+- assertVisible:
+    id: txn.amount.input
+- takeScreenshot: a2-amount-editing
+- eraseText: 12
+- inputText: '18.20'
+- tapOn:
+    id: txn.amount.save
+- assertVisible: Amount saved
+- assertVisible: '−RM18.20'
+- takeScreenshot: a2-amount-saved
+- tapOn: Undo
+- assertNotVisible: '−RM18.20'
+
+- tapOn:
+    id: txn.merchant.pencil
+- eraseText: 40
+- inputText: Not this name
+- hideKeyboard
+- assertNotVisible:
+    id: txn.merchant.input
+- assertNotVisible: Not this name
+- takeScreenshot: a2-name-cancelled
+
+- tapOn:
+    id: txn.tile.category
+- assertVisible: Choose category
+- tapOn: 'Transport.*'
+- assertVisible: Category saved
+- assertVisible: 'Transport.*'
+- takeScreenshot: a2-category

@@ -1,0 +1,60 @@
+# A2 transaction detail per V2A-TxnDetail: no ellipsis, the tiles, the note, and Delete with Keep it first.
+# Run: scripts/device/with-device.sh --lane a2 -- maestro test .maestro/flows/activity/txn-detail.yaml
+appId: com.anonymous.moni.e2e
+name: A2 transaction detail
+tags:
+  - a2
+  - needs-default-seed
+---
+- launchApp
+- tapOn:
+    id: nav.tab.activity
+- tapOn:
+    id: activity.filter.expense
+- extendedWaitUntil:
+    visible:
+      id: 'activity\.transaction\..*'
+    timeout: 15000
+- tapOn:
+    id: 'activity\.transaction\..*'
+    index: 0
+- assertVisible: Transaction
+- assertVisible:
+    id: txn.amount.pencil
+- assertVisible:
+    id: txn.tile.category
+- assertVisible:
+    id: txn.tile.wallet
+- assertVisible: Source
+- assertNotVisible: Tags
+- assertNotVisible: '⋯'
+- takeScreenshot: a2-detail
+
+- tapOn:
+    id: txn.note.value
+- inputText: With Mei
+- tapOn:
+    id: txn.note.save
+- assertVisible: Note saved
+- assertVisible: With Mei
+- takeScreenshot: a2-note
+
+- scrollUntilVisible:
+    element:
+      id: txn.delete
+    direction: DOWN
+- tapOn:
+    id: txn.delete
+- assertVisible: Delete this transaction?
+- tapOn:
+    id: sheet.cancel
+- assertVisible:
+    id: txn.delete
+- tapOn:
+    id: txn.delete
+- tapOn:
+    id: sheet.confirm
+- assertVisible:
+    id: 'activity\.transaction\..*'
+    index: 0
+- takeScreenshot: a2-deleted

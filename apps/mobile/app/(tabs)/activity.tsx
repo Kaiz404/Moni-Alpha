@@ -1,6 +1,6 @@
 import { syncState } from '@legendapp/state';
 import { useSelector, useValue } from '@legendapp/state/react';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { Alert, ScrollView, View } from 'react-native';
 
@@ -115,13 +115,18 @@ export default function ActivityScreen() {
   const [timezone, setTimezone] = useState('UTC');
   const progress = useValue(budgetProgress$(userId, timezone));
   const [mode, setMode] = useState<ActivityChartMode>('spending');
-  const [query, setQuery] = useState('');
+  const { q } = useLocalSearchParams<{ q?: string }>();
+  const [query, setQuery] = useState(q ?? '');
   const [kind, setKind] = useState<ActivityKind>('all');
   const [walletId, setWalletId] = useState<string | null>(null);
   const [day, setDay] = useState<string | null>(null);
   const [shownDays, setShownDays] = useState(FIRST_DAYS);
   const [held, setHeld] = useState<Held | null>(null);
   const now = new Date();
+
+  useEffect(() => {
+    if (q) setQuery(q);
+  }, [q]);
 
   useEffect(() => {
     void ensureFinanceTimezone()

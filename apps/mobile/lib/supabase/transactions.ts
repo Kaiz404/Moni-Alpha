@@ -248,3 +248,10 @@ export async function deleteTransaction(id: string) {
     updated_at: new Date().toISOString(),
   });
 }
+
+export function setTransactionReceipt(id: string, url: string): void {
+  patchRow(transactions$, id, {
+    receipt_image_url: url,
+    updated_at: new Date().toISOString(),
+  });
+}
