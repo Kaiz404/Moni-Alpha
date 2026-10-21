@@ -1,0 +1,41 @@
+# H2 answer card: a Transport question shows the thinking card, then an answer card with ledger numbers.
+# Needs Transport spending this month in the main currency.
+# Run: scripts/device/with-device.sh --lane h2 -- maestro test .maestro/flows/chat/answer.yaml
+appId: com.anonymous.moni.e2e
+name: H2 chat answer
+tags:
+  - h2
+  - needs-default-seed
+---
+- launchApp
+- extendedWaitUntil:
+    visible:
+      id: home.ask-moni
+    timeout: 15000
+- tapOn:
+    id: home.ask-moni
+- tapOn:
+    id: chat.input
+- inputText: How much on Transport this month
+- tapOn:
+    id: chat.send
+- extendedWaitUntil:
+    visible:
+      id: chat.answer.title
+    timeout: 30000
+- assertVisible:
+    id: chat.answer.title
+    text: 'RM.* on Transport.*'
+- assertVisible:
+    id: chat.answer.open-budget
+- takeScreenshot: h2-l4-answer
+
+# The composer still works after an answer, and the keyboard keeps the thread visible.
+- tapOn:
+    id: chat.input
+- assertVisible:
+    id: chat.answer.title
+- takeScreenshot: h2-l10-keyboard
+- hideKeyboard
+- assertVisible:
+    id: chat.mic

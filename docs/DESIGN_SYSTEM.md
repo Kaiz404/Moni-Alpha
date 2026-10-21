@@ -426,6 +426,8 @@ Chat is a dedicated capability, not the application’s control center.
 - The future companion is a small brand presence: a greeting marker, processing companion, or empty-state moment. It never blocks amounts, occupies major persistent screen space, or replaces useful labels.
 - Use a compact “Suggested action” card rather than forcing users into a conversational loop.
 
+v2 (`V2H-AskMoni`, `V2H-AskMoniAnswer`, `V2H-ChatHistory`): Moni chat is a pushed page titled "Moni" with today's date, reached from the Home ask box, the Moni header button (Home, Activity) and the chooser's Ask Moni; all three open today's thread. The user writes on Sand, Moni answers on Ink. A capture becomes a draft card ("Moni's draft · not counted yet"): merchant and amount edit in place, category and wallet chips open picker sheets, and **Not mine** · **Later** · **Approve** settle it behind a 5 s toast with Undo (Approve reads "Pick wallet" until a wallet is set). A question shows the thinking card, then an Ink answer card whose title, bar and chart come from the ledger and whose caption is the model's reply. "Moni noticed" opens the day with what stands out. Older messages of the day fold under "Earlier today"; Past days lists each day with search, delete and Undo.
+
 ### 7.13 Debt component
 
 v2 (D1, boards `V2P-Debts`, `V2P-DebtDetail`, `V2P-DebtNew`, `V2P-DebtSettle`, `V2P-DebtsEmpty`). Debts show only in the main currency and never sum across currencies.

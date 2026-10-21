@@ -1,0 +1,47 @@
+# H2 draft capture: a typed spend becomes a draft card; edit the amount in place, then Approve.
+# Needs a signed-in e2e build with a MYR wallet; the mock or live AI client extracts the spend.
+# Run: scripts/device/with-device.sh --lane h2 -- maestro test .maestro/flows/chat/draft.yaml
+appId: com.anonymous.moni.e2e
+name: H2 chat draft
+tags:
+  - h2
+  - needs-default-seed
+---
+- launchApp
+- extendedWaitUntil:
+    visible:
+      id: home.ask-box
+    timeout: 15000
+- tapOn:
+    id: home.ask-box
+- tapOn:
+    id: chat.input
+- inputText: paid 6 ringgit parking at KLCC
+- tapOn:
+    id: chat.send
+- extendedWaitUntil:
+    visible:
+      id: chat.draft.approve
+    timeout: 30000
+- assertVisible: "Moni's draft · not counted yet"
+- assertVisible:
+    id: chat.draft.amount-text
+    text: '−RM6.00'
+- takeScreenshot: h2-l1-draft
+
+# Edit the amount in place to 7.
+- tapOn:
+    id: chat.draft.amount
+- eraseText
+- inputText: '7'
+- tapOn:
+    id: chat.draft.save
+- assertVisible:
+    id: chat.draft.amount-text
+    text: '−RM7.00'
+- tapOn:
+    id: chat.draft.approve
+- assertVisible: 'Approved .* −RM7.00'
+- assertVisible:
+    id: chat.draft.undo
+- takeScreenshot: h2-l3-approved

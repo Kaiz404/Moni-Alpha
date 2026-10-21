@@ -23,14 +23,14 @@ Input (chat text / receipt photo / notification / + chooser scan or voice)
 ### Moni chat (conversational)
 
 ```
-User message (text / inline receipt-camera photo / hold-to-talk)
-  → lib/ai/chat/orchestrator.ts (heuristic routing)
-  → extract path: run-extraction (sync for text) or processing queue (images)
-  → analyze path: build snapshot on-device → POST /v1/chat/analyze → prose reply in thread
+User message (text / inline receipt-camera photo / tap-to-talk)
+  → lib/ai/chat/orchestrator.ts (heuristic routing; a thinking card holds the turn)
+  → extract path: run-extraction (sync for text) or processing queue (images) → draft card in thread
+  → analyze path: pick an answer card on-device + POST /v1/chat/analyze → card with the reply as caption, or prose
   → extract skipped → auto-retry analyze → clarify with quick-reply chips if both fail
 ```
 
-Chat sessions: MMKV (`lib/ai/chat/messages.ts`), 24h idle expiry, "New chat" reset. API history is the last 6 question/answer pairs whose answer was a successful analysis, each prefixed with its local `[HH:MM]`; extraction acks and errors are never sent. Failures show a short message by category (not configured, offline, rate-limited, signed out, other), never the backend reason.
+Threads: one per local date in the finance timezone (`lib/ai/chat/sessions.ts`), stored in MMKV by `lib/ai/chat/messages.ts`; opening chat reopens today's thread, and `app/chat/history.tsx` lists past days. Messages are a discriminated union; `assistant_draft` holds a `proposalId`, `assistant_card` an `AnswerCard`, `assistant_noticed` the lines of "Moni noticed". **Answer cards are client-side:** `pickAnswerCard` in `lib/ai/chat/answer-cards.ts` picks `category_spend`, `budget_progress` or `bill_due` from the question's topic and fills it from the ledger (`answer-snapshot.ts`), so the model never sets a card's numbers; the wire contract is unchanged. API history is the last 6 question/answer pairs of today's thread whose answer was a successful analysis (prose or a card's caption), each prefixed with its local `[HH:MM]`; drafts and errors are never sent. Failures show a short message by category (not configured, offline, rate-limited, signed out, other), never the backend reason.
 
 Capture entry points feeding the **extraction queue** (silent — not shown in Chat thread): the tab bar's + chooser (Scan a receipt → `app/scan/receipt.tsx` camera; Say it → `app/scan/listen.tsx` narration).
 
@@ -66,7 +66,7 @@ Chat answers balance, payday, subscription and affordability questions from fact
 - **Overrides**: `recurring_overrides` rows hide a dismissed series and mark a confirmed one as certain, optionally fixing its kind, amount and day of month.
 - **Payday**: the confirmed income series, else the most regular monthly one.
 - **Forecast** to payday, else month end: balance − bills due before it + trusted income before it − day-to-day spend. Day-to-day spend excludes recurring series; its light, typical and heavy cases are the P10, P50 and P90 of spend in 7-day windows (shorter when the horizon is) over the last 8 weeks. Shown only with ≥45 days of history, the balance of every liquid wallet in use (holding money or used in the last 8 weeks) confirmed within 30 days (`wallets.balance_confirmed_at`), logged coverage ≥70% (logged spending over logged spending plus balance corrections that lowered a balance, last 8 weeks), a positive balance, without a payday no more unscheduled income than 20% of spending, and a range no wider than 40% of the balance. Otherwise it is `insufficient` with reasons, and the model says what it can't see.
-- **Balance check**: `walletsNeedingConfirmation` lists the in-use liquid wallets holding the forecast back (never confirmed or older than 30 days), using the forecast's own in-use rule. The Wallets and Chat tabs ask "Confirm balances to unlock your forecast" for them once that currency has ≥45 days of history; "Yes" stamps `balance_confirmed_at`, "Fix it" opens the wallet screen, "Not now" hides it for 7 days (device-local).
+- **Balance check**: `walletsNeedingConfirmation` lists the in-use liquid wallets holding the forecast back (never confirmed or older than 30 days), using the forecast's own in-use rule. Home's check-in asks about one main-currency wallet once that currency has ≥45 days of history; "That's right" stamps `balance_confirmed_at`, "Fix it" opens the wallet page's balance edit, "Not now" hides it for 7 days (device-local).
 - **Afford**: when the question asks about affording ("afford", "can I buy/spend", "should I buy", "enough for"), its amount (`RM800`, or a bare number) is subtracted on-device; the reply is yes only if the worst case stays ≥ 0.
 - **Backtest** (`backtestForecast`, CI only): replaying 10 synthetic six-month salaried ledgers day by day put the real balance before payday inside the range 86% of the time (80% over 20 ledgers, worst ledger 53%). P25/P75 managed 60% (50% over 20): an interquartile range holds about half the outcomes by construction. Real accuracy needs replay over real ledgers.
 

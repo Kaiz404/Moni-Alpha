@@ -1,116 +1,117 @@
-import { ActivityIndicator, View } from 'react-native';
-import { Text } from '@/components/ui/text';
 import { Image } from 'expo-image';
+import { View } from 'react-native';
 
 import { IconSymbol } from '@/components/ui/icon-symbol';
+import { Text } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
-import type {
-  ChatMessage,
-  QuickReplyOption,
-} from '@/lib/ai/chat/messages';
+import type { ChatMessage, NoticedItem, QuickReplyOption } from '@/lib/ai/chat/messages';
+import { tid } from '@/lib/test-ids';
+
+import { AnswerCard } from './answer-card';
+import { chatTime } from './chat-time';
+import { DraftCard } from './draft-card';
+import { NoticedCard } from './noticed-card';
 import { QuickReplyChips } from './quick-reply-chips';
+import { ThinkingCard } from './thinking-card';
 
 type MessageBubbleProps = {
   message: ChatMessage;
-  onQuickReply?: (
-    option: QuickReplyOption,
-    message: ChatMessage,
-  ) => void;
+  onQuickReply: (option: QuickReplyOption, message: ChatMessage) => void;
+  onNoticed: (item: NoticedItem) => void;
 };
 
-/** Clear human/Moni attribution without turning conversation into a card wall. */
-export function MessageBubble({
-  message,
-  onQuickReply,
-}: MessageBubbleProps) {
+/** One thread item: the user's words on Sand, Moni's on Ink, and Moni's cards. */
+export function MessageBubble({ message, onQuickReply, onNoticed }: MessageBubbleProps) {
   const tokens = useThemeTokens();
-  const isUser = message.role === 'user';
-
-  if (
-    message.kind === 'assistant_status' &&
-    message.status === 'processing'
-  ) {
-    return (
-      <View
-        className="mb-4 flex-row items-center"
-        accessibilityLiveRegion="polite"
-      >
-        <View className="h-8 w-8 items-center justify-center rounded-full bg-primary-muted">
-          <ActivityIndicator
-            size="small"
-            color={tokens.primary}
-          />
+  switch (message.kind) {
+    case 'user_text':
+    case 'user_image':
+      return (
+        <View className="mb-4 items-end gap-1">
+          <View className="max-w-[85%] rounded-[22px] rounded-br-md bg-sand px-4 py-3">
+            {message.kind === 'user_image' ? (
+              <Image
+                source={{ uri: message.imageUri }}
+                style={{ width: 200, height: 140, borderRadius: 12, marginBottom: message.content ? 8 : 0 }}
+                contentFit="cover"
+                accessibilityLabel="Receipt photo"
+              />
+            ) : null}
+            {message.content ? (
+              <Text
+                variant="body"
+                className="text-foreground"
+              >
+                {message.content}
+              </Text>
+            ) : null}
+          </View>
+          <Text
+            variant="smallest"
+            className="text-muted"
+          >
+            {chatTime(message.createdAt)}
+          </Text>
         </View>
-        <Text className="ml-2 text-[13px] font-display-semibold text-muted">
-          {message.content}
-        </Text>
-      </View>
-    );
-  }
-
-  if (isUser) {
-    return (
-      <View className="mb-4 items-end">
-        <View className="max-w-[88%] rounded-[22px] rounded-br-md bg-primary px-4 py-3">
-          {message.imageUri ? (
-            <Image
-              source={{ uri: message.imageUri }}
-              style={{
-                width: 200,
-                height: 140,
-                borderRadius: 12,
-                marginBottom: message.content ? 8 : 0,
-              }}
-              contentFit="cover"
+      );
+    case 'assistant_status':
+      return <ThinkingCard label={message.content} />;
+    case 'assistant_draft':
+      return <DraftCard message={message} />;
+    case 'assistant_card':
+      return <AnswerCard message={message} />;
+    case 'assistant_noticed':
+      return (
+        <NoticedCard
+          message={message}
+          onPick={onNoticed}
+        />
+      );
+    case 'assistant_text':
+      if (message.status === 'error')
+        return (
+          <View
+            accessibilityLiveRegion="polite"
+            className="mb-4 max-w-[88%] flex-row gap-2 self-start rounded-[22px] rounded-bl-md bg-sand px-4 py-3"
+          >
+            <IconSymbol
+              name="cloud-off-outline"
+              size={18}
+              color={tokens.ink2}
             />
-          ) : null}
-          {message.content ? (
-            <Text className="text-[15px] leading-[22px] text-primary-foreground">
+            <Text
+              testID={tid('chat', 'unavailable')}
+              variant="body"
+              className="flex-1 text-foreground"
+            >
               {message.content}
             </Text>
-          ) : null}
+          </View>
+        );
+      return (
+        <View className="mb-4 max-w-[88%] self-start rounded-[22px] rounded-bl-md bg-primary px-4 py-3">
+          <Text
+            variant="body"
+            className="text-primary-foreground"
+          >
+            {message.content}
+          </Text>
         </View>
-      </View>
-    );
-  }
-
-  const isError = message.status === 'error';
-  return (
-    <View className="mb-4 items-start">
-      <View className="mb-1 flex-row items-center">
-        <View className="h-5 w-5 items-center justify-center rounded-full bg-primary-muted">
-          <IconSymbol
-            name={isError ? 'information-outline' : 'auto-fix'}
-            size={12}
-            color={isError ? tokens.danger : tokens.primary}
-          />
-        </View>
-        <Text className="ml-1.5 text-[12px] font-display-semibold text-muted">
-          Moni
-        </Text>
-      </View>
-      <View
-        className={`max-w-[88%] rounded-[22px] rounded-tl-md px-4 py-3 ${
-          isError ? 'bg-danger/10' : 'bg-card'
-        }`}
-      >
-        <Text
-          className={`text-[15px] leading-[22px] ${
-            isError ? 'text-danger' : 'text-foreground'
-          }`}
-        >
-          {message.content}
-        </Text>
-        {message.kind === 'assistant_clarify' &&
-        message.quickReplies &&
-        message.pendingContext &&
-        onQuickReply ? (
+      );
+    case 'assistant_clarify':
+      return (
+        <View className="mb-4 max-w-[88%] self-start rounded-[22px] rounded-bl-md bg-primary px-4 py-3">
+          <Text
+            variant="body"
+            className="text-primary-foreground"
+          >
+            {message.content}
+          </Text>
           <QuickReplyChips
             options={message.quickReplies}
             onSelect={(option) => onQuickReply(option, message)}
           />
-        ) : null}
-      </View>
-    </View>
-  );
+        </View>
+      );
+  }
 }

@@ -1,38 +1,36 @@
 import { View } from 'react-native';
+
+import { Press } from '@/components/ui/press';
 import { Text } from '@/components/ui/text';
 import type { QuickReplyOption } from '@/lib/ai/chat/messages';
-import { Press } from '@/components/ui/press';
 import { tid } from '@/lib/test-ids';
 
 const LABELS: Record<QuickReplyOption, string> = {
-  log_transaction: 'Review transaction',
-  analyze_finances: 'Analyze finances',
+  log_transaction: 'Add it',
+  analyze_finances: 'Ask about it',
 };
 
-type QuickReplyChipsProps = {
-  options: QuickReplyOption[];
-  onSelect: (option: QuickReplyOption) => void;
-};
-
-/** Explicit suggested actions, not decorative chat chips. */
+/** The two answers to "add or ask?", as cream capsules on Moni's Ink bubble. */
 export function QuickReplyChips({
   options,
   onSelect,
-}: QuickReplyChipsProps) {
+}: {
+  options: QuickReplyOption[];
+  onSelect: (option: QuickReplyOption) => void;
+}) {
   return (
-    <View className="mt-3 gap-2">
+    <View className="mt-3 flex-row flex-wrap gap-2">
       {options.map((option) => (
         <Press
           testID={tid('chat', 'select', option)}
-          pressedClassName="bg-hairline"
           key={option}
           onPress={() => onSelect(option)}
-          className="self-start rounded-xl bg-primary-muted px-3 py-2"
+          radius={{ rest: 22, pressed: 16 }}
+          pressedClassName="bg-sand-light"
+          className="h-11 justify-center bg-primary-foreground px-4"
           accessibilityLabel={LABELS[option]}
         >
-          <Text className="text-[13px] font-display-semibold text-primary">
-            {LABELS[option]}
-          </Text>
+          <Text className="text-[15px] font-display-semibold text-primary">{LABELS[option]}</Text>
         </Press>
       ))}
     </View>

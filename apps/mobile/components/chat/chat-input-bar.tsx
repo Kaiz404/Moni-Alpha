@@ -1,220 +1,169 @@
-import { useState } from 'react';
-import { Pressable, TextInput, View } from 'react-native';
-import { Text } from '@/components/ui/text';
 import { Image } from 'expo-image';
-import { IconSymbol } from '@/components/ui/icon-symbol';
-import { useThemeTokens } from '@/hooks/use-theme-tokens';
-import { toggleOff, toggleOn } from '@/lib/haptics';
+import { TextInput, View } from 'react-native';
+
 import { HeaderIconButton } from '@/components/ui/header-icon-button';
-import { tid } from '@/lib/test-ids';
+import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Press } from '@/components/ui/press';
+import { Text } from '@/components/ui/text';
+import { useThemeTokens } from '@/hooks/use-theme-tokens';
+import { tid } from '@/lib/test-ids';
 
 type ChatInputBarProps = {
   input: string;
   onChangeText: (text: string) => void;
+  placeholder: string;
   attachedImage: string | null;
   onRemoveImage: () => void;
   onOpenCamera: () => void;
   onSend: () => void;
-  isSpeechRecognizing: boolean;
-  onPressInMic: () => void;
-  onPressOutMic: () => void;
-  bottomPad: number;
+  listening: boolean;
+  onListen: () => void;
+  onCancelListen: () => void;
+  onDoneListen: () => void;
+  bottomInset: number;
 };
 
-/** Quiet, touch-friendly composer with text, receipt, and voice entry. */
+/** The composer: receipt camera, the system keyboard, and the mic (tap to talk, Done to stop). */
 export function ChatInputBar({
   input,
   onChangeText,
+  placeholder,
   attachedImage,
   onRemoveImage,
   onOpenCamera,
   onSend,
-  isSpeechRecognizing,
-  onPressInMic,
-  onPressOutMic,
-  bottomPad,
+  listening,
+  onListen,
+  onCancelListen,
+  onDoneListen,
+  bottomInset,
 }: ChatInputBarProps) {
   const tokens = useThemeTokens();
-  const [isInputFocused, setIsInputFocused] = useState(false);
-  const hasContent = input.trim().length > 0 || !!attachedImage;
-  const showMicMode = isSpeechRecognizing || !hasContent;
-  const inputPlaceholder = isSpeechRecognizing
-    ? 'Listeningâ€¦ speak naturally'
-    : 'Ask or add a transaction';
+  const canSend = input.trim().length > 0 || !!attachedImage;
 
   return (
-    <View className="border-t border-border-subtle bg-canvas px-5 pt-2">
+    <View
+      className="gap-2 bg-canvas px-3 pt-2"
+      style={{ paddingBottom: bottomInset + 8 }}
+    >
       {attachedImage ? (
-        <View className="bg-sand mb-2 flex-row items-center rounded-2xl p-2">
+        <View className="flex-row items-center gap-3 rounded-tile bg-card p-2 pr-3">
           <Image
             source={{ uri: attachedImage }}
-            style={{ width: 56, height: 56, borderRadius: 12 }}
+            style={{ width: 52, height: 52, borderRadius: 12 }}
             contentFit="cover"
+            accessibilityLabel="Receipt photo"
           />
-          <View className="ml-3 flex-1">
-            <Text className="text-[15px] font-display-semibold text-foreground">
-              Receipt ready to review
-            </Text>
-            <Text className="mt-0.5 text-[13px] text-muted">
-              Send it when you&apos;re ready.
-            </Text>
-          </View>
+          <Text
+            variant="rowTitle"
+            className="flex-1 text-foreground"
+          >
+            Receipt ready to send
+          </Text>
           <HeaderIconButton
-            testID={tid('chat', 'remove-attached-receipt')}
-            accessibilityLabel="Remove attached receipt"
+            testID={tid('chat', 'remove-receipt')}
+            accessibilityLabel="Remove the receipt"
             icon="close"
             onPress={onRemoveImage}
           />
         </View>
       ) : null}
 
-      {isSpeechRecognizing ? (
-        <View className="mb-2 flex-row items-center rounded-2xl bg-primary-muted px-4 py-2.5">
-          <View className="h-2 w-2 rounded-full bg-primary" />
-          <Text className="ml-2 flex-1 text-[13px] font-display-semibold text-primary">
-            Listeningâ€¦ release the microphone when you&apos;re done
+      {listening ? (
+        <View
+          accessibilityRole="text"
+          accessibilityLiveRegion="polite"
+          className="h-14 flex-row items-center gap-3 rounded-full bg-card pl-1.5 pr-1.5"
+        >
+          <Press
+            testID={tid('chat', 'listen', 'cancel')}
+            accessibilityLabel="Cancel"
+            onPress={onCancelListen}
+            pressedClassName="bg-hairline"
+            className="h-11 w-11 items-center justify-center rounded-full bg-sand"
+          >
+            <IconSymbol
+              name="close"
+              size={20}
+              color={tokens.foreground}
+            />
+          </Press>
+          <Text
+            variant="body"
+            className="flex-1 text-ink-2"
+            numberOfLines={1}
+          >
+            {input || 'Listening. Tap done to send.'}
           </Text>
-        </View>
-      ) : null}
-
-      <View
-        className="flex-row items-end"
-        style={{ paddingBottom: bottomPad }}
-      >
-        <HeaderIconButton
-          testID={tid('chat', 'attach-a-receipt')}
-          accessibilityLabel="Attach a receipt photo"
-          icon="camera"
-          onPress={onOpenCamera}
-        />
-
-        <TextInput
-          testID={tid('chat', 'message-moni')}
-          className={`ml-2 mr-2 min-h-11 max-h-30 flex-1 rounded-2xl bg-card px-4 py-2.5 text-base leading-5 text-foreground ${
-            isInputFocused ? 'border border-primary' : ''
-          }`}
-          placeholder={inputPlaceholder}
-          placeholderTextColor={tokens.muted}
-          value={input}
-          onChangeText={onChangeText}
-          onFocus={() => setIsInputFocused(true)}
-          onBlur={() => setIsInputFocused(false)}
-          multiline
-          editable={!isSpeechRecognizing}
-          returnKeyType="send"
-          blurOnSubmit
-          onSubmitEditing={onSend}
-          accessibilityLabel="Message Moni"
-        />
-
-        {showMicMode ? (
           <Press
-            testID={tid('chat', 'mic')}
-            pressedClassName={
-              isSpeechRecognizing
-                ? 'bg-transparent'
-                : 'bg-primary-pressed'
-            }
-            className="h-11 w-11 items-center justify-center rounded-full"
-            style={{
-              backgroundColor: isSpeechRecognizing
-                ? tokens.accents.lilac
-                : tokens.primary,
-            }}
-            onPressIn={() => {
-              toggleOn();
-              onPressInMic();
-            }}
-            onPressOut={() => {
-              toggleOff();
-              onPressOutMic();
-            }}
-            accessibilityLabel={
-              isSpeechRecognizing
-                ? 'Listening. Release to stop recording'
-                : 'Hold to speak to Moni'
-            }
-            accessibilityHint="Hold while speaking, then release to add your words"
-          >
-            <IconSymbol
-              name="microphone"
-              size={22}
-              color={
-                isSpeechRecognizing
-                  ? tokens.onPastel
-                  : tokens.primaryForeground
-              }
-            />
-          </Press>
-        ) : (
-          <Press
-            testID={tid('chat', 'send-message')}
+            testID={tid('chat', 'listen', 'done')}
+            onPress={onDoneListen}
+            radius={{ rest: 22, pressed: 16 }}
             pressedClassName="bg-primary-pressed"
-            className="h-11 w-11 items-center justify-center rounded-full bg-primary"
-            onPress={onSend}
-            disabled={!hasContent || isSpeechRecognizing}
-            accessibilityLabel="Send message"
+            className="h-11 justify-center bg-primary px-4"
+          >
+            <Text className="text-[15px] font-display-semibold text-primary-foreground">Done</Text>
+          </Press>
+        </View>
+      ) : (
+        <View className="min-h-14 flex-row items-end gap-1 rounded-[28px] border-[1.5px] border-hairline bg-card p-1.5">
+          <Press
+            testID={tid('chat', 'scan')}
+            accessibilityLabel="Scan a receipt"
+            onPress={onOpenCamera}
+            pressedClassName="bg-sand"
+            className="h-11 w-11 items-center justify-center rounded-full"
           >
             <IconSymbol
-              name="arrow-up"
+              name="camera-outline"
               size={22}
-              color={tokens.primaryForeground}
+              color={tokens.foreground}
             />
           </Press>
-        )}
-      </View>
-    </View>
-  );
-}
-
-type ChatEmptyStateProps = {
-  primary: string;
-  onSuggestion?: (text: string) => void;
-};
-
-/** Companion cue and useful, data-safe starting prompts for a new chat. */
-export function ChatEmptyState({
-  primary,
-  onSuggestion,
-}: ChatEmptyStateProps) {
-  const suggestions = [
-    'How much did I spend on food this month?',
-    'Help me set a budget for dining',
-    'Add a coffee for $5',
-  ];
-
-  return (
-    <View className="flex-1 items-center justify-center px-5 py-12">
-      <View
-        className="mb-5 h-16 w-16 items-center justify-center rounded-full"
-        style={{ backgroundColor: `${primary}26` }}
-      >
-        <IconSymbol
-          name="auto-fix"
-          size={30}
-          color={primary}
-        />
-      </View>
-      <Text className="text-center text-[22px] font-display-bold leading-7 text-foreground">
-        A clearer view of your money
-      </Text>
-      <View className="mt-7 w-full max-w-md gap-2">
-        {suggestions.map((suggestion) => (
-          <Pressable
-            testID={tid('chat', 'suggestion', suggestion)}
-            key={suggestion}
-            onPress={() => onSuggestion?.(suggestion)}
-            disabled={!onSuggestion}
-            className="rounded-2xl bg-card px-4 py-3.5 active:bg-surface-2"
-            accessibilityRole="button"
-          >
-            <Text className="text-[15px] font-display-semibold text-foreground">
-              {suggestion}
-            </Text>
-          </Pressable>
-        ))}
-      </View>
+          <TextInput
+            testID={tid('chat', 'input')}
+            accessibilityLabel="Message Moni"
+            className="max-h-32 min-h-11 flex-1 py-2.5 font-display text-[16px] leading-[22px] text-foreground"
+            placeholder={placeholder}
+            placeholderTextColor={tokens.muted}
+            value={input}
+            onChangeText={onChangeText}
+            multiline
+            submitBehavior="blurAndSubmit"
+            returnKeyType="send"
+            onSubmitEditing={onSend}
+          />
+          {canSend ? (
+            <Press
+              testID={tid('chat', 'send')}
+              accessibilityLabel="Send"
+              onPress={onSend}
+              pressedClassName="bg-primary-pressed"
+              className="h-11 w-11 items-center justify-center rounded-full bg-primary"
+            >
+              <IconSymbol
+                name="arrow-up"
+                size={22}
+                color={tokens.primaryForeground}
+              />
+            </Press>
+          ) : (
+            <Press
+              testID={tid('chat', 'mic')}
+              accessibilityLabel="Talk to Moni"
+              onPress={onListen}
+              pressedClassName="bg-primary-pressed"
+              className="h-11 w-11 items-center justify-center rounded-full bg-primary"
+            >
+              <IconSymbol
+                name="microphone"
+                size={22}
+                color={tokens.primaryForeground}
+              />
+            </Press>
+          )}
+        </View>
+      )}
     </View>
   );
 }

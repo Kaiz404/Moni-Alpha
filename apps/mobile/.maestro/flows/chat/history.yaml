@@ -1,0 +1,41 @@
+# H2 past days: today's thread is listed, search finds it, and a delete shows Undo.
+# Run after draft.yaml so today's thread mentions parking.
+# Run: scripts/device/with-device.sh --lane h2 -- maestro test .maestro/flows/chat/history.yaml
+appId: com.anonymous.moni.e2e
+name: H2 chat history
+tags:
+  - h2
+---
+- launchApp
+- extendedWaitUntil:
+    visible:
+      id: home.ask-box
+    timeout: 15000
+- tapOn:
+    id: home.ask-box
+- tapOn:
+    id: chat.history
+- assertVisible: Past days
+- tapOn:
+    id: chat.history.search
+- inputText: parking
+- assertVisible: Today
+- takeScreenshot: h2-l6-history
+- hideKeyboard
+
+# Delete today's thread, then Undo.
+- tapOn:
+    id: chat.history.edit
+- tapOn:
+    id: 'chat\.history\.delete\..*'
+- assertVisible: Today deleted
+- tapOn: Undo
+- assertVisible: Today
+
+# A day opens its thread.
+- tapOn:
+    id: chat.history.edit
+- tapOn:
+    id: 'chat\.history\.day\..*'
+- assertVisible:
+    id: chat.input

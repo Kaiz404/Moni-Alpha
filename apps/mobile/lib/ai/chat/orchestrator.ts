@@ -5,310 +5,197 @@ import { AI_UNAVAILABLE_REASON } from '@/lib/ai/client';
 import { enqueue, type ProcessingQueueItem } from '@/lib/ai/processing-queue';
 import { runExtraction } from '@/lib/ai/run-extraction';
 import { captureLocationSnapshot } from '@/lib/location/location-snapshot';
+import { waitForProposal } from '@/lib/proposals/proposal-wait';
 import { saveImageLocally } from '@/lib/receipts/images';
 import { enqueueImageUpload } from '@/lib/receipts/upload-queue';
 import { getUserId } from '@/lib/supabase/client';
-import {
-  beginImmediateProposalReview,
-  clearImmediateProposalReview,
-  completeImmediateProposalReview,
-} from '@/lib/proposals/immediate-review';
-import { waitForProposal } from '@/lib/proposals/proposal-wait';
 
 import { analyzeUserFinances } from './analyze';
-import { appendMessage, updateMessage, type ChatMessage, type QuickReplyOption } from './messages';
+import { pickAnswerCard } from './answer-cards';
+import { buildAnswerSnapshot } from './answer-snapshot';
+import { appendMessage, replaceMessage, type ChatMessage, type QuickReplyOption } from './messages';
 import { resolveRoute, type ForcedIntent } from './routing';
+import { threadDay } from './sessions';
 
 export type SendChatInput = {
   text: string;
   imageUri?: string | null;
   forcedIntent?: ForcedIntent;
-  /** When clarifying, the original user message */
-  pendingContext?: string;
-  pendingImageUri?: string;
 };
 
-export type ChatSessionSnapshot = {
-  messages: ChatMessage[];
-};
+const CLARIFY_TEXT = 'Did you want to add a transaction or ask about your money?';
 
-export type SendChatCallbacks = {
-  onSessionUpdate: (session: ChatSessionSnapshot) => void;
-};
-
-const EXTRACT_ACK = "Got it — I'll let you know when it's ready to review.";
-const EXTRACT_ACK_PROCESSING = 'Processing your transaction…';
-const IMAGE_ACK = 'Got it — processing your receipt. Review when ready.';
-const CLARIFY_TEXT = 'Did you want to log a transaction or ask about your finances?';
-
-function emit(cb: SendChatCallbacks, messages: ChatMessage[]) {
-  cb.onSessionUpdate({ messages });
-}
-
-/** Raw backend reasons stay in the log; the thread only ever shows these. */
+/** Raw backend reasons stay in the log; the thread only ever shows these (V2F-States). */
 function friendlyFailure(reason: string): string {
   console.warn('[chat] failed:', reason);
-  if (reason === AI_UNAVAILABLE_REASON) return "Moni's AI isn't connected in this build yet.";
+  if (reason === AI_UNAVAILABLE_REASON) return "Moni can't answer in this build yet. You can still add spends here.";
   if (/network request failed|failed to fetch|timed? ?out/i.test(reason)) {
-    return "I couldn't reach Moni's AI. Check your connection and try again.";
+    return "Moni can't answer right now. Check your connection and try again.";
   }
   if (/rate limit|too many/i.test(reason)) {
-    return "I'm getting a lot of requests right now. Try again in a minute.";
+    return 'Moni is busy right now. Try again in a minute.';
   }
   if (/not authenticated|invalid or expired token|missing bearer/i.test(reason)) {
-    return 'Please sign in again, then try once more.';
+    return 'Sign in again, then try once more.';
   }
-  return 'Something went wrong on my side. Please try again.';
+  return "Moni couldn't answer that. Try asking another way.";
 }
 
-export async function sendChatMessage(
-  input: SendChatInput,
-  callbacks: SendChatCallbacks,
-): Promise<void> {
-  const text = (input.pendingContext ?? input.text).trim();
-  const imageUri = input.pendingImageUri ?? input.imageUri ?? null;
+/** One assistant turn: starts as the thinking card and is replaced in place by its result. */
+function startTurn(thinking: string) {
+  const createdAt = new Date().toISOString();
+  const id = randomUUID();
+  const day = threadDay(createdAt);
+  appendMessage({ id, role: 'assistant', kind: 'assistant_status', content: thinking, createdAt });
+  return {
+    finish(next: DistributiveOmit<ChatMessage, 'id' | 'createdAt'>) {
+      replaceMessage(day, id, { ...next, id, createdAt } as ChatMessage);
+    },
+    fail(reason: string) {
+      this.finish({
+        role: 'assistant',
+        kind: 'assistant_text',
+        content: friendlyFailure(reason),
+        status: 'error',
+      });
+    },
+  };
+}
+
+type DistributiveOmit<T, K extends PropertyKey> = T extends unknown ? Omit<T, K> : never;
+type Turn = ReturnType<typeof startTurn>;
+
+/** Writes the message and Moni's turn into today's thread; the chat page listens with subscribeThreads. */
+export async function sendChatMessage(input: SendChatInput): Promise<void> {
+  const text = input.text.trim();
+  const imageUri = input.imageUri ?? null;
   if (!text && !imageUri) return;
 
-  const userMessage: ChatMessage = {
-    id: randomUUID(),
-    role: 'user',
-    kind: imageUri ? 'user_image' : 'user_text',
-    content: text || (imageUri ? 'Receipt photo' : ''),
-    imageUri: imageUri ?? undefined,
-    createdAt: new Date().toISOString(),
-  };
-
-  let session = appendMessage(userMessage);
-  emit(callbacks, session.messages);
-
-  const statusId = randomUUID();
-  const statusMessage: ChatMessage = {
-    id: statusId,
-    role: 'assistant',
-    kind: 'assistant_status',
-    content: imageUri ? 'Processing your receipt…' : EXTRACT_ACK_PROCESSING,
-    createdAt: new Date().toISOString(),
-    status: 'processing',
-  };
-  session = appendMessage(statusMessage);
-  emit(callbacks, session.messages);
+  const createdAt = new Date().toISOString();
+  appendMessage(
+    imageUri
+      ? { id: randomUUID(), role: 'user', kind: 'user_image', content: text, imageUri, createdAt }
+      : { id: randomUUID(), role: 'user', kind: 'user_text', content: text, createdAt },
+  );
 
   const route = resolveRoute(text, !!imageUri, input.forcedIntent);
+  await respond(text, imageUri, route, input.forcedIntent === 'extract');
+}
 
+async function respond(
+  text: string,
+  imageUri: string | null,
+  route: ReturnType<typeof resolveRoute>,
+  forced = false,
+) {
+  const turn = startTurn(
+    imageUri ? 'Reading your receipt' : route === 'analyze' ? 'Looking at your month' : 'Writing it down',
+  );
   try {
-    if (imageUri) {
-      await handleImageExtract(imageUri, text, statusId, callbacks);
-      return;
-    }
-
-    if (route === 'analyze') {
-      await handleAnalyze(text, statusId, callbacks);
-      return;
-    }
-
-    if (route === 'ambiguous' && !input.forcedIntent) {
-      await showClarify(statusId, text, imageUri, callbacks);
-      return;
-    }
-
-    await handleTextExtract(text, statusId, callbacks, input.forcedIntent === 'analyze');
+    if (imageUri) return await extractImage(imageUri, text, turn);
+    if (route === 'analyze') return await answer(text, turn);
+    if (route === 'ambiguous')
+      return turn.finish({
+        role: 'assistant',
+        kind: 'assistant_clarify',
+        content: CLARIFY_TEXT,
+        quickReplies: ['log_transaction', 'analyze_finances'],
+        pendingContext: text,
+      });
+    await extractText(text, turn, !forced);
   } catch (e) {
-    session = updateMessage(statusId, {
-      kind: 'assistant_text',
-      content: friendlyFailure(e instanceof Error ? e.message : String(e)),
-      status: 'error',
-    });
-    emit(callbacks, session.messages);
+    turn.fail(e instanceof Error ? e.message : String(e));
   }
 }
 
-async function handleImageExtract(
-  imageUri: string,
-  caption: string,
-  statusId: string,
-  callbacks: SendChatCallbacks,
-) {
+async function extractImage(imageUri: string, caption: string, turn: Turn) {
   const id = randomUUID();
-  const createdAt = new Date().toISOString();
-  const locationSnapshot = await captureLocationSnapshot();
-  const localUri = await saveImageLocally(imageUri);
-
   const queueItem: ProcessingQueueItem = {
     id,
     type: 'image',
-    imageUri: localUri,
+    imageUri: await saveImageLocally(imageUri),
     userContext: caption || undefined,
-    createdAt,
+    createdAt: new Date().toISOString(),
     status: 'pending',
-    locationSnapshot,
+    locationSnapshot: await captureLocationSnapshot(),
   };
   enqueue(queueItem);
-
-  beginImmediateProposalReview(id, {
-    title: 'Reading your receipt…',
-    detail: 'Moni will show every detail before saving anything.',
-    icon: 'receipt',
-  });
-
   try {
     const userId = await getUserId();
-    if (userId) {
-      enqueueImageUpload({ proposalId: id, localUri, userId });
-    }
+    if (userId && queueItem.imageUri)
+      enqueueImageUpload({ proposalId: id, localUri: queueItem.imageUri, userId });
   } catch {
-    // non-critical
+    // The receipt photo uploads later; the draft does not wait for it.
   }
-
   startBackgroundProcessor().catch(() => {});
 
-  void waitForProposal(id).then((result) => {
-    if (result === 'ready') {
-      completeImmediateProposalReview(id);
-      return;
-    }
-    clearImmediateProposalReview(id);
-  });
-
-  const session = updateMessage(statusId, {
-    kind: 'assistant_text',
-    content: IMAGE_ACK,
-    status: 'done',
-  });
-  emit(callbacks, session.messages);
+  const result = await waitForProposal(id);
+  if (result === 'ready')
+    turn.finish({ role: 'assistant', kind: 'assistant_draft', proposalId: id });
+  else turn.fail(result === 'timeout' ? 'timed out' : 'receipt');
 }
 
-async function handleTextExtract(
-  text: string,
-  statusId: string,
-  callbacks: SendChatCallbacks,
-  skipFallback = false,
-) {
-  const locationSnapshot = await captureLocationSnapshot();
+async function extractText(text: string, turn: Turn, answerIfSkipped: boolean) {
   const proposalId = randomUUID();
-  const queueItem: ProcessingQueueItem = {
+  const result = await runExtraction({
     id: proposalId,
     type: 'text',
     text,
     createdAt: new Date().toISOString(),
     status: 'pending',
-    locationSnapshot,
-  };
-
-  beginImmediateProposalReview(proposalId, {
-    title: 'Preparing your review…',
-    detail: 'Moni is checking the details you provided.',
-    icon: 'chat',
+    locationSnapshot: await captureLocationSnapshot(),
   });
-
-  const result = await runExtraction(queueItem);
-
-  if (result.created) {
-    completeImmediateProposalReview(result.proposalId ?? proposalId);
-    const session = updateMessage(statusId, {
-      kind: 'assistant_text',
-      content: EXTRACT_ACK,
-      status: 'done',
+  if (result.created)
+    return turn.finish({
+      role: 'assistant',
+      kind: 'assistant_draft',
+      proposalId: result.proposalId ?? proposalId,
     });
-    emit(callbacks, session.messages);
-    return;
-  }
-
-  if (!skipFallback && result.skipped) {
-    clearImmediateProposalReview(proposalId);
-    await handleAnalyze(text, statusId, callbacks, true);
-    return;
-  }
-
-  if (result.skipped) {
-    clearImmediateProposalReview(proposalId);
-    await showClarify(statusId, text, null, callbacks);
-    return;
-  }
-
-  const session = updateMessage(statusId, {
-    kind: 'assistant_text',
-    content: friendlyFailure(result.reason),
-    status: 'error',
-  });
-  clearImmediateProposalReview(proposalId);
-  emit(callbacks, session.messages);
+  if (result.skipped && answerIfSkipped) return answer(text, turn);
+  if (result.skipped)
+    return turn.finish({
+      role: 'assistant',
+      kind: 'assistant_text',
+      content: "Moni couldn't find an amount in that. Try “parking 6 at KLCC”.",
+      status: 'error',
+    });
+  turn.fail(result.reason);
 }
 
-async function handleAnalyze(
-  text: string,
-  statusId: string,
-  callbacks: SendChatCallbacks,
-  afterExtractSkip = false,
-) {
+/** The card's numbers come from the ledger; the model's reply is its caption. */
+async function answer(text: string, turn: Turn) {
+  const userId = await getUserId();
+  const card = userId ? pickAnswerCard(text, buildAnswerSnapshot(userId)) : null;
   const analysis = await analyzeUserFinances(text);
-
-  if (analysis.ok) {
-    const session = updateMessage(statusId, {
+  if (card)
+    return turn.finish({
+      role: 'assistant',
+      kind: 'assistant_card',
+      card,
+      content: analysis.ok ? analysis.reply : '',
+      analysis: analysis.ok,
+    });
+  if (analysis.ok)
+    return turn.finish({
+      role: 'assistant',
       kind: 'assistant_text',
       content: analysis.reply,
       status: 'done',
       analysis: true,
     });
-    emit(callbacks, session.messages);
-    return;
-  }
-
-  if (afterExtractSkip) {
-    await showClarify(statusId, text, null, callbacks);
-    return;
-  }
-
-  const session = updateMessage(statusId, {
-    kind: 'assistant_text',
-    content: friendlyFailure(analysis.reason),
-    status: 'error',
-  });
-  emit(callbacks, session.messages);
+  turn.fail(analysis.reason);
 }
 
-async function showClarify(
-  statusId: string,
-  text: string,
-  imageUri: string | null,
-  callbacks: SendChatCallbacks,
-) {
-  const quickReplies: QuickReplyOption[] = ['log_transaction', 'analyze_finances'];
-  const session = updateMessage(statusId, {
-    kind: 'assistant_clarify',
-    content: CLARIFY_TEXT,
-    quickReplies,
-    pendingContext: text,
-    pendingImageUri: imageUri ?? undefined,
-    status: 'done',
-  });
-  emit(callbacks, session.messages);
-}
-
+/** The clarify chips: run the pinned message the way the user chose. */
 export async function handleQuickReply(
   option: QuickReplyOption,
   pendingContext: string,
   pendingImageUri: string | undefined,
-  callbacks: SendChatCallbacks,
 ): Promise<void> {
-  const statusId = randomUUID();
-  let session = appendMessage({
-    id: statusId,
-    role: 'assistant',
-    kind: 'assistant_status',
-    content: EXTRACT_ACK_PROCESSING,
-    createdAt: new Date().toISOString(),
-    status: 'processing',
-  });
-  emit(callbacks, session.messages);
-
-  if (option === 'log_transaction') {
-    if (pendingImageUri) {
-      await handleImageExtract(pendingImageUri, pendingContext, statusId, callbacks);
-    } else {
-      await handleTextExtract(pendingContext, statusId, callbacks, true);
-    }
-    return;
-  }
-
-  await handleAnalyze(pendingContext, statusId, callbacks);
+  await respond(
+    pendingContext,
+    pendingImageUri ?? null,
+    option === 'log_transaction' ? 'extract' : 'analyze',
+    option === 'log_transaction',
+  );
 }

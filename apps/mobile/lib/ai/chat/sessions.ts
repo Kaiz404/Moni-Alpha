@@ -1,22 +1,20 @@
-import { createNewSession, getActiveSession, type ChatSession } from './messages';
+import { dayKeyInTimezone } from '@/lib/finance/dates';
+import { profilePreferences$ } from '@/lib/store';
 
-const SESSION_IDLE_MS = 24 * 60 * 60 * 1000;
-
-export function isSessionExpired(session: ChatSession | null): boolean {
-  if (!session) return true;
-  const idle = Date.now() - new Date(session.lastActiveAt).getTime();
-  return idle > SESSION_IDLE_MS;
+/** The profile's finance timezone, else the phone's. */
+export function financeTimezone(): string {
+  return (
+    profilePreferences$.peek()?.finance_timezone ||
+    Intl.DateTimeFormat().resolvedOptions().timeZone ||
+    'UTC'
+  );
 }
 
-/** Returns active session or starts fresh if idle > 24h. */
-export function getOrRefreshSession(): ChatSession {
-  const existing = getActiveSession();
-  if (!existing || isSessionExpired(existing)) {
-    return createNewSession();
-  }
-  return existing;
+/** One thread per local date: the YYYY-MM-DD a message belongs to. */
+export function threadDay(at: string | Date, timeZone: string = financeTimezone()): string {
+  return dayKeyInTimezone(at, timeZone);
 }
 
-export function startNewChatSession(): ChatSession {
-  return createNewSession();
+export function todayThreadDay(now: Date = new Date()): string {
+  return threadDay(now);
 }
