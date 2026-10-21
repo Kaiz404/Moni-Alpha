@@ -212,7 +212,7 @@ export default function EditWalletScreen() {
     if (!confirmed) return;
     try {
       await deleteWallet(walletId);
-      router.replace('/(tabs)' as never);
+      router.dismissTo('/');
     } catch (error) {
       Alert.alert(
         'Could not delete wallet',

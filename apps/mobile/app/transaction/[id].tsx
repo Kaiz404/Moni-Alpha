@@ -109,7 +109,7 @@ export default function EditTransactionScreen() {
           return;
         }
         if (tx.debtActivityId) {
-          router.replace('/debts');
+          router.dismissTo('/debts');
           return;
         }
         setWallets(walletList);

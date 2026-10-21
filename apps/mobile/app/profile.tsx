@@ -221,7 +221,7 @@ export default function ProfileScreen() {
               icon="account-group-outline"
               tint="aqua"
               title="Debts"
-              onPress={() => router.push('/debts')}
+              onPress={() => router.dismissTo('/debts')}
             />
           </ListCard>
         </View>
