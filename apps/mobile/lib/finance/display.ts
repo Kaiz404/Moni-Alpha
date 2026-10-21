@@ -32,12 +32,18 @@ function currencySymbol(currency: CurrencyCode | string): string {
  * Money that exists (balances, transactions, spent), unsigned: `RM1,116.20`,
  * `$120.00`. No space after RM; other currencies keep their own symbol.
  */
-export function formatMoney(amountMinor: MinorAmount | number, currency: CurrencyCode | string): string {
+export function formatMoney(
+  amountMinor: MinorAmount | number,
+  currency: CurrencyCode | string,
+): string {
   return `${currencySymbol(currency)}${exact.format(Math.abs(minorToNumber(amountMinor)))}`;
 }
 
 /** Forward-looking money (left, over, budgets) in whole units, rounded down: `RM20`. */
-export function formatWholeMoney(amountMinor: MinorAmount | number, currency: CurrencyCode | string): string {
+export function formatWholeMoney(
+  amountMinor: MinorAmount | number,
+  currency: CurrencyCode | string,
+): string {
   return `${currencySymbol(currency)}${whole.format(Math.floor(Math.abs(minorToNumber(amountMinor))))}`;
 }
 

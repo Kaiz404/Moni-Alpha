@@ -113,6 +113,10 @@ describe('useThemeTokens', () => {
       destructiveFill: '#f9d5d0',
       destructivePressed: '#f3c3bc',
       moniGlyph: '#c9b6f0',
+      attentionFill: '#f8edb8',
+      pendingFill: '#e4daf6',
+      bloom: '#e3d8c2',
+      onInkPositive: '#a9ddb5',
     });
   });
 

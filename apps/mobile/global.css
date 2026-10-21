@@ -90,6 +90,10 @@
       --color-destructive-fill: #f9d5d0;
       --color-destructive-pressed: #f3c3bc;
       --color-moni-glyph: #c9b6f0;
+      --color-attention-fill: #f8edb8;
+      --color-pending-fill: #e4daf6;
+      --color-bloom: #e3d8c2;
+      --color-on-ink-positive: #a9ddb5;
     }
 
     @variant dark {
@@ -159,6 +163,10 @@
       --color-destructive-fill: #43231f;
       --color-destructive-pressed: #532c27;
       --color-moni-glyph: #4b3a80;
+      --color-attention-fill: #3a3115;
+      --color-pending-fill: #2e2841;
+      --color-bloom: #3a362f;
+      --color-on-ink-positive: #236b47;
     }
   }
 }

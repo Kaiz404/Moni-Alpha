@@ -22,6 +22,7 @@ import { ProposalSummarySheet } from '@/components/proposal/proposal-summary-she
 import { StoreSyncActivator } from '@/components/providers/store-sync-activator';
 import { SheetHost } from '@/components/ui/sheet/sheet-host';
 import { textFonts } from '@/components/ui/text';
+import { ToastHost } from '@/components/ui/toast';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { AuthProvider } from '@/lib/auth/auth-context';
 import { getPendingCount } from '@/lib/ai/processing-queue';
@@ -151,6 +152,7 @@ export default function RootLayout() {
               <FabReceiptProcessingOverlay />
               <ProposalSummarySheet />
             </AuthGuard>
+            <ToastHost />
             <StatusBar style={theme === 'dark' ? 'light' : 'dark'} />
           </AuthProvider>
         </ThemeProvider>

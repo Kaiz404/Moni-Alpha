@@ -84,5 +84,9 @@ export function useThemeTokens() {
     destructiveFill: t['destructive-fill'],
     destructivePressed: t['destructive-pressed'],
     moniGlyph: t['moni-glyph'],
+    attentionFill: t['attention-fill'],
+    pendingFill: t['pending-fill'],
+    bloom: t.bloom,
+    onInkPositive: t['on-ink-positive'],
   };
 }
