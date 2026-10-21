@@ -6,9 +6,11 @@ import {
 } from '@testing-library/react-native';
 
 import { TransactionRow } from '@/components/ui/transaction-row';
+import { holdCommit } from '@/lib/haptics';
 import { tid } from '@/lib/test-ids';
 import type { TransactionRowData } from '@/lib/transactions/row';
 
+jest.mock('@/lib/haptics', () => ({ holdCommit: jest.fn() }));
 jest.mock('uniwind', () => ({
   useCSSVariable: (names: string[]) => names.map(() => undefined),
   useUniwind: () => ({ theme: 'light' }),
@@ -84,25 +86,71 @@ describe('TransactionRow', () => {
     expect(screen.getByText('To review')).toBeTruthy();
     expect(screen.getByText('Today · no wallet yet')).toBeTruthy();
   });
+});
 
-  it('opens quick actions with the hold, not the detail, from the screen reader action', () => {
+describe('TransactionRow hold', () => {
+  const touch = (pageX: number) => ({
+    nativeEvent: { pageX, pageY: 300 },
+  });
+
+  function renderHoldable() {
     const onPress = jest.fn();
-    const onHold = jest.fn();
     render(
       <TransactionRow
         testID={tid('activity', 'row', 'grab')}
         row={grab}
         grouped
         onPress={onPress}
-        onHold={onHold}
+        onHold={() => {}}
         now={now}
       />,
     );
-    const row = screen.getByTestId('activity.row.grab');
+    return { onPress, row: screen.getByTestId('activity.row.grab') };
+  }
+
+  beforeEach(() => {
+    jest.useFakeTimers();
+    jest.mocked(holdCommit).mockClear();
+  });
+  afterEach(() => jest.useRealTimers());
+
+  it('offers Quick actions to the screen reader', () => {
+    const { row } = renderHoldable();
     expect(row.props.accessibilityActions).toEqual([
       { name: 'quickActions', label: 'Quick actions' },
     ]);
+  });
+
+  it('opens the detail on a release inside 250 ms', () => {
+    const { onPress, row } = renderHoldable();
+    fireEvent(row, 'pressIn', touch(100));
+    jest.advanceTimersByTime(120);
     fireEvent.press(row);
     expect(onPress).toHaveBeenCalledTimes(1);
+  });
+
+  it('opens nothing on a release after the bloom starts', () => {
+    const { onPress, row } = renderHoldable();
+    fireEvent(row, 'pressIn', touch(100));
+    jest.advanceTimersByTime(300);
+    fireEvent.press(row);
+    expect(onPress).not.toHaveBeenCalled();
+  });
+
+  it('cancels the hold when the finger drifts past 10 px', () => {
+    const { onPress, row } = renderHoldable();
+    fireEvent(row, 'pressIn', touch(100));
+    fireEvent(row, 'touchMove', touch(112));
+    fireEvent(row, 'longPress');
+    fireEvent.press(row);
+    expect(holdCommit).not.toHaveBeenCalled();
+    expect(onPress).not.toHaveBeenCalled();
+  });
+
+  it('commits with the Confirm haptic at 500 ms', () => {
+    const { row } = renderHoldable();
+    fireEvent(row, 'pressIn', touch(100));
+    fireEvent(row, 'longPress');
+    expect(holdCommit).toHaveBeenCalledTimes(1);
   });
 });

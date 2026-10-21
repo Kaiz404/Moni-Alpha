@@ -133,9 +133,15 @@ export function useHold(
       onPressOut: retract,
       onLongPress: () => {
         const held = touch.current;
-        if (!held || held.cancelled || !held.frame) return;
+        if (!held || held.cancelled) return;
         holdCommit();
-        onHold({ x: held.pageX, y: held.pageY, frame: held.frame });
+        const open = (frame: Frame) =>
+          onHold({ x: held.pageX, y: held.pageY, frame });
+        if (held.frame) open(held.frame);
+        else
+          ref.current?.measureInWindow((x, y, width, height) =>
+            open({ x, y, width, height }),
+          );
       },
     },
     /** A release after the bloom started is a cancelled hold, not a tap. */
