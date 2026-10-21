@@ -5,10 +5,10 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-  Text,
   TextInput,
   View,
 } from 'react-native';
+import { Text } from '@/components/ui/text';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useValue } from '@legendapp/state/react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -178,7 +178,7 @@ export default function CategoryFormScreen() {
             onScrollBeginDrag={blurNameInput}
             showsVerticalScrollIndicator={false}
           >
-            <Text className="mt-6 text-base font-bold text-foreground">
+            <Text className="mt-6 text-base font-display-bold text-foreground">
               Preview
             </Text>
             <Surface
@@ -205,7 +205,7 @@ export default function CategoryFormScreen() {
               />
             </Surface>
 
-            <Text className="mt-4 text-base font-bold text-foreground">
+            <Text className="mt-4 text-base font-display-bold text-foreground">
               Icon
             </Text>
             <Surface
@@ -261,7 +261,7 @@ export default function CategoryFormScreen() {
               </ScrollView>
             </Surface>
 
-            <Text className="mt-4 text-base font-bold text-foreground">
+            <Text className="mt-4 text-base font-display-bold text-foreground">
               Color
             </Text>
             <Surface

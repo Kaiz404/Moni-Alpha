@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
-import { Text, View } from 'react-native';
+import { View } from 'react-native';
+import { Text } from '@/components/ui/text';
 
 import { CategoryIcon } from '@/components/categories/category-icon';
 import { BudgetProgressBar } from '@/components/charts/budget-progress-bar';
@@ -70,26 +71,26 @@ export function BudgetProgressItem({
               <Text
                 className={
                   detailed
-                    ? `text-[15px] font-semibold ${over ? 'text-danger' : 'text-foreground'}`
-                    : `text-base font-semibold ${over ? 'text-danger' : 'text-foreground'}`
+                    ? `text-[15px] font-display-semibold ${over ? 'text-danger' : 'text-foreground'}`
+                    : `text-base font-display-semibold ${over ? 'text-danger' : 'text-foreground'}`
                 }
                 numberOfLines={1}
               >
                 {budget.categoryName}
                 {overAmountLabel ? (
-                  <Text className="text-xs font-semibold text-danger">
+                  <Text className="text-xs font-display-semibold text-danger">
                     {overAmountLabel}
                   </Text>
                 ) : null}
                 {showArchived && !budget.categoryIsActive ? (
-                  <Text className="ml-2 text-xs font-semibold text-muted">
+                  <Text className="ml-2 text-xs font-display-semibold text-muted">
                     Archived
                   </Text>
                 ) : null}
               </Text>
 
               <Text
-                className={`text-xs font-semibold ${over ? 'text-danger' : 'text-muted'}`}
+                className={`text-xs font-display-semibold ${over ? 'text-danger' : 'text-muted'}`}
               >
                 {context}
               </Text>

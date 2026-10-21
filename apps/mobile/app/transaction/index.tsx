@@ -4,10 +4,10 @@ import {
   Pressable,
   RefreshControl,
   ScrollView,
-  Text,
   TouchableOpacity,
   View,
 } from 'react-native';
+import { Text } from '@/components/ui/text';
 import { Link, router, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialDesignIcons } from '@react-native-vector-icons/material-design-icons';
@@ -145,7 +145,7 @@ export default function TransactionsScreen() {
                 {selectedWallet.name}
               </Text>
               <Text
-                className="mt-1 text-2xl font-bold"
+                className="mt-1 text-2xl font-display-bold"
                 style={{ color: selectedWalletStyle.contentColor }}
               >
                 {formatMinorAmount(
@@ -176,7 +176,7 @@ export default function TransactionsScreen() {
             </SolidWalletCard>
           ) : (
             <Surface className="p-4">
-              <Text className="font-semibold text-foreground">
+              <Text className="font-display-semibold text-foreground">
                 {rows.length} transactions
               </Text>
               <Text className="mt-1 text-sm text-muted">
@@ -188,7 +188,7 @@ export default function TransactionsScreen() {
 
         {proposals.length ? (
           <View className="mb-4">
-            <Text className="mb-2 text-xs font-bold uppercase tracking-wider text-muted">
+            <Text className="mb-2 text-xs font-display-bold uppercase tracking-wider text-muted">
               Pending proposals
             </Text>
             {proposals.map((proposal) => (
@@ -203,12 +203,12 @@ export default function TransactionsScreen() {
                 }
               >
                 <View className="flex-row justify-between">
-                  <Text className="font-semibold text-foreground">
+                  <Text className="font-display-semibold text-foreground">
                     {proposal.merchant ??
                       proposal.description ??
                       'AI proposal'}
                   </Text>
-                  <Text className="font-bold text-primary">
+                  <Text className="font-display-bold text-primary">
                     {proposal.amountMinor == null
                       ? 'Choose amount'
                       : formatMinorAmount(
@@ -223,7 +223,7 @@ export default function TransactionsScreen() {
         ) : null}
 
         <View className="mb-2 flex-row items-center justify-between">
-          <Text className="text-base font-semibold text-foreground">
+          <Text className="text-base font-display-semibold text-foreground">
             Recent transactions
           </Text>
           <Link
@@ -235,7 +235,7 @@ export default function TransactionsScreen() {
             asChild
           >
             <TouchableOpacity className="rounded-lg bg-primary px-4 py-2">
-              <Text className="font-semibold text-white">+ Add</Text>
+              <Text className="font-display-semibold text-white">+ Add</Text>
             </TouchableOpacity>
           </Link>
         </View>
@@ -266,7 +266,7 @@ export default function TransactionsScreen() {
               >
                 <View className="flex-row justify-between">
                   <View className="flex-1 pr-2">
-                    <Text className="font-semibold text-foreground">
+                    <Text className="font-display-semibold text-foreground">
                       {transfer
                         ? `${walletNames[row.walletId] ?? 'Wallet'} → ${walletNames[row.transferToWalletId ?? ''] ?? 'Wallet'}`
                         : (row.merchant ??
@@ -293,7 +293,7 @@ export default function TransactionsScreen() {
                       />
                     </Pressable>
                     <Text
-                      className={`mt-1 font-bold ${transfer ? 'text-transfer' : row.type === 'income' ? 'text-income' : 'text-expense'}`}
+                      className={`mt-1 font-display-bold ${transfer ? 'text-transfer' : row.type === 'income' ? 'text-income' : 'text-expense'}`}
                     >
                       {sign}
                       {formatMinorAmount(

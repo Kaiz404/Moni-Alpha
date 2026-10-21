@@ -1,4 +1,5 @@
-import { ScrollView, Text, View } from 'react-native';
+import { ScrollView, View } from 'react-native';
+import { Text } from '@/components/ui/text';
 import {
   BOTTOM_SHEET_PRIMARY_ACTION_SPACE,
   BottomSheetPrimaryAction,
@@ -39,7 +40,7 @@ export function WalletColorPickerContent({
   return (
     <View className="flex-1 px-4">
       <View className="mb-5 flex-row items-center justify-between">
-        <Text className="flex-1 pr-3 text-xl font-bold text-foreground">
+        <Text className="flex-1 pr-3 text-xl font-display-bold text-foreground">
           Color
         </Text>
         <IconAction
@@ -71,7 +72,7 @@ export function WalletColorPickerContent({
             />
           </View>
           <Text
-            className="pr-12 text-lg font-bold"
+            className="pr-12 text-lg font-display-bold"
             numberOfLines={1}
             style={{ color: style.contentColor }}
           >
@@ -79,7 +80,7 @@ export function WalletColorPickerContent({
           </Text>
           <View>
             <Text
-              className="text-2xl font-bold"
+              className="text-2xl font-display-bold"
               style={{ color: style.contentColor }}
             >
               0.00 {currency.trim().toUpperCase() || 'USD'}
@@ -87,7 +88,7 @@ export function WalletColorPickerContent({
           </View>
         </SolidWalletCard>
 
-        <Text className="mb-3 mt-6 text-sm font-semibold text-foreground">
+        <Text className="mb-3 mt-6 text-sm font-display-semibold text-foreground">
           Color options
         </Text>
         <View className="flex-row flex-wrap">
@@ -125,7 +126,7 @@ export function WalletColorPickerContent({
                 <Text
                   className={
                     selected
-                      ? 'mt-1.5 text-[11px] font-semibold text-foreground'
+                      ? 'mt-1.5 text-[11px] font-display-semibold text-foreground'
                       : 'mt-1.5 text-[11px] text-muted'
                   }
                   numberOfLines={1}

@@ -3,11 +3,11 @@ import {
   View,
   StyleSheet,
   ActivityIndicator,
-  Text,
   Linking,
   Platform,
   Pressable,
 } from 'react-native';
+import { Text } from '@/components/ui/text';
 import MapView, { Marker } from 'react-native-maps';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
@@ -129,7 +129,7 @@ export default function HeatmapScreen() {
         tone="tray"
         className="absolute bottom-5 left-5 right-5 p-3"
       >
-        <Text className="mb-2 text-sm font-bold text-foreground">
+        <Text className="mb-2 text-sm font-display-bold text-foreground">
           Pinmap
         </Text>
         <Text className="mt-1 text-xs text-muted">
@@ -166,7 +166,7 @@ export default function HeatmapScreen() {
               ✕
             </Text>
           </Pressable>
-          <Text className="mb-1.5 pr-7 text-[15px] font-bold text-foreground">
+          <Text className="mb-1.5 pr-7 text-[15px] font-display-bold text-foreground">
             {selectedPin.locationName}
           </Text>
           <Text className="mb-1 text-xs text-foreground">
@@ -199,7 +199,7 @@ export default function HeatmapScreen() {
             }
             className="bg-primary"
           >
-            <Text className="text-[13px] font-semibold text-primary-foreground">
+            <Text className="text-[13px] font-display-semibold text-primary-foreground">
               Open in Map App
             </Text>
           </Pressable>
@@ -247,7 +247,7 @@ const styles = StyleSheet.create({
   },
   closeButtonText: {
     fontSize: 14,
-    fontWeight: '700',
+    fontFamily: 'FunnelDisplay_700Bold',
     lineHeight: 16,
   },
   navigateButton: {

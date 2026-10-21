@@ -1,4 +1,5 @@
-import { Pressable, ScrollView, Text, View } from 'react-native';
+import { Pressable, ScrollView, View } from 'react-native';
+import { Text } from '@/components/ui/text';
 
 import { CategoryIcon } from '@/components/categories/category-icon';
 import { IconAction } from '@/components/ui/icon-action';
@@ -61,12 +62,12 @@ export function CategoryPickerContent({
           />
         </View>
         <View className="min-w-0 flex-1">
-          <Text className="text-base font-semibold text-foreground">
+          <Text className="text-base font-display-semibold text-foreground">
             {category.name}
           </Text>
           {category.budgetUsage ? (
             <Text
-              className="mt-0.5 text-xs font-medium text-muted"
+              className="mt-0.5 text-xs font-display-semibold text-muted"
               numberOfLines={1}
             >
               {category.budgetUsage}
@@ -88,7 +89,7 @@ export function CategoryPickerContent({
     <View className="flex-1">
       <View className="flex-row items-start justify-between">
         <View className="flex-1 pr-3">
-          <Text className="text-xl font-bold text-foreground">
+          <Text className="text-xl font-display-bold text-foreground">
             {title}
           </Text>
         </View>
@@ -107,13 +108,13 @@ export function CategoryPickerContent({
       >
         {suggested.length ? (
           <>
-            <Text className="mb-1 mt-2 px-1 text-xs font-bold uppercase tracking-wide text-muted">
+            <Text className="mb-1 mt-2 px-1 text-xs font-display-bold uppercase tracking-wide text-muted">
               Recent
             </Text>
             {suggested.map(row)}
           </>
         ) : null}
-        <Text className="mb-1 mt-4 px-1 text-xs font-bold uppercase tracking-wide text-muted">
+        <Text className="mb-1 mt-4 px-1 text-xs font-display-bold uppercase tracking-wide text-muted">
           All categories
         </Text>
         {remaining.map(row)}
@@ -130,7 +131,7 @@ export function CategoryPickerContent({
               icon="plus"
               size={21}
             />
-            <Text className="ml-3 text-[15px] font-semibold text-primary">
+            <Text className="ml-3 text-[15px] font-display-semibold text-primary">
               Create category
             </Text>
           </Pressable>

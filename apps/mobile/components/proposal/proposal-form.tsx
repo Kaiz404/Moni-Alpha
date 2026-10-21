@@ -3,11 +3,11 @@ import {
   ActivityIndicator,
   Alert,
   Pressable,
-  Text,
   TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
+import { Text } from '@/components/ui/text';
 import { Image } from 'expo-image';
 import {
   minorToDecimal,
@@ -248,10 +248,10 @@ export function ProposalForm({
         tone="muted"
         className="mb-5 px-4 py-4"
       >
-        <Text className="text-xs font-semibold uppercase tracking-wide text-muted">
+        <Text className="text-xs font-display-semibold uppercase tracking-wide text-muted">
           {sourceTitle}
         </Text>
-        <Text className="mt-1 text-base font-bold text-foreground">
+        <Text className="mt-1 text-base font-display-bold text-foreground">
           {sourceLabel}
         </Text>
         {proposal.sourceText ? (
@@ -273,7 +273,7 @@ export function ProposalForm({
         ) : null}
       </Surface>
 
-      <Text className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted">
+      <Text className="mb-2 text-xs font-display-semibold uppercase tracking-wider text-muted">
         Transaction type
       </Text>
       <View className="mb-4 flex-row gap-1.5">
@@ -285,7 +285,7 @@ export function ProposalForm({
             activeOpacity={0.85}
           >
             <Text
-              className={`text-sm font-semibold capitalize ${chipTextClass(txType === t)}`}
+              className={`text-sm font-display-semibold capitalize ${chipTextClass(txType === t)}`}
             >
               {t}
             </Text>
@@ -294,16 +294,16 @@ export function ProposalForm({
       </View>
 
       <View className="mb-5 border-b border-border-subtle pb-5">
-        <Text className="text-xs font-semibold uppercase tracking-wide text-muted">
+        <Text className="text-xs font-display-semibold uppercase tracking-wide text-muted">
           Proposed amount
         </Text>
         <View className="mt-2 flex-row items-end justify-between gap-3">
-          <Text className="pb-3 text-sm font-semibold text-muted">
+          <Text className="pb-3 text-sm font-display-semibold text-muted">
             {displayCurrency}
           </Text>
           <TextInput
             accessibilityLabel="Amount"
-            className="min-w-[120px] flex-1 border-b border-border bg-transparent px-1 py-1 text-right text-4xl font-bold"
+            className="min-w-[120px] flex-1 border-b border-border bg-transparent px-1 py-1 text-right text-4xl font-display-bold"
             style={{ color: amountColor }}
             value={amount}
             onChangeText={setAmount}
@@ -342,7 +342,7 @@ export function ProposalForm({
                 setShowWalletPicker(false);
               }}
             >
-              <Text className="text-sm font-medium text-foreground">
+              <Text className="text-sm font-display-semibold text-foreground">
                 {w.name}
               </Text>
               <Text className="text-xs capitalize text-muted">
@@ -394,7 +394,7 @@ export function ProposalForm({
                       setShowTransferToPicker(false);
                     }}
                   >
-                    <Text className="text-sm font-medium text-foreground">
+                    <Text className="text-sm font-display-semibold text-foreground">
                       {w.name}
                     </Text>
                     <Text className="text-xs capitalize text-muted">
@@ -470,7 +470,7 @@ export function ProposalForm({
                           size={17}
                         />
                       </View>
-                      <Text className="text-sm font-medium text-foreground">
+                      <Text className="text-sm font-display-semibold text-foreground">
                         {category.name}
                       </Text>
                     </View>
@@ -544,7 +544,7 @@ export function ProposalForm({
 
       {proposal.sourceImageUri ? (
         <View className="mt-5">
-          <Text className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted">
+          <Text className="mb-2 text-xs font-display-semibold uppercase tracking-wide text-muted">
             Receipt evidence
           </Text>
           <Image
@@ -571,7 +571,7 @@ export function ProposalForm({
               color={tokens.muted}
             />
           ) : (
-            <Text className="text-base font-semibold text-foreground">
+            <Text className="text-base font-display-semibold text-foreground">
               Decline
             </Text>
           )}
@@ -588,7 +588,7 @@ export function ProposalForm({
               color={tokens.primaryForeground}
             />
           ) : (
-            <Text className="text-base font-semibold text-primary-foreground">
+            <Text className="text-base font-display-semibold text-primary-foreground">
               {canApprove
                 ? 'Approve'
                 : isTransfer

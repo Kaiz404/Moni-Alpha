@@ -3,9 +3,9 @@ import {
   Keyboard,
   Platform,
   Pressable,
-  Text,
   View,
 } from 'react-native';
+import { Text } from '@/components/ui/text';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { BottomTabBarProps } from 'expo-router/js-tabs';
 import type {
@@ -97,11 +97,8 @@ export function TabBar({
           size: 26,
         })}
         <Text
-          style={{
-            fontSize: 11,
-            fontWeight: isFocused ? '700' : '500',
-            color,
-          }}
+          className={isFocused ? 'font-display-bold' : 'font-display-semibold'}
+          style={{ fontSize: 11, color }}
         >
           {label}
         </Text>

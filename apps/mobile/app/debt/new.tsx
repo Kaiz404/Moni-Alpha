@@ -3,9 +3,9 @@ import {
   Alert,
   Pressable,
   ScrollView,
-  Text,
   View,
 } from 'react-native';
+import { Text } from '@/components/ui/text';
 import type { ColorValue } from 'react-native';
 import { router } from 'expo-router';
 import type { DebtDirection } from '@repo/types';
@@ -92,7 +92,7 @@ export default function NewDebtScreen() {
                 onPress={() => setDirection(option)}
               >
                 <Text
-                  className={`text-center text-[15px] font-bold ${selected && option === 'owed_to_me' ? 'text-primary' : 'text-foreground'}`}
+                  className={`text-center text-[15px] font-display-bold ${selected && option === 'owed_to_me' ? 'text-primary' : 'text-foreground'}`}
                 >
                   {option === 'owed_to_me'
                     ? 'They owe me'
@@ -116,12 +116,12 @@ export default function NewDebtScreen() {
             onChangeText={setName}
             autoCapitalize="words"
           />
-          <Text className="mb-2 text-[15px] font-semibold text-foreground">
+          <Text className="mb-2 text-[15px] font-display-semibold text-foreground">
             Amount
           </Text>
           <AmountInput
             accessibilityLabel="Debt amount"
-            className="min-h-14 px-4 py-3 text-right text-2xl font-bold text-foreground"
+            className="min-h-14 px-4 py-3 text-right text-2xl font-display-bold text-foreground"
             currency={selectedWallet?.currency}
             onChangeValue={setAmount}
             placeholder="0.00"
@@ -143,7 +143,7 @@ export default function NewDebtScreen() {
           />
         </Surface>
 
-        <Text className="mb-2 mt-8 text-base font-bold text-foreground">
+        <Text className="mb-2 mt-8 text-base font-display-bold text-foreground">
           Cash wallet
         </Text>
         {wallets.length === 0 ? (
@@ -174,7 +174,7 @@ export default function NewDebtScreen() {
                       type={wallet.type}
                     />
                     <Text
-                      className={`text-sm font-semibold ${selected && owedToMe ? 'text-primary' : 'text-foreground'}`}
+                      className={`text-sm font-display-semibold ${selected && owedToMe ? 'text-primary' : 'text-foreground'}`}
                     >
                       {wallet.name} · {wallet.currency}
                     </Text>

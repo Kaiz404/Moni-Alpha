@@ -1,11 +1,11 @@
 import { useCallback, useState } from 'react';
 import {
   View,
-  Text,
   Pressable,
   ActivityIndicator,
   Alert,
 } from 'react-native';
+import { Text } from '@/components/ui/text';
 import { useFocusEffect } from 'expo-router';
 import { getWallets } from '@/lib/supabase/wallets';
 import {
@@ -137,7 +137,7 @@ export function DefaultWalletPicker() {
             } ${saving ? 'opacity-70' : ''}`}
           >
             <View className="flex-1 min-w-0 pr-3">
-              <Text className="text-[17px] font-semibold text-foreground">
+              <Text className="text-[17px] font-display-semibold text-foreground">
                 {option.label}
               </Text>
             </View>

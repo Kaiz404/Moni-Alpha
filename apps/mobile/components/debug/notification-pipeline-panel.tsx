@@ -1,4 +1,5 @@
-import { Text, TouchableOpacity, View } from 'react-native';
+import { TouchableOpacity, View } from 'react-native';
+import { Text } from '@/components/ui/text';
 
 import { StatCard } from '@/components/debug/stat-card';
 import { Surface } from '@/components/ui/surface';
@@ -58,14 +59,14 @@ export function NotificationPipelinePanel() {
   return (
     <Surface className="mx-5 mt-5 p-4">
       <View className="flex-row items-center justify-between">
-        <Text className="text-base font-bold text-foreground">
+        <Text className="text-base font-display-bold text-foreground">
           Notification pipeline
         </Text>
         <TouchableOpacity
           onPress={refresh}
           hitSlop={8}
         >
-          <Text className="text-xs font-semibold text-primary">
+          <Text className="text-xs font-display-semibold text-primary">
             Refresh
           </Text>
         </TouchableOpacity>
@@ -91,13 +92,13 @@ export function NotificationPipelinePanel() {
                     PERMISSION_COLORS[permissionStatus],
                 }}
               />
-              <Text className="text-sm font-semibold text-foreground">
+              <Text className="text-sm font-display-semibold text-foreground">
                 {permissionLabel}
               </Text>
             </View>
           </StatCard>
           <StatCard label="Last captured">
-            <Text className="text-sm font-semibold text-foreground">
+            <Text className="text-sm font-display-semibold text-foreground">
               {formatRelativeTime(snapshot.lastReceivedAt)}
             </Text>
           </StatCard>
@@ -105,17 +106,17 @@ export function NotificationPipelinePanel() {
 
         <View className="flex-row gap-2">
           <StatCard label="Captured">
-            <Text className="text-sm font-semibold text-foreground">
+            <Text className="text-sm font-display-semibold text-foreground">
               {snapshot.capturedTotal}
             </Text>
           </StatCard>
           <StatCard label="Prefilter pass">
-            <Text className="text-sm font-semibold text-success">
+            <Text className="text-sm font-display-semibold text-success">
               {snapshot.prefilterPassed}
             </Text>
           </StatCard>
           <StatCard label="Ignored">
-            <Text className="text-sm font-semibold text-muted">
+            <Text className="text-sm font-display-semibold text-muted">
               {snapshot.prefilterIgnored}
             </Text>
           </StatCard>
@@ -149,7 +150,7 @@ export function NotificationPipelinePanel() {
 
       <View className="mt-3 rounded-2xl bg-surface-2 px-3 py-2.5">
         <Text className="text-xs text-muted">Native status</Text>
-        <Text className="mt-0.5 text-sm font-mono font-medium text-foreground">
+        <Text className="mt-0.5 text-sm font-mono font-display-semibold text-foreground">
           {permissionStatus}
         </Text>
         <Text className="mt-1 text-[10px] leading-4 text-muted">
@@ -162,7 +163,7 @@ export function NotificationPipelinePanel() {
       <View className="mt-3 rounded-2xl bg-surface-2 px-3 py-2.5">
         <Text className="text-xs text-muted">Build</Text>
         <Text
-          className="text-sm font-medium mt-0.5"
+          className="text-sm font-display-semibold mt-0.5"
           style={{
             color: diagnostics.isExpoGo
               ? tokens.danger
@@ -179,7 +180,7 @@ export function NotificationPipelinePanel() {
         </Text>
       ) : recent.length === 0 ? (
         <View className="mt-3 rounded-2xl border border-warning/30 bg-accent-lemon/30 px-3 py-2.5">
-          <Text className="text-xs font-semibold text-warning">
+          <Text className="text-xs font-display-semibold text-warning">
             No captures yet
           </Text>
           {diagnostics.troubleshooting.map((tip, i) => (
@@ -203,7 +204,7 @@ export function NotificationPipelinePanel() {
             >
               <View className="flex-row items-start justify-between gap-2">
                 <Text
-                  className="flex-1 text-sm font-semibold text-foreground"
+                  className="flex-1 text-sm font-display-semibold text-foreground"
                   numberOfLines={1}
                 >
                   {entry.app}
@@ -215,7 +216,7 @@ export function NotificationPipelinePanel() {
                   }}
                 >
                   <Text
-                    className="text-[10px] font-semibold"
+                    className="text-[10px] font-display-semibold"
                     style={{
                       color: QUEUE_STATUS_COLORS[entry.queueStatus],
                     }}

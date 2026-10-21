@@ -1,9 +1,9 @@
 import {
   ScrollView,
-  Text,
   TouchableOpacity,
   View,
 } from 'react-native';
+import { Text } from '@/components/ui/text';
 
 import { IconAction } from '@/components/ui/icon-action';
 import {
@@ -34,7 +34,7 @@ export function WalletTypePickerContent({
   return (
     <View className="flex-1 px-4">
       <View className="mb-5 flex-row items-center justify-between">
-        <Text className="flex-1 pr-3 text-xl font-bold text-foreground">
+        <Text className="flex-1 pr-3 text-xl font-display-bold text-foreground">
           Account type
         </Text>
         <IconAction
@@ -75,7 +75,7 @@ export function WalletTypePickerContent({
                     size={19}
                   />
                 </View>
-                <Text className="ml-3 flex-1 text-base font-semibold text-foreground">
+                <Text className="ml-3 flex-1 text-base font-display-semibold text-foreground">
                   {option.label}
                 </Text>
                 {selected ? (

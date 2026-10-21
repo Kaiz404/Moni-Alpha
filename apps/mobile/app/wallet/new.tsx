@@ -4,10 +4,10 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-  Text,
   TouchableOpacity,
   View,
 } from 'react-native';
+import { Text } from '@/components/ui/text';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { createWalletSchema, decimalToMinor } from '@repo/types';
@@ -168,7 +168,7 @@ export default function NewWalletScreen() {
             showsVerticalScrollIndicator={false}
           >
             <Surface className="mt-6">
-              <Text className="mb-2 text-base font-semibold text-foreground">
+              <Text className="mb-2 text-base font-display-semibold text-foreground">
                 Starting balance
               </Text>
               <AmountInput
@@ -193,7 +193,7 @@ export default function NewWalletScreen() {
                   autoCapitalize="words"
                 />
                 <View style={{ width: 130 }}>
-                  <Text className="mb-2 text-base font-semibold text-foreground">
+                  <Text className="mb-2 text-base font-display-semibold text-foreground">
                     Account type
                   </Text>
                   <TouchableOpacity
@@ -208,7 +208,7 @@ export default function NewWalletScreen() {
                       size={18}
                     />
                     <Text
-                      className="ml-2 min-w-0 flex-1 text-xs font-semibold text-foreground"
+                      className="ml-2 min-w-0 flex-1 text-xs font-display-semibold text-foreground"
                       numberOfLines={1}
                     >
                       {selectedType.label}
@@ -218,7 +218,7 @@ export default function NewWalletScreen() {
               </View>
             </Surface>
 
-            <Text className="mt-8 text-base font-bold text-foreground">
+            <Text className="mt-8 text-base font-display-bold text-foreground">
               Color
             </Text>
             <Surface
@@ -237,16 +237,16 @@ export default function NewWalletScreen() {
                     backgroundColor: selectedCardStyle.swatchHex,
                   }}
                 />
-                <Text className="flex-1 text-sm font-semibold text-foreground">
+                <Text className="flex-1 text-sm font-display-semibold text-foreground">
                   {selectedCardStyle.label}
                 </Text>
-                <Text className="text-sm font-semibold text-primary">
+                <Text className="text-sm font-display-semibold text-primary">
                   Change
                 </Text>
               </TouchableOpacity>
             </Surface>
 
-            <Text className="mt-8 text-base font-bold text-foreground">
+            <Text className="mt-8 text-base font-display-bold text-foreground">
               Notification link
             </Text>
             <Surface tone="muted">

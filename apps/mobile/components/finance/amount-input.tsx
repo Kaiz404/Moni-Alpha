@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { TextInputProps } from 'react-native';
-import { Pressable, Text, TextInput, View } from 'react-native';
+import { Pressable, TextInput, View } from 'react-native';
+import { Text } from '@/components/ui/text';
 
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 
@@ -49,7 +50,7 @@ export function AmountInput({
         <TextInput
           {...props}
           accessibilityLabel={props.accessibilityLabel ?? 'Amount'}
-          className={`min-h-13  pr-2 flex-1 text-right text-2xl font-bold leading-8 text-foreground ${className ?? ''}`}
+          className={`min-h-13  pr-2 flex-1 text-right text-2xl font-display-bold leading-8 text-foreground ${className ?? ''}`}
           value={displayValue}
           onChangeText={onChangeValue}
           onFocus={(event) => {
@@ -80,12 +81,12 @@ export function AmountInput({
               hitSlop={8}
               onPress={onCurrencyPress}
             >
-              <Text className="text-lg font-bold tracking-wide text-primary">
+              <Text className="text-lg font-display-bold tracking-wide text-primary">
                 {currency.toUpperCase()}
               </Text>
             </Pressable>
           ) : (
-            <Text className="text-lg font-bold tracking-wide text-muted">
+            <Text className="text-lg font-display-bold tracking-wide text-muted">
               {currency.toUpperCase()}
             </Text>
           )

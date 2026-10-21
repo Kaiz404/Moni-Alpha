@@ -3,9 +3,9 @@ import {
   Alert,
   Pressable,
   ScrollView,
-  Text,
   View,
 } from 'react-native';
+import { Text } from '@/components/ui/text';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useValue } from '@legendapp/state/react';
 
@@ -178,11 +178,11 @@ export default function BudgetFormScreen() {
         {existing ? (
           <Surface className="mt-7">
             <View className="flex-row items-center justify-between">
-              <Text className="text-sm font-semibold text-foreground">
+              <Text className="text-sm font-display-semibold text-foreground">
                 This month
               </Text>
               <Text
-                className={`text-xs font-semibold ${
+                className={`text-xs font-display-semibold ${
                   existing.status === 'over'
                     ? 'text-danger'
                     : 'text-muted'
@@ -204,7 +204,7 @@ export default function BudgetFormScreen() {
             </View>
           </Surface>
         ) : null}
-        <Text className="mb-2 mt-7 text-sm font-semibold text-foreground">
+        <Text className="mb-2 mt-7 text-sm font-display-semibold text-foreground">
           Category
         </Text>
         <Pressable
@@ -225,7 +225,7 @@ export default function BudgetFormScreen() {
                   size={20}
                 />
               </View>
-              <Text className="flex-1 text-base font-semibold text-foreground">
+              <Text className="flex-1 text-base font-display-semibold text-foreground">
                 {selected.name}
               </Text>
             </>
@@ -240,11 +240,11 @@ export default function BudgetFormScreen() {
             size={22}
           />
         </Pressable>
-        <Text className="mb-2 mt-7 text-sm font-semibold text-foreground">
+        <Text className="mb-2 mt-7 text-sm font-display-semibold text-foreground">
           Monthly cap
         </Text>
         <AmountInput
-          className="min-h-14 rounded-2xl px-4 text-right text-xl font-bold text-foreground"
+          className="min-h-14 rounded-2xl px-4 text-right text-xl font-display-bold text-foreground"
           currency={currency}
           onCurrencyPress={() => setCurrencyPickerVisible(true)}
           value={amount}

@@ -3,9 +3,9 @@ import {
   Alert,
   FlatList,
   RefreshControl,
-  Text,
   View,
 } from 'react-native';
+import { Text } from '@/components/ui/text';
 import { useFocusEffect } from 'expo-router';
 
 import { IconAction } from '@/components/ui/icon-action';
@@ -69,13 +69,13 @@ function NotificationRow({
           <View className="flex-row items-start justify-between gap-3">
             <View className="min-w-0 flex-1">
               <Text
-                className="text-sm font-bold text-foreground"
+                className="text-sm font-display-bold text-foreground"
                 numberOfLines={1}
               >
                 {item.app || packageName || 'Unknown app'}
               </Text>
               <Text
-                className={`mt-1 text-xs font-semibold ${stateClass}`}
+                className={`mt-1 text-xs font-display-semibold ${stateClass}`}
               >
                 {state}
               </Text>
@@ -88,7 +88,7 @@ function NotificationRow({
             />
           </View>
           <Text
-            className="mt-3 text-[15px] font-semibold text-foreground"
+            className="mt-3 text-[15px] font-display-semibold text-foreground"
             numberOfLines={2}
           >
             {title}
@@ -168,10 +168,10 @@ export default function NotificationsScreen() {
         ListHeaderComponent={
           <View className="mb-6 flex-row items-start justify-between gap-4">
             <View className="flex-1">
-              <Text className="text-2xl font-bold text-foreground">
+              <Text className="text-2xl font-display-bold text-foreground">
                 Capture log
               </Text>
-              <Text className="mt-2 text-xs font-semibold text-muted">
+              <Text className="mt-2 text-xs font-display-semibold text-muted">
                 {notifications.length} of 50 stored
               </Text>
             </View>

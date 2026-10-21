@@ -2,10 +2,10 @@ import { useState } from 'react';
 import {
   Alert,
   ScrollView,
-  Text,
   TouchableOpacity,
   View,
 } from 'react-native';
+import { Text } from '@/components/ui/text';
 import { Link, router, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -58,12 +58,12 @@ export default function LoginScreen() {
         contentContainerStyle={{ paddingBottom: 36 }}
       >
         <View className="mb-10">
-          <Text className="text-[28px] font-bold leading-[34px] text-foreground">
+          <Text className="text-[28px] font-display-bold leading-[34px] text-foreground">
             Welcome back
           </Text>
           {showVerifyEmailHint ? (
             <View className="mt-5 rounded-2xl bg-primary-muted px-4 py-3.5">
-              <Text className="text-[15px] font-bold text-primary">
+              <Text className="text-[15px] font-display-bold text-primary">
                 Confirm your email
               </Text>
               <Text className="mt-1 text-[13px] leading-[18px] text-foreground">
@@ -120,7 +120,7 @@ export default function LoginScreen() {
             className="mt-8 items-center py-3"
             accessibilityRole="button"
           >
-            <Text className="text-[15px] font-semibold text-primary">
+            <Text className="text-[15px] font-display-semibold text-primary">
               New to Moni? Create an account
             </Text>
           </TouchableOpacity>

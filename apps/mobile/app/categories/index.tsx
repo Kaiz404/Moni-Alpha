@@ -2,9 +2,9 @@ import {
   Alert,
   Pressable,
   ScrollView,
-  Text,
   View,
 } from 'react-native';
+import { Text } from '@/components/ui/text';
 import { router } from 'expo-router';
 import { useValue } from '@legendapp/state/react';
 
@@ -48,7 +48,7 @@ export default function CategoriesScreen() {
   const section = (type: 'expense' | 'income', title: string) => (
     <View className="mt-7">
       <View className="mb-3 flex-row items-center justify-between">
-        <Text className="text-lg font-bold text-foreground">
+        <Text className="text-lg font-display-bold text-foreground">
           {title}
         </Text>
         <Pressable
@@ -65,7 +65,7 @@ export default function CategoriesScreen() {
             icon="plus"
             size={19}
           />
-          <Text className="ml-1 text-sm font-semibold text-primary">
+          <Text className="ml-1 text-sm font-display-semibold text-primary">
             Add
           </Text>
         </Pressable>
@@ -104,7 +104,7 @@ export default function CategoriesScreen() {
                     size={20}
                   />
                 </View>
-                <Text className="flex-1 text-[15px] font-semibold text-foreground">
+                <Text className="flex-1 text-[15px] font-display-semibold text-foreground">
                   {category.name}
                 </Text>
                 {custom ? (
@@ -116,7 +116,7 @@ export default function CategoriesScreen() {
                     }
                   />
                 ) : (
-                  <Text className="text-xs font-medium text-muted">
+                  <Text className="text-xs font-display-semibold text-muted">
                     Preset
                   </Text>
                 )}
@@ -143,7 +143,7 @@ export default function CategoriesScreen() {
         {section('income', 'Income')}
         {archived.length ? (
           <View className="mt-8">
-            <Text className="mb-3 text-lg font-bold text-foreground">
+            <Text className="mb-3 text-lg font-display-bold text-foreground">
               Archived
             </Text>
             <Surface className="overflow-hidden">
@@ -165,10 +165,10 @@ export default function CategoriesScreen() {
                       size={20}
                     />
                   </View>
-                  <Text className="flex-1 text-[15px] font-semibold text-muted">
+                  <Text className="flex-1 text-[15px] font-display-semibold text-muted">
                     {category.name}
                   </Text>
-                  <Text className="text-sm font-semibold text-primary">
+                  <Text className="text-sm font-display-semibold text-primary">
                     Restore
                   </Text>
                 </Pressable>

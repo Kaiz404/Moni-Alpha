@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Text, TouchableOpacity, View } from 'react-native';
+import { TouchableOpacity, View } from 'react-native';
+import { Text } from '@/components/ui/text';
 
 export function AiReasoningSection({
   reasoning,
@@ -17,7 +18,7 @@ export function AiReasoningSection({
         onPress={() => setExpanded(!expanded)}
         activeOpacity={0.7}
       >
-        <Text className="text-xs font-medium text-muted">
+        <Text className="text-xs font-display-semibold text-muted">
           AI analysis {expanded ? '▲' : '▼'}
         </Text>
         {confidence !== null ? (

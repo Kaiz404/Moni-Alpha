@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Platform, Text, View } from 'react-native';
+import { Platform, View } from 'react-native';
+import { Text } from '@/components/ui/text';
 import { router } from 'expo-router';
 import { TactilePressable } from '@/components/ui/tactile-pressable';
 import { useAuth } from '@/lib/auth/auth-context';
@@ -40,7 +41,7 @@ export function GoogleSignInButton({
     <View className="mt-4">
       <View className="my-4 flex-row items-center gap-3">
         <View className="h-px flex-1 bg-border" />
-        <Text className="text-xs font-medium uppercase tracking-wide text-muted">
+        <Text className="text-xs font-display-semibold uppercase tracking-wide text-muted">
           or
         </Text>
         <View className="h-px flex-1 bg-border" />
@@ -54,7 +55,7 @@ export function GoogleSignInButton({
         accessibilityLabel="Continue with Google"
       >
         <Text className="text-lg leading-none text-primary">G</Text>
-        <Text className="text-base font-semibold text-foreground">
+        <Text className="text-base font-display-semibold text-foreground">
           {loading ? 'Connecting...' : 'Continue with Google'}
         </Text>
       </TactilePressable>

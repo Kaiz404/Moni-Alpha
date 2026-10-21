@@ -1,4 +1,4 @@
-import { Text } from 'react-native';
+import { Text } from '@/components/ui/text';
 
 export function ProfileSectionTitle({
   children,
@@ -6,7 +6,7 @@ export function ProfileSectionTitle({
   children: string;
 }) {
   return (
-    <Text className="mb-2 text-[13px] font-semibold text-muted">
+    <Text className="mb-2 text-[13px] font-display-semibold text-muted">
       {children}
     </Text>
   );

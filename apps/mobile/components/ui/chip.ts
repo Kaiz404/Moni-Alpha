@@ -6,7 +6,7 @@ export const chipActive = 'bg-primary-muted';
 
 export const chipIdleText = 'text-foreground';
 
-export const chipActiveText = 'font-semibold text-primary';
+export const chipActiveText = 'font-display-semibold text-primary';
 
 export function chipTextClass(active: boolean): string {
   return active ? chipActiveText : chipIdleText;

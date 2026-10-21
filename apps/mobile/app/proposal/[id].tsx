@@ -4,9 +4,9 @@ import {
   Alert,
   Pressable,
   ScrollView,
-  Text,
   View,
 } from 'react-native';
+import { Text } from '@/components/ui/text';
 import { router, useLocalSearchParams } from 'expo-router';
 import type { ProposedTransaction } from '@repo/types';
 
@@ -264,7 +264,7 @@ export default function ProposalDetailScreen() {
                 className="items-center rounded-2xl bg-surface-2 py-3"
                 accessibilityRole="button"
               >
-                <Text className="text-sm font-semibold text-foreground">
+                <Text className="text-sm font-display-semibold text-foreground">
                   {duplicate.kind === 'same_purchase'
                     ? 'Same purchase · merge'
                     : 'Combine into transfer'}

@@ -1,4 +1,5 @@
-import { Text, View } from 'react-native';
+import { View } from 'react-native';
+import { Text } from '@/components/ui/text';
 
 type BudgetProgressBarProps = {
   percentage: number | null;
@@ -30,7 +31,7 @@ export function BudgetProgressBar({
         />
         <Text
           pointerEvents="none"
-          className="absolute inset-y-0 left-2 right-2 flex-row items-center align-middle text-right text-[10px] font-bold text-muted"
+          className="absolute inset-y-0 left-2 right-2 flex-row items-center align-middle text-right text-[10px] font-display-bold text-muted"
           accessibilityElementsHidden
           numberOfLines={1}
         >

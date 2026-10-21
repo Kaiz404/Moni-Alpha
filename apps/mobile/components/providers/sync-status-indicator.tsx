@@ -1,5 +1,6 @@
 import React from 'react';
-import { Text, View } from 'react-native';
+import { View } from 'react-native';
+import { Text } from '@/components/ui/text';
 import { syncState } from '@legendapp/state';
 import { useSelector } from '@legendapp/state/react';
 
@@ -57,7 +58,7 @@ export function SyncStatusIndicator() {
           dotByTone[status.tone],
         ].join(' ')}
       />
-      <Text className="text-xs font-semibold">{status.text}</Text>
+      <Text className="text-xs font-display-semibold">{status.text}</Text>
     </View>
   );
 }

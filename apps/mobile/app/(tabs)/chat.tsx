@@ -6,11 +6,11 @@ import React, {
 } from 'react';
 import {
   View,
-  Text,
   FlatList,
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
+import { Text } from '@/components/ui/text';
 import { useFocusEffect } from 'expo-router';
 import {
   SafeAreaView,
@@ -226,7 +226,7 @@ export default function ChatScreen() {
               />
             </View>
             <View className="ml-3">
-              <Text className="text-[22px] font-bold leading-7 text-foreground">
+              <Text className="text-[22px] font-display-bold leading-7 text-foreground">
                 Chat with Moni
               </Text>
             </View>

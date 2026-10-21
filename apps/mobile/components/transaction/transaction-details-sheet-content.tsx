@@ -3,10 +3,10 @@ import {
   ActivityIndicator,
   ScrollView,
   StyleSheet,
-  Text,
   TouchableOpacity,
   View,
 } from 'react-native';
+import { Text } from '@/components/ui/text';
 import MapView, { Marker } from 'react-native-maps';
 
 import { FormField } from '@/components/ui/form-field';
@@ -51,7 +51,7 @@ export function TransactionDetailsSheetContent({
     <View className="flex-1">
       <View className="flex-row items-start justify-between">
         <View className="flex-1 pr-3">
-          <Text className="text-xl font-bold text-foreground">
+          <Text className="text-xl font-display-bold text-foreground">
             More details
           </Text>
         </View>
@@ -139,7 +139,7 @@ export function TransactionDetailsSheetContent({
                   mapExpanded ? 'Hide map' : 'Show map'
                 }
               >
-                <Text className="text-xs font-semibold uppercase tracking-wide text-muted">
+                <Text className="text-xs font-display-semibold uppercase tracking-wide text-muted">
                   Transaction location {mapExpanded ? '▲' : '▼'}
                 </Text>
               </TouchableOpacity>

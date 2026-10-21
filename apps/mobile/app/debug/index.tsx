@@ -1,11 +1,11 @@
 import React, { useState, useRef, useCallback } from 'react';
 import {
   View,
-  Text,
   ScrollView,
   TouchableOpacity,
   ActivityIndicator,
 } from 'react-native';
+import { Text } from '@/components/ui/text';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { BrandHeader } from '@/components/ui/brand-header';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
@@ -190,7 +190,7 @@ export default function DebugPage() {
                     />
                   )}
                   <Text
-                    className="text-xs font-semibold mt-1"
+                    className="text-xs font-display-semibold mt-1"
                     style={{
                       color: isDisabled
                         ? tokens.muted
@@ -224,7 +224,7 @@ export default function DebugPage() {
             }
           >
             <Text
-              className="text-xs font-bold"
+              className="text-xs font-display-bold"
               style={{
                 color: lastResult.result.success
                   ? tokens.success
@@ -239,11 +239,11 @@ export default function DebugPage() {
 
         <View className="mx-5 mt-5">
           <View className="flex-row justify-between items-center mb-2">
-            <Text className="text-xs font-bold text-foreground">
+            <Text className="text-xs font-display-bold text-foreground">
               Live logs
             </Text>
             <TouchableOpacity onPress={clearLog}>
-              <Text className="text-xs font-semibold text-primary">
+              <Text className="text-xs font-display-semibold text-primary">
                 Clear All Logs
               </Text>
             </TouchableOpacity>
@@ -285,7 +285,7 @@ export default function DebugPage() {
         {(selectedProcessLogs.length > 0 || logLines.length > 0) && (
           <View className="mx-5 mt-3">
             <View className="flex-row justify-between items-center mb-1">
-              <Text className="text-xs font-bold text-muted">
+              <Text className="text-xs font-display-bold text-muted">
                 {PROCESS_LABELS[selectedProcessLog]} console
               </Text>
             </View>

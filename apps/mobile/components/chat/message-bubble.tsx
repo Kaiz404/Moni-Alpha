@@ -1,4 +1,5 @@
-import { ActivityIndicator, Text, View } from 'react-native';
+import { ActivityIndicator, View } from 'react-native';
+import { Text } from '@/components/ui/text';
 import { Image } from 'expo-image';
 
 import { IconSymbol } from '@/components/ui/icon-symbol';
@@ -40,7 +41,7 @@ export function MessageBubble({
             color={tokens.primary}
           />
         </View>
-        <Text className="ml-2 text-[13px] font-medium text-muted">
+        <Text className="ml-2 text-[13px] font-display-semibold text-muted">
           {message.content}
         </Text>
       </View>
@@ -84,7 +85,7 @@ export function MessageBubble({
             color={isError ? tokens.danger : tokens.primary}
           />
         </View>
-        <Text className="ml-1.5 text-[12px] font-semibold text-muted">
+        <Text className="ml-1.5 text-[12px] font-display-semibold text-muted">
           Moni
         </Text>
       </View>

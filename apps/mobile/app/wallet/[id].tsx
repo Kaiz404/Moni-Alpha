@@ -5,10 +5,10 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-  Text,
   TouchableOpacity,
   View,
 } from 'react-native';
+import { Text } from '@/components/ui/text';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
@@ -364,7 +364,7 @@ export default function EditWalletScreen() {
             showsVerticalScrollIndicator={false}
           >
             <Surface>
-              <Text className="mb-2 text-base font-semibold text-foreground">
+              <Text className="mb-2 text-base font-display-semibold text-foreground">
                 Current balance
               </Text>
               <AmountInput
@@ -394,7 +394,7 @@ export default function EditWalletScreen() {
                   autoCapitalize="words"
                 />
                 <View style={{ width: 130 }}>
-                  <Text className="mb-2 text-base font-semibold text-foreground">
+                  <Text className="mb-2 text-base font-display-semibold text-foreground">
                     Account type
                   </Text>
                   <TouchableOpacity
@@ -409,7 +409,7 @@ export default function EditWalletScreen() {
                       size={18}
                     />
                     <Text
-                      className="ml-2 min-w-0 flex-1 text-xs font-semibold text-foreground"
+                      className="ml-2 min-w-0 flex-1 text-xs font-display-semibold text-foreground"
                       numberOfLines={1}
                     >
                       {selectedType.label}
@@ -419,7 +419,7 @@ export default function EditWalletScreen() {
               </View>
             </Surface>
 
-            <Text className="mt-8 text-base font-bold text-foreground">
+            <Text className="mt-8 text-base font-display-bold text-foreground">
               Color
             </Text>
             <Surface
@@ -438,16 +438,16 @@ export default function EditWalletScreen() {
                     backgroundColor: selectedCardStyle.swatchHex,
                   }}
                 />
-                <Text className="flex-1 text-sm font-semibold text-foreground">
+                <Text className="flex-1 text-sm font-display-semibold text-foreground">
                   {selectedCardStyle.label}
                 </Text>
-                <Text className="text-sm font-semibold text-primary">
+                <Text className="text-sm font-display-semibold text-primary">
                   Change
                 </Text>
               </TouchableOpacity>
             </Surface>
 
-            <Text className="mt-8 text-base font-bold text-foreground">
+            <Text className="mt-8 text-base font-display-bold text-foreground">
               Notification link
             </Text>
             <Surface tone="muted">

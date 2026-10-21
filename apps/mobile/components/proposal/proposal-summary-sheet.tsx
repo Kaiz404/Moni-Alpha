@@ -10,9 +10,9 @@ import {
   DeviceEventEmitter,
   Modal,
   Pressable,
-  Text,
   View,
 } from 'react-native';
+import { Text } from '@/components/ui/text';
 import { usePathname, router } from 'expo-router';
 import { MaterialDesignIcons } from '@react-native-vector-icons/material-design-icons';
 import {
@@ -172,7 +172,7 @@ export function ProposalSummarySheet() {
               />
             </View>
             <View className="flex-1">
-              <Text className="text-base font-bold text-foreground">
+              <Text className="text-base font-display-bold text-foreground">
                 Review a notification capture
               </Text>
             </View>
@@ -189,12 +189,12 @@ export function ProposalSummarySheet() {
               className="flex-row items-start justify-between gap-3 px-4 py-4"
             >
               <View className="min-w-0 flex-1">
-                <Text className="text-xs font-semibold uppercase tracking-wide text-muted">
+                <Text className="text-xs font-display-semibold uppercase tracking-wide text-muted">
                   {direction} from{' '}
                   {current.sourceApp ?? 'notification'}
                 </Text>
                 <Text
-                  className="mt-1 text-base font-bold text-foreground"
+                  className="mt-1 text-base font-display-bold text-foreground"
                   numberOfLines={1}
                 >
                   {title}
@@ -202,14 +202,14 @@ export function ProposalSummarySheet() {
               </View>
               <View className="items-end">
                 <Text
-                  className="text-lg font-bold"
+                  className="text-lg font-display-bold"
                   style={{ color: amountColor }}
                 >
                   {current.amountMinor == null
                     ? '—'
                     : minorToDecimal(current.amountMinor)}
                 </Text>
-                <Text className="mt-0.5 text-xs font-semibold text-muted">
+                <Text className="mt-0.5 text-xs font-display-semibold text-muted">
                   {current.currency}
                 </Text>
               </View>
@@ -230,7 +230,7 @@ export function ProposalSummarySheet() {
               className="items-center justify-center rounded-2xl bg-surface-2 py-3.5"
               accessibilityRole="button"
             >
-              <Text className="text-base font-semibold text-foreground">
+              <Text className="text-base font-display-semibold text-foreground">
                 {copy.secondaryLabel}
               </Text>
             </Pressable>

@@ -1,10 +1,10 @@
 import { forwardRef, useState } from 'react';
 import {
-  Text,
   TextInput,
   View,
   type TextInputProps,
 } from 'react-native';
+import { Text } from '@/components/ui/text';
 
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 
@@ -38,7 +38,7 @@ export const FormField = forwardRef<TextInput, FormFieldProps>(
 
     return (
       <View className={`mb-4 ${containerClassName ?? ''}`}>
-        <Text className="mb-2 text-base font-semibold text-foreground">
+        <Text className="mb-2 text-base font-display-semibold text-foreground">
           {label}
         </Text>
         <TextInput

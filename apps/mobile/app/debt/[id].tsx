@@ -3,9 +3,9 @@ import {
   Alert,
   Pressable,
   ScrollView,
-  Text,
   View,
 } from 'react-native';
+import { Text } from '@/components/ui/text';
 import { useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { BrandHeader } from '@/components/ui/brand-header';
 import { AmountInput } from '@/components/finance/amount-input';
@@ -184,7 +184,7 @@ export default function DebtDetailScreen() {
               : 'You owe them'}{' '}
             · {debtDueState(debt, balance).replace('_', ' ')}
           </Text>
-          <Text className="mt-1 text-3xl font-bold text-foreground">
+          <Text className="mt-1 text-3xl font-display-bold text-foreground">
             {money(debt.currency, balance)}
           </Text>
           {debt.dueDate ? (
@@ -198,7 +198,7 @@ export default function DebtDetailScreen() {
             tone="raised"
             className="mb-4 p-3"
           >
-            <Text className="font-bold text-foreground">
+            <Text className="font-display-bold text-foreground">
               {action === 'principal'
                 ? debt.direction === 'owed_to_me'
                   ? 'Lend more'
@@ -279,12 +279,12 @@ export default function DebtDetailScreen() {
             className="mb-4 self-start"
             onPress={writeOff}
           >
-            <Text className="font-semibold text-expense">
+            <Text className="font-display-semibold text-expense">
               Write off remaining balance
             </Text>
           </Pressable>
         ) : null}
-        <Text className="mb-2 text-base font-bold text-foreground">
+        <Text className="mb-2 text-base font-display-bold text-foreground">
           Activity
         </Text>
         {activities.map((item) => (
@@ -293,10 +293,10 @@ export default function DebtDetailScreen() {
             className="mb-2 rounded-xl bg-card p-3"
           >
             <View className="flex-row justify-between">
-              <Text className="font-semibold text-foreground">
+              <Text className="font-display-semibold text-foreground">
                 {item.kind.replace('_', ' ')}
               </Text>
-              <Text className="font-semibold text-foreground">
+              <Text className="font-display-semibold text-foreground">
                 {money(debt.currency, item.amountMinor)}
               </Text>
             </View>

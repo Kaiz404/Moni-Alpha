@@ -1,5 +1,6 @@
 import { Fragment, useMemo, useState } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { Pressable, View } from 'react-native';
+import { Text } from '@/components/ui/text';
 import Svg, { Circle, Path, Text as SvgText } from 'react-native-svg';
 import glyphMap from '@react-native-vector-icons/material-design-icons/glyphmaps/MaterialDesignIcons.json';
 
@@ -73,7 +74,7 @@ export function DonutChart({
         accessibilityLabel="No expense categories to display"
       >
         <View className="mb-3 h-14 w-14 rounded-full bg-card" />
-        <Text className="text-center text-base font-semibold text-foreground">
+        <Text className="text-center text-base font-display-semibold text-foreground">
           Nothing to compare yet
         </Text>
         <Text className="mt-1 text-center text-sm leading-5 text-muted">
@@ -169,20 +170,20 @@ export function DonutChart({
           style={{ maxWidth: size * 0.54 }}
         >
           <Text
-            className="text-center text-[12px] font-semibold text-muted"
+            className="text-center text-[12px] font-display-semibold text-muted"
             numberOfLines={1}
           >
             {centerItem?.label ?? 'Expenses'}
           </Text>
           <Text
-            className="mt-1 text-center text-lg font-bold text-foreground"
+            className="mt-1 text-center text-lg font-display-bold text-foreground"
             numberOfLines={1}
             style={{ fontVariant: ['tabular-nums'] }}
           >
             {valueLabel(centerItem?.value ?? total)}
           </Text>
           {selected && total > 0 ? (
-            <Text className="mt-0.5 text-center text-[11px] font-medium text-muted">
+            <Text className="mt-0.5 text-center text-[11px] font-display-semibold text-muted">
               {Math.round((selected.value / total) * 100)}% of
               spending
             </Text>
@@ -222,14 +223,14 @@ export function DonutChart({
                   </View>
                 ) : null}
                 <Text
-                  className="flex-1 text-sm font-medium text-foreground"
+                  className="flex-1 text-sm font-display-semibold text-foreground"
                   numberOfLines={1}
                 >
                   {datum.label}
                 </Text>
               </View>
               <Text
-                className="text-sm font-semibold text-foreground"
+                className="text-sm font-display-semibold text-foreground"
                 style={{ fontVariant: ['tabular-nums'] }}
               >
                 {percentage}%

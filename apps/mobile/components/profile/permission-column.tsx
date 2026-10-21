@@ -1,4 +1,5 @@
-import { Text, TouchableOpacity, View } from 'react-native';
+import { TouchableOpacity, View } from 'react-native';
+import { Text } from '@/components/ui/text';
 
 import {
   IconSymbol,
@@ -58,7 +59,7 @@ export function PermissionColumn({
       </View>
       <View className="ml-3 flex-1 pr-3">
         <Text
-          className="text-[17px] font-semibold text-foreground"
+          className="text-[17px] font-display-semibold text-foreground"
           numberOfLines={1}
         >
           {title}
@@ -71,12 +72,12 @@ export function PermissionColumn({
         </Text>
       </View>
       {muted ? (
-        <Text className="text-[13px] font-semibold text-muted">
+        <Text className="text-[13px] font-display-semibold text-muted">
           Not available
         </Text>
       ) : granted ? (
         <View className="rounded-xl bg-success/15 px-3 py-2">
-          <Text className="text-[13px] font-semibold text-success">
+          <Text className="text-[13px] font-display-semibold text-success">
             On
           </Text>
         </View>
@@ -88,7 +89,7 @@ export function PermissionColumn({
           activeOpacity={0.85}
         >
           <Text
-            className="text-center text-[13px] font-semibold text-primary-foreground"
+            className="text-center text-[13px] font-display-semibold text-primary-foreground"
             numberOfLines={1}
           >
             {actionLabel}
@@ -96,7 +97,7 @@ export function PermissionColumn({
         </TouchableOpacity>
       ) : (
         <View className="rounded-xl bg-surface-2 px-3 py-2">
-          <Text className="text-[13px] font-semibold text-muted">
+          <Text className="text-[13px] font-display-semibold text-muted">
             Off
           </Text>
         </View>

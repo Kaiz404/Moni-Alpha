@@ -1,11 +1,11 @@
 import { useCallback, useRef, useState } from 'react';
 import {
   Modal,
-  Text,
   TouchableOpacity,
   View,
   useWindowDimensions,
 } from 'react-native';
+import { Text } from '@/components/ui/text';
 import {
   Column,
   Host,
@@ -82,11 +82,11 @@ export function WalletNotificationLinkSection({
             />
           </View>
           <View className="min-w-0 flex-1">
-            <Text className="text-sm font-semibold text-foreground">
+            <Text className="text-sm font-display-semibold text-foreground">
               {selectedLabel ?? 'No app selected'}
             </Text>
           </View>
-          <Text className="text-sm font-semibold text-primary">
+          <Text className="text-sm font-display-semibold text-primary">
             Change
           </Text>
         </TouchableOpacity>

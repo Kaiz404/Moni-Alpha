@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Alert, Pressable, Text, View } from 'react-native';
+import { Alert, Pressable, View } from 'react-native';
+import { Text } from '@/components/ui/text';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useValue } from '@legendapp/state/react';
@@ -469,7 +470,7 @@ export default function NewTransactionScreen() {
                   onPress={() => setType(option)}
                 >
                   <Text
-                    className={`text-sm font-semibold ${chipTextClass(selected)}`}
+                    className={`text-sm font-display-semibold ${chipTextClass(selected)}`}
                   >
                     {transactionCopy[option]}
                   </Text>
@@ -481,14 +482,14 @@ export default function NewTransactionScreen() {
 
         <View className="flex-1 items-center justify-center px-2">
           <Text
-            className={`mt-2 text-6xl font-bold tracking-tight ${amountTone}`}
+            className={`mt-2 text-6xl font-display-bold tracking-tight ${amountTone}`}
             accessibilityLabel={`${amount || '0'}`}
           >
             {amountPrefix}
             {amount || '0'}
           </Text>
           <View className="mt-4 items-center">
-            <Text className="text-sm font-bold text-foreground">
+            <Text className="text-sm font-display-bold text-foreground">
               {currency ?? 'Choose a wallet'}
             </Text>
           </View>
@@ -496,7 +497,7 @@ export default function NewTransactionScreen() {
 
         <View className="pt-2">
           <View className="mb-2 flex-row items-center justify-between px-1">
-            <Text className="text-xs font-bold uppercase tracking-wide text-muted">
+            <Text className="text-xs font-display-bold uppercase tracking-wide text-muted">
               Transaction details
             </Text>
             <Pressable
@@ -510,7 +511,7 @@ export default function NewTransactionScreen() {
                 name="tune"
                 size={16}
               />
-              <Text className="ml-1 text-xs font-bold text-foreground">
+              <Text className="ml-1 text-xs font-display-bold text-foreground">
                 Details
               </Text>
             </Pressable>

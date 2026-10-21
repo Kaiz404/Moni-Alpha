@@ -9,10 +9,10 @@ import {
   Modal,
   Platform,
   Pressable,
-  Text,
   View,
   useWindowDimensions,
 } from 'react-native';
+import { Text } from '@/components/ui/text';
 import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { MaterialDesignIcons } from '@react-native-vector-icons/material-design-icons';
@@ -161,7 +161,7 @@ function CaptureMenuItem({
               />
             </View>
             <View className="ml-3 min-w-0 flex-1">
-              <Text className="text-base font-bold text-foreground">
+              <Text className="text-base font-display-bold text-foreground">
                 {action.label}
               </Text>
             </View>

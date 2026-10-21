@@ -2,10 +2,10 @@ import { useState } from 'react';
 import {
   Alert,
   ScrollView,
-  Text,
   TouchableOpacity,
   View,
 } from 'react-native';
+import { Text } from '@/components/ui/text';
 import { Link, router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -75,7 +75,7 @@ export default function RegisterScreen() {
         contentContainerStyle={{ paddingBottom: 36 }}
       >
         <View className="mb-10">
-          <Text className="text-[28px] font-bold leading-[34px] text-foreground">
+          <Text className="text-[28px] font-display-bold leading-[34px] text-foreground">
             Start with a clearer view
           </Text>
         </View>
@@ -136,7 +136,7 @@ export default function RegisterScreen() {
             className="mt-8 items-center py-3"
             accessibilityRole="button"
           >
-            <Text className="text-[15px] font-semibold text-primary">
+            <Text className="text-[15px] font-display-semibold text-primary">
               Already have an account? Sign in
             </Text>
           </TouchableOpacity>

@@ -3,10 +3,10 @@ import {
   ActivityIndicator,
   Alert,
   Pressable,
-  Text,
   TextInput,
   View,
 } from 'react-native';
+import { Text } from '@/components/ui/text';
 import { router } from 'expo-router';
 import { randomUUID } from 'expo-crypto';
 import {
@@ -185,7 +185,7 @@ export default function ScanListenScreen() {
             color={tokens.foreground}
           />
         </Pressable>
-        <Text className="text-sm font-semibold text-foreground">
+        <Text className="text-sm font-display-semibold text-foreground">
           Narrate a transaction
         </Text>
         <View className="h-10 w-10" />
@@ -218,7 +218,7 @@ export default function ScanListenScreen() {
                 size={20}
                 color="#ffffff"
               />
-              <Text className="text-base font-semibold text-primary-foreground">
+              <Text className="text-base font-display-semibold text-primary-foreground">
                 Done speaking
               </Text>
             </Pressable>
@@ -231,7 +231,7 @@ export default function ScanListenScreen() {
         </View>
       ) : (
         <View className="flex-1 px-6 pt-4">
-          <Text className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted">
+          <Text className="mb-2 text-xs font-display-semibold uppercase tracking-wide text-muted">
             Review before sending
           </Text>
           <TextInput
@@ -254,7 +254,7 @@ export default function ScanListenScreen() {
               }}
               className="flex-1 items-center rounded-xl bg-surface-2 py-3.5"
             >
-              <Text className="text-base font-semibold text-foreground">
+              <Text className="text-base font-display-semibold text-foreground">
                 Try again
               </Text>
             </Pressable>
@@ -263,7 +263,7 @@ export default function ScanListenScreen() {
               disabled={!transcript.trim()}
               className={`flex-1 items-center rounded-xl py-3.5 ${transcript.trim() ? 'bg-primary' : 'bg-primary/50'}`}
             >
-              <Text className="text-base font-semibold text-primary-foreground">
+              <Text className="text-base font-display-semibold text-primary-foreground">
                 Send
               </Text>
             </Pressable>

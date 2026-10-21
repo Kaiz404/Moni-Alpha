@@ -3,11 +3,11 @@ import {
   FlatList,
   Pressable,
   ScrollView,
-  Text,
   TextInput,
   View,
   type ListRenderItem,
 } from 'react-native';
+import { Text } from '@/components/ui/text';
 
 import {
   filterCurrencyOptions,
@@ -57,7 +57,7 @@ function CurrencyOptionRow({
     >
       <View className="flex-1">
         <View className="flex-row gap-4">
-          <Text className="text-base font-semibold text-foreground">
+          <Text className="text-base font-display-semibold text-foreground">
             {item.code}
           </Text>
           <Text className="mt-0.5 text-sm text-muted">
@@ -88,7 +88,7 @@ export function CurrencyPickerHeader({
   return (
     <View className="">
       <View className="mb-4 flex-row items-center justify-between gap-3">
-        <Text className="flex-1 text-[22px] font-bold text-foreground">
+        <Text className="flex-1 text-[22px] font-display-bold text-foreground">
           Choose currency
         </Text>
         <IconAction

@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { Pressable, View } from 'react-native';
+import { Text } from '@/components/ui/text';
 
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
@@ -36,7 +37,7 @@ export function TransactionModifierChip({
       onPress={onPress}
     >
       <Text
-        className="text-[11px] font-bold uppercase tracking-wide text-muted"
+        className="text-[11px] font-display-bold uppercase tracking-wide text-muted"
         numberOfLines={1}
       >
         {hint}
@@ -55,7 +56,7 @@ export function TransactionModifierChip({
           </View>
         ) : null}
         <Text
-          className={`min-w-0 flex-1 text-sm font-bold ${
+          className={`min-w-0 flex-1 text-sm font-display-bold ${
             hasValue ? 'text-foreground' : 'text-muted'
           }`}
           numberOfLines={1}
@@ -70,7 +71,7 @@ export function TransactionModifierChip({
       </View>
       {detail && hasValue ? (
         <Text
-          className="ml-10 mt-0.5 text-xs font-medium text-muted"
+          className="ml-10 mt-0.5 text-xs font-display-semibold text-muted"
           numberOfLines={1}
         >
           {detail}

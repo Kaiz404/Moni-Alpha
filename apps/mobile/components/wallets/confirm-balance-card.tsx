@@ -1,4 +1,5 @@
-import { Text, View } from 'react-native';
+import { View } from 'react-native';
+import { Text } from '@/components/ui/text';
 import { router } from 'expo-router';
 import Animated, {
   FadeOut,
@@ -40,7 +41,7 @@ export function ConfirmBalanceCard({
       >
         <View className="flex-row items-start justify-between pl-4 pr-1 pt-3">
           <Text
-            className="flex-1 pt-2.5 text-base font-bold text-foreground"
+            className="flex-1 pt-2.5 text-base font-display-bold text-foreground"
             accessibilityRole="header"
           >
             Confirm balances to unlock your forecast
@@ -50,7 +51,7 @@ export function ConfirmBalanceCard({
             onPress={dismiss}
             accessibilityLabel="Not now, ask again in a week"
           >
-            <Text className="text-sm font-semibold text-muted">
+            <Text className="text-sm font-display-semibold text-muted">
               Not now
             </Text>
           </TactilePressable>
@@ -75,7 +76,7 @@ export function ConfirmBalanceCard({
                 >
                   <View className="min-w-0 flex-1 pr-3">
                     <Text
-                      className="text-base font-semibold text-foreground"
+                      className="text-base font-display-semibold text-foreground"
                       numberOfLines={1}
                     >
                       {wallet.name}
@@ -85,7 +86,7 @@ export function ConfirmBalanceCard({
                     </Text>
                   </View>
                   <Text
-                    className="text-base font-bold text-foreground"
+                    className="text-base font-display-bold text-foreground"
                     style={{ fontVariant: ['tabular-nums'] }}
                   >
                     {balance}

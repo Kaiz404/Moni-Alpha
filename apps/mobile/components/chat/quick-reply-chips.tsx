@@ -1,4 +1,5 @@
-import { Text, View } from 'react-native';
+import { View } from 'react-native';
+import { Text } from '@/components/ui/text';
 
 import { TactilePressable } from '@/components/ui/tactile-pressable';
 import type { QuickReplyOption } from '@/lib/ai/chat/messages';
@@ -27,7 +28,7 @@ export function QuickReplyChips({
           className="self-start rounded-xl bg-primary-muted px-3 py-2"
           accessibilityLabel={LABELS[option]}
         >
-          <Text className="text-[13px] font-semibold text-primary">
+          <Text className="text-[13px] font-display-semibold text-primary">
             {LABELS[option]}
           </Text>
         </TactilePressable>

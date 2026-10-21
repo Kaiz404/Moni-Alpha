@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { Pressable, View } from 'react-native';
+import { Text } from '@/components/ui/text';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
@@ -44,7 +45,7 @@ export function BrandHeader({
           </Pressable>
         ) : null}
         <Text
-          className={`flex-1 text-lg font-semibold text-foreground ${showBack ? 'ml-3' : ''}`}
+          className={`flex-1 text-lg font-display-semibold text-foreground ${showBack ? 'ml-3' : ''}`}
           numberOfLines={1}
         >
           {title}

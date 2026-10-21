@@ -1,4 +1,5 @@
-import { Pressable, Text, View } from 'react-native';
+import { Pressable, View } from 'react-native';
+import { Text } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { hapticKeypadPress } from '@/lib/haptics';
 import { IconSymbol } from './icon-symbol';
@@ -52,7 +53,7 @@ export function NumericKeypad({
                   color={tokens.muted}
                 />
               ) : (
-                <Text className="text-2xl font-semibold text-foreground">
+                <Text className="text-2xl font-display-semibold text-foreground">
                   {key}
                 </Text>
               )}

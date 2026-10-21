@@ -1,8 +1,8 @@
 import {
-  Text,
   TouchableOpacity,
   type TouchableOpacityProps,
 } from 'react-native';
+import { Text } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { IconSymbol, type IconSymbolName } from './icon-symbol';
 
@@ -57,7 +57,7 @@ export function PrimaryButton({
       {...props}
     >
       {loading ? (
-        <Text className={`text-base font-bold ${styles.text}`}>
+        <Text className={`text-base font-display-bold ${styles.text}`}>
           {loadingLabel ?? 'Please wait…'}
         </Text>
       ) : (
@@ -69,7 +69,7 @@ export function PrimaryButton({
               color={styles.icon}
             />
           ) : null}
-          <Text className={`text-base font-bold ${styles.text}`}>
+          <Text className={`text-base font-display-bold ${styles.text}`}>
             {label}
           </Text>
         </>

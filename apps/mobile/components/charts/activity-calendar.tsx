@@ -1,4 +1,5 @@
-import { Pressable, Text, View } from 'react-native';
+import { Pressable, View } from 'react-native';
+import { Text } from '@/components/ui/text';
 
 import {
   buildActivityCalendar,
@@ -48,7 +49,7 @@ export function ActivityCalendar({
             key={`${weekday}-${index}`}
             className="flex-1 items-center"
           >
-            <Text className="text-[11px] font-semibold text-muted">
+            <Text className="text-[11px] font-display-semibold text-muted">
               {weekday}
             </Text>
           </View>
@@ -94,7 +95,7 @@ export function ActivityCalendar({
                     />
                   ) : null}
                   <Text
-                    className={`text-xs font-semibold ${selected ? 'text-primary-foreground' : active ? 'text-foreground' : 'text-muted'}`}
+                    className={`text-xs font-display-semibold ${selected ? 'text-primary-foreground' : active ? 'text-foreground' : 'text-muted'}`}
                     style={{ fontVariant: ['tabular-nums'] }}
                   >
                     {cell.day}

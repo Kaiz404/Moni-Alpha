@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
-import { Modal, Pressable, Text, View } from 'react-native';
+import { Modal, Pressable, View } from 'react-native';
+import { Text } from '@/components/ui/text';
 import { router } from 'expo-router';
 import { MaterialDesignIcons } from '@react-native-vector-icons/material-design-icons';
 import Animated, {
@@ -134,7 +135,7 @@ export function FabReceiptProcessingOverlay() {
               color={tokens.primary}
             />
           </View>
-          <Text className="mt-5 text-center text-xl font-bold text-foreground">
+          <Text className="mt-5 text-center text-xl font-display-bold text-foreground">
             {readyAt ? 'Ready for your review' : copy.title}
           </Text>
           <View
@@ -157,7 +158,7 @@ export function FabReceiptProcessingOverlay() {
             accessibilityRole="button"
             accessibilityLabel="Continue processing in the background"
           >
-            <Text className="text-sm font-semibold text-primary">
+            <Text className="text-sm font-display-semibold text-primary">
               Continue in background
             </Text>
           </Pressable>

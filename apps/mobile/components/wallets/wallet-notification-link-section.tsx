@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import {
   Modal,
-  Text,
   TouchableOpacity,
   useWindowDimensions,
   View,
 } from 'react-native';
+import { Text } from '@/components/ui/text';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import {
@@ -63,7 +63,7 @@ export function WalletNotificationLinkSection({
           />
         </View>
         <View className="min-w-0 flex-1">
-          <Text className="text-sm font-semibold text-foreground">
+          <Text className="text-sm font-display-semibold text-foreground">
             {selectedLabel ?? 'No app selected'}
           </Text>
           <Text
@@ -75,7 +75,7 @@ export function WalletNotificationLinkSection({
               : 'Choose an installed banking app'}
           </Text>
         </View>
-        <Text className="text-sm font-semibold text-primary">
+        <Text className="text-sm font-display-semibold text-primary">
           Change
         </Text>
       </TouchableOpacity>

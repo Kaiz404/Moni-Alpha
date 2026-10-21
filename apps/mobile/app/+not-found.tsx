@@ -1,5 +1,6 @@
 import { router, Stack } from 'expo-router';
-import { Text, View } from 'react-native';
+import { View } from 'react-native';
+import { Text } from '@/components/ui/text';
 
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { PrimaryButton } from '@/components/ui/primary-button';
@@ -26,7 +27,7 @@ export default function NotFoundScreen() {
               color={tokens.primary}
             />
           </View>
-          <Text className="text-center text-[22px] font-bold text-foreground">
+          <Text className="text-center text-[22px] font-display-bold text-foreground">
             This screen moved
           </Text>
           <PrimaryButton

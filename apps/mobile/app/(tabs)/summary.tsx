@@ -2,10 +2,10 @@ import { useMemo, useState } from 'react';
 import {
   Pressable,
   ScrollView,
-  Text,
   View,
   useWindowDimensions,
 } from 'react-native';
+import { Text } from '@/components/ui/text';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useValue } from '@legendapp/state/react';
@@ -270,7 +270,7 @@ export default function InsightsScreen() {
       >
         <View className="mb-7 flex-row items-start justify-between">
           <View className="flex-1 pr-3">
-            <Text className="text-[28px] font-bold leading-9 text-foreground">
+            <Text className="text-[28px] font-display-bold leading-9 text-foreground">
               Insights
             </Text>
           </View>
@@ -284,14 +284,14 @@ export default function InsightsScreen() {
             smoothing="hero"
             className="rounded-[28px] px-5 py-8"
           >
-            <Text className="text-lg font-bold text-foreground">
+            <Text className="text-lg font-display-bold text-foreground">
               Start with one wallet
             </Text>
             <Pressable
               className="mt-5 self-start rounded-2xl bg-primary px-4 py-3"
               onPress={() => router.push('/wallet/new' as any)}
             >
-              <Text className="font-semibold text-primary-foreground">
+              <Text className="font-display-semibold text-primary-foreground">
                 Add a wallet
               </Text>
             </Pressable>
@@ -319,7 +319,7 @@ export default function InsightsScreen() {
                     accessibilityState={{ selected: active }}
                   >
                     <Text
-                      className={`font-semibold ${active ? 'text-primary-foreground' : 'text-foreground'}`}
+                      className={`font-display-semibold ${active ? 'text-primary-foreground' : 'text-foreground'}`}
                     >
                       {item}
                     </Text>
@@ -330,7 +330,7 @@ export default function InsightsScreen() {
 
             <View className="mb-6">
               <View className="mb-2 flex-row items-center justify-between">
-                <Text className="text-sm font-semibold text-muted">
+                <Text className="text-sm font-display-semibold text-muted">
                   Wallets
                 </Text>
                 {selectedWalletIds.size ? (
@@ -344,7 +344,7 @@ export default function InsightsScreen() {
                     accessibilityRole="button"
                     accessibilityLabel="Show insights for all wallets"
                   >
-                    <Text className="text-sm font-semibold text-primary">
+                    <Text className="text-sm font-display-semibold text-primary">
                       All wallets
                     </Text>
                   </Pressable>
@@ -368,7 +368,7 @@ export default function InsightsScreen() {
                       accessibilityLabel={`Include ${wallet.name} in insights`}
                     >
                       <Text
-                        className={`text-sm font-semibold ${selected ? 'text-primary' : 'text-foreground'}`}
+                        className={`text-sm font-display-semibold ${selected ? 'text-primary' : 'text-foreground'}`}
                       >
                         {wallet.name}
                       </Text>
@@ -384,10 +384,10 @@ export default function InsightsScreen() {
               className="mb-6 rounded-card p-5"
             >
               <View className="flex-row items-baseline justify-between">
-                <Text className="text-xl font-bold text-foreground">
+                <Text className="text-xl font-display-bold text-foreground">
                   {formatMonth(currentMonth)} spending
                 </Text>
-                <Text className="text-sm font-semibold text-muted">
+                <Text className="text-sm font-display-semibold text-muted">
                   {currency}
                 </Text>
               </View>
@@ -425,7 +425,7 @@ export default function InsightsScreen() {
                   color={tokens.primary}
                 />
                 <View className="ml-2 flex-1">
-                  <Text className="text-base font-bold text-foreground">
+                  <Text className="text-base font-display-bold text-foreground">
                     {takeaway.headline}
                   </Text>
                 </View>
@@ -439,7 +439,7 @@ export default function InsightsScreen() {
             >
               <View className="flex-row items-center justify-between">
                 <View>
-                  <Text className="text-base font-bold text-foreground">
+                  <Text className="text-base font-display-bold text-foreground">
                     Balance trend
                   </Text>
                 </View>
@@ -456,7 +456,7 @@ export default function InsightsScreen() {
                       accessibilityState={{ selected: active }}
                     >
                       <Text
-                        className={`text-sm font-semibold ${active ? 'text-primary' : 'text-muted'}`}
+                        className={`text-sm font-display-semibold ${active ? 'text-primary' : 'text-muted'}`}
                       >
                         {option}
                       </Text>
@@ -494,7 +494,7 @@ export default function InsightsScreen() {
             <View className="mb-6">
               <View className="mb-3 flex-row items-center justify-between">
                 <View>
-                  <Text className="text-lg font-bold text-foreground">
+                  <Text className="text-lg font-display-bold text-foreground">
                     Budget pulse
                   </Text>
                 </View>
@@ -504,7 +504,7 @@ export default function InsightsScreen() {
                   accessibilityRole="button"
                   accessibilityLabel="Manage budgets"
                 >
-                  <Text className="text-sm font-semibold text-primary">
+                  <Text className="text-sm font-display-semibold text-primary">
                     Manage
                   </Text>
                 </Pressable>
@@ -544,7 +544,7 @@ export default function InsightsScreen() {
                                 } as any)
                               }
                             >
-                              <Text className="text-sm font-semibold text-primary">
+                              <Text className="text-sm font-display-semibold text-primary">
                                 View transactions
                               </Text>
                             </Pressable>
@@ -572,7 +572,7 @@ export default function InsightsScreen() {
               smoothing="hero"
               className="mb-6 rounded-[28px] p-5"
             >
-              <Text className="text-lg font-bold text-foreground">
+              <Text className="text-lg font-display-bold text-foreground">
                 Activity calendar
               </Text>
               <View className="mt-5">
@@ -588,7 +588,7 @@ export default function InsightsScreen() {
                   tone="muted"
                   className="mt-5 p-4"
                 >
-                  <Text className="text-sm font-semibold text-foreground">
+                  <Text className="text-sm font-display-semibold text-foreground">
                     {new Intl.DateTimeFormat(undefined, {
                       weekday: 'long',
                       month: 'long',
@@ -611,7 +611,7 @@ export default function InsightsScreen() {
                           }
                         >
                           <Text
-                            className="flex-1 pr-3 text-sm font-medium text-foreground"
+                            className="flex-1 pr-3 text-sm font-display-semibold text-foreground"
                             numberOfLines={1}
                           >
                             {transaction.merchant ??
@@ -619,7 +619,7 @@ export default function InsightsScreen() {
                               'Expense'}
                           </Text>
                           <Text
-                            className="text-sm font-bold text-foreground"
+                            className="text-sm font-display-bold text-foreground"
                             style={{ fontVariant: ['tabular-nums'] }}
                           >
                             {formatMinorAmount(
@@ -649,7 +649,7 @@ export default function InsightsScreen() {
             >
               <View className="flex-row items-center justify-between">
                 <View>
-                  <Text className="text-lg font-bold text-foreground">
+                  <Text className="text-lg font-display-bold text-foreground">
                     Where money sits
                   </Text>
                 </View>
@@ -667,7 +667,7 @@ export default function InsightsScreen() {
                 >
                   <View className="min-w-0 flex-1 pr-3">
                     <Text
-                      className="text-base font-semibold text-foreground"
+                      className="text-base font-display-semibold text-foreground"
                       numberOfLines={1}
                     >
                       {wallet.name}
@@ -677,7 +677,7 @@ export default function InsightsScreen() {
                     </Text>
                   </View>
                   <Text
-                    className="text-base font-bold text-foreground"
+                    className="text-base font-display-bold text-foreground"
                     style={{ fontVariant: ['tabular-nums'] }}
                   >
                     {formatMinorAmount(
@@ -706,7 +706,7 @@ export default function InsightsScreen() {
                   />
                 </View>
                 <View className="ml-3 flex-1">
-                  <Text className="text-base font-bold text-foreground">
+                  <Text className="text-base font-display-bold text-foreground">
                     Transaction pinmap
                   </Text>
                 </View>

@@ -1,7 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   View,
-  Text,
   TouchableOpacity,
   Alert,
   ScrollView,
@@ -10,6 +9,7 @@ import {
   ActivityIndicator,
   StyleSheet,
 } from 'react-native';
+import { Text } from '@/components/ui/text';
 import type { ColorValue } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -326,17 +326,17 @@ export default function EditTransactionScreen() {
             contentContainerClassName="px-4 pt-4 pb-2"
             showsVerticalScrollIndicator={false}
           >
-            <Text className="text-2xl font-bold text-foreground">
+            <Text className="text-2xl font-display-bold text-foreground">
               Edit transaction
             </Text>
             <Surface
               tone="muted"
               className="mb-6 mt-4 p-4"
             >
-              <Text className="text-xs font-semibold uppercase tracking-wide text-muted">
+              <Text className="text-xs font-display-semibold uppercase tracking-wide text-muted">
                 Date &amp; time
               </Text>
-              <Text className="mt-1 text-sm font-semibold text-foreground">
+              <Text className="mt-1 text-sm font-display-semibold text-foreground">
                 {readOnlyDate}
               </Text>
               {readOnlyLocation ? (
@@ -358,7 +358,7 @@ export default function EditTransactionScreen() {
               </Surface>
             ) : null}
 
-            <Text className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-muted">
+            <Text className="mb-1.5 text-xs font-display-semibold uppercase tracking-wide text-muted">
               {isTransfer ? 'From wallet' : 'Wallet'}
             </Text>
             <View className="mb-4 flex-row flex-wrap gap-1.5">
@@ -395,7 +395,7 @@ export default function EditTransactionScreen() {
 
             {isTransfer ? (
               <>
-                <Text className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-muted">
+                <Text className="mb-1.5 text-xs font-display-semibold uppercase tracking-wide text-muted">
                   To wallet
                 </Text>
                 <View className="mb-4 flex-row flex-wrap gap-1.5">
@@ -437,7 +437,7 @@ export default function EditTransactionScreen() {
             {isTransfer ? (
               <View className="mb-4 flex-row gap-3">
                 <View className="flex-1 min-w-[120px]">
-                  <Text className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-muted">
+                  <Text className="mb-1.5 text-xs font-display-semibold uppercase tracking-wide text-muted">
                     Amount
                   </Text>
                   <AmountInput
@@ -456,7 +456,7 @@ export default function EditTransactionScreen() {
             ) : (
               <View className="mb-4 flex-row gap-3">
                 <View className="flex-1 min-w-[140px]">
-                  <Text className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-muted">
+                  <Text className="mb-1.5 text-xs font-display-semibold uppercase tracking-wide text-muted">
                     Type
                   </Text>
                   <View className="flex-row gap-1.5">
@@ -467,7 +467,7 @@ export default function EditTransactionScreen() {
                       disabled={isTransfer}
                     >
                       <Text
-                        className={`text-sm font-medium ${chipTextClass(type === 'income')}`}
+                        className={`text-sm font-display-semibold ${chipTextClass(type === 'income')}`}
                       >
                         Income
                       </Text>
@@ -481,7 +481,7 @@ export default function EditTransactionScreen() {
                       disabled={isTransfer}
                     >
                       <Text
-                        className={`text-sm font-medium ${chipTextClass(type === 'expense')}`}
+                        className={`text-sm font-display-semibold ${chipTextClass(type === 'expense')}`}
                       >
                         Expense
                       </Text>
@@ -489,7 +489,7 @@ export default function EditTransactionScreen() {
                   </View>
                 </View>
                 <View className="flex-1 min-w-[120px]">
-                  <Text className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-muted">
+                  <Text className="mb-1.5 text-xs font-display-semibold uppercase tracking-wide text-muted">
                     Amount
                   </Text>
                   <AmountInput
@@ -509,7 +509,7 @@ export default function EditTransactionScreen() {
 
             {!isTransfer ? (
               <>
-                <Text className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-muted">
+                <Text className="mb-1.5 text-xs font-display-semibold uppercase tracking-wide text-muted">
                   Category
                 </Text>
                 <View className="mb-4 flex-row flex-wrap gap-1.5">
@@ -568,7 +568,7 @@ export default function EditTransactionScreen() {
                       mapExpanded ? 'Hide map' : 'Show map'
                     }
                   >
-                    <Text className="text-xs font-semibold uppercase tracking-wide text-muted">
+                    <Text className="text-xs font-display-semibold uppercase tracking-wide text-muted">
                       Transaction location {mapExpanded ? '▲' : '▼'}
                     </Text>
                   </TouchableOpacity>

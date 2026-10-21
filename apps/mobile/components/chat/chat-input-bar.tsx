@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Pressable, Text, TextInput, View } from 'react-native';
+import { Pressable, TextInput, View } from 'react-native';
+import { Text } from '@/components/ui/text';
 import { Image } from 'expo-image';
 
 import { IconAction } from '@/components/ui/icon-action';
@@ -56,7 +57,7 @@ export function ChatInputBar({
             contentFit="cover"
           />
           <View className="ml-3 flex-1">
-            <Text className="text-[15px] font-semibold text-foreground">
+            <Text className="text-[15px] font-display-semibold text-foreground">
               Receipt ready to review
             </Text>
             <Text className="mt-0.5 text-[13px] text-muted">
@@ -75,7 +76,7 @@ export function ChatInputBar({
       {isSpeechRecognizing ? (
         <View className="mb-2 flex-row items-center rounded-2xl bg-primary-muted px-4 py-2.5">
           <View className="h-2 w-2 rounded-full bg-primary" />
-          <Text className="ml-2 flex-1 text-[13px] font-semibold text-primary">
+          <Text className="ml-2 flex-1 text-[13px] font-display-semibold text-primary">
             Listeningâ€¦ release the microphone when you&apos;re done
           </Text>
         </View>
@@ -190,7 +191,7 @@ export function ChatEmptyState({
           color={primary}
         />
       </View>
-      <Text className="text-center text-[22px] font-bold leading-7 text-foreground">
+      <Text className="text-center text-[22px] font-display-bold leading-7 text-foreground">
         A clearer view of your money
       </Text>
       <View className="mt-7 w-full max-w-md gap-2">
@@ -202,7 +203,7 @@ export function ChatEmptyState({
             className="rounded-2xl bg-card px-4 py-3.5 active:bg-surface-2"
             accessibilityRole="button"
           >
-            <Text className="text-[15px] font-medium text-foreground">
+            <Text className="text-[15px] font-display-semibold text-foreground">
               {suggestion}
             </Text>
           </Pressable>

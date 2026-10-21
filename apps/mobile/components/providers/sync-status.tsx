@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, Text } from 'react-native';
+import { View } from 'react-native';
+import { Text } from '@/components/ui/text';
 import { syncState } from '@legendapp/state';
 import { useSelector } from '@legendapp/state/react';
 import { transactions$ } from '@/lib/store';
@@ -55,7 +56,7 @@ export function SyncStatus({ className }: SyncStatusProps = {}) {
         .filter(Boolean)
         .join(' ')}
     >
-      <Text className="mb-3 text-lg font-semibold text-foreground">
+      <Text className="mb-3 text-lg font-display-semibold text-foreground">
         Sync Status
       </Text>
 
@@ -63,7 +64,7 @@ export function SyncStatus({ className }: SyncStatusProps = {}) {
         <View className="flex-row items-center justify-between">
           <Text className="text-sm text-muted">Status:</Text>
           <Text
-            className={`text-sm font-medium ${status.colorClass}`}
+            className={`text-sm font-display-semibold ${status.colorClass}`}
           >
             {status.text}
           </Text>

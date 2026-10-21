@@ -1,10 +1,10 @@
 import { useMemo, useState } from 'react';
 import {
   StyleSheet,
-  Text,
   TouchableOpacity,
   View,
 } from 'react-native';
+import { Text } from '@/components/ui/text';
 import MapView, { Marker } from 'react-native-maps';
 
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
@@ -41,7 +41,7 @@ export function ProposalLocationSection({
         onPress={() => setExpanded(!expanded)}
         activeOpacity={0.7}
       >
-        <Text className="text-xs font-semibold uppercase tracking-wider text-muted">
+        <Text className="text-xs font-display-semibold uppercase tracking-wider text-muted">
           Captured location {expanded ? '▲' : '▼'}
         </Text>
       </TouchableOpacity>

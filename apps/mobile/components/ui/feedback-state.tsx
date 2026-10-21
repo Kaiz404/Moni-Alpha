@@ -1,4 +1,5 @@
-import { ActivityIndicator, Text, View } from 'react-native';
+import { ActivityIndicator, View } from 'react-native';
+import { Text } from '@/components/ui/text';
 
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { IconSymbol, type IconSymbolName } from './icon-symbol';
@@ -40,7 +41,7 @@ export function FeedbackState({
           />
         )}
       </View>
-      <Text className="text-center text-lg font-bold text-foreground">
+      <Text className="text-center text-lg font-display-bold text-foreground">
         {title}
       </Text>
     </View>

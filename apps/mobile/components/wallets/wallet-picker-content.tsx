@@ -1,4 +1,5 @@
-import { Pressable, ScrollView, Text, View } from 'react-native';
+import { Pressable, ScrollView, View } from 'react-native';
+import { Text } from '@/components/ui/text';
 
 import { IconAction } from '@/components/ui/icon-action';
 import {
@@ -67,10 +68,10 @@ export function WalletPickerContent({
           />
         </View>
         <View className="min-w-0 flex-1">
-          <Text className="text-base font-semibold text-foreground">
+          <Text className="text-base font-display-semibold text-foreground">
             {wallet.name}
           </Text>
-          <Text className="mt-0.5 text-xs font-semibold uppercase text-muted">
+          <Text className="mt-0.5 text-xs font-display-semibold uppercase text-muted">
             {wallet.currency}
           </Text>
         </View>
@@ -89,7 +90,7 @@ export function WalletPickerContent({
     <View className="flex-1">
       <View className="flex-row items-start justify-between">
         <View className="flex-1 pr-3">
-          <Text className="text-xl font-bold text-foreground">
+          <Text className="text-xl font-display-bold text-foreground">
             {title}
           </Text>
         </View>

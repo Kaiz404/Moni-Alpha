@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
-import { Pressable, ScrollView, Text, View } from 'react-native';
+import { Pressable, ScrollView, View } from 'react-native';
+import { Text } from '@/components/ui/text';
 import { router } from 'expo-router';
 import { useValue } from '@legendapp/state/react';
 
@@ -57,7 +58,7 @@ export default function DebtsScreen() {
                 onPress={() => setTab(option)}
               >
                 <Text
-                  className={`text-center text-[15px] font-bold ${selected && option === 'owed_to_me' ? 'text-primary' : 'text-foreground'}`}
+                  className={`text-center text-[15px] font-display-bold ${selected && option === 'owed_to_me' ? 'text-primary' : 'text-foreground'}`}
                 >
                   {option === 'owed_to_me' ? 'Owed to me' : 'I owe'}
                 </Text>
@@ -72,14 +73,14 @@ export default function DebtsScreen() {
             className="mt-6 p-5"
           >
             <Text
-              className={`text-sm font-semibold ${owedToMe ? 'text-primary' : 'text-warning'}`}
+              className={`text-sm font-display-semibold ${owedToMe ? 'text-primary' : 'text-warning'}`}
             >
               {owedToMe ? 'You are owed' : 'You need to repay'}
             </Text>
             {totals.map(([currency, amount]) => (
               <Text
                 key={currency}
-                className="mt-2 text-2xl font-bold text-foreground"
+                className="mt-2 text-2xl font-display-bold text-foreground"
               >
                 {formatMinorAmount(amount, currency)}
               </Text>
@@ -115,13 +116,13 @@ export default function DebtsScreen() {
                     <View className="flex-row items-start justify-between gap-3">
                       <View className="flex-1">
                         <Text
-                          className="text-[16px] font-bold text-foreground"
+                          className="text-[16px] font-display-bold text-foreground"
                           numberOfLines={1}
                         >
                           {debt.counterpartyName}
                         </Text>
                         <Text
-                          className={`mt-1 text-sm font-semibold ${owedToMe ? 'text-primary' : 'text-warning'}`}
+                          className={`mt-1 text-sm font-display-semibold ${owedToMe ? 'text-primary' : 'text-warning'}`}
                         >
                           {owedToMe ? 'Owed to you' : 'You owe'} ·{' '}
                           {dueState}
@@ -132,7 +133,7 @@ export default function DebtsScreen() {
                           </Text>
                         ) : null}
                       </View>
-                      <Text className="text-right text-base font-bold text-foreground">
+                      <Text className="text-right text-base font-display-bold text-foreground">
                         {formatMinorAmount(
                           balanceMinor,
                           debt.currency,

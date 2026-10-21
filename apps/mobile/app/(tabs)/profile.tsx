@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { 
+import {
   Image,
   Platform,
   ScrollView,
-  Text,
   TouchableOpacity,
   View,
 } from 'react-native';
+import { Text } from '@/components/ui/text';
 import { router, useFocusEffect } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Location from 'expo-location';
@@ -163,7 +163,7 @@ export default function ProfileScreen() {
         showsVerticalScrollIndicator={false}
       >
         <View className="px-5 pb-5 pt-6">
-          <Text className="text-[28px] font-bold leading-[34px] text-foreground">
+          <Text className="text-[28px] font-display-bold leading-[34px] text-foreground">
             Profile
           </Text>
         </View>
@@ -185,17 +185,17 @@ export default function ProfileScreen() {
                   cardStyle={avatarStyle}
                   className="h-14 w-14 items-center justify-center rounded-2xl"
                 >
-                  <Text className="text-2xl font-bold text-primary-foreground">
+                  <Text className="text-2xl font-display-bold text-primary-foreground">
                     {userInitial}
                   </Text>
                 </GradientCard>
               )}
               <View className="ml-3 flex-1">
-                <Text className="text-[13px] font-semibold text-muted">
+                <Text className="text-[13px] font-display-semibold text-muted">
                   Your Moni account
                 </Text>
                 <Text
-                  className="mt-0.5 text-[17px] font-bold text-foreground"
+                  className="mt-0.5 text-[17px] font-display-bold text-foreground"
                   numberOfLines={2}
                 >
                   {user?.email ?? 'Not signed in'}
@@ -393,7 +393,7 @@ export default function ProfileScreen() {
               size={20}
               color={tokens.danger}
             />
-            <Text className="ml-2 text-base font-bold text-danger">
+            <Text className="ml-2 text-base font-display-bold text-danger">
               Sign out
             </Text>
           </TouchableOpacity>

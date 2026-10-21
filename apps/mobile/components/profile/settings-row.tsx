@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { Pressable, View } from 'react-native';
+import { Text } from '@/components/ui/text';
 
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import {
@@ -54,7 +55,7 @@ export function SettingsRow({
       </View>
       <View className="ml-3 flex-1 min-w-0">
         <Text
-          className="text-[17px] font-semibold text-foreground"
+          className="text-[17px] font-display-semibold text-foreground"
           numberOfLines={1}
         >
           {title}

@@ -4,9 +4,9 @@ import {
   Pressable,
   RefreshControl,
   ScrollView,
-  Text,
   View,
 } from 'react-native';
+import { Text } from '@/components/ui/text';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useValue } from '@legendapp/state/react';
@@ -99,7 +99,7 @@ const WalletCard = memo(function WalletCard({
         <View className="flex-row items-start justify-between">
           <View className="min-w-0 flex-1 pr-2">
             <Text
-              className="text-base font-bold"
+              className="text-base font-display-bold"
               style={{ color: cardStyle.contentColor }}
               numberOfLines={1}
             >
@@ -109,7 +109,7 @@ const WalletCard = memo(function WalletCard({
         </View>
         <View className="mt-auto pt-2">
           <Text
-            className="mt-1 text-xl font-bold"
+            className="mt-1 text-xl font-display-bold"
             numberOfLines={1}
             style={{
               color: cardStyle.contentColor,
@@ -196,13 +196,13 @@ export default function HomeScreen() {
                 cardStyle={avatarStyle}
                 className="h-14 w-14 items-center justify-center rounded-2xl"
               >
-                <Text className="text-2xl font-bold text-primary-foreground">
+                <Text className="text-2xl font-display-bold text-primary-foreground">
                   {userInitial}
                 </Text>
               </GradientCard>
             )}
             <View className="flex-1 pr-3">
-              <Text className="text-sm font-semibold text-muted">
+              <Text className="text-sm font-display-semibold text-muted">
                 {timeAwareGreeting()}
                 {displayName(user?.user_metadata?.full_name) ||
                 displayName(user?.email)
@@ -234,7 +234,7 @@ export default function HomeScreen() {
                 />
               </View>
               <View className="ml-3 flex-1">
-                <Text className="text-sm font-bold text-foreground">
+                <Text className="text-sm font-display-bold text-foreground">
                   {pendingProposals.length} ready to review
                 </Text>
               </View>
@@ -251,7 +251,7 @@ export default function HomeScreen() {
             smoothing="hero"
             className="mt-7 p-5"
           >
-            <Text className="text-sm font-semibold text-muted">
+            <Text className="text-sm font-display-semibold text-muted">
               Net worth
             </Text>
             {netWorth.length ? (
@@ -260,7 +260,7 @@ export default function HomeScreen() {
                   <View key={row.currency}>
                     <View className="flex-row items-baseline justify-between">
                       <Text
-                        className={`${index === 0 ? 'text-[30px]' : 'text-xl'} font-bold leading-9 text-foreground`}
+                        className={`${index === 0 ? 'text-[30px]' : 'text-xl'} font-display-bold leading-9 text-foreground`}
                         style={{ fontVariant: ['tabular-nums'] }}
                       >
                         {formatMinorAmount(
@@ -268,7 +268,7 @@ export default function HomeScreen() {
                           row.currency,
                         )}
                       </Text>
-                      <Text className="text-sm font-semibold text-muted">
+                      <Text className="text-sm font-display-semibold text-muted">
                         {row.currency}
                       </Text>
                     </View>
@@ -291,7 +291,7 @@ export default function HomeScreen() {
               </View>
             ) : (
               <View className="mt-2">
-                <Text className="text-lg font-bold text-foreground">
+                <Text className="text-lg font-display-bold text-foreground">
                   Add your first account
                 </Text>
               </View>
@@ -302,7 +302,7 @@ export default function HomeScreen() {
         <View className="mt-4">
           <View className="mb-1 flex-row items-center justify-between px-5">
             <View>
-              <Text className="text-lg font-bold text-foreground">
+              <Text className="text-lg font-display-bold text-foreground">
                 Wallets
               </Text>
             </View>
@@ -336,7 +336,7 @@ export default function HomeScreen() {
         <View className="mt-4 px-5">
           <View className="flex-row items-center justify-between">
             <View>
-              <Text className="text-lg font-bold text-foreground">
+              <Text className="text-lg font-display-bold text-foreground">
                 Budgets
               </Text>
             </View>
@@ -383,7 +383,7 @@ export default function HomeScreen() {
               className="rounded-[22px] bg-surface-2 px-5 py-6"
               onPress={() => router.push('/budget' as any)}
             >
-              <Text className="text-base font-semibold text-foreground">
+              <Text className="text-base font-display-semibold text-foreground">
                 Plan a monthly cap
               </Text>
               <Text className="mt-1 text-sm leading-5 text-muted">
@@ -398,7 +398,7 @@ export default function HomeScreen() {
           <View className="mt-4 px-5">
             <View className="flex-row items-center justify-between">
               <View>
-                <Text className="text-lg font-bold text-foreground">
+                <Text className="text-lg font-display-bold text-foreground">
                   Debt pulse
                 </Text>
               </View>
@@ -430,7 +430,7 @@ export default function HomeScreen() {
                   >
                     <View className="min-w-0 flex-1 pr-3">
                       <Text
-                        className="text-base font-semibold text-foreground"
+                        className="text-base font-display-semibold text-foreground"
                         numberOfLines={1}
                       >
                         {debt.counterpartyName}
@@ -441,7 +441,7 @@ export default function HomeScreen() {
                       </Text>
                     </View>
                     <Text
-                      className="text-base font-bold text-foreground"
+                      className="text-base font-display-bold text-foreground"
                       style={{ fontVariant: ['tabular-nums'] }}
                     >
                       {formatMinorAmount(balanceMinor, debt.currency)}
@@ -456,7 +456,7 @@ export default function HomeScreen() {
         <View className="mt-4 px-5">
           <View className="flex-row items-center justify-between">
             <View>
-              <Text className="text-lg font-bold text-foreground">
+              <Text className="text-lg font-display-bold text-foreground">
                 Recent activity
               </Text>
             </View>
@@ -526,7 +526,7 @@ export default function HomeScreen() {
                     </View>
                     <View className="min-w-0 flex-1 pr-3">
                       <Text
-                        className="text-base font-semibold text-foreground"
+                        className="text-base font-display-semibold text-foreground"
                         numberOfLines={1}
                       >
                         {transaction.merchant ??
@@ -549,7 +549,7 @@ export default function HomeScreen() {
                     </View>
                     <View className="items-end">
                       <Text
-                        className={`text-base font-bold ${amountClass}`}
+                        className={`text-base font-display-bold ${amountClass}`}
                         style={{ fontVariant: ['tabular-nums'] }}
                       >
                         {sign}
@@ -575,7 +575,7 @@ export default function HomeScreen() {
               className="rounded-[22px] bg-surface-2 px-5 py-6"
               onPress={() => router.push('/transaction/new' as any)}
             >
-              <Text className="text-base font-semibold text-foreground">
+              <Text className="text-base font-display-semibold text-foreground">
                 Your activity will live here
               </Text>
               <Text className="mt-1 text-sm leading-5 text-muted">

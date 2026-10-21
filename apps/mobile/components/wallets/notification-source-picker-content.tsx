@@ -4,11 +4,11 @@ import {
   AppState,
   Platform,
   ScrollView,
-  Text,
   TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
+import { Text } from '@/components/ui/text';
 import { Image } from 'expo-image';
 import Animated, {
   FadeIn,
@@ -159,14 +159,14 @@ export function NotificationAccessRequired({
         />
       </View>
       <View className="min-w-0 flex-1">
-        <Text className="text-sm font-semibold text-foreground">
+        <Text className="text-sm font-display-semibold text-foreground">
           Enable notification access
         </Text>
         <Text className="mt-0.5 text-xs leading-4 text-muted">
           Allow Moni to read banking alerts before linking an app.
         </Text>
       </View>
-      <Text className="ml-3 text-sm font-semibold text-primary">
+      <Text className="ml-3 text-sm font-display-semibold text-primary">
         Enable
       </Text>
     </TouchableOpacity>
@@ -262,7 +262,7 @@ export function NotificationSourcePickerContent({
     <View className="flex-1">
       <View className="mb-4 flex-row items-center justify-between">
         <View className="flex-1 pr-3">
-          <Text className="text-xl font-bold text-foreground">
+          <Text className="text-xl font-display-bold text-foreground">
             Notification source
           </Text>
         </View>
@@ -273,7 +273,7 @@ export function NotificationSourcePickerContent({
         />
       </View>
 
-      <Text className="mb-2 text-sm font-semibold text-foreground">
+      <Text className="mb-2 text-sm font-display-semibold text-foreground">
         Installed curated apps
       </Text>
       {loadingInstalled ? (
@@ -313,7 +313,7 @@ export function NotificationSourcePickerContent({
               layout={accountHintTransition}
               className="mb-4"
             >
-              <Text className="mb-2 text-xs font-semibold text-muted">
+              <Text className="mb-2 text-xs font-display-semibold text-muted">
                 {section.title}
               </Text>
               {section.apps.map((app) => {
@@ -341,7 +341,7 @@ export function NotificationSourcePickerContent({
                     >
                       <NotificationAppIcon iconUri={app.iconUri} />
                       <View className="ml-3 flex-1">
-                        <Text className="text-sm font-medium text-foreground">
+                        <Text className="text-sm font-display-semibold text-foreground">
                           {app.label}
                         </Text>
                       </View>

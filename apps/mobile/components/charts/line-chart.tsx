@@ -1,5 +1,6 @@
 import { useCallback, useMemo, useState } from 'react';
-import { PanResponder, Pressable, Text, View } from 'react-native';
+import { PanResponder, Pressable, View } from 'react-native';
+import { Text } from '@/components/ui/text';
 import Svg, { Circle, Line, Path } from 'react-native-svg';
 
 import {
@@ -115,7 +116,7 @@ export function LineChart({
         className="items-center justify-center rounded-[22px] bg-surface-2 px-5 py-8"
         accessibilityLabel="No balance history to display"
       >
-        <Text className="text-center text-base font-semibold text-foreground">
+        <Text className="text-center text-base font-display-semibold text-foreground">
           Your trend will appear here
         </Text>
         <Text className="mt-1 text-center text-sm leading-5 text-muted">
@@ -201,21 +202,21 @@ export function LineChart({
           ) : null}
         </Svg>
         <View className="absolute bottom-1 left-3 right-3 flex-row justify-between">
-          <Text className="text-[11px] font-medium text-muted">
+          <Text className="text-[11px] font-display-semibold text-muted">
             {dateLabel(ordered[0]!.date)}
           </Text>
-          <Text className="text-[11px] font-medium text-muted">
+          <Text className="text-[11px] font-display-semibold text-muted">
             {dateLabel(ordered[ordered.length - 1]!.date)}
           </Text>
         </View>
       </Pressable>
       <View className="mt-3 flex-row items-start justify-between rounded-2xl bg-surface-2 px-3 py-2.5">
         <View className="flex-1 pr-3">
-          <Text className="text-xs font-semibold text-muted">
+          <Text className="text-xs font-display-semibold text-muted">
             {selected ? dateLabel(selected.date) : 'Selected date'}
           </Text>
           <Text
-            className="mt-0.5 text-lg font-bold text-foreground"
+            className="mt-0.5 text-lg font-display-bold text-foreground"
             style={{ fontVariant: ['tabular-nums'] }}
           >
             {selected ? valueLabel(selected.value) : '—'}

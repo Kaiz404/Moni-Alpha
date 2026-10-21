@@ -19,4 +19,23 @@ module.exports = defineConfig([
       'react-hooks/set-state-in-effect': 'off',
     },
   },
+  {
+    files: ['app/**/*.{ts,tsx}', 'components/**/*.{ts,tsx}'],
+    ignores: ['components/ui/text.tsx', '**/__tests__/**'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            {
+              name: 'react-native',
+              importNames: ['Text'],
+              message:
+                "Import Text from '@/components/ui/text' so it renders in Funnel Display. scripts/codemods/text-to-v2.mjs rewrites the import and the font-* weight classes.",
+            },
+          ],
+        },
+      ],
+    },
+  },
 ]);
