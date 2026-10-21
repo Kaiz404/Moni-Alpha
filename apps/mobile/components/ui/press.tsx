@@ -20,7 +20,6 @@ import type { TestId } from '@/lib/test-ids';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
-const PRESSED_SCALE = 0.97;
 const REDUCED_FADE = { duration: 150 };
 
 export type PressProps = Omit<
@@ -33,6 +32,8 @@ export type PressProps = Omit<
   pressedClassName?: string;
   /** Corners that morph while pressed, as on capsule buttons (rest 26 → 16). */
   radius?: { rest: number; pressed: number };
+  /** Tab cells squish to 0.94; everything else keeps 0.97. */
+  pressedScale?: number;
   style?: StyleProp<ViewStyle>;
   children?: ReactNode;
 };
@@ -47,6 +48,7 @@ export function Press({
   className,
   pressedClassName = 'bg-sand-light',
   radius,
+  pressedScale = 0.97,
   style,
   children,
   onPressIn,
@@ -76,7 +78,7 @@ export function Press({
         {
           scale: reduceMotion
             ? 1
-            : interpolate(p, [0, 1], [1, PRESSED_SCALE]),
+            : interpolate(p, [0, 1], [1, pressedScale]),
         },
       ],
     };

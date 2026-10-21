@@ -266,7 +266,7 @@ export default function BudgetScreen() {
     >
       <ScrollView
         className="flex-1"
-        contentContainerClassName="px-5 pb-32 pt-4"
+        contentContainerClassName="px-5 pb-[120px] pt-4"
         showsVerticalScrollIndicator={false}
       >
         <SyncBanner

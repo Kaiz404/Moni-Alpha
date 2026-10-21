@@ -198,7 +198,7 @@ export default function HomeScreen() {
     >
       <ScrollView
         className="flex-1"
-        contentContainerClassName="pb-12"
+        contentContainerClassName="pb-[120px]"
         refreshControl={
           <RefreshControl
             refreshing={refreshing}

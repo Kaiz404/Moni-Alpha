@@ -1,129 +1,126 @@
-import { useEffect, useState } from 'react';
-import { Keyboard, Platform, Pressable, View } from 'react-native';
-import { Text } from '@/components/ui/text';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { View } from 'react-native';
+import { router } from 'expo-router';
 import type { BottomTabBarProps } from 'expo-router/js-tabs';
-import type {
-  NavigationRoute,
-  ParamListBase,
-} from 'expo-router/react-navigation';
-import { useThemeTokens } from '@/hooks/use-theme-tokens';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
 import {
-  CAPTURE_FAB_LAYOUT,
-  CaptureButton,
-} from '@/components/nav/capture-button';
+  PlusButton,
+  TAB_BAR_HEIGHT,
+  TAB_BAR_REACH,
+  tabBarBottom,
+} from '@/components/nav/plus-button';
+import {
+  IconSymbol,
+  type IconSymbolName,
+} from '@/components/ui/icon-symbol';
+import { Press } from '@/components/ui/press';
+import { Text } from '@/components/ui/text';
+import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { tid } from '@/lib/test-ids';
 
-/** Matches `CaptureButton` width so side tabs clear the FAB. */
-const CAPTURE_BUTTON_SLOT_WIDTH = CAPTURE_FAB_LAYOUT.size;
+/** The four tab roots in bar order; the + sits between Activity and Budget. */
+export const TABS = [
+  { name: 'index', title: 'Home', icon: 'home' },
+  { name: 'activity', title: 'Activity', icon: 'receipt-text' },
+  { name: 'budget', title: 'Budget', icon: 'chart-box' },
+  { name: 'debts', title: 'Debts', icon: 'handshake-outline' },
+] as const satisfies readonly {
+  name: string;
+  title: string;
+  icon: IconSymbolName;
+}[];
+
+const PLUS_CELL = 2;
 
 /**
- * Custom tab bar so a floating capture button can sit above the bar between
- * tabs, while the 4 real routes keep their existing icons/titles from
- * `Tabs.Screen options` (read via `descriptors`, not re-declared here).
+ * The floating Ink pill from V2F-Nav: five equal cells, the centre one holding
+ * the raised +. The active cell only turns cream; nothing slides. The row
+ * reaches up to the ring so Android delivers touches on the + (it drops
+ * touches outside a parent's bounds), and so TalkBack reads the + third.
  */
-export function TabBar({
-  state,
-  descriptors,
-  navigation,
-}: BottomTabBarProps) {
+export function TabBar({ state, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
   const tokens = useThemeTokens();
-  const [keyboardVisible, setKeyboardVisible] = useState(false);
+  const bottom = tabBarBottom(insets.bottom);
 
-  const focusedOptions =
-    descriptors[state.routes[state.index].key].options;
-
-  useEffect(() => {
-    if (!focusedOptions.tabBarHideOnKeyboard) return;
-    const showEvent =
-      Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
-    const hideEvent =
-      Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
-    const showSub = Keyboard.addListener(showEvent, () =>
-      setKeyboardVisible(true),
-    );
-    const hideSub = Keyboard.addListener(hideEvent, () =>
-      setKeyboardVisible(false),
-    );
-    return () => {
-      showSub.remove();
-      hideSub.remove();
-    };
-  }, [focusedOptions.tabBarHideOnKeyboard]);
-
-  if (keyboardVisible && focusedOptions.tabBarHideOnKeyboard)
-    return null;
-
-  const leftRoutes = state.routes.slice(0, 2);
-  const rightRoutes = state.routes.slice(2);
-
-  const renderTab = (
-    route: NavigationRoute<ParamListBase, string>,
-    index: number,
-  ) => {
-    const { options } = descriptors[route.key];
-    const isFocused = state.index === index;
-    const color = isFocused ? tokens.accent : tokens.muted;
-    const label = options.title ?? route.name;
-
-    const onPress = () => {
-      const event = navigation.emit({
-        type: 'tabPress',
-        target: route.key,
-        canPreventDefault: true,
-      });
-      if (!isFocused && !event.defaultPrevented) {
-        navigation.navigate(route.name);
-      }
-    };
-
+  const cells = state.routes.map((route, index) => {
+    const tab = TABS.find((t) => t.name === route.name);
+    if (!tab) return null;
+    const focused = state.index === index;
+    const color = focused ? tokens.onTabBar : tokens.inactive;
     return (
-      <Pressable
-        testID={tid('nav', 'tab', route.name)}
+      <View
         key={route.key}
-        accessibilityRole="button"
-        accessibilityState={isFocused ? { selected: true } : {}}
-        accessibilityLabel={options.tabBarAccessibilityLabel ?? label}
-        onPress={onPress}
-        className="flex-1 items-center justify-center gap-1 py-1"
+        className="flex-1 justify-center"
+        style={{ height: TAB_BAR_HEIGHT }}
       >
-        {options.tabBarIcon?.({
-          focused: isFocused,
-          color,
-          size: 26,
-        })}
-        <Text
-          className={
-            isFocused ? 'font-display-bold' : 'font-display-semibold'
-          }
-          style={{ fontSize: 11, color }}
+        <Press
+          testID={tid('nav', 'tab', route.name)}
+          accessibilityRole="tab"
+          accessibilityLabel={tab.title}
+          accessibilityState={{ selected: focused }}
+          pressedScale={0.94}
+          pressedClassName="bg-on-tab-bar/12"
+          className="h-14 items-center justify-center gap-0.5 rounded-full"
+          onPress={() => {
+            const event = navigation.emit({
+              type: 'tabPress',
+              target: route.key,
+              canPreventDefault: true,
+            });
+            if (!focused && !event.defaultPrevented) {
+              navigation.navigate(route.name, route.params);
+            }
+          }}
         >
-          {label}
-        </Text>
-      </Pressable>
+          <IconSymbol
+            name={tab.icon}
+            size={24}
+            color={color}
+          />
+          <Text
+            className="text-[11px] leading-[14px] font-display-semibold"
+            style={{ color }}
+          >
+            {tab.title}
+          </Text>
+        </Press>
+      </View>
     );
-  };
+  });
+  cells.splice(
+    PLUS_CELL,
+    0,
+    <View
+      key="plus"
+      className="flex-1 items-center self-start"
+    >
+      <PlusButton
+        testID={tid('nav', 'plus')}
+        open={false}
+        onPress={() => router.push('/transaction/new')}
+      />
+    </View>,
+  );
 
   return (
-    <View style={{ position: 'relative' }}>
-      <CaptureButton />
+    <View
+      pointerEvents="box-none"
+      className="absolute inset-x-3"
+      style={{ bottom, height: TAB_BAR_REACH }}
+    >
       <View
-        className="flex-row border-t border-border bg-card"
+        className="absolute inset-x-0 bottom-0 rounded-full bg-tab-bar"
         style={{
-          paddingBottom: Math.max(insets.bottom, 10),
-          paddingTop: 8,
+          height: TAB_BAR_HEIGHT,
+          boxShadow: '0 12px 32px rgba(23,24,26,0.18)',
         }}
+      />
+      <View
+        pointerEvents="box-none"
+        className="flex-1 flex-row items-end"
       >
-        <View className="flex-1 flex-row">
-          {leftRoutes.map((route, i) => renderTab(route, i))}
-        </View>
-        <View style={{ width: CAPTURE_BUTTON_SLOT_WIDTH }} />
-        <View className="flex-1 flex-row">
-          {rightRoutes.map((route, i) =>
-            renderTab(route, i + leftRoutes.length),
-          )}
-        </View>
+        {cells}
       </View>
     </View>
   );

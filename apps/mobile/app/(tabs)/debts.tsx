@@ -44,7 +44,7 @@ export default function DebtsScreen() {
     >
       <ScrollView
         className="flex-1"
-        contentContainerClassName="px-5 pb-10 pt-6"
+        contentContainerClassName="px-5 pb-[120px] pt-6"
         showsVerticalScrollIndicator={false}
       >
         <View className="flex-row gap-2">

@@ -10,7 +10,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useMemo, useRef } from 'react';
 import { AppState } from 'react-native';
-import 'react-native-reanimated';
+import { useReducedMotion } from 'react-native-reanimated';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useUniwind } from 'uniwind';
 
@@ -42,6 +42,7 @@ export const unstable_settings = {
 
 export default function RootLayout() {
   const { theme } = useUniwind();
+  const reduceMotion = useReducedMotion();
   const tokens = useThemeTokens();
   const [fontsLoaded, fontError] = useFonts(textFonts);
   const fontsSettled = fontsLoaded || fontError !== null;
@@ -138,14 +139,19 @@ export default function RootLayout() {
           <AuthProvider>
             <StoreSyncActivator />
             <AuthGuard>
-              <Stack screenOptions={{ headerShown: false }}>
+              <Stack
+                screenOptions={{
+                  headerShown: false,
+                  animation: reduceMotion ? 'fade' : 'slide_from_right',
+                }}
+              >
                 <Stack.Screen
                   name="(auth)"
-                  options={{ headerShown: false }}
+                  options={{ animation: 'fade' }}
                 />
                 <Stack.Screen
                   name="(tabs)"
-                  options={{ headerShown: false }}
+                  options={{ animation: 'fade' }}
                 />
               </Stack>
               <SheetHost />

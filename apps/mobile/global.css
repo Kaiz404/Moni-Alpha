@@ -74,10 +74,12 @@
       --color-ink-2: #4a463e;
       --color-inactive: #a9a397;
       --color-tab-bar: #17181a;
+      --color-on-tab-bar: #fffdf8;
       --color-on-pastel: #17181a;
       --color-deep-mint: #236b47;
       --color-mint: #a9ddb5;
       --color-mint-key: #8ecf9d;
+      --color-mint-key-pressed: #7dc48d;
       --color-lemon: #f2dc72;
       --color-lilac: #c9b6f0;
       --color-peach: #f5be98;
@@ -147,10 +149,12 @@
       --color-ink-2: #c7c0b2;
       --color-inactive: #9d968a;
       --color-tab-bar: #2a2823;
+      --color-on-tab-bar: #f3eee3;
       --color-on-pastel: #17181a;
       --color-deep-mint: #7fcf98;
       --color-mint: #8fc79d;
       --color-mint-key: #8ecf9d;
+      --color-mint-key-pressed: #7dc48d;
       --color-lemon: #e0c85e;
       --color-lilac: #b29de0;
       --color-peach: #e3a47e;

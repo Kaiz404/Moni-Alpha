@@ -12,7 +12,10 @@ import { useSelector, useValue } from '@legendapp/state/react';
 import { Page } from '@/components/ui/page';
 import { SyncBanner } from '@/components/providers/sync-banner';
 import { EmptyTile } from '@/components/ui/empty-tile';
-import { HeaderIconButton } from '@/components/ui/header-icon-button';
+import {
+  HeaderIconButton,
+  MoniButton,
+} from '@/components/ui/header-icon-button';
 import {
   HoldHint,
   HoldMenu,
@@ -274,18 +277,24 @@ export default function TransactionsScreen() {
       kind="tabRoot"
       title="Activity"
       trailing={
-        <HeaderIconButton
-          testID={tid('activity', 'add')}
-          icon="plus"
-          accessibilityLabel="Add a transaction"
-          onPress={() =>
-            router.push(
-              (walletId
-                ? `/transaction/new?walletId=${walletId}`
-                : '/transaction/new') as never,
-            )
-          }
-        />
+        <>
+          <HeaderIconButton
+            testID={tid('activity', 'add')}
+            icon="plus"
+            accessibilityLabel="Add a transaction"
+            onPress={() =>
+              router.push(
+                (walletId
+                  ? `/transaction/new?walletId=${walletId}`
+                  : '/transaction/new') as never,
+              )
+            }
+          />
+          <MoniButton
+            testID={tid('activity', 'ask-moni')}
+            onPress={() => router.push('/chat')}
+          />
+        </>
       }
     >
       <ScrollView
@@ -295,7 +304,7 @@ export default function TransactionsScreen() {
             onRefresh={onRefresh}
           />
         }
-        contentContainerClassName="gap-section px-screen pb-8"
+        contentContainerClassName="gap-section px-screen pb-[120px]"
       >
         <SyncBanner screen="activity" />
         {selectedWallet ? (
