@@ -37,6 +37,8 @@ export const walletSchema = z.object({
   notificationAccountHint: z.string().max(100).nullable().optional(),
   /** When the user last saw and saved this wallet's current balance; gates the chat forecast. */
   balanceConfirmedAt: z.string().datetime().nullable().optional(),
+  /** Record where I spend: capture the location of this wallet's notification payments. */
+  recordLocation: z.boolean().optional(),
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
 });
@@ -73,6 +75,7 @@ export const updateWalletSchema = z.object({
   notificationAppLabel: z.string().max(100).nullable().optional(),
   notificationAccountHint: z.string().max(100).nullable().optional(),
   balanceConfirmedAt: z.string().datetime().optional(),
+  recordLocation: z.boolean().optional(),
 });
 
 // Reorder wallets schema
