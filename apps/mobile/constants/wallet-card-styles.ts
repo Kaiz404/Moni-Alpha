@@ -7,6 +7,8 @@
  * never rename an existing `id` (wallets already reference it), only append.
  */
 
+import type { BubbleTint } from '@/components/ui/nav-row';
+
 export type WalletCardStyle = {
   id: string;
   label: string;
@@ -17,6 +19,8 @@ export type WalletCardStyle = {
   angle: number;
   /** Flat hex used for charts/legends/small dots where a gradient can't render. */
   swatchHex: string;
+  /** The v2 pastel its 42 list bubble takes (V2H-Wallets draws Aqua for an Aqua wallet). */
+  tint: BubbleTint;
   /** Accessible foreground colours for this pastel surface. */
   contentColor: string;
   contentMutedColor: string;
@@ -32,6 +36,7 @@ const PASTEL_CONTENT = {
 export const WALLET_CARD_STYLES: WalletCardStyle[] = [
   {
     id: 'emerald-grain',
+    tint: 'mint',
     label: 'Mint',
     backgroundColor: '#8ECF9D',
     colors: ['#C8E6D4', '#8ECF9D'],
@@ -41,6 +46,7 @@ export const WALLET_CARD_STYLES: WalletCardStyle[] = [
   },
   {
     id: 'citrus-pop',
+    tint: 'lemon',
     label: 'Lemon',
     backgroundColor: '#E8CF50',
     colors: ['#F7F7F2', '#E8CF50'],
@@ -50,6 +56,7 @@ export const WALLET_CARD_STYLES: WalletCardStyle[] = [
   },
   {
     id: 'coral-bloom',
+    tint: 'coral',
     label: 'Coral',
     backgroundColor: '#E87D72',
     colors: ['#F7F7F2', '#E87D72'],
@@ -59,6 +66,7 @@ export const WALLET_CARD_STYLES: WalletCardStyle[] = [
   },
   {
     id: 'ocean-deep',
+    tint: 'aqua',
     label: 'Aqua',
     backgroundColor: '#72CEC4',
     colors: ['#F7F7F2', '#72CEC4'],
@@ -68,6 +76,7 @@ export const WALLET_CARD_STYLES: WalletCardStyle[] = [
   },
   {
     id: 'violet-dusk',
+    tint: 'lilac',
     label: 'Lilac',
     backgroundColor: '#B39AE8',
     colors: ['#F7F7F2', '#B39AE8'],
@@ -77,6 +86,7 @@ export const WALLET_CARD_STYLES: WalletCardStyle[] = [
   },
   {
     id: 'midnight-mint',
+    tint: 'mint',
     label: 'Mint shade',
     backgroundColor: '#236B47',
     colors: ['#E5E9DC', '#8ECF9D'],
@@ -88,6 +98,7 @@ export const WALLET_CARD_STYLES: WalletCardStyle[] = [
   },
   {
     id: 'rose-quartz',
+    tint: 'peach',
     label: 'Peach',
     backgroundColor: '#F0AD85',
     colors: ['#F7F7F2', '#F0AD85'],
@@ -97,6 +108,7 @@ export const WALLET_CARD_STYLES: WalletCardStyle[] = [
   },
   {
     id: 'slate-steel',
+    tint: 'sand',
     label: 'Neutral',
     backgroundColor: '#E5E9DC',
     colors: ['#F7F7F2', '#E5E9DC'],
@@ -107,6 +119,22 @@ export const WALLET_CARD_STYLES: WalletCardStyle[] = [
 ];
 
 export const DEFAULT_WALLET_CARD_STYLE_ID = WALLET_CARD_STYLES[0].id;
+
+const TYPE_TINT: Record<string, BubbleTint> = {
+  bank: 'lemon',
+  cash: 'mint',
+  credit: 'peach',
+  debit: 'peach',
+  ewallet: 'lilac',
+  investment: 'sky',
+  other: 'sand',
+};
+
+/** A wallet's list bubble: its stored card style's pastel, else one picked by wallet type. */
+export function walletBubbleTint(cardStyleId: string | null, type: string): BubbleTint {
+  const style = WALLET_CARD_STYLES.find((item) => item.id === cardStyleId);
+  return style?.tint ?? TYPE_TINT[type] ?? 'sand';
+}
 
 /** Looks up a style by id, gracefully falling back if a preset is ever retired. */
 export function getWalletCardStyle(id: string | null | undefined): WalletCardStyle {

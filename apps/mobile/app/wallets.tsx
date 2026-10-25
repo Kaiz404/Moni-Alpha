@@ -12,6 +12,7 @@ import type { BubbleTint } from '@/components/ui/nav-row';
 import { Page } from '@/components/ui/page';
 import { Press } from '@/components/ui/press';
 import { Text } from '@/components/ui/text';
+import { walletBubbleTint } from '@/constants/wallet-card-styles';
 import { resolveWalletIcon } from '@/constants/wallet-form';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { useAuth } from '@/lib/auth/auth-context';
@@ -49,16 +50,6 @@ const TYPE_LABEL: Record<string, string> = {
   ewallet: 'E-wallet',
   investment: 'Investment',
   other: 'Wallet',
-};
-
-const TYPE_TINT: Record<string, BubbleTint> = {
-  bank: 'lemon',
-  cash: 'mint',
-  credit: 'peach',
-  debit: 'peach',
-  ewallet: 'lilac',
-  investment: 'sky',
-  other: 'sand',
 };
 
 const tintClass: Record<BubbleTint, string> = {
@@ -236,7 +227,7 @@ function WalletRow({
   meta: string;
 }) {
   const tokens = useThemeTokens();
-  const tint = TYPE_TINT[wallet.type] ?? 'sand';
+  const tint = walletBubbleTint(wallet.cardStyleId, wallet.type);
   return (
     <Press
       testID={tid('wallet', 'list', 'row', wallet.id)}
