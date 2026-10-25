@@ -1,4 +1,3 @@
-import { router } from 'expo-router';
 import { useState } from 'react';
 import { ScrollView, View } from 'react-native';
 
@@ -6,11 +5,11 @@ import { ComingUp } from '@/components/debts/coming-up';
 import { SIDE_WORDS } from '@/components/debts/debt-words';
 import { NetPosition } from '@/components/debts/net-position';
 import { PersonRow } from '@/components/debts/person-row';
+import { RecordDebtButton } from '@/components/debts/record-debt-button';
 import { SettledList } from '@/components/debts/settled-list';
 import { useDebtSummary } from '@/components/debts/use-debts';
 import { useTabBarClearance } from '@/components/nav/tab-bar';
 import { SyncBanner } from '@/components/providers/sync-banner';
-import { EmptyTile } from '@/components/ui/empty-tile';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { ListCard } from '@/components/ui/list-card';
 import { Page } from '@/components/ui/page';
@@ -19,8 +18,6 @@ import { Text } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import type { DebtSide } from '@/lib/finance/debt-summary';
 import { tid } from '@/lib/test-ids';
-
-const recordDebt = () => router.push('/debt/new');
 
 export default function DebtsScreen() {
   const tokens = useThemeTokens();
@@ -42,22 +39,7 @@ export default function DebtsScreen() {
       title="Debts"
       trailing={
         empty ? null : (
-          <Press
-            testID={tid('debts', 'record-debt')}
-            radius={{ rest: 22, pressed: 16 }}
-            pressedClassName="bg-hairline"
-            className="h-11 flex-row items-center gap-1.5 bg-sand pl-3.5 pr-[18px]"
-            onPress={recordDebt}
-          >
-            <IconSymbol
-              name="plus"
-              size={20}
-              color={tokens.foreground}
-            />
-            <Text className="text-[15px] leading-[21px] font-display-semibold text-foreground">
-              Record a debt
-            </Text>
-          </Press>
+          <RecordDebtButton testID={tid('debts', 'record-debt')} />
         )
       }
     >
@@ -69,17 +51,7 @@ export default function DebtsScreen() {
       >
         <SyncBanner screen="debts" />
         {empty ? (
-          <EmptyTile
-            icon="handshake-outline"
-            title="No debts yet"
-            body="Lent a friend money, or they covered you? Note it here. Moni shows who owes who."
-            action={{
-              testID: tid('debts', 'empty', 'record-debt'),
-              label: 'Record a debt',
-              icon: 'plus',
-              onPress: recordDebt,
-            }}
-          />
+          <NoDebtsTile />
         ) : (
           <>
             <NetPosition
@@ -146,6 +118,35 @@ export default function DebtsScreen() {
         )}
       </ScrollView>
     </Page>
+  );
+}
+
+/** V2P-DebtsEmpty: the dashed tile when there are no debts at all. */
+function NoDebtsTile() {
+  const tokens = useThemeTokens();
+  return (
+    <View className="items-start gap-2.5 rounded-tile border-[1.5px] border-dashed border-border-strong px-[18px] py-[22px]"
+    >
+      <View className="h-[42px] w-[42px] items-center justify-center rounded-full bg-sand">
+        <IconSymbol
+          name="handshake-outline"
+          size={20}
+          color={tokens.foreground}
+        />
+      </View>
+      <Text
+        variant="cardTitle"
+        className="text-foreground"
+        accessibilityRole="header"
+      >
+        No debts yet
+      </Text>
+      <Text className="text-[14px] leading-[20px] text-ink-2">
+        Lent a friend money, or they covered you? Note it here. Moni shows
+        who owes who.
+      </Text>
+      <RecordDebtButton testID={tid('debts', 'empty', 'record-debt')} />
+    </View>
   );
 }
 
