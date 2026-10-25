@@ -17,9 +17,11 @@ type TopPlacesProps = {
   currency: CurrencyCode;
   look: (categoryId: string | null) => CategoryLook;
   onOpen: (place: Place) => void;
+  /** The dashed line under the heading when the filters leave no place. */
+  emptyLine: string;
 };
 
-export function TopPlaces({ places, currency, look, onOpen }: TopPlacesProps) {
+export function TopPlaces({ places, currency, look, onOpen, emptyLine }: TopPlacesProps) {
   const tokens = useThemeTokens();
   return (
     <View className="gap-3.5 pt-2.5">
@@ -31,15 +33,27 @@ export function TopPlaces({ places, currency, look, onOpen }: TopPlacesProps) {
         >
           Top places
         </Text>
-        <Text
-          variant="meta"
-          className="text-muted"
-          style={{ fontVariant: ['tabular-nums'] }}
-        >
-          {`${formatMoney(placesTotal(places), currency, { whole: true })} at ${plural(places.length, 'place')}`}
-        </Text>
+        {places.length ? (
+          <Text
+            variant="meta"
+            className="text-muted"
+            style={{ fontVariant: ['tabular-nums'] }}
+          >
+            {`${formatMoney(placesTotal(places), currency, { whole: true })} at ${plural(places.length, 'place')}`}
+          </Text>
+        ) : null}
       </View>
-      <ListCard>
+      {places.length === 0 ? (
+        <View className="rounded-tile border-[1.5px] border-dashed border-hairline p-[18px]">
+          <Text
+            variant="body"
+            className="text-ink-2"
+          >
+            {emptyLine}
+          </Text>
+        </View>
+      ) : null}
+      {places.length ? <ListCard>
         {places.map((place) => {
           const top = look(place.categories[0]?.categoryId ?? null);
           const meta = placeCategoryLine(place, look);
@@ -87,7 +101,7 @@ export function TopPlaces({ places, currency, look, onOpen }: TopPlacesProps) {
             </Press>
           );
         })}
-      </ListCard>
+      </ListCard> : null}
     </View>
   );
 }

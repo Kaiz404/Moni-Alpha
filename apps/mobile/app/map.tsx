@@ -230,28 +230,18 @@ export default function MapScreen() {
                   place={selected}
                   look={categoryLook(selected.categories[0]?.categoryId ?? null)}
                   currency={currency}
-                  sentence={`${places.length === 1 ? 'All' : `${sharePercent(selected.totalMinor, total)}%`} of what you spent${categoryWords} at a place ${range.words}.`}
+                  sentence={`${sharePercent(selected.totalMinor, total)}% of what you spent${categoryWords} at a place ${range.words}.`}
                   onOpen={() => open(selected)}
                 />
               </View>
             ) : null}
-            {places.length ? (
-              <TopPlaces
-                places={places}
-                currency={currency}
-                look={categoryLook}
-                onOpen={open}
-              />
-            ) : (
-              <View className="rounded-tile border-[1.5px] border-dashed border-hairline p-[18px]">
-                <Text
-                  variant="body"
-                  className="text-ink-2"
-                >
-                  {`Nothing${categoryWords} with a place ${range.words}.`}
-                </Text>
-              </View>
-            )}
+            <TopPlaces
+              places={places}
+              currency={currency}
+              look={categoryLook}
+              onOpen={open}
+              emptyLine={`Nothing${categoryWords} with a place ${range.words}.`}
+            />
           </>
         ) : null}
       </MapSheet>

@@ -93,7 +93,7 @@ export function MapSheet({
           accessibilityLabel="Expand or shrink the list"
           accessibilityActions={[{ name: 'activate' }]}
           onAccessibilityAction={() => toggle()}
-          className="h-[30px] items-center justify-center"
+          className="h-[34px] items-center pt-2.5"
         >
           <View className="h-[5px] w-9 rounded-full bg-hairline" />
         </View>

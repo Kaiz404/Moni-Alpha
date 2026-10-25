@@ -2,6 +2,7 @@ import type { CurrencyCode, MinorAmount } from '@repo/types';
 import { useEffect, useMemo, useState } from 'react';
 import { View } from 'react-native';
 import { Marker } from 'react-native-maps';
+import { useUniwind } from 'uniwind';
 
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Text } from '@/components/ui/text';
@@ -89,7 +90,6 @@ function PinMarker({
     const timer = setTimeout(() => setTracking(false), 600);
     return () => clearTimeout(timer);
   }, []);
-  const tokens = useThemeTokens();
   const multi = cluster.members.length > 1;
   return (
     <Marker
@@ -106,16 +106,11 @@ function PinMarker({
       <View
         className={`h-8 flex-row items-center gap-1.5 rounded-full border-[1.5px] pl-[3px] pr-2.5 ${on ? 'border-primary bg-primary' : 'border-hairline bg-card'}`}
       >
-        <View
-          className="h-6 w-6 items-center justify-center rounded-full bg-sand"
-          style={look.color ? { backgroundColor: look.color } : undefined}
-        >
-          <IconSymbol
-            name={look.icon}
-            size={14}
-            color={look.color ? tokens.onPastel : tokens.foreground}
-          />
-        </View>
+        <PinBubble
+          look={look}
+          size={24}
+          glyph={14}
+        />
         <Text
           className={`text-[14px] leading-[19px] font-display-bold ${on ? 'text-primary-foreground' : 'text-foreground'}`}
           style={{ fontVariant: ['tabular-nums'] }}
@@ -133,5 +128,31 @@ function PinMarker({
         ) : null}
       </View>
     </Marker>
+  );
+}
+
+/**
+ * A pin's category bubble in the category's light tint, as on a row's bubble.
+ * The Paper under it keeps the tint opaque on the Ink of a selected pin.
+ */
+export function PinBubble({ look, size, glyph }: { look: CategoryLook; size: number; glyph: number }) {
+  const tokens = useThemeTokens();
+  const dark = useUniwind().theme === 'dark';
+  return (
+    <View
+      className={`overflow-hidden rounded-full ${look.color ? 'bg-card' : 'bg-sand'}`}
+      style={{ width: size, height: size }}
+    >
+      <View
+        className="flex-1 items-center justify-center"
+        style={look.color ? { backgroundColor: `${look.color}${dark ? '38' : '73'}` } : undefined}
+      >
+        <IconSymbol
+          name={look.icon}
+          size={glyph}
+          color={look.color && dark ? look.color : tokens.foreground}
+        />
+      </View>
+    </View>
   );
 }

@@ -10,7 +10,8 @@ type MapPalette = {
 };
 
 // XM-Places draws the map itself: a warm ground, pale parks and water, Paper
-// roads, Meta labels, and no business icons competing with the pins.
+// roads, Meta area names (no road or water names), and no business icons
+// competing with the pins.
 const light: MapPalette = {
   ground: '#F2ECE0',
   park: '#DCE9D5',
@@ -41,6 +42,8 @@ function styleFor(p: MapPalette): MapStyleElement[] {
     { featureType: 'poi.park', elementType: 'geometry', stylers: [{ visibility: 'on' }, { color: p.park }] },
     { featureType: 'road', elementType: 'geometry.fill', stylers: [{ color: p.road }] },
     { featureType: 'road', elementType: 'geometry.stroke', stylers: [{ color: p.roadEdge }] },
+    { featureType: 'road', elementType: 'labels', stylers: [{ visibility: 'off' }] },
+    { featureType: 'water', elementType: 'labels', stylers: [{ visibility: 'off' }] },
     { featureType: 'transit', stylers: [{ visibility: 'off' }] },
     { featureType: 'water', elementType: 'geometry', stylers: [{ color: p.water }] },
   ];
