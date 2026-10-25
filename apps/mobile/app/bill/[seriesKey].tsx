@@ -3,7 +3,6 @@ import type { MinorAmount } from '@repo/types';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useMemo, useState, type ReactNode } from 'react';
 import { ScrollView, View } from 'react-native';
-import { useUniwind } from 'uniwind';
 
 import { DueDaySheet } from '@/components/budget/due-day-sheet';
 import { Toggle } from '@/components/ui/toggle';
@@ -90,7 +89,6 @@ function errorText(error: unknown): string {
 /** `V2P-BillDetail`: one bill, its name and amount in place, its schedule, and its payments. */
 export default function BillScreen() {
   const tokens = useThemeTokens();
-  const dark = useUniwind().theme === 'dark';
   const { seriesKey } = useLocalSearchParams<{ seriesKey: string }>();
   const data = useBudgetData();
   const { now, currency } = data;
@@ -276,6 +274,7 @@ export default function BillScreen() {
         name: item.name,
         icon: item.icon,
         color: item.color,
+        custom: item.userId !== null,
         spentMinor: (spent.get(item.id) ?? 0) as MinorAmount,
         budgetMinor:
           data.budgets.find(
@@ -378,20 +377,11 @@ export default function BillScreen() {
               {({ editable, editor }) =>
                 editor ?? (
                   <View className="flex-row items-center gap-3">
-                    <View
-                      className={`h-[52px] w-[52px] items-center justify-center rounded-full ${category?.color ? '' : 'bg-sand'}`}
-                      style={
-                        category?.color
-                          ? { backgroundColor: `${category.color}${dark ? '38' : '73'}` }
-                          : undefined
-                      }
-                    >
-                      <IconSymbol
-                        name={bubbleIcon}
-                        size={24}
-                        color={category?.color && dark ? category.color : tokens.foreground}
-                      />
-                    </View>
+                    <TintBubble
+                      size={52}
+                      icon={bubbleIcon}
+                      color={category?.color ?? null}
+                    />
                     <View className="min-w-0 flex-1">
                       {editable(
                         <Text

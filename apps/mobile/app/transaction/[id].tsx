@@ -436,6 +436,7 @@ function Detail({ transaction: tx }: { transaction: FinanceTransaction }) {
   const nameRow = (name: ReactNode) => (
     <View className="flex-row items-center gap-3">
       <TintBubble
+        size={52}
         icon={
           correction
             ? 'scale-balance'

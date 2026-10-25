@@ -8,6 +8,7 @@ type CategoryLike = {
   name: string;
   icon: string | null;
   color: string | null;
+  userId: string | null;
 };
 
 /** Joins categories with this month's spend and budget in one currency, recent ids first. */
@@ -35,6 +36,7 @@ export function toCategoryTiles(
         name: category.name,
         icon: category.icon,
         color: category.color,
+        custom: category.userId !== null,
         spentMinor: row?.spentMinor ?? (0 as MinorAmount),
         budgetMinor: row?.budgetAmountMinor ?? null,
       };

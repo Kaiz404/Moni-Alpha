@@ -12,11 +12,10 @@ import { scrubStep } from '@/lib/haptics';
 import { springs } from '@/lib/motion/tokens';
 import { tid, type Screen } from '@/lib/test-ids';
 
-const SEGMENT = 70;
-
 /**
  * The chart card toggle on every chart card (Pace | Daily, Spending | Balance): Sand track 36
- * tall, Ink pill on the control spring, 70-wide segments. Segments are `<screen>.<name>.<value>`.
+ * tall, Ink pill on the control spring, segments 70 wide (Home) or 88 (Activity's longer
+ * labels). Segments are `<screen>.<name>.<value>`.
  */
 export function ChartToggle<T extends string>({
   screen,
@@ -24,12 +23,14 @@ export function ChartToggle<T extends string>({
   options,
   value,
   onChange,
+  segment = 70,
 }: {
   screen: Screen;
   name: string;
   options: readonly { value: T; label: string }[];
   value: T;
   onChange: (value: T) => void;
+  segment?: 70 | 88;
 }) {
   const index = Math.max(
     0,
@@ -40,7 +41,7 @@ export function ChartToggle<T extends string>({
     position.set(withSpring(index, springs.control));
   }, [index, position]);
   const pill = useAnimatedStyle(() => ({
-    transform: [{ translateX: position.get() * (SEGMENT - 3) }],
+    transform: [{ translateX: position.get() * (segment - 3) }],
   }));
 
   return (
@@ -48,12 +49,12 @@ export function ChartToggle<T extends string>({
       accessibilityRole="radiogroup"
       accessibilityLabel="Chart type"
       className="h-9 flex-row rounded-full bg-sand"
-      style={{ width: SEGMENT * options.length }}
+      style={{ width: segment * options.length }}
     >
       <Animated.View
         pointerEvents="none"
         className="absolute rounded-full bg-primary"
-        style={[{ left: 3, top: 3, height: 30, width: SEGMENT - 3 }, pill]}
+        style={[{ left: 3, top: 3, height: 30, width: segment - 3 }, pill]}
       />
       {options.map((option) => {
         const selected = option.value === value;
@@ -67,7 +68,7 @@ export function ChartToggle<T extends string>({
             hitSlop={{ top: 4, bottom: 4 }}
             pressedClassName="bg-transparent"
             className="h-9 items-center justify-center rounded-full"
-            style={{ width: SEGMENT }}
+            style={{ width: segment }}
             onPress={() => {
               if (selected) return;
               scrubStep();

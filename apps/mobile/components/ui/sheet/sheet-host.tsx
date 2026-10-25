@@ -31,6 +31,14 @@ function renderSheet(sheet: OpenSheet, frame: SheetFrameProps) {
             sheet.settle(null);
             sheet.request.onCreate?.();
           }}
+          onTransfer={() => {
+            sheet.settle(null);
+            sheet.request.onTransfer?.();
+          }}
+          onDebtPayment={() => {
+            sheet.settle(null);
+            sheet.request.onDebtPayment?.();
+          }}
         />
       );
     case 'wallet':

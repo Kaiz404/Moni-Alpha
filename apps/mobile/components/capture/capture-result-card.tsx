@@ -2,7 +2,6 @@ import { useValue } from '@legendapp/state/react';
 import { Image } from 'expo-image';
 import { useEffect, useRef, useState } from 'react';
 import { ScrollView, View } from 'react-native';
-import { useUniwind } from 'uniwind';
 
 import { CategoryIcon } from '@/components/categories/category-icon';
 import { Button } from '@/components/ui/button';
@@ -14,6 +13,7 @@ import { InPlaceField, InPlaceGroup } from '@/components/ui/in-place-field';
 import { Page } from '@/components/ui/page';
 import { PickerField } from '@/components/ui/picker-field';
 import { Text } from '@/components/ui/text';
+import { TintBubble } from '@/components/ui/transaction-row';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { useAuth } from '@/lib/auth/auth-context';
 import type {
@@ -41,6 +41,7 @@ import { toCategoryTiles } from '@/lib/sheet/category-tiles';
 import { openSheet } from '@/lib/sheet/sheet-store';
 import { ensureFinanceTimezone } from '@/lib/supabase/profile';
 import { tid, type TestId } from '@/lib/test-ids';
+import { resolveTransactionIcon } from '@/lib/transactions/icon';
 
 type CaptureResultProps = {
   quote: CaptureQuote;
@@ -68,7 +69,6 @@ export function CaptureResult({
   const { user } = useAuth();
   const userId = user?.id ?? null;
   const tokens = useThemeTokens();
-  const dark = useUniwind().theme === 'dark';
   const currency = useMainCurrency();
   const [editing, setEditing] = useState<TestId | null>(null);
   const read = useRef(draft).current;
@@ -219,20 +219,11 @@ export function CaptureResult({
                     style={{ width: 52, height: 64, borderRadius: 12 }}
                   />
                 ) : (
-                  <View
-                    className="h-[52px] w-[52px] items-center justify-center rounded-full"
-                    style={{
-                      backgroundColor: category?.color
-                        ? `${category.color}${dark ? '38' : '73'}`
-                        : tokens.sand,
-                    }}
-                  >
-                    <CategoryIcon
-                      icon={category?.icon ?? null}
-                      size={24}
-                      color={category?.color && dark ? category.color : tokens.foreground}
-                    />
-                  </View>
+                  <TintBubble
+                    size={52}
+                    icon={resolveTransactionIcon(category?.icon ?? 'shape-outline', 'expense')}
+                    color={category?.color ?? null}
+                  />
                 )}
                 <View className="min-w-0 flex-1">
                   {editable(

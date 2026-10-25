@@ -1,3 +1,4 @@
+import { useValue } from '@legendapp/state/react';
 import { useMemo, useState, type ReactNode } from 'react';
 import { FlatList, View } from 'react-native';
 
@@ -23,8 +24,12 @@ import { WALLET_TYPE_OPTIONS } from '@/constants/wallet-form';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { dayLabel } from '@/lib/dates/day-label';
 import { toLocalDateInput } from '@/lib/dates/local-date-input';
+import {
+  currencySymbol,
+  formatMoney,
+} from '@/lib/finance/format-money';
 import { useMainCurrency } from '@/lib/finance/main-currency';
-import { currencySymbol } from '@/lib/finance/format-money';
+import { walletBalanceMinor$ } from '@/lib/finance/selectors';
 import type {
   SheetRequestOf,
   SheetResult,
@@ -36,6 +41,8 @@ export type PickerOption = {
   name: string;
   meta?: string;
   leading?: ReactNode;
+  /** The Mint-tinted Suggested row (XA-Review's wallet sheet). */
+  suggested?: boolean;
 };
 
 function Bubble({
@@ -137,7 +144,8 @@ export function OptionPickerSheet({
                   ? `${option.name}, ${option.meta}`
                   : option.name
               }
-              className="min-h-[66px] flex-row items-center gap-3.5 px-[18px] py-3"
+              radius={{ rest: 26, pressed: 16 }}
+              className={`min-h-[66px] flex-row items-center gap-3.5 px-[18px] py-3 ${option.suggested ? 'bg-primary-muted' : ''}`}
               onPress={() => onPick(option.id)}
             >
               {option.leading}
@@ -189,24 +197,37 @@ export function WalletSheet({
   onPick,
   ...frame
 }: KindSheetProps<'wallet'>) {
-  const options: PickerOption[] = request.wallets.map((wallet) => {
-    const style = getWalletCardStyle(wallet.cardStyleId);
-    return {
-      id: wallet.id,
-      name: wallet.name,
-      meta: wallet.currency.toUpperCase(),
-      leading: (
-        <Bubble color={wallet.color ?? style.swatchHex}>
-          <WalletIcon
-            color={style.contentColor}
-            icon={wallet.icon}
-            type={wallet.type}
-            size={20}
-          />
-        </Bubble>
-      ),
-    };
-  });
+  const balances = useValue(() =>
+    request.wallets.map((wallet) =>
+      walletBalanceMinor$(wallet.id).get(),
+    ),
+  );
+  const options: PickerOption[] = request.wallets.map(
+    (wallet, index) => {
+      const style = getWalletCardStyle(wallet.cardStyleId);
+      const suggested = wallet.id === request.suggestedId;
+      const balance = formatMoney(
+        balances[index] ?? 0,
+        wallet.currency,
+      );
+      return {
+        id: wallet.id,
+        name: wallet.name,
+        meta: suggested ? `${balance} · Suggested` : balance,
+        suggested,
+        leading: (
+          <Bubble color={wallet.color ?? style.swatchHex}>
+            <WalletIcon
+              color={style.contentColor}
+              icon={wallet.icon}
+              type={wallet.type}
+              size={20}
+            />
+          </Bubble>
+        ),
+      };
+    },
+  );
   if (request.noneLabel)
     options.unshift({ id: NONE, name: request.noneLabel });
   return (

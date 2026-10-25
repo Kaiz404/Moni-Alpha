@@ -21,6 +21,12 @@ type PickerFieldProps = {
   leading?: ReactNode;
   className?: string;
   disabled?: boolean;
+  /**
+   * `capture` is the Type it field (V2A-CaptureType): 60 tall, radius 22, a 32
+   * bubble in `leading`, label 12/16 Ink 2 over a 15/20 600 value, and a 20
+   * Ink 2 chevron at the end.
+   */
+  size?: 'default' | 'capture';
 };
 
 /**
@@ -38,9 +44,52 @@ export function PickerField({
   leading,
   className,
   disabled = false,
+  size = 'default',
 }: PickerFieldProps) {
   const tokens = useThemeTokens();
   const empty = value.trim().length === 0;
+  const shown = empty ? placeholder : value;
+  if (size === 'capture') {
+    return (
+      <Press
+        testID={testID}
+        accessibilityLabel={`${label}, ${empty ? 'not chosen' : value}`}
+        accessibilityHint="Opens a picker"
+        accessibilityState={{ disabled }}
+        disabled={disabled}
+        radius={{ rest: 22, pressed: 16 }}
+        pressedClassName="bg-hairline"
+        className={`h-[60px] flex-row items-center gap-2.5 bg-sand px-2.5 ${className ?? ''}`}
+        onPress={onPress}
+      >
+        {leading}
+        <View className="min-w-0 flex-1 gap-px">
+          <Text
+            className="text-[12px] leading-[16px] text-ink-2"
+            numberOfLines={1}
+          >
+            {label}
+          </Text>
+          <View className="flex-row items-center gap-1.5">
+            {mark}
+            <Text
+              className={`min-w-0 flex-1 text-[15px] leading-[20px] font-display-semibold ${empty ? 'text-muted' : 'text-foreground'}`}
+              numberOfLines={1}
+            >
+              {shown}
+            </Text>
+          </View>
+        </View>
+        <View pointerEvents="none">
+          <IconSymbol
+            name="chevron-down"
+            size={20}
+            color={tokens.ink2}
+          />
+        </View>
+      </Press>
+    );
+  }
   return (
     <Press
       testID={testID}
@@ -68,7 +117,7 @@ export function PickerField({
             className={`min-w-0 flex-1 ${empty ? 'text-muted' : 'text-foreground'}`}
             numberOfLines={1}
           >
-            {empty ? placeholder : value}
+            {shown}
           </Text>
           <View pointerEvents="none">
             <IconSymbol

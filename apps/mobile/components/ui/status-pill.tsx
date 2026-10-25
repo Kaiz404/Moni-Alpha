@@ -36,17 +36,37 @@ const tones: Record<
   },
 };
 
+const sizes = {
+  default: {
+    frame: 'min-h-[30px] gap-[7px] px-3',
+    label: 'text-[13px] leading-[18px]',
+  },
+  small: {
+    frame: 'min-h-7 gap-1.5 px-3',
+    label: 'text-[13px] leading-[18px]',
+  },
+  compact: {
+    frame: 'h-[26px] gap-1.5 px-2.5',
+    label: 'text-[12px] leading-[16px] tracking-[0.24px]',
+  },
+} as const;
+
 export function StatusPill({
   tone,
   label,
   variant = 'standalone',
-  small = false,
+  size = 'default',
+  align = 'start',
 }: {
   tone: StatusTone;
   label: string;
   variant?: 'inline' | 'standalone';
-  /** A standalone pill 28 tall instead of 30, as XM-Detail draws it. */
-  small?: boolean;
+  /**
+   * A standalone pill: `default` 30 tall, `small` 28 (XM-Detail), `compact` 26 with a 12/700
+   * label (the capture pages, the capture log).
+   */
+  size?: keyof typeof sizes;
+  align?: 'start' | 'center';
 }) {
   const look = tones[tone];
   if (variant === 'inline') {
@@ -62,13 +82,15 @@ export function StatusPill({
       </View>
     );
   }
+  const shape = sizes[size];
   return (
     <View
-      className={`${small ? 'min-h-7' : 'min-h-[30px]'} flex-row items-center gap-[7px] self-start rounded-full px-3 ${look.fill}`}
+      className={`${shape.frame} ${align === 'center' ? 'self-center' : 'self-start'} flex-row items-center rounded-full ${look.fill}`}
     >
       <View className={`h-1.5 w-1.5 rounded-full ${look.dot}`} />
       <Text
-        className={`text-[13px] leading-[18px] font-display-bold ${look.text}`}
+        className={`${shape.label} font-display-bold ${look.text}`}
+        numberOfLines={size === 'compact' ? 1 : undefined}
       >
         {label}
       </Text>

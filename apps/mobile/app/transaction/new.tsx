@@ -11,12 +11,13 @@ import {
   type DuplicateHit,
 } from '@/components/capture/duplicate-sheet';
 import { FieldBubble } from '@/components/capture/field-bubble';
-import { CategoryIcon } from '@/components/categories/category-icon';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { PickerField } from '@/components/ui/picker-field';
 import { Segmented } from '@/components/ui/segmented';
 import { Text } from '@/components/ui/text';
-import { WalletIcon } from '@/components/wallets/wallet-icon';
+import { TintBubble } from '@/components/ui/transaction-row';
+import { getWalletCardStyle } from '@/constants/wallet-card-styles';
+import { resolveWalletIcon } from '@/constants/wallet-form';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import type { LedgerEntry } from '@/lib/ai/duplicates';
 import { useAuth } from '@/lib/auth/auth-context';
@@ -57,6 +58,7 @@ import {
   prefetchTransactionLocation,
   type TransactionLocationSnapshot,
 } from '@/lib/transactions/prefetch-location';
+import { resolveTransactionIcon } from '@/lib/transactions/icon';
 import { proposalRow, transactionRow } from '@/lib/transactions/row';
 import { resolveDefaultWalletId } from '@/lib/wallets/default-wallet';
 
@@ -276,6 +278,12 @@ export default function TypeItScreen() {
           pathname: '/categories/form',
           params: { type: kind, returnTo: '/transaction/new' },
         }),
+      ...(kind === 'expense'
+        ? {
+            onTransfer: () => changeKind('transfer'),
+            onDebtPayment: () => router.dismissTo('/debts'),
+          }
+        : {}),
     });
     if (picked) setCategoryId(picked);
   };
@@ -406,19 +414,17 @@ export default function TypeItScreen() {
 
   const walletBubble = (item: FinanceWallet | null) =>
     item ? (
-      <FieldBubble color={item.color ?? tokens.card}>
-        <WalletIcon
-          icon={item.icon}
-          type={item.type}
-          size={17}
-          color={tokens.onPastel}
-        />
-      </FieldBubble>
+      <TintBubble
+        size={32}
+        icon={resolveWalletIcon(item.icon, item.type)}
+        color={item.color ?? getWalletCardStyle(item.cardStyleId).swatchHex}
+      />
     ) : undefined;
 
   const dateField = (
     <PickerField
       testID={tid('capture', 'date')}
+      size="capture"
       className="flex-1"
       label="Date"
       value={dayLabel(date)}
@@ -436,7 +442,7 @@ export default function TypeItScreen() {
   );
 
   const noteField = (
-    <View className="h-16 flex-1 flex-row items-center gap-2.5 rounded-field bg-sand px-3.5">
+    <View className="h-[60px] flex-1 flex-row items-center gap-2.5 rounded-tile bg-sand pl-2.5 pr-3">
       <FieldBubble color={tokens.card}>
         <IconSymbol
           name="pencil-outline"
@@ -444,15 +450,15 @@ export default function TypeItScreen() {
           color={tokens.foreground}
         />
       </FieldBubble>
-      <View className="min-w-0 flex-1">
-        <Text className="text-[13px] leading-[18px] text-muted">
+      <View className="min-w-0 flex-1 gap-px">
+        <Text className="text-[12px] leading-[16px] text-ink-2">
           Shop or note
         </Text>
         <TextInput
           testID={tid('capture', 'note')}
           accessibilityLabel="Shop or note"
           autoCapitalize="words"
-          className="p-0 text-base leading-[22px] font-display-semibold text-foreground"
+          className="p-0 text-[15px] leading-[20px] font-display-semibold text-foreground"
           placeholder="Optional"
           placeholderTextColor={tokens.muted}
           value={note}
@@ -501,6 +507,7 @@ export default function TypeItScreen() {
           <>
             <PickerField
               testID={tid('capture', 'wallet')}
+              size="capture"
               label="From"
               value={wallet?.name ?? ''}
               leading={walletBubble(wallet)}
@@ -508,6 +515,7 @@ export default function TypeItScreen() {
             />
             <PickerField
               testID={tid('capture', 'to-wallet')}
+              size="capture"
               label="To"
               value={toWallet?.name ?? ''}
               leading={walletBubble(toWallet)}
@@ -522,17 +530,16 @@ export default function TypeItScreen() {
           <>
             <PickerField
               testID={tid('capture', 'category')}
+              size="capture"
               label="Category"
               value={category?.name ?? ''}
               leading={
                 category ? (
-                  <FieldBubble color={category.color ?? tokens.card}>
-                    <CategoryIcon
-                      icon={category.icon}
-                      size={17}
-                      color={tokens.onPastel}
-                    />
-                  </FieldBubble>
+                  <TintBubble
+                    size={32}
+                    icon={resolveTransactionIcon(category.icon ?? 'shape-outline', kind)}
+                    color={category.color}
+                  />
                 ) : undefined
               }
               onPress={() => void pickCategory()}
@@ -540,6 +547,7 @@ export default function TypeItScreen() {
             <View className="flex-row gap-2">
               <PickerField
                 testID={tid('capture', 'wallet')}
+                size="capture"
                 className="flex-1"
                 label={kind === 'income' ? 'Into' : 'Paid with'}
                 value={wallet?.name ?? ''}

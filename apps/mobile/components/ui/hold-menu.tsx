@@ -177,8 +177,9 @@ const ITEMS: {
 
 const MENU_WIDTH = 220;
 const MENU_HEIGHT = ITEMS.length * 44 + 12;
-const EDGE = 16;
-const GAP = 6;
+/** V2A-ActivityMenu: the menu keeps the screen's 20 sides and tucks 10 under the lifted row. */
+const EDGE = 20;
+const OVERLAP = 10;
 const SCRIM = 'rgba(23,24,26,0.16)';
 const LIFT_SHADOW = {
   elevation: 12,
@@ -250,12 +251,12 @@ function HoldMenuLayer({
     Math.max(anchor.x - MENU_WIDTH / 2, EDGE),
     window.width - MENU_WIDTH - EDGE,
   );
-  const below = frame.y + frame.height + GAP;
+  const below = frame.y + frame.height - OVERLAP;
   const fitsBelow =
     below + MENU_HEIGHT <= window.height - insets.bottom - EDGE;
   const top = fitsBelow
     ? below
-    : Math.max(frame.y - GAP - MENU_HEIGHT, insets.top + EDGE);
+    : Math.max(frame.y + OVERLAP - MENU_HEIGHT, insets.top + EDGE);
 
   const scrimStyle = useAnimatedStyle(() => ({
     opacity: Math.min(shown.get(), 1),
@@ -379,22 +380,21 @@ export function HoldHint({ screen }: { screen: Screen }) {
               .stiffness(springs.sheet.stiffness)
               .damping(springs.sheet.damping)
       }
-      className="h-9 flex-row items-center gap-2 self-start rounded-full bg-sand pl-3 pr-1.5"
+      className="h-9 flex-row items-center gap-1.5 self-start rounded-full bg-sand pl-3"
     >
       <IconSymbol
         name="gesture-tap-hold"
         size={18}
-        color={tokens.ink2}
+        color={tokens.foreground}
       />
-      <Text className="text-[14px] leading-[19px] font-display-semibold text-foreground">
+      <Text className="text-[14px] leading-[20px] font-display-semibold text-foreground">
         Hold a row for quick actions
       </Text>
       <Press
         testID={tid(screen, 'hold-hint', 'dismiss')}
         accessibilityLabel="Dismiss hint"
-        hitSlop={8}
         pressedClassName="bg-hairline"
-        className="h-7 w-7 items-center justify-center rounded-full"
+        className="-my-1 h-11 w-11 items-center justify-center rounded-full"
         onPress={markHoldHintSeen}
       >
         <IconSymbol

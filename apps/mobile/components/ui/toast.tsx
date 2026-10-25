@@ -98,15 +98,18 @@ function ToastCapsule({ toast }: { toast: ShownToast }) {
     >
       <IconSymbol
         name={
-          toast.tone === 'removed'
+          toast.icon ??
+          (toast.tone === 'removed'
             ? 'trash-can-outline'
-            : 'check-circle'
+            : 'check-circle')
         }
         size={20}
         color={
-          toast.tone === 'removed'
-            ? tokens.inactive
-            : tokens.onInkPositive
+          toast.icon
+            ? tokens.primaryForeground
+            : toast.tone === 'removed'
+              ? tokens.inactive
+              : tokens.onInkPositive
         }
       />
       <Text

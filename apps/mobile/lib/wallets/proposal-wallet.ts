@@ -1,4 +1,5 @@
 import type { CreateProposedTransaction } from '@repo/types';
+import { merchantKey } from '@/lib/ai/routine';
 import { resolveDefaultWalletId } from '@/lib/wallets/default-wallet';
 
 /** Matches @repo/types wallet default when no wallet is resolved yet. */
@@ -112,4 +113,21 @@ export function finalizeProposalWallet(
     p = applyWalletCurrency(p, wallets);
   }
   return p;
+}
+
+/** The wallet that last paid this merchant, which the wallet sheet marks Suggested (XA-Review). */
+export function lastWalletForMerchant(
+  merchant: string | null,
+  transactions: readonly { merchant: string | null; walletId: string; transactionDate: string }[],
+  walletIds: ReadonlySet<string>,
+): string | null {
+  const key = merchantKey(merchant);
+  if (!key) return null;
+  let latest: { walletId: string; at: string } | null = null;
+  for (const row of transactions) {
+    if (!walletIds.has(row.walletId) || merchantKey(row.merchant) !== key) continue;
+    if (!latest || row.transactionDate > latest.at)
+      latest = { walletId: row.walletId, at: row.transactionDate };
+  }
+  return latest?.walletId ?? null;
 }

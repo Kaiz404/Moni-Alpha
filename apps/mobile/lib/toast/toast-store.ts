@@ -1,5 +1,7 @@
 import { useSyncExternalStore } from 'react';
 
+import type { IconSymbolName } from '@/components/ui/icon-symbol';
+
 export const TOAST_MS = 5000;
 
 export type ToastTone = 'done' | 'removed';
@@ -7,6 +9,8 @@ export type ToastTone = 'done' | 'removed';
 export type ToastRequest = {
   text: string;
   tone?: ToastTone;
+  /** A cream glyph in place of the tone's, such as XA-Review's close for Not mine and clock for Later. */
+  icon?: IconSymbolName;
   undo?: () => void;
   commit?: () => void;
 };

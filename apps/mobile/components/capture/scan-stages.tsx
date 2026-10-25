@@ -2,13 +2,13 @@ import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import { View } from 'react-native';
 
-import { CapturePill } from '@/components/capture/capture-pill';
 import { Button } from '@/components/ui/button';
 import {
   IconSymbol,
   type IconSymbolName,
 } from '@/components/ui/icon-symbol';
 import { Page } from '@/components/ui/page';
+import { StatusPill } from '@/components/ui/status-pill';
 import { Text } from '@/components/ui/text';
 import {
   TransactionRowBody,
@@ -58,8 +58,10 @@ export function CaptureReading({ quote }: { quote: CaptureQuote }) {
               />
             </View>
           )}
-          <CapturePill
-            tone="pending"
+          <StatusPill
+            tone="review"
+            size="compact"
+            align="center"
             label={
               camera
                 ? 'Moni is reading the receipt'
@@ -187,8 +189,10 @@ export function CaptureFailed({
               style={{ width: 84, height: 108, borderRadius: 12 }}
             />
           ) : null}
-          <CapturePill
-            tone="attention"
+          <StatusPill
+            tone="near"
+            size="compact"
+            align="center"
             label={
               failure === 'unavailable'
                 ? "Couldn't reach Moni"

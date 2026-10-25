@@ -12,6 +12,7 @@ import { dismissSheet, openSheet } from '@/lib/sheet/sheet-store';
 
 jest.mock('uniwind', () => ({
   useCSSVariable: (names: string[]) => names.map(() => undefined),
+  useUniwind: () => ({ theme: 'light' }),
 }));
 jest.mock('react-native-safe-area-context', () => ({
   useSafeAreaInsets: () => ({
@@ -45,6 +46,7 @@ const tile = (
   name,
   icon: null,
   color: null,
+  custom: false,
   spentMinor: rm(spent),
   budgetMinor: budget === null ? null : rm(budget),
 });
@@ -145,5 +147,64 @@ describe('SheetHost', () => {
 
     await act(() => new Promise((resolve) => setTimeout(resolve, 0)));
     await expect(answer).resolves.toEqual({ walletId: null });
+  });
+
+  it('closes the category sheet before running a Not counted in budgets choice', async () => {
+    render(<SheetHost />);
+    const onTransfer = jest.fn();
+    let answer!: Promise<string | null>;
+    act(() => {
+      answer = openSheet({
+        kind: 'category',
+        title: 'Choose category',
+        currency: 'MYR',
+        selectedId: null,
+        categories: [tile('food', 'Food & Dining', 80, 100)],
+        onTransfer,
+      });
+    });
+
+    expect(screen.getByText('Not counted in budgets')).toBeTruthy();
+    expect(screen.queryByText('Debt payment')).toBeNull();
+    fireEvent.press(screen.getByTestId('sheet.category.transfer'));
+
+    await act(() => new Promise((resolve) => setTimeout(resolve, 0)));
+    await expect(answer).resolves.toBeNull();
+    expect(onTransfer).toHaveBeenCalledTimes(1);
+  });
+
+  it('shows each wallet balance and marks the suggested one', () => {
+    render(<SheetHost />);
+    act(() => {
+      void openSheet({
+        kind: 'wallet',
+        title: 'Which wallet?',
+        selectedId: null,
+        suggestedId: 'w2',
+        wallets: [
+          {
+            id: 'w1',
+            name: 'Maybank',
+            currency: 'MYR',
+            type: 'bank',
+            icon: null,
+            color: null,
+            cardStyleId: null,
+          },
+          {
+            id: 'w2',
+            name: "Touch 'n Go",
+            currency: 'MYR',
+            type: 'ewallet',
+            icon: null,
+            color: null,
+            cardStyleId: null,
+          },
+        ],
+      });
+    });
+
+    expect(screen.getByText('RM0.00')).toBeTruthy();
+    expect(screen.getByText('RM0.00 · Suggested')).toBeTruthy();
   });
 });

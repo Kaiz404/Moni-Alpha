@@ -9,6 +9,8 @@ export type CategoryTile = {
   name: string;
   icon: string | null;
   color: string | null;
+  /** The user's own category: its colour fills the bubble, as CategoryBubble draws it. */
+  custom: boolean;
   spentMinor: MinorAmount;
   budgetMinor: MinorAmount | null;
 };
@@ -38,6 +40,9 @@ type Sheets = {
       selectedId: string | null;
       /** Shows the New category tile; the sheet closes before it runs. */
       onCreate?: () => void;
+      /** The "Not counted in budgets" choices under the grid; the sheet closes before each runs. */
+      onTransfer?: () => void;
+      onDebtPayment?: () => void;
     };
     result: string;
   };
@@ -51,6 +56,8 @@ type Sheets = {
       note?: string;
       /** Adds a first row that resolves to `walletId: null`. */
       noneLabel?: string;
+      /** Tints this row Mint and adds "Suggested" to its balance. */
+      suggestedId?: string | null;
     };
     result: { walletId: string | null };
   };

@@ -47,6 +47,7 @@ import { merchantName } from '@/lib/finance/merchant-name';
 import {
   budgetProgress$,
   categoriesForUser$,
+  transactions$,
   walletsForUser$,
 } from '@/lib/finance/selectors';
 import type { FinanceCategory, FinanceWallet } from '@/lib/finance/types';
@@ -86,7 +87,7 @@ import { listAwaitingReview, type RejectedProposal } from '@/lib/supabase/propos
 import { tid } from '@/lib/test-ids';
 import { showToast } from '@/lib/toast/toast-store';
 import { getDefaultWalletId } from '@/lib/wallets/default-wallet';
-import { resolveInitialWalletId } from '@/lib/wallets/proposal-wallet';
+import { lastWalletForMerchant, resolveInitialWalletId } from '@/lib/wallets/proposal-wallet';
 
 /** A Later row snoozed past any real date still counts as unreviewed. */
 const END_OF_TIME = new Date(8.64e15);
@@ -378,6 +379,7 @@ export function ReviewDeck({ session }: { session: ReviewSession }) {
   const mainCurrency = useMainCurrency();
   const wallets = useValue(walletsForUser$(userId));
   const categories = useValue(categoriesForUser$(userId));
+  const ledger = useValue(transactions$({ userId }));
   const aliases = useSelector(() => (userId ? listMerchantAliases(userId) : []));
   const [timezone, setTimezone] = useState('UTC');
   const progress = useValue(budgetProgress$(userId, timezone));
@@ -493,13 +495,21 @@ export function ReviewDeck({ session }: { session: ReviewSession }) {
         selectedId: destination
           ? (edits[top.id]?.transferToWalletId ?? top.transferToWalletId)
           : current,
+        suggestedId:
+          destination || current
+            ? null
+            : lastWalletForMerchant(
+                top.merchant,
+                ledger,
+                new Set(mainWallets.map((w) => w.id)),
+              ),
       });
       if (picked?.walletId) {
         setEdit(top.id, destination ? { transferToWalletId: picked.walletId } : { walletId: picked.walletId });
       }
       send({ type: 'resolved' });
     },
-    [top, edits, wallets, mainWallets, setEdit, send],
+    [top, edits, wallets, mainWallets, ledger, setEdit, send],
   );
 
   const pickCategory = useCallback(async () => {
@@ -550,9 +560,9 @@ export function ReviewDeck({ session }: { session: ReviewSession }) {
         );
         showToast({ text: `Approved ${name} ${amount}`, undo: undoIt });
       } else if (outcome.action === 'notMine') {
-        showToast({ text: '1 not mine', tone: 'removed', undo: undoIt });
+        showToast({ text: '1 not mine', icon: 'close', undo: undoIt });
       } else {
-        showToast({ text: 'Saved for later' });
+        showToast({ text: 'Saved for later', icon: 'clock-outline' });
       }
     },
     [lookups, restore],

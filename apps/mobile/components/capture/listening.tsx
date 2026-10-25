@@ -11,10 +11,10 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 
-import { CapturePill } from '@/components/capture/capture-pill';
 import { Button } from '@/components/ui/button';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Page } from '@/components/ui/page';
+import { StatusPill } from '@/components/ui/status-pill';
 import { Text } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { tid } from '@/lib/test-ids';
@@ -126,7 +126,12 @@ export function Listening({
     >
       <View className="flex-1 items-center gap-3 px-5">
         {offline ? (
-          <CapturePill tone="pending" label="Listening on this phone · works offline" />
+          <StatusPill
+            tone="review"
+            size="compact"
+            align="center"
+            label="Listening on this phone · works offline"
+          />
         ) : null}
         <Orb />
         <Waveform level={level} />
@@ -192,7 +197,12 @@ export function SayDenied({ onTurnOn }: { onTurnOn: () => void }) {
             "Turn on microphone access to say a transaction. Speech becomes text on this phone, and the recording isn't kept."
           }
         </Text>
-        <CapturePill tone="attention" label="Microphone is off for Moni" />
+        <StatusPill
+          tone="near"
+          size="compact"
+          align="center"
+          label="Microphone is off for Moni"
+        />
       </View>
       <View className="gap-2.5 px-5 pb-3">
         <Button

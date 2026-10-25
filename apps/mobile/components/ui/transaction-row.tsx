@@ -193,27 +193,40 @@ function RowBubble({ row }: { row: TransactionRowData }) {
   );
 }
 
+/** Bubble diameter to glyph size: Type it fields 32, rows 42, picker tiles 44, detail heroes 52. */
+export const BUBBLE_GLYPH = {
+  32: 17,
+  42: 20,
+  44: 22,
+  52: 24,
+} as const;
+
+export type TintBubbleSize = keyof typeof BUBBLE_GLYPH;
+
 export function TintBubble({
   icon,
   color,
+  size = 42,
 }: {
   icon: IconSymbolName;
   color: string | null;
+  size?: TintBubbleSize;
 }) {
   const tokens = useThemeTokens();
   const dark = useUniwind().theme === 'dark';
   return (
     <View
-      className={`h-[42px] w-[42px] items-center justify-center rounded-full ${color ? '' : 'bg-sand'}`}
-      style={
+      className={`items-center justify-center rounded-full ${color ? '' : 'bg-sand'}`}
+      style={[
+        { width: size, height: size },
         color
           ? { backgroundColor: `${color}${dark ? '38' : '73'}` }
-          : undefined
-      }
+          : null,
+      ]}
     >
       <IconSymbol
         name={icon}
-        size={20}
+        size={BUBBLE_GLYPH[size]}
         color={color && dark ? color : tokens.foreground}
       />
     </View>

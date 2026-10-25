@@ -2,7 +2,11 @@ import { View } from 'react-native';
 import { useUniwind } from 'uniwind';
 
 import { IconSymbol, type IconSymbolName } from '@/components/ui/icon-symbol';
-import { TintBubble } from '@/components/ui/transaction-row';
+import {
+  BUBBLE_GLYPH,
+  TintBubble,
+  type TintBubbleSize,
+} from '@/components/ui/transaction-row';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 
 /**
@@ -13,19 +17,21 @@ import { useThemeTokens } from '@/hooks/use-theme-tokens';
 export function CategoryBubble({
   icon,
   color,
+  size = 42,
 }: {
   icon: IconSymbolName;
   color: string;
+  size?: TintBubbleSize;
 }) {
   const tokens = useThemeTokens();
   const dark = useUniwind().theme === 'dark';
-  if (dark) return <TintBubble icon={icon} color={color} />;
+  if (dark) return <TintBubble icon={icon} color={color} size={size} />;
   return (
     <View
-      className="h-[42px] w-[42px] items-center justify-center rounded-full"
-      style={{ backgroundColor: color }}
+      className="items-center justify-center rounded-full"
+      style={{ width: size, height: size, backgroundColor: color }}
     >
-      <IconSymbol name={icon} size={20} color={tokens.onPastel} />
+      <IconSymbol name={icon} size={BUBBLE_GLYPH[size]} color={tokens.onPastel} />
     </View>
   );
 }

@@ -102,6 +102,7 @@ export function ActivityChart(props: ActivityChartProps) {
         <ChartToggle
           screen="activity"
           name="chart-mode"
+          segment={88}
           options={MODES}
           value={mode}
           onChange={onModeChange}

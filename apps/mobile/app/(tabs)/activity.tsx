@@ -333,6 +333,7 @@ export default function ActivityScreen() {
               </View>
             ) : null}
             <SearchField
+              compact
               testID={tid('activity', 'search')}
               accessibilityLabel="Search transactions"
               placeholder="Search merchant, note or amount"

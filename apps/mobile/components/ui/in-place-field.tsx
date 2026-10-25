@@ -486,7 +486,7 @@ function Editor({
         amount
           ? 'h-full min-w-0 flex-1 p-0 font-display-bold text-[40px] leading-[44px] text-foreground'
           : note
-            ? 'min-h-[96px] p-0 font-display text-[15px] leading-[21px] text-foreground'
+            ? 'min-h-[63px] p-0 font-display text-[15px] leading-[21px] text-foreground'
             : 'h-full min-w-0 flex-1 p-0 font-display-semibold text-[18px] leading-[22px] text-foreground'
       }
       style={
@@ -503,7 +503,7 @@ function Editor({
     <View className="gap-1.5">
       {note ? (
         <>
-          <View className="rounded-field border-2 border-foreground bg-card px-3.5 py-3">
+          <View className="rounded-field border-2 border-foreground bg-card px-3 py-2.5">
             {input}
           </View>
           <View className="flex-row justify-end gap-2">

@@ -1,7 +1,12 @@
 import { useMemo, useState } from 'react';
 import { ScrollView, View } from 'react-native';
 
+import { CategoryBubble } from '@/components/categories/category-bubble';
 import { CategoryIcon } from '@/components/categories/category-icon';
+import {
+  IconSymbol,
+  type IconSymbolName,
+} from '@/components/ui/icon-symbol';
 import { Press } from '@/components/ui/press';
 import { SearchField } from '@/components/ui/search-field';
 import {
@@ -9,6 +14,7 @@ import {
   type SheetFrameProps,
 } from '@/components/ui/sheet/sheet';
 import { Text } from '@/components/ui/text';
+import { TintBubble } from '@/components/ui/transaction-row';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import {
   budgetNote,
@@ -19,11 +25,21 @@ import type {
   SheetRequestOf,
 } from '@/lib/sheet/sheet-store';
 import { tid } from '@/lib/test-ids';
+import { resolveTransactionIcon } from '@/lib/transactions/icon';
 
 type CategoryPickerSheetProps = SheetFrameProps & {
   request: SheetRequestOf<'category'>;
   onPick: (categoryId: string) => void;
   onCreate: () => void;
+  onTransfer: () => void;
+  onDebtPayment: () => void;
+};
+
+type UncountedChoice = {
+  id: string;
+  label: string;
+  icon: IconSymbolName;
+  onPress: () => void;
 };
 
 const NOTE_TONE: Record<BudgetNote['tone'], string> = {
@@ -44,7 +60,10 @@ function Tile({
   selected: boolean;
   onPick: () => void;
 }) {
-  const tokens = useThemeTokens();
+  const icon = resolveTransactionIcon(
+    tile.icon ?? 'shape-outline',
+    'expense',
+  );
   const note = budgetNote(
     tile.spentMinor,
     tile.budgetMinor,
@@ -59,21 +78,26 @@ function Tile({
       className="min-w-0 flex-1 items-center gap-1 rounded-tile bg-card px-1.5 py-2"
       onPress={onPick}
     >
-      <View
-        className={`rounded-full border-2 p-0.5 ${selected ? 'border-foreground' : 'border-transparent'}`}
-      >
-        <View
-          className="h-11 w-11 items-center justify-center rounded-full bg-sand"
-          style={
-            tile.color ? { backgroundColor: tile.color } : undefined
-          }
-        >
-          <CategoryIcon
-            color={tokens.onPastel}
-            icon={tile.icon}
-            size={22}
+      <View>
+        {tile.custom && tile.color ? (
+          <CategoryBubble
+            size={44}
+            icon={icon}
+            color={tile.color}
           />
-        </View>
+        ) : (
+          <TintBubble
+            size={44}
+            icon={icon}
+            color={tile.color}
+          />
+        )}
+        {selected ? (
+          <View
+            pointerEvents="none"
+            className="absolute -inset-1 rounded-full border-2 border-foreground"
+          />
+        ) : null}
       </View>
       <Text
         className="text-center text-sm leading-[18px] font-display-semibold text-foreground"
@@ -104,6 +128,8 @@ export function CategoryPickerSheet({
   request,
   onPick,
   onCreate,
+  onTransfer,
+  onDebtPayment,
   ...frame
 }: CategoryPickerSheetProps) {
   const tokens = useThemeTokens();
@@ -116,6 +142,21 @@ export function CategoryPickerSheet({
       ),
     [request.categories, q],
   );
+  const uncounted: UncountedChoice[] = [];
+  if (request.onTransfer)
+    uncounted.push({
+      id: 'transfer',
+      label: 'Transfer',
+      icon: 'swap-horizontal',
+      onPress: onTransfer,
+    });
+  if (request.onDebtPayment)
+    uncounted.push({
+      id: 'debt-payment',
+      label: 'Debt payment',
+      icon: 'handshake-outline',
+      onPress: onDebtPayment,
+    });
   const cells: (CategoryTile | 'new')[] = request.onCreate
     ? [...tiles, 'new']
     : tiles;
@@ -149,6 +190,7 @@ export function CategoryPickerSheet({
         accessibilityLabel="Categories"
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
+        className="flex-1"
         contentContainerClassName="gap-2 pb-3"
       >
         {rows.map((row, index) => (
@@ -200,6 +242,40 @@ export function CategoryPickerSheet({
           </View>
         ) : null}
       </ScrollView>
+      {uncounted.length > 0 ? (
+        <View className="gap-1.5 pt-2.5">
+          <Text
+            variant="meta"
+            className="text-muted"
+          >
+            Not counted in budgets
+          </Text>
+          <View className="flex-row gap-2">
+            {uncounted.map((choice) => (
+              <Press
+                key={choice.id}
+                testID={tid('sheet', 'category', choice.id)}
+                radius={{ rest: 20, pressed: 16 }}
+                pressedClassName="bg-hairline"
+                className="h-10 min-w-0 flex-1 flex-row items-center justify-center gap-1.5 bg-sand"
+                onPress={choice.onPress}
+              >
+                <IconSymbol
+                  name={choice.icon}
+                  size={18}
+                  color={tokens.foreground}
+                />
+                <Text
+                  className="text-[14px] leading-[19px] font-display-semibold text-foreground"
+                  numberOfLines={1}
+                >
+                  {choice.label}
+                </Text>
+              </Press>
+            ))}
+          </View>
+        </View>
+      ) : null}
     </Sheet>
   );
 }
