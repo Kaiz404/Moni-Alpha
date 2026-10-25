@@ -39,7 +39,8 @@ const KINDS = [
   { value: 'expense', label: 'Expense' },
   { value: 'income', label: 'Income' },
 ] as const;
-const GAP = 8;
+const ICON_GAP = 6;
+const SWATCH = 34;
 
 function isIcon(value: string | null | undefined): value is CategoryIconName {
   return (categoryIconNames as readonly string[]).includes(value ?? '');
@@ -85,8 +86,8 @@ export default function CategoryFormScreen() {
   }, [existing]);
   const named = name.trim().length > 0;
   const waiting = Boolean(params.id) && !existing;
-  const iconSize = Math.floor((width - 40 - GAP * 6) / 7);
-  const swatch = Math.floor((width - 40 - GAP * 7) / 8);
+  const iconWidth = Math.floor((width - 40 - ICON_GAP * 6) / 7);
+  const swatchCell = Math.floor((width - 40 + 8) / 8);
 
   const leave = (id: string) => {
     if (params.returnTo === '/transaction/new')
@@ -142,7 +143,7 @@ export default function CategoryFormScreen() {
     >
       <ScrollView
         keyboardShouldPersistTaps="handled"
-        contentContainerClassName="gap-5 px-screen pb-6"
+        contentContainerClassName="gap-4 px-screen pb-6"
       >
         {existing || params.id ? null : (
           <Segmented
@@ -154,11 +155,11 @@ export default function CategoryFormScreen() {
             accessibilityLabel="Category type"
           />
         )}
-        <View className="gap-2">
+        <View className="gap-1.5">
           <Text variant="caps" className="text-muted">
             Name
           </Text>
-          <View className="h-[60px] flex-row items-center gap-3 rounded-tile border-[1.5px] border-foreground bg-card pl-2 pr-4">
+          <View className="h-[60px] flex-row items-center gap-2.5 rounded-tile border-2 border-foreground bg-card pl-2 pr-4">
             <View
               className="h-[42px] w-[42px] items-center justify-center rounded-full"
               style={{ backgroundColor: colour }}
@@ -178,13 +179,13 @@ export default function CategoryFormScreen() {
             />
             <Text
               variant="meta"
-              className={name.length >= categoryNameMaxLength ? 'text-state-destructive' : 'text-muted'}
+              className={`font-display-semibold ${name.length >= categoryNameMaxLength ? 'text-state-destructive' : 'text-muted'}`}
               style={{ fontVariant: ['tabular-nums'] }}
             >
               {`${name.length} / ${categoryNameMaxLength}`}
             </Text>
           </View>
-          <Text variant="meta" className="text-muted">
+          <Text variant="meta" className="px-1 text-muted">
             {named ? 'Shows like this in lists and charts' : 'Give it a name to save'}
           </Text>
         </View>
@@ -196,7 +197,7 @@ export default function CategoryFormScreen() {
           <View
             accessibilityLabel="Icon"
             className="flex-row flex-wrap"
-            style={{ gap: GAP }}
+            style={{ gap: ICON_GAP }}
           >
             {categoryIconNames.map((glyph) => {
               const selected = glyph === icon;
@@ -208,7 +209,7 @@ export default function CategoryFormScreen() {
                   accessibilityState={{ selected }}
                   pressedClassName={selected ? 'bg-primary-pressed' : 'bg-sand-light'}
                   className={`items-center justify-center rounded-[14px] ${selected ? 'bg-primary' : 'bg-card'}`}
-                  style={{ width: iconSize, height: iconSize }}
+                  style={{ width: iconWidth, height: 44 }}
                   onPress={() => setIcon(glyph)}
                 >
                   <IconSymbol
@@ -228,8 +229,7 @@ export default function CategoryFormScreen() {
           </Text>
           <View
             accessibilityLabel="Colour"
-            className="flex-row flex-wrap"
-            style={{ gap: GAP }}
+            className="-mx-1 flex-row flex-wrap"
           >
             {customCategoryColors.map((hex, index) => {
               const selected = hex === colour;
@@ -241,21 +241,21 @@ export default function CategoryFormScreen() {
                   accessibilityState={{ selected }}
                   pressedScale={0.94}
                   pressedClassName="bg-transparent"
-                  className={`items-center justify-center rounded-full ${selected ? 'border-2 border-foreground' : ''}`}
-                  style={{ width: swatch, height: swatch }}
+                  className="h-11 items-center justify-center rounded-full"
+                  style={{ width: swatchCell }}
                   onPress={() => setColour(hex)}
                 >
                   <View
-                    className="items-center justify-center rounded-full"
-                    style={{
-                      width: selected ? swatch - 8 : swatch,
-                      height: selected ? swatch - 8 : swatch,
-                      backgroundColor: hex,
-                    }}
+                    className={`h-[42px] w-[42px] items-center justify-center rounded-full ${selected ? 'border-2 border-foreground' : ''}`}
                   >
-                    {selected ? (
-                      <IconSymbol name="check" size={18} color={tokens.onPastel} />
-                    ) : null}
+                    <View
+                      className="items-center justify-center rounded-full"
+                      style={{ width: SWATCH, height: SWATCH, backgroundColor: hex }}
+                    >
+                      {selected ? (
+                        <IconSymbol name="check" size={18} color={tokens.onPastel} />
+                      ) : null}
+                    </View>
                   </View>
                 </Press>
               );
