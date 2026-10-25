@@ -16,7 +16,7 @@ tags:
     timeout: 10000
 
 - tapOn:
-    id: review.amount
+    id: review.amount.edit
 - assertVisible:
     id: review.amount.input
 - eraseText: 12

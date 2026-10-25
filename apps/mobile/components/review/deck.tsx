@@ -53,7 +53,6 @@ import {
 } from '@/lib/finance/selectors';
 import type { FinanceCategory, FinanceWallet } from '@/lib/finance/types';
 import * as haptics from '@/lib/haptics';
-import { parseAmountInput } from '@/lib/finance/money';
 import { springs } from '@/lib/motion/tokens';
 import { captureSourceLabel, captureTime } from '@/lib/proposals/capture-source';
 import {
@@ -678,23 +677,11 @@ export function ReviewDeck({ session }: { session: ReviewSession }) {
   const editing = card.kind === 'editing' ? card.field : null;
   const handlers = useMemo<ReviewCardHandlers | null>(() => {
     if (!top) return null;
-    const endEdit = () => send({ type: 'endEdit' });
     return {
       onEdit: (field: EditField) => send({ type: 'edit', field }),
-      onCancelEdit: endEdit,
-      onSaveMerchant: (value) => {
-        if (!value.trim()) return;
-        setEdit(top.id, { merchant: value.trim() });
-        endEdit();
-      },
-      onSaveAmount: (value) => {
-        try {
-          setEdit(top.id, { amountMinor: parseAmountInput(value) });
-          endEdit();
-        } catch {
-          // An amount that does not parse keeps the field open, as the board's save does.
-        }
-      },
+      onCancelEdit: () => send({ type: 'endEdit' }),
+      onSaveMerchant: (merchant) => setEdit(top.id, { merchant }),
+      onSaveAmount: (amountMinor) => setEdit(top.id, { amountMinor }),
       onPickCategory: () => void pickCategory(),
       onPickWallet: () => void pickWallet('wallet'),
       onPickDestination: () => void pickWallet('destination'),

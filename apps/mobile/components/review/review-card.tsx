@@ -3,9 +3,9 @@ import { View } from 'react-native';
 import { useUniwind } from 'uniwind';
 
 import { CategoryIcon } from '@/components/categories/category-icon';
-import { EditableValue, EditField } from '@/components/review/in-place-edit';
 import { ResultPill, type BudgetLine } from '@/components/review/result-pill';
 import { IconSymbol, type IconSymbolName } from '@/components/ui/icon-symbol';
+import { InPlaceField, InPlaceGroup } from '@/components/ui/in-place-field';
 import { Press } from '@/components/ui/press';
 import { StatusPill } from '@/components/ui/status-pill';
 import { Text } from '@/components/ui/text';
@@ -13,6 +13,8 @@ import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { formatSignedMoney } from '@/lib/finance/format-money';
 import type { EditField as EditFieldName } from '@/lib/proposals/review-card-state';
 import { tid } from '@/lib/test-ids';
+
+const FIELD = { merchant: tid('review', 'merchant'), amount: tid('review', 'amount') } as const;
 
 export type ChipLook = { name: string; icon: string | null; color: string | null };
 
@@ -39,7 +41,7 @@ export type ReviewCardHandlers = {
   onEdit: (field: EditFieldName) => void;
   onCancelEdit: () => void;
   onSaveMerchant: (value: string) => void;
-  onSaveAmount: (value: string) => void;
+  onSaveAmount: (value: MinorAmount) => void;
   onPickCategory: () => void;
   onPickWallet: () => void;
   onPickDestination: () => void;
@@ -207,56 +209,65 @@ export function ReviewCard({
         </View>
       ) : null}
 
-      <View>
-        {editing === 'merchant' ? (
-          <EditField
-            field="merchant"
-            initial={model.merchant}
-            onCancel={handlers.onCancelEdit}
-            onSave={handlers.onSaveMerchant}
-          />
-        ) : transfer ? null : (
-          <EditableValue
-            field="merchant"
-            label={`Merchant ${model.merchant}. Edit name`}
-            showPencil={!editing}
-            onEdit={() => handlers.onEdit('merchant')}
-          >
-            <Text
-              variant="rowTitle"
-              className="text-foreground"
-              numberOfLines={2}
+      <InPlaceGroup
+        editing={editing ? FIELD[editing] : null}
+        onEditingChange={(id) => {
+          const field = id === FIELD.merchant ? 'merchant' : id === FIELD.amount ? 'amount' : null;
+          if (field) handlers.onEdit(field);
+          else handlers.onCancelEdit();
+        }}
+      >
+        <View>
+          {transfer ? null : (
+            <InPlaceField
+              testID={FIELD.merchant}
+              label="Merchant name"
+              kind="text"
+              required
+              maxLength={40}
+              value={model.merchant}
+              onSave={handlers.onSaveMerchant}
             >
-              {model.merchant}
-            </Text>
-          </EditableValue>
-        )}
-        {editing === 'amount' ? (
-          <EditField
-            field="amount"
-            initial={(Number(model.amountMinor) / 100).toFixed(2)}
+              {({ editable, editor }) =>
+                editor ??
+                editable(
+                  <Text
+                    variant="rowTitle"
+                    className="text-foreground"
+                    numberOfLines={2}
+                  >
+                    {model.merchant}
+                  </Text>,
+                  { accessibilityLabel: `Merchant ${model.merchant}. Edit name` },
+                )
+              }
+            </InPlaceField>
+          )}
+          <InPlaceField
+            testID={FIELD.amount}
+            label="Amount"
+            kind="amount"
             prefix={amountText.replace(/[\d.,]/g, '')}
-            onCancel={handlers.onCancelEdit}
+            value={model.amountMinor}
             onSave={handlers.onSaveAmount}
-          />
-        ) : (
-          <EditableValue
-            field="amount"
-            label={`Amount ${amountText}. Edit amount`}
-            showPencil={!editing}
-            onEdit={() => handlers.onEdit('amount')}
           >
-            <Text
-              className="text-[44px] leading-[50px] font-display-bold text-foreground"
-              numberOfLines={1}
-              adjustsFontSizeToFit
-              minimumFontScale={0.5}
-            >
-              {amountText}
-            </Text>
-          </EditableValue>
-        )}
-      </View>
+            {({ editable, editor }) =>
+              editor ??
+              editable(
+                <Text
+                  className="text-[44px] leading-[50px] font-display-bold text-foreground"
+                  numberOfLines={1}
+                  adjustsFontSizeToFit
+                  minimumFontScale={0.5}
+                >
+                  {amountText}
+                </Text>,
+                { accessibilityLabel: `Amount ${amountText}. Edit amount` },
+              )
+            }
+          </InPlaceField>
+        </View>
+      </InPlaceGroup>
 
       <View className="flex-row flex-wrap gap-2">
         {transfer ? null : (

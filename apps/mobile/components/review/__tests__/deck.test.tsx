@@ -205,7 +205,7 @@ describe('Review deck', () => {
     seed('p1');
     await show(<ReviewScreen />);
 
-    fireEvent.press(screen.getByTestId('review.amount'));
+    fireEvent.press(screen.getByTestId('review.amount.edit'));
     fireEvent.changeText(screen.getByTestId('review.amount.input'), '15.50');
     fireEvent.press(screen.getByTestId('review.amount.save'));
     expect(screen.getByText('−RM15.50')).toBeTruthy();
