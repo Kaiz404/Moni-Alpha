@@ -96,13 +96,15 @@ export function CaptureAdded({
         <View className="h-24 w-24 items-center justify-center rounded-full bg-mint">
           <IconSymbol
             name="check"
-            size={44}
+            size={52}
             color={tokens.onPastel}
           />
         </View>
         <Text
           variant="screenTitle"
-          className="pt-3 text-center text-foreground"
+          className="pt-2 text-center text-foreground"
+          accessibilityRole="header"
+          accessibilityLiveRegion="polite"
         >
           {categoryName ? `Added to ${categoryName}` : 'Added'}
         </Text>
@@ -112,7 +114,7 @@ export function CaptureAdded({
         >
           It counts in your totals now.
         </Text>
-        <View className="mt-4 self-stretch rounded-card bg-card py-1.5">
+        <View className="mt-3 self-stretch rounded-card bg-card py-1.5">
           <TransactionRowBody
             row={row}
             meta={rowMeta(row, 'date')}
@@ -120,7 +122,7 @@ export function CaptureAdded({
           />
         </View>
       </View>
-      <View className="gap-2 px-5 pb-3">
+      <View className="gap-1 px-5 pb-3">
         <Button
           testID={tid('capture', 'added', 'home')}
           pinned
