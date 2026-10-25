@@ -27,7 +27,7 @@ import { Text } from '@/components/ui/text';
 import { TransactionRow } from '@/components/ui/transaction-row';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { useAuth } from '@/lib/auth/auth-context';
-import { dayLabel, formatDayHeading } from '@/lib/dates/day-label';
+import { formatDate, formatDayHeading } from '@/lib/dates/day-label';
 import { toLocalDateInput } from '@/lib/dates/local-date-input';
 import {
   filterActivity,
@@ -255,7 +255,7 @@ export default function ActivityScreen() {
     >
       <ScrollView
         keyboardShouldPersistTaps="handled"
-        contentContainerClassName="gap-4 px-screen"
+        contentContainerClassName="gap-3 px-screen"
         contentContainerStyle={{ paddingBottom: clearance }}
       >
         <SyncBanner screen="activity" />
@@ -286,16 +286,16 @@ export default function ActivityScreen() {
               now={now}
             />
             {day ? (
-              <View className="flex-row items-center justify-between gap-3 px-1">
-                <Text variant="rowTitle" className="text-foreground">
-                  {`${dayLabel(day, now)} · ${dayRows} ${dayRows === 1 ? 'transaction' : 'transactions'}`}
+              <View className="min-h-9 flex-row items-center justify-between gap-2 pl-1.5 pr-0.5">
+                <Text className="flex-shrink text-[15px] leading-[21px] font-display-semibold text-foreground">
+                  {`${formatDate(dayOf(day), now)} · ${dayRows} ${dayRows === 1 ? 'transaction' : 'transactions'}`}
                 </Text>
                 <Press
                   testID={tid('activity', 'whole-month')}
                   onPress={() => setDay(null)}
                   radius={{ rest: 18, pressed: 16 }}
                   pressedClassName="bg-hairline"
-                  className="h-9 flex-row items-center gap-1 bg-sand px-3.5"
+                  className="h-9 flex-row items-center gap-1 bg-sand pl-3.5 pr-2.5"
                 >
                   <Text className="text-[14px] leading-[19px] font-display-semibold text-foreground">
                     Whole month
@@ -323,26 +323,25 @@ export default function ActivityScreen() {
               onClearPlace={() => setPlace(null)}
               onWallet={() => void pickWallet()}
             />
-            <HoldHint screen="activity" />
-            {visible.length === 0 ? (
-              <EmptyTile
-                icon="magnify-close"
-                title={
-                  query.trim()
-                    ? `No matches for "${query.trim()}"`
-                    : day
-                      ? 'Nothing like that on this day'
-                      : 'Nothing matches'
-                }
-                body={
-                  query.trim()
-                    ? 'Try a merchant, a category or an amount like 18.90.'
-                    : 'Try another filter or day.'
-                }
-              />
-            ) : (
-              <View className="gap-section">
-                {visible.map((group) => (
+            <View className="gap-3.5">
+              <HoldHint screen="activity" />
+              {visible.length === 0 ? (
+                <View className="items-center gap-1 rounded-tile border-[1.5px] border-dashed border-hairline px-[18px] py-5">
+                  <Text variant="rowTitle" className="text-center text-foreground">
+                    {query.trim()
+                      ? `No matches for "${query.trim()}"`
+                      : day
+                        ? 'Nothing like that on this day'
+                        : 'Nothing matches'}
+                  </Text>
+                  <Text variant="meta" className="text-center text-muted">
+                    {query.trim()
+                      ? 'Try a merchant, a category or an amount like 18.90.'
+                      : 'Try another filter or day.'}
+                  </Text>
+                </View>
+              ) : (
+                visible.map((group) => (
                   <DayGroup
                     key={group.key}
                     label={formatDayHeading(
@@ -370,27 +369,27 @@ export default function ActivityScreen() {
                       );
                     })}
                   </DayGroup>
-                ))}
-              </View>
-            )}
-            {earlier > 0 ? (
-              <Press
-                testID={tid('activity', 'show-more')}
-                onPress={() => setShownDays(visible.length + MORE_DAYS)}
-                radius={{ rest: 22, pressed: 16 }}
-                pressedClassName="bg-hairline"
-                className="h-11 flex-row items-center gap-1.5 self-center bg-sand px-[18px]"
-              >
-                <Text className="text-[15px] leading-[21px] font-display-semibold text-foreground">
-                  {`Show ${earlier} earlier ${earlier === 1 ? 'day' : 'days'}`}
-                </Text>
-                <IconSymbol
-                  name="chevron-down"
-                  size={18}
-                  color={tokens.foreground}
-                />
-              </Press>
-            ) : null}
+                ))
+              )}
+              {earlier > 0 ? (
+                <Press
+                  testID={tid('activity', 'show-more')}
+                  onPress={() => setShownDays(visible.length + MORE_DAYS)}
+                  radius={{ rest: 22, pressed: 16 }}
+                  pressedClassName="bg-hairline"
+                  className="h-11 flex-row items-center gap-1.5 self-center bg-sand px-[18px]"
+                >
+                  <Text className="text-[14px] leading-[19px] font-display-semibold text-foreground">
+                    {`Show ${earlier} earlier ${earlier === 1 ? 'day' : 'days'}`}
+                  </Text>
+                  <IconSymbol
+                    name="chevron-down"
+                    size={18}
+                    color={tokens.foreground}
+                  />
+                </Press>
+              ) : null}
+            </View>
           </>
         )}
       </ScrollView>

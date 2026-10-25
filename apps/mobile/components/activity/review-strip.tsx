@@ -24,27 +24,30 @@ export function ReviewStrip({
       onPress={onPress}
       radius={{ rest: 22, pressed: 16 }}
       pressedClassName="bg-foreground/10"
-      className="h-11 flex-row items-center gap-2 bg-lilac pl-1.5 pr-2.5"
+      className="h-11 flex-row items-center gap-1.5 bg-lilac pl-1.5 pr-2"
     >
-      <View className="h-8 min-w-8 items-center justify-center rounded-full bg-primary px-1.5">
-        <Text className="text-[13px] leading-[18px] font-display-bold text-primary-foreground">
+      <View className="h-7 min-w-7 items-center justify-center rounded-full bg-primary px-1.5">
+        <Text
+          className="text-[13px] leading-[18px] font-display-bold text-primary-foreground"
+          style={{ fontVariant: ['tabular-nums'] }}
+        >
           {count}
         </Text>
       </View>
       <View>
-        <Text className="text-[13px] leading-[16px] font-display-semibold text-on-pastel">
+        <Text className="text-[14px] leading-4 font-display-semibold text-on-pastel">
           To review
         </Text>
         {amount ? (
           <Text
-            className="text-[12px] leading-[15px] text-on-pastel"
+            className="text-[12px] leading-4 font-display-semibold text-on-pastel/75"
             style={{ fontVariant: ['tabular-nums'] }}
           >
             {amount}
           </Text>
         ) : null}
       </View>
-      <IconSymbol name="chevron-right" size={18} color={tokens.onPastel} />
+      <IconSymbol name="chevron-right" size={20} color={tokens.onPastel} />
     </Press>
   );
 }

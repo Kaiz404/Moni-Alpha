@@ -14,9 +14,9 @@ export function DayGroup({
   children: ReactNode;
 }) {
   return (
-    <View className="gap-2.5">
-      <View className="flex-row items-center justify-between px-1">
-        <Text variant="caps" className="text-muted" accessibilityRole="header">
+    <View className="gap-1.5">
+      <View className="min-h-5 flex-row items-center justify-between px-1.5">
+        <Text variant="caps" className="text-ink-2" accessibilityRole="header">
           {label}
         </Text>
         <Text

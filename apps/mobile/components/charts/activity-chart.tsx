@@ -92,7 +92,7 @@ export function ActivityChart(props: ActivityChartProps) {
 
   return (
     <View
-      className="gap-3 rounded-card bg-card px-[18px] py-3.5"
+      className="gap-2 rounded-card bg-card px-[18px] py-3.5"
       accessibilityLabel={spend ? `Daily spending in ${month}` : `Balance in ${month}`}
     >
       <View className="flex-row items-center justify-between gap-3">
@@ -109,8 +109,7 @@ export function ActivityChart(props: ActivityChartProps) {
       </View>
       <View>
         <Text
-          variant="screenTitle"
-          className="text-foreground"
+          className="text-[32px] leading-[36px] font-display-bold text-foreground"
           style={{ fontVariant: ['tabular-nums'] }}
         >
           {formatMoney(spend ? spending.spentMinor : latest, currency)}
@@ -140,28 +139,28 @@ export function Legend({ spend, paced }: { spend: boolean; paced: boolean }) {
   const tokens = useThemeTokens();
   return (
     <View className="flex-row items-center justify-between gap-2">
-      <View className="flex-shrink flex-row flex-wrap items-center gap-x-3 gap-y-1">
+      <View className="flex-shrink flex-row flex-wrap items-center gap-x-2.5 gap-y-1">
         {spend && paced ? (
           <>
-            <View className="flex-row items-center gap-1.5">
+            <View className="flex-row items-center gap-1">
               <View className="h-2.5 w-2.5 rounded-[3px] bg-coral" />
-              <Text variant="smallest" className="text-muted">Over even pace</Text>
+              <Text variant="smallest" className="text-ink-2">Over even pace</Text>
             </View>
-            <View className="flex-row items-center gap-1.5">
-              <View className="h-2.5 w-2.5 rounded-[3px] border border-dashed border-foreground" />
-              <Text variant="smallest" className="text-muted">Safe to spend a day</Text>
+            <View className="flex-row items-center gap-1">
+              <View className="h-2.5 w-2.5 rounded-[3px] border-[1.2px] border-dashed border-foreground" />
+              <Text variant="smallest" className="text-ink-2">Safe to spend a day</Text>
             </View>
           </>
         ) : spend ? null : (
-          <View className="flex-row items-center gap-1.5">
-            <View className="h-[3px] w-3.5 rounded-full bg-foreground" />
-            <Text variant="smallest" className="text-muted">Balance</Text>
+          <View className="flex-row items-center gap-1">
+            <View className="h-[3px] w-[15px] rounded-full bg-foreground" />
+            <Text variant="smallest" className="text-ink-2">Balance</Text>
           </View>
         )}
       </View>
       <View className="flex-row items-center gap-1">
-        <IconSymbol name="gesture-tap" size={14} color={tokens.muted} />
-        <Text variant="smallest" className="text-muted">
+        <IconSymbol name="gesture-tap" size={16} color={tokens.muted} />
+        <Text variant="smallest" className="text-ink-2">
           {spend ? 'Tap a bar' : 'Tap or drag'}
         </Text>
       </View>
@@ -171,23 +170,32 @@ export function Legend({ spend, paced }: { spend: boolean; paced: boolean }) {
 
 type PlotProps = ActivityChartProps & { width: number; month: string };
 
+/** A day under the plot: centred on `x`, or `start` from the axis and `end` at the right edge. */
 function XLabel({
   x,
   width,
   label,
   strong,
+  align = 'center',
 }: {
   x: number;
   width: number;
   label: string;
   strong?: boolean;
+  align?: 'start' | 'center' | 'end';
 }) {
-  const left = Math.min(width - 60, Math.max(AXIS - 10, x - 30));
+  const left =
+    align === 'start'
+      ? AXIS
+      : align === 'end'
+        ? width - 60
+        : Math.min(width - 60, Math.max(AXIS - 10, x - 30));
+  const textAlign = align === 'start' ? 'text-left' : align === 'end' ? 'text-right' : 'text-center';
   return (
     <Text
       variant="smallest"
-      className={`absolute w-[60px] text-center ${strong ? 'font-display-semibold text-foreground' : 'text-muted'}`}
-      style={{ left, top: PLOT_H + 4 }}
+      className={`absolute w-[60px] ${textAlign} ${strong ? 'font-display-bold text-foreground' : 'text-muted'}`}
+      style={{ left, top: PLOT_H + 8 }}
       numberOfLines={1}
     >
       {label}
@@ -215,7 +223,7 @@ function Callout({
         left: Math.max(0, Math.min(width - CALLOUT_W, x - CALLOUT_W / 2)),
       }}
     >
-      <Text variant="smallest" className="text-primary-foreground">
+      <Text className="text-[12px] leading-[15px] text-primary-foreground/90">
         {date}
       </Text>
       <Text
@@ -280,11 +288,11 @@ function SpendingPlot({ spending, currency, selectedDay, onSelectDay, width, mon
     .join(' ');
 
   return (
-    <View style={{ height: PLOT_H + 22 }} accessibilityLabel={label}>
+    <View style={{ height: PLOT_H + 24 }} accessibilityLabel={label}>
       {today ? (
         <View
-          className="absolute rounded-[9px] bg-sand-light"
-          style={{ left: barX(days.length - 1) - 4, width: barW + 8, top: TOP - 4, height: BASE - TOP + 4 }}
+          className="absolute rounded-[8px] bg-sand-light"
+          style={{ left: barX(days.length - 1) - 9, width: barW + 18, top: TOP - 4, height: PLOT_H - TOP + 4 }}
         />
       ) : null}
       <Svg width={width} height={PLOT_H} style={{ position: 'absolute' }}>
@@ -430,9 +438,11 @@ export function BalancePlot({
   const hi = Math.max(lo + stepMinor * 2, Math.ceil(max / stepMinor) * stepMinor);
   const BOTTOM = 142;
   const y = (minor: number) => BOTTOM - ((minor - lo) / (hi - lo)) * (BOTTOM - TOP);
-  const left = AXIS + 8;
-  const dx = (width - left - 4) / Math.max(1, daysInMonth - 1);
-  const x = (index: number) => left + index * dx;
+  const gridLeft = AXIS + 4;
+  const gridRight = width - 4;
+  const dx = (gridRight - gridLeft) / Math.max(1, daysInMonth);
+  const x = (index: number) => gridLeft + (index + 1) * dx;
+  const left = x(0);
   const points = days.map((d, i) => `${x(i)},${y(d.balanceMinor)}`).join(' ');
   const last = days.length - 1;
   const area = `M${x(0)},${BOTTOM} L${points.replaceAll(' ', ' L')} L${x(last)},${BOTTOM} Z`;
@@ -471,11 +481,11 @@ export function BalancePlot({
 
   return (
     <GestureDetector gesture={scrub}>
-      <View style={{ height: PLOT_H + 22 }} accessibilityLabel={label}>
+      <View style={{ height: PLOT_H + 24 }} accessibilityLabel={label}>
         <Svg width={width} height={PLOT_H + 8} style={{ position: 'absolute' }}>
-          <Line x1={AXIS + 4} y1={TOP} x2={width} y2={TOP} stroke={tokens.hairline} strokeWidth={1.5} />
-          <Line x1={AXIS + 4} y1={(TOP + BOTTOM) / 2} x2={width} y2={(TOP + BOTTOM) / 2} stroke={tokens.sandLight} strokeWidth={1.5} strokeDasharray="3 5" />
-          <Line x1={AXIS + 4} y1={BOTTOM} x2={width} y2={BOTTOM} stroke={tokens.hairline} strokeWidth={1.5} />
+          <Line x1={gridLeft} y1={TOP} x2={gridRight} y2={TOP} stroke={tokens.hairline} strokeWidth={1.5} />
+          <Line x1={gridLeft} y1={(TOP + BOTTOM) / 2} x2={gridRight} y2={(TOP + BOTTOM) / 2} stroke={tokens.sandLight} strokeWidth={1.5} strokeDasharray="3 5" />
+          <Line x1={gridLeft} y1={BOTTOM} x2={gridRight} y2={BOTTOM} stroke={tokens.hairline} strokeWidth={1.5} />
           <Path d={area} fill={tokens.sand} opacity={0.8} />
           <Polyline
             points={points}
@@ -502,22 +512,24 @@ export function BalancePlot({
         />
         <View
           pointerEvents="none"
-          className="absolute h-3.5 w-3.5 rounded-full border-2 border-card bg-primary"
-          style={{ left: x(at) - 7, top: y(selected.balanceMinor) - 7 }}
-        />
+          className="absolute h-[17px] w-[17px] rounded-full bg-primary p-[1.5px]"
+          style={{ left: x(at) - 8.5, top: y(selected.balanceMinor) - 8.5 }}
+        >
+          <View className="h-3.5 w-3.5 rounded-full border-[3px] border-card bg-primary" />
+        </View>
         <View
           pointerEvents="none"
           className="absolute h-5 w-7 items-center justify-center rounded-full bg-primary"
-          style={{ left: x(at) - 14, top: BOTTOM - 4 }}
+          style={{ left: x(at) - 14, top: BOTTOM - 10 }}
         >
-          <IconSymbol name="arrow-left-right" size={12} color={tokens.primaryForeground} />
+          <IconSymbol name="arrow-left-right" size={14} color={tokens.primaryForeground} />
         </View>
         <AxisLabel y={TOP} label={formatMoney(hi, currency, { whole: true })} />
         <AxisLabel y={(TOP + BOTTOM) / 2} label={formatMoney((hi + lo) / 2, currency, { whole: true })} />
         <AxisLabel y={BOTTOM} label={formatMoney(lo, currency, { whole: true })} />
-        <XLabel width={width} x={x(0)} label={`1 ${month.slice(0, 3)}`} />
+        <XLabel width={width} x={x(0)} label={`1 ${month.slice(0, 3)}`} align="start" />
         {last > 2 && daysInMonth - 1 - last > 2 ? <XLabel width={width} x={x(last)} label="Today" strong /> : null}
-        <XLabel width={width} x={x(daysInMonth - 1)} label={`${daysInMonth} ${month.slice(0, 3)}`} />
+        <XLabel width={width} x={x(daysInMonth - 1)} label={`${daysInMonth} ${month.slice(0, 3)}`} align="end" />
         <Callout
           x={x(at)}
           width={width}
