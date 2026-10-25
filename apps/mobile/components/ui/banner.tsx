@@ -26,8 +26,8 @@ export function Banner({
   const ink = error ? tokens.states.attention : tokens.foreground;
   return (
     <View
-      accessibilityRole="alert"
-      accessibilityLiveRegion="polite"
+      accessibilityRole={error ? 'alert' : undefined}
+      accessibilityLiveRegion={error ? 'assertive' : 'polite'}
       className={`min-h-11 flex-row items-center gap-2.5 rounded-full py-2 pl-4 ${action ? 'pr-2' : 'pr-4'} ${error ? 'bg-attention-fill' : 'bg-sand'} ${className ?? ''}`}
     >
       <IconSymbol

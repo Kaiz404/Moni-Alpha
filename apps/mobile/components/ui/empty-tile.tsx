@@ -4,6 +4,7 @@ import {
   IconSymbol,
   type IconSymbolName,
 } from '@/components/ui/icon-symbol';
+import { Button } from '@/components/ui/button';
 import { Press } from '@/components/ui/press';
 import { Text } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
@@ -22,8 +23,10 @@ type EmptyTileProps = {
   /**
    * `quiet` is the smaller tile for a section that fills in on its own, as
    * V2H-HomeFirstRun draws Recent and bills: Hairline dashes, a 16/600 title.
+   * `notice` is a page's whole empty state on Hairline dashes, as
+   * V2A-NotifLogEmpty draws it: an 18/700 title, all parts 8 apart.
    */
-  tone?: 'default' | 'quiet';
+  tone?: 'default' | 'quiet' | 'notice';
   className?: string;
 };
 
@@ -43,6 +46,14 @@ const looks = {
     title: 'rowTitle',
     body: 'text-[15px] leading-[21px]',
     action: 'pl-3 pr-4',
+    actionIcon: 18,
+  },
+  notice: {
+    frame: 'gap-2 border-hairline p-[18px]',
+    textGap: 8,
+    title: 'cardTitle',
+    body: 'text-[15px] leading-[21px]',
+    action: 'mt-1 pl-3 pr-4',
     actionIcon: 18,
   },
 } as const;
@@ -101,38 +112,57 @@ export function EmptyTile({
   );
 }
 
+/**
+ * A link to something that is gone (V2F-States "Not found"): a 72 Sand
+ * circle, a 22/26 title and a 15/21 body, top-aligned under the header,
+ * then the way out as a primary button 28 below. Back always works.
+ */
 export function NotFound({
   icon,
   title,
   body,
+  action,
 }: {
   icon: IconSymbolName;
   title: string;
   body?: string;
+  action?: { testID: TestId; label: string; onPress: () => void };
 }) {
   const tokens = useThemeTokens();
   return (
     <View
       accessibilityLiveRegion="polite"
-      className="flex-1 items-center justify-center gap-3 px-8"
+      className="gap-7 px-5"
     >
-      <View className="h-14 w-14 items-center justify-center rounded-tile bg-sand">
-        <IconSymbol
-          name={icon}
-          size={24}
-          color={tokens.foreground}
-        />
-      </View>
-      <Text
-        variant="sectionTitle"
-        className="text-center text-foreground"
-      >
-        {title}
-      </Text>
-      {body ? (
-        <Text className="text-center text-[14px] leading-[20px] text-ink-2">
-          {body}
+      <View className="items-center gap-3 px-2 py-7">
+        <View className="h-[72px] w-[72px] items-center justify-center rounded-full bg-sand">
+          <IconSymbol
+            name={icon}
+            size={34}
+            color={tokens.foreground}
+          />
+        </View>
+        <Text
+          variant="sectionTitle"
+          className="text-center text-foreground"
+        >
+          {title}
         </Text>
+        {body ? (
+          <Text
+            variant="body"
+            className="text-center text-ink-2"
+          >
+            {body}
+          </Text>
+        ) : null}
+      </View>
+      {action ? (
+        <Button
+          testID={action.testID}
+          label={action.label}
+          onPress={action.onPress}
+        />
       ) : null}
     </View>
   );

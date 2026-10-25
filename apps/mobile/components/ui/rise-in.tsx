@@ -61,7 +61,14 @@ export function RiseInGroup({
   );
 }
 
-/** One row of a `RiseInGroup`. Reduce Motion fades the rows in together. */
+type Arrival = 'rise' | 'fade' | 'none';
+
+/**
+ * One row of a `RiseInGroup`. On first load the first 6 rise; a row that
+ * arrives later (the next page, new data) fades in alone with no rise, as
+ * V2F-States draws older spends arriving. Reduce Motion fades the first
+ * rows in together.
+ */
 export function RiseIn({
   index,
   children,
@@ -71,33 +78,38 @@ export function RiseIn({
 }) {
   const entrance = useContext(EntranceContext);
   const reduceMotion = useReducedMotion();
-  const [rises] = useState(
-    () =>
-      entrance !== null &&
-      index < MAX_RISING &&
-      Date.now() - entrance.mountedAt < FIRST_LOAD_WINDOW_MS,
-  );
-  const shown = useSharedValue(rises ? 0 : 1);
-  const settled = useSharedValue(rises && !reduceMotion ? 0 : 1);
+  const [arrival] = useState<Arrival>(() => {
+    if (entrance === null) return 'none';
+    if (Date.now() - entrance.mountedAt >= FIRST_LOAD_WINDOW_MS)
+      return 'fade';
+    return index < MAX_RISING ? 'rise' : 'none';
+  });
+  const rises = arrival === 'rise' && !reduceMotion;
+  const shown = useSharedValue(arrival === 'none' ? 1 : 0);
+  const settled = useSharedValue(rises ? 0 : 1);
 
   useEffect(() => {
-    if (!rises || !entrance) return;
+    if (arrival === 'none' || !entrance) return;
+    if (arrival === 'fade') {
+      shown.set(withTiming(1, FADE));
+      return;
+    }
     const delay = reduceMotion
       ? entrance.delay
       : entrance.delay + index * entrance.stagger;
     shown.set(withDelay(delay, withTiming(1, FADE)));
-    if (!reduceMotion) {
+    if (rises) {
       settled.set(
         withDelay(delay, withSpring(1, springs[entrance.spring])),
       );
     }
-  }, [entrance, index, reduceMotion, rises, settled, shown]);
+  }, [arrival, entrance, index, reduceMotion, rises, settled, shown]);
 
   const style = useAnimatedStyle(() => ({
     opacity: shown.get(),
     transform: [{ translateY: RISE * (1 - settled.get()) }],
   }));
 
-  if (!rises) return children;
+  if (arrival === 'none') return children;
   return <Animated.View style={style}>{children}</Animated.View>;
 }

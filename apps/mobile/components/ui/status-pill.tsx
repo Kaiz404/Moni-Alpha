@@ -40,16 +40,19 @@ export function StatusPill({
   tone,
   label,
   variant = 'standalone',
+  small = false,
 }: {
   tone: StatusTone;
   label: string;
   variant?: 'inline' | 'standalone';
+  /** A standalone pill 28 tall instead of 30, as XM-Detail draws it. */
+  small?: boolean;
 }) {
   const look = tones[tone];
   if (variant === 'inline') {
     return (
       <View
-        className={`h-5 justify-center rounded-full px-2 ${look.fill}`}
+        className={`min-h-5 justify-center rounded-full px-2 ${look.fill}`}
       >
         <Text
           className={`text-[12px] leading-[16px] font-display-bold ${look.text}`}
@@ -61,7 +64,7 @@ export function StatusPill({
   }
   return (
     <View
-      className={`h-[30px] flex-row items-center gap-[7px] self-start rounded-full px-3 ${look.fill}`}
+      className={`${small ? 'min-h-7' : 'min-h-[30px]'} flex-row items-center gap-[7px] self-start rounded-full px-3 ${look.fill}`}
     >
       <View className={`h-1.5 w-1.5 rounded-full ${look.dot}`} />
       <Text

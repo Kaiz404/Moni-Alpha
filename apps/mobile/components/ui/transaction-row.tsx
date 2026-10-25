@@ -51,6 +51,12 @@ export function rowAmount(row: TransactionRowData): string {
     : formatSignedMoney(row.kind, row.amountMinor, row.currency);
 }
 
+/** The pill a row shows first in its meta, read aloud with the row. */
+function rowPill(row: TransactionRowData): string | null {
+  if (row.kind === 'pending') return 'To review';
+  return row.autoAdded ? 'Auto' : null;
+}
+
 const amountTone: Record<TransactionRowData['kind'], string> = {
   expense: 'text-foreground',
   income: 'text-deep-mint',
@@ -76,7 +82,9 @@ export function TransactionRow({
     >
       <Press
         testID={testID}
-        accessibilityLabel={`${row.title}, ${meta}, ${amount}`}
+        accessibilityLabel={[row.title, rowPill(row), meta, amount]
+          .filter(Boolean)
+          .join(', ')}
         accessibilityActions={
           hold
             ? [{ name: 'quickActions', label: 'Quick actions' }]
@@ -117,7 +125,7 @@ export function TransactionRowBody({
   amount: string;
 }) {
   return (
-    <View className="h-[66px] flex-row items-center gap-3.5 px-[18px]">
+    <View className="min-h-[66px] flex-row items-center gap-3.5 px-[18px] py-3">
       <RowBubble row={row} />
       <View className="min-w-0 flex-1">
         <Text

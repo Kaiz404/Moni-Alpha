@@ -93,7 +93,6 @@ function ToastCapsule({ toast }: { toast: ShownToast }) {
     <Animated.View
       exiting={FadeOut.duration(150)}
       accessibilityLiveRegion="polite"
-      accessibilityRole="alert"
       className={`min-h-14 flex-row items-center gap-2.5 rounded-full bg-primary py-1.5 pl-[18px] ${toast.undo ? 'pr-1.5' : 'pr-[18px]'}`}
       style={[SHADOW, rise]}
     >
@@ -121,8 +120,9 @@ function ToastCapsule({ toast }: { toast: ShownToast }) {
           testID={tid('nav', 'toast', 'undo')}
           accessibilityLabel="Undo"
           onPress={undoToast}
+          radius={{ rest: 22, pressed: 16 }}
           pressedClassName="bg-ink-2"
-          className="h-11 flex-row items-center gap-1.5 rounded-full bg-primary-pressed px-4"
+          className="h-11 flex-row items-center gap-1.5 bg-primary-pressed px-4"
         >
           <IconSymbol
             name="undo"
