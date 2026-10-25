@@ -14,6 +14,14 @@ export const transactionSourceSchema = z.enum([
   'camera',
 ]);
 
+/** The bank alert a notification capture came from: its text as sent, and the amount Moni read from it. */
+export const transactionAlertSchema = z.object({
+  text: z.string().max(1000),
+  amountMinor: positiveMinorAmountSchema,
+  currency: currencyCodeSchema,
+});
+export type TransactionAlert = z.infer<typeof transactionAlertSchema>;
+
 // Transaction metadata schema
 export const transactionMetadataSchema = z
   .object({
@@ -23,6 +31,7 @@ export const transactionMetadataSchema = z
     source: transactionSourceSchema.optional(),
     /** A wallet balance fix; always paired with analysisExcluded. */
     kind: z.literal('balance_correction').optional(),
+    alert: transactionAlertSchema.optional(),
   })
   .passthrough(); // Allow additional properties for future use
 
