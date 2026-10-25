@@ -15,9 +15,9 @@ export function CategorySpark({ totals, color }: { totals: number[]; color: stri
   const area = `M2,${H} L${line.replaceAll(' ', ' L')} L${last[0].toFixed(1)},${H} Z`;
   return (
     <Svg width={W} height={H} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
-      <Path d={area} fill={color ?? tokens.sand} opacity={0.6} />
-      <Polyline points={line} fill="none" stroke={tokens.ink2} strokeWidth={1.5} strokeLinejoin="round" />
-      <Circle cx={last[0]} cy={last[1]} r={2.5} fill={tokens.foreground} />
+      <Path d={area} fill={color ?? tokens.sand} fillOpacity={0.55} />
+      <Polyline points={line} fill="none" stroke={tokens.ink2} strokeWidth={1.5} strokeLinejoin="round" strokeLinecap="round" />
+      <Circle cx={last[0]} cy={last[1]} r={3} fill={tokens.foreground} stroke={tokens.card} strokeWidth={1.5} />
     </Svg>
   );
 }

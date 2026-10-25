@@ -3,6 +3,7 @@ import { router } from 'expo-router';
 import { useEffect, useState, type ReactNode } from 'react';
 import { Alert, ScrollView, View } from 'react-native';
 
+import { CategoryBubble } from '@/components/categories/category-bubble';
 import { CategorySpark } from '@/components/categories/category-spark';
 import { HeaderIconButton } from '@/components/ui/header-icon-button';
 import { IconSymbol } from '@/components/ui/icon-symbol';
@@ -35,12 +36,21 @@ function dayOf(key: string): Date {
   const [year, month, day] = key.split('-').map(Number);
   return new Date(year, month - 1, day);
 }
-type Category = Pick<FinanceCategory, 'id' | 'name' | 'icon' | 'color' | 'type'>;
+type Category = Pick<FinanceCategory, 'id' | 'userId' | 'name' | 'icon' | 'color' | 'type'>;
 
 const KINDS = [
   { value: 'expense', label: 'Expenses' },
   { value: 'income', label: 'Income' },
 ] as const;
+
+function Bubble({ category }: { category: Category }) {
+  const icon = resolveTransactionIcon(category.icon, category.type ?? 'expense');
+  return category.userId && category.color ? (
+    <CategoryBubble icon={icon} color={category.color} />
+  ) : (
+    <TintBubble icon={icon} color={category.color} />
+  );
+}
 
 function Row({
   category,
@@ -55,17 +65,14 @@ function Row({
 }) {
   const body = (
     <>
-      <TintBubble
-        icon={resolveTransactionIcon(category.icon, category.type ?? 'expense')}
-        color={category.color}
-      />
+      <Bubble category={category} />
       <View className="min-w-0 flex-1">
         <Text variant="rowTitle" className="text-foreground" numberOfLines={1}>
           {category.name}
         </Text>
         <Text
           variant="meta"
-          className="text-muted"
+          className={category.userId ? 'text-muted' : 'text-ink-2'}
           numberOfLines={1}
           style={{ fontVariant: ['tabular-nums'] }}
         >
@@ -89,6 +96,47 @@ function Row({
     <View className={className} accessibilityLabel={`${category.name}, ${meta}`}>
       {body}
     </View>
+  );
+}
+
+function ArchivedRow({
+  category,
+  onRestore,
+}: {
+  category: Category;
+  onRestore: () => void;
+}) {
+  const tokens = useThemeTokens();
+  return (
+    <View className="h-14 flex-row items-center gap-3 pl-3.5 pr-2">
+      <View className="opacity-60">
+        <Bubble category={category} />
+      </View>
+      <Text variant="rowTitle" className="min-w-0 flex-1 text-ink-2" numberOfLines={1}>
+        {category.name}
+      </Text>
+      <Press
+        testID={tid('activity', 'categories', 'restore', category.id)}
+        accessibilityLabel={`Restore ${category.name}`}
+        onPress={onRestore}
+        radius={{ rest: 22, pressed: 16 }}
+        pressedClassName="bg-hairline"
+        className="h-11 flex-row items-center gap-1.5 bg-sand px-3.5"
+      >
+        <IconSymbol name="restore" size={18} color={tokens.foreground} />
+        <Text className="text-[14px] leading-[19px] font-display-semibold text-foreground">
+          Restore
+        </Text>
+      </Press>
+    </View>
+  );
+}
+
+function SectionLabel({ children }: { children: string }) {
+  return (
+    <Text variant="caps" className="text-ink-2" accessibilityRole="header">
+      {children}
+    </Text>
   );
 }
 
@@ -124,7 +172,7 @@ export default function CategoriesScreen() {
 
   const presetMeta = (category: Category) => {
     const amount = formatMoney(spent(category), currency);
-    if (kind === 'income') return amount;
+    if (kind === 'income') return `${amount} this month`;
     const budget = progress.find(
       (row) =>
         row.categoryId === category.id &&
@@ -147,6 +195,12 @@ export default function CategoriesScreen() {
 
   const edit = (id: string) =>
     router.push({ pathname: '/categories/form', params: { id } });
+  const open = (categoryId: string) =>
+    router.push({ pathname: '/budget/[categoryId]', params: { categoryId } });
+  const restore = (id: string) =>
+    void restoreCategory(id).catch((error: unknown) =>
+      Alert.alert('Not saved', error instanceof Error ? error.message : 'Try again.'),
+    );
   const create = () =>
     router.push({ pathname: '/categories/form', params: { type: kind } });
 
@@ -164,7 +218,7 @@ export default function CategoriesScreen() {
         />
       }
     >
-      <ScrollView contentContainerClassName="gap-section px-screen pb-8">
+      <ScrollView contentContainerClassName="gap-3 px-screen pb-10">
         <Segmented
           screen="activity"
           name="categories-kind"
@@ -174,10 +228,10 @@ export default function CategoriesScreen() {
           accessibilityLabel="Category type"
         />
 
-        <View className="gap-2.5">
-          <Text variant="caps" className="pl-1 text-muted" accessibilityRole="header">
-            Yours
-          </Text>
+        <View className="gap-1.5">
+          <View className="px-1.5">
+            <SectionLabel>Yours</SectionLabel>
+          </View>
           {mine.length ? (
             <ListCard>
               {mine.map((category) => (
@@ -194,10 +248,10 @@ export default function CategoriesScreen() {
               testID={tid('activity', 'categories', 'make-one')}
               onPress={create}
               pressedClassName="bg-sand-light"
-              className="min-h-[56px] flex-row items-center gap-2 rounded-tile border-[1.5px] border-dashed border-hairline px-[18px]"
+              className="flex-row items-center gap-2 rounded-tile border-[1.5px] border-dashed border-hairline px-4 py-3.5"
             >
               <IconSymbol name="plus" size={20} color={tokens.foreground} />
-              <Text className="flex-1 text-[15px] leading-[21px] font-display-semibold text-foreground">
+              <Text className="min-w-0 flex-1 text-[15px] leading-[21px] font-display-semibold text-foreground">
                 {"Make one for anything the presets don't fit"}
               </Text>
             </Press>
@@ -205,14 +259,12 @@ export default function CategoriesScreen() {
         </View>
 
         {presets.length ? (
-          <View className="gap-2.5">
-            <View className="flex-row items-center justify-between pl-1">
-              <Text variant="caps" className="text-muted" accessibilityRole="header">
-                {`Presets · since ${since}`}
-              </Text>
+          <View className="gap-1.5">
+            <View className="flex-row items-center justify-between px-1.5">
+              <SectionLabel>{`Presets · since ${since}`}</SectionLabel>
               <View className="flex-row items-center gap-1">
-                <IconSymbol name="lock-outline" size={14} color={tokens.muted} />
-                <Text variant="smallest" className="text-muted">
+                <IconSymbol name="lock-outline" size={16} color={tokens.muted} />
+                <Text variant="meta" className="text-muted">
                   Fixed for everyone
                 </Text>
               </View>
@@ -223,6 +275,7 @@ export default function CategoriesScreen() {
                   key={category.id}
                   category={category}
                   meta={presetMeta(category)}
+                  onPress={kind === 'expense' ? () => open(category.id) : undefined}
                   trailing={
                     <CategorySpark
                       totals={months[category.id] ?? [0, 0]}
@@ -236,38 +289,16 @@ export default function CategoriesScreen() {
         ) : null}
 
         {archived.length ? (
-          <View className="gap-2.5">
-            <Text variant="caps" className="pl-1 text-muted" accessibilityRole="header">
-              Archived · hidden from new transactions
-            </Text>
-            <View className="overflow-hidden rounded-card border-[1.5px] border-dashed border-hairline">
+          <View className="gap-1.5">
+            <View className="px-1.5">
+              <SectionLabel>Archived · hidden from new transactions</SectionLabel>
+            </View>
+            <View className="overflow-hidden rounded-tile border-[1.5px] border-hairline py-1">
               {archived.map((category) => (
-                <Row
+                <ArchivedRow
                   key={category.id}
                   category={category}
-                  meta="Archived"
-                  trailing={
-                    <Press
-                      testID={tid('activity', 'categories', 'restore', category.id)}
-                      accessibilityLabel={`Restore ${category.name}`}
-                      onPress={() =>
-                        void restoreCategory(category.id).catch((error: unknown) =>
-                          Alert.alert(
-                            'Not saved',
-                            error instanceof Error ? error.message : 'Try again.',
-                          ),
-                        )
-                      }
-                      radius={{ rest: 22, pressed: 16 }}
-                      pressedClassName="bg-hairline"
-                      className="h-11 flex-row items-center gap-1.5 bg-sand px-4"
-                    >
-                      <IconSymbol name="restore" size={18} color={tokens.foreground} />
-                      <Text className="text-[15px] leading-[21px] font-display-semibold text-foreground">
-                        Restore
-                      </Text>
-                    </Press>
-                  }
+                  onRestore={() => restore(category.id)}
                 />
               ))}
             </View>
