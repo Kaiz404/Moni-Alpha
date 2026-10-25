@@ -16,7 +16,7 @@
     "check-types": "node scripts/gen-route-types.mjs && tsc --noEmit",
     "format": "prettier --write \"**/*.{ts,tsx}\"",
     "format:check": "prettier --check \"**/*.{ts,tsx}\"",
-    "test": "node --test \"scripts/lint/*.test.mjs\" && jest --runInBand",
+    "test": "node --test \"scripts/lint/*.test.mjs\" \"scripts/e2e/*.test.mjs\" && jest --runInBand",
     "bench:chat": "jest --runInBand lib/ai/chat/__tests__/chat-bench.test.ts",
     "bench:chat:live": "node ./scripts/chat-bench-live.mjs",
     "test:notification-detection": "node ./scripts/notification-detection-suite.mjs",

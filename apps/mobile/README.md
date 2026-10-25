@@ -113,12 +113,28 @@ apps/mobile/scripts/device/with-device.sh --pr v3 --lane smoke -- apps/mobile/sc
 ```
 
 - `build-apk.sh [--clean-prebuild] [--allow-main]` builds the arm64 release APK and copies it to `~/.cache/moni-apk/<key>/app-release.apk` with a `build.json` that records the SHA, the byte count, and the build seconds. The key is the `HEAD` SHA, or `<sha>-dirty-<hash>` when `apps/mobile`, `packages`, or the lockfile has changes. A key that is already cached with the same env returns at once. The script runs `expo prebuild --clean` only when the Expo native fingerprint differs from the one saved in `android/.moni-fingerprint`, so a JS-only change goes straight to Gradle. It refuses to run in the main checkout, where prebuild would rewrite your `android/` folder, unless you pass `--allow-main`. It exits 3 on that refusal.
-- The build reads `.env.e2e`, then `.env`, from this worktree and then from the main checkout, and the first value it reads for a key wins. `EXPO_PUBLIC_AI_API_URL` defaults to empty, so the e2e app uses the mock AI client. Copy `.env.e2e.example` to `.env.e2e` to point the build at the e2e Supabase project. Until that project exists, the build uses the project in `.env`.
+- The build reads `.env.e2e`, then `.env`, from this worktree and then from the main checkout, and the first value it reads for a key wins. `EXPO_PUBLIC_AI_API_URL` defaults to empty, so the e2e app uses the mock AI client. The main checkout's `.env.e2e` holds the dev project's keys and the e2e user, per `.env.e2e.example`.
 - In the e2e build, `app.config.ts` sets `extra.appVariant` to `e2e`, and `isE2eBuild()` in `lib/app-variant.ts` reads it. The mock AI client (`lib/ai/client/mock.ts`) then answers the inputs in `lib/ai/client/mock-fixtures.ts` with fixed results: the sentence "paid 6 ringgit parking at KLCC" (Say it and chat), any scanned image (the mamak receipt in `.maestro/fixtures/`), a Maybank "You've spent RM… at …" alert, and "How much on Transport this month" in chat. Other input, and every input in the daily build, stays `unavailable`. `lib/ai/client/__tests__/mock.test.ts` checks both builds.
 - `install.sh <key>` installs only `com.anonymous.moni.e2e` and exits 3 for any other package. It skips the install when `/data/local/tmp/moni-e2e.sha` on the phone already holds the key, then grants each of the camera, microphone, location, and notification permissions that the APK requests. The app does not request `POST_NOTIFICATIONS` today, so the script skips it. It exits 4 when `adb install` fails or takes longer than `MONI_INSTALL_TIMEOUT` seconds, default 300. The first install of a new package can wait on a **Google Play Protect** "Send app for a security check?" dialog or an **Install via USB** prompt, and only the person holding the phone can answer it.
 - `perf.sh --sha <key> [--flow <flow.yaml>] [--out perf.json] [--runs 10]` installs the key, then writes `coldStartMs`, the median `TotalTime` of `am start -W` after `am force-stop`, with `apkBytes` and `bundleBytes`. With `--flow`, it also runs the Maestro flow and records `jankyPct`, `p50Ms`, `p90Ms`, and `p95Ms` from `dumpsys gfxinfo`. It exits 7 when the battery is above 40 C.
 - `perf-compare.mjs base.json head.json --rule <metric>=<limit>` prints one line per metric and exits 1 when a rule fails. A limit of `N` caps the head value, `+N` caps the increase, and `+N%` caps the increase relative to the base.
 - `screenrecord.sh <seconds> <out.mp4>` records the screen for up to 180 s and pulls the MP4.
+
+### E2E data
+
+The e2e app signs in as one dedicated user, `E2E_EMAIL` in `.env.e2e`, on the dev Supabase project `yucjcjquwpwkgowzthhn`. That project has no real users, and the owner chose it over a separate e2e project. `scripts/e2e/seed.mjs` resets that user's data:
+
+```bash
+node apps/mobile/scripts/e2e/seed.mjs --reset --profile full    # or --profile empty
+node apps/mobile/scripts/e2e/seed.mjs --query pending-proposals # counts, user, wallets, latest-transaction, debts, bills
+```
+
+- `--reset` creates the user with a confirmed email, or resets its password to `E2E_PASSWORD`. It then deletes every row that user owns in the synced tables, children first, writes the profile, and prints the row counts before and after. A second run prints the same counts. It touches only the user whose `E2E_EMAIL` starts with `e2e`, and it exits 2 for any other address, before any request.
+- `--profile empty` writes no rows, for the first-run screens. `--profile full` writes the canvas sample from `scripts/e2e/fixtures.mjs`: four wallets (three MYR, Wise in USD) at the board balances, about 46 transactions with merchants and places, six budgets and a Groceries category, three bills with two months of payments, three debts, one auto-add rule, four merchant names, and four pending captures, one per source type. Every sample date moves by the days between Wed 14 Oct 2026 and today in Kuala Lumpur, so the relative days match the boards. Row ids derive from the user id, so a reseed writes the same ids.
+- Maybank links `com.android.shell`, so `adb shell cmd notification post` acts as a Maybank alert.
+- The capture log lives on the phone, in MMKV, so the seed cannot write it. Clearing the app's data empties it.
+- `--query <name>` prints one read-only query as JSON. Every query reads only the e2e user's rows.
+- `node --test "apps/mobile/scripts/e2e/*.test.mjs"` checks the date shift, the balances, the Review order, the merchant keys, the ids, and the guard, with no network. `pnpm --filter moni test` runs it.
 
 ## Map
 
