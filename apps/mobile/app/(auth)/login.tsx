@@ -206,9 +206,14 @@ export default function LoginScreen() {
               </Press>
             }
           />
-          {wrong ? <LoginError message={WRONG_DETAILS} /> : null}
-          {status.kind === 'failed' ? (
-            <LoginError message={status.message} />
+          {wrong || status.kind === 'failed' ? (
+            <View className="-mt-2">
+              <LoginError
+                message={
+                  status.kind === 'failed' ? status.message : WRONG_DETAILS
+                }
+              />
+            </View>
           ) : null}
           <Button
             testID={tid('auth', creating ? 'create-account' : 'sign-in')}
