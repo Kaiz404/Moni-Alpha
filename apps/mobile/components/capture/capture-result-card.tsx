@@ -5,13 +5,13 @@ import { useEffect, useState } from 'react';
 import { ScrollView, View } from 'react-native';
 
 import { FieldBubble } from '@/components/capture/field-bubble';
-import { InPlaceField } from '@/components/capture/in-place-field';
 import { CategoryIcon } from '@/components/categories/category-icon';
 import { Button } from '@/components/ui/button';
 import {
   IconSymbol,
   type IconSymbolName,
 } from '@/components/ui/icon-symbol';
+import { InPlaceField, InPlaceGroup } from '@/components/ui/in-place-field';
 import { Page } from '@/components/ui/page';
 import { PickerField } from '@/components/ui/picker-field';
 import { Text } from '@/components/ui/text';
@@ -34,7 +34,6 @@ import {
   formatSignedMoney,
 } from '@/lib/finance/format-money';
 import { useMainCurrency } from '@/lib/finance/main-currency';
-import { parseAmountInput } from '@/lib/finance/money';
 import {
   budgetProgress$,
   categoriesForUser$,
@@ -43,7 +42,7 @@ import {
 import { toCategoryTiles } from '@/lib/sheet/category-tiles';
 import { openSheet } from '@/lib/sheet/sheet-store';
 import { ensureFinanceTimezone } from '@/lib/supabase/profile';
-import { tid } from '@/lib/test-ids';
+import { tid, type TestId } from '@/lib/test-ids';
 
 type CaptureResultProps = {
   quote: CaptureQuote;
@@ -72,7 +71,7 @@ export function CaptureResult({
   const userId = user?.id ?? null;
   const tokens = useThemeTokens();
   const currency = useMainCurrency();
-  const [editing, setEditing] = useState<'name' | 'amount' | null>(null);
+  const [editing, setEditing] = useState<TestId | null>(null);
   const wallets = useValue(walletsForUser$(userId)).filter(
     (wallet) => wallet.currency === currency,
   );
@@ -165,6 +164,10 @@ export function CaptureResult({
       kind="task"
       title="Check and approve"
     >
+      <InPlaceGroup
+        editing={editing}
+        onEditingChange={setEditing}
+      >
       <ScrollView
         className="flex-1"
         contentContainerClassName="gap-2 px-5 pb-3"
@@ -208,57 +211,47 @@ export function CaptureResult({
           )}
           <View className="min-w-0 flex-1 gap-0.5">
             <InPlaceField
-              screen="capture"
-              name="shop"
+              testID={tid('capture', 'shop')}
               label="Shop"
-              keyboard="text"
-              draft={draft.merchant}
-              editing={editing === 'name'}
-              onEditingChange={(on) => setEditing(on ? 'name' : null)}
-              onSave={(text) => {
-                if (!text.trim()) return false;
-                onEdit({ merchant: text.trim() });
-                return true;
-              }}
+              kind="text"
+              required
+              value={draft.merchant}
+              onSave={(merchant) => onEdit({ merchant })}
             >
-              <Text
-                variant="sectionTitle"
-                className="text-foreground"
-                numberOfLines={1}
-              >
-                {draft.merchant || 'Add a shop'}
-              </Text>
+              {({ editable, editor }) =>
+                editor ?? (
+                  <>
+                    {editable(
+                      <Text
+                        variant="sectionTitle"
+                        className="text-foreground"
+                        numberOfLines={1}
+                      >
+                        {draft.merchant || 'Add a shop'}
+                      </Text>,
+                    )}
+                    <Text
+                      variant="meta"
+                      className="text-muted"
+                    >
+                      {voice
+                        ? `${dayAndTime(draft.transactionDate)} · Voice`
+                        : 'Receipt'}
+                    </Text>
+                  </>
+                )
+              }
             </InPlaceField>
-            {editing === 'name' ? null : (
-              <Text
-                variant="meta"
-                className="text-muted"
-              >
-                {voice
-                  ? `${dayAndTime(draft.transactionDate)} · Voice`
-                  : 'Receipt'}
-              </Text>
-            )}
           </View>
         </View>
         <View className="py-2">
           <InPlaceField
-            screen="capture"
-            name="amount"
+            testID={tid('capture', 'amount')}
             label="Amount"
-            keyboard="amount"
+            kind="amount"
             prefix={`${draft.kind === 'expense' ? '−' : '+'}${currencySymbol(currency)}`}
-            draft={(draft.amountMinor / 100).toFixed(2)}
-            editing={editing === 'amount'}
-            onEditingChange={(on) => setEditing(on ? 'amount' : null)}
-            onSave={(text) => {
-              try {
-                onEdit({ amountMinor: parseAmountInput(text) });
-                return true;
-              } catch {
-                return false;
-              }
-            }}
+            value={draft.amountMinor > 0 ? draft.amountMinor : null}
+            onSave={(amountMinor) => onEdit({ amountMinor })}
           >
             <Text
               testID={tid('capture', 'result', 'amount')}
@@ -347,6 +340,7 @@ export function CaptureResult({
           </View>
         </View>
       </ScrollView>
+      </InPlaceGroup>
       <View className="flex-row gap-2 px-5 pb-3">
         <Button
           testID={tid('capture', 'again')}
