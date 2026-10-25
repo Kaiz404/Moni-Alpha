@@ -47,7 +47,12 @@ ANDROID_GOOGLE_MAPS_API_KEY=<android-maps-key>
 
 ### `apps/mobile/.env.e2e`
 
-Optional. The e2e APK that `apps/mobile/scripts/device/build-apk.sh` builds reads this file before `.env`, and a key that this file leaves out comes from `.env`. Copy `apps/mobile/.env.e2e.example` and put the `moni-e2e` Supabase project's URL and keys in it. Keep `EXPO_PUBLIC_AI_API_URL` empty, so the e2e app uses the mock AI client.
+The e2e APK (`apps/mobile/scripts/device/build-apk.sh`), the e2e seed (`apps/mobile/scripts/e2e/seed.mjs`), and `apps/mobile/scripts/device/run-flows.sh` read this file. Keep it in the main checkout, because the scripts read the worktree's copy, then the main checkout's, then `.env`. Copy `apps/mobile/.env.e2e.example` and fill in:
+
+- `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY` for the dev project `yucjcjquwpwkgowzthhn`, which holds the e2e data.
+- `SUPABASE_SECRET_KEY`, for the seed only. Read it with `npx supabase projects api-keys --project-ref yucjcjquwpwkgowzthhn --reveal`. The app never receives it, because Expo inlines only `EXPO_PUBLIC_` variables.
+- `E2E_EMAIL` and `E2E_PASSWORD`, the one e2e user. The address must start with `e2e`. The first `seed.mjs --reset` creates the user.
+- `EXPO_PUBLIC_AI_API_URL` left empty, so the e2e app uses the mock AI client and its fixtures.
 
 ### `apps/web/.env`
 
@@ -98,7 +103,7 @@ Verify with `adb devices` (`device`, not `no permissions`). Some OEMs (e.g. Xiao
 
 ### Phone over Tailscale
 
-The device scripts in `apps/mobile/scripts/device/` reach the phone over Tailscale. Day-to-day use is in [apps/mobile/README.md § Drive the phone over Tailscale](../apps/mobile/README.md#drive-the-phone-over-tailscale).
+The device scripts in `apps/mobile/scripts/device/` reach the phone over Tailscale. Day-to-day use is in [apps/mobile/README.md § Drive the phone over Tailscale](../apps/mobile/README.md#drive-the-phone-over-tailscale). Agents follow the `moni-device` skill in `.claude/skills/moni-device/SKILL.md`.
 
 In WSL, install these tools:
 
@@ -114,6 +119,7 @@ On the phone, do these steps once:
 2. In **Wireless debugging**, tap **Pair device with pairing code**. In WSL, run `adb pair <ip>:<pairing-port>` with the address the dialog shows, then enter the code.
 3. In the Tailscale app, set battery use to **No restrictions** and turn on **Autostart**.
 4. In the Tailscale admin console, turn on **Send files** so `taildrop.sh` works.
+5. In **Developer options**, turn on **Stay awake**, so the screen stays on while the phone charges and does not lock during a Maestro run.
 
 After each reboot, or each time Wireless debugging turns on again, Android picks a new port. Turn on **Wireless debugging**, read the port, and run `apps/mobile/scripts/device/connect.sh 100.127.128.74:<port>`.
 

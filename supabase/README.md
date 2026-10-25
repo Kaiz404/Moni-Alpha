@@ -32,3 +32,5 @@ Bucket `receipts` — receipt images at `{userId}/{proposalId}.jpg`, policies re
 ## Seeded data
 
 18 system categories (`user_id IS NULL`) from the initial schema; profile rows auto-created on signup by trigger.
+
+The linked project `yucjcjquwpwkgowzthhn` is the dev project. It also holds the e2e user (`E2E_EMAIL` in `apps/mobile/.env.e2e`), whose rows `apps/mobile/scripts/e2e/seed.mjs` resets. See [apps/mobile/README.md § E2E data](../apps/mobile/README.md#e2e-data).
