@@ -1,10 +1,5 @@
 import { useValue } from '@legendapp/state/react';
-import {
-  decimalToMinor,
-  minorToNumber,
-  type MinorAmount,
-  type UpdateTransaction,
-} from '@repo/types';
+import type { UpdateTransaction } from '@repo/types';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { Alert, ScrollView, View } from 'react-native';
@@ -22,12 +17,13 @@ import {
   transactionSource,
   type Tile,
 } from '@/components/transaction/detail-tiles';
+import { Button } from '@/components/ui/button';
+import { NotFound } from '@/components/ui/empty-tile';
 import {
   InPlaceField,
   InPlaceGroup,
-} from '@/components/transaction/in-place-field';
-import { Button } from '@/components/ui/button';
-import { NotFound } from '@/components/ui/empty-tile';
+  type Saved,
+} from '@/components/ui/in-place-field';
 import { Page } from '@/components/ui/page';
 import { Text } from '@/components/ui/text';
 import { TintBubble } from '@/components/ui/transaction-row';
@@ -87,19 +83,23 @@ function notSaved(error: unknown) {
   );
 }
 
+async function update(
+  id: string,
+  change: UpdateTransaction,
+  previous: UpdateTransaction,
+): Promise<Saved> {
+  await updateTransaction(id, change);
+  return { undo: () => void updateTransaction(id, previous).catch(notSaved) };
+}
+
 function saveWithUndo(
   id: string,
   label: string,
   change: UpdateTransaction,
   previous: UpdateTransaction,
 ) {
-  updateTransaction(id, change)
-    .then(() =>
-      showToast({
-        text: `${label} saved`,
-        undo: () => void updateTransaction(id, previous).catch(notSaved),
-      }),
-    )
+  update(id, change, previous)
+    .then(({ undo }) => showToast({ text: `${label} saved`, undo }))
     .catch(notSaved);
 }
 
@@ -166,7 +166,6 @@ function Detail({ transaction: tx }: { transaction: FinanceTransaction }) {
       tx.description ??
       category?.name ??
       'Transaction');
-  const amount = minorToNumber(tx.amountMinor);
   const sign = tx.type === 'expense' ? '−' : tx.type === 'income' ? '+' : '';
   const thisMonth =
     toLocalDateInput(new Date(tx.transactionDate)).slice(0, 7) ===
@@ -222,32 +221,17 @@ function Detail({ transaction: tx }: { transaction: FinanceTransaction }) {
         cardStyleId: w.cardStyleId,
       }));
 
-  const saveName = (next: string) => {
+  const saveName = async (next: string): Promise<Saved | void> => {
+    if (next === title) return;
     const key = alert ? merchantKey(tx.merchant) : null;
     if (key) {
       const previous = title;
-      nameMerchant(key, next)
-        .then(() =>
-          showToast({
-            text: 'Name saved',
-            undo: () => void nameMerchant(key, previous).catch(notSaved),
-          }),
-        )
-        .catch(notSaved);
-    } else if (transfer)
-      saveWithUndo(
-        tx.id,
-        'Name',
-        { description: next },
-        { description: tx.description },
-      );
-    else
-      saveWithUndo(
-        tx.id,
-        'Name',
-        { merchant: next },
-        { merchant: tx.merchant },
-      );
+      await nameMerchant(key, next);
+      return { undo: () => void nameMerchant(key, previous).catch(notSaved) };
+    }
+    return transfer
+      ? update(tx.id, { description: next }, { description: tx.description })
+      : update(tx.id, { merchant: next }, { merchant: tx.merchant });
   };
 
   const pickCategory = async () => {
@@ -480,10 +464,10 @@ function Detail({ transaction: tx }: { transaction: FinanceTransaction }) {
                 </Text>
               ) : (
               <InPlaceField
-                screen="txn"
-                name="merchant"
-                label={alert ? 'merchant name' : 'name'}
-                kind="name"
+                testID={tid('txn', 'merchant')}
+                label="Name"
+                kind="text"
+                required
                 value={title}
                 maxLength={40}
                 hint={
@@ -518,20 +502,16 @@ function Detail({ transaction: tx }: { transaction: FinanceTransaction }) {
           </View>
 
           <InPlaceField
-            screen="txn"
-            name="amount"
-            label="amount"
+            testID={tid('txn', 'amount')}
+            label="Amount"
             kind="amount"
             prefix={`${sign}${currencySymbol(tx.currency)}`}
-            value={amount}
+            value={tx.amountMinor}
             hint={tx.currency}
             onSave={(value) =>
-              saveWithUndo(
-                tx.id,
-                'Amount',
-                { amountMinor: decimalToMinor(value.toFixed(2)) as MinorAmount },
-                { amountMinor: tx.amountMinor },
-              )
+              value === tx.amountMinor
+                ? undefined
+                : update(tx.id, { amountMinor: value }, { amountMinor: tx.amountMinor })
             }
           >
             <Text
@@ -563,29 +543,30 @@ function Detail({ transaction: tx }: { transaction: FinanceTransaction }) {
               Note
             </Text>
             <InPlaceField
-              screen="txn"
-              name="note"
-              label="note"
+              testID={tid('txn', 'note')}
+              label="Note"
               kind="note"
               value={tx.notes ?? ''}
-              pencil={Boolean(tx.notes)}
               maxLength={1000}
               placeholder="Who it was with, what it was for"
               onSave={(value) =>
-                saveWithUndo(
-                  tx.id,
-                  'Note',
-                  { notes: value || null },
-                  { notes: tx.notes },
-                )
+                value === (tx.notes ?? '')
+                  ? undefined
+                  : update(tx.id, { notes: value || null }, { notes: tx.notes })
               }
             >
-              <Text
-                variant="body"
-                className={tx.notes ? 'text-foreground' : 'text-muted'}
-              >
-                {tx.notes || 'Add a note: who it was with, what it was for'}
-              </Text>
+              {({ editable, editor }) =>
+                editor ??
+                editable(
+                  <Text
+                    variant="body"
+                    className={tx.notes ? 'text-foreground' : 'text-muted'}
+                  >
+                    {tx.notes || 'Add a note: who it was with, what it was for'}
+                  </Text>,
+                  { pencil: Boolean(tx.notes) },
+                )
+              }
             </InPlaceField>
           </View>
 

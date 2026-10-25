@@ -25,7 +25,14 @@ function kebab(part: string | number): string {
     .toLowerCase();
 }
 
-/** Maestro selects controls by these ids: `tid('home', 'recent', 'row', id)` is `home.recent.row.<id>`. */
-export function tid(screen: Screen, part: string | number, ...rest: (string | number)[]): TestId {
+/**
+ * Maestro selects controls by these ids: `tid('home', 'recent', 'row', id)` is `home.recent.row.<id>`.
+ * A component handed a `testID` names its parts from it: `tid(testID, 'save')`.
+ */
+export function tid(
+  screen: Screen | TestId,
+  part: string | number,
+  ...rest: (string | number)[]
+): TestId {
   return `${screen}.${[part, ...rest].map(kebab).join('.')}`;
 }

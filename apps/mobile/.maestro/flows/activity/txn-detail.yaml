@@ -20,7 +20,7 @@ tags:
     index: 0
 - assertVisible: Transaction
 - assertVisible:
-    id: txn.amount.pencil
+    id: txn.amount.edit
 - assertVisible:
     id: txn.tile.category
 - assertVisible:
@@ -31,7 +31,7 @@ tags:
 - takeScreenshot: a2-detail
 
 - tapOn:
-    id: txn.note.value
+    id: txn.note.edit
 - inputText: With Mei
 - tapOn:
     id: txn.note.save

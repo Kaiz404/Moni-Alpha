@@ -19,10 +19,10 @@ tags:
     index: 0
 - extendedWaitUntil:
     visible:
-      id: txn.amount.value
+      id: txn.amount.edit
     timeout: 5000
 - tapOn:
-    id: txn.amount.pencil
+    id: txn.amount.edit
 - extendedWaitUntil:
     visible:
       id: txn.amount.input

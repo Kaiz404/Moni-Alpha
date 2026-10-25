@@ -20,7 +20,7 @@ tags:
     index: 0
 
 - tapOn:
-    id: txn.amount.pencil
+    id: txn.amount.edit
 - assertVisible:
     id: txn.amount.input
 - takeScreenshot: a2-amount-editing
@@ -35,7 +35,7 @@ tags:
 - assertNotVisible: '−RM18.20'
 
 - tapOn:
-    id: txn.merchant.pencil
+    id: txn.merchant.edit
 - eraseText: 40
 - inputText: Not this name
 - hideKeyboard
