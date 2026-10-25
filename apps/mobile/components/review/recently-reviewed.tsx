@@ -23,6 +23,7 @@ import { listMerchantAliases } from '@/lib/supabase/merchant-aliases';
 import {
   listRecentlyReviewed,
   proposalSource,
+  type RejectedProposal,
   type ReviewedProposal,
 } from '@/lib/supabase/proposed-transactions';
 import { tid } from '@/lib/test-ids';
@@ -33,13 +34,14 @@ type Lookups = RowLookups & {
   transactionsById: Record<string, FinanceTransaction>;
 };
 
-/** One decision in Recently reviewed. An approved row opens its ledger row while it exists. */
+/** `gone`: approved, but its ledger row has since been deleted, so there is nothing to open. */
 export type HistoryRow =
   | { kind: 'approved'; id: string; transactionId: string; row: TransactionRowData; meta: string }
+  | { kind: 'gone'; id: string; title: string; meta: string; amount: string }
   | {
-      kind: 'gone' | 'notMine';
+      kind: 'notMine';
       id: string;
-      proposal: ReviewedProposal;
+      proposal: RejectedProposal;
       title: string;
       meta: string;
       amount: string;
@@ -64,10 +66,8 @@ function historyRow(proposal: ReviewedProposal, lookups: Lookups, now: Date): Hi
   }
   const direction =
     proposal.type === 'income' ? 'income' : proposal.type === 'transfer' ? 'transfer' : 'expense';
-  return {
-    kind: proposal.status === 'rejected' ? 'notMine' : 'gone',
+  const shown = {
     id: proposal.id,
-    proposal,
     title:
       merchantName(proposal.merchant, lookups.aliases) ??
       proposal.description ??
@@ -75,9 +75,11 @@ function historyRow(proposal: ReviewedProposal, lookups: Lookups, now: Date): Hi
     meta,
     amount: formatSignedMoney(direction, proposal.amountMinor ?? 0, proposal.currency),
   };
+  return proposal.status === 'rejected'
+    ? { kind: 'notMine', ...shown, proposal: { ...proposal, status: 'rejected' } }
+    : { kind: 'gone', ...shown };
 }
 
-/** Decisions grouped by the local day they were made, newest day first. */
 export function historyGroups(
   reviewed: readonly ReviewedProposal[],
   lookups: Lookups,
@@ -97,7 +99,6 @@ export function historyGroups(
   return [...groups.values()];
 }
 
-/** Recently reviewed for the signed-in user, live. */
 export function useRecentlyReviewed(): HistoryGroup[] {
   const { user } = useAuth();
   const userId = user?.id ?? null;
@@ -200,7 +201,7 @@ function HistoryItem({
   onMoveBack,
 }: {
   item: HistoryRow;
-  onMoveBack: (proposal: ReviewedProposal) => void;
+  onMoveBack: (proposal: RejectedProposal) => void;
 }) {
   if (item.kind === 'approved') {
     const amount = rowAmount(item.row);
@@ -247,14 +248,13 @@ function HistoryItem({
   );
 }
 
-/** The last 30 days of Approve and Not mine, one card per day. */
 export function RecentlyReviewed({
   groups,
   onMoveBack,
   heading = true,
 }: {
   groups: readonly HistoryGroup[];
-  onMoveBack: (proposal: ReviewedProposal) => void;
+  onMoveBack: (proposal: RejectedProposal) => void;
   heading?: boolean;
 }) {
   if (!groups.length) return null;
@@ -290,7 +290,6 @@ export function RecentlyReviewed({
   );
 }
 
-/** Folds Recently reviewed under the deck while captures still wait. */
 export function HistoryToggle({
   count,
   open,

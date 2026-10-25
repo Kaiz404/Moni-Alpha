@@ -19,7 +19,7 @@ import {
   isOpenProposal,
   laterProposedTransaction,
   rejectProposedTransaction,
-  type ReviewedProposal,
+  type RejectedProposal,
 } from '@/lib/supabase/proposed-transactions';
 import { deleteTransaction } from '@/lib/supabase/transactions';
 
@@ -37,7 +37,7 @@ export type ReviewEdits = {
   similar?: boolean;
 };
 
-/** The proposed_transactions row as stored, kept so Undo can put back a soft-deleted one. */
+/** The proposed_transactions row as stored, kept so Undo can put it back. */
 export type ProposalRowSnapshot = Record<string, unknown> & { id: string };
 
 /** Everything Undo needs. Plain JSON, so a notification can carry it. */
@@ -171,7 +171,6 @@ export async function dontAskAboutSimilar(outcome: ApprovedOutcome): Promise<App
   return { ...outcome, ruleAdded: await addSimilarRule(outcome.proposal) };
 }
 
-/** Stamps the capture `rejected`; it stays in Recently reviewed (D6). */
 export async function notMine(proposal: ProposedTransaction): Promise<ReviewResult> {
   const row = openRow(proposal.id);
   if (!row) return { status: 'error', message: 'This capture was already reviewed.' };
@@ -218,10 +217,9 @@ function restoreRow(row: ProposalRowSnapshot): void {
   emitProposedTransactionsChanged();
 }
 
-/** "Move back to review" on a Not mine row of Recently reviewed. */
-export function moveBackToReview(proposal: ReviewedProposal): void {
+export function moveBackToReview(proposal: RejectedProposal): void {
   const row = proposedTransactions$[proposal.id].peek() as ProposalRowSnapshot | undefined;
-  if (row && proposal.status === 'rejected') restoreRow(row);
+  if (row) restoreRow(row);
 }
 
 async function removeSimilarRule(proposal: ProposedTransaction): Promise<void> {

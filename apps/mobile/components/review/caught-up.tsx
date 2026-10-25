@@ -35,7 +35,6 @@ function CaptureLogLink({ onPress }: { onPress: () => void }) {
   );
 }
 
-/** This session's counts. The decisions themselves are listed in Recently reviewed below. */
 export function CaughtUp({
   sentence,
   onCaptureLog,

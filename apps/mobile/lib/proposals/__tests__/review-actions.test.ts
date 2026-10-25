@@ -222,23 +222,14 @@ describe('Not mine', () => {
     };
     await notMine(seed('p2'));
     const [reviewed] = listRecentlyReviewed();
+    if (reviewed?.status !== 'rejected') throw new Error('expected a Not mine row');
     markCaptureStatus.mockClear();
 
-    moveBackToReview(reviewed);
+    moveBackToReview({ ...reviewed, status: 'rejected' });
 
     expect(listAwaitingReview(NOW).map((p) => p.id)).toEqual(['p2']);
     expect(listRecentlyReviewed()).toEqual([]);
     expect(markCaptureStatus.mock.calls).toEqual([['p2', 'waiting_for_review']]);
-  });
-
-  it('Move back to review leaves an approved capture alone', async () => {
-    await approve(seed('p1'));
-    const [reviewed] = listRecentlyReviewed();
-
-    moveBackToReview(reviewed);
-
-    expect(listAwaitingReview(NOW)).toEqual([]);
-    expect(ledger()).toHaveLength(1);
   });
 });
 

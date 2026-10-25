@@ -84,7 +84,7 @@ import { toCategoryTiles } from '@/lib/sheet/category-tiles';
 import { openSheet, type WalletOption } from '@/lib/sheet/sheet-store';
 import { listMerchantAliases } from '@/lib/supabase/merchant-aliases';
 import { ensureFinanceTimezone } from '@/lib/supabase/profile';
-import { listAwaitingReview, type ReviewedProposal } from '@/lib/supabase/proposed-transactions';
+import { listAwaitingReview, type RejectedProposal } from '@/lib/supabase/proposed-transactions';
 import { tid } from '@/lib/test-ids';
 import { showToast } from '@/lib/toast/toast-store';
 import { getDefaultWalletId } from '@/lib/wallets/default-wallet';
@@ -154,7 +154,6 @@ export function useReviewSession(firstId: string | undefined) {
     setQueue((current) => current.filter((p) => p.id !== id));
   }, []);
 
-  /** Undo, or Move back to review: the capture goes back on top of the deck. */
   const reopen = useCallback((proposal: ProposedTransaction) => {
     decided.current.delete(proposal.id);
     setResults((all) => all.filter((o) => o.proposal.id !== proposal.id));
@@ -341,7 +340,7 @@ export function ReviewDeck({ session }: { session: ReviewSession }) {
   const history = useRecentlyReviewed();
   const [historyOpen, setHistoryOpen] = useState(false);
   const moveBack = useCallback(
-    (proposal: ReviewedProposal) => {
+    (proposal: RejectedProposal) => {
       moveBackToReview(proposal);
       const reopened = listAwaitingReview(END_OF_TIME).find((p) => p.id === proposal.id);
       if (reopened) reopen(reopened);

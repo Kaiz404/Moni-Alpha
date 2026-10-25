@@ -1,6 +1,4 @@
--- Review keeps reviewed proposals as history: Approve and Not mine stamp reviewed_at (and, for
--- Approve, the ledger row it created) instead of soft-deleting the row. The app soft-deletes rows
--- reviewed more than 90 days ago.
+-- The app soft-deletes rows reviewed more than 90 days ago (pruneReviewHistory).
 ALTER TABLE public.proposed_transactions
   ADD COLUMN reviewed_at TIMESTAMPTZ,
   ADD COLUMN transaction_id UUID REFERENCES public.transactions(id) ON DELETE SET NULL;

@@ -62,15 +62,12 @@ const TRANSACTION_SOURCE_BY_PROPOSAL_SOURCE: Record<
   image: 'camera',
 };
 
-/** The Source an approved capture gets on its ledger row. */
 export function proposalSource(sourceType: ProposedTransactionSourceType): TransactionSource {
   return TRANSACTION_SOURCE_BY_PROPOSAL_SOURCE[sourceType];
 }
 
 const DAY_MS = 86_400_000;
-/** Review lists this many days of Approve and Not mine decisions. */
 export const REVIEW_HISTORY_DAYS = 30;
-/** Decisions older than this are soft-deleted. */
 export const REVIEW_RETENTION_DAYS = 90;
 
 function rowToProposedTransaction(row: ProposedRow): ProposedTransaction {
@@ -116,7 +113,6 @@ function isReviewableRow(row: ProposedRow): boolean {
   }
 }
 
-/** Pending and Later captures wait for a decision; Approve and Not mine leave review history. */
 export function isUnreviewed(proposal: Pick<ProposedTransaction, 'status'>): boolean {
   return proposal.status === 'pending' || proposal.status === 'later';
 }
@@ -125,6 +121,7 @@ export type ReviewedProposal = ProposedTransaction & {
   status: 'approved' | 'rejected';
   reviewedAt: string;
 };
+export type RejectedProposal = ReviewedProposal & { status: 'rejected' };
 
 function asReviewed(proposal: ProposedTransaction): ReviewedProposal | null {
   const { status, reviewedAt } = proposal;
@@ -149,13 +146,12 @@ function readReviewedProposals(): ReviewedProposal[] {
   return readProposals().flatMap((proposal) => asReviewed(proposal) ?? []);
 }
 
-/** The capture exists and has no decision yet. */
 export function isOpenProposal(id: string): boolean {
   const row = proposedTransactions$[id].peek() as ProposedRow | undefined;
   return !!row && !row.deleted && isUnreviewed(rowToProposedTransaction(row));
 }
 
-/** Approve and Not mine decisions of the last 30 days, newest first. Safe in a reactive selector. */
+/** Safe in a reactive selector. */
 export function listRecentlyReviewed(now = new Date()): ReviewedProposal[] {
   const since = now.getTime() - REVIEW_HISTORY_DAYS * DAY_MS;
   return readReviewedProposals()
@@ -163,7 +159,6 @@ export function listRecentlyReviewed(now = new Date()): ReviewedProposal[] {
     .sort((a, b) => Date.parse(b.reviewedAt) - Date.parse(a.reviewedAt));
 }
 
-/** Soft-deletes decisions made more than 90 days ago. A second run finds nothing to do. */
 export function pruneReviewHistory(now = new Date()): number {
   const before = now.getTime() - REVIEW_RETENTION_DAYS * DAY_MS;
   const old = readReviewedProposals().filter(
@@ -307,10 +302,7 @@ export async function rejectProposedTransaction(id: string): Promise<void> {
   closeProposal(rowToProposedTransaction(row), 'rejected');
 }
 
-/**
- * Stamps the decision and keeps the row as review history. Until the review_history migration
- * is pushed the row has nowhere to keep `reviewed_at`, so it is soft-deleted as before.
- */
+/** Before review_history is pushed there is no reviewed_at column, so the row is soft-deleted. */
 function closeProposal(
   proposal: Pick<ProposedTransaction, 'id' | 'sourceType'>,
   status: 'approved' | 'rejected',

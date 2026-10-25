@@ -26,7 +26,6 @@ tags:
     visible: 1 not mine
     timeout: 3000
 
-# With captures still waiting, the history is one folded control under the deck buttons.
 - runFlow:
     when:
       visible:
@@ -48,7 +47,6 @@ tags:
             id: review.card
           timeout: 3000
 
-# Clear the rest of the queue with Approve, picking a wallet when one is missing.
 - repeat:
     while:
       visible:
