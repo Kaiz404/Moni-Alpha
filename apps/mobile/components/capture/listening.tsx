@@ -15,7 +15,6 @@ import { CapturePill } from '@/components/capture/capture-pill';
 import { Button } from '@/components/ui/button';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Page } from '@/components/ui/page';
-import { StatusPill } from '@/components/ui/status-pill';
 import { Text } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { tid } from '@/lib/test-ids';
@@ -171,17 +170,17 @@ export function SayDenied({ onTurnOn }: { onTurnOn: () => void }) {
       kind="task"
       title="Say it"
     >
-      <View className="flex-1 items-center gap-3 px-8 pt-24">
+      <View className="flex-1 items-center gap-3 px-7 pt-24">
         <View className="h-20 w-20 items-center justify-center rounded-full bg-sand">
           <IconSymbol
             name="microphone-off"
-            size={32}
+            size={38}
             color={tokens.foreground}
           />
         </View>
         <Text
           variant="sectionTitle"
-          className="pt-2 text-center text-foreground"
+          className="text-center text-foreground"
         >
           {"Moni can't hear you yet"}
         </Text>
@@ -193,12 +192,9 @@ export function SayDenied({ onTurnOn }: { onTurnOn: () => void }) {
             "Turn on microphone access to say a transaction. Speech becomes text on this phone, and the recording isn't kept."
           }
         </Text>
-        <StatusPill
-          tone="near"
-          label="Microphone is off for Moni"
-        />
+        <CapturePill tone="attention" label="Microphone is off for Moni" />
       </View>
-      <View className="gap-2 px-5 pb-3">
+      <View className="gap-2.5 px-5 pb-3">
         <Button
           testID={tid('capture', 'turn-on-mic')}
           pinned
