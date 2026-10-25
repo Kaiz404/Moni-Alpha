@@ -4,11 +4,13 @@ import { ScrollView, View } from 'react-native';
 import { MerchantRow, type MerchantSection } from '@/components/merchants/merchant-row';
 import { useMerchantNames, type MerchantRow as MerchantRowData } from '@/components/merchants/use-merchant-names';
 import { IconSymbol } from '@/components/ui/icon-symbol';
+import { InPlaceGroup, type Saved } from '@/components/ui/in-place-field';
 import { ListSection } from '@/components/ui/list-card';
 import { Page } from '@/components/ui/page';
 import { Text } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { forgetMerchantName, nameMerchant } from '@/lib/supabase/merchant-aliases';
+import type { TestId } from '@/lib/test-ids';
 import { showToast } from '@/lib/toast/toast-store';
 
 function failed(error: unknown) {
@@ -18,21 +20,15 @@ function failed(error: unknown) {
 export default function MerchantsScreen() {
   const tokens = useThemeTokens();
   const { toName, named } = useMerchantNames();
-  const [editing, setEditing] = useState<string | null>(null);
+  const [editing, setEditing] = useState<TestId | null>(null);
   const [risen, setRisen] = useState<string | null>(null);
 
-  const save = async (row: MerchantRowData, name: string) => {
-    setEditing(null);
+  const save = async (row: MerchantRowData, name: string): Promise<Saved | void> => {
     if (name === row.name) return;
     const previous = row.name;
-    try {
-      await nameMerchant(row.key, name);
-    } catch (error) {
-      failed(error);
-      return;
-    }
+    await nameMerchant(row.key, name);
     setRisen(row.key);
-    showToast({
+    return {
       text: `${row.raw} is now ${name}`,
       undo: () => {
         setRisen(row.key);
@@ -40,7 +36,7 @@ export default function MerchantsScreen() {
           failed,
         );
       },
-    });
+    };
   };
 
   const forget = async (row: MerchantRowData) => {
@@ -70,15 +66,8 @@ export default function MerchantsScreen() {
         key={row.key}
         row={row}
         section={section}
-        editing={editing === row.key}
-        locked={editing !== null}
         rises={risen === row.key}
-        onEdit={() => {
-          setRisen(null);
-          setEditing(row.key);
-        }}
-        onCancel={() => setEditing(null)}
-        onSave={(name) => void save(row, name)}
+        onSave={(name) => save(row, name)}
         onForget={() => void forget(row)}
       />
     ));
@@ -89,6 +78,13 @@ export default function MerchantsScreen() {
       kind="pushed"
       title="Merchant names"
     >
+      <InPlaceGroup
+        editing={editing}
+        onEditingChange={(id) => {
+          if (id) setRisen(null);
+          setEditing(id);
+        }}
+      >
       <ScrollView
         className="flex-1"
         contentContainerClassName="gap-5 px-5 pb-10"
@@ -125,6 +121,7 @@ export default function MerchantsScreen() {
           <ListSection label={`Named · ${named.length}`}>{rows(named, 'named')}</ListSection>
         ) : null}
       </ScrollView>
+      </InPlaceGroup>
     </Page>
   );
 }
