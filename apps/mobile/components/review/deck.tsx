@@ -9,7 +9,7 @@ import {
   useRef,
   useState,
 } from 'react';
-import { ActivityIndicator, View, type LayoutChangeEvent } from 'react-native';
+import { ActivityIndicator, ScrollView, View, type LayoutChangeEvent } from 'react-native';
 import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
 import Animated, {
   Extrapolation,
@@ -21,8 +21,14 @@ import Animated, {
 } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
 
-import { CaughtUp, NothingToReview, type SessionRow } from '@/components/review/caught-up';
+import { CaughtUp, NothingToReview } from '@/components/review/caught-up';
 import { EdgeCues } from '@/components/review/edge-cues';
+import {
+  HistoryToggle,
+  RecentlyReviewed,
+  historyCount,
+  useRecentlyReviewed,
+} from '@/components/review/recently-reviewed';
 import { budgetLine } from '@/components/review/result-pill';
 import {
   ReviewCard,
@@ -54,6 +60,7 @@ import {
   approve,
   duplicateOf,
   later,
+  moveBackToReview,
   notMine,
   undo,
   type ReviewEdits,
@@ -77,10 +84,9 @@ import { toCategoryTiles } from '@/lib/sheet/category-tiles';
 import { openSheet, type WalletOption } from '@/lib/sheet/sheet-store';
 import { listMerchantAliases } from '@/lib/supabase/merchant-aliases';
 import { ensureFinanceTimezone } from '@/lib/supabase/profile';
-import { listAwaitingReview } from '@/lib/supabase/proposed-transactions';
+import { listAwaitingReview, type ReviewedProposal } from '@/lib/supabase/proposed-transactions';
 import { tid } from '@/lib/test-ids';
 import { showToast } from '@/lib/toast/toast-store';
-import { resolveTransactionIcon } from '@/lib/transactions/icon';
 import { getDefaultWalletId } from '@/lib/wallets/default-wallet';
 import { resolveInitialWalletId } from '@/lib/wallets/proposal-wallet';
 
@@ -117,8 +123,8 @@ function reconcile(
 }
 
 /**
- * The deck's cards and this session's results (D6: memory only). The card for `firstId`
- * goes first; a capture that arrives while the page is open joins the back.
+ * The deck's cards and this session's results, for the All caught up sentence. The card for
+ * `firstId` goes first; a capture that arrives while the page is open joins the back.
  */
 export function useReviewSession(firstId: string | undefined) {
   const live = useSelector(() => {
@@ -148,19 +154,20 @@ export function useReviewSession(firstId: string | undefined) {
     setQueue((current) => current.filter((p) => p.id !== id));
   }, []);
 
-  const restore = useCallback((outcome: ReviewOutcome) => {
-    const id = outcome.proposal.id;
-    decided.current.delete(id);
-    setResults((all) => all.filter((o) => o.proposal.id !== id));
-    setQueue((current) => [outcome.proposal, ...current.filter((p) => p.id !== id)]);
+  /** Undo, or Move back to review: the capture goes back on top of the deck. */
+  const reopen = useCallback((proposal: ProposedTransaction) => {
+    decided.current.delete(proposal.id);
+    setResults((all) => all.filter((o) => o.proposal.id !== proposal.id));
+    setQueue((current) => [proposal, ...current.filter((p) => p.id !== proposal.id)]);
   }, []);
+  const restore = useCallback((outcome: ReviewOutcome) => reopen(outcome.proposal), [reopen]);
 
   /** The card flying out stays in the deck after its row leaves the store, until it is gone. */
   const setLeaving = useCallback((id: string | null) => {
     leaving.current = id;
   }, []);
 
-  return { queue, results, setLeaving, decide, remove, restore };
+  return { queue, results, setLeaving, decide, remove, restore, reopen };
 }
 
 export type ReviewSession = ReturnType<typeof useReviewSession>;
@@ -330,7 +337,19 @@ export function ReviewDeck({ session }: { session: ReviewSession }) {
       .catch(() => {});
   }, []);
 
-  const { queue, results, setLeaving, decide, remove, restore } = session;
+  const { queue, results, setLeaving, decide, remove, restore, reopen } = session;
+  const history = useRecentlyReviewed();
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const moveBack = useCallback(
+    (proposal: ReviewedProposal) => {
+      moveBackToReview(proposal);
+      const reopened = listAwaitingReview(END_OF_TIME).find((p) => p.id === proposal.id);
+      if (reopened) reopen(reopened);
+      setHistoryOpen(false);
+      showToast({ text: 'Moved back to review' });
+    },
+    [reopen],
+  );
   const top = queue[0];
   const [edits, setEdits] = useState<Record<string, ReviewEdits>>({});
   const [duplicates, setDuplicates] = useState<Record<string, DuplicateMatch | null>>({});
@@ -690,12 +709,18 @@ export function ReviewDeck({ session }: { session: ReviewSession }) {
   }, [top, edits, send, setEdit, pickCategory, pickWallet]);
 
   if (!top) {
-    const decidedRows = results.filter((o) => o.action !== 'later');
+    const recentlyReviewed = (
+      <RecentlyReviewed
+        groups={history}
+        onMoveBack={moveBack}
+      />
+    );
     if (!results.length) {
       return (
-        <View className="px-5 pt-2">
+        <ScrollView contentContainerClassName="gap-section px-5 pb-8 pt-2">
           <NothingToReview onCaptureLog={() => router.push('/capture-log')} />
-        </View>
+          {recentlyReviewed}
+        </ScrollView>
       );
     }
     const approved = results.filter((o) => o.action === 'approve');
@@ -711,45 +736,46 @@ export function ReviewDeck({ session }: { session: ReviewSession }) {
       ...(laterCount ? [`${laterCount} for later`] : []),
     ].join(', ');
     const sentence = `${counts}. ${added > 0 ? `${formatMoney(added as MinorAmount, mainCurrency)} now counts in ${month}.` : `Nothing new in ${month}.`}`;
-    const rows: SessionRow[] = decidedRows.map((o) => {
-      const category = categories.find((c) => c.id === o.proposal.categoryId);
-      const ok = o.action === 'approve';
-      return {
-        id: o.proposal.id,
-        title: displayName(o.proposal, {}, lookups),
-        meta: ok
-          ? `${category?.name ?? 'No category'}${o.ruleAdded ? ' · Auto from now' : ''}`
-          : 'Not mine',
-        amountText: formatSignedMoney(
-          o.proposal.type === 'income' ? 'income' : o.proposal.type === 'transfer' ? 'transfer' : 'expense',
-          o.proposal.amountMinor ?? 0,
-          o.proposal.currency,
-        ),
-        icon: ok ? resolveTransactionIcon(category?.icon, o.proposal.type ?? 'expense') : 'close',
-        color: ok ? (category?.color ?? null) : null,
-        struck: !ok,
-      };
-    });
     return (
-      <View className="gap-3 px-5 pt-2">
-        <CaughtUp
-          sentence={sentence}
-          rows={rows}
-          onCaptureLog={() => router.push('/capture-log')}
+      <ScrollView contentContainerClassName="gap-section px-5 pb-8 pt-2">
+        <View className="gap-3">
+          <CaughtUp
+            sentence={sentence}
+            onCaptureLog={() => router.push('/capture-log')}
+          />
+          <Press
+            testID={tid('review', 'home')}
+            onPress={() => router.dismissTo('/')}
+            accessibilityLabel="Back to Home"
+            radius={{ rest: 26, pressed: 16 }}
+            pressedClassName="bg-primary-pressed"
+            className="h-[52px] items-center justify-center bg-primary"
+          >
+            <Text className="text-[15px] leading-[21px] font-display-semibold text-primary-foreground">
+              Back to Home
+            </Text>
+          </Press>
+        </View>
+        {recentlyReviewed}
+      </ScrollView>
+    );
+  }
+
+  const reviewedCount = historyCount(history);
+  if (historyOpen) {
+    return (
+      <ScrollView contentContainerClassName="gap-section px-5 pb-8 pt-2">
+        <HistoryToggle
+          count={reviewedCount}
+          open
+          onPress={() => setHistoryOpen(false)}
         />
-        <Press
-          testID={tid('review', 'home')}
-          onPress={() => router.dismissTo('/')}
-          accessibilityLabel="Back to Home"
-          radius={{ rest: 26, pressed: 16 }}
-          pressedClassName="bg-primary-pressed"
-          className="h-[52px] items-center justify-center bg-primary"
-        >
-          <Text className="text-[15px] leading-[21px] font-display-semibold text-primary-foreground">
-            Back to Home
-          </Text>
-        </Press>
-      </View>
+        <RecentlyReviewed
+          groups={history}
+          onMoveBack={moveBack}
+          heading={false}
+        />
+      </ScrollView>
     );
   }
 
@@ -852,6 +878,13 @@ export function ReviewDeck({ session }: { session: ReviewSession }) {
             onPress={() => press('approve')}
           />
         </View>
+        {reviewedCount ? (
+          <HistoryToggle
+            count={reviewedCount}
+            open={false}
+            onPress={() => setHistoryOpen(true)}
+          />
+        ) : null}
       </View>
     </GestureHandlerRootView>
   );

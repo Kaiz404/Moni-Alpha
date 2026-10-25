@@ -1,0 +1,93 @@
+# G4 Review history: Recently reviewed folds under the deck, lists the decisions under All caught up,
+# and Move back to review returns a Not mine card to the deck.
+# Needs a signed-in e2e build with at least two pending captures, and the review_history migration
+# pushed (without it decisions are soft-deleted and the list stays empty).
+# Run: scripts/device/with-device.sh --lane g4 -- maestro test .maestro/flows/review/history.yaml
+appId: com.anonymous.moni.e2e
+name: G4 Review history
+tags:
+  - g4
+  - needs-pending-proposals
+---
+- launchApp
+- extendedWaitUntil:
+    visible:
+      id: home.avatar
+    timeout: 15000
+- openLink: moni-e2e://review
+- extendedWaitUntil:
+    visible:
+      id: review.card
+    timeout: 10000
+
+- tapOn:
+    id: review.not-mine
+- extendedWaitUntil:
+    visible: 1 not mine
+    timeout: 3000
+
+# With captures still waiting, the history is one folded control under the deck buttons.
+- runFlow:
+    when:
+      visible:
+        id: review.card
+    commands:
+      - assertVisible:
+          id: review.history.toggle
+      - takeScreenshot: g4-history-folded
+      - tapOn:
+          id: review.history.toggle
+      - assertNotVisible:
+          id: review.card
+      - assertVisible: Not mine
+      - takeScreenshot: g4-history-open
+      - tapOn:
+          id: review.history.toggle
+      - extendedWaitUntil:
+          visible:
+            id: review.card
+          timeout: 3000
+
+# Clear the rest of the queue with Approve, picking a wallet when one is missing.
+- repeat:
+    while:
+      visible:
+        id: review.card
+    commands:
+      - runFlow:
+          when:
+            visible: Needs a wallet
+          commands:
+            - tapOn:
+                id: review.approve
+            - tapOn:
+                id: 'sheet\.option\..*'
+                index: 0
+      - tapOn:
+          id: review.approve
+      - extendedWaitUntil:
+          visible: 'Approved .*'
+          timeout: 3000
+
+- extendedWaitUntil:
+    visible: All caught up
+    timeout: 5000
+- scrollUntilVisible:
+    element: Recently reviewed
+    direction: DOWN
+- assertVisible: 'Today · .*'
+- takeScreenshot: g4-history-caught-up
+
+- scrollUntilVisible:
+    element:
+      id: 'review\.history\..*\.move-back'
+    direction: DOWN
+- tapOn:
+    id: 'review\.history\..*\.move-back'
+    index: 0
+- extendedWaitUntil:
+    visible:
+      id: review.card
+    timeout: 3000
+- assertVisible: Moved back to review
+- takeScreenshot: g4-history-moved-back

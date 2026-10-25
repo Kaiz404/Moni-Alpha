@@ -1,13 +1,15 @@
 import 'react-native-gesture-handler/jestSetup';
 import type { Observable } from '@legendapp/state';
+import type { CurrencyCode, MinorAmount } from '@repo/types';
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
 import type React from 'react';
+import { Text } from 'react-native';
 
 import ReviewScreen from '@/app/review';
 import { financeProjection$ } from '@/lib/finance/projection';
 import { EMPTY_FINANCE_PROJECTION } from '@/lib/finance/types';
 import { getOpenSheet } from '@/lib/sheet/sheet-store';
-import { dismissToast, undoToast } from '@/lib/toast/toast-store';
+import { dismissToast, undoToast, useToast } from '@/lib/toast/toast-store';
 import { financeWallet } from '@/lib/wallets/__tests__/balance-fixture';
 
 let mockNextId = 0;
@@ -233,5 +235,121 @@ describe('Review deck', () => {
     await show(<ReviewScreen />);
     expect(screen.getByText('Nothing to review')).toBeTruthy();
     expect(screen.getByText('0 left')).toBeTruthy();
+  });
+});
+
+describe('Recently reviewed', () => {
+  const { router } = jest.requireMock('expo-router') as { router: { push: jest.Mock } };
+  const hoursAgo = (hours: number) => new Date(Date.now() - hours * 3_600_000).toISOString();
+
+  function ToastText() {
+    const toast = useToast();
+    return toast ? <Text>{toast.text}</Text> : null;
+  }
+
+  function reviewed(id: string, over: Record<string, unknown>) {
+    seed(id, { created_at: hoursAgo(30), transaction_date: hoursAgo(30), ...over });
+  }
+
+  it('lists the decisions under All caught up, and Move back to review puts a Not mine card back', async () => {
+    seed('p1');
+    seed('p2', { merchant: 'JAYA GROCER', amount: '86.40', created_at: '2020-01-01T00:00:00.000Z' });
+    await show(
+      <>
+        <ReviewScreen />
+        <ToastText />
+      </>,
+    );
+
+    await act(async () => fireEvent.press(screen.getByTestId('review.approve')));
+    await act(async () => fireEvent.press(screen.getByTestId('review.not-mine')));
+
+    expect(screen.getByText('Recently reviewed')).toBeTruthy();
+    expect(screen.getByText(/^Today · /)).toBeTruthy();
+    expect(screen.getByText('Not mine')).toBeTruthy();
+    expect(screen.getByText('−RM86.40')).toBeTruthy();
+    expect(screen.queryByTestId('review.history.p1.move-back')).toBeNull();
+
+    await act(async () => fireEvent.press(screen.getByTestId('review.history.p2.move-back')));
+
+    expect(store.proposedTransactions$.p2.peek()).toMatchObject({
+      status: 'pending',
+      reviewed_at: null,
+    });
+    expect(screen.getByText('JAYA GROCER')).toBeTruthy();
+    expect(screen.getByText('2 of 2')).toBeTruthy();
+    expect(screen.getByText('Moved back to review')).toBeTruthy();
+  });
+
+  it('opens the transaction an approved row created, with its source as the meta', async () => {
+    reviewed('ok', { status: 'approved', reviewed_at: hoursAgo(26), transaction_id: 't1' });
+    reviewed('no', {
+      status: 'rejected',
+      reviewed_at: hoursAgo(25),
+      merchant: 'KEDAI ABC',
+      source_type: 'text',
+    });
+    financeProjection$.transactionsById.set({
+      t1: {
+        id: 't1',
+        userId: 'user-1',
+        walletId: MAYBANK,
+        amountMinor: 1250 as MinorAmount,
+        currency: 'MYR' as CurrencyCode,
+        type: 'expense',
+        analysisExcluded: false,
+        debtActivityId: null,
+        categoryId: FOOD,
+        transferToWalletId: null,
+        linkedTransactionId: null,
+        description: null,
+        merchant: 'GRAB',
+        notes: null,
+        transactionDate: hoursAgo(30),
+        locationLatitude: null,
+        locationLongitude: null,
+        locationName: null,
+        autoAdded: false,
+        balanceCorrection: false,
+        createdAt: hoursAgo(30),
+      },
+    });
+    await show(<ReviewScreen />);
+
+    expect(screen.getByText('Nothing to review')).toBeTruthy();
+    expect(screen.getByText(/^Yesterday · /)).toBeTruthy();
+    expect(screen.getByText('−RM12.50')).toBeTruthy();
+    expect(screen.getByText(/^Notification · Yesterday, /)).toBeTruthy();
+    expect(screen.getByText(/^Moni · Yesterday, /)).toBeTruthy();
+
+    fireEvent.press(screen.getByTestId('review.history.ok'));
+
+    expect(router.push).toHaveBeenLastCalledWith({
+      pathname: '/transaction/[id]',
+      params: { id: 't1' },
+    });
+  });
+
+  it('folds under the deck while captures wait, and Move back to review puts that card on top', async () => {
+    seed('p1');
+    reviewed('old', { status: 'rejected', reviewed_at: hoursAgo(25), merchant: 'KEDAI ABC' });
+    await show(<ReviewScreen />);
+
+    expect(screen.getByText('GRAB')).toBeTruthy();
+    expect(screen.queryByText('KEDAI ABC')).toBeNull();
+
+    await act(async () => fireEvent.press(screen.getByText('Recently reviewed · 1')));
+
+    expect(screen.queryByTestId('review.deck')).toBeNull();
+    expect(screen.getByText('KEDAI ABC')).toBeTruthy();
+
+    await act(async () => fireEvent.press(screen.getByTestId('review.history.old.move-back')));
+    fireEvent(screen.getByTestId('review.deck'), 'layout', {
+      nativeEvent: { layout: { width: 390, height: 640 } },
+    });
+
+    expect(screen.getByText('KEDAI ABC')).toBeTruthy();
+    expect(screen.getByText('1 of 2')).toBeTruthy();
+    expect(screen.queryByText('Recently reviewed · 1')).toBeNull();
   });
 });

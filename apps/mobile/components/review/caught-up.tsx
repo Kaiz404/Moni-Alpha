@@ -1,22 +1,10 @@
 import { View } from 'react-native';
 
-import { IconSymbol, type IconSymbolName } from '@/components/ui/icon-symbol';
+import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Press } from '@/components/ui/press';
 import { Text } from '@/components/ui/text';
-import { TintBubble } from '@/components/ui/transaction-row';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { tid } from '@/lib/test-ids';
-
-export type SessionRow = {
-  id: string;
-  title: string;
-  meta: string;
-  amountText: string;
-  icon: IconSymbolName;
-  color: string | null;
-  /** Not mine rows read struck through in Meta. */
-  struck: boolean;
-};
 
 function CaptureLogLink({ onPress }: { onPress: () => void }) {
   const tokens = useThemeTokens();
@@ -47,14 +35,12 @@ function CaptureLogLink({ onPress }: { onPress: () => void }) {
   );
 }
 
-/** D6: this session's results, from memory. Nothing is kept once the page closes. */
+/** This session's counts. The decisions themselves are listed in Recently reviewed below. */
 export function CaughtUp({
   sentence,
-  rows,
   onCaptureLog,
 }: {
   sentence: string;
-  rows: SessionRow[];
   onCaptureLog: () => void;
 }) {
   const tokens = useThemeTokens();
@@ -85,43 +71,6 @@ export function CaughtUp({
           {sentence}
         </Text>
       </View>
-      {rows.length ? (
-        <View className="rounded-card bg-card py-1.5">
-          {rows.map((row) => (
-            <View
-              key={row.id}
-              className="flex-row items-center gap-3.5 px-[18px] py-2.5"
-            >
-              <TintBubble
-                icon={row.icon}
-                color={row.color}
-              />
-              <View className="min-w-0 flex-1">
-                <Text
-                  variant="rowTitle"
-                  className="text-foreground"
-                  numberOfLines={1}
-                >
-                  {row.title}
-                </Text>
-                <Text
-                  variant="meta"
-                  className="text-muted"
-                  numberOfLines={1}
-                >
-                  {row.meta}
-                </Text>
-              </View>
-              <Text
-                variant="rowTitle"
-                className={row.struck ? 'text-muted line-through' : 'text-foreground'}
-              >
-                {row.amountText}
-              </Text>
-            </View>
-          ))}
-        </View>
-      ) : null}
       <CaptureLogLink onPress={onCaptureLog} />
     </View>
   );
