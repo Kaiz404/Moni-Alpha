@@ -19,20 +19,46 @@ type EmptyTileProps = {
     icon?: IconSymbolName;
     onPress: () => void;
   };
+  /**
+   * `quiet` is the smaller tile for a section that fills in on its own, as
+   * V2H-HomeFirstRun draws Recent and bills: Hairline dashes, a 16/600 title.
+   */
+  tone?: 'default' | 'quiet';
   className?: string;
 };
+
+const looks = {
+  default: {
+    frame: 'gap-2.5 border-border-strong px-[18px] py-[22px]',
+    textGap: 10,
+    title: 'cardTitle',
+    body: 'text-[14px] leading-[20px]',
+    action: 'px-[18px]',
+    actionIcon: 20,
+  },
+  quiet: {
+    frame: 'gap-2 border-hairline p-[18px]',
+    textGap: 2,
+    title: 'rowTitle',
+    body: 'text-[15px] leading-[21px]',
+    action: 'pl-3 pr-4',
+    actionIcon: 18,
+  },
+} as const;
 
 export function EmptyTile({
   icon,
   title,
   body,
   action,
+  tone = 'default',
   className,
 }: EmptyTileProps) {
   const tokens = useThemeTokens();
+  const look = looks[tone];
   return (
     <View
-      className={`items-start gap-2.5 rounded-tile border-[1.5px] border-dashed border-border-strong px-[18px] py-[22px] ${className ?? ''}`}
+      className={`items-start rounded-tile border-[1.5px] border-dashed ${look.frame} ${className ?? ''}`}
     >
       <View className="h-[42px] w-[42px] items-center justify-center rounded-full bg-sand">
         <IconSymbol
@@ -41,27 +67,27 @@ export function EmptyTile({
           color={tokens.foreground}
         />
       </View>
-      <Text
-        variant="cardTitle"
-        className="text-foreground"
-      >
-        {title}
-      </Text>
-      <Text className="text-[14px] leading-[20px] text-ink-2">
-        {body}
-      </Text>
+      <View style={{ gap: look.textGap }}>
+        <Text
+          variant={look.title}
+          className="text-foreground"
+        >
+          {title}
+        </Text>
+        <Text className={`${look.body} text-ink-2`}>{body}</Text>
+      </View>
       {action ? (
         <Press
           testID={action.testID}
           onPress={action.onPress}
           radius={{ rest: 22, pressed: 16 }}
           pressedClassName="bg-hairline"
-          className="h-11 flex-row items-center gap-1.5 bg-sand px-[18px]"
+          className={`h-11 flex-row items-center gap-1.5 bg-sand ${look.action}`}
         >
           {action.icon ? (
             <IconSymbol
               name={action.icon}
-              size={18}
+              size={look.actionIcon}
               color={tokens.foreground}
             />
           ) : null}

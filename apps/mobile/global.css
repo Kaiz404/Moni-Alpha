@@ -37,7 +37,7 @@
       --color-muted: #6b665c;
       --color-border: #ddd5c5;
       --color-border-subtle: #efe8da;
-      --color-border-strong: #a9a397;
+      --color-border-strong: #b9b0a0;
 
       --color-primary: #17181a;
       --color-primary-foreground: #fffdf8;
@@ -96,6 +96,10 @@
       --color-pending-fill: #e4daf6;
       --color-bloom: #e3d8c2;
       --color-on-ink-positive: #a9ddb5;
+      /* Secondary ink on a pastel block; pastels keep ink text in both themes. */
+      --color-on-lemon: #6b5410;
+      --color-on-lilac: #3e3654;
+      --color-on-mint: #174831;
     }
 
     @variant dark {
@@ -171,6 +175,9 @@
       --color-pending-fill: #2e2841;
       --color-bloom: #3a362f;
       --color-on-ink-positive: #236b47;
+      --color-on-lemon: #6b5410;
+      --color-on-lilac: #3e3654;
+      --color-on-mint: #174831;
     }
   }
 }

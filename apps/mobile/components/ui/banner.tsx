@@ -32,7 +32,7 @@ export function Banner({
     >
       <IconSymbol
         name={error ? 'sync-alert' : 'cloud-off-outline'}
-        size={18}
+        size={20}
         color={ink}
       />
       <Text

@@ -90,5 +90,8 @@ export function useThemeTokens() {
     pendingFill: t['pending-fill'],
     bloom: t.bloom,
     onInkPositive: t['on-ink-positive'],
+    onLemon: t['on-lemon'],
+    onLilac: t['on-lilac'],
+    onMint: t['on-mint'],
   };
 }

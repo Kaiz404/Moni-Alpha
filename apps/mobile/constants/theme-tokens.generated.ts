@@ -68,6 +68,9 @@ export const themeTokenNames = [
   'pending-fill',
   'bloom',
   'on-ink-positive',
+  'on-lemon',
+  'on-lilac',
+  'on-mint',
 ] as const;
 
 export type ThemeTokenName = (typeof themeTokenNames)[number];
@@ -85,7 +88,7 @@ export const lightThemeTokens: Record<ThemeTokenName, string> = {
   muted: '#6b665c',
   border: '#ddd5c5',
   'border-subtle': '#efe8da',
-  'border-strong': '#a9a397',
+  'border-strong': '#b9b0a0',
   primary: '#17181a',
   'primary-foreground': '#fffdf8',
   'primary-muted': '#d3eed9',
@@ -140,6 +143,9 @@ export const lightThemeTokens: Record<ThemeTokenName, string> = {
   'pending-fill': '#e4daf6',
   bloom: '#e3d8c2',
   'on-ink-positive': '#a9ddb5',
+  'on-lemon': '#6b5410',
+  'on-lilac': '#3e3654',
+  'on-mint': '#174831',
 };
 
 export const darkThemeTokens: Record<ThemeTokenName, string> = {
@@ -210,4 +216,7 @@ export const darkThemeTokens: Record<ThemeTokenName, string> = {
   'pending-fill': '#2e2841',
   bloom: '#3a362f',
   'on-ink-positive': '#236b47',
+  'on-lemon': '#6b5410',
+  'on-lilac': '#3e3654',
+  'on-mint': '#174831',
 };
