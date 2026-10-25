@@ -13,6 +13,7 @@ jest.mock('@/lib/store', () => {
     wallets$: observable({ w1: { id: 'w1', currency: 'MYR', deleted: false } }),
     transactions$: observable({}),
     proposedTransactions$: observable({}),
+    isMigrated: () => true,
   };
 });
 

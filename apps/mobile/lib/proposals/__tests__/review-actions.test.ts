@@ -1,13 +1,13 @@
 import type { Observable } from '@legendapp/state';
 import type { MinorAmount } from '@repo/types';
 
-import { approve, later, laterUntil, notMine, undo } from '../review-actions';
+import { approve, later, laterUntil, moveBackToReview, notMine, undo } from '../review-actions';
 import {
   drainImageUploadQueue,
   enqueueImageUpload,
   getPendingUploadCount,
 } from '@/lib/receipts/upload-queue';
-import { listAwaitingReview } from '@/lib/supabase/proposed-transactions';
+import { listAwaitingReview, listRecentlyReviewed } from '@/lib/supabase/proposed-transactions';
 
 let mockNextId = 0;
 jest.mock('expo-crypto', () => ({ randomUUID: () => `id-${++mockNextId}` }));
@@ -26,6 +26,7 @@ jest.mock('@/lib/store', () => {
     proposedTransactions$: observable({}),
     autoAddRules$: observable({}),
     assertMigrated: () => {},
+    isMigrated: () => true,
   };
 });
 
@@ -186,6 +187,13 @@ describe('approve', () => {
       expect.objectContaining({ merchant_key: 'grab', deleted: true }),
     ]);
     expect(listAwaitingReview(NOW).map((p) => p.id)).toEqual(['p1']);
+    expect(proposedTransactions$.p1.peek()).toMatchObject({
+      status: 'pending',
+      reviewed_at: null,
+      transaction_id: null,
+      deleted: false,
+    });
+    expect(listRecentlyReviewed()).toEqual([]);
   });
 });
 
@@ -205,6 +213,32 @@ describe('Not mine', () => {
     if (result.status !== 'done') throw new Error(result.status);
     await undo(result.outcome);
     expect(listAwaitingReview(NOW).map((p) => p.id)).toEqual(['p2']);
+    expect(proposedTransactions$.p2.peek()).toMatchObject({ status: 'pending', reviewed_at: null });
+  });
+
+  it('Move back to review puts a Not mine capture from Recently reviewed back in the deck', async () => {
+    const { markCaptureStatus } = jest.requireMock('@/lib/notifications/capture-status') as {
+      markCaptureStatus: jest.Mock;
+    };
+    await notMine(seed('p2'));
+    const [reviewed] = listRecentlyReviewed();
+    markCaptureStatus.mockClear();
+
+    moveBackToReview(reviewed);
+
+    expect(listAwaitingReview(NOW).map((p) => p.id)).toEqual(['p2']);
+    expect(listRecentlyReviewed()).toEqual([]);
+    expect(markCaptureStatus.mock.calls).toEqual([['p2', 'waiting_for_review']]);
+  });
+
+  it('Move back to review leaves an approved capture alone', async () => {
+    await approve(seed('p1'));
+    const [reviewed] = listRecentlyReviewed();
+
+    moveBackToReview(reviewed);
+
+    expect(listAwaitingReview(NOW)).toEqual([]);
+    expect(ledger()).toHaveLength(1);
   });
 });
 

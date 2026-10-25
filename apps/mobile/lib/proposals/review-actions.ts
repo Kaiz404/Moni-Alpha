@@ -6,7 +6,7 @@ import { markCaptureStatus } from '@/lib/notifications/capture-status';
 import { emitProposedTransactionsChanged } from '@/lib/proposals/proposed-transactions-events';
 import { keepProposalReceipt } from '@/lib/receipts/upload-queue';
 import { proposedTransactions$, wallets$ } from '@/lib/store';
-import { getRecordValues, patchRow } from '@/lib/store/helpers';
+import { getRecordValues, hasRow, patchRow } from '@/lib/store/helpers';
 import {
   createAutoAddRule,
   deleteAutoAddRule,
@@ -16,8 +16,10 @@ import { getUserId } from '@/lib/supabase/client';
 import {
   approveProposedTransaction,
   findProposalDuplicate,
+  isOpenProposal,
   laterProposedTransaction,
   rejectProposedTransaction,
+  type ReviewedProposal,
 } from '@/lib/supabase/proposed-transactions';
 import { deleteTransaction } from '@/lib/supabase/transactions';
 
@@ -35,7 +37,7 @@ export type ReviewEdits = {
   similar?: boolean;
 };
 
-/** The proposed_transactions row as stored, kept so Undo can put it back. */
+/** The proposed_transactions row as stored, kept so Undo can put back a soft-deleted one. */
 export type ProposalRowSnapshot = Record<string, unknown> & { id: string };
 
 /** Everything Undo needs. Plain JSON, so a notification can carry it. */
@@ -57,9 +59,10 @@ export type ReviewResult =
   | { status: 'needsInput'; field: ReviewField }
   | { status: 'error'; message: string };
 
-function snapshotRow(id: string): ProposalRowSnapshot | null {
-  const row = proposedTransactions$[id].peek() as ProposalRowSnapshot | undefined;
-  return row ? { ...row } : null;
+/** The row as it stands, or null once it has a decision: the guard against deciding twice. */
+function openRow(id: string): ProposalRowSnapshot | null {
+  if (!isOpenProposal(id)) return null;
+  return { ...(proposedTransactions$[id].peek() as ProposalRowSnapshot) };
 }
 
 function messageOf(error: unknown, fallback: string): string {
@@ -142,7 +145,7 @@ export async function approve(
     return { status: 'error', message: 'Enter an amount above zero.' };
   }
 
-  const row = snapshotRow(proposal.id);
+  const row = openRow(proposal.id);
   if (!row) return { status: 'error', message: 'This capture was already reviewed.' };
   try {
     const transactionId = await approveProposedTransaction(next, {
@@ -168,9 +171,9 @@ export async function dontAskAboutSimilar(outcome: ApprovedOutcome): Promise<App
   return { ...outcome, ruleAdded: await addSimilarRule(outcome.proposal) };
 }
 
-/** Stamps the capture `rejected`, then soft-deletes it (D6: no stored history). */
+/** Stamps the capture `rejected`; it stays in Recently reviewed (D6). */
 export async function notMine(proposal: ProposedTransaction): Promise<ReviewResult> {
-  const row = snapshotRow(proposal.id);
+  const row = openRow(proposal.id);
   if (!row) return { status: 'error', message: 'This capture was already reviewed.' };
   try {
     await rejectProposedTransaction(proposal.id);
@@ -205,15 +208,20 @@ export async function later(
 }
 
 function restoreRow(row: ProposalRowSnapshot): void {
-  proposedTransactions$[row.id].set({
-    ...row,
-    status: 'pending',
-    snoozed_until: null,
-    deleted: false,
-    updated_at: new Date().toISOString(),
-  });
+  const pending = { status: 'pending', snoozed_until: null, updated_at: new Date().toISOString() };
+  if (hasRow(proposedTransactions$, row.id)) {
+    patchRow(proposedTransactions$, row.id, { ...pending, reviewed_at: null, transaction_id: null });
+  } else {
+    proposedTransactions$[row.id].set({ ...row, ...pending, deleted: false });
+  }
   if (row.source_type === 'notification') markCaptureStatus(row.id, 'waiting_for_review');
   emitProposedTransactionsChanged();
+}
+
+/** "Move back to review" on a Not mine row of Recently reviewed. */
+export function moveBackToReview(proposal: ReviewedProposal): void {
+  const row = proposedTransactions$[proposal.id].peek() as ProposalRowSnapshot | undefined;
+  if (row && proposal.status === 'rejected') restoreRow(row);
 }
 
 async function removeSimilarRule(proposal: ProposedTransaction): Promise<void> {

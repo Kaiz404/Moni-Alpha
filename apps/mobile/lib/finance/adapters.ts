@@ -181,8 +181,11 @@ export function toFinanceDebtActivity(row: RawRow): FinanceDebtActivity | null {
   };
 }
 
+/** Captures still waiting for a decision. Approve and Not mine rows are review history only. */
 export function toFinanceProposal(row: RawRow): FinanceProposal | null {
   if (!isLiveRow(row)) return null;
+  const status = proposedTransactionStatusSchema.catch('pending').parse(row.status);
+  if (status === 'approved' || status === 'rejected') return null;
   const type =
     row.type === 'income' || row.type === 'expense' || row.type === 'transfer' ? row.type : null;
   const parsedAmount = row.amount == null ? null : amountMinor(row.amount);
@@ -214,7 +217,7 @@ export function toFinanceProposal(row: RawRow): FinanceProposal | null {
     transactionDate: nullableString(row.transaction_date),
     createdAt: isoDate(row.created_at),
     updatedAt: isoDate(row.updated_at, isoDate(row.created_at)),
-    status: proposedTransactionStatusSchema.catch('pending').parse(row.status),
+    status,
     snoozedUntil: nullableString(row.snoozed_until),
   };
 }

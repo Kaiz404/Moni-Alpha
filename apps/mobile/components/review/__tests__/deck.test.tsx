@@ -54,6 +54,7 @@ jest.mock('@/lib/store', () => {
     merchantAliases$: observable({}),
     profilePreferences$: observable({ currency: 'MYR' }),
     assertMigrated: () => {},
+    isMigrated: () => true,
   };
 });
 
@@ -154,7 +155,7 @@ describe('Review deck', () => {
 
     await act(async () => fireEvent.press(screen.getByTestId('review.not-mine')));
 
-    expect(store.proposedTransactions$.peek().p2).toBeUndefined();
+    expect(store.proposedTransactions$.peek().p2).toMatchObject({ status: 'rejected', deleted: false });
     expect(ledger()).toHaveLength(1);
     expect(screen.getByText('All caught up')).toBeTruthy();
     expect(screen.getByText(/^1 approved, 1 not mine\. RM12\.00 now counts in \w+\.$/)).toBeTruthy();

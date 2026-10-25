@@ -46,6 +46,7 @@ jest.mock('@/lib/store', () => {
     ALL_STORE_OBSERVABLES: Object.values(tables),
     enableStoreSync: jest.fn(async () => {}),
     assertMigrated: () => {},
+    isMigrated: () => true,
   };
 });
 
@@ -167,7 +168,7 @@ describe('review notification', () => {
 
     seed();
     await tap('not-mine', { kind: 'review', proposalId: 'p1' });
-    expect(store.proposedTransactions$.peek().p1).toBeUndefined();
+    expect(store.proposedTransactions$.p1.status.peek()).toBe('rejected');
     expect(ledger()).toEqual([]);
   });
 

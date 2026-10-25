@@ -24,6 +24,7 @@ jest.mock('uniwind', () => ({
 jest.mock('@/lib/haptics', () => ({ approve: jest.fn(), notMine: jest.fn() }));
 jest.mock('expo-router', () => ({ router: { push: jest.fn() } }));
 jest.mock('@/lib/supabase/proposed-transactions', () => ({
+  ...jest.requireActual('@/lib/supabase/proposed-transactions'),
   approveProposedTransaction: jest.fn(async () => 't1'),
   rejectProposedTransaction: jest.fn(async () => {}),
   laterProposedTransaction: jest.fn(),

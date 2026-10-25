@@ -1,4 +1,4 @@
-import { assertMigrated, proposedTransactions$, transactions$ } from '@/lib/store';
+import { assertMigrated, isMigrated, proposedTransactions$, transactions$ } from '@/lib/store';
 import { getRecordValues, hasRow, patchRow } from '@/lib/store/helpers';
 import { getUserId } from '@/lib/supabase/client';
 import { randomUUID } from 'expo-crypto';
@@ -46,6 +46,8 @@ type ProposedRow = {
   transaction_date: string | null;
   status: string | null;
   snoozed_until?: string | null;
+  reviewed_at?: string | null;
+  transaction_id?: string | null;
   created_at: string | null;
   updated_at: string | null;
   deleted?: boolean;
@@ -59,6 +61,17 @@ const TRANSACTION_SOURCE_BY_PROPOSAL_SOURCE: Record<
   text: 'moni',
   image: 'camera',
 };
+
+/** The Source an approved capture gets on its ledger row. */
+export function proposalSource(sourceType: ProposedTransactionSourceType): TransactionSource {
+  return TRANSACTION_SOURCE_BY_PROPOSAL_SOURCE[sourceType];
+}
+
+const DAY_MS = 86_400_000;
+/** Review lists this many days of Approve and Not mine decisions. */
+export const REVIEW_HISTORY_DAYS = 30;
+/** Decisions older than this are soft-deleted. */
+export const REVIEW_RETENTION_DAYS = 90;
 
 function rowToProposedTransaction(row: ProposedRow): ProposedTransaction {
   return {
@@ -87,6 +100,8 @@ function rowToProposedTransaction(row: ProposedRow): ProposedTransaction {
     transactionDate: row.transaction_date,
     status: proposedTransactionStatusSchema.catch('pending').parse(row.status),
     snoozedUntil: row.snoozed_until ?? null,
+    reviewedAt: row.reviewed_at ?? null,
+    transactionId: row.transaction_id ?? null,
     createdAt: row.created_at ?? '',
     updatedAt: row.updated_at ?? '',
   };
@@ -101,12 +116,61 @@ function isReviewableRow(row: ProposedRow): boolean {
   }
 }
 
-function readUnreviewedProposals(): ProposedTransaction[] {
+/** Pending and Later captures wait for a decision; Approve and Not mine leave review history. */
+export function isUnreviewed(proposal: Pick<ProposedTransaction, 'status'>): boolean {
+  return proposal.status === 'pending' || proposal.status === 'later';
+}
+
+export type ReviewedProposal = ProposedTransaction & {
+  status: 'approved' | 'rejected';
+  reviewedAt: string;
+};
+
+function asReviewed(proposal: ProposedTransaction): ReviewedProposal | null {
+  const { status, reviewedAt } = proposal;
+  return (status === 'approved' || status === 'rejected') && reviewedAt
+    ? { ...proposal, status, reviewedAt }
+    : null;
+}
+
+function readProposals(): ProposedTransaction[] {
   return getRecordValues<ProposedRow>(proposedTransactions$)
     .filter(isReviewableRow)
-    .sort((a, b) => (b.created_at ?? '').localeCompare(a.created_at ?? ''))
-    .map(rowToProposedTransaction)
-    .filter((proposal) => proposal.status === 'pending' || proposal.status === 'later');
+    .map(rowToProposedTransaction);
+}
+
+function readUnreviewedProposals(): ProposedTransaction[] {
+  return readProposals()
+    .filter(isUnreviewed)
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+}
+
+function readReviewedProposals(): ReviewedProposal[] {
+  return readProposals().flatMap((proposal) => asReviewed(proposal) ?? []);
+}
+
+/** The capture exists and has no decision yet. */
+export function isOpenProposal(id: string): boolean {
+  const row = proposedTransactions$[id].peek() as ProposedRow | undefined;
+  return !!row && !row.deleted && isUnreviewed(rowToProposedTransaction(row));
+}
+
+/** Approve and Not mine decisions of the last 30 days, newest first. Safe in a reactive selector. */
+export function listRecentlyReviewed(now = new Date()): ReviewedProposal[] {
+  const since = now.getTime() - REVIEW_HISTORY_DAYS * DAY_MS;
+  return readReviewedProposals()
+    .filter((proposal) => Date.parse(proposal.reviewedAt) >= since)
+    .sort((a, b) => Date.parse(b.reviewedAt) - Date.parse(a.reviewedAt));
+}
+
+/** Soft-deletes decisions made more than 90 days ago. A second run finds nothing to do. */
+export function pruneReviewHistory(now = new Date()): number {
+  const before = now.getTime() - REVIEW_RETENTION_DAYS * DAY_MS;
+  const old = readReviewedProposals().filter(
+    (proposal) => Date.parse(proposal.reviewedAt) < before,
+  );
+  for (const proposal of old) softDelete(proposal.id);
+  return old.length;
 }
 
 export function isAwaitingReview(
@@ -145,7 +209,7 @@ export async function pruneIncompleteProposals(): Promise<number> {
   for (const row of rows) {
     if (isReviewableRow(row)) continue;
     try {
-      await deleteProposedTransaction(row.id);
+      softDelete(row.id);
       pruned++;
     } catch {
       // row already removed
@@ -231,20 +295,22 @@ export async function approveProposedTransaction(
     locationLatitude: earlyLocation?.latitude ?? null,
     locationLongitude: earlyLocation?.longitude ?? null,
     locationName: earlyLocation?.name ?? null,
-  }, TRANSACTION_SOURCE_BY_PROPOSAL_SOURCE[proposal.sourceType]);
+  }, proposalSource(proposal.sourceType));
 
   closeProposal(proposal, 'approved', transaction.id);
-  await deleteProposedTransaction(proposal.id);
   return transaction.id;
 }
 
 export async function rejectProposedTransaction(id: string): Promise<void> {
   const row = proposedTransactions$[id].peek() as ProposedRow | undefined;
-  if (row) closeProposal(rowToProposedTransaction(row), 'rejected');
-  await deleteProposedTransaction(id);
+  if (!row) throw new Error(`Cannot reject missing proposal: ${id}`);
+  closeProposal(rowToProposedTransaction(row), 'rejected');
 }
 
-/** Stamps the review outcome on the row before its soft delete, so the server keeps it. */
+/**
+ * Stamps the decision and keeps the row as review history. Until the review_history migration
+ * is pushed the row has nowhere to keep `reviewed_at`, so it is soft-deleted as before.
+ */
 function closeProposal(
   proposal: Pick<ProposedTransaction, 'id' | 'sourceType'>,
   status: 'approved' | 'rejected',
@@ -255,8 +321,20 @@ function closeProposal(
     if (status === 'approved') markCaptureStatus(proposal.id, 'added', transactionId);
     else markCaptureStatus(proposal.id, 'ignored');
   }
-  if (!hasRow(proposedTransactions$, proposal.id)) return;
-  patchRow(proposedTransactions$, proposal.id, { status, updated_at: new Date().toISOString() });
+  const now = new Date().toISOString();
+  if (!isMigrated('review_history')) {
+    patchRow(proposedTransactions$, proposal.id, { status, updated_at: now });
+    softDelete(proposal.id);
+    return;
+  }
+  patchRow(proposedTransactions$, proposal.id, {
+    status,
+    reviewed_at: now,
+    transaction_id: transactionId ?? null,
+    updated_at: now,
+  });
+  clearProposalLocationSnapshot(proposal.id);
+  emitProposedTransactionsChanged();
 }
 
 export async function updateProposalImageUri(id: string, remoteUrl: string): Promise<boolean> {
@@ -271,7 +349,7 @@ export async function updateProposalImageUri(id: string, remoteUrl: string): Pro
   return true;
 }
 
-export async function deleteProposedTransaction(id: string): Promise<void> {
+function softDelete(id: string): void {
   const row$ = proposedTransactions$[id] as { delete?: () => void } | undefined;
   if (!row$?.delete) {
     throw new Error(`Cannot delete missing proposal: ${id}`);

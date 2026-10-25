@@ -51,6 +51,7 @@ import type { FinanceTransaction } from '@/lib/finance/types';
 import { openSheet } from '@/lib/sheet/sheet-store';
 import { transactions$ as transactionTable$ } from '@/lib/store';
 import { listMerchantAliases } from '@/lib/supabase/merchant-aliases';
+import { isAwaitingReview } from '@/lib/supabase/proposed-transactions';
 import { tid } from '@/lib/test-ids';
 import { transactionRow, type RowLookups } from '@/lib/transactions/row';
 
@@ -171,6 +172,7 @@ export default function ActivityScreen() {
       ),
     [named, shownPlace, query, walletId, currency, kind, day, categories],
   );
+  const waiting = proposals.filter((proposal) => isAwaitingReview(proposal, new Date()));
   const todayKey = toLocalDateInput(now);
   const spending = useMemo(
     () => spendingMonth(inCurrency, budgetMonth, currency, dayOf(todayKey)),
@@ -180,7 +182,7 @@ export default function ActivityScreen() {
     () => balanceMonth(wallets, all, currency, dayOf(todayKey)),
     [wallets, all, currency, todayKey],
   );
-  const reviewTotal = proposals
+  const reviewTotal = waiting
     .filter((proposal) => proposal.currency === currency)
     .reduce((sum, proposal) => sum + Number(proposal.amountMinor ?? 0), 0);
   const mainWallets = wallets.filter(
@@ -230,16 +232,16 @@ export default function ActivityScreen() {
       title="Activity"
       trailing={
         <>
-          {proposals.length ? (
+          {waiting.length ? (
             <ReviewStrip
-              count={proposals.length}
+              count={waiting.length}
               amount={
                 reviewTotal > 0 ? formatMoney(reviewTotal, currency) : null
               }
               onPress={() =>
                 router.push({
                   pathname: '/review',
-                  params: { id: proposals[0].id },
+                  params: { id: waiting[0].id },
                 })
               }
             />

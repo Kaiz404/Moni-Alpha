@@ -66,6 +66,7 @@ const GATED_MIGRATIONS = {
 /** Migrations that only add columns, each with one column that proves it ran. */
 const GATED_COLUMNS = {
   recurring_override_bills: 'recurring_overrides.skip_period',
+  review_history: 'proposed_transactions.reviewed_at',
 } as const;
 export type GatedMigration = keyof typeof GATED_MIGRATIONS | keyof typeof GATED_COLUMNS;
 const migrationFound$ = observable<Partial<Record<GatedMigration, boolean>>>({});
@@ -76,9 +77,14 @@ const TABLE_FOUND_KEY_PREFIX = 'table-found:';
  * is gone once the gate opens (migration-gate.test.ts).
  */
 export function assertMigrated(migration: GatedMigration): void {
-  if (migrationFound$[migration].peek() !== true) {
+  if (!isMigrated(migration)) {
     throw new Error('Moni needs a server update before it can save this. Try again later.');
   }
+}
+
+/** For a writer that has an older way to save while its migration is not pushed yet. */
+export function isMigrated(migration: GatedMigration): boolean {
+  return migrationFound$[migration].peek() === true;
 }
 
 function syncTableOnceMigrated(migration: keyof typeof GATED_MIGRATIONS) {
