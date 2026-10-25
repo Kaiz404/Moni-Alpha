@@ -46,6 +46,11 @@ function partValues(node) {
   return null;
 }
 
+// tid(testID, 'edit') extends an id the caller passed in, so it can render under any prefix.
+function isPassedTestId(node) {
+  return ts.isIdentifier(node) && /testid$/i.test(node.text);
+}
+
 export function tidTemplates(file, source) {
   const sourceFile = ts.createSourceFile(file, source, ts.ScriptTarget.Latest, true);
   const templates = [];
@@ -57,7 +62,11 @@ export function tidTemplates(file, source) {
       node.arguments.length >= 2
     ) {
       const parts = node.arguments.map((arg, index) =>
-        ts.isSpreadElement(arg) ? 'spread' : index === 0 && !partValues(arg) ? 'screen' : partValues(arg),
+        ts.isSpreadElement(arg) || (index === 0 && isPassedTestId(arg))
+          ? 'spread'
+          : index === 0 && !partValues(arg)
+            ? 'screen'
+            : partValues(arg),
       );
       const { line } = sourceFile.getLineAndCharacterOfPosition(node.getStart());
       templates.push({ file, line: line + 1, parts });
@@ -79,10 +88,10 @@ export function compileTemplate(template) {
   return { ...template, regex: new RegExp(`^${template.parts.map(partPattern).join('\\.')}$`) };
 }
 
-function renderings(parts, pool) {
+function renderings(parts, pool, spreadPool = pool) {
   let ids = [''];
   for (const part of parts) {
-    const values = part === null || part === 'spread' || part === 'screen' ? pool : part;
+    const values = part === 'spread' ? spreadPool : part === null || part === 'screen' ? pool : part;
     ids = ids.flatMap((prefix) => values.map((value) => (prefix ? `${prefix}.${value}` : value))).slice(0, 4096);
   }
   return ids;
@@ -101,7 +110,11 @@ export function idMatches(flowId, compiled) {
   }
   const segments = flowId.split('\\.').filter((segment) => /^[a-z0-9-]+$/.test(segment));
   const pool = [...new Set([...segments, SAMPLE_PART, '2026-10', '0'])];
-  return compiled.some((template) => renderings(template.parts, pool).some((id) => pattern.test(id)));
+  const prefixes = segments.map((_, end) => segments.slice(0, end + 1).join('.'));
+  const spreadPool = [...new Set([...pool, ...prefixes, ...prefixes.map((prefix) => `${prefix}.${SAMPLE_PART}`)])];
+  return compiled.some((template) =>
+    renderings(template.parts, pool, spreadPool).some((id) => pattern.test(id)),
+  );
 }
 
 export function flowIds(source) {

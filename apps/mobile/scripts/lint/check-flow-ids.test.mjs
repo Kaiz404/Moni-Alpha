@@ -61,3 +61,10 @@ test('regex ids match when a rendering fits, using the pattern segments for runt
     ["3 merchants\\.named\\..*\\.delete", "4 home\\.recent\\..*"],
   );
 });
+
+test('parts appended to a passed-in testID match under any prefix', () => {
+  const field = [{ file: 'components/ui/field.tsx', source: "const a = tid(testID, 'edit');" }];
+  const ids = (yaml) => unknownFlowIds([{ file: 'flow.yaml', source: yaml }], field).map(({ id }) => id);
+  assert.deepEqual(ids('id: chat.draft.amount.edit\nid: "merchants\\\\.named\\\\..*\\\\.edit"'), []);
+  assert.deepEqual(ids('id: chat.draft.amount.save'), ['chat.draft.amount.save']);
+});
