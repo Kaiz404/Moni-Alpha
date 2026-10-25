@@ -1,18 +1,14 @@
 # M1 map: pins, the fixed place card, range and category filters, Top places.
-# Needs a signed-in e2e build, location granted, and located expenses this month.
+# Needs location granted, and located expenses this month.
 # The map tiles stay blank until O6 adds com.anonymous.moni.e2e to the Maps key.
-# Run: scripts/device/with-device.sh --lane m1 -- maestro test .maestro/flows/map/places.yaml
+# Run: scripts/device/run-flows.sh .maestro/flows/map/places.yaml
 appId: com.anonymous.moni.e2e
 name: M1 places
 tags:
   - m1
-  - needs-default-seed
+  - seed-full
 ---
-- launchApp
-- extendedWaitUntil:
-    visible:
-      id: home.avatar
-    timeout: 15000
+- runFlow: ../../subflows/launch.yaml
 - openLink: moni-e2e://map
 - extendedWaitUntil:
     visible: Where you spend

@@ -1,12 +1,12 @@
 # A2 transaction detail per V2A-TxnDetail: no ellipsis, the tiles, the note, and Delete with Keep it first.
-# Run: scripts/device/with-device.sh --lane a2 -- maestro test .maestro/flows/activity/txn-detail.yaml
+# Run: scripts/device/run-flows.sh .maestro/flows/activity/txn-detail.yaml
 appId: com.anonymous.moni.e2e
 name: A2 transaction detail
 tags:
   - a2
-  - needs-default-seed
+  - seed-full
 ---
-- launchApp
+- runFlow: ../../subflows/launch.yaml
 - tapOn:
     id: nav.tab.activity
 - tapOn:

@@ -1,12 +1,13 @@
 # B2 bill page (V2P-BillDetail): open a bill from the Budget tab, skip this month, undo.
-# Needs a signed-in e2e build with a bill due this month (the seeded Netflix) and the bills migration pushed.
-# Run: scripts/device/with-device.sh --lane b2 -- maestro test .maestro/flows/budget/bill.yaml
+# Needs a bill due this month (the seeded Netflix) and the bills migration pushed.
+# Run: scripts/device/run-flows.sh .maestro/flows/budget/bill.yaml
 appId: com.anonymous.moni.e2e
 name: B2 bill page
 tags:
   - b2
+  - seed-full
 ---
-- launchApp
+- runFlow: ../../subflows/launch.yaml
 - extendedWaitUntil:
     visible:
       id: nav.tab.budget

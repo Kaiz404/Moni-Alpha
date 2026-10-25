@@ -1,0 +1,29 @@
+# Smoke: each tab root opens from the bar, and Home comes back.
+# Run: scripts/device/run-flows.sh --tag smoke
+appId: com.anonymous.moni.e2e
+name: Smoke tab roots
+tags:
+  - smoke
+  - seed-any
+---
+- runFlow: ../../subflows/launch.yaml
+- tapOn:
+    id: nav.tab.activity
+- assertVisible:
+    id: activity.ask-moni
+- takeScreenshot: smoke-activity
+- tapOn:
+    id: nav.tab.budget
+- assertVisible:
+    id: budget.month
+- takeScreenshot: smoke-budget
+- tapOn:
+    id: nav.tab.debts
+- scrollUntilVisible:
+    element:
+      id: debts.record-debt
+- takeScreenshot: smoke-debts
+- tapOn:
+    id: nav.tab.index
+- assertVisible:
+    id: home.avatar

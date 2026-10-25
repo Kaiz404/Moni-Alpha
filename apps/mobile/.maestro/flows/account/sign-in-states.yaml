@@ -1,12 +1,14 @@
 # K1 sign-in states: mode toggle, password reveal, wrong details, Google did not finish.
 # Starts signed out. Ends signed in through the sign-in subflow.
-# Run: scripts/device/with-device.sh --lane k1 -- maestro test -e E2E_EMAIL=... -e E2E_PASSWORD=... .maestro/flows/account/sign-in-states.yaml
+# Run: scripts/device/run-flows.sh .maestro/flows/account/sign-in-states.yaml
 appId: com.anonymous.moni.e2e
 name: K1 sign-in states
 tags:
   - k1
+  - seed-any
 ---
-- launchApp
+- runFlow: ../../subflows/launch.yaml
+- runFlow: ../../subflows/sign-out.yaml
 - extendedWaitUntil:
     visible:
       id: auth.email

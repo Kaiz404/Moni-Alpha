@@ -1,16 +1,13 @@
 # K2 wallet form: New wallet with type, starting balance and colour, then Alerts from on a bank.
-# Needs a signed-in e2e build. Leaves a "K2 Cash" wallet behind.
-# Run: scripts/device/with-device.sh --lane k2 -- maestro test .maestro/flows/account/wallet-form.yaml
+# Leaves a "K2 Cash" wallet behind.
+# Run: scripts/device/run-flows.sh .maestro/flows/account/wallet-form.yaml
 appId: com.anonymous.moni.e2e
 name: K2 wallet form
 tags:
   - k2
+  - seed-full
 ---
-- launchApp
-- extendedWaitUntil:
-    visible:
-      id: home.avatar
-    timeout: 15000
+- runFlow: ../../subflows/launch.yaml
 
 # Lane 6. A cash wallet with a starting balance shows up once saved.
 - openLink: moni-e2e://wallet/new

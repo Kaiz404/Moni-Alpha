@@ -1,0 +1,28 @@
+# Smoke: Home's review block opens the Review deck on a seeded capture. Nothing is decided.
+# Run: scripts/device/run-flows.sh --tag smoke
+appId: com.anonymous.moni.e2e
+name: Smoke Review deck
+tags:
+  - smoke
+  - seed-full
+---
+- runFlow: ../../subflows/launch.yaml
+- scrollUntilVisible:
+    element:
+      id: home.review
+- tapOn:
+    id: home.review
+- extendedWaitUntil:
+    visible:
+      id: review.card
+    timeout: 10000
+- assertVisible:
+    id: review.not-mine
+- assertVisible:
+    id: review.later
+- assertVisible:
+    id: review.approve
+- takeScreenshot: smoke-review
+- pressKey: Back
+- assertVisible:
+    id: home.avatar

@@ -3,18 +3,15 @@
 # Needs the AI backend and the fixture on the phone:
 #   adb push .maestro/fixtures/receipt-blank.png /sdcard/Pictures/
 #   adb shell am broadcast -a android.intent.action.MEDIA_SCANNER_SCAN_FILE -d file:///sdcard/Pictures/receipt-blank.png
-# Run: scripts/device/with-device.sh --lane c2 -- maestro test .maestro/flows/capture/scan-failed.yaml
+# Run: scripts/device/run-flows.sh .maestro/flows/capture/scan-failed.yaml
 appId: com.anonymous.moni.e2e
 name: C2 Scan a receipt failed
 tags:
   - c2
   - needs-ai
+  - seed-full
 ---
-- launchApp
-- extendedWaitUntil:
-    visible:
-      id: home.avatar
-    timeout: 15000
+- runFlow: ../../subflows/launch.yaml
 - tapOn:
     id: nav.plus
 - tapOn:

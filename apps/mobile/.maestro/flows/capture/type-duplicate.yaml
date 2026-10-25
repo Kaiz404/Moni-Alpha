@@ -1,18 +1,14 @@
 # C1 duplicate: typing an amount and shop already saved or waiting in the last
 # three days opens "Looks like a duplicate" with its three ways on.
 # Needs the default seed, which holds RM23.40 at GRAB*FOOD from yesterday.
-# Run: scripts/device/with-device.sh --lane c1 -- maestro test .maestro/flows/capture/type-duplicate.yaml
+# Run: scripts/device/run-flows.sh .maestro/flows/capture/type-duplicate.yaml
 appId: com.anonymous.moni.e2e
 name: C1 Type it duplicate
 tags:
   - c1
-  - needs-default-seed
+  - seed-full
 ---
-- launchApp
-- extendedWaitUntil:
-    visible:
-      id: home.avatar
-    timeout: 15000
+- runFlow: ../../subflows/launch.yaml
 - tapOn:
     id: nav.plus
 - tapOn:

@@ -1,12 +1,12 @@
 # A2 in-place edits per V2A-TxnDetailEdit: amount on the numeric keyboard with Undo, a cancelled name, a category pick.
-# Run: scripts/device/with-device.sh --lane a2 -- maestro test .maestro/flows/activity/txn-edit.yaml
+# Run: scripts/device/run-flows.sh .maestro/flows/activity/txn-edit.yaml
 appId: com.anonymous.moni.e2e
 name: A2 transaction in-place edits
 tags:
   - a2
-  - needs-default-seed
+  - seed-full
 ---
-- launchApp
+- runFlow: ../../subflows/launch.yaml
 - tapOn:
     id: nav.tab.activity
 - tapOn:

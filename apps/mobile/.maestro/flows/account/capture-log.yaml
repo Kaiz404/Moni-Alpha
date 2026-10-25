@@ -1,16 +1,13 @@
 # K3 Capture log: day groups, filter chips, glossary statuses, and the empty state.
-# Needs a signed-in e2e build. Post alerts first for the filled log; with none it checks the empty state.
-# Run: scripts/device/with-device.sh --lane k3 -- maestro test .maestro/flows/account/capture-log.yaml
+# Post alerts first for the filled log; with none it checks the empty state.
+# Run: scripts/device/run-flows.sh .maestro/flows/account/capture-log.yaml
 appId: com.anonymous.moni.e2e
 name: K3 capture log
 tags:
   - k3
+  - seed-full
 ---
-- launchApp
-- extendedWaitUntil:
-    visible:
-      id: home.avatar
-    timeout: 15000
+- runFlow: ../../subflows/launch.yaml
 - tapOn:
     id: home.avatar
 - scrollUntilVisible:

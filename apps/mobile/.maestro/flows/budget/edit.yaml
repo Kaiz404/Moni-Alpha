@@ -1,12 +1,13 @@
 # B1 Edit budgets (V2P-BudgetEdit): the monthly total and caps in place, then Save.
-# Needs a signed-in e2e build with at least one MYR wallet and an expense category without a budget.
-# Run: scripts/device/with-device.sh --lane b1 -- maestro test .maestro/flows/budget/edit.yaml
+# Needs at least one MYR wallet and an expense category without a budget.
+# Run: scripts/device/run-flows.sh .maestro/flows/budget/edit.yaml
 appId: com.anonymous.moni.e2e
 name: B1 edit budgets
 tags:
   - b1
+  - seed-full
 ---
-- launchApp
+- runFlow: ../../subflows/launch.yaml
 - extendedWaitUntil:
     visible:
       id: nav.tab.budget

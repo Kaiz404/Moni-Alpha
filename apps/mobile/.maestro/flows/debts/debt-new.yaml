@@ -1,12 +1,13 @@
 # D1 Record a debt: Hana owes me RM50, lent from the first MYR wallet.
-# Needs a signed-in e2e build with at least one MYR wallet and no open debt with Hana.
-# Run: scripts/device/with-device.sh --lane d1 -- maestro test .maestro/flows/debts/debt-new.yaml
+# Needs at least one MYR wallet and no open debt with Hana.
+# Run: scripts/device/run-flows.sh .maestro/flows/debts/debt-new.yaml
 appId: com.anonymous.moni.e2e
 name: D1 record a debt
 tags:
   - d1
+  - seed-full
 ---
-- launchApp
+- runFlow: ../../subflows/launch.yaml
 - extendedWaitUntil:
     visible:
       id: nav.tab.debts

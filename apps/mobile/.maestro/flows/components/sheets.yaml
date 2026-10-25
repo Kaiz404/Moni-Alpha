@@ -1,9 +1,11 @@
-# F3 sheet host. Needs a signed-in e2e build with at least one wallet.
-# Run: scripts/device/with-device.sh --lane f3 -- maestro test .maestro/flows/components/sheets.yaml
+# F3 sheet host. Needs at least one wallet.
+# Run: scripts/device/run-flows.sh .maestro/flows/components/sheets.yaml
 appId: com.anonymous.moni.e2e
 name: sheets
+tags:
+  - seed-full
 ---
-- launchApp
+- runFlow: ../../subflows/launch.yaml
 - tapOn:
     id: nav.plus
 - tapOn:

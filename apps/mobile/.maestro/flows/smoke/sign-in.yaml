@@ -1,0 +1,16 @@
+# Smoke: sign out from Profile, then sign back in with the e2e user's email and password.
+# Run: scripts/device/run-flows.sh --tag smoke
+appId: com.anonymous.moni.e2e
+name: Smoke sign in
+tags:
+  - smoke
+  - seed-any
+---
+- runFlow: ../../subflows/launch.yaml
+- runFlow: ../../subflows/sign-out.yaml
+- assertVisible: Welcome back
+- takeScreenshot: smoke-signed-out
+- runFlow: ../../subflows/sign-in.yaml
+- assertVisible:
+    id: nav.tab.index
+- takeScreenshot: smoke-signed-in

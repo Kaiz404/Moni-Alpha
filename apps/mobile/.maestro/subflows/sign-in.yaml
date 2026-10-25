@@ -1,5 +1,5 @@
 # Signs in with email and password from a signed-out e2e build.
-# Pass E2E_EMAIL and E2E_PASSWORD with maestro test -e.
+# Pass E2E_EMAIL and E2E_PASSWORD with maestro test -e. run-flows.sh passes them from .env.e2e.
 appId: com.anonymous.moni.e2e
 ---
 - extendedWaitUntil:

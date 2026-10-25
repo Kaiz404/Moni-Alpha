@@ -2,9 +2,9 @@ appId: com.anonymous.moni.e2e
 name: F4 rows, hold menu, delete confirm, nav rows
 tags:
   - f4
-  - needs-default-seed
+  - seed-full
 ---
-- launchApp
+- runFlow: ../../subflows/launch.yaml
 - tapOn:
     id: nav.tab.activity
 - extendedWaitUntil:

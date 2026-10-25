@@ -1,18 +1,14 @@
 # R1 lanes 7 and 9: edit the amount in place, check the swipe is off while editing,
 # then tick Don't ask about similar and approve the edited amount.
-# Needs a signed-in e2e build and a pending notification capture with a wallet first in the queue.
-# Run: scripts/device/with-device.sh --lane r1 -- maestro test .maestro/flows/review/edit-in-card.yaml
+# Needs a pending notification capture with a wallet first in the queue.
+# Run: scripts/device/run-flows.sh .maestro/flows/review/edit-in-card.yaml
 appId: com.anonymous.moni.e2e
 name: R1 edit in the Review card
 tags:
   - r1
-  - needs-pending-proposals
+  - seed-full
 ---
-- launchApp
-- extendedWaitUntil:
-    visible:
-      id: home.avatar
-    timeout: 15000
+- runFlow: ../../subflows/launch.yaml
 - openLink: moni-e2e://review
 - extendedWaitUntil:
     visible:

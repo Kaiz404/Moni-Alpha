@@ -1,17 +1,13 @@
 # N1 shell: the five-slot tab bar, the + chooser, and the pushed pages.
-# Needs a signed-in e2e build. Debts expects the default seed.
-# Run: scripts/device/with-device.sh --lane n1 -- maestro test .maestro/flows/nav/tabs-and-chooser.yaml
+# Debts expects the default seed.
+# Run: scripts/device/run-flows.sh .maestro/flows/nav/tabs-and-chooser.yaml
 appId: com.anonymous.moni.e2e
 name: N1 tabs and chooser
 tags:
   - n1
-  - needs-default-seed
+  - seed-full
 ---
-- launchApp
-- extendedWaitUntil:
-    visible:
-      id: home.avatar
-    timeout: 15000
+- runFlow: ../../subflows/launch.yaml
 - assertVisible:
     id: nav.tab.index
 - assertVisible:

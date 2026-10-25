@@ -2,21 +2,17 @@
 # the heard card shows the shop and amount with pencils and Approve.
 # The heard half needs someone (or parking.wav from the PC speaker, the
 # Appendix A experiment) to say "paid 6 ringgit parking at KLCC" while the
-# page listens, plus the AI backend. Grant the mic first:
+# page listens. The e2e mock reads that sentence. run-flows.sh grants the mic with:
 #   adb shell pm grant com.anonymous.moni.e2e android.permission.RECORD_AUDIO
-# Run: scripts/device/with-device.sh --lane c2 -- maestro test .maestro/flows/capture/say.yaml
+# Run: scripts/device/run-flows.sh .maestro/flows/capture/say.yaml
 appId: com.anonymous.moni.e2e
 name: C2 Say it
 tags:
   - c2
   - needs-speech
-  - needs-ai
+  - seed-full
 ---
-- launchApp
-- extendedWaitUntil:
-    visible:
-      id: home.avatar
-    timeout: 15000
+- runFlow: ../../subflows/launch.yaml
 - tapOn:
     id: nav.plus
 - tapOn:

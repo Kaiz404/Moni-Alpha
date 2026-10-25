@@ -1,11 +1,12 @@
 # D1 repayment: Hana pays back RM20 of the RM50 from debt-new.yaml.
-# Run after debt-new.yaml: scripts/device/with-device.sh --lane d1 -- maestro test .maestro/flows/debts/repay.yaml
+# Run after debt-new.yaml: scripts/device/run-flows.sh .maestro/flows/debts/repay.yaml
 appId: com.anonymous.moni.e2e
 name: D1 record a repayment
 tags:
   - d1
+  - seed-full
 ---
-- launchApp
+- runFlow: ../../subflows/launch.yaml
 - extendedWaitUntil:
     visible:
       id: nav.tab.debts

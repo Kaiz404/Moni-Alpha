@@ -1,17 +1,13 @@
 # R1 lanes 3 to 6: swipe the top card right, left, down, and a short slow drag that snaps back.
-# Needs a signed-in e2e build and at least four pending captures that each have a wallet.
-# Run: scripts/device/with-device.sh --lane r1 -- maestro test .maestro/flows/review/swipe.yaml
+# Needs the full seed's four pending captures. It decides the first three, which each have a wallet.
+# Run: scripts/device/run-flows.sh .maestro/flows/review/swipe.yaml
 appId: com.anonymous.moni.e2e
 name: R1 swipe the Review deck
 tags:
   - r1
-  - needs-pending-proposals
+  - seed-full
 ---
-- launchApp
-- extendedWaitUntil:
-    visible:
-      id: home.avatar
-    timeout: 15000
+- runFlow: ../../subflows/launch.yaml
 - openLink: moni-e2e://review
 - extendedWaitUntil:
     visible:

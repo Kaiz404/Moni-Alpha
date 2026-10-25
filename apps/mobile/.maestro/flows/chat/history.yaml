@@ -1,12 +1,13 @@
 # H2 past days: today's thread is listed, search finds it, and a delete shows Undo.
 # Run after draft.yaml so today's thread mentions parking.
-# Run: scripts/device/with-device.sh --lane h2 -- maestro test .maestro/flows/chat/history.yaml
+# Run: scripts/device/run-flows.sh .maestro/flows/chat/history.yaml
 appId: com.anonymous.moni.e2e
 name: H2 chat history
 tags:
   - h2
+  - seed-full
 ---
-- launchApp
+- runFlow: ../../subflows/launch.yaml
 - extendedWaitUntil:
     visible:
       id: home.ask-box

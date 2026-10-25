@@ -1,12 +1,13 @@
 # B2 Add a bill (V2P-AmountPage, New bill): Unifi fibre at RM129, due in a few days, every month.
-# Needs a signed-in e2e build with at least one MYR wallet and the bills migration pushed.
-# Run: scripts/device/with-device.sh --lane b2 -- maestro test .maestro/flows/budget/bill-new.yaml
+# Needs at least one MYR wallet and the bills migration pushed.
+# Run: scripts/device/run-flows.sh .maestro/flows/budget/bill-new.yaml
 appId: com.anonymous.moni.e2e
 name: B2 add a bill
 tags:
   - b2
+  - seed-full
 ---
-- launchApp
+- runFlow: ../../subflows/launch.yaml
 - extendedWaitUntil:
     visible:
       id: nav.tab.budget

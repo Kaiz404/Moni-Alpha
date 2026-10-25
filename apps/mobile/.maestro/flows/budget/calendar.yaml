@@ -1,12 +1,13 @@
 # B1 Calendar view (V2P-InsightsCalendar): heat by day, the picked day's rows, top merchants.
-# Needs a signed-in e2e build with at least one MYR wallet.
-# Run: scripts/device/with-device.sh --lane b1 -- maestro test .maestro/flows/budget/calendar.yaml
+# Needs at least one MYR wallet.
+# Run: scripts/device/run-flows.sh .maestro/flows/budget/calendar.yaml
 appId: com.anonymous.moni.e2e
 name: B1 budget calendar
 tags:
   - b1
+  - seed-full
 ---
-- launchApp
+- runFlow: ../../subflows/launch.yaml
 - extendedWaitUntil:
     visible:
       id: nav.tab.budget

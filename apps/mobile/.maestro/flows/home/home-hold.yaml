@@ -1,17 +1,13 @@
 # X1 Home Recent rows share Activity's hold menu: hold a row, see the three actions, close it.
-# Needs a signed-in e2e build with spending in the main currency.
-# Run: scripts/device/with-device.sh --lane x1 -- maestro test .maestro/flows/home/home-hold.yaml
+# Needs spending in the main currency.
+# Run: scripts/device/run-flows.sh .maestro/flows/home/home-hold.yaml
 appId: com.anonymous.moni.e2e
 name: X1 Home hold menu
 tags:
   - x1
-  - needs-default-seed
+  - seed-full
 ---
-- launchApp
-- extendedWaitUntil:
-    visible:
-      id: home.avatar
-    timeout: 15000
+- runFlow: ../../subflows/launch.yaml
 - scrollUntilVisible:
     element:
       id: 'home\.recent\.row\..*'

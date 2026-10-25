@@ -1,0 +1,15 @@
+# Smoke: a cold start reaches Home with the tab bar and the +.
+# Run: scripts/device/run-flows.sh --tag smoke
+appId: com.anonymous.moni.e2e
+name: Smoke launch
+tags:
+  - smoke
+  - seed-any
+---
+- stopApp
+- runFlow: ../../subflows/launch.yaml
+- assertVisible:
+    id: nav.tab.index
+- assertVisible:
+    id: nav.plus
+- takeScreenshot: smoke-home

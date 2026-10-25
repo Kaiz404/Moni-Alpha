@@ -1,17 +1,13 @@
 # C1 Type it: the + chooser slides in the amount page; keypad, pickers, save.
-# Needs a signed-in e2e build with a main-currency wallet.
-# Run: scripts/device/with-device.sh --lane c1 -- maestro test .maestro/flows/capture/type-it.yaml
+# Needs a main-currency wallet.
+# Run: scripts/device/run-flows.sh .maestro/flows/capture/type-it.yaml
 appId: com.anonymous.moni.e2e
 name: C1 Type it
 tags:
   - c1
-  - needs-default-seed
+  - seed-full
 ---
-- launchApp
-- extendedWaitUntil:
-    visible:
-      id: home.avatar
-    timeout: 15000
+- runFlow: ../../subflows/launch.yaml
 
 # Start from Activity so the save proves the page returns to its origin.
 - tapOn:

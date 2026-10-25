@@ -1,0 +1,4 @@
+# Workspace config for `maestro test .maestro`. Flows live in flows/<area>/; subflows/ holds the
+# steps they share and never runs on its own. scripts/device/run-flows.sh picks flows by tag.
+flows:
+  - flows/**

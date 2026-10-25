@@ -1,12 +1,13 @@
 # D1 Debts tab: the hero tiles filter the people list in place (D5), and a
 # person row opens the debt page. Needs at least one open debt owed to the user.
-# Run: scripts/device/with-device.sh --lane d1 -- maestro test .maestro/flows/debts/debts.yaml
+# Run: scripts/device/run-flows.sh .maestro/flows/debts/debts.yaml
 appId: com.anonymous.moni.e2e
 name: D1 Debts tab
 tags:
   - d1
+  - seed-full
 ---
-- launchApp
+- runFlow: ../../subflows/launch.yaml
 - extendedWaitUntil:
     visible:
       id: nav.tab.debts

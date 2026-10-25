@@ -5,9 +5,9 @@ name: A1 scroll Activity
 tags:
   - a1
   - perf
-  - needs-heavy-seed
+  - seed-full
 ---
-- launchApp
+- runFlow: ../../subflows/launch.yaml
 - tapOn:
     id: nav.tab.activity
 - extendedWaitUntil:

@@ -1,14 +1,15 @@
 # R2 lanes 2, 3, 4 and 8: the Moni review notification in the shade.
-# Needs a signed-in e2e build with notification access, Maybank linked to com.android.shell, and
+# Needs notification access, Maybank linked to com.android.shell, and
 # a bank alert posted first, so the capture is waiting:
 #   scripts/device/with-device.sh --lane r2 -- adb shell cmd notification post -S bigtext \
 #     -t Maybank r2-grab "MAYBANK: You've spent RM12.00 at GRAB on 14/10 12:41."
-# Run: scripts/device/with-device.sh --lane r2 -- maestro test .maestro/flows/review/notification.yaml
+# Run: scripts/device/run-flows.sh .maestro/flows/review/notification.yaml
 appId: com.anonymous.moni.e2e
 name: R2 approve from the notification
 tags:
   - r2
   - needs-posted-alert
+  - seed-any
 ---
 - pressKey: Home
 - swipe:

@@ -5,9 +5,9 @@ name: A2 open detail
 tags:
   - a2
   - perf
-  - needs-default-seed
+  - seed-full
 ---
-- launchApp
+- runFlow: ../../subflows/launch.yaml
 - tapOn:
     id: nav.tab.activity
 - extendedWaitUntil:

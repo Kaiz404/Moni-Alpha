@@ -1,0 +1,26 @@
+# Smoke: the + opens the chooser with its four rows, and the close button dismisses it.
+# Run: scripts/device/run-flows.sh --tag smoke
+appId: com.anonymous.moni.e2e
+name: Smoke + chooser
+tags:
+  - smoke
+  - seed-any
+---
+- runFlow: ../../subflows/launch.yaml
+- tapOn:
+    id: nav.plus
+- assertVisible: Add a transaction
+- assertVisible:
+    id: nav.chooser.type
+- assertVisible:
+    id: nav.chooser.scan
+- assertVisible:
+    id: nav.chooser.say
+- assertVisible:
+    id: nav.chooser.ask
+- takeScreenshot: smoke-chooser
+- tapOn:
+    id: nav.chooser.close
+- assertNotVisible: Add a transaction
+- assertVisible:
+    id: home.avatar

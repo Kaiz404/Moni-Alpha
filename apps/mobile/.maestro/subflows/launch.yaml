@@ -1,0 +1,18 @@
+# Opens Moni E2E on Home. Signs in through sign-in.yaml first when the app shows the sign-in page,
+# as it does after run-flows.sh clears the app's data. Every flow under flows/ starts here.
+appId: com.anonymous.moni.e2e
+---
+- launchApp
+- extendedWaitUntil:
+    visible:
+      id: 'home\.avatar|auth\.email'
+    timeout: 20000
+- runFlow:
+    when:
+      visible:
+        id: auth.email
+    file: sign-in.yaml
+- extendedWaitUntil:
+    visible:
+      id: home.avatar
+    timeout: 20000

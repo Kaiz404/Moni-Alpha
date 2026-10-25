@@ -1,12 +1,12 @@
 # A1 hold menu per V2A-ActivityMenu: hold a row, Edit category to Food & Dining.
-# Run: scripts/device/with-device.sh --lane a1 -- maestro test .maestro/flows/activity/activity-hold.yaml
+# Run: scripts/device/run-flows.sh .maestro/flows/activity/activity-hold.yaml
 appId: com.anonymous.moni.e2e
 name: A1 Activity hold menu
 tags:
   - a1
-  - needs-default-seed
+  - seed-full
 ---
-- launchApp
+- runFlow: ../../subflows/launch.yaml
 - tapOn:
     id: nav.tab.activity
 - extendedWaitUntil:

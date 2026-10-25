@@ -1,12 +1,12 @@
 # A1 search: typing grab leaves only Grab rows; a miss shows the no-matches tile.
-# Run: scripts/device/with-device.sh --lane a1 -- maestro test .maestro/flows/activity/activity-search.yaml
+# Run: scripts/device/run-flows.sh .maestro/flows/activity/activity-search.yaml
 appId: com.anonymous.moni.e2e
 name: A1 Activity search
 tags:
   - a1
-  - needs-default-seed
+  - seed-full
 ---
-- launchApp
+- runFlow: ../../subflows/launch.yaml
 - tapOn:
     id: nav.tab.activity
 - extendedWaitUntil:

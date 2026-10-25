@@ -1,23 +1,17 @@
 # C2 Scan a receipt: the ML Kit scanner imports the mamak receipt from the
 # gallery, Moni reads it, the check page approves it to the ledger.
-# Needs the AI backend (EXPO_PUBLIC_AI_API_URL) and the fixture on the phone:
-#   adb push .maestro/fixtures/receipt-mamak.png /sdcard/Pictures/
-#   adb shell am broadcast -a android.intent.action.MEDIA_SCANNER_SCAN_FILE -d file:///sdcard/Pictures/receipt-mamak.png
+# The e2e mock reads any scanned image as this receipt (lib/ai/client/mock-fixtures.ts).
+# run-flows.sh pushes .maestro/fixtures/*.png to /sdcard/Pictures/moni-e2e/ for the import.
 # The scanner's import control is Google's UI; its label is the Appendix A
 # experiment's finding and may need updating after `maestro hierarchy`.
-# Run: scripts/device/with-device.sh --lane c2 -- maestro test .maestro/flows/capture/scan.yaml
+# Run: scripts/device/run-flows.sh .maestro/flows/capture/scan.yaml
 appId: com.anonymous.moni.e2e
 name: C2 Scan a receipt
 tags:
   - c2
-  - needs-default-seed
-  - needs-ai
+  - seed-full
 ---
-- launchApp
-- extendedWaitUntil:
-    visible:
-      id: home.avatar
-    timeout: 15000
+- runFlow: ../../subflows/launch.yaml
 - tapOn:
     id: nav.plus
 - tapOn:

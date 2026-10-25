@@ -1,0 +1,14 @@
+# Signs out from Home through Profile and ends on the sign-in page.
+appId: com.anonymous.moni.e2e
+---
+- tapOn:
+    id: home.avatar
+- scrollUntilVisible:
+    element:
+      id: profile.sign-out
+- tapOn:
+    id: profile.sign-out
+- extendedWaitUntil:
+    visible:
+      id: auth.email
+    timeout: 15000

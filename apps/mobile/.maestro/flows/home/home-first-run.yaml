@@ -1,17 +1,13 @@
 # H1 Home first run: a user with no wallets and no transactions.
 # Needs the empty seed.
-# Run: scripts/device/with-device.sh --lane h1 -- maestro test .maestro/flows/home/home-first-run.yaml
+# Run: scripts/device/run-flows.sh .maestro/flows/home/home-first-run.yaml
 appId: com.anonymous.moni.e2e
 name: H1 Home first run
 tags:
   - h1
-  - needs-empty-seed
+  - seed-empty
 ---
-- launchApp
-- extendedWaitUntil:
-    visible:
-      id: home.avatar
-    timeout: 15000
+- runFlow: ../../subflows/launch.yaml
 - assertVisible: 'Welcome to Moni.*'
 - assertVisible: Add a wallet and Moni adds up what you have.
 - assertVisible:

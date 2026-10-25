@@ -1,0 +1,26 @@
+# Smoke: a seeded transaction opens from Activity on its detail page.
+# Run: scripts/device/run-flows.sh --tag smoke
+appId: com.anonymous.moni.e2e
+name: Smoke open a transaction
+tags:
+  - smoke
+  - seed-full
+---
+- runFlow: ../../subflows/launch.yaml
+- tapOn:
+    id: nav.tab.activity
+- extendedWaitUntil:
+    visible:
+      id: 'activity\.transaction\..*'
+    timeout: 15000
+- tapOn:
+    id: 'activity\.transaction\..*'
+    index: 0
+- assertVisible:
+    id: txn.amount.pencil
+- assertVisible:
+    id: txn.tile.category
+- takeScreenshot: smoke-transaction
+- pressKey: Back
+- assertVisible:
+    id: activity.ask-moni

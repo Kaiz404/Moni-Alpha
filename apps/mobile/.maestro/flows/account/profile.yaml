@@ -1,17 +1,13 @@
 # K1 Profile: rows in board order, main currency, appearance, the rows that open pages, sign out.
-# Needs a signed-in e2e build with the default seed. Signs out at the end and back in.
-# Run: scripts/device/with-device.sh --lane k1 -- maestro test -e E2E_EMAIL=... -e E2E_PASSWORD=... .maestro/flows/account/profile.yaml
+# Needs the full seed. Signs out at the end and back in.
+# Run: scripts/device/run-flows.sh .maestro/flows/account/profile.yaml
 appId: com.anonymous.moni.e2e
 name: K1 Profile
 tags:
   - k1
-  - needs-default-seed
+  - seed-full
 ---
-- launchApp
-- extendedWaitUntil:
-    visible:
-      id: home.avatar
-    timeout: 15000
+- runFlow: ../../subflows/launch.yaml
 - tapOn:
     id: home.avatar
 - assertVisible:

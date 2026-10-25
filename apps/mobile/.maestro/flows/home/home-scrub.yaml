@@ -1,12 +1,12 @@
 # H1 Home scrub: drag across the Pace chart; the callout follows a day.
-# Run: scripts/device/with-device.sh --lane h1 -- maestro test .maestro/flows/home/home-scrub.yaml
+# Run: scripts/device/run-flows.sh .maestro/flows/home/home-scrub.yaml
 appId: com.anonymous.moni.e2e
 name: H1 Home scrub
 tags:
   - h1
-  - needs-default-seed
+  - seed-full
 ---
-- launchApp
+- runFlow: ../../subflows/launch.yaml
 - extendedWaitUntil:
     visible:
       id: home.chart.plot
