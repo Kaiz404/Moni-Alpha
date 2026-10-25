@@ -115,6 +115,7 @@ function DebtPage({
   const closeDue = useCallback(() => setDueOpen(false), []);
   const settling = useRef(false);
   const open = state === 'open';
+  const [openedOpen] = useState(open);
   const money = (minor: number) => formatMoney(minor, currency);
 
   const settle = async () => {
@@ -258,7 +259,10 @@ function DebtPage({
               onRemind={() => void sendReminder(line)}
             />
           ) : state === 'settled' ? (
-            <SquareCard line={line} />
+            <SquareCard
+              line={line}
+              pop={openedOpen}
+            />
           ) : (
             <WrittenOff line={line} />
           )}
