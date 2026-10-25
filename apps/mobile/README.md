@@ -136,6 +136,31 @@ node apps/mobile/scripts/e2e/seed.mjs --query pending-proposals # counts, user, 
 - `--query <name>` prints one read-only query as JSON. Every query reads only the e2e user's rows.
 - `node --test "apps/mobile/scripts/e2e/*.test.mjs"` checks the date shift, the balances, the Review order, the merchant keys, the ids, and the guard, with no network. `pnpm --filter moni test` runs it.
 
+### Maestro flows
+
+Flows live in `.maestro/flows/<area>/`. Each one starts with `subflows/launch.yaml`, which opens Moni E2E and signs in through `subflows/sign-in.yaml` when the sign-in page shows. `.maestro/config.yaml` makes `maestro test .maestro` run `flows/**` and never `subflows/`. Tags pick flows:
+
+- `smoke` marks the short v2 suite in `flows/smoke/`: launch, sign in, each tab root, the + chooser, a transaction, and the Review deck.
+- Each flow has one seed tag. `seed-full` needs `--profile full`, `seed-empty` needs `--profile empty`, and `seed-any` passes on either.
+- `needs-speech`, `needs-posted-alert`, `needs-ai`, and `perf` mark flows that need a person speaking, a posted bank alert, the real AI backend, or `perf.sh`.
+- The unit tags, such as `h1` or `r1`, name the PLAN.md unit that wrote the flow.
+
+`node scripts/codemods/maestro-flows.mjs --check` fails when a flow skips the launch subflow or its seed tag. `pnpm --filter moni lint:flow-ids` fails on an `id:` that no `tid()` call renders. Check a flow's syntax with `maestro check-syntax <flow.yaml>`.
+
+Run a suite with `run-flows.sh`:
+
+```bash
+apps/mobile/scripts/device/run-flows.sh --tag smoke                       # the smoke suite on the full seed
+apps/mobile/scripts/device/run-flows.sh --area budget --out /tmp/budget   # one area, screenshots copied to /tmp/budget
+apps/mobile/scripts/device/run-flows.sh --seed empty --area home          # the seed-empty flows in one area
+apps/mobile/scripts/device/run-flows.sh --sha <key> .maestro/flows/review/buttons.yaml
+```
+
+- `run-flows.sh [--sha <key>] [--seed full|empty] [--out <dir>] [--tag <tag>]... [--area <area>]... [<flow or dir>...]` takes the device lock through `with-device.sh`, which runs `doctor.sh` and honours the hold file. It then installs the key with `install.sh` (the `HEAD` SHA by default), resets the seed with `seed.mjs --reset`, clears the app's data with `pm clear` and grants the permissions again, and pushes `.maestro/fixtures/*.png` to `/sdcard/Pictures/moni-e2e/` for the Scan flows. Then it runs one `maestro test` with JUnit output and `E2E_EMAIL` and `E2E_PASSWORD` from `.env.e2e`.
+- With no flow, `--tag`, or `--area`, it runs every flow. It always leaves out the other seed's tag, and it leaves out the `needs-*` and `perf` tags unless you pass that tag with `--tag`.
+- Each run writes `~/.local/share/moni-runs/<key>/<timestamp>/` with `seed.log`, `maestro.log`, `report.xml`, and `maestro/` (Maestro's `commands-*.json` and `takeScreenshot/` PNGs). `--out` also copies every PNG there. The last line is `<passed>/<total> flows passed, report <path>`, and the exit code is Maestro's. The run directory holds the e2e password in Maestro's command log, so do not paste it.
+- It exits 2 on a bad argument, before it takes the lock, and 3 when `.env.e2e` has no `E2E_EMAIL` or `E2E_PASSWORD`. The lock's exit codes are `with-device.sh`'s.
+
 ## Map
 
 | Path                              | Role                                                                                                                                                                                                                                |

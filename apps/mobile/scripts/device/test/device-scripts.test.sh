@@ -45,6 +45,7 @@ mkdir -p "$tmp/fake-sdk/platform-tools" "$tmp/stub-bin" "$tmp/home/.maestro/bin"
 cat >"$tmp/fake-sdk/platform-tools/adb" <<'ADB'
 #!/bin/sh
 [ "$1" = -s ] && serial=$2 && shift 2
+[ -z "$FAKE_ADB_LOG" ] || echo "$*" >>"$FAKE_ADB_LOG"
 case "$1" in
   version) printf 'Android Debug Bridge version 1.0.41\nVersion 37.0.0-14910828\n' ;;
   start-server) [ -z "$FAKE_SERVER_PID" ] || { sleep 30 >/dev/null 2>&1 & echo $! >>"$FAKE_SERVER_PID"; } ;;
@@ -57,11 +58,32 @@ case "$1" in
       "dumpsys window policy") echo "    showing=false" ;;
       "getprop ro.build.version.release") echo 16 ;;
       "getprop ro.mi.os.version.name") echo OS3.0 ;;
+      "cat /data/local/tmp/moni-e2e.sha") echo "$FAKE_MARKER" ;;
+      "pm path com.anonymous.moni.e2e") echo package:/data/app/moni-e2e/base.apk ;;
     esac
     ;;
 esac
 ADB
-printf '#!/bin/sh\necho 2.11.0\necho "A new version of the Maestro CLI is available (2.12.0). Upgrade command: curl -Ls https://get.maestro.mobile.dev | bash"\n' >"$tmp/home/.maestro/bin/maestro"
+cat >"$tmp/home/.maestro/bin/maestro" <<'MAESTRO'
+#!/bin/sh
+if [ "$1" != test ]; then
+  echo 2.11.0
+  echo "A new version of the Maestro CLI is available (2.12.0). Upgrade command: curl -Ls https://get.maestro.mobile.dev | bash"
+  exit 0
+fi
+printf '%s\n' "$@" >"$FAKE_MAESTRO_LOG"
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --output) report=$2 ;;
+    --test-output-dir) shots=$2/takeScreenshot ;;
+  esac
+  shift
+done
+mkdir -p "$shots"
+printf '\211PNG' >"$shots/smoke-home.png"
+printf '<testsuites><testsuite><testcase name="a"/><testcase name="b"><failure/></testcase></testsuite></testsuites>\n' >"$report"
+exit 1
+MAESTRO
 printf '#!/bin/sh\necho "Picked up JAVA_TOOL_OPTIONS: -Dfile.encoding=UTF-8" >&2\necho "openjdk version \\"17.0.12\\" 2024-07-16" >&2\n' >"$tmp/stub-bin/java"
 printf '#!/bin/sh\n[ "$1" = status ] && echo "100.64.0.9  redmi-note-13-pro-5g  owner@  android  -"\nexit 0\n' >"$tmp/stub-bin/tailscale.exe"
 printf '#!/bin/sh\necho "  Proto  Local Address  Foreign Address  State  PID"\n[ -z "$FAKE_WINDOWS_ADB" ] || echo "  TCP    127.0.0.1:5037         0.0.0.0:0              LISTENING       $FAKE_WINDOWS_ADB"\n' >"$tmp/stub-bin/netstat.exe"
@@ -242,6 +264,51 @@ expo_config() {
 }
 expect "APP_VARIANT=e2e gives the e2e package, scheme, name, and extra.appVariant" "com.anonymous.moni.e2e moni-e2e Moni E2E e2e" "$(APP_VARIANT=e2e expo_config)"
 expect "without APP_VARIANT the config keeps the daily package and scheme, with no appVariant" "com.anonymous.moni moni Moni no-variant" "$(expo_config)"
+
+rf=$dir/run-flows.sh
+for bad in "--seed bogus" "--area nosuch" "--tag" "--frobnicate" "no/such/flow.yaml"; do
+  # shellcheck disable=SC2086
+  out=$("$rf" $bad 2>&1)
+  rc=$?
+  [[ $rc == 2 && $out == *"usage: run-flows.sh"* ]] && pass "run-flows.sh $bad exits 2 with the usage" || fail "run-flows.sh $bad: rc $rc, $out"
+done
+[[ $("$rf" --area nosuch 2>&1) == *"areas: "*"smoke"* ]] && pass "run-flows.sh lists the areas" || fail "run-flows.sh area list missing"
+
+setsid "$dir/with-device.sh" --skip-doctor --pr t3 --lane holder -- sleep 5 >/dev/null 2>&1 &
+holder=$!
+disown
+for _ in $(seq 50); do
+  grep -q " $holder t3 holder$" "$MONI_DEVICE_STATE_DIR/redmi.owner" 2>/dev/null && break
+  sleep 0.1
+done
+out=$(timeout 1 "$rf" --tag smoke 2>&1)
+[[ $out == *"waiting for device lock held by $holder t3 holder"* ]] && pass "run-flows.sh waits for the device lock" || fail "run-flows.sh lock wait: $out"
+kill -9 -- "-$holder" 2>/dev/null
+holder=""
+
+mkdir -p "$tmp/rf-bin" "$tmp/rf-apks/rf-key"
+touch "$tmp/rf-apks/rf-key/app-release.apk"
+printf '#!/bin/sh\necho "$@" >>"$FAKE_NODE_LOG"\necho "before {}"\necho "after  {\\"wallets\\":4}"\necho "seeded"\n' >"$tmp/rf-bin/node"
+printf '#!/bin/sh\ncase "$2" in packagename) echo com.anonymous.moni.e2e ;; permissions) echo "uses-permission: name='"'"'android.permission.CAMERA'"'"'" ;; esac\n' >"$tmp/rf-bin/aapt2"
+chmod +x "$tmp/rf-bin/"*
+run_flows() {
+  stubbed env PATH="$tmp/rf-bin:$tmp/stub-bin:/usr/bin:/bin" MONI_APK_CACHE="$tmp/rf-apks" MONI_AAPT2="$tmp/rf-bin/aapt2" \
+    MONI_RUNS_DIR="$tmp/runs" FAKE_MARKER=rf-key FAKE_ADB_LOG="$tmp/rf-adb.log" FAKE_NODE_LOG="$tmp/rf-node.log" \
+    FAKE_MAESTRO_LOG="$tmp/rf-maestro.log" E2E_EMAIL=e2e+test@example.com E2E_PASSWORD=pw-123 "$rf" "$@"
+}
+out=$(run_flows --sha rf-key --tag smoke --out "$tmp/rf-out" 2>/dev/null)
+expect "run-flows.sh exits with Maestro's code" 1 $?
+[[ $out == "1/2 flows passed, report $tmp/runs/rf-key/"*"/report.xml" ]] && pass "run-flows.sh prints the passed count from report.xml" || fail "run-flows.sh summary: $out"
+maestro_args=$(tr '\n' ' ' <"$tmp/rf-maestro.log")
+[[ $maestro_args == "test --device 100.64.0.9:40000 --include-tags smoke --exclude-tags seed-empty,needs-speech,needs-posted-alert,needs-ai,perf --format junit --output $tmp/runs/rf-key/"*"/report.xml"* ]] && pass "run-flows.sh runs one Maestro suite with the smoke tag and the full seed's exclusions" || fail "maestro args: $maestro_args"
+[[ $maestro_args == *"-e E2E_EMAIL=e2e+test@example.com -e E2E_PASSWORD=pw-123 $(cd "$dir/../.." && pwd)/.maestro "* ]] && pass "run-flows.sh passes the e2e credentials and the workspace" || fail "maestro env args: $maestro_args"
+expect "run-flows.sh resets the seed it was given" "$(cd "$dir/../.." && pwd)/scripts/e2e/seed.mjs --reset --profile full" "$(cat "$tmp/rf-node.log")"
+[[ $(grep -c "^shell pm clear com.anonymous.moni.e2e$" "$tmp/rf-adb.log") == 1 && $(grep -c "^shell pm grant com.anonymous.moni.e2e android.permission.CAMERA$" "$tmp/rf-adb.log") == 2 ]] && pass "run-flows.sh clears the app's data and grants permissions again" || fail "adb calls: $(tr '\n' ';' <"$tmp/rf-adb.log")"
+grep -q "^install " "$tmp/rf-adb.log" && fail "run-flows.sh reinstalled an APK the phone already has" || pass "run-flows.sh skips the install when the phone has the key"
+[[ -f $tmp/rf-out/smoke-home.png ]] && pass "run-flows.sh copies screenshots to --out" || fail "no screenshot in --out: $(ls "$tmp/rf-out" 2>&1)"
+run_flows --sha rf-key --seed empty --tag needs-ai --area home >/dev/null 2>&1
+maestro_args=$(tr '\n' ' ' <"$tmp/rf-maestro.log")
+[[ $maestro_args == *"--include-tags needs-ai --exclude-tags seed-full,needs-speech,needs-posted-alert,perf "*" $(cd "$dir/../.." && pwd)/.maestro/flows/home "* ]] && pass "--seed empty excludes seed-full, a --tag lifts its default exclusion, and --area picks one folder" || fail "empty seed maestro args: $maestro_args"
 
 echo "$failures failed"
 ((failures == 0))
