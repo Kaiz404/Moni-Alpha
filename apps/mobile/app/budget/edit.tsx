@@ -327,10 +327,16 @@ export default function EditBudgetsScreen() {
                     {({ editable, editor }) => (
                       <View>
                         <View className="min-h-[66px] flex-row items-center gap-3.5 py-3 pl-[18px] pr-3">
-                          <TintBubble
-                            icon={resolveTransactionIcon(category.icon, 'expense')}
-                            color={category.color}
-                          />
+                          <View>
+                            <TintBubble
+                              icon={resolveTransactionIcon(category.icon, 'expense')}
+                              color={category.color}
+                            />
+                            <View
+                              className="absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full border-[2.5px] border-card"
+                              style={{ backgroundColor: category.color ?? tokens.inactive }}
+                            />
+                          </View>
                           <View className="min-w-0 flex-1">
                             <Text
                               variant="rowTitle"
