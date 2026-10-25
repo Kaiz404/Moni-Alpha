@@ -108,7 +108,11 @@ The screen tracks reported these differences in their handoffs. Each waits for t
 - Debts: recording a debt with no wallet, and debt reminders.
 - Budget: the Budgets heading has a routing chevron into Edit budgets, which the board does not draw (D9 removed the Edit link, and the chevron keeps the monthly total reachable).
 - Budget calendar: the day cut-offs.
-- Scan a receipt: the ML Kit scanner (D11).
+- Scan a receipt: the ML Kit scanner (D11). The check page's meta reads "Receipt" where the board reads "Receipt · 6 items": the receipt reader returns one total and no line items, and counting them needs a backend wire change.
+- Say it: when no run of the spoken words gives the amount Moni read, the amount hint falls back to "Moni heard RM9.80" instead of the board's "you said nine eighty".
+- Transaction detail: only notification rows captured by this build or later keep the bank alert, so older rows show the currency alone under the amount edit.
+- Capture log: the note under a Not linked alert says "Same payment as the … alert" for every app; the board's "Same ride" is Grab's sample. It matches another app's Added alert by RM amount within 10 minutes.
+- States kit: the offline banner shows on the tab roots and the debt page that carry `SyncBanner`. Maestro cannot drive it over wireless adb, so Jest covers the state mapping.
 - The category sheet's **Debt payment** opens the Debts tab, where the person is chosen; the board links the amount page, which needs a person first.
 - Categories: an income preset opens Activity scoped to it for this month. The board links every preset to the category page, which has no income view.
 - Wallet page: **Use as default** is an addition. It sets the wallet captures fall back to, which v1 set on Profile.

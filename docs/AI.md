@@ -15,7 +15,7 @@ Input (chat text / receipt photo / notification / + chooser scan or voice)
   → Go backend                            apps/backend (Gin, stateless)
   → OpenRouter
   → routine detection                     apps/mobile/lib/ai/routine.ts
-      routine notification → transactions (metadata.ai_suggested, shown as "Auto")
+      routine notification → transactions (metadata.ai_suggested, shown as "Auto"; metadata.alert keeps the alert)
       otherwise            → proposed_transactions (category/merchant prefilled from history)
   → Review deck (`app/review.tsx`) → Approve / Not mine / Later
 ```
