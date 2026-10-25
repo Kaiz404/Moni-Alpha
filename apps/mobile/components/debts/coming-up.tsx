@@ -25,13 +25,15 @@ export function ComingUp({ rows }: { rows: ComingUpRow[] }) {
       accessibilityLabel="Coming up"
       className="rounded-card bg-lemon pb-2 pl-[18px] pr-3.5 pt-3.5"
     >
-      <Text
-        variant="caps"
-        className="pb-1 text-on-pastel"
-        accessibilityRole="header"
-      >
-        Coming up
-      </Text>
+      <View className="min-h-[18px] justify-center pb-1">
+        <Text
+          variant="caps"
+          className="text-on-pastel"
+          accessibilityRole="header"
+        >
+          Coming up
+        </Text>
+      </View>
       {rows.map((row) => (
         <Row
           key={row.line.debt.id}
@@ -120,7 +122,7 @@ function Row({
         ) : null}
       </View>
       {iOwe ? null : remindedToday ? (
-        <View className="ml-14 h-11 flex-row items-center gap-1.5">
+        <View className="ml-14 h-11 flex-row items-center gap-1.5 opacity-80">
           <IconSymbol
             name="check"
             size={18}

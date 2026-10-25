@@ -2,6 +2,7 @@ import { router } from 'expo-router';
 import { useEffect } from 'react';
 import { View } from 'react-native';
 import Animated, {
+  FadeIn,
   useAnimatedStyle,
   useReducedMotion,
   useSharedValue,
@@ -72,14 +73,16 @@ export function SettledList({
         </Animated.View>
       </Press>
       {open ? (
-        <ListCard>
-          {lines.map((line) => (
-            <ClosedRow
-              key={line.debt.id}
-              line={line}
-            />
-          ))}
-        </ListCard>
+        <Animated.View entering={FadeIn.duration(200)}>
+          <ListCard>
+            {lines.map((line) => (
+              <ClosedRow
+                key={line.debt.id}
+                line={line}
+              />
+            ))}
+          </ListCard>
+        </Animated.View>
       ) : null}
     </>
   );
