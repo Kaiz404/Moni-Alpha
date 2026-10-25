@@ -238,10 +238,10 @@ expect "perf-compare.mjs exits 0 when every rule passes" 0 $?
 
 expo_config() {
   (cd "$dir/../.." && with_env npx expo config --type public --json 2>/dev/null) |
-    with_env node -e 'const c = JSON.parse(require("fs").readFileSync(0, "utf8")); console.log(c.android.package, c.scheme, c.name)'
+    with_env node -e 'const c = JSON.parse(require("fs").readFileSync(0, "utf8")); console.log(c.android.package, c.scheme, c.name, c.extra.appVariant ?? "no-variant")'
 }
-expect "APP_VARIANT=e2e gives the e2e package, scheme, and name" "com.anonymous.moni.e2e moni-e2e Moni E2E" "$(APP_VARIANT=e2e expo_config)"
-expect "without APP_VARIANT the config keeps the daily package and scheme" "com.anonymous.moni moni Moni" "$(expo_config)"
+expect "APP_VARIANT=e2e gives the e2e package, scheme, name, and extra.appVariant" "com.anonymous.moni.e2e moni-e2e Moni E2E e2e" "$(APP_VARIANT=e2e expo_config)"
+expect "without APP_VARIANT the config keeps the daily package and scheme, with no appVariant" "com.anonymous.moni moni Moni no-variant" "$(expo_config)"
 
 echo "$failures failed"
 ((failures == 0))

@@ -24,6 +24,7 @@ const base: ExpoConfig =
         scheme: 'moni-e2e',
         android: { ...daily.android, package: e2eId },
         ios: { ...daily.ios, bundleIdentifier: e2eId },
+        extra: { ...daily.extra, appVariant: 'e2e' },
       }
     : daily;
 const iosUrlScheme = googleIosUrlScheme();
