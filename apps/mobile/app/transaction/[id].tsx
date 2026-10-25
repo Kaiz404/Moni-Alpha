@@ -1,12 +1,13 @@
 import { useValue } from '@legendapp/state/react';
 import type { UpdateTransaction } from '@repo/types';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Alert, ScrollView, View } from 'react-native';
 
 import { BudgetLine } from '@/components/transaction/budget-line';
 import {
   DetailLinks,
+  MapThumb,
   useReceiptLink,
   type DetailLink,
 } from '@/components/transaction/detail-links';
@@ -19,12 +20,14 @@ import {
 } from '@/components/transaction/detail-tiles';
 import { Button } from '@/components/ui/button';
 import { NotFound } from '@/components/ui/empty-tile';
+import { IconSymbol } from '@/components/ui/icon-symbol';
 import {
   InPlaceField,
   InPlaceGroup,
   type Saved,
 } from '@/components/ui/in-place-field';
 import { Page } from '@/components/ui/page';
+import { Press } from '@/components/ui/press';
 import { Text } from '@/components/ui/text';
 import { TintBubble } from '@/components/ui/transaction-row';
 import { useAuth } from '@/lib/auth/auth-context';
@@ -58,7 +61,7 @@ import {
   deleteTransaction,
   updateTransaction,
 } from '@/lib/supabase/transactions';
-import { tid } from '@/lib/test-ids';
+import { tid, type TestId } from '@/lib/test-ids';
 import { showToast } from '@/lib/toast/toast-store';
 import { resolveTransactionIcon } from '@/lib/transactions/icon';
 import { BALANCE_CORRECTION_TITLE } from '@/lib/wallets/balance-correction';
@@ -138,6 +141,7 @@ function Detail({ transaction: tx }: { transaction: FinanceTransaction }) {
     () => transactionTable$[tx.id].get() as RawRow | undefined,
   );
   const [timezone, setTimezone] = useState('UTC');
+  const [editing, setEditing] = useState<TestId | null>(null);
   const progress = useValue(budgetProgress$(userId, timezone));
 
   useEffect(() => {
@@ -315,7 +319,7 @@ function Detail({ transaction: tx }: { transaction: FinanceTransaction }) {
     const confirmed = await openSheet({
       kind: 'confirm',
       title: 'Delete this transaction?',
-      message: `${title} ${formatMoney(tx.amountMinor, tx.currency)} on ${formatDate(tx.transactionDate)} comes out of ${month}${category && !transfer ? ` and out of ${category.name}` : ''}.`,
+      message: `${title} ${formatSignedMoney(tx.type, tx.amountMinor, tx.currency)} on ${formatDate(tx.transactionDate)} comes out of ${month}${category && !transfer ? ` and out of ${category.name}` : ''}.`,
       confirmLabel: 'Delete',
       cancelLabel: 'Keep it',
       destructive: true,
@@ -396,6 +400,7 @@ function Detail({ transaction: tx }: { transaction: FinanceTransaction }) {
             meta: [label?.area, 'open map'].filter(Boolean).join(' · '),
             icon: 'map-marker-outline',
             trailing: 'chevron-right',
+            bubble: <MapThumb />,
             onPress: () =>
               place
                 ? router.push({ pathname: '/place/[id]', params: { id: place.id } })
@@ -428,41 +433,67 @@ function Detail({ transaction: tx }: { transaction: FinanceTransaction }) {
       : []),
   ];
 
+  const nameRow = (name: ReactNode) => (
+    <View className="flex-row items-center gap-3">
+      <TintBubble
+        icon={
+          correction
+            ? 'scale-balance'
+            : resolveTransactionIcon(category?.icon, tx.type)
+        }
+        color={
+          correction
+            ? tokens.lemon
+            : transfer
+              ? null
+              : (category?.color ?? null)
+        }
+      />
+      <View className="min-w-0 flex-1">
+        {name}
+        <Text
+          variant="meta"
+          className="text-muted"
+          style={{ fontVariant: ['tabular-nums'] }}
+        >
+          {[
+            formatDate(tx.transactionDate),
+            clockTime(tx.transactionDate),
+            alert ? `Alert says ${tx.merchant}` : null,
+          ]
+            .filter(Boolean)
+            .join(' · ')}
+        </Text>
+      </View>
+    </View>
+  );
+
   return (
     <Page
       screen="txn"
       kind="pushed"
       title="Transaction"
     >
-      <InPlaceGroup>
+      <InPlaceGroup
+        editing={editing}
+        onEditingChange={setEditing}
+      >
         <ScrollView
           keyboardShouldPersistTaps="handled"
-          contentContainerClassName="gap-4 px-screen pb-8"
+          contentContainerClassName="gap-3 px-screen pb-8"
         >
-          <View className="flex-row items-start gap-3">
-            <TintBubble
-              icon={
-                correction
-                  ? 'scale-balance'
-                  : resolveTransactionIcon(category?.icon, tx.type)
-              }
-              color={
-                correction
-                  ? tokens.lemon
-                  : transfer
-                    ? null
-                    : (category?.color ?? null)
-              }
-            />
-            <View className="min-w-0 flex-1 gap-0.5">
-              {correction ? (
+          <View className="gap-2.5">
+            {correction ? (
+              nameRow(
                 <Text
                   variant="sectionTitle"
                   className="text-foreground"
+                  numberOfLines={1}
                 >
                   {title}
-                </Text>
-              ) : (
+                </Text>,
+              )
+            ) : (
               <InPlaceField
                 testID={tid('txn', 'merchant')}
                 label="Name"
@@ -477,71 +508,67 @@ function Detail({ transaction: tx }: { transaction: FinanceTransaction }) {
                 }
                 onSave={saveName}
               >
-                <Text
-                  variant="sectionTitle"
-                  className="text-foreground"
-                  numberOfLines={2}
-                >
-                  {title}
-                </Text>
+                {({ editable, editor }) =>
+                  editor ??
+                  nameRow(
+                    editable(
+                      <Text
+                        variant="sectionTitle"
+                        className="text-foreground"
+                        numberOfLines={1}
+                      >
+                        {title}
+                      </Text>,
+                    ),
+                  )
+                }
               </InPlaceField>
-              )}
-              <Text
-                variant="meta"
-                className="text-muted"
-              >
-                {[
-                  formatDate(tx.transactionDate),
-                  clockTime(tx.transactionDate),
-                  alert ? `Alert says ${tx.merchant}` : null,
-                ]
-                  .filter(Boolean)
-                  .join(' · ')}
-              </Text>
-            </View>
-          </View>
+            )}
 
-          <InPlaceField
-            testID={tid('txn', 'amount')}
-            label="Amount"
-            kind="amount"
-            prefix={`${sign}${currencySymbol(tx.currency)}`}
-            value={tx.amountMinor}
-            hint={tx.currency}
-            onSave={(value) =>
-              value === tx.amountMinor
-                ? undefined
-                : update(tx.id, { amountMinor: value }, { amountMinor: tx.amountMinor })
-            }
-          >
-            <Text
-              variant="amountHero"
-              className={
-                tx.type === 'income'
-                  ? 'text-deep-mint'
-                  : transfer
-                    ? 'text-muted'
-                    : 'text-foreground'
+            <InPlaceField
+              testID={tid('txn', 'amount')}
+              label="Amount"
+              kind="amount"
+              prefix={`${sign}${currencySymbol(tx.currency)}`}
+              value={tx.amountMinor}
+              hint={tx.currency}
+              onSave={(value) =>
+                value === tx.amountMinor
+                  ? undefined
+                  : update(tx.id, { amountMinor: value }, { amountMinor: tx.amountMinor })
               }
-              style={{ fontVariant: ['tabular-nums'] }}
-              adjustsFontSizeToFit
-              numberOfLines={1}
             >
-              {formatSignedMoney(tx.type, tx.amountMinor, tx.currency)}
-            </Text>
-          </InPlaceField>
+              {({ editable, editor }) =>
+                editor ?? (
+                  <View>
+                    {editable(
+                      <Text
+                        variant="amountHero"
+                        className={
+                          tx.type === 'income'
+                            ? 'text-deep-mint'
+                            : transfer
+                              ? 'text-muted'
+                              : 'text-foreground'
+                        }
+                        style={{ fontVariant: ['tabular-nums'] }}
+                        adjustsFontSizeToFit
+                        numberOfLines={1}
+                      >
+                        {formatSignedMoney(tx.type, tx.amountMinor, tx.currency)}
+                      </Text>,
+                    )}
+                  </View>
+                )
+              }
+            </InPlaceField>
+          </View>
 
           <DetailTiles tiles={tiles} />
 
           {budget ? <BudgetLine budget={budget} /> : null}
 
-          <View className="gap-1.5 rounded-card bg-card px-[18px] py-3.5">
-            <Text
-              variant="meta"
-              className="text-muted"
-            >
-              Note
-            </Text>
+          <View className="gap-1.5 rounded-card bg-card pb-3.5 pl-[18px] pr-3 pt-3">
             <InPlaceField
               testID={tid('txn', 'note')}
               label="Note"
@@ -555,18 +582,48 @@ function Detail({ transaction: tx }: { transaction: FinanceTransaction }) {
                   : update(tx.id, { notes: value || null }, { notes: tx.notes })
               }
             >
-              {({ editable, editor }) =>
-                editor ??
-                editable(
-                  <Text
-                    variant="body"
-                    className={tx.notes ? 'text-foreground' : 'text-muted'}
-                  >
-                    {tx.notes || 'Add a note: who it was with, what it was for'}
-                  </Text>,
-                  { pencil: Boolean(tx.notes) },
-                )
-              }
+              {({ editable, editor, open }) => (
+                <>
+                  <View className="min-h-8 flex-row items-center justify-between gap-2">
+                    <Text
+                      variant="meta"
+                      className="text-muted"
+                    >
+                      Note
+                    </Text>
+                    {tx.notes && editing === null ? (
+                      <Press
+                        testID={tid('txn', 'note', 'pencil')}
+                        accessibilityLabel="Edit note"
+                        accessibilityHint="Opens the keyboard"
+                        hitSlop={6}
+                        pressedClassName="bg-hairline"
+                        className="h-8 w-8 items-center justify-center rounded-full bg-sand"
+                        onPress={open}
+                      >
+                        <IconSymbol
+                          name="pencil-outline"
+                          size={16}
+                          color={tokens.foreground}
+                        />
+                      </Press>
+                    ) : null}
+                  </View>
+                  {editor ??
+                    editable(
+                      <Text
+                        variant="body"
+                        className={`pr-1 ${tx.notes ? 'text-foreground' : 'text-muted'}`}
+                      >
+                        {tx.notes || 'Add a note: who it was with, what it was for'}
+                      </Text>,
+                      {
+                        pencil: false,
+                        className: 'min-h-11 flex-row items-center',
+                      },
+                    )}
+                </>
+              )}
             </InPlaceField>
           </View>
 
@@ -577,7 +634,7 @@ function Detail({ transaction: tx }: { transaction: FinanceTransaction }) {
             variant="destructive"
             icon="trash-can-outline"
             label="Delete transaction"
-            pinned
+            className="mt-1"
             onPress={() => void remove()}
           />
         </ScrollView>

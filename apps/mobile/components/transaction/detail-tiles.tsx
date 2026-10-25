@@ -64,16 +64,18 @@ function DetailTile({ tile }: { tile: Tile }) {
           {tile.value}
         </Text>
         {tile.action ? (
-          <IconSymbol
-            name={pick ? 'chevron-down' : 'chevron-right'}
-            size={18}
-            color={tokens.foreground}
-          />
+          <View className="ml-auto">
+            <IconSymbol
+              name={pick ? 'chevron-down' : 'chevron-right'}
+              size={18}
+              color={tokens.ink2}
+            />
+          </View>
         ) : null}
       </View>
     </>
   );
-  const className = `min-h-[64px] flex-1 justify-center gap-0.5 rounded-tile px-3.5 py-2.5 ${pick ? 'bg-sand' : 'bg-card'}`;
+  const className = `min-h-[64px] flex-1 justify-center gap-0.5 rounded-field px-3.5 py-2 ${pick ? 'bg-sand' : 'bg-card'}`;
   return tile.action ? (
     <Press
       testID={tid('txn', 'tile', tile.name)}

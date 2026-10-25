@@ -2,6 +2,7 @@ import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { useState, type ReactNode } from 'react';
 import { ActivityIndicator, Alert, Linking, View } from 'react-native';
+import Svg, { Circle, Path, Rect } from 'react-native-svg';
 
 import {
   IconSymbol,
@@ -38,7 +39,7 @@ function LinkRow({ link }: { link: DetailLink }) {
         {link.bubble ?? <IconSymbol name={link.icon} size={20} color={tokens.foreground} />}
       </View>
       <View className="min-w-0 flex-1">
-        <Text variant="rowTitle" className="text-foreground" numberOfLines={1}>
+        <Text variant="rowTitle" className="text-[15px] leading-[21px] text-foreground" numberOfLines={1}>
           {link.title}
         </Text>
         <Text variant="meta" className="text-muted" numberOfLines={1}>
@@ -47,6 +48,32 @@ function LinkRow({ link }: { link: DetailLink }) {
       </View>
       <IconSymbol name={link.trailing} size={20} color={tokens.muted} />
     </Press>
+  );
+}
+
+/** The board's place bubble: a cream street map with a park and a river, and the pin. */
+export function MapThumb() {
+  const tokens = useThemeTokens();
+  return (
+    <Svg width={42} height={42} viewBox="0 0 96 96">
+      <Rect width={96} height={96} fill={tokens.sandLight} />
+      <Rect x={58} y={50} width={30} height={18} rx={6} fill={tokens.mint} />
+      <Path d="M72 0 C 66 18, 84 30, 78 52" stroke={tokens.aqua} strokeWidth={5} fill="none" />
+      <Path
+        d="M-4 32 C 28 26, 60 42, 100 34"
+        stroke={tokens.card}
+        strokeWidth={8}
+        fill="none"
+        strokeLinecap="round"
+      />
+      <Path d="M30 -4 L 40 100" stroke={tokens.card} strokeWidth={6} fill="none" />
+      <Path d="M-4 76 L 100 64" stroke={tokens.card} strokeWidth={4} fill="none" />
+      <Path
+        d="M48 24 C 40.8 24 36 29 36 36 C 36 45 48 56 48 56 C 48 56 60 45 60 36 C 60 29 55.2 24 48 24 Z"
+        fill={tokens.foreground}
+      />
+      <Circle cx={48} cy={36} r={4.5} fill={tokens.mintKey} />
+    </Svg>
   );
 }
 

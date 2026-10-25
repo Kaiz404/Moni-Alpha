@@ -17,7 +17,7 @@ tags:
     id: 'activity\.transaction\..*'
     index: 0
 - assertVisible:
-    id: txn.amount.pencil
+    id: txn.amount.edit
 - assertVisible:
     id: txn.tile.category
 - takeScreenshot: smoke-transaction
