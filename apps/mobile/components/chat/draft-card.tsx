@@ -69,7 +69,7 @@ export function DraftCard({ message }: { message: DraftMessage }) {
     return (
       <Text
         variant="meta"
-        className="mb-4 text-muted"
+        className="text-muted"
       >
         This capture was settled in Review.
       </Text>
@@ -200,7 +200,7 @@ export function DraftCard({ message }: { message: DraftMessage }) {
   return (
     <View
       accessibilityLabel={`Moni's draft: ${title}, ${amountText}${wallet ? '' : ', no wallet yet'}`}
-      className="mb-4 gap-3 rounded-card bg-card p-[18px]"
+      className="gap-2.5 rounded-card bg-card px-[18px] pb-[18px] pt-4"
     >
       <Text
         variant="meta"
@@ -226,7 +226,7 @@ export function DraftCard({ message }: { message: DraftMessage }) {
             editor ??
             editable(
               <Text
-                variant="cardTitle"
+                variant="rowTitle"
                 className="text-foreground"
                 numberOfLines={1}
               >
@@ -248,14 +248,14 @@ export function DraftCard({ message }: { message: DraftMessage }) {
             testID={tid('chat', 'draft', 'amount-text')}
             variant="amountHero"
             className="text-foreground"
-            style={{ fontVariant: ['tabular-nums'] }}
+            style={{ fontSize: 44, lineHeight: 50, fontVariant: ['tabular-nums'] }}
           >
             {amountText}
           </Text>
         </InPlaceField>
       </InPlaceGroup>
 
-      <View className="flex-row flex-wrap gap-2">
+      <View className="flex-row gap-2">
         <PickerChip
           testID={tid('chat', 'draft', 'category')}
           look={
@@ -279,7 +279,7 @@ export function DraftCard({ message }: { message: DraftMessage }) {
               ? { name: wallet.name, icon: wallet.icon ?? 'wallet-outline', color: wallet.color }
               : null
           }
-          empty={{ label: 'Pick a wallet', icon: 'wallet-plus-outline' }}
+          empty={{ label: 'Pick a wallet', icon: 'wallet-outline' }}
           accessibilityLabel={wallet ? `Wallet: ${wallet.name}. Change` : 'Pick a wallet'}
           onPress={() => void pickWallet()}
         />
@@ -303,11 +303,16 @@ export function DraftCard({ message }: { message: DraftMessage }) {
 
       {afterMinor !== null && category ? (
         <View
-          className={`flex-row items-center gap-1.5 self-start rounded-full px-2.5 py-1 ${afterMinor < 0 ? 'bg-destructive-fill' : 'bg-sand'}`}
+          className={`min-h-7 flex-row items-center gap-1.5 self-start rounded-full px-3 py-1 ${afterMinor < 0 ? 'bg-destructive-fill' : 'bg-sand'}`}
         >
+          <View
+            className="h-1.5 w-1.5 rounded-full"
+            style={{ backgroundColor: afterMinor < 0 ? tokens.states.destructive : tokens.ink2 }}
+          />
           <Text
             variant="meta"
-            className={`font-display-semibold ${afterMinor < 0 ? 'text-over' : 'text-ink-2'}`}
+            className="font-display-semibold"
+            style={{ color: afterMinor < 0 ? tokens.states.destructive : tokens.ink2 }}
           >
             {`${category.name}: ${formatMoney(Math.abs(afterMinor), currency, { whole: true })} ${afterMinor < 0 ? 'over' : 'left'} after this`}
           </Text>
@@ -347,7 +352,7 @@ export function DraftCard({ message }: { message: DraftMessage }) {
         <ActionButton
           testID={tid('chat', 'draft', 'approve')}
           label={wallet ? 'Approve' : 'Pick wallet'}
-          icon={wallet ? 'check' : 'wallet-plus-outline'}
+          icon={wallet ? 'check' : 'wallet-outline'}
           fill={wallet ? 'bg-mint' : 'bg-lemon'}
           accessibilityLabel={wallet ? `Approve ${amountText}` : 'Pick a wallet first'}
           onPress={() => void onApprove()}
@@ -373,22 +378,21 @@ function DoneRow({
     <View
       accessibilityRole="text"
       accessibilityLiveRegion="polite"
-      className="mb-4 flex-row items-center gap-3 rounded-tile border-[1.5px] border-hairline py-2.5 pl-3 pr-2.5"
+      className="flex-row items-center gap-3 rounded-tile bg-card py-2 pl-3.5 pr-2"
     >
       <View
-        className={`h-[42px] w-[42px] items-center justify-center rounded-full ${outcome.kind === 'approved' ? 'bg-mint' : 'bg-sand'}`}
+        className={`h-9 w-9 items-center justify-center rounded-full ${outcome.kind === 'approved' ? 'bg-mint' : 'bg-sand'}`}
       >
         <IconSymbol
           name={icon}
-          size={20}
+          size={18}
           color={outcome.kind === 'approved' ? tokens.onPastel : tokens.foreground}
         />
       </View>
       <View className="min-w-0 flex-1">
         <Text
           testID={tid('chat', 'draft', 'done', id)}
-          variant="rowTitle"
-          className="text-foreground"
+          className="text-[15px] leading-[20px] font-display-semibold text-foreground"
           numberOfLines={1}
         >
           {outcome.title}
@@ -408,10 +412,9 @@ function DoneRow({
           testID={tid('chat', 'draft', 'undo')}
           onPress={undoToast}
           radius={{ rest: 22, pressed: 16 }}
-          pressedClassName="bg-hairline"
-          className="h-11 justify-center bg-sand px-4"
+          className="h-11 justify-center px-3.5"
         >
-          <Text className="text-[15px] font-display-semibold text-foreground">Undo</Text>
+          <Text className="text-[15px] font-display-semibold text-deep-mint">Undo</Text>
         </Press>
       ) : null}
     </View>

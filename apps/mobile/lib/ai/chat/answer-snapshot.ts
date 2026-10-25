@@ -40,6 +40,8 @@ export function buildAnswerSnapshot(userId: string, now: Date = new Date()): Ans
     categories: [...month.budgeted, ...month.unbudgeted].map((category) => ({
       id: category.categoryId,
       name: category.name,
+      icon: category.icon,
+      color: category.color,
       spent: Number(category.spentMinor),
       budget: category.budgetMinor === null ? null : Number(category.budgetMinor),
     })),
@@ -55,6 +57,7 @@ export function buildAnswerSnapshot(userId: string, now: Date = new Date()): Ans
       name: bill.name,
       amount: Number(bill.amountMinor),
       dueDate: bill.dueDate,
+      walletName: bill.walletId ? (projection.walletsById[bill.walletId]?.name ?? null) : null,
     })),
   };
 }

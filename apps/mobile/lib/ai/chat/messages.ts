@@ -1,7 +1,7 @@
 import type { ChatHistoryMessage } from '@repo/types';
 import { createMMKV } from 'react-native-mmkv';
 
-import type { IconSymbolName } from '@/components/ui/icon-symbol';
+import type { SoftTint } from '@/components/chat/ink-card';
 
 import type { AnswerCard } from './answer-cards';
 import { threadDay, todayThreadDay } from './sessions';
@@ -24,7 +24,10 @@ export type DraftOutcome = {
 export type NoticedItem = {
   title: string;
   meta: string;
-  icon: IconSymbolName;
+  /** A glyph name, or a category's own icon. */
+  icon: string | null;
+  /** Absent on lines saved before the soft bubbles; they draw Lilac. */
+  tint?: SoftTint;
   target: { kind: 'ask'; question: string } | { kind: 'review' };
 };
 

@@ -1,5 +1,6 @@
 import { formatMoney } from '@/lib/finance/format-money';
 import { dueWhen } from '@/lib/finance/spent-summary';
+import { resolveTransactionIcon } from '@/lib/transactions/icon';
 
 import type { AnswerSnapshot } from './answer-cards';
 import type { NoticedItem } from './messages';
@@ -22,7 +23,8 @@ export function noticedItems(
     items.push({
       title: `${over.name} is ${by} over`,
       meta: `${whole(over.spent)} of your ${whole(over.budget!)} budget`,
-      icon: 'alert-circle-outline',
+      icon: resolveTransactionIcon(over.icon, 'expense'),
+      tint: { color: over.color ?? null },
       target: { kind: 'ask', question: `Why is ${over.name} ${by} over?` },
     });
   }
@@ -31,7 +33,8 @@ export function noticedItems(
     items.push({
       title: `${waiting.count} ${waiting.count === 1 ? 'capture' : 'captures'} to review`,
       meta: `${money(waiting.amount)} · not in your totals yet`,
-      icon: 'tray-arrow-down',
+      icon: 'inbox-arrow-down',
+      tint: 'lilac',
       target: { kind: 'review' },
     });
 
@@ -39,8 +42,9 @@ export function noticedItems(
   if (bill)
     items.push({
       title: `${bill.name} is due ${dueWhen(bill.dueDate, now)}`,
-      meta: money(bill.amount),
-      icon: 'calendar-clock',
+      meta: bill.walletName ? `${money(bill.amount)} from ${bill.walletName}` : money(bill.amount),
+      icon: 'repeat',
+      tint: 'lemon',
       target: { kind: 'ask', question: `When does ${bill.name} go out?` },
     });
 

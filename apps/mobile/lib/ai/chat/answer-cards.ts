@@ -17,7 +17,14 @@ export type AnswerCard =
 
 export type AnswerSnapshot = {
   currency: string;
-  categories: readonly { id: string; name: string; spent: number; budget: number | null }[];
+  categories: readonly {
+    id: string;
+    name: string;
+    icon?: string | null;
+    color?: string | null;
+    spent: number;
+    budget: number | null;
+  }[];
   /** This month in the main currency; null fields without a budget. */
   month: {
     spent: number;
@@ -27,7 +34,13 @@ export type AnswerSnapshot = {
     perDay: number | null;
   };
   /** Bills still due this month, soonest first. */
-  bills: readonly { seriesKey: string; name: string; amount: number; dueDate: string }[];
+  bills: readonly {
+    seriesKey: string;
+    name: string;
+    amount: number;
+    dueDate: string;
+    walletName?: string | null;
+  }[];
 };
 
 const BILL_WORDS = /\b(bills?|due|subscriptions?|renews?|goes? out)\b/;

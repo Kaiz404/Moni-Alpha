@@ -1,91 +1,49 @@
 import { View } from 'react-native';
 
-import { IconSymbol } from '@/components/ui/icon-symbol';
-import { Press } from '@/components/ui/press';
-import { Text } from '@/components/ui/text';
-import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import type { ChatMessage, NoticedItem } from '@/lib/ai/chat/messages';
 import { tid } from '@/lib/test-ids';
 
 import { chatTime } from './chat-time';
+import { InkCardLabel, InkRow } from './ink-card';
 
 type NoticedMessage = Extract<ChatMessage, { kind: 'assistant_noticed' }>;
 
-/** "Moni noticed": what stood out when today's thread opened; each line asks about it. */
+/** "Moni noticed": what stood out when today's thread opened; each line asks Moni about it. */
 export function NoticedCard({
   message,
+  asked,
   onPick,
 }: {
   message: NoticedMessage;
+  /** Questions already in the thread: their lines dim and show a check. */
+  asked: ReadonlySet<string>;
   onPick: (item: NoticedItem) => void;
 }) {
-  const tokens = useThemeTokens();
   return (
     <View
       accessibilityLabel="Moni noticed"
-      className="mb-4 gap-1 rounded-card bg-primary px-3.5 py-3.5"
+      className="gap-1 rounded-card bg-primary px-[18px] pb-2.5 pt-3.5"
     >
-      <View className="flex-row items-center gap-1.5 px-1 pb-1">
-        <IconSymbol
-          name="creation"
-          size={16}
-          color={tokens.lilac}
+      <View className="pb-1">
+        <InkCardLabel
+          label="Moni noticed"
+          trailing={chatTime(message.createdAt)}
         />
-        <Text
-          variant="caps"
-          className="flex-1 text-primary-foreground opacity-70"
-        >
-          Moni noticed
-        </Text>
-        <Text
-          variant="smallest"
-          className="text-primary-foreground opacity-70"
-        >
-          {chatTime(message.createdAt)}
-        </Text>
       </View>
       {message.items.map((item, index) => (
-        <Press
+        <InkRow
           key={item.title}
           testID={tid('chat', 'noticed', index)}
           accessibilityLabel={
             item.target.kind === 'ask' ? `Ask Moni: ${item.target.question}` : `${item.title}. Open Review`
           }
+          icon={item.icon}
+          tint={item.tint ?? 'lilac'}
+          title={item.title}
+          meta={item.meta}
+          done={item.target.kind === 'ask' && asked.has(item.target.question)}
           onPress={() => onPick(item)}
-          pressedClassName="bg-ink-2/40"
-          className="flex-row items-center gap-3 rounded-tile px-1 py-2"
-        >
-          <View className="h-[42px] w-[42px] items-center justify-center rounded-full bg-lilac">
-            <IconSymbol
-              name={item.icon}
-              size={20}
-              color={tokens.onPastel}
-            />
-          </View>
-          <View className="min-w-0 flex-1">
-            <Text
-              variant="rowTitle"
-              className="text-primary-foreground"
-              numberOfLines={1}
-            >
-              {item.title}
-            </Text>
-            <Text
-              variant="meta"
-              className="text-primary-foreground opacity-70"
-              numberOfLines={1}
-            >
-              {item.meta}
-            </Text>
-          </View>
-          <View className="h-9 w-9 items-center justify-center rounded-full bg-primary-foreground">
-            <IconSymbol
-              name={item.target.kind === 'ask' ? 'arrow-up' : 'chevron-right'}
-              size={18}
-              color={tokens.primary}
-            />
-          </View>
-        </Press>
+        />
       ))}
     </View>
   );

@@ -4,6 +4,7 @@ import {
   useSpeechRecognitionEvent,
   type ExpoSpeechRecognitionResultEvent,
 } from 'expo-speech-recognition';
+import { LinearGradient } from 'expo-linear-gradient';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { FlatList, View } from 'react-native';
@@ -14,6 +15,7 @@ import { ChatInputBar } from '@/components/chat/chat-input-bar';
 import { chatTime } from '@/components/chat/chat-time';
 import { MeetMoni } from '@/components/chat/meet-moni';
 import { MessageBubble } from '@/components/chat/message-bubble';
+import { foldedOnReopen } from '@/components/chat/thread-fold';
 import { HeaderIconButton } from '@/components/ui/header-icon-button';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Page } from '@/components/ui/page';
@@ -49,8 +51,9 @@ import {
 import { isAwaitingReview } from '@/lib/supabase/proposed-transactions';
 import { tid } from '@/lib/test-ids';
 
-/** Messages shown under "Earlier today" stay folded beyond these last few. */
-const SHOWN_ON_OPEN = 4;
+function ThreadGap() {
+  return <View className="h-3" />;
+}
 
 function dayTitle(day: string, now: Date): string {
   const date = parseLocalDateInput(day) ?? now;
@@ -62,7 +65,7 @@ export default function ChatScreen() {
   const insets = useSafeAreaInsets();
   const keyboard = useAnimatedKeyboard();
   const { user } = useAuth();
-  const params = useLocalSearchParams<{ draft?: string; day?: string }>();
+  const params = useLocalSearchParams<{ draft?: string; day?: string; focus?: string }>();
   const today = todayThreadDay();
   const [viewDay, setViewDay] = useState(params.day ?? today);
   const isToday = viewDay === today;
@@ -70,12 +73,16 @@ export default function ChatScreen() {
     viewDay === today ? readTodayThread().messages : readThread(viewDay).messages,
   );
   const [firstRun] = useState(() => listThreads().length === 0);
-  const folded = useRef(Math.max(0, messages.length - SHOWN_ON_OPEN));
+  const proposals = useValue(pendingProposals$(user?.id ?? null));
+  const folded = useRef(
+    isToday
+      ? foldedOnReopen(messages, new Set(proposals.map((proposal) => proposal.id)), new Date())
+      : 0,
+  );
   const [unfolded, setUnfolded] = useState(false);
   const [input, setInput] = useState(params.draft ?? '');
   const [attachedImage, setAttachedImage] = useState<string | null>(null);
   const [listening, setListening] = useState(false);
-  const proposals = useValue(pendingProposals$(user?.id ?? null));
 
   const listRef = useRef<FlatList<ChatMessage>>(null);
   const inputRef = useRef(input);
@@ -84,6 +91,7 @@ export default function ChatScreen() {
   const sendOnEnd = useRef(false);
 
   useEffect(() => {
+    if (viewDay !== today) folded.current = 0;
     setMessages(readThread(viewDay).messages);
     return subscribeThreads((day) => {
       if (day === viewDay) setMessages(readThread(day).messages);
@@ -186,6 +194,9 @@ export default function ChatScreen() {
 
   const hidden = unfolded ? 0 : Math.min(folded.current, messages.length);
   const shown = messages.slice(hidden);
+  const asked = new Set(
+    messages.flatMap((message) => (message.kind === 'user_text' ? [message.content] : [])),
+  );
   const answered = messages.some(
     (m) => m.kind === 'assistant_card' || (m.kind === 'assistant_text' && m.status === 'done'),
   );
@@ -219,7 +230,7 @@ export default function ChatScreen() {
           data={shown}
           keyExtractor={(item) => item.id}
           keyboardShouldPersistTaps="handled"
-          contentContainerClassName="grow px-5 pb-4 pt-1"
+          contentContainerClassName="grow justify-end px-5 pb-3 pt-1"
           onContentSizeChange={() => listRef.current?.scrollToEnd({ animated: true })}
           onLayout={() => listRef.current?.scrollToEnd({ animated: false })}
           ListHeaderComponent={
@@ -229,7 +240,7 @@ export default function ChatScreen() {
                 onStarter={setInput}
               />
             ) : messages.length ? (
-              <View className="mb-3 gap-2">
+              <View className="mb-3 gap-3">
                 <Text
                   variant="caps"
                   className="text-center text-muted"
@@ -242,33 +253,31 @@ export default function ChatScreen() {
                     accessibilityState={{ expanded: unfolded }}
                     onPress={() => setUnfolded((open) => !open)}
                     radius={{ rest: 22, pressed: 16 }}
-                    pressedClassName="bg-hairline"
-                    className="h-11 flex-row items-center gap-2 self-center bg-sand px-4"
+                    className="min-h-11 flex-row items-center gap-2.5 border-[1.5px] border-hairline pl-3.5 pr-2"
                   >
                     <IconSymbol
                       name="clock-outline"
-                      size={16}
+                      size={18}
                       color={tokens.ink2}
                     />
-                    <Text
-                      variant="meta"
-                      className="text-ink-2"
-                    >
-                      {`Earlier ${isToday ? 'today' : 'this day'} · ${folded.current} ${folded.current === 1 ? 'message' : 'messages'}`}
+                    <Text className="flex-1 text-[15px] leading-[20px] font-display-semibold text-foreground">
+                      {`Earlier today · ${folded.current} ${folded.current === 1 ? 'message' : 'messages'}`}
                     </Text>
                     <IconSymbol
                       name={unfolded ? 'chevron-up' : 'chevron-down'}
-                      size={16}
-                      color={tokens.ink2}
+                      size={20}
+                      color={tokens.muted}
                     />
                   </Press>
                 ) : null}
               </View>
             ) : null
           }
+          ItemSeparatorComponent={ThreadGap}
           renderItem={({ item }) => (
             <MessageBubble
               message={item}
+              asked={asked}
               onQuickReply={onQuickReply}
               onNoticed={onNoticed}
             />
@@ -277,7 +286,7 @@ export default function ChatScreen() {
             answered ? (
               <Text
                 variant="smallest"
-                className="mt-2 text-center text-muted"
+                className="mt-3 text-center text-muted"
               >
                 Moni can be wrong. Check important numbers.
               </Text>
@@ -308,7 +317,13 @@ export default function ChatScreen() {
             sendOnEnd.current = true;
             ExpoSpeechRecognitionModule.stop();
           }}
-          bottomInset={0}
+          autoFocus={params.focus === '1'}
+          bottomInset={Math.max(8, 16 - insets.bottom)}
+        />
+        <LinearGradient
+          pointerEvents="none"
+          colors={[tokens.canvas, `${tokens.canvas}00`]}
+          style={{ position: 'absolute', left: 0, right: 0, top: 0, height: 12 }}
         />
       </Animated.View>
     </Page>
