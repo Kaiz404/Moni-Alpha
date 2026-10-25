@@ -291,7 +291,9 @@ export function InPlaceField(props: InPlaceFieldProps) {
         accessibilityState={{ disabled: busy }}
         disabled={busy}
         pressedScale={options.pressedClassName ? 0.97 : 1}
-        pressedClassName={options.pressedClassName ?? 'bg-transparent'}
+        pressedClassName={
+          options.pressedClassName ?? 'bg-transparent'
+        }
         className={
           options.className ??
           'min-h-11 max-w-full flex-row items-center gap-2 self-start'

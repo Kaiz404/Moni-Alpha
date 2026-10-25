@@ -17,6 +17,8 @@ type HeaderIconButtonProps = {
   accessibilityLabel: string;
   onPress: () => void;
   disabled?: boolean;
+  /** Selected, as V2F-Components draws it: Ink fill and edge, cream glyph (a toggled filter or the map's list view). */
+  active?: boolean;
   /** Back and close draw at 22; every other header glyph at 20. */
   glyphSize?: 20 | 22;
 };
@@ -28,25 +30,37 @@ export function HeaderIconButton({
   accessibilityLabel,
   onPress,
   disabled = false,
+  active = false,
   glyphSize = 20,
 }: HeaderIconButtonProps) {
   const tokens = useThemeTokens();
+  const edge = disabled
+    ? 'border-sand-light'
+    : active
+      ? 'border-primary bg-primary'
+      : 'border-hairline';
   return (
     <Press
       testID={testID}
       onPress={onPress}
       disabled={disabled}
       accessibilityLabel={accessibilityLabel}
-      accessibilityState={{ disabled }}
+      accessibilityState={{ disabled, selected: active }}
       radius={PRESSED_CORNERS}
-      pressedClassName="bg-sand"
-      className={`h-11 w-11 items-center justify-center border-[1.5px] ${disabled ? 'border-sand-light' : 'border-hairline'}`}
+      pressedClassName={active ? 'bg-primary-pressed' : 'bg-sand'}
+      className={`h-11 w-11 items-center justify-center border-[1.5px] ${edge}`}
     >
       <View pointerEvents="none">
         <IconSymbol
           name={icon}
           size={glyphSize}
-          color={disabled ? tokens.muted : tokens.foreground}
+          color={
+            disabled
+              ? tokens.muted
+              : active
+                ? tokens.primaryForeground
+                : tokens.foreground
+          }
         />
       </View>
     </Press>

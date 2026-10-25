@@ -8,8 +8,13 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 
+import {
+  IconSymbol,
+  type IconSymbolName,
+} from '@/components/ui/icon-symbol';
 import { Press } from '@/components/ui/press';
 import { Text } from '@/components/ui/text';
+import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { scrubStep } from '@/lib/haptics';
 import { springs } from '@/lib/motion/tokens';
 import { tid, type Screen } from '@/lib/test-ids';
@@ -20,13 +25,21 @@ const REDUCED_FADE = { duration: 180 };
 type SegmentedProps<T extends string> = {
   screen: Screen;
   name: string;
-  options: readonly { value: T; label: string }[];
+  /** An icon draws 18 before its label, 6 apart (V2H-Profile Appearance). */
+  options: readonly {
+    value: T;
+    label: string;
+    icon?: IconSymbolName;
+  }[];
   value: T;
   onChange: (value: T) => void;
   accessibilityLabel: string;
   disabled?: boolean;
-  /** `form` is the 52 track with a 44 pill and 15/600 labels that leads a form (V2P-DebtNew). */
-  size?: 'default' | 'form';
+  /**
+   * `medium` is the 48 track with 15/600 labels (V2H-Profile, V2H-Login);
+   * `form` is the 52 track that leads a form (V2P-DebtNew).
+   */
+  size?: 'default' | 'medium' | 'form';
 };
 
 const sizes = {
@@ -35,6 +48,12 @@ const sizes = {
     pill: 'h-9',
     corners: 18,
     label: 'text-[14px] leading-[19px]',
+  },
+  medium: {
+    track: 'h-12',
+    pill: 'h-10',
+    corners: 20,
+    label: 'text-[15px] leading-[21px]',
   },
   form: {
     track: 'h-[52px]',
@@ -55,6 +74,7 @@ export function Segmented<T extends string>({
   size = 'default',
 }: SegmentedProps<T>) {
   const look = sizes[size];
+  const tokens = useThemeTokens();
   const index = Math.max(
     0,
     options.findIndex((option) => option.value === value),
@@ -113,13 +133,26 @@ export function Segmented<T extends string>({
             pressedClassName={
               selected ? 'bg-primary-pressed' : 'bg-hairline'
             }
-            className="flex-1 items-center justify-center"
+            className="flex-1 flex-row items-center justify-center gap-1.5"
             onPress={() => {
               if (selected) return;
               scrubStep();
               onChange(option.value);
             }}
           >
+            {option.icon ? (
+              <IconSymbol
+                name={option.icon}
+                size={18}
+                color={
+                  disabled
+                    ? tokens.muted
+                    : selected
+                      ? tokens.primaryForeground
+                      : tokens.foreground
+                }
+              />
+            ) : null}
             <Text
               className={`${look.label} font-display-semibold ${disabled ? 'text-muted' : selected ? 'text-primary-foreground' : 'text-foreground'}`}
               numberOfLines={1}

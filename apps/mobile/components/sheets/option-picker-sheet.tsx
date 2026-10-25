@@ -265,7 +265,7 @@ export function CurrencySheet({
       {...frame}
       size="large"
       title="Currency"
-      note="Moni never converts currencies or adds them together."
+      note="Each wallet keeps one. Moni never converts or adds them together."
       searchPlaceholder="Search currencies"
       options={options}
       selectedId={selected}
@@ -299,7 +299,7 @@ export function WalletTypeSheet({
     <OptionPickerSheet
       {...frame}
       title="Wallet type"
-      note="Changes the wallet's icon."
+      note="Changes the icon and where it sits in Wallets."
       options={options}
       selectedId={request.selected}
       onPick={(id) => {

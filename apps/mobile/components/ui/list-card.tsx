@@ -22,14 +22,20 @@ export function ListCard({
 export function ListSection({
   label,
   children,
+  gap = 10,
   className,
 }: {
   label: string;
   children: ReactNode;
+  /** Label to card: 10 in day-grouped lists (V2F-Components), 8 on settings pages (V2H-Profile). */
+  gap?: 8 | 10;
   className?: string;
 }) {
   return (
-    <View className={`gap-2.5 ${className ?? ''}`}>
+    <View
+      className={className}
+      style={{ gap }}
+    >
       <Text
         variant="caps"
         className="pl-1 text-muted"
