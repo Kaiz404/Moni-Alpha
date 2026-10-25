@@ -4,7 +4,7 @@ import { ScrollView, View } from 'react-native';
 
 import { HeaderIconButton } from '@/components/ui/header-icon-button';
 import { IconSymbol } from '@/components/ui/icon-symbol';
-import { ListCard } from '@/components/ui/list-card';
+import { ListSection } from '@/components/ui/list-card';
 import { Page } from '@/components/ui/page';
 import { Press } from '@/components/ui/press';
 import { SearchField } from '@/components/ui/search-field';
@@ -127,18 +127,10 @@ export default function ChatHistoryScreen() {
         />
 
         {groups.map((group) => (
-          <View
+          <ListSection
             key={group.name}
-            className="gap-2.5"
+            label={group.name}
           >
-            <Text
-              variant="caps"
-              className="pl-1 text-muted"
-              accessibilityRole="header"
-            >
-              {group.name}
-            </Text>
-            <ListCard>
               {group.rows.map((row) => (
                 <View
                   key={row.day}
@@ -219,8 +211,7 @@ export default function ChatHistoryScreen() {
                   ) : null}
                 </View>
               ))}
-            </ListCard>
-          </View>
+          </ListSection>
         ))}
 
         {groups.length === 0 ? (
