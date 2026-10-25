@@ -31,11 +31,11 @@ tags:
 
 # Edit the amount in place to 7.
 - tapOn:
-    id: chat.draft.amount
+    id: chat.draft.amount.edit
 - eraseText
 - inputText: '7'
 - tapOn:
-    id: chat.draft.save
+    id: chat.draft.amount.save
 - assertVisible:
     id: chat.draft.amount-text
     text: '−RM7.00'

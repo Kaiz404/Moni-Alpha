@@ -1,9 +1,10 @@
 import { useValue } from '@legendapp/state/react';
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { TextInput, View } from 'react-native';
+import { View } from 'react-native';
 
 import { IconSymbol, type IconSymbolName } from '@/components/ui/icon-symbol';
+import { InPlaceField, InPlaceGroup } from '@/components/ui/in-place-field';
 import { Press } from '@/components/ui/press';
 import { Text } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
@@ -11,7 +12,6 @@ import { replaceMessage, type ChatMessage, type DraftOutcome } from '@/lib/ai/ch
 import { financeTimezone, threadDay } from '@/lib/ai/chat/sessions';
 import { useAuth } from '@/lib/auth/auth-context';
 import { formatMoney, formatSignedMoney } from '@/lib/finance/format-money';
-import { parseAmountInput } from '@/lib/finance/money';
 import { financeProjection$ } from '@/lib/finance/projection';
 import {
   budgetProgress$,
@@ -31,12 +31,11 @@ import {
 } from '@/lib/proposals/review-actions';
 import { toCategoryTiles } from '@/lib/sheet/category-tiles';
 import { openSheet } from '@/lib/sheet/sheet-store';
-import { tid } from '@/lib/test-ids';
+import { tid, type TestId } from '@/lib/test-ids';
 import { showToast, undoToast } from '@/lib/toast/toast-store';
 import { resolveTransactionIcon } from '@/lib/transactions/icon';
 
 type DraftMessage = Extract<ChatMessage, { kind: 'assistant_draft' }>;
-type Field = 'merchant' | 'amount';
 
 /** A chat capture as the compact Review card: edit in place, then Not mine, Later, or Approve. */
 export function DraftCard({ message }: { message: DraftMessage }) {
@@ -51,8 +50,7 @@ export function DraftCard({ message }: { message: DraftMessage }) {
   const categories = useValue(categoriesForUser$(userId)) ?? [];
   const progress = useValue(budgetProgress$(userId, financeTimezone()));
   const [edits, setEdits] = useState<ReviewEdits>({});
-  const [editing, setEditing] = useState<Field | null>(null);
-  const [field, setField] = useState('');
+  const [editing, setEditing] = useState<TestId | null>(null);
   const [busy, setBusy] = useState(false);
   const [undoable, setUndoable] = useState(false);
   const [shown, setShown] = useState<DraftOutcome | null>(null);
@@ -197,28 +195,6 @@ export function DraftCard({ message }: { message: DraftMessage }) {
     );
   };
 
-  const save = () => {
-    if (editing === 'merchant' && field.trim()) set({ merchant: field.trim() });
-    if (editing === 'amount') {
-      try {
-        set({ amountMinor: parseAmountInput(field) });
-      } catch {
-        return;
-      }
-    }
-    setEditing(null);
-  };
-
-  const edit = (which: Field) => {
-    setEditing(which);
-    setField(
-      which === 'merchant'
-        ? (current.merchant ?? '')
-        : current.amountMinor === null
-          ? ''
-          : (Number(current.amountMinor) / 100).toFixed(2),
-    );
-  };
 
   return (
     <View
@@ -232,46 +208,40 @@ export function DraftCard({ message }: { message: DraftMessage }) {
         {"Moni's draft · not counted yet"}
       </Text>
 
-      {editing === 'merchant' ? (
-        <EditField
-          value={field}
-          onChange={setField}
-          onCancel={() => setEditing(null)}
-          onSave={save}
-          label="Merchant name"
-        />
-      ) : (
-        <EditableValue
+      <InPlaceGroup
+        editing={editing}
+        onEditingChange={setEditing}
+      >
+        <InPlaceField
           testID={tid('chat', 'draft', 'merchant')}
-          label={`Rename ${title}`}
-          onPress={() => edit('merchant')}
-          showPencil={editing === null}
+          label="Merchant name"
+          kind="text"
+          required
+          maxLength={40}
+          value={current.merchant ?? ''}
+          onSave={(merchant) => set({ merchant })}
         >
-          <Text
-            variant="cardTitle"
-            className="text-foreground"
-            numberOfLines={1}
-          >
-            {title}
-          </Text>
-        </EditableValue>
-      )}
-
-      {editing === 'amount' ? (
-        <EditField
-          value={field}
-          onChange={setField}
-          onCancel={() => setEditing(null)}
-          onSave={save}
-          label="Amount"
-          numeric
-        />
-      ) : (
-        <EditableValue
+          {({ editable, editor }) =>
+            editor ??
+            editable(
+              <Text
+                variant="cardTitle"
+                className="text-foreground"
+                numberOfLines={1}
+              >
+                {title}
+              </Text>,
+              { accessibilityLabel: `Rename ${title}` },
+            )
+          }
+        </InPlaceField>
+        <InPlaceField
           testID={tid('chat', 'draft', 'amount')}
-          label="Edit amount"
-          onPress={() => edit('amount')}
-          showPencil={editing === null}
+          label="Amount"
+          kind="amount"
+          prefix={formatSignedMoney(direction, 0, currency).replace(/[\d.,]/g, '')}
+          value={current.amountMinor}
+          onSave={(amountMinor) => set({ amountMinor })}
         >
           <Text
             testID={tid('chat', 'draft', 'amount-text')}
@@ -281,8 +251,8 @@ export function DraftCard({ message }: { message: DraftMessage }) {
           >
             {amountText}
           </Text>
-        </EditableValue>
-      )}
+        </InPlaceField>
+      </InPlaceGroup>
 
       <View className="flex-row flex-wrap gap-2">
         <ChipButton
@@ -433,102 +403,6 @@ function DoneRow({
           <Text className="text-[15px] font-display-semibold text-foreground">Undo</Text>
         </Press>
       ) : null}
-    </View>
-  );
-}
-
-function EditableValue({
-  testID,
-  label,
-  onPress,
-  showPencil,
-  children,
-}: {
-  testID: ReturnType<typeof tid>;
-  label: string;
-  onPress: () => void;
-  showPencil: boolean;
-  children: React.ReactNode;
-}) {
-  const tokens = useThemeTokens();
-  return (
-    <Press
-      testID={testID}
-      accessibilityLabel={label}
-      onPress={onPress}
-      pressedClassName="bg-transparent"
-      className="flex-row items-center gap-2 self-start"
-    >
-      <View className="shrink">{children}</View>
-      {showPencil ? (
-        <View className="h-8 w-8 items-center justify-center rounded-full bg-sand">
-          <IconSymbol
-            name="pencil-outline"
-            size={16}
-            color={tokens.foreground}
-          />
-        </View>
-      ) : null}
-    </Press>
-  );
-}
-
-function EditField({
-  value,
-  onChange,
-  onCancel,
-  onSave,
-  label,
-  numeric = false,
-}: {
-  value: string;
-  onChange: (text: string) => void;
-  onCancel: () => void;
-  onSave: () => void;
-  label: string;
-  numeric?: boolean;
-}) {
-  const tokens = useThemeTokens();
-  return (
-    <View className="flex-row items-center gap-2">
-      <TextInput
-        testID={tid('chat', 'draft', 'field')}
-        accessibilityLabel={label}
-        autoFocus
-        value={value}
-        onChangeText={onChange}
-        onSubmitEditing={onSave}
-        keyboardType={numeric ? 'decimal-pad' : 'default'}
-        maxLength={numeric ? 12 : 40}
-        className={`flex-1 rounded-field border-2 border-foreground bg-card px-4 font-display-bold text-foreground ${numeric ? 'h-16 text-[40px]' : 'h-[52px] text-[18px]'}`}
-        placeholderTextColor={tokens.muted}
-      />
-      <Press
-        testID={tid('chat', 'draft', 'cancel')}
-        accessibilityLabel="Cancel"
-        onPress={onCancel}
-        pressedClassName="bg-hairline"
-        className="h-11 w-11 items-center justify-center rounded-full bg-sand"
-      >
-        <IconSymbol
-          name="close"
-          size={20}
-          color={tokens.foreground}
-        />
-      </Press>
-      <Press
-        testID={tid('chat', 'draft', 'save')}
-        accessibilityLabel={`Save ${label.toLowerCase()}`}
-        onPress={onSave}
-        pressedClassName="bg-primary-pressed"
-        className="h-11 w-11 items-center justify-center rounded-full bg-primary"
-      >
-        <IconSymbol
-          name="check"
-          size={20}
-          color={tokens.primaryForeground}
-        />
-      </Press>
     </View>
   );
 }

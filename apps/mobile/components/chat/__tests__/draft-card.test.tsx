@@ -98,9 +98,9 @@ describe('DraftCard', () => {
     expect(screen.getByText('KLCC Parking')).toBeTruthy();
     expect(screen.getByTestId('chat.draft.amount-text')).toHaveTextContent('−RM6.00');
 
-    fireEvent.press(screen.getByTestId('chat.draft.amount'));
-    fireEvent.changeText(screen.getByTestId('chat.draft.field'), '7');
-    fireEvent.press(screen.getByTestId('chat.draft.save'));
+    fireEvent.press(screen.getByTestId('chat.draft.amount.edit'));
+    fireEvent.changeText(screen.getByTestId('chat.draft.amount.input'), '7');
+    fireEvent.press(screen.getByTestId('chat.draft.amount.save'));
     expect(screen.getByTestId('chat.draft.amount-text')).toHaveTextContent('−RM7.00');
 
     await act(async () => fireEvent.press(screen.getByTestId('chat.draft.approve')));
