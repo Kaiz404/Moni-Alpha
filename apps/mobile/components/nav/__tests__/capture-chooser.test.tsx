@@ -37,7 +37,12 @@ const flush = () =>
 
 /** Returns the chooser's promise boxed, so awaiting the helper does not wait for a pick. */
 function openChooser() {
-  render(<SheetHost />);
+  render(
+    <>
+      <SheetHost />
+      <SheetHost layer="tabs" />
+    </>,
+  );
   let chosen!: Promise<void>;
   act(() => {
     chosen = openCaptureChooser();
@@ -67,6 +72,15 @@ describe('capture chooser', () => {
       screen.getByTestId('nav.chooser.close').props
         .accessibilityLabel,
     ).toBe('Close');
+  });
+
+  it('renders in the tabs layer only, so pushed pages slide in above it', () => {
+    render(<SheetHost />);
+    act(() => {
+      void openCaptureChooser();
+    });
+
+    expect(screen.queryByText('Add a transaction')).toBeNull();
   });
 
   it('closes the sheet and pushes the listening page for Say it', async () => {

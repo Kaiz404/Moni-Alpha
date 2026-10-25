@@ -17,7 +17,14 @@ import {
   dismissSheet,
   useOpenSheet,
   type OpenSheet,
+  type SheetKind,
 } from '@/lib/sheet/sheet-store';
+
+/**
+ * Sheets that drop away under the page they open (V2A-CaptureFlow-VA): the
+ * tabs layout hosts them, so a pushed page slides in above the falling sheet.
+ */
+const UNDER_PAGES: ReadonlySet<SheetKind> = new Set(['chooser']);
 
 function renderSheet(sheet: OpenSheet, frame: SheetFrameProps) {
   switch (sheet.kind) {
@@ -108,12 +115,22 @@ function renderSheet(sheet: OpenSheet, frame: SheetFrameProps) {
 }
 
 /**
- * Renders the store's one open sheet above the root Stack, so its scrim covers
- * every page and the tab bar. A closed sheet stays mounted until its exit
- * finishes; touches pass through to the page meanwhile.
+ * Renders the store's one open sheet. The `root` layer sits above the root
+ * Stack, so its scrim covers every page and the tab bar; the `tabs` layer sits
+ * above the tab bar but under pushed pages, and holds the UNDER_PAGES kinds. A
+ * closed sheet stays mounted until its exit finishes; touches pass through to
+ * the page meanwhile.
  */
-export function SheetHost() {
-  const open = useOpenSheet();
+export function SheetHost({
+  layer = 'root',
+}: {
+  layer?: 'root' | 'tabs';
+}) {
+  const latest = useOpenSheet();
+  const open =
+    latest && UNDER_PAGES.has(latest.kind) === (layer === 'tabs')
+      ? latest
+      : null;
   const [shown, setShown] = useState<OpenSheet | null>(open);
 
   if (open && open !== shown) setShown(open);

@@ -2,6 +2,7 @@ import { Tabs } from 'expo-router';
 
 import { BillReminderSync } from '@/components/budget/bill-reminder-sync';
 import { TabBar, TABS } from '@/components/nav/tab-bar';
+import { SheetHost } from '@/components/ui/sheet/sheet-host';
 
 export default function TabLayout() {
   return (
@@ -25,6 +26,7 @@ export default function TabLayout() {
           />
         ))}
       </Tabs>
+      <SheetHost layer="tabs" />
       <BillReminderSync />
     </>
   );

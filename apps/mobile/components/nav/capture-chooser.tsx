@@ -79,8 +79,9 @@ const SHEET_BOTTOM_PADDING = 20;
 
 /**
  * The + opens the chooser. A pick settles the sheet, which starts its drop, and
- * the push follows in the same task, so the page slides in while the sheet
- * falls (V2A-CaptureFlow-VA) with no frame of the bare origin between them.
+ * the push follows in the same task, so the page slides in over the falling
+ * sheet (V2A-CaptureFlow-VA): the tabs layout hosts the chooser, under pushed
+ * pages, with no frame of the bare origin between them.
  */
 export async function openCaptureChooser() {
   const choice = await openSheet({ kind: 'chooser' });
