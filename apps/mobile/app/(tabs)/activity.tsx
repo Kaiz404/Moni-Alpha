@@ -8,7 +8,6 @@ import { DayGroup } from '@/components/activity/day-group';
 import { useBudgetData, useBudgetMonth } from '@/components/budget/use-budget';
 import { FilterChips } from '@/components/activity/filter-chips';
 import { ReviewStrip } from '@/components/activity/review-strip';
-import { SearchField } from '@/components/activity/search-field';
 import {
   ActivityChart,
   type ActivityChartMode,
@@ -21,6 +20,7 @@ import { useTransactionHold } from '@/components/transaction/use-transaction-hol
 import { HoldHint } from '@/components/ui/hold-menu';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Page } from '@/components/ui/page';
+import { SearchField } from '@/components/ui/search-field';
 import { Press } from '@/components/ui/press';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Text } from '@/components/ui/text';
@@ -309,8 +309,11 @@ export default function ActivityScreen() {
               </View>
             ) : null}
             <SearchField
+              testID={tid('activity', 'search')}
+              accessibilityLabel="Search transactions"
+              placeholder="Search merchant, note or amount"
               value={query}
-              onChange={setQuery}
+              onChangeText={setQuery}
             />
             <FilterChips
               kind={kind}

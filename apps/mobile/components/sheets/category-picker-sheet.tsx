@@ -2,8 +2,8 @@ import { useMemo, useState } from 'react';
 import { ScrollView, View } from 'react-native';
 
 import { CategoryIcon } from '@/components/categories/category-icon';
-import { SheetSearchField } from '@/components/sheets/option-picker-sheet';
 import { Press } from '@/components/ui/press';
+import { SearchField } from '@/components/ui/search-field';
 import {
   Sheet,
   type SheetFrameProps,
@@ -137,7 +137,9 @@ export function CategoryPickerSheet({
       closeLabel="Close"
     >
       <View className="pb-3">
-        <SheetSearchField
+        <SearchField
+          testID={tid('sheet', 'search')}
+          accessibilityLabel="Search categories"
           placeholder="Search categories"
           value={query}
           onChangeText={setQuery}

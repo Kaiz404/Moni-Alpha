@@ -36,6 +36,7 @@ export const CONTROLS = [
   'InPlaceField',
   'Toggle',
   'PickerChip',
+  'SearchField',
 ];
 
 // A component that wraps a control passes its own testID prop through, typed as TestId, so the

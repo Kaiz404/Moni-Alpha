@@ -1,8 +1,9 @@
 import { useMemo, useState, type ReactNode } from 'react';
-import { FlatList, TextInput, View } from 'react-native';
+import { FlatList, View } from 'react-native';
 
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Press } from '@/components/ui/press';
+import { SearchField } from '@/components/ui/search-field';
 import {
   Sheet,
   type SheetFrameProps,
@@ -36,39 +37,6 @@ export type PickerOption = {
   meta?: string;
   leading?: ReactNode;
 };
-
-/** The 52 Paper capsule search field shared by the picker sheets. */
-export function SheetSearchField({
-  placeholder,
-  value,
-  onChangeText,
-}: {
-  placeholder: string;
-  value: string;
-  onChangeText: (text: string) => void;
-}) {
-  const tokens = useThemeTokens();
-  return (
-    <View className="h-[52px] flex-row items-center gap-2.5 rounded-full bg-card px-4">
-      <IconSymbol
-        name="magnify"
-        size={20}
-        color={tokens.muted}
-      />
-      <TextInput
-        testID={tid('sheet', 'search')}
-        accessibilityLabel={placeholder}
-        autoCapitalize="none"
-        autoCorrect={false}
-        className="h-11 flex-1 font-display text-[15px] text-foreground"
-        placeholder={placeholder}
-        placeholderTextColor={tokens.muted}
-        value={value}
-        onChangeText={onChangeText}
-      />
-    </View>
-  );
-}
 
 function Bubble({
   children,
@@ -129,7 +97,9 @@ export function OptionPickerSheet({
     >
       {searchPlaceholder ? (
         <View className="pb-3">
-          <SheetSearchField
+          <SearchField
+            testID={tid('sheet', 'search')}
+            accessibilityLabel={searchPlaceholder}
             placeholder={searchPlaceholder}
             value={query}
             onChangeText={setQuery}

@@ -1,12 +1,13 @@
 import { router } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
-import { ScrollView, TextInput, View } from 'react-native';
+import { ScrollView, View } from 'react-native';
 
 import { HeaderIconButton } from '@/components/ui/header-icon-button';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { ListCard } from '@/components/ui/list-card';
 import { Page } from '@/components/ui/page';
 import { Press } from '@/components/ui/press';
+import { SearchField } from '@/components/ui/search-field';
 import { Text } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import {
@@ -117,22 +118,13 @@ export default function ChatHistoryScreen() {
         contentContainerClassName="gap-5 px-5 pb-10"
         keyboardShouldPersistTaps="handled"
       >
-        <View className="h-[52px] flex-row items-center gap-2.5 rounded-full bg-card px-4">
-          <IconSymbol
-            name="magnify"
-            size={20}
-            color={tokens.ink2}
-          />
-          <TextInput
-            testID={tid('chat', 'history', 'search')}
-            accessibilityLabel="Search past days"
-            value={query}
-            onChangeText={setQuery}
-            placeholder="Search a day, shop or amount"
-            placeholderTextColor={tokens.muted}
-            className="flex-1 font-display text-[16px] text-foreground"
-          />
-        </View>
+        <SearchField
+          testID={tid('chat', 'history', 'search')}
+          accessibilityLabel="Search past days"
+          placeholder="Search a day, shop or amount"
+          value={query}
+          onChangeText={setQuery}
+        />
 
         {groups.map((group) => (
           <View
