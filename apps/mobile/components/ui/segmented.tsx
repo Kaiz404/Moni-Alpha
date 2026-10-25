@@ -2,8 +2,10 @@ import { useEffect } from 'react';
 import { View } from 'react-native';
 import Animated, {
   useAnimatedStyle,
+  useReducedMotion,
   useSharedValue,
   withSpring,
+  withTiming,
 } from 'react-native-reanimated';
 
 import { Press } from '@/components/ui/press';
@@ -13,6 +15,7 @@ import { springs } from '@/lib/motion/tokens';
 import { tid, type Screen } from '@/lib/test-ids';
 
 const INSET = 4;
+const REDUCED_FADE = { duration: 180 };
 
 type SegmentedProps<T extends string> = {
   screen: Screen;
@@ -56,14 +59,25 @@ export function Segmented<T extends string>({
     0,
     options.findIndex((option) => option.value === value),
   );
+  const reduceMotion = useReducedMotion();
   const position = useSharedValue(index);
   const segment = useSharedValue(0);
+  const shown = useSharedValue(1);
 
   useEffect(() => {
+    if (position.get() === index) return;
+    if (reduceMotion) {
+      // V2F-Motion: under Reduce Motion the pill cross-fades between options in 180.
+      position.set(index);
+      shown.set(0);
+      shown.set(withTiming(1, REDUCED_FADE));
+      return;
+    }
     position.set(withSpring(index, springs.control));
-  }, [index, position]);
+  }, [index, position, reduceMotion, shown]);
 
   const pill = useAnimatedStyle(() => ({
+    opacity: shown.get(),
     width: segment.get(),
     transform: [{ translateX: position.get() * segment.get() }],
   }));

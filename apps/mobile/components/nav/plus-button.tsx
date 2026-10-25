@@ -5,6 +5,7 @@ import Animated, {
   useReducedMotion,
   useSharedValue,
   withSpring,
+  withTiming,
 } from 'react-native-reanimated';
 
 import { IconSymbol } from '@/components/ui/icon-symbol';
@@ -17,6 +18,7 @@ export const TAB_BAR_HEIGHT = 64;
 const PLUS_SIZE = 60;
 export const RING_SIZE = 72;
 const PLUS_ABOVE_BAR = 16;
+const REDUCED_FADE = { duration: 180 };
 /** The bar plus the part of the ringed + that rises above it. */
 export const TAB_BAR_REACH =
   TAB_BAR_HEIGHT + PLUS_ABOVE_BAR + (RING_SIZE - PLUS_SIZE) / 2;
@@ -55,15 +57,23 @@ export function PlusButton({
   const tokens = useThemeTokens();
   const reduceMotion = useReducedMotion();
   const turn = useSharedValue(0);
+  const shown = useSharedValue(1);
 
   useEffect(() => {
     const target = open ? 45 : 0;
-    turn.set(
-      reduceMotion ? target : withSpring(target, springs.control),
-    );
-  }, [open, reduceMotion, turn]);
+    if (turn.get() === target) return;
+    if (reduceMotion) {
+      // V2F-Motion: under Reduce Motion the + cross-fades to the × without turning.
+      turn.set(target);
+      shown.set(0);
+      shown.set(withTiming(1, REDUCED_FADE));
+      return;
+    }
+    turn.set(withSpring(target, springs.control));
+  }, [open, reduceMotion, shown, turn]);
 
   const glyph = useAnimatedStyle(() => ({
+    opacity: shown.get(),
     transform: [{ rotate: `${turn.get()}deg` }],
   }));
 
