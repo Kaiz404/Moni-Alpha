@@ -154,7 +154,12 @@ export function parseAmountDraft(
     max,
   }: { whole?: boolean; signed?: boolean; max?: number },
 ): MinorAmount | null {
-  const cleaned = draft.trim().replaceAll(',', '').replace('−', '-');
+  const cleaned = draft
+    .trim()
+    .replaceAll(',', '')
+    .replace('−', '-')
+    .replace(/^(-?)\./, (_, sign: string) => `${sign}0.`)
+    .replace(/\.$/, '');
   if (!cleaned || (whole && !/^-?\d+$/.test(cleaned))) return null;
   let minor: MinorAmount;
   try {
@@ -337,18 +342,23 @@ export function InPlaceField(props: InPlaceFieldProps) {
  * another can close and reopen the keyboard, so a hide before this field's own show does not count.
  */
 function useCancelOnDismiss(cancel: () => void) {
+  // Subscribed once per open field: a fresh subscription would forget the keyboard already shown.
+  const latest = useRef(cancel);
+  useEffect(() => {
+    latest.current = cancel;
+  });
   useEffect(() => {
     let shown = false;
     const show = Keyboard.addListener('keyboardDidShow', () => {
       shown = true;
     });
     const hide = Keyboard.addListener('keyboardDidHide', () => {
-      if (shown) cancel();
+      if (shown) latest.current();
     });
     const back = BackHandler.addEventListener(
       'hardwareBackPress',
       () => {
-        cancel();
+        latest.current();
         return true;
       },
     );
@@ -357,7 +367,7 @@ function useCancelOnDismiss(cancel: () => void) {
       hide.remove();
       back.remove();
     };
-  }, [cancel]);
+  }, []);
 }
 
 function Editor({
@@ -443,6 +453,7 @@ function Editor({
       onChangeText={onDraft}
       onBlur={cancel}
       onSubmitEditing={note ? undefined : finish(onSave)}
+      submitBehavior={note ? 'newline' : 'submit'}
       returnKeyType={note ? 'default' : 'done'}
       keyboardType={
         field.kind !== 'amount'

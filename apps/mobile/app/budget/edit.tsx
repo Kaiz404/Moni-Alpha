@@ -205,12 +205,18 @@ export default function EditBudgetsScreen() {
             onDraftChange={setTypedMinor}
             onSave={(minor) => setTotal(wholeOf(minor))}
           >
-            <Text
-              className="text-[40px] leading-[44px] font-display-bold text-foreground"
-              style={{ fontVariant: ['tabular-nums'] }}
-            >
-              {whole(liveTotal)}
-            </Text>
+            {({ editable, editor }) =>
+              editor ??
+              editable(
+                <Text
+                  className="text-[40px] leading-[44px] font-display-bold text-foreground"
+                  style={{ fontVariant: ['tabular-nums'] }}
+                >
+                  {whole(liveTotal)}
+                </Text>,
+                { accessibilityLabel: `Monthly total ${whole(liveTotal)}. Edit` },
+              )
+            }
           </InPlaceField>
           <View className="flex-row items-center gap-4">
             <View

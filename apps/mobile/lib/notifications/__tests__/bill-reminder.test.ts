@@ -122,6 +122,32 @@ describe('billReminders across the month boundary', () => {
     ]);
   });
 
+  it('reminds on 31 December for a bill due on 1 January', () => {
+    const december = [10, 11, 12].map((month) => tx(firstOf(month), 'expense', '89.90', 'Astro'));
+    const now = new Date(2026, 11, 30, 20);
+    expect(billReminders(selectBillsAhead(now, december, astroOn), astroOn, now)).toEqual([
+      astroReminder(new Date(2026, 11, 31, 9)),
+    ]);
+  });
+
+  it('plans next month’s reminder for a bill skipped this month', () => {
+    const now = new Date(2026, 9, 5, 10);
+    const skipped = [
+      {
+        ...remind('MYR|expense|astro'),
+        status: 'confirmed',
+        kind: 'bill',
+        expectedDay: 20,
+        expectedAmountMinor: 8990 as MinorAmount,
+        currency: 'MYR',
+        skipPeriod: '2026-10',
+      } as RecurringOverride,
+    ];
+    expect(billReminders(selectBillsAhead(now, [], skipped), skipped, now)).toEqual([
+      { ...astroReminder(new Date(2026, 10, 19, 9)), title: 'astro is due tomorrow' },
+    ]);
+  });
+
   it('plans next month’s reminder once this month’s bill is paid', () => {
     const now = new Date(2026, 9, 20, 10);
     const netflix = [7, 8, 9, 10].map((month) =>

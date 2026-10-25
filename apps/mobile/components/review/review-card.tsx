@@ -141,7 +141,6 @@ export function ReviewCard({
               label="Merchant name"
               kind="text"
               required
-              maxLength={40}
               value={model.merchant}
               onSave={handlers.onSaveMerchant}
             >

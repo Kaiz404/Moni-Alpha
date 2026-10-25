@@ -392,6 +392,7 @@ export default function BillScreen() {
                         >
                           {bill.name}
                         </Text>,
+                        { accessibilityLabel: `Edit name, ${bill.name}` },
                       )}
                       <Text
                         variant="meta"
@@ -425,14 +426,22 @@ export default function BillScreen() {
                     )
               }
             >
-              <Text
-                testID={tid('budget', 'bill', 'amount')}
-                variant="amountHero"
-                className="text-foreground"
-                style={{ fontVariant: ['tabular-nums'] }}
-              >
-                {formatMoney(bill.amountMinor, bill.currency)}
-              </Text>
+              {({ editable, editor }) =>
+                editor ??
+                editable(
+                  <Text
+                    testID={tid('budget', 'bill', 'amount')}
+                    variant="amountHero"
+                    className="text-foreground"
+                    style={{ fontVariant: ['tabular-nums'] }}
+                  >
+                    {formatMoney(bill.amountMinor, bill.currency)}
+                  </Text>,
+                  {
+                    accessibilityLabel: `Edit amount, ${formatMoney(bill.amountMinor, bill.currency)}`,
+                  },
+                )
+              }
             </InPlaceField>
             {open ? (
               <View className="flex-row gap-2">

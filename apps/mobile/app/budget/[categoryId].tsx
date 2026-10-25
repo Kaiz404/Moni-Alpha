@@ -277,7 +277,7 @@ export default function CategoryBudgetScreen() {
 
         <InPlaceField
           testID={tid('budget', 'category-budget')}
-          label="Monthly budget"
+          label={`Monthly budget for ${category.name}`}
           kind="amount"
           prefix={currencySymbol(currency)}
           whole

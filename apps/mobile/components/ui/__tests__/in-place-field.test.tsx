@@ -6,7 +6,7 @@ import {
   screen,
 } from '@testing-library/react-native';
 import { useState } from 'react';
-import { View } from 'react-native';
+import { Keyboard, View } from 'react-native';
 
 import {
   InPlaceField,
@@ -423,12 +423,92 @@ describe('InPlaceField', () => {
   });
 });
 
+describe('InPlaceField and the keyboard', () => {
+  type Listener = () => void;
+  let listeners: Record<string, Listener[]>;
+
+  beforeEach(() => {
+    listeners = {};
+    jest.spyOn(Keyboard, 'addListener').mockImplementation(((
+      event: string,
+      listener: Listener,
+    ) => {
+      (listeners[event] ??= []).push(listener);
+      return {
+        remove: () => {
+          listeners[event] = listeners[event].filter(
+            (held) => held !== listener,
+          );
+        },
+      };
+    }) as unknown as typeof Keyboard.addListener);
+  });
+  afterEach(() => jest.restoreAllMocks());
+
+  const emit = (event: string) =>
+    act(() => listeners[event]?.forEach((listener) => listener()));
+
+  it('cancels when the keyboard closes, even after typing re-rendered the page', () => {
+    const onCancel = jest.fn();
+    function Page() {
+      const [, setTyped] = useState<MinorAmount | null>(null);
+      return (
+        <InPlaceGroup>
+          <InPlaceField
+            testID={tid('budget', 'cap', 'food')}
+            label="Food budget"
+            kind="amount"
+            prefix="RM"
+            whole
+            value={rm(30000)}
+            onDraftChange={setTyped}
+            onCancel={() => onCancel()}
+            onSave={jest.fn()}
+          >
+            <Text>RM300</Text>
+          </InPlaceField>
+        </InPlaceGroup>
+      );
+    }
+    render(<Page />);
+    fireEvent.press(screen.getByTestId('budget.cap.food.edit'));
+    emit('keyboardDidShow');
+    fireEvent.changeText(
+      screen.getByTestId('budget.cap.food.input'),
+      '350',
+    );
+    fireEvent.changeText(
+      screen.getByTestId('budget.cap.food.input'),
+      '360',
+    );
+    emit('keyboardDidHide');
+    expect(screen.queryByTestId('budget.cap.food.input')).toBeNull();
+    expect(onCancel).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps the field focused when Done is pressed on a value it cannot take', () => {
+    render(<Fields />);
+    fireEvent.press(screen.getByTestId('txn.merchant.edit'));
+    const input = screen.getByTestId('txn.merchant.input');
+    expect(input.props.submitBehavior).toBe('submit');
+    fireEvent.changeText(input, ' ');
+    fireEvent(input, 'submitEditing');
+    expect(screen.getByTestId('txn.merchant.input')).toBeTruthy();
+  });
+});
+
 describe('parseAmountDraft', () => {
   it('reads ringgit and sen into minor units', () => {
     expect(parseAmountDraft('1,234.5', {})).toBe(123450);
     expect(parseAmountDraft('12.345', {})).toBeNull();
     expect(parseAmountDraft('abc', {})).toBeNull();
     expect(parseAmountDraft('', {})).toBeNull();
+  });
+
+  it('takes a leading or trailing point as the phone keyboard types it', () => {
+    expect(parseAmountDraft('.5', {})).toBe(50);
+    expect(parseAmountDraft('12.', {})).toBe(1200);
+    expect(parseAmountDraft('.', {})).toBeNull();
   });
 
   it('takes only whole ringgit when whole', () => {

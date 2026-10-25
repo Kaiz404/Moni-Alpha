@@ -159,7 +159,11 @@ export function WalletHero({
 
         <InPlaceField
           testID={tid('wallet', 'balance')}
-          label="Balance"
+          label={
+            source.kind === 'cash'
+              ? `Cash you have, in ${currency}`
+              : `Balance your ${source.name} app shows, in ${currency}`
+          }
           kind="amount"
           prefix={currencySymbol(currency)}
           signed
