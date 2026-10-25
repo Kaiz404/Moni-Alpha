@@ -29,6 +29,8 @@ tags:
     id: capture.submit
 - assertVisible: Looks like a duplicate
 - assertVisible:
+    id: capture.duplicate.row
+- assertVisible:
     id: capture.duplicate.review
 - assertVisible:
     id: capture.duplicate.add-anyway
