@@ -118,6 +118,16 @@ export type ButtonProps = {
   accessibilityLabel?: string;
   /** A sheet's pinned action is 56 tall. */
   pinned?: boolean;
+  /**
+   * The 44 capsule inside a card or tile (empty tiles, Lend more): 18 sides,
+   * 14 on the glyph side, 6 between glyph and label.
+   */
+  compact?: boolean;
+  /**
+   * The form is not filled in yet: Sand with Ink 2 text and no press, the
+   * label saying what is missing (V2P-DebtNew). Disabled keeps the faded look.
+   */
+  waiting?: boolean;
 };
 
 /** The v2 capsule: 52 tall (tertiary 44), 15/600 label, one variant per role. */
@@ -133,12 +143,18 @@ export function Button({
   className,
   accessibilityLabel,
   pinned = false,
+  compact = false,
+  waiting = false,
 }: ButtonProps) {
   const tokens = useThemeTokens();
   const look = looks[variant];
-  const inactive = disabled || loading;
-  const height = pinned ? 56 : look.tall ? 52 : 44;
-  const ink = disabled ? tokens.muted : look.ink(tokens);
+  const inactive = disabled || loading || waiting;
+  const height = pinned ? 56 : look.tall && !compact ? 52 : 44;
+  const ink = disabled
+    ? tokens.muted
+    : waiting
+      ? tokens.ink2
+      : look.ink(tokens);
   const glyph = loading ? (
     <LoadingRing
       color={ink}
@@ -157,8 +173,26 @@ export function Button({
     ? variant === 'tertiary'
       ? ''
       : 'bg-sand-light'
-    : look.fill;
-  const gap = loading ? 'gap-2.5' : look.tall ? 'gap-2' : 'gap-0.5';
+    : waiting
+      ? 'bg-sand'
+      : look.fill;
+  const gap = loading
+    ? 'gap-2.5'
+    : compact
+      ? 'gap-1.5'
+      : look.tall
+        ? 'gap-2'
+        : 'gap-0.5';
+  const padding = compact
+    ? glyph
+      ? 'pl-3.5 pr-[18px]'
+      : 'px-[18px]'
+    : look.padding;
+  const textTone = disabled
+    ? 'text-muted'
+    : waiting
+      ? 'text-ink-2'
+      : look.text;
 
   return (
     <Press
@@ -172,12 +206,12 @@ export function Button({
       accessibilityState={{ disabled: inactive, busy: loading }}
       radius={{ rest: height / 2, pressed: 16 }}
       pressedClassName={look.pressed}
-      className={`flex-row items-center justify-center ${gap} ${look.padding} ${restFill} ${className ?? ''}`}
+      className={`flex-row items-center justify-center ${gap} ${padding} ${restFill} ${className ?? ''}`}
       style={{ height }}
     >
       {variant === 'tertiary' ? null : glyph}
       <Text
-        className={`text-[15px] leading-[21px] font-display-semibold ${disabled ? 'text-muted' : look.text}`}
+        className={`text-[15px] leading-[21px] font-display-semibold ${textTone}`}
         numberOfLines={1}
       >
         {loading ? (loadingLabel ?? label) : label}
