@@ -1,4 +1,14 @@
-import { ActivityIndicator, View } from 'react-native';
+import { useEffect } from 'react';
+import { View } from 'react-native';
+import Animated, {
+  Easing,
+  useAnimatedStyle,
+  useReducedMotion,
+  useSharedValue,
+  withRepeat,
+  withTiming,
+} from 'react-native-reanimated';
+import Svg, { Circle } from 'react-native-svg';
 
 import {
   IconSymbol,
@@ -25,7 +35,11 @@ type Look = {
   pressed: string;
   text: string;
   ink: (tokens: Tokens) => string;
+  /** The loading ring's track, a step off the fill. */
+  track: (tokens: Tokens) => string;
   tall: boolean;
+  /** Side padding: 26 on Primary and Secondary, 22 on the icon-led capsules. */
+  padding: string;
   haptic?: () => void;
 };
 
@@ -36,28 +50,36 @@ const looks: Record<ButtonVariant, Look> = {
     pressed: 'bg-primary-pressed',
     text: 'text-primary-foreground',
     ink: (t) => t.primaryForeground,
+    track: (t) => t.ink2,
     tall: true,
+    padding: 'px-[26px]',
   },
   secondary: {
     fill: 'bg-sand',
     pressed: 'bg-hairline',
     text: 'text-foreground',
     ink: (t) => t.foreground,
+    track: (t) => t.hairline,
     tall: true,
+    padding: 'px-[26px]',
   },
   tertiary: {
     fill: '',
     pressed: 'bg-sand-light',
     text: 'text-deep-mint',
     ink: (t) => t.deepMint,
+    track: (t) => t.sandLight,
     tall: false,
+    padding: 'px-3.5',
   },
   approve: {
     fill: 'bg-mint',
     pressed: 'bg-mint-pressed',
     text: 'text-on-pastel',
     ink: (t) => t.onPastel,
+    track: (t) => t.primaryMuted,
     tall: true,
+    padding: 'px-[22px]',
     haptic: approve,
   },
   notMine: {
@@ -65,7 +87,9 @@ const looks: Record<ButtonVariant, Look> = {
     pressed: 'bg-hairline',
     text: 'text-foreground',
     ink: (t) => t.foreground,
+    track: (t) => t.hairline,
     tall: true,
+    padding: 'px-[22px]',
     haptic: notMine,
   },
   destructive: {
@@ -73,7 +97,9 @@ const looks: Record<ButtonVariant, Look> = {
     pressed: 'bg-destructive-pressed',
     text: 'text-state-destructive',
     ink: (t) => t.states.destructive,
+    track: (t) => t.destructivePressed,
     tall: true,
+    padding: 'px-[22px]',
   },
 };
 
@@ -114,9 +140,9 @@ export function Button({
   const height = pinned ? 56 : look.tall ? 52 : 44;
   const ink = disabled ? tokens.muted : look.ink(tokens);
   const glyph = loading ? (
-    <ActivityIndicator
-      size={18}
+    <LoadingRing
       color={ink}
+      track={look.track(tokens)}
     />
   ) : icon ? (
     <View pointerEvents="none">
@@ -127,6 +153,12 @@ export function Button({
       />
     </View>
   ) : null;
+  const restFill = disabled
+    ? variant === 'tertiary'
+      ? ''
+      : 'bg-sand-light'
+    : look.fill;
+  const gap = loading ? 'gap-2.5' : look.tall ? 'gap-2' : 'gap-0.5';
 
   return (
     <Press
@@ -140,7 +172,7 @@ export function Button({
       accessibilityState={{ disabled: inactive, busy: loading }}
       radius={{ rest: height / 2, pressed: 16 }}
       pressedClassName={look.pressed}
-      className={`flex-row items-center justify-center ${look.tall ? 'gap-2 px-6' : 'gap-0.5 px-3.5'} ${disabled ? 'bg-sand-light' : look.fill} ${className ?? ''}`}
+      className={`flex-row items-center justify-center ${gap} ${look.padding} ${restFill} ${className ?? ''}`}
       style={{ height }}
     >
       {variant === 'tertiary' ? null : glyph}
@@ -152,5 +184,68 @@ export function Button({
       </Text>
       {variant === 'tertiary' ? glyph : null}
     </Press>
+  );
+}
+
+const RING = 18;
+const RING_RADIUS = 7;
+const RING_STROKE = 2.5;
+
+/** The V2F-Components loading glyph: a 14-long arc turning on its track. */
+function LoadingRing({
+  color,
+  track,
+}: {
+  color: string;
+  track: string;
+}) {
+  const reduceMotion = useReducedMotion();
+  const turn = useSharedValue(0);
+
+  useEffect(() => {
+    if (reduceMotion) return;
+    turn.set(
+      withRepeat(
+        withTiming(360, { duration: 900, easing: Easing.linear }),
+        -1,
+      ),
+    );
+  }, [reduceMotion, turn]);
+
+  const spin = useAnimatedStyle(() => ({
+    transform: [{ rotate: `${turn.get()}deg` }],
+  }));
+
+  return (
+    <Animated.View
+      pointerEvents="none"
+      style={[{ width: RING, height: RING }, spin]}
+    >
+      <Svg
+        width={RING}
+        height={RING}
+        viewBox={`0 0 ${RING} ${RING}`}
+      >
+        <Circle
+          cx={RING / 2}
+          cy={RING / 2}
+          r={RING_RADIUS}
+          fill="none"
+          stroke={track}
+          strokeWidth={RING_STROKE}
+        />
+        <Circle
+          cx={RING / 2}
+          cy={RING / 2}
+          r={RING_RADIUS}
+          fill="none"
+          stroke={color}
+          strokeWidth={RING_STROKE}
+          strokeLinecap="round"
+          strokeDasharray="14 30"
+          transform={`rotate(-90 ${RING / 2} ${RING / 2})`}
+        />
+      </Svg>
+    </Animated.View>
   );
 }
