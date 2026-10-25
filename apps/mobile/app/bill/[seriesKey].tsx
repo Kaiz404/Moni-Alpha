@@ -3,6 +3,7 @@ import type { MinorAmount } from '@repo/types';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useMemo, useState, type ReactNode } from 'react';
 import { ScrollView, View } from 'react-native';
+import { useUniwind } from 'uniwind';
 
 import { DueDaySheet } from '@/components/budget/due-day-sheet';
 import { Toggle } from '@/components/ui/toggle';
@@ -89,6 +90,7 @@ function errorText(error: unknown): string {
 /** `V2P-BillDetail`: one bill, its name and amount in place, its schedule, and its payments. */
 export default function BillScreen() {
   const tokens = useThemeTokens();
+  const dark = useUniwind().theme === 'dark';
   const { seriesKey } = useLocalSearchParams<{ seriesKey: string }>();
   const data = useBudgetData();
   const { now, currency } = data;
@@ -376,10 +378,18 @@ export default function BillScreen() {
               {({ editable, editor }) =>
                 editor ?? (
                   <View className="flex-row items-center gap-3">
-                    <View className="h-[52px] w-[52px] items-center justify-center">
-                      <TintBubble
-                        icon={bubbleIcon}
-                        color={category?.color ?? null}
+                    <View
+                      className={`h-[52px] w-[52px] items-center justify-center rounded-full ${category?.color ? '' : 'bg-sand'}`}
+                      style={
+                        category?.color
+                          ? { backgroundColor: `${category.color}${dark ? '38' : '73'}` }
+                          : undefined
+                      }
+                    >
+                      <IconSymbol
+                        name={bubbleIcon}
+                        size={24}
+                        color={category?.color && dark ? category.color : tokens.foreground}
                       />
                     </View>
                     <View className="min-w-0 flex-1">
@@ -472,7 +482,7 @@ export default function BillScreen() {
                 className="flex-1"
                 leading={
                   <IconSymbol
-                    name="calendar-blank"
+                    name="calendar"
                     size={18}
                     color={tokens.foreground}
                   />
@@ -484,6 +494,14 @@ export default function BillScreen() {
                 label="Pays from"
                 value={wallet?.name ?? ''}
                 className="flex-1"
+                leading={
+                  wallet?.color ? (
+                    <View
+                      className="h-2.5 w-2.5 rounded-full"
+                      style={{ backgroundColor: wallet.color }}
+                    />
+                  ) : undefined
+                }
                 onPress={pickWallet}
               />
             </View>
@@ -558,6 +576,7 @@ export default function BillScreen() {
                     variant="tertiary"
                     label="See all"
                     icon="chevron-right"
+                    className="-mr-3.5"
                     onPress={() =>
                       router.dismissTo({
                         pathname: '/activity',
@@ -664,7 +683,7 @@ function SwitchRow({
 }) {
   const tokens = useThemeTokens();
   return (
-    <View className="min-h-[66px] flex-row items-center gap-3.5 py-3 pl-[18px] pr-3.5">
+    <View className="min-h-[66px] flex-row items-center gap-3.5 px-[18px] py-3">
       <View className="h-[42px] w-[42px] items-center justify-center rounded-full bg-sand">
         <IconSymbol
           name={icon}
