@@ -5,16 +5,16 @@ import { useMemo, useState, type ReactNode } from 'react';
 import { ScrollView, View } from 'react-native';
 
 import { DueDaySheet } from '@/components/budget/due-day-sheet';
-import {
-  InPlaceField,
-  Pencil,
-  parseDraft,
-} from '@/components/budget/in-place-field';
 import { Toggle } from '@/components/budget/toggle';
 import { useBudgetData } from '@/components/budget/use-budget';
 import { Button } from '@/components/ui/button';
 import { NotFound } from '@/components/ui/empty-tile';
 import { IconSymbol } from '@/components/ui/icon-symbol';
+import {
+  InPlaceField,
+  InPlaceGroup,
+  type Saved,
+} from '@/components/ui/in-place-field';
 import { ListCard } from '@/components/ui/list-card';
 import { Page } from '@/components/ui/page';
 import { PickerField } from '@/components/ui/picker-field';
@@ -36,7 +36,8 @@ import {
   monthName,
   monthSpend,
 } from '@/lib/finance/budget-month';
-import { formatMoney } from '@/lib/finance/format-money';
+import { currencySymbol, formatMoney } from '@/lib/finance/format-money';
+import { PLAN_LIMIT_MINOR } from '@/lib/finance/money';
 import { ensureBillReminderPermission, reminderAt } from '@/lib/notifications/bill-reminder';
 import { openSheet } from '@/lib/sheet/sheet-store';
 import { autoAddRules$, wallets$ } from '@/lib/store';
@@ -63,7 +64,6 @@ import { resolveDefaultWalletId } from '@/lib/wallets/default-wallet';
 const HISTORY_ROWS = 3;
 const REMINDER_TIME = '9:00 am';
 
-type Editing = 'name' | 'amount' | null;
 
 /** The same day of the month after a `YYYY-MM-DD`, clamped to that month's length. */
 function nextMonthDay(dueDate: string): Date {
@@ -98,8 +98,6 @@ export default function BillScreen() {
   const override = data.overrides.find(
     (item) => item.seriesKey === seriesKey,
   );
-  const [editing, setEditing] = useState<Editing>(null);
-  const [draft, setDraft] = useState('');
   const [dueOpen, setDueOpen] = useState(false);
   const payments = useMemo(
     () =>
@@ -165,12 +163,6 @@ export default function BillScreen() {
   const reminder = reminderAt(toLocalDateInput(nextDue));
   const sourceApp = walletId ? linkedApps[walletId] : null;
   const rule = rules.find((item) => item.source_app === sourceApp);
-  const typedAmount = parseDraft(draft, true);
-  const amountMinor =
-    typedAmount === null
-      ? null
-      : (Math.round(typedAmount * 100) as MinorAmount);
-  const nameOk = draft.trim().length > 0 && draft.trim().length <= 30;
   const lookup = {
     categoriesById: Object.fromEntries(
       data.categories.map((item) => [item.id, item]),
@@ -193,29 +185,9 @@ export default function BillScreen() {
       showToast({ text: errorText(error), tone: 'removed' });
     }
   };
-  const start = (field: Exclude<Editing, null>) => {
-    setEditing(field);
-    setDraft(
-      field === 'name'
-        ? bill.name
-        : (bill.amountMinor / 100).toFixed(2),
-    );
-  };
-  const commit = async () => {
-    const field = editing;
-    setEditing(null);
-    if (field === 'name' && nameOk)
-      await save({ name: draft.trim() }, 'Name saved', {
-        name: override?.name ?? null,
-      });
-    if (field === 'amount' && amountMinor !== null)
-      await save(
-        { expectedAmountMinor: amountMinor },
-        'Amount saved',
-        {
-          expectedAmountMinor: bill.amountMinor,
-        },
-      );
+  const update = async (patch: BillPatch, undo: BillPatch): Promise<Saved> => {
+    await updateBill(bill, patch);
+    return { undo: () => void updateBill(bill, undo) };
   };
 
   const markPaid = async () => {
@@ -379,6 +351,7 @@ export default function BillScreen() {
         kind="pushed"
         title="Bill"
       >
+        <InPlaceGroup>
         <ScrollView
           className="flex-1"
           contentContainerClassName="gap-4 px-5 pb-8"
@@ -386,103 +359,81 @@ export default function BillScreen() {
           showsVerticalScrollIndicator={false}
         >
           <View className="gap-3">
-            {editing === 'name' ? (
-              <InPlaceField
-                screen="budget"
-                name="bill-name"
-                accessibilityLabel="Bill name, editing"
-                value={draft}
-                onChangeText={setDraft}
-                onCancel={() => setEditing(null)}
-                onSave={commit}
-                canSave={nameOk}
-                maxLength={30}
-              >
-                {nameOk ? null : (
-                  <Text
-                    variant="meta"
-                    className="text-muted"
-                  >
-                    A name needs 1 to 30 letters.
-                  </Text>
-                )}
-              </InPlaceField>
-            ) : (
-              <View className="flex-row items-center gap-3">
-                <View className="h-[52px] w-[52px] items-center justify-center">
-                  <TintBubble
-                    icon={bubbleIcon}
-                    color={category?.color ?? null}
-                  />
-                </View>
-                <View className="min-w-0 flex-1">
-                  <View className="flex-row items-center gap-2">
-                    <Text
-                      testID={tid('budget', 'bill', 'name')}
-                      variant="sectionTitle"
-                      className="flex-shrink text-foreground"
-                      numberOfLines={1}
-                    >
-                      {bill.name}
-                    </Text>
-                    {editing ? null : (
-                      <Pencil
-                        testID={tid('budget', 'bill', 'edit-name')}
-                        accessibilityLabel="Edit name"
-                        onPress={() => start('name')}
+            <InPlaceField
+              testID={tid('budget', 'bill-name')}
+              label="Name"
+              kind="text"
+              required
+              maxLength={30}
+              value={bill.name}
+              hint={(value) => (value === null ? 'A name needs 1 to 30 letters.' : null)}
+              onSave={(name) =>
+                name === bill.name
+                  ? undefined
+                  : update({ name }, { name: override?.name ?? null })
+              }
+            >
+              {({ editable, editor }) =>
+                editor ?? (
+                  <View className="flex-row items-center gap-3">
+                    <View className="h-[52px] w-[52px] items-center justify-center">
+                      <TintBubble
+                        icon={bubbleIcon}
+                        color={category?.color ?? null}
                       />
-                    )}
+                    </View>
+                    <View className="min-w-0 flex-1">
+                      {editable(
+                        <Text
+                          testID={tid('budget', 'bill', 'name')}
+                          variant="sectionTitle"
+                          className="text-foreground"
+                          numberOfLines={1}
+                        >
+                          {bill.name}
+                        </Text>,
+                      )}
+                      <Text
+                        variant="meta"
+                        className="text-muted"
+                      >
+                        {once ? 'Bill · just once' : 'Bill · every month'}
+                      </Text>
+                    </View>
                   </View>
-                  <Text
-                    variant="meta"
-                    className="text-muted"
-                  >
-                    {once ? 'Bill · just once' : 'Bill · every month'}
-                  </Text>
-                </View>
-              </View>
-            )}
-            {editing === 'amount' ? (
-              <InPlaceField
-                screen="budget"
-                name="bill-amount"
-                accessibilityLabel="Bill amount, editing"
-                currency={bill.currency}
-                decimals
-                value={draft}
-                onChangeText={setDraft}
-                onCancel={() => setEditing(null)}
-                onSave={commit}
-                canSave={amountMinor !== null}
+                )
+              }
+            </InPlaceField>
+            <InPlaceField
+              testID={tid('budget', 'bill-amount')}
+              label="Amount"
+              kind="amount"
+              prefix={currencySymbol(bill.currency)}
+              max={PLAN_LIMIT_MINOR}
+              value={bill.amountMinor}
+              hint={(value) =>
+                value === null
+                  ? `Type an amount above ${formatMoney(0, bill.currency, { whole: true })}.`
+                  : `From ${formatDate(nextDue, now)} on. Past payments stay as they were.`
+              }
+              onSave={(expectedAmountMinor) =>
+                expectedAmountMinor === bill.amountMinor
+                  ? undefined
+                  : update(
+                      { expectedAmountMinor },
+                      { expectedAmountMinor: bill.amountMinor },
+                    )
+              }
+            >
+              <Text
+                testID={tid('budget', 'bill', 'amount')}
+                variant="amountHero"
+                className="text-foreground"
+                style={{ fontVariant: ['tabular-nums'] }}
               >
-                <Text
-                  variant="meta"
-                  className="text-muted"
-                >
-                  {amountMinor === null
-                    ? `Type an amount above ${formatMoney(0, bill.currency, { whole: true })}.`
-                    : `From ${formatDate(nextDue, now)} on. Past payments stay as they were.`}
-                </Text>
-              </InPlaceField>
-            ) : (
-              <View className="flex-row items-center gap-2">
-                <Text
-                  testID={tid('budget', 'bill', 'amount')}
-                  variant="amountHero"
-                  className="text-foreground"
-                  style={{ fontVariant: ['tabular-nums'] }}
-                >
-                  {formatMoney(bill.amountMinor, bill.currency)}
-                </Text>
-                {editing ? null : (
-                  <Pencil
-                    testID={tid('budget', 'bill', 'edit-amount')}
-                    accessibilityLabel="Edit amount"
-                    onPress={() => start('amount')}
-                  />
-                )}
-              </View>
-            )}
+                {formatMoney(bill.amountMinor, bill.currency)}
+              </Text>
+            </InPlaceField>
             {open ? (
               <View className="flex-row gap-2">
                 <Button
@@ -678,6 +629,7 @@ export default function BillScreen() {
             onPress={stop}
           />
         </ScrollView>
+        </InPlaceGroup>
       </Page>
       <DueDaySheet
         open={dueOpen}

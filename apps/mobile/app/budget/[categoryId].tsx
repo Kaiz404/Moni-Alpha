@@ -1,18 +1,13 @@
 import { useValue } from '@legendapp/state/react';
 import type { MinorAmount } from '@repo/types';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { ScrollView, View } from 'react-native';
 
 import {
   BillsList,
   type BillLook,
 } from '@/components/budget/bills-list';
-import {
-  InPlaceField,
-  Pencil,
-  parseDraft,
-} from '@/components/budget/in-place-field';
 import { MerchantList } from '@/components/budget/merchant-list';
 import { useBudgetData } from '@/components/budget/use-budget';
 import { PaceChart } from '@/components/charts/pace-chart';
@@ -20,6 +15,7 @@ import { monthFromKey } from '@/components/charts/pace-geometry';
 import { Button } from '@/components/ui/button';
 import { NotFound } from '@/components/ui/empty-tile';
 import { HeaderIconButton } from '@/components/ui/header-icon-button';
+import { InPlaceField, InPlaceGroup, type Saved } from '@/components/ui/in-place-field';
 import { ListCard } from '@/components/ui/list-card';
 import { Page } from '@/components/ui/page';
 import { ProgressBar } from '@/components/ui/progress-bar';
@@ -41,7 +37,8 @@ import {
   monthSpend,
   topMerchants,
 } from '@/lib/finance/budget-month';
-import { formatMoney } from '@/lib/finance/format-money';
+import { currencySymbol, formatMoney } from '@/lib/finance/format-money';
+import { PLAN_LIMIT_MINOR } from '@/lib/finance/money';
 import { pendingProposals$ } from '@/lib/finance/selectors';
 import { openSheet } from '@/lib/sheet/sheet-store';
 import {
@@ -82,8 +79,6 @@ export default function CategoryBudgetScreen() {
         budget.currency === currency,
     )?.amountMinor ?? null;
   const proposals = useValue(pendingProposals$(data.userId));
-  const [editing, setEditing] = useState(false);
-  const [draft, setDraft] = useState('');
 
   const spend = useMemo(
     () =>
@@ -144,9 +139,6 @@ export default function CategoryBudgetScreen() {
 
   const name = monthName(month);
   const look = { icon: category.icon, color: category.color };
-  const typed = parseDraft(draft, false);
-  const typedMinor =
-    typed === null ? null : ((typed * 100) as MinorAmount);
   const note =
     budgetMinor === null
       ? null
@@ -172,26 +164,17 @@ export default function CategoryBudgetScreen() {
     walletNames: data.walletNames,
   };
 
-  const startEdit = () => {
-    setDraft(
-      budgetMinor === null
-        ? ''
-        : String(Math.floor(budgetMinor / 100)),
-    );
-    setEditing(true);
-  };
-  const save = async () => {
-    if (typedMinor === null) return;
+  const save = async (typedMinor: MinorAmount): Promise<Saved | void> => {
     const before = budgetMinor;
-    setEditing(false);
+    if (typedMinor === before) return;
     await upsertCategoryBudget(category.id, currency, typedMinor);
-    showToast({
+    return {
       text: `${category.name} budget is ${formatMoney(typedMinor, currency, { whole: true })} from ${monthName(monthKey(now))}`,
       undo: () =>
         void (before === null
           ? deleteCategoryBudget(category.id, currency)
           : upsertCategoryBudget(category.id, currency, before)),
-    });
+    };
   };
   const removeBudget = async () => {
     if (budgetMinor === null) return;
@@ -229,6 +212,7 @@ export default function CategoryBudgetScreen() {
         ) : null
       }
     >
+      <InPlaceGroup>
       <ScrollView
         className="flex-1"
         contentContainerClassName="gap-3.5 px-5 pb-8"
@@ -291,105 +275,106 @@ export default function CategoryBudgetScreen() {
           ) : null}
         </View>
 
-        {editing ? (
-          <View className="gap-2 rounded-card bg-card p-3.5">
-            <Text className="pl-1 text-[13px] leading-[18px] text-muted">
-              {`Monthly budget for ${category.name}`}
-            </Text>
-            <InPlaceField
-              screen="budget"
-              name="category-budget"
-              accessibilityLabel={`Monthly budget for ${category.name}, editing`}
-              currency={currency}
-              value={draft}
-              onChangeText={setDraft}
-              onCancel={() => setEditing(false)}
-              onSave={save}
-              canSave={typedMinor !== null}
-            >
-              {typedMinor !== null ? (
-                <ProgressBar
-                  spentMinor={spentMinor}
-                  budgetMinor={typedMinor}
-                  currency={currency}
-                  title={`Spent ${formatMoney(spentMinor, currency)} of ${formatMoney(typedMinor, currency, { whole: true })}`}
-                />
-              ) : (
-                <Text className="pl-1 text-[13px] leading-[18px] text-muted">
-                  {`Type an amount above ${formatMoney(0, currency, { whole: true })}.`}
-                </Text>
-              )}
-            </InPlaceField>
-          </View>
-        ) : budgetMinor !== null ? (
-          <ListCard>
-            <View className="min-h-[66px] flex-row items-center gap-3.5 py-3 pl-[18px] pr-3.5">
-              <TintBubble
-                icon={bubbleIcon}
-                color={category.color}
+        <InPlaceField
+          testID={tid('budget', 'category-budget')}
+          label="Monthly budget"
+          kind="amount"
+          prefix={currencySymbol(currency)}
+          whole
+          max={PLAN_LIMIT_MINOR}
+          value={budgetMinor}
+          hint={(typedMinor) =>
+            typedMinor !== null ? (
+              <ProgressBar
+                spentMinor={spentMinor}
+                budgetMinor={typedMinor}
+                currency={currency}
+                title={`Spent ${formatMoney(spentMinor, currency)} of ${formatMoney(typedMinor, currency, { whole: true })}`}
               />
-              <View className="min-w-0 flex-1">
+            ) : (
+              <Text className="pl-1 text-[13px] leading-[18px] text-muted">
+                {`Type an amount above ${formatMoney(0, currency, { whole: true })}.`}
+              </Text>
+            )
+          }
+          onSave={save}
+        >
+          {({ editable, editor, open }) =>
+            editor ? (
+              <View className="gap-2 rounded-card bg-card p-3.5">
+                <Text className="pl-1 text-[13px] leading-[18px] text-muted">
+                  {`Monthly budget for ${category.name}`}
+                </Text>
+                {editor}
+              </View>
+            ) : budgetMinor !== null ? (
+              <ListCard>
+                <View className="min-h-[66px] flex-row items-center gap-3.5 py-3 pl-[18px] pr-3.5">
+                  <TintBubble
+                    icon={bubbleIcon}
+                    color={category.color}
+                  />
+                  <View className="min-w-0 flex-1">
+                    <Text
+                      variant="rowTitle"
+                      className="text-foreground"
+                    >
+                      Monthly budget
+                    </Text>
+                    <Text
+                      variant="meta"
+                      className="text-muted"
+                    >
+                      Every month
+                    </Text>
+                  </View>
+                  {editable(
+                    <Text
+                      variant="rowTitle"
+                      className="text-foreground"
+                      style={{ fontVariant: ['tabular-nums'] }}
+                    >
+                      {formatMoney(budgetMinor, currency, { whole: true })}
+                    </Text>,
+                    {
+                      accessibilityLabel: `Monthly budget ${formatMoney(budgetMinor, currency, { whole: true })}. Edit`,
+                    },
+                  )}
+                </View>
+              </ListCard>
+            ) : (
+              <View className="items-start gap-2.5 rounded-tile border-[1.5px] border-dashed border-border-strong px-[18px] py-[22px]">
+                <TintBubble
+                  icon={bubbleIcon}
+                  color={category.color}
+                />
                 <Text
-                  variant="rowTitle"
+                  variant="cardTitle"
                   className="text-foreground"
                 >
-                  Monthly budget
+                  {`No budget for ${category.name}`}
                 </Text>
-                <Text
-                  variant="meta"
-                  className="text-muted"
-                >
-                  Every month
+                <Text className="text-[14px] leading-5 text-ink-2">
+                  {[
+                    "Set one and this page shows what's left as you go.",
+                    bills[0]
+                      ? `${bills[0].name}, ${formatMoney(bills[0].amountMinor, currency)}, is due ${dayLabel(bills[0].dueDate, now)}.`
+                      : null,
+                  ]
+                    .filter(Boolean)
+                    .join(' ')}
                 </Text>
+                <Button
+                  testID={tid('budget', 'category', 'set-budget')}
+                  variant="secondary"
+                  icon="plus"
+                  label="Set a budget"
+                  onPress={open}
+                />
               </View>
-              <Button
-                testID={tid('budget', 'category', 'budget-value')}
-                variant="tertiary"
-                label={formatMoney(budgetMinor, currency, {
-                  whole: true,
-                })}
-                accessibilityLabel={`Monthly budget ${formatMoney(budgetMinor, currency, { whole: true })}. Edit`}
-                className="px-1"
-                onPress={startEdit}
-              />
-              <Pencil
-                testID={tid('budget', 'category', 'edit-budget')}
-                accessibilityLabel="Edit monthly budget"
-                onPress={startEdit}
-              />
-            </View>
-          </ListCard>
-        ) : (
-          <View className="items-start gap-2.5 rounded-tile border-[1.5px] border-dashed border-border-strong px-[18px] py-[22px]">
-            <TintBubble
-              icon={bubbleIcon}
-              color={category.color}
-            />
-            <Text
-              variant="cardTitle"
-              className="text-foreground"
-            >
-              {`No budget for ${category.name}`}
-            </Text>
-            <Text className="text-[14px] leading-5 text-ink-2">
-              {[
-                "Set one and this page shows what's left as you go.",
-                bills[0]
-                  ? `${bills[0].name}, ${formatMoney(bills[0].amountMinor, currency)}, is due ${dayLabel(bills[0].dueDate, now)}.`
-                  : null,
-              ]
-                .filter(Boolean)
-                .join(' ')}
-            </Text>
-            <Button
-              testID={tid('budget', 'category', 'set-budget')}
-              variant="secondary"
-              icon="plus"
-              label="Set a budget"
-              onPress={startEdit}
-            />
-          </View>
-        )}
+            )
+          }
+        </InPlaceField>
 
         <View className="gap-2 rounded-card bg-card px-[18px] py-3.5">
           <View className="flex-row items-center justify-between">
@@ -521,6 +506,7 @@ export default function CategoryBudgetScreen() {
           />
         </View>
       </ScrollView>
+      </InPlaceGroup>
     </Page>
   );
 }

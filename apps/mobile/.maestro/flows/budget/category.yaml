@@ -29,9 +29,9 @@ tags:
     id: budget.pace-chart
 - takeScreenshot: b1-l6-category
 - assertVisible:
-    id: budget.category.edit-budget
+    id: budget.category-budget.edit
 - tapOn:
-    id: budget.category.edit-budget
+    id: budget.category-budget.edit
 - assertVisible:
     id: budget.category-budget.input
 - eraseText: 10

@@ -34,7 +34,7 @@ tags:
 - assertVisible: Monthly total
 - takeScreenshot: b1-l8-budget-edit
 - tapOn:
-    id: budget.edit.edit-total
+    id: budget.total.edit
 - assertVisible:
     id: budget.total.input
 - eraseText: 10
@@ -49,10 +49,10 @@ tags:
     id: budget\.edit\.set\..*
     index: 0
 - assertVisible:
-    id: budget.cap.input
+    id: budget\.cap\..*\.input
 - inputText: '150'
 - tapOn:
-    id: budget.cap.save
+    id: budget\.cap\..*\.save
 - tapOn:
     id: budget.edit.save
 - assertVisible: .*saved

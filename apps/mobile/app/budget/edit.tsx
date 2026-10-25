@@ -5,16 +5,12 @@ import { ScrollView, View } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
 
 import {
-  InPlaceField,
-  Pencil,
-  parseDraft,
-} from '@/components/budget/in-place-field';
-import {
   useBudgetData,
   useBudgetMonth,
 } from '@/components/budget/use-budget';
 import { Button } from '@/components/ui/button';
 import { IconSymbol } from '@/components/ui/icon-symbol';
+import { InPlaceField, InPlaceGroup } from '@/components/ui/in-place-field';
 import { ListCard } from '@/components/ui/list-card';
 import { Page } from '@/components/ui/page';
 import { Press } from '@/components/ui/press';
@@ -22,12 +18,13 @@ import { Text } from '@/components/ui/text';
 import { TintBubble } from '@/components/ui/transaction-row';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { monthKey, monthName } from '@/lib/finance/budget-month';
-import { formatMoney } from '@/lib/finance/format-money';
+import { currencySymbol, formatMoney } from '@/lib/finance/format-money';
+import { PLAN_LIMIT_MINOR } from '@/lib/finance/money';
 import {
   setMonthlyBudget,
   upsertCategoryBudget,
 } from '@/lib/supabase/category-budgets';
-import { tid } from '@/lib/test-ids';
+import { tid, type TestId } from '@/lib/test-ids';
 import { showToast } from '@/lib/toast/toast-store';
 import { resolveTransactionIcon } from '@/lib/transactions/icon';
 
@@ -36,6 +33,9 @@ const DONUT = 96;
 const DONUT_R = 40;
 const DONUT_C = 2 * Math.PI * DONUT_R;
 const ARC_GAP = 2;
+
+const fieldOf = (id: string) =>
+  id === TOTAL ? tid('budget', 'total') : tid('budget', 'cap', id);
 
 /** Whole units from minor, rounded down, as budgets are typed. */
 const wholeOf = (minor: number) => Math.floor(minor / 100);
@@ -67,8 +67,8 @@ export default function EditBudgetsScreen() {
       : wholeOf(data.monthlyTotalMinor);
   const [caps, setCaps] = useState<Record<string, number>>(saved);
   const [total, setTotal] = useState<number | null>(savedTotal);
-  const [editing, setEditing] = useState<string | null>(null);
-  const [draft, setDraft] = useState('');
+  const [editing, setEditing] = useState<TestId | null>(null);
+  const [typedMinor, setTypedMinor] = useState<MinorAmount | null>(null);
   const [saving, setSaving] = useState(false);
 
   const spentByCategory = useMemo(
@@ -81,10 +81,9 @@ export default function EditBudgetsScreen() {
       ),
     [month.budgeted, month.unbudgeted],
   );
-  const typed = parseDraft(draft, false);
   const live = (id: string) =>
-    editing === id && typed !== null
-      ? typed
+    editing === fieldOf(id) && typedMinor !== null
+      ? wholeOf(typedMinor)
       : id === TOTAL
         ? (total ?? 0)
         : (caps[id] ?? 0);
@@ -102,7 +101,7 @@ export default function EditBudgetsScreen() {
     0,
   );
   const liveTotal =
-    total === null && editing !== TOTAL ? sum : live(TOTAL);
+    total === null && editing !== fieldOf(TOTAL) ? sum : live(TOTAL);
   const whole = (value: number) =>
     formatMoney(value * 100, currency, { whole: true });
   const spent = (id: string) =>
@@ -141,24 +140,10 @@ export default function EditBudgetsScreen() {
         sentence: `${whole(sum)} across ${counted === 1 ? '1 budget' : `${counted} budgets`}, more than the total. Raise it or lower one.`,
       };
 
-  const start = (id: string, value: number | null) => {
-    setEditing(id);
-    setDraft(value ? String(value) : '');
-  };
-  const cancel = () => {
-    if (editing && editing !== TOTAL && caps[editing] === 0) {
-      const { [editing]: _, ...rest } = caps;
-      setCaps(rest);
-    }
-    setEditing(null);
-    setDraft('');
-  };
-  const commit = () => {
-    if (typed === null || !editing) return;
-    if (editing === TOTAL) setTotal(typed);
-    else setCaps({ ...caps, [editing]: typed });
-    setEditing(null);
-    setDraft('');
+  const dropIfUnset = (id: string) => {
+    if (caps[id] !== 0) return;
+    const { [id]: _, ...rest } = caps;
+    setCaps(rest);
   };
   const saveAll = async () => {
     setSaving(true);
@@ -192,6 +177,10 @@ export default function EditBudgetsScreen() {
       title="Edit budgets"
       subtitle={`From ${thisMonth}`}
     >
+      <InPlaceGroup
+        editing={editing}
+        onEditingChange={setEditing}
+      >
       <ScrollView
         className="flex-1"
         contentContainerClassName="gap-6 px-5 pb-8"
@@ -205,43 +194,24 @@ export default function EditBudgetsScreen() {
           >
             Monthly total
           </Text>
-          {editing === TOTAL ? (
-            <InPlaceField
-              screen="budget"
-              name="total"
-              accessibilityLabel="Monthly total, editing"
-              currency={currency}
-              value={draft}
-              onChangeText={setDraft}
-              onCancel={cancel}
-              onSave={commit}
-              canSave={typed !== null}
-            />
-          ) : (
-            <View className="flex-row items-center gap-2">
-              <Press
-                testID={tid('budget', 'edit', 'total')}
-                accessibilityLabel={`Monthly total ${whole(liveTotal)}. Edit`}
-                disabled={editing !== null}
-                pressedClassName="bg-transparent"
-                onPress={() => start(TOTAL, liveTotal)}
-              >
-                <Text
-                  className="text-[40px] leading-[44px] font-display-bold text-foreground"
-                  style={{ fontVariant: ['tabular-nums'] }}
-                >
-                  {whole(liveTotal)}
-                </Text>
-              </Press>
-              {editing ? null : (
-                <Pencil
-                  testID={tid('budget', 'edit', 'edit-total')}
-                  accessibilityLabel="Edit monthly total"
-                  onPress={() => start(TOTAL, liveTotal)}
-                />
-              )}
-            </View>
-          )}
+          <InPlaceField
+            testID={fieldOf(TOTAL)}
+            label="Monthly total"
+            kind="amount"
+            prefix={currencySymbol(currency)}
+            whole
+            max={PLAN_LIMIT_MINOR}
+            value={liveTotal ? ((liveTotal * 100) as MinorAmount) : null}
+            onDraftChange={setTypedMinor}
+            onSave={(minor) => setTotal(wholeOf(minor))}
+          >
+            <Text
+              className="text-[40px] leading-[44px] font-display-bold text-foreground"
+              style={{ fontVariant: ['tabular-nums'] }}
+            >
+              {whole(liveTotal)}
+            </Text>
+          </InPlaceField>
           <View className="flex-row items-center gap-4">
             <View
               accessible
@@ -318,106 +288,78 @@ export default function EditBudgetsScreen() {
               {rows.map((category) => {
                 const cap = caps[category.id];
                 const was = saved[category.id];
-                const leftMinor =
-                  live(category.id) * 100 -
-                  Number(spentByCategory[category.id] ?? 0);
+                const spentMinor = Number(spentByCategory[category.id] ?? 0);
                 return (
-                  <View key={category.id}>
-                    <View className="min-h-[66px] flex-row items-center gap-3.5 py-3 pl-[18px] pr-3">
-                      <TintBubble
-                        icon={resolveTransactionIcon(
-                          category.icon,
-                          'expense',
-                        )}
-                        color={category.color}
-                      />
-                      <View className="min-w-0 flex-1">
-                        <Text
-                          variant="rowTitle"
-                          className="text-foreground"
-                          numberOfLines={1}
-                        >
-                          {category.name}
-                        </Text>
+                  <InPlaceField
+                    key={category.id}
+                    testID={fieldOf(category.id)}
+                    label={`${category.name} budget`}
+                    kind="amount"
+                    prefix={currencySymbol(currency)}
+                    whole
+                    max={PLAN_LIMIT_MINOR}
+                    value={cap ? ((cap * 100) as MinorAmount) : null}
+                    hint={(typed) => {
+                      const leftMinor = (typed ?? 0) - spentMinor;
+                      return (
                         <Text
                           variant="meta"
-                          className="text-muted"
-                          numberOfLines={1}
+                          className={typed !== null && leftMinor < 0 ? 'text-over' : 'text-muted'}
                         >
-                          {`${was !== undefined && was !== cap ? `Was ${whole(was)} · ` : ''}${spent(category.id)} spent`}
+                          {typed === null
+                            ? `Type an amount above ${whole(0)}.`
+                            : leftMinor >= 0
+                              ? `${formatMoney(leftMinor, currency, { whole: true })} left this month`
+                              : `${formatMoney(-leftMinor, currency, { whole: true })} over this month`}
                         </Text>
-                      </View>
-                      {editing === category.id ? null : (
-                        <>
-                          <Press
-                            testID={tid(
-                              'budget',
-                              'edit',
-                              'cap-value',
-                              category.name,
-                            )}
-                            accessibilityLabel={`${category.name} budget ${whole(cap)}. Edit`}
-                            disabled={editing !== null}
-                            pressedClassName="bg-transparent"
-                            className="min-h-11 justify-center"
-                            onPress={() => start(category.id, cap)}
-                          >
+                      );
+                    }}
+                    onDraftChange={setTypedMinor}
+                    onCancel={() => dropIfUnset(category.id)}
+                    onSave={(minor) => setCaps({ ...caps, [category.id]: wholeOf(minor) })}
+                  >
+                    {({ editable, editor }) => (
+                      <View>
+                        <View className="min-h-[66px] flex-row items-center gap-3.5 py-3 pl-[18px] pr-3">
+                          <TintBubble
+                            icon={resolveTransactionIcon(category.icon, 'expense')}
+                            color={category.color}
+                          />
+                          <View className="min-w-0 flex-1">
                             <Text
                               variant="rowTitle"
                               className="text-foreground"
-                              style={{
-                                fontVariant: ['tabular-nums'],
-                              }}
+                              numberOfLines={1}
                             >
-                              {whole(cap)}
+                              {category.name}
                             </Text>
-                          </Press>
-                          {editing ? null : (
-                            <Pencil
-                              testID={tid(
-                                'budget',
-                                'edit',
-                                'cap',
-                                category.name,
+                            <Text
+                              variant="meta"
+                              className="text-muted"
+                              numberOfLines={1}
+                            >
+                              {`${was !== undefined && was !== cap ? `Was ${whole(was)} · ` : ''}${spent(category.id)} spent`}
+                            </Text>
+                          </View>
+                          {editor
+                            ? null
+                            : editable(
+                                <Text
+                                  variant="rowTitle"
+                                  className="text-foreground"
+                                  style={{ fontVariant: ['tabular-nums'] }}
+                                >
+                                  {whole(cap)}
+                                </Text>,
+                                {
+                                  accessibilityLabel: `Edit ${category.name} budget, ${whole(cap)}`,
+                                },
                               )}
-                              accessibilityLabel={`Edit ${category.name} budget, ${whole(cap)}`}
-                              onPress={() => start(category.id, cap)}
-                            />
-                          )}
-                        </>
-                      )}
-                    </View>
-                    {editing === category.id ? (
-                      <View className="px-[18px] pb-3">
-                        <InPlaceField
-                          screen="budget"
-                          name="cap"
-                          accessibilityLabel={`${category.name} budget, editing`}
-                          currency={currency}
-                          value={draft}
-                          onChangeText={setDraft}
-                          onCancel={cancel}
-                          onSave={commit}
-                          canSave={typed !== null}
-                        >
-                          <Text
-                            variant="meta"
-                            className={
-                              typed !== null && leftMinor < 0
-                                ? 'text-over'
-                                : 'text-muted'
-                            }
-                          >
-                            {typed === null
-                              ? `Type an amount above ${whole(0)}.`
-                              : leftMinor >= 0
-                                ? `${formatMoney(leftMinor, currency, { whole: true })} left this month`
-                                : `${formatMoney(-leftMinor, currency, { whole: true })} over this month`}
-                          </Text>
-                        </InPlaceField>
+                        </View>
+                        {editor ? <View className="px-[18px] pb-3">{editor}</View> : null}
                       </View>
-                    ) : null}
-                  </View>
+                    )}
+                  </InPlaceField>
                 );
               })}
             </ListCard>
@@ -476,7 +418,7 @@ export default function EditBudgetsScreen() {
                     className="h-11 flex-row items-center gap-1 bg-sand pl-2.5 pr-3.5"
                     onPress={() => {
                       setCaps({ ...caps, [category.id]: 0 });
-                      start(category.id, null);
+                      setEditing(fieldOf(category.id));
                     }}
                   >
                     <IconSymbol
@@ -494,6 +436,7 @@ export default function EditBudgetsScreen() {
           </View>
         ) : null}
       </ScrollView>
+      </InPlaceGroup>
       <View className="border-t-[1.5px] border-sand bg-canvas px-5 pb-[26px] pt-3">
         <Button
           testID={tid('budget', 'edit', 'save')}
