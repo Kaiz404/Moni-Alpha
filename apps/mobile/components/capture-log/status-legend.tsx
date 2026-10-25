@@ -2,7 +2,7 @@ import type { CapturedNotificationStatus } from '@repo/types';
 import { View } from 'react-native';
 
 import { CaptureStatusPill } from '@/components/capture-log/status-pill';
-import { ListSection } from '@/components/ui/list-card';
+import { ListCard } from '@/components/ui/list-card';
 import { Text } from '@/components/ui/text';
 import { CAPTURE_STATUS_ORDER } from '@/lib/notifications/capture-log';
 
@@ -16,17 +16,26 @@ const MEANING: Record<CapturedNotificationStatus, string> = {
 
 export function StatusLegend() {
   return (
-    <ListSection label="What each status means">
-      {CAPTURE_STATUS_ORDER.map((status) => (
-        <View
-          key={status}
-          accessible
-          className="items-start gap-1 px-[18px] py-2.5"
-        >
-          <CaptureStatusPill status={status} />
-          <Text className="text-[14px] leading-[20px] text-ink-2">{MEANING[status]}</Text>
-        </View>
-      ))}
-    </ListSection>
+    <View className="gap-1.5">
+      <Text
+        variant="caps"
+        className="px-1.5 text-ink-2"
+        accessibilityRole="header"
+      >
+        What each status means
+      </Text>
+      <ListCard>
+        {CAPTURE_STATUS_ORDER.map((status) => (
+          <View
+            key={status}
+            accessible
+            className="items-start gap-1 px-[18px] py-2.5"
+          >
+            <CaptureStatusPill status={status} />
+            <Text className="text-[14px] leading-[20px] text-ink-2">{MEANING[status]}</Text>
+          </View>
+        ))}
+      </ListCard>
+    </View>
   );
 }

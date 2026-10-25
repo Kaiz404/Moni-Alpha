@@ -126,7 +126,7 @@ export default function CaptureLogScreen() {
         </Text>
 
         {total === 0 ? (
-          <View className="gap-6">
+          <View className="gap-3">
             <EmptyTile
               icon="bell-outline"
               title="Nothing captured yet"
