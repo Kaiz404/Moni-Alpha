@@ -1,9 +1,13 @@
 import { View } from 'react-native';
 
+import { useBudgetData, useBudgetMonth } from '@/components/budget/use-budget';
+
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Press } from '@/components/ui/press';
 import { Text } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
+import { monthKey } from '@/lib/finance/budget-month';
+import { formatMoney } from '@/lib/finance/format-money';
 import { tid } from '@/lib/test-ids';
 
 function CaptureLogLink({ onPress }: { onPress: () => void }) {
@@ -35,14 +39,38 @@ function CaptureLogLink({ onPress }: { onPress: () => void }) {
   );
 }
 
+/**
+ * Safe to spend a day before and after this session's approvals: "RM24 → RM23" over
+ * "RM420 left for 18 days after these.", or null without a budget or anything left.
+ */
+function useSafeToSpend(addedMinor: number) {
+  const data = useBudgetData();
+  const { left } = useBudgetMonth(data, monthKey(data.now));
+  if (!left || left.leftMinor <= 0) return null;
+  const whole = (minor: number) => formatMoney(minor, data.currency, { whole: true });
+  const before = Math.floor((left.leftMinor + addedMinor) / left.daysLeft / 100) * 100;
+  const days = `${left.daysLeft} ${left.daysLeft === 1 ? 'day' : 'days'}`;
+  return {
+    line:
+      before === left.perDayMinor
+        ? whole(left.perDayMinor)
+        : `${whole(before)} → ${whole(left.perDayMinor)}`,
+    sentence: `${whole(left.leftMinor)} left for ${days}${addedMinor > 0 ? ' after these' : ''}.`,
+  };
+}
+
 export function CaughtUp({
   sentence,
+  addedMinor,
   onCaptureLog,
 }: {
   sentence: string;
+  /** Main-currency spending this session approved, for the safe to spend a day change. */
+  addedMinor: number;
   onCaptureLog: () => void;
 }) {
   const tokens = useThemeTokens();
+  const safe = useSafeToSpend(addedMinor);
   return (
     <View
       testID={tid('review', 'caught-up')}
@@ -50,7 +78,7 @@ export function CaughtUp({
     >
       <View className="h-16 w-16 items-center justify-center rounded-full bg-primary">
         <IconSymbol
-          name="check-bold"
+          name="check-all"
           size={34}
           color={tokens.primaryForeground}
         />
@@ -70,6 +98,28 @@ export function CaughtUp({
           {sentence}
         </Text>
       </View>
+      {safe ? (
+        <View
+          testID={tid('review', 'safe-to-spend')}
+          className="gap-0.5"
+        >
+          <Text
+            variant="caps"
+            className="text-on-pastel"
+          >
+            Safe to spend a day
+          </Text>
+          <Text className="text-[34px] leading-[40px] font-display-bold text-on-pastel">
+            {safe.line}
+          </Text>
+          <Text
+            variant="meta"
+            className="text-on-pastel"
+          >
+            {safe.sentence}
+          </Text>
+        </View>
+      ) : null}
       <CaptureLogLink onPress={onCaptureLog} />
     </View>
   );
@@ -85,7 +135,7 @@ export function NothingToReview({ onCaptureLog }: { onCaptureLog: () => void }) 
     >
       <View className="h-16 w-16 items-center justify-center rounded-full bg-sand">
         <IconSymbol
-          name="check"
+          name="check-all"
           size={30}
           color={tokens.foreground}
         />

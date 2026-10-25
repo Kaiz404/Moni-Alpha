@@ -18,6 +18,7 @@ jest.mock('expo-crypto', () => ({ randomUUID: () => `00000000-0000-4000-8000-${S
 jest.mock('expo-router', () => ({
   router: { push: jest.fn(), back: jest.fn(), dismissTo: jest.fn() },
   useLocalSearchParams: () => mockParams,
+  useFocusEffect: () => {},
 }));
 jest.mock('react-native-safe-area-context', () => ({
   useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
@@ -55,6 +56,7 @@ jest.mock('@/lib/store', () => {
     autoAddRules$: observable({}),
     merchantAliases$: observable({}),
     profilePreferences$: observable({ currency: 'MYR' }),
+    recurringOverrides$: observable({}),
     assertMigrated: () => {},
     isMigrated: () => true,
   };
@@ -327,6 +329,49 @@ describe('Recently reviewed', () => {
     expect(router.push).toHaveBeenLastCalledWith({
       pathname: '/transaction/[id]',
       params: { id: 't1' },
+    });
+  });
+
+  it('lists what Moni added without asking this week under Added for you', async () => {
+    const row = (id: string, autoAdded: boolean, hours: number) => ({
+      id,
+      userId: 'user-1',
+      walletId: MAYBANK,
+      amountMinor: 10000 as MinorAmount,
+      currency: 'MYR' as CurrencyCode,
+      type: 'expense' as const,
+      analysisExcluded: false,
+      debtActivityId: null,
+      categoryId: FOOD,
+      transferToWalletId: null,
+      linkedTransactionId: null,
+      description: null,
+      merchant: `SHOP ${id}`,
+      notes: null,
+      transactionDate: hoursAgo(hours),
+      locationLatitude: null,
+      locationLongitude: null,
+      locationName: null,
+      autoAdded,
+      balanceCorrection: false,
+      createdAt: hoursAgo(hours),
+    });
+    financeProjection$.transactionsById.set({
+      a1: row('a1', true, 20),
+      a2: row('a2', true, 24 * 9),
+      m1: row('m1', false, 20),
+    });
+    await show(<ReviewScreen />);
+
+    expect(screen.getByText('Added for you')).toBeTruthy();
+    expect(screen.getByText('SHOP a1')).toBeTruthy();
+    expect(screen.queryByText('SHOP a2')).toBeNull();
+    expect(screen.queryByText('SHOP m1')).toBeNull();
+
+    fireEvent.press(screen.getByTestId('review.added.a1'));
+    expect(router.push).toHaveBeenLastCalledWith({
+      pathname: '/transaction/[id]',
+      params: { id: 'a1' },
     });
   });
 

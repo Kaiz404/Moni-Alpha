@@ -1,43 +1,39 @@
-import type { MinorAmount } from '@repo/types';
+import { View } from 'react-native';
 
-import { StatusPill, type StatusTone } from '@/components/ui/status-pill';
-import { formatMoney } from '@/lib/finance/format-money';
-import type { BudgetProgress } from '@/lib/finance/selectors';
+import { Text } from '@/components/ui/text';
+import type { BudgetLine, BudgetTone } from '@/lib/proposals/budget-line';
 
-export type BudgetLine = { tone: StatusTone; text: string };
+const TONES: Record<BudgetTone, { fill: string; text: string; dot: string }> = {
+  onTrack: { fill: 'bg-primary-muted', text: 'text-state-approved', dot: 'bg-state-approved' },
+  near: { fill: 'bg-attention-fill', text: 'text-state-attention', dot: 'bg-state-attention' },
+  over: { fill: 'bg-destructive-fill', text: 'text-state-destructive', dot: 'bg-state-destructive' },
+  review: { fill: 'bg-pending-fill', text: 'text-state-pending', dot: 'bg-state-pending' },
+};
 
-/**
- * What approving does to the category's month: "Food & Dining: RM76 left after this".
- * Forward-looking money is whole ringgit, rounded down.
- */
-export function budgetLine(
-  categoryName: string,
-  progress: BudgetProgress | undefined,
-  amountMinor: MinorAmount,
-  currency: string,
-): BudgetLine {
-  const budget = progress?.budgetAmountMinor ?? null;
-  if (budget === null) return { tone: 'auto', text: `No budget for ${categoryName} yet` };
-  const spent = Number(progress?.spentMinor ?? 0);
-  const after = spent + Number(amountMinor);
-  const money = (minor: number) => formatMoney(minor, currency, { whole: true });
-  if (after > Number(budget)) {
-    const over = after - Number(budget);
-    return spent > Number(budget)
-      ? { tone: 'over', text: `${categoryName}: ${money(over)} over after this` }
-      : { tone: 'over', text: `${categoryName} goes ${money(over)} over` };
-  }
-  return {
-    tone: after >= Number(budget) * 0.75 ? 'near' : 'onTrack',
-    text: `${categoryName}: ${money(Number(budget) - after)} left after this`,
-  };
+/** The source row's pill ("Needs a wallet"): 28 tall and 12/700, as `XA-Review` draws it. */
+export function SourcePill({ tone, label }: { tone: BudgetTone; label: string }) {
+  const look = TONES[tone];
+  return (
+    <View className={`h-7 flex-row items-center gap-1.5 rounded-full px-2.5 ${look.fill}`}>
+      <View className={`h-1.5 w-1.5 rounded-full ${look.dot}`} />
+      <Text className={`text-[12px] leading-[16px] font-display-bold ${look.text}`}>{label}</Text>
+    </View>
+  );
 }
 
+/** The card's last line, 13/600, wrapping when the category name is long. */
 export function ResultPill({ line }: { line: BudgetLine }) {
+  const look = TONES[line.tone];
   return (
-    <StatusPill
-      tone={line.tone}
-      label={line.text}
-    />
+    <View
+      className={`min-h-7 flex-row items-center gap-1.5 self-start rounded-full px-3 py-1 ${look.fill}`}
+    >
+      <View className={`h-1.5 w-1.5 rounded-full ${look.dot}`} />
+      <Text
+        className={`min-w-0 shrink text-[13px] leading-[18px] font-display-semibold ${look.text}`}
+      >
+        {line.text}
+      </Text>
+    </View>
   );
 }

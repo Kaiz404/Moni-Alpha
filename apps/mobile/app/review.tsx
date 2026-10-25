@@ -45,7 +45,7 @@ export default function ReviewScreen() {
     >
       {total > 0 ? (
         <View
-          className="flex-row gap-1.5 px-5 pb-1"
+          className="flex-row gap-1.5 px-5 pb-3"
           importantForAccessibility="no-hide-descendants"
         >
           {Array.from({ length: total }, (_, i) => (

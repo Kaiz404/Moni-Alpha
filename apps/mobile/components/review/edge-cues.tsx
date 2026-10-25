@@ -1,7 +1,6 @@
-import { View } from 'react-native';
+import { View, type ViewStyle } from 'react-native';
 import Animated, {
-  Extrapolation,
-  interpolate,
+  interpolateColor,
   useAnimatedStyle,
   type SharedValue,
 } from 'react-native-reanimated';
@@ -16,6 +15,8 @@ type Side = 'right' | 'left' | 'down';
 
 const SIDE_WIDTH = 28;
 const SIDE_LENGTH = 128;
+/** Past this much fill the label switches to the ink that reads on the action colour. */
+const INK_SWITCH = 0.55;
 
 type CueProps = {
   x: SharedValue<number>;
@@ -25,75 +26,92 @@ type CueProps = {
   height: number;
 };
 
-/** How far toward this side's threshold the card is, 0 to 1, and whether it is armed. */
-function useCueStyles(side: Side, { x, y, intent, width, height }: CueProps) {
-  const progress = () => {
+type Look = { canvas: string; border: string; hex: string };
+
+/** Which way the card is being dragged, from its offset alone. */
+function towardOf(dx: number, dy: number): Side | null {
+  'worklet';
+  if (Math.abs(dx) >= Math.abs(dy)) return dx > 0 ? 'right' : dx < 0 ? 'left' : null;
+  return dy > 0 ? 'down' : null;
+}
+
+/**
+ * `XA-Review` hintVals: `p` is how far toward this side's threshold the card is, `on` that the
+ * decision is armed, `full` that the cue shows its action (armed, or Approve blocked on a wallet).
+ */
+function useCue(side: Side, { x, y, intent, width, height }: CueProps, look: Look) {
+  const read = () => {
     'worklet';
     const dx = x.get();
     const dy = y.get();
-    const sideways = Math.abs(dx) >= Math.abs(dy);
+    const toward = towardOf(dx, dy);
     const reach =
-      side === 'right'
-        ? sideways ? dx / (width * FLING_COMMIT_THRESHOLD) : 0
-        : side === 'left'
-          ? sideways ? -dx / (width * FLING_COMMIT_THRESHOLD) : 0
-          : sideways ? 0 : dy / (height * FLING_COMMIT_THRESHOLD);
-    return Math.min(1, Math.max(0, reach));
-  };
-  const armed = () => {
-    'worklet';
+      toward !== side
+        ? 0
+        : side === 'down'
+          ? dy / (height * FLING_COMMIT_THRESHOLD)
+          : Math.abs(dx) / (width * FLING_COMMIT_THRESHOLD);
+    const p = Math.min(1, Math.max(0, reach));
     const now = intent.get();
-    return side === 'right'
-      ? now === 'approve' || now === 'needsWallet'
-      : side === 'left'
-        ? now === 'notMine'
-        : now === 'later';
-  };
-  const other = () => {
-    'worklet';
-    const dx = x.get();
-    const dy = y.get();
-    if (dx === 0 && dy === 0) return false;
-    const sideways = Math.abs(dx) >= Math.abs(dy);
-    const toward: Side = sideways ? (dx > 0 ? 'right' : 'left') : 'down';
-    return toward !== side;
+    const on =
+      side === 'right' ? now === 'approve' : side === 'left' ? now === 'notMine' : now === 'later';
+    const full = on || (side === 'right' && now === 'needsWallet');
+    return { toward, p, on, full, fill: full ? 1 : 0.8 * p, dy };
   };
 
   const wrap = useAnimatedStyle(() => {
-    const p = progress();
+    const cue = read();
     return {
-      opacity: other() ? 0.3 : 1,
+      opacity: cue.toward && cue.toward !== side ? 0.3 : 1,
       transform: [
-        ...(side === 'down' ? [{ translateY: Math.max(0, y.get()) * 0.5 }] : []),
-        { scale: armed() ? 1.3 : 1 + 0.18 * p },
+        ...(side === 'down' ? [{ translateY: cue.toward === 'down' ? cue.dy * 0.5 : 0 }] : []),
+        { scale: cue.on ? 1.3 : 1 + 0.18 * cue.p },
       ],
     };
   });
-  const on = useAnimatedStyle(() => ({
-    opacity: armed() ? 1 : interpolate(progress(), [0, 1], [0, 0.8], Extrapolation.CLAMP),
-  }));
-  return { wrap, on };
+  const face = useAnimatedStyle(() => {
+    const cue = read();
+    return {
+      backgroundColor: interpolateColor(cue.fill, [0, 1], [look.canvas, look.hex]),
+      borderColor: interpolateColor(cue.full ? 1 : cue.p, [0, 1], [look.border, look.hex]),
+    };
+  });
+  const rest = useAnimatedStyle(() => {
+    const cue = read();
+    return { opacity: cue.p === 0 && !cue.full ? 1 : 0 };
+  });
+  const moving = useAnimatedStyle(() => {
+    const cue = read();
+    return { opacity: cue.p > 0 && !cue.full && cue.fill < INK_SWITCH ? 1 : 0 };
+  });
+  const movingOn = useAnimatedStyle(() => {
+    const cue = read();
+    return { opacity: !cue.full && cue.fill >= INK_SWITCH ? 1 : 0 };
+  });
+  const full = useAnimatedStyle(() => ({ opacity: read().full ? 1 : 0 }));
+  return { wrap, face, layers: { rest, moving, movingOn, full } };
 }
 
-function CueFace({
+function CueContent({
   icon,
   label,
-  fill,
-  border,
   ink,
   vertical,
+  sizer,
+  style,
 }: {
   icon: IconSymbolName;
   label: string;
-  fill: string;
-  border: string;
   ink: string;
   vertical: 'up' | 'down' | null;
+  /** The one layer that sets the down cue's width; the others sit over it. */
+  sizer: boolean;
+  style: ReturnType<typeof useAnimatedStyle>;
 }) {
-  const content = (
-    <View
-      className="flex-row items-center justify-center gap-1.5"
-      style={
+  return (
+    <Animated.View
+      className={`flex-row items-center justify-center gap-1.5 ${vertical ? '' : sizer ? 'h-full pl-2.5 pr-3.5' : 'absolute inset-0'}`}
+      style={[
         vertical
           ? {
               position: 'absolute',
@@ -103,8 +121,9 @@ function CueFace({
               top: (SIDE_LENGTH - SIDE_WIDTH) / 2,
               transform: [{ rotate: vertical === 'down' ? '90deg' : '-90deg' }],
             }
-          : undefined
-      }
+          : undefined,
+        style,
+      ]}
     >
       <IconSymbol
         name={icon}
@@ -118,29 +137,71 @@ function CueFace({
       >
         {label}
       </Text>
-    </View>
+    </Animated.View>
   );
+}
+
+function Cue({
+  side,
+  position,
+  props,
+  look,
+  arrow,
+  action,
+  label,
+  onInk,
+}: {
+  side: Side;
+  /** Where the cue sits and the edge it grows from. */
+  position: ViewStyle;
+  props: CueProps;
+  look: Look;
+  arrow: IconSymbolName;
+  action: IconSymbolName;
+  label: string;
+  /** Label colour once the cue has filled with its action colour. */
+  onInk: string;
+}) {
+  const tokens = useThemeTokens();
+  const cue = useCue(side, props, look);
+  const vertical = side === 'right' ? 'down' : side === 'left' ? 'up' : null;
+  const layers = [
+    { key: 'rest', icon: arrow, ink: tokens.muted, style: cue.layers.rest },
+    { key: 'moving', icon: arrow, ink: tokens.foreground, style: cue.layers.moving },
+    { key: 'movingOn', icon: arrow, ink: onInk, style: cue.layers.movingOn },
+    { key: 'full', icon: action, ink: onInk, style: cue.layers.full },
+  ] as const;
   return (
-    <View
-      className="absolute inset-0 items-center justify-center rounded-full"
-      style={{ backgroundColor: fill, borderColor: border, borderWidth: 1.5 }}
-    >
-      {content}
-    </View>
+    <Animated.View style={[position, cue.wrap]}>
+      <Animated.View
+        className={`rounded-full border-[1.5px] ${vertical ? 'h-32 w-7' : 'h-8'}`}
+        style={cue.face}
+      >
+        {layers.map((layer, i) => (
+          <CueContent
+            key={layer.key}
+            icon={layer.icon}
+            label={label}
+            ink={layer.ink}
+            vertical={vertical}
+            sizer={i === 0}
+            style={layer.style}
+          />
+        ))}
+      </Animated.View>
+    </Animated.View>
   );
 }
 
 /**
- * "Not mine" on the left edge, "Approve" on the right, "Later" under the card. Each fills
- * toward its colour as the card moves its way, and swaps to the action icon once armed.
+ * "Not mine" on the left edge, "Approve" on the right, "Later" under the card, as `XA-Review`
+ * draws them: each fills toward its colour as the card moves its way and swaps its arrow for
+ * the action icon once armed.
  */
 export function EdgeCues(props: CueProps & { canApprove: boolean; cardTop: number }) {
   const tokens = useThemeTokens();
-  const right = useCueStyles('right', props);
-  const left = useCueStyles('left', props);
-  const down = useCueStyles('down', props);
-  const approveFill = props.canApprove ? tokens.mint : tokens.lemon;
-  const sideTop = props.cardTop + props.height * 0.38;
+  const base = { canvas: tokens.canvas, border: tokens.border };
+  const sideTop = props.cardTop + props.height / 2 - SIDE_LENGTH / 2;
 
   return (
     <View
@@ -148,90 +209,40 @@ export function EdgeCues(props: CueProps & { canApprove: boolean; cardTop: numbe
       className="absolute inset-0"
       importantForAccessibility="no-hide-descendants"
     >
-      <Animated.View
-        className="absolute h-32 w-7"
-        style={[{ right: 4, top: sideTop, transformOrigin: '100% 50%' }, right.wrap]}
-      >
-        <CueFace
-          icon="arrow-right"
-          label={props.canApprove ? 'Approve' : 'Pick a wallet'}
-          fill={tokens.canvas}
-          border={tokens.border}
-          ink={tokens.muted}
-          vertical="down"
-        />
-        <Animated.View
-          className="absolute inset-0"
-          style={right.on}
-        >
-          <CueFace
-            icon={props.canApprove ? 'check' : 'wallet-outline'}
-            label={props.canApprove ? 'Approve' : 'Pick a wallet'}
-            fill={approveFill}
-            border={approveFill}
-            ink={tokens.onPastel}
-            vertical="down"
-          />
-        </Animated.View>
-      </Animated.View>
-
-      <Animated.View
-        className="absolute h-32 w-7"
-        style={[{ left: 4, top: sideTop, transformOrigin: '0% 50%' }, left.wrap]}
-      >
-        <CueFace
-          icon="arrow-left"
-          label="Not mine"
-          fill={tokens.canvas}
-          border={tokens.border}
-          ink={tokens.muted}
-          vertical="up"
-        />
-        <Animated.View
-          className="absolute inset-0"
-          style={left.on}
-        >
-          <CueFace
-            icon="close"
-            label="Not mine"
-            fill={tokens.primary}
-            border={tokens.primary}
-            ink={tokens.primaryForeground}
-            vertical="up"
-          />
-        </Animated.View>
-      </Animated.View>
-
+      <Cue
+        side="right"
+        position={{ position: 'absolute', right: 4, top: sideTop, transformOrigin: '100% 50%' }}
+        props={props}
+        look={{ ...base, hex: props.canApprove ? tokens.mint : tokens.lemon }}
+        arrow="arrow-right"
+        action={props.canApprove ? 'check' : 'wallet-outline'}
+        label={props.canApprove ? 'Approve' : 'Pick wallet'}
+        onInk={tokens.onPastel}
+      />
+      <Cue
+        side="left"
+        position={{ position: 'absolute', left: 4, top: sideTop, transformOrigin: '0% 50%' }}
+        props={props}
+        look={{ ...base, hex: tokens.primary }}
+        arrow="arrow-left"
+        action="close"
+        label="Not mine"
+        onInk={tokens.primaryForeground}
+      />
       <View
         className="absolute inset-x-0 items-center"
         style={{ top: props.cardTop + props.height + 12 }}
       >
-        <Animated.View
-          className="h-8 w-[92px]"
-          style={[{ transformOrigin: '50% 100%' }, down.wrap]}
-        >
-          <CueFace
-            icon="arrow-down"
-            label="Later"
-            fill={tokens.canvas}
-            border={tokens.border}
-            ink={tokens.muted}
-            vertical={null}
-          />
-          <Animated.View
-            className="absolute inset-0"
-            style={down.on}
-          >
-            <CueFace
-              icon="clock-outline"
-              label="Later"
-              fill={tokens.lemon}
-              border={tokens.lemon}
-              ink={tokens.onPastel}
-              vertical={null}
-            />
-          </Animated.View>
-        </Animated.View>
+        <Cue
+          side="down"
+          position={{ transformOrigin: '50% 100%' }}
+          props={props}
+          look={{ ...base, hex: tokens.lemon }}
+          arrow="arrow-down"
+          action="clock-outline"
+          label="Later"
+          onInk={tokens.onPastel}
+        />
       </View>
     </View>
   );

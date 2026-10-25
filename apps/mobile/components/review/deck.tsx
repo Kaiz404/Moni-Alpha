@@ -12,8 +12,6 @@ import {
 import { ActivityIndicator, ScrollView, View, type LayoutChangeEvent } from 'react-native';
 import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
 import Animated, {
-  Extrapolation,
-  interpolate,
   useAnimatedStyle,
   useSharedValue,
   withSpring,
@@ -21,6 +19,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
 
+import { AddedForYou } from '@/components/review/added-for-you';
 import { CaughtUp, NothingToReview } from '@/components/review/caught-up';
 import { EdgeCues } from '@/components/review/edge-cues';
 import {
@@ -30,7 +29,6 @@ import {
   useRecentlyReviewed,
 } from '@/components/review/recently-reviewed';
 import type { ChipLook } from '@/components/review/picker-chip';
-import { budgetLine } from '@/components/review/result-pill';
 import {
   ReviewCard,
   type ReviewCardHandlers,
@@ -54,6 +52,7 @@ import {
 import type { FinanceCategory, FinanceWallet } from '@/lib/finance/types';
 import * as haptics from '@/lib/haptics';
 import { springs } from '@/lib/motion/tokens';
+import { budgetLine } from '@/lib/proposals/budget-line';
 import { captureSourceLabel, captureTime } from '@/lib/proposals/capture-source';
 import {
   approve,
@@ -92,9 +91,15 @@ import { resolveInitialWalletId } from '@/lib/wallets/proposal-wallet';
 /** A Later row snoozed past any real date still counts as unreviewed. */
 const END_OF_TIME = new Date(8.64e15);
 const UNDER_SCALE = 0.96;
-const MAX_TILT_DEG = 8;
+/** `XA-Review` tilts the card 12° per card width it travels. */
+const TILT_PER_WIDTH_DEG = 12;
 /** Room under the card for the Later cue. */
 const LATER_ROOM = 56;
+/** The board's 150 under its 480 card: the Later cue, then room for the toast above the buttons. */
+const BELOW_CARD = 150;
+/** Below this the card gives up the toast room before its content is cut. */
+const CARD_MIN = 420;
+const LIFT = '0 12px 32px rgba(23,24,26,0.18)';
 
 function rubberband(overshoot: number, dimension: number): number {
   'worklet';
@@ -208,6 +213,7 @@ function walletIdOf(proposal: ProposedTransaction, edits: ReviewEdits, wallets: 
 function DeckButton({
   decision,
   label,
+  accessibilityLabel,
   icon,
   armed,
   busy,
@@ -217,6 +223,7 @@ function DeckButton({
 }: {
   decision: ReviewDecision;
   label: string;
+  accessibilityLabel: string;
   icon: IconSymbolName;
   armed: boolean;
   busy: boolean;
@@ -233,7 +240,7 @@ function DeckButton({
       testID={tid('review', decision === 'notMine' ? 'not-mine' : decision)}
       onPress={onPress}
       disabled={disabled}
-      accessibilityLabel={label}
+      accessibilityLabel={accessibilityLabel}
       accessibilityState={{ disabled, busy }}
       radius={{ rest: 26, pressed: 16 }}
       pressedClassName={pressed}
@@ -283,9 +290,59 @@ function UnderCard({
     <Animated.View
       testID={tid('review', 'next-card')}
       className="absolute inset-0 rounded-card bg-sand-light"
-      style={style}
+      style={[{ transformOrigin: '50% 90%' }, style]}
     />
   );
+}
+
+/**
+ * While the finger holds the card: the drag shadow under it, and a ring in the colour of the
+ * way it is headed that firms to 4 once the decision is armed (`XA-Review`).
+ */
+function useCardLift(
+  x: SharedValue<number>,
+  y: SharedValue<number>,
+  intent: SharedValue<SwipeIntent>,
+  held: SharedValue<boolean>,
+  size: { width: number; height: number; canApprove: boolean },
+) {
+  const { width, height, canApprove } = size;
+  const tokens = useThemeTokens();
+  const approveRing = canApprove ? tokens.mint : tokens.lemon;
+  const notMineRing = tokens.primary;
+  const laterRing = tokens.lemon;
+  const shadow = useAnimatedStyle(() => ({ opacity: held.get() ? 1 : 0 }));
+  const ring = useAnimatedStyle(() => {
+    const dx = x.get();
+    const dy = y.get();
+    const sideways = Math.abs(dx) >= Math.abs(dy);
+    const reach = sideways ? Math.abs(dx) / (width * 0.4) : Math.max(0, dy) / (height * 0.4);
+    const now = intent.get();
+    const armed = now === 'approve' || now === 'notMine' || now === 'later';
+    const toward = sideways ? (dx > 0 ? approveRing : notMineRing) : laterRing;
+    const moving = held.get() && (sideways ? dx !== 0 : dy > 0);
+    return {
+      borderColor: toward,
+      borderWidth: armed ? 4 : 3,
+      opacity: moving ? (armed ? 1 : Math.min(1, reach)) : 0,
+    };
+  });
+  return {
+    shadow: (
+      <Animated.View
+        pointerEvents="none"
+        className="absolute inset-0 rounded-card"
+        style={[{ boxShadow: LIFT }, shadow]}
+      />
+    ),
+    ring: (
+      <Animated.View
+        pointerEvents="none"
+        className="absolute inset-0 rounded-card"
+        style={ring}
+      />
+    ),
+  };
 }
 
 /** Flings the top card off toward its decision; the spring keeps the release velocity. */
@@ -367,6 +424,7 @@ export function ReviewDeck({ session }: { session: ReviewSession }) {
   const startX = useSharedValue(0);
   const startY = useSharedValue(0);
   const intent = useSharedValue<SwipeIntent>(null);
+  const held = useSharedValue(false);
   const exit = useRef({ id: '', flown: false, done: false });
 
   const shownId = useRef<string | undefined>(undefined);
@@ -395,7 +453,13 @@ export function ReviewDeck({ session }: { session: ReviewSession }) {
   const topWalletId = top ? walletIdOf(top, topEdits, wallets) : null;
   const canApprove = !!topWalletId;
   const cardWidth = Math.max(0, area.width - 48);
-  const cardHeight = Math.max(0, area.height - 8 - LATER_ROOM);
+  const room = area.height - 8;
+  const cardHeight = Math.max(0, Math.min(room - LATER_ROOM, CARD_MIN), room - BELOW_CARD);
+  const lift = useCardLift(x, y, intent, held, {
+    width: cardWidth,
+    height: cardHeight,
+    canApprove,
+  });
 
   const setEdit = useCallback((id: string, patch: ReviewEdits) => {
     setEdits((all) => ({ ...all, [id]: { ...all[id], ...patch } }));
@@ -566,6 +630,7 @@ export function ReviewDeck({ session }: { session: ReviewSession }) {
         .onStart(() => {
           startX.set(x.get());
           startY.set(y.get());
+          held.set(true);
         })
         .onUpdate((e) => {
           const rawX = startX.get() + e.translationX;
@@ -608,8 +673,11 @@ export function ReviewDeck({ session }: { session: ReviewSession }) {
             y.set(withSpring(0, { ...springs.throw, velocity: e.velocityY }));
           }
           scheduleOnRN(onRelease, swipe);
+        })
+        .onFinalize(() => {
+          held.set(false);
         }),
-    [dragEnabled, canApprove, cardWidth, cardHeight, x, y, startX, startY, intent, onIntent, onRelease, onFlown],
+    [dragEnabled, canApprove, cardWidth, cardHeight, x, y, startX, startY, intent, held, onIntent, onRelease, onFlown],
   );
 
   const topStyle = useAnimatedStyle(() => ({
@@ -617,7 +685,7 @@ export function ReviewDeck({ session }: { session: ReviewSession }) {
       { translateX: x.get() },
       { translateY: y.get() },
       {
-        rotate: `${interpolate(x.get(), [-cardWidth, cardWidth], [-MAX_TILT_DEG, MAX_TILT_DEG], Extrapolation.CLAMP)}deg`,
+        rotate: `${cardWidth ? (x.get() / cardWidth) * TILT_PER_WIDTH_DEG : 0}deg`,
       },
     ],
   }));
@@ -701,12 +769,32 @@ export function ReviewDeck({ session }: { session: ReviewSession }) {
         onMoveBack={moveBack}
       />
     );
+    const homeRow = (
+      <View className="px-5 pb-3 pt-1">
+        <Press
+          testID={tid('review', 'home')}
+          onPress={() => router.dismissTo('/')}
+          accessibilityLabel="Back to Home"
+          radius={{ rest: 26, pressed: 16 }}
+          pressedClassName="bg-primary-pressed"
+          className="h-[52px] items-center justify-center bg-primary"
+        >
+          <Text className="text-[15px] leading-[21px] font-display-semibold text-primary-foreground">
+            Back to Home
+          </Text>
+        </Press>
+      </View>
+    );
     if (!results.length) {
       return (
-        <ScrollView contentContainerClassName="gap-section px-5 pb-8 pt-2">
-          <NothingToReview onCaptureLog={() => router.push('/capture-log')} />
-          {recentlyReviewed}
-        </ScrollView>
+        <View className="flex-1">
+          <ScrollView contentContainerClassName="gap-section px-5 pb-8 pt-2">
+            <NothingToReview onCaptureLog={() => router.push('/capture-log')} />
+            <AddedForYou />
+            {recentlyReviewed}
+          </ScrollView>
+          {homeRow}
+        </View>
       );
     }
     const approved = results.filter((o) => o.action === 'approve');
@@ -723,27 +811,18 @@ export function ReviewDeck({ session }: { session: ReviewSession }) {
     ].join(', ');
     const sentence = `${counts}. ${added > 0 ? `${formatMoney(added as MinorAmount, mainCurrency)} now counts in ${month}.` : `Nothing new in ${month}.`}`;
     return (
-      <ScrollView contentContainerClassName="gap-section px-5 pb-8 pt-2">
-        <View className="gap-3">
+      <View className="flex-1">
+        <ScrollView contentContainerClassName="gap-section px-5 pb-8 pt-2">
           <CaughtUp
             sentence={sentence}
+            addedMinor={added}
             onCaptureLog={() => router.push('/capture-log')}
           />
-          <Press
-            testID={tid('review', 'home')}
-            onPress={() => router.dismissTo('/')}
-            accessibilityLabel="Back to Home"
-            radius={{ rest: 26, pressed: 16 }}
-            pressedClassName="bg-primary-pressed"
-            className="h-[52px] items-center justify-center bg-primary"
-          >
-            <Text className="text-[15px] leading-[21px] font-display-semibold text-primary-foreground">
-              Back to Home
-            </Text>
-          </Press>
-        </View>
-        {recentlyReviewed}
-      </ScrollView>
+          <AddedForYou />
+          {recentlyReviewed}
+        </ScrollView>
+        {homeRow}
+      </View>
     );
   }
 
@@ -765,6 +844,14 @@ export function ReviewDeck({ session }: { session: ReviewSession }) {
     );
   }
 
+  const approveLabel =
+    canApprove && model
+      ? `Approve ${formatSignedMoney(
+          top.type === 'income' ? 'income' : top.type === 'transfer' ? 'transfer' : 'expense',
+          model.amountMinor,
+          top.currency,
+        )}`
+      : 'Pick a wallet first';
   const armed = armedDecision(card);
   const saving = card.kind === 'saving' ? card.decision : null;
   const locked = card.kind === 'saving' || card.kind === 'editing';
@@ -798,11 +885,13 @@ export function ReviewDeck({ session }: { session: ReviewSession }) {
                     className="absolute inset-0"
                     style={[{ transformOrigin: '50% 90%' }, topStyle]}
                   >
+                    {lift.shadow}
                     <ReviewCard
                       model={model}
                       editing={editing}
                       handlers={handlers}
                     />
+                    {lift.ring}
                   </Animated.View>
                 </GestureDetector>
               ) : null}
@@ -836,6 +925,7 @@ export function ReviewDeck({ session }: { session: ReviewSession }) {
           <DeckButton
             decision="notMine"
             label="Not mine"
+            accessibilityLabel="Not mine. Nothing gets added"
             icon="close"
             tone="sand"
             armed={armed === 'notMine'}
@@ -846,6 +936,7 @@ export function ReviewDeck({ session }: { session: ReviewSession }) {
           <DeckButton
             decision="later"
             label="Later"
+            accessibilityLabel="Later. Save it for later"
             icon="clock-outline"
             tone="sand"
             armed={armed === 'later'}
@@ -855,7 +946,8 @@ export function ReviewDeck({ session }: { session: ReviewSession }) {
           />
           <DeckButton
             decision="approve"
-            label={canApprove ? 'Approve' : 'Pick a wallet'}
+            label={canApprove ? 'Approve' : 'Pick wallet'}
+            accessibilityLabel={approveLabel}
             icon={canApprove ? 'check' : 'wallet-outline'}
             tone={canApprove ? 'mint' : 'lemon'}
             armed={armed === 'approve'}

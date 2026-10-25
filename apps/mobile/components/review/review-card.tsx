@@ -2,14 +2,14 @@ import type { MinorAmount, ProposedTransaction } from '@repo/types';
 import { View } from 'react-native';
 
 import { PickerChip, type ChipLook } from '@/components/review/picker-chip';
-import { ResultPill, type BudgetLine } from '@/components/review/result-pill';
+import { ResultPill, SourcePill } from '@/components/review/result-pill';
 import { IconSymbol, type IconSymbolName } from '@/components/ui/icon-symbol';
 import { InPlaceField, InPlaceGroup } from '@/components/ui/in-place-field';
 import { Press } from '@/components/ui/press';
-import { StatusPill } from '@/components/ui/status-pill';
 import { Text } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { formatSignedMoney } from '@/lib/finance/format-money';
+import type { BudgetLine } from '@/lib/proposals/budget-line';
 import type { EditField as EditFieldName } from '@/lib/proposals/review-card-state';
 import { tid } from '@/lib/test-ids';
 
@@ -47,11 +47,11 @@ export type ReviewCardHandlers = {
 
 const SOURCE: Record<
   ProposedTransaction['sourceType'],
-  { icon: IconSymbolName; tint: string }
+  { icon: IconSymbolName; tint: string; onPastel: boolean }
 > = {
-  notification: { icon: 'bell-outline', tint: 'bg-lemon' },
-  text: { icon: 'creation', tint: 'bg-lilac' },
-  image: { icon: 'receipt-text-outline', tint: 'bg-peach' },
+  notification: { icon: 'bell-outline', tint: 'bg-attention-fill', onPastel: false },
+  text: { icon: 'creation', tint: 'bg-pending-fill', onPastel: false },
+  image: { icon: 'receipt-text-outline', tint: 'bg-peach', onPastel: true },
 };
 
 function moneyDirection(type: ProposedTransaction['type']) {
@@ -90,7 +90,7 @@ export function ReviewCard({
           <IconSymbol
             name={source.icon}
             size={20}
-            color={tokens.onPastel}
+            color={source.onPastel ? tokens.onPastel : tokens.foreground}
           />
         </View>
         <View className="min-w-0 flex-1">
@@ -108,7 +108,7 @@ export function ReviewCard({
           </Text>
         </View>
         {model.status ? (
-          <StatusPill
+          <SourcePill
             tone={model.status.tone}
             label={model.status.label}
           />
@@ -145,16 +145,19 @@ export function ReviewCard({
               onSave={handlers.onSaveMerchant}
             >
               {({ editable, editor }) =>
-                editor ??
-                editable(
-                  <Text
-                    variant="rowTitle"
-                    className="text-foreground"
-                    numberOfLines={2}
-                  >
-                    {model.merchant}
-                  </Text>,
-                  { accessibilityLabel: `Merchant ${model.merchant}. Edit name` },
+                editor ?? (
+                  <View className="-my-1.5">
+                    {editable(
+                      <Text
+                        variant="rowTitle"
+                        className="text-foreground"
+                        numberOfLines={1}
+                      >
+                        {model.merchant}
+                      </Text>,
+                      { accessibilityLabel: `Merchant ${model.merchant}. Edit name` },
+                    )}
+                  </View>
                 )
               }
             </InPlaceField>
@@ -185,7 +188,7 @@ export function ReviewCard({
         </View>
       </InPlaceGroup>
 
-      <View className="flex-row flex-wrap gap-2">
+      <View className="flex-row gap-2">
         {transfer ? null : (
           <PickerChip
             testID={tid('review', 'category')}

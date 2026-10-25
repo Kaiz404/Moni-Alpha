@@ -111,7 +111,7 @@ The screen tracks reported these differences in their handoffs. Each waits for t
 - Budget calendar: the day cut-offs.
 - Scan a receipt: the ML Kit scanner (D11).
 - Wallet page: **Use as default** is an addition. It sets the wallet captures fall back to, which v1 set on Profile.
-- Review: **Recently reviewed** is an addition with no board, designed in the `XA-Review` and `V2F-Components` style (D6). It lists the last 30 days of Approve and Not mine by day under All caught up, and folds into one control under the deck buttons while captures wait. The All caught up card keeps its sentence and drops the session rows that the board draws, because the list below shows them.
+- Review: **Recently reviewed** is an addition with no board, designed in the `XA-Review` and `V2F-Components` style (D6). It lists the last 30 days of Approve and Not mine by day under All caught up, and folds into one control under the deck buttons while captures wait. The All caught up card keeps its sentence and drops the session rows that the board draws, because the list below shows them. **Added for you** shows only under All caught up and Nothing to review, because the deck page does not scroll below its buttons.
 
 ## Suggested build order
 
