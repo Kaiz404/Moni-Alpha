@@ -8,15 +8,19 @@ type Source = Pick<
   'sourceType' | 'sourceApp' | 'notificationTitle'
 >;
 
-/** "Maybank alert", "Moni chat", "Receipt": the source row on the card and the notification title. */
+/** The banking app that sent a notification capture ("Maybank"), for the notification's header. */
+export function captureBankName(proposal: Source): string {
+  const app = proposal.sourceApp
+    ? getCachedInstalledAppsMap()?.get(proposal.sourceApp)?.label
+    : null;
+  return app ?? proposal.notificationTitle ?? 'Bank';
+}
+
+/** "Maybank alert", "Moni chat", "Receipt": the source row on the card. */
 export function captureSourceLabel(proposal: Source): string {
   switch (proposal.sourceType) {
-    case 'notification': {
-      const app = proposal.sourceApp
-        ? getCachedInstalledAppsMap()?.get(proposal.sourceApp)?.label
-        : null;
-      return `${app ?? proposal.notificationTitle ?? 'Bank'} alert`;
-    }
+    case 'notification':
+      return `${captureBankName(proposal)} alert`;
     case 'text':
       return 'Moni chat';
     case 'image':

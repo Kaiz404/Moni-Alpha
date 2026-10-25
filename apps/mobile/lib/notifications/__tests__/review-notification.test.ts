@@ -13,6 +13,7 @@ jest.mock('expo-crypto', () => ({
 jest.mock('expo-notifications', () => ({
   DEFAULT_ACTION_IDENTIFIER: 'expo.modules.notifications.actions.DEFAULT',
   AndroidImportance: { HIGH: 5, DEFAULT: 3 },
+  AndroidNotificationVisibility: { PRIVATE: 0 },
   setNotificationChannelAsync: jest.fn(async () => null),
   setNotificationCategoryAsync: jest.fn(async () => null),
   scheduleNotificationAsync: jest.fn(async () => 'id'),
@@ -37,6 +38,9 @@ jest.mock('@/lib/store', () => {
     wallets$: observable({}),
     transactions$: observable({}),
     categories$: observable({}),
+    categoryBudgets$: observable({}),
+    debts$: observable({}),
+    debtActivities$: observable({}),
     proposedTransactions$: observable({}),
     autoAddRules$: observable({}),
     merchantAliases$: observable({}),
@@ -71,6 +75,7 @@ function seed(over: Record<string, unknown> = {}) {
     merchant: 'GRAB',
     wallet_id: MAYBANK,
     category_id: FOOD,
+    notification_body: "MAYBANK: You've spent RM12.00 at GRAB on 14/10 12:41.",
     status: 'pending',
     created_at: '2026-10-14T04:41:00.000Z',
     deleted: false,
@@ -108,28 +113,45 @@ beforeEach(() => {
 afterEach(() => jest.useRealTimers());
 
 describe('review notification', () => {
-  it('posts Maybank alert, GRAB · RM12.00 with the review actions for a new capture', async () => {
+  it('posts GRAB · −RM12.00 from Maybank with the alert, the category and the review actions', async () => {
     seed();
     await postReviewNotification('p1');
     expect(lastShown()).toEqual({
       identifier: 'review-p1',
       content: {
-        title: 'Maybank alert',
-        subtitle: 'Food & Dining',
-        body: 'GRAB · RM12.00',
+        title: 'GRAB · \u2212RM12.00',
+        subtitle: 'Maybank',
+        body: "MAYBANK: You've spent RM12.00 at GRAB on 14/10 12:41.\nMoni: Food & Dining.",
+        color: '#236B47',
         data: { kind: 'review', proposalId: 'p1' },
         categoryIdentifier: 'moni-review',
       },
       trigger: { channelId: 'moni-review-first' },
     });
+    expect(notifications.setNotificationChannelAsync).toHaveBeenCalledWith(
+      'moni-review',
+      expect.objectContaining({ lockscreenVisibility: 0 }),
+    );
+
+    const filed = (id: string, merchant: string) => ({
+      id,
+      user_id: 'user-1',
+      merchant,
+      category_id: FOOD,
+      deleted: false,
+    });
+    store.transactions$.set({ t1: filed('t1', 'GRAB'), t2: filed('t2', 'Grab'), t3: filed('t3', 'KFC') });
     await postReviewNotification('p1');
     expect(lastShown().trigger).toEqual({ channelId: 'moni-review' });
+    expect(lastShown().content.body).toBe(
+      "MAYBANK: You've spent RM12.00 at GRAB on 14/10 12:41.\nMoni: Food & Dining, like the last 2 times.",
+    );
   });
 
   it('Approve with the app killed turns sync on, writes the ledger row, and shows Approved with Undo for 8 s', async () => {
     seed();
     notifications.getPresentedNotificationsAsync.mockResolvedValueOnce([
-      { request: { identifier: 'review-p1', content: { data: { kind: 'approved' } } } },
+      { request: { identifier: 'review-p1', content: { data: { kind: 'decided' } } } },
     ]);
     await tap('approve', { kind: 'review', proposalId: 'p1' });
 
@@ -139,8 +161,8 @@ describe('review notification', () => {
     ]);
     const approved = lastShown();
     expect(approved.content).toMatchObject({
-      title: 'Approved',
-      body: 'GRAB · RM12.00',
+      title: 'Approved GRAB \u2212RM12.00',
+      body: 'No budget for Food & Dining yet',
       categoryIdentifier: 'moni-review-approved',
     });
     expect(notifications.dismissNotificationAsync).toHaveBeenLastCalledWith('review-p1');
@@ -151,25 +173,44 @@ describe('review notification', () => {
     expect(lastShown().content.categoryIdentifier).toBe('moni-review');
   });
 
-  it("Don't ask about similar after Approve adds the merchant's rule", async () => {
+  it("Don't ask about similar after Approve adds the merchant's rule and says what Moni does now", async () => {
     seed();
     await tap('approve', { kind: 'review', proposalId: 'p1' });
     await tap('similar', lastShown().content.data);
     expect(Object.values(store.autoAddRules$.peek())).toEqual([
       expect.objectContaining({ merchant_key: 'grab', wallet_id: MAYBANK, category_id: FOOD }),
     ]);
+    expect(lastShown().content).toMatchObject({
+      title: 'Approved GRAB \u2212RM12.00',
+      body: 'Moni adds GRAB alerts like this without asking and marks them Auto.',
+      categoryIdentifier: 'moni-review-decided',
+    });
   });
 
-  it('Not mine rejects and Later snoozes, each clearing the notification', async () => {
+  it('Not mine and Later show what happened with Undo for 8 s, and Undo brings the capture back', async () => {
     seed();
     await tap('later', { kind: 'review', proposalId: 'p1' });
     expect(store.proposedTransactions$.p1.status.peek()).toBe('later');
-    expect(notifications.dismissNotificationAsync).toHaveBeenLastCalledWith('review-p1');
+    expect(lastShown().content).toMatchObject({
+      title: 'Saved for later',
+      body: 'It waits in Review and does not count yet.',
+      categoryIdentifier: 'moni-review-decided',
+    });
 
     seed();
+    notifications.getPresentedNotificationsAsync.mockResolvedValueOnce([
+      { request: { identifier: 'review-p1', content: { data: { kind: 'decided' } } } },
+    ]);
     await tap('not-mine', { kind: 'review', proposalId: 'p1' });
     expect(store.proposedTransactions$.p1.status.peek()).toBe('rejected');
     expect(ledger()).toEqual([]);
+    const notMine = lastShown();
+    expect(notMine.content).toMatchObject({ title: '1 not mine', body: 'Nothing was added.' });
+    expect(notifications.dismissNotificationAsync).toHaveBeenLastCalledWith('review-p1');
+
+    await tap('undo', notMine.content.data);
+    expect(store.proposedTransactions$.p1.status.peek()).toBe('pending');
+    expect(lastShown().content.categoryIdentifier).toBe('moni-review');
   });
 
   it('Approve on a capture with no wallet writes nothing and asks for a tap', async () => {

@@ -3,20 +3,24 @@
  * only this file: payloads live in review-notification.core.js, decisions in review-actions.
  */
 import { observe, syncState, when, type Observable } from '@legendapp/state';
-import type { ProposedTransaction } from '@repo/types';
+import type { MinorAmount, ProposedTransaction } from '@repo/types';
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
 import { createMMKV } from 'react-native-mmkv';
 
+import { merchantKey } from '@/lib/ai/routine';
 import { merchantName } from '@/lib/finance/merchant-name';
-import { captureSourceLabel } from '@/lib/proposals/capture-source';
+import { financeProjection$, rehydrateFinanceProjection } from '@/lib/finance/projection';
+import { budgetProgress$ } from '@/lib/finance/selectors';
+import { budgetLine } from '@/lib/proposals/budget-line';
+import { captureBankName } from '@/lib/proposals/capture-source';
 import {
   approve,
   dontAskAboutSimilar,
   later,
   notMine,
   undo,
-  type ApprovedOutcome,
+  type ReviewOutcome,
 } from '@/lib/proposals/review-actions';
 import {
   ALL_STORE_OBSERVABLES,
@@ -36,16 +40,21 @@ import { getDefaultWalletId } from '@/lib/wallets/default-wallet';
 import { resolveInitialWalletId } from '@/lib/wallets/proposal-wallet';
 import { readLinkedPackagesFromCache } from './linked-packages-cache';
 import {
+  ACCENT,
   APPROVED_ACTIONS,
   APPROVED_CATEGORY,
   APPROVED_MS,
+  DECIDED_ACTIONS,
+  DECIDED_CATEGORY,
   HEADS_UP_CHANNEL,
   QUIET_CHANNEL,
   REVIEW_ACTIONS,
   REVIEW_CATEGORY,
   buildApprovedNotification,
+  buildAutoAddedNotification,
   buildOpenAppNotification,
   buildReviewNotification,
+  buildSetAsideNotification,
   identifierFor,
 } from './review-notification.core.js';
 
@@ -62,7 +71,10 @@ type Payload = {
   actionIds: string[];
   data: Record<string, unknown>;
 };
-type ReviewData = { kind: 'review' | 'approved'; proposalId: string; outcome?: ApprovedOutcome };
+/** `decided` carries the outcome its Undo (and, after Approve, Don't ask about similar) needs. */
+type ReviewData =
+  | { kind: 'review'; proposalId: string }
+  | { kind: 'decided'; proposalId: string; outcome: ReviewOutcome };
 
 /** A Later row snoozed past any real date still counts as unreviewed. */
 const END_OF_TIME = new Date(8.64e15);
@@ -75,13 +87,16 @@ let setup: Promise<void> | null = null;
 
 function ensureSetup(): Promise<void> {
   setup ??= (async () => {
+    // Money stays off the lock screen (`XA-Notification` 4). Android keeps a channel's first settings.
     await Notifications.setNotificationChannelAsync(HEADS_UP_CHANNEL, {
       name: 'New capture',
       importance: Notifications.AndroidImportance.HIGH,
+      lockscreenVisibility: Notifications.AndroidNotificationVisibility.PRIVATE,
     });
     await Notifications.setNotificationChannelAsync(QUIET_CHANNEL, {
       name: 'Captures to review',
       importance: Notifications.AndroidImportance.DEFAULT,
+      lockscreenVisibility: Notifications.AndroidNotificationVisibility.PRIVATE,
     });
     const buttons = (actions: { id: string; title: string }[]) =>
       actions.map((action) => ({
@@ -91,6 +106,7 @@ function ensureSetup(): Promise<void> {
       }));
     await Notifications.setNotificationCategoryAsync(REVIEW_CATEGORY, buttons(REVIEW_ACTIONS));
     await Notifications.setNotificationCategoryAsync(APPROVED_CATEGORY, buttons(APPROVED_ACTIONS));
+    await Notifications.setNotificationCategoryAsync(DECIDED_CATEGORY, buttons(DECIDED_ACTIONS));
   })().catch((error: unknown) => {
     setup = null;
     throw error;
@@ -106,6 +122,7 @@ async function present(payload: Payload): Promise<void> {
       title: payload.title,
       subtitle: payload.subtitle ?? undefined,
       body: payload.body,
+      color: ACCENT,
       data: payload.data,
       categoryIdentifier: payload.categoryIdentifier ?? undefined,
     },
@@ -123,21 +140,60 @@ function shownMerchant(proposal: ProposedTransaction): string {
 }
 
 function amountOf(proposal: ProposedTransaction) {
-  return { amountMinor: proposal.amountMinor ?? 0, currency: proposal.currency };
+  return { amountMinor: proposal.amountMinor ?? 0, currency: proposal.currency, type: proposal.type };
+}
+
+function categoryOf(proposal: ProposedTransaction) {
+  return getRecordValues<{ id: string; name: string | null }>(categories$).find(
+    (c) => c.id === proposal.categoryId,
+  );
+}
+
+/** How many ledger rows from this merchant the user filed under the capture's category. */
+function seenCount(proposal: ProposedTransaction): number {
+  const key = merchantKey(proposal.merchant);
+  if (!key || !proposal.categoryId) return 0;
+  return getRecordValues<{ user_id: string; merchant: string | null; category_id: string | null }>(
+    transactions$,
+  ).filter(
+    (row) =>
+      row.user_id === proposal.userId &&
+      row.category_id === proposal.categoryId &&
+      merchantKey(row.merchant) === key,
+  ).length;
 }
 
 function reviewPayload(proposal: ProposedTransaction, firstAlert: boolean): Payload {
-  const category = getRecordValues<{ id: string; name: string | null }>(categories$).find(
-    (c) => c.id === proposal.categoryId,
-  );
   return buildReviewNotification({
     proposalId: proposal.id,
-    sourceLabel: captureSourceLabel(proposal),
+    bankName: captureBankName(proposal),
     merchant: shownMerchant(proposal),
     ...amountOf(proposal),
-    categoryName: category?.name ?? null,
+    alertText: proposal.notificationBody,
+    categoryName: categoryOf(proposal)?.name ?? null,
+    seenCount: seenCount(proposal),
     firstAlert,
   });
+}
+
+/**
+ * "Food & Dining: RM76 left after this", read before Approve writes so the capture is not
+ * counted twice. With the app killed the finance projection has not been built yet.
+ */
+function budgetTextBefore(proposal: ProposedTransaction): string | null {
+  const category = categoryOf(proposal);
+  if (proposal.type !== 'expense' || !category?.name || !proposal.userId) return null;
+  if (!Object.keys(financeProjection$.categoriesById.peek()).length) rehydrateFinanceProjection();
+  const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const progress = budgetProgress$(proposal.userId, timezone)
+    .peek()
+    .find((p) => p.categoryId === category.id && p.currency === proposal.currency);
+  return budgetLine(
+    category.name,
+    progress,
+    (proposal.amountMinor ?? 0) as MinorAmount,
+    proposal.currency,
+  ).text;
 }
 
 /** Posts `XA-Notification` for a new notification capture. Never throws into the pipeline. */
@@ -185,27 +241,37 @@ async function withStore(run: () => Promise<void>): Promise<void> {
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
-async function clearApprovedLater(proposalId: string): Promise<void> {
+/** Shows a decision with its Undo, then clears it after APPROVED_MS unless Undo brought the capture back. */
+async function showDecided(payload: Payload): Promise<void> {
+  await present(payload);
   await sleep(APPROVED_MS);
   const shown = await Notifications.getPresentedNotificationsAsync();
   const still = shown.find(
     (n) =>
-      n.request.identifier === identifierFor(proposalId) &&
-      (n.request.content.data as ReviewData | undefined)?.kind === 'approved',
+      n.request.identifier === payload.identifier &&
+      (n.request.content.data as ReviewData | undefined)?.kind === 'decided',
   );
   if (still) await Notifications.dismissNotificationAsync(still.request.identifier);
 }
 
 async function act(action: string, data: ReviewData): Promise<void> {
   const id = identifierFor(data.proposalId);
-  if (action === 'undo' || action === 'similar') {
-    if (!data.outcome) return;
-    if (action === 'similar') {
-      await dontAskAboutSimilar(data.outcome);
-      await Notifications.dismissNotificationAsync(id);
+  if (data.kind === 'decided') {
+    const { outcome } = data;
+    if (action === 'similar' && outcome.action === 'approve') {
+      const ruled = await dontAskAboutSimilar(outcome);
+      await present(
+        buildAutoAddedNotification({
+          proposalId: data.proposalId,
+          merchant: shownMerchant(outcome.proposal),
+          ...amountOf(outcome.proposal),
+          outcome: ruled,
+        }),
+      );
       return;
     }
-    await undo(data.outcome);
+    if (action !== 'undo') return;
+    await undo(outcome);
     const restored = findProposal(data.proposalId);
     if (restored) await present(reviewPayload(restored, false));
     return;
@@ -218,19 +284,21 @@ async function act(action: string, data: ReviewData): Promise<void> {
   }
   if (action === 'not-mine' || action === 'later') {
     const result = action === 'later' ? await later(proposal) : await notMine(proposal);
-    if (result.status === 'done') await Notifications.dismissNotificationAsync(id);
+    if (result.status === 'done') {
+      await showDecided(buildSetAsideNotification({ proposalId: proposal.id, outcome: result.outcome }));
+    }
     return;
   }
   if (action !== 'approve') return;
 
   const wallets = getRecordValues<{ id: string; currency: string | null }>(wallets$);
+  const budgetText = budgetTextBefore(proposal);
   const result = await approve(proposal, {
     walletId: resolveInitialWalletId(proposal, wallets, getDefaultWalletId()),
   });
   const shown = { proposalId: proposal.id, merchant: shownMerchant(proposal), ...amountOf(proposal) };
   if (result.status === 'done' && result.outcome.action === 'approve') {
-    await present(buildApprovedNotification({ ...shown, outcome: result.outcome }));
-    await clearApprovedLater(proposal.id);
+    await showDecided(buildApprovedNotification({ ...shown, budgetText, outcome: result.outcome }));
     return;
   }
   // Android blocks opening an activity from here, so the notification asks for a tap instead.
@@ -270,7 +338,7 @@ export async function handleReviewNotificationTask(body: { data?: unknown }): Pr
 
 export function reviewProposalIdOf(response: Notifications.NotificationResponse): string | null {
   const data = response.notification.request.content.data as ReviewData | undefined;
-  return data?.kind === 'review' || data?.kind === 'approved' ? data.proposalId : null;
+  return data?.kind === 'review' || data?.kind === 'decided' ? data.proposalId : null;
 }
 
 /** Android 13+ needs POST_NOTIFICATIONS. Asked once a banking app is linked, never before. */
