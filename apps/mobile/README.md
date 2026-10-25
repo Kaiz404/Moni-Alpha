@@ -210,7 +210,7 @@ Wallet identity: `wallet.cardStyleId` picks a curated solid fill from `constants
 
 Appearance: Profile → Appearance (`light` default; `system` follows the device). Persisted in MMKV via `lib/theme/preference.ts`.
 
-Main currency: Profile → Main currency opens the `currency` sheet; `components/profile/main-currency-row.tsx` sets `profilePreferences$` at once and writes `preferences.currency` through `updateProfilePreferences`, restoring the old value if the write fails. `useMainCurrency()` reads it.
+Main currency: Profile → Main currency opens `components/profile/main-currency-sheet.tsx` (the kit `Sheet` in a `Modal`, held currencies only); `components/profile/main-currency-row.tsx` sets `profilePreferences$` at once and writes `preferences.currency` through `updateProfilePreferences`, restoring the old value if the write fails. `useMainCurrency()` reads it.
 
 Export data: Profile → Export data builds a CSV with `transactionsCsv` (`lib/transactions/export-csv.ts`) and writes `moni-YYYY-MM-DD.csv` to a folder the user picks through Android's file picker (`Directory.pickDirectoryAsync`).
 

@@ -473,7 +473,7 @@ Debts never appear on the Budget tab beyond the D1 label ("after bills and RM40 
 
 ### Profile (v2, `V2H-Profile`)
 
-Grouped settings rows, not dashboard cards, in board order: the account (Mint initial, name, email and "Google" for a Google account), **Main currency** (opens the currency sheet, writes `preferences.currency`, with the note that focused pages show only it), APPEARANCE (Light, Dark, System), MONEY (Wallets, Categories, Merchant names), CAPTURE SOURCES with **Set up** (Bank notifications, Location, Camera, Microphone, each with On, Off or Not set up), PRIVACY AND DATA (Capture log, Export data as a CSV), then **Sign out**. Rows carry a 13 meta line and light pastel bubbles (`components/profile/profile-row.tsx`). Profile has no Budgets or Debts row. A Debug panel row shows only in development builds.
+Grouped settings rows, not dashboard cards, in board order: the account (Mint initial, name, email and "Google" for a Google account), **Main currency** (opens the Main currency sheet, which lists only the currencies held in a wallet with their wallet count and total, writes `preferences.currency`, with the note that focused pages show only it), APPEARANCE (Light, Dark, System), MONEY (Wallets, Categories, Merchant names), CAPTURE SOURCES with **Set up** (Bank notifications, Location, Camera, Microphone, each with On, Off or Not set up), PRIVACY AND DATA (Capture log, Export data as a CSV), then **Sign out**. Rows carry a 13 meta line and light pastel bubbles (`components/profile/profile-row.tsx`). Profile has no Budgets or Debts row. A Debug panel row shows only in development builds.
 
 ### Sign in (v2, `V2H-Login`)
 
