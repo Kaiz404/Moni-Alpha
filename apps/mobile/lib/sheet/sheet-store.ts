@@ -47,6 +47,8 @@ type Sheets = {
       wallets: WalletOption[];
       selectedId: string | null;
       emptyMessage?: string;
+      /** The 13/18 Meta line under the title, such as which currency the list keeps to. */
+      note?: string;
       /** Adds a first row that resolves to `walletId: null`. */
       noneLabel?: string;
     };

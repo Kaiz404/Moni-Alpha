@@ -216,7 +216,7 @@ export function WalletSheet({
       note={
         request.wallets.length === 0
           ? request.emptyMessage
-          : undefined
+          : request.note
       }
       options={options}
       selectedId={
