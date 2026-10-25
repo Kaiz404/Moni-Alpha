@@ -52,7 +52,6 @@ export default function MerchantsScreen() {
     if (!previous) return;
     showToast({
       text: 'Name forgotten',
-      tone: 'removed',
       undo: () => {
         setRisen(row.key);
         void nameMerchant(row.key, previous).catch(failed);
@@ -120,6 +119,13 @@ export default function MerchantsScreen() {
         {named.length > 0 ? (
           <ListSection label={`Named · ${named.length}`}>{rows(named, 'named')}</ListSection>
         ) : null}
+
+        <Text
+          variant="meta"
+          className="px-1 text-muted"
+        >
+          You can also name a code on a transaction.
+        </Text>
       </ScrollView>
       </InPlaceGroup>
     </Page>
