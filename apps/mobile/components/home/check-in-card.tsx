@@ -78,7 +78,7 @@ export function CheckInCard({ currency }: { currency: string }) {
       <View className="gap-0.5">
         <Text
           variant="caps"
-          className="text-on-pastel opacity-70"
+          className="text-on-lemon"
         >
           {daysSinceConfirmed === null
             ? 'Check-in'

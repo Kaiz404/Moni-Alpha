@@ -1,7 +1,7 @@
 import { syncState } from '@legendapp/state';
 import { useValue } from '@legendapp/state/react';
-import { router } from 'expo-router';
-import { useEffect, useMemo, useState } from 'react';
+import { router, useScrollToTop } from 'expo-router';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { RefreshControl, ScrollView, View } from 'react-native';
 
 import { AskBox } from '@/components/home/ask-box';
@@ -65,6 +65,8 @@ export default function HomeScreen() {
   const { user } = useAuth();
   const userId = user?.id ?? null;
   const clearance = useTabBarClearance();
+  const scroll = useRef<ScrollView>(null);
+  useScrollToTop(scroll);
   const currency = useMainCurrency();
   const now = new Date();
 
@@ -174,6 +176,7 @@ export default function HomeScreen() {
         <HomeSkeleton />
       ) : (
         <ScrollView
+          ref={scroll}
           className="flex-1"
           contentContainerClassName="gap-3 px-5"
           contentContainerStyle={{ paddingBottom: clearance }}
@@ -219,6 +222,7 @@ export default function HomeScreen() {
           />
           {firstRun ? (
             <EmptyTile
+              tone="quiet"
               icon="calendar-clock"
               title="No bills yet"
               body="Each bill shows here a few days before it's due."

@@ -72,6 +72,7 @@ export function RecentList({
         </ListCard>
       ) : (
         <EmptyTile
+          tone="quiet"
           icon="receipt-text"
           title="No transactions yet"
           body="Type it, scan a receipt or tell Moni. Your newest show here."

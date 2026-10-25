@@ -69,7 +69,7 @@ export function ReviewBlock({
           </View>
           <Text
             variant="meta"
-            className="text-on-pastel opacity-80"
+            className="text-on-lilac"
           >
             {waiting}
           </Text>

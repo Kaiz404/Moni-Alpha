@@ -60,7 +60,7 @@ export function SetupTiles({ steps }: { steps: readonly SetupStep[] }) {
               </Text>
               <Text
                 variant="meta"
-                className="text-on-pastel opacity-75"
+                className="text-on-mint"
               >
                 {step.body}
               </Text>
