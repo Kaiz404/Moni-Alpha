@@ -22,7 +22,24 @@ type SegmentedProps<T extends string> = {
   onChange: (value: T) => void;
   accessibilityLabel: string;
   disabled?: boolean;
+  /** `form` is the 52 track with a 44 pill and 15/600 labels that leads a form (V2P-DebtNew). */
+  size?: 'default' | 'form';
 };
+
+const sizes = {
+  default: {
+    track: 'h-11',
+    pill: 'h-9',
+    corners: 18,
+    label: 'text-[14px] leading-[19px]',
+  },
+  form: {
+    track: 'h-[52px]',
+    pill: 'h-11',
+    corners: 22,
+    label: 'text-[15px] leading-[21px]',
+  },
+} as const;
 
 export function Segmented<T extends string>({
   screen,
@@ -32,7 +49,9 @@ export function Segmented<T extends string>({
   onChange,
   accessibilityLabel,
   disabled = false,
+  size = 'default',
 }: SegmentedProps<T>) {
+  const look = sizes[size];
   const index = Math.max(
     0,
     options.findIndex((option) => option.value === value),
@@ -53,7 +72,7 @@ export function Segmented<T extends string>({
     <View
       accessibilityRole="radiogroup"
       accessibilityLabel={accessibilityLabel}
-      className={`h-11 flex-row rounded-full p-1 ${disabled ? 'bg-sand-light' : 'bg-sand'}`}
+      className={`${look.track} flex-row rounded-full p-1 ${disabled ? 'bg-sand-light' : 'bg-sand'}`}
       onLayout={(event) =>
         segment.set(
           (event.nativeEvent.layout.width - INSET * 2) /
@@ -63,7 +82,7 @@ export function Segmented<T extends string>({
     >
       <Animated.View
         pointerEvents="none"
-        className={`absolute left-1 top-1 h-9 rounded-full ${disabled ? 'bg-hairline' : 'bg-primary'}`}
+        className={`absolute left-1 top-1 ${look.pill} rounded-full ${disabled ? 'bg-hairline' : 'bg-primary'}`}
         style={pill}
       />
       {options.map((option) => {
@@ -76,7 +95,7 @@ export function Segmented<T extends string>({
             accessibilityLabel={option.label}
             accessibilityState={{ selected, disabled }}
             disabled={disabled}
-            radius={{ rest: 18, pressed: 16 }}
+            radius={{ rest: look.corners, pressed: 16 }}
             pressedClassName={
               selected ? 'bg-primary-pressed' : 'bg-hairline'
             }
@@ -88,7 +107,7 @@ export function Segmented<T extends string>({
             }}
           >
             <Text
-              className={`text-[14px] leading-[19px] font-display-semibold ${disabled ? 'text-muted' : selected ? 'text-primary-foreground' : 'text-foreground'}`}
+              className={`${look.label} font-display-semibold ${disabled ? 'text-muted' : selected ? 'text-primary-foreground' : 'text-foreground'}`}
               numberOfLines={1}
             >
               {option.label}
