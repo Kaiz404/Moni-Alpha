@@ -1,4 +1,5 @@
-import { View } from 'react-native';
+import { useEffect, useState } from 'react';
+import { Keyboard, View } from 'react-native';
 import type { BottomTabBarProps } from 'expo-router/js-tabs';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -33,6 +34,23 @@ export const TABS = [
 
 const PLUS_CELL = 2;
 
+function useKeyboardUp() {
+  const [up, setUp] = useState(Keyboard.isVisible());
+  useEffect(() => {
+    const show = Keyboard.addListener('keyboardDidShow', () =>
+      setUp(true),
+    );
+    const hide = Keyboard.addListener('keyboardDidHide', () =>
+      setUp(false),
+    );
+    return () => {
+      show.remove();
+      hide.remove();
+    };
+  }, []);
+  return up;
+}
+
 /**
  * Bottom padding for a tab root's scroll content: 120 on a phone with no
  * system nav bar, as V2F-Nav draws it, and more above a taller one.
@@ -51,7 +69,11 @@ export function useTabBarClearance() {
 export function TabBar({ state, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
   const tokens = useThemeTokens();
+  const keyboardUp = useKeyboardUp();
   const bottom = tabBarBottom(insets.bottom);
+
+  // V2F-Components "Hidden when": the bar leaves while the keyboard is up.
+  if (keyboardUp) return null;
 
   const cells = state.routes.map((route, index) => {
     const tab = TABS.find((t) => t.name === route.name);
