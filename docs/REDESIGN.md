@@ -74,7 +74,7 @@ Checked 21 Oct 2026. Every row is built; new data work adds Zod schemas in `pack
 
 | Designed | Built on | Status |
 | --- | --- | --- |
-| Bills list with due dates, "Add a bill" | `selectUpcomingBills` (`lib/finance/bills.ts`); bill pages edit `recurring_overrides`; Remind schedules through `syncBillReminders` | Done. A bill due on the 1st gets no reminder yet |
+| Bills list with due dates, "Add a bill" | `selectUpcomingBills` (`lib/finance/bills.ts`); bill pages edit `recurring_overrides`; Remind schedules through `syncBillReminders` | Done |
 | "Don't ask about similar" | `auto_add_rules`; `matchRoutine` applies a rule before the history heuristic | Done: Review (R1), list and "Ask again" in Capture sources (K3) |
 | Source tile (Manual, Voice, Moni, Notification, Camera) | `transactions.metadata.source`; older rows read as Manual | Done (A2) |
 | Merchant names | `merchantName(raw, aliases)` in `lib/finance/merchant-name.ts` | Done on Home, Activity, wallet pages and Review |

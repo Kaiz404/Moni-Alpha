@@ -1,5 +1,8 @@
 import type { MinorAmount, RecurringOverride, UpcomingBill } from '@repo/types';
 
+import { tx } from '@/lib/ai/facts/__tests__/synthetic-ledger';
+import { selectBillsAhead } from '@/lib/finance/bills';
+
 import { billReminders, reminderAt, syncBillReminders } from '../bill-reminder';
 
 type Request = { identifier: string; content: { title: string; body: string; data: object } };
@@ -75,6 +78,64 @@ describe('billReminders', () => {
         WED_14_OCT,
       ),
     ).toEqual([]);
+  });
+});
+
+describe('billReminders across the month boundary', () => {
+  const firstOf = (month: number) => new Date(2026, month - 1, 1, 9);
+  const astro = [8, 9, 10].map((month) => tx(firstOf(month), 'expense', '89.90', 'Astro'));
+  const astroOn = [remind('MYR|expense|astro')];
+  const plan = (now: Date) => billReminders(selectBillsAhead(now, astro, astroOn), astroOn, now);
+  const astroReminder = (at: Date) => ({
+    id: 'bill:MYR|expense|astro',
+    at,
+    title: 'Astro is due tomorrow',
+    body: 'RM89.90',
+  });
+
+  it('reminds on the 31st for a bill due on the 1st, from the 30th', () => {
+    expect(plan(new Date(2026, 9, 30, 14))).toEqual([astroReminder(new Date(2026, 9, 31, 9))]);
+  });
+
+  it('reminds on the 31st itself until 9:00 am', () => {
+    expect(plan(new Date(2026, 9, 31, 8))).toEqual([astroReminder(new Date(2026, 9, 31, 9))]);
+    expect(plan(new Date(2026, 9, 31, 10))).toEqual([]);
+  });
+
+  it('reminds on the 30th of a 30-day month for a bill the user added on the 1st', () => {
+    const unifi = {
+      ...remind('MYR|expense|unifi'),
+      status: 'confirmed',
+      kind: 'bill',
+      expectedDay: 1,
+      expectedAmountMinor: 12900 as MinorAmount,
+      currency: 'MYR',
+    } as RecurringOverride;
+    const now = new Date(2026, 8, 30, 7);
+    expect(billReminders(selectBillsAhead(now, [], [unifi]), [unifi], now)).toEqual([
+      {
+        id: 'bill:MYR|expense|unifi',
+        at: new Date(2026, 8, 30, 9),
+        title: 'unifi is due tomorrow',
+        body: 'RM129.00',
+      },
+    ]);
+  });
+
+  it('plans next month’s reminder once this month’s bill is paid', () => {
+    const now = new Date(2026, 9, 20, 10);
+    const netflix = [7, 8, 9, 10].map((month) =>
+      tx(new Date(2026, month - 1, 15, 9), 'expense', '54.90', 'Netflix'),
+    );
+    const on = [remind('MYR|expense|netflix')];
+    expect(billReminders(selectBillsAhead(now, netflix, on), on, now)).toEqual([
+      {
+        id: 'bill:MYR|expense|netflix',
+        at: new Date(2026, 10, 14, 9),
+        title: 'Netflix is due tomorrow',
+        body: 'RM54.90',
+      },
+    ]);
   });
 });
 

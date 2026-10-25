@@ -120,3 +120,19 @@ export function selectUpcomingBills(
     (a, b) => a.dueDate.localeCompare(b.dueDate) || a.name.localeCompare(b.name),
   );
 }
+
+/**
+ * This month's bills and then next month's, for planning what comes next: on the 30th a bill
+ * due on the 1st is already next month's, and a bill paid this month comes round again.
+ */
+export function selectBillsAhead(
+  now: Date,
+  transactions: readonly FactsTransaction[],
+  overrides: readonly RecurringOverride[],
+): UpcomingBill[] {
+  const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1, 12);
+  return [
+    ...selectUpcomingBills(now, transactions, overrides),
+    ...selectUpcomingBills(nextMonth, transactions, overrides),
+  ];
+}

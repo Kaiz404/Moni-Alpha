@@ -20,7 +20,10 @@ export type BillReminder = {
   body: string;
 };
 
-/** The reminders to have scheduled: bills still due with Remind on, whose time has not passed. */
+/**
+ * The reminders to have scheduled: for each bill with Remind on, the soonest due date whose
+ * reminder time has not passed. `bills` may hold a bill once per month (`selectBillsAhead`).
+ */
 export function billReminders(
   bills: readonly UpcomingBill[],
   overrides: readonly RecurringOverride[],
@@ -29,18 +32,21 @@ export function billReminders(
   const remind = new Set(
     overrides.filter((override) => override.remind).map((override) => override.seriesKey),
   );
-  return bills.flatMap((bill) => {
+  const soonest = new Map<string, BillReminder>();
+  for (const bill of bills) {
     const at = reminderAt(bill.dueDate);
-    if (bill.status !== 'due' || !remind.has(bill.seriesKey) || !at || at <= now) return [];
-    return [
-      {
-        id: `bill:${bill.seriesKey}`,
-        at,
-        title: `${bill.name} is due tomorrow`,
-        body: formatMoney(bill.amountMinor, bill.currency),
-      },
-    ];
-  });
+    if (bill.status !== 'due' || !remind.has(bill.seriesKey) || !at || at <= now) continue;
+    const id = `bill:${bill.seriesKey}`;
+    const held = soonest.get(id);
+    if (held && held.at <= at) continue;
+    soonest.set(id, {
+      id,
+      at,
+      title: `${bill.name} is due tomorrow`,
+      body: formatMoney(bill.amountMinor, bill.currency),
+    });
+  }
+  return [...soonest.values()];
 }
 
 export const BILL_REMINDER_CHANNEL = 'bill-reminders';
