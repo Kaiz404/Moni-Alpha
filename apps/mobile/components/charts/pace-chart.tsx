@@ -262,9 +262,11 @@ function Selection({
       {kind === 'daily' ? null : (
         <>
           <View
-            className="absolute h-3.5 w-3.5 rounded-full border-[3px] border-card bg-foreground"
-            style={{ left: at.x - 7, top: at.y - 7 }}
-          />
+            className="absolute h-[17px] w-[17px] items-center justify-center rounded-full bg-foreground"
+            style={{ left: at.x - 8.5, top: at.y - 8.5 }}
+          >
+            <View className="h-3.5 w-3.5 rounded-full border-[3px] border-card bg-foreground" />
+          </View>
           <View
             className="absolute h-5 w-7 items-center justify-center rounded-full bg-primary"
             style={{ left: at.x - 14, top: 132 }}
@@ -283,8 +285,7 @@ function Selection({
         style={{ left: calloutLeft(at.x, plotWidth), top: 0 }}
       >
         <Text
-          variant="smallest"
-          className="text-primary-foreground opacity-85"
+          className="text-[12px] leading-[15px] text-primary-foreground opacity-85"
           numberOfLines={1}
         >
           {at.date}
@@ -550,28 +551,46 @@ function Bar({
 
 function Ticks({ geometry: g }: { geometry: PaceGeometry }) {
   const today = g.ticks.find((tick) => tick.today);
+  const first = g.ticks[0];
+  const end = g.ticks[g.ticks.length - 1];
   const visible = g.ticks.filter(
     (tick) =>
       tick.today || !today || Math.abs(tick.x - today.x) >= 52,
   );
   return (
     <View style={{ height: 16 }}>
-      {visible.map((tick) => (
-        <Text
-          key={tick.text}
-          variant="smallest"
-          numberOfLines={1}
-          className={`absolute w-[60px] text-center ${tick.today ? 'font-display-bold text-foreground' : 'text-muted'}`}
-          style={{
-            left: Math.max(
-              AXIS_WIDTH - 4,
-              Math.min(g.width - 60, tick.x - 30),
-            ),
-          }}
-        >
-          {tick.text}
-        </Text>
-      ))}
+      {visible.map((tick) => {
+        const edge =
+          g.mode === 'daily' || tick.today
+            ? null
+            : tick === first
+              ? 'start'
+              : tick === end
+                ? 'end'
+                : null;
+        return (
+          <Text
+            key={tick.text}
+            variant="smallest"
+            numberOfLines={1}
+            className={`absolute ${edge ? '' : 'w-[60px] text-center'} ${tick.today ? 'font-display-bold text-foreground' : 'text-muted'}`}
+            style={
+              edge === 'start'
+                ? { left: AXIS_WIDTH + 6 }
+                : edge === 'end'
+                  ? { right: 0 }
+                  : {
+                      left: Math.max(
+                        AXIS_WIDTH - 4,
+                        Math.min(g.width - 60, tick.x - 30),
+                      ),
+                    }
+            }
+          >
+            {tick.text}
+          </Text>
+        );
+      })}
     </View>
   );
 }

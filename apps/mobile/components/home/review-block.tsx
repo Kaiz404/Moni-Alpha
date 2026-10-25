@@ -52,12 +52,12 @@ export function ReviewBlock({
           {title}
         </Text>
         <View className="flex-row items-center gap-2">
-          <View className="flex-row">
+          <View className="h-[26px] flex-row items-center">
             {proposals.slice(0, 3).map((proposal, index) => (
               <View
                 key={proposal.id}
-                className="h-[26px] w-[26px] items-center justify-center rounded-full border-2 border-lilac bg-card"
-                style={{ marginLeft: index ? -6 : 0 }}
+                className="h-[30px] w-[30px] items-center justify-center rounded-full border-2 border-lilac bg-card"
+                style={{ marginLeft: index ? -10 : -2 }}
               >
                 <IconSymbol
                   name={sourceIcon[proposal.sourceType]}

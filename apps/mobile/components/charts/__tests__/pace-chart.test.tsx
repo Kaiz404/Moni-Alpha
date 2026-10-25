@@ -3,6 +3,7 @@ import {
   render,
   screen,
 } from '@testing-library/react-native';
+import { StyleSheet } from 'react-native';
 
 import { PaceChart } from '@/components/charts/pace-chart';
 import { paceGeometry } from '@/components/charts/pace-geometry';
@@ -68,6 +69,22 @@ describe('PaceChart', () => {
       'RM1,103.00',
     );
     expect(scrubStep).toHaveBeenCalledTimes(1);
+  });
+
+  it('pins the month ends of a line chart to the plot edges and centres Today', () => {
+    render(
+      <PaceChart
+        screen="home"
+        mode="pace"
+        series={{ month: october, values: spend }}
+        budget={budget}
+        currency="MYR"
+      />,
+    );
+    expect(screen.getByText('1 Oct')).toHaveStyle({ left: 50 });
+    expect(screen.getByText('31 Oct')).toHaveStyle({ right: 0 });
+    const today = screen.getByText('Today');
+    expect(StyleSheet.flatten(today.props.style).left).toBeCloseTo(139.6, 1);
   });
 });
 
