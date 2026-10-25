@@ -1,7 +1,7 @@
 import { syncState } from '@legendapp/state';
 import { useSelector, useValue } from '@legendapp/state/react';
-import { router, useLocalSearchParams } from 'expo-router';
-import { useEffect, useMemo, useState } from 'react';
+import { router, useLocalSearchParams, useScrollToTop } from 'expo-router';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { ScrollView, View } from 'react-native';
 
 import {
@@ -83,6 +83,8 @@ function dayTotal(day: ActivityDay, currency: string) {
 }
 
 export default function ActivityScreen() {
+  const scroll = useRef<ScrollView>(null);
+  useScrollToTop(scroll);
   const { user } = useAuth();
   const tokens = useThemeTokens();
   const clearance = useTabBarClearance();
@@ -278,6 +280,7 @@ export default function ActivityScreen() {
       }
     >
       <ScrollView
+        ref={scroll}
         keyboardShouldPersistTaps="handled"
         contentContainerClassName="gap-3 px-screen"
         contentContainerStyle={{ paddingBottom: clearance }}

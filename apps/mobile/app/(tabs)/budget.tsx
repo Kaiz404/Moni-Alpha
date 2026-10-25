@@ -1,5 +1,5 @@
-import { router } from 'expo-router';
-import { useMemo, useState } from 'react';
+import { router, useScrollToTop } from 'expo-router';
+import { useMemo, useRef, useState } from 'react';
 import { ScrollView, View } from 'react-native';
 
 import {
@@ -48,6 +48,8 @@ const VIEWS = [
 ] as const;
 
 export default function BudgetScreen() {
+  const scroll = useRef<ScrollView>(null);
+  useScrollToTop(scroll);
   const tokens = useThemeTokens();
   const clearance = useTabBarClearance();
   const data = useBudgetData();
@@ -117,6 +119,7 @@ export default function BudgetScreen() {
       }
     >
       <ScrollView
+        ref={scroll}
         className="flex-1"
         contentContainerClassName="gap-3 px-5"
         contentContainerStyle={{ paddingBottom: clearance }}

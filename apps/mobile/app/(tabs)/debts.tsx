@@ -1,5 +1,5 @@
-import { router } from 'expo-router';
-import { useState } from 'react';
+import { router, useScrollToTop } from 'expo-router';
+import { useRef, useState } from 'react';
 import { ScrollView, View } from 'react-native';
 
 import { ComingUp } from '@/components/debts/coming-up';
@@ -22,6 +22,8 @@ import type { DebtSide } from '@/lib/finance/debt-summary';
 import { tid } from '@/lib/test-ids';
 
 export default function DebtsScreen() {
+  const scroll = useRef<ScrollView>(null);
+  useScrollToTop(scroll);
   const tokens = useThemeTokens();
   const clearance = useTabBarClearance();
   const summary = useDebtSummary();
@@ -54,6 +56,7 @@ export default function DebtsScreen() {
       }
     >
       <ScrollView
+        ref={scroll}
         className="flex-1"
         contentContainerClassName="gap-4 px-5"
         contentContainerStyle={{ paddingBottom: clearance }}
