@@ -4,6 +4,14 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { ScrollView, View } from 'react-native';
 
+import {
+  CLEARED_LINK,
+  inScope,
+  readActivityLink,
+  scopeLabel,
+  type ActivityLinkParams,
+  type ActivityScope,
+} from '@/components/activity/activity-link';
 import { DayGroup } from '@/components/activity/day-group';
 import { useBudgetData, useBudgetMonth } from '@/components/budget/use-budget';
 import { FilterChips } from '@/components/activity/filter-chips';
@@ -94,12 +102,8 @@ export default function ActivityScreen() {
   const budgetData = useBudgetData();
   const budgetMonth = useBudgetMonth(budgetData, monthKey(budgetData.now));
   const [mode, setMode] = useState<ActivityChartMode>('spending');
-  const params = useLocalSearchParams<{
-    q?: string;
-    placeId?: string;
-    range?: string;
-  }>();
-  const [place, setPlace] = useState<{ id: string; range: string | null } | null>(null);
+  const params = useLocalSearchParams<ActivityLinkParams>();
+  const [scope, setScope] = useState<ActivityScope | null>(null);
   const [query, setQuery] = useState('');
   const [kind, setKind] = useState<ActivityKind>('all');
   const [walletId, setWalletId] = useState<string | null>(null);
@@ -109,14 +113,14 @@ export default function ActivityScreen() {
 
   // A link from another page replaces whatever filters were left, then clears its params so the same link works again.
   useEffect(() => {
-    const { q, placeId, range } = params;
-    if (!q && !placeId) return;
-    setQuery(q ?? '');
-    setPlace(placeId ? { id: placeId, range: range ?? null } : null);
+    const link = readActivityLink(params, monthKey(new Date()));
+    if (!link) return;
+    setQuery(link.query);
+    setScope(link.scope);
     setKind('all');
     setWalletId(null);
-    setDay(null);
-    router.setParams({ q: undefined, placeId: undefined, range: undefined });
+    setDay(link.chartDay);
+    router.setParams(CLEARED_LINK);
   }, [params]);
 
   const lookups = useMemo<RowLookups>(
@@ -148,18 +152,38 @@ export default function ActivityScreen() {
   );
   const shownPlace = useMemo(
     () =>
-      place
+      scope?.kind === 'place'
         ? (groupPlaces(named, {
             currency,
-            range: place.range ? placeRange(place.range, new Date()) : null,
-          }).find((candidate) => candidate.id === place.id) ?? null)
+            range: scope.range ? placeRange(scope.range, new Date()) : null,
+          }).find((candidate) => candidate.id === scope.placeId) ?? null)
         : null,
-    [named, place, currency],
+    [named, scope, currency],
   );
+  const scoped = useMemo(
+    () =>
+      shownPlace
+        ? shownPlace.transactions
+        : scope && scope.kind !== 'place'
+          ? named.filter((transaction) => inScope(transaction, scope))
+          : named,
+    [named, shownPlace, scope],
+  );
+  const chipLabel = shownPlace
+    ? shownPlace.name
+    : scope && scope.kind !== 'place'
+      ? scopeLabel(
+          scope,
+          scope.kind === 'category'
+            ? (categories.find((category) => category.id === scope.categoryId)?.name ?? null)
+            : null,
+          now,
+        )
+      : null;
   const days = useMemo(
     () =>
       groupActivityDays(
-        filterActivity(shownPlace ? shownPlace.transactions : named, {
+        filterActivity(scoped, {
           query,
           walletId,
           mainCurrency: currency,
@@ -170,7 +194,7 @@ export default function ActivityScreen() {
           ),
         }),
       ),
-    [named, shownPlace, query, walletId, currency, kind, day, categories],
+    [scoped, query, walletId, currency, kind, day, categories],
   );
   const waiting = proposals.filter((proposal) => isAwaitingReview(proposal, new Date()));
   const todayKey = toLocalDateInput(now);
@@ -319,8 +343,8 @@ export default function ActivityScreen() {
               kind={kind}
               onKind={setKind}
               walletName={walletName}
-              placeName={shownPlace?.name ?? null}
-              onClearPlace={() => setPlace(null)}
+              scope={chipLabel && scope ? { kind: scope.kind, label: chipLabel } : null}
+              onClearScope={() => setScope(null)}
               onWallet={() => void pickWallet()}
             />
             <View className="gap-3.5">

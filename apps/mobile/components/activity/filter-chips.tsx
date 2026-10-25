@@ -1,5 +1,6 @@
 import { ScrollView } from 'react-native';
 
+import type { ActivityScope } from '@/components/activity/activity-link';
 import { Chip } from '@/components/ui/chip';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Press } from '@/components/ui/press';
@@ -20,17 +21,17 @@ export function FilterChips({
   onKind,
   walletName,
   onWallet,
-  placeName,
-  onClearPlace,
+  scope,
+  onClearScope,
 }: {
   kind: ActivityKind;
   onKind: (kind: ActivityKind) => void;
   /** The chosen wallet, or null for every wallet. */
   walletName: string | null;
   onWallet: () => void;
-  /** The place the map sent the list to, shown first with a way to clear it. */
-  placeName: string | null;
-  onClearPlace: () => void;
+  /** The place, category or day a link narrowed the list to, shown first with a way to clear it. */
+  scope: { kind: ActivityScope['kind']; label: string } | null;
+  onClearScope: () => void;
 }) {
   const tokens = useThemeTokens();
   const walletInk = walletName ? tokens.primaryForeground : tokens.foreground;
@@ -42,11 +43,11 @@ export function FilterChips({
       className="-mx-screen"
       contentContainerClassName="gap-2 px-screen py-1"
     >
-      {placeName ? (
+      {scope ? (
         <Press
-          testID={tid('activity', 'filter', 'place')}
-          accessibilityLabel={`${placeName}, clear`}
-          onPress={onClearPlace}
+          testID={tid('activity', 'filter', scope.kind)}
+          accessibilityLabel={`${scope.label}, clear`}
+          onPress={onClearScope}
           hitSlop={4}
           radius={{ rest: 18, pressed: 16 }}
           pressedClassName="bg-primary-pressed"
@@ -56,7 +57,7 @@ export function FilterChips({
             className="text-[14px] leading-[19px] font-display-semibold text-primary-foreground"
             numberOfLines={1}
           >
-            {placeName}
+            {scope.label}
           </Text>
           <IconSymbol
             name="close"

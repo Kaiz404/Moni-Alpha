@@ -1,0 +1,41 @@
+# A1 links into Activity: a category page's See all narrows the list to that category and month
+# behind one chip; clearing the chip shows every row again. Needs a ring with more than 5 rows.
+# Run: scripts/device/run-flows.sh .maestro/flows/activity/activity-links.yaml
+appId: com.anonymous.moni.e2e
+name: A1 Activity links
+tags:
+  - a1
+  - seed-full
+---
+- runFlow: ../../subflows/launch.yaml
+- extendedWaitUntil:
+    visible:
+      id: nav.tab.budget
+    timeout: 15000
+- tapOn:
+    id: nav.tab.budget
+- scrollUntilVisible:
+    element:
+      id: budget\.ring\..*
+- tapOn:
+    id: budget\.ring\..*
+    index: 0
+- scrollUntilVisible:
+    element:
+      id: budget.category.see-all
+- tapOn:
+    id: budget.category.see-all
+- extendedWaitUntil:
+    visible:
+      id: activity.filter.category
+    timeout: 5000
+- assertVisible:
+    id: activity.filter.category
+    text: '.* · [A-Z][a-z]{2}, clear'
+- takeScreenshot: a1-activity-category-link
+- tapOn:
+    id: activity.filter.category
+- assertNotVisible:
+    id: activity.filter.category
+- assertVisible:
+    id: activity.filter.all
