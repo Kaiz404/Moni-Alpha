@@ -3,6 +3,7 @@ import { router } from 'expo-router';
 import { useState } from 'react';
 import { View } from 'react-native';
 
+import { PickerChip } from '@/components/review/picker-chip';
 import { IconSymbol, type IconSymbolName } from '@/components/ui/icon-symbol';
 import { InPlaceField, InPlaceGroup } from '@/components/ui/in-place-field';
 import { Press } from '@/components/ui/press';
@@ -255,20 +256,30 @@ export function DraftCard({ message }: { message: DraftMessage }) {
       </InPlaceGroup>
 
       <View className="flex-row flex-wrap gap-2">
-        <ChipButton
+        <PickerChip
           testID={tid('chat', 'draft', 'category')}
-          label={category?.name ?? 'Pick a category'}
-          icon={resolveTransactionIcon(category?.icon, direction)}
-          fill={category ? 'bg-sand' : 'bg-lemon'}
-          color={category?.color ?? undefined}
+          look={
+            category
+              ? {
+                  name: category.name,
+                  icon: resolveTransactionIcon(category.icon, direction),
+                  color: category.color,
+                }
+              : null
+          }
+          tinted
+          empty={{ label: 'Pick a category', icon: 'shape-outline' }}
           accessibilityLabel={`Category: ${category?.name ?? 'none'}. Change`}
           onPress={() => void pickCategory()}
         />
-        <ChipButton
+        <PickerChip
           testID={tid('chat', 'draft', 'wallet')}
-          label={wallet?.name ?? 'Pick a wallet'}
-          icon={wallet ? 'wallet-outline' : 'wallet-plus-outline'}
-          fill={wallet ? 'bg-sand' : 'bg-lemon'}
+          look={
+            wallet
+              ? { name: wallet.name, icon: wallet.icon ?? 'wallet-outline', color: wallet.color }
+              : null
+          }
+          empty={{ label: 'Pick a wallet', icon: 'wallet-plus-outline' }}
           accessibilityLabel={wallet ? `Wallet: ${wallet.name}. Change` : 'Pick a wallet'}
           onPress={() => void pickWallet()}
         />
@@ -410,58 +421,6 @@ function DoneRow({
 /** Sand carries the page's ink; pastels and category colours always carry #17181A. */
 function inkOn(fill: string, color: string | undefined, tokens: ReturnType<typeof useThemeTokens>) {
   return fill === 'bg-sand' && !color ? tokens.foreground : tokens.onPastel;
-}
-
-function ChipButton({
-  testID,
-  label,
-  icon,
-  fill,
-  color,
-  accessibilityLabel,
-  onPress,
-}: {
-  testID: ReturnType<typeof tid>;
-  label: string;
-  icon: IconSymbolName;
-  fill: string;
-  /** The category's own colour, over `fill`. */
-  color?: string;
-  accessibilityLabel: string;
-  onPress: () => void;
-}) {
-  const tokens = useThemeTokens();
-  const ink = inkOn(fill, color, tokens);
-  return (
-    <Press
-      testID={testID}
-      accessibilityLabel={accessibilityLabel}
-      onPress={onPress}
-      radius={{ rest: 22, pressed: 16 }}
-      className={`h-11 flex-row items-center gap-1.5 pl-2 pr-3 ${fill}`}
-      style={color ? { backgroundColor: color } : undefined}
-    >
-      <View className="h-7 w-7 items-center justify-center rounded-full bg-card/60">
-        <IconSymbol
-          name={icon}
-          size={16}
-          color={ink}
-        />
-      </View>
-      <Text
-        className="text-[15px] font-display-semibold"
-        style={{ color: ink }}
-        numberOfLines={1}
-      >
-        {label}
-      </Text>
-      <IconSymbol
-        name="chevron-down"
-        size={18}
-        color={ink}
-      />
-    </Press>
-  );
 }
 
 function ActionButton({

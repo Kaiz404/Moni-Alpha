@@ -20,6 +20,7 @@ jest.mock('@/lib/auth/auth-context', () => ({
 }));
 jest.mock('uniwind', () => ({
   useCSSVariable: (names: string[]) => names.map(() => undefined),
+  useUniwind: () => ({ theme: 'light' }),
 }));
 jest.mock('@/lib/haptics', () => ({ approve: jest.fn(), notMine: jest.fn() }));
 jest.mock('expo-router', () => ({ router: { push: jest.fn() } }));

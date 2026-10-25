@@ -1,8 +1,7 @@
 import type { MinorAmount, ProposedTransaction } from '@repo/types';
 import { View } from 'react-native';
-import { useUniwind } from 'uniwind';
 
-import { CategoryIcon } from '@/components/categories/category-icon';
+import { PickerChip, type ChipLook } from '@/components/review/picker-chip';
 import { ResultPill, type BudgetLine } from '@/components/review/result-pill';
 import { IconSymbol, type IconSymbolName } from '@/components/ui/icon-symbol';
 import { InPlaceField, InPlaceGroup } from '@/components/ui/in-place-field';
@@ -15,8 +14,6 @@ import type { EditField as EditFieldName } from '@/lib/proposals/review-card-sta
 import { tid } from '@/lib/test-ids';
 
 const FIELD = { merchant: tid('review', 'merchant'), amount: tid('review', 'amount') } as const;
-
-export type ChipLook = { name: string; icon: string | null; color: string | null };
 
 /** Everything the card shows, already resolved from the store and this card's edits. */
 export type ReviewCardModel = {
@@ -59,86 +56,6 @@ const SOURCE: Record<
 
 function moneyDirection(type: ProposedTransaction['type']) {
   return type === 'income' || type === 'transfer' ? type : 'expense';
-}
-
-function PickerChip({
-  name,
-  look,
-  label,
-  tinted = false,
-  onPress,
-}: {
-  name: string;
-  look: ChipLook | null;
-  label: string;
-  /** The category chip takes its category's tint; wallet chips stay Sand. */
-  tinted?: boolean;
-  onPress: () => void;
-}) {
-  const tokens = useThemeTokens();
-  const dark = useUniwind().theme === 'dark';
-  if (!look) {
-    return (
-      <Press
-        testID={tid('review', name)}
-        onPress={onPress}
-        accessibilityLabel={label}
-        radius={{ rest: 22, pressed: 16 }}
-        className="h-11 flex-row items-center gap-1.5 bg-lemon pl-3 pr-2.5"
-      >
-        <IconSymbol
-          name="wallet-outline"
-          size={18}
-          color={tokens.onPastel}
-        />
-        <Text className="text-[14px] leading-[19px] font-display-bold text-on-pastel">
-          Pick a wallet
-        </Text>
-        <IconSymbol
-          name="chevron-down"
-          size={16}
-          color={tokens.onPastel}
-        />
-      </Press>
-    );
-  }
-  return (
-    <Press
-      testID={tid('review', name)}
-      onPress={onPress}
-      accessibilityLabel={label}
-      radius={{ rest: 22, pressed: 16 }}
-      pressedClassName="bg-hairline"
-      className="h-11 min-w-0 shrink flex-row items-center gap-1 bg-sand pl-1.5 pr-2"
-      style={
-        tinted && look.color
-          ? { backgroundColor: `${look.color}${dark ? '38' : '73'}` }
-          : undefined
-      }
-    >
-      <View
-        className="h-7 w-7 items-center justify-center rounded-full bg-card"
-        style={look.color ? { backgroundColor: look.color } : undefined}
-      >
-        <CategoryIcon
-          icon={look.icon}
-          color={look.color ? tokens.onPastel : tokens.foreground}
-          size={16}
-        />
-      </View>
-      <Text
-        className="min-w-0 shrink text-[14px] leading-[19px] font-display-semibold text-foreground"
-        numberOfLines={1}
-      >
-        {look.name}
-      </Text>
-      <IconSymbol
-        name="chevron-down"
-        size={16}
-        color={tokens.foreground}
-      />
-    </Press>
-  );
 }
 
 /** The `XA-Review` card body. The deck owns the gesture; this only draws and edits. */
@@ -272,24 +189,24 @@ export function ReviewCard({
       <View className="flex-row flex-wrap gap-2">
         {transfer ? null : (
           <PickerChip
-            name="category"
+            testID={tid('review', 'category')}
             look={model.category}
             tinted
-            label={`Category ${model.category?.name ?? 'none'}. Change category`}
+            accessibilityLabel={`Category ${model.category?.name ?? 'none'}. Change category`}
             onPress={handlers.onPickCategory}
           />
         )}
         <PickerChip
-          name="wallet"
+          testID={tid('review', 'wallet')}
           look={model.wallet}
-          label={model.wallet ? `Wallet ${model.wallet.name}. Change wallet` : 'Pick a wallet'}
+          accessibilityLabel={model.wallet ? `Wallet ${model.wallet.name}. Change wallet` : 'Pick a wallet'}
           onPress={handlers.onPickWallet}
         />
         {transfer ? (
           <PickerChip
-            name="destination"
+            testID={tid('review', 'destination')}
             look={model.destination ?? null}
-            label={
+            accessibilityLabel={
               model.destination
                 ? `Moves to ${model.destination.name}. Change wallet`
                 : 'Pick a wallet'

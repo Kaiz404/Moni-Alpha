@@ -29,10 +29,10 @@ import {
   historyCount,
   useRecentlyReviewed,
 } from '@/components/review/recently-reviewed';
+import type { ChipLook } from '@/components/review/picker-chip';
 import { budgetLine } from '@/components/review/result-pill';
 import {
   ReviewCard,
-  type ChipLook,
   type ReviewCardHandlers,
   type ReviewCardModel,
 } from '@/components/review/review-card';

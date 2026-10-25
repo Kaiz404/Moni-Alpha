@@ -35,6 +35,7 @@ export const CONTROLS = [
   'TransactionRow',
   'InPlaceField',
   'Toggle',
+  'PickerChip',
 ];
 
 // A component that wraps a control passes its own testID prop through, typed as TestId, so the
