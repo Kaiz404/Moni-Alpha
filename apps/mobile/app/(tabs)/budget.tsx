@@ -158,6 +158,7 @@ export default function BudgetScreen() {
                 categoriesById={categoriesById}
                 walletNames={data.walletNames}
                 bills={data.bills}
+                aliases={data.aliases}
                 now={data.now}
               />
             )}

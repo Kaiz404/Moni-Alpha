@@ -51,8 +51,8 @@ type BillsListProps = {
   looks: Record<string, BillLook>;
   now: Date;
   currency: string;
-  /** "31 Oct", the end of the month the bills are due in. */
-  monthEnd: string;
+  /** "31 Oct", the end of the month the bills are due in; without it the header shows no total. */
+  monthEnd?: string;
   onOpen?: (bill: UpcomingBill) => void;
   onAdd?: () => void;
 };
@@ -83,7 +83,7 @@ export function BillsList({
         >
           Bills
         </Text>
-        {bills.length ? (
+        {bills.length && monthEnd ? (
           <Text
             variant="meta"
             className="text-muted"

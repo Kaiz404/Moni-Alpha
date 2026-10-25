@@ -1,4 +1,4 @@
-import type { UpcomingBill } from '@repo/types';
+import type { MerchantAlias, UpcomingBill } from '@repo/types';
 import { router } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { View } from 'react-native';
@@ -21,6 +21,7 @@ import {
   type BudgetMonth,
 } from '@/lib/finance/budget-month';
 import { formatMoney } from '@/lib/finance/format-money';
+import { merchantName } from '@/lib/finance/merchant-name';
 import type {
   FinanceCategory,
   FinanceTransaction,
@@ -38,6 +39,7 @@ type CalendarViewProps = {
   categoriesById: Record<string, FinanceCategory>;
   walletNames: Record<string, string>;
   bills: readonly UpcomingBill[];
+  aliases: readonly Pick<MerchantAlias, 'rawKey' | 'displayName'>[];
   now: Date;
 };
 
@@ -48,6 +50,7 @@ export function CalendarView({
   categoriesById,
   walletNames,
   bills,
+  aliases,
   now,
 }: CalendarViewProps) {
   const tokens = useThemeTokens();
@@ -60,8 +63,13 @@ export function CalendarView({
   const selected =
     picked?.month === month.month ? picked.day : month.throughDay;
   const spend = useMemo(
-    () => monthSpend(transactions, month.month, currency),
-    [transactions, month.month, currency],
+    () =>
+      monthSpend(transactions, month.month, currency).map((transaction) =>
+        transaction.merchant
+          ? { ...transaction, merchant: merchantName(transaction.merchant, aliases) }
+          : transaction,
+      ),
+    [transactions, aliases, month.month, currency],
   );
   const billByDay = useMemo(() => {
     const byDay: Record<number, UpcomingBill> = {};

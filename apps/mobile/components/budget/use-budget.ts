@@ -11,6 +11,7 @@ import { financeProjection$ } from '@/lib/finance/projection';
 import { debtsWithBalance$, transactions$, walletsForUser$ } from '@/lib/finance/selectors';
 import { profilePreferences$, recurringOverrides$ } from '@/lib/store';
 import { getRecordValues } from '@/lib/store/helpers';
+import { listMerchantAliases } from '@/lib/supabase/merchant-aliases';
 import {
   selectRecurringOverrides,
   type RecurringOverrideRow,
@@ -49,6 +50,7 @@ export function useBudgetData() {
       (budget) => budget.userId === userId,
     ),
   );
+  const aliases = useValue(() => (userId ? listMerchantAliases(userId) : []));
   const monthlyTotal = useValue(() => profilePreferences$.get()?.monthly_budget ?? null);
   const overrides = useValue(() =>
     userId
@@ -70,6 +72,7 @@ export function useBudgetData() {
     transactions,
     wallets,
     walletNames,
+    aliases,
     categories,
     budgets,
     monthlyTotalMinor: monthlyTotal === null ? null : (decimalToMinor(monthlyTotal) as MinorAmount),

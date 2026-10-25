@@ -9,21 +9,26 @@ import {
   type BillLook,
 } from '@/components/budget/bills-list';
 import { MerchantList } from '@/components/budget/merchant-list';
+import { useMerchantNames } from '@/components/merchants/use-merchant-names';
 import { useBudgetData } from '@/components/budget/use-budget';
 import { PaceChart } from '@/components/charts/pace-chart';
 import { monthFromKey } from '@/components/charts/pace-geometry';
 import { Button } from '@/components/ui/button';
 import { NotFound } from '@/components/ui/empty-tile';
 import { HeaderIconButton } from '@/components/ui/header-icon-button';
+import { IconSymbol } from '@/components/ui/icon-symbol';
 import { InPlaceField, InPlaceGroup, type Saved } from '@/components/ui/in-place-field';
 import { ListCard } from '@/components/ui/list-card';
 import { Page } from '@/components/ui/page';
+import { Press } from '@/components/ui/press';
 import { ProgressBar } from '@/components/ui/progress-bar';
 import { Text } from '@/components/ui/text';
 import {
   TintBubble,
   TransactionRow,
 } from '@/components/ui/transaction-row';
+import { useThemeTokens } from '@/hooks/use-theme-tokens';
+import { merchantKey } from '@/lib/ai/routine';
 import { dayLabel } from '@/lib/dates/day-label';
 import { lastPaymentBySeries } from '@/lib/finance/bills';
 import { budgetNote } from '@/lib/finance/budget-note';
@@ -33,14 +38,15 @@ import {
   daysInMonth,
   monthKey,
   monthName,
-  monthShort,
   monthSpend,
   topMerchants,
 } from '@/lib/finance/budget-month';
 import { currencySymbol, formatMoney } from '@/lib/finance/format-money';
+import { merchantName } from '@/lib/finance/merchant-name';
 import { PLAN_LIMIT_MINOR } from '@/lib/finance/money';
 import { pendingProposals$ } from '@/lib/finance/selectors';
 import { openSheet } from '@/lib/sheet/sheet-store';
+import { forgetMerchantName, nameMerchant } from '@/lib/supabase/merchant-aliases';
 import {
   deleteCategoryBudget,
   upsertCategoryBudget,
@@ -50,7 +56,7 @@ import { showToast } from '@/lib/toast/toast-store';
 import { resolveTransactionIcon } from '@/lib/transactions/icon';
 import { proposalRow, transactionRow } from '@/lib/transactions/row';
 
-const SHOWN_ROWS = 6;
+const SHOWN_ROWS = 5;
 
 const leftTone = {
   plain: 'text-foreground',
@@ -65,6 +71,7 @@ export default function CategoryBudgetScreen() {
     categoryId: string;
     month?: string;
   }>();
+  const tokens = useThemeTokens();
   const data = useBudgetData();
   const { currency, now } = data;
   const month = params.month ?? monthKey(now);
@@ -87,9 +94,14 @@ export default function CategoryBudgetScreen() {
         month,
         currency,
         params.categoryId,
+      ).map((transaction) =>
+        transaction.merchant
+          ? { ...transaction, merchant: merchantName(transaction.merchant, data.aliases) }
+          : transaction,
       ),
-    [data.transactions, month, currency, params.categoryId],
+    [data.transactions, data.aliases, month, currency, params.categoryId],
   );
+  const { toName } = useMerchantNames();
   const { series, chartSeries } = useMemo(() => {
     const { daily, throughDay } = dailySpend(spend, month, now);
     return {
@@ -364,13 +376,23 @@ export default function CategoryBudgetScreen() {
                     .filter(Boolean)
                     .join(' ')}
                 </Text>
-                <Button
+                <Press
                   testID={tid('budget', 'category', 'set-budget')}
-                  variant="secondary"
-                  icon="plus"
-                  label="Set a budget"
+                  accessibilityLabel={`Set a budget for ${category.name}`}
                   onPress={open}
-                />
+                  radius={{ rest: 22, pressed: 16 }}
+                  pressedClassName="bg-hairline"
+                  className="h-11 flex-row items-center gap-1.5 bg-sand pl-3.5 pr-[18px]"
+                >
+                  <IconSymbol
+                    name="plus"
+                    size={20}
+                    color={tokens.foreground}
+                  />
+                  <Text className="text-[15px] leading-5 font-display-semibold text-foreground">
+                    Set a budget
+                  </Text>
+                </Press>
               </View>
             )
           }
@@ -411,7 +433,6 @@ export default function CategoryBudgetScreen() {
               looks={billLooks}
               now={now}
               currency={currency}
-              monthEnd={`${daysInMonth(month)} ${monthShort(month)}`}
               onOpen={(bill) =>
                 router.push({
                   pathname: '/bill/[seriesKey]',
@@ -438,6 +459,7 @@ export default function CategoryBudgetScreen() {
                   variant="tertiary"
                   label="See all"
                   icon="chevron-right"
+                  className="-mr-3.5"
                   onPress={() =>
                     router.dismissTo({
                       pathname: '/activity',
@@ -503,6 +525,17 @@ export default function CategoryBudgetScreen() {
             currency={currency}
             walletNames={data.walletNames}
             look={() => look}
+            codeKey={(merchant) => {
+              const key = merchantKey(merchant.name);
+              return key && toName.some((entry) => entry.key === key) ? key : null;
+            }}
+            onName={async (key, raw, typed) => {
+              await nameMerchant(key, typed);
+              return {
+                text: `${raw} is now ${typed}`,
+                undo: () => void forgetMerchantName(key),
+              };
+            }}
           />
         </View>
       </ScrollView>
