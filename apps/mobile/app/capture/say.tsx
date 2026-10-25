@@ -4,6 +4,12 @@ import {
 } from 'expo-speech-recognition';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Linking } from 'react-native';
+import {
+  Easing,
+  useReducedMotion,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated';
 
 import { CaptureResult } from '@/components/capture/capture-result-card';
 import { Listening, SayDenied } from '@/components/capture/listening';
@@ -20,6 +26,9 @@ import {
 } from '@/lib/speech/speech-recognition';
 
 type Mic = 'starting' | 'listening' | 'denied';
+
+const LEVEL_EASE = { duration: 100, easing: Easing.bezier(0.23, 1, 0.32, 1) };
+const LOUD = 8;
 
 function stopListening() {
   try {
@@ -40,6 +49,8 @@ export default function SayScreen() {
   const [seconds, setSeconds] = useState(0);
   const [transcript, setTranscript] = useState('');
   const committed = useRef('');
+  const reduceMotion = useReducedMotion();
+  const level = useSharedValue(reduceMotion ? 1 : 0);
 
   const listen = useCallback(async () => {
     const permission =
@@ -53,7 +64,11 @@ export default function SayScreen() {
     setTranscript('');
     setSeconds(0);
     setMic('listening');
-    ExpoSpeechRecognitionModule.start(buildSpeechRecognitionOptions());
+    ExpoSpeechRecognitionModule.start(
+      buildSpeechRecognitionOptions({
+        volumeChangeEventOptions: { enabled: true, intervalMillis: 100 },
+      }),
+    );
     return true;
   }, []);
 
@@ -68,6 +83,11 @@ export default function SayScreen() {
     const timer = setInterval(() => setSeconds((value) => value + 1), 1000);
     return () => clearInterval(timer);
   }, [mic, stage.name]);
+
+  useSpeechRecognitionEvent('volumechange', (event) => {
+    if (reduceMotion) return;
+    level.set(withTiming(Math.min(1, Math.max(0, event.value / LOUD)), LEVEL_EASE));
+  });
 
   useSpeechRecognitionEvent('result', (event) => {
     const text = getTranscriptFromResult(event);
@@ -102,6 +122,7 @@ export default function SayScreen() {
           seconds={seconds}
           transcript={transcript}
           offline={ExpoSpeechRecognitionModule.supportsOnDeviceRecognition()}
+          level={level}
           onDone={done}
         />
       );
