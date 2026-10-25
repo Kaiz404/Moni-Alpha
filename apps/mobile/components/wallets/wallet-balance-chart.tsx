@@ -73,12 +73,14 @@ export function WalletBalanceChart({
       className="gap-2 rounded-card bg-card px-[18px] py-3.5"
       accessibilityLabel={`${wallet.name} balance in ${month}`}
     >
-      <Text
-        variant="caps"
-        className="text-muted"
-      >
-        {month}
-      </Text>
+      <View className="min-h-9 justify-center">
+        <Text
+          variant="caps"
+          className="text-muted"
+        >
+          {month}
+        </Text>
+      </View>
       <View>
         <Text
           variant="cardTitle"

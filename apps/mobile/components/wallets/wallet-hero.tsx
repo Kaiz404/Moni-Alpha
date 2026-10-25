@@ -202,16 +202,16 @@ export function WalletHero({
                       accessibilityLabel: `Balance ${formatMoney(balanceMinor, currency)}. Edit balance`,
                     },
                   )}
-                  <View className="flex-row items-center gap-1.5">
+                  <View className="flex-row flex-wrap items-center gap-x-1.5">
                     <Text
                       variant="meta"
-                      className="text-ink-2"
+                      className="text-muted"
                     >
                       {checkedLabel(wallet.balanceConfirmedAt)}
                     </Text>
                     <Text
                       variant="meta"
-                      className="text-ink-2"
+                      className="text-muted"
                       importantForAccessibility="no"
                     >
                       ·

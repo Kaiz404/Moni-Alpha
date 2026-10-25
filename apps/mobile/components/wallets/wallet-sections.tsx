@@ -11,7 +11,10 @@ import {
 import { ListCard } from '@/components/ui/list-card';
 import { Press } from '@/components/ui/press';
 import { Text } from '@/components/ui/text';
-import { TransactionRow } from '@/components/ui/transaction-row';
+import {
+  TintBubble,
+  TransactionRow,
+} from '@/components/ui/transaction-row';
 import { labelForNotificationPackage } from '@/constants/notification-apps';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { formatMoney } from '@/lib/finance/format-money';
@@ -57,7 +60,7 @@ function DetailRow({
 }: {
   testID: TestId;
   icon: IconSymbolName;
-  tint: 'bg-lilac' | 'bg-mint';
+  tint: 'lilac' | 'mint';
   title: string;
   meta: string;
   value?: string;
@@ -73,15 +76,10 @@ function DetailRow({
       className="min-h-[66px] flex-row items-center gap-3.5 py-3 pl-[18px] pr-3"
       onPress={onPress}
     >
-      <View
-        className={`h-[42px] w-[42px] items-center justify-center rounded-full ${tint}`}
-      >
-        <IconSymbol
-          name={icon}
-          size={20}
-          color={tokens.onPastel}
-        />
-      </View>
+      <TintBubble
+        icon={icon}
+        color={tokens[tint]}
+      />
       <View className="min-w-0 flex-1">
         <Text
           variant="rowTitle"
@@ -101,7 +99,7 @@ function DetailRow({
       {value ? (
         <Text
           variant="body"
-          className="text-ink-2"
+          className="-mr-1.5 text-ink-2"
         >
           {value}
         </Text>
@@ -136,7 +134,7 @@ export function ReviewStrip({
       <DetailRow
         testID={tid('wallet', 'review')}
         icon="bell-outline"
-        tint="bg-lilac"
+        tint="lilac"
         title={`${count} ${count === 1 ? 'capture' : 'captures'} to review`}
         meta={`${formatMoney(waiting, currency)} isn't in this balance yet`}
         onPress={() =>
@@ -317,7 +315,7 @@ export function WalletAlerts({
           <DetailRow
             testID={tid('wallet', 'alerts')}
             icon="bell-outline"
-            tint="bg-mint"
+            tint="mint"
             title={app ? `Alerts from ${app}` : 'Alerts from'}
             meta={
               app ? 'Alerts become captures' : 'Link a banking app'
@@ -328,8 +326,8 @@ export function WalletAlerts({
         )}
         <DetailRow
           testID={tid('wallet', 'capture-log')}
-          icon="cellphone-text"
-          tint="bg-lilac"
+          icon="cellphone-message"
+          tint="lilac"
           title="Capture log"
           meta="Every alert and what happened"
           onPress={() => router.push('/capture-log')}
@@ -357,14 +355,11 @@ export function WalletDefault({ wallet }: { wallet: FinanceWallet }) {
 
   return (
     <ListCard>
-      <View className="min-h-[66px] flex-row items-center gap-3.5 py-3 pl-[18px] pr-3.5">
-        <View className="h-[42px] w-[42px] items-center justify-center rounded-full bg-lemon">
-          <IconSymbol
-            name="star-outline"
-            size={20}
-            color={tokens.onPastel}
-          />
-        </View>
+      <View className="min-h-[66px] flex-row items-center gap-3.5 px-[18px] py-3">
+        <TintBubble
+          icon="star-outline"
+          color={tokens.lemon}
+        />
         <View className="min-w-0 flex-1">
           <Text
             variant="rowTitle"

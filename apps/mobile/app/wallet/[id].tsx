@@ -20,6 +20,7 @@ import {
   WalletTransactions,
 } from '@/components/wallets/wallet-sections';
 import { useAuth } from '@/lib/auth/auth-context';
+import { useMainCurrency } from '@/lib/finance/main-currency';
 import { merchantName } from '@/lib/finance/merchant-name';
 import {
   categoriesForUser$,
@@ -57,6 +58,7 @@ export default function WalletScreen() {
   const categories = useValue(categoriesForUser$(userId));
   const aliases = useValue(() => (userId ? listMerchantAliases(userId) : []));
   const now = useNow();
+  const mainCurrency = useMainCurrency();
   const named = useMemo(
     () =>
       transactions.map((transaction) =>
@@ -150,11 +152,13 @@ export default function WalletScreen() {
             link={link}
             initialEdit={params.edit === 'balance' ? 'balance' : null}
           />
-          <WalletBalanceChart
-            wallet={wallet}
-            transactions={transactions}
-            now={now}
-          />
+          {wallet.currency === mainCurrency ? (
+            <WalletBalanceChart
+              wallet={wallet}
+              transactions={transactions}
+              now={now}
+            />
+          ) : null}
           <ReviewStrip
             proposals={waiting}
             currency={wallet.currency}

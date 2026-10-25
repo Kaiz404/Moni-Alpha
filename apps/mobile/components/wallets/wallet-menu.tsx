@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Modal, Pressable, View } from 'react-native';
-import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
+import Animated, { FadeInUp, FadeOut } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { HeaderIconButton } from '@/components/ui/header-icon-button';
@@ -11,7 +11,15 @@ import {
 import { Press } from '@/components/ui/press';
 import { Text } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
+import { springs } from '@/lib/motion/tokens';
 import { tid } from '@/lib/test-ids';
+
+/** V2H-WalletDetail's menu `rise`: up 8 and fade in on the sheet spring. */
+const RISE = FadeInUp.springify()
+  .stiffness(springs.sheet.stiffness)
+  .damping(springs.sheet.damping)
+  .mass(springs.sheet.mass)
+  .withInitialValues({ opacity: 0, transform: [{ translateY: 8 }] });
 
 const ITEMS: {
   action: 'edit' | 'delete';
@@ -21,7 +29,7 @@ const ITEMS: {
   {
     action: 'edit',
     label: 'Edit wallet',
-    icon: 'square-edit-outline',
+    icon: 'cog-outline',
   },
   {
     action: 'delete',
@@ -79,11 +87,11 @@ export function WalletMenu({
           onPress={() => setOpen(false)}
         />
         <Animated.View
-          entering={FadeIn.duration(150)}
+          entering={RISE}
           exiting={FadeOut.duration(120)}
           accessibilityRole="menu"
           className="absolute right-5 w-[220px] rounded-tile bg-card py-1.5"
-          style={[{ top: insets.top + 50 }, SHADOW]}
+          style={[{ top: insets.top + 52 }, SHADOW]}
         >
           {ITEMS.map((item) => {
             const destructive = item.action === 'delete';
