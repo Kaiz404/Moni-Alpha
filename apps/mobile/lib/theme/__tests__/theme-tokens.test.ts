@@ -71,7 +71,7 @@ describe('useThemeTokens', () => {
       muted: '#6b665c',
       border: '#ddd5c5',
       borderSubtle: '#efe8da',
-      borderStrong: '#a9a397',
+      borderStrong: '#b9b0a0',
       card: '#fffdf8',
       surface1: '#fffdf8',
       surface2: '#ece5d6',
@@ -119,6 +119,9 @@ describe('useThemeTokens', () => {
       pendingFill: '#e4daf6',
       bloom: '#e3d8c2',
       onInkPositive: '#a9ddb5',
+      onLemon: '#6b5410',
+      onLilac: '#3e3654',
+      onMint: '#174831',
     });
   });
 
