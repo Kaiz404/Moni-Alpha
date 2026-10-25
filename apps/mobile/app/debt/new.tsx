@@ -7,10 +7,15 @@ import {
   DueDateSheet,
 } from '@/components/debt/due-date-sheet';
 import {
+  DebtPickField,
+  DueMark,
+} from '@/components/debts/debt-pick-field';
+import {
   pickDebtWallet,
   useDebtWallets,
 } from '@/components/debts/debt-wallets';
 import { SIDE_WORDS } from '@/components/debts/debt-words';
+import { DirectionToggle } from '@/components/debts/direction-toggle';
 import {
   editNewDebtDraft,
   resetNewDebtDraft,
@@ -21,10 +26,9 @@ import { Button } from '@/components/ui/button';
 import { Chip } from '@/components/ui/chip';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Page } from '@/components/ui/page';
-import { PickerField } from '@/components/ui/picker-field';
 import { Press } from '@/components/ui/press';
-import { Segmented } from '@/components/ui/segmented';
 import { Text } from '@/components/ui/text';
+import { getWalletCardStyle } from '@/constants/wallet-card-styles';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { useMainCurrency } from '@/lib/finance/main-currency';
 import { formatMoney } from '@/lib/finance/format-money';
@@ -201,21 +205,9 @@ export default function NewDebtScreen() {
             ) : null}
           </View>
 
-          <Segmented
-            screen="debts"
-            name="direction"
-            accessibilityLabel="Who owes who"
+          <DirectionToggle
+            name={who}
             value={draft.direction}
-            options={[
-              {
-                value: 'owed_to_me',
-                label: SIDE_WORDS.owed_to_me.segment(who),
-              },
-              {
-                value: 'i_owe',
-                label: SIDE_WORDS.i_owe.segment(who),
-              },
-            ]}
             onChange={(direction) => editNewDebtDraft({ direction })}
           />
 
@@ -251,11 +243,23 @@ export default function NewDebtScreen() {
           </View>
 
           <View className="flex-row gap-2">
-            <PickerField
+            <DebtPickField
               testID={tid('debts', 'new', 'wallet')}
               className="flex-1"
               label={walletLabel}
-              value={wallet?.name ?? ''}
+              value={wallet?.name ?? 'Choose'}
+              mark={
+                wallet ? (
+                  <View
+                    className="h-2.5 w-2.5 rounded-full"
+                    style={{
+                      backgroundColor: getWalletCardStyle(
+                        wallet.cardStyleId,
+                      ).swatchHex,
+                    }}
+                  />
+                ) : null
+              }
               onPress={async () => {
                 const picked = await pickDebtWallet(
                   walletLabel,
@@ -266,11 +270,12 @@ export default function NewDebtScreen() {
                 if (picked) editNewDebtDraft({ walletId: picked });
               }}
             />
-            <PickerField
+            <DebtPickField
               testID={tid('debts', 'new', 'due-date')}
               className="flex-1"
               label="Due date"
               value={dueLabel(draft.dueDate)}
+              mark={<DueMark />}
               onPress={() => setDueOpen(true)}
             />
           </View>
@@ -292,22 +297,34 @@ export default function NewDebtScreen() {
           </View>
         </ScrollView>
         <View className="border-t-[1.5px] border-sand px-5 pb-5 pt-3">
-          <Button
-            testID={tid('debts', 'new', 'record')}
-            pinned
-            label={
-              wallets.length === 0
-                ? `Add a ${currency} wallet first`
-                : ready
-                  ? words.record(who, amount)
+          {ready ? (
+            <Button
+              testID={tid('debts', 'new', 'record')}
+              pinned
+              label={words.record(who, amount)}
+              loading={saving}
+              onPress={() => void submit()}
+            />
+          ) : (
+            <View
+              testID={tid('debts', 'new', 'record')}
+              accessible
+              accessibilityRole="button"
+              accessibilityState={{ disabled: true }}
+              className="h-14 items-center justify-center rounded-full bg-sand px-6"
+            >
+              <Text
+                className="text-[15px] leading-[21px] font-display-semibold text-ink-2"
+                numberOfLines={1}
+              >
+                {wallets.length === 0
+                  ? `Add a ${currency} wallet first`
                   : who
                     ? 'Add an amount'
-                    : 'Add who and an amount'
-            }
-            disabled={!ready}
-            loading={saving}
-            onPress={() => void submit()}
-          />
+                    : 'Add who and an amount'}
+              </Text>
+            </View>
+          )}
         </View>
       </Page>
       <DueDateSheet
