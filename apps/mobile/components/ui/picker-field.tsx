@@ -10,9 +10,14 @@ import type { TestId } from '@/lib/test-ids';
 type PickerFieldProps = {
   testID: TestId;
   label: string;
-  /** The current pick; empty shows "Choose" in Meta. */
+  /** The current pick; empty shows `placeholder` in Meta. */
   value: string;
   onPress: () => void;
+  /** Shown in Meta while `value` is empty, such as "Pick a date". */
+  placeholder?: string;
+  /** An 18 glyph or 10 dot just before the value, as V2F-Components draws the category and wallet fields. */
+  mark?: ReactNode;
+  /** A bubble beside the label and value, for the capture pages' larger marks. */
   leading?: ReactNode;
   className?: string;
   disabled?: boolean;
@@ -20,13 +25,16 @@ type PickerFieldProps = {
 
 /**
  * The Sand field that opens a picker sheet (V2F-Components "Pickers"):
- * radius 16, 64 tall, label 13/18 over value 16/22 600, chevron-down.
+ * radius 16, 64 tall, label 13/18 over the value row: mark, value 16/22
+ * 600, and an 18 chevron-down, 6 apart.
  */
 export function PickerField({
   testID,
   label,
   value,
   onPress,
+  placeholder = 'Choose',
+  mark,
   leading,
   className,
   disabled = false,
@@ -45,26 +53,31 @@ export function PickerField({
       onPress={onPress}
     >
       {leading}
-      <View className="min-w-0 flex-1">
+      <View className="min-w-0 flex-1 gap-0.5">
         <Text
-          className="text-[13px] leading-[18px] text-muted"
+          variant="meta"
+          className="text-muted"
           numberOfLines={1}
         >
           {label}
         </Text>
-        <Text
-          className={`text-base leading-[22px] font-display-semibold ${empty ? 'text-muted' : 'text-foreground'}`}
-          numberOfLines={1}
-        >
-          {empty ? 'Choose' : value}
-        </Text>
-      </View>
-      <View pointerEvents="none">
-        <IconSymbol
-          name="chevron-down"
-          size={20}
-          color={tokens.foreground}
-        />
+        <View className="flex-row items-center gap-1.5">
+          {mark}
+          <Text
+            variant="rowTitle"
+            className={`min-w-0 flex-1 ${empty ? 'text-muted' : 'text-foreground'}`}
+            numberOfLines={1}
+          >
+            {empty ? placeholder : value}
+          </Text>
+          <View pointerEvents="none">
+            <IconSymbol
+              name="chevron-down"
+              size={18}
+              color={tokens.foreground}
+            />
+          </View>
+        </View>
       </View>
     </Press>
   );
