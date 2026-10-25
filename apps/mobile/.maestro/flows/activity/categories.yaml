@@ -48,3 +48,12 @@ tags:
     index: 0
 - assertNotVisible: 'Archived · hidden from new transactions'
 - takeScreenshot: a2-restored
+
+# An income preset opens this month's rows for it in Activity, as expense presets open their page.
+- tapOn:
+    id: activity.categories-kind.income
+- tapOn: Salary
+- assertVisible:
+    id: activity.search
+- assertVisible: 'Salary · .*'
+- takeScreenshot: a2-income-preset

@@ -61,10 +61,15 @@ function Row({
   category: Category;
   meta: string;
   trailing?: ReactNode;
-  onPress?: () => void;
+  onPress: () => void;
 }) {
-  const body = (
-    <>
+  return (
+    <Press
+      testID={tid('activity', 'categories', 'row', category.id)}
+      accessibilityLabel={`${category.name}, ${meta}`}
+      onPress={onPress}
+      className="min-h-[66px] flex-row items-center gap-3.5 px-[18px] py-3"
+    >
       <Bubble category={category} />
       <View className="min-w-0 flex-1">
         <Text variant="rowTitle" className="text-foreground" numberOfLines={1}>
@@ -80,22 +85,7 @@ function Row({
         </Text>
       </View>
       {trailing}
-    </>
-  );
-  const className = 'min-h-[66px] flex-row items-center gap-3.5 px-[18px] py-3';
-  return onPress ? (
-    <Press
-      testID={tid('activity', 'categories', 'row', category.id)}
-      accessibilityLabel={`${category.name}, ${meta}`}
-      onPress={onPress}
-      className={className}
-    >
-      {body}
     </Press>
-  ) : (
-    <View className={className} accessibilityLabel={`${category.name}, ${meta}`}>
-      {body}
-    </View>
   );
 }
 
@@ -195,8 +185,14 @@ export default function CategoriesScreen() {
 
   const edit = (id: string) =>
     router.push({ pathname: '/categories/form', params: { id } });
+  /** Expense presets open their category page; income has no budget, so it opens the month's rows in Activity. */
   const open = (categoryId: string) =>
-    router.push({ pathname: '/budget/[categoryId]', params: { categoryId } });
+    kind === 'expense'
+      ? router.push({ pathname: '/budget/[categoryId]', params: { categoryId } })
+      : router.dismissTo({
+          pathname: '/activity',
+          params: { categoryId, month: todayKey.slice(0, 7) },
+        });
   const restore = (id: string) =>
     void restoreCategory(id).catch((error: unknown) =>
       Alert.alert('Not saved', error instanceof Error ? error.message : 'Try again.'),
@@ -275,7 +271,7 @@ export default function CategoriesScreen() {
                   key={category.id}
                   category={category}
                   meta={presetMeta(category)}
-                  onPress={kind === 'expense' ? () => open(category.id) : undefined}
+                  onPress={() => open(category.id)}
                   trailing={
                     <CategorySpark
                       totals={months[category.id] ?? [0, 0]}
