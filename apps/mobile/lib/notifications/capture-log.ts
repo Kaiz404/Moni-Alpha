@@ -42,6 +42,8 @@ export type CaptureLogItem = {
   status: CapturedNotificationStatus;
   label: CaptureStatusLabel;
   transactionId: string | null;
+  /** Why a Not linked alert needs nothing: another app's alert for the same payment was added. */
+  note: string | null;
 };
 
 export type CaptureLogDay = {
@@ -69,7 +71,33 @@ function toItem(entry: StoredCaptureEntry, received: Date): CaptureLogItem {
     status,
     label: CAPTURE_STATUS_LABELS[status],
     transactionId: entry.transactionId ?? null,
+    note: null,
   };
+}
+
+const MONEY = /(?:\b(?:RM|MYR)|\$)\s*(\d+(?:,\d{3})*(?:\.\d{1,2})?)/gi;
+/** A ride app's receipt and the wallet's payment alert arrive about a minute apart. */
+const SAME_PAYMENT_MS = 10 * 60_000;
+
+/** The amounts an alert names, in minor units. */
+function amountsIn(text: string): number[] {
+  return [...text.matchAll(MONEY)].map((match) =>
+    Math.round(Number(match[1].replace(/,/g, '')) * 100),
+  );
+}
+
+type Received = { item: CaptureLogItem; at: number; amounts: number[] };
+
+function sameAddedPayment(entry: Received, all: readonly Received[]): CaptureLogItem | null {
+  if (entry.item.status !== 'not_linked' || entry.amounts.length === 0) return null;
+  const other = all.find(
+    (candidate) =>
+      (candidate.item.status === 'added' || candidate.item.status === 'auto_added') &&
+      candidate.item.app !== entry.item.app &&
+      Math.abs(candidate.at - entry.at) <= SAME_PAYMENT_MS &&
+      candidate.amounts.some((amount) => entry.amounts.includes(amount)),
+  );
+  return other?.item ?? null;
 }
 
 /** Newest day first, newest entry first within a day. */
@@ -77,18 +105,29 @@ export function groupCaptureLog(
   entries: readonly StoredCaptureEntry[],
   now: Date = new Date(),
 ): CaptureLogDay[] {
+  const received: Received[] = [...entries]
+    .sort((a, b) => b.receivedAt.localeCompare(a.receivedAt))
+    .map((entry) => ({ entry, date: new Date(entry.receivedAt) }))
+    .filter(({ date }) => !Number.isNaN(date.getTime()))
+    .map(({ entry, date }) => {
+      const item = toItem(entry, date);
+      return { item, at: date.getTime(), amounts: amountsIn(item.text) };
+    });
   const days = new Map<string, CaptureLogDay>();
-  const sorted = [...entries].sort((a, b) => b.receivedAt.localeCompare(a.receivedAt));
-  for (const entry of sorted) {
-    const received = new Date(entry.receivedAt);
-    if (Number.isNaN(received.getTime())) continue;
-    const key = toLocalDateInput(received);
+  for (const entry of received) {
+    const date = new Date(entry.at);
+    const key = toLocalDateInput(date);
     let day = days.get(key);
     if (!day) {
-      day = { key, label: formatDayHeading(received, now), items: [] };
+      day = { key, label: formatDayHeading(date, now), items: [] };
       days.set(key, day);
     }
-    day.items.push(toItem(entry, received));
+    const same = sameAddedPayment(entry, received);
+    day.items.push(
+      same
+        ? { ...entry.item, note: `Same payment as the ${same.app} alert at ${same.time}, which was added.` }
+        : entry.item,
+    );
   }
   return [...days.values()];
 }

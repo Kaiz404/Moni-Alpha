@@ -84,6 +84,14 @@ export function LogEntry({ item, action }: { item: CaptureLogItem; action?: LogE
             </Press>
           ) : null}
         </View>
+        {item.note ? (
+          <Text
+            variant="meta"
+            className="text-muted"
+          >
+            {item.note}
+          </Text>
+        ) : null}
       </View>
     </View>
   );

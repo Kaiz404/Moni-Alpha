@@ -70,7 +70,43 @@ describe('groupCaptureLog', () => {
       status: 'ignored',
       label: 'Ignored',
       transactionId: null,
+      note: null,
     });
+  });
+
+  it("notes a Not linked alert whose payment another app's added alert already covers", () => {
+    const ride: StoredCaptureEntry[] = [
+      {
+        id: 'grab',
+        receivedAt: at(9, 21, 41),
+        app: 'Grab',
+        text: 'Your ride receipt: RM23.10 paid. Thanks for riding with Grab.',
+        status: 'not_linked',
+      },
+      {
+        id: 'tng',
+        receivedAt: at(9, 21, 40),
+        app: "Touch 'n Go",
+        text: 'Payment of RM23.10 to GRAB*A-3KX2 was successful.',
+        status: 'added',
+        transactionId: 'tx-2',
+      },
+      {
+        id: 'grab-later',
+        receivedAt: at(9, 23, 5),
+        app: 'Grab',
+        text: 'Your ride receipt: RM23.10 paid.',
+        status: 'not_linked',
+      },
+    ];
+
+    const [day] = groupCaptureLog(ride, now);
+
+    expect(day.items.map((item) => [item.id, item.note])).toEqual([
+      ['grab-later', null],
+      ['grab', "Same payment as the Touch 'n Go alert at 9:40 pm, which was added."],
+      ['tng', null],
+    ]);
   });
 
   it('quotes the full alert text and keeps the transaction link', () => {
