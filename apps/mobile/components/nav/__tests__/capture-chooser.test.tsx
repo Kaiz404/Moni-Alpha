@@ -87,7 +87,10 @@ describe('capture chooser', () => {
     await flush();
     await chosen;
 
-    expect(router.push).toHaveBeenCalledWith('/chat');
+    expect(router.push).toHaveBeenCalledWith({
+      pathname: '/chat',
+      params: { focus: '1' },
+    });
   });
 
   it('pushes nothing when the × closes it', async () => {

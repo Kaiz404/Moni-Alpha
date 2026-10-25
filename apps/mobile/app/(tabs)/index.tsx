@@ -10,9 +10,15 @@ import { CheckInCard } from '@/components/home/check-in-card';
 import { NetWorth } from '@/components/home/net-worth';
 import { RecentList } from '@/components/home/recent-list';
 import { ReviewBlock } from '@/components/home/review-block';
-import { SetupTiles, type SetupStep } from '@/components/home/setup-tiles';
+import {
+  SetupTiles,
+  type SetupStep,
+} from '@/components/home/setup-tiles';
 import { SpentCard } from '@/components/home/spent-card';
-import { useBudgetData, useBudgetMonth } from '@/components/budget/use-budget';
+import {
+  useBudgetData,
+  useBudgetMonth,
+} from '@/components/budget/use-budget';
 import { monthKey } from '@/lib/finance/budget-month';
 import { debtPhrase } from '@/lib/finance/spent-summary';
 import { openCaptureChooser } from '@/components/nav/capture-chooser';
@@ -24,7 +30,10 @@ import { SKELETON_DELAY_MS } from '@/components/ui/skeleton';
 import { useAuth } from '@/lib/auth/auth-context';
 import { useMainCurrency } from '@/lib/finance/main-currency';
 import { merchantName } from '@/lib/finance/merchant-name';
-import { financeOverview$, pendingProposals$ } from '@/lib/finance/selectors';
+import {
+  financeOverview$,
+  pendingProposals$,
+} from '@/lib/finance/selectors';
 import type { FinanceTransaction } from '@/lib/finance/types';
 import { wallets$ } from '@/lib/store';
 import { getRecordValues } from '@/lib/store/helpers';
@@ -75,11 +84,16 @@ export default function HomeScreen() {
   // The Budget tab's own month model, so Home's "left" always matches it (D1).
   const month = useBudgetMonth(budgetData, monthKey(budgetData.now));
   const proposals = useValue(pendingProposals$(userId));
-  const aliases = useValue(() => (userId ? listMerchantAliases(userId) : []));
+  const aliases = useValue(() =>
+    userId ? listMerchantAliases(userId) : [],
+  );
   const alertsLinked = useValue(() =>
-    getRecordValues<{ deleted?: boolean; notification_package: string | null }>(
-      wallets$,
-    ).some((wallet) => !wallet.deleted && wallet.notification_package),
+    getRecordValues<{
+      deleted?: boolean;
+      notification_package: string | null;
+    }>(wallets$).some(
+      (wallet) => !wallet.deleted && wallet.notification_package,
+    ),
   );
   const firstSync = useValue(
     () => !syncState(wallets$).isLoaded.get(),
@@ -87,17 +101,22 @@ export default function HomeScreen() {
   const [refreshing, setRefreshing] = useState(false);
 
   const name =
-    firstName(user?.user_metadata?.full_name) ?? firstName(user?.email);
-  const initial = (name ?? user?.email ?? '?').charAt(0).toUpperCase();
+    firstName(user?.user_metadata?.full_name) ??
+    firstName(user?.email);
+  const initial = (name ?? user?.email ?? '?')
+    .charAt(0)
+    .toUpperCase();
   const mainWallets = overview.wallets.filter(
     (wallet) => wallet.currency === currency,
   );
   const netWorthMinor = mainWallets.reduce(
-    (sum, wallet) => sum + Number(overview.balancesByWallet[wallet.id] ?? 0),
+    (sum, wallet) =>
+      sum + Number(overview.balancesByWallet[wallet.id] ?? 0),
     0,
   );
   const firstRun =
-    overview.wallets.length === 0 && overview.transactions.length === 0;
+    overview.wallets.length === 0 &&
+    overview.transactions.length === 0;
   const waiting = proposals.filter((proposal) =>
     isAwaitingReview(proposal, now),
   );
@@ -145,7 +164,8 @@ export default function HomeScreen() {
     },
   ];
   const showSetup =
-    overview.transactions.length === 0 && steps.some((step) => !step.done);
+    overview.transactions.length === 0 &&
+    steps.some((step) => !step.done);
   const debtsLabel = month.billsDue.length
     ? null
     : debtPhrase(month.left?.debtsDue ?? [], currency);
@@ -201,7 +221,14 @@ export default function HomeScreen() {
             currency={currency}
             after={debtsLabel}
           />
-          <AskBox onPress={() => router.push('/chat')} />
+          <AskBox
+            onPress={() =>
+              router.push({
+                pathname: '/chat',
+                params: { focus: '1' },
+              })
+            }
+          />
           <ReviewBlock
             proposals={waiting}
             currency={currency}

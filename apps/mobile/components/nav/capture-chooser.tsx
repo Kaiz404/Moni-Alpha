@@ -61,7 +61,7 @@ const CHOICES = {
     icon: 'creation',
     bubble: 'bg-primary',
     glyph: 'moniGlyph',
-    href: '/chat',
+    href: { pathname: '/chat', params: { focus: '1' } },
   },
 } as const satisfies Record<CaptureChoice, Choice>;
 
