@@ -222,7 +222,7 @@ export function WalletForm({
   return (
     <Page
       screen="wallet"
-      kind="task"
+      kind="pushed"
       title={editing ? 'Edit wallet' : 'New wallet'}
     >
       <KeyboardAvoidingView
@@ -300,21 +300,21 @@ export function WalletForm({
               <View
                 accessible
                 accessibilityLabel={`Currency, ${values.currency}. A wallet keeps its currency.`}
-                className="h-16 min-w-0 flex-1 flex-row items-center gap-2.5 rounded-field bg-sand px-3.5"
+                className="h-16 min-w-0 flex-1 justify-center rounded-field bg-sand px-3.5"
               >
-                <View className="min-w-0 flex-1">
-                  <Text className="text-[13px] leading-[18px] text-muted">
-                    Currency
-                  </Text>
-                  <Text className="text-base leading-[22px] font-display-semibold text-foreground">
+                <Text className="text-[13px] leading-[18px] text-muted">
+                  Currency
+                </Text>
+                <View className="flex-row items-center gap-1.5">
+                  <Text className="min-w-0 flex-1 text-base leading-[22px] font-display-semibold text-foreground">
                     {values.currency}
                   </Text>
+                  <IconSymbol
+                    name="lock-outline"
+                    size={16}
+                    color={tokens.muted}
+                  />
                 </View>
-                <IconSymbol
-                  name="lock-outline"
-                  size={16}
-                  color={tokens.muted}
-                />
               </View>
             ) : (
               <PickerField
@@ -389,6 +389,7 @@ export function WalletForm({
               </View>
               <Button
                 testID={tid('wallet', 'form', 'delete')}
+                className="self-start"
                 variant="destructive"
                 icon="trash-can-outline"
                 label="Delete wallet"

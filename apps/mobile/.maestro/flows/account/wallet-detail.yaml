@@ -82,7 +82,7 @@ tags:
     id: wallet.form.delete
 - takeScreenshot: k2-form-edit
 - tapOn:
-    id: wallet.close
+    id: wallet.back
 - assertVisible:
     id: wallet.balance.edit
 

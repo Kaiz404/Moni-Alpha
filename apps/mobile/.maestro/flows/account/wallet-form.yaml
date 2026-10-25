@@ -13,7 +13,7 @@ tags:
 - openLink: moni-e2e://wallet/new
 - assertVisible: New wallet
 - assertVisible:
-    id: wallet.close
+    id: wallet.back
 - assertVisible: Create wallet
 - tapOn:
     id: wallet.form.name
@@ -64,5 +64,5 @@ tags:
     id: sheet.scrim
     optional: true
 - tapOn:
-    id: wallet.close
+    id: wallet.back
 - assertNotVisible: New wallet

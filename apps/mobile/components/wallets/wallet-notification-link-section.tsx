@@ -5,12 +5,7 @@ import { PickerField } from '@/components/ui/picker-field';
 import { Press } from '@/components/ui/press';
 import { Text } from '@/components/ui/text';
 import { IconSymbol } from '@/components/ui/icon-symbol';
-import {
-  getNotificationAppIconUri,
-  NotificationAppIcon,
-  useNotificationSourceData,
-  useNotificationSourcePermission,
-} from '@/components/wallets/notification-source';
+import { useNotificationSourcePermission } from '@/components/wallets/notification-source';
 import { labelForNotificationPackage } from '@/constants/notification-apps';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { openSheet } from '@/lib/sheet/sheet-store';
@@ -31,7 +26,6 @@ export function WalletNotificationLinkSection({
 }: Props) {
   const tokens = useThemeTokens();
   const permission = useNotificationSourcePermission();
-  const { installed } = useNotificationSourceData();
   const selectedLabel =
     value.notificationAppLabel ||
     (value.notificationPackage
@@ -90,17 +84,6 @@ export function WalletNotificationLinkSection({
         testID={tid('wallet', 'alerts-from')}
         label="Alerts from"
         value={selectedLabel ?? "Don't link"}
-        leading={
-          value.notificationPackage ? (
-            <NotificationAppIcon
-              iconUri={getNotificationAppIconUri(
-                value.notificationPackage,
-                installed,
-              )}
-              size={32}
-            />
-          ) : undefined
-        }
         onPress={() => void pickApp()}
       />
       {value.notificationPackage &&

@@ -17,7 +17,7 @@ export function WalletColourSwatches({ value, onChange }: Props) {
       <Text className="text-[13px] leading-[18px] text-muted">
         Colour
       </Text>
-      <View className="flex-1 flex-row flex-wrap justify-between gap-y-2">
+      <View className="flex-1 flex-row justify-between">
         {WALLET_CARD_STYLES.map((style) => {
           const selected = style.id === value;
           return (
@@ -28,14 +28,14 @@ export function WalletColourSwatches({ value, onChange }: Props) {
               accessibilityLabel={style.label}
               accessibilityState={{ selected }}
               pressedClassName=""
-              className="h-11 w-8 items-center justify-center"
+              className="h-11 max-w-9 flex-1 items-center justify-center"
               onPress={() => onChange(style.id)}
             >
               <View
-                className={`h-8 w-8 items-center justify-center rounded-full border-2 ${selected ? 'border-foreground' : 'border-transparent'}`}
+                className={`h-9 w-9 items-center justify-center rounded-full border-2 ${selected ? 'border-foreground' : 'border-transparent'}`}
               >
                 <View
-                  className="h-6 w-6 rounded-full"
+                  className="h-7 w-7 rounded-full"
                   style={{ backgroundColor: style.swatchHex }}
                 />
               </View>

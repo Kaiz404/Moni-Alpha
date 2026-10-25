@@ -27,7 +27,7 @@ export default function EditWalletScreen() {
     return (
       <Page
         screen="wallet"
-        kind="task"
+        kind="pushed"
         title="Edit wallet"
       >
         <NotFound
