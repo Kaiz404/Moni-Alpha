@@ -284,7 +284,7 @@ export default function CaptureSourcesScreen() {
             variant="meta"
             className="px-1 text-muted"
           >
-            {"Tick \"Don't ask about similar\" on a capture in Review to add one here."}
+            {"Tick “Don't ask about similar” on a capture in Review to add one here."}
           </Text>
         </View>
 

@@ -52,7 +52,7 @@ export function PermissionRow({
   const unavailable = state === 'unavailable';
   return (
     <View>
-      <View className="min-h-[66px] flex-row items-center gap-3.5 py-3 pl-[18px] pr-3">
+      <View className="min-h-[66px] flex-row items-center gap-3.5 px-[18px] py-3">
         <RowBubble
           icon={icon}
           on={on}
@@ -100,7 +100,7 @@ export function AppLocationRow({
   onChange: (next: boolean) => void;
 }) {
   return (
-    <View className="min-h-[52px] flex-row items-center gap-3.5 py-1.5 pl-[74px] pr-3">
+    <View className="min-h-[52px] flex-row items-center gap-3.5 py-1.5 pl-[74px] pr-[18px]">
       <View className="min-w-0 flex-1">
         <Text
           className="text-[15px] leading-[21px] font-display-semibold text-foreground"
