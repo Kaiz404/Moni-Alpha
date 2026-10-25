@@ -146,7 +146,7 @@ export default function NewBillScreen() {
               className="flex-1"
               leading={
                 <IconSymbol
-                  name="calendar-blank"
+                  name="calendar"
                   size={18}
                   color={due ? tokens.foreground : tokens.muted}
                 />
