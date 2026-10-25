@@ -12,6 +12,7 @@
     "lint": "expo lint",
     "lint:copy": "node scripts/lint/check-copy.mjs",
     "lint:test-ids": "node scripts/lint/check-test-ids.mjs",
+    "lint:flow-ids": "node scripts/lint/check-flow-ids.mjs",
     "check-types": "node scripts/gen-route-types.mjs && tsc --noEmit",
     "format": "prettier --write \"**/*.{ts,tsx}\"",
     "format:check": "prettier --check \"**/*.{ts,tsx}\"",

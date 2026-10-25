@@ -6,7 +6,7 @@ tags:
 ---
 - launchApp
 - tapOn:
-    id: home.transactions
+    id: nav.tab.activity
 - extendedWaitUntil:
     visible:
       id: 'activity\.transaction\..*'

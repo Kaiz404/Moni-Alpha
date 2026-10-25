@@ -199,14 +199,16 @@ pnpm --filter moni test:notification-routing     # wallet candidate routing (no 
 pnpm --filter moni test                          # scripts/lint tests (node --test), then Jest
 pnpm --filter moni lint:copy                     # glossary words and money/date formats in UI copy
 pnpm --filter moni lint:test-ids                 # every Pressable, TextInput, Switch has a tid() testID
+pnpm --filter moni lint:flow-ids                 # every Maestro `id:` matches a testID some tid() call renders
 pnpm --filter moni bench:chat                    # offline chat grounding bench (fixture ledgers, 31 cases)
 pnpm --filter moni bench:chat:live               # same questions through the real backend + model (needs apps/backend/.env)
 pnpm --filter moni check-types                   # route types, then tsc --noEmit
 ```
 
-CI runs `pnpm test` (Jest here, `go test ./...` in the backend) in the `Tests` job, and both lints in `Lint and typecheck`.
+CI runs `pnpm test` (Jest here, `go test ./...` in the backend) in the `Tests` job, and the `lint:*` scripts in `Lint and typecheck`.
 
 - **Typed routes.** `check-types` first runs `scripts/gen-route-types.mjs`, which writes `.expo/types/router.d.ts` from `app/` the way `expo start` does. A link to a route that does not exist fails `tsc` without a dev server.
 - **Copy lint.** `scripts/lint/check-copy.mjs` reads JSX text and the strings that flow into JSX children or a display prop (`title`, `label`, `accessibilityLabel`, and other names ending in label, title, text, placeholder, hint, message, description, caption, heading, or alt) under `app/` and `components/`. It tests them against `copy-rules.mjs`, the words and formats `docs/redesign/glossary.md` bans.
 - **testID lint.** `scripts/lint/check-test-ids.mjs` requires `testID={tid(...)}` from `lib/test-ids.ts`, or a pass-through of the wrapper's own `testID` prop, on each JSX element in its `CONTROLS` list.
+- **Flow id lint.** `scripts/lint/check-flow-ids.mjs` reads every `id:` selector under `.maestro/` and fails when no `tid()` call in `app/`, `components/`, or `lib/` can render it. A part computed at runtime matches any kebab-case value. A selector with regex syntax, such as `'activity\.transaction\..*'`, passes when some rendering of a `tid()` call fits the pattern.
 - **Ratchet lists.** `copy-allow.txt` and `test-id-exempt.txt` hold the v1 hits and files that may stay until rebuilt. A check fails on a new hit, on a listed entry that no longer hits (`stale`), and on a list longer than its copy at `LINT_BASE_REF` (CI sets it to the PR base or the previous push; it defaults to `origin/main`). After you fix or delete v1 code, regenerate a list with `--write`, for example `pnpm --filter moni lint:test-ids --write`, and commit it.

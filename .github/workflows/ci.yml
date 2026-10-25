@@ -40,6 +40,7 @@ jobs:
       - run: pnpm --filter moni lint:tokens
       - run: pnpm --filter moni lint:copy
       - run: pnpm --filter moni lint:test-ids
+      - run: pnpm --filter moni lint:flow-ids
 
   test:
     name: Tests
