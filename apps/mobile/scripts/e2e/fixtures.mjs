@@ -125,7 +125,6 @@ const DAY_MS = 86_400_000;
 const isoDay = (ms) => new Date(ms).toISOString().slice(0, 10);
 const dayMs = (day) => Date.parse(`${day}T00:00:00Z`);
 
-/** Whole days from the sample's Wed 14 Oct 2026 to `today` (YYYY-MM-DD). */
 export function dayShift(today) {
   return Math.round((dayMs(today) - dayMs(SAMPLE_TODAY)) / DAY_MS);
 }
@@ -134,7 +133,6 @@ export function shiftDate(sampleDay, today) {
   return isoDay(dayMs(sampleDay) + dayShift(today) * DAY_MS);
 }
 
-/** Today in Kuala Lumpur, the sample user's finance timezone. */
 export function todayInTimezone(now = new Date()) {
   return new Intl.DateTimeFormat('en-CA', { timeZone: TIMEZONE, year: 'numeric', month: '2-digit', day: '2-digit' }).format(now);
 }
@@ -178,10 +176,6 @@ function monthsBefore(day, count) {
   return isoDay(first.getTime());
 }
 
-/**
- * The rows one profile writes for `userId`, keyed by table, plus the profile preferences.
- * `systemCategories` maps a system category name to its id.
- */
 export function buildProfile(profile, { userId, today, systemCategories }) {
   if (!PROFILES.includes(profile)) throw new Error(`unknown profile ${profile}, use ${PROFILES.join(' or ')}`);
   const base = { user_id: userId, deleted: false };
@@ -451,7 +445,6 @@ export function buildProfile(profile, { userId, today, systemCategories }) {
   };
 }
 
-/** Tables a reset clears for the user, children before parents. */
 export const DELETE_ORDER = [
   'transaction_tags',
   'auto_add_rules',
@@ -467,7 +460,6 @@ export const DELETE_ORDER = [
   'categories',
 ];
 
-/** Tables a profile writes, parents before children. */
 export const INSERT_ORDER = [
   'categories',
   'wallets',

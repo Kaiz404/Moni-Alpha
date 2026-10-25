@@ -18,7 +18,6 @@ const SEED_TAGS = {
   'needs-heavy-seed': 'seed-full',
   'needs-empty-seed': 'seed-empty',
 };
-// Flows that pass on either seed.
 const SEED_ANY = new Set(['account/sign-in-states.yaml', 'review/notification.yaml']);
 // The e2e mock answers these flows' AI calls (lib/ai/client/mock-fixtures.ts).
 const MOCK_AI = new Set(['capture/say.yaml', 'capture/scan.yaml']);

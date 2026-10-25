@@ -33,7 +33,6 @@ function kebab(part) {
 
 const escapeRegex = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
-// One part of a tid() call as its possible renderings: literal strings, or null for "any part".
 function partValues(node) {
   if (ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node))
     return [kebab(node.text)];
@@ -47,7 +46,6 @@ function partValues(node) {
   return null;
 }
 
-/** Every tid() call in a source file, as `{ line, parts }` where a part is string[] or null. */
 export function tidTemplates(file, source) {
   const sourceFile = ts.createSourceFile(file, source, ts.ScriptTarget.Latest, true);
   const templates = [];
@@ -77,12 +75,10 @@ function partPattern(part) {
   return `(?:${part.map(escapeRegex).join('|')})`;
 }
 
-/** The regex for the ids a template renders. */
 export function compileTemplate(template) {
   return { ...template, regex: new RegExp(`^${template.parts.map(partPattern).join('\\.')}$`) };
 }
 
-// Concrete ids a template renders when each runtime part takes a value from the pool.
 function renderings(parts, pool) {
   let ids = [''];
   for (const part of parts) {
@@ -92,9 +88,7 @@ function renderings(parts, pool) {
   return ids;
 }
 
-// Maestro reads `id:` as a regex. An id made of word characters and dots names one testID;
-// anything else is a pattern, tested against renderings that fill each runtime part with a
-// literal segment of the pattern itself or a generic value.
+// Maestro reads `id:` as a regex.
 export function idMatches(flowId, compiled) {
   const literal = flowId.replace(/\\\./g, '.');
   if (/^[A-Za-z0-9._-]+$/.test(literal))
@@ -110,7 +104,6 @@ export function idMatches(flowId, compiled) {
   return compiled.some((template) => renderings(template.parts, pool).some((id) => pattern.test(id)));
 }
 
-/** `id:` selectors in a Maestro YAML file, as `{ line, id }`. */
 export function flowIds(source) {
   const ids = [];
   source.split('\n').forEach((text, index) => {

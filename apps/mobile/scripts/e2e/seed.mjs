@@ -16,7 +16,6 @@ export class SeedError extends Error {
   }
 }
 
-/** Parses argv into `{ mode: 'reset', profile, today } | { mode: 'query', name }`. */
 export function parseArgs(argv) {
   const args = { mode: null, profile: null, today: null, name: null };
   for (let i = 0; i < argv.length; i++) {
@@ -67,7 +66,6 @@ export function loadEnv(env = process.env) {
   return loaded;
 }
 
-/** The e2e settings, checked before any request: only a user whose email starts with e2e is touched. */
 export function e2eConfig(env) {
   const url = env.EXPO_PUBLIC_SUPABASE_URL?.replace(/\/+$/, '');
   const email = env.E2E_EMAIL?.trim().toLowerCase();
@@ -104,7 +102,7 @@ async function findUser(request, email) {
 
 // Creates the user with a confirmed email, or resets its password to the one in .env.e2e,
 // so the Maestro sign-in subflow always has working credentials.
-async function ensureUser(request, { email, password }) {
+async function ensureUserWithPassword(request, { email, password }) {
   const existing = await findUser(request, email);
   if (existing) {
     await request(`/auth/v1/admin/users/${existing.id}`, { method: 'PUT', body: { password, email_confirm: true } });
@@ -186,7 +184,7 @@ async function main(argv) {
     return;
   }
   const today = args.today ?? todayInTimezone();
-  const user = await ensureUser(request, config);
+  const user = await ensureUserWithPassword(request, config);
   console.log(`user ${config.email} ${user.id}${user.created ? ' created' : ''}`);
   console.log(`before ${JSON.stringify(await counts(request, user.id))}`);
   await reset(request, user.id, args.profile, today);

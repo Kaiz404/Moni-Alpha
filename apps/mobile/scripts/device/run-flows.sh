@@ -59,7 +59,6 @@ esac
 ((${#paths[@]})) || paths=("$maestro_dir")
 key=${key:-$(git -C "$mobile" rev-parse HEAD)}
 
-# Every run holds the device lock, so two suites never drive the phone at once.
 if [[ -z ${MONI_DEVICE_LOCK_HOLDER:-} ]] || ! kill -0 "$MONI_DEVICE_LOCK_HOLDER" 2>/dev/null; then
   exec "$here/with-device.sh" --lane "${MONI_LANE:-run-flows}" -- "$here/run-flows.sh" "${argv[@]}"
 fi

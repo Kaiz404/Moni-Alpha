@@ -34,7 +34,6 @@ function extraction(
   };
 }
 
-/** What a person says or types, compared after `normalizeSaid`. */
 export const TEXT_FIXTURES: { said: string[]; extraction: ExtractedTransaction }[] = [
   {
     said: [

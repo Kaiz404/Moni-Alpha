@@ -266,9 +266,10 @@ expect "APP_VARIANT=e2e gives the e2e package, scheme, name, and extra.appVarian
 expect "without APP_VARIANT the config keeps the daily package and scheme, with no appVariant" "com.anonymous.moni moni Moni no-variant" "$(expo_config)"
 
 rf=$dir/run-flows.sh
-for bad in "--seed bogus" "--area nosuch" "--tag" "--frobnicate" "no/such/flow.yaml"; do
-  # shellcheck disable=SC2086
-  out=$("$rf" $bad 2>&1)
+bad_args=("--seed bogus" "--area nosuch" "--tag" "--frobnicate" "no/such/flow.yaml")
+for bad in "${bad_args[@]}"; do
+  read -r -a args <<<"$bad"
+  out=$("$rf" "${args[@]}" 2>&1)
   rc=$?
   [[ $rc == 2 && $out == *"usage: run-flows.sh"* ]] && pass "run-flows.sh $bad exits 2 with the usage" || fail "run-flows.sh $bad: rc $rc, $out"
 done

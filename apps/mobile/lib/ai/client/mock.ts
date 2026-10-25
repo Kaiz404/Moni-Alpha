@@ -1,7 +1,3 @@
-/**
- * Mock AI client, used whenever EXPO_PUBLIC_AI_API_URL is empty. It reports unavailable,
- * except in the Moni E2E build, where inputs listed in `mock-fixtures.ts` get fixed answers.
- */
 import { isE2eBuild } from '@/lib/app-variant';
 import { AI_UNAVAILABLE_REASON } from './config';
 import { chatFixture, imageFixture, notificationFixture, textFixture } from './mock-fixtures';
