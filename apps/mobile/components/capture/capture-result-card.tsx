@@ -287,7 +287,7 @@ export function CaptureResult({
           testID={tid('capture', 'result', 'category')}
           label="Category"
           value={category?.name ?? ''}
-          leading={
+          mark={
             category ? (
               <CategoryIcon
                 icon={category.icon}
@@ -304,7 +304,7 @@ export function CaptureResult({
             className="flex-1"
             label={draft.kind === 'income' ? 'Into' : 'Paid with'}
             value={wallet?.name ?? ''}
-            leading={
+            mark={
               wallet ? (
                 <View
                   className="h-2.5 w-2.5 rounded-full"
