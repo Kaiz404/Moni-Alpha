@@ -128,7 +128,7 @@ These are owner calls that no experiment settles. Each PR implements the default
 - [x] D6. Review keeps its history. The owner decided on 25 Oct 2026 to keep reviewed proposals instead of deleting them. Approve and Not mine stamp `status`, `reviewed_at`, and, for Approve, `transaction_id`, and keep the row. The Review page lists the last 30 days under "Recently reviewed", and the app soft-deletes rows reviewed more than 90 days ago. Built by G4. The earlier default (session results from memory, then a soft delete) is replaced.
 - [ ] D7. The Review deck shows a blank card at scale 0.96 under the top card, with no content, as `XA-Review` and `CG-Guide` draw it. `docs/redesign/tokens.md` says "No peek of the next card". Default is the board, and R1 fixes the tokens.md line.
 - [ ] D8. Motion has six tokens, five springs plus `drag` at 1:1, as tokens.md lists. `V2F-Motion` says "five springs". Default is the tokens.md table. Affects F1.
-- [ ] D9. `V2P-InsightsMonth` keeps the "Edit" link beside Budgets as the entry into `V2P-BudgetEdit`, as drawn. Open canvas thread 8cd5c2da asks to remove it. Default is the board, because the link is the only drawn entry into budget editing. Affects B1.
+- [x] D9. Reversed by the owner on 25 Oct 2026: follow canvas thread 8cd5c2da and drop the "Edit" link beside Budgets on `V2P-InsightsMonth`. Each ring opens its category page, where the monthly budget edits in place and a "No budget yet" ring offers **Set a budget**. The Budgets heading carries a routing chevron into `V2P-BudgetEdit` for the monthly total and every cap at once, and the empty tile's **Set budgets** opens the same page. The earlier default (keep the link as drawn) is replaced. Affects B1.
 - [ ] D10. The dev-only `debug/` route has no board. Default is to keep it, reachable from Profile only when `__DEV__` is true. Affects K1.
 - [ ] D11. `V2A-CaptureScan` draws an in-app camera with a detection frame. Default differs from the board here. C2 keeps the ML Kit document scanner for the camera stage, because that scanner already finds the receipt edges and captures on its own, and an in-app camera needs a new native camera dependency. C2 builds the reading, result, added, and failed pages as drawn.
 
@@ -1463,7 +1463,7 @@ These are owner calls that no experiment settles. Each PR implements the default
 
 **Build.**
 
-- [ ] Build `V2P-InsightsMonth` as the tab root titled "Budget". It has the Month and Calendar toggle, the month chooser sheet, the "Spent in October" pace chart from H1 with left this month after bills and debts due per D1, the Budgets header with the "Edit" link per D9, the ring grid per D2, the bills list from `selectUpcomingBills` with "x days left", **Add a bill**, and the "Where you spend" map teaser.
+- [ ] Build `V2P-InsightsMonth` as the tab root titled "Budget". It has the Month and Calendar toggle, the month chooser sheet, the "Spent in October" pace chart from H1 with left this month after bills and debts due per D1, the Budgets heading with its routing chevron per D9, the ring grid per D2, the bills list from `selectUpcomingBills` with "x days left", **Add a bill**, and the "Where you spend" map teaser.
 - [ ] Make `Ring` the 44 box with stroke 5, a Sand track, and an Ink 2 fill from 12 o'clock on the `value` spring. Over budget shows a full Coral ring and "RM20 over".
 - [ ] Build `V2P-InsightsCalendar`. `calendarHeat(days, evenPace)` buckets each day as Under, 1.5x, 2x, or Over 2x, and marks bill due days. The selected-day panel lists that day's rows.
 - [ ] Build `V2P-BudgetDetail` as the one category page, with the 12 progress bar, the monthly budget in place from A2, the "No budget" variant with **Set a budget**, the chart, bills, transactions with pending "To review" rows, and top merchants.
@@ -1483,7 +1483,7 @@ These are owner calls that no experiment settles. Each PR implements the default
 **Verify, live.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked. Ten lanes on `sonnet` at the PR head, per the boot recipe.
 
 - [ ] Lane 1. Regression lane against trunk. Open the Budget tab at base, the renamed v1 Insights screen, and at head. Save `b1-l1-budget.png`. Pass when both show the same month spend total from `seed.mjs --query month-spend`.
-- [ ] Lane 2. Pair the tab root with the `V2P-InsightsMonth` render. Save `b1-l2-pair.png`. Pass when the blocks and their order match the board, including the "Edit" link.
+- [ ] Lane 2. Pair the tab root with the `V2P-InsightsMonth` render. Save `b1-l2-pair.png`. Pass when the blocks and their order match the board, including the Budgets heading chevron that replaced the "Edit" link (D9).
 - [ ] Lane 3. Read the left-this-month line. Save `b1-l3-left.png`. Pass when it subtracts the seeded bill and the debt due and says "bills and RM40 to Mei" with the shifted sample values.
 - [ ] Lane 4. Toggle to Calendar and select a day. Save `b1-l4-calendar.png`. Pass when the panel lists exactly that day's rows.
 - [ ] Lane 5. Open the month chooser and pick September. Save `b1-l5-september.png`. Pass when every number on the tab changes to September's totals.

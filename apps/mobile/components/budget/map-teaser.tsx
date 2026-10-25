@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { View } from 'react-native';
-import Svg, { Circle, Rect } from 'react-native-svg';
+import Svg, { Circle, Path, Rect } from 'react-native-svg';
 
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Press } from '@/components/ui/press';
@@ -14,6 +14,14 @@ const HEIGHT = 132;
 const PAD = 24;
 const MAX_BUBBLES = 12;
 const LABELS = 3;
+/** The street art is drawn on the board's 314-wide map and stretched to the card. */
+const ART_WIDTH = 314;
+const ROADS = [
+  { d: 'M -4 123 L 318 92', width: 6 },
+  { d: 'M 57 -4 L 94 180', width: 5 },
+  { d: 'M 182 -4 C 173 70, 195 123, 176 180', width: 5 },
+  { d: 'M 220 -4 L 276 180', width: 4 },
+];
 
 type MapTeaserProps = {
   places: readonly Place[];
@@ -101,26 +109,47 @@ export function MapTeaser({
         style={{ height: HEIGHT }}
         onLayout={(event) => setWidth(event.nativeEvent.layout.width)}
       >
-        {width > 0 && shown.length ? (
+        {width > 0 ? (
           <>
             <Svg
               width={width}
               height={HEIGHT}
+              viewBox={`0 22 ${ART_WIDTH} ${HEIGHT}`}
+              preserveAspectRatio="none"
+              style={{ position: 'absolute' }}
             >
               <Rect
-                x={0}
-                y={HEIGHT * 0.55}
-                width={width}
-                height={6}
-                fill={tokens.card}
+                x={38}
+                y={60}
+                width={44}
+                height={30}
+                rx={12}
+                fill={tokens.mint}
+                fillOpacity={0.3}
               />
-              <Rect
-                x={width * 0.42}
-                y={0}
-                width={5}
-                height={HEIGHT}
-                fill={tokens.card}
+              <Path
+                d="M -4 53 C 78 63, 141 109, 195 102 S 270 70, 318 81"
+                fill="none"
+                stroke={tokens.sky}
+                strokeOpacity={0.5}
+                strokeWidth={7}
+                strokeLinecap="round"
               />
+              {ROADS.map((road) => (
+                <Path
+                  key={road.d}
+                  d={road.d}
+                  fill="none"
+                  stroke={tokens.card}
+                  strokeWidth={road.width}
+                  strokeLinecap="round"
+                />
+              ))}
+            </Svg>
+            <Svg
+              width={width}
+              height={HEIGHT}
+            >
               {[...shown].reverse().map((place, index) => {
                 const at = single
                   ? { x: width / 2, y: HEIGHT / 2, r: 18 }

@@ -2,9 +2,11 @@ import { router } from 'expo-router';
 import { View } from 'react-native';
 
 import { Ring } from '@/components/budget/ring';
-import { Button } from '@/components/ui/button';
 import { EmptyTile } from '@/components/ui/empty-tile';
+import { IconSymbol } from '@/components/ui/icon-symbol';
+import { Press } from '@/components/ui/press';
 import { Text } from '@/components/ui/text';
+import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import type { CategorySpend } from '@/lib/finance/budget-month';
 import { tid } from '@/lib/test-ids';
 
@@ -62,10 +64,31 @@ export function BudgetRings({
   month,
   emptyBody,
 }: BudgetRingsProps) {
+  const tokens = useThemeTokens();
   const openEdit = () => router.push('/budget/edit');
   return (
     <View className="gap-2">
-      <View className="flex-row items-center justify-between">
+      {budgeted.length ? (
+        <Press
+          testID={tid('budget', 'edit-budgets')}
+          accessibilityRole="button"
+          accessibilityLabel="Budgets. Edit budgets"
+          onPress={openEdit}
+          className="min-h-11 flex-row items-center gap-0.5 self-start rounded-field pr-1"
+        >
+          <Text
+            variant="sectionTitle"
+            className="text-foreground"
+          >
+            Budgets
+          </Text>
+          <IconSymbol
+            name="chevron-right"
+            size={22}
+            color={tokens.muted}
+          />
+        </Press>
+      ) : (
         <Text
           variant="sectionTitle"
           className="text-foreground"
@@ -73,17 +96,7 @@ export function BudgetRings({
         >
           Budgets
         </Text>
-        {budgeted.length ? (
-          <Button
-            testID={tid('budget', 'edit-budgets')}
-            variant="tertiary"
-            label="Edit"
-            icon="chevron-right"
-            accessibilityLabel="Edit budgets"
-            onPress={openEdit}
-          />
-        ) : null}
-      </View>
+      )}
       {budgeted.length ? (
         <View className="gap-1.5 rounded-card bg-card px-2.5 py-3">
           <RingGrid

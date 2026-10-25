@@ -456,7 +456,7 @@ Home must remain useful when there are no pending proposals. Do not reserve a la
 ### Budget (v2)
 
 1. Title "Budget" with the month chooser (a Sand capsule that opens the `month` sheet), then Month | Calendar.
-2. Month: the "Spent in October" card with the pace chart (`components/charts/pace-chart.tsx`) and what is left after bills and debts due (D1), the ring grid with the **Edit** link (D9) and "No budget yet", the bills still due with **Add a bill**, and the "Where you spend" teaser that opens `/map`.
+2. Month: the "Spent in October" card with the pace chart (`components/charts/pace-chart.tsx`) and what is left after bills and debts due (D1), the ring grid under a Budgets heading whose chevron opens Edit budgets (D9) and "No budget yet", the bills still due with **Add a bill**, and the "Where you spend" teaser that opens `/map`.
 3. Calendar: days coloured Under, 1.5×, 2× or Over 2× against even pace (`calendarHeat`), a dot on bill due days, the picked day's rows, and top merchants.
 4. One page per category (`/budget/[categoryId]`): spent of the budget on the 12 bar, the monthly budget in place, its chart, bills, transactions with pending "To review" rows, and top merchants. **Edit budgets** (`/budget/edit`) edits the monthly total and every cap in place and saves them together.
 5. A bill page (`/bill/[seriesKey]`): name and amount in place, Mark paid, Skip this month, due day, wallet and category pickers, Remind and Auto-add switches, history, and Stop tracking.

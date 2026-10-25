@@ -96,7 +96,7 @@ The app builds the default for each. [`redesign/PLAN.md`](redesign/PLAN.md) ("Op
 - D6. Decided 25 Oct 2026: Review keeps its history. "Recently reviewed" lists 30 days; rows older than 90 days are soft-deleted.
 - D7. The Review deck shows a blank card at scale 0.96 under the top card.
 - D8. Motion has six tokens: five springs and `drag`.
-- D9. The Budget tab keeps the "Edit" link beside Budgets as the way into `V2P-BudgetEdit` (canvas thread 8cd5c2da asks to remove it).
+- D9. Decided 25 Oct 2026: the "Edit" link beside Budgets is gone (canvas thread 8cd5c2da). Rings open their category page, where the budget edits in place; the Budgets heading's chevron opens `V2P-BudgetEdit`.
 - D10. The dev-only `debug/` route stays, reachable from Profile in `__DEV__` builds.
 - D11. Scan a receipt uses the ML Kit document scanner instead of the in-app camera that `V2A-CaptureScan` draws.
 
@@ -108,7 +108,7 @@ The screen tracks reported these differences in their handoffs. Each waits for t
 - Debts: recording a debt with no wallet, and debt reminders.
 - Type it: the sentence under the amount.
 - The + chooser: the sheet sits over the incoming page while it slides in.
-- Budget: the Edit link beside Budgets stays (D9).
+- Budget: the Budgets heading has a routing chevron into Edit budgets, which the board does not draw (D9 removed the Edit link, and the chevron keeps the monthly total reachable).
 - Budget calendar: the day cut-offs.
 - Scan a receipt: the ML Kit scanner (D11).
 - Wallet page: **Use as default** is an addition. It sets the wallet captures fall back to, which v1 set on Profile.

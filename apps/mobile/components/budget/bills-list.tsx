@@ -129,8 +129,7 @@ export function BillsList({
                 </Text>
               </View>
               <Text
-                variant="rowTitle"
-                className="text-foreground"
+                className="text-[15px] leading-5 text-ink-2"
                 style={{ fontVariant: ['tabular-nums'] }}
               >
                 {amount}
