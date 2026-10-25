@@ -25,6 +25,8 @@ When in doubt, prefer reading the relevant Cursor rule over guessing from memory
 
 A core subset of [pstack](https://github.com/cursor/plugins/tree/main/pstack) (v0.15.13, commit `77526ff`, MIT) is vendored in `.cursor/skills/` (`poteto-mode`, `how`, `why`, `architect`, `tdd`, `unslop`, `no-comments`, `technical-writing`, `typescript-best-practices`, `create-verification-skill`, `show-me-your-work`, `arena`, `swarm`, `interrogate`, `principle-*`). `.claude/skills/` symlinks to the same directories; `.cursor/agents/` and `.claude/agents/` hold the `poteto-agent` and Comment Sicko subagents. To update, re-copy from upstream rather than editing in place.
 
+`.claude/skills/moni-device/` is not pstack. It is this repo's own skill for driving the phone, kept as a real directory, and `.cursor/skills/moni-device` links to it. Edit it in place.
+
 pstack is written for Cursor. Outside Cursor, translate:
 
 - `Task` subagent → your agent/subagent tool; `generalPurpose` → `general-purpose`, `explore` → `Explore`, `"Comment Sicko"` → `comment-sicko`.

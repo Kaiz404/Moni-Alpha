@@ -119,6 +119,7 @@ apps/mobile/scripts/device/with-device.sh --pr v3 --lane smoke -- apps/mobile/sc
 - `perf.sh --sha <key> [--flow <flow.yaml>] [--out perf.json] [--runs 10]` installs the key, then writes `coldStartMs`, the median `TotalTime` of `am start -W` after `am force-stop`, with `apkBytes` and `bundleBytes`. With `--flow`, it also runs the Maestro flow and records `jankyPct`, `p50Ms`, `p90Ms`, and `p95Ms` from `dumpsys gfxinfo`. It exits 7 when the battery is above 40 C.
 - `perf-compare.mjs base.json head.json --rule <metric>=<limit>` prints one line per metric and exits 1 when a rule fails. A limit of `N` caps the head value, `+N` caps the increase, and `+N%` caps the increase relative to the base.
 - `screenrecord.sh <seconds> <out.mp4>` records the screen for up to 180 s and pulls the MP4.
+- `review-pair.sh <slug> <Board> <device.png> [--out <dir>]` copies the board render `~/.local/share/moni-canvas/renders/r6/all/<Board>.png` and a device screenshot to `<dir>` (default `~/.local/share/moni-runs/review/`) as `<slug>-board.png` and `<slug>-device.png`, for side-by-side review. It exits 3 for an unknown board and lists the boards it has.
 
 ### E2E data
 
@@ -158,7 +159,7 @@ apps/mobile/scripts/device/run-flows.sh --sha <key> .maestro/flows/review/button
 
 - `run-flows.sh [--sha <key>] [--seed full|empty] [--out <dir>] [--tag <tag>]... [--area <area>]... [<flow or dir>...]` takes the device lock through `with-device.sh`, which runs `doctor.sh` and honours the hold file. It then installs the key with `install.sh` (the `HEAD` SHA by default), resets the seed with `seed.mjs --reset`, clears the app's data with `pm clear` and grants the permissions again, and pushes `.maestro/fixtures/*.png` to `/sdcard/Pictures/moni-e2e/` for the Scan flows. Then it runs one `maestro test` with JUnit output and `E2E_EMAIL` and `E2E_PASSWORD` from `.env.e2e`.
 - With no flow, `--tag`, or `--area`, it runs every flow. It always leaves out the other seed's tag, and it leaves out the `needs-*` and `perf` tags unless you pass that tag with `--tag`.
-- Each run writes `~/.local/share/moni-runs/<key>/<timestamp>/` with `seed.log`, `maestro.log`, `report.xml`, and `maestro/` (Maestro's `commands-*.json` and `takeScreenshot/` PNGs). `--out` also copies every PNG there. The last line is `<passed>/<total> flows passed, report <path>`, and the exit code is Maestro's. The run directory holds the e2e password in Maestro's command log, so do not paste it.
+- Each run writes `~/.local/share/moni-runs/<key>/<timestamp>/` with `seed.log`, `maestro.log`, `report.xml`, and `maestro/` (Maestro's commands JSON, `logs/`, and `takeScreenshot/` PNGs). `--out` also copies every PNG there. The last line is `<passed>/<total> flows passed, report <path>`, and the exit code is Maestro's. The run directory holds the e2e password in Maestro's command log, so do not paste it.
 - It exits 2 on a bad argument, before it takes the lock, and 3 when `.env.e2e` has no `E2E_EMAIL` or `E2E_PASSWORD`. The lock's exit codes are `with-device.sh`'s.
 
 ## Map

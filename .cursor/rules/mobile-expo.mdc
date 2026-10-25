@@ -61,6 +61,10 @@ Tailwind via Uniwind `className` — **not** NativeWind. Design tokens live in `
 - Every `Pressable`, `TextInput`, `Switch`, and v2 control gets `testID={tid('<screen>', ...parts)}` from `lib/test-ids.ts`; `pnpm --filter moni lint:test-ids` enforces it in CI.
 - UI copy follows `docs/redesign/glossary.md`; `pnpm --filter moni lint:copy` fails on a banned word or format, and fixed v1 hits come off `scripts/lint/copy-allow.txt` (`--write` regenerates it).
 
+## Device checks
+
+Drive the phone only through the `moni-device` skill (`.claude/skills/moni-device/SKILL.md`; `.cursor/skills/moni-device` links to it): `scripts/device/run-flows.sh` takes the device lock, runs the doctor, installs the e2e APK, resets the seed with `scripts/e2e/seed.mjs`, and runs Maestro. A Maestro flow lives in `.maestro/flows/<area>/`, starts with `subflows/launch.yaml`, and carries one of `seed-full`, `seed-empty`, `seed-any`; `lint:flow-ids` fails on an `id:` no `tid()` renders.
+
 ## Receipt camera (Android)
 
 `lib/receipts/scan-receipt.ts` (the chooser's Scan a receipt, `/capture/scan`, and the chat camera) calls `modules/moni-document-scanner` (Nitro) → Google ML Kit native document scanner, which is the camera stage of `/capture/scan`. Post-scan: `lib/receipts/normalize-scan.ts` (copy + 1024px cap). **Android only** — iOS shows an alert. Requires Google Play Services; rebuild dev client after native module changes (`npx expo run:android`).

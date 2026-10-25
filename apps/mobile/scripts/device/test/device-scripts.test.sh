@@ -310,5 +310,15 @@ run_flows --sha rf-key --seed empty --tag needs-ai --area home >/dev/null 2>&1
 maestro_args=$(tr '\n' ' ' <"$tmp/rf-maestro.log")
 [[ $maestro_args == *"--include-tags needs-ai --exclude-tags seed-full,needs-speech,needs-posted-alert,perf "*" $(cd "$dir/../.." && pwd)/.maestro/flows/home "* ]] && pass "--seed empty excludes seed-full, a --tag lifts its default exclusion, and --area picks one folder" || fail "empty seed maestro args: $maestro_args"
 
+mkdir -p "$tmp/renders"
+printf '\211PNG\r\n\032\nboard' >"$tmp/renders/V2H-Home.png"
+out=$(MONI_BOARD_RENDERS=$tmp/renders "$dir/review-pair.sh" home V2H-Home "$tmp/screen.png" --out "$tmp/pairs")
+expect "review-pair.sh prints the board and device copies" "$tmp/pairs/home-board.png
+$tmp/pairs/home-device.png" "$out"
+expect "review-pair.sh copies the board render" "$(cat "$tmp/renders/V2H-Home.png")" "$(cat "$tmp/pairs/home-board.png")"
+out=$(MONI_BOARD_RENDERS=$tmp/renders "$dir/review-pair.sh" home V2H-Nope "$tmp/screen.png" --out "$tmp/pairs" 2>&1)
+expect "review-pair.sh exits 3 for an unknown board" 3 $?
+[[ $out == *"Boards: V2H-Home"* ]] && pass "review-pair.sh lists the boards it has" || fail "review-pair.sh board list: $out"
+
 echo "$failures failed"
 ((failures == 0))
