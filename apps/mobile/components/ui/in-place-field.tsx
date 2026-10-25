@@ -87,6 +87,11 @@ type EditableOptions = {
   className?: string;
   /** False leaves the pencil off, for a value that already reads as an invitation. */
   pencil?: boolean;
+  /**
+   * The pressed fill for a value that fills a whole row, such as `bg-sand-light`; the row
+   * then squishes to 0.97 like any row. A bare value has no fill and no squish.
+   */
+  pressedClassName?: string;
   accessibilityLabel?: string;
 };
 
@@ -285,8 +290,8 @@ export function InPlaceField(props: InPlaceFieldProps) {
         accessibilityHint="Opens the keyboard"
         accessibilityState={{ disabled: busy }}
         disabled={busy}
-        pressedScale={1}
-        pressedClassName="bg-transparent"
+        pressedScale={options.pressedClassName ? 0.97 : 1}
+        pressedClassName={options.pressedClassName ?? 'bg-transparent'}
         className={
           options.className ??
           'min-h-11 max-w-full flex-row items-center gap-2 self-start'

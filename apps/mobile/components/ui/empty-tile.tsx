@@ -33,7 +33,8 @@ const looks = {
     textGap: 10,
     title: 'cardTitle',
     body: 'text-[14px] leading-[20px]',
-    action: 'px-[18px]',
+    // The V2P boards pad an icon-led action 14 on the glyph side.
+    action: 'pl-3.5 pr-[18px]',
     actionIcon: 20,
   },
   quiet: {
@@ -82,7 +83,7 @@ export function EmptyTile({
           onPress={action.onPress}
           radius={{ rest: 22, pressed: 16 }}
           pressedClassName="bg-hairline"
-          className={`h-11 flex-row items-center gap-1.5 bg-sand ${look.action}`}
+          className={`h-11 flex-row items-center gap-1.5 bg-sand ${action.icon ? look.action : 'px-[18px]'}`}
         >
           {action.icon ? (
             <IconSymbol
