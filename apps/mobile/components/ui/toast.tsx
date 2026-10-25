@@ -1,7 +1,9 @@
+import { useSegments } from 'expo-router';
 import { useEffect } from 'react';
-import { AppState, View } from 'react-native';
+import { AppState } from 'react-native';
 import Animated, {
   FadeOut,
+  useAnimatedKeyboard,
   useAnimatedStyle,
   useReducedMotion,
   useSharedValue,
@@ -10,6 +12,10 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import {
+  TAB_BAR_REACH,
+  tabBarBottom,
+} from '@/components/nav/plus-button';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Press } from '@/components/ui/press';
 import { Text } from '@/components/ui/text';
@@ -24,17 +30,13 @@ import {
 } from '@/lib/toast/toast-store';
 
 const RISE = 8;
-const SHADOW = {
-  elevation: 12,
-  shadowColor: '#17181A',
-  shadowOpacity: 0.18,
-  shadowRadius: 16,
-  shadowOffset: { width: 0, height: 12 },
-};
+const SHADOW = { boxShadow: '0 12px 32px rgba(23,24,26,0.18)' };
 
 export function ToastHost() {
   const toast = useToast();
   const insets = useSafeAreaInsets();
+  const keyboard = useAnimatedKeyboard();
+  const onTabRoot = useSegments()[0] === '(tabs)';
 
   useEffect(() => {
     const sub = AppState.addEventListener('change', (state) => {
@@ -43,18 +45,27 @@ export function ToastHost() {
     return () => sub.remove();
   }, []);
 
+  // V2F-Components "Toast with Undo": 10 above the + ring on a tab root, else 20 above the keyboard or the bottom edge.
+  const rest = onTabRoot
+    ? tabBarBottom(insets.bottom) + TAB_BAR_REACH + 10
+    : insets.bottom + 20;
+  const lift = useAnimatedStyle(() => {
+    const up = keyboard.height.get();
+    return { paddingBottom: up > 0 ? up + 20 : rest };
+  });
+
   if (!toast) return null;
   return (
-    <View
+    <Animated.View
       pointerEvents="box-none"
       className="absolute inset-x-0 bottom-0 px-5"
-      style={{ paddingBottom: insets.bottom + 20 }}
+      style={lift}
     >
       <ToastCapsule
         key={toast.id}
         toast={toast}
       />
-    </View>
+    </Animated.View>
   );
 }
 
