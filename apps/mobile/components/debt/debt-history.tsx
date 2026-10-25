@@ -59,7 +59,11 @@ export function DebtHistory({
               ? 'no money moved'
               : wallet
                 ? `${comesIn ? 'into' : 'from'} ${wallet}`
-                : null;
+                : !activity.walletId &&
+                    activity.kind === 'principal' &&
+                    !owedToMe
+                  ? `${debt.counterpartyName} paid directly`
+                  : null;
           const title =
             activity.kind === 'principal'
               ? words.principal

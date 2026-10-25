@@ -57,7 +57,8 @@ function dueChoices(
     )
       dated.push(choice);
   if (current && !dated.some((choice) => choice.id === current))
-    dated.unshift({ id: current, name: 'As agreed' });
+    dated.push({ id: current, name: 'As agreed' });
+  dated.sort((a, b) => a.id.localeCompare(b.id));
   return [
     { id: NONE, name: 'No date', meta: 'Nothing coming up' },
     ...dated.map((choice) => ({

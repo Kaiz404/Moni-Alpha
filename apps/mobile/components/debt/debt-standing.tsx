@@ -115,13 +115,22 @@ export function OpenStanding({
             label="Record repayment"
             onPress={() => toAmount('repay')}
           />
-          <Button
+          <Press
             testID={tid('debts', 'lend-more')}
-            variant="secondary"
-            icon="plus"
-            label={words.more}
+            radius={{ rest: 26, pressed: 16 }}
+            pressedClassName="bg-hairline"
+            className="h-[52px] flex-row items-center justify-center gap-1.5 bg-sand px-[18px]"
             onPress={() => toAmount('more')}
-          />
+          >
+            <IconSymbol
+              name="plus"
+              size={18}
+              color={tokens.foreground}
+            />
+            <Text className="text-[15px] leading-[21px] font-display-semibold text-foreground">
+              {words.more}
+            </Text>
+          </Press>
         </View>
         <View className="flex-row gap-1">
           <Press

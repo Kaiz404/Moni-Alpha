@@ -12,6 +12,10 @@ import {
   dueLabel,
   DueDateSheet,
 } from '@/components/debt/due-date-sheet';
+import {
+  DebtPickField,
+  DueMark,
+} from '@/components/debts/debt-pick-field';
 import { useDebtWallets } from '@/components/debts/debt-wallets';
 import { dueWords, SIDE_WORDS } from '@/components/debts/debt-words';
 import { PersonAvatar } from '@/components/debts/person-avatar';
@@ -321,37 +325,13 @@ function DebtPage({
           </InPlaceField>
 
           {open ? (
-            <Press
+            <DebtPickField
               testID={tid('debts', 'due-date')}
-              accessibilityLabel={`Due date, ${dueText}`}
-              accessibilityHint="Opens a picker"
-              pressedClassName="bg-hairline"
-              className="h-16 justify-center gap-0.5 rounded-field bg-sand px-3.5"
+              label="Due date"
+              value={dueText}
+              mark={<DueMark />}
               onPress={() => setDueOpen(true)}
-            >
-              <Text className="text-[13px] leading-[18px] text-muted">
-                Due date
-              </Text>
-              <View className="flex-row items-center gap-1.5">
-                <IconSymbol
-                  name="calendar-clock"
-                  size={18}
-                  color={tokens.foreground}
-                />
-                <Text
-                  variant="rowTitle"
-                  className="flex-1 text-foreground"
-                  numberOfLines={1}
-                >
-                  {dueText}
-                </Text>
-                <IconSymbol
-                  name="chevron-down"
-                  size={18}
-                  color={tokens.foreground}
-                />
-              </View>
-            </Press>
+            />
           ) : null}
 
           <DebtHistory
