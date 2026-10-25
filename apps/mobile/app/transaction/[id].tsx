@@ -540,7 +540,7 @@ function Detail({ transaction: tx }: { transaction: FinanceTransaction }) {
             >
               {({ editable, editor }) =>
                 editor ?? (
-                  <View>
+                  <View className="min-h-16 justify-center">
                     {editable(
                       <Text
                         variant="amountHero"
