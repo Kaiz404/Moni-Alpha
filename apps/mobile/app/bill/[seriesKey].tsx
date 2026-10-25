@@ -5,7 +5,7 @@ import { useMemo, useState, type ReactNode } from 'react';
 import { ScrollView, View } from 'react-native';
 
 import { DueDaySheet } from '@/components/budget/due-day-sheet';
-import { Toggle } from '@/components/budget/toggle';
+import { Toggle } from '@/components/ui/toggle';
 import { useBudgetData } from '@/components/budget/use-budget';
 import { Button } from '@/components/ui/button';
 import { NotFound } from '@/components/ui/empty-tile';

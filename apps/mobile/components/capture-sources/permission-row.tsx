@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { View } from 'react-native';
 
-import { Toggle } from '@/components/capture-sources/toggle';
+import { Toggle } from '@/components/ui/toggle';
 import type { AccessState } from '@/components/capture-sources/use-phone-access';
 import { Button } from '@/components/ui/button';
 import { IconSymbol, type IconSymbolName } from '@/components/ui/icon-symbol';
@@ -74,7 +74,7 @@ export function PermissionRow({
         </View>
         <Toggle
           testID={testID}
-          label={title}
+          accessibilityLabel={title}
           value={on}
           disabled={unavailable || state === 'checking'}
           onChange={onChange}
@@ -118,7 +118,7 @@ export function AppLocationRow({
       </View>
       <Toggle
         testID={testID}
-        label={`Location from ${label} notifications`}
+        accessibilityLabel={`Location from ${label} notifications`}
         value={on}
         onChange={onChange}
       />

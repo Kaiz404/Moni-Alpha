@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { AppState, Platform, View } from 'react-native';
 import { addMinor, type MinorAmount } from '@repo/types';
 
-import { Toggle } from '@/components/budget/toggle';
+import { Toggle } from '@/components/ui/toggle';
 import {
   IconSymbol,
   type IconSymbolName,

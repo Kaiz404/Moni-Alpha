@@ -17,19 +17,19 @@ import type { TestId } from '@/lib/test-ids';
 const TRAVEL = 22;
 
 /**
- * The settings switch from `V2H-Permissions`: ink track when on, Sand with a Hairline edge when
+ * The one switch (`V2H-Permissions`, `V2H-WalletDetail`, `V2P-BillDetail`): ink track when on, Sand with a Hairline edge when
  * off. The knob rides the control spring; the hit area is 56 × 44.
  */
 export function Toggle({
   testID,
   value,
-  label,
+  accessibilityLabel,
   onChange,
   disabled = false,
 }: {
   testID: TestId;
   value: boolean;
-  label: string;
+  accessibilityLabel: string;
   onChange: (next: boolean) => void;
   disabled?: boolean;
 }) {
@@ -39,7 +39,9 @@ export function Toggle({
   useEffect(() => {
     const target = value ? 1 : 0;
     position.set(
-      reduceMotion ? withTiming(target, { duration: 150 }) : withSpring(target, springs.control),
+      reduceMotion
+        ? withTiming(target, { duration: 150 })
+        : withSpring(target, springs.control),
     );
   }, [position, reduceMotion, value]);
 
@@ -51,7 +53,7 @@ export function Toggle({
     <Press
       testID={testID}
       accessibilityRole="switch"
-      accessibilityLabel={label}
+      accessibilityLabel={accessibilityLabel}
       accessibilityState={{ checked: value, disabled }}
       disabled={disabled}
       pressedScale={1}
