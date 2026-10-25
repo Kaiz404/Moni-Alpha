@@ -80,7 +80,7 @@ export function e2eConfig(env) {
 }
 
 function client({ url, secret }) {
-  const headers = { apikey: secret, Authorization: `Bearer ${secret}`, 'Content-Type': 'application/json' };
+  const headers = { apikey: secret, 'Content-Type': 'application/json' };
   return async function request(path, { method = 'GET', body, prefer } = {}) {
     const response = await fetch(`${url}${path}`, {
       method,
