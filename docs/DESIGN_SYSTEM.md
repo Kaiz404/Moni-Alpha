@@ -172,8 +172,11 @@ Use pills sparingly: filter states, segmented controls, compact metadata, and th
 
 - `components/ui/page.tsx`: every full-screen page renders `Page` with a `screen` (the testID prefix) and one header `kind`. `home` draws the 44 Mint avatar, date over greeting, and the Moni button; `tabRoot` a 28/32 title with up to two trailing buttons; `pushed` a back circle and an 18/22 title; `task` a close circle, title, and optional subtitle; `bare` no header row (sign-in). It applies the real top inset, a 44 header row with 20 sides, and starts content 12 below it.
 - `components/ui/press.tsx`: the press primitive. Scale 0.97 on the `press` spring at finger-down, a pressed fill (`pressedClassName`, default Sand light) fading in, release on `control`; `radius` morphs capsule corners to 16. Reduce Motion keeps only the fill fade. Its `testID` is a required `TestId`.
-- `components/ui/button.tsx`: `Button` with `variant` `primary` (Ink), `secondary` (Sand), `tertiary` (Deep mint text, 44 tall), `approve` (Mint, Approve haptic), `notMine` (Sand, Not mine haptic), `destructive` (destructive fill); 52 tall, `loading` shows a spinner and `loadingLabel`, `disabled` turns Sand light with Meta text.
-- `components/ui/header-icon-button.tsx`: `HeaderIconButton` (44 circle, 1.5 Hairline, pressed Sand) for every header action, and `MoniButton` (44 Ink circle, `creation` glyph, "Ask Moni") on Home and Activity only.
+- `components/ui/text.tsx`: display variants track as V2F-Bible sets them: −0.02em from 18 up, −0.03em on the 64 hero, 0 on body text, +0.04em on caps.
+- `components/ui/button.tsx`: `Button` with `variant` `primary` (Ink), `secondary` (Sand), `tertiary` (Deep mint text, 44 tall), `approve` (Mint, Approve haptic), `notMine` (Sand, Not mine haptic), `destructive` (destructive fill); 52 tall, 26 sides on Primary and Secondary and 22 on the icon-led capsules. `loading` turns the board's 14-long arc on a track one step off the fill, with `loadingLabel`; `disabled` turns Sand light with Meta text (Tertiary stays transparent); `waiting` is Sand with Ink 2 text while a form is missing something; `compact` is the 44 capsule inside a card or tile.
+- `components/ui/header-icon-button.tsx`: `HeaderIconButton` (44 circle, 1.5 Hairline, pressed Sand at radius 16; `active` is the Ink Selected look) for every header action, and `MoniButton` (44 Ink circle, `creation` glyph, "Ask Moni") on Home and Activity only.
+- `components/ui/segmented.tsx`: `Segmented` in three sizes: the 44 default, `medium` 48 with 15/600 labels and optional 18 icons (Appearance, sign-in), and `form` 52 (record a debt). Under Reduce Motion the pill cross-fades in 180.
+- `components/ui/rise-in.tsx`: `RiseInGroup` and `RiseIn` play V2F-Motion's list entrance: the first 6 rows rise 8 and fade in 30 apart on first load only; a row that arrives later fades in alone. The + chooser uses it at 120 then 50 apart on `control`.
 
 ### 5.3 Elevation and material
 
@@ -379,7 +382,8 @@ v2 (F3). One sheet host serves every sheet; the values are in [`redesign/tokens.
 - The sheet is Cream with a 32 top radius, a 36 × 5 Hairline grabber, a 22/26 title, and a scrim of `rgba(23,24,26,0.32)` over the page **and the tab bar**. It rises on the `sheet` spring and follows the finger 1:1 from its header; a release whose projected position passes 40% of its height closes it. The scrim, Android back, and a picker's 44 close also close it. Reduce Motion turns the rise into a 180 ms fade.
 - Pickers close on pick and carry no pinned action. Options are rows in a Paper list card (42 bubble, 16/22 name, 13/18 Meta line, radio mark). The category picker is the `V2A-CategoryPick` grid: a 52 search field, three columns of Paper tiles with a 4 progress bar and "RM100 left", "RM20 over", or what was spent.
 - A confirm sheet fits its content and pins two 56 actions split 50/50, the safe one first ("Keep it", then "Delete" in the destructive fill). Use it instead of `Alert.alert` for any destructive choice.
-- The control that opens a picker is a `PickerField`: Sand, radius 16, 64 tall, label 13/18 over value 16/22 600, chevron-down.
+- The control that opens a picker is a `PickerField`: Sand, radius 16, 64 tall, label 13/18 over one row of `mark` (an 18 glyph or 10 dot), value 16/22 600 and an 18 chevron-down, 6 apart; `placeholder` names an empty pick.
+- The + chooser grows from the + centre at scale 0.2 on the `sheet` spring and shrinks back into it (`growFromBottom`), spaces its parts 16 apart, and its rows rise 50 apart. The tab bar hides while the keyboard is up; toasts float 10 above the + ring on tab roots and 20 above the keyboard or bottom edge elsewhere.
 
 ### 7.11 Processing state
 
@@ -392,9 +396,9 @@ Processing must feel fast, transparent, and controlled.
 
 ### Empty, loading, and missing states (v2, V2F-States)
 
-- Empty list: `EmptyTile` (`components/ui/empty-tile.tsx`), a dashed outline tile with one icon, a title, one sentence that says what to do, and at most one action.
-- Missing or failed page: `NotFound` from the same file, centred icon, title, and what it means ("This spend isn't here any more").
-- Loading: `Skeleton` (`components/ui/skeleton.tsx`), static Sand-light rows shaped like the real ones. It appears only after 300 ms and never shimmers; nothing loops where balances show.
+- Empty list: `EmptyTile` (`components/ui/empty-tile.tsx`), a dashed outline tile (#B9B0A0) with one icon, a title, one sentence that says what to do, and at most one action. `tone="quiet"` is the Hairline tile with a 16/600 title for a section that fills in on its own (Home first run); `tone="notice"` is a page's whole empty state on Hairline dashes (Capture log).
+- Missing or failed page: `NotFound` from the same file: a 72 Sand circle, title and what it means ("This spend isn't here any more"), top-aligned, with an optional `action` drawn as the primary button 28 below.
+- Loading: `Skeleton` (`components/ui/skeleton.tsx`), static Sand-light rows shaped like the real ones, their bars varying row to row. It appears only after 300 ms, reads as busy with its `label`, and never shimmers; nothing loops where balances show.
 
 ### 7.12 Charts and insights
 

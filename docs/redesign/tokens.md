@@ -11,6 +11,7 @@ The measured values behind the canvas boards `V2F-Components`, `V2F-Bible` and `
 | Sand | #ECE5D6 | Chips, secondary buttons, tracks, pencil circle. |
 | Sand light | #EFE8DA | Press fill, inner dividers, today's chart band. |
 | Hairline | #DDD5C5 | 1.5 borders, outline tiles, gridlines. |
+| Dashed outline | #B9B0A0 | Dashed empty tiles (`border-strong`). |
 | Ink | #17181A | Text, primary buttons, tab bar, AI cards, Moni button. |
 | Ink 2 | #4A463E | Secondary text, progress fill. |
 | Meta | #6B665C | Meta text (min 12, never lighter). |
@@ -26,14 +27,14 @@ The measured values behind the canvas boards `V2F-Components`, `V2F-Bible` and `
 | Aqua | #9FDCD3 | Housing. |
 | Over text | #B23E35 | Over-budget and destructive text. |
 
-Pastels always carry ink text. Category colours come from the category, never from a screen.
+Pastels always carry ink text; their secondary text is #6B5410 on Lemon, #3E3654 on Lilac and #174831 on Mint in both themes (`on-lemon`, `on-lilac`, `on-mint`). Secondary text on an Ink card is #A9A397 and #EFE8DA (`on-ink-meta`, `on-ink-body`; dark #575653 and #2C2D2D on the cream card are not on a board). Category colours come from the category, never from a screen.
 
 Dark (`V2F-Dark`): Ground #161512 · Raised #211F1B (cards) · Fill #2C2924 (Sand) · Track #26241F (Sand light, tracks) · Hairline #3A362F · Tab pill #2A2823 · Text #F3EEE3 · Text 2 #C7C0B2 · Meta #A39C8E · Inactive #9D968A · Contrast #EDE6D8 (the ink role: primary buttons, AI cards) · Money in #7FCF98 · Over #F0897E · Mint key #8ECF9D. Pastels deepen and keep #17181A text: Mint #8FC79D, Lemon #E0C85E, Lilac #B29DE0, Peach #E3A47E, Coral #DE8B80, Sky #86AED6, Aqua #82C7BD. `apps/mobile/global.css` holds both themes under the same names.
 
 ## Type
 
 - One family: **Funnel Display** (300–800) for display, numbers, body and labels. Its figures already align; add `tabular-nums` only where a font fallback might not.
-- Scale: hero 64/64 700 (whole-ringgit hero) · amount hero 52/54 700 (2-decimal hero) · screen title 28/32 700 · section title 22/26 700 · card title 18/22 700 · row title 16/22 600 · body 15/21 · meta 13/18 · smallest 12/16 (caps labels 12/700 +0.04em). Nothing below 12.
+- Scale: hero 64/64 700 (whole-ringgit hero) · amount hero 52/54 700 (2-decimal hero) · screen title 28/32 700 · section title 22/26 700 · card title 18/22 700 · row title 16/22 600 · body 15/21 · meta 13/18 · smallest 12/16 (caps labels 12/700 +0.04em). Tracking −0.02em from 18 up, −0.03em on the hero, 0 below 18. Nothing below 12.
 
 ## Shape, space, elevation
 
