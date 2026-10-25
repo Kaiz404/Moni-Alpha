@@ -1,10 +1,9 @@
 import { useValue } from '@legendapp/state/react';
-import type { MinorAmount } from '@repo/types';
 import { Image } from 'expo-image';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ScrollView, View } from 'react-native';
+import { useUniwind } from 'uniwind';
 
-import { FieldBubble } from '@/components/capture/field-bubble';
 import { CategoryIcon } from '@/components/categories/category-icon';
 import { Button } from '@/components/ui/button';
 import {
@@ -15,10 +14,8 @@ import { InPlaceField, InPlaceGroup } from '@/components/ui/in-place-field';
 import { Page } from '@/components/ui/page';
 import { PickerField } from '@/components/ui/picker-field';
 import { Text } from '@/components/ui/text';
-import { WalletIcon } from '@/components/wallets/wallet-icon';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { useAuth } from '@/lib/auth/auth-context';
-import { amountSentence } from '@/lib/capture/amount-sentence';
 import type {
   CaptureDraft,
   CaptureQuote,
@@ -31,6 +28,7 @@ import {
 } from '@/lib/dates/local-date-input';
 import {
   currencySymbol,
+  formatMoney,
   formatSignedMoney,
 } from '@/lib/finance/format-money';
 import { useMainCurrency } from '@/lib/finance/main-currency';
@@ -70,8 +68,10 @@ export function CaptureResult({
   const { user } = useAuth();
   const userId = user?.id ?? null;
   const tokens = useThemeTokens();
+  const dark = useUniwind().theme === 'dark';
   const currency = useMainCurrency();
   const [editing, setEditing] = useState<TestId | null>(null);
+  const read = useRef(draft).current;
   const wallets = useValue(walletsForUser$(userId)).filter(
     (wallet) => wallet.currency === currency,
   );
@@ -93,22 +93,24 @@ export function CaptureResult({
     (item) =>
       item.categoryId === draft.categoryId && item.currency === currency,
   );
-  const sentence =
-    draft.kind === 'expense'
-      ? amountSentence({
-          kind: 'expense',
-          amountMinor: draft.amountMinor,
-          currency,
-          category: category
-            ? {
-                name: category.name,
-                budgetMinor: row?.budgetAmountMinor ?? null,
-                spentMinor: row?.spentMinor ?? (0 as MinorAmount),
-              }
-            : null,
-        })
+  const left =
+    draft.kind === 'expense' && category && row?.budgetAmountMinor != null
+      ? Number(row.budgetAmountMinor) - Number(row.spentMinor) - Number(draft.amountMinor)
       : null;
+  const sentence =
+    left === null || !category
+      ? null
+      : left < 0
+        ? {
+            text: `Puts ${category.name} ${formatMoney(-left, currency, { whole: true })} over`,
+            over: true,
+          }
+        : {
+            text: `${formatMoney(left, currency)} left in ${category.name} after this`,
+            over: false,
+          };
   const voice = quote.source === 'voice';
+  const readAmount = formatMoney(read.amountMinor, currency);
   const amountText = formatSignedMoney(
     draft.kind,
     draft.amountMinor,
@@ -170,16 +172,18 @@ export function CaptureResult({
       >
       <ScrollView
         className="flex-1"
-        contentContainerClassName="gap-2 px-5 pb-3"
+        contentContainerClassName="gap-3 px-5 pb-3"
         keyboardShouldPersistTaps="handled"
       >
-        {voice ? (
-          <View className="flex-row gap-2.5 rounded-field bg-sand px-3.5 py-3">
-            <IconSymbol
-              name="microphone"
-              size={18}
-              color={tokens.foreground}
-            />
+        {voice && !editing ? (
+          <View className="flex-row items-start gap-2.5 rounded-field bg-sand px-3.5 py-2.5">
+            <View className="mt-0.5">
+              <IconSymbol
+                name="microphone"
+                size={18}
+                color={tokens.foreground}
+              />
+            </View>
             <Text
               testID={tid('capture', 'quote')}
               variant="body"
@@ -189,67 +193,78 @@ export function CaptureResult({
             </Text>
           </View>
         ) : null}
-        <View className="flex-row items-center gap-3 pt-1">
-          {quote.source === 'camera' ? (
-            <Image
-              source={{ uri: quote.imageUri }}
-              contentFit="cover"
-              accessibilityLabel="The scanned receipt"
-              style={{ width: 52, height: 64, borderRadius: 12 }}
-            />
-          ) : (
-            <View
-              className="h-[52px] w-[52px] items-center justify-center rounded-full"
-              style={{ backgroundColor: category?.color ?? tokens.sand }}
-            >
-              <CategoryIcon
-                icon={category?.icon ?? null}
-                size={24}
-                color={tokens.onPastel}
-              />
-            </View>
-          )}
-          <View className="min-w-0 flex-1 gap-0.5">
-            <InPlaceField
-              testID={tid('capture', 'shop')}
-              label="Shop"
-              kind="text"
-              required
-              value={draft.merchant}
-              onSave={(merchant) => onEdit({ merchant })}
-            >
-              {({ editable, editor }) =>
-                editor ?? (
-                  <>
-                    {editable(
-                      <Text
-                        variant="sectionTitle"
-                        className="text-foreground"
-                        numberOfLines={1}
-                      >
-                        {draft.merchant || 'Add a shop'}
-                      </Text>,
-                    )}
+        <InPlaceField
+          testID={tid('capture', 'shop')}
+          label="Shop"
+          kind="text"
+          required
+          hint={
+            voice
+              ? `You said ${read.merchant || 'no shop'}. Fix the spelling here.`
+              : read.merchant
+                ? `The receipt says ${read.merchant}.`
+                : undefined
+          }
+          value={draft.merchant}
+          onSave={(merchant) => onEdit({ merchant })}
+        >
+          {({ editable, editor }) =>
+            editor ?? (
+              <View className="flex-row items-center gap-3">
+                {quote.source === 'camera' ? (
+                  <Image
+                    source={{ uri: quote.imageUri }}
+                    contentFit="cover"
+                    accessibilityLabel="The scanned receipt"
+                    style={{ width: 52, height: 64, borderRadius: 12 }}
+                  />
+                ) : (
+                  <View
+                    className="h-[52px] w-[52px] items-center justify-center rounded-full"
+                    style={{
+                      backgroundColor: category?.color
+                        ? `${category.color}${dark ? '38' : '73'}`
+                        : tokens.sand,
+                    }}
+                  >
+                    <CategoryIcon
+                      icon={category?.icon ?? null}
+                      size={24}
+                      color={category?.color && dark ? category.color : tokens.foreground}
+                    />
+                  </View>
+                )}
+                <View className="min-w-0 flex-1">
+                  {editable(
                     <Text
-                      variant="meta"
-                      className="text-muted"
+                      variant="sectionTitle"
+                      className="text-foreground"
+                      numberOfLines={1}
                     >
-                      {voice
-                        ? `${dayAndTime(draft.transactionDate)} · Voice`
-                        : 'Receipt'}
-                    </Text>
-                  </>
-                )
-              }
-            </InPlaceField>
-          </View>
-        </View>
-        <View className="py-2">
+                      {draft.merchant || 'Add a shop'}
+                    </Text>,
+                  )}
+                  <Text variant="meta" className="text-muted">
+                    {voice
+                      ? `${dayAndTime(draft.transactionDate)} · Voice`
+                      : 'Receipt'}
+                  </Text>
+                </View>
+              </View>
+            )
+          }
+        </InPlaceField>
+        <View className="min-h-16 justify-center">
           <InPlaceField
             testID={tid('capture', 'amount')}
             label="Amount"
             kind="amount"
             prefix={`${draft.kind === 'expense' ? '−' : '+'}${currencySymbol(currency)}`}
+            hint={
+              read.amountMinor > 0
+                ? `${currency} · ${voice ? 'Moni heard' : 'the receipt says'} ${readAmount}`
+                : currency
+            }
             value={draft.amountMinor > 0 ? draft.amountMinor : null}
             onSave={(amountMinor) => onEdit({ amountMinor })}
           >
@@ -274,13 +289,11 @@ export function CaptureResult({
           value={category?.name ?? ''}
           leading={
             category ? (
-              <FieldBubble color={category.color ?? tokens.card}>
-                <CategoryIcon
-                  icon={category.icon}
-                  size={18}
-                  color={tokens.onPastel}
-                />
-              </FieldBubble>
+              <CategoryIcon
+                icon={category.icon}
+                size={18}
+                color={tokens.foreground}
+              />
             ) : undefined
           }
           onPress={() => void pickCategory()}
@@ -293,14 +306,10 @@ export function CaptureResult({
             value={wallet?.name ?? ''}
             leading={
               wallet ? (
-                <FieldBubble color={wallet.color ?? tokens.card}>
-                  <WalletIcon
-                    icon={wallet.icon}
-                    type={wallet.type}
-                    size={18}
-                    color={tokens.onPastel}
-                  />
-                </FieldBubble>
+                <View
+                  className="h-2.5 w-2.5 rounded-full"
+                  style={{ backgroundColor: wallet.color ?? tokens.mint }}
+                />
               ) : undefined
             }
             onPress={() => void pickWallet()}
@@ -313,12 +322,14 @@ export function CaptureResult({
             onPress={() => void pickDate()}
           />
         </View>
-        <View className="flex-row gap-2.5 pt-2">
-          <IconSymbol
-            name="creation"
-            size={16}
-            color={tokens.foreground}
-          />
+        <View className="flex-row gap-1.5 px-1">
+          <View className="mt-px">
+            <IconSymbol
+              name="creation"
+              size={16}
+              color={tokens.ink2}
+            />
+          </View>
           <View className="flex-1 gap-1">
             <Text
               testID={tid('capture', 'evidence')}
@@ -330,9 +341,8 @@ export function CaptureResult({
             {sentence ? (
               <Text
                 variant="meta"
-                className={
-                  sentence.tone === 'over' ? 'text-over' : 'text-ink-2'
-                }
+                className={sentence.over ? 'text-over' : 'text-ink-2'}
+                style={{ fontVariant: ['tabular-nums'] }}
               >
                 {sentence.text}
               </Text>
@@ -344,7 +354,7 @@ export function CaptureResult({
       <View className="flex-row gap-2 px-5 pb-3">
         <Button
           testID={tid('capture', 'again')}
-          className="flex-[0.75]"
+          className="flex-[2]"
           pinned
           variant="secondary"
           icon={again.icon}
@@ -353,7 +363,7 @@ export function CaptureResult({
         />
         <Button
           testID={tid('capture', 'approve')}
-          className="flex-1"
+          className="flex-[3]"
           pinned
           variant="approve"
           icon="check"
