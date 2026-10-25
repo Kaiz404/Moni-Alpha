@@ -21,6 +21,7 @@ import type {
   CaptureQuote,
 } from '@/lib/capture/capture-stage';
 import { dayAndTime } from '@/lib/capture/clock-time';
+import { spokenAmount } from '@/lib/capture/spoken-amount';
 import {
   isoToLocalDateInput,
   localDateInputToIso,
@@ -111,6 +112,10 @@ export function CaptureResult({
           };
   const voice = quote.source === 'voice';
   const readAmount = formatMoney(read.amountMinor, currency);
+  const said = voice ? spokenAmount(quote.text, read.amountMinor) : null;
+  const amountRead = said
+    ? `you said ${said}`
+    : `${voice ? 'Moni heard' : 'the receipt says'} ${readAmount}`;
   const amountText = formatSignedMoney(
     draft.kind,
     draft.amountMinor,
@@ -253,7 +258,7 @@ export function CaptureResult({
             prefix={`${draft.kind === 'expense' ? '−' : '+'}${currencySymbol(currency)}`}
             hint={
               read.amountMinor > 0
-                ? `${currency} · ${voice ? 'Moni heard' : 'the receipt says'} ${readAmount}`
+                ? `${currency} · ${amountRead}`
                 : currency
             }
             value={draft.amountMinor > 0 ? draft.amountMinor : null}
