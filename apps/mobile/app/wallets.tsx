@@ -272,7 +272,7 @@ function WalletRow({
         </Text>
       </View>
       <Text
-        className="text-[15px] leading-[21px] text-ink-2"
+        className="-mr-1.5 text-[15px] leading-5 text-ink-2"
         style={{ fontVariant: ['tabular-nums'] }}
       >
         {balance}
@@ -290,11 +290,13 @@ function KeptApart({ text }: { text: string }) {
   const tokens = useThemeTokens();
   return (
     <View className="flex-row gap-2 px-1">
-      <IconSymbol
-        name="information-outline"
-        size={16}
-        color={tokens.muted}
-      />
+      <View className="h-[18px] justify-center">
+        <IconSymbol
+          name="information-outline"
+          size={16}
+          color={tokens.muted}
+        />
+      </View>
       <Text
         variant="meta"
         className="flex-1 text-ink-2"
