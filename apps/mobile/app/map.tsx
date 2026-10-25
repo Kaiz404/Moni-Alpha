@@ -47,6 +47,8 @@ type MapState =
 const SHEET_TOP_SHARE = 448 / 844;
 /** The map runs under the sheet's rounded top. */
 const SHEET_OVERLAP = 32;
+/** The floating header row under the status bar. */
+const HEADER_HEIGHT = 44;
 
 function categoryChips(places: Place[]) {
   const totals = new Map<string, MinorAmount>();
@@ -148,7 +150,12 @@ export default function MapScreen() {
             />
           ) : null}
         </MapView>
-        {state.kind === 'empty' ? <MapEmptyNote reason={state.reason} /> : null}
+        {state.kind === 'empty' ? (
+          <MapEmptyNote
+            reason={state.reason}
+            band={{ top: insets.top + HEADER_HEIGHT, height: collapsedTop - insets.top - HEADER_HEIGHT }}
+          />
+        ) : null}
       </View>
       <MapHeader
         scope="places"

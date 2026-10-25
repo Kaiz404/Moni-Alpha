@@ -24,23 +24,31 @@ const COPY = {
   },
 } as const;
 
-/** The capsule XM-Empty sets in the middle of the faded map. */
-export function MapEmptyNote({ reason }: { reason: EmptyReason }) {
+/**
+ * The faded map with XM-Empty's capsule centred in the strip of map left
+ * between the header and the sheet (`band`).
+ */
+export function MapEmptyNote({ reason, band }: { reason: EmptyReason; band: { top: number; height: number } }) {
   const tokens = useThemeTokens();
   return (
     <View
       pointerEvents="none"
-      className="absolute inset-0 items-center justify-center bg-canvas/45"
+      className="absolute inset-0 bg-canvas/45"
     >
-      <View className="h-10 flex-row items-center gap-2 rounded-full border-[1.5px] border-hairline bg-card pl-3 pr-4">
-        <IconSymbol
-          name={COPY[reason].noteIcon}
-          size={18}
-          color={tokens.foreground}
-        />
-        <Text className="text-[14px] leading-[19px] font-display-semibold text-foreground">
-          {COPY[reason].note}
-        </Text>
+      <View
+        className="absolute left-0 right-0 items-center justify-center"
+        style={band}
+      >
+        <View className="h-10 flex-row items-center gap-2 rounded-full border-[1.5px] border-hairline bg-card pl-3 pr-4">
+          <IconSymbol
+            name={COPY[reason].noteIcon}
+            size={18}
+            color={tokens.foreground}
+          />
+          <Text className="text-[14px] leading-[19px] font-display-semibold text-foreground">
+            {COPY[reason].note}
+          </Text>
+        </View>
       </View>
     </View>
   );
@@ -65,7 +73,7 @@ export function MapEmpty({
   return (
     <View
       accessibilityLabel={reason === 'location-off' ? 'Location is off' : 'No places yet'}
-      className="gap-[18px] pt-1.5"
+      className="gap-[18px] pt-2.5"
     >
       <View className="gap-2">
         <Text
