@@ -27,14 +27,14 @@ tags:
 # Lane 2. The blocks in board order.
 - extendedWaitUntil:
     visible:
-      id: wallet.balance
+      id: wallet.balance.edit
     timeout: 10000
 - assertVisible:
     id: wallet.back
 - assertVisible:
     id: wallet.more
 - assertVisible:
-    id: wallet.name
+    id: wallet.name.edit
 - assertVisible: RM120.00
 - assertVisible:
     id: wallet.balance-not-right
@@ -54,12 +54,12 @@ tags:
 - takeScreenshot: k2-l2-pair
 - scrollUntilVisible:
     element:
-      id: wallet.name
+      id: wallet.name.edit
     direction: UP
 
 # Lane 4. Rename in place, then Undo.
 - tapOn:
-    id: wallet.name.pencil
+    id: wallet.name.edit
 - assertVisible: Only the name changes. Its transactions stay as they are.
 - eraseText: 20
 - inputText: K2 Renamed
@@ -84,7 +84,7 @@ tags:
 - tapOn:
     id: wallet.close
 - assertVisible:
-    id: wallet.balance
+    id: wallet.balance.edit
 
 # Lane 8. Delete through the confirm sheet; the page closes.
 - tapOn:
@@ -96,5 +96,5 @@ tags:
 - tapOn:
     id: sheet.confirm
 - assertNotVisible:
-    id: wallet.balance
+    id: wallet.balance.edit
 - assertNotVisible: K2 Detail

@@ -29,7 +29,7 @@ tags:
 - tapOn: K2 Fix
 - extendedWaitUntil:
     visible:
-      id: wallet.balance
+      id: wallet.balance.edit
     timeout: 10000
 - assertVisible: RM63.60
 
@@ -63,7 +63,7 @@ tags:
 
 # A matching balance closes the field and writes nothing.
 - tapOn:
-    id: wallet.balance.pencil
+    id: wallet.balance.edit
 - assertVisible: Moni has RM63.60. Type what you count.
 - tapOn:
     id: wallet.balance.save

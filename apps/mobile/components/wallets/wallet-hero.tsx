@@ -1,14 +1,14 @@
-import { useEffect, useState } from 'react';
-import { BackHandler, View } from 'react-native';
+import { useState } from 'react';
+import { View } from 'react-native';
 import type { MinorAmount } from '@repo/types';
 
+import {
+  InPlaceField,
+  InPlaceGroup,
+  type Saved,
+} from '@/components/ui/in-place-field';
 import { Press } from '@/components/ui/press';
 import { Text } from '@/components/ui/text';
-import {
-  FieldNote,
-  InPlaceField,
-  Pencil,
-} from '@/components/wallets/in-place-field';
 import { walletMeta } from '@/components/wallets/wallet-form';
 import { WalletIcon } from '@/components/wallets/wallet-icon';
 import { labelForNotificationPackage } from '@/constants/notification-apps';
@@ -18,7 +18,7 @@ import {
   formatMoney,
   formatSignedMoney,
 } from '@/lib/finance/format-money';
-import { minorToDecimal, minorToNumber } from '@/lib/finance/money';
+import { minorToNumber } from '@/lib/finance/money';
 import type { FinanceWallet } from '@/lib/finance/types';
 import {
   createBalanceCorrection,
@@ -28,12 +28,8 @@ import {
   confirmWalletBalance,
   updateWallet,
 } from '@/lib/supabase/wallets';
-import { tid } from '@/lib/test-ids';
-import { showToast } from '@/lib/toast/toast-store';
-import {
-  correctBalance,
-  parseBalanceInput,
-} from '@/lib/wallets/balance-correction';
+import { tid, type TestId } from '@/lib/test-ids';
+import { correctBalance } from '@/lib/wallets/balance-correction';
 import {
   balanceDiffLine,
   checkedLabel,
@@ -61,10 +57,8 @@ export function WalletHero({
   link: WalletAlertLink;
   initialEdit: HeroEdit;
 }) {
-  const [edit, setEdit] = useState<HeroEdit>(initialEdit);
-  const [nameDraft, setNameDraft] = useState(wallet.name);
-  const [balanceDraft, setBalanceDraft] = useState(() =>
-    minorToDecimal(balanceMinor),
+  const [editing, setEditing] = useState<TestId | null>(
+    initialEdit ? tid('wallet', initialEdit) : null,
   );
   const style = getWalletCardStyle(wallet.cardStyleId);
   const currency = wallet.currency;
@@ -78,225 +72,165 @@ export function WalletHero({
       ? { kind: 'cash' }
       : { kind: 'app', name: appName ?? wallet.name };
 
-  useEffect(() => {
-    if (!edit) return;
-    const subscription = BackHandler.addEventListener(
-      'hardwareBackPress',
-      () => {
-        setEdit(null);
-        return true;
-      },
-    );
-    return () => subscription.remove();
-  }, [edit]);
-
-  const startName = () => {
-    setNameDraft(wallet.name);
-    setEdit('name');
-  };
-  const startBalance = () => {
-    setBalanceDraft(minorToDecimal(balanceMinor));
-    setEdit('balance');
-  };
-
-  const saveName = () => {
-    setEdit(null);
-    const next = nameDraft.trim();
+  const saveName = (next: string): Saved | void => {
     const previous = wallet.name;
-    if (!next || next === previous) return;
+    if (next === previous) return;
     void updateWallet(wallet.id, { name: next });
-    showToast({
+    return {
       text: `Renamed to ${next}`,
       undo: () => void updateWallet(wallet.id, { name: previous }),
-    });
+    };
   };
 
-  const typed = parseBalanceInput(balanceDraft);
-  const saveBalance = async () => {
-    if (typed === null) return;
-    setEdit(null);
+  const saveBalance = async (typed: MinorAmount): Promise<Saved | void> => {
     const previousCheck = wallet.balanceConfirmedAt;
     confirmWalletBalance(wallet.id);
     const correction = correctBalance(
       { balance: minorToNumber(balanceMinor) },
-      typed,
+      minorToNumber(typed),
     );
     if (!correction) return;
-    const created = await createBalanceCorrection(
-      wallet.id,
-      correction,
-    );
-    showToast({
+    const created = await createBalanceCorrection(wallet.id, correction);
+    return {
       text: `Correction ${formatSignedMoney(correction.type, correction.amountMinor, currency)} added`,
       undo: () => {
         void deleteTransaction(created.id);
         confirmWalletBalance(wallet.id, previousCheck);
       },
-    });
+    };
   };
 
   return (
-    <View className="gap-2.5">
-      {edit === 'name' ? (
-        <View className="gap-1.5">
-          <InPlaceField
-            part="name"
-            accessibilityLabel="Wallet name"
-            saveLabel="Save name"
-            value={nameDraft}
-            onChangeText={setNameDraft}
-            maxLength={NAME_MAX}
-            autoCapitalize="words"
-            onCancel={() => setEdit(null)}
-            onSave={saveName}
-          />
-          <FieldNote>
-            Only the name changes. Its transactions stay as they are.
-          </FieldNote>
-        </View>
-      ) : (
-        <View className="flex-row items-center gap-3">
-          <View
-            className="h-[52px] w-[52px] items-center justify-center rounded-full"
-            style={{
-              backgroundColor: wallet.color ?? style.swatchHex,
-            }}
-          >
-            <WalletIcon
-              color={style.contentColor}
-              icon={wallet.icon}
-              type={wallet.type}
-              size={24}
-            />
-          </View>
-          <View className="min-w-0 flex-1">
-            <View className="flex-row items-center gap-2">
-              <Press
-                testID={tid('wallet', 'name')}
-                accessibilityLabel={`${wallet.name}. Rename`}
-                pressedClassName=""
-                className="min-w-0 flex-shrink"
-                disabled={edit !== null}
-                onPress={startName}
-              >
-                <Text
-                  variant="sectionTitle"
-                  className="text-foreground"
-                  numberOfLines={1}
+    <InPlaceGroup
+      editing={editing}
+      onEditingChange={setEditing}
+    >
+      <View className="gap-2.5">
+        <InPlaceField
+          testID={tid('wallet', 'name')}
+          label="Wallet name"
+          kind="text"
+          required
+          maxLength={NAME_MAX}
+          autoCapitalize="words"
+          value={wallet.name}
+          hint="Only the name changes. Its transactions stay as they are."
+          onSave={saveName}
+        >
+          {({ editable, editor }) =>
+            editor ?? (
+              <View className="flex-row items-center gap-3">
+                <View
+                  className="h-[52px] w-[52px] items-center justify-center rounded-full"
+                  style={{
+                    backgroundColor: wallet.color ?? style.swatchHex,
+                  }}
                 >
-                  {wallet.name}
-                </Text>
-              </Press>
-              {edit === null ? (
-                <Pencil
-                  part="name"
-                  label={`Rename ${wallet.name}`}
-                  onPress={startName}
-                />
-              ) : null}
-            </View>
-            <Text
-              variant="meta"
-              className="text-muted"
-              numberOfLines={1}
-            >
-              {walletMeta(wallet.type, currency, link)}
-            </Text>
-          </View>
-        </View>
-      )}
+                  <WalletIcon
+                    color={style.contentColor}
+                    icon={wallet.icon}
+                    type={wallet.type}
+                    size={24}
+                  />
+                </View>
+                <View className="min-w-0 flex-1">
+                  {editable(
+                    <Text
+                      variant="sectionTitle"
+                      className="text-foreground"
+                      numberOfLines={1}
+                    >
+                      {wallet.name}
+                    </Text>,
+                    { accessibilityLabel: `Rename ${wallet.name}` },
+                  )}
+                  <Text
+                    variant="meta"
+                    className="text-muted"
+                    numberOfLines={1}
+                  >
+                    {walletMeta(wallet.type, currency, link)}
+                  </Text>
+                </View>
+              </View>
+            )
+          }
+        </InPlaceField>
 
-      {edit === 'balance' ? (
-        <View className="gap-1.5">
-          <Text
-            variant="caps"
-            className="text-muted"
-          >
-            Balance
-          </Text>
-          <InPlaceField
-            part="balance"
-            prefix={currencySymbol(currency)}
-            accessibilityLabel={
-              source.kind === 'cash'
-                ? `Cash you have, in ${currency}`
-                : `Balance your ${source.name} app shows, in ${currency}`
-            }
-            saveLabel="Save balance"
-            keyboardType="numeric"
-            value={balanceDraft}
-            onChangeText={setBalanceDraft}
-            onCancel={() => setEdit(null)}
-            onSave={() => void saveBalance()}
-          />
-          <FieldNote>
-            {balanceDiffLine(balanceMinor, currency, typed, source)}
-          </FieldNote>
-        </View>
-      ) : (
-        <View className="gap-0.5">
-          <Text
-            variant="caps"
-            className="text-muted"
-          >
-            Balance
-          </Text>
-          <View className="flex-row items-center gap-2">
-            <Press
-              testID={tid('wallet', 'balance')}
-              accessibilityLabel={`Balance ${formatMoney(balanceMinor, currency)}. Edit balance`}
-              pressedClassName=""
-              className="min-w-0 flex-shrink"
-              disabled={edit !== null}
-              onPress={startBalance}
-            >
+        <InPlaceField
+          testID={tid('wallet', 'balance')}
+          label="Balance"
+          kind="amount"
+          prefix={currencySymbol(currency)}
+          signed
+          value={balanceMinor}
+          hint={(typed) =>
+            balanceDiffLine(
+              balanceMinor,
+              currency,
+              typed === null ? null : minorToNumber(typed),
+              source,
+            )
+          }
+          onSave={saveBalance}
+        >
+          {({ editable, editor, open }) => (
+            <View className={editor ? 'gap-1.5' : 'gap-0.5'}>
               <Text
-                variant="amountHero"
-                className="text-foreground"
-                numberOfLines={1}
-                adjustsFontSizeToFit
-                style={{ fontVariant: ['tabular-nums'] }}
+                variant="caps"
+                className="text-muted"
               >
-                {formatMoney(balanceMinor, currency)}
+                Balance
               </Text>
-            </Press>
-            {edit === null ? (
-              <Pencil
-                part="balance"
-                label="Edit balance"
-                onPress={startBalance}
-              />
-            ) : null}
-          </View>
-          <View className="flex-row items-center gap-1.5">
-            <Text
-              variant="meta"
-              className="text-ink-2"
-            >
-              {checkedLabel(wallet.balanceConfirmedAt)}
-            </Text>
-            <Text
-              variant="meta"
-              className="text-ink-2"
-              importantForAccessibility="no"
-            >
-              ·
-            </Text>
-            <Press
-              testID={tid('wallet', 'balance-not-right')}
-              accessibilityLabel="Balance not right? Fix it"
-              pressedClassName=""
-              hitSlop={13}
-              disabled={edit !== null}
-              onPress={startBalance}
-            >
-              <Text className="font-display-bold text-[13px] leading-[18px] text-deep-mint">
-                Balance not right?
-              </Text>
-            </Press>
-          </View>
-        </View>
-      )}
-    </View>
+              {editor ?? (
+                <>
+                  {editable(
+                    <Text
+                      variant="amountHero"
+                      className="text-foreground"
+                      numberOfLines={1}
+                      adjustsFontSizeToFit
+                      style={{ fontVariant: ['tabular-nums'] }}
+                    >
+                      {formatMoney(balanceMinor, currency)}
+                    </Text>,
+                    {
+                      accessibilityLabel: `Balance ${formatMoney(balanceMinor, currency)}. Edit balance`,
+                    },
+                  )}
+                  <View className="flex-row items-center gap-1.5">
+                    <Text
+                      variant="meta"
+                      className="text-ink-2"
+                    >
+                      {checkedLabel(wallet.balanceConfirmedAt)}
+                    </Text>
+                    <Text
+                      variant="meta"
+                      className="text-ink-2"
+                      importantForAccessibility="no"
+                    >
+                      ·
+                    </Text>
+                    <Press
+                      testID={tid('wallet', 'balance-not-right')}
+                      accessibilityLabel="Balance not right? Fix it"
+                      pressedClassName=""
+                      hitSlop={13}
+                      disabled={editing !== null}
+                      onPress={open}
+                    >
+                      <Text className="font-display-bold text-[13px] leading-[18px] text-deep-mint">
+                        Balance not right?
+                      </Text>
+                    </Press>
+                  </View>
+                </>
+              )}
+            </View>
+          )}
+        </InPlaceField>
+      </View>
+    </InPlaceGroup>
   );
 }
