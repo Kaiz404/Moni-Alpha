@@ -106,7 +106,6 @@ The screen tracks reported these differences in their handoffs. Each waits for t
 
 - Map: the range control offers This week, the month, and last month where the board has a custom range; the empty state's action is **Add an expense**.
 - Debts: recording a debt with no wallet, and debt reminders.
-- Type it: the sentence under the amount.
 - The + chooser: the sheet sits over the incoming page while it slides in.
 - Budget: the Budgets heading has a routing chevron into Edit budgets, which the board does not draw (D9 removed the Edit link, and the chevron keeps the monthly total reachable).
 - Budget calendar: the day cut-offs.

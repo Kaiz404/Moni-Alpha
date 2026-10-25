@@ -17,6 +17,7 @@ tags:
 - tapOn:
     id: nav.chooser.type
 - assertVisible: New expense
+- assertVisible: 'RM[0-9,]+ (left for [0-9]+ days?.*|over)'
 - assertVisible:
     id: capture.key.1
 - assertNotVisible:

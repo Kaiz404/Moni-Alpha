@@ -369,8 +369,8 @@ Toasts: "Approved GRAB −RM12.00" and "1 not mine" with Undo, "Saved for later"
 
 New money uses one full page, `components/amount/amount-page.tsx` (`V2P-AmountPage`): Type it, Record a debt, a repayment and lending more. Existing values edit in place.
 
-- The amount is the centred hero (64/700, 52/700 once decimals are typed) with the sign and symbol: `−RM45.90`, `+RM100`, transfers unsigned in Meta. One sentence under it says what the amount does, in Over text when it passes a budget.
-- Picker fields and the note sit under the amount. The Paper keypad (56 tall keys, `Keyboard_Tap` on each) and one 56 primary button stay at the bottom.
+- The amount is the centred hero (64/68 700, shrinking only to fit) with the sign and symbol: `−RM0` before the first key, `−RM45.90`, `+RM100`, transfers unsigned in Meta. One sentence under it says what the amount does, in Over text when it passes a budget. On Type it an expense at 0 shows the month's safe to spend (`RM443 left for 18 days · RM24 a day`, as on Home); once typed, what it leaves in the category.
+- Picker fields and the note sit under the amount. The Paper keypad (56 tall keys, radius 20, digits 26/600, Sand while pressed, `Keyboard_Tap` on each; a key that cannot change the amount, such as a third decimal, reads Inactive and does nothing) and one 56 primary button stay at the bottom.
 - `lib/amount/amount-input.ts` is the keypad's pure reducer: nine digits before the point, two after. A suggested amount (`prefilled`) is replaced by the first key.
 - No arithmetic and no currency switch on the page. The wallet sets the currency; Type it lists main-currency wallets only.
 

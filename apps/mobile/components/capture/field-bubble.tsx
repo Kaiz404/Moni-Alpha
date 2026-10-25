@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { View } from 'react-native';
 
-/** The 34 tint circle that leads a capture field: the category, the wallet, the date. */
+/** The 32 tint circle that leads a capture field: the category, the wallet, the date. */
 export function FieldBubble({
   color,
   children,
@@ -11,7 +11,7 @@ export function FieldBubble({
 }) {
   return (
     <View
-      className="h-[34px] w-[34px] items-center justify-center rounded-full"
+      className="h-8 w-8 items-center justify-center rounded-full"
       style={{ backgroundColor: color }}
     >
       {children}

@@ -94,11 +94,12 @@ export function AmountPage({
         keyboardShouldPersistTaps="handled"
       >
         {control}
-        <View className="items-center pt-2">
+        <View className="items-center pb-1 pt-2">
           <Text
             testID={tid(screen, 'amount')}
-            variant={typed.includes('.') ? 'amountHero' : 'hero'}
-            className={typed ? TONE[direction] : 'text-muted'}
+            variant="hero"
+            className={TONE[direction]}
+            style={{ lineHeight: 68 }}
             numberOfLines={1}
             adjustsFontSizeToFit
             accessibilityLiveRegion="polite"
@@ -109,7 +110,7 @@ export function AmountPage({
           <Text
             testID={tid(screen, 'sentence')}
             variant="body"
-            className={`mt-1 text-center ${sentence?.tone === 'over' ? 'font-display-semibold text-over' : 'text-ink-2'}`}
+            className={`mt-1 text-center ${sentence?.tone === 'over' ? 'text-over' : 'text-ink-2'}`}
             numberOfLines={2}
           >
             {sentence?.text ?? ' '}
@@ -129,6 +130,7 @@ export function AmountPage({
       <View className="gap-3 px-5 pb-3">
         <Keypad
           screen={screen}
+          typed={prefilled ? '' : typed}
           onKey={(key) =>
             onTyped(pressAmountKey(prefilled ? '' : typed, key))
           }

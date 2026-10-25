@@ -2,9 +2,10 @@ import { useValue } from '@legendapp/state/react';
 import { createTransactionSchema, type MinorAmount } from '@repo/types';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
-import { Alert, TextInput, View } from 'react-native';
+import { Alert, Keyboard, TextInput, View } from 'react-native';
 
 import { AmountPage } from '@/components/amount/amount-page';
+import { useBudgetData, useBudgetMonth } from '@/components/budget/use-budget';
 import {
   DuplicateSheet,
   type DuplicateHit,
@@ -19,13 +20,14 @@ import { WalletIcon } from '@/components/wallets/wallet-icon';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import type { LedgerEntry } from '@/lib/ai/duplicates';
 import { useAuth } from '@/lib/auth/auth-context';
-import { readAmount } from '@/lib/amount/amount-input';
+import { readAmount, type AmountSentence } from '@/lib/amount/amount-input';
 import { amountSentence } from '@/lib/capture/amount-sentence';
 import {
   duplicateCopy,
   findTypedDuplicate,
 } from '@/lib/capture/type-duplicate';
 import { dayLabel } from '@/lib/dates/day-label';
+import { monthKey } from '@/lib/finance/budget-month';
 import {
   localDateInputToIso,
   toLocalDateInput,
@@ -39,6 +41,7 @@ import {
   walletsForUser$,
 } from '@/lib/finance/selectors';
 import { financeProjection$ } from '@/lib/finance/projection';
+import { leftLine } from '@/lib/finance/spent-summary';
 import type { FinanceWallet } from '@/lib/finance/types';
 import { approve } from '@/lib/haptics';
 import { toCategoryTiles } from '@/lib/sheet/category-tiles';
@@ -126,6 +129,8 @@ export default function TypeItScreen() {
   const recentCategories = useValue(recentExpenseCategories$(userId));
   const budgetProgress = useValue(budgetProgress$(userId, timezone));
   const transactions = useValue(transactions$({ userId }));
+  const budgetData = useBudgetData();
+  const budgetMonth = useBudgetMonth(budgetData, monthKey(budgetData.now));
 
   const wallets = useMemo(
     () => allWallets.filter((wallet) => wallet.currency === mainCurrency),
@@ -170,7 +175,7 @@ export default function TypeItScreen() {
     if (recent) setCategoryId(recent);
   }, [categoryId, kind, recentCategories]);
 
-  const sentence = useMemo(() => {
+  const sentence = useMemo((): AmountSentence | null => {
     if (kind === 'transfer') {
       return amountSentence({ kind, currency: mainCurrency });
     }
@@ -191,6 +196,12 @@ export default function TypeItScreen() {
         incomeThisMonthMinor,
       });
     }
+    if (amount.minor === 0 && budgetMonth.left) {
+      return {
+        text: leftLine(budgetMonth.left, mainCurrency),
+        tone: budgetMonth.left.leftMinor < 0 ? 'over' : 'plain',
+      };
+    }
     const progress = budgetProgress.find(
       (row) =>
         row.categoryId === category?.id && row.currency === mainCurrency,
@@ -209,6 +220,7 @@ export default function TypeItScreen() {
     });
   }, [
     amount.minor,
+    budgetMonth.left,
     budgetProgress,
     category,
     date,
@@ -336,6 +348,7 @@ export default function TypeItScreen() {
 
   const save = async ({ checkRepeat }: { checkRepeat: boolean }) => {
     if (!wallet || amount.minor <= 0) return;
+    Keyboard.dismiss();
     setSaving(true);
     try {
       if (kind === 'transfer') {
@@ -397,7 +410,7 @@ export default function TypeItScreen() {
         <WalletIcon
           icon={item.icon}
           type={item.type}
-          size={18}
+          size={17}
           color={tokens.onPastel}
         />
       </FieldBubble>
@@ -412,8 +425,8 @@ export default function TypeItScreen() {
       leading={
         <FieldBubble color={tokens.card}>
           <IconSymbol
-            name="calendar-blank-outline"
-            size={18}
+            name="calendar-today"
+            size={17}
             color={tokens.foreground}
           />
         </FieldBubble>
@@ -427,7 +440,7 @@ export default function TypeItScreen() {
       <FieldBubble color={tokens.card}>
         <IconSymbol
           name="pencil-outline"
-          size={18}
+          size={17}
           color={tokens.foreground}
         />
       </FieldBubble>
@@ -516,7 +529,7 @@ export default function TypeItScreen() {
                   <FieldBubble color={category.color ?? tokens.card}>
                     <CategoryIcon
                       icon={category.icon}
-                      size={18}
+                      size={17}
                       color={tokens.onPastel}
                     />
                   </FieldBubble>
