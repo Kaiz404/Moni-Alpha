@@ -14,7 +14,7 @@ import { scheduleOnRN } from 'react-native-worklets';
 
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Press } from '@/components/ui/press';
-import { Segmented } from '@/components/ui/segmented';
+import { ChartToggle } from '@/components/charts/chart-toggle';
 import { Text } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { dayLabel } from '@/lib/dates/day-label';
@@ -99,16 +99,13 @@ export function ActivityChart(props: ActivityChartProps) {
         <Text variant="caps" className="flex-shrink text-muted" numberOfLines={1}>
           {spend ? `Spent in ${month}` : 'Balance'}
         </Text>
-        <View className="w-[176px]">
-          <Segmented
-            screen="activity"
-            name="chart-mode"
-            options={MODES}
-            value={mode}
-            onChange={onModeChange}
-            accessibilityLabel="Chart type"
-          />
-        </View>
+        <ChartToggle
+          screen="activity"
+          name="chart-mode"
+          options={MODES}
+          value={mode}
+          onChange={onModeChange}
+        />
       </View>
       <View>
         <Text

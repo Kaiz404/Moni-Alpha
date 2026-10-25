@@ -52,6 +52,7 @@ export function SpentCard({
         </Text>
         <ChartToggle
           screen="home"
+          name="chart"
           options={MODES}
           value={mode}
           onChange={setMode}

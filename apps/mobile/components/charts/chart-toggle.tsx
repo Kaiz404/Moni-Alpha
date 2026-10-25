@@ -14,14 +14,19 @@ import { tid, type Screen } from '@/lib/test-ids';
 
 const SEGMENT = 70;
 
-/** The chart card toggle: Sand track 36 tall, Ink pill on the control spring, 70-wide segments. */
+/**
+ * The chart card toggle on every chart card (Pace | Daily, Spending | Balance): Sand track 36
+ * tall, Ink pill on the control spring, 70-wide segments. Segments are `<screen>.<name>.<value>`.
+ */
 export function ChartToggle<T extends string>({
   screen,
+  name,
   options,
   value,
   onChange,
 }: {
   screen: Screen;
+  name: string;
   options: readonly { value: T; label: string }[];
   value: T;
   onChange: (value: T) => void;
@@ -55,7 +60,7 @@ export function ChartToggle<T extends string>({
         return (
           <Press
             key={option.value}
-            testID={tid(screen, 'chart', option.value)}
+            testID={tid(screen, name, option.value)}
             accessibilityRole="radio"
             accessibilityLabel={option.label}
             accessibilityState={{ selected }}
