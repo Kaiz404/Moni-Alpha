@@ -7,7 +7,7 @@ import { StyleSheet } from 'react-native';
 import { Text, textFonts } from '@/components/ui/text';
 
 describe('Text', () => {
-  it('sets family, size, and line height from the variant', () => {
+  it('sets family, size, line height and tracking from the variant', () => {
     render(<Text variant="screenTitle">Budget</Text>);
 
     expect(
@@ -16,7 +16,17 @@ describe('Text', () => {
       fontFamily: 'FunnelDisplay_700Bold',
       fontSize: 28,
       lineHeight: 32,
+      letterSpacing: -0.56,
     });
+  });
+
+  it('keeps body text untracked', () => {
+    render(<Text variant="rowTitle">GRAB*FOOD</Text>);
+
+    expect(
+      StyleSheet.flatten(screen.getByText('GRAB*FOOD').props.style)
+        .letterSpacing,
+    ).toBeUndefined();
   });
 
   it('defaults to Regular, keeps a named weight, and lets nested text inherit', () => {

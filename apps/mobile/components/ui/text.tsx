@@ -21,26 +21,31 @@ const variantStyles = {
     fontFamily: 'FunnelDisplay_700Bold',
     fontSize: 64,
     lineHeight: 64,
+    letterSpacing: -1.92,
   },
   amountHero: {
     fontFamily: 'FunnelDisplay_700Bold',
     fontSize: 52,
     lineHeight: 54,
+    letterSpacing: -1.04,
   },
   screenTitle: {
     fontFamily: 'FunnelDisplay_700Bold',
     fontSize: 28,
     lineHeight: 32,
+    letterSpacing: -0.56,
   },
   sectionTitle: {
     fontFamily: 'FunnelDisplay_700Bold',
     fontSize: 22,
     lineHeight: 26,
+    letterSpacing: -0.44,
   },
   cardTitle: {
     fontFamily: 'FunnelDisplay_700Bold',
     fontSize: 18,
     lineHeight: 22,
+    letterSpacing: -0.36,
   },
   rowTitle: {
     fontFamily: 'FunnelDisplay_600SemiBold',
@@ -81,8 +86,9 @@ const familyClass = /(^|\s)font-display(-semibold|-bold)?(\s|$)/;
 const InsideText = createContext(false);
 
 /**
- * Every app text renders in Funnel Display. `variant` sets family, size, and
- * line height from the tokens.md type scale; without one, the `font-display*`
+ * Every app text renders in Funnel Display. `variant` sets family, size, line
+ * height and tracking from the V2F-Bible type scale (−0.02em from 18 up,
+ * −0.03em on the hero, +0.04em on caps); without one, the `font-display*`
  * class in `className` picks the weight and Regular is the default.
  */
 export function Text({
