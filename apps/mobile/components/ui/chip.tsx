@@ -47,7 +47,7 @@ export function Chip({
       {icon ? (
         <IconSymbol
           name={icon}
-          size={16}
+          size={18}
           color={ink}
         />
       ) : null}

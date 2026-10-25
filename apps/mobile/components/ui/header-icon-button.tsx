@@ -8,6 +8,9 @@ import { Press } from '@/components/ui/press';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import type { TestId } from '@/lib/test-ids';
 
+/** A 44 circle tightens to 16 corners under the finger (V2F-Components "Icon button"). */
+const PRESSED_CORNERS = { rest: 22, pressed: 16 };
+
 type HeaderIconButtonProps = {
   testID: TestId;
   icon: IconSymbolName;
@@ -35,8 +38,9 @@ export function HeaderIconButton({
       disabled={disabled}
       accessibilityLabel={accessibilityLabel}
       accessibilityState={{ disabled }}
+      radius={PRESSED_CORNERS}
       pressedClassName="bg-sand"
-      className={`h-11 w-11 items-center justify-center rounded-full border-[1.5px] ${disabled ? 'border-sand-light' : 'border-hairline'}`}
+      className={`h-11 w-11 items-center justify-center border-[1.5px] ${disabled ? 'border-sand-light' : 'border-hairline'}`}
     >
       <View pointerEvents="none">
         <IconSymbol
@@ -62,8 +66,9 @@ export function MoniButton({ testID, onPress }: MoniButtonProps) {
       testID={testID}
       onPress={onPress}
       accessibilityLabel="Ask Moni"
+      radius={PRESSED_CORNERS}
       pressedClassName="bg-primary-pressed"
-      className="h-11 w-11 items-center justify-center rounded-full bg-primary"
+      className="h-11 w-11 items-center justify-center bg-primary"
     >
       <View pointerEvents="none">
         <IconSymbol
