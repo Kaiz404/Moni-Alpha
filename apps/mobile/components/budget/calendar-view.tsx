@@ -5,9 +5,12 @@ import { View } from 'react-native';
 
 import { CalendarHeat } from '@/components/budget/calendar-heat';
 import { MerchantList } from '@/components/budget/merchant-list';
+import { IconSymbol } from '@/components/ui/icon-symbol';
 import { ListCard } from '@/components/ui/list-card';
+import { Press } from '@/components/ui/press';
 import { Text } from '@/components/ui/text';
 import { TransactionRow } from '@/components/ui/transaction-row';
+import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { calendarHeat } from '@/lib/finance/calendar-heat';
 import {
   dayOfMonth,
@@ -26,6 +29,8 @@ import { tid } from '@/lib/test-ids';
 import { transactionRow } from '@/lib/transactions/row';
 
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+/** The day panel shows this many rows, then links to the rest in Activity. */
+const DAY_ROWS = 3;
 
 type CalendarViewProps = {
   month: BudgetMonth;
@@ -45,6 +50,7 @@ export function CalendarView({
   bills,
   now,
 }: CalendarViewProps) {
+  const tokens = useThemeTokens();
   const { currency, evenPaceMinor } = month;
   const today = month.isCurrent ? now.getDate() : null;
   const [picked, setPicked] = useState<{
@@ -153,7 +159,7 @@ export function CalendarView({
         onSelect={(day) => setPicked({ month: month.month, day })}
       />
       <View
-        className="gap-2 pt-1"
+        className="gap-2"
         accessibilityLiveRegion="polite"
       >
         <View className="flex-row items-baseline justify-between">
@@ -188,7 +194,7 @@ export function CalendarView({
                 .join(' · ')}
             </Text>
             <ListCard>
-              {rows.map((transaction) => (
+              {rows.slice(0, DAY_ROWS).map((transaction) => (
                 <TransactionRow
                   key={transaction.id}
                   testID={tid('budget', 'day', 'row', transaction.id)}
@@ -202,6 +208,28 @@ export function CalendarView({
                   }
                 />
               ))}
+              {rows.length > DAY_ROWS ? (
+                <Press
+                  testID={tid('budget', 'day', 'all')}
+                  accessibilityLabel={`All ${rows.length} on ${weekday} ${selected} ${short}. Open in Activity`}
+                  onPress={() =>
+                    router.navigate({
+                      pathname: '/activity',
+                      params: { day: `${month.month}-${String(selected).padStart(2, '0')}` },
+                    })
+                  }
+                  className="min-h-11 flex-row items-center gap-0.5 pl-[18px] pr-3"
+                >
+                  <Text className="text-[15px] leading-5 font-display-semibold text-deep-mint">
+                    {`All ${rows.length} on ${weekday} ${selected} ${short}`}
+                  </Text>
+                  <IconSymbol
+                    name="chevron-right"
+                    size={20}
+                    color={tokens.deepMint}
+                  />
+                </Press>
+              ) : null}
             </ListCard>
           </>
         ) : (
@@ -242,6 +270,7 @@ export function CalendarView({
           currency={currency}
           walletNames={walletNames}
           look={(merchant) => lastCategory(merchant.name)}
+          onSeeAll={() => router.navigate('/activity')}
         />
       </View>
     </View>

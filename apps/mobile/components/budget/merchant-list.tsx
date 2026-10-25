@@ -1,10 +1,12 @@
 import { View } from 'react-native';
 
+import { Button } from '@/components/ui/button';
 import { ListCard } from '@/components/ui/list-card';
 import { Text } from '@/components/ui/text';
 import { TintBubble } from '@/components/ui/transaction-row';
 import type { MerchantSpend } from '@/lib/finance/budget-month';
 import { formatMoney } from '@/lib/finance/format-money';
+import { tid } from '@/lib/test-ids';
 import { resolveTransactionIcon } from '@/lib/transactions/icon';
 
 type MerchantListProps = {
@@ -17,6 +19,8 @@ type MerchantListProps = {
     icon: string | null;
     color: string | null;
   };
+  /** "See all" beside the title, opening these payments in Activity. */
+  onSeeAll?: () => void;
 };
 
 /** "Top merchants": who got the most of this spending, with payment counts. */
@@ -26,11 +30,14 @@ export function MerchantList({
   currency,
   walletNames,
   look,
+  onSeeAll,
 }: MerchantListProps) {
   if (!merchants.length) return null;
   return (
     <View className="gap-2">
-      <View className="flex-row items-baseline justify-between">
+      <View
+        className={`flex-row justify-between ${onSeeAll ? 'items-center' : 'items-baseline'}`}
+      >
         <Text
           variant="sectionTitle"
           className="text-foreground"
@@ -38,7 +45,17 @@ export function MerchantList({
         >
           Top merchants
         </Text>
-        {note ? (
+        {onSeeAll ? (
+          <Button
+            testID={tid('budget', 'merchants', 'see-all')}
+            variant="tertiary"
+            label="See all"
+            icon="chevron-right"
+            accessibilityLabel="See all payments in Activity"
+            onPress={onSeeAll}
+            className="-mr-3.5"
+          />
+        ) : note ? (
           <Text
             variant="meta"
             className="text-muted"
