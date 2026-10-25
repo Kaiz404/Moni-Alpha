@@ -86,7 +86,10 @@ function HeaderRow(props: PageProps) {
             pressedClassName="bg-mint-pressed"
             className="h-11 w-11 items-center justify-center rounded-[16px] bg-mint"
           >
-            <Text className="text-[18px] leading-[22px] font-display-bold text-on-pastel">
+            <Text
+              variant="cardTitle"
+              className="text-on-pastel"
+            >
               {props.initial}
             </Text>
           </Press>

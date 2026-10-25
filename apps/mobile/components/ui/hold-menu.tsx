@@ -379,7 +379,7 @@ export function HoldHint({ screen }: { screen: Screen }) {
               .stiffness(springs.sheet.stiffness)
               .damping(springs.sheet.damping)
       }
-      className="h-9 flex-row items-center gap-2 self-start rounded-full bg-sand pl-3 pr-1"
+      className="h-9 flex-row items-center gap-2 self-start rounded-full bg-sand pl-3 pr-1.5"
     >
       <IconSymbol
         name="gesture-tap-hold"
@@ -399,7 +399,7 @@ export function HoldHint({ screen }: { screen: Screen }) {
       >
         <IconSymbol
           name="close"
-          size={16}
+          size={18}
           color={tokens.ink2}
         />
       </Press>
