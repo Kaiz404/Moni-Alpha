@@ -470,7 +470,7 @@ export default function BillScreen() {
                 label={once ? 'Due · once' : 'Next due · monthly'}
                 value={formatDate(nextDue, now)}
                 className="flex-1"
-                leading={
+                mark={
                   <IconSymbol
                     name="calendar"
                     size={18}
@@ -484,7 +484,7 @@ export default function BillScreen() {
                 label="Pays from"
                 value={wallet?.name ?? ''}
                 className="flex-1"
-                leading={
+                mark={
                   wallet?.color ? (
                     <View
                       className="h-2.5 w-2.5 rounded-full"
@@ -499,7 +499,7 @@ export default function BillScreen() {
               testID={tid('budget', 'bill', 'category')}
               label="Category"
               value={category?.name ?? ''}
-              leading={
+              mark={
                 category ? (
                   <IconSymbol
                     name={bubbleIcon}

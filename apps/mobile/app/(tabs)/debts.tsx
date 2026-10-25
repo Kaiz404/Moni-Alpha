@@ -1,3 +1,4 @@
+import { router } from 'expo-router';
 import { useState } from 'react';
 import { ScrollView, View } from 'react-native';
 
@@ -5,11 +6,12 @@ import { ComingUp } from '@/components/debts/coming-up';
 import { SIDE_WORDS } from '@/components/debts/debt-words';
 import { NetPosition } from '@/components/debts/net-position';
 import { PersonRow } from '@/components/debts/person-row';
-import { RecordDebtButton } from '@/components/debts/record-debt-button';
 import { SettledList } from '@/components/debts/settled-list';
 import { useDebtSummary } from '@/components/debts/use-debts';
 import { useTabBarClearance } from '@/components/nav/tab-bar';
 import { SyncBanner } from '@/components/providers/sync-banner';
+import { Button } from '@/components/ui/button';
+import { EmptyTile } from '@/components/ui/empty-tile';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { ListCard } from '@/components/ui/list-card';
 import { Page } from '@/components/ui/page';
@@ -39,7 +41,15 @@ export default function DebtsScreen() {
       title="Debts"
       trailing={
         empty ? null : (
-          <RecordDebtButton testID={tid('debts', 'record-debt')} />
+          <Button
+            testID={tid('debts', 'record-debt')}
+            variant="secondary"
+            compact
+            icon="plus"
+            label="Record a debt"
+            className="self-start"
+            onPress={() => router.push('/debt/new')}
+          />
         )
       }
     >
@@ -123,30 +133,18 @@ export default function DebtsScreen() {
 
 /** V2P-DebtsEmpty: the dashed tile when there are no debts at all. */
 function NoDebtsTile() {
-  const tokens = useThemeTokens();
   return (
-    <View className="items-start gap-2.5 rounded-tile border-[1.5px] border-dashed border-border-strong px-[18px] py-[22px]"
-    >
-      <View className="h-[42px] w-[42px] items-center justify-center rounded-full bg-sand">
-        <IconSymbol
-          name="handshake-outline"
-          size={20}
-          color={tokens.foreground}
-        />
-      </View>
-      <Text
-        variant="cardTitle"
-        className="text-foreground"
-        accessibilityRole="header"
-      >
-        No debts yet
-      </Text>
-      <Text className="text-[14px] leading-[20px] text-ink-2">
-        Lent a friend money, or they covered you? Note it here. Moni shows
-        who owes who.
-      </Text>
-      <RecordDebtButton testID={tid('debts', 'empty', 'record-debt')} />
-    </View>
+    <EmptyTile
+      icon="handshake-outline"
+      title="No debts yet"
+      body="Lent a friend money, or they covered you? Note it here. Moni shows who owes who."
+      action={{
+        testID: tid('debts', 'empty', 'record-debt'),
+        label: 'Record a debt',
+        icon: 'plus',
+        onPress: () => router.push('/debt/new'),
+      }}
+    />
   );
 }
 

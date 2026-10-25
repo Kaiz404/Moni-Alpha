@@ -287,7 +287,7 @@ export function WalletForm({
               className="min-w-0 flex-1"
               label="Type"
               value={type.label}
-              leading={
+              mark={
                 <WalletIcon
                   color={tokens.foreground}
                   icon={type.icon}

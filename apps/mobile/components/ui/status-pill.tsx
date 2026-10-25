@@ -7,7 +7,8 @@ export type StatusTone =
   | 'review'
   | 'onTrack'
   | 'near'
-  | 'over';
+  | 'over'
+  | 'quiet';
 
 const tones: Record<
   StatusTone,
@@ -33,6 +34,11 @@ const tones: Record<
     fill: 'bg-destructive-fill',
     text: 'text-state-destructive',
     dot: 'bg-state-destructive',
+  },
+  quiet: {
+    fill: 'bg-sand-light',
+    text: 'text-muted',
+    dot: 'bg-muted',
   },
 };
 

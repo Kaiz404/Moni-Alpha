@@ -12,10 +12,6 @@ import {
   dueLabel,
   DueDateSheet,
 } from '@/components/debt/due-date-sheet';
-import {
-  DebtPickField,
-  DueMark,
-} from '@/components/debts/debt-pick-field';
 import { useDebtWallets } from '@/components/debts/debt-wallets';
 import { dueWords, SIDE_WORDS } from '@/components/debts/debt-words';
 import { PersonAvatar } from '@/components/debts/person-avatar';
@@ -30,6 +26,7 @@ import { IconSymbol } from '@/components/ui/icon-symbol';
 import { InPlaceField, InPlaceGroup, type Saved } from '@/components/ui/in-place-field';
 import { ListCard } from '@/components/ui/list-card';
 import { Page } from '@/components/ui/page';
+import { PickerField } from '@/components/ui/picker-field';
 import { Press } from '@/components/ui/press';
 import { Text } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
@@ -329,11 +326,17 @@ function DebtPage({
           </InPlaceField>
 
           {open ? (
-            <DebtPickField
+            <PickerField
               testID={tid('debts', 'due-date')}
               label="Due date"
               value={dueText}
-              mark={<DueMark />}
+              mark={
+                <IconSymbol
+                  name="calendar-clock"
+                  size={18}
+                  color={tokens.foreground}
+                />
+              }
               onPress={() => setDueOpen(true)}
             />
           ) : null}

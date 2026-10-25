@@ -7,15 +7,10 @@ import {
   DueDateSheet,
 } from '@/components/debt/due-date-sheet';
 import {
-  DebtPickField,
-  DueMark,
-} from '@/components/debts/debt-pick-field';
-import {
   pickDebtWallet,
   useDebtWallets,
 } from '@/components/debts/debt-wallets';
 import { SIDE_WORDS } from '@/components/debts/debt-words';
-import { DirectionToggle } from '@/components/debts/direction-toggle';
 import {
   editNewDebtDraft,
   resetNewDebtDraft,
@@ -26,7 +21,9 @@ import { Button } from '@/components/ui/button';
 import { Chip } from '@/components/ui/chip';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Page } from '@/components/ui/page';
+import { PickerField } from '@/components/ui/picker-field';
 import { Press } from '@/components/ui/press';
+import { Segmented } from '@/components/ui/segmented';
 import { Text } from '@/components/ui/text';
 import { getWalletCardStyle } from '@/constants/wallet-card-styles';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
@@ -42,6 +39,8 @@ import {
 import { readAmount } from '@/lib/amount/amount-input';
 import { tid } from '@/lib/test-ids';
 import { showToast } from '@/lib/toast/toast-store';
+
+const DIRECTIONS = ['owed_to_me', 'i_owe'] as const;
 
 const sameName = (a: string, b: string) =>
   a.trim().toLowerCase() === b.trim().toLowerCase();
@@ -205,8 +204,15 @@ export default function NewDebtScreen() {
             ) : null}
           </View>
 
-          <DirectionToggle
-            name={who}
+          <Segmented
+            screen="debts"
+            name="direction"
+            size="form"
+            accessibilityLabel="Who owes who"
+            options={DIRECTIONS.map((side) => ({
+              value: side,
+              label: SIDE_WORDS[side].segment(who),
+            }))}
             value={draft.direction}
             onChange={(direction) => editNewDebtDraft({ direction })}
           />
@@ -243,11 +249,11 @@ export default function NewDebtScreen() {
           </View>
 
           <View className="flex-row gap-2">
-            <DebtPickField
+            <PickerField
               testID={tid('debts', 'new', 'wallet')}
               className="flex-1"
               label={walletLabel}
-              value={wallet?.name ?? 'Choose'}
+              value={wallet?.name ?? ''}
               mark={
                 wallet ? (
                   <View
@@ -270,12 +276,18 @@ export default function NewDebtScreen() {
                 if (picked) editNewDebtDraft({ walletId: picked });
               }}
             />
-            <DebtPickField
+            <PickerField
               testID={tid('debts', 'new', 'due-date')}
               className="flex-1"
               label="Due date"
               value={dueLabel(draft.dueDate)}
-              mark={<DueMark />}
+              mark={
+                <IconSymbol
+                  name="calendar-clock"
+                  size={18}
+                  color={tokens.foreground}
+                />
+              }
               onPress={() => setDueOpen(true)}
             />
           </View>
@@ -297,34 +309,22 @@ export default function NewDebtScreen() {
           </View>
         </ScrollView>
         <View className="border-t-[1.5px] border-sand px-5 pb-5 pt-3">
-          {ready ? (
-            <Button
-              testID={tid('debts', 'new', 'record')}
-              pinned
-              label={words.record(who, amount)}
-              loading={saving}
-              onPress={() => void submit()}
-            />
-          ) : (
-            <View
-              testID={tid('debts', 'new', 'record')}
-              accessible
-              accessibilityRole="button"
-              accessibilityState={{ disabled: true }}
-              className="h-14 items-center justify-center rounded-full bg-sand px-6"
-            >
-              <Text
-                className="text-[15px] leading-[21px] font-display-semibold text-ink-2"
-                numberOfLines={1}
-              >
-                {wallets.length === 0
+          <Button
+            testID={tid('debts', 'new', 'record')}
+            pinned
+            label={
+              ready
+                ? words.record(who, amount)
+                : wallets.length === 0
                   ? `Add a ${currency} wallet first`
                   : who
                     ? 'Add an amount'
-                    : 'Add who and an amount'}
-              </Text>
-            </View>
-          )}
+                    : 'Add who and an amount'
+            }
+            waiting={!ready}
+            loading={saving}
+            onPress={() => void submit()}
+          />
         </View>
       </Page>
       <DueDateSheet

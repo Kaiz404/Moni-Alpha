@@ -55,6 +55,7 @@ export function PlaceHero({
         {top ? (
           <StatusPill
             tone="review"
+            size="small"
             label="Your top place"
           />
         ) : null}

@@ -144,7 +144,7 @@ export default function NewBillScreen() {
                   : ''
               }
               className="flex-1"
-              leading={
+              mark={
                 <IconSymbol
                   name="calendar"
                   size={18}
