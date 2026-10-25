@@ -12,7 +12,6 @@ import {
   dueLabel,
   DueDateSheet,
 } from '@/components/debt/due-date-sheet';
-import { InlineEdit, Pencil } from '@/components/debt/inline-edit';
 import { useDebtWallets } from '@/components/debts/debt-wallets';
 import { dueWords, SIDE_WORDS } from '@/components/debts/debt-words';
 import { PersonAvatar } from '@/components/debts/person-avatar';
@@ -24,6 +23,7 @@ import { useDebt } from '@/components/debts/use-debts';
 import { SyncBanner } from '@/components/providers/sync-banner';
 import { NotFound } from '@/components/ui/empty-tile';
 import { IconSymbol } from '@/components/ui/icon-symbol';
+import { InPlaceField, InPlaceGroup, type Saved } from '@/components/ui/in-place-field';
 import { ListCard } from '@/components/ui/list-card';
 import { Page } from '@/components/ui/page';
 import { Press } from '@/components/ui/press';
@@ -70,8 +70,6 @@ export default function DebtDetailScreen() {
   );
 }
 
-type Editing = 'name' | 'note' | null;
-
 function failed(error: unknown) {
   showToast({
     text:
@@ -83,16 +81,11 @@ function failed(error: unknown) {
 /** Saves one field in place and offers Undo back to what it was. */
 function saveField(
   id: string,
-  text: string,
   patch: Parameters<typeof updateDebt>[1],
   previous: Parameters<typeof updateDebt>[1],
-) {
-  try {
-    updateDebt(id, patch);
-    showToast({ text, undo: () => updateDebt(id, previous) });
-  } catch (error) {
-    failed(error);
-  }
+): Saved {
+  updateDebt(id, patch);
+  return { undo: () => updateDebt(id, previous) };
 }
 
 function DebtPage({
@@ -114,7 +107,6 @@ function DebtPage({
   const words = SIDE_WORDS[direction];
   const reminded = useRemindedToday();
   const { wallets } = useDebtWallets(currency);
-  const [editing, setEditing] = useState<Editing>(null);
   const [dueOpen, setDueOpen] = useState(false);
   const closeDue = useCallback(() => setDueOpen(false), []);
   const settling = useRef(false);
@@ -193,6 +185,7 @@ function DebtPage({
         kind="pushed"
         title="Debt"
       >
+        <InPlaceGroup>
         <ScrollView
           className="flex-1"
           contentContainerClassName="gap-4 px-5 pb-10"
@@ -200,57 +193,58 @@ function DebtPage({
           showsVerticalScrollIndicator={false}
         >
           <SyncBanner screen="debts" />
-          {editing === 'name' ? (
-            <InlineEdit
-              name="name"
-              label="Name"
-              initial={name}
-              required
-              onCancel={() => setEditing(null)}
-              onSave={(value) => {
-                setEditing(null);
-                if (value !== name)
-                  saveField(
-                    id,
-                    'Name saved',
-                    { counterpartyName: value },
-                    { counterpartyName: name },
-                  );
-              }}
-            />
-          ) : (
-            <View className="flex-row items-center gap-3">
-              <PersonAvatar
-                name={name}
-                size={52}
-              />
-              <View className="min-w-0 flex-1">
-                <Press
-                  testID={tid('debts', 'edit-name')}
-                  accessibilityLabel={`Edit name, ${name}`}
-                  disabled={editing !== null}
-                  pressedClassName=""
-                  className="min-h-11 flex-row items-center gap-2 self-start"
-                  onPress={() => setEditing('name')}
-                >
+          <InPlaceField
+            testID={tid('debts', 'name')}
+            label="Name"
+            kind="text"
+            required
+            maxLength={120}
+            value={name}
+            onSave={(value) =>
+              value === name
+                ? undefined
+                : saveField(id, { counterpartyName: value }, { counterpartyName: name })
+            }
+          >
+            {({ editable, editor }) =>
+              editor ? (
+                <View className="gap-1.5">
                   <Text
-                    variant="sectionTitle"
-                    className="shrink text-foreground"
-                    numberOfLines={1}
+                    variant="meta"
+                    className="text-muted"
                   >
-                    {name}
+                    Name
                   </Text>
-                  {editing === null ? <Pencil /> : null}
-                </Press>
-                <Text
-                  variant="meta"
-                  className="-mt-2 text-muted"
-                >
-                  {words.started} {formatDate(line.startedAt)}
-                </Text>
-              </View>
-            </View>
-          )}
+                  {editor}
+                </View>
+              ) : (
+                <View className="flex-row items-center gap-3">
+                  <PersonAvatar
+                    name={name}
+                    size={52}
+                  />
+                  <View className="min-w-0 flex-1">
+                    {editable(
+                      <Text
+                        variant="sectionTitle"
+                        className="text-foreground"
+                        numberOfLines={1}
+                      >
+                        {name}
+                      </Text>,
+                      { accessibilityLabel: `Edit name, ${name}` },
+                    )}
+                    <Text
+                      variant="meta"
+                      className="-mt-2 text-muted"
+                    >
+                      {words.started} {formatDate(line.startedAt)}
+                    </Text>
+                  </View>
+                </View>
+              )
+            }
+          </InPlaceField>
 
           {open ? (
             <OpenStanding
@@ -265,61 +259,66 @@ function DebtPage({
             <WrittenOff line={line} />
           )}
 
-          {editing === 'note' ? (
-            <InlineEdit
-              name="note"
-              label="Note"
-              initial={note ?? ''}
-              placeholder="What is it for?"
-              onCancel={() => setEditing(null)}
-              onSave={(value) => {
-                setEditing(null);
-                if (value !== (note ?? ''))
-                  saveField(
-                    id,
-                    'Note saved',
-                    { note: value || null },
-                    { note },
-                  );
-              }}
-            />
-          ) : (
-            <ListCard>
-              <Press
-                testID={tid('debts', 'edit-note')}
-                accessibilityLabel={`Edit note, ${note ?? 'no note'}`}
-                disabled={editing !== null}
-                className="flex-row items-center gap-3.5 px-[18px] py-3"
-                onPress={() => setEditing('note')}
-              >
-                <View className="h-[42px] w-[42px] items-center justify-center rounded-full bg-sand">
-                  <IconSymbol
-                    name="note-text-outline"
-                    size={20}
-                    color={tokens.foreground}
-                  />
-                </View>
-                <View className="min-w-0 flex-1">
+          <InPlaceField
+            testID={tid('debts', 'note')}
+            label="Note"
+            kind="text"
+            maxLength={1000}
+            placeholder="What is it for?"
+            value={note ?? ''}
+            onSave={(value) =>
+              value === (note ?? '')
+                ? undefined
+                : saveField(id, { note: value || null }, { note })
+            }
+          >
+            {({ editable, editor }) =>
+              editor ? (
+                <View className="gap-1.5">
                   <Text
                     variant="meta"
                     className="text-muted"
                   >
                     Note
                   </Text>
-                  <Text
-                    variant="rowTitle"
-                    className={
-                      note ? 'text-foreground' : 'text-muted'
-                    }
-                    numberOfLines={1}
-                  >
-                    {note ?? 'Add a note'}
-                  </Text>
+                  {editor}
                 </View>
-                {editing === null ? <Pencil /> : null}
-              </Press>
-            </ListCard>
-          )}
+              ) : (
+                <ListCard>
+                  {editable(
+                    <View className="flex-row items-center gap-3.5">
+                      <View className="h-[42px] w-[42px] items-center justify-center rounded-full bg-sand">
+                        <IconSymbol
+                          name="note-text-outline"
+                          size={20}
+                          color={tokens.foreground}
+                        />
+                      </View>
+                      <View className="min-w-0 flex-1">
+                        <Text
+                          variant="meta"
+                          className="text-muted"
+                        >
+                          Note
+                        </Text>
+                        <Text
+                          variant="rowTitle"
+                          className={note ? 'text-foreground' : 'text-muted'}
+                          numberOfLines={1}
+                        >
+                          {note ?? 'Add a note'}
+                        </Text>
+                      </View>
+                    </View>,
+                    {
+                      className: 'flex-row items-center gap-3.5 px-[18px] py-3',
+                      accessibilityLabel: `Edit note, ${note ?? 'no note'}`,
+                    },
+                  )}
+                </ListCard>
+              )
+            }
+          </InPlaceField>
 
           {open ? (
             <Press
@@ -379,6 +378,7 @@ function DebtPage({
             </Press>
           ) : null}
         </ScrollView>
+        </InPlaceGroup>
       </Page>
       <DueDateSheet
         open={dueOpen}
@@ -386,13 +386,13 @@ function DebtPage({
         onDismiss={closeDue}
         onPick={(dueDate) => {
           setDueOpen(false);
-          if (dueDate !== debt.dueDate)
-            saveField(
-              id,
-              'Due date saved',
-              { dueDate },
-              { dueDate: debt.dueDate },
-            );
+          if (dueDate === debt.dueDate) return;
+          try {
+            const { undo } = saveField(id, { dueDate }, { dueDate: debt.dueDate });
+            showToast({ text: 'Due date saved', undo });
+          } catch (error) {
+            failed(error);
+          }
         }}
       />
     </View>
