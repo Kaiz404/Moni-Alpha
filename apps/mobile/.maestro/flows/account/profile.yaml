@@ -19,20 +19,24 @@ tags:
 - assertNotVisible: Budgets
 - takeScreenshot: k1-l2-pair
 
-# Main currency opens the currency sheet; picking SGD writes it, MYR puts it back.
+# Main currency lists only the currencies the seed holds; picking USD writes it, MYR puts it back.
 - tapOn:
     id: profile.main-currency
-- assertVisible: Currency
-- tapOn: SGD · Singapore Dollar
+- assertVisible: The one you spend in day to day.
+- assertNotVisible: Singapore dollar
+- tapOn:
+    id: profile.currency.usd
 - assertVisible:
-    text: SGD
+    text: USD
     below:
       id: profile.back
-- takeScreenshot: k1-l3-sgd
+- assertVisible: US dollar
+- takeScreenshot: k1-l3-usd
 - tapOn:
     id: profile.main-currency
-- tapOn: MYR · Malaysian Ringgit
-- assertVisible: MYR
+- tapOn:
+    id: profile.currency.myr
+- assertVisible: Malaysian ringgit
 
 # Appearance switches to dark and back to light.
 - tapOn:

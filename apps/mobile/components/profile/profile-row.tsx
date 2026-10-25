@@ -19,7 +19,7 @@ export type ProfileTint =
   | 'aqua'
   | 'sand';
 
-const tintClass: Record<ProfileTint, string> = {
+export const PROFILE_TINT_CLASS: Record<ProfileTint, string> = {
   mint: 'bg-mint/45',
   lemon: 'bg-lemon/45',
   lilac: 'bg-lilac/45',
@@ -47,13 +47,13 @@ type ProfileRowProps = {
   | { testID?: never; onPress?: never; chevron?: never; accessory: ReactNode }
 );
 
-/** A settings row with a meta line: 42 bubble, 16/600 title, 13 meta, trailing value and chevron. */
+/** A settings row with a meta line: 42 bubble, 16/600 title, 13 meta, trailing value 8 before the chevron. */
 export function ProfileRow(props: ProfileRowProps) {
   const tokens = useThemeTokens();
   const body = (
     <>
       <View
-        className={`h-[42px] w-[42px] items-center justify-center rounded-full ${tintClass[props.tint]}`}
+        className={`h-[42px] w-[42px] items-center justify-center rounded-full ${PROFILE_TINT_CLASS[props.tint]}`}
       >
         <IconSymbol
           name={props.icon}
@@ -81,7 +81,7 @@ export function ProfileRow(props: ProfileRowProps) {
       </View>
       {props.value ? (
         <Text
-          className={`text-[15px] leading-5 ${props.strongValue ? 'font-display-bold text-foreground' : 'text-ink-2'}`}
+          className={`text-[15px] leading-5 ${props.chevron ? '-mr-1.5' : ''} ${props.strongValue ? 'font-display-bold text-foreground' : 'text-ink-2'}`}
           numberOfLines={1}
         >
           {props.value}
@@ -92,7 +92,7 @@ export function ProfileRow(props: ProfileRowProps) {
 
   if (!props.onPress) {
     return (
-      <View className="min-h-[66px] flex-row items-center gap-3.5 py-3 pl-[18px] pr-3">
+      <View className="min-h-[66px] flex-row items-center gap-3.5 px-[18px] py-3">
         {body}
         {props.accessory}
       </View>

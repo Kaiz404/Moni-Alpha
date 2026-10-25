@@ -1,12 +1,13 @@
 import { userPreferencesSchema } from '@repo/types';
+import { useState } from 'react';
 import { View } from 'react-native';
 
+import { currencyName } from '@/components/profile/currency-words';
+import { MainCurrencySheet } from '@/components/profile/main-currency-sheet';
 import { ProfileRow } from '@/components/profile/profile-row';
 import { ListCard } from '@/components/ui/list-card';
 import { Text } from '@/components/ui/text';
-import { resolveCurrencyOption } from '@/constants/currencies';
 import { useMainCurrency } from '@/lib/finance/main-currency';
-import { openSheet } from '@/lib/sheet/sheet-store';
 import { profilePreferences$ } from '@/lib/store';
 import { updateProfilePreferences } from '@/lib/supabase/profile';
 import { tid } from '@/lib/test-ids';
@@ -32,10 +33,11 @@ async function saveMainCurrency(currency: string) {
 
 export function MainCurrencyRow() {
   const main = useMainCurrency();
+  const [sheet, setSheet] = useState<'closed' | 'open' | 'closing'>('closed');
 
-  const pick = async () => {
-    const picked = await openSheet({ kind: 'currency', selected: main });
-    if (picked && picked !== main) await saveMainCurrency(picked);
+  const pick = (currency: string) => {
+    setSheet('closing');
+    if (currency !== main) void saveMainCurrency(currency);
   };
 
   return (
@@ -46,11 +48,11 @@ export function MainCurrencyRow() {
           icon="cash-multiple"
           tint="aqua"
           title="Main currency"
-          meta={resolveCurrencyOption(main).name}
+          meta={currencyName(main)}
           value={main}
           strongValue
           chevron="down"
-          onPress={() => void pick()}
+          onPress={() => setSheet('open')}
         />
       </ListCard>
       <Text
@@ -60,6 +62,14 @@ export function MainCurrencyRow() {
         Home, Activity, Budget and Debts show this currency. Wallets in
         other currencies stay in Wallets.
       </Text>
+      <MainCurrencySheet
+        visible={sheet !== 'closed'}
+        open={sheet === 'open'}
+        selected={main}
+        onPick={pick}
+        onDismiss={() => setSheet('closing')}
+        onExited={() => setSheet('closed')}
+      />
     </View>
   );
 }

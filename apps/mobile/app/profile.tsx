@@ -4,9 +4,13 @@ import { router } from 'expo-router';
 import { useState, type ReactNode } from 'react';
 import { ScrollView, View } from 'react-native';
 
+import { currencyHeldIn } from '@/components/profile/currency-words';
 import { ExportDataRow } from '@/components/profile/export-data-row';
 import { MainCurrencyRow } from '@/components/profile/main-currency-row';
-import { ProfileRow } from '@/components/profile/profile-row';
+import {
+  ProfileRow,
+  type ProfileTint,
+} from '@/components/profile/profile-row';
 import {
   usePhoneAccess,
   type AccessState,
@@ -51,7 +55,7 @@ function walletsMeta(currencies: readonly string[]): string {
   }
   return [...counts]
     .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
-    .map(([currency, count]) => `${count} in ${currency}`)
+    .map(([currency, count]) => `${count} in ${currencyHeldIn(currency)}`)
     .join(' · ');
 }
 
@@ -62,6 +66,11 @@ const ACCESS_WORD: Record<AccessState, string | undefined> = {
   not_set_up: 'Not set up',
   unavailable: 'Off',
 };
+
+/** A source's bubble is Mint while it is on and Sand otherwise. */
+function accessTint(state: AccessState): ProfileTint {
+  return state === 'on' ? 'mint' : 'sand';
+}
 
 function plural(count: number, one: string, many: string): string {
   return `${count} ${count === 1 ? one : many}`;
@@ -243,7 +252,7 @@ export default function ProfileScreen() {
           <ProfileRow
             testID={tid('profile', 'row', 'bank-notifications')}
             icon="bell-outline"
-            tint="mint"
+            tint={accessTint(access.notifications)}
             title="Bank notifications"
             meta={plural(apps.length, 'linked app', 'linked apps')}
             value={ACCESS_WORD[access.notifications]}
@@ -253,7 +262,7 @@ export default function ProfileScreen() {
           <ProfileRow
             testID={tid('profile', 'row', 'location')}
             icon="map-marker"
-            tint="mint"
+            tint={accessTint(access.location)}
             title="Location"
             meta="From notifications"
             value={ACCESS_WORD[access.location]}
@@ -263,7 +272,7 @@ export default function ProfileScreen() {
           <ProfileRow
             testID={tid('profile', 'row', 'camera')}
             icon="camera-outline"
-            tint="mint"
+            tint={accessTint(access.camera)}
             title="Camera"
             meta="Scan receipts"
             value={ACCESS_WORD[access.camera]}
@@ -273,7 +282,7 @@ export default function ProfileScreen() {
           <ProfileRow
             testID={tid('profile', 'row', 'microphone')}
             icon="microphone"
-            tint={access.microphone === 'on' ? 'mint' : 'sand'}
+            tint={accessTint(access.microphone)}
             title="Microphone"
             meta="Say it instead of typing"
             value={ACCESS_WORD[access.microphone]}
