@@ -7,6 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useUniwind } from 'uniwind';
 
 import { MapHeader } from '@/components/map/map-header';
+import { PinBubble } from '@/components/map/place-pins';
 import { mapStyles } from '@/components/map/map-style';
 import {
   MoniNoticed,
@@ -16,13 +17,11 @@ import {
 } from '@/components/map/place-detail';
 import { usePlaceSources } from '@/components/map/use-places';
 import { NotFound } from '@/components/ui/empty-tile';
-import { IconSymbol } from '@/components/ui/icon-symbol';
 import { ListCard } from '@/components/ui/list-card';
 import { Page } from '@/components/ui/page';
 import { Button } from '@/components/ui/button';
 import { Text } from '@/components/ui/text';
 import { TransactionRow } from '@/components/ui/transaction-row';
-import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { getProposalLocationSnapshot } from '@/lib/ai/proposal-location-cache';
 import { formatMoney } from '@/lib/finance/format-money';
 import { merchantName } from '@/lib/finance/merchant-name';
@@ -44,6 +43,12 @@ import { transactionRow } from '@/lib/transactions/row';
 /** XM-Detail's map strip; the sheet starts 28 above its bottom edge. */
 const MAP_HEIGHT = 240;
 const SHEET_OVERLAP = 28;
+/** The place's dot sits at y 152, midway between the header and the sheet. */
+const PLACE_Y = 152;
+/** Top map padding that moves the camera's centre down onto that dot. */
+const MAP_PADDING_TOP = 2 * PLACE_Y - MAP_HEIGHT;
+/** The pin capsule is 34 tall and ends 8 above the 12 dot. */
+const PIN_TOP = PLACE_Y - 6 - 8 - 34;
 
 async function openInMaps(place: Place) {
   const label = encodeURIComponent(place.name);
@@ -59,7 +64,6 @@ async function openInMaps(place: Place) {
 export default function PlaceScreen() {
   const params = useLocalSearchParams<{ id: string; range?: string }>();
   const insets = useSafeAreaInsets();
-  const tokens = useThemeTokens();
   const dark = useUniwind().theme === 'dark';
   const { userId, currency, transactions, lookups, categoryLook } = usePlaceSources();
   const proposals = useValue(pendingProposals$(userId));
@@ -100,7 +104,7 @@ export default function PlaceScreen() {
   const regular = placeRegular(place);
   const regularWallet = regular?.walletId ? lookups.walletNames[regular.walletId] : null;
   const noticed = regular
-    ? `${nameOf(regular.merchant)} is your regular. ${regular.visits} visits ${range.words}, about ${formatMoney(regular.averageMinor, currency, { whole: true })} each${regularWallet ? `, always paid with ${regularWallet}` : ''}.`
+    ? `${nameOf(regular.merchant)} is your regular. ${regular.visits} visits ${range.key === 'month' ? 'this month' : range.words}, about ${formatMoney(regular.averageMinor, currency, { whole: true })} each${regularWallet ? `, always ${regularWallet}` : ''}.`
     : null;
   const lead = categoryLook(place.categories[0]?.categoryId ?? null);
 
@@ -119,6 +123,7 @@ export default function PlaceScreen() {
             liteMode
             style={{ flex: 1 }}
             customMapStyle={dark ? mapStyles.dark : mapStyles.light}
+            mapPadding={{ top: MAP_PADDING_TOP, right: 0, bottom: 0, left: 0 }}
             initialRegion={{
               latitude: place.latitude,
               longitude: place.longitude,
@@ -131,18 +136,16 @@ export default function PlaceScreen() {
             pitchEnabled={false}
             toolbarEnabled={false}
           />
-          <View className="absolute inset-0 items-center justify-center">
+          <View
+            className="absolute left-0 right-0 items-center"
+            style={{ top: PIN_TOP }}
+          >
             <View className="h-[34px] flex-row items-center gap-1.5 rounded-full bg-primary pl-1 pr-3">
-              <View
-                className="h-[26px] w-[26px] items-center justify-center rounded-full bg-sand"
-                style={lead.color ? { backgroundColor: lead.color } : undefined}
-              >
-                <IconSymbol
-                  name={lead.icon}
-                  size={15}
-                  color={lead.color ? tokens.onPastel : tokens.foreground}
-                />
-              </View>
+              <PinBubble
+                look={lead}
+                size={26}
+                glyph={15}
+              />
               <Text
                 className="text-[15px] leading-[20px] font-display-bold text-primary-foreground"
                 style={{ fontVariant: ['tabular-nums'] }}
