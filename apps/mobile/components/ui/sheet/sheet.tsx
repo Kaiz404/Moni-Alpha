@@ -32,6 +32,9 @@ const SCRIM = 'rgba(23,24,26,0.32)';
 const LARGE_TOP_BELOW_INSET = 106;
 const OFFSCREEN = 2000;
 const REDUCED_FADE = { duration: 180 };
+/** The + chooser starts at a fifth of its size while it and the scrim fade in over 200. */
+const GROW_FROM = 0.2;
+const GROW_FADE = { duration: 200 };
 
 function rubberband(overshoot: number, dimension: number) {
   'worklet';
@@ -56,6 +59,13 @@ export type SheetProps = {
   size: 'fit' | 'large';
   /** Pinned 56 actions, 20 from the sides and the bottom. */
   actions?: ReactNode;
+  /**
+   * Grows from scale 0.2 at a point this far above the screen's bottom edge,
+   * centred, and shrinks back into it on close: the + chooser (V2F-Nav).
+   */
+  growFromBottom?: number;
+  /** Space between the grabber, the title row and the body: 12, or 16 on the + chooser. */
+  gap?: 12 | 16;
   children?: ReactNode;
 };
 
@@ -80,6 +90,8 @@ export function Sheet({
   closeLabel,
   size,
   actions,
+  growFromBottom,
+  gap = 12,
   children,
 }: SheetProps) {
   const insets = useSafeAreaInsets();
@@ -87,7 +99,9 @@ export function Sheet({
   const keyboard = useAnimatedKeyboard();
   const height = useSharedValue(0);
   const offset = useSharedValue(OFFSCREEN);
-  const fade = useSharedValue(reduceMotion ? 0 : 1);
+  const grows = growFromBottom !== undefined && !reduceMotion;
+  const fade = useSharedValue(reduceMotion || grows ? 0 : 1);
+  const grow = useSharedValue(grows ? 0 : 1);
   const start = useSharedValue(0);
   const releaseVelocity = useSharedValue(0);
   const closing = useSharedValue(false);
@@ -95,6 +109,19 @@ export function Sheet({
   useEffect(() => {
     if (open) return;
     closing.set(true);
+    if (grows) {
+      fade.set(withTiming(0, GROW_FADE));
+      grow.set(
+        withSpring(
+          0,
+          { ...springs.sheet, overshootClamping: true },
+          (finished) => {
+            if (finished) scheduleOnRN(onExited);
+          },
+        ),
+      );
+      return;
+    }
     if (reduceMotion) {
       fade.set(
         withTiming(0, REDUCED_FADE, (finished) => {
@@ -118,6 +145,8 @@ export function Sheet({
     );
   }, [
     open,
+    grows,
+    grow,
     reduceMotion,
     fade,
     offset,
@@ -188,19 +217,30 @@ export function Sheet({
             Extrapolation.CLAMP,
           )
         : 0;
-    return { opacity: reduceMotion ? fade.get() * slide : slide };
+    return {
+      opacity:
+        reduceMotion || grows ? fade.get() * slide : slide,
+    };
   });
 
   const frameStyle = useAnimatedStyle(() => ({
     bottom: keyboard.height.get(),
   }));
 
-  const sheetStyle = useAnimatedStyle(() => ({
-    opacity: reduceMotion ? fade.get() : 1,
-    paddingBottom:
-      20 + Math.max(insets.bottom - keyboard.height.get(), 0),
-    transform: [{ translateY: offset.get() }],
-  }));
+  const sheetStyle = useAnimatedStyle(() => {
+    const scale = interpolate(grow.get(), [0, 1], [GROW_FROM, 1]);
+    return {
+      opacity: reduceMotion || grows ? fade.get() : 1,
+      paddingBottom:
+        20 + Math.max(insets.bottom - keyboard.height.get(), 0),
+      transformOrigin: [
+        '50%',
+        height.get() - (growFromBottom ?? 0),
+        0,
+      ],
+      transform: [{ translateY: offset.get() }, { scale }],
+    };
+  });
 
   return (
     <GestureHandlerRootView style={StyleSheet.absoluteFill}>
@@ -240,7 +280,11 @@ export function Sheet({
             const first = height.get() === 0;
             height.set(measured);
             if (!first || !open) return;
-            if (reduceMotion) {
+            if (grows) {
+              offset.set(0);
+              fade.set(withTiming(1, GROW_FADE));
+              grow.set(withSpring(1, springs.sheet));
+            } else if (reduceMotion) {
               offset.set(0);
               fade.set(withTiming(1, REDUCED_FADE));
             } else {
@@ -250,18 +294,22 @@ export function Sheet({
           }}
         >
           <GestureDetector gesture={pan}>
-            <View className="gap-3 pb-3">
+            <View style={{ gap, paddingBottom: gap }}>
               <View className="h-[5px] w-9 self-center rounded-full bg-hairline" />
               <View className="min-h-11 flex-row items-start gap-3">
                 <View className="flex-1 gap-0.5 pt-[9px]">
                   <Text
+                    variant="sectionTitle"
                     accessibilityRole="header"
-                    className="text-[22px] leading-[26px] font-display-bold text-foreground"
+                    className="text-foreground"
                   >
                     {title}
                   </Text>
                   {note ? (
-                    <Text className="text-[13px] leading-[18px] text-muted">
+                    <Text
+                      variant="meta"
+                      className="text-muted"
+                    >
                       {note}
                     </Text>
                   ) : null}
@@ -271,7 +319,6 @@ export function Sheet({
                     testID={tid('sheet', 'close')}
                     accessibilityLabel={closeLabel}
                     icon="close"
-                    glyphSize={22}
                     onPress={onDismiss}
                   />
                 ) : null}
