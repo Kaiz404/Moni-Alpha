@@ -139,6 +139,14 @@ export function todayInTimezone(now = new Date()) {
 
 const at = (day, time) => new Date(`${day}T${time}:00${UTC_OFFSET}`).toISOString();
 
+/** A bank alert as the wallet's app sends it. */
+function alertText(wallet, code, amount, day, time) {
+  const money = `RM${amount.toFixed(2)}`;
+  return wallet === 'tng'
+    ? `Touch 'n Go: Payment of ${money} to ${code} was successful.`
+    : `MAYBANK: You've spent ${money} at ${code} on ${day.slice(8)}/${day.slice(5, 7)} ${time}.`;
+}
+
 /** Mirrors `merchantKey` in lib/ai/routine.ts, which keys aliases, rules, and bill series. */
 export function merchantKey(merchant) {
   const text = (merchant ?? '').toLowerCase();
@@ -227,6 +235,10 @@ export function buildProfile(profile, { userId, today, systemCategories }) {
   const transactions = TRANSACTIONS.map(([day, time, merchant, alert, category, wallet, type, amount, place, source, extra = {}], index) => {
     const [locationName, lat, lng] = place ? PLACES[place] : [null, null, null];
     const coded = alert && (alert in MERCHANT_ALIASES || UNNAMED_CODES.includes(alert));
+    const kept =
+      source === 'notification' && alert && type === 'expense'
+        ? { alert: { text: alertText(wallet, alert, amount, shift(day), time), amountMinor: Math.round(amount * 100), currency: 'MYR' } }
+        : {};
     return transaction(`sample-${index + 1}`, {
       wallet_id: walletId(wallet),
       transfer_to_wallet_id: walletId(extra.to),
@@ -240,7 +252,7 @@ export function buildProfile(profile, { userId, today, systemCategories }) {
       location_latitude: lat,
       location_longitude: lng,
       location_name: locationName,
-      metadata: extra.auto ? { source, ai_suggested: true } : { source },
+      metadata: extra.auto ? { source, ai_suggested: true } : { source, ...kept },
     });
   });
 
@@ -396,18 +408,16 @@ export function buildProfile(profile, { userId, today, systemCategories }) {
   const proposals = PROPOSALS.map((p, index) => {
     const day = shift(p.date);
     const received = at(day, p.time);
-    const alertText = p.alert
-      ? `MAYBANK: You've spent RM${p.amount.toFixed(2)} at ${p.alert} on ${day.slice(8)}/${day.slice(5, 7)} ${p.time}.`
-      : null;
+    const alert = p.alert ? alertText(p.wallet, p.alert, p.amount, day, p.time) : null;
     return {
       ...base,
       id: id('proposal', p.key),
       source_type: p.source,
       source_app: p.source === 'notification' ? SHELL_PACKAGE : null,
       notification_title: p.source === 'notification' ? 'Maybank' : null,
-      notification_body: alertText,
+      notification_body: alert,
       notification_received_at: p.source === 'notification' ? received : null,
-      source_text: p.said ?? alertText,
+      source_text: p.said ?? alert,
       source_image_uri: null,
       ai_reasoning: p.reason,
       ai_confidence: p.confidence,

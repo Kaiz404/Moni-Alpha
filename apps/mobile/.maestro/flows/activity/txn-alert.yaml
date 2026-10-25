@@ -1,0 +1,29 @@
+# X4 a notification row keeps its bank alert per V2A-TxnDetailEdit: the amount edit reads "MYR · the alert said RM30.40".
+# Run: scripts/device/run-flows.sh .maestro/flows/activity/txn-alert.yaml
+appId: com.anonymous.moni.e2e
+name: X4 transaction bank alert
+tags:
+  - x4
+  - seed-full
+---
+- runFlow: ../../subflows/launch.yaml
+- tapOn:
+    id: nav.tab.activity
+- extendedWaitUntil:
+    visible:
+      id: activity.search
+    timeout: 15000
+- tapOn:
+    id: activity.search
+- inputText: shell
+- hideKeyboard
+- tapOn:
+    id: 'activity\.transaction\..*'
+    index: 0
+- assertVisible: '(?i).*Alert says shell'
+- tapOn:
+    id: txn.amount.edit
+- assertVisible: 'MYR · the alert said RM30.40'
+- takeScreenshot: x4-txn-alert
+- tapOn:
+    id: txn.amount.cancel

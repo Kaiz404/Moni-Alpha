@@ -9,6 +9,7 @@ import {
   type CreateProposedTransaction,
   type ProposedTransaction,
   type ProposedTransactionSourceType,
+  type TransactionAlert,
   type TransactionSource,
 } from '@repo/types';
 import { createTransaction, getTransactions } from './transactions';
@@ -261,6 +262,7 @@ export async function createProposedTransaction(
 export async function approveProposedTransaction(
   proposal: ProposedTransaction,
   wallets: { walletId: string; transferToWalletId?: string | null },
+  alert?: TransactionAlert,
 ): Promise<string> {
   if (!proposal.amountMinor || !proposal.type) {
     throw new Error('Cannot approve: amount or type is missing');
@@ -290,6 +292,7 @@ export async function approveProposedTransaction(
     locationLatitude: earlyLocation?.latitude ?? null,
     locationLongitude: earlyLocation?.longitude ?? null,
     locationName: earlyLocation?.name ?? null,
+    metadata: alert ? { alert } : undefined,
   }, proposalSource(proposal.sourceType));
 
   closeProposal(proposal, 'approved', transaction.id);

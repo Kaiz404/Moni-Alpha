@@ -108,6 +108,33 @@ describe('approve', () => {
     expect(listAwaitingReview(NOW)).toEqual([]);
   });
 
+  it('keeps the bank alert on the ledger row with the amount the alert said, not the edit', async () => {
+    const proposal = seed('p1');
+
+    await approve(proposal, { amountMinor: 1550 as MinorAmount });
+
+    expect(ledger()).toEqual([
+      expect.objectContaining({
+        metadata: {
+          source: 'notification',
+          alert: {
+            text: "MAYBANK: You've spent RM12.00 at GRAB on 14/10 12:41.",
+            amountMinor: 1200,
+            currency: 'MYR',
+          },
+        },
+      }),
+    ]);
+  });
+
+  it('keeps no alert for a capture that did not come from a notification', async () => {
+    const proposal = seed('p1', { source_type: 'text', notification_body: null });
+
+    await approve(proposal);
+
+    expect(ledger()).toEqual([expect.objectContaining({ metadata: { source: 'moni' } })]);
+  });
+
   it("adds an auto-add rule when Don't ask about similar is ticked", async () => {
     const proposal = seed('p1');
 

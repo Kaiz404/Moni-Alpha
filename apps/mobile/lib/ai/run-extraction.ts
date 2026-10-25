@@ -28,6 +28,7 @@ import {
 import { resolveNotificationCandidates } from '@/lib/notifications/notification-routing';
 import type { RawNotification } from '@/lib/ai/notification-types';
 import { getDefaultWalletId } from '@/lib/wallets/default-wallet';
+import { captureAlert } from '@/lib/transactions/alert';
 import { FALLBACK_CURRENCY, finalizeProposalWallet } from '@/lib/wallets/proposal-wallet';
 
 export type TraceEvent = {
@@ -231,7 +232,11 @@ async function persistProposal(
         locationLatitude: locationSnapshot?.latitude ?? null,
         locationLongitude: locationSnapshot?.longitude ?? null,
         locationName: locationSnapshot?.name ?? null,
-        metadata: { ai_suggested: true, ai_confidence: proposal.aiConfidence ?? undefined },
+        metadata: {
+          ai_suggested: true,
+          ai_confidence: proposal.aiConfidence ?? undefined,
+          alert: captureAlert(proposal),
+        },
       }, 'notification');
       trace(logger, 'creator', 'auto-added', { transactionId: transaction.id });
       return {

@@ -22,6 +22,7 @@ import {
   type RejectedProposal,
 } from '@/lib/supabase/proposed-transactions';
 import { deleteTransaction } from '@/lib/supabase/transactions';
+import { captureAlert } from '@/lib/transactions/alert';
 
 /**
  * What the user changed on a capture before deciding. A field left undefined keeps the
@@ -148,10 +149,11 @@ export async function approve(
   const row = openRow(proposal.id);
   if (!row) return { status: 'error', message: 'This capture was already reviewed.' };
   try {
-    const transactionId = await approveProposedTransaction(next, {
-      walletId: next.walletId,
-      transferToWalletId: next.transferToWalletId,
-    });
+    const transactionId = await approveProposedTransaction(
+      next,
+      { walletId: next.walletId, transferToWalletId: next.transferToWalletId },
+      captureAlert(proposal),
+    );
     keepProposalReceipt(next, transactionId);
     const ruleAdded = edits.similar ? await addSimilarRule(next) : false;
     return {

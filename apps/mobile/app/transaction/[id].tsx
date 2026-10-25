@@ -63,6 +63,7 @@ import {
 } from '@/lib/supabase/transactions';
 import { tid, type TestId } from '@/lib/test-ids';
 import { showToast } from '@/lib/toast/toast-store';
+import { transactionAlert } from '@/lib/transactions/alert';
 import { resolveTransactionIcon } from '@/lib/transactions/icon';
 import { BALANCE_CORRECTION_TITLE } from '@/lib/wallets/balance-correction';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
@@ -161,6 +162,7 @@ function Detail({ transaction: tx }: { transaction: FinanceTransaction }) {
     wallets.find((w) => w.id === tx.transferToWalletId) ?? null;
   const transfer = tx.type === 'transfer';
   const alert = source === 'notification' && tx.merchant !== null;
+  const bankAlert = source === 'notification' ? transactionAlert(raw?.metadata) : null;
   const correction = tx.balanceCorrection;
   const title = correction
     ? BALANCE_CORRECTION_TITLE
@@ -532,7 +534,11 @@ function Detail({ transaction: tx }: { transaction: FinanceTransaction }) {
               kind="amount"
               prefix={`${sign}${currencySymbol(tx.currency)}`}
               value={tx.amountMinor}
-              hint={tx.currency}
+              hint={
+                bankAlert
+                  ? `${tx.currency} · the alert said ${formatMoney(bankAlert.amountMinor, bankAlert.currency)}`
+                  : tx.currency
+              }
               onSave={(value) =>
                 value === tx.amountMinor
                   ? undefined
