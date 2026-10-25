@@ -1,0 +1,32 @@
+# V2H-AskMoniAnswer captures card: "Show my captures" lists the waiting captures on an Ink card with Open Review.
+# The card is filled on the phone, so it needs no model reply.
+# Run: scripts/device/run-flows.sh .maestro/flows/chat/captures.yaml
+appId: com.anonymous.moni.e2e
+name: H2 chat captures
+tags:
+  - h2
+  - seed-full
+---
+- runFlow: ../../subflows/launch.yaml
+- extendedWaitUntil:
+    visible:
+      id: home.ask-moni
+    timeout: 15000
+- tapOn:
+    id: home.ask-moni
+- tapOn:
+    id: chat.input
+- inputText: Show my captures
+- tapOn:
+    id: chat.send
+- extendedWaitUntil:
+    visible:
+      id: chat.answer.title
+    timeout: 15000
+- assertVisible:
+    id: chat.answer.title
+    text: '(\d+ captures?.*|All sorted)'
+- assertVisible: None of these count in your totals until you say yes.
+- assertVisible:
+    id: chat.answer.open-review
+- takeScreenshot: h2-captures-answer

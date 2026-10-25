@@ -36,6 +36,8 @@ import { tid, type TestId } from '@/lib/test-ids';
 import { showToast, undoToast } from '@/lib/toast/toast-store';
 import { resolveTransactionIcon } from '@/lib/transactions/icon';
 
+import { pickWallet } from './pick-wallet';
+
 type DraftMessage = Extract<ChatMessage, { kind: 'assistant_draft' }>;
 
 /** A chat capture as the compact Review card: edit in place, then Not mine, Later, or Approve. */
@@ -138,24 +140,10 @@ export function DraftCard({ message }: { message: DraftMessage }) {
     });
   };
 
-  const pickWallet = async () => {
-    const sameCurrency = wallets.filter((w) => w.currency === currency);
-    const picked = await openSheet({
-      kind: 'wallet',
-      title: 'Which wallet paid?',
-      wallets: (sameCurrency.length ? sameCurrency : wallets).map((w) => ({
-        id: w.id,
-        name: w.name,
-        currency: w.currency,
-        type: w.type,
-        icon: w.icon,
-        color: w.color,
-        cardStyleId: w.cardStyleId,
-      })),
-      selectedId: current.walletId,
-    });
-    if (picked?.walletId) set({ walletId: picked.walletId });
-    return picked?.walletId ?? null;
+  const chooseWallet = async () => {
+    const walletId = await pickWallet(wallets, currency, current.walletId);
+    if (walletId) set({ walletId });
+    return walletId;
   };
 
   const pickCategory = async () => {
@@ -174,7 +162,7 @@ export function DraftCard({ message }: { message: DraftMessage }) {
   };
 
   const onApprove = async () => {
-    const walletId = current.walletId ?? (await pickWallet());
+    const walletId = current.walletId ?? (await chooseWallet());
     if (!walletId) return;
     const chosen = wallets.find((w) => w.id === walletId);
     haptics.approve();
@@ -281,7 +269,7 @@ export function DraftCard({ message }: { message: DraftMessage }) {
           }
           empty={{ label: 'Pick a wallet', icon: 'wallet-outline' }}
           accessibilityLabel={wallet ? `Wallet: ${wallet.name}. Change` : 'Pick a wallet'}
-          onPress={() => void pickWallet()}
+          onPress={() => void chooseWallet()}
         />
       </View>
 

@@ -166,6 +166,8 @@ async function extractText(text: string, turn: Turn, answerIfSkipped: boolean) {
 async function answer(text: string, turn: Turn) {
   const userId = await getUserId();
   const card = userId ? pickAnswerCard(text, buildAnswerSnapshot(userId)) : null;
+  if (card?.kind === 'captures')
+    return turn.finish({ role: 'assistant', kind: 'assistant_card', card, content: '', analysis: false });
   const analysis = await analyzeUserFinances(text);
   if (card)
     return turn.finish({

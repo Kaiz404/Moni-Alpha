@@ -7,10 +7,11 @@ const snapshot: AnswerSnapshot = {
     { id: 'food', name: 'Food & Dining', icon: 'silverware-fork-knife', color: '#F1A399', spent: 34980, budget: 45000 },
     { id: 'transport', name: 'Transport', icon: 'car', color: '#9FC4E8', spent: 14000, budget: 12000 },
   ],
-  month: { spent: 111620, budget: 180000, left: 44300, daysLeft: 18, perDay: 2400 },
+  month: { spent: 111620, budget: 180000, left: 44300, daysLeft: 18, perDay: 2400, owed: [] },
   bills: [
     { seriesKey: 'netflix', name: 'Netflix', amount: 5490, dueDate: '2026-10-15', walletName: 'Maybank Savings' },
   ],
+  waiting: ['p1', 'p2', 'p3'],
 };
 
 describe('noticedItems', () => {
@@ -29,7 +30,7 @@ describe('noticedItems', () => {
         meta: 'RM115.80 · not in your totals yet',
         icon: 'inbox-arrow-down',
         tint: 'lilac',
-        target: { kind: 'review' },
+        target: { kind: 'ask', question: 'Show my 3 captures' },
       },
       {
         title: 'Netflix is due tomorrow',

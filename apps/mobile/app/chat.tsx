@@ -96,7 +96,7 @@ export default function ChatScreen() {
     return subscribeThreads((day) => {
       if (day === viewDay) setMessages(readThread(day).messages);
     });
-  }, [viewDay]);
+  }, [viewDay, today]);
 
   useEffect(() => {
     if (params.draft) setInput(params.draft);

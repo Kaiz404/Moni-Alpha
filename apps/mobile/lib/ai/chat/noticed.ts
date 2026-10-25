@@ -35,7 +35,10 @@ export function noticedItems(
       meta: `${money(waiting.amount)} · not in your totals yet`,
       icon: 'inbox-arrow-down',
       tint: 'lilac',
-      target: { kind: 'review' },
+      target: {
+        kind: 'ask',
+        question: `Show my ${waiting.count} ${waiting.count === 1 ? 'capture' : 'captures'}`,
+      },
     });
 
   const bill = snapshot.bills[0];

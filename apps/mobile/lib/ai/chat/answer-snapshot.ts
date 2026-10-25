@@ -6,6 +6,7 @@ import { selectMainCurrency } from '@/lib/finance/main-currency';
 import { financeProjection$ } from '@/lib/finance/projection';
 import { debtsWithBalance$, transactions$ } from '@/lib/finance/selectors';
 import { profilePreferences$ } from '@/lib/store';
+import { listAwaitingReview } from '@/lib/supabase/proposed-transactions';
 import { listRecurringOverrides } from '@/lib/supabase/recurring-overrides';
 
 import type { AnswerSnapshot } from './answer-cards';
@@ -51,7 +52,11 @@ export function buildAnswerSnapshot(userId: string, now: Date = new Date()): Ans
       left: month.left ? Number(month.left.leftMinor) : null,
       daysLeft: month.left?.daysLeft ?? month.daysInMonth - now.getDate() + 1,
       perDay: month.left && month.left.perDayMinor > 0 ? Number(month.left.perDayMinor) : null,
+      owed: month.left?.debtsDue ?? [],
     },
+    waiting: listAwaitingReview(now)
+      .filter((proposal) => proposal.userId === userId)
+      .map((proposal) => proposal.id),
     bills: month.billsDue.map((bill) => ({
       seriesKey: bill.seriesKey,
       name: bill.name,
