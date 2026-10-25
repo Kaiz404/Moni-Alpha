@@ -79,7 +79,7 @@ Checked 21 Oct 2026. Every row is built; new data work adds Zod schemas in `pack
 | Source tile (Manual, Voice, Moni, Notification, Camera) | `transactions.metadata.source`; older rows read as Manual | Done (A2) |
 | Merchant names | `merchantName(raw, aliases)` in `lib/finance/merchant-name.ts` | Done on Home, Activity, wallet pages and Review |
 | Main currency | `preferences.currency`, `useMainCurrency()`, set from Profile | Done on every focused page |
-| Review history, Not mine / Later | `later`, `snoozed_until`; Approve and Not mine stamp a status before the soft delete | Deck done (R1); history stays D6 |
+| Review history, Not mine / Later | `later`, `snoozed_until`; Approve and Not mine stamp `reviewed_at` and keep the row (`20261025000000_review_history.sql`) | Done: deck (R1), Recently reviewed (G4) |
 | Chat generative cards, draft cards, one thread per day | Message kinds in `lib/ai/chat/messages.ts` | Done (H2) |
 
 Already supported: debts with repayments and write-off, monthly category budgets, multi-currency wallets, balance check-in, proposal review, routine auto-add, notification linking per wallet, transaction location, receipt scan (ML Kit), voice capture, custom categories, the spending map (`react-native-maps`), SVG charts, Funnel Display (400/600/700), the six motion tokens, the haptics table, balance correction (`correctBalance`), location from notifications per banking app, and stored capture log statuses.
@@ -93,7 +93,7 @@ The app builds the default for each. [`redesign/PLAN.md`](redesign/PLAN.md) ("Op
 - D3. No logo, mascot, reactions, or logging streak.
 - D4. Home keeps both the ask box and the Moni header button.
 - D5. Debts hero tiles filter in place; Remind opens the Android share sheet.
-- D6. Review keeps no stored history; "All caught up" lists this session's results.
+- D6. Decided 25 Oct 2026: Review keeps its history. "Recently reviewed" lists 30 days; rows older than 90 days are soft-deleted.
 - D7. The Review deck shows a blank card at scale 0.96 under the top card.
 - D8. Motion has six tokens: five springs and `drag`.
 - D9. The Budget tab keeps the "Edit" link beside Budgets as the way into `V2P-BudgetEdit` (canvas thread 8cd5c2da asks to remove it).
@@ -112,6 +112,7 @@ The screen tracks reported these differences in their handoffs. Each waits for t
 - Budget calendar: the day cut-offs.
 - Scan a receipt: the ML Kit scanner (D11).
 - Wallet page: **Use as default** is an addition. It sets the wallet captures fall back to, which v1 set on Profile.
+- Review: **Recently reviewed** is an addition with no board, designed in the `XA-Review` and `V2F-Components` style (D6). It lists the last 30 days of Approve and Not mine by day under All caught up, and folds into one control under the deck buttons while captures wait. The All caught up card keeps its sentence and drops the session rows that the board draws, because the list below shows them.
 
 ## Suggested build order
 

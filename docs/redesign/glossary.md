@@ -11,6 +11,7 @@ The words the redesigned app uses, and the words it never uses. The design canva
 | Ask Moni | The label on the ways into Moni chat: the + chooser row, the Moni header button (Home, Activity), the ask box on Home. |
 | Review | The screen holding captures that wait for a decision. |
 | Approve · Not mine · Later | The three actions on every capture: chat draft cards, the Review card, the notification. Approve is on the right. |
+| Recently reviewed, Move back to review | The Review page's list of the last 30 days of Approve and Not mine, and the button on a Not mine row that returns it to the deck. |
 | Don't ask about similar | The checkbox on a capture. Moni then adds similar alerts without asking and marks them Auto. |
 | Auto | The pill on a row Moni added without asking (routine auto-add). |
 | Added, Auto-added, Waiting for review, Ignored, Not linked | The five statuses in the Capture log. |
