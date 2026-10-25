@@ -1,4 +1,8 @@
-import { decimalToMinor, minorToDecimal, type MinorAmount } from '@repo/types';
+import {
+  decimalToMinor,
+  minorToDecimal,
+  type MinorAmount,
+} from '@repo/types';
 import {
   createContext,
   useCallback,
@@ -10,7 +14,13 @@ import {
   type ReactElement,
   type ReactNode,
 } from 'react';
-import { BackHandler, Keyboard, TextInput, View, type TextInputProps } from 'react-native';
+import {
+  BackHandler,
+  Keyboard,
+  TextInput,
+  View,
+  type TextInputProps,
+} from 'react-native';
 
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Press } from '@/components/ui/press';
@@ -49,13 +59,21 @@ export function InPlaceGroup({
     },
     [controlled, onEditingChange],
   );
-  const group = useMemo(() => ({ editing, setEditing }), [editing, setEditing]);
-  return <GroupContext.Provider value={group}>{children}</GroupContext.Provider>;
+  const group = useMemo(
+    () => ({ editing, setEditing }),
+    [editing, setEditing],
+  );
+  return (
+    <GroupContext.Provider value={group}>
+      {children}
+    </GroupContext.Provider>
+  );
 }
 
 function useGroup(): Group {
   const group = useContext(GroupContext);
-  if (!group) throw new Error('InPlaceField needs an InPlaceGroup above it');
+  if (!group)
+    throw new Error('InPlaceField needs an InPlaceGroup above it');
   return group;
 }
 
@@ -74,7 +92,10 @@ type EditableOptions = {
 
 export type InPlaceSlots = {
   /** The value with the pencil 8 after it. Pressing either opens the field. */
-  editable: (value: ReactNode, options?: EditableOptions) => ReactElement;
+  editable: (
+    value: ReactNode,
+    options?: EditableOptions,
+  ) => ReactElement;
   /** The open field with cancel and save, or null at rest. */
   editor: ReactElement | null;
   open: () => void;
@@ -127,7 +148,11 @@ export type InPlaceFieldProps = AmountFieldProps | TextFieldProps;
 
 export function parseAmountDraft(
   draft: string,
-  { whole = false, signed = false, max }: { whole?: boolean; signed?: boolean; max?: number },
+  {
+    whole = false,
+    signed = false,
+    max,
+  }: { whole?: boolean; signed?: boolean; max?: number },
 ): MinorAmount | null {
   const cleaned = draft.trim().replaceAll(',', '').replace('−', '-');
   if (!cleaned || (whole && !/^-?\d+$/.test(cleaned))) return null;
@@ -145,7 +170,9 @@ export function parseAmountDraft(
 function initialDraft(props: InPlaceFieldProps): string {
   if (props.kind !== 'amount') return props.value;
   if (props.value === null) return '';
-  return props.whole ? String(Math.trunc(props.value / 100)) : minorToDecimal(props.value);
+  return props.whole
+    ? String(Math.trunc(props.value / 100))
+    : minorToDecimal(props.value);
 }
 
 type Bound = {
@@ -159,7 +186,10 @@ function bind(props: InPlaceFieldProps, draft: string): Bound {
   if (props.kind === 'amount') {
     const value = parseAmountDraft(draft, props);
     return {
-      hint: typeof props.hint === 'function' ? props.hint(value) : props.hint,
+      hint:
+        typeof props.hint === 'function'
+          ? props.hint(value)
+          : props.hint,
       commit: value === null ? null : () => props.onSave(value),
       typed: value,
     };
@@ -167,7 +197,10 @@ function bind(props: InPlaceFieldProps, draft: string): Bound {
   const text = draft.trim();
   const value = props.required && !text ? null : text;
   return {
-    hint: typeof props.hint === 'function' ? props.hint(value) : props.hint,
+    hint:
+      typeof props.hint === 'function'
+        ? props.hint(value)
+        : props.hint,
     commit: value === null ? null : () => props.onSave(value),
     typed: null,
   };
@@ -197,7 +230,10 @@ export function InPlaceField(props: InPlaceFieldProps) {
 
   const bound = bind(props, draft);
   const { setEditing } = group;
-  const open = useCallback(() => setEditing(testID), [setEditing, testID]);
+  const open = useCallback(
+    () => setEditing(testID),
+    [setEditing, testID],
+  );
   const { onCancel } = props;
   const cancel = useCallback(() => {
     setEditing(null);
@@ -210,12 +246,19 @@ export function InPlaceField(props: InPlaceFieldProps) {
         setEditing(null);
         const fail = (error: unknown) =>
           showToast({
-            text: error instanceof Error ? error.message : "Couldn't save that",
+            text:
+              error instanceof Error
+                ? error.message
+                : "Couldn't save that",
             tone: 'removed',
           });
         try {
           void Promise.resolve(commit()).then((saved) => {
-            if (saved) showToast({ text: saved.text ?? `${label} saved`, undo: saved.undo });
+            if (saved)
+              showToast({
+                text: saved.text ?? `${label} saved`,
+                undo: saved.undo,
+              });
           }, fail);
         } catch (error) {
           fail(error);
@@ -223,21 +266,35 @@ export function InPlaceField(props: InPlaceFieldProps) {
       }
     : null;
 
-  const editable: InPlaceSlots['editable'] = (value, options = {}) => {
+  const editable: InPlaceSlots['editable'] = (
+    value,
+    options = {},
+  ) => {
     const busy = group.editing !== null;
     return (
       <Press
         testID={tid(testID, 'edit')}
-        accessibilityLabel={options.accessibilityLabel ?? `Edit ${lowerFirst(label)}`}
+        accessibilityLabel={
+          options.accessibilityLabel ?? `Edit ${lowerFirst(label)}`
+        }
         accessibilityHint="Opens the keyboard"
         accessibilityState={{ disabled: busy }}
         disabled={busy}
         pressedScale={1}
         pressedClassName="bg-transparent"
-        className={options.className ?? 'min-h-11 max-w-full flex-row items-center gap-2 self-start'}
+        className={
+          options.className ??
+          'min-h-11 max-w-full flex-row items-center gap-2 self-start'
+        }
         onPress={open}
       >
-        <View className={options.className ? 'min-w-0 flex-1' : 'min-w-0 flex-shrink'}>
+        <View
+          className={
+            options.className
+              ? 'min-w-0 flex-1'
+              : 'min-w-0 flex-shrink'
+          }
+        >
           {value}
         </View>
         {busy || options.pencil === false ? null : (
@@ -265,7 +322,13 @@ export function InPlaceField(props: InPlaceFieldProps) {
   ) : null;
 
   if (typeof props.children === 'function')
-    return props.children({ editable, editor, open, draft, setDraft });
+    return props.children({
+      editable,
+      editor,
+      open,
+      draft,
+      setDraft,
+    });
   return editor ?? editable(props.children);
 }
 
@@ -282,10 +345,13 @@ function useCancelOnDismiss(cancel: () => void) {
     const hide = Keyboard.addListener('keyboardDidHide', () => {
       if (shown) cancel();
     });
-    const back = BackHandler.addEventListener('hardwareBackPress', () => {
-      cancel();
-      return true;
-    });
+    const back = BackHandler.addEventListener(
+      'hardwareBackPress',
+      () => {
+        cancel();
+        return true;
+      },
+    );
     return () => {
       show.remove();
       hide.remove();
@@ -328,7 +394,8 @@ function Editor({
   }, [onCancel]);
   useCancelOnDismiss(cancel);
 
-  const onDraftChange = field.kind === 'amount' ? field.onDraftChange : undefined;
+  const onDraftChange =
+    field.kind === 'amount' ? field.onDraftChange : undefined;
   useEffect(() => {
     onDraftChange?.(typed);
   }, [onDraftChange, typed]);
@@ -388,8 +455,12 @@ function Editor({
       }
       multiline={note}
       maxLength={field.kind === 'amount' ? 12 : field.maxLength}
-      placeholder={field.kind === 'amount' ? undefined : field.placeholder}
-      autoCapitalize={field.kind === 'amount' ? 'none' : field.autoCapitalize}
+      placeholder={
+        field.kind === 'amount' ? undefined : field.placeholder
+      }
+      autoCapitalize={
+        field.kind === 'amount' ? 'none' : field.autoCapitalize
+      }
       placeholderTextColor={tokens.muted}
       cursorColor={tokens.foreground}
       selectionColor={tokens.foreground}
@@ -401,7 +472,11 @@ function Editor({
             : 'h-full min-w-0 flex-1 p-0 font-display-semibold text-[18px] leading-[22px] text-foreground'
       }
       style={
-        note ? { textAlignVertical: 'top' } : amount ? { fontVariant: ['tabular-nums'] } : undefined
+        note
+          ? { textAlignVertical: 'top' }
+          : amount
+            ? { fontVariant: ['tabular-nums'] }
+            : undefined
       }
     />
   );
@@ -410,8 +485,12 @@ function Editor({
     <View className="gap-1.5">
       {note ? (
         <>
-          <View className="rounded-field border-2 border-foreground bg-card px-3.5 py-3">{input}</View>
-          <View className="flex-row justify-end gap-2">{buttons}</View>
+          <View className="rounded-field border-2 border-foreground bg-card px-3.5 py-3">
+            {input}
+          </View>
+          <View className="flex-row justify-end gap-2">
+            {buttons}
+          </View>
         </>
       ) : (
         <View className="flex-row items-center gap-2">

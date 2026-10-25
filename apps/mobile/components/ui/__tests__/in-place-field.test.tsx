@@ -1,13 +1,26 @@
 import type { MinorAmount } from '@repo/types';
-import { act, fireEvent, render, screen } from '@testing-library/react-native';
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+} from '@testing-library/react-native';
 import { useState } from 'react';
 import { View } from 'react-native';
 
-import { InPlaceField, InPlaceGroup, parseAmountDraft } from '@/components/ui/in-place-field';
+import {
+  InPlaceField,
+  InPlaceGroup,
+  parseAmountDraft,
+} from '@/components/ui/in-place-field';
 import { Press } from '@/components/ui/press';
 import { Text } from '@/components/ui/text';
 import { tid, type TestId } from '@/lib/test-ids';
-import { dismissToast, undoToast, useToast } from '@/lib/toast/toast-store';
+import {
+  dismissToast,
+  undoToast,
+  useToast,
+} from '@/lib/toast/toast-store';
 
 jest.mock('uniwind', () => ({
   useCSSVariable: (names: string[]) => names.map(() => undefined),
@@ -18,7 +31,11 @@ const rm = (minor: number) => minor as MinorAmount;
 
 function ToastText() {
   const toast = useToast();
-  return toast ? <Text testID={tid('nav', 'toast')}>{`${toast.tone}: ${toast.text}`}</Text> : null;
+  return toast ? (
+    <Text
+      testID={tid('nav', 'toast')}
+    >{`${toast.tone}: ${toast.text}`}</Text>
+  ) : null;
 }
 
 function Fields({
@@ -75,7 +92,10 @@ describe('InPlaceField', () => {
     const onAmount = jest.fn();
     render(<Fields onAmount={onAmount} />);
     fireEvent.press(screen.getByTestId('txn.amount.edit'));
-    fireEvent.changeText(screen.getByTestId('txn.amount.input'), '12.5');
+    fireEvent.changeText(
+      screen.getByTestId('txn.amount.input'),
+      '12.5',
+    );
     fireEvent.press(screen.getByTestId('txn.amount.save'));
     expect(onAmount).toHaveBeenCalledWith(1250);
     expect(screen.queryByTestId('txn.amount.input')).toBeNull();
@@ -86,8 +106,14 @@ describe('InPlaceField', () => {
     const onName = jest.fn();
     render(<Fields onName={onName} />);
     fireEvent.press(screen.getByTestId('txn.merchant.edit'));
-    fireEvent.changeText(screen.getByTestId('txn.merchant.input'), '  Shell Damansara ');
-    fireEvent(screen.getByTestId('txn.merchant.input'), 'submitEditing');
+    fireEvent.changeText(
+      screen.getByTestId('txn.merchant.input'),
+      '  Shell Damansara ',
+    );
+    fireEvent(
+      screen.getByTestId('txn.merchant.input'),
+      'submitEditing',
+    );
     expect(onName).toHaveBeenCalledWith('Shell Damansara');
   });
 
@@ -95,11 +121,16 @@ describe('InPlaceField', () => {
     const onAmount = jest.fn();
     render(<Fields onAmount={onAmount} />);
     fireEvent.press(screen.getByTestId('txn.amount.edit'));
-    fireEvent.changeText(screen.getByTestId('txn.amount.input'), '99');
+    fireEvent.changeText(
+      screen.getByTestId('txn.amount.input'),
+      '99',
+    );
     fireEvent.press(screen.getByTestId('txn.amount.cancel'));
     expect(onAmount).not.toHaveBeenCalled();
     fireEvent.press(screen.getByTestId('txn.amount.edit'));
-    expect(screen.getByTestId('txn.amount.input').props.value).toBe('30.40');
+    expect(screen.getByTestId('txn.amount.input').props.value).toBe(
+      '30.40',
+    );
   });
 
   it('cancels when the input loses focus, but not after a save', () => {
@@ -134,7 +165,9 @@ describe('InPlaceField', () => {
     render(<Fields />);
     fireEvent.press(screen.getByTestId('txn.merchant.edit'));
     const amount = screen.getByTestId('txn.amount.edit');
-    expect(amount.props.accessibilityState).toEqual({ disabled: true });
+    expect(amount.props.accessibilityState).toEqual({
+      disabled: true,
+    });
     fireEvent.press(amount);
     expect(screen.queryByTestId('txn.amount.input')).toBeNull();
     expect(screen.getByTestId('txn.merchant.input')).toBeTruthy();
@@ -145,7 +178,9 @@ describe('InPlaceField', () => {
     render(<Fields onAmount={onAmount} />);
     fireEvent.press(screen.getByTestId('txn.amount.edit'));
     fireEvent.changeText(screen.getByTestId('txn.amount.input'), '0');
-    expect(screen.getByTestId('txn.amount.save').props.accessibilityState).toEqual({
+    expect(
+      screen.getByTestId('txn.amount.save').props.accessibilityState,
+    ).toEqual({
       disabled: true,
     });
     fireEvent.press(screen.getByTestId('txn.amount.save'));
@@ -157,7 +192,10 @@ describe('InPlaceField', () => {
     const onName = jest.fn();
     render(<Fields onName={onName} />);
     fireEvent.press(screen.getByTestId('txn.merchant.edit'));
-    fireEvent.changeText(screen.getByTestId('txn.merchant.input'), '   ');
+    fireEvent.changeText(
+      screen.getByTestId('txn.merchant.input'),
+      '   ',
+    );
     fireEvent.press(screen.getByTestId('txn.merchant.save'));
     expect(onName).not.toHaveBeenCalled();
   });
@@ -166,19 +204,36 @@ describe('InPlaceField', () => {
     const undo = jest.fn();
     render(<Fields onAmount={() => ({ undo })} />);
     fireEvent.press(screen.getByTestId('txn.amount.edit'));
-    fireEvent.changeText(screen.getByTestId('txn.amount.input'), '31');
+    fireEvent.changeText(
+      screen.getByTestId('txn.amount.input'),
+      '31',
+    );
     fireEvent.press(screen.getByTestId('txn.amount.save'));
-    expect(await screen.findByText('done: Amount saved')).toBeTruthy();
+    expect(
+      await screen.findByText('done: Amount saved'),
+    ).toBeTruthy();
     act(() => undoToast());
     expect(undo).toHaveBeenCalledTimes(1);
   });
 
   it('uses the toast text a save hands back, after the save settles', async () => {
-    render(<Fields onName={async () => ({ undo: jest.fn(), text: 'Renamed to Shell Damansara' })} />);
+    render(
+      <Fields
+        onName={async () => ({
+          undo: jest.fn(),
+          text: 'Renamed to Shell Damansara',
+        })}
+      />,
+    );
     fireEvent.press(screen.getByTestId('txn.merchant.edit'));
-    fireEvent.changeText(screen.getByTestId('txn.merchant.input'), 'Shell Damansara');
+    fireEvent.changeText(
+      screen.getByTestId('txn.merchant.input'),
+      'Shell Damansara',
+    );
     fireEvent.press(screen.getByTestId('txn.merchant.save'));
-    expect(await screen.findByText('done: Renamed to Shell Damansara')).toBeTruthy();
+    expect(
+      await screen.findByText('done: Renamed to Shell Damansara'),
+    ).toBeTruthy();
   });
 
   it('shows a save that fails as a removed toast with its message', async () => {
@@ -191,7 +246,9 @@ describe('InPlaceField', () => {
     );
     fireEvent.press(screen.getByTestId('txn.merchant.edit'));
     fireEvent.press(screen.getByTestId('txn.merchant.save'));
-    expect(await screen.findByText('removed: Offline. Not saved.')).toBeTruthy();
+    expect(
+      await screen.findByText('removed: Offline. Not saved.'),
+    ).toBeTruthy();
   });
 
   it('shows no toast when the save hands back nothing', () => {
@@ -223,7 +280,9 @@ describe('InPlaceField', () => {
     expect(input.props.placeholder).toBe('Who it was with');
     fireEvent.changeText(input, 'Lunch with Mei\nat Pavilion');
     fireEvent.press(screen.getByTestId('txn.note.save'));
-    expect(onNote).toHaveBeenCalledWith('Lunch with Mei\nat Pavilion');
+    expect(onNote).toHaveBeenCalledWith(
+      'Lunch with Mei\nat Pavilion',
+    );
   });
 
   it('places the editor where the render function puts it and shows a hint from the draft', () => {
@@ -236,7 +295,11 @@ describe('InPlaceField', () => {
           prefix="RM"
           value={rm(5490)}
           max={10_000_000}
-          hint={(value) => (value === null ? 'Type an amount above RM0.' : 'From Thu 15 Oct on.')}
+          hint={(value) =>
+            value === null
+              ? 'Type an amount above RM0.'
+              : 'From Thu 15 Oct on.'
+          }
           onSave={jest.fn()}
         >
           {({ editable, editor }) => (
@@ -251,8 +314,13 @@ describe('InPlaceField', () => {
     fireEvent.press(screen.getByTestId('budget.bill-amount.edit'));
     expect(screen.getByText('Netflix')).toBeTruthy();
     expect(screen.getByText('From Thu 15 Oct on.')).toBeTruthy();
-    fireEvent.changeText(screen.getByTestId('budget.bill-amount.input'), '100000');
-    expect(screen.getByText('Type an amount above RM0.')).toBeTruthy();
+    fireEvent.changeText(
+      screen.getByTestId('budget.bill-amount.input'),
+      '100000',
+    );
+    expect(
+      screen.getByText('Type an amount above RM0.'),
+    ).toBeTruthy();
   });
 
   it('lets the page open a field and follow which one is open', () => {
@@ -287,11 +355,23 @@ describe('InPlaceField', () => {
     }
     render(<Page />);
     fireEvent.press(screen.getByTestId('budget.edit.add'));
-    expect(screen.getByTestId('budget.edit.cap.food.input').props.value).toBe('');
-    expect(screen.getByTestId('budget.edit.cap.food.input').props.keyboardType).toBe('number-pad');
-    fireEvent.changeText(screen.getByTestId('budget.edit.cap.food.input'), '300');
-    expect(screen.getByText('open budget.edit.cap.food, typed 30000')).toBeTruthy();
-    fireEvent.press(screen.getByTestId('budget.edit.cap.food.cancel'));
+    expect(
+      screen.getByTestId('budget.edit.cap.food.input').props.value,
+    ).toBe('');
+    expect(
+      screen.getByTestId('budget.edit.cap.food.input').props
+        .keyboardType,
+    ).toBe('number-pad');
+    fireEvent.changeText(
+      screen.getByTestId('budget.edit.cap.food.input'),
+      '300',
+    );
+    expect(
+      screen.getByText('open budget.edit.cap.food, typed 30000'),
+    ).toBeTruthy();
+    fireEvent.press(
+      screen.getByTestId('budget.edit.cap.food.cancel'),
+    );
     expect(screen.getByText('open none, typed none')).toBeTruthy();
   });
 
@@ -311,7 +391,12 @@ describe('InPlaceField', () => {
               <>
                 {editor}
                 <Press
-                  testID={tid('merchants', 'to-name', 'grab', 'guess')}
+                  testID={tid(
+                    'merchants',
+                    'to-name',
+                    'grab',
+                    'guess',
+                  )}
                   onPress={() => setDraft('Grab Food')}
                 />
               </>
@@ -322,10 +407,18 @@ describe('InPlaceField', () => {
         </InPlaceField>
       </InPlaceGroup>,
     );
-    fireEvent.press(screen.getByTestId('merchants.to-name.grab.edit'));
-    fireEvent.press(screen.getByTestId('merchants.to-name.grab.guess'));
-    expect(screen.getByTestId('merchants.to-name.grab.input').props.value).toBe('Grab Food');
-    fireEvent.press(screen.getByTestId('merchants.to-name.grab.save'));
+    fireEvent.press(
+      screen.getByTestId('merchants.to-name.grab.edit'),
+    );
+    fireEvent.press(
+      screen.getByTestId('merchants.to-name.grab.guess'),
+    );
+    expect(
+      screen.getByTestId('merchants.to-name.grab.input').props.value,
+    ).toBe('Grab Food');
+    fireEvent.press(
+      screen.getByTestId('merchants.to-name.grab.save'),
+    );
     expect(onName).toHaveBeenCalledWith('Grab Food');
   });
 });
@@ -351,7 +444,11 @@ describe('parseAmountDraft', () => {
   });
 
   it('stays below max', () => {
-    expect(parseAmountDraft('99999', { max: 10_000_000 })).toBe(9_999_900);
-    expect(parseAmountDraft('100000', { max: 10_000_000 })).toBeNull();
+    expect(parseAmountDraft('99999', { max: 10_000_000 })).toBe(
+      9_999_900,
+    );
+    expect(
+      parseAmountDraft('100000', { max: 10_000_000 }),
+    ).toBeNull();
   });
 });

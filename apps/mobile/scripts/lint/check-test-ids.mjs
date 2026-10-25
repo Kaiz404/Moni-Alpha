@@ -33,6 +33,7 @@ export const CONTROLS = [
   'Chip',
   'NavRow',
   'TransactionRow',
+  'InPlaceField',
 ];
 
 // A component that wraps a control passes its own testID prop through, typed as TestId, so the

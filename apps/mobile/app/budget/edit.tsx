@@ -195,7 +195,7 @@ export default function EditBudgetsScreen() {
             Monthly total
           </Text>
           <InPlaceField
-            testID={fieldOf(TOTAL)}
+            testID={tid('budget', 'total')}
             label="Monthly total"
             kind="amount"
             prefix={currencySymbol(currency)}
@@ -292,7 +292,7 @@ export default function EditBudgetsScreen() {
                 return (
                   <InPlaceField
                     key={category.id}
-                    testID={fieldOf(category.id)}
+                    testID={tid('budget', 'cap', category.id)}
                     label={`${category.name} budget`}
                     kind="amount"
                     prefix={currencySymbol(currency)}

@@ -220,7 +220,7 @@ export function ReviewCard({
         <View>
           {transfer ? null : (
             <InPlaceField
-              testID={FIELD.merchant}
+              testID={tid('review', 'merchant')}
               label="Merchant name"
               kind="text"
               required
@@ -244,7 +244,7 @@ export function ReviewCard({
             </InPlaceField>
           )}
           <InPlaceField
-            testID={FIELD.amount}
+            testID={tid('review', 'amount')}
             label="Amount"
             kind="amount"
             prefix={amountText.replace(/[\d.,]/g, '')}
