@@ -218,8 +218,7 @@ export function Sheet({
           )
         : 0;
     return {
-      opacity:
-        reduceMotion || grows ? fade.get() * slide : slide,
+      opacity: reduceMotion || grows ? fade.get() * slide : slide,
     };
   });
 

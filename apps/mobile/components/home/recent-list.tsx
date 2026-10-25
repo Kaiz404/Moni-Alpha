@@ -4,13 +4,17 @@ import { EmptyTile } from '@/components/ui/empty-tile';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { ListCard } from '@/components/ui/list-card';
 import { Press } from '@/components/ui/press';
+import { RiseIn, RiseInGroup } from '@/components/ui/rise-in';
 import { Text } from '@/components/ui/text';
 import { useTransactionHold } from '@/components/transaction/use-transaction-hold';
 import { TransactionRow } from '@/components/ui/transaction-row';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import type { FinanceTransaction } from '@/lib/finance/types';
 import { tid } from '@/lib/test-ids';
-import { transactionRow, type RowLookups } from '@/lib/transactions/row';
+import {
+  transactionRow,
+  type RowLookups,
+} from '@/lib/transactions/row';
 
 /** "Recent": the newest three rows and See all, or the first-run empty tile. */
 export function RecentList({
@@ -45,7 +49,9 @@ export function RecentList({
             pressedClassName="bg-transparent"
             className="min-h-11 flex-row items-center gap-0.5"
           >
-            <Text className="text-[15px] font-display-semibold text-deep-mint">See all</Text>
+            <Text className="text-[15px] font-display-semibold text-deep-mint">
+              See all
+            </Text>
             <IconSymbol
               name="chevron-right"
               size={18}
@@ -56,19 +62,30 @@ export function RecentList({
       </View>
       {transactions.length ? (
         <ListCard>
-          {transactions.map((transaction) => {
-            const row = transactionRow(transaction, lookups);
-            return (
-              <TransactionRow
-                key={transaction.id}
-                testID={tid('home', 'recent', 'row', transaction.id)}
-                row={row}
-                metaLead="date"
-                onPress={() => onOpen(transaction)}
-                onHold={hold.holdFor(transaction, row)}
-              />
-            );
-          })}
+          <RiseInGroup>
+            {transactions.map((transaction, index) => {
+              const row = transactionRow(transaction, lookups);
+              return (
+                <RiseIn
+                  key={transaction.id}
+                  index={index}
+                >
+                  <TransactionRow
+                    testID={tid(
+                      'home',
+                      'recent',
+                      'row',
+                      transaction.id,
+                    )}
+                    row={row}
+                    metaLead="date"
+                    onPress={() => onOpen(transaction)}
+                    onHold={hold.holdFor(transaction, row)}
+                  />
+                </RiseIn>
+              );
+            })}
+          </RiseInGroup>
         </ListCard>
       ) : (
         <EmptyTile
