@@ -122,6 +122,8 @@ describe('useThemeTokens', () => {
       onLemon: '#6b5410',
       onLilac: '#3e3654',
       onMint: '#174831',
+      onInkMeta: '#a9a397',
+      onInkBody: '#efe8da',
     });
   });
 

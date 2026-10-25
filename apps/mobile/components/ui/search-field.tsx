@@ -24,7 +24,7 @@ export function SearchField({
 }) {
   const tokens = useThemeTokens();
   return (
-    <View className="h-[52px] flex-row items-center gap-2.5 rounded-full bg-card pl-4 pr-1.5">
+    <View className="h-[52px] flex-row items-center gap-2.5 rounded-full bg-card pl-[18px] pr-1.5">
       <IconSymbol
         name="magnify"
         size={20}

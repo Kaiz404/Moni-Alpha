@@ -9,7 +9,13 @@ import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import type { TestId } from '@/lib/test-ids';
 
 /** The soft bubble fills on Moni's Ink cards: a pastel's light step, or a category's own colour. */
-export type SoftTint = 'coral' | 'mint' | 'lilac' | 'lemon' | 'sand' | { color: string | null };
+export type SoftTint =
+  | 'coral'
+  | 'mint'
+  | 'lilac'
+  | 'lemon'
+  | 'sand'
+  | { color: string | null };
 
 const FILL: Record<Exclude<SoftTint, object>, string> = {
   coral: 'bg-destructive-fill',
@@ -19,20 +25,14 @@ const FILL: Record<Exclude<SoftTint, object>, string> = {
   sand: 'bg-sand',
 };
 
-/**
- * Secondary text on an Ink card: #A9A397 and #EFE8DA on the boards. In dark the card turns cream
- * (Contrast), where those light tones vanish, so the text dims its own ink instead.
- */
+/** Secondary text on an Ink card: #A9A397 and #EFE8DA on the boards, a dimmed ink on the cream dark card. */
 export function useOnInk() {
   const tokens = useThemeTokens();
-  const dark = useUniwind().theme === 'dark';
-  return dark
-    ? {
-        meta: 'text-primary-foreground opacity-70',
-        body: 'text-primary-foreground opacity-90',
-        metaGlyph: tokens.primaryForeground,
-      }
-    : { meta: 'text-inactive', body: 'text-sand-light', metaGlyph: tokens.inactive };
+  return {
+    meta: 'text-on-ink-meta',
+    body: 'text-on-ink-body',
+    metaGlyph: tokens.onInkMeta,
+  };
 }
 
 export function SoftBubble({
@@ -69,7 +69,13 @@ export function SoftBubble({
 }
 
 /** The "MONI" caps line that opens every Ink card. */
-export function InkCardLabel({ label, trailing }: { label: string; trailing?: string }) {
+export function InkCardLabel({
+  label,
+  trailing,
+}: {
+  label: string;
+  trailing?: string;
+}) {
   const tokens = useThemeTokens();
   const onInk = useOnInk();
   return (
@@ -86,7 +92,11 @@ export function InkCardLabel({ label, trailing }: { label: string; trailing?: st
         {label}
       </Text>
       {trailing ? (
-        <Text className={`text-[12px] leading-[16px] font-display-semibold ${onInk.meta}`}>{trailing}</Text>
+        <Text
+          className={`text-[12px] leading-[16px] font-display-semibold ${onInk.meta}`}
+        >
+          {trailing}
+        </Text>
       ) : null}
     </View>
   );

@@ -71,6 +71,8 @@ export const themeTokenNames = [
   'on-lemon',
   'on-lilac',
   'on-mint',
+  'on-ink-meta',
+  'on-ink-body',
 ] as const;
 
 export type ThemeTokenName = (typeof themeTokenNames)[number];
@@ -146,6 +148,8 @@ export const lightThemeTokens: Record<ThemeTokenName, string> = {
   'on-lemon': '#6b5410',
   'on-lilac': '#3e3654',
   'on-mint': '#174831',
+  'on-ink-meta': '#a9a397',
+  'on-ink-body': '#efe8da',
 };
 
 export const darkThemeTokens: Record<ThemeTokenName, string> = {
@@ -219,4 +223,6 @@ export const darkThemeTokens: Record<ThemeTokenName, string> = {
   'on-lemon': '#6b5410',
   'on-lilac': '#3e3654',
   'on-mint': '#174831',
+  'on-ink-meta': '#575653',
+  'on-ink-body': '#2c2d2d',
 };

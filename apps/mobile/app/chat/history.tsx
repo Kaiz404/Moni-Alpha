@@ -2,7 +2,10 @@ import { router } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { ScrollView, View } from 'react-native';
 
-import { SoftBubble, type SoftTint } from '@/components/chat/ink-card';
+import {
+  SoftBubble,
+  type SoftTint,
+} from '@/components/chat/ink-card';
 import { HeaderIconButton } from '@/components/ui/header-icon-button';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { ListSection } from '@/components/ui/list-card';
@@ -43,16 +46,27 @@ type Row = {
 /** The bubble a day wears: what its latest card was about, or Moni's Lilac for plain talk. */
 function topicOf(messages: readonly ChatMessage[]): Topic {
   const projection = financeProjection$.peek();
-  const categoryTopic = (categoryId: string | null | undefined, type: 'expense' | 'income'): Topic => {
-    const category = categoryId ? projection.categoriesById[categoryId] : null;
+  const categoryTopic = (
+    categoryId: string | null | undefined,
+    type: 'expense' | 'income',
+  ): Topic => {
+    const category = categoryId
+      ? projection.categoriesById[categoryId]
+      : null;
     return category
-      ? { icon: resolveTransactionIcon(category.icon, type), tint: { color: category.color } }
+      ? {
+          icon: resolveTransactionIcon(category.icon, type),
+          tint: { color: category.color },
+        }
       : { icon: 'receipt-text-outline', tint: 'sand' };
   };
   for (const message of [...messages].reverse()) {
     if (message.kind === 'assistant_draft') {
       const proposal = projection.proposalsById[message.proposalId];
-      return categoryTopic(proposal?.categoryId, proposal?.type === 'income' ? 'income' : 'expense');
+      return categoryTopic(
+        proposal?.categoryId,
+        proposal?.type === 'income' ? 'income' : 'expense',
+      );
     }
     if (message.kind !== 'assistant_card') continue;
     switch (message.card.kind) {
@@ -99,11 +113,17 @@ function previewOf(messages: readonly ChatMessage[]): string {
 
 function toRow(thread: ChatThread, now: Date): Row {
   const date = parseLocalDateInput(thread.day) ?? now;
-  const title = thread.day === todayThreadDay(now) ? 'Today' : formatDate(date, now);
+  const title =
+    thread.day === todayThreadDay(now)
+      ? 'Today'
+      : formatDate(date, now);
   const talk = thread.messages.filter(
-    (m) => m.kind !== 'assistant_status' && m.kind !== 'assistant_noticed',
+    (m) =>
+      m.kind !== 'assistant_status' && m.kind !== 'assistant_noticed',
   );
-  const drafts = thread.messages.filter((m) => m.kind === 'assistant_draft');
+  const drafts = thread.messages.filter(
+    (m) => m.kind === 'assistant_draft',
+  );
   const open = drafts.filter((m) => !m.outcome).length;
   const added = drafts.find((m) => m.outcome?.kind === 'approved');
   const words = thread.messages
@@ -119,13 +139,20 @@ function toRow(thread: ChatThread, now: Date): Row {
     title,
     count: talk.length,
     pill: open
-      ? { text: `${open} ${open === 1 ? 'draft' : 'drafts'}`, tone: 'draft' }
+      ? {
+          text: `${open} ${open === 1 ? 'draft' : 'drafts'}`,
+          tone: 'draft',
+        }
       : added?.kind === 'assistant_draft' && added.outcome
-        ? { text: `Added ${added.outcome.title.split(' ').at(-1)}`, tone: 'added' }
+        ? {
+            text: `Added ${added.outcome.title.split(' ').at(-1)}`,
+            tone: 'added',
+          }
         : null,
     preview,
     topic: topicOf(thread.messages),
-    searchText: `${title} ${formatDate(date, now)} ${words} ${preview}`.toLowerCase(),
+    searchText:
+      `${title} ${formatDate(date, now)} ${words} ${preview}`.toLowerCase(),
   };
 }
 
@@ -136,7 +163,10 @@ export default function ChatHistoryScreen() {
   const [query, setQuery] = useState('');
   const [editing, setEditing] = useState(false);
 
-  useEffect(() => subscribeThreads(() => setThreads(listThreads())), []);
+  useEffect(
+    () => subscribeThreads(() => setThreads(listThreads())),
+    [],
+  );
 
   const now = new Date();
   const rows = useMemo(() => {
@@ -148,12 +178,22 @@ export default function ChatHistoryScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [threads, query]);
 
-  const weekStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 6);
+  const weekStart = new Date(
+    now.getFullYear(),
+    now.getMonth(),
+    now.getDate() - 6,
+  );
   const pad = (n: number) => String(n).padStart(2, '0');
   const weekKey = `${weekStart.getFullYear()}-${pad(weekStart.getMonth() + 1)}-${pad(weekStart.getDate())}`;
   const groups = [
-    { name: 'This week', rows: rows.filter((row) => row.day >= weekKey) },
-    { name: 'Earlier', rows: rows.filter((row) => row.day < weekKey) },
+    {
+      name: 'This week',
+      rows: rows.filter((row) => row.day >= weekKey),
+    },
+    {
+      name: 'Earlier',
+      rows: rows.filter((row) => row.day < weekKey),
+    },
   ].filter((group) => group.rows.length);
 
   const remove = (row: Row) => {
@@ -172,20 +212,13 @@ export default function ChatHistoryScreen() {
       title="Past days"
       trailing={
         editing ? (
-          <Press
+          <HeaderIconButton
             testID={tid('chat', 'history', 'edit')}
             accessibilityLabel="Done deleting"
-            accessibilityState={{ selected: true }}
+            icon="check"
+            active
             onPress={() => setEditing(false)}
-            pressedClassName="bg-primary-pressed"
-            className="h-11 w-11 items-center justify-center rounded-full border-[1.5px] border-primary bg-primary"
-          >
-            <IconSymbol
-              name="check"
-              size={20}
-              color={tokens.primaryForeground}
-            />
-          </Press>
+          />
         ) : (
           <HeaderIconButton
             testID={tid('chat', 'history', 'edit')}
@@ -223,7 +256,12 @@ export default function ChatHistoryScreen() {
                   testID={tid('chat', 'history', 'day', row.day)}
                   disabled={editing}
                   accessibilityLabel={`${row.title}, ${row.count} messages${row.preview ? `, ${row.preview}` : ''}`}
-                  onPress={() => router.dismissTo({ pathname: '/chat', params: { day: row.day } })}
+                  onPress={() =>
+                    router.dismissTo({
+                      pathname: '/chat',
+                      params: { day: row.day },
+                    })
+                  }
                   className="min-h-[66px] flex-1 flex-row items-center gap-3.5 py-3 pl-[18px] pr-3"
                 >
                   <SoftBubble
@@ -253,7 +291,10 @@ export default function ChatHistoryScreen() {
                           <Text
                             className="text-[12px] font-display-bold"
                             style={{
-                              color: row.pill.tone === 'draft' ? tokens.states.pending : tokens.states.approved,
+                              color:
+                                row.pill.tone === 'draft'
+                                  ? tokens.states.pending
+                                  : tokens.states.approved,
                             }}
                           >
                             {row.pill.text}

@@ -93,5 +93,7 @@ export function useThemeTokens() {
     onLemon: t['on-lemon'],
     onLilac: t['on-lilac'],
     onMint: t['on-mint'],
+    onInkMeta: t['on-ink-meta'],
+    onInkBody: t['on-ink-body'],
   };
 }

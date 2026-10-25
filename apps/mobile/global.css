@@ -100,6 +100,9 @@
       --color-on-lemon: #6b5410;
       --color-on-lilac: #3e3654;
       --color-on-mint: #174831;
+      /* Secondary text on an Ink card (AI moments). */
+      --color-on-ink-meta: #a9a397;
+      --color-on-ink-body: #efe8da;
     }
 
     @variant dark {
@@ -178,6 +181,8 @@
       --color-on-lemon: #6b5410;
       --color-on-lilac: #3e3654;
       --color-on-mint: #174831;
+      --color-on-ink-meta: #575653;
+      --color-on-ink-body: #2c2d2d;
     }
   }
 }
