@@ -2,6 +2,7 @@ import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import { View } from 'react-native';
 
+import { CapturePill } from '@/components/capture/capture-pill';
 import { Button } from '@/components/ui/button';
 import {
   IconSymbol,
@@ -56,23 +57,18 @@ export function CaptureReading({ quote }: { quote: CaptureQuote }) {
               />
             </View>
           )}
-          <View className="h-[26px] flex-row items-center gap-[7px] rounded-full bg-lilac px-3">
-            <View className="h-1.5 w-1.5 rounded-full bg-foreground" />
-            <Text
-              variant="meta"
-              className="font-display-bold text-on-pastel"
-            >
-              {camera
-                ? 'Moni is reading the receipt'
-                : 'Moni is reading what you said'}
-            </Text>
-          </View>
+          <CapturePill
+            tone="pending"
+            label={camera ? 'Moni is reading the receipt' : 'Moni is reading what you said'}
+          />
         </View>
-        <View className="h-[52px] w-3/5 rounded-field bg-sand-light" />
-        <View className="h-16 rounded-field bg-sand-light" />
-        <View className="flex-row gap-2">
-          <View className="h-16 flex-1 rounded-field bg-sand-light" />
-          <View className="h-16 flex-1 rounded-field bg-sand-light" />
+        <View className="h-[52px] w-[220px] rounded-field bg-sand" />
+        <View className="gap-2">
+          <View className="h-16 rounded-field bg-sand" />
+          <View className="flex-row gap-2">
+            <View className="h-16 flex-1 rounded-field bg-sand" />
+            <View className="h-16 flex-1 rounded-field bg-sand" />
+          </View>
         </View>
       </View>
     </Page>
