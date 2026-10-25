@@ -29,6 +29,7 @@ import { startBackgroundProcessor } from '@/lib/ai/background-processor';
 import { QueryProvider } from '@/lib/query/query-client';
 import { drainImageUploadQueue } from '@/lib/receipts/upload-queue';
 import { pruneIncompleteProposals } from '@/lib/supabase/proposed-transactions';
+import { pruneReviewHistoryDaily } from '@/lib/proposals/review-history';
 import { applyStoredThemePreference } from '@/lib/theme/preference';
 import { prepareOfflineSpeechModel } from '@/lib/speech/speech-recognition';
 
@@ -109,6 +110,7 @@ export default function RootLayout() {
   // Drain pending image uploads whenever the app comes to foreground
   useEffect(() => {
     pruneIncompleteProposals().catch(() => {});
+    pruneReviewHistoryDaily();
     drainImageUploadQueue().catch(() => {});
     prepareOfflineSpeechModel().catch(() => {});
 
@@ -117,6 +119,7 @@ export default function RootLayout() {
         uploadAppState.current.match(/inactive|background/) &&
         nextState === 'active'
       ) {
+        pruneReviewHistoryDaily();
         drainImageUploadQueue().catch(() => {});
         prepareOfflineSpeechModel().catch(() => {});
       }
