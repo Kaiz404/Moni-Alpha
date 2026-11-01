@@ -25,7 +25,6 @@ if (Platform.OS === 'android') {
   const { captureStatusAtIntake } = require('./lib/notifications/capture-status.core');
   const { recordHeard } = require('./lib/notifications/capture-health.core');
   const { enrichNotificationPackage } = require('./lib/notifications/notification-package.core');
-  const { cacheNotificationAppIcon } = require('./lib/notifications/app-icon-cache.core');
   const { isRepeatedNotification } = require('./lib/notifications/notification-repeat.core');
   const { REVIEW_TASK, isOwnNotification } = require('./lib/notifications/review-notification.core');
   const TaskManager = require('expo-task-manager');
@@ -86,9 +85,6 @@ if (Platform.OS === 'android') {
         linked: packageLinked,
         at: enriched.receivedAt,
       });
-      if (enriched.packageName && enriched.icon) {
-        cacheNotificationAppIcon(enriched.packageName, enriched.icon);
-      }
       const queueEligible = prefilterPassed && packageLinked && !repeated;
       console.log(
         '[NotifCapture] stored',

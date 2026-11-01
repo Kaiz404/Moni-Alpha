@@ -5,7 +5,11 @@ import { PickerField } from '@/components/ui/picker-field';
 import { Press } from '@/components/ui/press';
 import { Text } from '@/components/ui/text';
 import { IconSymbol } from '@/components/ui/icon-symbol';
-import { useNotificationSourcePermission } from '@/components/wallets/notification-source';
+import {
+  NotificationAppIcon,
+  useAppIcon,
+  useNotificationSourcePermission,
+} from '@/components/wallets/notification-source';
 import { labelForNotificationPackage } from '@/constants/notification-apps';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { NOTIFICATION_ACCESS_DISCLOSURE } from '@/lib/notifications/permission';
@@ -19,7 +23,7 @@ type Props = {
   sharedPackageWalletNames?: string[];
 };
 
-/** "Alerts from": the banking app whose notifications become this wallet's captures. */
+/** "Alerts from": the app whose notifications become this wallet's captures. */
 export function WalletNotificationLinkSection({
   value,
   onChange,
@@ -27,6 +31,7 @@ export function WalletNotificationLinkSection({
 }: Props) {
   const tokens = useThemeTokens();
   const permission = useNotificationSourcePermission();
+  const icon = useAppIcon(value.notificationPackage);
   const selectedLabel =
     value.notificationAppLabel ||
     (value.notificationPackage
@@ -40,7 +45,7 @@ export function WalletNotificationLinkSection({
   const accessRow = needsAccess ? (
     <Press
       testID={tid('wallet', 'enable-notification-access')}
-      accessibilityLabel="Let Moni read bank alerts"
+      accessibilityLabel="Let Moni read alerts"
       pressedClassName="bg-hairline"
       className="flex-row items-center gap-3 rounded-field bg-sand px-3.5 py-3"
       onPress={() => void permission.openNotificationSettings()}
@@ -52,7 +57,7 @@ export function WalletNotificationLinkSection({
       />
       <View className="min-w-0 flex-1">
         <Text className="text-base font-display-semibold text-foreground">
-          Let Moni read bank alerts
+          Let Moni read alerts
         </Text>
         <Text className="text-[13px] leading-[18px] text-muted">
           Turn on notification access before linking an app. {NOTIFICATION_ACCESS_DISCLOSURE}
@@ -67,6 +72,7 @@ export function WalletNotificationLinkSection({
     const pick = await openSheet({
       kind: 'notificationApp',
       selected: value.notificationPackage,
+      selectedLabel,
     });
     if (!pick) return;
     onChange({
@@ -85,6 +91,14 @@ export function WalletNotificationLinkSection({
         testID={tid('wallet', 'alerts-from')}
         label="Alerts from"
         value={selectedLabel ?? "Don't link"}
+        mark={
+          value.notificationPackage ? (
+            <NotificationAppIcon
+              iconUri={icon}
+              size={20}
+            />
+          ) : undefined
+        }
         onPress={() => void pickApp()}
       />
       {value.notificationPackage &&

@@ -38,7 +38,7 @@ Input → `processing-queue.ts` (MMKV) → `background-processor.ts` (Android FG
 
 - Client results are `{ status: 'ok' | 'skipped' | 'unavailable' }` — never throw across this boundary
 - Wire types in `lib/ai/client/types.ts` must match `apps/backend/internal/extract/types.go`
-- Notification prefilter is on-device (`lib/notifications/notification-filter.core.js`). Headless-shared helpers: see rule `mobile-headless-js` (`*.core.js` + thin `*.ts`). Wallet–app linking: `notification_package` on wallets + MMKV linked-package cache; installed app labels/icons, the battery exemption and the Autostart link via `modules/moni-android-apps` (Android 11+ `<queries>` and `REQUEST_IGNORE_BATTERY_OPTIMIZATIONS` in `plugins/with-notification-listener-manifest.js`; rebuild dev client after native/manifest changes, and a stale build reads the battery row as unavailable rather than crashing).
+- Notification prefilter is on-device (`lib/notifications/notification-filter.core.js`). Headless-shared helpers: see rule `mobile-headless-js` (`*.core.js` + thin `*.ts`). Wallet–app linking: any launchable app, on the wallet page or form: `notification_package` on wallets + MMKV linked-package cache; the app list with labels and icons, the battery exemption and the Autostart link via `modules/moni-android-apps` (a MAIN and LAUNCHER `<queries>` intent and `REQUEST_IGNORE_BATTERY_OPTIMIZATIONS` in `plugins/with-notification-listener-manifest.js`, never `QUERY_ALL_PACKAGES`; rebuild dev client after native/manifest changes, and a stale build lists only the known finance apps and reads the battery row as unavailable rather than crashing).
 
 ## Routing (expo-router)
 

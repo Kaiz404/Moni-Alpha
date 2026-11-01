@@ -65,7 +65,7 @@ type Sheets = {
   walletType: { request: { selected: WalletKind }; result: WalletKind };
   transactionType: { request: { selected: TransactionType | null }; result: TransactionType };
   notificationApp: {
-    request: { selected: string | null };
+    request: { selected: string | null; selectedLabel?: string | null };
     result: { app: NotificationApp | null };
   };
   /** Dates are local `YYYY-MM-DD`. */

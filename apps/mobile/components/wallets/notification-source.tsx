@@ -1,18 +1,16 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { AppState, Platform, View } from 'react-native';
 import { Image } from 'expo-image';
 
 import { IconSymbol } from '@/components/ui/icon-symbol';
-import {
-  groupCuratedAppsByRegion,
-  resolveInstalledPackageForCurated,
-} from '@/constants/notification-apps';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { getCachedAppIcon } from '@/lib/notifications/app-icon-cache';
 import {
+  canListEveryApp,
   getCachedInstalledAppsMap,
+  getInstalledAppInfo,
   isMoniAndroidAppsNativeAvailable,
-  preloadInstalledApps,
+  refreshInstalledApps,
   type InstalledAppInfo,
 } from '@/lib/notifications/installed-apps';
 import {
@@ -21,71 +19,51 @@ import {
   type NotificationListenerPermission,
 } from '@/lib/notifications/permission';
 
-export type InstalledBankApp = {
-  packageName: string;
-  label: string;
-  /** The region label, such as "Malaysia". */
-  region: string;
-  iconUri: string | null;
-};
+export type AppListing =
+  | { kind: 'not_android' }
+  | { kind: 'needs_rebuild' }
+  | { kind: 'loading' }
+  /** `everyApp` is false on a build from before the launcher query. */
+  | { kind: 'listed'; apps: ReadonlyMap<string, InstalledAppInfo>; everyApp: boolean };
 
-/** Curated banking apps installed on this phone, or why none can be listed. */
-export function useNotificationSourceData() {
-  const [installed, setInstalled] = useState<
-    Map<string, InstalledAppInfo>
-  >(() => getCachedInstalledAppsMap() ?? new Map());
+/** The apps on this phone: the last listing at once, and a fresh one as soon as it arrives. */
+export function useInstalledApps(): AppListing {
+  const [apps, setApps] = useState(getCachedInstalledAppsMap);
 
   useEffect(() => {
-    if (Platform.OS !== 'android') return;
     let cancelled = false;
-    void preloadInstalledApps().then((apps) => {
-      if (!cancelled) setInstalled(apps);
+    void refreshInstalledApps().then((next) => {
+      if (!cancelled) setApps(next);
     });
     return () => {
       cancelled = true;
     };
   }, []);
 
-  const resolved = getCachedInstalledAppsMap() ?? installed;
-  const loading =
-    Platform.OS === 'android' && !getCachedInstalledAppsMap();
+  if (Platform.OS !== 'android') return { kind: 'not_android' };
+  if (!isMoniAndroidAppsNativeAvailable()) return { kind: 'needs_rebuild' };
+  if (!apps) return { kind: 'loading' };
+  return { kind: 'listed', apps, everyApp: canListEveryApp() };
+}
 
-  const apps = useMemo(
-    () =>
-      groupCuratedAppsByRegion().flatMap((section) =>
-        section.apps.flatMap((app): InstalledBankApp[] => {
-          const packageName = resolveInstalledPackageForCurated(
-            resolved,
-            app,
-          );
-          if (!packageName) return [];
-          const native = resolved.get(packageName);
-          return [
-            {
-              packageName,
-              label: native?.label ?? app.label,
-              region: section.title,
-              iconUri:
-                native?.iconUri ?? getCachedAppIcon(packageName),
-            },
-          ];
-        }),
-      ),
-    [resolved],
-  );
+/** The app's launcher icon: what's kept if anything, otherwise asked of the phone by name. */
+export function useAppIcon(packageName: string | null): string | null {
+  const [icon, setIcon] = useState(() => (packageName ? getCachedAppIcon(packageName) : null));
 
-  const unavailableReason =
-    Platform.OS !== 'android'
-      ? 'Linking a banking app works on Android only.'
-      : !isMoniAndroidAppsNativeAvailable()
-        ? 'Listing installed apps needs a native rebuild.'
-        : loading
-          ? 'Looking for banking apps on this phone…'
-          : apps.length === 0
-            ? 'No supported banking or e-wallet app is installed on this phone.'
-            : null;
+  useEffect(() => {
+    const cached = packageName ? getCachedAppIcon(packageName) : null;
+    setIcon(cached);
+    if (!packageName || cached) return;
+    let cancelled = false;
+    void getInstalledAppInfo(packageName).then((app) => {
+      if (!cancelled) setIcon(app?.iconUri ?? null);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [packageName]);
 
-  return { installed: resolved, apps, unavailableReason };
+  return icon;
 }
 
 export function useNotificationSourcePermission() {
@@ -111,17 +89,6 @@ export function useNotificationSourcePermission() {
     notificationAccessEnabled: permission === 'authorized',
     openNotificationSettings: askForNotificationAccess,
   };
-}
-
-export function getNotificationAppIconUri(
-  packageName: string | null,
-  installed: Map<string, InstalledAppInfo>,
-) {
-  if (!packageName) return null;
-  return (
-    installed.get(packageName)?.iconUri ??
-    getCachedAppIcon(packageName)
-  );
 }
 
 export function NotificationAppIcon({

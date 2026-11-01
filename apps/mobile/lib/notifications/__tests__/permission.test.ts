@@ -9,7 +9,7 @@ describe('asking for notification access', () => {
     await askForNotificationAccess();
     expect(openSheet).toHaveBeenCalledWith({
       kind: 'confirm',
-      title: 'Let Moni read bank alerts?',
+      title: 'Let Moni read alerts?',
       message:
         'One-time codes never leave this phone, and other payment alerts from the apps you link go to a cloud AI model that reads them.',
       confirmLabel: 'Open settings',

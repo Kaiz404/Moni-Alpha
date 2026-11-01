@@ -52,7 +52,7 @@ export function openNotificationListenerSettings(): void {
 export async function askForNotificationAccess(): Promise<void> {
   const confirmed = await openSheet({
     kind: 'confirm',
-    title: 'Let Moni read bank alerts?',
+    title: 'Let Moni read alerts?',
     message: NOTIFICATION_ACCESS_DISCLOSURE,
     confirmLabel: 'Open settings',
     cancelLabel: 'Not now',

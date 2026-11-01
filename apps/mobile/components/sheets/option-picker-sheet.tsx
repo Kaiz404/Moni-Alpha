@@ -1,6 +1,6 @@
 import { useValue } from '@legendapp/state/react';
 import { useMemo, useState, type ReactNode } from 'react';
-import { FlatList, View } from 'react-native';
+import { ActivityIndicator, FlatList, View } from 'react-native';
 
 import { sameName } from '@/components/debts/past-people';
 import { PersonAvatar } from '@/components/debts/person-avatar';
@@ -14,13 +14,14 @@ import {
 import { Text } from '@/components/ui/text';
 import {
   NotificationAppIcon,
-  useNotificationSourceData,
+  useInstalledApps,
 } from '@/components/wallets/notification-source';
 import { WalletIcon } from '@/components/wallets/wallet-icon';
 import {
   CURRENCY_OPTIONS,
   resolveCurrencyOption,
 } from '@/constants/currencies';
+import { labelForNotificationPackage } from '@/constants/notification-apps';
 import { getWalletCardStyle } from '@/constants/wallet-card-styles';
 import { WALLET_TYPE_OPTIONS } from '@/constants/wallet-form';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
@@ -32,6 +33,9 @@ import {
 } from '@/lib/finance/format-money';
 import { useMainCurrency } from '@/lib/finance/main-currency';
 import { walletBalanceMinor$ } from '@/lib/finance/selectors';
+import { getCachedAppIcon, saveAppIcon } from '@/lib/notifications/app-icon-cache';
+import { appPickerRows } from '@/lib/notifications/app-picker';
+import { curatedPackagesEquivalent } from '@/lib/notifications/notification-package-aliases';
 import type {
   SheetRequestOf,
   SheetResult,
@@ -78,6 +82,8 @@ type OptionPickerSheetProps = SheetFrameProps & {
   /** Shows the search field and filters on name and meta. */
   searchPlaceholder?: string;
   size?: 'fit' | 'large';
+  /** Below the rows, such as while more of them load. */
+  footer?: ReactNode;
 };
 
 /** A Paper list card of option rows with a radio mark. Tapping a row saves and closes. */
@@ -89,6 +95,7 @@ export function OptionPickerSheet({
   onPick,
   searchPlaceholder,
   size = 'fit',
+  footer,
   ...frame
 }: OptionPickerSheetProps) {
   const tokens = useThemeTokens();
@@ -133,6 +140,7 @@ export function OptionPickerSheet({
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
           initialNumToRender={12}
+          ListFooterComponent={footer ? <>{footer}</> : undefined}
           ListEmptyComponent={
             <View className="rounded-tile border-[1.5px] border-dashed border-hairline p-4">
               <Text className="text-center text-[15px] font-display-semibold text-foreground">
@@ -440,25 +448,35 @@ export function PersonSheet({
   );
 }
 
+const APP_LISTING_NOTE: Record<'not_android' | 'needs_rebuild', string> = {
+  not_android: 'Linking an app works on Android only.',
+  needs_rebuild: 'Listing the apps on this phone needs a new build of Moni.',
+};
+
 export function NotificationAppSheet({
   request,
   onPick,
   ...frame
 }: KindSheetProps<'notificationApp'>) {
   const tokens = useThemeTokens();
-  const { apps, unavailableReason } = useNotificationSourceData();
-  const options: PickerOption[] = [
-    ...apps.map((app) => ({
-      id: app.packageName,
-      name: app.label,
-      meta: app.region,
-      leading: (
-        <NotificationAppIcon
-          iconUri={app.iconUri}
-          size={42}
-        />
+  const listing = useInstalledApps();
+  const installed = listing.kind === 'listed' ? listing.apps : null;
+  const { selected, selectedLabel } = request;
+  const rows = useMemo(
+    () =>
+      appPickerRows(
+        installed?.values() ?? [],
+        selected
+          ? {
+              packageName: selected,
+              label: selectedLabel ?? labelForNotificationPackage(selected),
+              iconUri: getCachedAppIcon(selected),
+            }
+          : null,
       ),
-    })),
+    [installed, selected, selectedLabel],
+  );
+  const options: PickerOption[] = [
     {
       id: NONE,
       name: "Don't link",
@@ -473,26 +491,61 @@ export function NotificationAppSheet({
         </Bubble>
       ),
     },
+    ...rows.map(
+      (app): PickerOption => ({
+        id: app.packageName,
+        name: app.label,
+        meta: app.missing ? 'Not found on this phone' : app.suggested ? 'Suggested' : undefined,
+        leading: (
+          <NotificationAppIcon
+            iconUri={app.iconUri}
+            size={42}
+          />
+        ),
+      }),
+    ),
   ];
+  const searchable = listing.kind === 'loading' || listing.kind === 'listed';
   return (
     <OptionPickerSheet
       {...frame}
+      size="large"
       title="Alerts from"
       note={
-        unavailableReason ??
-        'Moni reads spending alerts only from the app you pick.'
+        listing.kind === 'not_android' || listing.kind === 'needs_rebuild'
+          ? APP_LISTING_NOTE[listing.kind]
+          : listing.kind === 'listed' && !listing.everyApp
+            ? 'This build of Moni lists only the finance apps it knows. A new build lists every app.'
+            : 'Moni reads spending alerts only from the app you pick.'
       }
+      searchPlaceholder={searchable ? 'Search apps' : undefined}
       options={options}
-      selectedId={request.selected ?? NONE}
+      selectedId={
+        rows.find(
+          (app) => selected && curatedPackagesEquivalent(app.packageName, selected),
+        )?.packageName ?? NONE
+      }
+      footer={
+        listing.kind === 'loading' ? (
+          <View className="flex-row items-center gap-3 px-[18px] py-4">
+            <ActivityIndicator color={tokens.muted} />
+            <Text
+              variant="meta"
+              className="text-muted"
+            >
+              Looking for the apps on this phone
+            </Text>
+          </View>
+        ) : undefined
+      }
       onPick={(id) => {
-        const app = apps.find(
-          (candidate) => candidate.packageName === id,
-        );
-        onPick({
-          app: app
-            ? { packageName: app.packageName, label: app.label }
-            : null,
-        });
+        const app = rows.find((row) => row.packageName === id);
+        if (!app) {
+          onPick({ app: null });
+          return;
+        }
+        saveAppIcon(app.packageName, app.iconUri);
+        onPick({ app: { packageName: app.packageName, label: app.label } });
       }}
     />
   );

@@ -4,7 +4,7 @@ import { useMemo } from 'react';
 import { wallets$ } from '@/lib/store';
 import { isActive } from '@/lib/store/helpers';
 
-/** "Alerts from": the banking app whose notifications become this wallet's captures. */
+/** "Alerts from": the app whose notifications become this wallet's captures. */
 export type WalletAlertLink = {
   notificationPackage: string | null;
   notificationAppLabel: string | null;

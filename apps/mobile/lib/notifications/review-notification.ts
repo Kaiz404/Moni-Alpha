@@ -341,7 +341,7 @@ export function reviewProposalIdOf(response: Notifications.NotificationResponse)
   return data?.kind === 'review' || data?.kind === 'decided' ? data.proposalId : null;
 }
 
-/** Android 13+ needs POST_NOTIFICATIONS. Asked once a banking app is linked, never before. */
+/** Android 13+ needs POST_NOTIFICATIONS. Asked once an app is linked, never before. */
 export async function ensureReviewNotificationPermission(): Promise<void> {
   if (Platform.OS !== 'android' || readLinkedPackagesFromCache().length === 0) return;
   const current = await Notifications.getPermissionsAsync();

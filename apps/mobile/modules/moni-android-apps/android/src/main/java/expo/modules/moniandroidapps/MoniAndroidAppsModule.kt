@@ -2,6 +2,7 @@ package expo.modules.moniandroidapps
 
 import android.content.Context
 import android.content.Intent
+import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.Canvas
@@ -14,9 +15,12 @@ import android.provider.Settings
 import android.view.WindowManager
 import android.util.Base64
 import android.util.Log
+import expo.modules.kotlin.functions.Coroutine
 import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
 import java.io.ByteArrayOutputStream
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 class MoniAndroidAppsModule : Module() {
   private val reactContext
@@ -31,6 +35,11 @@ class MoniAndroidAppsModule : Module() {
 
     AsyncFunction("getAppInfoAsync") { packageName: String ->
       getAppInfo(packageName.trim())
+    }
+
+    // Every Expo async function shares one thread, and this one draws an icon per app.
+    AsyncFunction("listLaunchableAppsAsync") Coroutine { ->
+      withContext(Dispatchers.Default) { listLaunchableApps() }
     }
 
     // Pan moves the whole window, header included, so a page that lifts its own composer turns it off.
@@ -87,10 +96,7 @@ class MoniAndroidAppsModule : Module() {
     }
   }
 
-  /**
-   * Only return the package IDs the picker can display. A launcher-wide scan
-   * produces hundreds of base64 icon payloads and can stall the JS/UI thread.
-   */
+  /** A build whose manifest lacks the launcher query sees only the packages it names. */
   private fun getInstalledApps(packageNames: List<String>): List<Map<String, Any?>> {
     val apps = packageNames
       .asSequence()
@@ -105,6 +111,24 @@ class MoniAndroidAppsModule : Module() {
     return apps
   }
 
+  /** Reaches every launchable app through the MAIN and LAUNCHER `<queries>` intent, with no QUERY_ALL_PACKAGES. */
+  private fun listLaunchableApps(): List<Map<String, Any?>> {
+    val pm = reactContext.packageManager
+    val launcher = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER)
+    val activities =
+      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+        pm.queryIntentActivities(launcher, PackageManager.ResolveInfoFlags.of(0L))
+      } else {
+        @Suppress("DEPRECATION")
+        pm.queryIntentActivities(launcher, 0)
+      }
+    return activities
+      .map { it.activityInfo.applicationInfo }
+      .distinctBy { it.packageName }
+      .mapNotNull { describe(it) }
+      .sortedBy { (it["label"] as String).lowercase() }
+  }
+
   private fun getAppInfo(packageName: String): Map<String, Any?>? {
     if (packageName.isEmpty()) return null
     return try {
@@ -116,16 +140,25 @@ class MoniAndroidAppsModule : Module() {
           @Suppress("DEPRECATION")
           pm.getApplicationInfo(packageName, 0)
         }
-      val label = pm.getApplicationLabel(appInfo).toString().trim()
-      mapOf(
-        "packageName" to packageName,
-        "label" to label,
-        "iconUri" to drawableToDataUri(pm.getApplicationIcon(appInfo)),
-      )
+      describe(appInfo)
     } catch (_: PackageManager.NameNotFoundException) {
       null
     } catch (error: Exception) {
       Log.w(TAG, "getAppInfo failed for $packageName", error)
+      null
+    }
+  }
+
+  private fun describe(appInfo: ApplicationInfo): Map<String, Any?>? {
+    return try {
+      val pm = reactContext.packageManager
+      mapOf(
+        "packageName" to appInfo.packageName,
+        "label" to pm.getApplicationLabel(appInfo).toString().trim(),
+        "iconUri" to drawableToDataUri(pm.getApplicationIcon(appInfo)),
+      )
+    } catch (error: Exception) {
+      Log.w(TAG, "Could not describe ${appInfo.packageName}", error)
       null
     }
   }
@@ -140,8 +173,9 @@ class MoniAndroidAppsModule : Module() {
             bmp
           }
           else -> {
-            val width = drawable.intrinsicWidth.coerceAtLeast(1)
-            val height = drawable.intrinsicHeight.coerceAtLeast(1)
+            // Drawn at the final size: a phone's adaptive icons are 300 px or more each.
+            val width = drawable.intrinsicWidth.takeIf { it > 0 }?.coerceAtMost(MAX_ICON_PX) ?: MAX_ICON_PX
+            val height = drawable.intrinsicHeight.takeIf { it > 0 }?.coerceAtMost(MAX_ICON_PX) ?: MAX_ICON_PX
             val bmp = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
             val canvas = Canvas(bmp)
             drawable.setBounds(0, 0, canvas.width, canvas.height)

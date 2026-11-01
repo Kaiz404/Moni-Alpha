@@ -17,7 +17,7 @@ export type LinkedWallet = {
   cardStyleId: string | null;
 };
 
-/** A banking app linked to one or more wallets; its alerts become captures. */
+/** An app linked to one or more wallets; its alerts become captures. */
 export type LinkedApp = {
   packageName: string;
   label: string;

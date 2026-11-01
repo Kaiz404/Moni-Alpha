@@ -10,6 +10,7 @@ import {
 import { startFinanceProjection } from '@/lib/finance/projection';
 import { repairFinanceIntegrity } from '@/lib/finance/integrity';
 import { reconcileDebtTransactions } from '@/lib/supabase/debts';
+import { fillLinkedAppIcons } from '@/lib/notifications/installed-apps';
 import { refreshLinkedPackagesFromStore } from '@/lib/notifications/linked-packages-cache';
 import { syncDefaultWalletFromProfile } from '@/lib/wallets/default-wallet';
 
@@ -45,6 +46,7 @@ export function StoreSyncActivator() {
       })
       .catch(() => {});
     refreshLinkedPackagesFromStore();
+    void fillLinkedAppIcons().catch(() => {});
     void syncDefaultWalletFromProfile().catch(() => {});
 
     const walletsDispose = observe(() => {

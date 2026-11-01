@@ -6,8 +6,8 @@
  *  2. Adds `android:foregroundServiceType="dataSync"` to the
  *     react-native-background-actions service so it satisfies the Android 14+
  *     (SDK 34+) requirement for typed foreground services.
- *  3. Declares Android 11+ package visibility for named curated banking-app
- *     lookups (wallet ↔ banking-app linker via moni-android-apps).
+ *  3. Declares Android 11+ visibility of launchable apps, so a wallet can link any app on the
+ *     phone (moni-android-apps). An intent query, because Play restricts QUERY_ALL_PACKAGES.
  *  4. Declares REQUEST_IGNORE_BATTERY_OPTIMIZATIONS for the exemption prompt in
  *     Capture sources.
  *  5. Removes the listener library's BootUpReceiver. It calls
@@ -16,45 +16,27 @@
  *     sends BOOT_COMPLETED on the first launch after a force-stop, so this crashed
  *     a running app. The system rebinds a granted listener by itself after boot.
  */
-const fs = require('fs');
-const path = require('path');
 const { withAndroidManifest } = require('expo/config-plugins');
 
 const BG_ACTIONS_SERVICE = 'com.asterinet.react.bgactions.RNBackgroundActionsTask';
 const LISTENER_BOOT_RECEIVER = 'com.lesimoes.androidnotificationlistener.BootUpReceiver';
 
-function readCuratedPackageNames() {
-  try {
-    const appsTs = fs.readFileSync(
-      path.join(__dirname, '../constants/notification-apps.ts'),
-      'utf8',
-    );
-    const primary = [...appsTs.matchAll(/packageName:\s*'([^']+)'/g)].map((match) => match[1]);
-    const aliasBlocks = [...appsTs.matchAll(/aliases:\s*\[([^\]]*)\]/g)];
-    const aliases = aliasBlocks.flatMap((block) =>
-      [...block[1].matchAll(/'([^']+)'/g)].map((match) => match[1]),
-    );
-    return [...new Set([...primary, ...aliases])];
-  } catch {
-    return [];
-  }
+const LAUNCHER_INTENT = {
+  action: [{ $: { 'android:name': 'android.intent.action.MAIN' } }],
+  category: [{ $: { 'android:name': 'android.intent.category.LAUNCHER' } }],
+};
+
+function isLauncherQuery(intent) {
+  return (
+    intent.action?.[0]?.$?.['android:name'] === 'android.intent.action.MAIN' &&
+    intent.category?.[0]?.$?.['android:name'] === 'android.intent.category.LAUNCHER'
+  );
 }
 
-function ensurePackageVisibility(manifestRoot) {
+function ensureLauncherVisibility(manifestRoot) {
   manifestRoot.queries = manifestRoot.queries ?? [];
-
-  const declaredPackages = new Set(
-    manifestRoot.queries.flatMap((block) =>
-      (block.package ?? []).map((pkg) => pkg.$?.['android:name']).filter(Boolean),
-    ),
-  );
-
-  const curated = readCuratedPackageNames().filter((pkg) => !declaredPackages.has(pkg));
-  if (curated.length === 0) return;
-
-  manifestRoot.queries.push({
-    package: curated.map((pkg) => ({ $: { 'android:name': pkg } })),
-  });
+  if (manifestRoot.queries.some((block) => block.intent?.some(isLauncherQuery))) return;
+  manifestRoot.queries.push({ intent: [LAUNCHER_INTENT] });
 }
 
 module.exports = function withNotificationListenerManifest(config) {
@@ -65,9 +47,9 @@ module.exports = function withNotificationListenerManifest(config) {
     manifest.manifest.$ = manifest.manifest.$ ?? {};
     manifest.manifest.$['xmlns:tools'] = 'http://schemas.android.com/tools';
 
-    // ── 3. Package visibility for installed banking-app discovery ────────────
-    // Without this, named PackageManager lookups are filtered on API 30+.
-    ensurePackageVisibility(manifest.manifest);
+    // ── 3. Package visibility for the app picker ─────────────────────────────
+    // Without this, PackageManager filters other apps out on API 30+.
+    ensureLauncherVisibility(manifest.manifest);
 
     const application = manifest.manifest.application?.[0];
     if (application) {

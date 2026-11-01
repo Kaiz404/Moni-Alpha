@@ -2,11 +2,11 @@ import { Image } from 'expo-image';
 import { View } from 'react-native';
 
 import { CaptureStatusPill } from '@/components/capture-log/status-pill';
+import { useAppIcon } from '@/components/wallets/notification-source';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Press } from '@/components/ui/press';
 import { Text } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
-import { getCachedAppIcon } from '@/lib/notifications/app-icon-cache';
 import type { CaptureLogItem } from '@/lib/notifications/capture-log';
 import { tid, type TestId } from '@/lib/test-ids';
 
@@ -14,7 +14,7 @@ export type LogEntryAction = { testID: TestId; label: string; onPress: () => voi
 
 export function AppBubble({ packageName }: { packageName: string | null }) {
   const tokens = useThemeTokens();
-  const icon = packageName ? getCachedAppIcon(packageName) : null;
+  const icon = useAppIcon(packageName);
   if (icon) {
     return (
       <Image

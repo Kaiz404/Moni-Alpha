@@ -7,6 +7,7 @@ export default {
   async getAppInfoAsync(): Promise<InstalledAppInfo | null> {
     return null;
   },
+  listLaunchableAppsAsync: undefined as (() => Promise<InstalledAppInfo[]>) | undefined,
   setKeyboardPansWindowAsync: undefined as ((pans: boolean) => Promise<void>) | undefined,
   hasGoogleMapsKey: undefined as (() => boolean) | undefined,
   isIgnoringBatteryOptimizationsAsync: undefined as (() => Promise<boolean>) | undefined,
