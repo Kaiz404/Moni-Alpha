@@ -96,7 +96,9 @@ export async function fakeFetch(input: RequestInfo | URL, init?: RequestInit): P
   if (headers.get('Accept')?.includes('vnd.pgrst.object')) {
     return rows[0] ? json(rows[0]) : json({ code: 'PGRST116', message: 'no rows' }, 406);
   }
-  return json(rows);
+  const offset = Number(url.searchParams.get('offset') ?? 0);
+  const limit = Number(url.searchParams.get('limit') ?? rows.length);
+  return json(rows.slice(offset, offset + limit));
 }
 
 /** The realtime socket stays silent: a push is not what these tests are about. */
