@@ -133,24 +133,6 @@ export function ActivityChart(props: ActivityChartProps) {
           <BalancePlot {...props} width={width} month={month} />
         )}
       </View>
-      <Legend spend={spend} paced={spending.evenPaceMinor !== null} />
-    </View>
-  );
-}
-
-/** Only the bars need a key: a coral or dashed bar doesn't explain itself, and a line does. */
-function Legend({ spend, paced }: { spend: boolean; paced: boolean }) {
-  if (!spend || !paced) return null;
-  return (
-    <View className="flex-row flex-wrap items-center gap-x-2.5 gap-y-1">
-      <View className="flex-row items-center gap-1">
-        <View className="h-2.5 w-2.5 rounded-[3px] bg-coral" />
-        <Text variant="smallest" className="text-ink-2">Over even pace</Text>
-      </View>
-      <View className="flex-row items-center gap-1">
-        <View className="h-2.5 w-2.5 rounded-[3px] border-[1.2px] border-dashed border-ink-2" />
-        <Text variant="smallest" className="text-ink-2">Safe to spend a day</Text>
-      </View>
     </View>
   );
 }

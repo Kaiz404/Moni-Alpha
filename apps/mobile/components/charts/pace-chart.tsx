@@ -229,7 +229,6 @@ export function PaceChart({
         </GestureDetector>
       </View>
       <Ticks geometry={geometry} />
-      <Legend mode={mode} />
     </View>
   );
 }
@@ -592,48 +591,6 @@ function Ticks({ geometry: g }: { geometry: PaceGeometry }) {
           </Text>
         );
       })}
-    </View>
-  );
-}
-
-/** Only the daily bars need a key: a coral or dashed bar doesn't explain itself, and a line does. */
-function Legend({ mode: kind }: { mode: PaceChartMode }) {
-  if (kind !== 'daily') return null;
-  return (
-    <View
-      className="flex-row items-center gap-2.5"
-      importantForAccessibility="no-hide-descendants"
-    >
-      <Key swatch={<View className="h-2.5 w-2.5 rounded-[3px] bg-coral" />}>
-        Over even pace
-      </Key>
-      <Key
-        swatch={
-          <View className="h-2.5 w-2.5 rounded-[3px] border border-dashed border-ink-2" />
-        }
-      >
-        Safe to spend a day
-      </Key>
-    </View>
-  );
-}
-
-function Key({
-  swatch,
-  children,
-}: {
-  swatch: React.ReactNode;
-  children: string;
-}) {
-  return (
-    <View className="flex-row items-center gap-1">
-      {swatch}
-      <Text
-        variant="smallest"
-        className="text-ink-2"
-      >
-        {children}
-      </Text>
     </View>
   );
 }

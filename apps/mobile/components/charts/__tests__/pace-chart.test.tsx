@@ -23,7 +23,7 @@ const spend = [
 const budget = 180000;
 
 describe('PaceChart', () => {
-  it('keys only the daily bars: lines have no key, and no chart carries a hint', () => {
+  it('draws no legend or hint in either mode', () => {
     const chart = (mode: 'pace' | 'daily') => (
       <PaceChart
         screen="home"
@@ -34,16 +34,12 @@ describe('PaceChart', () => {
         safePerDay={2461}
       />
     );
-    const { rerender } = render(chart('pace'));
-    for (const gone of ['Spent', 'Even pace', 'Tap or drag', 'Over even pace']) {
-      expect(screen.queryByText(gone, { includeHiddenElements: true })).toBeNull();
-    }
-    rerender(chart('daily'));
-    // The key is hidden from screen readers on purpose, because the plot's own label says it.
+    const gone = ['Spent', 'Even pace', 'Tap or drag', 'Tap a bar', 'Over even pace', 'Safe to spend a day'];
     const hidden = { includeHiddenElements: true };
-    expect(screen.getByText('Over even pace', hidden)).toBeTruthy();
-    expect(screen.getByText('Safe to spend a day', hidden)).toBeTruthy();
-    expect(screen.queryByText('Tap a bar', hidden)).toBeNull();
+    const { rerender } = render(chart('pace'));
+    for (const text of gone) expect(screen.queryByText(text, hidden)).toBeNull();
+    rerender(chart('daily'));
+    for (const text of gone) expect(screen.queryByText(text, hidden)).toBeNull();
   });
 
   it('keeps the budget as the top line while spending is under it, and hides a scale that would overprint it', () => {

@@ -223,28 +223,6 @@ export function TrendChart({
           </View>
         ) : null}
       </View>
-      <View className="flex-row items-center justify-between gap-2">
-        <View className="flex-row items-center gap-2.5">
-          <View className="flex-row items-center gap-1">
-            <View className="h-2.5 w-2.5 rounded-[3px] bg-primary" />
-            <Text
-              variant="smallest"
-              className="text-ink-2"
-            >
-              Spent
-            </Text>
-          </View>
-          <View className="flex-row items-center gap-1">
-            <View className="h-2.5 w-2.5 rounded-[3px] bg-deep-mint" />
-            <Text
-              variant="smallest"
-              className="text-ink-2"
-            >
-              Money in
-            </Text>
-          </View>
-        </View>
-      </View>
     </View>
   );
 }
