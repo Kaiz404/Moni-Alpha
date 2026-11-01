@@ -10,6 +10,7 @@ const stub = {
   async getAppInfoAsync(_packageName: string): Promise<InstalledAppInfo | null> {
     return null;
   },
+  setKeyboardPansWindowAsync: undefined as ((pans: boolean) => Promise<void>) | undefined,
   isIgnoringBatteryOptimizationsAsync: undefined as (() => Promise<boolean>) | undefined,
   async requestBatteryExemptionAsync(): Promise<boolean> {
     return false;

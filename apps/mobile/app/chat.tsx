@@ -5,7 +5,7 @@ import {
   type ExpoSpeechRecognitionResultEvent,
 } from 'expo-speech-recognition';
 import { LinearGradient } from 'expo-linear-gradient';
-import { router, useLocalSearchParams } from 'expo-router';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { FlatList, View } from 'react-native';
 import Animated, { useAnimatedKeyboard, useAnimatedStyle } from 'react-native-reanimated';
@@ -50,6 +50,7 @@ import {
 } from '@/lib/speech/speech-recognition';
 import { isAwaitingReview } from '@/lib/supabase/proposed-transactions';
 import { tid } from '@/lib/test-ids';
+import MoniAndroidApps from '@/modules/moni-android-apps';
 
 function ThreadGap() {
   return <View className="h-3" />;
@@ -64,6 +65,14 @@ export default function ChatScreen() {
   const tokens = useThemeTokens();
   const insets = useSafeAreaInsets();
   const keyboard = useAnimatedKeyboard();
+  // The body lifts the composer by the keyboard's height, so the window must not pan as well.
+  // A build older than this function has no such call, and it keeps the double shift.
+  useFocusEffect(
+    useCallback(() => {
+      void MoniAndroidApps.setKeyboardPansWindowAsync?.(false);
+      return () => void MoniAndroidApps.setKeyboardPansWindowAsync?.(true);
+    }, []),
+  );
   const { user } = useAuth();
   const params = useLocalSearchParams<{ draft?: string; day?: string; focus?: string }>();
   const today = todayThreadDay();

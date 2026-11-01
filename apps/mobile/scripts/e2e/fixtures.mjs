@@ -10,7 +10,7 @@ export const SHELL_PACKAGE = 'com.android.shell';
 export const PROFILES = ['empty', 'full'];
 
 const WALLETS = [
-  { key: 'maybank', name: 'Maybank Savings', type: 'bank', currency: 'MYR', balance: 2281.8, style: 'citrus-pop', color: '#E8CF50', notification: { package: SHELL_PACKAGE, label: 'Maybank' } },
+  { key: 'maybank', name: 'Maybank Savings', type: 'bank', currency: 'MYR', balance: 2281.8, confirmed: '2026-09-04', style: 'citrus-pop', color: '#E8CF50', notification: { package: SHELL_PACKAGE, label: 'Maybank' } },
   { key: 'tng', name: "Touch 'n Go eWallet", type: 'ewallet', currency: 'MYR', balance: 86.4, style: 'violet-dusk', color: '#B39AE8', notification: { package: 'my.com.tngdigital.ewallet', label: "Touch 'n Go" } },
   { key: 'cash', name: 'Cash', type: 'cash', currency: 'MYR', balance: 63.6, style: 'emerald-grain', color: '#8ECF9D' },
   { key: 'wise', name: 'Wise USD', type: 'bank', currency: 'USD', balance: 120, style: 'ocean-deep', color: '#72CEC4' },
@@ -357,7 +357,8 @@ export function buildProfile(profile, { userId, today, systemCategories }) {
     notification_package: w.notification?.package ?? null,
     notification_app_label: w.notification?.label ?? null,
     notification_account_hint: null,
-    balance_confirmed_at: now,
+    // V2H-Home asks about Maybank: "Last done 40 days ago".
+    balance_confirmed_at: w.confirmed ? at(shift(w.confirmed), '12:00') : now,
     record_location: true,
   }));
 

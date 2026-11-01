@@ -42,6 +42,8 @@ const PLOT_H = 150;
 const TOP = 44;
 const BASE = 141.25;
 const AXIS = 50;
+const AXIS_LABEL_HEIGHT = 16;
+const X_LABEL_WIDTH = 60;
 const CALLOUT_W = 100;
 const MODES = [
   { value: 'spending', label: 'Spending' },
@@ -329,12 +331,18 @@ function SpendingPlot({ spending, currency, selectedDay, onSelectDay, width, mon
           <Line x1={AXIS} y1={paceY} x2={width} y2={paceY} stroke={tokens.foreground} strokeWidth={1.5} strokeDasharray="4 4" />
         </Svg>
       )}
-      <AxisLabel y={TOP} label={formatMoney(top, currency, { whole: true })} />
+      {paceY !== null && Math.abs(paceY - TOP) < AXIS_LABEL_HEIGHT ? null : (
+        <AxisLabel y={TOP} label={formatMoney(top, currency, { whole: true })} />
+      )}
       {evenPaceMinor === null || paceY === null ? null : (
         <AxisLabel y={paceY} label={formatMoney(evenPaceMinor, currency, { whole: true })} strong />
       )}
-      <AxisLabel y={BASE} label={formatMoney(0, currency, { whole: true })} />
-      <XLabel width={width} x={barX(0) + barW / 2} label={`1 ${month.slice(0, 3)}`} />
+      {paceY !== null && Math.abs(BASE - paceY) < AXIS_LABEL_HEIGHT ? null : (
+        <AxisLabel y={BASE} label={formatMoney(0, currency, { whole: true })} />
+      )}
+      {today && barX(days.length - 1) - barX(0) < X_LABEL_WIDTH ? null : (
+        <XLabel width={width} x={barX(0) + barW / 2} label={`1 ${month.slice(0, 3)}`} />
+      )}
       {today ? <XLabel width={width} x={barX(days.length - 1) + barW / 2} label="Today" strong /> : null}
       {selected ? (
         <Callout

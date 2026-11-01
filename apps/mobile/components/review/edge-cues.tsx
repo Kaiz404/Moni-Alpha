@@ -110,7 +110,7 @@ function CueContent({
 }) {
   return (
     <Animated.View
-      className={`flex-row items-center justify-center gap-1.5 ${vertical ? '' : sizer ? 'h-full pl-2.5 pr-3.5' : 'absolute inset-0'}`}
+      className={`${vertical === 'up' ? 'flex-row-reverse' : 'flex-row'} items-center justify-center gap-1.5 ${vertical ? '' : sizer ? 'h-full pl-2.5 pr-3.5' : 'absolute inset-0'}`}
       style={[
         vertical
           ? {
@@ -125,11 +125,14 @@ function CueContent({
         style,
       ]}
     >
-      <IconSymbol
-        name={icon}
-        size={18}
-        color={ink}
-      />
+      {/* The rail turns its label, and the arrow stays upright at the top so it points the way to swipe. */}
+      <View style={vertical ? { transform: [{ rotate: vertical === 'down' ? '-90deg' : '90deg' }] } : undefined}>
+        <IconSymbol
+          name={icon}
+          size={18}
+          color={ink}
+        />
+      </View>
       <Text
         className="text-[13px] leading-[18px] font-display-bold"
         style={{ color: ink }}

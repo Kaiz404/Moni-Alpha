@@ -11,9 +11,11 @@ import android.net.Uri
 import android.os.Build
 import android.os.PowerManager
 import android.provider.Settings
+import android.view.WindowManager
 import android.util.Base64
 import android.util.Log
 import expo.modules.kotlin.modules.Module
+import expo.modules.kotlin.Queues
 import expo.modules.kotlin.modules.ModuleDefinition
 import java.io.ByteArrayOutputStream
 
@@ -31,6 +33,15 @@ class MoniAndroidAppsModule : Module() {
     AsyncFunction("getAppInfoAsync") { packageName: String ->
       getAppInfo(packageName.trim())
     }
+
+    // Pan moves the whole window, header included, so a page that lifts its own composer turns it off.
+    AsyncFunction("setKeyboardPansWindowAsync") { pans: Boolean ->
+      appContext.currentActivity?.window?.setSoftInputMode(
+        if (pans) WindowManager.LayoutParams.SOFT_INPUT_ADJUST_PAN
+        else WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE,
+      )
+      Unit
+    }.runOnQueue(Queues.MAIN)
 
     AsyncFunction("isIgnoringBatteryOptimizationsAsync") {
       val power = reactContext.getSystemService(Context.POWER_SERVICE) as PowerManager
