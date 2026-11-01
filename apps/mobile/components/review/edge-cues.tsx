@@ -8,10 +8,11 @@ import Animated, {
 import { IconSymbol, type IconSymbolName } from '@/components/ui/icon-symbol';
 import { Text } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
-import { FLING_COMMIT_THRESHOLD } from '@/lib/motion/tokens';
-import type { SwipeIntent } from '@/lib/proposals/review-card-state';
-
-type Side = 'right' | 'left' | 'down';
+import {
+  selectionReach,
+  type SwipeSelection,
+  type SwipeSide,
+} from '@/lib/proposals/review-card-state';
 
 const SIDE_WIDTH = 28;
 const SIDE_LENGTH = 128;
@@ -21,50 +22,42 @@ const INK_SWITCH = 0.55;
 type CueProps = {
   x: SharedValue<number>;
   y: SharedValue<number>;
-  intent: SharedValue<SwipeIntent>;
+  /** The one answer to which side is lit, so a cue can't disagree with the card or the buttons. */
+  selection: SharedValue<SwipeSelection>;
   width: number;
   height: number;
+  canApprove: boolean;
 };
 
 type Look = { canvas: string; border: string; hex: string };
-
-/** Which way the card is being dragged, from its offset alone. */
-function towardOf(dx: number, dy: number): Side | null {
-  'worklet';
-  if (Math.abs(dx) >= Math.abs(dy)) return dx > 0 ? 'right' : dx < 0 ? 'left' : null;
-  return dy > 0 ? 'down' : null;
-}
 
 /**
  * `XA-Review` hintVals: `p` is how far toward this side's threshold the card is, `on` that the
  * decision is armed, `full` that the cue shows its action (armed, or Approve blocked on a wallet).
  */
-function useCue(side: Side, { x, y, intent, width, height }: CueProps, look: Look) {
+function useCue(
+  side: SwipeSide,
+  { x, y, selection, width, height, canApprove }: CueProps,
+  look: Look,
+) {
   const read = () => {
     'worklet';
-    const dx = x.get();
     const dy = y.get();
-    const toward = towardOf(dx, dy);
-    const reach =
-      toward !== side
-        ? 0
-        : side === 'down'
-          ? dy / (height * FLING_COMMIT_THRESHOLD)
-          : Math.abs(dx) / (width * FLING_COMMIT_THRESHOLD);
-    const p = Math.min(1, Math.max(0, reach));
-    const now = intent.get();
-    const on =
-      side === 'right' ? now === 'approve' : side === 'left' ? now === 'notMine' : now === 'later';
-    const full = on || (side === 'right' && now === 'needsWallet');
-    return { toward, p, on, full, fill: full ? 1 : 0.8 * p, dy };
+    const current = selection.get();
+    const reach = selectionReach(current, { dx: x.get(), dy, width, height });
+    const mine = current?.side === side;
+    const p = mine ? reach : 0;
+    const full = mine && current.engaged;
+    const on = full && (side !== 'right' || canApprove);
+    return { dimmed: !mine && reach > 0, mine, p, on, full, fill: full ? 1 : 0.8 * p, dy };
   };
 
   const wrap = useAnimatedStyle(() => {
     const cue = read();
     return {
-      opacity: cue.toward && cue.toward !== side ? 0.3 : 1,
+      opacity: cue.dimmed ? 0.3 : 1,
       transform: [
-        ...(side === 'down' ? [{ translateY: cue.toward === 'down' ? cue.dy * 0.5 : 0 }] : []),
+        ...(side === 'down' ? [{ translateY: cue.mine ? Math.max(0, cue.dy) * 0.5 : 0 }] : []),
         { scale: cue.on ? 1.3 : 1 + 0.18 * cue.p },
       ],
     };
@@ -154,7 +147,7 @@ function Cue({
   label,
   onInk,
 }: {
-  side: Side;
+  side: SwipeSide;
   /** Where the cue sits and the edge it grows from. */
   position: ViewStyle;
   props: CueProps;
@@ -201,7 +194,7 @@ function Cue({
  * draws them: each fills toward its colour as the card moves its way and swaps its arrow for
  * the action icon once armed.
  */
-export function EdgeCues(props: CueProps & { canApprove: boolean; cardTop: number }) {
+export function EdgeCues(props: CueProps & { cardTop: number }) {
   const tokens = useThemeTokens();
   const base = { canvas: tokens.canvas, border: tokens.border };
   const sideTop = props.cardTop + props.height / 2 - SIDE_LENGTH / 2;

@@ -8,13 +8,19 @@ import {
   useMemo,
   useRef,
   useState,
+  type ReactNode,
 } from 'react';
 import { ActivityIndicator, ScrollView, View, type LayoutChangeEvent } from 'react-native';
 import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
 import Animated, {
+  ReduceMotion,
   useAnimatedStyle,
+  useReducedMotion,
   useSharedValue,
+  withDelay,
   withSpring,
+  withTiming,
+  type EntryAnimationsValues,
   type SharedValue,
 } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
@@ -76,15 +82,22 @@ import {
 import {
   armedDecision,
   canDrag,
+  DECISION_SIDE,
   idle,
+  nextSelection,
+  releasedSelection,
+  releaseIntent,
   reviewCardReducer,
-  swipeIntent,
+  selectionIntent,
+  selectionReach,
+  SWIPE_ENGAGE_SHARE,
   type EditField,
   type ReviewCardEvent,
   type ReviewCardState,
   type ReviewDecision,
-  type Swipe,
   type SwipeIntent,
+  type SwipeSelection,
+  type SwipeSide,
 } from '@/lib/proposals/review-card-state';
 import { toCategoryTiles } from '@/lib/sheet/category-tiles';
 import { openSheet, type WalletOption } from '@/lib/sheet/sheet-store';
@@ -109,6 +122,42 @@ const BELOW_CARD = 150;
 /** Below this the card gives up the toast room before its content is cut. */
 const CARD_MIN = 420;
 const LIFT = '0 12px 32px rgba(23,24,26,0.18)';
+/** A card this many of its own widths or heights away is off the screen. */
+const OFFSTAGE_X = 1.6;
+const OFFSTAGE_Y = 1.4;
+const ARRIVE_FADE_MS = 180;
+
+const noExit = () => ({ id: '', flown: false, done: false });
+
+/** A restored card comes back along the path it left by, or fades in with no path to retrace. */
+function arriveFrom(side: SwipeSide | null, width: number, height: number, reduceMotion: boolean) {
+  const fromX = side === 'right' ? width * OFFSTAGE_X : side === 'left' ? -width * OFFSTAGE_X : 0;
+  const fromY = side === 'down' ? height * OFFSTAGE_Y : 0;
+  const tilt = `${Math.sign(fromX) * OFFSTAGE_X * TILT_PER_WIDTH_DEG}deg`;
+  return (_values: EntryAnimationsValues) => {
+    'worklet';
+    if (!side || reduceMotion) {
+      return {
+        initialValues: { opacity: 0 },
+        animations: {
+          opacity: withTiming(1, { duration: ARRIVE_FADE_MS, reduceMotion: ReduceMotion.Never }),
+        },
+      };
+    }
+    return {
+      initialValues: {
+        transform: [{ translateX: fromX }, { translateY: fromY }, { rotate: tilt }],
+      },
+      animations: {
+        transform: [
+          { translateX: withSpring(0, springs.sheet) },
+          { translateY: withSpring(0, springs.sheet) },
+          { rotate: withSpring('0deg', springs.sheet) },
+        ],
+      },
+    };
+  };
+}
 
 function rubberband(overshoot: number, dimension: number): number {
   'worklet';
@@ -321,18 +370,28 @@ function DeckButton({
 function UnderCard({
   x,
   y,
+  arrive,
   width,
   height,
+  children,
 }: {
   x: SharedValue<number>;
   y: SharedValue<number>;
+  /** 1 while a restored card is on its way home, so the card below settles as it lands. */
+  arrive: SharedValue<number>;
   width: number;
   height: number;
+  /** The face of the card a restored card is covering. Otherwise the under-card is blank (D7). */
+  children?: ReactNode;
 }) {
   const style = useAnimatedStyle(() => {
     const reach = Math.min(
       1,
-      Math.max(Math.abs(x.get()) / (width * 0.4), Math.max(0, y.get()) / (height * 0.4)),
+      Math.max(
+        arrive.get(),
+        Math.abs(x.get()) / (width * SWIPE_ENGAGE_SHARE),
+        Math.max(0, y.get()) / (height * SWIPE_ENGAGE_SHARE),
+      ),
     );
     return { transform: [{ scale: UNDER_SCALE + (1 - UNDER_SCALE) * reach }] };
   });
@@ -341,7 +400,9 @@ function UnderCard({
       testID={tid('review', 'next-card')}
       className="absolute inset-0 rounded-card bg-sand-light"
       style={[{ transformOrigin: '50% 90%' }, style]}
-    />
+    >
+      {children}
+    </Animated.View>
   );
 }
 
@@ -352,7 +413,7 @@ function UnderCard({
 function useCardLift(
   x: SharedValue<number>,
   y: SharedValue<number>,
-  intent: SharedValue<SwipeIntent>,
+  selection: SharedValue<SwipeSelection>,
   held: SharedValue<boolean>,
   size: { width: number; height: number; canApprove: boolean },
 ) {
@@ -363,18 +424,17 @@ function useCardLift(
   const laterRing = tokens.lemon;
   const shadow = useAnimatedStyle(() => ({ opacity: held.get() ? 1 : 0 }));
   const ring = useAnimatedStyle(() => {
-    const dx = x.get();
-    const dy = y.get();
-    const sideways = Math.abs(dx) >= Math.abs(dy);
-    const reach = sideways ? Math.abs(dx) / (width * 0.4) : Math.max(0, dy) / (height * 0.4);
-    const now = intent.get();
+    const current = selection.get();
+    const reach = selectionReach(current, { dx: x.get(), dy: y.get(), width, height });
+    const now = selectionIntent(current, canApprove);
     const armed = now === 'approve' || now === 'notMine' || now === 'later';
-    const toward = sideways ? (dx > 0 ? approveRing : notMineRing) : laterRing;
-    const moving = held.get() && (sideways ? dx !== 0 : dy > 0);
+    const toward =
+      current?.side === 'right' ? approveRing : current?.side === 'left' ? notMineRing : laterRing;
+    const moving = held.get() && reach > 0;
     return {
       borderColor: toward,
       borderWidth: armed ? 4 : 3,
-      opacity: moving ? (armed ? 1 : Math.min(1, reach)) : 0,
+      opacity: moving ? (armed ? 1 : reach) : 0,
     };
   });
   return {
@@ -414,10 +474,10 @@ function flyOut(
   const clamp = { ...springs.sheet, overshootClamping: true };
   if (decision === 'later') {
     x.set(withSpring(0, { ...clamp, velocity: vx }));
-    y.set(withSpring(height * 1.4, { ...clamp, velocity: vy }, done));
+    y.set(withSpring(height * OFFSTAGE_Y, { ...clamp, velocity: vy }, done));
     return;
   }
-  const edge = width * 1.6;
+  const edge = width * OFFSTAGE_X;
   x.set(withSpring(decision === 'approve' ? edge : -edge, { ...clamp, velocity: vx }, done));
   y.set(withSpring(y.get() + vy * 0.12, { ...clamp, velocity: vy }));
 }
@@ -474,9 +534,16 @@ export function ReviewDeck({ session }: { session: ReviewSession }) {
   const y = useSharedValue(0);
   const startX = useSharedValue(0);
   const startY = useSharedValue(0);
-  const intent = useSharedValue<SwipeIntent>(null);
+  const selection = useSharedValue<SwipeSelection>(null);
   const held = useSharedValue(false);
-  const exit = useRef({ id: '', flown: false, done: false });
+  const arrive = useSharedValue(0);
+  const exit = useRef(noExit());
+  const reduceMotion = useReducedMotion();
+  const [arrival, setArrival] = useState<{
+    id: string;
+    side: SwipeSide | null;
+    overId: string | undefined;
+  } | null>(null);
 
   const shownId = useRef<string | undefined>(undefined);
   useLayoutEffect(() => {
@@ -484,10 +551,10 @@ export function ReviewDeck({ session }: { session: ReviewSession }) {
     shownId.current = top?.id;
     x.set(0);
     y.set(0);
-    intent.set(null);
+    selection.set(null);
     cardRef.current = idle;
     setCard(idle);
-  }, [top?.id, x, y, intent]);
+  }, [top?.id, x, y, selection]);
 
   useEffect(() => {
     if (!top || top.id in duplicates) return;
@@ -506,7 +573,7 @@ export function ReviewDeck({ session }: { session: ReviewSession }) {
   const cardWidth = Math.max(0, area.width - 48);
   const room = area.height - 8;
   const cardHeight = Math.max(0, Math.min(room - LATER_ROOM, CARD_MIN), room - BELOW_CARD);
-  const lift = useCardLift(x, y, intent, held, {
+  const lift = useCardLift(x, y, selection, held, {
     width: cardWidth,
     height: cardHeight,
     canApprove,
@@ -597,21 +664,63 @@ export function ReviewDeck({ session }: { session: ReviewSession }) {
     (part: 'flown' | 'done') => {
       const state = exit.current;
       state[part] = true;
-      if (state.flown && state.done) remove(state.id);
+      if (state.flown && state.done) {
+        exit.current = noExit();
+        remove(state.id);
+      }
     },
     [remove],
   );
   const onFlown = useCallback(() => finishExit('flown'), [finishExit]);
 
   const snapBack = useCallback(() => {
+    selection.set(null);
     x.set(withSpring(0, springs.throw));
     y.set(withSpring(0, springs.throw));
-  }, [x, y]);
+  }, [x, y, selection]);
+
+  const endArrival = useCallback(() => setArrival(null), []);
+
+  const bringBack = useCallback(
+    (outcome: ReviewOutcome) => {
+      const { id } = outcome.proposal;
+      const flying = exit.current.id;
+      if (flying === id) {
+        // Undo beat the fly-out: the card is still on top, so turn it around where it is.
+        exit.current = noExit();
+        setLeaving(null);
+        selection.set(null);
+        x.set(withSpring(0, springs.sheet));
+        y.set(withSpring(0, springs.sheet));
+      } else {
+        // The restored card takes over x and y, so a card still flying never reports landing.
+        if (flying) finishExit('flown');
+        const side = outcome.action === 'pair' ? null : DECISION_SIDE[outcome.action];
+        setArrival({ id, side, overId: flying ? undefined : shownId.current });
+        const landed = (finished?: boolean) => {
+          'worklet';
+          if (finished) scheduleOnRN(endArrival);
+        };
+        arrive.set(1);
+        arrive.set(
+          side && !reduceMotion
+            ? withSpring(0, springs.sheet, landed)
+            : withDelay(
+                ARRIVE_FADE_MS,
+                withTiming(0, { duration: 0, reduceMotion: ReduceMotion.Never }, landed),
+                ReduceMotion.Never,
+              ),
+        );
+      }
+      restore(outcome);
+    },
+    [x, y, selection, arrive, reduceMotion, setLeaving, finishExit, endArrival, restore],
+  );
 
   const toast = useCallback(
     (outcome: ReviewOutcome) => {
       const undoIt = () => {
-        void undo(outcome).then(() => restore(outcome));
+        void undo(outcome).then(() => bringBack(outcome));
       };
       if (outcome.action === 'pair') {
         showToast({ text: 'Counted once', icon: 'link-variant', undo: undoIt });
@@ -626,10 +735,10 @@ export function ReviewDeck({ session }: { session: ReviewSession }) {
       } else if (outcome.action === 'notMine') {
         showToast({ text: '1 not mine', icon: 'close', undo: undoIt });
       } else {
-        showToast({ text: 'Saved for later', icon: 'clock-outline' });
+        showToast({ text: 'Saved for later', icon: 'clock-outline', undo: undoIt });
       }
     },
-    [lookups, restore],
+    [lookups, bringBack],
   );
 
   const run = useCallback(
@@ -656,6 +765,7 @@ export function ReviewDeck({ session }: { session: ReviewSession }) {
         finishExit('done');
         return;
       }
+      exit.current = noExit();
       setLeaving(null);
       snapBack();
       if (result.status === 'needsInput') void pickWallet(result.field);
@@ -689,9 +799,9 @@ export function ReviewDeck({ session }: { session: ReviewSession }) {
   }, [top, duplicates, edits, decide, toast, remove]);
 
   const onIntent = useCallback(
-    (swipe: Swipe) => {
+    (next: SwipeIntent) => {
       const before = armedDecision(cardRef.current);
-      const after = armedDecision(send({ type: 'drag', swipe }));
+      const after = armedDecision(send({ type: 'drag', intent: next }));
       if (after && after !== before) haptics.thresholdOn();
       else if (!after && before) haptics.thresholdOff();
     },
@@ -699,8 +809,8 @@ export function ReviewDeck({ session }: { session: ReviewSession }) {
   );
 
   const onRelease = useCallback(
-    (swipe: Swipe) => {
-      const next = send({ type: 'release', swipe });
+    (final: SwipeIntent) => {
+      const next = send({ type: 'release', intent: final });
       if (next.kind === 'saving') void run(next.decision);
       else if (next.kind === 'needsInput') void pickWallet(next.field);
     },
@@ -709,15 +819,18 @@ export function ReviewDeck({ session }: { session: ReviewSession }) {
 
   const press = useCallback(
     (decision: ReviewDecision) => {
+      // A second tap while the card is still flying would decide it twice.
+      if (exit.current.id === top?.id) return;
       const next = send({ type: 'press', decision, canApprove });
       if (next.kind === 'saving') {
+        selection.set(releasedSelection(null, decision));
         flyOut(decision, x, y, cardWidth, cardHeight, 0, 0, onFlown);
         void run(decision);
       } else if (next.kind === 'needsInput') {
         void pickWallet(next.field);
       }
     },
-    [send, canApprove, x, y, cardWidth, cardHeight, onFlown, run, pickWallet],
+    [top?.id, send, canApprove, selection, x, y, cardWidth, cardHeight, onFlown, run, pickWallet],
   );
 
   const dragEnabled = !!top && canDrag(card) && cardWidth > 0;
@@ -729,54 +842,51 @@ export function ReviewDeck({ session }: { session: ReviewSession }) {
         .onStart(() => {
           startX.set(x.get());
           startY.set(y.get());
+          selection.set(null);
           held.set(true);
         })
         .onUpdate((e) => {
           const rawX = startX.get() + e.translationX;
           const rawY = startY.get() + e.translationY;
-          const dx = rawX > 0 && !canApprove ? rubberband(rawX, cardWidth) : rawX;
-          const dy = rawY < 0 ? rubberband(rawY, cardHeight) : rawY;
-          x.set(dx);
-          y.set(dy);
-          const swipe = {
-            dx,
-            dy,
-            vx: e.velocityX,
-            vy: e.velocityY,
+          x.set(rawX > 0 && !canApprove ? rubberband(rawX, cardWidth) : rawX);
+          y.set(rawY < 0 ? rubberband(rawY, cardHeight) : rawY);
+          const before = selection.get();
+          // The finger's travel, not the card's: the rubber band would put Pick wallet out of reach.
+          const after = nextSelection(before, {
+            dx: rawX,
+            dy: rawY,
             width: cardWidth,
             height: cardHeight,
-            canApprove,
-          };
-          const next = swipeIntent(swipe);
-          if (next !== intent.get()) {
-            intent.set(next);
-            scheduleOnRN(onIntent, swipe);
-          }
+          });
+          if (after === before) return;
+          selection.set(after);
+          const now = selectionIntent(after, canApprove);
+          if (now !== selectionIntent(before, canApprove)) scheduleOnRN(onIntent, now);
         })
         .onEnd((e) => {
-          const swipe = {
-            dx: x.get(),
-            dy: y.get(),
+          const current = selection.get();
+          const final = releaseIntent(current, {
+            dx: startX.get() + e.translationX,
+            dy: startY.get() + e.translationY,
             vx: e.velocityX,
             vy: e.velocityY,
             width: cardWidth,
             height: cardHeight,
             canApprove,
-          };
-          const final = swipeIntent(swipe);
-          intent.set(null);
+          });
+          selection.set(releasedSelection(current, final));
           if (final === 'approve' || final === 'notMine' || final === 'later') {
             flyOut(final, x, y, cardWidth, cardHeight, e.velocityX, e.velocityY, onFlown);
           } else {
             x.set(withSpring(0, { ...springs.throw, velocity: e.velocityX }));
             y.set(withSpring(0, { ...springs.throw, velocity: e.velocityY }));
           }
-          scheduleOnRN(onRelease, swipe);
+          scheduleOnRN(onRelease, final);
         })
         .onFinalize(() => {
           held.set(false);
         }),
-    [dragEnabled, canApprove, cardWidth, cardHeight, x, y, startX, startY, intent, held, onIntent, onRelease, onFlown],
+    [dragEnabled, canApprove, cardWidth, cardHeight, x, y, startX, startY, selection, held, onIntent, onRelease, onFlown],
   );
 
   const topStyle = useAnimatedStyle(() => ({
@@ -796,60 +906,68 @@ export function ReviewDeck({ session }: { session: ReviewSession }) {
     );
   };
 
-  const model = useMemo<ReviewCardModel | null>(() => {
-    if (!top) return null;
-    const own = edits[top.id] ?? {};
-    const type = reviewType(top, own);
-    const categoryId = own.categoryId !== undefined ? own.categoryId : top.categoryId;
-    const category = categoryId ? categories.find((c) => c.id === categoryId) : undefined;
-    const amountMinor = (own.amountMinor ?? top.amountMinor ?? 0) as MinorAmount;
-    const duplicate = duplicates[top.id] ?? null;
-    const walletId = walletIdOf(top, own, wallets);
-    const destinationId =
-      own.transferToWalletId !== undefined ? own.transferToWalletId : top.transferToWalletId;
-    const budget =
-      type === 'expense' && category
-        ? budgetLine(
-            category.name,
-            progress.find((p) => p.categoryId === category.id && p.currency === top.currency),
-            amountMinor,
-            top.currency,
-          )
-        : null;
-    return {
-      proposal: top,
-      type,
-      sourceLabel: captureSourceLabel(top),
-      time: captureTime(top.notificationReceivedAt ?? top.createdAt),
-      status: reviewStatus({
-        hasWallet: !!walletId,
-        paired: !!top.pairing,
-        maybeDuplicate: !!duplicate,
-        timesFiled: timesFiled(
-          { type, currency: top.currency, merchant: own.merchant ?? top.merchant },
-          ledger,
-        ),
-      }),
-      quote:
-        top.sourceType === 'notification'
-          ? top.notificationBody
-          : top.sourceType === 'text'
-            ? top.sourceText
-            : null,
-      merchant: displayName(top, own, lookups),
-      amountMinor,
-      category: category ? { name: category.name, icon: category.icon, color: category.color } : null,
-      wallet: walletLook(wallets, walletId),
-      destination: type === 'transfer' ? walletLook(wallets, destinationId) : undefined,
-      evidence:
-        countedOnceText(top) ??
-        (duplicate ? duplicateText(duplicate, top.currency) : top.aiReasoning),
-      pair: pairControl(top, duplicate),
-      // A likely duplicate is not a reason to stop asking about the merchant.
-      similar: top.sourceType === 'notification' && !own.type && !duplicate ? !!own.similar : null,
-      budget,
-    };
-  }, [top, edits, categories, duplicates, wallets, progress, lookups, ledger]);
+  const modelOf = useCallback(
+    (proposal: ProposedTransaction): ReviewCardModel => {
+      const own = edits[proposal.id] ?? {};
+      const type = reviewType(proposal, own);
+      const categoryId = own.categoryId !== undefined ? own.categoryId : proposal.categoryId;
+      const category = categoryId ? categories.find((c) => c.id === categoryId) : undefined;
+      const amountMinor = (own.amountMinor ?? proposal.amountMinor ?? 0) as MinorAmount;
+      const duplicate = duplicates[proposal.id] ?? null;
+      const walletId = walletIdOf(proposal, own, wallets);
+      const destinationId =
+        own.transferToWalletId !== undefined ? own.transferToWalletId : proposal.transferToWalletId;
+      const budget =
+        type === 'expense' && category
+          ? budgetLine(
+              category.name,
+              progress.find((p) => p.categoryId === category.id && p.currency === proposal.currency),
+              amountMinor,
+              proposal.currency,
+            )
+          : null;
+      return {
+        proposal: proposal,
+        type,
+        sourceLabel: captureSourceLabel(proposal),
+        time: captureTime(proposal.notificationReceivedAt ?? proposal.createdAt),
+        status: reviewStatus({
+          hasWallet: !!walletId,
+          paired: !!proposal.pairing,
+          maybeDuplicate: !!duplicate,
+          timesFiled: timesFiled(
+            { type, currency: proposal.currency, merchant: own.merchant ?? proposal.merchant },
+            ledger,
+          ),
+        }),
+        quote:
+          proposal.sourceType === 'notification'
+            ? proposal.notificationBody
+            : proposal.sourceType === 'text'
+              ? proposal.sourceText
+              : null,
+        merchant: displayName(proposal, own, lookups),
+        amountMinor,
+        category: category ? { name: category.name, icon: category.icon, color: category.color } : null,
+        wallet: walletLook(wallets, walletId),
+        destination: type === 'transfer' ? walletLook(wallets, destinationId) : undefined,
+        evidence:
+          countedOnceText(proposal) ??
+          (duplicate ? duplicateText(duplicate, proposal.currency) : proposal.aiReasoning),
+        pair: pairControl(proposal, duplicate),
+        // A likely duplicate is not a reason to stop asking about the merchant.
+        similar: proposal.sourceType === 'notification' && !own.type && !duplicate ? !!own.similar : null,
+        budget,
+      };
+    },
+    [edits, categories, duplicates, wallets, progress, lookups, ledger],
+  );
+  const model = useMemo(() => (top ? modelOf(top) : null), [top, modelOf]);
+  const coveredId = arrival?.overId;
+  const coveredModel = useMemo(() => {
+    const covered = queue.find((p) => p.id === coveredId);
+    return covered ? modelOf(covered) : null;
+  }, [queue, coveredId, modelOf]);
 
   const editing = card.kind === 'editing' ? card.field : null;
   const handlers = useMemo<ReviewCardHandlers | null>(() => {
@@ -987,9 +1105,25 @@ export function ReviewDeck({ session }: { session: ReviewSession }) {
                 <UnderCard
                   x={x}
                   y={y}
+                  arrive={arrive}
                   width={cardWidth}
                   height={cardHeight}
-                />
+                >
+                  {coveredModel && handlers ? (
+                    <View
+                      pointerEvents="none"
+                      className="absolute inset-0"
+                      accessibilityElementsHidden
+                      importantForAccessibility="no-hide-descendants"
+                    >
+                      <ReviewCard
+                        model={coveredModel}
+                        editing={null}
+                        handlers={handlers}
+                      />
+                    </View>
+                  ) : null}
+                </UnderCard>
               ) : null}
               {model && handlers ? (
                 <GestureDetector gesture={pan}>
@@ -999,13 +1133,23 @@ export function ReviewDeck({ session }: { session: ReviewSession }) {
                     className="absolute inset-0"
                     style={[{ transformOrigin: '50% 90%' }, topStyle]}
                   >
-                    {lift.shadow}
-                    <ReviewCard
-                      model={model}
-                      editing={editing}
-                      handlers={handlers}
-                    />
-                    {lift.ring}
+                    <Animated.View
+                      className="absolute inset-0"
+                      style={{ transformOrigin: '50% 90%' }}
+                      entering={
+                        arrival?.id === top.id
+                          ? arriveFrom(arrival.side, cardWidth, cardHeight, reduceMotion)
+                          : undefined
+                      }
+                    >
+                      {lift.shadow}
+                      <ReviewCard
+                        model={model}
+                        editing={editing}
+                        handlers={handlers}
+                      />
+                      {lift.ring}
+                    </Animated.View>
                   </Animated.View>
                 </GestureDetector>
               ) : null}
@@ -1014,7 +1158,7 @@ export function ReviewDeck({ session }: { session: ReviewSession }) {
               <EdgeCues
                 x={x}
                 y={y}
-                intent={intent}
+                selection={selection}
                 width={cardWidth}
                 height={cardHeight}
                 cardTop={8}
