@@ -78,7 +78,9 @@ function mentions(question: string[], name: string): number {
   const parts = words(name).filter((word) => word.length > 2);
   if (!parts.length) return 0;
   if (parts.every((part) => question.includes(part))) return parts.join(' ').length;
-  return question.includes(parts[0]!) ? parts[0]!.length : 0;
+  if (question.includes(parts[0]!)) return parts[0]!.length;
+  // "transport" asks about the preset Transportation. Six letters keeps "month" off "Monthly".
+  return question.find((word) => word.length >= 6 && parts[0]!.startsWith(word))?.length ?? 0;
 }
 
 function best<T extends { name: string }>(question: string[], items: readonly T[]): T | null {

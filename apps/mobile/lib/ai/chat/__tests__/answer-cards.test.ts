@@ -33,6 +33,23 @@ describe('pickAnswerCard', () => {
     });
   });
 
+  it('reads a shortened name as the category it starts, and not a short word', () => {
+    const presets = {
+      ...snapshot,
+      categories: [
+        { id: 'transportation', name: 'Transportation', icon: 'car', color: '#9FD8D5', spent: 14000, budget: 12000 },
+        { id: 'monthly', name: 'Monthly fees', icon: 'cash', color: '#9FD8D5', spent: 500, budget: null },
+      ],
+    };
+    expect(pickAnswerCard('How much on Transport this month', presets)).toEqual({
+      kind: 'category_spend',
+      categoryId: 'transportation',
+      spent: 14000,
+      budget: 12000,
+    });
+    expect(pickAnswerCard('How much this month', { ...presets, month: { ...presets.month, budget: null, left: null } })).toBeNull();
+  });
+
   it('reads a category by its first word', () => {
     expect(pickAnswerCard('how much did I spend on food?', snapshot)).toEqual({
       kind: 'category_spend',
