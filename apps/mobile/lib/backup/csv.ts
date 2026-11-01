@@ -76,8 +76,9 @@ function readRecord(
       index += 1;
       continue;
     }
-    if (char === '"' && cell === '') {
+    if (char === '"' && cell.trim() === '') {
       quoted = true;
+      cell = '';
     } else if (char === delimiter) {
       cells.push(cell);
       cell = '';

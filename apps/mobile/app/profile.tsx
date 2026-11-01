@@ -6,6 +6,7 @@ import { ScrollView, View } from 'react-native';
 
 import { currencyHeldIn } from '@/components/profile/currency-words';
 import { ExportDataRow } from '@/components/profile/export-data-row';
+import { ImportDataRow } from '@/components/profile/import-data-row';
 import { MainCurrencyRow } from '@/components/profile/main-currency-row';
 import {
   ProfileRow,
@@ -302,6 +303,7 @@ export default function ProfileScreen() {
             onPress={() => router.push('/capture-log')}
           />
           <ExportDataRow userId={userId} />
+          <ImportDataRow />
         </Section>
 
         {__DEV__ ? (

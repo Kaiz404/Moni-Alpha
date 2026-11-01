@@ -1,4 +1,4 @@
-import type { Observable } from '@legendapp/state';
+import { syncState, type Observable } from '@legendapp/state';
 
 import {
   categories$,
@@ -10,6 +10,7 @@ import {
 } from '@/lib/store';
 
 import type { BackupTables, RawRow, TableName } from './moni-export';
+import type { StoreSnapshot } from './plan';
 
 export const STORE_TABLES: Record<TableName, Observable<any>> = {
   wallets: wallets$,
@@ -19,6 +20,26 @@ export const STORE_TABLES: Record<TableName, Observable<any>> = {
   debtActivities: debtActivities$,
   transactions: transactions$,
 };
+
+/**
+ * True once every table has pulled from the server since the app opened. Until then the store may
+ * be missing rows the server holds, and an import would take them for new. `lastSync` can't say
+ * this: `enableStoreSync` stamps it even when the pull failed with no signal.
+ */
+export function storeHasPulled(): boolean {
+  return Object.values(STORE_TABLES).every((table$) => syncState(table$).isLoaded.get());
+}
+
+export function readStoreSnapshot(): StoreSnapshot {
+  return {
+    wallets: storeRows('wallets'),
+    categories: storeRows('categories'),
+    budgets: storeRows('budgets'),
+    debts: storeRows('debts'),
+    debtActivities: storeRows('debtActivities'),
+    transactions: storeRows('transactions'),
+  };
+}
 
 /** A table's rows as the store holds them, soft-deleted ones included. */
 export function storeRows(table: TableName): RawRow[] {

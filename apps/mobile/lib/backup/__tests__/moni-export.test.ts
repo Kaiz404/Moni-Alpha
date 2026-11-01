@@ -181,6 +181,10 @@ describe('parseCsv', () => {
     expect(cells('a,b,\n')).toEqual([['a', 'b', '']]);
   });
 
+  it('reads a quoted cell with spaces before its quote', () => {
+    expect(cells('a, "b,c"\n')).toEqual([['a', 'b,c']]);
+  });
+
   it('takes a quote in the middle of a cell as text', () => {
     expect(cells('5" screen,b\n')).toEqual([['5" screen', 'b']]);
   });

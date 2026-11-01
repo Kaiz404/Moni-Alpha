@@ -32,10 +32,51 @@ configureSyncedSupabase({
   fieldDeleted: 'deleted',
 });
 
+type CreateParams = { onError: (error: Error, params: Record<string, unknown>) => void };
+
+/**
+ * A pull never brings a soft-deleted row to this phone, so a restore can create a row whose id the
+ * server still holds. Insert as usual; on the key clash, bring a soft-deleted row back, or adopt
+ * the row already live, which a create must never overwrite.
+ */
+function createOrRevive(collection: string) {
+  return async (input: Record<string, unknown>, params: CreateParams) => {
+    const fail = (message: string) => {
+      params.onError(new Error(message), {
+        setParams: params,
+        source: 'create',
+        type: 'set',
+        retry: params,
+        input,
+      });
+      return { data: undefined };
+    };
+    const inserted = await supabase.from(collection).insert(input).select();
+    if (inserted.error?.code !== '23505') {
+      return inserted.error ? fail(inserted.error.message) : { data: inserted.data?.[0] };
+    }
+    const revived = await supabase
+      .from(collection)
+      .update(input)
+      .eq('id', input.id as string)
+      .eq('deleted', true)
+      .select();
+    if (revived.error) return fail(revived.error.message);
+    if (revived.data?.length) return { data: revived.data[0] };
+    const live = await supabase
+      .from(collection)
+      .select()
+      .eq('id', input.id as string);
+    // Nothing under this id means another unique key clashed, which is a real failure.
+    return live.data?.length ? { data: live.data[0] } : fail(inserted.error.message);
+  };
+}
+
 function syncTable(collection: string, extra?: Record<string, unknown>) {
   return syncedSupabase({
     supabase,
     collection,
+    create: createOrRevive(collection) as never,
     realtime: true,
     persist: { name: collection, ...persistOptions },
     waitFor: waitForAuth,

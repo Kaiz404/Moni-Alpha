@@ -1,0 +1,35 @@
+# Y3 Export and import (no board, fits V2H-Profile): the Export data button opens the share sheet,
+# and Import data opens the page that chooses a file. Android's file picker is not Moni's to drive,
+# so Jest covers the pages after it. A device check picks a file by hand.
+# Run: scripts/device/run-flows.sh .maestro/flows/reports/import.yaml
+appId: com.anonymous.moni.e2e
+name: Y3 import
+tags:
+  - y3
+  - seed-full
+---
+- runFlow: ../../subflows/launch.yaml
+- tapOn:
+    id: home.avatar
+- assertVisible:
+    id: profile.back
+- scrollUntilVisible:
+    element:
+      id: profile.import
+- assertVisible:
+    id: profile.export-csv
+- takeScreenshot: y3-profile-data
+- tapOn:
+    id: profile.import
+- assertVisible: Import data
+- extendedWaitUntil:
+    visible:
+      id: import.choose
+    timeout: 15000
+- takeScreenshot: y3-import-choose
+- tapOn:
+    id: import.back
+- tapOn:
+    id: profile.export-csv
+- takeScreenshot: y3-export-share-sheet
+- back

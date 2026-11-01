@@ -160,6 +160,7 @@ export const TABLES: Record<TableName, { title: string; columns: Column[] }> = {
       text('Note', 'notes'),
       {
         header: 'Source',
+        field: 'source',
         show: (row) => {
           const source = metadataOf(row).source;
           return typeof source === 'string' ? source : 'manual';

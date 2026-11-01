@@ -270,6 +270,16 @@ async function addActivity(
   return activity;
 }
 
+/** Works a debt's status out again after a restore added activity to it. */
+export async function refreshDebtStatus(debtId: string): Promise<void> {
+  const debt = await getDebtById(debtId);
+  if (!debt) return;
+  const status = debtStatus(debt, await getDebtActivities(debtId));
+  if (status !== debt.status) {
+    patchRow(debts$, debtId, { status, updated_at: new Date().toISOString() });
+  }
+}
+
 export async function createDebt(data: {
   counterpartyName: string;
   direction: DebtDirection;
