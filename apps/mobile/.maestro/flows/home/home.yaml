@@ -48,6 +48,34 @@ tags:
     id: wallet.list.net-worth
 - assertVisible: Wallets
 - takeScreenshot: h1-l3-wallets
+
+# The net worth chart: range chips, one line per wallet, and a scrub that reads a past day.
+- assertVisible:
+    id: wallet.chart.plot
+- tapOn:
+    id: wallet.chart.30d
+- assertVisible:
+    id: wallet.chart.callout
+- tapOn:
+    id: wallet.chart.90d
+- assertVisible:
+    id: wallet.chart.callout
+- tapOn:
+    id: wallet.chart.by-wallet
+- assertVisible:
+    id: wallet.chart.key
+- takeScreenshot: h1-l3-wallets-by-wallet
+- swipe:
+    from:
+      id: wallet.chart.plot
+    direction: LEFT
+    duration: 1200
+- assertVisible:
+    text: '(Mon|Tue|Wed|Thu|Fri|Sat|Sun) \d{1,2} (Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)( \d{4})?'
+- tapOn:
+    id: wallet.chart.total
+- assertNotVisible:
+    id: wallet.chart.key
 - tapOn:
     id: wallet.back
 - assertVisible:

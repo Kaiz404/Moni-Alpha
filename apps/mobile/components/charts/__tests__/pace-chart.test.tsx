@@ -121,24 +121,6 @@ describe('PaceChart', () => {
 });
 
 describe('paceGeometry', () => {
-  it('starts the balance axis near the lowest balance, not at zero', () => {
-    const geometry = paceGeometry({
-      mode: 'balance',
-      series: { month: october, values: [318550, 290000, 243180] },
-      budget: null,
-      currency: 'MYR',
-      width: 314,
-    });
-    expect(geometry.labels.map((label) => label.text)).toEqual([
-      'RM3,200',
-      'RM2,800',
-      'RM2,400',
-    ]);
-    expect(geometry.accessibilityLabel).toBe(
-      'Closing balance, 1 to 3 October, from RM3,185.50 to RM2,431.80. The axis starts at RM2,400, not zero.',
-    );
-  });
-
   it('ends a past month on its last day instead of today', () => {
     const geometry = paceGeometry({
       mode: 'pace',

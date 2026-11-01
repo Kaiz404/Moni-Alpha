@@ -1,14 +1,13 @@
 import { formatMoney } from '@/lib/finance/format-money';
 
-export type PaceChartMode = 'pace' | 'daily' | 'balance';
+export type PaceChartMode = 'pace' | 'daily';
 
 /** A calendar month; `month` is 0 for January. */
 export type ChartMonth = { year: number; month: number };
 
 /**
- * One value per day of `month` so far, in minor units: index 0 is day 1 and
- * the last entry is today. Spend per day for `pace` and `daily` (pace adds
- * them up), the closing balance for `balance`.
+ * Spend per day of `month` so far, in minor units: index 0 is day 1 and the
+ * last entry is today. `pace` adds them up.
  */
 export type DaySeries = { month: ChartMonth; values: readonly number[] };
 
@@ -37,7 +36,7 @@ export type PaceGeometry = {
   baseline: number;
   labels: AxisLabel[];
   points: ChartPoint[];
-  /** Pace and balance: the line through `points`, the first one at the baseline for pace. */
+  /** Pace: the line through `points`, from the baseline at day 0. */
   line: { x: number; y: number }[];
   /** Pace: the even-pace line ends at the budget at month end. */
   evenPace: { x1: number; y1: number; x2: number; y2: number } | null;
@@ -66,7 +65,7 @@ const BAR_TAIL = 24;
 const MAX_SLOT = 24;
 
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+export const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const MONTH_NAMES = [
   'January',
   'February',
@@ -108,7 +107,7 @@ function whole(minor: number, currency: string): string {
 }
 
 /** The smallest of 1, 2, 2.5, 5 × 10^k at or above `value`. */
-function niceCeil(value: number): number {
+export function niceCeil(value: number): number {
   if (value <= 0) return 0;
   const power = 10 ** Math.floor(Math.log10(value));
   const step = [1, 2, 2.5, 5, 10].find((m) => m * power >= value)!;
@@ -121,7 +120,7 @@ function cumulative(values: readonly number[]): number[] {
 }
 
 /**
- * Pure layout for the spent-vs-budget line, daily bars, and balance line on
+ * Pure layout for the spent-vs-budget line and daily bars on
  * a `width` × 150 plot whose first 44 are the axis column (tokens.md Charts).
  */
 export function paceGeometry({
@@ -222,54 +221,12 @@ export function paceGeometry({
   const right = width - LINE_RIGHT_INSET;
   const step = (right - LINE_LEFT) / days;
   const xOf = (day: number) => LINE_LEFT + day * step;
-  const values = mode === 'pace' ? cumulative(series.values) : [...series.values];
+  const values = cumulative(series.values);
   const ticks = [
     { x: LINE_LEFT, text: `1 ${short}`, today: false },
     ...(today && endsToday ? [{ x: xOf(today), text: 'Today', today: true }] : []),
     { x: right, ...lastTick },
   ];
-
-  if (mode === 'balance') {
-    const low = values.length ? Math.min(...values) : 0;
-    const high = values.length ? Math.max(...values) : 0;
-    const range = Math.max(high - low, 100);
-    const unit = 10 ** Math.floor(Math.log10(range));
-    const floor = Math.floor(low / unit) * unit;
-    const half = Math.max(Math.ceil((high - floor) / 2 / unit) * unit, unit);
-    const ceiling = floor + half * 2;
-    const yOf = (minor: number) => LINE_BASE - ((minor - floor) / (ceiling - floor)) * (LINE_BASE - TOP);
-    const points = values.map((value, index) => {
-      const date = endsToday && index === today - 1 ? 'Today' : dayDate(month, index + 1);
-      return {
-        x: xOf(index + 1),
-        y: yOf(value),
-        date,
-        value: money(value),
-        accessibilityLabel: `${dayDate(month, index + 1)}, ${money(value)}`,
-      };
-    });
-    return {
-      mode,
-      width,
-      top: TOP,
-      baseline: LINE_BASE,
-      labels: [
-        { y: TOP, text: whole(ceiling, currency), tone: 'meta' },
-        { y: (TOP + LINE_BASE) / 2, text: whole(floor + half, currency), tone: 'meta' },
-        { y: LINE_BASE, text: whole(floor, currency), tone: 'meta' },
-      ],
-      points,
-      line: points,
-      evenPace: null,
-      budgetY: null,
-      bars: [],
-      safe: null,
-      ticks,
-      accessibilityLabel: values.length
-        ? `Closing balance, 1 to ${today} ${name}, from ${money(values[0]!)} to ${money(values[today - 1]!)}. The axis starts at ${whole(floor, currency)}, not zero.`
-        : `Closing balance in ${name}.`,
-    };
-  }
 
   const spent = values[today - 1] ?? 0;
   // Under budget, the budget is the top line, as the boards draw it: niceCeil alone turns RM1,224 into RM2,000.
@@ -332,6 +289,7 @@ export function nearestIndex(xs: readonly number[], x: number): number {
 
 /** Callout left edge: centred on `x`, kept inside the plot right of the axis. */
 export function calloutLeft(x: number, width: number): number {
+  'worklet';
   return Math.max(AXIS_WIDTH + 4, Math.min(width - 100, x - 50));
 }
 

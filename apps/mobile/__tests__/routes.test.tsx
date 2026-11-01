@@ -295,7 +295,7 @@ const ROUTES: Record<string, RouteSpec> = {
   'wallets.tsx': differ(
     '/wallets',
     'Ringgit · main currency',
-    'MYR wallets, closing balance each day',
+    'Net worth',
   ),
 };
 

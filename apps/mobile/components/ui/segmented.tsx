@@ -37,8 +37,8 @@ type SegmentedProps<T extends string> = {
   onChange: (value: T) => void;
   accessibilityLabel: string;
   disabled?: boolean;
-  /** `medium` is the 48 track with 15/600 labels (V2H-Profile, V2H-Login). */
-  size?: 'default' | 'medium';
+  /** `medium` is the 48 track with 15/600 labels (V2H-Profile, V2H-Login). `compact` is 36 with 12/600 labels. */
+  size?: 'default' | 'medium' | 'compact';
 };
 
 const sizes = {
@@ -53,6 +53,12 @@ const sizes = {
     pill: 'h-10',
     corners: 20,
     label: 'text-[15px] leading-[21px]',
+  },
+  compact: {
+    track: 'h-9',
+    pill: 'h-7',
+    corners: 14,
+    label: 'text-[12px] leading-4',
   },
 } as const;
 
@@ -129,6 +135,7 @@ export function Segmented<T extends string>({
             accessibilityLabel={option.label}
             accessibilityState={{ selected, disabled }}
             disabled={disabled}
+            hitSlop={size === 'compact' ? { top: 8, bottom: 8 } : undefined}
             pressedClassName="bg-transparent"
             className="flex-1 flex-row items-center justify-center gap-1.5 rounded-full"
             onPress={() => {

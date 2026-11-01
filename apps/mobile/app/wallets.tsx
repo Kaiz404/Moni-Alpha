@@ -1,10 +1,9 @@
 import { useValue } from '@legendapp/state/react';
 import { router } from 'expo-router';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { ScrollView, View } from 'react-native';
+import Animated from 'react-native-reanimated';
 
-import { PaceChart } from '@/components/charts/pace-chart';
-import { closingBalances } from '@/components/home/closing-balances';
 import { HeaderIconButton } from '@/components/ui/header-icon-button';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { ListCard } from '@/components/ui/list-card';
@@ -12,6 +11,7 @@ import type { BubbleTint } from '@/components/ui/nav-row';
 import { Page } from '@/components/ui/page';
 import { Press } from '@/components/ui/press';
 import { Text } from '@/components/ui/text';
+import { NetWorthChart, netWorthLayout } from '@/components/wallets/net-worth-chart';
 import { walletBubbleTint } from '@/constants/wallet-card-styles';
 import { resolveWalletIcon } from '@/constants/wallet-form';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
@@ -108,16 +108,7 @@ export default function WalletsScreen() {
   }, [overview.wallets, overview.balancesByWallet, currency]);
 
   const main = groups.find((group) => group.code === currency);
-  const series = useMemo(
-    () =>
-      closingBalances({
-        now: new Date(),
-        walletIds: new Set(main?.wallets.map((wallet) => wallet.id) ?? []),
-        balanceMinor: main?.totalMinor ?? 0,
-        transactions: overview.transactions,
-      }),
-    [main, overview.transactions],
-  );
+  const [now] = useState(() => new Date());
 
   return (
     <Page
@@ -138,80 +129,59 @@ export default function WalletsScreen() {
         contentContainerClassName="gap-5 px-5 pb-10"
         showsVerticalScrollIndicator={false}
       >
-        <View className="gap-2 rounded-card bg-card px-[18px] py-3.5">
-          <Text
-            variant="caps"
-            className="min-h-9 text-muted"
-            style={{ textAlignVertical: 'center' }}
-          >
-            Net worth
-          </Text>
-          <View>
-            <Text
-              testID={tid('wallet', 'list', 'net-worth')}
-              className="text-[32px] leading-9 font-display-bold text-foreground"
-              style={{ fontVariant: ['tabular-nums'] }}
-            >
-              {formatMoney(main?.totalMinor ?? 0, currency)}
-            </Text>
-            <Text
-              variant="meta"
-              className="text-ink-2"
-            >
-              {`${currency} wallets, closing balance each day`}
-            </Text>
-          </View>
-          {main ? (
-            <PaceChart
-              screen="wallet"
-              mode="balance"
-              series={series}
-              budget={null}
-              currency={currency}
-            />
-          ) : null}
-        </View>
-
-        {groups.map((group) => {
-          const isMain = group.code === currency;
-          const [name, plural] = currencyName(group.code);
-          return (
-            <View
-              key={group.code}
-              className="gap-2"
-            >
-              <View className="flex-row items-baseline justify-between gap-2 px-1">
-                <Text
-                  variant="caps"
-                  className="text-muted"
-                  accessibilityRole="header"
-                >
-                  {isMain ? `${name} · main currency` : name}
-                </Text>
-                <Text className="text-[13px] leading-[18px] font-display-semibold text-ink-2">
-                  {formatMoney(group.totalMinor, group.code)}
-                </Text>
+        <NetWorthChart
+          now={now}
+          currency={currency}
+          totalMinor={main?.totalMinor ?? 0}
+          wallets={main?.wallets ?? []}
+          balances={overview.balancesByWallet}
+          transactions={overview.transactions}
+        />
+        <Animated.View
+          layout={netWorthLayout}
+          className="gap-5"
+        >
+          {groups.map((group) => {
+            const isMain = group.code === currency;
+            const [name, plural] = currencyName(group.code);
+            return (
+              <View
+                key={group.code}
+                className="gap-2"
+              >
+                <View className="flex-row items-baseline justify-between gap-2 px-1">
+                  <Text
+                    variant="caps"
+                    className="text-muted"
+                    accessibilityRole="header"
+                  >
+                    {isMain ? `${name} · main currency` : name}
+                  </Text>
+                  <Text className="text-[13px] leading-[18px] font-display-semibold text-ink-2">
+                    {formatMoney(group.totalMinor, group.code)}
+                  </Text>
+                </View>
+                <ListCard>
+                  {group.wallets.map((wallet) => (
+                    <WalletRow
+                      key={wallet.id}
+                      wallet={wallet}
+                      balance={formatMoney(
+                        overview.balancesByWallet[wallet.id] ?? 0,
+                        wallet.currency,
+                      )}
+                      meta={walletMeta(wallet, isMain, linked.has(wallet.id))}
+                    />
+                  ))}
+                </ListCard>
+                {isMain ? null : (
+                  <KeptApart text={`Kept apart. Moni never converts ${plural} or adds them to your ${currencyName(currency)[1]}.`} />
+                )}
               </View>
-              <ListCard>
-                {group.wallets.map((wallet) => (
-                  <WalletRow
-                    key={wallet.id}
-                    wallet={wallet}
-                    balance={formatMoney(
-                      overview.balancesByWallet[wallet.id] ?? 0,
-                      wallet.currency,
-                    )}
-                    meta={walletMeta(wallet, isMain, linked.has(wallet.id))}
-                  />
-                ))}
-              </ListCard>
-              {isMain ? null : (
-                <KeptApart text={`Kept apart. Moni never converts ${plural} or adds them to your ${currencyName(currency)[1]}.`} />
-              )}
-            </View>
-          );
-        })}
-        <AddWallet />
+            );
+          })}
+          <AddWallet />
+        </Animated.View>
       </ScrollView>
     </Page>
   );

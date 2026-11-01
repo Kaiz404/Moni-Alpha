@@ -48,10 +48,10 @@ const BAR_STAGGER_MS = 14;
 
 export type PaceChartProps = {
   screen: Screen;
-  /** `pace` spent against budget, `daily` one bar a day, `balance` closing balance. */
+  /** `pace` spent against budget, `daily` one bar a day. */
   mode: PaceChartMode;
   series: DaySeries;
-  /** Minor units for the month; ignored by `balance`. */
+  /** Minor units for the month. */
   budget: number | null;
   currency: string;
   /** Daily: today's dashed segment, in minor units. */
@@ -63,7 +63,7 @@ export type PaceChartProps = {
 };
 
 /**
- * The spent-vs-budget line, daily bars, and balance line from tokens.md
+ * The spent-vs-budget line and daily bars from tokens.md
  * Charts, with the day-snapping scrub and the one callout. Draws in once per
  * mode on first open; never on return.
  */
