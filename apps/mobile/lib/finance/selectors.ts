@@ -58,7 +58,7 @@ function values<T>(record: Record<string, T>): T[] {
  * forms immediately after a full sync or catalogue reseed.
  */
 function syncedCategoriesForUser(userId: string | null): FinanceCategory[] {
-  const rows = categories$.get() as Record<string, Record<string, unknown> | undefined>;
+  const rows = (categories$.get() ?? {}) as Record<string, Record<string, unknown> | undefined>;
   return Object.entries(rows)
     .map(([key, row]) =>
       row
