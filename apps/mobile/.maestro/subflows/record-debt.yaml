@@ -8,19 +8,15 @@ appId: com.anonymous.moni.e2e
 - inputText: ${PERSON}
 - hideKeyboard
 - tapOn:
-    id: debts.new.amount
-- tapOn:
     id: debts.key.5
 - tapOn:
     id: debts.key.0
-- tapOn:
-    id: debts.submit
 - tapOn:
     id: debts.new.note
 - inputText: ${PERSON} lunch
 - hideKeyboard
 - tapOn:
-    id: debts.new.record
+    id: debts.submit
 - assertVisible: People
 - scrollUntilVisible:
     element:

@@ -37,11 +37,8 @@ type SegmentedProps<T extends string> = {
   onChange: (value: T) => void;
   accessibilityLabel: string;
   disabled?: boolean;
-  /**
-   * `medium` is the 48 track with 15/600 labels (V2H-Profile, V2H-Login);
-   * `form` is the 52 track that leads a form (V2P-DebtNew).
-   */
-  size?: 'default' | 'medium' | 'form';
+  /** `medium` is the 48 track with 15/600 labels (V2H-Profile, V2H-Login). */
+  size?: 'default' | 'medium';
 };
 
 const sizes = {
@@ -55,12 +52,6 @@ const sizes = {
     track: 'h-12',
     pill: 'h-10',
     corners: 20,
-    label: 'text-[15px] leading-[21px]',
-  },
-  form: {
-    track: 'h-[52px]',
-    pill: 'h-11',
-    corners: 22,
     label: 'text-[15px] leading-[21px]',
   },
 } as const;

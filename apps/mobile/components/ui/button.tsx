@@ -123,11 +123,6 @@ export type ButtonProps = {
    * 14 on the glyph side, 6 between glyph and label.
    */
   compact?: boolean;
-  /**
-   * The form is not filled in yet: Sand with Ink 2 text and no press, the
-   * label saying what is missing (V2P-DebtNew). Disabled keeps the faded look.
-   */
-  waiting?: boolean;
 };
 
 /** The v2 capsule: 52 tall (tertiary 44), 15/600 label, one variant per role. */
@@ -144,17 +139,12 @@ export function Button({
   accessibilityLabel,
   pinned = false,
   compact = false,
-  waiting = false,
 }: ButtonProps) {
   const tokens = useThemeTokens();
   const look = looks[variant];
-  const inactive = disabled || loading || waiting;
+  const inactive = disabled || loading;
   const height = pinned ? 56 : look.tall && !compact ? 52 : 44;
-  const ink = disabled
-    ? tokens.muted
-    : waiting
-      ? tokens.ink2
-      : look.ink(tokens);
+  const ink = disabled ? tokens.muted : look.ink(tokens);
   const glyph = loading ? (
     <LoadingRing
       color={ink}
@@ -173,9 +163,7 @@ export function Button({
     ? variant === 'tertiary'
       ? ''
       : 'bg-sand-light'
-    : waiting
-      ? 'bg-sand'
-      : look.fill;
+    : look.fill;
   const gap = loading
     ? 'gap-2.5'
     : compact
@@ -188,11 +176,7 @@ export function Button({
       ? 'pl-3.5 pr-[18px]'
       : 'px-[18px]'
     : look.padding;
-  const textTone = disabled
-    ? 'text-muted'
-    : waiting
-      ? 'text-ink-2'
-      : look.text;
+  const textTone = disabled ? 'text-muted' : look.text;
 
   return (
     <Press

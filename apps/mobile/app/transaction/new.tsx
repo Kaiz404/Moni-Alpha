@@ -2,24 +2,22 @@ import { useValue } from '@legendapp/state/react';
 import { createTransactionSchema, type MinorAmount } from '@repo/types';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
-import { Alert, Keyboard, TextInput, View } from 'react-native';
+import { Alert, Keyboard, View } from 'react-native';
 
 import { AmountPage } from '@/components/amount/amount-page';
+import { TextTile } from '@/components/amount/text-tile';
 import { useBudgetData, useBudgetMonth } from '@/components/budget/use-budget';
 import {
   DuplicateSheet,
   type DuplicateHit,
 } from '@/components/capture/duplicate-sheet';
-import { FieldBubble } from '@/components/capture/field-bubble';
+import { FieldBubble, WalletBubble } from '@/components/capture/field-bubble';
 import { LocationField } from '@/components/capture/location-field';
 import { PlaceChip } from '@/components/capture/place-chip';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { PickerField } from '@/components/ui/picker-field';
 import { Segmented } from '@/components/ui/segmented';
-import { Text } from '@/components/ui/text';
 import { TintBubble } from '@/components/ui/transaction-row';
-import { getWalletCardStyle } from '@/constants/wallet-card-styles';
-import { resolveWalletIcon } from '@/constants/wallet-form';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import type { LedgerEntry } from '@/lib/ai/duplicates';
 import { useAuth } from '@/lib/auth/auth-context';
@@ -452,13 +450,7 @@ export default function TypeItScreen() {
     setDuplicate((current) => current && { ...current, open: false });
 
   const walletBubble = (item: FinanceWallet | null) =>
-    item ? (
-      <TintBubble
-        size={32}
-        icon={resolveWalletIcon(item.icon, item.type)}
-        color={item.color ?? getWalletCardStyle(item.cardStyleId).swatchHex}
-      />
-    ) : undefined;
+    item ? <WalletBubble wallet={item} /> : undefined;
 
   const dateField = (
     <PickerField
@@ -481,30 +473,15 @@ export default function TypeItScreen() {
   );
 
   const noteField = (
-    <View className="h-[60px] flex-row items-center gap-2.5 rounded-tile bg-sand pl-2.5 pr-3">
-      <FieldBubble color={tokens.card}>
-        <IconSymbol
-          name="pencil-outline"
-          size={17}
-          color={tokens.foreground}
-        />
-      </FieldBubble>
-      <View className="min-w-0 flex-1 gap-px">
-        <Text className="text-[12px] leading-[16px] text-ink-2">
-          Shop or note
-        </Text>
-        <TextInput
-          testID={tid('capture', 'note')}
-          accessibilityLabel="Shop or note"
-          autoCapitalize="words"
-          className="p-0 text-[15px] leading-[20px] font-display-semibold text-foreground"
-          placeholder="Optional"
-          placeholderTextColor={tokens.muted}
-          value={note}
-          onChangeText={setNote}
-        />
-      </View>
-    </View>
+    <TextTile
+      testID={tid('capture', 'note')}
+      label="Shop or note"
+      icon="pencil-outline"
+      autoCapitalize="words"
+      placeholder="Optional"
+      value={note}
+      onChangeText={setNote}
+    />
   );
 
   const ready =

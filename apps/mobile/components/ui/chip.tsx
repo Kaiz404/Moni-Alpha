@@ -14,6 +14,8 @@ type ChipProps = {
   selected?: boolean;
   disabled?: boolean;
   icon?: IconSymbolName;
+  /** Inside a Sand tile the rest fill turns Paper, as the tile's bubble does. */
+  onSand?: boolean;
 };
 
 export function Chip({
@@ -23,6 +25,7 @@ export function Chip({
   selected = false,
   disabled = false,
   icon,
+  onSand = false,
 }: ChipProps) {
   const tokens = useThemeTokens();
   const ink = disabled
@@ -42,7 +45,7 @@ export function Chip({
       pressedClassName={
         selected ? 'bg-primary-pressed' : 'bg-hairline'
       }
-      className={`h-9 flex-row items-center gap-1.5 self-start px-3.5 ${disabled ? 'bg-sand-light' : selected ? 'bg-primary' : 'bg-sand'}`}
+      className={`h-9 flex-row items-center gap-1.5 self-start px-3.5 ${disabled ? 'bg-sand-light' : selected ? 'bg-primary' : onSand ? 'bg-card' : 'bg-sand'}`}
     >
       {icon ? (
         <IconSymbol

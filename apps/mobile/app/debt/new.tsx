@@ -1,7 +1,10 @@
 import { router } from 'expo-router';
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { ScrollView, TextInput, View } from 'react-native';
+import { useCallback, useMemo, useState } from 'react';
+import { Keyboard, ScrollView, View } from 'react-native';
 
+import { AmountPage } from '@/components/amount/amount-page';
+import { TextTile } from '@/components/amount/text-tile';
+import { FieldBubble, WalletBubble } from '@/components/capture/field-bubble';
 import {
   dueLabel,
   DueDateSheet,
@@ -11,24 +14,17 @@ import {
   useDebtWallets,
 } from '@/components/debts/debt-wallets';
 import { SIDE_WORDS } from '@/components/debts/debt-words';
-import {
-  editNewDebtDraft,
-  resetNewDebtDraft,
-  useNewDebtDraft,
-} from '@/components/debts/new-debt-draft';
 import { useDebtLines } from '@/components/debts/use-debts';
-import { Button } from '@/components/ui/button';
 import { Chip } from '@/components/ui/chip';
 import { IconSymbol } from '@/components/ui/icon-symbol';
-import { Page } from '@/components/ui/page';
 import { PickerField } from '@/components/ui/picker-field';
-import { Press } from '@/components/ui/press';
 import { Segmented } from '@/components/ui/segmented';
 import { Text } from '@/components/ui/text';
-import { getWalletCardStyle } from '@/constants/wallet-card-styles';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
-import { useMainCurrency } from '@/lib/finance/main-currency';
+import { readAmount } from '@/lib/amount/amount-input';
+import type { DebtSide } from '@/lib/finance/debt-summary';
 import { formatMoney } from '@/lib/finance/format-money';
+import { useMainCurrency } from '@/lib/finance/main-currency';
 import { approve } from '@/lib/haptics';
 import {
   addDebtPrincipal,
@@ -36,7 +32,6 @@ import {
   getDebtById,
   updateDebt,
 } from '@/lib/supabase/debts';
-import { readAmount } from '@/lib/amount/amount-input';
 import { tid } from '@/lib/test-ids';
 import { showToast } from '@/lib/toast/toast-store';
 import { compactWalletNames } from '@/lib/wallets/compact-name';
@@ -49,16 +44,17 @@ const sameName = (a: string, b: string) =>
 export default function NewDebtScreen() {
   const tokens = useThemeTokens();
   const currency = useMainCurrency();
-  const draft = useNewDebtDraft();
   const lines = useDebtLines();
   const { wallets } = useDebtWallets(currency);
+  const [name, setName] = useState('');
+  const [direction, setDirection] = useState<DebtSide>('owed_to_me');
+  const [typed, setTyped] = useState('');
+  const [chosenWalletId, setChosenWalletId] = useState<string | null>(null);
+  const [dueDate, setDueDate] = useState<string | null>(null);
+  const [note, setNote] = useState('');
   const [dueOpen, setDueOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const closeDue = useCallback(() => setDueOpen(false), []);
-
-  useEffect(() => {
-    resetNewDebtDraft();
-  }, []);
 
   const mine = useMemo(
     () => lines.filter((line) => line.debt.currency === currency),
@@ -70,34 +66,30 @@ export default function NewDebtScreen() {
       b.lastAt.localeCompare(a.lastAt),
     ))
       if (
-        !names.some((name) =>
-          sameName(name, line.debt.counterpartyName),
+        !names.some((known) =>
+          sameName(known, line.debt.counterpartyName),
         )
       )
         names.push(line.debt.counterpartyName);
     return names.slice(0, 3);
   }, [mine]);
 
-  const who = draft.name.trim();
-  const words = SIDE_WORDS[draft.direction];
+  const who = name.trim();
+  const words = SIDE_WORDS[direction];
   const existing = who
     ? mine.find(
         (line) =>
           line.state === 'open' &&
-          line.debt.direction === draft.direction &&
+          line.debt.direction === direction &&
           sameName(line.debt.counterpartyName, who),
       )
     : undefined;
-  const walletId =
-    draft.walletId &&
-    wallets.some((wallet) => wallet.id === draft.walletId)
-      ? draft.walletId
-      : (wallets[0]?.id ?? null);
-  const wallet = wallets.find((item) => item.id === walletId);
-  const amountMinor = readAmount(draft.amount).minor;
+  const wallet =
+    wallets.find((item) => item.id === chosenWalletId) ?? wallets[0] ?? null;
+  const walletId = wallet?.id ?? null;
+  const amountMinor = readAmount(typed).minor;
   const amount = formatMoney(amountMinor, currency);
-  const ready =
-    who.length > 0 && amountMinor > 0 && walletId !== null;
+  const ready = who.length > 0 && amountMinor > 0 && walletId !== null;
   const walletLabel = words.principalWallet;
 
   const submit = async () => {
@@ -105,28 +97,26 @@ export default function NewDebtScreen() {
     approve();
     setSaving(true);
     try {
-      const note = draft.note.trim() || null;
+      const saidNote = note.trim() || null;
       if (existing) {
         const stored = await getDebtById(existing.debt.id);
         if (!stored) throw new Error('This debt is gone');
-        await addDebtPrincipal(stored, amountMinor, walletId, note);
-        if (draft.dueDate)
-          updateDebt(stored.id, { dueDate: draft.dueDate });
+        await addDebtPrincipal(stored, amountMinor, walletId, saidNote);
+        if (dueDate) updateDebt(stored.id, { dueDate });
       } else {
         await createDebt({
           counterpartyName: who,
-          direction: draft.direction,
+          direction,
           amountMinor,
           walletId,
-          dueDate: draft.dueDate,
-          note,
+          dueDate,
+          note: saidNote,
         });
       }
       const owed = existing
         ? formatMoney(existing.balanceMinor + amountMinor, currency)
         : amount;
       showToast({ text: words.saved(who, owed) });
-      resetNewDebtDraft();
       router.back();
     } catch (error) {
       setSaving(false);
@@ -142,200 +132,159 @@ export default function NewDebtScreen() {
 
   return (
     <View className="flex-1">
-      <Page
+      <AmountPage
         screen="debts"
-        kind="pushed"
+        header="pushed"
+        direction="plain"
         title="Record a debt"
-      >
-        <ScrollView
-          className="flex-1"
-          contentContainerClassName="gap-[18px] px-5 pb-6"
-          keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}
-        >
-          <View className="gap-2">
-            <Text className="text-[13px] leading-[18px] font-display-semibold text-foreground">
-              Who
-            </Text>
-            <TextInput
-              testID={tid('debts', 'new', 'person')}
-              accessibilityLabel="Who"
-              autoCapitalize="words"
-              autoComplete="name"
-              className="h-[52px] rounded-field bg-card px-4 font-display-semibold text-base text-foreground"
-              placeholder="Name"
-              placeholderTextColor={tokens.muted}
-              value={draft.name}
-              onChangeText={(name) => editNewDebtDraft({ name })}
-              maxLength={120}
-            />
-            {recentPeople.length > 0 ? (
-              <View
-                accessibilityLabel="Recent people"
-                className="flex-row flex-wrap gap-2"
-              >
-                {recentPeople.map((name) => (
-                  <Chip
-                    key={name}
-                    testID={tid('debts', 'new', 'recent', name)}
-                    label={name}
-                    selected={sameName(name, who)}
-                    onPress={() => editNewDebtDraft({ name })}
-                  />
-                ))}
-              </View>
-            ) : null}
-            {existing ? (
-              <View className="flex-row items-center gap-1.5">
-                <IconSymbol
-                  name="information-outline"
-                  size={16}
-                  color={tokens.states.pending}
-                />
-                <Text
-                  variant="meta"
-                  className="flex-1 text-state-pending"
-                >
-                  {words.existing(
-                    existing.debt.counterpartyName,
-                    formatMoney(existing.balanceMinor, currency),
-                  )}
-                </Text>
-              </View>
-            ) : null}
-          </View>
-
+        currency={currency}
+        typed={typed}
+        onTyped={setTyped}
+        sentence={{
+          text:
+            amountMinor > 0
+              ? words.owesAfter(
+                  who || (direction === 'i_owe' ? 'them' : 'They'),
+                  amount,
+                )
+              : 'How much?',
+          tone: 'plain',
+        }}
+        control={
           <Segmented
             screen="debts"
             name="direction"
-            size="form"
             accessibilityLabel="Who owes who"
             options={DIRECTIONS.map((side) => ({
               value: side,
               label: SIDE_WORDS[side].segment(who),
             }))}
-            value={draft.direction}
-            onChange={(direction) => editNewDebtDraft({ direction })}
+            value={direction}
+            onChange={setDirection}
           />
-
-          <View className="gap-2">
-            <Text className="text-[13px] leading-[18px] font-display-semibold text-foreground">
-              Amount
-            </Text>
-            <Press
-              testID={tid('debts', 'new', 'amount')}
-              accessibilityLabel={`Amount, ${amountMinor > 0 ? amount : 'not entered'}`}
-              accessibilityHint="Opens the amount page"
-              radius={{ rest: 16, pressed: 16 }}
-              className="h-16 flex-row items-center gap-2 bg-card pl-4 pr-3.5"
-              onPress={() =>
-                router.push({
-                  pathname: '/debt/amount',
-                  params: { mode: 'new' },
-                })
-              }
-            >
-              <Text
-                className={`flex-1 font-display-bold ${amountMinor > 0 ? 'text-[32px] leading-[38px] text-foreground' : 'text-[20px] leading-[26px] text-muted'}`}
-                numberOfLines={1}
+        }
+        action={{
+          label: ready
+            ? words.record(who, amount)
+            : wallets.length === 0
+              ? `Add a ${currency} wallet first`
+              : who
+                ? 'Add an amount'
+                : 'Add who and an amount',
+          disabled: !ready,
+          loading: saving,
+          onPress: () => void submit(),
+        }}
+      >
+        <TextTile
+          testID={tid('debts', 'new', 'person')}
+          label="Who"
+          icon="account-outline"
+          autoCapitalize="words"
+          autoComplete="name"
+          placeholder="Name"
+          value={name}
+          onChangeText={setName}
+          maxLength={120}
+          trailing={
+            // Inside the tile: a row under it would push Note off a 390 × 844 screen.
+            !who && recentPeople.length > 0 ? (
+              <ScrollView
+                horizontal
+                accessibilityLabel="Recent people"
+                className="-mr-3 grow-0"
+                contentContainerClassName="items-center gap-1.5 pr-3"
+                keyboardShouldPersistTaps="handled"
+                showsHorizontalScrollIndicator={false}
               >
-                {amountMinor > 0 ? amount : 'Enter amount'}
-              </Text>
-              <IconSymbol
-                name="chevron-right"
-                size={20}
-                color={tokens.muted}
-              />
-            </Press>
-          </View>
-
-          <View className="flex-row gap-2">
-            <PickerField
-              testID={tid('debts', 'new', 'wallet')}
-              className="flex-1"
-              label={walletLabel}
-              value={wallet ? compactWalletNames(wallets)[wallet.id] : ''}
-              spokenValue={wallet?.name}
-              mark={
-                wallet ? (
-                  <View
-                    className="h-2.5 w-2.5 rounded-full"
-                    style={{
-                      backgroundColor: getWalletCardStyle(
-                        wallet.cardStyleId,
-                      ).swatchHex,
+                {recentPeople.map((person) => (
+                  <Chip
+                    key={person}
+                    testID={tid('debts', 'new', 'recent', person)}
+                    label={person}
+                    onSand
+                    onPress={() => {
+                      setName(person);
+                      Keyboard.dismiss();
                     }}
                   />
-                ) : null
-              }
-              onPress={async () => {
-                const picked = await pickDebtWallet(
-                  walletLabel,
-                  wallets,
-                  walletId,
-                  currency,
-                );
-                if (picked) editNewDebtDraft({ walletId: picked });
-              }}
+                ))}
+              </ScrollView>
+            ) : null
+          }
+        />
+        {existing ? (
+          <View className="flex-row items-center gap-1.5 px-1.5">
+            <IconSymbol
+              name="information-outline"
+              size={16}
+              color={tokens.states.pending}
             />
-            <PickerField
-              testID={tid('debts', 'new', 'due-date')}
-              className="flex-1"
-              label="Due date"
-              value={dueLabel(draft.dueDate)}
-              mark={
+            <Text
+              variant="meta"
+              className="flex-1 text-state-pending"
+            >
+              {words.existing(
+                existing.debt.counterpartyName,
+                formatMoney(existing.balanceMinor, currency),
+              )}
+            </Text>
+          </View>
+        ) : null}
+        <View className="flex-row gap-2">
+          <PickerField
+            testID={tid('debts', 'new', 'wallet')}
+            size="capture"
+            className="flex-1"
+            label={walletLabel}
+            value={wallet ? compactWalletNames(wallets)[wallet.id] : ''}
+            spokenValue={wallet?.name}
+            leading={wallet ? <WalletBubble wallet={wallet} /> : undefined}
+            onPress={async () => {
+              const picked = await pickDebtWallet(
+                walletLabel,
+                wallets,
+                walletId,
+                currency,
+              );
+              if (picked) setChosenWalletId(picked);
+            }}
+          />
+          <PickerField
+            testID={tid('debts', 'new', 'due-date')}
+            size="capture"
+            className="flex-1"
+            label="Due date"
+            value={dueLabel(dueDate)}
+            leading={
+              <FieldBubble color={tokens.card}>
                 <IconSymbol
                   name="calendar-clock"
-                  size={18}
+                  size={17}
                   color={tokens.foreground}
                 />
-              }
-              onPress={() => setDueOpen(true)}
-            />
-          </View>
-
-          <View className="gap-2">
-            <Text className="text-[13px] leading-[18px] font-display-semibold text-foreground">
-              Note
-            </Text>
-            <TextInput
-              testID={tid('debts', 'new', 'note')}
-              accessibilityLabel="Note"
-              className="h-[52px] rounded-field bg-card px-4 font-display-semibold text-base text-foreground"
-              placeholder="What is it for?"
-              placeholderTextColor={tokens.muted}
-              value={draft.note}
-              onChangeText={(note) => editNewDebtDraft({ note })}
-              maxLength={1000}
-            />
-          </View>
-        </ScrollView>
-        <View className="border-t-[1.5px] border-sand px-5 pb-5 pt-3">
-          <Button
-            testID={tid('debts', 'new', 'record')}
-            pinned
-            label={
-              ready
-                ? words.record(who, amount)
-                : wallets.length === 0
-                  ? `Add a ${currency} wallet first`
-                  : who
-                    ? 'Add an amount'
-                    : 'Add who and an amount'
+              </FieldBubble>
             }
-            waiting={!ready}
-            loading={saving}
-            onPress={() => void submit()}
+            onPress={() => setDueOpen(true)}
           />
         </View>
-      </Page>
+        <TextTile
+          testID={tid('debts', 'new', 'note')}
+          label="Note"
+          icon="pencil-outline"
+          placeholder="What is it for?"
+          value={note}
+          onChangeText={setNote}
+          maxLength={1000}
+        />
+      </AmountPage>
       <DueDateSheet
         open={dueOpen}
-        selected={draft.dueDate}
+        selected={dueDate}
         onDismiss={closeDue}
-        onPick={(dueDate) => {
+        onPick={(picked) => {
           setDueOpen(false);
-          editNewDebtDraft({ dueDate });
+          setDueDate(picked);
         }}
       />
     </View>
