@@ -23,6 +23,19 @@ The owner replaced the per-PR stack below with this mode after V1 landed. Where 
 - Migrations are committed as files only. Pushing them to a Supabase project is the operator's action (O4 and O7).
 - No commit carries a Co-Authored-By or "Generated with" line.
 
+## Feature wave after the redesign (from 1 Nov 2026)
+
+The owner asked for the remaining features to be built without the phone, with device checks to follow in one pass. Every board is built, so this wave takes its scope from a v1 parity audit and from the gaps in `docs/research/competitor-reviews-2026-10.md`. No board covers these units, so each is designed to fit the v2 style and listed in `docs/REDESIGN.md` as a board addition.
+
+- Z1: mount every route in Jest, and fix what crashes.
+- P1: audit v1 against v2 for lost features, then restore what the audit finds.
+- Y1: capture trust. Last captured per app, a quiet-source alert, a missed-transaction report, the battery exemption, and an on-device one-time-code filter.
+- Y2: Malaysian pairing and categories. Bank and e-wallet alerts for one purchase, reloads, credit-card bill payments, and PTPTN, takaful, tolls, and transit.
+- Y3: reports, export and import, and idempotent restore.
+- Y4: receipt item count (an additive backend field), and location pre-fill on Type it.
+
+Not started, because each is a product call for the owner: savings goals, shared budgets, widgets, investments, a web or desktop version, live exchange rates, and payday-aligned budgets.
+
 ## How to read this
 
 One box is one unit of work. Every box names the evidence that checks it. A nested box is a sub-step of the box above it. Check a box only when its evidence exists, a file, a log line, a screenshot, a test run, or a SHA. The body is a how-to. The appendices explain and record.
