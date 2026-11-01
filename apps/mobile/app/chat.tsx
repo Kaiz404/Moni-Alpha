@@ -104,6 +104,15 @@ export default function ChatScreen() {
   const [listening, setListening] = useState(false);
 
   const listRef = useRef<FlatList<ChatMessage>>(null);
+  const contentHeight = useRef(0);
+  const listHeight = useRef(0);
+  // Not FlatList.scrollToEnd: it reckons the end from the last cell's measured height, which lags the
+  // content size when a tall card arrives, and it stops with that card under the composer.
+  const scrollThreadToEnd = (animated: boolean) =>
+    listRef.current?.scrollToOffset({
+      offset: Math.max(contentHeight.current - listHeight.current, 0),
+      animated,
+    });
   const inputRef = useRef(input);
   inputRef.current = input;
   const speechBase = useRef('');
@@ -271,8 +280,14 @@ export default function ChatScreen() {
           keyExtractor={(item) => item.id}
           keyboardShouldPersistTaps="handled"
           contentContainerClassName="grow justify-end px-5 pb-3 pt-1"
-          onContentSizeChange={() => listRef.current?.scrollToEnd({ animated: true })}
-          onLayout={() => listRef.current?.scrollToEnd({ animated: false })}
+          onContentSizeChange={(_width, height) => {
+            contentHeight.current = height;
+            scrollThreadToEnd(true);
+          }}
+          onLayout={(event) => {
+            listHeight.current = event.nativeEvent.layout.height;
+            scrollThreadToEnd(false);
+          }}
           ListHeaderComponent={
             firstRun && !messages.length ? (
               <MeetMoni
