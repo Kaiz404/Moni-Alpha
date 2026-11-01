@@ -16,8 +16,8 @@ tags:
     id: nav.tab.debts
 - assertVisible:
     id: debts.record-debt
-    above:
-      id: nav.plus
+    below:
+      id: debts.tile.owed-to-me
 - assertVisible:
     id: debts.tile.owed-to-me
 - takeScreenshot: d1-l2-pair

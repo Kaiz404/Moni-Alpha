@@ -10,7 +10,6 @@ import { SettledList } from '@/components/debts/settled-list';
 import { useDebtSummary } from '@/components/debts/use-debts';
 import { useTabBarClearance } from '@/components/nav/tab-bar';
 import { SyncBanner } from '@/components/providers/sync-banner';
-import { Button } from '@/components/ui/button';
 import { EmptyTile } from '@/components/ui/empty-tile';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { ListCard } from '@/components/ui/list-card';
@@ -20,10 +19,6 @@ import { Text } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import type { DebtSide } from '@/lib/finance/debt-summary';
 import { tid } from '@/lib/test-ids';
-
-/** The primary capsule's 52 plus room, so the last row scrolls clear of it. */
-const CAPSULE_ROOM = 52 + 12;
-const LIFT = { boxShadow: '0 12px 32px rgba(23,24,26,0.18)' };
 
 export default function DebtsScreen() {
   const scroll = useRef<ScrollView>(null);
@@ -50,7 +45,7 @@ export default function DebtsScreen() {
         ref={scroll}
         className="flex-1"
         contentContainerClassName="gap-4 px-5"
-        contentContainerStyle={{ paddingBottom: empty ? clearance : clearance + CAPSULE_ROOM }}
+        contentContainerStyle={{ paddingBottom: clearance }}
         showsVerticalScrollIndicator={false}
       >
         <SyncBanner screen="debts" />
@@ -63,6 +58,7 @@ export default function DebtsScreen() {
               filter={filter}
               onFilter={setFilter}
             />
+            <RecordDebtCard />
             <ComingUp rows={summary.comingUp} />
             <View className="gap-2 pt-1">
               <View className="min-h-9 flex-row items-center justify-between">
@@ -121,22 +117,40 @@ export default function DebtsScreen() {
           </>
         )}
       </ScrollView>
-      {empty ? null : (
-        // Above the ring around the +, because its width reaches over the + on a 390 phone. The
-        // shadow sits on this wrapper since Press clips and its corners morph.
-        <View
-          className="absolute right-5 rounded-full"
-          style={[{ bottom: clearance }, LIFT]}
-        >
-          <Button
-            testID={tid('debts', 'record-debt')}
-            icon="plus"
-            label="Record a debt"
-            onPress={() => router.push('/debt/new')}
-          />
-        </View>
-      )}
     </Page>
+  );
+}
+
+function RecordDebtCard() {
+  const tokens = useThemeTokens();
+  return (
+    <Press
+      testID={tid('debts', 'record-debt')}
+      accessibilityLabel="Record a debt"
+      onPress={() => router.push('/debt/new')}
+      radius={{ rest: 22, pressed: 16 }}
+      pressedClassName="bg-sand-light"
+      className="min-h-[66px] flex-row items-center gap-3.5 bg-card py-3 pl-[18px] pr-3"
+    >
+      <View className="h-[42px] w-[42px] items-center justify-center rounded-full bg-sand">
+        <IconSymbol
+          name="plus"
+          size={20}
+          color={tokens.foreground}
+        />
+      </View>
+      <Text
+        variant="rowTitle"
+        className="min-w-0 flex-1 text-foreground"
+      >
+        Record a debt
+      </Text>
+      <IconSymbol
+        name="chevron-right"
+        size={20}
+        color={tokens.muted}
+      />
+    </Press>
   );
 }
 
