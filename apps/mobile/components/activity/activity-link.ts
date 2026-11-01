@@ -25,6 +25,9 @@ export type ActivityLink = {
   chartDay: string | null;
 };
 
+/** `categoryId` for spending with no category: the rows the report's Uncategorized row adds up. */
+export const NO_CATEGORY = 'none';
+
 /** Every param a link can carry, cleared once the link is read so the same link works again. */
 export const CLEARED_LINK: { [K in keyof Required<ActivityLinkParams>]: undefined } = {
   q: undefined,
@@ -60,10 +63,15 @@ export function inScope(
   scope: Exclude<ActivityScope, { kind: 'place' }>,
 ): boolean {
   const day = toLocalDateInput(new Date(transaction.transactionDate));
-  return scope.kind === 'day'
-    ? day === scope.day
-    : transaction.categoryId === scope.categoryId &&
-        (scope.month === null || day.startsWith(`${scope.month}-`));
+  if (scope.kind === 'day') return day === scope.day;
+  const inCategory =
+    scope.categoryId === NO_CATEGORY
+      ? transaction.categoryId === null &&
+        transaction.type === 'expense' &&
+        !transaction.analysisExcluded &&
+        !transaction.debtActivityId
+      : transaction.categoryId === scope.categoryId;
+  return inCategory && (scope.month === null || day.startsWith(`${scope.month}-`));
 }
 
 /** The chip's words: "Food & Dining · Oct" for a category month, "Mon 14 Sep" for a day. */

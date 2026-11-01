@@ -1,0 +1,50 @@
+# Y3 Reports (no board, fits V2P-InsightsMonth): month and custom period, income against spending,
+# categories, top merchants, trend; a row opens Activity filtered.
+# Needs at least one MYR wallet and some spending this month.
+# Run: scripts/device/run-flows.sh .maestro/flows/reports/reports.yaml
+appId: com.anonymous.moni.e2e
+name: Y3 reports
+tags:
+  - y3
+  - seed-full
+---
+- runFlow: ../../subflows/launch.yaml
+- extendedWaitUntil:
+    visible:
+      id: nav.tab.budget
+    timeout: 15000
+- tapOn:
+    id: nav.tab.budget
+- scrollUntilVisible:
+    element:
+      id: budget.reports
+- tapOn:
+    id: budget.reports
+- assertVisible: Reports
+- assertVisible:
+    id: reports.view.month
+- assertVisible:
+    id: reports.spent
+- assertVisible:
+    id: reports.in
+- assertVisible:
+    id: reports.trend
+- assertVisible: By category
+- takeScreenshot: y3-reports-month
+- tapOn:
+    id: reports.view.custom
+- assertVisible:
+    id: reports.from
+- assertVisible:
+    id: reports.to
+- takeScreenshot: y3-reports-custom
+- tapOn:
+    id: reports.view.month
+- scrollUntilVisible:
+    element: Top merchants
+- tapOn:
+    id: reports\.merchant\..*
+    index: 0
+- assertVisible:
+    id: nav.tab.activity
+- takeScreenshot: y3-reports-drill

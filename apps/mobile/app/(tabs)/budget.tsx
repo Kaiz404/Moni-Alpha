@@ -18,6 +18,7 @@ import { monthFromKey } from '@/components/charts/pace-geometry';
 import { openCaptureChooser } from '@/components/nav/capture-chooser';
 import { useTabBarClearance } from '@/components/nav/tab-bar';
 import { SyncBanner } from '@/components/providers/sync-banner';
+import { ReportsLink } from '@/components/reports/reports-link';
 import { EmptyTile } from '@/components/ui/empty-tile';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Page } from '@/components/ui/page';
@@ -316,6 +317,7 @@ function MonthView({
           emptyBody={emptyBody}
         />
       </View>
+      <ReportsLink month={budget.month} />
       {budget.isCurrent ? (
         <View className="mt-2">
           <BillsList

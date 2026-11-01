@@ -88,6 +88,7 @@ export function countsAsSpend(transaction: FinanceTransaction, currency: Currenc
   return (
     transaction.type === 'expense' &&
     !transaction.analysisExcluded &&
+    !transaction.debtActivityId &&
     transaction.currency === currency
   );
 }

@@ -25,6 +25,7 @@ The words the redesigned app uses, and the words it never uses. The design canva
 | Main currency | The Profile setting (default MYR) that picks the one currency focused pages show. Other-currency wallets appear only on Wallets and their own detail. |
 | Merchant names | The Profile page listing raw merchant codes from alerts and the names the user gave them. "Name this merchant" names one in place. |
 | Balance correction | The transaction Moni adds when the user fixes a wallet's balance ("Balance not right?"). Check-in buttons: "That's right", "Fix it". |
+| Reports | The pushed page from the Budget tab: Spent against Money in for a month or a custom period, By category, Top merchants, and the trend. |
 | Source | Where a transaction came from: Manual, Voice, Moni, Notification, Camera. |
 | Capture log | The page listing the notifications Moni read and what it did with each. |
 | Keep capture running, Battery, Autostart | The Capture sources section for the phone settings that let Moni keep reading alerts. Autostart shows only on Xiaomi, Redmi and POCO phones. Moni cannot read it, so the row says so. |
