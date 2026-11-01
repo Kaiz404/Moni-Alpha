@@ -159,6 +159,7 @@ jest.mock('../modules/moni-android-apps', () => ({
 }));
 // Its native module loads through import(), which Jest cannot run without ESM mode.
 jest.mock('@/lib/notifications/permission', () => ({
+  NOTIFICATION_ACCESS_DISCLOSURE: 'One-time codes never leave this phone.',
   readNotificationListenerPermission: async () => 'authorized',
   openNotificationListenerSettings: () => {},
 }));
@@ -236,8 +237,8 @@ const ROUTES: Record<string, RouteSpec> = {
   'capture-log.tsx': same('/capture-log', 'Nothing captured yet'),
   'capture-sources.tsx': differ(
     '/capture-sources',
-    'Pins payments · Maybank Savings',
-    'Link a banking app on a wallet page',
+    'Keep capture running',
+    'On a wallet page',
   ),
   'capture/say.tsx': same('/capture/say', 'Say the shop, the amount and how you paid.'),
   'capture/scan.tsx': same('/capture/scan', 'Scan a receipt'),

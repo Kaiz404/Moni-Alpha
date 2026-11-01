@@ -1,5 +1,5 @@
-# K3 Capture sources: phone access, location per banking app, rules added without asking, links.
-# The location and Ask again steps run when Maybank is linked and a GRAB auto-add rule exists.
+# K3 Capture sources: one Notifications row with no app named, phone access, rules added without
+# asking, links. The Ask again step runs when a GRAB auto-add rule exists.
 # Ask again is undone at the end so the flow can run twice; lane 7 skips the Undo.
 # Run: scripts/device/run-flows.sh .maestro/flows/account/capture-sources.yaml
 appId: com.anonymous.moni.e2e
@@ -16,9 +16,30 @@ tags:
       id: profile.row.capture-sources
 - tapOn:
     id: profile.row.capture-sources
+- assertVisible:
+    id: sources.back
 - assertVisible: Capture sources
-- assertVisible: Moni works without any of these.*
+- assertNotVisible: Moni works without any of these.*
+- assertVisible:
+    id: sources.location
+- assertVisible:
+    id: sources.camera
+- assertVisible:
+    id: sources.microphone
+- assertNotVisible: Bank notifications
+- assertNotVisible: Maybank
+# Maybank is linked in seed-full, so the pointer to the wallet pages stays away.
+- assertNotVisible:
+    id: sources.link-app
 - takeScreenshot: k3-l9-sources
+
+# Notification access on: the one row says what it reads and names no app.
+- runFlow:
+    when:
+      visible:
+        id: sources.notifications
+    commands:
+      - assertVisible: .*Reads alerts from the apps you link on your wallets
 
 # Notification access revoked: the denied state replaces the row.
 - runFlow:
@@ -26,23 +47,11 @@ tags:
       visible:
         id: sources.notifications.open-settings
     commands:
-      - assertVisible: Moni can't see bank notifications
+      - assertVisible: Moni can't see notifications
+      - assertVisible: .*One-time codes never leave this phone.*
       - assertVisible:
           id: sources.notifications.by-hand
       - takeScreenshot: k3-l10-denied
-
-# Location from Maybank notifications, off and back on.
-- runFlow:
-    when:
-      visible:
-        id: sources.location.maybank
-    commands:
-      - tapOn:
-          id: sources.location.maybank
-      - assertVisible: Off · .*
-      - takeScreenshot: k3-l8-location-off
-      - tapOn:
-          id: sources.location.maybank
 
 # Ask again on the GRAB rule, then Undo.
 - scrollUntilVisible:
@@ -70,5 +79,6 @@ tags:
 - assertVisible: Capture log
 - tapOn:
     id: capture-log.back
+- assertNotVisible: Linked apps
 - tapOn:
     id: sources.back

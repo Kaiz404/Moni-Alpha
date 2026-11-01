@@ -1,5 +1,5 @@
-# Y1 capture trust: the Home alert, Linked apps with Last captured, Keep capture running, the
-# one-sentence promise, and reporting a missed transaction into a prefilled Type it.
+# Y1 capture trust: the Home alert, Keep capture running, the one-sentence promise, and reporting
+# a missed transaction from the Capture log into a prefilled Type it.
 # The seed cannot write the capture log or capture health (both live on the phone), so a real
 # quiet source needs days of history: the Home alert step runs only when the phone has one.
 # Run: scripts/device/run-flows.sh .maestro/flows/account/capture-trust.yaml
@@ -38,19 +38,6 @@ tags:
     id: sources.battery
 - takeScreenshot: y1-keep-running
 
-# Maybank is linked in seed-full.
-- scrollUntilVisible:
-    element:
-      id: sources.app.maybank.report-missed
-- assertVisible: Linked apps
-- assertVisible: (No captures yet|Last captured .*)
-- takeScreenshot: y1-linked-apps
-- tapOn:
-    id: sources.app.maybank.report-missed
-- assertVisible: New expense
-- takeScreenshot: y1-type-it-from-source
-- back
-
 - scrollUntilVisible:
     element:
       id: sources.capture-log
@@ -60,3 +47,9 @@ tags:
 - assertVisible:
     id: capture-log.report-missed
 - takeScreenshot: y1-log-report
+# Maybank is the one app linked in seed-full, so this opens Type it without asking which wallet.
+- tapOn:
+    id: capture-log.report-missed
+- assertVisible: New expense
+- takeScreenshot: y1-type-it-from-source
+- back

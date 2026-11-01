@@ -1,12 +1,25 @@
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
+import { router } from 'expo-router';
 import { Platform } from 'react-native';
 
 import CaptureSourcesScreen from '@/app/capture-sources';
 import { retryCaptures } from '@/lib/ai/background-processor';
 import { enqueue, pruneCompleted, requeueGaveUp } from '@/lib/ai/processing-queue';
 import { markCaptureStatus } from '@/lib/notifications/capture-status';
+import { NOTIFICATION_ACCESS_DISCLOSURE } from '@/lib/notifications/permission';
 
 const MAYBANK = 'com.maybank2u.life';
+const MAYBANK_APP = {
+  packageName: MAYBANK,
+  label: 'Maybank',
+  wallets: [{ id: 'w1', name: 'Maybank Savings' }],
+  recordsLocation: false,
+};
+
+let mockApps: (typeof MAYBANK_APP)[] = [MAYBANK_APP];
+let mockNotifications: 'on' | 'off' = 'on';
+let mockAlert: { alert: { kind: string }; title: string; body: string; actionLabel: string; fix: () => void } | null =
+  null;
 
 jest.mock('uniwind', () => ({
   useCSSVariable: (names: string[]) => names.map(() => undefined),
@@ -42,31 +55,21 @@ jest.mock('@/lib/supabase/auto-add-rules', () => ({
   createAutoAddRule: jest.fn(),
   deleteAutoAddRule: jest.fn(),
 }));
-jest.mock('@/lib/supabase/wallets', () => ({ updateWallet: jest.fn() }));
 jest.mock('@/components/capture-sources/use-auto-add-rules', () => ({ useAutoAddRules: () => [] }));
-jest.mock('@/components/capture-sources/use-capture-alert', () => ({ useCaptureAlert: () => null }));
+jest.mock('@/components/capture-sources/use-capture-alert', () => ({
+  useCaptureAlert: () => mockAlert,
+}));
 jest.mock('@/components/capture-sources/keep-capture-running', () => ({
   KeepCaptureRunning: () => null,
 }));
 jest.mock('@/components/capture-sources/use-phone-access', () => ({
-  accessSummary: () => 'All on',
   usePhoneAccess: () => ({
-    access: { notifications: 'on', location: 'on', camera: 'on', microphone: 'on' },
+    access: { notifications: mockNotifications, location: 'on', camera: 'on', microphone: 'on' },
     change: jest.fn(),
   }),
 }));
 jest.mock('@/components/capture-sources/use-linked-apps', () => ({
-  useLinkedApps: () => ({
-    wallets: [],
-    apps: [
-      {
-        packageName: 'com.maybank2u.life',
-        label: 'Maybank',
-        wallets: [{ id: 'w1', name: 'Maybank' }],
-        recordsLocation: false,
-      },
-    ],
-  }),
+  useLinkedApps: () => ({ wallets: [], apps: mockApps }),
 }));
 
 function gaveUp(id: string, packageName: string) {
@@ -91,16 +94,81 @@ beforeEach(() => {
   Platform.OS = 'android';
   pruneCompleted();
   jest.mocked(retryCaptures).mockClear();
+  jest.mocked(router.push).mockClear();
+  mockApps = [MAYBANK_APP];
+  mockNotifications = 'on';
+  mockAlert = null;
+});
+
+const NOTE_START = 'Moni saves a place only when a payment arrives, and never tracks where you go.';
+
+describe('Capture sources', () => {
+  it('aggregates notifications into one row with no app named anywhere', () => {
+    render(<CaptureSourcesScreen />);
+
+    expect(screen.getByText('Notifications')).toBeTruthy();
+    expect(screen.getByText('Reads alerts from the apps you link on your wallets')).toBeTruthy();
+    expect(screen.queryByText('Bank notifications')).toBeNull();
+    expect(screen.queryByText(/Maybank/)).toBeNull();
+    expect(screen.queryByText('Linked apps')).toBeNull();
+    expect(screen.queryByText(/Moni works without/)).toBeNull();
+    expect(screen.getByTestId('sources.location')).toBeTruthy();
+    expect(screen.queryByTestId('sources.location.maybank')).toBeNull();
+  });
+
+  it('keeps the disclosure next to the shield note while access is on', () => {
+    render(<CaptureSourcesScreen />);
+    expect(screen.getByText(`${NOTE_START} ${NOTIFICATION_ACCESS_DISCLOSURE}`)).toBeTruthy();
+  });
+
+  it('shows the disclosure once, on the denied card, when access is off', () => {
+    mockNotifications = 'off';
+    render(<CaptureSourcesScreen />);
+
+    expect(screen.getByText("Moni can't see notifications")).toBeTruthy();
+    expect(screen.queryByText(/Maybank/)).toBeNull();
+    expect(screen.getByText(NOTIFICATION_ACCESS_DISCLOSURE)).toBeTruthy();
+    expect(screen.getByText(NOTE_START)).toBeTruthy();
+    expect(screen.queryByTestId('sources.notifications')).toBeNull();
+  });
+
+  it('sends a person with no linked app to the wallet pages', () => {
+    mockApps = [];
+    render(<CaptureSourcesScreen />);
+
+    fireEvent.press(screen.getByTestId('sources.link-app'));
+    expect(router.push).toHaveBeenCalledWith('/wallets');
+  });
+
+  it('has no link row once an app is linked', () => {
+    render(<CaptureSourcesScreen />);
+    expect(screen.queryByTestId('sources.link-app')).toBeNull();
+  });
+
+  it('keeps the Gone quiet banner and its fix', () => {
+    const fix = jest.fn();
+    mockAlert = {
+      alert: { kind: 'app_quiet' },
+      title: 'Maybank has gone quiet',
+      body: 'Nothing for 5 days. Add anything Moni missed.',
+      actionLabel: 'Add it',
+      fix,
+    };
+    render(<CaptureSourcesScreen />);
+
+    expect(screen.getByText('Maybank has gone quiet')).toBeTruthy();
+    fireEvent.press(screen.getByTestId('sources.capture-alert.fix'));
+    expect(fix).toHaveBeenCalledTimes(1);
+  });
 });
 
 describe('Capture sources after captures gave up', () => {
   it('stays quiet when nothing did', () => {
     render(<CaptureSourcesScreen />);
     expect(screen.queryByTestId('sources.unreached.retry')).toBeNull();
-    expect(screen.getByText('No captures yet')).toBeTruthy();
   });
 
-  it('counts them, per app and in total, including Say it and Scan, and offers Retry', () => {
+  it('counts them in total, including Say it and Scan, and offers Retry', () => {
     gaveUp('a', MAYBANK);
     gaveUp('b', MAYBANK);
     gaveUp('c', 'com.grab.passenger');
@@ -114,7 +182,6 @@ describe('Capture sources after captures gave up', () => {
     render(<CaptureSourcesScreen />);
 
     expect(screen.getByText("4 captures couldn't reach Moni.")).toBeTruthy();
-    expect(screen.getByText("No captures yet · 2 couldn't reach Moni")).toBeTruthy();
 
     fireEvent.press(screen.getByTestId('sources.unreached.retry'));
     expect(retryCaptures).toHaveBeenCalledWith();

@@ -1,19 +1,13 @@
 import { router, type Href } from 'expo-router';
 import { Platform, ScrollView, View } from 'react-native';
 
-import {
-  AppLocationRow,
-  NotificationsDenied,
-  PermissionRow,
-} from '@/components/capture-sources/permission-row';
+import { NotificationsDenied, PermissionRow } from '@/components/capture-sources/permission-row';
 import { useAutoAddRules, type AutoAddRuleRow } from '@/components/capture-sources/use-auto-add-rules';
-import { reportMissedFrom } from '@/components/capture-log/report-missed';
 import { KeepCaptureRunning } from '@/components/capture-sources/keep-capture-running';
-import { LinkedAppRow } from '@/components/capture-sources/linked-app-row';
 import { useCaptureAlert } from '@/components/capture-sources/use-capture-alert';
 import { useCaptureHealth } from '@/components/capture-sources/use-capture-health';
-import { useLinkedApps, type LinkedApp } from '@/components/capture-sources/use-linked-apps';
-import { accessSummary, usePhoneAccess } from '@/components/capture-sources/use-phone-access';
+import { useLinkedApps } from '@/components/capture-sources/use-linked-apps';
+import { usePhoneAccess } from '@/components/capture-sources/use-phone-access';
 import { Banner } from '@/components/ui/banner';
 import { IconSymbol, type IconSymbolName } from '@/components/ui/icon-symbol';
 import { ListCard, ListSection } from '@/components/ui/list-card';
@@ -23,31 +17,13 @@ import { Text } from '@/components/ui/text';
 import { TintBubble } from '@/components/ui/transaction-row';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { retryCaptures } from '@/lib/ai/background-processor';
-import { toLocalDateInput } from '@/lib/dates/local-date-input';
-import { assessCadence } from '@/lib/notifications/capture-cadence';
-import { sourceHealth, unreachedLine } from '@/lib/notifications/capture-health';
 import { NOTIFICATION_ACCESS_DISCLOSURE } from '@/lib/notifications/permission';
 import { createAutoAddRule, deleteAutoAddRule } from '@/lib/supabase/auto-add-rules';
-import { updateWallet } from '@/lib/supabase/wallets';
 import { tid, type TestId } from '@/lib/test-ids';
 import { showToast } from '@/lib/toast/toast-store';
 
 function failed(error: unknown) {
   showToast({ text: error instanceof Error ? error.message : "Couldn't save that change." });
-}
-
-function joinOr(names: readonly string[]): string {
-  return names.length < 2
-    ? (names[0] ?? '')
-    : `${names.slice(0, -1).join(', ')} or ${names[names.length - 1]}`;
-}
-
-async function setAppLocation(app: LinkedApp, next: boolean) {
-  try {
-    for (const wallet of app.wallets) await updateWallet(wallet.id, { recordLocation: next });
-  } catch (error) {
-    failed(error);
-  }
 }
 
 function askAgain({ rule, name }: AutoAddRuleRow) {
@@ -128,17 +104,10 @@ function LinkRow({
 export default function CaptureSourcesScreen() {
   const tokens = useThemeTokens();
   const { access, change } = usePhoneAccess();
-  const { apps, wallets } = useLinkedApps();
-  const { health, unreached } = useCaptureHealth();
+  const { apps } = useLinkedApps();
+  const { unreached } = useCaptureHealth();
   const captureAlert = useCaptureAlert();
   const rules = useAutoAddRules();
-  const today = toLocalDateInput(new Date());
-
-  const appCount = apps.length;
-  const notificationsMeta =
-    appCount === 0
-      ? 'Link a banking app on a wallet page'
-      : `From ${appCount} linked ${appCount === 1 ? 'app' : 'apps'}`;
   const denied = Platform.OS === 'android' && access.notifications === 'off';
 
   return (
@@ -152,15 +121,6 @@ export default function CaptureSourcesScreen() {
         contentContainerClassName="gap-5 px-5 pb-10"
         showsVerticalScrollIndicator={false}
       >
-        <Text
-          variant="body"
-          className="px-1 text-ink-2"
-        >
-          {Object.values(access).includes('checking')
-            ? 'Moni works without any of these.'
-            : `Moni works without any of these. ${accessSummary(access)}.`}
-        </Text>
-
         {captureAlert && captureAlert.alert.kind !== 'access_off' ? (
           <Banner
             tone="syncError"
@@ -191,7 +151,6 @@ export default function CaptureSourcesScreen() {
           <ListSection label="Phone access">
             {denied ? (
               <NotificationsDenied
-                apps={joinOr(apps.map((app) => app.label))}
                 onOpenSettings={() => void change('notifications')}
                 onByHand={() => router.push('/transaction/new')}
               />
@@ -199,8 +158,8 @@ export default function CaptureSourcesScreen() {
               <PermissionRow
                 testID={tid('sources', 'notifications')}
                 icon="bell-outline"
-                title="Bank notifications"
-                meta={notificationsMeta}
+                title="Notifications"
+                meta="Reads alerts from the apps you link on your wallets"
                 state={access.notifications}
                 onChange={() => void change('notifications')}
               />
@@ -212,18 +171,7 @@ export default function CaptureSourcesScreen() {
               meta="From notifications, to pin each payment"
               state={access.location}
               onChange={() => void change('location')}
-            >
-              {apps.map((app) => (
-                <AppLocationRow
-                  key={app.packageName}
-                  testID={tid('sources', 'location', app.label)}
-                  label={app.label}
-                  wallets={app.wallets.map((wallet) => wallet.name).join(' · ')}
-                  on={app.recordsLocation}
-                  onChange={(next) => void setAppLocation(app, next)}
-                />
-              ))}
-            </PermissionRow>
+            />
             <PermissionRow
               testID={tid('sources', 'camera')}
               icon="camera-outline"
@@ -252,30 +200,27 @@ export default function CaptureSourcesScreen() {
               variant="meta"
               className="min-w-0 flex-1 text-ink-2"
             >
-              Moni reads alerts only from the apps you link, and saves a place only when a payment
-              arrives. It never tracks where you go. {NOTIFICATION_ACCESS_DISCLOSURE}
+              Moni saves a place only when a payment arrives, and never tracks where you go.
+              {denied ? '' : ` ${NOTIFICATION_ACCESS_DISCLOSURE}`}
             </Text>
           </View>
         </View>
 
-        {Platform.OS === 'android' && (apps.length > 0 || access.notifications === 'on') ? (
-          <KeepCaptureRunning />
+        {Platform.OS === 'android' && apps.length === 0 ? (
+          <ListCard>
+            <LinkRow
+              testID={tid('sources', 'link-app')}
+              icon="link-variant"
+              tint="bg-sand"
+              title="Link a banking app"
+              meta="On a wallet page"
+              href="/wallets"
+            />
+          </ListCard>
         ) : null}
 
-        {Platform.OS === 'android' && apps.length > 0 ? (
-          <ListSection label="Linked apps">
-            {apps.map((app) => (
-              <LinkedAppRow
-                key={app.packageName}
-                label={app.label}
-                packageName={app.packageName}
-                source={sourceHealth(health, app.packageName)}
-                unreached={unreachedLine(unreached, app.packageName)}
-                quiet={assessCadence(sourceHealth(health, app.packageName), today).kind === 'quiet'}
-                onReportMissed={() => reportMissedFrom(app.packageName, wallets)}
-              />
-            ))}
-          </ListSection>
+        {Platform.OS === 'android' && (apps.length > 0 || access.notifications === 'on') ? (
+          <KeepCaptureRunning />
         ) : null}
 
         <View className="gap-2">
