@@ -1,6 +1,7 @@
 import { syncState } from '@legendapp/state';
 import { useSelector, useValue } from '@legendapp/state/react';
-import { router, useLocalSearchParams, useScrollToTop } from 'expo-router';
+import { router, useLocalSearchParams, useNavigation, useScrollToTop } from 'expo-router';
+import type { NavigationProp } from 'expo-router/react-navigation';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ScrollView, View } from 'react-native';
 
@@ -105,6 +106,7 @@ export default function ActivityScreen() {
   const budgetMonth = useBudgetMonth(budgetData, monthKey(budgetData.now));
   const [mode, setMode] = useState<ActivityChartMode>('spending');
   const params = useLocalSearchParams<ActivityLinkParams>();
+  const navigation = useNavigation<NavigationProp<{ activity: ActivityLinkParams }, 'activity'>>();
   const [scope, setScope] = useState<ActivityScope | null>(null);
   const [query, setQuery] = useState('');
   const [kind, setKind] = useState<ActivityKind>('all');
@@ -122,8 +124,8 @@ export default function ActivityScreen() {
     setKind('all');
     setWalletId(null);
     setDay(link.chartDay);
-    router.setParams(CLEARED_LINK);
-  }, [params]);
+    navigation.setParams(CLEARED_LINK);
+  }, [navigation, params]);
 
   const lookups = useMemo<RowLookups>(
     () => ({
