@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/kaiz404/moni/backend/internal/llm"
@@ -207,5 +208,90 @@ func TestTruncatedOutputSkipsTheBadJSONRetry(t *testing.T) {
 	note := NotificationRequest{Notification: RawNotification{Text: "You paid RM12 to Mamak"}}
 	if got := s.FromNotification(context.Background(), note); got.Status != "unavailable" || calls != 2 {
 		t.Fatalf("notification: status %q after %d calls, want unavailable after 2", got.Status, calls)
+	}
+}
+
+func fakeModel(t *testing.T, content string) *Service {
+	t.Helper()
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		json.NewEncoder(w).Encode(map[string]any{"choices": []any{
+			map[string]any{"message": map[string]any{"content": content}},
+		}})
+	}))
+	t.Cleanup(srv.Close)
+	return NewService(llm.NewClient("test-key", srv.URL))
+}
+
+func readReceipt(t *testing.T, content string) Result {
+	t.Helper()
+	return fakeModel(t, content).FromImage(context.Background(), ImageRequest{ImageBase64: "abc"})
+}
+
+func TestReceiptItemCount(t *testing.T) {
+	six, most := 6, 200
+	cases := []struct {
+		name  string
+		field string
+		want  *int
+	}{
+		{"whole number", `,"item_count":6`, &six},
+		{"whole number written as a float", `,"item_count":6.0`, &six},
+		{"at the bound", `,"item_count":200`, &most},
+		{"key left out", ``, nil},
+		{"null", `,"item_count":null`, nil},
+		{"zero", `,"item_count":0`, nil},
+		{"negative", `,"item_count":-3`, nil},
+		{"fraction", `,"item_count":6.5`, nil},
+		{"past the bound", `,"item_count":201`, nil},
+		{"past float64", `,"item_count":1e999`, nil},
+		{"digits in a string", `,"item_count":"6"`, nil},
+		{"words", `,"item_count":"six items"`, nil},
+		{"bool", `,"item_count":true`, nil},
+		{"array", `,"item_count":[1,2]`, nil},
+		{"object", `,"item_count":{"n":6}`, nil},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			got := readReceipt(t, `{"amount":18.6,"merchant":"99 Speedmart"`+c.field+`}`)
+			if got.Status != "ok" {
+				t.Fatalf("status = %q (%s), want ok", got.Status, got.Reason)
+			}
+			if got.Extraction.Amount != 18.6 || *got.Extraction.Merchant != "99 Speedmart" {
+				t.Fatalf("receipt fields lost: %+v", got.Extraction)
+			}
+			switch {
+			case c.want == nil && got.Extraction.ItemCount != nil:
+				t.Fatalf("itemCount = %d, want none", *got.Extraction.ItemCount)
+			case c.want != nil && got.Extraction.ItemCount == nil:
+				t.Fatalf("itemCount missing, want %d", *c.want)
+			case c.want != nil && *got.Extraction.ItemCount != *c.want:
+				t.Fatalf("itemCount = %d, want %d", *got.Extraction.ItemCount, *c.want)
+			}
+		})
+	}
+}
+
+func TestItemCountStaysOffTheWireWithoutACount(t *testing.T) {
+	without, err := json.Marshal(readReceipt(t, `{"amount":18.6,"item_count":"lots"}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(string(without), "itemCount") {
+		t.Fatalf("wire has itemCount with no count: %s", without)
+	}
+	with, err := json.Marshal(readReceipt(t, `{"amount":18.6,"item_count":6}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(with), `"itemCount":6`) {
+		t.Fatalf("wire lacks itemCount: %s", with)
+	}
+}
+
+func TestOnlyReceiptsCarryAnItemCount(t *testing.T) {
+	s := fakeModel(t, `{"amount":12,"item_count":6}`)
+	got := s.FromText(context.Background(), TextRequest{Text: "lunch 12"})
+	if got.Status != "ok" || got.Extraction.ItemCount != nil {
+		t.Fatalf("text: status %q, extraction %+v, want ok and no count", got.Status, got.Extraction)
 	}
 }

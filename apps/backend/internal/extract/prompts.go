@@ -98,11 +98,12 @@ Best-effort (infer if possible, null if not):
 - description: 2-4 sentences: what category of purchase this is, main items or departments, quantities or notable lines if readable. Avoid generic one-word answers.
 - category_hint: spending category (food, groceries, transport, health, entertainment, utilities, etc.)
 - occurred_at: the purchase date printed on the receipt as YYYY-MM-DD; null if unreadable or if the message has no TODAY line
+- item_count: how many items the receipt lists, as a whole number. Use the count the receipt prints ("6 items"), else count the product lines. Never count tax, service charge, rounding, discount or payment lines. Null if the document lists no items or the lines are unreadable.
 - confidence: number 0-1
 - reasoning: one short sentence explaining what you read from the receipt
 
 Rules:
-1. Return ONLY valid JSON with keys: amount, type, merchant, description, category_hint, occurred_at, confidence, reasoning. Do not include currency or wallet fields — the app assigns the user's default wallet and its currency.
+1. Return ONLY valid JSON with keys: amount, type, merchant, description, category_hint, occurred_at, item_count, confidence, reasoning. Do not include currency or wallet fields — the app assigns the user's default wallet and its currency.
 2. Prefer the final amount paid (including tax) — "Grand total", "Total due", "Payment amount", "Amount paid", "NETT TOTAL", "AMOUNT PAYABLE" — over subtotal before tax.
 3. If both a subtotal and a larger tax-inclusive total appear, use the TAX-INCLUSIVE / FINAL total — NOT the pre-tax subtotal.
 4. The merchant name is usually at the top of the receipt.

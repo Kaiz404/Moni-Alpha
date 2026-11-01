@@ -2,7 +2,9 @@ package extract
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
+	"math"
 	"regexp"
 	"strings"
 	"time"
@@ -63,6 +65,22 @@ func occurredAt(raw *string, dc DateContext) *string {
 	}
 	s := date.Format(time.DateOnly)
 	return &s
+}
+
+// maxReceiptItems bounds the count: a longer receipt is a misread, not a shopping trip.
+const maxReceiptItems = 200
+
+// itemCount keeps a whole number from 1 to maxReceiptItems; anything else means no count.
+func itemCount(raw json.RawMessage) *int {
+	var n float64
+	if err := json.Unmarshal(raw, &n); err != nil {
+		return nil
+	}
+	if n < 1 || n > maxReceiptItems || n != math.Trunc(n) {
+		return nil
+	}
+	count := int(n)
+	return &count
 }
 
 // FromText extracts a transaction from free-form user text.
@@ -143,6 +161,7 @@ func (s *Service) FromImage(ctx context.Context, req ImageRequest) Result {
 
 	ex := s.finalize(out, req.Wallets, req.UserContext, 0.8, nil, currencyFromWallet, true)
 	ex.OccurredAt = occurredAt(out.OccurredAt, req.DateContext)
+	ex.ItemCount = itemCount(out.ItemCount)
 	return OK(ex)
 }
 

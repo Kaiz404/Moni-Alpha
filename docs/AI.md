@@ -94,6 +94,7 @@ type ExtractResult =
         confidence;
         reasoning;
         occurredAt; // YYYY-MM-DD or null; text and receipts only
+        itemCount?; // whole number 1-200; receipts only, absent when the reader has no count
       };
     }
   | { status: 'skipped'; reason: string } // input isn't a transaction
@@ -111,6 +112,8 @@ Chat analyze (`POST /v1/chat/analyze`):
 ```
 
 Text and image requests also carry optional `clientNow` (device local time, RFC 3339 with offset) and `timezone` (IANA). Without them the backend sends no `TODAY` line and returns `occurredAt: null`, so older clients keep working.
+
+`itemCount` is additive: the backend leaves the key out unless the model returned a whole number from 1 to 200, so a missing or garbage `item_count` never fails a receipt, and older app builds ignore the key.
 
 `type` is `income` | `expense` | `transfer`. Transfers use `walletId` as the source wallet and `transferToWalletId` as the destination (either may be `null` for user completion in the review UI). Receipt and notification extraction remain income/expense only; **text** extraction detects transfers (e.g. "move 500 from Maybank to savings").
 
@@ -184,7 +187,7 @@ Findings:
 - **Text transfer patterns:** deposits ("deposited cash to bank"), withdrawals, top-ups, and explicit "from X to Y" moves are transfers between wallets in `AVAILABLE_WALLETS` — not income. The model uses wallet names/types to infer direction (e.g. cash → bank for deposits).
 - **Notification rule:** each wallet may link one Android app (`notification_package` on `wallets`). Notifications from unlinked apps are captured for debug but not queued. Candidate wallets are narrowed by package before extraction; ambiguous same-app wallets may create proposals with `walletId: null` for review (`run-extraction.ts`).
 - **Notification prefilter stays on-device** (`apps/mobile/lib/notifications/notification-filter.core.js`): requires a money-amount signal AND a transfer signal before an LLM ever sees it. Test suite: `pnpm --filter moni test:notification-detection`.
-- **Receipt images:** Android ML Kit document scanner (`modules/moni-document-scanner`) → normalized ≤1024px JPEG (`lib/receipts/normalize-scan.ts`). `lib/ai/client/image-payload.ts` base64-encodes (defensive downscale fallback) or sends the Storage URL if already uploaded. User cancel / empty scan never reaches the queue. Backend extracts amount, merchant, and description only; mobile assigns the default wallet and its currency.
+- **Receipt images:** Android ML Kit document scanner (`modules/moni-document-scanner`) → normalized ≤1024px JPEG (`lib/receipts/normalize-scan.ts`). `lib/ai/client/image-payload.ts` base64-encodes (defensive downscale fallback) or sends the Storage URL if already uploaded. User cancel / empty scan never reaches the queue. Backend extracts amount, merchant, description, and the item count only; mobile assigns the default wallet and its currency.
 
 ## Chat routing (on-device)
 

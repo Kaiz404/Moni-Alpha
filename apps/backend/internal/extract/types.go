@@ -1,6 +1,9 @@
 package extract
 
-import "strings"
+import (
+	"encoding/json"
+	"strings"
+)
 
 // WalletContext is the user's wallet list sent with every request so the
 // backend can resolve which wallet a transaction belongs to.
@@ -29,6 +32,9 @@ type Extraction struct {
 	// OccurredAt is a local calendar date (YYYY-MM-DD) for text and receipts; null when
 	// the input names none. The client falls back to "now" for null, future or over-90-day dates.
 	OccurredAt *string `json:"occurredAt"`
+	// ItemCount is how many items a receipt lists, receipts only. Omitted when the model
+	// gave no usable count, so the field never reaches a client as null or zero.
+	ItemCount *int `json:"itemCount,omitempty"`
 }
 
 // Result is the discriminated union the mobile client consumes.
@@ -131,6 +137,8 @@ type llmExtraction struct {
 	Confidence           *float64 `json:"confidence"`
 	Reasoning            string   `json:"reasoning"`
 	OccurredAt           *string  `json:"occurred_at"`
+	// ItemCount stays raw: a typed field would fail the whole receipt on "six" or 6.5.
+	ItemCount json.RawMessage `json:"item_count"`
 }
 
 // llmNotificationResult matches the notification detection schema.

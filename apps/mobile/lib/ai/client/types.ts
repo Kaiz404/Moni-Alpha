@@ -35,6 +35,8 @@ export type ExtractedTransaction = {
   reasoning: string;
   /** Local date (YYYY-MM-DD) the input names, text and receipts only. Clamp before use. */
   occurredAt?: string | null;
+  /** How many items a receipt lists; receipts only. Absent when the reader has no count. */
+  itemCount?: number;
 };
 
 /** Anchors relative dates; the backend returns no `occurredAt` without it. */
