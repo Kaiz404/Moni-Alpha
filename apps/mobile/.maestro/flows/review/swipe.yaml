@@ -17,7 +17,7 @@ tags:
     id: review.next-card
 - takeScreenshot: r1-l2-pair
 
-# A short, slow drag stays under 40 percent: the card comes back and nothing is written.
+# A short, slow drag stays short of the 45 percent an option takes: the card comes back and nothing is written.
 - swipe:
     start: 50%, 40%
     end: 62%, 40%
@@ -27,10 +27,11 @@ tags:
 - assertNotVisible: 'Approved .*'
 - takeScreenshot: r1-l6-snap-back
 
+# Starts near the card's far edge: from its centre a swipe ends barely past the 45 percent.
 - swipe:
-    from:
-      id: review.card
-    direction: RIGHT
+    start: 15%, 40%
+    end: 90%, 40%
+    duration: 400
 - extendedWaitUntil:
     visible: 'Approved .*'
     timeout: 3000
@@ -39,9 +40,9 @@ tags:
 - takeScreenshot: r1-l3-swipe-right
 
 - swipe:
-    from:
-      id: review.card
-    direction: LEFT
+    start: 85%, 40%
+    end: 10%, 40%
+    duration: 400
 - extendedWaitUntil:
     visible: 1 not mine
     timeout: 3000
@@ -55,3 +56,10 @@ tags:
     visible: Saved for later
     timeout: 3000
 - takeScreenshot: r1-l5-swipe-down
+
+- tapOn:
+    id: nav.toast.undo
+- assertNotVisible: Saved for later
+- assertVisible:
+    id: review.card
+- takeScreenshot: r1-undo-later

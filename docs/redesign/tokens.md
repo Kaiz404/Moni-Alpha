@@ -103,7 +103,10 @@ All inside a Paper card (radius 26, padding 14 18), plot 314 × 150, axis column
 ## Approvals (Review card)
 
 - Paper card radius 26: source row (bubble, "Maybank alert", time, "Usual for you" pill), quoted alert text, merchant and amount each with a pencil (in place), category and wallet chips (picker sheets), evidence line, "Don't ask about similar" checkbox (22 box, radius 6), result pill ("Food & Dining: RM76.80 left after this").
-- Three equal 52-tall buttons: Not mine · Later · Approve (Mint). Swipe right Approve (Confirm), left Not mine (Reject), down Later; Toggle_On at 40% projected. Edge cues "Not mine" left, "Approve" right. Under the top card, a blank card at scale 0.96 with no content (D7); it grows to 1 as the top card leaves.
+- Three equal 52-tall buttons: Not mine · Later · Approve (Mint). Swipe right Approve (Confirm), left Not mine (Reject), down Later. Edge cues "Not mine" left, "Approve" right. Under the top card, a blank card at scale 0.96 with no content (D7); it grows to 1 as the top card leaves.
+- Swipe selection, on finger distance alone while held: a side leans past 16 and lets go under 8; its option engages at 45% of the card along its axis (Toggle_On, once) and holds down to 35% (Toggle_Off); another side takes over only when it leads by 24.
+- Release: the engaged option commits, unless flung back at 800/s or more. With nothing engaged, a fling at 800/s or more commits the way x + 0.5·v points, once it has moved the card 12%.
+- Undo: the card slides back on `sheet` from where it left, right for Approve, left for Not mine, below for Later, by swipe or button; the card it covers settles from 1 to 0.96 under it. Same payment and reduced motion fade in over 180 ms.
 
 ## Motion
 
@@ -118,7 +121,7 @@ Springs (mass 1):
 | throw | snap-back after a fling | 157.9 / 17.6 | ~4.5% |
 | drag | finger-tracked | 1:1, no spring | none |
 
-- Bounce belongs to containers, never values. Every animation is interruptible. Flings decide on projected position (x + 0.5·v), threshold 40%.
+- Bounce belongs to containers, never values. Every animation is interruptible. Sheets decide flings on projected position (x + 0.5·v), threshold 40%; the Review deck has its own rule under Approvals.
 - One expressive moment per screen. Nothing loops on screens showing balances.
 - A number is never hidden or moving for more than ~200 ms; no digit roll on first paint.
 - Lists: first 6 rows rise 8 + fade, 30 ms apart, on first load only.

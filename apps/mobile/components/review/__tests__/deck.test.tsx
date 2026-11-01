@@ -451,6 +451,32 @@ describe('Review deck', () => {
     expect(screen.getByText('1 of 1')).toBeTruthy();
   });
 
+  it.each([
+    ['Approve', 'review.approve', 'approved'],
+    ['Not mine', 'review.not-mine', 'rejected'],
+    ['Later', 'review.later', 'later'],
+  ])('Undo after %s puts the card back on top of the next one', async (_name, button, status) => {
+    seed('p1');
+    seed('p2', { merchant: 'JAYA GROCER', created_at: '2020-01-01T00:00:00.000Z' });
+    await show(<ReviewScreen />);
+
+    await act(async () => fireEvent.press(screen.getByTestId(button)));
+    expect(store.proposedTransactions$.p1.status.peek()).toBe(status);
+    expect(screen.getByText('JAYA GROCER')).toBeTruthy();
+    expect(screen.queryByText('GRAB')).toBeNull();
+
+    await act(async () => undoToast());
+
+    expect(store.proposedTransactions$.p1.status.peek()).toBe('pending');
+    expect(screen.getByText('GRAB')).toBeTruthy();
+    expect(screen.queryByText('JAYA GROCER')).toBeNull();
+    expect(screen.getByText('1 of 2')).toBeTruthy();
+
+    await act(async () => fireEvent.press(screen.getByTestId('review.not-mine')));
+    expect(screen.getByText('JAYA GROCER')).toBeTruthy();
+    expect(screen.getByText('2 of 2')).toBeTruthy();
+  });
+
   describe('the source row pill', () => {
     const filed = (count: number, merchant = 'GRAB') =>
       Object.fromEntries(
