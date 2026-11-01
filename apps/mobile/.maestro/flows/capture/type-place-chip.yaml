@@ -1,0 +1,51 @@
+# Type it place chip: at a place the seed has paid before, the chip offers its
+# merchant and usual category, and nothing fills until it is tapped.
+# Mamak Ali is the seed's most visited merchant at Bangsar. Needs location granted.
+# Run: scripts/device/run-flows.sh .maestro/flows/capture/type-place-chip.yaml
+appId: com.anonymous.moni.e2e
+name: Type it place chip
+tags:
+  - y4
+  - seed-full
+---
+- setLocation:
+    latitude: 3.13
+    longitude: 101.671
+- runFlow: ../../subflows/launch.yaml
+- tapOn:
+    id: nav.plus
+- tapOn:
+    id: nav.chooser.type
+- extendedWaitUntil:
+    visible:
+      id: capture.place-chip
+    timeout: 15000
+- assertVisible: At Mamak Ali\? · Food & Dining
+- assertNotVisible: Mamak Ali
+- takeScreenshot: y4-place-chip
+
+# Dismissing keeps the fields as they were.
+- tapOn:
+    id: capture.place-chip.dismiss
+- assertNotVisible:
+    id: capture.place-chip
+- assertVisible: Optional
+- pressKey: Back
+
+# Tapping fills the shop and the category, once.
+- tapOn:
+    id: nav.plus
+- tapOn:
+    id: nav.chooser.type
+- extendedWaitUntil:
+    visible:
+      id: capture.place-chip
+    timeout: 15000
+- tapOn:
+    id: capture.place-chip
+- assertVisible: Mamak Ali
+- assertVisible: Food & Dining
+- assertNotVisible:
+    id: capture.place-chip
+- takeScreenshot: y4-place-chip-used
+- pressKey: Back

@@ -12,6 +12,7 @@ import {
 } from '@/components/capture/duplicate-sheet';
 import { FieldBubble } from '@/components/capture/field-bubble';
 import { LocationField } from '@/components/capture/location-field';
+import { PlaceChip } from '@/components/capture/place-chip';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { PickerField } from '@/components/ui/picker-field';
 import { Segmented } from '@/components/ui/segmented';
@@ -24,6 +25,7 @@ import type { LedgerEntry } from '@/lib/ai/duplicates';
 import { useAuth } from '@/lib/auth/auth-context';
 import { readAmount, type AmountSentence } from '@/lib/amount/amount-input';
 import { amountSentence } from '@/lib/capture/amount-sentence';
+import { placeSuggestion } from '@/lib/capture/place-suggestion';
 import {
   duplicateCopy,
   findTypedDuplicate,
@@ -48,6 +50,7 @@ import type { FinanceWallet } from '@/lib/finance/types';
 import { approve } from '@/lib/haptics';
 import { toCategoryTiles } from '@/lib/sheet/category-tiles';
 import { openSheet, type WalletOption } from '@/lib/sheet/sheet-store';
+import { listMerchantAliases } from '@/lib/supabase/merchant-aliases';
 import { ensureFinanceTimezone } from '@/lib/supabase/profile';
 import { getLedgerEntries } from '@/lib/supabase/proposed-transactions';
 import {
@@ -118,6 +121,7 @@ export default function TypeItScreen() {
   const [note, setNote] = useState('');
   const [here, setHere] = useState<EntryLocation>({ status: 'none' });
   const [locationRemoved, setLocationRemoved] = useState(false);
+  const [chipClosed, setChipClosed] = useState(false);
   const [timezone, setTimezone] = useState('UTC');
   const [saving, setSaving] = useState(false);
   const [duplicate, setDuplicate] = useState<{
@@ -132,6 +136,9 @@ export default function TypeItScreen() {
   const recentCategories = useValue(recentExpenseCategories$(userId));
   const budgetProgress = useValue(budgetProgress$(userId, timezone));
   const transactions = useValue(transactions$({ userId }));
+  const aliases = useValue(() =>
+    userId ? listMerchantAliases(userId) : [],
+  );
   const budgetData = useBudgetData();
   const budgetMonth = useBudgetMonth(budgetData, monthKey(budgetData.now));
 
@@ -158,6 +165,24 @@ export default function TypeItScreen() {
     recordsLocation && !locationRemoved && here.status === 'found'
       ? here.location
       : null;
+  const suggestion = useMemo(
+    () =>
+      location && kind === 'expense'
+        ? placeSuggestion({
+            transactions,
+            here: location,
+            currency: mainCurrency,
+            activeCategoryIds: new Set(categories.map((item) => item.id)),
+            locationOffWalletIds: new Set(
+              allWallets
+                .filter((item) => item.recordLocation === false)
+                .map((item) => item.id),
+            ),
+            aliases,
+          })
+        : null,
+    [aliases, allWallets, categories, kind, location, mainCurrency, transactions],
+  );
 
   useEffect(() => {
     void ensureFinanceTimezone()
@@ -488,6 +513,23 @@ export default function TypeItScreen() {
         currency={wallet?.currency ?? mainCurrency}
         direction={kind}
         sentence={sentence}
+        aboveKeypad={
+          suggestion && !chipClosed && !note.trim() ? (
+            <PlaceChip
+              merchant={suggestion.merchant}
+              categoryName={
+                categories.find((item) => item.id === suggestion.categoryId)
+                  ?.name ?? null
+              }
+              onUse={() => {
+                setNote(suggestion.merchant);
+                if (suggestion.categoryId) setCategoryId(suggestion.categoryId);
+                setChipClosed(true);
+              }}
+              onDismiss={() => setChipClosed(true)}
+            />
+          ) : null
+        }
         control={
           <Segmented
             screen="capture"

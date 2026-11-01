@@ -11,7 +11,7 @@ import TypeItScreen from '@/app/transaction/new';
 import { financeProjection$ } from '@/lib/finance/projection';
 import { EMPTY_FINANCE_PROJECTION } from '@/lib/finance/types';
 import { createTransaction } from '@/lib/supabase/transactions';
-import { financeWallet } from '@/lib/wallets/__tests__/balance-fixture';
+import { expense, financeWallet } from '@/lib/wallets/__tests__/balance-fixture';
 
 jest.mock('expo-location', () => ({
   Accuracy: { Balanced: 3 },
@@ -74,6 +74,8 @@ jest.mock('@/lib/store', () => {
 const location = jest.mocked(Location);
 const POSITION = { latitude: 3.13, longitude: 101.671 };
 const MAYBANK = '00000000-0000-4000-8000-00000000000a';
+const FOOD = '00000000-0000-4000-8000-0000000000f0';
+const GROCERIES = '00000000-0000-4000-8000-0000000000f1';
 
 function seedWallet(recordLocation: boolean) {
   financeProjection$.set({
@@ -190,5 +192,135 @@ describe('Type it location', () => {
     await openPage();
     fireEvent.press(screen.getByText('Transfer'));
     expect(screen.queryByTestId('capture.location')).toBeNull();
+  });
+});
+
+describe('Type it place chip', () => {
+  const store = jest.requireMock('@/lib/store') as {
+    categories$: { set: (rows: Record<string, unknown>) => void };
+  };
+  const category = (id: string, name: string, order: number) => ({
+    id,
+    user_id: 'user_1',
+    name,
+    type: 'expense',
+    icon: 'shape-outline',
+    color: null,
+    is_active: true,
+    display_order: order,
+    deleted: false,
+  });
+  const rows = [
+    expense('t1', '2026-10-01T04:00:00.000Z', {
+      walletId: MAYBANK,
+      merchant: 'Mamak Ali',
+      categoryId: FOOD,
+      locationLatitude: 3.13,
+      locationLongitude: 101.671,
+    }),
+    expense('t2', '2026-10-20T04:00:00.000Z', {
+      walletId: MAYBANK,
+      merchant: 'Jaya Grocer',
+      categoryId: GROCERIES,
+    }),
+  ];
+
+  function seed(recordLocation = true) {
+    store.categories$.set({
+      [FOOD]: category(FOOD, 'Food & Dining', 0),
+      [GROCERIES]: category(GROCERIES, 'Groceries', 1),
+    });
+    financeProjection$.set({
+      ...EMPTY_FINANCE_PROJECTION,
+      walletsById: { [MAYBANK]: financeWallet({ id: MAYBANK, recordLocation }) },
+      transactionsById: Object.fromEntries(rows.map((row) => [row.id, row])),
+      transactionsByWallet: { [MAYBANK]: rows.map((row) => row.id) },
+    });
+  }
+
+  const CHIP = 'At Mamak Ali? · Food & Dining';
+
+  beforeEach(() => seed());
+
+  it('waits for the location, and keeps the amount typed meanwhile', async () => {
+    const answer = positionAnswersLater();
+    await openPage();
+    fireEvent.press(screen.getByTestId('capture.key.7'));
+    expect(screen.queryByText(CHIP)).toBeNull();
+    await act(async () => answer());
+    expect(screen.getByText(CHIP)).toBeTruthy();
+    expect(screen.getByLabelText('Amount −RM7')).toBeTruthy();
+  });
+
+  it('fills nothing until it is tapped', async () => {
+    await openPage();
+    expect(screen.getByText(CHIP)).toBeTruthy();
+    expect(screen.getByTestId('capture.note').props.value).toBe('');
+    const saved = await addExpense();
+    expect(saved.merchant).toBeNull();
+    expect(saved.categoryId).not.toBe(FOOD);
+  });
+
+  it('fills the shop and category on a tap, then goes away', async () => {
+    await openPage();
+    fireEvent.press(screen.getByTestId('capture.place-chip'));
+    expect(screen.getByTestId('capture.note').props.value).toBe('Mamak Ali');
+    expect(screen.queryByText(CHIP)).toBeNull();
+    expect(await addExpense()).toMatchObject({ merchant: 'Mamak Ali', categoryId: FOOD });
+  });
+
+  it('dismisses without filling, and stays dismissed', async () => {
+    await openPage();
+    fireEvent.press(screen.getByTestId('capture.place-chip.dismiss'));
+    expect(screen.queryByText(CHIP)).toBeNull();
+    expect(screen.getByTestId('capture.note').props.value).toBe('');
+    fireEvent.changeText(screen.getByTestId('capture.note'), 'x');
+    fireEvent.changeText(screen.getByTestId('capture.note'), '');
+    expect(screen.queryByText(CHIP)).toBeNull();
+    expect((await addExpense()).merchant).toBeNull();
+  });
+
+  it('gives way once the user types a shop', async () => {
+    await openPage();
+    fireEvent.changeText(screen.getByTestId('capture.note'), 'Kopitiam');
+    expect(screen.queryByText(CHIP)).toBeNull();
+    expect((await addExpense()).merchant).toBe('Kopitiam');
+  });
+
+  it('goes when the user removes the location from this entry', async () => {
+    await openPage();
+    fireEvent.press(screen.getByTestId('capture.location'));
+    expect(screen.queryByText(CHIP)).toBeNull();
+  });
+
+  it('is only for expenses', async () => {
+    await openPage();
+    fireEvent.press(screen.getByText('Income'));
+    expect(screen.queryByText(CHIP)).toBeNull();
+    fireEvent.press(screen.getByText('Transfer'));
+    expect(screen.queryByText(CHIP)).toBeNull();
+    fireEvent.press(screen.getByText('Expense'));
+    expect(screen.getByText(CHIP)).toBeTruthy();
+  });
+
+  it('never shows without permission, and never asks', async () => {
+    permission('denied');
+    await openPage();
+    expect(screen.queryByText(CHIP)).toBeNull();
+    expect(location.requestForegroundPermissionsAsync).not.toHaveBeenCalled();
+  });
+
+  it('never shows for a wallet whose app has location off', async () => {
+    seed(false);
+    await openPage();
+    expect(screen.queryByText(CHIP)).toBeNull();
+  });
+
+  it('never shows away from the place', async () => {
+    location.getCurrentPositionAsync.mockResolvedValue({
+      coords: { latitude: 3.2, longitude: 101.671 },
+    } as Location.LocationObject);
+    await openPage();
+    expect(screen.queryByText(CHIP)).toBeNull();
   });
 });

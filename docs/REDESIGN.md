@@ -110,6 +110,7 @@ The screen tracks reported these differences in their handoffs. Each waits for t
 - Budget calendar: the day cut-offs.
 - Scan a receipt: the ML Kit scanner (D11). The Added row also ends with the item count, which the board keeps to the check page.
 - Type it: **Location** is an addition with no board, restored from v1. It sits beside Shop or note in the same field shape, shows the place being saved with the entry, and one tap takes it off that entry or puts it back. The page no longer asks for location: without permission, or for a wallet whose app has location off, nothing is saved and the field does not show.
+- Type it: the place chip is an addition with no board. At a place the user has paid before, a Sand chip above the keypad reads "At Mamak Ali? · Food & Dining" with a dismiss button; only a tap fills the shop and category. It uses the location already read for the entry, so it follows the Location field and the per-app location rule, and never asks for a permission.
 - Say it: when no run of the spoken words gives the amount Moni read, the amount hint falls back to "Moni heard RM9.80" instead of the board's "you said nine eighty".
 - Transaction detail: only notification rows captured by this build or later keep the bank alert, so older rows show the currency alone under the amount edit.
 - Capture log: the note under a Not linked alert says "Same payment as the … alert" for every app; the board's "Same ride" is Grab's sample. It matches another app's Added alert by RM amount within 10 minutes.
