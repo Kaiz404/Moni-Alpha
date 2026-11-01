@@ -1,4 +1,5 @@
-# A1 Activity tab: the search bar on top of the list, the wallet filter and its chip.
+# A1 Activity tab: the search bar on top of the list, the chart and its dates, the wallet filter
+# and its chip, and the pager.
 # Run: scripts/device/run-flows.sh .maestro/flows/activity/activity.yaml
 appId: com.anonymous.moni.e2e
 name: A1 Activity tab
@@ -16,7 +17,30 @@ tags:
 - assertVisible:
     id: activity.search
 - assertVisible: 'Today · .*'
+- assertVisible:
+    id: activity.chart
+- assertVisible:
+    id: activity.range
+    text: 'Dates, Last 6 months'
+- assertNotVisible:
+    id: activity.range.clear
 - takeScreenshot: a1-activity
+
+- tapOn:
+    id: activity.range
+- assertVisible:
+    id: sheet.range.all-time
+- takeScreenshot: a1-dates-sheet
+- tapOn:
+    id: sheet.range.this-month
+- assertVisible:
+    id: activity.range
+    text: 'Dates, [A-Z][a-z]{2} \d{4}'
+- takeScreenshot: a1-this-month
+- tapOn:
+    id: activity.range.clear
+- assertNotVisible:
+    id: activity.range.clear
 
 - tapOn:
     id: activity.filter.wallet
@@ -37,14 +61,29 @@ tags:
 
 - scrollUntilVisible:
     element:
-      id: activity.show-more
+      id: activity.pager.older
     direction: DOWN
-    optional: true
     centerElement: true
+- assertVisible:
+    id: activity.pager.page
+    text: 'Page 1 of \d+'
 - tapOn:
-    id: activity.show-more
-    optional: true
-- takeScreenshot: a1-show-more
+    id: activity.pager.older
+- assertVisible:
+    id: activity.search
+- extendedWaitUntil:
+    visible:
+      id: 'activity\.transaction\..*'
+    timeout: 5000
+- takeScreenshot: a1-page-2
+- scrollUntilVisible:
+    element:
+      id: activity.pager.page
+    direction: DOWN
+    centerElement: true
+- assertVisible:
+    id: activity.pager.page
+    text: 'Page 2 of \d+'
 
 - scrollUntilVisible:
     element:

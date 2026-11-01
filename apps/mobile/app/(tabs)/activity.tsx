@@ -2,8 +2,9 @@ import { syncState } from '@legendapp/state';
 import { useSelector, useValue } from '@legendapp/state/react';
 import { router, useLocalSearchParams, useNavigation, useScrollToTop } from 'expo-router';
 import type { NavigationProp } from 'expo-router/react-navigation';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 import { ScrollView, View } from 'react-native';
+import { useReducedMotion } from 'react-native-reanimated';
 
 import {
   CLEARED_LINK,
@@ -13,8 +14,9 @@ import {
   type ActivityLinkParams,
   type ActivityScope,
 } from '@/components/activity/activity-link';
-import { DayGroup } from '@/components/activity/day-group';
 import { FilterChips } from '@/components/activity/filter-chips';
+import { FlowCard } from '@/components/activity/flow-card';
+import { PagedTransactions } from '@/components/activity/paged-transactions';
 import { ReviewStrip } from '@/components/activity/review-strip';
 import { useTabBarClearance } from '@/components/nav/tab-bar';
 import { SyncBanner } from '@/components/providers/sync-banner';
@@ -22,26 +24,24 @@ import { EmptyTile } from '@/components/ui/empty-tile';
 import { MoniButton } from '@/components/ui/header-icon-button';
 import { useTransactionHold } from '@/components/transaction/use-transaction-hold';
 import { HoldHint } from '@/components/ui/hold-menu';
-import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Page } from '@/components/ui/page';
 import { SearchField } from '@/components/ui/search-field';
-import { Press } from '@/components/ui/press';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Text } from '@/components/ui/text';
-import { TransactionRow } from '@/components/ui/transaction-row';
-import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { useAuth } from '@/lib/auth/auth-context';
-import { formatDate, formatDayHeading } from '@/lib/dates/day-label';
+import { toLocalDateInput } from '@/lib/dates/local-date-input';
 import {
   filterActivity,
-  groupActivityDays,
-  type ActivityDay,
+  localDay,
+  withinRange,
   type ActivityKind,
+  type ActivityRange,
 } from '@/lib/finance/activity-filter';
-import { monthKey } from '@/lib/finance/budget-month';
+import { flowSeries } from '@/lib/finance/flow-series';
 import { formatMoney } from '@/lib/finance/format-money';
 import { useMainCurrency } from '@/lib/finance/main-currency';
 import { merchantName } from '@/lib/finance/merchant-name';
+import { usePageNumber } from '@/lib/finance/paged';
 import { groupPlaces, placeRange } from '@/lib/finance/places';
 import {
   categoriesForUser$,
@@ -50,38 +50,20 @@ import {
   walletsForUser$,
 } from '@/lib/finance/selectors';
 import type { FinanceTransaction } from '@/lib/finance/types';
+import { pickActivityRange } from '@/lib/sheet/pick-date';
 import { openSheet } from '@/lib/sheet/sheet-store';
 import { transactions$ as transactionTable$ } from '@/lib/store';
 import { listMerchantAliases } from '@/lib/supabase/merchant-aliases';
 import { isAwaitingReview } from '@/lib/supabase/proposed-transactions';
 import { tid } from '@/lib/test-ids';
-import { transactionRow, type RowLookups } from '@/lib/transactions/row';
+import type { RowLookups } from '@/lib/transactions/row';
 import { compactWalletNames } from '@/lib/wallets/compact-name';
-
-const FIRST_DAYS = 5;
-const MORE_DAYS = 10;
-
-function dayOf(key: string): Date {
-  const [year, month, day] = key.split('-').map(Number);
-  return new Date(year, month - 1, day);
-}
-
-function dayTotal(day: ActivityDay, currency: string) {
-  return [
-    day.spentMinor > 0
-      ? `−${formatMoney(day.spentMinor, currency)}`
-      : null,
-    day.inMinor > 0 ? `+${formatMoney(day.inMinor, currency)}` : null,
-  ]
-    .filter(Boolean)
-    .join(' · ');
-}
 
 export default function ActivityScreen() {
   const scroll = useRef<ScrollView>(null);
   useScrollToTop(scroll);
   const { user } = useAuth();
-  const tokens = useThemeTokens();
+  const reduceMotion = useReducedMotion();
   const clearance = useTabBarClearance();
   const userId = user?.id ?? null;
   const currency = useMainCurrency();
@@ -102,19 +84,21 @@ export default function ActivityScreen() {
   const [query, setQuery] = useState('');
   const [kind, setKind] = useState<ActivityKind>('all');
   const [walletId, setWalletId] = useState<string | null>(null);
-  const [day, setDay] = useState<string | null>(null);
-  const [shownDays, setShownDays] = useState(FIRST_DAYS);
+  const [range, setRange] = useState<ActivityRange | null>(null);
+  const searched = useDeferredValue(query);
+  const listTop = useRef(0);
   const now = new Date();
+  const today = toLocalDateInput(now);
 
   // A link from another page replaces whatever filters were left, then clears its params so the same link works again.
   useEffect(() => {
-    const link = readActivityLink(params, monthKey(new Date()));
+    const link = readActivityLink(params);
     if (!link) return;
     setQuery(link.query);
     setScope(link.scope);
     setKind('all');
     setWalletId(null);
-    setDay(link.chartDay);
+    setRange(link.range);
     navigation.setParams(CLEARED_LINK);
   }, [navigation, params]);
 
@@ -170,24 +154,28 @@ export default function ActivityScreen() {
           scope.kind === 'category'
             ? (categories.find((category) => category.id === scope.categoryId)?.name ?? null)
             : null,
-          now,
         )
       : null;
-  const days = useMemo(
+  const matching = useMemo(
     () =>
-      groupActivityDays(
-        filterActivity(scoped, {
-          query,
-          walletId,
-          mainCurrency: currency,
-          kind,
-          day,
-          categoryNames: Object.fromEntries(
-            categories.map((category) => [category.id, category.name]),
-          ),
-        }),
-      ),
-    [scoped, query, walletId, currency, kind, day, categories],
+      filterActivity(scoped, {
+        query: searched,
+        walletId,
+        mainCurrency: currency,
+        kind,
+        categoryNames: Object.fromEntries(
+          categories.map((category) => [category.id, category.name]),
+        ),
+      }),
+    [scoped, searched, walletId, currency, kind, categories],
+  );
+  const listed = useMemo(() => withinRange(matching, range), [matching, range]);
+  const series = useMemo(
+    () => flowSeries({ transactions: matching, range, now: localDay(today), currency }),
+    [matching, range, today, currency],
+  );
+  const [page, setPage] = usePageNumber(
+    JSON.stringify([searched, walletId, kind, range, scope, currency]),
   );
   const waiting = proposals.filter((proposal) => isAwaitingReview(proposal, new Date()));
   const reviewTotal = waiting
@@ -200,8 +188,6 @@ export default function ActivityScreen() {
     mainWallets.some((wallet) => wallet.id === walletId) && walletId
       ? lookups.walletNames[walletId]
       : null;
-  const visible = day ? days : days.slice(0, shownDays);
-  const earlier = Math.min(MORE_DAYS, days.length - visible.length);
 
   const pickWallet = async () => {
     const picked = await openSheet({
@@ -230,10 +216,15 @@ export default function ActivityScreen() {
           params: { id: transaction.id },
         });
 
-  const dayRows = days.reduce(
-    (sum, group) => sum + group.transactions.length,
-    0,
-  );
+  const pickRange = async () => {
+    const picked = await pickActivityRange(range);
+    if (picked) setRange(picked.range);
+  };
+
+  const turnPage = (next: number) => {
+    setPage(next);
+    scroll.current?.scrollTo({ y: listTop.current, animated: !reduceMotion });
+  };
 
   return (
     <Page
@@ -298,29 +289,15 @@ export default function ActivityScreen() {
           />
         ) : (
           <>
-            {day ? (
-              <View className="min-h-9 flex-row items-center justify-between gap-2 pl-1.5 pr-0.5">
-                <Text className="flex-shrink text-[15px] leading-[21px] font-display-semibold text-foreground">
-                  {`${formatDate(dayOf(day), now)} · ${dayRows} ${dayRows === 1 ? 'transaction' : 'transactions'}`}
-                </Text>
-                <Press
-                  testID={tid('activity', 'whole-month')}
-                  onPress={() => setDay(null)}
-                  radius={{ rest: 18, pressed: 16 }}
-                  pressedClassName="bg-hairline"
-                  className="h-9 flex-row items-center gap-1 bg-sand pl-3.5 pr-2.5"
-                >
-                  <Text className="text-[14px] leading-[19px] font-display-semibold text-foreground">
-                    Whole month
-                  </Text>
-                  <IconSymbol
-                    name="close"
-                    size={16}
-                    color={tokens.foreground}
-                  />
-                </Press>
-              </View>
-            ) : null}
+            <FlowCard
+              series={series}
+              range={range}
+              currency={currency}
+              now={now}
+              onPickRange={() => void pickRange()}
+              onClearRange={() => setRange(null)}
+              onNarrow={(bucket) => setRange({ from: bucket.from, to: bucket.to })}
+            />
             <FilterChips
               kind={kind}
               onKind={setKind}
@@ -329,72 +306,41 @@ export default function ActivityScreen() {
               onClearScope={() => setScope(null)}
               onWallet={() => void pickWallet()}
             />
-            <View className="gap-3.5">
+            <View
+              className="gap-3.5"
+              onLayout={(event) => {
+                listTop.current = event.nativeEvent.layout.y;
+              }}
+            >
               <HoldHint screen="activity" />
-              {visible.length === 0 ? (
+              {listed.length === 0 ? (
                 <View className="items-center gap-1 rounded-tile border-[1.5px] border-dashed border-hairline px-[18px] py-5">
                   <Text variant="rowTitle" className="text-center text-foreground">
-                    {query.trim()
-                      ? `No matches for "${query.trim()}"`
-                      : day
-                        ? 'Nothing like that on this day'
+                    {searched.trim()
+                      ? `No matches for "${searched.trim()}"`
+                      : range
+                        ? 'Nothing like that in these dates'
                         : 'Nothing matches'}
                   </Text>
                   <Text variant="meta" className="text-center text-muted">
-                    {query.trim()
+                    {searched.trim()
                       ? 'Try a merchant, a category or an amount like 18.90.'
-                      : 'Try another filter or day.'}
+                      : 'Try another filter or other dates.'}
                   </Text>
                 </View>
               ) : (
-                visible.map((group) => (
-                  <DayGroup
-                    key={group.key}
-                    label={formatDayHeading(
-                      group.transactions[0].transactionDate,
-                      now,
-                    )}
-                    total={dayTotal(group, currency)}
-                  >
-                    {group.transactions.map((transaction) => {
-                      const row = transactionRow(transaction, lookups);
-                      return (
-                        <TransactionRow
-                          key={transaction.id}
-                          testID={tid(
-                            'activity',
-                            'transaction',
-                            transaction.id,
-                          )}
-                          row={row}
-                          metaLead="category"
-                          now={now}
-                          onPress={() => open(transaction)}
-                          onHold={hold.holdFor(transaction, row)}
-                        />
-                      );
-                    })}
-                  </DayGroup>
-                ))
+                <PagedTransactions
+                  screen="activity"
+                  transactions={listed}
+                  lookups={lookups}
+                  currency={currency}
+                  now={now}
+                  page={page}
+                  onPage={turnPage}
+                  onOpen={open}
+                  holdFor={hold.holdFor}
+                />
               )}
-              {earlier > 0 ? (
-                <Press
-                  testID={tid('activity', 'show-more')}
-                  onPress={() => setShownDays(visible.length + MORE_DAYS)}
-                  radius={{ rest: 22, pressed: 16 }}
-                  pressedClassName="bg-hairline"
-                  className="h-11 flex-row items-center gap-1.5 self-center bg-sand px-[18px]"
-                >
-                  <Text className="text-[14px] leading-[19px] font-display-semibold text-foreground">
-                    {`Show ${earlier} earlier ${earlier === 1 ? 'day' : 'days'}`}
-                  </Text>
-                  <IconSymbol
-                    name="chevron-down"
-                    size={18}
-                    color={tokens.foreground}
-                  />
-                </Press>
-              ) : null}
             </View>
           </>
         )}

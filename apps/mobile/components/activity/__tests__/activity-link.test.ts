@@ -29,54 +29,52 @@ function row(id: string, categoryId: string | null, date: Date): FinanceTransact
   };
 }
 
-const now = new Date(2026, 9, 14, 14, 6);
-
 describe('readActivityLink', () => {
   it('reads nothing from a plain visit', () => {
-    expect(readActivityLink({}, '2026-10')).toBeNull();
+    expect(readActivityLink({})).toBeNull();
   });
 
-  it('selects a day of the chart month on the chart instead of a chip', () => {
-    expect(readActivityLink({ day: '2026-10-07' }, '2026-10')).toEqual({
+  it('opens a day as a one-day range', () => {
+    expect(readActivityLink({ day: '2026-09-14' })).toEqual({
       query: '',
       scope: null,
-      chartDay: '2026-10-07',
-    });
-  });
-
-  it('makes a chip of a day the chart does not draw', () => {
-    expect(readActivityLink({ day: '2026-09-14' }, '2026-10')).toEqual({
-      query: '',
-      scope: { kind: 'day', day: '2026-09-14' },
-      chartDay: null,
+      range: { from: '2026-09-14', to: '2026-09-14' },
     });
   });
 
   it('ignores a day that is not a date', () => {
-    expect(readActivityLink({ day: '2026-02-30' }, '2026-10')).toBeNull();
+    expect(readActivityLink({ day: '2026-02-30' })).toBeNull();
+  });
+
+  it('keeps a search from a link', () => {
+    expect(readActivityLink({ q: 'Grab ride' })).toEqual({
+      query: 'Grab ride',
+      scope: null,
+      range: null,
+    });
   });
 
   it('scopes a category to the month the category page sent', () => {
-    expect(readActivityLink({ categoryId: 'food', month: '2026-09' }, '2026-10')).toEqual({
+    expect(readActivityLink({ categoryId: 'food', month: '2026-09' })).toEqual({
       query: '',
       scope: { kind: 'category', categoryId: 'food', month: '2026-09' },
-      chartDay: null,
+      range: null,
     });
   });
 
   it('scopes a bill category to every month', () => {
-    expect(readActivityLink({ categoryId: 'bills', month: 'soon' }, '2026-10')).toEqual({
+    expect(readActivityLink({ categoryId: 'bills', month: 'soon' })).toEqual({
       query: '',
       scope: { kind: 'category', categoryId: 'bills', month: null },
-      chartDay: null,
+      range: null,
     });
   });
 
   it('keeps the map link as a place with its range', () => {
-    expect(readActivityLink({ placeId: 'p1', range: 'week', q: 'kopi' }, '2026-10')).toEqual({
+    expect(readActivityLink({ placeId: 'p1', range: 'week', q: 'kopi' })).toEqual({
       query: 'kopi',
       scope: { kind: 'place', placeId: 'p1', range: 'week' },
-      chartDay: null,
+      range: null,
     });
   });
 });
@@ -96,26 +94,18 @@ describe('inScope', () => {
   it('keeps one category in every month', () => {
     expect(ids({ kind: 'category', categoryId: 'food', month: null })).toEqual(['lunch', 'sep-lunch']);
   });
-
-  it('keeps one local day', () => {
-    expect(ids({ kind: 'day', day: '2026-09-14' })).toEqual(['sep-lunch', 'fuel']);
-  });
 });
 
 describe('scopeLabel', () => {
   it('names a category month', () => {
-    expect(scopeLabel({ kind: 'category', categoryId: 'food', month: '2026-10' }, 'Food & Dining', now)).toBe(
+    expect(scopeLabel({ kind: 'category', categoryId: 'food', month: '2026-10' }, 'Food & Dining')).toBe(
       'Food & Dining · Oct',
     );
   });
 
   it('names a category alone for a bill', () => {
-    expect(scopeLabel({ kind: 'category', categoryId: 'food', month: null }, 'Food & Dining', now)).toBe(
+    expect(scopeLabel({ kind: 'category', categoryId: 'food', month: null }, 'Food & Dining')).toBe(
       'Food & Dining',
     );
-  });
-
-  it('dates a day', () => {
-    expect(scopeLabel({ kind: 'day', day: '2026-09-14' }, null, now)).toBe('Mon 14 Sep');
   });
 });

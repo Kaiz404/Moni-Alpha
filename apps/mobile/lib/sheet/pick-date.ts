@@ -2,6 +2,7 @@ import { DateTimePickerAndroid } from '@react-native-community/datetimepicker';
 import { Platform } from 'react-native';
 
 import { toLocalDateInput } from '@/lib/dates/local-date-input';
+import { orderRange, type ActivityRange } from '@/lib/finance/activity-filter';
 import { openSheet } from '@/lib/sheet/sheet-store';
 
 /**
@@ -19,4 +20,23 @@ export function pickDate(selected: string): Promise<string | null> {
         resolve(event.type === 'set' && date ? toLocalDateInput(date) : null),
     });
   });
+}
+
+/**
+ * Opens Activity's date sheet and resolves the dates, null for all time, or nothing when
+ * dismissed. Only one sheet opens at a time, so where `pickDate` is a sheet the date sheet closes
+ * around it and comes back holding the days picked so far.
+ */
+export async function pickActivityRange(
+  range: ActivityRange | null,
+): Promise<{ range: ActivityRange | null } | null> {
+  let shown = range;
+  while (true) {
+    const result = await openSheet({ kind: 'activityRange', range: shown });
+    if (!result || !('editing' in result)) return result;
+    const day = await pickDate(result.draft[result.editing]);
+    shown = day
+      ? orderRange(day, result.editing === 'from' ? result.draft.to : result.draft.from)
+      : result.draft;
+  }
 }

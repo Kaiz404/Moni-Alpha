@@ -2,6 +2,7 @@ import { useSyncExternalStore } from 'react';
 import type { MinorAmount, TransactionType } from '@repo/types';
 
 import type { WalletKind } from '@/constants/wallet-form';
+import type { ActivityRange } from '@/lib/finance/activity-filter';
 
 /** A category tile with this month's spending in the sheet's currency. */
 export type CategoryTile = {
@@ -75,6 +76,16 @@ type Sheets = {
   month: {
     request: { months: { month: string; name: string; meta: string }[]; selected: string };
     result: string;
+  };
+  /**
+   * Activity's dates. Resolves to the dates, null for all time. `editing` asks the caller to
+   * pick one end and open the sheet again, for a platform whose date picker is itself a sheet.
+   */
+  activityRange: {
+    request: { range: ActivityRange | null };
+    result:
+      | { range: ActivityRange | null }
+      | { editing: keyof ActivityRange; draft: ActivityRange };
   };
   /** People from past debts; resolves to the picked name. */
   person: {

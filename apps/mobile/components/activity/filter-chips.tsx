@@ -29,7 +29,7 @@ export function FilterChips({
   /** The chosen wallet, or null for every wallet. */
   walletName: string | null;
   onWallet: () => void;
-  /** The place, category or day a link narrowed the list to, shown first with a way to clear it. */
+  /** The place or category a link narrowed the list to, shown first with a way to clear it. */
   scope: { kind: ActivityScope['kind']; label: string } | null;
   onClearScope: () => void;
 }) {

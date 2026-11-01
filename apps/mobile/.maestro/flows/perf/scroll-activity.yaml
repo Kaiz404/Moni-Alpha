@@ -1,4 +1,4 @@
-# A1 perf probe: open Activity, load more days, and scroll the list down and back.
+# A1 perf probe: open Activity, turn to the next page, and scroll the list down and back.
 # Run: scripts/device/perf.sh --sha <sha> --flow .maestro/flows/perf/scroll-activity.yaml
 appId: com.anonymous.moni.e2e
 name: A1 scroll Activity
@@ -16,13 +16,11 @@ tags:
     timeout: 15000
 - scrollUntilVisible:
     element:
-      id: activity.show-more
+      id: activity.pager.older
     direction: DOWN
-    optional: true
     centerElement: true
 - tapOn:
-    id: activity.show-more
-    optional: true
+    id: activity.pager.older
 - swipe:
     direction: UP
     duration: 400
