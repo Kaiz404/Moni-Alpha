@@ -21,6 +21,10 @@ import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import type { DebtSide } from '@/lib/finance/debt-summary';
 import { tid } from '@/lib/test-ids';
 
+/** The primary capsule's 52 plus room, so the last row scrolls clear of it. */
+const CAPSULE_ROOM = 52 + 12;
+const LIFT = { boxShadow: '0 12px 32px rgba(23,24,26,0.18)' };
+
 export default function DebtsScreen() {
   const scroll = useRef<ScrollView>(null);
   useScrollToTop(scroll);
@@ -41,25 +45,12 @@ export default function DebtsScreen() {
       screen="debts"
       kind="tabRoot"
       title="Debts"
-      trailing={
-        empty ? null : (
-          <Button
-            testID={tid('debts', 'record-debt')}
-            variant="secondary"
-            compact
-            icon="plus"
-            label="Record a debt"
-            className="self-start"
-            onPress={() => router.push('/debt/new')}
-          />
-        )
-      }
     >
       <ScrollView
         ref={scroll}
         className="flex-1"
         contentContainerClassName="gap-4 px-5"
-        contentContainerStyle={{ paddingBottom: clearance }}
+        contentContainerStyle={{ paddingBottom: empty ? clearance : clearance + CAPSULE_ROOM }}
         showsVerticalScrollIndicator={false}
       >
         <SyncBanner screen="debts" />
@@ -130,6 +121,21 @@ export default function DebtsScreen() {
           </>
         )}
       </ScrollView>
+      {empty ? null : (
+        // Above the ring around the +, because its width reaches over the + on a 390 phone. The
+        // shadow sits on this wrapper since Press clips and its corners morph.
+        <View
+          className="absolute right-5 rounded-full"
+          style={[{ bottom: clearance }, LIFT]}
+        >
+          <Button
+            testID={tid('debts', 'record-debt')}
+            icon="plus"
+            label="Record a debt"
+            onPress={() => router.push('/debt/new')}
+          />
+        </View>
+      )}
     </Page>
   );
 }

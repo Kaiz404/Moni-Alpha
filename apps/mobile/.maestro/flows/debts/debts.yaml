@@ -16,6 +16,8 @@ tags:
     id: nav.tab.debts
 - assertVisible:
     id: debts.record-debt
+    above:
+      id: nav.plus
 - assertVisible:
     id: debts.tile.owed-to-me
 - takeScreenshot: d1-l2-pair
@@ -32,6 +34,10 @@ tags:
 - tapOn:
     id: debts.show-everyone
 - assertVisible: People
+- scrollUntilVisible:
+    element:
+      id: debts\.person\..*
+    centerElement: true
 - tapOn:
     id: debts\.person\..*
     index: 0
