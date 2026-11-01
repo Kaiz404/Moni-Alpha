@@ -21,7 +21,9 @@ import { act, cleanup, fireEvent, renderRouter, screen } from 'expo-router/testi
 import { Share } from 'react-native';
 
 import { authMMKV } from '@/lib/mmkv/auth';
+import { dismissSheet } from '@/lib/sheet/sheet-store';
 import { clearStore } from '@/lib/store';
+import { dismissToast } from '@/lib/toast/toast-store';
 /* eslint-enable import/first */
 
 let mockTheme: 'light' | 'dark' = 'light';
@@ -501,6 +503,10 @@ const pressableIds = (): string[] => [
     [`${file} empty`, spec.empty.href, 'empty', spec.signedOut],
   ]) as [string, string, Profile, true | undefined][];
 
+  afterAll(() => {
+    process.stdout.write(`Pressed ${pressed.size} controls\n`);
+  });
+
   it.each(cases)('%s', async (_label, href, profile, signedOut) => {
     jest.spyOn(Share, 'share').mockResolvedValue({ action: 'dismissedAction' });
     const options: Mount = { profile, theme: 'light', signedOut };
@@ -508,6 +514,8 @@ const pressableIds = (): string[] => [
     const queue: string[][] = [[]];
     while (queue.length > 0) {
       const path = queue.shift() as string[];
+      dismissSheet();
+      dismissToast();
       await clearStore();
       await mount(href, options);
       try {
