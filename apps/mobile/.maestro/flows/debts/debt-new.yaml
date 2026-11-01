@@ -34,23 +34,21 @@ tags:
 - inputText: Hana
 - hideKeyboard
 - assertVisible: Hana owes me
-- tapOn:
-    id: debts.new.amount
+- assertVisible: Add an amount
 - tapOn:
     id: debts.key.5
 - tapOn:
     id: debts.key.0
+- assertVisible: RM50
 - assertVisible: Hana will owe you RM50.00
-- tapOn:
-    id: debts.submit
-- assertVisible: RM50.00
+- assertVisible: 'Record: Hana owes you RM50.00'
 - tapOn:
     id: debts.new.note
 - inputText: Lunch
 - hideKeyboard
 - takeScreenshot: d1-l5-new-form
 - tapOn:
-    id: debts.new.record
+    id: debts.submit
 - assertVisible: People
 - assertNotVisible:
     id: debts.tile.owed-to-me

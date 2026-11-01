@@ -303,7 +303,6 @@ const PARAM_VISITS: [label: string, Visit][] = [
   ['debt amount, no id', { href: '/debt/amount', text: "This debt isn't here any more" }],
   ['debt amount, unknown id', { href: '/debt/amount?id=unknown', text: "This debt isn't here any more" }],
   ['debt amount, borrow more', { href: `/debt/amount?id=${MEI}&mode=more`, text: 'Borrow more' }],
-  ['debt amount, new debt', { href: '/debt/amount?mode=new', text: 'Done' }],
   ['place, unknown id', { href: '/place/unknown', text: 'Nothing here in this range' }],
   ['place, nonsense range', { href: `/place/${BANGSAR}?range=nonsense`, text: 'Bangsar' }],
   ['transaction, unknown id', { href: '/transaction/unknown', text: "This spend isn't here any more" }],

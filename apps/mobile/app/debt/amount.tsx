@@ -8,10 +8,6 @@ import {
   useDebtWallets,
 } from '@/components/debts/debt-wallets';
 import { SIDE_WORDS } from '@/components/debts/debt-words';
-import {
-  editNewDebtDraft,
-  useNewDebtDraft,
-} from '@/components/debts/new-debt-draft';
 import { useDebt } from '@/components/debts/use-debts';
 import { Chip } from '@/components/ui/chip';
 import { NotFound } from '@/components/ui/empty-tile';
@@ -44,52 +40,10 @@ export default function DebtAmountScreen() {
     id?: string;
     mode?: string;
   }>();
-  if (params.mode === 'new') return <NewDebtAmount />;
   return (
     <DebtMoney
       id={params.id}
       initial={params.mode === 'more' ? 'more' : 'repay'}
-    />
-  );
-}
-
-/** Record a debt hands its amount here and takes it back on Done. */
-function NewDebtAmount() {
-  const draft = useNewDebtDraft();
-  const currency = useMainCurrency();
-  const [typed, setTyped] = useState(draft.amount);
-  const amountMinor = readAmount(typed).minor;
-  const name =
-    draft.name.trim() ||
-    (draft.direction === 'i_owe' ? 'them' : 'They');
-  const words = SIDE_WORDS[draft.direction];
-  return (
-    <AmountPage
-      screen="debts"
-      header="pushed"
-      direction="plain"
-      title="Amount"
-      currency={currency}
-      typed={typed}
-      onTyped={setTyped}
-      sentence={{
-        text:
-          amountMinor > 0
-            ? words.owesAfter(
-                name,
-                formatMoney(amountMinor, currency),
-              )
-            : 'How much?',
-        tone: 'plain',
-      }}
-      action={{
-        label: 'Done',
-        disabled: amountMinor <= 0,
-        onPress: () => {
-          editNewDebtDraft({ amount: typed });
-          router.back();
-        },
-      }}
     />
   );
 }
