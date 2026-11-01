@@ -30,7 +30,7 @@ apps/mobile/scripts/device/run-flows.sh --sha <key> --tag smoke --out <dir>
 | Skipped tests | 76 of the 78 are the optional "press every control" suite. Run it with `pnpm --filter moni test:taps`, about 4 minutes. It passed at `0568453`, measured. |
 | APK on the phone | Key `0568453…`. **It is older than `main`**: it lacks Y5's capture retry. Build `a9a32a7` or later before you validate. |
 | Smoke suite | 5 of 6 passed on `0568453`. Measured. See "Known failures". |
-| Backend | Revision `00007` was live before Y5, serving the receipt item count and the new one-time-code rule. The push of `a9a32a7` started Cloud Build, which was `WORKING` when this was written. Check it: `gcloud builds list --limit=1`. |
+| Backend | Revision `00008-lkn` is the latest ready revision, from the push of `a9a32a7` (Y5's startup fix, the receipt item count, and the new one-time-code rule). Its Cloud Build still read `WORKING` when this was written, so confirm it finished: `gcloud builds list --limit=1`. |
 | Database | All migrations through `20261101000100` are applied to the dev project. Y5 added none, but confirm with `npx supabase migration list --linked`. |
 
 ## The phone
@@ -134,7 +134,7 @@ Build the lever. Add a small script that reads a run's `commands.json` and print
 - Every fix ends with: `pnpm lint`, `pnpm check-types`, `pnpm test`, and in `apps/mobile` `lint:copy`, `lint:test-ids`, `lint:unreferenced`, `lint:tokens`, `lint:flow-ids`. Add a row to `__tests__/routes.test.tsx` for a new route, or the route test fails on purpose. Update the matching docs per `docs-maintenance.mdc`.
 - **A push touching `apps/backend/**` auto-deploys to Cloud Run.** Keep backend changes backward compatible. Watch with `gcloud builds list` (Windows and WSL both have it, at `~/google-cloud-sdk/bin` in WSL). A `gcloud builds retry` attempt was blocked by the auto-mode permission check on 1 Nov, so do not work around it. Ask the owner.
 - **Migrations:** the linked Supabase project `yucjcjquwpwkgowzthhn` is dev-only with no real data, and the owner allows direct pushes: `npx supabase db push --linked`. Use it for e2e data. The e2e user is `E2E_EMAIL` in the gitignored `apps/mobile/.env.e2e`. Never print that file.
-- **The free-tier project pauses when idle.** It paused around 25 Oct to 1 Nov. Its hostname stops resolving, and before Y5 the backend crashed on start. If the seed or sign-in fails with DNS errors, check its status with the Management API and restore it (`POST /v1/projects/{ref}/restore`, token in `~/.supabase/access-token`). It took under 2 minutes. `docs/SETUP.md` covers it.
+- **The free-tier project pauses when idle.** It was found paused on 1 Nov, after about a week idle, which is the likely cause. Its hostname stops resolving, and before Y5 the backend crashed on start. If the seed or sign-in fails with DNS errors, check its status with the Management API and restore it (`POST /v1/projects/{ref}/restore`, token in `~/.supabase/access-token`). It took under 2 minutes. `docs/SETUP.md` covers it.
 
 ### Traps that cost time
 
@@ -142,7 +142,7 @@ Build the lever. Add a small script that reads a run's `commands.json` and print
 - `pnpm` and `node` resolve to Windows shims unless you `source apps/mobile/scripts/device/env.sh` in that shell. Shell state does not persist between commands.
 - Never run `pkill -f` with a pattern that appears in your own command line. It kills your own shell.
 - `docs/` and README paragraphs are single long lines, so parallel edits conflict constantly. `/tmp/claude-1000/-home-kaiz404-projects-moni/fd8f0f44-0e03-4f48-ba05-4bb8f42a2239/scratchpad/wordmerge.py <files>` does a word-level three-way merge during a rebase. `/tmp` may have been cleared. It is small to rewrite.
-- `main` has 57 worktrees under `.claude/worktrees/`, many from finished units. Each `decisions.tsv` there is uncommitted and may hold useful trail. Do not delete them without asking.
+- About 56 worktrees sit under `.claude/worktrees/`, many from finished units. Each `decisions.tsv` there is uncommitted and may hold useful trail. Do not delete them without asking.
 - `docs/redesign/PLAN.md` holds the full per-unit plan, and its "Fast execution mode" and "Feature wave" sections override the older checklist. `docs/redesign/WAVE5-BRIEF.md` lists the shared kit, some of it since extended. The kit's real API is in `components/ui/`.
 
 ## What was built
@@ -154,7 +154,7 @@ Build the lever. Add a small script that reads a run's `commands.json` and print
 | F1 to F4, N1 | Tokens, font, motion, haptics; press and page chrome; the one sheet host; rows and states; the five-slot tab bar and + chooser |
 | H1, H2, A1, A2, C1, C2, R1, R2, B1, B2, D1, K1 to K3, M1 | Every v2 screen |
 | X1 to X4 | Integration, the shared `InPlaceField`, leftovers, and data-backed board details |
-| Fidelity groups 1 to 4 | A code-against-board pass over every board (about 400 findings fixed, **from reading code and renders, never from a device**) |
+| Fidelity groups 1 to 4 | A code-against-board pass over every board (about 350 findings fixed by the agents' own counts, **from reading code and renders, never from a device**) |
 | Y1 | Capture trust: last captured per app, the quiet-source alert, the missed-transaction report, the battery exemption, and one-time codes blanked on the phone |
 | Y2 | Bank and e-wallet pairing, reloads and card bills as transfers, the duplicate merge restored, and Malaysian categories |
 | Y3 | Reports, full export, and idempotent import |
