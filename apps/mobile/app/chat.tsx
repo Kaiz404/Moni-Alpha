@@ -236,7 +236,7 @@ export default function ChatScreen() {
           ListHeaderComponent={
             firstRun && !messages.length ? (
               <MeetMoni
-                name={user?.user_metadata?.full_name ?? null}
+                name={user?.user_metadata?.display_name ?? user?.user_metadata?.full_name ?? null}
                 onStarter={setInput}
               />
             ) : messages.length ? (

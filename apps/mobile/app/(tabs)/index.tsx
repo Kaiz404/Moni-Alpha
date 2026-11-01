@@ -102,8 +102,9 @@ export default function HomeScreen() {
   const [refreshing, setRefreshing] = useState(false);
 
   const name =
+    firstName(user?.user_metadata?.display_name) ??
     firstName(user?.user_metadata?.full_name) ??
-    firstName(user?.email);
+    firstName(user?.email?.split('@')[0]);
   const initial = (name ?? user?.email ?? '?')
     .charAt(0)
     .toUpperCase();
