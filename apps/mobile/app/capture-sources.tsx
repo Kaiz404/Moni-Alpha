@@ -7,6 +7,7 @@ import {
   PermissionRow,
 } from '@/components/capture-sources/permission-row';
 import { useAutoAddRules, type AutoAddRuleRow } from '@/components/capture-sources/use-auto-add-rules';
+import { KeepCaptureRunning } from '@/components/capture-sources/keep-capture-running';
 import { LinkedAppRow } from '@/components/capture-sources/linked-app-row';
 import { useCaptureHealth } from '@/components/capture-sources/use-capture-health';
 import { useLinkedApps, type LinkedApp } from '@/components/capture-sources/use-linked-apps';
@@ -222,6 +223,10 @@ export default function CaptureSourcesScreen() {
             </Text>
           </View>
         </View>
+
+        {Platform.OS === 'android' && (apps.length > 0 || access.notifications === 'on') ? (
+          <KeepCaptureRunning />
+        ) : null}
 
         {Platform.OS === 'android' && apps.length > 0 ? (
           <ListSection label="Linked apps">

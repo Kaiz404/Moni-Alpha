@@ -25,6 +25,7 @@ The words the redesigned app uses, and the words it never uses. The design canva
 | Balance correction | The transaction Moni adds when the user fixes a wallet's balance ("Balance not right?"). Check-in buttons: "That's right", "Fix it". |
 | Source | Where a transaction came from: Manual, Voice, Moni, Notification, Camera. |
 | Capture log | The page listing the notifications Moni read and what it did with each. |
+| Keep capture running, Battery, Autostart | The Capture sources section for the phone settings that let Moni keep reading alerts. Autostart shows only on Xiaomi, Redmi and POCO phones. Moni cannot read it, so the row says so. |
 | Linked apps, Last captured | Capture sources lists each linked app with "Last captured 3 hours ago", or "No captures yet". A capture is an alert that became a transaction or a Review card, not one that only arrived. |
 | Location from notifications | On by default; per banking app in Capture sources. |
 

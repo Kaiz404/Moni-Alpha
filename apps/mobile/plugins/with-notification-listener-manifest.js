@@ -8,6 +8,8 @@
  *     (SDK 34+) requirement for typed foreground services.
  *  3. Declares Android 11+ package visibility for named curated banking-app
  *     lookups (wallet ↔ banking-app linker via moni-android-apps).
+ *  4. Declares REQUEST_IGNORE_BATTERY_OPTIMIZATIONS for the exemption prompt in
+ *     Capture sources.
  */
 const fs = require('fs');
 const path = require('path');
@@ -100,8 +102,13 @@ module.exports = function withNotificationListenerManifest(config) {
       manifest.manifest['uses-permission'] = manifest.manifest['uses-permission'] ?? [];
       const permissions = manifest.manifest['uses-permission'];
       const FGS_DATA_SYNC = 'android.permission.FOREGROUND_SERVICE_DATA_SYNC';
-      if (!permissions.some((p) => p.$?.['android:name'] === FGS_DATA_SYNC)) {
-        permissions.push({ $: { 'android:name': FGS_DATA_SYNC } });
+      // ── 4. The system prompt that exempts Moni from battery optimization ─────
+      // Without the exemption an OEM battery manager can stop the listener silently.
+      const BATTERY_EXEMPTION = 'android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS';
+      for (const name of [FGS_DATA_SYNC, BATTERY_EXEMPTION]) {
+        if (!permissions.some((p) => p.$?.['android:name'] === name)) {
+          permissions.push({ $: { 'android:name': name } });
+        }
       }
     }
 

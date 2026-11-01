@@ -6,6 +6,9 @@ export type InstalledAppInfo = {
   iconUri: string | null;
 };
 
+/** Which page `openAutostartSettingsAsync` reached. */
+export type AutostartOpened = 'autostart' | 'app_details' | 'none';
+
 /**
  * Kept for the Expo module view template even though the app currently only
  * consumes the native package-query functions. Defining it here keeps the

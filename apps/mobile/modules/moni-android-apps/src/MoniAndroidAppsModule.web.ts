@@ -1,4 +1,4 @@
-import type { InstalledAppInfo } from './MoniAndroidApps.types';
+import type { AutostartOpened, InstalledAppInfo } from './MoniAndroidApps.types';
 
 export default {
   async getInstalledAppsAsync(_packageNames: string[]): Promise<InstalledAppInfo[]> {
@@ -6,5 +6,15 @@ export default {
   },
   async getAppInfoAsync(): Promise<InstalledAppInfo | null> {
     return null;
+  },
+  isIgnoringBatteryOptimizationsAsync: undefined as (() => Promise<boolean>) | undefined,
+  async requestBatteryExemptionAsync(): Promise<boolean> {
+    return false;
+  },
+  async openBatterySettingsAsync(): Promise<boolean> {
+    return false;
+  },
+  async openAutostartSettingsAsync(): Promise<AutostartOpened> {
+    return 'none';
   },
 };

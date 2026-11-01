@@ -1,7 +1,7 @@
 import { Platform } from 'react-native';
 import { requireNativeModule } from 'expo';
 
-import type { InstalledAppInfo } from './MoniAndroidApps.types';
+import type { AutostartOpened, InstalledAppInfo } from './MoniAndroidApps.types';
 
 const stub = {
   async getInstalledAppsAsync(_packageNames: string[]): Promise<InstalledAppInfo[]> {
@@ -9,6 +9,16 @@ const stub = {
   },
   async getAppInfoAsync(_packageName: string): Promise<InstalledAppInfo | null> {
     return null;
+  },
+  isIgnoringBatteryOptimizationsAsync: undefined as (() => Promise<boolean>) | undefined,
+  async requestBatteryExemptionAsync(): Promise<boolean> {
+    return false;
+  },
+  async openBatterySettingsAsync(): Promise<boolean> {
+    return false;
+  },
+  async openAutostartSettingsAsync(): Promise<AutostartOpened> {
+    return 'none';
   },
 };
 

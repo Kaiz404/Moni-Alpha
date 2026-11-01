@@ -1,11 +1,16 @@
 package expo.modules.moniandroidapps
 
+import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.Drawable
+import android.net.Uri
 import android.os.Build
+import android.os.PowerManager
+import android.provider.Settings
 import android.util.Base64
 import android.util.Log
 import expo.modules.kotlin.modules.Module
@@ -25,6 +30,47 @@ class MoniAndroidAppsModule : Module() {
 
     AsyncFunction("getAppInfoAsync") { packageName: String ->
       getAppInfo(packageName.trim())
+    }
+
+    AsyncFunction("isIgnoringBatteryOptimizationsAsync") {
+      val power = reactContext.getSystemService(Context.POWER_SERVICE) as PowerManager
+      power.isIgnoringBatteryOptimizations(reactContext.packageName)
+    }
+
+    AsyncFunction("requestBatteryExemptionAsync") {
+      open(Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS, packageUri())) ||
+        open(Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS))
+    }
+
+    AsyncFunction("openBatterySettingsAsync") {
+      open(Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS))
+    }
+
+    // MIUI and HyperOS keep Autostart in their own security app, with no public API to read it.
+    // A version can rename the page or refuse outside callers, so the caller is told what opened.
+    AsyncFunction("openAutostartSettingsAsync") {
+      val autostart =
+        Intent().setClassName(
+          "com.miui.securitycenter",
+          "com.miui.permcenter.autostart.AutoStartManagementActivity",
+        )
+      when {
+        open(autostart) -> "autostart"
+        open(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, packageUri())) -> "app_details"
+        else -> "none"
+      }
+    }
+  }
+
+  private fun packageUri(): Uri = Uri.parse("package:${reactContext.packageName}")
+
+  private fun open(intent: Intent): Boolean {
+    return try {
+      reactContext.startActivity(intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+      true
+    } catch (error: Exception) {
+      Log.w(TAG, "Could not open ${intent.action ?: intent.component}", error)
+      false
     }
   }
 
