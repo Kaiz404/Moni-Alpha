@@ -92,6 +92,41 @@ describe('the headless task', () => {
     expect(startBackgroundProcessor).toHaveBeenCalledTimes(1);
   });
 
+  it('reads any app the user linked, known to Moni or not', async () => {
+    writeLinkedPackages(['com.example.anybank']);
+
+    await deliver({
+      app: 'com.example.anybank',
+      title: 'Any Bank',
+      text: 'You paid RM12.00 to KEDAI ABC.',
+      time: '1000',
+    });
+
+    expect(log()[0]).toMatchObject({
+      packageName: 'com.example.anybank',
+      packageLinked: true,
+      prefilterPassed: true,
+      status: 'waiting_for_review',
+    });
+    expect(getAll().map((item) => item.id)).toEqual([log()[0]!.id]);
+    expect(startBackgroundProcessor).toHaveBeenCalledTimes(1);
+  });
+
+  it('never queues a payment alert from an app the user did not link', async () => {
+    writeLinkedPackages(['com.example.anybank']);
+
+    await deliver({
+      app: 'com.example.otherbank',
+      title: 'Other Bank',
+      text: 'You paid RM12.00 to KEDAI ABC.',
+      time: '1000',
+    });
+
+    expect(log()[0]).toMatchObject({ packageLinked: false, status: 'not_linked' });
+    expect(getAll()).toEqual([]);
+    expect(startBackgroundProcessor).not.toHaveBeenCalled();
+  });
+
   it('keeps no icon in the queue, where a capture can wait for days', async () => {
     await deliver(payment('1000'));
 

@@ -3,6 +3,8 @@
  * Run: pnpm --filter moni test:notification-routing
  */
 
+import { passesNotificationTransactionPrefilter } from '../lib/notifications/notification-filter.core.js';
+import { enrichNotificationPackage } from '../lib/notifications/notification-package.core.js';
 import { curatedPackagesEquivalent } from '../lib/notifications/notification-package-aliases.core.js';
 import {
   CAPTURED_NOTIFICATIONS_KEY,
@@ -65,6 +67,14 @@ const wallets = [
     notificationPackage: 'com.tngdigital.ewallet',
     notificationAccountHint: null,
   },
+  {
+    id: 'w4',
+    name: 'Rainy day',
+    type: 'cash',
+    currency: 'MYR',
+    notificationPackage: 'com.example.anybank',
+    notificationAccountHint: null,
+  },
 ];
 
 let passed = 0;
@@ -114,6 +124,18 @@ console.log('notification-routing-suite\n');
 {
   const { candidates } = resolveNotificationCandidates('com.unknown.app', wallets);
   assert('unlinked package: zero candidates', candidates.length === 0);
+}
+
+{
+  const alert = enrichNotificationPackage({
+    app: 'com.example.anybank',
+    title: 'Any Bank',
+    text: 'You paid RM12.00 to KEDAI ABC.',
+  });
+  const { candidates, lockedWalletId } = resolveNotificationCandidates(alert.packageName, wallets);
+  assert('arbitrary app: alert passes the filter', passesNotificationTransactionPrefilter(alert));
+  assert('arbitrary app: one candidate', candidates.length === 1);
+  assert('arbitrary app: locks its wallet, whatever the type', lockedWalletId === 'w4');
 }
 
 {

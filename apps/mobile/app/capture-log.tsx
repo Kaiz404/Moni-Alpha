@@ -16,6 +16,8 @@ import { ListCard } from '@/components/ui/list-card';
 import { Page } from '@/components/ui/page';
 import { Press } from '@/components/ui/press';
 import { Text } from '@/components/ui/text';
+import { useInstalledApps } from '@/components/wallets/notification-source';
+import { labelForNotificationPackage } from '@/constants/notification-apps';
 import { useNotificationListener } from '@/hooks/use-notification-listener';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { retryCaptures } from '@/lib/ai/background-processor';
@@ -28,6 +30,7 @@ import {
   groupCaptureLog,
   type CaptureLogItem,
 } from '@/lib/notifications/capture-log';
+import { linkedAppLabel } from '@/lib/notifications/linked-packages-cache';
 import { walletForApp } from '@/lib/notifications/missed-report';
 import { openSheet } from '@/lib/sheet/sheet-store';
 import { undoPairing } from '@/lib/proposals/pairing';
@@ -122,6 +125,8 @@ export default function CaptureLogScreen() {
   const tokens = useThemeTokens();
   const { notifications, refresh, clearAll, clearOne, restoreOne } = useNotificationListener();
   const { wallets, apps } = useLinkedApps();
+  const listing = useInstalledApps();
+  const installed = listing.kind === 'listed' ? listing.apps : null;
   const [picked, setFilter] = useState<Filter>('all');
   const [showOlder, setShowOlder] = useState(false);
 
@@ -132,7 +137,14 @@ export default function CaptureLogScreen() {
   );
 
   const now = new Date();
-  const days = groupCaptureLog(notifications, now);
+  const days = groupCaptureLog(
+    notifications,
+    now,
+    (packageName) =>
+      installed?.get(packageName)?.label ??
+      linkedAppLabel(packageName) ??
+      labelForNotificationPackage(packageName),
+  );
   const counts = countByStatus(days);
   const monthPrefix = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
   const thisMonth = days
@@ -222,8 +234,8 @@ export default function CaptureLogScreen() {
           className="px-1 text-ink-2"
         >
           {total > 0
-            ? `Notifications Moni read from your banking apps, kept on this phone. ${thisMonth} this month.`
-            : 'Notifications Moni read from your banking apps, kept on this phone.'}
+            ? `Notifications Moni read from the apps you link, kept on this phone. ${thisMonth} this month.`
+            : 'Notifications Moni read from the apps you link, kept on this phone.'}
         </Text>
 
         {apps.length > 0 ? (
@@ -253,7 +265,7 @@ export default function CaptureLogScreen() {
               body={
                 appNames.length > 0
                   ? `When ${joinAnd(appNames)} sends a payment alert, it shows up here within a few seconds.`
-                  : 'Link a banking app to a wallet. Its payment alerts show up here within a few seconds.'
+                  : 'Link an app to a wallet. Its payment alerts show up here within a few seconds.'
               }
               action={{
                 testID: tid('capture-log', 'check-access'),

@@ -173,7 +173,7 @@ function proposalFromExtraction(
 async function persistProposal(
   proposal: CreateProposedTransaction,
   proposalId: string,
-  locationSnapshot: LocationSnapshot | null | undefined,
+  phoneLocation: LocationSnapshot | null | undefined,
   logger?: TraceLogger,
 ): Promise<RunExtractionResult> {
   const automatic = proposal.sourceType === 'notification';
@@ -184,6 +184,11 @@ async function persistProposal(
       getWallets(),
       getUserId(),
     ]);
+    // Intake snapshots while any wallet on the app records, and only now is the wallet known.
+    const locationSnapshot =
+      wallets.find((w) => w.id === proposal.walletId)?.recordLocation === false
+        ? null
+        : phoneLocation;
     const movement = automatic
       ? classifyMovement(
           {

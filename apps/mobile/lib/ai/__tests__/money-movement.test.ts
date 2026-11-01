@@ -268,3 +268,35 @@ describe('the table', () => {
     ).toMatchObject({ fromWalletId: 'mbsb', toWalletId: 'tng', confidence: 'high' });
   });
 });
+
+describe('a wallet linked to an app outside the institution table', () => {
+  const free: MovementWallet[] = [
+    { id: 'any', name: 'Any Bank', type: 'bank', currency: 'MYR', notificationPackage: 'com.example.anybank' },
+    { id: 'pay', name: 'Any Pay', type: 'ewallet', currency: 'MYR', notificationPackage: 'com.example.anypay' },
+    { id: 'jar', name: 'Jar', type: 'cash', currency: 'MYR', notificationPackage: 'com.example.jar' },
+  ];
+  const alert = (text: string, walletId: string, type: 'income' | 'expense' = 'expense') =>
+    classifyMovement(
+      { text, walletId, sourceApp: free.find((w) => w.id === walletId)!.notificationPackage!, currency: 'MYR', type },
+      free,
+    );
+
+  it.each([
+    ['You paid RM12.00 to KEDAI ABC.', 'any'],
+    ['You paid RM12.00 to KEDAI ABC.', 'pay'],
+    ['You paid RM12.00 to KEDAI ABC.', 'jar'],
+  ])('leaves a plain payment alone: %s on %s', (text, walletId) => {
+    expect(alert(text, walletId)).toBeNull();
+  });
+
+  it('reads a reload by the wallet type, named by the wallet', () => {
+    expect(alert('Top up of RM50.00 successful.', 'pay', 'income')).toEqual({
+      kind: 'reload',
+      fromWalletId: null,
+      toWalletId: 'pay',
+      label: 'Any Pay reload',
+      reason: 'Looks like a Any Pay reload. Which wallet paid for it?',
+      confidence: 'low',
+    });
+  });
+});

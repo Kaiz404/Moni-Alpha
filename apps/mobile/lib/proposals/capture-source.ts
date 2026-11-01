@@ -2,16 +2,18 @@ import type { ProposedTransaction } from '@repo/types';
 
 import { formatDay } from '@/lib/dates/day-label';
 import { getCachedInstalledAppsMap } from '@/lib/notifications/installed-apps';
+import { linkedAppLabel } from '@/lib/notifications/linked-packages-cache';
 
 type Source = Pick<
   ProposedTransaction,
   'sourceType' | 'sourceApp' | 'notificationTitle'
 >;
 
-/** The banking app that sent a notification capture ("Maybank"), for the notification's header. */
+/** The app that sent a notification capture ("Maybank"), for the notification's header. */
 export function captureBankName(proposal: Source): string {
-  const app = proposal.sourceApp
-    ? getCachedInstalledAppsMap()?.get(proposal.sourceApp)?.label
+  const { sourceApp } = proposal;
+  const app = sourceApp
+    ? (getCachedInstalledAppsMap()?.get(sourceApp)?.label ?? linkedAppLabel(sourceApp))
     : null;
   return app ?? proposal.notificationTitle ?? 'Bank';
 }

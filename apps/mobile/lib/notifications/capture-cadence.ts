@@ -218,7 +218,7 @@ export function captureAlertCopy(alert: CaptureAlert): CaptureAlertCopy {
   switch (alert.kind) {
     case 'access_off':
       return finish(
-        "Moni can't see bank notifications",
+        "Moni can't see notifications",
         `Payments from ${names} won't add themselves until notification access is back on.`,
         'Not now',
       );

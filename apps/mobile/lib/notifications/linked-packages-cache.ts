@@ -1,6 +1,7 @@
 import { wallets$ } from '@/lib/store';
 import { getRecordValues, isActive } from '@/lib/store/helpers';
 import { writeLinkedPackages } from './linked-packages-cache.core.js';
+import { curatedPackagesEquivalent } from './notification-package-aliases';
 
 export {
   isLocationRecordedForPackage,
@@ -10,6 +11,7 @@ export {
 
 type WalletRow = {
   notification_package?: string | null;
+  notification_app_label?: string | null;
   is_active?: boolean | number | null;
   record_location?: boolean | null;
   deleted?: boolean;
@@ -29,4 +31,15 @@ export function refreshLinkedPackagesFromStore(): string[] {
     packages.filter((pkg) => !recordsLocation.get(pkg)),
   );
   return packages;
+}
+
+/** The name saved when the app was linked. Works in the headless task, which lists no apps. */
+export function linkedAppLabel(packageName: string): string | null {
+  const wallet = getRecordValues<WalletRow>(wallets$).find(
+    (row) =>
+      !row.deleted &&
+      row.notification_app_label?.trim() &&
+      curatedPackagesEquivalent(row.notification_package, packageName),
+  );
+  return wallet?.notification_app_label?.trim() ?? null;
 }

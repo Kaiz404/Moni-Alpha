@@ -73,13 +73,27 @@ function clockTime(date: Date): string {
   return `${hours % 12 || 12}:${minutes} ${hours < 12 ? 'am' : 'pm'}`;
 }
 
-function toItem(entry: StoredCaptureEntry, received: Date): CaptureLogItem {
+/** The listener's `app` is the package id, which is no name to show. */
+function appName(
+  entry: StoredCaptureEntry,
+  appLabel: (packageName: string) => string | null,
+): string {
+  const sent = entry.app?.trim();
+  if (sent && sent !== entry.packageName) return sent;
+  return (entry.packageName && appLabel(entry.packageName)) || sent || 'Unknown app';
+}
+
+function toItem(
+  entry: StoredCaptureEntry,
+  received: Date,
+  appLabel: (packageName: string) => string | null,
+): CaptureLogItem {
   const status = entry.status ?? 'ignored';
   // Entries from before the on-device filter still hold their text.
   const oneTimeCode = entry.oneTimeCode === true || isOneTimeCode(entry);
   return {
     id: entry.id,
-    app: entry.app?.trim() || entry.packageName || 'Unknown app',
+    app: appName(entry, appLabel),
     packageName: entry.packageName ?? null,
     time: clockTime(received),
     receivedAt: entry.receivedAt,
@@ -137,13 +151,14 @@ function sameAddedPayment(entry: Received, all: readonly Received[]): CaptureLog
 export function groupCaptureLog(
   entries: readonly StoredCaptureEntry[],
   now: Date = new Date(),
+  appLabel: (packageName: string) => string | null = () => null,
 ): CaptureLogDay[] {
   const received: Received[] = [...entries]
     .sort((a, b) => b.receivedAt.localeCompare(a.receivedAt))
     .map((entry) => ({ entry, date: new Date(entry.receivedAt) }))
     .filter(({ date }) => !Number.isNaN(date.getTime()))
     .map(({ entry, date }) => {
-      const item = toItem(entry, date);
+      const item = toItem(entry, date, appLabel);
       return { item, at: date.getTime(), amounts: amountsIn(item.text) };
     });
   const days = new Map<string, CaptureLogDay>();

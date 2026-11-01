@@ -9,6 +9,25 @@ jest.mock('@/lib/ai/client', () => ({
 jest.mock('@/lib/supabase/wallets', () => ({
   getWallets: async () => [
     { id: 'w1', name: 'Maybank', notificationPackage: 'com.maybank2u.life', isActive: true },
+    {
+      id: 'w2',
+      name: 'Rainy day',
+      type: 'cash',
+      currency: 'MYR',
+      notificationPackage: 'com.example.anybank',
+      notificationAccountHint: null,
+      isActive: true,
+      recordLocation: true,
+    },
+    {
+      id: 'w3',
+      name: 'Private',
+      type: 'bank',
+      currency: 'MYR',
+      notificationPackage: 'com.example.private',
+      isActive: true,
+      recordLocation: false,
+    },
   ],
 }));
 jest.mock('@/lib/supabase/categories', () => ({ getCategories: async () => [] }));
@@ -47,6 +66,95 @@ function queued(notification: Record<string, unknown>): NotificationQueueItem {
 }
 
 beforeEach(() => mockExtract.mockClear());
+
+describe('an alert from an app Moni has never heard of', () => {
+  const alert = (packageName: string) =>
+    queued({
+      app: packageName,
+      packageName,
+      title: 'Any Bank',
+      text: 'You paid RM20.00 to Ali',
+    });
+  const extraction = (walletId: string) => ({
+    status: 'ok',
+    extraction: {
+      amount: '20.00',
+      currency: 'MYR',
+      type: 'expense',
+      merchant: 'Ali',
+      description: 'Ali',
+      walletId,
+      walletHint: null,
+      transferToWalletId: null,
+      transferToWalletHint: null,
+      categoryHint: null,
+      occurredAt: null,
+      confidence: 0.9,
+      reasoning: 'paid',
+    },
+  });
+  const proposal = () => {
+    const { createProposedTransaction } = jest.requireMock('@/lib/supabase/proposed-transactions');
+    return jest.mocked(createProposedTransaction);
+  };
+  const saved = () => {
+    const { saveProposalLocationSnapshot } = jest.requireMock('@/lib/ai/proposal-location-cache');
+    return jest.mocked(saveProposalLocationSnapshot);
+  };
+  const place = { latitude: 3.1, longitude: 101.6, name: 'Bangsar', capturedAt: 'now' };
+
+  beforeEach(() => {
+    proposal().mockReset().mockImplementation(async () => ({ id: 'n1' }));
+    saved().mockClear();
+  });
+
+  it('routes to the one wallet linked to it, locked', async () => {
+    await runExtraction(alert('com.example.anybank'));
+
+    expect(mockExtract).toHaveBeenCalledTimes(1);
+    expect(mockExtract.mock.calls[0]).toEqual([
+      expect.objectContaining({
+        wallets: [
+          { id: 'w2', name: 'Rainy day', type: 'cash', currency: 'MYR', accountHint: null },
+        ],
+        lockedWalletId: 'w2',
+      }),
+    ]);
+  });
+
+  it('becomes a proposal on that wallet with no known bank in the table', async () => {
+    mockExtract.mockResolvedValueOnce(extraction('w2') as never);
+
+    await runExtraction({ ...alert('com.example.anybank'), locationSnapshot: place } as never);
+
+    expect(proposal().mock.calls[0]?.[0]).toMatchObject({
+      sourceApp: 'com.example.anybank',
+      walletId: 'w2',
+      type: 'expense',
+    });
+    expect(saved()).toHaveBeenCalledWith('n1', place);
+  });
+
+  it('drops the place when this wallet has location off', async () => {
+    mockExtract.mockResolvedValueOnce(extraction('w3') as never);
+
+    await runExtraction({ ...alert('com.example.private'), locationSnapshot: place } as never);
+
+    expect(proposal().mock.calls[0]?.[0]).toMatchObject({ walletId: 'w3' });
+    expect(saved()).not.toHaveBeenCalled();
+  });
+
+  it('stops an app no wallet links before the wire', async () => {
+    const result = await runExtraction(alert('com.example.otherbank'));
+
+    expect(mockExtract).not.toHaveBeenCalled();
+    expect(result).toMatchObject({
+      created: false,
+      skipped: true,
+      reason: 'No wallet linked to notification app',
+    });
+  });
+});
 
 describe('what a notification sends to the backend', () => {
   it('sends nothing for a code queued before the on-device rule existed', async () => {

@@ -74,6 +74,23 @@ describe('capture statuses a failed read can hold', () => {
 });
 
 describe('groupCaptureLog', () => {
+  it("names an app by the phone's label, because the listener's app field is the package id", () => {
+    const entry = {
+      id: 'free',
+      receivedAt: at(14, 12, 0),
+      app: 'com.example.anybank',
+      packageName: 'com.example.anybank',
+      text: 'You paid RM12.00 to KEDAI ABC.',
+      status: 'not_linked',
+    } satisfies StoredCaptureEntry;
+
+    const named = groupCaptureLog([entry], now, (packageName) =>
+      packageName === 'com.example.anybank' ? 'Any Bank' : null,
+    );
+    expect(named[0]!.items[0]!.app).toBe('Any Bank');
+    expect(groupCaptureLog([entry], now)[0]!.items[0]!.app).toBe('com.example.anybank');
+  });
+
   it('groups today and yesterday under Today and Yesterday, newest first', () => {
     const days = groupCaptureLog(entries, now);
 

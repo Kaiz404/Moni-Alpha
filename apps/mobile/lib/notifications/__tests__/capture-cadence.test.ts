@@ -321,7 +321,7 @@ describe('captureAlertCopy', () => {
 
   it('uses the permission words when access is off', () => {
     expect(copy({ kind: 'access_off', apps: [MAYBANK, GRAB], fix: 'turn_on_access' })).toEqual({
-      title: "Moni can't see bank notifications",
+      title: "Moni can't see notifications",
       body: "Payments from Maybank and Grab won't add themselves until notification access is back on.",
       actionLabel: 'Turn on',
       dismissLabel: 'Not now',
