@@ -23,15 +23,24 @@ apps/mobile/scripts/device/run-flows.sh --sha <key> --tag smoke --out <dir>
 
 ## Current state
 
+Updated 2 Nov 2026. Sections below this one were written on 1 Nov, so trust this one where they differ.
+
 | Item | State |
 | --- | --- |
-| `main` | `a9a32a7` plus this file. Everything is committed and pushed. The owner's checkout has only `moni.md` and `.claude/settings.json` untracked. They are the owner's, so leave them. |
-| Unit and lint gates at `a9a32a7` | 1406 Jest tests pass and 78 are skipped. Lint has 0 errors. Typecheck passes, including generated route types. `go vet` passes. All five mobile lints pass. Measured. |
-| Skipped tests | 76 of the 78 are the optional "press every control" suite. Run it with `pnpm --filter moni test:taps`, about 4 minutes. It passed at `0568453`, measured. |
-| APK on the phone | Key `0568453…`. **It is older than `main`**: it lacks Y5's capture retry. Build `a9a32a7` or later before you validate. |
-| Smoke suite | 5 of 6 passed on `0568453`. Measured. See "Known failures". |
-| Backend | Revision `00008-lkn` is live, from the push of `a9a32a7` (Y5's startup fix, the receipt item count, and the new one-time-code rule). Its Cloud Build read `SUCCESS`, and a request with no login gets a `401`. Measured. |
-| Database | All migrations through `20261101000100` are applied to the dev project. Y5 added none, but confirm with `npx supabase migration list --linked`. |
+| `main` | Holds all the device-run fixes and the owner's redesign from the phone. Gates passed before landing: 1635 Jest tests, lint 0 errors, types, all mobile lints, device script tests. |
+| Full flow suite | **Not green yet.** The last full run, on an older build, was 38 of 60 with no app crashes. Fixes followed, but the suite has not been re-run. Run it next. |
+| APK on the phone | Key `b6e2783…-clock`: pinned clock, real 4 s toasts. Smoke launch passed on it. |
+| Database | All migrations applied, through `20261101000200_currency_text.sql`. |
+| Canvas | Version `1793552757-fa37` matches the owner's redesign, except what `docs/REDESIGN.md` still lists. |
+
+Running flows:
+
+```bash
+EXPO_PUBLIC_E2E_NOW=2026-10-14T14:06:00+08:00 EXPO_PUBLIC_E2E_TOAST_MS=15000 apps/mobile/scripts/device/build-apk.sh
+apps/mobile/scripts/device/run-areas.sh --sha <key>-clock --out <dir>
+```
+
+The pinned clock makes seeded screens match the boards. A real touch or a notification during a run fails flows, so keep the phone untouched. Capture flows need a build without the clock, because Android's notification times stay real.
 
 ## The phone
 
@@ -89,41 +98,28 @@ These are the things no test could see, so spend your attention here first.
 
 ## Known failures and suspects
 
-- **`flows/smoke/chooser.yaml` failed at the last step: resolved 1 Nov.** It had two causes. The app was crashing, because the listener library's `BootUpReceiver` called `startForegroundService` on a service that never calls `startForeground`, which killed the process about 31 s after any launch from a stopped state. Measured on the phone and fixed by removing the receiver in `plugins/with-notification-listener-manifest.js`. The flow also asserted that "Add a transaction" was gone, which is the + button's accessibility label too, so it could pass only after a crash. It now checks `nav.chooser.type`.
-- **The Type it note row** may clip about 11 px on a 390×844 screen while the place chip shows. That was calculated, not seen.
-- **The duplicate sheet** (`V2A-CaptureTypeDuplicate`) probably matches its board, but only a device can confirm how it layers over the incoming page.
-- **A repeat alert within 2 minutes of clearing the Capture log** is not caught by the repeat filter. By reading the code, the duplicate check should stop an auto-add. Unverified.
-- **"Gone quiet" can fire during a long backend outage.** A kill right after a transfer pair combines is a known retry edge, with a test added late in Y5. Treat it as a suspect.
-- **Undoing a transfer pair** can leave the "Auto" mark on the row. A completed transfer leaves its review notification up until tapped.
-- **Home's new quiet-source alert card** can shift flows that assume the old Home layout.
-- **Alerts lost before Y5** cannot be recovered. Any failed backend call used to mark an alert Ignored with no retry.
+Found and fixed on the phone, see `git log`: the crash 31 s after launch, currencies cut to one letter by Realtime, the public `wallet_balances` view, builds with no Maps key, dead chart gestures, stale Debts after recording, chat cards under the composer, and the chat mic tap.
+
+Still suspects, unverified:
+
+- `K1 sign-in states`: Back on sign-in seems to clear the email. A real touch also spoiled that run.
+- `components/review/recently-reviewed.tsx` and `components/debt/debt-history.tsx` read a whole map through `useValue`, the pattern that left Debts stale.
+- Hidden screens freeze since `freezeOnBlur`. Check a change made on a pushed page shows when you go back.
+- The owner saw Review's old buttons with blank labels. The cause was not found, and other capsule buttons could share it.
+- Activity's day totals include debt cash and excluded rows, and Reports leaves them out, so the two can differ.
+- A repeat alert within 2 minutes of clearing the Capture log. "Gone quiet" during a long backend outage. Undoing a transfer pair can leave the Auto mark.
 
 ## The Maestro speed task
 
-The owner finds the delay between steps slow and inefficient. Measured from the smoke run's per-command metadata (6 flows, 6.6 minutes):
+`scripts/device/maestro-timing.py <run dir> [--flows]` prints a run's per-command time.
 
-| Command | Total | Count | Average |
-| --- | --- | --- | --- |
-| `tapOnElement` | 119.3 s | 19 | **6.28 s** |
-| `launchAppCommand` | 91.8 s | 6 | 15.29 s |
-| `assertConditionCommand` | 60.0 s | 40 | 1.50 s |
-| `eraseTextCommand` | 20.9 s | 4 | 5.23 s |
-| `inputTextCommand` | 20.0 s | 4 | 4.99 s |
-| `takeScreenshotCommand` | 10.4 s | 9 | 1.16 s |
+| Change | Before | After |
+| --- | --- | --- |
+| `launchApp` with `permissions: {}` | 17.9 to 25.8 s | 0.5 to 0.8 s, 3 trials each, still a true cold start |
+| Driver kept on the phone | Install prompts every run | None |
+| Smoke suite wall time | 7m47s | 6m43s, 1 run each, so treat as indicative |
 
-The `Smoke sign in` flow alone took 157 s, against 25 s for `Smoke launch`. `launch.yaml` runs at the start of every flow.
-
-**Why it is slow is a guess. Measure before you change anything.** Hypotheses to test, using the `principle-explain-the-number` skill:
-
-1. Maestro waits for the screen to settle after each tap, and looping animations or springs in the app may keep that wait running to its timeout. Look at the app's idle state on a tap-heavy screen. Reanimated, a running spring, or a live chart are suspects. If so, part of this is an app finding.
-2. View-hierarchy dumps over wireless TLS adb are slow, and the phone is reached through Tailscale. Compare `tailscale ping` and a timed `adb shell uiautomator dump` with a USB connection to measure the transport's share. The ping was direct and fast (7 to 50 ms) on earlier days.
-3. A big accessibility tree: a large hierarchy makes every lookup slow. Measure the node count on Home.
-4. `launchApp` plus sign-in in every flow. `run-flows.sh` clears app data once, then each flow goes through `launch.yaml`. Consider `launchApp` with `stopApp: false` where a flow does not need a cold start, and avoid repeating sign-in.
-5. Maestro settings and version: check the `maestro` config and docs for the idle and screenshot-settle options in 2.11.0, and the JVM start cost (about 4 s, which also bounds `doctor.sh`).
-6. Timing flags in the app's e2e variant, such as reducing animation durations with `settings put global animator_duration_scale`, which changes the phone. It is the owner's device, so restore it afterwards, and do not validate motion with it on.
-7. Selectors: `extendedWaitUntil` and regex ids over the whole tree.
-
-Build the lever. Add a small script that reads a run's `commands.json` and prints the per-command table above, so every change has a before and after number. **`commands.json` holds the typed e2e password, so the script must print only names and durations, and you must never paste that file.** Use `perf.sh` and `perf-compare.mjs` for app-side numbers. Do not weaken a flow's assertions to go faster.
+**What limits it now:** taps, at 5 to 8 s each. `waitToSettleTimeoutMs: 300` only moved them from about 6.2 s to about 5.4 s, so settling is not the main cost. Maestro's pre-tap stability check has a 3 s limit in its bytecode. The cause of the rest is unmeasured.
 
 ## How to work
 
