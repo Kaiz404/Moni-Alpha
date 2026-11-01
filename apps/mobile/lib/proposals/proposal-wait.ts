@@ -4,7 +4,8 @@ import { getAll } from '@/lib/ai/processing-queue';
 import { PROPOSED_TRANSACTIONS_CHANGED } from '@/lib/proposals/proposed-transactions-events';
 import { getProposedTransactions } from '@/lib/supabase/proposed-transactions';
 
-export type ProposalWaitResult = 'ready' | 'error' | 'timeout';
+/** `retrying`: the backend could not be reached, and the capture stays queued for Review. */
+export type ProposalWaitResult = 'ready' | 'error' | 'retrying' | 'timeout';
 
 /**
  * Wait for an already-enqueued, user-initiated capture to become reviewable.
@@ -38,6 +39,10 @@ export function waitForProposal(
         const item = getAll().find((entry) => entry.id === proposalId);
         if (item?.status === 'error') {
           finish('error');
+          return;
+        }
+        if (item?.status === 'pending' && (item.attempts ?? 0) > 0) {
+          finish('retrying');
           return;
         }
 

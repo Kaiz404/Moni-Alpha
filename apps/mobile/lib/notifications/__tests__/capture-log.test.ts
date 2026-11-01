@@ -42,6 +42,34 @@ const entries: StoredCaptureEntry[] = [
   },
 ];
 
+describe('capture statuses a failed read can hold', () => {
+  const entry = (status: StoredCaptureEntry['status']): StoredCaptureEntry => ({
+    id: 'a',
+    receivedAt: at(14, 12, 0),
+    app: 'Maybank',
+    text: 'spent RM1.00',
+    status,
+  });
+
+  it('labels them in glossary words and counts them apart from Ignored', () => {
+    const days = groupCaptureLog([entry('trying_again')], now);
+    expect(days[0]!.items[0]).toMatchObject({ status: 'trying_again', label: 'Trying again' });
+    expect(groupCaptureLog([entry('gave_up')], now)[0]!.items[0]).toMatchObject({
+      status: 'gave_up',
+      label: "Couldn't reach Moni",
+    });
+    expect(countByStatus(groupCaptureLog([entry('gave_up')], now))).toEqual({
+      added: 0,
+      auto_added: 0,
+      waiting_for_review: 0,
+      trying_again: 0,
+      gave_up: 1,
+      ignored: 0,
+      not_linked: 0,
+    });
+  });
+});
+
 describe('groupCaptureLog', () => {
   it('groups today and yesterday under Today and Yesterday, newest first', () => {
     const days = groupCaptureLog(entries, now);
@@ -188,6 +216,8 @@ describe('groupCaptureLog', () => {
       added: 0,
       auto_added: 1,
       waiting_for_review: 1,
+      trying_again: 0,
+      gave_up: 0,
       ignored: 1,
       not_linked: 1,
     });

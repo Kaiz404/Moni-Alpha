@@ -36,6 +36,24 @@ Threads: one per local date in the finance timezone (`lib/ai/chat/sessions.ts`),
 
 Capture entry points feeding the **extraction queue** (silent — not shown in Chat thread): the tab bar's + chooser (Scan a receipt → `app/scan/receipt.tsx` camera; Say it → `app/scan/listen.tsx` narration).
 
+### When the backend is unavailable
+
+A capture is never lost because the backend is down. `unavailable`, a non-2xx response, a network failure, a 100s timeout, and a store write that throws all leave the item queued. Only `skipped` is terminal: one-time codes, non-transactions, no linked wallet, and a receipt image that can't be read.
+
+| Rule | Value |
+| --- | --- |
+| Backoff, shared by the queue | 30s, doubling to a 1h cap. One failed request ends the run, because an outage is shared. Any answer from the backend resets it. |
+| Immediate retries | App open, app foreground, connectivity returning, the next capture, Retry |
+| Order | Fewest failed attempts, then oldest, so an item that always fails can't block a fresh one |
+| Give up | 7 days after capture, and only after a failed try: the capture becomes `gave_up` and waits for Retry |
+| Size | 200 live items and 20 finished ones. Finished items go first, then what gave up, and an unread capture last |
+
+The queue lives in MMKV, so it survives a kill. An item killed mid-request returns to pending on the next start. A retry is idempotent because a queue item's id is the id of the row it writes: `runExtraction` returns the existing proposal or transaction without calling the backend. The one window left is a transfer pair combined just before a kill, which is microtasks long. Signing out clears the queue, so a waiting capture can't land in the next account.
+
+The Capture log shows **Trying again** while Moni keeps trying and **Couldn't reach Moni** once it gives up, each with Retry, and never Ignored. Capture sources counts what gave up, per app and in total, from the queue, because the log holds only 50 entries.
+
+Say it and Scan read live, not through the queue, so they hold the capture when a read is `unavailable`: the transcript, or the scan moved out of the cache. The failed page offers Try again on the same capture, Keep it for Review, and Type it instead. Leaving the page or a kill also keeps it, and it arrives as a proposal in Review. A chat receipt reports that it stays queued after the first failed try; a chat sentence stays in the thread for the user to send again.
+
 If `EXPO_PUBLIC_AI_API_URL` is unset, the mobile client falls back to a mock that returns `unavailable` — AI features degrade cleanly.
 
 ## Routine detection
@@ -112,7 +130,7 @@ type ExtractResult =
       };
     }
   | { status: 'skipped'; reason: string } // input isn't a transaction
-  | { status: 'unavailable'; reason: string }; // backend model failure (mobile queue retries)
+  | { status: 'unavailable'; reason: string }; // backend model failure (mobile queue retries; see above)
 ```
 
 Chat analyze (`POST /v1/chat/analyze`):

@@ -52,6 +52,7 @@ export type CaptureEvent =
   | { type: 'read'; result: ReadResult }
   | { type: 'edit'; patch: Partial<CaptureDraft> }
   | { type: 'approved' }
+  | { type: 'reread' }
   | { type: 'retry' };
 
 export const START: CaptureStage = { name: 'capture' };
@@ -83,6 +84,10 @@ export function captureStage(
     case 'approved':
       return stage.name === 'result'
         ? { name: 'approved', draft: stage.draft }
+        : stage;
+    case 'reread':
+      return stage.name === 'failed' && stage.failure === 'unavailable'
+        ? { name: 'reading', quote: stage.quote }
         : stage;
     case 'retry':
       return stage.name === 'result' ||

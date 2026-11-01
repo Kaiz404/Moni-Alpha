@@ -3,6 +3,8 @@ import { Text } from 'react-native';
 import { createMMKV } from 'react-native-mmkv';
 
 import CaptureLogScreen from '@/app/capture-log';
+import { retryCaptures } from '@/lib/ai/background-processor';
+import { enqueue, getAll, pruneCompleted } from '@/lib/ai/processing-queue';
 import { getOpenSheet } from '@/lib/sheet/sheet-store';
 import { dismissToast, undoToast, useToast } from '@/lib/toast/toast-store';
 
@@ -23,6 +25,7 @@ jest.mock('react-native-safe-area-context', () => ({
 jest.mock('@/components/capture-sources/use-linked-apps', () => ({
   useLinkedApps: () => ({ wallets: [], apps: [] }),
 }));
+jest.mock('@/lib/ai/background-processor', () => ({ retryCaptures: jest.fn(async () => {}) }));
 jest.mock('react-native-mmkv', () => {
   const stores = new Map<string, Map<string, string>>();
   return {
@@ -91,6 +94,89 @@ beforeEach(() => {
 
 afterEach(() => {
   act(() => dismissToast());
+});
+
+describe('A capture that could not reach Moni', () => {
+  const ALERT = "MAYBANK: You've spent RM12.00 at KEDAI ABC.";
+
+  function logEntry(status: 'trying_again' | 'gave_up') {
+    storage.set(
+      KEY,
+      JSON.stringify([
+        {
+          id: 'unread',
+          receivedAt: '2026-10-14T04:50:00.000Z',
+          app: 'Maybank',
+          packageName: 'com.maybank2u.life',
+          text: ALERT,
+          status,
+        },
+      ]),
+    );
+  }
+
+  function queued(status: 'pending' | 'gave_up') {
+    enqueue({
+      id: 'unread',
+      type: 'notification',
+      status,
+      createdAt: '2026-10-14T04:50:00.000Z',
+      notification: {
+        id: 'unread',
+        app: 'Maybank',
+        packageName: 'com.maybank2u.life',
+        title: 'Maybank',
+        text: ALERT,
+        time: '1',
+        receivedAt: '2026-10-14T04:50:00.000Z',
+      },
+    });
+  }
+
+  beforeEach(() => {
+    pruneCompleted();
+    jest.mocked(retryCaptures).mockClear();
+  });
+
+  it('says so in its own words and offers Retry, never Ignored', () => {
+    logEntry('gave_up');
+    queued('gave_up');
+    show();
+    expect(screen.getAllByText("Couldn't reach Moni").length).toBeGreaterThan(0);
+    expect(screen.getByText("Couldn't reach Moni 1")).toBeTruthy();
+    expect(screen.queryByText('Ignored')).toBeNull();
+
+    fireEvent.press(screen.getByTestId('capture-log.entry.unread.retry'));
+    expect(retryCaptures).toHaveBeenCalledWith('unread');
+  });
+
+  it('shows Trying again while Moni is still trying, with Retry to try now', () => {
+    logEntry('trying_again');
+    queued('pending');
+    show();
+    expect(screen.getByText('Trying again 1')).toBeTruthy();
+    fireEvent.press(screen.getByTestId('capture-log.entry.unread.retry'));
+    expect(retryCaptures).toHaveBeenCalledWith('unread');
+  });
+
+  it('offers no Retry once the queue no longer holds it', () => {
+    logEntry('gave_up');
+    show();
+    expect(screen.queryByTestId('capture-log.entry.unread.retry')).toBeNull();
+  });
+
+  it('removes the kept copy with the alert, and Undo restores both', () => {
+    logEntry('gave_up');
+    queued('gave_up');
+    show();
+    fireEvent.press(screen.getByTestId('capture-log.entry.unread.dismiss'));
+    expect(storedIds()).toEqual([]);
+    expect(getAll()).toEqual([]);
+
+    act(() => undoToast());
+    expect(storedIds()).toEqual(['unread']);
+    expect(getAll().map((item) => [item.id, item.status])).toEqual([['unread', 'gave_up']]);
+  });
 });
 
 describe('Capture log clearing', () => {

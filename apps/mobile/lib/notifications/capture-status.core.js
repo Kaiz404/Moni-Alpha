@@ -9,7 +9,7 @@ function captureStatusAtIntake({ prefilterPassed, packageLinked, repeated }) {
 function captureStatusAfterExtraction(result) {
   if (result.transactionId) return 'auto_added';
   if (result.proposalId) return 'waiting_for_review';
-  return 'ignored';
+  return result.skipped ? 'ignored' : 'trying_again';
 }
 
 /**

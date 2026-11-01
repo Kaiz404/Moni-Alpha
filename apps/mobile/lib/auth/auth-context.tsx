@@ -15,6 +15,7 @@ import {
   signInWithGoogleNative,
   signOutGoogleNative,
 } from '@/lib/auth/google-signin';
+import { pruneCompleted } from '@/lib/ai/processing-queue';
 import { clearDefaultWalletCache } from '@/lib/wallets/default-wallet';
 
 type AuthContextType = {
@@ -121,6 +122,8 @@ export function AuthProvider({
   const signOut = async () => {
     authReady$.set(false);
     clearDefaultWalletCache();
+    // A capture waiting on the backend must not land in the next account on this phone.
+    pruneCompleted();
     await syncBillReminders([]).catch(() => {});
     await clearStore();
     await signOutGoogleNative();

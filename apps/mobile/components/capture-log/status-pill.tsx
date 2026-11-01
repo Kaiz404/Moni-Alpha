@@ -5,6 +5,8 @@ import { CAPTURE_STATUS_LABELS } from '@/lib/notifications/capture-log';
 
 const TONES: Record<CapturedNotificationStatus, StatusTone> = {
   waiting_for_review: 'review',
+  trying_again: 'review',
+  gave_up: 'near',
   auto_added: 'auto',
   added: 'onTrack',
   same_payment: 'quiet',

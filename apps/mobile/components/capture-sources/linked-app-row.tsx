@@ -13,12 +13,15 @@ export function LinkedAppRow({
   label,
   packageName,
   source,
+  unreached,
   quiet,
   onReportMissed,
 }: {
   label: string;
   packageName: string;
   source: CaptureSourceHealth;
+  /** "2 couldn't reach Moni", when any did. */
+  unreached: string | null;
   quiet: boolean;
   onReportMissed: () => void;
 }) {
@@ -27,6 +30,7 @@ export function LinkedAppRow({
     quiet ? 'Gone quiet' : null,
     lastCapturedLine(source),
     reportedMissedLine(source),
+    unreached,
   ]
     .filter(Boolean)
     .join(' · ');

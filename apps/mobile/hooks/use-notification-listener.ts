@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { AppState, Platform } from 'react-native';
 import { createMMKV } from 'react-native-mmkv';
 import type { CapturedNotificationStatus } from '@repo/types';
+import { onCaptureStatusChanged } from '@/lib/notifications/capture-status';
 import {
   readNotificationListenerPermission,
   type NotificationListenerPermission,
@@ -117,7 +118,12 @@ export function useNotificationListener() {
       }
     });
 
-    return () => sub.remove();
+    const stopListening = onCaptureStatusChanged(refresh);
+
+    return () => {
+      sub.remove();
+      stopListening();
+    };
   }, [checkPermission, refresh]);
 
   return {

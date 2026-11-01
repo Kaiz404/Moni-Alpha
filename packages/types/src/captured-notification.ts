@@ -10,6 +10,8 @@ export const capturedNotificationStatusSchema = z.enum([
   'auto_added',
   'same_payment',
   'waiting_for_review',
+  'trying_again',
+  'gave_up',
   'ignored',
   'not_linked',
 ]);

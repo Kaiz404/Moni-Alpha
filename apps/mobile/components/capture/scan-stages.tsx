@@ -171,14 +171,20 @@ export function CaptureFailed({
   failure,
   title,
   onRetry,
+  onKeep,
+  onTypeIt,
 }: {
   quote: CaptureQuote;
   failure: ReadFailure;
   title: string;
+  /** `unavailable` reads the same capture again; `unreadable` captures it again. */
   onRetry: () => void;
+  onKeep: () => void;
+  onTypeIt: () => void;
 }) {
   const tokens = useThemeTokens();
   const camera = quote.source === 'camera';
+  const unavailable = failure === 'unavailable';
   return (
     <Page
       screen="capture"
@@ -194,13 +200,20 @@ export function CaptureFailed({
               accessibilityLabel="The scanned receipt"
               style={{ width: 84, height: 108, borderRadius: 12 }}
             />
+          ) : quote.text ? (
+            <Text
+              variant="body"
+              className="max-w-[310px] text-center text-foreground"
+            >
+              {`“${quote.text}”`}
+            </Text>
           ) : null}
           <StatusPill
             tone="near"
             size="compact"
             align="center"
             label={
-              failure === 'unavailable'
+              unavailable
                 ? "Couldn't reach Moni"
                 : "Couldn't read it"
             }
@@ -209,7 +222,7 @@ export function CaptureFailed({
             variant="screenTitle"
             className="text-center text-foreground"
           >
-            {failure === 'unavailable'
+            {unavailable
               ? "Moni can't read it right now"
               : camera
                 ? "Moni couldn't find a total"
@@ -219,8 +232,8 @@ export function CaptureFailed({
             variant="body"
             className="max-w-[310px] text-center text-ink-2"
           >
-            {failure === 'unavailable'
-              ? 'Check your connection and try again. Nothing was added.'
+            {unavailable
+              ? `Moni kept ${camera ? 'your receipt' : 'what you said'}. Try again, or keep it and it goes to Review once Moni reads it. Nothing was added.`
               : 'Nothing was added.'}
           </Text>
         </View>
@@ -253,17 +266,27 @@ export function CaptureFailed({
         <Button
           testID={tid('capture', 'failed', 'retry')}
           pinned
-          icon={camera ? 'camera-retake-outline' : 'microphone'}
+          icon={unavailable ? 'refresh' : camera ? 'camera-retake-outline' : 'microphone'}
           label="Try again"
           onPress={onRetry}
         />
+        {unavailable ? (
+          <Button
+            testID={tid('capture', 'failed', 'keep')}
+            pinned
+            variant="secondary"
+            icon="tray-arrow-down"
+            label="Keep it for Review"
+            onPress={onKeep}
+          />
+        ) : null}
         <Button
           testID={tid('capture', 'failed', 'type-it')}
           pinned
           variant="secondary"
           icon="dialpad"
           label="Type it instead"
-          onPress={() => router.replace('/transaction/new')}
+          onPress={onTypeIt}
         />
       </View>
     </Page>

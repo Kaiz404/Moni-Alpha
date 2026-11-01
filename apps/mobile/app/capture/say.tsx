@@ -154,7 +154,9 @@ export default function SayScreen() {
           quote={stage.quote}
           failure={stage.failure}
           title="Say it"
-          onRetry={again}
+          onRetry={stage.failure === 'unavailable' ? () => void flow.reread() : again}
+          onKeep={flow.keep}
+          onTypeIt={flow.typeInstead}
         />
       );
   }

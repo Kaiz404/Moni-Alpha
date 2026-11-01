@@ -72,6 +72,32 @@ export function reportedMissedLine(source: CaptureSourceHealth, now = Date.now()
   return count > 0 ? `${count} reported missed` : null;
 }
 
+export type UnreachedCounts = {
+  total: number;
+  /** Alerts only, by canonical package. Say it and Scan belong to no app. */
+  byPackage: Record<string, number>;
+};
+
+/** What the queue gave up on. Counted from the queue, because the log only holds 50 entries. */
+export function unreachedCounts(
+  items: readonly { type: string; notification?: { packageName?: string } }[],
+): UnreachedCounts {
+  const byPackage: Record<string, number> = {};
+  for (const item of items) {
+    const packageName = item.notification?.packageName;
+    if (!packageName) continue;
+    const key = canonicalNotificationPackage(packageName);
+    byPackage[key] = (byPackage[key] ?? 0) + 1;
+  }
+  return { total: items.length, byPackage };
+}
+
+/** "2 couldn't reach Moni", or nothing. */
+export function unreachedLine(counts: UnreachedCounts, packageName: string): string | null {
+  const count = counts.byPackage[canonicalNotificationPackage(packageName)] ?? 0;
+  return count > 0 ? `${count} couldn't reach Moni` : null;
+}
+
 /** "Last captured 3 hours ago", under an app's name. */
 export function lastCapturedLine(source: CaptureSourceHealth, now = Date.now()): string {
   return source.lastCapturedAt

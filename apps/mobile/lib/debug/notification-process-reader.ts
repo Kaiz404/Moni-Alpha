@@ -4,7 +4,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { AppState, Platform } from 'react-native';
 import { createMMKV } from 'react-native-mmkv';
-import { getAll, peekPending } from '@/lib/ai/processing-queue';
+import { getAll, peekPending, type ProcessingQueueItem } from '@/lib/ai/processing-queue';
 import { isBackgroundProcessorRunning } from '@/lib/ai/background-processor';
 import type { PermissionStatus } from '@/hooks/use-notification-listener';
 import { readNotificationListenerPermission } from '@/lib/notifications/permission';
@@ -25,7 +25,7 @@ type StoredNotification = {
   summaryText?: string;
 };
 
-export type NotificationQueueStatus = 'not_queued' | 'pending' | 'processing' | 'done' | 'error';
+export type NotificationQueueStatus = 'not_queued' | ProcessingQueueItem['status'];
 
 export type NotificationProcessSnapshot = {
   running: boolean;
@@ -170,6 +170,8 @@ export const QUEUE_STATUS_LABELS: Record<NotificationQueueStatus, string> = {
   processing: 'Processing',
   done: 'Done',
   error: 'Error',
+  held: 'Held',
+  gave_up: 'Gave up',
 };
 
 export const QUEUE_STATUS_COLORS: Record<NotificationQueueStatus, string> = {
@@ -178,6 +180,8 @@ export const QUEUE_STATUS_COLORS: Record<NotificationQueueStatus, string> = {
   processing: '#3b82f6',
   done: '#22c55e',
   error: '#ef4444',
+  held: '#71717a',
+  gave_up: '#ef4444',
 };
 
 export const PERMISSION_COLORS: Record<PermissionStatus, string> = {

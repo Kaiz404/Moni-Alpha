@@ -11,6 +11,8 @@ if (Platform.OS === 'android') {
     withoutOneTimeCode,
   } = require('./lib/notifications/notification-filter.core');
   const { startBackgroundProcessor } = require('./lib/ai/background-processor');
+  const { enqueue } = require('./lib/ai/processing-queue');
+  const { randomUUID } = require('expo-crypto');
   const { captureLocationSnapshot } = require('./lib/location/location-snapshot');
   const {
     isPackageLinked,
@@ -22,17 +24,14 @@ if (Platform.OS === 'android') {
   const { cacheNotificationAppIcon } = require('./lib/notifications/app-icon-cache.core');
   const { isRepeatedNotification } = require('./lib/notifications/notification-repeat.core');
   const { REVIEW_TASK, isOwnNotification } = require('./lib/notifications/review-notification.core');
-  const { randomUUID } = require('expo-crypto');
   const TaskManager = require('expo-task-manager');
   const Notifications = require('expo-notifications');
 
   void RNAndroidNotificationListener;
 
   const notificationStorage = createMMKV({ id: 'moni-notifications' });
-  const processingStorage = createMMKV({ id: 'moni-processing' });
 
   const ALL_NOTIFICATIONS_KEY = 'captured_notifications';
-  const UNIFIED_QUEUE_KEY = 'unified_processing_queue';
   const MAX_STORED = 50;
 
   function readList(storage, key) {
@@ -67,7 +66,7 @@ if (Platform.OS === 'android') {
       );
       const enriched = {
         ...withPackage,
-        // Also the id of the proposal it may become, and that column is a uuid.
+        // A UUID, because the proposal or transaction it becomes takes this id into Postgres.
         id: randomUUID(),
         receivedAt: new Date(nowMs).toISOString(),
         prefilterPassed,
@@ -110,18 +109,20 @@ if (Platform.OS === 'android') {
           // Location is best-effort in headless context (no UI for permission prompts).
         }
 
-        const queueItem = {
+        // The icons stay out: a capture can wait here for days, next to a hundred others.
+        const { icon: _icon, image: _image, ...notification } = enriched;
+        enqueue({
           id: enriched.id,
           type: 'notification',
-          notification: enriched,
+          notification,
           createdAt: enriched.receivedAt,
           status: 'pending',
           locationSnapshot,
-        };
-        appendToList(processingStorage, UNIFIED_QUEUE_KEY, queueItem, MAX_STORED);
+        });
 
         // Kick off processing immediately from headless context so notification
-        // extraction runs even when the app UI is not open.
+        // extraction runs even when the app UI is not open. A new capture is also
+        // a moment to retry the ones still waiting.
         await startBackgroundProcessor().catch((e) => {
           console.error('[NotifCapture] processor start failed:', e?.message ?? e);
         });

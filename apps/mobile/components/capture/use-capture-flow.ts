@@ -1,7 +1,10 @@
 import { useValue } from '@legendapp/state/react';
-import { useReducer, useState } from 'react';
+import { router } from 'expo-router';
+import { useCallback, useEffect, useReducer, useRef, useState } from 'react';
 import { Alert } from 'react-native';
 
+import { startBackgroundProcessor } from '@/lib/ai/background-processor';
+import { releaseHeld } from '@/lib/ai/processing-queue';
 import { useAuth } from '@/lib/auth/auth-context';
 import { approveCapture } from '@/lib/capture/approve-capture';
 import {
@@ -10,6 +13,7 @@ import {
   type CaptureQuote,
   type CaptureSource,
 } from '@/lib/capture/capture-stage';
+import { dropHeldCapture, holdCapture } from '@/lib/capture/held-capture';
 import { readCapture } from '@/lib/capture/read-capture';
 import { keepScannedReceipt } from '@/lib/receipts/upload-queue';
 import { useMainCurrency } from '@/lib/finance/main-currency';
@@ -20,13 +24,16 @@ import {
 } from '@/lib/finance/selectors';
 import { resolveTransactionIcon } from '@/lib/transactions/icon';
 import type { TransactionRowData } from '@/lib/transactions/row';
+import { showToast } from '@/lib/toast/toast-store';
 import { getDefaultWalletId } from '@/lib/wallets/default-wallet';
 
 const HISTORY = 500;
 
 /**
  * The stage machine for Say it and Scan a receipt, with the reader and the
- * ledger write wired in. Nothing is written until `approve`.
+ * ledger write wired in. Nothing is written until `approve`. A capture the
+ * reader could not reach is held in the queue. Leaving the page sends it to
+ * Review once Moni is back.
  */
 export function useCaptureFlow(source: CaptureSource) {
   const { user } = useAuth();
@@ -39,8 +46,31 @@ export function useCaptureFlow(source: CaptureSource) {
   const categories = useValue(categoriesForUser$(userId));
   const history = useValue(transactions$({ userId, limit: HISTORY }));
 
-  const read = async (quote: CaptureQuote) => {
-    dispatch({ type: 'captured', quote });
+  const heldId = useRef<string | null>(null);
+  const left = useRef(false);
+
+  const keepHeld = useCallback(() => {
+    const id = heldId.current;
+    if (!id) return;
+    heldId.current = null;
+    releaseHeld(id);
+    void startBackgroundProcessor().catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    left.current = false;
+    return () => {
+      left.current = true;
+      keepHeld();
+    };
+  }, [keepHeld]);
+
+  const dropHeld = () => {
+    if (heldId.current) dropHeldCapture(heldId.current);
+    heldId.current = null;
+  };
+
+  const readQuote = async (quote: CaptureQuote) => {
     const result =
       quote.source === 'voice' && !quote.text.trim()
         ? ({ status: 'unreadable', reason: 'Nothing was heard' } as const)
@@ -50,7 +80,36 @@ export function useCaptureFlow(source: CaptureSource) {
             history,
             defaultWalletId: getDefaultWalletId(),
           });
+    if (result.status === 'unavailable') {
+      heldId.current ??= await holdCapture(quote).catch(() => null);
+      if (left.current) keepHeld();
+    } else {
+      dropHeld();
+    }
     dispatch({ type: 'read', result });
+  };
+
+  const read = async (quote: CaptureQuote) => {
+    dispatch({ type: 'captured', quote });
+    await readQuote(quote);
+  };
+
+  /** The same words or the same photo, read again. */
+  const reread = async () => {
+    if (stage.name !== 'failed') return;
+    dispatch({ type: 'reread' });
+    await readQuote(stage.quote);
+  };
+
+  const keep = () => {
+    keepHeld();
+    showToast({ text: 'Kept for Review' });
+    router.back();
+  };
+
+  const typeInstead = () => {
+    dropHeld();
+    router.replace('/transaction/new');
   };
 
   const approve = async () => {
@@ -97,6 +156,9 @@ export function useCaptureFlow(source: CaptureSource) {
     stage,
     dispatch,
     read,
+    reread,
+    keep,
+    typeInstead,
     approve,
     approving,
     added,

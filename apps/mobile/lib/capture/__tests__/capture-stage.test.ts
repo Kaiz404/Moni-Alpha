@@ -25,6 +25,26 @@ const draft: CaptureDraft = {
 const reading: CaptureStage = { name: 'reading', quote };
 const result: CaptureStage = { name: 'result', quote, draft };
 
+describe('reading the same capture again', () => {
+  const failed = (failure: 'unavailable' | 'unreadable'): CaptureStage => ({
+    name: 'failed',
+    quote,
+    failure,
+    reason: 'x',
+  });
+
+  it('goes back to reading with the same quote when the reader was out of reach', () => {
+    expect(captureStage(failed('unavailable'), { type: 'reread' })).toEqual({
+      name: 'reading',
+      quote,
+    });
+  });
+
+  it('stays put when the reader answered and found no amount', () => {
+    expect(captureStage(failed('unreadable'), { type: 'reread' })).toEqual(failed('unreadable'));
+  });
+});
+
 describe('scan stages', () => {
   it('goes from the camera to reading when an image is captured', () => {
     expect(captureStage(START, { type: 'captured', quote })).toEqual(

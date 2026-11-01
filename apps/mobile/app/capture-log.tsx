@@ -18,6 +18,8 @@ import { Press } from '@/components/ui/press';
 import { Text } from '@/components/ui/text';
 import { useNotificationListener } from '@/hooks/use-notification-listener';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
+import { retryCaptures } from '@/lib/ai/background-processor';
+import { discardGaveUpAlerts, getAll, restoreItems } from '@/lib/ai/processing-queue';
 import {
   CAPTURE_STATUS_LABELS,
   CAPTURE_STATUS_ORDER,
@@ -37,7 +39,22 @@ const FIRST_DAYS = 3;
 
 type Filter = CapturedNotificationStatus | 'all';
 
-function entryAction(item: CaptureLogItem, wallets: readonly LinkedWallet[]): LogEntryAction | undefined {
+function reportAction(item: CaptureLogItem, wallets: readonly LinkedWallet[]): LogEntryAction | undefined {
+  const packageName = item.packageName;
+  if (!packageName || item.oneTimeCode || !walletForApp(packageName, wallets)) return undefined;
+  return {
+    testID: tid('capture-log', 'entry', item.id, 'missed'),
+    label: 'This was a transaction',
+    onPress: () =>
+      reportIgnoredAlert({ packageName, text: item.text, receivedAt: item.receivedAt }, wallets),
+  };
+}
+
+function entryAction(
+  item: CaptureLogItem,
+  wallets: readonly LinkedWallet[],
+  queued: ReadonlySet<string>,
+): LogEntryAction | undefined {
   switch (item.status) {
     case 'waiting_for_review':
       return {
@@ -80,19 +97,18 @@ function entryAction(item: CaptureLogItem, wallets: readonly LinkedWallet[]): Lo
         onPress: () => router.push({ pathname: '/transaction/[id]', params: { id: transactionId } }),
       };
     }
-    case 'ignored': {
-      const packageName = item.packageName;
-      if (!packageName || item.oneTimeCode || !walletForApp(packageName, wallets)) return undefined;
-      return {
-        testID: tid('capture-log', 'entry', item.id, 'missed'),
-        label: 'This was a transaction',
-        onPress: () =>
-          reportIgnoredAlert(
-            { packageName, text: item.text, receivedAt: item.receivedAt },
-            wallets,
-          ),
-      };
-    }
+    case 'ignored':
+      return reportAction(item, wallets);
+    case 'trying_again':
+    case 'gave_up':
+      // A long outage can push the kept copy out of the queue. The alert text is still here.
+      return queued.has(item.id)
+        ? {
+            testID: tid('capture-log', 'entry', item.id, 'retry'),
+            label: 'Retry',
+            onPress: () => void retryCaptures(item.id).catch(() => {}),
+          }
+        : reportAction(item, wallets);
   }
 }
 
@@ -139,11 +155,20 @@ export default function CaptureLogScreen() {
   };
 
   const appNames = apps.map((app) => app.label);
+  const queued = new Set(getAll().map((queueItem) => queueItem.id));
 
   const dismiss = (id: string) => {
     const removed = clearOne(id);
     if (!removed) return;
-    showToast({ text: 'Alert removed', tone: 'removed', undo: () => restoreOne(removed) });
+    const kept = discardGaveUpAlerts(id);
+    showToast({
+      text: 'Alert removed',
+      tone: 'removed',
+      undo: () => {
+        restoreOne(removed);
+        restoreItems(kept);
+      },
+    });
   };
 
   const confirmClearAll = async () => {
@@ -157,6 +182,7 @@ export default function CaptureLogScreen() {
     });
     if (!confirmed) return;
     clearAll();
+    discardGaveUpAlerts();
     showToast({ text: 'Capture log cleared', tone: 'removed' });
   };
 
@@ -282,7 +308,7 @@ export default function CaptureLogScreen() {
                       <LogEntry
                         key={item.id}
                         item={item}
-                        action={entryAction(item, wallets)}
+                        action={entryAction(item, wallets, queued)}
                         onDismiss={() => dismiss(item.id)}
                         undo={
                           item.status === 'same_payment'

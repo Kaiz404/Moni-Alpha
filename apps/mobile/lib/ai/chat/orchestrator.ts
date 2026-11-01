@@ -29,7 +29,7 @@ const CLARIFY_TEXT = 'Did you want to add a transaction or ask about your money?
 function friendlyFailure(reason: string): string {
   console.warn('[chat] failed:', reason);
   if (reason === AI_UNAVAILABLE_REASON) return "Moni can't answer in this build yet. You can still add spends here.";
-  if (/network request failed|failed to fetch|timed? ?out/i.test(reason)) {
+  if (/network request failed|failed to fetch|timed? ?out|keys are not loaded|backend error \(5\d\d\)/i.test(reason)) {
     return "Moni can't answer right now. Check your connection and try again.";
   }
   if (/rate limit|too many/i.test(reason)) {
@@ -132,6 +132,13 @@ async function extractImage(imageUri: string, caption: string, turn: Turn) {
   const result = await waitForProposal(id);
   if (result === 'ready')
     turn.finish({ role: 'assistant', kind: 'assistant_draft', proposalId: id });
+  else if (result === 'retrying')
+    turn.finish({
+      role: 'assistant',
+      kind: 'assistant_text',
+      content: "Moni can't read this receipt right now. It's safe on this phone and goes to Review once Moni reads it.",
+      status: 'error',
+    });
   else turn.fail(result === 'timeout' ? 'timed out' : 'receipt');
 }
 
@@ -151,7 +158,7 @@ async function extractText(text: string, turn: Turn, answerIfSkipped: boolean) {
       kind: 'assistant_draft',
       proposalId: result.proposalId ?? proposalId,
     });
-  if (result.skipped && answerIfSkipped) return answer(text, turn);
+  if (answerIfSkipped) return answer(text, turn);
   if (result.skipped)
     return turn.finish({
       role: 'assistant',

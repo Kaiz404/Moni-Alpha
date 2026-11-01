@@ -1,0 +1,45 @@
+# Y5 Say it with Moni out of reach: the failed page shows the words, Try again reads the same
+# words, and Keep it for Review leaves the page with the capture queued. The e2e mock answers
+# unavailable for any sentence that is not a fixture, so say "bought coffee for nine ringgit"
+# while the page listens. Say the parking sentence on the retry to see it succeed.
+# Run: scripts/device/run-flows.sh .maestro/flows/capture/say-unavailable.yaml
+appId: com.anonymous.moni.e2e
+name: Y5 Say it unavailable
+tags:
+  - y5
+  - needs-speech
+  - seed-full
+---
+- runFlow: ../../subflows/launch.yaml
+- tapOn:
+    id: nav.plus
+- tapOn:
+    id: nav.chooser.say
+- assertVisible:
+    id: capture.done-speaking
+
+# Speech happens here; give it time, then finish.
+- extendedWaitUntil:
+    visible: .*coffee.*
+    timeout: 20000
+- tapOn:
+    id: capture.done-speaking
+- extendedWaitUntil:
+    visible: Moni can't read it right now
+    timeout: 20000
+- assertVisible: .*coffee.*
+- assertVisible: Couldn't reach Moni
+- assertVisible: Moni kept what you said.*
+- takeScreenshot: y5-say-unavailable
+
+- tapOn:
+    id: capture.failed.retry
+- extendedWaitUntil:
+    visible: Moni can't read it right now
+    timeout: 20000
+- assertVisible: .*coffee.*
+
+- tapOn:
+    id: capture.failed.keep
+- assertVisible: Kept for Review
+- takeScreenshot: y5-kept-for-review

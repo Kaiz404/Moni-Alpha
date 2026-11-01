@@ -15,6 +15,8 @@ import type {
   ExtractTextRequest,
 } from './types';
 
+const REQUEST_TIMEOUT_MS = 100_000;
+
 async function getAccessToken(): Promise<string | null> {
   try {
     const { supabase } = await import('@/lib/supabase/client');
@@ -31,27 +33,38 @@ async function postJson<T>(path: string, body: unknown): Promise<T> {
   }
 
   const token = await getAccessToken();
-  const res = await fetch(`${AI_API_BASE_URL}${path}`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    },
-    body: JSON.stringify(body),
-  });
+  // React Native's fetch has no timeout of its own, and a black-holed host would hold the
+  // processor forever. This sits past the backend's 90s write timeout.
+  const abort = new AbortController();
+  const timeout = setTimeout(() => abort.abort(), REQUEST_TIMEOUT_MS);
+  try {
+    const res = await fetch(`${AI_API_BASE_URL}${path}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: JSON.stringify(body),
+      signal: abort.signal,
+    });
 
-  if (!res.ok) {
-    let message = `AI backend error (${res.status})`;
-    try {
-      const err = await res.json();
-      if (err?.error) message = String(err.error);
-    } catch {
-      // ignore
+    if (!res.ok) {
+      let message = `AI backend error (${res.status})`;
+      try {
+        const err = await res.json();
+        if (err?.error) message = String(err.error);
+      } catch {
+        // ignore
+      }
+      throw new Error(message);
     }
-    throw new Error(message);
-  }
 
-  return res.json() as Promise<T>;
+    return (await res.json()) as T;
+  } catch (e) {
+    throw abort.signal.aborted ? new Error('AI backend timed out') : e;
+  } finally {
+    clearTimeout(timeout);
+  }
 }
 
 function asExtractResult(data: unknown): ExtractResult {

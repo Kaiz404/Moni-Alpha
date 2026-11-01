@@ -230,6 +230,10 @@ export async function pruneIncompleteProposals(): Promise<number> {
   return pruned;
 }
 
+export function proposalExists(id: string): boolean {
+  return hasRow(proposedTransactions$, id);
+}
+
 export async function createProposedTransaction(
   data: CreateProposedTransaction,
   options?: { id?: string },

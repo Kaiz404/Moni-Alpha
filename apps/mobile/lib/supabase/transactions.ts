@@ -1,5 +1,5 @@
 import { transactions$, wallets$ } from '@/lib/store';
-import { getRecordValues, patchRow } from '@/lib/store/helpers';
+import { getRecordValues, hasRow, patchRow } from '@/lib/store/helpers';
 import { getUserId } from '@/lib/supabase/client';
 import { isTransactionRelevantToWallet } from '@/lib/finance/ledger';
 import type {
@@ -150,11 +150,19 @@ export async function updateTransaction(id: string, data: UpdateTransaction) {
   return getTransactionById(id);
 }
 
-export async function createTransaction(data: CreateTransaction, source: TransactionSource) {
+export function transactionExists(id: string): boolean {
+  return hasRow(transactions$, id);
+}
+
+export async function createTransaction(
+  data: CreateTransaction,
+  source: TransactionSource,
+  options?: { id?: string },
+) {
   const userId = await getUserId();
   if (!userId) throw new Error('User ID required');
 
-  const id = randomUUID();
+  const id = options?.id ?? randomUUID();
   const transactionDate = data.transactionDate || new Date().toISOString();
 
   transactions$[id].set({

@@ -37,6 +37,19 @@ tags:
             - takeScreenshot: k3-l3-filter
             - tapOn:
                 id: capture-log.filter.all
+      # Any alert Moni could not read: the e2e mock answers only Maybank "You've spent" alerts.
+      - runFlow:
+          when:
+            visible:
+              id: capture-log.filter.trying-again
+          commands:
+            - tapOn:
+                id: capture-log.filter.trying-again
+            - assertVisible: Retry
+            - assertNotVisible: Ignored
+            - takeScreenshot: y5-trying-again
+            - tapOn:
+                id: capture-log.filter.all
       - runFlow:
           when:
             visible:

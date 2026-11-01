@@ -6,10 +6,11 @@ import type { CreateProposedTransaction } from '@repo/types';
 import { decimalToMinor } from '@repo/types';
 import { getWallets } from '@/lib/supabase/wallets';
 import { getCategories } from '@/lib/supabase/categories';
-import { createTransaction, getTransactions } from '@/lib/supabase/transactions';
+import { createTransaction, getTransactions, transactionExists } from '@/lib/supabase/transactions';
 import {
   createProposedTransaction,
   findProposalDuplicate,
+  proposalExists,
 } from '@/lib/supabase/proposed-transactions';
 import {
   canPairInto,
@@ -46,6 +47,7 @@ export type TraceEvent = {
 
 export type TraceLogger = (event: TraceEvent) => void;
 
+/** Neither `created` nor `skipped`: the backend or the store failed, and the capture stays queued. */
 export type RunExtractionResult = {
   created: boolean;
   skipped: boolean;
@@ -59,6 +61,8 @@ export type RunExtractionResult = {
 
 /** How much recent history routine detection looks at. */
 const ROUTINE_HISTORY_LIMIT = 500;
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 function trace(
   logger: TraceLogger | undefined,
@@ -303,7 +307,11 @@ async function persistProposal(
           ai_confidence: proposal.aiConfidence ?? undefined,
           alert: captureAlert(proposal, proposalId),
         },
-      }, 'notification');
+      }, 'notification', {
+        // The queue item's id, so a retry after a kill finds this row instead of adding another.
+        // Items queued before intake used UUIDs cannot be row ids.
+        id: UUID.test(proposalId) ? proposalId : undefined,
+      });
       trace(logger, 'creator', 'auto-added', { transactionId: transaction.id });
       return {
         created: true,
@@ -336,7 +344,7 @@ async function persistProposal(
     trace(logger, 'creator', 'error', { message });
     return {
       created: false,
-      skipped: true,
+      skipped: false,
       reason: 'Failed to create proposal',
     };
   }
@@ -356,7 +364,7 @@ function mapClientResult(
   trace(logger, 'extractor', result.status, {
     reason: result.reason,
   });
-  return { created: false, skipped: true, reason: result.reason };
+  return { created: false, skipped: result.status === 'skipped', reason: result.reason };
 }
 
 /** Android's post time, which a redelivery repeats; the listener's own clock when it is missing. */
@@ -377,6 +385,14 @@ export async function runExtraction(
 ): Promise<RunExtractionResult> {
   const logger = options?.trace;
   const client = getAiClient();
+
+  // A retry after a kill: this item already wrote its row before the queue could record that.
+  if (proposalExists(item.id)) {
+    return { created: true, skipped: false, reason: 'Already captured', proposalId: item.id };
+  }
+  if (transactionExists(item.id)) {
+    return { created: true, skipped: false, reason: 'Already captured', transactionId: item.id };
+  }
 
   trace(logger, 'extraction', 'start', {
     type: item.type,
@@ -522,7 +538,7 @@ export async function runExtraction(
     trace(logger, 'extraction', 'fatal-error', { message: msg });
     return {
       created: false,
-      skipped: true,
+      skipped: false,
       reason: `Extraction error: ${msg}`,
     };
   }

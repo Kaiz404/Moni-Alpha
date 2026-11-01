@@ -78,7 +78,9 @@ export default function ScanScreen() {
           quote={stage.quote}
           failure={stage.failure}
           title="Scan a receipt"
-          onRetry={retake}
+          onRetry={stage.failure === 'unavailable' ? () => void flow.reread() : retake}
+          onKeep={flow.keep}
+          onTypeIt={flow.typeInstead}
         />
       );
   }

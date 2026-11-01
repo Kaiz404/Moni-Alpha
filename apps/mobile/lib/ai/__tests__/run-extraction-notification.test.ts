@@ -15,11 +15,13 @@ jest.mock('@/lib/supabase/categories', () => ({ getCategories: async () => [] })
 jest.mock('@/lib/supabase/transactions', () => ({
   createTransaction: jest.fn(),
   getTransactions: async () => [],
+  transactionExists: () => false,
 }));
 jest.mock('@/lib/supabase/proposed-transactions', () => ({
   createProposedTransaction: jest.fn(),
   combineIntoTransfer: jest.fn(),
   findProposalDuplicate: jest.fn(),
+  proposalExists: () => false,
 }));
 jest.mock('@/lib/supabase/auto-add-rules', () => ({ listAutoAddRules: () => [] }));
 jest.mock('@/lib/supabase/client', () => ({ getUserId: async () => 'user-1' }));

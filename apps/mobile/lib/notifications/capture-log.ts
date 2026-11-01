@@ -6,6 +6,8 @@ import { isOneTimeCode } from '@/lib/notifications/notification-filter';
 /** The glossary words, in the order the filter chips and the legend list them. */
 export const CAPTURE_STATUS_LABELS = {
   waiting_for_review: 'Waiting for review',
+  trying_again: 'Trying again',
+  gave_up: "Couldn't reach Moni",
   auto_added: 'Auto-added',
   added: 'Added',
   same_payment: 'Same payment',
@@ -172,6 +174,8 @@ export function countByStatus(
     auto_added: 0,
     same_payment: 0,
     waiting_for_review: 0,
+    trying_again: 0,
+    gave_up: 0,
     ignored: 0,
     not_linked: 0,
   };

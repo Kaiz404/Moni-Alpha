@@ -11,9 +11,13 @@ import {
   markProcessing,
   markDone,
   markError,
+  markRetry,
   getPendingCount,
+  requeueGaveUp,
+  resumeInterrupted,
+  type ProcessingQueueItem,
 } from './processing-queue';
-import { runExtraction } from './run-extraction';
+import { runExtraction, type RunExtractionResult } from './run-extraction';
 import { recordCapture } from '@/lib/notifications/capture-health';
 import {
   captureStatusAfterExtraction,
@@ -46,6 +50,8 @@ function formatTraceEvent(event: {
 }
 
 let isRunning = false;
+let heldResumed = false;
+let retryTimer: ReturnType<typeof setTimeout> | null = null;
 
 const BACKGROUND_OPTIONS = {
   taskName: 'MoniTransactionProcessor',
@@ -61,20 +67,39 @@ const BACKGROUND_OPTIONS = {
   },
 };
 
-async function processingTask(taskData?: { delay?: number }) {
+/** Records what became of an attempt. Returns the wait before the next run, if it has to retry. */
+async function settle(item: ProcessingQueueItem, result: RunExtractionResult): Promise<number | null> {
+  if (!result.created && !result.skipped) return markRetry(item.id).retryInMs;
+
+  if (result.created) markDone(item.id);
+  else markError(item.id);
+  // A paired alert already has its status: pairCapture wrote it.
+  if (item.type === 'notification' && !result.paired) {
+    markCaptureStatus(item.id, captureStatusAfterExtraction(result), result.transactionId);
+    if (result.transactionId || result.proposalId) {
+      recordCapture(item.notification.packageName, item.notification.receivedAt);
+    }
+    if (result.proposalId && !result.transactionId) {
+      await postReviewNotification(result.proposalId).catch((e) => {
+        console.error(TAG, 'Review notification not posted:', e);
+      });
+    }
+  }
+  return null;
+}
+
+async function processingTask(taskData?: { delay?: number; foreground?: boolean }) {
   const delay = taskData?.delay ?? 500;
   await new Promise((r) => setTimeout(r, delay));
 
   console.log(TAG, '\u{250C}\u{2500}\u{2500} Background task started');
 
+  let retryInMs: number | null = null;
   try {
-    const isServiceAlive = BackgroundService.isRunning();
-    console.log(TAG, `\u{2502}  Service alive: ${isServiceAlive}`);
-
     let processedCount = 0;
     const queueStart = Date.now();
 
-    while (BackgroundService.isRunning()) {
+    while (taskData?.foreground || BackgroundService.isRunning()) {
       const item = peekPending();
       if (!item) {
         console.log(TAG, `\u{2502}`);
@@ -116,18 +141,8 @@ async function processingTask(taskData?: { delay?: number }) {
             console.log(TAG, formatTraceEvent(event));
           },
         });
-
         const elapsed = Date.now() - itemStart;
-        // A paired alert already has its status: pairCapture wrote it.
-        if (item.type === 'notification' && !result.paired) {
-          markCaptureStatus(item.id, captureStatusAfterExtraction(result), result.transactionId);
-          if (result.transactionId || result.proposalId) {
-            recordCapture(item.notification.packageName, item.notification.receivedAt);
-          }
-          if (result.proposalId && !result.transactionId) {
-            await postReviewNotification(result.proposalId);
-          }
-        }
+        retryInMs = await settle(item, result);
 
         if (result.created) {
           console.log(
@@ -135,18 +150,16 @@ async function processingTask(taskData?: { delay?: number }) {
             `\u{2502}  \u{2705} ${result.reason} (${elapsed}ms) id=${result.transactionId ?? result.proposalId ?? '?'}`,
           );
           processedCount++;
-          markDone(item.id);
         } else {
-          console.log(TAG, `\u{2502}  \u{23ED} Skipped (${elapsed}ms): ${result.reason}`);
-          // Unavailable / skipped — mark error so the UI can show failure, not hang as processing.
-          markError(item.id);
+          console.log(TAG, `\u{2502}  \u{23ED} Not added (${elapsed}ms): ${result.reason}`);
         }
       } catch (e) {
-        const elapsed = Date.now() - itemStart;
-        console.error(TAG, `\u{2502}  \u{274C} Error (${elapsed}ms):`, e);
-        markError(item.id);
-        if (item.type === 'notification') markCaptureStatus(item.id, 'ignored');
+        console.error(TAG, `\u{2502}  \u{274C} Error (${Date.now() - itemStart}ms):`, e);
+        retryInMs = markRetry(item.id).retryInMs;
       }
+
+      // The backend is out. Everything else would only fail the same way.
+      if (retryInMs !== null) break;
 
       await new Promise((r) => setTimeout(r, 200));
     }
@@ -156,6 +169,7 @@ async function processingTask(taskData?: { delay?: number }) {
     }
   } finally {
     isRunning = false;
+    if (retryInMs !== null) scheduleRetry(retryInMs);
     try {
       if (BackgroundService.isRunning()) {
         await BackgroundService.stop();
@@ -166,8 +180,25 @@ async function processingTask(taskData?: { delay?: number }) {
   }
 }
 
+function clearRetryTimer() {
+  if (retryTimer !== null) clearTimeout(retryTimer);
+  retryTimer = null;
+}
+
+/** Only while this process lives. App open, connectivity and the next capture cover the rest. */
+function scheduleRetry(ms: number) {
+  clearRetryTimer();
+  console.log(TAG, `Backend unreachable, next try in ${ms}ms`);
+  retryTimer = setTimeout(() => {
+    retryTimer = null;
+    startBackgroundProcessor().catch((e) => console.error(TAG, 'Retry failed to start:', e));
+  }, ms);
+}
+
 /**
- * Start the background processor if not already running and there are pending items.
+ * Start the background processor if not already running and there are pending items. It tries
+ * right away, whatever the backoff says: every caller is a moment worth one more try (the app
+ * opened, connectivity returned, a new capture, the backoff elapsed).
  * Safe to call multiple times — will no-op if already active.
  */
 export async function startBackgroundProcessor(): Promise<void> {
@@ -175,6 +206,9 @@ export async function startBackgroundProcessor(): Promise<void> {
     console.log(TAG, 'Already running, skipping start');
     return;
   }
+
+  resumeInterrupted({ includeHeld: !heldResumed });
+  heldResumed = true;
 
   const pending = getPendingCount();
   if (pending === 0) {
@@ -184,6 +218,7 @@ export async function startBackgroundProcessor(): Promise<void> {
 
   console.log(TAG, `Starting with ${pending} pending items`);
   isRunning = true;
+  clearRetryTimer();
 
   try {
     await BackgroundService.start(processingTask, {
@@ -193,10 +228,15 @@ export async function startBackgroundProcessor(): Promise<void> {
     console.log(TAG, 'Background service started');
   } catch (e) {
     console.error(TAG, 'Failed to start background service:', e);
-    isRunning = false;
     console.log(TAG, 'Falling back to foreground processing');
-    await processingTask(BACKGROUND_OPTIONS.parameters);
+    await processingTask({ ...BACKGROUND_OPTIONS.parameters, foreground: true });
   }
+}
+
+/** The Retry control: one capture, or everything that gave up. */
+export async function retryCaptures(id?: string): Promise<void> {
+  requeueGaveUp(id);
+  await startBackgroundProcessor();
 }
 
 export async function stopBackgroundProcessor(): Promise<void> {

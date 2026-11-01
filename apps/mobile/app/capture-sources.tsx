@@ -22,9 +22,10 @@ import { Press } from '@/components/ui/press';
 import { Text } from '@/components/ui/text';
 import { TintBubble } from '@/components/ui/transaction-row';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
+import { retryCaptures } from '@/lib/ai/background-processor';
 import { toLocalDateInput } from '@/lib/dates/local-date-input';
 import { assessCadence } from '@/lib/notifications/capture-cadence';
-import { sourceHealth } from '@/lib/notifications/capture-health';
+import { sourceHealth, unreachedLine } from '@/lib/notifications/capture-health';
 import { NOTIFICATION_ACCESS_DISCLOSURE } from '@/lib/notifications/permission';
 import { createAutoAddRule, deleteAutoAddRule } from '@/lib/supabase/auto-add-rules';
 import { updateWallet } from '@/lib/supabase/wallets';
@@ -128,7 +129,7 @@ export default function CaptureSourcesScreen() {
   const tokens = useThemeTokens();
   const { access, change } = usePhoneAccess();
   const { apps, wallets } = useLinkedApps();
-  const { health } = useCaptureHealth();
+  const { health, unreached } = useCaptureHealth();
   const captureAlert = useCaptureAlert();
   const rules = useAutoAddRules();
   const today = toLocalDateInput(new Date());
@@ -169,6 +170,19 @@ export default function CaptureSourcesScreen() {
               testID: tid('sources', 'capture-alert', 'fix'),
               label: captureAlert.actionLabel,
               onPress: captureAlert.fix,
+            }}
+          />
+        ) : null}
+
+        {unreached.total > 0 ? (
+          <Banner
+            tone="syncError"
+            title={`${unreached.total} ${unreached.total === 1 ? "capture couldn't" : "captures couldn't"} reach Moni.`}
+            body="Moni tried for 7 days and stopped. Nothing was added."
+            action={{
+              testID: tid('sources', 'unreached', 'retry'),
+              label: 'Retry',
+              onPress: () => void retryCaptures().catch(() => {}),
             }}
           />
         ) : null}
@@ -256,6 +270,7 @@ export default function CaptureSourcesScreen() {
                 label={app.label}
                 packageName={app.packageName}
                 source={sourceHealth(health, app.packageName)}
+                unreached={unreachedLine(unreached, app.packageName)}
                 quiet={assessCadence(sourceHealth(health, app.packageName), today).kind === 'quiet'}
                 onReportMissed={() => reportMissedFrom(app.packageName, wallets)}
               />

@@ -8,6 +8,8 @@ import { CAPTURE_STATUS_ORDER } from '@/lib/notifications/capture-log';
 
 const MEANING: Record<CapturedNotificationStatus, string> = {
   waiting_for_review: 'In Review now. Not counted in totals yet.',
+  trying_again: "Moni couldn't be reached. It keeps the alert and tries again. Nothing added yet.",
+  gave_up: 'Moni tried for 7 days and stopped. Retry to try again. Nothing added.',
   auto_added: 'Added without asking, by an auto-add rule. Marked Auto.',
   added: 'You approved it in Review.',
   same_payment: 'Another alert for one payment. Counted once. Undo if they are two.',

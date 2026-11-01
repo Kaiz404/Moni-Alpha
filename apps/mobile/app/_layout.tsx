@@ -22,10 +22,9 @@ import { StoreSyncActivator } from '@/components/providers/store-sync-activator'
 import { SheetHost } from '@/components/ui/sheet/sheet-host';
 import { textFonts } from '@/components/ui/text';
 import { ToastHost } from '@/components/ui/toast';
+import { useCaptureRetry } from '@/hooks/use-capture-retry';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { AuthProvider } from '@/lib/auth/auth-context';
-import { getPendingCount } from '@/lib/ai/processing-queue';
-import { startBackgroundProcessor } from '@/lib/ai/background-processor';
 import { QueryProvider } from '@/lib/query/query-client';
 import { drainImageUploadQueue } from '@/lib/receipts/upload-queue';
 import { pruneIncompleteProposals } from '@/lib/supabase/proposed-transactions';
@@ -46,7 +45,6 @@ export default function RootLayout() {
   const tokens = useThemeTokens();
   const [fontsLoaded, fontError] = useFonts(textFonts);
   const fontsSettled = fontsLoaded || fontError !== null;
-  const processorAppState = useRef(AppState.currentState);
   const uploadAppState = useRef(AppState.currentState);
 
   const navigationTheme = useMemo<Theme>(() => {
@@ -83,29 +81,7 @@ export default function RootLayout() {
     };
   }, [theme, tokens]);
 
-  const triggerProcessingIfPending = async () => {
-    if (getPendingCount() > 0) {
-      await startBackgroundProcessor();
-    }
-  };
-
-  // Ensure queued AI work (including notifications captured in headless mode)
-  // resumes automatically when the app starts or returns to foreground.
-  useEffect(() => {
-    triggerProcessingIfPending().catch(() => {});
-
-    const sub = AppState.addEventListener('change', (nextState) => {
-      if (
-        processorAppState.current.match(/inactive|background/) &&
-        nextState === 'active'
-      ) {
-        triggerProcessingIfPending().catch(() => {});
-      }
-      processorAppState.current = nextState;
-    });
-
-    return () => sub.remove();
-  }, []);
+  useCaptureRetry();
 
   // Drain pending image uploads whenever the app comes to foreground
   useEffect(() => {
