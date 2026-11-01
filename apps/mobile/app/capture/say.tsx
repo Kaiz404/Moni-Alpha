@@ -50,7 +50,7 @@ export default function SayScreen() {
   const [transcript, setTranscript] = useState('');
   const committed = useRef('');
   const reduceMotion = useReducedMotion();
-  const level = useSharedValue(reduceMotion ? 1 : 0);
+  const level = useSharedValue(0);
 
   const listen = useCallback(async () => {
     const permission =
@@ -121,7 +121,6 @@ export default function SayScreen() {
         <Listening
           seconds={seconds}
           transcript={transcript}
-          offline={ExpoSpeechRecognitionModule.supportsOnDeviceRecognition()}
           level={level}
           onDone={done}
         />

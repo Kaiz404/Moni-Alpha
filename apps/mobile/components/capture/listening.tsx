@@ -1,14 +1,8 @@
 import { router } from 'expo-router';
-import { useEffect } from 'react';
 import { View } from 'react-native';
 import Animated, {
-  Easing,
   type SharedValue,
   useAnimatedStyle,
-  useReducedMotion,
-  useSharedValue,
-  withRepeat,
-  withTiming,
 } from 'react-native-reanimated';
 
 import { Button } from '@/components/ui/button';
@@ -19,74 +13,50 @@ import { Text } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { tid } from '@/lib/test-ids';
 
-const BREATH = { duration: 1200, easing: Easing.bezier(0.77, 0, 0.175, 1) };
-const BARS = [10, 18, 30, 22, 36, 26, 14, 24, 16, 10, 20, 12];
-const QUIET = 0.35;
-
 function elapsed(seconds: number) {
   return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
 }
 
-function Bar({ height, level }: { height: number; level: SharedValue<number> }) {
-  const style = useAnimatedStyle(() => ({
-    transform: [{ scaleY: QUIET + (1 - QUIET) * level.get() }],
-  }));
-  return (
-    <Animated.View
-      className="w-[5px] rounded-full bg-foreground"
-      style={[{ height }, style]}
-    />
-  );
-}
+/** How far each layer grows at full volume. They nest, so the rings spread apart as you get louder. */
+const GROW = { outer: 0.16, middle: 0.1, core: 0.06 };
 
-/** Twelve Ink bars at the board's heights, scaled by how loud the mic hears you. */
-function Waveform({ level }: { level: SharedValue<number> }) {
-  return (
-    <View
-      className="h-10 flex-row items-center justify-center gap-1"
-      accessibilityElementsHidden
-      importantForAccessibility="no-hide-descendants"
-    >
-      {BARS.map((height, index) => (
-        <Bar key={index} height={height} level={level} />
-      ))}
-    </View>
-  );
-}
-
-/** The mic orb: Lilac rings on a Sand light halo; the middle ring breathes while Moni listens. */
-function Orb() {
+/** The mic orb: Lilac rings on a Sand light halo, swelling with how loud the mic hears you. */
+function Orb({ level }: { level: SharedValue<number> }) {
   const tokens = useThemeTokens();
-  const reduceMotion = useReducedMotion();
-  const breath = useSharedValue(0);
-
-  useEffect(() => {
-    if (reduceMotion) return;
-    breath.set(withRepeat(withTiming(1, BREATH), -1, true));
-  }, [breath, reduceMotion]);
-
-  const ring = useAnimatedStyle(() => ({
-    transform: [{ scale: 1 + breath.get() * 0.06 }],
+  const outer = useAnimatedStyle(() => ({
+    transform: [{ scale: 1 + GROW.outer * level.get() }],
+  }));
+  const middle = useAnimatedStyle(() => ({
+    transform: [{ scale: 1 + GROW.middle * level.get() }],
+  }));
+  const core = useAnimatedStyle(() => ({
+    transform: [{ scale: 1 + GROW.core * level.get() }],
   }));
 
   return (
     <View className="h-[320px] items-center justify-center self-stretch">
-    <View className="h-[268px] w-[268px] items-center justify-center rounded-full bg-sand-light">
-      <Animated.View
-        className="h-[220px] w-[220px] items-center justify-center rounded-full bg-pending-fill"
-        style={ring}
-      >
-        <View className="h-[180px] w-[180px] items-center justify-center rounded-full bg-lilac/50">
-          <View className="h-[140px] w-[140px] items-center justify-center rounded-full bg-lilac">
-            <IconSymbol
-              name="microphone"
-              size={48}
-              color={tokens.onPastel}
-            />
-          </View>
-        </View>
-      </Animated.View>
-    </View>
+      <View className="h-[268px] w-[268px] items-center justify-center rounded-full bg-sand-light">
+        <Animated.View
+          className="h-[220px] w-[220px] items-center justify-center rounded-full bg-pending-fill"
+          style={outer}
+        >
+          <Animated.View
+            className="h-[180px] w-[180px] items-center justify-center rounded-full bg-lilac/50"
+            style={middle}
+          >
+            <Animated.View
+              className="h-[140px] w-[140px] items-center justify-center rounded-full bg-lilac"
+              style={core}
+            >
+              <IconSymbol
+                name="microphone"
+                size={48}
+                color={tokens.onPastel}
+              />
+            </Animated.View>
+          </Animated.View>
+        </Animated.View>
+      </View>
     </View>
   );
 }
@@ -95,14 +65,11 @@ function Orb() {
 export function Listening({
   seconds,
   transcript,
-  offline,
   level,
   onDone,
 }: {
   seconds: number;
   transcript: string;
-  /** The phone recognises speech itself, with no network. */
-  offline: boolean;
   /** Mic loudness from 0 to 1. */
   level: SharedValue<number>;
   onDone: () => void;
@@ -125,16 +92,7 @@ export function Listening({
       }
     >
       <View className="flex-1 items-center gap-3 px-5">
-        {offline ? (
-          <StatusPill
-            tone="review"
-            size="compact"
-            align="center"
-            label="Listening on this phone · works offline"
-          />
-        ) : null}
-        <Orb />
-        <Waveform level={level} />
+        <Orb level={level} />
         <Text
           testID={tid('capture', 'transcript')}
           accessibilityLiveRegion="polite"
