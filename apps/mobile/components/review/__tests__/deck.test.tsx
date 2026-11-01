@@ -611,6 +611,13 @@ describe('Review deck', () => {
 describe('Recently reviewed', () => {
   const { router } = jest.requireMock('expo-router') as { router: { push: jest.Mock } };
   const hoursAgo = (hours: number) => new Date(Date.now() - hours * 3_600_000).toISOString();
+  // Not a count of hours back: 26 hours ago is two days back for the first two hours of a day.
+  const yesterdayAt = (hour: number) => {
+    const day = new Date();
+    day.setDate(day.getDate() - 1);
+    day.setHours(hour, 0, 0, 0);
+    return day.toISOString();
+  };
 
   function ToastText() {
     const toast = useToast();
@@ -618,7 +625,7 @@ describe('Recently reviewed', () => {
   }
 
   function reviewed(id: string, over: Record<string, unknown>) {
-    seed(id, { created_at: hoursAgo(30), transaction_date: hoursAgo(30), ...over });
+    seed(id, { created_at: yesterdayAt(10), transaction_date: yesterdayAt(10), ...over });
   }
 
   it('lists the decisions under All caught up, and Move back to review puts a Not mine card back', async () => {
@@ -652,10 +659,10 @@ describe('Recently reviewed', () => {
   });
 
   it('opens the transaction an approved row created, with its source as the meta', async () => {
-    reviewed('ok', { status: 'approved', reviewed_at: hoursAgo(26), transaction_id: 't1' });
+    reviewed('ok', { status: 'approved', reviewed_at: yesterdayAt(12), transaction_id: 't1' });
     reviewed('no', {
       status: 'rejected',
-      reviewed_at: hoursAgo(25),
+      reviewed_at: yesterdayAt(13),
       merchant: 'KEDAI ABC',
       source_type: 'text',
     });
@@ -675,13 +682,13 @@ describe('Recently reviewed', () => {
         description: null,
         merchant: 'GRAB',
         notes: null,
-        transactionDate: hoursAgo(30),
+        transactionDate: yesterdayAt(10),
         locationLatitude: null,
         locationLongitude: null,
         locationName: null,
         autoAdded: false,
         balanceCorrection: false,
-        createdAt: hoursAgo(30),
+        createdAt: yesterdayAt(10),
       },
     });
     await show(<ReviewScreen />);

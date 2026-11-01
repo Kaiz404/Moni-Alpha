@@ -2,7 +2,6 @@ import type { CurrencyCode, MinorAmount } from '@repo/types';
 
 import { inScope, readActivityLink } from '@/components/activity/activity-link';
 import { filterActivity } from '@/lib/finance/activity-filter';
-import { spendingMonth } from '@/lib/finance/activity-series';
 import { buildBudgetMonth } from '@/lib/finance/budget-month';
 import type { FinanceCategory, FinanceTransaction } from '@/lib/finance/types';
 import {
@@ -182,17 +181,11 @@ describe('the report matches the other screens', () => {
     );
   });
 
-  it('spends and earns the same as Activity, and compares with last month by now the same way', () => {
-    const activity = spendingMonth(
-      TRANSACTIONS,
-      { evenPaceMinor: null, left: null },
-      MYR,
-      NOW,
-    );
+  it('leaves debt cash and excluded rows out of what it spends and earns, and compares with last month by now', () => {
     const october = report(OCTOBER);
-    expect(october.spentMinor).toBe(activity.spentMinor);
-    expect(october.inMinor).toBe(activity.inMinor);
-    expect(october.previousSpentMinor).toBe(activity.lastMonthByNowMinor);
+    expect(october.spentMinor).toBe(18040);
+    expect(october.inMinor).toBe(420000);
+    expect(october.previousSpentMinor).toBe(4000);
   });
 
   it('opens each category row on the rows that add up to it in Activity', () => {

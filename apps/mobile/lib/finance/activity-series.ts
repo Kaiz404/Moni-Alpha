@@ -1,22 +1,10 @@
 import type { CurrencyCode } from '@repo/types';
 
 import { toLocalDateInput } from '@/lib/dates/local-date-input';
-import type { BudgetMonth } from '@/lib/finance/budget-month';
 import { transactionDeltaMinor } from '@/lib/finance/ledger';
 import type { FinanceTransaction, FinanceWallet } from '@/lib/finance/types';
 
 export type MonthDay<V extends string> = { key: string; day: number } & Record<V, number>;
-
-export type SpendingMonth = {
-  days: MonthDay<'spentMinor'>[];
-  daysInMonth: number;
-  spentMinor: number;
-  inMinor: number;
-  /** Spent last month from the 1st to the same day number. */
-  lastMonthByNowMinor: number;
-  evenPaceMinor: number | null;
-  safeToSpendMinor: number | null;
-};
 
 export type BalanceMonth = {
   days: MonthDay<'balanceMinor'>[];
@@ -44,52 +32,9 @@ function isSpending(transaction: FinanceTransaction, currency: CurrencyCode): bo
   );
 }
 
-export function spendingMonth(
-  transactions: readonly FinanceTransaction[],
-  budget: Pick<BudgetMonth, 'evenPaceMinor' | 'left'>,
-  currency: CurrencyCode,
-  now: Date,
-): SpendingMonth {
-  const year = now.getFullYear();
-  const month = now.getMonth();
-  const daysInMonth = daysIn(year, month);
-  const lastMonthEnd = new Date(year, month - 1, Math.min(now.getDate(), daysIn(year, month - 1)));
-  const lastMonthKey = toLocalDateInput(lastMonthEnd);
-  const lastMonthStart = toLocalDateInput(new Date(year, month - 1, 1));
-  const days = monthDays(now).map((day) => ({ ...day, spentMinor: 0 }));
-  const byKey = new Map(days.map((day) => [day.key, day]));
-  let inMinor = 0;
-  let lastMonthByNowMinor = 0;
-  for (const transaction of transactions) {
-    const key = toLocalDateInput(new Date(transaction.transactionDate));
-    if (
-      transaction.type === 'income' &&
-      transaction.currency === currency &&
-      !transaction.analysisExcluded &&
-      !transaction.debtActivityId &&
-      byKey.has(key)
-    )
-      inMinor += Number(transaction.amountMinor);
-    if (!isSpending(transaction, currency)) continue;
-    const day = byKey.get(key);
-    if (day) day.spentMinor += Number(transaction.amountMinor);
-    else if (key >= lastMonthStart && key <= lastMonthKey)
-      lastMonthByNowMinor += Number(transaction.amountMinor);
-  }
-  return {
-    days,
-    daysInMonth,
-    spentMinor: days.reduce((sum, day) => sum + day.spentMinor, 0),
-    inMinor,
-    lastMonthByNowMinor,
-    evenPaceMinor: budget.evenPaceMinor,
-    safeToSpendMinor: budget.left?.perDayMinor ?? null,
-  };
-}
-
 /**
  * Running total per category from the 1st to today, in one currency: spending for
- * expense categories, money in for income ones. Same exclusions as `spendingMonth`.
+ * expense categories, money in for income ones. Same exclusions as Activity's day totals.
  */
 export function categoryMonths(
   transactions: readonly FinanceTransaction[],

@@ -20,7 +20,6 @@ import {
 } from './pairing-fixture';
 import { toFinanceTransaction } from '@/lib/finance/adapters';
 import { groupActivityDays } from '@/lib/finance/activity-filter';
-import { spendingMonth } from '@/lib/finance/activity-series';
 import { buildBudgetMonth, monthKey } from '@/lib/finance/budget-month';
 import type { FinanceTransaction } from '@/lib/finance/types';
 import { markCaptureStatus } from '@/lib/notifications/capture-status';
@@ -378,7 +377,6 @@ describe('spending totals', () => {
       debts: [],
     });
     expect(budget.spentMinor).toBe(3 * 2000 + 1590);
-    expect(spendingMonth(rows, budget, MYR, NOW).spentMinor).toBe(3 * 2000 + 1590);
     const today = groupActivityDays(
       [...rows].sort((a, b) => b.transactionDate.localeCompare(a.transactionDate)),
     )[0]!;

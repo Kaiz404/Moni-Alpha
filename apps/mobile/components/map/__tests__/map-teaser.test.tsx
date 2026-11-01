@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react-native';
 import type { ReactNode } from 'react';
 
-import { MapTeaser } from '@/components/budget/map-teaser';
+import { MapTeaser } from '@/components/map/map-teaser';
 import type { Place } from '@/lib/finance/places';
 
 const mockNative: { hasGoogleMapsKey?: () => boolean } = {};
@@ -50,7 +50,6 @@ const bangsar = {
 
 const card = (places: Place[]) => (
   <MapTeaser
-    screen="budget"
     places={places}
     expenses={30}
     withPlace={25}

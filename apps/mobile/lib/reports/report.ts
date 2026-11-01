@@ -73,7 +73,7 @@ const DAY_MS = 86_400_000;
 
 const pad = (value: number) => String(value).padStart(2, '0');
 
-/** Money in that counts: income, not balance corrections or debt cash (same as `spendingMonth`). */
+/** Money in that counts: income, not balance corrections or debt cash (same as Activity's day totals). */
 export function countsAsIncome(transaction: FinanceTransaction, currency: CurrencyCode): boolean {
   return (
     transaction.type === 'income' &&

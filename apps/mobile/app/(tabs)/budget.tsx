@@ -8,7 +8,6 @@ import {
 } from '@/components/budget/bills-list';
 import { BudgetRings } from '@/components/budget/budget-rings';
 import { CalendarView } from '@/components/budget/calendar-view';
-import { MapTeaser, useMonthPlaces } from '@/components/budget/map-teaser';
 import {
   useBudgetData,
   useBudgetMonth,
@@ -183,7 +182,6 @@ function MonthView({
   const { currency } = budget;
   const name = monthName(budget.month);
   const sentence = leftSentence(budget);
-  const places = useMonthPlaces(data.transactions, budget.month, budget.daysInMonth, currency);
   const looks = useMemo(() => {
     const latest = lastPaymentBySeries(data.transactions);
     const categories = Object.fromEntries(
@@ -315,17 +313,6 @@ function MonthView({
           />
         </View>
       ) : null}
-      <View className="mt-2">
-        <MapTeaser
-          screen="budget"
-          places={places.places}
-          expenses={places.expenses}
-          withPlace={places.withPlace}
-          monthName={name}
-          currency={currency}
-          onOpen={() => router.push('/map')}
-        />
-      </View>
     </View>
   );
 }

@@ -23,7 +23,6 @@ import {
 } from './pairing-fixture';
 import { toFinanceTransaction } from '@/lib/finance/adapters';
 import { groupActivityDays } from '@/lib/finance/activity-filter';
-import { spendingMonth } from '@/lib/finance/activity-series';
 import { buildBudgetMonth, monthKey } from '@/lib/finance/budget-month';
 import { walletBalanceForTest } from './wallet-balance';
 import { markCaptureStatus } from '@/lib/notifications/capture-status';
@@ -324,7 +323,6 @@ describe('a credit-card bill payment', () => {
     expect(rows).toHaveLength(1);
     expect(budget.spentMinor).toBe(0);
     expect(groupActivityDays(rows)[0]!.spentMinor).toBe(0);
-    expect(spendingMonth(rows, budget, 'MYR' as CurrencyCode, now).spentMinor).toBe(0);
     expect(walletBalanceForTest(rows, VISA)).toBe(50000);
   });
 
@@ -434,7 +432,6 @@ describe('spending totals', () => {
     });
     expect(rows).toHaveLength(2);
     expect(budget.spentMinor).toBe(1200);
-    expect(spendingMonth(rows, budget, MYR, NOW).spentMinor).toBe(1200);
     const today = groupActivityDays(
       [...rows].sort((a, b) => b.transactionDate.localeCompare(a.transactionDate)),
     )[0]!;

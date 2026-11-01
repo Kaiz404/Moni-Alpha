@@ -24,7 +24,7 @@ const PINS = 3;
 /** Room around the outermost pins, which are wider than the point they sit on. */
 const ZOOM_OUT = 2;
 
-/** The month's places and how many of its expenses had one. Budget and Home share this. */
+/** The month's places and how many of its expenses had one. */
 export function useMonthPlaces(
   transactions: Parameters<typeof monthSpend>[0],
   month: string,
@@ -47,8 +47,6 @@ export function useMonthPlaces(
 }
 
 type MapTeaserProps = {
-  /** Where the card is, for its testID. */
-  screen: 'home' | 'budget';
   places: readonly Place[];
   expenses: number;
   withPlace: number;
@@ -58,12 +56,11 @@ type MapTeaserProps = {
 };
 
 /**
- * "Where you spend" on the Budget tab: a small still copy of the map page, with its colours and
+ * "Where you spend" on Home: a small still copy of the map page, with its colours and
  * pins, by the owner's direction over V2P-InsightsMonth's drawn map. The whole card opens the map,
  * so the map takes no touches. Lite mode is one still image, which scrolls with the page.
  */
 export function MapTeaser({
-  screen,
   places,
   expenses,
   withPlace,
@@ -103,7 +100,7 @@ export function MapTeaser({
 
   return (
     <Press
-      testID={tid(screen, 'open-map')}
+      testID={tid('home', 'open-map')}
       accessibilityLabel={label}
       onPress={onOpen}
       className="gap-2.5 rounded-card bg-card px-[18px] py-3.5"

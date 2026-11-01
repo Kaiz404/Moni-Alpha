@@ -13,11 +13,8 @@ tags:
     visible:
       id: activity.search
     timeout: 15000
-- assertVisible: 'Spent in .*'
 - tapOn:
     id: activity.search
-# The bar scrolls to the top, past the chart, so the keyboard leaves room for results.
-- assertNotVisible: 'Spent in .*'
 - inputText: grab
 - hideKeyboard
 - assertVisible: '(?i)grab.*'

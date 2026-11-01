@@ -22,6 +22,22 @@ tags:
     id: budget.calendar.day.1
 - assertVisible: .* 1 .*
 - takeScreenshot: b1-l4-calendar
+# A day's "All" link opens Activity on that day, and its chip goes back to the whole month.
+- scrollUntilVisible:
+    element:
+      id: budget.day.all
+    centerElement: true
+- tapOn:
+    id: budget.day.all
+- assertVisible:
+    id: activity.whole-month
+- assertVisible: '.* · \d+ transactions?'
+- tapOn:
+    id: activity.whole-month
+- assertNotVisible:
+    id: activity.whole-month
+- tapOn:
+    id: nav.tab.budget
 - tapOn:
     id: budget.view.month
 - assertVisible:

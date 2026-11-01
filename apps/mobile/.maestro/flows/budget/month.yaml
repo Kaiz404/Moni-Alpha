@@ -36,18 +36,6 @@ tags:
     centerElement: true
 - assertVisible:
     id: budget.edit-budgets
-# No centerElement: this is the last card, so it cannot reach the middle of the screen.
-- scrollUntilVisible:
-    element:
-      id: budget.open-map
-- takeScreenshot: b1-l2-pair-bottom
-- tapOn:
-    id: budget.open-map
-- extendedWaitUntil:
-    visible: Where you spend
-    timeout: 10000
-- takeScreenshot: b1-l9-map
-- back
 - scrollUntilVisible:
     element:
       id: budget.month

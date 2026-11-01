@@ -3,7 +3,7 @@ import { useSelector, useValue } from '@legendapp/state/react';
 import { router, useLocalSearchParams, useNavigation, useScrollToTop } from 'expo-router';
 import type { NavigationProp } from 'expo-router/react-navigation';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ScrollView, useWindowDimensions, View } from 'react-native';
+import { ScrollView, View } from 'react-native';
 
 import {
   CLEARED_LINK,
@@ -14,13 +14,8 @@ import {
   type ActivityScope,
 } from '@/components/activity/activity-link';
 import { DayGroup } from '@/components/activity/day-group';
-import { useBudgetData, useBudgetMonth } from '@/components/budget/use-budget';
 import { FilterChips } from '@/components/activity/filter-chips';
 import { ReviewStrip } from '@/components/activity/review-strip';
-import {
-  ActivityChart,
-  type ActivityChartMode,
-} from '@/components/charts/activity-chart';
 import { useTabBarClearance } from '@/components/nav/tab-bar';
 import { SyncBanner } from '@/components/providers/sync-banner';
 import { EmptyTile } from '@/components/ui/empty-tile';
@@ -37,14 +32,12 @@ import { TransactionRow } from '@/components/ui/transaction-row';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { useAuth } from '@/lib/auth/auth-context';
 import { formatDate, formatDayHeading } from '@/lib/dates/day-label';
-import { toLocalDateInput } from '@/lib/dates/local-date-input';
 import {
   filterActivity,
   groupActivityDays,
   type ActivityDay,
   type ActivityKind,
 } from '@/lib/finance/activity-filter';
-import { balanceMonth, spendingMonth } from '@/lib/finance/activity-series';
 import { monthKey } from '@/lib/finance/budget-month';
 import { formatMoney } from '@/lib/finance/format-money';
 import { useMainCurrency } from '@/lib/finance/main-currency';
@@ -84,8 +77,6 @@ function dayTotal(day: ActivityDay, currency: string) {
     .join(' · ');
 }
 
-const SEARCH_TOP_GAP = 8;
-
 export default function ActivityScreen() {
   const scroll = useRef<ScrollView>(null);
   useScrollToTop(scroll);
@@ -105,26 +96,10 @@ export default function ActivityScreen() {
     () => syncState(transactionTable$).get().isPersistLoaded,
   );
   const hold = useTransactionHold('activity');
-  const budgetData = useBudgetData();
-  const budgetMonth = useBudgetMonth(budgetData, monthKey(budgetData.now));
-  const [mode, setMode] = useState<ActivityChartMode>('spending');
   const params = useLocalSearchParams<ActivityLinkParams>();
   const navigation = useNavigation<NavigationProp<{ activity: ActivityLinkParams }, 'activity'>>();
   const [scope, setScope] = useState<ActivityScope | null>(null);
   const [query, setQuery] = useState('');
-  const [searchFocused, setSearchFocused] = useState(false);
-  const { height: windowHeight } = useWindowDimensions();
-  const searchBox = useRef<View>(null);
-  // The bar goes to the top so the keyboard leaves its results in view.
-  const scrollSearchToTop = () => {
-    // In React Native's ScrollView, but missing from its types.
-    const list = scroll.current as (ScrollView & { getInnerViewRef(): View }) | null;
-    const content = list?.getInnerViewRef();
-    if (!content) return;
-    searchBox.current?.measureLayout(content, (_x, y) => {
-      scroll.current?.scrollTo({ y: Math.max(0, y - SEARCH_TOP_GAP), animated: true });
-    });
-  };
   const [kind, setKind] = useState<ActivityKind>('all');
   const [walletId, setWalletId] = useState<string | null>(null);
   const [day, setDay] = useState<string | null>(null);
@@ -215,15 +190,6 @@ export default function ActivityScreen() {
     [scoped, query, walletId, currency, kind, day, categories],
   );
   const waiting = proposals.filter((proposal) => isAwaitingReview(proposal, new Date()));
-  const todayKey = toLocalDateInput(now);
-  const spending = useMemo(
-    () => spendingMonth(inCurrency, budgetMonth, currency, dayOf(todayKey)),
-    [inCurrency, budgetMonth, currency, todayKey],
-  );
-  const balance = useMemo(
-    () => balanceMonth(wallets, all, currency, dayOf(todayKey)),
-    [wallets, all, currency, todayKey],
-  );
   const reviewTotal = waiting
     .filter((proposal) => proposal.currency === currency)
     .reduce((sum, proposal) => sum + Number(proposal.amountMinor ?? 0), 0);
@@ -297,14 +263,23 @@ export default function ActivityScreen() {
         </>
       }
     >
+      {loaded && inCurrency.length > 0 ? (
+        <View className="px-screen pb-3">
+          <SearchField
+            compact
+            testID={tid('activity', 'search')}
+            accessibilityLabel="Search transactions"
+            placeholder="Search merchant, note or amount"
+            value={query}
+            onChangeText={setQuery}
+          />
+        </View>
+      ) : null}
       <ScrollView
         ref={scroll}
         keyboardShouldPersistTaps="handled"
         contentContainerClassName="gap-3 px-screen"
-        // Room to stay scrolled when a search leaves few rows, or the bar would drop back down.
-        contentContainerStyle={{
-          paddingBottom: searchFocused || query.trim() ? windowHeight : clearance,
-        }}
+        contentContainerStyle={{ paddingBottom: clearance }}
       >
         <SyncBanner screen="activity" />
         {!loaded ? (
@@ -323,16 +298,6 @@ export default function ActivityScreen() {
           />
         ) : (
           <>
-            <ActivityChart
-              mode={mode}
-              onModeChange={setMode}
-              spending={spending}
-              balance={balance}
-              currency={currency}
-              selectedDay={day}
-              onSelectDay={setDay}
-              now={now}
-            />
             {day ? (
               <View className="min-h-9 flex-row items-center justify-between gap-2 pl-1.5 pr-0.5">
                 <Text className="flex-shrink text-[15px] leading-[21px] font-display-semibold text-foreground">
@@ -356,21 +321,6 @@ export default function ActivityScreen() {
                 </Press>
               </View>
             ) : null}
-            <View ref={searchBox}>
-              <SearchField
-                compact
-                testID={tid('activity', 'search')}
-                accessibilityLabel="Search transactions"
-                placeholder="Search merchant, note or amount"
-                value={query}
-                onChangeText={setQuery}
-                onFocus={() => {
-                  setSearchFocused(true);
-                  scrollSearchToTop();
-                }}
-                onBlur={() => setSearchFocused(false)}
-              />
-            </View>
             <FilterChips
               kind={kind}
               onKind={setKind}

@@ -7,7 +7,7 @@ import { RefreshControl, ScrollView, View } from 'react-native';
 import { AskBox } from '@/components/home/ask-box';
 import { BillsStrip } from '@/components/home/bills-strip';
 import { CaptureAlertCard } from '@/components/home/capture-alert-card';
-import { MapTeaser, useMonthPlaces } from '@/components/budget/map-teaser';
+import { MapTeaser, useMonthPlaces } from '@/components/map/map-teaser';
 import { CheckInCard } from '@/components/home/check-in-card';
 import { NetWorth } from '@/components/home/net-worth';
 import { RecentList } from '@/components/home/recent-list';
@@ -251,6 +251,16 @@ export default function HomeScreen() {
             onSeeAll={() => router.navigate('/activity')}
             onAdd={() => void openCaptureChooser()}
           />
+          {overview.transactions.length > 0 ? (
+            <MapTeaser
+              places={places.places}
+              expenses={places.expenses}
+              withPlace={places.withPlace}
+              monthName={monthLong(now)}
+              currency={currency}
+              onOpen={() => router.push('/map')}
+            />
+          ) : null}
           {firstRun ? (
             <EmptyTile
               tone="quiet"
@@ -278,17 +288,6 @@ export default function HomeScreen() {
             />
           )}
           <CheckInCard currency={currency} />
-          {places.places.length > 0 ? (
-            <MapTeaser
-              screen="home"
-              places={places.places}
-              expenses={places.expenses}
-              withPlace={places.withPlace}
-              monthName={monthLong(now)}
-              currency={currency}
-              onOpen={() => router.push('/map')}
-            />
-          ) : null}
         </ScrollView>
       )}
     </Page>

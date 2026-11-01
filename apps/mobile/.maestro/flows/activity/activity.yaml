@@ -1,4 +1,4 @@
-# A1 Activity tab: chart card, Spending and Balance toggle, a bar pick, wallet chip, Show more.
+# A1 Activity tab: the search bar on top of the list, the wallet filter and its chip.
 # Run: scripts/device/run-flows.sh .maestro/flows/activity/activity.yaml
 appId: com.anonymous.moni.e2e
 name: A1 Activity tab
@@ -14,30 +14,9 @@ tags:
       id: 'activity\.transaction\..*'
     timeout: 15000
 - assertVisible:
-    id: activity.chart-mode.spending
-- assertVisible: 'Spent in .*'
+    id: activity.search
 - assertVisible: 'Today · .*'
 - takeScreenshot: a1-activity
-
-- tapOn:
-    id: activity.chart-mode.balance
-- assertVisible: 'Balance'
-- assertVisible: '.* wallets, closing balance each day'
-- takeScreenshot: a1-balance
-- tapOn:
-    id: activity.chart-mode.spending
-
-- tapOn:
-    id: 'activity\.chart\.day\..*'
-    index: 0
-- assertVisible:
-    id: activity.whole-month
-- assertVisible: '.* · \d+ transactions?'
-- takeScreenshot: a1-day
-- tapOn:
-    id: activity.whole-month
-- assertNotVisible:
-    id: activity.whole-month
 
 - tapOn:
     id: activity.filter.wallet
