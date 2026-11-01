@@ -16,6 +16,10 @@ tags:
     id: nav.tab.budget
 - assertVisible:
     id: budget.month
+- assertVisible:
+    id: budget.spend-ring
+- assertVisible:
+    id: budget.spend-ring.total
 - takeScreenshot: smoke-budget
 - tapOn:
     id: nav.tab.debts

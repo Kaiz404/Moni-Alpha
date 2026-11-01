@@ -8,16 +8,16 @@ import {
 } from '@/components/budget/bills-list';
 import { BudgetRings } from '@/components/budget/budget-rings';
 import { CalendarView } from '@/components/budget/calendar-view';
+import { SpendRing } from '@/components/budget/spend-ring';
 import {
   useBudgetData,
   useBudgetMonth,
 } from '@/components/budget/use-budget';
-import { PaceChart } from '@/components/charts/pace-chart';
-import { monthFromKey } from '@/components/charts/pace-geometry';
 import { openCaptureChooser } from '@/components/nav/capture-chooser';
 import { useTabBarClearance } from '@/components/nav/tab-bar';
 import { SyncBanner } from '@/components/providers/sync-banner';
 import { ReportsLink } from '@/components/reports/reports-link';
+import { Button } from '@/components/ui/button';
 import { EmptyTile } from '@/components/ui/empty-tile';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Page } from '@/components/ui/page';
@@ -32,6 +32,7 @@ import {
   monthName,
   monthShort,
   spendMonths,
+  spendSlices,
   type BudgetMonth,
 } from '@/lib/finance/budget-month';
 import { formatMoney } from '@/lib/finance/format-money';
@@ -221,56 +222,65 @@ function MonthView({
         )} a month from ${monthName(history[2].month)} to ${monthName(history[0].month)}. Set budgets and Moni starts each category from there.`
       : 'Set a budget for each category and this tab shows what is left as you spend.';
   const firstExpense = budget.isCurrent && budget.spentMinor === 0;
+  const slices = useMemo(
+    () =>
+      spendSlices(
+        data.transactions,
+        budget.month,
+        currency,
+        data.everyCategory,
+      ),
+    [data.transactions, budget.month, currency, data.everyCategory],
+  );
 
   return (
     <View className="gap-3">
-      {firstExpense ? (
-        <EmptyTile
-          icon="chart-box"
-          title="Your line starts with one expense"
-          body="Add one with the +, or let Moni read your bank alerts. The chart and the calendar fill in as you spend."
-          action={{
-            testID: tid('budget', 'add-expense'),
-            label: 'Add an expense',
-            icon: 'plus',
-            onPress: () => void openCaptureChooser(),
-          }}
-        />
-      ) : (
-        <View
-          accessibilityLabel={`Spent in ${name}`}
-          className="gap-2 rounded-card bg-card px-[18px] py-3.5"
+      <View
+        accessibilityLabel={`Spent in ${name}`}
+        className="gap-2 rounded-card bg-card px-[18px] py-3.5"
+      >
+        <Text
+          variant="caps"
+          className="text-muted"
         >
+          {`Spent in ${name}`}
+        </Text>
+        <SpendRing
+          slices={slices}
+          totalMinor={budget.spentMinor}
+          budgetMinor={budget.budgetMinor}
+          currency={currency}
+          month={budget.month}
+          monthName={name}
+        />
+        {sentence ? (
           <Text
-            variant="caps"
-            className="text-muted"
+            testID={tid('budget', 'left')}
+            variant="meta"
+            className="text-ink-2"
+            style={{ fontVariant: ['tabular-nums'] }}
           >
-            {`Spent in ${name}`}
+            {sentence}
           </Text>
-          <PaceChart
-            screen="budget"
-            mode="pace"
-            series={{
-              month: monthFromKey(budget.month),
-              values: budget.daily.slice(0, budget.throughDay),
-            }}
-            budget={budget.budgetMinor}
-            currency={currency}
-            endsToday={budget.isCurrent}
-            what={`Spent so far in ${name}`}
-          />
-          {sentence ? (
+        ) : null}
+        {firstExpense ? (
+          <View className="items-start gap-2 pt-1">
             <Text
-              testID={tid('budget', 'left')}
               variant="meta"
               className="text-ink-2"
-              style={{ fontVariant: ['tabular-nums'] }}
             >
-              {sentence}
+              Add one with the +, or let Moni read your bank alerts.
             </Text>
-          ) : null}
-        </View>
-      )}
+            <Button
+              testID={tid('budget', 'add-expense')}
+              label="Add an expense"
+              icon="plus"
+              variant="secondary"
+              onPress={() => void openCaptureChooser()}
+            />
+          </View>
+        ) : null}
+      </View>
       <View className="mt-2">
         <BudgetRings
           budgeted={budget.budgeted}

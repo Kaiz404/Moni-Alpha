@@ -8,7 +8,12 @@ import { selectUpcomingBills } from '@/lib/finance/bills';
 import { buildBudgetMonth, type BudgetMonth, type MonthKey } from '@/lib/finance/budget-month';
 import { useMainCurrency } from '@/lib/finance/main-currency';
 import { financeProjection$ } from '@/lib/finance/projection';
-import { debtsWithBalance$, transactions$, walletsForUser$ } from '@/lib/finance/selectors';
+import {
+  categoriesForUser$,
+  debtsWithBalance$,
+  transactions$,
+  walletsForUser$,
+} from '@/lib/finance/selectors';
 import { profilePreferences$, recurringOverrides$ } from '@/lib/store';
 import { getRecordValues } from '@/lib/store/helpers';
 import { listMerchantAliases } from '@/lib/supabase/merchant-aliases';
@@ -46,6 +51,7 @@ export function useBudgetData() {
         category.type !== 'income',
     ),
   );
+  const everyCategory = useValue(categoriesForUser$(userId));
   const budgets = useValue(() =>
     Object.values(financeProjection$.budgetsById.get()).filter(
       (budget) => budget.userId === userId,
@@ -75,6 +81,8 @@ export function useBudgetData() {
     walletNames,
     aliases,
     categories,
+    /** Archived ones too, for spending that still belongs to them. */
+    everyCategory,
     budgets,
     monthlyTotalMinor: monthlyTotal === null ? null : (decimalToMinor(monthlyTotal) as MinorAmount),
     overrides,
