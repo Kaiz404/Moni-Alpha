@@ -168,7 +168,7 @@ describe('Review deck', () => {
   async function pickType(type: 'expense' | 'income' | 'transfer') {
     fireEvent.press(screen.getByTestId('review.type'));
     const sheet = getOpenSheet();
-    if (sheet?.kind !== 'transactionType') throw new Error('the type chip opens the Type sheet');
+    if (sheet?.kind !== 'transactionType') throw new Error('the Type row opens the Type sheet');
     await act(async () => sheet.settle(type));
   }
 
@@ -199,7 +199,7 @@ describe('Review deck', () => {
 
     fireEvent.press(screen.getByTestId('review.category'));
     const sheet = getOpenSheet();
-    if (sheet?.kind !== 'category') throw new Error('the category chip opens the category sheet');
+    if (sheet?.kind !== 'category') throw new Error('the Category row opens the category sheet');
     expect(sheet.request.categories.map((c) => c.name)).toEqual(['Salary']);
     await act(async () => sheet.settle(SALARY));
 
@@ -856,7 +856,41 @@ describe('Review deck', () => {
     });
   });
 
-  it('shows the compact wallet name on the chip and speaks the full one', async () => {
+  describe('the field list', () => {
+    const labels = (...testIDs: string[]) =>
+      testIDs.map((id) => screen.getByTestId(id).props.accessibilityLabel);
+
+    it('lists Type, Category and Wallet on an expense, each as a row with its value', async () => {
+      seed('p1');
+      await show(<ReviewScreen />);
+
+      expect(labels('review.type', 'review.category', 'review.wallet')).toEqual([
+        'Type Expense. Change type',
+        'Category Food & Dining. Change category',
+        'Wallet Maybank. Change wallet',
+      ]);
+      expect(screen.getByText('Type')).toBeTruthy();
+      expect(screen.getByText('Category')).toBeTruthy();
+      expect(screen.getByText('Wallet')).toBeTruthy();
+      expect(screen.queryByText('Moves to')).toBeNull();
+    });
+
+    it('lists Type, Wallet and Moves to on a transfer, asking for the wallet it lacks', async () => {
+      seed('p1', { type: 'transfer', transfer_to_wallet_id: null, category_id: null });
+      await show(<ReviewScreen />);
+
+      expect(labels('review.type', 'review.wallet', 'review.destination')).toEqual([
+        'Type Transfer. Change type',
+        'Wallet Maybank. Change wallet',
+        'Pick a wallet',
+      ]);
+      expect(screen.getByText('Moves to')).toBeTruthy();
+      expect(screen.getByText('Pick a wallet')).toBeTruthy();
+      expect(screen.queryByText('Category')).toBeNull();
+    });
+  });
+
+  it('shows the compact wallet name on its row and speaks the full one', async () => {
     seed('p1');
     financeProjection$.walletsById[MAYBANK].name.set('Maybank Savings');
     await show(<ReviewScreen />);

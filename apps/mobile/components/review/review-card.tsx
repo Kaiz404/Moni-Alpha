@@ -2,9 +2,9 @@ import type { MinorAmount, ProposedTransaction, TransactionType } from '@repo/ty
 import { memo } from 'react';
 import { View, type AccessibilityActionEvent } from 'react-native';
 
-import { PickerChip, type ChipLook } from '@/components/review/picker-chip';
+import { FieldRow, FieldRows } from '@/components/review/field-row';
+import type { ChipLook } from '@/components/review/picker-chip';
 import { SourcePill } from '@/components/review/source-pill';
-import { TypeChip } from '@/components/review/type-chip';
 import { IconSymbol, type IconSymbolName } from '@/components/ui/icon-symbol';
 import { InPlaceField, InPlaceGroup } from '@/components/ui/in-place-field';
 import { Press } from '@/components/ui/press';
@@ -17,10 +17,12 @@ import type {
 } from '@/lib/proposals/review-card-state';
 import type { ReviewStatus } from '@/lib/proposals/review-status';
 import { tid } from '@/lib/test-ids';
+import { resolveTransactionIcon } from '@/lib/transactions/icon';
+import { TRANSACTION_TYPE_COPY } from '@/lib/transactions/type-change';
 
 const FIELD = { merchant: tid('review', 'merchant'), amount: tid('review', 'amount') } as const;
 
-/** A wallet chip shows the compact name; the screen reader hears the full one (`XA-Review`). */
+/** A wallet row shows the compact name; the screen reader hears the full one (`XA-Review`). */
 export type WalletLook = ChipLook & { fullName: string };
 
 /** Everything the card shows, already resolved from the store and this card's edits. */
@@ -96,11 +98,9 @@ export const ReviewCard = memo(function ReviewCard({
   const tokens = useThemeTokens();
   const { proposal } = model;
   const source = SOURCE[proposal.sourceType];
-  const amountText = formatSignedMoney(
-    moneyDirection(model.type),
-    model.amountMinor,
-    proposal.currency,
-  );
+  const direction = moneyDirection(model.type);
+  const typeLabel = TRANSACTION_TYPE_COPY[direction].label;
+  const amountText = formatSignedMoney(direction, model.amountMinor, proposal.currency);
   const transfer = model.type === 'transfer';
   // A screen reader can't swipe, so the swipe's three decisions are this row's actions.
   const decisions: { name: ReviewDecision; label: string }[] = canDecide
@@ -182,43 +182,33 @@ export const ReviewCard = memo(function ReviewCard({
         }}
       >
         <View>
-          <View className="flex-row items-center gap-2">
-            {transfer ? null : (
-              <View className="min-w-0 flex-1">
-                <InPlaceField
-                  testID={tid('review', 'merchant')}
-                  label="Merchant name"
-                  kind="text"
-                  required
-                  value={model.merchant}
-                  onSave={handlers.onSaveMerchant}
-                >
-                  {({ editable, editor }) =>
-                    editor ?? (
-                      <View className="-my-1.5">
-                        {editable(
-                          <Text
-                            variant="rowTitle"
-                            className="text-foreground"
-                            numberOfLines={1}
-                          >
-                            {model.merchant}
-                          </Text>,
-                          { accessibilityLabel: `Merchant ${model.merchant}. Edit name` },
-                        )}
-                      </View>
-                    )
-                  }
-                </InPlaceField>
-              </View>
-            )}
-            {editing === 'merchant' ? null : (
-              <TypeChip
-                type={moneyDirection(model.type)}
-                onPress={handlers.onPickType}
-              />
-            )}
-          </View>
+          {transfer ? null : (
+            <InPlaceField
+              testID={tid('review', 'merchant')}
+              label="Merchant name"
+              kind="text"
+              required
+              value={model.merchant}
+              onSave={handlers.onSaveMerchant}
+            >
+              {({ editable, editor }) =>
+                editor ?? (
+                  <View className="-my-1.5">
+                    {editable(
+                      <Text
+                        variant="cardTitle"
+                        className="text-foreground"
+                        numberOfLines={1}
+                      >
+                        {model.merchant}
+                      </Text>,
+                      { accessibilityLabel: `Merchant ${model.merchant}. Edit name` },
+                    )}
+                  </View>
+                )
+              }
+            </InPlaceField>
+          )}
           <InPlaceField
             testID={tid('review', 'amount')}
             label="Amount"
@@ -245,26 +235,39 @@ export const ReviewCard = memo(function ReviewCard({
         </View>
       </InPlaceGroup>
 
-      <View className="flex-row gap-2">
+      <FieldRows>
+        <FieldRow
+          testID={tid('review', 'type')}
+          label="Type"
+          look={{
+            name: typeLabel,
+            icon: resolveTransactionIcon(null, direction),
+            color: null,
+          }}
+          accessibilityLabel={`Type ${typeLabel}. Change type`}
+          onPress={handlers.onPickType}
+        />
         {transfer ? null : (
-          <PickerChip
+          <FieldRow
             testID={tid('review', 'category')}
+            label="Category"
             look={model.category}
-            tinted
             empty={{ label: 'Pick a category', icon: 'shape-outline' }}
             accessibilityLabel={`Category ${model.category?.name ?? 'none'}. Change category`}
             onPress={handlers.onPickCategory}
           />
         )}
-        <PickerChip
+        <FieldRow
           testID={tid('review', 'wallet')}
+          label="Wallet"
           look={model.wallet}
           accessibilityLabel={model.wallet ? `Wallet ${model.wallet.fullName}. Change wallet` : 'Pick a wallet'}
           onPress={handlers.onPickWallet}
         />
         {transfer ? (
-          <PickerChip
+          <FieldRow
             testID={tid('review', 'destination')}
+            label="Moves to"
             look={model.destination ?? null}
             accessibilityLabel={
               model.destination
@@ -274,7 +277,7 @@ export const ReviewCard = memo(function ReviewCard({
             onPress={handlers.onPickDestination}
           />
         ) : null}
-      </View>
+      </FieldRows>
 
       {model.evidence ? (
         <Text

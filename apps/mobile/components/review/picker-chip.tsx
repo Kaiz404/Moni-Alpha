@@ -11,8 +11,8 @@ import type { TestId } from '@/lib/test-ids';
 export type ChipLook = { name: string; icon: string | null; color: string | null };
 
 /**
- * The 44 chip that opens a picker sheet on the review card and Moni's draft card: a 28 bubble in
- * the item's colour, its name, chevron-down. With nothing picked yet it turns Lemon and asks.
+ * The 44 chip that opens a picker sheet on Moni's draft card: a 28 bubble in the item's colour,
+ * its name, chevron-down. With nothing picked yet it turns Lemon and asks.
  */
 export function PickerChip({
   testID,
