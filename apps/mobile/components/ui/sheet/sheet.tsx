@@ -284,7 +284,7 @@ export function Sheet({
                   <Press
                     testID={tid('sheet', 'close')}
                     accessibilityLabel={closeLabel}
-                    radius={22}
+                    radius={{ rest: 22, pressed: 16 }}
                     pressedClassName="bg-sand"
                     className="h-11 w-11 items-center justify-center"
                     onPress={onDismiss}
