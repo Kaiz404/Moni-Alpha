@@ -3,6 +3,7 @@ import type { UpdateTransaction } from '@repo/types';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Alert, ScrollView, View } from 'react-native';
+import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 
 import { BudgetLine } from '@/components/transaction/budget-line';
 import {
@@ -626,21 +627,26 @@ function Detail({ transaction: tx }: { transaction: FinanceTransaction }) {
                       Note
                     </Text>
                     {tx.notes && editing === null ? (
-                      <Press
-                        testID={tid('txn', 'note', 'pencil')}
-                        accessibilityLabel="Edit note"
-                        accessibilityHint="Opens the keyboard"
-                        hitSlop={6}
-                        pressedClassName="bg-hairline"
-                        className="h-8 w-8 items-center justify-center rounded-full bg-sand"
-                        onPress={open}
+                      <Animated.View
+                        entering={FadeIn.duration(200)}
+                        exiting={FadeOut.duration(160)}
                       >
-                        <IconSymbol
-                          name="pencil-outline"
-                          size={16}
-                          color={tokens.foreground}
-                        />
-                      </Press>
+                        <Press
+                          testID={tid('txn', 'note', 'pencil')}
+                          accessibilityLabel="Edit note"
+                          accessibilityHint="Opens the keyboard"
+                          hitSlop={6}
+                          pressedClassName="bg-hairline"
+                          className="h-8 w-8 items-center justify-center rounded-full bg-sand"
+                          onPress={open}
+                        >
+                          <IconSymbol
+                            name="pencil-outline"
+                            size={16}
+                            color={tokens.foreground}
+                          />
+                        </Press>
+                      </Animated.View>
                     ) : null}
                   </View>
                   {editor ??
