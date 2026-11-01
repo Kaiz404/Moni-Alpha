@@ -61,7 +61,7 @@ load_env "$mobile/.env"
 load_env "$main_checkout/apps/mobile/.env"
 export APP_VARIANT=e2e
 e2e_now=${EXPO_PUBLIC_E2E_NOW:-}
-env_hash=$(printf '%s\n' "APP_VARIANT=$APP_VARIANT" "EXPO_PUBLIC_AI_API_URL=$EXPO_PUBLIC_AI_API_URL" "EXPO_PUBLIC_E2E_NOW=$e2e_now" "${env_assignments[@]}" | sort | sha256sum | cut -c1-16)
+env_hash=$(printf '%s\n' "APP_VARIANT=$APP_VARIANT" "EXPO_PUBLIC_AI_API_URL=$EXPO_PUBLIC_AI_API_URL" "EXPO_PUBLIC_E2E_NOW=$e2e_now" "EXPO_PUBLIC_E2E_TOAST_MS=${EXPO_PUBLIC_E2E_TOAST_MS:-}" "${env_assignments[@]}" | sort | sha256sum | cut -c1-16)
 
 inputs=(apps/mobile packages package.json pnpm-lock.yaml pnpm-workspace.yaml)
 sha=$(git -C "$root" rev-parse HEAD)

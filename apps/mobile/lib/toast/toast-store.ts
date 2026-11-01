@@ -2,7 +2,9 @@ import { useSyncExternalStore } from 'react';
 
 import type { IconSymbolName } from '@/components/ui/icon-symbol';
 
-export const TOAST_MS = 5000;
+// Maestro takes longer than this to reach Undo, so a flow-run build passes a longer time.
+const TEST_TOAST_MS = Number(process.env.EXPO_PUBLIC_E2E_TOAST_MS);
+export const TOAST_MS = TEST_TOAST_MS > 0 ? TEST_TOAST_MS : 4000;
 
 export type ToastTone = 'done' | 'removed';
 

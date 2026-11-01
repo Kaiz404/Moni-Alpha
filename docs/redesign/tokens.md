@@ -72,7 +72,7 @@ Dark (`V2F-Dark`): Ground #161512 · Raised #211F1B (cards) · Fill #2C2924 (San
 - Field: Paper, 2 ink border, radius 16. Amount 64 tall (sign + "RM" 28/700 Meta, digits 40/44 700). Name 52 tall, 18/600.
 - Then cancel (44 Sand circle, close) and save (44 Ink circle, check). One field at a time; the rest of the page stays at full opacity; back or tapping outside cancels.
 - The phone's own keyboard (numeric for amounts). Never a custom keypad or a sheet holding one.
-- Saved toast: Ink capsule ≥ 56 tall, check-circle Mint, text 14/19 cream, Undo button (Mint text, `on-ink-positive`; dark #236B47 on the light capsule is not on a board). 5 s.
+- Saved toast: Ink capsule ≥ 56 tall, check-circle Mint, text 14/19 cream, Undo button (Mint text, `on-ink-positive`; dark #236B47 on the light capsule is not on a board). 4 s, with a 3 tall `on-ink-positive` bar along the bottom edge that runs out with the time left (owner's direction, 1 Nov 2026; the board has 5 s and no bar).
 - New money (a capture, a repayment, lending more, a new bill or debt) uses the full amount page instead (keypad page that slides in from the right). A fixed set (category, wallet, date) uses a picker sheet.
 
 ## Sheets

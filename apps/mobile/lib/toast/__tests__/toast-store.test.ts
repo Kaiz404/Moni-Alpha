@@ -45,4 +45,8 @@ describe('toast store', () => {
     expect(commit).toHaveBeenCalledTimes(1);
     expect(result.current).toBeNull();
   });
+
+  it('lasts 4 seconds', () => {
+    expect(TOAST_MS).toBe(4000);
+  });
 });

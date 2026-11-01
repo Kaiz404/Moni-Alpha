@@ -1,7 +1,8 @@
 import { useSegments } from 'expo-router';
 import { useEffect } from 'react';
-import { AppState } from 'react-native';
+import { AppState, View } from 'react-native';
 import Animated, {
+  Easing,
   FadeOut,
   useAnimatedKeyboard,
   useAnimatedStyle,
@@ -24,6 +25,7 @@ import { springs } from '@/lib/motion/tokens';
 import { tid } from '@/lib/test-ids';
 import {
   dismissToast,
+  TOAST_MS,
   undoToast,
   useToast,
   type ShownToast,
@@ -73,6 +75,7 @@ function ToastCapsule({ toast }: { toast: ShownToast }) {
   const tokens = useThemeTokens();
   const reduceMotion = useReducedMotion();
   const shown = useSharedValue(0);
+  const left = useSharedValue(1);
 
   useEffect(() => {
     shown.set(
@@ -80,7 +83,12 @@ function ToastCapsule({ toast }: { toast: ShownToast }) {
         ? withTiming(1, { duration: 150 })
         : withSpring(1, springs.sheet),
     );
-  }, [reduceMotion, shown]);
+    left.set(withTiming(0, { duration: TOAST_MS, easing: Easing.linear }));
+  }, [reduceMotion, shown, left]);
+
+  const remaining = useAnimatedStyle(() => ({
+    transform: [{ scaleX: left.get() }],
+  }));
 
   const rise = useAnimatedStyle(() => ({
     opacity: Math.min(shown.get(), 1),
@@ -96,6 +104,19 @@ function ToastCapsule({ toast }: { toast: ShownToast }) {
       className={`min-h-14 flex-row items-center gap-2.5 rounded-full bg-primary py-1.5 pl-[18px] ${toast.undo ? 'pr-1.5' : 'pr-[18px]'}`}
       style={[SHADOW, rise]}
     >
+      <View
+        pointerEvents="none"
+        className="absolute inset-0 overflow-hidden rounded-full"
+      >
+        <Animated.View
+          testID={tid('nav', 'toast', 'time-left')}
+          className="absolute inset-x-0 bottom-0 h-[3px]"
+          style={[
+            { backgroundColor: tokens.onInkPositive, transformOrigin: 'left' },
+            remaining,
+          ]}
+        />
+      </View>
       <IconSymbol
         name={
           toast.icon ??
