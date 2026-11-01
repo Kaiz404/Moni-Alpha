@@ -6,7 +6,7 @@ import { Press } from '@/components/ui/press';
 import { Text } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { lastCapturedLine, reportedMissedLine, type CaptureSourceHealth } from '@/lib/notifications/capture-health';
-import { tid } from '@/lib/test-ids';
+import { tid, type TestId } from '@/lib/test-ids';
 
 /** One linked app, how recently it produced a capture, and a way to say it missed one. */
 export function LinkedAppRow({
@@ -16,6 +16,9 @@ export function LinkedAppRow({
   unreached,
   quiet,
   onReportMissed,
+  testID = tid('sources', 'app', label),
+  accessOff = false,
+  onChange,
 }: {
   label: string;
   packageName: string;
@@ -24,9 +27,15 @@ export function LinkedAppRow({
   unreached: string | null;
   quiet: boolean;
   onReportMissed: () => void;
+  testID?: TestId;
+  /** Notification access is off, so nothing from this app reaches Moni. */
+  accessOff?: boolean;
+  /** Tapping the app itself: pick another one. */
+  onChange?: () => void;
 }) {
   const tokens = useThemeTokens();
   const meta = [
+    accessOff ? 'Notification access is off' : null,
     quiet ? 'Gone quiet' : null,
     lastCapturedLine(source),
     reportedMissedLine(source),
@@ -34,8 +43,8 @@ export function LinkedAppRow({
   ]
     .filter(Boolean)
     .join(' · ');
-  return (
-    <View className="flex-row gap-3.5 px-[18px] py-3">
+  const identity = (
+    <>
       <AppBubble packageName={packageName} />
       <View className="min-w-0 flex-1 gap-0.5">
         <Text
@@ -51,23 +60,44 @@ export function LinkedAppRow({
         >
           {meta}
         </Text>
+      </View>
+    </>
+  );
+  return (
+    <View>
+      {onChange ? (
         <Press
-          testID={tid('sources', 'app', label, 'report-missed')}
-          onPress={onReportMissed}
-          hitSlop={6}
-          accessibilityLabel={`Report a transaction ${label} missed`}
-          className="min-h-8 flex-row items-center gap-0.5 self-start rounded-full"
+          testID={testID}
+          accessibilityLabel={`Alerts from ${label}, ${meta}. Change app`}
+          onPress={onChange}
+          className="min-h-[66px] flex-row items-center gap-3.5 py-3 pl-[18px] pr-3"
         >
-          <Text className="text-[14px] leading-[19px] font-display-semibold text-deep-mint">
-            Report a missed transaction
-          </Text>
+          {identity}
           <IconSymbol
             name="chevron-right"
-            size={16}
-            color={tokens.deepMint}
+            size={20}
+            color={tokens.muted}
           />
         </Press>
-      </View>
+      ) : (
+        <View className="flex-row gap-3.5 px-[18px] pt-3">{identity}</View>
+      )}
+      <Press
+        testID={tid(testID, 'report-missed')}
+        onPress={onReportMissed}
+        hitSlop={6}
+        accessibilityLabel={`Report a transaction ${label} missed`}
+        className="mb-2 ml-[74px] min-h-8 flex-row items-center gap-0.5 self-start rounded-full"
+      >
+        <Text className="text-[14px] leading-[19px] font-display-semibold text-deep-mint">
+          Report a missed transaction
+        </Text>
+        <IconSymbol
+          name="chevron-right"
+          size={16}
+          color={tokens.deepMint}
+        />
+      </Press>
     </View>
   );
 }

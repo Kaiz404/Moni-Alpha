@@ -37,8 +37,8 @@ The words the redesigned app uses, and the words it never uses. The design canva
 | Keep capture running, Battery, Autostart | The Capture sources section for the phone settings that let Moni keep reading alerts. Autostart shows only on Xiaomi, Redmi and POCO phones. Moni cannot read it, so the row says so. |
 | This was a transaction, Report a transaction Moni missed, reported missed | The ways to say capture failed. The first sits on an Ignored entry in the Capture log and opens Type it holding what the alert said. The second is for a payment with no alert. Saving counts the miss against that app: "1 reported missed". |
 | Gone quiet, Nothing missed | A linked app that has been silent for longer than its own usual rhythm. Nothing missed dismisses the alert until the app's next capture. |
-| Linked apps, Last captured | Capture sources lists each linked app with "Last captured 3 hours ago", or "No captures yet". A capture is an alert that became a transaction or a Review card, or counted once with one, not one that only arrived. |
-| Location from notifications | On by default; per banking app in Capture sources. |
+| Linked app, Last captured | A wallet's Alerts section shows the app it links with "Last captured 3 hours ago", or "No captures yet". A capture is an alert that became a transaction or a Review card, or counted once with one, not one that only arrived. |
+| Location from notifications | On by default; per wallet, on the wallet page. |
 
 ## Never use
 

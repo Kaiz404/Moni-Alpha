@@ -9,6 +9,7 @@ jest.mock('uniwind', () => ({
   useCSSVariable: (names: string[]) => names.map(() => undefined),
   useUniwind: () => ({ theme: 'light' }),
 }));
+jest.mock('@/components/capture-sources/use-linked-apps', () => ({ useLinkedApps: jest.fn() }));
 jest.mock('@/lib/supabase/profile', () => ({
   getProfilePreferences: jest.fn(async () => ({})),
   updateProfilePreferences: jest.fn(async () => {}),

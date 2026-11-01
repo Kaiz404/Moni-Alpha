@@ -3,7 +3,11 @@ import { useEffect, useMemo, useState } from 'react';
 import { AppState, Platform, View } from 'react-native';
 import { addMinor, type MinorAmount } from '@repo/types';
 
+import { reportMissedFrom } from '@/components/capture-log/report-missed';
+import { LinkedAppRow } from '@/components/capture-sources/linked-app-row';
 import { useCaptureHealth } from '@/components/capture-sources/use-capture-health';
+import { useLinkedApps } from '@/components/capture-sources/use-linked-apps';
+import { FormField } from '@/components/ui/form-field';
 import { Toggle } from '@/components/ui/toggle';
 import {
   IconSymbol,
@@ -18,13 +22,15 @@ import {
 } from '@/components/ui/transaction-row';
 import { labelForNotificationPackage } from '@/constants/notification-apps';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
+import { toLocalDateInput } from '@/lib/dates/local-date-input';
 import { formatMoney } from '@/lib/finance/format-money';
 import type {
   FinanceProposal,
   FinanceTransaction,
   FinanceWallet,
 } from '@/lib/finance/types';
-import { lastCapturedLine, sourceHealth } from '@/lib/notifications/capture-health';
+import { assessCadence } from '@/lib/notifications/capture-cadence';
+import { sourceHealth, unreachedLine } from '@/lib/notifications/capture-health';
 import {
   askForNotificationAccess,
   readNotificationListenerPermission,
@@ -42,7 +48,7 @@ import {
   getDefaultWalletId,
   setDefaultWalletId,
 } from '@/lib/wallets/default-wallet';
-import type { WalletAlertLink } from '@/lib/wallets/wallet-link';
+import { useWalletNamesLinkedTo, type WalletAlertLink } from '@/lib/wallets/wallet-link';
 import {
   formatDayTotal,
   groupWalletDays,
@@ -269,7 +275,81 @@ function useListenerOn(): boolean {
   return on;
 }
 
-/** ALERTS: which app's alerts become this wallet's captures, and the Capture log. */
+/** Which other wallet an alert is for, when another wallet reads the same app. Saved on leaving the field. */
+function AccountHint({
+  walletId,
+  hint,
+  appLabel,
+  sharedWith,
+}: {
+  walletId: string;
+  hint: string | null;
+  appLabel: string;
+  sharedWith: string[];
+}) {
+  const [draft, setDraft] = useState(hint ?? '');
+  return (
+    <FormField
+      testID={tid('wallet', 'account-hint')}
+      containerClassName="px-1 pt-1"
+      label="Account hint"
+      hint={`${appLabel} also sends alerts for ${sharedWith.join(', ')}. A hint such as Savings or ****4521 tells Moni which wallet an alert is for.`}
+      autoCapitalize="words"
+      placeholder="Savings or ****4521"
+      value={draft}
+      onChangeText={setDraft}
+      onBlur={() => {
+        const next = draft.trim() || null;
+        if (next === (hint?.trim() || null)) return;
+        void updateWallet(walletId, { notificationAccountHint: next }).catch(couldNotSave);
+      }}
+    />
+  );
+}
+
+function couldNotSave() {
+  showToast({ text: "Couldn't save that. Try again.", tone: 'removed' });
+}
+
+/** Where a capture happened, for this wallet's alerts. */
+function WalletLocation({ wallet }: { wallet: FinanceWallet }) {
+  const tokens = useThemeTokens();
+  const on = wallet.recordLocation !== false;
+  return (
+    <View className="min-h-[66px] flex-row items-center gap-3.5 px-[18px] py-3">
+      <TintBubble
+        icon="map-marker"
+        color={tokens.sky}
+      />
+      <View className="min-w-0 flex-1">
+        <Text
+          variant="rowTitle"
+          className="text-foreground"
+          numberOfLines={1}
+        >
+          Location from notifications
+        </Text>
+        <Text
+          variant="meta"
+          className="text-muted"
+          numberOfLines={1}
+        >
+          {on ? 'Pins each payment on the map' : 'Off for this wallet'}
+        </Text>
+      </View>
+      <Toggle
+        testID={tid('wallet', 'location')}
+        accessibilityLabel={`Location from notifications for ${wallet.name}`}
+        value={on}
+        onChange={(next) =>
+          void updateWallet(wallet.id, { recordLocation: next }).catch(couldNotSave)
+        }
+      />
+    </View>
+  );
+}
+
+/** ALERTS: the one place a wallet links an app, what that app has done lately, and the Capture log. */
 export function WalletAlerts({
   wallet,
   link,
@@ -278,12 +358,13 @@ export function WalletAlerts({
   link: WalletAlertLink;
 }) {
   const listenerOn = useListenerOn();
-  const { health } = useCaptureHealth();
-  const app =
+  const { health, unreached } = useCaptureHealth();
+  const { wallets } = useLinkedApps();
+  const sharedWith = useWalletNamesLinkedTo(link.notificationPackage, wallet.id);
+  const packageName = link.notificationPackage;
+  const label =
     link.notificationAppLabel ??
-    (link.notificationPackage
-      ? labelForNotificationPackage(link.notificationPackage)
-      : null);
+    (packageName ? labelForNotificationPackage(packageName) : null);
 
   const changeApp = async () => {
     if (Platform.OS === 'android' && !listenerOn) {
@@ -292,7 +373,8 @@ export function WalletAlerts({
     }
     const pick = await openSheet({
       kind: 'notificationApp',
-      selected: link.notificationPackage,
+      selected: packageName,
+      selectedLabel: label,
     });
     if (!pick) return;
     await updateWallet(wallet.id, {
@@ -304,6 +386,8 @@ export function WalletAlerts({
     });
   };
 
+  const source = packageName ? sourceHealth(health, packageName) : null;
+
   return (
     <View className="gap-2 pt-2">
       <Text
@@ -314,18 +398,35 @@ export function WalletAlerts({
         Alerts
       </Text>
       <ListCard>
-        {wallet.type === 'cash' ? null : (
+        {packageName && label && source ? (
+          <>
+            <LinkedAppRow
+              testID={tid('wallet', 'alerts')}
+              label={label}
+              packageName={packageName}
+              source={source}
+              unreached={unreachedLine(unreached, packageName)}
+              quiet={
+                assessCadence(source, toLocalDateInput(new Date())).kind === 'quiet'
+              }
+              accessOff={Platform.OS === 'android' && !listenerOn}
+              onChange={() => void changeApp()}
+              onReportMissed={() =>
+                reportMissedFrom(
+                  packageName,
+                  wallets.filter((linked) => linked.id === wallet.id),
+                )
+              }
+            />
+            <WalletLocation wallet={wallet} />
+          </>
+        ) : (
           <DetailRow
             testID={tid('wallet', 'alerts')}
             icon="bell-outline"
             tint="mint"
-            title={app ? `Alerts from ${app}` : 'Alerts from'}
-            meta={
-              link.notificationPackage
-                ? lastCapturedLine(sourceHealth(health, link.notificationPackage))
-                : 'Link a banking app'
-            }
-            value={app && listenerOn ? 'On' : 'Off'}
+            title="Link an app"
+            meta="Any app on this phone that sends payment alerts"
             onPress={() => void changeApp()}
           />
         )}
@@ -338,6 +439,15 @@ export function WalletAlerts({
           onPress={() => router.push('/capture-log')}
         />
       </ListCard>
+      {packageName && label && sharedWith.length > 0 ? (
+        <AccountHint
+          key={packageName}
+          walletId={wallet.id}
+          hint={link.notificationAccountHint}
+          appLabel={label}
+          sharedWith={sharedWith}
+        />
+      ) : null}
     </View>
   );
 }

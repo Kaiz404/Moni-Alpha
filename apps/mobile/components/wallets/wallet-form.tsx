@@ -96,7 +96,7 @@ export function walletMeta(
   const label =
     WALLET_TYPE_OPTIONS.find((option) => option.value === type)
       ?.label ?? 'Wallet';
-  const app = type === 'cash' ? null : linkLabel(link);
+  const app = linkLabel(link);
   return [label, currency, app ? `alerts from ${app}` : null]
     .filter(Boolean)
     .join(' · ');
@@ -118,9 +118,8 @@ export function WalletForm({
   const set = (patch: Partial<WalletFormValues>) =>
     setValues((current) => ({ ...current, ...patch }));
 
-  const linkable = values.type !== 'cash';
   const sharedWith = useWalletNamesLinkedTo(
-    linkable ? values.link.notificationPackage : null,
+    values.link.notificationPackage,
     editing ? mode.walletId : null,
   );
   const style = getWalletCardStyle(values.cardStyleId);
@@ -149,7 +148,7 @@ export function WalletForm({
     color: style.swatchHex,
     icon: getWalletTypeIcon(values.type),
     cardStyleId: style.id,
-    ...(linkable ? values.link : NO_LINK),
+    ...values.link,
   });
 
   const save = async () => {
@@ -348,20 +347,11 @@ export function WalletForm({
             </SandField>
           )}
 
-          {linkable ? (
-            <WalletNotificationLinkSection
-              value={values.link}
-              onChange={(link) => set({ link })}
-              sharedPackageWalletNames={sharedWith}
-            />
-          ) : (
-            <Text
-              variant="meta"
-              className="px-1 pt-1 text-muted"
-            >
-              Cash has no app. Add it with + or tell Moni.
-            </Text>
-          )}
+          <WalletNotificationLinkSection
+            value={values.link}
+            onChange={(link) => set({ link })}
+            sharedPackageWalletNames={sharedWith}
+          />
 
           <View className="min-h-[52px] justify-center px-1">
             <WalletColourSwatches

@@ -26,8 +26,8 @@ tags:
 - assertVisible: Wallet type
 - tapOn:
     id: sheet.option.cash
-- assertVisible: Cash has no app. Add it with + or tell Moni.
-- assertNotVisible:
+# Any wallet can link an app, cash included.
+- assertVisible:
     id: wallet.alerts-from
 - tapOn:
     id: wallet.form.starting-balance

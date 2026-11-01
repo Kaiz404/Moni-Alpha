@@ -1,0 +1,62 @@
+# The wallet page is the one home for a linked app: its capture health, reporting a missed
+# transaction, the location switch, and the app sheet. Maybank is linked in seed-full.
+# The sheet step needs notification access; without it the row asks for access instead.
+# Run: scripts/device/run-flows.sh .maestro/flows/account/wallet-linked-app.yaml
+appId: com.anonymous.moni.e2e
+name: Wallet linked app
+tags:
+  - k2
+  - seed-full
+---
+- runFlow: ../../subflows/launch.yaml
+- tapOn:
+    id: home.net-worth
+- scrollUntilVisible:
+    element:
+      text: Maybank Savings
+    centerElement: true
+- tapOn: Maybank Savings
+- extendedWaitUntil:
+    visible:
+      id: wallet.balance.edit
+    timeout: 10000
+- scrollUntilVisible:
+    element:
+      id: wallet.location
+- assertVisible:
+    id: wallet.alerts
+- assertVisible: Maybank
+- assertVisible: "(.*· )?(No captures yet|Last captured .*)"
+- takeScreenshot: wallet-linked-app
+
+# Location off and back on.
+- assertVisible: Pins each payment on the map
+- tapOn:
+    id: wallet.location
+- assertVisible: Off for this wallet
+- tapOn:
+    id: wallet.location
+- assertVisible: Pins each payment on the map
+
+- tapOn:
+    id: wallet.alerts.report-missed
+- assertVisible: New expense
+- takeScreenshot: wallet-linked-app-report-missed
+- back
+
+- runFlow:
+    when:
+      notVisible: "Notification access is off.*"
+    commands:
+      - tapOn:
+          id: wallet.alerts
+      - assertVisible: Alerts from
+      - assertVisible:
+          id: sheet.search
+      - assertVisible:
+          id: sheet.option.none
+      - takeScreenshot: wallet-linked-app-sheet
+      - tapOn:
+          id: sheet.close
+      - assertNotVisible:
+          id: sheet.scrim
