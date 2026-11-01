@@ -1,4 +1,4 @@
-# B1 Budget tab root (V2P-InsightsMonth): spent card with the pace chart, budgets, bills, map teaser, month chooser.
+# B1 Budget tab root (V2P-InsightsMonth): spent card with the spending ring, budgets, bills, map teaser, month chooser.
 # Needs at least one MYR wallet and some spending this month.
 # Run: scripts/device/run-flows.sh .maestro/flows/budget/month.yaml
 appId: com.anonymous.moni.e2e
@@ -20,11 +20,37 @@ tags:
 - assertVisible:
     id: budget.month
 - assertVisible:
-    id: budget.pace-chart
+    id: budget.spend-ring
 - assertVisible:
-    id: budget.chart.callout
+    id: budget.spend-ring.total
+    text: 'RM[\d,]+\.\d\d'
 - assertNotVisible: Insights
 - takeScreenshot: b1-l2-pair
+
+# An arc reads in the middle; the same arc, or the middle, goes back to the month's total.
+- tapOn:
+    id: budget\.slice\..*
+    index: 0
+- assertVisible:
+    id: budget.spend-ring.selected
+- assertVisible: '.*% of spending'
+- assertNotVisible:
+    id: budget.spend-ring.total
+- takeScreenshot: b1-l2-ring-selected
+- tapOn:
+    id: budget\.slice\..*
+    index: 0
+- assertVisible:
+    id: budget.spend-ring.total
+- tapOn:
+    id: budget\.slice\..*
+    index: 0
+- assertVisible:
+    id: budget.spend-ring.selected
+- tapOn:
+    id: budget.spend-ring.selected
+- assertVisible:
+    id: budget.spend-ring.total
 - runFlow:
     when:
       visible:
@@ -56,4 +82,6 @@ tags:
           id: sheet\.option\.\d{4}-\d{2}
           index: 1
       - assertNotVisible: Choose month
+      - assertVisible:
+          id: budget.spend-ring.total
       - takeScreenshot: b1-l5-september

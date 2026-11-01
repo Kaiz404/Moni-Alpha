@@ -4,6 +4,7 @@ import {
   buildBudgetMonth,
   leftSentence,
   spendMonths,
+  spendSlices,
   type BudgetMonthInput,
 } from '../budget-month';
 import { formatMoney } from '../format-money';
@@ -195,6 +196,47 @@ describe('buildBudgetMonth', () => {
     expect(month.budgetMinor).toBeNull();
     expect(month.evenPaceMinor).toBeNull();
     expect(leftSentence(month)).toBeNull();
+  });
+});
+
+describe('spendSlices', () => {
+  const food = category('food', 'Food & Dining', 1);
+  const archived = { ...category('pets', 'Pets', 2), isActive: false };
+
+  it('adds up to the month the tab shows, with archived and uncategorised spending kept', () => {
+    const transactions = [
+      spend(2, 40.1, 'food'),
+      spend(3, 9.9, 'food'),
+      spend(4, 25, 'pets'),
+      spend(5, 12.5, null),
+      spend(6, 7, 'deleted-long-ago'),
+      spend(7, 100, 'food', { type: 'income' }),
+      spend(8, 100, 'food', { analysisExcluded: true }),
+      spend(9, 100, 'food', { currency: 'USD' as CurrencyCode }),
+    ];
+    const slices = spendSlices(transactions, '2026-10', MYR, [food, archived]);
+    expect(slices.map((slice) => [slice.categoryId, slice.name, slice.spentMinor])).toEqual([
+      ['food', 'Food & Dining', 5000],
+      ['pets', 'Pets', 2500],
+      [null, 'No category', 1950],
+    ]);
+    const month = buildBudgetMonth({
+      month: '2026-10',
+      now: WED_14_OCT,
+      currency: MYR,
+      transactions,
+      categories: [food],
+      budgets: [],
+      monthlyTotalMinor: null,
+      bills: [],
+      debts: [],
+    });
+    expect(month.spentMinor).toBe(9450);
+    expect(slices.reduce((sum, slice) => sum + Number(slice.spentMinor), 0)).toBe(9450);
+  });
+
+  it('has nothing for a month with no spending', () => {
+    expect(spendSlices([spend(2, 40, 'food')], '2026-09', MYR, [food])).toEqual([]);
   });
 });
 

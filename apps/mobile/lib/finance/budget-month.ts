@@ -373,6 +373,45 @@ export function monthSpend(
     .sort((a, b) => b.transactionDate.localeCompare(a.transactionDate));
 }
 
+export type SpendSlice = {
+  /** Null for spending with no category. */
+  categoryId: string | null;
+  name: string;
+  icon: string | null;
+  color: string | null;
+  spentMinor: MinorAmount;
+};
+
+/**
+ * A month's spending split by category, biggest first, adding up to `buildBudgetMonth`'s `spentMinor`.
+ * `categories` has to include archived ones: old spending still belongs to them.
+ */
+export function spendSlices(
+  transactions: readonly FinanceTransaction[],
+  month: MonthKey,
+  currency: CurrencyCode,
+  categories: readonly Pick<FinanceCategory, 'id' | 'name' | 'icon' | 'color'>[],
+): SpendSlice[] {
+  const byId = new Map(categories.map((category) => [category.id, category]));
+  const totals = new Map<string | null, number>();
+  for (const transaction of monthSpend(transactions, month, currency)) {
+    const id = transaction.categoryId && byId.has(transaction.categoryId) ? transaction.categoryId : null;
+    totals.set(id, (totals.get(id) ?? 0) + Number(transaction.amountMinor));
+  }
+  return [...totals]
+    .map(([categoryId, spentMinor]) => {
+      const category = categoryId ? byId.get(categoryId) : undefined;
+      return {
+        categoryId,
+        name: category?.name ?? 'No category',
+        icon: category?.icon ?? null,
+        color: category?.color ?? null,
+        spentMinor: spentMinor as MinorAmount,
+      };
+    })
+    .sort((a, b) => b.spentMinor - a.spentMinor || a.name.localeCompare(b.name));
+}
+
 /** Day of month for a transaction in device-local time. */
 export function dayOfMonth(transaction: Pick<FinanceTransaction, 'transactionDate'>): number {
   return localDay(transaction.transactionDate).day;

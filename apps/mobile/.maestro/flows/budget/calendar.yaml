@@ -41,4 +41,6 @@ tags:
 - tapOn:
     id: budget.view.month
 - assertVisible:
-    id: budget.pace-chart
+    id: budget.spend-ring
+- assertVisible:
+    id: budget.spend-ring.total
