@@ -31,7 +31,7 @@ failed=0
 for area in "${areas[@]}"; do
   args=(--sha "$key" --area "$area")
   [[ -z $out ]] || args+=(--out "$out/$area")
-  summary=$("$here/run-flows.sh" "${args[@]}" 2>/dev/null | tail -n 1) || failed=1
+  summary=$("$here/run-flows.sh" "${args[@]}" 2>&1 | tail -n 1) || failed=1
   echo "$area: $summary"
 done
 exit "$failed"
