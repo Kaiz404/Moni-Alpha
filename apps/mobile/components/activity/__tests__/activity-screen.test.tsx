@@ -216,16 +216,6 @@ describe('Activity dates', () => {
     expect(capsule()).toHaveTextContent('Last 6 months');
   });
 
-  it('opens a day link on just that day, with a way back', () => {
-    mockParams = { day: '2026-09-14' };
-    render(<ActivityScreen />);
-    expect(capsule()).toHaveTextContent('Mon 14 Sep');
-    expect(shown('r31')).toBe(true);
-    expect(shown('r1')).toBe(false);
-    expect(screen.queryByTestId('activity.filter.day')).toBeNull();
-    fireEvent.press(screen.getByTestId('activity.range.clear'));
-    expect(shown('r1')).toBe(true);
-  });
 });
 
 describe('Activity chart', () => {

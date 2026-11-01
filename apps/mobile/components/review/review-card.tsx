@@ -5,17 +5,13 @@ import { useWindowDimensions, View, type AccessibilityActionEvent } from 'react-
 import { FieldRow, FieldRows } from '@/components/review/field-row';
 import type { ChipLook } from '@/components/review/picker-chip';
 import { SourcePill } from '@/components/review/source-pill';
-import {
-  getNotificationAppIconUri,
-  NotificationAppIcon,
-} from '@/components/wallets/notification-source';
+import { NotificationAppIcon, useAppIcon } from '@/components/wallets/notification-source';
 import { IconSymbol, type IconSymbolName } from '@/components/ui/icon-symbol';
 import { InPlaceField, InPlaceGroup } from '@/components/ui/in-place-field';
 import { Press } from '@/components/ui/press';
 import { Text } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { formatSignedMoney } from '@/lib/finance/format-money';
-import { getCachedInstalledAppsMap, getInstalledAppInfo } from '@/lib/notifications/installed-apps';
 import {
   cardFit,
   type EditField as EditFieldName,
@@ -81,27 +77,6 @@ const SOURCE: Record<
   text: { icon: 'creation', tint: 'bg-pending-fill', onPastel: false },
   image: { icon: 'receipt-text-outline', tint: 'bg-peach', onPastel: true },
 };
-
-/** The app's icon from the caches, or from the phone when they are cold. Null until one is known. */
-function useAppIcon(packageName: string | null): string | null {
-  const [loaded, setLoaded] = useState<string | null>(null);
-  // The icon cache parses all its stored icons on each read, so a card reads it once.
-  const cached = useMemo(
-    () => getNotificationAppIconUri(packageName, getCachedInstalledAppsMap() ?? new Map()),
-    [packageName],
-  );
-  useEffect(() => {
-    if (!packageName || cached) return;
-    let cancelled = false;
-    void getInstalledAppInfo(packageName).then((app) => {
-      if (!cancelled && app?.iconUri) setLoaded(app.iconUri);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [packageName, cached]);
-  return cached ?? loaded;
-}
 
 /** A notification capture shows the app that sent it. The tile is for the rest, and for an app with no known icon. */
 function SourceIcon({ proposal }: { proposal: ProposedTransaction }) {

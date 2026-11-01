@@ -39,6 +39,9 @@ jest.mock('@/lib/supabase/profile', () => ({ ensureFinanceTimezone: async () => 
 jest.mock('@/lib/notifications/capture-status', () => ({ markCaptureStatus: jest.fn() }));
 const mockInstalledApps = new Map<string, { label: string; iconUri?: string }>();
 const mockGetInstalledAppInfo = jest.fn(async (_packageName: string) => null as { iconUri: string } | null);
+jest.mock('@/lib/notifications/app-icon-cache', () => ({
+  getCachedAppIcon: (packageName: string) => mockInstalledApps.get(packageName)?.iconUri ?? null,
+}));
 jest.mock('@/lib/notifications/installed-apps', () => ({
   getCachedInstalledAppsMap: () => mockInstalledApps,
   getInstalledAppInfo: (packageName: string) => mockGetInstalledAppInfo(packageName),

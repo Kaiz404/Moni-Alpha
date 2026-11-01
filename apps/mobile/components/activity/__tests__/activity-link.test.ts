@@ -34,23 +34,10 @@ describe('readActivityLink', () => {
     expect(readActivityLink({})).toBeNull();
   });
 
-  it('opens a day as a one-day range', () => {
-    expect(readActivityLink({ day: '2026-09-14' })).toEqual({
-      query: '',
-      scope: null,
-      range: { from: '2026-09-14', to: '2026-09-14' },
-    });
-  });
-
-  it('ignores a day that is not a date', () => {
-    expect(readActivityLink({ day: '2026-02-30' })).toBeNull();
-  });
-
   it('keeps a search from a link', () => {
     expect(readActivityLink({ q: 'Grab ride' })).toEqual({
       query: 'Grab ride',
       scope: null,
-      range: null,
     });
   });
 
@@ -58,7 +45,6 @@ describe('readActivityLink', () => {
     expect(readActivityLink({ categoryId: 'food', month: '2026-09' })).toEqual({
       query: '',
       scope: { kind: 'category', categoryId: 'food', month: '2026-09' },
-      range: null,
     });
   });
 
@@ -66,7 +52,6 @@ describe('readActivityLink', () => {
     expect(readActivityLink({ categoryId: 'bills', month: 'soon' })).toEqual({
       query: '',
       scope: { kind: 'category', categoryId: 'bills', month: null },
-      range: null,
     });
   });
 
@@ -74,7 +59,6 @@ describe('readActivityLink', () => {
     expect(readActivityLink({ placeId: 'p1', range: 'week', q: 'kopi' })).toEqual({
       query: 'kopi',
       scope: { kind: 'place', placeId: 'p1', range: 'week' },
-      range: null,
     });
   });
 });

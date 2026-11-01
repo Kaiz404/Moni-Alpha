@@ -538,7 +538,7 @@ export default function BillScreen() {
                   ? 'Added for you, marked Auto'
                   : sourceApp
                     ? 'You approve each alert'
-                    : `Link ${wallet?.name ?? 'the wallet'} to its banking app first`
+                    : `Link ${wallet?.name ?? 'the wallet'} to its app first`
               }
             >
               <Toggle

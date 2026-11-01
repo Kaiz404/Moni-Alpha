@@ -16,7 +16,7 @@ export function LinkedAppRow({
   unreached,
   quiet,
   onReportMissed,
-  testID = tid('sources', 'app', label),
+  testID,
   accessOff = false,
   onChange,
 }: {
@@ -27,11 +27,11 @@ export function LinkedAppRow({
   unreached: string | null;
   quiet: boolean;
   onReportMissed: () => void;
-  testID?: TestId;
+  testID: TestId;
   /** Notification access is off, so nothing from this app reaches Moni. */
   accessOff?: boolean;
   /** Tapping the app itself: pick another one. */
-  onChange?: () => void;
+  onChange: () => void;
 }) {
   const tokens = useThemeTokens();
   const meta = [
@@ -43,45 +43,36 @@ export function LinkedAppRow({
   ]
     .filter(Boolean)
     .join(' · ');
-  const identity = (
-    <>
-      <AppBubble packageName={packageName} />
-      <View className="min-w-0 flex-1 gap-0.5">
-        <Text
-          variant="rowTitle"
-          className="text-foreground"
-          numberOfLines={1}
-        >
-          {label}
-        </Text>
-        <Text
-          variant="meta"
-          className="text-muted"
-        >
-          {meta}
-        </Text>
-      </View>
-    </>
-  );
   return (
     <View>
-      {onChange ? (
-        <Press
-          testID={testID}
-          accessibilityLabel={`Alerts from ${label}, ${meta}. Change app`}
-          onPress={onChange}
-          className="min-h-[66px] flex-row items-center gap-3.5 py-3 pl-[18px] pr-3"
-        >
-          {identity}
-          <IconSymbol
-            name="chevron-right"
-            size={20}
-            color={tokens.muted}
-          />
-        </Press>
-      ) : (
-        <View className="flex-row gap-3.5 px-[18px] pt-3">{identity}</View>
-      )}
+      <Press
+        testID={testID}
+        accessibilityLabel={`Alerts from ${label}, ${meta}. Change app`}
+        onPress={onChange}
+        className="min-h-[66px] flex-row items-center gap-3.5 py-3 pl-[18px] pr-3"
+      >
+        <AppBubble packageName={packageName} />
+        <View className="min-w-0 flex-1 gap-0.5">
+          <Text
+            variant="rowTitle"
+            className="text-foreground"
+            numberOfLines={1}
+          >
+            {label}
+          </Text>
+          <Text
+            variant="meta"
+            className="text-muted"
+          >
+            {meta}
+          </Text>
+        </View>
+        <IconSymbol
+          name="chevron-right"
+          size={20}
+          color={tokens.muted}
+        />
+      </Press>
       <Press
         testID={tid(testID, 'report-missed')}
         onPress={onReportMissed}

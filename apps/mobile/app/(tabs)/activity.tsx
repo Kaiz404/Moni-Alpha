@@ -98,7 +98,7 @@ export default function ActivityScreen() {
     setScope(link.scope);
     setKind('all');
     setWalletId(null);
-    setRange(link.range);
+    setRange(null);
     navigation.setParams(CLEARED_LINK);
   }, [navigation, params]);
 
@@ -279,12 +279,12 @@ export default function ActivityScreen() {
           <EmptyTile
             icon="format-list-bulleted"
             title="No spending yet"
-            body="Add your first spend with + or link a bank app so Moni catches them for you."
+            body="Add your first spend with +, or link an app on a wallet so Moni catches them for you."
             action={{
               testID: tid('activity', 'empty', 'link'),
-              label: 'Link a bank app',
-              icon: 'bank-outline',
-              onPress: () => router.push('/capture-sources'),
+              label: 'Link an app',
+              icon: 'wallet-outline',
+              onPress: () => router.push('/wallets'),
             }}
           />
         ) : (

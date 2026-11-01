@@ -285,7 +285,7 @@ function MonthView({
               variant="meta"
               className="text-ink-2"
             >
-              Add one with the +, or let Moni read your bank alerts.
+              Add one with the +, or let Moni read your alerts.
             </Text>
             <Button
               testID={tid('budget', 'add-expense')}

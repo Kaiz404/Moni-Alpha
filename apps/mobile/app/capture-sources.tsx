@@ -212,7 +212,7 @@ export default function CaptureSourcesScreen() {
               testID={tid('sources', 'link-app')}
               icon="link-variant"
               tint="bg-sand"
-              title="Link a banking app"
+              title="Link an app"
               meta="On a wallet page"
               href="/wallets"
             />

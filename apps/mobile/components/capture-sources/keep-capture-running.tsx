@@ -35,7 +35,7 @@ export function KeepCaptureRunning() {
         testID={tid('sources', 'battery')}
         icon="battery-charging-outline"
         title="Battery"
-        meta="Lets Moni read bank notifications while the phone sleeps"
+        meta="Lets Moni read notifications while the phone sleeps"
         state={BATTERY_ACCESS[exemption]}
         onChange={() =>
           void (exemption === 'exempt' ? openBatterySettings() : askForBatteryExemption())
