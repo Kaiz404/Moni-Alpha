@@ -38,6 +38,9 @@ describe('findDuplicate same_purchase', () => {
     expect(findDuplicate(receipt, [notification])).toEqual({
       kind: 'same_purchase',
       target: notification,
+      confidence: 'low',
+      walletId: null,
+      preferCandidate: false,
     });
   });
 
@@ -67,6 +70,9 @@ describe('findDuplicate same_purchase', () => {
     expect(findDuplicate(manual, [notification])).toEqual({
       kind: 'same_purchase',
       target: notification,
+      confidence: 'low',
+      walletId: null,
+      preferCandidate: false,
     });
   });
 });
@@ -92,6 +98,7 @@ describe('findDuplicate transfer_pair', () => {
     expect(findDuplicate(tngIn, [maybankOut])).toEqual({
       kind: 'transfer_pair',
       target: maybankOut,
+      confidence: 'high',
       fromWalletId: MAYBANK,
       toWalletId: TNG,
     });
@@ -101,6 +108,7 @@ describe('findDuplicate transfer_pair', () => {
     expect(findDuplicate(maybankOut, [tngIn])).toEqual({
       kind: 'transfer_pair',
       target: tngIn,
+      confidence: 'high',
       fromWalletId: MAYBANK,
       toWalletId: TNG,
     });
@@ -112,6 +120,81 @@ describe('findDuplicate transfer_pair', () => {
 
   it('ignores opposite directions in the same wallet', () => {
     expect(findDuplicate({ ...tngIn, walletId: MAYBANK }, [maybankOut])).toBeNull();
+  });
+});
+
+describe('findDuplicate for a bank alert and an e-wallet alert', () => {
+  const bankAlert = entry({
+    id: 'bank',
+    walletId: MAYBANK,
+    merchant: 'TNG DIGITAL',
+    fromAlert: true,
+    side: 'bank',
+    institutionId: 'maybank',
+  });
+  const tngAlert = entry({
+    id: 'tng',
+    walletId: TNG,
+    merchant: 'GUARDIAN',
+    fromAlert: true,
+    side: 'ewallet',
+    institutionId: 'tng',
+    at: at(3 * MINUTE),
+  });
+
+  it.each([
+    ['the e-wallet alert second', tngAlert, bankAlert, true],
+    ['the bank alert second', bankAlert, tngAlert, false],
+  ])('counts one purchase with %s', (_name, candidate, existing, preferCandidate) => {
+    expect(findDuplicate(candidate, [existing])).toMatchObject({
+      kind: 'same_purchase',
+      target: existing,
+      confidence: 'high',
+      walletId: MAYBANK,
+      preferCandidate,
+    });
+  });
+
+  it('is confident only up to 10 minutes apart', () => {
+    const tenMinutes = { ...tngAlert, at: at(10 * MINUTE) };
+    const eleven = { ...tngAlert, at: at(11 * MINUTE) };
+    expect(findDuplicate(tenMinutes, [bankAlert])?.confidence).toBe('high');
+    expect(findDuplicate(eleven, [bankAlert])?.confidence).toBe('low');
+  });
+
+  it('asks up to an hour apart when the merchants disagree, then says nothing', () => {
+    const shell = { ...bankAlert, merchant: 'SHELL' };
+    expect(findDuplicate({ ...tngAlert, at: at(60 * MINUTE) }, [shell])?.confidence).toBe('low');
+    expect(findDuplicate({ ...tngAlert, at: at(61 * MINUTE) }, [shell])).toBeNull();
+  });
+
+  it('asks when one alert names no merchant', () => {
+    const blank = { ...bankAlert, merchant: null };
+    expect(findDuplicate(tngAlert, [blank])?.confidence).toBe('low');
+  });
+
+  it('is confident when both name the same shop', () => {
+    const guardian = { ...bankAlert, merchant: 'GUARDIAN MID VALLEY' };
+    expect(findDuplicate(tngAlert, [guardian])?.confidence).toBe('high');
+  });
+
+  it('prefers the confident match over a closer guess', () => {
+    const closer = entry({ id: 'manual', walletId: MAYBANK, merchant: null, at: at(3 * MINUTE) });
+    expect(findDuplicate(tngAlert, [closer, bankAlert])).toMatchObject({
+      target: bankAlert,
+      confidence: 'high',
+    });
+  });
+
+  it('never pairs a row that already counts two captures', () => {
+    expect(findDuplicate(tngAlert, [{ ...bankAlert, paired: true }])).toBeNull();
+    expect(findDuplicate({ ...tngAlert, paired: true }, [bankAlert])).toBeNull();
+  });
+
+  it('needs both alerts to be alerts, in two kinds of wallet', () => {
+    expect(findDuplicate(tngAlert, [{ ...bankAlert, fromAlert: false }])).toBeNull();
+    expect(findDuplicate(tngAlert, [{ ...bankAlert, side: 'ewallet' }])).toBeNull();
+    expect(findDuplicate(tngAlert, [{ ...bankAlert, side: null }])).toBeNull();
   });
 });
 

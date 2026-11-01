@@ -22,6 +22,7 @@ if (Platform.OS === 'android') {
   const { cacheNotificationAppIcon } = require('./lib/notifications/app-icon-cache.core');
   const { isRepeatedNotification } = require('./lib/notifications/notification-repeat.core');
   const { REVIEW_TASK, isOwnNotification } = require('./lib/notifications/review-notification.core');
+  const { randomUUID } = require('expo-crypto');
   const TaskManager = require('expo-task-manager');
   const Notifications = require('expo-notifications');
 
@@ -66,7 +67,8 @@ if (Platform.OS === 'android') {
       );
       const enriched = {
         ...withPackage,
-        id: `${nowMs}-${Math.random().toString(36).slice(2, 7)}`,
+        // Also the id of the proposal it may become, and that column is a uuid.
+        id: randomUUID(),
         receivedAt: new Date(nowMs).toISOString(),
         prefilterPassed,
         packageLinked,

@@ -7,6 +7,7 @@ const TONES: Record<CapturedNotificationStatus, StatusTone> = {
   waiting_for_review: 'review',
   auto_added: 'auto',
   added: 'onTrack',
+  same_payment: 'quiet',
   not_linked: 'near',
   ignored: 'quiet',
 };

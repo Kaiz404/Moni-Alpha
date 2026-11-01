@@ -9,10 +9,8 @@ import { currencyCodeSchema, positiveMinorAmountSchema } from './money';
 export const proposedTransactionStatusSchema = z.enum(['pending', 'later', 'rejected', 'approved']);
 export const proposedTransactionSourceTypeSchema = z.enum(['notification', 'text', 'image']);
 
-export const proposedTransactionSchema = z.object({
-  id: z.string().uuid(),
-  userId: z.string().uuid(),
-
+/** What was captured and what Moni read from it, before any decision. */
+const capturedFieldsSchema = z.object({
   // Source metadata
   sourceType: proposedTransactionSourceTypeSchema,
   sourceApp: z.string().nullable(),
@@ -20,7 +18,7 @@ export const proposedTransactionSchema = z.object({
   sourceImageUri: z.string().nullable(),
   notificationTitle: z.string().nullable(),
   notificationBody: z.string().nullable(),
-  notificationReceivedAt: z.string().datetime().nullable(),
+  notificationReceivedAt: z.string().datetime({ offset: true }).nullable(),
 
   // AI analysis
   aiReasoning: z.string().nullable(),
@@ -38,7 +36,29 @@ export const proposedTransactionSchema = z.object({
   merchant: z.string().nullable(),
   categoryId: z.string().uuid().nullable(),
   categoryHint: z.string().nullable(),
-  transactionDate: z.string().datetime().nullable(),
+  transactionDate: z.string().datetime({ offset: true }).nullable(),
+});
+
+/** One payment counted once: `same_purchase` is two captures of a purchase, `transfer_pair` the two legs of a transfer. */
+export const pairKindSchema = z.enum(['same_purchase', 'transfer_pair']);
+
+/**
+ * A capture folded into another row, stored whole on that row so it stays visible and Undo can
+ * bring it back. One slot per row, so a third identical payment can never fold into the same row.
+ */
+export const capturePairingSchema = z.object({
+  kind: pairKindSchema,
+  /** `id` is the capture's: its capture log entry, and the proposal it becomes on Undo. */
+  absorbed: capturedFieldsSchema.extend({ id: z.string().min(1) }),
+  /** The row's columns this pairing changed, as they stood, for Undo. */
+  before: z.record(z.unknown()),
+  /** Set on a ledger row the pairing created by completing a Review capture. */
+  promotedFromProposalId: z.string().optional(),
+});
+
+export const proposedTransactionSchema = capturedFieldsSchema.extend({
+  id: z.string().uuid(),
+  userId: z.string().uuid(),
 
   status: proposedTransactionStatusSchema,
   snoozedUntil: z.string().datetime().nullable().optional(),
@@ -46,6 +66,8 @@ export const proposedTransactionSchema = z.object({
   reviewedAt: z.string().datetime().nullable().optional(),
   /** The ledger row Approve created; null for Not mine and once that row is deleted. */
   transactionId: z.string().uuid().nullable().optional(),
+  /** The capture this one absorbed, shown on the card and carried to the ledger row. */
+  pairing: capturePairingSchema.nullable().optional(),
 
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
@@ -56,10 +78,14 @@ export const createProposedTransactionSchema = proposedTransactionSchema.omit({
   userId: true,
   reviewedAt: true,
   transactionId: true,
+  pairing: true,
   createdAt: true,
   updatedAt: true,
 });
 
+export type PairKind = z.infer<typeof pairKindSchema>;
+export type CapturePairing = z.infer<typeof capturePairingSchema>;
+export type AbsorbedCapture = CapturePairing['absorbed'];
 export type ProposedTransactionSourceType = z.infer<typeof proposedTransactionSourceTypeSchema>;
 export type ProposedTransactionStatus = z.infer<typeof proposedTransactionStatusSchema>;
 export type ProposedTransaction = z.infer<typeof proposedTransactionSchema>;

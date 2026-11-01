@@ -3,11 +3,12 @@ import { formatDayHeading } from '@/lib/dates/day-label';
 import { toLocalDateInput } from '@/lib/dates/local-date-input';
 import { isOneTimeCode } from '@/lib/notifications/notification-filter';
 
-/** The five glossary words, in the order the filter chips and the legend list them. */
+/** The glossary words, in the order the filter chips and the legend list them. */
 export const CAPTURE_STATUS_LABELS = {
   waiting_for_review: 'Waiting for review',
   auto_added: 'Auto-added',
   added: 'Added',
+  same_payment: 'Same payment',
   not_linked: 'Not linked',
   ignored: 'Ignored',
 } as const satisfies Record<CapturedNotificationStatus, string>;
@@ -34,6 +35,7 @@ export type StoredCaptureEntry = {
   transactionId?: string;
   /** Set at intake, which also blanks the text. */
   oneTimeCode?: boolean;
+  pairedProposalId?: string;
 };
 
 export const ONE_TIME_CODE_NOTE = 'One-time code. Moni did not keep it.';
@@ -50,7 +52,9 @@ export type CaptureLogItem = {
   status: CapturedNotificationStatus;
   label: CaptureStatusLabel;
   transactionId: string | null;
-  /** Why a Not linked alert needs nothing: another app's alert for the same payment was added. */
+  /** A Same payment entry whose other capture still waits in Review. */
+  pairedProposalId: string | null;
+  /** Why a Not linked or Same payment alert needs nothing: another app's alert for the same payment was added. */
   note: string | null;
 };
 
@@ -84,6 +88,7 @@ function toItem(entry: StoredCaptureEntry, received: Date): CaptureLogItem {
     status,
     label: CAPTURE_STATUS_LABELS[status],
     transactionId: entry.transactionId ?? null,
+    pairedProposalId: entry.pairedProposalId ?? null,
     note: null,
   };
 }
@@ -100,6 +105,19 @@ function amountsIn(text: string): number[] {
 }
 
 type Received = { item: CaptureLogItem; at: number; amounts: number[] };
+
+function pairedNote(entry: Received, all: readonly Received[]): string | null {
+  if (entry.item.status !== 'same_payment') return null;
+  const { transactionId, pairedProposalId } = entry.item;
+  const other = all.find(
+    ({ item }) =>
+      item.id !== entry.item.id &&
+      (item.id === pairedProposalId || (!!transactionId && item.transactionId === transactionId)),
+  );
+  return other
+    ? `Counted once, with the ${other.item.app} alert at ${other.item.time}.`
+    : 'Counted once, with a payment already in your transactions.';
+}
 
 function sameAddedPayment(entry: Received, all: readonly Received[]): CaptureLogItem | null {
   if (entry.item.status !== 'not_linked' || entry.amounts.length === 0) return null;
@@ -136,11 +154,12 @@ export function groupCaptureLog(
       days.set(key, day);
     }
     const same = sameAddedPayment(entry, received);
-    day.items.push(
-      same
-        ? { ...entry.item, note: `Same payment as the ${same.app} alert at ${same.time}, which was added.` }
-        : entry.item,
-    );
+    day.items.push({
+      ...entry.item,
+      note: same
+        ? `Same payment as the ${same.app} alert at ${same.time}, which was added.`
+        : pairedNote(entry, received),
+    });
   }
   return [...days.values()];
 }
@@ -148,7 +167,14 @@ export function groupCaptureLog(
 export function countByStatus(
   days: readonly CaptureLogDay[],
 ): Record<CapturedNotificationStatus, number> {
-  const counts = { added: 0, auto_added: 0, waiting_for_review: 0, ignored: 0, not_linked: 0 };
+  const counts = {
+    added: 0,
+    auto_added: 0,
+    same_payment: 0,
+    waiting_for_review: 0,
+    ignored: 0,
+    not_linked: 0,
+  };
   for (const day of days) for (const item of day.items) counts[item.status] += 1;
   return counts;
 }

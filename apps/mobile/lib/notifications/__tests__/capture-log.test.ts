@@ -72,6 +72,7 @@ describe('groupCaptureLog', () => {
       status: 'ignored',
       label: 'Ignored',
       transactionId: null,
+      pairedProposalId: null,
       note: null,
     });
   });
@@ -111,6 +112,44 @@ describe('groupCaptureLog', () => {
     ]);
   });
 
+  it('says which alert a Same payment entry was counted with', () => {
+    const at = '2026-10-14T12:00:00+08:00';
+    const later = '2026-10-14T12:03:00+08:00';
+    const [day] = groupCaptureLog(
+      [
+        { id: 'bank', receivedAt: at, app: 'Maybank', status: 'auto_added', transactionId: 'tx-1' },
+        {
+          id: 'tng',
+          receivedAt: later,
+          app: "Touch 'n Go",
+          status: 'same_payment',
+          transactionId: 'tx-1',
+        },
+        {
+          id: 'grab',
+          receivedAt: later,
+          app: 'Grab',
+          status: 'same_payment',
+          pairedProposalId: 'waiting',
+        },
+        { id: 'waiting', receivedAt: at, app: 'CIMB', status: 'waiting_for_review' },
+        { id: 'alone', receivedAt: later, app: 'Boost', status: 'same_payment', transactionId: 'gone' },
+      ],
+      now,
+    );
+
+    const note = (id: string) => day!.items.find((item) => item.id === id)!;
+    expect(note('tng')).toMatchObject({
+      label: 'Same payment',
+      note: 'Counted once, with the Maybank alert at 12:00 pm.',
+    });
+    expect(note('grab')).toMatchObject({
+      pairedProposalId: 'waiting',
+      note: 'Counted once, with the CIMB alert at 12:00 pm.',
+    });
+    expect(note('alone').note).toBe('Counted once, with a payment already in your transactions.');
+  });
+
   it('quotes the full alert text and keeps the transaction link', () => {
     const [today, yesterday] = groupCaptureLog(entries, now);
 
@@ -145,6 +184,7 @@ describe('groupCaptureLog', () => {
     const days = groupCaptureLog(entries, now);
 
     expect(countByStatus(days)).toEqual({
+      same_payment: 0,
       added: 0,
       auto_added: 1,
       waiting_for_review: 1,

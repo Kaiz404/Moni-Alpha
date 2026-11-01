@@ -1,8 +1,15 @@
-import { assertMigrated, isMigrated, proposedTransactions$, transactions$ } from '@/lib/store';
+import {
+  assertMigrated,
+  isMigrated,
+  proposedTransactions$,
+  transactions$,
+  wallets$,
+} from '@/lib/store';
 import { getRecordValues, hasRow, patchRow } from '@/lib/store/helpers';
 import { getUserId } from '@/lib/supabase/client';
 import { randomUUID } from 'expo-crypto';
 import {
+  capturePairingSchema,
   decimalToMinor,
   minorToDecimal,
   proposedTransactionStatusSchema,
@@ -15,13 +22,19 @@ import {
 import { createTransaction, getTransactions } from './transactions';
 import { findDuplicate, type DuplicateMatch, type LedgerEntry } from '@/lib/ai/duplicates';
 import {
+  institutionOfWallet,
+  moneySideOfWallet,
+  type InstitutionWallet,
+} from '@/lib/ai/institutions';
+import { transactionPairing } from '@/lib/transactions/alert';
+import {
   getProposalLocationSnapshot,
   clearProposalLocationSnapshot,
 } from '@/lib/ai/proposal-location-cache';
 import { emitProposedTransactionsChanged } from '@/lib/proposals/proposed-transactions-events';
 import { markCaptureStatus } from '@/lib/notifications/capture-status';
 
-type ProposedRow = {
+export type ProposedTransactionRow = {
   id: string;
   user_id: string | null;
   source_type: string | null;
@@ -49,6 +62,7 @@ type ProposedRow = {
   snoozed_until?: string | null;
   reviewed_at?: string | null;
   transaction_id?: string | null;
+  pairing?: unknown;
   created_at: string | null;
   updated_at: string | null;
   deleted?: boolean;
@@ -71,7 +85,7 @@ const DAY_MS = 86_400_000;
 export const REVIEW_HISTORY_DAYS = 30;
 export const REVIEW_RETENTION_DAYS = 90;
 
-function rowToProposedTransaction(row: ProposedRow): ProposedTransaction {
+export function rowToProposedTransaction(row: ProposedTransactionRow): ProposedTransaction {
   return {
     id: row.id,
     userId: row.user_id ?? '',
@@ -100,12 +114,13 @@ function rowToProposedTransaction(row: ProposedRow): ProposedTransaction {
     snoozedUntil: row.snoozed_until ?? null,
     reviewedAt: row.reviewed_at ?? null,
     transactionId: row.transaction_id ?? null,
+    pairing: capturePairingSchema.safeParse(row.pairing).data ?? null,
     createdAt: row.created_at ?? '',
     updatedAt: row.updated_at ?? '',
   };
 }
 
-function isReviewableRow(row: ProposedRow): boolean {
+function isReviewableRow(row: ProposedTransactionRow): boolean {
   if (row.amount == null || !row.type) return false;
   try {
     return decimalToMinor(row.amount) > 0;
@@ -132,7 +147,7 @@ function asReviewed(proposal: ProposedTransaction): ReviewedProposal | null {
 }
 
 function readProposals(): ProposedTransaction[] {
-  return getRecordValues<ProposedRow>(proposedTransactions$)
+  return getRecordValues<ProposedTransactionRow>(proposedTransactions$)
     .filter(isReviewableRow)
     .map(rowToProposedTransaction);
 }
@@ -148,7 +163,7 @@ function readReviewedProposals(): ReviewedProposal[] {
 }
 
 export function isOpenProposal(id: string): boolean {
-  const row = proposedTransactions$[id].peek() as ProposedRow | undefined;
+  const row = proposedTransactions$[id].peek() as ProposedTransactionRow | undefined;
   return !!row && !row.deleted && isUnreviewed(rowToProposedTransaction(row));
 }
 
@@ -199,7 +214,7 @@ export function laterProposedTransaction(id: string, until: Date): void {
 
 /** Soft-delete stub rows left by image-upload races (no amount/type). Safe to call on startup. */
 export async function pruneIncompleteProposals(): Promise<number> {
-  const rows = getRecordValues<ProposedRow>(proposedTransactions$);
+  const rows = getRecordValues<ProposedTransactionRow>(proposedTransactions$);
   let pruned = 0;
 
   for (const row of rows) {
@@ -252,7 +267,7 @@ export async function createProposedTransaction(
     deleted: false,
   });
 
-  const created = getRecordValues<ProposedRow>(proposedTransactions$).find((r) => r.id === id);
+  const created = getRecordValues<ProposedTransactionRow>(proposedTransactions$).find((r) => r.id === id);
   if (!created) throw new Error('Failed to create proposed transaction');
   const result = rowToProposedTransaction(created);
   emitProposedTransactionsChanged();
@@ -263,6 +278,8 @@ export async function approveProposedTransaction(
   proposal: ProposedTransaction,
   wallets: { walletId: string; transferToWalletId?: string | null },
   alert?: TransactionAlert,
+  /** Moni completed this capture without asking, so the row is marked Auto. */
+  added: { automatically: boolean } = { automatically: false },
 ): Promise<string> {
   if (!proposal.amountMinor || !proposal.type) {
     throw new Error('Cannot approve: amount or type is missing');
@@ -292,7 +309,11 @@ export async function approveProposedTransaction(
     locationLatitude: earlyLocation?.latitude ?? null,
     locationLongitude: earlyLocation?.longitude ?? null,
     locationName: earlyLocation?.name ?? null,
-    metadata: alert ? { alert } : undefined,
+    metadata: {
+      ...(alert ? { alert } : {}),
+      ...(proposal.pairing ? { pairing: proposal.pairing } : {}),
+      ...(added.automatically ? { ai_suggested: true } : {}),
+    },
   }, proposalSource(proposal.sourceType));
 
   closeProposal(proposal, 'approved', transaction.id);
@@ -300,14 +321,14 @@ export async function approveProposedTransaction(
 }
 
 export async function rejectProposedTransaction(id: string): Promise<void> {
-  const row = proposedTransactions$[id].peek() as ProposedRow | undefined;
+  const row = proposedTransactions$[id].peek() as ProposedTransactionRow | undefined;
   if (!row) throw new Error(`Cannot reject missing proposal: ${id}`);
   closeProposal(rowToProposedTransaction(row), 'rejected');
 }
 
 /** Before review_history is pushed there is no reviewed_at column, so the row is soft-deleted. */
 function closeProposal(
-  proposal: Pick<ProposedTransaction, 'id' | 'sourceType'>,
+  proposal: Pick<ProposedTransaction, 'id' | 'sourceType' | 'pairing'>,
   status: 'approved' | 'rejected',
   transactionId?: string,
 ): void {
@@ -315,6 +336,11 @@ function closeProposal(
     // run-extraction stores a notification's proposal under the id of its capture log entry.
     if (status === 'approved') markCaptureStatus(proposal.id, 'added', transactionId);
     else markCaptureStatus(proposal.id, 'ignored');
+  }
+  const absorbed = proposal.pairing?.absorbed;
+  if (absorbed?.sourceType === 'notification') {
+    if (status === 'approved') markCaptureStatus(absorbed.id, 'same_payment', transactionId);
+    else markCaptureStatus(absorbed.id, 'ignored');
   }
   const now = new Date().toISOString();
   if (!isMigrated('review_history')) {
@@ -344,6 +370,11 @@ export async function updateProposalImageUri(id: string, remoteUrl: string): Pro
   return true;
 }
 
+/** A capture folded into another row leaves Review; the other row keeps all of it. */
+export function retireProposal(id: string): void {
+  if (hasRow(proposedTransactions$, id)) softDelete(id);
+}
+
 function softDelete(id: string): void {
   const row$ = proposedTransactions$[id] as { delete?: () => void } | undefined;
   if (!row$?.delete) {
@@ -359,44 +390,101 @@ function ledgerType(type: string | null): LedgerEntry['type'] {
   return type === 'income' || type === 'expense' || type === 'transfer' ? type : null;
 }
 
+type WalletRow = {
+  id: string;
+  name: string | null;
+  type: string | null;
+  notification_package?: string | null;
+};
+
+function readWalletLookup(): Map<string, InstitutionWallet> {
+  return new Map(
+    getRecordValues<WalletRow>(wallets$).map((row) => [
+      row.id,
+      {
+        id: row.id,
+        name: row.name,
+        type: row.type,
+        notificationPackage: row.notification_package ?? null,
+      },
+    ]),
+  );
+}
+
+/** What pairing needs to know about the wallets on either end of a row. */
+function walletFacts(
+  wallets: ReadonlyMap<string, InstitutionWallet>,
+  walletId: string | null,
+  transferToWalletId: string | null,
+) {
+  const wallet = walletId ? wallets.get(walletId) : undefined;
+  const to = transferToWalletId ? wallets.get(transferToWalletId) : undefined;
+  return {
+    side: wallet ? moneySideOfWallet(wallet) : null,
+    institutionId: wallet ? (institutionOfWallet(wallet)?.id ?? null) : null,
+    transferToInstitutionId: to ? (institutionOfWallet(to)?.id ?? null) : null,
+  };
+}
+
 function proposalLedgerEntry(
   id: string,
   proposal: Pick<
     CreateProposedTransaction,
-    'type' | 'walletId' | 'currency' | 'amountMinor' | 'merchant' | 'transactionDate'
-  >,
+    | 'type'
+    | 'walletId'
+    | 'transferToWalletId'
+    | 'currency'
+    | 'amountMinor'
+    | 'merchant'
+    | 'transactionDate'
+    | 'sourceType'
+  > & { pairing?: ProposedTransaction['pairing'] },
+  wallets: ReadonlyMap<string, InstitutionWallet>,
 ): LedgerEntry {
+  const walletId = proposal.walletId ?? null;
+  const transferToWalletId = proposal.transferToWalletId ?? null;
   return {
     id,
     kind: 'proposal',
     type: ledgerType(proposal.type ?? null),
-    walletId: proposal.walletId ?? null,
+    walletId,
+    transferToWalletId,
     currency: (proposal.currency ?? 'USD').toUpperCase(),
     amountMinor: proposal.amountMinor ?? null,
     merchant: proposal.merchant ?? null,
     at: proposal.transactionDate ?? '',
+    fromAlert: proposal.sourceType === 'notification',
+    paired: !!proposal.pairing,
+    ...walletFacts(wallets, walletId, transferToWalletId),
   };
 }
 
 export async function getLedgerEntries(): Promise<LedgerEntry[]> {
   const transactions = await getTransactions(undefined, 500);
   const proposals = readUnreviewedProposals();
+  const wallets = readWalletLookup();
   return [
     ...transactions
       .filter((t) => !t.debtActivityId && !t.analysisExcluded)
-      .map(
-        (t): LedgerEntry => ({
+      .map((t): LedgerEntry => {
+        const walletId = t.walletId || null;
+        const transferToWalletId = t.transferToWalletId ?? null;
+        return {
           id: t.id,
           kind: 'transaction',
           type: ledgerType(t.type),
-          walletId: t.walletId || null,
+          walletId,
+          transferToWalletId,
           currency: t.currency,
           amountMinor: t.amountMinor,
           merchant: t.merchant,
           at: t.transactionDate,
-        }),
-      ),
-    ...proposals.map((p) => proposalLedgerEntry(p.id, p)),
+          fromAlert: t.metadata.source === 'notification',
+          paired: !!transactionPairing(t.metadata),
+          ...walletFacts(wallets, walletId, transferToWalletId),
+        };
+      }),
+    ...proposals.map((p) => proposalLedgerEntry(p.id, p, wallets)),
   ];
 }
 
@@ -404,42 +492,8 @@ export async function findProposalDuplicate(
   id: string,
   proposal: Parameters<typeof proposalLedgerEntry>[1],
 ): Promise<DuplicateMatch | null> {
-  return findDuplicate(proposalLedgerEntry(id, proposal), await getLedgerEntries());
-}
-
-/**
- * Rewrites the target of a transfer pair as one transfer between the two wallets. Runs
- * automatically when a notification completes the pair, so a combined ledger row is marked
- * auto-added. Value-setting only, so running it twice converges.
- */
-export function combineIntoTransfer(
-  match: Extract<DuplicateMatch, { kind: 'transfer_pair' }>,
-): void {
-  const { target } = match;
-  const transfer = {
-    type: 'transfer',
-    wallet_id: match.fromWalletId,
-    transfer_to_wallet_id: match.toWalletId,
-    updated_at: new Date().toISOString(),
-  };
-  if (target.kind === 'proposal') {
-    patchRow(proposedTransactions$, target.id, transfer);
-    emitProposedTransactionsChanged();
-    return;
-  }
-  const row = getRecordValues<{ id: string; metadata: unknown }>(transactions$).find(
-    (r) => r.id === target.id,
+  return findDuplicate(
+    proposalLedgerEntry(id, proposal, readWalletLookup()),
+    await getLedgerEntries(),
   );
-  let metadata: object = {};
-  try {
-    const raw = typeof row?.metadata === 'string' ? JSON.parse(row.metadata) : row?.metadata;
-    if (raw && typeof raw === 'object') metadata = raw;
-  } catch {
-    // Unreadable metadata is replaced rather than blocking the combine.
-  }
-  patchRow(transactions$, target.id, {
-    ...transfer,
-    category_id: null,
-    metadata: { ...metadata, ai_suggested: true },
-  });
 }

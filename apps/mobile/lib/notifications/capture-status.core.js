@@ -12,8 +12,11 @@ function captureStatusAfterExtraction(result) {
   return 'ignored';
 }
 
-/** `transactionId` links an added entry to its ledger row for "See transaction". */
-function setCaptureStatus(storage, id, status, transactionId) {
+/**
+ * `transactionId` links an added entry to its ledger row for "See transaction". A same payment entry
+ * links the row counting it: that ledger row, or `pairedProposalId` while it waits in Review.
+ */
+function setCaptureStatus(storage, id, status, transactionId, pairedProposalId) {
   let list;
   try {
     list = JSON.parse(storage.getString(CAPTURED_NOTIFICATIONS_KEY) || '[]');
@@ -24,6 +27,9 @@ function setCaptureStatus(storage, id, status, transactionId) {
   if (!entry) return false;
   entry.status = status;
   if (transactionId) entry.transactionId = transactionId;
+  if (status === 'waiting_for_review') delete entry.transactionId;
+  if (pairedProposalId) entry.pairedProposalId = pairedProposalId;
+  else delete entry.pairedProposalId;
   storage.set(CAPTURED_NOTIFICATIONS_KEY, JSON.stringify(list));
   return true;
 }

@@ -10,6 +10,7 @@ const MEANING: Record<CapturedNotificationStatus, string> = {
   waiting_for_review: 'In Review now. Not counted in totals yet.',
   auto_added: 'Added without asking, by an auto-add rule. Marked Auto.',
   added: 'You approved it in Review.',
+  same_payment: 'Another alert for one payment. Counted once. Undo if they are two.',
   not_linked: "The app isn't linked to a wallet. Nothing added.",
   ignored: 'Not a payment. Nothing added.',
 };

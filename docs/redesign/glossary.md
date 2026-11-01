@@ -14,7 +14,9 @@ The words the redesigned app uses, and the words it never uses. The design canva
 | Recently reviewed, Move back to review | The Review page's list of the last 30 days of Approve and Not mine, and the button on a Not mine row that returns it to the deck. |
 | Don't ask about similar | The checkbox on a capture. Moni then adds similar alerts without asking and marks them Auto. |
 | Auto | The pill on a row Moni added without asking (routine auto-add). |
-| Added, Auto-added, Waiting for review, Ignored, Not linked | The five statuses in the Capture log. |
+| Added, Auto-added, Same payment, Waiting for review, Ignored, Not linked | The six statuses in the Capture log. |
+| Same payment, Counted once | Two alerts or captures for one payment. Moni counts them as one row and keeps both visible, with Undo. The Review card's control is "Same payment". |
+| It's a transfer | The Review card's control when a capture looks like the other side of a transfer between the user's own wallets. |
 | safe to spend a day | What's left ÷ days left in the month ("RM443 left for 18 days · RM24 a day"). |
 | even pace | The month's budget ÷ days in the month ("Even pace RM58"). "a day" may follow only "even pace". |
 | bills | Recurring bills still due this month. Debts are not bills. |

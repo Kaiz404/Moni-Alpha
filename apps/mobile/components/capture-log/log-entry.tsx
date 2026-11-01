@@ -39,10 +39,13 @@ export function AppBubble({ packageName }: { packageName: string | null }) {
 export function LogEntry({
   item,
   action,
+  undo,
   onDismiss,
 }: {
   item: CaptureLogItem;
   action?: LogEntryAction;
+  /** A Same payment entry only: makes this alert its own capture again. */
+  undo?: LogEntryAction;
   onDismiss: () => void;
 }) {
   const tokens = useThemeTokens();
@@ -87,6 +90,19 @@ export function LogEntry({
                   size={16}
                   color={tokens.deepMint}
                 />
+              </Press>
+            ) : null}
+            {undo ? (
+              <Press
+                testID={undo.testID}
+                onPress={undo.onPress}
+                hitSlop={6}
+                accessibilityLabel={`${undo.label}, ${item.app} ${item.time}`}
+                className="min-h-8 justify-center rounded-full"
+              >
+                <Text className="text-[14px] leading-[19px] font-display-semibold text-foreground">
+                  {undo.label}
+                </Text>
               </Press>
             ) : null}
           </View>

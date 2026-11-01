@@ -9,9 +9,14 @@ import { getCategories } from '@/lib/supabase/categories';
 import { createTransaction, getTransactions } from '@/lib/supabase/transactions';
 import {
   createProposedTransaction,
-  combineIntoTransfer,
   findProposalDuplicate,
 } from '@/lib/supabase/proposed-transactions';
+import {
+  canPairInto,
+  findProcessedAlert,
+  pairCapture,
+  toAbsorbedCapture,
+} from '@/lib/proposals/pairing';
 import { matchRoutine } from '@/lib/ai/routine';
 import { listAutoAddRules } from '@/lib/supabase/auto-add-rules';
 import { getUserId } from '@/lib/supabase/client';
@@ -28,7 +33,7 @@ import {
 import { resolveNotificationCandidates } from '@/lib/notifications/notification-routing';
 import type { RawNotification } from '@/lib/ai/notification-types';
 import { getDefaultWalletId } from '@/lib/wallets/default-wallet';
-import { captureAlert } from '@/lib/transactions/alert';
+import { alertKey, captureAlert } from '@/lib/transactions/alert';
 import { FALLBACK_CURRENCY, finalizeProposalWallet } from '@/lib/wallets/proposal-wallet';
 
 export type TraceEvent = {
@@ -46,6 +51,8 @@ export type RunExtractionResult = {
   proposalId?: string;
   /** Set when a routine notification was added to the ledger without review. */
   transactionId?: string;
+  /** Set when this capture was counted once with another row. */
+  paired?: boolean;
 };
 
 /** How much recent history routine detection looks at. */
@@ -199,23 +206,14 @@ async function persistProposal(
     const duplicate = await findProposalDuplicate(proposalId, proposal);
     if (duplicate) trace(logger, 'creator', 'duplicate', { kind: duplicate.kind });
 
-    // Two notifications seconds apart, opposite directions, two of the user's own wallets:
-    // one transfer, combined without review.
-    if (automatic && duplicate?.kind === 'transfer_pair') {
-      combineIntoTransfer(duplicate);
-      return duplicate.target.kind === 'transaction'
-        ? {
-            created: true,
-            skipped: false,
-            reason: 'Combined into transfer',
-            transactionId: duplicate.target.id,
-          }
-        : {
-            created: true,
-            skipped: false,
-            reason: 'Combined into transfer',
-            proposalId: duplicate.target.id,
-          };
+    // One payment, two notifications: counted once without review, and both stay in the log.
+    if (automatic && duplicate?.confidence === 'high' && canPairInto(duplicate)) {
+      try {
+        await pairCapture(toAbsorbedCapture({ ...proposal, id: proposalId }), duplicate);
+        return { created: true, skipped: false, reason: 'Same payment', paired: true };
+      } catch (e) {
+        trace(logger, 'creator', 'pairing-failed', { message: e instanceof Error ? e.message : String(e) });
+      }
     }
 
     const wallet = wallets.find((w) => w.id === proposal.walletId);
@@ -241,7 +239,7 @@ async function persistProposal(
         metadata: {
           ai_suggested: true,
           ai_confidence: proposal.aiConfidence ?? undefined,
-          alert: captureAlert(proposal),
+          alert: captureAlert(proposal, proposalId),
         },
       }, 'notification');
       trace(logger, 'creator', 'auto-added', { transactionId: transaction.id });
@@ -297,6 +295,12 @@ function mapClientResult(
     reason: result.reason,
   });
   return { created: false, skipped: true, reason: result.reason };
+}
+
+/** Android's post time, which a redelivery repeats; the listener's own clock when it is missing. */
+function postedAt(n: RawNotification): string {
+  const posted = Number(n.time);
+  return Number.isFinite(posted) && posted > 0 ? new Date(posted).toISOString() : n.receivedAt;
 }
 
 function capturedAtOf(item: ProcessingQueueItem): Date {
@@ -391,6 +395,15 @@ export async function runExtraction(
           };
         }
 
+        const delivery = {
+          sourceApp: n.packageName || n.app,
+          notificationTitle: n.title,
+          notificationBody: n.bigText || n.text || null,
+          notificationReceivedAt: postedAt(n),
+        };
+        const processed = findProcessedAlert(alertKey(delivery), item.id);
+        if (processed) return processed;
+
         const packageName = resolveNotificationPackageName(n);
         const walletLinks = await loadWalletsForNotificationRouting();
         const { candidates, lockedWalletId } = resolveNotificationCandidates(
@@ -418,10 +431,7 @@ export async function runExtraction(
               proposalFromExtraction(
                 {
                   sourceType: 'notification',
-                  sourceApp: n.packageName || n.app,
-                  notificationTitle: n.title,
-                  notificationBody: n.bigText || n.text || null,
-                  notificationReceivedAt: n.receivedAt,
+                  ...delivery,
                   capturedAt,
                 },
                 mapped.extraction,

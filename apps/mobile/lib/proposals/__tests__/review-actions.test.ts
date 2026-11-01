@@ -197,6 +197,8 @@ describe('approve', () => {
             text: "MAYBANK: You've spent RM12.00 at GRAB on 14/10 12:41.",
             amountMinor: 1200,
             currency: 'MYR',
+            key: expect.any(String),
+            captureId: 'p1',
           },
         },
       }),

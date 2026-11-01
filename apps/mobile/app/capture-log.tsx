@@ -28,6 +28,7 @@ import {
 } from '@/lib/notifications/capture-log';
 import { walletForApp } from '@/lib/notifications/missed-report';
 import { openSheet } from '@/lib/sheet/sheet-store';
+import { undoPairing } from '@/lib/proposals/pairing';
 import { tid } from '@/lib/test-ids';
 import { showToast } from '@/lib/toast/toast-store';
 
@@ -61,6 +62,22 @@ function entryAction(item: CaptureLogItem, wallets: readonly LinkedWallet[]): Lo
         testID: tid('capture-log', 'entry', item.id, 'link'),
         label: `Link ${item.app} to a wallet`,
         onPress: () => void linkAppToWallet({ packageName, label: item.app }, wallets),
+      };
+    }
+    case 'same_payment': {
+      const { transactionId, pairedProposalId } = item;
+      if (pairedProposalId) {
+        return {
+          testID: tid('capture-log', 'entry', item.id, 'review'),
+          label: 'Review it',
+          onPress: () => router.push({ pathname: '/review', params: { id: pairedProposalId } }),
+        };
+      }
+      if (!transactionId) return undefined;
+      return {
+        testID: tid('capture-log', 'entry', item.id, 'transaction'),
+        label: 'See transaction',
+        onPress: () => router.push({ pathname: '/transaction/[id]', params: { id: transactionId } }),
       };
     }
     case 'ignored': {
@@ -141,6 +158,16 @@ export default function CaptureLogScreen() {
     if (!confirmed) return;
     clearAll();
     showToast({ text: 'Capture log cleared', tone: 'removed' });
+  };
+
+  const separate = async (id: string) => {
+    const done = await undoPairing(id);
+    refresh();
+    showToast(
+      done
+        ? { text: 'Back in Review as its own capture' }
+        : { text: "Couldn't undo that.", tone: 'removed' },
+    );
   };
 
   return (
@@ -257,6 +284,15 @@ export default function CaptureLogScreen() {
                         item={item}
                         action={entryAction(item, wallets)}
                         onDismiss={() => dismiss(item.id)}
+                        undo={
+                          item.status === 'same_payment'
+                            ? {
+                                testID: tid('capture-log', 'entry', item.id, 'undo'),
+                                label: 'Undo',
+                                onPress: () => void separate(item.id),
+                              }
+                            : undefined
+                        }
                       />
                     ))}
                   </ListCard>

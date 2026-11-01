@@ -27,6 +27,12 @@ describe('isRepeatedNotification', () => {
     expect(isRepeatedNotification([old], incoming, NOW)).toBe(false);
   });
 
+  it('flags a redelivery with the same post time at any age', () => {
+    const old = { ...stored, receivedAt: '2026-10-06T09:57:00.000Z', time: '1791000000000' };
+    expect(isRepeatedNotification([old], { ...incoming, time: '1791000000000' }, NOW)).toBe(true);
+    expect(isRepeatedNotification([old], { ...incoming, time: '1791000999000' }, NOW)).toBe(false);
+  });
+
   it('does not flag a different text, title or package', () => {
     expect(
       isRepeatedNotification([stored], { ...incoming, text: 'You paid RM13.00 to Kopi' }, NOW),

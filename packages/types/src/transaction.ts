@@ -19,6 +19,10 @@ export const transactionAlertSchema = z.object({
   text: z.string().max(1000),
   amountMinor: positiveMinorAmountSchema,
   currency: currencyCodeSchema,
+  /** The delivery this alert came from, so a redelivered notification is recognised. */
+  key: z.string().optional(),
+  /** The capture log entry it came from. */
+  captureId: z.string().optional(),
 });
 export type TransactionAlert = z.infer<typeof transactionAlertSchema>;
 

@@ -18,6 +18,7 @@ export function markCaptureStatus(
   id: string,
   status: CapturedNotificationStatus,
   transactionId?: string,
+  pairedProposalId?: string,
 ): void {
-  setCaptureStatus(notificationStorage, id, status, transactionId);
+  setCaptureStatus(notificationStorage, id, status, transactionId, pairedProposalId);
 }

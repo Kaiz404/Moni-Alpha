@@ -118,7 +118,8 @@ async function processingTask(taskData?: { delay?: number }) {
         });
 
         const elapsed = Date.now() - itemStart;
-        if (item.type === 'notification') {
+        // A paired alert already has its status: pairCapture wrote it.
+        if (item.type === 'notification' && !result.paired) {
           markCaptureStatus(item.id, captureStatusAfterExtraction(result), result.transactionId);
           if (result.transactionId || result.proposalId) {
             recordCapture(item.notification.packageName, item.notification.receivedAt);

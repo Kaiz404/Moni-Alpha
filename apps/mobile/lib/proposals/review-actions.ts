@@ -170,7 +170,7 @@ export async function approve(
     const transactionId = await approveProposedTransaction(
       next,
       { walletId: next.walletId, transferToWalletId: next.transferToWalletId },
-      captureAlert(proposal),
+      captureAlert(proposal, proposal.id),
     );
     keepProposalReceipt(next, transactionId);
     // A rule has no type, so it would add the next alert under the type Moni misread.
