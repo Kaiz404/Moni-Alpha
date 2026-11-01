@@ -1,26 +1,31 @@
 import { View } from 'react-native';
 
 import { AppBubble } from '@/components/capture-log/log-entry';
+import { IconSymbol } from '@/components/ui/icon-symbol';
+import { Press } from '@/components/ui/press';
 import { Text } from '@/components/ui/text';
-import { lastCapturedLine, type CaptureSourceHealth } from '@/lib/notifications/capture-health';
+import { useThemeTokens } from '@/hooks/use-theme-tokens';
+import { lastCapturedLine, reportedMissedLine, type CaptureSourceHealth } from '@/lib/notifications/capture-health';
+import { tid } from '@/lib/test-ids';
 
-/** One linked app and how recently it produced a capture. */
+/** One linked app, how recently it produced a capture, and a way to say it missed one. */
 export function LinkedAppRow({
   label,
   packageName,
   source,
+  onReportMissed,
 }: {
   label: string;
   packageName: string;
   source: CaptureSourceHealth;
+  onReportMissed: () => void;
 }) {
+  const tokens = useThemeTokens();
+  const reported = reportedMissedLine(source);
   return (
-    <View
-      accessible
-      className="min-h-[66px] flex-row items-center gap-3.5 px-[18px] py-3"
-    >
+    <View className="flex-row gap-3.5 px-[18px] py-3">
       <AppBubble packageName={packageName} />
-      <View className="min-w-0 flex-1">
+      <View className="min-w-0 flex-1 gap-0.5">
         <Text
           variant="rowTitle"
           className="text-foreground"
@@ -32,8 +37,24 @@ export function LinkedAppRow({
           variant="meta"
           className="text-muted"
         >
-          {lastCapturedLine(source)}
+          {reported ? `${lastCapturedLine(source)} · ${reported}` : lastCapturedLine(source)}
         </Text>
+        <Press
+          testID={tid('sources', 'app', label, 'report-missed')}
+          onPress={onReportMissed}
+          hitSlop={6}
+          accessibilityLabel={`Report a transaction ${label} missed`}
+          className="min-h-8 flex-row items-center gap-0.5 self-start rounded-full"
+        >
+          <Text className="text-[14px] leading-[19px] font-display-semibold text-deep-mint">
+            Report a missed transaction
+          </Text>
+          <IconSymbol
+            name="chevron-right"
+            size={16}
+            color={tokens.deepMint}
+          />
+        </Press>
       </View>
     </View>
   );

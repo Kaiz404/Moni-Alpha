@@ -5,6 +5,7 @@ import { ScrollView, View } from 'react-native';
 
 import { linkAppToWallet } from '@/components/capture-log/link-app';
 import { LogEntry, type LogEntryAction } from '@/components/capture-log/log-entry';
+import { reportIgnoredAlert, reportMissed } from '@/components/capture-log/report-missed';
 import { StatusLegend } from '@/components/capture-log/status-legend';
 import { useLinkedApps, type LinkedWallet } from '@/components/capture-sources/use-linked-apps';
 import { Chip } from '@/components/ui/chip';
@@ -25,6 +26,7 @@ import {
   groupCaptureLog,
   type CaptureLogItem,
 } from '@/lib/notifications/capture-log';
+import { walletForApp } from '@/lib/notifications/missed-report';
 import { openSheet } from '@/lib/sheet/sheet-store';
 import { tid } from '@/lib/test-ids';
 import { showToast } from '@/lib/toast/toast-store';
@@ -61,8 +63,19 @@ function entryAction(item: CaptureLogItem, wallets: readonly LinkedWallet[]): Lo
         onPress: () => void linkAppToWallet({ packageName, label: item.app }, wallets),
       };
     }
-    case 'ignored':
-      return undefined;
+    case 'ignored': {
+      const packageName = item.packageName;
+      if (!packageName || item.oneTimeCode || !walletForApp(packageName, wallets)) return undefined;
+      return {
+        testID: tid('capture-log', 'entry', item.id, 'missed'),
+        label: 'This was a transaction',
+        onPress: () =>
+          reportIgnoredAlert(
+            { packageName, text: item.text, receivedAt: item.receivedAt },
+            wallets,
+          ),
+      };
+    }
   }
 }
 
@@ -159,6 +172,25 @@ export default function CaptureLogScreen() {
             ? `Notifications Moni read from your banking apps, kept on this phone. ${thisMonth} this month.`
             : 'Notifications Moni read from your banking apps, kept on this phone.'}
         </Text>
+
+        {apps.length > 0 ? (
+          <Press
+            testID={tid('capture-log', 'report-missed')}
+            onPress={() => void reportMissed(apps, wallets)}
+            radius={{ rest: 22, pressed: 16 }}
+            pressedClassName="bg-hairline"
+            className="h-11 flex-row items-center gap-1.5 self-start bg-sand px-[18px]"
+          >
+            <IconSymbol
+              name="plus"
+              size={18}
+              color={tokens.foreground}
+            />
+            <Text className="text-[14px] leading-[19px] font-display-semibold text-foreground">
+              Report a transaction Moni missed
+            </Text>
+          </Press>
+        ) : null}
 
         {total === 0 ? (
           <View className="gap-3">

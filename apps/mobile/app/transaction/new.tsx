@@ -48,6 +48,7 @@ import { financeProjection$ } from '@/lib/finance/projection';
 import { leftLine } from '@/lib/finance/spent-summary';
 import type { FinanceWallet } from '@/lib/finance/types';
 import { approve } from '@/lib/haptics';
+import { recordMissedTransaction } from '@/lib/notifications/capture-health';
 import { toCategoryTiles } from '@/lib/sheet/category-tiles';
 import { openSheet, type WalletOption } from '@/lib/sheet/sheet-store';
 import { listMerchantAliases } from '@/lib/supabase/merchant-aliases';
@@ -105,20 +106,25 @@ export default function TypeItScreen() {
     walletId?: string | string[];
     type?: string | string[];
     categoryId?: string | string[];
+    /** Set by a missed-transaction report, which also prefills what the alert said. */
+    missedFrom?: string | string[];
+    amount?: string | string[];
+    note?: string | string[];
+    date?: string | string[];
   }>();
   const paramType = first(params.type);
 
   const [kind, setKind] = useState<Kind>(
     paramType === 'income' ? 'income' : 'expense',
   );
-  const [typed, setTyped] = useState('');
+  const [typed, setTyped] = useState(first(params.amount) ?? '');
   const [categoryId, setCategoryId] = useState<string | null>(
     first(params.categoryId) ?? null,
   );
   const [walletId, setWalletId] = useState<string | null>(null);
   const [toWalletId, setToWalletId] = useState<string | null>(null);
-  const [date, setDate] = useState(() => toLocalDateInput(new Date()));
-  const [note, setNote] = useState('');
+  const [date, setDate] = useState(() => first(params.date) ?? toLocalDateInput(new Date()));
+  const [note, setNote] = useState(first(params.note) ?? '');
   const [here, setHere] = useState<EntryLocation>({ status: 'none' });
   const [locationRemoved, setLocationRemoved] = useState(false);
   const [chipClosed, setChipClosed] = useState(false);
@@ -428,6 +434,8 @@ export default function TypeItScreen() {
         if (checkRepeat && (await findRepeat())) return;
         await createTransaction(parsed.data, 'manual');
       }
+      const missedFrom = first(params.missedFrom);
+      if (missedFrom) recordMissedTransaction(missedFrom);
       approve();
       router.back();
     } catch (error) {

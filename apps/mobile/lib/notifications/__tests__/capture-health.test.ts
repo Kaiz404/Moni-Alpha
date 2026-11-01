@@ -7,7 +7,12 @@ import {
   recordLinked,
   recordMissed,
 } from '../capture-health.core.js';
-import { lastCapturedLine, sourceHealth, type CaptureHealth } from '../capture-health';
+import {
+  lastCapturedLine,
+  reportedMissedLine,
+  sourceHealth,
+  type CaptureHealth,
+} from '../capture-health';
 
 function memoryStorage(initial: Record<string, string> = {}) {
   const values = new Map(Object.entries(initial));
@@ -132,5 +137,21 @@ describe('lastCapturedLine', () => {
 
   it('says so when nothing has come through', () => {
     expect(lastCapturedLine(empty, now)).toBe('No captures yet');
+  });
+});
+
+describe('reportedMissedLine', () => {
+  const now = new Date(2026, 9, 31, 12).getTime();
+  const empty = sourceHealth({ listenerHeardAt: null, sources: {} }, MAYBANK);
+
+  it('counts reports from the last 30 days', () => {
+    expect(
+      reportedMissedLine({ ...empty, missed: [at(30), at(28), new Date(2026, 8, 1).toISOString()] }, now),
+    ).toBe('2 reported missed');
+  });
+
+  it('says nothing with no recent report', () => {
+    expect(reportedMissedLine({ ...empty, missed: [new Date(2026, 8, 1).toISOString()] }, now)).toBeNull();
+    expect(reportedMissedLine(empty, now)).toBeNull();
   });
 });

@@ -57,6 +57,14 @@ export function dismissQuietSource(packageName: string, at = new Date().toISOStr
   recordQuietDismissedIn(notificationStorage, { packageName, at });
 }
 
+const REPORTED_WINDOW_MS = 30 * 86_400_000;
+
+/** "2 reported missed" over the last 30 days, or nothing. */
+export function reportedMissedLine(source: CaptureSourceHealth, now = Date.now()): string | null {
+  const count = source.missed.filter((at) => now - Date.parse(at) <= REPORTED_WINDOW_MS).length;
+  return count > 0 ? `${count} reported missed` : null;
+}
+
 /** "Last captured 3 hours ago", under an app's name. */
 export function lastCapturedLine(source: CaptureSourceHealth, now = Date.now()): string {
   return source.lastCapturedAt

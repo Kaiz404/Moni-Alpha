@@ -7,6 +7,7 @@ import {
   PermissionRow,
 } from '@/components/capture-sources/permission-row';
 import { useAutoAddRules, type AutoAddRuleRow } from '@/components/capture-sources/use-auto-add-rules';
+import { reportMissedFrom } from '@/components/capture-log/report-missed';
 import { KeepCaptureRunning } from '@/components/capture-sources/keep-capture-running';
 import { LinkedAppRow } from '@/components/capture-sources/linked-app-row';
 import { useCaptureHealth } from '@/components/capture-sources/use-capture-health';
@@ -122,7 +123,7 @@ function LinkRow({
 export default function CaptureSourcesScreen() {
   const tokens = useThemeTokens();
   const { access, change } = usePhoneAccess();
-  const { apps } = useLinkedApps();
+  const { apps, wallets } = useLinkedApps();
   const { health } = useCaptureHealth();
   const rules = useAutoAddRules();
 
@@ -236,6 +237,7 @@ export default function CaptureSourcesScreen() {
                 label={app.label}
                 packageName={app.packageName}
                 source={sourceHealth(health, app.packageName)}
+                onReportMissed={() => reportMissedFrom(app.packageName, wallets)}
               />
             ))}
           </ListSection>

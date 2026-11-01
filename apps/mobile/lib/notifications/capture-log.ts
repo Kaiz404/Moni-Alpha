@@ -43,8 +43,10 @@ export type CaptureLogItem = {
   app: string;
   packageName: string | null;
   time: string;
+  receivedAt: string;
   /** The alert text exactly as the app sent it. */
   text: string;
+  oneTimeCode: boolean;
   status: CapturedNotificationStatus;
   label: CaptureStatusLabel;
   transactionId: string | null;
@@ -74,9 +76,11 @@ function toItem(entry: StoredCaptureEntry, received: Date): CaptureLogItem {
     app: entry.app?.trim() || entry.packageName || 'Unknown app',
     packageName: entry.packageName ?? null,
     time: clockTime(received),
+    receivedAt: entry.receivedAt,
     text: oneTimeCode
       ? ONE_TIME_CODE_NOTE
       : entry.bigText || entry.text || entry.summaryText || entry.subText || entry.title || '',
+    oneTimeCode,
     status,
     label: CAPTURE_STATUS_LABELS[status],
     transactionId: entry.transactionId ?? null,
