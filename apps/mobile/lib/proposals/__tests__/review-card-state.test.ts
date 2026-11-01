@@ -9,6 +9,7 @@ import {
   reviewCardReducer,
   selectionIntent,
   selectionReach,
+  swipeEngageAt,
   swipeRoom,
   type ReviewCardEvent,
   type ReviewCardState,
@@ -31,6 +32,14 @@ function walk(path: [number, number][], room = OPEN_ROOM): string[] {
     return selection ? `${selection.side}${selection.engaged ? '!' : ''}` : '-';
   });
 }
+
+describe('swipeEngageAt on the tall card', () => {
+  it('asks for the same drag down as sideways, however tall the card is', () => {
+    const offset = { dx: 0, dy: 0, width: 342, height: 560, room: OPEN_ROOM };
+    expect(swipeEngageAt('down', offset)).toBeCloseTo(153.9);
+    expect(swipeEngageAt('right', offset)).toBeCloseTo(153.9);
+  });
+});
 
 describe('which option a drag selects', () => {
   it.each<[string, [number, number][], string[]]>([
@@ -65,8 +74,8 @@ describe('which option a drag selects', () => {
       ['left', 'left!', 'left!', 'left!', 'left!'],
     ],
     [
-      'jitter on the down lines holds, with its own share of the taller card',
-      [[0, 210], [0, 220], [0, 180], [0, 165], [0, 180], [0, 216]],
+      'jitter on the down lines holds, measured by the card width on a taller card',
+      [[0, 150], [0, 160], [0, 130], [0, 115], [0, 130], [0, 155]],
       ['down', 'down!', 'down!', 'down', 'down', 'down!'],
     ],
     [
@@ -97,7 +106,7 @@ describe('which option a drag selects', () => {
     [
       'a deliberate turn from right to down switches once down clearly leads',
       [[160, 0], [160, 180], [160, 190], [160, 220]],
-      ['right!', 'right!', 'down', 'down!'],
+      ['right!', 'right!', 'down!', 'down!'],
     ],
   ])('%s', (_name, path, expected) => {
     expect(walk(path)).toEqual(expected);
@@ -199,10 +208,10 @@ describe('where the finger starts', () => {
       ['down', 'down!'],
     ],
     [
-      'a start high on the screen needs the normal 45% of the card to Later',
+      'a start high on the screen needs the normal 45% of the card width to Later',
       195,
       200,
-      [[0, 210], [0, 220]],
+      [[0, 150], [0, 160]],
       ['down', 'down!'],
     ],
     [

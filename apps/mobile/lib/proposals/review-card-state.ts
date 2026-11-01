@@ -77,7 +77,8 @@ function travelToward(side: SwipeSide, dx: number, dy: number): number {
 /** The finger's travel that engages this side: 45% of the card, or 60% of the room when that is less. */
 export function swipeEngageAt(side: SwipeSide, offset: SwipeOffset): number {
   'worklet';
-  const size = side === 'down' ? offset.height : offset.width;
+  // A tall card must not ask for a longer drag down than sideways: the thumb travels the same.
+  const size = side === 'down' ? Math.min(offset.height, offset.width) : offset.width;
   return Math.max(
     SWIPE_ENGAGE_FLOOR_PX,
     Math.min(size * SWIPE_ENGAGE_SHARE, offset.room[side] * SWIPE_ROOM_SHARE),
@@ -157,7 +158,7 @@ export function releaseIntent(selection: SwipeSelection, swipe: Swipe): SwipeInt
   const side: SwipeSide = sideways ? (landX >= 0 ? 'right' : 'left') : 'down';
   const thrown =
     travelToward(side, vx, vy) >= FLING_MIN_SPEED &&
-    travelToward(side, dx, dy) >= (side === 'down' ? height : width) * FLING_MIN_TRAVEL_SHARE;
+    travelToward(side, dx, dy) >= (side === 'down' ? Math.min(height, width) : width) * FLING_MIN_TRAVEL_SHARE;
   return thrown ? intentOfSide(side, canApprove) : null;
 }
 
