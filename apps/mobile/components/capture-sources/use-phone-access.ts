@@ -137,7 +137,7 @@ export function usePhoneAccess() {
   return { access, change };
 }
 
-/** "3 on, 1 not set up" for the Capture sources intro. */
+/** "2 on, 1 not set up", for the Profile row on a phone where Moni cannot read notifications. */
 export function accessSummary(access: Record<PhoneAccessId, AccessState>): string {
   const states = Object.values(access);
   const count = (state: AccessState) => states.filter((value) => value === state).length;

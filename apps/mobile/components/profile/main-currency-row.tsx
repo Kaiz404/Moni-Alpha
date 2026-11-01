@@ -1,12 +1,10 @@
 import { userPreferencesSchema } from '@repo/types';
 import { useState } from 'react';
-import { View } from 'react-native';
 
 import { currencyName } from '@/components/profile/currency-words';
 import { MainCurrencySheet } from '@/components/profile/main-currency-sheet';
 import { ProfileRow } from '@/components/profile/profile-row';
 import { ListCard } from '@/components/ui/list-card';
-import { Text } from '@/components/ui/text';
 import { useMainCurrency } from '@/lib/finance/main-currency';
 import { profilePreferences$ } from '@/lib/store';
 import { updateProfilePreferences } from '@/lib/supabase/profile';
@@ -41,7 +39,7 @@ export function MainCurrencyRow() {
   };
 
   return (
-    <View className="gap-2">
+    <>
       <ListCard>
         <ProfileRow
           testID={tid('profile', 'main-currency')}
@@ -55,13 +53,6 @@ export function MainCurrencyRow() {
           onPress={() => setSheet('open')}
         />
       </ListCard>
-      <Text
-        variant="meta"
-        className="px-1 text-ink-2"
-      >
-        Home, Activity, Budget and Debts show this currency. Wallets in
-        other currencies stay in Wallets.
-      </Text>
       <MainCurrencySheet
         visible={sheet !== 'closed'}
         open={sheet === 'open'}
@@ -70,6 +61,6 @@ export function MainCurrencyRow() {
         onDismiss={() => setSheet('closing')}
         onExited={() => setSheet('closed')}
       />
-    </View>
+    </>
   );
 }

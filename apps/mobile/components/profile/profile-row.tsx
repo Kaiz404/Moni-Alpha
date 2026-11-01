@@ -17,7 +17,8 @@ export type ProfileTint =
   | 'lilac'
   | 'peach'
   | 'aqua'
-  | 'sand';
+  | 'sand'
+  | 'attention';
 
 export const PROFILE_TINT_CLASS: Record<ProfileTint, string> = {
   mint: 'bg-mint/45',
@@ -26,6 +27,7 @@ export const PROFILE_TINT_CLASS: Record<ProfileTint, string> = {
   peach: 'bg-peach/45',
   aqua: 'bg-aqua/45',
   sand: 'bg-sand',
+  attention: 'bg-attention-fill',
 };
 
 type ProfileRowProps = {

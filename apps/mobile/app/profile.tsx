@@ -13,20 +13,18 @@ import {
   type ProfileTint,
 } from '@/components/profile/profile-row';
 import {
+  accessSummary,
   usePhoneAccess,
+  type PhoneAccessId,
   type AccessState,
 } from '@/components/capture-sources/use-phone-access';
-import { useLinkedApps } from '@/components/capture-sources/use-linked-apps';
 import { useMerchantNames } from '@/components/merchants/use-merchant-names';
 import { Button } from '@/components/ui/button';
-import { IconSymbol } from '@/components/ui/icon-symbol';
 import { ListCard } from '@/components/ui/list-card';
 import { NavRow } from '@/components/ui/nav-row';
 import { Page } from '@/components/ui/page';
-import { Press } from '@/components/ui/press';
 import { Segmented } from '@/components/ui/segmented';
 import { Text } from '@/components/ui/text';
-import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { useAuth } from '@/lib/auth/auth-context';
 import {
   categoriesForUser$,
@@ -66,17 +64,23 @@ function walletsMeta(currencies: readonly string[]): string {
     .join(' · ');
 }
 
-const ACCESS_WORD: Record<AccessState, string | undefined> = {
-  checking: undefined,
-  on: 'On',
-  off: 'Off',
-  not_set_up: 'Not set up',
-  unavailable: 'Off',
-};
-
-/** A source's bubble is Mint while it is on and Sand otherwise. */
-function accessTint(state: AccessState): ProfileTint {
-  return state === 'on' ? 'mint' : 'sand';
+/** Reading alerts is what the page is for, so that state speaks for the whole row. */
+function captureSourcesRow(access: Record<PhoneAccessId, AccessState>): {
+  meta: string;
+  tint: ProfileTint;
+} {
+  switch (access.notifications) {
+    case 'on':
+      return { meta: 'Notifications on', tint: 'mint' };
+    case 'off':
+    case 'not_set_up':
+      return { meta: 'Notifications off', tint: 'attention' };
+    case 'unavailable':
+      return { meta: accessSummary(access), tint: 'sand' };
+    case 'checking':
+      // Holds the second line, so the title does not jump when the read lands.
+      return { meta: 'Notifications', tint: 'sand' };
+  }
 }
 
 function plural(count: number, one: string, many: string): string {
@@ -85,25 +89,20 @@ function plural(count: number, one: string, many: string): string {
 
 function Section({
   label,
-  link,
   children,
 }: {
   label: string;
-  link?: ReactNode;
   children: ReactNode;
 }) {
   return (
     <View className="gap-2">
-      <View className="min-h-6 flex-row items-center justify-between px-1">
-        <Text
-          variant="caps"
-          className="text-muted"
-          accessibilityRole="header"
-        >
-          {label}
-        </Text>
-        {link}
-      </View>
+      <Text
+        variant="caps"
+        className="px-1 text-muted"
+        accessibilityRole="header"
+      >
+        {label}
+      </Text>
       <ListCard>{children}</ListCard>
     </View>
   );
@@ -111,14 +110,13 @@ function Section({
 
 export default function ProfileScreen() {
   const { user, signOut } = useAuth();
-  const tokens = useThemeTokens();
   const userId = user?.id ?? null;
   const name = displayName(user);
   const google = user?.app_metadata?.provider === 'google';
   const [theme, setTheme] = useState<ThemePreference>(getThemePreference);
   const themeFlip = useRef<ReturnType<typeof setTimeout>>(undefined);
   const { access } = usePhoneAccess();
-  const { apps } = useLinkedApps();
+  const sources = captureSourcesRow(access);
   const merchants = useMerchantNames();
 
   const wallets = useValue(walletsForUser$(userId));
@@ -128,8 +126,6 @@ export default function ProfileScreen() {
         .get()
         .filter((category) => category.isActive).length,
   );
-
-  const openSources = () => router.push('/capture-sources');
 
   const handleSignOut = async () => {
     await signOut();
@@ -241,69 +237,16 @@ export default function ProfileScreen() {
           />
         </Section>
 
-        <Section
-          label="CAPTURE SOURCES"
-          link={
-            <Press
-              testID={tid('profile', 'set-up')}
-              onPress={openSources}
-              accessibilityLabel="Set up capture sources"
-              className="-my-2.5 min-h-11 flex-row items-center gap-0.5 rounded-full pl-2"
-            >
-              <Text className="text-[15px] leading-5 font-display-semibold text-deep-mint">
-                Set up
-              </Text>
-              <IconSymbol
-                name="chevron-right"
-                size={18}
-                color={tokens.deepMint}
-              />
-            </Press>
-          }
-        >
-          <ProfileRow
-            testID={tid('profile', 'row', 'bank-notifications')}
-            icon="bell-outline"
-            tint={accessTint(access.notifications)}
-            title="Bank notifications"
-            meta={plural(apps.length, 'linked app', 'linked apps')}
-            value={ACCESS_WORD[access.notifications]}
-            chevron="right"
-            onPress={openSources}
-          />
-          <ProfileRow
-            testID={tid('profile', 'row', 'location')}
-            icon="map-marker"
-            tint={accessTint(access.location)}
-            title="Location"
-            meta="From notifications"
-            value={ACCESS_WORD[access.location]}
-            chevron="right"
-            onPress={openSources}
-          />
-          <ProfileRow
-            testID={tid('profile', 'row', 'camera')}
-            icon="camera-outline"
-            tint={accessTint(access.camera)}
-            title="Camera"
-            meta="Scan receipts"
-            value={ACCESS_WORD[access.camera]}
-            chevron="right"
-            onPress={openSources}
-          />
-          <ProfileRow
-            testID={tid('profile', 'row', 'microphone')}
-            icon="microphone"
-            tint={accessTint(access.microphone)}
-            title="Microphone"
-            meta="Say it instead of typing"
-            value={ACCESS_WORD[access.microphone]}
-            chevron="right"
-            onPress={openSources}
-          />
-        </Section>
-
         <Section label="PRIVACY AND DATA">
+          <ProfileRow
+            testID={tid('profile', 'row', 'capture-sources')}
+            icon={sources.tint === 'attention' ? 'bell-off-outline' : 'bell-outline'}
+            tint={sources.tint}
+            title="Capture sources"
+            meta={sources.meta}
+            chevron="right"
+            onPress={() => router.push('/capture-sources')}
+          />
           <ProfileRow
             testID={tid('profile', 'row', 'capture-log')}
             icon="cellphone-message"

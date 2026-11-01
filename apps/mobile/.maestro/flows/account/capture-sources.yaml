@@ -13,9 +13,9 @@ tags:
     id: home.avatar
 - scrollUntilVisible:
     element:
-      id: profile.row.bank-notifications
+      id: profile.row.capture-sources
 - tapOn:
-    id: profile.row.bank-notifications
+    id: profile.row.capture-sources
 - assertVisible: Capture sources
 - assertVisible: Moni works without any of these.*
 - takeScreenshot: k3-l9-sources

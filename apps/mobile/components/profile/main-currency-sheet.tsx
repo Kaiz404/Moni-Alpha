@@ -96,7 +96,7 @@ export function MainCurrencySheet({
         onExited={onExited}
         size="fit"
         title="Main currency"
-        note="The one you spend in day to day."
+        note="Home, Activity, Budget and Debts show this currency. Other currencies stay on Wallets."
         closeLabel="Close"
       >
         <View className="gap-3.5">
