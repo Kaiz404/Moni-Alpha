@@ -1,16 +1,21 @@
 import type { MinorAmount, ProposedTransaction, TransactionType } from '@repo/types';
-import { memo } from 'react';
+import { memo, useEffect, useMemo, useState } from 'react';
 import { useWindowDimensions, View, type AccessibilityActionEvent } from 'react-native';
 
 import { FieldRow, FieldRows } from '@/components/review/field-row';
 import type { ChipLook } from '@/components/review/picker-chip';
 import { SourcePill } from '@/components/review/source-pill';
+import {
+  getNotificationAppIconUri,
+  NotificationAppIcon,
+} from '@/components/wallets/notification-source';
 import { IconSymbol, type IconSymbolName } from '@/components/ui/icon-symbol';
 import { InPlaceField, InPlaceGroup } from '@/components/ui/in-place-field';
 import { Press } from '@/components/ui/press';
 import { Text } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { formatSignedMoney } from '@/lib/finance/format-money';
+import { getCachedInstalledAppsMap, getInstalledAppInfo } from '@/lib/notifications/installed-apps';
 import {
   cardFit,
   type EditField as EditFieldName,
@@ -77,6 +82,51 @@ const SOURCE: Record<
   image: { icon: 'receipt-text-outline', tint: 'bg-peach', onPastel: true },
 };
 
+/** The app's icon from the caches, or from the phone when they are cold. Null until one is known. */
+function useAppIcon(packageName: string | null): string | null {
+  const [loaded, setLoaded] = useState<string | null>(null);
+  // The icon cache parses all its stored icons on each read, so a card reads it once.
+  const cached = useMemo(
+    () => getNotificationAppIconUri(packageName, getCachedInstalledAppsMap() ?? new Map()),
+    [packageName],
+  );
+  useEffect(() => {
+    if (!packageName || cached) return;
+    let cancelled = false;
+    void getInstalledAppInfo(packageName).then((app) => {
+      if (!cancelled && app?.iconUri) setLoaded(app.iconUri);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [packageName, cached]);
+  return cached ?? loaded;
+}
+
+/** A notification capture shows the app that sent it. The tile is for the rest, and for an app with no known icon. */
+function SourceIcon({ proposal }: { proposal: ProposedTransaction }) {
+  const tokens = useThemeTokens();
+  const source = SOURCE[proposal.sourceType];
+  const iconUri = useAppIcon(proposal.sourceType === 'notification' ? proposal.sourceApp : null);
+  if (iconUri) {
+    return (
+      <NotificationAppIcon
+        iconUri={iconUri}
+        size={36}
+      />
+    );
+  }
+  return (
+    <View className={`h-9 w-9 items-center justify-center rounded-[12px] ${source.tint}`}>
+      <IconSymbol
+        name={source.icon}
+        size={20}
+        color={source.onPastel ? tokens.onPastel : tokens.foreground}
+      />
+    </View>
+  );
+}
+
 function moneyDirection(type: TransactionType | null) {
   return type === 'income' || type === 'transfer' ? type : 'expense';
 }
@@ -99,7 +149,6 @@ export const ReviewCard = memo(function ReviewCard({
   const tokens = useThemeTokens();
   const { fontScale } = useWindowDimensions();
   const { proposal } = model;
-  const source = SOURCE[proposal.sourceType];
   const direction = moneyDirection(model.type);
   const typeLabel = TRANSACTION_TYPE_COPY[direction].label;
   const amountText = formatSignedMoney(direction, model.amountMinor, proposal.currency);
@@ -146,15 +195,7 @@ export const ReviewCard = memo(function ReviewCard({
         accessibilityActions={decisions}
         onAccessibilityAction={onDecisionAction}
       >
-        <View
-          className={`h-9 w-9 items-center justify-center rounded-[12px] ${source.tint}`}
-        >
-          <IconSymbol
-            name={source.icon}
-            size={20}
-            color={source.onPastel ? tokens.onPastel : tokens.foreground}
-          />
-        </View>
+        <SourceIcon proposal={proposal} />
         <View className="min-w-0 flex-1">
           <Text
             className="text-[15px] leading-[20px] font-display-semibold text-foreground"

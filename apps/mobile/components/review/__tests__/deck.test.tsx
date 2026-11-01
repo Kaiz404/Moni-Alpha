@@ -2,6 +2,7 @@ import 'react-native-gesture-handler/jestSetup';
 import type { Observable } from '@legendapp/state';
 import type { CurrencyCode, MinorAmount } from '@repo/types';
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
+import { Image } from 'expo-image';
 import type React from 'react';
 import { Dimensions, StyleSheet, Text } from 'react-native';
 import { State, type PanGesture } from 'react-native-gesture-handler';
@@ -36,8 +37,11 @@ jest.mock('@/lib/auth/auth-context', () => ({ useAuth: () => ({ user: { id: 'use
 jest.mock('@/lib/supabase/client', () => ({ getUserId: async () => 'user-1' }));
 jest.mock('@/lib/supabase/profile', () => ({ ensureFinanceTimezone: async () => 'Asia/Kuala_Lumpur' }));
 jest.mock('@/lib/notifications/capture-status', () => ({ markCaptureStatus: jest.fn() }));
+const mockInstalledApps = new Map<string, { label: string; iconUri?: string }>();
+const mockGetInstalledAppInfo = jest.fn(async (_packageName: string) => null as { iconUri: string } | null);
 jest.mock('@/lib/notifications/installed-apps', () => ({
-  getCachedInstalledAppsMap: () => new Map([['com.maybank2u.life', { label: 'Maybank' }]]),
+  getCachedInstalledAppsMap: () => mockInstalledApps,
+  getInstalledAppInfo: (packageName: string) => mockGetInstalledAppInfo(packageName),
 }));
 jest.mock('@/lib/haptics', () => ({
   approve: jest.fn(),
@@ -137,6 +141,10 @@ const ledger = () =>
   Object.values(store.transactions$.peek()).filter((row) => row.deleted === false);
 
 beforeEach(() => {
+  mockInstalledApps.clear();
+  mockInstalledApps.set('com.maybank2u.life', { label: 'Maybank' });
+  mockGetInstalledAppInfo.mockClear();
+  mockGetInstalledAppInfo.mockResolvedValue(null);
   // The test window reports a font scale of 2; these tests read the card at the default size.
   jest
     .spyOn(Dimensions, 'get')
@@ -852,6 +860,58 @@ describe('Review deck', () => {
       expect(getOpenSheet()?.kind).toBe('wallet');
       expect(ledger()).toEqual([]);
       await act(async () => dismissSheet());
+    });
+  });
+
+  describe('the source icon', () => {
+    const MAYBANK_ICON = 'data:image/png;base64,bWF5YmFuaw==';
+    const JAYA_ICON = 'data:image/png;base64,amF5YQ==';
+    const icons = () =>
+      screen.UNSAFE_queryAllByType(Image).map((image) => (image.props.source as { uri: string }).uri);
+
+    it("shows the installed app's icon in place of the bell", async () => {
+      mockInstalledApps.set('com.maybank2u.life', { label: 'Maybank', iconUri: MAYBANK_ICON });
+      seed('p1');
+      await show(<ReviewScreen />);
+      expect(icons()).toEqual([MAYBANK_ICON]);
+      expect(mockGetInstalledAppInfo).not.toHaveBeenCalled();
+    });
+
+    it('loads the icon when the cache is cold, for the card underneath too', async () => {
+      seed('p1');
+      seed('p2', { source_app: 'my.jaya', merchant: 'JAYA', created_at: '2020-01-01T00:00:00.000Z' });
+      const answers: (() => void)[] = [];
+      mockGetInstalledAppInfo.mockImplementation(
+        (name) =>
+          new Promise((answer) => {
+            answers.push(() => answer({ iconUri: name === 'my.jaya' ? JAYA_ICON : MAYBANK_ICON }));
+          }),
+      );
+      await show(<ReviewScreen />);
+      expect(icons()).toEqual([]);
+
+      await act(async () => answers.forEach((answer) => answer()));
+
+      expect(mockGetInstalledAppInfo.mock.calls.map(([name]) => name).sort()).toEqual([
+        'com.maybank2u.life',
+        'my.jaya',
+      ]);
+      expect(icons().sort()).toEqual([JAYA_ICON, MAYBANK_ICON].sort());
+    });
+
+    it('keeps the bell when no icon is known', async () => {
+      seed('p1');
+      await show(<ReviewScreen />);
+      await act(async () => {});
+      expect(icons()).toEqual([]);
+    });
+
+    it('never asks for an app icon on a chat or receipt capture', async () => {
+      seed('p1', { source_type: 'text', source_text: 'Lunch', source_app: 'com.maybank2u.life' });
+      await show(<ReviewScreen />);
+      await act(async () => {});
+      expect(icons()).toEqual([]);
+      expect(mockGetInstalledAppInfo).not.toHaveBeenCalled();
     });
   });
 
