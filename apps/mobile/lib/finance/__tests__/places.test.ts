@@ -4,6 +4,7 @@ import type { FinanceTransaction } from '../types';
 import {
   clusterPins,
   groupPlaces,
+  zoomMoved,
   placeLabel,
   placeRanges,
   placeRegular,
@@ -143,5 +144,24 @@ describe('clusterPins', () => {
     ]);
     const far = clusterPins(places, (point) => ({ x: point === places[0] ? 0 : 300, y: 0 }), () => 90);
     expect(far.map((cluster) => cluster.members.length)).toEqual([1, 1]);
+  });
+});
+
+describe('zoomMoved', () => {
+  const at = (latitudeDelta: number, latitude = 3) => ({
+    latitude,
+    longitude: 101,
+    latitudeDelta,
+    longitudeDelta: latitudeDelta,
+  });
+
+  it.each([
+    ['the first region', null, at(0.1), true],
+    ['a pan at the same zoom', at(0.1), at(0.1, 3.5), false],
+    ['a tiny zoom', at(0.1), at(0.105), false],
+    ['a pinch in', at(0.1), at(0.08), true],
+    ['a pinch out', at(0.1), at(0.12), true],
+  ])('%s', (_name, previous, next, expected) => {
+    expect(zoomMoved(previous, next)).toBe(expected);
   });
 });

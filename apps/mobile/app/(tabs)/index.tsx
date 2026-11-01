@@ -7,6 +7,7 @@ import { RefreshControl, ScrollView, View } from 'react-native';
 import { AskBox } from '@/components/home/ask-box';
 import { BillsStrip } from '@/components/home/bills-strip';
 import { CaptureAlertCard } from '@/components/home/capture-alert-card';
+import { MapTeaser, useMonthPlaces } from '@/components/budget/map-teaser';
 import { CheckInCard } from '@/components/home/check-in-card';
 import { NetWorth } from '@/components/home/net-worth';
 import { RecentList } from '@/components/home/recent-list';
@@ -85,6 +86,7 @@ export default function HomeScreen() {
   const budgetData = useBudgetData();
   // The Budget tab's own month model, so Home's "left" always matches it (D1).
   const month = useBudgetMonth(budgetData, monthKey(budgetData.now));
+  const places = useMonthPlaces(budgetData.transactions, month.month, month.daysInMonth, currency);
   const proposals = useValue(pendingProposals$(userId));
   const aliases = useValue(() =>
     userId ? listMerchantAliases(userId) : [],
@@ -276,6 +278,17 @@ export default function HomeScreen() {
             />
           )}
           <CheckInCard currency={currency} />
+          {places.places.length > 0 ? (
+            <MapTeaser
+              screen="home"
+              places={places.places}
+              expenses={places.expenses}
+              withPlace={places.withPlace}
+              monthName={monthLong(now)}
+              currency={currency}
+              onOpen={() => router.push('/map')}
+            />
+          ) : null}
         </ScrollView>
       )}
     </Page>

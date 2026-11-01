@@ -326,6 +326,18 @@ export function clusterPins(
 }
 
 /** Linear screen projection of a map region; close enough at city zoom. */
+/** About a tenth of a zoom level's change in scale: pins can merge, and a pinch frame is cheap to skip. */
+const ZOOM_STEP = 0.1;
+
+/**
+ * Whether a moving map has zoomed enough to cluster its pins again. Panning alone keeps the pins'
+ * distances, so it never needs to.
+ */
+export function zoomMoved(previous: Region | null, next: Region): boolean {
+  if (!previous) return true;
+  return Math.abs(Math.log(next.latitudeDelta / previous.latitudeDelta)) > ZOOM_STEP;
+}
+
 export function projector(region: Region, size: { width: number; height: number }) {
   const west = region.longitude - region.longitudeDelta / 2;
   const north = region.latitude + region.latitudeDelta / 2;

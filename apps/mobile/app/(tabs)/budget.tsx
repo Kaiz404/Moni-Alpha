@@ -8,7 +8,7 @@ import {
 } from '@/components/budget/bills-list';
 import { BudgetRings } from '@/components/budget/budget-rings';
 import { CalendarView } from '@/components/budget/calendar-view';
-import { MapTeaser } from '@/components/budget/map-teaser';
+import { MapTeaser, useMonthPlaces } from '@/components/budget/map-teaser';
 import {
   useBudgetData,
   useBudgetMonth,
@@ -32,12 +32,10 @@ import {
   monthKey,
   monthName,
   monthShort,
-  monthSpend,
   spendMonths,
   type BudgetMonth,
 } from '@/lib/finance/budget-month';
 import { formatMoney } from '@/lib/finance/format-money';
-import { groupPlaces } from '@/lib/finance/places';
 import { openSheet } from '@/lib/sheet/sheet-store';
 import { tid } from '@/lib/test-ids';
 
@@ -185,26 +183,7 @@ function MonthView({
   const { currency } = budget;
   const name = monthName(budget.month);
   const sentence = leftSentence(budget);
-  const places = useMemo(() => {
-    const range = {
-      from: `${budget.month}-01`,
-      to: `${budget.month}-${budget.daysInMonth}`,
-    };
-    const spend = monthSpend(
-      data.transactions,
-      budget.month,
-      currency,
-    );
-    return {
-      places: groupPlaces(data.transactions, { currency, range }),
-      expenses: spend.length,
-      withPlace: spend.filter(
-        (row) =>
-          row.locationLatitude !== null &&
-          row.locationLongitude !== null,
-      ).length,
-    };
-  }, [data.transactions, budget.month, budget.daysInMonth, currency]);
+  const places = useMonthPlaces(data.transactions, budget.month, budget.daysInMonth, currency);
   const looks = useMemo(() => {
     const latest = lastPaymentBySeries(data.transactions);
     const categories = Object.fromEntries(
@@ -338,6 +317,7 @@ function MonthView({
       ) : null}
       <View className="mt-2">
         <MapTeaser
+          screen="budget"
           places={places.places}
           expenses={places.expenses}
           withPlace={places.withPlace}

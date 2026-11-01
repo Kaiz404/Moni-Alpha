@@ -51,6 +51,14 @@ function styleFor(p: MapPalette): MapStyleElement[] {
 
 export const mapStyles = { light: styleFor(light), dark: styleFor(dark) };
 
+const NO_LABELS: MapStyleElement = { elementType: 'labels', stylers: [{ visibility: 'off' }] };
+
+/** A small lite map draws place names large and cuts them at its edge, so it goes without. */
+export const miniMapStyles = {
+  light: [...styleFor(light), NO_LABELS],
+  dark: [...styleFor(dark), NO_LABELS],
+};
+
 /** Kuala Lumpur, for a map with nothing to frame yet. */
 export const FALLBACK_REGION = {
   latitude: 3.139,

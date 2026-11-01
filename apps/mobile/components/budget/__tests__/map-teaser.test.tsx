@@ -50,6 +50,7 @@ const bangsar = {
 
 const card = (places: Place[]) => (
   <MapTeaser
+    screen="budget"
     places={places}
     expenses={30}
     withPlace={25}
@@ -71,6 +72,17 @@ describe('MapTeaser', () => {
     expect(screen.getByText('RM293', { includeHiddenElements: true })).toBeTruthy();
     expect(mockMapProps.mock.calls[0][0].liteMode).toBe(true);
     expect(screen.getByText('1 place · 25 of 30 expenses had a place')).toBeTruthy();
+  });
+
+  it('pins only the three biggest places', () => {
+    const near = (id: string, totalMinor: number, offset: number) =>
+      ({ ...bangsar, id, name: id, totalMinor, latitude: 3 + offset, longitude: 101 + offset }) as unknown as Place;
+    render(card([near('a', 40000, 0), near('b', 30000, 0.5), near('c', 20000, 1), near('d', 10000, 1.5)]));
+    const hidden = { includeHiddenElements: true };
+    expect(screen.getByText('RM400', hidden)).toBeTruthy();
+    expect(screen.getByText('RM200', hidden)).toBeTruthy();
+    expect(screen.queryByText('RM100', hidden)).toBeNull();
+    expect(screen.getByText('4 places · 25 of 30 expenses had a place')).toBeTruthy();
   });
 
   it('leaves the map out of a build with no Maps key, and keeps the card', () => {

@@ -1,0 +1,21 @@
+# Home's Where you spend card opens the map.
+# Run: scripts/device/run-flows.sh .maestro/flows/home/home-map.yaml
+appId: com.anonymous.moni.e2e
+name: Home map card
+tags:
+  - h1
+  - seed-full
+---
+- runFlow: ../../subflows/launch.yaml
+- scrollUntilVisible:
+    element:
+      id: home.open-map
+    direction: DOWN
+- takeScreenshot: home-map-card
+- tapOn:
+    id: home.open-map
+- extendedWaitUntil:
+    visible: Where you spend
+    timeout: 15000
+- assertVisible:
+    id: map.places.back

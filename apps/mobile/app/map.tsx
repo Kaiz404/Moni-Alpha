@@ -32,6 +32,7 @@ import {
   placeRanges,
   placesTotal,
   regionFor,
+  zoomMoved,
   sharePercent,
   type Place,
   type PlaceRangeKey,
@@ -139,6 +140,9 @@ export default function MapScreen() {
             toolbarEnabled={false}
             moveOnMarkerPress={false}
             onLayout={(event) => setSize(event.nativeEvent.layout)}
+            onRegionChange={(next) =>
+              setRegion((current) => (zoomMoved(current, next) ? next : current))
+            }
             onRegionChangeComplete={setRegion}
           >
             {state.kind === 'places' ? (
