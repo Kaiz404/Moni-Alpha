@@ -22,15 +22,25 @@ function mockQuery(table: string, op: string) {
         },
       };
   mockServer.calls.push(`${op} ${table}`);
+  let from = 0;
   const query: any = {
     gt: () => query,
     eq: () => query,
+    order: () => query,
+    range: (start: number) => {
+      from = start;
+      return query;
+    },
     limit: () => {
       mockServer.calls.pop();
       return mockQuery(table, 'probe');
     },
     select: () => query,
-    then: (resolve: any, reject: any) => Promise.resolve(result).then(resolve, reject),
+    then: (resolve: any, reject: any) =>
+      Promise.resolve(result.data ? { ...result, data: result.data.slice(from) } : result).then(
+        resolve,
+        reject,
+      ),
   };
   return query;
 }

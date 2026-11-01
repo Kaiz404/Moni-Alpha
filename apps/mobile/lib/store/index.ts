@@ -72,10 +72,39 @@ function createOrRevive(collection: string) {
   };
 }
 
+const PULL_PAGE = 1000;
+
+/**
+ * PostgREST cuts a response at the server's `max_rows` and reports no error, so the plugin's own
+ * one-request list leaves a larger table short on the phone. Pages run in id order, which an edit
+ * never changes, so no row moves between pages. Only an empty page ends the pull: a page shorter
+ * than asked may just mean the server's cap is lower than `PULL_PAGE`.
+ */
+function pagedList(collection: string) {
+  return async ({ lastSync }: { lastSync?: number }) => {
+    const data: Record<string, unknown>[] = [];
+    while (true) {
+      const changed = lastSync
+        ? supabase
+            .from(collection)
+            .select()
+            .gt('updated_at', new Date(lastSync).toISOString())
+        : supabase.from(collection).select();
+      const page = await changed.order('id').range(data.length, data.length + PULL_PAGE - 1);
+      // The plugin's own list rethrows this one so its retry can run.
+      if (page.error?.message?.includes('Failed to fetch')) throw page.error;
+      if (page.error) return { data: null, error: page.error };
+      if (!page.data.length) return { data, error: null };
+      data.push(...page.data);
+    }
+  };
+}
+
 function syncTable(collection: string, extra?: Record<string, unknown>) {
   return syncedSupabase({
     supabase,
     collection,
+    list: pagedList(collection) as never,
     create: createOrRevive(collection) as never,
     realtime: true,
     persist: { name: collection, ...persistOptions },

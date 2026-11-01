@@ -39,9 +39,15 @@ const mockNow = () => new Date().toISOString();
 function mockQuery(table: string) {
   let run: (rows: Row[]) => { data: unknown; error: unknown } = (rows) => ({ data: rows, error: null });
   const filters: ((row: Row) => boolean)[] = [];
+  let from = 0;
   const query: any = {
     select: () => query,
     limit: () => query,
+    order: () => query,
+    range: (start: number) => {
+      from = start;
+      return query;
+    },
     gt: (field: string, value: string) => {
       filters.push((row) => String(row[field]) > value);
       return query;
@@ -88,7 +94,7 @@ function mockQuery(table: string) {
       }
       const result = run(rows);
       const data = Array.isArray(result.data)
-        ? result.data.filter((row) => filters.every((filter) => filter(row as Row)))
+        ? result.data.filter((row) => filters.every((filter) => filter(row as Row))).slice(from)
         : result.data;
       return Promise.resolve({ ...result, data }).then(resolve, reject);
     },
