@@ -6,6 +6,7 @@
  *
  * {
  *   listenerHeardAt: ISO | null   last notification from any app: the listener is alive
+ *   accessOffDismissedAt: ISO | null   "Not now" on the access alert; the next notification clears it
  *   sources: { [package]: {
  *     lastHeardAt: ISO | null     last notification of any kind from this app
  *     lastCapturedAt: ISO | null  last alert that became a capture
@@ -66,7 +67,7 @@ function addCapture(source, at) {
 
 /** First read after an update: the log still knows the last few captures. */
 function seedFromLog(storage) {
-  const health = { listenerHeardAt: null, sources: {} };
+  const health = { listenerHeardAt: null, accessOffDismissedAt: null, sources: {} };
   let entries = [];
   try {
     entries = JSON.parse(storage.getString(CAPTURED_NOTIFICATIONS_KEY) || '[]');
@@ -92,6 +93,7 @@ function readCaptureHealth(storage) {
     const parsed = JSON.parse(raw);
     return {
       listenerHeardAt: parsed?.listenerHeardAt ?? null,
+      accessOffDismissedAt: parsed?.accessOffDismissedAt ?? null,
       sources: parsed?.sources && typeof parsed.sources === 'object' ? parsed.sources : {},
     };
   } catch {
@@ -99,16 +101,23 @@ function readCaptureHealth(storage) {
   }
 }
 
+// The headless task writes this before it queues the alert, and a health record is never worth
+// losing a capture over.
 function updateCaptureHealth(storage, change) {
-  const health = readCaptureHealth(storage);
-  change(health);
-  storage.set(CAPTURE_HEALTH_KEY, JSON.stringify(health));
+  try {
+    const health = readCaptureHealth(storage);
+    change(health);
+    storage.set(CAPTURE_HEALTH_KEY, JSON.stringify(health));
+  } catch (e) {
+    console.error('[CaptureHealth] not recorded:', e?.message ?? e);
+  }
 }
 
 /** Every notification, from any app. Only a linked app gets a source. */
 function recordHeard(storage, { packageName, linked, at }) {
   updateCaptureHealth(storage, (health) => {
     health.listenerHeardAt = latest(health.listenerHeardAt, at);
+    health.accessOffDismissedAt = null;
     if (!linked) return;
     const source = sourceFor(health, packageName);
     source.lastHeardAt = latest(source.lastHeardAt, at);
@@ -140,12 +149,19 @@ function recordQuietDismissed(storage, { packageName, at }) {
   });
 }
 
+function recordAccessOffDismissed(storage, { at }) {
+  updateCaptureHealth(storage, (health) => {
+    health.accessOffDismissedAt = at;
+  });
+}
+
 module.exports = {
   CAPTURE_HEALTH_KEY,
   MAX_CAPTURE_DAYS,
   emptySource,
   localDay,
   readCaptureHealth,
+  recordAccessOffDismissed,
   recordCapture,
   recordHeard,
   recordLinked,

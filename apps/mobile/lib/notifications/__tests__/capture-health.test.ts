@@ -119,15 +119,33 @@ describe('capture health store', () => {
 
   it('survives a corrupt value', () => {
     const storage = memoryStorage({ [CAPTURE_HEALTH_KEY]: '{not json' });
-    expect(readCaptureHealth(storage)).toEqual({ listenerHeardAt: null, sources: {} });
+    expect(readCaptureHealth(storage)).toEqual({
+      listenerHeardAt: null,
+      accessOffDismissedAt: null,
+      sources: {},
+    });
     recordCapture(storage, { packageName: MAYBANK, at: at(14) });
     expect(readCaptureHealth(storage).sources[MAYBANK].lastCapturedAt).toBe(at(14));
+  });
+
+  it('never throws into the headless task when a write fails', () => {
+    const logged = jest.spyOn(console, 'error').mockImplementation(() => {});
+    const storage = {
+      getString: () => undefined,
+      set: () => {
+        throw new Error('disk full');
+      },
+    };
+    expect(() =>
+      recordHeard(storage, { packageName: MAYBANK, linked: true, at: at(14) }),
+    ).not.toThrow();
+    logged.mockRestore();
   });
 });
 
 describe('lastCapturedLine', () => {
   const now = new Date(2026, 9, 14, 12).getTime();
-  const empty = sourceHealth({ listenerHeardAt: null, sources: {} }, MAYBANK);
+  const empty = sourceHealth({ listenerHeardAt: null, accessOffDismissedAt: null, sources: {} }, MAYBANK);
 
   it('reads as the research sentence does', () => {
     expect(
@@ -142,7 +160,7 @@ describe('lastCapturedLine', () => {
 
 describe('reportedMissedLine', () => {
   const now = new Date(2026, 9, 31, 12).getTime();
-  const empty = sourceHealth({ listenerHeardAt: null, sources: {} }, MAYBANK);
+  const empty = sourceHealth({ listenerHeardAt: null, accessOffDismissedAt: null, sources: {} }, MAYBANK);
 
   it('counts reports from the last 30 days', () => {
     expect(

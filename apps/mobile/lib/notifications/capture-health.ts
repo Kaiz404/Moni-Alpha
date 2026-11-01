@@ -4,6 +4,7 @@ import { formatTimeAgo } from '@/lib/dates/relative-time';
 import {
   emptySource,
   readCaptureHealth as readHealth,
+  recordAccessOffDismissed as recordAccessOffDismissedIn,
   recordCapture as recordCaptureIn,
   recordLinked as recordLinkedIn,
   recordMissed as recordMissedIn,
@@ -27,6 +28,8 @@ export type CaptureSourceHealth = {
 export type CaptureHealth = {
   /** The last notification from any app: the listener was alive then. */
   listenerHeardAt: string | null;
+  /** "Not now" on the access alert. A notification arriving clears it. */
+  accessOffDismissedAt: string | null;
   sources: Record<string, CaptureSourceHealth>;
 };
 
@@ -55,6 +58,10 @@ export function recordSourceLinked(packageName: string, at = new Date().toISOStr
 
 export function dismissQuietSource(packageName: string, at = new Date().toISOString()): void {
   recordQuietDismissedIn(notificationStorage, { packageName, at });
+}
+
+export function dismissAccessOff(at = new Date().toISOString()): void {
+  recordAccessOffDismissedIn(notificationStorage, { at });
 }
 
 const REPORTED_WINDOW_MS = 30 * 86_400_000;

@@ -6,6 +6,7 @@ import { RefreshControl, ScrollView, View } from 'react-native';
 
 import { AskBox } from '@/components/home/ask-box';
 import { BillsStrip } from '@/components/home/bills-strip';
+import { CaptureAlertCard } from '@/components/home/capture-alert-card';
 import { CheckInCard } from '@/components/home/check-in-card';
 import { NetWorth } from '@/components/home/net-worth';
 import { RecentList } from '@/components/home/recent-list';
@@ -239,6 +240,7 @@ export default function HomeScreen() {
               })
             }
           />
+          <CaptureAlertCard />
           <View className="h-1" />
           <RecentList
             transactions={recent}

@@ -13,15 +13,23 @@ export function LinkedAppRow({
   label,
   packageName,
   source,
+  quiet,
   onReportMissed,
 }: {
   label: string;
   packageName: string;
   source: CaptureSourceHealth;
+  quiet: boolean;
   onReportMissed: () => void;
 }) {
   const tokens = useThemeTokens();
-  const reported = reportedMissedLine(source);
+  const meta = [
+    quiet ? 'Gone quiet' : null,
+    lastCapturedLine(source),
+    reportedMissedLine(source),
+  ]
+    .filter(Boolean)
+    .join(' · ');
   return (
     <View className="flex-row gap-3.5 px-[18px] py-3">
       <AppBubble packageName={packageName} />
@@ -37,7 +45,7 @@ export function LinkedAppRow({
           variant="meta"
           className="text-muted"
         >
-          {reported ? `${lastCapturedLine(source)} · ${reported}` : lastCapturedLine(source)}
+          {meta}
         </Text>
         <Press
           testID={tid('sources', 'app', label, 'report-missed')}

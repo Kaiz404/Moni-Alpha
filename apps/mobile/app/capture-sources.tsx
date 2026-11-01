@@ -10,9 +10,11 @@ import { useAutoAddRules, type AutoAddRuleRow } from '@/components/capture-sourc
 import { reportMissedFrom } from '@/components/capture-log/report-missed';
 import { KeepCaptureRunning } from '@/components/capture-sources/keep-capture-running';
 import { LinkedAppRow } from '@/components/capture-sources/linked-app-row';
+import { useCaptureAlert } from '@/components/capture-sources/use-capture-alert';
 import { useCaptureHealth } from '@/components/capture-sources/use-capture-health';
 import { useLinkedApps, type LinkedApp } from '@/components/capture-sources/use-linked-apps';
 import { accessSummary, usePhoneAccess } from '@/components/capture-sources/use-phone-access';
+import { Banner } from '@/components/ui/banner';
 import { IconSymbol, type IconSymbolName } from '@/components/ui/icon-symbol';
 import { ListCard, ListSection } from '@/components/ui/list-card';
 import { Page } from '@/components/ui/page';
@@ -20,6 +22,8 @@ import { Press } from '@/components/ui/press';
 import { Text } from '@/components/ui/text';
 import { TintBubble } from '@/components/ui/transaction-row';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
+import { toLocalDateInput } from '@/lib/dates/local-date-input';
+import { assessCadence } from '@/lib/notifications/capture-cadence';
 import { sourceHealth } from '@/lib/notifications/capture-health';
 import { NOTIFICATION_ACCESS_DISCLOSURE } from '@/lib/notifications/permission';
 import { createAutoAddRule, deleteAutoAddRule } from '@/lib/supabase/auto-add-rules';
@@ -125,7 +129,9 @@ export default function CaptureSourcesScreen() {
   const { access, change } = usePhoneAccess();
   const { apps, wallets } = useLinkedApps();
   const { health } = useCaptureHealth();
+  const captureAlert = useCaptureAlert();
   const rules = useAutoAddRules();
+  const today = toLocalDateInput(new Date());
 
   const appCount = apps.length;
   const notificationsMeta =
@@ -153,6 +159,19 @@ export default function CaptureSourcesScreen() {
             ? 'Moni works without any of these.'
             : `Moni works without any of these. ${accessSummary(access)}.`}
         </Text>
+
+        {captureAlert && captureAlert.alert.kind !== 'access_off' ? (
+          <Banner
+            tone="syncError"
+            title={captureAlert.title}
+            body={captureAlert.body}
+            action={{
+              testID: tid('sources', 'capture-alert', 'fix'),
+              label: captureAlert.actionLabel,
+              onPress: captureAlert.fix,
+            }}
+          />
+        ) : null}
 
         <View className="gap-2">
           <ListSection label="Phone access">
@@ -237,6 +256,7 @@ export default function CaptureSourcesScreen() {
                 label={app.label}
                 packageName={app.packageName}
                 source={sourceHealth(health, app.packageName)}
+                quiet={assessCadence(sourceHealth(health, app.packageName), today).kind === 'quiet'}
                 onReportMissed={() => reportMissedFrom(app.packageName, wallets)}
               />
             ))}
