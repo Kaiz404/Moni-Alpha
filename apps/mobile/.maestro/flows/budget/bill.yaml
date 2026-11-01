@@ -1,5 +1,5 @@
 # B2 bill page (V2P-BillDetail): open a bill from the Budget tab, skip this month, undo, then skip it.
-# Undo goes first and straight after the skip: the toast lasts 5 s and a Maestro tap takes about as long.
+# Undo goes first and straight after the skip: a Maestro tap takes about 6 s, so a flow-run build holds the toast for 15 s (EXPO_PUBLIC_E2E_TOAST_MS).
 # Leaves the first bill skipped this month.
 # Needs a bill due this month (the seeded Netflix) and the bills migration pushed.
 # Run: scripts/device/run-flows.sh .maestro/flows/budget/bill.yaml

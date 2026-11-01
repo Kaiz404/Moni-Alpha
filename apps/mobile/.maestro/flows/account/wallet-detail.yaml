@@ -1,7 +1,7 @@
 # K2 wallet page: its blocks, rename in place with Undo, Edit wallet, and Delete wallet.
 # Creates "K2 Detail", renames it, and deletes it at the end.
 # Opens the form and the wallet from Home, Net worth, then Wallets.
-# Undo goes straight after the rename: the toast lasts 5 s and a Maestro tap takes about as long.
+# Undo goes straight after the rename: a Maestro tap takes about 6 s, so a flow-run build holds the toast for 15 s (EXPO_PUBLIC_E2E_TOAST_MS).
 # Run: scripts/device/run-flows.sh .maestro/flows/account/wallet-detail.yaml
 appId: com.anonymous.moni.e2e
 name: K2 wallet page

@@ -314,6 +314,29 @@ run_flows --sha rf-key --seed empty --tag needs-ai --area home >/dev/null 2>&1
 maestro_args=$(tr '\n' ' ' <"$tmp/rf-maestro.log")
 [[ $maestro_args == *"--include-tags needs-ai --exclude-tags seed-full,needs-speech,needs-posted-alert,needs-scanner,perf "*" $(cd "$dir/../.." && pwd)/.maestro/flows/home "* ]] && pass "--seed empty excludes seed-full, a --tag lifts its default exclusion, and --area picks one folder" || fail "empty seed maestro args: $maestro_args"
 
+ra=$tmp/ra
+mkdir -p "$ra/scripts/device" "$ra/.maestro/flows/home" "$ra/.maestro/flows/perf" "$ra/.maestro/flows/review"
+cp "$dir/run-areas.sh" "$dir/manual-tags.sh" "$ra/scripts/device/"
+cat >"$ra/scripts/device/run-flows.sh" <<'FAKE'
+#!/usr/bin/env bash
+echo "$*" >>"$FAKE_RA_LOG"
+[[ $* == *cards.yaml* ]] && { echo "0/1 flows passed"; exit 1; }
+echo "1/1 flows passed"
+FAKE
+chmod +x "$ra/scripts/device/run-flows.sh"
+printf 'tags:\n  - r1\n' >"$ra/.maestro/flows/review/cards.yaml"
+printf 'tags:\n  - r1\n' >"$ra/.maestro/flows/review/swipe.yaml"
+printf 'tags:\n  - r2\n  - needs-posted-alert\n' >"$ra/.maestro/flows/review/alert.yaml"
+out=$(FAKE_RA_LOG=$tmp/ra.log "$ra/scripts/device/run-areas.sh" --sha k --out /o 2>&1)
+rc=$?
+expect "run-areas.sh exits 1 when a flow fails" 1 $rc
+expect "run-areas.sh runs a per-flow area one flow at a time, past a failure, and skips manual flows and perf" "home: 1/1 flows passed
+review/cards: 0/1 flows passed
+review/swipe: 1/1 flows passed" "$out"
+expect "run-areas.sh gives run-flows.sh each flow's own path and out dir" "--sha k --area home --out /o/home
+--sha k $ra/scripts/device/../../.maestro/flows/review/cards.yaml --out /o/review/cards
+--sha k $ra/scripts/device/../../.maestro/flows/review/swipe.yaml --out /o/review/swipe" "$(sed "s#$ra/\.maestro#$ra/scripts/device/../../.maestro#" "$tmp/ra.log")"
+
 mkdir -p "$tmp/renders"
 printf '\211PNG\r\n\032\nboard' >"$tmp/renders/V2H-Home.png"
 out=$(MONI_BOARD_RENDERS=$tmp/renders "$dir/review-pair.sh" home V2H-Home "$tmp/screen.png" --out "$tmp/pairs")

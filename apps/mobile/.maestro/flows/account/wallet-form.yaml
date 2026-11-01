@@ -61,14 +61,13 @@ tags:
 - assertVisible: Bank · USD
 - tapOn:
     id: wallet.alerts-from
-    optional: true
-- assertVisible:
-    text: Moni reads spending alerts only from the app you pick.
-    optional: true
+- assertVisible: Moni reads spending alerts only from the app you pick.
 - takeScreenshot: k2-l7-app
+# Not sheet.scrim: Maestro taps its centre, which this tall sheet covers.
 - tapOn:
+    id: sheet.close
+- assertNotVisible:
     id: sheet.scrim
-    optional: true
 - tapOn:
     id: wallet.back
 - assertNotVisible: New wallet

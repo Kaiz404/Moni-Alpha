@@ -1,7 +1,7 @@
 # K2 balance correction: RM63.60 to RM60.00 writes a −RM3.60 correction, and Undo removes it.
 # Creates a "K2 Fix" cash wallet and leaves it corrected to RM60.00.
 # Opens the form and the wallet from Home, Net worth, then Wallets.
-# Undo goes straight after the save: the toast lasts 5 s and a Maestro tap takes about as long.
+# Undo goes straight after the save: a Maestro tap takes about 6 s, so a flow-run build holds the toast for 15 s (EXPO_PUBLIC_E2E_TOAST_MS).
 # Run: scripts/device/run-flows.sh .maestro/flows/account/wallet-correction.yaml
 appId: com.anonymous.moni.e2e
 name: K2 balance correction
@@ -53,8 +53,9 @@ tags:
     id: wallet.balance-not-right
 - assertVisible:
     id: wallet.balance.input
-- assertVisible: Type the cash you have.
+- assertVisible: Moni has RM63.60. Type what you count.
 - eraseText: 12
+- assertVisible: Type the cash you have.
 - inputText: '60'
 - assertVisible: Moni adds a −RM3.60 balance correction. Not counted as spending or income.
 - takeScreenshot: k2-correction-typing

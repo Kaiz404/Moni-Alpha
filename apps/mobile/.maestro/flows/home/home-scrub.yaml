@@ -24,11 +24,11 @@ tags:
 # The callout always shows a day. Only leaving "By today" proves the chart took the drag.
 - assertNotVisible: By today
 - assertVisible:
-    text: 'By \d+ .*'
+    text: 'By (Mon|Tue|Wed|Thu|Fri|Sat|Sun) \d{1,2} (Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)'
 - takeScreenshot: h1-l5-scrub
 - tapOn:
     id: home.chart.plot
     point: 20%,50%
 - assertNotVisible: By today
 - assertVisible:
-    text: 'By \d+ .*'
+    text: 'By (Mon|Tue|Wed|Thu|Fri|Sat|Sun) \d{1,2} (Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)'

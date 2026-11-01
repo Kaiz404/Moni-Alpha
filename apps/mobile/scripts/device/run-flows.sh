@@ -5,9 +5,7 @@ source "$here/env.sh"
 mobile=$(cd "$here/../.." && pwd)
 maestro_dir=$mobile/.maestro
 package=com.anonymous.moni.e2e
-# Flows with these tags need a person, a posted alert, the real AI backend, the system photo picker
-# (which shows the operator's own gallery), or perf.sh.
-manual_tags=(needs-speech needs-posted-alert needs-ai needs-scanner perf)
+source "$here/manual-tags.sh"
 
 usage() {
   echo "usage: run-flows.sh [--sha <key>] [--seed full|empty] [--out <dir>] [--tag <tag>]... [--area <area>]... [<flow.yaml or dir>...]" >&2

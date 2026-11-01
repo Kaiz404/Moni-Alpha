@@ -19,6 +19,8 @@ tags:
 - inputText: Show my captures
 - tapOn:
     id: chat.send
+# The card lists every waiting capture, which is taller than the thread above the keyboard.
+- hideKeyboard
 - extendedWaitUntil:
     visible:
       id: chat.answer.title

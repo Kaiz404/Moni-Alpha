@@ -74,7 +74,7 @@ apps/mobile/scripts/device/run-flows.sh --sha <key> --seed empty --area home    
 apps/mobile/scripts/device/run-flows.sh --sha <key> .maestro/flows/capture/type-it.yaml # one flow
 ```
 
-`run-areas.sh --sha <key> [--out <dir>] [<area>...]` runs each area on its own fresh seed. Use it for a full run, because a single run shares one seed and one flow's edits can fail the next.
+`run-areas.sh --sha <key> [--out <dir>] [<area>...]` runs each area on its own fresh seed. The `review` area takes a fresh seed per flow, because its flows spend the seed's four captures, so it costs about a minute more a flow. Use it for a full run, because a single run shares one seed and one flow's edits can fail the next.
 
 Build with `EXPO_PUBLIC_E2E_NOW=2026-10-14T14:06:00+08:00 apps/mobile/scripts/device/build-apk.sh` to pin JS time to the boards' sample day. The key gets a `-clock` suffix, and `run-flows.sh` seeds that same day, so a seeded screen compares number for number with its board. Android's own times stay real, so run capture and notification flows on a build without the clock. Toasts last 4 s and Maestro takes longer than that to reach Undo, so pass `EXPO_PUBLIC_E2E_TOAST_MS=15000` on any build meant for flows, and build without it for a person to try. A session never refreshes under the pinned clock and expires after an hour, so use `run-areas.sh`, which signs in again per area.
 
