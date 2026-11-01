@@ -76,6 +76,11 @@ type Sheets = {
     request: { months: { month: string; name: string; meta: string }[]; selected: string };
     result: string;
   };
+  /** People from past debts; resolves to the picked name. */
+  person: {
+    request: { title: string; people: string[]; selected: string };
+    result: string;
+  };
   confirm: {
     request: {
       title: string;

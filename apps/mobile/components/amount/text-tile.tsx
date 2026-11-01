@@ -22,7 +22,7 @@ type TextTileProps = Pick<
   testID: TestId;
   label: string;
   icon: IconSymbolName;
-  /** Beside the input, inside the tile, such as chips that fill it. */
+  /** Beside the input, inside the tile, such as a button that fills it. */
   trailing?: ReactNode;
 };
 

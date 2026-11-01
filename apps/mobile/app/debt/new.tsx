@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
-import { Keyboard, ScrollView, View } from 'react-native';
+import { Keyboard, View } from 'react-native';
 
 import { AmountPage } from '@/components/amount/amount-page';
 import { TextTile } from '@/components/amount/text-tile';
@@ -14,10 +14,11 @@ import {
   useDebtWallets,
 } from '@/components/debts/debt-wallets';
 import { SIDE_WORDS } from '@/components/debts/debt-words';
+import { pastPeople, sameName } from '@/components/debts/past-people';
 import { useDebtLines } from '@/components/debts/use-debts';
-import { Chip } from '@/components/ui/chip';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { PickerField } from '@/components/ui/picker-field';
+import { Press } from '@/components/ui/press';
 import { Segmented } from '@/components/ui/segmented';
 import { Text } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
@@ -26,6 +27,7 @@ import type { DebtSide } from '@/lib/finance/debt-summary';
 import { formatMoney } from '@/lib/finance/format-money';
 import { useMainCurrency } from '@/lib/finance/main-currency';
 import { approve } from '@/lib/haptics';
+import { openSheet } from '@/lib/sheet/sheet-store';
 import {
   addDebtPrincipal,
   createDebt,
@@ -37,9 +39,6 @@ import { showToast } from '@/lib/toast/toast-store';
 import { compactWalletNames } from '@/lib/wallets/compact-name';
 
 const DIRECTIONS = ['owed_to_me', 'i_owe'] as const;
-
-const sameName = (a: string, b: string) =>
-  a.trim().toLowerCase() === b.trim().toLowerCase();
 
 export default function NewDebtScreen() {
   const tokens = useThemeTokens();
@@ -60,19 +59,6 @@ export default function NewDebtScreen() {
     () => lines.filter((line) => line.debt.currency === currency),
     [lines, currency],
   );
-  const recentPeople = useMemo(() => {
-    const names: string[] = [];
-    for (const line of [...mine].sort((a, b) =>
-      b.lastAt.localeCompare(a.lastAt),
-    ))
-      if (
-        !names.some((known) =>
-          sameName(known, line.debt.counterpartyName),
-        )
-      )
-        names.push(line.debt.counterpartyName);
-    return names.slice(0, 3);
-  }, [mine]);
 
   const who = name.trim();
   const words = SIDE_WORDS[direction];
@@ -91,6 +77,18 @@ export default function NewDebtScreen() {
   const amount = formatMoney(amountMinor, currency);
   const ready = who.length > 0 && amountMinor > 0 && walletId !== null;
   const walletLabel = words.principalWallet;
+  const people = pastPeople(lines, direction);
+
+  const pickPerson = async () => {
+    Keyboard.dismiss();
+    const picked = await openSheet({
+      kind: 'person',
+      title: words.pastPeople,
+      people,
+      selected: who,
+    });
+    if (picked) setName(picked);
+  };
 
   const submit = async () => {
     if (!ready || !walletId) return;
@@ -140,16 +138,6 @@ export default function NewDebtScreen() {
         currency={currency}
         typed={typed}
         onTyped={setTyped}
-        sentence={{
-          text:
-            amountMinor > 0
-              ? words.owesAfter(
-                  who || (direction === 'i_owe' ? 'them' : 'They'),
-                  amount,
-                )
-              : 'How much?',
-          tone: 'plain',
-        }}
         control={
           <Segmented
             screen="debts"
@@ -157,7 +145,7 @@ export default function NewDebtScreen() {
             accessibilityLabel="Who owes who"
             options={DIRECTIONS.map((side) => ({
               value: side,
-              label: SIDE_WORDS[side].segment(who),
+              label: SIDE_WORDS[side].segment,
             }))}
             value={direction}
             onChange={setDirection}
@@ -187,29 +175,20 @@ export default function NewDebtScreen() {
           onChangeText={setName}
           maxLength={120}
           trailing={
-            // Inside the tile: a row under it would push Note off a 390 × 844 screen.
-            !who && recentPeople.length > 0 ? (
-              <ScrollView
-                horizontal
-                accessibilityLabel="Recent people"
-                className="-mr-3 grow-0"
-                contentContainerClassName="items-center gap-1.5 pr-3"
-                keyboardShouldPersistTaps="handled"
-                showsHorizontalScrollIndicator={false}
+            people.length > 0 ? (
+              <Press
+                testID={tid('debts', 'new', 'people')}
+                accessibilityLabel={`Choose from ${words.pastPeople.toLowerCase()}`}
+                onPress={() => void pickPerson()}
+                pressedClassName="bg-hairline"
+                className="-mr-1 h-11 w-11 items-center justify-center rounded-full bg-card"
               >
-                {recentPeople.map((person) => (
-                  <Chip
-                    key={person}
-                    testID={tid('debts', 'new', 'recent', person)}
-                    label={person}
-                    onSand
-                    onPress={() => {
-                      setName(person);
-                      Keyboard.dismiss();
-                    }}
-                  />
-                ))}
-              </ScrollView>
+                <IconSymbol
+                  name="account-multiple-outline"
+                  size={20}
+                  color={tokens.foreground}
+                />
+              </Press>
             ) : null
           }
         />

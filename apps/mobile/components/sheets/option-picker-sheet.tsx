@@ -2,6 +2,8 @@ import { useValue } from '@legendapp/state/react';
 import { useMemo, useState, type ReactNode } from 'react';
 import { FlatList, View } from 'react-native';
 
+import { sameName } from '@/components/debts/past-people';
+import { PersonAvatar } from '@/components/debts/person-avatar';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Press, PressRows } from '@/components/ui/press';
 import { SearchField } from '@/components/ui/search-field';
@@ -192,7 +194,8 @@ type KindSheetProps<
     | 'walletType'
     | 'transactionType'
     | 'date'
-    | 'notificationApp',
+    | 'notificationApp'
+    | 'person',
 > = SheetFrameProps & {
   request: SheetRequestOf<K>;
   onPick: (result: SheetResult<K>) => void;
@@ -407,6 +410,31 @@ export function DateSheet({
       title="Date"
       options={options}
       selectedId={request.selected}
+      onPick={onPick}
+    />
+  );
+}
+
+export function PersonSheet({
+  request,
+  onPick,
+  ...frame
+}: KindSheetProps<'person'>) {
+  const options: PickerOption[] = request.people.map((name) => ({
+    id: name,
+    name,
+    leading: <PersonAvatar name={name} />,
+  }));
+  return (
+    <OptionPickerSheet
+      {...frame}
+      title={request.title}
+      options={options}
+      selectedId={
+        request.people.find((name) =>
+          sameName(name, request.selected),
+        ) ?? null
+      }
       onPick={onPick}
     />
   );

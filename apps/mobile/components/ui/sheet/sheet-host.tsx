@@ -9,6 +9,7 @@ import {
   CurrencySheet,
   DateSheet,
   NotificationAppSheet,
+  PersonSheet,
   TransactionTypeSheet,
   WalletSheet,
   WalletTypeSheet,
@@ -107,6 +108,14 @@ function renderSheet(sheet: OpenSheet, frame: SheetFrameProps) {
     case 'month':
       return (
         <MonthSheet
+          {...frame}
+          request={sheet.request}
+          onPick={sheet.settle}
+        />
+      );
+    case 'person':
+      return (
+        <PersonSheet
           {...frame}
           request={sheet.request}
           onPick={sheet.settle}

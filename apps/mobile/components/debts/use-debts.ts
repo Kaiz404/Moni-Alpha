@@ -46,7 +46,7 @@ export function useDebt(id: string | undefined): {
   return { line: debt ? describeDebt(debt, own) : null, activities: own };
 }
 
-/** Every debt with its money, for Record a debt's people chips and its existing-debt check. */
+/** Every debt with its money, for Record a debt's past people and its existing-debt check. */
 export function useDebtLines(): DebtLine[] {
   const { debts, activities } = useOwnDebts();
   return debts

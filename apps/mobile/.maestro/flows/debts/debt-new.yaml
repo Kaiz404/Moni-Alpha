@@ -29,18 +29,47 @@ tags:
       - tapOn:
           id: debts.record-debt
 - assertVisible: Add who and an amount
+- assertVisible: They owe me
+- assertVisible: I owe them
+# The drawer keeps to the side that is selected: Mei is someone I owed, so she shows only on that side.
 - tapOn:
+    id: debts.direction.i-owe
+- tapOn:
+    id: debts.new.people
+- assertVisible: People you owed
+- assertVisible:
+    id: sheet.option.mei
+- assertNotVisible:
+    id: sheet.option.hana
+- tapOn:
+    id: sheet.scrim
+- tapOn:
+    id: debts.direction.owed-to-me
+# Hana is settled and Aiman is open, and both have owed me. Picking fills the field.
+- tapOn:
+    id: debts.new.people
+- assertVisible: People who owed you
+- assertVisible:
+    id: sheet.option.aiman
+- assertNotVisible:
+    id: sheet.option.mei
+- tapOn:
+    id: sheet.option.hana
+- assertVisible:
     id: debts.new.person
-- inputText: Hana
-- hideKeyboard
-- assertVisible: Hana owes me
+    text: Hana
+# The name stays in its field: the control keeps its own words.
+- assertVisible: They owe me
+- assertVisible: I owe them
+- assertNotVisible: Hana owes me
 - assertVisible: Add an amount
 - tapOn:
     id: debts.key.5
 - tapOn:
     id: debts.key.0
 - assertVisible: RM50
-- assertVisible: Hana will owe you RM50.00
+- assertNotVisible: Hana will owe you RM50.00
+- assertVisible: They owe me
 - assertVisible: 'Record: Hana owes you RM50.00'
 - tapOn:
     id: debts.new.note
