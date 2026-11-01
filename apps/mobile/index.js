@@ -17,6 +17,7 @@ if (Platform.OS === 'android') {
     isLocationRecordedForPackage,
   } = require('./lib/notifications/linked-packages-cache.core');
   const { captureStatusAtIntake } = require('./lib/notifications/capture-status.core');
+  const { recordHeard } = require('./lib/notifications/capture-health.core');
   const { enrichNotificationPackage } = require('./lib/notifications/notification-package.core');
   const { cacheNotificationAppIcon } = require('./lib/notifications/app-icon-cache.core');
   const { isRepeatedNotification } = require('./lib/notifications/notification-repeat.core');
@@ -75,6 +76,11 @@ if (Platform.OS === 'android') {
 
       // Always store in the full notifications list for the UI
       appendToList(notificationStorage, ALL_NOTIFICATIONS_KEY, enriched, MAX_STORED);
+      recordHeard(notificationStorage, {
+        packageName: enriched.packageName,
+        linked: packageLinked,
+        at: enriched.receivedAt,
+      });
       if (enriched.packageName && enriched.icon) {
         cacheNotificationAppIcon(enriched.packageName, enriched.icon);
       }

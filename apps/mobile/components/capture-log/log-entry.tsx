@@ -12,7 +12,7 @@ import { tid, type TestId } from '@/lib/test-ids';
 
 export type LogEntryAction = { testID: TestId; label: string; onPress: () => void };
 
-function AppBubble({ packageName }: { packageName: string | null }) {
+export function AppBubble({ packageName }: { packageName: string | null }) {
   const tokens = useThemeTokens();
   const icon = packageName ? getCachedAppIcon(packageName) : null;
   if (icon) {

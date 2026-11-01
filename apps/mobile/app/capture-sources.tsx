@@ -7,6 +7,8 @@ import {
   PermissionRow,
 } from '@/components/capture-sources/permission-row';
 import { useAutoAddRules, type AutoAddRuleRow } from '@/components/capture-sources/use-auto-add-rules';
+import { LinkedAppRow } from '@/components/capture-sources/linked-app-row';
+import { useCaptureHealth } from '@/components/capture-sources/use-capture-health';
 import { useLinkedApps, type LinkedApp } from '@/components/capture-sources/use-linked-apps';
 import { accessSummary, usePhoneAccess } from '@/components/capture-sources/use-phone-access';
 import { IconSymbol, type IconSymbolName } from '@/components/ui/icon-symbol';
@@ -16,6 +18,7 @@ import { Press } from '@/components/ui/press';
 import { Text } from '@/components/ui/text';
 import { TintBubble } from '@/components/ui/transaction-row';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
+import { sourceHealth } from '@/lib/notifications/capture-health';
 import { NOTIFICATION_ACCESS_DISCLOSURE } from '@/lib/notifications/permission';
 import { createAutoAddRule, deleteAutoAddRule } from '@/lib/supabase/auto-add-rules';
 import { updateWallet } from '@/lib/supabase/wallets';
@@ -119,6 +122,7 @@ export default function CaptureSourcesScreen() {
   const tokens = useThemeTokens();
   const { access, change } = usePhoneAccess();
   const { apps } = useLinkedApps();
+  const { health } = useCaptureHealth();
   const rules = useAutoAddRules();
 
   const appCount = apps.length;
@@ -218,6 +222,19 @@ export default function CaptureSourcesScreen() {
             </Text>
           </View>
         </View>
+
+        {Platform.OS === 'android' && apps.length > 0 ? (
+          <ListSection label="Linked apps">
+            {apps.map((app) => (
+              <LinkedAppRow
+                key={app.packageName}
+                label={app.label}
+                packageName={app.packageName}
+                source={sourceHealth(health, app.packageName)}
+              />
+            ))}
+          </ListSection>
+        ) : null}
 
         <View className="gap-2">
           {rules.length > 0 ? (

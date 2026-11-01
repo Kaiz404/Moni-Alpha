@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { AppState, Platform, View } from 'react-native';
 import { addMinor, type MinorAmount } from '@repo/types';
 
+import { useCaptureHealth } from '@/components/capture-sources/use-capture-health';
 import { Toggle } from '@/components/ui/toggle';
 import {
   IconSymbol,
@@ -23,6 +24,7 @@ import type {
   FinanceTransaction,
   FinanceWallet,
 } from '@/lib/finance/types';
+import { lastCapturedLine, sourceHealth } from '@/lib/notifications/capture-health';
 import {
   askForNotificationAccess,
   readNotificationListenerPermission,
@@ -276,6 +278,7 @@ export function WalletAlerts({
   link: WalletAlertLink;
 }) {
   const listenerOn = useListenerOn();
+  const { health } = useCaptureHealth();
   const app =
     link.notificationAppLabel ??
     (link.notificationPackage
@@ -318,7 +321,9 @@ export function WalletAlerts({
             tint="mint"
             title={app ? `Alerts from ${app}` : 'Alerts from'}
             meta={
-              app ? 'Alerts become captures' : 'Link a banking app'
+              link.notificationPackage
+                ? lastCapturedLine(sourceHealth(health, link.notificationPackage))
+                : 'Link a banking app'
             }
             value={app && listenerOn ? 'On' : 'Off'}
             onPress={() => void changeApp()}

@@ -2,6 +2,7 @@ import { assertMigrated, wallets$, transactions$ } from '@/lib/store';
 import { getRecordValues, isActive, patchRow } from '@/lib/store/helpers';
 import { getUserId } from '@/lib/supabase/client';
 import { getWalletBalances } from '@/lib/supabase/balances';
+import { recordSourceLinked } from '@/lib/notifications/capture-health';
 import { refreshLinkedPackagesFromStore } from '@/lib/notifications/linked-packages-cache';
 import { clearDefaultWalletIfDeleted } from '@/lib/wallets/default-wallet';
 import { DEFAULT_WALLET_CARD_STYLE_ID } from '@/constants/wallet-card-styles';
@@ -109,6 +110,7 @@ export async function createWallet(data: CreateWallet) {
     deleted: false,
   });
 
+  if (data.notificationPackage) recordSourceLinked(data.notificationPackage);
   refreshLinkedPackagesFromStore();
 
   const created = getRecordValues<WalletRow>(wallets$).find((w) => w.id === id);
@@ -142,6 +144,10 @@ export async function updateWallet(id: string, data: UpdateWallet) {
     patch.record_location = data.recordLocation;
   }
 
+  const before = getRecordValues<WalletRow>(wallets$).find((w) => w.id === id);
+  if (data.notificationPackage && data.notificationPackage !== before?.notification_package) {
+    recordSourceLinked(data.notificationPackage, now);
+  }
   patchRow(wallets$, id, patch);
   refreshLinkedPackagesFromStore();
 

@@ -14,6 +14,7 @@ import {
   getPendingCount,
 } from './processing-queue';
 import { runExtraction } from './run-extraction';
+import { recordCapture } from '@/lib/notifications/capture-health';
 import {
   captureStatusAfterExtraction,
   markCaptureStatus,
@@ -119,6 +120,9 @@ async function processingTask(taskData?: { delay?: number }) {
         const elapsed = Date.now() - itemStart;
         if (item.type === 'notification') {
           markCaptureStatus(item.id, captureStatusAfterExtraction(result), result.transactionId);
+          if (result.transactionId || result.proposalId) {
+            recordCapture(item.notification.packageName, item.notification.receivedAt);
+          }
           if (result.proposalId && !result.transactionId) {
             await postReviewNotification(result.proposalId);
           }
