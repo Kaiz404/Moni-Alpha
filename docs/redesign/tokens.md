@@ -60,10 +60,10 @@ Dark (`V2F-Dark`): Ground #161512 · Raised #211F1B (cards) · Fill #2C2924 (San
 
 ## Lists and rows
 
-- Paper list card radius 26, padding 6 0, no borders or dividers.
+- Paper list card radius 26, no padding, no borders or dividers. Rows reach its edges and keep their own padding; the card clips them to its corners (owner's direction, 1 Nov 2026).
 - Transaction row 66 tall: 42 tint bubble, title 16/600 one line, meta 13 Meta, amount 16/600. No chevron, no ⋯; the whole row opens the detail. Meta: "Category · Wallet" in day-grouped lists, otherwise "Date · Wallet". Transfers "Maybank → Touch 'n Go". "Auto" pill (20 tall Sand, 12/700 Ink 2) first in the meta. Pending: dashed bubble, "To review" pill, unsigned amount in Ink 2.
 - Navigation row (settings, lists of places): trailing value 15 Ink 2, then chevron-right 20 Meta.
-- Press: fill Sand light, scale 0.97 on the press spring, release on control.
+- Press: fill Sand light, scale 0.97 on the press spring, release on control. A row in a list card or menu does not scale, and its fill reaches the card's edges. A press with no corners and no row around it draws no fill.
 - Hold (500 ms; bloom from the finger from 250 ms in #E3D8C2 (`bloom`; dark #3A362F is not on a board), Confirm haptic, row lifts 1.02): menu Paper radius 22, 220 wide, items 44 tall: Edit category, Change wallet, Delete (Over text). Nothing else. A one-time hint chip "Hold a row for quick actions" teaches it.
 
 ## In-place edit (existing values on detail pages)
@@ -77,7 +77,7 @@ Dark (`V2F-Dark`): Ground #161512 · Raised #211F1B (cards) · Fill #2C2924 (San
 
 ## Sheets
 
-- Cream, top radius 32, grabber 36 × 5 Hairline, title 22/26 700, a bare close glyph in a 44 touch area for pickers (owner's direction, 1 Nov 2026). Pinned action 56 tall, 20 from sides and bottom.
+- Cream, top radius 32 (the Cream carries on below the sheet's bottom edge, so the spring's overshoot and an upward drag never show the page), grabber 36 × 5 Hairline, title 22/26 700, a bare close glyph in a 44 touch area for pickers (owner's direction, 1 Nov 2026). Pinned action 56 tall, 20 from sides and bottom.
 - Scrim rgba(23,24,26,0.32) over the page **and the tab bar**. Only the + (as ×) stays visible when the sheet came from the +.
 - Pickers use the category grid: 52 search field, 3 columns, Paper tiles radius 22, 44 bubble, name 14/600, 4 bar, "RM100 left" / "RM20 over".
 - + chooser: "Add a transaction"; four Paper capsule rows 60 tall, no subtitles: Type it (Mint, `dialpad`), Scan a receipt (Peach, `line-scan`), Say it (Sky, `microphone`), Ask Moni (Ink bubble, `creation` Lilac). Choosing one dismisses the sheet and slides the page in from the right.
@@ -91,7 +91,7 @@ Dark (`V2F-Dark`): Ground #161512 · Raised #211F1B (cards) · Fill #2C2924 (San
 
 All inside a Paper card (radius 26, padding 14 18), plot 314 × 150, axis column 44 (labels right-aligned 12 Meta).
 
-- Card header: caps label left, chart toggle right (Sand track 36 tall, Ink pill on the control spring, segments ≥ 70: Pace | Daily, Spending | Balance; Segment_Tick on change).
+- Card header: caps label left, chart toggle right (Sand track 36 tall, Ink pill on the control spring, segments ≥ 70: Pace | Daily, Spending | Balance; Segment_Tick on change). A spent-vs-budget card has no header number, because the callout and the budget line already show it; "RM317 left for 18 days · RM17 a day" sits below the chart in both modes (owner's direction, 1 Nov 2026).
 - Gridlines: top and baseline solid 1.5 Hairline; middle dashed Sand light.
 - Callout (one shape everywhere): Ink box radius 12, 100 × 38 at the top of the plot, date 12 over value 14/700 cream, dashed ink guide to the point.
 - Spent vs budget line (Home Pace, Budget root, category page): Ink 3 line, Sand fill at 0.8 up to today; even pace #A9A397 dashed from 0 to the budget at month end; budget as the top gridline with a Deep mint label and end dot; today point 14 Ink dot with cream border; scrub handle 28 × 20 Ink capsule. No projection line.

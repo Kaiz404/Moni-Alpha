@@ -247,30 +247,6 @@ function MonthView({
           >
             {`Spent in ${name}`}
           </Text>
-          <View>
-            <Text
-              testID={tid('budget', 'spent')}
-              className="text-[32px] leading-9 font-display-bold text-foreground"
-              style={{ fontVariant: ['tabular-nums'] }}
-            >
-              {formatMoney(budget.spentMinor, currency)}
-              {budget.budgetMinor !== null ? (
-                <Text className="text-[17px] leading-[22px] font-display-semibold text-ink-2">
-                  {` of ${formatMoney(budget.budgetMinor, currency, { whole: true })}`}
-                </Text>
-              ) : null}
-            </Text>
-            {sentence ? (
-              <Text
-                testID={tid('budget', 'left')}
-                variant="meta"
-                className="text-ink-2"
-                style={{ fontVariant: ['tabular-nums'] }}
-              >
-                {sentence}
-              </Text>
-            ) : null}
-          </View>
           <PaceChart
             screen="budget"
             mode="pace"
@@ -283,6 +259,16 @@ function MonthView({
             endsToday={budget.isCurrent}
             what={`Spent so far in ${name}`}
           />
+          {sentence ? (
+            <Text
+              testID={tid('budget', 'left')}
+              variant="meta"
+              className="text-ink-2"
+              style={{ fontVariant: ['tabular-nums'] }}
+            >
+              {sentence}
+            </Text>
+          ) : null}
         </View>
       )}
       <View className="mt-2">

@@ -1,7 +1,7 @@
 import { useValue } from '@legendapp/state/react';
 import type { User } from '@supabase/supabase-js';
 import { router } from 'expo-router';
-import { useState, type ReactNode } from 'react';
+import { useRef, useState, type ReactNode } from 'react';
 import { ScrollView, View } from 'react-native';
 
 import { currencyHeldIn } from '@/components/profile/currency-words';
@@ -39,6 +39,12 @@ import {
   THEME_PREFERENCE_OPTIONS,
   type ThemePreference,
 } from '@/lib/theme/preference';
+
+/**
+ * Changing theme recolours every mounted screen and calls into native Appearance,
+ * which stalls both threads. It waits until the pill's control spring is within 3%.
+ */
+const THEME_AFTER_PILL_MS = 220;
 
 function displayName(user: User | null): string {
   const meta = user?.user_metadata ?? {};
@@ -110,6 +116,7 @@ export default function ProfileScreen() {
   const name = displayName(user);
   const google = user?.app_metadata?.provider === 'google';
   const [theme, setTheme] = useState<ThemePreference>(getThemePreference);
+  const themeFlip = useRef<ReturnType<typeof setTimeout>>(undefined);
   const { access } = usePhoneAccess();
   const { apps } = useLinkedApps();
   const merchants = useMerchantNames();
@@ -188,7 +195,11 @@ export default function ProfileScreen() {
             value={theme}
             onChange={(next) => {
               setTheme(next);
-              setThemePreference(next);
+              clearTimeout(themeFlip.current);
+              themeFlip.current = setTimeout(
+                () => setThemePreference(next),
+                THEME_AFTER_PILL_MS,
+              );
             }}
           />
         </View>

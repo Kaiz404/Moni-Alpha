@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { View } from 'react-native';
 import Animated, {
   interpolateColor,
@@ -76,17 +76,24 @@ export function Segmented<T extends string>({
   const segment = useSharedValue(0);
   const shown = useSharedValue(1);
 
-  useEffect(() => {
-    if (position.get() === index) return;
+  const heading = useRef(index);
+
+  const slideTo = (next: number) => {
+    if (heading.current === next) return;
+    heading.current = next;
     if (reduceMotion) {
       // V2F-Motion: under Reduce Motion the pill cross-fades between options in 180.
-      position.set(index);
+      position.set(next);
       shown.set(0);
       shown.set(withTiming(1, REDUCED_FADE));
       return;
     }
-    position.set(withSpring(index, springs.control));
-  }, [index, position, reduceMotion, shown]);
+    position.set(withSpring(next, springs.control));
+  };
+
+  // Follows a value changed from outside. A tap slides in its own handler, so
+  // the pill never waits for the render its `onChange` causes.
+  useEffect(() => slideTo(index));
 
   const pill = useAnimatedStyle(() => ({
     opacity: shown.get(),
@@ -107,6 +114,7 @@ export function Segmented<T extends string>({
       }
     >
       <Animated.View
+        testID={tid(screen, name, 'pill')}
         pointerEvents="none"
         className={`absolute left-1 top-1 ${look.pill} rounded-full ${disabled ? 'bg-hairline' : 'bg-primary'}`}
         style={pill}
@@ -121,10 +129,12 @@ export function Segmented<T extends string>({
             accessibilityLabel={option.label}
             accessibilityState={{ selected, disabled }}
             disabled={disabled}
-            className="flex-1 flex-row items-center justify-center gap-1.5"
+            pressedClassName="bg-transparent"
+            className="flex-1 flex-row items-center justify-center gap-1.5 rounded-full"
             onPress={() => {
               if (selected) return;
               scrubStep();
+              slideTo(optionIndex);
               onChange(option.value);
             }}
           >

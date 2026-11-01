@@ -8,7 +8,7 @@ import {
   IconSymbol,
   type IconSymbolName,
 } from '@/components/ui/icon-symbol';
-import { Press } from '@/components/ui/press';
+import { Press, PressRows } from '@/components/ui/press';
 import { Text } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { springs } from '@/lib/motion/tokens';
@@ -90,36 +90,40 @@ export function WalletMenu({
           entering={RISE}
           exiting={FadeOut.duration(120)}
           accessibilityRole="menu"
-          className="absolute right-5 w-[220px] rounded-tile bg-card py-1.5"
+          className="absolute right-5 w-[220px] rounded-tile bg-card"
           style={[{ top: insets.top + 52 }, SHADOW]}
         >
-          {ITEMS.map((item) => {
-            const destructive = item.action === 'delete';
-            return (
-              <Press
-                key={item.action}
-                testID={tid('wallet', 'menu', item.action)}
-                accessibilityRole="menuitem"
-                className="h-11 flex-row items-center gap-3 px-4"
-                onPress={() => run(item.action)}
-              >
-                <View pointerEvents="none">
-                  <IconSymbol
-                    name={item.icon}
-                    size={20}
-                    color={
-                      destructive ? tokens.over : tokens.foreground
-                    }
-                  />
-                </View>
-                <Text
-                  className={`font-display-semibold text-[15px] leading-[21px] ${destructive ? 'text-over' : 'text-foreground'}`}
-                >
-                  {item.label}
-                </Text>
-              </Press>
-            );
-          })}
+          <View className="overflow-hidden rounded-tile">
+            <PressRows>
+              {ITEMS.map((item) => {
+                const destructive = item.action === 'delete';
+                return (
+                  <Press
+                    key={item.action}
+                    testID={tid('wallet', 'menu', item.action)}
+                    accessibilityRole="menuitem"
+                    className="h-11 flex-row items-center gap-3 px-4"
+                    onPress={() => run(item.action)}
+                  >
+                    <View pointerEvents="none">
+                      <IconSymbol
+                        name={item.icon}
+                        size={20}
+                        color={
+                          destructive ? tokens.over : tokens.foreground
+                        }
+                      />
+                    </View>
+                    <Text
+                      className={`font-display-semibold text-[15px] leading-[21px] ${destructive ? 'text-over' : 'text-foreground'}`}
+                    >
+                      {item.label}
+                    </Text>
+                  </Press>
+                );
+              })}
+            </PressRows>
+          </View>
         </Animated.View>
       </Modal>
     </>

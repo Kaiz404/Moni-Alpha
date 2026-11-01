@@ -1,8 +1,10 @@
 import type { ReactNode } from 'react';
 import { View } from 'react-native';
 
+import { PressRows } from '@/components/ui/press';
 import { Text } from '@/components/ui/text';
 
+/** Rows reach the card's edges and keep their own padding; the card clips them to its corners. */
 export function ListCard({
   children,
   className,
@@ -11,10 +13,8 @@ export function ListCard({
   className?: string;
 }) {
   return (
-    <View
-      className={`overflow-hidden rounded-card bg-card py-1.5 ${className ?? ''}`}
-    >
-      {children}
+    <View className={`overflow-hidden rounded-card bg-card ${className ?? ''}`}>
+      <PressRows>{children}</PressRows>
     </View>
   );
 }

@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { BackHandler, View } from 'react-native';
 
 import { Button } from '@/components/ui/button';
+import { ListCard } from '@/components/ui/list-card';
 import { Press } from '@/components/ui/press';
 import { Sheet } from '@/components/ui/sheet/sheet';
 import { StatusPill } from '@/components/ui/status-pill';
@@ -85,7 +86,7 @@ export function DuplicateSheet({
             {hit.message}
           </Text>
         </View>
-        <View className="overflow-hidden rounded-card bg-card py-1.5">
+        <ListCard>
           <Press
             testID={tid('capture', 'duplicate', 'row')}
             accessibilityLabel={`${hit.row.title}, ${meta}, ${rowAmount(hit.row)}`}
@@ -97,7 +98,7 @@ export function DuplicateSheet({
               amount={rowAmount(hit.row)}
             />
           </Press>
-        </View>
+        </ListCard>
         <View className="gap-2.5">
           <Button
             testID={tid('capture', 'duplicate', 'review')}
