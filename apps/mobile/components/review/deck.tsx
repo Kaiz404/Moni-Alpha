@@ -86,6 +86,7 @@ import {
 import {
   armedDecision,
   canDrag,
+  CARD_HEIGHT,
   DECISION_SIDE,
   idle,
   nextSelection,
@@ -120,7 +121,7 @@ import { lastWalletForMerchant, resolveInitialWalletId } from '@/lib/wallets/pro
 /** A Later row snoozed past any real date still counts as unreviewed. */
 const END_OF_TIME = new Date(8.64e15);
 const UNDER_SCALE = 0.96;
-/** A taller card underneath would show around the top card, so it waits unseen until the top card moves. */
+/** The next card waits unseen until the top card moves, which keeps its repeated ids out of a device test's view. */
 const UNDER_REVEAL_REACH = 0.08;
 /** `XA-Review` tilts the card 12° per card width it travels. */
 const TILT_PER_WIDTH_DEG = 12;
@@ -363,7 +364,6 @@ function DeckSlot({
   makePan,
   dragEnabled,
   entering,
-  onHeight,
   lift,
   children,
 }: {
@@ -380,7 +380,6 @@ function DeckSlot({
   /** Whether the card on top can be dragged right now. */
   dragEnabled: boolean;
   entering: ComponentProps<typeof Animated.View>['entering'];
-  onHeight: (id: string, height: number) => void;
   /** Top card only. Beside the card, not around it, so the card keeps its place when it comes on top. */
   lift?: { shadow: ReactNode; ring: ReactNode };
   children: ReactNode;
@@ -426,7 +425,6 @@ function DeckSlot({
         <Animated.View
           testID={tid('review', top ? 'card' : 'next-card')}
           style={[{ transformOrigin: '50% 90%' }, motion]}
-          onLayout={(event) => onHeight(id, event.nativeEvent.layout.height)}
         >
           <Animated.View style={face}>
             <Animated.View
@@ -622,13 +620,8 @@ export function ReviewDeck({ session }: { session: ReviewSession }) {
   const topWalletId = top ? walletIdOf(top, topEdits, wallets) : null;
   const canApprove = !!topWalletId;
   const cardWidth = Math.max(0, area.width - CARD_INSET * 2);
-  const [heights, setHeights] = useState<Record<string, number>>({});
-  const cardHeight = top ? (heights[top.id] ?? 0) : 0;
-  const cardMaxHeight = Math.max(0, area.height - LATER_ROOM - CARD_MARGIN * 2);
+  const cardHeight = Math.min(CARD_HEIGHT, Math.max(0, area.height - LATER_ROOM - CARD_MARGIN * 2));
   const screen = useWindowDimensions();
-  const onHeight = useCallback((id: string, height: number) => {
-    setHeights((all) => (all[id] === height ? all : { ...all, [id]: height }));
-  }, []);
   const lift = useCardLift(x, y, selection, room, held, {
     width: cardWidth,
     height: cardHeight,
@@ -1147,14 +1140,13 @@ export function ReviewDeck({ session }: { session: ReviewSession }) {
                 makePan={makePan}
                 dragEnabled={dragEnabled}
                 entering={undefined}
-                onHeight={onHeight}
               >
                 <ReviewCard
                   model={underModel}
                   editing={null}
                   handlers={UNDER_HANDLERS}
                   canDecide={false}
-                  maxHeight={cardMaxHeight}
+                  height={cardHeight}
                 />
               </DeckSlot>
             ) : null}
@@ -1175,7 +1167,6 @@ export function ReviewDeck({ session }: { session: ReviewSession }) {
                     ? arriveFrom(arrival.side, cardWidth, area.height, reduceMotion)
                     : undefined
                 }
-                onHeight={onHeight}
                 lift={lift}
               >
                 <ReviewCard
@@ -1183,7 +1174,7 @@ export function ReviewDeck({ session }: { session: ReviewSession }) {
                   editing={editing}
                   handlers={handlers}
                   canDecide={!locked}
-                  maxHeight={cardMaxHeight}
+                  height={cardHeight}
                 />
               </DeckSlot>
             ) : null}
@@ -1202,18 +1193,18 @@ export function ReviewDeck({ session }: { session: ReviewSession }) {
           </>
         ) : null}
       </View>
-      <View className="min-h-[60px] justify-end gap-2 px-5 pb-3 pt-1">
+      <View className="h-[60px] justify-end px-5 pb-3 pt-1">
         {card.kind === 'error' ? (
           <Text
             variant="meta"
             className="text-over"
             accessibilityLiveRegion="assertive"
             accessibilityRole="alert"
+            numberOfLines={2}
           >
             {card.message}
           </Text>
-        ) : null}
-        {reviewedCount ? (
+        ) : reviewedCount ? (
           <HistoryToggle
             count={reviewedCount}
             open={false}

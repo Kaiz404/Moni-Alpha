@@ -1,5 +1,6 @@
 import {
   armedDecision,
+  cardFit,
   idle,
   nextSelection,
   OPEN_ROOM,
@@ -360,5 +361,30 @@ describe('decisions and results', () => {
         result: { status: 'needsInput', field: 'destination' },
       }),
     ).toEqual({ kind: 'needsInput', field: 'destination' });
+  });
+});
+
+describe('cardFit', () => {
+  const FULLEST = { quote: true, evidence: true, pair: true, similar: true };
+  const ALERT = { quote: true, evidence: false, pair: false, similar: true };
+  const DUPLICATE = { quote: true, evidence: true, pair: true, similar: false };
+
+  it.each([
+    ['the 560 card', FULLEST, 560, 1, { quoteLines: 2, evidenceLines: 2, similar: true }],
+    ['the 560 card', ALERT, 560, 1, { quoteLines: 3, evidenceLines: 2, similar: true }],
+    ['the 560 card', DUPLICATE, 560, 1, { quoteLines: 3, evidenceLines: 2, similar: true }],
+    ['a 360x800 deck', FULLEST, 534, 1, { quoteLines: 0, evidenceLines: 2, similar: true }],
+    ['a 360x800 deck', ALERT, 534, 1, { quoteLines: 3, evidenceLines: 2, similar: true }],
+    ['a 360x640 deck', FULLEST, 422, 1, { quoteLines: 0, evidenceLines: 0, similar: false }],
+    ['a 360x640 deck', ALERT, 422, 1, { quoteLines: 0, evidenceLines: 2, similar: true }],
+    ['a 360x640 deck', DUPLICATE, 422, 1, { quoteLines: 0, evidenceLines: 1, similar: true }],
+    ['large text', FULLEST, 560, 1.3, { quoteLines: 0, evidenceLines: 2, similar: true }],
+    ['large text', ALERT, 560, 1.3, { quoteLines: 3, evidenceLines: 2, similar: true }],
+  ])('on %s gives way in order: %j at %i, scale %d', (_name, parts, height, scale, fit) => {
+    expect(cardFit(parts, height, scale)).toEqual(fit);
+  });
+
+  it('keeps the plainest fit on a deck too short for anything', () => {
+    expect(cardFit(FULLEST, 100, 1)).toEqual({ quoteLines: 0, evidenceLines: 0, similar: false });
   });
 });

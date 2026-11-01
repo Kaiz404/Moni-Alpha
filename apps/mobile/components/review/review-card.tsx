@@ -1,6 +1,6 @@
 import type { MinorAmount, ProposedTransaction, TransactionType } from '@repo/types';
 import { memo } from 'react';
-import { View, type AccessibilityActionEvent } from 'react-native';
+import { useWindowDimensions, View, type AccessibilityActionEvent } from 'react-native';
 
 import { FieldRow, FieldRows } from '@/components/review/field-row';
 import type { ChipLook } from '@/components/review/picker-chip';
@@ -11,9 +11,10 @@ import { Press } from '@/components/ui/press';
 import { Text } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { formatSignedMoney } from '@/lib/finance/format-money';
-import type {
-  EditField as EditFieldName,
-  ReviewDecision,
+import {
+  cardFit,
+  type EditField as EditFieldName,
+  type ReviewDecision,
 } from '@/lib/proposals/review-card-state';
 import type { ReviewStatus } from '@/lib/proposals/review-status';
 import { tid } from '@/lib/test-ids';
@@ -86,22 +87,35 @@ export const ReviewCard = memo(function ReviewCard({
   editing,
   handlers,
   canDecide,
-  maxHeight,
+  height,
 }: {
   model: ReviewCardModel;
   editing: EditFieldName | null;
   handlers: ReviewCardHandlers;
   /** Off while a field edits or a decision saves, and on the card waiting underneath. */
   canDecide: boolean;
-  maxHeight: number;
+  height: number;
 }) {
   const tokens = useThemeTokens();
+  const { fontScale } = useWindowDimensions();
   const { proposal } = model;
   const source = SOURCE[proposal.sourceType];
   const direction = moneyDirection(model.type);
   const typeLabel = TRANSACTION_TYPE_COPY[direction].label;
   const amountText = formatSignedMoney(direction, model.amountMinor, proposal.currency);
   const transfer = model.type === 'transfer';
+  const fit = cardFit(
+    {
+      quote: !!model.quote,
+      evidence: !!model.evidence,
+      pair: !!model.pair,
+      similar: model.similar !== null,
+    },
+    height,
+    fontScale,
+  );
+  const evidence = fit.evidenceLines > 0 ? model.evidence : null;
+  const similar = fit.similar ? model.similar : null;
   // A screen reader can't swipe, so the swipe's three decisions are this row's actions.
   const decisions: { name: ReviewDecision; label: string }[] = canDecide
     ? [
@@ -117,8 +131,9 @@ export const ReviewCard = memo(function ReviewCard({
 
   return (
     <View
-      className="gap-2.5 overflow-hidden rounded-card bg-card p-[18px]"
-      style={{ maxHeight }}
+      testID={tid('review', 'body')}
+      className="gap-3 overflow-hidden rounded-card bg-card p-[18px]"
+      style={{ height }}
     >
       <View
         testID={tid('review', 'summary')}
@@ -150,6 +165,7 @@ export const ReviewCard = memo(function ReviewCard({
           <Text
             variant="meta"
             className="text-muted"
+            numberOfLines={1}
           >
             {model.time}
           </Text>
@@ -162,78 +178,80 @@ export const ReviewCard = memo(function ReviewCard({
         ) : null}
       </View>
 
-      {model.quote ? (
+      {model.quote && fit.quoteLines > 0 ? (
         <View className="rounded-field bg-sand-light px-3 py-2">
           <Text
             className="text-[14px] leading-[20px] text-ink-2"
-            numberOfLines={3}
+            numberOfLines={fit.quoteLines}
           >
             {`“${model.quote}”`}
           </Text>
         </View>
       ) : null}
 
-      <InPlaceGroup
-        editing={editing ? FIELD[editing] : null}
-        onEditingChange={(id) => {
-          const field = id === FIELD.merchant ? 'merchant' : id === FIELD.amount ? 'amount' : null;
-          if (field) handlers.onEdit(field);
-          else handlers.onCancelEdit();
-        }}
-      >
-        <View>
-          {transfer ? null : (
+      <View className="min-h-0 flex-1 justify-center">
+        <InPlaceGroup
+          editing={editing ? FIELD[editing] : null}
+          onEditingChange={(id) => {
+            const field = id === FIELD.merchant ? 'merchant' : id === FIELD.amount ? 'amount' : null;
+            if (field) handlers.onEdit(field);
+            else handlers.onCancelEdit();
+          }}
+        >
+          <View>
+            {transfer ? null : (
+              <InPlaceField
+                testID={tid('review', 'merchant')}
+                label="Merchant name"
+                kind="text"
+                required
+                value={model.merchant}
+                onSave={handlers.onSaveMerchant}
+              >
+                {({ editable, editor }) =>
+                  editor ?? (
+                    <View className="-my-1.5">
+                      {editable(
+                        <Text
+                          variant="cardTitle"
+                          className="text-foreground"
+                          numberOfLines={1}
+                        >
+                          {model.merchant}
+                        </Text>,
+                        { accessibilityLabel: `Merchant ${model.merchant}. Edit name` },
+                      )}
+                    </View>
+                  )
+                }
+              </InPlaceField>
+            )}
             <InPlaceField
-              testID={tid('review', 'merchant')}
-              label="Merchant name"
-              kind="text"
-              required
-              value={model.merchant}
-              onSave={handlers.onSaveMerchant}
+              testID={tid('review', 'amount')}
+              label="Amount"
+              kind="amount"
+              prefix={amountText.replace(/[\d.,]/g, '')}
+              value={model.amountMinor}
+              onSave={handlers.onSaveAmount}
             >
               {({ editable, editor }) =>
-                editor ?? (
-                  <View className="-my-1.5">
-                    {editable(
-                      <Text
-                        variant="cardTitle"
-                        className="text-foreground"
-                        numberOfLines={1}
-                      >
-                        {model.merchant}
-                      </Text>,
-                      { accessibilityLabel: `Merchant ${model.merchant}. Edit name` },
-                    )}
-                  </View>
+                editor ??
+                editable(
+                  <Text
+                    className="text-[44px] leading-[50px] font-display-bold text-foreground"
+                    numberOfLines={1}
+                    adjustsFontSizeToFit
+                    minimumFontScale={0.5}
+                  >
+                    {amountText}
+                  </Text>,
+                  { accessibilityLabel: `Amount ${amountText}. Edit amount` },
                 )
               }
             </InPlaceField>
-          )}
-          <InPlaceField
-            testID={tid('review', 'amount')}
-            label="Amount"
-            kind="amount"
-            prefix={amountText.replace(/[\d.,]/g, '')}
-            value={model.amountMinor}
-            onSave={handlers.onSaveAmount}
-          >
-            {({ editable, editor }) =>
-              editor ??
-              editable(
-                <Text
-                  className="text-[44px] leading-[50px] font-display-bold text-foreground"
-                  numberOfLines={1}
-                  adjustsFontSizeToFit
-                  minimumFontScale={0.5}
-                >
-                  {amountText}
-                </Text>,
-                { accessibilityLabel: `Amount ${amountText}. Edit amount` },
-              )
-            }
-          </InPlaceField>
-        </View>
-      </InPlaceGroup>
+          </View>
+        </InPlaceGroup>
+      </View>
 
       <FieldRows>
         <FieldRow
@@ -279,78 +297,89 @@ export const ReviewCard = memo(function ReviewCard({
         ) : null}
       </FieldRows>
 
-      {model.evidence ? (
-        <Text
-          variant="meta"
-          className="text-ink-2"
-          numberOfLines={3}
-        >
-          {model.evidence}
-        </Text>
-      ) : null}
-
-      {model.pair ? (
-        <View className="flex-row flex-wrap items-center gap-x-2.5 gap-y-1">
-          <Press
-            testID={tid('review', model.pair.kind)}
-            onPress={handlers.onPair}
-            accessibilityLabel={model.pair.label}
-            accessibilityHint={model.pair.hint ?? undefined}
-            hitSlop={4}
-            radius={{ rest: 20, pressed: 14 }}
-            pressedClassName="bg-hairline"
-            className="h-10 flex-row items-center gap-1.5 bg-sand px-3.5"
-          >
-            <IconSymbol
-              name={
-                model.pair.kind === 'its-a-transfer' || model.pair.kind === 'not-a-transfer'
-                  ? 'swap-horizontal'
-                  : 'link-variant'
-              }
-              size={18}
-              color={tokens.foreground}
-            />
-            <Text className="text-[14px] leading-[19px] font-display-semibold text-foreground">
-              {model.pair.label}
-            </Text>
-          </Press>
-          {model.pair.hint ? (
+      {evidence || model.pair || similar !== null ? (
+        <View className="gap-1.5">
+          {evidence ? (
             <Text
               variant="meta"
-              className="text-muted"
+              className="text-ink-2"
+              numberOfLines={fit.evidenceLines}
             >
-              {model.pair.hint}
+              {evidence}
             </Text>
           ) : null}
-        </View>
-      ) : null}
 
-      {model.similar !== null ? (
-        <Press
-          testID={tid('review', 'similar')}
-          onPress={handlers.onToggleSimilar}
-          accessibilityRole="checkbox"
-          accessibilityState={{ checked: model.similar }}
-          accessibilityLabel="Don't ask about similar"
-          pressedScale={1}
-          radius={{ rest: 12, pressed: 12 }}
-          className="-ml-1 min-h-11 flex-row items-center gap-2.5 self-start pl-1 pr-2"
-        >
-          <View
-            className={`h-[22px] w-[22px] items-center justify-center rounded-[6px] border-2 border-foreground ${model.similar ? 'bg-primary' : ''}`}
-          >
-            {model.similar ? (
-              <IconSymbol
-                name="check"
-                size={16}
-                color={tokens.primaryForeground}
-              />
-            ) : null}
-          </View>
-          <Text className="text-[15px] leading-[20px] font-display-semibold text-foreground">
-            Don&apos;t ask about similar
-          </Text>
-        </Press>
+          {model.pair ? (
+            <View className="h-10 flex-row items-center gap-2.5">
+              <Press
+                testID={tid('review', model.pair.kind)}
+                onPress={handlers.onPair}
+                accessibilityLabel={model.pair.label}
+                accessibilityHint={model.pair.hint ?? undefined}
+                hitSlop={4}
+                radius={{ rest: 20, pressed: 14 }}
+                pressedClassName="bg-hairline"
+                className="h-10 flex-row items-center gap-1.5 bg-sand px-3.5"
+              >
+                <IconSymbol
+                  name={
+                    model.pair.kind === 'its-a-transfer' || model.pair.kind === 'not-a-transfer'
+                      ? 'swap-horizontal'
+                      : 'link-variant'
+                  }
+                  size={18}
+                  color={tokens.foreground}
+                />
+                <Text
+                  className="text-[14px] leading-[19px] font-display-semibold text-foreground"
+                  numberOfLines={1}
+                >
+                  {model.pair.label}
+                </Text>
+              </Press>
+              {model.pair.hint ? (
+                <Text
+                  variant="meta"
+                  className="min-w-0 flex-1 text-muted"
+                  numberOfLines={2}
+                >
+                  {model.pair.hint}
+                </Text>
+              ) : null}
+            </View>
+          ) : null}
+
+          {similar !== null ? (
+            <Press
+              testID={tid('review', 'similar')}
+              onPress={handlers.onToggleSimilar}
+              accessibilityRole="checkbox"
+              accessibilityState={{ checked: similar }}
+              accessibilityLabel="Don't ask about similar"
+              pressedScale={1}
+              radius={{ rest: 12, pressed: 12 }}
+              className="-ml-1 h-11 flex-row items-center gap-2.5 self-start pl-1 pr-2"
+            >
+              <View
+                className={`h-[22px] w-[22px] items-center justify-center rounded-[6px] border-2 border-foreground ${similar ? 'bg-primary' : ''}`}
+              >
+                {similar ? (
+                  <IconSymbol
+                    name="check"
+                    size={16}
+                    color={tokens.primaryForeground}
+                  />
+                ) : null}
+              </View>
+              <Text
+                className="text-[15px] leading-[20px] font-display-semibold text-foreground"
+                numberOfLines={1}
+              >
+                Don&apos;t ask about similar
+              </Text>
+            </Press>
+          ) : null}
+        </View>
       ) : null}
     </View>
   );

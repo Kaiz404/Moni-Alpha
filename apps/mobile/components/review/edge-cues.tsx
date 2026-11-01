@@ -2,14 +2,12 @@ import { View, type ViewStyle } from 'react-native';
 import Animated, {
   interpolateColor,
   useAnimatedStyle,
-  withSpring,
   type SharedValue,
 } from 'react-native-reanimated';
 
 import { IconSymbol, type IconSymbolName } from '@/components/ui/icon-symbol';
 import { Text } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
-import { springs } from '@/lib/motion/tokens';
 import {
   selectionReach,
   type SwipeRoom,
@@ -207,11 +205,6 @@ export function EdgeCues(props: CueProps & { centerY: number }) {
   const base = { canvas: tokens.canvas, border: tokens.border };
   const sideTop = props.centerY - SIDE_LENGTH / 2;
   const laterTop = props.centerY + props.height / 2 + LATER_GAP;
-  // Cards differ in height, so Later moves to the new card's edge instead of jumping there.
-  const laterAt = useAnimatedStyle(
-    () => ({ transform: [{ translateY: withSpring(laterTop, springs.sheet) }] }),
-    [laterTop],
-  );
 
   return (
     <View
@@ -239,9 +232,9 @@ export function EdgeCues(props: CueProps & { centerY: number }) {
         label="Not mine"
         onInk={tokens.primaryForeground}
       />
-      <Animated.View
-        className="absolute inset-x-0 top-0 items-center"
-        style={laterAt}
+      <View
+        className="absolute inset-x-0 items-center"
+        style={{ top: laterTop }}
       >
         <Cue
           side="down"
@@ -253,7 +246,7 @@ export function EdgeCues(props: CueProps & { centerY: number }) {
           label="Later"
           onInk={tokens.onPastel}
         />
-      </Animated.View>
+      </View>
     </View>
   );
 }

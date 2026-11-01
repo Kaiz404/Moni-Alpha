@@ -170,6 +170,58 @@ export function releasedSelection(selection: SwipeSelection, intent: SwipeIntent
   return selection ? { side: selection.side, engaged: false } : null;
 }
 
+/** A normal large card, the same whatever it holds. The deck clamps it to the room it has. */
+export const CARD_HEIGHT = 560;
+
+/** The parts a card may have that its height can't always hold. */
+export type CardParts = { quote: boolean; evidence: boolean; pair: boolean; similar: boolean };
+
+/** How much of those parts the card shows. The pair control always shows. */
+export type CardFit = { quoteLines: number; evidenceLines: number; similar: boolean };
+
+/** Fullest first. The quote gives way first, then the evidence, and the checkbox only after both. */
+const CARD_FITS: CardFit[] = [
+  { quoteLines: 3, evidenceLines: 2, similar: true },
+  { quoteLines: 2, evidenceLines: 2, similar: true },
+  { quoteLines: 1, evidenceLines: 2, similar: true },
+  { quoteLines: 0, evidenceLines: 2, similar: true },
+  { quoteLines: 0, evidenceLines: 1, similar: true },
+  { quoteLines: 0, evidenceLines: 0, similar: true },
+  { quoteLines: 0, evidenceLines: 0, similar: false },
+];
+
+/**
+ * The card's column in px, with text at the phone's font scale: padding, source row, the merchant
+ * field open over the amount (the tallest the middle gets), three 48 rows and their hairlines.
+ */
+function heightNeeded(parts: CardParts, fit: CardFit, fontScale: number): number {
+  const gap = 12;
+  const footerGap = 6;
+  const padding = 36;
+  const source = 38 * fontScale;
+  const middle = 52 + 50 * fontScale;
+  const rows = 3 * 48 + 2;
+  const quote =
+    parts.quote && fit.quoteLines > 0 ? gap + 16 + fit.quoteLines * 20 * fontScale : 0;
+  const footer = [
+    parts.evidence ? fit.evidenceLines * 18 * fontScale : 0,
+    parts.pair ? 40 : 0,
+    parts.similar && fit.similar ? 44 : 0,
+  ].filter((part) => part > 0);
+  const footerHeight = footer.length
+    ? gap + footer.reduce((sum, part) => sum + part, 0) + (footer.length - 1) * footerGap
+    : 0;
+  return padding + source + gap + middle + gap + rows + quote + footerHeight;
+}
+
+/** The fullest version of the card that its height holds, so nothing is ever clipped. */
+export function cardFit(parts: CardParts, height: number, fontScale: number): CardFit {
+  return (
+    CARD_FITS.find((fit) => heightNeeded(parts, fit, fontScale) <= height) ??
+    CARD_FITS[CARD_FITS.length - 1]
+  );
+}
+
 /** The `CG-Guide` Review card rows, one member each. */
 export type ReviewCardState =
   | { kind: 'idle' }

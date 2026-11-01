@@ -3,7 +3,7 @@ import type { Observable } from '@legendapp/state';
 import type { CurrencyCode, MinorAmount } from '@repo/types';
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
 import type React from 'react';
-import { Text } from 'react-native';
+import { Dimensions, StyleSheet, Text } from 'react-native';
 import { State, type PanGesture } from 'react-native-gesture-handler';
 import { fireGestureHandler, getByGestureTestId } from 'react-native-gesture-handler/jest-utils';
 
@@ -137,6 +137,10 @@ const ledger = () =>
   Object.values(store.transactions$.peek()).filter((row) => row.deleted === false);
 
 beforeEach(() => {
+  // The test window reports a font scale of 2; these tests read the card at the default size.
+  jest
+    .spyOn(Dimensions, 'get')
+    .mockReturnValue({ width: 750, height: 1334, scale: 2, fontScale: 1 });
   mockParams = {};
   store.proposedTransactions$.set({});
   store.transactions$.set({});
@@ -729,20 +733,15 @@ describe('Review deck', () => {
       );
     }
 
-    async function measure() {
-      const layout = { nativeEvent: { layout: { width: 342, height: 330 } } };
-      fireEvent(screen.getByTestId('review.card'), 'layout', layout);
-      const nextCard = screen.queryByTestId('review.next-card', { includeHiddenElements: true });
-      if (nextCard) fireEvent(nextCard, 'layout', layout);
-      // The detector registers the enabled pan from a setImmediate.
-      await act(async () => {
+    /** The detector registers the enabled pan from a setImmediate. */
+    const settle = () =>
+      act(async () => {
         await new Promise(setImmediate);
       });
-    }
 
-    async function showMeasured() {
+    async function showSettled() {
       await show(<ReviewScreen />);
-      await measure();
+      await settle();
     }
 
     describe('card after card', () => {
@@ -784,14 +783,14 @@ describe('Review deck', () => {
         seed('p2', { merchant: 'JAYA GROCER', created_at: '2020-01-01T00:00:00.000Z' });
         seed('p3', { merchant: 'KEDAI ABC', created_at: '2019-01-01T00:00:00.000Z' });
         seed('p4', { merchant: 'TESCO', created_at: '2018-01-01T00:00:00.000Z' });
-        await showMeasured();
+        await showSettled();
 
         const onP1 = handlersOn();
         expect(onP1).toHaveLength(1);
         const [onP2] = [...native.keys()].filter((tag) => tag !== onP1[0]);
 
         await swipe(100, 250, 'p1');
-        await measure();
+        await settle();
 
         expect(ledger()).toEqual([expect.objectContaining({ merchant: 'GRAB' })]);
         expect(screen.getByText('JAYA GROCER')).toBeTruthy();
@@ -800,14 +799,14 @@ describe('Review deck', () => {
         const [onP3] = [...native.keys()].filter((tag) => tag !== onP2);
 
         await swipe(500, -250, 'p2');
-        await measure();
+        await settle();
 
         expect(store.proposedTransactions$.peek().p2).toMatchObject({ status: 'rejected' });
         expect(screen.getByText('KEDAI ABC')).toBeTruthy();
         expect(handlersOn()).toEqual([onP3]);
 
         await swipe(100, 250, 'p3');
-        await measure();
+        await settle();
 
         expect(ledger()).toEqual([
           expect.objectContaining({ merchant: 'GRAB' }),
@@ -819,10 +818,10 @@ describe('Review deck', () => {
         seed('p1');
         seed('p2', { merchant: 'JAYA GROCER', created_at: '2020-01-01T00:00:00.000Z' });
         seed('p3', { merchant: 'KEDAI ABC', created_at: '2019-01-01T00:00:00.000Z' });
-        await showMeasured();
+        await showSettled();
 
         await swipe(100, 250, 'p1');
-        await measure();
+        await settle();
 
         expect(screen.getByText('JAYA GROCER')).toBeTruthy();
         expect(Object.fromEntries(mockCardMounts)).toEqual({ p1: 1, p2: 1, p3: 1 });
@@ -831,14 +830,14 @@ describe('Review deck', () => {
 
     it('a short drag from near the right edge approves what it highlighted', async () => {
       seed('p1');
-      await showMeasured();
+      await showSettled();
       await swipe(WINDOW_WIDTH - 50, 31);
       expect(ledger()).toEqual([expect.objectContaining({ merchant: 'GRAB' })]);
     });
 
     it('the same drag from the left is too short, and writes nothing', async () => {
       seed('p1');
-      await showMeasured();
+      await showSettled();
       await swipe(40, 31);
       expect(ledger()).toEqual([]);
       expect(screen.getByText('GRAB')).toBeTruthy();
@@ -848,11 +847,84 @@ describe('Review deck', () => {
       seed('p1', { wallet_id: null });
       store.wallets$.set({});
       financeProjection$.walletsById.set({});
-      await showMeasured();
+      await showSettled();
       await swipe(100, 200);
       expect(getOpenSheet()?.kind).toBe('wallet');
       expect(ledger()).toEqual([]);
       await act(async () => dismissSheet());
+    });
+  });
+
+  describe('the card height', () => {
+    const LONG_QUOTE = 'MAYBANK: You have spent a good deal at a place with a very long name. '.repeat(6);
+    const LONG_NAME = 'RESTORAN NASI KANDAR WITH A VERY LONG NAME INDEED '.repeat(4);
+    const cardHeight = () =>
+      StyleSheet.flatten(screen.getByTestId('review.body').props.style).height;
+    const quoteLines = (text: string) =>
+      screen.getByText(`“${text}”`).props.numberOfLines as number;
+
+    it('is 560 for a short card and for the fullest one', async () => {
+      seed('short', { source_type: 'text', source_text: 'Lunch', notification_body: null });
+      await show(<ReviewScreen />);
+      expect(cardHeight()).toBe(560);
+      expect(quoteLines('Lunch')).toBe(3);
+
+      act(() => {
+        store.proposedTransactions$.set({});
+        seed('long', {
+          merchant: LONG_NAME,
+          notification_body: LONG_QUOTE,
+          pairing: {
+            kind: 'same_purchase',
+            before: { merchant: 'TNG DIGITAL' },
+            absorbed: {
+              id: '00000000-0000-4000-9000-000000000001',
+              sourceType: 'notification',
+              sourceApp: 'com.maybank2u.life',
+              sourceText: null,
+              sourceImageUri: null,
+              notificationTitle: 'Alert',
+              notificationBody: LONG_QUOTE,
+              notificationReceivedAt: new Date().toISOString(),
+              aiReasoning: null,
+              aiConfidence: null,
+              walletId: MAYBANK,
+              walletHint: null,
+              transferToWalletId: null,
+              transferToWalletHint: null,
+              amountMinor: 1200,
+              currency: 'MYR',
+              type: 'expense',
+              description: null,
+              merchant: 'GRAB',
+              categoryId: null,
+              categoryHint: null,
+              transactionDate: new Date().toISOString(),
+            },
+          },
+        });
+      });
+      await act(async () => {});
+
+      expect(cardHeight()).toBe(560);
+      expect(screen.getByText(LONG_NAME).props.numberOfLines).toBe(1);
+      expect(quoteLines(LONG_QUOTE)).toBe(2);
+      expect(screen.getByTestId('review.not-same-payment')).toBeTruthy();
+      expect(screen.getByTestId('review.similar')).toBeTruthy();
+    });
+
+    it('clamps to a short deck, where the quote gives way before any control', async () => {
+      seed('p1', { notification_body: LONG_QUOTE });
+      render(<ReviewScreen />);
+      await act(async () => {});
+      fireEvent(screen.getByTestId('review.deck'), 'layout', {
+        nativeEvent: { layout: { width: 312, height: 482 } },
+      });
+
+      expect(cardHeight()).toBe(422);
+      expect(screen.queryByText(`“${LONG_QUOTE}”`)).toBeNull();
+      expect(screen.getByTestId('review.similar')).toBeTruthy();
+      expect(screen.getByTestId('review.wallet')).toBeTruthy();
     });
   });
 
