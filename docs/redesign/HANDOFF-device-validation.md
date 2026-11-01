@@ -30,7 +30,7 @@ apps/mobile/scripts/device/run-flows.sh --sha <key> --tag smoke --out <dir>
 | Skipped tests | 76 of the 78 are the optional "press every control" suite. Run it with `pnpm --filter moni test:taps`, about 4 minutes. It passed at `0568453`, measured. |
 | APK on the phone | Key `0568453…`. **It is older than `main`**: it lacks Y5's capture retry. Build `a9a32a7` or later before you validate. |
 | Smoke suite | 5 of 6 passed on `0568453`. Measured. See "Known failures". |
-| Backend | Revision `00008-lkn` is the latest ready revision, from the push of `a9a32a7` (Y5's startup fix, the receipt item count, and the new one-time-code rule). Its Cloud Build still read `WORKING` when this was written, so confirm it finished: `gcloud builds list --limit=1`. |
+| Backend | Revision `00008-lkn` is live, from the push of `a9a32a7` (Y5's startup fix, the receipt item count, and the new one-time-code rule). Its Cloud Build read `SUCCESS`, and a request with no login gets a `401`. Measured. |
 | Database | All migrations through `20261101000100` are applied to the dev project. Y5 added none, but confirm with `npx supabase migration list --linked`. |
 
 ## The phone
