@@ -32,9 +32,10 @@ import { dismissToast } from '@/lib/toast/toast-store';
 let mockTheme: 'light' | 'dark' = 'light';
 let mockOnline = true;
 
-// expo-router's testing library swaps in Reanimated's bare mock, which lacks these two.
+// expo-router's testing library swaps in Reanimated's bare mock, which lacks these.
 Object.assign(jest.requireMock('react-native-reanimated'), {
   useReducedMotion: () => false,
+  LayoutAnimationConfig: ({ children }: { children: unknown }) => children,
   useAnimatedKeyboard: () => ({
     height: { get: () => 0, value: 0 },
     state: { get: () => 0, value: 0 },

@@ -602,7 +602,7 @@ function Detail({ transaction: tx }: { transaction: FinanceTransaction }) {
             </View>
           ) : null}
 
-          <View className="gap-1.5 rounded-card bg-card pb-3.5 pl-[18px] pr-3 pt-3">
+          <View className="rounded-card bg-card pb-3.5 pl-[18px] pr-3 pt-3">
             <InPlaceField
               testID={tid('txn', 'note')}
               label="Note"
@@ -617,7 +617,7 @@ function Detail({ transaction: tx }: { transaction: FinanceTransaction }) {
               }
             >
               {({ editable, editor, open }) => (
-                <>
+                <View className="gap-1.5">
                   <View className="min-h-8 flex-row items-center justify-between gap-2">
                     <Text
                       variant="meta"
@@ -656,7 +656,7 @@ function Detail({ transaction: tx }: { transaction: FinanceTransaction }) {
                         className: 'min-h-11 flex-row items-center',
                       },
                     )}
-                </>
+                </View>
               )}
             </InPlaceField>
           </View>

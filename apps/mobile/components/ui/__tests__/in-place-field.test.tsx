@@ -27,6 +27,11 @@ jest.mock('uniwind', () => ({
   useUniwind: () => ({ theme: 'light' }),
 }));
 
+const mockPageLift = { current: jest.fn(() => 0), to: jest.fn() };
+jest.mock('@/components/ui/page', () => ({
+  usePageLift: () => mockPageLift,
+}));
+
 const rm = (minor: number) => minor as MinorAmount;
 
 function ToastText() {
@@ -86,6 +91,50 @@ describe('InPlaceField', () => {
     expect(input.props.keyboardType).toBe('decimal-pad');
     expect(screen.getByText('−RM')).toBeTruthy();
     expect(screen.queryByText('−RM30.40')).toBeNull();
+  });
+
+  it('asks the keyboard to open on the same press, with no second tap', () => {
+    render(<Fields />);
+    fireEvent.press(screen.getByTestId('txn.merchant.edit'));
+    expect(screen.getByTestId('txn.merchant.input').props.autoFocus).toBe(
+      true,
+    );
+  });
+
+  it('opens on mount when the page starts on a field, as Fix it does', () => {
+    const id = tid('wallet', 'balance');
+    render(
+      <InPlaceGroup editing={id}>
+        <InPlaceField
+          testID={id}
+          label="Balance"
+          kind="amount"
+          prefix="RM"
+          signed
+          value={rm(5000)}
+          onSave={jest.fn()}
+        >
+          <Text>RM50.00</Text>
+        </InPlaceField>
+      </InPlaceGroup>,
+    );
+    expect(screen.getByTestId('wallet.balance.input').props.value).toBe(
+      '50.00',
+    );
+    expect(screen.queryByText('RM50.00')).toBeNull();
+  });
+
+  it('never leaves the value and the field in the tree together, on the way in or out', () => {
+    render(<Fields />);
+    fireEvent.press(screen.getByTestId('txn.merchant.edit'));
+    expect(screen.queryByTestId('txn.merchant.edit')).toBeNull();
+    expect(screen.queryByText('Shell')).toBeNull();
+    fireEvent.press(screen.getByTestId('txn.merchant.cancel'));
+    expect(screen.queryByTestId('txn.merchant.input')).toBeNull();
+    expect(screen.queryByTestId('txn.merchant.cancel')).toBeNull();
+    expect(screen.queryByTestId('txn.merchant.save')).toBeNull();
+    expect(screen.getByText('Shell')).toBeTruthy();
+    expect(screen.getByTestId('txn.merchant.edit')).toBeTruthy();
   });
 
   it('saves 12.5 as 1250 minor units and closes the field', () => {
@@ -484,6 +533,90 @@ describe('InPlaceField and the keyboard', () => {
     emit('keyboardDidHide');
     expect(screen.queryByTestId('budget.cap.food.input')).toBeNull();
     expect(onCancel).toHaveBeenCalledTimes(1);
+  });
+
+  describe('lifting the page clear of the keyboard', () => {
+    const KEYBOARD_TOP = 500;
+    const CONTROLS_HEIGHT = 52;
+    let controlsY: number;
+
+    beforeEach(() => {
+      mockPageLift.to.mockClear();
+      mockPageLift.current.mockReturnValue(0);
+      jest.spyOn(Keyboard, 'metrics').mockReturnValue({
+        screenX: 0,
+        screenY: KEYBOARD_TOP,
+        width: 390,
+        height: 344,
+      });
+      jest
+        .spyOn(View.prototype, 'measureInWindow')
+        .mockImplementation((callback) =>
+          callback(0, controlsY, 300, CONTROLS_HEIGHT),
+        );
+    });
+
+    const faceOf = (testID: TestId) => {
+      let node = screen.getByTestId(testID);
+      const withLayout = [];
+      while (node.parent) {
+        if (node.props.onLayout) withLayout.push(node);
+        node = node.parent;
+      }
+      return withLayout[withLayout.length - 1];
+    };
+
+    const layout = (height: number) => ({
+      nativeEvent: { layout: { x: 0, y: 0, width: 300, height } },
+    });
+
+    it('lifts by what the keyboard covers plus the gap once it has shown', () => {
+      controlsY = 480;
+      render(<Fields />);
+      fireEvent.press(screen.getByTestId('txn.merchant.edit'));
+      emit('keyboardDidShow');
+      expect(mockPageLift.to).toHaveBeenCalledTimes(1);
+      expect(mockPageLift.to).toHaveBeenCalledWith(44);
+    });
+
+    it('does not lift further when measured again partway up the spring', () => {
+      controlsY = 480;
+      render(<Fields />);
+      fireEvent.press(screen.getByTestId('txn.merchant.edit'));
+      emit('keyboardDidShow');
+      mockPageLift.current.mockReturnValue(20);
+      controlsY = 460;
+      emit('keyboardDidShow');
+      expect(mockPageLift.to).toHaveBeenCalledTimes(1);
+    });
+
+    it('measures again when the height settles, and lands on the settled place', async () => {
+      controlsY = 400;
+      render(<Fields />);
+      const rest = faceOf(tid('txn', 'merchant', 'edit'));
+      fireEvent(rest, 'layout', layout(44));
+      fireEvent.press(screen.getByTestId('txn.merchant.edit'));
+      emit('keyboardDidShow');
+      expect(mockPageLift.to).not.toHaveBeenCalled();
+      controlsY = 470;
+      await act(async () => {
+        fireEvent(
+          faceOf(tid('txn', 'merchant', 'input')),
+          'layout',
+          layout(52),
+        );
+      });
+      expect(mockPageLift.to).toHaveBeenCalledWith(34);
+    });
+
+    it('drops the page back when the field closes', () => {
+      controlsY = 480;
+      render(<Fields />);
+      fireEvent.press(screen.getByTestId('txn.merchant.edit'));
+      emit('keyboardDidShow');
+      fireEvent.press(screen.getByTestId('txn.merchant.cancel'));
+      expect(mockPageLift.to).toHaveBeenLastCalledWith(0);
+    });
   });
 
   it('keeps the field focused when Done is pressed on a value it cannot take', () => {

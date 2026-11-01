@@ -13,22 +13,95 @@ import {
   useState,
   type ReactElement,
   type ReactNode,
+  type RefObject,
 } from 'react';
 import {
   BackHandler,
   Keyboard,
   TextInput,
   View,
+  type LayoutChangeEvent,
   type TextInputProps,
 } from 'react-native';
+import Animated, {
+  Easing,
+  LayoutAnimationConfig,
+  ReduceMotion,
+  useAnimatedStyle,
+  useSharedValue,
+  withDelay,
+  withSpring,
+  withTiming,
+} from 'react-native-reanimated';
+import { scheduleOnRN } from 'react-native-worklets';
 
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { usePageLift } from '@/components/ui/page';
 import { Press } from '@/components/ui/press';
 import { Text } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
+import { springs } from '@/lib/motion/tokens';
 import { tid, type TestId } from '@/lib/test-ids';
 import { showToast } from '@/lib/toast/toast-store';
+
+const FADE_OUT_MS = 160;
+const FADE_IN = {
+  duration: 200,
+  easing: Easing.bezier(0.23, 1, 0.32, 1),
+  reduceMotion: ReduceMotion.Never,
+};
+// Linear, against a strong ease-out coming in: what the two faces share, such as a label, barely dips.
+const FADE_OUT = {
+  duration: FADE_OUT_MS,
+  easing: Easing.linear,
+  reduceMotion: ReduceMotion.Never,
+};
+
+/**
+ * Fades run under Reduce Motion. Travel does not: its spring keeps the System default, which jumps
+ * to the end on the first frame.
+ */
+function appear({
+  scale = 1,
+  x = 0,
+  delay = 0,
+}: { scale?: number; x?: number; delay?: number } = {}) {
+  return () => {
+    'worklet';
+    return {
+      initialValues: {
+        opacity: 0,
+        transform: [{ translateX: x }, { scale }],
+      },
+      animations: {
+        opacity: withDelay(delay, withTiming(1, FADE_IN)),
+        transform: [
+          { translateX: withDelay(delay, withSpring(0, springs.sheet)) },
+          { scale: withDelay(delay, withSpring(1, springs.sheet)) },
+        ],
+      },
+    };
+  };
+}
+
+/** A timing, never a spring: the view stays in the way of touches until its animation ends. */
+const FADES_OUT = () => {
+  'worklet';
+  return {
+    initialValues: { opacity: 1 },
+    animations: { opacity: withTiming(0, FADE_OUT) },
+  };
+};
+
+const REST_IN = appear({ scale: 0.985 });
+const EDIT_IN = appear();
+const FIELD_IN = appear({ scale: 0.98 });
+const CANCEL_IN = appear({ x: 12, delay: 30 });
+const SAVE_IN = appear({ x: 12, delay: 70 });
+const HINT_IN = appear({ delay: 60 });
+
+const GROWS_FROM_VALUE = { transformOrigin: 'left center' };
+const UNMEASURED = -1;
 
 type Group = {
   editing: TestId | null;
@@ -102,7 +175,10 @@ export type InPlaceSlots = {
     value: ReactNode,
     options?: EditableOptions,
   ) => ReactElement;
-  /** The open field with cancel and save, or null at rest. */
+  /**
+   * The open field with cancel and save, or null at rest. What the render function returns is
+   * one face: when `editor` comes or goes the two faces cross-fade and the height springs between them.
+   */
   editor: ReactElement | null;
   open: () => void;
   draft: string;
@@ -222,10 +298,13 @@ function lowerFirst(text: string) {
 }
 
 /**
- * tokens.md "In-place edit": a 32 Sand pencil after the value; pressing it or the value swaps in
- * a Paper field with a 2 ink border on the phone's own keyboard, then cancel and save. Back, the
- * keyboard closing, or a tap outside cancels. A save that hands back `{ undo }` shows the saved
+ * tokens.md "In-place edit": a 32 Sand pencil after the value; pressing it or the value grows
+ * a Paper field with a 2 ink border out of it on the phone's own keyboard, then cancel and save. Back,
+ * the keyboard closing, or a tap outside cancels. A save that hands back `{ undo }` shows the saved
  * toast with Undo; a save that throws shows its message.
+ *
+ * The frame's height is always a number once measured, so a face commits under the old height and
+ * siblings reflow with the spring. It only clips while moving: at rest a value may reach outside it.
  */
 export function InPlaceField(props: InPlaceFieldProps) {
   const tokens = useThemeTokens();
@@ -238,6 +317,35 @@ export function InPlaceField(props: InPlaceFieldProps) {
     setWasEditing(editing);
     if (editing) setDraft(initialDraft(props));
   }
+
+  const height = useSharedValue(UNMEASURED);
+  const target = useSharedValue(UNMEASURED);
+  const frame = useAnimatedStyle(() => {
+    const now = height.get();
+    if (now === UNMEASURED) return {};
+    return {
+      height: now,
+      overflow: now === target.get() ? 'visible' : 'hidden',
+    };
+  });
+  const refitRef = useRef<(() => void) | null>(null);
+  const afterMotion = useCallback(() => refitRef.current?.(), []);
+  const measured = useRef(false);
+  const onFaceLayout = (event: LayoutChangeEvent) => {
+    const next = event.nativeEvent.layout.height;
+    target.set(next);
+    if (!measured.current) {
+      measured.current = true;
+      height.set(next);
+      return;
+    }
+    height.set(
+      withSpring(next, springs.sheet, (finished) => {
+        'worklet';
+        if (finished) scheduleOnRN(afterMotion);
+      }),
+    );
+  };
 
   const bound = bind(props, draft);
   const { setEditing } = group;
@@ -310,14 +418,21 @@ export function InPlaceField(props: InPlaceFieldProps) {
         >
           {value}
         </View>
-        {busy || options.pencil === false ? null : (
-          <View className="h-8 w-8 items-center justify-center rounded-full bg-sand">
+        {options.pencil === false ? null : (
+          <Animated.View
+            className="h-8 w-8 items-center justify-center rounded-full bg-sand"
+            style={{
+              opacity: busy ? 0 : 1,
+              transitionProperty: 'opacity',
+              transitionDuration: FADE_OUT_MS,
+            }}
+          >
             <IconSymbol
               name="pencil-outline"
               size={16}
               color={tokens.foreground}
             />
-          </View>
+          </Animated.View>
         )}
       </Press>
     );
@@ -331,18 +446,36 @@ export function InPlaceField(props: InPlaceFieldProps) {
       bound={bound}
       onCancel={cancel}
       onSave={save}
+      refitRef={refitRef}
     />
   ) : null;
 
-  if (typeof props.children === 'function')
-    return props.children({
-      editable,
-      editor,
-      open,
-      draft,
-      setDraft,
-    });
-  return editor ?? editable(props.children);
+  return (
+    <LayoutAnimationConfig
+      skipEntering
+      skipExiting
+    >
+      <Animated.View style={frame}>
+        <Animated.View
+          key={editing ? 'editing' : 'rest'}
+          onLayout={onFaceLayout}
+          entering={editing ? EDIT_IN : REST_IN}
+          exiting={FADES_OUT}
+          style={GROWS_FROM_VALUE}
+        >
+          {typeof props.children === 'function'
+            ? props.children({
+                editable,
+                editor,
+                open,
+                draft,
+                setDraft,
+              })
+            : (editor ?? editable(props.children))}
+        </Animated.View>
+      </Animated.View>
+    </LayoutAnimationConfig>
+  );
 }
 
 /**
@@ -381,8 +514,12 @@ function useCancelOnDismiss(cancel: () => void) {
 /** The gap kept between an open field's controls and the top of the keyboard. */
 const KEYBOARD_GAP = 12;
 
-/** Lifts the page while the keyboard would cover the open field's cancel and save. */
-function useClearKeyboard() {
+/**
+ * Lifts the page while the keyboard would cover the open field's cancel and save. Measures again
+ * when the height settles (`refitRef`). A measure can land mid-spring, so it asks where the controls
+ * sit with no lift at all: repeating one never lifts further.
+ */
+function useClearKeyboard(refitRef: RefObject<(() => void) | null>) {
   const controls = useRef<View>(null);
   const lift = usePageLift();
   const latestLift = useRef(lift);
@@ -392,19 +529,26 @@ function useClearKeyboard() {
     const keyboard = Keyboard.metrics();
     if (!keyboard) return;
     controls.current?.measureInWindow((_x, y, _width, height) => {
-      const covered = y + height + KEYBOARD_GAP - keyboard.screenY;
-      if (covered <= 0) return;
-      lifted.current += covered;
-      latestLift.current(lifted.current);
+      const needed =
+        y +
+        latestLift.current.current() +
+        height +
+        KEYBOARD_GAP -
+        keyboard.screenY;
+      if (needed <= lifted.current) return;
+      lifted.current = needed;
+      latestLift.current.to(needed);
     });
   }, []);
   useEffect(() => {
+    refitRef.current = fit;
     const show = Keyboard.addListener('keyboardDidShow', fit);
     return () => {
+      refitRef.current = null;
       show.remove();
-      latestLift.current(0);
+      latestLift.current.to(0);
     };
-  }, [fit]);
+  }, [fit, refitRef]);
   return { controls, onControlsLayout: fit };
 }
 
@@ -415,6 +559,7 @@ function Editor({
   bound: { hint, typed },
   onCancel,
   onSave,
+  refitRef,
 }: {
   field: InPlaceFieldProps;
   draft: string;
@@ -422,6 +567,7 @@ function Editor({
   bound: Bound;
   onCancel: () => void;
   onSave: (() => void) | null;
+  refitRef: RefObject<(() => void) | null>;
 }) {
   const tokens = useThemeTokens();
   const { testID, label } = field;
@@ -441,7 +587,7 @@ function Editor({
     onCancel();
   }, [onCancel]);
   useCancelOnDismiss(cancel);
-  const { controls, onControlsLayout } = useClearKeyboard();
+  const { controls, onControlsLayout } = useClearKeyboard(refitRef);
 
   const onDraftChange =
     field.kind === 'amount' ? field.onDraftChange : undefined;
@@ -452,34 +598,38 @@ function Editor({
 
   const buttons = (
     <>
-      <Press
-        testID={tid(testID, 'cancel')}
-        accessibilityLabel="Cancel"
-        pressedClassName="bg-hairline"
-        className="h-11 w-11 items-center justify-center rounded-full bg-sand"
-        onPress={cancel}
-      >
-        <IconSymbol
-          name="close"
-          size={20}
-          color={tokens.foreground}
-        />
-      </Press>
-      <Press
-        testID={tid(testID, 'save')}
-        accessibilityLabel="Save"
-        accessibilityState={{ disabled: !onSave }}
-        disabled={!onSave}
-        pressedClassName="bg-primary-pressed"
-        className={`h-11 w-11 items-center justify-center rounded-full ${onSave ? 'bg-primary' : 'bg-inactive'}`}
-        onPress={finish(onSave)}
-      >
-        <IconSymbol
-          name="check"
-          size={22}
-          color={tokens.primaryForeground}
-        />
-      </Press>
+      <Animated.View entering={CANCEL_IN}>
+        <Press
+          testID={tid(testID, 'cancel')}
+          accessibilityLabel="Cancel"
+          pressedClassName="bg-hairline"
+          className="h-11 w-11 items-center justify-center rounded-full bg-sand"
+          onPress={cancel}
+        >
+          <IconSymbol
+            name="close"
+            size={20}
+            color={tokens.foreground}
+          />
+        </Press>
+      </Animated.View>
+      <Animated.View entering={SAVE_IN}>
+        <Press
+          testID={tid(testID, 'save')}
+          accessibilityLabel="Save"
+          accessibilityState={{ disabled: !onSave }}
+          disabled={!onSave}
+          pressedClassName="bg-primary-pressed"
+          className={`h-11 w-11 items-center justify-center rounded-full ${onSave ? 'bg-primary' : 'bg-inactive'}`}
+          onPress={finish(onSave)}
+        >
+          <IconSymbol
+            name="check"
+            size={22}
+            color={tokens.primaryForeground}
+          />
+        </Press>
+      </Animated.View>
     </>
   );
 
@@ -535,9 +685,13 @@ function Editor({
     <View className="gap-1.5">
       {note ? (
         <>
-          <View className="rounded-field border-2 border-foreground bg-card px-3 py-2.5">
+          <Animated.View
+            entering={FIELD_IN}
+            className="rounded-field border-2 border-foreground bg-card px-3 py-2.5"
+            style={GROWS_FROM_VALUE}
+          >
             {input}
-          </View>
+          </Animated.View>
           <View
             ref={controls}
             onLayout={onControlsLayout}
@@ -552,8 +706,10 @@ function Editor({
           onLayout={onControlsLayout}
           className="flex-row items-center gap-2"
         >
-          <View
+          <Animated.View
+            entering={FIELD_IN}
             className={`min-w-0 flex-1 flex-row items-center gap-1 rounded-field border-2 border-foreground bg-card px-3.5 ${amount ? 'h-16' : 'h-[52px]'}`}
+            style={GROWS_FROM_VALUE}
           >
             {field.kind === 'amount' ? (
               <Text className="font-display-bold text-[28px] leading-[32px] text-muted">
@@ -561,22 +717,29 @@ function Editor({
               </Text>
             ) : null}
             {input}
-          </View>
+          </Animated.View>
           {buttons}
         </View>
       )}
-      {typeof hint === 'string' ? (
-        <Text
-          variant="meta"
-          accessibilityLiveRegion="polite"
-          className="text-muted"
-          style={{ fontVariant: ['tabular-nums'] }}
+      {hint ? (
+        <Animated.View
+          entering={HINT_IN}
+          exiting={FADES_OUT}
         >
-          {hint}
-        </Text>
-      ) : (
-        hint
-      )}
+          {typeof hint === 'string' ? (
+            <Text
+              variant="meta"
+              accessibilityLiveRegion="polite"
+              className="text-muted"
+              style={{ fontVariant: ['tabular-nums'] }}
+            >
+              {hint}
+            </Text>
+          ) : (
+            hint
+          )}
+        </Animated.View>
+      ) : null}
     </View>
   );
 }

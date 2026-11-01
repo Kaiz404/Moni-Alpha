@@ -26,11 +26,12 @@ jest.mock('react-native-mmkv', () => ({
   }),
 }));
 
-// Reanimated's mock leaves useReducedMotion out; Press reads it.
+// Reanimated's mock leaves these out; Press reads useReducedMotion and InPlaceField renders the config.
 jest.mock('react-native-worklets', () =>
   require('react-native-worklets/src/mock'),
 );
 jest.mock('react-native-reanimated', () => ({
   ...require('react-native-reanimated/mock'),
   useReducedMotion: () => false,
+  LayoutAnimationConfig: ({ children }) => children,
 }));

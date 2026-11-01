@@ -94,8 +94,11 @@ const PageLift = createContext<SharedValue<number> | null>(null);
  */
 export function usePageLift() {
   const lift = useContext(PageLift);
-  return (by: number) => {
-    if (lift) lift.set(withSpring(by, springs.sheet));
+  return {
+    current: () => lift?.get() ?? 0,
+    to: (by: number) => {
+      if (lift) lift.set(withSpring(by, springs.sheet));
+    },
   };
 }
 
