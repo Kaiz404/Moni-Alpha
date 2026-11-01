@@ -68,6 +68,7 @@ import { captureSourceLabel } from '@/lib/proposals/capture-source';
 import { transactionAlert, transactionPairing } from '@/lib/transactions/alert';
 import { resolveTransactionIcon } from '@/lib/transactions/icon';
 import { BALANCE_CORRECTION_TITLE } from '@/lib/wallets/balance-correction';
+import { compactWalletNames } from '@/lib/wallets/compact-name';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 
 type RawRow = {
@@ -334,12 +335,14 @@ function Detail({ transaction: tx }: { transaction: FinanceTransaction }) {
     router.back();
   };
 
+  const compactNames = compactWalletNames(wallets);
   const tiles: [Tile, Tile, Tile, Tile] = [
     transfer
       ? {
           name: 'from',
           label: 'From',
-          value: wallet?.name ?? 'Wallet',
+          value: wallet ? compactNames[wallet.id] : 'Wallet',
+          spoken: wallet?.name,
           dot: wallet?.color,
           action: { kind: 'pick', onPress: () => void pickWallet('from') },
         }
@@ -364,14 +367,16 @@ function Detail({ transaction: tx }: { transaction: FinanceTransaction }) {
       ? {
           name: 'to',
           label: 'To',
-          value: toWallet?.name ?? 'Wallet',
+          value: toWallet ? compactNames[toWallet.id] : 'Wallet',
+          spoken: toWallet?.name,
           dot: toWallet?.color,
           action: { kind: 'pick', onPress: () => void pickWallet('to') },
         }
       : {
           name: 'wallet',
           label: 'Wallet',
-          value: wallet?.name ?? 'Wallet',
+          value: wallet ? compactNames[wallet.id] : 'Wallet',
+          spoken: wallet?.name,
           dot: wallet?.color,
           action: { kind: 'pick', onPress: () => void pickWallet('from') },
         },

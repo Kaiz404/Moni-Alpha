@@ -9,6 +9,7 @@ import { categoriesForUser$, transactions$, walletsForUser$ } from '@/lib/financ
 import { listMerchantAliases } from '@/lib/supabase/merchant-aliases';
 import { tid } from '@/lib/test-ids';
 import { transactionRow } from '@/lib/transactions/row';
+import { compactWalletNames } from '@/lib/wallets/compact-name';
 
 /** How far back "Added for you" looks for rows Moni added without asking. */
 const WINDOW_DAYS = 7;
@@ -33,7 +34,7 @@ export function AddedForYou() {
 
   const lookups = {
     categoriesById: Object.fromEntries(categories.map((c) => [c.id, c])),
-    walletNames: Object.fromEntries(wallets.map((w) => [w.id, w.name])),
+    walletNames: compactWalletNames(wallets),
   };
   return (
     <ListSection label="Added for you">

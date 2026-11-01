@@ -88,6 +88,26 @@ describe('TransactionRow', () => {
   });
 });
 
+describe('TransactionRow pills', () => {
+  it.each<[string, Partial<TransactionRowData>]>([
+    ['To review', { kind: 'pending', category: 'Food & Dining', wallet: 'Maybank' }],
+    ['Auto', { autoAdded: true }],
+  ])('keeps %s on one line and leaves the shrinking to the meta', (label, over) => {
+    render(
+      <TransactionRow
+        testID={tid('activity', 'row', 'grab')}
+        row={{ ...grab, title: 'Restoran Nasi Kandar Ali', ...over } as TransactionRowData}
+        metaLead="date"
+        onPress={() => {}}
+        now={now}
+      />,
+    );
+    expect(screen.getByText(label).props.numberOfLines).toBe(1);
+    expect(screen.getByText('Today · Maybank').props.className).toContain('flex-shrink');
+    expect(screen.getByText(label).props.className).not.toContain('flex-shrink');
+  });
+});
+
 describe('TransactionRow hold', () => {
   const touch = (pageX: number) => ({
     nativeEvent: { pageX, pageY: 300 },

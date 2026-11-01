@@ -35,6 +35,7 @@ import { openSheet } from '@/lib/sheet/sheet-store';
 import { tid, type TestId } from '@/lib/test-ids';
 import { showToast, undoToast } from '@/lib/toast/toast-store';
 import { resolveTransactionIcon } from '@/lib/transactions/icon';
+import { compactWalletNames } from '@/lib/wallets/compact-name';
 
 import { pickWallet } from './pick-wallet';
 
@@ -264,7 +265,11 @@ export function DraftCard({ message }: { message: DraftMessage }) {
           testID={tid('chat', 'draft', 'wallet')}
           look={
             wallet
-              ? { name: wallet.name, icon: wallet.icon ?? 'wallet-outline', color: wallet.color }
+              ? {
+                  name: compactWalletNames(wallets)[wallet.id],
+                  icon: wallet.icon ?? 'wallet-outline',
+                  color: wallet.color,
+                }
               : null
           }
           empty={{ label: 'Pick a wallet', icon: 'wallet-outline' }}

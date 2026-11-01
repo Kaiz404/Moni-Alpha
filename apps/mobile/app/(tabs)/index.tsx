@@ -42,6 +42,7 @@ import { listMerchantAliases } from '@/lib/supabase/merchant-aliases';
 import { isAwaitingReview } from '@/lib/supabase/proposed-transactions';
 import { tid } from '@/lib/test-ids';
 import type { RowLookups } from '@/lib/transactions/row';
+import { compactWalletNames } from '@/lib/wallets/compact-name';
 
 function timeAwareGreeting(now: Date): string {
   const hour = now.getHours();
@@ -136,9 +137,7 @@ export default function HomeScreen() {
   const lookups = useMemo<RowLookups>(
     () => ({
       categoriesById: overview.categoriesById,
-      walletNames: Object.fromEntries(
-        overview.wallets.map((wallet) => [wallet.id, wallet.name]),
-      ),
+      walletNames: compactWalletNames(overview.wallets),
     }),
     [overview.categoriesById, overview.wallets],
   );

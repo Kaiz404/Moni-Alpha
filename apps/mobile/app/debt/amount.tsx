@@ -34,6 +34,7 @@ import {
 } from '@/lib/supabase/debts';
 import { readAmount } from '@/lib/amount/amount-input';
 import { tid } from '@/lib/test-ids';
+import { compactWalletNames } from '@/lib/wallets/compact-name';
 import { minorToDecimal } from '@repo/types';
 
 type Mode = 'repay' | 'more';
@@ -239,7 +240,8 @@ function DebtMoneyForm({
           testID={tid('debts', 'amount', 'wallet')}
           className="flex-1"
           label={walletLabel}
-          value={wallet?.name ?? ''}
+          value={wallet ? compactWalletNames(wallets)[wallet.id] : ''}
+          spokenValue={wallet?.name}
           onPress={async () => {
             const picked = await pickDebtWallet(
               walletLabel,

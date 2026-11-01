@@ -12,9 +12,13 @@ import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { formatSignedMoney } from '@/lib/finance/format-money';
 import type { BudgetLine } from '@/lib/proposals/budget-line';
 import type { EditField as EditFieldName } from '@/lib/proposals/review-card-state';
+import type { ReviewStatus } from '@/lib/proposals/review-status';
 import { tid } from '@/lib/test-ids';
 
 const FIELD = { merchant: tid('review', 'merchant'), amount: tid('review', 'amount') } as const;
+
+/** A wallet chip shows the compact name; the screen reader hears the full one (`XA-Review`). */
+export type WalletLook = ChipLook & { fullName: string };
 
 /** Everything the card shows, already resolved from the store and this card's edits. */
 export type ReviewCardModel = {
@@ -23,15 +27,14 @@ export type ReviewCardModel = {
   type: TransactionType | null;
   sourceLabel: string;
   time: string;
-  /** "Needs a wallet", "Maybe a duplicate". Only facts the app knows. */
-  status: { tone: 'near' | 'review'; label: string } | null;
+  status: ReviewStatus | null;
   quote: string | null;
   merchant: string;
   amountMinor: MinorAmount;
   category: ChipLook | null;
-  wallet: ChipLook | null;
+  wallet: WalletLook | null;
   /** Transfers only: the wallet the money moves to. */
-  destination: ChipLook | null | undefined;
+  destination: WalletLook | null | undefined;
   evidence: string | null;
   /** What the user can do about a likely duplicate, or a pair Moni already counted once. */
   pair: {
@@ -223,7 +226,7 @@ export function ReviewCard({
         <PickerChip
           testID={tid('review', 'wallet')}
           look={model.wallet}
-          accessibilityLabel={model.wallet ? `Wallet ${model.wallet.name}. Change wallet` : 'Pick a wallet'}
+          accessibilityLabel={model.wallet ? `Wallet ${model.wallet.fullName}. Change wallet` : 'Pick a wallet'}
           onPress={handlers.onPickWallet}
         />
         {transfer ? (
@@ -232,7 +235,7 @@ export function ReviewCard({
             look={model.destination ?? null}
             accessibilityLabel={
               model.destination
-                ? `Moves to ${model.destination.name}. Change wallet`
+                ? `Moves to ${model.destination.fullName}. Change wallet`
                 : 'Pick a wallet'
             }
             onPress={handlers.onPickDestination}

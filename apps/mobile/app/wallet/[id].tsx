@@ -32,6 +32,7 @@ import {
 } from '@/lib/finance/selectors';
 import { listMerchantAliases } from '@/lib/supabase/merchant-aliases';
 import type { RowLookups } from '@/lib/transactions/row';
+import { compactWalletNames } from '@/lib/wallets/compact-name';
 import { confirmDeleteWallet } from '@/lib/wallets/delete-wallet';
 import { useWalletAlertLink } from '@/lib/wallets/wallet-link';
 
@@ -74,9 +75,7 @@ export default function WalletScreen() {
       categoriesById: Object.fromEntries(
         categories.map((category) => [category.id, category]),
       ),
-      walletNames: Object.fromEntries(
-        wallets.map((item) => [item.id, item.name]),
-      ),
+      walletNames: compactWalletNames(wallets),
     }),
     [categories, wallets],
   );

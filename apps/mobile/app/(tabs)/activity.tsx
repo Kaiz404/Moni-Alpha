@@ -63,6 +63,7 @@ import { listMerchantAliases } from '@/lib/supabase/merchant-aliases';
 import { isAwaitingReview } from '@/lib/supabase/proposed-transactions';
 import { tid } from '@/lib/test-ids';
 import { transactionRow, type RowLookups } from '@/lib/transactions/row';
+import { compactWalletNames } from '@/lib/wallets/compact-name';
 
 const FIRST_DAYS = 5;
 const MORE_DAYS = 10;
@@ -132,9 +133,7 @@ export default function ActivityScreen() {
       categoriesById: Object.fromEntries(
         categories.map((category) => [category.id, category]),
       ),
-      walletNames: Object.fromEntries(
-        wallets.map((wallet) => [wallet.id, wallet.name]),
-      ),
+      walletNames: compactWalletNames(wallets),
     }),
     [categories, wallets],
   );
@@ -217,7 +216,9 @@ export default function ActivityScreen() {
     (wallet) => wallet.currency === currency,
   );
   const walletName =
-    mainWallets.find((wallet) => wallet.id === walletId)?.name ?? null;
+    mainWallets.some((wallet) => wallet.id === walletId) && walletId
+      ? lookups.walletNames[walletId]
+      : null;
   const visible = day ? days : days.slice(0, shownDays);
   const earlier = Math.min(MORE_DAYS, days.length - visible.length);
 

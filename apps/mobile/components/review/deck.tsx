@@ -28,17 +28,18 @@ import {
   historyCount,
   useRecentlyReviewed,
 } from '@/components/review/recently-reviewed';
-import type { ChipLook } from '@/components/review/picker-chip';
 import {
   ReviewCard,
   type ReviewCardHandlers,
   type ReviewCardModel,
+  type WalletLook,
 } from '@/components/review/review-card';
 import { IconSymbol, type IconSymbolName } from '@/components/ui/icon-symbol';
 import { Press } from '@/components/ui/press';
 import { Text } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import type { DuplicateMatch } from '@/lib/ai/duplicates';
+import { timesFiled } from '@/lib/ai/routine';
 import { useAuth } from '@/lib/auth/auth-context';
 import { formatDate } from '@/lib/dates/day-label';
 import { formatMoney, formatSignedMoney } from '@/lib/finance/format-money';
@@ -54,6 +55,7 @@ import type { FinanceCategory, FinanceWallet } from '@/lib/finance/types';
 import * as haptics from '@/lib/haptics';
 import { springs } from '@/lib/motion/tokens';
 import { budgetLine } from '@/lib/proposals/budget-line';
+import { reviewStatus } from '@/lib/proposals/review-status';
 import { canPairInto, undoPairing } from '@/lib/proposals/pairing';
 import { captureSourceLabel, captureTime } from '@/lib/proposals/capture-source';
 import {
@@ -92,6 +94,7 @@ import { listAwaitingReview, type RejectedProposal } from '@/lib/supabase/propos
 import { tid } from '@/lib/test-ids';
 import { showToast } from '@/lib/toast/toast-store';
 import { getDefaultWalletId } from '@/lib/wallets/default-wallet';
+import { compactWalletNames } from '@/lib/wallets/compact-name';
 import { lastWalletForMerchant, resolveInitialWalletId } from '@/lib/wallets/proposal-wallet';
 
 /** A Later row snoozed past any real date still counts as unreviewed. */
@@ -189,9 +192,16 @@ type Lookups = {
   aliases: ReturnType<typeof listMerchantAliases>;
 };
 
-function walletLook(wallets: FinanceWallet[], id: string | null | undefined): ChipLook | null {
+function walletLook(wallets: FinanceWallet[], id: string | null | undefined): WalletLook | null {
   const wallet = id ? wallets.find((w) => w.id === id) : undefined;
-  return wallet ? { name: wallet.name, icon: wallet.icon ?? 'wallet-outline', color: wallet.color } : null;
+  return wallet
+    ? {
+        name: compactWalletNames(wallets)[wallet.id],
+        fullName: wallet.name,
+        icon: wallet.icon ?? 'wallet-outline',
+        color: wallet.color,
+      }
+    : null;
 }
 
 function duplicateText(match: DuplicateMatch, currency: string): string {
@@ -811,13 +821,15 @@ export function ReviewDeck({ session }: { session: ReviewSession }) {
       type,
       sourceLabel: captureSourceLabel(top),
       time: captureTime(top.notificationReceivedAt ?? top.createdAt),
-      status: !walletId
-        ? { tone: 'near', label: 'Needs a wallet' }
-        : top.pairing
-          ? { tone: 'review', label: 'Same payment' }
-          : duplicate
-            ? { tone: 'review', label: 'Maybe a duplicate' }
-            : null,
+      status: reviewStatus({
+        hasWallet: !!walletId,
+        paired: !!top.pairing,
+        maybeDuplicate: !!duplicate,
+        timesFiled: timesFiled(
+          { type, currency: top.currency, merchant: own.merchant ?? top.merchant },
+          ledger,
+        ),
+      }),
       quote:
         top.sourceType === 'notification'
           ? top.notificationBody
@@ -837,7 +849,7 @@ export function ReviewDeck({ session }: { session: ReviewSession }) {
       similar: top.sourceType === 'notification' && !own.type && !duplicate ? !!own.similar : null,
       budget,
     };
-  }, [top, edits, categories, duplicates, wallets, progress, lookups]);
+  }, [top, edits, categories, duplicates, wallets, progress, lookups, ledger]);
 
   const editing = card.kind === 'editing' ? card.field : null;
   const handlers = useMemo<ReviewCardHandlers | null>(() => {

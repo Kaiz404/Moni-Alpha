@@ -26,6 +26,7 @@ import { resolveTransactionIcon } from '@/lib/transactions/icon';
 import type { TransactionRowData } from '@/lib/transactions/row';
 import { showToast } from '@/lib/toast/toast-store';
 import { getDefaultWalletId } from '@/lib/wallets/default-wallet';
+import { compactWalletNames } from '@/lib/wallets/compact-name';
 
 const HISTORY = 500;
 
@@ -130,9 +131,7 @@ export function useCaptureFlow(source: CaptureSource) {
         icon: resolveTransactionIcon(category?.icon, draft.kind),
         color: category?.color ?? null,
         category: category?.name ?? null,
-        wallet:
-          wallets.find((wallet) => wallet.id === draft.walletId)?.name ??
-          'Wallet',
+        wallet: compactWalletNames(wallets)[draft.walletId] ?? 'Wallet',
         autoAdded: false,
       });
       dispatch({ type: 'approved' });

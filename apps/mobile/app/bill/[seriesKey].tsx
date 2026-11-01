@@ -482,7 +482,8 @@ export default function BillScreen() {
               <PickerField
                 testID={tid('budget', 'bill', 'wallet')}
                 label="Pays from"
-                value={wallet?.name ?? ''}
+                value={wallet ? data.walletNames[wallet.id] : ''}
+                spokenValue={wallet?.name}
                 className="flex-1"
                 mark={
                   wallet?.color ? (

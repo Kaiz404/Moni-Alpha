@@ -12,6 +12,8 @@ type PickerFieldProps = {
   label: string;
   /** The current pick; empty shows `placeholder` in Meta. */
   value: string;
+  /** What the screen reader hears when `value` is shortened, such as the full wallet name. */
+  spokenValue?: string;
   onPress: () => void;
   /** Shown in Meta while `value` is empty, such as "Pick a date". */
   placeholder?: string;
@@ -38,6 +40,7 @@ export function PickerField({
   testID,
   label,
   value,
+  spokenValue,
   onPress,
   placeholder = 'Choose',
   mark,
@@ -53,7 +56,7 @@ export function PickerField({
     return (
       <Press
         testID={testID}
-        accessibilityLabel={`${label}, ${empty ? 'not chosen' : value}`}
+        accessibilityLabel={`${label}, ${empty ? 'not chosen' : (spokenValue ?? value)}`}
         accessibilityHint="Opens a picker"
         accessibilityState={{ disabled }}
         disabled={disabled}
@@ -93,7 +96,7 @@ export function PickerField({
   return (
     <Press
       testID={testID}
-      accessibilityLabel={`${label}, ${empty ? 'not chosen' : value}`}
+      accessibilityLabel={`${label}, ${empty ? 'not chosen' : (spokenValue ?? value)}`}
       accessibilityHint="Opens a picker"
       accessibilityState={{ disabled }}
       disabled={disabled}

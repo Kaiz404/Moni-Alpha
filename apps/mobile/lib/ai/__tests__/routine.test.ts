@@ -1,4 +1,4 @@
-import { matchRoutine, merchantKey, type RoutineHistoryTransaction } from '../routine';
+import { matchRoutine, merchantKey, timesFiled, type RoutineHistoryTransaction } from '../routine';
 
 const FOOD = 'food';
 const TRANSPORT = 'transport';
@@ -152,5 +152,39 @@ describe('matchRoutine with auto-add rules', () => {
     expect(matchRoutine({ ...grabAlert, sourceApp: null }, [], active, [grabRule]).kind).toBe(
       'proposal',
     );
+  });
+});
+
+describe('timesFiled', () => {
+  const grab = { type: 'expense', currency: 'MYR', merchant: 'GRAB*FOOD' };
+  const filed = tx({ merchant: 'GRAB*FOOD' });
+
+  it.each<[string, RoutineHistoryTransaction[], number]>([
+    ['nothing filed', [], 0],
+    ['one match', [filed], 1],
+    ['fourteen matches', Array.from({ length: 14 }, () => filed), 14],
+    ['the same merchant with a reference', [tx({ merchant: 'Grab*Food 1234' })], 1],
+    ['another merchant', [tx({ merchant: 'Jaya Grocer' })], 0],
+    ['another currency', [tx({ merchant: 'GRAB*FOOD', currency: 'USD' })], 0],
+    ['another type', [tx({ merchant: 'GRAB*FOOD', type: 'income' })], 0],
+    ['no category', [tx({ merchant: 'GRAB*FOOD', categoryId: null })], 0],
+    ['a balance adjustment', [tx({ merchant: 'GRAB*FOOD', analysisExcluded: true })], 0],
+    ['a debt-linked row', [tx({ merchant: 'GRAB*FOOD', debtActivityId: 'debt-1' })], 0],
+  ])('counts %s', (_, history, count) => {
+    expect(timesFiled(grab, history)).toBe(count);
+  });
+
+  it('does not count a nearby payment at another merchant, which routine matching would', () => {
+    const nearby = tx({ merchant: 'Kedai Ali', locationLatitude: 3.15, locationLongitude: 101.71 });
+    expect(timesFiled(grab, [nearby])).toBe(0);
+  });
+
+  it.each([
+    ['a capture with no merchant', { ...grab, merchant: null }],
+    ['a capture whose merchant is only digits', { ...grab, merchant: '1234' }],
+    ['a transfer', { ...grab, type: 'transfer' }],
+    ['a capture with no type', { ...grab, type: null }],
+  ])('counts nothing for %s', (_, capture) => {
+    expect(timesFiled(capture, [filed, tx({ merchant: null }), tx({ type: 'transfer' })])).toBe(0);
   });
 });

@@ -65,6 +65,7 @@ import {
 } from '@/lib/transactions/prefetch-location';
 import { resolveTransactionIcon } from '@/lib/transactions/icon';
 import { proposalRow, transactionRow } from '@/lib/transactions/row';
+import { compactWalletNames } from '@/lib/wallets/compact-name';
 import { resolveDefaultWalletId } from '@/lib/wallets/default-wallet';
 
 type Kind = 'expense' | 'income' | 'transfer';
@@ -355,9 +356,7 @@ export default function TypeItScreen() {
     const projection = financeProjection$.get();
     const lookups = {
       categoriesById: projection.categoriesById,
-      walletNames: Object.fromEntries(
-        allWallets.map((item) => [item.id, item.name]),
-      ),
+      walletNames: compactWalletNames(allWallets),
     };
     const proposal =
       target.kind === 'proposal' ? projection.proposalsById[target.id] : null;

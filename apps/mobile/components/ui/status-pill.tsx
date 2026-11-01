@@ -57,6 +57,7 @@ const sizes = {
   },
 } as const;
 
+/** One line in every shape: without the limit Android can break a label at its space and show "To". */
 export function StatusPill({
   tone,
   label,
@@ -82,6 +83,7 @@ export function StatusPill({
       >
         <Text
           className={`text-[12px] leading-[16px] font-display-bold ${look.text}`}
+          numberOfLines={1}
         >
           {label}
         </Text>
@@ -96,7 +98,7 @@ export function StatusPill({
       <View className={`h-1.5 w-1.5 rounded-full ${look.dot}`} />
       <Text
         className={`${shape.label} font-display-bold ${look.text}`}
-        numberOfLines={size === 'compact' ? 1 : undefined}
+        numberOfLines={1}
       >
         {label}
       </Text>

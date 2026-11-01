@@ -28,6 +28,7 @@ import {
 } from '@/lib/supabase/proposed-transactions';
 import { tid } from '@/lib/test-ids';
 import { transactionRow, type RowLookups, type TransactionRowData } from '@/lib/transactions/row';
+import { compactWalletNames } from '@/lib/wallets/compact-name';
 
 type Lookups = RowLookups & {
   aliases: ReturnType<typeof listMerchantAliases>;
@@ -109,7 +110,7 @@ export function useRecentlyReviewed(): HistoryGroup[] {
   const reviewed = useSelector(() => listRecentlyReviewed(new Date()));
   const lookups: Lookups = {
     categoriesById: Object.fromEntries(categories.map((c) => [c.id, c])),
-    walletNames: Object.fromEntries(wallets.map((w) => [w.id, w.name])),
+    walletNames: compactWalletNames(wallets),
     aliases,
     transactionsById,
   };

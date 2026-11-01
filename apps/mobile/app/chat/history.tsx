@@ -290,6 +290,7 @@ export default function ChatHistoryScreen() {
                         >
                           <Text
                             className="text-[12px] font-display-bold"
+                            numberOfLines={1}
                             style={{
                               color:
                                 row.pill.tone === 'draft'

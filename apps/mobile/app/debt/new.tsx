@@ -39,6 +39,7 @@ import {
 import { readAmount } from '@/lib/amount/amount-input';
 import { tid } from '@/lib/test-ids';
 import { showToast } from '@/lib/toast/toast-store';
+import { compactWalletNames } from '@/lib/wallets/compact-name';
 
 const DIRECTIONS = ['owed_to_me', 'i_owe'] as const;
 
@@ -253,7 +254,8 @@ export default function NewDebtScreen() {
               testID={tid('debts', 'new', 'wallet')}
               className="flex-1"
               label={walletLabel}
-              value={wallet?.name ?? ''}
+              value={wallet ? compactWalletNames(wallets)[wallet.id] : ''}
+              spokenValue={wallet?.name}
               mark={
                 wallet ? (
                   <View

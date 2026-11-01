@@ -9,7 +9,7 @@
 import type { AutoAddRule } from '@repo/types';
 
 /** Recent matches that must agree on one category before a transaction is added automatically. */
-const STREAK = 3;
+export const STREAK = 3;
 /** An amount above this multiple of the largest recent match is out of the norm: review it. */
 const OUTLIER_FACTOR = 3;
 const NEARBY_M = 100;
@@ -107,6 +107,22 @@ function isSimilar(
   );
 }
 
+/** Transfers, balance adjustments and debt-linked rows say nothing about a merchant. */
+function isFiled(tx: RoutineHistoryTransaction): boolean {
+  return !!tx.categoryId && !tx.analysisExcluded && !tx.debtActivityId;
+}
+
+/** How many of the user's filed transactions share this capture's merchant, type and currency. */
+export function timesFiled(
+  capture: Pick<RoutineCandidate, 'type' | 'currency' | 'merchant'>,
+  history: readonly RoutineHistoryTransaction[],
+): number {
+  const key = merchantKey(capture.merchant);
+  if (!key || (capture.type !== 'income' && capture.type !== 'expense')) return 0;
+  const candidate = { ...capture, amountMinor: null, location: null, sourceApp: null };
+  return history.filter((tx) => isFiled(tx) && isSimilar(tx, candidate, key)).length;
+}
+
 /**
  * @param history newest first. Transfers, balance adjustments and debt-linked rows are ignored.
  * @param activeCategoryIds a category the user archived is never applied automatically.
@@ -134,8 +150,7 @@ export function matchRoutine(
 
   const recent: RoutineHistoryTransaction[] = [];
   for (const tx of history) {
-    if (!tx.categoryId || tx.analysisExcluded || tx.debtActivityId) continue;
-    if (isSimilar(tx, candidate, key)) recent.push(tx);
+    if (isFiled(tx) && isSimilar(tx, candidate, key)) recent.push(tx);
     if (recent.length === STREAK) break;
   }
   const latest = recent[0];

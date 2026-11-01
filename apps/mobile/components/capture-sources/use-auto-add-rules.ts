@@ -9,6 +9,7 @@ import { getRecordValues } from '@/lib/store/helpers';
 import { listAutoAddRules } from '@/lib/supabase/auto-add-rules';
 import { listMerchantAliases } from '@/lib/supabase/merchant-aliases';
 import { resolveTransactionIcon, type TransactionIconName } from '@/lib/transactions/icon';
+import { compactWalletNames } from '@/lib/wallets/compact-name';
 
 /** An auto-add rule as ADDED WITHOUT ASKING lists it. */
 export type AutoAddRuleRow = {
@@ -49,11 +50,11 @@ export function useAutoAddRules(now: Date = new Date()): AutoAddRuleRow[] {
       string,
       { name?: string | null; icon?: string | null; color?: string | null } | undefined
     >;
-    const walletNames = new Map(
-      getRecordValues<{ id: string; name?: string | null }>(wallets$).map((wallet) => [
-        wallet.id,
-        wallet.name ?? '',
-      ]),
+    const walletNames = compactWalletNames(
+      getRecordValues<{ id: string; name?: string | null }>(wallets$).map((wallet) => ({
+        id: wallet.id,
+        name: wallet.name ?? '',
+      })),
     );
     const addedThisMonth = new Map<string, number>();
     for (const row of getRecordValues<TransactionRow>(transactions$)) {
@@ -76,7 +77,7 @@ export function useAutoAddRules(now: Date = new Date()): AutoAddRuleRow[] {
           meta:
             added > 0
               ? `${added} added this month`
-              : [category?.name, walletNames.get(rule.walletId)].filter(Boolean).join(' · '),
+              : [category?.name, walletNames[rule.walletId]].filter(Boolean).join(' · '),
           icon: category?.icon
             ? resolveTransactionIcon(category.icon, 'expense')
             : 'storefront-outline',

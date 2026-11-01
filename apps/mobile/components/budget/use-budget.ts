@@ -16,6 +16,7 @@ import {
   selectRecurringOverrides,
   type RecurringOverrideRow,
 } from '@/lib/supabase/recurring-overrides';
+import { compactWalletNames } from '@/lib/wallets/compact-name';
 
 /** A clock that moves on when the screen comes back into focus, so "today" never goes stale. */
 export function useNow(): Date {
@@ -62,7 +63,7 @@ export function useBudgetData() {
     [now, transactions, overrides],
   );
   const walletNames = useMemo(
-    () => Object.fromEntries(wallets.map((wallet) => [wallet.id, wallet.name])),
+    () => compactWalletNames(wallets),
     [wallets],
   );
   return {

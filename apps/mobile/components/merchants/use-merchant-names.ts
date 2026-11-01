@@ -10,6 +10,7 @@ import { categories$, transactions$, wallets$ } from '@/lib/store';
 import { getRecordValues } from '@/lib/store/helpers';
 import { listMerchantAliases } from '@/lib/supabase/merchant-aliases';
 import { resolveTransactionIcon, type TransactionIconName } from '@/lib/transactions/icon';
+import { compactWalletNames } from '@/lib/wallets/compact-name';
 
 export type MerchantRow = MerchantEntry & { icon: TransactionIconName; color: string | null };
 
@@ -52,10 +53,12 @@ export function useMerchantNames(): { toName: MerchantRow[]; named: MerchantRow[
         fromAlert: capturedFromAlert(row.metadata),
       });
     }
-    const walletNames: Record<string, string> = {};
-    for (const wallet of getRecordValues<{ id: string; name?: string | null }>(wallets$)) {
-      walletNames[wallet.id] = wallet.name ?? '';
-    }
+    const walletNames = compactWalletNames(
+      getRecordValues<{ id: string; name?: string | null }>(wallets$).map((wallet) => ({
+        id: wallet.id,
+        name: wallet.name ?? '',
+      })),
+    );
     const categories = categories$.get() as
       | Record<string, { icon?: string | null; color?: string | null } | undefined>
       | undefined;

@@ -16,6 +16,7 @@ import {
   type TransactionIconName,
 } from '@/lib/transactions/icon';
 import type { RowLookups } from '@/lib/transactions/row';
+import { compactWalletNames } from '@/lib/wallets/compact-name';
 
 export type CategoryLook = {
   name: string;
@@ -46,9 +47,7 @@ export function usePlaceSources() {
       categoriesById: Object.fromEntries(
         categories.map((category) => [category.id, category]),
       ),
-      walletNames: Object.fromEntries(
-        wallets.map((wallet) => [wallet.id, wallet.name]),
-      ),
+      walletNames: compactWalletNames(wallets),
     }),
     [categories, wallets],
   );

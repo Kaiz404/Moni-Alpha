@@ -41,6 +41,8 @@ export type Tile = {
   name: string;
   label: string;
   value: string;
+  /** What the screen reader hears when `value` is shortened: the full wallet name (V2A-TxnDetail). */
+  spoken?: string;
   icon?: IconSymbolName;
   dot?: string | null;
   /** `pick` opens a picker sheet (Sand, chevron down); `link` opens a page (Paper, chevron right). */
@@ -79,7 +81,7 @@ function DetailTile({ tile }: { tile: Tile }) {
   return tile.action ? (
     <Press
       testID={tid('txn', 'tile', tile.name)}
-      accessibilityLabel={`${tile.label}, ${tile.value}. ${pick ? 'Change' : 'Open'}`}
+      accessibilityLabel={`${tile.label}, ${tile.spoken ?? tile.value}. ${pick ? 'Change' : 'Open'}`}
       onPress={tile.action.onPress}
       pressedClassName={pick ? 'bg-hairline' : 'bg-sand-light'}
       className={className}
@@ -87,7 +89,7 @@ function DetailTile({ tile }: { tile: Tile }) {
       {body}
     </Press>
   ) : (
-    <View className={className} accessibilityLabel={`${tile.label}, ${tile.value}`}>
+    <View className={className} accessibilityLabel={`${tile.label}, ${tile.spoken ?? tile.value}`}>
       {body}
     </View>
   );

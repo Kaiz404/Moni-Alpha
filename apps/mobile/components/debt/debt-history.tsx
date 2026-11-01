@@ -19,6 +19,7 @@ import type {
   FinanceDebtActivity,
 } from '@/lib/finance/types';
 import { tid } from '@/lib/test-ids';
+import { compactWalletNames } from '@/lib/wallets/compact-name';
 
 const GLYPHS: Record<FinanceDebtActivity['kind'], IconSymbolName> = {
   principal: 'hand-coin-outline',
@@ -36,6 +37,7 @@ export function DebtHistory({
 }) {
   const tokens = useThemeTokens();
   const walletsById = useValue(financeProjection$.walletsById);
+  const compactNames = compactWalletNames(Object.values(walletsById ?? {}));
   const words = SIDE_WORDS[debt.direction];
   const owedToMe = debt.direction === 'owed_to_me';
   return (
@@ -50,7 +52,7 @@ export function DebtHistory({
       <ListCard>
         {activities.map((activity) => {
           const wallet = activity.walletId
-            ? walletsById?.[activity.walletId]?.name
+            ? compactNames[activity.walletId]
             : null;
           const comesIn =
             activity.kind === 'repayment' ? owedToMe : !owedToMe;

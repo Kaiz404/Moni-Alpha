@@ -21,6 +21,7 @@ import type {
   FinanceTransaction,
   FinanceWallet,
 } from '@/lib/finance/types';
+import { compactWalletNames } from '@/lib/wallets/compact-name';
 
 export type ReadContext = {
   /** Main-currency wallets only: a live capture never lands in another currency. */
@@ -100,7 +101,7 @@ function walletFor(
   if (last) {
     const streak = visits.findIndex((row) => row.walletId !== last.walletId);
     const count = streak === -1 ? visits.length : streak;
-    const name = context.wallets.find((w) => w.id === last.walletId)?.name;
+    const name = compactWalletNames(context.wallets)[last.walletId];
     return {
       walletId: last.walletId,
       evidence: `You didn't say a wallet. ${name} paid your last ${count === 1 ? '' : `${count} `}${extraction.merchant} visit${count === 1 ? '' : 's'}.`,

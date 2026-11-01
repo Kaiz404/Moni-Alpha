@@ -451,6 +451,77 @@ describe('Review deck', () => {
     expect(screen.getByText('1 of 1')).toBeTruthy();
   });
 
+  describe('the source row pill', () => {
+    const filed = (count: number, merchant = 'GRAB') =>
+      Object.fromEntries(
+        Array.from({ length: count }, (_, index) => [
+          `t${index}`,
+          {
+            id: `t${index}`,
+            userId: 'user-1',
+            walletId: MAYBANK,
+            amountMinor: 1200 as MinorAmount,
+            currency: 'MYR' as CurrencyCode,
+            type: 'expense' as const,
+            analysisExcluded: false,
+            debtActivityId: null,
+            categoryId: FOOD,
+            transferToWalletId: null,
+            linkedTransactionId: null,
+            description: null,
+            merchant,
+            notes: null,
+            transactionDate: '2026-10-01T04:00:00.000Z',
+            locationLatitude: null,
+            locationLongitude: null,
+            locationName: null,
+            autoAdded: false,
+            balanceCorrection: false,
+            createdAt: '2026-10-01T04:00:00.000Z',
+          },
+        ]),
+      );
+
+    it.each([
+      [14, 'Usual for you'],
+      [3, 'Usual for you'],
+      [2, 'Seen before'],
+      [1, 'Seen before'],
+    ])('a merchant filed %i times reads %s', async (count, label) => {
+      seed('p1');
+      financeProjection$.transactionsById.set(filed(count));
+      await show(<ReviewScreen />);
+      expect(screen.getByText(label)).toBeTruthy();
+    });
+
+    it('shows no pill for a merchant never filed', async () => {
+      seed('p1');
+      financeProjection$.transactionsById.set(filed(14, 'Jaya Grocer'));
+      await show(<ReviewScreen />);
+      expect(screen.queryByText('Usual for you')).toBeNull();
+      expect(screen.queryByText('Seen before')).toBeNull();
+    });
+
+    it('lets Needs a wallet outrank a merchant filed 14 times', async () => {
+      seed('p1', { wallet_id: null });
+      store.wallets$.set({});
+      financeProjection$.walletsById.set({});
+      financeProjection$.transactionsById.set(filed(14));
+      await show(<ReviewScreen />);
+      expect(screen.getByText('Needs a wallet')).toBeTruthy();
+      expect(screen.queryByText('Usual for you')).toBeNull();
+    });
+  });
+
+  it('shows the compact wallet name on the chip and speaks the full one', async () => {
+    seed('p1');
+    financeProjection$.walletsById[MAYBANK].name.set('Maybank Savings');
+    await show(<ReviewScreen />);
+    expect(screen.getByText('Maybank')).toBeTruthy();
+    expect(screen.queryByText('Maybank Savings')).toBeNull();
+    expect(screen.getByLabelText('Wallet Maybank Savings. Change wallet')).toBeTruthy();
+  });
+
   it('asks for a wallet instead of approving a capture without one', async () => {
     seed('p1', { wallet_id: null });
     store.wallets$.set({});

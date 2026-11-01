@@ -14,6 +14,7 @@ The words the redesigned app uses, and the words it never uses. The design canva
 | Recently reviewed, Move back to review | The Review page's list of the last 30 days of Approve and Not mine, and the button on a Not mine row that returns it to the deck. |
 | Don't ask about similar | The checkbox on a capture. Moni then adds similar alerts without asking and marks them Auto. |
 | Auto | The pill on a row Moni added without asking (routine auto-add). |
+| Usual for you, Seen before | The Review card's source-row pill for a merchant the user has filed 3 or more times, or once or twice. Needs a wallet, Same payment and Maybe a duplicate outrank both. |
 | Added, Auto-added, Same payment, Waiting for review, Trying again, Couldn't reach Moni, Ignored, Not linked | The eight statuses in the Capture log. |
 | Same payment, Counted once | Two alerts or captures for one payment. Moni counts them as one row and keeps both visible, with Undo. The Review card's control is "Same payment". |
 | It's a transfer, It's spending, It's income | The Review card's controls when a capture looks like the other side of a transfer between the user's own wallets, or was read as a transfer and wasn't. |
@@ -24,6 +25,7 @@ The words the redesigned app uses, and the words it never uses. The design canva
 | bills | Recurring bills still due this month. Debts are not bills. |
 | bills and RM40 to Mei | The label when a total includes money owed to a person as well as bills. |
 | Net worth | The sum of wallets in the main currency only. |
+| Compact wallet name | Rows, transfer meta, chips and picker fields drop a trailing account word: "Maybank Savings" reads "Maybank". Wallet lists, wallet pages, the choices in a picker, sentences a board writes in full, and check-in keep the full name. So does any wallet whose compact name another of the user's wallets shares. |
 | Main currency | The Profile setting (default MYR) that picks the one currency focused pages show. Other-currency wallets appear only on Wallets and their own detail. |
 | Merchant names | The Profile page listing raw merchant codes from alerts and the names the user gave them. "Name this merchant" names one in place. |
 | Balance correction | The transaction Moni adds when the user fixes a wallet's balance ("Balance not right?"). Check-in buttons: "That's right", "Fix it". |
