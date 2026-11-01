@@ -1,0 +1,33 @@
+# Type it location: the Location field shows the place saved with the entry, and
+# a tap takes it off that entry or puts it back. Needs location granted.
+# Run: scripts/device/run-flows.sh .maestro/flows/capture/type-location.yaml
+appId: com.anonymous.moni.e2e
+name: Type it location
+tags:
+  - y4
+  - seed-full
+---
+- runFlow: ../../subflows/launch.yaml
+- tapOn:
+    id: nav.plus
+- tapOn:
+    id: nav.chooser.type
+
+# The page works before the location answers.
+- tapOn:
+    id: capture.key.7
+- assertVisible: −RM7
+
+- extendedWaitUntil:
+    visible:
+      id: capture.location
+    timeout: 15000
+- takeScreenshot: y4-location-on
+- tapOn:
+    id: capture.location
+- assertVisible: Not saved
+- takeScreenshot: y4-location-off
+- tapOn:
+    id: capture.location
+- assertNotVisible: Not saved
+- pressKey: Back

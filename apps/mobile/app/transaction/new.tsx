@@ -11,6 +11,7 @@ import {
   type DuplicateHit,
 } from '@/components/capture/duplicate-sheet';
 import { FieldBubble } from '@/components/capture/field-bubble';
+import { LocationField } from '@/components/capture/location-field';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { PickerField } from '@/components/ui/picker-field';
 import { Segmented } from '@/components/ui/segmented';
@@ -56,7 +57,7 @@ import {
 import { tid } from '@/lib/test-ids';
 import {
   prefetchTransactionLocation,
-  type TransactionLocationSnapshot,
+  type EntryLocation,
 } from '@/lib/transactions/prefetch-location';
 import { resolveTransactionIcon } from '@/lib/transactions/icon';
 import { proposalRow, transactionRow } from '@/lib/transactions/row';
@@ -115,8 +116,8 @@ export default function TypeItScreen() {
   const [toWalletId, setToWalletId] = useState<string | null>(null);
   const [date, setDate] = useState(() => toLocalDateInput(new Date()));
   const [note, setNote] = useState('');
-  const [location, setLocation] =
-    useState<TransactionLocationSnapshot | null>(null);
+  const [here, setHere] = useState<EntryLocation>({ status: 'none' });
+  const [locationRemoved, setLocationRemoved] = useState(false);
   const [timezone, setTimezone] = useState('UTC');
   const [saving, setSaving] = useState(false);
   const [duplicate, setDuplicate] = useState<{
@@ -152,12 +153,17 @@ export default function TypeItScreen() {
   const category =
     categories.find((item) => item.id === categoryId) ?? null;
   const amount = readAmount(typed);
+  const recordsLocation = kind !== 'transfer' && wallet?.recordLocation !== false;
+  const location =
+    recordsLocation && !locationRemoved && here.status === 'found'
+      ? here.location
+      : null;
 
   useEffect(() => {
     void ensureFinanceTimezone()
       .then(setTimezone)
       .catch(() => {});
-    void prefetchTransactionLocation().then(setLocation);
+    void prefetchTransactionLocation(setHere);
   }, []);
 
   useEffect(() => {
@@ -556,7 +562,16 @@ export default function TypeItScreen() {
               />
               {dateField}
             </View>
-            {noteField}
+            <View className="flex-row gap-2">
+              {noteField}
+              {recordsLocation && here.status !== 'none' ? (
+                <LocationField
+                  here={here}
+                  removed={locationRemoved}
+                  onToggle={() => setLocationRemoved((removed) => !removed)}
+                />
+              ) : null}
+            </View>
           </>
         )}
       </AmountPage>
