@@ -8,7 +8,14 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { FlatList, View } from 'react-native';
-import Animated, { useAnimatedKeyboard, useAnimatedStyle } from 'react-native-reanimated';
+import Animated, {
+  Easing,
+  useAnimatedKeyboard,
+  useAnimatedStyle,
+  useReducedMotion,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ChatInputBar } from '@/components/chat/chat-input-bar';
@@ -43,6 +50,7 @@ import { pendingProposals$ } from '@/lib/finance/selectors';
 import { scanAndNormalizeReceipt } from '@/lib/receipts/scan-receipt';
 import {
   buildSpeechRecognitionOptions,
+  micLevel,
   ensureSpeechPermissions,
   getTranscriptFromResult,
   mergeTranscriptWithBase,
@@ -60,6 +68,8 @@ function dayTitle(day: string, now: Date): string {
   const date = parseLocalDateInput(day) ?? now;
   return day === todayThreadDay(now) ? `Today · ${formatDate(date, now)}` : formatDate(date, now);
 }
+
+const MIC_EASE = { duration: 100, easing: Easing.bezier(0.23, 1, 0.32, 1) };
 
 export default function ChatScreen() {
   const tokens = useThemeTokens();
@@ -98,6 +108,9 @@ export default function ChatScreen() {
   inputRef.current = input;
   const speechBase = useRef('');
   const sendOnEnd = useRef(false);
+  const holdEnded = useRef(false);
+  const reduceMotion = useReducedMotion();
+  const level = useSharedValue(0);
 
   useEffect(() => {
     if (viewDay !== today) folded.current = 0;
@@ -163,7 +176,12 @@ export default function ChatScreen() {
     const text = getTranscriptFromResult(event);
     if (text) setInput(mergeTranscriptWithBase(speechBase.current, text));
   });
+  useSpeechRecognitionEvent('volumechange', (event) => {
+    if (reduceMotion) return;
+    level.set(withTiming(micLevel(event.value), MIC_EASE));
+  });
   useSpeechRecognitionEvent('end', () => {
+    level.set(0);
     setListening(false);
     if (sendOnEnd.current) {
       sendOnEnd.current = false;
@@ -179,12 +197,25 @@ export default function ChatScreen() {
     try {
       if (!(await ensureSpeechPermissions())) return;
       await prepareOfflineSpeechModel({ allowDialog: true });
+      // A permission or download dialog can outlast the finger that asked for it.
+      if (holdEnded.current) return;
       speechBase.current = input;
       setListening(true);
       ExpoSpeechRecognitionModule.start(buildSpeechRecognitionOptions());
     } catch {
       setListening(false);
     }
+  };
+
+  const cancelListen = () => {
+    sendOnEnd.current = false;
+    ExpoSpeechRecognitionModule.abort();
+    setInput(speechBase.current);
+    setListening(false);
+  };
+  const doneListen = () => {
+    sendOnEnd.current = true;
+    ExpoSpeechRecognitionModule.stop();
   };
 
   const onQuickReply = (option: QuickReplyOption, message: ChatMessage) => {
@@ -316,16 +347,19 @@ export default function ChatScreen() {
           onSend={() => send(input)}
           listening={listening}
           onListen={() => void listen()}
-          onCancelListen={() => {
-            sendOnEnd.current = false;
-            ExpoSpeechRecognitionModule.abort();
-            setInput(speechBase.current);
-            setListening(false);
+          onCancelListen={cancelListen}
+          onDoneListen={doneListen}
+          onHoldStart={() => {
+            holdEnded.current = false;
+            void listen();
           }}
-          onDoneListen={() => {
-            sendOnEnd.current = true;
-            ExpoSpeechRecognitionModule.stop();
+          onHoldEnd={(send) => {
+            holdEnded.current = true;
+            if (!listening) return;
+            if (send) doneListen();
+            else cancelListen();
           }}
+          level={level}
           autoFocus={params.focus === '1'}
           bottomInset={Math.max(8, 16 - insets.bottom)}
         />

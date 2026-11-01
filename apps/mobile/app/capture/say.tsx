@@ -21,6 +21,7 @@ import {
 import { useCaptureFlow } from '@/components/capture/use-capture-flow';
 import {
   buildSpeechRecognitionOptions,
+  micLevel,
   getTranscriptFromResult,
   prepareOfflineSpeechModel,
 } from '@/lib/speech/speech-recognition';
@@ -28,7 +29,6 @@ import {
 type Mic = 'starting' | 'listening' | 'denied';
 
 const LEVEL_EASE = { duration: 100, easing: Easing.bezier(0.23, 1, 0.32, 1) };
-const LOUD = 8;
 
 function stopListening() {
   try {
@@ -64,11 +64,7 @@ export default function SayScreen() {
     setTranscript('');
     setSeconds(0);
     setMic('listening');
-    ExpoSpeechRecognitionModule.start(
-      buildSpeechRecognitionOptions({
-        volumeChangeEventOptions: { enabled: true, intervalMillis: 100 },
-      }),
-    );
+    ExpoSpeechRecognitionModule.start(buildSpeechRecognitionOptions());
     return true;
   }, []);
 
@@ -86,7 +82,7 @@ export default function SayScreen() {
 
   useSpeechRecognitionEvent('volumechange', (event) => {
     if (reduceMotion) return;
-    level.set(withTiming(Math.min(1, Math.max(0, event.value / LOUD)), LEVEL_EASE));
+    level.set(withTiming(micLevel(event.value), LEVEL_EASE));
   });
 
   useSpeechRecognitionEvent('result', (event) => {

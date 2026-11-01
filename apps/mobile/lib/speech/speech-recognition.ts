@@ -63,6 +63,14 @@ export function getSpeechContextualStrings(): string[] {
 }
 
 /** Shared live-transcription defaults — on-device, continuous, punctuation, finance biasing. */
+/** Android reports about -2 to 10; talking at the phone sits near 8. */
+const LOUD = 8;
+
+/** Mic loudness from 0 to 1, from a `volumechange` event's value. */
+export function micLevel(value: number): number {
+  return Math.min(1, Math.max(0, value / LOUD));
+}
+
 export function buildSpeechRecognitionOptions(
   overrides?: Partial<ExpoSpeechRecognitionOptions>,
 ): ExpoSpeechRecognitionOptions {
@@ -75,6 +83,7 @@ export function buildSpeechRecognitionOptions(
     requiresOnDeviceRecognition: onDevice,
     addsPunctuation: onDevice,
     contextualStrings: getSpeechContextualStrings(),
+    volumeChangeEventOptions: { enabled: true, intervalMillis: 100 },
     ...overrides,
   };
 }
