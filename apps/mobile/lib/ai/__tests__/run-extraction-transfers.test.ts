@@ -1,6 +1,7 @@
 import type { CurrencyCode } from '@repo/types';
 
 import {
+  CIMB_APP,
   delivered,
   GRAB_APP,
   GRABPAY,
@@ -16,6 +17,7 @@ import {
   T0,
   TNG,
   TNG_APP,
+  VISA,
   wallet,
 } from './pairing-fixture';
 import { toFinanceTransaction } from '@/lib/finance/adapters';
@@ -250,6 +252,96 @@ describe('a reload funded from a bank', () => {
       }),
     );
     expect(openProposals()[0]).toMatchObject({ type: 'expense', wallet_id: TNG, merchant: 'Hotlink' });
+  });
+});
+
+describe('a credit-card bill payment', () => {
+  const bankPaid = (minutes = 0) =>
+    delivered(
+      MAYBANK_APP,
+      'MAYBANK: Payment of RM500.00 to Credit Card ending 1234 on 14/10 successful.',
+      { amount: 500, type: 'expense', merchant: 'Credit Card' },
+      minutes,
+    );
+  const issuerReceived = (minutes = 0) =>
+    delivered(
+      CIMB_APP,
+      "We've received your credit card payment of RM500.00. Thank you.",
+      { amount: 500, type: 'income', merchant: null },
+      minutes,
+    );
+  const BILL = {
+    type: 'transfer',
+    from: MAYBANK,
+    to: VISA,
+    amount: '500.00',
+    category: null,
+    merchant: null,
+  };
+
+  beforeEach(() => {
+    resetStore([
+      wallet(MAYBANK, 'Maybank', 'bank', MAYBANK_APP),
+      wallet(VISA, 'CIMB Visa', 'credit', CIMB_APP, '1234'),
+    ]);
+  });
+
+  it('joins the ledger as a transfer, marked Auto, not spending', async () => {
+    await run(bankPaid());
+    expect(ledgerRows().map(transferShape)).toEqual([BILL]);
+    expect(ledgerRows()[0]).toMatchObject({
+      description: 'Credit card payment',
+      metadata: { ai_suggested: true },
+    });
+  });
+
+  it.each([
+    ['the bank alert first', bankPaid, issuerReceived],
+    ['the issuer alert first', issuerReceived, bankPaid],
+  ])('ends as one transfer with %s', async (_name, first, second) => {
+    await run(first(0));
+    await run(second(6));
+    expect(ledgerRows().map(transferShape)).toEqual([BILL]);
+    expect(openProposals()).toEqual([]);
+  });
+
+  it('stays out of spending totals', async () => {
+    await run(bankPaid());
+    const rows = ledgerRows().flatMap((row) => toFinanceTransaction(row) ?? []);
+    const now = new Date(T0 + 60_000);
+    const budget = buildBudgetMonth({
+      month: monthKey(now),
+      now,
+      currency: 'MYR' as CurrencyCode,
+      transactions: rows,
+      categories: [],
+      budgets: [],
+      monthlyTotalMinor: null,
+      bills: [],
+      debts: [],
+    });
+    expect(rows).toHaveLength(1);
+    expect(budget.spentMinor).toBe(0);
+    expect(groupActivityDays(rows)[0]!.spentMinor).toBe(0);
+    expect(spendingMonth(rows, budget, 'MYR' as CurrencyCode, now).spentMinor).toBe(0);
+    expect(walletBalanceForTest(rows, VISA)).toBe(50000);
+  });
+
+  it('creates nothing when redelivered', async () => {
+    await run(bankPaid());
+    await expect(run(bankPaid())).resolves.toMatchObject({ created: false });
+    expect(ledgerRows()).toHaveLength(1);
+  });
+
+  it('stays spending in Review with no card wallet', async () => {
+    resetStore([wallet(MAYBANK, 'Maybank', 'bank', MAYBANK_APP)]);
+    await run(bankPaid());
+    expect(ledgerRows()).toEqual([]);
+    expect(openProposals()[0]).toMatchObject({
+      type: 'expense',
+      wallet_id: MAYBANK,
+      ai_reasoning: 'Looks like a credit card payment. Add the card as a wallet to count it as a transfer.',
+    });
   });
 });
 

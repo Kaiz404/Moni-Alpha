@@ -1,5 +1,6 @@
 /**
- * Alerts that move the user's own money rather than spend it: an e-wallet reload. Deterministic and
+ * Alerts that move the user's own money rather than spend it: an e-wallet reload or a credit-card
+ * bill payment. Deterministic and
  * on-device, because notification extraction only returns income or expense. The wording lives here
  * and the banks and e-wallets live in `institutions.ts`, so a new bank is one row there.
  */
@@ -8,12 +9,13 @@ import {
   institutionOfWallet,
   KNOWN_INSTITUTIONS,
   moneySideOfWallet,
+  textNames,
   type Institution,
   type InstitutionWallet,
   type MoneySide,
 } from './institutions';
 
-export type MovementKind = 'reload';
+export type MovementKind = 'reload' | 'card_bill';
 
 export type MovementWallet = InstitutionWallet & {
   currency?: string | null;
@@ -61,14 +63,20 @@ const PERSON_RAIL = /\bduitnow\b/i;
 const NOT_A_WALLET_RELOAD =
   /\b(hotlink|xpax|digi|maxis|celcom|celcomdigi|umobile|u mobile|yoodo|tunetalk|redone|prepaid|airtime|mobile (?:re-?load|top[- ]?up)|phone|card reload|rfid|refund(?:ed)?|revers(?:al|ed)|cashback|fail(?:ed)?|unsuccessful)\b|go\+/i;
 
-function institutionOfAlert(
-  alert: MovementAlert,
-  wallet: MovementWallet | undefined,
-  table: readonly Institution[],
-): Institution | null {
-  const byWallet = wallet ? institutionOfWallet(wallet, table) : null;
-  if (byWallet) return byWallet;
-  return alert.sourceApp ? institutionOfWallet({ id: '', name: null, notificationPackage: alert.sourceApp }, table) : null;
+/** Paying the card, in the words banks use. Amounts are blanked first, so a decimal can't end a phrase. */
+const CARD_BILL_WORDS = [
+  /\bcredit card (?:bill )?payment\b/i,
+  /\bpa(?:id|yment)\b[^.]*?\bto\b[^.]*?\bcredit card\b/i,
+  /\bpayment\b[^.]*?\b(?:to|for)\b[^.]*?\bcard\s+(?:ending|account|no\b|number|\d)/i,
+  /\bbayaran kad kredit\b/i,
+];
+/** Spending on the card, a reminder, or a fee mention the same words. */
+const NOT_A_CARD_BILL =
+  /\b(?:due|overdue|statement|minimum|reminder|spent|purchase|annual fee|late fee|refund(?:ed)?|revers(?:al|ed)|fail(?:ed)?|unsuccessful)\b|\bat [a-z]|\b(?:with|using|via|on) (?:your )?(?:[a-z]+ ){0,2}(?:credit )?card\b/i;
+const CARD_PAYMENT_RECEIVED = /\b(?:payment|bayaran)\b/i;
+
+function blankAmounts(text: string): string {
+  return text.replace(/\d[\d,]*\.\d{1,2}/g, '0');
 }
 
 function walletsOf(
@@ -83,6 +91,67 @@ function walletsOf(
       wallet.type !== 'credit' &&
       (wallet.currency ?? '').toUpperCase() === currency,
   );
+}
+
+function isCreditCardPayment(text: string, wallet: MovementWallet | undefined, alert: MovementAlert) {
+  const words = blankAmounts(text);
+  if (NOT_A_CARD_BILL.test(words)) return false;
+  if (CARD_BILL_WORDS.some((pattern) => pattern.test(words))) return true;
+  // Money arriving on a credit card, from its own issuer's alert ("We've received your payment").
+  return wallet?.type === 'credit' && alert.type === 'income' && CARD_PAYMENT_RECEIVED.test(words);
+}
+
+/** The card an alert pays: by last digits, then by the bank it names, then the only card there is. */
+function cardBeingPaid(
+  alert: MovementAlert,
+  cards: readonly MovementWallet[],
+  table: readonly Institution[],
+): MovementWallet | null {
+  const byHint = cards.filter(
+    (card) => card.notificationAccountHint && alert.text.includes(card.notificationAccountHint.trim()),
+  );
+  if (byHint.length === 1) return byHint[0]!;
+  const named = table.filter((row) => row.kind === 'bank' && textNames(alert.text, row));
+  const byName = cards.filter((card) => {
+    const issuer = institutionOfWallet(card, table);
+    return !!issuer && named.includes(issuer);
+  });
+  if (byName.length === 1) return byName[0]!;
+  return cards.length === 1 && byName.length === 0 && named.length <= 1 ? cards[0]! : null;
+}
+
+function cardBill(
+  alert: MovementAlert,
+  wallet: MovementWallet | undefined,
+  side: MoneySide | null,
+  wallets: readonly MovementWallet[],
+  table: readonly Institution[],
+): Movement | UntrackedMovement | null {
+  if (side === 'ewallet' || !isCreditCardPayment(alert.text, wallet, alert)) return null;
+  const cards = wallets.filter(
+    (w) => w.type === 'credit' && (w.currency ?? '').toUpperCase() === alert.currency,
+  );
+  if (cards.length === 0) {
+    return {
+      kind: 'card_bill',
+      untracked: true,
+      reason: 'Looks like a credit card payment. Add the card as a wallet to count it as a transfer.',
+      institutionId: null,
+    };
+  }
+  const to = wallet?.type === 'credit' ? wallet : cardBeingPaid(alert, cards, table);
+  const from = wallet && wallet.type !== 'credit' ? wallet : null;
+  return {
+    kind: 'card_bill',
+    fromWalletId: from?.id ?? null,
+    toWalletId: to?.id ?? null,
+    label: 'Credit card payment',
+    reason:
+      from && to
+        ? `Looks like a credit card payment from ${from.name} to ${to.name}.`
+        : 'Looks like a credit card payment. Which wallets did it move between?',
+    confidence: from && to ? 'high' : 'low',
+  };
 }
 
 function reload(
@@ -143,10 +212,13 @@ export function classifyMovement(
   table: readonly Institution[] = KNOWN_INSTITUTIONS,
 ): Movement | UntrackedMovement | null {
   const wallet = wallets.find((w) => w.id === alert.walletId);
-  const side = wallet
-    ? moneySideOfWallet(wallet, table)
-    : (institutionOfAlert(alert, wallet, table)?.kind ?? null);
-  return reload(alert, wallet, side, wallets, table);
+  const side = moneySideOfWallet(
+    wallet ?? { id: '', name: null, notificationPackage: alert.sourceApp },
+    table,
+  );
+  return (
+    cardBill(alert, wallet, side, wallets, table) ?? reload(alert, wallet, side, wallets, table)
+  );
 }
 
 export function isTrackedMovement(movement: Movement | UntrackedMovement | null): movement is Movement {

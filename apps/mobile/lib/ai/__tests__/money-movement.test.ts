@@ -144,6 +144,108 @@ describe('not a reload', () => {
   });
 });
 
+describe('a credit-card bill payment', () => {
+  const withCards: MovementWallet[] = [
+    ...wallets,
+    { id: 'visa', name: 'Maybank Visa', type: 'credit', currency: 'MYR', notificationPackage: 'com.maybank2u.life', notificationAccountHint: '1234' },
+  ];
+  const read = (
+    text: string,
+    walletId: string,
+    type: 'income' | 'expense',
+    list: MovementWallet[] = withCards,
+  ) =>
+    classifyMovement(
+      { text, walletId, sourceApp: 'com.maybank2u.life', currency: 'MYR', type },
+      list,
+    );
+
+  it.each([
+    'MAYBANK: Payment of RM500.00 to Credit Card 5412****1234 on 14/10 successful.',
+    'You have paid RM1,200.00 to your Maybank Credit Card ending 1234.',
+    'Maybank2u: Credit Card Bill Payment of RM800.00 is successful.',
+    'RM350.00 credit card payment to MAYBANK VISA ending 1234 successful.',
+    'Bayaran kad kredit RM200.00 berjaya.',
+    'Payment of RM300.00 for your card ending 1234 is successful.',
+  ])('from the bank: %s', (text) => {
+    expect(read(text, 'maybank', 'expense')).toEqual({
+      kind: 'card_bill',
+      fromWalletId: 'maybank',
+      toWalletId: 'visa',
+      label: 'Credit card payment',
+      reason: 'Looks like a credit card payment from Maybank to Maybank Visa.',
+      confidence: 'high',
+    });
+  });
+
+  it.each([
+    "We've received your credit card payment of RM500.00. Thank you.",
+    'Payment of RM500.00 has been credited to your Maybank Credit Card.',
+    'Thank you. Your payment of RM500.00 was received.',
+  ])('from the issuer: %s', (text) => {
+    expect(read(text, 'visa', 'income')).toMatchObject({
+      kind: 'card_bill',
+      fromWalletId: null,
+      toWalletId: 'visa',
+      confidence: 'low',
+    });
+  });
+
+  it.each([
+    ["MAYBANK: You've spent RM86.40 at JAYA GROCER with your credit card ending 1234.", 'visa', 'expense'],
+    ['Payment of RM30.00 to GUARDIAN with credit card ending 1234 is successful.', 'visa', 'expense'],
+    ['Credit card payment of RM45.00 at SHELL successful.', 'visa', 'expense'],
+    ['Your credit card payment of RM500.00 is due on 20/10.', 'maybank', 'expense'],
+    ['Minimum payment of RM50.00 for your credit card is due.', 'maybank', 'expense'],
+    ['Annual fee of RM150.00 charged to your credit card.', 'visa', 'expense'],
+    ['Refund of RM50.00 from LAZADA to your credit card ending 1234.', 'visa', 'income'],
+  ] as const)('not a bill: %s', (text, walletId, type) => {
+    expect(read(text, walletId, type)).toBeNull();
+  });
+
+  it('picks the card by its last digits among several', () => {
+    const two = [
+      ...withCards,
+      { id: 'cimb-mc', name: 'CIMB Mastercard', type: 'credit', currency: 'MYR', notificationAccountHint: '8821' },
+    ];
+    expect(read('Payment of RM500.00 to Credit Card ending 8821 successful.', 'maybank', 'expense', two)).toMatchObject({
+      toWalletId: 'cimb-mc',
+      confidence: 'high',
+    });
+  });
+
+  it('picks the card by the bank the alert names', () => {
+    const two = [
+      ...withCards,
+      { id: 'cimb-mc', name: 'CIMB Mastercard', type: 'credit', currency: 'MYR' },
+    ];
+    expect(read('You have paid RM500.00 to your CIMB Credit Card.', 'maybank', 'expense', two)).toMatchObject({
+      toWalletId: 'cimb-mc',
+    });
+  });
+
+  it('asks when several cards fit', () => {
+    const two = [
+      ...withCards,
+      { id: 'cimb-mc', name: 'CIMB Mastercard', type: 'credit', currency: 'MYR' },
+    ];
+    expect(read('Credit Card Bill Payment of RM800.00 is successful.', 'maybank', 'expense', two)).toMatchObject({
+      fromWalletId: 'maybank',
+      toWalletId: null,
+      confidence: 'low',
+    });
+  });
+
+  it('stays spending with no card to pay into, and says so', () => {
+    expect(read('Credit Card Bill Payment of RM800.00 is successful.', 'maybank', 'expense', wallets)).toEqual({
+      kind: 'card_bill',
+      untracked: true,
+      institutionId: null,
+      reason: 'Looks like a credit card payment. Add the card as a wallet to count it as a transfer.',
+    });
+  });
+});
+
 describe('the table', () => {
   it('reads a new bank from its one row', () => {
     const table: Institution[] = [
