@@ -66,6 +66,22 @@ jest.mock('@/lib/store', () => {
   };
 });
 
+const mockCardMounts = new Map<string, number>();
+jest.mock('@/components/review/review-card', () => {
+  const actual = jest.requireActual('@/components/review/review-card');
+  const { createElement, useEffect } = jest.requireActual('react');
+  return {
+    ...actual,
+    ReviewCard: (props: { model: { proposal: { id: string } } }) => {
+      const { id } = props.model.proposal;
+      useEffect(() => {
+        mockCardMounts.set(id, (mockCardMounts.get(id) ?? 0) + 1);
+      }, [id]);
+      return createElement(actual.ReviewCard, props);
+    },
+  };
+});
+
 type Rows = Observable<Record<string, Record<string, unknown>>>;
 const store = jest.requireMock('@/lib/store') as Record<
   'wallets$' | 'transactions$' | 'proposedTransactions$' | 'categories$',
@@ -690,14 +706,14 @@ describe('Review deck', () => {
 
   describe('the swipe', () => {
     const { BEGAN, ACTIVE, END } = State;
-    const pan = () => getByGestureTestId('review.pan');
+    const pan = (id: string) => getByGestureTestId(`review.pan.${id}`);
     const y = 400;
     /** The width the test renderer's window reports. */
     const WINDOW_WIDTH = 750;
 
-    async function swipe(startX: number, travel: number) {
+    async function swipe(startX: number, travel: number, id = 'p1') {
       await act(async () =>
-        fireGestureHandler<PanGesture>(pan(), [
+        fireGestureHandler<PanGesture>(pan(id), [
           { state: BEGAN, absoluteX: startX, absoluteY: y, translationX: 0 },
           { state: ACTIVE, absoluteX: startX, absoluteY: y, translationX: 0 },
           { state: ACTIVE, absoluteX: startX + travel, absoluteY: y, translationX: travel },
@@ -713,16 +729,105 @@ describe('Review deck', () => {
       );
     }
 
-    async function showMeasured() {
-      await show(<ReviewScreen />);
-      fireEvent(screen.getByTestId('review.card'), 'layout', {
-        nativeEvent: { layout: { width: 342, height: 330 } },
-      });
+    async function measure() {
+      const layout = { nativeEvent: { layout: { width: 342, height: 330 } } };
+      fireEvent(screen.getByTestId('review.card'), 'layout', layout);
+      const nextCard = screen.queryByTestId('review.next-card', { includeHiddenElements: true });
+      if (nextCard) fireEvent(nextCard, 'layout', layout);
       // The detector registers the enabled pan from a setImmediate.
       await act(async () => {
         await new Promise(setImmediate);
       });
     }
+
+    async function showMeasured() {
+      await show(<ReviewScreen />);
+      await measure();
+    }
+
+    describe('card after card', () => {
+      type NativeModule = Record<
+        'createGestureHandler' | 'updateGestureHandler' | 'dropGestureHandler',
+        (...args: never[]) => void
+      >;
+      const nativeModule = (
+        jest.requireMock('react-native-gesture-handler/lib/commonjs/RNGestureHandlerModule') as {
+          default: NativeModule;
+        }
+      ).default;
+      /** The handlers the native side holds, each attached to one view, and whether each is on. */
+      const native = new Map<number, boolean>();
+      const handlersOn = () => [...native].filter(([, on]) => on).map(([tag]) => tag);
+
+      beforeEach(() => {
+        native.clear();
+        mockCardMounts.clear();
+        const set = (tag: number, config: { enabled?: boolean }) => {
+          native.set(tag, config.enabled !== false);
+        };
+        jest
+          .spyOn(nativeModule, 'createGestureHandler')
+          .mockImplementation(((_name: string, tag: number, config: { enabled?: boolean }) =>
+            set(tag, config)) as never);
+        jest.spyOn(nativeModule, 'updateGestureHandler').mockImplementation(set as never);
+        jest.spyOn(nativeModule, 'dropGestureHandler').mockImplementation(((tag: number) => {
+          native.delete(tag);
+        }) as never);
+      });
+
+      afterEach(() => {
+        jest.restoreAllMocks();
+      });
+
+      it('turns on the handler already on the waiting card, so the next swipe lands, and so does the one after', async () => {
+        seed('p1');
+        seed('p2', { merchant: 'JAYA GROCER', created_at: '2020-01-01T00:00:00.000Z' });
+        seed('p3', { merchant: 'KEDAI ABC', created_at: '2019-01-01T00:00:00.000Z' });
+        seed('p4', { merchant: 'TESCO', created_at: '2018-01-01T00:00:00.000Z' });
+        await showMeasured();
+
+        const onP1 = handlersOn();
+        expect(onP1).toHaveLength(1);
+        const [onP2] = [...native.keys()].filter((tag) => tag !== onP1[0]);
+
+        await swipe(100, 250, 'p1');
+        await measure();
+
+        expect(ledger()).toEqual([expect.objectContaining({ merchant: 'GRAB' })]);
+        expect(screen.getByText('JAYA GROCER')).toBeTruthy();
+        expect(handlersOn()).toEqual([onP2]);
+
+        const [onP3] = [...native.keys()].filter((tag) => tag !== onP2);
+
+        await swipe(500, -250, 'p2');
+        await measure();
+
+        expect(store.proposedTransactions$.peek().p2).toMatchObject({ status: 'rejected' });
+        expect(screen.getByText('KEDAI ABC')).toBeTruthy();
+        expect(handlersOn()).toEqual([onP3]);
+
+        await swipe(100, 250, 'p3');
+        await measure();
+
+        expect(ledger()).toEqual([
+          expect.objectContaining({ merchant: 'GRAB' }),
+          expect.objectContaining({ merchant: 'KEDAI ABC' }),
+        ]);
+      });
+
+      it('keeps a card mounted once from under to top', async () => {
+        seed('p1');
+        seed('p2', { merchant: 'JAYA GROCER', created_at: '2020-01-01T00:00:00.000Z' });
+        seed('p3', { merchant: 'KEDAI ABC', created_at: '2019-01-01T00:00:00.000Z' });
+        await showMeasured();
+
+        await swipe(100, 250, 'p1');
+        await measure();
+
+        expect(screen.getByText('JAYA GROCER')).toBeTruthy();
+        expect(Object.fromEntries(mockCardMounts)).toEqual({ p1: 1, p2: 1, p3: 1 });
+      });
+    });
 
     it('a short drag from near the right edge approves what it highlighted', async () => {
       seed('p1');

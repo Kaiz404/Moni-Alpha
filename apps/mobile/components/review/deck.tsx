@@ -12,7 +12,12 @@ import {
   type ReactNode,
 } from 'react';
 import { ScrollView, View, useWindowDimensions, type LayoutChangeEvent } from 'react-native';
-import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
+import {
+  Gesture,
+  GestureDetector,
+  GestureHandlerRootView,
+  type PanGesture,
+} from 'react-native-gesture-handler';
 import Animated, {
   ReduceMotion,
   useAnimatedStyle,
@@ -344,6 +349,8 @@ function underReach(
 /**
  * One card of the deck, under a key of its own, so the card underneath is the same mounted card
  * when it comes on top: `topId` flips with the x and y reset, so nothing shows between the two.
+ * Each slot owns its pan: mounting a detector writes a new handler tag onto the gesture it holds,
+ * so a gesture shared between detectors sends the next card's enabled config to the wrong view.
  */
 function DeckSlot({
   id,
@@ -353,7 +360,8 @@ function DeckSlot({
   y,
   arrive,
   width,
-  gesture,
+  makePan,
+  dragEnabled,
   entering,
   onHeight,
   lift,
@@ -368,7 +376,9 @@ function DeckSlot({
   /** 1 while a restored card is on its way home, so the card below settles as it lands. */
   arrive: SharedValue<number>;
   width: number;
-  gesture: ComponentProps<typeof GestureDetector>['gesture'];
+  makePan: (id: string, enabled: boolean) => PanGesture;
+  /** Whether the card on top can be dragged right now. */
+  dragEnabled: boolean;
   entering: ComponentProps<typeof Animated.View>['entering'];
   onHeight: (id: string, height: number) => void;
   /** Top card only. Beside the card, not around it, so the card keeps its place when it comes on top. */
@@ -402,6 +412,8 @@ function DeckSlot({
         : Math.min(1, underReach(coveredBy, topId, x, y, arrive, width) / UNDER_REVEAL_REACH),
   }));
   const top = coveredBy === null;
+  const enabled = top && dragEnabled;
+  const pan = useMemo(() => makePan(id, enabled), [makePan, id, enabled]);
   return (
     <View
       pointerEvents={top ? 'box-none' : 'none'}
@@ -410,7 +422,7 @@ function DeckSlot({
       className="absolute inset-y-0 justify-center"
       style={{ left: CARD_INSET, width, paddingBottom: LATER_ROOM }}
     >
-      <GestureDetector gesture={gesture}>
+      <GestureDetector gesture={pan}>
         <Animated.View
           testID={tid('review', top ? 'card' : 'next-card')}
           style={[{ transformOrigin: '50% 90%' }, motion]}
@@ -881,13 +893,12 @@ export function ReviewDeck({ session }: { session: ReviewSession }) {
   const screenWidth = screen.width;
   const screenHeight = screen.height;
   const dragEnabled = !!top && canDrag(card) && cardWidth > 0 && cardHeight > 0;
-  const noPan = useMemo(() => Gesture.Pan().enabled(false), []);
-  const pan = useMemo(
-    () =>
+  const makePan = useCallback(
+    (id: string, enabled: boolean) =>
       Gesture.Pan()
-        .enabled(dragEnabled)
+        .enabled(enabled)
         .minDistance(6)
-        .withTestId('review.pan')
+        .withTestId(`review.pan.${id}`)
         .onBegin((e) => {
           room.set(
             swipeRoom(
@@ -933,18 +944,19 @@ export function ReviewDeck({ session }: { session: ReviewSession }) {
             canApprove,
           });
           selection.set(releasedSelection(current, final));
+          // First, so the fly-out's landing finds the decision it belongs to.
+          scheduleOnRN(onRelease, final);
           if (final === 'approve' || final === 'notMine' || final === 'later') {
             flyOut(final, x, y, cardWidth, deckHeight, e.velocityX, e.velocityY, onFlown);
           } else {
             x.set(withSpring(0, { ...springs.throw, velocity: e.velocityX }));
             y.set(withSpring(0, { ...springs.throw, velocity: e.velocityY }));
           }
-          scheduleOnRN(onRelease, final);
         })
         .onFinalize(() => {
           held.set(false);
         }),
-    [dragEnabled, canApprove, cardWidth, cardHeight, deckHeight, screenWidth, screenHeight, x, y, startX, startY, room, selection, held, onIntent, onRelease, onFlown],
+    [canApprove, cardWidth, cardHeight, deckHeight, screenWidth, screenHeight, x, y, startX, startY, room, selection, held, onIntent, onRelease, onFlown],
   );
 
   const onLayout = (event: LayoutChangeEvent) => {
@@ -1132,7 +1144,8 @@ export function ReviewDeck({ session }: { session: ReviewSession }) {
                 y={y}
                 arrive={arrive}
                 width={cardWidth}
-                gesture={noPan}
+                makePan={makePan}
+                dragEnabled={dragEnabled}
                 entering={undefined}
                 onHeight={onHeight}
               >
@@ -1155,7 +1168,8 @@ export function ReviewDeck({ session }: { session: ReviewSession }) {
                 y={y}
                 arrive={arrive}
                 width={cardWidth}
-                gesture={pan}
+                makePan={makePan}
+                dragEnabled={dragEnabled}
                 entering={
                   arrival?.id === top.id
                     ? arriveFrom(arrival.side, cardWidth, area.height, reduceMotion)
