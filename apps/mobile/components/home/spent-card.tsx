@@ -7,7 +7,7 @@ import { PaceChart } from '@/components/charts/pace-chart';
 import { monthFromKey, monthName } from '@/components/charts/pace-geometry';
 import { Text } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
-import { currencySymbol, formatMoney } from '@/lib/finance/format-money';
+import { currencySymbol } from '@/lib/finance/format-money';
 import { tid } from '@/lib/test-ids';
 
 import type { BudgetMonth } from '@/lib/finance/budget-month';
@@ -20,7 +20,7 @@ const MODES = [
   { value: 'daily', label: 'Daily' },
 ] as const;
 
-/** "Spent in October": spent of budget, what's left, and the Pace / Daily chart. */
+/** "Spent in October": the Pace / Daily chart, whose callout carries the numbers, then what's left. */
 export function SpentCard({
   month,
   currency,
@@ -58,31 +58,6 @@ export function SpentCard({
           onChange={setMode}
         />
       </View>
-      <View>
-        <Text
-          testID={tid('home', 'spent', 'amount')}
-          className={`text-[32px] leading-9 font-display-bold ${empty ? 'text-muted' : 'text-foreground'}`}
-          style={{ fontVariant: ['tabular-nums'] }}
-        >
-          {formatMoney(month.spentMinor, currency)}
-          {month.budgetMinor !== null || empty ? (
-            <Text
-              className={`text-[17px] leading-[22px] font-display-semibold ${empty ? 'text-muted' : 'text-ink-2'}`}
-            >
-              {` of ${month.budgetMinor === null ? `${currencySymbol(currency)}–` : formatMoney(month.budgetMinor, currency, { whole: true })}`}
-            </Text>
-          ) : null}
-        </Text>
-        {line ? (
-          <Text
-            testID={tid('home', 'spent', 'left')}
-            variant="meta"
-            className="text-ink-2"
-          >
-            {line}
-          </Text>
-        ) : null}
-      </View>
       {empty ? (
         <EmptyChart
           mode={mode}
@@ -101,6 +76,15 @@ export function SpentCard({
           safePerDay={month.left && month.left.perDayMinor > 0 ? month.left.perDayMinor : null}
         />
       )}
+      {line ? (
+        <Text
+          testID={tid('home', 'spent', 'left')}
+          variant="meta"
+          className="text-ink-2"
+        >
+          {line}
+        </Text>
+      ) : null}
     </View>
   );
 }

@@ -302,9 +302,8 @@ function HomeSkeleton() {
     >
       <View className="h-3 w-24 rounded-full bg-sand-light" />
       <View className="h-12 w-56 rounded-full bg-sand-light" />
-      <View className="h-[300px] rounded-card bg-card p-[18px]">
+      <View className="h-[270px] rounded-card bg-card p-[18px]">
         <View className="h-3 w-32 rounded-full bg-sand-light" />
-        <View className="mt-4 h-8 w-44 rounded-full bg-sand-light" />
         <View className="mt-4 flex-1 rounded-tile bg-sand-light" />
       </View>
       <View className="h-12 rounded-full bg-card" />

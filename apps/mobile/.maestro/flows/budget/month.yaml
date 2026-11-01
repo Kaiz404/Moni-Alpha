@@ -22,7 +22,7 @@ tags:
 - assertVisible:
     id: budget.pace-chart
 - assertVisible:
-    id: budget.spent
+    id: budget.chart.callout
 - assertNotVisible: Insights
 - takeScreenshot: b1-l2-pair
 - runFlow:

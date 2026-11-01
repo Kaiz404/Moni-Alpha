@@ -13,7 +13,7 @@ tags:
 - assertVisible:
     id: home.net-worth.amount
 - assertVisible:
-    id: home.spent.amount
+    id: home.chart.callout
 - assertVisible:
     id: home.chart.pace
 - assertVisible:
