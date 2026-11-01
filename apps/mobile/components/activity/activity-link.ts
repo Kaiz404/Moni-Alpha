@@ -1,6 +1,6 @@
 import { formatDate } from '@/lib/dates/day-label';
 import { parseLocalDateInput, toLocalDateInput } from '@/lib/dates/local-date-input';
-import { monthShort, type MonthKey } from '@/lib/finance/budget-month';
+import { isMonthKey, monthShort, type MonthKey } from '@/lib/finance/budget-month';
 import type { FinanceTransaction } from '@/lib/finance/types';
 
 /** What a link from another page narrows Activity to, shown as one clearable chip before the type chips. */
@@ -44,7 +44,7 @@ export function readActivityLink(
   chartMonth: MonthKey,
 ): ActivityLink | null {
   const day = params.day && parseLocalDateInput(params.day) ? params.day : null;
-  const month = params.month && /^\d{4}-\d{2}$/.test(params.month) ? params.month : null;
+  const month = isMonthKey(params.month) ? params.month : null;
   if (!params.q && !params.placeId && !params.categoryId && !day) return null;
   const chartDay = day?.startsWith(`${chartMonth}-`) ? day : null;
   const scope: ActivityScope | null = params.placeId

@@ -36,6 +36,7 @@ import {
   cumulativeSpend,
   dailySpend,
   daysInMonth,
+  isMonthKey,
   monthKey,
   monthName,
   monthSpend,
@@ -74,7 +75,7 @@ export default function CategoryBudgetScreen() {
   const tokens = useThemeTokens();
   const data = useBudgetData();
   const { currency, now } = data;
-  const month = params.month ?? monthKey(now);
+  const month = isMonthKey(params.month) ? params.month : monthKey(now);
   const isCurrent = month === monthKey(now);
   const category = data.categories.find(
     (item) => item.id === params.categoryId,

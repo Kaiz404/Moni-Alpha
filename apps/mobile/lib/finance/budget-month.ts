@@ -69,6 +69,11 @@ export type BudgetMonthInput = {
 
 const pad = (value: number) => String(value).padStart(2, '0');
 
+/** For a month that arrived as a route param. */
+export function isMonthKey(value: string | undefined): value is MonthKey {
+  return value !== undefined && /^\d{4}-(0[1-9]|1[0-2])$/.test(value);
+}
+
 export function monthKey(date: Date): MonthKey {
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}`;
 }
