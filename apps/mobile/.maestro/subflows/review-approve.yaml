@@ -1,0 +1,7 @@
+# Swipes the top Review card right across the screen, the way a user approves it.
+appId: com.anonymous.moni.e2e
+---
+- swipe:
+    start: 20%, 50%
+    end: 95%, 50%
+    duration: 400

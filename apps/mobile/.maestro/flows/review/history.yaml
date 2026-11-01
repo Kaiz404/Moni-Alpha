@@ -16,8 +16,7 @@ tags:
       id: review.card
     timeout: 10000
 
-- tapOn:
-    id: review.not-mine
+- runFlow: ../../subflows/review-not-mine.yaml
 - extendedWaitUntil:
     visible: 1 not mine
     timeout: 3000
@@ -52,13 +51,11 @@ tags:
           when:
             visible: Needs a wallet
           commands:
-            - tapOn:
-                id: review.approve
+            - runFlow: ../../subflows/review-approve.yaml
             - tapOn:
                 id: 'sheet\.option\..*'
                 index: 0
-      - tapOn:
-          id: review.approve
+      - runFlow: ../../subflows/review-approve.yaml
       - extendedWaitUntil:
           visible: 'Approved .*'
           timeout: 3000

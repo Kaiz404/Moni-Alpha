@@ -1,8 +1,9 @@
 import type { MinorAmount, ProposedTransaction, TransactionType } from '@repo/types';
-import { View } from 'react-native';
+import { memo } from 'react';
+import { View, type AccessibilityActionEvent } from 'react-native';
 
 import { PickerChip, type ChipLook } from '@/components/review/picker-chip';
-import { ResultPill, SourcePill } from '@/components/review/result-pill';
+import { SourcePill } from '@/components/review/source-pill';
 import { TypeChip } from '@/components/review/type-chip';
 import { IconSymbol, type IconSymbolName } from '@/components/ui/icon-symbol';
 import { InPlaceField, InPlaceGroup } from '@/components/ui/in-place-field';
@@ -10,8 +11,10 @@ import { Press } from '@/components/ui/press';
 import { Text } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { formatSignedMoney } from '@/lib/finance/format-money';
-import type { BudgetLine } from '@/lib/proposals/budget-line';
-import type { EditField as EditFieldName } from '@/lib/proposals/review-card-state';
+import type {
+  EditField as EditFieldName,
+  ReviewDecision,
+} from '@/lib/proposals/review-card-state';
 import type { ReviewStatus } from '@/lib/proposals/review-status';
 import { tid } from '@/lib/test-ids';
 
@@ -33,8 +36,11 @@ export type ReviewCardModel = {
   amountMinor: MinorAmount;
   category: ChipLook | null;
   wallet: WalletLook | null;
+  /** Approve has a wallet to write to. Without one it asks for one instead. */
+  canApprove: boolean;
   /** Transfers only: the wallet the money moves to. */
   destination: WalletLook | null | undefined;
+  /** Why this card might be the same money as another: the duplicate or pairing it found. */
   evidence: string | null;
   /** What the user can do about a likely duplicate, or a pair Moni already counted once. */
   pair: {
@@ -43,7 +49,6 @@ export type ReviewCardModel = {
     hint: string | null;
   } | null;
   similar: boolean | null;
-  budget: BudgetLine | null;
 };
 
 export type ReviewCardHandlers = {
@@ -57,6 +62,7 @@ export type ReviewCardHandlers = {
   onPickDestination: () => void;
   onToggleSimilar: () => void;
   onPair: () => void;
+  onDecide: (decision: ReviewDecision) => void;
 };
 
 const SOURCE: Record<
@@ -73,14 +79,19 @@ function moneyDirection(type: TransactionType | null) {
 }
 
 /** The `XA-Review` card body. The deck owns the gesture; this only draws and edits. */
-export function ReviewCard({
+export const ReviewCard = memo(function ReviewCard({
   model,
   editing,
   handlers,
+  canDecide,
+  maxHeight,
 }: {
   model: ReviewCardModel;
   editing: EditFieldName | null;
   handlers: ReviewCardHandlers;
+  /** Off while a field edits or a decision saves, and on the card waiting underneath. */
+  canDecide: boolean;
+  maxHeight: number;
 }) {
   const tokens = useThemeTokens();
   const { proposal } = model;
@@ -91,13 +102,35 @@ export function ReviewCard({
     proposal.currency,
   );
   const transfer = model.type === 'transfer';
+  // A screen reader can't swipe, so the swipe's three decisions are this row's actions.
+  const decisions: { name: ReviewDecision; label: string }[] = canDecide
+    ? [
+        { name: 'approve', label: model.canApprove ? `Approve ${amountText}` : 'Pick wallet' },
+        { name: 'notMine', label: 'Not mine. Nothing gets added' },
+        { name: 'later', label: 'Later. Save it for later' },
+      ]
+    : [];
+  const onDecisionAction = ({ nativeEvent }: AccessibilityActionEvent) => {
+    const decision = decisions.find((d) => d.name === nativeEvent.actionName);
+    if (decision) handlers.onDecide(decision.name);
+  };
 
   return (
     <View
-      className="flex-1 gap-2.5 overflow-hidden rounded-card bg-card p-[18px]"
-      accessibilityLabel={`${model.merchant}, ${amountText}, from ${model.sourceLabel}`}
+      className="gap-2.5 overflow-hidden rounded-card bg-card p-[18px]"
+      style={{ maxHeight }}
     >
-      <View className="flex-row items-center gap-2.5">
+      <View
+        testID={tid('review', 'summary')}
+        className="flex-row items-center gap-2.5"
+        accessible
+        accessibilityLabel={[
+          `${model.merchant}, ${amountText}, from ${model.sourceLabel}, ${model.time}`,
+          ...(model.status ? [model.status.label] : []),
+        ].join('. ')}
+        accessibilityActions={decisions}
+        onAccessibilityAction={onDecisionAction}
+      >
         <View
           className={`h-9 w-9 items-center justify-center rounded-[12px] ${source.tint}`}
         >
@@ -244,20 +277,13 @@ export function ReviewCard({
       </View>
 
       {model.evidence ? (
-        <View className="flex-row gap-2">
-          <IconSymbol
-            name="creation"
-            size={16}
-            color={tokens.deepMint}
-          />
-          <Text
-            variant="meta"
-            className="min-w-0 flex-1 text-ink-2"
-            numberOfLines={3}
-          >
-            {model.evidence}
-          </Text>
-        </View>
+        <Text
+          variant="meta"
+          className="text-ink-2"
+          numberOfLines={3}
+        >
+          {model.evidence}
+        </Text>
       ) : null}
 
       {model.pair ? (
@@ -323,8 +349,6 @@ export function ReviewCard({
           </Text>
         </Press>
       ) : null}
-
-      {model.budget ? <ResultPill line={model.budget} /> : null}
     </View>
   );
-}
+});

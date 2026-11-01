@@ -6,7 +6,7 @@ export type EditField = 'merchant' | 'amount';
 
 export type SwipeSide = 'right' | 'left' | 'down';
 
-/** The way each decision sends the card, by swipe or by button, and the way Undo brings it back. */
+/** The way each decision sends the card, by swipe or screen reader action, and the way Undo brings it back. */
 export const DECISION_SIDE = {
   approve: 'right',
   notMine: 'left',
@@ -14,10 +14,27 @@ export const DECISION_SIDE = {
 } as const satisfies Record<ReviewDecision, SwipeSide>;
 
 /** The finger's offset in px, against the card's own size. */
-export type SwipeOffset = { dx: number; dy: number; width: number; height: number };
+export type SwipeTravel = { dx: number; dy: number; width: number; height: number };
 
-/** The offset at release, with the velocity in px/s. */
-export type Swipe = SwipeOffset & {
+/** How far the finger can go each way, from where it came down to the screen's edge. */
+export type SwipeRoom = Record<SwipeSide, number>;
+
+/** Before any touch, and for a decision no finger made. */
+export const OPEN_ROOM: SwipeRoom = { right: Infinity, left: Infinity, down: Infinity };
+
+export function swipeRoom(
+  start: { x: number; y: number },
+  screen: { width: number; height: number },
+): SwipeRoom {
+  'worklet';
+  return { right: screen.width - start.x, left: start.x, down: screen.height - start.y };
+}
+
+/** A frame of the drag. */
+export type SwipeOffset = SwipeTravel & { room: SwipeRoom };
+
+/** The travel at release, with the velocity in px/s. */
+export type Swipe = SwipeTravel & {
   vx: number;
   vy: number;
   /** Approve needs a wallet; without one a right swipe asks for it instead. */
@@ -35,10 +52,18 @@ export const SWIPE_LEAN_PX = 16;
 export const SWIPE_UNLEAN_PX = 8;
 /** Near a diagonal the axes sit within tremor of each other, so the other side must clearly lead. */
 export const SWIPE_SWITCH_MARGIN_PX = 24;
-/** Share of the card an option takes to engage. Was 40% of a projection that velocity inflated. */
+/** The margin's share of the engage distance, so it can't outweigh a short engage. */
+export const SWIPE_SWITCH_SHARE = 0.16;
+/** Share of the card an option takes to engage, when the finger has the room to go that far. */
 export const SWIPE_ENGAGE_SHARE = 0.45;
-/** An engaged option holds down to here: a band of about 34 px on a phone, wider than tremor. */
-export const SWIPE_RELEASE_SHARE = 0.35;
+/** Share of the room left to the screen's edge, so a finger starting near that edge still gets there. */
+export const SWIPE_ROOM_SHARE = 0.6;
+/** A twitch beside the edge never engages. Under the 24 between card and edge, so it stays reachable. */
+export const SWIPE_ENGAGE_FLOOR_PX = 20;
+/** An engaged option holds down to this share of its engage distance: 35% of the card at full distance. */
+export const SWIPE_RELEASE_RATIO = 7 / 9;
+/** Wider than tremor: the narrowest the release band or the switch margin ever gets. */
+export const SWIPE_MIN_BAND_PX = 12;
 /** Px/s. Under Shuffle's 1100 so a thumb flick counts; the old projection committed near 270. */
 export const FLING_MIN_SPEED = 800;
 /** A fling still has to move the card, so a twitch during a tap never decides anything. */
@@ -49,13 +74,23 @@ function travelToward(side: SwipeSide, dx: number, dy: number): number {
   return side === 'right' ? dx : side === 'left' ? -dx : dy;
 }
 
+/** The finger's travel that engages this side: 45% of the card, or 60% of the room when that is less. */
+export function swipeEngageAt(side: SwipeSide, offset: SwipeOffset): number {
+  'worklet';
+  const size = side === 'down' ? offset.height : offset.width;
+  return Math.max(
+    SWIPE_ENGAGE_FLOOR_PX,
+    Math.min(size * SWIPE_ENGAGE_SHARE, offset.room[side] * SWIPE_ROOM_SHARE),
+  );
+}
+
 /**
  * The option under the finger, one frame on from `current`. Distance alone decides: velocity
  * swings every frame and belongs to the release. Returns `current` itself when nothing changed.
  */
 export function nextSelection(current: SwipeSelection, offset: SwipeOffset): SwipeSelection {
   'worklet';
-  const { dx, dy, width, height } = offset;
+  const { dx, dy } = offset;
   const sideways = Math.abs(dx) >= dy;
   const lead: SwipeSide = sideways ? (dx >= 0 ? 'right' : 'left') : 'down';
   const leadTravel = sideways ? Math.abs(dx) : dy;
@@ -63,7 +98,11 @@ export function nextSelection(current: SwipeSelection, offset: SwipeOffset): Swi
   let side = lead;
   if (current) {
     const held = travelToward(current.side, dx, dy);
-    if (lead === current.side || leadTravel <= held + SWIPE_SWITCH_MARGIN_PX) {
+    const margin = Math.min(
+      SWIPE_SWITCH_MARGIN_PX,
+      Math.max(SWIPE_MIN_BAND_PX, swipeEngageAt(current.side, offset) * SWIPE_SWITCH_SHARE),
+    );
+    if (lead === current.side || leadTravel <= held + margin) {
       if (held < SWIPE_UNLEAN_PX) return null;
       side = current.side;
     }
@@ -71,10 +110,12 @@ export function nextSelection(current: SwipeSelection, offset: SwipeOffset): Swi
     return null;
   }
 
-  const size = side === 'down' ? height : width;
+  const engageAt = swipeEngageAt(side, offset);
   const holding = current?.side === side && current.engaged;
-  const share = holding ? SWIPE_RELEASE_SHARE : SWIPE_ENGAGE_SHARE;
-  const engaged = travelToward(side, dx, dy) >= size * share;
+  const line = holding
+    ? Math.min(engageAt * SWIPE_RELEASE_RATIO, engageAt - SWIPE_MIN_BAND_PX)
+    : engageAt;
+  const engaged = travelToward(side, dx, dy) >= line;
   return current?.side === side && current.engaged === engaged ? current : { side, engaged };
 }
 
@@ -82,9 +123,8 @@ export function nextSelection(current: SwipeSelection, offset: SwipeOffset): Swi
 export function selectionReach(selection: SwipeSelection, offset: SwipeOffset): number {
   'worklet';
   if (!selection) return 0;
-  const { dx, dy, width, height } = offset;
-  const size = selection.side === 'down' ? height : width;
-  const reach = travelToward(selection.side, dx, dy) / (size * SWIPE_ENGAGE_SHARE);
+  const reach =
+    travelToward(selection.side, offset.dx, offset.dy) / swipeEngageAt(selection.side, offset);
   return Math.min(1, Math.max(0, reach));
 }
 
@@ -145,7 +185,7 @@ export type ReviewCardState =
 export type ReviewCardEvent =
   | { type: 'drag'; intent: SwipeIntent }
   | { type: 'release'; intent: SwipeIntent }
-  | { type: 'press'; decision: ReviewDecision; canApprove: boolean }
+  | { type: 'decide'; decision: ReviewDecision; canApprove: boolean }
   | { type: 'edit'; field: EditField }
   | { type: 'endEdit' }
   | { type: 'result'; result: ReviewResult }
@@ -200,7 +240,7 @@ export function reviewCardReducer(
       if (intent === 'needsWallet') return { kind: 'needsInput', field: 'wallet' };
       return { kind: 'saving', decision: intent };
     }
-    case 'press':
+    case 'decide':
       return canDrag(state) ? decide(event.decision, event.canApprove) : state;
     case 'edit':
       return state.kind === 'saving' ? state : { kind: 'editing', field: event.field };

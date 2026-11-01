@@ -1,9 +1,9 @@
-# R1 lanes 8 and 10: the buttons clear the queue and the deck ends on All caught up.
+# R1 lanes 8 and 10: swipes clear the queue and the deck ends on All caught up.
 # Needs the full seed's pending captures, one of them with no wallet
 # (the Moni chat parking capture in the board sample).
-# Run: scripts/device/run-flows.sh .maestro/flows/review/buttons.yaml
+# Run: scripts/device/run-flows.sh .maestro/flows/review/decide-all.yaml
 appId: com.anonymous.moni.e2e
-name: R1 Review deck buttons
+name: R1 Review deck decide all
 tags:
   - r1
   - seed-full
@@ -14,15 +14,11 @@ tags:
     visible:
       id: review.card
     timeout: 10000
-- assertVisible:
-    id: review.not-mine
-- assertVisible:
-    id: review.later
-- assertVisible:
-    id: review.approve
+- assertVisible: Not mine
+- assertVisible: Later
+- assertVisible: Approve
 
-- tapOn:
-    id: review.not-mine
+- runFlow: ../../subflows/review-not-mine.yaml
 - extendedWaitUntil:
     visible: 1 not mine
     timeout: 3000
@@ -38,16 +34,15 @@ tags:
           when:
             visible: Needs a wallet
           commands:
-            - tapOn:
-                id: review.approve
+            - assertVisible: Pick wallet
+            - runFlow: ../../subflows/review-approve.yaml
             - assertVisible: Which wallet?
             - takeScreenshot: r1-l8-needs-wallet
             - tapOn:
                 id: 'sheet\.option\..*'
                 index: 0
             - assertNotVisible: Needs a wallet
-      - tapOn:
-          id: review.approve
+      - runFlow: ../../subflows/review-approve.yaml
       - extendedWaitUntil:
           visible: 'Approved .*'
           timeout: 3000

@@ -2,11 +2,13 @@ import {
   armedDecision,
   idle,
   nextSelection,
+  OPEN_ROOM,
   releasedSelection,
   releaseIntent,
   reviewCardReducer,
   selectionIntent,
   selectionReach,
+  swipeRoom,
   type ReviewCardEvent,
   type ReviewCardState,
   type SwipeIntent,
@@ -15,15 +17,16 @@ import {
 
 const W = 342;
 const H = 480;
+const PHONE = { width: 390, height: 844 };
 
 const run = (events: ReviewCardEvent[], from: ReviewCardState = idle) =>
   events.reduce(reviewCardReducer, from);
 
 /** `right` leans, `right!` is engaged, `-` is nothing. Each frame starts from the one before. */
-function walk(path: [number, number][]): string[] {
+function walk(path: [number, number][], room = OPEN_ROOM): string[] {
   let selection: SwipeSelection = null;
   return path.map(([dx, dy]) => {
-    selection = nextSelection(selection, { dx, dy, width: W, height: H });
+    selection = nextSelection(selection, { dx, dy, width: W, height: H, room });
     return selection ? `${selection.side}${selection.engaged ? '!' : ''}` : '-';
   });
 }
@@ -100,7 +103,7 @@ describe('which option a drag selects', () => {
   });
 
   it('hands back the same selection while nothing changes, so the UI thread does no work', () => {
-    const offset = { dx: 160, dy: 0, width: W, height: H };
+    const offset = { dx: 160, dy: 0, width: W, height: H, room: OPEN_ROOM };
     const engaged = nextSelection(null, offset);
     expect(nextSelection(engaged, { ...offset, dx: 170 })).toBe(engaged);
   });
@@ -110,7 +113,7 @@ describe('which option a drag selects', () => {
     let last: SwipeIntent = null;
     const sent: SwipeIntent[] = [];
     for (const dx of [150, 155, 150, 156, 148, 158, 151, 157]) {
-      selection = nextSelection(selection, { dx, dy: 0, width: W, height: H });
+      selection = nextSelection(selection, { dx, dy: 0, width: W, height: H, room: OPEN_ROOM });
       const now = selectionIntent(selection, true);
       if (now !== last) sent.push(now);
       last = now;
@@ -120,7 +123,7 @@ describe('which option a drag selects', () => {
   });
 
   it('a right swipe without a wallet selects the ask, which arms nothing', () => {
-    const selection = nextSelection(null, { dx: 200, dy: 0, width: W, height: H });
+    const selection = nextSelection(null, { dx: 200, dy: 0, width: W, height: H, room: OPEN_ROOM });
     const intent = selectionIntent(selection, false);
     expect(intent).toBe('needsWallet');
     expect(run([{ type: 'drag', intent }])).toEqual({ kind: 'dragging' });
@@ -128,12 +131,145 @@ describe('which option a drag selects', () => {
   });
 
   it('reach follows the card to the engage line, and only for its own side', () => {
-    const offset = { width: W, height: H };
+    const offset = { width: W, height: H, room: OPEN_ROOM };
     const right: SwipeSelection = { side: 'right', engaged: false };
     expect(selectionReach(right, { ...offset, dx: 76.95, dy: 0 })).toBeCloseTo(0.5);
     expect(selectionReach(right, { ...offset, dx: 400, dy: 0 })).toBe(1);
     expect(selectionReach(right, { ...offset, dx: -40, dy: 0 })).toBe(0);
     expect(selectionReach(null, { ...offset, dx: 100, dy: 0 })).toBe(0);
+  });
+});
+
+describe('where the finger starts', () => {
+  const from = (x: number, y = 400) => swipeRoom({ x, y }, PHONE);
+
+  it('measures the room from the touch to each screen edge', () => {
+    expect(from(340, 600)).toEqual({ right: 50, left: 340, down: 244 });
+  });
+
+  it.each<[string, number, number, [number, number][], string[]]>([
+    [
+      'a start at the left needs the normal 45% of the card',
+      40,
+      400,
+      [[150, 0], [155, 0]],
+      ['right', 'right!'],
+    ],
+    [
+      'a start at the centre needs 60% of the 195 to the edge',
+      195,
+      400,
+      [[110, 0], [118, 0]],
+      ['right', 'right!'],
+    ],
+    [
+      'a start near the right edge engages Approve with the 30 it needs',
+      340,
+      400,
+      [[20, 0], [29, 0], [31, 0]],
+      ['right', 'right', 'right!'],
+    ],
+    [
+      'the last px of the card still reaches Approve, on the floor of 20',
+      366,
+      400,
+      [[17, 0], [19, 0], [21, 0]],
+      ['right', 'right', 'right!'],
+    ],
+    [
+      'a twitch beside the edge engages nothing',
+      366,
+      400,
+      [[8, 0], [14, 0], [8, 0]],
+      ['-', '-', '-'],
+    ],
+    [
+      'a start near the left edge engages Not mine the same way',
+      50,
+      400,
+      [[-20, 0], [-29, 0], [-31, 0]],
+      ['left', 'left', 'left!'],
+    ],
+    [
+      'a start near the bottom engages Later with 60% of the 144 under it',
+      195,
+      700,
+      [[0, 80], [0, 90]],
+      ['down', 'down!'],
+    ],
+    [
+      'a start high on the screen needs the normal 45% of the card to Later',
+      195,
+      200,
+      [[0, 210], [0, 220]],
+      ['down', 'down!'],
+    ],
+    [
+      'jitter on the short engage line engages once',
+      340,
+      400,
+      [[29, 0], [31, 0], [29, 0], [32, 0], [25, 0], [31, 0]],
+      ['right', 'right!', 'right!', 'right!', 'right!', 'right!'],
+    ],
+    [
+      'the short release band is still 12 wide, so jitter on it lets go once',
+      340,
+      400,
+      [[31, 0], [19, 0], [17, 0], [19, 0], [17, 0], [29, 0], [31, 0]],
+      ['right!', 'right!', 'right', 'right', 'right', 'right', 'right!'],
+    ],
+    [
+      'the switch margin shrinks with the engage distance: right to down after 12',
+      340,
+      400,
+      [[31, 0], [31, 40], [31, 44]],
+      ['right!', 'right!', 'down'],
+    ],
+  ])('%s', (_name, x, y, path, expected) => {
+    expect(walk(path, from(x, y))).toEqual(expected);
+  });
+
+  it('a highlighted option near the edge is the one the release commits', () => {
+    const selection = nextSelection(null, {
+      dx: 31,
+      dy: 0,
+      width: W,
+      height: H,
+      room: from(340),
+    });
+    expect(selection).toEqual({ side: 'right', engaged: true });
+    expect(
+      releaseIntent(selection, { dx: 31, dy: 0, vx: 0, vy: 0, width: W, height: H, canApprove: true }),
+    ).toBe('approve');
+  });
+
+  it('a fling from the left still commits before anything engages', () => {
+    const selection = nextSelection(null, {
+      dx: 60,
+      dy: 0,
+      width: W,
+      height: H,
+      room: from(40),
+    });
+    expect(selection).toEqual({ side: 'right', engaged: false });
+    expect(
+      releaseIntent(selection, {
+        dx: 60,
+        dy: 0,
+        vx: 1500,
+        vy: 0,
+        width: W,
+        height: H,
+        canApprove: true,
+      }),
+    ).toBe('approve');
+  });
+
+  it('reach fills to the short engage line, so the cue lights when the option does', () => {
+    const offset = { dy: 0, width: W, height: H, room: from(340) };
+    const right: SwipeSelection = { side: 'right', engaged: false };
+    expect(selectionReach(right, { ...offset, dx: 15 })).toBe(0.5);
+    expect(selectionReach(right, { ...offset, dx: 30 })).toBe(1);
   });
 });
 
@@ -201,12 +337,12 @@ describe('what the release commits', () => {
   });
 });
 
-describe('buttons and results', () => {
+describe('decisions and results', () => {
   it('Approve without a wallet asks for one; after the pick it saves', () => {
-    const asked = run([{ type: 'press', decision: 'approve', canApprove: false }]);
+    const asked = run([{ type: 'decide', decision: 'approve', canApprove: false }]);
     expect(asked).toEqual({ kind: 'needsInput', field: 'wallet' });
     expect(
-      run([{ type: 'resolved' }, { type: 'press', decision: 'approve', canApprove: true }], asked),
+      run([{ type: 'resolved' }, { type: 'decide', decision: 'approve', canApprove: true }], asked),
     ).toEqual({ kind: 'saving', decision: 'approve' });
   });
 
