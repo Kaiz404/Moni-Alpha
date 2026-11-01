@@ -5,6 +5,7 @@ import { View } from 'react-native';
 
 import { CalendarHeat } from '@/components/budget/calendar-heat';
 import { MerchantList } from '@/components/budget/merchant-list';
+import { openSpending } from '@/components/budget/open-spending';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { ListCard } from '@/components/ui/list-card';
 import { Press } from '@/components/ui/press';
@@ -219,12 +220,12 @@ export function CalendarView({
               {rows.length > DAY_ROWS ? (
                 <Press
                   testID={tid('budget', 'day', 'all')}
-                  accessibilityLabel={`All ${rows.length} on ${weekday} ${selected} ${short}. Open in Activity`}
+                  accessibilityLabel={`All ${rows.length} on ${weekday} ${selected} ${short}`}
                   onPress={() =>
-                    router.navigate({
-                      pathname: '/activity',
-                      params: { day: `${month.month}-${String(selected).padStart(2, '0')}` },
-                    })
+                    openSpending(
+                      { kind: 'day', day: `${month.month}-${String(selected).padStart(2, '0')}` },
+                      month.month,
+                    )
                   }
                   className="min-h-11 flex-row items-center gap-0.5 pl-[18px] pr-3"
                 >
@@ -278,6 +279,7 @@ export function CalendarView({
           currency={currency}
           walletNames={walletNames}
           look={(merchant) => lastCategory(merchant.name)}
+          onOpen={(merchant) => openSpending({ kind: 'merchant', name: merchant.name }, month.month)}
           onSeeAll={() => router.navigate('/activity')}
         />
       </View>

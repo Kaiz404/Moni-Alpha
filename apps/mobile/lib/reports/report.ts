@@ -1,12 +1,12 @@
 import type { CurrencyCode, MerchantAlias, MinorAmount } from '@repo/types';
 
-import { formatDate } from '@/lib/dates/day-label';
 import { parseLocalDateInput, toLocalDateInput } from '@/lib/dates/local-date-input';
 import {
-  countsAsSpend,
   daysInMonth,
+  isMonthKey,
   monthKey,
   monthShort,
+  monthSpend,
   shiftMonth,
   topMerchants,
   type MerchantSpend,
@@ -16,12 +16,34 @@ import { formatMoney } from '@/lib/finance/format-money';
 import { merchantName } from '@/lib/finance/merchant-name';
 import type { FinanceCategory, FinanceTransaction } from '@/lib/finance/types';
 
+type Aliases = readonly Pick<MerchantAlias, 'rawKey' | 'displayName'>[];
+
+/**
+ * Which of a month's spending a Budget row adds up, for the page that lists those payments. A
+ * merchant on a category page counts only that category, so it carries the category too.
+ */
+export type SpendingScope =
+  | { kind: 'category'; categoryId: string | null }
+  | { kind: 'merchant'; name: string; categoryId?: string }
+  | { kind: 'day'; day: string };
+
+export type SpendingParams = {
+  month?: string;
+  categoryId?: string;
+  merchant?: string;
+  day?: string;
+};
+
+/** `categoryId` in the spending page's params for spending with no category. */
+const NO_CATEGORY = 'none';
+
+/** The same words the ring and the transaction rows use. */
+export const NO_CATEGORY_NAME = 'No category';
+
 /** Local `YYYY-MM-DD` days, both ends included. */
 export type ReportRange = { from: string; to: string };
 
-export type ReportPeriod = { kind: 'month'; month: MonthKey } | ({ kind: 'custom' } & ReportRange);
-
-/** What a period is measured against, and the words for it: "Sep", "Sep by now". */
+/** What a month is measured against, and the words for it: "Sep", "Sep by now". */
 export type ReportComparison = { range: ReportRange; label: string };
 
 export type ReportCategory = {
@@ -36,40 +58,29 @@ export type ReportCategory = {
 
 export type ReportMerchant = MerchantSpend & {
   /** The category of its newest payment, for the bubble. */
-  categoryId: string | null;
+  icon: string | null;
+  color: string | null;
 };
 
-export type ReportMonth = { month: MonthKey; spentMinor: MinorAmount; inMinor: MinorAmount };
-
 export type Report = {
-  period: ReportPeriod;
-  range: ReportRange;
   comparison: ReportComparison;
-  currency: CurrencyCode;
-  spentMinor: MinorAmount;
-  inMinor: MinorAmount;
-  previousSpentMinor: MinorAmount;
-  /** Biggest first; together they add up to `spentMinor`. */
+  /** Biggest first; together they add up to the month's spending. */
   categories: ReportCategory[];
   merchants: ReportMerchant[];
   merchantCount: number;
-  /** Oldest first, ending at the period's last month. */
-  trend: ReportMonth[];
 };
 
 export type ReportInput = {
-  period: ReportPeriod;
+  month: MonthKey;
   now: Date;
   currency: CurrencyCode;
   transactions: readonly FinanceTransaction[];
   /** Every category, archived ones too: old spending still belongs to them. */
-  categories: readonly FinanceCategory[];
-  aliases: readonly Pick<MerchantAlias, 'rawKey' | 'displayName'>[];
+  categories: readonly Pick<FinanceCategory, 'id' | 'name' | 'icon' | 'color'>[];
+  aliases: Aliases;
 };
 
-export const TREND_MONTHS = 6;
 const TOP_MERCHANTS = 5;
-const DAY_MS = 86_400_000;
 
 const pad = (value: number) => String(value).padStart(2, '0');
 
@@ -83,46 +94,23 @@ export function countsAsIncome(transaction: FinanceTransaction, currency: Curren
   );
 }
 
-export function periodRange(period: ReportPeriod): ReportRange {
-  if (period.kind === 'month') {
-    return { from: `${period.month}-01`, to: `${period.month}-${pad(daysInMonth(period.month))}` };
-  }
-  return period.from <= period.to
-    ? { from: period.from, to: period.to }
-    : { from: period.to, to: period.from };
-}
-
-function dayCount({ from, to }: ReportRange): number {
-  const start = parseLocalDateInput(from);
-  const end = parseLocalDateInput(to);
-  if (!start || !end) return 1;
-  return Math.round((end.getTime() - start.getTime()) / DAY_MS) + 1;
+function monthRange(month: MonthKey): ReportRange {
+  return { from: `${month}-01`, to: `${month}-${pad(daysInMonth(month))}` };
 }
 
 /**
  * A past month against the whole month before. The running month against the same days of the
- * month before, as Activity's "than Sep by now" does. A custom period against the days just before it.
+ * month before, as Activity's "than Sep by now" does.
  */
-export function comparisonFor(period: ReportPeriod, now: Date): ReportComparison {
-  if (period.kind === 'month') {
-    const previous = shiftMonth(period.month, -1);
-    const name = monthShort(previous);
-    const whole = periodRange({ kind: 'month', month: previous });
-    if (period.month !== monthKey(now)) return { range: whole, label: name };
-    const day = Math.min(now.getDate(), daysInMonth(previous));
-    return {
-      range: { from: whole.from, to: `${previous}-${pad(day)}` },
-      label: `${name} by now`,
-    };
-  }
-  const range = periodRange(period);
-  const days = dayCount(range);
-  const start = parseLocalDateInput(range.from) ?? now;
-  const before = (offset: number) =>
-    toLocalDateInput(new Date(start.getFullYear(), start.getMonth(), start.getDate() - offset));
+export function comparisonFor(month: MonthKey, now: Date): ReportComparison {
+  const previous = shiftMonth(month, -1);
+  const name = monthShort(previous);
+  const whole = monthRange(previous);
+  if (month !== monthKey(now)) return { range: whole, label: name };
+  const day = Math.min(now.getDate(), daysInMonth(previous));
   return {
-    range: { from: before(days), to: before(1) },
-    label: days === 1 ? 'the day before' : `the ${days} days before`,
+    range: { from: whole.from, to: `${previous}-${pad(day)}` },
+    label: `${name} by now`,
   };
 }
 
@@ -140,27 +128,15 @@ export function changePhrase(
   return `${amount} ${change > 0 ? 'more' : 'less'} than ${comparison.label}`;
 }
 
-/** A custom period's name: "Thu 1 Oct to Wed 14 Oct". */
-export function rangeLabel({ from, to }: ReportRange, now: Date): string {
-  const start = parseLocalDateInput(from);
-  const end = parseLocalDateInput(to);
-  if (!start || !end) return `${from} to ${to}`;
-  return from === to
-    ? formatDate(start, now)
-    : `${formatDate(start, now)} to ${formatDate(end, now)}`;
-}
+const dayOf = (transaction: FinanceTransaction) =>
+  toLocalDateInput(new Date(transaction.transactionDate));
 
-type Dated = { transaction: FinanceTransaction; day: string };
+const within = (transaction: FinanceTransaction, { from, to }: ReportRange) =>
+  dayOf(transaction) >= from && dayOf(transaction) <= to;
 
-const within = (day: string, { from, to }: ReportRange) => day >= from && day <= to;
-
-function sum(rows: readonly Dated[]): number {
-  return rows.reduce((total, row) => total + Number(row.transaction.amountMinor), 0);
-}
-
-function byCategory(rows: readonly Dated[]): Map<string | null, number> {
+function byCategory(transactions: readonly FinanceTransaction[]): Map<string | null, number> {
   const totals = new Map<string | null, number>();
-  for (const { transaction } of rows) {
+  for (const transaction of transactions) {
     totals.set(
       transaction.categoryId,
       (totals.get(transaction.categoryId) ?? 0) + Number(transaction.amountMinor),
@@ -169,26 +145,127 @@ function byCategory(rows: readonly Dated[]): Map<string | null, number> {
   return totals;
 }
 
-export function buildReport(input: ReportInput): Report {
-  const { period, now, currency } = input;
-  const range = periodRange(period);
-  const comparison = comparisonFor(period, now);
-
-  const spend: Dated[] = [];
-  const income: Dated[] = [];
-  for (const transaction of input.transactions) {
-    const isSpend = countsAsSpend(transaction, currency);
-    if (!isSpend && !countsAsIncome(transaction, currency)) continue;
-    (isSpend ? spend : income).push({
-      day: toLocalDateInput(new Date(transaction.transactionDate)),
-      transaction: transaction.merchant
-        ? { ...transaction, merchant: merchantName(transaction.merchant, input.aliases) }
-        : transaction,
-    });
+function isInScope(transaction: FinanceTransaction, scope: SpendingScope): boolean {
+  switch (scope.kind) {
+    case 'category':
+      return transaction.categoryId === scope.categoryId;
+    case 'merchant':
+      return (
+        (transaction.merchant ?? transaction.description) === scope.name &&
+        (scope.categoryId === undefined || transaction.categoryId === scope.categoryId)
+      );
+    case 'day':
+      return dayOf(transaction) === scope.day;
   }
+}
 
-  const current = spend.filter((row) => within(row.day, range));
-  const previous = spend.filter((row) => within(row.day, comparison.range));
+/** A month's payments in a scope, newest first, under the names the user gave their merchants. */
+export function spendingRows(
+  scope: SpendingScope,
+  month: MonthKey,
+  transactions: readonly FinanceTransaction[],
+  currency: CurrencyCode,
+  aliases: Aliases,
+): FinanceTransaction[] {
+  return monthSpend(transactions, month, currency)
+    .map((transaction) =>
+      transaction.merchant
+        ? { ...transaction, merchant: merchantName(transaction.merchant, aliases) }
+        : transaction,
+    )
+    .filter((transaction) => isInScope(transaction, scope));
+}
+
+export function totalMinor(transactions: readonly FinanceTransaction[]): MinorAmount {
+  return transactions.reduce(
+    (total, transaction) => total + Number(transaction.amountMinor),
+    0,
+  ) as MinorAmount;
+}
+
+/** The month-over-month phrase for a scope. A single day has no month to compare with. */
+export function spendingChange(
+  scope: SpendingScope,
+  month: MonthKey,
+  now: Date,
+  transactions: readonly FinanceTransaction[],
+  currency: CurrencyCode,
+  aliases: Aliases,
+): string | null {
+  if (scope.kind === 'day') return null;
+  const comparison = comparisonFor(month, now);
+  const previous = spendingRows(
+    scope,
+    shiftMonth(month, -1),
+    transactions,
+    currency,
+    aliases,
+  ).filter((transaction) => within(transaction, comparison.range));
+  return changePhrase(
+    totalMinor(spendingRows(scope, month, transactions, currency, aliases)),
+    totalMinor(previous),
+    comparison,
+    currency,
+  );
+}
+
+export function spendingParams(scope: SpendingScope, month: MonthKey): SpendingParams {
+  switch (scope.kind) {
+    case 'category':
+      return { month, categoryId: scope.categoryId ?? NO_CATEGORY };
+    case 'merchant':
+      return {
+        month,
+        merchant: scope.name,
+        ...(scope.categoryId === undefined ? {} : { categoryId: scope.categoryId }),
+      };
+    case 'day':
+      return { month, day: scope.day };
+  }
+}
+
+/** The page's scope and month, or null when its params name no spending. A bad month is this month. */
+export function readSpendingParams(
+  params: SpendingParams,
+  thisMonth: MonthKey,
+): { scope: SpendingScope; month: MonthKey } | null {
+  const month = isMonthKey(params.month) ? params.month : thisMonth;
+  if (params.merchant) {
+    return {
+      month,
+      scope: {
+        kind: 'merchant',
+        name: params.merchant,
+        ...(params.categoryId ? { categoryId: params.categoryId } : {}),
+      },
+    };
+  }
+  if (params.categoryId) {
+    return {
+      month,
+      scope: {
+        kind: 'category',
+        categoryId: params.categoryId === NO_CATEGORY ? null : params.categoryId,
+      },
+    };
+  }
+  if (params.day && parseLocalDateInput(params.day)) {
+    return { month: params.day.slice(0, 7), scope: { kind: 'day', day: params.day } };
+  }
+  return null;
+}
+
+export function buildReport(input: ReportInput): Report {
+  const { month, now, currency, transactions, aliases } = input;
+  const comparison = comparisonFor(month, now);
+  const current = monthSpend(transactions, month, currency).map((transaction) =>
+    transaction.merchant
+      ? { ...transaction, merchant: merchantName(transaction.merchant, aliases) }
+      : transaction,
+  );
+  const previous = monthSpend(transactions, shiftMonth(month, -1), currency).filter((transaction) =>
+    within(transaction, comparison.range),
+  );
 
   const categoriesById = new Map(input.categories.map((category) => [category.id, category]));
   const previousByCategory = byCategory(previous);
@@ -197,7 +274,7 @@ export function buildReport(input: ReportInput): Report {
       const category = categoryId ? categoriesById.get(categoryId) : undefined;
       return {
         categoryId,
-        name: category?.name ?? 'Uncategorized',
+        name: category?.name ?? NO_CATEGORY_NAME,
         icon: category?.icon ?? null,
         color: category?.color ?? null,
         spentMinor: spentMinor as MinorAmount,
@@ -206,42 +283,18 @@ export function buildReport(input: ReportInput): Report {
     })
     .sort((a, b) => b.spentMinor - a.spentMinor || a.name.localeCompare(b.name));
 
-  const newestFirst = [...current].sort((a, b) =>
-    b.transaction.transactionDate.localeCompare(a.transaction.transactionDate),
-  );
-  const { merchants, count } = topMerchants(
-    newestFirst.map((row) => row.transaction),
-    TOP_MERCHANTS,
-  );
-
-  const lastMonth = range.to.slice(0, 7);
-  const trend = Array.from({ length: TREND_MONTHS }, (_, index): ReportMonth => {
-    const month = shiftMonth(lastMonth, index - TREND_MONTHS + 1);
-    const inMonth = (row: Dated) => row.day.startsWith(`${month}-`);
-    return {
-      month,
-      spentMinor: sum(spend.filter(inMonth)) as MinorAmount,
-      inMinor: sum(income.filter(inMonth)) as MinorAmount,
-    };
-  });
+  const { merchants, count } = topMerchants(current, TOP_MERCHANTS);
 
   return {
-    period,
-    range,
     comparison,
-    currency,
-    spentMinor: sum(current) as MinorAmount,
-    inMinor: sum(income.filter((row) => within(row.day, range))) as MinorAmount,
-    previousSpentMinor: sum(previous) as MinorAmount,
     categories,
-    merchants: merchants.map((merchant) => ({
-      ...merchant,
-      categoryId:
-        newestFirst.find(
-          ({ transaction }) => (transaction.merchant ?? transaction.description) === merchant.name,
-        )?.transaction.categoryId ?? null,
-    })),
+    merchants: merchants.map((merchant) => {
+      const newest = current.find(
+        (transaction) => (transaction.merchant ?? transaction.description) === merchant.name,
+      );
+      const category = newest?.categoryId ? categoriesById.get(newest.categoryId) : undefined;
+      return { ...merchant, icon: category?.icon ?? null, color: category?.color ?? null };
+    }),
     merchantCount: count,
-    trend,
   };
 }

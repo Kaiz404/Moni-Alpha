@@ -9,6 +9,7 @@ import {
   type BillLook,
 } from '@/components/budget/bills-list';
 import { MerchantList } from '@/components/budget/merchant-list';
+import { openSpending } from '@/components/budget/open-spending';
 import { useMerchantNames } from '@/components/merchants/use-merchant-names';
 import { useBudgetData } from '@/components/budget/use-budget';
 import { PaceChart } from '@/components/charts/pace-chart';
@@ -461,12 +462,7 @@ export default function CategoryBudgetScreen() {
                   label="See all"
                   icon="chevron-right"
                   className="-mr-3.5"
-                  onPress={() =>
-                    router.dismissTo({
-                      pathname: '/activity',
-                      params: { categoryId: category.id, month },
-                    })
-                  }
+                  onPress={() => openSpending({ kind: 'category', categoryId: category.id }, month)}
                 />
               ) : null}
             </View>
@@ -526,6 +522,12 @@ export default function CategoryBudgetScreen() {
             currency={currency}
             walletNames={data.walletNames}
             look={() => look}
+            onOpen={(merchant) =>
+              openSpending(
+                { kind: 'merchant', name: merchant.name, categoryId: category.id },
+                month,
+              )
+            }
             codeKey={(merchant) => {
               const key = merchantKey(merchant.name);
               return key && toName.some((entry) => entry.key === key) ? key : null;

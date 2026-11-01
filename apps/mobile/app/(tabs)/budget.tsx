@@ -8,6 +8,9 @@ import {
 } from '@/components/budget/bills-list';
 import { BudgetRings } from '@/components/budget/budget-rings';
 import { CalendarView } from '@/components/budget/calendar-view';
+import { MerchantList } from '@/components/budget/merchant-list';
+import { openSpending } from '@/components/budget/open-spending';
+import { ReportRow } from '@/components/budget/report-row';
 import { SpendRing } from '@/components/budget/spend-ring';
 import {
   useBudgetData,
@@ -16,10 +19,10 @@ import {
 import { openCaptureChooser } from '@/components/nav/capture-chooser';
 import { useTabBarClearance } from '@/components/nav/tab-bar';
 import { SyncBanner } from '@/components/providers/sync-banner';
-import { ReportsLink } from '@/components/reports/reports-link';
 import { Button } from '@/components/ui/button';
 import { EmptyTile } from '@/components/ui/empty-tile';
 import { IconSymbol } from '@/components/ui/icon-symbol';
+import { ListCard } from '@/components/ui/list-card';
 import { Page } from '@/components/ui/page';
 import { Press } from '@/components/ui/press';
 import { Segmented } from '@/components/ui/segmented';
@@ -36,6 +39,7 @@ import {
   type BudgetMonth,
 } from '@/lib/finance/budget-month';
 import { formatMoney } from '@/lib/finance/format-money';
+import { buildReport, changePhrase } from '@/lib/reports/report';
 import { openSheet } from '@/lib/sheet/sheet-store';
 import { tid } from '@/lib/test-ids';
 
@@ -232,6 +236,18 @@ function MonthView({
       ),
     [data.transactions, budget.month, currency, data.everyCategory],
   );
+  const report = useMemo(
+    () =>
+      buildReport({
+        month: budget.month,
+        now: data.now,
+        currency,
+        transactions: data.transactions,
+        categories: data.everyCategory,
+        aliases: data.aliases,
+      }),
+    [budget.month, data.now, currency, data.transactions, data.everyCategory, data.aliases],
+  );
 
   return (
     <View className="gap-3">
@@ -290,7 +306,6 @@ function MonthView({
           emptyBody={emptyBody}
         />
       </View>
-      <ReportsLink month={budget.month} />
       {budget.isCurrent ? (
         <View className="mt-2">
           <BillsList
@@ -306,6 +321,54 @@ function MonthView({
               })
             }
             onAdd={() => router.push('/bill/new')}
+          />
+        </View>
+      ) : null}
+      {report.categories.length ? (
+        <View className="mt-2 gap-2">
+          <Text
+            variant="sectionTitle"
+            className="text-foreground"
+            accessibilityRole="header"
+          >
+            By category
+          </Text>
+          <ListCard>
+            {report.categories.map((row) => (
+              <ReportRow
+                key={row.categoryId ?? 'none'}
+                testID={tid('budget', 'by-category', row.categoryId ?? 'none')}
+                icon={row.icon}
+                color={row.color}
+                title={row.name}
+                meta={
+                  changePhrase(row.spentMinor, row.previousMinor, report.comparison, currency) ??
+                  `Nothing in ${report.comparison.label}`
+                }
+                amount={formatMoney(row.spentMinor, currency)}
+                onPress={() =>
+                  openSpending({ kind: 'category', categoryId: row.categoryId }, budget.month)
+                }
+              />
+            ))}
+          </ListCard>
+        </View>
+      ) : null}
+      {report.merchants.length ? (
+        <View className="mt-2">
+          <MerchantList
+            merchants={report.merchants}
+            note={
+              report.merchantCount > report.merchants.length
+                ? `${report.merchantCount} merchants`
+                : undefined
+            }
+            currency={currency}
+            walletNames={data.walletNames}
+            look={(merchant) => merchant}
+            onOpen={(merchant) =>
+              openSpending({ kind: 'merchant', name: merchant.name }, budget.month)
+            }
           />
         </View>
       ) : null}

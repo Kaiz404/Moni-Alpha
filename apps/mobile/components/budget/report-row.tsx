@@ -8,7 +8,7 @@ import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import type { TestId } from '@/lib/test-ids';
 import { resolveTransactionIcon } from '@/lib/transactions/icon';
 
-/** A report line that opens its rows in Activity: bubble, name over meta, amount, chevron. */
+/** A line of the month's spending that opens its payments: bubble, name over meta, amount, chevron. */
 export function ReportRow({
   testID,
   icon,
@@ -32,7 +32,7 @@ export function ReportRow({
       testID={testID}
       onPress={onPress}
       accessibilityLabel={[title, meta, amount].filter(Boolean).join(', ')}
-      accessibilityHint="Opens these payments in Activity"
+      accessibilityHint="Opens these payments"
       className="min-h-[66px] flex-row items-center gap-3.5 py-2 pl-[18px] pr-3"
     >
       <TintBubble

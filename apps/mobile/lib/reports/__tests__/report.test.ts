@@ -1,19 +1,18 @@
 import type { CurrencyCode, MinorAmount } from '@repo/types';
 
-import { inScope, readActivityLink } from '@/components/activity/activity-link';
-import { filterActivity } from '@/lib/finance/activity-filter';
 import { buildBudgetMonth } from '@/lib/finance/budget-month';
 import type { FinanceCategory, FinanceTransaction } from '@/lib/finance/types';
 import {
   buildReport,
   changePhrase,
   comparisonFor,
-  periodRange,
-  rangeLabel,
-  type ReportPeriod,
+  countsAsIncome,
+  readSpendingParams,
+  spendingChange,
+  spendingParams,
+  spendingRows,
+  totalMinor,
 } from '@/lib/reports/report';
-import { categoryLink, merchantLink } from '@/components/reports/report-link';
-import { trendGeometry } from '@/lib/reports/trend-geometry';
 
 const MYR = 'MYR' as CurrencyCode;
 const NOW = new Date(2026, 9, 14, 12, 0);
@@ -93,30 +92,30 @@ const TRANSACTIONS = [
   txn(oct(10), 'expense', 999, { currency: 'USD' as CurrencyCode, categoryId: 'food' }),
 ];
 
-function report(period: ReportPeriod) {
+const ALIASES = [{ rawKey: 'grab', displayName: 'Grab ride' }];
+
+function report(month: string) {
   return buildReport({
-    period,
+    month,
     now: NOW,
     currency: MYR,
     transactions: TRANSACTIONS,
     categories: CATEGORIES,
-    aliases: [{ rawKey: 'grab', displayName: 'Grab ride' }],
+    aliases: ALIASES,
   });
 }
 
-const OCTOBER: ReportPeriod = { kind: 'month', month: '2026-10' };
+const rows = (scope: Parameters<typeof spendingRows>[0], month = '2026-10') =>
+  spendingRows(scope, month, TRANSACTIONS, MYR, ALIASES);
+
+/** Date and amount, newest first, which is all a list of payments has to get right. */
+const shown = (transactions: FinanceTransaction[]) =>
+  transactions.map((row) => [new Date(row.transactionDate).getDate(), row.amountMinor]);
 
 describe('buildReport for a month', () => {
-  it('totals income against spending, leaving out transfers, corrections and debt cash', () => {
-    const october = report(OCTOBER);
-    expect(october.spentMinor).toBe(18040);
-    expect(october.inMinor).toBe(420000);
-    expect(october.range).toEqual({ from: '2026-10-01', to: '2026-10-31' });
-  });
-
   it('lists categories by spend with the same days of last month, archived ones included', () => {
     expect(
-      report(OCTOBER).categories.map((row) => [
+      report('2026-10').categories.map((row) => [
         row.categoryId,
         row.name,
         row.spentMinor,
@@ -125,175 +124,201 @@ describe('buildReport for a month', () => {
     ).toEqual([
       ['food', 'Food & Dining', 15050, 4000],
       ['old', 'Old hobby', 2000, 0],
-      [null, 'Uncategorized', 990, 0],
+      [null, 'No category', 990, 0],
     ]);
   });
 
-  it('adds its category rows up to its total', () => {
-    const october = report(OCTOBER);
-    expect(october.categories.reduce((sum, row) => sum + row.spentMinor, 0)).toBe(
-      october.spentMinor,
-    );
+  it('holds a past month against the whole month before', () => {
+    expect(report('2026-09').categories[0].spentMinor).toBe(54000);
+    expect(report('2026-09').comparison.label).toBe('Aug');
   });
 
-  it('names merchants with the merchant names, biggest first', () => {
-    const october = report(OCTOBER);
+  it('adds its category rows up to what Budget and Home spend in that month', () => {
+    const budget = (month: string) =>
+      buildBudgetMonth({
+        month,
+        now: NOW,
+        currency: MYR,
+        transactions: TRANSACTIONS,
+        categories: CATEGORIES,
+        budgets: [],
+        monthlyTotalMinor: null,
+        bills: [],
+        debts: [],
+      });
+    for (const [month, spent] of [
+      ['2026-10', 18040],
+      ['2026-09', 54000],
+    ] as const) {
+      expect(report(month).categories.reduce((sum, row) => sum + row.spentMinor, 0)).toBe(spent);
+      expect(budget(month).spentMinor).toBe(spent);
+    }
+  });
+
+  it('names merchants with the merchant names, biggest first, in the colours of their newest payment', () => {
+    const october = report('2026-10');
     expect(
-      october.merchants.map((row) => [row.name, row.payments, row.spentMinor, row.categoryId]),
+      october.merchants.map((row) => [row.name, row.payments, row.spentMinor, row.icon, row.color]),
     ).toEqual([
-      ['Grab ride', 2, 15050, 'food'],
-      ['Kedai ABC', 1, 2000, 'old'],
-      ['Parking', 1, 990, null],
+      ['Grab ride', 2, 15050, 'silverware', '#F1A399'],
+      ['Kedai ABC', 1, 2000, 'silverware', '#F1A399'],
+      ['Parking', 1, 990, null, null],
     ]);
     expect(october.merchantCount).toBe(3);
   });
-
-  it('draws six months ending at the period, each with spending and money in', () => {
-    expect(report(OCTOBER).trend).toEqual([
-      { month: '2026-05', spentMinor: 0, inMinor: 0 },
-      { month: '2026-06', spentMinor: 0, inMinor: 0 },
-      { month: '2026-07', spentMinor: 0, inMinor: 0 },
-      { month: '2026-08', spentMinor: 0, inMinor: 0 },
-      { month: '2026-09', spentMinor: 54000, inMinor: 400000 },
-      { month: '2026-10', spentMinor: 18040, inMinor: 420000 },
-    ]);
-  });
 });
 
-describe('the report matches the other screens', () => {
-  const budget = (month: string) =>
-    buildBudgetMonth({
-      month,
-      now: NOW,
-      currency: MYR,
-      transactions: TRANSACTIONS,
-      categories: CATEGORIES,
-      budgets: [],
-      monthlyTotalMinor: null,
-      bills: [],
-      debts: [],
-    });
-
-  it('spends the same as Budget and Home in every month', () => {
-    expect(report(OCTOBER).spentMinor).toBe(budget('2026-10').spentMinor);
-    expect(report({ kind: 'month', month: '2026-09' }).spentMinor).toBe(
-      budget('2026-09').spentMinor,
-    );
+describe('spendingRows', () => {
+  it('lists a category newest first, leaving out debt cash, excluded rows and other currencies', () => {
+    expect(shown(rows({ kind: 'category', categoryId: 'food' }))).toEqual([
+      [3, 5050],
+      [2, 10000],
+    ]);
   });
 
-  it('leaves debt cash and excluded rows out of what it spends and earns, and compares with last month by now', () => {
-    const october = report(OCTOBER);
-    expect(october.spentMinor).toBe(18040);
-    expect(october.inMinor).toBe(420000);
-    expect(october.previousSpentMinor).toBe(4000);
+  it('lists spending with no category, without its debt cash, corrections or transfers', () => {
+    expect(shown(rows({ kind: 'category', categoryId: null }))).toEqual([[5, 990]]);
   });
 
-  it('opens each category row on the rows that add up to it in Activity', () => {
-    const october = report(OCTOBER);
-    for (const row of october.categories) {
-      const link = readActivityLink(categoryLink(row.categoryId, october.range), '2026-10');
-      const scope = link?.scope;
-      if (scope?.kind !== 'category') throw new Error('expected a category scope');
-      const shown = filterActivity(
-        TRANSACTIONS.filter((transaction) => inScope(transaction, scope)),
-        {
-          query: '',
-          walletId: null,
-          mainCurrency: MYR,
-          kind: 'all',
-          day: null,
-          categoryNames: {},
-        },
-      );
-      expect(shown.reduce((sum, transaction) => sum + Number(transaction.amountMinor), 0)).toBe(
-        row.spentMinor,
-      );
+  it('finds a merchant under the name the user gave it, across every bank code', () => {
+    const grab = rows({ kind: 'merchant', name: 'Grab ride' });
+    expect(shown(grab)).toEqual([
+      [3, 5050],
+      [2, 10000],
+    ]);
+    expect(grab.map((row) => row.merchant)).toEqual(['Grab ride', 'Grab ride']);
+    expect(rows({ kind: 'merchant', name: 'GRAB*1234 KL' })).toEqual([]);
+  });
+
+  it('finds a merchant named only by its description', () => {
+    expect(shown(rows({ kind: 'merchant', name: 'Parking' }))).toEqual([[5, 990]]);
+  });
+
+  it('narrows a merchant to one category when the row it came from did', () => {
+    const lunches = [
+      txn(oct(2), 'expense', 10, { categoryId: 'food', merchant: 'Kedai ABC' }),
+      txn(oct(3), 'expense', 30, { categoryId: 'old', merchant: 'Kedai ABC' }),
+    ];
+    const scoped = (categoryId?: string) =>
+      spendingRows({ kind: 'merchant', name: 'Kedai ABC', categoryId }, '2026-10', lunches, MYR, []);
+    expect(totalMinor(scoped('food'))).toBe(1000);
+    expect(totalMinor(scoped())).toBe(4000);
+  });
+
+  it('lists one day of spending', () => {
+    expect(shown(rows({ kind: 'day', day: '2026-10-03' }))).toEqual([[3, 5050]]);
+    expect(rows({ kind: 'day', day: '2026-10-06' })).toEqual([]);
+  });
+
+  it('stays in its month', () => {
+    expect(shown(rows({ kind: 'category', categoryId: 'food' }, '2026-09'))).toEqual([
+      [20, 50000],
+      [14, 1000],
+      [1, 3000],
+    ]);
+  });
+
+  it('adds up to the amount on every row of the report, in any month', () => {
+    for (const month of ['2026-10', '2026-09']) {
+      const { categories, merchants } = report(month);
+      for (const row of categories) {
+        expect(totalMinor(rows({ kind: 'category', categoryId: row.categoryId }, month))).toBe(
+          row.spentMinor,
+        );
+      }
+      for (const row of merchants) {
+        expect(totalMinor(rows({ kind: 'merchant', name: row.name }, month))).toBe(row.spentMinor);
+      }
     }
   });
 });
 
-describe('category and merchant links', () => {
-  it('keeps the month when the period stays inside one', () => {
-    expect(categoryLink('food', { from: '2026-10-01', to: '2026-10-31' })).toEqual({
-      categoryId: 'food',
-      month: '2026-10',
-    });
+describe('spendingChange', () => {
+  const change = (scope: Parameters<typeof spendingRows>[0], month = '2026-10') =>
+    spendingChange(scope, month, NOW, TRANSACTIONS, MYR, ALIASES);
+
+  it('reads the same as the row the page opened from', () => {
+    expect(change({ kind: 'category', categoryId: 'food' })).toBe('RM110.50 more than Sep by now');
+    expect(change({ kind: 'merchant', name: 'Grab ride' })).toBe('RM110.50 more than Sep by now');
   });
 
-  it('drops the month for a period across months', () => {
-    expect(categoryLink('food', { from: '2026-09-20', to: '2026-10-05' })).toEqual({
-      categoryId: 'food',
-    });
+  it('holds a past month against the whole month before', () => {
+    const lastAugust = txn(new Date(2026, 7, 31, 9, 0), 'expense', 40, { categoryId: 'food' });
+    expect(
+      spendingChange(
+        { kind: 'category', categoryId: 'food' },
+        '2026-09',
+        NOW,
+        [...TRANSACTIONS, lastAugust],
+        MYR,
+        ALIASES,
+      ),
+    ).toBe('RM500.00 more than Aug');
   });
 
-  it('gives spending with no category its own filter', () => {
-    expect(categoryLink(null, { from: '2026-10-01', to: '2026-10-31' })).toEqual({
-      categoryId: 'none',
-      month: '2026-10',
-    });
-  });
-
-  it('searches for a merchant by its name', () => {
-    expect(merchantLink('Grab ride')).toEqual({ q: 'Grab ride' });
+  it('has nothing to say about one day, or about a month with nothing before it', () => {
+    expect(change({ kind: 'day', day: '2026-10-03' })).toBeNull();
+    expect(change({ kind: 'category', categoryId: 'old' })).toBeNull();
   });
 });
 
-describe('a custom period', () => {
-  const custom: ReportPeriod = { kind: 'custom', from: '2026-10-02', to: '2026-10-05' };
-
-  it('counts only its days', () => {
-    const period = report(custom);
-    expect(period.spentMinor).toBe(18040);
-    expect(period.inMinor).toBe(0);
+describe('spending params', () => {
+  it.each([
+    [{ kind: 'category', categoryId: 'food' }, { month: '2026-10', categoryId: 'food' }],
+    [{ kind: 'category', categoryId: null }, { month: '2026-10', categoryId: 'none' }],
+    [{ kind: 'merchant', name: 'A&W' }, { month: '2026-10', merchant: 'A&W' }],
+    [
+      { kind: 'merchant', name: 'Grab', categoryId: 'food' },
+      { month: '2026-10', merchant: 'Grab', categoryId: 'food' },
+    ],
+    [{ kind: 'day', day: '2026-10-03' }, { month: '2026-10', day: '2026-10-03' }],
+  ] as const)('carry %j and read back', (scope, params) => {
+    expect(spendingParams(scope, '2026-10')).toEqual(params);
+    expect(readSpendingParams(params, '2026-11')).toEqual({ scope, month: '2026-10' });
   });
 
-  it('is measured against the same number of days just before it', () => {
-    expect(comparisonFor(custom, NOW)).toEqual({
-      range: { from: '2026-09-28', to: '2026-10-01' },
-      label: 'the 4 days before',
-    });
-  });
-
-  it('reads the same with its ends swapped', () => {
-    expect(periodRange({ kind: 'custom', from: '2026-10-05', to: '2026-10-02' })).toEqual({
-      from: '2026-10-02',
-      to: '2026-10-05',
-    });
-  });
-
-  it('crosses a month end', () => {
-    expect(report({ kind: 'custom', from: '2026-09-14', to: '2026-10-02' }).spentMinor).toBe(61000);
-  });
-
-  it('ends its trend at its last month', () => {
-    expect(report({ kind: 'custom', from: '2026-08-01', to: '2026-09-30' }).trend.at(-1)?.month).toBe(
-      '2026-09',
+  it('falls back to this month for a bad month', () => {
+    expect(readSpendingParams({ month: 'nonsense', categoryId: 'food' }, '2026-11')?.month).toBe(
+      '2026-11',
     );
   });
 
-  it('has words for its days', () => {
-    expect(rangeLabel({ from: '2026-10-02', to: '2026-10-05' }, NOW)).toBe('Fri 2 Oct to Mon 5 Oct');
-    expect(rangeLabel({ from: '2026-10-02', to: '2026-10-02' }, NOW)).toBe('Fri 2 Oct');
+  it('takes the month from a day', () => {
+    expect(readSpendingParams({ day: '2026-09-03' }, '2026-11')?.month).toBe('2026-09');
+  });
+
+  it('reads nothing when they name no spending', () => {
+    expect(readSpendingParams({}, '2026-11')).toBeNull();
+    expect(readSpendingParams({ day: '2026-13-40' }, '2026-11')).toBeNull();
+    expect(readSpendingParams({ month: '2026-10' }, '2026-11')).toBeNull();
+  });
+});
+
+describe('countsAsIncome', () => {
+  it('counts income only, leaving out corrections, debt cash and other currencies', () => {
+    expect(TRANSACTIONS.filter((row) => countsAsIncome(row, MYR)).map((row) => row.amountMinor)).toEqual(
+      [420000, 400000],
+    );
   });
 });
 
 describe('comparisonFor', () => {
   it('holds a past month against the whole month before', () => {
-    expect(comparisonFor({ kind: 'month', month: '2026-09' }, NOW)).toEqual({
+    expect(comparisonFor('2026-09', NOW)).toEqual({
       range: { from: '2026-08-01', to: '2026-08-31' },
       label: 'Aug',
     });
   });
 
   it('holds the running month against the same days, clipped to a shorter month', () => {
-    expect(comparisonFor({ kind: 'month', month: '2026-03' }, new Date(2026, 2, 31))).toEqual({
+    expect(comparisonFor('2026-03', new Date(2026, 2, 31))).toEqual({
       range: { from: '2026-02-01', to: '2026-02-28' },
       label: 'Feb by now',
     });
   });
 
   it('crosses a year', () => {
-    expect(comparisonFor({ kind: 'month', month: '2026-01' }, NOW).range).toEqual({
+    expect(comparisonFor('2026-01', NOW).range).toEqual({
       from: '2025-12-01',
       to: '2025-12-31',
     });
@@ -311,41 +336,5 @@ describe('changePhrase', () => {
 
   it('says nothing when there was nothing before', () => {
     expect(changePhrase(4000, 0, comparison, 'MYR')).toBeNull();
-  });
-});
-
-describe('trendGeometry', () => {
-  const trend = [
-    { month: '2026-09', spentMinor: 50000 as MinorAmount, inMinor: 100000 as MinorAmount },
-    { month: '2026-10', spentMinor: 1 as MinorAmount, inMinor: 0 as MinorAmount },
-  ];
-
-  it('lays out a pair of bars in each slot on one axis', () => {
-    const geometry = trendGeometry(trend, 350, '2026-10', 'MYR');
-    expect(geometry.slot).toBe(150);
-    expect(geometry.topLabel).toBe('RM1,000');
-    expect(geometry.zeroLabel).toBe('RM0');
-    expect(geometry.slots[0]).toEqual({
-      month: '2026-09',
-      x: 50,
-      spentX: 112,
-      inX: 126,
-      spentHeight: 48.625,
-      inHeight: 97.25,
-      label: 'Sep',
-      selected: false,
-    });
-  });
-
-  it('keeps a tiny amount visible, draws nothing for zero, and marks the chosen month', () => {
-    const october = trendGeometry(trend, 350, '2026-10', 'MYR').slots[1];
-    expect(october.spentHeight).toBe(6);
-    expect(october.inHeight).toBe(0);
-    expect(october.selected).toBe(true);
-  });
-
-  it('shortens a five-figure axis label', () => {
-    const big = [{ month: '2026-10', spentMinor: 1234500 as MinorAmount, inMinor: 0 as MinorAmount }];
-    expect(trendGeometry(big, 350, null, 'MYR').topLabel).toBe('RM13k');
   });
 });

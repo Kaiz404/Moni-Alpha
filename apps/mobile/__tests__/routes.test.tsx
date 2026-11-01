@@ -18,11 +18,14 @@ global.fetch = fakeFetch as typeof fetch;
 
 /* eslint-disable import/first */
 import { act, cleanup, fireEvent, renderRouter, screen } from 'expo-router/testing-library';
+import type { MinorAmount } from '@repo/types';
+import { router } from 'expo-router';
 import { Share } from 'react-native';
 
 import { authMMKV } from '@/lib/mmkv/auth';
 import { dismissSheet } from '@/lib/sheet/sheet-store';
 import { clearStore } from '@/lib/store';
+import { createTransaction, updateTransaction } from '@/lib/supabase/transactions';
 import { dismissToast } from '@/lib/toast/toast-store';
 /* eslint-enable import/first */
 
@@ -224,7 +227,6 @@ const ROUTES: Record<string, RouteSpec> = {
   'import/index.tsx': same('/import', 'Choose a CSV'),
   'import/columns.tsx': same('/import/columns', 'No file chosen'),
   'import/preview.tsx': same('/import/preview', 'No file chosen'),
-  'reports.tsx': same('/reports', 'Reports'),
   'bill/[seriesKey].tsx': differ(
     `/bill/${NETFLIX}`,
     'Stop tracking Netflix',
@@ -234,6 +236,11 @@ const ROUTES: Record<string, RouteSpec> = {
   'budget/[categoryId].tsx': differ(`/budget/${FOOD}`, 'of RM450', 'No budget for Food & Dining'),
   'budget/edit.tsx': same('/budget/edit', 'Monthly total'),
   'budget/list.tsx': same('/budget/list', 'Monthly total'),
+  'budget/spending.tsx': differ(
+    `/budget/spending?month=2026-10&categoryId=${FOOD}`,
+    'October · 13 payments',
+    'No payments left here',
+  ),
   'capture-log.tsx': same('/capture-log', 'Nothing captured yet'),
   'capture-sources.tsx': differ(
     '/capture-sources',
@@ -298,6 +305,13 @@ const PARAM_VISITS: [label: string, Visit][] = [
   ['budget category, unknown id', { href: '/budget/unknown', text: 'This category is gone' }],
   ['budget category, nonsense month', { href: `/budget/${FOOD}?month=nonsense`, text: 'Spent in October' }],
   ['budget category, month 13', { href: `/budget/${FOOD}?month=2026-13`, text: 'Spent in October' }],
+  ['spending, no scope', { href: '/budget/spending', text: 'These payments are gone' }],
+  ['spending, nonsense day', { href: '/budget/spending?day=2026-13-40', text: 'These payments are gone' }],
+  ['spending, nonsense month', { href: `/budget/spending?month=nonsense&categoryId=${FOOD}`, text: 'October · 13 payments' }],
+  ['spending, unknown category', { href: '/budget/spending?month=2026-10&categoryId=unknown', text: 'No category' }],
+  ['spending, no category', { href: '/budget/spending?month=2026-10&categoryId=none', text: 'No category' }],
+  ['spending, a name with & in it', { href: '/budget/spending?month=2026-10&merchant=A%26W', text: 'A&W' }],
+  ['spending, a day', { href: '/budget/spending?day=2026-10-13', text: 'Tue 13 Oct' }],
   ['debt, unknown id', { href: '/debt/unknown', text: "This debt isn't here any more" }],
   ['debt, someone owes me', { href: `/debt/${id('debt', 'aiman')}`, text: 'Aiman owes you' }],
   ['debt, settled', { href: `/debt/${id('debt', 'hana')}`, text: 'Hana' }],
@@ -485,6 +499,119 @@ describe('params', () => {
   it.each(PARAM_VISITS)('%s', async (_label, target) => {
     await visit(target, { profile: 'full', theme: 'light' });
     await visit(target, { profile: 'full', theme: 'dark' });
+  });
+});
+
+describe('a Budget row opens its payments under Budget', () => {
+  const open = async (testID: string) => {
+    fireEvent.press(screen.getByTestId(testID));
+    await settle();
+  };
+  const leave = async () => {
+    act(() => router.back());
+    await settle();
+  };
+  const text = (testID: string) => textsOf(screen.getByTestId(testID).children);
+
+  it('a By category row lists what adds up to its amount, then back keeps the month', async () => {
+    await mount('/budget', { profile: 'full', theme: 'light' });
+    await open('budget.month');
+    await open('sheet.option.2026-09');
+    expect(text('budget.month')).toEqual(['September']);
+    expect(screen.getByTestId('budget.merchant.netflix').props.accessibilityLabel).toBe(
+      'Netflix, 1 payment · Maybank, RM54.90',
+    );
+    const row = screen.getAllByTestId(/^budget\.by-category\./)[0];
+    const [, , amount] = row.props.accessibilityLabel.split(', ');
+    await open(row.props.testID);
+    expect(row.props.accessibilityLabel).toContain('Same as Aug');
+    expect(text('budget.spending.total')).toEqual([amount]);
+    expect(text('budget.spending.meta')[0]).toMatch(/^September · \d+ payments?$/);
+    expect(text('budget.spending.change')).toEqual(['Same as Aug']);
+    expect(screen.queryByTestId('budget.back')).not.toBeNull();
+    expect(screen.queryByTestId('activity.search')).toBeNull();
+    await leave();
+    expect(text('budget.month')).toEqual(['September']);
+    expect(noise).toEqual([]);
+  });
+
+  it('shows an edit from the transaction page on this page and on the tab', async () => {
+    await mount('/budget', { profile: 'full', theme: 'light' });
+    const rowId = `budget.by-category.${FOOD}`;
+    await open(rowId);
+    expect(text('budget.spending.total')).toEqual(['RM349.80']);
+    await open(`budget.transaction.${id('transaction', 'sample-34')}`);
+    // Both pages behind the transaction are frozen by the root Stack, so this is the case that could go stale.
+    expect(screen.queryByTestId('budget.spending.total')).toBeNull();
+    expect(screen.queryByTestId(rowId)).toBeNull();
+    await act(() => updateTransaction(id('transaction', 'sample-34'), { amountMinor: 2320 as MinorAmount }));
+    await leave();
+    expect(text('budget.spending.total')).toEqual(['RM359.80']);
+    await leave();
+    expect(screen.getByTestId(rowId).props.accessibilityLabel).toContain('RM359.80');
+    expect(noise).toEqual([]);
+  });
+
+  it('a merchant on a category page counts only that category', async () => {
+    await mount(`/budget/${FOOD}`, { profile: 'full', theme: 'light' });
+    const row = screen.getAllByTestId(/^budget\.merchant\.(?!.*\.)/)[0];
+    const parts = row.props.accessibilityLabel.split(', ');
+    await open(row.props.testID);
+    expect(text('budget.spending.total')).toEqual([parts[parts.length - 1]]);
+    expect(text('budget.spending.meta')[0]).toMatch(/^October · Food & Dining · \d+ payments?$/);
+  });
+
+  it("a category page's See all stays under Budget", async () => {
+    await mount(`/budget/${FOOD}`, { profile: 'full', theme: 'light' });
+    await open('budget.category.see-all');
+    expect(text('budget.spending.meta')).toEqual(['October · 13 payments']);
+  });
+
+  it("a Calendar day's All link lists that day", async () => {
+    await mount('/budget', { profile: 'full', theme: 'light' });
+    await open('budget.view.calendar');
+    await open('budget.calendar.day.10');
+    await open('budget.day.all');
+    expect(text('budget.spending.meta')).toEqual(['4 payments']);
+    expect(screen.getAllByText('Sat 10 Oct').length).toBeGreaterThan(0);
+  });
+
+  it('turns pages when a list runs past one page', async () => {
+    await mount(`/budget/spending?month=2026-10&categoryId=${FOOD}`, { profile: 'full', theme: 'light' });
+    expect(screen.queryByTestId('budget.pager.page')).toBeNull();
+    await act(async () => {
+      for (const day of [1, 2, 3, 4, 5, 6, 7, 8]) {
+        await createTransaction(
+          {
+            walletId: id('wallet', 'cash'),
+            amountMinor: 100 as MinorAmount,
+            type: 'expense',
+            categoryId: FOOD,
+            description: `Lunch ${day}`,
+            transactionDate: new Date(2026, 9, day, 12).toISOString(),
+          },
+          'manual',
+          { id: id('transaction', `lunch-${day}`) },
+        );
+      }
+    });
+    await settle();
+    expect(text('budget.pager.page')).toEqual(['Page 1 of 2']);
+    expect(text('budget.spending.meta')).toEqual(['October · 21 payments']);
+    await open('budget.pager.older');
+    expect(text('budget.pager.page')).toEqual(['Page 2 of 2']);
+    expect(text('budget.spending.total')).toEqual(['RM357.80']);
+  });
+
+  it('the tab leads with the ring and budgets, with no way into a Reports page', async () => {
+    await mount('/budget', { profile: 'full', theme: 'light' });
+    const order = textsOf(screen.toJSON());
+    const places = ['Budgets', 'Bills', 'By category', 'Top merchants'].map((title) =>
+      order.findIndex((line) => line.startsWith(title)),
+    );
+    expect(places).toEqual([...places].sort((a, b) => a - b));
+    expect(places.every((place) => place >= 0)).toBe(true);
+    expect(screen.queryByTestId('budget.reports')).toBeNull();
   });
 });
 
