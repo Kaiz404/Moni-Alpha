@@ -24,8 +24,6 @@ export type NetWorthGeometry = {
   area: string | null;
   axis: { y: number; text: string }[];
   ticks: { x: number; text: string; align: 'start' | 'center' | 'end'; today: boolean }[];
-  /** Days between scrub ticks, so a year does not buzz once per pixel. */
-  tickEvery: number;
   accessibilityLabel: string;
 };
 
@@ -33,7 +31,6 @@ const TOP = 44;
 const BASELINE = 142;
 const LEFT = 54;
 const RIGHT_INSET = 4;
-const MIN_TICK_PIXELS = 8;
 const LONG_RANGE_DAYS = 180;
 /** Wallets that share a colour stay apart by pattern, in list order. */
 const DASHES = [undefined, '7 5', '1 6', '12 5 1 5'];
@@ -156,7 +153,6 @@ export function netWorthGeometry({
       { y: BASELINE, text: axisMoney(floor) },
     ],
     ticks,
-    tickEvery: step > 0 ? Math.max(1, Math.ceil(MIN_TICK_PIXELS / step)) : 1,
     accessibilityLabel:
       floor === 0 ? reading : `${reading} The axis starts at ${axisMoney(floor)}, not zero.`,
   };

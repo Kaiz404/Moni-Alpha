@@ -1,7 +1,7 @@
 import * as Haptics from 'expo-haptics';
 import { Platform } from 'react-native';
 
-import { approve, keypadTap, notMine, scrubStep } from '@/lib/haptics';
+import { approve, chartStep, keypadTap, notMine, scrubStep } from '@/lib/haptics';
 
 jest.mock('expo-haptics', () => ({
   ...jest.requireActual('expo-haptics'),
@@ -34,6 +34,18 @@ describe('haptics on Android', () => {
     keypadTap();
 
     expect(haptics.performAndroidHapticsAsync.mock.calls).toEqual([['keyboard-tap']]);
+  });
+});
+
+describe('chartStep', () => {
+  beforeEach(() => onPlatform('ios'));
+
+  it('ticks on a chart of up to twelve points and stays quiet on a denser one', () => {
+    chartStep(12);
+    expect(haptics.selectionAsync).toHaveBeenCalledTimes(1);
+    chartStep(13);
+    chartStep(366);
+    expect(haptics.selectionAsync).toHaveBeenCalledTimes(1);
   });
 });
 

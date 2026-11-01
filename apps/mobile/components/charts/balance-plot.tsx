@@ -18,7 +18,7 @@ import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { dayLabel } from '@/lib/dates/day-label';
 import type { BalanceMonth } from '@/lib/finance/activity-series';
 import { formatMoney } from '@/lib/finance/format-money';
-import { scrubStep } from '@/lib/haptics';
+import { chartStep } from '@/lib/haptics';
 import { springs } from '@/lib/motion/tokens';
 import { tid, type Screen } from '@/lib/test-ids';
 
@@ -173,7 +173,7 @@ export function BalancePlot({
   }));
 
   const pick = (index: number) => {
-    scrubStep();
+    chartStep(days.length);
     onSelectDay(days[index].key);
   };
   const scrub = Gesture.Pan()

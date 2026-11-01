@@ -39,7 +39,7 @@ import type {
   FinanceTransaction,
   FinanceWallet,
 } from '@/lib/finance/types';
-import { scrubStep } from '@/lib/haptics';
+import { chartStep } from '@/lib/haptics';
 import { springs } from '@/lib/motion/tokens';
 import { tid } from '@/lib/test-ids';
 import { compactWalletNames } from '@/lib/wallets/compact-name';
@@ -151,13 +151,12 @@ export function NetWorthChart({
   // Cleared in the press handler, so the new line never shows whole for a frame before it draws.
   const redraw = () => reveal.set(0);
 
-  const lastTick = useRef<number | null>(null);
-  const { left, step, tickEvery } = geometry;
+  const lastPick = useRef<number | null>(null);
+  const { left, step } = geometry;
   const onPick = (next: number) => {
     setPicked(next);
-    const bucket = Math.floor(next / tickEvery);
-    if (bucket !== lastTick.current) scrubStep();
-    lastTick.current = bucket;
+    if (next !== lastPick.current) chartStep(history.days.length);
+    lastPick.current = next;
   };
   const gesture = useMemo(() => {
     const pick = (x: number) => {
@@ -176,9 +175,9 @@ export function NetWorthChart({
       .failOffsetY([-12, 12])
       .onUpdate((event) => pick(event.x));
     return Gesture.Exclusive(pan, tap);
-    // onPick only closes over tickEvery, listed here.
+    // onPick only closes over the day count, listed here.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [left, step, last, tickEvery, index]);
+  }, [left, step, last, history.days.length, index]);
 
   const nudge = (next: number) => {
     if (next < 0 || next > last) return;
@@ -352,7 +351,7 @@ export function NetWorthChart({
             accessibilityLabel="Time range"
             onChange={(next) => {
               redraw();
-              lastTick.current = null;
+              lastPick.current = null;
               setPicked(null);
               setRange(next);
             }}

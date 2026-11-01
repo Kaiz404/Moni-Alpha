@@ -7,9 +7,9 @@ import { StyleSheet } from 'react-native';
 
 import { PaceChart } from '@/components/charts/pace-chart';
 import { paceGeometry } from '@/components/charts/pace-geometry';
-import { scrubStep } from '@/lib/haptics';
+import { chartStep } from '@/lib/haptics';
 
-jest.mock('@/lib/haptics', () => ({ scrubStep: jest.fn() }));
+jest.mock('@/lib/haptics', () => ({ scrubStep: jest.fn(), chartStep: jest.fn() }));
 jest.mock('uniwind', () => ({
   useCSSVariable: (names: string[]) => names.map(() => undefined),
 }));
@@ -100,7 +100,7 @@ describe('PaceChart', () => {
     expect(screen.getByTestId('home.chart.callout')).toHaveTextContent(
       'RM1,103.00',
     );
-    expect(scrubStep).toHaveBeenCalledTimes(1);
+    expect(chartStep).toHaveBeenCalledTimes(1);
   });
 
   it('pins the month ends of a line chart to the plot edges and centres Today', () => {

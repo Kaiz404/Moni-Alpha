@@ -15,13 +15,13 @@ import type {
   FinanceTransaction,
   FinanceWallet,
 } from '@/lib/finance/types';
-import { scrubStep } from '@/lib/haptics';
+import { chartStep } from '@/lib/haptics';
 import {
   expense,
   financeWallet,
 } from '@/lib/wallets/__tests__/balance-fixture';
 
-jest.mock('@/lib/haptics', () => ({ scrubStep: jest.fn() }));
+jest.mock('@/lib/haptics', () => ({ scrubStep: jest.fn(), chartStep: jest.fn() }));
 jest.mock('uniwind', () => ({
   useCSSVariable: (names: string[]) => names.map(() => undefined),
   useUniwind: () => ({ theme: 'light' }),
@@ -138,16 +138,16 @@ describe('NetWorthChart', () => {
     );
   });
 
-  it('ticks on the first move, then once per twelve days, when scrubbing a year', () => {
+  it('reports each day crossed with how many days the chart holds, so the haptic can stay quiet', () => {
     chart([maybank]);
     fireEvent.press(screen.getByTestId('wallet.chart.1y'));
-    (scrubStep as jest.Mock).mockClear();
+    (chartStep as jest.Mock).mockClear();
     const plot = screen.getByTestId('wallet.chart.plot');
-    for (let times = 0; times < 24; times++)
+    for (let times = 0; times < 2; times++)
       fireEvent(plot, 'accessibilityAction', {
         nativeEvent: { actionName: 'decrement' },
       });
-    expect(scrubStep).toHaveBeenCalledTimes(3);
+    expect((chartStep as jest.Mock).mock.calls).toEqual([[366], [366]]);
   });
 
   it('returns the callout to today when the range changes', () => {
@@ -248,15 +248,14 @@ describe('netWorthGeometry', () => {
     );
   });
 
-  it('labels a year by month, spaces its scrub ticks, and keeps the last point exact', () => {
+  it('labels a year by month and keeps the last point exact', () => {
     const year = history('1y');
-    const { ticks, tickEvery, lines } = layout(year);
+    const { ticks, lines } = layout(year);
     expect(ticks.map((tick) => tick.text)).toEqual([
       'Oct 2025',
       'Apr 2026',
       'Today',
     ]);
-    expect(tickEvery).toBe(12);
     expect(lines[0]!.points.split(' ')).toHaveLength(366);
     expect(year.total[365]).toBe(243180);
   });

@@ -19,7 +19,7 @@ import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Text } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import type { SpendHistory } from '@/lib/finance/spend-history';
-import { scrubStep } from '@/lib/haptics';
+import { chartStep } from '@/lib/haptics';
 import { springs } from '@/lib/motion/tokens';
 import { tid, type Screen } from '@/lib/test-ids';
 
@@ -145,7 +145,7 @@ function Plot({
 
   const select = (index: number) => {
     if (index === selectedRef.current || index < 0 || index > last) return;
-    scrubStep();
+    chartStep(geometry.points.length);
     setPicked(index);
   };
 

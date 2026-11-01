@@ -8,7 +8,7 @@ import { SpentCard } from '@/components/home/spent-card';
 import type { FinanceTransaction } from '@/lib/finance/types';
 import type { BudgetMonth } from '@/lib/finance/budget-month';
 
-jest.mock('@/lib/haptics', () => ({ scrubStep: jest.fn() }));
+jest.mock('@/lib/haptics', () => ({ scrubStep: jest.fn(), chartStep: jest.fn() }));
 jest.mock('uniwind', () => ({
   useCSSVariable: (names: string[]) => names.map(() => undefined),
   useUniwind: () => ({ theme: 'light' }),

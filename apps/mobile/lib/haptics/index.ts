@@ -24,8 +24,16 @@ export const thresholdOn = () => fire(Haptics.AndroidHaptics.Toggle_On, lightImp
 /** A swipe falls back under the commit threshold. */
 export const thresholdOff = () => fire(Haptics.AndroidHaptics.Toggle_Off, lightImpact);
 
-/** Chart scrub step, segmented change, sheet detent. */
+/** Segmented change, sheet detent, a pick among a few. */
 export const scrubStep = () => fire(Haptics.AndroidHaptics.Segment_Tick, Haptics.selectionAsync);
+
+/** Past this many points a drag crosses them faster than a tick can mean anything. */
+const CHART_TICK_MOST_POINTS = 12;
+
+/** A chart's point under the finger. Dense charts stay quiet. */
+export const chartStep = (points: number) => {
+  if (points <= CHART_TICK_MOST_POINTS) scrubStep();
+};
 
 export const toggleOn = () => fire(Haptics.AndroidHaptics.Toggle_On, Haptics.selectionAsync);
 
