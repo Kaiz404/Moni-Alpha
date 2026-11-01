@@ -32,7 +32,11 @@ func newRouter(verifier *auth.Verifier, limiter, ipLimiter *auth.RateLimiter, ll
 	r.Use(gin.Recovery(), gin.Logger())
 
 	r.GET("/healthz", func(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{"status": "ok"})
+		authKeys := "loading"
+		if verifier.KeysLoaded() {
+			authKeys = "loaded"
+		}
+		c.JSON(http.StatusOK, gin.H{"status": "ok", "authKeys": authKeys})
 	})
 
 	ipLimit := ipLimiter.MiddlewareBy(func(c *gin.Context) string { return auth.ClientIP(c.Request) }, "Too many requests — try again shortly")

@@ -131,7 +131,7 @@ Text and image requests also carry optional `clientNow` (device local time, RFC 
 
 `type` is `income` | `expense` | `transfer`. Transfers use `walletId` as the source wallet and `transferToWalletId` as the destination (either may be `null` for user completion in the review UI). Receipt and notification extraction remain income/expense only on the wire (the client reads reloads and card payments itself, with no wire change); **text** extraction detects transfers (e.g. "move 500 from Maybank to savings").
 
-Auth: `Authorization: Bearer <supabase-user-jwt>`, verified via JWKS (ES256). Errors: `{ error, details? }`.
+Auth: `Authorization: Bearer <supabase-user-jwt>`, verified via JWKS (ES256). Errors: `{ error, details? }`. Until the JWKS has loaded, every authenticated request gets a 503 with `Retry-After: 30` and `details.retryAfterSeconds`; no request passes auth without verified keys. The client treats any non-2xx or network failure as `unavailable`.
 
 ## Model allocation
 

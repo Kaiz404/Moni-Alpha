@@ -8,7 +8,7 @@ All `/v1` routes require `Authorization: Bearer <supabase-user-jwt>`.
 
 | Method | Path                       | Purpose                                          | Model                          |
 | ------ | -------------------------- | ------------------------------------------------ | ------------------------------ |
-| GET    | `/healthz`                 | Liveness (no auth)                               | —                              |
+| GET    | `/healthz`                 | Liveness (no auth), always 200; `authKeys` is `loaded` or `loading` | —           |
 | POST   | `/v1/extract/text`         | Transaction from free text                       | `deepseek/deepseek-v4.1-flash` |
 | POST   | `/v1/extract/image`        | Transaction from receipt image (base64 or URL)   | `deepseek/deepseek-v4.1-flash` |
 | POST   | `/v1/extract/notification` | Transaction from Android notification            | `deepseek/deepseek-v4.1-flash` |
@@ -19,6 +19,12 @@ Extraction responses are a discriminated union: `{ status: "ok", extraction }`, 
 ## Auth
 
 Supabase signs user access tokens with an asymmetric ES256 key. The backend verifies them statelessly against the project JWKS (`$SUPABASE_URL/auth/v1/.well-known/jwks.json`) with a 15-minute key cache — no shared JWT secret, no Supabase round-trip per request. A per-user in-memory token bucket (20 req/min, burst 8) protects the shared OpenRouter credit.
+
+An unreachable JWKS does not stop the process. This matters when a free-tier Supabase project pauses and its hostname stops resolving ([docs/SETUP.md](../../docs/SETUP.md#supabase)).
+
+- Startup waits at most 5s for the first fetch, then starts the server either way. A healthy cold start therefore serves its first request with keys.
+- A background loop retries from 2s, doubling up to 60s, until a fetch returns at least one key. After that the JWKS cache refreshes on its own and keeps the last good keys when a refresh fails.
+- Until keys load, a `/v1` request with a bearer token gets `503 { "error": "Auth keys are not loaded yet", "details": { "retryAfterSeconds": 30 } }` and `Retry-After: 30`. No request reaches a handler without a verified token (`internal/auth/keys_test.go`). The mobile client reads a 503 as `unavailable` and keeps the capture queued.
 
 ## Run locally
 

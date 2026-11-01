@@ -150,8 +150,51 @@ var v1Routes = []string{"/v1/extract/text", "/v1/extract/image", "/v1/extract/no
 func TestHealthzNeedsNoToken(t *testing.T) {
 	s := newTestServer(t, nil)
 	code, _, body := s.call(t, http.MethodGet, "/healthz", "", nil)
-	if code != http.StatusOK || body["status"] != "ok" {
+	if code != http.StatusOK || body["status"] != "ok" || body["authKeys"] != "loaded" {
 		t.Fatalf("got %d %v", code, body)
+	}
+}
+
+func TestRoutesWithTheJWKSUnreachable(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	gin.DefaultWriter = io.Discard
+	dead := httptest.NewServer(http.NotFoundHandler())
+	url := dead.URL
+	dead.Close()
+	ctx, cancel := context.WithCancel(context.Background())
+	t.Cleanup(cancel)
+	verifier, err := auth.NewVerifier(ctx, url)
+	if err != nil {
+		t.Fatalf("NewVerifier: %v", err)
+	}
+	fake := &fakeLLM{}
+	llmSrv := httptest.NewServer(fake)
+	t.Cleanup(llmSrv.Close)
+	h := newRouter(verifier, auth.NewRateLimiter(600, 100), auth.NewRateLimiter(600, 100), llm.NewClient("test-key", llmSrv.URL))
+	priv, _ := authtest.KeyAndJWKS(t)
+	token := authtest.SignToken(t, priv, "user-1", time.Now().Add(time.Hour))
+
+	health := httptest.NewRecorder()
+	h.ServeHTTP(health, httptest.NewRequest(http.MethodGet, "/healthz", nil))
+	if health.Code != http.StatusOK || health.Body.String() != `{"authKeys":"loading","status":"ok"}` {
+		t.Fatalf("healthz: got %d %s", health.Code, health.Body)
+	}
+
+	for _, route := range v1Routes {
+		req := httptest.NewRequest(http.MethodPost, route, strings.NewReader(`{}`))
+		req.Header.Set("Authorization", "Bearer "+token)
+		rec := httptest.NewRecorder()
+		h.ServeHTTP(rec, req)
+		if rec.Code != http.StatusServiceUnavailable || rec.Header().Get("Retry-After") != "30" {
+			t.Fatalf("%s: got %d, Retry-After %q: %s", route, rec.Code, rec.Header().Get("Retry-After"), rec.Body)
+		}
+		want := `{"details":{"retryAfterSeconds":30},"error":"Auth keys are not loaded yet"}`
+		if rec.Body.String() != want {
+			t.Fatalf("%s: body %s", route, rec.Body)
+		}
+	}
+	if len(fake.requests) != 0 {
+		t.Fatalf("%d requests reached the model without a verified token", len(fake.requests))
 	}
 }
 
