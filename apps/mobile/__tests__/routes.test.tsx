@@ -6,6 +6,7 @@ import {
   id,
   serve,
   sessionStorageEntry,
+  setOnline,
   SilentWebSocket,
   systemCategoryId,
   type Profile,
@@ -16,13 +17,15 @@ global.fetch = fakeFetch as typeof fetch;
 (global as unknown as { WebSocket: unknown }).WebSocket = SilentWebSocket;
 
 /* eslint-disable import/first */
-import { act, cleanup, renderRouter, screen } from 'expo-router/testing-library';
+import { act, cleanup, fireEvent, renderRouter, screen } from 'expo-router/testing-library';
+import { Share } from 'react-native';
 
 import { authMMKV } from '@/lib/mmkv/auth';
 import { clearStore } from '@/lib/store';
 /* eslint-enable import/first */
 
 let mockTheme: 'light' | 'dark' = 'light';
+let mockOnline = true;
 
 // expo-router's testing library swaps in Reanimated's bare mock, which lacks these two.
 Object.assign(jest.requireMock('react-native-reanimated'), {
@@ -149,13 +152,13 @@ jest.mock('react-native-background-actions', () => ({
 jest.mock('moni-document-scanner', () => ({ scanDocument: () => new Promise(() => {}) }));
 jest.mock('../modules/moni-android-apps', () => ({
   __esModule: true,
-  default: { getInstalledApps: async () => [], getInstalledFinanceApps: async () => [] },
+  default: { getInstalledAppsAsync: async () => [] },
   isMoniAndroidAppsNativeAvailable: () => true,
 }));
-jest.mock('react-native-android-notification-listener', () => ({
-  __esModule: true,
-  default: { getPermissionStatus: async () => 'authorized', requestPermission: () => {} },
-  RNAndroidNotificationListenerHeadlessJsName: 'RNAndroidNotificationListenerHeadlessJs',
+// Its native module loads through import(), which Jest cannot run without ESM mode.
+jest.mock('@/lib/notifications/permission', () => ({
+  readNotificationListenerPermission: async () => 'authorized',
+  openNotificationListenerSettings: () => {},
 }));
 jest.mock('expo-image-picker', () => ({
   MediaTypeOptions: { Images: 'Images' },
@@ -166,11 +169,10 @@ jest.mock('expo-image-picker', () => ({
   launchImageLibraryAsync: async () => ({ canceled: true, assets: null }),
 }));
 jest.mock('expo-network', () => ({
-  useNetworkState: () => ({ isConnected: true, isInternetReachable: true, type: 'WIFI' }),
-  getNetworkStateAsync: async () => ({
-    isConnected: true,
-    isInternetReachable: true,
-    type: 'WIFI',
+  useNetworkState: () => ({
+    isConnected: mockOnline,
+    isInternetReachable: mockOnline,
+    type: mockOnline ? 'WIFI' : 'NONE',
   }),
 }));
 
@@ -239,7 +241,7 @@ const ROUTES: Record<string, RouteSpec> = {
     'Custom · RM235.30 since 1 Oct',
     "Make one for anything the presets don't fit",
   ),
-  'chat.tsx': same('/chat', "Hi. Tell me what you spent and I'll file it."),
+  'chat.tsx': same('/chat', "Hi Kai. Tell me what you spent and I'll file it."),
   'chat/history.tsx': same('/chat/history', 'No past days yet'),
   'debt/[id].tsx': differ(`/debt/${MEI}`, 'You owe Mei', "This debt isn't here any more"),
   'debt/amount.tsx': differ(
@@ -284,9 +286,11 @@ const ROUTES: Record<string, RouteSpec> = {
 
 /** Seeded store. Each row is a param a route reads, with a missing, unknown, or odd value. */
 const PARAM_VISITS: [label: string, Visit][] = [
+  ['home, greets by the name sign-up saved', { href: '/', text: 'Afternoon, Kai' }],
   ['bill, unknown series', { href: '/bill/unknown', text: "This bill isn't due this month" }],
   ['budget category, unknown id', { href: '/budget/unknown', text: 'This category is gone' }],
-  ['budget category, nonsense month', { href: `/budget/${FOOD}?month=nonsense`, text: 'Food & Dining' }],
+  ['budget category, nonsense month', { href: `/budget/${FOOD}?month=nonsense`, text: 'Spent in October' }],
+  ['budget category, month 13', { href: `/budget/${FOOD}?month=2026-13`, text: 'Spent in October' }],
   ['debt, unknown id', { href: '/debt/unknown', text: "This debt isn't here any more" }],
   ['debt, someone owes me', { href: `/debt/${id('debt', 'aiman')}`, text: 'Aiman owes you' }],
   ['debt, settled', { href: `/debt/${id('debt', 'hana')}`, text: 'Hana' }],
@@ -334,6 +338,34 @@ function textsOf(node: unknown): string[] {
   return node && typeof node === 'object' ? textsOf((node as { children?: unknown }).children) : [];
 }
 
+/** A NaN reaching a layout or SVG prop can kill the Android view; on screen it reads RMNaN. */
+function brokenValues(node: unknown): string[] {
+  if (typeof node === 'string') {
+    return /\bNaN\b|\bundefined\b|\[object Object\]/.test(node) ? [`text "${node}"`] : [];
+  }
+  if (Array.isArray(node)) return node.flatMap(brokenValues);
+  if (!node || typeof node !== 'object') return [];
+  const { type, props = {}, children } = node as {
+    type: string;
+    props?: Record<string, unknown>;
+    children?: unknown;
+  };
+  const inValue = (name: string, value: unknown): string[] => {
+    if (typeof value === 'number') return Number.isFinite(value) ? [] : [`${type}.${name}=${value}`];
+    return typeof value === 'string' && /\bNaN\b/.test(value) ? [`${type}.${name}="${value}"`] : [];
+  };
+  const inStyle = (name: string, style: unknown): string[] =>
+    style && typeof style === 'object'
+      ? Object.entries(style).flatMap(([key, value]) => inStyle(`${name}.${key}`, value))
+      : inValue(name, style);
+  return [
+    ...Object.entries(props).flatMap(([name, value]) =>
+      name === 'style' ? inStyle(name, value) : inValue(name, value),
+    ),
+    ...brokenValues(children ?? []),
+  ];
+}
+
 let noise: string[] = [];
 
 const { setImmediate: realSetImmediate } = jest.requireActual('timers');
@@ -350,14 +382,9 @@ async function settle(): Promise<void> {
   }
 }
 
-async function visit(
-  { href, text }: Visit,
-  {
-    profile,
-    theme,
-    signedOut = false,
-  }: { profile: Profile; theme: 'light' | 'dark'; signedOut?: boolean },
-): Promise<void> {
+type Mount = { profile: Profile; theme: 'light' | 'dark'; signedOut?: boolean };
+
+async function mount(href: string, { profile, theme, signedOut = false }: Mount): Promise<void> {
   mockTheme = theme;
   serve(profile);
   const [key, session] = sessionStorageEntry();
@@ -366,8 +393,13 @@ async function visit(
   jest.useFakeTimers({ now: new Date('2026-10-14T05:00:00.000Z') });
   renderRouter('./app', { initialUrl: href });
   await settle();
+}
+
+async function visit({ href, text }: Visit, options: Mount): Promise<void> {
+  await mount(href, options);
   expect(noise).toEqual([]);
   expect(rawTextOutsideText(screen.toJSON())).toEqual([]);
+  expect(brokenValues(screen.toJSON())).toEqual([]);
   if (screen.queryAllByText(text).length === 0) {
     throw new Error(`${href} shows no "${text}". It shows: ${textsOf(screen.toJSON()).join(' | ')}`);
   }
@@ -427,9 +459,79 @@ describe.each(Object.entries(ROUTES))('%s', (_file, spec) => {
   });
 });
 
+describe('offline', () => {
+  afterEach(() => {
+    setOnline(true);
+    mockOnline = true;
+  });
+  it.each(Object.entries(ROUTES).filter(([, spec]) => !spec.signedOut))('%s opens from cache', async (_file, spec) => {
+    await visit(spec.seeded, { profile: 'full', theme: 'light' });
+    setOnline(false);
+    mockOnline = false;
+    await visit(spec.seeded, { profile: 'full', theme: 'light' });
+  });
+});
+
 describe('params', () => {
   it.each(PARAM_VISITS)('%s', async (_label, target) => {
     await visit(target, { profile: 'full', theme: 'light' });
     await visit(target, { profile: 'full', theme: 'dark' });
   });
+});
+
+const pressableIds = (): string[] => [
+  ...new Set(
+    screen
+      .queryAllByTestId(/./)
+      .filter((node) => node.props.onClick != null || node.props.onStartShouldSetResponder != null)
+      .map((node) => node.props.testID as string),
+  ),
+];
+
+/**
+ * Presses every control a route shows, then every control that press revealed (a sheet's
+ * options, a confirm), each from a fresh mount. Too slow for the default run:
+ * `pnpm --filter moni test:taps`.
+ */
+(process.env.TAP_EVERY_CONTROL === '1' ? describe : describe.skip)('every control', () => {
+  const MAX_DEPTH = 2;
+  const pressed = new Set<string>();
+  const cases = Object.entries(ROUTES).flatMap(([file, spec]) => [
+    [`${file} seeded`, spec.seeded.href, 'full', spec.signedOut],
+    [`${file} empty`, spec.empty.href, 'empty', spec.signedOut],
+  ]) as [string, string, Profile, true | undefined][];
+
+  it.each(cases)('%s', async (_label, href, profile, signedOut) => {
+    jest.spyOn(Share, 'share').mockResolvedValue({ action: 'dismissedAction' });
+    const options: Mount = { profile, theme: 'light', signedOut };
+    const failures: string[] = [];
+    const queue: string[][] = [[]];
+    while (queue.length > 0) {
+      const path = queue.shift() as string[];
+      await clearStore();
+      await mount(href, options);
+      try {
+        for (const testID of path) {
+          fireEvent.press(screen.getAllByTestId(testID)[0]);
+          await settle();
+        }
+        const raw = [...rawTextOutsideText(screen.toJSON()), ...brokenValues(screen.toJSON())];
+        if (noise.length > 0 || raw.length > 0) {
+          failures.push(`${path.join(' > ')}: ${[...noise, ...raw].join(' || ')}`);
+        }
+        if (path.length < MAX_DEPTH) {
+          for (const testID of pressableIds()) {
+            if (pressed.has(testID)) continue;
+            pressed.add(testID);
+            queue.push([...path, testID]);
+          }
+        }
+      } catch (error) {
+        failures.push(`${path.join(' > ')}: ${(error as Error).stack}`);
+      }
+      noise = [];
+      cleanup();
+    }
+    expect(failures).toEqual([]);
+  }, 590_000);
 });

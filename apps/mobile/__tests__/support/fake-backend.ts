@@ -36,6 +36,11 @@ export type Profile = 'empty' | 'full';
 type Row = Record<string, unknown>;
 
 let tables: Record<string, Row[]> = {};
+let online = true;
+
+export function setOnline(value: boolean): void {
+  online = value;
+}
 /** What the server holds. A brand new account still sees the system categories. */
 export function serve(profile: Profile): void {
   const built = buildProfile(profile, {
@@ -77,6 +82,7 @@ function json(body: unknown, status = 200): Response {
 
 /** PostgREST for the handful of verbs the app sends; anything else is empty, never an error. */
 export async function fakeFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
+  if (!online) throw new TypeError('Network request failed');
   const url = new URL(typeof input === 'string' ? input : input instanceof URL ? input.href : input.url);
   const rest = url.pathname.match(/^\/rest\/v1\/([^/]+)$/);
   if (!rest) return json({});

@@ -1,3 +1,6 @@
+// Route tests freeze the clock and read local-time copy, so CI and a laptop must agree.
+process.env.TZ = 'Asia/Kuala_Lumpur';
+
 module.exports = {
   preset: 'jest-expo',
   setupFiles: ['<rootDir>/jest.setup.js'],
