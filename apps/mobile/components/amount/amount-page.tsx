@@ -43,7 +43,8 @@ type AmountPageProps = {
   prefilled?: boolean;
   currency: string;
   direction: AmountDirection;
-  sentence: AmountSentence | null;
+  /** Null keeps its line blank so nothing moves when one arrives; left out, the page has no line. */
+  sentence?: AmountSentence | null;
   /** The control above the amount, such as a segmented control. */
   control?: ReactNode;
   /** Picker fields and the note, between the amount and the keypad. */
@@ -110,14 +111,16 @@ export function AmountPage({
           >
             {shown}
           </Text>
-          <Text
-            testID={tid(screen, 'sentence')}
-            variant="body"
-            className={`mt-1 text-center ${sentence?.tone === 'over' ? 'text-over' : 'text-ink-2'}`}
-            numberOfLines={2}
-          >
-            {sentence?.text ?? ' '}
-          </Text>
+          {sentence === undefined ? null : (
+            <Text
+              testID={tid(screen, 'sentence')}
+              variant="body"
+              className={`mt-1 text-center ${sentence?.tone === 'over' ? 'text-over' : 'text-ink-2'}`}
+              numberOfLines={2}
+            >
+              {sentence?.text ?? ' '}
+            </Text>
+          )}
         </View>
         {children}
         {hint ? (

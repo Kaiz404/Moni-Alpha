@@ -34,7 +34,8 @@ export const SIDE_WORDS = {
       `${name} won't owe you anything. No money moves, and this history stays.`,
     record: (name: string, amount: string) => `Record: ${name} owes you ${amount}`,
     saved: (name: string, amount: string) => `Saved. ${name} owes you ${amount}`,
-    segment: (name: string) => `${name || 'They'} owe${name ? 's' : ''} me`,
+    segment: 'They owe me',
+    pastPeople: 'People who owed you',
     existing: (name: string, amount: string) =>
       `${name} already owes you ${amount}. This goes on ${name}'s page too.`,
   },
@@ -65,7 +66,8 @@ export const SIDE_WORDS = {
       `You won't owe ${name} anything. No money moves, and this history stays.`,
     record: (name: string, amount: string) => `Record: you owe ${name} ${amount}`,
     saved: (name: string, amount: string) => `Saved. You owe ${name} ${amount}`,
-    segment: (name: string) => `I owe ${name || 'them'}`,
+    segment: 'I owe them',
+    pastPeople: 'People you owed',
     existing: (name: string, amount: string) =>
       `You already owe ${name} ${amount}. This goes on ${name}'s page too.`,
   },
