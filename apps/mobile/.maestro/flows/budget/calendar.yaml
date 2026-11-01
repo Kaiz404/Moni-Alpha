@@ -22,7 +22,10 @@ tags:
     id: budget.calendar.day.1
 - assertVisible: .* 1 .*
 - takeScreenshot: b1-l4-calendar
-# A day's "All" link opens Activity on that day, and its chip goes back to the whole month.
+# A day's "All" link lists that day under Budget, and back returns to the same day. On the pinned
+# clock, day 10 is the seed's day with more rows than the card shows.
+- tapOn:
+    id: budget.calendar.day.10
 - scrollUntilVisible:
     element:
       id: budget.day.all
@@ -30,14 +33,20 @@ tags:
 - tapOn:
     id: budget.day.all
 - assertVisible:
-    id: activity.whole-month
-- assertVisible: '.* · \d+ transactions?'
+    id: budget.spending.meta
+    text: '\d+ payments'
+- assertVisible:
+    id: budget\.transaction\..*
+    index: 0
+- takeScreenshot: b1-calendar-day-all
 - tapOn:
-    id: activity.whole-month
-- assertNotVisible:
-    id: activity.whole-month
-- tapOn:
-    id: nav.tab.budget
+    id: budget.back
+- assertVisible:
+    id: budget.day.all
+- scrollUntilVisible:
+    element:
+      id: budget.view.month
+    direction: UP
 - tapOn:
     id: budget.view.month
 - assertVisible:

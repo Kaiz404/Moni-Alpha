@@ -1,0 +1,92 @@
+# B1 The Budget tab as the month's report: a By category or Top merchants row opens its payments on
+# a page under Budget, not in Activity, and back returns to the tab where it was. Rows open a
+# transaction and hold for the menu as on Activity.
+# Run: scripts/device/run-flows.sh .maestro/flows/budget/spending.yaml
+appId: com.anonymous.moni.e2e
+name: B1 budget spending
+tags:
+  - b1
+  - seed-full
+---
+- runFlow: ../../subflows/launch.yaml
+- extendedWaitUntil:
+    visible:
+      id: nav.tab.budget
+    timeout: 15000
+- tapOn:
+    id: nav.tab.budget
+- assertNotVisible: Reports
+- scrollUntilVisible:
+    element:
+      id: budget\.by-category\..*
+      text: 'Food & Dining,.*'
+    centerElement: true
+- assertVisible: By category
+- takeScreenshot: b1-by-category
+- tapOn:
+    id: budget\.by-category\..*
+    text: 'Food & Dining,.*'
+- assertVisible:
+    id: budget.back
+- assertVisible: Food & Dining
+- assertVisible:
+    id: budget.spending.total
+    text: 'RM[\d,]+\.\d\d'
+- assertVisible:
+    id: budget.spending.meta
+    text: '.* · \d+ payments?'
+- assertVisible: Mamak Ali
+- assertNotVisible:
+    id: activity.search
+- takeScreenshot: b1-spending-category
+
+# A row opens its transaction and comes back here.
+- tapOn:
+    id: budget\.transaction\..*
+    index: 0
+- assertVisible:
+    id: txn.amount.edit
+- tapOn:
+    id: txn.back
+- assertVisible:
+    id: budget.spending.total
+
+# Holding a row gives the same menu as Activity.
+- longPressOn:
+    id: budget\.transaction\..*
+    index: 0
+- assertVisible:
+    id: budget.hold.edit-category
+- takeScreenshot: b1-spending-hold
+- tapOn:
+    id: budget.hold.close
+- assertNotVisible:
+    id: budget.hold.edit-category
+
+# Back returns to the tab at the row that was pressed.
+- tapOn:
+    id: budget.back
+- assertVisible:
+    id: budget\.by-category\..*
+    text: 'Food & Dining,.*'
+
+- scrollUntilVisible:
+    element: Top merchants
+    centerElement: true
+- scrollUntilVisible:
+    element:
+      id: budget\.merchant\..*
+    centerElement: true
+- tapOn:
+    id: budget\.merchant\..*
+    index: 0
+- assertVisible:
+    id: budget.spending.meta
+    text: '.* · \d+ payments?'
+- assertVisible:
+    id: budget\.transaction\..*
+    index: 0
+- takeScreenshot: b1-spending-merchant
+- tapOn:
+    id: budget.back
+- assertVisible: Top merchants
