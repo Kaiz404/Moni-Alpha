@@ -35,7 +35,7 @@ When adding a synced table: add those columns, enable RLS + realtime, then regis
 ## Conventions
 
 - UUID primary keys (`gen_random_uuid()`)
-- Postgres stores money as `DECIMAL(12,2)` and currency as `CHAR(3)` ISO code. Client/domain contracts use integer minor units (`amountMinor` and balance/budget variants); adapters convert exactly at the database boundary.
+- Postgres stores money as `DECIMAL(12,2)` and currency as a `TEXT` three-letter ISO code with a check, never `CHAR(3)`, because Supabase Realtime delivers a `CHAR(n)` value cut to one character. Client/domain contracts use integer minor units (`amountMinor` and balance/budget variants); adapters convert exactly at the database boundary.
 - `transaction_type` enum: `income` | `expense` | `transfer` — transfers store source in `wallet_id`, destination in `transfer_to_wallet_id` (same currency only in the app); net worth unchanged across wallets
 - All user tables reference `auth.users(id) ON DELETE CASCADE`
 - Category archiving sets `is_active = false`: it removes a custom category from new selections while preserving linked financial history. System presets remain read-only through RLS.
@@ -43,6 +43,7 @@ When adding a synced table: add those columns, enable RLS + realtime, then regis
 - `20261012000000_drop_ai_insights.sql` drops the unused `ai_insights` cache (and its realtime publication entry). Ship the app build without `aiInsights$` first, then apply it, so installed builds never sync a missing table.
 - `20261013000000_recurring_overrides.sql` adds `recurring_overrides` (synced) and `wallets.balance_confirmed_at` (stamped by the app on wallet create and each save of the wallet screen, which shows the balance; backfilled from `created_at`, no default so server-side inserts never count), which gates the chat forecast. Apply it before shipping the build that syncs `recurringOverrides$`.
 - `20261021000300_recurring_override_bills.sql` adds the bill columns to `recurring_overrides` (`skip_period`, `remind`, `name`, `wallet_id`, `category_id`, `due_once`), all additive, so an installed app keeps syncing. The app probes `recurring_overrides.skip_period` and refuses to write those columns until the migration is pushed (operator O7).
+- `20261101000200_currency_text.sql` moves every currency column from `CHAR(3)` to `TEXT`, repairs values the truncation wrote back, adds the missing checks on `wallets` and `proposed_transactions`, touches every row so phones re-pull it, and rebuilds `wallet_balances` with `security_invoker` and no `anon` grant.
 - `20261021000000_main_currency_myr.sql` moves the `profiles.preferences` default currency to `MYR` and rewrites stored `USD`, which was only ever the column default (no client offered a choice).
 - `20261021000100_review_later_and_auto_add_rules.sql` adds the `later` status and `snoozed_until` to `proposed_transactions` and creates `auto_add_rules` (synced). Both are additive, so it can land after the build: the app syncs `auto_add_rules` only once a probe finds the table.
 - `20261025000000_review_history.sql` adds `proposed_transactions.reviewed_at` and `transaction_id` and an index on the user's reviewed rows. Additive: the app probes `reviewed_at` and, until it is found, soft-deletes reviewed rows as before.
