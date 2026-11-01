@@ -101,7 +101,8 @@ export default function ChatScreen() {
   const [unfolded, setUnfolded] = useState(false);
   const [input, setInput] = useState(params.draft ?? '');
   const [attachedImage, setAttachedImage] = useState<string | null>(null);
-  const [listening, setListening] = useState(false);
+  // Who asked: a tap stays open until Done, and a hold ends with the finger.
+  const [listening, setListening] = useState<'tap' | 'hold' | null>(null);
 
   const listRef = useRef<FlatList<ChatMessage>>(null);
   const contentHeight = useRef(0);
@@ -117,7 +118,7 @@ export default function ChatScreen() {
   inputRef.current = input;
   const speechBase = useRef('');
   const sendOnEnd = useRef(false);
-  const holdEnded = useRef(false);
+  const fingerDown = useRef(false);
   const reduceMotion = useReducedMotion();
   const level = useSharedValue(0);
 
@@ -191,7 +192,7 @@ export default function ChatScreen() {
   });
   useSpeechRecognitionEvent('end', () => {
     level.set(0);
-    setListening(false);
+    setListening(null);
     if (sendOnEnd.current) {
       sendOnEnd.current = false;
       send(inputRef.current);
@@ -199,20 +200,20 @@ export default function ChatScreen() {
   });
   useSpeechRecognitionEvent('error', () => {
     sendOnEnd.current = false;
-    setListening(false);
+    setListening(null);
   });
 
-  const listen = async () => {
+  const listen = async (by: 'tap' | 'hold') => {
     try {
       if (!(await ensureSpeechPermissions())) return;
       await prepareOfflineSpeechModel({ allowDialog: true });
       // A permission or download dialog can outlast the finger that asked for it.
-      if (holdEnded.current) return;
+      if (by === 'hold' && !fingerDown.current) return;
       speechBase.current = input;
-      setListening(true);
+      setListening(by);
       ExpoSpeechRecognitionModule.start(buildSpeechRecognitionOptions());
     } catch {
-      setListening(false);
+      setListening(null);
     }
   };
 
@@ -220,7 +221,7 @@ export default function ChatScreen() {
     sendOnEnd.current = false;
     ExpoSpeechRecognitionModule.abort();
     setInput(speechBase.current);
-    setListening(false);
+    setListening(null);
   };
   const doneListen = () => {
     sendOnEnd.current = true;
@@ -360,16 +361,16 @@ export default function ChatScreen() {
             })
           }
           onSend={() => send(input)}
-          listening={listening}
-          onListen={() => void listen()}
+          listening={listening === 'tap'}
+          onListen={() => void listen('tap')}
           onCancelListen={cancelListen}
           onDoneListen={doneListen}
           onHoldStart={() => {
-            holdEnded.current = false;
-            void listen();
+            fingerDown.current = true;
+            void listen('hold');
           }}
           onHoldEnd={(send) => {
-            holdEnded.current = true;
+            fingerDown.current = false;
             if (!listening) return;
             if (send) doneListen();
             else cancelListen();
