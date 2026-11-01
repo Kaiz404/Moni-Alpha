@@ -23,6 +23,7 @@ import { springs } from '@/lib/motion/tokens';
 import { tid, type Screen } from '@/lib/test-ids';
 
 import {
+  AXIS_LABEL_OVERHANG,
   AXIS_WIDTH,
   BAR_WIDTH,
   PLOT_HEIGHT,
@@ -180,7 +181,11 @@ export function PaceChart({
             variant="smallest"
             numberOfLines={1}
             className={`absolute text-right ${label.tone === 'meta' ? 'text-muted' : label.tone === 'ink' ? 'font-display-bold text-foreground' : 'font-display-bold text-deep-mint'}`}
-            style={{ left: 0, width: AXIS_WIDTH, top: label.y - 8 }}
+            style={{
+              left: -AXIS_LABEL_OVERHANG,
+              width: AXIS_WIDTH + AXIS_LABEL_OVERHANG,
+              top: label.y - 8,
+            }}
           >
             {label.text}
           </Text>

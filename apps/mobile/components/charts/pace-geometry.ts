@@ -52,6 +52,8 @@ export type PaceGeometry = {
 
 export const PLOT_HEIGHT = 150;
 export const AXIS_WIDTH = 44;
+/** RM1,800 is wider than the axis. The board lets it overflow left into the card's padding, and numberOfLines would cut it. */
+export const AXIS_LABEL_OVERHANG = 16;
 export const BAR_WIDTH = 12;
 const TOP = 44;
 const LINE_BASE = 142;

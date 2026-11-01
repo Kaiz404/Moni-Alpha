@@ -60,6 +60,8 @@ case "$1" in
       "getprop ro.mi.os.version.name") echo OS3.0 ;;
       "cat /data/local/tmp/moni-e2e.sha") echo "$FAKE_MARKER" ;;
       "pm path com.anonymous.moni.e2e") echo package:/data/app/moni-e2e/base.apk ;;
+      "cat /data/local/tmp/moni-maestro-app.apk.sha" | "cat /data/local/tmp/moni-maestro-server.apk.sha") echo "$FAKE_DRIVER_MARKER" ;;
+      "pm path dev.mobile.maestro" | "pm path dev.mobile.maestro.test") echo package:/data/app/maestro/base.apk ;;
     esac
     ;;
 esac
@@ -288,20 +290,21 @@ kill -9 -- "-$holder" 2>/dev/null
 holder=""
 
 mkdir -p "$tmp/rf-bin" "$tmp/rf-apks/rf-key"
+echo fake-jar >"$tmp/maestro-client.jar"
 touch "$tmp/rf-apks/rf-key/app-release.apk"
 printf '#!/bin/sh\necho "$@" >>"$FAKE_NODE_LOG"\necho "before {}"\necho "after  {\\"wallets\\":4}"\necho "seeded"\n' >"$tmp/rf-bin/node"
 printf '#!/bin/sh\ncase "$2" in packagename) echo com.anonymous.moni.e2e ;; permissions) echo "uses-permission: name='"'"'android.permission.CAMERA'"'"'" ;; esac\n' >"$tmp/rf-bin/aapt2"
 chmod +x "$tmp/rf-bin/"*
 run_flows() {
   stubbed env PATH="$tmp/rf-bin:$tmp/stub-bin:/usr/bin:/bin" MONI_APK_CACHE="$tmp/rf-apks" MONI_AAPT2="$tmp/rf-bin/aapt2" \
-    MONI_RUNS_DIR="$tmp/runs" FAKE_MARKER=rf-key FAKE_ADB_LOG="$tmp/rf-adb.log" FAKE_NODE_LOG="$tmp/rf-node.log" \
+    MONI_RUNS_DIR="$tmp/runs" MONI_MAESTRO_CLIENT_JAR="$tmp/maestro-client.jar" FAKE_DRIVER_MARKER="$(sha256sum "$tmp/maestro-client.jar" | cut -c1-16)" FAKE_MARKER=rf-key FAKE_ADB_LOG="$tmp/rf-adb.log" FAKE_NODE_LOG="$tmp/rf-node.log" \
     FAKE_MAESTRO_LOG="$tmp/rf-maestro.log" E2E_EMAIL=e2e+test@example.com E2E_PASSWORD=pw-123 "$rf" "$@"
 }
 out=$(run_flows --sha rf-key --tag smoke --out "$tmp/rf-out" 2>/dev/null)
 expect "run-flows.sh exits with Maestro's code" 1 $?
 [[ $out == "1/2 flows passed, report $tmp/runs/rf-key/"*"/report.xml" ]] && pass "run-flows.sh prints the passed count from report.xml" || fail "run-flows.sh summary: $out"
 maestro_args=$(tr '\n' ' ' <"$tmp/rf-maestro.log")
-[[ $maestro_args == "test --device 100.64.0.9:40000 --include-tags smoke --exclude-tags seed-empty,needs-speech,needs-posted-alert,needs-ai,perf --format junit --output $tmp/runs/rf-key/"*"/report.xml"* ]] && pass "run-flows.sh runs one Maestro suite with the smoke tag and the full seed's exclusions" || fail "maestro args: $maestro_args"
+[[ $maestro_args == "test --device 100.64.0.9:40000 --no-reinstall-driver --include-tags smoke --exclude-tags seed-empty,needs-speech,needs-posted-alert,needs-ai,perf --format junit --output $tmp/runs/rf-key/"*"/report.xml"* ]] && pass "run-flows.sh runs one Maestro suite with the smoke tag and the full seed's exclusions" || fail "maestro args: $maestro_args"
 [[ $maestro_args == *"-e E2E_EMAIL=e2e+test@example.com -e E2E_PASSWORD=pw-123 $(cd "$dir/../.." && pwd)/.maestro "* ]] && pass "run-flows.sh passes the e2e credentials and the workspace" || fail "maestro env args: $maestro_args"
 expect "run-flows.sh resets the seed it was given" "$(cd "$dir/../.." && pwd)/scripts/e2e/seed.mjs --reset --profile full" "$(cat "$tmp/rf-node.log")"
 [[ $(grep -c "^shell pm clear com.anonymous.moni.e2e$" "$tmp/rf-adb.log") == 1 && $(grep -c "^shell pm grant com.anonymous.moni.e2e android.permission.CAMERA$" "$tmp/rf-adb.log") == 2 ]] && pass "run-flows.sh clears the app's data and grants permissions again" || fail "adb calls: $(tr '\n' ';' <"$tmp/rf-adb.log")"

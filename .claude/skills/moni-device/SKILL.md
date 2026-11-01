@@ -74,7 +74,7 @@ apps/mobile/scripts/device/run-flows.sh --sha <key> --seed empty --area home    
 apps/mobile/scripts/device/run-flows.sh --sha <key> .maestro/flows/capture/type-it.yaml # one flow
 ```
 
-It takes the device lock and runs the doctor. Then it installs the key if the phone has a different one, resets the e2e user's data with `seed.mjs --reset --profile <full|empty>` (default `full`), clears the app's data, grants the camera, microphone, and location permissions again, and pushes the receipt fixtures to `/sdcard/Pictures/moni-e2e/`. Then it runs Maestro with JUnit output. Each flow signs in on its own through `.maestro/subflows/launch.yaml`.
+It takes the device lock and runs the doctor. Then it keeps Maestro's two driver apps on the phone with `install-driver.sh` and passes `--no-reinstall-driver`, because Maestro's default installs and removes them on every run and each install needs the operator. Then it installs the key if the phone has a different one, resets the e2e user's data with `seed.mjs --reset --profile <full|empty>` (default `full`), clears the app's data, grants the camera, microphone, and location permissions again, and pushes the receipt fixtures to `/sdcard/Pictures/moni-e2e/`. Then it runs Maestro with JUnit output. Each flow signs in on its own through `.maestro/subflows/launch.yaml`.
 
 It leaves out flows tagged with the other seed and flows tagged `needs-speech`, `needs-posted-alert`, `needs-ai`, or `perf`. Pass `--tag <that tag>` to include one. Areas are the folders under `apps/mobile/.maestro/flows/`. Run `run-flows.sh --area x` to list them.
 
@@ -119,6 +119,8 @@ Each `run-flows.sh` call writes `~/.local/share/moni-runs/<key>/<timestamp>/`:
 
 The last line printed is `<passed>/<total> flows passed, report <path>`, and the exit code is Maestro's. `--out <dir>` copies every PNG to `<dir>`. Maestro's command log holds the typed e2e password, so never paste the commands JSON into a report.
 
+A flow that fails with the launcher on screen means the app left the foreground. Search that flow's `logs/device-logcat.txt` for `FATAL EXCEPTION` before you blame the flow. `Force stopping com.anonymous.moni.e2e` lines are Maestro's `launchApp`, and they are expected.
+
 Proof standards:
 
 - Drive the real user path. Tap the controls a user taps. Do not open a route by deep link when the test is about the control that opens it.
@@ -141,7 +143,7 @@ For one screenshot outside a flow, use `apps/mobile/scripts/device/with-device.s
 
 Only the operator can answer these. Report them, and keep working on what does not need the phone.
 
-- **Install prompts.** A first install, or an install after a signature change, can show a HyperOS **Install via USB** confirmation or a **Google Play Protect** "Send app for a security check?" dialog. `install.sh` waits up to `MONI_INSTALL_TIMEOUT` seconds (default 300), then exits 4 and names both prompts.
+- **Install prompts.** Every install of a new APK, including Maestro's driver apps after a Maestro upgrade, can show a HyperOS **Install via USB** confirmation or a **Google Play Protect** "Send app for a security check?" dialog. The prompts time out in about 25 s and fail with `INSTALL_FAILED_USER_RESTRICTED`, so tell the operator just before you install. `install.sh` waits up to `MONI_INSTALL_TIMEOUT` seconds (default 300), then exits 4 and names both prompts.
 - **Port rotation.** After a reboot, `connect.sh` exits 3. The operator reads the new port, or runs `adb tcpip 5555` over USB (O2).
 - **Stay awake and the lock screen.** A locked phone fails every flow at `launchApp`. The operator unlocks it and turns on **Stay awake**.
 - **The hold file.** `touch ~/.local/share/moni-device/hold` is the operator's way to take the phone. Wait for them to delete it.
@@ -152,7 +154,8 @@ All under `apps/mobile/scripts/device/` unless named otherwise, each with usage 
 
 - `env.sh` sets `PATH` and `MONI_DEVICE_SERIAL`. Source it.
 - `connect.sh [host[:port]]`, `doctor.sh [--toolchain]`, `with-device.sh [--pr <id>] [--lane <name>] [--skip-doctor] -- <command>`.
-- `build-apk.sh [--clean-prebuild]`, `install.sh <key>`.
+- `build-apk.sh [--clean-prebuild]`, `install.sh <key>`, `install-driver.sh`. Pass `--clean-prebuild` after a config plugin change, or check the merged manifest, because the native fingerprint may not see it.
+- `maestro-timing.py <run dir> [--flows]` prints a run's per-command time. It prints names and durations only.
 - `run-flows.sh [--sha <key>] [--seed full|empty] [--out <dir>] [--tag <tag>]... [--area <area>]... [<flow or dir>...]`.
 - `screenshot.sh <out.png>`, `screenrecord.sh <seconds> <out.mp4>`, `review-pair.sh <slug> <Board> <device.png> [--out <dir>]`.
 - `perf.sh --sha <key> [--flow <flow.yaml>]` and `perf-compare.mjs base.json head.json --rule <metric>=<limit>` for cold start, APK size, and jank.

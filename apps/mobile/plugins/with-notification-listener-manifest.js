@@ -10,12 +10,18 @@
  *     lookups (wallet ↔ banking-app linker via moni-android-apps).
  *  4. Declares REQUEST_IGNORE_BATTERY_OPTIMIZATIONS for the exemption prompt in
  *     Capture sources.
+ *  5. Removes the listener library's BootUpReceiver. It calls
+ *     startForegroundService on a NotificationListenerService, which never calls
+ *     startForeground, so Android kills the app about 30 s later. Android 15+ also
+ *     sends BOOT_COMPLETED on the first launch after a force-stop, so this crashed
+ *     a running app. The system rebinds a granted listener by itself after boot.
  */
 const fs = require('fs');
 const path = require('path');
 const { withAndroidManifest } = require('expo/config-plugins');
 
 const BG_ACTIONS_SERVICE = 'com.asterinet.react.bgactions.RNBackgroundActionsTask';
+const LISTENER_BOOT_RECEIVER = 'com.lesimoes.androidnotificationlistener.BootUpReceiver';
 
 function readCuratedPackageNames() {
   try {
@@ -73,6 +79,14 @@ module.exports = function withNotificationListenerManifest(config) {
         }
       } else {
         application.$['tools:replace'] = 'android:allowBackup';
+      }
+
+      // ── 5. Drop the library's crashing boot receiver ────────────────────────
+      application.receiver = application.receiver ?? [];
+      if (!application.receiver.some((r) => r.$?.['android:name'] === LISTENER_BOOT_RECEIVER)) {
+        application.receiver.push({
+          $: { 'android:name': LISTENER_BOOT_RECEIVER, 'tools:node': 'remove' },
+        });
       }
 
       // ── 2. Add foregroundServiceType to RNBackgroundActionsTask ─────────────

@@ -56,7 +56,8 @@ tags:
 
 # Android back closes the sheet and leaves Home in place.
 - pressKey: Back
-- assertNotVisible: Add a transaction
+- assertNotVisible:
+    id: nav.chooser.type
 - assertVisible:
     id: home.avatar
 - takeScreenshot: n1-l9-back
@@ -66,7 +67,8 @@ tags:
     id: nav.plus
 - tapOn:
     id: nav.chooser.close
-- assertNotVisible: Add a transaction
+- assertNotVisible:
+    id: nav.chooser.type
 
 # Ask Moni pushes chat with no tab bar; back returns to Home.
 - tapOn:
@@ -108,7 +110,8 @@ tags:
     id: nav.plus
 - tapOn:
     id: nav.chooser.say
-- assertNotVisible: Add a transaction
+- assertNotVisible:
+    id: nav.chooser.type
 - assertNotVisible:
     id: nav.tab.index
 - takeScreenshot: n1-l8-say

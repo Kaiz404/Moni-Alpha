@@ -1,8 +1,12 @@
 # Opens Moni E2E on Home. Signs in through sign-in.yaml first when the app shows the sign-in page,
 # as it does after run-flows.sh clears the app's data. Every flow under flows/ starts here.
+# permissions: {} skips Maestro's default grant of every manifest permission. That grant takes about
+# 18 s a launch here, and it would undo the revoke that capture/say-denied.yaml needs. run-flows.sh
+# grants what the flows use.
 appId: com.anonymous.moni.e2e
 ---
-- launchApp
+- launchApp:
+    permissions: {}
 - extendedWaitUntil:
     visible:
       id: 'home\.avatar|auth\.email'

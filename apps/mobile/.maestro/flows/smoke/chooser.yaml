@@ -21,6 +21,7 @@ tags:
 - takeScreenshot: smoke-chooser
 - tapOn:
     id: nav.chooser.close
-- assertNotVisible: Add a transaction
+- assertNotVisible:
+    id: nav.chooser.type
 - assertVisible:
     id: home.avatar

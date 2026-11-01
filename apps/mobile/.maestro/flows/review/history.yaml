@@ -9,7 +9,8 @@ tags:
   - g4
   - needs-pending-proposals
 ---
-- launchApp
+- launchApp:
+    permissions: {}
 - extendedWaitUntil:
     visible:
       id: home.avatar

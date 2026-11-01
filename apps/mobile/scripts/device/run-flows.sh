@@ -93,6 +93,7 @@ run=${MONI_RUNS_DIR:-$HOME/.local/share/moni-runs}/$key/$(date +%Y%m%dT%H%M%S)
 mkdir -p "$run"
 echo "run $run" >&2
 
+"$here/install-driver.sh" >&2
 "$here/install.sh" "$key" >&2
 node "$mobile/scripts/e2e/seed.mjs" --reset --profile "$seed" >"$run/seed.log"
 tail -n 2 "$run/seed.log" | head -n 1 >&2
@@ -114,7 +115,7 @@ include=()
 ((${#tags[@]})) && include=(--include-tags "$(IFS=,; echo "${tags[*]}")")
 
 rc=0
-maestro test --device "$MONI_DEVICE_SERIAL" "${include[@]}" --exclude-tags "$(IFS=,; echo "${exclude[*]}")" \
+maestro test --device "$MONI_DEVICE_SERIAL" --no-reinstall-driver "${include[@]}" --exclude-tags "$(IFS=,; echo "${exclude[*]}")" \
   --format junit --output "$run/report.xml" --test-output-dir "$run/maestro" \
   -e "E2E_EMAIL=$email" -e "E2E_PASSWORD=$password" "${paths[@]}" >"$run/maestro.log" 2>&1 || rc=$?
 tail -n 20 "$run/maestro.log" >&2
