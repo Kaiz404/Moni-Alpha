@@ -93,7 +93,7 @@ describe('NetWorthChart', () => {
       'Oct 2025',
     );
     expect(screen.queryByText('15 Sep')).toBeNull();
-    fireEvent.press(screen.getByTestId('wallet.chart.month'));
+    fireEvent.press(screen.getByTestId('wallet.chart.1m'));
     expect(screen.getByText('1 Oct')).toHaveTextContent('1 Oct');
   });
 
@@ -190,12 +190,12 @@ describe('NetWorthChart', () => {
       screen.getByTestId('wallet.list.net-worth'),
     ).toHaveTextContent('RM0.00');
     expect(screen.queryByTestId('wallet.chart.plot')).toBeNull();
-    expect(screen.queryByTestId('wallet.chart.month')).toBeNull();
+    expect(screen.queryByTestId('wallet.chart.1m')).toBeNull();
   });
 });
 
 describe('netWorthGeometry', () => {
-  const history = (range: '1y' | 'month') =>
+  const history = (range: '1y' | '1m') =>
     balanceHistory({
       now,
       range,
@@ -225,7 +225,7 @@ describe('netWorthGeometry', () => {
     });
 
   it('puts the first day on the left edge and today on the right on the 14th, not half way', () => {
-    const { lines, left, right, step } = layout(history('month'));
+    const { lines, left, right, step } = layout(history('1m'));
     const xs = lines[0]!.points
       .split(' ')
       .map((point) => Number(point.split(',')[0]));
@@ -237,7 +237,7 @@ describe('netWorthGeometry', () => {
   });
 
   it('starts the axis near the lowest balance and says so', () => {
-    const { axis, accessibilityLabel } = layout(history('month'));
+    const { axis, accessibilityLabel } = layout(history('1m'));
     expect(axis.map((label) => label.text)).toEqual([
       'RM3,500',
       'RM2,750',
@@ -265,7 +265,7 @@ describe('netWorthGeometry', () => {
     const { lines, ticks, area, step } = layout(
       balanceHistory({
         now,
-        range: 'month',
+        range: '1m',
         wallets: [
           {
             id: 'maybank',
@@ -287,7 +287,7 @@ describe('netWorthGeometry', () => {
   it('draws a later wallet only from the day it began', () => {
     const later = balanceHistory({
       now,
-      range: 'month',
+      range: '1m',
       wallets: [
         { id: 'maybank', balanceMinor: 100000, createdAt: old },
         { id: 'cash', balanceMinor: 5000, createdAt: on(10, 13) },

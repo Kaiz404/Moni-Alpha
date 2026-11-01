@@ -31,7 +31,7 @@ describe('balanceHistory', () => {
   it('walks back from the live balance so the last point equals it', () => {
     const history = balanceHistory({
       now: noon(2026, 10, 4),
-      range: 'month',
+      range: '1m',
       wallets: [{ id: 'maybank', balanceMinor: 10000, createdAt: old }],
       transactions: [
         row('expense', 'maybank', 500, noon(2026, 10, 3)),
@@ -49,7 +49,7 @@ describe('balanceHistory', () => {
   it('moves two lines and leaves the total alone on a transfer between wallets', () => {
     const history = balanceHistory({
       now: noon(2026, 10, 3),
-      range: 'month',
+      range: '1m',
       wallets: [
         { id: 'maybank', balanceMinor: 7000, createdAt: old },
         { id: 'tng', balanceMinor: 3000, createdAt: old },
@@ -66,7 +66,7 @@ describe('balanceHistory', () => {
   it('counts only the end of a transfer that is a listed wallet', () => {
     const history = balanceHistory({
       now: noon(2026, 10, 2),
-      range: 'month',
+      range: '1m',
       wallets: [{ id: 'maybank', balanceMinor: 7000, createdAt: old }],
       transactions: [row('transfer', 'wise', 1000, noon(2026, 10, 2), 'maybank')],
     });
@@ -127,7 +127,7 @@ describe('balanceHistory', () => {
   it('keeps a transaction dated after today out of today', () => {
     const history = balanceHistory({
       now: noon(2026, 10, 2),
-      range: 'month',
+      range: '1m',
       wallets: [{ id: 'maybank', balanceMinor: 9000, createdAt: old }],
       transactions: [
         row('expense', 'maybank', 1000, noon(2026, 10, 9)),
@@ -140,7 +140,7 @@ describe('balanceHistory', () => {
   it('counts a transaction later today in today', () => {
     const history = balanceHistory({
       now: noon(2026, 10, 2),
-      range: 'month',
+      range: '1m',
       wallets: [{ id: 'maybank', balanceMinor: 9000, createdAt: old }],
       transactions: [row('expense', 'maybank', 1000, new Date(2026, 9, 2, 23, 30))],
     });
@@ -170,7 +170,7 @@ describe('balanceHistory', () => {
   it('begins a wallet on a transaction backdated before it was created', () => {
     const history = balanceHistory({
       now: noon(2026, 10, 10),
-      range: 'month',
+      range: '1m',
       wallets: [{ id: 'maybank', balanceMinor: 900, createdAt: noon(2026, 10, 9).toISOString() }],
       transactions: [row('expense', 'maybank', 100, noon(2026, 10, 8))],
     });
@@ -190,5 +190,23 @@ describe('balanceHistory', () => {
       total: [350],
       byWallet: { new: [350] },
     });
+  });
+});
+
+describe('balanceHistory on the short and open ranges', () => {
+  const now = new Date(2026, 10, 2, 12);
+  const wallets = [{ id: 'w', balanceMinor: 1000, createdAt: '2024-03-05T04:00:00Z' }];
+
+  it('7D is seven days ending today', () => {
+    const { days } = balanceHistory({ now, range: '7d', wallets, transactions: [] });
+    expect(days[0]).toBe('2026-10-27');
+    expect(days.at(-1)).toBe('2026-11-02');
+    expect(days).toHaveLength(7);
+  });
+
+  it('All starts on the day the first wallet began, past a year back', () => {
+    const { days, total } = balanceHistory({ now, range: 'all', wallets, transactions: [] });
+    expect(days[0]).toBe('2024-03-05');
+    expect(total.at(-1)).toBe(1000);
   });
 });

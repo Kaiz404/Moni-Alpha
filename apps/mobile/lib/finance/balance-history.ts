@@ -1,38 +1,16 @@
 import { toLocalDateInput } from '@/lib/dates/local-date-input';
+import { chartRangeStart, type ChartRange } from '@/lib/finance/chart-range';
 import { transactionDeltaMinor } from '@/lib/finance/ledger';
 import type { FinanceTransaction } from '@/lib/finance/types';
 
-export type BalanceRange = 'month' | '30d' | '90d' | '1y';
-
-export const BALANCE_RANGES: readonly { value: BalanceRange; label: string }[] = [
-  { value: 'month', label: 'This month' },
-  { value: '30d', label: '30 days' },
-  { value: '90d', label: '90 days' },
-  { value: '1y', label: '1 year' },
-];
-
 /** Closing balances, one entry per local day, oldest first. The last day is today. */
 export type BalanceHistory = {
-  /** Local `YYYY-MM-DD`. Starts at the range start, or the day the first wallet began if later. */
+  /** Local `YYYY-MM-DD`. Starts at the range start, or the day the first wallet began if later or the range is All. */
   days: string[];
   total: number[];
   /** Null before the wallet began, so no line is drawn for days it did not exist. */
   byWallet: Record<string, (number | null)[]>;
 };
-
-function rangeStart(now: Date, range: BalanceRange): string {
-  const [year, month, day] = [now.getFullYear(), now.getMonth(), now.getDate()];
-  switch (range) {
-    case 'month':
-      return toLocalDateInput(new Date(year, month, 1));
-    case '30d':
-      return toLocalDateInput(new Date(year, month, day - 29));
-    case '90d':
-      return toLocalDateInput(new Date(year, month, day - 89));
-    case '1y':
-      return toLocalDateInput(new Date(year - 1, month, day));
-  }
-}
 
 /**
  * Walks each wallet back from today's balance. A wallet begins on the day it was created, or on
@@ -46,7 +24,7 @@ export function balanceHistory({
   transactions,
 }: {
   now: Date;
-  range: BalanceRange;
+  range: ChartRange;
   wallets: readonly { id: string; balanceMinor: number; createdAt?: string | null }[];
   transactions: readonly Pick<
     FinanceTransaction,
@@ -77,9 +55,9 @@ export function balanceHistory({
     }
   }
 
-  const start = rangeStart(now, range);
+  const start = chartRangeStart(now, range);
   const earliest = [...began.values()].reduce((a, b) => (b < a ? b : a), today);
-  const first = earliest > start ? earliest : start;
+  const first = start === null || earliest > start ? earliest : start;
   const days: string[] = [];
   const [year, month, date] = [now.getFullYear(), now.getMonth(), now.getDate()];
   // Calendar arithmetic, not 24-hour steps, so a daylight saving change cannot skip or repeat a day.

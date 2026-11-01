@@ -31,10 +31,9 @@ import { Text } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { dayLabel } from '@/lib/dates/day-label';
 import {
-  BALANCE_RANGES,
   balanceHistory,
-  type BalanceRange,
 } from '@/lib/finance/balance-history';
+import { CHART_RANGES, type ChartRange } from '@/lib/finance/chart-range';
 import { formatMoney } from '@/lib/finance/format-money';
 import type {
   FinanceTransaction,
@@ -105,7 +104,7 @@ export function NetWorthChart({
   const dark = useUniwind().theme === 'dark';
   const reduceMotion = useReducedMotion();
   const [width, setWidth] = useState(DEFAULT_WIDTH);
-  const [range, setRange] = useState<BalanceRange>('30d');
+  const [range, setRange] = useState<ChartRange>('30d');
   const [chosenView, setView] = useState<NetWorthView>('total');
   const [picked, setPicked] = useState<number | null>(null);
   const view = wallets.length > 1 ? chosenView : 'total';
@@ -348,7 +347,7 @@ export function NetWorthChart({
             screen="wallet"
             name="chart"
             size="compact"
-            options={BALANCE_RANGES}
+            options={CHART_RANGES}
             value={range}
             accessibilityLabel="Time range"
             onChange={(next) => {
