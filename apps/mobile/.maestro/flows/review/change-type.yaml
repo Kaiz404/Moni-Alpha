@@ -1,0 +1,43 @@
+# P1: correct a capture's type on the Review card before Approve. Income flips the sign and
+# asks for a category; Transfer swaps merchant and category for where the money moves to.
+# Needs a pending capture first in the queue. It decides nothing, so the seed stays as it was.
+# Run: scripts/device/run-flows.sh .maestro/flows/review/change-type.yaml
+appId: com.anonymous.moni.e2e
+name: P1 change type in the Review card
+tags:
+  - p1
+  - seed-full
+---
+- runFlow: ../../subflows/launch.yaml
+- openLink: moni-e2e://review
+- extendedWaitUntil:
+    visible:
+      id: review.card
+    timeout: 10000
+
+- tapOn:
+    id: review.type
+- assertVisible: A new type clears the category, so you choose one that fits.
+- takeScreenshot: p1-type-sheet
+- tapOn:
+    id: sheet.option.income
+- assertVisible: '\+.*'
+- assertVisible: Pick a category
+- takeScreenshot: p1-type-income
+
+- tapOn:
+    id: review.type
+- tapOn:
+    id: sheet.option.transfer
+- assertVisible:
+    id: review.destination
+- assertNotVisible:
+    id: review.category
+- takeScreenshot: p1-type-transfer
+
+- tapOn:
+    id: review.type
+- tapOn:
+    id: sheet.option.expense
+- assertVisible:
+    id: review.category

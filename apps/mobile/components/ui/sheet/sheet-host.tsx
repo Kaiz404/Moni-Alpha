@@ -9,6 +9,7 @@ import {
   CurrencySheet,
   DateSheet,
   NotificationAppSheet,
+  TransactionTypeSheet,
   WalletSheet,
   WalletTypeSheet,
 } from '@/components/sheets/option-picker-sheet';
@@ -67,6 +68,14 @@ function renderSheet(sheet: OpenSheet, frame: SheetFrameProps) {
     case 'walletType':
       return (
         <WalletTypeSheet
+          {...frame}
+          request={sheet.request}
+          onPick={sheet.settle}
+        />
+      );
+    case 'transactionType':
+      return (
+        <TransactionTypeSheet
           {...frame}
           request={sheet.request}
           onPick={sheet.settle}

@@ -1,8 +1,9 @@
-import type { MinorAmount, ProposedTransaction } from '@repo/types';
+import type { MinorAmount, ProposedTransaction, TransactionType } from '@repo/types';
 import { View } from 'react-native';
 
 import { PickerChip, type ChipLook } from '@/components/review/picker-chip';
 import { ResultPill, SourcePill } from '@/components/review/result-pill';
+import { TypeChip } from '@/components/review/type-chip';
 import { IconSymbol, type IconSymbolName } from '@/components/ui/icon-symbol';
 import { InPlaceField, InPlaceGroup } from '@/components/ui/in-place-field';
 import { Press } from '@/components/ui/press';
@@ -18,6 +19,8 @@ const FIELD = { merchant: tid('review', 'merchant'), amount: tid('review', 'amou
 /** Everything the card shows, already resolved from the store and this card's edits. */
 export type ReviewCardModel = {
   proposal: ProposedTransaction;
+  /** The type as it will be written, the user's correction applied. */
+  type: TransactionType | null;
   sourceLabel: string;
   time: string;
   /** "Needs a wallet", "Maybe a duplicate". Only facts the app knows. */
@@ -39,6 +42,7 @@ export type ReviewCardHandlers = {
   onCancelEdit: () => void;
   onSaveMerchant: (value: string) => void;
   onSaveAmount: (value: MinorAmount) => void;
+  onPickType: () => void;
   onPickCategory: () => void;
   onPickWallet: () => void;
   onPickDestination: () => void;
@@ -54,7 +58,7 @@ const SOURCE: Record<
   image: { icon: 'receipt-text-outline', tint: 'bg-peach', onPastel: true },
 };
 
-function moneyDirection(type: ProposedTransaction['type']) {
+function moneyDirection(type: TransactionType | null) {
   return type === 'income' || type === 'transfer' ? type : 'expense';
 }
 
@@ -72,11 +76,11 @@ export function ReviewCard({
   const { proposal } = model;
   const source = SOURCE[proposal.sourceType];
   const amountText = formatSignedMoney(
-    moneyDirection(proposal.type),
+    moneyDirection(model.type),
     model.amountMinor,
     proposal.currency,
   );
-  const transfer = proposal.type === 'transfer';
+  const transfer = model.type === 'transfer';
 
   return (
     <View
@@ -135,33 +139,43 @@ export function ReviewCard({
         }}
       >
         <View>
-          {transfer ? null : (
-            <InPlaceField
-              testID={tid('review', 'merchant')}
-              label="Merchant name"
-              kind="text"
-              required
-              value={model.merchant}
-              onSave={handlers.onSaveMerchant}
-            >
-              {({ editable, editor }) =>
-                editor ?? (
-                  <View className="-my-1.5">
-                    {editable(
-                      <Text
-                        variant="rowTitle"
-                        className="text-foreground"
-                        numberOfLines={1}
-                      >
-                        {model.merchant}
-                      </Text>,
-                      { accessibilityLabel: `Merchant ${model.merchant}. Edit name` },
-                    )}
-                  </View>
-                )
-              }
-            </InPlaceField>
-          )}
+          <View className="flex-row items-center gap-2">
+            {transfer ? null : (
+              <View className="min-w-0 flex-1">
+                <InPlaceField
+                  testID={tid('review', 'merchant')}
+                  label="Merchant name"
+                  kind="text"
+                  required
+                  value={model.merchant}
+                  onSave={handlers.onSaveMerchant}
+                >
+                  {({ editable, editor }) =>
+                    editor ?? (
+                      <View className="-my-1.5">
+                        {editable(
+                          <Text
+                            variant="rowTitle"
+                            className="text-foreground"
+                            numberOfLines={1}
+                          >
+                            {model.merchant}
+                          </Text>,
+                          { accessibilityLabel: `Merchant ${model.merchant}. Edit name` },
+                        )}
+                      </View>
+                    )
+                  }
+                </InPlaceField>
+              </View>
+            )}
+            {editing === 'merchant' ? null : (
+              <TypeChip
+                type={moneyDirection(model.type)}
+                onPress={handlers.onPickType}
+              />
+            )}
+          </View>
           <InPlaceField
             testID={tid('review', 'amount')}
             label="Amount"
@@ -194,6 +208,7 @@ export function ReviewCard({
             testID={tid('review', 'category')}
             look={model.category}
             tinted
+            empty={{ label: 'Pick a category', icon: 'shape-outline' }}
             accessibilityLabel={`Category ${model.category?.name ?? 'none'}. Change category`}
             onPress={handlers.onPickCategory}
           />

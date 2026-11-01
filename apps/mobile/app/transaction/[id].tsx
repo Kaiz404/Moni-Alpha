@@ -62,6 +62,7 @@ import {
   updateTransaction,
 } from '@/lib/supabase/transactions';
 import { tid, type TestId } from '@/lib/test-ids';
+import { retypeFields, TRANSACTION_TYPE_COPY } from '@/lib/transactions/type-change';
 import { showToast } from '@/lib/toast/toast-store';
 import { transactionAlert } from '@/lib/transactions/alert';
 import { resolveTransactionIcon } from '@/lib/transactions/icon';
@@ -308,7 +309,7 @@ function Detail({ transaction: tx }: { transaction: FinanceTransaction }) {
       saveWithUndo(
         tx.id,
         'Type',
-        { type: next, categoryId: null },
+        retypeFields(next),
         { type: tx.type, categoryId: tx.categoryId },
       );
   };
@@ -375,7 +376,7 @@ function Detail({ transaction: tx }: { transaction: FinanceTransaction }) {
     {
       name: 'type',
       label: 'Type',
-      value: transfer ? 'Transfer' : tx.type === 'income' ? 'Income' : 'Expense',
+      value: TRANSACTION_TYPE_COPY[tx.type].label,
       action:
         transfer || correction
           ? null

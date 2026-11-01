@@ -1,4 +1,4 @@
-import type { MinorAmount, ProposedTransaction } from '@repo/types';
+import type { MinorAmount, ProposedTransaction, TransactionType } from '@repo/types';
 
 import type { DuplicateMatch } from '@/lib/ai/duplicates';
 import { merchantKey } from '@/lib/ai/routine';
@@ -23,6 +23,7 @@ import {
 } from '@/lib/supabase/proposed-transactions';
 import { deleteTransaction } from '@/lib/supabase/transactions';
 import { captureAlert } from '@/lib/transactions/alert';
+import { retypeFields } from '@/lib/transactions/type-change';
 
 /**
  * What the user changed on a capture before deciding. A field left undefined keeps the
@@ -34,6 +35,8 @@ export type ReviewEdits = {
   categoryId?: string | null;
   walletId?: string | null;
   transferToWalletId?: string | null;
+  /** The capture was read as the wrong type. Set through `retypeEdits`. */
+  type?: TransactionType;
   /** "Don't ask about similar": Approve also adds an auto-add rule for this app and merchant. */
   similar?: boolean;
 };
@@ -77,15 +80,29 @@ function walletCurrency(walletId: string): string | null {
   return wallet?.currency?.toUpperCase() ?? null;
 }
 
+export function reviewType(
+  proposal: ProposedTransaction,
+  edits: ReviewEdits,
+): TransactionType | null {
+  return edits.type ?? proposal.type;
+}
+
+/** Going back to the type Moni read brings back the category it read with it. */
+export function retypeEdits(proposal: ProposedTransaction, next: TransactionType): ReviewEdits {
+  return next === proposal.type ? { type: undefined, categoryId: undefined } : retypeFields(next);
+}
+
 /** The proposal as it will be written, edits applied. */
 export function editedProposal(
   proposal: ProposedTransaction,
   edits: ReviewEdits,
 ): ProposedTransaction {
-  const transfer = proposal.type === 'transfer';
+  const type = reviewType(proposal, edits);
+  const transfer = type === 'transfer';
   const merchant = edits.merchant === undefined ? proposal.merchant : edits.merchant.trim() || null;
   return {
     ...proposal,
+    type,
     amountMinor: edits.amountMinor ?? proposal.amountMinor,
     merchant: transfer ? null : merchant,
     categoryId: transfer
@@ -94,8 +111,9 @@ export function editedProposal(
         ? proposal.categoryId
         : edits.categoryId,
     walletId: edits.walletId === undefined ? proposal.walletId : edits.walletId,
-    transferToWalletId:
-      edits.transferToWalletId === undefined
+    transferToWalletId: !transfer
+      ? null
+      : edits.transferToWalletId === undefined
         ? proposal.transferToWalletId
         : edits.transferToWalletId,
   };
@@ -155,7 +173,8 @@ export async function approve(
       captureAlert(proposal),
     );
     keepProposalReceipt(next, transactionId);
-    const ruleAdded = edits.similar ? await addSimilarRule(next) : false;
+    // A rule has no type, so it would add the next alert under the type Moni misread.
+    const ruleAdded = edits.similar && !edits.type ? await addSimilarRule(next) : false;
     return {
       status: 'done',
       outcome: { action: 'approve', proposal: next, row, transactionId, ruleAdded },

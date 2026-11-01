@@ -61,6 +61,8 @@ import {
   later,
   moveBackToReview,
   notMine,
+  retypeEdits,
+  reviewType,
   undo,
   type ReviewEdits,
   type ReviewOutcome,
@@ -201,7 +203,7 @@ function displayName(proposal: ProposedTransaction, edits: ReviewEdits, lookups:
   return (
     merchantName(proposal.merchant, lookups.aliases) ??
     proposal.description ??
-    (proposal.type === 'transfer' ? 'Transfer' : 'Capture')
+    (reviewType(proposal, edits) === 'transfer' ? 'Transfer' : 'Capture')
   );
 }
 
@@ -490,7 +492,13 @@ export function ReviewDeck({ session }: { session: ReviewSession }) {
       const destination = field === 'destination';
       const picked = await openSheet({
         kind: 'wallet',
-        title: destination ? 'Moves to' : current ? 'Paid from' : 'Which wallet?',
+        title: destination
+          ? 'Moves to'
+          : !current
+            ? 'Which wallet?'
+            : reviewType(top, edits[top.id] ?? {}) === 'income'
+              ? 'Paid into'
+              : 'Paid from',
         wallets: destination ? mainWallets.filter((w) => w.id !== current) : mainWallets,
         selectedId: destination
           ? (edits[top.id]?.transferToWalletId ?? top.transferToWalletId)
@@ -514,7 +522,7 @@ export function ReviewDeck({ session }: { session: ReviewSession }) {
 
   const pickCategory = useCallback(async () => {
     if (!top) return;
-    const kind = top.type === 'income' ? 'income' : 'expense';
+    const kind = reviewType(top, edits[top.id] ?? {}) === 'income' ? 'income' : 'expense';
     const selected =
       edits[top.id]?.categoryId !== undefined ? edits[top.id]!.categoryId! : top.categoryId;
     const picked = await openSheet({
@@ -530,6 +538,13 @@ export function ReviewDeck({ session }: { session: ReviewSession }) {
     });
     if (picked) setEdit(top.id, { categoryId: picked });
   }, [top, edits, categories, progress, mainCurrency, setEdit]);
+
+  const pickType = useCallback(async () => {
+    if (!top) return;
+    const current = reviewType(top, edits[top.id] ?? {});
+    const picked = await openSheet({ kind: 'transactionType', selected: current });
+    if (picked && picked !== current) setEdit(top.id, retypeEdits(top, picked));
+  }, [top, edits, setEdit]);
 
   const finishExit = useCallback(
     (part: 'flown' | 'done') => {
@@ -710,6 +725,7 @@ export function ReviewDeck({ session }: { session: ReviewSession }) {
   const model = useMemo<ReviewCardModel | null>(() => {
     if (!top) return null;
     const own = edits[top.id] ?? {};
+    const type = reviewType(top, own);
     const categoryId = own.categoryId !== undefined ? own.categoryId : top.categoryId;
     const category = categoryId ? categories.find((c) => c.id === categoryId) : undefined;
     const amountMinor = (own.amountMinor ?? top.amountMinor ?? 0) as MinorAmount;
@@ -718,7 +734,7 @@ export function ReviewDeck({ session }: { session: ReviewSession }) {
     const destinationId =
       own.transferToWalletId !== undefined ? own.transferToWalletId : top.transferToWalletId;
     const budget =
-      top.type === 'expense' && category
+      type === 'expense' && category
         ? budgetLine(
             category.name,
             progress.find((p) => p.categoryId === category.id && p.currency === top.currency),
@@ -728,6 +744,7 @@ export function ReviewDeck({ session }: { session: ReviewSession }) {
         : null;
     return {
       proposal: top,
+      type,
       sourceLabel: captureSourceLabel(top),
       time: captureTime(top.notificationReceivedAt ?? top.createdAt),
       status: !walletId
@@ -745,9 +762,9 @@ export function ReviewDeck({ session }: { session: ReviewSession }) {
       amountMinor,
       category: category ? { name: category.name, icon: category.icon, color: category.color } : null,
       wallet: walletLook(wallets, walletId),
-      destination: top.type === 'transfer' ? walletLook(wallets, destinationId) : undefined,
+      destination: type === 'transfer' ? walletLook(wallets, destinationId) : undefined,
       evidence: duplicate ? duplicateText(duplicate, top.currency) : top.aiReasoning,
-      similar: top.sourceType === 'notification' ? !!own.similar : null,
+      similar: top.sourceType === 'notification' && !own.type ? !!own.similar : null,
       budget,
     };
   }, [top, edits, categories, duplicates, wallets, progress, lookups]);
@@ -760,6 +777,7 @@ export function ReviewDeck({ session }: { session: ReviewSession }) {
       onCancelEdit: () => send({ type: 'endEdit' }),
       onSaveMerchant: (merchant) => setEdit(top.id, { merchant }),
       onSaveAmount: (amountMinor) => setEdit(top.id, { amountMinor }),
+      onPickType: () => void pickType(),
       onPickCategory: () => void pickCategory(),
       onPickWallet: () => void pickWallet('wallet'),
       onPickDestination: () => void pickWallet('destination'),
@@ -770,7 +788,7 @@ export function ReviewDeck({ session }: { session: ReviewSession }) {
         setEdit(top.id, { similar: next });
       },
     };
-  }, [top, edits, send, setEdit, pickCategory, pickWallet]);
+  }, [top, edits, send, setEdit, pickType, pickCategory, pickWallet]);
 
   if (!top) {
     const recentlyReviewed = (
@@ -854,10 +872,11 @@ export function ReviewDeck({ session }: { session: ReviewSession }) {
     );
   }
 
+  const topType = reviewType(top, topEdits);
   const approveLabel =
     canApprove && model
       ? `Approve ${formatSignedMoney(
-          top.type === 'income' ? 'income' : top.type === 'transfer' ? 'transfer' : 'expense',
+          topType === 'income' || topType === 'transfer' ? topType : 'expense',
           model.amountMinor,
           top.currency,
         )}`

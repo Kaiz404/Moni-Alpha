@@ -8,7 +8,7 @@ import { Text } from 'react-native';
 import ReviewScreen from '@/app/review';
 import { financeProjection$ } from '@/lib/finance/projection';
 import { EMPTY_FINANCE_PROJECTION } from '@/lib/finance/types';
-import { getOpenSheet } from '@/lib/sheet/sheet-store';
+import { dismissSheet, getOpenSheet } from '@/lib/sheet/sheet-store';
 import { dismissToast, undoToast, useToast } from '@/lib/toast/toast-store';
 import { financeWallet } from '@/lib/wallets/__tests__/balance-fixture';
 
@@ -70,6 +70,7 @@ const store = jest.requireMock('@/lib/store') as Record<
 
 const MAYBANK = '00000000-0000-4000-8000-00000000000a';
 const FOOD = '00000000-0000-4000-8000-0000000000f0';
+const SALARY = '00000000-0000-4000-8000-0000000000f1';
 
 function seed(id: string, over: Record<string, unknown> = {}) {
   store.proposedTransactions$[id].set({
@@ -135,6 +136,71 @@ afterEach(() => {
 });
 
 describe('Review deck', () => {
+  async function pickType(type: 'expense' | 'income' | 'transfer') {
+    fireEvent.press(screen.getByTestId('review.type'));
+    const sheet = getOpenSheet();
+    if (sheet?.kind !== 'transactionType') throw new Error('the type chip opens the Type sheet');
+    await act(async () => sheet.settle(type));
+  }
+
+  it('corrects a capture to income: the sign, the category and the rule checkbox follow', async () => {
+    seed('p1');
+    store.categories$[SALARY].set({
+      id: SALARY,
+      user_id: 'user-1',
+      name: 'Salary',
+      type: 'income',
+      icon: 'cash',
+      color: '#A9DDB5',
+      is_active: true,
+      display_order: 1,
+      deleted: false,
+    });
+    await show(<ReviewScreen />);
+    expect(screen.getByText('Expense')).toBeTruthy();
+    expect(screen.getByText('−RM12.00')).toBeTruthy();
+    expect(screen.getByText('Food & Dining')).toBeTruthy();
+
+    await pickType('income');
+
+    expect(screen.getByText('Income')).toBeTruthy();
+    expect(screen.getByText('+RM12.00')).toBeTruthy();
+    expect(screen.getByText('Pick a category')).toBeTruthy();
+    expect(screen.queryByTestId('review.similar')).toBeNull();
+
+    fireEvent.press(screen.getByTestId('review.category'));
+    const sheet = getOpenSheet();
+    if (sheet?.kind !== 'category') throw new Error('the category chip opens the category sheet');
+    expect(sheet.request.categories.map((c) => c.name)).toEqual(['Salary']);
+    await act(async () => sheet.settle(SALARY));
+
+    await act(async () => fireEvent.press(screen.getByTestId('review.approve')));
+
+    expect(ledger()).toEqual([
+      expect.objectContaining({ type: 'income', category_id: SALARY, merchant: 'GRAB' }),
+    ]);
+  });
+
+  it('corrects a capture to a transfer: destination replaces merchant and category', async () => {
+    seed('p1');
+    await show(<ReviewScreen />);
+
+    await pickType('transfer');
+
+    expect(screen.getByText('Transfer')).toBeTruthy();
+    expect(screen.getByText('RM12.00')).toBeTruthy();
+    expect(screen.queryByTestId('review.merchant.edit')).toBeNull();
+    expect(screen.queryByTestId('review.category')).toBeNull();
+    expect(screen.getByTestId('review.destination')).toBeTruthy();
+
+    await act(async () => fireEvent.press(screen.getByTestId('review.approve')));
+
+    const sheet = getOpenSheet();
+    expect(sheet?.kind === 'wallet' && sheet.request.title).toBe('Moves to');
+    expect(ledger()).toEqual([]);
+    await act(async () => dismissSheet());
+  });
+
   it('approves the top card from the button, then Not mine ends on All caught up', async () => {
     seed('p1');
     seed('p2', {

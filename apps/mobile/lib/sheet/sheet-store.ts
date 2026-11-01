@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from 'react';
-import type { MinorAmount } from '@repo/types';
+import type { MinorAmount, TransactionType } from '@repo/types';
 
 import type { WalletKind } from '@/constants/wallet-form';
 
@@ -63,6 +63,7 @@ type Sheets = {
   };
   currency: { request: { selected: string }; result: string };
   walletType: { request: { selected: WalletKind }; result: WalletKind };
+  transactionType: { request: { selected: TransactionType | null }; result: TransactionType };
   notificationApp: {
     request: { selected: string | null };
     result: { app: NotificationApp | null };

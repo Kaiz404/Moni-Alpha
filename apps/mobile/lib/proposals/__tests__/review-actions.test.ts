@@ -1,7 +1,16 @@
 import type { Observable } from '@legendapp/state';
 import type { MinorAmount } from '@repo/types';
 
-import { approve, later, laterUntil, moveBackToReview, notMine, undo } from '../review-actions';
+import {
+  approve,
+  editedProposal,
+  later,
+  laterUntil,
+  moveBackToReview,
+  notMine,
+  retypeEdits,
+  undo,
+} from '../review-actions';
 import {
   drainImageUploadQueue,
   enqueueImageUpload,
@@ -37,6 +46,7 @@ const { wallets$, transactions$, proposedTransactions$, autoAddRules$ } = jest.r
 
 const MAYBANK = '00000000-0000-4000-8000-00000000000a';
 const FOOD = '00000000-0000-4000-8000-0000000000f0';
+const TNG = '00000000-0000-4000-8000-00000000000b';
 const NOW = new Date('2026-10-14T04:41:00.000Z');
 
 function seed(id: string, over: Record<string, unknown> = {}) {
@@ -73,6 +83,72 @@ beforeEach(() => {
 });
 
 describe('approve', () => {
+  it('writes a corrected type and drops the category Moni read for the old one', async () => {
+    const proposal = seed('p1');
+
+    const result = await approve(proposal, retypeEdits(proposal, 'income'));
+
+    expect(result.status).toBe('done');
+    expect(ledger()).toEqual([
+      expect.objectContaining({ type: 'income', category_id: null, merchant: 'GRAB', amount: '12.00' }),
+    ]);
+  });
+
+  it('asks where a capture corrected to a transfer goes, then writes it with no merchant', async () => {
+    const proposal = seed('p1');
+    const edits = retypeEdits(proposal, 'transfer');
+
+    expect(await approve(proposal, edits)).toEqual({ status: 'needsInput', field: 'destination' });
+    expect(ledger()).toEqual([]);
+
+    wallets$[TNG].set({ id: TNG, currency: 'MYR', deleted: false });
+    const result = await approve(proposal, { ...edits, transferToWalletId: TNG });
+
+    expect(result.status).toBe('done');
+    expect(ledger()).toEqual([
+      expect.objectContaining({
+        type: 'transfer',
+        wallet_id: MAYBANK,
+        transfer_to_wallet_id: TNG,
+        category_id: null,
+        merchant: null,
+      }),
+    ]);
+  });
+
+  it('drops the destination when a transfer is corrected to an expense', async () => {
+    const proposal = seed('p1', {
+      type: 'transfer',
+      merchant: null,
+      category_id: null,
+      transfer_to_wallet_id: TNG,
+    });
+
+    const result = await approve(proposal, retypeEdits(proposal, 'expense'));
+
+    expect(result.status).toBe('done');
+    expect(ledger()).toEqual([
+      expect.objectContaining({ type: 'expense', transfer_to_wallet_id: null }),
+    ]);
+  });
+
+  it('brings the category back when the type returns to what Moni read', () => {
+    const proposal = seed('p1');
+
+    const away = retypeEdits(proposal, 'income');
+    expect(editedProposal(proposal, away)).toMatchObject({ type: 'income', categoryId: null });
+    const back = { ...away, ...retypeEdits(proposal, 'expense') };
+    expect(editedProposal(proposal, back)).toMatchObject({ type: 'expense', categoryId: FOOD });
+  });
+
+  it("adds no Don't ask about similar rule for a capture Moni read as the wrong type", async () => {
+    const proposal = seed('p1');
+
+    await approve(proposal, { ...retypeEdits(proposal, 'income'), categoryId: FOOD, similar: true });
+
+    expect(autoAddRules$.peek()).toEqual({});
+  });
+
   it('asks for a wallet and writes nothing when none is picked', async () => {
     const proposal = seed('p1', { wallet_id: null });
 

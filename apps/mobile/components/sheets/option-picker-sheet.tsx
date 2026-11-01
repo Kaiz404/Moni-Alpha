@@ -35,6 +35,11 @@ import type {
   SheetResult,
 } from '@/lib/sheet/sheet-store';
 import { tid } from '@/lib/test-ids';
+import { resolveTransactionIcon } from '@/lib/transactions/icon';
+import {
+  TRANSACTION_TYPE_COPY,
+  TRANSACTION_TYPES,
+} from '@/lib/transactions/type-change';
 
 export type PickerOption = {
   id: string;
@@ -183,6 +188,7 @@ type KindSheetProps<
     | 'wallet'
     | 'currency'
     | 'walletType'
+    | 'transactionType'
     | 'date'
     | 'notificationApp',
 > = SheetFrameProps & {
@@ -328,6 +334,41 @@ export function WalletTypeSheet({
           (option) => option.value === id,
         );
         if (picked) onPick(picked.value);
+      }}
+    />
+  );
+}
+
+export function TransactionTypeSheet({
+  request,
+  onPick,
+  ...frame
+}: KindSheetProps<'transactionType'>) {
+  const tokens = useThemeTokens();
+  const options: PickerOption[] = TRANSACTION_TYPES.map((type) => ({
+    id: type,
+    name: TRANSACTION_TYPE_COPY[type].label,
+    meta: TRANSACTION_TYPE_COPY[type].meta,
+    leading: (
+      <Bubble>
+        <IconSymbol
+          name={resolveTransactionIcon(null, type)}
+          size={20}
+          color={tokens.foreground}
+        />
+      </Bubble>
+    ),
+  }));
+  return (
+    <OptionPickerSheet
+      {...frame}
+      title="Type"
+      note="A new type clears the category, so you choose one that fits."
+      options={options}
+      selectedId={request.selected}
+      onPick={(id) => {
+        const picked = TRANSACTION_TYPES.find((type) => type === id);
+        if (picked) onPick(picked);
       }}
     />
   );
