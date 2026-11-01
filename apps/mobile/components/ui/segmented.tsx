@@ -1,11 +1,14 @@
 import { useEffect } from 'react';
 import { View } from 'react-native';
 import Animated, {
+  interpolateColor,
   useAnimatedStyle,
+  useDerivedValue,
   useReducedMotion,
   useSharedValue,
   withSpring,
   withTiming,
+  type SharedValue,
 } from 'react-native-reanimated';
 
 import {
@@ -13,7 +16,6 @@ import {
   type IconSymbolName,
 } from '@/components/ui/icon-symbol';
 import { Press } from '@/components/ui/press';
-import { Text } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { scrubStep } from '@/lib/haptics';
 import { springs } from '@/lib/motion/tokens';
@@ -74,7 +76,6 @@ export function Segmented<T extends string>({
   size = 'default',
 }: SegmentedProps<T>) {
   const look = sizes[size];
-  const tokens = useThemeTokens();
   const index = Math.max(
     0,
     options.findIndex((option) => option.value === value),
@@ -119,7 +120,7 @@ export function Segmented<T extends string>({
         className={`absolute left-1 top-1 ${look.pill} rounded-full ${disabled ? 'bg-hairline' : 'bg-primary'}`}
         style={pill}
       />
-      {options.map((option) => {
+      {options.map((option, optionIndex) => {
         const selected = option.value === value;
         return (
           <Press
@@ -129,10 +130,6 @@ export function Segmented<T extends string>({
             accessibilityLabel={option.label}
             accessibilityState={{ selected, disabled }}
             disabled={disabled}
-            radius={{ rest: look.corners, pressed: 16 }}
-            pressedClassName={
-              selected ? 'bg-primary-pressed' : 'bg-hairline'
-            }
             className="flex-1 flex-row items-center justify-center gap-1.5"
             onPress={() => {
               if (selected) return;
@@ -140,28 +137,61 @@ export function Segmented<T extends string>({
               onChange(option.value);
             }}
           >
-            {option.icon ? (
-              <IconSymbol
-                name={option.icon}
-                size={18}
-                color={
-                  disabled
-                    ? tokens.muted
-                    : selected
-                      ? tokens.primaryForeground
-                      : tokens.foreground
-                }
-              />
-            ) : null}
-            <Text
-              className={`${look.label} font-display-semibold ${disabled ? 'text-muted' : selected ? 'text-primary-foreground' : 'text-foreground'}`}
-              numberOfLines={1}
-            >
-              {option.label}
-            </Text>
+            <OptionFace
+              option={option}
+              index={optionIndex}
+              position={position}
+              labelClass={look.label}
+              disabled={disabled}
+            />
           </Press>
         );
       })}
     </View>
+  );
+}
+
+/** The pill carries the colour: a label turns as the pill reaches it, not when the value changes. */
+function OptionFace({
+  option,
+  index,
+  position,
+  labelClass,
+  disabled,
+}: {
+  option: { label: string; icon?: IconSymbolName };
+  index: number;
+  position: SharedValue<number>;
+  labelClass: string;
+  disabled: boolean;
+}) {
+  const tokens = useThemeTokens();
+  const rest = disabled ? tokens.muted : tokens.foreground;
+  const onPill = disabled ? tokens.muted : tokens.primaryForeground;
+  const under = useDerivedValue(() =>
+    Math.max(0, 1 - Math.abs(position.get() - index)),
+  );
+  const label = useAnimatedStyle(() => ({
+    color: interpolateColor(under.get(), [0, 1], [rest, onPill]),
+  }));
+  const iconOnPill = useAnimatedStyle(() => ({ opacity: under.get() }));
+  return (
+    <>
+      {option.icon ? (
+        <View>
+          <IconSymbol name={option.icon} size={18} color={rest} />
+          <Animated.View className="absolute inset-0" style={iconOnPill}>
+            <IconSymbol name={option.icon} size={18} color={onPill} />
+          </Animated.View>
+        </View>
+      ) : null}
+      <Animated.Text
+        className={`${labelClass} font-display-semibold`}
+        style={label}
+        numberOfLines={1}
+      >
+        {option.label}
+      </Animated.Text>
+    </>
   );
 }

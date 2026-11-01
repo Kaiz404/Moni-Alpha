@@ -229,11 +229,7 @@ export function PaceChart({
         </GestureDetector>
       </View>
       <Ticks geometry={geometry} />
-      <Legend
-        mode={mode}
-        evenPace={geometry.evenPace !== null}
-        tokens={tokens}
-      />
+      <Legend mode={mode} />
     </View>
   );
 }
@@ -600,68 +596,27 @@ function Ticks({ geometry: g }: { geometry: PaceGeometry }) {
   );
 }
 
-function Legend({
-  mode: kind,
-  evenPace,
-  tokens,
-}: {
-  mode: PaceChartMode;
-  evenPace: boolean;
-  tokens: Tokens;
-}) {
+/** Only the daily bars need a key: a coral or dashed bar doesn't explain itself, and a line does. */
+function Legend({ mode: kind }: { mode: PaceChartMode }) {
+  if (kind !== 'daily') return null;
   return (
-    <View className="flex-row items-center justify-between gap-2">
-      <View
-        className="flex-row items-center gap-2.5"
-        importantForAccessibility="no-hide-descendants"
+    <View
+      className="flex-row items-center gap-2.5"
+      importantForAccessibility="no-hide-descendants"
+    >
+      <Key swatch={<View className="h-2.5 w-2.5 rounded-[3px] bg-coral" />}>
+        Over even pace
+      </Key>
+      <Key
+        swatch={
+          <View className="h-2.5 w-2.5 rounded-[3px] border border-dashed border-ink-2" />
+        }
       >
-        {kind === 'daily' ? (
-          <>
-            <Key swatch={<View className="h-2.5 w-2.5 rounded-[3px] bg-coral" />}>
-              Over even pace
-            </Key>
-            <Key
-              swatch={
-                <View className="h-2.5 w-2.5 rounded-[3px] border border-dashed border-foreground" />
-              }
-            >
-              Safe to spend a day
-            </Key>
-          </>
-        ) : (
-          <>
-            <Key swatch={<View className="h-[3px] w-3.5 rounded-full bg-foreground" />}>
-              {kind === 'pace' ? 'Spent' : 'Balance'}
-            </Key>
-            {kind === 'pace' && evenPace ? (
-              <Key
-                swatch={
-                  <View className="w-4 border-t-[1.5px] border-dashed border-inactive" />
-                }
-              >
-                Even pace
-              </Key>
-            ) : null}
-          </>
-        )}
-      </View>
-      <View className="flex-row items-center gap-1">
-        <IconSymbol
-          name="gesture-tap"
-          size={16}
-          color={tokens.muted}
-        />
-        <Text
-          variant="smallest"
-          className="text-ink-2"
-        >
-          {kind === 'daily' ? 'Tap a bar' : 'Tap or drag'}
-        </Text>
-      </View>
+        Safe to spend a day
+      </Key>
     </View>
   );
 }
-
 
 function Key({
   swatch,

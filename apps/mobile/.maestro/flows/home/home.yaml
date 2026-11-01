@@ -33,11 +33,11 @@ tags:
     direction: UP
 - tapOn:
     id: home.chart.daily
-- assertVisible: Tap a bar
+- assertVisible: Over even pace
 - takeScreenshot: h1-l4-daily
 - tapOn:
     id: home.chart.pace
-- assertVisible: Tap or drag
+- assertNotVisible: Over even pace
 
 # Net worth opens Wallets.
 - tapOn:

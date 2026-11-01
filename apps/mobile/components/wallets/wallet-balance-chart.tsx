@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { View } from 'react-native';
 
-import { BalancePlot, Legend } from '@/components/charts/activity-chart';
+import { BalancePlot } from '@/components/charts/activity-chart';
 import { Text } from '@/components/ui/text';
 import { balanceMonth } from '@/lib/finance/activity-series';
 import { monthKey, monthName } from '@/lib/finance/budget-month';
@@ -114,10 +114,6 @@ export function WalletBalanceChart({
           screen="wallet"
         />
       </View>
-      <Legend
-        spend={false}
-        paced={false}
-      />
     </View>
   );
 }

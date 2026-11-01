@@ -90,13 +90,6 @@ export default function MerchantsScreen() {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        <Text
-          variant="body"
-          className="px-1 text-ink-2"
-        >
-          Banks send codes, not shop names. Name a code once and Moni uses your name on every
-          payment from it.
-        </Text>
 
         {toName.length > 0 ? (
           <ListSection label={`To name · ${toName.length}`}>{rows(toName, 'to-name')}</ListSection>

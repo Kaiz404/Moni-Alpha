@@ -9,7 +9,6 @@ import Animated, {
 } from 'react-native-reanimated';
 import Svg, { Line } from 'react-native-svg';
 
-import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Press } from '@/components/ui/press';
 import { Text } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
@@ -244,19 +243,6 @@ export function TrendChart({
               Money in
             </Text>
           </View>
-        </View>
-        <View className="flex-row items-center gap-1">
-          <IconSymbol
-            name="gesture-tap"
-            size={16}
-            color={tokens.muted}
-          />
-          <Text
-            variant="smallest"
-            className="text-ink-2"
-          >
-            Tap a bar
-          </Text>
         </View>
       </View>
     </View>

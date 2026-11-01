@@ -23,6 +23,27 @@ const spend = [
 const budget = 180000;
 
 describe('PaceChart', () => {
+  it('keys only the daily bars: lines have no key, and no chart carries a hint', () => {
+    const chart = (mode: 'pace' | 'daily') => (
+      <PaceChart
+        screen="home"
+        mode={mode}
+        series={{ month: october, values: spend }}
+        budget={budget}
+        currency="MYR"
+        safePerDay={2461}
+      />
+    );
+    const { rerender } = render(chart('pace'));
+    for (const gone of ['Spent', 'Even pace', 'Tap or drag', 'Over even pace']) {
+      expect(screen.queryByText(gone)).toBeNull();
+    }
+    rerender(chart('daily'));
+    expect(screen.getByText('Over even pace')).toBeTruthy();
+    expect(screen.getByText('Safe to spend a day')).toBeTruthy();
+    expect(screen.queryByText('Tap a bar')).toBeNull();
+  });
+
   it('keeps the budget as the top line while spending is under it, and hides a scale that would overprint it', () => {
     const pace = (values: number[]) =>
       paceGeometry({

@@ -97,7 +97,7 @@ All inside a Paper card (radius 26, padding 14 18), plot 314 × 150, axis column
 - Spent vs budget line (Home Pace, Budget root, category page): Ink 3 line, Sand fill at 0.8 up to today; even pace #A9A397 dashed from 0 to the budget at month end; budget as the top gridline with a Deep mint label and end dot; today point 14 Ink dot with cream border; scrub handle 28 × 20 Ink capsule. No projection line.
 - Daily bars (Home Daily, Activity Spending): one 12-wide Ink bar per day so far, the part above even pace in Coral; even pace dashed line labelled "RM58"; today on a Sand light band with a dashed segment for safe to spend a day. No future bars.
 - Balance line (Activity Balance, wallet page): the line chart without budget or even pace; axis does not start at 0 (say so in the accessibility label); main-currency wallets only.
-- Captions: legend left, "Tap or drag" / "Tap a bar" right. No readout rows, no ‹ › buttons, no pace pills.
+- Captions: only bars get a key ("Over even pace", "Safe to spend a day", paired bars). Lines get none, and no chart carries a "Tap or drag" hint (owner's direction, 1 Nov 2026). No readout rows, no ‹ › buttons, no pace pills.
 - Lines draw in once on first open (value spring); bars grow 14 ms apart; never on return or refresh. Scrub snaps per day with Segment_Tick.
 
 ## Approvals (Review card)
