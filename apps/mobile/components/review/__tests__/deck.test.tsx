@@ -398,6 +398,32 @@ describe('Review deck', () => {
       ).toMatchObject({ status: 'pending', merchant: 'GRAB', deleted: false });
     });
 
+    it("It's spending turns a misread transfer back into an expense in Review", async () => {
+      store.wallets$[TNG].set({ id: TNG, currency: 'MYR', type: 'ewallet', name: 'TNG', deleted: false });
+      seed('p1', {
+        type: 'transfer',
+        wallet_id: MAYBANK,
+        transfer_to_wallet_id: TNG,
+        merchant: 'ALI BIN ABU',
+        category_id: null,
+        description: "Touch 'n Go reload",
+      });
+      await show(<ReviewScreen />);
+
+      expect(screen.getByText('Approve keeps it a transfer.')).toBeTruthy();
+      await act(async () => fireEvent.press(screen.getByTestId('review.not-a-transfer')));
+
+      expect(store.proposedTransactions$.peek().p1).toMatchObject({
+        type: 'expense',
+        wallet_id: MAYBANK,
+        transfer_to_wallet_id: null,
+        merchant: 'ALI BIN ABU',
+        status: 'pending',
+      });
+      expect(screen.getByText('ALI BIN ABU')).toBeTruthy();
+      expect(ledger()).toEqual([]);
+    });
+
     it('hides the control until the column is there for a capture waiting in Review', async () => {
       const { isMigrated } = jest.requireMock('@/lib/store') as { isMigrated: jest.Mock };
       isMigrated.mockImplementation((migration: string) => migration !== 'capture_pairing');

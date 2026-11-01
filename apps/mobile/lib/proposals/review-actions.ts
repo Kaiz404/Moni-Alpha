@@ -222,6 +222,22 @@ export async function samePayment(
   }
 }
 
+/**
+ * The card's way out when Moni read an alert as moving the user's own money and it wasn't: the
+ * capture stays in Review with the merchant the alert named. A bank's alert is spending out of that
+ * wallet; with no source wallet the alert came from the side the money arrived in.
+ */
+export function notATransfer(proposal: ProposedTransaction): void {
+  patchRow(proposedTransactions$, proposal.id, {
+    type: proposal.walletId ? 'expense' : 'income',
+    wallet_id: proposal.walletId ?? proposal.transferToWalletId,
+    transfer_to_wallet_id: null,
+    description: null,
+    updated_at: new Date().toISOString(),
+  });
+  emitProposedTransactionsChanged();
+}
+
 /** Neither XA-Review nor XA-Notification names a snooze, so Later waits until 8 am tomorrow. */
 export function laterUntil(now: Date = new Date()): Date {
   const until = new Date(now);

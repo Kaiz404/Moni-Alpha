@@ -34,7 +34,11 @@ export type ReviewCardModel = {
   destination: ChipLook | null | undefined;
   evidence: string | null;
   /** What the user can do about a likely duplicate, or a pair Moni already counted once. */
-  pair: { kind: 'same-payment' | 'its-a-transfer' | 'not-same-payment'; label: string; hint: string | null } | null;
+  pair: {
+    kind: 'same-payment' | 'its-a-transfer' | 'not-same-payment' | 'not-a-transfer';
+    label: string;
+    hint: string | null;
+  } | null;
   similar: boolean | null;
   budget: BudgetLine | null;
 };
@@ -266,7 +270,11 @@ export function ReviewCard({
             className="h-10 flex-row items-center gap-1.5 bg-sand px-3.5"
           >
             <IconSymbol
-              name={model.pair.kind === 'its-a-transfer' ? 'swap-horizontal' : 'link-variant'}
+              name={
+                model.pair.kind === 'its-a-transfer' || model.pair.kind === 'not-a-transfer'
+                  ? 'swap-horizontal'
+                  : 'link-variant'
+              }
               size={18}
               color={tokens.foreground}
             />

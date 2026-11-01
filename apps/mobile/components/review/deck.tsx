@@ -61,6 +61,7 @@ import {
   duplicateOf,
   later,
   moveBackToReview,
+  notATransfer,
   notMine,
   retypeEdits,
   reviewType,
@@ -217,7 +218,18 @@ function pairControl(
   if (proposal.pairing) {
     return { kind: 'not-same-payment', label: 'Not the same payment', hint: null };
   }
-  if (!duplicate || !canPairInto(duplicate)) return null;
+  if (duplicate && canPairInto(duplicate)) {
+    return pairOffer(duplicate);
+  }
+  if (proposal.type === 'transfer' && proposal.sourceType === 'notification') {
+    return proposal.walletId
+      ? { kind: 'not-a-transfer', label: "It's spending", hint: 'Approve keeps it a transfer.' }
+      : { kind: 'not-a-transfer', label: "It's income", hint: 'Approve keeps it a transfer.' };
+  }
+  return null;
+}
+
+function pairOffer(duplicate: DuplicateMatch): NonNullable<ReviewCardModel['pair']> {
   return duplicate.kind === 'transfer_pair'
     ? { kind: 'its-a-transfer', label: "It's a transfer", hint: 'Approve keeps both.' }
     : { kind: 'same-payment', label: 'Same payment', hint: 'Approve keeps both.' };
@@ -644,6 +656,10 @@ export function ReviewDeck({ session }: { session: ReviewSession }) {
   const pair = useCallback(async () => {
     if (!top || !canDrag(cardRef.current)) return;
     const proposal = top;
+    if (!proposal.pairing && !duplicates[proposal.id] && proposal.type === 'transfer') {
+      notATransfer(proposal);
+      return;
+    }
     if (proposal.pairing) {
       await undoPairing(proposal.pairing.absorbed.id);
       showToast({ text: 'Back in Review as its own capture' });

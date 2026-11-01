@@ -17,6 +17,7 @@ import {
   pairCapture,
   toAbsorbedCapture,
 } from '@/lib/proposals/pairing';
+import { classifyMovement, isTrackedMovement } from '@/lib/ai/money-movement';
 import { matchRoutine } from '@/lib/ai/routine';
 import { listAutoAddRules } from '@/lib/supabase/auto-add-rules';
 import { getUserId } from '@/lib/supabase/client';
@@ -178,6 +179,32 @@ async function persistProposal(
       getWallets(),
       getUserId(),
     ]);
+    const movement = automatic
+      ? classifyMovement(
+          {
+            text: [proposal.notificationTitle, proposal.notificationBody].filter(Boolean).join(' '),
+            walletId: proposal.walletId,
+            sourceApp: proposal.sourceApp,
+            currency: proposal.currency,
+            type: proposal.type,
+          },
+          wallets,
+        )
+      : null;
+    const moved = isTrackedMovement(movement) ? movement : null;
+    if (moved) {
+      proposal = {
+        ...proposal,
+        type: 'transfer',
+        walletId: moved.fromWalletId,
+        transferToWalletId: moved.toWalletId,
+        description: moved.label,
+        aiReasoning: moved.reason,
+      };
+    } else if (movement) {
+      proposal = { ...proposal, aiReasoning: movement.reason };
+    }
+
     const sameCurrencyWalletIds = new Set(
       wallets.filter((w) => w.currency?.toUpperCase() === proposal.currency).map((w) => w.id),
     );
@@ -214,6 +241,33 @@ async function persistProposal(
       } catch (e) {
         trace(logger, 'creator', 'pairing-failed', { message: e instanceof Error ? e.message : String(e) });
       }
+    }
+
+    // Both wallets named without doubt: the board's "Touch 'n Go reload", marked Auto.
+    if (moved?.confidence === 'high' && !duplicate && proposal.amountMinor) {
+      const transaction = await createTransaction(
+        {
+          walletId: moved.fromWalletId!,
+          amountMinor: proposal.amountMinor,
+          type: 'transfer',
+          transferToWalletId: moved.toWalletId,
+          description: moved.label,
+          transactionDate: proposal.transactionDate ?? undefined,
+          metadata: {
+            ai_suggested: true,
+            ai_confidence: proposal.aiConfidence ?? undefined,
+            alert: captureAlert(proposal, proposalId),
+          },
+        },
+        'notification',
+      );
+      trace(logger, 'creator', 'auto-added-transfer', { transactionId: transaction.id });
+      return {
+        created: true,
+        skipped: false,
+        reason: 'Added automatically (transfer)',
+        transactionId: transaction.id,
+      };
     }
 
     const wallet = wallets.find((w) => w.id === proposal.walletId);
