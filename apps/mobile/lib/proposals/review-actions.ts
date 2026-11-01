@@ -1,4 +1,9 @@
-import type { MinorAmount, ProposedTransaction, TransactionType } from '@repo/types';
+import {
+  capturePairingSchema,
+  type MinorAmount,
+  type ProposedTransaction,
+  type TransactionType,
+} from '@repo/types';
 
 import type { DuplicateMatch } from '@/lib/ai/duplicates';
 import { merchantKey } from '@/lib/ai/routine';
@@ -270,6 +275,10 @@ function restoreRow(row: ProposalRowSnapshot): void {
     proposedTransactions$[row.id].set({ ...row, ...pending, deleted: false });
   }
   if (row.source_type === 'notification') markCaptureStatus(row.id, 'waiting_for_review');
+  const absorbed = capturePairingSchema.safeParse(row.pairing).data?.absorbed;
+  if (absorbed?.sourceType === 'notification') {
+    markCaptureStatus(absorbed.id, 'same_payment', undefined, row.id);
+  }
   emitProposedTransactionsChanged();
 }
 

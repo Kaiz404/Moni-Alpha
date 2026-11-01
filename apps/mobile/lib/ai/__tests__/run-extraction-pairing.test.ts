@@ -25,7 +25,7 @@ import { buildBudgetMonth, monthKey } from '@/lib/finance/budget-month';
 import type { FinanceTransaction } from '@/lib/finance/types';
 import { markCaptureStatus } from '@/lib/notifications/capture-status';
 import { undoPairing } from '@/lib/proposals/pairing';
-import { approve, duplicateOf, notMine } from '@/lib/proposals/review-actions';
+import { approve, duplicateOf, notMine, undo } from '@/lib/proposals/review-actions';
 import { listAwaitingReview } from '@/lib/supabase/proposed-transactions';
 
 let mockNextId = 0;
@@ -254,6 +254,36 @@ describe('Undo', () => {
     await undoPairing(second.id);
     await expect(undoPairing(second.id)).resolves.toBe(false);
     expect(openProposals()).toHaveLength(2);
+  });
+
+  it('separates an approved pair once, leaving the approved row in the ledger', async () => {
+    await run(bank(0));
+    const second = ewallet(2);
+    await run(second);
+    const [card] = listAwaitingReview(new Date(T0 + 1000));
+    await approve(card!);
+    expect(ledgerRows()[0]!.metadata).toMatchObject({ pairing: { absorbed: { id: second.id } } });
+
+    await expect(undoPairing(second.id)).resolves.toBe(true);
+
+    expect(ledgerRows()[0]).toMatchObject({ merchant: 'TNG DIGITAL', wallet_id: MAYBANK });
+    expect(openProposals().map((row) => row.id)).toEqual([second.id]);
+    await expect(undoPairing(second.id)).resolves.toBe(false);
+  });
+
+  it('keeps the folded alert linked when an approved pair goes back to Review', async () => {
+    await run(bank(0));
+    const second = ewallet(2);
+    await run(second);
+    const [card] = listAwaitingReview(new Date(T0 + 1000));
+    const approved = await approve(card!);
+    if (approved.status !== 'done') throw new Error('not approved');
+
+    await undo(approved.outcome);
+
+    expect(ledgerRows()).toEqual([]);
+    expect(markCaptureStatus).toHaveBeenLastCalledWith(second.id, 'same_payment', undefined, card!.id);
+    expect(openProposals()).toHaveLength(1);
   });
 
   it('Not mine on the card takes the folded alert with it', async () => {

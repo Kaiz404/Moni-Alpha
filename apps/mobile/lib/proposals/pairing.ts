@@ -222,6 +222,12 @@ export async function undoPairing(captureId: string): Promise<boolean> {
     const { pairing: _dropped, ...metadata } = parseMetadata(row.metadata);
     const { source_image_uri: _notALedgerColumn, ...before } = pairing.before;
     patchRow(transactions$, row.id, { ...before, metadata, updated_at });
+    // The Review row this ledger row was approved from still holds the same capture.
+    for (const proposal of getRecordValues<Row>(proposedTransactions$)) {
+      if (pairingOf(proposal, 'proposal')?.absorbed.id === captureId) {
+        patchRow(proposedTransactions$, proposal.id, { pairing: null, updated_at });
+      }
+    }
   } else {
     patchRow(proposedTransactions$, row.id, { ...pairing.before, pairing: null, updated_at });
   }
