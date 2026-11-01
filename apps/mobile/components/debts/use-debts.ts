@@ -1,5 +1,4 @@
 import { useValue } from '@legendapp/state/react';
-import { useMemo } from 'react';
 
 import { useAuth } from '@/lib/auth/auth-context';
 import {
@@ -18,24 +17,20 @@ function useOwnDebts(): {
 } {
   const { user } = useAuth();
   const userId = user?.id ?? null;
-  const debtsById = useValue(financeProjection$.debtsById);
-  const activitiesById = useValue(financeProjection$.debtActivitiesById);
-  return useMemo(
-    () => ({
-      debts: Object.values(debtsById ?? {}).filter((debt) => debt.userId === userId),
-      activities: Object.values(activitiesById ?? {}),
-    }),
-    [debtsById, activitiesById, userId],
-  );
+  // Read inside the selector and never memoize on the maps: a row's set() changes its map in place,
+  // so the map's reference stays the same and a memo keyed on it would never see a new debt.
+  return useValue(() => ({
+    debts: Object.values(financeProjection$.debtsById.get() ?? {}).filter(
+      (debt) => debt.userId === userId,
+    ),
+    activities: Object.values(financeProjection$.debtActivitiesById.get() ?? {}),
+  }));
 }
 
 export function useDebtSummary(): DebtSummary {
   const { debts, activities } = useOwnDebts();
   const currency = useMainCurrency();
-  return useMemo(
-    () => summarizeDebts(debts, activities, new Date(), currency),
-    [debts, activities, currency],
-  );
+  return summarizeDebts(debts, activities, new Date(), currency);
 }
 
 /** One debt and its activities, newest first, in whatever currency it is in. */
@@ -44,23 +39,17 @@ export function useDebt(id: string | undefined): {
   activities: FinanceDebtActivity[];
 } {
   const { debts, activities } = useOwnDebts();
-  return useMemo(() => {
-    const debt = debts.find((item) => item.id === id);
-    const own = activities
-      .filter((activity) => activity.debtId === id)
-      .sort((a, b) => b.activityDate.localeCompare(a.activityDate));
-    return { line: debt ? describeDebt(debt, own) : null, activities: own };
-  }, [debts, activities, id]);
+  const debt = debts.find((item) => item.id === id);
+  const own = activities
+    .filter((activity) => activity.debtId === id)
+    .sort((a, b) => b.activityDate.localeCompare(a.activityDate));
+  return { line: debt ? describeDebt(debt, own) : null, activities: own };
 }
 
 /** Every debt with its money, for Record a debt's people chips and its existing-debt check. */
 export function useDebtLines(): DebtLine[] {
   const { debts, activities } = useOwnDebts();
-  return useMemo(
-    () =>
-      debts
-        .map((debt) => describeDebt(debt, activities))
-        .filter((line): line is DebtLine => line !== null),
-    [debts, activities],
-  );
+  return debts
+    .map((debt) => describeDebt(debt, activities))
+    .filter((line): line is DebtLine => line !== null);
 }

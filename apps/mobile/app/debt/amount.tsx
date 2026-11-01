@@ -17,7 +17,6 @@ import { Segmented } from '@/components/ui/segmented';
 import { Text } from '@/components/ui/text';
 import { showToast } from '@/lib/toast/toast-store';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
-import { useMainCurrency } from '@/lib/finance/main-currency';
 import type { DebtLine } from '@/lib/finance/debt-summary';
 import { formatMoney } from '@/lib/finance/format-money';
 import type { FinanceDebtActivity } from '@/lib/finance/types';
