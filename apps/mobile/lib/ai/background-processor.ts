@@ -73,10 +73,12 @@ async function settle(item: ProcessingQueueItem, result: RunExtractionResult): P
 
   if (result.created) markDone(item.id);
   else markError(item.id);
-  // A paired alert already has its status: pairCapture wrote it.
-  if (item.type === 'notification' && !result.paired) {
-    markCaptureStatus(item.id, captureStatusAfterExtraction(result), result.transactionId);
-    if (result.transactionId || result.proposalId) {
+  if (item.type === 'notification') {
+    // A paired alert already has its status: pairCapture wrote it.
+    if (!result.paired) {
+      markCaptureStatus(item.id, captureStatusAfterExtraction(result), result.transactionId);
+    }
+    if (result.created) {
       recordCapture(item.notification.packageName, item.notification.receivedAt);
     }
     if (result.proposalId && !result.transactionId) {

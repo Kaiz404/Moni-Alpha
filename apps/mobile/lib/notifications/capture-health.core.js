@@ -25,7 +25,7 @@ const CAPTURE_HEALTH_KEY = 'capture_health';
 const MAX_CAPTURE_DAYS = 60;
 const MAX_MISSED = 20;
 
-const CAPTURED_STATUSES = new Set(['added', 'auto_added', 'waiting_for_review']);
+const CAPTURED_STATUSES = new Set(['added', 'auto_added', 'same_payment', 'waiting_for_review']);
 
 function localDay(iso) {
   const date = new Date(iso);

@@ -48,7 +48,7 @@ A capture is never lost because the backend is down. `unavailable`, a non-2xx re
 | Give up | 7 days after capture, and only after a failed try: the capture becomes `gave_up` and waits for Retry |
 | Size | 200 live items and 20 finished ones. Finished items go first, then what gave up, and an unread capture last |
 
-The queue lives in MMKV, so it survives a kill. An item killed mid-request returns to pending on the next start. A retry is idempotent because a queue item's id is the id of the row it writes: `runExtraction` returns the existing proposal or transaction without calling the backend. The one window left is a transfer pair combined just before a kill, which is microtasks long. Signing out clears the queue, so a waiting capture can't land in the next account.
+The queue lives in MMKV, so it survives a kill. An item killed mid-request returns to pending on the next start. A retry is idempotent because a queue item's id is the id of the row it writes: `runExtraction` returns the existing proposal or transaction without calling the backend. A paired alert is found the same way, inside the row that holds it. Signing out clears the queue, so a waiting capture can't land in the next account.
 
 The Capture log shows **Trying again** while Moni keeps trying and **Couldn't reach Moni** once it gives up, each with Retry, and never Ignored. Capture sources counts what gave up, per app and in total, from the queue, because the log holds only 50 entries.
 
