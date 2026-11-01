@@ -29,7 +29,7 @@ Updated 2 Nov 2026, after the second round of refinements. Sections below this o
 | --- | --- |
 | `main` | Holds all the device-run fixes and the owner's redesign from the phone. Gates passed before landing: 1635 Jest tests, lint 0 errors, types, all mobile lints, device script tests. |
 | Full flow suite | **Not green yet.** The last full run, on an older build, was 38 of 60 with no app crashes. Fixes followed, but the suite has not been re-run. Run it next. |
-| APK on the phone | Key `1f1d818`: real clock, real 4 s toasts, installed 2 Nov for the owner's blackbox test of the second round. No flow has run on it. |
+| APK on the phone | Key `d03f8aa`: real clock, real 4 s toasts, installed 2 Nov for the owner's blackbox test of the second round. No flow has run on it. |
 | Database | All migrations applied, through `20261101000200_currency_text.sql`. |
 | Canvas | Version `1793552757-fa37` matches the owner's redesign, except what `docs/REDESIGN.md` still lists. |
 
