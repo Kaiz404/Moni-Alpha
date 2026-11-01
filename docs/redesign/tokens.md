@@ -55,7 +55,7 @@ Dark (`V2F-Dark`): Ground #161512 · Raised #211F1B (cards) · Fill #2C2924 (San
 ## Navigation
 
 - Floating ink pill: left 12, right 12, bottom 26, height 64, radius 32, five equal cells: Home (`home`) · Activity (`receipt-text`) · + · Budget (`chart-box`) · Debts (`handshake-outline`). Active cream icon + label, inactive #A9A397, labels 11/600.
-- Centre +: 60 Mint key circle, top 16 above the pill, 6 cream ring; never an active state. Opens the + chooser sheet; it rotates 45° into the sheet's ×.
+- Centre +: 60 Mint key circle in a 72 touch area, top 16 above the pill, no ring; never an active state. Opens the + chooser sheet; it rotates 45° into the sheet's ×.
 - Pushed pages and Moni chat have no tab bar.
 
 ## Lists and rows
@@ -91,7 +91,7 @@ Dark (`V2F-Dark`): Ground #161512 · Raised #211F1B (cards) · Fill #2C2924 (San
 
 All inside a Paper card (radius 26, padding 14 18), plot 314 × 150, axis column 44 (labels right-aligned 12 Meta).
 
-- Card header: caps label left, chart toggle right (Sand track 36 tall, Ink pill on the control spring, segments ≥ 70: Pace | Daily, Spending | Balance; Segment_Tick on change). A spent-vs-budget card has no header number, because the callout and the budget line already show it; "RM317 left for 18 days · RM17 a day" sits below the chart in both modes (owner's direction, 1 Nov 2026).
+- Card header: caps label left, chart toggle right (Sand track 36 tall, Ink pill on the control spring, segments ≥ 70: Pace | Daily; Segment_Tick on change). A spent-vs-budget card has no header number, because the callout and the budget line already show it; "RM317 left for 18 days · RM17 a day" sits below the chart in both modes (owner's direction, 1 Nov 2026).
 - Gridlines: top and baseline solid 1.5 Hairline; middle dashed Sand light.
 - Callout (one shape everywhere): Ink box radius 12, 100 × 38 at the top of the plot, date 12 over value 14/700 cream, dashed ink guide to the point.
 - Spent vs budget line (Home Pace, category page): Ink 3 line, Sand fill at 0.8 up to today; even pace #A9A397 dashed from 0 to the budget at month end; budget as the top gridline with a Deep mint label and end dot; today point 14 Ink dot with cream border; scrub handle 28 × 20 Ink capsule. No projection line.
