@@ -33,6 +33,12 @@ const SCRIM = 'rgba(23,24,26,0.32)';
 /** A large sheet stops 154 from the top of an 844 phone with a 48 inset. */
 const LARGE_TOP_BELOW_INSET = 106;
 const OFFSCREEN = 2000;
+/**
+ * Cream hanging below the sheet, so the rise's overshoot and an upward drag
+ * never show the page under it. The drag rubber-bands towards the sheet's own
+ * height at most, and no sheet is taller than a screen.
+ */
+const BLEED = 2000;
 const REDUCED_FADE = { duration: 180 };
 
 function rubberband(overshoot: number, dimension: number) {
@@ -259,6 +265,12 @@ export function Sheet({
             }
           }}
         >
+          <View
+            testID={tid('sheet', 'bleed')}
+            pointerEvents="none"
+            className="bg-canvas"
+            style={styles.bleed}
+          />
           <GestureDetector gesture={pan}>
             <View style={{ gap, paddingBottom: gap }}>
               <View className="h-[5px] w-9 self-center rounded-full bg-hairline" />
@@ -320,6 +332,14 @@ const styles = StyleSheet.create({
   },
   sheet: {
     boxShadow: '0 12px 32px rgba(23,24,26,0.18)',
+  },
+  // One point of overlap, or a fractional translateY draws a seam at the join.
+  bleed: {
+    bottom: -BLEED,
+    height: BLEED + 1,
+    left: 0,
+    position: 'absolute',
+    right: 0,
   },
   fit: { flexShrink: 1, maxHeight: '100%' },
   large: { flex: 1 },
