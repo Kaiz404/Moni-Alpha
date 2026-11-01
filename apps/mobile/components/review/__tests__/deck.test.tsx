@@ -6,6 +6,8 @@ import type React from 'react';
 import { Text } from 'react-native';
 
 import ReviewScreen from '@/app/review';
+import { toFinanceTransaction } from '@/lib/finance/adapters';
+import { buildBudgetMonth, monthKey } from '@/lib/finance/budget-month';
 import { financeProjection$ } from '@/lib/finance/projection';
 import { EMPTY_FINANCE_PROJECTION } from '@/lib/finance/types';
 import { dismissSheet, getOpenSheet } from '@/lib/sheet/sheet-store';
@@ -58,7 +60,7 @@ jest.mock('@/lib/store', () => {
     profilePreferences$: observable({ currency: 'MYR' }),
     recurringOverrides$: observable({}),
     assertMigrated: () => {},
-    isMigrated: () => true,
+    isMigrated: jest.fn(() => true),
   };
 });
 
@@ -230,6 +232,183 @@ describe('Review deck', () => {
     expect(screen.getByText('All caught up')).toBeTruthy();
     expect(screen.getByText(/^1 approved, 1 not mine\. RM12\.00 now counts in \w+\.$/)).toBeTruthy();
     expect(screen.getByText('Done')).toBeTruthy();
+  });
+
+  describe('a likely duplicate', () => {
+    const TNG = '00000000-0000-4000-8000-00000000000b';
+    const THEN = new Date(Date.now() - 60_000).toISOString();
+
+    function ledgerRow(over: Record<string, unknown> = {}) {
+      store.transactions$.t1.set({
+        id: 't1',
+        user_id: 'user-1',
+        wallet_id: MAYBANK,
+        amount: '12.00',
+        currency: 'MYR',
+        type: 'expense',
+        merchant: 'GRAB',
+        category_id: FOOD,
+        transaction_date: THEN,
+        created_at: THEN,
+        metadata: { source: 'notification' },
+        deleted: false,
+        ...over,
+      });
+    }
+
+    /** What Home and Budget count this month, from the real ledger rows. */
+    const spent = () => {
+      const now = new Date();
+      return buildBudgetMonth({
+        month: monthKey(now),
+        now,
+        currency: 'MYR' as CurrencyCode,
+        transactions: ledger().flatMap((row) => toFinanceTransaction(row) ?? []),
+        categories: [],
+        budgets: [],
+        monthlyTotalMinor: null,
+        bills: [],
+        debts: [],
+      }).spentMinor;
+    };
+
+    it('Same payment leaves one ledger row, counted once, and Undo brings the card back', async () => {
+      ledgerRow();
+      seed('p1', { transaction_date: new Date().toISOString() });
+      await show(<ReviewScreen />);
+
+      expect(await screen.findByText('Maybe a duplicate')).toBeTruthy();
+      expect(screen.getByText('Approve keeps both.')).toBeTruthy();
+      expect(screen.queryByTestId('review.similar')).toBeNull();
+
+      await act(async () => fireEvent.press(screen.getByTestId('review.same-payment')));
+
+      expect(ledger()).toHaveLength(1);
+      expect(spent()).toBe(1200);
+      expect(screen.getByText('All caught up')).toBeTruthy();
+      expect(screen.getByText(/^0 approved, 0 not mine, 1 counted once\./)).toBeTruthy();
+      expect(store.proposedTransactions$.peek().p1?.deleted).not.toBe(false);
+      expect(store.transactions$.peek().t1?.metadata).toMatchObject({
+        pairing: { kind: 'same_purchase', absorbed: { id: 'p1' } },
+      });
+
+      await act(async () => undoToast());
+
+      expect(screen.getByText('GRAB')).toBeTruthy();
+      expect(store.proposedTransactions$.peek().p1).toMatchObject({
+        status: 'pending',
+        deleted: false,
+      });
+      expect((store.transactions$.peek().t1?.metadata as { pairing?: unknown }).pairing).toBeUndefined();
+    });
+
+    it('Approve keeps both, as the card says', async () => {
+      ledgerRow();
+      seed('p1', { transaction_date: new Date().toISOString() });
+      await show(<ReviewScreen />);
+      await screen.findByText('Maybe a duplicate');
+
+      await act(async () => fireEvent.press(screen.getByTestId('review.approve')));
+
+      expect(ledger()).toHaveLength(2);
+      expect(spent()).toBe(2400);
+    });
+
+    it("It's a transfer rewrites both sides as one transfer, spending nothing", async () => {
+      store.wallets$[TNG].set({ id: TNG, currency: 'MYR', type: 'ewallet', name: 'TNG', deleted: false });
+      financeProjection$.walletsById[TNG].set(
+        financeWallet({ id: TNG, userId: 'user-1', name: 'TNG', type: 'ewallet' }),
+      );
+      ledgerRow({ merchant: 'TNG DIGITAL' });
+      seed('p1', {
+        source_app: 'my.com.tngdigital.ewallet',
+        type: 'income',
+        wallet_id: TNG,
+        merchant: null,
+        category_id: null,
+        transaction_date: new Date().toISOString(),
+      });
+      await show(<ReviewScreen />);
+
+      await act(async () => {
+        await screen.findByTestId('review.its-a-transfer');
+        fireEvent.press(screen.getByTestId('review.its-a-transfer'));
+      });
+
+      expect(ledger()).toEqual([
+        expect.objectContaining({
+          type: 'transfer',
+          wallet_id: MAYBANK,
+          transfer_to_wallet_id: TNG,
+          category_id: null,
+          merchant: null,
+        }),
+      ]);
+      expect(spent()).toBe(0);
+    });
+
+    it('a card that already counts another alert quotes it and can separate them', async () => {
+      seed('p1', {
+        pairing: {
+          kind: 'same_purchase',
+          before: { merchant: 'TNG DIGITAL' },
+          absorbed: {
+            id: '00000000-0000-4000-9000-000000000001',
+            sourceType: 'notification',
+            sourceApp: 'com.maybank2u.life',
+            sourceText: null,
+            sourceImageUri: null,
+            notificationTitle: 'Alert',
+            notificationBody: 'Payment of RM12.00 to GRAB was successful.',
+            notificationReceivedAt: THEN,
+            aiReasoning: null,
+            aiConfidence: null,
+            walletId: MAYBANK,
+            walletHint: null,
+            transferToWalletId: null,
+            transferToWalletHint: null,
+            amountMinor: 1200,
+            currency: 'MYR',
+            type: 'expense',
+            description: null,
+            merchant: 'GRAB',
+            categoryId: null,
+            categoryHint: null,
+            transactionDate: THEN,
+          },
+        },
+      });
+      await show(<ReviewScreen />);
+
+      expect(screen.getByText('Same payment')).toBeTruthy();
+      expect(
+        screen.getByText(
+          'Counted once with the Maybank alert: “Payment of RM12.00 to GRAB was successful.”',
+        ),
+      ).toBeTruthy();
+
+      await act(async () => fireEvent.press(screen.getByTestId('review.not-same-payment')));
+
+      expect(store.proposedTransactions$.peek().p1).toMatchObject({
+        merchant: 'TNG DIGITAL',
+        pairing: null,
+      });
+      expect(
+        store.proposedTransactions$.peek()['00000000-0000-4000-9000-000000000001'],
+      ).toMatchObject({ status: 'pending', merchant: 'GRAB', deleted: false });
+    });
+
+    it('hides the control until the column is there for a capture waiting in Review', async () => {
+      const { isMigrated } = jest.requireMock('@/lib/store') as { isMigrated: jest.Mock };
+      isMigrated.mockImplementation((migration: string) => migration !== 'capture_pairing');
+      seed('p1', { transaction_date: THEN });
+      seed('p2', { transaction_date: new Date().toISOString() });
+      await show(<ReviewScreen />);
+
+      expect(await screen.findByText('Maybe a duplicate')).toBeTruthy();
+      expect(screen.queryByTestId('review.same-payment')).toBeNull();
+      isMigrated.mockImplementation(() => true);
+    });
   });
 
   it('Undo on the toast removes the ledger row and brings the card back', async () => {

@@ -34,32 +34,34 @@ export function canPairInto(match: DuplicateMatch): boolean {
   return match.target.kind === 'transaction' || isMigrated('capture_pairing');
 }
 
+/** A synced row can miss a column that was added later; a stored capture always has every field. */
 export function toAbsorbedCapture(
-  proposal: Omit<AbsorbedCapture, 'id'> & { id: string },
+  proposal: Pick<AbsorbedCapture, 'id' | 'sourceType' | 'currency'> &
+    Partial<Omit<AbsorbedCapture, 'id' | 'sourceType' | 'currency'>>,
 ): AbsorbedCapture {
   return {
     id: proposal.id,
     sourceType: proposal.sourceType,
-    sourceApp: proposal.sourceApp,
-    sourceText: proposal.sourceText,
-    sourceImageUri: proposal.sourceImageUri,
-    notificationTitle: proposal.notificationTitle,
-    notificationBody: proposal.notificationBody,
-    notificationReceivedAt: proposal.notificationReceivedAt,
-    aiReasoning: proposal.aiReasoning,
-    aiConfidence: proposal.aiConfidence,
-    walletId: proposal.walletId,
-    walletHint: proposal.walletHint,
-    transferToWalletId: proposal.transferToWalletId,
-    transferToWalletHint: proposal.transferToWalletHint,
-    amountMinor: proposal.amountMinor,
+    sourceApp: proposal.sourceApp ?? null,
+    sourceText: proposal.sourceText ?? null,
+    sourceImageUri: proposal.sourceImageUri ?? null,
+    notificationTitle: proposal.notificationTitle ?? null,
+    notificationBody: proposal.notificationBody ?? null,
+    notificationReceivedAt: proposal.notificationReceivedAt ?? null,
+    aiReasoning: proposal.aiReasoning ?? null,
+    aiConfidence: proposal.aiConfidence ?? null,
+    walletId: proposal.walletId ?? null,
+    walletHint: proposal.walletHint ?? null,
+    transferToWalletId: proposal.transferToWalletId ?? null,
+    transferToWalletHint: proposal.transferToWalletHint ?? null,
+    amountMinor: proposal.amountMinor ?? null,
     currency: proposal.currency,
-    type: proposal.type,
-    description: proposal.description,
-    merchant: proposal.merchant,
-    categoryId: proposal.categoryId,
-    categoryHint: proposal.categoryHint,
-    transactionDate: proposal.transactionDate,
+    type: proposal.type ?? null,
+    description: proposal.description ?? null,
+    merchant: proposal.merchant ?? null,
+    categoryId: proposal.categoryId ?? null,
+    categoryHint: proposal.categoryHint ?? null,
+    transactionDate: proposal.transactionDate ?? null,
   };
 }
 

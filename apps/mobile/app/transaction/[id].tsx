@@ -64,7 +64,8 @@ import {
 import { tid, type TestId } from '@/lib/test-ids';
 import { retypeFields, TRANSACTION_TYPE_COPY } from '@/lib/transactions/type-change';
 import { showToast } from '@/lib/toast/toast-store';
-import { transactionAlert } from '@/lib/transactions/alert';
+import { captureSourceLabel } from '@/lib/proposals/capture-source';
+import { transactionAlert, transactionPairing } from '@/lib/transactions/alert';
 import { resolveTransactionIcon } from '@/lib/transactions/icon';
 import { BALANCE_CORRECTION_TITLE } from '@/lib/wallets/balance-correction';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
@@ -164,6 +165,7 @@ function Detail({ transaction: tx }: { transaction: FinanceTransaction }) {
   const transfer = tx.type === 'transfer';
   const alert = source === 'notification' && tx.merchant !== null;
   const bankAlert = source === 'notification' ? transactionAlert(raw?.metadata) : null;
+  const counted = transactionPairing(raw?.metadata)?.absorbed ?? null;
   const correction = tx.balanceCorrection;
   const title = correction
     ? BALANCE_CORRECTION_TITLE
@@ -575,6 +577,25 @@ function Detail({ transaction: tx }: { transaction: FinanceTransaction }) {
           <DetailTiles tiles={tiles} />
 
           {budget ? <BudgetLine budget={budget} /> : null}
+
+          {counted ? (
+            <View
+              accessible
+              className="gap-1 rounded-card bg-card px-[18px] py-3"
+            >
+              <Text
+                variant="meta"
+                className="text-muted"
+              >
+                {`Counted once with ${captureSourceLabel(counted)}`}
+              </Text>
+              {counted.notificationBody ?? counted.sourceText ? (
+                <Text className="text-[14px] leading-[20px] text-ink-2">
+                  {`“${counted.notificationBody ?? counted.sourceText}”`}
+                </Text>
+              ) : null}
+            </View>
+          ) : null}
 
           <View className="gap-1.5 rounded-card bg-card pb-3.5 pl-[18px] pr-3 pt-3">
             <InPlaceField

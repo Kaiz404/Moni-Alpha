@@ -33,6 +33,8 @@ export type ReviewCardModel = {
   /** Transfers only: the wallet the money moves to. */
   destination: ChipLook | null | undefined;
   evidence: string | null;
+  /** What the user can do about a likely duplicate, or a pair Moni already counted once. */
+  pair: { kind: 'same-payment' | 'its-a-transfer' | 'not-same-payment'; label: string; hint: string | null } | null;
   similar: boolean | null;
   budget: BudgetLine | null;
 };
@@ -47,6 +49,7 @@ export type ReviewCardHandlers = {
   onPickWallet: () => void;
   onPickDestination: () => void;
   onToggleSimilar: () => void;
+  onPair: () => void;
 };
 
 const SOURCE: Record<
@@ -247,6 +250,38 @@ export function ReviewCard({
           >
             {model.evidence}
           </Text>
+        </View>
+      ) : null}
+
+      {model.pair ? (
+        <View className="flex-row flex-wrap items-center gap-x-2.5 gap-y-1">
+          <Press
+            testID={tid('review', model.pair.kind)}
+            onPress={handlers.onPair}
+            accessibilityLabel={model.pair.label}
+            accessibilityHint={model.pair.hint ?? undefined}
+            hitSlop={4}
+            radius={{ rest: 20, pressed: 14 }}
+            pressedClassName="bg-hairline"
+            className="h-10 flex-row items-center gap-1.5 bg-sand px-3.5"
+          >
+            <IconSymbol
+              name={model.pair.kind === 'its-a-transfer' ? 'swap-horizontal' : 'link-variant'}
+              size={18}
+              color={tokens.foreground}
+            />
+            <Text className="text-[14px] leading-[19px] font-display-semibold text-foreground">
+              {model.pair.label}
+            </Text>
+          </Press>
+          {model.pair.hint ? (
+            <Text
+              variant="meta"
+              className="text-muted"
+            >
+              {model.pair.hint}
+            </Text>
+          ) : null}
         </View>
       ) : null}
 

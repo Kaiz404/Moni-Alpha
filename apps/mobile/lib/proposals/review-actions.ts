@@ -3,6 +3,7 @@ import type { MinorAmount, ProposedTransaction, TransactionType } from '@repo/ty
 import type { DuplicateMatch } from '@/lib/ai/duplicates';
 import { merchantKey } from '@/lib/ai/routine';
 import { markCaptureStatus } from '@/lib/notifications/capture-status';
+import { canPairInto, pairCapture, toAbsorbedCapture, undoPairing } from '@/lib/proposals/pairing';
 import { emitProposedTransactionsChanged } from '@/lib/proposals/proposed-transactions-events';
 import { keepProposalReceipt } from '@/lib/receipts/upload-queue';
 import { proposedTransactions$, wallets$ } from '@/lib/store';
@@ -54,6 +55,7 @@ export type ReviewOutcome =
       ruleAdded: boolean;
     }
   | { action: 'notMine'; proposal: ProposedTransaction; row: ProposalRowSnapshot }
+  | { action: 'pair'; proposal: ProposedTransaction }
   | { action: 'later'; proposal: ProposedTransaction; until: string };
 
 export type ReviewField = 'wallet' | 'destination';
@@ -203,6 +205,23 @@ export async function notMine(proposal: ProposedTransaction): Promise<ReviewResu
   }
 }
 
+/** The card's Same payment or It's a transfer: this capture counts once with what it matched. */
+export async function samePayment(
+  proposal: ProposedTransaction,
+  edits: ReviewEdits,
+  match: DuplicateMatch,
+): Promise<ReviewResult> {
+  if (!canPairInto(match) || !openRow(proposal.id)) {
+    return { status: 'error', message: 'This capture was already reviewed.' };
+  }
+  try {
+    await pairCapture(toAbsorbedCapture(editedProposal(proposal, edits)), match);
+    return { status: 'done', outcome: { action: 'pair', proposal } };
+  } catch (error) {
+    return { status: 'error', message: messageOf(error, "Couldn't save. Try again.") };
+  }
+}
+
 /** Neither XA-Review nor XA-Notification names a snooze, so Later waits until 8 am tomorrow. */
 export function laterUntil(now: Date = new Date()): Date {
   const until = new Date(now);
@@ -264,6 +283,9 @@ export async function undo(outcome: ReviewOutcome): Promise<void> {
     case 'notMine':
       restoreRow(outcome.row);
       return;
+    case 'pair':
+      await undoPairing(outcome.proposal.id);
+      return;
     case 'later':
       patchRow(proposedTransactions$, outcome.proposal.id, {
         status: 'pending',
@@ -275,7 +297,7 @@ export async function undo(outcome: ReviewOutcome): Promise<void> {
   }
 }
 
-/** The ledger row or capture this one may repeat. The card warns; it never merges. */
+/** The ledger row or capture this one may repeat. The card warns and offers `samePayment`. */
 export function duplicateOf(proposal: ProposedTransaction): Promise<DuplicateMatch | null> {
   return findProposalDuplicate(proposal.id, proposal);
 }

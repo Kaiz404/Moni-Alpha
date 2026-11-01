@@ -54,6 +54,7 @@ import type { FinanceCategory, FinanceWallet } from '@/lib/finance/types';
 import * as haptics from '@/lib/haptics';
 import { springs } from '@/lib/motion/tokens';
 import { budgetLine } from '@/lib/proposals/budget-line';
+import { canPairInto, undoPairing } from '@/lib/proposals/pairing';
 import { captureSourceLabel, captureTime } from '@/lib/proposals/capture-source';
 import {
   approve,
@@ -63,6 +64,7 @@ import {
   notMine,
   retypeEdits,
   reviewType,
+  samePayment,
   undo,
   type ReviewEdits,
   type ReviewOutcome,
@@ -196,6 +198,29 @@ function duplicateText(match: DuplicateMatch, currency: string): string {
   const { target } = match;
   const amount = formatMoney((target.amountMinor ?? 0) as MinorAmount, target.currency || currency);
   return `You may already have this: ${target.merchant ?? 'a payment'} ${amount} on ${formatDate(target.at)}.`;
+}
+
+/** The other capture this card already counts, as the evidence line says it. */
+function countedOnceText(proposal: ProposedTransaction): string | null {
+  const absorbed = proposal.pairing?.absorbed;
+  if (!absorbed) return null;
+  const label = captureSourceLabel(absorbed);
+  const quote = absorbed.notificationBody ?? absorbed.sourceText;
+  const from = absorbed.sourceType === 'notification' ? `the ${label}` : label;
+  return quote ? `Counted once with ${from}: “${quote}”` : `Counted once with ${from}.`;
+}
+
+function pairControl(
+  proposal: ProposedTransaction,
+  duplicate: DuplicateMatch | null,
+): ReviewCardModel['pair'] {
+  if (proposal.pairing) {
+    return { kind: 'not-same-payment', label: 'Not the same payment', hint: null };
+  }
+  if (!duplicate || !canPairInto(duplicate)) return null;
+  return duplicate.kind === 'transfer_pair'
+    ? { kind: 'its-a-transfer', label: "It's a transfer", hint: 'Approve keeps both.' }
+    : { kind: 'same-payment', label: 'Same payment', hint: 'Approve keeps both.' };
 }
 
 function displayName(proposal: ProposedTransaction, edits: ReviewEdits, lookups: Lookups) {
@@ -566,7 +591,9 @@ export function ReviewDeck({ session }: { session: ReviewSession }) {
       const undoIt = () => {
         void undo(outcome).then(() => restore(outcome));
       };
-      if (outcome.action === 'approve') {
+      if (outcome.action === 'pair') {
+        showToast({ text: 'Counted once', icon: 'link-variant', undo: undoIt });
+      } else if (outcome.action === 'approve') {
         const name = displayName(outcome.proposal, {}, lookups);
         const amount = formatSignedMoney(
           outcome.proposal.type === 'income' ? 'income' : outcome.proposal.type === 'transfer' ? 'transfer' : 'expense',
@@ -613,6 +640,27 @@ export function ReviewDeck({ session }: { session: ReviewSession }) {
     },
     [top, edits, wallets, setLeaving, send, decide, toast, finishExit, snapBack, pickWallet],
   );
+
+  const pair = useCallback(async () => {
+    if (!top || !canDrag(cardRef.current)) return;
+    const proposal = top;
+    if (proposal.pairing) {
+      await undoPairing(proposal.pairing.absorbed.id);
+      showToast({ text: 'Back in Review as its own capture' });
+      return;
+    }
+    const match = duplicates[proposal.id];
+    if (!match) return;
+    haptics.approve();
+    const result = await samePayment(proposal, edits[proposal.id] ?? {}, match);
+    if (result.status === 'done') {
+      decide(result.outcome);
+      toast(result.outcome);
+      remove(proposal.id);
+    } else if (result.status === 'error') {
+      showToast({ text: result.message, tone: 'removed' });
+    }
+  }, [top, duplicates, edits, decide, toast, remove]);
 
   const onIntent = useCallback(
     (swipe: Swipe) => {
@@ -749,9 +797,11 @@ export function ReviewDeck({ session }: { session: ReviewSession }) {
       time: captureTime(top.notificationReceivedAt ?? top.createdAt),
       status: !walletId
         ? { tone: 'near', label: 'Needs a wallet' }
-        : duplicate
-          ? { tone: 'review', label: 'Maybe a duplicate' }
-          : null,
+        : top.pairing
+          ? { tone: 'review', label: 'Same payment' }
+          : duplicate
+            ? { tone: 'review', label: 'Maybe a duplicate' }
+            : null,
       quote:
         top.sourceType === 'notification'
           ? top.notificationBody
@@ -763,8 +813,12 @@ export function ReviewDeck({ session }: { session: ReviewSession }) {
       category: category ? { name: category.name, icon: category.icon, color: category.color } : null,
       wallet: walletLook(wallets, walletId),
       destination: type === 'transfer' ? walletLook(wallets, destinationId) : undefined,
-      evidence: duplicate ? duplicateText(duplicate, top.currency) : top.aiReasoning,
-      similar: top.sourceType === 'notification' && !own.type ? !!own.similar : null,
+      evidence:
+        countedOnceText(top) ??
+        (duplicate ? duplicateText(duplicate, top.currency) : top.aiReasoning),
+      pair: pairControl(top, duplicate),
+      // A likely duplicate is not a reason to stop asking about the merchant.
+      similar: top.sourceType === 'notification' && !own.type && !duplicate ? !!own.similar : null,
       budget,
     };
   }, [top, edits, categories, duplicates, wallets, progress, lookups]);
@@ -787,8 +841,9 @@ export function ReviewDeck({ session }: { session: ReviewSession }) {
         else haptics.toggleOff();
         setEdit(top.id, { similar: next });
       },
+      onPair: () => void pair(),
     };
-  }, [top, edits, send, setEdit, pickType, pickCategory, pickWallet]);
+  }, [top, edits, send, setEdit, pickType, pickCategory, pickWallet, pair]);
 
   if (!top) {
     const recentlyReviewed = (
@@ -827,7 +882,8 @@ export function ReviewDeck({ session }: { session: ReviewSession }) {
     }
     const approved = results.filter((o) => o.action === 'approve');
     const notMineCount = results.filter((o) => o.action === 'notMine').length;
-    const laterCount = results.length - approved.length - notMineCount;
+    const pairedCount = results.filter((o) => o.action === 'pair').length;
+    const laterCount = results.length - approved.length - notMineCount - pairedCount;
     const added = approved
       .filter((o) => o.proposal.currency === mainCurrency && o.proposal.type === 'expense')
       .reduce((sum, o) => sum + Number(o.proposal.amountMinor ?? 0), 0);
@@ -835,6 +891,7 @@ export function ReviewDeck({ session }: { session: ReviewSession }) {
     const counts = [
       `${approved.length} approved`,
       `${notMineCount} not mine`,
+      ...(pairedCount ? [`${pairedCount} counted once`] : []),
       ...(laterCount ? [`${laterCount} for later`] : []),
     ].join(', ');
     const sentence = `${counts}. ${added > 0 ? `${formatMoney(added as MinorAmount, mainCurrency)} now counts in ${month}.` : `Nothing new in ${month}.`}`;

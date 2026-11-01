@@ -1,0 +1,57 @@
+# Y2 Review card: a capture that repeats a saved row offers Same payment. It leaves one row, and
+# Undo on the toast brings the card back. Typing RM23.40 at GRAB*FOOD makes the seeded GRAB*FOOD
+# capture a likely duplicate, because the seed dates that capture today (within 12 hours until midnight).
+# Run: scripts/device/run-flows.sh .maestro/flows/review/same-payment.yaml
+appId: com.anonymous.moni.e2e
+name: Y2 Review Same payment
+tags:
+  - y2
+  - seed-full
+---
+- runFlow: ../../subflows/launch.yaml
+- tapOn:
+    id: nav.plus
+- tapOn:
+    id: nav.chooser.type
+- tapOn:
+    id: capture.key.2
+- tapOn:
+    id: capture.key.3
+- tapOn:
+    id: capture.key.point
+- tapOn:
+    id: capture.key.4
+- tapOn:
+    id: capture.note
+- inputText: GRAB*FOOD
+- hideKeyboard
+- tapOn:
+    id: capture.submit
+- tapOn:
+    id: capture.duplicate.add-anyway
+
+- openLink: moni-e2e://review
+- extendedWaitUntil:
+    visible:
+      id: review.card
+    timeout: 10000
+- assertVisible: Maybe a duplicate
+- assertVisible:
+    id: review.same-payment
+- assertVisible: Approve keeps both.
+- takeScreenshot: y2-review-likely-duplicate
+
+- tapOn:
+    id: review.same-payment
+- extendedWaitUntil:
+    visible: Counted once
+    timeout: 3000
+- assertNotVisible: Maybe a duplicate
+- takeScreenshot: y2-review-counted-once
+
+- tapOn: Undo
+- extendedWaitUntil:
+    visible: Maybe a duplicate
+    timeout: 3000
+- assertVisible:
+    id: review.same-payment
