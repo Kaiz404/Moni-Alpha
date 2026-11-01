@@ -1,6 +1,7 @@
 # K2 balance correction: RM63.60 to RM60.00 writes a −RM3.60 correction, and Undo removes it.
-# Creates a "K2 Fix" cash wallet.
-# Opening the wallet taps its name where Home or the Wallets page lists it.
+# Creates a "K2 Fix" cash wallet and leaves it corrected to RM60.00.
+# Opens the form and the wallet from Home, Net worth, then Wallets.
+# Undo goes straight after the save: the toast lasts 5 s and a Maestro tap takes about as long.
 # Run: scripts/device/run-flows.sh .maestro/flows/account/wallet-correction.yaml
 appId: com.anonymous.moni.e2e
 name: K2 balance correction
@@ -9,7 +10,10 @@ tags:
   - seed-full
 ---
 - runFlow: ../../subflows/launch.yaml
-- openLink: moni-e2e://wallet/new
+- tapOn:
+    id: home.net-worth
+- tapOn:
+    id: wallet.list.add
 - tapOn:
     id: wallet.form.name
 - inputText: K2 Fix
@@ -26,12 +30,23 @@ tags:
 - scrollUntilVisible:
     element:
       text: K2 Fix
+    centerElement: true
 - tapOn: K2 Fix
 - extendedWaitUntil:
     visible:
       id: wallet.balance.edit
     timeout: 10000
 - assertVisible: RM63.60
+
+# A matching balance closes the field and writes nothing.
+- tapOn:
+    id: wallet.balance.edit
+- assertVisible: Moni has RM63.60. Type what you count.
+- tapOn:
+    id: wallet.balance.save
+- assertNotVisible: Balance correction
+- assertVisible:
+    id: wallet.balance-not-right
 
 # "Balance not right?" opens the field with the system keyboard and a live difference line.
 - tapOn:
@@ -46,14 +61,6 @@ tags:
 - tapOn:
     id: wallet.balance.save
 
-# Lane 1 and You see. The balance reads RM60.00, the row and the toast appear.
-- assertVisible: Correction −RM3.60 added
-- assertVisible: RM60.00
-- assertVisible: Checked today
-- assertVisible: Balance correction
-- assertVisible: Not in budgets · K2 Fix
-- takeScreenshot: k2-l1-corrected
-
 # Lane 3. Undo removes the row and the balance returns.
 - tapOn:
     id: nav.toast.undo
@@ -61,12 +68,16 @@ tags:
 - assertVisible: RM63.60
 - takeScreenshot: k2-l3-undo
 
-# A matching balance closes the field and writes nothing.
+# Lane 1 and You see. Saved again, the balance reads RM60.00, the row and the toast appear.
 - tapOn:
-    id: wallet.balance.edit
-- assertVisible: Moni has RM63.60. Type what you count.
+    id: wallet.balance-not-right
+- eraseText: 12
+- inputText: '60'
 - tapOn:
     id: wallet.balance.save
-- assertNotVisible: Balance correction
-- assertVisible:
-    id: wallet.balance-not-right
+- assertVisible: Correction −RM3.60 added
+- assertVisible: RM60.00
+- assertVisible: Checked today
+- assertVisible: Balance correction
+- assertVisible: Not in budgets · K2 Fix
+- takeScreenshot: k2-l1-corrected

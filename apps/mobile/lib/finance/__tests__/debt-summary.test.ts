@@ -71,6 +71,31 @@ describe('summarizeDebts', () => {
     expect(summary.open.map((line) => line.debt.id)).toEqual(['Mei', 'Aiman']);
   });
 
+  it('lists a new debt with someone whose old debt is settled, and keeps the old one under Settled', () => {
+    const summary = summarizeDebts(
+      [
+        debt('hana-old', { direction: 'owed_to_me', counterpartyName: 'Hana', status: 'settled' }),
+        debt('hana-new', { direction: 'owed_to_me', counterpartyName: 'Hana' }),
+        debt('aiman', { direction: 'owed_to_me', counterpartyName: 'Aiman' }),
+      ],
+      [
+        activity('hana-old', 'principal', 25, '2026-09-30T04:00:00.000Z'),
+        activity('hana-old', 'repayment', 25, '2026-10-08T04:00:00.000Z'),
+        activity('hana-new', 'principal', 50, '2026-10-14T04:00:00.000Z'),
+        activity('aiman', 'principal', 150, '2026-09-28T04:00:00.000Z'),
+      ],
+      WED_14_OCT,
+      MYR,
+    );
+
+    expect(summary.owedToMeMinor).toBe(20000);
+    expect(summary.open.map((line) => [line.debt.id, line.balanceMinor])).toEqual([
+      ['aiman', 15000],
+      ['hana-new', 5000],
+    ]);
+    expect(summary.closed.map((line) => line.debt.id)).toEqual(['hana-old']);
+  });
+
   it('moves paid and written-off debts to the closed list, newest first', () => {
     const summary = summarizeDebts(
       [

@@ -1,5 +1,5 @@
 # K2 wallet form: New wallet with type, starting balance and colour, then Alerts from on a bank.
-# Leaves a "K2 Cash" wallet behind.
+# Opens the form from Home, Net worth, then Wallets. Leaves a "K2 Cash" wallet behind.
 # Run: scripts/device/run-flows.sh .maestro/flows/account/wallet-form.yaml
 appId: com.anonymous.moni.e2e
 name: K2 wallet form
@@ -10,7 +10,10 @@ tags:
 - runFlow: ../../subflows/launch.yaml
 
 # Lane 6. A cash wallet with a starting balance shows up once saved.
-- openLink: moni-e2e://wallet/new
+- tapOn:
+    id: home.net-worth
+- tapOn:
+    id: wallet.list.add
 - assertVisible: New wallet
 - assertVisible:
     id: wallet.back
@@ -37,13 +40,16 @@ tags:
 - tapOn:
     id: wallet.form.submit
 - assertNotVisible: New wallet
+- assertVisible: Wallets
 - scrollUntilVisible:
     element:
       text: K2 Cash
+    centerElement: true
 - takeScreenshot: k2-l6-new
 
 # Lane 7. A bank wallet offers Alerts from, which opens the app picker sheet.
-- openLink: moni-e2e://wallet/new
+- tapOn:
+    id: wallet.list.add
 - tapOn:
     id: wallet.currency
 - assertVisible: Currency

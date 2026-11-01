@@ -22,8 +22,12 @@ tags:
 - tapOn:
     id: debts.tile.owed-to-me
 - assertVisible: Show everyone
-- assertVisible: owes you
-- assertNotVisible: you owe
+- assertVisible:
+    id: 'debts\.person\..*'
+    text: '.* owes you .*'
+- assertNotVisible:
+    id: 'debts\.person\..*'
+    text: 'You owe .*'
 - takeScreenshot: d1-l3-filter
 - tapOn:
     id: debts.show-everyone

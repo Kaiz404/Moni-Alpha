@@ -32,7 +32,7 @@ tags:
 # Wallet picker: the scrim covers the tab bar and a tap on it closes the sheet.
 - tapOn:
     id: capture.wallet
-- assertVisible: Paid from
+- assertVisible: Paid with
 - assertVisible:
     id: sheet.scrim
 - takeScreenshot: f3-wallet-sheet

@@ -11,6 +11,7 @@ tags:
 - scrollUntilVisible:
     element:
       id: home.check-in.right
+    centerElement: true
 - takeScreenshot: h1-l7-check-in
 - tapOn:
     id: home.check-in.right

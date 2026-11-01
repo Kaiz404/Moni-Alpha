@@ -15,6 +15,10 @@ appId: com.anonymous.moni.e2e
 - tapOn:
     id: auth.password
 - eraseText: 80
+# Screenshots and failure captures must never show this password: stop here if it would be readable.
+- assertVisible:
+    id: auth.password.reveal
+    text: Show password
 - inputText: ${E2E_PASSWORD}
 - hideKeyboard
 - tapOn:

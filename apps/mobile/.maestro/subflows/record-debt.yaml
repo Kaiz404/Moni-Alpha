@@ -1,0 +1,32 @@
+# Records "${PERSON} owes me RM50" with the note ${PERSON} lunch, from the Debts tab, and ends back there.
+appId: com.anonymous.moni.e2e
+---
+- tapOn:
+    id: debts.record-debt
+- tapOn:
+    id: debts.new.person
+- inputText: ${PERSON}
+- hideKeyboard
+- tapOn:
+    id: debts.new.amount
+- tapOn:
+    id: debts.key.5
+- tapOn:
+    id: debts.key.0
+- tapOn:
+    id: debts.submit
+- tapOn:
+    id: debts.new.note
+- inputText: ${PERSON} lunch
+- hideKeyboard
+- tapOn:
+    id: debts.new.record
+- assertVisible: People
+- scrollUntilVisible:
+    element:
+      id: 'debts\.person\..*'
+      text: ${PERSON} owes you RM50\.00
+    centerElement: true
+- tapOn:
+    id: 'debts\.person\..*'
+    text: ${PERSON} owes you RM50\.00

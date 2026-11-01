@@ -33,15 +33,13 @@ tags:
       - takeScreenshot: b1-l3-left
 - scrollUntilVisible:
     element: Budgets
-- runFlow:
-    when:
-      visible:
-        id: budget.edit-budgets
-    commands:
-      - assertVisible: Edit
+    centerElement: true
+- assertVisible:
+    id: budget.edit-budgets
 - scrollUntilVisible:
     element:
       id: budget.open-map
+    centerElement: true
 - takeScreenshot: b1-l2-pair-bottom
 - tapOn:
     id: budget.open-map

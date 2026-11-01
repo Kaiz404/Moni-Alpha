@@ -41,13 +41,19 @@ tags:
     id: activity.category-form.archive
 - tapOn:
     id: sheet.confirm
-- assertVisible: 'Archived · hidden from new transactions'
+- scrollUntilVisible:
+    element: 'Archived · hidden from new transactions'
+    centerElement: true
 - takeScreenshot: a2-archived
 - tapOn:
     id: 'activity\.categories\.restore\..*'
     index: 0
 - assertNotVisible: 'Archived · hidden from new transactions'
 - takeScreenshot: a2-restored
+- scrollUntilVisible:
+    element:
+      id: activity.categories-kind.income
+    direction: UP
 
 # An income preset opens this month's rows for it in Activity, as expense presets open their page.
 - tapOn:

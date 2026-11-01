@@ -34,10 +34,16 @@ tags:
 - inputText: ${E2E_EMAIL}
 - tapOn:
     id: auth.password
-- inputText: not-the-password
+# Under half the field wide: a tap lands mid-field, eraseText deletes backwards from there, and a
+# longer text keeps its tail. The tail then trails the real password and the sign-in fails.
+- inputText: not-it-99
 - tapOn:
     id: auth.password.reveal
-- assertVisible: not-the-password
+- assertVisible: not-it-99
+# Reveal goes off here, so nothing later can type the real password in the clear.
+- tapOn:
+    id: auth.password.reveal
+- assertNotVisible: not-it-99
 - hideKeyboard
 - tapOn:
     id: auth.sign-in

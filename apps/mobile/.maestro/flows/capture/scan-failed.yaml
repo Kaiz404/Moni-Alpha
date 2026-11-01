@@ -3,12 +3,15 @@
 # Needs the AI backend and the fixture on the phone:
 #   adb push .maestro/fixtures/receipt-blank.png /sdcard/Pictures/
 #   adb shell am broadcast -a android.intent.action.MEDIA_SCANNER_SCAN_FILE -d file:///sdcard/Pictures/receipt-blank.png
-# Run: scripts/device/run-flows.sh .maestro/flows/capture/scan-failed.yaml
+# needs-scanner: the picker shows no filenames and displays the phone's real gallery, so default runs
+# skip this flow and no screenshot is taken while the picker is up.
+# Run: scripts/device/run-flows.sh --tag needs-ai --tag needs-scanner .maestro/flows/capture/scan-failed.yaml
 appId: com.anonymous.moni.e2e
 name: C2 Scan a receipt failed
 tags:
   - c2
   - needs-ai
+  - needs-scanner
   - seed-full
 ---
 - runFlow: ../../subflows/launch.yaml

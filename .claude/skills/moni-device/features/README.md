@@ -22,7 +22,7 @@ This directory holds the recipes for verifying Moni's user-facing features on th
 - Report the flow path, the `<passed>/<total>` line, and the run directory.
 - Pair each screenshot with its board render through `review-pair.sh`.
 - Prove a write with a second view: a `seed.mjs --query` result, or the row on another screen.
-- A flow tagged `needs-speech`, `needs-posted-alert`, or `needs-ai` needs a person, a posted alert, or the real backend. Report it as skipped with the tag. Do not report it as passed through another path.
+- A flow tagged `needs-speech`, `needs-posted-alert`, `needs-ai`, or `needs-scanner` needs a person, a posted alert, the real backend, or the system photo picker. Report it as skipped with the tag. Do not report it as passed through another path.
 
 ## Feature entry contract
 

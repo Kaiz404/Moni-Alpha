@@ -11,6 +11,7 @@ tags:
 - scrollUntilVisible:
     element:
       id: 'home\.recent\.row\..*'
+    centerElement: true
 - longPressOn:
     id: 'home\.recent\.row\..*'
     index: 0

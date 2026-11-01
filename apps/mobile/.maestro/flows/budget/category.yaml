@@ -17,6 +17,7 @@ tags:
 - scrollUntilVisible:
     element:
       id: budget\.ring\..*
+    centerElement: true
 - tapOn:
     id: budget\.ring\..*
     index: 0

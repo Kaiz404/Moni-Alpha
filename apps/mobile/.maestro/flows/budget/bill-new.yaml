@@ -1,4 +1,5 @@
-# B2 Add a bill (V2P-AmountPage, New bill): Unifi fibre at RM129, due in a few days, every month.
+# B2 Add a bill (V2P-AmountPage, New bill): Indah Water at RM129, due in a few days, every month.
+# Not Unifi fibre, the board's sample: the seed already holds that bill, so the name would edit it.
 # Needs at least one MYR wallet and the bills migration pushed.
 # Run: scripts/device/run-flows.sh .maestro/flows/budget/bill-new.yaml
 appId: com.anonymous.moni.e2e
@@ -17,6 +18,7 @@ tags:
 - scrollUntilVisible:
     element:
       id: budget.add-bill
+    centerElement: true
 - tapOn:
     id: budget.add-bill
 - assertVisible: New bill
@@ -31,7 +33,7 @@ tags:
 - assertVisible: RM129.00 every month, on the due date
 - tapOn:
     id: budget.bill-new.name
-- inputText: Unifi fibre
+- inputText: Indah Water
 - hideKeyboard
 - tapOn:
     id: budget.bill-new.due
@@ -46,5 +48,10 @@ tags:
 - assertVisible:
     id: budget.month
 - scrollUntilVisible:
-    element: Unifi fibre
+    element:
+      id: budget.bills.row.indah-water
+    centerElement: true
+- assertVisible:
+    id: budget.bills.row.indah-water
+    text: 'Indah Water, RM129\.00, 6 days left.*'
 - takeScreenshot: b2-l6-new-bill

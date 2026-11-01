@@ -1,5 +1,5 @@
-# D1 settle: Paid back in full squares Hana's debt, and it moves to Settled.
-# Run after repay.yaml: scripts/device/run-flows.sh .maestro/flows/debts/settle.yaml
+# D1 settle: Paid back in full squares the debt this flow records, and it moves to Settled.
+# Run: scripts/device/run-flows.sh .maestro/flows/debts/settle.yaml
 appId: com.anonymous.moni.e2e
 name: D1 settle a debt
 tags:
@@ -13,16 +13,27 @@ tags:
     timeout: 15000
 - tapOn:
     id: nav.tab.debts
-- tapOn: Hana
+- runFlow:
+    file: ../../subflows/record-debt.yaml
+    env:
+      PERSON: Suresh
 - tapOn:
     id: debts.settle
-- assertVisible: All square with Hana
+- assertVisible: All square with Suresh
 - assertVisible: Paid in full
 - assertVisible: Undo
 - takeScreenshot: d1-l6-settled
 - tapOn:
     id: debts.done
+- scrollUntilVisible:
+    element:
+      id: debts.settled.toggle
+    centerElement: true
 - tapOn:
     id: debts.settled.toggle
-- assertVisible: Settled · Lunch
+- scrollUntilVisible:
+    element:
+      id: 'debts\.settled\..*'
+      text: 'Suresh, Settled · Suresh lunch, .*'
+    centerElement: true
 - takeScreenshot: d1-l6-settled-list

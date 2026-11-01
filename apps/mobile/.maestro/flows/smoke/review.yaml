@@ -10,6 +10,7 @@ tags:
 - scrollUntilVisible:
     element:
       id: home.review
+    centerElement: true
 - tapOn:
     id: home.review
 - extendedWaitUntil:

@@ -1,14 +1,20 @@
 # C2 Say it, denied: with the microphone revoked the page says so and Type it
-# instead opens the amount page. Revoke first:
-#   adb shell pm revoke com.anonymous.moni.e2e android.permission.RECORD_AUDIO
-# Android may show its own permission prompt; the flow denies it.
+# instead opens the amount page. Android may show its own permission prompt; the flow denies it.
+# onFlowComplete gives the microphone back even after a failure, so later Say flows still work.
 # Run: scripts/device/run-flows.sh .maestro/flows/capture/say-denied.yaml
 appId: com.anonymous.moni.e2e
 name: C2 Say it denied
 tags:
   - c2
   - seed-full
+onFlowComplete:
+  - launchApp:
+      permissions:
+        microphone: allow
 ---
+- launchApp:
+    permissions:
+      microphone: deny
 - runFlow: ../../subflows/launch.yaml
 - tapOn:
     id: nav.plus

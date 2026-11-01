@@ -19,6 +19,7 @@ tags:
       id: activity.show-more
     direction: DOWN
     optional: true
+    centerElement: true
 - tapOn:
     id: activity.show-more
     optional: true

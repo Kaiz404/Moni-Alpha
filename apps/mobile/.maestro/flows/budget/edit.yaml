@@ -16,6 +16,7 @@ tags:
     id: nav.tab.budget
 - scrollUntilVisible:
     element: Budgets
+    centerElement: true
 - runFlow:
     when:
       visible:

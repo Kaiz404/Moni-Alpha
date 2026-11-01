@@ -18,6 +18,7 @@ tags:
 - scrollUntilVisible:
     element:
       id: budget.reports
+    centerElement: true
 - tapOn:
     id: budget.reports
 - assertVisible: Reports
@@ -42,6 +43,7 @@ tags:
     id: reports.view.month
 - scrollUntilVisible:
     element: Top merchants
+    centerElement: true
 - tapOn:
     id: reports\.merchant\..*
     index: 0

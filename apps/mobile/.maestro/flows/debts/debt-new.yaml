@@ -1,5 +1,5 @@
-# D1 Record a debt: Hana owes me RM50, lent from the first MYR wallet.
-# Needs at least one MYR wallet and no open debt with Hana.
+# D1 Record a debt: Hana owes me RM50, lent from the first MYR wallet. The seed's Hana is settled,
+# so her new debt must reach People and the Owed to you total, with the old one still under Settled.
 # Run: scripts/device/run-flows.sh .maestro/flows/debts/debt-new.yaml
 appId: com.anonymous.moni.e2e
 name: D1 record a debt
@@ -52,5 +52,23 @@ tags:
 - tapOn:
     id: debts.new.record
 - assertVisible: People
-- assertVisible: Hana
+- assertNotVisible:
+    id: debts.tile.owed-to-me
+    text: Owed to you RM150
+- scrollUntilVisible:
+    element:
+      id: 'debts\.person\..*'
+      text: Hana owes you RM50\.00
+    centerElement: true
 - takeScreenshot: d1-l5-new
+- scrollUntilVisible:
+    element:
+      id: debts.settled.toggle
+    centerElement: true
+- tapOn:
+    id: debts.settled.toggle
+- scrollUntilVisible:
+    element:
+      id: 'debts\.settled\..*'
+      text: 'Hana, Settled · Lunch, .*'
+    centerElement: true

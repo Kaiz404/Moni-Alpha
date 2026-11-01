@@ -23,7 +23,7 @@ Preconditions:
 - `run-flows.sh` grants the microphone and camera and pushes `receipt-mamak.png` and `receipt-blank.png` to `/sdcard/Pictures/moni-e2e/`.
 
 - **Listening page.** Run `run-flows.sh --sha <key> --tag needs-speech .maestro/flows/capture/say.yaml`. The first half checks `capture.done-speaking` and the counter. The heard half waits for someone to say "paid 6 ringgit parking at KLCC" near the phone, so ask the operator or report the flow as skipped with `needs-speech`.
-- **Scan.** Run `run-flows.sh --sha <key> .maestro/flows/capture/scan.yaml`. It taps `nav.chooser.scan`, imports `receipt-mamak.png` in Google's scanner, checks `capture.result.amount`, `capture.result.category`, and `capture.result.wallet`, edits the amount through `capture.amount.edit` and `capture.amount.save`, and approves with `capture.approve`.
+- **Scan.** Run `run-flows.sh --sha <key> --tag needs-scanner .maestro/flows/capture/scan.yaml`, because the picker displays the phone's real gallery and default runs skip it. It taps `nav.chooser.scan`, imports `receipt-mamak.png` in Google's scanner, checks `capture.result.amount`, `capture.result.category`, and `capture.result.wallet`, edits the amount through `capture.amount.edit` and `capture.amount.save`, and approves with `capture.approve`.
 - **Chat capture.** Run `run-flows.sh --sha <key> .maestro/flows/chat/draft.yaml`. It types the parking sentence into `chat.input` and taps `chat.send`. The mock reads it, and a draft card appears.
 - **Second view.** `node apps/mobile/scripts/e2e/seed.mjs --query latest-transaction` shows the approved scan with `"source": "camera"`.
 - **Proof.** Pair `c2-l2-pair.png` with `V2A-CaptureScan` and `c2-l3-added.png` with `V2A-CaptureScanAdded`.

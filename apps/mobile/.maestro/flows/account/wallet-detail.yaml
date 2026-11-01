@@ -1,6 +1,7 @@
 # K2 wallet page: its blocks, rename in place with Undo, Edit wallet, and Delete wallet.
-# Creates "K2 Detail" and deletes it at the end.
-# Opening the wallet taps its name where Home or the Wallets page lists it.
+# Creates "K2 Detail", renames it, and deletes it at the end.
+# Opens the form and the wallet from Home, Net worth, then Wallets.
+# Undo goes straight after the rename: the toast lasts 5 s and a Maestro tap takes about as long.
 # Run: scripts/device/run-flows.sh .maestro/flows/account/wallet-detail.yaml
 appId: com.anonymous.moni.e2e
 name: K2 wallet page
@@ -9,7 +10,10 @@ tags:
   - seed-full
 ---
 - runFlow: ../../subflows/launch.yaml
-- openLink: moni-e2e://wallet/new
+- tapOn:
+    id: home.net-worth
+- tapOn:
+    id: wallet.list.add
 - tapOn:
     id: wallet.form.name
 - inputText: K2 Detail
@@ -22,6 +26,7 @@ tags:
 - scrollUntilVisible:
     element:
       text: K2 Detail
+    centerElement: true
 - tapOn: K2 Detail
 
 # Lane 2. The blocks in board order.
@@ -57,19 +62,26 @@ tags:
       id: wallet.name.edit
     direction: UP
 
-# Lane 4. Rename in place, then Undo.
+# Lane 4. Rename in place and Undo, then rename again.
 - tapOn:
     id: wallet.name.edit
 - assertVisible: Only the name changes. Its transactions stay as they are.
+- eraseText: 20
+- inputText: K2 Undone
+- tapOn:
+    id: wallet.name.save
+- tapOn:
+    id: nav.toast.undo
+- assertVisible: K2 Detail
+- assertNotVisible: K2 Undone
+- tapOn:
+    id: wallet.name.edit
 - eraseText: 20
 - inputText: K2 Renamed
 - tapOn:
     id: wallet.name.save
 - assertVisible: Renamed to K2 Renamed
 - takeScreenshot: k2-l4-rename
-- tapOn:
-    id: nav.toast.undo
-- assertVisible: K2 Detail
 
 # Edit wallet opens the form with the currency locked.
 - tapOn:
@@ -91,10 +103,11 @@ tags:
     id: wallet.more
 - tapOn:
     id: wallet.menu.delete
-- assertVisible: Delete K2 Detail?
+- assertVisible: Delete K2 Renamed?
 - takeScreenshot: k2-l8-delete
 - tapOn:
     id: sheet.confirm
 - assertNotVisible:
     id: wallet.balance.edit
-- assertNotVisible: K2 Detail
+- assertVisible: Wallets
+- assertNotVisible: K2 Renamed

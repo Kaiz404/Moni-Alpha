@@ -4,11 +4,14 @@
 # run-flows.sh pushes .maestro/fixtures/*.png to /sdcard/Pictures/moni-e2e/ for the import.
 # The scanner's import control is Google's UI; its label is the Appendix A
 # experiment's finding and may need updating after `maestro hierarchy`.
-# Run: scripts/device/run-flows.sh .maestro/flows/capture/scan.yaml
+# needs-scanner: the picker shows no filenames and displays the phone's real gallery, so default runs
+# skip this flow and no screenshot is taken while the picker is up.
+# Run: scripts/device/run-flows.sh --tag needs-scanner .maestro/flows/capture/scan.yaml
 appId: com.anonymous.moni.e2e
 name: C2 Scan a receipt
 tags:
   - c2
+  - needs-scanner
   - seed-full
 ---
 - runFlow: ../../subflows/launch.yaml

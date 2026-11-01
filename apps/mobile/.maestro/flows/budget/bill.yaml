@@ -1,4 +1,6 @@
-# B2 bill page (V2P-BillDetail): open a bill from the Budget tab, skip this month, undo.
+# B2 bill page (V2P-BillDetail): open a bill from the Budget tab, skip this month, undo, then skip it.
+# Undo goes first and straight after the skip: the toast lasts 5 s and a Maestro tap takes about as long.
+# Leaves the first bill skipped this month.
 # Needs a bill due this month (the seeded Netflix) and the bills migration pushed.
 # Run: scripts/device/run-flows.sh .maestro/flows/budget/bill.yaml
 appId: com.anonymous.moni.e2e
@@ -17,6 +19,7 @@ tags:
 - scrollUntilVisible:
     element:
       id: budget\.bills\.row\..*
+    centerElement: true
 - takeScreenshot: b2-l1-bills
 - tapOn:
     id: budget\.bills\.row\..*
@@ -31,13 +34,16 @@ tags:
 - takeScreenshot: b2-l2-pair
 - tapOn:
     id: budget.bill.skip
+- tapOn:
+    id: nav.toast.undo
+- assertVisible:
+    id: budget.bill.mark-paid
+- tapOn:
+    id: budget.bill.skip
 - assertVisible: .* skipped
 - assertNotVisible:
     id: budget.bill.mark-paid
 - takeScreenshot: b2-l3-skipped
-- tapOn: Undo
-- assertVisible:
-    id: budget.bill.mark-paid
 - tapOn:
     id: budget.back
 - assertVisible:

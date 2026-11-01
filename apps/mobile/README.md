@@ -143,10 +143,10 @@ Flows live in `.maestro/flows/<area>/`. Each one starts with `subflows/launch.ya
 
 - `smoke` marks the short v2 suite in `flows/smoke/`: launch, sign in, each tab root, the + chooser, a transaction, and the Review deck.
 - Each flow has one seed tag. `seed-full` needs `--profile full`, `seed-empty` needs `--profile empty`, and `seed-any` passes on either.
-- `needs-speech`, `needs-posted-alert`, `needs-ai`, and `perf` mark flows that need a person speaking, a posted bank alert, the real AI backend, or `perf.sh`.
+- `needs-speech`, `needs-posted-alert`, `needs-ai`, `needs-scanner`, and `perf` mark flows that need a person speaking, a posted bank alert, the real AI backend, the system photo picker, or `perf.sh`. The picker shows no filenames and displays the phone's real gallery, so never add a screenshot while it is up.
 - The unit tags, such as `h1` or `r1`, name the PLAN.md unit that wrote the flow.
 
-`node scripts/codemods/maestro-flows.mjs --check` fails when a flow skips the launch subflow or its seed tag. `pnpm --filter moni lint:flow-ids` fails on an `id:` that no `tid()` call renders. Check a flow's syntax with `maestro check-syntax <flow.yaml>`.
+`node scripts/codemods/maestro-flows.mjs --check` fails when a flow skips the launch subflow or its seed tag. `pnpm --filter moni lint:flow-ids` fails on an `id:` that no `tid()` call renders, and reads a `Segmented` or `ChartToggle` option id from that control's `screen` and `name` props. Check a flow's syntax with `maestro check-syntax <flow.yaml>`.
 
 Run a suite with `run-flows.sh`:
 

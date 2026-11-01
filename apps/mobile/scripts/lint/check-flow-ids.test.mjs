@@ -68,3 +68,17 @@ test('parts appended to a passed-in testID match under any prefix', () => {
   assert.deepEqual(ids('id: chat.draft.amount.edit\nid: "merchants\\\\.named\\\\..*\\\\.edit"'), []);
   assert.deepEqual(ids('id: chat.draft.amount.save'), ['chat.draft.amount.save']);
 });
+
+test('a Segmented row renders only its own screen and name, so a stale option id fails', () => {
+  const rows = [
+    { file: 'components/ui/segmented.tsx', source: 'const a = tid(screen, name, option.value);' },
+    { file: 'app/profile.tsx', source: '<Segmented screen="profile" name="appearance" options={THEMES} />;' },
+    { file: 'components/home/card.tsx', source: '<ChartToggle screen="home" name="chart"></ChartToggle>;' },
+  ];
+  const ids = (yaml) => unknownFlowIds([{ file: 'flow.yaml', source: yaml }], rows).map(({ id }) => id);
+  assert.deepEqual(ids('id: profile.appearance.dark\nid: home.chart.daily'), []);
+  assert.deepEqual(ids('id: profile.theme.dark\nid: capture.duplicate.add-anyway'), [
+    'profile.theme.dark',
+    'capture.duplicate.add-anyway',
+  ]);
+});

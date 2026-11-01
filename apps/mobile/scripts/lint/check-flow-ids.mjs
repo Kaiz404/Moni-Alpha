@@ -10,6 +10,8 @@ const FLOW_ROOT = '.maestro';
 const DYNAMIC_PART = '[a-z0-9-]+';
 const DYNAMIC_SCREEN = '[a-z-]+';
 const SAMPLE_PART = 'abc-123';
+// These build tid(screen, name, option) from props, so their own call matches any three-part id.
+const SEGMENT_CONTROLS = new Set(['Segmented', 'ChartToggle']);
 
 function walk(dir, keep) {
   const files = [];
@@ -51,10 +53,24 @@ function isPassedTestId(node) {
   return ts.isIdentifier(node) && /testid$/i.test(node.text);
 }
 
+function stringProp(element, name) {
+  const prop = element.attributes.properties.find((attr) => ts.isJsxAttribute(attr) && attr.name.getText() === name);
+  return prop?.initializer && ts.isStringLiteral(prop.initializer) ? kebab(prop.initializer.text) : null;
+}
+
 export function tidTemplates(file, source) {
   const sourceFile = ts.createSourceFile(file, source, ts.ScriptTarget.Latest, true);
   const templates = [];
   const visit = (node) => {
+    if (
+      (ts.isJsxSelfClosingElement(node) || ts.isJsxOpeningElement(node)) &&
+      SEGMENT_CONTROLS.has(node.tagName.getText())
+    ) {
+      const screen = stringProp(node, 'screen');
+      const name = stringProp(node, 'name');
+      const { line } = sourceFile.getLineAndCharacterOfPosition(node.getStart());
+      if (screen && name) templates.push({ file, line: line + 1, parts: [[screen], [name], null] });
+    }
     if (
       ts.isCallExpression(node) &&
       ts.isIdentifier(node.expression) &&
@@ -129,8 +145,13 @@ export function flowIds(source) {
   return ids;
 }
 
+const fullyDynamic = ({ parts }) => parts.every((part) => part === null || part === 'screen');
+
 export function unknownFlowIds(flowFiles, codeFiles) {
-  const compiled = codeFiles.flatMap(({ file, source }) => tidTemplates(file, source)).map(compileTemplate);
+  const compiled = codeFiles
+    .flatMap(({ file, source }) => tidTemplates(file, source))
+    .filter((template) => !fullyDynamic(template))
+    .map(compileTemplate);
   return flowFiles.flatMap(({ file, source }) =>
     flowIds(source)
       .filter(({ id }) => !idMatches(id, compiled))

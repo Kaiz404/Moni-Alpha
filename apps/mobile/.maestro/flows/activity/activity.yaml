@@ -41,7 +41,7 @@ tags:
 
 - tapOn:
     id: activity.filter.wallet
-- tapOn: "Touch 'n Go"
+- tapOn: "Touch 'n Go eWallet"
 - assertVisible:
     id: activity.filter.wallet
     text: "Touch 'n Go"
@@ -61,6 +61,7 @@ tags:
       id: activity.show-more
     direction: DOWN
     optional: true
+    centerElement: true
 - tapOn:
     id: activity.show-more
     optional: true

@@ -1,5 +1,5 @@
 # H2 past days: today's thread is listed, search finds it, and a delete shows Undo.
-# Run after draft.yaml so today's thread mentions parking.
+# It sends the parking sentence itself, so today's thread mentions parking.
 # Run: scripts/device/run-flows.sh .maestro/flows/chat/history.yaml
 appId: com.anonymous.moni.e2e
 name: H2 chat history
@@ -14,6 +14,15 @@ tags:
     timeout: 15000
 - tapOn:
     id: home.ask-box
+- tapOn:
+    id: chat.input
+- inputText: paid 6 ringgit parking at KLCC
+- tapOn:
+    id: chat.send
+- extendedWaitUntil:
+    visible:
+      id: chat.draft.approve
+    timeout: 30000
 - tapOn:
     id: chat.history
 - assertVisible: Past days
