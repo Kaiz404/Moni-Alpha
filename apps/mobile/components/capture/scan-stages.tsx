@@ -7,6 +7,7 @@ import {
   IconSymbol,
   type IconSymbolName,
 } from '@/components/ui/icon-symbol';
+import { ListCard } from '@/components/ui/list-card';
 import { Page } from '@/components/ui/page';
 import { StatusPill } from '@/components/ui/status-pill';
 import { Text } from '@/components/ui/text';
@@ -125,7 +126,7 @@ export function CaptureAdded({
         >
           It counts in your totals now.
         </Text>
-        <View className="mt-3 self-stretch rounded-card bg-card py-1.5">
+        <ListCard className="mt-3 self-stretch">
           <TransactionRowBody
             row={row}
             meta={[rowMeta(row, 'date'), itemCount && itemsLabel(itemCount)]
@@ -133,7 +134,7 @@ export function CaptureAdded({
               .join(' · ')}
             amount={rowAmount(row)}
           />
-        </View>
+        </ListCard>
       </View>
       <View className="gap-1 px-5 pb-3">
         <Button

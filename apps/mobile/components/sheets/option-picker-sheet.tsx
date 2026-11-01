@@ -3,7 +3,7 @@ import { useMemo, useState, type ReactNode } from 'react';
 import { FlatList, View } from 'react-native';
 
 import { IconSymbol } from '@/components/ui/icon-symbol';
-import { Press } from '@/components/ui/press';
+import { Press, PressRows } from '@/components/ui/press';
 import { SearchField } from '@/components/ui/search-field';
 import {
   Sheet,
@@ -118,67 +118,69 @@ export function OptionPickerSheet({
           />
         </View>
       ) : null}
-      <FlatList
-        data={shown}
-        keyExtractor={(option) => option.id}
-        style={size === 'fit' ? { flexGrow: 0 } : undefined}
-        contentContainerClassName={
-          shown.length === 0
-            ? undefined
-            : 'overflow-hidden rounded-card bg-card py-1.5'
-        }
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
-        initialNumToRender={12}
-        ListEmptyComponent={
-          <View className="rounded-tile border-[1.5px] border-dashed border-hairline p-4">
-            <Text className="text-center text-[15px] font-display-semibold text-foreground">
-              Nothing matches “{query.trim()}”.
-            </Text>
-          </View>
-        }
-        renderItem={({ item: option }) => {
-          const selected = option.id === selectedId;
-          return (
-            <Press
-              testID={tid('sheet', 'option', option.id)}
-              accessibilityRole="radio"
-              accessibilityState={{ selected }}
-              accessibilityLabel={
-                option.meta
-                  ? `${option.name}, ${option.meta}`
-                  : option.name
-              }
-              radius={{ rest: 26, pressed: 16 }}
-              className={`min-h-[66px] flex-row items-center gap-3.5 px-[18px] py-3 ${option.suggested ? 'bg-primary-muted' : ''}`}
-              onPress={() => onPick(option.id)}
-            >
-              {option.leading}
-              <View className="min-w-0 flex-1">
-                <Text
-                  className="text-base leading-[22px] font-display-semibold text-foreground"
-                  numberOfLines={1}
-                >
-                  {option.name}
-                </Text>
-                {option.meta ? (
+      <PressRows>
+        <FlatList
+          data={shown}
+          keyExtractor={(option) => option.id}
+          style={size === 'fit' ? { flexGrow: 0 } : undefined}
+          contentContainerClassName={
+            shown.length === 0
+              ? undefined
+              : 'overflow-hidden rounded-card bg-card'
+          }
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+          initialNumToRender={12}
+          ListEmptyComponent={
+            <View className="rounded-tile border-[1.5px] border-dashed border-hairline p-4">
+              <Text className="text-center text-[15px] font-display-semibold text-foreground">
+                Nothing matches “{query.trim()}”.
+              </Text>
+            </View>
+          }
+          renderItem={({ item: option }) => {
+            const selected = option.id === selectedId;
+            return (
+              <Press
+                testID={tid('sheet', 'option', option.id)}
+                accessibilityRole="radio"
+                accessibilityState={{ selected }}
+                accessibilityLabel={
+                  option.meta
+                    ? `${option.name}, ${option.meta}`
+                    : option.name
+                }
+                radius={option.suggested ? { rest: 26, pressed: 16 } : undefined}
+                className={`min-h-[66px] flex-row items-center gap-3.5 px-[18px] py-3 ${option.suggested ? 'bg-primary-muted' : ''}`}
+                onPress={() => onPick(option.id)}
+              >
+                {option.leading}
+                <View className="min-w-0 flex-1">
                   <Text
-                    className="text-[13px] leading-[18px] text-muted"
+                    className="text-base leading-[22px] font-display-semibold text-foreground"
                     numberOfLines={1}
                   >
-                    {option.meta}
+                    {option.name}
                   </Text>
-                ) : null}
-              </View>
-              <IconSymbol
-                name={selected ? 'radiobox-marked' : 'radiobox-blank'}
-                size={24}
-                color={selected ? tokens.foreground : tokens.muted}
-              />
-            </Press>
-          );
-        }}
-      />
+                  {option.meta ? (
+                    <Text
+                      className="text-[13px] leading-[18px] text-muted"
+                      numberOfLines={1}
+                    >
+                      {option.meta}
+                    </Text>
+                  ) : null}
+                </View>
+                <IconSymbol
+                  name={selected ? 'radiobox-marked' : 'radiobox-blank'}
+                  size={24}
+                  color={selected ? tokens.foreground : tokens.muted}
+                />
+              </Press>
+            );
+          }}
+        />
+      </PressRows>
     </Sheet>
   );
 }
