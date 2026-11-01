@@ -1,6 +1,7 @@
 import { computed, type Observable } from '@legendapp/state';
 import { addMinor, subtractMinor, type CurrencyCode, type MinorAmount } from '@repo/types';
 import { categories$ } from '@/lib/store';
+import { hideShadowedPresets } from './category-presets';
 import { toFinanceCategory } from './adapters';
 import { monthKeyInTimezone } from './dates';
 import { outstandingDebtBalanceMinor, transactionDeltaMinor } from './ledger';
@@ -71,6 +72,11 @@ function syncedCategoriesForUser(userId: string | null): FinanceCategory[] {
       (category): category is FinanceCategory =>
         category !== null && (category.userId === null || category.userId === userId),
     );
+}
+
+/** What pickers and lists show; lookups by id use every category, since a row may point at any. */
+function listedCategoriesForUser(userId: string | null): FinanceCategory[] {
+  return hideShadowedPresets(syncedCategoriesForUser(userId), (category) => category);
 }
 
 function cacheComputed<T>(
@@ -208,7 +214,7 @@ export function expenseCategories$(
   userId: string | null,
 ): Observable<{ id: string; name: string; icon: string | null; color: string | null }[]> {
   return cacheComputed(expenseCategoriesCache, userId ?? 'anonymous', () =>
-    syncedCategoriesForUser(userId)
+    listedCategoriesForUser(userId)
       .filter(
         (category) =>
           category.isActive &&
@@ -242,7 +248,7 @@ const categoryListCache = new Map<
 
 export function categoriesForUser$(userId: string | null) {
   return cacheComputed(categoryListCache, userId ?? 'anonymous', () =>
-    syncedCategoriesForUser(userId)
+    listedCategoriesForUser(userId)
       .sort(
         (a, b) =>
           a.type?.localeCompare(b.type ?? '') ||

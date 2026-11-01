@@ -13,6 +13,7 @@ import {
   resetStore,
   run,
   seedRoutine,
+  SHOPPING,
   store,
   T0,
   TNG,
@@ -342,6 +343,63 @@ describe('a credit-card bill payment', () => {
       wallet_id: MAYBANK,
       ai_reasoning: 'Looks like a credit card payment. Add the card as a wallet to count it as a transfer.',
     });
+  });
+});
+
+describe('Malaysian categories', () => {
+  const preset = (id: string, name: string) => ({
+    id,
+    user_id: null,
+    name,
+    type: 'expense',
+    icon: 'boom-gate',
+    color: '#EAD978',
+    is_active: true,
+    display_order: 14,
+    deleted: false,
+  });
+  const TOLLS = '00000000-0000-4000-8000-0000000000f2';
+  const RELOADS = '00000000-0000-4000-8000-0000000000f3';
+
+  beforeEach(() => {
+    store.categories$[TOLLS].set(preset(TOLLS, 'Tolls'));
+    store.categories$[RELOADS].set(preset(RELOADS, 'TNG Reloads'));
+  });
+
+  it('prefills Tolls on a card, and still asks', async () => {
+    const result = await run(
+      delivered(TNG_APP, 'Payment of RM5.40 to PLUS MALAYSIA BERHAD was successful.', {
+        amount: 5.4,
+        type: 'expense',
+        merchant: 'PLUS MALAYSIA BERHAD',
+      }),
+    );
+    expect(result.proposalId).toBeTruthy();
+    expect(openProposals()[0]).toMatchObject({ category_id: TOLLS });
+  });
+
+  it("lets the user's history win over the hint", async () => {
+    seedRoutine(TNG, 'PLUS MALAYSIA BERHAD');
+    const result = await run(
+      delivered(TNG_APP, 'Payment of RM5.40 to PLUS MALAYSIA BERHAD was successful.', {
+        amount: 5.4,
+        type: 'expense',
+        merchant: 'PLUS MALAYSIA BERHAD',
+      }),
+    );
+    expect(store.transactions$[result.transactionId!].peek()).toMatchObject({ category_id: SHOPPING });
+  });
+
+  it('prefills TNG Reloads for a reload with no Touch n Go wallet', async () => {
+    resetStore([wallet(MAYBANK, 'Maybank', 'bank', MAYBANK_APP)]);
+    store.categories$[RELOADS].set(preset(RELOADS, 'TNG Reloads'));
+    await run(bankReload());
+    expect(openProposals()[0]).toMatchObject({ type: 'expense', category_id: RELOADS });
+  });
+
+  it('gives a reload that is a transfer no category', async () => {
+    await run(tngReload());
+    expect(openProposals()[0]).toMatchObject({ type: 'transfer', category_id: null });
   });
 });
 

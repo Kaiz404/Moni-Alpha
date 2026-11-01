@@ -16,6 +16,7 @@ Input (chat text / receipt photo / notification / + chooser scan or voice)
   → OpenRouter
   → routine detection                     apps/mobile/lib/ai/routine.ts
       second alert for one payment → counted once with the first (`lib/proposals/pairing.ts`; see [Duplicate detection](#duplicate-detection))
+      reload or card bill naming both wallets → a transfer in transactions (metadata.ai_suggested)
       routine notification → transactions (metadata.ai_suggested, shown as "Auto"; metadata.alert keeps the alert)
       otherwise            → proposed_transactions (category/merchant prefilled from history)
   → Review deck (`app/review.tsx`) → Approve / Not mine / Later
@@ -44,7 +45,7 @@ On-device and deterministic; the user's own transaction history is the model.
 - Similar = same type and currency, and the same merchant (ids and digits stripped), or for notifications within 100 m at a similar amount. Location is ignored for manual inputs: they are often logged away from where the money was spent.
 - The first transaction of a kind always goes to review. Afterwards the most recent similar transaction's category is prefilled.
 - A **notification** is added without review when the last (up to 3) similar transactions agree on one active category and the amount is at most 3x the largest of them. Correcting a category breaks the streak, so the next one returns to review until the last 3 agree again.
-- Transfers never auto-add. Notification transactions are dated when the notification arrived.
+- History never auto-adds a transfer; only an alert naming both wallets does ([Duplicate detection](#duplicate-detection)). Notification transactions are dated when Android posted the notification.
 
 ## Duplicate detection
 
@@ -59,6 +60,8 @@ One payment often reaches Moni twice. `apps/mobile/lib/ai/duplicates.ts` is a pu
 | `transfer_pair`        | The two legs of one movement within 10 min: an expense in one wallet and income in another, or a transfer row that fills the other's gap. A one-way alert joins a complete transfer only if its merchant names the far side, so a second RM100 purchase from Maybank is not the reload's leg | `high`: one transfer. On a notification, counted once and marked Auto. A Review capture this completes joins the ledger, as when the bank's alert came first |
 
 A row counts at most two captures. `lib/proposals/pairing.ts` is the one path for both automatic pairing and the Review card's controls: `pairCapture` folds the capture into the other row and keeps it whole in `pairing` (`proposed_transactions.pairing`, or `metadata.pairing` on a ledger row), and either arrival order lands on the same row: the bank's wallet, the e-wallet's merchant and category. A ledger row the user already reviewed keeps their merchant and category. The folded alert stays in the Capture log as Same payment with Undo, and `undoPairing` makes it its own capture in Review and restores the row. Until `proposed_transactions.pairing` is pushed, a pair whose other row waits in Review stays two cards, without the control. On a card with any match, **Same payment** or **It's a transfer** runs the same `pairCapture`, and Approve keeps both.
+
+**Malaysian category hints.** Client-side, with no wire change: `lib/ai/category-hints.ts` prefills PTPTN, Takaful, Tolls and Transit from the merchant or alert when the user's own history names no category, by name, so a category the user made with that name is the one filed. A reload with no wallet for Touch 'n Go prefills TNG Reloads. A prefill never adds a row by itself: the capture still goes to Review.
 
 **Credit-card bill payments.** The same reader turns a card payment into a transfer. It matches the bank's and the issuer's wording ("Payment of RM500.00 to Credit Card ending 1234", "We've received your credit card payment"), not spending on the card, a due-date reminder, or a fee. The card is the `credit` wallet whose account hint is in the text, then the one whose bank the text names, then the only card. With no credit wallet the alert stays an expense in Review, because Moni has not counted that card's purchases, and the card says what would make it a transfer.
 
@@ -126,7 +129,7 @@ Text and image requests also carry optional `clientNow` (device local time, RFC 
 
 `itemCount` is additive: the backend leaves the key out unless the model returned a whole number from 1 to 200, so a missing or garbage `item_count` never fails a receipt, and older app builds ignore the key.
 
-`type` is `income` | `expense` | `transfer`. Transfers use `walletId` as the source wallet and `transferToWalletId` as the destination (either may be `null` for user completion in the review UI). Receipt and notification extraction remain income/expense only; **text** extraction detects transfers (e.g. "move 500 from Maybank to savings").
+`type` is `income` | `expense` | `transfer`. Transfers use `walletId` as the source wallet and `transferToWalletId` as the destination (either may be `null` for user completion in the review UI). Receipt and notification extraction remain income/expense only on the wire (the client reads reloads and card payments itself, with no wire change); **text** extraction detects transfers (e.g. "move 500 from Maybank to savings").
 
 Auth: `Authorization: Bearer <supabase-user-jwt>`, verified via JWKS (ES256). Errors: `{ error, details? }`.
 

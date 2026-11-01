@@ -6,6 +6,7 @@ import {
   type UpdateCategory,
 } from '@repo/types';
 import { categories$ } from '@/lib/store';
+import { hideShadowedPresets } from '@/lib/finance/category-presets';
 import { getRecordValues, isActive, patchRow } from '@/lib/store/helpers';
 import { getUserId } from '@/lib/supabase/client';
 
@@ -47,7 +48,10 @@ function getAllCategoryRows(userId: string | null, includeArchived = false): Cat
     return merged.filter((c) => c.user_id === null);
   }
 
-  return merged.filter((c) => c.user_id === null || c.user_id === userId);
+  return hideShadowedPresets(
+    merged.filter((c) => c.user_id === null || c.user_id === userId),
+    (c) => ({ userId: c.user_id, name: c.name, type: c.type, isActive: isActive(c.is_active) }),
+  );
 }
 
 export async function getCategories(type?: 'income' | 'expense') {

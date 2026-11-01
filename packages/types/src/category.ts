@@ -31,6 +31,9 @@ export const categoryIconNames = [
   'laptop',
   'chart-line',
   'cash-plus',
+  'shield-check',
+  'boom-gate',
+  'wallet-plus',
 ] as const;
 
 export const categoryIconSchema = z.enum(categoryIconNames);

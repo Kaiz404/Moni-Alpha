@@ -51,10 +51,13 @@ function normalized(text: string): string {
     .trim()} `;
 }
 
+/** `phrase` as whole words, lowercase with one space between them. */
+export function textNamesPhrase(text: string | null | undefined, phrase: string): boolean {
+  return !!text && normalized(text).includes(` ${phrase} `);
+}
+
 export function textNames(text: string | null | undefined, institution: Institution): boolean {
-  if (!text) return false;
-  const haystack = normalized(text);
-  return institution.names.some((name) => haystack.includes(` ${name} `));
+  return institution.names.some((name) => textNamesPhrase(text, name));
 }
 
 export function institutionNamedIn(

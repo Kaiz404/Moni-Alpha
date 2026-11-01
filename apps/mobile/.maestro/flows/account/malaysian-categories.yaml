@@ -1,0 +1,25 @@
+# Y2 presets: Transit, Tolls, TNG Reloads, PTPTN and Takaful list under Presets, before Other Expenses.
+# Needs the migration 20261101000100_malaysian_categories.sql pushed.
+# Run: scripts/device/run-flows.sh .maestro/flows/account/malaysian-categories.yaml
+appId: com.anonymous.moni.e2e
+name: Y2 Malaysian categories
+tags:
+  - y2
+  - seed-full
+---
+- runFlow: ../../subflows/launch.yaml
+- openLink: moni-e2e://categories
+- extendedWaitUntil:
+    visible: Categories
+    timeout: 10000
+- scrollUntilVisible:
+    element: Transit
+    direction: DOWN
+- assertVisible: Tolls
+- takeScreenshot: y2-categories-transit-tolls
+- scrollUntilVisible:
+    element: Takaful
+    direction: DOWN
+- assertVisible: TNG Reloads
+- assertVisible: PTPTN
+- takeScreenshot: y2-categories-ptptn-takaful
