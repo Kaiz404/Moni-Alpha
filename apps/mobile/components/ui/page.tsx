@@ -1,6 +1,12 @@
 import { router } from 'expo-router';
-import type { ReactNode } from 'react';
+import { createContext, useContext, type ReactNode } from 'react';
 import { View } from 'react-native';
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+  type SharedValue,
+} from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import {
@@ -10,6 +16,7 @@ import {
 import { Press } from '@/components/ui/press';
 import { Text } from '@/components/ui/text';
 import { tid, type Screen } from '@/lib/test-ids';
+import { springs } from '@/lib/motion/tokens';
 
 export type PageHeader =
   | {
@@ -52,20 +59,44 @@ export type PageProps = PageHeader & {
 export function Page(props: PageProps) {
   const insets = useSafeAreaInsets();
   const onTab = props.kind === 'home' || props.kind === 'tabRoot';
+  const lift = useSharedValue(0);
+  const lifted = useAnimatedStyle(() => ({
+    transform: [{ translateY: -lift.get() }],
+  }));
   return (
-    <View
-      className="flex-1 bg-canvas"
-      style={{
-        paddingTop: insets.top,
-        paddingBottom: onTab ? 0 : insets.bottom,
-      }}
-    >
-      <View className="h-11 flex-row items-center gap-3 px-5">
-        <HeaderRow {...props} />
+    <PageLift.Provider value={lift}>
+      <View className="flex-1 bg-canvas">
+        <Animated.View
+          className="flex-1"
+          style={[
+            {
+              paddingTop: insets.top,
+              paddingBottom: onTab ? 0 : insets.bottom,
+            },
+            lifted,
+          ]}
+        >
+          <View className="h-11 flex-row items-center gap-3 px-5">
+            <HeaderRow {...props} />
+          </View>
+          <View className="flex-1 pt-3">{props.children}</View>
+        </Animated.View>
       </View>
-      <View className="flex-1 pt-3">{props.children}</View>
-    </View>
+    </PageLift.Provider>
   );
+}
+
+const PageLift = createContext<SharedValue<number> | null>(null);
+
+/**
+ * Slides the page up so an open field's controls clear the keyboard, as `V2A-TxnDetailEdit` draws
+ * for the note. Android's pan only keeps the caret visible, which leaves Save under the keyboard.
+ */
+export function usePageLift() {
+  const lift = useContext(PageLift);
+  return (by: number) => {
+    if (lift) lift.set(withSpring(by, springs.sheet));
+  };
 }
 
 function Trailing({ children }: { children: ReactNode }) {

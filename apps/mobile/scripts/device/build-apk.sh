@@ -60,7 +60,8 @@ load_env "$main_checkout/apps/mobile/.env.e2e"
 load_env "$mobile/.env"
 load_env "$main_checkout/apps/mobile/.env"
 export APP_VARIANT=e2e
-env_hash=$(printf '%s\n' "APP_VARIANT=$APP_VARIANT" "EXPO_PUBLIC_AI_API_URL=$EXPO_PUBLIC_AI_API_URL" "${env_assignments[@]}" | sort | sha256sum | cut -c1-16)
+e2e_now=${EXPO_PUBLIC_E2E_NOW:-}
+env_hash=$(printf '%s\n' "APP_VARIANT=$APP_VARIANT" "EXPO_PUBLIC_AI_API_URL=$EXPO_PUBLIC_AI_API_URL" "EXPO_PUBLIC_E2E_NOW=$e2e_now" "${env_assignments[@]}" | sort | sha256sum | cut -c1-16)
 
 inputs=(apps/mobile packages package.json pnpm-lock.yaml pnpm-workspace.yaml)
 sha=$(git -C "$root" rev-parse HEAD)
@@ -74,6 +75,7 @@ if [[ -n $(git -C "$root" status --porcelain --untracked-files=all -- "${inputs[
   key=$sha-dirty-$(sha256sum <<<"$diff_hash" | cut -c1-12)
 fi
 
+[[ -z $e2e_now ]] || key=$key-clock
 cache=${MONI_APK_CACHE:-$HOME/.cache/moni-apk}
 out=$cache/$key
 if [[ -f $out/app-release.apk ]] && grep -q "\"envHash\": \"$env_hash\"" "$out/build.json" 2>/dev/null; then
@@ -114,6 +116,7 @@ cat >"$staging/build.json" <<JSON
   "buildSeconds": $seconds,
   "prebuild": $prebuild,
   "envHash": "$env_hash",
+  "e2eNow": "$e2e_now",
   "builtAt": "$(date -Iseconds)"
 }
 JSON

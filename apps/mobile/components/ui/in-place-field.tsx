@@ -23,6 +23,7 @@ import {
 } from 'react-native';
 
 import { IconSymbol } from '@/components/ui/icon-symbol';
+import { usePageLift } from '@/components/ui/page';
 import { Press } from '@/components/ui/press';
 import { Text } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
@@ -377,6 +378,36 @@ function useCancelOnDismiss(cancel: () => void) {
   }, []);
 }
 
+/** The gap kept between an open field's controls and the top of the keyboard. */
+const KEYBOARD_GAP = 12;
+
+/** Lifts the page while the keyboard would cover the open field's cancel and save. */
+function useClearKeyboard() {
+  const controls = useRef<View>(null);
+  const lift = usePageLift();
+  const latestLift = useRef(lift);
+  latestLift.current = lift;
+  const lifted = useRef(0);
+  const fit = useCallback(() => {
+    const keyboard = Keyboard.metrics();
+    if (!keyboard) return;
+    controls.current?.measureInWindow((_x, y, _width, height) => {
+      const covered = y + height + KEYBOARD_GAP - keyboard.screenY;
+      if (covered <= 0) return;
+      lifted.current += covered;
+      latestLift.current(lifted.current);
+    });
+  }, []);
+  useEffect(() => {
+    const show = Keyboard.addListener('keyboardDidShow', fit);
+    return () => {
+      show.remove();
+      latestLift.current(0);
+    };
+  }, [fit]);
+  return { controls, onControlsLayout: fit };
+}
+
 function Editor({
   field,
   draft,
@@ -410,6 +441,7 @@ function Editor({
     onCancel();
   }, [onCancel]);
   useCancelOnDismiss(cancel);
+  const { controls, onControlsLayout } = useClearKeyboard();
 
   const onDraftChange =
     field.kind === 'amount' ? field.onDraftChange : undefined;
@@ -506,12 +538,20 @@ function Editor({
           <View className="rounded-field border-2 border-foreground bg-card px-3 py-2.5">
             {input}
           </View>
-          <View className="flex-row justify-end gap-2">
+          <View
+            ref={controls}
+            onLayout={onControlsLayout}
+            className="flex-row justify-end gap-2"
+          >
             {buttons}
           </View>
         </>
       ) : (
-        <View className="flex-row items-center gap-2">
+        <View
+          ref={controls}
+          onLayout={onControlsLayout}
+          className="flex-row items-center gap-2"
+        >
           <View
             className={`min-w-0 flex-1 flex-row items-center gap-1 rounded-field border-2 border-foreground bg-card px-3.5 ${amount ? 'h-16' : 'h-[52px]'}`}
           >

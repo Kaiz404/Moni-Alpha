@@ -1,5 +1,9 @@
 import { AppRegistry, Platform } from 'react-native';
 
+if (process.env.EXPO_PUBLIC_E2E_NOW) {
+  require('./lib/e2e/pinned-clock.core').pinClock(process.env.EXPO_PUBLIC_E2E_NOW);
+}
+
 if (Platform.OS === 'android') {
   const {
     default: RNAndroidNotificationListener,
