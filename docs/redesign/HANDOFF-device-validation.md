@@ -78,7 +78,6 @@ Maestro proves a path works. It does not prove the screen looks right. Run the f
 | `debts` | 4 | `V2P-Debts`, `V2P-DebtDetail`, `V2P-DebtNew`, `V2P-DebtsEmpty`, `V2P-DebtSettle` | Debts |
 | `account` | 10 | `V2H-Profile`, `V2H-Login`, `V2H-WalletDetail`, `V2H-WalletForm`, `V2H-Merchants`, `V2H-Permissions`, `V2A-NotifLog`, `V2A-NotifLogEmpty` | Account |
 | `map` | 3 | `XM-Places`, `XM-Detail`, `XM-Empty` | Spending map. May render blank until the e2e package is added to the Maps key (see "Things only the owner can do"). |
-| `reports` | 2 | none (addition) | Reports, Import |
 | `components` | 2 | `V2F-Components` | Sheets, rows, hold menu |
 | `nav` | 1 | `V2F-Nav` | Tabs and chooser |
 | `perf` | 2 | none | Tagged `perf`, excluded by default |
@@ -106,7 +105,7 @@ Still suspects, unverified:
 - `components/review/recently-reviewed.tsx` and `components/debt/debt-history.tsx` read a whole map through `useValue`, the pattern that left Debts stale.
 - Hidden screens freeze since `freezeOnBlur`. Check a change made on a pushed page shows when you go back.
 - The owner saw Review's old buttons with blank labels. The cause was not found, and other capsule buttons could share it.
-- Activity's day totals include debt cash and excluded rows, and Reports leaves them out, so the two can differ.
+- Activity's day totals include debt cash and excluded rows, and Budget and Activity's chart leave them out, so the two can differ.
 - A repeat alert within 2 minutes of clearing the Capture log. "Gone quiet" during a long backend outage. Undoing a transfer pair can leave the Auto mark.
 
 ## The Maestro speed task
@@ -195,6 +194,6 @@ Everything else that differs from a board is listed in `docs/REDESIGN.md`, "Wher
 1. Every flow in every area passes on the phone at the head of `main`, including the excluded tags where they can run, or each exception is written down with its reason.
 2. Each board in `docs/REDESIGN.md`, "Build these", has a device screenshot beside its render in light mode, and in dark mode where `V2F-Dark` covers it, reviewed for layout, copy, and tokens. Differences are fixed or listed.
 3. The "never exercised" list above has evidence, a fix, or an open item for the owner.
-4. Spending totals agree across Home, Budget, Activity, and Reports on seeded data after pairing, retry, and restore.
+4. Spending totals agree across Home, Budget, and Activity on seeded data after pairing, retry, and restore.
 5. The Maestro numbers improved with a before and after table, and with what limits them now.
 6. The owner gets a report with screenshot pairs, published as a private artifact, plus the fixes on `main`, and `docs/REDESIGN.md`'s status line says what the device run proved.
