@@ -8,6 +8,7 @@ import { IconSymbol } from '@/components/ui/icon-symbol';
 import { useNotificationSourcePermission } from '@/components/wallets/notification-source';
 import { labelForNotificationPackage } from '@/constants/notification-apps';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
+import { NOTIFICATION_ACCESS_DISCLOSURE } from '@/lib/notifications/permission';
 import { openSheet } from '@/lib/sheet/sheet-store';
 import { tid } from '@/lib/test-ids';
 import type { WalletAlertLink } from '@/lib/wallets/wallet-link';
@@ -42,7 +43,7 @@ export function WalletNotificationLinkSection({
       accessibilityLabel="Let Moni read bank alerts"
       pressedClassName="bg-hairline"
       className="flex-row items-center gap-3 rounded-field bg-sand px-3.5 py-3"
-      onPress={permission.openNotificationSettings}
+      onPress={() => void permission.openNotificationSettings()}
     >
       <IconSymbol
         name="bell-outline"
@@ -54,7 +55,7 @@ export function WalletNotificationLinkSection({
           Let Moni read bank alerts
         </Text>
         <Text className="text-[13px] leading-[18px] text-muted">
-          Turn on notification access before linking an app.
+          Turn on notification access before linking an app. {NOTIFICATION_ACCESS_DISCLOSURE}
         </Text>
       </View>
     </Press>

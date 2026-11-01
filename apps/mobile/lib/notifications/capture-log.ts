@@ -1,6 +1,7 @@
 import type { CapturedNotificationStatus } from '@repo/types';
 import { formatDayHeading } from '@/lib/dates/day-label';
 import { toLocalDateInput } from '@/lib/dates/local-date-input';
+import { isOneTimeCode } from '@/lib/notifications/notification-filter';
 
 /** The five glossary words, in the order the filter chips and the legend list them. */
 export const CAPTURE_STATUS_LABELS = {
@@ -28,9 +29,14 @@ export type StoredCaptureEntry = {
   bigText?: string;
   subText?: string;
   summaryText?: string;
+  groupedMessages?: { title?: string; text?: string }[];
   status?: CapturedNotificationStatus;
   transactionId?: string;
+  /** Set at intake, which also blanks the text. */
+  oneTimeCode?: boolean;
 };
+
+export const ONE_TIME_CODE_NOTE = 'One-time code. Moni did not keep it.';
 
 export type CaptureLogItem = {
   id: string;
@@ -61,13 +67,16 @@ function clockTime(date: Date): string {
 
 function toItem(entry: StoredCaptureEntry, received: Date): CaptureLogItem {
   const status = entry.status ?? 'ignored';
+  // Entries from before the on-device filter still hold their text.
+  const oneTimeCode = entry.oneTimeCode === true || isOneTimeCode(entry);
   return {
     id: entry.id,
     app: entry.app?.trim() || entry.packageName || 'Unknown app',
     packageName: entry.packageName ?? null,
     time: clockTime(received),
-    text:
-      entry.bigText || entry.text || entry.summaryText || entry.subText || entry.title || '',
+    text: oneTimeCode
+      ? ONE_TIME_CODE_NOTE
+      : entry.bigText || entry.text || entry.summaryText || entry.subText || entry.title || '',
     status,
     label: CAPTURE_STATUS_LABELS[status],
     transactionId: entry.transactionId ?? null,

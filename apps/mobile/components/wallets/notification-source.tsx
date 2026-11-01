@@ -16,7 +16,7 @@ import {
   type InstalledAppInfo,
 } from '@/lib/notifications/installed-apps';
 import {
-  openNotificationListenerSettings,
+  askForNotificationAccess,
   readNotificationListenerPermission,
   type NotificationListenerPermission,
 } from '@/lib/notifications/permission';
@@ -109,7 +109,7 @@ export function useNotificationSourcePermission() {
 
   return {
     notificationAccessEnabled: permission === 'authorized',
-    openNotificationSettings: openNotificationListenerSettings,
+    openNotificationSettings: askForNotificationAccess,
   };
 }
 

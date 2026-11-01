@@ -124,6 +124,21 @@ describe('groupCaptureLog', () => {
     });
   });
 
+  it('shows a one-time code as a note, whether stored blank or from before the filter', () => {
+    const [day] = groupCaptureLog(
+      [
+        { id: 'blank', receivedAt: at(14, 9, 0), app: 'Maybank', text: '', oneTimeCode: true },
+        { id: 'old', receivedAt: at(14, 8, 0), app: 'Maybank', text: 'Your TAC is 482910' },
+      ],
+      now,
+    );
+
+    expect(day.items.map((item) => item.text)).toEqual([
+      'One-time code. Moni did not keep it.',
+      'One-time code. Moni did not keep it.',
+    ]);
+  });
+
   it('counts and filters by stored status', () => {
     const days = groupCaptureLog(entries, now);
 

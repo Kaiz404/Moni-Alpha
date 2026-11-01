@@ -3,7 +3,6 @@ import { AppState, Platform } from 'react-native';
 import { createMMKV } from 'react-native-mmkv';
 import type { CapturedNotificationStatus } from '@repo/types';
 import {
-  openNotificationListenerSettings,
   readNotificationListenerPermission,
   type NotificationListenerPermission,
 } from '@/lib/notifications/permission';
@@ -83,10 +82,6 @@ export function useNotificationListener() {
     }
   }, [isAndroid]);
 
-  const requestPermission = useCallback(() => {
-    openNotificationListenerSettings();
-  }, []);
-
   const clearAll = useCallback(() => {
     notificationStorage.remove(STORAGE_KEY);
     setNotifications([]);
@@ -129,7 +124,6 @@ export function useNotificationListener() {
     isCheckingPermission,
     notifications,
     checkPermission,
-    requestPermission,
     refresh,
     clearAll,
     clearOne,

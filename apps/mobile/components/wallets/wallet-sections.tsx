@@ -24,7 +24,7 @@ import type {
   FinanceWallet,
 } from '@/lib/finance/types';
 import {
-  openNotificationListenerSettings,
+  askForNotificationAccess,
   readNotificationListenerPermission,
 } from '@/lib/notifications/permission';
 import { openSheet } from '@/lib/sheet/sheet-store';
@@ -284,7 +284,7 @@ export function WalletAlerts({
 
   const changeApp = async () => {
     if (Platform.OS === 'android' && !listenerOn) {
-      openNotificationListenerSettings();
+      await askForNotificationAccess();
       return;
     }
     const pick = await openSheet({

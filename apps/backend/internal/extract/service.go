@@ -23,11 +23,6 @@ func NewService(client *llm.Client) *Service {
 
 const defaultCurrency = "USD"
 
-// One-time codes often quote the amount they authorize ("TAC ... for a transfer of RM 300"),
-// and the model has classified them as payments despite the prompt. A real payment
-// notification never asks the user to keep a code secret, so these never reach the model.
-var oneTimeCode = regexp.MustCompile(`(?i)\b(otp|tac|one[- ]time (password|pin|code)|verification code|security code|do not share|don'?t share|jangan kongsi)\b`)
-
 type currencyMode int
 
 const (
@@ -173,7 +168,9 @@ func (s *Service) FromNotification(ctx context.Context, req NotificationRequest)
 		return Skipped("Empty notification")
 	}
 
-	if oneTimeCode.MatchString(combined) {
+	// One-time codes often quote the amount they authorize ("TAC ... for a transfer of RM 300"),
+	// and the model has classified them as payments despite the prompt.
+	if isOneTimeCode(combined) {
 		return Skipped("One-time code, not a transaction")
 	}
 

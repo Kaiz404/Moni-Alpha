@@ -20,7 +20,7 @@ import type { ProcessingQueueItem } from '@/lib/ai/processing-queue';
 import { extractDateContext, resolveOccurredAt } from '@/lib/ai/occurred-at';
 import { saveProposalLocationSnapshot } from '@/lib/ai/proposal-location-cache';
 import type { LocationSnapshot } from '@/lib/location/location-snapshot';
-import { passesTransactionPrefilter } from '@/lib/ai/notification-types';
+import { passesNotificationTransactionPrefilter } from '@/lib/notifications/notification-filter';
 import {
   resolveNotificationPackageName,
   enrichNotificationPackage,
@@ -64,10 +64,16 @@ function trace(
   }
 }
 
+/**
+ * Exactly the fields `RawNotification` in apps/backend/internal/extract/types.go reads. The listener
+ * also hands over icons, images and grouped messages, and none of that leaves the phone.
+ */
 function enrichNotificationForExtraction(
   notification: RawNotification & { packageName?: string },
 ): RawNotification {
-  return enrichNotificationPackage(notification);
+  const { id, app, packageName, title, titleBig, text, bigText, subText, summaryText, extraInfoText, time, receivedAt } =
+    enrichNotificationPackage(notification);
+  return { id, app, packageName, title, titleBig, text, bigText, subText, summaryText, extraInfoText, time, receivedAt };
 }
 
 async function loadWalletContext(): Promise<AiWalletContext[]> {
@@ -376,7 +382,8 @@ export async function runExtraction(
 
       case 'notification': {
         const n = enrichNotificationForExtraction(item.notification);
-        if (!passesTransactionPrefilter(n)) {
+        // Checked again here, at the last step before the wire: the queue outlives an app update.
+        if (!passesNotificationTransactionPrefilter(item.notification)) {
           return {
             created: false,
             skipped: true,

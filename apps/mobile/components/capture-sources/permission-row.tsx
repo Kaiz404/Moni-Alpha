@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { IconSymbol, type IconSymbolName } from '@/components/ui/icon-symbol';
 import { Text } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
+import { NOTIFICATION_ACCESS_DISCLOSURE } from '@/lib/notifications/permission';
 import { tid, type TestId } from '@/lib/test-ids';
 
 const PREFIX: Partial<Record<AccessState, string>> = {
@@ -163,6 +164,12 @@ export function NotificationsDenied({
         {apps
           ? `Turn on notification access and ${apps} spends add themselves. Moni only reads apps you link to a wallet.`
           : 'Turn on notification access and spends from your banking apps add themselves. Moni only reads apps you link to a wallet.'}
+      </Text>
+      <Text
+        variant="meta"
+        className="text-ink-2"
+      >
+        {NOTIFICATION_ACCESS_DISCLOSURE}
       </Text>
       <Button
         testID={tid('sources', 'notifications', 'open-settings')}

@@ -8,6 +8,7 @@ if (Platform.OS === 'android') {
   const { createMMKV } = require('react-native-mmkv');
   const {
     passesNotificationTransactionPrefilter,
+    withoutOneTimeCode,
   } = require('./lib/notifications/notification-filter.core');
   const { startBackgroundProcessor } = require('./lib/ai/background-processor');
   const { captureLocationSnapshot } = require('./lib/location/location-snapshot');
@@ -52,7 +53,7 @@ if (Platform.OS === 'android') {
     try {
       const parsed =
         typeof notification === 'string' ? JSON.parse(notification) : notification;
-      const withPackage = enrichNotificationPackage(parsed);
+      const withPackage = withoutOneTimeCode(enrichNotificationPackage(parsed));
       if (isOwnNotification(withPackage.packageName)) return;
       const prefilterPassed = passesNotificationTransactionPrefilter(withPackage);
       const packageLinked = isPackageLinked(withPackage.packageName);

@@ -16,6 +16,7 @@ import { Press } from '@/components/ui/press';
 import { Text } from '@/components/ui/text';
 import { TintBubble } from '@/components/ui/transaction-row';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
+import { NOTIFICATION_ACCESS_DISCLOSURE } from '@/lib/notifications/permission';
 import { createAutoAddRule, deleteAutoAddRule } from '@/lib/supabase/auto-add-rules';
 import { updateWallet } from '@/lib/supabase/wallets';
 import { tid, type TestId } from '@/lib/test-ids';
@@ -213,7 +214,7 @@ export default function CaptureSourcesScreen() {
               className="min-w-0 flex-1 text-ink-2"
             >
               Moni reads alerts only from the apps you link, and saves a place only when a payment
-              arrives. It never tracks where you go.
+              arrives. It never tracks where you go. {NOTIFICATION_ACCESS_DISCLOSURE}
             </Text>
           </View>
         </View>

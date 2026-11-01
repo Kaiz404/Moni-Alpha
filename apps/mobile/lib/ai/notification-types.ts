@@ -4,7 +4,6 @@
  */
 import type { CreateProposedTransaction } from '@repo/types';
 import { decimalToMinor } from '@repo/types';
-import { buildNotificationContext } from '@/lib/ai/notification-context';
 
 export type RawNotification = {
   id: string;
@@ -51,12 +50,6 @@ function notificationText(notification: RawNotification): string {
   ]
     .filter(Boolean)
     .join(' ');
-}
-
-/** Deterministic prefilter: money amount + transfer signal required. */
-export function passesTransactionPrefilter(notification: RawNotification): boolean {
-  const context = buildNotificationContext(notification);
-  return context.signals.hasMoney && context.signals.hasTransferSignal;
 }
 
 function inferTypeFromText(input: string): 'income' | 'expense' {

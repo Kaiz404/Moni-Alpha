@@ -6,6 +6,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { AppState, Linking } from 'react-native';
 
 import {
+  askForNotificationAccess,
   openNotificationListenerSettings,
   readNotificationListenerPermission,
 } from '@/lib/notifications/permission';
@@ -119,7 +120,8 @@ export function usePhoneAccess() {
   const change = useCallback(
     async (id: PhoneAccessId) => {
       if (id === 'notifications') {
-        openNotificationListenerSettings();
+        if (access.notifications === 'on') openNotificationListenerSettings();
+        else await askForNotificationAccess();
         return;
       }
       if (access[id] !== 'on' && canAsk[id]) {
