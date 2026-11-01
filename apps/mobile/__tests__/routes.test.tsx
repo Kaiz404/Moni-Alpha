@@ -220,6 +220,10 @@ const ROUTES: Record<string, RouteSpec> = {
   '(tabs)/budget.tsx': differ('/budget', 'RM200.80 due by 31 Oct', 'Start with one wallet'),
   '(tabs)/debts.tsx': differ('/debts', 'Pay Mei RM40', 'No debts yet'),
   '+not-found.tsx': same('/no-such-page', 'This screen moved'),
+  'import/index.tsx': same('/import', 'Choose a CSV'),
+  'import/columns.tsx': same('/import/columns', 'No file chosen'),
+  'import/preview.tsx': same('/import/preview', 'No file chosen'),
+  'reports.tsx': same('/reports', 'Reports'),
   'bill/[seriesKey].tsx': differ(
     `/bill/${NETFLIX}`,
     'Stop tracking Netflix',
