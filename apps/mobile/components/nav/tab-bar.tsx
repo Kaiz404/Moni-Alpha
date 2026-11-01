@@ -6,7 +6,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { openCaptureChooser } from '@/components/nav/capture-chooser';
 import {
   PlusButton,
-  RING_SIZE,
   TAB_BAR_HEIGHT,
   TAB_BAR_REACH,
   tabBarBottom,
@@ -33,6 +32,8 @@ export const TABS = [
 }[];
 
 const PLUS_CELL = 2;
+/** Five equal cells as a share of the bar, so a cell's content cannot change its width. */
+const CELL_WIDTH = '20%';
 
 function useKeyboardUp() {
   const [up, setUp] = useState(Keyboard.isVisible());
@@ -83,8 +84,8 @@ export function TabBar({ state, navigation }: BottomTabBarProps) {
     return (
       <View
         key={route.key}
-        className="flex-1 justify-center"
-        style={{ height: TAB_BAR_HEIGHT }}
+        className="justify-center"
+        style={{ width: CELL_WIDTH, height: TAB_BAR_HEIGHT }}
       >
         <Press
           testID={tid('nav', 'tab', route.name)}
@@ -125,8 +126,8 @@ export function TabBar({ state, navigation }: BottomTabBarProps) {
     0,
     <View
       key="plus"
-      className="flex-1 items-center self-start"
-      style={{ minWidth: RING_SIZE }}
+      className="items-center self-start"
+      style={{ width: CELL_WIDTH }}
     >
       <PlusButton
         testID={tid('nav', 'plus')}
