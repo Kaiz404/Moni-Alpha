@@ -14,6 +14,8 @@ export type FinanceWallet = {
   displayOrder: number;
   /** Last time the user saw and saved this balance; creation counts. */
   balanceConfirmedAt: string | null;
+  /** Set by the server on first sync, so a wallet made on this phone has none until then. */
+  createdAt?: string | null;
   /** False once the user turned location off for the app linked to this wallet. */
   recordLocation?: boolean;
 };
