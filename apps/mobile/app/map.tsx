@@ -16,6 +16,7 @@ import { useUniwind } from 'uniwind';
 import { MapEmpty, MapEmptyNote, type EmptyReason } from '@/components/map/map-empty';
 import { MapHeader } from '@/components/map/map-header';
 import { MapSheet } from '@/components/map/map-sheet';
+import { mapsAvailable } from '@/components/map/maps-available';
 import { FALLBACK_REGION, mapStyles } from '@/components/map/map-style';
 import { PlaceCard } from '@/components/map/place-card';
 import { PlacePins, usePinClusters } from '@/components/map/place-pins';
@@ -65,6 +66,7 @@ export default function MapScreen() {
   const { currency, transactions, loaded, categoryLook } = usePlaceSources();
   const [permission, requestPermission, getPermission] = Location.useForegroundPermissions();
   const mapRef = useRef<MapView>(null);
+  const [hasMap] = useState(mapsAvailable);
 
   const ranges = useMemo(() => placeRanges(new Date()), []);
   const [rangeKey, setRangeKey] = useState<PlaceRangeKey>('month');
@@ -97,6 +99,7 @@ export default function MapScreen() {
     : everywhere.length === 0
       ? { kind: 'empty', reason: locationOff ? 'location-off' : 'no-places' }
       : { kind: 'places', locationOff };
+  const note = !hasMap ? 'unavailable' : state.kind === 'empty' ? state.reason : null;
 
   const frame = (points: readonly Place[], minDelta?: number) => {
     const next = regionFor(points, minDelta);
@@ -124,35 +127,39 @@ export default function MapScreen() {
   return (
     <View className="flex-1 bg-canvas">
       <View style={{ height: collapsedTop + SHEET_OVERLAP }}>
-        <MapView
-          ref={mapRef}
-          provider={PROVIDER_GOOGLE}
-          style={{ flex: 1 }}
-          customMapStyle={dark ? mapStyles.dark : mapStyles.light}
-          initialRegion={regionFor(everywhere) ?? FALLBACK_REGION}
-          showsUserLocation={permission?.granted === true}
-          showsMyLocationButton={false}
-          toolbarEnabled={false}
-          moveOnMarkerPress={false}
-          onLayout={(event) => setSize(event.nativeEvent.layout)}
-          onRegionChangeComplete={setRegion}
-        >
-          {state.kind === 'places' ? (
-            <PlacePins
-              clusters={clusters}
-              selectedId={selected?.id ?? null}
-              currency={currency}
-              look={categoryLook}
-              onPick={(cluster) => {
-                setSelectedId(cluster.lead.id);
-                if (cluster.members.length > 1) frame(cluster.members, 0.004);
-              }}
-            />
-          ) : null}
-        </MapView>
-        {state.kind === 'empty' ? (
+        {hasMap ? (
+          <MapView
+            ref={mapRef}
+            provider={PROVIDER_GOOGLE}
+            style={{ flex: 1 }}
+            customMapStyle={dark ? mapStyles.dark : mapStyles.light}
+            initialRegion={regionFor(everywhere) ?? FALLBACK_REGION}
+            showsUserLocation={permission?.granted === true}
+            showsMyLocationButton={false}
+            toolbarEnabled={false}
+            moveOnMarkerPress={false}
+            onLayout={(event) => setSize(event.nativeEvent.layout)}
+            onRegionChangeComplete={setRegion}
+          >
+            {state.kind === 'places' ? (
+              <PlacePins
+                clusters={clusters}
+                selectedId={selected?.id ?? null}
+                currency={currency}
+                look={categoryLook}
+                onPick={(cluster) => {
+                  setSelectedId(cluster.lead.id);
+                  if (cluster.members.length > 1) frame(cluster.members, 0.004);
+                }}
+              />
+            ) : null}
+          </MapView>
+        ) : (
+          <View className="flex-1 bg-sand" />
+        )}
+        {note ? (
           <MapEmptyNote
-            reason={state.reason}
+            reason={note}
             band={{ top: insets.top + HEADER_HEIGHT, height: collapsedTop - insets.top - HEADER_HEIGHT }}
           />
         ) : null}
@@ -160,12 +167,16 @@ export default function MapScreen() {
       <MapHeader
         scope="places"
         title="Where you spend"
-        action={{
-          name: 'fit',
-          icon: 'crosshairs-gps',
-          label: 'Fit all places',
-          onPress: () => frame(places.length ? places : everywhere),
-        }}
+        action={
+          hasMap
+            ? {
+                name: 'fit',
+                icon: 'crosshairs-gps',
+                label: 'Fit all places',
+                onPress: () => frame(places.length ? places : everywhere),
+              }
+            : undefined
+        }
       />
       <MapSheet
         collapsedTop={collapsedTop}

@@ -24,12 +24,21 @@ const COPY = {
   },
 } as const;
 
+const UNAVAILABLE = { note: 'Map unavailable', noteIcon: 'map-marker-off-outline' } as const;
+
 /**
  * The faded map with XM-Empty's capsule centred in the strip of map left
  * between the header and the sheet (`band`).
  */
-export function MapEmptyNote({ reason, band }: { reason: EmptyReason; band: { top: number; height: number } }) {
+export function MapEmptyNote({
+  reason,
+  band,
+}: {
+  reason: EmptyReason | 'unavailable';
+  band: { top: number; height: number };
+}) {
   const tokens = useThemeTokens();
+  const { note, noteIcon } = reason === 'unavailable' ? UNAVAILABLE : COPY[reason];
   return (
     <View
       pointerEvents="none"
@@ -41,12 +50,12 @@ export function MapEmptyNote({ reason, band }: { reason: EmptyReason; band: { to
       >
         <View className="h-10 flex-row items-center gap-2 rounded-full border-[1.5px] border-hairline bg-card pl-3 pr-4">
           <IconSymbol
-            name={COPY[reason].noteIcon}
+            name={noteIcon}
             size={18}
             color={tokens.foreground}
           />
           <Text className="text-[14px] leading-[19px] font-display-semibold text-foreground">
-            {COPY[reason].note}
+            {note}
           </Text>
         </View>
       </View>

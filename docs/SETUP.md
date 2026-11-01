@@ -169,7 +169,7 @@ pnpm --filter moni test:notification-detection  # notification prefilter suite
 The spending map (`apps/mobile/app/map.tsx`, `place/[id].tsx`) renders transaction locations on Google Maps. The e2e build (`com.anonymous.moni.e2e`) needs its own package and SHA-1 on a restricted key, or its map stays blank.
 
 1. In [Google Cloud Console](https://console.cloud.google.com/), enable **Maps SDK for Android** and **Maps SDK for iOS**; create one API key per platform, restricted to the app's package name / bundle ID.
-2. Put `ANDROID_GOOGLE_MAPS_API_KEY` (and, when needed, `IOS_GOOGLE_MAPS_API_KEY`) in `apps/mobile/.env`. `app.config.ts` injects the keys into the native `react-native-maps` configuration during prebuild.
+2. Put `ANDROID_GOOGLE_MAPS_API_KEY` (and, when needed, `IOS_GOOGLE_MAPS_API_KEY`) in `apps/mobile/.env`. `app.config.ts` injects the keys into the native `react-native-maps` configuration during prebuild. An Android build with no key reads **Map unavailable** on the map pages instead of crashing.
 3. Rebuild the dev client (`npx expo run:android` locally). A grey/blank map means a missing or wrongly restricted key.
 
 The Android key is recoverable from an installed APK, so protect it with Google Cloud restrictions: enable only Maps SDK for Android, restrict to package `com.anonymous.moni`, and add the SHA-1 fingerprints for every signing certificate used to build the app.

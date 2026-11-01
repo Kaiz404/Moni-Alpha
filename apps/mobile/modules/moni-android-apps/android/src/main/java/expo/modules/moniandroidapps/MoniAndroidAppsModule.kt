@@ -43,6 +43,15 @@ class MoniAndroidAppsModule : Module() {
       Unit
     }.runOnQueue(Queues.MAIN)
 
+    // Google's SDK throws on its own thread when a MapView starts with no key, out of reach of any JS catch.
+    Function("hasGoogleMapsKey") {
+      !reactContext.packageManager
+        .getApplicationInfo(reactContext.packageName, PackageManager.GET_META_DATA)
+        .metaData
+        ?.getString("com.google.android.geo.API_KEY")
+        .isNullOrBlank()
+    }
+
     AsyncFunction("isIgnoringBatteryOptimizationsAsync") {
       val power = reactContext.getSystemService(Context.POWER_SERVICE) as PowerManager
       power.isIgnoringBatteryOptimizations(reactContext.packageName)

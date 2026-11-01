@@ -14,7 +14,8 @@ type MapHeaderProps = {
   scope: 'places' | 'place';
   title: string;
   subtitle?: string;
-  action: {
+  /** Left out when the page has no map for it to act on. */
+  action?: {
     name: string;
     icon: IconSymbolName;
     label: string;
@@ -81,14 +82,16 @@ export function MapHeader({ scope, title, subtitle, action }: MapHeaderProps) {
             </Text>
           ) : null}
         </View>
-        <OnMap>
-          <HeaderIconButton
-            testID={tid('map', scope, action.name)}
-            icon={action.icon}
-            accessibilityLabel={action.label}
-            onPress={action.onPress}
-          />
-        </OnMap>
+        {action ? (
+          <OnMap>
+            <HeaderIconButton
+              testID={tid('map', scope, action.name)}
+              icon={action.icon}
+              accessibilityLabel={action.label}
+              onPress={action.onPress}
+            />
+          </OnMap>
+        ) : null}
       </View>
     </View>
   );

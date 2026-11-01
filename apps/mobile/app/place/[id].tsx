@@ -1,6 +1,6 @@
 import { useValue } from '@legendapp/state/react';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { Linking, Platform, ScrollView, View } from 'react-native';
 import MapView, { PROVIDER_GOOGLE } from 'react-native-maps';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -9,6 +9,7 @@ import { useUniwind } from 'uniwind';
 import { MapHeader } from '@/components/map/map-header';
 import { PinBubble } from '@/components/map/place-pins';
 import { mapStyles } from '@/components/map/map-style';
+import { mapsAvailable } from '@/components/map/maps-available';
 import {
   MoniNoticed,
   PendingHere,
@@ -65,6 +66,7 @@ export default function PlaceScreen() {
   const params = useLocalSearchParams<{ id: string; range?: string }>();
   const insets = useSafeAreaInsets();
   const dark = useUniwind().theme === 'dark';
+  const [hasMap] = useState(mapsAvailable);
   const { userId, currency, transactions, lookups, categoryLook } = usePlaceSources();
   const proposals = useValue(pendingProposals$(userId));
   const aliases = useValue(() => (userId ? listMerchantAliases(userId) : []));
@@ -118,24 +120,28 @@ export default function PlaceScreen() {
           pointerEvents="none"
           style={{ height: MAP_HEIGHT }}
         >
-          <MapView
-            provider={PROVIDER_GOOGLE}
-            liteMode
-            style={{ flex: 1 }}
-            customMapStyle={dark ? mapStyles.dark : mapStyles.light}
-            mapPadding={{ top: MAP_PADDING_TOP, right: 0, bottom: 0, left: 0 }}
-            initialRegion={{
-              latitude: place.latitude,
-              longitude: place.longitude,
-              latitudeDelta: 0.01,
-              longitudeDelta: 0.01,
-            }}
-            scrollEnabled={false}
-            zoomEnabled={false}
-            rotateEnabled={false}
-            pitchEnabled={false}
-            toolbarEnabled={false}
-          />
+          {hasMap ? (
+            <MapView
+              provider={PROVIDER_GOOGLE}
+              liteMode
+              style={{ flex: 1 }}
+              customMapStyle={dark ? mapStyles.dark : mapStyles.light}
+              mapPadding={{ top: MAP_PADDING_TOP, right: 0, bottom: 0, left: 0 }}
+              initialRegion={{
+                latitude: place.latitude,
+                longitude: place.longitude,
+                latitudeDelta: 0.01,
+                longitudeDelta: 0.01,
+              }}
+              scrollEnabled={false}
+              zoomEnabled={false}
+              rotateEnabled={false}
+              pitchEnabled={false}
+              toolbarEnabled={false}
+            />
+          ) : (
+            <View className="flex-1 bg-sand" />
+          )}
           <View
             className="absolute left-0 right-0 items-center"
             style={{ top: PIN_TOP }}

@@ -11,6 +11,7 @@ const stub = {
     return null;
   },
   setKeyboardPansWindowAsync: undefined as ((pans: boolean) => Promise<void>) | undefined,
+  hasGoogleMapsKey: undefined as (() => boolean) | undefined,
   isIgnoringBatteryOptimizationsAsync: undefined as (() => Promise<boolean>) | undefined,
   async requestBatteryExemptionAsync(): Promise<boolean> {
     return false;

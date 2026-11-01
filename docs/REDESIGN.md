@@ -105,6 +105,7 @@ The app builds the default for each. [`redesign/PLAN.md`](redesign/PLAN.md) ("Op
 The screen tracks reported these differences in their handoffs. Each waits for the owner to accept it or ask for the board.
 
 - Map: the range control offers This week, the month, and last month where the board has a custom range; the empty state's action is **Add an expense**.
+- Map: a build with no Google Maps key has no board. It draws Sand where the map goes, with XM-Empty's capsule reading **Map unavailable** and no Fit button. The sheet and the place page keep working. The Budget tab's card is drawn art, so it needs no key.
 - Debts: recording a debt with no wallet, and debt reminders.
 - Budget: the Budgets heading has a routing chevron into Edit budgets, which the board does not draw (D9 removed the Edit link, and the chevron keeps the monthly total reachable).
 - Budget calendar: the day cut-offs.
