@@ -144,6 +144,7 @@ export default function SayScreen() {
         <CaptureAdded
           row={flow.added}
           categoryName={flow.categoryName}
+          itemCount={null}
           another={{ label: 'Say another', onPress: again }}
         />
       ) : null;

@@ -21,6 +21,7 @@ import type {
   CaptureQuote,
 } from '@/lib/capture/capture-stage';
 import { dayAndTime } from '@/lib/capture/clock-time';
+import { itemsLabel } from '@/lib/capture/read-capture';
 import { spokenAmount } from '@/lib/capture/spoken-amount';
 import {
   isoToLocalDateInput,
@@ -243,7 +244,9 @@ export function CaptureResult({
                   <Text variant="meta" className="text-muted">
                     {voice
                       ? `${dayAndTime(draft.transactionDate)} · Voice`
-                      : 'Receipt'}
+                      : draft.itemCount === null
+                        ? 'Receipt'
+                        : `Receipt · ${itemsLabel(draft.itemCount)}`}
                   </Text>
                 </View>
               </View>

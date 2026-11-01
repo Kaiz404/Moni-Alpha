@@ -14,6 +14,8 @@ export type CaptureDraft = {
   transactionDate: string;
   /** The one line that says why Moni filled the fields as it did. */
   evidence: string;
+  /** How many items the receipt lists; null when the reader has no count. Never edited. */
+  itemCount: number | null;
 };
 
 /** What the user gave Moni: the words heard, or the scanned image. */

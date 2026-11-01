@@ -20,6 +20,7 @@ import type {
   CaptureQuote,
   ReadFailure,
 } from '@/lib/capture/capture-stage';
+import { itemsLabel } from '@/lib/capture/read-capture';
 import type { TransactionRowData } from '@/lib/transactions/row';
 import { tid } from '@/lib/test-ids';
 
@@ -86,10 +87,13 @@ export function CaptureReading({ quote }: { quote: CaptureQuote }) {
 export function CaptureAdded({
   row,
   categoryName,
+  itemCount,
   another,
 }: {
   row: TransactionRowData;
   categoryName: string | null;
+  /** The receipt's item count, joined to the row's meta. */
+  itemCount: number | null;
   another: { label: string; onPress: () => void };
 }) {
   const tokens = useThemeTokens();
@@ -124,7 +128,9 @@ export function CaptureAdded({
         <View className="mt-3 self-stretch rounded-card bg-card py-1.5">
           <TransactionRowBody
             row={row}
-            meta={rowMeta(row, 'date')}
+            meta={[rowMeta(row, 'date'), itemCount && itemsLabel(itemCount)]
+              .filter(Boolean)
+              .join(' · ')}
             amount={rowAmount(row)}
           />
         </View>

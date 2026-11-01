@@ -10,6 +10,7 @@ import {
   resolveOccurredAt,
 } from '@/lib/ai/occurred-at';
 import { matchRoutine, merchantKey } from '@/lib/ai/routine';
+import { formatMoney } from '@/lib/finance/format-money';
 import type {
   CaptureDraft,
   CaptureQuote,
@@ -31,6 +32,22 @@ export type ReadContext = {
 };
 
 const UNREADABLE = "Moni couldn't find a total";
+const MAX_RECEIPT_ITEMS = 200;
+
+/** The wire is cast, not parsed, so an older or odd reader can send anything here. */
+export function receiptItemCount(value: unknown): number | null {
+  return typeof value === 'number' &&
+    Number.isInteger(value) &&
+    value >= 1 &&
+    value <= MAX_RECEIPT_ITEMS
+    ? value
+    : null;
+}
+
+/** "1 item", "6 items": the check page and the Added row both say it this way. */
+export function itemsLabel(count: number): string {
+  return `${count} item${count === 1 ? '' : 's'}`;
+}
 
 function categoryFor(
   extraction: ExtractedTransaction,
@@ -121,6 +138,14 @@ export function draftFromExtraction(
   }
   const kind = extraction.type;
   const wallet = walletFor(extraction, context);
+  const itemCount = receiptItemCount(extraction.itemCount);
+  const read =
+    itemCount === null
+      ? null
+      : `Moni read ${itemsLabel(itemCount)} and a total of ${formatMoney(
+          amountMinor,
+          context.wallets[0]?.currency ?? extraction.currency,
+        )}.`;
   return {
     status: 'ok',
     draft: {
@@ -130,7 +155,10 @@ export function draftFromExtraction(
       categoryId: categoryFor(extraction, kind, context),
       walletId: wallet.walletId,
       transactionDate: resolveOccurredAt(extraction.occurredAt, capturedAt),
-      evidence: wallet.evidence ?? extraction.reasoning,
+      evidence: read
+        ? [read, wallet.evidence].filter(Boolean).join(' ')
+        : (wallet.evidence ?? extraction.reasoning),
+      itemCount,
     },
   };
 }

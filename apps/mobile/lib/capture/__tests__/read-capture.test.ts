@@ -77,6 +77,52 @@ const heard: ExtractedTransaction = {
   occurredAt: null,
 };
 
+describe('the receipt item count', () => {
+  const read = (body: string) => {
+    const result = draftFromExtraction(
+      JSON.parse(
+        `{"status":"ok","extraction":{"amount":9.8,"type":"expense","merchant":"Kopitiam","reasoning":"Read a total."${body}}}`,
+      ),
+      context,
+      capturedAt,
+    );
+    if (result.status !== 'ok') throw new Error(`read ${result.status}`);
+    return result.draft;
+  };
+
+  it('carries a whole number from 1 to 200 and names it in the evidence', () => {
+    expect(read(',"itemCount":6').itemCount).toBe(6);
+    expect(read(',"itemCount":1').itemCount).toBe(1);
+    expect(read(',"itemCount":200').itemCount).toBe(200);
+    expect(read(',"itemCount":6').evidence).toBe(
+      "Moni read 6 items and a total of RM9.80. You didn't say a wallet. Cash paid your last 2 Kopitiam visits.",
+    );
+    expect(read(',"itemCount":1').evidence).toBe(
+      "Moni read 1 item and a total of RM9.80. You didn't say a wallet. Cash paid your last 2 Kopitiam visits.",
+    );
+  });
+
+  it.each([
+    ['an older backend that leaves it out', ''],
+    ['null', ',"itemCount":null'],
+    ['zero', ',"itemCount":0'],
+    ['a negative', ',"itemCount":-2'],
+    ['a fraction', ',"itemCount":6.5'],
+    ['past the bound', ',"itemCount":201'],
+    ['digits in a string', ',"itemCount":"6"'],
+    ['words', ',"itemCount":"six"'],
+    ['an array', ',"itemCount":[6]'],
+  ])('yields no count from %s and still reads the receipt', (_name, body) => {
+    expect(read(body)).toMatchObject({
+      amountMinor: 980,
+      merchant: 'Kopitiam',
+      itemCount: null,
+      evidence:
+        "You didn't say a wallet. Cash paid your last 2 Kopitiam visits.",
+    });
+  });
+});
+
 describe('draft from extraction', () => {
   it('fills the wallet and category from the last visits to the shop', () => {
     expect(
@@ -96,6 +142,7 @@ describe('draft from extraction', () => {
         transactionDate: capturedAt.toISOString(),
         evidence:
           "You didn't say a wallet. Cash paid your last 2 Kopitiam visits.",
+        itemCount: null,
       },
     });
   });

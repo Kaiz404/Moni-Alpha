@@ -41,6 +41,8 @@ tags:
     id: capture.result.wallet
 - assertVisible:
     id: capture.evidence
+- assertVisible: Receipt · 3 items
+- assertVisible: Moni read 3 items and a total of RM15.30.*
 - takeScreenshot: c2-l2-pair
 
 # Edit the amount in place before approving.
@@ -56,6 +58,7 @@ tags:
 - tapOn:
     id: capture.approve
 - assertVisible: It counts in your totals now.
+- assertVisible: .*· 3 items
 - assertVisible:
     id: capture.added.home
 - assertVisible:

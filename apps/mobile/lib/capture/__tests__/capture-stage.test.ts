@@ -20,6 +20,7 @@ const draft: CaptureDraft = {
   walletId: 'cash',
   transactionDate: '2026-10-14T06:04:00.000Z',
   evidence: 'Moni read a total of RM18.60.',
+  itemCount: null,
 };
 const reading: CaptureStage = { name: 'reading', quote };
 const result: CaptureStage = { name: 'result', quote, draft };

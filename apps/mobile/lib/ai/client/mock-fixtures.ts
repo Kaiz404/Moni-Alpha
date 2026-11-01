@@ -62,6 +62,7 @@ export const IMAGE_FIXTURE = extraction({
   walletHint: 'Cash',
   confidence: 0.92,
   reasoning: 'TOTAL RM 15.30, paid in cash.',
+  itemCount: 3,
 });
 
 const MAYBANK_ALERT = /You've spent RM([\d,]+\.\d{2}) at (.+?) on \d{2}\/\d{2}/;
