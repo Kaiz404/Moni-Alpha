@@ -121,6 +121,8 @@ export default function RootLayout() {
               <AuthGuard>
                 <Stack
                   screenOptions={{
+                  // A theme change recolours every mounted screen, so hidden ones wait until they show.
+                  freezeOnBlur: true,
                     headerShown: false,
                     animation: reduceMotion
                       ? 'fade'

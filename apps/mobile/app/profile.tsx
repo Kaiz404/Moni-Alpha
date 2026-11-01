@@ -41,10 +41,10 @@ import {
 } from '@/lib/theme/preference';
 
 /**
- * Changing theme recolours every mounted screen and calls into native Appearance,
- * which stalls both threads. It waits until the pill's control spring is within 3%.
+ * Lets the pill's spring start on the UI thread before the recolour takes the JS thread. Hidden
+ * screens are frozen, so only this page recolours now, and a longer wait just reads as lag.
  */
-const THEME_AFTER_PILL_MS = 220;
+const THEME_AFTER_PILL_MS = 50;
 
 function displayName(user: User | null): string {
   const meta = user?.user_metadata ?? {};
