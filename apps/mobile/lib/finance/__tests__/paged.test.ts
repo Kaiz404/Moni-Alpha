@@ -1,4 +1,6 @@
-import { pageOf } from '@/lib/finance/paged';
+import { act, renderHook } from '@testing-library/react-native';
+
+import { pageOf, usePageNumber } from '@/lib/finance/paged';
 
 const rows = Array.from({ length: 45 }, (_, index) => index + 1);
 
@@ -21,5 +23,19 @@ describe('pageOf', () => {
 
   it('has one empty page for an empty list', () => {
     expect(pageOf([], 1)).toEqual({ rows: [], page: 1, pageCount: 1, total: 0, first: 0, last: 0 });
+  });
+});
+
+describe('usePageNumber', () => {
+  it('goes back to page 1 on a new list, and stays there on return to the old one', () => {
+    const { result, rerender } = renderHook(({ listKey }) => usePageNumber(listKey), {
+      initialProps: { listKey: 'all' },
+    });
+    act(() => result.current[1](3));
+    expect(result.current[0]).toBe(3);
+    rerender({ listKey: 'grab' });
+    expect(result.current[0]).toBe(1);
+    rerender({ listKey: 'all' });
+    expect(result.current[0]).toBe(1);
   });
 });

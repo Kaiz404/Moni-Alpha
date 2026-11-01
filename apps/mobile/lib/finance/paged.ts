@@ -34,6 +34,8 @@ export function pageOf<T>(rows: readonly T[], page: number, size = PAGE_SIZE): P
 /** The current page, back to 1 whenever `listKey` changes: a new filter is a new list. */
 export function usePageNumber(listKey: string): [number, (page: number) => void] {
   const [state, setState] = useState({ listKey, page: 1 });
+  // Forgets the old page now, or coming back to the same filters would land on it again.
+  if (state.listKey !== listKey) setState({ listKey, page: 1 });
   const setPage = useCallback((page: number) => setState({ listKey, page }), [listKey]);
   return [state.listKey === listKey ? state.page : 1, setPage];
 }
