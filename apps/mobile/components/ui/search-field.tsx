@@ -16,6 +16,8 @@ export function SearchField({
   placeholder,
   value,
   onChangeText,
+  onFocus,
+  onBlur,
   compact = false,
 }: {
   testID: TestId;
@@ -23,6 +25,8 @@ export function SearchField({
   placeholder: string;
   value: string;
   onChangeText: (text: string) => void;
+  onFocus?: () => void;
+  onBlur?: () => void;
   compact?: boolean;
 }) {
   const tokens = useThemeTokens();
@@ -42,6 +46,8 @@ export function SearchField({
         placeholderTextColor={tokens.muted}
         value={value}
         onChangeText={onChangeText}
+        onFocus={onFocus}
+        onBlur={onBlur}
         returnKeyType="search"
         autoCapitalize="none"
         autoCorrect={false}

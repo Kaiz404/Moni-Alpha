@@ -3,7 +3,7 @@ import { useSelector, useValue } from '@legendapp/state/react';
 import { router, useLocalSearchParams, useNavigation, useScrollToTop } from 'expo-router';
 import type { NavigationProp } from 'expo-router/react-navigation';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ScrollView, View } from 'react-native';
+import { ScrollView, useWindowDimensions, View } from 'react-native';
 
 import {
   CLEARED_LINK,
@@ -84,6 +84,8 @@ function dayTotal(day: ActivityDay, currency: string) {
     .join(' · ');
 }
 
+const SEARCH_TOP_GAP = 8;
+
 export default function ActivityScreen() {
   const scroll = useRef<ScrollView>(null);
   useScrollToTop(scroll);
@@ -110,6 +112,19 @@ export default function ActivityScreen() {
   const navigation = useNavigation<NavigationProp<{ activity: ActivityLinkParams }, 'activity'>>();
   const [scope, setScope] = useState<ActivityScope | null>(null);
   const [query, setQuery] = useState('');
+  const [searchFocused, setSearchFocused] = useState(false);
+  const { height: windowHeight } = useWindowDimensions();
+  const searchBox = useRef<View>(null);
+  // The bar goes to the top so the keyboard leaves its results in view.
+  const scrollSearchToTop = () => {
+    // In React Native's ScrollView, but missing from its types.
+    const list = scroll.current as (ScrollView & { getInnerViewRef(): View }) | null;
+    const content = list?.getInnerViewRef();
+    if (!content) return;
+    searchBox.current?.measureLayout(content, (_x, y) => {
+      scroll.current?.scrollTo({ y: Math.max(0, y - SEARCH_TOP_GAP), animated: true });
+    });
+  };
   const [kind, setKind] = useState<ActivityKind>('all');
   const [walletId, setWalletId] = useState<string | null>(null);
   const [day, setDay] = useState<string | null>(null);
@@ -286,7 +301,10 @@ export default function ActivityScreen() {
         ref={scroll}
         keyboardShouldPersistTaps="handled"
         contentContainerClassName="gap-3 px-screen"
-        contentContainerStyle={{ paddingBottom: clearance }}
+        // Room to stay scrolled when a search leaves few rows, or the bar would drop back down.
+        contentContainerStyle={{
+          paddingBottom: searchFocused || query.trim() ? windowHeight : clearance,
+        }}
       >
         <SyncBanner screen="activity" />
         {!loaded ? (
@@ -338,14 +356,21 @@ export default function ActivityScreen() {
                 </Press>
               </View>
             ) : null}
-            <SearchField
-              compact
-              testID={tid('activity', 'search')}
-              accessibilityLabel="Search transactions"
-              placeholder="Search merchant, note or amount"
-              value={query}
-              onChangeText={setQuery}
-            />
+            <View ref={searchBox}>
+              <SearchField
+                compact
+                testID={tid('activity', 'search')}
+                accessibilityLabel="Search transactions"
+                placeholder="Search merchant, note or amount"
+                value={query}
+                onChangeText={setQuery}
+                onFocus={() => {
+                  setSearchFocused(true);
+                  scrollSearchToTop();
+                }}
+                onBlur={() => setSearchFocused(false)}
+              />
+            </View>
             <FilterChips
               kind={kind}
               onKind={setKind}
