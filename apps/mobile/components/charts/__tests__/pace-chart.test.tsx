@@ -36,12 +36,14 @@ describe('PaceChart', () => {
     );
     const { rerender } = render(chart('pace'));
     for (const gone of ['Spent', 'Even pace', 'Tap or drag', 'Over even pace']) {
-      expect(screen.queryByText(gone)).toBeNull();
+      expect(screen.queryByText(gone, { includeHiddenElements: true })).toBeNull();
     }
     rerender(chart('daily'));
-    expect(screen.getByText('Over even pace')).toBeTruthy();
-    expect(screen.getByText('Safe to spend a day')).toBeTruthy();
-    expect(screen.queryByText('Tap a bar')).toBeNull();
+    // The key is hidden from screen readers on purpose, because the plot's own label says it.
+    const hidden = { includeHiddenElements: true };
+    expect(screen.getByText('Over even pace', hidden)).toBeTruthy();
+    expect(screen.getByText('Safe to spend a day', hidden)).toBeTruthy();
+    expect(screen.queryByText('Tap a bar', hidden)).toBeNull();
   });
 
   it('keeps the budget as the top line while spending is under it, and hides a scale that would overprint it', () => {
