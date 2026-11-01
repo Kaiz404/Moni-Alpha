@@ -5,8 +5,9 @@ source "$here/env.sh"
 mobile=$(cd "$here/../.." && pwd)
 maestro_dir=$mobile/.maestro
 package=com.anonymous.moni.e2e
-# Flows with these tags need a person, a posted alert, the real AI backend, or perf.sh.
-manual_tags=(needs-speech needs-posted-alert needs-ai perf)
+# Flows with these tags need a person, a posted alert, the real AI backend, the system photo picker
+# (which shows the operator's own gallery), or perf.sh.
+manual_tags=(needs-speech needs-posted-alert needs-ai needs-scanner perf)
 
 usage() {
   echo "usage: run-flows.sh [--sha <key>] [--seed full|empty] [--out <dir>] [--tag <tag>]... [--area <area>]... [<flow.yaml or dir>...]" >&2
@@ -95,7 +96,12 @@ echo "run $run" >&2
 
 "$here/install-driver.sh" >&2
 "$here/install.sh" "$key" >&2
-node "$mobile/scripts/e2e/seed.mjs" --reset --profile "$seed" >"$run/seed.log"
+# A -clock build pins JS time, so the seed moves its dates to that same day.
+build_json=${MONI_APK_CACHE:-$HOME/.cache/moni-apk}/$key/build.json
+e2e_now=$(sed -n 's/.*"e2eNow": "\(.*\)".*/\1/p' "$build_json" 2>/dev/null || true)
+seed_args=(--reset --profile "$seed")
+[[ -z $e2e_now ]] || seed_args+=(--today "${e2e_now:0:10}")
+node "$mobile/scripts/e2e/seed.mjs" "${seed_args[@]}" >"$run/seed.log"
 tail -n 2 "$run/seed.log" | head -n 1 >&2
 # A fresh app reads the new seed; a cached Legend-State store would keep deleted rows.
 adb shell pm clear "$package" >/dev/null
@@ -113,6 +119,12 @@ for tag in "${manual_tags[@]}"; do
 done
 include=()
 ((${#tags[@]})) && include=(--include-tags "$(IFS=,; echo "${tags[*]}")")
+
+# Notification access only for the run: Home draws its access card without it, and the phone is the
+# operator's, so Moni E2E does not keep reading its notifications afterwards.
+listener=$package/com.lesimoes.androidnotificationlistener.RNAndroidNotificationListener
+adb shell cmd notification allow_listener "$listener" >/dev/null 2>&1 || true
+trap 'adb shell cmd notification disallow_listener "$listener" >/dev/null 2>&1 || true' EXIT
 
 rc=0
 maestro test --device "$MONI_DEVICE_SERIAL" --no-reinstall-driver "${include[@]}" --exclude-tags "$(IFS=,; echo "${exclude[*]}")" \

@@ -74,9 +74,13 @@ apps/mobile/scripts/device/run-flows.sh --sha <key> --seed empty --area home    
 apps/mobile/scripts/device/run-flows.sh --sha <key> .maestro/flows/capture/type-it.yaml # one flow
 ```
 
+`run-areas.sh --sha <key> [--out <dir>] [<area>...]` runs each area on its own fresh seed. Use it for a full run, because a single run shares one seed and one flow's edits can fail the next.
+
+Build with `EXPO_PUBLIC_E2E_NOW=2026-10-14T14:06:00+08:00 apps/mobile/scripts/device/build-apk.sh` to pin JS time to the boards' sample day. The key gets a `-clock` suffix, and `run-flows.sh` seeds that same day, so a seeded screen compares number for number with its board. Android's own times stay real, so run capture and notification flows on a build without the clock. A session never refreshes under the pinned clock and expires after an hour, so use `run-areas.sh`, which signs in again per area.
+
 It takes the device lock and runs the doctor. Then it keeps Maestro's two driver apps on the phone with `install-driver.sh` and passes `--no-reinstall-driver`, because Maestro's default installs and removes them on every run and each install needs the operator. Then it installs the key if the phone has a different one, resets the e2e user's data with `seed.mjs --reset --profile <full|empty>` (default `full`), clears the app's data, grants the camera, microphone, and location permissions again, and pushes the receipt fixtures to `/sdcard/Pictures/moni-e2e/`. Then it runs Maestro with JUnit output. Each flow signs in on its own through `.maestro/subflows/launch.yaml`.
 
-It leaves out flows tagged with the other seed and flows tagged `needs-speech`, `needs-posted-alert`, `needs-ai`, or `perf`. Pass `--tag <that tag>` to include one. Areas are the folders under `apps/mobile/.maestro/flows/`. Run `run-flows.sh --area x` to list them.
+It grants Moni E2E notification access for the run and takes it away afterwards. It leaves out flows tagged with the other seed and flows tagged `needs-speech`, `needs-posted-alert`, `needs-ai`, `needs-scanner`, or `perf`. Pass `--tag <that tag>` to include one. Areas are the folders under `apps/mobile/.maestro/flows/`. Run `run-flows.sh --area x` to list them.
 
 The smoke suite is `flows/smoke/`: `launch`, `sign-in`, `tabs`, `chooser`, `transaction`, and `review`. Run it after any change to the app shell, sign-in, or navigation.
 
@@ -117,7 +121,7 @@ Each `run-flows.sh` call writes `~/.local/share/moni-runs/<key>/<timestamp>/`:
 - `maestro.log`, Maestro's console output. `seed.log` holds the seed's row counts.
 - `maestro/`, Maestro's output: the commands JSON with each step's status and timing, `logs/`, and `takeScreenshot/` with every `takeScreenshot` PNG.
 
-The last line printed is `<passed>/<total> flows passed, report <path>`, and the exit code is Maestro's. `--out <dir>` copies every PNG to `<dir>`. Maestro's command log holds the typed e2e password, so never paste the commands JSON into a report.
+The last line printed is `<passed>/<total> flows passed, report <path>`, and the exit code is Maestro's. `--out <dir>` copies every PNG to `<dir>`. Maestro's command log holds the typed e2e password, so never paste the commands JSON into a report. A failure screenshot can show what is on the phone, including its own gallery behind a system picker. Look at it before you put it in a report, and leave out any that shows personal content or a credential.
 
 A flow that fails with the launcher on screen means the app left the foreground. Search that flow's `logs/device-logcat.txt` for `FATAL EXCEPTION` before you blame the flow. `Force stopping com.anonymous.moni.e2e` lines are Maestro's `launchApp`, and they are expected.
 

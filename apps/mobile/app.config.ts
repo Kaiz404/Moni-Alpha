@@ -45,7 +45,8 @@ if (iosGoogleMapsApiKey) {
 }
 const googleMapsPlugin: [string, Record<string, string>] = ['react-native-maps', googleMapsConfig];
 const basePluginsWithoutGoogleMaps = (base.plugins ?? []).filter(
-  (plugin) => !(Array.isArray(plugin) && plugin[0] === 'react-native-maps'),
+  // app.json can list it as a bare string too. Run with no key, the plugin removes the key the other added.
+  (plugin) => (Array.isArray(plugin) ? plugin[0] : plugin) !== 'react-native-maps',
 );
 
 export default {
