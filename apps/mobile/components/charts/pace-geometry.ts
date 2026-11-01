@@ -54,6 +54,7 @@ export const PLOT_HEIGHT = 150;
 export const AXIS_WIDTH = 44;
 /** RM1,800 is wider than the axis. The board lets it overflow left into the card's padding, and numberOfLines would cut it. */
 export const AXIS_LABEL_OVERHANG = 16;
+const AXIS_LABEL_HEIGHT = 16;
 export const BAR_WIDTH = 12;
 const TOP = 44;
 const LINE_BASE = 142;
@@ -271,7 +272,9 @@ export function paceGeometry({
   }
 
   const spent = values[today - 1] ?? 0;
-  const max = Math.max(budget ?? 0, niceCeil(Math.max(...values, 0)), 1);
+  // Under budget, the budget is the top line, as the boards draw it: niceCeil alone turns RM1,224 into RM2,000.
+  const highest = Math.max(...values, 0);
+  const max = budget !== null && highest <= budget ? budget : Math.max(budget ?? 0, niceCeil(highest), 1);
   const yOf = (minor: number) => LINE_BASE - (minor / max) * (LINE_BASE - TOP);
   const budgetY = budget === null ? null : yOf(budget);
   const points = values.map((value, index) => ({
@@ -288,7 +291,10 @@ export function paceGeometry({
           { y: (TOP + LINE_BASE) / 2, text: whole(budget / 2, currency), tone: 'meta' },
         ]
       : [
-          { y: TOP, text: whole(max, currency), tone: 'meta' },
+          // Just over budget, the two labels would print on each other.
+          ...(budgetY !== null && budgetY - TOP < AXIS_LABEL_HEIGHT
+            ? []
+            : [{ y: TOP, text: whole(max, currency), tone: 'meta' as const }]),
           ...(budgetY === null ? [] : [{ y: budgetY, text: whole(budget!, currency), tone: 'mint' as const }]),
         ];
   return {

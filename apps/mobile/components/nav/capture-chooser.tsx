@@ -6,7 +6,6 @@ import {
   PlusButton,
   plusRingBottom,
   plusTop,
-  RING_SIZE,
 } from '@/components/nav/plus-button';
 import {
   IconSymbol,
@@ -110,7 +109,6 @@ export function CaptureChooserSheet({
         size="fit"
         title="Add a transaction"
         gap={16}
-        growFromBottom={plusRingBottom(insets.bottom) + RING_SIZE / 2}
       >
         <RiseInGroup
           delay={120}

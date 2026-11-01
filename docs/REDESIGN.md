@@ -104,6 +104,7 @@ The app builds the default for each. [`redesign/PLAN.md`](redesign/PLAN.md) ("Op
 
 The screen tracks reported these differences in their handoffs. Each waits for the owner to accept it or ask for the board.
 
+- Owner's direction, 1 Nov 2026, over the boards: the + opens the chooser as a sheet sliding up from the bottom of the screen, where `V2F-Nav` grows it out of the +. The + has no cream ring. On Android, choosing a date opens the system calendar, where `V2A-CaptureType` opens a list of days. On Type it, **Shop or note** and **Location** each take the full width.
 - Map: the range control offers This week, the month, and last month where the board has a custom range; the empty state's action is **Add an expense**.
 - Map: a build with no Google Maps key has no board. It draws Sand where the map goes, with XM-Empty's capsule reading **Map unavailable** and no Fit button. The sheet and the place page keep working. The Budget tab's card is drawn art, so it needs no key.
 - Debts: recording a debt with no wallet, and debt reminders.

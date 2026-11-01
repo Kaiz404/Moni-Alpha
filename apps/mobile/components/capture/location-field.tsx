@@ -43,7 +43,7 @@ export function LocationField({
       }
       radius={{ rest: 22, pressed: 16 }}
       pressedClassName="bg-hairline"
-      className="h-[60px] flex-1 flex-row items-center gap-2.5 bg-sand px-2.5"
+      className="h-[60px] flex-row items-center gap-2.5 bg-sand px-2.5"
       onPress={onToggle}
     >
       <FieldBubble color={tokens.card}>

@@ -9,7 +9,8 @@ import { useFonts } from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useMemo, useRef } from 'react';
-import { AppState } from 'react-native';
+import { AppState, StyleSheet } from 'react-native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useReducedMotion } from 'react-native-reanimated';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useUniwind } from 'uniwind';
@@ -111,35 +112,41 @@ export default function RootLayout() {
   if (!fontsSettled) return null;
 
   return (
-    <SafeAreaProvider>
-      <QueryProvider>
-        <ThemeProvider value={navigationTheme}>
-          <AuthProvider>
-            <StoreSyncActivator />
-            <AuthGuard>
-              <Stack
-                screenOptions={{
-                  headerShown: false,
-                  animation: reduceMotion ? 'fade' : 'slide_from_right',
-                }}
-              >
-                <Stack.Screen
-                  name="(auth)"
-                  options={{ animation: 'fade' }}
-                />
-                <Stack.Screen
-                  name="(tabs)"
-                  options={{ animation: 'fade' }}
-                />
-              </Stack>
-              <SheetHost />
-              <ReviewNotificationTaps />
-            </AuthGuard>
-            <ToastHost />
-            <StatusBar style={theme === 'dark' ? 'light' : 'dark'} />
-          </AuthProvider>
-        </ThemeProvider>
-      </QueryProvider>
-    </SafeAreaProvider>
+    <GestureHandlerRootView style={StyleSheet.absoluteFill}>
+      <SafeAreaProvider>
+        <QueryProvider>
+          <ThemeProvider value={navigationTheme}>
+            <AuthProvider>
+              <StoreSyncActivator />
+              <AuthGuard>
+                <Stack
+                  screenOptions={{
+                    headerShown: false,
+                    animation: reduceMotion
+                      ? 'fade'
+                      : 'slide_from_right',
+                  }}
+                >
+                  <Stack.Screen
+                    name="(auth)"
+                    options={{ animation: 'fade' }}
+                  />
+                  <Stack.Screen
+                    name="(tabs)"
+                    options={{ animation: 'fade' }}
+                  />
+                </Stack>
+                <SheetHost />
+                <ReviewNotificationTaps />
+              </AuthGuard>
+              <ToastHost />
+              <StatusBar
+                style={theme === 'dark' ? 'light' : 'dark'}
+              />
+            </AuthProvider>
+          </ThemeProvider>
+        </QueryProvider>
+      </SafeAreaProvider>
+    </GestureHandlerRootView>
   );
 }

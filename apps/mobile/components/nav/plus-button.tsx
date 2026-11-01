@@ -46,7 +46,7 @@ type PlusButtonProps = {
 };
 
 /**
- * The Mint key + in its cream ring. The tab bar and the chooser render it at
+ * The Mint key + with room around it. The tab bar and the chooser render it at
  * the same spot, so the one in the chooser sits above the scrim as its ×.
  */
 export function PlusButton({
@@ -79,7 +79,7 @@ export function PlusButton({
 
   return (
     <View
-      className="items-center justify-center rounded-full bg-canvas"
+      className="items-center justify-center"
       style={{ width: RING_SIZE, height: RING_SIZE }}
     >
       <Press

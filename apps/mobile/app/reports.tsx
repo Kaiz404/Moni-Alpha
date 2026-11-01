@@ -1,3 +1,4 @@
+import { pickDate } from '@/lib/sheet/pick-date';
 import { useValue } from '@legendapp/state/react';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useMemo, useState } from 'react';
@@ -91,7 +92,7 @@ export default function ReportsScreen() {
     if (picked) setMonth(picked);
   };
   const chooseDay = async (end: keyof ReportRange) => {
-    const picked = await openSheet({ kind: 'date', selected: range[end] });
+    const picked = await pickDate(range[end]);
     if (picked) setRange(periodRange({ kind: 'custom', ...range, [end]: picked }));
   };
   const openInActivity = (link: Record<string, string>) =>

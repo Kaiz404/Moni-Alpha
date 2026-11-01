@@ -15,7 +15,6 @@ import android.view.WindowManager
 import android.util.Base64
 import android.util.Log
 import expo.modules.kotlin.modules.Module
-import expo.modules.kotlin.Queues
 import expo.modules.kotlin.modules.ModuleDefinition
 import java.io.ByteArrayOutputStream
 
@@ -36,20 +35,14 @@ class MoniAndroidAppsModule : Module() {
 
     // Pan moves the whole window, header included, so a page that lifts its own composer turns it off.
     AsyncFunction("setKeyboardPansWindowAsync") { pans: Boolean ->
-      appContext.currentActivity?.window?.setSoftInputMode(
-        if (pans) WindowManager.LayoutParams.SOFT_INPUT_ADJUST_PAN
-        else WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE,
-      )
+      val activity = appContext.currentActivity
+      activity?.runOnUiThread {
+        activity.window.setSoftInputMode(
+          if (pans) WindowManager.LayoutParams.SOFT_INPUT_ADJUST_PAN
+          else WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE,
+        )
+      }
       Unit
-    }.runOnQueue(Queues.MAIN)
-
-    // Google's SDK throws on its own thread when a MapView starts with no key, out of reach of any JS catch.
-    Function("hasGoogleMapsKey") {
-      !reactContext.packageManager
-        .getApplicationInfo(reactContext.packageName, PackageManager.GET_META_DATA)
-        .metaData
-        ?.getString("com.google.android.geo.API_KEY")
-        .isNullOrBlank()
     }
 
     AsyncFunction("isIgnoringBatteryOptimizationsAsync") {

@@ -66,6 +66,7 @@ import {
 import { resolveTransactionIcon } from '@/lib/transactions/icon';
 import { proposalRow, transactionRow } from '@/lib/transactions/row';
 import { compactWalletNames } from '@/lib/wallets/compact-name';
+import { pickDate as pickNativeDate } from '@/lib/sheet/pick-date';
 import { resolveDefaultWalletId } from '@/lib/wallets/default-wallet';
 
 type Kind = 'expense' | 'income' | 'transfer';
@@ -326,8 +327,8 @@ export default function TypeItScreen() {
     if (picked) setCategoryId(picked);
   };
 
-  const pickDate = async () => {
-    const picked = await openSheet({ kind: 'date', selected: date });
+  const chooseDate = async () => {
+    const picked = await pickNativeDate(date);
     if (picked) setDate(picked);
   };
 
@@ -475,12 +476,12 @@ export default function TypeItScreen() {
           />
         </FieldBubble>
       }
-      onPress={() => void pickDate()}
+      onPress={() => void chooseDate()}
     />
   );
 
   const noteField = (
-    <View className="h-[60px] flex-1 flex-row items-center gap-2.5 rounded-tile bg-sand pl-2.5 pr-3">
+    <View className="h-[60px] flex-row items-center gap-2.5 rounded-tile bg-sand pl-2.5 pr-3">
       <FieldBubble color={tokens.card}>
         <IconSymbol
           name="pencil-outline"
@@ -576,10 +577,8 @@ export default function TypeItScreen() {
               leading={walletBubble(toWallet)}
               onPress={() => void pickWallet('to')}
             />
-            <View className="flex-row gap-2">
-              {dateField}
-              {noteField}
-            </View>
+            {dateField}
+            {noteField}
           </>
         ) : (
           <>
@@ -605,22 +604,20 @@ export default function TypeItScreen() {
                 size="capture"
                 className="flex-1"
                 label={kind === 'income' ? 'Into' : 'Paid with'}
-                value={wallet?.name ?? ''}
+                value={wallet ? compactWalletNames(allWallets)[wallet.id] ?? wallet.name : ''}
                 leading={walletBubble(wallet)}
                 onPress={() => void pickWallet('from')}
               />
               {dateField}
             </View>
-            <View className="flex-row gap-2">
-              {noteField}
-              {recordsLocation && here.status !== 'none' ? (
-                <LocationField
-                  here={here}
-                  removed={locationRemoved}
-                  onToggle={() => setLocationRemoved((removed) => !removed)}
-                />
-              ) : null}
-            </View>
+            {noteField}
+            {recordsLocation && here.status !== 'none' ? (
+              <LocationField
+                here={here}
+                removed={locationRemoved}
+                onToggle={() => setLocationRemoved((removed) => !removed)}
+              />
+            ) : null}
           </>
         )}
       </AmountPage>

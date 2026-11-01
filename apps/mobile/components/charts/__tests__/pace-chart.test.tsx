@@ -23,6 +23,19 @@ const spend = [
 const budget = 180000;
 
 describe('PaceChart', () => {
+  it('keeps the budget as the top line while spending is under it, and hides a scale that would overprint it', () => {
+    const pace = (values: number[]) =>
+      paceGeometry({
+        mode: 'pace',
+        width: 314,
+        series: { month: october, values },
+        budget,
+        currency: 'MYR',
+      } as never).labels.map((label) => label.text);
+    expect(pace([122390])).toEqual(['RM1,800', 'RM900', 'RM0']);
+    expect(pace([181000])).toEqual(['RM1,800', 'RM0']);
+  });
+
   it('labels the even pace RM58 for a RM1,800 month and draws no projection line', () => {
     render(
       <PaceChart
@@ -123,13 +136,13 @@ describe('paceGeometry', () => {
   it('raises the top of the pace axis above the budget once spending passes it', () => {
     const geometry = paceGeometry({
       mode: 'pace',
-      series: { month: october, values: [150000, 50000] },
+      series: { month: october, values: [250000, 50000] },
       budget,
       currency: 'MYR',
       width: 314,
     });
     expect(geometry.labels.map((label) => label.text)).toEqual([
-      'RM2,000',
+      'RM5,000',
       'RM1,800',
       'RM0',
     ]);

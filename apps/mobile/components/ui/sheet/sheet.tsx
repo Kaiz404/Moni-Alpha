@@ -32,9 +32,6 @@ const SCRIM = 'rgba(23,24,26,0.32)';
 const LARGE_TOP_BELOW_INSET = 106;
 const OFFSCREEN = 2000;
 const REDUCED_FADE = { duration: 180 };
-/** The + chooser starts at a fifth of its size while it and the scrim fade in over 200. */
-const GROW_FROM = 0.2;
-const GROW_FADE = { duration: 200 };
 
 function rubberband(overshoot: number, dimension: number) {
   'worklet';
@@ -63,7 +60,6 @@ export type SheetProps = {
    * Grows from scale 0.2 at a point this far above the screen's bottom edge,
    * centred, and shrinks back into it on close: the + chooser (V2F-Nav).
    */
-  growFromBottom?: number;
   /** Space between the grabber, the title row and the body: 12, or 16 on the + chooser. */
   gap?: 12 | 16;
   children?: ReactNode;
@@ -90,7 +86,6 @@ export function Sheet({
   closeLabel,
   size,
   actions,
-  growFromBottom,
   gap = 12,
   children,
 }: SheetProps) {
@@ -99,9 +94,7 @@ export function Sheet({
   const keyboard = useAnimatedKeyboard();
   const height = useSharedValue(0);
   const offset = useSharedValue(OFFSCREEN);
-  const grows = growFromBottom !== undefined && !reduceMotion;
-  const fade = useSharedValue(reduceMotion || grows ? 0 : 1);
-  const grow = useSharedValue(grows ? 0 : 1);
+  const fade = useSharedValue(reduceMotion ? 0 : 1);
   const start = useSharedValue(0);
   const releaseVelocity = useSharedValue(0);
   const closing = useSharedValue(false);
@@ -109,19 +102,6 @@ export function Sheet({
   useEffect(() => {
     if (open) return;
     closing.set(true);
-    if (grows) {
-      fade.set(withTiming(0, GROW_FADE));
-      grow.set(
-        withSpring(
-          0,
-          { ...springs.sheet, overshootClamping: true },
-          (finished) => {
-            if (finished) scheduleOnRN(onExited);
-          },
-        ),
-      );
-      return;
-    }
     if (reduceMotion) {
       fade.set(
         withTiming(0, REDUCED_FADE, (finished) => {
@@ -145,8 +125,6 @@ export function Sheet({
     );
   }, [
     open,
-    grows,
-    grow,
     reduceMotion,
     fade,
     offset,
@@ -218,7 +196,7 @@ export function Sheet({
           )
         : 0;
     return {
-      opacity: reduceMotion || grows ? fade.get() * slide : slide,
+      opacity: reduceMotion ? fade.get() * slide : slide,
     };
   });
 
@@ -227,17 +205,11 @@ export function Sheet({
   }));
 
   const sheetStyle = useAnimatedStyle(() => {
-    const scale = interpolate(grow.get(), [0, 1], [GROW_FROM, 1]);
     return {
-      opacity: reduceMotion || grows ? fade.get() : 1,
+      opacity: reduceMotion ? fade.get() : 1,
       paddingBottom:
         20 + Math.max(insets.bottom - keyboard.height.get(), 0),
-      transformOrigin: [
-        '50%',
-        height.get() - (growFromBottom ?? 0),
-        0,
-      ],
-      transform: [{ translateY: offset.get() }, { scale }],
+      transform: [{ translateY: offset.get() }],
     };
   });
 
@@ -279,11 +251,7 @@ export function Sheet({
             const first = height.get() === 0;
             height.set(measured);
             if (!first || !open) return;
-            if (grows) {
-              offset.set(0);
-              fade.set(withTiming(1, GROW_FADE));
-              grow.set(withSpring(1, springs.sheet));
-            } else if (reduceMotion) {
+            if (reduceMotion) {
               offset.set(0);
               fade.set(withTiming(1, REDUCED_FADE));
             } else {

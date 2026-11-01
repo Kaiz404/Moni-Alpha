@@ -52,7 +52,7 @@ tags:
 
 # Drag the grabber down past 40% of the sheet.
 - tapOn:
-    id: capture.date
+    id: capture.wallet
 - assertVisible:
     id: sheet.scrim
 - swipe:

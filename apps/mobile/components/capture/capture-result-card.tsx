@@ -1,3 +1,4 @@
+import { pickDate as pickNativeDate } from '@/lib/sheet/pick-date';
 import { useValue } from '@legendapp/state/react';
 import { Image } from 'expo-image';
 import { useEffect, useRef, useState } from 'react';
@@ -153,10 +154,7 @@ export function CaptureResult({
   };
 
   const pickDate = async () => {
-    const picked = await openSheet({
-      kind: 'date',
-      selected: isoToLocalDateInput(draft.transactionDate),
-    });
+    const picked = await pickNativeDate(isoToLocalDateInput(draft.transactionDate));
     if (!picked) return;
     onEdit({
       transactionDate:
