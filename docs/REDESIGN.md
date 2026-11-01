@@ -112,6 +112,7 @@ The screen tracks reported these differences in their handoffs. Each waits for t
 - Say it: when no run of the spoken words gives the amount Moni read, the amount hint falls back to "Moni heard RM9.80" instead of the board's "you said nine eighty".
 - Transaction detail: only notification rows captured by this build or later keep the bank alert, so older rows show the currency alone under the amount edit.
 - Capture log: the note under a Not linked alert says "Same payment as the … alert" for every app; the board's "Same ride" is Grab's sample. It matches another app's Added alert by RM amount within 10 minutes.
+- Capture log: the board draws no way to clear it. A 32 Sand close beside each status removes that alert from the phone, with Undo in the toast. A trash button in the header opens a confirm sheet for **Clear all**. Both clear only the alert text kept on the phone, never transactions or captures waiting for review. v1 had both, and the raw text would otherwise stay until the phone's 50-entry cap pushes it out.
 - States kit: the offline banner shows on the tab roots and the debt page that carry `SyncBanner`. Maestro cannot drive it over wireless adb, so Jest covers the state mapping.
 - The category sheet's **Debt payment** opens the Debts tab, where the person is chosen; the board links the amount page, which needs a person first.
 - Categories: an income preset opens Activity scoped to it for this month. The board links every preset to the category page, which has no income view.

@@ -9,6 +9,7 @@ import { StatusLegend } from '@/components/capture-log/status-legend';
 import { useLinkedApps, type LinkedWallet } from '@/components/capture-sources/use-linked-apps';
 import { Chip } from '@/components/ui/chip';
 import { EmptyTile } from '@/components/ui/empty-tile';
+import { HeaderIconButton } from '@/components/ui/header-icon-button';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { ListCard } from '@/components/ui/list-card';
 import { Page } from '@/components/ui/page';
@@ -24,7 +25,9 @@ import {
   groupCaptureLog,
   type CaptureLogItem,
 } from '@/lib/notifications/capture-log';
+import { openSheet } from '@/lib/sheet/sheet-store';
 import { tid } from '@/lib/test-ids';
+import { showToast } from '@/lib/toast/toast-store';
 
 /** Day groups shown before "Show N older" on the unfiltered log. */
 const FIRST_DAYS = 3;
@@ -71,9 +74,9 @@ function joinAnd(names: readonly string[]): string {
 
 export default function CaptureLogScreen() {
   const tokens = useThemeTokens();
-  const { notifications, refresh } = useNotificationListener();
+  const { notifications, refresh, clearAll, clearOne, restoreOne } = useNotificationListener();
   const { wallets, apps } = useLinkedApps();
-  const [filter, setFilter] = useState<Filter>('all');
+  const [picked, setFilter] = useState<Filter>('all');
   const [showOlder, setShowOlder] = useState(false);
 
   useFocusEffect(
@@ -91,6 +94,8 @@ export default function CaptureLogScreen() {
     .reduce((sum, day) => sum + day.items.length, 0);
   const total = days.reduce((sum, day) => sum + day.items.length, 0);
 
+  // Removing the last entry of a status removes its chip, so the log falls back to All.
+  const filter = picked !== 'all' && counts[picked] === 0 ? 'all' : picked;
   const shown = filterCaptureLog(days, filter);
   const cut = filter === 'all' && !showOlder;
   const visible = cut ? shown.slice(0, FIRST_DAYS) : shown;
@@ -105,11 +110,41 @@ export default function CaptureLogScreen() {
 
   const appNames = apps.map((app) => app.label);
 
+  const dismiss = (id: string) => {
+    const removed = clearOne(id);
+    if (!removed) return;
+    showToast({ text: 'Alert removed', tone: 'removed', undo: () => restoreOne(removed) });
+  };
+
+  const confirmClearAll = async () => {
+    const confirmed = await openSheet({
+      kind: 'confirm',
+      title: 'Clear the Capture log?',
+      message:
+        'This removes the alert text kept on this phone. Transactions and captures waiting for review stay as they are.',
+      confirmLabel: 'Clear all',
+      destructive: true,
+    });
+    if (!confirmed) return;
+    clearAll();
+    showToast({ text: 'Capture log cleared', tone: 'removed' });
+  };
+
   return (
     <Page
       screen="capture-log"
       kind="pushed"
       title="Capture log"
+      trailing={
+        total > 0 ? (
+          <HeaderIconButton
+            testID={tid('capture-log', 'clear-all')}
+            icon="trash-can-outline"
+            accessibilityLabel="Clear all stored alerts"
+            onPress={() => void confirmClearAll()}
+          />
+        ) : undefined
+      }
     >
       <ScrollView
         className="flex-1"
@@ -189,6 +224,7 @@ export default function CaptureLogScreen() {
                         key={item.id}
                         item={item}
                         action={entryAction(item, wallets)}
+                        onDismiss={() => dismiss(item.id)}
                       />
                     ))}
                   </ListCard>

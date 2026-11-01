@@ -46,6 +46,23 @@ tags:
                 id: capture-log.show-older
             - assertNotVisible:
                 id: capture-log.show-older
+      # Removing one alert offers Undo; Clear all asks first and Keep it leaves the log alone.
+      - tapOn:
+          id: 'capture-log\.entry\..*\.dismiss'
+          index: 0
+      - assertVisible: Alert removed
+      - takeScreenshot: p1-dismiss-undo
+      - tapOn:
+          id: nav.toast.undo
+      - tapOn:
+          id: capture-log.clear-all
+      - assertVisible: Clear the Capture log?
+      - assertVisible: '.*Transactions and captures waiting for review stay as they are.*'
+      - takeScreenshot: p1-clear-all
+      - tapOn:
+          id: sheet.cancel
+      - assertVisible:
+          id: capture-log.filter.all
 
 # The empty log explains each status and points at notification access.
 - runFlow:

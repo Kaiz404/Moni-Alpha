@@ -8,7 +8,7 @@ import { Text } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { getCachedAppIcon } from '@/lib/notifications/app-icon-cache';
 import type { CaptureLogItem } from '@/lib/notifications/capture-log';
-import type { TestId } from '@/lib/test-ids';
+import { tid, type TestId } from '@/lib/test-ids';
 
 export type LogEntryAction = { testID: TestId; label: string; onPress: () => void };
 
@@ -35,14 +35,19 @@ function AppBubble({ packageName }: { packageName: string | null }) {
   );
 }
 
-/** One alert in the capture log: app, time, the alert text as sent, its status, and what to do next. */
-export function LogEntry({ item, action }: { item: CaptureLogItem; action?: LogEntryAction }) {
+/** One alert in the capture log: app, time, the alert text as sent, its status, what to do next, and a visible way to remove it. */
+export function LogEntry({
+  item,
+  action,
+  onDismiss,
+}: {
+  item: CaptureLogItem;
+  action?: LogEntryAction;
+  onDismiss: () => void;
+}) {
   const tokens = useThemeTokens();
   return (
-    <View
-      className="flex-row gap-3.5 px-[18px] py-3"
-      accessible={!action}
-    >
+    <View className="flex-row gap-3.5 px-[18px] py-3">
       <AppBubble packageName={item.packageName} />
       <View className="min-w-0 flex-1 gap-1">
         <View className="flex-row items-baseline justify-between gap-2">
@@ -63,26 +68,43 @@ export function LogEntry({ item, action }: { item: CaptureLogItem; action?: LogE
         {item.text ? (
           <Text className="text-[14px] leading-[20px] text-ink-2">{item.text}</Text>
         ) : null}
-        <View className="mt-0.5 flex-row flex-wrap items-center gap-x-2.5 gap-y-1">
-          <CaptureStatusPill status={item.status} />
-          {action ? (
-            <Press
-              testID={action.testID}
-              onPress={action.onPress}
-              hitSlop={6}
-              accessibilityLabel={`${action.label}, ${item.app} ${item.time}`}
-              className="min-h-8 flex-row items-center gap-0.5 rounded-full"
-            >
-              <Text className="text-[14px] leading-[19px] font-display-semibold text-deep-mint">
-                {action.label}
-              </Text>
-              <IconSymbol
-                name="chevron-right"
-                size={16}
-                color={tokens.deepMint}
-              />
-            </Press>
-          ) : null}
+        <View className="mt-0.5 flex-row items-start gap-2">
+          <View className="min-w-0 flex-1 flex-row flex-wrap items-center gap-x-2.5 gap-y-1">
+            <CaptureStatusPill status={item.status} />
+            {action ? (
+              <Press
+                testID={action.testID}
+                onPress={action.onPress}
+                hitSlop={6}
+                accessibilityLabel={`${action.label}, ${item.app} ${item.time}`}
+                className="min-h-8 flex-row items-center gap-0.5 rounded-full"
+              >
+                <Text className="text-[14px] leading-[19px] font-display-semibold text-deep-mint">
+                  {action.label}
+                </Text>
+                <IconSymbol
+                  name="chevron-right"
+                  size={16}
+                  color={tokens.deepMint}
+                />
+              </Press>
+            ) : null}
+          </View>
+          <Press
+            testID={tid('capture-log', 'entry', item.id, 'dismiss')}
+            onPress={onDismiss}
+            hitSlop={6}
+            accessibilityLabel={`Remove this alert, ${item.app} ${item.time}`}
+            radius={{ rest: 16, pressed: 12 }}
+            pressedClassName="bg-hairline"
+            className="h-8 w-8 items-center justify-center bg-sand"
+          >
+            <IconSymbol
+              name="close"
+              size={16}
+              color={tokens.foreground}
+            />
+          </Press>
         </View>
         {item.note ? (
           <Text

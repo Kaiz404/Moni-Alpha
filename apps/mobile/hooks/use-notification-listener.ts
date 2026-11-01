@@ -50,6 +50,10 @@ function readStoredNotifications(): CapturedNotification[] {
   }
 }
 
+function writeStoredNotifications(list: CapturedNotification[]): void {
+  notificationStorage.set(STORAGE_KEY, JSON.stringify(list));
+}
+
 export function useNotificationListener() {
   const [permissionStatus, setPermissionStatus] = useState<PermissionStatus>('unknown');
   const [lastPermissionCheckAt, setLastPermissionCheckAt] = useState<string | null>(null);
@@ -88,9 +92,20 @@ export function useNotificationListener() {
     setNotifications([]);
   }, []);
 
-  const clearOne = useCallback((id: string) => {
-    const updated = readStoredNotifications().filter((n) => n.id !== id);
-    notificationStorage.set(STORAGE_KEY, JSON.stringify(updated));
+  /** Returns the removed entry so Undo can put it back. */
+  const clearOne = useCallback((id: string): CapturedNotification | null => {
+    const stored = readStoredNotifications();
+    const updated = stored.filter((n) => n.id !== id);
+    writeStoredNotifications(updated);
+    setNotifications(updated);
+    return stored.find((n) => n.id === id) ?? null;
+  }, []);
+
+  const restoreOne = useCallback((entry: CapturedNotification) => {
+    const stored = readStoredNotifications();
+    if (stored.some((n) => n.id === entry.id)) return;
+    const updated = [...stored, entry].sort((a, b) => b.receivedAt.localeCompare(a.receivedAt));
+    writeStoredNotifications(updated);
     setNotifications(updated);
   }, []);
 
@@ -118,6 +133,7 @@ export function useNotificationListener() {
     refresh,
     clearAll,
     clearOne,
+    restoreOne,
     isAndroid,
   };
 }
