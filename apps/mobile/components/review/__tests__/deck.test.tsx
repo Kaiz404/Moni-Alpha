@@ -4,6 +4,8 @@ import type { CurrencyCode, MinorAmount } from '@repo/types';
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
 import type React from 'react';
 import { Text } from 'react-native';
+import { State, type PanGesture } from 'react-native-gesture-handler';
+import { fireGestureHandler, getByGestureTestId } from 'react-native-gesture-handler/jest-utils';
 
 import ReviewScreen from '@/app/review';
 import { toFinanceTransaction } from '@/lib/finance/adapters';
@@ -106,6 +108,15 @@ async function show(ui: React.ReactElement) {
   }
 }
 
+/** The way a screen reader decides: the card's own accessibility actions. */
+async function decide(actionName: 'approve' | 'notMine' | 'later') {
+  await act(async () =>
+    fireEvent(screen.getByTestId('review.summary'), 'accessibilityAction', {
+      nativeEvent: { actionName },
+    }),
+  );
+}
+
 const ledger = () =>
   Object.values(store.transactions$.peek()).filter((row) => row.deleted === false);
 
@@ -176,7 +187,7 @@ describe('Review deck', () => {
     expect(sheet.request.categories.map((c) => c.name)).toEqual(['Salary']);
     await act(async () => sheet.settle(SALARY));
 
-    await act(async () => fireEvent.press(screen.getByTestId('review.approve')));
+    await decide('approve');
 
     expect(ledger()).toEqual([
       expect.objectContaining({ type: 'income', category_id: SALARY, merchant: 'GRAB' }),
@@ -195,7 +206,7 @@ describe('Review deck', () => {
     expect(screen.queryByTestId('review.category')).toBeNull();
     expect(screen.getByTestId('review.destination')).toBeTruthy();
 
-    await act(async () => fireEvent.press(screen.getByTestId('review.approve')));
+    await decide('approve');
 
     const sheet = getOpenSheet();
     expect(sheet?.kind === 'wallet' && sheet.request.title).toBe('Moves to');
@@ -203,7 +214,7 @@ describe('Review deck', () => {
     await act(async () => dismissSheet());
   });
 
-  it('approves the top card from the button, then Not mine ends on All caught up', async () => {
+  it('approves the top card, then Not mine ends on All caught up', async () => {
     seed('p1');
     seed('p2', {
       merchant: 'JAYA GROCER',
@@ -215,9 +226,9 @@ describe('Review deck', () => {
     expect(screen.getByText('GRAB')).toBeTruthy();
     expect(screen.getByText('Maybank alert')).toBeTruthy();
     expect(screen.getByText('1 of 2')).toBeTruthy();
-    expect(screen.getByTestId('review.next-card')).toBeTruthy();
+    expect(screen.getByTestId('review.next-card', { includeHiddenElements: true })).toBeTruthy();
 
-    await act(async () => fireEvent.press(screen.getByTestId('review.approve')));
+    await decide('approve');
 
     expect(ledger()).toEqual([
       expect.objectContaining({ merchant: 'GRAB', amount: '12.00', wallet_id: MAYBANK }),
@@ -225,7 +236,7 @@ describe('Review deck', () => {
     expect(screen.getByText('JAYA GROCER')).toBeTruthy();
     expect(screen.getByText('2 of 2')).toBeTruthy();
 
-    await act(async () => fireEvent.press(screen.getByTestId('review.not-mine')));
+    await decide('notMine');
 
     expect(store.proposedTransactions$.peek().p2).toMatchObject({ status: 'rejected', deleted: false });
     expect(ledger()).toHaveLength(1);
@@ -308,7 +319,7 @@ describe('Review deck', () => {
       await show(<ReviewScreen />);
       await screen.findByText('Maybe a duplicate');
 
-      await act(async () => fireEvent.press(screen.getByTestId('review.approve')));
+      await decide('approve');
 
       expect(ledger()).toHaveLength(2);
       expect(spent()).toBe(2400);
@@ -441,7 +452,7 @@ describe('Review deck', () => {
     seed('p1');
     await show(<ReviewScreen />);
 
-    await act(async () => fireEvent.press(screen.getByTestId('review.approve')));
+    await decide('approve');
     expect(screen.getByText('All caught up')).toBeTruthy();
 
     await act(async () => undoToast());
@@ -452,15 +463,15 @@ describe('Review deck', () => {
   });
 
   it.each([
-    ['Approve', 'review.approve', 'approved'],
-    ['Not mine', 'review.not-mine', 'rejected'],
-    ['Later', 'review.later', 'later'],
-  ])('Undo after %s puts the card back on top of the next one', async (_name, button, status) => {
+    ['Approve', 'approve', 'approved'],
+    ['Not mine', 'notMine', 'rejected'],
+    ['Later', 'later', 'later'],
+  ] as const)('Undo after %s puts the card back on top of the next one', async (_name, action, status) => {
     seed('p1');
     seed('p2', { merchant: 'JAYA GROCER', created_at: '2020-01-01T00:00:00.000Z' });
     await show(<ReviewScreen />);
 
-    await act(async () => fireEvent.press(screen.getByTestId(button)));
+    await decide(action);
     expect(store.proposedTransactions$.p1.status.peek()).toBe(status);
     expect(screen.getByText('JAYA GROCER')).toBeTruthy();
     expect(screen.queryByText('GRAB')).toBeNull();
@@ -472,7 +483,7 @@ describe('Review deck', () => {
     expect(screen.queryByText('JAYA GROCER')).toBeNull();
     expect(screen.getByText('1 of 2')).toBeTruthy();
 
-    await act(async () => fireEvent.press(screen.getByTestId('review.not-mine')));
+    await decide('notMine');
     expect(screen.getByText('JAYA GROCER')).toBeTruthy();
     expect(screen.getByText('2 of 2')).toBeTruthy();
   });
@@ -539,6 +550,207 @@ describe('Review deck', () => {
     });
   });
 
+  describe('the card underneath', () => {
+    const SECOND = { merchant: 'JAYA GROCER', amount: '86.40', created_at: '2020-01-01T00:00:00.000Z' };
+    const hidden = { includeHiddenElements: true };
+
+    it('is already rendered with its own content, hidden from a screen reader', async () => {
+      seed('p1');
+      seed('p2', SECOND);
+      await show(<ReviewScreen />);
+
+      expect(screen.getByText('JAYA GROCER', hidden)).toBeTruthy();
+      expect(screen.getByText('−RM86.40', hidden)).toBeTruthy();
+      expect(screen.queryByText('JAYA GROCER')).toBeNull();
+    });
+
+    it('is the same mounted card when it comes on top, with no remount to flash', async () => {
+      seed('p1');
+      seed('p2', SECOND);
+      await show(<ReviewScreen />);
+      const waiting = screen.getByText('JAYA GROCER', hidden);
+
+      await decide('approve');
+
+      expect(screen.getByText('JAYA GROCER')).toBe(waiting);
+    });
+
+    it('already carries its duplicate warning before it comes on top', async () => {
+      store.transactions$.t1.set({
+        id: 't1',
+        user_id: 'user-1',
+        wallet_id: MAYBANK,
+        amount: '86.40',
+        currency: 'MYR',
+        type: 'expense',
+        merchant: 'JAYA GROCER',
+        category_id: FOOD,
+        transaction_date: new Date(Date.now() - 60_000).toISOString(),
+        created_at: new Date(Date.now() - 60_000).toISOString(),
+        metadata: { source: 'notification' },
+        deleted: false,
+      });
+      seed('p1');
+      seed('p2', { ...SECOND, transaction_date: new Date().toISOString() });
+      await show(<ReviewScreen />);
+
+      expect(await screen.findByText('Maybe a duplicate', hidden)).toBeTruthy();
+      expect(screen.queryByText('Maybe a duplicate')).toBeNull();
+    });
+
+    it('is the card an Undo covers, with no third card left under it', async () => {
+      seed('p1');
+      seed('p2', SECOND);
+      await show(<ReviewScreen />);
+      await decide('approve');
+      const shown = screen.getByText('JAYA GROCER');
+
+      await act(async () => undoToast());
+
+      expect(screen.getByText('GRAB')).toBeTruthy();
+      expect(screen.getByText('JAYA GROCER', hidden)).toBe(shown);
+      expect(screen.queryByText('JAYA GROCER')).toBeNull();
+    });
+
+    it('is not there behind the last card', async () => {
+      seed('p1');
+      await show(<ReviewScreen />);
+      expect(screen.queryByTestId('review.next-card', hidden)).toBeNull();
+    });
+  });
+
+  describe('what the card leaves out', () => {
+    it("shows neither the AI reasoning nor the budget left, and keeps Don't ask about similar", async () => {
+      seed('p1');
+      await show(<ReviewScreen />);
+      expect(screen.queryByText('You filed GRAB under Food & Dining 14 times.')).toBeNull();
+      expect(screen.queryByText(/left after this/)).toBeNull();
+      expect(screen.queryByText(/No budget for/)).toBeNull();
+      expect(screen.getByTestId('review.similar')).toBeTruthy();
+    });
+
+    it('keeps the duplicate explanation the user decides on', async () => {
+      store.transactions$.t1.set({
+        id: 't1',
+        user_id: 'user-1',
+        wallet_id: MAYBANK,
+        amount: '12.00',
+        currency: 'MYR',
+        type: 'expense',
+        merchant: 'GRAB',
+        category_id: FOOD,
+        transaction_date: new Date(Date.now() - 60_000).toISOString(),
+        created_at: new Date(Date.now() - 60_000).toISOString(),
+        metadata: { source: 'notification' },
+        deleted: false,
+      });
+      seed('p1', { transaction_date: new Date().toISOString() });
+      await show(<ReviewScreen />);
+      expect(await screen.findByText(/^You may already have this: GRAB RM12\.00 on /)).toBeTruthy();
+    });
+  });
+
+  describe('deciding without a swipe', () => {
+    const actions = () =>
+      screen.getByTestId('review.summary').props.accessibilityActions as { name: string; label: string }[];
+
+    it('offers a screen reader the three decisions, with the amount on Approve', async () => {
+      seed('p1');
+      await show(<ReviewScreen />);
+      expect(actions()).toEqual([
+        { name: 'approve', label: 'Approve −RM12.00' },
+        { name: 'notMine', label: 'Not mine. Nothing gets added' },
+        { name: 'later', label: 'Later. Save it for later' },
+      ]);
+    });
+
+    it('offers Pick wallet in place of Approve when there is no wallet', async () => {
+      seed('p1', { wallet_id: null });
+      store.wallets$.set({});
+      financeProjection$.walletsById.set({});
+      await show(<ReviewScreen />);
+      expect(actions()[0]).toEqual({ name: 'approve', label: 'Pick wallet' });
+    });
+
+    it('offers nothing while a field edits', async () => {
+      seed('p1');
+      await show(<ReviewScreen />);
+      fireEvent.press(screen.getByTestId('review.amount.edit'));
+      expect(actions()).toEqual([]);
+    });
+
+    it('keeps Recently reviewed reachable while cards wait', async () => {
+      seed('p1');
+      seed('p2', { merchant: 'JAYA GROCER', created_at: '2020-01-01T00:00:00.000Z' });
+      await show(<ReviewScreen />);
+      await decide('notMine');
+      expect(screen.getByTestId('review.history.toggle')).toBeTruthy();
+    });
+  });
+
+  describe('the swipe', () => {
+    const { BEGAN, ACTIVE, END } = State;
+    const pan = () => getByGestureTestId('review.pan');
+    const y = 400;
+    /** The width the test renderer's window reports. */
+    const WINDOW_WIDTH = 750;
+
+    async function swipe(startX: number, travel: number) {
+      await act(async () =>
+        fireGestureHandler<PanGesture>(pan(), [
+          { state: BEGAN, absoluteX: startX, absoluteY: y, translationX: 0 },
+          { state: ACTIVE, absoluteX: startX, absoluteY: y, translationX: 0 },
+          { state: ACTIVE, absoluteX: startX + travel, absoluteY: y, translationX: travel },
+          {
+            state: END,
+            absoluteX: startX + travel,
+            absoluteY: y,
+            translationX: travel,
+            velocityX: 0,
+            velocityY: 0,
+          },
+        ]),
+      );
+    }
+
+    async function showMeasured() {
+      await show(<ReviewScreen />);
+      fireEvent(screen.getByTestId('review.card'), 'layout', {
+        nativeEvent: { layout: { width: 342, height: 330 } },
+      });
+      // The detector registers the enabled pan from a setImmediate.
+      await act(async () => {
+        await new Promise(setImmediate);
+      });
+    }
+
+    it('a short drag from near the right edge approves what it highlighted', async () => {
+      seed('p1');
+      await showMeasured();
+      await swipe(WINDOW_WIDTH - 50, 31);
+      expect(ledger()).toEqual([expect.objectContaining({ merchant: 'GRAB' })]);
+    });
+
+    it('the same drag from the left is too short, and writes nothing', async () => {
+      seed('p1');
+      await showMeasured();
+      await swipe(40, 31);
+      expect(ledger()).toEqual([]);
+      expect(screen.getByText('GRAB')).toBeTruthy();
+    });
+
+    it('a swipe right with no wallet asks for one and writes nothing', async () => {
+      seed('p1', { wallet_id: null });
+      store.wallets$.set({});
+      financeProjection$.walletsById.set({});
+      await showMeasured();
+      await swipe(100, 200);
+      expect(getOpenSheet()?.kind).toBe('wallet');
+      expect(ledger()).toEqual([]);
+      await act(async () => dismissSheet());
+    });
+  });
+
   it('shows the compact wallet name on the chip and speaks the full one', async () => {
     seed('p1');
     financeProjection$.walletsById[MAYBANK].name.set('Maybank Savings');
@@ -555,7 +767,7 @@ describe('Review deck', () => {
     await show(<ReviewScreen />);
 
     expect(screen.getByText('Needs a wallet')).toBeTruthy();
-    await act(async () => fireEvent.press(screen.getByTestId('review.approve')));
+    await decide('approve');
 
     expect(getOpenSheet()?.kind).toBe('wallet');
     expect(ledger()).toEqual([]);
@@ -580,7 +792,7 @@ describe('Review deck', () => {
     fireEvent.press(screen.getByTestId('review.amount.save'));
     expect(screen.getByText('−RM15.50')).toBeTruthy();
 
-    await act(async () => fireEvent.press(screen.getByTestId('review.approve')));
+    await decide('approve');
     expect(ledger()).toEqual([expect.objectContaining({ amount: '15.50' })]);
   });
 
@@ -590,13 +802,13 @@ describe('Review deck', () => {
     await show(<ReviewScreen />);
 
     fireEvent.press(screen.getByTestId('review.similar'));
-    await act(async () => fireEvent.press(screen.getByTestId('review.approve')));
+    await decide('approve');
     const rules = jest.requireMock('@/lib/store').autoAddRules$ as Rows;
     expect(Object.values(rules.peek())).toEqual([
       expect.objectContaining({ merchant_key: 'grab', wallet_id: MAYBANK, category_id: FOOD }),
     ]);
 
-    await act(async () => fireEvent.press(screen.getByTestId('review.later')));
+    await decide('later');
     expect(store.proposedTransactions$.p2.status.peek()).toBe('later');
     expect(screen.getByText(/^1 approved, 0 not mine, 1 for later\./)).toBeTruthy();
   });
@@ -638,8 +850,8 @@ describe('Recently reviewed', () => {
       </>,
     );
 
-    await act(async () => fireEvent.press(screen.getByTestId('review.approve')));
-    await act(async () => fireEvent.press(screen.getByTestId('review.not-mine')));
+    await decide('approve');
+    await decide('notMine');
 
     expect(screen.getByText('Recently reviewed')).toBeTruthy();
     expect(screen.getByText(/^Today · /)).toBeTruthy();
@@ -752,7 +964,7 @@ describe('Recently reviewed', () => {
 
   it('folds under the deck while captures wait, and Move back to review puts that card on top', async () => {
     seed('p1');
-    reviewed('old', { status: 'rejected', reviewed_at: hoursAgo(25), merchant: 'KEDAI ABC' });
+    reviewed('old', { status: 'rejected', reviewed_at: yesterdayAt(12), merchant: 'KEDAI ABC' });
     await show(<ReviewScreen />);
 
     expect(screen.getByText('GRAB')).toBeTruthy();

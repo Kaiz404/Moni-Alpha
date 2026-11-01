@@ -1,0 +1,7 @@
+# Swipes the top Review card left across the screen, the way a user says Not mine.
+appId: com.anonymous.moni.e2e
+---
+- swipe:
+    start: 80%, 50%
+    end: 5%, 50%
+    duration: 400

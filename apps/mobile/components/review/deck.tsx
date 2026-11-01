@@ -8,9 +8,10 @@ import {
   useMemo,
   useRef,
   useState,
+  type ComponentProps,
   type ReactNode,
 } from 'react';
-import { ActivityIndicator, ScrollView, View, type LayoutChangeEvent } from 'react-native';
+import { ScrollView, View, useWindowDimensions, type LayoutChangeEvent } from 'react-native';
 import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
 import Animated, {
   ReduceMotion,
@@ -27,7 +28,7 @@ import { scheduleOnRN } from 'react-native-worklets';
 
 import { AddedForYou } from '@/components/review/added-for-you';
 import { CaughtUp, NothingToReview } from '@/components/review/caught-up';
-import { EdgeCues } from '@/components/review/edge-cues';
+import { EdgeCues, LATER_ROOM } from '@/components/review/edge-cues';
 import {
   HistoryToggle,
   RecentlyReviewed,
@@ -40,7 +41,6 @@ import {
   type ReviewCardModel,
   type WalletLook,
 } from '@/components/review/review-card';
-import { IconSymbol, type IconSymbolName } from '@/components/ui/icon-symbol';
 import { Press } from '@/components/ui/press';
 import { Text } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
@@ -60,7 +60,6 @@ import {
 import type { FinanceCategory, FinanceWallet } from '@/lib/finance/types';
 import * as haptics from '@/lib/haptics';
 import { springs } from '@/lib/motion/tokens';
-import { budgetLine } from '@/lib/proposals/budget-line';
 import { reviewStatus } from '@/lib/proposals/review-status';
 import { canPairInto, undoPairing } from '@/lib/proposals/pairing';
 import { captureSourceLabel, captureTime } from '@/lib/proposals/capture-source';
@@ -85,17 +84,20 @@ import {
   DECISION_SIDE,
   idle,
   nextSelection,
+  OPEN_ROOM,
   releasedSelection,
   releaseIntent,
   reviewCardReducer,
   selectionIntent,
   selectionReach,
   SWIPE_ENGAGE_SHARE,
+  swipeRoom,
   type EditField,
   type ReviewCardEvent,
   type ReviewCardState,
   type ReviewDecision,
   type SwipeIntent,
+  type SwipeRoom,
   type SwipeSelection,
   type SwipeSide,
 } from '@/lib/proposals/review-card-state';
@@ -113,19 +115,33 @@ import { lastWalletForMerchant, resolveInitialWalletId } from '@/lib/wallets/pro
 /** A Later row snoozed past any real date still counts as unreviewed. */
 const END_OF_TIME = new Date(8.64e15);
 const UNDER_SCALE = 0.96;
+/** A taller card underneath would show around the top card, so it waits unseen until the top card moves. */
+const UNDER_REVEAL_REACH = 0.08;
 /** `XA-Review` tilts the card 12° per card width it travels. */
 const TILT_PER_WIDTH_DEG = 12;
-/** Room under the card for the Later cue. */
-const LATER_ROOM = 56;
-/** The board's 150 under its 480 card: the Later cue, then room for the toast above the buttons. */
-const BELOW_CARD = 150;
-/** Below this the card gives up the toast room before its content is cut. */
-const CARD_MIN = 420;
+const CARD_INSET = 24;
+const CARD_MARGIN = 8;
 const LIFT = '0 12px 32px rgba(23,24,26,0.18)';
-/** A card this many of its own widths or heights away is off the screen. */
+/** A card this many of its own widths, or of the deck's heights, away is off the screen. */
 const OFFSTAGE_X = 1.6;
 const OFFSTAGE_Y = 1.4;
 const ARRIVE_FADE_MS = 180;
+
+const ignore = () => {};
+/** The card underneath takes no touches, so nothing here ever runs. */
+const UNDER_HANDLERS: ReviewCardHandlers = {
+  onEdit: ignore,
+  onCancelEdit: ignore,
+  onSaveMerchant: ignore,
+  onSaveAmount: ignore,
+  onPickType: ignore,
+  onPickCategory: ignore,
+  onPickWallet: ignore,
+  onPickDestination: ignore,
+  onToggleSimilar: ignore,
+  onPair: ignore,
+  onDecide: ignore,
+};
 
 const noExit = () => ({ id: '', flown: false, done: false });
 
@@ -309,100 +325,110 @@ function walletIdOf(proposal: ProposedTransaction, edits: ReviewEdits, wallets: 
     : resolveInitialWalletId(proposal, wallets, getDefaultWalletId());
 }
 
-function DeckButton({
-  decision,
-  label,
-  accessibilityLabel,
-  icon,
-  armed,
-  busy,
-  disabled,
-  tone,
-  onPress,
-}: {
-  decision: ReviewDecision;
-  label: string;
-  accessibilityLabel: string;
-  icon: IconSymbolName;
-  armed: boolean;
-  busy: boolean;
-  disabled: boolean;
-  tone: 'sand' | 'mint' | 'lemon';
-  onPress: () => void;
-}) {
-  const tokens = useThemeTokens();
-  const fill = { sand: 'bg-sand', mint: 'bg-mint', lemon: 'bg-lemon' }[tone];
-  const pressed = { sand: 'bg-hairline', mint: 'bg-mint-pressed', lemon: 'bg-hairline' }[tone];
-  const ink = tone === 'sand' ? tokens.foreground : tokens.onPastel;
-  return (
-    <Press
-      testID={tid('review', decision === 'notMine' ? 'not-mine' : decision)}
-      onPress={onPress}
-      disabled={disabled}
-      accessibilityLabel={accessibilityLabel}
-      accessibilityState={{ disabled, busy }}
-      radius={{ rest: 26, pressed: 16 }}
-      pressedClassName={pressed}
-      className={`h-[52px] min-w-0 flex-1 flex-row items-center justify-center gap-1.5 px-1.5 ${fill} ${armed ? 'border-[3px] border-foreground' : ''}`}
-    >
-      {busy ? (
-        <ActivityIndicator
-          size={18}
-          color={ink}
-        />
-      ) : (
-        <IconSymbol
-          name={icon}
-          size={20}
-          color={ink}
-        />
-      )}
-      <Text
-        className={`text-[15px] leading-[21px] font-display-semibold ${tone === 'sand' ? 'text-foreground' : 'text-on-pastel'}`}
-        numberOfLines={1}
-      >
-        {label}
-      </Text>
-    </Press>
-  );
+/** How much of the way the card underneath is to taking over, 0 to 1. */
+function underReach(
+  coveredBy: string | null,
+  topId: SharedValue<string | null>,
+  x: SharedValue<number>,
+  y: SharedValue<number>,
+  arrive: SharedValue<number>,
+  width: number,
+) {
+  'worklet';
+  // Until `topId` catches up, x and y still belong to the card that just left.
+  if (topId.get() !== coveredBy) return 0;
+  const travel = Math.max(Math.abs(x.get()), Math.abs(y.get()));
+  return Math.min(1, Math.max(arrive.get(), travel / (width * SWIPE_ENGAGE_SHARE)));
 }
 
-function UnderCard({
+/**
+ * One card of the deck, under a key of its own, so the card underneath is the same mounted card
+ * when it comes on top: `topId` flips with the x and y reset, so nothing shows between the two.
+ */
+function DeckSlot({
+  id,
+  coveredBy,
+  topId,
   x,
   y,
   arrive,
   width,
-  height,
+  gesture,
+  entering,
+  onHeight,
+  lift,
   children,
 }: {
+  id: string;
+  /** The card on top of this one, or null for the top card. */
+  coveredBy: string | null;
+  topId: SharedValue<string | null>;
   x: SharedValue<number>;
   y: SharedValue<number>;
   /** 1 while a restored card is on its way home, so the card below settles as it lands. */
   arrive: SharedValue<number>;
   width: number;
-  height: number;
-  /** The face of the card a restored card is covering. Otherwise the under-card is blank (D7). */
-  children?: ReactNode;
+  gesture: ComponentProps<typeof GestureDetector>['gesture'];
+  entering: ComponentProps<typeof Animated.View>['entering'];
+  onHeight: (id: string, height: number) => void;
+  /** Top card only. Beside the card, not around it, so the card keeps its place when it comes on top. */
+  lift?: { shadow: ReactNode; ring: ReactNode };
+  children: ReactNode;
 }) {
-  const style = useAnimatedStyle(() => {
-    const reach = Math.min(
-      1,
-      Math.max(
-        arrive.get(),
-        Math.abs(x.get()) / (width * SWIPE_ENGAGE_SHARE),
-        Math.max(0, y.get()) / (height * SWIPE_ENGAGE_SHARE),
-      ),
-    );
-    return { transform: [{ scale: UNDER_SCALE + (1 - UNDER_SCALE) * reach }] };
+  const motion = useAnimatedStyle(() => {
+    if (topId.get() === id) {
+      return {
+        transform: [
+          { translateX: x.get() },
+          { translateY: y.get() },
+          { rotate: `${width ? (x.get() / width) * TILT_PER_WIDTH_DEG : 0}deg` },
+          { scale: 1 },
+        ],
+      };
+    }
+    return {
+      transform: [
+        { translateX: 0 },
+        { translateY: 0 },
+        { rotate: '0deg' },
+        { scale: UNDER_SCALE + (1 - UNDER_SCALE) * underReach(coveredBy, topId, x, y, arrive, width) },
+      ],
+    };
   });
+  const face = useAnimatedStyle(() => ({
+    opacity:
+      topId.get() === id
+        ? 1
+        : Math.min(1, underReach(coveredBy, topId, x, y, arrive, width) / UNDER_REVEAL_REACH),
+  }));
+  const top = coveredBy === null;
   return (
-    <Animated.View
-      testID={tid('review', 'next-card')}
-      className="absolute inset-0 rounded-card bg-sand-light"
-      style={[{ transformOrigin: '50% 90%' }, style]}
+    <View
+      pointerEvents={top ? 'box-none' : 'none'}
+      accessibilityElementsHidden={!top}
+      importantForAccessibility={top ? 'auto' : 'no-hide-descendants'}
+      className="absolute inset-y-0 justify-center"
+      style={{ left: CARD_INSET, width, paddingBottom: LATER_ROOM }}
     >
-      {children}
-    </Animated.View>
+      <GestureDetector gesture={gesture}>
+        <Animated.View
+          testID={tid('review', top ? 'card' : 'next-card')}
+          style={[{ transformOrigin: '50% 90%' }, motion]}
+          onLayout={(event) => onHeight(id, event.nativeEvent.layout.height)}
+        >
+          <Animated.View style={face}>
+            <Animated.View
+              style={{ transformOrigin: '50% 90%' }}
+              entering={entering}
+            >
+              {lift?.shadow}
+              {children}
+              {lift?.ring}
+            </Animated.View>
+          </Animated.View>
+        </Animated.View>
+      </GestureDetector>
+    </View>
   );
 }
 
@@ -414,6 +440,7 @@ function useCardLift(
   x: SharedValue<number>,
   y: SharedValue<number>,
   selection: SharedValue<SwipeSelection>,
+  room: SharedValue<SwipeRoom>,
   held: SharedValue<boolean>,
   size: { width: number; height: number; canApprove: boolean },
 ) {
@@ -425,7 +452,13 @@ function useCardLift(
   const shadow = useAnimatedStyle(() => ({ opacity: held.get() ? 1 : 0 }));
   const ring = useAnimatedStyle(() => {
     const current = selection.get();
-    const reach = selectionReach(current, { dx: x.get(), dy: y.get(), width, height });
+    const reach = selectionReach(current, {
+      dx: x.get(),
+      dy: y.get(),
+      width,
+      height,
+      room: room.get(),
+    });
     const now = selectionIntent(current, canApprove);
     const armed = now === 'approve' || now === 'notMine' || now === 'later';
     const toward =
@@ -517,6 +550,7 @@ export function ReviewDeck({ session }: { session: ReviewSession }) {
     [reopen],
   );
   const top = queue[0];
+  const under = queue[1];
   const [edits, setEdits] = useState<Record<string, ReviewEdits>>({});
   const [duplicates, setDuplicates] = useState<Record<string, DuplicateMatch | null>>({});
   const [card, setCard] = useState<ReviewCardState>(idle);
@@ -534,7 +568,9 @@ export function ReviewDeck({ session }: { session: ReviewSession }) {
   const y = useSharedValue(0);
   const startX = useSharedValue(0);
   const startY = useSharedValue(0);
+  const room = useSharedValue<SwipeRoom>(OPEN_ROOM);
   const selection = useSharedValue<SwipeSelection>(null);
+  const topId = useSharedValue<string | null>(top?.id ?? null);
   const held = useSharedValue(false);
   const arrive = useSharedValue(0);
   const exit = useRef(noExit());
@@ -542,38 +578,46 @@ export function ReviewDeck({ session }: { session: ReviewSession }) {
   const [arrival, setArrival] = useState<{
     id: string;
     side: SwipeSide | null;
-    overId: string | undefined;
   } | null>(null);
 
   const shownId = useRef<string | undefined>(undefined);
   useLayoutEffect(() => {
     if (shownId.current === top?.id) return;
     shownId.current = top?.id;
+    topId.set(top?.id ?? null);
     x.set(0);
     y.set(0);
     selection.set(null);
     cardRef.current = idle;
     setCard(idle);
-  }, [top?.id, x, y, selection]);
+  }, [top?.id, topId, x, y, selection]);
 
+  const checkDuplicate = useCallback((proposal: ProposedTransaction) => {
+    void duplicateOf(proposal)
+      .catch(() => null)
+      .then((match) => setDuplicates((all) => ({ ...all, [proposal.id]: match })));
+  }, []);
+  // The next card shows its warning before it is on top. On top it is checked again, because
+  // approving the card before it can be what made it a duplicate.
   useEffect(() => {
-    if (!top || top.id in duplicates) return;
-    let live = true;
-    void duplicateOf(top)
-      .then((match) => live && setDuplicates((all) => ({ ...all, [top.id]: match })))
-      .catch(() => live && setDuplicates((all) => ({ ...all, [top.id]: null })));
-    return () => {
-      live = false;
-    };
-  }, [top, duplicates]);
+    if (top) checkDuplicate(top);
+  }, [top, checkDuplicate]);
+  useEffect(() => {
+    if (under) checkDuplicate(under);
+  }, [under, checkDuplicate]);
 
   const topEdits = top ? (edits[top.id] ?? {}) : {};
   const topWalletId = top ? walletIdOf(top, topEdits, wallets) : null;
   const canApprove = !!topWalletId;
-  const cardWidth = Math.max(0, area.width - 48);
-  const room = area.height - 8;
-  const cardHeight = Math.max(0, Math.min(room - LATER_ROOM, CARD_MIN), room - BELOW_CARD);
-  const lift = useCardLift(x, y, selection, held, {
+  const cardWidth = Math.max(0, area.width - CARD_INSET * 2);
+  const [heights, setHeights] = useState<Record<string, number>>({});
+  const cardHeight = top ? (heights[top.id] ?? 0) : 0;
+  const cardMaxHeight = Math.max(0, area.height - LATER_ROOM - CARD_MARGIN * 2);
+  const screen = useWindowDimensions();
+  const onHeight = useCallback((id: string, height: number) => {
+    setHeights((all) => (all[id] === height ? all : { ...all, [id]: height }));
+  }, []);
+  const lift = useCardLift(x, y, selection, room, held, {
     width: cardWidth,
     height: cardHeight,
     canApprove,
@@ -696,7 +740,7 @@ export function ReviewDeck({ session }: { session: ReviewSession }) {
         // The restored card takes over x and y, so a card still flying never reports landing.
         if (flying) finishExit('flown');
         const side = outcome.action === 'pair' ? null : DECISION_SIDE[outcome.action];
-        setArrival({ id, side, overId: flying ? undefined : shownId.current });
+        setArrival({ id, side });
         const landed = (finished?: boolean) => {
           'worklet';
           if (finished) scheduleOnRN(endArrival);
@@ -817,28 +861,41 @@ export function ReviewDeck({ session }: { session: ReviewSession }) {
     [send, run, pickWallet],
   );
 
-  const press = useCallback(
+  const decideByAction = useCallback(
     (decision: ReviewDecision) => {
-      // A second tap while the card is still flying would decide it twice.
+      // A second action while the card is still flying would decide it twice.
       if (exit.current.id === top?.id) return;
-      const next = send({ type: 'press', decision, canApprove });
+      const next = send({ type: 'decide', decision, canApprove });
       if (next.kind === 'saving') {
         selection.set(releasedSelection(null, decision));
-        flyOut(decision, x, y, cardWidth, cardHeight, 0, 0, onFlown);
+        flyOut(decision, x, y, cardWidth, area.height, 0, 0, onFlown);
         void run(decision);
       } else if (next.kind === 'needsInput') {
         void pickWallet(next.field);
       }
     },
-    [top?.id, send, canApprove, selection, x, y, cardWidth, cardHeight, onFlown, run, pickWallet],
+    [top?.id, send, canApprove, selection, x, y, cardWidth, area.height, onFlown, run, pickWallet],
   );
 
-  const dragEnabled = !!top && canDrag(card) && cardWidth > 0;
+  const deckHeight = area.height;
+  const screenWidth = screen.width;
+  const screenHeight = screen.height;
+  const dragEnabled = !!top && canDrag(card) && cardWidth > 0 && cardHeight > 0;
+  const noPan = useMemo(() => Gesture.Pan().enabled(false), []);
   const pan = useMemo(
     () =>
       Gesture.Pan()
         .enabled(dragEnabled)
         .minDistance(6)
+        .withTestId('review.pan')
+        .onBegin((e) => {
+          room.set(
+            swipeRoom(
+              { x: e.absoluteX, y: e.absoluteY },
+              { width: screenWidth, height: screenHeight },
+            ),
+          );
+        })
         .onStart(() => {
           startX.set(x.get());
           startY.set(y.get());
@@ -857,6 +914,7 @@ export function ReviewDeck({ session }: { session: ReviewSession }) {
             dy: rawY,
             width: cardWidth,
             height: cardHeight,
+            room: room.get(),
           });
           if (after === before) return;
           selection.set(after);
@@ -876,7 +934,7 @@ export function ReviewDeck({ session }: { session: ReviewSession }) {
           });
           selection.set(releasedSelection(current, final));
           if (final === 'approve' || final === 'notMine' || final === 'later') {
-            flyOut(final, x, y, cardWidth, cardHeight, e.velocityX, e.velocityY, onFlown);
+            flyOut(final, x, y, cardWidth, deckHeight, e.velocityX, e.velocityY, onFlown);
           } else {
             x.set(withSpring(0, { ...springs.throw, velocity: e.velocityX }));
             y.set(withSpring(0, { ...springs.throw, velocity: e.velocityY }));
@@ -886,18 +944,8 @@ export function ReviewDeck({ session }: { session: ReviewSession }) {
         .onFinalize(() => {
           held.set(false);
         }),
-    [dragEnabled, canApprove, cardWidth, cardHeight, x, y, startX, startY, selection, held, onIntent, onRelease, onFlown],
+    [dragEnabled, canApprove, cardWidth, cardHeight, deckHeight, screenWidth, screenHeight, x, y, startX, startY, room, selection, held, onIntent, onRelease, onFlown],
   );
-
-  const topStyle = useAnimatedStyle(() => ({
-    transform: [
-      { translateX: x.get() },
-      { translateY: y.get() },
-      {
-        rotate: `${cardWidth ? (x.get() / cardWidth) * TILT_PER_WIDTH_DEG : 0}deg`,
-      },
-    ],
-  }));
 
   const onLayout = (event: LayoutChangeEvent) => {
     const { width, height } = event.nativeEvent.layout;
@@ -917,15 +965,6 @@ export function ReviewDeck({ session }: { session: ReviewSession }) {
       const walletId = walletIdOf(proposal, own, wallets);
       const destinationId =
         own.transferToWalletId !== undefined ? own.transferToWalletId : proposal.transferToWalletId;
-      const budget =
-        type === 'expense' && category
-          ? budgetLine(
-              category.name,
-              progress.find((p) => p.categoryId === category.id && p.currency === proposal.currency),
-              amountMinor,
-              proposal.currency,
-            )
-          : null;
       return {
         proposal: proposal,
         type,
@@ -950,24 +989,19 @@ export function ReviewDeck({ session }: { session: ReviewSession }) {
         amountMinor,
         category: category ? { name: category.name, icon: category.icon, color: category.color } : null,
         wallet: walletLook(wallets, walletId),
+        canApprove: !!walletId,
         destination: type === 'transfer' ? walletLook(wallets, destinationId) : undefined,
         evidence:
-          countedOnceText(proposal) ??
-          (duplicate ? duplicateText(duplicate, proposal.currency) : proposal.aiReasoning),
+          countedOnceText(proposal) ?? (duplicate ? duplicateText(duplicate, proposal.currency) : null),
         pair: pairControl(proposal, duplicate),
         // A likely duplicate is not a reason to stop asking about the merchant.
         similar: proposal.sourceType === 'notification' && !own.type && !duplicate ? !!own.similar : null,
-        budget,
       };
     },
-    [edits, categories, duplicates, wallets, progress, lookups, ledger],
+    [edits, categories, duplicates, wallets, lookups, ledger],
   );
   const model = useMemo(() => (top ? modelOf(top) : null), [top, modelOf]);
-  const coveredId = arrival?.overId;
-  const coveredModel = useMemo(() => {
-    const covered = queue.find((p) => p.id === coveredId);
-    return covered ? modelOf(covered) : null;
-  }, [queue, coveredId, modelOf]);
+  const underModel = useMemo(() => (under ? modelOf(under) : null), [under, modelOf]);
 
   const editing = card.kind === 'editing' ? card.field : null;
   const handlers = useMemo<ReviewCardHandlers | null>(() => {
@@ -988,8 +1022,9 @@ export function ReviewDeck({ session }: { session: ReviewSession }) {
         setEdit(top.id, { similar: next });
       },
       onPair: () => void pair(),
+      onDecide: decideByAction,
     };
-  }, [top, edits, send, setEdit, pickType, pickCategory, pickWallet, pair]);
+  }, [top, edits, send, setEdit, pickType, pickCategory, pickWallet, pair, decideByAction]);
 
   if (!top) {
     const recentlyReviewed = (
@@ -1075,18 +1110,8 @@ export function ReviewDeck({ session }: { session: ReviewSession }) {
     );
   }
 
-  const topType = reviewType(top, topEdits);
-  const approveLabel =
-    canApprove && model
-      ? `Approve ${formatSignedMoney(
-          topType === 'income' || topType === 'transfer' ? topType : 'expense',
-          model.amountMinor,
-          top.currency,
-        )}`
-      : 'Pick a wallet first';
-  const armed = armedDecision(card);
-  const saving = card.kind === 'saving' ? card.decision : null;
   const locked = card.kind === 'saving' || card.kind === 'editing';
+  const centerY = (area.height - LATER_ROOM) / 2;
 
   return (
     <GestureHandlerRootView className="flex-1">
@@ -1097,78 +1122,73 @@ export function ReviewDeck({ session }: { session: ReviewSession }) {
       >
         {cardWidth > 0 ? (
           <>
-            <View
-              className="absolute"
-              style={{ left: 24, top: 8, width: cardWidth, height: cardHeight }}
-            >
-              {queue.length > 1 ? (
-                <UnderCard
-                  x={x}
-                  y={y}
-                  arrive={arrive}
-                  width={cardWidth}
-                  height={cardHeight}
-                >
-                  {coveredModel && handlers ? (
-                    <View
-                      pointerEvents="none"
-                      className="absolute inset-0"
-                      accessibilityElementsHidden
-                      importantForAccessibility="no-hide-descendants"
-                    >
-                      <ReviewCard
-                        model={coveredModel}
-                        editing={null}
-                        handlers={handlers}
-                      />
-                    </View>
-                  ) : null}
-                </UnderCard>
-              ) : null}
-              {model && handlers ? (
-                <GestureDetector gesture={pan}>
-                  <Animated.View
-                    key={top.id}
-                    testID={tid('review', 'card')}
-                    className="absolute inset-0"
-                    style={[{ transformOrigin: '50% 90%' }, topStyle]}
-                  >
-                    <Animated.View
-                      className="absolute inset-0"
-                      style={{ transformOrigin: '50% 90%' }}
-                      entering={
-                        arrival?.id === top.id
-                          ? arriveFrom(arrival.side, cardWidth, cardHeight, reduceMotion)
-                          : undefined
-                      }
-                    >
-                      {lift.shadow}
-                      <ReviewCard
-                        model={model}
-                        editing={editing}
-                        handlers={handlers}
-                      />
-                      {lift.ring}
-                    </Animated.View>
-                  </Animated.View>
-                </GestureDetector>
-              ) : null}
-            </View>
-            {editing ? null : (
+            {under && underModel ? (
+              <DeckSlot
+                key={under.id}
+                id={under.id}
+                coveredBy={top.id}
+                topId={topId}
+                x={x}
+                y={y}
+                arrive={arrive}
+                width={cardWidth}
+                gesture={noPan}
+                entering={undefined}
+                onHeight={onHeight}
+              >
+                <ReviewCard
+                  model={underModel}
+                  editing={null}
+                  handlers={UNDER_HANDLERS}
+                  canDecide={false}
+                  maxHeight={cardMaxHeight}
+                />
+              </DeckSlot>
+            ) : null}
+            {model && handlers ? (
+              <DeckSlot
+                key={top.id}
+                id={top.id}
+                coveredBy={null}
+                topId={topId}
+                x={x}
+                y={y}
+                arrive={arrive}
+                width={cardWidth}
+                gesture={pan}
+                entering={
+                  arrival?.id === top.id
+                    ? arriveFrom(arrival.side, cardWidth, area.height, reduceMotion)
+                    : undefined
+                }
+                onHeight={onHeight}
+                lift={lift}
+              >
+                <ReviewCard
+                  model={model}
+                  editing={editing}
+                  handlers={handlers}
+                  canDecide={!locked}
+                  maxHeight={cardMaxHeight}
+                />
+              </DeckSlot>
+            ) : null}
+            {editing || cardHeight === 0 ? null : (
               <EdgeCues
                 x={x}
                 y={y}
                 selection={selection}
+                room={room}
                 width={cardWidth}
                 height={cardHeight}
-                cardTop={8}
+                centerY={centerY}
                 canApprove={canApprove}
               />
             )}
           </>
         ) : null}
       </View>
-      <View className="gap-2 px-5 pb-3 pt-1">
+      <View className="min-h-[60px] justify-end gap-2 px-5 pb-3 pt-1">
         {card.kind === 'error' ? (
           <Text
             variant="meta"
@@ -1179,41 +1199,6 @@ export function ReviewDeck({ session }: { session: ReviewSession }) {
             {card.message}
           </Text>
         ) : null}
-        <View className="flex-row gap-2">
-          <DeckButton
-            decision="notMine"
-            label="Not mine"
-            accessibilityLabel="Not mine. Nothing gets added"
-            icon="close"
-            tone="sand"
-            armed={armed === 'notMine'}
-            busy={saving === 'notMine'}
-            disabled={locked}
-            onPress={() => press('notMine')}
-          />
-          <DeckButton
-            decision="later"
-            label="Later"
-            accessibilityLabel="Later. Save it for later"
-            icon="clock-outline"
-            tone="sand"
-            armed={armed === 'later'}
-            busy={saving === 'later'}
-            disabled={locked}
-            onPress={() => press('later')}
-          />
-          <DeckButton
-            decision="approve"
-            label={canApprove ? 'Approve' : 'Pick wallet'}
-            accessibilityLabel={approveLabel}
-            icon={canApprove ? 'check' : 'wallet-outline'}
-            tone={canApprove ? 'mint' : 'lemon'}
-            armed={armed === 'approve'}
-            busy={saving === 'approve'}
-            disabled={locked}
-            onPress={() => press('approve')}
-          />
-        </View>
         {reviewedCount ? (
           <HistoryToggle
             count={reviewedCount}

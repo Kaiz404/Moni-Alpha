@@ -154,7 +154,7 @@ Run a suite with `run-flows.sh`:
 apps/mobile/scripts/device/run-flows.sh --tag smoke                       # the smoke suite on the full seed
 apps/mobile/scripts/device/run-flows.sh --area budget --out /tmp/budget   # one area, screenshots copied to /tmp/budget
 apps/mobile/scripts/device/run-flows.sh --seed empty --area home          # the seed-empty flows in one area
-apps/mobile/scripts/device/run-flows.sh --sha <key> .maestro/flows/review/buttons.yaml
+apps/mobile/scripts/device/run-flows.sh --sha <key> .maestro/flows/review/decide-all.yaml
 ```
 
 - `run-flows.sh [--sha <key>] [--seed full|empty] [--out <dir>] [--tag <tag>]... [--area <area>]... [<flow or dir>...]` takes the device lock through `with-device.sh`, which runs `doctor.sh` and honours the hold file. It then installs the key with `install.sh` (the `HEAD` SHA by default), resets the seed with `seed.mjs --reset`, clears the app's data with `pm clear` and grants the permissions again, and pushes `.maestro/fixtures/*.png` to `/sdcard/Pictures/moni-e2e/` for the Scan flows. Then it runs one `maestro test` with JUnit output and `E2E_EMAIL` and `E2E_PASSWORD` from `.env.e2e`.

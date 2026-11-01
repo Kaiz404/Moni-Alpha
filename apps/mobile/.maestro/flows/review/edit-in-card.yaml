@@ -37,8 +37,7 @@ tags:
 - assertVisible: '.*RM15\.50'
 - tapOn:
     id: review.similar
-- tapOn:
-    id: review.approve
+- runFlow: ../../subflows/review-approve.yaml
 - extendedWaitUntil:
     visible: 'Approved .* .RM15\.50'
     timeout: 3000

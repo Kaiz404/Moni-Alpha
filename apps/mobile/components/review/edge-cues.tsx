@@ -2,28 +2,36 @@ import { View, type ViewStyle } from 'react-native';
 import Animated, {
   interpolateColor,
   useAnimatedStyle,
+  withSpring,
   type SharedValue,
 } from 'react-native-reanimated';
 
 import { IconSymbol, type IconSymbolName } from '@/components/ui/icon-symbol';
 import { Text } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
+import { springs } from '@/lib/motion/tokens';
 import {
   selectionReach,
+  type SwipeRoom,
   type SwipeSelection,
   type SwipeSide,
 } from '@/lib/proposals/review-card-state';
 
 const SIDE_WIDTH = 28;
 const SIDE_LENGTH = 128;
+const LATER_GAP = 12;
+const LATER_HEIGHT = 32;
+/** What the Later cue needs under a card, so the deck can keep it clear. */
+export const LATER_ROOM = LATER_GAP + LATER_HEIGHT;
 /** Past this much fill the label switches to the ink that reads on the action colour. */
 const INK_SWITCH = 0.55;
 
 type CueProps = {
   x: SharedValue<number>;
   y: SharedValue<number>;
-  /** The one answer to which side is lit, so a cue can't disagree with the card or the buttons. */
+  /** The one answer to which side is lit, so a cue can't disagree with the card. */
   selection: SharedValue<SwipeSelection>;
+  room: SharedValue<SwipeRoom>;
   width: number;
   height: number;
   canApprove: boolean;
@@ -37,14 +45,14 @@ type Look = { canvas: string; border: string; hex: string };
  */
 function useCue(
   side: SwipeSide,
-  { x, y, selection, width, height, canApprove }: CueProps,
+  { x, y, selection, room, width, height, canApprove }: CueProps,
   look: Look,
 ) {
   const read = () => {
     'worklet';
     const dy = y.get();
     const current = selection.get();
-    const reach = selectionReach(current, { dx: x.get(), dy, width, height });
+    const reach = selectionReach(current, { dx: x.get(), dy, width, height, room: room.get() });
     const mine = current?.side === side;
     const p = mine ? reach : 0;
     const full = mine && current.engaged;
@@ -194,10 +202,16 @@ function Cue({
  * draws them: each fills toward its colour as the card moves its way and swaps its arrow for
  * the action icon once armed.
  */
-export function EdgeCues(props: CueProps & { cardTop: number }) {
+export function EdgeCues(props: CueProps & { centerY: number }) {
   const tokens = useThemeTokens();
   const base = { canvas: tokens.canvas, border: tokens.border };
-  const sideTop = props.cardTop + props.height / 2 - SIDE_LENGTH / 2;
+  const sideTop = props.centerY - SIDE_LENGTH / 2;
+  const laterTop = props.centerY + props.height / 2 + LATER_GAP;
+  // Cards differ in height, so Later moves to the new card's edge instead of jumping there.
+  const laterAt = useAnimatedStyle(
+    () => ({ transform: [{ translateY: withSpring(laterTop, springs.sheet) }] }),
+    [laterTop],
+  );
 
   return (
     <View
@@ -225,9 +239,9 @@ export function EdgeCues(props: CueProps & { cardTop: number }) {
         label="Not mine"
         onInk={tokens.primaryForeground}
       />
-      <View
-        className="absolute inset-x-0 items-center"
-        style={{ top: props.cardTop + props.height + 12 }}
+      <Animated.View
+        className="absolute inset-x-0 top-0 items-center"
+        style={laterAt}
       >
         <Cue
           side="down"
@@ -239,7 +253,7 @@ export function EdgeCues(props: CueProps & { cardTop: number }) {
           label="Later"
           onInk={tokens.onPastel}
         />
-      </View>
+      </Animated.View>
     </View>
   );
 }

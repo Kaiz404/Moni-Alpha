@@ -18,11 +18,10 @@ tags:
       id: review.card
     timeout: 10000
 - assertVisible:
-    id: review.not-mine
-- assertVisible:
-    id: review.later
-- assertVisible:
-    id: review.approve
+    id: review.summary
+- assertVisible: Not mine
+- assertVisible: Later
+- assertVisible: Approve
 - takeScreenshot: smoke-review
 - pressKey: Back
 - assertVisible:

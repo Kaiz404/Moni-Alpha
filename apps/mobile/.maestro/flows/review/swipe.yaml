@@ -1,4 +1,4 @@
-# R1 lanes 3 to 6: swipe the top card right, left, down, and a short slow drag that snaps back.
+# R1 lanes 3 to 6: swipe the top card right from near the edge, left, down, and a short slow drag that snaps back.
 # Needs the full seed's four pending captures. It decides the first three, which each have a wallet.
 # Run: scripts/device/run-flows.sh .maestro/flows/review/swipe.yaml
 appId: com.anonymous.moni.e2e
@@ -17,21 +17,21 @@ tags:
     id: review.next-card
 - takeScreenshot: r1-l2-pair
 
-# A short, slow drag stays short of the 45 percent an option takes: the card comes back and nothing is written.
+# A short, slow drag from the centre stays short of the 60 percent of the room to the edge that an option takes there: the card comes back and nothing is written.
 - swipe:
-    start: 50%, 40%
-    end: 62%, 40%
+    start: 50%, 50%
+    end: 62%, 50%
     duration: 2000
 - assertVisible:
     id: review.card
 - assertNotVisible: 'Approved .*'
 - takeScreenshot: r1-l6-snap-back
 
-# Starts near the card's far edge: from its centre a swipe ends barely past the 45 percent.
+# Starts near the right edge and moves slowly, so distance alone has to light Approve with the little room there is.
 - swipe:
-    start: 15%, 40%
-    end: 90%, 40%
-    duration: 400
+    start: 86%, 50%
+    end: 98%, 50%
+    duration: 800
 - extendedWaitUntil:
     visible: 'Approved .*'
     timeout: 3000
@@ -40,8 +40,8 @@ tags:
 - takeScreenshot: r1-l3-swipe-right
 
 - swipe:
-    start: 85%, 40%
-    end: 10%, 40%
+    start: 85%, 50%
+    end: 10%, 50%
     duration: 400
 - extendedWaitUntil:
     visible: 1 not mine
