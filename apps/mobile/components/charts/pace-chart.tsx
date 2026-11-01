@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { View } from 'react-native';
 import {
   Gesture,
@@ -18,6 +18,7 @@ import { scheduleOnRN } from 'react-native-worklets';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Text } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
+import type { SpendHistory } from '@/lib/finance/spend-history';
 import { scrubStep } from '@/lib/haptics';
 import { springs } from '@/lib/motion/tokens';
 import { tid, type Screen } from '@/lib/test-ids';
@@ -25,12 +26,12 @@ import { tid, type Screen } from '@/lib/test-ids';
 import {
   AXIS_LABEL_OVERHANG,
   AXIS_WIDTH,
-  BAR_WIDTH,
   PLOT_HEIGHT,
   calloutLeft,
   nearestIndex,
   paceGeometry,
   polylineLength,
+  rangeGeometry,
   type DaySeries,
   type PaceChartMode,
   type PaceGeometry,
@@ -77,14 +78,58 @@ export function PaceChart({
   endsToday = true,
   what,
 }: PaceChartProps) {
+  const geometryOf = useCallback(
+    (width: number) =>
+      paceGeometry({ mode, series, budget, currency, safePerDay, width, endsToday, what }),
+    [mode, series, budget, currency, safePerDay, endsToday, what],
+  );
+  return (
+    <Plot
+      screen={screen}
+      mode={mode}
+      geometryOf={geometryOf}
+    />
+  );
+}
+
+/** The same plot over a chart range: running total or bars, with no budget. */
+export function RangeChart({
+  screen,
+  mode,
+  history,
+  currency,
+}: {
+  screen: Screen;
+  mode: PaceChartMode;
+  history: SpendHistory;
+  currency: string;
+}) {
+  const geometryOf = useCallback(
+    (width: number) => rangeGeometry({ mode, history, currency, width }),
+    [mode, history, currency],
+  );
+  return (
+    <Plot
+      screen={screen}
+      mode={mode}
+      geometryOf={geometryOf}
+    />
+  );
+}
+
+function Plot({
+  screen,
+  mode,
+  geometryOf,
+}: {
+  screen: Screen;
+  mode: PaceChartMode;
+  geometryOf: (width: number) => PaceGeometry;
+}) {
   const tokens = useThemeTokens();
   const reduceMotion = useReducedMotion();
   const [width, setWidth] = useState(DEFAULT_WIDTH);
-  const geometry = useMemo(
-    () =>
-      paceGeometry({ mode, series, budget, currency, safePerDay, width, endsToday, what }),
-    [mode, series, budget, currency, safePerDay, width, endsToday, what],
-  );
+  const geometry = useMemo(() => geometryOf(width), [geometryOf, width]);
   const last = geometry.points.length - 1;
   const [picked, setPicked] = useState<number | null>(null);
   const selected = Math.min(picked ?? last, last);
@@ -455,6 +500,7 @@ function DailyBars({
         <Bar
           key={index}
           x={bar.x}
+          barWidth={g.barWidth}
           top={bar.top}
           base={g.baseline - 0.7}
           even={g.budgetY}
@@ -466,9 +512,9 @@ function DailyBars({
       ))}
       {g.safe ? (
         <Rect
-          x={g.safe.x - BAR_WIDTH / 2}
+          x={g.safe.x - g.barWidth / 2}
           y={g.safe.top}
-          width={BAR_WIDTH}
+          width={g.barWidth}
           height={g.safe.height}
           rx={6}
           fill={tokens.card}
@@ -494,6 +540,7 @@ function DailyBars({
 
 function Bar({
   x,
+  barWidth,
   top,
   base,
   even,
@@ -503,6 +550,7 @@ function Bar({
   coral,
 }: {
   x: number;
+  barWidth: number;
   top: number;
   base: number;
   even: number | null;
@@ -530,17 +578,17 @@ function Bar({
   return (
     <>
       <AnimatedRect
-        x={x - BAR_WIDTH / 2}
-        width={BAR_WIDTH}
-        rx={6}
+        x={x - barWidth / 2}
+        width={barWidth}
+        rx={Math.min(6, barWidth / 2)}
         fill={inkColor}
         animatedProps={ink}
       />
       {even !== null && top < even ? (
         <AnimatedRect
-          x={x - BAR_WIDTH / 2}
-          width={BAR_WIDTH}
-          rx={6}
+          x={x - barWidth / 2}
+          width={barWidth}
+          rx={Math.min(6, barWidth / 2)}
           fill={coral}
           animatedProps={over}
         />

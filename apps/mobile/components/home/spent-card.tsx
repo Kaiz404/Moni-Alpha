@@ -1,16 +1,21 @@
-import { useState } from 'react';
+import type { CurrencyCode } from '@repo/types';
+import { useMemo, useState } from 'react';
 import { View } from 'react-native';
 import Svg, { Circle, Line, Rect } from 'react-native-svg';
 
 import { ChartToggle } from '@/components/charts/chart-toggle';
-import { PaceChart } from '@/components/charts/pace-chart';
+import { PaceChart, RangeChart } from '@/components/charts/pace-chart';
 import { monthFromKey, monthName } from '@/components/charts/pace-geometry';
+import { Segmented } from '@/components/ui/segmented';
 import { Text } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { currencySymbol } from '@/lib/finance/format-money';
+import { spendHistory } from '@/lib/finance/spend-history';
 import { tid } from '@/lib/test-ids';
 
-import type { BudgetMonth } from '@/lib/finance/budget-month';
+import { countsAsSpend, type BudgetMonth } from '@/lib/finance/budget-month';
+import { CHART_RANGES, type ChartRange } from '@/lib/finance/chart-range';
+import type { FinanceTransaction } from '@/lib/finance/types';
 import { leftLine } from '@/lib/finance/spent-summary';
 
 type Mode = 'pace' | 'daily';
@@ -20,26 +25,48 @@ const MODES = [
   { value: 'daily', label: 'Daily' },
 ] as const;
 
+const RANGE_TITLE: Record<Exclude<ChartRange, '1m'>, string> = {
+  '7d': 'Spent in the last 7 days',
+  '30d': 'Spent in the last 30 days',
+  '90d': 'Spent in the last 90 days',
+  '1y': 'Spent in the last year',
+  all: 'Spent, all time',
+};
+
 /** "Spent in October": the Pace / Daily chart, whose callout carries the numbers, then what's left. */
 export function SpentCard({
   month,
   currency,
+  transactions,
+  now,
   after,
 }: {
   month: BudgetMonth;
-  currency: string;
+  currency: CurrencyCode;
+  transactions: readonly FinanceTransaction[];
+  now: Date;
   /** D1 label when no bills strip carries it: "RM40 to Mei". */
   after?: string | null;
 }) {
   const [mode, setMode] = useState<Mode>('pace');
+  const [range, setRange] = useState<ChartRange>('1m');
   const empty = month.spentMinor === 0 && month.budgetMinor === null;
   const line = month.left ? leftLine(month.left, currency, after) : null;
   const chartMonth = monthFromKey(month.month);
   const name = monthName(chartMonth);
+  const title = range === '1m' ? `Spent in ${name}` : RANGE_TITLE[range];
+  const history = useMemo(
+    () => (range === '1m' ? null : spendHistory({ now, range, transactions, currency })),
+    [now, range, transactions, currency],
+  );
+  const everSpent = useMemo(
+    () => transactions.some((transaction) => countsAsSpend(transaction, currency)),
+    [transactions, currency],
+  );
 
   return (
     <View
-      accessibilityLabel={`Spent in ${name}`}
+      accessibilityLabel={title}
       className="gap-2 rounded-card bg-card px-[18px] py-3.5"
     >
       <View className="flex-row items-center justify-between gap-2">
@@ -48,7 +75,7 @@ export function SpentCard({
           className="text-muted"
           accessibilityRole="header"
         >
-          {`Spent in ${name}`}
+          {title}
         </Text>
         <ChartToggle
           screen="home"
@@ -58,7 +85,15 @@ export function SpentCard({
           onChange={setMode}
         />
       </View>
-      {empty ? (
+      {history ? (
+        <RangeChart
+          key={range}
+          screen="home"
+          mode={mode}
+          history={history}
+          currency={currency}
+        />
+      ) : empty ? (
         <EmptyChart
           mode={mode}
           today={month.throughDay}
@@ -76,7 +111,18 @@ export function SpentCard({
           safePerDay={month.left && month.left.perDayMinor > 0 ? month.left.perDayMinor : null}
         />
       )}
-      {line ? (
+      {everSpent ? (
+        <Segmented
+          screen="home"
+          name="range"
+          size="compact"
+          options={CHART_RANGES}
+          value={range}
+          accessibilityLabel="Time range"
+          onChange={setRange}
+        />
+      ) : null}
+      {line && !history ? (
         <Text
           testID={tid('home', 'spent', 'left')}
           variant="meta"

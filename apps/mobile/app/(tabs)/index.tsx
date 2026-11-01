@@ -222,6 +222,8 @@ export default function HomeScreen() {
           <SpentCard
             month={month}
             currency={currency}
+            transactions={budgetData.transactions}
+            now={budgetData.now}
             after={debtsLabel}
           />
           <AskBox

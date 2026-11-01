@@ -1,4 +1,6 @@
+import { parseLocalDateInput } from '@/lib/dates/local-date-input';
 import { formatMoney } from '@/lib/finance/format-money';
+import type { SpendBucket, SpendHistory } from '@/lib/finance/spend-history';
 
 export type PaceChartMode = 'pace' | 'daily';
 
@@ -43,6 +45,8 @@ export type PaceGeometry = {
   /** Pace: the budget gridline and its end dot. Daily: the even-pace line. */
   budgetY: number | null;
   bars: ChartBar[];
+  /** Bars thin out once there are too many for the full width. */
+  barWidth: number;
   /** Daily: dashed segment for safe to spend a day, on top of today's bar. */
   safe: { x: number; top: number; height: number } | null;
   ticks: { x: number; text: string; today: boolean }[];
@@ -112,6 +116,10 @@ export function niceCeil(value: number): number {
   const power = 10 ** Math.floor(Math.log10(value));
   const step = [1, 2, 2.5, 5, 10].find((m) => m * power >= value)!;
   return step * power;
+}
+
+function fitBar(slot: number): number {
+  return Math.max(3, Math.min(BAR_WIDTH, slot - 2));
 }
 
 function cumulative(values: readonly number[]): number[] {
@@ -201,6 +209,7 @@ export function paceGeometry({
       evenPace: null,
       budgetY: evenY,
       bars,
+      barWidth: fitBar(slot),
       safe,
       ticks: today
         ? [
@@ -267,6 +276,7 @@ export function paceGeometry({
     evenPace: budgetY === null ? null : { x1: LINE_LEFT, y1: LINE_BASE, x2: right, y2: budgetY },
     budgetY,
     bars: [],
+    barWidth: BAR_WIDTH,
     safe: null,
     ticks,
     accessibilityLabel:
@@ -274,6 +284,117 @@ export function paceGeometry({
       (budget === null
         ? '.'
         : `, against the ${whole(budget, currency)} budget. Dashed line is an even pace.`),
+  };
+}
+
+function rangeDay(key: string, withYear = false): string {
+  const date = parseLocalDateInput(key)!;
+  const label = `${date.getDate()} ${MONTHS[date.getMonth()]}`;
+  return withYear ? `${label} ${date.getFullYear()}` : label;
+}
+
+function bucketName({ from, to }: SpendBucket, unit: SpendHistory['unit']): string {
+  const date = parseLocalDateInput(from)!;
+  if (unit === 'day') return dayDate({ year: date.getFullYear(), month: date.getMonth() }, date.getDate());
+  if (unit === 'week') return from === to ? rangeDay(from) : `${rangeDay(from)} to ${rangeDay(to)}`;
+  return unit === 'month' ? `${MONTHS[date.getMonth()]} ${date.getFullYear()}` : String(date.getFullYear());
+}
+
+/**
+ * The same plot over a chart range rather than a calendar month, with no budget to measure against.
+ * Pace adds the days up and runs edge to edge; Daily draws one bar per bucket, however wide a bucket is.
+ */
+export function rangeGeometry({
+  mode,
+  history: { days, buckets, unit },
+  currency,
+  width,
+}: {
+  mode: PaceChartMode;
+  history: SpendHistory;
+  currency: string;
+  width: number;
+}): PaceGeometry {
+  const money = (minor: number) => formatMoney(minor, currency);
+  const first = days[0]!.day;
+  const long = days.length > 365;
+  const spent = days.reduce((sum, day) => sum + day.spentMinor, 0);
+  const span = `from ${rangeDay(first, true)} to today`;
+
+  if (mode === 'daily') {
+    const slot = Math.min(MAX_SLOT, (width - BAR_LEFT - BAR_TAIL) / buckets.length);
+    const max = niceCeil(Math.max(...buckets.map((bucket) => bucket.spentMinor), 1));
+    const centre = (index: number) => BAR_LEFT + slot * index + slot / 2;
+    const bars = buckets.map((bucket, index) => ({
+      x: centre(index),
+      top: Math.min(BAR_BASE - (bucket.spentMinor / max) * (BAR_BASE - TOP), BAR_BASE - 4),
+      overTop: null,
+    }));
+    return {
+      mode,
+      width,
+      top: TOP,
+      baseline: BAR_BASE,
+      labels: [
+        { y: TOP, text: whole(max, currency), tone: 'meta' as const },
+        { y: BAR_BASE, text: whole(0, currency), tone: 'meta' as const },
+      ].filter((label, index, all) => index === all.length - 1 || label.text !== all.at(-1)!.text),
+      points: buckets.map((bucket, index) => ({
+        x: centre(index),
+        y: bars[index]!.top,
+        date: bucketName(bucket, unit),
+        value: money(bucket.spentMinor),
+        accessibilityLabel: `${bucketName(bucket, unit)}, ${money(bucket.spentMinor)} spent`,
+      })),
+      line: [],
+      evenPace: null,
+      budgetY: null,
+      bars,
+      barWidth: fitBar(slot),
+      safe: null,
+      ticks: [
+        { x: centre(0), text: rangeDay(first, long), today: buckets.length === 1 },
+        ...(buckets.length > 1
+          ? [{ x: centre(buckets.length - 1), text: 'Today', today: true }]
+          : []),
+      ],
+      accessibilityLabel: `Spending per ${unit}, ${span}, ${money(spent)} in all.`,
+    };
+  }
+
+  const right = width - LINE_RIGHT_INSET;
+  const step = (right - LINE_LEFT) / days.length;
+  const values = cumulative(days.map((day) => day.spentMinor));
+  const max = Math.max(niceCeil(Math.max(...values, 0)), 1);
+  const yOf = (minor: number) => LINE_BASE - (minor / max) * (LINE_BASE - TOP);
+  const points = values.map((value, index) => ({
+    x: LINE_LEFT + (index + 1) * step,
+    y: yOf(value),
+    date: index === values.length - 1 ? 'By today' : `By ${rangeDay(days[index]!.day)}`,
+    value: money(value),
+    accessibilityLabel: `${rangeDay(days[index]!.day, true)}, ${money(value)} spent so far`,
+  }));
+  return {
+    mode,
+    width,
+    top: TOP,
+    baseline: LINE_BASE,
+    labels: [
+      { y: TOP, text: whole(max, currency), tone: 'meta' as const },
+      { y: LINE_BASE, text: whole(0, currency), tone: 'meta' as const },
+    ].filter((label, index, all) => index === all.length - 1 || label.text !== all.at(-1)!.text),
+    points,
+    line: [{ x: LINE_LEFT, y: LINE_BASE }, ...points],
+    evenPace: null,
+    budgetY: null,
+    bars: [],
+    barWidth: BAR_WIDTH,
+    safe: null,
+    ticks: [
+      { x: LINE_LEFT, text: rangeDay(first, long), today: false },
+      { x: right, text: 'Today', today: true },
+    ],
+    accessibilityLabel: `Spent ${span}, ${money(spent)}.`,
   };
 }
 
