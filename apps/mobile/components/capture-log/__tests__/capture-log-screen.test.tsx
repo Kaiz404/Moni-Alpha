@@ -5,7 +5,9 @@ import { createMMKV } from 'react-native-mmkv';
 import CaptureLogScreen from '@/app/capture-log';
 import { retryCaptures } from '@/lib/ai/background-processor';
 import { enqueue, getAll, pruneCompleted } from '@/lib/ai/processing-queue';
+import { undoPairing } from '@/lib/proposals/pairing';
 import { getOpenSheet } from '@/lib/sheet/sheet-store';
+import { tid } from '@/lib/test-ids';
 import { dismissToast, undoToast, useToast } from '@/lib/toast/toast-store';
 
 jest.mock('uniwind', () => ({
@@ -22,9 +24,11 @@ jest.mock('expo-router', () => ({
 jest.mock('react-native-safe-area-context', () => ({
   useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
 }));
+let mockWallets: { id: string; notificationPackage: string | null }[] = [];
 jest.mock('@/components/capture-sources/use-linked-apps', () => ({
-  useLinkedApps: () => ({ wallets: [], apps: [] }),
+  useLinkedApps: () => ({ wallets: mockWallets, apps: [] }),
 }));
+jest.mock('@/lib/proposals/pairing', () => ({ undoPairing: jest.fn(async () => true) }));
 jest.mock('@/lib/ai/background-processor', () => ({ retryCaptures: jest.fn(async () => {}) }));
 jest.mock('react-native-mmkv', () => {
   const stores = new Map<string, Map<string, string>>();
@@ -176,6 +180,87 @@ describe('A capture that could not reach Moni', () => {
     act(() => undoToast());
     expect(storedIds()).toEqual(['unread']);
     expect(getAll().map((item) => [item.id, item.status])).toEqual([['unread', 'gave_up']]);
+  });
+});
+
+describe('Every status on one Capture log', () => {
+  const PACKAGE = 'com.maybank2u.life';
+  const CONTROLS = [
+    ['waiting_for_review', 'review', 'Review it'],
+    ['trying_again', 'retry', 'Retry'],
+    ['gave_up', 'retry', 'Retry'],
+    ['auto_added', 'transaction', 'See transaction'],
+    ['added', 'transaction', 'See transaction'],
+    ['same_payment', 'undo', 'Undo'],
+    ['not_linked', 'link', 'Link Maybank to a wallet'],
+    ['ignored', 'missed', 'This was a transaction'],
+  ] as const;
+
+  beforeEach(() => {
+    mockWallets = [{ id: 'w1', notificationPackage: PACKAGE }];
+    pruneCompleted();
+    storage.set(
+      KEY,
+      JSON.stringify(
+        CONTROLS.map(([status], index) => ({
+          id: status,
+          receivedAt: `2026-10-14T04:${String(50 - index)}:00.000Z`,
+          app: 'Maybank',
+          packageName: PACKAGE,
+          text: `MAYBANK: You've spent RM${index + 1}.00 at KEDAI ABC.`,
+          status,
+          transactionId: status.endsWith('added') || status === 'same_payment' ? 'tx-1' : undefined,
+        })),
+      ),
+    );
+    for (const status of ['trying_again', 'gave_up'] as const) {
+      enqueue({
+        id: status,
+        type: 'notification',
+        status: status === 'gave_up' ? 'gave_up' : 'pending',
+        createdAt: '2026-10-14T04:50:00.000Z',
+        notification: {
+          id: status,
+          app: 'Maybank',
+          packageName: PACKAGE,
+          title: 'Maybank',
+          text: 'text',
+          time: '1',
+          receivedAt: '2026-10-14T04:50:00.000Z',
+        },
+      });
+    }
+  });
+
+  afterEach(() => {
+    mockWallets = [];
+    pruneCompleted();
+  });
+
+  it.each(CONTROLS)('%s offers its own control', (status, control, label) => {
+    show();
+    const button = screen.getByTestId(tid('capture-log', 'entry', status, control));
+    expect(button.props.accessibilityLabel).toMatch(new RegExp(`^${label}, Maybank `));
+  });
+
+  it('same_payment keeps its way to the row counting it beside Undo', async () => {
+    show();
+    expect(screen.getByTestId('capture-log.entry.same-payment.transaction')).toBeTruthy();
+    await act(async () => {
+      fireEvent.press(screen.getByTestId('capture-log.entry.same-payment.undo'));
+    });
+    expect(undoPairing).toHaveBeenCalledWith('same_payment');
+  });
+
+  it.each(CONTROLS)('%s can be dismissed, and Undo brings it back', (status) => {
+    show();
+    fireEvent.press(screen.getByTestId(tid('capture-log', 'entry', status, 'dismiss')));
+    expect(storedIds()).toHaveLength(CONTROLS.length - 1);
+    expect(storedIds()).not.toContain(status);
+
+    act(() => undoToast());
+    expect(storedIds()).toHaveLength(CONTROLS.length);
+    expect(storedIds()).toContain(status);
   });
 });
 

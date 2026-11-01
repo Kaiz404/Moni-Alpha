@@ -453,6 +453,9 @@ it('flags a string or a stray 0 outside Text, and leaves Text alone', () => {
   expect(rawTextOutsideText(tree)).toEqual(['"0" inside View', '"Hi" inside RCTScrollView']);
 });
 
+// The first mount loads the whole app, and one timeout fails every route after it.
+jest.setTimeout(30_000);
+
 describe.each(Object.entries(ROUTES))('%s', (_file, spec) => {
   const { signedOut } = spec;
   it('seeded: rows land under the mounted page in light, then opens from cache in dark', async () => {

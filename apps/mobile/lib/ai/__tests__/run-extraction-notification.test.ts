@@ -19,7 +19,6 @@ jest.mock('@/lib/supabase/transactions', () => ({
 }));
 jest.mock('@/lib/supabase/proposed-transactions', () => ({
   createProposedTransaction: jest.fn(),
-  combineIntoTransfer: jest.fn(),
   findProposalDuplicate: jest.fn(),
   proposalExists: () => false,
 }));

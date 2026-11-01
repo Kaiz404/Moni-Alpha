@@ -106,6 +106,9 @@ function launch(): { queue: Queue; processor: Processor } {
   };
 }
 
+let nextPostTime = 1;
+
+/** Each call is a new delivery: Android's post time is part of what makes one alert unique. */
 function alert(over: Partial<NotificationQueueItem> = {}): NotificationQueueItem {
   const createdAt = over.createdAt ?? new Date(NOW).toISOString();
   return {
@@ -119,7 +122,7 @@ function alert(over: Partial<NotificationQueueItem> = {}): NotificationQueueItem
       packageName: PACKAGE,
       title: 'Maybank',
       text: ALERT,
-      time: '1',
+      time: String(nextPostTime++),
       receivedAt: createdAt,
     },
     ...over,

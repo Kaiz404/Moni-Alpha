@@ -31,6 +31,7 @@ jest.mock('expo-router', () => ({
   router: { push: (...args: unknown[]) => mockPush(...args), back: jest.fn() },
   useFocusEffect: () => {},
 }));
+jest.mock('@/lib/ai/background-processor', () => ({ retryCaptures: jest.fn(async () => {}) }));
 jest.mock('react-native-safe-area-context', () => ({
   useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
 }));

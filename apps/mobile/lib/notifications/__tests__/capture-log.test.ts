@@ -1,4 +1,6 @@
 import {
+  CAPTURE_STATUS_LABELS,
+  CAPTURE_STATUS_ORDER,
   countByStatus,
   filterCaptureLog,
   groupCaptureLog,
@@ -61,6 +63,7 @@ describe('capture statuses a failed read can hold', () => {
     expect(countByStatus(groupCaptureLog([entry('gave_up')], now))).toEqual({
       added: 0,
       auto_added: 0,
+      same_payment: 0,
       waiting_for_review: 0,
       trying_again: 0,
       gave_up: 1,
@@ -227,5 +230,20 @@ describe('groupCaptureLog', () => {
         day.items.map((item) => item.id),
       ]),
     ).toEqual([['Today · Wed 14 Oct', ['today-review']]]);
+  });
+});
+
+describe('the eight statuses', () => {
+  it('has the glossary word for each, in the order the chips list them', () => {
+    expect(CAPTURE_STATUS_ORDER.map((status) => [status, CAPTURE_STATUS_LABELS[status]])).toEqual([
+      ['waiting_for_review', 'Waiting for review'],
+      ['trying_again', 'Trying again'],
+      ['gave_up', "Couldn't reach Moni"],
+      ['auto_added', 'Auto-added'],
+      ['added', 'Added'],
+      ['same_payment', 'Same payment'],
+      ['not_linked', 'Not linked'],
+      ['ignored', 'Ignored'],
+    ]);
   });
 });
