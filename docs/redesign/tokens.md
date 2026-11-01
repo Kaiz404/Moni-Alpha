@@ -77,7 +77,7 @@ Dark (`V2F-Dark`): Ground #161512 · Raised #211F1B (cards) · Fill #2C2924 (San
 
 ## Sheets
 
-- Cream, top radius 32, grabber 36 × 5 Hairline, title 22/26 700, 44 close for pickers. Pinned action 56 tall, 20 from sides and bottom.
+- Cream, top radius 32, grabber 36 × 5 Hairline, title 22/26 700, a bare close glyph in a 44 touch area for pickers (owner's direction, 1 Nov 2026). Pinned action 56 tall, 20 from sides and bottom.
 - Scrim rgba(23,24,26,0.32) over the page **and the tab bar**. Only the + (as ×) stays visible when the sheet came from the +.
 - Pickers use the category grid: 52 search field, 3 columns, Paper tiles radius 22, 44 bubble, name 14/600, 4 bar, "RM100 left" / "RM20 over".
 - + chooser: "Add a transaction"; four Paper capsule rows 60 tall, no subtitles: Type it (Mint, `dialpad`), Scan a receipt (Peach, `line-scan`), Say it (Sky, `microphone`), Ask Moni (Ink bubble, `creation` Lilac). Choosing one dismisses the sheet and slides the page in from the right.

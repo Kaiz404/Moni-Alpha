@@ -18,8 +18,10 @@ import Animated, {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { scheduleOnRN } from 'react-native-worklets';
 
-import { HeaderIconButton } from '@/components/ui/header-icon-button';
+import { IconSymbol } from '@/components/ui/icon-symbol';
+import { Press } from '@/components/ui/press';
 import { Text } from '@/components/ui/text';
+import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import {
   FLING_COMMIT_THRESHOLD,
   projectedPosition,
@@ -56,10 +58,6 @@ export type SheetProps = {
   size: 'fit' | 'large';
   /** Pinned 56 actions, 20 from the sides and the bottom. */
   actions?: ReactNode;
-  /**
-   * Grows from scale 0.2 at a point this far above the screen's bottom edge,
-   * centred, and shrinks back into it on close: the + chooser (V2F-Nav).
-   */
   /** Space between the grabber, the title row and the body: 12, or 16 on the + chooser. */
   gap?: 12 | 16;
   children?: ReactNode;
@@ -90,6 +88,7 @@ export function Sheet({
   children,
 }: SheetProps) {
   const insets = useSafeAreaInsets();
+  const tokens = useThemeTokens();
   const reduceMotion = useReducedMotion();
   const keyboard = useAnimatedKeyboard();
   const height = useSharedValue(0);
@@ -282,12 +281,20 @@ export function Sheet({
                   ) : null}
                 </View>
                 {closeLabel ? (
-                  <HeaderIconButton
+                  <Press
                     testID={tid('sheet', 'close')}
                     accessibilityLabel={closeLabel}
-                    icon="close"
+                    radius={22}
+                    pressedClassName="bg-sand"
+                    className="h-11 w-11 items-center justify-center"
                     onPress={onDismiss}
-                  />
+                  >
+                    <IconSymbol
+                      name="close"
+                      size={22}
+                      color={tokens.foreground}
+                    />
+                  </Press>
                 ) : null}
               </View>
             </View>
