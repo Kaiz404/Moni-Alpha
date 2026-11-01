@@ -18,6 +18,7 @@
   ],
   "exclude": [
     "lib/**/__tests__/**",
-    "components/**/__tests__/**"
+    "components/**/__tests__/**",
+    "__tests__/**"
   ]
 }
