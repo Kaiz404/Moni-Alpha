@@ -29,6 +29,24 @@ API keys: use the **new key system** (Dashboard → Settings → API Keys):
 
 JWT signing must be on the **ES256 asymmetric key** (Dashboard → Settings → JWT Keys) so the Go backend can verify tokens via JWKS.
 
+### A paused project
+
+Supabase pauses a free-tier project after about a week without activity. A paused project's hostname stops resolving, so sync and sign-in fail, and the backend cannot fetch its JWKS.
+
+You see these symptoms:
+
+- `dig +short <project-ref>.supabase.co` returns nothing.
+- Backend logs repeat `auth: JWKS not loaded ... no such host`.
+- `GET /healthz` returns `"authKeys":"loading"`, and AI requests get a 503 with `Auth keys are not loaded yet`. A backend build older than this change exits instead, so Cloud Run itself answers 503.
+- In the app, the Capture log shows Trying again, and Say it and Scan show "Moni can't read it right now". No capture is lost ([docs/AI.md](AI.md#when-the-backend-is-unavailable)).
+
+To restore the project:
+
+1. Open the project in the [Supabase Dashboard](https://supabase.com/dashboard) and select **Restore project**.
+2. Wait until the project shows as active and `dig` returns an address.
+3. Do not redeploy the backend. It retries the JWKS at least once a minute, or fetches it when a new instance starts. Check that `/healthz` returns `"authKeys":"loaded"`.
+4. Open the app. Queued captures retry when it opens.
+
 ## Environment files
 
 ### `apps/mobile/.env`
