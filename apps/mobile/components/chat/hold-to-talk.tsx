@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, type ReactNode } from 'react';
-import { useWindowDimensions, View } from 'react-native';
+import { useWindowDimensions, View, type ViewStyle } from 'react-native';
 import { Gesture, GestureDetector, type ComposedGesture } from 'react-native-gesture-handler';
 import Animated, {
   Easing,
@@ -12,6 +12,7 @@ import Animated, {
   withSpring,
   withTiming,
   type SharedValue,
+  type AnimatedStyle,
 } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
 
@@ -377,7 +378,7 @@ function TrashGlyph({
   lid,
 }: {
   color: string;
-  lid: ReturnType<typeof useAnimatedStyle>;
+  lid: AnimatedStyle<ViewStyle>;
 }) {
   return (
     <View style={{ width: GLYPH, height: GLYPH }}>

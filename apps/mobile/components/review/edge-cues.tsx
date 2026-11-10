@@ -3,6 +3,7 @@ import Animated, {
   interpolateColor,
   useAnimatedStyle,
   type SharedValue,
+  type AnimatedStyle,
 } from 'react-native-reanimated';
 
 import { IconSymbol, type IconSymbolName } from '@/components/ui/icon-symbol';
@@ -105,7 +106,7 @@ function CueContent({
   vertical: 'up' | 'down' | null;
   /** The one layer that sets the down cue's width; the others sit over it. */
   sizer: boolean;
-  style: ReturnType<typeof useAnimatedStyle>;
+  style: AnimatedStyle<ViewStyle>;
 }) {
   return (
     <Animated.View
