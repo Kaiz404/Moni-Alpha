@@ -4,15 +4,16 @@ here=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 source "$here/env.sh"
 
 usage() {
-  echo "usage: build-apk.sh [--allow-main] [--clean-prebuild]" >&2
+  echo "usage: build-apk.sh [--allow-main] [--clean-prebuild] [--dev]" >&2
   exit 2
 }
 
-allow_main=false clean_prebuild=false
+allow_main=false clean_prebuild=false dev=false
 while (($#)); do
   case $1 in
     --allow-main) allow_main=true ;;
     --clean-prebuild) clean_prebuild=true ;;
+    --dev) dev=true ;;
     *) usage ;;
   esac
   shift
@@ -31,35 +32,9 @@ fi
 exec 7>"$git_dir/moni-build-apk.lock"
 flock 7
 
-# Variables already set win over the files, as with Expo's own .env loading.
-# .env.e2e comes first so the e2e build can point at its own Supabase project,
-# and the AI URL defaults to empty so the e2e build uses the mock AI client.
-env_assignments=()
-load_env() {
-  local file=$1 line key value
-  [[ -f $file ]] || return 0
-  while IFS= read -r line || [[ -n $line ]]; do
-    line=${line%$'\r'}
-    [[ $line =~ ^[[:space:]]*(export[[:space:]]+)?([A-Za-z_][A-Za-z0-9_]*)=(.*)$ ]] || continue
-    key=${BASH_REMATCH[2]} value=${BASH_REMATCH[3]}
-    [[ -v $key ]] && continue
-    if [[ $value =~ ^\"(.*)\"[[:space:]]*$ || $value =~ ^\'(.*)\'[[:space:]]*$ ]]; then
-      value=${BASH_REMATCH[1]}
-    else
-      value=${value%%[[:space:]]#*}
-      value=${value%"${value##*[![:space:]]}"}
-    fi
-    export "$key=$value"
-    env_assignments+=("$key=$value")
-  done <"$file"
-  echo "loaded $file" >&2
-}
-load_env "$mobile/.env.e2e"
-load_env "$main_checkout/apps/mobile/.env.e2e"
-[[ -v EXPO_PUBLIC_AI_API_URL ]] || export EXPO_PUBLIC_AI_API_URL=
-load_env "$mobile/.env"
-load_env "$main_checkout/apps/mobile/.env"
-export APP_VARIANT=e2e
+dev_flag=$($dev && echo --dev || true)
+# shellcheck disable=SC2086
+source "$here/app-env.sh" "$mobile" "$main_checkout" $dev_flag
 e2e_now=${EXPO_PUBLIC_E2E_NOW:-}
 env_hash=$(printf '%s\n' "APP_VARIANT=$APP_VARIANT" "EXPO_PUBLIC_AI_API_URL=$EXPO_PUBLIC_AI_API_URL" "EXPO_PUBLIC_E2E_NOW=$e2e_now" "EXPO_PUBLIC_E2E_TOAST_MS=${EXPO_PUBLIC_E2E_TOAST_MS:-}" "${env_assignments[@]}" | sort | sha256sum | cut -c1-16)
 
@@ -76,6 +51,7 @@ if [[ -n $(git -C "$root" status --porcelain --untracked-files=all -- "${inputs[
 fi
 
 [[ -z $e2e_now ]] || key=$key-clock
+! $dev || key=$key-dev
 cache=${MONI_APK_CACHE:-$HOME/.cache/moni-apk}
 out=$cache/$key
 if [[ -f $out/app-release.apk ]] && grep -q "\"envHash\": \"$env_hash\"" "$out/build.json" 2>/dev/null; then
@@ -99,10 +75,14 @@ if $clean_prebuild || [[ $(cat android/.moni-fingerprint 2>/dev/null) != "$(nati
   npx expo prebuild --platform android --clean --no-install
   native_fingerprint >android/.moni-fingerprint
 fi
-(cd android && ./gradlew assembleRelease -PreactNativeArchitectures=arm64-v8a --build-cache)
+if $dev; then
+  gradle_task=assembleDebug apk=android/app/build/outputs/apk/debug/app-debug.apk
+else
+  gradle_task=assembleRelease apk=android/app/build/outputs/apk/release/app-release.apk
+fi
+(cd android && ./gradlew "$gradle_task" -PreactNativeArchitectures=arm64-v8a --build-cache)
 seconds=$((SECONDS - start))
 
-apk=android/app/build/outputs/apk/release/app-release.apk
 mkdir -p "$cache"
 staging=$(mktemp -d "$cache/.staging.XXXXXX")
 cp "$apk" "$staging/app-release.apk"
