@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { View } from 'react-native';
 import Animated, {
   interpolateColor,
@@ -79,7 +79,9 @@ export function Segmented<T extends string>({
   );
   const reduceMotion = useReducedMotion();
   const position = useSharedValue(index);
-  const segment = useSharedValue(0);
+  // React state, not a shared value: the style is rebuilt when the track is measured, so the
+  // pill draws under the selected option on the first frame instead of after its first move.
+  const [segment, setSegment] = useState(0);
   const shown = useSharedValue(1);
 
   const heading = useRef(index);
@@ -101,11 +103,14 @@ export function Segmented<T extends string>({
   // the pill never waits for the render its `onChange` causes.
   useEffect(() => slideTo(index));
 
-  const pill = useAnimatedStyle(() => ({
-    opacity: shown.get(),
-    width: segment.get(),
-    transform: [{ translateX: position.get() * segment.get() }],
-  }));
+  const pill = useAnimatedStyle(
+    () => ({
+      opacity: shown.get(),
+      width: segment,
+      transform: [{ translateX: position.get() * segment }],
+    }),
+    [segment],
+  );
 
   return (
     <View
@@ -113,7 +118,7 @@ export function Segmented<T extends string>({
       accessibilityLabel={accessibilityLabel}
       className={`${look.track} flex-row rounded-full p-1 ${disabled ? 'bg-sand-light' : 'bg-sand'}`}
       onLayout={(event) =>
-        segment.set(
+        setSegment(
           (event.nativeEvent.layout.width - INSET * 2) /
             options.length,
         )
