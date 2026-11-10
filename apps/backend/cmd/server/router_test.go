@@ -147,11 +147,13 @@ var wallets = []map[string]any{
 
 var v1Routes = []string{"/v1/extract/text", "/v1/extract/image", "/v1/extract/notification", "/v1/chat/analyze"}
 
-func TestHealthzNeedsNoToken(t *testing.T) {
+func TestHealthNeedsNoToken(t *testing.T) {
 	s := newTestServer(t, nil)
-	code, _, body := s.call(t, http.MethodGet, "/healthz", "", nil)
-	if code != http.StatusOK || body["status"] != "ok" || body["authKeys"] != "loaded" {
-		t.Fatalf("got %d %v", code, body)
+	for _, path := range []string{"/health", "/healthz"} {
+		code, _, body := s.call(t, http.MethodGet, path, "", nil)
+		if code != http.StatusOK || body["status"] != "ok" || body["authKeys"] != "loaded" {
+			t.Fatalf("%s: got %d %v", path, code, body)
+		}
 	}
 }
 

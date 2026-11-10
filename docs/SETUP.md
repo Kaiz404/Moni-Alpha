@@ -37,14 +37,14 @@ You see these symptoms:
 
 - `dig +short <project-ref>.supabase.co` returns nothing.
 - Backend logs repeat `auth: JWKS not loaded ... no such host`.
-- `GET /healthz` returns `"authKeys":"loading"`, and AI requests get a 503 with `Auth keys are not loaded yet`. A backend build older than this change exits instead, so Cloud Run itself answers 503.
+- `GET /health` returns `"authKeys":"loading"`, and AI requests get a 503 with `Auth keys are not loaded yet`. A backend build older than this change exits instead, so Cloud Run itself answers 503.
 - In the app, the Capture log shows Trying again, and Say it and Scan show "Moni can't read it right now". No capture is lost ([docs/AI.md](AI.md#when-the-backend-is-unavailable)).
 
 To restore the project:
 
 1. Open the project in the [Supabase Dashboard](https://supabase.com/dashboard) and select **Restore project**.
 2. Wait until the project shows as active and `dig` returns an address.
-3. Do not redeploy the backend. It retries the JWKS at least once a minute, or fetches it when a new instance starts. Check that `/healthz` returns `"authKeys":"loaded"`.
+3. Do not redeploy the backend. It retries the JWKS at least once a minute, or fetches it when a new instance starts. Check that `GET /health` returns `"authKeys":"loaded"`. On Cloud Run use `/health`: the Google frontend answers `/healthz` itself with a 404.
 4. Open the app. Queued captures retry when it opens.
 
 ## Environment files

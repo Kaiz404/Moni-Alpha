@@ -31,13 +31,16 @@ func newRouter(verifier *auth.Verifier, limiter, ipLimiter *auth.RateLimiter, ll
 	r.SetTrustedProxies(nil)
 	r.Use(gin.Recovery(), gin.Logger())
 
-	r.GET("/healthz", func(c *gin.Context) {
+	health := func(c *gin.Context) {
 		authKeys := "loading"
 		if verifier.KeysLoaded() {
 			authKeys = "loaded"
 		}
 		c.JSON(http.StatusOK, gin.H{"status": "ok", "authKeys": authKeys})
-	})
+	}
+	// Cloud Run's frontend answers /healthz itself with a 404 that never reaches the container.
+	r.GET("/health", health)
+	r.GET("/healthz", health)
 
 	ipLimit := ipLimiter.MiddlewareBy(func(c *gin.Context) string { return auth.ClientIP(c.Request) }, "Too many requests — try again shortly")
 	v1 := r.Group("/v1", ipLimit, verifier.Middleware(), limiter.Middleware(), limitBody(maxBodyBytes))

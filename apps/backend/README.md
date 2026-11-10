@@ -8,7 +8,7 @@ All `/v1` routes require `Authorization: Bearer <supabase-user-jwt>`.
 
 | Method | Path                       | Purpose                                          | Model                          |
 | ------ | -------------------------- | ------------------------------------------------ | ------------------------------ |
-| GET    | `/healthz`                 | Liveness (no auth), always 200; `authKeys` is `loaded` or `loading` | —           |
+| GET    | `/health`                  | Liveness (no auth), always 200; `authKeys` is `loaded` or `loading`. `/healthz` answers the same locally, but Cloud Run's frontend keeps that path and returns 404 | —           |
 | POST   | `/v1/extract/text`         | Transaction from free text                       | `deepseek/deepseek-v4.1-flash` |
 | POST   | `/v1/extract/image`        | Transaction from receipt image (base64 or URL)   | `deepseek/deepseek-v4.1-flash` |
 | POST   | `/v1/extract/notification` | Transaction from Android notification            | `deepseek/deepseek-v4.1-flash` |
@@ -78,6 +78,8 @@ gcloud run deploy moni-ai-backend \
 (`--allow-unauthenticated` is required because the app does its own JWT auth; store `OPENROUTER_API_KEY` in Secret Manager.)
 
 `asia-southeast3` (Bangkok) is a Tier 1 region, the cheapest one near Malaysia (Kuala Lumpur isn't available on Cloud Run). `--max-instances 1` keeps the in-memory rate limiter correct.
+
+The live service runs with min instances 0, max 1, concurrency 20, a 300s request timeout, 1 CPU with startup boost and 256 MiB. Its startup probe is TCP on 8080, so no health path is configured. A cold start took about 1.2s from instance start to listening (10 Nov 2026). Check a deployed service with `GET /health`; Cloud Run's frontend answers `/healthz` itself with a 404 that never reaches the container.
 
 After the first deploy, pushes to `main` that touch `apps/backend/**` redeploy automatically: the `Moni-Backend` Cloud Build trigger runs the root `cloudbuild.yaml`, which builds this Dockerfile and runs `gcloud run deploy --image`, keeping the env vars and secret above.
 
