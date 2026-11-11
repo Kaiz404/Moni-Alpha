@@ -426,6 +426,8 @@ Activity chart (v2, `components/charts/activity-chart.tsx`, `V2A-Activity`): a P
 
 v2: `components/charts/pace-chart.tsx` draws the three tokens.md line and bar charts from one `series` of per-day values: `pace` (spent against the budget, with even pace), `daily` (one bar a day, Coral above even pace, today's safe-to-spend segment) and `balance` (closing balance, axis not from zero). One callout, a scrub that snaps per day with `scrubStep`, draw-in once per mode, and no projection line or readout row. On the line charts the first day sits at the plot's left edge and the month end at its right edge; Today and the daily bars' labels centre on their day. The view toggle on every chart card is a compact `Segmented` with fixed 70 segments.
 
+Range charts (Home's spent card, `components/charts/spend-chart.tsx`, and the Wallets net worth card) never redraw on a range change: they index the data once and zoom the x and y axes to the new range on one `value` spring, retargeted mid-flight, with the paths built on the UI thread (`components/charts/zoom.ts`). Bars and date ticks are anchored to their days, so they slide and widen with the zoom; y labels cross-fade on fixed gridlines. The tick scheme per range is in tokens.md Charts.
+
 ### 7.12 Chat and companion presence
 
 Chat is a dedicated capability, not the application’s control center.
