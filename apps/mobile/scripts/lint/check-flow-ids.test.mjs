@@ -73,7 +73,7 @@ test('a Segmented row renders only its own screen and name, so a stale option id
   const rows = [
     { file: 'components/ui/segmented.tsx', source: 'const a = tid(screen, name, option.value);' },
     { file: 'app/profile.tsx', source: '<Segmented screen="profile" name="appearance" options={THEMES} />;' },
-    { file: 'components/home/card.tsx', source: '<ChartToggle screen="home" name="chart"></ChartToggle>;' },
+    { file: 'components/home/card.tsx', source: '<Segmented screen="home" name="chart"></Segmented>;' },
   ];
   const ids = (yaml) => unknownFlowIds([{ file: 'flow.yaml', source: yaml }], rows).map(({ id }) => id);
   assert.deepEqual(ids('id: profile.appearance.dark\nid: home.chart.daily'), []);

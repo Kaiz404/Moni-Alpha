@@ -11,7 +11,7 @@ const DYNAMIC_PART = '[a-z0-9-]+';
 const DYNAMIC_SCREEN = '[a-z-]+';
 const SAMPLE_PART = 'abc-123';
 // These build tid(screen, name, option) from props, so their own call matches any three-part id.
-const SEGMENT_CONTROLS = new Set(['Segmented', 'ChartToggle']);
+const SEGMENT_CONTROLS = new Set(['Segmented']);
 
 function walk(dir, keep) {
   const files = [];

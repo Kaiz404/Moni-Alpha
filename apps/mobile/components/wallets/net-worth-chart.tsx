@@ -18,7 +18,6 @@ import Svg, { Line, Path, Polyline } from 'react-native-svg';
 import { useUniwind } from 'uniwind';
 import { scheduleOnRN } from 'react-native-worklets';
 
-import { ChartToggle } from '@/components/charts/chart-toggle';
 import {
   AXIS_LABEL_OVERHANG,
   AXIS_WIDTH,
@@ -227,9 +226,12 @@ export function NetWorthChart({
           Net worth
         </Text>
         {wallets.length > 1 ? (
-          <ChartToggle
+          <Segmented
             screen="wallet"
             name="chart"
+            size="compact"
+            segmentWidth={70}
+            accessibilityLabel="Net worth chart"
             options={VIEWS}
             value={view}
             onChange={(next) => {

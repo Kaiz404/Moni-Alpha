@@ -3,7 +3,6 @@ import { useMemo, useState } from 'react';
 import { View } from 'react-native';
 import Svg, { Circle, Line, Rect } from 'react-native-svg';
 
-import { ChartToggle } from '@/components/charts/chart-toggle';
 import { PaceChart, RangeChart } from '@/components/charts/pace-chart';
 import { monthFromKey, monthName } from '@/components/charts/pace-geometry';
 import { Segmented } from '@/components/ui/segmented';
@@ -77,9 +76,12 @@ export function SpentCard({
         >
           {title}
         </Text>
-        <ChartToggle
+        <Segmented
           screen="home"
           name="chart"
+          size="compact"
+          segmentWidth={70}
+          accessibilityLabel="Spending chart"
           options={MODES}
           value={mode}
           onChange={setMode}

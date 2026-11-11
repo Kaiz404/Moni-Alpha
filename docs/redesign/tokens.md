@@ -143,5 +143,8 @@ Springs (mass 1):
 | Chart scrub step | Segment_Tick | selection |
 | Toggle | Toggle_On / Toggle_Off | selection |
 | Row hold commits | Confirm | medium impact |
+| Segmented pill picked up for a glide | Drag_Start | light impact |
+| Glided pill reaches an option | Segment_Tick | selection |
+| Glided pill lands | Gesture_End | light impact |
 
-At most one haptic per user action. expo-haptics 57 has no Gesture_Threshold constants.
+At most one haptic per user action; a glide is one action with a tick per option it crosses, like a picker. expo-haptics 57 has no Gesture_Threshold constants.

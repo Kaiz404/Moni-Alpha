@@ -35,6 +35,12 @@ export const chartStep = (points: number) => {
   if (points <= CHART_TICK_MOST_POINTS) scrubStep();
 };
 
+/** A held segmented pill lifts under the finger. */
+export const glidePickUp = () => fire(Haptics.AndroidHaptics.Drag_Start, lightImpact);
+
+/** A glided segmented pill lands on its option. */
+export const glideSnap = () => fire(Haptics.AndroidHaptics.Gesture_End, lightImpact);
+
 export const toggleOn = () => fire(Haptics.AndroidHaptics.Toggle_On, Haptics.selectionAsync);
 
 export const toggleOff = () => fire(Haptics.AndroidHaptics.Toggle_Off, Haptics.selectionAsync);
