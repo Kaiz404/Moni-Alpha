@@ -4,16 +4,17 @@ here=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 source "$here/env.sh"
 
 usage() {
-  echo "usage: build-apk.sh [--allow-main] [--clean-prebuild] [--dev]" >&2
+  echo "usage: build-apk.sh [--allow-main] [--clean-prebuild] [--dev | --preview]" >&2
   exit 2
 }
 
-allow_main=false clean_prebuild=false dev=false
+allow_main=false clean_prebuild=false dev=false preview=false
 while (($#)); do
   case $1 in
     --allow-main) allow_main=true ;;
     --clean-prebuild) clean_prebuild=true ;;
     --dev) dev=true ;;
+    --preview) preview=true ;;
     *) usage ;;
   esac
   shift
@@ -32,7 +33,9 @@ fi
 exec 7>"$git_dir/moni-build-apk.lock"
 flock 7
 
-dev_flag=$($dev && echo --dev || true)
+! $dev || ! $preview || usage
+# Both talk to the real AI backend: --dev loads its code from Metro, --preview carries it built in.
+dev_flag=$($dev || $preview && echo --real-ai || true)
 # shellcheck disable=SC2086
 source "$here/app-env.sh" "$mobile" "$main_checkout" $dev_flag
 e2e_now=${EXPO_PUBLIC_E2E_NOW:-}
@@ -52,6 +55,7 @@ fi
 
 [[ -z $e2e_now ]] || key=$key-clock
 ! $dev || key=$key-dev
+! $preview || key=$key-preview
 cache=${MONI_APK_CACHE:-$HOME/.cache/moni-apk}
 out=$cache/$key
 if [[ -f $out/app-release.apk ]] && grep -q "\"envHash\": \"$env_hash\"" "$out/build.json" 2>/dev/null; then
