@@ -97,8 +97,9 @@ function positionAt(x: number, segment: number, last: number) {
 /**
  * One of a few options, on a Sand track with a sliding pill. Tap an option, or glide the pill:
  * slide sideways along the track, or hold it and move any way. The held pill grows a little and
- * stretches with the finger's speed, each label turns as the pill passes under it, each new
- * option ticks once, and on release the pill springs to the option the finger was heading for.
+ * stretches with the finger's speed, each label turns as the pill passes under it, and each
+ * option it snaps to ticks and is picked at once. On release it springs to the option the finger
+ * was heading for.
  */
 export function Segmented<T extends string>({
   screen,
@@ -155,12 +156,14 @@ export function Segmented<T extends string>({
     if (next !== current) change(now[next].value);
   };
 
-  // One tick per option the gliding pill reaches, on the frame it gets there.
+  // The gliding pill picks each option it snaps to, on the frame it gets there: the tick and the
+  // change land together, so a theme or a chart follows the finger instead of waiting for release.
   useAnimatedReaction(
-    () => (gliding.get() ? Math.round(position.get()) : null),
+    () => (gliding.get() ? Math.min(Math.max(Math.round(position.get()), 0), last) : null),
     (reached, before) => {
       if (reached !== null && before !== null && reached !== before) {
         scheduleOnRN(scrubStep);
+        scheduleOnRN(commit, reached);
       }
     },
   );

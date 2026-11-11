@@ -341,7 +341,7 @@ Never mimic real payment cards unless users need a real card identifier. The vis
 
 - `components/ui/chip.tsx`: 36-tall capsule with a 44 hit area for filters and picks; Sand, pressed Hairline, selected Ink with cream text, disabled Sand light; `onSand` rests Paper inside a Sand field.
 - `components/ui/segmented.tsx`: one of a few fixed options (type, appearance, who owes who). A 44 Sand track with an Ink pill that slides on the `control` spring; a change plays `scrubStep`. Segment testIDs are `<screen>.<name>.<value>`.
-- Chart cards use `Segmented` with `size="compact"` and `segmentWidth={70}` for their view toggle (Home's Pace | Daily, Net worth's Total | By wallet), so it matches the range control beside it. Every `Segmented` glides: slide sideways along the track, or hold it 220 ms and move, and the pill follows the finger with a magnet toward each option, a little growth while held and a stretch with speed. It never leaves the track, ticks once per option reached, and lands with `glideSnap` on release.
+- Chart cards use `Segmented` with `size="compact"` and `segmentWidth={70}` for their view toggle (Home's Pace | Daily, Net worth's Total | By wallet), so it matches the range control beside it. Every `Segmented` glides: slide sideways along the track, or hold it 220 ms and move, and the pill follows the finger with a magnet toward each option, a little growth while held and a stretch with speed. It never leaves the track, ticks and picks each option the moment it snaps to it (so a theme or a chart changes under the finger), and lands with `glideSnap` on release.
 - `components/ui/search-field.tsx`: `SearchField`, the 52 Paper capsule (picker sheets, past days); `compact` is Activity's 48 field.
 
 ### 7.6b Toasts and banners (v2)

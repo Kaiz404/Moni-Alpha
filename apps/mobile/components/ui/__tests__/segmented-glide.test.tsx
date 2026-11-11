@@ -59,8 +59,7 @@ describe('Segmented glide', () => {
     const onChange = jest.fn();
     renderRange(onChange);
     await glide('home.range.glide', [centre(0), centre(1), centre(2) + 10]);
-    expect(onChange).toHaveBeenCalledTimes(1);
-    expect(onChange).toHaveBeenCalledWith('30d');
+    expect(onChange).toHaveBeenLastCalledWith('30d');
     expect(glidePickUp).toHaveBeenCalledTimes(1);
     expect(glideSnap).toHaveBeenCalledTimes(1);
   });
