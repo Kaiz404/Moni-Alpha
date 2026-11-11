@@ -5,7 +5,7 @@ import { Uniwind } from 'uniwind';
 import { setThemePreference, type ThemePreference } from '@/lib/theme/preference';
 import { nextThemeCommit } from '@/lib/theme/theme-commit';
 
-/** V2F-Motion: the new theme opens from the finger in 450, ease-in-out. */
+/** V2F-Motion: the new theme opens from the finger in 450, ease-out. */
 export const REVEAL_MS = 450;
 /** Longest wait for the new theme to commit before the circle opens anyway. */
 const COMMIT_WAIT_MS = 500;

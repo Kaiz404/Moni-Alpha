@@ -59,7 +59,7 @@ internal class RevealOverlay(
       max(hypot(x, height - y), hypot(width - x, height - y)),
     )
     play(durationMs, done) { t ->
-      radius = far * EASE_IN_OUT.getInterpolation(t)
+      radius = far * EASE_OUT.getInterpolation(t)
       invalidate()
     }
   }
@@ -101,6 +101,8 @@ internal class RevealOverlay(
   }
 
   private companion object {
-    val EASE_IN_OUT = PathInterpolator(0.77f, 0f, 0.175f, 1f)
+    // Ease-out, so the circle clears the finger at once: the option under it is still the
+    // screenshot until the hole reaches it, and a slow start reads as the control freezing.
+    val EASE_OUT = PathInterpolator(0.23f, 1f, 0.32f, 1f)
   }
 }
