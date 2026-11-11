@@ -1,12 +1,12 @@
 import { useValue } from '@legendapp/state/react';
 import { router } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
-import { ScrollView, View } from 'react-native';
+import { View } from 'react-native';
 
 import { ColumnSheet } from '@/components/import/column-sheet';
 import { Button } from '@/components/ui/button';
 import { EmptyTile } from '@/components/ui/empty-tile';
-import { Page } from '@/components/ui/page';
+import { Page, PageScroll } from '@/components/ui/page';
 import { PickerField } from '@/components/ui/picker-field';
 import { Segmented } from '@/components/ui/segmented';
 import { Text } from '@/components/ui/text';
@@ -116,12 +116,13 @@ export default function ImportColumnsScreen() {
 
   return (
     <Page
+      headerScrolls
       screen="import"
       kind="pushed"
       title="Match columns"
       subtitle={generic.fileName}
     >
-      <ScrollView
+      <PageScroll
         className="flex-1"
         contentContainerClassName="gap-3 px-5 pb-8"
         showsVerticalScrollIndicator={false}
@@ -171,7 +172,7 @@ export default function ImportColumnsScreen() {
           onPress={check}
           className="mt-2"
         />
-      </ScrollView>
+      </PageScroll>
       <ColumnSheet
         open={picking !== null}
         title={picking?.label ?? ''}

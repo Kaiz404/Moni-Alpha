@@ -13,7 +13,7 @@ import { SyncBanner } from '@/components/providers/sync-banner';
 import { EmptyTile } from '@/components/ui/empty-tile';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { ListCard } from '@/components/ui/list-card';
-import { Page } from '@/components/ui/page';
+import { Page, PageScroll } from '@/components/ui/page';
 import { Press } from '@/components/ui/press';
 import { Text } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
@@ -37,11 +37,12 @@ export default function DebtsScreen() {
 
   return (
     <Page
+      headerScrolls
       screen="debts"
       kind="tabRoot"
       title="Debts"
     >
-      <ScrollView
+      <PageScroll
         ref={scroll}
         className="flex-1"
         contentContainerClassName="gap-4 px-5"
@@ -116,7 +117,7 @@ export default function DebtsScreen() {
             </View>
           </>
         )}
-      </ScrollView>
+      </PageScroll>
     </Page>
   );
 }

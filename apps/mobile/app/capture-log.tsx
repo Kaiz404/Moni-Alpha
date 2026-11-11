@@ -13,7 +13,7 @@ import { EmptyTile } from '@/components/ui/empty-tile';
 import { HeaderIconButton } from '@/components/ui/header-icon-button';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { ListCard } from '@/components/ui/list-card';
-import { Page } from '@/components/ui/page';
+import { Page, PageScroll } from '@/components/ui/page';
 import { Press } from '@/components/ui/press';
 import { Text } from '@/components/ui/text';
 import { useInstalledApps } from '@/components/wallets/notification-source';
@@ -210,6 +210,7 @@ export default function CaptureLogScreen() {
 
   return (
     <Page
+      headerScrolls
       screen="capture-log"
       kind="pushed"
       title="Capture log"
@@ -224,7 +225,7 @@ export default function CaptureLogScreen() {
         ) : undefined
       }
     >
-      <ScrollView
+      <PageScroll
         className="flex-1"
         contentContainerClassName="gap-3 px-5 pb-10"
         showsVerticalScrollIndicator={false}
@@ -358,7 +359,7 @@ export default function CaptureLogScreen() {
             </View>
           </>
         )}
-      </ScrollView>
+      </PageScroll>
     </Page>
   );
 }

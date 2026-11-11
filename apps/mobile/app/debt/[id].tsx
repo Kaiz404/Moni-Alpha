@@ -1,6 +1,6 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useRef, useState } from 'react';
-import { ScrollView, View } from 'react-native';
+import { View } from 'react-native';
 
 import { DebtHistory } from '@/components/debt/debt-history';
 import {
@@ -25,7 +25,7 @@ import { NotFound } from '@/components/ui/empty-tile';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { InPlaceField, InPlaceGroup, type Saved } from '@/components/ui/in-place-field';
 import { ListCard } from '@/components/ui/list-card';
-import { Page } from '@/components/ui/page';
+import { Page, PageScroll } from '@/components/ui/page';
 import { PickerField } from '@/components/ui/picker-field';
 import { Press } from '@/components/ui/press';
 import { Text } from '@/components/ui/text';
@@ -183,12 +183,13 @@ function DebtPage({
   return (
     <View className="flex-1">
       <Page
+      headerScrolls
         screen="debts"
         kind="pushed"
         title="Debt"
       >
         <InPlaceGroup>
-        <ScrollView
+        <PageScroll
           className="flex-1"
           contentContainerClassName="gap-4 px-5 pb-10"
           keyboardShouldPersistTaps="handled"
@@ -364,7 +365,7 @@ function DebtPage({
               </Text>
             </Press>
           ) : null}
-        </ScrollView>
+        </PageScroll>
         </InPlaceGroup>
       </Page>
       <DueDateSheet

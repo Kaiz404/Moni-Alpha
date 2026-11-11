@@ -6,7 +6,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { Text } from '@/components/ui/text';
-import { Page } from '@/components/ui/page';
+import { Page, PageScroll } from '@/components/ui/page';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import {
   runNotificationTests,
@@ -127,11 +127,12 @@ export default function DebugPage() {
 
   return (
     <Page
+      headerScrolls
       screen="profile"
       kind="pushed"
       title="Debug tools"
     >
-      <ScrollView
+      <PageScroll
         ref={scrollRef}
         contentContainerClassName="pb-20"
         showsVerticalScrollIndicator={false}
@@ -318,7 +319,7 @@ export default function DebugPage() {
             </View>
           </View>
         )}
-      </ScrollView>
+      </PageScroll>
     </Page>
   );
 }

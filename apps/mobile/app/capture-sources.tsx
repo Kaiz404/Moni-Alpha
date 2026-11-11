@@ -1,5 +1,5 @@
 import { router, type Href } from 'expo-router';
-import { Platform, ScrollView, View } from 'react-native';
+import { Platform, View } from 'react-native';
 
 import { NotificationsDenied, PermissionRow } from '@/components/capture-sources/permission-row';
 import { useAutoAddRules, type AutoAddRuleRow } from '@/components/capture-sources/use-auto-add-rules';
@@ -11,7 +11,7 @@ import { usePhoneAccess } from '@/components/capture-sources/use-phone-access';
 import { Banner } from '@/components/ui/banner';
 import { IconSymbol, type IconSymbolName } from '@/components/ui/icon-symbol';
 import { ListCard, ListSection } from '@/components/ui/list-card';
-import { Page } from '@/components/ui/page';
+import { Page, PageScroll } from '@/components/ui/page';
 import { Press } from '@/components/ui/press';
 import { Text } from '@/components/ui/text';
 import { TintBubble } from '@/components/ui/transaction-row';
@@ -112,11 +112,12 @@ export default function CaptureSourcesScreen() {
 
   return (
     <Page
+      headerScrolls
       screen="sources"
       kind="pushed"
       title="Capture sources"
     >
-      <ScrollView
+      <PageScroll
         className="flex-1"
         contentContainerClassName="gap-5 px-5 pb-10"
         showsVerticalScrollIndicator={false}
@@ -311,7 +312,7 @@ export default function CaptureSourcesScreen() {
             href="/map"
           />
         </ListCard>
-      </ScrollView>
+      </PageScroll>
     </Page>
   );
 }

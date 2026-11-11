@@ -1,12 +1,12 @@
 import { useState } from 'react';
-import { ScrollView, View } from 'react-native';
+import { View } from 'react-native';
 
 import { MerchantRow, type MerchantSection } from '@/components/merchants/merchant-row';
 import { useMerchantNames, type MerchantRow as MerchantRowData } from '@/components/merchants/use-merchant-names';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { InPlaceGroup, type Saved } from '@/components/ui/in-place-field';
 import { ListSection } from '@/components/ui/list-card';
-import { Page } from '@/components/ui/page';
+import { Page, PageScroll } from '@/components/ui/page';
 import { Text } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { forgetMerchantName, nameMerchant } from '@/lib/supabase/merchant-aliases';
@@ -73,6 +73,7 @@ export default function MerchantsScreen() {
 
   return (
     <Page
+      headerScrolls
       screen="merchants"
       kind="pushed"
       title="Merchant names"
@@ -84,7 +85,7 @@ export default function MerchantsScreen() {
           setEditing(id);
         }}
       >
-      <ScrollView
+      <PageScroll
         className="flex-1"
         contentContainerClassName="gap-5 px-5 pb-10"
         keyboardShouldPersistTaps="handled"
@@ -119,7 +120,7 @@ export default function MerchantsScreen() {
         >
           You can also name a code on a transaction.
         </Text>
-      </ScrollView>
+      </PageScroll>
       </InPlaceGroup>
     </Page>
   );

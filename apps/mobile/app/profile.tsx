@@ -2,7 +2,7 @@ import { useValue } from '@legendapp/state/react';
 import type { User } from '@supabase/supabase-js';
 import { router } from 'expo-router';
 import { useRef, useState, type ReactNode } from 'react';
-import { ScrollView, View } from 'react-native';
+import { View } from 'react-native';
 
 import { currencyHeldIn } from '@/components/profile/currency-words';
 import { ExportDataRow } from '@/components/profile/export-data-row';
@@ -22,7 +22,7 @@ import { useMerchantNames } from '@/components/merchants/use-merchant-names';
 import { Button } from '@/components/ui/button';
 import { ListCard } from '@/components/ui/list-card';
 import { NavRow } from '@/components/ui/nav-row';
-import { Page } from '@/components/ui/page';
+import { Page, PageScroll } from '@/components/ui/page';
 import { Segmented } from '@/components/ui/segmented';
 import { Text } from '@/components/ui/text';
 import { UserAvatar } from '@/components/ui/user-avatar';
@@ -136,11 +136,12 @@ export default function ProfileScreen() {
 
   return (
     <Page
+      headerScrolls
       screen="profile"
       kind="pushed"
       title="Profile"
     >
-      <ScrollView
+      <PageScroll
         className="flex-1"
         contentContainerClassName="gap-5 px-5 pb-10"
         showsVerticalScrollIndicator={false}
@@ -280,7 +281,7 @@ export default function ProfileScreen() {
           label="Sign out"
           onPress={() => void handleSignOut()}
         />
-      </ScrollView>
+      </PageScroll>
     </Page>
   );
 }

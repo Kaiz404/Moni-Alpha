@@ -2,7 +2,7 @@ import { useValue } from '@legendapp/state/react';
 import type { UpdateTransaction } from '@repo/types';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
-import { Alert, ScrollView, View } from 'react-native';
+import { Alert, View } from 'react-native';
 import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 
 import { BudgetLine } from '@/components/transaction/budget-line';
@@ -27,7 +27,7 @@ import {
   InPlaceGroup,
   type Saved,
 } from '@/components/ui/in-place-field';
-import { Page } from '@/components/ui/page';
+import { Page, PageScroll } from '@/components/ui/page';
 import { Press } from '@/components/ui/press';
 import { Text } from '@/components/ui/text';
 import { TintBubble } from '@/components/ui/transaction-row';
@@ -482,6 +482,7 @@ function Detail({ transaction: tx }: { transaction: FinanceTransaction }) {
 
   return (
     <Page
+      headerScrolls
       screen="txn"
       kind="pushed"
       title="Transaction"
@@ -490,7 +491,7 @@ function Detail({ transaction: tx }: { transaction: FinanceTransaction }) {
         editing={editing}
         onEditingChange={setEditing}
       >
-        <ScrollView
+        <PageScroll
           keyboardShouldPersistTaps="handled"
           contentContainerClassName="gap-3 px-screen pb-8"
         >
@@ -677,7 +678,7 @@ function Detail({ transaction: tx }: { transaction: FinanceTransaction }) {
             className="mt-1"
             onPress={() => void remove()}
           />
-        </ScrollView>
+        </PageScroll>
       </InPlaceGroup>
     </Page>
   );

@@ -1,11 +1,11 @@
 import { router } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { ScrollView, View } from 'react-native';
+import { View } from 'react-native';
 
 import { Button } from '@/components/ui/button';
 import { EmptyTile } from '@/components/ui/empty-tile';
 import { ListCard, ListSection } from '@/components/ui/list-card';
-import { Page } from '@/components/ui/page';
+import { Page, PageScroll } from '@/components/ui/page';
 import { Text } from '@/components/ui/text';
 import { useAuth } from '@/lib/auth/auth-context';
 import { applyPlan, type ApplyProgress } from '@/lib/backup/apply';
@@ -184,12 +184,13 @@ export default function ImportPreviewScreen() {
 
   return (
     <Page
+      headerScrolls
       screen="import"
       kind="pushed"
       title="Check the file"
       subtitle={session.fileName}
     >
-      <ScrollView
+      <PageScroll
         className="flex-1"
         contentContainerClassName="gap-3 px-5 pb-8"
         showsVerticalScrollIndicator={false}
@@ -256,7 +257,7 @@ export default function ImportPreviewScreen() {
             </ListCard>
           </ListSection>
         ) : null}
-      </ScrollView>
+      </PageScroll>
     </Page>
   );
 }

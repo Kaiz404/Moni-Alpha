@@ -69,8 +69,6 @@ tags:
     text: 'Page 1 of \d+'
 - tapOn:
     id: activity.pager.older
-- assertVisible:
-    id: activity.search
 - extendedWaitUntil:
     visible:
       id: 'activity\.transaction\..*'

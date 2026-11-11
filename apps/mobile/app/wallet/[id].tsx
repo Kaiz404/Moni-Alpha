@@ -4,12 +4,11 @@ import { useEffect, useMemo, useRef } from 'react';
 import {
   KeyboardAvoidingView,
   Platform,
-  ScrollView,
-} from 'react-native';
+  } from 'react-native';
 
 import { useNow } from '@/components/budget/use-budget';
 import { NotFound } from '@/components/ui/empty-tile';
-import { Page } from '@/components/ui/page';
+import { Page, PageScroll } from '@/components/ui/page';
 import { WalletBalanceChart } from '@/components/wallets/wallet-balance-chart';
 import { WalletHero } from '@/components/wallets/wallet-hero';
 import { WalletMenu } from '@/components/wallets/wallet-menu';
@@ -118,6 +117,7 @@ export default function WalletScreen() {
 
   return (
     <Page
+      headerScrolls
       screen="wallet"
       kind="pushed"
       title="Wallet"
@@ -138,7 +138,7 @@ export default function WalletScreen() {
         className="flex-1"
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
-        <ScrollView
+        <PageScroll
           className="flex-1"
           contentContainerClassName="gap-3.5 px-5 pb-10"
           keyboardShouldPersistTaps="handled"
@@ -172,7 +172,7 @@ export default function WalletScreen() {
             link={link}
           />
           <WalletDefault wallet={wallet} />
-        </ScrollView>
+        </PageScroll>
       </KeyboardAvoidingView>
     </Page>
   );

@@ -2,7 +2,7 @@ import { useValue } from '@legendapp/state/react';
 import type { MinorAmount } from '@repo/types';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useMemo } from 'react';
-import { ScrollView, View } from 'react-native';
+import { View } from 'react-native';
 
 import {
   BillsList,
@@ -20,7 +20,7 @@ import { HeaderIconButton } from '@/components/ui/header-icon-button';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { InPlaceField, InPlaceGroup, type Saved } from '@/components/ui/in-place-field';
 import { ListCard } from '@/components/ui/list-card';
-import { Page } from '@/components/ui/page';
+import { Page, PageScroll } from '@/components/ui/page';
 import { Press } from '@/components/ui/press';
 import { ProgressBar } from '@/components/ui/progress-bar';
 import { Text } from '@/components/ui/text';
@@ -212,6 +212,7 @@ export default function CategoryBudgetScreen() {
 
   return (
     <Page
+      headerScrolls
       screen="budget"
       kind="pushed"
       title={category.name}
@@ -227,7 +228,7 @@ export default function CategoryBudgetScreen() {
       }
     >
       <InPlaceGroup>
-      <ScrollView
+      <PageScroll
         className="flex-1"
         contentContainerClassName="gap-3.5 px-5 pb-8"
         keyboardShouldPersistTaps="handled"
@@ -541,7 +542,7 @@ export default function CategoryBudgetScreen() {
             }}
           />
         </View>
-      </ScrollView>
+      </PageScroll>
       </InPlaceGroup>
     </Page>
   );

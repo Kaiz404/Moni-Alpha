@@ -23,7 +23,7 @@ import { Button } from '@/components/ui/button';
 import { EmptyTile } from '@/components/ui/empty-tile';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { ListCard } from '@/components/ui/list-card';
-import { Page } from '@/components/ui/page';
+import { Page, PageScroll } from '@/components/ui/page';
 import { Press } from '@/components/ui/press';
 import { Segmented } from '@/components/ui/segmented';
 import { Text } from '@/components/ui/text';
@@ -95,6 +95,7 @@ export default function BudgetScreen() {
 
   return (
     <Page
+      headerScrolls
       screen="budget"
       kind="tabRoot"
       title="Budget"
@@ -121,7 +122,7 @@ export default function BudgetScreen() {
         ) : null
       }
     >
-      <ScrollView
+      <PageScroll
         ref={scroll}
         className="flex-1"
         contentContainerClassName="gap-3 px-5"
@@ -170,7 +171,7 @@ export default function BudgetScreen() {
             )}
           </>
         )}
-      </ScrollView>
+      </PageScroll>
     </Page>
   );
 }

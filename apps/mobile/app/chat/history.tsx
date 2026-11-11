@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
-import { ScrollView, View } from 'react-native';
+import { View } from 'react-native';
 
 import {
   SoftBubble,
@@ -9,7 +9,7 @@ import {
 import { HeaderIconButton } from '@/components/ui/header-icon-button';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { ListSection } from '@/components/ui/list-card';
-import { Page } from '@/components/ui/page';
+import { Page, PageScroll } from '@/components/ui/page';
 import { Press } from '@/components/ui/press';
 import { SearchField } from '@/components/ui/search-field';
 import { Text } from '@/components/ui/text';
@@ -207,6 +207,7 @@ export default function ChatHistoryScreen() {
 
   return (
     <Page
+      headerScrolls
       screen="chat"
       kind="pushed"
       title="Past days"
@@ -229,7 +230,7 @@ export default function ChatHistoryScreen() {
         )
       }
     >
-      <ScrollView
+      <PageScroll
         className="flex-1"
         contentContainerClassName="gap-4 px-5 pb-10"
         keyboardShouldPersistTaps="handled"
@@ -359,7 +360,7 @@ export default function ChatHistoryScreen() {
             </Text>
           </View>
         ) : null}
-      </ScrollView>
+      </PageScroll>
     </Page>
   );
 }

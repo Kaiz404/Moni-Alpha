@@ -1,11 +1,10 @@
 import { useValue } from '@legendapp/state/react';
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { ScrollView } from 'react-native';
 
 import { Banner } from '@/components/ui/banner';
 import { EmptyTile } from '@/components/ui/empty-tile';
-import { Page } from '@/components/ui/page';
+import { Page, PageScroll } from '@/components/ui/page';
 import { useAuth } from '@/lib/auth/auth-context';
 import { pickFile, readPickedFile, setImportSession } from '@/lib/backup/import-session';
 import { storeHasPulled } from '@/lib/backup/store-tables';
@@ -37,11 +36,12 @@ export default function ImportScreen() {
 
   return (
     <Page
+      headerScrolls
       screen="import"
       kind="pushed"
       title="Import data"
     >
-      <ScrollView
+      <PageScroll
         className="flex-1"
         contentContainerClassName="gap-3 px-5 pb-8"
         showsVerticalScrollIndicator={false}
@@ -74,7 +74,7 @@ export default function ImportScreen() {
               : undefined
           }
         />
-      </ScrollView>
+      </PageScroll>
     </Page>
   );
 }

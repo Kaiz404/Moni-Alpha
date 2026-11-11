@@ -1,14 +1,14 @@
 import { useValue } from '@legendapp/state/react';
 import { router } from 'expo-router';
 import { useEffect, useState, type ReactNode } from 'react';
-import { Alert, ScrollView, View } from 'react-native';
+import { Alert, View } from 'react-native';
 
 import { CategoryBubble } from '@/components/categories/category-bubble';
 import { CategorySpark } from '@/components/categories/category-spark';
 import { HeaderIconButton } from '@/components/ui/header-icon-button';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { ListCard } from '@/components/ui/list-card';
-import { Page } from '@/components/ui/page';
+import { Page, PageScroll } from '@/components/ui/page';
 import { Press } from '@/components/ui/press';
 import { Segmented } from '@/components/ui/segmented';
 import { Text } from '@/components/ui/text';
@@ -202,6 +202,7 @@ export default function CategoriesScreen() {
 
   return (
     <Page
+      headerScrolls
       screen="activity"
       kind="pushed"
       title="Categories"
@@ -214,7 +215,7 @@ export default function CategoriesScreen() {
         />
       }
     >
-      <ScrollView contentContainerClassName="gap-3 px-screen pb-10">
+      <PageScroll contentContainerClassName="gap-3 px-screen pb-10">
         <Segmented
           screen="activity"
           name="categories-kind"
@@ -300,7 +301,7 @@ export default function CategoriesScreen() {
             </View>
           </View>
         ) : null}
-      </ScrollView>
+      </PageScroll>
     </Page>
   );
 }

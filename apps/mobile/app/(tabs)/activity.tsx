@@ -24,7 +24,7 @@ import { EmptyTile } from '@/components/ui/empty-tile';
 import { MoniButton } from '@/components/ui/header-icon-button';
 import { useTransactionHold } from '@/components/transaction/use-transaction-hold';
 import { HoldHint } from '@/components/ui/hold-menu';
-import { Page } from '@/components/ui/page';
+import { Page, PAGE_CONTENT_TOP, PageScroll } from '@/components/ui/page';
 import { SearchField } from '@/components/ui/search-field';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Text } from '@/components/ui/text';
@@ -223,11 +223,12 @@ export default function ActivityScreen() {
 
   const turnPage = (next: number) => {
     setPage(next);
-    scroll.current?.scrollTo({ y: listTop.current, animated: !reduceMotion });
+    scroll.current?.scrollTo({ y: PAGE_CONTENT_TOP + listTop.current, animated: !reduceMotion });
   };
 
   return (
     <Page
+      headerScrolls
       screen="activity"
       kind="tabRoot"
       title="Activity"
@@ -254,8 +255,13 @@ export default function ActivityScreen() {
         </>
       }
     >
-      {loaded && inCurrency.length > 0 ? (
-        <View className="px-screen pb-3">
+      <PageScroll
+        ref={scroll}
+        keyboardShouldPersistTaps="handled"
+        contentContainerClassName="gap-3 px-screen"
+        contentContainerStyle={{ paddingBottom: clearance }}
+      >
+        {loaded && inCurrency.length > 0 ? (
           <SearchField
             compact
             testID={tid('activity', 'search')}
@@ -264,14 +270,7 @@ export default function ActivityScreen() {
             value={query}
             onChangeText={setQuery}
           />
-        </View>
-      ) : null}
-      <ScrollView
-        ref={scroll}
-        keyboardShouldPersistTaps="handled"
-        contentContainerClassName="gap-3 px-screen"
-        contentContainerStyle={{ paddingBottom: clearance }}
-      >
+        ) : null}
         <SyncBanner screen="activity" />
         {!loaded ? (
           <Skeleton rows={4} />
@@ -344,7 +343,7 @@ export default function ActivityScreen() {
             </View>
           </>
         )}
-      </ScrollView>
+      </PageScroll>
 
       {hold.menu}
     </Page>

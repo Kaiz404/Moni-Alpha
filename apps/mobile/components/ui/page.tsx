@@ -1,6 +1,11 @@
 import { router } from 'expo-router';
-import { createContext, useContext, type ReactNode } from 'react';
-import { View } from 'react-native';
+import {
+  createContext,
+  forwardRef,
+  useContext,
+  type ReactNode,
+} from 'react';
+import { ScrollView, View, type ScrollViewProps } from 'react-native';
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
@@ -51,13 +56,23 @@ export type PageHeader =
 export type PageProps = PageHeader & {
   /** Prefixes the header controls' testIDs: `<screen>.back`, `<screen>.ask-moni`. */
   screen: Screen;
+  /**
+   * The header scrolls away with the content instead of staying pinned. The page must then
+   * render its content in a `PageScroll`, which draws the header at its top.
+   */
+  headerScrolls?: boolean;
   children: ReactNode;
 };
+
+/** The header row (44) and the 12 under it: where a `PageScroll`'s content starts. */
+export const PAGE_CONTENT_TOP = 56;
 
 /**
  * Full-screen page chrome from tokens.md: the real top inset, a 44 header row
  * with 20 sides, and content 12 below it (y 104 on a 48 inset). Tab roots
  * leave the bottom to the tab bar; other kinds keep the bottom inset.
+ * The top inset stays fixed as a strip of canvas, so scrolled content passes
+ * under it rather than under the status bar's clock and icons.
  */
 export function Page(props: PageProps) {
   const insets = useSafeAreaInsets();
@@ -66,28 +81,68 @@ export function Page(props: PageProps) {
   const lifted = useAnimatedStyle(() => ({
     transform: [{ translateY: -lift.get() }],
   }));
+  const header = (
+    <View className="h-11 flex-row items-center gap-3 px-5">
+      <HeaderRow {...props} />
+    </View>
+  );
   return (
     <PageLift.Provider value={lift}>
-      <View className="flex-1 bg-canvas">
-        <Animated.View
-          className="flex-1"
-          style={[
-            {
-              paddingTop: insets.top,
-              paddingBottom: onTab ? 0 : insets.bottom,
-            },
-            lifted,
-          ]}
-        >
-          <View className="h-11 flex-row items-center gap-3 px-5">
-            <HeaderRow {...props} />
-          </View>
-          <View className="flex-1 pt-3">{props.children}</View>
-        </Animated.View>
-      </View>
+      <ScrollingHeader.Provider value={props.headerScrolls ? header : null}>
+        <View className="flex-1 bg-canvas">
+          <Animated.View
+            className="flex-1"
+            style={[
+              {
+                paddingTop: insets.top,
+                paddingBottom: onTab ? 0 : insets.bottom,
+              },
+              lifted,
+            ]}
+          >
+            {props.headerScrolls ? (
+              props.children
+            ) : (
+              <>
+                {header}
+                <View className="flex-1 pt-3">{props.children}</View>
+              </>
+            )}
+          </Animated.View>
+        </View>
+      </ScrollingHeader.Provider>
     </PageLift.Provider>
   );
 }
+
+const ScrollingHeader = createContext<ReactNode>(null);
+
+/**
+ * The scroll view of a `Page` with `headerScrolls`: the header row, then the content 12 below it.
+ * `contentContainerClassName` styles the content under the header, so its sides and gaps leave
+ * the header alone. Content `onLayout` y values are relative to that content, so add
+ * `PAGE_CONTENT_TOP` to scroll to one.
+ */
+export const PageScroll = forwardRef<ScrollView, ScrollViewProps>(
+  function PageScroll(
+    { children, contentContainerClassName, className, ...rest },
+    ref,
+  ) {
+    const header = useContext(ScrollingHeader);
+    return (
+      <ScrollView
+        ref={ref}
+        className={className ?? 'flex-1'}
+        {...rest}
+      >
+        {header}
+        <View className={`pt-3 ${contentContainerClassName ?? ''}`}>
+          {children}
+        </View>
+      </ScrollView>
+    );
+  },
+);
 
 const PageLift = createContext<SharedValue<number> | null>(null);
 

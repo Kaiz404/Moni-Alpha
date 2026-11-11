@@ -10,7 +10,6 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import {
   Alert,
-  ScrollView,
   TextInput,
   useWindowDimensions,
   View,
@@ -18,7 +17,7 @@ import {
 
 import { Button } from '@/components/ui/button';
 import { IconSymbol } from '@/components/ui/icon-symbol';
-import { Page } from '@/components/ui/page';
+import { Page, PageScroll } from '@/components/ui/page';
 import { Press } from '@/components/ui/press';
 import { Segmented } from '@/components/ui/segmented';
 import { Text } from '@/components/ui/text';
@@ -137,11 +136,12 @@ export default function CategoryFormScreen() {
 
   return (
     <Page
+      headerScrolls
       screen="activity"
       kind="pushed"
       title={existing || params.id ? 'Edit category' : 'New category'}
     >
-      <ScrollView
+      <PageScroll
         keyboardShouldPersistTaps="handled"
         contentContainerClassName="gap-4 px-screen pb-6"
       >
@@ -273,7 +273,7 @@ export default function CategoryFormScreen() {
             onPress={() => void archive()}
           />
         ) : null}
-      </ScrollView>
+      </PageScroll>
       <View className="border-t border-sand-light px-screen pt-3">
         <Button
           testID={tid('activity', 'category-form', 'save')}

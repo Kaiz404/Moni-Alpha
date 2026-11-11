@@ -80,5 +80,10 @@ tags:
 - tapOn:
     id: capture-log.back
 - assertNotVisible: Linked apps
+# The header scrolls away with the page, so bring it back before going back.
+- scrollUntilVisible:
+    element:
+      id: sources.back
+    direction: UP
 - tapOn:
     id: sources.back

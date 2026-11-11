@@ -8,7 +8,7 @@ import { useBudgetData, type BudgetData } from '@/components/budget/use-budget';
 import { useTransactionHold } from '@/components/transaction/use-transaction-hold';
 import { EmptyTile, NotFound } from '@/components/ui/empty-tile';
 import { HoldHint } from '@/components/ui/hold-menu';
-import { Page } from '@/components/ui/page';
+import { Page, PAGE_CONTENT_TOP, PageScroll } from '@/components/ui/page';
 import { Text } from '@/components/ui/text';
 import { TintBubble } from '@/components/ui/transaction-row';
 import { formatDate } from '@/lib/dates/day-label';
@@ -111,16 +111,17 @@ function Spending({
 
   const turnPage = (next: number) => {
     setPage(next);
-    scroll.current?.scrollTo({ y: listY.current, animated: !reduceMotion });
+    scroll.current?.scrollTo({ y: PAGE_CONTENT_TOP + listY.current, animated: !reduceMotion });
   };
 
   return (
     <Page
+      headerScrolls
       screen="budget"
       kind="pushed"
       title={title}
     >
-      <ScrollView
+      <PageScroll
         ref={scroll}
         className="flex-1"
         contentContainerClassName="gap-3 px-5 pb-8"
@@ -199,7 +200,7 @@ function Spending({
             body={`Nothing counts here in ${monthLabel} any more.`}
           />
         )}
-      </ScrollView>
+      </PageScroll>
       {hold.menu}
     </Page>
   );

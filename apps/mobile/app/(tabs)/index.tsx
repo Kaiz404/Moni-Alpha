@@ -27,7 +27,7 @@ import { openCaptureChooser } from '@/components/nav/capture-chooser';
 import { useTabBarClearance } from '@/components/nav/tab-bar';
 import { SyncBanner } from '@/components/providers/sync-banner';
 import { EmptyTile } from '@/components/ui/empty-tile';
-import { Page } from '@/components/ui/page';
+import { Page, PageScroll } from '@/components/ui/page';
 import { SKELETON_DELAY_MS } from '@/components/ui/skeleton';
 import { useAuth } from '@/lib/auth/auth-context';
 import { userPhotoUrl } from '@/lib/auth/user-photo';
@@ -184,6 +184,7 @@ export default function HomeScreen() {
 
   return (
     <Page
+      headerScrolls
       screen="home"
       kind="home"
       initial={initial}
@@ -198,9 +199,11 @@ export default function HomeScreen() {
       onAskMoni={() => router.push('/chat')}
     >
       {firstSync && firstRun ? (
-        <HomeSkeleton />
+        <PageScroll scrollEnabled={false}>
+          <HomeSkeleton />
+        </PageScroll>
       ) : (
-        <ScrollView
+        <PageScroll
           ref={scroll}
           className="flex-1"
           contentContainerClassName="gap-3 px-5"
@@ -292,7 +295,7 @@ export default function HomeScreen() {
             />
           )}
           <CheckInCard currency={currency} />
-        </ScrollView>
+        </PageScroll>
       )}
     </Page>
   );

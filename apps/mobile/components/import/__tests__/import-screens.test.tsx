@@ -18,6 +18,7 @@ jest.mock('expo-router', () => ({
   router: { dismissTo: jest.fn(), push: jest.fn(), back: jest.fn() },
 }));
 jest.mock('@/components/ui/page', () => ({
+  ...jest.requireActual('@/components/ui/page'),
   Page: ({ title, subtitle, children }: { title: string; subtitle?: string; children: ReactNode }) => {
     const { Text, View } = require('react-native');
     return (

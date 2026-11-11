@@ -2,7 +2,7 @@ import { useValue } from '@legendapp/state/react';
 import type { MinorAmount } from '@repo/types';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useMemo, useState, type ReactNode } from 'react';
-import { ScrollView, View } from 'react-native';
+import { View } from 'react-native';
 
 import { DueDaySheet } from '@/components/budget/due-day-sheet';
 import { Toggle } from '@/components/ui/toggle';
@@ -16,7 +16,7 @@ import {
   type Saved,
 } from '@/components/ui/in-place-field';
 import { ListCard } from '@/components/ui/list-card';
-import { Page } from '@/components/ui/page';
+import { Page, PageScroll } from '@/components/ui/page';
 import { PickerField } from '@/components/ui/picker-field';
 import { Text } from '@/components/ui/text';
 import {
@@ -348,12 +348,13 @@ export default function BillScreen() {
   return (
     <View className="flex-1">
       <Page
+      headerScrolls
         screen="budget"
         kind="pushed"
         title="Bill"
       >
         <InPlaceGroup>
-        <ScrollView
+        <PageScroll
           className="flex-1"
           contentContainerClassName="gap-4 px-5 pb-8"
           keyboardShouldPersistTaps="handled"
@@ -647,7 +648,7 @@ export default function BillScreen() {
             label={`Stop tracking ${bill.name}`}
             onPress={stop}
           />
-        </ScrollView>
+        </PageScroll>
         </InPlaceGroup>
       </Page>
       <DueDaySheet

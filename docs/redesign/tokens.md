@@ -45,6 +45,7 @@ Dark (`V2F-Dark`): Ground #161512 · Raised #211F1B (cards) · Fill #2C2924 (San
 ## Page chrome
 
 - Status-bar inset 48 on every full-screen page (use the real safe area in code). Header row 44 tall (y 48–92), sides 20; content from y 104.
+- The header row scrolls away with the content on every scrolling page (owner's direction, 12 Nov 2026). The status-bar inset stays as a fixed Cream strip, so content scrolls under it rather than under the clock. Pages that don't scroll (Moni chat, Review, the amount page) keep a fixed header.
 - Tab root title 28/32 700. Home header instead: 44 avatar (radius 16, Mint, initial 18/700) + date (13 Meta) over greeting (16/600), Moni button trailing.
 - Pushed page: back = 44 circle, 1.5 Hairline border, chevron-left 22 ink; title 18/22 700 left-aligned; up to two trailing header buttons.
 - Header icon button: 44 circle, 1.5 Hairline border, glyph 20 ink; pressed Sand fill, scale 0.97.

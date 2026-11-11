@@ -1,7 +1,7 @@
 import type { MinorAmount } from '@repo/types';
 import { router } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { ScrollView, View } from 'react-native';
+import { View } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
 
 import {
@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/button';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { InPlaceField, InPlaceGroup } from '@/components/ui/in-place-field';
 import { ListCard } from '@/components/ui/list-card';
-import { Page } from '@/components/ui/page';
+import { Page, PageScroll } from '@/components/ui/page';
 import { Press } from '@/components/ui/press';
 import { Text } from '@/components/ui/text';
 import { TintBubble } from '@/components/ui/transaction-row';
@@ -172,6 +172,7 @@ export default function EditBudgetsScreen() {
 
   return (
     <Page
+      headerScrolls
       screen="budget"
       kind="pushed"
       title="Edit budgets"
@@ -181,7 +182,7 @@ export default function EditBudgetsScreen() {
         editing={editing}
         onEditingChange={setEditing}
       >
-      <ScrollView
+      <PageScroll
         className="flex-1"
         contentContainerClassName="gap-6 px-5 pb-8"
         keyboardShouldPersistTaps="handled"
@@ -447,7 +448,7 @@ export default function EditBudgetsScreen() {
             </ListCard>
           </View>
         ) : null}
-      </ScrollView>
+      </PageScroll>
       </InPlaceGroup>
       <View className="border-t-[1.5px] border-sand bg-canvas px-5 pb-[26px] pt-3">
         <Button

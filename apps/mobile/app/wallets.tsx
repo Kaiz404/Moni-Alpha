@@ -1,14 +1,14 @@
 import { useValue } from '@legendapp/state/react';
 import { router } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { ScrollView, View } from 'react-native';
+import { View } from 'react-native';
 import Animated from 'react-native-reanimated';
 
 import { HeaderIconButton } from '@/components/ui/header-icon-button';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { ListCard } from '@/components/ui/list-card';
 import type { BubbleTint } from '@/components/ui/nav-row';
-import { Page } from '@/components/ui/page';
+import { Page, PageScroll } from '@/components/ui/page';
 import { Press } from '@/components/ui/press';
 import { Text } from '@/components/ui/text';
 import { NetWorthChart, netWorthLayout } from '@/components/wallets/net-worth-chart';
@@ -112,6 +112,7 @@ export default function WalletsScreen() {
 
   return (
     <Page
+      headerScrolls
       screen="wallet"
       kind="pushed"
       title="Wallets"
@@ -124,7 +125,7 @@ export default function WalletsScreen() {
         />
       }
     >
-      <ScrollView
+      <PageScroll
         className="flex-1"
         contentContainerClassName="gap-5 px-5 pb-10"
         showsVerticalScrollIndicator={false}
@@ -182,7 +183,7 @@ export default function WalletsScreen() {
           })}
           <AddWallet />
         </Animated.View>
-      </ScrollView>
+      </PageScroll>
     </Page>
   );
 }
