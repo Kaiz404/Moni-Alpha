@@ -45,10 +45,17 @@ export const unstable_settings = {
   anchor: '(tabs)',
 };
 
+/**
+ * Keeps the old theme's icons until the reveal has opened over them. Its own component, so the
+ * reveal's start and end re-render the status bar, not the whole root.
+ */
+function ThemeStatusBar({ theme }: { theme: string }) {
+  const shown = useRevealHeldTheme() ?? theme;
+  return <StatusBar style={shown === 'dark' ? 'light' : 'dark'} />;
+}
+
 export default function RootLayout() {
   const { theme } = useUniwind();
-  // The status bar keeps the old theme's icons until the reveal has opened over them.
-  const barTheme = useRevealHeldTheme() ?? theme;
   const reduceMotion = useReducedMotion();
   const tokens = useResolvedThemeTokens();
   const [fontsLoaded, fontError] = useFonts(textFonts);
@@ -151,9 +158,7 @@ export default function RootLayout() {
                   <ReviewNotificationTaps />
                 </AuthGuard>
                 <ToastHost />
-                <StatusBar
-                  style={barTheme === 'dark' ? 'light' : 'dark'}
-                />
+                <ThemeStatusBar theme={theme} />
               </AuthProvider>
             </ThemeProvider>
           </QueryProvider>
