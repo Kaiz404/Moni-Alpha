@@ -30,3 +30,25 @@ export function chartRangeStart(now: Date, range: ChartRange): string | null {
       return null;
   }
 }
+
+/** Day `index` counted on the calendar from `firstDay`, so a daylight saving change cannot skip or repeat a day. */
+export function dateAt(firstDay: string, index: number): Date {
+  const [year, month, day] = firstDay.split('-').map(Number);
+  return new Date(year!, month! - 1, day! + index);
+}
+
+/** Days since 1970 of a `YYYY-MM-DD` calendar day, counted in UTC so no day is 23 or 25 hours. */
+export function dayNumber(day: string): number {
+  return Date.UTC(Number(day.slice(0, 4)), Number(day.slice(5, 7)) - 1, Number(day.slice(8, 10))) / 86_400_000;
+}
+
+/** Whole calendar days from `firstDay` to `day`, both `YYYY-MM-DD`; negative before it. */
+export function daysBetween(firstDay: string, day: string): number {
+  return dayNumber(day) - dayNumber(firstDay);
+}
+
+/** Where the range starts in a day index that begins on `firstDay`, or null for `all`. */
+export function rangeStartIndex(firstDay: string, now: Date, range: ChartRange): number | null {
+  const start = chartRangeStart(now, range);
+  return start === null ? null : daysBetween(firstDay, start);
+}
