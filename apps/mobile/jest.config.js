@@ -12,5 +12,7 @@ module.exports = {
     '^react/jsx-runtime$': require.resolve('react/jsx-runtime'),
     '^react/jsx-dev-runtime$': require.resolve('react/jsx-dev-runtime'),
     '^@/(.*)$': '<rootDir>/$1',
+    // pnpm copies a file: module under node_modules, where Jest leaves its TypeScript untransformed.
+    '^moni-theme-reveal$': '<rootDir>/modules/moni-theme-reveal',
   },
 };

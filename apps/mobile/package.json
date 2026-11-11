@@ -70,6 +70,7 @@
     "expo-web-browser": "~57.0.1",
     "moni-android-apps": "file:./modules/moni-android-apps",
     "moni-document-scanner": "file:./modules/moni-document-scanner",
+    "moni-theme-reveal": "file:./modules/moni-theme-reveal",
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "react-native": "0.86.0",
