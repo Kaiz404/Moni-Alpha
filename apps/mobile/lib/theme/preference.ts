@@ -1,5 +1,6 @@
 import { Uniwind } from 'uniwind';
 import { preferencesMMKV } from '@/lib/mmkv/preferences';
+import { markThemeRequested } from '@/lib/theme/theme-commit';
 
 export const THEME_PREFERENCE_KEY = 'theme-preference';
 
@@ -38,6 +39,7 @@ export function getThemePreference(): ThemePreference {
 /** Persist preference and apply it through Uniwind immediately. */
 export function setThemePreference(preference: ThemePreference): void {
   preferencesMMKV.set(THEME_PREFERENCE_KEY, preference);
+  markThemeRequested();
   Uniwind.setTheme(preference);
 }
 

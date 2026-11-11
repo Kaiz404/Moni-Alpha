@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 import { renderHook } from '@testing-library/react-native';
+import { createElement, type ReactNode } from 'react';
 import { useCSSVariable } from 'uniwind';
 
 import {
@@ -9,7 +10,11 @@ import {
   lightThemeTokens,
   themeTokenNames,
 } from '@/constants/theme-tokens.generated';
-import { useThemeTokens } from '@/hooks/use-theme-tokens';
+import {
+  ThemeTokensContext,
+  useResolvedThemeTokens,
+  useThemeTokens,
+} from '@/hooks/use-theme-tokens';
 
 jest.mock('uniwind', () => ({ useCSSVariable: jest.fn() }));
 
@@ -38,10 +43,10 @@ describe('generated theme tokens', () => {
   });
 });
 
-describe('useThemeTokens', () => {
+describe('useResolvedThemeTokens', () => {
   it('reads every generated token exactly once', () => {
     mockedUseCSSVariable.mockReturnValue(themeTokenNames.map((name) => `--color-${name}`));
-    const { result } = renderHook(() => useThemeTokens());
+    const { result } = renderHook(() => useResolvedThemeTokens());
 
     expect(leafValues(result.current).sort()).toEqual(
       themeTokenNames.map((name) => `--color-${name}`).sort(),
@@ -50,7 +55,7 @@ describe('useThemeTokens', () => {
 
   it('falls back to the v2 light values when Uniwind resolves nothing', () => {
     mockedUseCSSVariable.mockReturnValue(themeTokenNames.map(() => undefined));
-    const { result } = renderHook(() => useThemeTokens());
+    const { result } = renderHook(() => useResolvedThemeTokens());
 
     expect(result.current).toEqual({
       primary: '#17181a',
@@ -129,7 +134,7 @@ describe('useThemeTokens', () => {
 
   it('returns the resolved dark values when Uniwind resolves them', () => {
     mockedUseCSSVariable.mockReturnValue(themeTokenNames.map((name) => darkThemeTokens[name]));
-    const { result } = renderHook(() => useThemeTokens());
+    const { result } = renderHook(() => useResolvedThemeTokens());
 
     expect(result.current.canvas).toBe('#161512');
     expect(result.current.card).toBe('#211f1b');
@@ -146,5 +151,38 @@ describe('useThemeTokens', () => {
       '#de8b80',
       '#e3a47e',
     ]);
+  });
+});
+
+describe('useThemeTokens', () => {
+  it('reads the colours the root resolved, without its own Uniwind subscription', () => {
+    mockedUseCSSVariable.mockClear();
+    mockedUseCSSVariable.mockReturnValue(themeTokenNames.map((name) => darkThemeTokens[name]));
+    const root = renderHook(() => useResolvedThemeTokens()).result.current;
+    mockedUseCSSVariable.mockClear();
+    const wrapper = ({ children }: { children: ReactNode }) =>
+      createElement(ThemeTokensContext, { value: root }, children);
+    const { result } = renderHook(() => useThemeTokens(), { wrapper });
+
+    expect(result.current.canvas).toBe('#161512');
+    expect(result.current).toBe(root);
+    expect(mockedUseCSSVariable).not.toHaveBeenCalled();
+  });
+
+  it('gives the light values outside the root provider', () => {
+    const { result } = renderHook(() => useThemeTokens());
+
+    expect(result.current.canvas).toBe('#f6f2e9');
+    expect(result.current.foreground).toBe('#17181a');
+  });
+
+  it('keeps the same object across renders while the theme holds', () => {
+    const values = themeTokenNames.map((name) => darkThemeTokens[name]);
+    mockedUseCSSVariable.mockReturnValue(values);
+    const { result, rerender } = renderHook(() => useResolvedThemeTokens());
+    const before = result.current;
+    rerender({});
+
+    expect(result.current).toBe(before);
   });
 });

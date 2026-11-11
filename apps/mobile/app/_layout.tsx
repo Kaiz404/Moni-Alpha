@@ -24,13 +24,17 @@ import { SheetHost } from '@/components/ui/sheet/sheet-host';
 import { textFonts } from '@/components/ui/text';
 import { ToastHost } from '@/components/ui/toast';
 import { useCaptureRetry } from '@/hooks/use-capture-retry';
-import { useThemeTokens } from '@/hooks/use-theme-tokens';
+import {
+  ThemeTokensContext,
+  useResolvedThemeTokens,
+} from '@/hooks/use-theme-tokens';
 import { AuthProvider } from '@/lib/auth/auth-context';
 import { QueryProvider } from '@/lib/query/query-client';
 import { drainImageUploadQueue } from '@/lib/receipts/upload-queue';
 import { pruneIncompleteProposals } from '@/lib/supabase/proposed-transactions';
 import { pruneReviewHistoryDaily } from '@/lib/proposals/review-history';
 import { applyStoredThemePreference } from '@/lib/theme/preference';
+import { useThemeCommit } from '@/lib/theme/theme-commit';
 import { prepareOfflineSpeechModel } from '@/lib/speech/speech-recognition';
 
 applyStoredThemePreference();
@@ -43,7 +47,7 @@ export const unstable_settings = {
 export default function RootLayout() {
   const { theme } = useUniwind();
   const reduceMotion = useReducedMotion();
-  const tokens = useThemeTokens();
+  const tokens = useResolvedThemeTokens();
   const [fontsLoaded, fontError] = useFonts(textFonts);
   const fontsSettled = fontsLoaded || fontError !== null;
   const uploadAppState = useRef(AppState.currentState);
@@ -82,6 +86,7 @@ export default function RootLayout() {
     };
   }, [theme, tokens]);
 
+  useThemeCommit(theme);
   useCaptureRetry();
 
   // Drain pending image uploads whenever the app comes to foreground
@@ -113,42 +118,44 @@ export default function RootLayout() {
 
   return (
     <GestureHandlerRootView style={StyleSheet.absoluteFill}>
-      <SafeAreaProvider>
-        <QueryProvider>
-          <ThemeProvider value={navigationTheme}>
-            <AuthProvider>
-              <StoreSyncActivator />
-              <AuthGuard>
-                <Stack
-                  screenOptions={{
-                    // A theme change recolours every mounted screen, so hidden ones wait until they show.
-                    freezeOnBlur: true,
-                    headerShown: false,
-                    animation: reduceMotion
-                      ? 'fade'
-                      : 'slide_from_right',
-                  }}
-                >
-                  <Stack.Screen
-                    name="(auth)"
-                    options={{ animation: 'fade' }}
-                  />
-                  <Stack.Screen
-                    name="(tabs)"
-                    options={{ animation: 'fade' }}
-                  />
-                </Stack>
-                <SheetHost />
-                <ReviewNotificationTaps />
-              </AuthGuard>
-              <ToastHost />
-              <StatusBar
-                style={theme === 'dark' ? 'light' : 'dark'}
-              />
-            </AuthProvider>
-          </ThemeProvider>
-        </QueryProvider>
-      </SafeAreaProvider>
+      <ThemeTokensContext value={tokens}>
+        <SafeAreaProvider>
+          <QueryProvider>
+            <ThemeProvider value={navigationTheme}>
+              <AuthProvider>
+                <StoreSyncActivator />
+                <AuthGuard>
+                  <Stack
+                    screenOptions={{
+                      // A theme change recolours every mounted screen, so hidden ones wait until they show.
+                      freezeOnBlur: true,
+                      headerShown: false,
+                      animation: reduceMotion
+                        ? 'fade'
+                        : 'slide_from_right',
+                    }}
+                  >
+                    <Stack.Screen
+                      name="(auth)"
+                      options={{ animation: 'fade' }}
+                    />
+                    <Stack.Screen
+                      name="(tabs)"
+                      options={{ animation: 'fade' }}
+                    />
+                  </Stack>
+                  <SheetHost />
+                  <ReviewNotificationTaps />
+                </AuthGuard>
+                <ToastHost />
+                <StatusBar
+                  style={theme === 'dark' ? 'light' : 'dark'}
+                />
+              </AuthProvider>
+            </ThemeProvider>
+          </QueryProvider>
+        </SafeAreaProvider>
+      </ThemeTokensContext>
     </GestureHandlerRootView>
   );
 }

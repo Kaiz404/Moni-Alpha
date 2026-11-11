@@ -1,15 +1,11 @@
+import { createContext, use, useMemo } from 'react';
 import { useCSSVariable } from 'uniwind';
 
 import { lightThemeTokens, themeTokenNames } from '@/constants/theme-tokens.generated';
 
 const variableNames = themeTokenNames.map((name) => `--color-${name}`);
 
-/**
- * Resolved semantic colours for APIs that cannot accept Uniwind class names
- * (native icons, maps, SVG charts, navigation chrome, and gradients).
- */
-export function useThemeTokens() {
-  const values = useCSSVariable(variableNames);
+function buildThemeTokens(values: readonly (string | number | undefined)[]) {
   const t = { ...lightThemeTokens };
   themeTokenNames.forEach((name, index) => {
     const value = values[index];
@@ -96,4 +92,26 @@ export function useThemeTokens() {
     onInkMeta: t['on-ink-meta'],
     onInkBody: t['on-ink-body'],
   };
+}
+
+export type ThemeTokens = ReturnType<typeof buildThemeTokens>;
+
+/** Outside the root provider (tests, isolated renders) every reader gets the light values. */
+export const ThemeTokensContext = createContext<ThemeTokens>(buildThemeTokens([]));
+
+/**
+ * The one Uniwind subscription for the whole app, called by the root layout and handed down
+ * through `ThemeTokensContext`. A theme change resolves the colours once, not once per reader.
+ */
+export function useResolvedThemeTokens(): ThemeTokens {
+  const values = useCSSVariable(variableNames);
+  return useMemo(() => buildThemeTokens(values), [values]);
+}
+
+/**
+ * Resolved semantic colours for APIs that cannot accept Uniwind class names
+ * (native icons, maps, SVG charts, navigation chrome, and gradients).
+ */
+export function useThemeTokens(): ThemeTokens {
+  return use(ThemeTokensContext);
 }

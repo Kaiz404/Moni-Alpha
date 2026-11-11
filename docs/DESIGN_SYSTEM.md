@@ -610,7 +610,7 @@ springs.press / value / control / sheet / throw, drag
 
 Do not name UI tokens after a one-off visual result (`purpleCard`, `greenButton2`, `chartBlue`).
 
-Token values live only in `apps/mobile/global.css`. `pnpm --filter moni gen:tokens` copies the light and dark semantic colours into `constants/theme-tokens.generated.ts` for `useThemeTokens()`, and CI fails when that file is stale.
+Token values live only in `apps/mobile/global.css`. `pnpm --filter moni gen:tokens` copies the light and dark semantic colours into `constants/theme-tokens.generated.ts` for `useThemeTokens()`, and CI fails when that file is stale. The root layout resolves those colours once per theme and hands them down through a context, so every `useThemeTokens()` reader shares one object.
 
 ### Design-review checklist
 
