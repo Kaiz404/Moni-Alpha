@@ -1,9 +1,10 @@
 import type { CurrencyCode, MinorAmount } from '@repo/types';
 
-import { rangeGeometry } from '@/components/charts/pace-geometry';
+import { spendTarget } from '@/components/charts/spend-geometry';
+import { frameFor, linePath } from '@/components/charts/zoom';
 import { netWorthGeometry } from '@/components/wallets/net-worth-geometry';
 import { balanceHistory } from '@/lib/finance/balance-history';
-import { spendHistory } from '@/lib/finance/spend-history';
+import { spendIndex } from '@/lib/finance/spend-history';
 import type { FinanceTransaction } from '@/lib/finance/types';
 
 const now = new Date(2026, 10, 12, 12);
@@ -34,14 +35,15 @@ function fixture(): FinanceTransaction[] {
   });
 }
 
-/** Median of `runs` timings in ms. */
-function time(runs: number, work: () => unknown): number {
-  const samples = Array.from({ length: runs }, () => {
-    const start = performance.now();
-    work();
-    return performance.now() - start;
+/** Median over 7 batches of the mean ms per call. Batches, since this clock ticks in whole ms. */
+function time(perBatch: number, work: () => unknown): number {
+  work();
+  const samples = Array.from({ length: 7 }, () => {
+    const start = Date.now();
+    for (let run = 0; run < perBatch; run++) work();
+    return (Date.now() - start) / perBatch;
   }).sort((a, b) => a - b);
-  return Number(samples[Math.floor(runs / 2)]!.toFixed(2));
+  return Number(samples[3]!.toFixed(3));
 }
 
 describe('chart build timing (logged, not asserted)', () => {
@@ -52,25 +54,27 @@ describe('chart build timing (logged, not asserted)', () => {
       balanceMinor: 500000,
       createdAt: new Date(2023, 0, 1).toISOString(),
     }));
-    const spend = () => spendHistory({ now, range: 'all', transactions, currency });
+    const spend = () => spendIndex({ now, transactions, currency });
     const balance = () => balanceHistory({ now, range: 'all', wallets, transactions });
-    const history = spend();
+    const index = spend();
     const balances = balance();
+    const frame = frameFor(314, 44, 142);
+    const month = { name: 'November', daysInMonth: 30, budget: 180000, safePerDay: null };
+    const all = spendTarget({ index, now, range: 'all', mode: 'pace', month, currency });
+    const names = Object.fromEntries(WALLETS.map((id) => [id, id]));
     const result = {
-      spendIndexMs: time(9, spend),
-      balanceIndexMs: time(9, balance),
-      spendAllPathMs: time(9, () =>
-        rangeGeometry({ mode: 'pace', history, currency, width: 314 }),
+      spendIndexMs: time(20, spend),
+      balanceHistoryAllMs: time(20, balance),
+      spendAllTargetMs: time(20, () =>
+        spendTarget({ index, now, range: 'all', mode: 'pace', month, currency }),
       ),
-      netWorthAllPathMs: time(9, () =>
-        netWorthGeometry({
-          history: balances,
-          view: 'by-wallet',
-          names: Object.fromEntries(WALLETS.map((id) => [id, id])),
-          width: 314,
-          currency,
-        }),
+      spendAllPathMs: time(500, () =>
+        linePath(index.cumulative, all.from, all.to, 0, all.high, all.shift, frame, 1),
       ),
+      netWorthAllGeometryMs: time(20, () =>
+        netWorthGeometry({ history: balances, view: 'by-wallet', names, width: 314, currency }),
+      ),
+      pathPoints: linePath(index.cumulative, all.from, all.to, 0, all.high, all.shift, frame, 1).d.split(' ').length,
       days: balances.days.length,
     };
     console.log(JSON.stringify(result));

@@ -1,83 +1,120 @@
 import type { CurrencyCode } from '@repo/types';
 
-import { parseLocalDateInput, toLocalDateInput } from '@/lib/dates/local-date-input';
+import { toLocalDateInput } from '@/lib/dates/local-date-input';
 import { countsAsSpend } from '@/lib/finance/budget-month';
-import { chartRangeStart, type ChartRange } from '@/lib/finance/chart-range';
+import { chartRangeStart, dateAt, dayNumber } from '@/lib/finance/chart-range';
 import type { FinanceTransaction } from '@/lib/finance/types';
 
 export type SpendUnit = 'day' | 'week' | 'month' | 'year';
 
-/** Local `YYYY-MM-DD`, both ends included. */
-export type SpendBucket = { from: string; to: string; spentMinor: number };
+/**
+ * Spending per local day from `firstDay` to today, built once per change of the transactions and
+ * sliced by every chart range. `firstDay` is the earlier of the first spend and a year ago, so the
+ * 1M, 7D, 30D, 90D and 1Y ranges are all inside it.
+ */
+export type SpendIndex = {
+  firstDay: string;
+  /** Days in the index; the last one, `days - 1`, is today. */
+  days: number;
+  /** The first day with spending, or today when nothing was spent. */
+  firstSpend: number;
+  /** Minor units spent on each day. */
+  spent: Float64Array;
+  /** `cumulative[k]` is what was spent before day k, so it holds `days + 1` entries and ends on the total. */
+  cumulative: Float64Array;
+};
 
-/** Spending over a chart range, oldest first. The last day is today. */
-export type SpendHistory = {
-  days: { day: string; spentMinor: number }[];
-  /** The same spending in as many bars as fit: one a day up to a month, then wider. */
-  buckets: SpendBucket[];
+/**
+ * The bars for one range: `unit`-wide buckets in day indices, both ends included. Day buckets cover
+ * the whole index, since a day is the same bar in every range; wider ones start at the range start.
+ */
+export type SpendBuckets = {
   unit: SpendUnit;
+  /** Two ranges with the same key draw the same bars. */
+  key: string;
+  starts: Float64Array;
+  ends: Float64Array;
+  values: Float64Array;
+  /** The first bucket inside the range; the last bucket is always today's. */
+  first: number;
 };
 
 const MOST_DAILY_DAYS = 31;
 const MOST_WEEKLY_DAYS = 120;
 const MOST_MONTHLY_DAYS = 732;
 
-function unitFor(dayCount: number): SpendUnit {
+export function unitFor(dayCount: number): SpendUnit {
   if (dayCount <= MOST_DAILY_DAYS) return 'day';
   if (dayCount <= MOST_WEEKLY_DAYS) return 'week';
   return dayCount <= MOST_MONTHLY_DAYS ? 'month' : 'year';
 }
 
-function bucketKey(day: string, index: number, unit: SpendUnit): string {
-  if (unit === 'day') return day;
-  if (unit === 'week') return String(Math.floor(index / 7));
-  return unit === 'month' ? day.slice(0, 7) : day.slice(0, 4);
-}
-
-export function spendHistory({
+export function spendIndex({
   now,
-  range,
   transactions,
   currency,
 }: {
   now: Date;
-  range: ChartRange;
   transactions: readonly FinanceTransaction[];
   currency: CurrencyCode;
-}): SpendHistory {
+}): SpendIndex {
   const today = toLocalDateInput(now);
   const byDay = new Map<string, number>();
+  let earliest = today;
   for (const transaction of transactions) {
     if (!countsAsSpend(transaction, currency)) continue;
     const day = toLocalDateInput(new Date(transaction.transactionDate));
-    if (day <= today) byDay.set(day, (byDay.get(day) ?? 0) + Number(transaction.amountMinor));
+    if (day > today) continue;
+    byDay.set(day, (byDay.get(day) ?? 0) + Number(transaction.amountMinor));
+    if (day < earliest) earliest = day;
   }
-  const first =
-    chartRangeStart(now, range) ?? [...byDay.keys()].reduce((a, b) => (b < a ? b : a), today);
-  const start = parseLocalDateInput(first) ?? now;
-  const days: SpendHistory['days'] = [];
-  // Calendar arithmetic, not 24-hour steps, so a daylight saving change cannot skip or repeat a day.
-  for (let forward = 0; ; forward++) {
-    const day = toLocalDateInput(
-      new Date(start.getFullYear(), start.getMonth(), start.getDate() + forward),
-    );
-    if (day > today) break;
-    days.push({ day, spentMinor: byDay.get(day) ?? 0 });
-  }
+  const yearAgo = chartRangeStart(now, '1y')!;
+  const firstDay = earliest < yearAgo ? earliest : yearAgo;
+  const origin = dayNumber(firstDay);
+  const days = dayNumber(today) - origin + 1;
+  const spent = new Float64Array(days);
+  for (const [day, minor] of byDay) spent[dayNumber(day) - origin] = minor;
+  const cumulative = new Float64Array(days + 1);
+  for (let day = 0; day < days; day++) cumulative[day + 1] = cumulative[day]! + spent[day]!;
+  return { firstDay, days, firstSpend: byDay.size ? dayNumber(earliest) - origin : days - 1, spent, cumulative };
+}
 
-  const unit = unitFor(days.length);
-  const buckets: SpendBucket[] = [];
-  let openKey: string | null = null;
-  days.forEach(({ day, spentMinor }, index) => {
-    const key = bucketKey(day, index, unit);
-    const open = buckets.at(-1);
-    if (open && key === openKey) {
-      open.to = day;
-      open.spentMinor += spentMinor;
+/** The bars for a range that starts on day `from` and ends today. */
+export function spendBuckets(index: SpendIndex, from: number): SpendBuckets {
+  const last = index.days - 1;
+  const unit = unitFor(last - from + 1);
+  if (unit === 'day') {
+    const days = Float64Array.from({ length: index.days }, (_, day) => day);
+    return { unit, key: 'day', starts: days, ends: days, values: index.spent, first: from };
+  }
+  const starts: number[] = [];
+  const ends: number[] = [];
+  const values: number[] = [];
+  let openKey = '';
+  for (let day = from; day <= last; day++) {
+    const date = dateAt(index.firstDay, day);
+    const key =
+      unit === 'week'
+        ? String(Math.floor((day - from) / 7))
+        : unit === 'month'
+          ? `${date.getFullYear()}-${date.getMonth()}`
+          : String(date.getFullYear());
+    if (key === openKey) {
+      ends[ends.length - 1] = day;
+      values[values.length - 1]! += index.spent[day]!;
     } else {
-      buckets.push({ from: day, to: day, spentMinor });
+      starts.push(day);
+      ends.push(day);
+      values.push(index.spent[day]!);
       openKey = key;
     }
-  });
-  return { days, buckets, unit };
+  }
+  return {
+    unit,
+    key: `${unit}:${from}`,
+    starts: Float64Array.from(starts),
+    ends: Float64Array.from(ends),
+    values: Float64Array.from(values),
+    first: 0,
+  };
 }

@@ -1,4 +1,5 @@
 import {
+  act,
   fireEvent,
   render,
   screen,
@@ -14,12 +15,13 @@ jest.mock('uniwind', () => ({
   useUniwind: () => ({ theme: 'light' }),
 }));
 
+// The chart reads 1M from the same transactions as the other ranges, so the month matches them.
 const month = {
   month: '2026-10',
   daysInMonth: 31,
-  throughDay: 2,
-  daily: [50000, 74130, ...Array.from({ length: 29 }, () => 0)],
-  spentMinor: 124130,
+  throughDay: 14,
+  daily: Array.from({ length: 31 }, (_, day) => (day === 9 ? 2500 : day === 13 ? 1000 : 0)),
+  spentMinor: 3500,
   budgetMinor: 180000,
   left: {
     leftMinor: 31700,
@@ -53,6 +55,8 @@ const spends = [
 ] as FinanceTransaction[];
 
 describe('SpentCard', () => {
+  afterEach(() => jest.useRealTimers());
+
   it('leaves the total to the chart and puts what is left under it', () => {
     render(
       <SpentCard
@@ -64,10 +68,11 @@ describe('SpentCard', () => {
     );
     expect(screen.getByText('Spent in October')).toBeTruthy();
     expect(screen.queryByText(/ of RM1,800/)).toBeNull();
-    expect(screen.getAllByText('RM1,241.30')).toHaveLength(1);
+    expect(screen.getAllByText('RM35.00')).toHaveLength(1);
     expect(screen.getByTestId('home.chart.callout')).toHaveTextContent(
-      'RM1,241.30',
+      'RM35.00',
     );
+    expect(screen.getByText('By today')).toBeTruthy();
     expect(screen.getByTestId('home.chart.budget')).toHaveTextContent(
       'RM1,800',
     );
@@ -93,6 +98,58 @@ describe('SpentCard', () => {
       expect(screen.getByTestId(`home.range.${id}`)).toHaveTextContent(label!);
     }
     expect(screen.getByTestId('home.range.1m').props.accessibilityState.selected).toBe(true);
+  });
+
+  it('dates the month on 1M and each weekday on 7D, with Today bold where today is', () => {
+    jest.useFakeTimers();
+    render(
+      <SpentCard
+        month={month}
+        currency="MYR"
+        transactions={spends}
+        now={NOW}
+      />,
+    );
+    for (const label of ['1 Oct', '8', '15', '22', '29', 'Today']) expect(screen.getByText(label)).toBeTruthy();
+    fireEvent.press(screen.getByTestId('home.range.7d'));
+    for (const label of ['Thu', 'Fri', 'Sat', 'Sun', 'Mon', 'Tue', 'Wed', 'Today'])
+      expect(screen.getByText(label)).toBeTruthy();
+    // The month's ticks slide out with the zoom as they fade, then go.
+    expect(screen.getByText('1 Oct')).toBeTruthy();
+    act(() => jest.advanceTimersByTime(150));
+    expect(screen.queryByText('1 Oct')).toBeNull();
+  });
+
+  it('zooms the same chart between ranges instead of drawing a new one', () => {
+    render(
+      <SpentCard
+        month={month}
+        currency="MYR"
+        transactions={spends}
+        now={NOW}
+      />,
+    );
+    const chart = screen.getByTestId('home.pace-chart');
+    fireEvent.press(screen.getByTestId('home.range.7d'));
+    fireEvent.press(screen.getByTestId('home.range.all'));
+    fireEvent.press(screen.getByTestId('home.range.1m'));
+    expect(screen.getByTestId('home.pace-chart')).toBe(chart);
+  });
+
+  it('labels the even pace on 1M Daily and drops it on other ranges', () => {
+    render(
+      <SpentCard
+        month={month}
+        currency="MYR"
+        transactions={spends}
+        now={NOW}
+      />,
+    );
+    fireEvent.press(screen.getByTestId('home.chart.daily'));
+    expect(screen.getByTestId('home.chart.even-pace')).toHaveTextContent('RM58');
+    expect(screen.getByTestId('home.chart.callout')).toHaveTextContent('RM10.00');
+    fireEvent.press(screen.getByTestId('home.range.30d'));
+    expect(screen.queryByTestId('home.chart.even-pace')).toBeNull();
   });
 
   it('adds up the chosen range on Pace, without the budget or what is left', () => {

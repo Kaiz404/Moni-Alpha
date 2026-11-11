@@ -18,7 +18,6 @@ import { scheduleOnRN } from 'react-native-worklets';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Text } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
-import type { SpendHistory } from '@/lib/finance/spend-history';
 import { chartStep } from '@/lib/haptics';
 import { springs } from '@/lib/motion/tokens';
 import { tid, type Screen } from '@/lib/test-ids';
@@ -31,7 +30,6 @@ import {
   nearestIndex,
   paceGeometry,
   polylineLength,
-  rangeGeometry,
   type DaySeries,
   type PaceChartMode,
   type PaceGeometry,
@@ -82,31 +80,6 @@ export function PaceChart({
     (width: number) =>
       paceGeometry({ mode, series, budget, currency, safePerDay, width, endsToday, what }),
     [mode, series, budget, currency, safePerDay, endsToday, what],
-  );
-  return (
-    <Plot
-      screen={screen}
-      mode={mode}
-      geometryOf={geometryOf}
-    />
-  );
-}
-
-/** The same plot over a chart range: running total or bars, with no budget. */
-export function RangeChart({
-  screen,
-  mode,
-  history,
-  currency,
-}: {
-  screen: Screen;
-  mode: PaceChartMode;
-  history: SpendHistory;
-  currency: string;
-}) {
-  const geometryOf = useCallback(
-    (width: number) => rangeGeometry({ mode, history, currency, width }),
-    [mode, history, currency],
   );
   return (
     <Plot

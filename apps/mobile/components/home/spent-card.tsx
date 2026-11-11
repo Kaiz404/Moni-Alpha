@@ -3,13 +3,13 @@ import { useMemo, useState } from 'react';
 import { View } from 'react-native';
 import Svg, { Circle, Line, Rect } from 'react-native-svg';
 
-import { PaceChart, RangeChart } from '@/components/charts/pace-chart';
 import { monthFromKey, monthName } from '@/components/charts/pace-geometry';
+import { SpendChart } from '@/components/charts/spend-chart';
 import { Segmented } from '@/components/ui/segmented';
 import { Text } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { currencySymbol } from '@/lib/finance/format-money';
-import { spendHistory } from '@/lib/finance/spend-history';
+import { spendIndex } from '@/lib/finance/spend-history';
 import { tid } from '@/lib/test-ids';
 
 import { countsAsSpend, type BudgetMonth } from '@/lib/finance/budget-month';
@@ -49,19 +49,29 @@ export function SpentCard({
 }) {
   const [mode, setMode] = useState<Mode>('pace');
   const [range, setRange] = useState<ChartRange>('1m');
-  const empty = month.spentMinor === 0 && month.budgetMinor === null;
   const line = month.left ? leftLine(month.left, currency, after) : null;
-  const chartMonth = monthFromKey(month.month);
-  const name = monthName(chartMonth);
+  const name = monthName(monthFromKey(month.month));
   const title = range === '1m' ? `Spent in ${name}` : RANGE_TITLE[range];
-  const history = useMemo(
-    () => (range === '1m' ? null : spendHistory({ now, range, transactions, currency })),
-    [now, range, transactions, currency],
+  const index = useMemo(
+    () => spendIndex({ now, transactions, currency }),
+    [now, transactions, currency],
+  );
+  const perDay = month.left?.perDayMinor ?? 0;
+  const spendMonth = useMemo(
+    () => ({
+      name,
+      daysInMonth: month.daysInMonth,
+      budget: month.budgetMinor,
+      safePerDay: perDay > 0 ? perDay : null,
+    }),
+    [name, month.daysInMonth, month.budgetMinor, perDay],
   );
   const everSpent = useMemo(
     () => transactions.some((transaction) => countsAsSpend(transaction, currency)),
     [transactions, currency],
   );
+  // The first-run hint only until there is spending or a budget; after that every range is one chart.
+  const firstRun = !everSpent && month.spentMinor === 0 && month.budgetMinor === null;
 
   return (
     <View
@@ -87,15 +97,7 @@ export function SpentCard({
           onChange={setMode}
         />
       </View>
-      {history ? (
-        <RangeChart
-          key={range}
-          screen="home"
-          mode={mode}
-          history={history}
-          currency={currency}
-        />
-      ) : empty ? (
+      {firstRun ? (
         <EmptyChart
           mode={mode}
           today={month.throughDay}
@@ -104,13 +106,14 @@ export function SpentCard({
           currency={currency}
         />
       ) : (
-        <PaceChart
+        <SpendChart
           screen="home"
+          index={index}
+          now={now}
+          range={range}
           mode={mode}
-          series={{ month: chartMonth, values: month.daily.slice(0, month.throughDay) }}
-          budget={month.budgetMinor}
+          month={spendMonth}
           currency={currency}
-          safePerDay={month.left && month.left.perDayMinor > 0 ? month.left.perDayMinor : null}
         />
       )}
       {everSpent ? (
@@ -124,7 +127,7 @@ export function SpentCard({
           onChange={setRange}
         />
       ) : null}
-      {line && !history ? (
+      {line && range === '1m' ? (
         <Text
           testID={tid('home', 'spent', 'left')}
           variant="meta"
