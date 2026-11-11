@@ -30,6 +30,7 @@ import { EmptyTile } from '@/components/ui/empty-tile';
 import { Page } from '@/components/ui/page';
 import { SKELETON_DELAY_MS } from '@/components/ui/skeleton';
 import { useAuth } from '@/lib/auth/auth-context';
+import { userPhotoUrl } from '@/lib/auth/user-photo';
 import { useMainCurrency } from '@/lib/finance/main-currency';
 import { merchantName } from '@/lib/finance/merchant-name';
 import {
@@ -186,6 +187,7 @@ export default function HomeScreen() {
       screen="home"
       kind="home"
       initial={initial}
+      photoUrl={userPhotoUrl(user)}
       date={headerDate(now)}
       greeting={
         firstRun

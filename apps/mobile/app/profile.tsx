@@ -25,7 +25,9 @@ import { NavRow } from '@/components/ui/nav-row';
 import { Page } from '@/components/ui/page';
 import { Segmented } from '@/components/ui/segmented';
 import { Text } from '@/components/ui/text';
+import { UserAvatar } from '@/components/ui/user-avatar';
 import { useAuth } from '@/lib/auth/auth-context';
+import { userPhotoUrl } from '@/lib/auth/user-photo';
 import {
   categoriesForUser$,
   walletsForUser$,
@@ -150,11 +152,11 @@ export default function ProfileScreen() {
             .filter(Boolean)
             .join(', ')}
         >
-          <View className="h-14 w-14 items-center justify-center rounded-[20px] bg-mint">
-            <Text className="text-[24px] leading-[28px] font-display-bold text-on-pastel">
-              {(name.charAt(0) || '?').toUpperCase()}
-            </Text>
-          </View>
+          <UserAvatar
+            initial={(name.charAt(0) || '?').toUpperCase()}
+            photoUrl={userPhotoUrl(user)}
+            size="profile"
+          />
           <View className="min-w-0 flex-1">
             <Text
               variant="sectionTitle"

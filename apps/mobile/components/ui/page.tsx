@@ -15,6 +15,7 @@ import {
 } from '@/components/ui/header-icon-button';
 import { Press } from '@/components/ui/press';
 import { Text } from '@/components/ui/text';
+import { UserAvatar } from '@/components/ui/user-avatar';
 import { tid, type Screen } from '@/lib/test-ids';
 import { springs } from '@/lib/motion/tokens';
 
@@ -22,6 +23,8 @@ export type PageHeader =
   | {
       kind: 'home';
       initial: string;
+      /** The account's photo, such as from Google; the initial shows without one. */
+      photoUrl: string | null;
       date: string;
       greeting: string;
       onAvatarPress: () => void;
@@ -117,15 +120,14 @@ function HeaderRow(props: PageProps) {
             testID={tid(props.screen, 'avatar')}
             onPress={props.onAvatarPress}
             accessibilityLabel="Profile and settings"
-            pressedClassName="bg-mint-pressed"
-            className="h-11 w-11 items-center justify-center rounded-[16px] bg-mint"
+            radius={{ rest: 16, pressed: 12 }}
+            className="h-11 w-11"
           >
-            <Text
-              variant="cardTitle"
-              className="text-on-pastel"
-            >
-              {props.initial}
-            </Text>
+            <UserAvatar
+              initial={props.initial}
+              photoUrl={props.photoUrl}
+              size="header"
+            />
           </Press>
           <View className="min-w-0 flex-1">
             <Text
