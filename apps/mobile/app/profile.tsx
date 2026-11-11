@@ -35,16 +35,10 @@ import {
 import { tid } from '@/lib/test-ids';
 import {
   getThemePreference,
-  setThemePreference,
   THEME_PREFERENCE_OPTIONS,
   type ThemePreference,
 } from '@/lib/theme/preference';
-
-/**
- * Lets the pill's spring start on the UI thread before the recolour takes the JS thread. Hidden
- * screens are frozen, so only this page recolours now, and a longer wait just reads as lag.
- */
-const THEME_AFTER_PILL_MS = 50;
+import { segmentCentre, switchTheme } from '@/lib/theme/reveal';
 
 function displayName(user: User | null): string {
   const meta = user?.user_metadata ?? {};
@@ -62,12 +56,17 @@ function walletsMeta(currencies: readonly string[]): string {
   }
   return [...counts]
     .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
-    .map(([currency, count]) => `${count} in ${currencyHeldIn(currency)}`)
+    .map(
+      ([currency, count]) =>
+        `${count} in ${currencyHeldIn(currency)}`,
+    )
     .join(' · ');
 }
 
 /** Reading alerts is what the page is for, so that state speaks for the whole row. */
-function captureSourcesRow(access: Record<PhoneAccessId, AccessState>): {
+function captureSourcesRow(
+  access: Record<PhoneAccessId, AccessState>,
+): {
   meta: string;
   tint: ProfileTint;
 } {
@@ -115,8 +114,10 @@ export default function ProfileScreen() {
   const userId = user?.id ?? null;
   const name = displayName(user);
   const google = user?.app_metadata?.provider === 'google';
-  const [theme, setTheme] = useState<ThemePreference>(getThemePreference);
-  const themeFlip = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const [theme, setTheme] = useState<ThemePreference>(
+    getThemePreference,
+  );
+  const appearance = useRef<View>(null);
   const { access } = usePhoneAccess();
   const sources = captureSourcesRow(access);
   const merchants = useMerchantNames();
@@ -149,7 +150,11 @@ export default function ProfileScreen() {
         <View
           className="flex-row items-center gap-3.5"
           accessible
-          accessibilityLabel={[name, user?.email, google ? 'Google' : null]
+          accessibilityLabel={[
+            name,
+            user?.email,
+            google ? 'Google' : null,
+          ]
             .filter(Boolean)
             .join(', ')}
         >
@@ -186,21 +191,40 @@ export default function ProfileScreen() {
           >
             APPEARANCE
           </Text>
-          <Segmented
-            screen="profile"
-            name="appearance"
-            accessibilityLabel="Appearance"
-            options={THEME_PREFERENCE_OPTIONS}
-            value={theme}
-            onChange={(next) => {
-              setTheme(next);
-              clearTimeout(themeFlip.current);
-              themeFlip.current = setTimeout(
-                () => setThemePreference(next),
-                THEME_AFTER_PILL_MS,
-              );
-            }}
-          />
+          <View
+            ref={appearance}
+            collapsable={false}
+          >
+            <Segmented
+              screen="profile"
+              name="appearance"
+              accessibilityLabel="Appearance"
+              options={THEME_PREFERENCE_OPTIONS}
+              value={theme}
+              onChange={(next) => {
+                setTheme(next);
+                const index = THEME_PREFERENCE_OPTIONS.findIndex(
+                  (option) => option.value === next,
+                );
+                const track = appearance.current;
+                if (!track) {
+                  void switchTheme(next);
+                  return;
+                }
+                // The circle opens from the option just picked, so the new theme spreads from the finger.
+                track.measureInWindow((x, y, width, height) => {
+                  void switchTheme(
+                    next,
+                    segmentCentre(
+                      { x, y, width, height },
+                      index,
+                      THEME_PREFERENCE_OPTIONS.length,
+                    ),
+                  );
+                });
+              }}
+            />
+          </View>
         </View>
 
         <Section label="MONEY">
@@ -209,7 +233,9 @@ export default function ProfileScreen() {
             icon="wallet"
             tint="lemon"
             title="Wallets"
-            meta={walletsMeta(wallets.map((wallet) => wallet.currency))}
+            meta={walletsMeta(
+              wallets.map((wallet) => wallet.currency),
+            )}
             value={String(wallets.length)}
             chevron="right"
             onPress={() => router.push('/wallets')}
@@ -231,7 +257,11 @@ export default function ProfileScreen() {
             title="Merchant names"
             meta={
               merchants.toName.length
-                ? plural(merchants.toName.length, 'bank code to name', 'bank codes to name')
+                ? plural(
+                    merchants.toName.length,
+                    'bank code to name',
+                    'bank codes to name',
+                  )
                 : 'Name the codes banks send'
             }
             value={`${merchants.named.length} named`}
@@ -243,7 +273,11 @@ export default function ProfileScreen() {
         <Section label="PRIVACY AND DATA">
           <ProfileRow
             testID={tid('profile', 'row', 'capture-sources')}
-            icon={sources.tint === 'attention' ? 'bell-off-outline' : 'bell-outline'}
+            icon={
+              sources.tint === 'attention'
+                ? 'bell-off-outline'
+                : 'bell-outline'
+            }
             tint={sources.tint}
             title="Capture sources"
             meta={sources.meta}

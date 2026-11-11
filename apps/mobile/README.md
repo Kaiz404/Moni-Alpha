@@ -20,7 +20,7 @@ This app uses native modules (camera, notifications, Google Sign-In) — **Expo 
 
 GitHub Actions creates a debug APK without EAS on every PR and `main` push. Download the APK from the workflow run for successful `main` or manual builds; it is retained for seven days. See [docs/SETUP.md](../../docs/SETUP.md#github-actions-android-ci).
 
-Rebuild the dev client when you change `app.json` plugins, native deps, or local modules (`modules/moni-android-apps`, `modules/moni-document-scanner`).
+Rebuild the dev client when you change `app.json` plugins, native deps, or local modules (`modules/moni-android-apps`, `modules/moni-document-scanner`, `modules/moni-theme-reveal`).
 
 ### Code style
 
@@ -215,7 +215,7 @@ Wallet identity: `wallet.cardStyleId` picks a curated solid fill from `constants
 
 **Transaction detail** (`app/transaction/[id].tsx`): reads the row from `transactionById$` and `metadata` and `receipt_image_url` from the synced table. Edits go through `updateTransaction` with an Undo that writes the previous values back; a notification row's name goes through `nameMerchant`, which needs the merchant-names migration. **Add a receipt photo** picks an image, uploads it with `uploadReceiptImage`, and stores the URL with `setTransactionReceipt`. Categories read this month per category from `categoryMonths` in `lib/finance/activity-series.ts`.
 
-Appearance: Profile → Appearance (`light` default; `system` follows the device). Persisted in MMKV via `lib/theme/preference.ts`.
+Appearance: Profile → Appearance (`light` default; `system` follows the device). Persisted in MMKV via `lib/theme/preference.ts`. Profile switches through `switchTheme` in `lib/theme/reveal.ts`, which runs `modules/moni-theme-reveal` (Android, Expo module): `capture()` lays a `PixelCopy` screenshot of the window over the decor view, the theme changes under it, `nextThemeCommit` (`lib/theme/theme-commit.ts`, answered by the root layout) waits for the commit, and `reveal(x, y, ms)` opens a circle in the screenshot from the picked option (`segmentCentre`) and removes it. One reveal runs at a time; picks while the screenshot is taken keep only the last, and picks during the circle recolour under it. `useRevealHeldTheme` keeps the status bar on the old theme until it ends. Without the module (iOS, Expo Go, an older dev client) or with a failed screenshot the theme switches at once. In development the root logs `[theme] dark: commit N ms, next frame N ms` per switch.
 
 Main currency: Profile → Main currency opens `components/profile/main-currency-sheet.tsx` (the kit `Sheet` in a `Modal`, held currencies only); `components/profile/main-currency-row.tsx` sets `profilePreferences$` at once and writes `preferences.currency` through `updateProfilePreferences`, restoring the old value if the write fails. `useMainCurrency()` reads it.
 

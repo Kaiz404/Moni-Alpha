@@ -551,6 +551,7 @@ Light and dark mode are first-class siblings, not inverted afterthoughts.
 - Pastel accents often need a deeper or brighter companion in dark mode to retain contrast.
 - Ensure receipt thumbnails, imported notification evidence, and charts remain interpretable in either theme.
 - Treat system appearance as default, with an explicit Profile override.
+- A theme switch never changes the whole screen in one frame: on Android the new theme opens as a circle from the picked option over a screenshot of the old one (values in [`redesign/tokens.md`](redesign/tokens.md) Motion).
 
 ---
 

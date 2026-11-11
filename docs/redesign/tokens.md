@@ -131,6 +131,7 @@ Springs (mass 1):
 - A number is never hidden or moving for more than ~200 ms; no digit roll on first paint.
 - Lists: first 6 rows rise 8 + fade, 30 ms apart, on first load only.
 - Reduce motion: slides and scales become 150–200 ms fades, no bounce, 1:1 tracking kept.
+- Theme reveal (owner's direction, 12 Nov 2026): picking Light, Dark or System opens the new theme as a circle from the centre of the picked option, over a still of the old one, ease-in-out (0.77, 0, 0.175, 1) for 450 ms, until it covers the farthest corner; the status bar keeps the old icons until it ends. One reveal at a time: a pick during one recolours under it. Animations off: the still fades in 180 ms. iOS switches at once.
 
 ## Haptics (expo-haptics; Android constant, iOS equivalent)
 

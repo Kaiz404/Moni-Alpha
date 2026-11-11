@@ -34,6 +34,7 @@ import { drainImageUploadQueue } from '@/lib/receipts/upload-queue';
 import { pruneIncompleteProposals } from '@/lib/supabase/proposed-transactions';
 import { pruneReviewHistoryDaily } from '@/lib/proposals/review-history';
 import { applyStoredThemePreference } from '@/lib/theme/preference';
+import { useRevealHeldTheme } from '@/lib/theme/reveal';
 import { useThemeCommit } from '@/lib/theme/theme-commit';
 import { prepareOfflineSpeechModel } from '@/lib/speech/speech-recognition';
 
@@ -46,6 +47,8 @@ export const unstable_settings = {
 
 export default function RootLayout() {
   const { theme } = useUniwind();
+  // The status bar keeps the old theme's icons until the reveal has opened over them.
+  const barTheme = useRevealHeldTheme() ?? theme;
   const reduceMotion = useReducedMotion();
   const tokens = useResolvedThemeTokens();
   const [fontsLoaded, fontError] = useFonts(textFonts);
@@ -149,7 +152,7 @@ export default function RootLayout() {
                 </AuthGuard>
                 <ToastHost />
                 <StatusBar
-                  style={theme === 'dark' ? 'light' : 'dark'}
+                  style={barTheme === 'dark' ? 'light' : 'dark'}
                 />
               </AuthProvider>
             </ThemeProvider>
