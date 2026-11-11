@@ -1,5 +1,6 @@
 import type { MinorAmount } from '@repo/types';
 import {
+  act,
   fireEvent,
   render,
   screen,
@@ -7,10 +8,10 @@ import {
 
 import { NetWorthChart } from '@/components/wallets/net-worth-chart';
 import {
-  netWorthGeometry,
+  netWorthTarget,
   walletLineStyles,
 } from '@/components/wallets/net-worth-geometry';
-import { balanceHistory } from '@/lib/finance/balance-history';
+import { balanceIndex } from '@/lib/finance/balance-history';
 import type {
   FinanceTransaction,
   FinanceWallet,
@@ -64,6 +65,8 @@ function chart(
 }
 
 describe('NetWorthChart', () => {
+  afterEach(() => jest.useRealTimers());
+
   it('shows the live number, thirty days by default, and a total callout on today', () => {
     chart([maybank, cash]);
     expect(
@@ -72,7 +75,8 @@ describe('NetWorthChart', () => {
     expect(
       screen.getByTestId('wallet.chart.callout'),
     ).toHaveTextContent('RM2,500.00');
-    expect(screen.getByText('15 Sep')).toHaveTextContent('15 Sep');
+    for (const monday of ['21 Sep', '28 Sep', '5 Oct', '12 Oct'])
+      expect(screen.getByText(monday)).toBeTruthy();
     expect(screen.getAllByText('Today')).toHaveLength(2);
     expect(
       screen.getByTestId('wallet.chart.30d').props.accessibilityState
@@ -82,17 +86,18 @@ describe('NetWorthChart', () => {
     expect(screen.queryByText(/closing balance each day/)).toBeNull();
   });
 
-  it('relabels the axis when a range chip is pressed', () => {
+  it('dates the axis by the range: Mondays on 30D, quarters on 1Y, the month on 1M', () => {
+    jest.useFakeTimers();
     chart([maybank, cash]);
     fireEvent.press(screen.getByTestId('wallet.chart.1y'));
+    act(() => jest.advanceTimersByTime(150));
     expect(
       screen.getByTestId('wallet.chart.1y').props.accessibilityState
         .selected,
     ).toBe(true);
-    expect(screen.getByText('Oct 2025')).toHaveTextContent(
-      'Oct 2025',
-    );
-    expect(screen.queryByText('15 Sep')).toBeNull();
+    for (const quarter of ['Jan 2026', 'Apr', 'Jul', 'Oct'])
+      expect(screen.getByText(quarter)).toBeTruthy();
+    expect(screen.queryByText('21 Sep')).toBeNull();
     fireEvent.press(screen.getByTestId('wallet.chart.1m'));
     expect(screen.getByText('1 Oct')).toHaveTextContent('1 Oct');
   });
@@ -194,50 +199,42 @@ describe('NetWorthChart', () => {
   });
 });
 
-describe('netWorthGeometry', () => {
-  const history = (range: '1y' | '1m') =>
-    balanceHistory({
-      now,
-      range,
-      wallets: [
-        { id: 'maybank', balanceMinor: 243180, createdAt: old },
-      ],
-      transactions: [
-        {
-          type: 'expense',
-          walletId: 'maybank',
-          transferToWalletId: null,
-          amountMinor: money(75370),
-          transactionDate: on(10, 10),
-        },
-      ],
-    });
-  const layout = (
-    input: ReturnType<typeof balanceHistory>,
+describe('netWorthTarget', () => {
+  const index = balanceIndex({
+    now,
+    wallets: [{ id: 'maybank', balanceMinor: 243180, createdAt: old }],
+    transactions: [
+      {
+        type: 'expense',
+        walletId: 'maybank',
+        transferToWalletId: null,
+        amountMinor: money(75370),
+        transactionDate: on(10, 10),
+      },
+    ],
+  });
+  const target = (
+    range: '1y' | '1m',
     view: 'total' | 'by-wallet' = 'total',
   ) =>
-    netWorthGeometry({
-      history: input,
+    netWorthTarget({
+      index,
+      now,
+      range,
       view,
       names: { maybank: 'Maybank' },
-      width: 314,
       currency: 'MYR',
     });
 
-  it('puts the first day on the left edge and today on the right on the 14th, not half way', () => {
-    const { lines, left, right, step } = layout(history('1m'));
-    const xs = lines[0]!.points
-      .split(' ')
-      .map((point) => Number(point.split(',')[0]));
-    expect(xs).toHaveLength(14);
-    expect(xs[0]).toBe(54);
-    expect(xs[13]).toBe(310);
-    expect([left, right]).toEqual([54, 310]);
-    expect(step).toBeCloseTo(256 / 13);
+  it('runs from the first day of the range to today on the 14th, not to the month end', () => {
+    const { from, to, count } = target('1m');
+    expect(to).toBe(index.days - 1);
+    expect([to - from, count]).toEqual([13, 14]);
   });
 
   it('starts the axis near the lowest balance and says so', () => {
-    const { axis, accessibilityLabel } = layout(history('1m'));
+    const { axis, low, high, accessibilityLabel } = target('1m');
+    expect([low, high]).toEqual([200000, 350000]);
     expect(axis.map((label) => label.text)).toEqual([
       'RM3,500',
       'RM2,750',
@@ -248,64 +245,58 @@ describe('netWorthGeometry', () => {
     );
   });
 
-  it('labels a year by month and keeps the last point exact', () => {
-    const year = history('1y');
-    const { ticks, lines } = layout(year);
-    expect(ticks.map((tick) => tick.text)).toEqual([
-      'Oct 2025',
-      'Apr 2026',
-      'Today',
+  it('dates a year by quarter and keeps the last day exact', () => {
+    const { ticks, count, to } = target('1y');
+    expect(ticks.map((tick) => tick.label)).toEqual([
+      'Jan 2026',
+      'Apr',
+      'Jul',
+      'Oct',
     ]);
-    expect(lines[0]!.points.split(' ')).toHaveLength(366);
-    expect(year.total[365]).toBe(243180);
+    expect(count).toBe(366);
+    expect(index.total[to]).toBe(243180);
   });
 
-  it('spans the plot with a single day', () => {
-    const { lines, ticks, area, step } = layout(
-      balanceHistory({
-        now,
-        range: '1m',
-        wallets: [
-          {
-            id: 'maybank',
-            balanceMinor: 243180,
-            createdAt: on(10, 14),
-          },
-        ],
-        transactions: [],
-      }),
-    );
-    expect(
-      lines[0]!.points.split(' ').map((point) => point.split(',')[0]),
-    ).toEqual(['54', '310']);
-    expect(ticks.map((tick) => tick.text)).toEqual(['Today']);
-    expect(step).toBe(0);
-    expect(area).toContain('L310,');
-  });
-
-  it('draws a later wallet only from the day it began', () => {
-    const later = balanceHistory({
+  it('holds a single day when the only wallet began today', () => {
+    const today = balanceIndex({
+      now,
+      wallets: [{ id: 'maybank', balanceMinor: 243180, createdAt: on(10, 14) }],
+      transactions: [],
+    });
+    const single = netWorthTarget({
+      index: today,
       now,
       range: '1m',
+      view: 'total',
+      names: { maybank: 'Maybank' },
+      currency: 'MYR',
+    });
+    expect([single.from, single.to, single.count]).toEqual([0, 0, 1]);
+    expect(single.ticks).toEqual([]);
+  });
+
+  it('leaves a later wallet empty before the day it began', () => {
+    const later = balanceIndex({
+      now,
       wallets: [
         { id: 'maybank', balanceMinor: 100000, createdAt: old },
         { id: 'cash', balanceMinor: 5000, createdAt: on(10, 13) },
       ],
       transactions: [],
     });
-    const { lines } = netWorthGeometry({
-      history: later,
+    const { from, to } = netWorthTarget({
+      index: later,
+      now,
+      range: '1m',
       view: 'by-wallet',
       names: { maybank: 'Maybank', cash: 'Cash' },
-      width: 314,
       currency: 'MYR',
     });
-    expect(
-      lines.map((line) => line.points.split(' ').length),
-    ).toEqual([14, 2]);
-    expect(lines[1]!.ys.slice(0, 12).every((y) => y === null)).toBe(
-      true,
-    );
+    expect(Array.from(later.byWallet.cash!.subarray(from, to + 1))).toEqual([
+      ...Array.from({ length: 12 }, () => NaN),
+      5000,
+      5000,
+    ]);
   });
 });
 

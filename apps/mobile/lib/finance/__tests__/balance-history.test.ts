@@ -1,7 +1,11 @@
 import type { MinorAmount } from '@repo/types';
 
+import { toLocalDateInput } from '@/lib/dates/local-date-input';
+
+import type { ChartRange } from '../chart-range';
+import { dateAt } from '../chart-range';
 import type { FinanceTransaction } from '../types';
-import { balanceHistory } from '../balance-history';
+import { balanceIndex, balanceViewport } from '../balance-history';
 
 type Row = Pick<
   FinanceTransaction,
@@ -24,10 +28,31 @@ function row(
   };
 }
 
+/** What a range shows: the index sliced to the range's viewport, a missing day read as null. */
+function balanceHistory({
+  range,
+  ...input
+}: Parameters<typeof balanceIndex>[0] & { range: ChartRange }) {
+  const index = balanceIndex(input);
+  const { from, to } = balanceViewport(index, input.now, range);
+  const days = Array.from({ length: to - from + 1 }, (_, day) =>
+    toLocalDateInput(dateAt(index.firstDay, from + day)),
+  );
+  const slice = (values: Float64Array) =>
+    Array.from(values.subarray(from, to + 1), (value) => (Number.isNaN(value) ? null : value));
+  return {
+    days,
+    total: slice(index.total),
+    byWallet: Object.fromEntries(
+      Object.entries(index.byWallet).map(([id, values]) => [id, slice(values)]),
+    ),
+  };
+}
+
 const noon = (year: number, month: number, day: number) => new Date(year, month - 1, day, 12);
 const old = noon(2020, 1, 1).toISOString();
 
-describe('balanceHistory', () => {
+describe('balanceIndex through a range', () => {
   it('walks back from the live balance so the last point equals it', () => {
     const history = balanceHistory({
       now: noon(2026, 10, 4),
@@ -193,7 +218,7 @@ describe('balanceHistory', () => {
   });
 });
 
-describe('balanceHistory on the short and open ranges', () => {
+describe('balanceIndex on the short and open ranges', () => {
   const now = new Date(2026, 10, 2, 12);
   const wallets = [{ id: 'w', balanceMinor: 1000, createdAt: '2024-03-05T04:00:00Z' }];
 

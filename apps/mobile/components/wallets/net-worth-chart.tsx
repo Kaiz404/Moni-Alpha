@@ -1,66 +1,72 @@
-import { memo, useEffect, useMemo, useRef, useState } from 'react';
+import { memo, useEffect, useMemo, useState } from 'react';
 import { View } from 'react-native';
-import {
-  Gesture,
-  GestureDetector,
-} from 'react-native-gesture-handler';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   FadeIn,
+  FadeOut,
+  LayoutAnimationConfig,
   LinearTransition,
+  useAnimatedProps,
   useAnimatedStyle,
+  useDerivedValue,
   useReducedMotion,
   useSharedValue,
-  withSpring,
-  withTiming,
   type SharedValue,
 } from 'react-native-reanimated';
-import Svg, { Line, Path, Polyline } from 'react-native-svg';
+import Svg, { Line, Path } from 'react-native-svg';
 import { useUniwind } from 'uniwind';
 import { scheduleOnRN } from 'react-native-worklets';
 
+import { PLOT_HEIGHT, calloutLeft } from '@/components/charts/pace-geometry';
 import {
-  AXIS_LABEL_OVERHANG,
-  AXIS_WIDTH,
-  PLOT_HEIGHT,
-  calloutLeft,
-} from '@/components/charts/pace-geometry';
+  areaPath,
+  frameFor,
+  linePath,
+  uAt,
+  useZoom,
+  xAt,
+  yAt,
+  type Frame,
+  type Zoom,
+} from '@/components/charts/zoom';
+import { YLabels, ZoomTicks } from '@/components/charts/zoom-axes';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Segmented } from '@/components/ui/segmented';
 import { Text } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { dayLabel } from '@/lib/dates/day-label';
-import {
-  balanceHistory,
-} from '@/lib/finance/balance-history';
-import { CHART_RANGES, type ChartRange } from '@/lib/finance/chart-range';
+import { toLocalDateInput } from '@/lib/dates/local-date-input';
+import { balanceIndex } from '@/lib/finance/balance-history';
+import { CHART_RANGES, dateAt, type ChartRange } from '@/lib/finance/chart-range';
 import { formatMoney } from '@/lib/finance/format-money';
-import type {
-  FinanceTransaction,
-  FinanceWallet,
-} from '@/lib/finance/types';
+import type { FinanceTransaction, FinanceWallet } from '@/lib/finance/types';
 import { chartStep } from '@/lib/haptics';
 import { springs } from '@/lib/motion/tokens';
 import { tid } from '@/lib/test-ids';
 import { compactWalletNames } from '@/lib/wallets/compact-name';
 
 import {
+  NET_WORTH_BASE,
+  NET_WORTH_TOP,
   dayReading,
-  netWorthGeometry,
+  netWorthTarget,
   walletLineStyles,
-  type NetWorthGeometry,
   type NetWorthView,
   type WalletLineStyle,
 } from './net-worth-geometry';
 
 const DEFAULT_WIDTH = 314;
-const REDUCED_FADE = { duration: 180 };
 const GUIDE_TOP = 38;
-/** The selection appears for the last part of the draw, once the line has nearly reached it. */
+/** The selection appears for the last part of the draw-in, once the line has nearly reached it. */
 const SELECTION_FADE_FROM = 0.6;
+const VIEW_IN = FadeIn.duration(180);
+const VIEW_OUT = FadeOut.duration(180);
 const VIEWS: readonly { value: NetWorthView; label: string }[] = [
   { value: 'total', label: 'Total' },
   { value: 'by-wallet', label: 'By wallet' },
 ];
+
+const AnimatedPath = Animated.createAnimatedComponent(Path);
 
 /** The card and everything under it slide together when the key opens below the chart. */
 export const netWorthLayout = LinearTransition.springify()
@@ -69,19 +75,10 @@ export const netWorthLayout = LinearTransition.springify()
 
 type Tokens = ReturnType<typeof useThemeTokens>;
 
-function xAt(
-  index: number,
-  left: number,
-  step: number,
-  right: number,
-): number {
-  'worklet';
-  return step > 0 ? left + index * step : right;
-}
-
 /**
  * The Wallets card: net worth now, its closing balance over a chosen range, as one line or one per
- * wallet. The number stays on the live balance, and the callout and key read the scrubbed day.
+ * wallet. The balances are indexed once; a range change zooms the axes on one spring. The number
+ * stays on the live balance, and the callout and key read the scrubbed day.
  */
 export function NetWorthChart({
   now,
@@ -105,14 +102,12 @@ export function NetWorthChart({
   const [width, setWidth] = useState(DEFAULT_WIDTH);
   const [range, setRange] = useState<ChartRange>('30d');
   const [chosenView, setView] = useState<NetWorthView>('total');
-  const [picked, setPicked] = useState<number | null>(null);
   const view = wallets.length > 1 ? chosenView : 'total';
 
-  const history = useMemo(
+  const index = useMemo(
     () =>
-      balanceHistory({
+      balanceIndex({
         now,
-        range,
         wallets: wallets.map((wallet) => ({
           id: wallet.id,
           balanceMinor: Number(balances[wallet.id] ?? 0),
@@ -120,52 +115,39 @@ export function NetWorthChart({
         })),
         transactions,
       }),
-    [now, range, wallets, balances, transactions],
+    [now, wallets, balances, transactions],
   );
   const names = useMemo(() => compactWalletNames(wallets), [wallets]);
-  const lineStyles = useMemo(
-    () => walletLineStyles(wallets, dark),
-    [wallets, dark],
+  const lineStyles = useMemo(() => walletLineStyles(wallets, dark), [wallets, dark]);
+  const target = useMemo(
+    () => netWorthTarget({ index, now, range, view, names, currency }),
+    [index, now, range, view, names, currency],
   );
-  const geometry = useMemo(
-    () => netWorthGeometry({ history, view, names, width, currency }),
-    [history, view, names, width, currency],
+  const zoom = useZoom(
+    { from: target.from, to: target.to, low: target.low, high: target.high, shift: 0 },
+    reduceMotion,
   );
+  const frame = useMemo(() => frameFor(width, NET_WORTH_TOP, NET_WORTH_BASE), [width]);
 
-  const last = history.days.length - 1;
-  const selected = Math.min(picked ?? last, last);
-  const index = useSharedValue(last);
+  const { from: first, to: last } = target;
+  const [pick, setPick] = useState<{ range: ChartRange; day: number } | null>(null);
+  const selected = pick?.range === range ? Math.max(first, Math.min(last, pick.day)) : last;
+  const day = useSharedValue(selected);
   useEffect(() => {
-    if (picked === null) index.set(last);
-  }, [picked, last, index]);
+    day.set(selected);
+  }, [selected, day]);
 
-  const reveal = useSharedValue(reduceMotion ? 1 : 0);
-  useEffect(() => {
-    reveal.set(
-      reduceMotion
-        ? withTiming(1, REDUCED_FADE)
-        : withSpring(1, springs.value),
-    );
-  }, [range, view, reduceMotion, reveal]);
-  // Cleared in the press handler, so the new line never shows whole for a frame before it draws.
-  const redraw = () => reveal.set(0);
-
-  const lastPick = useRef<number | null>(null);
-  const { left, step } = geometry;
   const onPick = (next: number) => {
-    setPicked(next);
-    if (next !== lastPick.current) chartStep(history.days.length);
-    lastPick.current = next;
+    setPick({ range, day: next });
+    chartStep(target.count);
   };
+  const { from, to, reveal, fade } = zoom;
   const gesture = useMemo(() => {
     const pick = (x: number) => {
       'worklet';
-      const next =
-        step > 0
-          ? Math.max(0, Math.min(last, Math.round((x - left) / step)))
-          : 0;
-      if (next === index.get()) return;
-      index.set(next);
+      const next = Math.max(first, Math.min(last, Math.round(uAt(x, from.get(), to.get(), frame))));
+      if (next === day.get()) return;
+      day.set(next);
       scheduleOnRN(onPick, next);
     };
     const tap = Gesture.Tap().onEnd((event) => pick(event.x));
@@ -174,44 +156,31 @@ export function NetWorthChart({
       .failOffsetY([-12, 12])
       .onUpdate((event) => pick(event.x));
     return Gesture.Exclusive(pan, tap);
-    // onPick only closes over the day count, listed here.
+    // onPick only closes over the range and the day count, both listed through the target.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [left, step, last, history.days.length, index]);
+  }, [first, last, from, to, frame, day, range]);
 
   const nudge = (next: number) => {
-    if (next < 0 || next > last) return;
-    index.set(next);
+    if (next < first || next > last) return;
+    day.set(next);
     onPick(next);
   };
 
-  const clip = useAnimatedStyle(() => {
-    const hidden = reduceMotion
-      ? 0
-      : (1 - Math.min(reveal.get(), 1)) * (width - left);
-    return {
-      opacity: reduceMotion ? reveal.get() : 1,
-      transform: [{ translateX: -hidden }],
-    };
-  });
-  const unclip = useAnimatedStyle(() => {
-    const hidden = reduceMotion
-      ? 0
-      : (1 - Math.min(reveal.get(), 1)) * (width - left);
-    return { transform: [{ translateX: hidden }] };
-  });
-  const labelsFade = useAnimatedStyle(() => ({
-    opacity: Math.min(reveal.get(), 1),
-  }));
   const selectionFade = useAnimatedStyle(() => ({
-    opacity: Math.max(
-      0,
-      (reveal.get() - SELECTION_FADE_FROM) /
-        (1 - SELECTION_FADE_FROM),
-    ),
+    opacity:
+      fade.get() *
+      Math.max(0, (reveal.get() - SELECTION_FADE_FROM) / (1 - SELECTION_FADE_FROM)),
   }));
 
+  const ids = useMemo(
+    () => (view === 'total' ? ['total'] : Object.keys(names)),
+    [view, names],
+  );
+  const series = useMemo(
+    () => ids.map((id) => (id === 'total' ? index.total : index.byWallet[id]!)),
+    [ids, index],
+  );
   const hasWallets = wallets.length > 0;
-  const day = history.days[selected]!;
 
   return (
     <Animated.View
@@ -234,10 +203,7 @@ export function NetWorthChart({
             accessibilityLabel="Net worth chart"
             options={VIEWS}
             value={view}
-            onChange={(next) => {
-              redraw();
-              setView(next);
-            }}
+            onChange={setView}
           />
         ) : null}
       </View>
@@ -253,59 +219,56 @@ export function NetWorthChart({
           <View className="gap-1.5">
             <View
               style={{ height: PLOT_HEIGHT }}
-              onLayout={(event) =>
-                setWidth(Math.round(event.nativeEvent.layout.width))
-              }
+              onLayout={(event) => setWidth(Math.round(event.nativeEvent.layout.width))}
             >
               <Grid
-                geometry={geometry}
+                frame={frame}
                 width={width}
                 solid={tokens.hairline}
                 dashed={tokens.sandLight}
               />
-              <Animated.View
-                pointerEvents="none"
-                className="absolute overflow-hidden"
-                style={[
-                  { left: 0, top: 0, width, height: PLOT_HEIGHT },
-                  clip,
-                ]}
-              >
-                <Animated.View style={unclip}>
+              <LayoutAnimationConfig skipEntering>
+                <Animated.View
+                  key={view}
+                  entering={VIEW_IN}
+                  exiting={VIEW_OUT}
+                  pointerEvents="none"
+                  className="absolute inset-0"
+                >
                   <Marks
-                    geometry={geometry}
+                    ids={ids}
+                    series={series}
                     view={view}
                     lineStyles={lineStyles}
+                    zoom={zoom}
+                    frame={frame}
                     width={width}
                     ink={tokens.foreground}
                     fill={tokens.sand}
                   />
                 </Animated.View>
-              </Animated.View>
-              <Animated.View
-                pointerEvents="none"
-                className="absolute inset-0"
-                style={labelsFade}
-              >
-                <YAxis geometry={geometry} />
-              </Animated.View>
+              </LayoutAnimationConfig>
+              <YLabels
+                rows={target.axis}
+                fit
+              />
               <Animated.View
                 pointerEvents="none"
                 className="absolute inset-0"
                 style={selectionFade}
               >
                 <Scrub
-                  geometry={geometry}
+                  ids={ids}
+                  series={series}
                   view={view}
                   lineStyles={lineStyles}
-                  index={index}
+                  day={day}
+                  zoom={zoom}
+                  frame={frame}
                   width={width}
                   tokens={tokens}
-                  date={dayLabel(day, now)}
-                  value={formatMoney(
-                    history.total[selected]!,
-                    currency,
-                  )}
+                  date={dayLabel(toLocalDateInput(dateAt(index.firstDay, selected)), now)}
+                  value={formatMoney(index.total[selected]!, currency)}
                 />
               </Animated.View>
               <GestureDetector gesture={gesture}>
@@ -313,36 +276,25 @@ export function NetWorthChart({
                   testID={tid('wallet', 'chart', 'plot')}
                   accessible
                   accessibilityRole="adjustable"
-                  accessibilityLabel={geometry.accessibilityLabel}
+                  accessibilityLabel={target.accessibilityLabel}
                   accessibilityValue={{
-                    text: dayReading(
-                      history,
-                      selected,
-                      view,
-                      names,
-                      currency,
-                      now,
-                    ),
+                    text: dayReading(index, selected, view, names, currency, now),
                   }}
-                  accessibilityActions={[
-                    { name: 'increment' },
-                    { name: 'decrement' },
-                  ]}
+                  accessibilityActions={[{ name: 'increment' }, { name: 'decrement' }]}
                   onAccessibilityAction={(event) =>
-                    nudge(
-                      selected +
-                        (event.nativeEvent.actionName === 'increment'
-                          ? 1
-                          : -1),
-                    )
+                    nudge(selected + (event.nativeEvent.actionName === 'increment' ? 1 : -1))
                   }
                   className="absolute inset-0"
                 />
               </GestureDetector>
             </View>
-            <Animated.View style={labelsFade}>
-              <Ticks geometry={geometry} />
-            </Animated.View>
+            <ZoomTicks
+              ticks={target.ticks}
+              todayU={last}
+              zoom={zoom}
+              frame={frame}
+              width={width}
+            />
           </View>
           <Segmented
             screen="wallet"
@@ -351,12 +303,7 @@ export function NetWorthChart({
             options={CHART_RANGES}
             value={range}
             accessibilityLabel="Time range"
-            onChange={(next) => {
-              redraw();
-              lastPick.current = null;
-              setPicked(null);
-              setRange(next);
-            }}
+            onChange={setRange}
           />
           {view === 'by-wallet' ? (
             <Animated.View
@@ -365,19 +312,14 @@ export function NetWorthChart({
               className="flex-row flex-wrap gap-y-1 pt-0.5"
             >
               {wallets.map((wallet) => {
-                const value =
-                  history.byWallet[wallet.id]?.[selected] ?? null;
+                const value = index.byWallet[wallet.id]?.[selected] ?? NaN;
                 return (
                   <KeyEntry
                     key={wallet.id}
                     id={wallet.id}
                     name={names[wallet.id]!}
                     lineStyle={lineStyles[wallet.id]!}
-                    value={
-                      value === null
-                        ? 'Not yet'
-                        : formatMoney(value, currency)
-                    }
+                    value={Number.isNaN(value) ? 'Not yet' : formatMoney(value, currency)}
                   />
                 );
               })}
@@ -390,12 +332,12 @@ export function NetWorthChart({
 }
 
 const Grid = memo(function Grid({
-  geometry: { left, right, top, baseline },
+  frame: { left, right, top, base },
   width,
   solid,
   dashed,
 }: {
-  geometry: NetWorthGeometry;
+  frame: Frame;
   width: number;
   solid: string;
   dashed: string;
@@ -416,18 +358,18 @@ const Grid = memo(function Grid({
       />
       <Line
         x1={left}
-        y1={(top + baseline) / 2}
+        y1={(top + base) / 2}
         x2={right}
-        y2={(top + baseline) / 2}
+        y2={(top + base) / 2}
         stroke={dashed}
         strokeWidth={1.5}
         strokeDasharray="3 5"
       />
       <Line
         x1={left}
-        y1={baseline}
+        y1={base}
         x2={right}
-        y2={baseline}
+        y2={base}
         stroke={solid}
         strokeWidth={1.5}
       />
@@ -435,18 +377,24 @@ const Grid = memo(function Grid({
   );
 });
 
-/** Memoised: a scrub re-renders the card many times a second and must not touch up to 365 points per line. */
+/** Memoised: a scrub re-renders the card many times a second, and the lines redraw on the UI thread anyway. */
 const Marks = memo(function Marks({
-  geometry: { area, lines },
+  ids,
+  series,
   view,
   lineStyles,
+  zoom,
+  frame,
   width,
   ink,
   fill,
 }: {
-  geometry: NetWorthGeometry;
+  ids: readonly string[];
+  series: readonly Float64Array[];
   view: NetWorthView;
   lineStyles: Record<string, WalletLineStyle>;
+  zoom: Zoom;
+  frame: Frame;
   width: number;
   ink: string;
   fill: string;
@@ -456,115 +404,101 @@ const Marks = memo(function Marks({
       width={width}
       height={PLOT_HEIGHT}
     >
-      {area ? (
-        <Path
-          d={area}
-          fill={fill}
-          opacity={0.8}
-        />
-      ) : null}
-      {lines.map((line) => (
-        <Polyline
-          key={line.id}
-          points={line.points}
-          fill="none"
-          stroke={view === 'total' ? ink : lineStyles[line.id]!.color}
+      {ids.map((id, line) => (
+        <BalanceLine
+          key={id}
+          values={series[line]!}
+          area={view === 'total' ? fill : null}
+          color={view === 'total' ? ink : lineStyles[id]!.color}
           strokeWidth={view === 'total' ? 3 : 2.5}
-          strokeDasharray={
-            view === 'total' ? undefined : lineStyles[line.id]!.dash
-          }
-          strokeLinejoin="round"
-          strokeLinecap="round"
+          dash={view === 'total' ? undefined : lineStyles[id]!.dash}
+          zoom={zoom}
+          frame={frame}
         />
       ))}
     </Svg>
   );
 });
 
-const YAxis = memo(function YAxis({
-  geometry: { axis },
+function BalanceLine({
+  values,
+  area,
+  color,
+  strokeWidth,
+  dash,
+  zoom: { from, to, low, high, reveal, fade },
+  frame,
 }: {
-  geometry: NetWorthGeometry;
+  values: Float64Array;
+  /** Total only: the soft fill under the line. */
+  area: string | null;
+  color: string;
+  strokeWidth: number;
+  dash: string | undefined;
+  zoom: Zoom;
+  frame: Frame;
 }) {
-  return axis.map((label) => (
-    <Text
-      key={label.y}
-      variant="smallest"
-      numberOfLines={1}
-      adjustsFontSizeToFit
-      className="absolute text-right text-muted"
-      style={{
-        left: -AXIS_LABEL_OVERHANG,
-        width: AXIS_WIDTH + AXIS_LABEL_OVERHANG,
-        top: label.y - 8,
-      }}
-    >
-      {label.text}
-    </Text>
-  ));
-});
-
-const Ticks = memo(function Ticks({
-  geometry: { ticks },
-}: {
-  geometry: NetWorthGeometry;
-}) {
-  return (
-    <View style={{ height: 16 }}>
-      {ticks.map((tick) => (
-        <Text
-          key={tick.align}
-          variant="smallest"
-          numberOfLines={1}
-          className={`absolute ${tick.align === 'center' ? 'w-[64px] text-center' : ''} ${tick.today ? 'font-display-bold text-foreground' : 'text-muted'}`}
-          style={
-            tick.align === 'start'
-              ? { left: AXIS_WIDTH + 6 }
-              : tick.align === 'end'
-                ? { right: 0 }
-                : { left: tick.x - 32 }
-          }
-        >
-          {tick.text}
-        </Text>
-      ))}
-    </View>
+  const line = useDerivedValue(() =>
+    linePath(values, from.get(), to.get(), low.get(), high.get(), 0, frame, reveal.get()),
   );
-});
+  const lineProps = useAnimatedProps(() => ({ d: line.get().d, opacity: fade.get() }));
+  const areaProps = useAnimatedProps(() => ({
+    d: areaPath(line.get(), frame),
+    opacity: 0.8 * fade.get(),
+  }));
+  return (
+    <>
+      {area ? (
+        <AnimatedPath
+          fill={area}
+          animatedProps={areaProps}
+        />
+      ) : null}
+      <AnimatedPath
+        fill="none"
+        stroke={color}
+        strokeWidth={strokeWidth}
+        strokeDasharray={dash}
+        strokeLinejoin="round"
+        strokeLinecap="round"
+        animatedProps={lineProps}
+      />
+    </>
+  );
+}
 
-/** Guide and dots move on the UI thread from `index`. Only the callout's words wait for React. */
+/** Guide and dots move on the UI thread from `day` and the live viewport. Only the callout's words wait for React. */
 function Scrub({
-  geometry,
+  ids,
+  series,
   view,
   lineStyles,
-  index,
+  day,
+  zoom,
+  frame,
   width,
   tokens,
   date,
   value,
 }: {
-  geometry: NetWorthGeometry;
+  ids: readonly string[];
+  series: readonly Float64Array[];
   view: NetWorthView;
   lineStyles: Record<string, WalletLineStyle>;
-  index: SharedValue<number>;
+  day: SharedValue<number>;
+  zoom: Zoom;
+  frame: Frame;
   width: number;
   tokens: Tokens;
   date: string;
   value: string;
 }) {
-  const { left, step, right, baseline, lines } = geometry;
+  const { from, to } = zoom;
   const guide = useAnimatedStyle(() => ({
-    transform: [{ translateX: xAt(index.get(), left, step, right) }],
+    transform: [{ translateX: xAt(day.get(), from.get(), to.get(), frame) }],
   }));
   const callout = useAnimatedStyle(() => ({
-    transform: [
-      {
-        translateX: calloutLeft(
-          xAt(index.get(), left, step, right),
-          width,
-        ),
-      },
-    ],
+    transform: [{ translateX: calloutLeft(xAt(day.get(), from.get(), to.get(), frame), width) }],
   }));
   return (
     <>
@@ -574,15 +508,11 @@ function Scrub({
       >
         <View
           className="absolute border-l-[1.5px] border-dashed border-foreground"
-          style={{
-            left: -0.75,
-            top: GUIDE_TOP,
-            height: baseline - GUIDE_TOP,
-          }}
+          style={{ left: -0.75, top: GUIDE_TOP, height: frame.base - GUIDE_TOP }}
         />
         <View
           className="absolute h-5 w-7 items-center justify-center rounded-full bg-primary"
-          style={{ left: -14, top: baseline - 10 }}
+          style={{ left: -14, top: frame.base - 10 }}
         >
           <IconSymbol
             name="arrow-left-right"
@@ -591,19 +521,14 @@ function Scrub({
           />
         </View>
       </Animated.View>
-      {lines.map((line) => (
+      {ids.map((id, line) => (
         <Dot
-          key={line.id}
-          ys={line.ys}
-          index={index}
-          left={left}
-          step={step}
-          right={right}
-          color={
-            view === 'total'
-              ? tokens.foreground
-              : lineStyles[line.id]!.color
-          }
+          key={id}
+          values={series[line]!}
+          day={day}
+          zoom={zoom}
+          frame={frame}
+          color={view === 'total' ? tokens.foreground : lineStyles[id]!.color}
           size={view === 'total' ? 14 : 11}
         />
       ))}
@@ -632,41 +557,35 @@ function Scrub({
 }
 
 function Dot({
-  ys,
-  index,
-  left,
-  step,
-  right,
+  values,
+  day,
+  zoom: { from, to, low, high },
+  frame,
   color,
   size,
 }: {
-  ys: readonly (number | null)[];
-  index: SharedValue<number>;
-  left: number;
-  step: number;
-  right: number;
+  values: Float64Array;
+  day: SharedValue<number>;
+  zoom: Zoom;
+  frame: Frame;
   color: string;
   size: number;
 }) {
   const place = useAnimatedStyle(() => {
-    const y = ys[index.get()] ?? null;
+    const value = values[day.get()]!;
+    const missing = value !== value;
     return {
-      opacity: y === null ? 0 : 1,
+      opacity: missing ? 0 : 1,
       transform: [
-        {
-          translateX: xAt(index.get(), left, step, right) - size / 2,
-        },
-        { translateY: (y ?? 0) - size / 2 },
+        { translateX: xAt(day.get(), from.get(), to.get(), frame) - size / 2 },
+        { translateY: (missing ? 0 : yAt(value, low.get(), high.get(), frame)) - size / 2 },
       ],
     };
   });
   return (
     <Animated.View
       className="absolute left-0 top-0 rounded-full border-2 border-card"
-      style={[
-        { width: size, height: size, backgroundColor: color },
-        place,
-      ]}
+      style={[{ width: size, height: size, backgroundColor: color }, place]}
     />
   );
 }

@@ -1,15 +1,20 @@
 import { toLocalDateInput } from '@/lib/dates/local-date-input';
-import { chartRangeStart, type ChartRange } from '@/lib/finance/chart-range';
+import { dayNumber, rangeStartIndex, type ChartRange } from '@/lib/finance/chart-range';
 import { transactionDeltaMinor } from '@/lib/finance/ledger';
 import type { FinanceTransaction } from '@/lib/finance/types';
 
-/** Closing balances, one entry per local day, oldest first. The last day is today. */
-export type BalanceHistory = {
-  /** Local `YYYY-MM-DD`. Starts at the range start, or the day the first wallet began if later or the range is All. */
-  days: string[];
-  total: number[];
-  /** Null before the wallet began, so no line is drawn for days it did not exist. */
-  byWallet: Record<string, (number | null)[]>;
+/**
+ * Closing balances, one entry per local day from the day the first wallet began to today, built
+ * once per change of the wallets, balances or transactions and sliced by every chart range.
+ */
+export type BalanceIndex = {
+  /** Local `YYYY-MM-DD` of day 0. */
+  firstDay: string;
+  /** Days in the index; the last one, `days - 1`, is today. */
+  days: number;
+  total: Float64Array;
+  /** NaN before the wallet began, so no line is drawn for days it did not exist. */
+  byWallet: Record<string, Float64Array>;
 };
 
 /**
@@ -17,20 +22,18 @@ export type BalanceHistory = {
  * its first transaction when one is backdated earlier. Transactions dated after today are in the
  * live balance but stay out of today's closing value.
  */
-export function balanceHistory({
+export function balanceIndex({
   now,
-  range,
   wallets,
   transactions,
 }: {
   now: Date;
-  range: ChartRange;
   wallets: readonly { id: string; balanceMinor: number; createdAt?: string | null }[];
   transactions: readonly Pick<
     FinanceTransaction,
     'walletId' | 'transferToWalletId' | 'amountMinor' | 'type' | 'transactionDate'
   >[];
-}): BalanceHistory {
+}): BalanceIndex {
   const today = toLocalDateInput(now);
   const began = new Map(
     wallets.map((wallet) => {
@@ -55,31 +58,38 @@ export function balanceHistory({
     }
   }
 
-  const start = chartRangeStart(now, range);
-  const earliest = [...began.values()].reduce((a, b) => (b < a ? b : a), today);
-  const first = start === null || earliest > start ? earliest : start;
-  const days: string[] = [];
-  const [year, month, date] = [now.getFullYear(), now.getMonth(), now.getDate()];
-  // Calendar arithmetic, not 24-hour steps, so a daylight saving change cannot skip or repeat a day.
-  for (let back = 0; ; back++) {
-    const day = toLocalDateInput(new Date(year, month, date - back));
-    if (day < first) break;
-    days.unshift(day);
-  }
-
-  const total = days.map(() => 0);
-  const byWallet: BalanceHistory['byWallet'] = {};
+  const firstDay = [...began.values()].reduce((a, b) => (b < a ? b : a), today);
+  const origin = dayNumber(firstDay);
+  const days = dayNumber(today) - origin + 1;
+  const total = new Float64Array(days);
+  const byWallet: BalanceIndex['byWallet'] = {};
   for (const wallet of wallets) {
-    const change = changes.get(wallet.id)!;
-    const begin = began.get(wallet.id)!;
-    const values = days.map<number | null>(() => null);
+    const values = new Float64Array(days).fill(NaN);
+    const byDay = new Float64Array(days);
+    for (const [day, delta] of changes.get(wallet.id)!) byDay[dayNumber(day) - origin] = delta;
+    const begin = dayNumber(began.get(wallet.id)!) - origin;
     let closing = wallet.balanceMinor - afterToday.get(wallet.id)!;
-    for (let index = days.length - 1; index >= 0 && days[index]! >= begin; index--) {
-      values[index] = closing;
-      total[index]! += closing;
-      closing -= change.get(days[index]!) ?? 0;
+    for (let day = days - 1; day >= begin; day--) {
+      values[day] = closing;
+      total[day]! += closing;
+      closing -= byDay[day]!;
     }
     byWallet[wallet.id] = values;
   }
-  return { days, total, byWallet };
+  return { firstDay, days, total, byWallet };
+}
+
+/**
+ * The days a range shows, both ends included: its start to today. A wallet with no history yet
+ * shortens the range rather than drawing a line before it existed.
+ */
+export function balanceViewport(
+  index: BalanceIndex,
+  now: Date,
+  range: ChartRange,
+): { from: number; to: number } {
+  return {
+    from: Math.max(0, rangeStartIndex(index.firstDay, now, range) ?? 0),
+    to: index.days - 1,
+  };
 }
