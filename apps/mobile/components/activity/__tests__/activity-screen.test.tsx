@@ -4,7 +4,7 @@ import { ScrollView } from 'react-native';
 
 import ActivityScreen from '@/app/(tabs)/activity';
 import type { ActivityLinkParams } from '@/components/activity/activity-link';
-import { PAGE_CONTENT_TOP } from '@/components/ui/page';
+import { PAGE_HEADER_HEIGHT } from '@/components/ui/page';
 import type { FinanceTransaction } from '@/lib/finance/types';
 import { dismissSheet, getOpenSheet } from '@/lib/sheet/sheet-store';
 
@@ -73,6 +73,7 @@ jest.mock('expo-router', () => ({
 }));
 jest.mock('@/components/ui/page', () => ({
   ...jest.requireActual('@/components/ui/page'),
+  usePageContentTop: () => jest.requireActual('@/components/ui/page').PAGE_HEADER_HEIGHT,
   Page: ({ title, trailing, children }: { title: string; trailing: ReactNode; children: ReactNode }) => {
     const { Text, View } = require('react-native');
     return (
@@ -156,7 +157,7 @@ describe('Activity pages', () => {
     while (wrapper && !wrapper.props.onLayout) wrapper = wrapper.parent;
     fireEvent(wrapper!, 'layout', { nativeEvent: { layout: { y: 312 } } });
     fireEvent.press(screen.getByTestId('activity.pager.older'));
-    expect(scroll.scrollTo).toHaveBeenCalledWith({ y: PAGE_CONTENT_TOP + 312, animated: true });
+    expect(scroll.scrollTo).toHaveBeenCalledWith({ y: PAGE_HEADER_HEIGHT + 312, animated: true });
   });
 
   it('goes back to page 1 when a filter changes', () => {

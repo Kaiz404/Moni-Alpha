@@ -18,6 +18,7 @@ import {
   HeaderIconButton,
   MoniButton,
 } from '@/components/ui/header-icon-button';
+import { useHoldMenuOpen } from '@/components/ui/hold-menu';
 import { Press } from '@/components/ui/press';
 import { Text } from '@/components/ui/text';
 import { UserAvatar } from '@/components/ui/user-avatar';
@@ -64,15 +65,21 @@ export type PageProps = PageHeader & {
   children: ReactNode;
 };
 
-/** The header row (44) and the 12 under it: where a `PageScroll`'s content starts. */
-export const PAGE_CONTENT_TOP = 56;
+/** The header row (44) and the 12 under it, below the status-bar padding. */
+export const PAGE_HEADER_HEIGHT = 56;
+
+/** Where a `PageScroll`'s content starts: the status-bar padding, the header row and its gap. */
+export function usePageContentTop() {
+  return useSafeAreaInsets().top + PAGE_HEADER_HEIGHT;
+}
 
 /**
- * Full-screen page chrome from tokens.md: the real top inset, a 44 header row
- * with 20 sides, and content 12 below it (y 104 on a 48 inset). Tab roots
+ * Full-screen page chrome from tokens.md: a 44 header row with 20 sides,
+ * and content 12 below it. Tab roots
  * leave the bottom to the tab bar; other kinds keep the bottom inset.
- * The top inset stays fixed as a strip of canvas, so scrolled content passes
- * under it rather than under the status bar's clock and icons.
+ * The status-bar inset is padding above the header rather than a fixed strip, so it
+ * scrolls away with the header and content passes under the status bar (owner's
+ * direction, 12 Nov 2026).
  */
 export function Page(props: PageProps) {
   const insets = useSafeAreaInsets();
@@ -82,8 +89,10 @@ export function Page(props: PageProps) {
     transform: [{ translateY: -lift.get() }],
   }));
   const header = (
-    <View className="h-11 flex-row items-center gap-3 px-5">
-      <HeaderRow {...props} />
+    <View style={{ paddingTop: insets.top }}>
+      <View className="h-11 flex-row items-center gap-3 px-5">
+        <HeaderRow {...props} />
+      </View>
     </View>
   );
   return (
@@ -93,10 +102,7 @@ export function Page(props: PageProps) {
           <Animated.View
             className="flex-1"
             style={[
-              {
-                paddingTop: insets.top,
-                paddingBottom: onTab ? 0 : insets.bottom,
-              },
+              { paddingBottom: onTab ? 0 : insets.bottom },
               lifted,
             ]}
           >
@@ -121,19 +127,21 @@ const ScrollingHeader = createContext<ReactNode>(null);
  * The scroll view of a `Page` with `headerScrolls`: the header row, then the content 12 below it.
  * `contentContainerClassName` styles the content under the header, so its sides and gaps leave
  * the header alone. Content `onLayout` y values are relative to that content, so add
- * `PAGE_CONTENT_TOP` to scroll to one.
+ * `usePageContentTop()` to scroll to one.
  */
 export const PageScroll = forwardRef<ScrollView, ScrollViewProps>(
   function PageScroll(
-    { children, contentContainerClassName, className, ...rest },
+    { children, contentContainerClassName, className, scrollEnabled, ...rest },
     ref,
   ) {
     const header = useContext(ScrollingHeader);
+    const holding = useHoldMenuOpen();
     return (
       <ScrollView
         ref={ref}
         className={className ?? 'flex-1'}
         {...rest}
+        scrollEnabled={(scrollEnabled ?? true) && !holding}
       >
         {header}
         <View className={`pt-3 ${contentContainerClassName ?? ''}`}>

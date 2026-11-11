@@ -24,7 +24,7 @@ import { EmptyTile } from '@/components/ui/empty-tile';
 import { MoniButton } from '@/components/ui/header-icon-button';
 import { useTransactionHold } from '@/components/transaction/use-transaction-hold';
 import { HoldHint } from '@/components/ui/hold-menu';
-import { Page, PAGE_CONTENT_TOP, PageScroll } from '@/components/ui/page';
+import { Page, PageScroll, usePageContentTop } from '@/components/ui/page';
 import { SearchField } from '@/components/ui/search-field';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Text } from '@/components/ui/text';
@@ -64,6 +64,7 @@ export default function ActivityScreen() {
   useScrollToTop(scroll);
   const { user } = useAuth();
   const reduceMotion = useReducedMotion();
+  const contentTop = usePageContentTop();
   const clearance = useTabBarClearance();
   const userId = user?.id ?? null;
   const currency = useMainCurrency();
@@ -223,7 +224,7 @@ export default function ActivityScreen() {
 
   const turnPage = (next: number) => {
     setPage(next);
-    scroll.current?.scrollTo({ y: PAGE_CONTENT_TOP + listTop.current, animated: !reduceMotion });
+    scroll.current?.scrollTo({ y: contentTop + listTop.current, animated: !reduceMotion });
   };
 
   return (

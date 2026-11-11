@@ -45,7 +45,7 @@ Dark (`V2F-Dark`): Ground #161512 · Raised #211F1B (cards) · Fill #2C2924 (San
 ## Page chrome
 
 - Status-bar inset 48 on every full-screen page (use the real safe area in code). Header row 44 tall (y 48–92), sides 20; content from y 104.
-- The header row scrolls away with the content on every scrolling page (owner's direction, 12 Nov 2026). The status-bar inset stays as a fixed Cream strip, so content scrolls under it rather than under the clock. Pages that don't scroll (Moni chat, Review, the amount page) keep a fixed header.
+- The header row scrolls away with the content on every scrolling page (owner's direction, 12 Nov 2026). The status-bar inset is padding above the header that scrolls away with it, so scrolled content passes under the status bar. Pages that don't scroll (Moni chat, Review, the amount page) keep a fixed header.
 - Tab root title 28/32 700. Home header instead: 44 avatar (radius 16, Mint, initial 18/700) + date (13 Meta) over greeting (16/600), Moni button trailing.
 - Pushed page: back = 44 circle, 1.5 Hairline border, chevron-left 22 ink; title 18/22 700 left-aligned; up to two trailing header buttons.
 - Header icon button: 44 circle, 1.5 Hairline border, glyph 20 ink; pressed Sand fill, scale 0.97.
@@ -56,7 +56,7 @@ Dark (`V2F-Dark`): Ground #161512 · Raised #211F1B (cards) · Fill #2C2924 (San
 ## Navigation
 
 - Floating ink pill: left 12, right 12, bottom 26, height 64, radius 32, five equal cells: Home (`home`) · Activity (`receipt-text`) · + · Budget (`chart-box`) · Debts (`handshake-outline`). Active cream icon + label, inactive #A9A397, labels 11/600.
-- Centre +: 60 Mint key circle in a 72 touch area, top 16 above the pill, no ring; never an active state. Opens the + chooser sheet; it rotates 45° into the sheet's ×.
+- Centre +: 60 Mint key circle in a 72 touch area, top 16 above the pill, no ring; never an active state. It stays a circle when pressed (owner's direction, 12 Nov 2026). Opens the + chooser sheet; it rotates 45° into the sheet's ×.
 - Pushed pages and Moni chat have no tab bar.
 
 ## Lists and rows

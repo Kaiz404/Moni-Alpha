@@ -8,7 +8,7 @@ import { useBudgetData, type BudgetData } from '@/components/budget/use-budget';
 import { useTransactionHold } from '@/components/transaction/use-transaction-hold';
 import { EmptyTile, NotFound } from '@/components/ui/empty-tile';
 import { HoldHint } from '@/components/ui/hold-menu';
-import { Page, PAGE_CONTENT_TOP, PageScroll } from '@/components/ui/page';
+import { Page, PageScroll, usePageContentTop } from '@/components/ui/page';
 import { Text } from '@/components/ui/text';
 import { TintBubble } from '@/components/ui/transaction-row';
 import { formatDate } from '@/lib/dates/day-label';
@@ -70,6 +70,7 @@ function Spending({
   const scroll = useRef<ScrollView>(null);
   const listY = useRef(0);
   const reduceMotion = useReducedMotion();
+  const contentTop = usePageContentTop();
   const hold = useTransactionHold('budget');
   const [page, setPage] = usePageNumber(JSON.stringify([month, scope]));
   const rows = useMemo(
@@ -111,7 +112,7 @@ function Spending({
 
   const turnPage = (next: number) => {
     setPage(next);
-    scroll.current?.scrollTo({ y: PAGE_CONTENT_TOP + listY.current, animated: !reduceMotion });
+    scroll.current?.scrollTo({ y: contentTop + listY.current, animated: !reduceMotion });
   };
 
   return (

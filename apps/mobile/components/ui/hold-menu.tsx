@@ -198,11 +198,41 @@ type HoldMenuProps = {
   onClose: () => void;
 };
 
+let openMenus = 0;
+const openListeners = new Set<() => void>();
+
+function subscribeOpen(listener: () => void) {
+  openListeners.add(listener);
+  return () => {
+    openListeners.delete(listener);
+  };
+}
+
+function shiftOpen(by: number) {
+  openMenus += by;
+  openListeners.forEach((listener) => listener());
+}
+
+/**
+ * True while a hold menu is open. The finger that opened it is still down on the page behind the
+ * menu's window, and Android keeps sending that touch there, so a page stops scrolling while this
+ * is true; otherwise the list slides under the lifted row.
+ */
+export function useHoldMenuOpen() {
+  return useSyncExternalStore(subscribeOpen, () => openMenus > 0);
+}
+
 export function HoldMenu({
   anchor,
   onClose,
   ...props
 }: HoldMenuProps) {
+  const open = anchor !== null;
+  useEffect(() => {
+    if (!open) return;
+    shiftOpen(1);
+    return () => shiftOpen(-1);
+  }, [open]);
   return (
     <Modal
       visible={anchor !== null}

@@ -88,7 +88,7 @@ export function PlusButton({
         hitSlop={(RING_SIZE - PLUS_SIZE) / 2}
         accessibilityLabel={open ? 'Close' : 'Add a transaction'}
         accessibilityState={{ expanded: open }}
-        radius={{ rest: PLUS_SIZE / 2, pressed: 20 }}
+        radius={{ rest: PLUS_SIZE / 2, pressed: PLUS_SIZE / 2 }}
         pressedClassName="bg-mint-key-pressed"
         className="items-center justify-center bg-mint-key"
         style={{ width: PLUS_SIZE, height: PLUS_SIZE }}
