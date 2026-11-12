@@ -46,7 +46,7 @@ func main() {
 	} else {
 		log.Printf("places: GOOGLE_PLACES_API_KEY is not set, place search answers unavailable")
 	}
-	placesHandler := places.NewHandler(placesClient, cfg.PlacesDailyCap, time.Now)
+	placesHandler := places.NewHandler(placesClient, cfg.PlacesDailyCap, cfg.PlacesUserDailyCap, time.Now)
 
 	if os.Getenv("GIN_MODE") == "" {
 		gin.SetMode(gin.ReleaseMode)

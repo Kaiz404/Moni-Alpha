@@ -12,12 +12,12 @@ Stateless Gin service: Supabase JWT in → OpenRouter inference → structured e
 
 ```
 cmd/server/         main: config, routes, graceful shutdown
-internal/config/    env loading (SUPABASE_URL, OPENROUTER_API_KEY, optional GOOGLE_PLACES_API_KEY, PLACES_DAILY_CAP)
+internal/config/    env loading (SUPABASE_URL, OPENROUTER_API_KEY, optional GOOGLE_PLACES_API_KEY, PLACES_DAILY_CAP, PLACES_USER_DAILY_CAP)
 internal/auth/      JWKS ES256 verification (lestrrat-go/jwx) + per-user rate limit; 503 until keys load
 internal/llm/       OpenRouter HTTP client, model constant, JSON-mode helpers
 internal/extract/   text/image/notification extraction + wallet ladder + prompts
 internal/chat/      finance Q&A from pre-aggregated snapshot
-internal/places/    Google Places (New) autocomplete + details proxy, daily cap; Essentials field mask only
+internal/places/    Google Places (New) autocomplete + details proxy, daily cap with a per-user allowance; Essentials field mask only
 ```
 
 ## Conventions

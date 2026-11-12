@@ -87,6 +87,7 @@ SUPABASE_URL=https://<project-ref>.supabase.co
 OPENROUTER_API_KEY=sk-or-...         # openrouter.ai/keys
 GOOGLE_PLACES_API_KEY=...            # optional; see "Places search (backend)" below
 # PLACES_DAILY_CAP=1000              # optional; calls per Pacific day, per endpoint
+# PLACES_USER_DAILY_CAP=100          # optional; one user's share of that, per endpoint
 ```
 
 ## WSL Android toolchain
@@ -185,7 +186,7 @@ Shop search calls Google Places API (New) through the Go backend (`/v1/places/au
 3. Never enable Places on the Android Maps key. That key is recoverable from the APK, and anyone who extracts it could spend up to the daily quota.
 4. Set hard daily limits. A budget does not cap spending. Under **APIs & Services → Places API (New) → Quotas**, lower the per-day quota for Autocomplete requests and for Place Details requests, for example to 1,000 each. Google's quota day ends at midnight Pacific time.
 5. Under **Billing → Budgets & alerts**, add a budget alert, for example at $20 a month. It sends email only.
-6. Set `GOOGLE_PLACES_API_KEY` in `apps/backend/.env` locally and as a Cloud Run secret in production. `PLACES_DAILY_CAP` (default 1000) mirrors the console quota in the backend, so the app gets `unavailable` instead of a Google error. Keep it at or below the console quota.
+6. Set `GOOGLE_PLACES_API_KEY` in `apps/backend/.env` locally and as a Cloud Run secret in production. `PLACES_DAILY_CAP` (default 1000) mirrors the console quota in the backend, so the app gets `unavailable` instead of a Google error. Keep it at or below the console quota. `PLACES_USER_DAILY_CAP` (default 100) gives each user that many calls per endpoint per day, so one account cannot use up the cap for everyone.
 
 Location capture itself is handled by `expo-location` (permissions configured via the plugin); transactions store `location_latitude` / `location_longitude` / `location_name`.
 

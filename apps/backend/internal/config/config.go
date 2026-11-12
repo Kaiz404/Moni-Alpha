@@ -21,6 +21,8 @@ type Config struct {
 	GooglePlacesAPIKey string
 	// PlacesDailyCap limits Autocomplete and Details calls per Pacific day, each counted separately.
 	PlacesDailyCap int
+	// PlacesUserDailyCap limits each user's calls per Pacific day, per endpoint, within PlacesDailyCap.
+	PlacesUserDailyCap int
 }
 
 func (c Config) JWKSURL() string {
@@ -35,11 +37,13 @@ func Load() (Config, error) {
 		OpenRouterBaseURL:  getenv("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1"),
 		GooglePlacesAPIKey: os.Getenv("GOOGLE_PLACES_API_KEY"),
 	}
-	placesCap, err := strconv.Atoi(getenv("PLACES_DAILY_CAP", "1000"))
-	if err != nil || placesCap < 0 {
-		return cfg, fmt.Errorf("PLACES_DAILY_CAP must be a non-negative integer")
+	var err error
+	if cfg.PlacesDailyCap, err = nonNegativeInt("PLACES_DAILY_CAP", 1000); err != nil {
+		return cfg, err
 	}
-	cfg.PlacesDailyCap = placesCap
+	if cfg.PlacesUserDailyCap, err = nonNegativeInt("PLACES_USER_DAILY_CAP", 100); err != nil {
+		return cfg, err
+	}
 	if cfg.SupabaseURL == "" {
 		return cfg, fmt.Errorf("SUPABASE_URL is required")
 	}
@@ -47,6 +51,14 @@ func Load() (Config, error) {
 		return cfg, fmt.Errorf("OPENROUTER_API_KEY is required")
 	}
 	return cfg, nil
+}
+
+func nonNegativeInt(key string, fallback int) (int, error) {
+	n, err := strconv.Atoi(getenv(key, strconv.Itoa(fallback)))
+	if err != nil || n < 0 {
+		return 0, fmt.Errorf("%s must be a non-negative integer", key)
+	}
+	return n, nil
 }
 
 func getenv(key, fallback string) string {

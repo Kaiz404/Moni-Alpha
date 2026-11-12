@@ -9,6 +9,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/gin-gonic/gin"
+	"github.com/kaiz404/moni/backend/internal/auth"
 )
 
 type Handler struct {
@@ -18,11 +19,12 @@ type Handler struct {
 }
 
 // NewHandler returns a handler that answers every call with unavailable when client is nil (no API key).
-func NewHandler(client *Client, dailyCapPerEndpoint int, now func() time.Time) *Handler {
+// Each endpoint allows dailyCap calls per Pacific day, and userDailyCap of them per user.
+func NewHandler(client *Client, dailyCap, userDailyCap int, now func() time.Time) *Handler {
 	return &Handler{
 		client:          client,
-		autocompleteCap: newDailyCap(dailyCapPerEndpoint, now),
-		detailsCap:      newDailyCap(dailyCapPerEndpoint, now),
+		autocompleteCap: newDailyCap(dailyCap, userDailyCap, now),
+		detailsCap:      newDailyCap(dailyCap, userDailyCap, now),
 	}
 }
 
@@ -42,7 +44,7 @@ func (h *Handler) autocomplete(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body", "details": "input must be 2 to 100 characters"})
 		return
 	}
-	if h.client == nil || !h.autocompleteCap.take() {
+	if h.client == nil || !h.autocompleteCap.take(auth.UserID(c)) {
 		c.JSON(http.StatusOK, AutocompleteResult{Status: StatusUnavailable})
 		return
 	}
@@ -61,7 +63,7 @@ func (h *Handler) details(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body", "details": err.Error()})
 		return
 	}
-	if h.client == nil || !h.detailsCap.take() {
+	if h.client == nil || !h.detailsCap.take(auth.UserID(c)) {
 		c.JSON(http.StatusOK, DetailsResult{Status: StatusUnavailable})
 		return
 	}

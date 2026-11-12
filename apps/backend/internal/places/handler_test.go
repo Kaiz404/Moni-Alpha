@@ -2,6 +2,7 @@ package places
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"io"
 	"net/http"
@@ -11,6 +12,8 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/kaiz404/moni/backend/internal/auth"
+	"github.com/kaiz404/moni/backend/internal/auth/authtest"
 )
 
 // fakeGoogle answers with a fixed status and body and records each request.
@@ -38,7 +41,13 @@ func (f *fakeGoogle) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	io.WriteString(w, f.body)
 }
 
-func newServer(t *testing.T, google *fakeGoogle, dailyCap int, now func() time.Time) http.Handler {
+type server struct {
+	handler http.Handler
+	token   func(sub string) string
+}
+
+// newServer puts the handler behind the real auth middleware, so each call carries a signed user id.
+func newServer(t *testing.T, google *fakeGoogle, dailyCap, userDailyCap int, now func() time.Time) *server {
 	t.Helper()
 	gin.SetMode(gin.TestMode)
 	var client *Client
@@ -47,18 +56,43 @@ func newServer(t *testing.T, google *fakeGoogle, dailyCap int, now func() time.T
 		t.Cleanup(srv.Close)
 		client = NewClient("server-key", srv.URL+"/v1")
 	}
+	priv, jwks := authtest.KeyAndJWKS(t)
+	verifier, err := auth.NewVerifier(context.Background(), jwks.URL)
+	if err != nil {
+		t.Fatal(err)
+	}
 	r := gin.New()
-	NewHandler(client, dailyCap, now).Register(r.Group("/v1"))
-	return r
+	NewHandler(client, dailyCap, userDailyCap, now).Register(r.Group("/v1", verifier.Middleware()))
+	return &server{
+		handler: r,
+		token: func(sub string) string {
+			return authtest.SignToken(t, priv, sub, time.Now().Add(time.Hour))
+		},
+	}
 }
 
-func post(t *testing.T, h http.Handler, path, body string) (int, string) {
+func post(t *testing.T, s *server, path, body string) (int, string) {
+	t.Helper()
+	return postAs(t, s, "user-1", path, body)
+}
+
+func postAs(t *testing.T, s *server, user, path, body string) (int, string) {
 	t.Helper()
 	rec := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodPost, path, bytes.NewReader([]byte(body)))
 	req.Header.Set("Content-Type", "application/json")
-	h.ServeHTTP(rec, req)
+	req.Header.Set("Authorization", "Bearer "+s.token(user))
+	s.handler.ServeHTTP(rec, req)
 	return rec.Code, rec.Body.String()
+}
+
+func status(t *testing.T, body string) string {
+	t.Helper()
+	var res struct{ Status string }
+	if err := json.Unmarshal([]byte(body), &res); err != nil {
+		t.Fatalf("response is not JSON: %s", body)
+	}
+	return res.Status
 }
 
 func jsonEqual(t *testing.T, got, want string) {
@@ -88,7 +122,7 @@ const autocompleteReply = `{"suggestions":[
 
 func TestAutocompleteSendsTheRequestGoogleExpectsAndMapsPlacePredictions(t *testing.T) {
 	google := &fakeGoogle{status: http.StatusOK, body: autocompleteReply}
-	h := newServer(t, google, 10, time.Now)
+	h := newServer(t, google, 10, 10, time.Now)
 
 	code, body := post(t, h, "/v1/places/autocomplete",
 		`{"input":"  nasi kandar ","sessionToken":"tok-1","bias":{"latitude":3.13,"longitude":101.67}}`)
@@ -118,7 +152,7 @@ func TestAutocompleteSendsTheRequestGoogleExpectsAndMapsPlacePredictions(t *test
 
 func TestAutocompleteWithoutBiasOrTokenOmitsThem(t *testing.T) {
 	google := &fakeGoogle{status: http.StatusOK, body: `{}`}
-	h := newServer(t, google, 10, time.Now)
+	h := newServer(t, google, 10, 10, time.Now)
 
 	code, body := post(t, h, "/v1/places/autocomplete", `{"input":"zus","sessionToken":null,"bias":null}`)
 
@@ -132,7 +166,7 @@ func TestAutocompleteWithoutBiasOrTokenOmitsThem(t *testing.T) {
 
 func TestDetailsRequestsOnlyEssentialsFields(t *testing.T) {
 	google := &fakeGoogle{status: http.StatusOK, body: `{"id":"ChIJabc","location":{"latitude":3.15,"longitude":101.71},"formattedAddress":"Jalan Ampang, 50450 Kuala Lumpur"}`}
-	h := newServer(t, google, 10, time.Now)
+	h := newServer(t, google, 10, 10, time.Now)
 
 	code, body := post(t, h, "/v1/places/details", `{"placeId":"ChIJabc","sessionToken":"tok-1"}`)
 
@@ -151,7 +185,7 @@ func TestDetailsRequestsOnlyEssentialsFields(t *testing.T) {
 
 func TestDetailsWithoutTokenOrAddress(t *testing.T) {
 	google := &fakeGoogle{status: http.StatusOK, body: `{"id":"ChIJabc","location":{"latitude":3.15,"longitude":101.71}}`}
-	h := newServer(t, google, 10, time.Now)
+	h := newServer(t, google, 10, 10, time.Now)
 
 	_, body := post(t, h, "/v1/places/details", `{"placeId":"ChIJabc","sessionToken":null}`)
 
@@ -164,7 +198,7 @@ func TestDetailsWithoutTokenOrAddress(t *testing.T) {
 func TestDetailsBadPlaceIDIsNotFound(t *testing.T) {
 	for _, status := range []int{http.StatusNotFound, http.StatusBadRequest} {
 		google := &fakeGoogle{status: status, body: `{"error":{"code":400,"status":"INVALID_ARGUMENT"}}`}
-		h := newServer(t, google, 10, time.Now)
+		h := newServer(t, google, 10, 10, time.Now)
 
 		code, body := post(t, h, "/v1/places/details", `{"placeId":"nope/../x"}`)
 
@@ -180,7 +214,7 @@ func TestDetailsBadPlaceIDIsNotFound(t *testing.T) {
 
 func TestGoogleFailuresAreUnavailable(t *testing.T) {
 	google := &fakeGoogle{status: http.StatusInternalServerError, body: `{"error":{"code":500}}`}
-	h := newServer(t, google, 10, time.Now)
+	h := newServer(t, google, 10, 10, time.Now)
 
 	for path, body := range map[string]string{
 		"/v1/places/autocomplete": `{"input":"nasi kandar"}`,
@@ -196,7 +230,7 @@ func TestGoogleFailuresAreUnavailable(t *testing.T) {
 
 func TestAutocompleteBadRequestFromGoogleIsUnavailable(t *testing.T) {
 	google := &fakeGoogle{status: http.StatusBadRequest, body: `{}`}
-	h := newServer(t, google, 10, time.Now)
+	h := newServer(t, google, 10, 10, time.Now)
 
 	_, body := post(t, h, "/v1/places/autocomplete", `{"input":"nasi kandar"}`)
 
@@ -204,7 +238,7 @@ func TestAutocompleteBadRequestFromGoogleIsUnavailable(t *testing.T) {
 }
 
 func TestMissingKeyIsUnavailable(t *testing.T) {
-	h := newServer(t, nil, 10, time.Now)
+	h := newServer(t, nil, 10, 10, time.Now)
 
 	_, autocomplete := post(t, h, "/v1/places/autocomplete", `{"input":"nasi kandar"}`)
 	_, details := post(t, h, "/v1/places/details", `{"placeId":"ChIJabc"}`)
@@ -217,15 +251,13 @@ func TestDailyCapPerEndpointResetsAtPacificMidnight(t *testing.T) {
 	google := &fakeGoogle{status: http.StatusOK, body: `{"id":"A","location":{"latitude":1,"longitude":2}}`}
 	// 07:59 UTC on 12 Nov is 23:59 on 11 Nov in Los Angeles (PST, UTC-8).
 	now := time.Date(2026, 11, 12, 7, 59, 0, 0, time.UTC)
-	h := newServer(t, google, 2, func() time.Time { return now })
+	h := newServer(t, google, 2, 10, func() time.Time { return now })
 
 	statuses := func(path, body string, n int) []string {
 		out := make([]string, n)
 		for i := range out {
 			_, got := post(t, h, path, body)
-			var res struct{ Status string }
-			json.Unmarshal([]byte(got), &res)
-			out[i] = res.Status
+			out[i] = status(t, got)
 		}
 		return out
 	}
@@ -248,9 +280,44 @@ func TestDailyCapPerEndpointResetsAtPacificMidnight(t *testing.T) {
 	}
 }
 
+func TestUserDailyAllowanceLeavesTheGlobalCapToOthersAndResetsAtPacificMidnight(t *testing.T) {
+	google := &fakeGoogle{status: http.StatusOK, body: `{"id":"A","location":{"latitude":1,"longitude":2}}`}
+	// 07:59 UTC on 12 Nov is 23:59 on 11 Nov in Los Angeles (PST, UTC-8).
+	now := time.Date(2026, 11, 12, 7, 59, 0, 0, time.UTC)
+	h := newServer(t, google, 3, 2, func() time.Time { return now })
+	details := func(user string) string {
+		_, body := postAs(t, h, user, "/v1/places/details", `{"placeId":"A"}`)
+		return status(t, body)
+	}
+
+	if got := [3]string{details("alice"), details("alice"), details("alice")}; got != [3]string{"ok", "ok", "unavailable"} {
+		t.Fatalf("alice: %v", got)
+	}
+	// The global cap is 3: had alice's refused call counted, bob would get unavailable here.
+	if got := details("bob"); got != "ok" {
+		t.Fatalf("bob after alice's allowance: %s", got)
+	}
+	if got := details("carol"); got != "unavailable" {
+		t.Fatalf("carol after the global cap: %s", got)
+	}
+	if len(google.requests) != 3 {
+		t.Fatalf("google called %d times, want 3", len(google.requests))
+	}
+	google.body = `{}`
+	if _, body := postAs(t, h, "alice", "/v1/places/autocomplete", `{"input":"ab"}`); status(t, body) != "ok" {
+		t.Fatalf("alice's autocomplete shares her details allowance: %s", body)
+	}
+
+	google.body = `{"id":"A","location":{"latitude":1,"longitude":2}}`
+	now = now.Add(time.Minute)
+	if got := [3]string{details("alice"), details("alice"), details("alice")}; got != [3]string{"ok", "ok", "unavailable"} {
+		t.Fatalf("alice after Pacific midnight: %v", got)
+	}
+}
+
 func TestInvalidBodiesAre400(t *testing.T) {
 	google := &fakeGoogle{status: http.StatusOK, body: `{}`}
-	h := newServer(t, google, 10, time.Now)
+	h := newServer(t, google, 10, 10, time.Now)
 	long := string(bytes.Repeat([]byte("a"), 101))
 	cases := []struct{ path, body string }{
 		{"/v1/places/autocomplete", `{}`},

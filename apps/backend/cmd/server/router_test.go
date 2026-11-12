@@ -148,7 +148,7 @@ var wallets = []map[string]any{
 
 var v1Routes = []string{"/v1/extract/text", "/v1/extract/image", "/v1/extract/notification", "/v1/chat/analyze", "/v1/places/autocomplete", "/v1/places/details"}
 
-func noPlaces() *places.Handler { return places.NewHandler(nil, 0, time.Now) }
+func noPlaces() *places.Handler { return places.NewHandler(nil, 0, 0, time.Now) }
 
 func TestHealthNeedsNoToken(t *testing.T) {
 	s := newTestServer(t, nil)

@@ -20,11 +20,12 @@ Extraction responses are a discriminated union: `{ status: "ok", extraction }`, 
 
 ### Places
 
-`internal/places/` proxies Google Places API (New). Both endpoints return HTTP 200 with a `status`. A missing `GOOGLE_PLACES_API_KEY`, a Google error or timeout (4s), or a reached daily cap answer `{ "status": "unavailable" }`. An invalid body is a 400 `{ error, details? }`.
+`internal/places/` proxies Google Places API (New). Both endpoints return HTTP 200 with a `status`. A missing `GOOGLE_PLACES_API_KEY`, a Google error or timeout (4s), or a reached daily cap or per-user allowance answer `{ "status": "unavailable" }`. An invalid body is a 400 `{ error, details? }`.
 
 - `POST /v1/places/autocomplete` takes `{ input, sessionToken?, bias? }`. `input` is trimmed and must be 2 to 100 characters; `sessionToken` is at most 64. `bias` is `{ latitude, longitude }` or null. It calls `places:autocomplete` with `includedRegionCodes: ["my"]`, `languageCode: "en"` and, when `bias` is given, a 5 km `locationBias` circle plus `origin`. It answers `{ status: "ok", predictions: [{ placeId, primaryText, secondaryText, distanceMeters }] }` with at most 5 place predictions; query predictions are dropped. `secondaryText` and `distanceMeters` may be null.
 - `POST /v1/places/details` takes `{ placeId, sessionToken? }`; `placeId` is 1 to 300 characters. It sends `X-Goog-FieldMask: id,location,formattedAddress`, which keeps the call in the Place Details Essentials SKU. Do not add `displayName` or any Pro field. It answers `{ status: "ok", place: { placeId, latitude, longitude, address } }`, or `{ status: "not_found" }` when Google rejects the ID with 400 or 404.
 - `PLACES_DAILY_CAP` (default 1000) limits each endpoint separately. The in-memory counter resets at midnight America/Los_Angeles, the same day as Google's quotas. It is global because Cloud Run runs one instance. Set the matching per-day quotas in Cloud Console as the hard cap ([docs/SETUP.md](../../docs/SETUP.md#places-search-backend)).
+- `PLACES_USER_DAILY_CAP` (default 100) limits each user's calls per endpoint on the same Pacific day, so one account cannot spend the global cap for everyone. A call refused by the allowance does not count against `PLACES_DAILY_CAP`.
 - Places routes have their own per-user rate limit (60 a minute, burst 20) and a 16 KB body limit, so search as you type does not spend the AI limit (20 a minute).
 
 ## Auth
@@ -66,7 +67,7 @@ go test ./...
 go vet ./...
 ```
 
-`go test ./...` is offline: `cmd/server/router_test.go` drives every endpoint through the real router (`newRouter`) with a local JWKS (`internal/auth/authtest`) and a fake OpenRouter server, covering auth, validation, `ok`/`skipped`/`unavailable`, the retry and the per-user rate limit. `internal/places/handler_test.go` fakes Google: the request body, headers and field mask sent, the mapping, `not_found`, `unavailable` and the daily cap.
+`go test ./...` is offline: `cmd/server/router_test.go` drives every endpoint through the real router (`newRouter`) with a local JWKS (`internal/auth/authtest`) and a fake OpenRouter server, covering auth, validation, `ok`/`skipped`/`unavailable`, the retry and the per-user rate limit. `internal/places/handler_test.go` fakes Google: the request body, headers and field mask sent, the mapping, `not_found`, `unavailable`, the daily cap and the per-user allowance.
 
 `pnpm test:live` (or `MONI_LIVE_TESTS=1 go test ./cmd/server -run Live -v`) calls the real OpenRouter API with `.env`'s `OPENROUTER_API_KEY`: it checks OpenRouter still serves `llm.Model` (`internal/llm/models.go`), then extracts from text, four notifications, the `cmd/server/testdata/receipt.png` receipt, and answers a chat question. Run it after changing models, prompts or keys.
 
