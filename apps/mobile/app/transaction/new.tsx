@@ -617,6 +617,7 @@ export default function TypeItScreen() {
                   }
                 }
                 onOpen={() => void pickPlace()}
+                onClear={() => setPlace({ kind: 'off' })}
               />
             </View>
             {noteField}

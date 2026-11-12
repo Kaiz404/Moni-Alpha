@@ -31,16 +31,19 @@ export type LocationOffer = {
 /**
  * The capture pages' Location field, shaped like the `PickerField size="capture"` beside it:
  * the place saved with the entry, and a tap opens the place sheet. Near a shop the user paid at
- * before, it reads "Been here?" with the shop and a check that fills it in.
+ * before, it reads "Been here?" with the shop and a check that fills it in. With a place set, an
+ * X in the chevron's slot takes it off the entry, so the place name loses no room.
  */
 export function LocationField({
   state,
   offer = null,
   onOpen,
+  onClear,
 }: {
   state: LocationFieldState;
   offer?: LocationOffer | null;
   onOpen: () => void;
+  onClear: () => void;
 }) {
   const tokens = useThemeTokens();
   const value = state.kind === 'place' ? state.name : WORDS[state.kind];
@@ -105,6 +108,23 @@ export function LocationField({
               name="check"
               size={18}
               color={tokens.onPastel}
+            />
+          </Press>
+        </Animated.View>
+      ) : state.kind === 'place' ? (
+        <Animated.View entering={ACCEPT_IN}>
+          <Press
+            testID={tid('capture', 'location', 'clear')}
+            accessibilityLabel={`Remove ${value} from this entry`}
+            hitSlop={12}
+            className="h-8 w-8 items-center justify-center rounded-full"
+            pressedClassName="bg-hairline"
+            onPress={onClear}
+          >
+            <IconSymbol
+              name="close"
+              size={18}
+              color={tokens.ink2}
             />
           </Press>
         </Animated.View>

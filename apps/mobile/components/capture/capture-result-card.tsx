@@ -339,6 +339,7 @@ export function CaptureResult({
           <LocationField
             state={locationFieldState(entryPlace)}
             onOpen={() => void pickPlace()}
+            onClear={() => onEdit({ place: { kind: 'off' } })}
           />
         </View>
         <TextTile

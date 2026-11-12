@@ -256,6 +256,16 @@ describe('Type it location', () => {
     expect(await addExpense()).toMatchObject({ locationLatitude: 3.13 });
   });
 
+  it('takes the place off the entry from the field\'s X, without opening the sheet', async () => {
+    await openPage();
+    expect(screen.getByText('Jalan Telawi 3')).toBeTruthy();
+    fireEvent.press(screen.getByLabelText('Remove Jalan Telawi 3 from this entry'));
+    expect(getOpenSheet()).toBeNull();
+    expect(screen.getByText('Not saved')).toBeTruthy();
+    expect(screen.queryByTestId('capture.location.clear')).toBeNull();
+    expect((await addExpense()).locationLatitude ?? null).toBeNull();
+  });
+
   it('stays off when it is turned off before the position arrives', async () => {
     const answer = positionAnswersLater();
     await openPage();
