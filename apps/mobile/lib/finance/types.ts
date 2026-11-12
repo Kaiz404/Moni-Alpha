@@ -39,6 +39,10 @@ export type FinanceTransaction = {
   locationLatitude: number | null;
   locationLongitude: number | null;
   locationName: string | null;
+  /** Google place ID, when the place was picked from Google. */
+  placeId: string | null;
+  /** Set while the coordinates are Google's, which must be refreshed within 30 days. */
+  placeCoordsAt: string | null;
   /** Added from a routine notification without review. */
   autoAdded: boolean;
   /** A wallet balance fix (metadata.kind balance_correction): kept out of budgets and spending. */

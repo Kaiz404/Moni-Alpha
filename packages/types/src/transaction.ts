@@ -79,6 +79,10 @@ export const transactionSchema = z
     locationLatitude: z.number().min(-90).max(90).nullable(),
     locationLongitude: z.number().min(-180).max(180).nullable(),
     locationName: z.string().max(200).nullable(),
+    /** Google place ID, kept indefinitely (exempt from Google's caching limits). */
+    placeId: z.string().min(1).max(300).nullable(),
+    /** When the coordinates came from Google; null for the user's own. Google's must be refreshed or dropped within 30 days. */
+    placeCoordsAt: z.string().datetime().nullable(),
 
     // Receipt
     receiptImageUrl: z.string().url().nullable(),
@@ -109,6 +113,8 @@ export const createTransactionSchema = z
     locationLatitude: z.number().min(-90).max(90).optional().nullable(),
     locationLongitude: z.number().min(-180).max(180).optional().nullable(),
     locationName: z.string().max(200).optional().nullable(),
+    placeId: z.string().min(1).max(300).optional().nullable(),
+    placeCoordsAt: z.string().datetime().optional().nullable(),
     tagIds: z.array(z.string().uuid()).optional(),
     metadata: transactionMetadataSchema.optional(),
   })
@@ -134,6 +140,8 @@ export const updateTransactionSchema = z
     locationLatitude: z.number().min(-90).max(90).optional().nullable(),
     locationLongitude: z.number().min(-180).max(180).optional().nullable(),
     locationName: z.string().max(200).optional().nullable(),
+    placeId: z.string().min(1).max(300).optional().nullable(),
+    placeCoordsAt: z.string().datetime().optional().nullable(),
     tagIds: z.array(z.string().uuid()).optional(),
   })
   .refine((data) => data.type !== 'transfer' || data.transferToWalletId, {

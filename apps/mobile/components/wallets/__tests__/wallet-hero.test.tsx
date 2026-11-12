@@ -33,6 +33,7 @@ jest.mock('@/lib/store', () => {
   const { observable } = jest.requireActual('@legendapp/state');
   return {
     assertMigrated: jest.fn(),
+    isMigrated: () => false,
     wallets$: observable({
       cash: {
         id: 'cash',

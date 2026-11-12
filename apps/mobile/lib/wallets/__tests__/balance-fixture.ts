@@ -48,6 +48,8 @@ export function expense(id: string, date: string, over: Partial<FinanceTransacti
     locationLatitude: null,
     locationLongitude: null,
     locationName: null,
+    placeId: null,
+    placeCoordsAt: null,
     autoAdded: false,
     balanceCorrection: false,
     createdAt: date,

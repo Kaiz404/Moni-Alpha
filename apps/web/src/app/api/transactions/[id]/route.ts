@@ -132,6 +132,8 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
         locationLatitude: data.location_latitude ? parseFloat(data.location_latitude) : null,
         locationLongitude: data.location_longitude ? parseFloat(data.location_longitude) : null,
         locationName: data.location_name,
+        placeId: data.place_id ?? null,
+        placeCoordsAt: data.place_coords_at ?? null,
         receiptImageUrl: data.receipt_image_url,
         metadata: data.metadata,
         createdAt: data.created_at,

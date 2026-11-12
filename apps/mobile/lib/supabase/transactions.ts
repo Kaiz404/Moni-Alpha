@@ -1,4 +1,4 @@
-import { transactions$, wallets$ } from '@/lib/store';
+import { isMigrated, transactions$, wallets$ } from '@/lib/store';
 import { getRecordValues, hasRow, patchRow } from '@/lib/store/helpers';
 import { getUserId } from '@/lib/supabase/client';
 import { isTransactionRelevantToWallet } from '@/lib/finance/ledger';
@@ -30,6 +30,8 @@ type TransactionRow = {
   location_latitude: string | number | null;
   location_longitude: string | number | null;
   location_name: string | null;
+  place_id?: string | null;
+  place_coords_at?: string | null;
   receipt_image_url: string | null;
   metadata: string | Record<string, unknown> | null;
   created_at: string | null;
@@ -80,6 +82,8 @@ function mapTransactionRow(t: TransactionRow) {
     locationLongitude:
       t.location_longitude != null ? parseFloat(String(t.location_longitude)) : null,
     locationName: t.location_name,
+    placeId: t.place_id ?? null,
+    placeCoordsAt: t.place_coords_at ?? null,
     receiptImageUrl: t.receipt_image_url,
     metadata,
     createdAt: t.created_at ?? t.updated_at ?? '',
@@ -135,6 +139,10 @@ export async function updateTransaction(id: string, data: UpdateTransaction) {
   if (p.locationLatitude !== undefined) patch.location_latitude = p.locationLatitude;
   if (p.locationLongitude !== undefined) patch.location_longitude = p.locationLongitude;
   if (p.locationName !== undefined) patch.location_name = p.locationName;
+  if (isMigrated('transaction_place_ids')) {
+    if (p.placeId !== undefined) patch.place_id = p.placeId;
+    if (p.placeCoordsAt !== undefined) patch.place_coords_at = p.placeCoordsAt;
+  }
 
   if (p.walletId !== undefined) {
     const wallet = getRecordValues<{
@@ -148,6 +156,22 @@ export async function updateTransaction(id: string, data: UpdateTransaction) {
   patchRow(transactions$, id, patch);
 
   return getTransactionById(id);
+}
+
+export type PlaceCoordsUpdate = {
+  latitude: number | null;
+  longitude: number | null;
+  placeCoordsAt: string | null;
+};
+
+/** The place-coordinate refresh's write: fresh Google coordinates, or none once they expire. */
+export function setPlaceCoords(id: string, update: PlaceCoordsUpdate): void {
+  patchRow(transactions$, id, {
+    location_latitude: update.latitude,
+    location_longitude: update.longitude,
+    place_coords_at: update.placeCoordsAt,
+    updated_at: new Date().toISOString(),
+  });
 }
 
 export function transactionExists(id: string): boolean {
@@ -188,6 +212,10 @@ export async function createTransaction(
     location_latitude: data.locationLatitude ?? null,
     location_longitude: data.locationLongitude ?? null,
     location_name: data.locationName || null,
+    // An unknown column fails the whole row's sync, so these wait for the migration.
+    ...(isMigrated('transaction_place_ids')
+      ? { place_id: data.placeId ?? null, place_coords_at: data.placeCoordsAt ?? null }
+      : {}),
     receipt_image_url: null,
     metadata: { ...data.metadata, source },
     deleted: false,

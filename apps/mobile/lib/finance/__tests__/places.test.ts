@@ -40,6 +40,8 @@ function row(
     locationLatitude: at?.latitude ?? null,
     locationLongitude: at?.longitude ?? null,
     locationName: at ? 'Mamak Ali, Jalan Telawi 3, Kuala Lumpur, Wilayah Persekutuan' : null,
+    placeId: null,
+    placeCoordsAt: null,
     autoAdded: false,
     createdAt: '2026-10-10T05:00:00.000Z',
     ...overrides,
@@ -91,6 +93,35 @@ describe('groupPlaces', () => {
     const later = groupPlaces(rows, { currency: 'MYR', range: { from: '2026-10-05', to: '2026-10-31' } });
     expect(later.map((place) => [place.id, place.count])).toEqual([[all[0].id, 2]]);
     expect(groupPlaces(rows, { currency: 'MYR', categoryId: 'groceries' })).toEqual([]);
+  });
+
+  it('gathers picks of one Google place, and keeps two shops in one mall apart', () => {
+    const mall = { latitude: 3.118, longitude: 101.677 };
+    const near = (metres: number) => ({ ...mall, latitude: mall.latitude + metres * METRE_LAT });
+    const places = groupPlaces(
+      [
+        row('a1', mall, 1000, { placeId: 'shop-a', merchant: 'Shop A', locationName: 'Shop A' }),
+        row('b1', near(15), 2000, { placeId: 'shop-b', merchant: 'Shop B', locationName: 'Shop B' }),
+        row('a2', near(140), 500, {
+          placeId: 'shop-a',
+          merchant: 'Shop A',
+          locationName: 'Shop A',
+          transactionDate: '2026-10-11T05:00:00.000Z',
+        }),
+        row('p1', near(5), 300, {
+          merchant: 'Shop A',
+          locationName: 'Shop A',
+          transactionDate: '2026-10-12T05:00:00.000Z',
+        }),
+      ],
+      { currency: 'MYR' },
+    );
+    expect(
+      places.map((place) => [place.id, place.transactions.map((t) => t.id)]),
+    ).toEqual([
+      ['shop-b', ['b1']],
+      ['shop-a', ['p1', 'a2', 'a1']],
+    ]);
   });
 });
 

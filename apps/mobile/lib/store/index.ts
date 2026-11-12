@@ -170,6 +170,7 @@ const GATED_COLUMNS = {
   recurring_override_bills: 'recurring_overrides.skip_period',
   review_history: 'proposed_transactions.reviewed_at',
   capture_pairing: 'proposed_transactions.pairing',
+  transaction_place_ids: 'transactions.place_id',
 } as const;
 export type GatedMigration = keyof typeof GATED_MIGRATIONS | keyof typeof GATED_COLUMNS;
 const migrationFound$ = observable<Partial<Record<GatedMigration, boolean>>>({});

@@ -25,8 +25,8 @@ export type PlaceCategory = { categoryId: string | null; totalMinor: MinorAmount
 
 /**
  * One spot the user spends at. The anchor is the earliest located payment
- * there; anchors sit at least `PLACE_RADIUS_M` apart, so the id stays the same
- * under any range or category filter.
+ * there; anchors without a Google place ID sit at least `PLACE_RADIUS_M` apart,
+ * so the id stays the same under any range or category filter.
  */
 export type Place = LatLng & {
   id: string;
@@ -152,14 +152,20 @@ export function groupPlaces(transactions: readonly FinanceTransaction[], filter:
     .filter((transaction): transaction is Located => located(transaction, filter.currency))
     .sort((a, b) => a.transactionDate.localeCompare(b.transactionDate) || a.id.localeCompare(b.id));
 
-  const anchors: (LatLng & { id: string; members: Located[] })[] = [];
+  // A place ID names one shop, so rows that carry one gather by it; two shops in one mall stay
+  // two places. Rows without one fall back to distance.
+  const anchors: (LatLng & { id: string; placeId: string | null; members: Located[] })[] = [];
   for (const row of rows) {
     const point = pointOf(row);
-    let anchor = anchors.find((candidate) => isAtPlace(candidate, point));
+    let anchor = row.placeId
+      ? (anchors.find((candidate) => candidate.placeId === row.placeId) ??
+        anchors.find((candidate) => !candidate.placeId && isAtPlace(candidate, point)))
+      : anchors.find((candidate) => isAtPlace(candidate, point));
     if (!anchor) {
-      anchor = { ...point, id: anchorId(point), members: [] };
+      anchor = { ...point, id: row.placeId ?? anchorId(point), placeId: row.placeId, members: [] };
       anchors.push(anchor);
     }
+    anchor.placeId ??= row.placeId;
     anchor.members.push(row);
   }
 

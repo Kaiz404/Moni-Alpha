@@ -170,6 +170,8 @@ export type Database = {
           location_latitude: number | null;
           location_longitude: number | null;
           location_name: string | null;
+          place_id: string | null;
+          place_coords_at: string | null;
           merchant: string | null;
           metadata: Json;
           notes: string | null;
@@ -194,6 +196,8 @@ export type Database = {
           location_latitude?: number | null;
           location_longitude?: number | null;
           location_name?: string | null;
+          place_id?: string | null;
+          place_coords_at?: string | null;
           merchant?: string | null;
           metadata?: Json;
           notes?: string | null;
@@ -218,6 +222,8 @@ export type Database = {
           location_latitude?: number | null;
           location_longitude?: number | null;
           location_name?: string | null;
+          place_id?: string | null;
+          place_coords_at?: string | null;
           merchant?: string | null;
           metadata?: Json;
           notes?: string | null;

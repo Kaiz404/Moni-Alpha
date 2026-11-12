@@ -110,6 +110,8 @@ export function toFinanceTransaction(row: RawRow): FinanceTransaction | null {
     locationLatitude: numberValue(row.location_latitude),
     locationLongitude: numberValue(row.location_longitude),
     locationName: nullableString(row.location_name),
+    placeId: nullableString(row.place_id),
+    placeCoordsAt: nullableString(row.place_coords_at),
     autoAdded: metadata.ai_suggested === true,
     balanceCorrection: metadata.kind === 'balance_correction',
     createdAt: isoDate(row.created_at, transactionDate),
