@@ -57,6 +57,14 @@ function isoDate(value: unknown, fallback = ''): string {
   return fallback;
 }
 
+/** A synced timestamptz as UTC ISO with `Z`: PostgREST sends `+00:00`, which the Zod datetime schemas reject. */
+function nullableIsoInstant(value: unknown): string | null {
+  const text = nullableString(value);
+  if (!text) return null;
+  const at = new Date(text);
+  return Number.isNaN(at.getTime()) ? null : at.toISOString();
+}
+
 export function isLiveRow(row: RawRow | null | undefined): row is RawRow & { id: string } {
   return Boolean(row && !row.deleted && typeof row.id === 'string' && row.id);
 }
@@ -111,7 +119,7 @@ export function toFinanceTransaction(row: RawRow): FinanceTransaction | null {
     locationLongitude: numberValue(row.location_longitude),
     locationName: nullableString(row.location_name),
     placeId: nullableString(row.place_id),
-    placeCoordsAt: nullableString(row.place_coords_at),
+    placeCoordsAt: nullableIsoInstant(row.place_coords_at),
     autoAdded: metadata.ai_suggested === true,
     balanceCorrection: metadata.kind === 'balance_correction',
     createdAt: isoDate(row.created_at, transactionDate),
