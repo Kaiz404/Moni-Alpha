@@ -4,32 +4,43 @@ The measured values behind the canvas boards `V2F-Components`, `V2F-Bible` and `
 
 ## Colour
 
+Current+ palette (owner's pick, 12 Nov 2026, canvas `Colour explorations` page and `V2F-Dark`): the Cream & Capsule neutrals in light, sharper category colours worn solid on every category bubble, and a near-black dark.
+
 | Role | Hex | Use |
 | --- | --- | --- |
 | Cream | #F6F2E9 | Screen ground (light grain, 6% multiply). Sheets. |
 | Paper | #FFFDF8 | List cards, chart cards, icon bubbles on colour blocks. |
-| Sand | #ECE5D6 | Chips, secondary buttons, tracks, pencil circle. |
+| Sand | #ECE5D6 | Chips, secondary buttons, tracks, pencil circle, the bubble of a row with no category (transfers). |
 | Sand light | #EFE8DA | Press fill, inner dividers, today's chart band. |
 | Hairline | #DDD5C5 | 1.5 borders, outline tiles, gridlines. |
 | Dashed outline | #B9B0A0 | Dashed empty tiles (`border-strong`). |
-| Ink | #17181A | Text, primary buttons, tab bar, AI cards, Moni button. |
+| Ink | #17181A | Text, primary buttons, tab bar, AI cards, Moni button, the glyph on every category bubble. |
 | Ink 2 | #4A463E | Secondary text, progress fill. |
 | Meta | #6B665C | Meta text (min 12, never lighter). |
 | Inactive on ink | #A9A397 | Inactive tab labels, even-pace line. |
 | Deep mint | #236B47 | Money in, links, positive deltas, budget line label. |
-| Mint | #A9DDB5 | Colour block, Approve, Groceries. |
 | Mint key | #8ECF9D | The + button only. |
-| Lemon | #F2DC72 | Colour block, warning, Subscriptions. |
-| Lilac | #C9B6F0 | Review / AI, Moni glyph, Entertainment. |
-| Peach | #F5BE98 | Colour block, Shopping. |
-| Coral | #F1A399 | Food, over-budget fill. |
-| Sky | #9FC4E8 | Transport. |
-| Aqua | #9FDCD3 | Housing. |
 | Over text | #B23E35 | Over-budget and destructive text. |
 
-Pastels always carry ink text; their secondary text is #6B5410 on Lemon, #3E3654 on Lilac and #174831 on Mint in both themes (`on-lemon`, `on-lilac`, `on-mint`). Secondary text on an Ink card is #A9A397 and #EFE8DA (`on-ink-meta`, `on-ink-body`; dark #575653 and #2C2D2D on the cream card are not on a board). Category colours come from the category, never from a screen.
+Blocks keep their pastels and ink text in light: Mint #A9DDB5 (Approve, check-in buttons), Lemon #F2DC72 (check-in, warning), Lilac #C9B6F0 (Review / AI, Moni glyph), Peach #F5BE98. Their secondary text is #6B5410 on Lemon, #3E3654 on Lilac and #174831 on Mint (`on-lemon`, `on-lilac`, `on-mint`). Soft fills for pills and states stay too: attention #F8EDB8, pending #E4DAF6, primary-muted #D3EED9, destructive #F9D5D0. Secondary text on an Ink card is #A9A397 and #EFE8DA (`on-ink-meta`, `on-ink-body`).
 
-Dark (`V2F-Dark`): Ground #161512 · Raised #211F1B (cards) · Fill #2C2924 (Sand) · Track #26241F (Sand light, tracks) · Hairline #3A362F · Tab pill #2A2823 · Text #F3EEE3 · Text 2 #C7C0B2 · Meta #A39C8E · Inactive #9D968A · Contrast #EDE6D8 (the ink role: primary buttons, AI cards) · Money in #7FCF98 · Over #F0897E · Mint key #8ECF9D. Pastels deepen and keep #17181A text: Mint #8FC79D, Lemon #E0C85E, Lilac #B29DE0, Peach #E3A47E, Coral #DE8B80, Sky #86AED6, Aqua #82C7BD. `apps/mobile/global.css` holds both themes under the same names.
+Category colours (the chart set). A category bubble wears the category's colour solid, with an Ink glyph, in both themes; it is never a pale tint (owner's direction, 12 Nov 2026: "the icons don't pop"). The same colour draws the category's ring arc, bar and chart marks. Core set, light / dark:
+
+| Category colour | Light | Dark |
+| --- | --- | --- |
+| Mint (Groceries) | #6FD08C | #59C97D |
+| Lemon (Subscriptions) | #F7CF3A | #F0C42C |
+| Lilac (Entertainment) | #A98CF5 | #987AFF |
+| Peach (Shopping) | #FF9F66 | #F58D47 |
+| Coral (Food, over-budget fill, Daily bars above pace) | #FF7F70 | #F5685A |
+| Sky (Transport) | #62A8EE | #4CA4F5 |
+| Aqua (Housing) | #4CC8BA | #30BEA6 |
+| Pink (Health) | #EE8DB8 | #F07AB2 |
+| Other | #CFC6B5 | #8C867B |
+
+The stored catalogue (`packages/types` `customCategoryColors`, the system presets, the `categories_color_catalog_check` constraint) is the old pastel catalogue sharpened by one rule: in HLS, lightness −0.10 (not below 0.55) and saturation ×1.25 + 0.08 (at most 0.95); colours with saturation under 0.15 stay. Old → new: #F2B8B5 #FC7F78 · #F4C58B #FBAF51 · #EAD978 #FADC35 · #BEDB8D #ADE451 · #A8D6A0 #7CD76C · #8FD3C7 #57D8C1 · #A6D8F0 #68CBFB · #AEC5F5 #75A0FB · #C3B2EF #9A76F8 · #E4B1E4 #E77BE7 · #F3B6CF #FC7AAF · #F0C0B6 #F8907B · #D9C6A5 #DAB471 · #C8D2A2 #BDD170 · #B7C9C0 #B7C9C0 · #C2CAD5 #9AAECA · #F3B6B2 #FB7F77 · #9FD8D5 #69DBD5 · #B7D5F0 #7CBDF8 · #F5C397 #FBA75E · #E8C8A9 #EFAE6F · #E9BCA8 #F1966D · #CAD5A5 #BED473 · #B5CBA0 #9BC870 · #B7C2D3 #8CA5CB · #BFC9D6 #95ADCD · #F4B7C1 #FC7C91 · #F1D0A9 #FBB96C · #AAD8C6 #78D7B2. Ink on every one is at least 5.3:1. Wallet colours follow the same rule. Category colours come from the category, never from a screen.
+
+Dark (`V2F-Dark`, near black): Ground #0B0A09 · Raised #1D1B19 (cards, 1.2:1 on ground) · Fill #2D2A27 (Sand) · Track #252320 (Sand light, tracks) · Hairline #443F38 (1.6:1 on raised) · Tab pill #242220 · Text #F6F3ED · Text 2 #CEC8BD · Meta #A39C90 · Inactive #A39C90 · Contrast #F6F3ED (the ink role: primary buttons, AI cards; pressed #DDD8CE) · On contrast #0B0A09 · Money in #72DE97 · Over #FF7366 · Mint key #66D68A with #0B2416 glyph. Blocks turn tonal instead of glowing: a dark tint with light text, Lilac #2D2452 (secondary #C9B7FF), Lemon #352B0C (secondary #F0CF5A), Mint #123422 (secondary #72DE97); the soft fills follow (attention #352B0C, pending #2D2452, primary-muted #123422, destructive #3D1D19). Category bubbles stay solid with an Ink glyph. `apps/mobile/global.css` holds both themes under the same names.
 
 ## Type
 
@@ -62,7 +73,7 @@ Dark (`V2F-Dark`): Ground #161512 · Raised #211F1B (cards) · Fill #2C2924 (San
 ## Lists and rows
 
 - Paper list card radius 26, no padding, no borders or dividers. Rows reach its edges and keep their own padding; the card clips them to its corners (owner's direction, 1 Nov 2026).
-- Transaction row 66 tall: 42 tint bubble, title 16/600 one line, meta 13 Meta, amount 16/600. No chevron, no ⋯; the whole row opens the detail. Meta: "Category · Wallet" in day-grouped lists, otherwise "Date · Wallet". Transfers "Maybank → Touch 'n Go". "Auto" pill (20 tall Sand, 12/700 Ink 2) first in the meta. Pending: dashed bubble, "To review" pill, unsigned amount in Ink 2.
+- Transaction row 66 tall: 42 category bubble (solid category colour, Ink glyph), title 16/600 one line, meta 13 Meta, amount 16/600. No chevron, no ⋯; the whole row opens the detail. Meta: "Category · Wallet" in day-grouped lists, otherwise "Date · Wallet". Transfers "Maybank → Touch 'n Go". "Auto" pill (20 tall Sand, 12/700 Ink 2) first in the meta. Pending: dashed bubble, "To review" pill, unsigned amount in Ink 2.
 - Navigation row (settings, lists of places): trailing value 15 Ink 2, then chevron-right 20 Meta.
 - Press: fill Sand light, scale 0.97 on the press spring, release on control. A row in a list card or menu does not scale, and its fill reaches the card's edges. A press with no corners and no row around it draws no fill.
 - Hold (500 ms; bloom from the finger from 250 ms in #E3D8C2 (`bloom`; dark #3A362F is not on a board), Confirm haptic, row lifts 1.02): menu Paper radius 22, 220 wide, items 44 tall: Edit category, Change wallet, Delete (Over text). Nothing else. A one-time hint chip "Hold a row for quick actions" teaches it.
@@ -87,7 +98,7 @@ Dark (`V2F-Dark`): Ground #161512 · Raised #211F1B (cards) · Fill #2C2924 (San
 ## Progress
 
 - Bar: Sand track, Ink 2 fill = spent ÷ budget. Over budget: 100% Coral fill and "RM20 over" 700 Over text. Never past the track, no pace tick, no split fill. 8 tall in rows, 4 in picker tiles, 12 for the category page hero. At ≥ 75% the label turns #6B5410.
-- Ring (Budget tab root only): 44 box, stroke 5, Sand track, Ink 2 fill from 12 o'clock, tint bubble inside. Over: full Coral ring and "RM20 over".
+- Ring (Budget tab root only): 44 box, stroke 5, Sand track, Ink 2 fill from 12 o'clock, solid category bubble inside. Over: full Coral ring and "RM20 over".
 
 ## Charts
 
@@ -98,7 +109,7 @@ All inside a Paper card (radius 26, padding 14 18), plot 314 × 150, axis column
 - Callout (one shape everywhere): Ink box radius 12, 100 × 38 at the top of the plot, date 12 over value 14/700 cream, dashed ink guide to the point.
 - Tooltip only under a finger (owner's direction, 12 Nov 2026), on Home's spent card and the net worth chart: at rest a chart shows only its marks (line, area, bars, gridlines, axis labels), with no callout, guide, dot, scrub handle or highlighted bar. The tooltip appears the moment a finger lands (100 ms fade in), follows a sideways drag, or after a 200 ms hold any direction, and fades over 150 ms on release; a tap shows it only while the finger is down. A finger that heads up or down scrolls the page instead and hides it at once. The tooltip moves through every day (every bar on Daily), keeping the same amount across days with no transactions, and ticks only on days (or bars) with transactions, so several transactions on one day are one tick (owner's direction, 12 Nov 2026). A screen reader steps only between those days and today. It reads the live zoom, so it works mid-flight.
 - Spent vs budget line (Home Pace, category page): Ink 3 line, Sand fill at 0.8 up to today; even pace #A9A397 dashed from 0 to the budget at month end; budget as the top gridline with a Deep mint label and end dot; while scrubbed, a 14 Ink dot with cream border and a 28 × 20 Ink scrub handle capsule. No projection line.
-- Spending ring (Budget root, owner's direction, 2 Nov 2026): box 284, centre line radius 124, stroke 34, round caps, 10 clear between any two neighbours, biggest first clockwise from 12 o'clock. Visible length (sweep plus caps) follows the share; the smallest keeps a 2° sweep, at most 8 arcs with the smallest folded into a last "Other" (`dots-horizontal`, Hairline; dark Inactive). Arcs wear the category's solid colour, never the 45% bubble tint; dark deepens it 12%. Glyph 20 #17181A on the arc. Centre: digits 46/50 700 with symbol and cents 18 Meta, then "of RM1,800" 13 Meta, or "RM20 over" 13/700 Over, or "spent" with no budget. Selected: stroke +4, others 60%, centre fades in over 140 ms with amount, name 15/600 and "31% of spending"; Segment_Tick on change. Empty: Sand circle and "RM0". First show sweeps from 12 o'clock on `value`, once a session; a month that keeps the order springs to new lengths, one that reorders fades over 180 ms, as Reduce Motion does.
+- Spending ring (Budget root, owner's direction, 2 Nov 2026): box 284, centre line radius 124, stroke 34, round caps, 10 clear between any two neighbours, biggest first clockwise from 12 o'clock. Visible length (sweep plus caps) follows the share; the smallest keeps a 2° sweep, at most 8 arcs with the smallest folded into a last "Other" (`dots-horizontal`, Hairline; dark Inactive). Arcs wear the category's colour from the chart set (dark: its dark value), the same colour as its bubble. Glyph 20 #17181A on the arc. Centre: digits 46/50 700 with symbol and cents 18 Meta, then "of RM1,800" 13 Meta, or "RM20 over" 13/700 Over, or "spent" with no budget. Selected: stroke +4, others 60%, centre fades in over 140 ms with amount, name 15/600 and "31% of spending"; Segment_Tick on change. Empty: Sand circle and "RM0". First show sweeps from 12 o'clock on `value`, once a session; a month that keeps the order springs to new lengths, one that reorders fades over 180 ms, as Reduce Motion does.
 - Daily bars (Home Daily, Activity Spending): one 12-wide Ink bar per day so far, the part above even pace in Coral; even pace dashed line labelled "RM58"; today on a Sand light band with a dashed segment for safe to spend a day. No future bars.
 - Balance line (Activity Balance, wallet page): the line chart without budget or even pace; axis does not start at 0 (say so in the accessibility label); main-currency wallets only.
 - Net worth chart (Wallets, owner's direction, 2 Nov 2026): the first day of the range on the left edge, today on the right, whatever the range. Range chips under the plot (1M, 7D, 30D, 90D, 1Y, All; compact Segmented, 36 tall), shared with Home's spent card. A wallet with no history yet shortens the range rather than drawing a flat line before it existed. Total | By wallet toggle in the header. Total is the Ink 3 line with Sand fill. By wallet is one 3.5 line per wallet in the exact tint of its bubble on the Wallets list (dark mode the dark list's tint), thicker than the Ink total because the pastels are pale on Paper, with a dash pattern for wallets sharing a tint and no key (owner's direction, 12 Nov 2026). Under a finger the callout reads the day's total and the guide carries one dot per wallet line. A view change cross-fades the lines over 180 ms while the axis springs to the new view's floor and ceiling.
