@@ -5,16 +5,16 @@ export const USER_ID = '11111111-1111-4111-8111-111111111111';
 const STAMP = '2026-10-01T00:00:00.000Z';
 
 const SYSTEM_CATEGORIES: [name: string, type: string, icon: string, color: string][] = [
-  ['Food & Dining', 'expense', 'silverware-fork-knife', '#F3B6B2'],
-  ['Transportation', 'expense', 'car', '#9FD8D5'],
-  ['Housing', 'expense', 'home-variant', '#B7D5F0'],
-  ['Entertainment', 'expense', 'movie-open', '#F5C397'],
-  ['Shopping', 'expense', 'shopping', '#E8C8A9'],
-  ['Healthcare', 'expense', 'heart-pulse', '#E9BCA8'],
-  ['Subscriptions', 'expense', 'autorenew', '#C8C4F0'],
-  ['Gifts & Donations', 'expense', 'gift-outline', '#E4B1E4'],
-  ['Salary', 'income', 'cash', '#A8D6A0'],
-  ['Freelance', 'income', 'laptop', '#A6D8F0'],
+  ['Food & Dining', 'expense', 'silverware-fork-knife', '#FB7F77'],
+  ['Transportation', 'expense', 'car', '#69DBD5'],
+  ['Housing', 'expense', 'home-variant', '#7CBDF8'],
+  ['Entertainment', 'expense', 'movie-open', '#FBA75E'],
+  ['Shopping', 'expense', 'shopping', '#EFAE6F'],
+  ['Healthcare', 'expense', 'heart-pulse', '#F1966D'],
+  ['Subscriptions', 'expense', 'autorenew', '#968DF4'],
+  ['Gifts & Donations', 'expense', 'gift-outline', '#E77BE7'],
+  ['Salary', 'income', 'cash', '#7CD76C'],
+  ['Freelance', 'income', 'laptop', '#68CBFB'],
 ];
 
 export const id = (...parts: string[]): string => fixtureId(USER_ID, ...parts);

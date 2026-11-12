@@ -41,7 +41,7 @@ export const WALLET_CARD_STYLES: WalletCardStyle[] = [
     backgroundColor: '#8ECF9D',
     colors: ['#C8E6D4', '#8ECF9D'],
     angle: 135,
-    swatchHex: '#8ECF9D',
+    swatchHex: '#57D374',
     ...PASTEL_CONTENT,
   },
   {
@@ -51,7 +51,7 @@ export const WALLET_CARD_STYLES: WalletCardStyle[] = [
     backgroundColor: '#E8CF50',
     colors: ['#F7F7F2', '#E8CF50'],
     angle: 135,
-    swatchHex: '#E8CF50',
+    swatchHex: '#F9D51F',
     ...PASTEL_CONTENT,
   },
   {
@@ -61,7 +61,7 @@ export const WALLET_CARD_STYLES: WalletCardStyle[] = [
     backgroundColor: '#E87D72',
     colors: ['#F7F7F2', '#E87D72'],
     angle: 135,
-    swatchHex: '#E87D72',
+    swatchHex: '#FA402D',
     ...PASTEL_CONTENT,
   },
   {
@@ -71,7 +71,7 @@ export const WALLET_CARD_STYLES: WalletCardStyle[] = [
     backgroundColor: '#72CEC4',
     colors: ['#F7F7F2', '#72CEC4'],
     angle: 135,
-    swatchHex: '#72CEC4',
+    swatchHex: '#3EDBCA',
     ...PASTEL_CONTENT,
   },
   {
@@ -81,7 +81,7 @@ export const WALLET_CARD_STYLES: WalletCardStyle[] = [
     backgroundColor: '#B39AE8',
     colors: ['#F7F7F2', '#B39AE8'],
     angle: 135,
-    swatchHex: '#B39AE8',
+    swatchHex: '#8C5CF3',
     ...PASTEL_CONTENT,
   },
   {
@@ -103,7 +103,7 @@ export const WALLET_CARD_STYLES: WalletCardStyle[] = [
     backgroundColor: '#F0AD85',
     colors: ['#F7F7F2', '#F0AD85'],
     angle: 135,
-    swatchHex: '#F0AD85',
+    swatchHex: '#FA8A48',
     ...PASTEL_CONTENT,
   },
   {

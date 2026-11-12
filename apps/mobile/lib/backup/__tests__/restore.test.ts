@@ -299,6 +299,7 @@ describe('planRestore: rows that point at other rows', () => {
     const store = { ...SYSTEM_ONLY, categories: [reseeded] };
     const plan = planRestore(exported(), store, USER);
     expect(plan.writes.categories.map((row) => row.id)).toEqual([YOGA]);
+    expect(plan.writes.categories[0].color).toBe('#9A76F8');
     expect(plan.writes.transactions.find((row) => row.id === LUNCH)?.category_id).toBe(uuid(77));
     expect(plan.writes.budgets[0].category_id).toBe(uuid(77));
   });

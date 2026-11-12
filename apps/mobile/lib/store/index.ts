@@ -6,7 +6,7 @@
 import { observable, syncState, when, type Observable } from '@legendapp/state';
 import { synced } from '@legendapp/state/sync';
 import { configureSyncedSupabase, syncedSupabase } from '@legendapp/state/sync-plugins/supabase';
-import type { UserPreferences } from '@repo/types';
+import { legacyColor, type UserPreferences } from '@repo/types';
 import { legendMMKV, legendPersistPlugin } from '@/lib/mmkv/legend-store';
 import { supabase } from '@/lib/supabase/client';
 import { getProfilePreferences } from '@/lib/supabase/profile';
@@ -51,6 +51,9 @@ function createOrRevive(collection: string) {
       });
       return { data: undefined };
     };
+    if (collection === 'categories' || collection === 'wallets') {
+      input = { ...input, color: legacyColor(input.color as string | null | undefined) };
+    }
     const inserted = await supabase.from(collection).insert(input).select();
     if (inserted.error?.code !== '23505') {
       return inserted.error ? fail(inserted.error.message) : { data: inserted.data?.[0] };

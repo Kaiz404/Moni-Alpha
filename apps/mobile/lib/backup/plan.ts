@@ -1,4 +1,4 @@
-import { createCategorySchema, decimalToMinor, minorToDecimal, type MerchantAlias } from '@repo/types';
+import { createCategorySchema, decimalToMinor, legacyColor, minorToDecimal, type MerchantAlias } from '@repo/types';
 
 import { merchantKey } from '@/lib/ai/routine';
 import { toLocalDateInput } from '@/lib/dates/local-date-input';
@@ -103,7 +103,7 @@ export function planRestore(file: MoniFile, store: StoreSnapshot, userId: string
     }
     walletIds.add(id);
     counts.wallets.fresh += 1;
-    writes.wallets.push(owned(fields));
+    writes.wallets.push(owned({ ...fields, color: legacyColor(fields.color as string | undefined) }));
   }
 
   // A category in the file resolves to the id the store knows it by.
@@ -137,10 +137,11 @@ export function planRestore(file: MoniFile, store: StoreSnapshot, userId: string
       counts.categories.here += 1;
       continue;
     }
+    const color = legacyColor(fields.color as string | undefined);
     const valid = createCategorySchema.safeParse({
       name: fields.name,
       icon: fields.icon,
-      color: fields.color,
+      color,
       type: fields.type,
     });
     if (!valid.success) {
@@ -149,7 +150,7 @@ export function planRestore(file: MoniFile, store: StoreSnapshot, userId: string
     }
     categoryIds.set(id, id);
     counts.categories.fresh += 1;
-    writes.categories.push(owned(fields));
+    writes.categories.push(owned({ ...fields, color }));
   }
 
   const budgetKey = (categoryId: unknown, currency: unknown) => `${String(categoryId)}|${String(currency)}`;

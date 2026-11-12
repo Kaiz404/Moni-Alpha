@@ -16,7 +16,7 @@ jest.mock('uniwind', () => ({
   useUniwind: () => ({ theme: 'light' }),
 }));
 
-const slice = (name: string, ringgit: number, color: string | null = '#F3B6B2'): SpendSlice => ({
+const slice = (name: string, ringgit: number, color: string | null = '#FB7F77'): SpendSlice => ({
   categoryId: name.toLowerCase(),
   name,
   icon: 'car',
