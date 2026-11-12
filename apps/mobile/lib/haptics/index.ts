@@ -27,13 +27,15 @@ export const thresholdOff = () => fire(Haptics.AndroidHaptics.Toggle_Off, lightI
 /** Segmented change, sheet detent, a pick among a few. */
 export const scrubStep = () => fire(Haptics.AndroidHaptics.Segment_Tick, Haptics.selectionAsync);
 
-/** Past this many points a drag crosses them faster than a tick can mean anything. */
-const CHART_TICK_MOST_POINTS = 12;
-
-/** A chart's point under the finger. Dense charts stay quiet. */
-export const chartStep = (points: number) => {
-  if (points <= CHART_TICK_MOST_POINTS) scrubStep();
-};
+/**
+ * The scrub reaches a new point on a chart, or the tooltip first appears. Points packed closer
+ * than a fingertip can tell apart play the lighter frequent tick, so a fast drag hums, not rattles.
+ */
+export const chartStep = (dense: boolean) =>
+  fire(
+    dense ? Haptics.AndroidHaptics.Segment_Frequent_Tick : Haptics.AndroidHaptics.Segment_Tick,
+    Haptics.selectionAsync,
+  );
 
 /** A held segmented pill lifts under the finger. */
 export const glidePickUp = () => fire(Haptics.AndroidHaptics.Drag_Start, lightImpact);

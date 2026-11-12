@@ -38,14 +38,21 @@ describe('haptics on Android', () => {
 });
 
 describe('chartStep', () => {
-  beforeEach(() => onPlatform('ios'));
+  it('plays Segment_Tick on Android, or Segment_Frequent_Tick where points are dense', () => {
+    onPlatform('android');
+    chartStep(false);
+    chartStep(true);
+    expect(haptics.performAndroidHapticsAsync.mock.calls).toEqual([
+      ['segment-tick'],
+      ['segment-frequent-tick'],
+    ]);
+  });
 
-  it('ticks on a chart of up to twelve points and stays quiet on a denser one', () => {
-    chartStep(12);
-    expect(haptics.selectionAsync).toHaveBeenCalledTimes(1);
-    chartStep(13);
-    chartStep(366);
-    expect(haptics.selectionAsync).toHaveBeenCalledTimes(1);
+  it('plays a selection on iOS however dense the points are', () => {
+    onPlatform('ios');
+    chartStep(false);
+    chartStep(true);
+    expect(haptics.selectionAsync).toHaveBeenCalledTimes(2);
   });
 });
 

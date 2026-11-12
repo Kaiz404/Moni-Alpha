@@ -34,6 +34,7 @@ import {
   type PaceChartMode,
   type PaceGeometry,
 } from './pace-geometry';
+import { DENSE_POINT_PX } from './scrub';
 
 export type { ChartMonth, DaySeries, PaceChartMode } from './pace-geometry';
 
@@ -118,7 +119,8 @@ function Plot({
 
   const select = (index: number) => {
     if (index === selectedRef.current || index < 0 || index > last) return;
-    chartStep(geometry.points.length);
+    const { points } = geometry;
+    chartStep(last > 0 && (points[last]!.x - points[0]!.x) / last < DENSE_POINT_PX);
     setPicked(index);
   };
 

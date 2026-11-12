@@ -22,6 +22,7 @@ import { chartStep } from '@/lib/haptics';
 import { springs } from '@/lib/motion/tokens';
 import { tid, type Screen } from '@/lib/test-ids';
 
+import { DENSE_POINT_PX } from './scrub';
 
 const PLOT_H = 150;
 const TOP = 44;
@@ -173,7 +174,7 @@ export function BalancePlot({
   }));
 
   const pick = (index: number) => {
-    chartStep(days.length);
+    chartStep(dx < DENSE_POINT_PX);
     onSelectDay(days[index].key);
   };
   const scrub = Gesture.Pan()
