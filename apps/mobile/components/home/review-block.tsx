@@ -41,8 +41,8 @@ export function ReviewBlock({
       testID={tid('home', 'review')}
       accessibilityLabel={`${title}, ${waiting}. Review`}
       onPress={onPress}
-      pressedClassName="bg-lilac"
-      className="flex-row items-center gap-3 rounded-card bg-lilac py-3 pl-[18px] pr-3.5"
+      pressedClassName="bg-block-lilac"
+      className="flex-row items-center gap-3 rounded-card bg-block-lilac py-3 pl-[18px] pr-3.5"
     >
       <View className="min-w-0 flex-1 gap-1.5">
         <Text
@@ -56,7 +56,7 @@ export function ReviewBlock({
             {proposals.slice(0, 3).map((proposal, index) => (
               <View
                 key={proposal.id}
-                className="h-[30px] w-[30px] items-center justify-center rounded-full border-2 border-lilac bg-card"
+                className="h-[30px] w-[30px] items-center justify-center rounded-full border-2 border-block-lilac bg-card"
                 style={{ marginLeft: index ? -10 : -2 }}
               >
                 <IconSymbol

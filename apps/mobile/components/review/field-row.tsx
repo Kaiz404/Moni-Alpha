@@ -57,7 +57,7 @@ export function FieldRow({
             >
               <CategoryIcon
                 icon={look.icon}
-                color={look.color ? tokens.onPastel : tokens.foreground}
+                color={look.color ? tokens.onCategory : tokens.foreground}
                 size={16}
               />
             </View>
@@ -74,7 +74,7 @@ export function FieldRow({
             />
           </>
         ) : (
-          <View className="h-8 min-w-0 shrink flex-row items-center gap-1 rounded-full bg-lemon pl-2.5 pr-1.5">
+          <View className="h-8 min-w-0 shrink flex-row items-center gap-1 rounded-full bg-block-lemon pl-2.5 pr-1.5">
             <IconSymbol
               name={empty.icon}
               size={16}

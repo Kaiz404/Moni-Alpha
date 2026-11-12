@@ -67,7 +67,7 @@ export function NavRow({
             name={icon}
             size={20}
             color={
-              tint === 'sand' ? tokens.foreground : tokens.onPastel
+              tint === 'sand' ? tokens.foreground : tokens.onCategory
             }
           />
         </View>

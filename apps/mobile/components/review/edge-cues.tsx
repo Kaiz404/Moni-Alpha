@@ -221,7 +221,7 @@ export function EdgeCues(props: CueProps & { centerY: number }) {
         arrow="arrow-right"
         action={props.canApprove ? 'check' : 'wallet-outline'}
         label={props.canApprove ? 'Approve' : 'Pick wallet'}
-        onInk={tokens.onPastel}
+        onInk={tokens.onCategory}
       />
       <Cue
         side="left"
@@ -245,7 +245,7 @@ export function EdgeCues(props: CueProps & { centerY: number }) {
           arrow="arrow-down"
           action="clock-outline"
           label="Later"
-          onInk={tokens.onPastel}
+          onInk={tokens.onCategory}
         />
       </View>
     </View>

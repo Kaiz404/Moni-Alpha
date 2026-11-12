@@ -40,7 +40,7 @@ export function PickerChip({
         onPress={onPress}
         accessibilityLabel={accessibilityLabel}
         radius={{ rest: 22, pressed: 16 }}
-        className="h-11 flex-row items-center gap-1.5 bg-lemon pl-3 pr-2.5"
+        className="h-11 flex-row items-center gap-1.5 bg-block-lemon pl-3 pr-2.5"
       >
         <IconSymbol
           name={empty.icon}
@@ -78,7 +78,7 @@ export function PickerChip({
       >
         <CategoryIcon
           icon={look.icon}
-          color={look.color ? tokens.onPastel : tokens.foreground}
+          color={look.color ? tokens.onCategory : tokens.foreground}
           size={16}
         />
       </View>

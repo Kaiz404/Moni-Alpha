@@ -1,6 +1,5 @@
 import { View } from 'react-native';
 import Animated from 'react-native-reanimated';
-import { useUniwind } from 'uniwind';
 
 import { useHold, type HoldAnchor } from '@/components/ui/hold-menu';
 import {
@@ -213,21 +212,18 @@ export function TintBubble({
   size?: TintBubbleSize;
 }) {
   const tokens = useThemeTokens();
-  const dark = useUniwind().theme === 'dark';
   return (
     <View
       className={`items-center justify-center rounded-full ${color ? '' : 'bg-sand'}`}
       style={[
         { width: size, height: size },
-        color
-          ? { backgroundColor: `${color}${dark ? '38' : '73'}` }
-          : null,
+        color ? { backgroundColor: color } : null,
       ]}
     >
       <IconSymbol
         name={icon}
         size={BUBBLE_GLYPH[size]}
-        color={color && dark ? color : tokens.foreground}
+        color={color ? tokens.onCategory : tokens.foreground}
       />
     </View>
   );

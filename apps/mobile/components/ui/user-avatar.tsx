@@ -35,7 +35,7 @@ export function UserAvatar({
           style={{ width: '100%', height: '100%', borderRadius: look.radius }}
         />
       ) : (
-        <Text className={`font-display-bold text-on-pastel ${look.text}`}>{initial}</Text>
+        <Text className={`font-display-bold text-on-category ${look.text}`}>{initial}</Text>
       )}
     </View>
   );

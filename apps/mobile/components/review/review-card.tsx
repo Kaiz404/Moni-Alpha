@@ -75,7 +75,7 @@ const SOURCE: Record<
 > = {
   notification: { icon: 'bell-outline', tint: 'bg-attention-fill', onPastel: false },
   text: { icon: 'creation', tint: 'bg-pending-fill', onPastel: false },
-  image: { icon: 'receipt-text-outline', tint: 'bg-peach', onPastel: true },
+  image: { icon: 'receipt-text-outline', tint: 'bg-block-peach', onPastel: true },
 };
 
 /** A notification capture shows the app that sent it. The tile is for the rest, and for an app with no known icon. */

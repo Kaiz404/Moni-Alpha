@@ -2,7 +2,6 @@ import type { CurrencyCode, MinorAmount } from '@repo/types';
 import { useEffect, useMemo, useState } from 'react';
 import { View } from 'react-native';
 import { Marker } from 'react-native-maps';
-import { useUniwind } from 'uniwind';
 
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Text } from '@/components/ui/text';
@@ -132,25 +131,23 @@ function PinMarker({
 }
 
 /**
- * A pin's category bubble in the category's light tint, as on a row's bubble.
- * The Paper under it keeps the tint opaque on the Ink of a selected pin.
+ * A pin's category bubble, as on a row: the colour solid with an Ink glyph.
  */
 export function PinBubble({ look, size, glyph }: { look: CategoryLook; size: number; glyph: number }) {
   const tokens = useThemeTokens();
-  const dark = useUniwind().theme === 'dark';
   return (
     <View
-      className={`overflow-hidden rounded-full ${look.color ? 'bg-card' : 'bg-sand'}`}
+      className="overflow-hidden rounded-full bg-sand"
       style={{ width: size, height: size }}
     >
       <View
         className="flex-1 items-center justify-center"
-        style={look.color ? { backgroundColor: `${look.color}${dark ? '38' : '73'}` } : undefined}
+        style={look.color ? { backgroundColor: look.color } : undefined}
       >
         <IconSymbol
           name={look.icon}
           size={glyph}
-          color={look.color && dark ? look.color : tokens.foreground}
+          color={look.color ? tokens.onCategory : tokens.foreground}
         />
       </View>
     </View>

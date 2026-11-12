@@ -100,7 +100,7 @@ export function PlusButton({
           <IconSymbol
             name="plus"
             size={28}
-            color={tokens.onPastel}
+            color={tokens.onMintKey}
           />
         </Animated.View>
       </Press>

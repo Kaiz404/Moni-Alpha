@@ -15,7 +15,7 @@ export function CaptureAlertCard() {
     <Animated.View
       entering={FadeIn.duration(180)}
       exiting={FadeOut.duration(180)}
-      className="gap-3 rounded-card bg-lemon p-[18px]"
+      className="gap-3 rounded-card bg-block-lemon p-[18px]"
     >
       <View className="gap-0.5">
         <Text
@@ -39,7 +39,7 @@ export function CaptureAlertCard() {
           onPress={model.fix}
           radius={{ rest: 22, pressed: 16 }}
           pressedClassName="bg-mint-pressed"
-          className="h-11 justify-center bg-mint px-3.5"
+          className="h-11 justify-center bg-block-mint px-3.5"
         >
           <Text className="text-[15px] font-display-semibold text-on-pastel">
             {model.actionLabel}

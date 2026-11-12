@@ -35,11 +35,11 @@ function leafValues(value: unknown): unknown[] {
 }
 
 describe('generated theme tokens', () => {
-  it('copies the v2 Cream canvas and the V2F-Dark ground from global.css', () => {
+  it('copies the v2 Cream canvas and the near-black V2F-Dark ground from global.css', () => {
     expect(variantBlock('light')).toContain('--color-canvas: #f6f2e9;');
-    expect(variantBlock('dark')).toContain('--color-canvas: #161512;');
+    expect(variantBlock('dark')).toContain('--color-canvas: #0b0a09;');
     expect(lightThemeTokens.canvas).toBe('#f6f2e9');
-    expect(darkThemeTokens.canvas).toBe('#161512');
+    expect(darkThemeTokens.canvas).toBe('#0b0a09');
   });
 });
 
@@ -63,11 +63,11 @@ describe('useResolvedThemeTokens', () => {
       primaryMuted: '#d3eed9',
       accent: '#8ecf9d',
       accents: {
-        lilac: '#c9b6f0',
-        peach: '#f5be98',
-        lemon: '#f2dc72',
-        coral: '#f1a399',
-        aqua: '#9fdcd3',
+        lilac: '#a98cf5',
+        peach: '#ff9f66',
+        lemon: '#f7cf3a',
+        coral: '#ff7f70',
+        aqua: '#4cc8ba',
       },
       background: '#f6f2e9',
       backgroundMuted: '#ece5d6',
@@ -94,7 +94,7 @@ describe('useResolvedThemeTokens', () => {
         approved: '#174831',
         destructive: '#8e2f28',
       },
-      chart: ['#a9ddb5', '#9fc4e8', '#c9b6f0', '#f2dc72', '#f1a399', '#f5be98'],
+      chart: ['#6fd08c', '#62a8ee', '#a98cf5', '#f7cf3a', '#ff7f70', '#ff9f66'],
       sand: '#ece5d6',
       sandLight: '#efe8da',
       hairline: '#ddd5c5',
@@ -104,16 +104,22 @@ describe('useResolvedThemeTokens', () => {
       tabBar: '#17181a',
       onTabBar: '#fffdf8',
       onPastel: '#17181a',
+      onCategory: '#17181a',
+      onMintKey: '#17181a',
+      blockMint: '#a9ddb5',
+      blockLemon: '#f2dc72',
+      blockLilac: '#c9b6f0',
+      blockPeach: '#f5be98',
       deepMint: '#236b47',
-      mint: '#a9ddb5',
+      mint: '#6fd08c',
       mintKey: '#8ecf9d',
       mintKeyPressed: '#7dc48d',
-      lemon: '#f2dc72',
-      lilac: '#c9b6f0',
-      peach: '#f5be98',
-      coral: '#f1a399',
-      sky: '#9fc4e8',
-      aqua: '#9fdcd3',
+      lemon: '#f7cf3a',
+      lilac: '#a98cf5',
+      peach: '#ff9f66',
+      coral: '#ff7f70',
+      sky: '#62a8ee',
+      aqua: '#4cc8ba',
       over: '#b23e35',
       primaryPressed: '#2e2f33',
       mintPressed: '#9ad3a8',
@@ -136,20 +142,22 @@ describe('useResolvedThemeTokens', () => {
     mockedUseCSSVariable.mockReturnValue(themeTokenNames.map((name) => darkThemeTokens[name]));
     const { result } = renderHook(() => useResolvedThemeTokens());
 
-    expect(result.current.canvas).toBe('#161512');
-    expect(result.current.card).toBe('#211f1b');
-    expect(result.current.foreground).toBe('#f3eee3');
-    expect(result.current.primary).toBe('#ede6d8');
-    expect(result.current.onPastel).toBe('#17181a');
-    expect(result.current.tabBar).toBe('#2a2823');
-    expect(result.current.states.pending).toBe('#cfbff3');
+    expect(result.current.canvas).toBe('#0b0a09');
+    expect(result.current.card).toBe('#1d1b19');
+    expect(result.current.foreground).toBe('#f6f3ed');
+    expect(result.current.primary).toBe('#f6f3ed');
+    expect(result.current.onPastel).toBe('#f6f3ed');
+    expect(result.current.onCategory).toBe('#17181a');
+    expect(result.current.blockMint).toBe('#123422');
+    expect(result.current.tabBar).toBe('#242220');
+    expect(result.current.states.pending).toBe('#c9b7ff');
     expect(result.current.chart).toEqual([
-      '#8fc79d',
-      '#86aed6',
-      '#b29de0',
-      '#e0c85e',
-      '#de8b80',
-      '#e3a47e',
+      '#59c97d',
+      '#4ca4f5',
+      '#987aff',
+      '#f0c42c',
+      '#f5685a',
+      '#f58d47',
     ]);
   });
 });
@@ -164,7 +172,7 @@ describe('useThemeTokens', () => {
       createElement(ThemeTokensContext, { value: root }, children);
     const { result } = renderHook(() => useThemeTokens(), { wrapper });
 
-    expect(result.current.canvas).toBe('#161512');
+    expect(result.current.canvas).toBe('#0b0a09');
     expect(result.current).toBe(root);
     expect(mockedUseCSSVariable).not.toHaveBeenCalled();
   });

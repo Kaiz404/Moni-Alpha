@@ -214,7 +214,7 @@ function WalletRow({
         <IconSymbol
           name={resolveWalletIcon(wallet.icon, wallet.type)}
           size={20}
-          color={tint === 'sand' ? tokens.foreground : tokens.onPastel}
+          color={tint === 'sand' ? tokens.foreground : tokens.onCategory}
         />
       </View>
       <View className="min-w-0 flex-1">

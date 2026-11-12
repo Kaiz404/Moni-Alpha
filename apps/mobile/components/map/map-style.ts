@@ -23,12 +23,12 @@ const light: MapPalette = {
 
 // The same roles on the V2F-Dark ground.
 const dark: MapPalette = {
-  ground: '#1D1B17',
-  park: '#1F2A21',
-  water: '#1C262C',
-  road: '#2C2924',
-  roadEdge: '#3A362F',
-  label: '#A39C8E',
+  ground: '#1D1B19',
+  park: '#1B2A1F',
+  water: '#1A262E',
+  road: '#2D2A27',
+  roadEdge: '#443F38',
+  label: '#A39C90',
 };
 
 function styleFor(p: MapPalette): MapStyleElement[] {

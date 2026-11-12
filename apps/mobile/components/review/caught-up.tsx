@@ -74,7 +74,7 @@ export function CaughtUp({
   return (
     <View
       testID={tid('review', 'caught-up')}
-      className="gap-3.5 rounded-card bg-mint px-[18px] py-[22px]"
+      className="gap-3.5 rounded-card bg-block-mint px-[18px] py-[22px]"
     >
       <View className="h-16 w-16 items-center justify-center rounded-full bg-primary">
         <IconSymbol

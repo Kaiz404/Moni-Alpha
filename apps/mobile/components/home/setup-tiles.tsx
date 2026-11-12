@@ -21,7 +21,7 @@ export function SetupTiles({ steps }: { steps: readonly SetupStep[] }) {
   return (
     <View
       accessibilityLabel="Setup steps"
-      className="overflow-hidden rounded-card bg-mint"
+      className="overflow-hidden rounded-card bg-block-mint"
     >
       <PressRows>
         {steps.map((step, index) => {

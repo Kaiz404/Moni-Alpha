@@ -216,23 +216,23 @@ Use simple, warm line icons with rounded terminals and a consistent optical weig
 
 ### 6.1 Palette logic
 
-**v2 "Cream & Capsule".** Cream ground, Paper cards, Ink text and primary buttons, and seven pastels that always carry ink text. Roles and hexes are in [`redesign/tokens.md`](redesign/tokens.md) (light) and the `V2F-Dark` board (dark: warm near-black grounds, deepened pastels, ink flips to cream). Category colours come from the category row, never from a screen.
+**v2 "Cream & Capsule".** Cream ground, Paper cards, Ink text and primary buttons. This is the Current+ palette: blocks, pills and buttons wear pastels with ink text in light and turn tonal in dark (a dark tint with light text, `block-mint`, `block-lemon`, `block-lilac`, `block-peach`); category and chart marks (`mint`, `lemon`, `lilac`, `peach`, `coral`, `sky`, `aqua`, `chart-1..6`) take the sharper core set; a category or wallet bubble is the colour solid with an Ink glyph (`on-category`) in both themes. Roles and hexes are in [`redesign/tokens.md`](redesign/tokens.md) § Colour (light and the near-black dark). Category colours come from the category row, never from a screen.
 
 The v1 semantic names that screens already use now carry v2 values:
 
 | Utility                        | v2 role (light / dark)                      |
 | ------------------------------ | ------------------------------------------- |
-| `canvas`, `background`         | Cream `#F6F2E9` / Ground `#161512`          |
-| `card`, `surface-1`, `surface-raised` | Paper `#FFFDF8` / Raised `#211F1B`   |
-| `surface-2`, `background-muted`| Sand `#ECE5D6` / Fill `#2C2924`             |
-| `foreground`, `expense`        | Ink `#17181A` / Text `#F3EEE3`              |
-| `muted`, `transfer`            | Meta `#6B665C` / `#A39C8E`                  |
-| `border`                       | Hairline `#DDD5C5` / `#3A362F`              |
-| `primary` / `primary-foreground` | Ink on Paper / Contrast `#EDE6D8` with ink |
-| `income`, `success`            | Deep mint `#236B47` / Money in `#7FCF98`    |
-| `danger`                       | Over text `#B23E35` / `#F0897E`             |
+| `canvas`, `background`         | Cream `#F6F2E9` / Ground `#0B0A09`          |
+| `card`, `surface-1`, `surface-raised` | Paper `#FFFDF8` / Raised `#1D1B19`   |
+| `surface-2`, `background-muted`| Sand `#ECE5D6` / Fill `#2D2A27`             |
+| `foreground`, `expense`        | Ink `#17181A` / Text `#F6F3ED`              |
+| `muted`, `transfer`            | Meta `#6B665C` / `#A39C90`                  |
+| `border`                       | Hairline `#DDD5C5` / `#443F38`              |
+| `primary` / `primary-foreground` | Ink on Paper / Contrast `#F6F3ED` with `#0B0A09` |
+| `income`, `success`            | Deep mint `#236B47` / Money in `#72DE97`    |
+| `danger`                       | Over text `#B23E35` / `#FF7366`             |
 
-v2 roles with no v1 name: `sand`, `sand-light`, `hairline`, `track`, `ink-2`, `inactive`, `tab-bar`, `on-tab-bar`, `on-pastel`, `deep-mint`, `mint`, `mint-key`, `mint-key-pressed`, `lemon`, `lilac`, `peach`, `coral`, `sky`, `aqua`, `over`. New screens use these; F2 to F4 move the v1 names over and delete them.
+v2 roles with no v1 name: `sand`, `sand-light`, `hairline`, `track`, `ink-2`, `inactive`, `tab-bar`, `on-tab-bar`, `on-pastel` (text on a block), `on-category` (glyph on a solid bubble), `on-mint-key`, `block-*`, `deep-mint`, `mint`, `mint-key`, `mint-key-pressed`, `lemon`, `lilac`, `peach`, `coral`, `sky`, `aqua`, `over`. New screens use these; F2 to F4 move the v1 names over and delete them.
 
 ### 6.2 Semantic color
 
@@ -250,7 +250,7 @@ Semantic colors communicate state, not moral judgment.
 
 ### 6.3 Category colors
 
-Each category gets one stable Material Design icon and pastel color. Do not use emoji or reassign colors per chart. Category hue may appear in a 12–16% tint for rows and cards, 100% saturation for chart segments, and a deep accessible companion for text/icon use. Preset pairs are fixed; custom categories select only from the curated icon and pastel grids.
+Each category gets one stable Material Design icon and pastel color. Do not use emoji or reassign colors per chart. A category bubble wears the colour solid with an Ink glyph (never a pale tint); other category hues may appear in a 12–16% tint for cards, 100% saturation for chart segments, and a deep accessible companion for text/icon use. Preset pairs are fixed; custom categories select only from the curated icon and pastel grids.
 
 If two categories share nearby hues, differentiate them with icon silhouette and/or chart pattern in accessibility modes. Never use color alone to encode a debt direction, budget warning, or approval state.
 
@@ -548,7 +548,7 @@ When Reduce Motion is enabled:
 Light and dark mode are first-class siblings, not inverted afterthoughts.
 
 - Preserve semantic relationships and category identity across themes.
-- Dark mode uses the `V2F-Dark` warm near-blacks (Ground `#161512`, Raised `#211F1B`), never grey. Pastels deepen a step and keep ink text (`on-pastel`); the ink role (`primary`) flips to cream.
+- Dark mode uses the near-black `V2F-Dark` grounds (Ground `#0B0A09`, Raised `#1D1B19`), never grey. Blocks turn tonal and carry light text (`on-pastel` flips to cream); category bubbles stay solid with an Ink glyph (`on-category`); the ink role (`primary`) flips to cream.
 - Lift muted text and dividers enough for readability; do not simply lower every opacity.
 - Pastel accents often need a deeper or brighter companion in dark mode to retain contrast.
 - Ensure receipt thumbnails, imported notification evidence, and charts remain interpretable in either theme.

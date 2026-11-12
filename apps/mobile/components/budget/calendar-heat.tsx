@@ -187,7 +187,7 @@ function DayCell({
     ? 'text-primary-foreground'
     : day.bucket === 'future' || day.bucket === 'plain'
       ? 'text-muted'
-      : 'text-on-pastel';
+      : 'text-on-category';
   return (
     <Press
       testID={tid('budget', 'calendar', 'day', day.day)}

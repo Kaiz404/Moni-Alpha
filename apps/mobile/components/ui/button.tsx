@@ -73,7 +73,7 @@ const looks: Record<ButtonVariant, Look> = {
     padding: 'px-3.5',
   },
   approve: {
-    fill: 'bg-mint',
+    fill: 'bg-block-mint',
     pressed: 'bg-mint-pressed',
     text: 'text-on-pastel',
     ink: (t) => t.onPastel,

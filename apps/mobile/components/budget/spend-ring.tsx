@@ -137,24 +137,13 @@ function nextDrawn(drawn: Drawn, arcs: RingArc[], reduceMotion: boolean): Drawn 
   };
 }
 
-/** Dark deepens a pastel a step and keeps its ink glyph (V2F-Dark). */
-function deepened(hex: string): string {
-  const channels = [1, 3, 5].map((at) =>
-    Math.round(parseInt(hex.slice(at, at + 2), 16) * 0.88)
-      .toString(16)
-      .padStart(2, '0'),
-  );
-  return `#${channels.join('')}`;
-}
-
 function arcLook(
   color: string | null,
   dark: boolean,
   tokens: ReturnType<typeof useThemeTokens>,
 ) {
   const neutral = dark ? tokens.inactive : tokens.hairline;
-  const pastel = color && dark ? deepened(color) : color;
-  return { fill: pastel ?? neutral, glyph: tokens.onPastel };
+  return { fill: color ?? neutral, glyph: tokens.onCategory };
 }
 
 type ArcProps = {

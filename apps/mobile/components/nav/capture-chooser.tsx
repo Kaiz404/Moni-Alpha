@@ -29,7 +29,7 @@ type Choice = {
   label: string;
   icon: IconSymbolName;
   bubble: string;
-  glyph: 'onPastel' | 'moniGlyph';
+  glyph: 'onCategory' | 'moniGlyph';
   href: Href;
 };
 
@@ -38,21 +38,21 @@ const CHOICES = {
     label: 'Type it',
     icon: 'dialpad',
     bubble: 'bg-mint',
-    glyph: 'onPastel',
+    glyph: 'onCategory',
     href: '/transaction/new',
   },
   scan: {
     label: 'Scan a receipt',
     icon: 'line-scan',
     bubble: 'bg-peach',
-    glyph: 'onPastel',
+    glyph: 'onCategory',
     href: '/capture/scan',
   },
   say: {
     label: 'Say it',
     icon: 'microphone',
     bubble: 'bg-sky',
-    glyph: 'onPastel',
+    glyph: 'onCategory',
     href: '/capture/say',
   },
   ask: {

@@ -43,11 +43,11 @@
       --color-primary-foreground: #fffdf8;
       --color-primary-muted: #d3eed9;
       --color-accent: #8ecf9d;
-      --color-accent-lilac: #c9b6f0;
-      --color-accent-peach: #f5be98;
-      --color-accent-lemon: #f2dc72;
-      --color-accent-coral: #f1a399;
-      --color-accent-aqua: #9fdcd3;
+      --color-accent-lilac: #a98cf5;
+      --color-accent-peach: #ff9f66;
+      --color-accent-lemon: #f7cf3a;
+      --color-accent-coral: #ff7f70;
+      --color-accent-aqua: #4cc8ba;
 
       --color-success: #236b47;
       --color-danger: #b23e35;
@@ -60,12 +60,12 @@
       --color-state-approved: #174831;
       --color-state-destructive: #8e2f28;
 
-      --color-chart-1: #a9ddb5;
-      --color-chart-2: #9fc4e8;
-      --color-chart-3: #c9b6f0;
-      --color-chart-4: #f2dc72;
-      --color-chart-5: #f1a399;
-      --color-chart-6: #f5be98;
+      --color-chart-1: #6fd08c;
+      --color-chart-2: #62a8ee;
+      --color-chart-3: #a98cf5;
+      --color-chart-4: #f7cf3a;
+      --color-chart-5: #ff7f70;
+      --color-chart-6: #ff9f66;
 
       --color-sand: #ece5d6;
       --color-sand-light: #efe8da;
@@ -76,16 +76,24 @@
       --color-tab-bar: #17181a;
       --color-on-tab-bar: #fffdf8;
       --color-on-pastel: #17181a;
+      /* Glyph on a solid category, wallet or action bubble: Ink in both themes. */
+      --color-on-category: #17181a;
+      --color-on-mint-key: #17181a;
+      /* Blocks, pills and buttons: pastel in light, tonal in dark. mint, lemon, lilac... below are marks. */
+      --color-block-mint: #a9ddb5;
+      --color-block-lemon: #f2dc72;
+      --color-block-lilac: #c9b6f0;
+      --color-block-peach: #f5be98;
       --color-deep-mint: #236b47;
-      --color-mint: #a9ddb5;
+      --color-mint: #6fd08c;
       --color-mint-key: #8ecf9d;
       --color-mint-key-pressed: #7dc48d;
-      --color-lemon: #f2dc72;
-      --color-lilac: #c9b6f0;
-      --color-peach: #f5be98;
-      --color-coral: #f1a399;
-      --color-sky: #9fc4e8;
-      --color-aqua: #9fdcd3;
+      --color-lemon: #f7cf3a;
+      --color-lilac: #a98cf5;
+      --color-peach: #ff9f66;
+      --color-coral: #ff7f70;
+      --color-sky: #62a8ee;
+      --color-aqua: #4cc8ba;
       --color-over: #b23e35;
       --color-primary-pressed: #2e2f33;
       --color-mint-pressed: #9ad3a8;
@@ -96,7 +104,7 @@
       --color-pending-fill: #e4daf6;
       --color-bloom: #e3d8c2;
       --color-on-ink-positive: #a9ddb5;
-      /* Secondary ink on a pastel block; pastels keep ink text in both themes. */
+      /* Secondary text on a block. */
       --color-on-lemon: #6b5410;
       --color-on-lilac: #3e3654;
       --color-on-mint: #174831;
@@ -106,83 +114,89 @@
     }
 
     @variant dark {
-      --color-background: #161512;
-      --color-background-muted: #2c2924;
-      --color-canvas: #161512;
-      --color-card: #211f1b;
-      --color-surface-1: #211f1b;
-      --color-surface-2: #2c2924;
-      --color-surface-raised: #211f1b;
-      --color-surface-tray: #26241f;
+      --color-background: #0b0a09;
+      --color-background-muted: #2d2a27;
+      --color-canvas: #0b0a09;
+      --color-card: #1d1b19;
+      --color-surface-1: #1d1b19;
+      --color-surface-2: #2d2a27;
+      --color-surface-raised: #1d1b19;
+      --color-surface-tray: #252320;
 
-      --color-foreground: #f3eee3;
-      --color-muted: #a39c8e;
-      --color-border: #3a362f;
-      --color-border-subtle: #26241f;
-      --color-border-strong: #9d968a;
+      --color-foreground: #f6f3ed;
+      --color-muted: #a39c90;
+      --color-border: #443f38;
+      --color-border-subtle: #252320;
+      --color-border-strong: #80796d;
 
-      --color-primary: #ede6d8;
-      --color-primary-foreground: #17181a;
-      --color-primary-muted: #1e3828;
-      --color-accent: #8ecf9d;
-      --color-accent-lilac: #b29de0;
-      --color-accent-peach: #e3a47e;
-      --color-accent-lemon: #e0c85e;
-      --color-accent-coral: #de8b80;
-      --color-accent-aqua: #82c7bd;
+      --color-primary: #f6f3ed;
+      --color-primary-foreground: #0b0a09;
+      --color-primary-muted: #123422;
+      --color-accent: #66d68a;
+      --color-accent-lilac: #987aff;
+      --color-accent-peach: #f58d47;
+      --color-accent-lemon: #f0c42c;
+      --color-accent-coral: #f5685a;
+      --color-accent-aqua: #30bea6;
 
-      --color-success: #7fcf98;
-      --color-danger: #f0897e;
-      --color-warning: #edd36e;
-      --color-income: #7fcf98;
-      --color-expense: #f3eee3;
-      --color-transfer: #a39c8e;
-      --color-state-pending: #cfbff3;
-      --color-state-attention: #edd36e;
-      --color-state-approved: #9fe0b3;
-      --color-state-destructive: #f6a79e;
+      --color-success: #72de97;
+      --color-danger: #ff7366;
+      --color-warning: #f0cf5a;
+      --color-income: #72de97;
+      --color-expense: #f6f3ed;
+      --color-transfer: #a39c90;
+      --color-state-pending: #c9b7ff;
+      --color-state-attention: #f0cf5a;
+      --color-state-approved: #72de97;
+      --color-state-destructive: #ff8a7e;
 
-      --color-chart-1: #8fc79d;
-      --color-chart-2: #86aed6;
-      --color-chart-3: #b29de0;
-      --color-chart-4: #e0c85e;
-      --color-chart-5: #de8b80;
-      --color-chart-6: #e3a47e;
+      --color-chart-1: #59c97d;
+      --color-chart-2: #4ca4f5;
+      --color-chart-3: #987aff;
+      --color-chart-4: #f0c42c;
+      --color-chart-5: #f5685a;
+      --color-chart-6: #f58d47;
 
-      --color-sand: #2c2924;
-      --color-sand-light: #26241f;
-      --color-hairline: #3a362f;
-      --color-track: #26241f;
-      --color-ink-2: #c7c0b2;
-      --color-inactive: #9d968a;
-      --color-tab-bar: #2a2823;
-      --color-on-tab-bar: #f3eee3;
-      --color-on-pastel: #17181a;
-      --color-deep-mint: #7fcf98;
-      --color-mint: #8fc79d;
-      --color-mint-key: #8ecf9d;
-      --color-mint-key-pressed: #7dc48d;
-      --color-lemon: #e0c85e;
-      --color-lilac: #b29de0;
-      --color-peach: #e3a47e;
-      --color-coral: #de8b80;
-      --color-sky: #86aed6;
-      --color-aqua: #82c7bd;
-      --color-over: #f0897e;
-      --color-primary-pressed: #d6cebf;
-      --color-mint-pressed: #80b98f;
-      --color-destructive-fill: #43231f;
-      --color-destructive-pressed: #532c27;
-      --color-moni-glyph: #4b3a80;
-      --color-attention-fill: #3a3115;
-      --color-pending-fill: #2e2841;
-      --color-bloom: #3a362f;
+      --color-sand: #2d2a27;
+      --color-sand-light: #252320;
+      --color-hairline: #443f38;
+      --color-track: #252320;
+      --color-ink-2: #cec8bd;
+      --color-inactive: #a39c90;
+      --color-tab-bar: #242220;
+      --color-on-tab-bar: #f6f3ed;
+      --color-on-pastel: #f6f3ed;
+      --color-on-category: #17181a;
+      --color-on-mint-key: #0b2416;
+      --color-block-mint: #123422;
+      --color-block-lemon: #352b0c;
+      --color-block-lilac: #2d2452;
+      --color-block-peach: #3d2616;
+      --color-deep-mint: #72de97;
+      --color-mint: #59c97d;
+      --color-mint-key: #66d68a;
+      --color-mint-key-pressed: #59c97d;
+      --color-lemon: #f0c42c;
+      --color-lilac: #987aff;
+      --color-peach: #f58d47;
+      --color-coral: #f5685a;
+      --color-sky: #4ca4f5;
+      --color-aqua: #30bea6;
+      --color-over: #ff7366;
+      --color-primary-pressed: #ddd8ce;
+      --color-mint-pressed: #1a4530;
+      --color-destructive-fill: #3d1d19;
+      --color-destructive-pressed: #4d2620;
+      --color-moni-glyph: #4a3596;
+      --color-attention-fill: #352b0c;
+      --color-pending-fill: #2d2452;
+      --color-bloom: #443f38;
       --color-on-ink-positive: #236b47;
-      --color-on-lemon: #6b5410;
-      --color-on-lilac: #3e3654;
-      --color-on-mint: #174831;
-      --color-on-ink-meta: #575653;
-      --color-on-ink-body: #2c2d2d;
+      --color-on-lemon: #f0cf5a;
+      --color-on-lilac: #c9b7ff;
+      --color-on-mint: #72de97;
+      --color-on-ink-meta: #6b655c;
+      --color-on-ink-body: #2d2a27;
     }
   }
 }

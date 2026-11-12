@@ -164,7 +164,7 @@ export default function CategoryFormScreen() {
               className="h-[42px] w-[42px] items-center justify-center rounded-full"
               style={{ backgroundColor: colour }}
             >
-              <IconSymbol name={icon} size={20} color={tokens.onPastel} />
+              <IconSymbol name={icon} size={20} color={tokens.onCategory} />
             </View>
             <TextInput
               testID={tid('activity', 'category-form', 'name')}
@@ -253,7 +253,7 @@ export default function CategoryFormScreen() {
                       style={{ width: SWATCH, height: SWATCH, backgroundColor: hex }}
                     >
                       {selected ? (
-                        <IconSymbol name="check" size={18} color={tokens.onPastel} />
+                        <IconSymbol name="check" size={18} color={tokens.onCategory} />
                       ) : null}
                     </View>
                   </View>

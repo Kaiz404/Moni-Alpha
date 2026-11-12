@@ -7,7 +7,6 @@ import Animated, {
   withSpring,
 } from 'react-native-reanimated';
 import Svg, { Circle } from 'react-native-svg';
-import { useUniwind } from 'uniwind';
 
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Press } from '@/components/ui/press';
@@ -92,7 +91,6 @@ export function Ring({
   onPress,
 }: RingProps) {
   const tokens = useThemeTokens();
-  const dark = useUniwind().theme === 'dark';
   const state = ringState(spentMinor, budgetMinor, currency);
   const sweep = useSharedValue(0);
 
@@ -135,7 +133,7 @@ export function Ring({
             cy={BOX / 2}
             r={16}
             fill={
-              color ? `${color}${dark ? '38' : '73'}` : tokens.sand
+              color ?? tokens.sand
             }
           />
           {state.tone === 'unbudgeted' ? (
@@ -179,7 +177,7 @@ export function Ring({
           <IconSymbol
             name={resolveTransactionIcon(icon, 'expense')}
             size={18}
-            color={color && dark ? color : tokens.foreground}
+            color={color ? tokens.onCategory : tokens.foreground}
           />
         </View>
       </View>
