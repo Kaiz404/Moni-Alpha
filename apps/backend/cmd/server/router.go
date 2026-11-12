@@ -14,6 +14,8 @@ import (
 // maxBodyBytes fits a base64 receipt image inside the JSON envelope.
 const maxBodyBytes = 6 << 20
 
+const placesBodyBytes = 16 << 10
+
 // limitBody rejects a declared oversize body before reading it and caps undeclared (chunked) bodies while streaming.
 func limitBody(max int64) gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -47,6 +49,9 @@ func newRouter(verifier *auth.Verifier, limiter, ipLimiter *auth.RateLimiter, ll
 	v1 := r.Group("/v1", ipLimit, verifier.Middleware(), limiter.Middleware(), limitBody(maxBodyBytes))
 	extract.NewHandler(extract.NewService(llmClient)).Register(v1)
 	chat.NewHandler(chat.NewService(llmClient)).Register(v1)
-	placesHandler.Register(v1)
+	// Search as you type sends a call every few keystrokes, which the AI limit would throttle.
+	placesLimiter := auth.NewRateLimiter(60, 20)
+	placesV1 := r.Group("/v1", ipLimit, verifier.Middleware(), placesLimiter.Middleware(), limitBody(placesBodyBytes))
+	placesHandler.Register(placesV1)
 	return r
 }
