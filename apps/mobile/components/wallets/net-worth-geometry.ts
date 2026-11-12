@@ -1,6 +1,6 @@
 import { MONTHS, niceCeil } from '@/components/charts/pace-geometry';
 import type { BubbleTint } from '@/components/ui/nav-row';
-import { walletBubbleTint, walletLineColor } from '@/constants/wallet-card-styles';
+import { walletBubbleTint } from '@/constants/wallet-card-styles';
 import { dayLabel } from '@/lib/dates/day-label';
 import { toLocalDateInput } from '@/lib/dates/local-date-input';
 import { balanceViewport, type BalanceIndex } from '@/lib/finance/balance-history';
@@ -36,9 +36,13 @@ const LONG_RANGE_DAYS = 180;
 /** Wallets that share a colour stay apart by pattern, in list order. */
 const DASHES = [undefined, '7 5', '1 6', '12 5 1 5'];
 
+/**
+ * Each wallet's line in the tint of its bubble on the Wallets list, so a line reads as its wallet
+ * without a key. `tints` is the theme's, so dark mode takes the dark list's tints.
+ */
 export function walletLineStyles(
   wallets: readonly { id: string; cardStyleId: string | null; type: string }[],
-  dark: boolean,
+  tints: Readonly<Record<BubbleTint, string>>,
 ): Record<string, WalletLineStyle> {
   const seen = new Map<BubbleTint, number>();
   return Object.fromEntries(
@@ -48,7 +52,7 @@ export function walletLineStyles(
       seen.set(tint, count + 1);
       return [
         wallet.id,
-        { color: walletLineColor(tint, dark), dash: DASHES[count % DASHES.length] },
+        { color: tints[tint], dash: DASHES[count % DASHES.length] },
       ];
     }),
   );

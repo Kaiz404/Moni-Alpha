@@ -14,6 +14,7 @@ import {
   walletLineStyles,
 } from '@/components/wallets/net-worth-geometry';
 import { balanceIndex } from '@/lib/finance/balance-history';
+import { lightThemeTokens } from '@/constants/theme-tokens.generated';
 import { CHART_RANGES } from '@/lib/finance/chart-range';
 import type {
   FinanceTransaction,
@@ -91,7 +92,6 @@ describe('NetWorthChart', () => {
       screen.getByTestId('wallet.chart.30d').props.accessibilityState
         .selected,
     ).toBe(true);
-    expect(screen.queryByTestId('wallet.chart.key')).toBeNull();
     expect(screen.queryByText(/closing balance each day/)).toBeNull();
   });
 
@@ -144,16 +144,15 @@ describe('NetWorthChart', () => {
       expect(chartStep).toHaveBeenCalledTimes(2);
     });
 
-  it('keys each wallet by short name and value in By wallet, and reads the day a screen reader picks', () => {
+  it('draws By wallet in each wallet list tint with no key, and reads the day a screen reader picks', () => {
     chart([maybank, cash], moves);
     fireEvent.press(screen.getByTestId('wallet.chart.by-wallet'));
 
-    expect(
-      screen.getByTestId('wallet.chart.key.maybank'),
-    ).toHaveTextContent('MaybankRM2,400.00');
-    expect(
-      screen.getByTestId('wallet.chart.key.cash'),
-    ).toHaveTextContent('CashRM100.00');
+    expect(screen.queryByTestId('wallet.chart.key')).toBeNull();
+    const strokes = screen.UNSAFE_root.findAll(
+      (node) => node.props.strokeWidth === 3.5 && typeof node.props.stroke === 'string',
+    ).map((node) => node.props.stroke);
+    expect(new Set(strokes)).toEqual(new Set([lightThemeTokens.lemon, lightThemeTokens.mint]));
 
     const plot = screen.getByTestId('wallet.chart.plot');
     expect(plot.props.accessibilityValue.text).toBe(
@@ -163,12 +162,6 @@ describe('NetWorthChart', () => {
     const back = { nativeEvent: { actionName: 'decrement' } };
     for (let times = 0; times < 2; times++)
       fireEvent(plot, 'accessibilityAction', back);
-    expect(
-      screen.getByTestId('wallet.chart.key.maybank'),
-    ).toHaveTextContent('MaybankRM2,410.00');
-    expect(
-      screen.getByTestId('wallet.chart.key.cash'),
-    ).toHaveTextContent('CashNot yet');
     expect(plot.props.accessibilityValue.text).toBe(
       'Sat 10 Oct, Maybank RM2,410.00, Cash not yet',
     );
@@ -345,7 +338,9 @@ describe('netWorthScrubPoints', () => {
 });
 
 describe('walletLineStyles', () => {
-  it('uses a deeper step of the wallet colour and patterns wallets that share one', () => {
+  const light = { sand: '#ece5d6', mint: '#a9ddb5', lemon: '#f2dc72', lilac: '#c9b6f0', peach: '#f5be98', coral: '#f1a399', sky: '#9fc4e8', aqua: '#9fdcd3' };
+
+  it('draws each wallet in its list bubble tint and patterns wallets that share one', () => {
     expect(
       walletLineStyles(
         [
@@ -353,18 +348,12 @@ describe('walletLineStyles', () => {
           { id: 'b', cardStyleId: null, type: 'bank' },
           { id: 'c', cardStyleId: 'emerald-grain', type: 'cash' },
         ],
-        false,
+        light,
       ),
     ).toEqual({
-      a: { color: '#858000', dash: undefined },
-      b: { color: '#858000', dash: '7 5' },
-      c: { color: '#0B6B2A', dash: undefined },
+      a: { color: '#f2dc72', dash: undefined },
+      b: { color: '#f2dc72', dash: '7 5' },
+      c: { color: '#a9ddb5', dash: undefined },
     });
-    expect(
-      walletLineStyles(
-        [{ id: 'c', cardStyleId: 'emerald-grain', type: 'cash' }],
-        true,
-      ).c,
-    ).toEqual({ color: '#29AB68', dash: undefined });
   });
 });

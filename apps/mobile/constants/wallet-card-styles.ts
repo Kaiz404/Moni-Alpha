@@ -136,25 +136,6 @@ export function walletBubbleTint(cardStyleId: string | null, type: string): Bubb
   return style?.tint ?? TYPE_TINT[type] ?? 'sand';
 }
 
-/**
- * The pastels vanish as a thin line on Paper, so a chart line takes a deeper step of the wallet's
- * hue. Checked with the dataviz validator on Paper and on dark Paper. Sand is a deliberate grey.
- */
-const WALLET_LINE_COLORS: Record<BubbleTint, { light: string; dark: string }> = {
-  mint: { light: '#0B6B2A', dark: '#29AB68' },
-  lemon: { light: '#858000', dark: '#F7C417' },
-  coral: { light: '#BE1F35', dark: '#CF2A34' },
-  aqua: { light: '#2AA197', dark: '#48D5D3' },
-  lilac: { light: '#5C389C', dark: '#884CC5' },
-  peach: { light: '#CF7E5C', dark: '#DF7B00' },
-  sky: { light: '#2F86E2', dark: '#519DFF' },
-  sand: { light: '#61655C', dark: '#6A7165' },
-};
-
-export function walletLineColor(tint: BubbleTint, dark: boolean): string {
-  return WALLET_LINE_COLORS[tint][dark ? 'dark' : 'light'];
-}
-
 /** Looks up a style by id, gracefully falling back if a preset is ever retired. */
 export function getWalletCardStyle(id: string | null | undefined): WalletCardStyle {
   return (

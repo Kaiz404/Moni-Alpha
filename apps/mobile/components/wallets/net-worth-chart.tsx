@@ -13,8 +13,7 @@ import Animated, {
   type DerivedValue,
   type SharedValue,
 } from 'react-native-reanimated';
-import Svg, { Line, Path } from 'react-native-svg';
-import { useUniwind } from 'uniwind';
+import Svg, { Path } from 'react-native-svg';
 
 import { PLOT_HEIGHT, calloutLeft } from '@/components/charts/pace-geometry';
 import {
@@ -54,6 +53,8 @@ import {
 } from './net-worth-geometry';
 
 const DEFAULT_WIDTH = 314;
+/** The wallet tints are pale on Paper, so their lines run thicker than the Ink total. */
+const WALLET_LINE_WIDTH = 3.5;
 const GUIDE_TOP = 38;
 const VIEW_IN = FadeIn.duration(180);
 const VIEW_OUT = FadeOut.duration(180);
@@ -93,7 +94,6 @@ export function NetWorthChart({
   transactions: readonly FinanceTransaction[];
 }) {
   const tokens = useThemeTokens();
-  const dark = useUniwind().theme === 'dark';
   const reduceMotion = useReducedMotion();
   const [width, setWidth] = useState(DEFAULT_WIDTH);
   const [range, setRange] = useState<ChartRange>('30d');
@@ -114,7 +114,7 @@ export function NetWorthChart({
     [now, wallets, balances, transactions],
   );
   const names = useMemo(() => compactWalletNames(wallets), [wallets]);
-  const lineStyles = useMemo(() => walletLineStyles(wallets, dark), [wallets, dark]);
+  const lineStyles = useMemo(() => walletLineStyles(wallets, tokens), [wallets, tokens]);
   const target = useMemo(
     () => netWorthTarget({ index, now, range, view, names, currency }),
     [index, now, range, view, names, currency],
@@ -279,26 +279,6 @@ export function NetWorthChart({
             accessibilityLabel="Time range"
             onChange={setRange}
           />
-          {view === 'by-wallet' ? (
-            <Animated.View
-              entering={FadeIn.duration(180)}
-              testID={tid('wallet', 'chart', 'key')}
-              className="flex-row flex-wrap gap-y-1 pt-0.5"
-            >
-              {wallets.map((wallet) => {
-                const value = index.byWallet[wallet.id]?.[selected] ?? NaN;
-                return (
-                  <KeyEntry
-                    key={wallet.id}
-                    id={wallet.id}
-                    name={names[wallet.id]!}
-                    lineStyle={lineStyles[wallet.id]!}
-                    value={Number.isNaN(value) ? 'Not yet' : formatMoney(value, currency)}
-                  />
-                );
-              })}
-            </Animated.View>
-          ) : null}
         </>
       ) : null}
     </Animated.View>
@@ -338,7 +318,7 @@ const Marks = memo(function Marks({
           values={series[line]!}
           area={view === 'total' ? fill : null}
           color={view === 'total' ? ink : lineStyles[id]!.color}
-          strokeWidth={view === 'total' ? 3 : 2.5}
+          strokeWidth={view === 'total' ? 3 : WALLET_LINE_WIDTH}
           dash={view === 'total' ? undefined : lineStyles[id]!.dash}
           zoom={zoom}
           frame={frame}
@@ -522,55 +502,5 @@ function Dot({
       className="absolute left-0 top-0 rounded-full border-2 border-card"
       style={[{ width: size, height: size, backgroundColor: color }, place]}
     />
-  );
-}
-
-function KeyEntry({
-  id,
-  name,
-  lineStyle,
-  value,
-}: {
-  id: string;
-  name: string;
-  lineStyle: WalletLineStyle;
-  value: string;
-}) {
-  return (
-    <View
-      testID={tid('wallet', 'chart', 'key', id)}
-      className="w-1/2 flex-row items-center gap-1.5 pr-3"
-    >
-      <Svg
-        width={14}
-        height={4}
-      >
-        <Line
-          x1={1}
-          y1={2}
-          x2={13}
-          y2={2}
-          stroke={lineStyle.color}
-          strokeWidth={2.5}
-          strokeDasharray={lineStyle.dash}
-          strokeLinecap="round"
-        />
-      </Svg>
-      <Text
-        variant="smallest"
-        className="min-w-0 flex-1 text-ink-2"
-        numberOfLines={1}
-      >
-        {name}
-      </Text>
-      <Text
-        variant="smallest"
-        className="text-foreground"
-        style={{ fontVariant: ['tabular-nums'] }}
-        numberOfLines={1}
-      >
-        {value}
-      </Text>
-    </View>
   );
 }

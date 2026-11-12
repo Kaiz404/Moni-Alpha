@@ -61,10 +61,11 @@ tags:
     id: wallet.chart.90d
 - assertNotVisible:
     id: wallet.chart.callout
+# By wallet draws one line per wallet in its list tint, with no key.
 - tapOn:
     id: wallet.chart.by-wallet
 - assertVisible:
-    id: wallet.chart.key
+    id: wallet.chart.plot
 - takeScreenshot: h1-l3-wallets-by-wallet
 # A scrub leaves nothing behind once the finger lifts.
 - swipe:
@@ -76,8 +77,6 @@ tags:
     id: wallet.chart.callout
 - tapOn:
     id: wallet.chart.total
-- assertNotVisible:
-    id: wallet.chart.key
 - tapOn:
     id: wallet.back
 - assertVisible:
