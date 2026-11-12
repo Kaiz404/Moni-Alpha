@@ -5,8 +5,12 @@ import { Uniwind } from 'uniwind';
 import { setThemePreference, type ThemePreference } from '@/lib/theme/preference';
 import { nextThemeCommit } from '@/lib/theme/theme-commit';
 
-/** V2F-Motion: the new theme opens from the finger in 450, ease-out. */
-export const REVEAL_MS = 450;
+/**
+ * The new theme opens from the button over 650 ms on an ease-in: it starts as a small, slow
+ * circle, then gathers speed and sweeps the screen (owner's direction, 12 Nov 2026).
+ */
+export const REVEAL_MS = 650;
+export const REVEAL_CURVE = [0.5, 0, 0.75, 0] as const;
 /** Longest wait for the new theme to commit before the circle opens anyway. */
 const COMMIT_WAIT_MS = 500;
 
@@ -69,26 +73,12 @@ export async function switchTheme(next: ThemePreference, origin?: RevealOrigin):
     if (!captured) return;
     await committed;
     await twoFrames();
-    await themeReveal.reveal(origin.x, origin.y, REVEAL_MS);
+    await themeReveal.reveal(origin.x, origin.y, REVEAL_MS, REVEAL_CURVE);
   } catch {
     // The native side fades a screenshot nobody opened, so a failed reveal only loses the circle.
   } finally {
     enter({ kind: 'idle' });
   }
-}
-
-/** The centre of option `index` in a `Segmented` whose track `measureInWindow` reported. */
-export function segmentCentre(
-  track: { x: number; y: number; width: number; height: number },
-  index: number,
-  count: number,
-  inset = 4,
-): RevealOrigin {
-  const segment = (track.width - inset * 2) / count;
-  return {
-    x: track.x + inset + segment * (index + 0.5),
-    y: track.y + track.height / 2,
-  };
 }
 
 function subscribe(listener: () => void) {

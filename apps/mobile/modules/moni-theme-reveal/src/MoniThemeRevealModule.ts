@@ -7,8 +7,11 @@ export type ThemeReveal = {
    * failed, and then nothing covers the window.
    */
   capture(): Promise<boolean>;
-  /** Opens a circle in the screenshot from `x`, `y` (window dp) until it is gone, then removes it. */
-  reveal(x: number, y: number, durationMs: number): Promise<void>;
+  /**
+   * Opens a circle in the screenshot from `x`, `y` (window dp) until it is gone, then removes it.
+   * `curve` is a cubic bezier's two control points, `[x1, y1, x2, y2]`, applied to the radius.
+   */
+  reveal(x: number, y: number, durationMs: number, curve: readonly number[]): Promise<void>;
 };
 
 function load(): ThemeReveal | null {

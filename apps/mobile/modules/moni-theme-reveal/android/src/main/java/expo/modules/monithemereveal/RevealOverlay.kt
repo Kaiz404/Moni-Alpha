@@ -50,7 +50,7 @@ internal class RevealOverlay(
   }
 
   /** Grows the hole from `x`, `y` (window px) until it covers the farthest corner. */
-  fun open(x: Float, y: Float, durationMs: Long, done: () -> Unit) {
+  fun open(x: Float, y: Float, durationMs: Long, curve: PathInterpolator, done: () -> Unit) {
     cx = x
     cy = y
     alpha = 1f
@@ -59,7 +59,7 @@ internal class RevealOverlay(
       max(hypot(x, height - y), hypot(width - x, height - y)),
     )
     play(durationMs, done) { t ->
-      radius = far * EASE_OUT.getInterpolation(t)
+      radius = far * curve.getInterpolation(t)
       invalidate()
     }
   }
@@ -100,9 +100,4 @@ internal class RevealOverlay(
     shot.recycle()
   }
 
-  private companion object {
-    // Ease-out, so the circle clears the finger at once: the option under it is still the
-    // screenshot until the hole reaches it, and a slow start reads as the control freezing.
-    val EASE_OUT = PathInterpolator(0.23f, 1f, 0.32f, 1f)
-  }
 }

@@ -7,24 +7,6 @@ export const THEME_PREFERENCE_KEY = 'theme-preference';
 /** User-selectable appearance modes. Default is light (not device-adaptive). */
 export type ThemePreference = 'light' | 'dark' | 'system';
 
-export const THEME_PREFERENCE_OPTIONS: {
-  value: ThemePreference;
-  label: string;
-}[] = [
-  {
-    value: 'light',
-    label: 'Light',
-  },
-  {
-    value: 'dark',
-    label: 'Dark',
-  },
-  {
-    value: 'system',
-    label: 'System',
-  },
-];
-
 const DEFAULT_PREFERENCE: ThemePreference = 'light';
 
 function isThemePreference(value: string | undefined): value is ThemePreference {

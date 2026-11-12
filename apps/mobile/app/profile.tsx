@@ -1,8 +1,9 @@
 import { useValue } from '@legendapp/state/react';
 import type { User } from '@supabase/supabase-js';
 import { router } from 'expo-router';
-import { useRef, useState, type ReactNode } from 'react';
+import { type ReactNode } from 'react';
 import { View } from 'react-native';
+import { useUniwind } from 'uniwind';
 
 import { currencyHeldIn } from '@/components/profile/currency-words';
 import { ExportDataRow } from '@/components/profile/export-data-row';
@@ -20,10 +21,10 @@ import {
 } from '@/components/capture-sources/use-phone-access';
 import { useMerchantNames } from '@/components/merchants/use-merchant-names';
 import { Button } from '@/components/ui/button';
+import { HeaderIconButton } from '@/components/ui/header-icon-button';
 import { ListCard } from '@/components/ui/list-card';
 import { NavRow } from '@/components/ui/nav-row';
 import { Page, PageScroll } from '@/components/ui/page';
-import { Segmented } from '@/components/ui/segmented';
 import { Text } from '@/components/ui/text';
 import { UserAvatar } from '@/components/ui/user-avatar';
 import { useAuth } from '@/lib/auth/auth-context';
@@ -33,12 +34,7 @@ import {
   walletsForUser$,
 } from '@/lib/finance/selectors';
 import { tid } from '@/lib/test-ids';
-import {
-  getThemePreference,
-  THEME_PREFERENCE_OPTIONS,
-  type ThemePreference,
-} from '@/lib/theme/preference';
-import { segmentCentre, switchTheme } from '@/lib/theme/reveal';
+import { switchTheme } from '@/lib/theme/reveal';
 
 function displayName(user: User | null): string {
   const meta = user?.user_metadata ?? {};
@@ -109,15 +105,31 @@ function Section({
   );
 }
 
+/**
+ * One round button flips light and dark, and the new theme opens as a circle from the finger. A plain
+ * tap, not a sliding control: the screenshot under the circle never catches a control mid-slide.
+ */
+function ThemeButton() {
+  const { theme } = useUniwind();
+  const dark = theme === 'dark';
+  return (
+    <HeaderIconButton
+      testID={tid('profile', 'theme')}
+      icon={dark ? 'white-balance-sunny' : 'weather-night'}
+      accessibilityLabel={dark ? 'Switch to light mode' : 'Switch to dark mode'}
+      onPress={(event) => {
+        const { pageX, pageY } = event.nativeEvent;
+        void switchTheme(dark ? 'light' : 'dark', { x: pageX, y: pageY });
+      }}
+    />
+  );
+}
+
 export default function ProfileScreen() {
   const { user, signOut } = useAuth();
   const userId = user?.id ?? null;
   const name = displayName(user);
   const google = user?.app_metadata?.provider === 'google';
-  const [theme, setTheme] = useState<ThemePreference>(
-    getThemePreference,
-  );
-  const appearance = useRef<View>(null);
   const { access } = usePhoneAccess();
   const sources = captureSourcesRow(access);
   const merchants = useMerchantNames();
@@ -141,6 +153,7 @@ export default function ProfileScreen() {
       screen="profile"
       kind="pushed"
       title="Profile"
+      trailing={<ThemeButton />}
     >
       <PageScroll
         className="flex-1"
@@ -182,50 +195,6 @@ export default function ProfileScreen() {
         </View>
 
         <MainCurrencyRow />
-
-        <View className="gap-2">
-          <Text
-            variant="caps"
-            className="px-1 text-muted"
-            accessibilityRole="header"
-          >
-            APPEARANCE
-          </Text>
-          <View
-            ref={appearance}
-            collapsable={false}
-          >
-            <Segmented
-              screen="profile"
-              name="appearance"
-              accessibilityLabel="Appearance"
-              options={THEME_PREFERENCE_OPTIONS}
-              value={theme}
-              onChange={(next) => {
-                setTheme(next);
-                const index = THEME_PREFERENCE_OPTIONS.findIndex(
-                  (option) => option.value === next,
-                );
-                const track = appearance.current;
-                if (!track) {
-                  void switchTheme(next);
-                  return;
-                }
-                // The circle opens from the option just picked, so the new theme spreads from the finger.
-                track.measureInWindow((x, y, width, height) => {
-                  void switchTheme(
-                    next,
-                    segmentCentre(
-                      { x, y, width, height },
-                      index,
-                      THEME_PREFERENCE_OPTIONS.length,
-                    ),
-                  );
-                });
-              }}
-            />
-          </View>
-        </View>
 
         <Section label="MONEY">
           <ProfileRow

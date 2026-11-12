@@ -39,12 +39,12 @@ tags:
     id: profile.currency.myr
 - assertVisible: Malaysian ringgit
 
-# Appearance switches to dark and back to light.
+# The theme button switches to dark and back to light.
 - tapOn:
-    id: profile.appearance.dark
+    id: profile.theme
 - takeScreenshot: k1-l4-dark
 - tapOn:
-    id: profile.appearance.light
+    id: profile.theme
 
 # Each MONEY and PRIVACY AND DATA row opens a page. Capture sources is one row, with no Set up link.
 - tapOn:

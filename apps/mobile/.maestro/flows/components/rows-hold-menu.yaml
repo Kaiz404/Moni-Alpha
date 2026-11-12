@@ -56,7 +56,7 @@ tags:
 - assertVisible:
     id: profile.row.categories
 - tapOn:
-    id: profile.appearance.dark
+    id: profile.theme
 - takeScreenshot: f4-l6-nav-rows-dark
 - tapOn:
-    id: profile.appearance.light
+    id: profile.theme

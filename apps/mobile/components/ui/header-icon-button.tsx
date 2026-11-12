@@ -1,4 +1,4 @@
-import { View } from 'react-native';
+import { View, type GestureResponderEvent } from 'react-native';
 
 import {
   IconSymbol,
@@ -15,7 +15,7 @@ type HeaderIconButtonProps = {
   testID: TestId;
   icon: IconSymbolName;
   accessibilityLabel: string;
-  onPress: () => void;
+  onPress: (event: GestureResponderEvent) => void;
   disabled?: boolean;
   /** Selected, as V2F-Components draws it: Ink fill and edge, cream glyph (a toggled filter or the map's list view). */
   active?: boolean;

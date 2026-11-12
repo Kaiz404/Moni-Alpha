@@ -2,7 +2,7 @@ import { act, renderHook } from '@testing-library/react-native';
 import { Uniwind } from 'uniwind';
 
 import { getThemePreference } from '@/lib/theme/preference';
-import { segmentCentre, switchTheme, useRevealHeldTheme } from '@/lib/theme/reveal';
+import { switchTheme, useRevealHeldTheme } from '@/lib/theme/reveal';
 import { useThemeCommit } from '@/lib/theme/theme-commit';
 
 type Native = {
@@ -81,7 +81,7 @@ describe('switchTheme', () => {
 
     await jest.advanceTimersByTimeAsync(1000);
     await running;
-    expect(reveal.reveal.mock.calls).toEqual([[78, 322, 450]]);
+    expect(reveal.reveal.mock.calls).toEqual([[78, 322, 650, [0.5, 0, 0.75, 0]]]);
   });
 
   it('opens the circle as soon as the new theme commits, not after the wait', async () => {
@@ -173,12 +173,3 @@ describe('switchTheme', () => {
   });
 });
 
-describe('segmentCentre', () => {
-  const track = { x: 16, y: 300, width: 356, height: 44 };
-
-  it('finds the middle of each of three equal options inside the 4 inset', () => {
-    expect(segmentCentre(track, 0, 3)).toEqual({ x: 78, y: 322 });
-    expect(segmentCentre(track, 1, 3)).toEqual({ x: 194, y: 322 });
-    expect(segmentCentre(track, 2, 3)).toEqual({ x: 310, y: 322 });
-  });
-});

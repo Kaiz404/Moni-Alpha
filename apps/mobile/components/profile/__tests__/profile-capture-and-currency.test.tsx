@@ -6,6 +6,7 @@ import { Platform } from 'react-native';
 
 import ProfileScreen from '@/app/profile';
 import { readNotificationListenerPermission } from '@/lib/notifications/permission';
+import { switchTheme } from '@/lib/theme/reveal';
 
 jest.mock('react-native-reanimated', () => {
   const actual = jest.requireActual('react-native-reanimated');
@@ -16,12 +17,14 @@ jest.mock('react-native-reanimated', () => {
     useAnimatedKeyboard: () => ({ height: { get: () => 0 } }),
   };
 });
+let mockTheme: 'light' | 'dark' = 'light';
 jest.mock('uniwind', () => ({
   useCSSVariable: (names: string[]) => names.map(() => undefined),
-  useUniwind: () => ({ theme: 'light' }),
+  useUniwind: () => ({ theme: mockTheme }),
   withUniwind: <T,>(component: T) => component,
   Uniwind: { setTheme: () => {} },
 }));
+jest.mock('@/lib/theme/reveal', () => ({ switchTheme: jest.fn() }));
 jest.mock('expo-router', () => ({
   router: { dismissTo: jest.fn(), back: jest.fn(), push: jest.fn(), replace: jest.fn() },
   useFocusEffect: (effect: () => void) => {
@@ -140,5 +143,26 @@ describe('Profile, Main currency', () => {
 
     fireEvent.press(screen.getByTestId('profile.main-currency'));
     expect(screen.getByText(NOTE)).toBeTruthy();
+  });
+});
+
+describe('Profile, theme button', () => {
+  afterEach(() => {
+    mockTheme = 'light';
+    jest.mocked(switchTheme).mockClear();
+  });
+
+  it('switches a light app to dark, and a dark one to light', async () => {
+    render(<ProfileScreen />);
+    expect(screen.getByLabelText('Switch to dark mode')).toBeTruthy();
+    const at = { nativeEvent: { pageX: 352, pageY: 70 } };
+    fireEvent.press(screen.getByTestId('profile.theme'), at);
+    expect(jest.mocked(switchTheme).mock.calls[0]).toEqual(['dark', { x: 352, y: 70 }]);
+
+    mockTheme = 'dark';
+    screen.rerender(<ProfileScreen />);
+    fireEvent.press(screen.getByTestId('profile.theme'), at);
+    expect(jest.mocked(switchTheme).mock.calls[1]).toEqual(['light', { x: 352, y: 70 }]);
+    await act(async () => {});
   });
 });

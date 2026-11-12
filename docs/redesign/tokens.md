@@ -143,7 +143,7 @@ Springs (mass 1):
 - A number is never hidden or moving for more than ~200 ms; no digit roll on first paint.
 - Lists: first 6 rows rise 8 + fade, 30 ms apart, on first load only.
 - Reduce motion: slides and scales become 150–200 ms fades, no bounce, 1:1 tracking kept.
-- Theme reveal (owner's direction, 12 Nov 2026): picking Light, Dark or System opens the new theme as a circle from the centre of the picked option, over a still of the old one, ease-out (0.23, 1, 0.32, 1) for 450 ms so it clears the finger at once, until it covers the farthest corner; the status bar keeps the old icons until it ends. One reveal at a time: a pick during one recolours under it. Animations off: the still fades in 180 ms. iOS switches at once.
+- Theme reveal (owner's direction, 12 Nov 2026): Profile's header has one 44 theme button (moon in light, sun in dark) in place of the Appearance control; a tap flips light and dark and opens the new theme as a circle from the finger, over a still of the old one, until it covers the farthest corner. 650 ms on an ease-in (0.5, 0, 0.75, 0): a small slow circle that gathers speed and sweeps the screen. The status bar keeps the old icons until it ends. One reveal at a time: a tap during one recolours under it. Animations off: the still fades in 180 ms. iOS switches at once. Duration and curve live in `lib/theme/reveal.ts`, so tuning them needs no native rebuild.
 
 ## Haptics (expo-haptics; Android constant, iOS equivalent)
 

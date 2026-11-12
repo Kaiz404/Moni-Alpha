@@ -175,7 +175,7 @@ Use pills sparingly: filter states, segmented controls, compact metadata, and th
 - `components/ui/text.tsx`: display variants track as V2F-Bible sets them: −0.02em from 18 up, −0.03em on the 64 hero, 0 on body text, +0.04em on caps.
 - `components/ui/button.tsx`: `Button` with `variant` `primary` (Ink), `secondary` (Sand), `tertiary` (Deep mint text, 44 tall), `approve` (Mint, Approve haptic), `notMine` (Sand, Not mine haptic), `destructive` (destructive fill); 52 tall, 26 sides on Primary and Secondary and 22 on the icon-led capsules. `loading` turns the board's 14-long arc on a track one step off the fill, with `loadingLabel`; `disabled` turns Sand light with Meta text (Tertiary stays transparent); `compact` is the 44 capsule inside a card or tile.
 - `components/ui/header-icon-button.tsx`: `HeaderIconButton` (44 circle, 1.5 Hairline, pressed Sand at radius 16; `active` is the Ink Selected look) for every header action, and `MoniButton` (44 Ink circle, `creation` glyph, "Ask Moni") on Home and Activity only.
-- `components/ui/segmented.tsx`: `Segmented` in two sizes: the 44 default, and `medium` 48 with 15/600 labels and optional 18 icons (Appearance, sign-in). Under Reduce Motion the pill cross-fades in 180.
+- `components/ui/segmented.tsx`: `Segmented` in two sizes: the 44 default, and `medium` 48 with 15/600 labels and optional 18 icons (sign-in). Under Reduce Motion the pill cross-fades in 180.
 - `components/ui/rise-in.tsx`: `RiseInGroup` and `RiseIn` play V2F-Motion's list entrance: the first 6 rows rise 8 and fade in 30 apart on first load only; a row that arrives later fades in alone. The + chooser uses it at 120 then 50 apart on `control`.
 
 ### 5.3 Elevation and material
@@ -340,7 +340,7 @@ Never mimic real payment cards unless users need a real card identifier. The vis
 ### 7.6a Chips and segmented controls (v2)
 
 - `components/ui/chip.tsx`: 36-tall capsule with a 44 hit area for filters and picks; Sand, pressed Hairline, selected Ink with cream text, disabled Sand light; `onSand` rests Paper inside a Sand field.
-- `components/ui/segmented.tsx`: one of a few fixed options (type, appearance, who owes who). A 44 Sand track with an Ink pill that slides on the `control` spring; a change plays `scrubStep`. Segment testIDs are `<screen>.<name>.<value>`.
+- `components/ui/segmented.tsx`: one of a few fixed options (type, who owes who). A 44 Sand track with an Ink pill that slides on the `control` spring; a change plays `scrubStep`. Segment testIDs are `<screen>.<name>.<value>`.
 - Chart cards use `Segmented` with `size="compact"` and `segmentWidth={70}` for their view toggle (Home's Pace | Daily, Net worth's Total | By wallet), so it matches the range control beside it. Every `Segmented` glides: slide sideways along the track, or hold it 220 ms and move, and the pill follows the finger with a magnet toward each option, a little growth while held and a stretch with speed. It never leaves the track, ticks and picks each option the moment it snaps to it (so a theme or a chart changes under the finger), and lands with `glideSnap` on release.
 - `components/ui/search-field.tsx`: `SearchField`, the 52 Paper capsule (picker sheets, past days); `compact` is Activity's 48 field.
 
@@ -486,7 +486,7 @@ Debts never appear on the Budget tab beyond the D1 label ("after bills and RM40 
 
 ### Profile (v2, `V2H-Profile`)
 
-Grouped settings rows, not dashboard cards, in board order: the account (Mint initial, name, email and "Google" for a Google account), **Main currency** (opens the Main currency sheet, which lists only the currencies held in a wallet with their wallet count and total, writes `preferences.currency`, with the note that focused pages show only it), APPEARANCE (Light, Dark, System), MONEY (Wallets, Categories, Merchant names), CAPTURE SOURCES with **Set up** (Bank notifications, Location, Camera, Microphone, each with On, Off or Not set up), PRIVACY AND DATA (Capture log, Export data as a CSV through the share sheet, Import data), then **Sign out**. Rows carry a 13 meta line and light pastel bubbles (`components/profile/profile-row.tsx`). Profile has no Budgets or Debts row. A Debug panel row shows only in development builds.
+Grouped settings rows, not dashboard cards, in board order: the account (Mint initial, name, email and "Google" for a Google account), **Main currency** (opens the Main currency sheet, which lists only the currencies held in a wallet with their wallet count and total, writes `preferences.currency`, with the note that focused pages show only it), MONEY (Wallets, Categories, Merchant names), CAPTURE SOURCES with **Set up** (Bank notifications, Location, Camera, Microphone, each with On, Off or Not set up), PRIVACY AND DATA (Capture log, Export data as a CSV through the share sheet, Import data), then **Sign out**. Rows carry a 13 meta line and light pastel bubbles (`components/profile/profile-row.tsx`). Profile has no Budgets or Debts row. A Debug panel row shows only in development builds.
 
 ### Sign in (v2, `V2H-Login`)
 
@@ -552,8 +552,8 @@ Light and dark mode are first-class siblings, not inverted afterthoughts.
 - Lift muted text and dividers enough for readability; do not simply lower every opacity.
 - Pastel accents often need a deeper or brighter companion in dark mode to retain contrast.
 - Ensure receipt thumbnails, imported notification evidence, and charts remain interpretable in either theme.
-- Treat system appearance as default, with an explicit Profile override.
-- A theme switch never changes the whole screen in one frame: on Android the new theme opens as a circle from the picked option over a screenshot of the old one (values in [`redesign/tokens.md`](redesign/tokens.md) Motion).
+- Light is the default; the theme button in Profile's header flips light and dark.
+- A theme switch never changes the whole screen in one frame: on Android the new theme opens as a circle from the tap on Profile's theme button, over a screenshot of the old one (values in [`redesign/tokens.md`](redesign/tokens.md) Motion).
 
 ---
 

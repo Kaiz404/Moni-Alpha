@@ -9,6 +9,7 @@ import android.os.Looper
 import android.provider.Settings
 import android.view.PixelCopy
 import android.view.ViewGroup
+import android.view.animation.PathInterpolator
 import expo.modules.kotlin.Promise
 import expo.modules.kotlin.functions.Queues
 import expo.modules.kotlin.modules.Module
@@ -34,7 +35,7 @@ class MoniThemeRevealModule : Module() {
       }
     }.runOnQueue(Queues.MAIN)
 
-    AsyncFunction("reveal") { x: Double, y: Double, durationMs: Int, promise: Promise ->
+    AsyncFunction("reveal") { x: Double, y: Double, durationMs: Int, curve: List<Double>, promise: Promise ->
       val shown = overlay
       if (shown == null) {
         promise.resolve(null)
@@ -54,11 +55,20 @@ class MoniThemeRevealModule : Module() {
             x.toFloat() * density + content[0],
             y.toFloat() * density + content[1],
             (durationMs * scale).toLong(),
+            curveOf(curve),
           ) { promise.resolve(null) }
         }
       }
     }.runOnQueue(Queues.MAIN)
   }
+
+  // The JS side owns the timing, so the feel can be tuned without a native rebuild.
+  private fun curveOf(curve: List<Double>): PathInterpolator =
+    if (curve.size == 4) {
+      PathInterpolator(curve[0].toFloat(), curve[1].toFloat(), curve[2].toFloat(), curve[3].toFloat())
+    } else {
+      PathInterpolator(0.5f, 0f, 0.75f, 0f)
+    }
 
   private fun capture(activity: Activity, promise: Promise) {
     val window = activity.window
