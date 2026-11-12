@@ -1,6 +1,7 @@
 import {
   applyPlacePick,
   locationFieldState,
+  phoneMayLocate,
   savedLocation,
   suggestionSpot,
   type EntryPlace,
@@ -100,5 +101,19 @@ describe('a pick from the place sheet', () => {
       place: { kind: 'off' },
       note: 'Teh tarik',
     });
+  });
+});
+
+describe('phoneMayLocate', () => {
+  it('lets the phone stand for an entry dated today', () => {
+    expect(phoneMayLocate({ recordLocation: true }, '2026-11-12', '2026-11-12')).toBe(true);
+  });
+
+  it('keeps the phone out of an entry dated another day', () => {
+    expect(phoneMayLocate({ recordLocation: true }, '2026-11-05', '2026-11-12')).toBe(false);
+  });
+
+  it('keeps the phone out when the wallet app has location off', () => {
+    expect(phoneMayLocate({ recordLocation: false }, '2026-11-12', '2026-11-12')).toBe(false);
   });
 });

@@ -7,7 +7,8 @@ import { startBackgroundProcessor } from '@/lib/ai/background-processor';
 import { releaseHeld } from '@/lib/ai/processing-queue';
 import { useAuth } from '@/lib/auth/auth-context';
 import { approveCapture } from '@/lib/capture/approve-capture';
-import { savedLocation } from '@/lib/capture/entry-place';
+import { phoneMayLocate, savedLocation } from '@/lib/capture/entry-place';
+import { isoToLocalDateInput } from '@/lib/dates/local-date-input';
 import {
   START,
   captureStage,
@@ -135,7 +136,10 @@ export function useCaptureFlow(source: CaptureSource) {
         savedLocation({
           place: draft.place,
           here,
-          phoneAllowed: wallet?.recordLocation !== false,
+          phoneAllowed: phoneMayLocate(
+            wallet,
+            isoToLocalDateInput(draft.transactionDate),
+          ),
         }),
       );
       if (transaction && stage.quote.source === 'camera')

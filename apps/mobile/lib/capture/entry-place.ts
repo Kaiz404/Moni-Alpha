@@ -1,3 +1,4 @@
+import { toLocalDateInput } from '@/lib/dates/local-date-input';
 import { placeLabel } from '@/lib/finance/places';
 import type {
   EntryLocation,
@@ -28,6 +29,18 @@ export type EntryPlaceInput = {
   /** False for a wallet whose app has location off: the phone's position is never saved. */
   phoneAllowed: boolean;
 };
+
+/**
+ * Whether the phone's position may stand for this entry: the wallet's app allows location and the
+ * entry is dated today, so a receipt scanned at home for last week's dinner is not pinned at home.
+ */
+export function phoneMayLocate(
+  wallet: { recordLocation?: boolean } | null | undefined,
+  localDate: string,
+  today: string = toLocalDateInput(new Date()),
+): boolean {
+  return wallet?.recordLocation !== false && localDate === today;
+}
 
 /** The one place saved with the entry, or null. */
 export function savedLocation({

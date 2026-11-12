@@ -103,7 +103,7 @@ const DRAFT: ReadResult = {
     amountMinor: 1200 as never,
     categoryId: null,
     walletId: 'w1',
-    transactionDate: '2026-11-01T02:00:00.000Z',
+    transactionDate: new Date().toISOString(),
     evidence: 'You said it.',
     itemCount: null,
     place: { kind: 'auto' },

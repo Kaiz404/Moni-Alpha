@@ -26,6 +26,7 @@ import { dayAndTime } from '@/lib/capture/clock-time';
 import {
   applyPlacePick,
   locationFieldState,
+  phoneMayLocate,
   savedLocation,
 } from '@/lib/capture/entry-place';
 import { itemsLabel } from '@/lib/capture/read-capture';
@@ -115,7 +116,10 @@ export function CaptureResult({
   const entryPlace = {
     place: draft.place,
     here,
-    phoneAllowed: wallet?.recordLocation !== false,
+    phoneAllowed: phoneMayLocate(
+      wallet,
+      isoToLocalDateInput(draft.transactionDate),
+    ),
   };
   const row = progress.find(
     (item) =>

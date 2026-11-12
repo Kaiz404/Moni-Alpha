@@ -27,6 +27,7 @@ import {
   applyPlacePick,
   locationColumns,
   locationFieldState,
+  phoneMayLocate,
   savedLocation,
   suggestionSpot,
   type EntryPlace,
@@ -173,29 +174,26 @@ export default function TypeItScreen() {
   const category =
     categories.find((item) => item.id === categoryId) ?? null;
   const amount = readAmount(typed);
-  const phoneAllowed = wallet?.recordLocation !== false;
+  const phoneAllowed = phoneMayLocate(wallet, date);
   const location =
     kind === 'transfer' ? null : savedLocation({ place, here, phoneAllowed });
   const spot =
     kind === 'expense' ? suggestionSpot({ place, here, phoneAllowed }) : null;
-  const suggestion = useMemo(
-    () =>
-      spot
-        ? placeSuggestion({
-            transactions,
-            here: spot,
-            currency: mainCurrency,
-            activeCategoryIds: new Set(categories.map((item) => item.id)),
-            locationOffWalletIds: new Set(
-              allWallets
-                .filter((item) => item.recordLocation === false)
-                .map((item) => item.id),
-            ),
-            aliases,
-          })
-        : null,
-    [aliases, allWallets, categories, spot, mainCurrency, transactions],
-  );
+  const suggestion =
+    spot
+      ? placeSuggestion({
+          transactions,
+          here: spot,
+          currency: mainCurrency,
+          activeCategoryIds: new Set(categories.map((item) => item.id)),
+          locationOffWalletIds: new Set(
+            allWallets
+              .filter((item) => item.recordLocation === false)
+              .map((item) => item.id),
+          ),
+          aliases,
+        })
+    : null;
   const offer = suggestion && !note.trim() ? suggestion : null;
 
   useEffect(() => {
