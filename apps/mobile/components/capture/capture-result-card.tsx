@@ -6,7 +6,7 @@ import Animated, { FadeIn } from 'react-native-reanimated';
 import { TextTile } from '@/components/amount/text-tile';
 import { FieldBubble, WalletBubble } from '@/components/capture/field-bubble';
 import { LocationField } from '@/components/capture/location-field';
-import { ReceiptPhoto } from '@/components/capture/receipt-photo';
+import { HEADER_H, ReceiptPhoto } from '@/components/capture/receipt-photo';
 import { Button } from '@/components/ui/button';
 import {
   IconSymbol,
@@ -224,19 +224,24 @@ export function CaptureResult({
         contentContainerClassName="gap-2 px-5 pb-3"
         keyboardShouldPersistTaps="handled"
       >
-        {voice && !editing ? (
-          <View className="mb-1 flex-row items-start gap-2.5 rounded-field bg-sand px-3.5 py-2.5">
-            <View className="mt-0.5">
+        {voice ? (
+          <View
+            className="items-center justify-center gap-3 rounded-tile bg-sand px-6"
+            style={{ height: HEADER_H }}
+          >
+            <View className="h-11 w-11 items-center justify-center rounded-full bg-primary">
               <IconSymbol
                 name="microphone"
-                size={18}
-                color={tokens.foreground}
+                size={22}
+                color={tokens.primaryForeground}
               />
             </View>
             <Text
               testID={tid('capture', 'quote')}
-              variant="body"
-              className="flex-1 text-foreground"
+              variant="sectionTitle"
+              className="text-center text-foreground"
+              numberOfLines={4}
+              adjustsFontSizeToFit
             >
               {`“${quote.text}”`}
             </Text>

@@ -19,7 +19,8 @@ import { Press } from '@/components/ui/press';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { tid } from '@/lib/test-ids';
 
-const HEADER_H = 188;
+/** The check page's header height, shared by the receipt photo and the words heard. */
+export const HEADER_H = 188;
 const RADIUS = 22;
 const MAX_ZOOM = 4;
 const DOUBLE_TAP_ZOOM = 2.5;
