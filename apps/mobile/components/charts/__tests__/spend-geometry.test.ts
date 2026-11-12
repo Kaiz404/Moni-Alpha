@@ -76,32 +76,40 @@ describe('spendTarget', () => {
 });
 
 describe('scrub points', () => {
+
   const points = (range: ChartRange, mode: 'pace' | 'daily') => {
-    const { at, ids } = target(range, mode).points;
-    return { at: Array.from(at), ids: Array.from(ids) };
+    const { at, ids, marks } = target(range, mode).points;
+    return {
+      first: ids[0],
+      last: ids[ids.length - 1],
+      count: ids.length,
+      at: [at[0], at[at.length - 1]],
+      marked: Array.from(ids).filter((_, i) => marks[i] === 1),
+    };
   };
 
-  it('Pace lands on the range start, each day with spending, and today, at the end of each day', () => {
+  it('Pace stops on every day of the range at its end, and ticks on the days with spending', () => {
     expect(today).toBe(365);
-    expect(points('1m', 'pace')).toEqual({ ids: [352, 361, 365], at: [353, 362, 366] });
-    expect(points('30d', 'pace')).toEqual({ ids: [336, 341, 361, 365], at: [337, 342, 362, 366] });
-    expect(points('7d', 'pace')).toEqual({ ids: [359, 361, 365], at: [360, 362, 366] });
+    expect(points('1m', 'pace')).toEqual({ first: 352, last: 365, count: 14, at: [353, 366], marked: [361, 365] });
+    expect(points('30d', 'pace')).toEqual({ first: 336, last: 365, count: 30, at: [337, 366], marked: [341, 361, 365] });
+    expect(points('7d', 'pace')).toEqual({ first: 359, last: 365, count: 7, at: [360, 366], marked: [361, 365] });
   });
 
-  it('Daily lands on each bar with spending and today, at the bar centre', () => {
-    expect(points('1m', 'daily')).toEqual({ ids: [361, 365], at: [361.5, 365.5] });
-    expect(points('90d', 'daily')).toEqual({ ids: [9, 12], at: [342.5, 363] });
-    expect(points('1y', 'daily')).toEqual({ ids: [11, 12], at: [337, 359] });
+  it('Daily stops on every bar at its centre, and ticks on the bars with spending', () => {
+    expect(points('1m', 'daily')).toEqual({ first: 352, last: 365, count: 14, at: [352.5, 365.5], marked: [361, 365] });
+    expect(points('90d', 'daily').marked).toEqual([9, 12]);
+    expect(points('1y', 'daily').marked).toEqual([11, 12]);
   });
 
-  it('counts several spends on one day as one point', () => {
+  it('counts several spends on one day as one tick', () => {
     const busy = spendIndex({
       now,
       currency,
       transactions: [spend(10, 12, 100), spend(10, 12, 200), spend(10, 12, 300)],
     });
-    const { ids } = spendTarget({ index: busy, now, range: '7d', mode: 'pace', month: october, currency }).points;
-    expect(Array.from(ids)).toEqual([359, 363, 365]);
+    const { ids, marks } = spendTarget({ index: busy, now, range: '7d', mode: 'pace', month: october, currency }).points;
+    expect(Array.from(ids)).toEqual([359, 360, 361, 362, 363, 364, 365]);
+    expect(Array.from(marks)).toEqual([0, 0, 0, 0, 1, 0, 0]);
   });
 });
 

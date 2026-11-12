@@ -173,23 +173,25 @@ describe('SpentCard', () => {
     expect(screen.getByTestId('home.pace-chart')).toBe(chart);
   });
 
-  it('shows the callout the moment a finger lands, snaps to days with spending, and goes on release', async () => {
+  it('shows the callout the moment a finger lands, moves day by day, ticks on days with spending, and goes on release', async () => {
     card();
     const touch = finger('home.chart');
-    // 1M runs 31 days over 256 px: 1 Oct ends at x 62, 10 Oct at 137, today at 170.
-    await touch.down(140);
+    // 1M runs 31 days over 256 px, about 8.3 px a day: 1 Oct ends at x 62, 10 Oct at 137, today at 170.
+    await touch.down(137);
     expect(screen.getByText('By Sat 10 Oct')).toBeTruthy();
     expect(screen.getByTestId('home.chart.callout')).toHaveTextContent('RM25.00');
-    await touch.drag(140);
-    await touch.move(100);
-    expect(screen.getByText('By Sat 10 Oct')).toBeTruthy();
-    await touch.move(60);
+    await touch.drag(137);
+    await touch.move(145);
+    expect(screen.getByText('By Sun 11 Oct')).toBeTruthy();
+    expect(screen.getByTestId('home.chart.callout')).toHaveTextContent('RM25.00');
+    await touch.move(62);
     expect(screen.getByText('By Thu 1 Oct')).toBeTruthy();
     expect(screen.getByTestId('home.chart.callout')).toHaveTextContent('RM0.00');
-    await touch.move(200);
+    await touch.move(170);
     expect(screen.getByText('By today')).toBeTruthy();
+    // The landing, then passing 10 Oct on the way back to 1 Oct, then today; 11 Oct alone is quiet.
     expect(jest.mocked(chartStep).mock.calls).toEqual([[false], [false], [false]]);
-    await touch.up(200);
+    await touch.up(170);
     expect(screen.queryByTestId('home.chart.callout')).toBeNull();
   });
 

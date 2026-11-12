@@ -111,22 +111,19 @@ export function monthMarks(index: SpendIndex, now: Date, month: SpendMonth): Mon
   };
 }
 
-/** Pace: the range start, each day with spending, and today, each at its day's end. */
+/** Pace: every day in the range, at its day's end; days with spending tick. */
 export function paceScrubPoints(spent: Float64Array, from: number, today: number): ScrubPoints {
-  const pairs: [number, number][] = [];
-  for (let day = from; day <= today; day++)
-    if (day === from || day === today || spent[day] !== 0) pairs.push([day + 1, day]);
-  return scrubPoints(pairs);
+  const points: [number, number, boolean][] = [];
+  for (let day = from; day <= today; day++) points.push([day + 1, day, spent[day] !== 0]);
+  return scrubPoints(points);
 }
 
-/** Daily: each bar in the range with spending, and today's, at the bar's centre. */
+/** Daily: every bar in the range, at the bar's centre; bars with spending tick. */
 export function barScrubPoints({ starts, ends, values, first }: SpendBuckets): ScrubPoints {
-  const last = values.length - 1;
-  const pairs: [number, number][] = [];
-  for (let bucket = first; bucket <= last; bucket++)
-    if (bucket === last || values[bucket] !== 0)
-      pairs.push([(starts[bucket]! + ends[bucket]! + 1) / 2, bucket]);
-  return scrubPoints(pairs);
+  const points: [number, number, boolean][] = [];
+  for (let bucket = first; bucket < values.length; bucket++)
+    points.push([(starts[bucket]! + ends[bucket]! + 1) / 2, bucket, values[bucket] !== 0]);
+  return scrubPoints(points);
 }
 
 /** Zero at the base, under the rows above it; drops a label that would repeat zero's, as RM0 does when nothing was spent. */

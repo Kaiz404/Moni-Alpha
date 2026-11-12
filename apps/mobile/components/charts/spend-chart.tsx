@@ -43,7 +43,7 @@ import {
   type SpendMonth,
   type SpendTarget,
 } from './spend-geometry';
-import { Tip, useChartScrub } from './scrub';
+import { readerStep, Tip, useChartScrub } from './scrub';
 import {
   areaPath,
   barBox,
@@ -139,9 +139,9 @@ export function SpendChart({
     frame,
     onPoint: (id) => setPick(id === null ? null : { key, id, by: 'finger' }),
   });
-  const nudge = (by: number) => {
-    const next = points.ids.indexOf(selected) + by;
-    if (next >= 0 && next < points.ids.length) setPick({ key, id: points.ids[next]!, by: 'reader' });
+  const nudge = (by: 1 | -1) => {
+    const next = readerStep(points, selected, by);
+    if (next !== null) setPick({ key, id: next, by: 'reader' });
   };
 
   const daily = mode === 'daily';

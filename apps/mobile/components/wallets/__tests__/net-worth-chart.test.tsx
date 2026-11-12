@@ -111,19 +111,24 @@ describe('NetWorthChart', () => {
     expect(screen.getByText('1 Oct')).toHaveTextContent('1 Oct');
   });
 
-  it('shows the callout while a finger is down, snapping to days a transaction moved a balance', async () => {
+  it('shows the callout while a finger is down, moving day by day and ticking on days a transaction moved a balance', async () => {
     chart([maybank, cash], moves);
     const touch = finger('wallet.chart');
-    // 30 days over 256 px: 10 Oct at x 275, 12 Oct at 292, today at 310.
-    await touch.down(270);
+    // 30 days over 256 px, about 8.8 px a day: 10 Oct at x 275, 12 Oct at 292, 13 Oct at 301, today at 310.
+    await touch.down(275);
     expect(screen.getByText('Sat 10 Oct')).toBeTruthy();
     expect(screen.getByTestId('wallet.chart.callout')).toHaveTextContent('RM2,410.00');
-    await touch.drag(270);
-    await touch.move(100);
-    expect(screen.getByText('Sat 10 Oct')).toBeTruthy();
-    await touch.move(300);
+    await touch.drag(275);
+    await touch.move(284);
+    expect(screen.getByText('Sun 11 Oct')).toBeTruthy();
+    expect(screen.getByTestId('wallet.chart.callout')).toHaveTextContent('RM2,410.00');
+    await touch.move(292);
     expect(screen.getByText('Mon 12 Oct')).toBeTruthy();
     expect(screen.getByTestId('wallet.chart.callout')).toHaveTextContent('RM2,500.00');
+    await touch.move(301);
+    expect(screen.getByText('Yesterday')).toBeTruthy();
+    expect(screen.getByTestId('wallet.chart.callout')).toHaveTextContent('RM2,500.00');
+    // The landing, then 12 Oct; 11 and 13 Oct had no transactions, so no tick.
     expect(jest.mocked(chartStep).mock.calls).toEqual([[false], [false]]);
     await touch.up(300);
     expect(screen.queryByTestId('wallet.chart.callout')).toBeNull();
@@ -246,8 +251,9 @@ describe('netWorthTarget', () => {
     const { from, to, points } = target('1m');
     expect(to).toBe(index.days - 1);
     expect(to - from).toBe(13);
-    expect(Array.from(points.ids)).toEqual([to - 4, to]);
-    expect(Array.from(points.at)).toEqual([to - 4, to]);
+    expect(Array.from(points.ids)).toEqual(Array.from({ length: 14 }, (_, k) => from + k));
+    expect(Array.from(points.at)).toEqual(Array.from(points.ids));
+    expect(Array.from(points.ids).filter((_, i) => points.marks[i] === 1)).toEqual([to - 4]);
   });
 
   it('starts the axis near the lowest balance and says so', () => {
@@ -320,7 +326,7 @@ describe('netWorthTarget', () => {
 });
 
 describe('netWorthScrubPoints', () => {
-  it('lands once on each day a transaction moved a balance, however many moved it, and on today', () => {
+  it('stops on every day, and ticks once on each day a transaction moved a balance, however many moved it', () => {
     const index = balanceIndex({
       now,
       wallets: [
@@ -330,10 +336,13 @@ describe('netWorthScrubPoints', () => {
       transactions: moves,
     });
     const today = index.days - 1;
-    const { at, ids } = netWorthScrubPoints(index, today - 29, today);
-    expect(Array.from(ids)).toEqual([today - 4, today - 2, today]);
-    expect(Array.from(at)).toEqual([today - 4, today - 2, today]);
-    expect(Array.from(netWorthScrubPoints(index, today - 3, today).ids)).toEqual([today - 2, today]);
+    const { at, ids, marks } = netWorthScrubPoints(index, today - 29, today);
+    expect(ids.length).toBe(30);
+    expect(Array.from(at)).toEqual(Array.from(ids));
+    expect(Array.from(ids).filter((_, i) => marks[i] === 1)).toEqual([today - 4, today - 2]);
+    const short = netWorthScrubPoints(index, today - 3, today);
+    expect(Array.from(short.ids)).toEqual([today - 3, today - 2, today - 1, today]);
+    expect(Array.from(short.marks)).toEqual([0, 1, 0, 0]);
   });
 });
 

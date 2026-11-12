@@ -63,11 +63,11 @@ function spanDate(date: Date, long: boolean): string {
   return long ? `${month} ${date.getFullYear()}` : `${date.getDate()} ${month}`;
 }
 
-/** Each day in the range on which a transaction moved a balance, and today. */
+/** Every day in the range; days on which a transaction moved a balance tick. */
 export function netWorthScrubPoints(index: BalanceIndex, from: number, to: number): ScrubPoints {
-  const pairs: [number, number][] = [];
-  for (let day = from; day <= to; day++) if (day === to || index.changed[day]) pairs.push([day, day]);
-  return scrubPoints(pairs);
+  const points: [number, number, boolean][] = [];
+  for (let day = from; day <= to; day++) points.push([day, day, index.changed[day] === 1]);
+  return scrubPoints(points);
 }
 
 /**

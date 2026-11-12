@@ -17,7 +17,11 @@ import { uAt, xAt, type Frame, type Zoom } from './zoom';
  * The points a scrub lands on, left to right. `at` is where each sits on the x axis, in the
  * zoom's data space; `ids` is what it reads: a day, or a bar's bucket.
  */
-export type ScrubPoints = { at: Float64Array; ids: Float64Array };
+/**
+ * Every day (or bar) the tooltip can stop on, in order. `marks` flags the ones with transactions:
+ * the tooltip moves through every point, and ticks only on marked ones.
+ */
+export type ScrubPoints = { at: Float64Array; ids: Float64Array; marks: Uint8Array };
 
 /** Points closer than this on screen play the frequent tick. */
 export const DENSE_POINT_PX = 8;
@@ -28,11 +32,27 @@ const SCROLL_PX = 12;
 const TIP_IN = FadeIn.duration(100);
 const TIP_OUT = FadeOut.duration(150);
 
-export function scrubPoints(pairs: readonly (readonly [at: number, id: number])[]): ScrubPoints {
+export function scrubPoints(
+  points: readonly (readonly [at: number, id: number, marked: boolean])[],
+): ScrubPoints {
   return {
-    at: Float64Array.from(pairs, ([at]) => at),
-    ids: Float64Array.from(pairs, ([, id]) => id),
+    at: Float64Array.from(points, ([at]) => at),
+    ids: Float64Array.from(points, ([, id]) => id),
+    marks: Uint8Array.from(points, ([, , marked]) => (marked ? 1 : 0)),
   };
+}
+
+/**
+ * The next stop for a screen reader from `selected`, `by` one way or the other: only the points
+ * with transactions and the last one, so stepping through a year is not 365 swipes. Null past
+ * either end.
+ */
+export function readerStep({ ids, marks }: ScrubPoints, selected: number, by: 1 | -1): number | null {
+  const last = ids.length - 1;
+  for (let i = ids.indexOf(selected) + by; i >= 0 && i <= last; i += by) {
+    if (marks[i] === 1 || i === last) return ids[i]!;
+  }
+  return null;
 }
 
 /** The point nearest `u`, by binary search; a tie goes left. `at` is ascending and not empty. */
@@ -74,14 +94,14 @@ export function useChartScrub({
   const reachedU = useSharedValue(NaN);
   const latest = useRef(onPoint);
   latest.current = onPoint;
-  const reach = (id: number, dense: boolean) => {
-    chartStep(dense);
+  const reach = (id: number, tick: boolean, dense: boolean) => {
+    if (tick) chartStep(dense);
     latest.current(id);
   };
   const lift = () => latest.current(null);
 
   const gesture = useMemo(() => {
-    const { at, ids } = points;
+    const { at, ids, marks } = points;
     const move = (x: number, first: boolean) => {
       'worklet';
       const f = from.get();
@@ -92,13 +112,20 @@ export function useChartScrub({
       if (!first && at[next] === before) return;
       point.set(next);
       reachedU.set(at[next]!);
-      // One touch update a frame, so at most one haptic a frame. A jump past several points
-      // counts as dense when their average spacing is.
-      const gap = first
-        ? Infinity
-        : Math.abs(xAt(at[next]!, f, t, frame) - xAt(before, f, t, frame)) /
-          Math.max(1, Math.abs(next - nearestPoint(at, before)));
-      scheduleOnRN(reach, ids[next]!, gap < DENSE_POINT_PX);
+      if (first) {
+        scheduleOnRN(reach, ids[next]!, true, false);
+        return;
+      }
+      // One touch update a frame, so at most one haptic a frame: it plays when the finger
+      // reached or passed a day with transactions, and is the frequent tick when those days
+      // sit closer than DENSE_POINT_PX on screen.
+      const was = nearestPoint(at, before);
+      const low = Math.min(was, next);
+      const high = Math.max(was, next);
+      let crossed = 0;
+      for (let i = low; i <= high; i++) if (i !== was && marks[i] === 1) crossed++;
+      const travel = Math.abs(xAt(at[next]!, f, t, frame) - xAt(before, f, t, frame));
+      scheduleOnRN(reach, ids[next]!, crossed > 0, crossed > 0 && travel / crossed < DENSE_POINT_PX);
     };
     const end = (scrolled: boolean) => {
       'worklet';

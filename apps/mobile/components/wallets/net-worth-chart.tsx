@@ -26,7 +26,7 @@ import {
   type Frame,
   type Zoom,
 } from '@/components/charts/zoom';
-import { Tip, useChartScrub } from '@/components/charts/scrub';
+import { readerStep, Tip, useChartScrub } from '@/components/charts/scrub';
 import { YGrid, YLabels, ZoomTicks } from '@/components/charts/zoom-axes';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Segmented } from '@/components/ui/segmented';
@@ -138,9 +138,9 @@ export function NetWorthChart({
     frame,
     onPoint: (day) => setPick(day === null ? null : { range, day, by: 'finger' }),
   });
-  const nudge = (by: number) => {
-    const next = points.ids.indexOf(selected) + by;
-    if (next >= 0 && next < points.ids.length) setPick({ range, day: points.ids[next]!, by: 'reader' });
+  const nudge = (by: 1 | -1) => {
+    const next = readerStep(points, selected, by);
+    if (next !== null) setPick({ range, day: next, by: 'reader' });
   };
 
   const ids = useMemo(
