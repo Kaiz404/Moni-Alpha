@@ -1,9 +1,26 @@
-import { useEffect, useMemo, type ReactNode } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useMemo,
+  type ReactNode,
+} from 'react';
+import {
+  FlatList,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  View,
+  type FlatListProps,
+  type NativeScrollEvent,
+  type NativeSyntheticEvent,
+  type ScrollViewProps,
+} from 'react-native';
 import {
   Gesture,
   GestureDetector,
   GestureHandlerRootView,
+  type NativeGesture,
 } from 'react-native-gesture-handler';
 import Animated, {
   Extrapolation,
@@ -14,6 +31,7 @@ import Animated, {
   useSharedValue,
   withSpring,
   withTiming,
+  type SharedValue,
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { scheduleOnRN } from 'react-native-worklets';
@@ -50,6 +68,54 @@ function rubberband(overshoot: number, dimension: number) {
   );
 }
 
+/** Lets a list inside a sheet tell the sheet where it is scrolled to. */
+type SheetScroll = { scrollY: SharedValue<number>; gesture: NativeGesture };
+const SheetScrollContext = createContext<SheetScroll | null>(null);
+
+/** Scrolled within this of the top counts as at the top. */
+const AT_TOP_PX = 1;
+
+function useSheetScrollProps() {
+  const sheet = useContext(SheetScrollContext);
+  // The sheet reads this once, as a finger lands, so a JS-thread write per scroll event is enough.
+  const onScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) =>
+    sheet?.scrollY.set(event.nativeEvent.contentOffset.y);
+  return { sheet, onScroll };
+}
+
+/**
+ * The scroll view for a sheet's body. It stops at its top instead of stretching, and lets the
+ * sheet know where it is, so a drag that starts with it at the top pulls the sheet down.
+ */
+export function SheetScrollView(props: ScrollViewProps) {
+  const { sheet, onScroll } = useSheetScrollProps();
+  const list = (
+    <ScrollView
+      {...props}
+      onScroll={onScroll}
+      scrollEventThrottle={16}
+      overScrollMode="never"
+      bounces={false}
+    />
+  );
+  return sheet ? <GestureDetector gesture={sheet.gesture}>{list}</GestureDetector> : list;
+}
+
+/** `SheetScrollView` for a long list. */
+export function SheetFlatList<T>(props: FlatListProps<T>) {
+  const { sheet, onScroll } = useSheetScrollProps();
+  const list = (
+    <FlatList
+      {...props}
+      onScroll={onScroll}
+      scrollEventThrottle={16}
+      overScrollMode="never"
+      bounces={false}
+    />
+  );
+  return sheet ? <GestureDetector gesture={sheet.gesture}>{list}</GestureDetector> : list;
+}
+
 export type SheetProps = {
   /** False plays the exit, then calls `onExited`. */
   open: boolean;
@@ -78,8 +144,9 @@ export type SheetFrameProps = Pick<
 /**
  * The one sheet surface from tokens.md: Cream, top radius 32, a 36 × 5
  * grabber, a 22/26 title, and a scrim over the page and the tab bar. It rises
- * on the `sheet` spring, follows the finger 1:1 from its header, and closes
- * when a release projects past 40% of its height.
+ * on the `sheet` spring, follows the finger 1:1 from its header, or from its body
+ * when the body's list is at its top, and closes when a release projects past
+ * 40% of its height.
  */
 export function Sheet({
   open,
@@ -139,55 +206,74 @@ export function Sheet({
     onExited,
   ]);
 
-  const pan = useMemo(
-    () =>
-      Gesture.Pan()
-        .activeOffsetY([-10, 10])
-        .onStart(() => {
-          start.set(offset.get());
-        })
-        .onUpdate((event) => {
-          // A sheet closed by back or the scrim mid-drag must keep its exit spring.
-          if (closing.get()) return;
-          const next = start.get() + event.translationY;
-          offset.set(
-            next >= 0 ? next : rubberband(next, height.get()),
-          );
-        })
-        .onEnd((event) => {
-          if (closing.get()) return;
-          const travel = height.get();
-          const landing = projectedPosition(
-            offset.get(),
-            event.velocityY,
-          );
-          if (
-            travel > 0 &&
-            landing > travel * FLING_COMMIT_THRESHOLD
-          ) {
-            releaseVelocity.set(event.velocityY);
-            scheduleOnRN(onDismiss);
-            return;
-          }
-          offset.set(
-            reduceMotion
-              ? withTiming(0, REDUCED_FADE)
-              : withSpring(0, {
-                  ...springs.sheet,
-                  velocity: event.velocityY,
-                }),
-          );
-        }),
-    [
-      closing,
-      height,
-      offset,
-      onDismiss,
-      reduceMotion,
-      releaseVelocity,
-      start,
-    ],
+  const scrollY = useSharedValue(0);
+  const fromTop = useSharedValue(true);
+  const scroll = useMemo<SheetScroll>(
+    () => ({ scrollY, gesture: Gesture.Native() }),
+    [scrollY],
   );
+
+  const { header, body } = useMemo(() => {
+    const follow = (translationY: number, stretchUp: boolean) => {
+      'worklet';
+      // A sheet closed by back or the scrim mid-drag must keep its exit spring.
+      if (closing.get()) return;
+      const next = start.get() + translationY;
+      offset.set(
+        next >= 0 ? next : stretchUp ? rubberband(next, height.get()) : 0,
+      );
+    };
+    const release = (velocityY: number) => {
+      'worklet';
+      if (closing.get()) return;
+      const travel = height.get();
+      const landing = projectedPosition(offset.get(), velocityY);
+      if (travel > 0 && landing > travel * FLING_COMMIT_THRESHOLD) {
+        releaseVelocity.set(velocityY);
+        scheduleOnRN(onDismiss);
+        return;
+      }
+      offset.set(
+        reduceMotion
+          ? withTiming(0, REDUCED_FADE)
+          : withSpring(0, { ...springs.sheet, velocity: velocityY }),
+      );
+    };
+    const header = Gesture.Pan()
+      .activeOffsetY([-10, 10])
+      .onStart(() => start.set(offset.get()))
+      .onUpdate((event) => follow(event.translationY, true))
+      .onEnd((event) => release(event.velocityY));
+    // The body pulls the sheet down only when its list was already at the top as the finger
+    // landed: a drag that scrolls the list up stops at the top, and the next one closes.
+    const body = Gesture.Pan()
+      .withTestId('sheet.body.drag')
+      .activeOffsetY([-10, 10])
+      .failOffsetX([-16, 16])
+      .simultaneousWithExternalGesture(scroll.gesture)
+      .onBegin(() => fromTop.set(scrollY.get() <= AT_TOP_PX))
+      .onStart(() => start.set(offset.get()))
+      .onUpdate((event) => {
+        // A drag that began by scrolling the list stays a scroll for the rest of the gesture.
+        if (event.translationY < 0 && offset.get() === 0) fromTop.set(false);
+        if (fromTop.get()) follow(event.translationY, false);
+      })
+      .onEnd((event) => {
+        if (fromTop.get()) release(event.velocityY);
+      });
+    return { header, body };
+  }, [
+    closing,
+    fromTop,
+    height,
+    offset,
+    onDismiss,
+    reduceMotion,
+    releaseVelocity,
+    scroll,
+    scrollY,
+    start,
+  ]);
 
   const scrimStyle = useAnimatedStyle(() => {
     const h = height.get();
@@ -271,7 +357,7 @@ export function Sheet({
             className="bg-canvas"
             style={styles.bleed}
           />
-          <GestureDetector gesture={pan}>
+          <GestureDetector gesture={header}>
             <View style={{ gap, paddingBottom: gap }}>
               <View className="h-[5px] w-9 self-center rounded-full bg-hairline" />
               <View className="min-h-11 flex-row items-start gap-3">
@@ -311,9 +397,13 @@ export function Sheet({
               </View>
             </View>
           </GestureDetector>
-          <View style={size === 'large' ? styles.large : styles.body}>
-            {children}
-          </View>
+          <SheetScrollContext.Provider value={scroll}>
+            <GestureDetector gesture={body}>
+              <View style={size === 'large' ? styles.large : styles.body}>
+                {children}
+              </View>
+            </GestureDetector>
+          </SheetScrollContext.Provider>
           {actions ? (
             <View className="flex-row gap-2 pt-5">{actions}</View>
           ) : null}

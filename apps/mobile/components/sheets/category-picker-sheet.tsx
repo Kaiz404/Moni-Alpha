@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { ScrollView, View } from 'react-native';
+import { View } from 'react-native';
 
 import { CategoryBubble } from '@/components/categories/category-bubble';
 import { CategoryIcon } from '@/components/categories/category-icon';
@@ -11,6 +11,7 @@ import { Press } from '@/components/ui/press';
 import { SearchField } from '@/components/ui/search-field';
 import {
   Sheet,
+  SheetScrollView,
   type SheetFrameProps,
 } from '@/components/ui/sheet/sheet';
 import { Text } from '@/components/ui/text';
@@ -186,7 +187,7 @@ export function CategoryPickerSheet({
           onChangeText={setQuery}
         />
       </View>
-      <ScrollView
+      <SheetScrollView
         accessibilityLabel="Categories"
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
@@ -241,7 +242,7 @@ export function CategoryPickerSheet({
             </Text>
           </View>
         ) : null}
-      </ScrollView>
+      </SheetScrollView>
       {uncounted.length > 0 ? (
         <View className="gap-1.5 pt-2.5">
           <Text

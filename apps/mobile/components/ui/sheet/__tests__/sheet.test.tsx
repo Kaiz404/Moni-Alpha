@@ -1,8 +1,13 @@
 import 'react-native-gesture-handler/jestSetup';
-import { render, screen } from '@testing-library/react-native';
-import { StyleSheet } from 'react-native';
+import { act, fireEvent, render, screen } from '@testing-library/react-native';
+import { StyleSheet, Text } from 'react-native';
+import { State } from 'react-native-gesture-handler';
+import {
+  fireGestureHandler,
+  getByGestureTestId,
+} from 'react-native-gesture-handler/jest-utils';
 
-import { Sheet } from '@/components/ui/sheet/sheet';
+import { Sheet, SheetScrollView } from '@/components/ui/sheet/sheet';
 
 jest.mock('uniwind', () => ({
   useCSSVariable: (names: string[]) => names.map(() => undefined),
@@ -44,5 +49,67 @@ describe.each(['fit', 'large'] as const)('Sheet size %s', (size) => {
     expect(screen.getByTestId('sheet.bleed').props.className).toContain(
       'bg-canvas',
     );
+  });
+});
+
+describe('Sheet body drag', () => {
+  function renderList(onDismiss: () => void) {
+    render(
+      <Sheet
+        open
+        onDismiss={onDismiss}
+        onExited={jest.fn()}
+        title="Edit category"
+        size="large"
+      >
+        <SheetScrollView testID="sheet.list">
+          <Text>Food & Dining</Text>
+        </SheetScrollView>
+      </Sheet>,
+    );
+    // The sheet measures 600 tall, as it would on the phone.
+    fireEvent(screen.getByTestId('sheet.bleed').parent!, 'layout', {
+      nativeEvent: { layout: { height: 600 } },
+    });
+  }
+
+  const dragDown = () =>
+    act(async () => {
+      fireGestureHandler(getByGestureTestId('sheet.body.drag'), [
+        { state: State.BEGAN, translationY: 0, velocityY: 0 },
+        { state: State.ACTIVE, translationY: 40, velocityY: 900 },
+        { translationY: 320, velocityY: 1400 },
+        { state: State.END, translationY: 320, velocityY: 1400 },
+      ]);
+    });
+
+  const scrollListTo = (y: number) =>
+    fireEvent.scroll(screen.getByTestId('sheet.list'), {
+      nativeEvent: { contentOffset: { y } },
+    });
+
+  it('closes when the list is already at its top and the finger pulls down', async () => {
+    const onDismiss = jest.fn();
+    renderList(onDismiss);
+    await dragDown();
+    expect(onDismiss).toHaveBeenCalledTimes(1);
+  });
+
+  it('stays open when the drag starts with the list scrolled down', async () => {
+    const onDismiss = jest.fn();
+    renderList(onDismiss);
+    scrollListTo(240);
+    await dragDown();
+    expect(onDismiss).not.toHaveBeenCalled();
+  });
+
+  it('closes on the next pull once the list is back at its top', async () => {
+    const onDismiss = jest.fn();
+    renderList(onDismiss);
+    scrollListTo(240);
+    await dragDown();
+    scrollListTo(0);
+    await dragDown();
+    expect(onDismiss).toHaveBeenCalledTimes(1);
   });
 });

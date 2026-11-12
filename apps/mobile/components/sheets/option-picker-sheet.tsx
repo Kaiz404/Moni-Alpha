@@ -1,6 +1,6 @@
 import { useValue } from '@legendapp/state/react';
 import { useMemo, useState, type ReactNode } from 'react';
-import { ActivityIndicator, FlatList, View } from 'react-native';
+import { ActivityIndicator, View } from 'react-native';
 
 import { sameName } from '@/components/debts/past-people';
 import { PersonAvatar } from '@/components/debts/person-avatar';
@@ -9,6 +9,7 @@ import { Press, PressRows } from '@/components/ui/press';
 import { SearchField } from '@/components/ui/search-field';
 import {
   Sheet,
+  SheetFlatList,
   type SheetFrameProps,
 } from '@/components/ui/sheet/sheet';
 import { Text } from '@/components/ui/text';
@@ -128,7 +129,7 @@ export function OptionPickerSheet({
         </View>
       ) : null}
       <PressRows>
-        <FlatList
+        <SheetFlatList
           data={shown}
           keyExtractor={(option) => option.id}
           style={size === 'fit' ? { flexGrow: 0 } : undefined}
