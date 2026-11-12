@@ -3,6 +3,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  type ComponentProps,
   type ReactNode,
 } from 'react';
 import {
@@ -21,6 +22,7 @@ import {
   GestureDetector,
   GestureHandlerRootView,
   type NativeGesture,
+  type PanGesture,
 } from 'react-native-gesture-handler';
 import Animated, {
   Extrapolation,
@@ -71,6 +73,34 @@ function rubberband(overshoot: number, dimension: number) {
 /** Lets a list inside a sheet tell the sheet where it is scrolled to. */
 type SheetScroll = { scrollY: SharedValue<number>; gesture: NativeGesture };
 const SheetScrollContext = createContext<SheetScroll | null>(null);
+
+/** The body's drag-to-close, handed to the one `SheetDragArea` of a sheet whose body holds a map. */
+const SheetDragContext = createContext<PanGesture | null>(null);
+
+/**
+ * The part of a `bodyDrags={false}` sheet that still pulls it down, such as the search and list
+ * under a map. Use one per sheet, and `SheetScrollView` for a list inside it.
+ */
+export function SheetDragArea({
+  className,
+  style,
+  children,
+}: {
+  className?: string;
+  style?: ComponentProps<typeof Animated.View>['style'];
+  children: ReactNode;
+}) {
+  const drag = useContext(SheetDragContext);
+  const area = (
+    <Animated.View
+      className={className}
+      style={style}
+    >
+      {children}
+    </Animated.View>
+  );
+  return drag ? <GestureDetector gesture={drag}>{area}</GestureDetector> : area;
+}
 
 /** Scrolled within this of the top counts as at the top. */
 const AT_TOP_PX = 1;
@@ -132,7 +162,7 @@ export type SheetProps = {
   actions?: ReactNode;
   /** Space between the grabber, the title row and the body: 12, or 16 on the + chooser. */
   gap?: 12 | 16;
-  /** False when the body holds a map: only the header drags the sheet. */
+  /** False when the body holds a map: the header and the body's `SheetDragArea` drag the sheet, the map does not. */
   bodyDrags?: boolean;
   children?: ReactNode;
 };
@@ -409,9 +439,13 @@ export function Sheet({
               </GestureDetector>
             </SheetScrollContext.Provider>
           ) : (
-            <View style={size === 'large' ? styles.large : styles.body}>
-              {children}
-            </View>
+            <SheetScrollContext.Provider value={scroll}>
+              <SheetDragContext.Provider value={body}>
+                <View style={size === 'large' ? styles.large : styles.body}>
+                  {children}
+                </View>
+              </SheetDragContext.Provider>
+            </SheetScrollContext.Provider>
           )}
           {actions ? (
             <View className="flex-row gap-2 pt-5">{actions}</View>

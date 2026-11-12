@@ -11,7 +11,6 @@ import {
 import {
   ActivityIndicator,
   Keyboard,
-  ScrollView,
   View,
   type TextInput,
 } from 'react-native';
@@ -33,7 +32,12 @@ import { Button } from '@/components/ui/button';
 import { IconSymbol, type IconSymbolName } from '@/components/ui/icon-symbol';
 import { Press } from '@/components/ui/press';
 import { SearchField } from '@/components/ui/search-field';
-import { Sheet, type SheetFrameProps } from '@/components/ui/sheet/sheet';
+import {
+  Sheet,
+  SheetDragArea,
+  SheetScrollView,
+  type SheetFrameProps,
+} from '@/components/ui/sheet/sheet';
 import { Text } from '@/components/ui/text';
 import { TintBubble } from '@/components/ui/transaction-row';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
@@ -549,7 +553,7 @@ export function PlaceSheet({ request, onPick, ...frame }: PlaceSheetProps) {
             </View>
           </View>
         </Animated.View>
-        <Animated.View
+        <SheetDragArea
           className="flex-1 bg-canvas"
           style={[{ zIndex: 1 }, panelStyle]}
         >
@@ -567,7 +571,7 @@ export function PlaceSheet({ request, onPick, ...frame }: PlaceSheetProps) {
               setQuery(text);
             }}
           />
-          <ScrollView
+          <SheetScrollView
             className="mt-3 flex-1"
             keyboardShouldPersistTaps="handled"
           >
@@ -639,8 +643,8 @@ export function PlaceSheet({ request, onPick, ...frame }: PlaceSheetProps) {
                 </Text>
               </Animated.View>
             ) : null}
-          </ScrollView>
-        </Animated.View>
+          </SheetScrollView>
+        </SheetDragArea>
       </View>
     </Sheet>
   );
