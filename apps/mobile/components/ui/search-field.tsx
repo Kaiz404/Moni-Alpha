@@ -1,3 +1,4 @@
+import type { Ref } from 'react';
 import { TextInput, View } from 'react-native';
 
 import { IconSymbol } from '@/components/ui/icon-symbol';
@@ -17,6 +18,9 @@ export function SearchField({
   value,
   onChangeText,
   compact = false,
+  inputRef,
+  onFocus,
+  onBlur,
 }: {
   testID: TestId;
   accessibilityLabel: string;
@@ -24,6 +28,9 @@ export function SearchField({
   value: string;
   onChangeText: (text: string) => void;
   compact?: boolean;
+  inputRef?: Ref<TextInput>;
+  onFocus?: () => void;
+  onBlur?: () => void;
 }) {
   const tokens = useThemeTokens();
   return (
@@ -36,7 +43,10 @@ export function SearchField({
         color={tokens.muted}
       />
       <TextInput
+        ref={inputRef}
         testID={testID}
+        onFocus={onFocus}
+        onBlur={onBlur}
         accessibilityLabel={accessibilityLabel}
         placeholder={placeholder}
         placeholderTextColor={tokens.muted}

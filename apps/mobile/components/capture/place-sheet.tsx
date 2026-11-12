@@ -1,8 +1,20 @@
 import { useValue } from '@legendapp/state/react';
 import { randomUUID } from 'expo-crypto';
 import * as Location from 'expo-location';
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Keyboard, ScrollView, View } from 'react-native';
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type RefObject,
+} from 'react';
+import {
+  ActivityIndicator,
+  Keyboard,
+  ScrollView,
+  View,
+  type TextInput,
+} from 'react-native';
 import MapView, { PROVIDER_GOOGLE, type Region } from 'react-native-maps';
 import Animated, {
   FadeIn,
@@ -125,17 +137,18 @@ function useGoogleSearch(
   return { google: search, sessionToken };
 }
 
-function useKeyboardUp(): boolean {
-  const [up, setUp] = useState(false);
+/** Whether the search field is in use. Back hides the keyboard but leaves the field focused, so a hidden keyboard ends it too. */
+function useSearchFocus(input: RefObject<TextInput | null>) {
+  const [focused, setFocused] = useState(false);
   useEffect(() => {
-    const show = Keyboard.addListener('keyboardDidShow', () => setUp(true));
-    const hide = Keyboard.addListener('keyboardDidHide', () => setUp(false));
-    return () => {
-      show.remove();
-      hide.remove();
-    };
-  }, []);
-  return up;
+    const hide = Keyboard.addListener('keyboardDidHide', () => input.current?.blur());
+    return () => hide.remove();
+  }, [input]);
+  const leave = () => {
+    input.current?.blur();
+    Keyboard.dismiss();
+  };
+  return { focused, setFocused, leave };
 }
 
 const ROW_IN = FadeIn.duration(180);
@@ -242,10 +255,11 @@ type PlaceSheetProps = SheetFrameProps & {
 };
 
 /**
- * The Location field's sheet: search on top, a map under a fixed centre pin, then a list. With
- * no query the list is "Near you", the user's own places around the map's centre. Typing lists
- * the user's places, then Google's, and folds the map away while the keyboard is up. A row picks
- * and closes in one tap; a shop tapped on the map, or a panned pin, waits for Use this place.
+ * The Location field's sheet: a map under a fixed centre pin, the picked place, search, then a
+ * list. With no query the list is "Near you", the user's own places around the map's centre.
+ * Typing lists the user's places, then Google's; the map folds away while search is in use. A
+ * row, a shop tapped on the map, or a panned pin selects that place and moves the map to it;
+ * only Confirm saves it.
  * Only the header drags the sheet, so the map keeps every gesture.
  */
 export function PlaceSheet({ request, onPick, ...frame }: PlaceSheetProps) {
@@ -256,7 +270,8 @@ export function PlaceSheet({ request, onPick, ...frame }: PlaceSheetProps) {
   const mapRef = useRef<MapView>(null);
   const naming = useRef(0);
   const [query, setQuery] = useState('');
-  const keyboardUp = useKeyboardUp();
+  const searchInput = useRef<TextInput>(null);
+  const search = useSearchFocus(searchInput);
   const [opening, setOpening] = useState<string | null>(null);
   const [failed, setFailed] = useState<string | null>(null);
   const [spot, setSpot] = useState<Spot | null>(() =>
@@ -279,7 +294,7 @@ export function PlaceSheet({ request, onPick, ...frame }: PlaceSheetProps) {
   const rows: PlaceRow[] = searching
     ? searchRows({ own, google, addresses })
     : near.map((option) => ({ kind: 'own', option }));
-  const folded = hasMap ? searching && keyboardUp : false;
+  const folded = hasMap ? search.focused : false;
   const showsGoogle = rows.some((row) => row.kind === 'google');
 
   const mapHeight = useSharedValue(MAP_BLOCK_H);
@@ -293,19 +308,24 @@ export function PlaceSheet({ request, onPick, ...frame }: PlaceSheetProps) {
 
   const moveTo = (at: LatLng) => mapRef.current?.animateToRegion(regionAt(at), 300);
 
-  const pickOption = (option: PlaceOption) => {
+  /** A list row or a map shop: it becomes the selected place, and the map shows it. */
+  const select = (next: Spot) => {
     scrubStep();
-    onPick({
-      kind: 'chosen',
-      place: {
-        latitude: option.latitude,
-        longitude: option.longitude,
-        name: option.shop ?? option.title,
-        coords: option.coords,
-      },
-      shop: option.shop,
-    });
+    naming.current += 1;
+    search.leave();
+    setSpot(next);
+    moveTo(next);
   };
+
+  const pickOption = (option: PlaceOption) =>
+    select({
+      latitude: option.latitude,
+      longitude: option.longitude,
+      name: option.shop ?? option.title,
+      shop: option.shop,
+      naming: false,
+      coords: option.coords,
+    });
 
   const pickPrediction = async (prediction: PlacePrediction) => {
     setOpening(prediction.placeId);
@@ -319,20 +339,17 @@ export function PlaceSheet({ request, onPick, ...frame }: PlaceSheetProps) {
       setFailed(prediction.placeId);
       return;
     }
-    scrubStep();
-    onPick({
-      kind: 'chosen',
-      place: {
-        latitude: result.place.latitude,
-        longitude: result.place.longitude,
-        name: prediction.primaryText,
-        coords: {
-          source: 'google',
-          placeId: result.place.placeId,
-          fetchedAt: new Date().toISOString(),
-        },
-      },
+    select({
+      latitude: result.place.latitude,
+      longitude: result.place.longitude,
+      name: prediction.primaryText,
       shop: prediction.primaryText,
+      naming: false,
+      coords: {
+        source: 'google',
+        placeId: result.place.placeId,
+        fetchedAt: new Date().toISOString(),
+      },
     });
   };
 
@@ -393,11 +410,11 @@ export function PlaceSheet({ request, onPick, ...frame }: PlaceSheetProps) {
             onPress={() => onPick({ kind: 'off' })}
           />
           <Button
-            testID={tid('sheet', 'place', 'use')}
+            testID={tid('sheet', 'place', 'confirm')}
             className="flex-[3]"
             pinned
             icon="check"
-            label="Use this place"
+            label="Confirm"
             disabled={!spot}
             onPress={() =>
               spot &&
@@ -417,23 +434,13 @@ export function PlaceSheet({ request, onPick, ...frame }: PlaceSheetProps) {
       }
     >
       <View className="flex-1">
-        <SearchField
-          testID={tid('sheet', 'place', 'search')}
-          accessibilityLabel="Search places"
-          placeholder="Search a shop or address"
-          value={query}
-          onChangeText={(text) => {
-            setFailed(null);
-            setQuery(text);
-          }}
-        />
         <Animated.View
           style={[{ overflow: 'hidden' }, mapBlockStyle]}
           pointerEvents={folded ? 'none' : 'auto'}
         >
           <View
             className="overflow-hidden rounded-card bg-sand"
-            style={{ height: MAP_H, marginTop: GAP }}
+            style={{ height: MAP_H }}
           >
             {hasMap ? (
               <MapView
@@ -449,18 +456,13 @@ export function PlaceSheet({ request, onPick, ...frame }: PlaceSheetProps) {
                 onPoiClick={(event) => {
                   const { name, coordinate, placeId } = event.nativeEvent;
                   const shop = name.replace(/\s*\n\s*/g, ' ').trim() || null;
-                  scrubStep();
-                  naming.current += 1;
-                  Keyboard.dismiss();
-                  setQuery('');
-                  setSpot({
+                  select({
                     ...coordinate,
                     name: shop,
                     shop,
                     naming: false,
                     coords: { source: 'google', placeId, fetchedAt: new Date().toISOString() },
                   });
-                  moveTo(coordinate);
                 }}
                 onRegionChangeComplete={(region, details) => {
                   if (details?.isGesture)
@@ -550,6 +552,19 @@ export function PlaceSheet({ request, onPick, ...frame }: PlaceSheetProps) {
             </View>
           </View>
         </Animated.View>
+        <SearchField
+          testID={tid('sheet', 'place', 'search')}
+          accessibilityLabel="Search places"
+          placeholder="Search a shop or address"
+          inputRef={searchInput}
+          onFocus={() => search.setFocused(true)}
+          onBlur={() => search.setFocused(false)}
+          value={query}
+          onChangeText={(text) => {
+            setFailed(null);
+            setQuery(text);
+          }}
+        />
         <ScrollView
           className="mt-3 flex-1"
           keyboardShouldPersistTaps="handled"

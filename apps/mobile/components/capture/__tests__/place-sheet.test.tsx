@@ -104,6 +104,9 @@ describe('the place sheet', () => {
     expect(screen.getByLabelText('Mamak Ali, 120 m · 1 visit')).toBeTruthy();
     expect(mockClient.autocomplete).not.toHaveBeenCalled();
     fireEvent.press(screen.getByLabelText('Mamak Ali, 120 m · 1 visit'));
+    expect(screen.getByTestId('sheet.place.name').props.children).toBe('Mamak Ali');
+    expect(screen.getByText('Choose a place')).toBeTruthy();
+    fireEvent.press(screen.getByTestId('sheet.place.confirm'));
     await expect(answer).resolves.toEqual({
       kind: 'chosen',
       place: {
@@ -116,7 +119,7 @@ describe('the place sheet', () => {
     });
   });
 
-  it('picks a Google place in one tap, and hides a 0 m distance', async () => {
+  it('selects a Google place, shows it on the map, and saves it on Confirm, hiding a 0 m distance', async () => {
     await openPlaceSheet();
     await type('jaya');
     expect(mockClient.autocomplete).toHaveBeenCalledWith(
@@ -129,6 +132,10 @@ describe('the place sheet', () => {
     );
     const row = await screen.findByLabelText('Jaya Grocer, Bangsar Village');
     fireEvent.press(row);
+    await waitFor(() =>
+      expect(screen.getByTestId('sheet.place.name').props.children).toBe('Jaya Grocer'),
+    );
+    fireEvent.press(screen.getByTestId('sheet.place.confirm'));
     const pick = await answer;
     expect(mockClient.details).toHaveBeenCalledWith({ placeId: 'p-jaya', sessionToken: 'session-1' });
     expect(pick).toEqual({
@@ -154,7 +161,7 @@ describe('the place sheet', () => {
     expect(screen.getByText('Choose a place')).toBeTruthy();
   });
 
-  it('goes to the phone from the my-location button, asking once, then waits for Use this place', async () => {
+  it('goes to the phone from the my-location button, asking once, then waits for Confirm', async () => {
     mockRequest.mockResolvedValue({ granted: true });
     jest.mocked(Location.getCurrentPositionAsync).mockResolvedValue({
       coords: { latitude: 3.14, longitude: 101.68 },
@@ -165,7 +172,7 @@ describe('the place sheet', () => {
     });
     expect(mockRequest).toHaveBeenCalledTimes(1);
     expect(await screen.findByText('Jalan Telawi 5')).toBeTruthy();
-    fireEvent.press(screen.getByTestId('sheet.place.use'));
+    fireEvent.press(screen.getByTestId('sheet.place.confirm'));
     await expect(answer).resolves.toEqual({
       kind: 'chosen',
       place: {

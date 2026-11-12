@@ -30,6 +30,15 @@ tags:
 - tapOn:
     id: sheet.place.result.mock-village-park
 - extendedWaitUntil:
+    visible:
+      id: sheet.place.name
+      text: Village Park Restaurant
+    timeout: 5000
+- assertVisible:
+    id: sheet.place.map
+- tapOn:
+    id: sheet.place.confirm
+- extendedWaitUntil:
     notVisible: Choose a place
     timeout: 5000
 - assertVisible: Village Park Restaurant

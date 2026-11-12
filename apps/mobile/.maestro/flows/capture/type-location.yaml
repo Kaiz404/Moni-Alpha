@@ -34,17 +34,17 @@ tags:
 - assertVisible:
     id: sheet.place.my-location
 - assertVisible:
-    id: sheet.place.use
+    id: sheet.place.confirm
 - takeScreenshot: y4-location-sheet
 - tapOn:
     id: sheet.place.off
 - assertVisible: Not saved
 - takeScreenshot: y4-location-off
 
-# Use this place puts the spot back.
+# Confirm puts the spot back.
 - tapOn:
     id: capture.location
 - tapOn:
-    id: sheet.place.use
+    id: sheet.place.confirm
 - assertNotVisible: Not saved
 - pressKey: Back
