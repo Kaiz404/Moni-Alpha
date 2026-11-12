@@ -1,4 +1,7 @@
-# H1 Home scrub: drag across the Pace chart; the callout follows a day.
+# H1 Home scrub: the spent chart shows only its marks at rest, and a drag or a tap leaves nothing
+# behind once the finger lifts. Maestro cannot hold a finger and assert at once, so what the
+# callout reads under the finger, its snapping and its haptics live in Jest
+# (components/home/__tests__/spent-card.test.tsx).
 # Run: scripts/device/run-flows.sh .maestro/flows/home/home-scrub.yaml
 appId: com.anonymous.moni.e2e
 name: H1 Home scrub
@@ -11,24 +14,19 @@ tags:
     visible:
       id: home.chart.plot
     timeout: 15000
-- assertVisible:
+- assertNotVisible:
     id: home.chart.callout
-- assertVisible: By today
+- assertNotVisible: By today
 - swipe:
     from:
       id: home.chart.plot
     direction: LEFT
     duration: 1200
-- assertVisible:
+- assertNotVisible:
     id: home.chart.callout
-# The callout always shows a day. Only leaving "By today" proves the chart took the drag.
-- assertNotVisible: By today
-- assertVisible:
-    text: 'By (Mon|Tue|Wed|Thu|Fri|Sat|Sun) \d{1,2} (Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)'
-- takeScreenshot: h1-l5-scrub
+- takeScreenshot: h1-l5-scrub-released
 - tapOn:
     id: home.chart.plot
     point: 20%,50%
-- assertNotVisible: By today
-- assertVisible:
-    text: 'By (Mon|Tue|Wed|Thu|Fri|Sat|Sun) \d{1,2} (Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)'
+- assertNotVisible:
+    id: home.chart.callout

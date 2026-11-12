@@ -15,6 +15,8 @@ export type BalanceIndex = {
   total: Float64Array;
   /** NaN before the wallet began, so no line is drawn for days it did not exist. */
   byWallet: Record<string, Float64Array>;
+  /** 1 on each day a transaction moved a wallet's balance. */
+  changed: Uint8Array;
 };
 
 /**
@@ -62,11 +64,15 @@ export function balanceIndex({
   const origin = dayNumber(firstDay);
   const days = dayNumber(today) - origin + 1;
   const total = new Float64Array(days);
+  const changed = new Uint8Array(days);
   const byWallet: BalanceIndex['byWallet'] = {};
   for (const wallet of wallets) {
     const values = new Float64Array(days).fill(NaN);
     const byDay = new Float64Array(days);
-    for (const [day, delta] of changes.get(wallet.id)!) byDay[dayNumber(day) - origin] = delta;
+    for (const [day, delta] of changes.get(wallet.id)!) {
+      byDay[dayNumber(day) - origin] = delta;
+      changed[dayNumber(day) - origin] = 1;
+    }
     const begin = dayNumber(began.get(wallet.id)!) - origin;
     let closing = wallet.balanceMinor - afterToday.get(wallet.id)!;
     for (let day = days - 1; day >= begin; day--) {
@@ -76,7 +82,7 @@ export function balanceIndex({
     }
     byWallet[wallet.id] = values;
   }
-  return { firstDay, days, total, byWallet };
+  return { firstDay, days, total, byWallet, changed };
 }
 
 /**

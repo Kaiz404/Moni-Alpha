@@ -7,6 +7,7 @@ import { balanceViewport, type BalanceIndex } from '@/lib/finance/balance-histor
 import { dateAt, type ChartRange } from '@/lib/finance/chart-range';
 import { chartTicks } from '@/lib/finance/chart-ticks';
 import { formatMoney } from '@/lib/finance/format-money';
+import { scrubPoints, type ScrubPoints } from '@/components/charts/scrub';
 import type { AxisRow, TickMark } from '@/components/charts/zoom-axes';
 
 export type NetWorthView = 'total' | 'by-wallet';
@@ -24,8 +25,8 @@ export type NetWorthTarget = {
   high: number;
   axis: AxisRow[];
   ticks: TickMark[];
-  /** Days a scrub steps through. */
-  count: number;
+  /** Where a scrub lands; each reads a day. */
+  points: ScrubPoints;
   accessibilityLabel: string;
 };
 
@@ -56,6 +57,13 @@ export function walletLineStyles(
 function spanDate(date: Date, long: boolean): string {
   const month = MONTHS[date.getMonth()];
   return long ? `${month} ${date.getFullYear()}` : `${date.getDate()} ${month}`;
+}
+
+/** Each day in the range on which a transaction moved a balance, and today. */
+export function netWorthScrubPoints(index: BalanceIndex, from: number, to: number): ScrubPoints {
+  const pairs: [number, number][] = [];
+  for (let day = from; day <= to; day++) if (day === to || index.changed[day]) pairs.push([day, day]);
+  return scrubPoints(pairs);
 }
 
 /**
@@ -122,7 +130,7 @@ export function netWorthTarget({
       u: tick.day,
       label: tick.label,
     })),
-    count,
+    points: netWorthScrubPoints(index, from, to),
     accessibilityLabel:
       floor === 0 ? reading : `${reading} The axis starts at ${axisMoney(floor)}, not zero.`,
   };

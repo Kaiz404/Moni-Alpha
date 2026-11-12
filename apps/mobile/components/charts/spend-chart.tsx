@@ -1,6 +1,6 @@
 import { memo, useEffect, useMemo, useRef, useState } from 'react';
 import { View } from 'react-native';
-import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import { GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   FadeIn,
   FadeOut,
@@ -15,14 +15,12 @@ import Animated, {
   type SharedValue,
 } from 'react-native-reanimated';
 import Svg, { Circle, Line, Path, Rect } from 'react-native-svg';
-import { scheduleOnRN } from 'react-native-worklets';
 
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Text } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import type { ChartRange } from '@/lib/finance/chart-range';
 import type { SpendBuckets, SpendIndex } from '@/lib/finance/spend-history';
-import { chartStep } from '@/lib/haptics';
 import { springs } from '@/lib/motion/tokens';
 import { tid, type Screen } from '@/lib/test-ids';
 
@@ -45,6 +43,7 @@ import {
   type SpendMonth,
   type SpendTarget,
 } from './spend-geometry';
+import { Tip, useChartScrub } from './scrub';
 import {
   areaPath,
   barBox,
@@ -53,7 +52,6 @@ import {
   frameFor,
   growAt,
   linePath,
-  uAt,
   useZoom,
   xAt,
   yAt,
@@ -76,8 +74,6 @@ const MODE_OUT = FadeOut.duration(180);
 /** A bar set whose unit changed fades out while the new set grows. */
 const BARS_OUT = FadeOut.duration(120);
 const MONTH_FADE = { duration: 150 };
-/** The selection appears for the last part of the draw-in, once the line has nearly reached it. */
-const SELECTION_FADE_FROM = 0.6;
 
 function clamp01(value: number): number {
   'worklet';
@@ -127,60 +123,26 @@ export function SpendChart({
     oneMonth.set(withTiming(target.oneMonth ? 1 : 0, MONTH_FADE));
   }, [target.oneMonth, oneMonth]);
 
+  // A finger's pick shows the tooltip until it lifts; a screen reader's only moves the spoken value.
   const key = `${range}:${mode}`;
-  const last = target.count - 1;
-  const [pick, setPick] = useState<{ key: string; step: number } | null>(null);
-  const selected = pick?.key === key ? Math.min(pick.step, last) : last;
-  const step = useSharedValue(selected);
-  useEffect(() => {
-    step.set(selected);
-  }, [selected, step]);
-
-  const onPick = (next: number) => {
-    setPick({ key, step: next });
-    chartStep(target.count);
+  const [pick, setPick] = useState<{ key: string; id: number; by: 'finger' | 'reader' } | null>(null);
+  const { points, buckets } = target;
+  const current = pick?.key === key ? pick : null;
+  const selected = current?.id ?? points.ids[points.ids.length - 1]!;
+  const held = current?.by === 'finger';
+  const { gesture, point, shown } = useChartScrub({
+    testID: tid(screen, 'chart'),
+    points,
+    zoom,
+    frame,
+    onPoint: (id) => setPick(id === null ? null : { key, id, by: 'finger' }),
+  });
+  const nudge = (by: number) => {
+    const next = points.ids.indexOf(selected) + by;
+    if (next >= 0 && next < points.ids.length) setPick({ key, id: points.ids[next]!, by: 'reader' });
   };
-  const select = (next: number) => {
-    if (next === selected || next < 0 || next > last) return;
-    step.set(next);
-    onPick(next);
-  };
 
-  const { from, to } = zoom;
-  const { firstDay, buckets } = target;
   const daily = mode === 'daily';
-  const gesture = useMemo(() => {
-    const pick = (x: number) => {
-      'worklet';
-      const u = uAt(x, from.get(), to.get(), frame);
-      let next: number;
-      if (daily) {
-        let low = buckets.first;
-        let high = buckets.starts.length - 1;
-        while (low < high) {
-          const middle = Math.ceil((low + high) / 2);
-          if (buckets.starts[middle]! <= u) low = middle;
-          else high = middle - 1;
-        }
-        next = low - buckets.first;
-      } else {
-        next = Math.round(u - 1 - firstDay);
-      }
-      next = Math.max(0, Math.min(last, next));
-      if (next === step.get()) return;
-      step.set(next);
-      scheduleOnRN(onPick, next);
-    };
-    const tap = Gesture.Tap().onEnd((event) => pick(event.x));
-    const pan = Gesture.Pan()
-      .activeOffsetX([-6, 6])
-      .failOffsetY([-12, 12])
-      .onUpdate((event) => pick(event.x));
-    return Gesture.Exclusive(pan, tap);
-    // onPick only closes over the key and the count, both listed through the target.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [from, to, frame, daily, buckets, firstDay, last, step, key]);
-
   const reading = spendReading(index, target, selected, currency);
 
   return (
@@ -192,14 +154,16 @@ export function SpendChart({
         style={{ height: PLOT_HEIGHT }}
         onLayout={(event) => setWidth(Math.round(event.nativeEvent.layout.width))}
       >
-        {daily ? (
-          <Band
-            target={target}
-            cumulative={index.cumulative}
-            step={step}
-            zoom={zoom}
-            frame={frame}
-          />
+        {daily && held ? (
+          <Tip shown={shown}>
+            <Band
+              target={target}
+              cumulative={index.cumulative}
+              point={point}
+              zoom={zoom}
+              frame={frame}
+            />
+          </Tip>
         ) : null}
         <LayoutAnimationConfig skipEntering>
           <Animated.View
@@ -274,18 +238,22 @@ export function SpendChart({
             />
           ) : null}
         </LayoutAnimationConfig>
-        <Selection
-          screen={screen}
-          target={target}
-          cumulative={index.cumulative}
-          step={step}
-          zoom={zoom}
-          frame={frame}
-          width={width}
-          tokens={tokens}
-          date={reading.date}
-          value={reading.value}
-        />
+        {held ? (
+          <Tip shown={shown}>
+            <Selection
+              screen={screen}
+              target={target}
+              cumulative={index.cumulative}
+              point={point}
+              zoom={zoom}
+              frame={frame}
+              width={width}
+              tokens={tokens}
+              date={reading.date}
+              value={reading.value}
+            />
+          </Tip>
+        ) : null}
         <GestureDetector gesture={gesture}>
           <View
             testID={tid(screen, 'chart', 'plot')}
@@ -295,7 +263,7 @@ export function SpendChart({
             accessibilityValue={{ text: reading.accessibilityLabel }}
             accessibilityActions={[{ name: 'increment' }, { name: 'decrement' }]}
             onAccessibilityAction={(event) =>
-              select(selected + (event.nativeEvent.actionName === 'increment' ? 1 : -1))
+              nudge(event.nativeEvent.actionName === 'increment' ? 1 : -1)
             }
             className="absolute inset-0"
           />
@@ -651,37 +619,41 @@ function BarSet({
   );
 }
 
-/** Where the selected point or bar is, from the live viewport, so the selection rides the zoom. */
-function useAnchor(target: SpendTarget, cumulative: Float64Array, step: SharedValue<number>, zoom: Zoom, frame: Frame) {
-  const { mode, firstDay, buckets } = target;
+/** Where the scrubbed point or bar is, from the live viewport, so the tooltip rides the zoom. */
+function useAnchor(target: SpendTarget, cumulative: Float64Array, point: SharedValue<number>, zoom: Zoom, frame: Frame) {
+  const {
+    mode,
+    buckets,
+    points: { at, ids },
+  } = target;
   const { from, to, high, shift } = zoom;
   return useDerivedValue(() => {
     const [f, t] = [from.get(), to.get()];
+    const index = Math.min(point.get(), ids.length - 1);
+    const id = ids[index]!;
     if (mode === 'daily') {
-      const bucket = buckets.first + step.get();
-      const { centre } = barBox(buckets.starts[bucket]!, buckets.ends[bucket]!, f, t, frame);
-      return { x: centre, y: barTop(buckets.values[bucket]!, high.get(), frame, 1) };
+      const { centre } = barBox(buckets.starts[id]!, buckets.ends[id]!, f, t, frame);
+      return { x: centre, y: barTop(buckets.values[id]!, high.get(), frame, 1) };
     }
-    const u = firstDay + step.get() + 1;
-    return { x: xAt(u, f, t, frame), y: yAt(cumulative[u]! - shift.get(), 0, high.get(), frame) };
+    return { x: xAt(at[index]!, f, t, frame), y: yAt(cumulative[id + 1]! - shift.get(), 0, high.get(), frame) };
   });
 }
 
-/** Daily: the Sand light band behind the selected bar. */
+/** Daily: the Sand light band behind the scrubbed bar. */
 function Band({
   target,
   cumulative,
-  step,
+  point,
   zoom,
   frame,
 }: {
   target: SpendTarget;
   cumulative: Float64Array;
-  step: SharedValue<number>;
+  point: SharedValue<number>;
   zoom: Zoom;
   frame: Frame;
 }) {
-  const anchor = useAnchor(target, cumulative, step, zoom, frame);
+  const anchor = useAnchor(target, cumulative, point, zoom, frame);
   const place = useAnimatedStyle(() => ({ transform: [{ translateX: anchor.get().x - 15 }] }));
   return (
     <Animated.View
@@ -692,12 +664,15 @@ function Band({
   );
 }
 
-/** Guide, dot and callout move on the UI thread from `step`. Only the callout's words wait for React. */
+/**
+ * The tooltip, mounted only while a finger scrubs. Guide, dot and callout move on the UI thread
+ * from `point`; only the callout's words wait for React.
+ */
 function Selection({
   screen,
   target,
   cumulative,
-  step,
+  point,
   zoom,
   frame,
   width,
@@ -708,7 +683,7 @@ function Selection({
   screen: Screen;
   target: SpendTarget;
   cumulative: Float64Array;
-  step: SharedValue<number>;
+  point: SharedValue<number>;
   zoom: Zoom;
   frame: Frame;
   width: number;
@@ -716,12 +691,8 @@ function Selection({
   date: string;
   value: string;
 }) {
-  const anchor = useAnchor(target, cumulative, step, zoom, frame);
-  const { reveal, fade } = zoom;
+  const anchor = useAnchor(target, cumulative, point, zoom, frame);
   const daily = target.mode === 'daily';
-  const shown = useAnimatedStyle(() => ({
-    opacity: fade.get() * clamp01((reveal.get() - SELECTION_FADE_FROM) / (1 - SELECTION_FADE_FROM)),
-  }));
   const guide = useAnimatedStyle(() => ({
     height: Math.max(0, anchor.get().y - GUIDE_TOP - (daily ? 1 : 0)),
     transform: [{ translateX: anchor.get().x - 0.75 }],
@@ -737,7 +708,6 @@ function Selection({
     <Animated.View
       pointerEvents="none"
       className="absolute inset-0"
-      style={shown}
     >
       <Animated.View
         className="absolute left-0 border-l-[1.5px] border-dashed border-foreground"

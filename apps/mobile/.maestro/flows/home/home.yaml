@@ -12,7 +12,8 @@ tags:
     id: home.ask-moni
 - assertVisible:
     id: home.net-worth.amount
-- assertVisible:
+# At rest a chart shows only its marks; the callout shows only under a finger (Jest covers the scrub).
+- assertNotVisible:
     id: home.chart.callout
 - assertVisible:
     id: home.chart.pace
@@ -49,29 +50,30 @@ tags:
 - assertVisible: Wallets
 - takeScreenshot: h1-l3-wallets
 
-# The net worth chart: range chips, one line per wallet, and a scrub that reads a past day.
+# The net worth chart: range chips and one line per wallet, with no callout at rest.
 - assertVisible:
     id: wallet.chart.plot
 - tapOn:
     id: wallet.chart.30d
-- assertVisible:
+- assertNotVisible:
     id: wallet.chart.callout
 - tapOn:
     id: wallet.chart.90d
-- assertVisible:
+- assertNotVisible:
     id: wallet.chart.callout
 - tapOn:
     id: wallet.chart.by-wallet
 - assertVisible:
     id: wallet.chart.key
 - takeScreenshot: h1-l3-wallets-by-wallet
+# A scrub leaves nothing behind once the finger lifts.
 - swipe:
     from:
       id: wallet.chart.plot
     direction: LEFT
     duration: 1200
-- assertVisible:
-    text: '(Mon|Tue|Wed|Thu|Fri|Sat|Sun) \d{1,2} (Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)( \d{4})?'
+- assertNotVisible:
+    id: wallet.chart.callout
 - tapOn:
     id: wallet.chart.total
 - assertNotVisible:

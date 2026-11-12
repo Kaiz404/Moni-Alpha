@@ -4,6 +4,7 @@ import { formatMoney } from '@/lib/finance/format-money';
 import { spendBuckets, type SpendBuckets, type SpendIndex } from '@/lib/finance/spend-history';
 
 import { MONTHS, niceCeil, type PaceChartMode } from './pace-geometry';
+import { scrubPoints, type ScrubPoints } from './scrub';
 import type { AxisRow, TickMark } from './zoom-axes';
 
 export const SPEND_TOP = 44;
@@ -36,13 +37,12 @@ export type SpendTarget = {
   high: number;
   /** Spent before the range starts; the line reads what was spent since. */
   shift: number;
-  /** Pace: the first and last day a scrub can pick. */
-  firstDay: number;
+  /** Today, which Pace's callout reads as "By today". */
   lastDay: number;
-  /** Daily: the bars, of which `buckets.first` to the last can be picked. */
+  /** Daily: the bars, of which `buckets.first` to the last are in the range. */
   buckets: SpendBuckets;
-  /** How many points or bars a scrub steps through. */
-  count: number;
+  /** Where a scrub lands: Pace reads a day, Daily a bucket. */
+  points: ScrubPoints;
   rows: AxisRow[];
   ticks: TickMark[];
   todayU: number;
@@ -111,6 +111,24 @@ export function monthMarks(index: SpendIndex, now: Date, month: SpendMonth): Mon
   };
 }
 
+/** Pace: the range start, each day with spending, and today, each at its day's end. */
+export function paceScrubPoints(spent: Float64Array, from: number, today: number): ScrubPoints {
+  const pairs: [number, number][] = [];
+  for (let day = from; day <= today; day++)
+    if (day === from || day === today || spent[day] !== 0) pairs.push([day + 1, day]);
+  return scrubPoints(pairs);
+}
+
+/** Daily: each bar in the range with spending, and today's, at the bar's centre. */
+export function barScrubPoints({ starts, ends, values, first }: SpendBuckets): ScrubPoints {
+  const last = values.length - 1;
+  const pairs: [number, number][] = [];
+  for (let bucket = first; bucket <= last; bucket++)
+    if (bucket === last || values[bucket] !== 0)
+      pairs.push([(starts[bucket]! + ends[bucket]! + 1) / 2, bucket]);
+  return scrubPoints(pairs);
+}
+
 /** Drops a label that would repeat the base's, as RM0 does twice when nothing was spent. */
 function rows(top: AxisRow[], base: AxisRow): AxisRow[] {
   return [...top.filter((row) => row.text !== base.text), base];
@@ -153,9 +171,9 @@ export function spendTarget({
     from,
     to,
     shift,
-    firstDay: from,
     lastDay: today,
     buckets,
+    points: daily ? barScrubPoints(buckets) : paceScrubPoints(index.spent, from, today),
     ticks,
     todayU: today + (daily ? 0.5 : 1),
   };
@@ -174,7 +192,6 @@ export function spendTarget({
     return {
       ...shared,
       high,
-      count,
       rows: rows([{ y: SPEND_TOP, text: whole(high, currency) }], zero),
       accessibilityLabel: oneMonth
         ? `Daily spending, 1 to ${count} ${month.name}.` +
@@ -200,7 +217,6 @@ export function spendTarget({
   return {
     ...shared,
     high,
-    count: today - from + 1,
     rows: rows(top, zero),
     accessibilityLabel: oneMonth
       ? `Spent so far in ${month.name}, ${money(spent)}` +
@@ -211,26 +227,24 @@ export function spendTarget({
   };
 }
 
-/** The callout and screen-reader value for the `step`th point or bar of a target. */
+/** The callout and screen-reader value for a scrub point's id: a day on Pace, a bucket on Daily. */
 export function spendReading(
   index: SpendIndex,
   target: SpendTarget,
-  step: number,
+  id: number,
   currency: string,
 ): SpendReading {
   const money = (minor: number) => formatMoney(minor, currency);
   if (target.mode === 'daily') {
-    const bucket = target.buckets.first + step;
-    const name = bucketName(index, target.buckets, bucket);
-    const value = money(target.buckets.values[bucket]!);
+    const name = bucketName(index, target.buckets, id);
+    const value = money(target.buckets.values[id]!);
     return { date: name, value, accessibilityLabel: `${name}, ${value} spent` };
   }
-  const day = target.firstDay + step;
-  const date = dateAt(index.firstDay, day);
-  const value = money(index.cumulative[day + 1]! - target.shift);
+  const date = dateAt(index.firstDay, id);
+  const value = money(index.cumulative[id + 1]! - target.shift);
   const named = target.oneMonth ? weekdayDate(date) : shortDate(date);
   return {
-    date: day === target.lastDay ? 'By today' : `By ${named}`,
+    date: id === target.lastDay ? 'By today' : `By ${named}`,
     value,
     accessibilityLabel: `${target.oneMonth ? named : shortDate(date, true)}, ${value} spent so far`,
   };

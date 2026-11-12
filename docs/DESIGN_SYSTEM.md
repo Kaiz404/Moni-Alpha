@@ -426,7 +426,7 @@ Activity chart (v2, `components/charts/activity-chart.tsx`, `V2A-Activity`): a P
 
 v2: `components/charts/pace-chart.tsx` draws the three tokens.md line and bar charts from one `series` of per-day values: `pace` (spent against the budget, with even pace), `daily` (one bar a day, Coral above even pace, today's safe-to-spend segment) and `balance` (closing balance, axis not from zero). One callout, a scrub that snaps per day with `scrubStep`, draw-in once per mode, and no projection line or readout row. On the line charts the first day sits at the plot's left edge and the month end at its right edge; Today and the daily bars' labels centre on their day. The view toggle on every chart card is a compact `Segmented` with fixed 70 segments.
 
-Range charts (Home's spent card, `components/charts/spend-chart.tsx`, and the Wallets net worth card) never redraw on a range change: they index the data once and zoom the x and y axes to the new range on one `value` spring, retargeted mid-flight, with the paths built on the UI thread (`components/charts/zoom.ts`). Bars and date ticks are anchored to their days, so they slide and widen with the zoom; y labels cross-fade on fixed gridlines. The tick scheme per range is in tokens.md Charts.
+Range charts (Home's spent card, `components/charts/spend-chart.tsx`, and the Wallets net worth card) never redraw on a range change: they index the data once and zoom the x and y axes to the new range on one `value` spring, retargeted mid-flight, with the paths built on the UI thread (`components/charts/zoom.ts`). Bars and date ticks are anchored to their days, so they slide and widen with the zoom; y labels cross-fade on fixed gridlines. The tick scheme per range is in tokens.md Charts. At rest they show only their marks; the callout, guide, dot and bar band mount while a finger is down and snap to days with transactions, one `chartStep` tick per point (`components/charts/scrub.tsx`).
 
 ### 7.12 Chat and companion presence
 
@@ -528,7 +528,7 @@ Motion must communicate cause and effect, preserve spatial orientation, and feel
 ### Springs and haptics (v2)
 
 - `lib/motion/tokens.ts` holds the six motion tokens from [`redesign/tokens.md`](redesign/tokens.md): `springs.press`, `value`, `control`, `sheet`, `throw` (mass 1, for `withSpring`) and `drag` (1:1, no spring while held). Flings decide on `projectedPosition(x, v)` against `FLING_COMMIT_THRESHOLD` (40%). Containers may bounce; anything that encodes money uses `value`.
-- `lib/haptics` has one function per moment in the tokens.md haptics table: `keypadTap`, `approve`, `notMine`, `thresholdOn`, `thresholdOff`, `scrubStep`, `toggleOn`, `toggleOff`, `holdCommit`. Android plays the `AndroidHaptics` constant, iOS the table's equivalent. ESLint rejects `expo-haptics` imports under `app/` and `components/`.
+- `lib/haptics` has one function per moment in the tokens.md haptics table: `keypadTap`, `approve`, `notMine`, `thresholdOn`, `thresholdOff`, `scrubStep`, `chartStep`, `toggleOn`, `toggleOff`, `holdCommit`. Android plays the `AndroidHaptics` constant, iOS the table's equivalent. ESLint rejects `expo-haptics` imports under `app/` and `components/`.
 - Fire a haptic on the same frame as the visual, at most once per user action, and never as the only feedback. Pressing the + and choosing from it play none.
 - Continuous AI gradient: slow and low-contrast; never pulse urgently unless an error actually requires attention.
 

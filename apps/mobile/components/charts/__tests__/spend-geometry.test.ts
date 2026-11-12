@@ -48,7 +48,6 @@ describe('spendTarget', () => {
     expect([month.from, month.to, month.todayU]).toEqual([today - 13, today + 1, today + 0.5]);
     expect(month.high).toBe(10000);
     expect(month.ticks.map((tick) => tick.u)).toEqual([today - 12.5, today - 5.5]);
-    expect(month.count).toBe(14);
   });
 
   it('7D zooms to the last seven days and counts from the first of them', () => {
@@ -63,16 +62,46 @@ describe('spendTarget', () => {
   });
 });
 
+describe('scrub points', () => {
+  const points = (range: ChartRange, mode: 'pace' | 'daily') => {
+    const { at, ids } = target(range, mode).points;
+    return { at: Array.from(at), ids: Array.from(ids) };
+  };
+
+  it('Pace lands on the range start, each day with spending, and today, at the end of each day', () => {
+    expect(today).toBe(365);
+    expect(points('1m', 'pace')).toEqual({ ids: [352, 361, 365], at: [353, 362, 366] });
+    expect(points('30d', 'pace')).toEqual({ ids: [336, 341, 361, 365], at: [337, 342, 362, 366] });
+    expect(points('7d', 'pace')).toEqual({ ids: [359, 361, 365], at: [360, 362, 366] });
+  });
+
+  it('Daily lands on each bar with spending and today, at the bar centre', () => {
+    expect(points('1m', 'daily')).toEqual({ ids: [361, 365], at: [361.5, 365.5] });
+    expect(points('90d', 'daily')).toEqual({ ids: [9, 12], at: [342.5, 363] });
+    expect(points('1y', 'daily')).toEqual({ ids: [11, 12], at: [337, 359] });
+  });
+
+  it('counts several spends on one day as one point', () => {
+    const busy = spendIndex({
+      now,
+      currency,
+      transactions: [spend(10, 12, 100), spend(10, 12, 200), spend(10, 12, 300)],
+    });
+    const { ids } = spendTarget({ index: busy, now, range: '7d', mode: 'pace', month: october, currency }).points;
+    expect(Array.from(ids)).toEqual([359, 363, 365]);
+  });
+});
+
 describe('spendReading', () => {
   it('reads the running total since the range start on Pace', () => {
     const month = target('1m', 'pace');
-    expect(spendReading(index, month, 13, currency)).toEqual({
+    expect(spendReading(index, month, today, currency)).toEqual({
       date: 'By today',
       value: 'RM35.00',
       accessibilityLabel: 'Wed 14 Oct, RM35.00 spent so far',
     });
-    expect(spendReading(index, month, 12, currency).date).toBe('By Tue 13 Oct');
-    expect(spendReading(index, target('30d', 'pace'), 0, currency)).toEqual({
+    expect(spendReading(index, month, today - 1, currency).date).toBe('By Tue 13 Oct');
+    expect(spendReading(index, target('30d', 'pace'), today - 29, currency)).toEqual({
       date: 'By 15 Sep',
       value: 'RM0.00',
       accessibilityLabel: '15 Sep 2026, RM0.00 spent so far',
@@ -80,9 +109,8 @@ describe('spendReading', () => {
   });
 
   it('names the bar on Daily', () => {
-    expect(spendReading(index, target('7d', 'daily'), 6, currency).date).toBe('Wed 14 Oct');
-    const year = target('1y', 'daily');
-    expect(spendReading(index, year, year.count - 1, currency)).toEqual({
+    expect(spendReading(index, target('7d', 'daily'), today, currency).date).toBe('Wed 14 Oct');
+    expect(spendReading(index, target('1y', 'daily'), 12, currency)).toEqual({
       date: 'Oct 2026',
       value: 'RM35.00',
       accessibilityLabel: 'Oct 2026, RM35.00 spent',

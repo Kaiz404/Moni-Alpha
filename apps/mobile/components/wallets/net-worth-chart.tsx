@@ -1,6 +1,6 @@
-import { memo, useEffect, useMemo, useState } from 'react';
+import { memo, useMemo, useState } from 'react';
 import { View } from 'react-native';
-import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import { GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   FadeIn,
   FadeOut,
@@ -10,25 +10,24 @@ import Animated, {
   useAnimatedStyle,
   useDerivedValue,
   useReducedMotion,
-  useSharedValue,
+  type DerivedValue,
   type SharedValue,
 } from 'react-native-reanimated';
 import Svg, { Line, Path } from 'react-native-svg';
 import { useUniwind } from 'uniwind';
-import { scheduleOnRN } from 'react-native-worklets';
 
 import { PLOT_HEIGHT, calloutLeft } from '@/components/charts/pace-geometry';
 import {
   areaPath,
   frameFor,
   linePath,
-  uAt,
   useZoom,
   xAt,
   yAt,
   type Frame,
   type Zoom,
 } from '@/components/charts/zoom';
+import { Tip, useChartScrub } from '@/components/charts/scrub';
 import { YLabels, ZoomTicks } from '@/components/charts/zoom-axes';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Segmented } from '@/components/ui/segmented';
@@ -40,7 +39,6 @@ import { balanceIndex } from '@/lib/finance/balance-history';
 import { CHART_RANGES, dateAt, type ChartRange } from '@/lib/finance/chart-range';
 import { formatMoney } from '@/lib/finance/format-money';
 import type { FinanceTransaction, FinanceWallet } from '@/lib/finance/types';
-import { chartStep } from '@/lib/haptics';
 import { springs } from '@/lib/motion/tokens';
 import { tid } from '@/lib/test-ids';
 import { compactWalletNames } from '@/lib/wallets/compact-name';
@@ -57,8 +55,6 @@ import {
 
 const DEFAULT_WIDTH = 314;
 const GUIDE_TOP = 38;
-/** The selection appears for the last part of the draw-in, once the line has nearly reached it. */
-const SELECTION_FADE_FROM = 0.6;
 const VIEW_IN = FadeIn.duration(180);
 const VIEW_OUT = FadeOut.duration(180);
 const VIEWS: readonly { value: NetWorthView; label: string }[] = [
@@ -129,48 +125,23 @@ export function NetWorthChart({
   );
   const frame = useMemo(() => frameFor(width, NET_WORTH_TOP, NET_WORTH_BASE), [width]);
 
-  const { from: first, to: last } = target;
-  const [pick, setPick] = useState<{ range: ChartRange; day: number } | null>(null);
-  const selected = pick?.range === range ? Math.max(first, Math.min(last, pick.day)) : last;
-  const day = useSharedValue(selected);
-  useEffect(() => {
-    day.set(selected);
-  }, [selected, day]);
-
-  const onPick = (next: number) => {
-    setPick({ range, day: next });
-    chartStep(target.count);
+  // A finger's pick shows the tooltip until it lifts; a screen reader's only moves the spoken value.
+  const { to: last, points } = target;
+  const [pick, setPick] = useState<{ range: ChartRange; day: number; by: 'finger' | 'reader' } | null>(null);
+  const current = pick?.range === range ? pick : null;
+  const selected = current?.day ?? last;
+  const held = current?.by === 'finger';
+  const { gesture, point, shown } = useChartScrub({
+    testID: tid('wallet', 'chart'),
+    points,
+    zoom,
+    frame,
+    onPoint: (day) => setPick(day === null ? null : { range, day, by: 'finger' }),
+  });
+  const nudge = (by: number) => {
+    const next = points.ids.indexOf(selected) + by;
+    if (next >= 0 && next < points.ids.length) setPick({ range, day: points.ids[next]!, by: 'reader' });
   };
-  const { from, to, reveal, fade } = zoom;
-  const gesture = useMemo(() => {
-    const pick = (x: number) => {
-      'worklet';
-      const next = Math.max(first, Math.min(last, Math.round(uAt(x, from.get(), to.get(), frame))));
-      if (next === day.get()) return;
-      day.set(next);
-      scheduleOnRN(onPick, next);
-    };
-    const tap = Gesture.Tap().onEnd((event) => pick(event.x));
-    const pan = Gesture.Pan()
-      .activeOffsetX([-6, 6])
-      .failOffsetY([-12, 12])
-      .onUpdate((event) => pick(event.x));
-    return Gesture.Exclusive(pan, tap);
-    // onPick only closes over the range and the day count, both listed through the target.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [first, last, from, to, frame, day, range]);
-
-  const nudge = (next: number) => {
-    if (next < first || next > last) return;
-    day.set(next);
-    onPick(next);
-  };
-
-  const selectionFade = useAnimatedStyle(() => ({
-    opacity:
-      fade.get() *
-      Math.max(0, (reveal.get() - SELECTION_FADE_FROM) / (1 - SELECTION_FADE_FROM)),
-  }));
 
   const ids = useMemo(
     () => (view === 'total' ? ['total'] : Object.keys(names)),
@@ -252,25 +223,24 @@ export function NetWorthChart({
                 rows={target.axis}
                 fit
               />
-              <Animated.View
-                pointerEvents="none"
-                className="absolute inset-0"
-                style={selectionFade}
-              >
-                <Scrub
-                  ids={ids}
-                  series={series}
-                  view={view}
-                  lineStyles={lineStyles}
-                  day={day}
-                  zoom={zoom}
-                  frame={frame}
-                  width={width}
-                  tokens={tokens}
-                  date={dayLabel(toLocalDateInput(dateAt(index.firstDay, selected)), now)}
-                  value={formatMoney(index.total[selected]!, currency)}
-                />
-              </Animated.View>
+              {held ? (
+                <Tip shown={shown}>
+                  <Scrub
+                    ids={ids}
+                    series={series}
+                    view={view}
+                    lineStyles={lineStyles}
+                    point={point}
+                    days={points.ids}
+                    zoom={zoom}
+                    frame={frame}
+                    width={width}
+                    tokens={tokens}
+                    date={dayLabel(toLocalDateInput(dateAt(index.firstDay, selected)), now)}
+                    value={formatMoney(index.total[selected]!, currency)}
+                  />
+                </Tip>
+              ) : null}
               <GestureDetector gesture={gesture}>
                 <View
                   testID={tid('wallet', 'chart', 'plot')}
@@ -282,7 +252,7 @@ export function NetWorthChart({
                   }}
                   accessibilityActions={[{ name: 'increment' }, { name: 'decrement' }]}
                   onAccessibilityAction={(event) =>
-                    nudge(selected + (event.nativeEvent.actionName === 'increment' ? 1 : -1))
+                    nudge(event.nativeEvent.actionName === 'increment' ? 1 : -1)
                   }
                   className="absolute inset-0"
                 />
@@ -467,13 +437,17 @@ function BalanceLine({
   );
 }
 
-/** Guide and dots move on the UI thread from `day` and the live viewport. Only the callout's words wait for React. */
+/**
+ * The tooltip, mounted only while a finger scrubs. Guide and dots move on the UI thread from
+ * `point` and the live viewport; only the callout's words wait for React.
+ */
 function Scrub({
   ids,
   series,
   view,
   lineStyles,
-  day,
+  point,
+  days,
   zoom,
   frame,
   width,
@@ -485,7 +459,9 @@ function Scrub({
   series: readonly Float64Array[];
   view: NetWorthView;
   lineStyles: Record<string, WalletLineStyle>;
-  day: SharedValue<number>;
+  point: SharedValue<number>;
+  /** The day each scrub point reads. */
+  days: Float64Array;
   zoom: Zoom;
   frame: Frame;
   width: number;
@@ -494,6 +470,7 @@ function Scrub({
   value: string;
 }) {
   const { from, to } = zoom;
+  const day = useDerivedValue(() => days[Math.min(point.get(), days.length - 1)]!);
   const guide = useAnimatedStyle(() => ({
     transform: [{ translateX: xAt(day.get(), from.get(), to.get(), frame) }],
   }));
@@ -565,7 +542,7 @@ function Dot({
   size,
 }: {
   values: Float64Array;
-  day: SharedValue<number>;
+  day: DerivedValue<number>;
   zoom: Zoom;
   frame: Frame;
   color: string;

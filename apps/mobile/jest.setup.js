@@ -30,8 +30,11 @@ jest.mock('react-native-mmkv', () => ({
 jest.mock('react-native-worklets', () =>
   require('react-native-worklets/src/mock'),
 );
+// The mock's useSharedValue makes a new value each render; a device keeps one for the component's life.
 jest.mock('react-native-reanimated', () => ({
   ...require('react-native-reanimated/mock'),
+  useSharedValue: (init) =>
+    require('react').useState(() => require('react-native-reanimated/mock').useSharedValue(init))[0],
   useReducedMotion: () => false,
   LayoutAnimationConfig: ({ children }) => children,
 }));

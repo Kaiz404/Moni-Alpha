@@ -6,12 +6,15 @@ import {
   screen,
 } from '@testing-library/react-native';
 
+import { finger } from '@/components/charts/__tests__/scrub-fixture';
 import { NetWorthChart } from '@/components/wallets/net-worth-chart';
 import {
+  netWorthScrubPoints,
   netWorthTarget,
   walletLineStyles,
 } from '@/components/wallets/net-worth-geometry';
 import { balanceIndex } from '@/lib/finance/balance-history';
+import { CHART_RANGES } from '@/lib/finance/chart-range';
 import type {
   FinanceTransaction,
   FinanceWallet,
@@ -48,6 +51,13 @@ const cash = financeWallet({
   createdAt: on(10, 12),
 });
 
+/** Maybank spends RM40 on 10 Oct, and both wallets spend on 12 Oct: two days with changes. */
+const moves = [
+  expense('grab', on(10, 10), { amountMinor: money(4000) }),
+  expense('kopi', on(10, 12), { amountMinor: money(1000) }),
+  expense('nasi', on(10, 12), { walletId: 'cash', amountMinor: money(500) }),
+];
+
 function chart(
   wallets: FinanceWallet[],
   transactions: FinanceTransaction[] = [],
@@ -66,18 +76,17 @@ function chart(
 
 describe('NetWorthChart', () => {
   afterEach(() => jest.useRealTimers());
+  beforeEach(() => jest.clearAllMocks());
 
-  it('shows the live number, thirty days by default, and a total callout on today', () => {
+  it('shows the live number and thirty days by default, with no callout at rest', () => {
     chart([maybank, cash]);
     expect(
       screen.getByTestId('wallet.list.net-worth'),
     ).toHaveTextContent('RM2,500.00');
-    expect(
-      screen.getByTestId('wallet.chart.callout'),
-    ).toHaveTextContent('RM2,500.00');
+    expect(screen.queryByTestId('wallet.chart.callout')).toBeNull();
     for (const monday of ['21 Sep', '28 Sep', '5 Oct', '12 Oct'])
       expect(screen.getByText(monday)).toBeTruthy();
-    expect(screen.getAllByText('Today')).toHaveLength(2);
+    expect(screen.getAllByText('Today')).toHaveLength(1);
     expect(
       screen.getByTestId('wallet.chart.30d').props.accessibilityState
         .selected,
@@ -102,11 +111,41 @@ describe('NetWorthChart', () => {
     expect(screen.getByText('1 Oct')).toHaveTextContent('1 Oct');
   });
 
-  it('keys each wallet by short name and value in By wallet, and reads the scrubbed day', () => {
-    chart(
-      [maybank, cash],
-      [expense('grab', on(10, 14), { amountMinor: money(4000) })],
-    );
+  it('shows the callout while a finger is down, snapping to days a transaction moved a balance', async () => {
+    chart([maybank, cash], moves);
+    const touch = finger('wallet.chart');
+    // 30 days over 256 px: 10 Oct at x 275, 12 Oct at 292, today at 310.
+    await touch.down(270);
+    expect(screen.getByText('Sat 10 Oct')).toBeTruthy();
+    expect(screen.getByTestId('wallet.chart.callout')).toHaveTextContent('RM2,410.00');
+    await touch.drag(270);
+    await touch.move(100);
+    expect(screen.getByText('Sat 10 Oct')).toBeTruthy();
+    await touch.move(300);
+    expect(screen.getByText('Mon 12 Oct')).toBeTruthy();
+    expect(screen.getByTestId('wallet.chart.callout')).toHaveTextContent('RM2,500.00');
+    expect(jest.mocked(chartStep).mock.calls).toEqual([[false], [false]]);
+    await touch.up(300);
+    expect(screen.queryByTestId('wallet.chart.callout')).toBeNull();
+    await touch.down(300);
+    await touch.scroll(300);
+    expect(screen.queryByTestId('wallet.chart.callout')).toBeNull();
+    expect(chartStep).toHaveBeenCalledTimes(3);
+  });
+
+  for (const { value: range } of CHART_RANGES)
+    it(`ticks once on touch and once per new point on ${range}`, async () => {
+      chart([maybank, cash], moves);
+      fireEvent.press(screen.getByTestId(`wallet.chart.${range}`));
+      const touch = finger('wallet.chart');
+      await touch.down(54);
+      await touch.drag(54);
+      await touch.move(310);
+      expect(chartStep).toHaveBeenCalledTimes(2);
+    });
+
+  it('keys each wallet by short name and value in By wallet, and reads the day a screen reader picks', () => {
+    chart([maybank, cash], moves);
     fireEvent.press(screen.getByTestId('wallet.chart.by-wallet'));
 
     expect(
@@ -122,47 +161,31 @@ describe('NetWorthChart', () => {
     );
 
     const back = { nativeEvent: { actionName: 'decrement' } };
-    fireEvent(plot, 'accessibilityAction', back);
-    expect(
-      screen.getByTestId('wallet.chart.key.maybank'),
-    ).toHaveTextContent('MaybankRM2,440.00');
-    expect(
-      screen.getByTestId('wallet.chart.callout'),
-    ).toHaveTextContent('RM2,540.00');
-    expect(
-      screen.getByTestId('wallet.list.net-worth'),
-    ).toHaveTextContent('RM2,500.00');
-
     for (let times = 0; times < 2; times++)
       fireEvent(plot, 'accessibilityAction', back);
+    expect(
+      screen.getByTestId('wallet.chart.key.maybank'),
+    ).toHaveTextContent('MaybankRM2,410.00');
     expect(
       screen.getByTestId('wallet.chart.key.cash'),
     ).toHaveTextContent('CashNot yet');
     expect(plot.props.accessibilityValue.text).toBe(
-      'Sun 11 Oct, Maybank RM2,440.00, Cash not yet',
+      'Sat 10 Oct, Maybank RM2,410.00, Cash not yet',
     );
+    expect(screen.queryByTestId('wallet.chart.callout')).toBeNull();
+    expect(
+      screen.getByTestId('wallet.list.net-worth'),
+    ).toHaveTextContent('RM2,500.00');
   });
 
-  it('reports each day crossed with how many days the chart holds, so the haptic can stay quiet', () => {
-    chart([maybank]);
-    fireEvent.press(screen.getByTestId('wallet.chart.1y'));
-    (chartStep as jest.Mock).mockClear();
-    const plot = screen.getByTestId('wallet.chart.plot');
-    for (let times = 0; times < 2; times++)
-      fireEvent(plot, 'accessibilityAction', {
-        nativeEvent: { actionName: 'decrement' },
-      });
-    expect((chartStep as jest.Mock).mock.calls).toEqual([[366], [366]]);
-  });
-
-  it('returns the callout to today when the range changes', () => {
-    chart([maybank, cash]);
+  it('returns the spoken day to today when the range changes', () => {
+    chart([maybank, cash], moves);
     const plot = screen.getByTestId('wallet.chart.plot');
     fireEvent(plot, 'accessibilityAction', {
       nativeEvent: { actionName: 'decrement' },
     });
     expect(plot.props.accessibilityValue.text).toBe(
-      'Yesterday, RM2,500.00',
+      'Mon 12 Oct, RM2,500.00',
     );
     fireEvent.press(screen.getByTestId('wallet.chart.90d'));
     expect(
@@ -227,9 +250,11 @@ describe('netWorthTarget', () => {
     });
 
   it('runs from the first day of the range to today on the 14th, not to the month end', () => {
-    const { from, to, count } = target('1m');
+    const { from, to, points } = target('1m');
     expect(to).toBe(index.days - 1);
-    expect([to - from, count]).toEqual([13, 14]);
+    expect(to - from).toBe(13);
+    expect(Array.from(points.ids)).toEqual([to - 4, to]);
+    expect(Array.from(points.at)).toEqual([to - 4, to]);
   });
 
   it('starts the axis near the lowest balance and says so', () => {
@@ -246,14 +271,14 @@ describe('netWorthTarget', () => {
   });
 
   it('dates a year by quarter and keeps the last day exact', () => {
-    const { ticks, count, to } = target('1y');
+    const { ticks, from, to } = target('1y');
     expect(ticks.map((tick) => tick.label)).toEqual([
       'Jan 2026',
       'Apr',
       'Jul',
       'Oct',
     ]);
-    expect(count).toBe(366);
+    expect(to - from).toBe(365);
     expect(index.total[to]).toBe(243180);
   });
 
@@ -271,7 +296,8 @@ describe('netWorthTarget', () => {
       names: { maybank: 'Maybank' },
       currency: 'MYR',
     });
-    expect([single.from, single.to, single.count]).toEqual([0, 0, 1]);
+    expect([single.from, single.to]).toEqual([0, 0]);
+    expect(Array.from(single.points.ids)).toEqual([0]);
     expect(single.ticks).toEqual([]);
   });
 
@@ -297,6 +323,24 @@ describe('netWorthTarget', () => {
       5000,
       5000,
     ]);
+  });
+});
+
+describe('netWorthScrubPoints', () => {
+  it('lands once on each day a transaction moved a balance, however many moved it, and on today', () => {
+    const index = balanceIndex({
+      now,
+      wallets: [
+        { id: 'maybank', balanceMinor: 240000, createdAt: old },
+        { id: 'cash', balanceMinor: 10000, createdAt: old },
+      ],
+      transactions: moves,
+    });
+    const today = index.days - 1;
+    const { at, ids } = netWorthScrubPoints(index, today - 29, today);
+    expect(Array.from(ids)).toEqual([today - 4, today - 2, today]);
+    expect(Array.from(at)).toEqual([today - 4, today - 2, today]);
+    expect(Array.from(netWorthScrubPoints(index, today - 3, today).ids)).toEqual([today - 2, today]);
   });
 });
 
