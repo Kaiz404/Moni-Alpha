@@ -10,6 +10,9 @@ export type EntryLocation =
   | { status: 'finding' }
   | { status: 'found'; location: TransactionLocationSnapshot };
 
+/** A geocoder part that is only the "Off" of a Malaysian "Off Jalan …" address, not a name. */
+const CONNECTOR = /^\s*off\s*$/i;
+
 /** The device geocoder's "name, street, city, region" for a spot, or null. */
 export async function placeName(position: {
   latitude: number;
@@ -20,7 +23,7 @@ export async function placeName(position: {
     if (!first) return null;
     return (
       [first.name, first.street, first.city, first.region]
-        .filter(Boolean)
+        .filter((part) => part && !CONNECTOR.test(part))
         .join(', ')
         .trim() || null
     );

@@ -78,3 +78,15 @@ describe('the location for a new transaction', () => {
     expect(await run()).toEqual([{ status: 'finding' }, { status: 'none' }]);
   });
 });
+
+it('leaves out an "Off" the geocoder gives as a place name', async () => {
+  granted('granted');
+  location.reverseGeocodeAsync.mockResolvedValue([
+    { name: 'Off', street: 'Jalan PJS 11/7', city: 'Petaling Jaya', region: null },
+  ] as Location.LocationGeocodedAddress[]);
+  const updates = await run();
+  expect(updates.at(-1)).toEqual({
+    status: 'found',
+    location: { ...POSITION, name: 'Jalan PJS 11/7, Petaling Jaya', coords: OWN },
+  });
+});

@@ -72,7 +72,7 @@ const MAP_H = 220;
 const PLACE_ROW_H = 44;
 const GAP = 12;
 /** The map and the place row under it, which give way to the list while the user types. */
-const MAP_BLOCK_H = MAP_H + GAP + PLACE_ROW_H + GAP;
+const MAP_BLOCK_H = MAP_H + GAP;
 
 /** What the pin marks. `shop` is a shop the user picked by name; the pin alone names a street. */
 type Spot = SavedPlace & { shop: string | null; naming: boolean };
@@ -521,9 +521,14 @@ export function PlaceSheet({ request, onPick, ...frame }: PlaceSheetProps) {
               </Press>
             ) : null}
           </View>
+        </Animated.View>
+        <SheetDragArea
+          className="flex-1 bg-canvas"
+          style={[{ zIndex: 1 }, panelStyle]}
+        >
           <View
             className="flex-row items-center gap-2.5 px-1"
-            style={{ height: PLACE_ROW_H, marginTop: GAP }}
+            style={{ height: PLACE_ROW_H, marginBottom: GAP }}
             accessibilityLiveRegion="polite"
           >
             <IconSymbol
@@ -552,25 +557,33 @@ export function PlaceSheet({ request, onPick, ...frame }: PlaceSheetProps) {
               </Animated.View>
             </View>
           </View>
-        </Animated.View>
-        <SheetDragArea
-          className="flex-1 bg-canvas"
-          style={[{ zIndex: 1 }, panelStyle]}
-        >
-          <SearchField
-            testID={tid('sheet', 'place', 'search')}
-            accessibilityLabel="Search places"
-            placeholder="Search a shop or address"
-            inputRef={searchInput}
-            onClear={search.focused ? search.leave : undefined}
-            onFocus={() => search.setFocused(true)}
-            onBlur={() => search.setFocused(false)}
-            value={query}
-            onChangeText={(text) => {
-              setFailed(null);
-              setQuery(text);
-            }}
-          />
+          <View>
+            <SearchField
+              testID={tid('sheet', 'place', 'search')}
+              accessibilityLabel="Search places"
+              placeholder="Search a shop or address"
+              inputRef={searchInput}
+              onClear={search.focused ? search.leave : undefined}
+              onFocus={() => search.setFocused(true)}
+              onBlur={() => search.setFocused(false)}
+              value={query}
+              onChangeText={(text) => {
+                setFailed(null);
+                setQuery(text);
+              }}
+            />
+            {search.focused ? null : (
+              // A text field keeps a drag that starts on it, so until search opens this layer takes
+              // the touch: a tap opens search, a swipe down closes the sheet.
+              <Press
+                testID={tid('sheet', 'place', 'search', 'open')}
+                accessibilityLabel="Search places"
+                className="absolute bottom-0 left-0 top-0"
+                style={{ right: query ? 56 : 0 }}
+                onPress={() => searchInput.current?.focus()}
+              />
+            )}
+          </View>
           <SheetScrollView
             className="mt-3 flex-1"
             keyboardShouldPersistTaps="handled"
