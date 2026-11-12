@@ -145,6 +145,18 @@ describe('SpentCard', () => {
     expect(screen.queryByText('1 Oct')).toBeNull();
   });
 
+  it('slides the new range y labels in while the old ones fade out on the moving scale', () => {
+    jest.useFakeTimers();
+    card();
+    expect(screen.getByText('RM900')).toBeTruthy();
+    fireEvent.press(screen.getByTestId('home.range.7d'));
+    expect(screen.getByText('RM50')).toBeTruthy();
+    expect(screen.getByText('RM900')).toBeTruthy();
+    act(() => jest.advanceTimersByTime(150));
+    expect(screen.queryByText('RM900')).toBeNull();
+    expect(screen.getAllByText('RM0')).toHaveLength(1);
+  });
+
   it('zooms the same chart between ranges instead of drawing a new one', () => {
     render(
       <SpentCard

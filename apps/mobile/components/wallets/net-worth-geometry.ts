@@ -122,9 +122,9 @@ export function netWorthTarget({
     low: floor,
     high: ceiling,
     axis: [
-      { y: NET_WORTH_TOP, text: axisMoney(ceiling) },
-      { y: (NET_WORTH_TOP + NET_WORTH_BASE) / 2, text: axisMoney((ceiling + floor) / 2) },
-      { y: NET_WORTH_BASE, text: axisMoney(floor) },
+      { value: ceiling, text: axisMoney(ceiling), line: 'solid' },
+      { value: (ceiling + floor) / 2, text: axisMoney((ceiling + floor) / 2), line: 'dashed' },
+      { value: floor, text: axisMoney(floor), line: 'solid' },
     ],
     ticks: chartTicks({ range, firstDay: index.firstDay, first: from, last: to }).map((tick) => ({
       u: tick.day,

@@ -58,7 +58,7 @@ import {
   type Frame,
   type Zoom,
 } from './zoom';
-import { LABEL_IN, LABEL_OUT, YLabels, ZoomTicks } from './zoom-axes';
+import { LABEL_IN, LABEL_OUT, YGrid, YLabels, ZoomTicks } from './zoom-axes';
 
 type Tokens = ReturnType<typeof useThemeTokens>;
 
@@ -68,6 +68,8 @@ const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 const AnimatedRect = Animated.createAnimatedComponent(Rect);
 
 const DEFAULT_WIDTH = 314;
+/** Daily's lines run from here to the card edge, as the boards draw them. */
+const BAR_GRID_LEFT = 50;
 const GUIDE_TOP = 38;
 const MODE_IN = FadeIn.duration(180);
 const MODE_OUT = FadeOut.duration(180);
@@ -154,6 +156,15 @@ export function SpendChart({
         style={{ height: PLOT_HEIGHT }}
         onLayout={(event) => setWidth(Math.round(event.nativeEvent.layout.width))}
       >
+        <YGrid
+          rows={target.rows}
+          zoom={zoom}
+          frame={frame}
+          width={width}
+          left={daily ? BAR_GRID_LEFT : undefined}
+          solid={tokens.hairline}
+          dashed={tokens.sandLight}
+        />
         {daily && held ? (
           <Tip shown={shown}>
             <Band
@@ -199,7 +210,11 @@ export function SpendChart({
             )}
           </Animated.View>
         </LayoutAnimationConfig>
-        <YLabels rows={target.rows} />
+        <YLabels
+          rows={target.rows}
+          zoom={zoom}
+          frame={frame}
+        />
         <LayoutAnimationConfig skipEntering>
           {target.oneMonth && !daily && marks.budget !== null ? (
             <>
@@ -400,23 +415,11 @@ const LineMarks = memo(function LineMarks({
       opacity: oneMonth.get(),
     };
   });
-  const middle = (frame.top + frame.base) / 2;
   return (
     <Svg
       width={width}
       height={PLOT_HEIGHT}
     >
-      <Line x1={frame.left} y1={frame.top} x2={frame.right} y2={frame.top} stroke={tokens.hairline} strokeWidth={1.5} />
-      <Line
-        x1={frame.left}
-        y1={middle}
-        x2={frame.right}
-        y2={middle}
-        stroke={tokens.sandLight}
-        strokeWidth={1.5}
-        strokeDasharray="3 5"
-      />
-      <Line x1={frame.left} y1={frame.base} x2={frame.right} y2={frame.base} stroke={tokens.hairline} strokeWidth={1.5} />
       {budget !== null ? (
         <AnimatedLine
           x1={frame.left}
@@ -511,14 +514,6 @@ const BarMarks = memo(function BarMarks({
   });
   return (
     <>
-      <Svg
-        width={width}
-        height={PLOT_HEIGHT}
-        style={{ position: 'absolute' }}
-      >
-        <Line x1={50} y1={frame.top} x2={width} y2={frame.top} stroke={tokens.sandLight} strokeWidth={1.5} strokeDasharray="3 5" />
-        <Line x1={50} y1={frame.base} x2={width} y2={frame.base} stroke={tokens.hairline} strokeWidth={1.5} />
-      </Svg>
       <Animated.View
         key={buckets.key}
         exiting={BARS_OUT}
@@ -552,7 +547,7 @@ const BarMarks = memo(function BarMarks({
         ) : null}
         {evenPace !== null ? (
           <AnimatedLine
-            x1={50}
+            x1={BAR_GRID_LEFT}
             x2={width}
             stroke={tokens.foreground}
             strokeWidth={1.5}

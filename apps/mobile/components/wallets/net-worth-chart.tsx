@@ -28,7 +28,7 @@ import {
   type Zoom,
 } from '@/components/charts/zoom';
 import { Tip, useChartScrub } from '@/components/charts/scrub';
-import { YLabels, ZoomTicks } from '@/components/charts/zoom-axes';
+import { YGrid, YLabels, ZoomTicks } from '@/components/charts/zoom-axes';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Segmented } from '@/components/ui/segmented';
 import { Text } from '@/components/ui/text';
@@ -192,7 +192,9 @@ export function NetWorthChart({
               style={{ height: PLOT_HEIGHT }}
               onLayout={(event) => setWidth(Math.round(event.nativeEvent.layout.width))}
             >
-              <Grid
+              <YGrid
+                rows={target.axis}
+                zoom={zoom}
                 frame={frame}
                 width={width}
                 solid={tokens.hairline}
@@ -221,6 +223,8 @@ export function NetWorthChart({
               </LayoutAnimationConfig>
               <YLabels
                 rows={target.axis}
+                zoom={zoom}
+                frame={frame}
                 fit
               />
               {held ? (
@@ -300,52 +304,6 @@ export function NetWorthChart({
     </Animated.View>
   );
 }
-
-const Grid = memo(function Grid({
-  frame: { left, right, top, base },
-  width,
-  solid,
-  dashed,
-}: {
-  frame: Frame;
-  width: number;
-  solid: string;
-  dashed: string;
-}) {
-  return (
-    <Svg
-      width={width}
-      height={PLOT_HEIGHT}
-      style={{ position: 'absolute' }}
-    >
-      <Line
-        x1={left}
-        y1={top}
-        x2={right}
-        y2={top}
-        stroke={solid}
-        strokeWidth={1.5}
-      />
-      <Line
-        x1={left}
-        y1={(top + base) / 2}
-        x2={right}
-        y2={(top + base) / 2}
-        stroke={dashed}
-        strokeWidth={1.5}
-        strokeDasharray="3 5"
-      />
-      <Line
-        x1={left}
-        y1={base}
-        x2={right}
-        y2={base}
-        stroke={solid}
-        strokeWidth={1.5}
-      />
-    </Svg>
-  );
-});
 
 /** Memoised: a scrub re-renders the card many times a second, and the lines redraw on the UI thread anyway. */
 const Marks = memo(function Marks({

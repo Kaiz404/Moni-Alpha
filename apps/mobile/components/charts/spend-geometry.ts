@@ -129,9 +129,13 @@ export function barScrubPoints({ starts, ends, values, first }: SpendBuckets): S
   return scrubPoints(pairs);
 }
 
-/** Drops a label that would repeat the base's, as RM0 does twice when nothing was spent. */
-function rows(top: AxisRow[], base: AxisRow): AxisRow[] {
-  return [...top.filter((row) => row.text !== base.text), base];
+/** Zero at the base, under the rows above it; drops a label that would repeat zero's, as RM0 does when nothing was spent. */
+function rows(above: AxisRow[], currency: string): AxisRow[] {
+  const zero = whole(0, currency);
+  return [
+    ...above.map((row) => (row.text === zero ? { ...row, text: null } : row)),
+    { value: 0, text: zero, line: 'solid' },
+  ];
 }
 
 export function spendTarget({
@@ -163,8 +167,6 @@ export function spendTarget({
   const ticks = chartTicks({ range, firstDay: index.firstDay, first: from, last: to - 1 }).map(
     (tick) => ({ u: tick.day + tickOffset, label: tick.label }),
   );
-  const base = daily ? BAR_BASE : LINE_BASE;
-  const zero = { y: base, text: whole(0, currency) };
   const shared = {
     mode,
     oneMonth,
@@ -192,7 +194,7 @@ export function spendTarget({
     return {
       ...shared,
       high,
-      rows: rows([{ y: SPEND_TOP, text: whole(high, currency) }], zero),
+      rows: rows([{ value: high, text: whole(high, currency), line: 'dashed' }], currency),
       accessibilityLabel: oneMonth
         ? `Daily spending, 1 to ${count} ${month.name}.` +
           (marks.evenPace === null
@@ -208,16 +210,17 @@ export function spendTarget({
     budget !== null && spent <= budget ? budget : Math.max(budget ?? 0, niceCeil(spent), 1);
   const budgetY =
     budget === null ? null : LINE_BASE - (budget / high) * (LINE_BASE - SPEND_TOP);
-  const top: AxisRow[] =
-    budget !== null && budget >= high
-      ? [{ y: (SPEND_TOP + LINE_BASE) / 2, text: whole(budget / 2, currency) }]
-      : budgetY !== null && budgetY - SPEND_TOP < AXIS_LABEL_HEIGHT
-        ? []
-        : [{ y: SPEND_TOP, text: whole(high, currency) }];
+  // At budget the top line is the budget's own, so the middle carries the label.
+  const atBudget = budget !== null && budget >= high;
+  const crowded = budgetY !== null && budgetY - SPEND_TOP < AXIS_LABEL_HEIGHT;
+  const above: AxisRow[] = [
+    { value: high, text: atBudget || crowded ? null : whole(high, currency), line: 'solid' },
+    { value: high / 2, text: atBudget ? whole(budget / 2, currency) : null, line: 'dashed' },
+  ];
   return {
     ...shared,
     high,
-    rows: rows(top, zero),
+    rows: rows(above, currency),
     accessibilityLabel: oneMonth
       ? `Spent so far in ${month.name}, ${money(spent)}` +
         (budget === null

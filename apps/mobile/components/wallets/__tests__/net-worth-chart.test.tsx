@@ -260,10 +260,10 @@ describe('netWorthTarget', () => {
   it('starts the axis near the lowest balance and says so', () => {
     const { axis, low, high, accessibilityLabel } = target('1m');
     expect([low, high]).toEqual([200000, 350000]);
-    expect(axis.map((label) => label.text)).toEqual([
-      'RM3,500',
-      'RM2,750',
-      'RM2,000',
+    expect(axis).toEqual([
+      { value: 350000, text: 'RM3,500', line: 'solid' },
+      { value: 275000, text: 'RM2,750', line: 'dashed' },
+      { value: 200000, text: 'RM2,000', line: 'solid' },
     ]);
     expect(accessibilityLabel).toBe(
       'Net worth, 1 Oct to today, from RM3,185.50 to RM2,431.80. The axis starts at RM2,000, not zero.',

@@ -33,7 +33,11 @@ describe('spendTarget', () => {
     const month = target('1m', 'pace');
     expect([month.from, month.to, month.todayU]).toEqual([today - 13, today + 18, today + 1]);
     expect([month.shift, month.high]).toEqual([4000, 180000]);
-    expect(month.rows.map((row) => row.text)).toEqual(['RM900', 'RM0']);
+    expect(month.rows).toEqual([
+      { value: 180000, text: null, line: 'solid' },
+      { value: 90000, text: 'RM900', line: 'dashed' },
+      { value: 0, text: 'RM0', line: 'solid' },
+    ]);
     expect(month.ticks).toEqual([
       { u: today - 13, label: '1 Oct' },
       { u: today - 6, label: '8' },
@@ -47,6 +51,10 @@ describe('spendTarget', () => {
     const month = target('1m', 'daily');
     expect([month.from, month.to, month.todayU]).toEqual([today - 13, today + 1, today + 0.5]);
     expect(month.high).toBe(10000);
+    expect(month.rows).toEqual([
+      { value: 10000, text: 'RM100', line: 'dashed' },
+      { value: 0, text: 'RM0', line: 'solid' },
+    ]);
     expect(month.ticks.map((tick) => tick.u)).toEqual([today - 12.5, today - 5.5]);
   });
 
@@ -54,6 +62,11 @@ describe('spendTarget', () => {
     const week = target('7d', 'pace');
     expect([week.from, week.to, week.shift, week.high]).toEqual([today - 6, today + 1, 4000, 5000]);
     expect(week.accessibilityLabel).toBe('Spent from 8 Oct 2026 to today, RM35.00.');
+    expect(week.rows).toEqual([
+      { value: 5000, text: 'RM50', line: 'solid' },
+      { value: 2500, text: null, line: 'dashed' },
+      { value: 0, text: 'RM0', line: 'solid' },
+    ]);
     expect(week.ticks.map((tick) => tick.label)).toEqual(['Thu', 'Fri', 'Sat', 'Sun', 'Mon', 'Tue', 'Wed']);
   });
 
