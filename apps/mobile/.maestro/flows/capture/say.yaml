@@ -37,7 +37,7 @@ tags:
 - assertVisible:
     id: capture.quote
 - assertVisible:
-    id: capture.shop.edit
+    id: capture.shop
 - assertVisible:
     id: capture.amount.edit
 - assertVisible: −RM6.00

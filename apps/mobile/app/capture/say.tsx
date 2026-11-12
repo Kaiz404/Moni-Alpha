@@ -128,6 +128,7 @@ export default function SayScreen() {
         <CaptureResult
           quote={stage.quote}
           draft={stage.draft}
+          here={flow.here}
           onEdit={(patch) => dispatch({ type: 'edit', patch })}
           again={{ label: 'Say again', icon: 'refresh', onPress: again }}
           onApprove={() => void flow.approve()}

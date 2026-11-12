@@ -51,6 +51,7 @@ const draft: CaptureDraft = {
   transactionDate: new Date(2026, 9, 14, 14, 4).toISOString(),
   evidence: 'Moni read 6 items and a total of RM18.60.',
   itemCount: 6,
+  place: { kind: 'auto' },
 };
 
 const checkPage = (itemCount: number | null) =>
@@ -58,6 +59,7 @@ const checkPage = (itemCount: number | null) =>
     <CaptureResult
       quote={{ source: 'camera', imageUri: 'file:///receipt.jpg' }}
       draft={{ ...draft, itemCount }}
+      here={{ status: 'none' }}
       onEdit={jest.fn()}
       again={{ label: 'Retake', icon: 'camera-retake-outline', onPress: jest.fn() }}
       onApprove={jest.fn()}

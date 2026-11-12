@@ -1,10 +1,11 @@
-import { pickDate as pickNativeDate } from '@/lib/sheet/pick-date';
 import { useValue } from '@legendapp/state/react';
 import { Image } from 'expo-image';
 import { useEffect, useRef, useState } from 'react';
 import { ScrollView, View } from 'react-native';
 
-import { CategoryIcon } from '@/components/categories/category-icon';
+import { TextTile } from '@/components/amount/text-tile';
+import { FieldBubble, WalletBubble } from '@/components/capture/field-bubble';
+import { LocationField } from '@/components/capture/location-field';
 import { Button } from '@/components/ui/button';
 import {
   IconSymbol,
@@ -22,8 +23,14 @@ import type {
   CaptureQuote,
 } from '@/lib/capture/capture-stage';
 import { dayAndTime } from '@/lib/capture/clock-time';
+import {
+  applyPlacePick,
+  locationFieldState,
+  savedLocation,
+} from '@/lib/capture/entry-place';
 import { itemsLabel } from '@/lib/capture/read-capture';
 import { spokenAmount } from '@/lib/capture/spoken-amount';
+import { formatDay } from '@/lib/dates/day-label';
 import {
   isoToLocalDateInput,
   localDateInputToIso,
@@ -38,17 +45,24 @@ import { useMainCurrency } from '@/lib/finance/main-currency';
 import {
   budgetProgress$,
   categoriesForUser$,
+  transactions$,
   walletsForUser$,
 } from '@/lib/finance/selectors';
 import { toCategoryTiles } from '@/lib/sheet/category-tiles';
+import { pickDate as pickNativeDate } from '@/lib/sheet/pick-date';
 import { openSheet } from '@/lib/sheet/sheet-store';
+import { listMerchantAliases } from '@/lib/supabase/merchant-aliases';
 import { ensureFinanceTimezone } from '@/lib/supabase/profile';
 import { tid, type TestId } from '@/lib/test-ids';
 import { resolveTransactionIcon } from '@/lib/transactions/icon';
+import type { EntryLocation } from '@/lib/transactions/prefetch-location';
+import { compactWalletNames } from '@/lib/wallets/compact-name';
 
 type CaptureResultProps = {
   quote: CaptureQuote;
   draft: CaptureDraft;
+  /** The phone's position, which the entry follows until the user picks a place. */
+  here: EntryLocation;
   onEdit: (patch: Partial<CaptureDraft>) => void;
   /** Say again, or Retake. */
   again: { label: string; icon: IconSymbolName; onPress: () => void };
@@ -56,14 +70,19 @@ type CaptureResultProps = {
   approving: boolean;
 };
 
+const AMOUNT_ID = tid('capture', 'amount');
+
 /**
  * The check page after Say it or Scan a receipt (V2A-CaptureSayHeard,
- * V2A-CaptureScanAdded): shop and amount edit in place, category, wallet and
- * date open pickers, one line of evidence, and Approve adds it to the ledger.
+ * V2A-CaptureScanAdded), laid out like Type it: the amount edits in place,
+ * Paid with, Category, Date and Location sit in the same 2 × 2 grid of capture
+ * fields, Shop or note is the same text tile, then one line of evidence, and
+ * Approve adds it to the ledger.
  */
 export function CaptureResult({
   quote,
   draft,
+  here,
   onEdit,
   again,
   onApprove,
@@ -75,12 +94,13 @@ export function CaptureResult({
   const currency = useMainCurrency();
   const [editing, setEditing] = useState<TestId | null>(null);
   const read = useRef(draft).current;
-  const wallets = useValue(walletsForUser$(userId)).filter(
-    (wallet) => wallet.currency === currency,
-  );
+  const allWallets = useValue(walletsForUser$(userId));
+  const wallets = allWallets.filter((wallet) => wallet.currency === currency);
   const categories = useValue(categoriesForUser$(userId)).filter(
     (category) => category.isActive && category.type === draft.kind,
   );
+  const transactions = useValue(transactions$({ userId }));
+  const aliases = useValue(() => (userId ? listMerchantAliases(userId) : []));
   const [timezone, setTimezone] = useState('UTC');
   const progress = useValue(budgetProgress$(userId, timezone));
 
@@ -91,7 +111,12 @@ export function CaptureResult({
   }, []);
 
   const category = categories.find((item) => item.id === draft.categoryId);
-  const wallet = wallets.find((item) => item.id === draft.walletId);
+  const wallet = wallets.find((item) => item.id === draft.walletId) ?? null;
+  const entryPlace = {
+    place: draft.place,
+    here,
+    phoneAllowed: wallet?.recordLocation !== false,
+  };
   const row = progress.find(
     (item) =>
       item.categoryId === draft.categoryId && item.currency === currency,
@@ -164,6 +189,19 @@ export function CaptureResult({
     });
   };
 
+  const pickPlace = async () => {
+    const picked = await openSheet({
+      kind: 'place',
+      start:
+        savedLocation(entryPlace) ??
+        (here.status === 'found' ? here.location : null),
+      past: { transactions, currency, aliases },
+    });
+    if (!picked) return;
+    const next = applyPlacePick(picked, draft.merchant);
+    onEdit({ place: next.place, merchant: next.note });
+  };
+
   return (
     <Page
       screen="capture"
@@ -176,11 +214,11 @@ export function CaptureResult({
       >
       <ScrollView
         className="flex-1"
-        contentContainerClassName="gap-3 px-5 pb-3"
+        contentContainerClassName="gap-2 px-5 pb-3"
         keyboardShouldPersistTaps="handled"
       >
         {voice && !editing ? (
-          <View className="flex-row items-start gap-2.5 rounded-field bg-sand px-3.5 py-2.5">
+          <View className="mb-1 flex-row items-start gap-2.5 rounded-field bg-sand px-3.5 py-2.5">
             <View className="mt-0.5">
               <IconSymbol
                 name="microphone"
@@ -197,129 +235,118 @@ export function CaptureResult({
             </Text>
           </View>
         ) : null}
-        <InPlaceField
-          testID={tid('capture', 'shop')}
-          label="Shop"
-          kind="text"
-          required
-          hint={
-            voice
-              ? `You said ${read.merchant || 'no shop'}. Fix the spelling here.`
-              : read.merchant
-                ? `The receipt says ${read.merchant}.`
-                : undefined
-          }
-          value={draft.merchant}
-          onSave={(merchant) => onEdit({ merchant })}
-        >
-          {({ editable, editor }) =>
-            editor ?? (
-              <View className="flex-row items-center gap-3">
-                {quote.source === 'camera' ? (
-                  <Image
-                    source={{ uri: quote.imageUri }}
-                    contentFit="cover"
-                    accessibilityLabel="The scanned receipt"
-                    style={{ width: 52, height: 64, borderRadius: 12 }}
-                  />
-                ) : (
-                  <TintBubble
-                    size={52}
-                    icon={resolveTransactionIcon(category?.icon ?? 'shape-outline', 'expense')}
-                    color={category?.color ?? null}
-                  />
-                )}
-                <View className="min-w-0 flex-1">
-                  {editable(
-                    <Text
-                      variant="sectionTitle"
-                      className="text-foreground"
-                      numberOfLines={1}
-                    >
-                      {draft.merchant || 'Add a shop'}
-                    </Text>,
-                  )}
-                  <Text variant="meta" className="text-muted">
-                    {voice
-                      ? `${dayAndTime(draft.transactionDate)} · Voice`
-                      : draft.itemCount === null
-                        ? 'Receipt'
-                        : `Receipt · ${itemsLabel(draft.itemCount)}`}
-                  </Text>
-                </View>
-              </View>
-            )
-          }
-        </InPlaceField>
-        <View className="min-h-16 justify-center">
-          <InPlaceField
-            testID={tid('capture', 'amount')}
-            label="Amount"
-            kind="amount"
-            prefix={`${draft.kind === 'expense' ? '−' : '+'}${currencySymbol(currency)}`}
-            hint={
-              read.amountMinor > 0
-                ? `${currency} · ${amountRead}`
-                : currency
-            }
-            value={draft.amountMinor > 0 ? draft.amountMinor : null}
-            onSave={(amountMinor) => onEdit({ amountMinor })}
-          >
-            <Text
-              testID={tid('capture', 'result', 'amount')}
-              variant="amountHero"
-              className={
-                draft.kind === 'income'
-                  ? 'text-deep-mint'
-                  : 'text-foreground'
+        <View className="min-h-16 flex-row items-center gap-3 pb-1">
+          {quote.source === 'camera' && editing !== AMOUNT_ID ? (
+            <Image
+              source={{ uri: quote.imageUri }}
+              contentFit="cover"
+              accessibilityLabel="The scanned receipt"
+              style={{ width: 52, height: 64, borderRadius: 12 }}
+            />
+          ) : null}
+          <View className="min-w-0 flex-1">
+            <InPlaceField
+              testID={tid('capture', 'amount')}
+              label="Amount"
+              kind="amount"
+              prefix={`${draft.kind === 'expense' ? '−' : '+'}${currencySymbol(currency)}`}
+              hint={
+                read.amountMinor > 0
+                  ? `${currency} · ${amountRead}`
+                  : currency
               }
-              numberOfLines={1}
-              adjustsFontSizeToFit
+              value={draft.amountMinor > 0 ? draft.amountMinor : null}
+              onSave={(amountMinor) => onEdit({ amountMinor })}
             >
-              {amountText}
-            </Text>
-          </InPlaceField>
+              <Text
+                testID={tid('capture', 'result', 'amount')}
+                variant="amountHero"
+                className={
+                  draft.kind === 'income'
+                    ? 'text-deep-mint'
+                    : 'text-foreground'
+                }
+                numberOfLines={1}
+                adjustsFontSizeToFit
+              >
+                {amountText}
+              </Text>
+            </InPlaceField>
+            {quote.source === 'camera' && editing !== AMOUNT_ID ? (
+              <Text
+                variant="meta"
+                className="text-muted"
+              >
+                {draft.itemCount === null
+                  ? 'Receipt'
+                  : `Receipt · ${itemsLabel(draft.itemCount)}`}
+              </Text>
+            ) : null}
+          </View>
         </View>
-        <PickerField
-          testID={tid('capture', 'result', 'category')}
-          label="Category"
-          value={category?.name ?? ''}
-          mark={
-            category ? (
-              <CategoryIcon
-                icon={category.icon}
-                size={18}
-                color={tokens.foreground}
-              />
-            ) : undefined
-          }
-          onPress={() => void pickCategory()}
-        />
         <View className="flex-row gap-2">
           <PickerField
             testID={tid('capture', 'result', 'wallet')}
+            size="capture"
             className="flex-1"
             label={draft.kind === 'income' ? 'Into' : 'Paid with'}
-            value={wallet?.name ?? ''}
-            mark={
-              wallet ? (
-                <View
-                  className="h-2.5 w-2.5 rounded-full"
-                  style={{ backgroundColor: wallet.color ?? tokens.mint }}
-                />
-              ) : undefined
-            }
+            value={wallet ? (compactWalletNames(allWallets)[wallet.id] ?? wallet.name) : ''}
+            spokenValue={wallet?.name}
+            leading={wallet ? <WalletBubble wallet={wallet} /> : undefined}
             onPress={() => void pickWallet()}
           />
           <PickerField
-            testID={tid('capture', 'result', 'date')}
+            testID={tid('capture', 'result', 'category')}
+            size="capture"
             className="flex-1"
-            label="Date"
-            value={dayAndTime(draft.transactionDate)}
-            onPress={() => void pickDate()}
+            label="Category"
+            value={category?.name ?? ''}
+            leading={
+              category ? (
+                <TintBubble
+                  size={32}
+                  icon={resolveTransactionIcon(category.icon ?? 'shape-outline', draft.kind)}
+                  color={category.color}
+                />
+              ) : undefined
+            }
+            onPress={() => void pickCategory()}
           />
         </View>
-        <View className="flex-row gap-1.5 px-1">
+        <View className="flex-row gap-2">
+          <PickerField
+            testID={tid('capture', 'result', 'date')}
+            size="capture"
+            className="flex-1"
+            label="Date"
+            value={formatDay(draft.transactionDate)}
+            spokenValue={dayAndTime(draft.transactionDate)}
+            leading={
+              <FieldBubble color={tokens.card}>
+                <IconSymbol
+                  name="calendar-today"
+                  size={17}
+                  color={tokens.foreground}
+                />
+              </FieldBubble>
+            }
+            onPress={() => void pickDate()}
+          />
+          <LocationField
+            state={locationFieldState(entryPlace)}
+            onOpen={() => void pickPlace()}
+          />
+        </View>
+        <TextTile
+          testID={tid('capture', 'shop')}
+          label="Shop or note"
+          icon="pencil-outline"
+          autoCapitalize="words"
+          placeholder="Optional"
+          value={draft.merchant}
+          onChangeText={(merchant) => onEdit({ merchant })}
+        />
+        <View className="flex-row gap-1.5 px-1 pt-1">
           <View className="mt-px">
             <IconSymbol
               name="creation"

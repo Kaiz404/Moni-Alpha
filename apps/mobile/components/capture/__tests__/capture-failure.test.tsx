@@ -2,6 +2,7 @@ import { act, fireEvent, render, renderHook, screen } from '@testing-library/rea
 
 import type { CaptureQuote, ReadResult } from '@/lib/capture/capture-stage';
 import { enqueue, getAll, pruneCompleted, resumeInterrupted } from '@/lib/ai/processing-queue';
+import { approveCapture } from '@/lib/capture/approve-capture';
 
 import { CaptureFailed } from '../scan-stages';
 import { useCaptureFlow } from '../use-capture-flow';
@@ -27,6 +28,12 @@ jest.mock('react-native-mmkv', () => {
     },
   };
 });
+jest.mock('expo-location', () => ({
+  Accuracy: { Balanced: 3 },
+  getForegroundPermissionsAsync: async () => ({ status: 'granted' }),
+  getCurrentPositionAsync: async () => ({ coords: { latitude: 3.13, longitude: 101.671 } }),
+  reverseGeocodeAsync: async () => [{ name: 'Jalan Telawi 3', city: 'Kuala Lumpur' }],
+}));
 jest.mock('expo-crypto', () => ({ randomUUID: () => 'held-1' }));
 jest.mock('expo-file-system', () => ({
   File: jest.fn().mockImplementation(() => ({ delete: mockDelete })),
@@ -44,7 +51,9 @@ jest.mock('@/lib/ai/background-processor', () => ({
   startBackgroundProcessor: () => mockStart(),
 }));
 jest.mock('@/lib/receipts/upload-queue', () => ({ keepScannedReceipt: jest.fn() }));
-jest.mock('@/lib/capture/approve-capture', () => ({ approveCapture: jest.fn() }));
+jest.mock('@/lib/capture/approve-capture', () => ({
+  approveCapture: jest.fn(async () => ({ id: 'saved' })),
+}));
 jest.mock('@/lib/auth/auth-context', () => ({ useAuth: () => ({ user: { id: 'kai' } }) }));
 jest.mock('@/lib/finance/main-currency', () => ({ useMainCurrency: () => 'MYR' }));
 jest.mock('@/lib/wallets/default-wallet', () => ({ getDefaultWalletId: () => null }));
@@ -97,6 +106,7 @@ const DRAFT: ReadResult = {
     transactionDate: '2026-11-01T02:00:00.000Z',
     evidence: 'You said it.',
     itemCount: null,
+    place: { kind: 'auto' },
   },
 };
 
@@ -270,5 +280,48 @@ describe('the failed page', () => {
     );
     expect(screen.queryByTestId('capture.failed.keep')).toBeNull();
     expect(screen.getByText("Moni couldn't find a total")).toBeTruthy();
+  });
+});
+
+describe('the place saved on Approve', () => {
+  async function checkPage() {
+    mockRead.mockResolvedValueOnce(DRAFT);
+    const hook = renderHook(() => useCaptureFlow('voice'));
+    await act(async () => {
+      await hook.result.current.read(VOICE);
+    });
+    return hook;
+  }
+
+  it("follows the phone's position by default", async () => {
+    const hook = await checkPage();
+    await act(async () => hook.result.current.approve());
+    expect(jest.mocked(approveCapture).mock.calls[0][2]).toEqual({
+      latitude: 3.13,
+      longitude: 101.671,
+      name: 'Jalan Telawi 3, Kuala Lumpur',
+    });
+  });
+
+  it('saves the place the user picked', async () => {
+    const hook = await checkPage();
+    const shop = { latitude: 3.1301, longitude: 101.6712, name: 'Kedai ABC' };
+    act(() =>
+      hook.result.current.dispatch({
+        type: 'edit',
+        patch: { place: { kind: 'chosen', place: shop } },
+      }),
+    );
+    await act(async () => hook.result.current.approve());
+    expect(jest.mocked(approveCapture).mock.calls[0][2]).toEqual(shop);
+  });
+
+  it('saves none once turned off', async () => {
+    const hook = await checkPage();
+    act(() =>
+      hook.result.current.dispatch({ type: 'edit', patch: { place: { kind: 'off' } } }),
+    );
+    await act(async () => hook.result.current.approve());
+    expect(jest.mocked(approveCapture).mock.calls[0][2]).toBeNull();
   });
 });

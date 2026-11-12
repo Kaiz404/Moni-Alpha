@@ -16,6 +16,7 @@ import type {
   CaptureQuote,
   ReadResult,
 } from '@/lib/capture/capture-stage';
+import { AUTO_PLACE } from '@/lib/capture/entry-place';
 import type {
   FinanceCategory,
   FinanceTransaction,
@@ -160,6 +161,7 @@ export function draftFromExtraction(
         ? [read, wallet.evidence].filter(Boolean).join(' ')
         : (wallet.evidence ?? extraction.reasoning),
       itemCount,
+      place: AUTO_PLACE,
     },
   };
 }

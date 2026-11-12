@@ -143,6 +143,7 @@ describe('draft from extraction', () => {
         evidence:
           "You didn't say a wallet. Cash paid your last 2 Kopitiam visits.",
         itemCount: null,
+        place: { kind: 'auto' },
       },
     });
   });

@@ -22,7 +22,11 @@ const ACCEPT_IN = ZoomIn.springify()
   .damping(springs.control.damping);
 
 /** A shop the user paid at near here, offered until they type a shop or pick a place. */
-export type LocationOffer = { merchant: string; categoryName: string | null };
+export type LocationOffer = {
+  merchant: string;
+  categoryName: string | null;
+  onAccept: () => void;
+};
 
 /**
  * The capture pages' Location field, shaped like the `PickerField size="capture"` beside it:
@@ -31,14 +35,12 @@ export type LocationOffer = { merchant: string; categoryName: string | null };
  */
 export function LocationField({
   state,
-  offer,
+  offer = null,
   onOpen,
-  onAccept,
 }: {
   state: LocationFieldState;
-  offer: LocationOffer | null;
+  offer?: LocationOffer | null;
   onOpen: () => void;
-  onAccept: () => void;
 }) {
   const tokens = useThemeTokens();
   const value = state.kind === 'place' ? state.name : WORDS[state.kind];
@@ -97,7 +99,7 @@ export function LocationField({
             hitSlop={6}
             className="h-8 w-8 items-center justify-center rounded-full bg-block-mint"
             pressedClassName="bg-mint-pressed"
-            onPress={onAccept}
+            onPress={offer.onAccept}
           >
             <IconSymbol
               name="check"

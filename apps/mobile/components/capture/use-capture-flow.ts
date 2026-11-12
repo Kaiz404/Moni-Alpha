@@ -7,6 +7,7 @@ import { startBackgroundProcessor } from '@/lib/ai/background-processor';
 import { releaseHeld } from '@/lib/ai/processing-queue';
 import { useAuth } from '@/lib/auth/auth-context';
 import { approveCapture } from '@/lib/capture/approve-capture';
+import { savedLocation } from '@/lib/capture/entry-place';
 import {
   START,
   captureStage,
@@ -27,6 +28,10 @@ import type { TransactionRowData } from '@/lib/transactions/row';
 import { showToast } from '@/lib/toast/toast-store';
 import { getDefaultWalletId } from '@/lib/wallets/default-wallet';
 import { compactWalletNames } from '@/lib/wallets/compact-name';
+import {
+  prefetchTransactionLocation,
+  type EntryLocation,
+} from '@/lib/transactions/prefetch-location';
 
 const HISTORY = 500;
 
@@ -43,6 +48,7 @@ export function useCaptureFlow(source: CaptureSource) {
   const [stage, dispatch] = useReducer(captureStage, START);
   const [approving, setApproving] = useState(false);
   const [added, setAdded] = useState<TransactionRowData | null>(null);
+  const [here, setHere] = useState<EntryLocation>({ status: 'none' });
   const wallets = useValue(walletsForUser$(userId));
   const categories = useValue(categoriesForUser$(userId));
   const history = useValue(transactions$({ userId, limit: HISTORY }));
@@ -56,6 +62,10 @@ export function useCaptureFlow(source: CaptureSource) {
     heldId.current = null;
     releaseHeld(id);
     void startBackgroundProcessor().catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    void prefetchTransactionLocation(setHere);
   }, []);
 
   useEffect(() => {
@@ -118,7 +128,16 @@ export function useCaptureFlow(source: CaptureSource) {
     setApproving(true);
     try {
       const draft = { ...stage.draft, walletId: stage.draft.walletId };
-      const transaction = await approveCapture(draft, source);
+      const wallet = wallets.find((item) => item.id === draft.walletId);
+      const transaction = await approveCapture(
+        draft,
+        source,
+        savedLocation({
+          place: draft.place,
+          here,
+          phoneAllowed: wallet?.recordLocation !== false,
+        }),
+      );
       if (transaction && stage.quote.source === 'camera')
         void keepScannedReceipt(stage.quote.imageUri, transaction.id).catch(() => {});
       const category = categories.find((item) => item.id === draft.categoryId);
@@ -162,5 +181,6 @@ export function useCaptureFlow(source: CaptureSource) {
     approving,
     added,
     categoryName,
+    here,
   };
 }

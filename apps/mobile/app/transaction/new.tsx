@@ -610,10 +610,10 @@ export default function TypeItScreen() {
                     merchant: offer.merchant,
                     categoryName:
                       categories.find((item) => item.id === offer.categoryId)?.name ?? null,
+                    onAccept: acceptOffer,
                   }
                 }
                 onOpen={() => void pickPlace()}
-                onAccept={acceptOffer}
               />
             </View>
             {noteField}

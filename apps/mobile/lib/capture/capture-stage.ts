@@ -1,5 +1,7 @@
 import type { MinorAmount } from '@repo/types';
 
+import type { EntryPlace } from '@/lib/capture/entry-place';
+
 /** How a live capture reached Moni: its `metadata.source` once approved. */
 export type CaptureSource = 'voice' | 'camera';
 
@@ -16,6 +18,8 @@ export type CaptureDraft = {
   evidence: string;
   /** How many items the receipt lists; null when the reader has no count. Never edited. */
   itemCount: number | null;
+  /** Where it happened: the phone's position by default, or a place the user picked. */
+  place: EntryPlace;
 };
 
 /** What the user gave Moni: the words heard, or the scanned image. */

@@ -53,6 +53,7 @@ export default function ScanScreen() {
         <CaptureResult
           quote={stage.quote}
           draft={stage.draft}
+          here={flow.here}
           onEdit={(patch) => dispatch({ type: 'edit', patch })}
           again={{
             label: 'Retake',

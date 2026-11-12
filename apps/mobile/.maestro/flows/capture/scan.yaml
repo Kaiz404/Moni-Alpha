@@ -43,6 +43,10 @@ tags:
 - assertVisible:
     id: capture.result.wallet
 - assertVisible:
+    id: capture.location
+- assertVisible:
+    id: capture.shop
+- assertVisible:
     id: capture.evidence
 - assertVisible: Receipt · 3 items
 - assertVisible: Moni read 3 items and a total of RM15.30.*
