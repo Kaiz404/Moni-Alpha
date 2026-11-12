@@ -71,6 +71,7 @@ export function useChartScrub({
   const point = useSharedValue(points.at.length - 1);
   const shown = useSharedValue(0);
   const holding = useSharedValue(false);
+  const reachedU = useSharedValue(NaN);
   const latest = useRef(onPoint);
   latest.current = onPoint;
   const reach = (id: number, dense: boolean) => {
@@ -86,14 +87,17 @@ export function useChartScrub({
       const f = from.get();
       const t = to.get();
       const next = nearestPoint(at, uAt(x, f, t, frame));
-      const before = point.get();
-      if (!first && next === before) return;
+      // Compared by position, not index, so a target rebuilt mid-touch still counts one change.
+      const before = reachedU.get();
+      if (!first && at[next] === before) return;
       point.set(next);
+      reachedU.set(at[next]!);
       // One touch update a frame, so at most one haptic a frame. A jump past several points
       // counts as dense when their average spacing is.
       const gap = first
         ? Infinity
-        : Math.abs(xAt(at[next]!, f, t, frame) - xAt(at[before]!, f, t, frame)) / Math.abs(next - before);
+        : Math.abs(xAt(at[next]!, f, t, frame) - xAt(before, f, t, frame)) /
+          Math.max(1, Math.abs(next - nearestPoint(at, before)));
       scheduleOnRN(reach, ids[next]!, gap < DENSE_POINT_PX);
     };
     const end = (scrolled: boolean) => {
@@ -128,7 +132,7 @@ export function useChartScrub({
         end(false);
       });
     return Gesture.Race(hold, drag);
-  }, [points, from, to, frame, point, shown, holding, testID]);
+  }, [points, from, to, frame, point, shown, holding, reachedU, testID]);
 
   return { gesture, point, shown };
 }
