@@ -26,12 +26,10 @@ export function localDateInputToIso(value: string): string | null {
   return new Date(date.getFullYear(), date.getMonth(), date.getDate()).toISOString();
 }
 
-/** Best-effort YYYY-MM-DD from an ISO datetime string. */
+/** The local calendar day of an ISO datetime as YYYY-MM-DD, or of `fallback` when it is missing or invalid. */
 export function isoToLocalDateInput(iso: string | null | undefined, fallback = new Date()): string {
-  if (!iso) return fallback.toISOString().split('T')[0];
-  const parsed = new Date(iso);
-  if (Number.isNaN(parsed.getTime())) return fallback.toISOString().split('T')[0];
-  return parsed.toISOString().split('T')[0];
+  const parsed = iso ? new Date(iso) : fallback;
+  return toLocalDateInput(Number.isNaN(parsed.getTime()) ? fallback : parsed);
 }
 
 /** The local calendar day of `date` as YYYY-MM-DD. */
