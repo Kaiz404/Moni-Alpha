@@ -126,6 +126,31 @@ describe('buildMoniExport', () => {
     expect(section(csv, 'Categories')[1].split(',').at(-1)).toBe('yes');
   });
 
+  it("writes a place's Google id and when its coordinates were fetched", () => {
+    const csv = buildMoniExport(
+      {
+        ...EMPTY,
+        transactions: [
+          {
+            id: TXN,
+            type: 'expense',
+            amount: 1,
+            transaction_date: '2026-10-14T00:00:00.000Z',
+            location_latitude: 3.139,
+            location_longitude: 101.6869,
+            place_id: 'ChIJ5-rvAcdJzDERfSgcL1uO2fQ',
+            place_coords_at: '2026-10-14T00:00:00.000Z',
+          },
+        ],
+      },
+      'kai',
+      NOW,
+    );
+    const [header, row] = section(csv, 'Transactions').map((line) => line.split(','));
+    expect(row[header.indexOf('Place id')]).toBe('ChIJ5-rvAcdJzDERfSgcL1uO2fQ');
+    expect(row[header.indexOf('Place fetched')]).toBe('2026-10-14T00:00:00.000Z');
+  });
+
   it('names the file for the local day', () => {
     expect(exportFileName(new Date(2026, 9, 14, 14, 6))).toBe('moni-2026-10-14.csv');
   });

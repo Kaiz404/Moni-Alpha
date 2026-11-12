@@ -106,6 +106,8 @@ const transactionSchema = z
     debt_activity_id: optionalUuid,
     location_latitude: z.number().min(-90).max(90).nullable().optional(),
     location_longitude: z.number().min(-180).max(180).nullable().optional(),
+    place_id: optionalText,
+    place_coords_at: instant.nullable().optional(),
   })
   .refine((row) => row.type !== 'transfer' || Boolean(row.transfer_to_wallet_id), {
     path: ['transfer_to_wallet_id'],
@@ -140,6 +142,12 @@ function castCell(cell: string, column: Column): unknown {
       if (cell.trim() === '') return null;
       const value = Number(cell);
       return Number.isNaN(value) ? cell : value;
+    }
+    case 'instant': {
+      const text = readTextCell(cell).trim();
+      if (text === '') return null;
+      const at = new Date(text);
+      return Number.isNaN(at.getTime()) ? text : at.toISOString();
     }
     case 'json':
       try {

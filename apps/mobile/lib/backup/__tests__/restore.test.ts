@@ -109,6 +109,8 @@ describe('a Moni export read back', () => {
       location_latitude: 3.139,
       location_longitude: 101.6869,
       location_name: 'Mid Valley',
+      place_id: null,
+      place_coords_at: null,
       receipt_image_url: null,
       metadata: {
         source: 'notification',
@@ -199,6 +201,75 @@ describe('a Moni export read back', () => {
     ]);
     expect(read.file.rows.wallets).toHaveLength(1);
     expect(read.file.rows.transactions.map((row) => row.fields.metadata)).toEqual([{}]);
+  });
+});
+
+describe('a Google place read back', () => {
+  const PLACE = 'ChIJ5-rvAcdJzDERfSgcL1uO2fQ';
+  const placed = (fields: RawRow): BackupTables => ({
+    ...TABLES,
+    transactions: TABLES.transactions.map((row) => (row.id === LUNCH ? { ...row, ...fields } : row)),
+  });
+  const lunch = (tables: BackupTables) =>
+    planRestore(exported(tables), SYSTEM_ONLY, USER).writes.transactions.find((row) => row.id === LUNCH);
+
+  it('keeps the place id and when its coordinates were fetched', () => {
+    expect(lunch(placed({ place_id: PLACE, place_coords_at: '2026-10-02T04:30:00.000Z' }))).toMatchObject({
+      location_latitude: 3.139,
+      location_longitude: 101.6869,
+      place_id: PLACE,
+      place_coords_at: '2026-10-02T04:30:00.000Z',
+    });
+  });
+
+  it("reads the server's +00:00 as Z", () => {
+    expect(lunch(placed({ place_id: PLACE, place_coords_at: '2026-10-02T04:30:00+00:00' }))).toMatchObject({
+      place_coords_at: '2026-10-02T04:30:00.000Z',
+    });
+  });
+
+  it('keeps a place id on coordinates of your own', () => {
+    expect(lunch(placed({ place_id: PLACE, place_coords_at: null }))).toMatchObject({
+      location_latitude: 3.139,
+      place_id: PLACE,
+      place_coords_at: null,
+    });
+  });
+
+  it('drops Google coordinates that have no place id to refresh them by', () => {
+    expect(lunch(placed({ place_id: null, place_coords_at: '2026-10-02T04:30:00.000Z' }))).toMatchObject({
+      location_latitude: null,
+      location_longitude: null,
+      location_name: 'Mid Valley',
+      place_id: null,
+      place_coords_at: null,
+    });
+  });
+
+  it('restores a file from before place ids with none', () => {
+    const csv = [
+      `Moni export,1,${USER},x`,
+      '',
+      'Transactions',
+      'Id,Timestamp,Type,Amount,Currency,Wallet id,Latitude,Longitude',
+      `${LUNCH},2026-10-01T00:00:00Z,expense,1.00,MYR,${MAYBANK},3.139,101.6869`,
+    ].join('\n');
+    const read = readMoniExport(csv);
+    if (read.kind !== 'moni') throw new Error('not a Moni export');
+    expect(read.file.problems).toEqual([]);
+    expect(read.file.rows.transactions[0].fields).toMatchObject({
+      location_latitude: 3.139,
+      place_id: null,
+      place_coords_at: null,
+    });
+  });
+
+  it('names a fetched time it can not read', () => {
+    const read = readMoniExport(
+      buildMoniExport(placed({ place_id: PLACE, place_coords_at: 'last week' }), USER, NOW).slice(1),
+    );
+    if (read.kind !== 'moni') throw new Error('not a Moni export');
+    expect(read.file.problems.map((problem) => problem.reason)).toEqual(["Place fetched can't be read"]);
   });
 });
 

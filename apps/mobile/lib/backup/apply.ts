@@ -71,5 +71,14 @@ function writeRow(table: TableName, row: RawRow): void {
   const value = { ...row };
   // Before its migration, an unknown column would fail every later sync of this wallet (wallets.ts).
   if (!isMigrated('merchant_aliases_and_wallet_location')) delete value.record_location;
+  if (table === 'transactions' && !isMigrated('transaction_place_ids')) {
+    // Google's coordinates could never be refreshed without the place ID column (coords.ts).
+    if (value.place_coords_at) {
+      value.location_latitude = null;
+      value.location_longitude = null;
+    }
+    delete value.place_id;
+    delete value.place_coords_at;
+  }
   STORE_TABLES[table][String(row.id)].set(value);
 }

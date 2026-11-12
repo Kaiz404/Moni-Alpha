@@ -65,6 +65,16 @@ const idsOf = (rows: readonly RawRow[]) => new Set(rows.map((row) => String(row.
 const nameKey = (type: unknown, name: unknown) =>
   `${String(type)}|${String(name ?? '').trim().toLocaleLowerCase()}`;
 
+/**
+ * Google coordinates with no place ID to refresh them by: the database refuses the timestamp
+ * alone, and keeping the coordinates without it would keep Google's past their 30 days.
+ */
+const unrefreshableCoords = {
+  location_latitude: null,
+  location_longitude: null,
+  place_coords_at: null,
+};
+
 export function planRestore(file: MoniFile, store: StoreSnapshot, userId: string): RestorePlan {
   const counts = emptyCounts();
   const writes = emptyTables();
@@ -218,6 +228,7 @@ export function planRestore(file: MoniFile, store: StoreSnapshot, userId: string
     counts.transactions.fresh += 1;
     writes.transactions.push({
       ...owned(fields),
+      ...(fields.place_coords_at && !fields.place_id ? unrefreshableCoords : {}),
       category_id: fields.category_id
         ? (categoryIds.get(String(fields.category_id)) ?? null)
         : null,

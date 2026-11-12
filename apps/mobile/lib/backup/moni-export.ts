@@ -32,7 +32,7 @@ export const EXPORT_VERSION = 1;
 
 type Names = { wallets: Map<string, string>; categories: Map<string, string>; debts: Map<string, string> };
 
-export type ColumnKind = 'text' | 'money' | 'bool' | 'number' | 'json';
+export type ColumnKind = 'text' | 'money' | 'bool' | 'number' | 'json' | 'instant';
 
 export type Column = {
   header: string;
@@ -47,6 +47,7 @@ const of = (kind: ColumnKind) => (header: string, field: string): Column => ({ h
 const money = of('money');
 const bool = of('bool');
 const number = of('number');
+const instant = of('instant');
 
 const nameIn = (names: Map<string, string>, id: unknown) =>
   typeof id === 'string' ? names.get(id) : undefined;
@@ -169,6 +170,8 @@ export const TABLES: Record<TableName, { title: string; columns: Column[] }> = {
       text('Place', 'location_name'),
       number('Latitude', 'location_latitude'),
       number('Longitude', 'location_longitude'),
+      text('Place id', 'place_id'),
+      instant('Place fetched', 'place_coords_at'),
       bool('Not counted', 'analysis_excluded'),
       text('Debt activity id', 'debt_activity_id'),
       text('Linked id', 'linked_transaction_id'),

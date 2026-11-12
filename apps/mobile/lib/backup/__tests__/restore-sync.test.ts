@@ -32,6 +32,8 @@ const mockServer = {
   offline: false,
   inserts: [] as string[],
   clashes: [] as string[],
+  /** Columns a migration the server has not had yet would add. */
+  missingColumns: new Set(['transactions.place_id']),
 };
 
 const mockNow = () => new Date().toISOString();
@@ -40,8 +42,12 @@ function mockQuery(table: string) {
   let run: (rows: Row[]) => { data: unknown; error: unknown } = (rows) => ({ data: rows, error: null });
   const filters: ((row: Row) => boolean)[] = [];
   let from = 0;
+  let selected = '';
   const query: any = {
-    select: () => query,
+    select: (columns = '') => {
+      selected = columns;
+      return query;
+    },
     limit: () => query,
     order: () => query,
     range: (start: number) => {
@@ -84,6 +90,12 @@ function mockQuery(table: string) {
           resolve,
           reject,
         );
+      }
+      if (mockServer.missingColumns.has(`${table}.${selected}`)) {
+        return Promise.resolve({
+          data: null,
+          error: { code: '42703', message: `column ${table}.${selected} does not exist` },
+        }).then(resolve, reject);
       }
       const rows = mockServer.tables.get(table);
       if (!rows) {
@@ -327,5 +339,28 @@ describe('restoring through the real store', () => {
     await settle();
     expect(serverRows('wallets').find((row) => row.id === wallet)).not.toHaveProperty('record_location');
     expect(Object.keys(wallets$.peek() ?? {})).toContain(wallet);
+  });
+
+  it("drops Google's coordinates and the place columns when the server has no place ids yet", async () => {
+    const google = uuid(44);
+    const own = uuid(45);
+    const tables = readBackupTables(USER);
+    const lunch = tables.transactions.find((row) => row.id === LUNCH)!;
+    const place = { location_latitude: 3.139, location_longitude: 101.6869, location_name: 'Mid Valley' };
+    tables.transactions = [
+      { ...lunch, ...place, id: google, place_id: 'ChIJgoogle', place_coords_at: '2026-10-01T00:00:00.000Z' },
+      { ...lunch, ...place, id: own, place_id: 'ChIJown', place_coords_at: null },
+    ];
+    const plan = planFromFile(buildMoniExport(tables, USER, new Date()));
+    expect(plan.writes.transactions.map((row) => row.place_id)).toEqual(['ChIJgoogle', 'ChIJown']);
+    await applyPlan(plan);
+    await settle();
+    const saved = (id: string) => serverRows('transactions').find((row) => row.id === id);
+    expect(saved(google)).toMatchObject({ location_latitude: null, location_longitude: null, location_name: 'Mid Valley' });
+    expect(saved(own)).toMatchObject({ location_latitude: 3.139, location_longitude: 101.6869 });
+    for (const id of [google, own]) {
+      expect(saved(id)).not.toHaveProperty('place_id');
+      expect(saved(id)).not.toHaveProperty('place_coords_at');
+    }
   });
 });
