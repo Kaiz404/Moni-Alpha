@@ -3,7 +3,6 @@ import { render, screen } from '@testing-library/react-native';
 import type { CaptureDraft } from '@/lib/capture/capture-stage';
 import { financeProjection$ } from '@/lib/finance/projection';
 import { EMPTY_FINANCE_PROJECTION } from '@/lib/finance/types';
-import type { TransactionRowData } from '@/lib/transactions/row';
 
 import { CaptureResult } from '../capture-result-card';
 import { CaptureAdded } from '../scan-stages';
@@ -67,25 +66,10 @@ const checkPage = (itemCount: number | null) =>
     />,
   );
 
-const row: TransactionRowData = {
-  kind: 'expense',
-  title: '99 Speedmart',
-  date: new Date(2026, 9, 14, 14, 4).toISOString(),
-  amountMinor: 1860 as TransactionRowData['amountMinor'],
-  currency: 'MYR' as TransactionRowData['currency'],
-  icon: 'cart',
-  color: null,
-  category: 'Groceries',
-  wallet: 'Cash',
-  autoAdded: false,
-};
-
-const addedPage = (itemCount: number | null) =>
+const addedPage = () =>
   render(
     <CaptureAdded
-      row={row}
       categoryName="Groceries"
-      itemCount={itemCount}
       another={{ label: 'Scan another', onPress: jest.fn() }}
     />,
   );
@@ -99,13 +83,9 @@ describe('the receipt item count', () => {
     expect(screen.queryByText(/^Receipt/)).toBeNull();
   });
 
-  it('ends the Added row meta', () => {
-    addedPage(6);
-    expect(screen.getByText(/ · Cash · 6 items$/)).toBeTruthy();
-  });
-
-  it('leaves the Added row meta alone with no count', () => {
-    addedPage(null);
-    expect(screen.getByText(/ · Cash$/)).toBeTruthy();
+  it('leaves the Added page to the category, with no row repeating the entry', () => {
+    addedPage();
+    expect(screen.getByText('Added to Groceries')).toBeTruthy();
+    expect(screen.queryByText(/Cash/)).toBeNull();
   });
 });

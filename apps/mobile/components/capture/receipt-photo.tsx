@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Modal, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
 import Animated, {
+  Easing,
   interpolate,
   useAnimatedStyle,
   useReducedMotion,
@@ -22,7 +23,9 @@ const HEADER_H = 188;
 const RADIUS = 22;
 const MAX_ZOOM = 4;
 const DOUBLE_TAP_ZOOM = 2.5;
-const OPEN = { damping: 24, stiffness: 240 } as const;
+/** Critically damped: zoom settles without overshoot. */
+const SETTLE = { damping: 32, stiffness: 240 } as const;
+const EXPAND = { duration: 280, easing: Easing.out(Easing.cubic) };
 
 type Frame = { x: number; y: number; width: number; height: number };
 
@@ -76,7 +79,7 @@ export function ReceiptPhoto({ uri }: { uri: string }) {
 }
 
 /**
- * The receipt full screen on black. It grows out of the header it was pressed on and shrinks back
+ * The receipt full screen on black. It expands out of the header it was pressed on and shrinks back
  * into it; pinch or double-tap zooms, a drag pans the zoomed photo, and × or Back closes it.
  */
 function ReceiptViewer({ uri, origin, onClosed }: { uri: string; origin: Frame; onClosed: () => void }) {
@@ -92,7 +95,7 @@ function ReceiptViewer({ uri, origin, onClosed }: { uri: string; origin: Frame; 
   const panStartY = useSharedValue(0);
 
   useEffect(() => {
-    shown.set(reduceMotion ? withTiming(1, { duration: 150 }) : withSpring(1, OPEN));
+    shown.set(withTiming(1, reduceMotion ? { duration: 150 } : EXPAND));
   }, [reduceMotion, shown]);
 
   const close = () => {
@@ -109,9 +112,9 @@ function ReceiptViewer({ uri, origin, onClosed }: { uri: string; origin: Frame; 
   const settle = () => {
     'worklet';
     if (zoom.get() <= 1) {
-      zoom.set(withSpring(1, OPEN));
-      panX.set(withSpring(0, OPEN));
-      panY.set(withSpring(0, OPEN));
+      zoom.set(withSpring(1, SETTLE));
+      panX.set(withSpring(0, SETTLE));
+      panY.set(withSpring(0, SETTLE));
     }
   };
 
@@ -135,9 +138,9 @@ function ReceiptViewer({ uri, origin, onClosed }: { uri: string; origin: Frame; 
     .numberOfTaps(2)
     .onEnd(() => {
       const zoomed = zoom.get() > 1;
-      zoom.set(withSpring(zoomed ? 1 : DOUBLE_TAP_ZOOM, OPEN));
-      panX.set(withSpring(0, OPEN));
-      panY.set(withSpring(0, OPEN));
+      zoom.set(withSpring(zoomed ? 1 : DOUBLE_TAP_ZOOM, SETTLE));
+      panX.set(withSpring(0, SETTLE));
+      panY.set(withSpring(0, SETTLE));
     });
   const gestures = Gesture.Exclusive(doubleTap, Gesture.Simultaneous(pinch, pan));
 

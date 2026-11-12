@@ -67,9 +67,7 @@ export default function ScanScreen() {
     case 'approved':
       return flow.added ? (
         <CaptureAdded
-          row={flow.added}
           categoryName={flow.categoryName}
-          itemCount={stage.draft.itemCount}
           another={{ label: 'Scan another', onPress: retake }}
         />
       ) : null;

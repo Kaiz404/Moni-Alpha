@@ -138,9 +138,7 @@ export default function SayScreen() {
     case 'approved':
       return flow.added ? (
         <CaptureAdded
-          row={flow.added}
           categoryName={flow.categoryName}
-          itemCount={null}
           another={{ label: 'Say another', onPress: again }}
         />
       ) : null;

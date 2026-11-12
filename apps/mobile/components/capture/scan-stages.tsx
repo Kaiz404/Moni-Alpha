@@ -1,30 +1,24 @@
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import { View } from 'react-native';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 
 import { Button } from '@/components/ui/button';
 import {
   IconSymbol,
   type IconSymbolName,
 } from '@/components/ui/icon-symbol';
-import { ListCard } from '@/components/ui/list-card';
 import { Page } from '@/components/ui/page';
 import { StatusPill } from '@/components/ui/status-pill';
 import { Text } from '@/components/ui/text';
-import {
-  TransactionRowBody,
-  rowAmount,
-  rowMeta,
-} from '@/components/ui/transaction-row';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import type {
   CaptureQuote,
   ReadFailure,
 } from '@/lib/capture/capture-stage';
-import { itemsLabel } from '@/lib/capture/read-capture';
-import type { TransactionRowData } from '@/lib/transactions/row';
 import { tid } from '@/lib/test-ids';
 
+import { AddedTick } from './added-tick';
 import { HeardQuote, ScanningReceipt } from './reading-motion';
 
 /** V2A-CaptureScan `reading`: what the user gave Moni, centred and moving while Moni reads it. */
@@ -47,57 +41,40 @@ export function CaptureReading({ quote }: { quote: CaptureQuote }) {
   );
 }
 
-/** V2A-CaptureScan `approved`: the row Approve just added and two ways on. */
+/** V2A-CaptureScan `approved`: the tick, where it went, and two ways on, centred on the page. */
 export function CaptureAdded({
-  row,
   categoryName,
-  itemCount,
   another,
 }: {
-  row: TransactionRowData;
   categoryName: string | null;
-  /** The receipt's item count, joined to the row's meta. */
-  itemCount: number | null;
   another: { label: string; onPress: () => void };
 }) {
-  const tokens = useThemeTokens();
   return (
     <Page
       screen="capture"
       kind="task"
-      title="Added"
+      title=""
     >
-      <View className="flex-1 items-center gap-3 px-5 pt-10">
-        <View className="h-24 w-24 items-center justify-center rounded-full bg-block-mint">
-          <IconSymbol
-            name="check"
-            size={52}
-            color={tokens.onPastel}
-          />
-        </View>
-        <Text
-          variant="screenTitle"
-          className="pt-2 text-center text-foreground"
-          accessibilityRole="header"
-          accessibilityLiveRegion="polite"
-        >
-          {categoryName ? `Added to ${categoryName}` : 'Added'}
-        </Text>
-        <Text
-          variant="body"
-          className="text-center text-ink-2"
-        >
-          It counts in your totals now.
-        </Text>
-        <ListCard className="mt-3 self-stretch">
-          <TransactionRowBody
-            row={row}
-            meta={[rowMeta(row, 'date'), itemCount && itemsLabel(itemCount)]
-              .filter(Boolean)
-              .join(' · ')}
-            amount={rowAmount(row)}
-          />
-        </ListCard>
+      <View className="flex-1 items-center justify-center gap-2 px-5 pb-10">
+        <AddedTick />
+        <Animated.View entering={FadeInDown.delay(380).duration(320)}>
+          <Text
+            variant="screenTitle"
+            className="text-center text-foreground"
+            accessibilityRole="header"
+            accessibilityLiveRegion="polite"
+          >
+            {categoryName ? `Added to ${categoryName}` : 'Added'}
+          </Text>
+        </Animated.View>
+        <Animated.View entering={FadeInDown.delay(480).duration(320)}>
+          <Text
+            variant="body"
+            className="text-center text-ink-2"
+          >
+            It counts in your totals now.
+          </Text>
+        </Animated.View>
       </View>
       <View className="gap-1 px-5 pb-3">
         <Button

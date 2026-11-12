@@ -64,7 +64,6 @@ tags:
 - tapOn:
     id: capture.approve
 - assertVisible: It counts in your totals now.
-- assertVisible: .*· 3 items
 - assertVisible:
     id: capture.added.home
 - assertVisible:

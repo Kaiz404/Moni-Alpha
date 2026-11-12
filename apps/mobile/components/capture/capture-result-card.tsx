@@ -270,10 +270,12 @@ export function CaptureResult({
                   }
                   numberOfLines={1}
                   adjustsFontSizeToFit
+                  style={{ textAlign: 'center' }}
                 >
                   {amountText}
                 </Text>,
-                { className: 'min-h-11 max-w-full flex-row items-center gap-2 self-center' },
+                // pl-10 mirrors the pencil and its gap, so the amount sits on the page's centre line.
+                { className: 'min-h-11 w-full flex-row items-center gap-2 pl-10' },
               )
             }
           </InPlaceField>
