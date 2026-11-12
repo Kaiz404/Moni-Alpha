@@ -1,5 +1,4 @@
 import { View } from 'react-native';
-import { useUniwind } from 'uniwind';
 
 import { CategoryIcon } from '@/components/categories/category-icon';
 import { IconSymbol } from '@/components/ui/icon-symbol';
@@ -16,6 +15,7 @@ export type SoftTint =
   | 'lemon'
   | 'sand'
   | { color: string | null };
+
 
 const FILL: Record<Exclude<SoftTint, object>, string> = {
   coral: 'bg-destructive-fill',
@@ -45,24 +45,17 @@ export function SoftBubble({
   size?: 36 | 40 | 42;
 }) {
   const tokens = useThemeTokens();
-  const dark = useUniwind().theme === 'dark';
   const color = typeof tint === 'object' ? tint.color : null;
   const glyph = size === 36 ? 18 : size === 40 ? 19 : 20;
   return (
     <View
-      className={`items-center justify-center overflow-hidden rounded-full ${typeof tint === 'object' ? (color ? 'bg-card' : 'bg-sand') : FILL[tint]}`}
-      style={{ width: size, height: size }}
+      className={`items-center justify-center overflow-hidden rounded-full ${typeof tint === 'object' ? (color ? '' : 'bg-sand') : FILL[tint]}`}
+      style={{ width: size, height: size, backgroundColor: color ?? undefined }}
     >
-      {color ? (
-        <View
-          className="absolute inset-0"
-          style={{ backgroundColor: `${color}${dark ? '38' : '73'}` }}
-        />
-      ) : null}
       <CategoryIcon
         icon={icon}
         size={glyph}
-        color={color && dark ? color : tokens.foreground}
+        color={color ? tokens.onCategory : tokens.foreground}
       />
     </View>
   );

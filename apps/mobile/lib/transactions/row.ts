@@ -5,7 +5,7 @@ import { resolveTransactionIcon, type TransactionIconName } from '@/lib/transact
 import { BALANCE_CORRECTION_TITLE } from '@/lib/wallets/balance-correction';
 
 /** tokens.md Lemon: the balance correction bubble on every list. */
-const LEMON = '#F2DC72';
+const LEMON = '#F7CF3A';
 
 type RowBase = {
   title: string;

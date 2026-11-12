@@ -61,7 +61,7 @@ const BACKGROUND_OPTIONS = {
     name: 'ic_launcher',
     type: 'mipmap',
   },
-  color: '#4F46E5',
+  color: '#236B47',
   parameters: {
     delay: 500,
   },

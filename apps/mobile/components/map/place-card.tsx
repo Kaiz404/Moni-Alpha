@@ -43,21 +43,21 @@ export function PlaceCard({ place, look, currency, sentence, onOpen }: PlaceCard
         </View>
         <View className="min-w-0 flex-1">
           <Text
-            className={`text-[20px] leading-[24px] font-display-bold ${look.color ? 'text-on-pastel' : 'text-foreground'}`}
+            className={`text-[20px] leading-[24px] font-display-bold ${look.color ? 'text-on-category' : 'text-foreground'}`}
             numberOfLines={1}
           >
             {place.name}
           </Text>
           <Text
             variant="meta"
-            className={look.color ? 'text-on-pastel' : 'text-foreground'}
+            className={look.color ? 'text-on-category' : 'text-foreground'}
             numberOfLines={1}
           >
             {`${plural(place.count, 'payment')} on ${plural(place.days, 'day')}`}
           </Text>
         </View>
         <Text
-          className={`text-[22px] leading-[26px] font-display-bold ${look.color ? 'text-on-pastel' : 'text-foreground'}`}
+          className={`text-[22px] leading-[26px] font-display-bold ${look.color ? 'text-on-category' : 'text-foreground'}`}
           style={{ fontVariant: ['tabular-nums'] }}
         >
           {amount}
@@ -65,7 +65,7 @@ export function PlaceCard({ place, look, currency, sentence, onOpen }: PlaceCard
       </View>
       <Text
         variant="body"
-        className={look.color ? 'text-on-pastel' : 'text-foreground'}
+        className={look.color ? 'text-on-category' : 'text-foreground'}
       >
         {sentence}
       </Text>
