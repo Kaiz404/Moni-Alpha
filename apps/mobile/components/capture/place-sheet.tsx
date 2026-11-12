@@ -121,24 +121,31 @@ function useGeocoded(query: string): PlaceOption[] {
   return found.query === q ? found.options : [];
 }
 
-/** Google's predictions for the query, one billing session per opening of the sheet. */
+/**
+ * Google's predictions for the query. A billing session runs until a place's details end it;
+ * `endSession` starts a new one, since Google bills a reused token as no session at all.
+ */
 function useGoogleSearch(
   query: string,
   bias: LatLng | null,
-): { google: GoogleSearch; sessionToken: string } {
+): { google: GoogleSearch; sessionToken: string; endSession: () => void } {
   const [search, setSearch] = useState<GoogleSearch>({ status: 'idle' });
   const biasRef = useRef(bias);
   biasRef.current = bias;
-  const [sessionToken] = useState(randomUUID);
-  const [engine] = useState(() =>
-    createGoogleSearch({ client: getPlacesClient(), sessionToken, onChange: setSearch }),
+  const [sessionToken, setSessionToken] = useState(randomUUID);
+  const engine = useMemo(
+    () => createGoogleSearch({ client: getPlacesClient(), sessionToken, onChange: setSearch }),
+    [sessionToken],
   );
+  const engineRef = useRef(engine);
+  engineRef.current = engine;
+  // Only a new query searches: a new session waits for the next query rather than asking again.
   useEffect(() => {
     const at = biasRef.current;
-    engine.search(query, at && { latitude: at.latitude, longitude: at.longitude });
-  }, [engine, query]);
+    engineRef.current.search(query, at && { latitude: at.latitude, longitude: at.longitude });
+  }, [query]);
   useEffect(() => engine.dispose, [engine]);
-  return { google: search, sessionToken };
+  return { google: search, sessionToken, endSession: () => setSessionToken(randomUUID()) };
 }
 
 /** Whether the search field is in use. Back hides the keyboard but leaves the field focused, so a hidden keyboard ends it too. */
@@ -293,7 +300,7 @@ export function PlaceSheet({ request, onPick, ...frame }: PlaceSheetProps) {
     () => (searching ? [] : nearPlaces(centre, request.past)),
     [searching, centre, request.past],
   );
-  const { google, sessionToken } = useGoogleSearch(query, centre);
+  const { google, sessionToken, endSession } = useGoogleSearch(query, centre);
   const addresses = useGeocoded(query);
   const rows: PlaceRow[] = searching
     ? searchRows({ own, google, addresses })
@@ -337,6 +344,7 @@ export function PlaceSheet({ request, onPick, ...frame }: PlaceSheetProps) {
       placeId: prediction.placeId,
       sessionToken,
     });
+    endSession();
     setOpening(null);
     if (result.status !== 'ok') {
       setFailed(prediction.placeId);
@@ -629,7 +637,7 @@ export function PlaceSheet({ request, onPick, ...frame }: PlaceSheetProps) {
                 />
               ),
             )}
-            {showsGoogle && folded ? (
+            {showsGoogle && (folded || !hasMap) ? (
               <Text
                 variant="meta"
                 className="px-2 pt-1 text-muted"

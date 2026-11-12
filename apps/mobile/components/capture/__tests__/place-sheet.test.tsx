@@ -18,7 +18,8 @@ const mockRequest = jest.fn();
 
 jest.mock('@/lib/places/client', () => ({ getPlacesClient: () => mockClient }));
 jest.mock('@/components/map/maps-available', () => ({ mapsAvailable: () => true }));
-jest.mock('expo-crypto', () => ({ randomUUID: () => 'session-1' }));
+let mockSession = 0;
+jest.mock('expo-crypto', () => ({ randomUUID: () => `session-${++mockSession}` }));
 jest.mock('expo-location', () => ({
   Accuracy: { Balanced: 3 },
   useForegroundPermissions: () => [mockPermission, mockRequest],
@@ -84,6 +85,7 @@ async function type(text: string) {
 
 beforeEach(() => {
   jest.clearAllMocks();
+  mockSession = 0;
   mockPermission.granted = false;
   mockClient.autocomplete.mockResolvedValue({ status: 'ok', predictions: [JAYA] });
   mockClient.details.mockResolvedValue({
@@ -161,6 +163,18 @@ describe('the place sheet', () => {
     fireEvent.press(screen.getByLabelText('Clear search'));
     expect(screen.getByTestId('sheet.place.search').props.value).toBe('');
     expect(screen.getByText('Near you')).toBeTruthy();
+  });
+
+  it('starts a new Google session for the next search once a place is opened', async () => {
+    await openPlaceSheet();
+    await type('jaya');
+    const first = mockClient.autocomplete.mock.calls[0][0].sessionToken;
+    fireEvent.press(await screen.findByLabelText('Jaya Grocer, Bangsar Village'));
+    await waitFor(() => expect(mockClient.details).toHaveBeenCalledWith({ placeId: 'p-jaya', sessionToken: first }));
+    mockClient.autocomplete.mockClear();
+    await type('zus');
+    expect(mockClient.autocomplete).toHaveBeenCalledTimes(1);
+    expect(mockClient.autocomplete.mock.calls[0][0].sessionToken).not.toBe(first);
   });
 
   it('stays open with a note on the row when Google cannot open the place', async () => {
