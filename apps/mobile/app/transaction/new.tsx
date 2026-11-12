@@ -349,7 +349,7 @@ export default function TypeItScreen() {
     toggleOn();
     setNote(offer.merchant);
     if (offer.categoryId) setCategoryId(offer.categoryId);
-    setPlace({ kind: 'chosen', place: { ...spot, name: offer.merchant } });
+    setPlace({ kind: 'here', name: offer.merchant });
   };
 
   const chooseDate = async () => {

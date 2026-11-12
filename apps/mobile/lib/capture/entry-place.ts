@@ -14,6 +14,8 @@ import type {
 export type EntryPlace =
   | { kind: 'auto' }
   | { kind: 'chosen'; place: TransactionLocationSnapshot }
+  /** The phone's position under a name the user accepted, such as "Been here?": still the phone, so it obeys `phoneAllowed`. */
+  | { kind: 'here'; name: string }
   | { kind: 'off' };
 
 export const AUTO_PLACE: EntryPlace = { kind: 'auto' };
@@ -54,6 +56,8 @@ export function savedLocation({
       return null;
     case 'chosen':
       return place.place;
+    case 'here':
+      return phoneAllowed && here.status === 'found' ? { ...here.location, name: place.name } : null;
     case 'auto':
       return phoneAllowed && here.status === 'found' ? here.location : null;
   }

@@ -32,6 +32,12 @@ describe('the entry place', () => {
     });
   });
 
+  it('saves an accepted shop name at the phone, only while the phone may stand for the entry', () => {
+    const here: EntryPlace = { kind: 'here', name: 'Mamak Ali' };
+    expect(savedLocation(input(here))).toEqual({ ...PHONE, name: 'Mamak Ali' });
+    expect(savedLocation(input(here, { phoneAllowed: false }))).toBeNull();
+  });
+
   it('saves no phone position for a wallet whose app has location off', () => {
     const off = input({ kind: 'auto' }, { phoneAllowed: false });
     expect(savedLocation(off)).toBeNull();
