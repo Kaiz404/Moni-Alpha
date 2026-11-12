@@ -8,6 +8,7 @@ import (
 	"github.com/kaiz404/moni/backend/internal/chat"
 	"github.com/kaiz404/moni/backend/internal/extract"
 	"github.com/kaiz404/moni/backend/internal/llm"
+	"github.com/kaiz404/moni/backend/internal/places"
 )
 
 // maxBodyBytes fits a base64 receipt image inside the JSON envelope.
@@ -26,7 +27,7 @@ func limitBody(max int64) gin.HandlerFunc {
 }
 
 // newRouter wires every route behind its middleware. main and the endpoint tests share it.
-func newRouter(verifier *auth.Verifier, limiter, ipLimiter *auth.RateLimiter, llmClient *llm.Client) *gin.Engine {
+func newRouter(verifier *auth.Verifier, limiter, ipLimiter *auth.RateLimiter, llmClient *llm.Client, placesHandler *places.Handler) *gin.Engine {
 	r := gin.New()
 	r.SetTrustedProxies(nil)
 	r.Use(gin.Recovery(), gin.Logger())
@@ -46,5 +47,6 @@ func newRouter(verifier *auth.Verifier, limiter, ipLimiter *auth.RateLimiter, ll
 	v1 := r.Group("/v1", ipLimit, verifier.Middleware(), limiter.Middleware(), limitBody(maxBodyBytes))
 	extract.NewHandler(extract.NewService(llmClient)).Register(v1)
 	chat.NewHandler(chat.NewService(llmClient)).Register(v1)
+	placesHandler.Register(v1)
 	return r
 }

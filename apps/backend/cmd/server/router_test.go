@@ -16,6 +16,7 @@ import (
 	"github.com/kaiz404/moni/backend/internal/auth"
 	"github.com/kaiz404/moni/backend/internal/auth/authtest"
 	"github.com/kaiz404/moni/backend/internal/llm"
+	"github.com/kaiz404/moni/backend/internal/places"
 )
 
 // llmReply is one scripted response from the fake OpenRouter server.
@@ -94,7 +95,7 @@ func newTestServer(t *testing.T, limiter *auth.RateLimiter, replies ...llmReply)
 		limiter = auth.NewRateLimiter(600, 100)
 	}
 	return &testServer{
-		handler: newRouter(verifier, limiter, auth.NewRateLimiter(6000, 1000), llm.NewClient("test-key", llmSrv.URL)),
+		handler: newRouter(verifier, limiter, auth.NewRateLimiter(6000, 1000), llm.NewClient("test-key", llmSrv.URL), noPlaces()),
 		llm:     fake,
 		token: func(sub string) string {
 			return authtest.SignToken(t, priv, sub, time.Now().Add(time.Hour))
@@ -145,7 +146,9 @@ var wallets = []map[string]any{
 	{"id": "w-tng", "name": "Touch n Go", "type": "ewallet", "currency": "MYR"},
 }
 
-var v1Routes = []string{"/v1/extract/text", "/v1/extract/image", "/v1/extract/notification", "/v1/chat/analyze"}
+var v1Routes = []string{"/v1/extract/text", "/v1/extract/image", "/v1/extract/notification", "/v1/chat/analyze", "/v1/places/autocomplete", "/v1/places/details"}
+
+func noPlaces() *places.Handler { return places.NewHandler(nil, 0, time.Now) }
 
 func TestHealthNeedsNoToken(t *testing.T) {
 	s := newTestServer(t, nil)
@@ -172,7 +175,7 @@ func TestRoutesWithTheJWKSUnreachable(t *testing.T) {
 	fake := &fakeLLM{}
 	llmSrv := httptest.NewServer(fake)
 	t.Cleanup(llmSrv.Close)
-	h := newRouter(verifier, auth.NewRateLimiter(600, 100), auth.NewRateLimiter(600, 100), llm.NewClient("test-key", llmSrv.URL))
+	h := newRouter(verifier, auth.NewRateLimiter(600, 100), auth.NewRateLimiter(600, 100), llm.NewClient("test-key", llmSrv.URL), noPlaces())
 	priv, _ := authtest.KeyAndJWKS(t)
 	token := authtest.SignToken(t, priv, "user-1", time.Now().Add(time.Hour))
 
@@ -504,7 +507,7 @@ func newLimitedServer(t *testing.T, user, ip *auth.RateLimiter) http.Handler {
 	if err != nil {
 		t.Fatal(err)
 	}
-	return newRouter(verifier, user, ip, llm.NewClient("test-key", "http://127.0.0.1:0"))
+	return newRouter(verifier, user, ip, llm.NewClient("test-key", "http://127.0.0.1:0"), noPlaces())
 }
 
 func TestOversizeBodyIs413(t *testing.T) {

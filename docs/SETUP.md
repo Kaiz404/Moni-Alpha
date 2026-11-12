@@ -85,6 +85,8 @@ SUPABASE_SECRET_KEY=sb_secret_...   # server-side scripts only
 ```bash
 SUPABASE_URL=https://<project-ref>.supabase.co
 OPENROUTER_API_KEY=sk-or-...         # openrouter.ai/keys
+GOOGLE_PLACES_API_KEY=...            # optional; see "Places search (backend)" below
+# PLACES_DAILY_CAP=1000              # optional; calls per Pacific day, per endpoint
 ```
 
 ## WSL Android toolchain
@@ -173,6 +175,17 @@ The spending map (`apps/mobile/app/map.tsx`, `place/[id].tsx`) renders transacti
 3. Rebuild the dev client (`npx expo run:android` locally). A grey/blank map means a missing or wrongly restricted key.
 
 The Android key is recoverable from an installed APK, so protect it with Google Cloud restrictions: enable only Maps SDK for Android, restrict to package `com.anonymous.moni`, and add the SHA-1 fingerprints for every signing certificate used to build the app.
+
+## Places search (backend)
+
+Shop search calls Google Places API (New) through the Go backend (`/v1/places/autocomplete` and `/v1/places/details`), so the Places key never ships in the app. The backend still has no database access. Without `GOOGLE_PLACES_API_KEY` the server starts and both endpoints answer `{ "status": "unavailable" }`.
+
+1. In Google Cloud Console, enable **Places API (New)**.
+2. Create a separate server key. Under **API restrictions**, select only **Places API (New)**. Cloud Run has no fixed egress IP, so leave application restrictions at **None** and keep the key in Secret Manager.
+3. Never enable Places on the Android Maps key. That key is recoverable from the APK, and anyone who extracts it could spend up to the daily quota.
+4. Set hard daily limits. A budget does not cap spending. Under **APIs & Services → Places API (New) → Quotas**, lower the per-day quota for Autocomplete requests and for Place Details requests, for example to 1,000 each. Google's quota day ends at midnight Pacific time.
+5. Under **Billing → Budgets & alerts**, add a budget alert, for example at $20 a month. It sends email only.
+6. Set `GOOGLE_PLACES_API_KEY` in `apps/backend/.env` locally and as a Cloud Run secret in production. `PLACES_DAILY_CAP` (default 1000) mirrors the console quota in the backend, so the app gets `unavailable` instead of a Google error. Keep it at or below the console quota.
 
 Location capture itself is handled by `expo-location` (permissions configured via the plugin); transactions store `location_latitude` / `location_longitude` / `location_name`.
 

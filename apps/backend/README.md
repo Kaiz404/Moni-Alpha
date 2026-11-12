@@ -1,6 +1,6 @@
 # Moni AI Backend (Go + Gin)
 
-Stateless inference gateway: receives AI requests from the mobile app, routes them to [OpenRouter](https://openrouter.ai), and returns normalized transaction extractions. It never touches the database — the mobile client decides on-device whether to insert a `proposed_transactions` row for review or, for routine notifications, a transaction directly.
+Stateless inference gateway: receives AI requests from the mobile app, routes them to [OpenRouter](https://openrouter.ai), and returns normalized transaction extractions. It also proxies Google Places (New) shop search so the Places key stays off the phone. It never touches the database — the mobile client decides on-device whether to insert a `proposed_transactions` row for review or, for routine notifications, a transaction directly.
 
 ## Endpoints
 
@@ -13,8 +13,18 @@ All `/v1` routes require `Authorization: Bearer <supabase-user-jwt>`.
 | POST   | `/v1/extract/image`        | Transaction from receipt image (base64 or URL)   | `deepseek/deepseek-v4.1-flash` |
 | POST   | `/v1/extract/notification` | Transaction from Android notification            | `deepseek/deepseek-v4.1-flash` |
 | POST   | `/v1/chat/analyze`         | Concise finance Q&A from pre-aggregated snapshot | `deepseek/deepseek-v4.1-flash` |
+| POST   | `/v1/places/autocomplete`  | Shop search suggestions in Malaysia              | Google Places Autocomplete (New) |
+| POST   | `/v1/places/details`       | Coordinates and address of a picked place        | Google Place Details (New), Essentials |
 
 Extraction responses are a discriminated union: `{ status: "ok", extraction }`, `{ status: "skipped", reason }`, or `{ status: "unavailable", reason }`. Chat analyze returns `{ status: "ok", reply, modelId }` or `{ status: "unavailable", reason }`. Errors use `{ error, details? }`. The wire contract mirrors `apps/mobile/lib/ai/client/types.ts`.
+
+### Places
+
+`internal/places/` proxies Google Places API (New). Both endpoints return HTTP 200 with a `status`. A missing `GOOGLE_PLACES_API_KEY`, a Google error or timeout (4s), or a reached daily cap answer `{ "status": "unavailable" }`. An invalid body is a 400 `{ error, details? }`.
+
+- `POST /v1/places/autocomplete` takes `{ input, sessionToken?, bias? }`. `input` is trimmed and must be 2 to 100 characters; `sessionToken` is at most 64. `bias` is `{ latitude, longitude }` or null. It calls `places:autocomplete` with `includedRegionCodes: ["my"]`, `languageCode: "en"` and, when `bias` is given, a 5 km `locationBias` circle plus `origin`. It answers `{ status: "ok", predictions: [{ placeId, primaryText, secondaryText, distanceMeters }] }` with at most 5 place predictions; query predictions are dropped. `secondaryText` and `distanceMeters` may be null.
+- `POST /v1/places/details` takes `{ placeId, sessionToken? }`; `placeId` is 1 to 300 characters. It sends `X-Goog-FieldMask: id,location,formattedAddress`, which keeps the call in the Place Details Essentials SKU. Do not add `displayName` or any Pro field. It answers `{ status: "ok", place: { placeId, latitude, longitude, address } }`, or `{ status: "not_found" }` when Google rejects the ID with 400 or 404.
+- `PLACES_DAILY_CAP` (default 1000) limits each endpoint separately. The in-memory counter resets at midnight America/Los_Angeles, the same day as Google's quotas. It is global because Cloud Run runs one instance. Set the matching per-day quotas in Cloud Console as the hard cap ([docs/SETUP.md](../../docs/SETUP.md#places-search-backend)).
 
 ## Auth
 
@@ -55,7 +65,7 @@ go test ./...
 go vet ./...
 ```
 
-`go test ./...` is offline: `cmd/server/router_test.go` drives every endpoint through the real router (`newRouter`) with a local JWKS (`internal/auth/authtest`) and a fake OpenRouter server, covering auth, validation, `ok`/`skipped`/`unavailable`, the retry and the per-user rate limit.
+`go test ./...` is offline: `cmd/server/router_test.go` drives every endpoint through the real router (`newRouter`) with a local JWKS (`internal/auth/authtest`) and a fake OpenRouter server, covering auth, validation, `ok`/`skipped`/`unavailable`, the retry and the per-user rate limit. `internal/places/handler_test.go` fakes Google: the request body, headers and field mask sent, the mapping, `not_found`, `unavailable` and the daily cap.
 
 `pnpm test:live` (or `MONI_LIVE_TESTS=1 go test ./cmd/server -run Live -v`) calls the real OpenRouter API with `.env`'s `OPENROUTER_API_KEY`: it checks OpenRouter still serves `llm.Model` (`internal/llm/models.go`), then extracts from text, four notifications, the `cmd/server/testdata/receipt.png` receipt, and answers a chat question. Run it after changing models, prompts or keys.
 
@@ -75,13 +85,20 @@ gcloud run deploy moni-ai-backend \
   --memory 256Mi --cpu 1 --max-instances 1
 ```
 
-(`--allow-unauthenticated` is required because the app does its own JWT auth; store `OPENROUTER_API_KEY` in Secret Manager.)
+(`--allow-unauthenticated` is required because the app does its own JWT auth; store `OPENROUTER_API_KEY` and `GOOGLE_PLACES_API_KEY` in Secret Manager.)
 
-`asia-southeast3` (Bangkok) is a Tier 1 region, the cheapest one near Malaysia (Kuala Lumpur isn't available on Cloud Run). `--max-instances 1` keeps the in-memory rate limiter correct.
+`asia-southeast3` (Bangkok) is a Tier 1 region, the cheapest one near Malaysia (Kuala Lumpur isn't available on Cloud Run). `--max-instances 1` keeps the in-memory rate limiter and the Places daily cap correct.
 
 The live service runs with min instances 0, max 1, concurrency 20, a 300s request timeout, 1 CPU with startup boost and 256 MiB. Its startup probe is TCP on 8080, so no health path is configured. A cold start took about 1.2s from instance start to listening (10 Nov 2026). Check a deployed service with `GET /health`; Cloud Run's frontend answers `/healthz` itself with a 404 that never reaches the container.
 
 After the first deploy, pushes to `main` that touch `apps/backend/**` redeploy automatically: the `Moni-Backend` Cloud Build trigger runs the root `cloudbuild.yaml`, which builds this Dockerfile and runs `gcloud run deploy --image`, keeping the env vars and secret above.
+
+The trigger keeps the service's existing env, so a new secret needs one manual update. Places search is optional; to turn it on, store the key in Secret Manager as `google-places-api-key` and run:
+
+```bash
+gcloud run services update moni-ai-backend --region asia-southeast3 \
+  --update-secrets GOOGLE_PLACES_API_KEY=google-places-api-key:latest
+```
 
 Then set `EXPO_PUBLIC_AI_API_URL` in `apps/mobile/.env` to the Cloud Run URL.
 

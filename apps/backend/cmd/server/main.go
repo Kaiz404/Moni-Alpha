@@ -1,5 +1,6 @@
 // Moni AI backend: stateless Gin service that routes mobile AI requests
-// (text, receipt images, notifications, chat analysis) to OpenRouter. Auth is a
+// (text, receipt images, notifications, chat analysis) to OpenRouter and proxies
+// Google Places shop search. Auth is a
 // Supabase user JWT verified against the project JWKS; no database access.
 package main
 
@@ -17,6 +18,7 @@ import (
 	"github.com/kaiz404/moni/backend/internal/auth"
 	"github.com/kaiz404/moni/backend/internal/config"
 	"github.com/kaiz404/moni/backend/internal/llm"
+	"github.com/kaiz404/moni/backend/internal/places"
 )
 
 func main() {
@@ -38,12 +40,20 @@ func main() {
 	limiter := auth.NewRateLimiter(20, 8)
 	ipLimiter := auth.NewRateLimiter(120, 30)
 
+	var placesClient *places.Client
+	if cfg.GooglePlacesAPIKey != "" {
+		placesClient = places.NewClient(cfg.GooglePlacesAPIKey, places.DefaultBaseURL)
+	} else {
+		log.Printf("places: GOOGLE_PLACES_API_KEY is not set, place search answers unavailable")
+	}
+	placesHandler := places.NewHandler(placesClient, cfg.PlacesDailyCap, time.Now)
+
 	if os.Getenv("GIN_MODE") == "" {
 		gin.SetMode(gin.ReleaseMode)
 	}
 	srv := &http.Server{
 		Addr:              ":" + cfg.Port,
-		Handler:           newRouter(verifier, limiter, ipLimiter, llm.NewClient(cfg.OpenRouterAPIKey, cfg.OpenRouterBaseURL)),
+		Handler:           newRouter(verifier, limiter, ipLimiter, llm.NewClient(cfg.OpenRouterAPIKey, cfg.OpenRouterBaseURL), placesHandler),
 		ReadHeaderTimeout: 10 * time.Second,
 		ReadTimeout:       30 * time.Second,
 		WriteTimeout:      90 * time.Second,
