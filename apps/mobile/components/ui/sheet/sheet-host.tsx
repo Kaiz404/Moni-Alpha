@@ -193,6 +193,10 @@ export function SheetHost({
     <View
       style={StyleSheet.absoluteFill}
       pointerEvents={open ? 'auto' : 'none'}
+      // Without this, Fabric flattens the View while it is 'auto' and builds it for 'none', which
+      // moves the closing sheet to a new parent. A Google MapView re-attached that way builds new
+      // map renderers that are never destroyed, about 10 MB each.
+      collapsable={false}
     >
       <View
         key={shown.id}
