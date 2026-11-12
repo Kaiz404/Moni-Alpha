@@ -13,6 +13,7 @@ import { getUserId } from '@/lib/supabase/client';
 import { analyzeUserFinances } from './analyze';
 import { pickAnswerCard } from './answer-cards';
 import { buildAnswerSnapshot } from './answer-snapshot';
+import { markFresh } from './fresh-replies';
 import { appendMessage, replaceMessage, type ChatMessage, type QuickReplyOption } from './messages';
 import { resolveRoute, type ForcedIntent } from './routing';
 import { threadDay } from './sessions';
@@ -49,6 +50,7 @@ function startTurn(thinking: string) {
   appendMessage({ id, role: 'assistant', kind: 'assistant_status', content: thinking, createdAt });
   return {
     finish(next: DistributiveOmit<ChatMessage, 'id' | 'createdAt'>) {
+      markFresh(id);
       replaceMessage(day, id, { ...next, id, createdAt } as ChatMessage);
     },
     fail(reason: string) {

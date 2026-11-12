@@ -25,9 +25,16 @@ import { itemsLabel } from '@/lib/capture/read-capture';
 import type { TransactionRowData } from '@/lib/transactions/row';
 import { tid } from '@/lib/test-ids';
 
-/** V2A-CaptureScan `reading`: the receipt thumbnail, a Lilac pill and field-shaped blocks. */
+import {
+  HeardQuote,
+  ReadingSteps,
+  RECEIPT_STEPS,
+  ScanningReceipt,
+  VOICE_STEPS,
+} from './reading-motion';
+
+/** V2A-CaptureScan `reading`: what the user gave Moni, alive, over the steps Moni works through. */
 export function CaptureReading({ quote }: { quote: CaptureQuote }) {
-  const tokens = useThemeTokens();
   const camera = quote.source === 'camera';
   return (
     <Page
@@ -36,49 +43,12 @@ export function CaptureReading({ quote }: { quote: CaptureQuote }) {
       title={camera ? 'Reading the receipt' : 'Reading what you said'}
     >
       <View
-        className="gap-3 px-5"
-        accessibilityLabel={
-          camera
-            ? 'Moni is reading the receipt'
-            : 'Moni is reading it'
-        }
+        className="gap-6 px-5 pt-2"
+        accessibilityLabel={camera ? 'Moni is reading the receipt' : 'Moni is reading what you said'}
         accessibilityRole="progressbar"
       >
-        <View className="flex-row items-center gap-3">
-          {camera ? (
-            <Image
-              source={{ uri: quote.imageUri }}
-              contentFit="cover"
-              style={{ width: 52, height: 64, borderRadius: 12 }}
-            />
-          ) : (
-            <View className="h-[52px] w-[52px] items-center justify-center rounded-full bg-sand">
-              <IconSymbol
-                name="microphone"
-                size={24}
-                color={tokens.foreground}
-              />
-            </View>
-          )}
-          <StatusPill
-            tone="review"
-            size="compact"
-            align="center"
-            label={
-              camera
-                ? 'Moni is reading the receipt'
-                : 'Moni is reading what you said'
-            }
-          />
-        </View>
-        <View className="h-[52px] w-[220px] rounded-field bg-sand" />
-        <View className="gap-2">
-          <View className="h-16 rounded-field bg-sand" />
-          <View className="flex-row gap-2">
-            <View className="h-16 flex-1 rounded-field bg-sand" />
-            <View className="h-16 flex-1 rounded-field bg-sand" />
-          </View>
-        </View>
+        {camera ? <ScanningReceipt imageUri={quote.imageUri} /> : <HeardQuote text={quote.text} />}
+        <ReadingSteps steps={camera ? RECEIPT_STEPS : VOICE_STEPS} />
       </View>
     </Page>
   );

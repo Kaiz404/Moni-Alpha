@@ -1,10 +1,12 @@
 import { Image } from 'expo-image';
-import type { ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { View } from 'react-native';
+import Animated, { FadeInDown, useReducedMotion } from 'react-native-reanimated';
 
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Text } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
+import { isFresh, settle } from '@/lib/ai/chat/fresh-replies';
 import type { ChatMessage, NoticedItem, QuickReplyOption } from '@/lib/ai/chat/messages';
 import { tid } from '@/lib/test-ids';
 
@@ -13,6 +15,7 @@ import { chatTime } from './chat-time';
 import { DraftCard } from './draft-card';
 import { NoticedCard } from './noticed-card';
 import { QuickReplyChips } from './quick-reply-chips';
+import { RevealText } from './reveal-text';
 import { ThinkingCard } from './thinking-card';
 
 type MessageBubbleProps = {
@@ -49,8 +52,42 @@ function Bubble({
   );
 }
 
+/**
+ * A reply that just replaced the thinking bubble rises in on a spring. `typed`
+ * replies leave settling to their RevealText, which needs to see them fresh.
+ */
+function Arrive({ id, typed, children }: { id: string; typed: boolean; children: ReactNode }) {
+  const reduceMotion = useReducedMotion();
+  const [fresh] = useState(() => isFresh(id) && !reduceMotion);
+  useEffect(() => {
+    if (!typed) settle(id);
+  }, [id, typed]);
+  return (
+    <Animated.View entering={fresh ? FadeInDown.springify().damping(18).stiffness(220) : undefined}>
+      {children}
+    </Animated.View>
+  );
+}
+
 /** One thread item: the user's words on Sand, Moni's on Ink, and Moni's cards. */
-export function MessageBubble({ message, asked, onQuickReply, onNoticed }: MessageBubbleProps) {
+export function MessageBubble(props: MessageBubbleProps) {
+  const { message } = props;
+  if (message.role !== 'assistant' || message.kind === 'assistant_status') return <ThreadItem {...props} />;
+  const typed =
+    (message.kind === 'assistant_text' && message.status !== 'error') ||
+    message.kind === 'assistant_clarify' ||
+    (message.kind === 'assistant_card' && message.content.length > 0);
+  return (
+    <Arrive
+      id={message.id}
+      typed={typed}
+    >
+      <ThreadItem {...props} />
+    </Arrive>
+  );
+}
+
+function ThreadItem({ message, asked, onQuickReply, onNoticed }: MessageBubbleProps) {
   const tokens = useThemeTokens();
   switch (message.kind) {
     case 'user_text':
@@ -126,12 +163,11 @@ export function MessageBubble({ message, asked, onQuickReply, onNoticed }: Messa
           fill="bg-primary"
           createdAt={message.createdAt}
         >
-          <Text
-            variant="body"
-            className="text-primary-foreground"
-          >
-            {message.content}
-          </Text>
+          <RevealText
+            messageId={message.id}
+            text={message.content}
+            color={tokens.primaryForeground}
+          />
         </Bubble>
       );
     case 'assistant_clarify':
@@ -141,12 +177,11 @@ export function MessageBubble({ message, asked, onQuickReply, onNoticed }: Messa
           fill="bg-primary"
           createdAt={message.createdAt}
         >
-          <Text
-            variant="body"
-            className="text-primary-foreground"
-          >
-            {message.content}
-          </Text>
+          <RevealText
+            messageId={message.id}
+            text={message.content}
+            color={tokens.primaryForeground}
+          />
           <QuickReplyChips
             options={message.quickReplies}
             onSelect={(option) => onQuickReply(option, message)}

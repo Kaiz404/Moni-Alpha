@@ -22,6 +22,7 @@ import { debtPhrase, dueWhen } from '@/lib/finance/spent-summary';
 import { tid } from '@/lib/test-ids';
 
 import { CapturesCard } from './captures-card';
+import { RevealText } from './reveal-text';
 import { InkCardLabel, useOnInk } from './ink-card';
 
 type CardMessage = Extract<ChatMessage, { kind: 'assistant_card' }>;
@@ -263,6 +264,7 @@ export function AnswerCard({ message }: { message: CardMessage }) {
 type LedgerCard = Exclude<Card, { kind: 'captures' }>;
 
 function LedgerAnswer({ message, card }: { message: CardMessage; card: LedgerCard }) {
+  const tokens = useThemeTokens();
   const onInk = useOnInk();
   const currency = useMainCurrency();
   const categoryId = card.kind === 'category_spend' ? card.categoryId : null;
@@ -292,12 +294,11 @@ function LedgerAnswer({ message, card }: { message: CardMessage; card: LedgerCar
           {title}
         </Text>
         {message.content ? (
-          <Text
-            variant="body"
-            className={onInk.body}
-          >
-            {message.content}
-          </Text>
+          <RevealText
+            messageId={message.id}
+            text={message.content}
+            color={tokens.onInkBody}
+          />
         ) : null}
       </View>
 
