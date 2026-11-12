@@ -1,7 +1,7 @@
 import { Image } from 'expo-image';
 import { useEffect, useState, type ReactNode } from 'react';
 import { View } from 'react-native';
-import Animated, { FadeInDown, useReducedMotion } from 'react-native-reanimated';
+import Animated, { FadeInUp, useReducedMotion } from 'react-native-reanimated';
 
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Text } from '@/components/ui/text';
@@ -63,7 +63,7 @@ function Arrive({ id, typed, children }: { id: string; typed: boolean; children:
     if (!typed) settle(id);
   }, [id, typed]);
   return (
-    <Animated.View entering={fresh ? FadeInDown.springify().damping(18).stiffness(220) : undefined}>
+    <Animated.View entering={fresh ? FadeInUp.springify().damping(18).stiffness(220) : undefined}>
       {children}
     </Animated.View>
   );

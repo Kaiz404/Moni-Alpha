@@ -209,40 +209,6 @@ export function useMicHold(handlers: {
   };
 }
 
-/** The bars of the listening capsule, in the board's heights. */
-const WAVE = [8, 16, 22, 12, 18];
-const QUIET = 0.35;
-
-function WaveBar({ height, level }: { height: number; level: SharedValue<number> }) {
-  const style = useAnimatedStyle(() => ({
-    transform: [{ scaleY: QUIET + (1 - QUIET) * level.get() }],
-  }));
-  return (
-    <Animated.View
-      className="w-[3px] rounded-full bg-mint-key"
-      style={[{ height }, style]}
-    />
-  );
-}
-
-/** The listening bars, moving with how loud the mic hears you. */
-export function LiveWave({ level }: { level: SharedValue<number> }) {
-  return (
-    <View
-      aria-hidden
-      className="h-6 flex-row items-center gap-[3px]"
-    >
-      {WAVE.map((height, index) => (
-        <WaveBar
-          key={index}
-          height={height}
-          level={level}
-        />
-      ))}
-    </View>
-  );
-}
-
 /** A ring behind the held mic, swelling with your voice. The outer one reaches further. */
 function MicRing({
   reach,

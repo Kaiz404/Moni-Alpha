@@ -1,7 +1,7 @@
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import { View } from 'react-native';
-import Animated, { FadeInDown } from 'react-native-reanimated';
+import Animated, { FadeInUp } from 'react-native-reanimated';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -57,7 +57,7 @@ export function CaptureAdded({
     >
       <View className="flex-1 items-center justify-center gap-2 px-5 pb-10">
         <AddedTick />
-        <Animated.View entering={FadeInDown.delay(380).duration(320)}>
+        <Animated.View entering={FadeInUp.delay(380).duration(320)}>
           <Text
             variant="screenTitle"
             className="text-center text-foreground"
@@ -67,7 +67,7 @@ export function CaptureAdded({
             {categoryName ? `Added to ${categoryName}` : 'Added'}
           </Text>
         </Animated.View>
-        <Animated.View entering={FadeInDown.delay(480).duration(320)}>
+        <Animated.View entering={FadeInUp.delay(480).duration(320)}>
           <Text
             variant="body"
             className="text-center text-ink-2"

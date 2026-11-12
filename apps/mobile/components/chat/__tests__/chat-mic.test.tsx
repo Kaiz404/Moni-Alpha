@@ -60,7 +60,7 @@ jest.mock('@/modules/moni-android-apps', () => ({
   default: { setKeyboardPansWindowAsync: jest.fn() },
 }));
 
-const CAPSULE = 'Listening. Tap done to send.';
+const CAPSULE = 'Listening. Tap Done to send.';
 const start = jest.mocked(ExpoSpeechRecognitionModule.start);
 
 const change = (id: string, oldState: number, state: number, translationX = 0) =>

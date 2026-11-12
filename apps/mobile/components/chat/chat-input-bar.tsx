@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { TextInput, View } from 'react-native';
 import type { SharedValue } from 'react-native-reanimated';
 
+import { VoiceWave } from '@/components/capture/reading-motion';
 import { HeaderIconButton } from '@/components/ui/header-icon-button';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Press } from '@/components/ui/press';
@@ -11,8 +12,9 @@ import { Text } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { tid } from '@/lib/test-ids';
 
-import { HeldCapsule, LiveWave, MicButton, useMicHold } from './hold-to-talk';
+import { HeldCapsule, MicButton, useMicHold } from './hold-to-talk';
 import { useOnInk } from './ink-card';
+import { ListeningPanel } from './listening-panel';
 
 type ChatInputBarProps = {
   input: string;
@@ -102,10 +104,15 @@ export function ChatInputBar({
         </View>
       ) : null}
 
+      {listening || holding ? (
+        <ListeningPanel
+          transcript={input}
+          level={level}
+          hint={holding ? 'Listening…' : 'Listening. Tap Done to send.'}
+        />
+      ) : null}
       {listening && !holding ? (
         <View
-          accessibilityRole="text"
-          accessibilityLiveRegion="polite"
           className="h-[52px] flex-row items-center gap-3 rounded-full bg-primary pl-1 pr-1"
         >
           <Press
@@ -121,13 +128,13 @@ export function ChatInputBar({
               color={onInk.metaGlyph}
             />
           </Press>
-          <LiveWave level={level} />
-          <Text
-            className="flex-1 text-[15px] leading-[20px] font-display-semibold text-primary-foreground"
-            numberOfLines={1}
-          >
-            {input || 'Listening. Tap done to send.'}
-          </Text>
+          <View className="flex-1 items-center">
+            <VoiceWave
+              level={level}
+              range={18}
+              color={tokens.mintKey}
+            />
+          </View>
           <Press
             testID={tid('chat', 'listen', 'done')}
             onPress={onDoneListen}
@@ -170,7 +177,11 @@ export function ChatInputBar({
           <HeldCapsule hold={hold}>
             {holding ? (
               <>
-                <LiveWave level={level} />
+                <VoiceWave
+                  level={level}
+                  range={16}
+                  color={tokens.mintKey}
+                />
                 <Text
                   accessibilityLiveRegion="polite"
                   className="flex-1 text-[15px] leading-[20px] font-display-semibold text-primary-foreground"

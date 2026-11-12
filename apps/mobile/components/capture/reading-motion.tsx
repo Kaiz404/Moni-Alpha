@@ -220,18 +220,52 @@ const WAVE = [0.35, 0.6, 0.85, 1, 0.85, 0.6, 0.35] as const;
 /** Mic loudness from 0 to 1, or null to breathe on its own while Moni reads. */
 type Level = SharedValue<number> | null;
 
-function WaveBar({ peak, index, level }: { peak: number; index: number; level: Level }) {
-  const tokens = useThemeTokens();
+function WaveBar({
+  peak,
+  index,
+  level,
+  range,
+  color,
+}: {
+  peak: number;
+  index: number;
+  level: Level;
+  range: number;
+  color: string;
+}) {
   const breath = useBreath(900, Math.abs(index - 3) * 120);
   const style = useAnimatedStyle(() => {
     const swing = level ? 0.2 + level.get() * (0.55 + breath.get() * 0.45) : 0.35 + breath.get() * 0.65;
-    return { height: 6 + peak * 26 * Math.min(1, swing) };
+    return { height: 4 + peak * range * Math.min(1, swing) };
   });
   return (
     <Animated.View
-      className="w-[5px] rounded-full"
-      style={[{ backgroundColor: tokens.foreground }, style]}
+      className="rounded-full"
+      style={[{ backgroundColor: color, width: range > 20 ? 5 : 3 }, style]}
     />
+  );
+}
+
+/** Seven bars mirrored about the middle one, each swinging a beat after its neighbour. */
+export function VoiceWave({ level, range = 26, color }: { level: Level; range?: number; color?: string }) {
+  const tokens = useThemeTokens();
+  return (
+    <View
+      aria-hidden
+      className="flex-row items-center"
+      style={{ height: range + 6, gap: range > 20 ? 5 : 3 }}
+    >
+      {WAVE.map((peak, index) => (
+        <WaveBar
+          key={index}
+          peak={peak}
+          index={index}
+          level={level}
+          range={range}
+          color={color ?? tokens.foreground}
+        />
+      ))}
+    </View>
   );
 }
 
@@ -270,16 +304,7 @@ export function MicHero({ level }: { level: Level }) {
           />
         </Animated.View>
       </View>
-      <View className="h-8 flex-row items-center gap-[5px]">
-        {WAVE.map((peak, index) => (
-          <WaveBar
-            key={index}
-            peak={peak}
-            index={index}
-            level={level}
-          />
-        ))}
-      </View>
+      <VoiceWave level={level} />
     </View>
   );
 }
