@@ -297,14 +297,13 @@ export function PlaceSheet({ request, onPick, ...frame }: PlaceSheetProps) {
   const folded = hasMap ? search.focused : false;
   const showsGoogle = rows.some((row) => row.kind === 'google');
 
-  const mapHeight = useSharedValue(MAP_BLOCK_H);
+  // The map never resizes or fades: Android draws it on its own surface, which flickers when
+  // clipped or faded. Search and the list slide up over it on an opaque panel instead.
+  const cover = useSharedValue(0);
   useEffect(() => {
-    mapHeight.set(withSpring(folded ? 0 : MAP_BLOCK_H, springs.sheet));
-  }, [folded, mapHeight]);
-  const mapBlockStyle = useAnimatedStyle(() => ({
-    height: mapHeight.get(),
-    opacity: mapHeight.get() / MAP_BLOCK_H,
-  }));
+    cover.set(withSpring(folded ? MAP_BLOCK_H : 0, springs.sheet));
+  }, [folded, cover]);
+  const panelStyle = useAnimatedStyle(() => ({ marginTop: -cover.get() }));
 
   const moveTo = (at: LatLng) => mapRef.current?.animateToRegion(regionAt(at), 300);
 
@@ -433,9 +432,9 @@ export function PlaceSheet({ request, onPick, ...frame }: PlaceSheetProps) {
         </>
       }
     >
-      <View className="flex-1">
+      <View className="flex-1 overflow-hidden">
         <Animated.View
-          style={[{ overflow: 'hidden' }, mapBlockStyle]}
+          style={{ height: MAP_BLOCK_H }}
           pointerEvents={folded ? 'none' : 'auto'}
         >
           <View
@@ -550,93 +549,98 @@ export function PlaceSheet({ request, onPick, ...frame }: PlaceSheetProps) {
             </View>
           </View>
         </Animated.View>
-        <SearchField
-          testID={tid('sheet', 'place', 'search')}
-          accessibilityLabel="Search places"
-          placeholder="Search a shop or address"
-          inputRef={searchInput}
-          onClear={search.focused ? search.leave : undefined}
-          onFocus={() => search.setFocused(true)}
-          onBlur={() => search.setFocused(false)}
-          value={query}
-          onChangeText={(text) => {
-            setFailed(null);
-            setQuery(text);
-          }}
-        />
-        <ScrollView
-          className="mt-3 flex-1"
-          keyboardShouldPersistTaps="handled"
+        <Animated.View
+          className="flex-1 bg-canvas"
+          style={[{ zIndex: 1 }, panelStyle]}
         >
-          {!searching && rows.length ? (
-            <Text
-              variant="meta"
-              className="px-2 pb-1 text-muted"
-            >
-              Near you
-            </Text>
-          ) : null}
-          {rows.map((row) =>
-            row.kind === 'google' ? (
-              <ListRow
-                key={`google:${row.prediction.placeId}`}
-                id={row.prediction.placeId}
-                leading={<GlyphBubble name="map-marker-outline" />}
-                title={row.prediction.primaryText}
-                meta={
-                  [distanceWords(row.prediction.distanceMeters), row.prediction.secondaryText]
-                    .filter(Boolean)
-                    .join(' · ') || null
-                }
-                busy={opening === row.prediction.placeId}
-                error={failed === row.prediction.placeId ? "Couldn't open this place. Try again." : null}
-                onPress={() => void pickPrediction(row.prediction)}
-              />
-            ) : (
-              <ListRow
-                key={`${row.kind}:${row.option.id}`}
-                id={row.option.id}
-                leading={
-                  row.kind === 'own' ? (
-                    <CategoryBubble categoryId={row.option.categoryId} />
-                  ) : (
-                    <GlyphBubble name="map-marker-outline" />
-                  )
-                }
-                title={row.option.title}
-                meta={row.option.meta}
-                onPress={() => pickOption(row.option)}
-              />
-            ),
-          )}
-          {showsGoogle && folded ? (
-            <Text
-              variant="meta"
-              className="px-2 pt-1 text-muted"
-            >
-              Google Maps
-            </Text>
-          ) : null}
-          {!rows.length ? (
-            <Animated.View
-              key={searching ? 'searching' : 'near'}
-              entering={ROW_IN}
-            >
+          <SearchField
+            testID={tid('sheet', 'place', 'search')}
+            accessibilityLabel="Search places"
+            placeholder="Search a shop or address"
+            inputRef={searchInput}
+            onClear={search.focused ? search.leave : undefined}
+            onFocus={() => search.setFocused(true)}
+            onBlur={() => search.setFocused(false)}
+            value={query}
+            onChangeText={(text) => {
+              setFailed(null);
+              setQuery(text);
+            }}
+          />
+          <ScrollView
+            className="mt-3 flex-1"
+            keyboardShouldPersistTaps="handled"
+          >
+            {!searching && rows.length ? (
               <Text
                 variant="meta"
-                className="px-2 py-3 text-muted"
+                className="px-2 pb-1 text-muted"
               >
-                {searching
-                  ? google.status === 'loading'
-                    ? 'Searching'
-                    : `Nothing found for “${query.trim()}” yet.`
-                  : hasMap
-                    ? 'Tap a shop on the map, or search.'
-                    : 'Search a shop or address.'}
+                Near you
               </Text>
-            </Animated.View>
-          ) : null}
-        </ScrollView>
+            ) : null}
+            {rows.map((row) =>
+              row.kind === 'google' ? (
+                <ListRow
+                  key={`google:${row.prediction.placeId}`}
+                  id={row.prediction.placeId}
+                  leading={<GlyphBubble name="map-marker-outline" />}
+                  title={row.prediction.primaryText}
+                  meta={
+                    [distanceWords(row.prediction.distanceMeters), row.prediction.secondaryText]
+                      .filter(Boolean)
+                      .join(' · ') || null
+                  }
+                  busy={opening === row.prediction.placeId}
+                  error={failed === row.prediction.placeId ? "Couldn't open this place. Try again." : null}
+                  onPress={() => void pickPrediction(row.prediction)}
+                />
+              ) : (
+                <ListRow
+                  key={`${row.kind}:${row.option.id}`}
+                  id={row.option.id}
+                  leading={
+                    row.kind === 'own' ? (
+                      <CategoryBubble categoryId={row.option.categoryId} />
+                    ) : (
+                      <GlyphBubble name="map-marker-outline" />
+                    )
+                  }
+                  title={row.option.title}
+                  meta={row.option.meta}
+                  onPress={() => pickOption(row.option)}
+                />
+              ),
+            )}
+            {showsGoogle && folded ? (
+              <Text
+                variant="meta"
+                className="px-2 pt-1 text-muted"
+              >
+                Google Maps
+              </Text>
+            ) : null}
+            {!rows.length ? (
+              <Animated.View
+                key={searching ? 'searching' : 'near'}
+                entering={ROW_IN}
+              >
+                <Text
+                  variant="meta"
+                  className="px-2 py-3 text-muted"
+                >
+                  {searching
+                    ? google.status === 'loading'
+                      ? 'Searching'
+                      : `Nothing found for “${query.trim()}” yet.`
+                    : hasMap
+                      ? 'Tap a shop on the map, or search.'
+                      : 'Search a shop or address.'}
+                </Text>
+              </Animated.View>
+            ) : null}
+          </ScrollView>
+        </Animated.View>
       </View>
     </Sheet>
   );
