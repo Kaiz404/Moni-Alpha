@@ -135,7 +135,7 @@ export function ChatInputBar({
             pressedClassName="bg-mint-key-pressed"
             className="h-11 justify-center bg-mint-key px-4"
           >
-            <Text className="text-[15px] font-display-semibold text-on-pastel">Done</Text>
+            <Text className="text-[15px] font-display-semibold text-on-mint-key">Done</Text>
           </Press>
         </View>
       ) : (

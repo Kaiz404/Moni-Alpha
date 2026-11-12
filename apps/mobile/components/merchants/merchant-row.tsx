@@ -80,7 +80,7 @@ export function MerchantRow({ row, section, rises, onSave, onForget }: MerchantR
                   testID={tid('merchants', section, row.key, 'guess')}
                   onPress={() => setDraft(row.guess ?? '')}
                   radius={{ rest: 18, pressed: 16 }}
-                  pressedClassName="bg-lilac"
+                  pressedClassName="bg-block-lilac"
                   className="h-9 flex-row items-center gap-1.5 self-start bg-pending-fill pl-2.5 pr-3.5"
                 >
                   <IconSymbol

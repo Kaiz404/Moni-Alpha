@@ -10,10 +10,10 @@ export const SHELL_PACKAGE = 'com.android.shell';
 export const PROFILES = ['empty', 'full'];
 
 const WALLETS = [
-  { key: 'maybank', name: 'Maybank Savings', type: 'bank', currency: 'MYR', balance: 2281.8, confirmed: '2026-09-04', style: 'citrus-pop', color: '#E8CF50', notification: { package: SHELL_PACKAGE, label: 'Maybank' } },
-  { key: 'tng', name: "Touch 'n Go eWallet", type: 'ewallet', currency: 'MYR', balance: 86.4, style: 'violet-dusk', color: '#B39AE8', notification: { package: 'my.com.tngdigital.ewallet', label: "Touch 'n Go" } },
-  { key: 'cash', name: 'Cash', type: 'cash', currency: 'MYR', balance: 63.6, style: 'emerald-grain', color: '#8ECF9D' },
-  { key: 'wise', name: 'Wise USD', type: 'bank', currency: 'USD', balance: 120, style: 'ocean-deep', color: '#72CEC4' },
+  { key: 'maybank', name: 'Maybank Savings', type: 'bank', currency: 'MYR', balance: 2281.8, confirmed: '2026-09-04', style: 'citrus-pop', color: '#F9D51F', notification: { package: SHELL_PACKAGE, label: 'Maybank' } },
+  { key: 'tng', name: "Touch 'n Go eWallet", type: 'ewallet', currency: 'MYR', balance: 86.4, style: 'violet-dusk', color: '#8C5CF3', notification: { package: 'my.com.tngdigital.ewallet', label: "Touch 'n Go" } },
+  { key: 'cash', name: 'Cash', type: 'cash', currency: 'MYR', balance: 63.6, style: 'emerald-grain', color: '#57D374' },
+  { key: 'wise', name: 'Wise USD', type: 'bank', currency: 'USD', balance: 120, style: 'ocean-deep', color: '#3EDBCA' },
 ];
 const WALLET_ICONS = { bank: 'bank', cash: 'cash', ewallet: 'wallet' };
 
@@ -32,7 +32,7 @@ const CATEGORY_NAMES = {
   salary: 'Salary',
   freelance: 'Freelance',
 };
-export const CUSTOM_CATEGORIES = [{ key: 'groceries', name: 'Groceries', type: 'expense', icon: 'shopping', color: '#BEDB8D' }];
+export const CUSTOM_CATEGORIES = [{ key: 'groceries', name: 'Groceries', type: 'expense', icon: 'shopping', color: '#ADE451' }];
 const BUDGETS = { food: 450, transport: 120, groceries: 350, shopping: 200, entertainment: 100, subscriptions: 80 };
 const MONTHLY_BUDGET = 1800;
 

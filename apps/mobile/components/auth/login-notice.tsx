@@ -39,7 +39,7 @@ export function LoginNotice({ status }: { status: LoginStatus }) {
         <View
           accessibilityRole="alert"
           accessibilityLiveRegion="polite"
-          className="flex-row items-start gap-3.5 rounded-card bg-lilac p-[18px]"
+          className="flex-row items-start gap-3.5 rounded-card bg-block-lilac p-[18px]"
         >
           <View className="h-[42px] w-[42px] items-center justify-center rounded-full bg-card">
             <IconSymbol

@@ -214,7 +214,7 @@ export function SquareCard({
   return (
     <View
       accessibilityLiveRegion="polite"
-      className="gap-3.5 rounded-card bg-mint px-[18px] pb-[18px] pt-[22px]"
+      className="gap-3.5 rounded-card bg-block-mint px-[18px] pb-[18px] pt-[22px]"
     >
       <Animated.View
         className="h-16 w-16 items-center justify-center rounded-full bg-card"

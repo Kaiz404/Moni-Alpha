@@ -117,7 +117,7 @@ export function MainCurrencySheet({
                   <View
                     className={`h-[42px] w-[42px] items-center justify-center rounded-full ${PROFILE_TINT_CLASS[TINTS[index % TINTS.length]]}`}
                   >
-                    <Text className="text-[15px] font-display-bold text-foreground">
+                    <Text className="text-[15px] font-display-bold text-on-category">
                       {currencySymbol(entry.currency)}
                     </Text>
                   </View>

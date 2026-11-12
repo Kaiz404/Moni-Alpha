@@ -105,7 +105,7 @@ export function CaptureAdded({
       title="Added"
     >
       <View className="flex-1 items-center gap-3 px-5 pt-10">
-        <View className="h-24 w-24 items-center justify-center rounded-full bg-mint">
+        <View className="h-24 w-24 items-center justify-center rounded-full bg-block-mint">
           <IconSymbol
             name="check"
             size={52}

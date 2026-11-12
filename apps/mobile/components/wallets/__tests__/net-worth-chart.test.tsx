@@ -353,7 +353,7 @@ describe('netWorthScrubPoints', () => {
 });
 
 describe('walletLineStyles', () => {
-  const light = { sand: '#ece5d6', mint: '#a9ddb5', lemon: '#f2dc72', lilac: '#c9b6f0', peach: '#f5be98', coral: '#f1a399', sky: '#9fc4e8', aqua: '#9fdcd3' };
+  const light = { sand: '#ece5d6', mint: '#6fd08c', lemon: '#f7cf3a', lilac: '#a98cf5', peach: '#ff9f66', coral: '#ff7f70', sky: '#62a8ee', aqua: '#4cc8ba' };
 
   it('draws each wallet in its list bubble tint and patterns wallets that share one', () => {
     expect(
@@ -366,9 +366,9 @@ describe('walletLineStyles', () => {
         light,
       ),
     ).toEqual({
-      a: { color: '#f2dc72', dash: undefined },
-      b: { color: '#f2dc72', dash: '7 5' },
-      c: { color: '#a9ddb5', dash: undefined },
+      a: { color: '#f7cf3a', dash: undefined },
+      b: { color: '#f7cf3a', dash: '7 5' },
+      c: { color: '#6fd08c', dash: undefined },
     });
   });
 });

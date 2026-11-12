@@ -346,7 +346,7 @@ export function DraftCard({ message }: { message: DraftMessage }) {
           testID={tid('chat', 'draft', 'approve')}
           label={wallet ? 'Approve' : 'Pick wallet'}
           icon={wallet ? 'check' : 'wallet-outline'}
-          fill={wallet ? 'bg-mint' : 'bg-lemon'}
+          fill={wallet ? 'bg-block-mint' : 'bg-block-lemon'}
           accessibilityLabel={wallet ? `Approve ${amountText}` : 'Pick a wallet first'}
           onPress={() => void onApprove()}
         />
@@ -374,7 +374,7 @@ function DoneRow({
       className="flex-row items-center gap-3 rounded-tile bg-card py-2 pl-3.5 pr-2"
     >
       <View
-        className={`h-9 w-9 items-center justify-center rounded-full ${outcome.kind === 'approved' ? 'bg-mint' : 'bg-sand'}`}
+        className={`h-9 w-9 items-center justify-center rounded-full ${outcome.kind === 'approved' ? 'bg-block-mint' : 'bg-sand'}`}
       >
         <IconSymbol
           name={icon}

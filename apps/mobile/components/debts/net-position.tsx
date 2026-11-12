@@ -46,7 +46,7 @@ export function NetPosition({
   return (
     <View
       accessibilityLabel="Where you stand"
-      className="gap-3 rounded-card bg-mint py-4 pl-[18px] pr-4"
+      className="gap-3 rounded-card bg-block-mint py-4 pl-[18px] pr-4"
     >
       <View
         accessible

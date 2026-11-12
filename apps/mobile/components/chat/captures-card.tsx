@@ -193,7 +193,7 @@ function CaptureRow({
             testID={tid('chat', 'captures', 'approve', proposal.id)}
             label={proposal.walletId ? `Approve ${title}` : `Pick a wallet for ${title}`}
             icon={proposal.walletId ? 'check' : 'wallet-outline'}
-            fill={proposal.walletId ? 'bg-mint' : 'bg-lemon'}
+            fill={proposal.walletId ? 'bg-block-mint' : 'bg-block-lemon'}
             ink={tokens.onPastel}
             onPress={() => void onApprove()}
           />

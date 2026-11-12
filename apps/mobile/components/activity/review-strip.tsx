@@ -24,7 +24,7 @@ export function ReviewStrip({
       onPress={onPress}
       radius={{ rest: 22, pressed: 16 }}
       pressedClassName="bg-foreground/10"
-      className="h-11 flex-row items-center gap-1.5 bg-lilac pl-1.5 pr-2"
+      className="h-11 flex-row items-center gap-1.5 bg-block-lilac pl-1.5 pr-2"
     >
       <View className="h-7 min-w-7 items-center justify-center rounded-full bg-primary px-1.5">
         <Text

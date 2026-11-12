@@ -21,11 +21,11 @@ export type ProfileTint =
   | 'attention';
 
 export const PROFILE_TINT_CLASS: Record<ProfileTint, string> = {
-  mint: 'bg-mint/45',
-  lemon: 'bg-lemon/45',
-  lilac: 'bg-lilac/45',
-  peach: 'bg-peach/45',
-  aqua: 'bg-aqua/45',
+  mint: 'bg-mint',
+  lemon: 'bg-lemon',
+  lilac: 'bg-lilac',
+  peach: 'bg-peach',
+  aqua: 'bg-aqua',
   sand: 'bg-sand',
   attention: 'bg-attention-fill',
 };
@@ -60,7 +60,7 @@ export function ProfileRow(props: ProfileRowProps) {
         <IconSymbol
           name={props.icon}
           size={20}
-          color={tokens.foreground}
+          color={props.tint === 'sand' || props.tint === 'attention' ? tokens.foreground : tokens.onCategory}
         />
       </View>
       <View className="min-w-0 flex-1">

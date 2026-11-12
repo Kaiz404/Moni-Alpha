@@ -41,11 +41,11 @@ function Orb({ level }: { level: SharedValue<number> }) {
           style={outer}
         >
           <Animated.View
-            className="h-[180px] w-[180px] items-center justify-center rounded-full bg-lilac/50"
+            className="h-[180px] w-[180px] items-center justify-center rounded-full bg-block-lilac/50"
             style={middle}
           >
             <Animated.View
-              className="h-[140px] w-[140px] items-center justify-center rounded-full bg-lilac"
+              className="h-[140px] w-[140px] items-center justify-center rounded-full bg-block-lilac"
               style={core}
             >
               <IconSymbol

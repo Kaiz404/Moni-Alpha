@@ -23,7 +23,7 @@ export function ComingUp({ rows }: { rows: ComingUpRow[] }) {
   return (
     <View
       accessibilityLabel="Coming up"
-      className="rounded-card bg-lemon pb-2 pl-[18px] pr-3.5 pt-3.5"
+      className="rounded-card bg-block-lemon pb-2 pl-[18px] pr-3.5 pt-3.5"
     >
       <View className="min-h-[18px] justify-center pb-1">
         <Text

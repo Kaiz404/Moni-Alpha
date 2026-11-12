@@ -359,7 +359,18 @@ export function MicButton({
           <IconSymbol
             name="microphone-outline"
             size={20}
-            color={tokens.onPastel}
+            color={tokens.onMintKey}
+          />
+        </Animated.View>
+        <Animated.View
+          pointerEvents="none"
+          className="absolute inset-0 items-center justify-center"
+          style={coral}
+        >
+          <IconSymbol
+            name="microphone-outline"
+            size={20}
+            color={tokens.onCategory}
           />
         </Animated.View>
       </Animated.View>

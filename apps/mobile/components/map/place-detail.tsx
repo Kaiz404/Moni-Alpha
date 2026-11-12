@@ -101,7 +101,7 @@ export function PendingHere({
   const amount = first.amountMinor ? ` ${formatMoney(first.amountMinor, first.currency)}` : '';
   const when = clock(first.notificationReceivedAt ?? first.createdAt);
   return (
-    <View className="flex-row items-center gap-3.5 rounded-card bg-lilac p-[18px]">
+    <View className="flex-row items-center gap-3.5 rounded-card bg-block-lilac p-[18px]">
       <View className="min-w-0 flex-1 gap-1">
         <Text
           variant="cardTitle"
