@@ -51,8 +51,6 @@ type AmountPageProps = {
   children?: ReactNode;
   /** One Meta line under the fields. */
   hint?: string;
-  /** Sits on the keypad and shortens the scroll area, so nothing else moves when it arrives. */
-  aboveKeypad?: ReactNode;
   action: {
     label: string;
     icon?: IconSymbolName;
@@ -81,7 +79,6 @@ export function AmountPage({
   control,
   children,
   hint,
-  aboveKeypad,
   action,
 }: AmountPageProps) {
   const { display } = readAmount(typed);
@@ -134,7 +131,6 @@ export function AmountPage({
         ) : null}
       </ScrollView>
       <View className="gap-3 px-5 pb-3">
-        {aboveKeypad}
         <Keypad
           screen={screen}
           typed={prefilled ? '' : typed}

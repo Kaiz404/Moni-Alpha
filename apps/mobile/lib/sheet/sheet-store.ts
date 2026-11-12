@@ -3,6 +3,7 @@ import type { MinorAmount, TransactionType } from '@repo/types';
 
 import type { WalletKind } from '@/constants/wallet-form';
 import type { PlacePick } from '@/lib/capture/entry-place';
+import type { PastPlaceInput } from '@/lib/capture/place-search';
 import type { ActivityRange } from '@/lib/finance/activity-filter';
 import type { TransactionLocationSnapshot } from '@/lib/transactions/prefetch-location';
 
@@ -96,10 +97,10 @@ type Sheets = {
   };
   /**
    * A new entry's place: a map with a fixed centre pin, the shops Google draws, and search over
-   * the user's own places, then the device geocoder. `start` is where the map opens.
+   * the user's own places (`past`), then the device geocoder. `start` is where the map opens.
    */
   place: {
-    request: { start: TransactionLocationSnapshot | null };
+    request: { start: TransactionLocationSnapshot | null; past: PastPlaceInput };
     result: PlacePick;
   };
   confirm: {

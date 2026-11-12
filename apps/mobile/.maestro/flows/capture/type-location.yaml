@@ -1,5 +1,6 @@
 # Type it location: the Location field shows the place saved with the entry, and
-# a tap takes it off that entry or puts it back. Needs location granted.
+# a tap opens the place sheet, where No place takes it off this entry and a
+# picked spot puts one back. Needs location granted.
 # Run: scripts/device/run-flows.sh .maestro/flows/capture/type-location.yaml
 appId: com.anonymous.moni.e2e
 name: Type it location
@@ -23,11 +24,25 @@ tags:
       id: capture.location
     timeout: 15000
 - takeScreenshot: y4-location-on
+
+# The sheet opens on a map with a search bar.
 - tapOn:
     id: capture.location
+- assertVisible: Choose a place
+- assertVisible:
+    id: sheet.place.search
+- assertVisible:
+    id: sheet.place.use
+- takeScreenshot: y4-location-sheet
+- tapOn:
+    id: sheet.place.off
 - assertVisible: Not saved
 - takeScreenshot: y4-location-off
+
+# Use this place puts the spot back.
 - tapOn:
     id: capture.location
+- tapOn:
+    id: sheet.place.use
 - assertNotVisible: Not saved
 - pressKey: Back

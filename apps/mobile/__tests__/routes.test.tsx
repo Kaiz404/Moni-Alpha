@@ -100,23 +100,6 @@ jest.mock('expo-notifications', () => ({
   setNotificationHandler: () => {},
   useLastNotificationResponse: () => null,
 }));
-jest.mock('react-native-maps', () => {
-  const { View } = jest.requireActual('react-native');
-  const { createElement, forwardRef } = jest.requireActual('react');
-  const nativeView = (name: string) =>
-    forwardRef(function NativeMapView(
-      { children, testID }: { children?: unknown; testID?: string },
-      _ref: unknown,
-    ) {
-      return createElement(View, { testID: testID ?? name }, children);
-    });
-  return {
-    __esModule: true,
-    default: nativeView('map-view'),
-    Marker: nativeView('map-marker'),
-    PROVIDER_GOOGLE: 'google',
-  };
-});
 jest.mock('expo-location', () => ({
   Accuracy: { Balanced: 3, Low: 2 },
   PermissionStatus: { DENIED: 'denied', GRANTED: 'granted', UNDETERMINED: 'undetermined' },

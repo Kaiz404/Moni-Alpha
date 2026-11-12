@@ -8,8 +8,10 @@ import {
 import * as Location from 'expo-location';
 
 import TypeItScreen from '@/app/transaction/new';
+import type { PlacePick } from '@/lib/capture/entry-place';
 import { financeProjection$ } from '@/lib/finance/projection';
 import { EMPTY_FINANCE_PROJECTION } from '@/lib/finance/types';
+import { getOpenSheet } from '@/lib/sheet/sheet-store';
 import { createTransaction } from '@/lib/supabase/transactions';
 import { expense, financeWallet } from '@/lib/wallets/__tests__/balance-fixture';
 
@@ -36,6 +38,7 @@ jest.mock('@/lib/supabase/proposed-transactions', () => ({
 }));
 jest.mock('@/lib/haptics', () => ({
   approve: jest.fn(),
+  toggleOn: jest.fn(),
   keypadTap: jest.fn(),
   scrubStep: jest.fn(),
 }));
@@ -105,6 +108,17 @@ async function openPage() {
   await act(async () => {});
 }
 
+/** Opens the place sheet from the Location field, answers it as the user would, and returns where the map opened. */
+async function pickInSheet(pick: PlacePick) {
+  fireEvent.press(screen.getByTestId('capture.location'));
+  const sheet = getOpenSheet();
+  if (sheet?.kind !== 'place') throw new Error('the place sheet did not open');
+  await act(async () => sheet.settle(pick));
+  return sheet.request.start;
+}
+
+const SHOP = { latitude: 3.1301, longitude: 101.6712, name: 'Mamak Ali' };
+
 async function addExpense() {
   fireEvent.press(screen.getByTestId('capture.key.5'));
   await act(async () => {
@@ -130,7 +144,7 @@ describe('Type it location', () => {
   it('lets the user add an expense before the location answers', async () => {
     positionAnswersLater();
     await openPage();
-    expect(screen.getByLabelText('Location, Finding. Remove it from this entry.')).toBeTruthy();
+    expect(screen.getByLabelText('Location, Finding')).toBeTruthy();
     expect(await addExpense()).toEqual(
       expect.not.objectContaining({ locationLatitude: expect.anything() }),
     );
@@ -146,46 +160,88 @@ describe('Type it location', () => {
     });
   });
 
-  it('takes the location off this entry when tapped', async () => {
+  it('opens the place sheet at the phone, and No place takes it off this entry', async () => {
     await openPage();
-    fireEvent.press(screen.getByTestId('capture.location'));
+    expect(await pickInSheet({ kind: 'off' })).toEqual({
+      latitude: 3.13,
+      longitude: 101.671,
+      name: 'Jalan Telawi 3, Kuala Lumpur, Wilayah Persekutuan',
+    });
     expect(screen.getByText('Not saved')).toBeTruthy();
     const saved = await addExpense();
     expect(saved.locationLatitude ?? null).toBeNull();
     expect(saved.locationName ?? null).toBeNull();
   });
 
-  it('puts it back on a second tap', async () => {
+  it('saves a shop picked on the map and fills an empty Shop or note', async () => {
+    await openPage();
+    await pickInSheet({ kind: 'chosen', place: SHOP, shop: 'Mamak Ali' });
+    expect(screen.getByTestId('capture.note').props.value).toBe('Mamak Ali');
+    expect(await addExpense()).toMatchObject({
+      merchant: 'Mamak Ali',
+      locationLatitude: 3.1301,
+      locationLongitude: 101.6712,
+      locationName: 'Mamak Ali',
+    });
+  });
+
+  it('keeps what the user typed when the pick is a street', async () => {
+    await openPage();
+    fireEvent.changeText(screen.getByTestId('capture.note'), 'Teh tarik');
+    await pickInSheet({
+      kind: 'chosen',
+      place: { ...SHOP, name: 'Jalan Telawi 5' },
+      shop: null,
+    });
+    expect(screen.getByText('Jalan Telawi 5')).toBeTruthy();
+    expect(await addExpense()).toMatchObject({
+      merchant: 'Teh tarik',
+      locationName: 'Jalan Telawi 5',
+    });
+  });
+
+  it('changes nothing when the sheet closes', async () => {
     await openPage();
     fireEvent.press(screen.getByTestId('capture.location'));
-    fireEvent.press(screen.getByTestId('capture.location'));
+    const sheet = getOpenSheet();
+    await act(async () => sheet?.settle(null));
     expect(screen.getByText('Jalan Telawi 3')).toBeTruthy();
     expect(await addExpense()).toMatchObject({ locationLatitude: 3.13 });
   });
 
-  it('stays off when it is removed before the position arrives', async () => {
+  it('stays off when it is turned off before the position arrives', async () => {
     const answer = positionAnswersLater();
     await openPage();
-    fireEvent.press(screen.getByTestId('capture.location'));
+    await pickInSheet({ kind: 'off' });
     await act(async () => answer());
     expect(screen.getByText('Not saved')).toBeTruthy();
     expect((await addExpense()).locationLatitude ?? null).toBeNull();
   });
 
-  it('never asks, and saves nothing, when permission is denied', async () => {
+  it('never asks without permission, saves nothing, and still lets the user pick', async () => {
     permission('denied');
     await openPage();
-    expect(screen.queryByTestId('capture.location')).toBeNull();
+    expect(screen.getByLabelText('Location, Add place')).toBeTruthy();
     expect(location.requestForegroundPermissionsAsync).not.toHaveBeenCalled();
     expect(location.getCurrentPositionAsync).not.toHaveBeenCalled();
+    expect(
+      await pickInSheet({ kind: 'chosen', place: SHOP, shop: 'Mamak Ali' }),
+    ).toBeNull();
+    expect(await addExpense()).toMatchObject({ locationLatitude: 3.1301 });
+  });
+
+  it('saves no phone position for a wallet whose app has location off', async () => {
+    seedWallet(false);
+    await openPage();
+    expect(screen.getByLabelText('Location, Add place')).toBeTruthy();
     expect((await addExpense()).locationLatitude ?? null).toBeNull();
   });
 
-  it('saves nothing for a wallet whose app has location off', async () => {
+  it('saves a place picked for a wallet whose app has location off', async () => {
     seedWallet(false);
     await openPage();
-    expect(screen.queryByTestId('capture.location')).toBeNull();
-    expect((await addExpense()).locationLatitude ?? null).toBeNull();
+    await pickInSheet({ kind: 'chosen', place: SHOP, shop: 'Mamak Ali' });
+    expect(await addExpense()).toMatchObject({ locationName: 'Mamak Ali' });
   });
 
   it('has no location on a transfer', async () => {
@@ -195,7 +251,7 @@ describe('Type it location', () => {
   });
 });
 
-describe('Type it place chip', () => {
+describe('Type it place offer', () => {
   const store = jest.requireMock('@/lib/store') as {
     categories$: { set: (rows: Record<string, unknown>) => void };
   };
@@ -238,7 +294,8 @@ describe('Type it place chip', () => {
     });
   }
 
-  const CHIP = 'At Mamak Ali? · Food & Dining';
+  const ACCEPT = 'capture.location.accept';
+  const offered = () => screen.queryByTestId(ACCEPT) !== null;
 
   beforeEach(() => seed());
 
@@ -246,74 +303,74 @@ describe('Type it place chip', () => {
     const answer = positionAnswersLater();
     await openPage();
     fireEvent.press(screen.getByTestId('capture.key.7'));
-    expect(screen.queryByText(CHIP)).toBeNull();
+    expect(offered()).toBe(false);
     await act(async () => answer());
-    expect(screen.getByText(CHIP)).toBeTruthy();
+    expect(screen.getByText('Been here?')).toBeTruthy();
+    expect(screen.getByLabelText('Use Mamak Ali, Food & Dining')).toBeTruthy();
     expect(screen.getByLabelText('Amount −RM7')).toBeTruthy();
   });
 
-  it('fills nothing until it is tapped', async () => {
+  it('fills nothing until it is accepted', async () => {
     await openPage();
-    expect(screen.getByText(CHIP)).toBeTruthy();
+    expect(offered()).toBe(true);
     expect(screen.getByTestId('capture.note').props.value).toBe('');
     const saved = await addExpense();
     expect(saved.merchant).toBeNull();
     expect(saved.categoryId).not.toBe(FOOD);
+    expect(saved.locationName).toBe(
+      'Jalan Telawi 3, Kuala Lumpur, Wilayah Persekutuan',
+    );
   });
 
-  it('fills the shop and category on a tap, then goes away', async () => {
+  it('fills the shop, category and place on the check, then goes away', async () => {
     await openPage();
-    fireEvent.press(screen.getByTestId('capture.place-chip'));
+    fireEvent.press(screen.getByTestId(ACCEPT));
     expect(screen.getByTestId('capture.note').props.value).toBe('Mamak Ali');
-    expect(screen.queryByText(CHIP)).toBeNull();
-    expect(await addExpense()).toMatchObject({ merchant: 'Mamak Ali', categoryId: FOOD });
-  });
-
-  it('dismisses without filling, and stays dismissed', async () => {
-    await openPage();
-    fireEvent.press(screen.getByTestId('capture.place-chip.dismiss'));
-    expect(screen.queryByText(CHIP)).toBeNull();
-    expect(screen.getByTestId('capture.note').props.value).toBe('');
-    fireEvent.changeText(screen.getByTestId('capture.note'), 'x');
-    fireEvent.changeText(screen.getByTestId('capture.note'), '');
-    expect(screen.queryByText(CHIP)).toBeNull();
-    expect((await addExpense()).merchant).toBeNull();
+    expect(offered()).toBe(false);
+    expect(screen.getByLabelText('Location, Mamak Ali')).toBeTruthy();
+    expect(await addExpense()).toMatchObject({
+      merchant: 'Mamak Ali',
+      categoryId: FOOD,
+      locationLatitude: 3.13,
+      locationLongitude: 101.671,
+      locationName: 'Mamak Ali',
+    });
   });
 
   it('gives way once the user types a shop', async () => {
     await openPage();
     fireEvent.changeText(screen.getByTestId('capture.note'), 'Kopitiam');
-    expect(screen.queryByText(CHIP)).toBeNull();
+    expect(offered()).toBe(false);
     expect((await addExpense()).merchant).toBe('Kopitiam');
   });
 
-  it('goes when the user removes the location from this entry', async () => {
+  it('goes when the user picks No place', async () => {
     await openPage();
-    fireEvent.press(screen.getByTestId('capture.location'));
-    expect(screen.queryByText(CHIP)).toBeNull();
+    await pickInSheet({ kind: 'off' });
+    expect(offered()).toBe(false);
   });
 
   it('is only for expenses', async () => {
     await openPage();
     fireEvent.press(screen.getByText('Income'));
-    expect(screen.queryByText(CHIP)).toBeNull();
+    expect(offered()).toBe(false);
     fireEvent.press(screen.getByText('Transfer'));
-    expect(screen.queryByText(CHIP)).toBeNull();
+    expect(offered()).toBe(false);
     fireEvent.press(screen.getByText('Expense'));
-    expect(screen.getByText(CHIP)).toBeTruthy();
+    expect(offered()).toBe(true);
   });
 
   it('never shows without permission, and never asks', async () => {
     permission('denied');
     await openPage();
-    expect(screen.queryByText(CHIP)).toBeNull();
+    expect(offered()).toBe(false);
     expect(location.requestForegroundPermissionsAsync).not.toHaveBeenCalled();
   });
 
   it('never shows for a wallet whose app has location off', async () => {
     seed(false);
     await openPage();
-    expect(screen.queryByText(CHIP)).toBeNull();
+    expect(offered()).toBe(false);
   });
 
   it('never shows away from the place', async () => {
@@ -321,6 +378,6 @@ describe('Type it place chip', () => {
       coords: { latitude: 3.2, longitude: 101.671 },
     } as Location.LocationObject);
     await openPage();
-    expect(screen.queryByText(CHIP)).toBeNull();
+    expect(offered()).toBe(false);
   });
 });

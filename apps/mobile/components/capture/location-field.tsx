@@ -1,79 +1,120 @@
 import { View } from 'react-native';
+import Animated, { FadeIn, ZoomIn } from 'react-native-reanimated';
 
 import { FieldBubble } from '@/components/capture/field-bubble';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Press } from '@/components/ui/press';
 import { Text } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
-import { placeLabel } from '@/lib/finance/places';
+import type { LocationFieldState } from '@/lib/capture/entry-place';
+import { springs } from '@/lib/motion/tokens';
 import { tid } from '@/lib/test-ids';
-import type { EntryLocation } from '@/lib/transactions/prefetch-location';
 
-function placeWords(
-  here: Exclude<EntryLocation, { status: 'none' }>,
-  removed: boolean,
-): string {
-  if (removed) return 'Not saved';
-  if (here.status === 'finding') return 'Finding';
-  return placeLabel(here.location.name)?.name ?? 'Saved here';
-}
+const WORDS: Record<Exclude<LocationFieldState['kind'], 'place'>, string> = {
+  finding: 'Finding',
+  empty: 'Add place',
+  off: 'Not saved',
+};
+
+const SWAP_IN = FadeIn.duration(180);
+const ACCEPT_IN = ZoomIn.springify()
+  .stiffness(springs.control.stiffness)
+  .damping(springs.control.damping);
+
+/** A shop the user paid at near here, offered until they type a shop or pick a place. */
+export type LocationOffer = { merchant: string; categoryName: string | null };
 
 /**
- * Type it's Location field, shaped like the fields beside it (V2A-CaptureType): shows where this
- * entry is being saved, and one tap takes the location off the entry or puts it back.
+ * The capture pages' Location field, shaped like the `PickerField size="capture"` beside it:
+ * the place saved with the entry, and a tap opens the place sheet. Near a shop the user paid at
+ * before, it reads "Been here?" with the shop and a check that fills it in.
  */
 export function LocationField({
-  here,
-  removed,
-  onToggle,
+  state,
+  offer,
+  onOpen,
+  onAccept,
 }: {
-  here: Exclude<EntryLocation, { status: 'none' }>;
-  removed: boolean;
-  onToggle: () => void;
+  state: LocationFieldState;
+  offer: LocationOffer | null;
+  onOpen: () => void;
+  onAccept: () => void;
 }) {
   const tokens = useThemeTokens();
-  const words = placeWords(here, removed);
+  const value = state.kind === 'place' ? state.name : WORDS[state.kind];
+  const quiet = state.kind === 'empty' || state.kind === 'off';
+  const label = offer ? 'Been here?' : 'Location';
+  const shown = offer ? offer.merchant : value;
+  const offerWords = offer
+    ? offer.categoryName
+      ? `${offer.merchant}, ${offer.categoryName}`
+      : offer.merchant
+    : '';
   return (
     <Press
       testID={tid('capture', 'location')}
       accessibilityLabel={
-        removed
-          ? 'Location not saved with this entry. Add it back.'
-          : `Location, ${words}. Remove it from this entry.`
+        offer
+          ? `You paid at ${offer.merchant} near here before. Location, ${value}`
+          : `Location, ${value}`
       }
+      accessibilityHint="Opens a map to choose a place"
       radius={{ rest: 22, pressed: 16 }}
       pressedClassName="bg-hairline"
-      className="h-[60px] flex-1 flex-row items-center gap-2.5 bg-sand px-2.5"
-      onPress={onToggle}
+      className="h-[60px] min-w-0 flex-1 flex-row items-center gap-2.5 bg-sand px-2.5"
+      onPress={onOpen}
     >
       <FieldBubble color={tokens.card}>
         <IconSymbol
-          name={removed ? 'map-marker-off-outline' : 'map-marker-outline'}
+          name={state.kind === 'off' && !offer ? 'map-marker-off-outline' : 'map-marker-outline'}
           size={17}
           color={tokens.foreground}
         />
       </FieldBubble>
-      <View className="min-w-0 flex-1 gap-px">
+      <Animated.View
+        key={`${label}:${shown}`}
+        entering={SWAP_IN}
+        className="min-w-0 flex-1 gap-px"
+      >
         <Text
           className="text-[12px] leading-[16px] text-ink-2"
           numberOfLines={1}
         >
-          Location
+          {label}
         </Text>
         <Text
-          className={`text-[15px] leading-[20px] font-display-semibold ${removed ? 'text-muted' : 'text-foreground'}`}
+          className={`text-[15px] leading-[20px] font-display-semibold ${quiet && !offer ? 'text-muted' : 'text-foreground'}`}
           numberOfLines={1}
         >
-          {words}
+          {shown}
         </Text>
-      </View>
-      <View pointerEvents="none">
-        <IconSymbol
-          name={removed ? 'undo' : 'close'}
-          size={20}
-          color={tokens.ink2}
-        />
-      </View>
+      </Animated.View>
+      {offer ? (
+        <Animated.View entering={ACCEPT_IN}>
+          <Press
+            testID={tid('capture', 'location', 'accept')}
+            accessibilityLabel={`Use ${offerWords}`}
+            hitSlop={6}
+            className="h-8 w-8 items-center justify-center rounded-full bg-block-mint"
+            pressedClassName="bg-mint-pressed"
+            onPress={onAccept}
+          >
+            <IconSymbol
+              name="check"
+              size={18}
+              color={tokens.onPastel}
+            />
+          </Press>
+        </Animated.View>
+      ) : (
+        <View pointerEvents="none">
+          <IconSymbol
+            name="chevron-down"
+            size={20}
+            color={tokens.ink2}
+          />
+        </View>
+      )}
     </Press>
   );
 }

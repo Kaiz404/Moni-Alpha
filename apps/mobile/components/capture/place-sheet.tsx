@@ -1,4 +1,3 @@
-import { useValue } from '@legendapp/state/react';
 import * as Location from 'expo-location';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Keyboard, ScrollView, View } from 'react-native';
@@ -9,7 +8,6 @@ import { useUniwind } from 'uniwind';
 import { FieldBubble } from '@/components/capture/field-bubble';
 import { FALLBACK_REGION, shopMapStyles } from '@/components/map/map-style';
 import { mapsAvailable } from '@/components/map/maps-available';
-import { usePlaceSources } from '@/components/map/use-places';
 import { Button } from '@/components/ui/button';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Press } from '@/components/ui/press';
@@ -22,7 +20,6 @@ import { searchPastPlaces, type PlaceOption } from '@/lib/capture/place-search';
 import { placeLabel, type LatLng } from '@/lib/finance/places';
 import { scrubStep } from '@/lib/haptics';
 import type { SheetRequestOf } from '@/lib/sheet/sheet-store';
-import { listMerchantAliases } from '@/lib/supabase/merchant-aliases';
 import { tid } from '@/lib/test-ids';
 import { placeName } from '@/lib/transactions/prefetch-location';
 
@@ -91,8 +88,6 @@ type PlaceSheetProps = SheetFrameProps & {
 export function PlaceSheet({ request, onPick, ...frame }: PlaceSheetProps) {
   const tokens = useThemeTokens();
   const dark = useUniwind().theme === 'dark';
-  const { userId, currency, transactions } = usePlaceSources();
-  const aliases = useValue(() => (userId ? listMerchantAliases(userId) : []));
   const [permission] = Location.useForegroundPermissions();
   const [hasMap] = useState(mapsAvailable);
   const mapRef = useRef<MapView>(null);
@@ -115,8 +110,8 @@ export function PlaceSheet({ request, onPick, ...frame }: PlaceSheetProps) {
   );
 
   const past = useMemo(
-    () => searchPastPlaces(query, { transactions, currency, aliases }),
-    [aliases, currency, query, transactions],
+    () => searchPastPlaces(query, request.past),
+    [query, request.past],
   );
   const geocoded = useGeocoded(query);
   const options = [...past, ...geocoded];

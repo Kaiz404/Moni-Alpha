@@ -1,0 +1,36 @@
+# Type it place offer: at a place the seed has paid before, the Location field
+# reads "Been here?" with the merchant, and nothing fills until its check is tapped.
+# Mamak Ali is the seed's most visited merchant at Bangsar. Needs location granted.
+# Run: scripts/device/run-flows.sh .maestro/flows/capture/type-place-offer.yaml
+appId: com.anonymous.moni.e2e
+name: Type it place offer
+tags:
+  - y4
+  - seed-full
+---
+- setLocation:
+    latitude: 3.13
+    longitude: 101.671
+- runFlow: ../../subflows/launch.yaml
+- tapOn:
+    id: nav.plus
+- tapOn:
+    id: nav.chooser.type
+- extendedWaitUntil:
+    visible:
+      id: capture.location.accept
+    timeout: 15000
+- assertVisible: Been here\?
+- assertVisible: Mamak Ali
+- assertVisible: Optional
+- takeScreenshot: y4-place-offer
+
+# The check fills the shop, the category and the place, once.
+- tapOn:
+    id: capture.location.accept
+- assertNotVisible:
+    id: capture.location.accept
+- assertVisible: Food & Dining
+- assertNotVisible: Optional
+- takeScreenshot: y4-place-offer-used
+- pressKey: Back

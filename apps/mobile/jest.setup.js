@@ -38,3 +38,19 @@ jest.mock('react-native-reanimated', () => ({
   useReducedMotion: () => false,
   LayoutAnimationConfig: ({ children }) => children,
 }));
+
+// The map's native module is missing under Jest; the sheet host reaches it through the place sheet.
+jest.mock('react-native-maps', () => {
+  const { View } = jest.requireActual('react-native');
+  const { createElement, forwardRef } = jest.requireActual('react');
+  const nativeView = (name) =>
+    forwardRef(function NativeMapView({ children, testID }, _ref) {
+      return createElement(View, { testID: testID ?? name }, children);
+    });
+  return {
+    __esModule: true,
+    default: nativeView('map-view'),
+    Marker: nativeView('map-marker'),
+    PROVIDER_GOOGLE: 'google',
+  };
+});

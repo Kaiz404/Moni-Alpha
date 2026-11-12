@@ -13,7 +13,6 @@ import {
 } from '@/components/capture/duplicate-sheet';
 import { FieldBubble, WalletBubble } from '@/components/capture/field-bubble';
 import { LocationField } from '@/components/capture/location-field';
-import { PlaceChip } from '@/components/capture/place-chip';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { PickerField } from '@/components/ui/picker-field';
 import { Segmented } from '@/components/ui/segmented';
@@ -23,6 +22,15 @@ import type { LedgerEntry } from '@/lib/ai/duplicates';
 import { useAuth } from '@/lib/auth/auth-context';
 import { readAmount, type AmountSentence } from '@/lib/amount/amount-input';
 import { amountSentence } from '@/lib/capture/amount-sentence';
+import {
+  AUTO_PLACE,
+  applyPlacePick,
+  locationColumns,
+  locationFieldState,
+  savedLocation,
+  suggestionSpot,
+  type EntryPlace,
+} from '@/lib/capture/entry-place';
 import { placeSuggestion } from '@/lib/capture/place-suggestion';
 import {
   duplicateCopy,
@@ -45,7 +53,7 @@ import {
 import { financeProjection$ } from '@/lib/finance/projection';
 import { leftLine } from '@/lib/finance/spent-summary';
 import type { FinanceWallet } from '@/lib/finance/types';
-import { approve } from '@/lib/haptics';
+import { approve, toggleOn } from '@/lib/haptics';
 import { recordMissedTransaction } from '@/lib/notifications/capture-health';
 import { toCategoryTiles } from '@/lib/sheet/category-tiles';
 import { openSheet, type WalletOption } from '@/lib/sheet/sheet-store';
@@ -126,8 +134,7 @@ export default function TypeItScreen() {
   const [date, setDate] = useState(() => first(params.date) ?? toLocalDateInput(new Date()));
   const [note, setNote] = useState(first(params.note) ?? '');
   const [here, setHere] = useState<EntryLocation>({ status: 'none' });
-  const [locationRemoved, setLocationRemoved] = useState(false);
-  const [chipClosed, setChipClosed] = useState(false);
+  const [place, setPlace] = useState<EntryPlace>(AUTO_PLACE);
   const [timezone, setTimezone] = useState('UTC');
   const [saving, setSaving] = useState(false);
   const [duplicate, setDuplicate] = useState<{
@@ -166,17 +173,17 @@ export default function TypeItScreen() {
   const category =
     categories.find((item) => item.id === categoryId) ?? null;
   const amount = readAmount(typed);
-  const recordsLocation = kind !== 'transfer' && wallet?.recordLocation !== false;
+  const phoneAllowed = wallet?.recordLocation !== false;
   const location =
-    recordsLocation && !locationRemoved && here.status === 'found'
-      ? here.location
-      : null;
+    kind === 'transfer' ? null : savedLocation({ place, here, phoneAllowed });
+  const spot =
+    kind === 'expense' ? suggestionSpot({ place, here, phoneAllowed }) : null;
   const suggestion = useMemo(
     () =>
-      location && kind === 'expense'
+      spot
         ? placeSuggestion({
             transactions,
-            here: location,
+            here: spot,
             currency: mainCurrency,
             activeCategoryIds: new Set(categories.map((item) => item.id)),
             locationOffWalletIds: new Set(
@@ -187,8 +194,9 @@ export default function TypeItScreen() {
             aliases,
           })
         : null,
-    [aliases, allWallets, categories, kind, location, mainCurrency, transactions],
+    [aliases, allWallets, categories, spot, mainCurrency, transactions],
   );
+  const offer = suggestion && !note.trim() ? suggestion : null;
 
   useEffect(() => {
     void ensureFinanceTimezone()
@@ -325,6 +333,26 @@ export default function TypeItScreen() {
     if (picked) setCategoryId(picked);
   };
 
+  const pickPlace = async () => {
+    const picked = await openSheet({
+      kind: 'place',
+      start: location ?? (here.status === 'found' ? here.location : null),
+      past: { transactions, currency: mainCurrency, aliases },
+    });
+    if (!picked) return;
+    const next = applyPlacePick(picked, note);
+    setPlace(next.place);
+    setNote(next.note);
+  };
+
+  const acceptOffer = () => {
+    if (!offer || !spot) return;
+    toggleOn();
+    setNote(offer.merchant);
+    if (offer.categoryId) setCategoryId(offer.categoryId);
+    setPlace({ kind: 'chosen', place: { ...spot, name: offer.merchant } });
+  };
+
   const chooseDate = async () => {
     const picked = await pickNativeDate(date);
     if (picked) setDate(picked);
@@ -414,13 +442,7 @@ export default function TypeItScreen() {
           categoryId: category?.id ?? null,
           merchant: note.trim() || null,
           transactionDate,
-          ...(location
-            ? {
-                locationLatitude: location.latitude,
-                locationLongitude: location.longitude,
-                locationName: location.name,
-              }
-            : {}),
+          ...locationColumns(location),
         });
         if (!parsed.success) {
           Alert.alert(
@@ -500,23 +522,6 @@ export default function TypeItScreen() {
         currency={wallet?.currency ?? mainCurrency}
         direction={kind}
         sentence={sentence}
-        aboveKeypad={
-          suggestion && !chipClosed && !note.trim() ? (
-            <PlaceChip
-              merchant={suggestion.merchant}
-              categoryName={
-                categories.find((item) => item.id === suggestion.categoryId)
-                  ?.name ?? null
-              }
-              onUse={() => {
-                setNote(suggestion.merchant);
-                if (suggestion.categoryId) setCategoryId(suggestion.categoryId);
-                setChipClosed(true);
-              }}
-              onDismiss={() => setChipClosed(true)}
-            />
-          ) : null
-        }
         control={
           <Segmented
             screen="capture"
@@ -598,13 +603,18 @@ export default function TypeItScreen() {
             </View>
             <View className="flex-row gap-2">
               {dateField}
-              {recordsLocation && here.status !== 'none' ? (
-                <LocationField
-                  here={here}
-                  removed={locationRemoved}
-                  onToggle={() => setLocationRemoved((removed) => !removed)}
-                />
-              ) : null}
+              <LocationField
+                state={locationFieldState({ place, here, phoneAllowed })}
+                offer={
+                  offer && {
+                    merchant: offer.merchant,
+                    categoryName:
+                      categories.find((item) => item.id === offer.categoryId)?.name ?? null,
+                  }
+                }
+                onOpen={() => void pickPlace()}
+                onAccept={acceptOffer}
+              />
             </View>
             {noteField}
           </>
