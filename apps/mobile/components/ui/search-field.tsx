@@ -21,6 +21,7 @@ export function SearchField({
   inputRef,
   onFocus,
   onBlur,
+  onClear,
 }: {
   testID: TestId;
   accessibilityLabel: string;
@@ -31,6 +32,8 @@ export function SearchField({
   inputRef?: Ref<TextInput>;
   onFocus?: () => void;
   onBlur?: () => void;
+  /** The clear button's action instead of emptying the text, such as leaving search with its results kept. */
+  onClear?: () => void;
 }) {
   const tokens = useThemeTokens();
   return (
@@ -60,8 +63,8 @@ export function SearchField({
       {value ? (
         <Press
           testID={tid(testID, 'clear')}
-          accessibilityLabel="Clear search"
-          onPress={() => onChangeText('')}
+          accessibilityLabel={onClear ? 'Close search' : 'Clear search'}
+          onPress={onClear ?? (() => onChangeText(''))}
           pressedClassName="bg-sand"
           className="h-10 w-10 items-center justify-center rounded-full"
         >

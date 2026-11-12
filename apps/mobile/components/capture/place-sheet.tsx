@@ -65,7 +65,7 @@ const GEOCODE_AFTER_MS = 600;
 const GEOCODE_RESULTS = 3;
 const PIN = 40;
 const MAP_H = 220;
-const PLACE_ROW_H = 60;
+const PLACE_ROW_H = 44;
 const GAP = 12;
 /** The map and the place row under it, which give way to the list while the user types. */
 const MAP_BLOCK_H = MAP_H + GAP + PLACE_ROW_H + GAP;
@@ -519,17 +519,15 @@ export function PlaceSheet({ request, onPick, ...frame }: PlaceSheetProps) {
             ) : null}
           </View>
           <View
-            className="flex-row items-center gap-2.5 rounded-tile bg-sand px-2.5"
+            className="flex-row items-center gap-2.5 px-1"
             style={{ height: PLACE_ROW_H, marginTop: GAP }}
             accessibilityLiveRegion="polite"
           >
-            <FieldBubble color={tokens.card}>
-              <IconSymbol
-                name={spot?.shop ? 'storefront-outline' : 'map-marker-outline'}
-                size={17}
-                color={tokens.foreground}
-              />
-            </FieldBubble>
+            <IconSymbol
+              name={spot?.shop ? 'storefront-outline' : 'map-marker-outline'}
+              size={20}
+              color={spot ? tokens.foreground : tokens.muted}
+            />
             <View className="min-w-0 flex-1 gap-px">
               <Text
                 className="text-[12px] leading-[16px] text-ink-2"
@@ -557,6 +555,7 @@ export function PlaceSheet({ request, onPick, ...frame }: PlaceSheetProps) {
           accessibilityLabel="Search places"
           placeholder="Search a shop or address"
           inputRef={searchInput}
+          onClear={search.focused ? search.leave : undefined}
           onFocus={() => search.setFocused(true)}
           onBlur={() => search.setFocused(false)}
           value={query}

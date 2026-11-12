@@ -150,6 +150,19 @@ describe('the place sheet', () => {
     });
   });
 
+  it('closes search from its X and keeps the results, and clears them from the X once closed', async () => {
+    await openPlaceSheet();
+    fireEvent(screen.getByTestId('sheet.place.search'), 'focus');
+    await type('jaya');
+    fireEvent.press(screen.getByLabelText('Close search'));
+    fireEvent(screen.getByTestId('sheet.place.search'), 'blur');
+    expect(screen.getByTestId('sheet.place.search').props.value).toBe('jaya');
+    expect(screen.getByLabelText('Jaya Grocer, Bangsar Village')).toBeTruthy();
+    fireEvent.press(screen.getByLabelText('Clear search'));
+    expect(screen.getByTestId('sheet.place.search').props.value).toBe('');
+    expect(screen.getByText('Near you')).toBeTruthy();
+  });
+
   it('stays open with a note on the row when Google cannot open the place', async () => {
     mockClient.details.mockResolvedValue({ status: 'unavailable' });
     await openPlaceSheet();
