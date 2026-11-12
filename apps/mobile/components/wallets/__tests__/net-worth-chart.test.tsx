@@ -77,7 +77,13 @@ function chart(
 
 describe('NetWorthChart', () => {
   afterEach(() => jest.useRealTimers());
-  beforeEach(() => jest.clearAllMocks());
+  // A slow drag: 100 ms between touch updates, so the tick governor never drops one here.
+  let clock = 0;
+  beforeEach(() => {
+    jest.clearAllMocks();
+    jest.spyOn(Date, 'now').mockImplementation(() => (clock += 100));
+  });
+  afterEach(() => jest.mocked(Date.now).mockRestore());
 
   it('shows the live number and thirty days by default, with no callout at rest', () => {
     chart([maybank, cash]);
@@ -128,14 +134,14 @@ describe('NetWorthChart', () => {
     await touch.move(301);
     expect(screen.getByText('Yesterday')).toBeTruthy();
     expect(screen.getByTestId('wallet.chart.callout')).toHaveTextContent('RM2,500.00');
-    // The landing, then 12 Oct; 11 and 13 Oct had no transactions, so no tick.
-    expect(jest.mocked(chartStep).mock.calls).toEqual([[false], [false]]);
+    // Strong on landing (10 Oct) and on 12 Oct; light on quiet 11 Oct and yesterday.
+    expect(jest.mocked(chartStep).mock.calls).toEqual([[false], [true], [false], [true]]);
     await touch.up(300);
     expect(screen.queryByTestId('wallet.chart.callout')).toBeNull();
     await touch.down(300);
     await touch.scroll(300);
     expect(screen.queryByTestId('wallet.chart.callout')).toBeNull();
-    expect(chartStep).toHaveBeenCalledTimes(3);
+    expect(chartStep).toHaveBeenCalledTimes(5);
   });
 
   for (const { value: range } of CHART_RANGES)

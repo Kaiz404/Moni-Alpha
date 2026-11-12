@@ -10,16 +10,17 @@ import Animated, {
 import { scheduleOnRN } from 'react-native-worklets';
 
 import { chartStep } from '@/lib/haptics';
+import { tickGovernor, type TickKind } from '@/lib/haptics/tick-governor';
 
-import { uAt, xAt, type Frame, type Zoom } from './zoom';
+import { uAt, type Frame, type Zoom } from './zoom';
 
 /**
  * The points a scrub lands on, left to right. `at` is where each sits on the x axis, in the
  * zoom's data space; `ids` is what it reads: a day, or a bar's bucket.
  */
 /**
- * Every day (or bar) the tooltip can stop on, in order. `marks` flags the ones with transactions:
- * the tooltip moves through every point, and ticks only on marked ones.
+ * Every day (or bar) the tooltip can stop on, in order. `marks` flags the ones with transactions,
+ * which tick strong; the rest tick light, and `tickGovernor` spaces them out on a fast glide.
  */
 export type ScrubPoints = { at: Float64Array; ids: Float64Array; marks: Uint8Array };
 
@@ -73,7 +74,7 @@ export function nearestPoint(at: Float64Array, u: number): number {
  * nearest point on the live viewport, so it works mid-zoom. A sideways drag, or a 200 ms hold and
  * then any direction, keeps it following the finger; a vertical swipe hands the page its scroll
  * and hides it at once. `point` (an index into `points`) moves on the UI thread; React hears only
- * when it changes, with one haptic each time, and once more with null when the finger lets go.
+ * when it changes, with a tick spaced by `tickGovernor`, and once more with null when the finger lets go.
  */
 export function useChartScrub({
   testID,
@@ -94,8 +95,10 @@ export function useChartScrub({
   const reachedU = useSharedValue(NaN);
   const latest = useRef(onPoint);
   latest.current = onPoint;
-  const reach = (id: number, tick: boolean, dense: boolean) => {
-    if (tick) chartStep(dense);
+  const ticks = useRef(tickGovernor());
+  const reach = (id: number, landed: boolean, kind: TickKind) => {
+    const play = landed ? ticks.current.land(Date.now()) : ticks.current.offer(Date.now(), kind);
+    if (play) chartStep(play === 'light');
     latest.current(id);
   };
   const lift = () => latest.current(null);
@@ -113,19 +116,17 @@ export function useChartScrub({
       point.set(next);
       reachedU.set(at[next]!);
       if (first) {
-        scheduleOnRN(reach, ids[next]!, true, false);
+        scheduleOnRN(reach, ids[next]!, true, 'data');
         return;
       }
-      // One touch update a frame, so at most one haptic a frame: it plays when the finger
-      // reached or passed a day with transactions, and is the frequent tick when those days
-      // sit closer than DENSE_POINT_PX on screen.
+      // One touch update a frame, so one offer a frame however many days it passed: a day with
+      // transactions among them makes it a strong one. The governor spaces the ticks out.
       const was = nearestPoint(at, before);
       const low = Math.min(was, next);
       const high = Math.max(was, next);
-      let crossed = 0;
-      for (let i = low; i <= high; i++) if (i !== was && marks[i] === 1) crossed++;
-      const travel = Math.abs(xAt(at[next]!, f, t, frame) - xAt(before, f, t, frame));
-      scheduleOnRN(reach, ids[next]!, crossed > 0, crossed > 0 && travel / crossed < DENSE_POINT_PX);
+      let data = false;
+      for (let i = low; i <= high; i++) if (i !== was && marks[i] === 1) data = true;
+      scheduleOnRN(reach, ids[next]!, false, data ? 'data' : 'quiet');
     };
     const end = (scrolled: boolean) => {
       'worklet';

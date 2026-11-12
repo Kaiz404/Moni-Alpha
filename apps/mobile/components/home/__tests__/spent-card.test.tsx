@@ -82,7 +82,13 @@ async function readAt(x: number): Promise<string> {
 
 describe('SpentCard', () => {
   afterEach(() => jest.useRealTimers());
-  beforeEach(() => jest.clearAllMocks());
+  // A slow drag: 100 ms between touch updates, so the tick governor never drops one here.
+  let clock = 0;
+  beforeEach(() => {
+    jest.clearAllMocks();
+    jest.spyOn(Date, 'now').mockImplementation(() => (clock += 100));
+  });
+  afterEach(() => jest.mocked(Date.now).mockRestore());
 
   it('puts what is left under the chart and shows only marks at rest', () => {
     render(
@@ -189,8 +195,9 @@ describe('SpentCard', () => {
     expect(screen.getByTestId('home.chart.callout')).toHaveTextContent('RM0.00');
     await touch.move(170);
     expect(screen.getByText('By today')).toBeTruthy();
-    // The landing, then passing 10 Oct on the way back to 1 Oct, then today; 11 Oct alone is quiet.
-    expect(jest.mocked(chartStep).mock.calls).toEqual([[false], [false], [false]]);
+    // Strong on landing (10 Oct), light on quiet 11 Oct, strong passing 10 Oct back to 1 Oct, and
+    // strong passing it again on the way to today.
+    expect(jest.mocked(chartStep).mock.calls).toEqual([[false], [true], [false], [false]]);
     await touch.up(170);
     expect(screen.queryByTestId('home.chart.callout')).toBeNull();
   });
@@ -233,17 +240,6 @@ describe('SpentCard', () => {
         await touch.up(RIGHT);
         expect(chartStep).toHaveBeenCalledTimes(2);
       });
-
-  it('plays the frequent tick between points closer than 8 px', async () => {
-    card();
-    fireEvent.press(screen.getByTestId('home.range.1y'));
-    const touch = finger('home.chart');
-    // A year over 256 px: 10 Oct and today sit 2.8 px apart at the right edge.
-    await touch.down(307);
-    await touch.drag(307);
-    await touch.move(RIGHT);
-    expect(jest.mocked(chartStep).mock.calls).toEqual([[false], [true]]);
-  });
 
   it('labels the even pace on 1M Daily and drops it on other ranges', async () => {
     render(
