@@ -217,15 +217,70 @@ function Halo({ delay }: { delay: number }) {
 /** How tall each bar peaks; mirrored so the wave is symmetrical about the middle bar. */
 const WAVE = [0.35, 0.6, 0.85, 1, 0.85, 0.6, 0.35] as const;
 
-function WaveBar({ peak, index }: { peak: number; index: number }) {
+/** Mic loudness from 0 to 1, or null to breathe on its own while Moni reads. */
+type Level = SharedValue<number> | null;
+
+function WaveBar({ peak, index, level }: { peak: number; index: number; level: Level }) {
   const tokens = useThemeTokens();
   const breath = useBreath(900, Math.abs(index - 3) * 120);
-  const style = useAnimatedStyle(() => ({ height: 6 + peak * 22 * (0.35 + breath.get() * 0.65) }));
+  const style = useAnimatedStyle(() => {
+    const swing = level ? 0.2 + level.get() * (0.55 + breath.get() * 0.45) : 0.35 + breath.get() * 0.65;
+    return { height: 6 + peak * 26 * Math.min(1, swing) };
+  });
   return (
     <Animated.View
       className="w-[5px] rounded-full"
       style={[{ backgroundColor: tokens.foreground }, style]}
     />
+  );
+}
+
+/**
+ * The Ink mic in a Lilac glow with rings rippling out and four sparkles round it, over a mirrored
+ * voice wave. Given a `level`, the mic, glow and wave follow how loud the user is.
+ */
+export function MicHero({ level }: { level: Level }) {
+  const tokens = useThemeTokens();
+  const swell = useAnimatedStyle(() => ({ transform: [{ scale: 1 + (level?.get() ?? 0) * 0.1 }] }));
+  const glowSwell = useAnimatedStyle(() => ({ transform: [{ scale: 1 + (level?.get() ?? 0) * 0.18 }] }));
+  return (
+    <View className="items-center gap-7">
+      <View
+        className="items-center justify-center"
+        style={{ width: 260, height: 220 }}
+      >
+        <Animated.View
+          className="absolute items-center justify-center"
+          style={[{ width: 210, height: 210 }, glowSwell]}
+        >
+          <Glow size={210} />
+        </Animated.View>
+        <Halo delay={0} />
+        <Halo delay={800} />
+        <Halo delay={1600} />
+        <Sparkles spread={118} />
+        <Animated.View
+          className="h-24 w-24 items-center justify-center rounded-full bg-primary"
+          style={swell}
+        >
+          <IconSymbol
+            name="microphone"
+            size={36}
+            color={tokens.primaryForeground}
+          />
+        </Animated.View>
+      </View>
+      <View className="h-8 flex-row items-center gap-[5px]">
+        {WAVE.map((peak, index) => (
+          <WaveBar
+            key={index}
+            peak={peak}
+            index={index}
+            level={level}
+          />
+        ))}
+      </View>
+    </View>
   );
 }
 
@@ -248,32 +303,7 @@ export function HeardQuote({ text }: { text: string }) {
 
   return (
     <View className="items-center gap-7">
-      <View
-        className="items-center justify-center"
-        style={{ width: 260, height: 220 }}
-      >
-        <Glow size={210} />
-        <Halo delay={0} />
-        <Halo delay={800} />
-        <Halo delay={1600} />
-        <Sparkles spread={118} />
-        <View className="h-24 w-24 items-center justify-center rounded-full bg-primary">
-          <IconSymbol
-            name="microphone"
-            size={36}
-            color={tokens.primaryForeground}
-          />
-        </View>
-      </View>
-      <View className="h-7 flex-row items-center gap-[5px]">
-        {WAVE.map((peak, index) => (
-          <WaveBar
-            key={index}
-            peak={peak}
-            index={index}
-          />
-        ))}
-      </View>
+      <MicHero level={null} />
       <Text
         variant="sectionTitle"
         className="max-w-[310px] text-center"

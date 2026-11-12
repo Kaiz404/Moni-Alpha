@@ -1,8 +1,15 @@
 import { router } from 'expo-router';
+import { useEffect } from 'react';
 import { View } from 'react-native';
 import Animated, {
+  Easing,
   type SharedValue,
   useAnimatedStyle,
+  useReducedMotion,
+  useSharedValue,
+  withRepeat,
+  withSequence,
+  withTiming,
 } from 'react-native-reanimated';
 
 import { Button } from '@/components/ui/button';
@@ -13,51 +20,34 @@ import { Text } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { tid } from '@/lib/test-ids';
 
+import { MicHero } from './reading-motion';
+
 function elapsed(seconds: number) {
   return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
 }
 
-/** How far each layer grows at full volume. They nest, so the rings spread apart as you get louder. */
-const GROW = { outer: 0.16, middle: 0.1, core: 0.06 };
-
-/** The mic orb: Lilac rings on a Sand light halo, swelling with how loud the mic hears you. */
-function Orb({ level }: { level: SharedValue<number> }) {
-  const tokens = useThemeTokens();
-  const outer = useAnimatedStyle(() => ({
-    transform: [{ scale: 1 + GROW.outer * level.get() }],
-  }));
-  const middle = useAnimatedStyle(() => ({
-    transform: [{ scale: 1 + GROW.middle * level.get() }],
-  }));
-  const core = useAnimatedStyle(() => ({
-    transform: [{ scale: 1 + GROW.core * level.get() }],
-  }));
-
+/** The red dot that says the mic is on, fading in and out beside the timer. */
+function RecordingDot() {
+  const reduceMotion = useReducedMotion();
+  const fade = useSharedValue(1);
+  useEffect(() => {
+    if (reduceMotion) return;
+    fade.set(
+      withRepeat(
+        withSequence(
+          withTiming(0.3, { duration: 600, easing: Easing.inOut(Easing.sin) }),
+          withTiming(1, { duration: 600, easing: Easing.inOut(Easing.sin) }),
+        ),
+        -1,
+      ),
+    );
+  }, [fade, reduceMotion]);
+  const style = useAnimatedStyle(() => ({ opacity: fade.get() }));
   return (
-    <View className="h-[320px] items-center justify-center self-stretch">
-      <View className="h-[268px] w-[268px] items-center justify-center rounded-full bg-sand-light">
-        <Animated.View
-          className="h-[220px] w-[220px] items-center justify-center rounded-full bg-pending-fill"
-          style={outer}
-        >
-          <Animated.View
-            className="h-[180px] w-[180px] items-center justify-center rounded-full bg-block-lilac/50"
-            style={middle}
-          >
-            <Animated.View
-              className="h-[140px] w-[140px] items-center justify-center rounded-full bg-block-lilac"
-              style={core}
-            >
-              <IconSymbol
-                name="microphone"
-                size={48}
-                color={tokens.onPastel}
-              />
-            </Animated.View>
-          </Animated.View>
-        </Animated.View>
-      </View>
-    </View>
+    <Animated.View
+      className="h-2.5 w-2.5 rounded-full bg-coral"
+      style={style}
+    />
   );
 }
 
@@ -78,25 +68,26 @@ export function Listening({
     <Page
       screen="capture"
       kind="task"
-      title="Say it"
-      trailing={
-        <Text
-          testID={tid('capture', 'timer')}
-          variant="body"
-          className="font-display-semibold text-ink-2"
-          style={{ fontVariant: ['tabular-nums'] }}
-          accessibilityLabel={`Recording for ${seconds} seconds`}
-        >
-          {elapsed(seconds)}
-        </Text>
-      }
+      title=""
     >
-      <View className="flex-1 items-center gap-3 px-5">
-        <Orb level={level} />
+      <View className="flex-1 items-center justify-center gap-5 px-5 pb-6">
+        <View className="h-8 flex-row items-center gap-2 rounded-full bg-sand px-3.5">
+          <RecordingDot />
+          <Text
+            testID={tid('capture', 'timer')}
+            variant="body"
+            className="font-display-semibold text-foreground"
+            style={{ fontVariant: ['tabular-nums'] }}
+            accessibilityLabel={`Recording for ${seconds} seconds`}
+          >
+            {elapsed(seconds)}
+          </Text>
+        </View>
+        <MicHero level={level} />
         <Text
           testID={tid('capture', 'transcript')}
           accessibilityLiveRegion="polite"
-          className="text-center text-[26px] leading-[32px] font-display-semibold tracking-[-0.52px] text-foreground"
+          className="min-h-16 max-w-[320px] text-center text-[26px] leading-[32px] font-display-semibold tracking-[-0.52px] text-foreground"
           numberOfLines={3}
         >
           {transcript || 'Listening…'}
@@ -131,9 +122,9 @@ export function SayDenied({ onTurnOn }: { onTurnOn: () => void }) {
     <Page
       screen="capture"
       kind="task"
-      title="Say it"
+      title=""
     >
-      <View className="flex-1 items-center gap-3 px-7 pt-24">
+      <View className="flex-1 items-center justify-center gap-3 px-7 pb-10">
         <View className="h-20 w-20 items-center justify-center rounded-full bg-sand">
           <IconSymbol
             name="microphone-off"
