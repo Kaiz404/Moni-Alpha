@@ -451,6 +451,8 @@ export default function TypeItScreen() {
 
   const walletBubble = (item: FinanceWallet | null) =>
     item ? <WalletBubble wallet={item} /> : undefined;
+  const walletName = (item: FinanceWallet | null) =>
+    item ? (compactWalletNames(allWallets)[item.id] ?? item.name) : '';
 
   const dateField = (
     <PickerField
@@ -538,63 +540,73 @@ export default function TypeItScreen() {
       >
         {kind === 'transfer' ? (
           <>
-            <PickerField
-              testID={tid('capture', 'wallet')}
-              size="capture"
-              label="From"
-              value={wallet?.name ?? ''}
-              leading={walletBubble(wallet)}
-              onPress={() => void pickWallet('from')}
-            />
-            <PickerField
-              testID={tid('capture', 'to-wallet')}
-              size="capture"
-              label="To"
-              value={toWallet?.name ?? ''}
-              leading={walletBubble(toWallet)}
-              onPress={() => void pickWallet('to')}
-            />
+            <View className="flex-row gap-2">
+              <PickerField
+                testID={tid('capture', 'wallet')}
+                size="capture"
+                className="flex-1"
+                label="From"
+                value={walletName(wallet)}
+                spokenValue={wallet?.name}
+                leading={walletBubble(wallet)}
+                onPress={() => void pickWallet('from')}
+              />
+              <PickerField
+                testID={tid('capture', 'to-wallet')}
+                size="capture"
+                className="flex-1"
+                label="To"
+                value={walletName(toWallet)}
+                spokenValue={toWallet?.name}
+                leading={walletBubble(toWallet)}
+                onPress={() => void pickWallet('to')}
+              />
+            </View>
             {dateField}
             {noteField}
           </>
         ) : (
           <>
-            <PickerField
-              testID={tid('capture', 'category')}
-              size="capture"
-              label="Category"
-              value={category?.name ?? ''}
-              leading={
-                category ? (
-                  <TintBubble
-                    size={32}
-                    icon={resolveTransactionIcon(category.icon ?? 'shape-outline', kind)}
-                    color={category.color}
-                  />
-                ) : undefined
-              }
-              onPress={() => void pickCategory()}
-            />
             <View className="flex-row gap-2">
               <PickerField
                 testID={tid('capture', 'wallet')}
                 size="capture"
                 className="flex-1"
                 label={kind === 'income' ? 'Into' : 'Paid with'}
-                value={wallet ? compactWalletNames(allWallets)[wallet.id] ?? wallet.name : ''}
+                value={walletName(wallet)}
+                spokenValue={wallet?.name}
                 leading={walletBubble(wallet)}
                 onPress={() => void pickWallet('from')}
               />
+              <PickerField
+                testID={tid('capture', 'category')}
+                size="capture"
+                className="flex-1"
+                label="Category"
+                value={category?.name ?? ''}
+                leading={
+                  category ? (
+                    <TintBubble
+                      size={32}
+                      icon={resolveTransactionIcon(category.icon ?? 'shape-outline', kind)}
+                      color={category.color}
+                    />
+                  ) : undefined
+                }
+                onPress={() => void pickCategory()}
+              />
+            </View>
+            <View className="flex-row gap-2">
               {dateField}
+              {recordsLocation && here.status !== 'none' ? (
+                <LocationField
+                  here={here}
+                  removed={locationRemoved}
+                  onToggle={() => setLocationRemoved((removed) => !removed)}
+                />
+              ) : null}
             </View>
             {noteField}
-            {recordsLocation && here.status !== 'none' ? (
-              <LocationField
-                here={here}
-                removed={locationRemoved}
-                onToggle={() => setLocationRemoved((removed) => !removed)}
-              />
-            ) : null}
           </>
         )}
       </AmountPage>
