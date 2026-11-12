@@ -48,7 +48,6 @@ tags:
     id: capture.shop
 - assertVisible:
     id: capture.evidence
-- assertVisible: Receipt · 3 items
 - assertVisible: Moni read 3 items and a total of RM15.30.*
 - takeScreenshot: c2-l2-pair
 

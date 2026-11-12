@@ -1,11 +1,12 @@
 import { useValue } from '@legendapp/state/react';
-import { Image } from 'expo-image';
 import { useEffect, useRef, useState } from 'react';
 import { ScrollView, View } from 'react-native';
+import Animated, { FadeIn } from 'react-native-reanimated';
 
 import { TextTile } from '@/components/amount/text-tile';
 import { FieldBubble, WalletBubble } from '@/components/capture/field-bubble';
 import { LocationField } from '@/components/capture/location-field';
+import { ReceiptPhoto } from '@/components/capture/receipt-photo';
 import { Button } from '@/components/ui/button';
 import {
   IconSymbol,
@@ -29,7 +30,6 @@ import {
   phoneMayLocate,
   savedLocation,
 } from '@/lib/capture/entry-place';
-import { itemsLabel } from '@/lib/capture/read-capture';
 import { spokenAmount } from '@/lib/capture/spoken-amount';
 import { formatDay } from '@/lib/dates/day-label';
 import {
@@ -71,7 +71,6 @@ type CaptureResultProps = {
   approving: boolean;
 };
 
-const AMOUNT_ID = tid('capture', 'amount');
 
 /**
  * The check page after Say it or Scan a receipt (V2A-CaptureSayHeard,
@@ -216,6 +215,10 @@ export function CaptureResult({
         editing={editing}
         onEditingChange={setEditing}
       >
+      <Animated.View
+        entering={FadeIn.duration(280)}
+        className="flex-1"
+      >
       <ScrollView
         className="flex-1"
         contentContainerClassName="gap-2 px-5 pb-3"
@@ -239,54 +242,41 @@ export function CaptureResult({
             </Text>
           </View>
         ) : null}
-        <View className="min-h-16 flex-row items-center gap-3 pb-1">
-          {quote.source === 'camera' && editing !== AMOUNT_ID ? (
-            <Image
-              source={{ uri: quote.imageUri }}
-              contentFit="cover"
-              accessibilityLabel="The scanned receipt"
-              style={{ width: 52, height: 64, borderRadius: 12 }}
-            />
-          ) : null}
-          <View className="min-w-0 flex-1">
-            <InPlaceField
-              testID={tid('capture', 'amount')}
-              label="Amount"
-              kind="amount"
-              prefix={`${draft.kind === 'expense' ? '−' : '+'}${currencySymbol(currency)}`}
-              hint={
-                read.amountMinor > 0
-                  ? `${currency} · ${amountRead}`
-                  : currency
-              }
-              value={draft.amountMinor > 0 ? draft.amountMinor : null}
-              onSave={(amountMinor) => onEdit({ amountMinor })}
-            >
-              <Text
-                testID={tid('capture', 'result', 'amount')}
-                variant="amountHero"
-                className={
-                  draft.kind === 'income'
-                    ? 'text-deep-mint'
-                    : 'text-foreground'
-                }
-                numberOfLines={1}
-                adjustsFontSizeToFit
-              >
-                {amountText}
-              </Text>
-            </InPlaceField>
-            {quote.source === 'camera' && editing !== AMOUNT_ID ? (
-              <Text
-                variant="meta"
-                className="text-muted"
-              >
-                {draft.itemCount === null
-                  ? 'Receipt'
-                  : `Receipt · ${itemsLabel(draft.itemCount)}`}
-              </Text>
-            ) : null}
-          </View>
+        {quote.source === 'camera' ? <ReceiptPhoto uri={quote.imageUri} /> : null}
+        <View className="min-h-16 items-center justify-center py-1">
+          <InPlaceField
+            testID={tid('capture', 'amount')}
+            label="Amount"
+            kind="amount"
+            prefix={`${draft.kind === 'expense' ? '−' : '+'}${currencySymbol(currency)}`}
+            hint={
+              read.amountMinor > 0
+                ? `${currency} · ${amountRead}`
+                : currency
+            }
+            value={draft.amountMinor > 0 ? draft.amountMinor : null}
+            onSave={(amountMinor) => onEdit({ amountMinor })}
+          >
+            {({ editable, editor }) =>
+              editor ??
+              editable(
+                <Text
+                  testID={tid('capture', 'result', 'amount')}
+                  variant="amountHero"
+                  className={
+                    draft.kind === 'income'
+                      ? 'text-deep-mint'
+                      : 'text-foreground'
+                  }
+                  numberOfLines={1}
+                  adjustsFontSizeToFit
+                >
+                  {amountText}
+                </Text>,
+                { className: 'min-h-11 max-w-full flex-row items-center gap-2 self-center' },
+              )
+            }
+          </InPlaceField>
         </View>
         <View className="flex-row gap-2">
           <PickerField
@@ -379,6 +369,7 @@ export function CaptureResult({
           </View>
         </View>
       </ScrollView>
+      </Animated.View>
       </InPlaceGroup>
       <View className="flex-row gap-2 px-5 pb-3">
         <Button

@@ -93,20 +93,10 @@ const addedPage = (itemCount: number | null) =>
 describe('the receipt item count', () => {
   beforeEach(() => financeProjection$.set(EMPTY_FINANCE_PROJECTION));
 
-  it('sits in the check page meta', async () => {
+  it('leaves the check page without a Receipt meta line', async () => {
     checkPage(6);
-    expect(await screen.findByText('Receipt · 6 items')).toBeTruthy();
-  });
-
-  it('says one item in the singular', async () => {
-    checkPage(1);
-    expect(await screen.findByText('Receipt · 1 item')).toBeTruthy();
-  });
-
-  it('leaves the check page at Receipt with no count', async () => {
-    checkPage(null);
-    expect(await screen.findByText('Receipt')).toBeTruthy();
-    expect(screen.queryByText(/items?$/)).toBeNull();
+    expect(await screen.findByLabelText('The scanned receipt')).toBeTruthy();
+    expect(screen.queryByText(/^Receipt/)).toBeNull();
   });
 
   it('ends the Added row meta', () => {

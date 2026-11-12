@@ -25,15 +25,9 @@ import { itemsLabel } from '@/lib/capture/read-capture';
 import type { TransactionRowData } from '@/lib/transactions/row';
 import { tid } from '@/lib/test-ids';
 
-import {
-  HeardQuote,
-  ReadingSteps,
-  RECEIPT_STEPS,
-  ScanningReceipt,
-  VOICE_STEPS,
-} from './reading-motion';
+import { HeardQuote, ScanningReceipt } from './reading-motion';
 
-/** V2A-CaptureScan `reading`: what the user gave Moni, alive, over the steps Moni works through. */
+/** V2A-CaptureScan `reading`: what the user gave Moni, centred and moving while Moni reads it. */
 export function CaptureReading({ quote }: { quote: CaptureQuote }) {
   const camera = quote.source === 'camera';
   return (
@@ -43,12 +37,11 @@ export function CaptureReading({ quote }: { quote: CaptureQuote }) {
       title={camera ? 'Reading the receipt' : 'Reading what you said'}
     >
       <View
-        className="gap-6 px-5 pt-2"
+        className="flex-1 items-center justify-center px-5 pb-16"
         accessibilityLabel={camera ? 'Moni is reading the receipt' : 'Moni is reading what you said'}
         accessibilityRole="progressbar"
       >
         {camera ? <ScanningReceipt imageUri={quote.imageUri} /> : <HeardQuote text={quote.text} />}
-        <ReadingSteps steps={camera ? RECEIPT_STEPS : VOICE_STEPS} />
       </View>
     </Page>
   );
