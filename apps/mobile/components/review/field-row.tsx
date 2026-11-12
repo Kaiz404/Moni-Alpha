@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { glyphOn } from '@/lib/theme/glyph-on';
 import { View } from 'react-native';
 
 import { CategoryIcon } from '@/components/categories/category-icon';
@@ -57,7 +58,7 @@ export function FieldRow({
             >
               <CategoryIcon
                 icon={look.icon}
-                color={look.color ? tokens.onCategory : tokens.foreground}
+                color={look.color ? glyphOn(look.color) : tokens.foreground}
                 size={16}
               />
             </View>

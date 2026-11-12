@@ -1,4 +1,5 @@
 import type { MinorAmount } from '@repo/types';
+import { glyphOn } from '@/lib/theme/glyph-on';
 import { useEffect } from 'react';
 import { View } from 'react-native';
 import Animated, {
@@ -177,7 +178,7 @@ export function Ring({
           <IconSymbol
             name={resolveTransactionIcon(icon, 'expense')}
             size={18}
-            color={color ? tokens.onCategory : tokens.foreground}
+            color={color ? glyphOn(color) : tokens.foreground}
           />
         </View>
       </View>

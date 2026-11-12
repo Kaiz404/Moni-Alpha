@@ -224,12 +224,12 @@ export function MoniNoticed({ sentence, onAsk }: { sentence: string; onAsk: () =
       <IconSymbol
         name="creation"
         size={20}
-        color={tokens.lilac}
+        color={tokens.moniGlyph}
       />
       <View className="min-w-0 flex-1 gap-1">
         <Text
           variant="caps"
-          className="text-inactive"
+          className="text-on-ink-meta"
         >
           Moni noticed
         </Text>

@@ -1,4 +1,5 @@
 import { View } from 'react-native';
+import { glyphOn } from '@/lib/theme/glyph-on';
 import Animated from 'react-native-reanimated';
 
 import { useHold, type HoldAnchor } from '@/components/ui/hold-menu';
@@ -223,7 +224,7 @@ export function TintBubble({
       <IconSymbol
         name={icon}
         size={BUBBLE_GLYPH[size]}
-        color={color ? tokens.onCategory : tokens.foreground}
+        color={color ? glyphOn(color) : tokens.foreground}
       />
     </View>
   );

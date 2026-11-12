@@ -129,7 +129,7 @@ function ToastCapsule({ toast }: { toast: ShownToast }) {
           toast.icon
             ? tokens.primaryForeground
             : toast.tone === 'removed'
-              ? tokens.inactive
+              ? tokens.onInkMeta
               : tokens.onInkPositive
         }
       />

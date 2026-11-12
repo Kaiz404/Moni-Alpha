@@ -75,6 +75,32 @@ function createOrRevive(collection: string) {
   };
 }
 
+/**
+ * A write queued offline before the palette change still carries an old hex, which the colour
+ * constraint would refuse. Updates get the same rewrite as creates.
+ */
+export function updateWithCurrentColor(collection: string) {
+  return async (input: Record<string, unknown>, params: CreateParams) => {
+    const row = 'color' in input ? { ...input, color: legacyColor(input.color as string | null | undefined) } : input;
+    const updated = await supabase
+      .from(collection)
+      .update(row)
+      .eq('id', input.id as string)
+      .select();
+    if (updated.error) {
+      params.onError(new Error(updated.error.message), {
+        setParams: params,
+        source: 'update',
+        type: 'set',
+        retry: params,
+        input,
+      });
+      return { data: undefined };
+    }
+    return { data: updated.data?.[0] };
+  };
+}
+
 const PULL_PAGE = 1000;
 
 /**
@@ -109,6 +135,9 @@ function syncTable(collection: string, extra?: Record<string, unknown>) {
     collection,
     list: pagedList(collection) as never,
     create: createOrRevive(collection) as never,
+    ...(collection === 'categories' || collection === 'wallets'
+      ? { update: updateWithCurrentColor(collection) as never }
+      : {}),
     realtime: true,
     persist: { name: collection, ...persistOptions },
     waitFor: waitForAuth,

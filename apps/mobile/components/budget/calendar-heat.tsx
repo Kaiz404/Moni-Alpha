@@ -183,6 +183,7 @@ function DayCell({
   ]
     .filter(Boolean)
     .join(', ');
+  const heat = day.bucket !== 'future' && day.bucket !== 'plain';
   const ink = selected
     ? 'text-primary-foreground'
     : day.bucket === 'future' || day.bucket === 'plain'
@@ -204,7 +205,7 @@ function DayCell({
       </Text>
       {spent > 0 ? (
         <Text
-          className={`text-[12px] leading-[14px] ${selected ? 'text-primary-foreground' : 'text-ink-2'}`}
+          className={`text-[12px] leading-[14px] ${selected ? 'text-primary-foreground' : heat ? 'text-on-category' : 'text-ink-2'}`}
           style={{ fontVariant: ['tabular-nums'] }}
         >
           {Math.round(spent / 100)}
@@ -212,7 +213,7 @@ function DayCell({
       ) : null}
       {billName ? (
         <View
-          className={`absolute right-1.5 top-[5px] h-1.5 w-1.5 rounded-full ${selected ? 'bg-primary-foreground' : 'bg-primary'}`}
+          className={`absolute right-1.5 top-[5px] h-1.5 w-1.5 rounded-full ${selected ? 'bg-primary-foreground' : heat ? 'bg-on-category' : 'bg-primary'}`}
         />
       ) : null}
     </Press>

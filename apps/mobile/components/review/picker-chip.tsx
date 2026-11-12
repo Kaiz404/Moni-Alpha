@@ -1,4 +1,5 @@
 import { View } from 'react-native';
+import { glyphOn } from '@/lib/theme/glyph-on';
 import { useUniwind } from 'uniwind';
 
 import { CategoryIcon } from '@/components/categories/category-icon';
@@ -78,7 +79,7 @@ export function PickerChip({
       >
         <CategoryIcon
           icon={look.icon}
-          color={look.color ? tokens.onCategory : tokens.foreground}
+          color={look.color ? glyphOn(look.color) : tokens.foreground}
           size={16}
         />
       </View>

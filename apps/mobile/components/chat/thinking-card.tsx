@@ -55,7 +55,7 @@ export function ThinkingCard({ label }: { label: string }) {
       <IconSymbol
         name="creation"
         size={16}
-        color={tokens.lilac}
+        color={tokens.moniGlyph}
       />
       <View className="flex-row gap-[5px]">
         {[0, 1, 2].map((index) => (

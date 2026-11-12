@@ -1,4 +1,5 @@
 import type { CurrencyCode, MinorAmount } from '@repo/types';
+import { glyphOn } from '@/lib/theme/glyph-on';
 import { useEffect, useMemo, useState } from 'react';
 import { View } from 'react-native';
 import { Marker } from 'react-native-maps';
@@ -147,7 +148,7 @@ export function PinBubble({ look, size, glyph }: { look: CategoryLook; size: num
         <IconSymbol
           name={look.icon}
           size={glyph}
-          color={look.color ? tokens.onCategory : tokens.foreground}
+          color={look.color ? glyphOn(look.color) : tokens.foreground}
         />
       </View>
     </View>

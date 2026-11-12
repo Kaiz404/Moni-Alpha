@@ -1,4 +1,5 @@
 import { useValue } from '@legendapp/state/react';
+import { glyphOn } from '@/lib/theme/glyph-on';
 import { router } from 'expo-router';
 import { useState } from 'react';
 import { View } from 'react-native';
@@ -414,9 +415,10 @@ function DoneRow({
   );
 }
 
-/** Sand carries the page's ink; pastels and category colours always carry #17181A. */
+/** Sand carries the page's ink; blocks carry onPastel, which flips in dark; category colours carry the dark or light glyph that reads on them. */
 function inkOn(fill: string, color: string | undefined, tokens: ReturnType<typeof useThemeTokens>) {
-  return fill === 'bg-sand' && !color ? tokens.foreground : tokens.onPastel;
+  if (color) return glyphOn(color);
+  return fill === 'bg-sand' ? tokens.foreground : tokens.onPastel;
 }
 
 function ActionButton({

@@ -1,5 +1,6 @@
 import { View } from 'react-native';
 
+import { glyphOn } from '@/lib/theme/glyph-on';
 import { CategoryIcon } from '@/components/categories/category-icon';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Press } from '@/components/ui/press';
@@ -55,7 +56,7 @@ export function SoftBubble({
       <CategoryIcon
         icon={icon}
         size={glyph}
-        color={color ? tokens.onCategory : tokens.foreground}
+        color={color ? glyphOn(color) : tokens.foreground}
       />
     </View>
   );
@@ -76,7 +77,7 @@ export function InkCardLabel({
       <IconSymbol
         name="creation"
         size={16}
-        color={tokens.lilac}
+        color={tokens.moniGlyph}
       />
       <Text
         variant="caps"

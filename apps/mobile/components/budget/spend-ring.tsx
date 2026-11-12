@@ -1,4 +1,5 @@
 import type { MinorAmount } from '@repo/types';
+import { glyphOn } from '@/lib/theme/glyph-on';
 import { useEffect, useMemo, useState } from 'react';
 import { View } from 'react-native';
 import {
@@ -143,7 +144,7 @@ function arcLook(
   tokens: ReturnType<typeof useThemeTokens>,
 ) {
   const neutral = dark ? tokens.inactive : tokens.hairline;
-  return { fill: color ?? neutral, glyph: tokens.onCategory };
+  return { fill: color ?? neutral, glyph: color ? glyphOn(color) : tokens.onCategory };
 }
 
 type ArcProps = {

@@ -62,7 +62,7 @@ export const customCategoryColors = [
  * Old pastel hex (category catalogue and wallet card swatches) to its Current+ replacement, keyed
  * uppercase. Backups and queued writes made before the palette change still carry the old values.
  */
-const legacyColorMap: Readonly<Record<string, string>> = {
+export const legacyColorMap: Readonly<Record<string, string>> = {
   '#F2B8B5': '#FC7F78',
   '#F4C58B': '#FBAF51',
   '#EAD978': '#FADC35',

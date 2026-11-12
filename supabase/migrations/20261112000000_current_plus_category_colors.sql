@@ -2,7 +2,7 @@
 -- Drop the check first so the rewrite below is allowed, then map every stored colour and re-add it.
 ALTER TABLE public.categories DROP CONSTRAINT IF EXISTS categories_color_catalog_check;
 
-CREATE TEMP TABLE current_plus_colors (old_color text PRIMARY KEY, new_color text NOT NULL) ON COMMIT DROP;
+CREATE TEMP TABLE current_plus_colors (old_color text PRIMARY KEY, new_color text NOT NULL);
 INSERT INTO current_plus_colors (old_color, new_color) VALUES
   ('#F2B8B5', '#FC7F78'), ('#F4C58B', '#FBAF51'), ('#EAD978', '#FADC35'), ('#BEDB8D', '#ADE451'),
   ('#A8D6A0', '#7CD76C'), ('#8FD3C7', '#57D8C1'), ('#A6D8F0', '#68CBFB'), ('#AEC5F5', '#75A0FB'),
@@ -25,6 +25,8 @@ UPDATE public.wallets AS w
 SET color = m.new_color
 FROM current_plus_colors AS m
 WHERE upper(w.color) = m.old_color AND w.color <> m.new_color;
+
+DROP TABLE current_plus_colors;
 
 ALTER TABLE public.categories
   ADD CONSTRAINT categories_color_catalog_check CHECK (

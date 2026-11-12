@@ -362,17 +362,6 @@ export function MicButton({
             color={tokens.onMintKey}
           />
         </Animated.View>
-        <Animated.View
-          pointerEvents="none"
-          className="absolute inset-0 items-center justify-center"
-          style={coral}
-        >
-          <IconSymbol
-            name="microphone-outline"
-            size={20}
-            color={tokens.onCategory}
-          />
-        </Animated.View>
       </Animated.View>
     </GestureDetector>
   );
@@ -460,7 +449,7 @@ function Trash({ hold }: { hold: MicHold }) {
         style={tinted}
       >
         <TrashGlyph
-          color={tokens.coral}
+          color={tokens.onCategory}
           lid={lid}
         />
       </Animated.View>

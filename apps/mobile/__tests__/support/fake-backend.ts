@@ -11,7 +11,7 @@ const SYSTEM_CATEGORIES: [name: string, type: string, icon: string, color: strin
   ['Entertainment', 'expense', 'movie-open', '#FBA75E'],
   ['Shopping', 'expense', 'shopping', '#EFAE6F'],
   ['Healthcare', 'expense', 'heart-pulse', '#F1966D'],
-  ['Subscriptions', 'expense', 'autorenew', '#968DF4'],
+  ['Subscriptions', 'expense', 'autorenew', '#95ADCD'],
   ['Gifts & Donations', 'expense', 'gift-outline', '#E77BE7'],
   ['Salary', 'income', 'cash', '#7CD76C'],
   ['Freelance', 'income', 'laptop', '#68CBFB'],
