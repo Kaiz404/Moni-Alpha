@@ -248,7 +248,7 @@ export function CaptureResult({
           </View>
         ) : null}
         {quote.source === 'camera' ? <ReceiptPhoto uri={quote.imageUri} /> : null}
-        <View className="min-h-16 items-center justify-center py-1">
+        <View className="min-h-16 justify-center py-1">
           <InPlaceField
             testID={tid('capture', 'amount')}
             label="Amount"
