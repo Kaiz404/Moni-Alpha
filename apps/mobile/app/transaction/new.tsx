@@ -58,6 +58,7 @@ import { approve, toggleOn } from '@/lib/haptics';
 import { recordMissedTransaction } from '@/lib/notifications/capture-health';
 import { toCategoryTiles } from '@/lib/sheet/category-tiles';
 import { openSheet, type WalletOption } from '@/lib/sheet/sheet-store';
+import { isMigrated } from '@/lib/store';
 import { listMerchantAliases } from '@/lib/supabase/merchant-aliases';
 import { ensureFinanceTimezone } from '@/lib/supabase/profile';
 import { getLedgerEntries } from '@/lib/supabase/proposed-transactions';
@@ -440,7 +441,11 @@ export default function TypeItScreen() {
           categoryId: category?.id ?? null,
           merchant: note.trim() || null,
           transactionDate,
-          ...locationColumns(location),
+          ...locationColumns(
+            { place, here, phoneAllowed },
+            note,
+            isMigrated('transaction_place_ids'),
+          ),
         });
         if (!parsed.success) {
           Alert.alert(

@@ -33,6 +33,7 @@ import { QueryProvider } from '@/lib/query/query-client';
 import { drainImageUploadQueue } from '@/lib/receipts/upload-queue';
 import { pruneIncompleteProposals } from '@/lib/supabase/proposed-transactions';
 import { pruneReviewHistoryDaily } from '@/lib/proposals/review-history';
+import { refreshPlaceCoordsDaily } from '@/lib/places/refresh-coords';
 import { applyStoredThemePreference } from '@/lib/theme/preference';
 import { useRevealHeldTheme } from '@/lib/theme/reveal';
 import { useThemeCommit } from '@/lib/theme/theme-commit';
@@ -103,6 +104,7 @@ export default function RootLayout() {
   useEffect(() => {
     pruneIncompleteProposals().catch(() => {});
     pruneReviewHistoryDaily();
+    void refreshPlaceCoordsDaily().catch(() => {});
     drainImageUploadQueue().catch(() => {});
     prepareOfflineSpeechModel().catch(() => {});
 
@@ -112,6 +114,7 @@ export default function RootLayout() {
         nextState === 'active'
       ) {
         pruneReviewHistoryDaily();
+        void refreshPlaceCoordsDaily().catch(() => {});
         drainImageUploadQueue().catch(() => {});
         prepareOfflineSpeechModel().catch(() => {});
       }

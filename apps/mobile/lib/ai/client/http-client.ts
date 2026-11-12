@@ -17,7 +17,7 @@ import type {
 
 const REQUEST_TIMEOUT_MS = 100_000;
 
-async function getAccessToken(): Promise<string | null> {
+export async function getAccessToken(): Promise<string | null> {
   try {
     const { supabase } = await import('@/lib/supabase/client');
     const { data } = await supabase.auth.getSession();

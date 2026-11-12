@@ -1,5 +1,6 @@
 import { toLocalDateInput } from '@/lib/dates/local-date-input';
 import { placeLabel } from '@/lib/finance/places';
+import { placeColumns, type PlaceColumns } from '@/lib/places/coords';
 import type {
   EntryLocation,
   TransactionLocationSnapshot,
@@ -58,15 +59,17 @@ export function savedLocation({
   }
 }
 
-/** The transaction columns for a saved place; none when there is no place. */
-export function locationColumns(location: TransactionLocationSnapshot | null) {
-  return location
-    ? {
-        locationLatitude: location.latitude,
-        locationLongitude: location.longitude,
-        locationName: location.name,
-      }
-    : {};
+/** The transaction columns for the entry's place, given Shop or note at save time. */
+export function locationColumns(
+  input: EntryPlaceInput,
+  note: string,
+  placeIdsReady: boolean,
+): PlaceColumns {
+  return placeColumns(savedLocation(input), {
+    phone: input.phoneAllowed && input.here.status === 'found' ? input.here.location : null,
+    note,
+    placeIdsReady,
+  });
 }
 
 /** What the Location field reads. */

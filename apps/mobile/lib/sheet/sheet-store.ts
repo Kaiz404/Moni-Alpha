@@ -96,8 +96,9 @@ type Sheets = {
     result: string;
   };
   /**
-   * A new entry's place: a map with a fixed centre pin, the shops Google draws, and search over
-   * the user's own places (`past`), then the device geocoder. `start` is where the map opens.
+   * A new entry's place: a map with a fixed centre pin and the shops Google draws, the user's
+   * own places (`past`) near it, and search over those, Google, then the device geocoder.
+   * `start` is where the map opens.
    */
   place: {
     request: { start: TransactionLocationSnapshot | null; past: PastPlaceInput };

@@ -117,7 +117,8 @@ async function pickInSheet(pick: PlacePick) {
   return sheet.request.start;
 }
 
-const SHOP = { latitude: 3.1301, longitude: 101.6712, name: 'Mamak Ali' };
+const OWN = { source: 'own', placeId: null } as const;
+const SHOP = { latitude: 3.1301, longitude: 101.6712, name: 'Mamak Ali', coords: OWN };
 
 async function addExpense() {
   fireEvent.press(screen.getByTestId('capture.key.5'));
@@ -166,6 +167,7 @@ describe('Type it location', () => {
       latitude: 3.13,
       longitude: 101.671,
       name: 'Jalan Telawi 3, Kuala Lumpur, Wilayah Persekutuan',
+      coords: OWN,
     });
     expect(screen.getByText('Not saved')).toBeTruthy();
     const saved = await addExpense();
@@ -197,6 +199,51 @@ describe('Type it location', () => {
     expect(await addExpense()).toMatchObject({
       merchant: 'Teh tarik',
       locationName: 'Jalan Telawi 5',
+    });
+  });
+
+  it('saves a Google place under the Shop or note, at the phone when the phone is there', async () => {
+    await openPage();
+    await pickInSheet({
+      kind: 'chosen',
+      place: {
+        latitude: 3.1306,
+        longitude: 101.6705,
+        name: 'Jaya Grocer',
+        coords: { source: 'google', placeId: 'p-jaya', fetchedAt: '2026-11-12T03:00:00.000Z' },
+      },
+      shop: 'Jaya Grocer',
+    });
+    expect(screen.getByLabelText('Location, Jaya Grocer')).toBeTruthy();
+    fireEvent.changeText(screen.getByTestId('capture.note'), 'Jaya Grocer veg');
+    expect(await addExpense()).toMatchObject({
+      merchant: 'Jaya Grocer veg',
+      locationLatitude: 3.13,
+      locationLongitude: 101.671,
+      locationName: 'Jaya Grocer veg',
+      placeId: 'p-jaya',
+      placeCoordsAt: null,
+    });
+  });
+
+  it("saves Google's position, stamped, for a Google place away from the phone", async () => {
+    await openPage();
+    await pickInSheet({
+      kind: 'chosen',
+      place: {
+        latitude: 3.1356,
+        longitude: 101.6237,
+        name: 'Village Park Restaurant',
+        coords: { source: 'google', placeId: 'p-village', fetchedAt: '2026-11-12T03:00:00.000Z' },
+      },
+      shop: 'Village Park Restaurant',
+    });
+    expect(await addExpense()).toMatchObject({
+      merchant: 'Village Park Restaurant',
+      locationLatitude: 3.1356,
+      locationName: 'Village Park Restaurant',
+      placeId: 'p-village',
+      placeCoordsAt: '2026-11-12T03:00:00.000Z',
     });
   });
 

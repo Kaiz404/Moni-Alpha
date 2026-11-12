@@ -13,8 +13,9 @@ const PHONE = {
   latitude: 3.13,
   longitude: 101.671,
   name: 'Jalan Telawi 3, Kuala Lumpur, Wilayah Persekutuan',
+  coords: { source: 'own', placeId: null } as const,
 };
-const SHOP = { latitude: 3.1301, longitude: 101.6712, name: 'Mamak Ali' };
+const SHOP = { ...PHONE, latitude: 3.1301, longitude: 101.6712, name: 'Mamak Ali' };
 const FOUND: EntryLocation = { status: 'found', location: PHONE };
 
 const input = (

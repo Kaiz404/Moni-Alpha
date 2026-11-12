@@ -7,7 +7,7 @@ import { startBackgroundProcessor } from '@/lib/ai/background-processor';
 import { releaseHeld } from '@/lib/ai/processing-queue';
 import { useAuth } from '@/lib/auth/auth-context';
 import { approveCapture } from '@/lib/capture/approve-capture';
-import { phoneMayLocate, savedLocation } from '@/lib/capture/entry-place';
+import { phoneMayLocate } from '@/lib/capture/entry-place';
 import { isoToLocalDateInput } from '@/lib/dates/local-date-input';
 import {
   START,
@@ -133,14 +133,14 @@ export function useCaptureFlow(source: CaptureSource) {
       const transaction = await approveCapture(
         draft,
         source,
-        savedLocation({
+        {
           place: draft.place,
           here,
           phoneAllowed: phoneMayLocate(
             wallet,
             isoToLocalDateInput(draft.transactionDate),
           ),
-        }),
+        },
       );
       if (transaction && stage.quote.source === 'camera')
         void keepScannedReceipt(stage.quote.imageUri, transaction.id).catch(() => {});

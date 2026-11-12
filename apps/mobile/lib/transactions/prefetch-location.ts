@@ -1,10 +1,8 @@
 import * as Location from 'expo-location';
 
-export type TransactionLocationSnapshot = {
-  latitude: number;
-  longitude: number;
-  name: string | null;
-};
+import { OWN_COORDS, type SavedPlace } from '@/lib/places/coords';
+
+export type TransactionLocationSnapshot = SavedPlace;
 
 /** What Type it knows about where the phone is. `none` means nothing can be saved. */
 export type EntryLocation =
@@ -52,9 +50,9 @@ export async function prefetchTransactionLocation(
       latitude: coords.latitude,
       longitude: coords.longitude,
     };
-    onChange({ status: 'found', location: { ...position, name: null } });
+    onChange({ status: 'found', location: { ...position, name: null, coords: OWN_COORDS } });
     const name = await placeName(position);
-    if (name) onChange({ status: 'found', location: { ...position, name } });
+    if (name) onChange({ status: 'found', location: { ...position, name, coords: OWN_COORDS } });
   } catch {
     onChange({ status: 'none' });
   }

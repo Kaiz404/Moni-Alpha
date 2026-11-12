@@ -3,6 +3,7 @@ import { act, fireEvent, render, renderHook, screen } from '@testing-library/rea
 import type { CaptureQuote, ReadResult } from '@/lib/capture/capture-stage';
 import { enqueue, getAll, pruneCompleted, resumeInterrupted } from '@/lib/ai/processing-queue';
 import { approveCapture } from '@/lib/capture/approve-capture';
+import { savedLocation } from '@/lib/capture/entry-place';
 
 import { CaptureFailed } from '../scan-stages';
 import { useCaptureFlow } from '../use-capture-flow';
@@ -296,16 +297,22 @@ describe('the place saved on Approve', () => {
   it("follows the phone's position by default", async () => {
     const hook = await checkPage();
     await act(async () => hook.result.current.approve());
-    expect(jest.mocked(approveCapture).mock.calls[0][2]).toEqual({
+    expect(savedLocation(jest.mocked(approveCapture).mock.calls[0][2])).toEqual({
       latitude: 3.13,
       longitude: 101.671,
       name: 'Jalan Telawi 3, Kuala Lumpur',
+      coords: { source: 'own', placeId: null },
     });
   });
 
   it('saves the place the user picked', async () => {
     const hook = await checkPage();
-    const shop = { latitude: 3.1301, longitude: 101.6712, name: 'Kedai ABC' };
+    const shop = {
+      latitude: 3.1301,
+      longitude: 101.6712,
+      name: 'Kedai ABC',
+      coords: { source: 'own', placeId: null } as const,
+    };
     act(() =>
       hook.result.current.dispatch({
         type: 'edit',
@@ -313,7 +320,7 @@ describe('the place saved on Approve', () => {
       }),
     );
     await act(async () => hook.result.current.approve());
-    expect(jest.mocked(approveCapture).mock.calls[0][2]).toEqual(shop);
+    expect(savedLocation(jest.mocked(approveCapture).mock.calls[0][2])).toEqual(shop);
   });
 
   it('saves none once turned off', async () => {
@@ -322,6 +329,6 @@ describe('the place saved on Approve', () => {
       hook.result.current.dispatch({ type: 'edit', patch: { place: { kind: 'off' } } }),
     );
     await act(async () => hook.result.current.approve());
-    expect(jest.mocked(approveCapture).mock.calls[0][2]).toBeNull();
+    expect(savedLocation(jest.mocked(approveCapture).mock.calls[0][2])).toBeNull();
   });
 });

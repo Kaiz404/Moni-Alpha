@@ -1,7 +1,7 @@
 import type { CaptureDraft, CaptureSource } from '@/lib/capture/capture-stage';
-import { locationColumns } from '@/lib/capture/entry-place';
+import { locationColumns, type EntryPlaceInput } from '@/lib/capture/entry-place';
+import { isMigrated } from '@/lib/store';
 import { createTransaction } from '@/lib/supabase/transactions';
-import type { TransactionLocationSnapshot } from '@/lib/transactions/prefetch-location';
 
 /**
  * Approve on a live capture writes the ledger row straight away, never through
@@ -10,7 +10,7 @@ import type { TransactionLocationSnapshot } from '@/lib/transactions/prefetch-lo
 export async function approveCapture(
   draft: CaptureDraft & { walletId: string },
   source: CaptureSource,
-  location: TransactionLocationSnapshot | null,
+  place: EntryPlaceInput,
 ) {
   return createTransaction(
     {
@@ -20,7 +20,7 @@ export async function approveCapture(
       categoryId: draft.categoryId,
       merchant: draft.merchant.trim() || null,
       transactionDate: draft.transactionDate,
-      ...locationColumns(location),
+      ...locationColumns(place, draft.merchant, isMigrated('transaction_place_ids')),
     },
     source,
   );

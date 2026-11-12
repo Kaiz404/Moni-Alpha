@@ -15,6 +15,7 @@ jest.mock('expo-location', () => ({
 
 const location = jest.mocked(Location);
 const POSITION = { latitude: 3.13, longitude: 101.671 };
+const OWN = { source: 'own', placeId: null };
 
 async function run(): Promise<EntryLocation[]> {
   const updates: EntryLocation[] = [];
@@ -53,10 +54,10 @@ describe('the location for a new transaction', () => {
     granted('granted');
     expect(await run()).toEqual([
       { status: 'finding' },
-      { status: 'found', location: { ...POSITION, name: null } },
+      { status: 'found', location: { ...POSITION, name: null, coords: OWN } },
       {
         status: 'found',
-        location: { ...POSITION, name: 'Jalan Telawi 3, Kuala Lumpur' },
+        location: { ...POSITION, name: 'Jalan Telawi 3, Kuala Lumpur', coords: OWN },
       },
     ]);
     expect(location.requestForegroundPermissionsAsync).not.toHaveBeenCalled();
@@ -67,7 +68,7 @@ describe('the location for a new transaction', () => {
     location.reverseGeocodeAsync.mockRejectedValue(new Error('offline'));
     expect(await run()).toEqual([
       { status: 'finding' },
-      { status: 'found', location: { ...POSITION, name: null } },
+      { status: 'found', location: { ...POSITION, name: null, coords: OWN } },
     ]);
   });
 
