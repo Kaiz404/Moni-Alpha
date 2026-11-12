@@ -25,12 +25,14 @@ tags:
     timeout: 15000
 - takeScreenshot: y4-location-on
 
-# The sheet opens on a map with a search bar.
+# The sheet opens with search, the map with its my-location button, and the list.
 - tapOn:
     id: capture.location
 - assertVisible: Choose a place
 - assertVisible:
     id: sheet.place.search
+- assertVisible:
+    id: sheet.place.my-location
 - assertVisible:
     id: sheet.place.use
 - takeScreenshot: y4-location-sheet

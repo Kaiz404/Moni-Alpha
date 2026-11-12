@@ -1,0 +1,40 @@
+# Type it place search: typing in the place sheet lists Google's places, and one tap on a
+# row picks it and closes the sheet; the Location field and an empty Shop or note show it.
+# Uses the mock Places client, so it needs a build with EXPO_PUBLIC_AI_API_URL unset (the
+# e2e default; not --real-ai).
+# Run: scripts/device/run-flows.sh .maestro/flows/capture/type-place-search.yaml
+appId: com.anonymous.moni.e2e
+name: Type it place search
+tags:
+  - y4
+  - seed-full
+---
+- runFlow: ../../subflows/launch.yaml
+- tapOn:
+    id: nav.plus
+- tapOn:
+    id: nav.chooser.type
+- tapOn:
+    id: capture.key.9
+- tapOn:
+    id: capture.location
+- assertVisible: Choose a place
+- tapOn:
+    id: sheet.place.search
+- inputText: village
+- extendedWaitUntil:
+    visible:
+      id: sheet.place.result.mock-village-park
+    timeout: 5000
+- takeScreenshot: y4-place-search
+- tapOn:
+    id: sheet.place.result.mock-village-park
+- extendedWaitUntil:
+    notVisible: Choose a place
+    timeout: 5000
+- assertVisible: Village Park Restaurant
+- assertVisible:
+    id: capture.note
+    text: Village Park Restaurant
+- takeScreenshot: y4-place-search-picked
+- pressKey: Back
