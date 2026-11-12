@@ -132,6 +132,8 @@ export type SheetProps = {
   actions?: ReactNode;
   /** Space between the grabber, the title row and the body: 12, or 16 on the + chooser. */
   gap?: 12 | 16;
+  /** False when the body holds a map: only the header drags the sheet. */
+  bodyDrags?: boolean;
   children?: ReactNode;
 };
 
@@ -158,6 +160,7 @@ export function Sheet({
   size,
   actions,
   gap = 12,
+  bodyDrags = true,
   children,
 }: SheetProps) {
   const insets = useSafeAreaInsets();
@@ -397,13 +400,19 @@ export function Sheet({
               </View>
             </View>
           </GestureDetector>
-          <SheetScrollContext.Provider value={scroll}>
-            <GestureDetector gesture={body}>
-              <View style={size === 'large' ? styles.large : styles.body}>
-                {children}
-              </View>
-            </GestureDetector>
-          </SheetScrollContext.Provider>
+          {bodyDrags ? (
+            <SheetScrollContext.Provider value={scroll}>
+              <GestureDetector gesture={body}>
+                <View style={size === 'large' ? styles.large : styles.body}>
+                  {children}
+                </View>
+              </GestureDetector>
+            </SheetScrollContext.Provider>
+          ) : (
+            <View style={size === 'large' ? styles.large : styles.body}>
+              {children}
+            </View>
+          )}
           {actions ? (
             <View className="flex-row gap-2 pt-5">{actions}</View>
           ) : null}

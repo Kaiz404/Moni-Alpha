@@ -3,6 +3,7 @@ import { BackHandler, StyleSheet, View } from 'react-native';
 
 import { RangeSheet } from '@/components/activity/range-sheet';
 import { MonthSheet } from '@/components/budget/month-sheet';
+import { PlaceSheet } from '@/components/capture/place-sheet';
 import { CaptureChooserSheet } from '@/components/nav/capture-chooser';
 import { CategoryPickerSheet } from '@/components/sheets/category-picker-sheet';
 import { ConfirmSheet } from '@/components/sheets/confirm-sheet';
@@ -125,6 +126,14 @@ function renderSheet(sheet: OpenSheet, frame: SheetFrameProps) {
     case 'person':
       return (
         <PersonSheet
+          {...frame}
+          request={sheet.request}
+          onPick={sheet.settle}
+        />
+      );
+    case 'place':
+      return (
+        <PlaceSheet
           {...frame}
           request={sheet.request}
           onPick={sheet.settle}

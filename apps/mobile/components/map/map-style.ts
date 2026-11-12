@@ -31,18 +31,22 @@ const dark: MapPalette = {
   label: '#A39C90',
 };
 
-function styleFor(p: MapPalette): MapStyleElement[] {
+function styleFor(p: MapPalette, { shops = false } = {}): MapStyleElement[] {
   return [
     { elementType: 'geometry', stylers: [{ color: p.ground }] },
-    { elementType: 'labels.icon', stylers: [{ visibility: 'off' }] },
+    ...(shops
+      ? []
+      : [{ elementType: 'labels.icon', stylers: [{ visibility: 'off' }] }]),
     { elementType: 'labels.text.fill', stylers: [{ color: p.label }] },
     { elementType: 'labels.text.stroke', stylers: [{ color: p.ground }] },
     { featureType: 'administrative', elementType: 'geometry', stylers: [{ visibility: 'off' }] },
-    { featureType: 'poi', stylers: [{ visibility: 'off' }] },
+    ...(shops ? [] : [{ featureType: 'poi', stylers: [{ visibility: 'off' }] }]),
     { featureType: 'poi.park', elementType: 'geometry', stylers: [{ visibility: 'on' }, { color: p.park }] },
     { featureType: 'road', elementType: 'geometry.fill', stylers: [{ color: p.road }] },
     { featureType: 'road', elementType: 'geometry.stroke', stylers: [{ color: p.roadEdge }] },
-    { featureType: 'road', elementType: 'labels', stylers: [{ visibility: 'off' }] },
+    ...(shops
+      ? []
+      : [{ featureType: 'road', elementType: 'labels', stylers: [{ visibility: 'off' }] }]),
     { featureType: 'water', elementType: 'labels', stylers: [{ visibility: 'off' }] },
     { featureType: 'transit', stylers: [{ visibility: 'off' }] },
     { featureType: 'water', elementType: 'geometry', stylers: [{ color: p.water }] },
@@ -57,6 +61,12 @@ const NO_LABELS: MapStyleElement = { elementType: 'labels', stylers: [{ visibili
 export const miniMapStyles = {
   light: [...styleFor(light), NO_LABELS],
   dark: [...styleFor(dark), NO_LABELS],
+};
+
+/** The place sheet's map: the same colours, with the shops and street names a user picks from. */
+export const shopMapStyles = {
+  light: styleFor(light, { shops: true }),
+  dark: styleFor(dark, { shops: true }),
 };
 
 /** Kuala Lumpur, for a map with nothing to frame yet. */

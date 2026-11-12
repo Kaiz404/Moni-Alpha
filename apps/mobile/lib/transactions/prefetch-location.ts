@@ -12,7 +12,8 @@ export type EntryLocation =
   | { status: 'finding' }
   | { status: 'found'; location: TransactionLocationSnapshot };
 
-async function placeName(position: {
+/** The device geocoder's "name, street, city, region" for a spot, or null. */
+export async function placeName(position: {
   latitude: number;
   longitude: number;
 }): Promise<string | null> {
