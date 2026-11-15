@@ -68,7 +68,6 @@ jest.mock('@shopify/react-native-skia', () => {
     Circle: host('SkiaCircle'),
     DashPathEffect: host('SkiaDashPathEffect'),
     Line: host('SkiaLine'),
-    Paint: host('SkiaPaint'),
     Path: host('SkiaPath'),
     RoundedRect: host('SkiaRoundedRect'),
   };

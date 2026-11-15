@@ -5,7 +5,6 @@ import {
   Circle,
   DashPathEffect,
   Line,
-  Paint,
   Path,
   RoundedRect,
 } from '@shopify/react-native-skia';
@@ -458,19 +457,22 @@ const LineMarks = memo(function LineMarks({
         opacity={lineOpacity}
       />
       {budget !== null ? (
-        <Circle
-          c={budgetDot}
-          r={5}
-          color={tokens.deepMint}
-          opacity={monthOpacity}
-        >
-          <Paint
+        <>
+          <Circle
+            c={budgetDot}
+            r={5}
+            color={tokens.deepMint}
+            opacity={monthOpacity}
+          />
+          <Circle
+            c={budgetDot}
+            r={5}
             style="stroke"
             strokeWidth={2}
             color={tokens.card}
             opacity={monthOpacity}
           />
-        </Circle>
+        </>
       ) : null}
     </Canvas>
   );
@@ -545,20 +547,22 @@ const BarMarks = memo(function BarMarks({
       </Animated.View>
       <Canvas style={{ position: 'absolute', width, height: PLOT_HEIGHT }}>
         {safePerDay !== null ? (
-          <RoundedRect
-            rect={safe}
-            color={tokens.card}
-            opacity={monthOpacity}
-          >
-            <Paint
+          <>
+            <RoundedRect
+              rect={safe}
+              color={tokens.card}
+              opacity={monthOpacity}
+            />
+            <RoundedRect
+              rect={safe}
               style="stroke"
               strokeWidth={1.2}
               color={tokens.foreground}
               opacity={monthOpacity}
             >
               <DashPathEffect intervals={[2, 2]} />
-            </Paint>
-          </RoundedRect>
+            </RoundedRect>
+          </>
         ) : null}
         {evenPace !== null ? (
           <Line

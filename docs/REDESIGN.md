@@ -83,7 +83,7 @@ Checked 21 Oct 2026. Every row is built; new data work adds Zod schemas in `pack
 | Review history, Not mine / Later | `later`, `snoozed_until`; Approve and Not mine stamp `reviewed_at` and keep the row (`20261025000000_review_history.sql`) | Done: deck (R1), Recently reviewed (G4) |
 | Chat generative cards, draft cards, one thread per day | Message kinds in `lib/ai/chat/messages.ts` | Done (H2) |
 
-Already supported: debts with repayments and write-off, monthly category budgets, multi-currency wallets, balance check-in, proposal review, routine auto-add, notification linking per wallet, transaction location, receipt scan (ML Kit), voice capture, custom categories, the spending map (`react-native-maps`), SVG charts, Funnel Display (400/600/700), the six motion tokens, the haptics table, balance correction (`correctBalance`), location from notifications per banking app, and stored capture log statuses.
+Already supported: debts with repayments and write-off, monthly category budgets, multi-currency wallets, balance check-in, proposal review, routine auto-add, notification linking per wallet, transaction location, receipt scan (ML Kit), voice capture, custom categories, the spending map (`react-native-maps`), SVG and Skia charts, Funnel Display (400/600/700), the six motion tokens, the haptics table, balance correction (`correctBalance`), location from notifications per banking app, and stored capture log statuses.
 
 ## Open owner decisions (do not decide alone)
 
