@@ -1,6 +1,8 @@
 import type { ReactNode } from 'react';
 import { View } from 'react-native';
+import Animated from 'react-native-reanimated';
 
+import { listSettle } from '@/components/ui/list-motion';
 import { PressRows } from '@/components/ui/press';
 import { Text } from '@/components/ui/text';
 
@@ -8,14 +10,20 @@ import { Text } from '@/components/ui/text';
 export function ListCard({
   children,
   className,
+  settles = false,
 }: {
   children: ReactNode;
   className?: string;
+  /** The card's height follows rows that come and go (`ListItemMotion`). */
+  settles?: boolean;
 }) {
   return (
-    <View className={`overflow-hidden rounded-card bg-card ${className ?? ''}`}>
+    <Animated.View
+      layout={settles ? listSettle : undefined}
+      className={`overflow-hidden rounded-card bg-card ${className ?? ''}`}
+    >
       <PressRows>{children}</PressRows>
-    </View>
+    </Animated.View>
   );
 }
 

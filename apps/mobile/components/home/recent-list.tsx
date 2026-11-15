@@ -3,6 +3,7 @@ import { View } from 'react-native';
 import { EmptyTile } from '@/components/ui/empty-tile';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { ListCard } from '@/components/ui/list-card';
+import { ListItemMotion } from '@/components/ui/list-motion';
 import { Press } from '@/components/ui/press';
 import { RiseIn, RiseInGroup } from '@/components/ui/rise-in';
 import { Text } from '@/components/ui/text';
@@ -61,28 +62,27 @@ export function RecentList({
         ) : null}
       </View>
       {transactions.length ? (
-        <ListCard>
+        <ListCard settles>
           <RiseInGroup>
             {transactions.map((transaction, index) => {
               const row = transactionRow(transaction, lookups);
               return (
-                <RiseIn
-                  key={transaction.id}
-                  index={index}
-                >
-                  <TransactionRow
-                    testID={tid(
-                      'home',
-                      'recent',
-                      'row',
-                      transaction.id,
-                    )}
-                    row={row}
-                    metaLead="date"
-                    onPress={() => onOpen(transaction)}
-                    onHold={hold.holdFor(transaction, row)}
-                  />
-                </RiseIn>
+                <ListItemMotion key={transaction.id}>
+                  <RiseIn index={index}>
+                    <TransactionRow
+                      testID={tid(
+                        'home',
+                        'recent',
+                        'row',
+                        transaction.id,
+                      )}
+                      row={row}
+                      metaLead="date"
+                      onPress={() => onOpen(transaction)}
+                      onHold={hold.holdFor(transaction, row)}
+                    />
+                  </RiseIn>
+                </ListItemMotion>
               );
             })}
           </RiseInGroup>

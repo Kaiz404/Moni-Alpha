@@ -27,7 +27,7 @@ export function DayGroup({
           {total}
         </Text>
       </View>
-      <ListCard>{children}</ListCard>
+      <ListCard settles>{children}</ListCard>
     </View>
   );
 }

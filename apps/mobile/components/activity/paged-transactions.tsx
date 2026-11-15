@@ -1,7 +1,9 @@
 import { useMemo } from 'react';
 import { View } from 'react-native';
+import Animated, { LayoutAnimationConfig } from 'react-native-reanimated';
 
 import { DayGroup } from '@/components/activity/day-group';
+import { ListItemMotion, listSettle } from '@/components/ui/list-motion';
 import type { HoldAnchor } from '@/components/ui/hold-menu';
 import { IconSymbol, type IconSymbolName } from '@/components/ui/icon-symbol';
 import { Press } from '@/components/ui/press';
@@ -148,33 +150,43 @@ export function PagedTransactions({
   const days = useMemo(() => groupActivityDays(current.rows), [current.rows]);
   return (
     <View className="gap-3.5">
-      {days.map((group) => (
-        <DayGroup
-          key={group.key}
-          label={formatDayHeading(group.transactions[0].transactionDate, now)}
-          total={totals.get(group.key) ?? ''}
-        >
-          {group.transactions.map((transaction) => {
-            const row = transactionRow(transaction, lookups);
-            return (
-              <TransactionRow
-                key={transaction.id}
-                testID={tid(screen, 'transaction', transaction.id)}
-                row={row}
-                metaLead="category"
-                now={now}
-                onPress={() => onOpen(transaction)}
-                onHold={holdFor?.(transaction, row)}
-              />
-            );
-          })}
-        </DayGroup>
-      ))}
-      <Pager
-        screen={screen}
-        page={current}
-        onPage={onPage}
-      />
+      {/* Turning the page swaps every row at once, so the old rows leave without animating. */}
+      <LayoutAnimationConfig
+        key={current.page}
+        skipExiting
+      >
+        {days.map((group) => (
+          <ListItemMotion key={group.key}>
+            <DayGroup
+              label={formatDayHeading(group.transactions[0].transactionDate, now)}
+              total={totals.get(group.key) ?? ''}
+            >
+              {group.transactions.map((transaction) => {
+                const row = transactionRow(transaction, lookups);
+                return (
+                  <ListItemMotion key={transaction.id}>
+                    <TransactionRow
+                      testID={tid(screen, 'transaction', transaction.id)}
+                      row={row}
+                      metaLead="category"
+                      now={now}
+                      onPress={() => onOpen(transaction)}
+                      onHold={holdFor?.(transaction, row)}
+                    />
+                  </ListItemMotion>
+                );
+              })}
+            </DayGroup>
+          </ListItemMotion>
+        ))}
+        <Animated.View layout={listSettle}>
+          <Pager
+            screen={screen}
+            page={current}
+            onPage={onPage}
+          />
+        </Animated.View>
+      </LayoutAnimationConfig>
     </View>
   );
 }

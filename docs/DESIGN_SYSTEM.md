@@ -177,6 +177,7 @@ Use pills sparingly: filter states, segmented controls, compact metadata, and th
 - `components/ui/header-icon-button.tsx`: `HeaderIconButton` (44 circle, 1.5 Hairline, pressed Sand at radius 16; `active` is the Ink Selected look) for every header action, and `MoniButton` (44 Ink circle, `creation` glyph, "Ask Moni") on Home and Activity only.
 - `components/ui/segmented.tsx`: `Segmented` in two sizes: the 44 default, and `medium` 48 with 15/600 labels and optional 18 icons (sign-in). Under Reduce Motion the pill cross-fades in 180.
 - `components/ui/rise-in.tsx`: `RiseInGroup` and `RiseIn` play V2F-Motion's list entrance: the first 6 rows rise 8 and fade in 30 apart on first load only; a row that arrives later fades in alone. The + chooser uses it at 120 then 50 apart on `control`.
+- `components/ui/list-motion.tsx`: `ListItemMotion` is the list exit. A deleted row (or an emptied Activity day) fades and shrinks to 0.97 in 160 ms, then the rows, cards (`ListCard settles`) and pager below settle into the gap on `sheet`. Home Recent and every `PagedTransactions` list (Activity, Budget spending) use it; turning a page skips it. Reduce Motion keeps the fade and nothing moves.
 
 ### 5.3 Elevation and material
 
