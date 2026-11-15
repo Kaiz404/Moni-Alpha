@@ -55,7 +55,14 @@ Add `needs-info` when an agent cannot act on the issue yet. Ask the owner the on
 Rules:
 
 - The repo is public. Do not write real balances, account numbers, people's names, or merchant names from the owner's own data unless the owner says to. Paraphrase: "a debt with a friend", "a Maybank alert for a grocery shop".
-- `gh` cannot attach images. If the owner sends a screenshot, describe what it shows in the body, and tell them to add the image from the GitHub app if it matters.
+- When the owner sends a screenshot, embed it. `gh` cannot upload images, so commit the image to the `issue-assets` branch as `issues/<n>-<slug>.png` with git plumbing (no checkout), push, and add `![<what it shows>](https://raw.githubusercontent.com/Kaiz404/Moni-Alpha/issue-assets/issues/<n>-<slug>.png)` under a **Screenshot** heading with `gh issue edit`. Also describe what it shows in words. Look at it first: the repo is public, so if it shows real balances, names, or merchants, ask the owner before pushing it. A pushed image stays in git history even after it is removed.
+
+  ```bash
+  blob=$(git hash-object -w <image>)
+  base=$(git rev-parse --verify -q origin/issue-assets) || base=   # git fetch origin issue-assets first
+  # add issues/<n>-<slug>.png to the branch's tree (git read-tree into a temp GIT_INDEX_FILE, git update-index --add --cacheinfo 100644,$blob,issues/<file>, git write-tree)
+  # then git commit-tree <tree> ${base:+-p $base} -m "Screenshot for #<n>" and git push origin <commit>:refs/heads/issue-assets
+  ```
 - File what the owner said. Do not investigate or fix while filing unless asked. Filing should take a minute.
 - Do not file an issue for something already fixed on `main` but not yet on the phone. Check `git log --oneline -20` for it, and tell the owner to update the daily app instead.
 
