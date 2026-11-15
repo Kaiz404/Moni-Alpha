@@ -14,10 +14,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import {
-  HeaderIconButton,
-  MoniButton,
-} from '@/components/ui/header-icon-button';
+import { HeaderIconButton } from '@/components/ui/header-icon-button';
 import { useHoldMenuOpen } from '@/components/ui/hold-menu';
 import { Press } from '@/components/ui/press';
 import { Text } from '@/components/ui/text';
@@ -34,7 +31,6 @@ export type PageHeader =
       date: string;
       greeting: string;
       onAvatarPress: () => void;
-      onAskMoni: () => void;
     }
   | { kind: 'tabRoot'; title: string; trailing?: ReactNode }
   | {
@@ -55,7 +51,7 @@ export type PageHeader =
   | { kind: 'bare' };
 
 export type PageProps = PageHeader & {
-  /** Prefixes the header controls' testIDs: `<screen>.back`, `<screen>.ask-moni`. */
+  /** Prefixes the header controls' testIDs: `<screen>.back`, `<screen>.avatar`. */
   screen: Screen;
   /**
    * The header scrolls away with the content instead of staying pinned. The page must then
@@ -208,16 +204,13 @@ function HeaderRow(props: PageProps) {
               {props.greeting}
             </Text>
           </View>
-          <MoniButton
-            testID={tid(props.screen, 'ask-moni')}
-            onPress={props.onAskMoni}
-          />
         </>
       );
     case 'tabRoot':
       return (
         <>
           <Text
+            testID={tid(props.screen, 'title')}
             variant="screenTitle"
             className="flex-1 text-foreground"
             accessibilityRole="header"

@@ -27,7 +27,6 @@ export const CONTROLS = [
   'Press',
   'Button',
   'HeaderIconButton',
-  'MoniButton',
   'FormField',
   'PickerField',
   'Chip',

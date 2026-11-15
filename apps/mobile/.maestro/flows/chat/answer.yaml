@@ -10,10 +10,10 @@ tags:
 - runFlow: ../../subflows/launch.yaml
 - extendedWaitUntil:
     visible:
-      id: home.ask-moni
+      id: home.ask-box
     timeout: 15000
 - tapOn:
-    id: home.ask-moni
+    id: home.ask-box
 - tapOn:
     id: chat.input
 - inputText: How much on Transport this month

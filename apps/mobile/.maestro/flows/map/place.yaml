@@ -32,7 +32,7 @@ tags:
     id: map.place.see-in-activity
 - extendedWaitUntil:
     visible:
-      id: activity.ask-moni
+      id: activity.title
     timeout: 5000
 - assertVisible:
     id: activity.filter.place

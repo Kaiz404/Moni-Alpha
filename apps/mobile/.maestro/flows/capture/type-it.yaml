@@ -90,7 +90,7 @@ tags:
 - tapOn:
     id: capture.submit
 - assertVisible:
-    id: activity.ask-moni
+    id: activity.title
 - assertVisible: Tesco
 - takeScreenshot: c1-l8-origin
 
@@ -103,6 +103,6 @@ tags:
     id: capture.key.7
 - pressKey: Back
 - assertVisible:
-    id: activity.ask-moni
+    id: activity.title
 - assertNotVisible: −RM7.00
 - takeScreenshot: c1-l9-back

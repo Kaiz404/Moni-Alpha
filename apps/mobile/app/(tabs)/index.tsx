@@ -196,7 +196,6 @@ export default function HomeScreen() {
           : `${timeAwareGreeting(now)}${name ? `, ${name}` : ''}`
       }
       onAvatarPress={() => router.push('/profile')}
-      onAskMoni={() => router.push('/chat')}
     >
       {firstSync && firstRun ? (
         <PageScroll scrollEnabled={false}>

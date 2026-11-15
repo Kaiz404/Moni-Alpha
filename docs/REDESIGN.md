@@ -52,7 +52,7 @@ Board titles on the canvas say which variant is the chosen one. Ignore any board
 ## Target navigation
 
 - Tabs: Home · Activity · ( + ) · Budget · Debts. The + opens the chooser sheet: Type it, Scan a receipt, Say it, Ask Moni. Choosing one slides its page in from the right; the sheet covers the tab bar.
-- Moni chat is a pushed page reached from the Home ask box, the Moni header button (Home, Activity) and the + sheet. It reopens on today's thread.
+- Moni chat is a pushed page reached from the Home ask box and the + sheet. It reopens on today's thread. Home and Activity have no Moni header button (owner's direction, 16 Nov 2026); their top right stays empty.
 - Profile is pushed from the Home avatar. Review is pushed from Home's review block, notifications and chat. The map is pushed from Home's Where you spend card.
 - Budget and Debts are separate tabs; debts never appear on the Budget tab.
 
@@ -92,7 +92,7 @@ The app builds the default for each. [`redesign/PLAN.md`](redesign/PLAN.md) ("Op
 - D1. "Left this month" subtracts bills and debts due, labelled "after bills and RM40 to Mei" (Home, Budget, and Activity's safe to spend a day).
 - D2. Budgets show as rings on the Budget tab.
 - D3. No logo, mascot, reactions, or logging streak.
-- D4. Home keeps both the ask box and the Moni header button.
+- D4. Decided 16 Nov 2026: Home keeps the ask box only; the Moni header button is gone from Home and Activity.
 - D5. Debts hero tiles filter in place; Remind opens the Android share sheet.
 - D6. Decided 25 Oct 2026: Review keeps its history. "Recently reviewed" lists 30 days; rows older than 90 days are soft-deleted.
 - D7. Superseded by the owner on 1 Nov 2026: the next card shows real content under the top card, hidden until the top card moves.

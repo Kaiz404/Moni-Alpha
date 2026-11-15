@@ -15,7 +15,7 @@ Every Wave 5 agent reads this file before its PLAN.md sections. It holds the rul
 Use these. Do not rebuild them.
 
 - Text and tokens. `components/ui/text.tsx` has ten variants. Colours live in `global.css`, and `pnpm --filter moni gen:tokens` regenerates the JS copy. Springs are in `lib/motion/tokens.ts`. Haptic moments are in `lib/haptics`.
-- Chrome. `components/ui/page.tsx` has the header kinds `home`, `tabRoot`, `pushed`, `task`, and `bare`. Also use `press.tsx` (it requires a `TestId`), `button.tsx`, and `header-icon-button.tsx` (`HeaderIconButton`, `MoniButton`).
+- Chrome. `components/ui/page.tsx` has the header kinds `home`, `tabRoot`, `pushed`, `task`, and `bare`. Also use `press.tsx` (it requires a `TestId`), `button.tsx`, and `header-icon-button.tsx` (`HeaderIconButton`).
 - Sheets. `openSheet(request)` in `lib/sheet/sheet-store.ts` supports the kinds `category`, `wallet`, `currency`, `walletType`, `notificationApp`, `date`, and `confirm`. The host components are in `components/ui/sheet/`. `PickerField` opens a picker sheet.
 - Rows and states. `components/ui/` has `TransactionRow`, `HoldMenu`, `ListCard`, `ListSection`, `NavRow`, `Chip`, `Segmented`, `ProgressBar`, `StatusPill`, `Banner`, `SyncBanner`, `Skeleton`, `EmptyTile`, `NotFound`, and toasts (`showToast`).
 - Data. G added main currency (`useMainCurrency`), `selectUpcomingBills`, `metadata.source` and `kind`, `createBalanceCorrection`, the Later status, auto-add rules, merchant aliases, `record_location`, and capture statuses. Tables gated on a migration throw on write until the migration exists. That is expected.

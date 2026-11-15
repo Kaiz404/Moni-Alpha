@@ -17,7 +17,7 @@ tags:
 - tapOn:
     id: nav.tab.activity
 - assertVisible:
-    id: activity.ask-moni
+    id: activity.title
 - takeScreenshot: n1-l2-tab-activity
 - tapOn:
     id: nav.tab.budget
@@ -85,9 +85,9 @@ tags:
 - assertVisible:
     id: home.avatar
 
-# The Home Moni button opens the same page.
+# The Home ask box opens the same page.
 - tapOn:
-    id: home.ask-moni
+    id: home.ask-box
 - assertVisible:
     id: chat.back
 - pressKey: Back

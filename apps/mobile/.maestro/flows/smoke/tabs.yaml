@@ -10,7 +10,7 @@ tags:
 - tapOn:
     id: nav.tab.activity
 - assertVisible:
-    id: activity.ask-moni
+    id: activity.title
 - takeScreenshot: smoke-activity
 - tapOn:
     id: nav.tab.budget

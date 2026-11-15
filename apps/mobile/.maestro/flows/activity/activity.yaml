@@ -85,10 +85,5 @@ tags:
 
 - scrollUntilVisible:
     element:
-      id: activity.ask-moni
+      id: activity.title
     direction: UP
-- tapOn:
-    id: activity.ask-moni
-- assertNotVisible:
-    id: nav.tab.activity
-- takeScreenshot: a1-moni

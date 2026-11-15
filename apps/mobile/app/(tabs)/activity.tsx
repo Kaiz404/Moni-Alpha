@@ -21,7 +21,6 @@ import { ReviewStrip } from '@/components/activity/review-strip';
 import { useTabBarClearance } from '@/components/nav/tab-bar';
 import { SyncBanner } from '@/components/providers/sync-banner';
 import { EmptyTile } from '@/components/ui/empty-tile';
-import { MoniButton } from '@/components/ui/header-icon-button';
 import { useTransactionHold } from '@/components/transaction/use-transaction-hold';
 import { HoldHint } from '@/components/ui/hold-menu';
 import { Page, PageScroll, usePageContentTop } from '@/components/ui/page';
@@ -234,26 +233,20 @@ export default function ActivityScreen() {
       kind="tabRoot"
       title="Activity"
       trailing={
-        <>
-          {waiting.length ? (
-            <ReviewStrip
-              count={waiting.length}
-              amount={
-                reviewTotal > 0 ? formatMoney(reviewTotal, currency) : null
-              }
-              onPress={() =>
-                router.push({
-                  pathname: '/review',
-                  params: { id: waiting[0].id },
-                })
-              }
-            />
-          ) : null}
-          <MoniButton
-            testID={tid('activity', 'ask-moni')}
-            onPress={() => router.push('/chat')}
+        waiting.length ? (
+          <ReviewStrip
+            count={waiting.length}
+            amount={
+              reviewTotal > 0 ? formatMoney(reviewTotal, currency) : null
+            }
+            onPress={() =>
+              router.push({
+                pathname: '/review',
+                params: { id: waiting[0].id },
+              })
+            }
           />
-        </>
+        ) : null
       }
     >
       <PageScroll

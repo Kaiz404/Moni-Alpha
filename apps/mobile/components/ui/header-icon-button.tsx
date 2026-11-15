@@ -23,7 +23,7 @@ type HeaderIconButtonProps = {
   glyphSize?: 20 | 22;
 };
 
-/** The 44 hairline circle used for every header action except Ask Moni. */
+/** The 44 hairline circle used for every header action. */
 export function HeaderIconButton({
   testID,
   icon,
@@ -61,34 +61,6 @@ export function HeaderIconButton({
                 ? tokens.primaryForeground
                 : tokens.foreground
           }
-        />
-      </View>
-    </Press>
-  );
-}
-
-type MoniButtonProps = {
-  testID: TestId;
-  onPress: () => void;
-};
-
-/** Ink circle with the Lilac `creation` glyph: the one AI door in a header (Home and Activity). */
-export function MoniButton({ testID, onPress }: MoniButtonProps) {
-  const tokens = useThemeTokens();
-  return (
-    <Press
-      testID={testID}
-      onPress={onPress}
-      accessibilityLabel="Ask Moni"
-      radius={PRESSED_CORNERS}
-      pressedClassName="bg-primary-pressed"
-      className="h-11 w-11 items-center justify-center bg-primary"
-    >
-      <View pointerEvents="none">
-        <IconSymbol
-          name="creation"
-          size={22}
-          color={tokens.moniGlyph}
         />
       </View>
     </Press>

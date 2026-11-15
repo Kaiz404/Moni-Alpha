@@ -9,7 +9,7 @@ tags:
 ---
 - runFlow: ../../subflows/launch.yaml
 - assertVisible:
-    id: home.ask-moni
+    id: home.ask-box
 - assertVisible:
     id: home.net-worth.amount
 # At rest a chart shows only its marks; the callout shows only under a finger (Jest covers the scrub).

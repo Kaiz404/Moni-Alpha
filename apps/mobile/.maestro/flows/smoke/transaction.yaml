@@ -23,4 +23,4 @@ tags:
 - takeScreenshot: smoke-transaction
 - pressKey: Back
 - assertVisible:
-    id: activity.ask-moni
+    id: activity.title

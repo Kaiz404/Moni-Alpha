@@ -6,7 +6,7 @@ import { Text } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { tid } from '@/lib/test-ids';
 
-/** The Home way into Moni chat (D4 keeps it beside the header Moni button). */
+/** The Home way into Moni chat: Home has no header Moni button (issue #14). */
 export function AskBox({ onPress }: { onPress: () => void }) {
   const tokens = useThemeTokens();
   return (

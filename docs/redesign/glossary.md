@@ -8,7 +8,7 @@ The words the redesigned app uses, and the words it never uses. The design canva
 | --- | --- |
 | Home, Activity, Budget, Debts | The four tabs, in this order, with the + in the middle of the bar. |
 | Moni chat | The pushed page where the user talks to Moni. It hides the tab bar. It is not a tab. |
-| Ask Moni | The label on the ways into Moni chat: the + chooser row, the Moni header button (Home, Activity), the ask box on Home. |
+| Ask Moni | The label on the ways into Moni chat: the + chooser row and the ask box on Home. |
 | Review | The screen holding captures that wait for a decision. |
 | Approve · Not mine · Later | The three actions on every capture: chat draft cards, the Review card, the notification. Approve is on the right. |
 | Recently reviewed, Move back to review | The Review page's list of the last 30 days of Approve and Not mine, and the button on a Not mine row that returns it to the deck. |
