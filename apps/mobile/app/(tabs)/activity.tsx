@@ -1,19 +1,10 @@
 import { syncState } from '@legendapp/state';
 import { useSelector, useValue } from '@legendapp/state/react';
-import { router, useLocalSearchParams, useNavigation, useScrollToTop } from 'expo-router';
-import type { NavigationProp } from 'expo-router/react-navigation';
-import { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
+import { router, useScrollToTop } from 'expo-router';
+import { useDeferredValue, useMemo, useRef, useState } from 'react';
 import { ScrollView, View } from 'react-native';
 import { useReducedMotion } from 'react-native-reanimated';
 
-import {
-  CLEARED_LINK,
-  inScope,
-  readActivityLink,
-  scopeLabel,
-  type ActivityLinkParams,
-  type ActivityScope,
-} from '@/components/activity/activity-link';
 import { FilterChips } from '@/components/activity/filter-chips';
 import { FlowCard } from '@/components/activity/flow-card';
 import { PagedTransactions } from '@/components/activity/paged-transactions';
@@ -41,7 +32,6 @@ import { formatMoney } from '@/lib/finance/format-money';
 import { useMainCurrency } from '@/lib/finance/main-currency';
 import { merchantName } from '@/lib/finance/merchant-name';
 import { usePageNumber } from '@/lib/finance/paged';
-import { groupPlaces, placeRange } from '@/lib/finance/places';
 import {
   categoriesForUser$,
   pendingProposals$,
@@ -78,9 +68,6 @@ export default function ActivityScreen() {
     () => syncState(transactionTable$).get().isPersistLoaded,
   );
   const hold = useTransactionHold('activity');
-  const params = useLocalSearchParams<ActivityLinkParams>();
-  const navigation = useNavigation<NavigationProp<{ activity: ActivityLinkParams }, 'activity'>>();
-  const [scope, setScope] = useState<ActivityScope | null>(null);
   const [query, setQuery] = useState('');
   const [kind, setKind] = useState<ActivityKind>('all');
   const [walletId, setWalletId] = useState<string | null>(null);
@@ -89,18 +76,6 @@ export default function ActivityScreen() {
   const listTop = useRef(0);
   const now = new Date();
   const today = toLocalDateInput(now);
-
-  // A link from another page replaces whatever filters were left, then clears its params so the same link works again.
-  useEffect(() => {
-    const link = readActivityLink(params);
-    if (!link) return;
-    setQuery(link.query);
-    setScope(link.scope);
-    setKind('all');
-    setWalletId(null);
-    setRange(null);
-    navigation.setParams(CLEARED_LINK);
-  }, [navigation, params]);
 
   const lookups = useMemo<RowLookups>(
     () => ({
@@ -127,38 +102,9 @@ export default function ActivityScreen() {
     () => named.filter((transaction) => transaction.currency === currency),
     [named, currency],
   );
-  const shownPlace = useMemo(
-    () =>
-      scope?.kind === 'place'
-        ? (groupPlaces(named, {
-            currency,
-            range: scope.range ? placeRange(scope.range, new Date()) : null,
-          }).find((candidate) => candidate.id === scope.placeId) ?? null)
-        : null,
-    [named, scope, currency],
-  );
-  const scoped = useMemo(
-    () =>
-      shownPlace
-        ? shownPlace.transactions
-        : scope && scope.kind !== 'place'
-          ? named.filter((transaction) => inScope(transaction, scope))
-          : named,
-    [named, shownPlace, scope],
-  );
-  const chipLabel = shownPlace
-    ? shownPlace.name
-    : scope && scope.kind !== 'place'
-      ? scopeLabel(
-          scope,
-          scope.kind === 'category'
-            ? (categories.find((category) => category.id === scope.categoryId)?.name ?? null)
-            : null,
-        )
-      : null;
   const matching = useMemo(
     () =>
-      filterActivity(scoped, {
+      filterActivity(named, {
         query: searched,
         walletId,
         mainCurrency: currency,
@@ -167,7 +113,7 @@ export default function ActivityScreen() {
           categories.map((category) => [category.id, category.name]),
         ),
       }),
-    [scoped, searched, walletId, currency, kind, categories],
+    [named, searched, walletId, currency, kind, categories],
   );
   const listed = useMemo(() => withinRange(matching, range), [matching, range]);
   const series = useMemo(
@@ -175,7 +121,7 @@ export default function ActivityScreen() {
     [matching, range, today, currency],
   );
   const [page, setPage] = usePageNumber(
-    JSON.stringify([searched, walletId, kind, range, scope, currency]),
+    JSON.stringify([searched, walletId, kind, range, currency]),
   );
   const waiting = proposals.filter((proposal) => isAwaitingReview(proposal, new Date()));
   const reviewTotal = waiting
@@ -295,8 +241,6 @@ export default function ActivityScreen() {
               kind={kind}
               onKind={setKind}
               walletName={walletName}
-              scope={chipLabel && scope ? { kind: scope.kind, label: chipLabel } : null}
-              onClearScope={() => setScope(null)}
               onWallet={() => void pickWallet()}
             />
             <View

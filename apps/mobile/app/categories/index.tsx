@@ -27,6 +27,7 @@ import {
 import type { FinanceCategory } from '@/lib/finance/types';
 import { ensureFinanceTimezone } from '@/lib/supabase/profile';
 import { tid } from '@/lib/test-ids';
+import { listParams } from '@/lib/transactions/list-scope';
 import { resolveTransactionIcon } from '@/lib/transactions/icon';
 
 type Kind = 'expense' | 'income';
@@ -150,13 +151,17 @@ export default function CategoriesScreen() {
 
   const edit = (id: string) =>
     router.push({ pathname: '/categories/form', params: { id } });
-  /** Expense presets open their category page; income has no budget, so it opens the month's rows in Activity. */
-  const open = (categoryId: string) =>
+  /** Expense presets open their category page; income has no budget, so it lists the month's rows under Categories. */
+  const open = (category: Category) =>
     kind === 'expense'
-      ? router.push({ pathname: '/budget/[categoryId]', params: { categoryId } })
-      : router.dismissTo({
-          pathname: '/activity',
-          params: { categoryId, month: todayKey.slice(0, 7) },
+      ? router.push({ pathname: '/budget/[categoryId]', params: { categoryId: category.id } })
+      : router.push({
+          pathname: '/transactions',
+          params: listParams(category.name, {
+            kind: 'category',
+            categoryId: category.id,
+            month: todayKey.slice(0, 7),
+          }),
         });
   const create = () =>
     router.push({ pathname: '/categories/form', params: { type: kind } });
@@ -233,7 +238,7 @@ export default function CategoriesScreen() {
                   key={category.id}
                   category={category}
                   meta={presetMeta(category)}
-                  onPress={() => open(category.id)}
+                  onPress={() => open(category)}
                   trailing={
                     <CategorySpark
                       totals={months[category.id] ?? [0, 0]}

@@ -64,6 +64,7 @@ Values are in `redesign/tokens.md`, words in `redesign/glossary.md`.
 - **One progress style:** full Coral with "RMx over" when over budget; never a pace tick or a bar past 100%.
 - **Editing:** existing values edit in place with the system keyboard; new money uses the amount page; fixed sets (category, wallet, date) use picker sheets.
 - **Rows:** transaction rows have no chevron and no ⋯; press feedback plus hold for Edit category / Change wallet / Delete. Delete is also a visible button on the detail page.
+- **See all:** on a pushed page it pushes a deeper list (`/transactions`, 20 a page) under that page, so Back returns there; it never jumps to the Activity tab (owner's direction, 16 Nov 2026). This covers the bill page's history, a transaction's same-merchant row, the place page and Categories' income presets.
 - **Visible affordances:** anything tappable looks tappable; long press and swipes only duplicate visible controls.
 - **First screen:** the key content of every tab root sits above y 744 on a 390 × 844 phone.
 - **No clutter:** no restating sentences, no status chips that repeat a number, no chart readout rows.
@@ -118,7 +119,7 @@ The screen tracks reported these differences in their handoffs. Each waits for t
 - Transaction detail: only notification rows captured by this build or later keep the bank alert, so older rows show the currency alone under the amount edit.
 - States kit: the offline banner shows on the tab roots and the debt page that carry `SyncBanner`. Maestro cannot drive it over wireless adb, so Jest covers the state mapping.
 - The category sheet's **Debt payment** opens the Debts tab, where the person is chosen; the board links the amount page, which needs a person first.
-- Categories: an income preset opens Activity scoped to it for this month. The board links every preset to the category page, which has no income view.
+- Categories: an income preset pushes its rows for this month as a list under Categories. The board links every preset to the category page, which has no income view.
 - Home and Capture sources: the quiet-source alert is an addition with no board. Home shows a Lemon card in the check-in card's style above Recent; Capture sources shows a `Banner` in the error tone, and the Alerts row on Edit wallet reads "Gone quiet". Each carries one fix, chosen by cause: Allow for the battery prompt, Autostart, Open settings, or Add it. Revoked access shows on Home only, because Capture sources already draws the `V2F-States` denied card.
 - Edit wallet: reporting a missed transaction is an addition with no board. A wallet's Alerts section has **Report a missed transaction**, which opens Type it, and only saving counts the miss.
 - Capture sources: **Keep capture running** is an addition with no board, in the `V2H-Permissions` row style. Battery is a switch that opens the system prompt, and Autostart is a link on Xiaomi, Redmi and POCO phones. The page falls back to Moni's App info and says so when the Autostart page cannot open.

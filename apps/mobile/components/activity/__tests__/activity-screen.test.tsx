@@ -3,7 +3,6 @@ import type { ReactNode } from 'react';
 import { ScrollView } from 'react-native';
 
 import ActivityScreen from '@/app/(tabs)/activity';
-import type { ActivityLinkParams } from '@/components/activity/activity-link';
 import { PAGE_HEADER_HEIGHT } from '@/components/ui/page';
 import type { FinanceTransaction } from '@/lib/finance/types';
 import { dismissSheet, getOpenSheet } from '@/lib/sheet/sheet-store';
@@ -58,17 +57,8 @@ mockRows.push(
   }),
 );
 
-let mockParams: ActivityLinkParams = {};
-const mockNavigation = {
-  setParams: () => {
-    mockParams = {};
-  },
-};
-
 jest.mock('expo-router', () => ({
   router: { push: jest.fn(), navigate: jest.fn() },
-  useLocalSearchParams: () => mockParams,
-  useNavigation: () => mockNavigation,
   useScrollToTop: jest.fn(),
 }));
 jest.mock('@/components/ui/page', () => ({
@@ -126,7 +116,6 @@ const settleSheet = (result: unknown) =>
 
 beforeEach(() => {
   jest.useFakeTimers({ now: new Date(2026, 9, 14, 12), doNotFake: ['nextTick', 'setImmediate'] });
-  mockParams = {};
 });
 afterEach(() => {
   dismissSheet();

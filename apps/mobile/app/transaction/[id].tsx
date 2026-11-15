@@ -68,6 +68,7 @@ import { showToast } from '@/lib/toast/toast-store';
 import { captureSourceLabel } from '@/lib/proposals/capture-source';
 import { transactionAlert, transactionPairing } from '@/lib/transactions/alert';
 import { resolveTransactionIcon } from '@/lib/transactions/icon';
+import { listParams } from '@/lib/transactions/list-scope';
 import { BALANCE_CORRECTION_TITLE } from '@/lib/wallets/balance-correction';
 import { compactWalletNames } from '@/lib/wallets/compact-name';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
@@ -432,9 +433,15 @@ function Detail({ transaction: tx }: { transaction: FinanceTransaction }) {
             icon: 'magnify',
             trailing: 'chevron-right',
             onPress: () =>
-              router.dismissTo({
-                pathname: '/activity',
-                params: { q: title },
+              router.push({
+                pathname: '/transactions',
+                params: listParams(title, {
+                  kind: 'merchant',
+                  merchant: tx.merchant ?? title,
+                  type: tx.type,
+                  currency: tx.currency,
+                  month: monthOf(tx.transactionDate),
+                }),
               }),
           } satisfies DetailLink,
         ]

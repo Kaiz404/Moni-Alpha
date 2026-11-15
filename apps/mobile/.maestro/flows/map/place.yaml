@@ -25,15 +25,19 @@ tags:
 - takeScreenshot: m1-l5-place
 - scrollUntilVisible:
     element:
-      id: map.place.see-in-activity
+      id: map.place.see-all
 - assertVisible: Payments
 - assertVisible: Newest first
+# See all pushes the place's list under the place page; Back returns to it.
 - tapOn:
-    id: map.place.see-in-activity
+    id: map.place.see-all
 - extendedWaitUntil:
     visible:
-      id: activity.title
+      id: list.back
     timeout: 5000
+- assertVisible: '\d+ transactions?'
+- takeScreenshot: m1-l6-list
+- tapOn:
+    id: list.back
 - assertVisible:
-    id: activity.filter.place
-- takeScreenshot: m1-l6-activity
+    id: map.place.see-all

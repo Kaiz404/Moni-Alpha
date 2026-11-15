@@ -56,6 +56,7 @@ import {
   deleteTransaction,
 } from '@/lib/supabase/transactions';
 import { tid } from '@/lib/test-ids';
+import { listParams } from '@/lib/transactions/list-scope';
 import { showToast } from '@/lib/toast/toast-store';
 import { resolveTransactionIcon } from '@/lib/transactions/icon';
 import { transactionRow } from '@/lib/transactions/row';
@@ -570,11 +571,12 @@ export default function BillScreen() {
                     icon="chevron-right"
                     className="-mr-3.5"
                     onPress={() =>
-                      router.dismissTo({
-                        pathname: '/activity',
-                        params: bill.categoryId
-                          ? { categoryId: bill.categoryId }
-                          : {},
+                      router.push({
+                        pathname: '/transactions',
+                        params: listParams(bill.name, {
+                          kind: 'bill',
+                          seriesKey: bill.seriesKey,
+                        }),
                       })
                     }
                   />

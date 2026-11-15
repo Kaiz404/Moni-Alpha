@@ -39,6 +39,7 @@ import {
 import { pendingProposals$ } from '@/lib/finance/selectors';
 import { listMerchantAliases } from '@/lib/supabase/merchant-aliases';
 import { tid } from '@/lib/test-ids';
+import { listParams } from '@/lib/transactions/list-scope';
 import { transactionRow } from '@/lib/transactions/row';
 
 /** XM-Detail's map strip; the sheet starts 28 above its bottom edge. */
@@ -231,12 +232,21 @@ export default function PlaceScreen() {
               })}
             </ListCard>
             <Button
-              testID={tid('map', 'place', 'see-in-activity')}
-              label="See these in Activity"
+              testID={tid('map', 'place', 'see-all')}
+              label="See all"
               variant="tertiary"
               icon="chevron-right"
               className="self-center"
-              onPress={() => router.dismissTo({ pathname: '/activity', params: { placeId: place.id } })}
+              onPress={() =>
+                router.push({
+                  pathname: '/transactions',
+                  params: listParams(place.name, {
+                    kind: 'place',
+                    placeId: place.id,
+                    range: params.range ?? null,
+                  }),
+                })
+              }
             />
           </View>
         </View>

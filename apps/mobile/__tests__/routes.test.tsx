@@ -263,6 +263,11 @@ const ROUTES: Record<string, RouteSpec> = {
     "This spend isn't here any more",
   ),
   'transaction/new.tsx': same('/transaction/new', 'Add expense'),
+  'transactions.tsx': differ(
+    `/transactions?title=Netflix&bill=${NETFLIX}`,
+    '−RM54.90',
+    'Nothing here any more',
+  ),
   'wallet/[id].tsx': differ(
     `/wallet/${WALLET}`,
     'Balance not right?',
@@ -321,9 +326,11 @@ const PARAM_VISITS: [label: string, Visit][] = [
   ['chat, nonsense day', { href: '/chat?day=nonsense', text: 'Moni' }],
   ['chat, past day', { href: '/chat?day=2026-10-01', text: 'Moni' }],
   ['chat, draft', { href: '/chat?draft=lunch', text: 'Moni' }],
-  ['activity, unknown category', { href: '/activity?categoryId=unknown', text: 'Activity' }],
-  ['activity, unknown place', { href: '/activity?placeId=unknown', text: 'Activity' }],
-  ['activity, nonsense day and month', { href: '/activity?day=nonsense&month=nonsense&range=nonsense', text: 'Activity' }],
+  ['transactions, no scope', { href: '/transactions', text: 'These transactions are gone' }],
+  ['transactions, merchant with no month', { href: '/transactions?title=Grab&merchant=grab&type=expense&currency=MYR', text: 'These transactions are gone' }],
+  ['transactions, unknown category', { href: '/transactions?title=Salary&categoryId=unknown&month=2026-10', text: 'Nothing here any more' }],
+  ['transactions, unknown place', { href: '/transactions?title=Kopi&placeId=unknown&range=nonsense', text: 'Nothing here any more' }],
+  ['transactions, unknown bill', { href: '/transactions?title=Netflix&bill=unknown', text: 'Nothing here any more' }],
 ];
 
 /** Android throws when a string, or the 0 from `{count && <X />}`, sits outside a Text. */

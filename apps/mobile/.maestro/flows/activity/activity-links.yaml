@@ -1,8 +1,8 @@
-# A1 links into Activity: an income category on Categories narrows the list to that category and
-# month behind one chip; clearing the chip shows every row again.
+# A1 See all from a nested page: an income category on Categories pushes that category's rows for
+# the month under Categories, and Back returns to Categories instead of landing on Activity.
 # Run: scripts/device/run-flows.sh .maestro/flows/activity/activity-links.yaml
 appId: com.anonymous.moni.e2e
-name: A1 Activity links
+name: A1 See all pushes a list
 tags:
   - a1
   - seed-full
@@ -21,15 +21,14 @@ tags:
 - tapOn: Salary
 - extendedWaitUntil:
     visible:
-      id: activity.filter.category
+      id: list.back
     timeout: 5000
-- assertVisible:
-    id: activity.filter.category
-    text: '.* · [A-Z][a-z]{2}, clear'
-- takeScreenshot: a1-activity-category-link
+- assertVisible: Salary
+- assertVisible: '\d+ transactions?'
+- takeScreenshot: a1-list-category
 - tapOn:
-    id: activity.filter.category
-- assertNotVisible:
-    id: activity.filter.category
+    id: list.back
 - assertVisible:
-    id: activity.filter.all
+    id: activity.categories-kind.income
+- assertNotVisible:
+    id: activity.title
