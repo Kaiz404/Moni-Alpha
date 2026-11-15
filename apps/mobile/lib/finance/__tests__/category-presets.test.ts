@@ -68,3 +68,21 @@ describe('the Malaysian presets migration', () => {
     ]);
   });
 });
+
+describe('the migration that retires TNG Reloads, PTPTN and Takaful', () => {
+  const sql = readFileSync(
+    join(__dirname, '../../../../../supabase/migrations/20261116000000_remove_reload_ptptn_takaful_presets.sql'),
+    'utf8',
+  );
+  const statements = sql
+    .replace(/--.*$/gm, '')
+    .split(';')
+    .map((statement) => statement.trim())
+    .filter(Boolean);
+
+  it('only deactivates those three system presets, so filed rows keep them', () => {
+    expect(statements).toEqual([
+      "UPDATE public.categories\nSET is_active = false\nWHERE user_id IS NULL\n  AND type = 'expense'\n  AND name IN ('TNG Reloads', 'PTPTN', 'Takaful')\n  AND is_active",
+    ]);
+  });
+});

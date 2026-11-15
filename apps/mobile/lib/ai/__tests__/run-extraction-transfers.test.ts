@@ -357,11 +357,9 @@ describe('Malaysian categories', () => {
     deleted: false,
   });
   const TOLLS = '00000000-0000-4000-8000-0000000000f2';
-  const RELOADS = '00000000-0000-4000-8000-0000000000f3';
 
   beforeEach(() => {
     store.categories$[TOLLS].set(preset(TOLLS, 'Tolls'));
-    store.categories$[RELOADS].set(preset(RELOADS, 'TNG Reloads'));
   });
 
   it('prefills Tolls on a card, and still asks', async () => {
@@ -388,11 +386,10 @@ describe('Malaysian categories', () => {
     expect(store.transactions$[result.transactionId!].peek()).toMatchObject({ category_id: SHOPPING });
   });
 
-  it('prefills TNG Reloads for a reload with no Touch n Go wallet', async () => {
+  it('leaves a reload with no Touch n Go wallet for the user to file', async () => {
     resetStore([wallet(MAYBANK, 'Maybank', 'bank', MAYBANK_APP)]);
-    store.categories$[RELOADS].set(preset(RELOADS, 'TNG Reloads'));
     await run(bankReload());
-    expect(openProposals()[0]).toMatchObject({ type: 'expense', category_id: RELOADS });
+    expect(openProposals()[0]).toMatchObject({ type: 'expense', category_id: null });
   });
 
   it('gives a reload that is a transfer no category', async () => {

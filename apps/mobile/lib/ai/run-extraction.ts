@@ -18,7 +18,7 @@ import {
   pairCapture,
   toAbsorbedCapture,
 } from '@/lib/proposals/pairing';
-import { categoryFromHints, categoryNamed } from '@/lib/ai/category-hints';
+import { categoryFromHints } from '@/lib/ai/category-hints';
 import { classifyMovement, isTrackedMovement } from '@/lib/ai/money-movement';
 import { matchRoutine } from '@/lib/ai/routine';
 import { listAutoAddRules } from '@/lib/supabase/auto-add-rules';
@@ -239,11 +239,9 @@ async function persistProposal(
       categoryId:
         proposal.categoryId ??
         match.categoryId ??
-        (proposal.type !== 'expense'
-          ? null
-          : movement && !isTrackedMovement(movement) && movement.institutionId === 'tng'
-            ? categoryNamed('TNG Reloads', categories)
-            : categoryFromHints([proposal.merchant, proposal.notificationBody], categories)),
+        (proposal.type === 'expense'
+          ? categoryFromHints([proposal.merchant, proposal.notificationBody], categories)
+          : null),
       merchant: proposal.merchant ?? (match.kind === 'rule' ? null : match.merchant),
     };
 

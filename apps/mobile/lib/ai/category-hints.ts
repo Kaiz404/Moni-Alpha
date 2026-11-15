@@ -5,11 +5,6 @@ import { textNamesPhrase } from './institutions';
  * the capture still goes to Review, and the user's own history wins over this.
  */
 export const CATEGORY_HINTS: readonly { category: string; names: readonly string[] }[] = [
-  { category: 'PTPTN', names: ['ptptn', 'perbadanan tabung pendidikan'] },
-  {
-    category: 'Takaful',
-    names: ['takaful', 'etiqa', 'prudential bsn', 'great eastern takaful', 'syarikat takaful'],
-  },
   {
     category: 'Tolls',
     names: ['toll', 'tol', 'smarttag', 'plus malaysia', 'plus expressway', 'lekas', 'besraya', 'litrak', 'kesas', 'penang bridge'],
@@ -30,14 +25,7 @@ export function categoryFromHints(
 ): string | null {
   const hint = hintFor(texts.filter(Boolean).join(' '));
   if (!hint) return null;
-  return categoryNamed(hint.category, categories);
-}
-
-export function categoryNamed(
-  name: string,
-  categories: readonly { id: string; name: string | null; type: string | null; isActive: boolean }[],
-): string | null {
-  const wanted = name.toLocaleLowerCase();
+  const wanted = hint.category.toLocaleLowerCase();
   return (
     categories.find(
       (category) =>
