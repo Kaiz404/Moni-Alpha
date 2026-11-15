@@ -40,6 +40,8 @@ const KINDS = [
 ] as const;
 const ICON_GAP = 6;
 const SWATCH = 34;
+/** Exact radii, no `rounded-full` (radius 99999): with it Android drew only the ring's corner arcs (#9). */
+const RING = 42;
 
 function isIcon(value: string | null | undefined): value is CategoryIconName {
   return (categoryIconNames as readonly string[]).includes(value ?? '');
@@ -240,17 +242,22 @@ export default function CategoryFormScreen() {
                   accessibilityLabel={`Colour ${hex}`}
                   accessibilityState={{ selected }}
                   pressedScale={0.94}
-                  pressedClassName="bg-transparent"
-                  className="h-11 items-center justify-center rounded-full"
+                  className="h-11 items-center justify-center"
                   style={{ width: swatchCell }}
                   onPress={() => setColour(hex)}
                 >
                   <View
-                    className={`h-[42px] w-[42px] items-center justify-center rounded-full ${selected ? 'border-2 border-foreground' : ''}`}
+                    className={`items-center justify-center border-2 ${selected ? 'border-foreground' : 'border-transparent'}`}
+                    style={{ width: RING, height: RING, borderRadius: RING / 2 }}
                   >
                     <View
-                      className="items-center justify-center rounded-full"
-                      style={{ width: SWATCH, height: SWATCH, backgroundColor: hex }}
+                      className="items-center justify-center"
+                      style={{
+                        width: SWATCH,
+                        height: SWATCH,
+                        borderRadius: SWATCH / 2,
+                        backgroundColor: hex,
+                      }}
                     >
                       {selected ? (
                         <IconSymbol name="check" size={18} color={tokens.onCategory} />
