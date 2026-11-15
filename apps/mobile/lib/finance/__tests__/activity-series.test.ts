@@ -1,7 +1,7 @@
 import type { CurrencyCode, MinorAmount } from '@repo/types';
 
-import { balanceMonth, categoryMonths } from '@/lib/finance/activity-series';
-import type { FinanceTransaction, FinanceWallet } from '@/lib/finance/types';
+import { categoryMonths } from '@/lib/finance/activity-series';
+import type { FinanceTransaction } from '@/lib/finance/types';
 
 const MYR = 'MYR' as CurrencyCode;
 const now = new Date(2026, 9, 3, 14, 6);
@@ -35,23 +35,6 @@ function txn(
     balanceCorrection: false,
     createdAt: date.toISOString(),
     ...over,
-  };
-}
-
-function wallet(id: string, currency: string, initial: number): FinanceWallet {
-  return {
-    id,
-    userId: 'kai',
-    name: id,
-    type: 'bank',
-    currency: currency as CurrencyCode,
-    initialBalanceMinor: initial as MinorAmount,
-    color: null,
-    icon: null,
-    cardStyleId: null,
-    isActive: true,
-    displayOrder: 0,
-    balanceConfirmedAt: null,
   };
 }
 
@@ -89,24 +72,5 @@ describe('categoryMonths', () => {
       transport: [0, 3040, 3040],
       salary: [420000, 420000, 420000],
     });
-  });
-});
-
-describe('balanceMonth', () => {
-  it('carries the opening balance into closing balances of the MYR wallets only', () => {
-    const month = balanceMonth(
-      [wallet('maybank', 'MYR', 300000), wallet('cash', 'MYR', 5000), wallet('wise', 'USD', 12000)],
-      [
-        txn(new Date(2026, 8, 28, 9), 'expense', 10000),
-        txn(new Date(2026, 9, 1, 9), 'expense', 2000),
-        txn(new Date(2026, 9, 3, 9), 'transfer', 10000, { transferToWalletId: 'cash' }),
-        txn(new Date(2026, 9, 3, 9), 'income', 500, { walletId: 'cash' }),
-        txn(new Date(2026, 9, 2, 9), 'expense', 700, { walletId: 'wise' }),
-      ],
-      MYR,
-      now,
-    );
-    expect(month.days.map((day) => day.balanceMinor)).toEqual([293000, 293000, 293500]);
-    expect(month.daysInMonth).toBe(31);
   });
 });

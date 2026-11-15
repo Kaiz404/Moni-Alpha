@@ -31,6 +31,25 @@ export function chartRangeStart(now: Date, range: ChartRange): string | null {
   }
 }
 
+/**
+ * The days a range shows `back` steps before the one ending today, as local `YYYY-MM-DD`. Each
+ * older window ends the day before the newer one starts, so 1M steps by calendar month. `all`
+ * starts wherever the data does and has no older window: `back` is ignored.
+ */
+export function chartWindow(
+  now: Date,
+  range: ChartRange,
+  back: number,
+): { start: string | null; end: string } {
+  let end = toLocalDateInput(now);
+  for (let step = 0; step < back; step++) {
+    const start = chartRangeStart(dateAt(end, 0), range);
+    if (start === null) break;
+    end = toLocalDateInput(dateAt(start, -1));
+  }
+  return { start: chartRangeStart(dateAt(end, 0), range), end };
+}
+
 /** Day `index` counted on the calendar from `firstDay`, so a daylight saving change cannot skip or repeat a day. */
 export function dateAt(firstDay: string, index: number): Date {
   const [year, month, day] = firstDay.split('-').map(Number);

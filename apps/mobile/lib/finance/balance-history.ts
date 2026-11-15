@@ -1,5 +1,5 @@
 import { toLocalDateInput } from '@/lib/dates/local-date-input';
-import { dayNumber, rangeStartIndex, type ChartRange } from '@/lib/finance/chart-range';
+import { chartWindow, dayNumber, daysBetween, type ChartRange } from '@/lib/finance/chart-range';
 import { transactionDeltaMinor } from '@/lib/finance/ledger';
 import type { FinanceTransaction } from '@/lib/finance/types';
 
@@ -86,16 +86,24 @@ export function balanceIndex({
 }
 
 /**
- * The days a range shows, both ends included: its start to today. A wallet with no history yet
- * shortens the range rather than drawing a line before it existed.
+ * The days a range shows, both ends included: its start to today, or, `back` steps older, the
+ * window before. A wallet with no history yet shortens the range rather than drawing a line
+ * before it existed; `to` is negative when the window ends before the index starts.
  */
 export function balanceViewport(
   index: BalanceIndex,
   now: Date,
   range: ChartRange,
+  back = 0,
 ): { from: number; to: number } {
+  const { start, end } = chartWindow(now, range, back);
   return {
-    from: Math.max(0, rangeStartIndex(index.firstDay, now, range) ?? 0),
-    to: index.days - 1,
+    from: Math.max(0, start === null ? 0 : daysBetween(index.firstDay, start)),
+    to: Math.min(index.days - 1, daysBetween(index.firstDay, end)),
   };
+}
+
+/** Whether a step older than `back` still shows a day of the index. */
+export function hasOlderWindow(index: BalanceIndex, now: Date, range: ChartRange, back: number): boolean {
+  return range !== 'all' && balanceViewport(index, now, range, back + 1).to >= 0;
 }

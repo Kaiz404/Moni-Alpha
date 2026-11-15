@@ -27,7 +27,7 @@ function dayTotal(day: ActivityDay, currency: string) {
     .join(' · ');
 }
 
-function PagerStep({
+export function PagerStep({
   testID,
   icon,
   label,

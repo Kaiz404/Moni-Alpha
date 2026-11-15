@@ -71,27 +71,33 @@ export function netWorthScrubPoints(index: BalanceIndex, from: number, to: numbe
 }
 
 /**
- * One range and view of the net worth chart. The first day sits on the left edge and today on
- * the right for every range, and the axis snaps to a nice unit around the lowest and highest
- * balance shown.
+ * One range and view of the net worth chart, or of one wallet's balance. The first day sits on the
+ * left edge and the window's last day (today unless `back` steps older) on the right, and the
+ * axis snaps to a nice unit around the lowest and highest balance shown.
  */
 export function netWorthTarget({
   index,
   now,
   range,
+  back = 0,
   view,
   names,
   currency,
+  title = 'Net worth',
 }: {
   index: BalanceIndex;
   now: Date;
   range: ChartRange;
+  /** Windows older than the one ending today. */
+  back?: number;
   view: NetWorthView;
   /** Wallet id to the name the key shows, in key order. */
   names: Record<string, string>;
   currency: string;
+  /** What the screen reader calls the total line. */
+  title?: string;
 }): NetWorthTarget {
-  const { from, to } = balanceViewport(index, now, range);
+  const { from, to } = balanceViewport(index, now, range, back);
   const ids = Object.keys(names);
   const series =
     view === 'total' ? [index.total] : ids.map((id) => index.byWallet[id]).filter((values) => values !== undefined);
@@ -112,10 +118,12 @@ export function netWorthTarget({
 
   const money = (minor: number) => formatMoney(minor, currency);
   const count = to - from + 1;
-  const span = count > 1 ? `${spanDate(dateAt(index.firstDay, from), to - from > LONG_RANGE_DAYS)} to today` : 'today';
+  const long = to - from > LONG_RANGE_DAYS;
+  const end = back > 0 ? spanDate(dateAt(index.firstDay, to), long) : 'today';
+  const span = count > 1 ? `${spanDate(dateAt(index.firstDay, from), long)} to ${end}` : end;
   const reading =
     view === 'total'
-      ? `Net worth, ${span}${count > 1 ? `, from ${money(index.total[from]!)} to ${money(index.total[to]!)}` : `, ${money(index.total[to]!)}`}.`
+      ? `${title}, ${span}${count > 1 ? `, from ${money(index.total[from]!)} to ${money(index.total[to]!)}` : `, ${money(index.total[to]!)}`}.`
       : `Net worth by wallet, ${span}. ${ids
           .map((id) => `${names[id]} ${money(index.byWallet[id]?.[to] ?? 0)}`)
           .join(', ')}.`;

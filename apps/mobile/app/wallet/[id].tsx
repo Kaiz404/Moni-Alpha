@@ -159,6 +159,7 @@ export default function WalletScreen() {
         {wallet.currency === mainCurrency ? (
           <WalletBalanceChart
             wallet={wallet}
+            balanceMinor={Number(balanceMinor)}
             transactions={transactions}
             now={now}
           />

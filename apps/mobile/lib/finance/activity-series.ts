@@ -1,19 +1,9 @@
 import type { CurrencyCode } from '@repo/types';
 
 import { toLocalDateInput } from '@/lib/dates/local-date-input';
-import { transactionDeltaMinor } from '@/lib/finance/ledger';
-import type { FinanceTransaction, FinanceWallet } from '@/lib/finance/types';
+import type { FinanceTransaction } from '@/lib/finance/types';
 
 export type MonthDay<V extends string> = { key: string; day: number } & Record<V, number>;
-
-export type BalanceMonth = {
-  days: MonthDay<'balanceMinor'>[];
-  daysInMonth: number;
-};
-
-function daysIn(year: number, month: number): number {
-  return new Date(year, month + 1, 0).getDate();
-}
 
 function monthDays(now: Date): { key: string; day: number }[] {
   return Array.from({ length: now.getDate() }, (_, index) => ({
@@ -61,36 +51,4 @@ export function categoryMonths(
   for (const row of Object.values(daily))
     for (let i = 1; i < row.length; i++) row[i] += row[i - 1];
   return daily;
-}
-
-export function balanceMonth(
-  wallets: readonly FinanceWallet[],
-  transactions: readonly FinanceTransaction[],
-  currency: CurrencyCode,
-  now: Date,
-): BalanceMonth {
-  const ids = wallets.filter((wallet) => wallet.currency === currency).map((wallet) => wallet.id);
-  const days = monthDays(now);
-  const deltaByKey = new Map<string, number>();
-  let opening = 0;
-  for (const wallet of wallets)
-    if (wallet.currency === currency) opening += Number(wallet.initialBalanceMinor);
-  for (const transaction of transactions) {
-    const delta = ids.reduce(
-      (sum, id) => sum + Number(transactionDeltaMinor(transaction, id)),
-      0,
-    );
-    if (delta === 0) continue;
-    const key = toLocalDateInput(new Date(transaction.transactionDate));
-    if (key < days[0].key) opening += delta;
-    else deltaByKey.set(key, (deltaByKey.get(key) ?? 0) + delta);
-  }
-  let running = opening;
-  return {
-    days: days.map((day) => {
-      running += deltaByKey.get(day.key) ?? 0;
-      return { ...day, balanceMinor: running };
-    }),
-    daysInMonth: daysIn(now.getFullYear(), now.getMonth()),
-  };
 }
