@@ -1,21 +1,19 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { View } from 'react-native';
+import { Canvas, DashPathEffect, Line } from '@shopify/react-native-skia';
 import Animated, {
   FadeIn,
   FadeOut,
-  useAnimatedProps,
   useAnimatedStyle,
+  useDerivedValue,
   useSharedValue,
   withTiming,
 } from 'react-native-reanimated';
-import Svg, { Line } from 'react-native-svg';
 
 import { Text } from '@/components/ui/text';
 
 import { AXIS_LABEL_OVERHANG, AXIS_WIDTH, PLOT_HEIGHT } from './pace-geometry';
 import { xAt, yAt, type Frame, type Zoom } from './zoom';
-
-const AnimatedLine = Animated.createAnimatedComponent(Line);
 
 /** Labels and lines fade over this long as they arrive or leave, sliding with the zoom throughout. */
 const TICK_SWAP_MS = 150;
@@ -205,11 +203,7 @@ export function YGrid({
     dashed,
   };
   return (
-    <Svg
-      width={width}
-      height={PLOT_HEIGHT}
-      style={{ position: 'absolute' }}
-    >
+    <Canvas style={{ position: 'absolute', width, height: PLOT_HEIGHT }}>
       {lined.map((row) => (
         <GridLine
           key={rowKey(row)}
@@ -226,7 +220,7 @@ export function YGrid({
           {...shared}
         />
       ))}
-    </Svg>
+    </Canvas>
   );
 }
 
@@ -252,19 +246,21 @@ function GridLine({
   dashed: string;
 }) {
   const shown = useShown(leaving, appear);
-  const props = useAnimatedProps(() => {
-    const { y, inside } = rowAt(value, low.get(), high.get(), frame);
-    return { y1: y, y2: y, opacity: shown.get() * inside };
-  });
+  const at = useDerivedValue(() => rowAt(value, low.get(), high.get(), frame));
+  const p1 = useDerivedValue(() => ({ x: x1, y: at.get().y }));
+  const p2 = useDerivedValue(() => ({ x: x2, y: at.get().y }));
+  const opacity = useDerivedValue(() => shown.get() * at.get().inside);
   return (
-    <AnimatedLine
-      x1={x1}
-      x2={x2}
-      stroke={line === 'dashed' ? dashed : solid}
+    <Line
+      p1={p1}
+      p2={p2}
+      style="stroke"
+      color={line === 'dashed' ? dashed : solid}
       strokeWidth={1.5}
-      strokeDasharray={line === 'dashed' ? '3 5' : undefined}
-      animatedProps={props}
-    />
+      opacity={opacity}
+    >
+      {line === 'dashed' ? <DashPathEffect intervals={[3, 5]} /> : null}
+    </Line>
   );
 }
 

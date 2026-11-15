@@ -161,8 +161,8 @@ describe('NetWorthChart', () => {
 
     expect(screen.queryByTestId('wallet.chart.key')).toBeNull();
     const strokes = screen.UNSAFE_root.findAll(
-      (node) => node.props.strokeWidth === 3.5 && typeof node.props.stroke === 'string',
-    ).map((node) => node.props.stroke);
+      (node) => node.props.strokeWidth === 3.5 && typeof node.props.color === 'string',
+    ).map((node) => node.props.color);
     expect(new Set(strokes)).toEqual(new Set([lightThemeTokens.lemon, lightThemeTokens.mint]));
 
     const plot = screen.getByTestId('wallet.chart.plot');
@@ -367,7 +367,7 @@ describe('walletLineStyles', () => {
       ),
     ).toEqual({
       a: { color: '#f7cf3a', dash: undefined },
-      b: { color: '#f7cf3a', dash: '7 5' },
+      b: { color: '#f7cf3a', dash: [7, 5] },
       c: { color: '#6fd08c', dash: undefined },
     });
   });

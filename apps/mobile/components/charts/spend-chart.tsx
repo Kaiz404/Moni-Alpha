@@ -1,11 +1,19 @@
 import { memo, useEffect, useMemo, useRef, useState } from 'react';
 import { View } from 'react-native';
+import {
+  Canvas,
+  Circle,
+  DashPathEffect,
+  Line,
+  Paint,
+  Path,
+  RoundedRect,
+} from '@shopify/react-native-skia';
 import { GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   FadeIn,
   FadeOut,
   LayoutAnimationConfig,
-  useAnimatedProps,
   useAnimatedStyle,
   useDerivedValue,
   useReducedMotion,
@@ -14,7 +22,6 @@ import Animated, {
   withTiming,
   type SharedValue,
 } from 'react-native-reanimated';
-import Svg, { Circle, Line, Path, Rect } from 'react-native-svg';
 
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Text } from '@/components/ui/text';
@@ -61,11 +68,6 @@ import {
 import { LABEL_IN, LABEL_OUT, YGrid, YLabels, ZoomTicks } from './zoom-axes';
 
 type Tokens = ReturnType<typeof useThemeTokens>;
-
-const AnimatedPath = Animated.createAnimatedComponent(Path);
-const AnimatedLine = Animated.createAnimatedComponent(Line);
-const AnimatedCircle = Animated.createAnimatedComponent(Circle);
-const AnimatedRect = Animated.createAnimatedComponent(Rect);
 
 const DEFAULT_WIDTH = 314;
 /** Daily's lines run from here to the card edge, as the boards draw them. */
@@ -380,85 +382,97 @@ const LineMarks = memo(function LineMarks({
       reveal.get(),
     ),
   );
-  const lineProps = useAnimatedProps(() => ({ d: line.get().d, opacity: fade.get() }));
-  const areaProps = useAnimatedProps(() => ({
-    d: areaPath(line.get(), frame),
-    opacity: 0.8 * fade.get(),
-  }));
+  const lineD = useDerivedValue(() => line.get().d);
+  const lineOpacity = useDerivedValue(() => fade.get());
+  const areaD = useDerivedValue(() => areaPath(line.get(), frame));
+  const areaOpacity = useDerivedValue(() => 0.8 * fade.get());
   const { budget } = marks;
   const budgetValue = budget === null ? 0 : marks.shift + budget;
-  const budgetLine = useAnimatedProps(() => {
-    const y = yAt(budgetValue - shift.get(), low.get(), high.get(), frame);
-    // On the top gridline the budget is that line, as the boards draw it; only its dot shows.
-    return { y1: y, y2: y, opacity: oneMonth.get() * clamp01(Math.abs(y - frame.top) / 4) };
-  });
-  const budgetDot = useAnimatedProps(() => ({
-    cx: xAt(marks.to, from.get(), to.get(), frame),
-    cy: yAt(budgetValue - shift.get(), low.get(), high.get(), frame),
-    opacity: oneMonth.get(),
+  const budgetY = useDerivedValue(() =>
+    yAt(budgetValue - shift.get(), low.get(), high.get(), frame),
+  );
+  const budgetStart = useDerivedValue(() => ({ x: frame.left, y: budgetY.get() }));
+  const budgetEnd = useDerivedValue(() => ({ x: frame.right, y: budgetY.get() }));
+  // On the top gridline the budget is that line, as the boards draw it; only its dot shows.
+  const budgetLineOpacity = useDerivedValue(
+    () => oneMonth.get() * clamp01(Math.abs(budgetY.get() - frame.top) / 4),
+  );
+  const budgetDot = useDerivedValue(() => ({
+    x: xAt(marks.to, from.get(), to.get(), frame),
+    y: budgetY.get(),
   }));
-  const evenPace = useAnimatedProps(() => {
+  const monthOpacity = useDerivedValue(() => oneMonth.get());
+  const evenPace = useDerivedValue(() => {
     const [f, t] = [from.get(), to.get()];
     const x1 = xAt(marks.from, f, t, frame);
     const x2 = xAt(marks.to, f, t, frame);
     const y1 = yAt(marks.shift - shift.get(), low.get(), high.get(), frame);
-    const y2 = yAt(budgetValue - shift.get(), low.get(), high.get(), frame);
+    const y2 = budgetY.get();
     // Cut to the plot, so the line never runs into the axis column while it zooms away.
     const along = (x: number) => (x2 === x1 ? 0 : (x - x1) / (x2 - x1));
     const start = clamp01(along(frame.left));
     const end = clamp01(along(frame.right));
     return {
-      x1: x1 + (x2 - x1) * start,
-      y1: y1 + (y2 - y1) * start,
-      x2: x1 + (x2 - x1) * end,
-      y2: y1 + (y2 - y1) * end,
-      opacity: oneMonth.get(),
+      p1: { x: x1 + (x2 - x1) * start, y: y1 + (y2 - y1) * start },
+      p2: { x: x1 + (x2 - x1) * end, y: y1 + (y2 - y1) * end },
     };
   });
+  const evenStart = useDerivedValue(() => evenPace.get().p1);
+  const evenEnd = useDerivedValue(() => evenPace.get().p2);
   return (
-    <Svg
-      width={width}
-      height={PLOT_HEIGHT}
-    >
+    <Canvas style={{ width, height: PLOT_HEIGHT }}>
       {budget !== null ? (
-        <AnimatedLine
-          x1={frame.left}
-          x2={frame.right}
-          stroke={tokens.deepMint}
+        <Line
+          p1={budgetStart}
+          p2={budgetEnd}
+          style="stroke"
+          color={tokens.deepMint}
           strokeWidth={1.5}
-          animatedProps={budgetLine}
+          opacity={budgetLineOpacity}
         />
       ) : null}
-      <AnimatedPath
-        fill={tokens.sand}
-        animatedProps={areaProps}
+      <Path
+        path={areaD}
+        color={tokens.sand}
+        opacity={areaOpacity}
       />
       {budget !== null ? (
-        <AnimatedLine
-          stroke={tokens.inactive}
+        <Line
+          p1={evenStart}
+          p2={evenEnd}
+          style="stroke"
+          color={tokens.inactive}
           strokeWidth={1.5}
-          strokeDasharray="5 5"
-          animatedProps={evenPace}
-        />
+          opacity={monthOpacity}
+        >
+          <DashPathEffect intervals={[5, 5]} />
+        </Line>
       ) : null}
-      <AnimatedPath
-        fill="none"
-        stroke={tokens.foreground}
+      <Path
+        path={lineD}
+        style="stroke"
+        color={tokens.foreground}
         strokeWidth={3}
-        strokeLinejoin="round"
-        strokeLinecap="round"
-        animatedProps={lineProps}
+        strokeJoin="round"
+        strokeCap="round"
+        opacity={lineOpacity}
       />
       {budget !== null ? (
-        <AnimatedCircle
+        <Circle
+          c={budgetDot}
           r={5}
-          fill={tokens.deepMint}
-          stroke={tokens.card}
-          strokeWidth={2}
-          animatedProps={budgetDot}
-        />
+          color={tokens.deepMint}
+          opacity={monthOpacity}
+        >
+          <Paint
+            style="stroke"
+            strokeWidth={2}
+            color={tokens.card}
+            opacity={monthOpacity}
+          />
+        </Circle>
       ) : null}
-    </Svg>
+    </Canvas>
   );
 });
 
@@ -496,20 +510,19 @@ const BarMarks = memo(function BarMarks({
   }, []);
   const { from, to, high, reveal } = zoom;
   const { evenPace, safePerDay } = marks;
-  const even = useAnimatedProps(() => {
-    const y = yAt(evenPace ?? 0, 0, high.get(), frame);
-    return { y1: y, y2: y, opacity: oneMonth.get() };
-  });
-  const safe = useAnimatedProps(() => {
+  const evenY = useDerivedValue(() => yAt(evenPace ?? 0, 0, high.get(), frame));
+  const evenStart = useDerivedValue(() => ({ x: BAR_GRID_LEFT, y: evenY.get() }));
+  const evenEnd = useDerivedValue(() => ({ x: width, y: evenY.get() }));
+  const monthOpacity = useDerivedValue(() => oneMonth.get());
+  const safe = useDerivedValue(() => {
     const { centre, width: barWidth } = barBox(today, today, from.get(), to.get(), frame);
     const top = barTop(spent[today]!, high.get(), frame, growAt(centre, frame, reveal.get()));
     const height = Math.max(frame.base - yAt(safePerDay ?? 0, 0, high.get(), frame), 6);
+    const r = Math.min(6, barWidth / 2, height / 2);
     return {
-      x: centre - barWidth / 2,
-      y: top - 2 - height,
-      width: barWidth,
-      height,
-      opacity: oneMonth.get(),
+      rect: { x: centre - barWidth / 2, y: top - 2 - height, width: barWidth, height },
+      rx: r,
+      ry: r,
     };
   });
   return (
@@ -530,32 +543,36 @@ const BarMarks = memo(function BarMarks({
           tokens={tokens}
         />
       </Animated.View>
-      <Svg
-        width={width}
-        height={PLOT_HEIGHT}
-        style={{ position: 'absolute' }}
-      >
+      <Canvas style={{ position: 'absolute', width, height: PLOT_HEIGHT }}>
         {safePerDay !== null ? (
-          <AnimatedRect
-            rx={6}
-            fill={tokens.card}
-            stroke={tokens.foreground}
-            strokeWidth={1.2}
-            strokeDasharray="2 2"
-            animatedProps={safe}
-          />
+          <RoundedRect
+            rect={safe}
+            color={tokens.card}
+            opacity={monthOpacity}
+          >
+            <Paint
+              style="stroke"
+              strokeWidth={1.2}
+              color={tokens.foreground}
+              opacity={monthOpacity}
+            >
+              <DashPathEffect intervals={[2, 2]} />
+            </Paint>
+          </RoundedRect>
         ) : null}
         {evenPace !== null ? (
-          <AnimatedLine
-            x1={BAR_GRID_LEFT}
-            x2={width}
-            stroke={tokens.foreground}
+          <Line
+            p1={evenStart}
+            p2={evenEnd}
+            style="stroke"
+            color={tokens.foreground}
             strokeWidth={1.5}
-            strokeDasharray="4 4"
-            animatedProps={even}
-          />
+            opacity={monthOpacity}
+          >
+            <DashPathEffect intervals={[4, 4]} />
+          </Line>
         ) : null}
-      </Svg>
+      </Canvas>
     </>
   );
 });
@@ -587,30 +604,31 @@ function BarSet({
     // Grow once on mount.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-  const ink = useAnimatedProps(() => ({
-    d: barsPath(starts, ends, values, from.get(), to.get(), high.get(), frame, grow.get(), reveal.get(), null),
-    opacity: fade.get(),
-  }));
-  const coral = useAnimatedProps(() => ({
-    d: barsPath(starts, ends, values, from.get(), to.get(), high.get(), frame, grow.get(), reveal.get(), over),
-    opacity: fade.get() * oneMonth.get(),
-  }));
+  const ink = useDerivedValue(() =>
+    barsPath(starts, ends, values, from.get(), to.get(), high.get(), frame, grow.get(), reveal.get(), null),
+  );
+  const inkOpacity = useDerivedValue(() => fade.get());
+  const coral = useDerivedValue(() =>
+    over === null
+      ? ''
+      : barsPath(starts, ends, values, from.get(), to.get(), high.get(), frame, grow.get(), reveal.get(), over),
+  );
+  const coralOpacity = useDerivedValue(() => fade.get() * oneMonth.get());
   return (
-    <Svg
-      width={width}
-      height={PLOT_HEIGHT}
-    >
-      <AnimatedPath
-        fill={tokens.foreground}
-        animatedProps={ink}
+    <Canvas style={{ width, height: PLOT_HEIGHT }}>
+      <Path
+        path={ink}
+        color={tokens.foreground}
+        opacity={inkOpacity}
       />
       {over !== null ? (
-        <AnimatedPath
-          fill={tokens.coral}
-          animatedProps={coral}
+        <Path
+          path={coral}
+          color={tokens.coral}
+          opacity={coralOpacity}
         />
       ) : null}
-    </Svg>
+    </Canvas>
   );
 }
 

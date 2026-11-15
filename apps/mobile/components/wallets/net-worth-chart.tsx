@@ -1,19 +1,18 @@
 import { memo, useMemo, useState } from 'react';
 import { View } from 'react-native';
+import { Canvas, DashPathEffect, Path } from '@shopify/react-native-skia';
 import { GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   FadeIn,
   FadeOut,
   LayoutAnimationConfig,
   LinearTransition,
-  useAnimatedProps,
   useAnimatedStyle,
   useDerivedValue,
   useReducedMotion,
   type DerivedValue,
   type SharedValue,
 } from 'react-native-reanimated';
-import Svg, { Path } from 'react-native-svg';
 
 import { PLOT_HEIGHT, calloutLeft } from '@/components/charts/pace-geometry';
 import {
@@ -62,8 +61,6 @@ const VIEWS: readonly { value: NetWorthView; label: string }[] = [
   { value: 'total', label: 'Total' },
   { value: 'by-wallet', label: 'By wallet' },
 ];
-
-const AnimatedPath = Animated.createAnimatedComponent(Path);
 
 /** The card and everything under it slide together when the key opens below the chart. */
 export const netWorthLayout = LinearTransition.springify()
@@ -308,10 +305,7 @@ const Marks = memo(function Marks({
   fill: string;
 }) {
   return (
-    <Svg
-      width={width}
-      height={PLOT_HEIGHT}
-    >
+    <Canvas style={{ width, height: PLOT_HEIGHT }}>
       {ids.map((id, line) => (
         <BalanceLine
           key={id}
@@ -324,7 +318,7 @@ const Marks = memo(function Marks({
           frame={frame}
         />
       ))}
-    </Svg>
+    </Canvas>
   );
 });
 
@@ -342,35 +336,37 @@ function BalanceLine({
   area: string | null;
   color: string;
   strokeWidth: number;
-  dash: string | undefined;
+  dash: number[] | undefined;
   zoom: Zoom;
   frame: Frame;
 }) {
   const line = useDerivedValue(() =>
     linePath(values, from.get(), to.get(), low.get(), high.get(), 0, frame, reveal.get()),
   );
-  const lineProps = useAnimatedProps(() => ({ d: line.get().d, opacity: fade.get() }));
-  const areaProps = useAnimatedProps(() => ({
-    d: areaPath(line.get(), frame),
-    opacity: 0.8 * fade.get(),
-  }));
+  const lineD = useDerivedValue(() => line.get().d);
+  const lineOpacity = useDerivedValue(() => fade.get());
+  const areaD = useDerivedValue(() => (area ? areaPath(line.get(), frame) : ''));
+  const areaOpacity = useDerivedValue(() => 0.8 * fade.get());
   return (
     <>
       {area ? (
-        <AnimatedPath
-          fill={area}
-          animatedProps={areaProps}
+        <Path
+          path={areaD}
+          color={area}
+          opacity={areaOpacity}
         />
       ) : null}
-      <AnimatedPath
-        fill="none"
-        stroke={color}
+      <Path
+        path={lineD}
+        style="stroke"
+        color={color}
         strokeWidth={strokeWidth}
-        strokeDasharray={dash}
-        strokeLinejoin="round"
-        strokeLinecap="round"
-        animatedProps={lineProps}
-      />
+        strokeJoin="round"
+        strokeCap="round"
+        opacity={lineOpacity}
+      >
+        {dash ? <DashPathEffect intervals={dash} /> : null}
+      </Path>
     </>
   );
 }

@@ -12,7 +12,7 @@ import type { AxisRow, TickMark } from '@/components/charts/zoom-axes';
 
 export type NetWorthView = 'total' | 'by-wallet';
 
-export type WalletLineStyle = { color: string; dash: string | undefined };
+export type WalletLineStyle = { color: string; dash: number[] | undefined };
 
 /**
  * What one range and view shows, in data space: days from the index's first day across (today at
@@ -34,7 +34,7 @@ export const NET_WORTH_TOP = 44;
 export const NET_WORTH_BASE = 142;
 const LONG_RANGE_DAYS = 180;
 /** Wallets that share a colour stay apart by pattern, in list order. */
-const DASHES = [undefined, '7 5', '1 6', '12 5 1 5'];
+const DASHES = [undefined, [7, 5], [1, 6], [12, 5, 1, 5]];
 
 /**
  * Each wallet's line in the tint of its bubble on the Wallets list, so a line reads as its wallet

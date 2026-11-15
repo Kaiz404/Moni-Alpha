@@ -54,3 +54,22 @@ jest.mock('react-native-maps', () => {
     PROVIDER_GOOGLE: 'google',
   };
 });
+
+// Skia's own mock needs CanvasKit's wasm; the charts only need their drawings to mount with their props.
+jest.mock('@shopify/react-native-skia', () => {
+  const { createElement } = jest.requireActual('react');
+  const host = (name) =>
+    function SkiaNode(props) {
+      return createElement(name, props);
+    };
+  return {
+    __esModule: true,
+    Canvas: host('SkiaCanvas'),
+    Circle: host('SkiaCircle'),
+    DashPathEffect: host('SkiaDashPathEffect'),
+    Line: host('SkiaLine'),
+    Paint: host('SkiaPaint'),
+    Path: host('SkiaPath'),
+    RoundedRect: host('SkiaRoundedRect'),
+  };
+});
