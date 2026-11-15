@@ -53,8 +53,9 @@ bundle_bytes=$(unzip -l "$apk" assets/index.android.bundle | awk '$4 == "assets/
 
 frames=null janky=null p50=null p90=null p95=null p99=null
 if [[ -n $flow ]]; then
+  "$here/install-driver.sh" >&2
   adb shell dumpsys gfxinfo "$package" reset >/dev/null
-  maestro --device "$MONI_DEVICE_SERIAL" test "$flow" >&2
+  maestro --device "$MONI_DEVICE_SERIAL" test --no-reinstall-driver "$flow" >&2
   gfx=$(adb shell dumpsys gfxinfo "$package" | tr -d '\r')
   frames=$(sed -n 's/^Total frames rendered: \([0-9]*\).*/\1/p' <<<"$gfx" | head -n 1)
   janky=$(sed -n 's/^Janky frames: [0-9]* (\([0-9.]*\)%).*/\1/p' <<<"$gfx" | head -n 1)
