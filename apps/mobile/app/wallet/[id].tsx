@@ -1,26 +1,24 @@
 import { useValue } from '@legendapp/state/react';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useMemo, useRef } from 'react';
-import {
-  KeyboardAvoidingView,
-  Platform,
-  } from 'react-native';
+import { ScrollView, View } from 'react-native';
+import { useReducedMotion } from 'react-native-reanimated';
 
+import { PagedTransactions } from '@/components/activity/paged-transactions';
 import { useNow } from '@/components/budget/use-budget';
+import { useTransactionHold } from '@/components/transaction/use-transaction-hold';
 import { NotFound } from '@/components/ui/empty-tile';
-import { Page, PageScroll } from '@/components/ui/page';
+import { HoldHint } from '@/components/ui/hold-menu';
+import { Page, PageScroll, usePageContentTop } from '@/components/ui/page';
+import { Text } from '@/components/ui/text';
 import { WalletBalanceChart } from '@/components/wallets/wallet-balance-chart';
 import { WalletHero } from '@/components/wallets/wallet-hero';
 import { WalletMenu } from '@/components/wallets/wallet-menu';
-import {
-  ReviewStrip,
-  WalletAlerts,
-  WalletDefault,
-  WalletTransactions,
-} from '@/components/wallets/wallet-sections';
+import { ReviewStrip } from '@/components/wallets/wallet-sections';
 import { useAuth } from '@/lib/auth/auth-context';
 import { useMainCurrency } from '@/lib/finance/main-currency';
 import { merchantName } from '@/lib/finance/merchant-name';
+import { usePageNumber } from '@/lib/finance/paged';
 import {
   categoriesForUser$,
   pendingProposals$,
@@ -36,8 +34,9 @@ import { confirmDeleteWallet } from '@/lib/wallets/delete-wallet';
 import { useWalletAlertLink } from '@/lib/wallets/wallet-link';
 
 /**
- * V2H-WalletDetail at `/wallet/<id>`. `?edit=balance` opens it with the
- * balance sheet up: the Home check-in's Fix it uses it.
+ * V2H-WalletDetail at `/wallet/<id>`, for looking: the balance, the month chart, and the wallet's
+ * transactions a page at a time. Its settings live on Edit wallet. `?edit=balance` opens it with
+ * the balance sheet up: the Home check-in's Fix it uses it.
  */
 export default function WalletScreen() {
   const params = useLocalSearchParams<{
@@ -59,6 +58,16 @@ export default function WalletScreen() {
   const aliases = useValue(() => (userId ? listMerchantAliases(userId) : []));
   const now = useNow();
   const mainCurrency = useMainCurrency();
+  const scroll = useRef<ScrollView>(null);
+  const listY = useRef(0);
+  const reduceMotion = useReducedMotion();
+  const contentTop = usePageContentTop();
+  const hold = useTransactionHold('wallet');
+  const [page, setPage] = usePageNumber(id);
+  const turnPage = (next: number) => {
+    setPage(next);
+    scroll.current?.scrollTo({ y: contentTop + listY.current, animated: !reduceMotion });
+  };
   const named = useMemo(
     () =>
       transactions.map((transaction) =>
@@ -134,46 +143,74 @@ export default function WalletScreen() {
         />
       }
     >
-      <KeyboardAvoidingView
+      <PageScroll
+        ref={scroll}
         className="flex-1"
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        contentContainerClassName="gap-3.5 px-5 pb-10"
+        showsVerticalScrollIndicator={false}
       >
-        <PageScroll
-          className="flex-1"
-          contentContainerClassName="gap-3.5 px-5 pb-10"
-          keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}
+        <WalletHero
+          key={wallet.id}
+          wallet={wallet}
+          balanceMinor={balanceMinor}
+          link={link}
+          openBalance={params.edit === 'balance'}
+        />
+        {wallet.currency === mainCurrency ? (
+          <WalletBalanceChart
+            wallet={wallet}
+            transactions={transactions}
+            now={now}
+          />
+        ) : null}
+        <ReviewStrip
+          proposals={waiting}
+          currency={wallet.currency}
+        />
+        <View
+          className="gap-2 pt-2"
+          onLayout={(event) => {
+            listY.current = event.nativeEvent.layout.y;
+          }}
         >
-          <WalletHero
-            key={wallet.id}
-            wallet={wallet}
-            balanceMinor={balanceMinor}
-            link={link}
-            openBalance={params.edit === 'balance'}
-          />
-          {wallet.currency === mainCurrency ? (
-            <WalletBalanceChart
-              wallet={wallet}
-              transactions={transactions}
-              now={now}
-            />
-          ) : null}
-          <ReviewStrip
-            proposals={waiting}
-            currency={wallet.currency}
-          />
-          <WalletTransactions
-            wallet={wallet}
-            transactions={named}
-            lookups={lookups}
-          />
-          <WalletAlerts
-            wallet={wallet}
-            link={link}
-          />
-          <WalletDefault wallet={wallet} />
-        </PageScroll>
-      </KeyboardAvoidingView>
+          <Text
+            variant="sectionTitle"
+            className="text-foreground"
+            accessibilityRole="header"
+          >
+            Transactions
+          </Text>
+          {named.length === 0 ? (
+            <Text
+              variant="body"
+              className="px-1 text-ink-2"
+            >
+              Nothing in this wallet yet. Add spending with + or tell Moni.
+            </Text>
+          ) : (
+            <>
+              <HoldHint screen="wallet" />
+              <PagedTransactions
+                screen="wallet"
+                transactions={named}
+                lookups={lookups}
+                currency={wallet.currency}
+                now={now}
+                page={page}
+                onPage={turnPage}
+                onOpen={(transaction) =>
+                  router.push({
+                    pathname: '/transaction/[id]',
+                    params: { id: transaction.id },
+                  })
+                }
+                holdFor={hold.holdFor}
+              />
+            </>
+          )}
+        </View>
+      </PageScroll>
+      {hold.menu}
     </Page>
   );
 }

@@ -1,4 +1,4 @@
-# The wallet page is the one home for a linked app: its capture health, reporting a missed
+# Edit wallet is the one home for a linked app: its capture health, reporting a missed
 # transaction, the location switch, and the app sheet. Maybank is linked in seed-full.
 # The sheet step needs notification access; without it the row asks for access instead.
 # Run: scripts/device/run-flows.sh .maestro/flows/account/wallet-linked-app.yaml
@@ -20,6 +20,10 @@ tags:
     visible:
       id: wallet.balance.edit
     timeout: 10000
+- tapOn:
+    id: wallet.more
+- tapOn:
+    id: wallet.menu.edit
 - scrollUntilVisible:
     element:
       id: wallet.location

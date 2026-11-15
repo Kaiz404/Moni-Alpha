@@ -1,9 +1,6 @@
-import { addMinor, minorToNumber, type MinorAmount } from '@repo/types';
+import { minorToNumber, type MinorAmount } from '@repo/types';
 
-import { formatDayHeading } from '@/lib/dates/day-label';
-import { toLocalDateInput } from '@/lib/dates/local-date-input';
 import { formatMoney, formatSignedMoney } from '@/lib/finance/format-money';
-import type { FinanceTransaction } from '@/lib/finance/types';
 import { correctBalance } from '@/lib/wallets/balance-correction';
 
 const DAY_MS = 86_400_000;
@@ -43,48 +40,4 @@ export function balanceDiffLine(
     return `Moni has ${formatMoney(balanceMinor, currency)}. Type what ${what}.`;
   }
   return `Moni adds a ${formatSignedMoney(correction.type, correction.amountMinor, currency)} balance correction. Not counted as spending or income.`;
-}
-
-export type WalletDay = {
-  key: string;
-  label: string;
-  /** Income minus expenses that day, transfers left out. */
-  totalMinor: MinorAmount;
-  items: FinanceTransaction[];
-};
-
-/** Newest-first transactions into day groups, as the wallet page lists them. */
-export function groupWalletDays(
-  transactions: FinanceTransaction[],
-  now: Date = new Date(),
-): WalletDay[] {
-  const days: WalletDay[] = [];
-  for (const transaction of transactions) {
-    const key = toLocalDateInput(new Date(transaction.transactionDate));
-    const delta =
-      transaction.type === 'income'
-        ? Number(transaction.amountMinor)
-        : transaction.type === 'expense'
-          ? -Number(transaction.amountMinor)
-          : 0;
-    const last = days.at(-1);
-    if (last?.key === key) {
-      last.items.push(transaction);
-      last.totalMinor = addMinor(last.totalMinor, delta);
-    } else {
-      days.push({
-        key,
-        label: formatDayHeading(transaction.transactionDate, now),
-        totalMinor: addMinor(delta),
-        items: [transaction],
-      });
-    }
-  }
-  return days;
-}
-
-/** A day total: "−RM45.90", "+RM6.40", or "RM0.00". */
-export function formatDayTotal(totalMinor: MinorAmount, currency: string): string {
-  if (totalMinor === 0) return formatMoney(0, currency);
-  return formatSignedMoney(totalMinor < 0 ? 'expense' : 'income', Math.abs(totalMinor), currency);
 }

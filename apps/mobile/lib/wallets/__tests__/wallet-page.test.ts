@@ -1,7 +1,6 @@
 import { decimalToMinor } from '@repo/types';
 
-import { balanceDiffLine, checkedLabel, formatDayTotal, groupWalletDays } from '../wallet-page';
-import { expense } from './balance-fixture';
+import { balanceDiffLine, checkedLabel } from '../wallet-page';
 
 const NOW = new Date(2026, 9, 14, 14, 6);
 const at = (day: number, hour = 12) => new Date(2026, 9, day, hour).toISOString();
@@ -39,33 +38,5 @@ describe('balanceDiffLine', () => {
     expect(balanceDiffLine(decimalToMinor('120'), 'USD', 125.5, bank)).toBe(
       'Moni adds a +$5.50 balance correction. Not counted as spending or income.',
     );
-  });
-});
-
-describe('groupWalletDays', () => {
-  it('groups by local day and totals income minus expenses, leaving transfers out', () => {
-    const days = groupWalletDays(
-      [
-        expense('a', at(13, 20), { amountMinor: decimalToMinor('45.90') }),
-        expense('b', at(13, 9), {
-          type: 'transfer',
-          amountMinor: decimalToMinor('100'),
-          transferToWalletId: 'tng',
-        }),
-        expense('c', at(12), { amountMinor: decimalToMinor('30.40') }),
-        expense('d', at(12, 8), { type: 'income', amountMinor: decimalToMinor('50') }),
-      ],
-      NOW,
-    );
-    expect(
-      days.map((day) => [
-        day.label,
-        formatDayTotal(day.totalMinor, 'MYR'),
-        day.items.map((item) => item.id),
-      ]),
-    ).toEqual([
-      ['Yesterday · Tue 13 Oct', '−RM45.90', ['a', 'b']],
-      ['Mon 12 Oct', '+RM19.60', ['c', 'd']],
-    ]);
   });
 });

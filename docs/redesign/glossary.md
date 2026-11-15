@@ -35,7 +35,7 @@ The words the redesigned app uses, and the words it never uses. The design canva
 | Report a missed transaction, reported missed | The way to say capture failed, on a wallet's Alerts section. Saving Type it counts the miss against that app: "1 reported missed". |
 | Gone quiet, Nothing missed | A linked app that has been silent for longer than its own usual rhythm. Nothing missed dismisses the alert until the app's next capture. |
 | Linked app, Last captured | A wallet's Alerts section shows the app it links with "Last captured 3 hours ago", or "No captures yet". A capture is an alert that became a transaction or a Review card, or counted once with one, not one that only arrived. |
-| Location from notifications | On by default; per wallet, on the wallet page. |
+| Location from notifications | On by default; per wallet, on Edit wallet. |
 | Location, Add place, Not saved, Been here? | The Location field on Type it and the capture check page. Add place: nothing to save yet. Not saved: the user chose No place. Been here?: a shop the user paid at near here, with a check that fills it in. |
 | Choose a place, Confirm, No place | The Location field's sheet, its primary action (saves the selected place), and the action that saves no place with the entry. |
 | Near you | The place sheet's list before the user types: their own places within about 500 m of the map's centre, with "120 m · 4 visits". |

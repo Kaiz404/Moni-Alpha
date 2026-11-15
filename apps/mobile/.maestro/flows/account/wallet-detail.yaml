@@ -1,7 +1,7 @@
-# K2 wallet page: its blocks, rename in place with Undo, Edit wallet, and Delete wallet.
+# K2 wallet page: balance, chart and transactions only; Edit wallet renames it, holds Alerts and
+# Use as default, and deletes it from the header trash button.
 # Creates "K2 Detail", renames it, and deletes it at the end.
 # Opens the form and the wallet from Home, Net worth, then Wallets.
-# Undo goes straight after the rename: a Maestro tap takes about 6 s, so a flow-run build holds the toast for 15 s (EXPO_PUBLIC_E2E_TOAST_MS).
 # Run: scripts/device/run-flows.sh .maestro/flows/account/wallet-detail.yaml
 appId: com.anonymous.moni.e2e
 name: K2 wallet page
@@ -29,7 +29,7 @@ tags:
     centerElement: true
 - tapOn: K2 Detail
 
-# Lane 2. The blocks in board order.
+# Lane 2. The blocks in board order. The name does not edit here, and the settings live on Edit wallet.
 - extendedWaitUntil:
     visible:
       id: wallet.balance.edit
@@ -39,6 +39,8 @@ tags:
 - assertVisible:
     id: wallet.more
 - assertVisible:
+    id: wallet.name
+- assertNotVisible:
     id: wallet.name.edit
 - assertVisible: RM120.00
 - assertVisible:
@@ -46,41 +48,10 @@ tags:
 - assertVisible: Checked today
 - assertVisible: 'Same as on 1 .*'
 - assertVisible: Transactions
-- scrollUntilVisible:
-    element:
-      id: wallet.alerts
-- scrollUntilVisible:
-    element:
-      id: wallet.default
-- assertVisible: Use as default
+- assertNotVisible: Use as default
 - takeScreenshot: k2-l2-pair
-- scrollUntilVisible:
-    element:
-      id: wallet.name.edit
-    direction: UP
 
-# Lane 4. Rename in place and Undo, then rename again.
-- tapOn:
-    id: wallet.name.edit
-- assertVisible: Only the name changes. Its transactions stay as they are.
-- eraseText: 20
-- inputText: K2 Undone
-- tapOn:
-    id: wallet.name.save
-- tapOn:
-    id: nav.toast.undo
-- assertVisible: K2 Detail
-- assertNotVisible: K2 Undone
-- tapOn:
-    id: wallet.name.edit
-- eraseText: 20
-- inputText: K2 Renamed
-- tapOn:
-    id: wallet.name.save
-- assertVisible: Renamed to K2 Renamed
-- takeScreenshot: k2-l4-rename
-
-# Edit wallet opens the form with the currency locked.
+# Edit wallet: the currency locked, Alerts and Use as default, and the trash button in the header.
 - tapOn:
     id: wallet.more
 - tapOn:
@@ -89,17 +60,36 @@ tags:
 - assertVisible: Save changes
 - assertVisible:
     id: wallet.form.delete
-- takeScreenshot: k2-form-edit
-- tapOn:
-    id: wallet.back
+- scrollUntilVisible:
+    element:
+      id: wallet.default
 - assertVisible:
-    id: wallet.balance.edit
+    id: wallet.alerts
+- assertVisible: Use as default
+- takeScreenshot: k2-form-edit
 
-# Lane 8. Delete through the confirm sheet; the page closes.
+# Lane 4. Rename on Edit wallet.
+- scrollUntilVisible:
+    element:
+      id: wallet.form.name
+    direction: UP
+- tapOn:
+    id: wallet.form.name
+- eraseText: 20
+- inputText: K2 Renamed
+- hideKeyboard
+- tapOn:
+    id: wallet.form.submit
+- assertVisible: K2 Renamed
+- takeScreenshot: k2-l4-rename
+
+# Lane 8. Delete from Edit wallet's trash button through the confirm sheet; both pages close.
 - tapOn:
     id: wallet.more
 - tapOn:
-    id: wallet.menu.delete
+    id: wallet.menu.edit
+- tapOn:
+    id: wallet.form.delete
 - assertVisible: Delete K2 Renamed?
 - takeScreenshot: k2-l8-delete
 - tapOn:

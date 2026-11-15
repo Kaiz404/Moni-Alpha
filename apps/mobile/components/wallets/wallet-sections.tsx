@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { AppState, Platform, View } from 'react-native';
 import { addMinor, type MinorAmount } from '@repo/types';
 
@@ -16,17 +16,13 @@ import {
 import { ListCard } from '@/components/ui/list-card';
 import { Press } from '@/components/ui/press';
 import { Text } from '@/components/ui/text';
-import {
-  TintBubble,
-  TransactionRow,
-} from '@/components/ui/transaction-row';
+import { TintBubble } from '@/components/ui/transaction-row';
 import { labelForNotificationPackage } from '@/constants/notification-apps';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { toLocalDateInput } from '@/lib/dates/local-date-input';
 import { formatMoney } from '@/lib/finance/format-money';
 import type {
   FinanceProposal,
-  FinanceTransaction,
   FinanceWallet,
 } from '@/lib/finance/types';
 import { assessCadence } from '@/lib/notifications/capture-cadence';
@@ -40,22 +36,11 @@ import { updateWallet } from '@/lib/supabase/wallets';
 import { tid, type TestId } from '@/lib/test-ids';
 import { showToast } from '@/lib/toast/toast-store';
 import {
-  transactionRow,
-  type RowLookups,
-} from '@/lib/transactions/row';
-import {
   cacheDefaultWalletId,
   getDefaultWalletId,
   setDefaultWalletId,
 } from '@/lib/wallets/default-wallet';
 import { useWalletNamesLinkedTo, type WalletAlertLink } from '@/lib/wallets/wallet-link';
-import {
-  formatDayTotal,
-  groupWalletDays,
-} from '@/lib/wallets/wallet-page';
-
-/** Rows shown on the wallet page; "All" opens the rest in Activity. */
-const RECENT_ROWS = 10;
 
 function DetailRow({
   testID,
@@ -153,106 +138,6 @@ export function ReviewStrip({
         }
       />
     </ListCard>
-  );
-}
-
-export function WalletTransactions({
-  wallet,
-  transactions,
-  lookups,
-}: {
-  wallet: FinanceWallet;
-  transactions: FinanceTransaction[];
-  lookups: RowLookups;
-}) {
-  const tokens = useThemeTokens();
-  const days = useMemo(
-    () => groupWalletDays(transactions.slice(0, RECENT_ROWS)),
-    [transactions],
-  );
-  return (
-    <View className="gap-2 pt-2">
-      <View className="flex-row items-center justify-between">
-        <Text
-          variant="sectionTitle"
-          className="text-foreground"
-          accessibilityRole="header"
-        >
-          Transactions
-        </Text>
-        {transactions.length > 0 ? (
-          <Press
-            testID={tid('wallet', 'all-transactions')}
-            accessibilityLabel={`All ${transactions.length} transactions in Activity`}
-            pressedClassName=""
-            hitSlop={8}
-            className="flex-row items-center gap-0.5"
-            onPress={() =>
-              router.dismissTo({
-                pathname: '/activity',
-                params: { walletId: wallet.id },
-              })
-            }
-          >
-            <Text className="font-display-semibold text-[15px] leading-[21px] text-deep-mint">
-              All {transactions.length}
-            </Text>
-            <IconSymbol
-              name="chevron-right"
-              size={18}
-              color={tokens.deepMint}
-            />
-          </Press>
-        ) : null}
-      </View>
-      {days.length === 0 ? (
-        <Text
-          variant="body"
-          className="px-1 text-ink-2"
-        >
-          Nothing in this wallet yet. Add spending with + or tell
-          Moni.
-        </Text>
-      ) : (
-        days.map((day) => (
-          <View
-            key={day.key}
-            className="gap-1.5"
-          >
-            <View className="flex-row items-baseline justify-between px-1">
-              <Text
-                variant="caps"
-                className="text-muted"
-              >
-                {day.label}
-              </Text>
-              <Text
-                className="font-display-semibold text-[13px] leading-[18px] text-ink-2"
-                style={{ fontVariant: ['tabular-nums'] }}
-              >
-                {formatDayTotal(day.totalMinor, wallet.currency)}
-              </Text>
-            </View>
-            <ListCard>
-              {day.items.map((transaction) => (
-                <TransactionRow
-                  key={transaction.id}
-                  testID={tid('wallet', 'row', transaction.id)}
-                  row={transactionRow(transaction, lookups)}
-                  metaLead="category"
-                  onPress={() =>
-                    router.push({
-                      pathname: '/transaction/[id]',
-                      params: { id: transaction.id },
-                    })
-                  }
-                />
-              ))}
-            </ListCard>
-          </View>
-        ))
-      )}
-    </View>
   );
 }
 

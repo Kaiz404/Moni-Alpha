@@ -16,6 +16,7 @@ import {
 } from '@repo/types';
 
 import { Button } from '@/components/ui/button';
+import { HeaderIconButton } from '@/components/ui/header-icon-button';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Page } from '@/components/ui/page';
 import { PickerField } from '@/components/ui/picker-field';
@@ -23,7 +24,7 @@ import { Text } from '@/components/ui/text';
 import { WalletColourSwatches } from '@/components/wallets/wallet-colour-swatches';
 import { WalletIcon } from '@/components/wallets/wallet-icon';
 import { WalletNotificationLinkSection } from '@/components/wallets/wallet-notification-link-section';
-import { labelForNotificationPackage } from '@/constants/notification-apps';
+import { WalletAlerts, WalletDefault } from '@/components/wallets/wallet-sections';
 import { getWalletCardStyle } from '@/constants/wallet-card-styles';
 import {
   getWalletTypeIcon,
@@ -32,11 +33,13 @@ import {
 } from '@/constants/wallet-form';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { currencySymbol } from '@/lib/finance/format-money';
+import type { FinanceWallet } from '@/lib/finance/types';
 import { openSheet } from '@/lib/sheet/sheet-store';
 import { createWallet, updateWallet } from '@/lib/supabase/wallets';
 import { tid, type TestId } from '@/lib/test-ids';
 import { parseBalanceInput } from '@/lib/wallets/balance-correction';
 import { confirmDeleteWallet } from '@/lib/wallets/delete-wallet';
+import { walletMeta } from '@/lib/wallets/wallet-meta';
 import {
   useWalletNamesLinkedTo,
   type WalletAlertLink,
@@ -50,9 +53,18 @@ export type WalletFormValues = {
   link: WalletAlertLink;
 };
 
+/**
+ * Edit carries the live wallet and its alert link: its Alerts and Use as default save as they
+ * change, so Save changes writes only the name, type and colour.
+ */
 export type WalletFormMode =
   | { kind: 'new' }
-  | { kind: 'edit'; walletId: string; transactionCount: number };
+  | {
+      kind: 'edit';
+      wallet: FinanceWallet;
+      link: WalletAlertLink;
+      transactionCount: number;
+    };
 
 const NAME_MAX = 30;
 const NO_LINK: WalletAlertLink = {
@@ -78,30 +90,6 @@ function typeOption(type: WalletKind) {
   );
 }
 
-function linkLabel(link: WalletAlertLink): string | null {
-  return (
-    link.notificationAppLabel ||
-    (link.notificationPackage
-      ? labelForNotificationPackage(link.notificationPackage)
-      : null)
-  );
-}
-
-/** "Bank · MYR · alerts from MAE": the line under a wallet's name on the form preview and the wallet page. */
-export function walletMeta(
-  type: string,
-  currency: string,
-  link: WalletAlertLink,
-): string {
-  const label =
-    WALLET_TYPE_OPTIONS.find((option) => option.value === type)
-      ?.label ?? 'Wallet';
-  const app = linkLabel(link);
-  return [label, currency, app ? `alerts from ${app}` : null]
-    .filter(Boolean)
-    .join(' · ');
-}
-
 /** V2H-WalletForm: one form for New wallet and Edit wallet. */
 export function WalletForm({
   mode,
@@ -118,10 +106,8 @@ export function WalletForm({
   const set = (patch: Partial<WalletFormValues>) =>
     setValues((current) => ({ ...current, ...patch }));
 
-  const sharedWith = useWalletNamesLinkedTo(
-    values.link.notificationPackage,
-    editing ? mode.walletId : null,
-  );
+  const link = mode.kind === 'edit' ? mode.link : values.link;
+  const sharedWith = useWalletNamesLinkedTo(values.link.notificationPackage, null);
   const style = getWalletCardStyle(values.cardStyleId);
   const type = typeOption(values.type);
   const name = values.name.trim();
@@ -148,7 +134,6 @@ export function WalletForm({
     color: style.swatchHex,
     icon: getWalletTypeIcon(values.type),
     cardStyleId: style.id,
-    ...values.link,
   });
 
   const save = async () => {
@@ -163,6 +148,7 @@ export function WalletForm({
       }
       const parsed = createWalletSchema.safeParse({
         ...fields(),
+        ...values.link,
         currency: values.currency,
         initialBalanceMinor: decimalToMinor(balance),
       });
@@ -198,7 +184,7 @@ export function WalletForm({
     }
     setSaving(true);
     try {
-      await updateWallet(mode.walletId, parsed.data);
+      await updateWallet(mode.wallet.id, parsed.data);
       router.back();
     } catch (error) {
       setSaving(false);
@@ -212,7 +198,7 @@ export function WalletForm({
   const remove = async () => {
     if (mode.kind !== 'edit') return;
     const deleted = await confirmDeleteWallet(
-      { id: mode.walletId, name: initial.name },
+      mode.wallet,
       mode.transactionCount,
     );
     if (deleted) router.back();
@@ -223,6 +209,16 @@ export function WalletForm({
       screen="wallet"
       kind="pushed"
       title={editing ? 'Edit wallet' : 'New wallet'}
+      trailing={
+        editing ? (
+          <HeaderIconButton
+            testID={tid('wallet', 'form', 'delete')}
+            icon="trash-can-outline"
+            accessibilityLabel={`Delete ${initial.name}`}
+            onPress={() => void remove()}
+          />
+        ) : undefined
+      }
     >
       <KeyboardAvoidingView
         className="flex-1"
@@ -258,11 +254,7 @@ export function WalletForm({
                 className="text-muted"
                 numberOfLines={1}
               >
-                {walletMeta(
-                  values.type,
-                  values.currency,
-                  values.link,
-                )}
+                {walletMeta(values.type, values.currency, link)}
               </Text>
             </View>
           </View>
@@ -349,11 +341,13 @@ export function WalletForm({
             </PaperField>
           )}
 
-          <WalletNotificationLinkSection
-            value={values.link}
-            onChange={(link) => set({ link })}
-            sharedPackageWalletNames={sharedWith}
-          />
+          {mode.kind === 'new' ? (
+            <WalletNotificationLinkSection
+              value={values.link}
+              onChange={(next) => set({ link: next })}
+              sharedPackageWalletNames={sharedWith}
+            />
+          ) : null}
 
           <View className="min-h-[52px] justify-center px-1">
             <WalletColourSwatches
@@ -362,32 +356,34 @@ export function WalletForm({
             />
           </View>
 
-          {editing ? (
+          {mode.kind === 'edit' ? (
             <>
-              <View className="flex-row gap-2 px-1">
-                <IconSymbol
-                  name="information-outline"
-                  size={16}
-                  color={tokens.muted}
-                />
-                <Text
-                  variant="meta"
-                  className="min-w-0 flex-1 text-ink-2"
-                >
-                  To fix the balance, tap Balance not right? on the
-                  wallet. Moni adds a correction so your history still
-                  adds up.
-                </Text>
-              </View>
-              <Button
-                testID={tid('wallet', 'form', 'delete')}
-                className="self-start"
-                variant="destructive"
-                icon="trash-can-outline"
-                label="Delete wallet"
-                onPress={() => void remove()}
+              <WalletAlerts
+                wallet={mode.wallet}
+                link={mode.link}
               />
+              <View className="pt-2">
+                <WalletDefault wallet={mode.wallet} />
+              </View>
             </>
+          ) : null}
+
+          {editing ? (
+            <View className="flex-row gap-2 px-1">
+              <IconSymbol
+                name="information-outline"
+                size={16}
+                color={tokens.muted}
+              />
+              <Text
+                variant="meta"
+                className="min-w-0 flex-1 text-ink-2"
+              >
+                To fix the balance, tap Balance not right? on the
+                wallet. Moni adds a correction so your history still
+                adds up.
+              </Text>
+            </View>
           ) : null}
         </ScrollView>
         <View className="px-5 pb-5 pt-2">

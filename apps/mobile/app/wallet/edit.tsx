@@ -10,7 +10,7 @@ import { useAuth } from '@/lib/auth/auth-context';
 import { transactions$, walletById$ } from '@/lib/finance/selectors';
 import { useWalletAlertLink } from '@/lib/wallets/wallet-link';
 
-/** `/wallet/edit?id=<walletId>`: Edit wallet, pushed from the wallet page's ⋯ menu. */
+/** `/wallet/edit?id=<walletId>`: Edit wallet, pushed from the wallet page's ⋯ menu. It also holds the wallet's Alerts and Use as default. */
 export default function EditWalletScreen() {
   const { id = '' } = useLocalSearchParams<{ id?: string }>();
   const { user } = useAuth();
@@ -42,7 +42,7 @@ export default function EditWalletScreen() {
   return (
     <WalletForm
       key={wallet.id}
-      mode={{ kind: 'edit', walletId: wallet.id, transactionCount }}
+      mode={{ kind: 'edit', wallet, link, transactionCount }}
       initial={{
         name: wallet.name,
         type:
