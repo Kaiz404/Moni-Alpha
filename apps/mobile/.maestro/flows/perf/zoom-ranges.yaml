@@ -1,0 +1,176 @@
+# Issue #10 perf probe: change Home's chart range fast, by taps and by gliding the range chips, so
+# the line and both axes retarget mid-zoom again and again.
+# Run: scripts/device/perf.sh --sha <key> --flow .maestro/flows/perf/zoom-ranges.yaml --runs 1
+appId: com.anonymous.moni.e2e
+name: Zoom ranges fast
+tags:
+  - perf
+  - seed-full
+---
+- runFlow: ../../subflows/launch.yaml
+- extendedWaitUntil:
+    visible:
+      id: home.range.all
+    timeout: 15000
+- tapOn:
+    id: home.range.7d
+    waitToSettleTimeoutMs: 1
+    retryTapIfNoChange: false
+- tapOn:
+    id: home.range.30d
+    waitToSettleTimeoutMs: 1
+    retryTapIfNoChange: false
+- tapOn:
+    id: home.range.90d
+    waitToSettleTimeoutMs: 1
+    retryTapIfNoChange: false
+- tapOn:
+    id: home.range.1y
+    waitToSettleTimeoutMs: 1
+    retryTapIfNoChange: false
+- tapOn:
+    id: home.range.all
+    waitToSettleTimeoutMs: 1
+    retryTapIfNoChange: false
+- tapOn:
+    id: home.range.1m
+    waitToSettleTimeoutMs: 1
+    retryTapIfNoChange: false
+- tapOn:
+    id: home.range.1y
+    waitToSettleTimeoutMs: 1
+    retryTapIfNoChange: false
+- tapOn:
+    id: home.range.7d
+    waitToSettleTimeoutMs: 1
+    retryTapIfNoChange: false
+- tapOn:
+    id: home.range.all
+    waitToSettleTimeoutMs: 1
+    retryTapIfNoChange: false
+- tapOn:
+    id: home.range.30d
+    waitToSettleTimeoutMs: 1
+    retryTapIfNoChange: false
+- tapOn:
+    id: home.range.1m
+    waitToSettleTimeoutMs: 1
+    retryTapIfNoChange: false
+- swipe:
+    from:
+      id: home.range.pill
+    direction: RIGHT
+    duration: 700
+- swipe:
+    from:
+      id: home.range.pill
+    direction: LEFT
+    duration: 700
+- tapOn:
+    id: home.range.7d
+    waitToSettleTimeoutMs: 1
+    retryTapIfNoChange: false
+- tapOn:
+    id: home.range.30d
+    waitToSettleTimeoutMs: 1
+    retryTapIfNoChange: false
+- tapOn:
+    id: home.range.90d
+    waitToSettleTimeoutMs: 1
+    retryTapIfNoChange: false
+- tapOn:
+    id: home.range.1y
+    waitToSettleTimeoutMs: 1
+    retryTapIfNoChange: false
+- tapOn:
+    id: home.range.all
+    waitToSettleTimeoutMs: 1
+    retryTapIfNoChange: false
+- tapOn:
+    id: home.range.1m
+    waitToSettleTimeoutMs: 1
+    retryTapIfNoChange: false
+- tapOn:
+    id: home.range.1y
+    waitToSettleTimeoutMs: 1
+    retryTapIfNoChange: false
+- tapOn:
+    id: home.range.7d
+    waitToSettleTimeoutMs: 1
+    retryTapIfNoChange: false
+- tapOn:
+    id: home.range.all
+    waitToSettleTimeoutMs: 1
+    retryTapIfNoChange: false
+- tapOn:
+    id: home.range.30d
+    waitToSettleTimeoutMs: 1
+    retryTapIfNoChange: false
+- tapOn:
+    id: home.range.1m
+    waitToSettleTimeoutMs: 1
+    retryTapIfNoChange: false
+- swipe:
+    from:
+      id: home.range.pill
+    direction: RIGHT
+    duration: 700
+- swipe:
+    from:
+      id: home.range.pill
+    direction: LEFT
+    duration: 700
+- tapOn:
+    id: home.range.7d
+    waitToSettleTimeoutMs: 1
+    retryTapIfNoChange: false
+- tapOn:
+    id: home.range.30d
+    waitToSettleTimeoutMs: 1
+    retryTapIfNoChange: false
+- tapOn:
+    id: home.range.90d
+    waitToSettleTimeoutMs: 1
+    retryTapIfNoChange: false
+- tapOn:
+    id: home.range.1y
+    waitToSettleTimeoutMs: 1
+    retryTapIfNoChange: false
+- tapOn:
+    id: home.range.all
+    waitToSettleTimeoutMs: 1
+    retryTapIfNoChange: false
+- tapOn:
+    id: home.range.1m
+    waitToSettleTimeoutMs: 1
+    retryTapIfNoChange: false
+- tapOn:
+    id: home.range.1y
+    waitToSettleTimeoutMs: 1
+    retryTapIfNoChange: false
+- tapOn:
+    id: home.range.7d
+    waitToSettleTimeoutMs: 1
+    retryTapIfNoChange: false
+- tapOn:
+    id: home.range.all
+    waitToSettleTimeoutMs: 1
+    retryTapIfNoChange: false
+- tapOn:
+    id: home.range.30d
+    waitToSettleTimeoutMs: 1
+    retryTapIfNoChange: false
+- tapOn:
+    id: home.range.1m
+    waitToSettleTimeoutMs: 1
+    retryTapIfNoChange: false
+- swipe:
+    from:
+      id: home.range.pill
+    direction: RIGHT
+    duration: 700
+- swipe:
+    from:
+      id: home.range.pill
+    direction: LEFT
+    duration: 700

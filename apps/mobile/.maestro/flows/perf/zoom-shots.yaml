@@ -1,0 +1,82 @@
+# Issue #10 parity shots: Home's chart at rest on every range in Pace and Daily, and the net worth
+# chart on two ranges, to compare a chart change with the build before it.
+# Run: scripts/device/run-flows.sh --tag perf .maestro/flows/perf/zoom-shots.yaml
+appId: com.anonymous.moni.e2e
+name: Zoom parity shots
+tags:
+  - perf
+  - seed-full
+---
+- runFlow: ../../subflows/launch.yaml
+- extendedWaitUntil:
+    visible:
+      id: home.range.all
+    timeout: 15000
+- waitForAnimationToEnd
+- takeScreenshot: zoom-pace-1m
+- tapOn:
+    id: home.range.7d
+- waitForAnimationToEnd
+- takeScreenshot: zoom-pace-7d
+- tapOn:
+    id: home.range.30d
+- waitForAnimationToEnd
+- takeScreenshot: zoom-pace-30d
+- tapOn:
+    id: home.range.90d
+- waitForAnimationToEnd
+- takeScreenshot: zoom-pace-90d
+- tapOn:
+    id: home.range.1y
+- waitForAnimationToEnd
+- takeScreenshot: zoom-pace-1y
+- tapOn:
+    id: home.range.all
+- waitForAnimationToEnd
+- takeScreenshot: zoom-pace-all
+- tapOn:
+    id: home.range.1m
+- tapOn:
+    id: home.chart.daily
+- waitForAnimationToEnd
+- takeScreenshot: zoom-daily-1m
+- tapOn:
+    id: home.range.7d
+- waitForAnimationToEnd
+- takeScreenshot: zoom-daily-7d
+- tapOn:
+    id: home.range.30d
+- waitForAnimationToEnd
+- takeScreenshot: zoom-daily-30d
+- tapOn:
+    id: home.range.90d
+- waitForAnimationToEnd
+- takeScreenshot: zoom-daily-90d
+- tapOn:
+    id: home.range.1y
+- waitForAnimationToEnd
+- takeScreenshot: zoom-daily-1y
+- tapOn:
+    id: home.range.all
+- waitForAnimationToEnd
+- takeScreenshot: zoom-daily-all
+- tapOn:
+    id: home.range.1m
+- tapOn:
+    id: home.chart.pace
+- tapOn:
+    id: home.net-worth
+- extendedWaitUntil:
+    visible:
+      id: wallet.chart.plot
+    timeout: 10000
+- waitForAnimationToEnd
+- takeScreenshot: zoom-net-worth-30d
+- tapOn:
+    id: wallet.chart.1y
+- waitForAnimationToEnd
+- takeScreenshot: zoom-net-worth-1y
+- tapOn:
+    id: wallet.chart.by-wallet
+- waitForAnimationToEnd
+- takeScreenshot: zoom-net-worth-1y-by-wallet

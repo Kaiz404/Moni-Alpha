@@ -51,17 +51,19 @@ fi
 apk_bytes=$(stat -c %s "$apk")
 bundle_bytes=$(unzip -l "$apk" assets/index.android.bundle | awk '$4 == "assets/index.android.bundle" { print $1 }')
 
-janky=null p50=null p90=null p95=null
+frames=null janky=null p50=null p90=null p95=null p99=null
 if [[ -n $flow ]]; then
   adb shell dumpsys gfxinfo "$package" reset >/dev/null
   maestro --device "$MONI_DEVICE_SERIAL" test "$flow" >&2
   gfx=$(adb shell dumpsys gfxinfo "$package" | tr -d '\r')
+  frames=$(sed -n 's/^Total frames rendered: \([0-9]*\).*/\1/p' <<<"$gfx" | head -n 1)
   janky=$(sed -n 's/^Janky frames: [0-9]* (\([0-9.]*\)%).*/\1/p' <<<"$gfx" | head -n 1)
   pct() { sed -n "s/^$1th percentile: \([0-9]*\)ms.*/\1/p" <<<"$gfx" | head -n 1; }
-  p50=$(pct 50) p90=$(pct 90) p95=$(pct 95)
+  p50=$(pct 50) p90=$(pct 90) p95=$(pct 95) p99=$(pct 99)
 fi
 
 mkdir -p "$(dirname "$out")"
+[[ -n $flow ]] && printf '%s\n' "$gfx" >"${out%.json}.gfxinfo.txt"
 cat >"$out" <<JSON
 {
   "key": "$key",
@@ -69,10 +71,12 @@ cat >"$out" <<JSON
   "coldStartSamplesMs": [$(IFS=,; echo "${samples[*]}")],
   "apkBytes": ${apk_bytes:-null},
   "bundleBytes": ${bundle_bytes:-null},
+  "frames": ${frames:-null},
   "jankyPct": ${janky:-null},
   "p50Ms": ${p50:-null},
   "p90Ms": ${p90:-null},
   "p95Ms": ${p95:-null},
+  "p99Ms": ${p99:-null},
   "batteryC": $battery_c,
   "measuredAt": "$(date -Iseconds)"
 }
