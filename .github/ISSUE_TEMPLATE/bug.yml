@@ -1,0 +1,30 @@
+name: Bug
+description: Something in Moni broke or did the wrong thing
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: This repo is public. Leave out real balances, account numbers, and names.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected
+  - type: input
+    id: where
+    attributes:
+      label: Where
+      placeholder: e.g. Home, Say it check page, Budget > Groceries
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps
+      placeholder: "1. Tap +\n2. Say it\n3. ..."
+  - type: dropdown
+    id: build
+    attributes:
+      label: Build
+      options: [Moni (daily), Moni E2E (dev)]

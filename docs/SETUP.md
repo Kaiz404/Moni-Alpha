@@ -72,6 +72,10 @@ The e2e APK (`apps/mobile/scripts/device/build-apk.sh`), the e2e seed (`apps/mob
 - `E2E_EMAIL` and `E2E_PASSWORD`, the one e2e user. The address must start with `e2e`. The first `seed.mjs --reset` creates the user.
 - `EXPO_PUBLIC_AI_API_URL` left empty, so the e2e app uses the mock AI client and its fixtures.
 
+### Daily app signing key
+
+`build-apk.sh --preview` signs the daily app with its EAS keystore, so the build installs over the copy on the phone. Download it once with `npx eas-cli credentials -p android` (from `apps/mobile`): pick the `preview` profile, then **credentials.json → Download**. Move `credentials/android/keystore.jks` to `~/.config/moni/signing/moni.jks`, write `~/.config/moni/signing/signing.properties` with `MONI_STORE_FILE`, `MONI_STORE_PASSWORD`, `MONI_KEY_ALIAS`, and `MONI_KEY_PASSWORD` from `credentials.json`, `chmod 600` both, and delete `credentials.json` and `credentials/`. Both are gitignored, but never commit them.
+
 ### `apps/web/.env`
 
 ```bash

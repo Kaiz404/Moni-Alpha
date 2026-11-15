@@ -103,16 +103,37 @@ Keep the Windows adb server stopped. With mirrored networking, Windows and WSL s
 
 To test the scripts, run `bash apps/mobile/scripts/device/test/device-scripts.test.sh`. The tests need the WSL toolchain above but not the phone.
 
+### Two apps on the phone
+
+| App | Package | Build | Used for |
+| --- | --- | --- | --- |
+| **Moni** | `com.anonymous.moni` | Preview: release, code built in, real AI, `.env` | The owner's daily use, with real data |
+| **Moni E2E** | `com.anonymous.moni.e2e`, scheme `moni-e2e` | Dev client (`build-apk.sh --dev`, `pnpm android`) or the test release (`build-apk.sh`) | Development and agent tests on the e2e user |
+
+`APP_VARIANT=e2e` switches `app.config.ts` to the E2E name, package, and scheme. Without the variable the config is the daily app's. `pnpm dev`, `start`, `android`, `ios`, and the EAS `development` profile set it, so a dev build never lands on the daily app.
+
+For development, install the dev client once with `build-apk.sh --dev` and `install.sh <key>`, then run `scripts/device/dev-server.sh` (Metro over Tailscale, real AI, `.env.e2e`). A test run installs the test release over it, so install the dev client again afterwards.
+
+To update the daily app, from a worktree:
+
+```bash
+apps/mobile/scripts/device/build-apk.sh --preview
+apps/mobile/scripts/device/with-device.sh -- apps/mobile/scripts/device/install.sh --preview <key>
+```
+
+- `--preview` builds `com.anonymous.moni` as a release from `.env` only (worktree, then main checkout) on the real AI, then re-signs it with `apksigner` using the EAS keystore named in `~/.config/moni/signing/signing.properties` (override with `MONI_SIGNING`). The daily app was first installed from an EAS build, so only that key can update it in place. It exits 5 when the file is missing; see `docs/SETUP.md`. The key ends in `-preview`.
+- `install.sh --preview <key>` installs only `com.anonymous.moni`, with `install -r` and no `-d`, clear, uninstall, or permission grants, so the app keeps its data. It records the key in `/data/local/tmp/moni-preview.sha`, which the `moni-issues` skill reads for an issue's build.
+
 ### The e2e APK
 
-Agents test a release build named **Moni E2E**, package `com.anonymous.moni.e2e` and scheme `moni-e2e`, that installs beside the daily `com.anonymous.moni` app and runs without Metro. `APP_VARIANT=e2e` switches `app.config.ts` to that name, package, and scheme. Without the variable the config is the daily app's.
+Agents test a release build of **Moni E2E** that runs without Metro.
 
 ```bash
 apps/mobile/scripts/device/build-apk.sh          # prints: built <key> <apk> in <n> s, or cached <key> <apk>
 apps/mobile/scripts/device/with-device.sh --pr v3 --lane smoke -- apps/mobile/scripts/device/install.sh <key>
 ```
 
-- `build-apk.sh [--clean-prebuild] [--allow-main]` builds the arm64 release APK and copies it to `~/.cache/moni-apk/<key>/app-release.apk` with a `build.json` that records the SHA, the byte count, and the build seconds. The key is the `HEAD` SHA, or `<sha>-dirty-<hash>` when `apps/mobile`, `packages`, or the lockfile has changes. A key that is already cached with the same env returns at once. The script runs `expo prebuild --clean` only when the Expo native fingerprint differs from the one saved in `android/.moni-fingerprint`, so a JS-only change goes straight to Gradle. It refuses to run in the main checkout, where prebuild would rewrite your `android/` folder, unless you pass `--allow-main`. It exits 3 on that refusal.
+- `build-apk.sh [--clean-prebuild] [--allow-main] [--dev | --preview]` builds the arm64 release APK and copies it to `~/.cache/moni-apk/<key>/app-release.apk` with a `build.json` that records the SHA, the byte count, and the build seconds. The key is the `HEAD` SHA, or `<sha>-dirty-<hash>` when `apps/mobile`, `packages`, or the lockfile has changes. A key that is already cached with the same env returns at once. The script runs `expo prebuild --clean` only when the Expo native fingerprint differs from the one saved in `android/.moni-fingerprint`, so a JS-only change goes straight to Gradle. It refuses to run in the main checkout, where prebuild would rewrite your `android/` folder, unless you pass `--allow-main`. It exits 3 on that refusal.
 - The build reads `.env.e2e`, then `.env`, from this worktree and then from the main checkout, and the first value it reads for a key wins. `EXPO_PUBLIC_AI_API_URL` defaults to empty, so the e2e app uses the mock AI client. The main checkout's `.env.e2e` holds the dev project's keys and the e2e user, per `.env.e2e.example`.
 - In the e2e build, `app.config.ts` sets `extra.appVariant` to `e2e`, and `isE2eBuild()` in `lib/app-variant.ts` reads it. The mock AI client (`lib/ai/client/mock.ts`) then answers the inputs in `lib/ai/client/mock-fixtures.ts` with fixed results: the sentence "paid 6 ringgit parking at KLCC" (Say it and chat), any scanned image (the mamak receipt in `.maestro/fixtures/`), a Maybank "You've spent RM… at …" alert, and "How much on Transport this month" in chat. Other input, and every input in the daily build, stays `unavailable`. `lib/ai/client/__tests__/mock.test.ts` checks both builds.
 - `install.sh <key>` installs only `com.anonymous.moni.e2e` and exits 3 for any other package. It skips the install when `/data/local/tmp/moni-e2e.sha` on the phone already holds the key, then grants each of the camera, microphone, location, and notification permissions that the APK requests. The app does not request `POST_NOTIFICATIONS` today, so the script skips it. It exits 4 when `adb install` fails or takes longer than `MONI_INSTALL_TIMEOUT` seconds, default 300. The first install of a new package can wait on a **Google Play Protect** "Send app for a security check?" dialog or an **Install via USB** prompt, and only the person holding the phone can answer it.

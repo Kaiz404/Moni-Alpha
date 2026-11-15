@@ -5,14 +5,14 @@ description: Drive the Moni E2E Android app on the owner's Redmi phone over Tail
 
 # Drive Moni on the phone
 
-This skill drives **Moni E2E** (`com.anonymous.moni.e2e`), a release build that installs beside the owner's daily `com.anonymous.moni` app and runs without Metro. The phone is the owner's Redmi Note 13 Pro 5G (HyperOS, Android 16) on the tailnet at `100.127.128.74`. adb, Maestro, and Gradle run in WSL. Every command below runs from the repo root of your git worktree.
+This skill drives **Moni E2E** (`com.anonymous.moni.e2e`), the dev and test app, which installs beside the owner's daily `com.anonymous.moni` app (a preview build). For tests it is a release build that runs without Metro. The phone is the owner's Redmi Note 13 Pro 5G (HyperOS, Android 16) on the tailnet at `100.127.128.74`. adb, Maestro, and Gradle run in WSL. Every command below runs from the repo root of your git worktree.
 
 This directory is a real directory in `.claude/skills/`. The pstack entries beside it (`poteto-mode`, `how`, `principle-*`, and the rest) are symlinks to `.cursor/skills/`, so read those through either path. `.cursor/skills/moni-device` is a symlink back to this directory, so Cursor loads it too. Edit this skill here.
 
 ## Rules
 
 - Touch the phone only through `apps/mobile/scripts/device/with-device.sh` or `run-flows.sh`, which takes the device lock itself. Only one lane uses the phone at a time.
-- Never install, clear, or drive `com.anonymous.moni`. That is the owner's daily app with real data. `install.sh` refuses any other package.
+- Never install, clear, or drive `com.anonymous.moni`. That is the owner's daily app with real data. `install.sh` refuses any other package. The one exception is `install.sh --preview`, which updates the daily app in place when the owner asks for it (see the `moni-issues` skill).
 - If `~/.local/share/moni-device/hold` exists, the owner is using the phone. The scripts exit 4. Do not delete the file. Report "device check pending operator" and move on.
 - Never run `build-apk.sh` in the main checkout `/home/kaiz404/projects/moni`, because `expo prebuild --clean` rewrites its `android/`. The script refuses with exit 3.
 - Never print `apps/mobile/.env.e2e` or the e2e password. Name the variables, not their values.

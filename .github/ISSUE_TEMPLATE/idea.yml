@@ -1,0 +1,16 @@
+name: Idea or polish
+description: Something to add, or something that works but feels off
+labels: [enhancement]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What and why
+      description: This repo is public. Leave out real balances, account numbers, and names.
+    validations:
+      required: true
+  - type: input
+    id: where
+    attributes:
+      label: Where
+      placeholder: e.g. Activity, Debts, the + chooser
