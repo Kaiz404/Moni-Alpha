@@ -46,8 +46,8 @@ export function WalletNotificationLinkSection({
     <Press
       testID={tid('wallet', 'enable-notification-access')}
       accessibilityLabel="Let Moni read alerts"
-      pressedClassName="bg-hairline"
-      className="flex-row items-center gap-3 rounded-field bg-sand px-3.5 py-3"
+      pressedClassName="bg-sand-light"
+      className="flex-row items-center gap-3 rounded-field bg-card px-3.5 py-3"
       onPress={() => void permission.openNotificationSettings()}
     >
       <IconSymbol
@@ -90,6 +90,7 @@ export function WalletNotificationLinkSection({
       <PickerField
         testID={tid('wallet', 'alerts-from')}
         label="Alerts from"
+        fill="paper"
         value={selectedLabel ?? "Don't link"}
         mark={
           value.notificationPackage ? (

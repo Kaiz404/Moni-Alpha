@@ -29,6 +29,8 @@ type PickerFieldProps = {
    * Ink 2 chevron at the end.
    */
   size?: 'default' | 'capture';
+  /** `paper` sits on the canvas among Paper cards, as on the wallet form; Sand is the default. */
+  fill?: 'sand' | 'paper';
 };
 
 /**
@@ -48,6 +50,7 @@ export function PickerField({
   className,
   disabled = false,
   size = 'default',
+  fill = 'sand',
 }: PickerFieldProps) {
   const tokens = useThemeTokens();
   const empty = value.trim().length === 0;
@@ -100,8 +103,8 @@ export function PickerField({
       accessibilityHint="Opens a picker"
       accessibilityState={{ disabled }}
       disabled={disabled}
-      pressedClassName="bg-hairline"
-      className={`h-16 flex-row items-center gap-2.5 rounded-field bg-sand px-3.5 ${className ?? ''}`}
+      pressedClassName={fill === 'paper' ? 'bg-sand-light' : 'bg-hairline'}
+      className={`h-16 flex-row items-center gap-2.5 rounded-field ${fill === 'paper' ? 'bg-card' : 'bg-sand'} px-3.5 ${className ?? ''}`}
       onPress={onPress}
     >
       {leading}

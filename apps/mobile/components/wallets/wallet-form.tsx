@@ -267,8 +267,8 @@ export function WalletForm({
             </View>
           </View>
 
-          <SandField label="Name">
-            <SandInput
+          <PaperField label="Name">
+            <PaperInput
               testID={tid('wallet', 'form', 'name')}
               accessibilityLabel="Name"
               value={values.name}
@@ -278,13 +278,14 @@ export function WalletForm({
               autoCapitalize="words"
               returnKeyType="done"
             />
-          </SandField>
+          </PaperField>
 
           <View className="flex-row gap-2">
             <PickerField
               testID={tid('wallet', 'type')}
               className="min-w-0 flex-1"
               label="Type"
+              fill="paper"
               value={type.label}
               mark={
                 <WalletIcon
@@ -299,7 +300,7 @@ export function WalletForm({
               <View
                 accessible
                 accessibilityLabel={`Currency, ${values.currency}. A wallet keeps its currency.`}
-                className="h-16 min-w-0 flex-1 justify-center rounded-field bg-sand px-3.5"
+                className="h-16 min-w-0 flex-1 justify-center rounded-field bg-card px-3.5"
               >
                 <Text className="text-[13px] leading-[18px] text-muted">
                   Currency
@@ -320,6 +321,7 @@ export function WalletForm({
                 testID={tid('wallet', 'currency')}
                 className="min-w-0 flex-1"
                 label="Currency"
+                fill="paper"
                 value={values.currency}
                 onPress={() => void pickCurrency()}
               />
@@ -327,12 +329,12 @@ export function WalletForm({
           </View>
 
           {editing ? null : (
-            <SandField label="Starting balance">
+            <PaperField label="Starting balance">
               <View className="flex-row items-center">
                 <Text className="text-base leading-[22px] font-display-semibold text-muted">
                   {currencySymbol(values.currency)}
                 </Text>
-                <SandInput
+                <PaperInput
                   testID={tid('wallet', 'form', 'starting-balance')}
                   accessibilityLabel={`Starting balance in ${values.currency}`}
                   value={startingBalance}
@@ -344,7 +346,7 @@ export function WalletForm({
                   returnKeyType="done"
                 />
               </View>
-            </SandField>
+            </PaperField>
           )}
 
           <WalletNotificationLinkSection
@@ -404,8 +406,8 @@ export function WalletForm({
   );
 }
 
-/** The Sand field from V2H-WalletForm: label 13 Meta over a 16/600 value, radius 16. */
-function SandField({
+/** V2H-WalletForm's field in Paper rather than the board's Sand: label 13 Meta over a 16/600 value, radius 16. */
+function PaperField({
   label,
   children,
 }: {
@@ -413,7 +415,7 @@ function SandField({
   children: ReactNode;
 }) {
   return (
-    <View className="min-h-16 justify-center rounded-field bg-sand px-3.5 py-2">
+    <View className="min-h-16 justify-center rounded-field bg-card px-3.5 py-2">
       <Text className="text-[13px] leading-[18px] text-muted">
         {label}
       </Text>
@@ -422,7 +424,7 @@ function SandField({
   );
 }
 
-function SandInput({
+function PaperInput({
   testID,
   ...props
 }: Omit<TextInputProps, 'testID'> & { testID: TestId }) {
