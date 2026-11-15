@@ -37,7 +37,7 @@ import { useWalletAlertLink } from '@/lib/wallets/wallet-link';
 
 /**
  * V2H-WalletDetail at `/wallet/<id>`. `?edit=balance` opens it with the
- * balance field focused: the Home check-in's Fix it uses it.
+ * balance sheet up: the Home check-in's Fix it uses it.
  */
 export default function WalletScreen() {
   const params = useLocalSearchParams<{
@@ -149,7 +149,7 @@ export default function WalletScreen() {
             wallet={wallet}
             balanceMinor={balanceMinor}
             link={link}
-            initialEdit={params.edit === 'balance' ? 'balance' : null}
+            openBalance={params.edit === 'balance'}
           />
           {wallet.currency === mainCurrency ? (
             <WalletBalanceChart

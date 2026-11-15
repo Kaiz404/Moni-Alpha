@@ -38,29 +38,32 @@ tags:
     timeout: 10000
 - assertVisible: RM63.60
 
-# A matching balance closes the field and writes nothing.
+# The pencil opens the balance sheet, which says saving adds a correction. A matching balance writes nothing.
 - tapOn:
     id: wallet.balance.edit
+- assertVisible:
+    id: wallet.balance-sheet.input
+- assertVisible: 'Saving adds a balance correction transaction.*'
+- assertVisible: Type the cash you have.
+- inputText: '63.60'
 - assertVisible: Moni has RM63.60. Type what you count.
 - tapOn:
-    id: wallet.balance.save
+    id: wallet.balance-sheet.save
+- assertVisible: Balance checked
 - assertNotVisible: Balance correction
 - assertVisible:
     id: wallet.balance-not-right
 
-# "Balance not right?" opens the field with the system keyboard and a live difference line.
+# "Balance not right?" opens the same sheet with the system keyboard and a live difference line.
 - tapOn:
     id: wallet.balance-not-right
 - assertVisible:
-    id: wallet.balance.input
-- assertVisible: Moni has RM63.60. Type what you count.
-- eraseText: 12
-- assertVisible: Type the cash you have.
+    id: wallet.balance-sheet.input
 - inputText: '60'
 - assertVisible: Moni adds a −RM3.60 balance correction. Not counted as spending or income.
 - takeScreenshot: k2-correction-typing
 - tapOn:
-    id: wallet.balance.save
+    id: wallet.balance-sheet.save
 
 # Lane 3. Undo removes the row and the balance returns.
 - tapOn:
@@ -72,10 +75,9 @@ tags:
 # Lane 1 and You see. Saved again, the balance reads RM60.00, the row and the toast appear.
 - tapOn:
     id: wallet.balance-not-right
-- eraseText: 12
 - inputText: '60'
 - tapOn:
-    id: wallet.balance.save
+    id: wallet.balance-sheet.save
 - assertVisible: Correction −RM3.60 added
 - assertVisible: RM60.00
 - assertVisible: Checked today

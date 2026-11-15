@@ -5,6 +5,7 @@ import { RangeSheet } from '@/components/activity/range-sheet';
 import { MonthSheet } from '@/components/budget/month-sheet';
 import { PlaceSheet } from '@/components/capture/place-sheet';
 import { CaptureChooserSheet } from '@/components/nav/capture-chooser';
+import { BalanceSheet } from '@/components/sheets/balance-sheet';
 import { CategoryPickerSheet } from '@/components/sheets/category-picker-sheet';
 import { ConfirmSheet } from '@/components/sheets/confirm-sheet';
 import {
@@ -137,6 +138,14 @@ function renderSheet(sheet: OpenSheet, frame: SheetFrameProps) {
           {...frame}
           request={sheet.request}
           onPick={sheet.settle}
+        />
+      );
+    case 'balance':
+      return (
+        <BalanceSheet
+          {...frame}
+          request={sheet.request}
+          onSave={sheet.settle}
         />
       );
     case 'confirm':

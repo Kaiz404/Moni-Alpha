@@ -6,6 +6,7 @@ import type { PlacePick } from '@/lib/capture/entry-place';
 import type { PastPlaceInput } from '@/lib/capture/place-search';
 import type { ActivityRange } from '@/lib/finance/activity-filter';
 import type { TransactionLocationSnapshot } from '@/lib/transactions/prefetch-location';
+import type { BalanceSource } from '@/lib/wallets/wallet-page';
 
 /** A category tile with this month's spending in the sheet's currency. */
 export type CategoryTile = {
@@ -103,6 +104,11 @@ type Sheets = {
   place: {
     request: { start: TransactionLocationSnapshot | null; past: PastPlaceInput };
     result: PlacePick;
+  };
+  /** A wallet's real balance, typed in its own currency; resolves to the new balance. */
+  balance: {
+    request: { currency: string; balanceMinor: MinorAmount; source: BalanceSource };
+    result: MinorAmount;
   };
   confirm: {
     request: {

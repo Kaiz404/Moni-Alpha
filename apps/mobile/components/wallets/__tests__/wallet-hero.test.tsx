@@ -1,3 +1,4 @@
+import 'react-native-gesture-handler/jestSetup';
 import type { Observable } from '@legendapp/state';
 import { decimalToMinor } from '@repo/types';
 import {
@@ -13,6 +14,8 @@ import {
   undoToast,
   useToast,
 } from '@/lib/toast/toast-store';
+import { SheetHost } from '@/components/ui/sheet/sheet-host';
+import { dismissSheet } from '@/lib/sheet/sheet-store';
 import { financeWallet } from '@/lib/wallets/__tests__/balance-fixture';
 import { WalletHero } from '../wallet-hero';
 
@@ -28,6 +31,18 @@ jest.mock('@/lib/notifications/linked-packages-cache', () => ({
 jest.mock('uniwind', () => ({
   useCSSVariable: (names: string[]) => names.map(() => undefined),
   useUniwind: () => ({ theme: 'light' }),
+  withUniwind: <T,>(component: T) => component,
+}));
+jest.mock('react-native-reanimated', () => ({
+  ...jest.requireActual<object>('react-native-reanimated/mock'),
+  useReducedMotion: () => false,
+  useAnimatedKeyboard: () => ({
+    height: { get: () => 0 },
+    state: { get: () => 0 },
+  }),
+}));
+jest.mock('react-native-safe-area-context', () => ({
+  useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
 }));
 jest.mock('@/lib/store', () => {
   const { observable } = jest.requireActual('@legendapp/state');
@@ -70,22 +85,31 @@ const noLink = {
 
 function renderFixIt() {
   render(
-    <WalletHero
-      wallet={cash}
-      balanceMinor={decimalToMinor('63.60')}
-      link={noLink}
-      initialEdit="balance"
-    />,
+    <>
+      <WalletHero
+        wallet={cash}
+        balanceMinor={decimalToMinor('63.60')}
+        link={noLink}
+        openBalance
+      />
+      <SheetHost />
+    </>,
   );
 }
 
 describe('WalletHero balance correction', () => {
-  afterEach(() => act(() => dismissToast()));
+  afterEach(() =>
+    act(() => {
+      dismissSheet();
+      dismissToast();
+    }),
+  );
 
-  it('opens on the balance field for Fix it and previews the correction', () => {
+  it('opens the balance sheet for Fix it, says saving adds a correction, and previews it', () => {
     renderFixIt();
+    expect(screen.getByText(/Saving adds a balance correction transaction/)).toBeTruthy();
     fireEvent.changeText(
-      screen.getByTestId('wallet.balance.input'),
+      screen.getByTestId('wallet.balance-sheet.input'),
       '60',
     );
     expect(
@@ -99,11 +123,11 @@ describe('WalletHero balance correction', () => {
     const toast = renderHook(() => useToast()).result;
     renderFixIt();
     fireEvent.changeText(
-      screen.getByTestId('wallet.balance.input'),
+      screen.getByTestId('wallet.balance-sheet.input'),
       '60',
     );
     await act(async () => {
-      fireEvent.press(screen.getByTestId('wallet.balance.save'));
+      fireEvent.press(screen.getByTestId('wallet.balance-sheet.save'));
     });
 
     expect(transactions$['correction-1'].peek()).toMatchObject({
