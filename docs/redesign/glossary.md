@@ -15,7 +15,6 @@ The words the redesigned app uses, and the words it never uses. The design canva
 | Don't ask about similar | The checkbox on a capture. Moni then adds similar alerts without asking and marks them Auto. |
 | Auto | The pill on a row Moni added without asking (routine auto-add). |
 | Usual for you, Seen before | The Review card's source-row pill for a merchant the user has filed 3 or more times, or once or twice. Needs a wallet, Same payment and Maybe a duplicate outrank both. |
-| Added, Auto-added, Same payment, Waiting for review, Trying again, Couldn't reach Moni, Ignored, Not linked | The eight statuses in the Capture log. |
 | Same payment, Counted once | Two alerts or captures for one payment. Moni counts them as one row and keeps both visible, with Undo. The Review card's control is "Same payment". |
 | It's a transfer, It's spending, It's income | The Review card's controls when a capture looks like the other side of a transfer between the user's own wallets, or was read as a transfer and wasn't. |
 | Trying again, Couldn't reach Moni, Retry | A capture the backend could not read. Trying again: Moni keeps it and tries by itself. Couldn't reach Moni: it tried for 7 days and stopped. Retry is the control on both, and Capture sources counts them: "2 couldn't reach Moni". Never Ignored, which means not a payment. |
@@ -32,9 +31,8 @@ The words the redesigned app uses, and the words it never uses. The design canva
 | Import data, Match columns, Check the file | The Profile row and pages that read a CSV back. |
 | new, already here | The two counts on Check the file: rows it would add, and rows Moni holds. |
 | Source | Where a transaction came from: Manual, Voice, Moni, Notification, Camera. |
-| Capture log | The page listing the notifications Moni read and what it did with each. |
 | Keep capture running, Battery, Autostart | The Capture sources section for the phone settings that let Moni keep reading alerts. Autostart shows only on Xiaomi, Redmi and POCO phones. Moni cannot read it, so the row says so. |
-| This was a transaction, Report a transaction Moni missed, reported missed | The ways to say capture failed. The first sits on an Ignored entry in the Capture log and opens Type it holding what the alert said. The second is for a payment with no alert. Saving counts the miss against that app: "1 reported missed". |
+| Report a missed transaction, reported missed | The way to say capture failed, on a wallet's Alerts section. Saving Type it counts the miss against that app: "1 reported missed". |
 | Gone quiet, Nothing missed | A linked app that has been silent for longer than its own usual rhythm. Nothing missed dismisses the alert until the app's next capture. |
 | Linked app, Last captured | A wallet's Alerts section shows the app it links with "Last captured 3 hours ago", or "No captures yet". A capture is an alert that became a transaction or a Review card, or counted once with one, not one that only arrived. |
 | Location from notifications | On by default; per wallet, on the wallet page. |

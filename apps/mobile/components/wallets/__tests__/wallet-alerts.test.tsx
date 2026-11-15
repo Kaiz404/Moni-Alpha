@@ -1,7 +1,7 @@
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
 import { Platform } from 'react-native';
 
-import { reportMissedFrom } from '@/components/capture-log/report-missed';
+import { reportMissedFrom } from '@/components/capture-sources/report-missed';
 import { askForNotificationAccess, readNotificationListenerPermission } from '@/lib/notifications/permission';
 import { openSheet } from '@/lib/sheet/sheet-store';
 import { updateWallet } from '@/lib/supabase/wallets';
@@ -26,7 +26,7 @@ jest.mock('@/lib/notifications/permission', () => ({
 }));
 jest.mock('@/lib/sheet/sheet-store', () => ({ openSheet: jest.fn() }));
 jest.mock('@/lib/supabase/wallets', () => ({ updateWallet: jest.fn(async () => ({})) }));
-jest.mock('@/components/capture-log/report-missed', () => ({ reportMissedFrom: jest.fn() }));
+jest.mock('@/components/capture-sources/report-missed', () => ({ reportMissedFrom: jest.fn() }));
 jest.mock('@/components/capture-sources/use-linked-apps', () => ({
   useLinkedApps: () => ({
     wallets: [

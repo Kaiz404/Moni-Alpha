@@ -225,7 +225,6 @@ const ROUTES: Record<string, RouteSpec> = {
     'October · 13 payments',
     'No payments left here',
   ),
-  'capture-log.tsx': same('/capture-log', 'Nothing captured yet'),
   'capture-sources.tsx': differ(
     '/capture-sources',
     'Keep capture running',

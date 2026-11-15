@@ -1,12 +1,36 @@
+import { Image } from 'expo-image';
 import { View } from 'react-native';
 
-import { AppBubble } from '@/components/capture-log/log-entry';
+import { useAppIcon } from '@/components/wallets/notification-source';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Press } from '@/components/ui/press';
 import { Text } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { lastCapturedLine, reportedMissedLine, type CaptureSourceHealth } from '@/lib/notifications/capture-health';
 import { tid, type TestId } from '@/lib/test-ids';
+
+function AppBubble({ packageName }: { packageName: string }) {
+  const tokens = useThemeTokens();
+  const icon = useAppIcon(packageName);
+  if (icon) {
+    return (
+      <Image
+        source={{ uri: icon }}
+        accessibilityIgnoresInvertColors
+        style={{ width: 42, height: 42, borderRadius: 21 }}
+      />
+    );
+  }
+  return (
+    <View className="h-[42px] w-[42px] items-center justify-center rounded-full bg-sand">
+      <IconSymbol
+        name="bell-outline"
+        size={20}
+        color={tokens.foreground}
+      />
+    </View>
+  );
+}
 
 /** One linked app, how recently it produced a capture, and a way to say it missed one. */
 export function LinkedAppRow({

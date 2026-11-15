@@ -253,15 +253,6 @@ export default function ProfileScreen() {
             chevron="right"
             onPress={() => router.push('/capture-sources')}
           />
-          <ProfileRow
-            testID={tid('profile', 'row', 'capture-log')}
-            icon="cellphone-message"
-            tint="lilac"
-            title="Capture log"
-            meta="Every alert Moni read, and what it did"
-            chevron="right"
-            onPress={() => router.push('/capture-log')}
-          />
           <ExportDataRow userId={userId} />
           <ImportDataRow />
         </Section>

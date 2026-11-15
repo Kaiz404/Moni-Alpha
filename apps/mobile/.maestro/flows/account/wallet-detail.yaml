@@ -48,9 +48,7 @@ tags:
 - assertVisible: Transactions
 - scrollUntilVisible:
     element:
-      id: wallet.capture-log
-- assertVisible:
-    id: wallet.alerts
+      id: wallet.alerts
 - scrollUntilVisible:
     element:
       id: wallet.default

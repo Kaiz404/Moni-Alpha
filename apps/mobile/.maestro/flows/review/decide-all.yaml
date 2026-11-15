@@ -50,11 +50,5 @@ tags:
 - extendedWaitUntil:
     visible: All caught up
     timeout: 5000
-- assertVisible:
-    id: review.capture-log
 - assertVisible: '.* approved, 1 not mine.*'
 - takeScreenshot: r1-l10-caught-up
-- tapOn:
-    id: review.capture-log
-- assertVisible:
-    id: capture-log.back

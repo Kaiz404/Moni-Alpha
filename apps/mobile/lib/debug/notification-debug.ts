@@ -5,7 +5,7 @@ import { Platform } from 'react-native';
 import Constants from 'expo-constants';
 import { createMMKV } from 'react-native-mmkv';
 import { passesNotificationTransactionPrefilter } from '@/lib/notifications/notification-filter';
-import type { PermissionStatus } from '@/hooks/use-notification-listener';
+import type { NotificationListenerPermission } from '@/lib/notifications/permission';
 import type { LogFn, DebugTestResult } from './types';
 
 const CAPTURED_KEY = 'captured_notifications';
@@ -20,7 +20,7 @@ export type NotificationDiagnostics = {
 };
 
 export function getNotificationDiagnostics(
-  permissionStatus: PermissionStatus,
+  permissionStatus: NotificationListenerPermission,
 ): NotificationDiagnostics {
   const isAndroid = Platform.OS === 'android';
   const isExpoGo = Constants.appOwnership === 'expo';

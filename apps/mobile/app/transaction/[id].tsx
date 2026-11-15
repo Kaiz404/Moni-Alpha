@@ -395,10 +395,7 @@ function Detail({ transaction: tx }: { transaction: FinanceTransaction }) {
       label: 'Source',
       value: sourceLabel(source),
       icon: sourceIcon(source),
-      action:
-        source === 'notification'
-          ? { kind: 'link', onPress: () => router.push('/capture-log') }
-          : null,
+      action: null,
     },
   ];
 

@@ -38,7 +38,7 @@ You see these symptoms:
 - `dig +short <project-ref>.supabase.co` returns nothing.
 - Backend logs repeat `auth: JWKS not loaded ... no such host`.
 - `GET /health` returns `"authKeys":"loading"`, and AI requests get a 503 with `Auth keys are not loaded yet`. A backend build older than this change exits instead, so Cloud Run itself answers 503.
-- In the app, the Capture log shows Trying again, and Say it and Scan show "Moni can't read it right now". No capture is lost ([docs/AI.md](AI.md#when-the-backend-is-unavailable)).
+- In the app, notification captures wait to try again, and Say it and Scan show "Moni can't read it right now". No capture is lost ([docs/AI.md](AI.md#when-the-backend-is-unavailable)).
 
 To restore the project:
 

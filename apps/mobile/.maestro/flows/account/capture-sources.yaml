@@ -71,15 +71,6 @@ tags:
       - assertVisible:
           id: sources.rule.grab.ask-again
 
-- scrollUntilVisible:
-    element:
-      id: sources.capture-log
-- tapOn:
-    id: sources.capture-log
-- assertVisible: Capture log
-- tapOn:
-    id: capture-log.back
-- assertNotVisible: Linked apps
 # The header scrolls away with the page, so bring it back before going back.
 - scrollUntilVisible:
     element:

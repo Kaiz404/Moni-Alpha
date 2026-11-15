@@ -3,41 +3,11 @@ import { View } from 'react-native';
 import { useBudgetData, useBudgetMonth } from '@/components/budget/use-budget';
 
 import { IconSymbol } from '@/components/ui/icon-symbol';
-import { Press } from '@/components/ui/press';
 import { Text } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { monthKey } from '@/lib/finance/budget-month';
 import { formatMoney } from '@/lib/finance/format-money';
 import { tid } from '@/lib/test-ids';
-
-function CaptureLogLink({ onPress }: { onPress: () => void }) {
-  const tokens = useThemeTokens();
-  return (
-    <Press
-      testID={tid('review', 'capture-log')}
-      onPress={onPress}
-      accessibilityRole="link"
-      accessibilityLabel="Capture log"
-      pressedScale={1}
-      radius={{ rest: 12, pressed: 12 }}
-      className="-ml-1 h-11 flex-row items-center gap-1.5 self-start px-1"
-    >
-      <IconSymbol
-        name="bell-outline"
-        size={18}
-        color={tokens.deepMint}
-      />
-      <Text className="text-[15px] leading-[21px] font-display-semibold text-deep-mint">
-        Capture log
-      </Text>
-      <IconSymbol
-        name="chevron-right"
-        size={18}
-        color={tokens.deepMint}
-      />
-    </Press>
-  );
-}
 
 /**
  * Safe to spend a day before and after this session's approvals: "RM24 → RM23" over
@@ -62,12 +32,10 @@ function useSafeToSpend(addedMinor: number) {
 export function CaughtUp({
   sentence,
   addedMinor,
-  onCaptureLog,
 }: {
   sentence: string;
   /** Main-currency spending this session approved, for the safe to spend a day change. */
   addedMinor: number;
-  onCaptureLog: () => void;
 }) {
   const tokens = useThemeTokens();
   const safe = useSafeToSpend(addedMinor);
@@ -120,13 +88,12 @@ export function CaughtUp({
           </Text>
         </View>
       ) : null}
-      <CaptureLogLink onPress={onCaptureLog} />
     </View>
   );
 }
 
 /** Opened with nothing waiting. */
-export function NothingToReview({ onCaptureLog }: { onCaptureLog: () => void }) {
+export function NothingToReview() {
   const tokens = useThemeTokens();
   return (
     <View
@@ -154,7 +121,6 @@ export function NothingToReview({ onCaptureLog }: { onCaptureLog: () => void }) 
         Bank alerts and Moni chat entries land here until you decide. Routine ones are added for
         you and marked Auto.
       </Text>
-      <CaptureLogLink onPress={onCaptureLog} />
     </View>
   );
 }

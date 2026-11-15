@@ -296,14 +296,6 @@ export default function CaptureSourcesScreen() {
 
         <ListCard>
           <LinkRow
-            testID={tid('sources', 'capture-log')}
-            icon="cellphone-message"
-            tint="bg-pending-fill"
-            title="Capture log"
-            meta="Every alert Moni read, and what it did"
-            href="/capture-log"
-          />
-          <LinkRow
             testID={tid('sources', 'places')}
             icon="map-marker"
             tint="bg-primary-muted"

@@ -1,8 +1,8 @@
-import { router, useFocusEffect } from 'expo-router';
+import { useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { AppState, Platform } from 'react-native';
 
-import { reportMissedFrom } from '@/components/capture-log/report-missed';
+import { reportMissedFrom } from '@/components/capture-sources/report-missed';
 import { useBatteryExemption } from '@/components/capture-sources/use-battery-exemption';
 import { useCaptureHealth } from '@/components/capture-sources/use-capture-health';
 import { useLinkedApps } from '@/components/capture-sources/use-linked-apps';
@@ -91,9 +91,6 @@ export function useCaptureAlert(): CaptureAlertModel | null {
           return;
         case 'report_missed':
           reportMissedFrom(alert.apps[0]!.packageName, wallets);
-          return;
-        case 'open_log':
-          router.push('/capture-log');
       }
     },
     dismiss: () => {

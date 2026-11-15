@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { AppState, Platform, View } from 'react-native';
 import { addMinor, type MinorAmount } from '@repo/types';
 
-import { reportMissedFrom } from '@/components/capture-log/report-missed';
+import { reportMissedFrom } from '@/components/capture-sources/report-missed';
 import { LinkedAppRow } from '@/components/capture-sources/linked-app-row';
 import { useCaptureHealth } from '@/components/capture-sources/use-capture-health';
 import { useLinkedApps } from '@/components/capture-sources/use-linked-apps';
@@ -349,7 +349,7 @@ function WalletLocation({ wallet }: { wallet: FinanceWallet }) {
   );
 }
 
-/** ALERTS: the one place a wallet links an app, what that app has done lately, and the Capture log. */
+/** ALERTS: the one place a wallet links an app and what that app has done lately. */
 export function WalletAlerts({
   wallet,
   link,
@@ -430,14 +430,6 @@ export function WalletAlerts({
             onPress={() => void changeApp()}
           />
         )}
-        <DetailRow
-          testID={tid('wallet', 'capture-log')}
-          icon="cellphone-message"
-          tint="lilac"
-          title="Capture log"
-          meta="Every alert and what happened"
-          onPress={() => router.push('/capture-log')}
-        />
       </ListCard>
       {packageName && label && sharedWith.length > 0 ? (
         <AccountHint

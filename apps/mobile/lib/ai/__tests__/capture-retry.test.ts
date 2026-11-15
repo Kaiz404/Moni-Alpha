@@ -412,7 +412,6 @@ describe('giving up', () => {
 
   it('shows the status, counts it for Capture sources, stops retrying, and Retry brings it back', async () => {
     const { queue, processor } = launch();
-    const { groupCaptureLog } = require('@/lib/notifications/capture-log');
     const { unreachedCounts, unreachedLine } = require('@/lib/notifications/capture-health');
     const item = eightDaysOld();
     logged(item);
@@ -423,10 +422,6 @@ describe('giving up', () => {
     await settle();
     expect(queueState(queue)).toEqual({ status: 'gave_up', attempts: 1 });
     expect(logStatus()).toBe('gave_up');
-    const stored = JSON.parse(
-      mockStores.get('moni-notifications')!.get('captured_notifications')!,
-    );
-    expect(groupCaptureLog(stored, new Date(NOW))[0].items[0].label).toBe("Couldn't reach Moni");
 
     const counts = unreachedCounts(queue.listGaveUp());
     expect(counts).toEqual({ total: 1, byPackage: { [PACKAGE]: 1 } });

@@ -70,14 +70,6 @@ tags:
 - assertVisible:
     id: sources.back
 - pressKey: Back
-- scrollUntilVisible:
-    element:
-      id: profile.row.capture-log
-- tapOn:
-    id: profile.row.capture-log
-- assertVisible:
-    id: capture-log.back
-- pressKey: Back
 - takeScreenshot: k1-l9-rows
 
 # The e2e build is a release build: no debug row.

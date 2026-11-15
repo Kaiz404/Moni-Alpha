@@ -5,7 +5,7 @@ export type MoneySide = 'bank' | 'ewallet';
 /** One row per Malaysian bank or e-wallet. Adding a bank here is all pairing needs. */
 export type Institution = {
   id: string;
-  /** As the Review card and the Capture log say it. */
+  /** As the Review card says it. */
   name: string;
   kind: MoneySide;
   /** Android packages whose alerts come from it; legacy aliases resolve through the curated list. */

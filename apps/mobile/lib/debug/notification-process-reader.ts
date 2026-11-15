@@ -6,8 +6,10 @@ import { AppState, Platform } from 'react-native';
 import { createMMKV } from 'react-native-mmkv';
 import { getAll, peekPending, type ProcessingQueueItem } from '@/lib/ai/processing-queue';
 import { isBackgroundProcessorRunning } from '@/lib/ai/background-processor';
-import type { PermissionStatus } from '@/hooks/use-notification-listener';
-import { readNotificationListenerPermission } from '@/lib/notifications/permission';
+import {
+  readNotificationListenerPermission,
+  type NotificationListenerPermission,
+} from '@/lib/notifications/permission';
 
 const CAPTURED_KEY = 'captured_notifications';
 const notificationStorage = createMMKV({ id: 'moni-notifications' });
@@ -48,7 +50,7 @@ export type NotificationMonitorEntry = {
 
 export type NotificationMonitorSnapshot = {
   isAndroid: boolean;
-  permissionStatus: PermissionStatus;
+  permissionStatus: NotificationListenerPermission;
   capturedTotal: number;
   prefilterPassed: number;
   prefilterIgnored: number;
@@ -105,7 +107,7 @@ export function getNotificationProcessSnapshot(): NotificationProcessSnapshot {
 }
 
 export function getNotificationMonitorSnapshot(
-  permissionStatus: PermissionStatus,
+  permissionStatus: NotificationListenerPermission,
 ): NotificationMonitorSnapshot {
   const captured = readCapturedNotifications();
   const prefilterPassed = captured.filter((n) => n.prefilterPassed).length;
@@ -131,12 +133,12 @@ export function getNotificationMonitorSnapshot(
   };
 }
 
-async function readPermissionStatus(): Promise<PermissionStatus> {
+async function readPermissionStatus(): Promise<NotificationListenerPermission> {
   return readNotificationListenerPermission();
 }
 
 export function useNotificationMonitor(pollMs = 1500) {
-  const [permissionStatus, setPermissionStatus] = useState<PermissionStatus>('unknown');
+  const [permissionStatus, setPermissionStatus] = useState<NotificationListenerPermission>('unknown');
   const [lastCheckedAt, setLastCheckedAt] = useState<string | null>(null);
   const [snapshot, setSnapshot] = useState<NotificationMonitorSnapshot>(() =>
     getNotificationMonitorSnapshot('unknown'),
@@ -184,7 +186,7 @@ export const QUEUE_STATUS_COLORS: Record<NotificationQueueStatus, string> = {
   gave_up: '#ef4444',
 };
 
-export const PERMISSION_COLORS: Record<PermissionStatus, string> = {
+export const PERMISSION_COLORS: Record<NotificationListenerPermission, string> = {
   authorized: '#22c55e',
   denied: '#ef4444',
   unknown: '#f59e0b',
