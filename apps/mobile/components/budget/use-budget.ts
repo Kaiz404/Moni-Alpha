@@ -81,7 +81,7 @@ export function useBudgetData() {
     walletNames,
     aliases,
     categories,
-    /** Archived ones too, for spending that still belongs to them. */
+    /** Deleted ones too, for spending that still belongs to them. */
     everyCategory,
     budgets,
     monthlyTotalMinor: monthlyTotal === null ? null : (decimalToMinor(monthlyTotal) as MinorAmount),

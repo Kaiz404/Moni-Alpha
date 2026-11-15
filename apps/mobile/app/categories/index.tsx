@@ -1,7 +1,7 @@
 import { useValue } from '@legendapp/state/react';
 import { router } from 'expo-router';
 import { useEffect, useState, type ReactNode } from 'react';
-import { Alert, View } from 'react-native';
+import { View } from 'react-native';
 
 import { CategoryBubble } from '@/components/categories/category-bubble';
 import { CategorySpark } from '@/components/categories/category-spark';
@@ -25,7 +25,6 @@ import {
   transactions$,
 } from '@/lib/finance/selectors';
 import type { FinanceCategory } from '@/lib/finance/types';
-import { restoreCategory } from '@/lib/supabase/categories';
 import { ensureFinanceTimezone } from '@/lib/supabase/profile';
 import { tid } from '@/lib/test-ids';
 import { resolveTransactionIcon } from '@/lib/transactions/icon';
@@ -89,39 +88,6 @@ function Row({
   );
 }
 
-function ArchivedRow({
-  category,
-  onRestore,
-}: {
-  category: Category;
-  onRestore: () => void;
-}) {
-  const tokens = useThemeTokens();
-  return (
-    <View className="h-14 flex-row items-center gap-3 pl-3.5 pr-2">
-      <View className="opacity-60">
-        <Bubble category={category} />
-      </View>
-      <Text variant="rowTitle" className="min-w-0 flex-1 text-ink-2" numberOfLines={1}>
-        {category.name}
-      </Text>
-      <Press
-        testID={tid('activity', 'categories', 'restore', category.id)}
-        accessibilityLabel={`Restore ${category.name}`}
-        onPress={onRestore}
-        radius={{ rest: 22, pressed: 16 }}
-        pressedClassName="bg-hairline"
-        className="h-11 flex-row items-center gap-1.5 bg-sand px-3.5"
-      >
-        <IconSymbol name="restore" size={18} color={tokens.foreground} />
-        <Text className="text-[14px] leading-[19px] font-display-semibold text-foreground">
-          Restore
-        </Text>
-      </Press>
-    </View>
-  );
-}
-
 function SectionLabel({ children }: { children: string }) {
   return (
     <Text variant="caps" className="text-ink-2" accessibilityRole="header">
@@ -154,7 +120,6 @@ export default function CategoriesScreen() {
   const ofKind = categories.filter((category) => category.type === kind);
   const mine = ofKind.filter((c) => c.userId === userId && c.isActive);
   const presets = ofKind.filter((c) => c.userId === null && c.isActive);
-  const archived = ofKind.filter((c) => c.userId === userId && !c.isActive);
   const since = `1 ${today.toLocaleDateString('en-US', { month: 'short' })}`;
 
   const spent = (category: Category) =>
@@ -193,10 +158,6 @@ export default function CategoriesScreen() {
           pathname: '/activity',
           params: { categoryId, month: todayKey.slice(0, 7) },
         });
-  const restore = (id: string) =>
-    void restoreCategory(id).catch((error: unknown) =>
-      Alert.alert('Not saved', error instanceof Error ? error.message : 'Try again.'),
-    );
   const create = () =>
     router.push({ pathname: '/categories/form', params: { type: kind } });
 
@@ -282,23 +243,6 @@ export default function CategoriesScreen() {
                 />
               ))}
             </ListCard>
-          </View>
-        ) : null}
-
-        {archived.length ? (
-          <View className="gap-1.5">
-            <View className="px-1.5">
-              <SectionLabel>Archived · hidden from new transactions</SectionLabel>
-            </View>
-            <View className="overflow-hidden rounded-tile border-[1.5px] border-hairline py-1">
-              {archived.map((category) => (
-                <ArchivedRow
-                  key={category.id}
-                  category={category}
-                  onRestore={() => restore(category.id)}
-                />
-              ))}
-            </View>
           </View>
         ) : null}
       </PageScroll>

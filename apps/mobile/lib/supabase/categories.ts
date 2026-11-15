@@ -122,12 +122,9 @@ export async function updateCategory(categoryId: string, input: UpdateCategory):
   });
 }
 
-export async function archiveCategory(categoryId: string): Promise<void> {
+/** A soft delete: the category only deactivates, so rows already filed under it keep it. */
+export async function deleteCategory(categoryId: string): Promise<void> {
   await updateCategory(categoryId, { isActive: false });
-}
-
-export async function restoreCategory(categoryId: string): Promise<void> {
-  await updateCategory(categoryId, { isActive: true });
 }
 
 /** Minimal category rows for name maps in list/chart screens. */

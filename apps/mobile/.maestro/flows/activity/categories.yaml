@@ -1,4 +1,4 @@
-# A2 categories per V2A-Categories and V2A-CategoryForm: create Pets, archive it, restore it.
+# A2 categories per V2A-Categories and V2A-CategoryForm: create Pets, then delete it from the edit page's header.
 # Run: scripts/device/run-flows.sh .maestro/flows/activity/categories.yaml
 appId: com.anonymous.moni.e2e
 name: A2 categories
@@ -37,19 +37,16 @@ tags:
 
 - tapOn: Pets
 - assertVisible: Edit category
+- takeScreenshot: a2-edit-category
 - tapOn:
-    id: activity.category-form.archive
+    id: activity.category-form.delete
+- assertVisible: Delete Pets?
+- takeScreenshot: a2-delete-sheet
 - tapOn:
     id: sheet.confirm
-- scrollUntilVisible:
-    element: 'Archived · hidden from new transactions'
-    centerElement: true
-- takeScreenshot: a2-archived
-- tapOn:
-    id: 'activity\.categories\.restore\..*'
-    index: 0
-- assertNotVisible: 'Archived · hidden from new transactions'
-- takeScreenshot: a2-restored
+- assertVisible: Categories
+- assertNotVisible: Pets
+- takeScreenshot: a2-deleted
 - scrollUntilVisible:
     element:
       id: activity.categories-kind.income

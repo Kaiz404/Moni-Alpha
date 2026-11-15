@@ -16,6 +16,7 @@ import {
 } from 'react-native';
 
 import { Button } from '@/components/ui/button';
+import { HeaderIconButton } from '@/components/ui/header-icon-button';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Page, PageScroll } from '@/components/ui/page';
 import { Press } from '@/components/ui/press';
@@ -26,8 +27,8 @@ import { useAuth } from '@/lib/auth/auth-context';
 import { categoriesForUser$ } from '@/lib/finance/selectors';
 import { openSheet } from '@/lib/sheet/sheet-store';
 import {
-  archiveCategory,
   createCategory,
+  deleteCategory,
   updateCategory,
 } from '@/lib/supabase/categories';
 import { tid } from '@/lib/test-ids';
@@ -117,19 +118,19 @@ export default function CategoryFormScreen() {
     }
   };
 
-  const archive = async () => {
+  const remove = async () => {
     if (!existing) return;
     const confirmed = await openSheet({
       kind: 'confirm',
-      title: `Archive ${existing.name}?`,
-      message: 'It is hidden from new transactions. Rows already filed under it keep it.',
-      confirmLabel: 'Archive',
+      title: `Delete ${existing.name}?`,
+      message: 'Transactions already in it keep it. It leaves your lists and pickers.',
+      confirmLabel: 'Delete',
       cancelLabel: 'Keep it',
       destructive: true,
     });
     if (!confirmed) return;
     try {
-      await archiveCategory(existing.id);
+      await deleteCategory(existing.id);
       router.back();
     } catch (error) {
       Alert.alert('Not saved', error instanceof Error ? error.message : 'Try again.');
@@ -142,6 +143,16 @@ export default function CategoryFormScreen() {
       screen="activity"
       kind="pushed"
       title={existing || params.id ? 'Edit category' : 'New category'}
+      trailing={
+        existing ? (
+          <HeaderIconButton
+            testID={tid('activity', 'category-form', 'delete')}
+            icon="trash-can-outline"
+            accessibilityLabel={`Delete ${existing.name}`}
+            onPress={() => void remove()}
+          />
+        ) : undefined
+      }
     >
       <PageScroll
         keyboardShouldPersistTaps="handled"
@@ -269,17 +280,6 @@ export default function CategoryFormScreen() {
             })}
           </View>
         </View>
-
-        {existing ? (
-          <Button
-            testID={tid('activity', 'category-form', 'archive')}
-            variant="tertiary"
-            icon="archive-outline"
-            label="Archive category"
-            className="self-start"
-            onPress={() => void archive()}
-          />
-        ) : null}
       </PageScroll>
       <View className="border-t border-sand-light px-screen pt-3">
         <Button
