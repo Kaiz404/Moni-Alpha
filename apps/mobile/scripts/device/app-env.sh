@@ -1,8 +1,9 @@
 # shellcheck shell=bash
-# Sourced: app-env.sh <mobile dir> <main checkout> [--real-ai]. Sets the build's environment for the
-# e2e app. Variables already set win over the files, as with Expo's own .env loading.
-# .env.e2e comes first so the e2e build can point at its own Supabase project. The AI URL defaults
-# to empty so the e2e build uses the mock AI client; --real-ai takes the real backend from .env.
+# Sourced: app-env.sh <mobile dir> <main checkout> [--real-ai | --preview]. Sets the build's
+# environment. Variables already set win over the files, as with Expo's own .env loading.
+# For the e2e app, .env.e2e comes first so it can point at its own Supabase project, and the AI URL
+# defaults to empty so it uses the mock AI client; --real-ai takes the real backend from .env.
+# --preview is the owner's daily app: .env only, no APP_VARIANT.
 env_assignments=()
 load_env() {
   local file=$1 line key value
@@ -23,13 +24,20 @@ load_env() {
   done <"$file"
   echo "loaded $file" >&2
 }
-load_env "$1/.env.e2e"
-load_env "$2/apps/mobile/.env.e2e"
-if [[ ${3:-} == --real-ai ]]; then
+mode=${3:-}
+if [[ $mode != --preview ]]; then
+  load_env "$1/.env.e2e"
+  load_env "$2/apps/mobile/.env.e2e"
+fi
+if [[ $mode == --real-ai ]]; then
   [[ -n ${EXPO_PUBLIC_AI_API_URL:-} ]] || unset EXPO_PUBLIC_AI_API_URL
-else
+elif [[ $mode != --preview ]]; then
   [[ -v EXPO_PUBLIC_AI_API_URL ]] || export EXPO_PUBLIC_AI_API_URL=
 fi
 load_env "$1/.env"
 load_env "$2/apps/mobile/.env"
-export APP_VARIANT=e2e
+if [[ $mode == --preview ]]; then
+  unset APP_VARIANT
+else
+  export APP_VARIANT=e2e
+fi

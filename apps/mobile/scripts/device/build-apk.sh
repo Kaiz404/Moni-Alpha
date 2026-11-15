@@ -34,12 +34,22 @@ exec 7>"$git_dir/moni-build-apk.lock"
 flock 7
 
 ! $dev || ! $preview || usage
-# Both talk to the real AI backend: --dev loads its code from Metro, --preview carries it built in.
-dev_flag=$($dev || $preview && echo --real-ai || true)
+# --dev is Moni E2E as a dev client on the real AI backend, loading its code from Metro.
+# --preview is the owner's daily Moni (com.anonymous.moni): a release build from .env, signed with
+# the EAS key so it installs over the daily app and keeps its data.
+dev_flag=$($dev && echo --real-ai || true)
+$preview && dev_flag=--preview
+package=com.anonymous.moni.e2e
+$preview && package=com.anonymous.moni
+signing=${MONI_SIGNING:-$HOME/.config/moni/signing/signing.properties}
+if $preview && [[ ! -f $signing ]]; then
+  echo "build-apk.sh --preview needs the EAS signing key at $signing, see apps/mobile/README.md" >&2
+  exit 5
+fi
 # shellcheck disable=SC2086
 source "$here/app-env.sh" "$mobile" "$main_checkout" $dev_flag
 e2e_now=${EXPO_PUBLIC_E2E_NOW:-}
-env_hash=$(printf '%s\n' "APP_VARIANT=$APP_VARIANT" "EXPO_PUBLIC_AI_API_URL=$EXPO_PUBLIC_AI_API_URL" "EXPO_PUBLIC_E2E_NOW=$e2e_now" "EXPO_PUBLIC_E2E_TOAST_MS=${EXPO_PUBLIC_E2E_TOAST_MS:-}" "${env_assignments[@]}" | sort | sha256sum | cut -c1-16)
+env_hash=$(printf '%s\n' "APP_VARIANT=${APP_VARIANT:-}" "EXPO_PUBLIC_AI_API_URL=$EXPO_PUBLIC_AI_API_URL" "EXPO_PUBLIC_E2E_NOW=$e2e_now" "EXPO_PUBLIC_E2E_TOAST_MS=${EXPO_PUBLIC_E2E_TOAST_MS:-}" "${env_assignments[@]}" | sort | sha256sum | cut -c1-16)
 
 inputs=(apps/mobile packages package.json pnpm-lock.yaml pnpm-workspace.yaml)
 sha=$(git -C "$root" rev-parse HEAD)
@@ -85,6 +95,14 @@ else
   gradle_task=assembleRelease apk=android/app/build/outputs/apk/release/app-release.apk
 fi
 (cd android && ./gradlew "$gradle_task" -PreactNativeArchitectures=arm64-v8a --build-cache)
+if $preview; then
+  # shellcheck disable=SC1090
+  source "$signing"
+  apksigner=${MONI_APKSIGNER:-$(compgen -G "$ANDROID_HOME/build-tools/*/apksigner" | sort -V | tail -n 1)}
+  MONI_STORE_PASSWORD=$MONI_STORE_PASSWORD MONI_KEY_PASSWORD=$MONI_KEY_PASSWORD "$apksigner" sign \
+    --ks "$MONI_STORE_FILE" --ks-key-alias "$MONI_KEY_ALIAS" \
+    --ks-pass env:MONI_STORE_PASSWORD --key-pass env:MONI_KEY_PASSWORD "$apk"
+fi
 seconds=$((SECONDS - start))
 
 mkdir -p "$cache"
@@ -95,7 +113,7 @@ cat >"$staging/build.json" <<JSON
 {
   "key": "$key",
   "sha": "$sha",
-  "package": "com.anonymous.moni.e2e",
+  "package": "$package",
   "bytes": $bytes,
   "buildSeconds": $seconds,
   "prebuild": $prebuild,

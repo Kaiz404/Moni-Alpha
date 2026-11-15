@@ -50,3 +50,7 @@ modules/**/android/.cxx/
 modules/**/android/local.properties
 modules/**/node_modules/
 modules/**/pnpm-lock.yaml
+
+# EAS signing credentials (eas credentials download)
+credentials.json
+credentials/

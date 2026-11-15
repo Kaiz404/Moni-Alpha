@@ -220,6 +220,20 @@ chmod +x "$tmp/stub-bin/aapt2"
 out=$(MONI_APK_CACHE=$tmp/apks MONI_AAPT2=$tmp/stub-bin/aapt2 "$dir/install.sh" daily-key 2>&1)
 expect "install.sh exits 3 for an APK whose package is com.anonymous.moni" 3 $?
 [[ $out == *"installs only com.anonymous.moni.e2e"* ]] && pass "install.sh names the package it refused" || fail "install.sh refusal: $out"
+printf '#!/bin/sh\necho com.anonymous.moni.e2e\n' >"$tmp/stub-bin/aapt2"
+out=$(MONI_APK_CACHE=$tmp/apks MONI_AAPT2=$tmp/stub-bin/aapt2 "$dir/install.sh" --preview daily-key 2>&1)
+expect "install.sh --preview exits 3 for an e2e APK" 3 $?
+[[ $out == *"installs only com.anonymous.moni,"* ]] && pass "install.sh --preview names the daily package" || fail "install.sh --preview refusal: $out"
+
+app_env() {
+  env -u APP_VARIANT -u EXPO_PUBLIC_AI_API_URL bash -c 'source "$1/app-env.sh" "$2" "$2" $3 2>/dev/null; echo "${APP_VARIANT:-none} ${EXPO_PUBLIC_AI_API_URL:-mock}"' _ "$dir" "$tmp/envs" "$@"
+}
+mkdir -p "$tmp/envs/apps/mobile"
+echo EXPO_PUBLIC_AI_API_URL= >"$tmp/envs/.env.e2e"
+echo EXPO_PUBLIC_AI_API_URL=https://ai.example >"$tmp/envs/.env"
+expect "app-env.sh gives the e2e build the mock AI" "e2e mock" "$(app_env)"
+expect "app-env.sh --real-ai gives the e2e build the real AI" "e2e https://ai.example" "$(app_env --real-ai)"
+expect "app-env.sh --preview is the daily app on the real AI" "none https://ai.example" "$(app_env --preview)"
 
 repo=$tmp/repo
 mkdir -p "$repo/apps/mobile/scripts" "$tmp/build-bin"
