@@ -10,7 +10,6 @@ export function ImportDataRow() {
       icon="upload"
       tint="sand"
       title="Import data"
-      meta="From a Moni export or any CSV"
       chevron="right"
       onPress={() => router.push('/import')}
     />

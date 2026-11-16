@@ -107,6 +107,7 @@ describe('SpentCard', () => {
     expect(screen.getByTestId('home.chart.budget')).toHaveTextContent(
       'RM1,800',
     );
+    expect(screen.getByTestId('home.chart.projection')).toHaveTextContent('RM77');
     expect(screen.getByTestId('home.spent.left')).toHaveTextContent(
       'RM317 left for 18 days · RM17 a day',
     );
@@ -270,6 +271,7 @@ describe('SpentCard', () => {
     expect(screen.getByText('Spent in the last 7 days')).toBeTruthy();
     expect(await readAt(RIGHT)).toBe('RM35.00');
     expect(screen.queryByTestId('home.chart.budget')).toBeNull();
+    expect(screen.queryByTestId('home.chart.projection')).toBeNull();
     expect(screen.queryByTestId('home.spent.left')).toBeNull();
 
     fireEvent.press(screen.getByTestId('home.range.30d'));

@@ -7,6 +7,7 @@ import { useReducedMotion } from 'react-native-reanimated';
 import { PagedTransactions } from '@/components/activity/paged-transactions';
 import { useTransactionHold } from '@/components/transaction/use-transaction-hold';
 import { EmptyTile, NotFound } from '@/components/ui/empty-tile';
+import { HeaderIconButton } from '@/components/ui/header-icon-button';
 import { HoldHint } from '@/components/ui/hold-menu';
 import { Page, PageScroll, usePageContentTop } from '@/components/ui/page';
 import { useAuth } from '@/lib/auth/auth-context';
@@ -19,6 +20,7 @@ import {
   walletsForUser$,
 } from '@/lib/finance/selectors';
 import { listMerchantAliases } from '@/lib/supabase/merchant-aliases';
+import { tid } from '@/lib/test-ids';
 import {
   readListScope,
   scopedRows,
@@ -94,6 +96,12 @@ function ScopedList({ title, scope }: { title: string; scope: ListScope }) {
     }),
     [categories, wallets],
   );
+  const owned =
+    scope.kind === 'category'
+      ? categories.find(
+          (category) => category.id === scope.categoryId && category.userId === userId,
+        )
+      : null;
   const turnPage = (next: number) => {
     setPage(next);
     scroll.current?.scrollTo({ y: contentTop + listY.current, animated: !reduceMotion });
@@ -106,6 +114,18 @@ function ScopedList({ title, scope }: { title: string; scope: ListScope }) {
       kind="pushed"
       title={title}
       subtitle={rows.length === 1 ? '1 transaction' : `${rows.length} transactions`}
+      trailing={
+        owned ? (
+          <HeaderIconButton
+            testID={tid('list', 'edit-category')}
+            icon="pencil-outline"
+            accessibilityLabel={`Edit ${owned.name}`}
+            onPress={() =>
+              router.push({ pathname: '/categories/form', params: { id: owned.id } })
+            }
+          />
+        ) : undefined
+      }
     >
       <PageScroll
         ref={scroll}

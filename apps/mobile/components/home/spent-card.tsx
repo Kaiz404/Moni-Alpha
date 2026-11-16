@@ -127,7 +127,7 @@ export function SpentCard({
           onChange={setRange}
         />
       ) : null}
-      {line && range === '1m' ? (
+      {line && range === '1m' && month.left !== null && month.left.leftMinor >= 0 ? (
         <Text
           testID={tid('home', 'spent', 'left')}
           variant="meta"

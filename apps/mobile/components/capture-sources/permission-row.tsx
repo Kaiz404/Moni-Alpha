@@ -6,13 +6,7 @@ import { Button } from '@/components/ui/button';
 import { IconSymbol, type IconSymbolName } from '@/components/ui/icon-symbol';
 import { Text } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
-import { NOTIFICATION_ACCESS_DISCLOSURE } from '@/lib/notifications/permission';
 import { tid, type TestId } from '@/lib/test-ids';
-
-const PREFIX: Partial<Record<AccessState, string>> = {
-  off: 'Off · ',
-  not_set_up: 'Not set up · ',
-};
 
 function RowBubble({ icon, on }: { icon: IconSymbolName; on: boolean }) {
   const tokens = useThemeTokens();
@@ -41,7 +35,8 @@ export function PermissionRow({
   testID: TestId;
   icon: IconSymbolName;
   title: string;
-  meta: string;
+  /** A second line only when the control needs one, as Battery does. */
+  meta?: string;
   state: AccessState;
   onChange: () => void;
 }) {
@@ -61,12 +56,14 @@ export function PermissionRow({
         >
           {title}
         </Text>
-        <Text
-          variant="meta"
-          className="text-muted"
-        >
-          {unavailable ? `Not on this phone · ${meta}` : `${PREFIX[state] ?? ''}${meta}`}
-        </Text>
+        {meta ? (
+          <Text
+            variant="meta"
+            className="text-muted"
+          >
+            {meta}
+          </Text>
+        ) : null}
       </View>
       <Toggle
         testID={testID}
@@ -109,16 +106,6 @@ export function NotificationsDenied({
         className="text-foreground"
       >
         {"Moni can't see notifications"}
-      </Text>
-      <Text className="text-[14px] leading-[20px] text-ink-2">
-        Turn on notification access and spends add themselves. Moni only reads apps you link on a
-        wallet.
-      </Text>
-      <Text
-        variant="meta"
-        className="text-ink-2"
-      >
-        {NOTIFICATION_ACCESS_DISCLOSURE}
       </Text>
       <Button
         testID={tid('sources', 'notifications', 'open-settings')}

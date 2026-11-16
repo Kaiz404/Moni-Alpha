@@ -188,6 +188,25 @@ export function listGaveUp(): ProcessingQueueItem[] {
   return readQueue().filter((i) => i.status === 'gave_up');
 }
 
+/** Removing an alert from the Capture log takes the kept copy with it. Returned for Undo. */
+export function discardGaveUpAlerts(id?: string): ProcessingQueueItem[] {
+  const queue = readQueue();
+  const removed = queue.filter(
+    (item) =>
+      item.status === 'gave_up' &&
+      item.type === 'notification' &&
+      (id === undefined || item.id === id),
+  );
+  writeQueue(queue.filter((item) => !removed.includes(item)));
+  return removed;
+}
+
+export function restoreItems(items: readonly ProcessingQueueItem[]) {
+  const queue = readQueue();
+  const present = new Set(queue.map((item) => item.id));
+  writeQueue([...queue, ...items.filter((item) => !present.has(item.id))]);
+}
+
 export function remove(id: string) {
   writeQueue(readQueue().filter((i) => i.id !== id));
 }

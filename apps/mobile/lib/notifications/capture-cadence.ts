@@ -62,7 +62,8 @@ export type CaptureFix =
   | 'open_access'
   | 'battery'
   | 'autostart'
-  | 'report_missed';
+  | 'report_missed'
+  | 'open_log';
 
 type AlertApp = { packageName: string; label: string };
 
@@ -150,7 +151,7 @@ export function assessCaptureHealth({
     return {
       kind: 'reported_missed',
       apps: reported,
-      fix: batteryFix ?? (autostart ? 'autostart' : 'open_access'),
+      fix: batteryFix ?? (autostart ? 'autostart' : 'open_log'),
     };
   }
 
@@ -187,6 +188,7 @@ const FIX_LABEL: Record<CaptureFix, string> = {
   battery: 'Allow',
   autostart: 'Autostart',
   report_missed: 'Add it',
+  open_log: 'Capture log',
 };
 
 const FIX_REASON: Partial<Record<CaptureFix, string>> = {

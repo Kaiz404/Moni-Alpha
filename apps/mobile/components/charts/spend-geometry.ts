@@ -59,6 +59,10 @@ export type MonthMarks = {
   /** Daily: the budget spread evenly over the month. */
   evenPace: number | null;
   safePerDay: number | null;
+  /** Today, as a day index in the spend history. */
+  today: number;
+  /** Pace on 1M: a line from the origin to this spend at month end, at the rate so far. Null on the last day. */
+  projected: number | null;
 };
 
 export type SpendReading = { date: string; value: string; accessibilityLabel: string };
@@ -101,6 +105,9 @@ export function spendRangeFrom(index: SpendIndex, now: Date, range: ChartRange):
 
 export function monthMarks(index: SpendIndex, now: Date, month: SpendMonth): MonthMarks {
   const from = spendRangeFrom(index, now, '1m');
+  const today = index.days - 1;
+  const elapsed = today - from + 1;
+  const spent = index.cumulative[today + 1]! - index.cumulative[from]!;
   return {
     from,
     to: from + month.daysInMonth,
@@ -108,6 +115,11 @@ export function monthMarks(index: SpendIndex, now: Date, month: SpendMonth): Mon
     budget: month.budget,
     evenPace: month.budget === null ? null : month.budget / month.daysInMonth,
     safePerDay: month.safePerDay !== null && month.safePerDay > 0 ? month.safePerDay : null,
+    today,
+    projected:
+      elapsed > 0 && elapsed < month.daysInMonth && spent > 0
+        ? (spent * month.daysInMonth) / elapsed
+        : null,
   };
 }
 
@@ -202,9 +214,11 @@ export function spendTarget({
   }
 
   const budget = oneMonth ? month.budget : null;
+  const projected = oneMonth ? marks.projected : null;
+  const top = Math.max(spent, projected ?? 0);
   // Under budget, the budget is the top line, as the boards draw it: niceCeil alone turns RM1,224 into RM2,000.
   const high =
-    budget !== null && spent <= budget ? budget : Math.max(budget ?? 0, niceCeil(spent), 1);
+    budget !== null && top <= budget ? budget : Math.max(budget ?? 0, niceCeil(top), 1);
   const budgetY =
     budget === null ? null : LINE_BASE - (budget / high) * (LINE_BASE - SPEND_TOP);
   // At budget the top line is the budget's own, so the middle carries the label.

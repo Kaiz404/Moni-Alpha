@@ -12,7 +12,7 @@ export type Screen =
   | 'profile'
   | 'wallet'
   | 'sheet'
-  | 'merchants' | 'sources'
+  | 'merchants' | 'sources' | 'capture-log'
   | 'map' | 'import'
   | 'list';
 

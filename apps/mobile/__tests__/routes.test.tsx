@@ -225,17 +225,18 @@ const ROUTES: Record<string, RouteSpec> = {
     'October · 13 payments',
     'No payments left here',
   ),
+  'capture-log.tsx': same('/capture-log', 'Nothing captured yet'),
   'capture-sources.tsx': differ(
     '/capture-sources',
     'Keep capture running',
-    'On a wallet page',
+    'Link an app',
   ),
   'capture/say.tsx': same('/capture/say', 'Say the shop, the amount and how you paid.'),
   'capture/scan.tsx': same('/capture/scan', 'Scan a receipt'),
   'categories/form.tsx': same('/categories/form', 'Give it a name to save'),
   'categories/index.tsx': differ(
     '/categories',
-    'Custom · RM235.30 since 1 Oct',
+    'RM235.30 of RM350',
     "Make one for anything the presets don't fit",
   ),
   'chat.tsx': same('/chat', "Hi Kai. Tell me what you spent and I'll file it."),
@@ -255,7 +256,7 @@ const ROUTES: Record<string, RouteSpec> = {
     'Nothing to name. Moni lists a code here once it shows up 3 times.',
   ),
   'place/[id].tsx': differ(`/place/${BANGSAR}`, 'Bangsar', 'Nothing here in this range'),
-  'profile.tsx': differ('/profile', '3 in ringgit · 1 in US dollars', 'Malaysian ringgit'),
+  'profile.tsx': differ('/profile', 'Wallets', 'Main currency'),
   'review.tsx': differ('/review', 'RM131.10 not counted yet', 'Nothing to review'),
   'transaction/[id].tsx': differ(
     `/transaction/${SALARY}`,
@@ -270,7 +271,7 @@ const ROUTES: Record<string, RouteSpec> = {
   ),
   'wallet/[id].tsx': differ(
     `/wallet/${WALLET}`,
-    'Balance not right?',
+    'RM2,281.80',
     "This wallet isn't here any more",
   ),
   'wallet/edit.tsx': differ(

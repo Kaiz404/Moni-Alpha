@@ -217,14 +217,26 @@ export default function CategoryBudgetScreen() {
       kind="pushed"
       title={category.name}
       trailing={
-        budgetMinor !== null ? (
-          <HeaderIconButton
-            testID={tid('budget', 'category', 'more')}
-            icon="dots-horizontal"
-            accessibilityLabel={`More actions for ${category.name}: remove budget`}
-            onPress={removeBudget}
-          />
-        ) : null
+        <View className="flex-row">
+          {category.userId ? (
+            <HeaderIconButton
+              testID={tid('budget', 'category', 'edit')}
+              icon="pencil-outline"
+              accessibilityLabel={`Edit ${category.name}`}
+              onPress={() =>
+                router.push({ pathname: '/categories/form', params: { id: category.id } })
+              }
+            />
+          ) : null}
+          {budgetMinor !== null ? (
+            <HeaderIconButton
+              testID={tid('budget', 'category', 'more')}
+              icon="dots-horizontal"
+              accessibilityLabel={`More actions for ${category.name}: remove budget`}
+              onPress={removeBudget}
+            />
+          ) : null}
+        </View>
       }
     >
       <InPlaceGroup>

@@ -234,7 +234,7 @@ function WalletLocation({ wallet }: { wallet: FinanceWallet }) {
   );
 }
 
-/** ALERTS: the one place a wallet links an app and what that app has done lately. */
+/** ALERTS: the one place a wallet links an app, what that app has done lately, and the Capture log. */
 export function WalletAlerts({
   wallet,
   link,
@@ -315,6 +315,14 @@ export function WalletAlerts({
             onPress={() => void changeApp()}
           />
         )}
+        <DetailRow
+          testID={tid('wallet', 'capture-log')}
+          icon="cellphone-message"
+          tint="lilac"
+          title="Capture log"
+          meta="Every alert and what happened"
+          onPress={() => router.push('/capture-log')}
+        />
       </ListCard>
       {packageName && label && sharedWith.length > 0 ? (
         <AccountHint

@@ -258,7 +258,7 @@ describe('assessCaptureHealth', () => {
           }),
         },
       }),
-    ).toEqual({ kind: 'reported_missed', apps: [MAYBANK], fix: 'open_access' });
+    ).toEqual({ kind: 'reported_missed', apps: [MAYBANK], fix: 'open_log' });
   });
 
   it('stops counting a report once a capture comes through', () => {

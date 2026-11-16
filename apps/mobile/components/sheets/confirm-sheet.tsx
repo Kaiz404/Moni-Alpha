@@ -38,9 +38,6 @@ export function ConfirmSheet({
             className="flex-1"
             pinned
             variant={request.destructive ? 'destructive' : 'primary'}
-            icon={
-              request.destructive ? 'trash-can-outline' : undefined
-            }
             label={request.confirmLabel}
             onPress={onConfirm}
           />

@@ -1,0 +1,284 @@
+import {
+  CAPTURE_STATUS_LABELS,
+  CAPTURE_STATUS_ORDER,
+  countByStatus,
+  filterCaptureLog,
+  groupCaptureLog,
+  shownOnCaptureLog,
+  type StoredCaptureEntry,
+} from '../capture-log';
+
+const now = new Date(2026, 9, 14, 14, 6);
+const at = (day: number, hour: number, minute: number) =>
+  new Date(2026, 9, day, hour, minute).toISOString();
+
+const entries: StoredCaptureEntry[] = [
+  {
+    id: 'yesterday-auto',
+    receivedAt: at(13, 19, 0),
+    app: 'Maybank',
+    packageName: 'com.maybank2u.life',
+    text: "MAYBANK: RM100.00 transferred to Touch 'n Go eWallet on 13/10 19:00.",
+    status: 'auto_added',
+    transactionId: 'tx-1',
+  },
+  {
+    id: 'today-review',
+    receivedAt: at(14, 12, 50),
+    app: 'Maybank',
+    bigText: "MAYBANK: You've spent RM86.40 at JAYA GROCER on 14/10 12:50.",
+    text: "MAYBANK: You've spent RM86.40",
+    status: 'waiting_for_review',
+  },
+  {
+    id: 'today-before-statuses',
+    receivedAt: at(14, 9, 12),
+    app: 'Shopee',
+    text: 'Your parcel is out for delivery. Track it in the app.',
+  },
+  {
+    id: 'monday-not-linked',
+    receivedAt: at(12, 17, 50),
+    app: 'Grab',
+    text: 'Your ride receipt: RM23.10 paid.',
+    status: 'not_linked',
+  },
+];
+
+describe('capture statuses a failed read can hold', () => {
+  const entry = (status: StoredCaptureEntry['status']): StoredCaptureEntry => ({
+    id: 'a',
+    receivedAt: at(14, 12, 0),
+    app: 'Maybank',
+    text: 'spent RM1.00',
+    status,
+  });
+
+  it('labels them in glossary words and counts them apart from Ignored', () => {
+    const days = groupCaptureLog([entry('trying_again')], now);
+    expect(days[0]!.items[0]).toMatchObject({ status: 'trying_again', label: 'Trying again' });
+    expect(groupCaptureLog([entry('gave_up')], now)[0]!.items[0]).toMatchObject({
+      status: 'gave_up',
+      label: "Couldn't reach Moni",
+    });
+    expect(countByStatus(groupCaptureLog([entry('gave_up')], now))).toEqual({
+      added: 0,
+      auto_added: 0,
+      same_payment: 0,
+      waiting_for_review: 0,
+      trying_again: 0,
+      gave_up: 1,
+      ignored: 0,
+      not_linked: 0,
+    });
+  });
+});
+
+describe('groupCaptureLog', () => {
+  it("names an app by the phone's label, because the listener's app field is the package id", () => {
+    const entry = {
+      id: 'free',
+      receivedAt: at(14, 12, 0),
+      app: 'com.example.anybank',
+      packageName: 'com.example.anybank',
+      text: 'You paid RM12.00 to KEDAI ABC.',
+      status: 'not_linked',
+    } satisfies StoredCaptureEntry;
+
+    const named = groupCaptureLog([entry], now, (packageName) =>
+      packageName === 'com.example.anybank' ? 'Any Bank' : null,
+    );
+    expect(named[0]!.items[0]!.app).toBe('Any Bank');
+    expect(groupCaptureLog([entry], now)[0]!.items[0]!.app).toBe('com.example.anybank');
+  });
+
+  it('groups today and yesterday under Today and Yesterday, newest first', () => {
+    const days = groupCaptureLog(entries, now);
+
+    expect(days.map((day) => day.label)).toEqual([
+      'Today · Wed 14 Oct',
+      'Yesterday · Tue 13 Oct',
+      'Mon 12 Oct',
+    ]);
+    expect(days.map((day) => day.items.map((item) => item.id))).toEqual([
+      ['today-review', 'today-before-statuses'],
+      ['yesterday-auto'],
+      ['monday-not-linked'],
+    ]);
+  });
+
+  it('shows an entry with no stored status as Ignored', () => {
+    const [today] = groupCaptureLog(entries, now);
+
+    expect(today.items[1]).toEqual({
+      id: 'today-before-statuses',
+      app: 'Shopee',
+      packageName: null,
+      time: '9:12 am',
+      receivedAt: at(14, 9, 12),
+      text: 'Your parcel is out for delivery. Track it in the app.',
+      oneTimeCode: false,
+      status: 'ignored',
+      label: 'Ignored',
+      transactionId: null,
+      pairedProposalId: null,
+      note: null,
+    });
+  });
+
+  it("notes a Not linked alert whose payment another app's added alert already covers", () => {
+    const ride: StoredCaptureEntry[] = [
+      {
+        id: 'grab',
+        receivedAt: at(9, 21, 41),
+        app: 'Grab',
+        text: 'Your ride receipt: RM23.10 paid. Thanks for riding with Grab.',
+        status: 'not_linked',
+      },
+      {
+        id: 'tng',
+        receivedAt: at(9, 21, 40),
+        app: "Touch 'n Go",
+        text: 'Payment of RM23.10 to GRAB*A-3KX2 was successful.',
+        status: 'added',
+        transactionId: 'tx-2',
+      },
+      {
+        id: 'grab-later',
+        receivedAt: at(9, 23, 5),
+        app: 'Grab',
+        text: 'Your ride receipt: RM23.10 paid.',
+        status: 'not_linked',
+      },
+    ];
+
+    const [day] = groupCaptureLog(ride, now);
+
+    expect(day.items.map((item) => [item.id, item.note])).toEqual([
+      ['grab-later', null],
+      ['grab', "Same payment as the Touch 'n Go alert at 9:40 pm, which was added."],
+      ['tng', null],
+    ]);
+  });
+
+  it('says which alert a Same payment entry was counted with', () => {
+    const at = '2026-10-14T12:00:00+08:00';
+    const later = '2026-10-14T12:03:00+08:00';
+    const [day] = groupCaptureLog(
+      [
+        { id: 'bank', receivedAt: at, app: 'Maybank', status: 'auto_added', transactionId: 'tx-1' },
+        {
+          id: 'tng',
+          receivedAt: later,
+          app: "Touch 'n Go",
+          status: 'same_payment',
+          transactionId: 'tx-1',
+        },
+        {
+          id: 'grab',
+          receivedAt: later,
+          app: 'Grab',
+          status: 'same_payment',
+          pairedProposalId: 'waiting',
+        },
+        { id: 'waiting', receivedAt: at, app: 'CIMB', status: 'waiting_for_review' },
+        { id: 'alone', receivedAt: later, app: 'Boost', status: 'same_payment', transactionId: 'gone' },
+      ],
+      now,
+    );
+
+    const note = (id: string) => day!.items.find((item) => item.id === id)!;
+    expect(note('tng')).toMatchObject({
+      label: 'Same payment',
+      note: 'Counted once, with the Maybank alert at 12:00 pm.',
+    });
+    expect(note('grab')).toMatchObject({
+      pairedProposalId: 'waiting',
+      note: 'Counted once, with the CIMB alert at 12:00 pm.',
+    });
+    expect(note('alone').note).toBe('Counted once, with a payment already in your transactions.');
+  });
+
+  it('quotes the full alert text and keeps the transaction link', () => {
+    const [today, yesterday] = groupCaptureLog(entries, now);
+
+    expect(today.items[0].text).toBe(
+      "MAYBANK: You've spent RM86.40 at JAYA GROCER on 14/10 12:50.",
+    );
+    expect(today.items[0].label).toBe('Waiting for review');
+    expect(today.items[0].time).toBe('12:50 pm');
+    expect(yesterday.items[0]).toMatchObject({
+      label: 'Auto-added',
+      time: '7:00 pm',
+      transactionId: 'tx-1',
+    });
+  });
+
+  it('shows a one-time code as a note, whether stored blank or from before the filter', () => {
+    const [day] = groupCaptureLog(
+      [
+        { id: 'blank', receivedAt: at(14, 9, 0), app: 'Maybank', text: '', oneTimeCode: true },
+        { id: 'old', receivedAt: at(14, 8, 0), app: 'Maybank', text: 'Your TAC is 482910' },
+      ],
+      now,
+    );
+
+    expect(day.items.map((item) => item.text)).toEqual([
+      'One-time code. Moni did not keep it.',
+      'One-time code. Moni did not keep it.',
+    ]);
+  });
+
+  it('counts and filters by stored status', () => {
+    const days = groupCaptureLog(entries, now);
+
+    expect(countByStatus(days)).toEqual({
+      same_payment: 0,
+      added: 0,
+      auto_added: 1,
+      waiting_for_review: 1,
+      trying_again: 0,
+      gave_up: 0,
+      ignored: 1,
+      not_linked: 1,
+    });
+    expect(
+      filterCaptureLog(days, 'waiting_for_review').map((day) => [
+        day.label,
+        day.items.map((item) => item.id),
+      ]),
+    ).toEqual([['Today · Wed 14 Oct', ['today-review']]]);
+  });
+});
+
+describe('shownOnCaptureLog', () => {
+  const linked = ['com.maybank2u.life'];
+
+  it('keeps a linked app and drops Ignored and every other app', () => {
+    expect(shownOnCaptureLog({ packageName: 'com.maybank2u.life', status: 'added' }, linked)).toBe(
+      true,
+    );
+    expect(shownOnCaptureLog({ packageName: 'com.maybank2u.life', status: 'ignored' }, linked)).toBe(
+      false,
+    );
+    expect(
+      shownOnCaptureLog({ packageName: 'com.maybank2u.life' }, linked),
+    ).toBe(false);
+    expect(shownOnCaptureLog({ packageName: 'com.shopee.my', status: 'added' }, linked)).toBe(false);
+  });
+});
+
+describe('the eight statuses', () => {
+  it('has the glossary word for each, in the order the chips list them', () => {
+    expect(CAPTURE_STATUS_ORDER.map((status) => [status, CAPTURE_STATUS_LABELS[status]])).toEqual([
+      ['waiting_for_review', 'Waiting for review'],
+      ['trying_again', 'Trying again'],
+      ['gave_up', "Couldn't reach Moni"],
+      ['auto_added', 'Auto-added'],
+      ['added', 'Added'],
+      ['same_payment', 'Same payment'],
+      ['not_linked', 'Not linked'],
+      ['ignored', 'Ignored'],
+    ]);
+  });
+});

@@ -1,4 +1,4 @@
-import { useFocusEffect } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { AppState, Platform } from 'react-native';
 
@@ -91,6 +91,9 @@ export function useCaptureAlert(): CaptureAlertModel | null {
           return;
         case 'report_missed':
           reportMissedFrom(alert.apps[0]!.packageName, wallets);
+          return;
+        case 'open_log':
+          router.push('/capture-log');
       }
     },
     dismiss: () => {

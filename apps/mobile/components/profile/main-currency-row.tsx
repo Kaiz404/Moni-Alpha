@@ -1,7 +1,6 @@
 import { userPreferencesSchema } from '@repo/types';
 import { useState } from 'react';
 
-import { currencyName } from '@/components/profile/currency-words';
 import { MainCurrencySheet } from '@/components/profile/main-currency-sheet';
 import { ProfileRow } from '@/components/profile/profile-row';
 import { ListCard } from '@/components/ui/list-card';
@@ -46,7 +45,6 @@ export function MainCurrencyRow() {
           icon="cash-multiple"
           tint="aqua"
           title="Main currency"
-          meta={currencyName(main)}
           value={main}
           strongValue
           chevron="down"

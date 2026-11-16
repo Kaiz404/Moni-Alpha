@@ -102,11 +102,11 @@ beforeEach(() => {
 });
 
 describe('Profile, Capture sources', () => {
-  it('is one row that says notifications are on and opens the page', async () => {
+  it('is one row that opens the page, with no warning when notifications are on', async () => {
     await showProfile('authorized');
 
-    expect(screen.getByText('Capture sources')).toBeTruthy();
-    expect(screen.getByText('Notifications on')).toBeTruthy();
+    expect(screen.getByText('Permissions')).toBeTruthy();
+    expect(screen.queryByText('Notifications on')).toBeNull();
     expect(warningBubbles()).toHaveLength(0);
     for (const old of OLD_ROWS) expect(screen.queryByText(old)).toBeNull();
 
@@ -114,22 +114,16 @@ describe('Profile, Capture sources', () => {
     expect(router.push).toHaveBeenCalledWith('/capture-sources');
   });
 
-  it('says so when notification access is off', async () => {
+  it('turns the bubble to attention when notification access is off', async () => {
     await showProfile('denied');
-    expect(screen.getByText('Notifications off')).toBeTruthy();
+    expect(screen.queryByText('Notifications off')).toBeNull();
     expect(warningBubbles()).toHaveLength(1);
   });
 
-  it('counts the other accesses on a phone that cannot read notifications', async () => {
+  it('stays a plain row on a phone that cannot read notifications', async () => {
     await showProfile('unavailable');
-    expect(screen.getByText('2 on, 1 not set up')).toBeTruthy();
-  });
-
-  it('holds the second line while the read is in flight', async () => {
-    jest.mocked(readNotificationListenerPermission).mockReturnValue(new Promise(() => {}));
-    render(<ProfileScreen />);
-    await act(async () => {});
-    expect(screen.getByText('Notifications')).toBeTruthy();
+    expect(screen.getByText('Permissions')).toBeTruthy();
+    expect(warningBubbles()).toHaveLength(0);
   });
 });
 

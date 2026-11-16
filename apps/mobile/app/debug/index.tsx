@@ -1,129 +1,35 @@
-import React, { useState, useRef, useCallback } from 'react';
-import {
-  View,
-  ScrollView,
-  TouchableOpacity,
-  ActivityIndicator,
-} from 'react-native';
-import { Text } from '@/components/ui/text';
+import { useCallback } from 'react';
+import { View } from 'react-native';
+import { useFocusEffect } from 'expo-router';
+
+import { CaptureStatusPill } from '@/components/capture-log/status-pill';
+import { ListCard } from '@/components/ui/list-card';
 import { Page, PageScroll } from '@/components/ui/page';
-import { useThemeTokens } from '@/hooks/use-theme-tokens';
-import {
-  runNotificationTests,
-  runQueueInspection,
-  pruneQueue,
-  injectTestNotificationCapture,
-  PROCESS_LABELS,
-  useCapturedProcessLogs,
-  type DebugTestResult,
-  type LogFn,
-  type ProcessId,
-} from '@/lib/debug';
-import { NotificationPipelinePanel } from '@/components/debug/notification-pipeline-panel';
+import { Text } from '@/components/ui/text';
+import { useInstalledApps } from '@/components/wallets/notification-source';
+import { labelForNotificationPackage } from '@/constants/notification-apps';
+import { useNotificationListener } from '@/hooks/use-notification-listener';
+import { groupCaptureLog } from '@/lib/notifications/capture-log';
+import { linkedAppLabel } from '@/lib/notifications/linked-packages-cache';
 
-type GridButton = {
-  id: string;
-  label: string;
-  description: string;
-  tone: 'pending' | 'attention' | 'transfer' | 'muted';
-  run: (log: LogFn) => Promise<DebugTestResult>;
-};
-
-function useDebugButtons(): GridButton[] {
-  return [
-    {
-      id: 'simulate-capture',
-      label: 'Simulate Capture',
-      description: 'Write a test notification to MMKV',
-      tone: 'pending',
-      run: injectTestNotificationCapture,
-    },
-    {
-      id: 'notif-test',
-      label: 'Notification Test',
-      description: 'Run 4 classification test cases',
-      tone: 'attention',
-      run: runNotificationTests,
-    },
-    {
-      id: 'queue-inspect',
-      label: 'Queue Inspector',
-      description: 'View processing queue state',
-      tone: 'transfer',
-      run: runQueueInspection,
-    },
-    {
-      id: 'queue-prune',
-      label: 'Prune Queue',
-      description: 'Clear all queue items',
-      tone: 'muted',
-      run: pruneQueue,
-    },
-  ];
-}
-
+/** Every stored alert, including Ignored and apps that are not linked to a wallet. */
 export default function DebugPage() {
-  const buttons = useDebugButtons();
-  const tokens = useThemeTokens();
-  const [runningId, setRunningId] = useState<string | null>(null);
-  const [lastResult, setLastResult] = useState<{
-    id: string;
-    result: DebugTestResult;
-  } | null>(null);
-  const [logLines, setLogLines] = useState<string[]>([]);
-  const [selectedProcessLog, setSelectedProcessLog] =
-    useState<ProcessId>('debug-log');
-  const scrollRef = useRef<ScrollView>(null);
-  const { clearCapturedLogs, getFormattedLogs } =
-    useCapturedProcessLogs();
+  const { notifications, refresh } = useNotificationListener();
+  const listing = useInstalledApps();
+  const installed = listing.kind === 'listed' ? listing.apps : null;
 
-  const uiLocked = runningId !== null;
-  const buttonColor = {
-    pending: tokens.states.pending,
-    attention: tokens.states.attention,
-    transfer: tokens.transfer,
-    muted: tokens.muted,
-  } as const;
-
-  const log: LogFn = useCallback((message: string) => {
-    setLogLines((prev) => [...prev, message]);
-    console.log('[Debug]', message);
-  }, []);
-
-  const clearLog = useCallback(() => {
-    setLogLines([]);
-    setLastResult(null);
-    clearCapturedLogs();
-  }, [clearCapturedLogs]);
-
-  const selectedProcessLogs = getFormattedLogs(
-    selectedProcessLog,
-    160,
+  useFocusEffect(
+    useCallback(() => {
+      refresh();
+    }, [refresh]),
   );
 
-  const handlePress = useCallback(
-    async (btn: GridButton) => {
-      if (runningId) return;
-
-      setRunningId(btn.id);
-      setLogLines([]);
-      setLastResult(null);
-      try {
-        const result = await btn.run(log);
-        setLastResult({ id: btn.id, result });
-      } catch (e: any) {
-        const msg = e?.message ?? String(e);
-        log(`Unhandled error: ${msg}`);
-        setLastResult({
-          id: btn.id,
-          result: { success: false, summary: `Error: ${msg}` },
-        });
-      } finally {
-        setRunningId(null);
-      }
-    },
-    [runningId, log],
+  const days = groupCaptureLog(notifications, new Date(), (packageName) =>
+    installed?.get(packageName)?.label ??
+    linkedAppLabel(packageName) ??
+    labelForNotificationPackage(packageName),
   );
+  const total = days.reduce((sum, day) => sum + day.items.length, 0);
 
   return (
     <Page
@@ -133,191 +39,67 @@ export default function DebugPage() {
       title="Debug tools"
     >
       <PageScroll
-        ref={scrollRef}
-        contentContainerClassName="pb-20"
+        className="flex-1"
+        contentContainerClassName="gap-3 px-5 pb-10"
         showsVerticalScrollIndicator={false}
-        onContentSizeChange={() =>
-          scrollRef.current?.scrollToEnd({ animated: true })
-        }
       >
-        <View className="px-5 pt-4 pb-2">
-          <Text className="text-xs leading-4 text-muted">
-            Tools for testing notification capture and the AI
-            processing queue.
-          </Text>
-        </View>
-
-        <NotificationPipelinePanel />
-
-        <View className="flex-row flex-wrap px-3 mt-4">
-          {buttons.map((btn) => {
-            const isRunning = runningId === btn.id;
-            const isDisabled = uiLocked && !isRunning;
-            const color = buttonColor[btn.tone];
-
-            return (
-              <View
-                key={btn.id}
-                className="w-1/2 p-1"
-              >
-                <TouchableOpacity
-                  onPress={() => handlePress(btn)}
-                  disabled={isDisabled}
-                  activeOpacity={0.7}
-                  className="min-h-28 justify-between rounded-2xl border bg-card p-3"
-                  style={{
-                    backgroundColor: isDisabled
-                      ? tokens.surface2
-                      : color + '18',
-                    borderWidth: 1,
-                    borderColor: isRunning
-                      ? color
-                      : isDisabled
-                        ? tokens.borderSubtle
-                        : color + '40',
-                    opacity: isDisabled ? 0.4 : 1,
-                  }}
-                >
-                  {isRunning ? (
-                    <ActivityIndicator
-                      size="small"
-                      color={color}
-                    />
-                  ) : (
-                    <View
-                      className="w-2 h-2 rounded-full mb-1"
-                      style={{ backgroundColor: color }}
-                    />
-                  )}
-                  <Text
-                    className="text-xs font-display-semibold mt-1"
-                    style={{
-                      color: isDisabled
-                        ? tokens.muted
-                        : tokens.foreground,
-                    }}
-                    numberOfLines={1}
-                  >
-                    {btn.label}
-                  </Text>
-                  <Text
-                    className="text-[10px] mt-0.5"
-                    style={{
-                      color: isDisabled ? tokens.muted : tokens.muted,
-                    }}
-                    numberOfLines={2}
-                  >
-                    {btn.description}
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            );
-          })}
-        </View>
-
-        {lastResult && (
-          <View
-            className={
-              lastResult.result.success
-                ? 'mx-5 mt-3 rounded-2xl border border-primary/30 bg-primary-muted px-4 py-3'
-                : 'mx-5 mt-3 rounded-2xl border border-danger/30 bg-danger/10 px-4 py-3'
-            }
+        <Text
+          variant="meta"
+          className="px-1 text-ink-2"
+        >
+          Every notification Moni stored, including Ignored and apps that are not linked to a
+          wallet. The Capture log hides those.
+        </Text>
+        {total === 0 ? (
+          <Text
+            variant="body"
+            className="px-1 text-muted"
           >
-            <Text
-              className="text-xs font-display-bold"
-              style={{
-                color: lastResult.result.success
-                  ? tokens.success
-                  : tokens.danger,
-              }}
+            Nothing stored yet.
+          </Text>
+        ) : (
+          days.map((day) => (
+            <View
+              key={day.key}
+              className="gap-1.5"
             >
-              {lastResult.result.success ? 'PASS' : 'FAIL'} —{' '}
-              {lastResult.result.summary}
-            </Text>
-          </View>
-        )}
-
-        <View className="mx-5 mt-5">
-          <View className="flex-row justify-between items-center mb-2">
-            <Text className="text-xs font-display-bold text-foreground">
-              Live logs
-            </Text>
-            <TouchableOpacity onPress={clearLog}>
-              <Text className="text-xs font-display-semibold text-primary">
-                Clear All Logs
+              <Text
+                variant="caps"
+                className="px-1.5 text-ink-2"
+                accessibilityRole="header"
+              >
+                {day.label}
               </Text>
-            </TouchableOpacity>
-          </View>
-          <View className="flex-row flex-wrap gap-2">
-            {(Object.keys(PROCESS_LABELS) as ProcessId[]).map(
-              (id) => (
-                <TouchableOpacity
-                  key={id}
-                  onPress={() => setSelectedProcessLog(id)}
-                  className="rounded-xl border px-3 py-2"
-                  style={{
-                    borderColor:
-                      selectedProcessLog === id
-                        ? tokens.primary
-                        : tokens.border,
-                    backgroundColor:
-                      selectedProcessLog === id
-                        ? tokens.primaryMuted
-                        : tokens.card,
-                  }}
-                >
-                  <Text
-                    className="text-[10px]"
-                    style={{
-                      color:
-                        selectedProcessLog === id
-                          ? tokens.primary
-                          : tokens.muted,
-                    }}
+              <ListCard>
+                {day.items.map((item) => (
+                  <View
+                    key={item.id}
+                    className="gap-1 px-[18px] py-3"
                   >
-                    {PROCESS_LABELS[id]}
-                  </Text>
-                </TouchableOpacity>
-              ),
-            )}
-          </View>
-        </View>
-        {(selectedProcessLogs.length > 0 || logLines.length > 0) && (
-          <View className="mx-5 mt-3">
-            <View className="flex-row justify-between items-center mb-1">
-              <Text className="text-xs font-display-bold text-muted">
-                {PROCESS_LABELS[selectedProcessLog]} console
-              </Text>
+                    <View className="flex-row items-baseline justify-between gap-2">
+                      <Text
+                        variant="rowTitle"
+                        className="min-w-0 flex-1 text-foreground"
+                        numberOfLines={1}
+                      >
+                        {item.app}
+                      </Text>
+                      <Text
+                        variant="meta"
+                        className="text-muted"
+                      >
+                        {item.time}
+                      </Text>
+                    </View>
+                    {item.text ? (
+                      <Text className="text-[14px] leading-[20px] text-ink-2">{item.text}</Text>
+                    ) : null}
+                    <CaptureStatusPill status={item.status} />
+                  </View>
+                ))}
+              </ListCard>
             </View>
-            <View className="rounded-2xl bg-surface-2 p-3">
-              {(selectedProcessLogs.length > 0
-                ? selectedProcessLogs
-                : logLines
-              ).map((line, i) => (
-                <Text
-                  key={i}
-                  className="text-[11px] leading-4 font-mono"
-                  style={{
-                    color: line.startsWith('===')
-                      ? tokens.transfer
-                      : line.startsWith('---')
-                        ? tokens.states.pending
-                        : line.includes('FAIL') ||
-                            line.includes('failed') ||
-                            line.includes('ERROR')
-                          ? tokens.danger
-                          : line.includes('PASS') ||
-                              line.includes('success')
-                            ? tokens.success
-                            : tokens.foreground,
-                  }}
-                  selectable
-                >
-                  {line}
-                </Text>
-              ))}
-            </View>
-          </View>
+          ))
         )}
       </PageScroll>
     </Page>

@@ -31,13 +31,17 @@ tags:
     text: USD
     below:
       id: profile.back
-- assertVisible: US dollar
+- assertNotVisible: US dollar
 - takeScreenshot: k1-l3-usd
 - tapOn:
     id: profile.main-currency
 - tapOn:
     id: profile.currency.myr
-- assertVisible: Malaysian ringgit
+- assertVisible:
+    text: MYR
+    below:
+      id: profile.back
+- assertNotVisible: Malaysian ringgit
 
 # The theme button switches to dark and back to light.
 - tapOn:
@@ -62,13 +66,21 @@ tags:
 - scrollUntilVisible:
     element:
       id: profile.row.capture-sources
-- assertVisible: Notifications (on|off)
+- assertNotVisible: Notifications on
 - assertNotVisible: Bank notifications
 - assertNotVisible: Set up
 - tapOn:
     id: profile.row.capture-sources
 - assertVisible:
     id: sources.back
+- pressKey: Back
+- scrollUntilVisible:
+    element:
+      id: profile.row.capture-log
+- tapOn:
+    id: profile.row.capture-log
+- assertVisible:
+    id: capture-log.back
 - pressKey: Back
 - takeScreenshot: k1-l9-rows
 

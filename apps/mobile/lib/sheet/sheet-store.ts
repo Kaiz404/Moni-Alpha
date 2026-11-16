@@ -1,4 +1,5 @@
 import { useSyncExternalStore } from 'react';
+import { Keyboard } from 'react-native';
 import type { MinorAmount, TransactionType } from '@repo/types';
 
 import type { WalletKind } from '@/constants/wallet-form';
@@ -6,8 +7,6 @@ import type { PlacePick } from '@/lib/capture/entry-place';
 import type { PastPlaceInput } from '@/lib/capture/place-search';
 import type { ActivityRange } from '@/lib/finance/activity-filter';
 import type { TransactionLocationSnapshot } from '@/lib/transactions/prefetch-location';
-import type { BalanceSource } from '@/lib/wallets/wallet-page';
-
 /** A category tile with this month's spending in the sheet's currency. */
 export type CategoryTile = {
   id: string;
@@ -107,7 +106,7 @@ type Sheets = {
   };
   /** A wallet's real balance, typed in its own currency; resolves to the new balance. */
   balance: {
-    request: { currency: string; balanceMinor: MinorAmount; source: BalanceSource };
+    request: { currency: string; balanceMinor: MinorAmount };
     result: MinorAmount;
   };
   confirm: {
@@ -161,6 +160,9 @@ function close(id: number) {
 export function openSheet<R extends SheetRequest>(
   request: R,
 ): Promise<SheetResult<R['kind']> | null> {
+  // A focused field keeps the keyboard up, because pages use keyboardShouldPersistTaps="handled"
+  // so the tap still opens the sheet. Dismiss here so the drawer never shares the screen with it.
+  Keyboard.dismiss();
   dismissSheet();
   const id = nextId++;
   return new Promise((resolve) => {

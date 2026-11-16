@@ -1058,7 +1058,7 @@ export function ReviewDeck({ session }: { session: ReviewSession }) {
       return (
         <View className="flex-1">
           <ScrollView contentContainerClassName="gap-section px-5 pb-8 pt-2">
-            <NothingToReview />
+            <NothingToReview onCaptureLog={() => router.push('/capture-log')} />
             <AddedForYou />
             {recentlyReviewed}
           </ScrollView>
@@ -1087,6 +1087,7 @@ export function ReviewDeck({ session }: { session: ReviewSession }) {
           <CaughtUp
             sentence={sentence}
             addedMinor={added}
+            onCaptureLog={() => router.push('/capture-log')}
           />
           <AddedForYou />
           {recentlyReviewed}

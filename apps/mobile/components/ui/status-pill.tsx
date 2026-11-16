@@ -70,7 +70,7 @@ export function StatusPill({
   variant?: 'inline' | 'standalone';
   /**
    * A standalone pill: `default` 30 tall, `small` 28 (XM-Detail), `compact` 26 with a 12/700
-   * label (the capture pages).
+   * label (the capture pages, the capture log).
    */
   size?: keyof typeof sizes;
   align?: 'start' | 'center';

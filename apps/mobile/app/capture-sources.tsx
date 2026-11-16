@@ -17,7 +17,6 @@ import { Text } from '@/components/ui/text';
 import { TintBubble } from '@/components/ui/transaction-row';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { retryCaptures } from '@/lib/ai/background-processor';
-import { NOTIFICATION_ACCESS_DISCLOSURE } from '@/lib/notifications/permission';
 import { createAutoAddRule, deleteAutoAddRule } from '@/lib/supabase/auto-add-rules';
 import { tid, type TestId } from '@/lib/test-ids';
 import { showToast } from '@/lib/toast/toast-store';
@@ -51,14 +50,12 @@ function LinkRow({
   icon,
   tint,
   title,
-  meta,
   href,
 }: {
   testID: TestId;
   icon: IconSymbolName;
   tint: string;
   title: string;
-  meta: string;
   href: Href;
 }) {
   const tokens = useThemeTokens();
@@ -66,7 +63,7 @@ function LinkRow({
     <Press
       testID={testID}
       onPress={() => router.push(href)}
-      accessibilityLabel={`${title}, ${meta}`}
+      accessibilityLabel={title}
       className="min-h-[66px] flex-row items-center gap-3.5 py-3 pl-[18px] pr-3"
     >
       <View className={`h-[42px] w-[42px] items-center justify-center rounded-full ${tint}`}>
@@ -84,13 +81,6 @@ function LinkRow({
         >
           {title}
         </Text>
-        <Text
-          variant="meta"
-          className="text-muted"
-          numberOfLines={1}
-        >
-          {meta}
-        </Text>
       </View>
       <IconSymbol
         name="chevron-right"
@@ -102,7 +92,6 @@ function LinkRow({
 }
 
 export default function CaptureSourcesScreen() {
-  const tokens = useThemeTokens();
   const { access, change } = usePhoneAccess();
   const { apps } = useLinkedApps();
   const { unreached } = useCaptureHealth();
@@ -115,7 +104,7 @@ export default function CaptureSourcesScreen() {
       headerScrolls
       screen="sources"
       kind="pushed"
-      title="Capture sources"
+      title="Permissions"
     >
       <PageScroll
         className="flex-1"
@@ -160,7 +149,6 @@ export default function CaptureSourcesScreen() {
                 testID={tid('sources', 'notifications')}
                 icon="bell-outline"
                 title="Notifications"
-                meta="Reads alerts from the apps you link on your wallets"
                 state={access.notifications}
                 onChange={() => void change('notifications')}
               />
@@ -169,7 +157,6 @@ export default function CaptureSourcesScreen() {
               testID={tid('sources', 'location')}
               icon="map-marker"
               title="Location"
-              meta="From notifications, to pin each payment"
               state={access.location}
               onChange={() => void change('location')}
             />
@@ -177,7 +164,6 @@ export default function CaptureSourcesScreen() {
               testID={tid('sources', 'camera')}
               icon="camera-outline"
               title="Camera"
-              meta="Receipts, only while scanning"
               state={access.camera}
               onChange={() => void change('camera')}
             />
@@ -185,26 +171,10 @@ export default function CaptureSourcesScreen() {
               testID={tid('sources', 'microphone')}
               icon="microphone"
               title="Microphone"
-              meta="Say it instead of typing"
               state={access.microphone}
               onChange={() => void change('microphone')}
             />
           </ListSection>
-          <View className="flex-row gap-2 px-1">
-            <IconSymbol
-              name="shield-check-outline"
-              size={16}
-              color={tokens.deepMint}
-              style={{ lineHeight: 18 }}
-            />
-            <Text
-              variant="meta"
-              className="min-w-0 flex-1 text-ink-2"
-            >
-              Moni saves a place only when a payment arrives, and never tracks where you go.
-              {denied ? '' : ` ${NOTIFICATION_ACCESS_DISCLOSURE}`}
-            </Text>
-          </View>
         </View>
 
         {Platform.OS === 'android' && apps.length === 0 ? (
@@ -214,7 +184,6 @@ export default function CaptureSourcesScreen() {
               icon="link-variant"
               tint="bg-sand"
               title="Link an app"
-              meta="On a wallet page"
               href="/wallets"
             />
           </ListCard>
@@ -224,9 +193,8 @@ export default function CaptureSourcesScreen() {
           <KeepCaptureRunning />
         ) : null}
 
-        <View className="gap-2">
-          {rules.length > 0 ? (
-            <ListSection label="Added without asking">
+        {rules.length > 0 ? (
+          <ListSection label="Added without asking">
               {rules.map((row) => (
                 <View
                   key={row.rule.id}
@@ -244,13 +212,6 @@ export default function CaptureSourcesScreen() {
                     >
                       {row.name}
                     </Text>
-                    <Text
-                      variant="meta"
-                      className="text-muted"
-                      numberOfLines={1}
-                    >
-                      {row.meta}
-                    </Text>
                   </View>
                   <Press
                     testID={tid('sources', 'rule', row.rule.merchantKey, 'ask-again')}
@@ -267,40 +228,21 @@ export default function CaptureSourcesScreen() {
                 </View>
               ))}
             </ListSection>
-          ) : (
-            <View className="gap-2">
-              <Text
-                variant="caps"
-                className="pl-1 text-muted"
-                accessibilityRole="header"
-              >
-                Added without asking
-              </Text>
-              <View className="rounded-tile border-[1.5px] border-dashed border-hairline px-[18px] py-3.5">
-                <Text
-                  variant="body"
-                  className="text-ink-2"
-                >
-                  Moni asks about every capture.
-                </Text>
-              </View>
-            </View>
-          )}
-          <Text
-            variant="meta"
-            className="px-1 text-muted"
-          >
-            {"Tick “Don't ask about similar” on a capture in Review to add one here."}
-          </Text>
-        </View>
+        ) : null}
 
         <ListCard>
+          <LinkRow
+            testID={tid('sources', 'capture-log')}
+            icon="cellphone-message"
+            tint="bg-pending-fill"
+            title="Capture log"
+            href="/capture-log"
+          />
           <LinkRow
             testID={tid('sources', 'places')}
             icon="map-marker"
             tint="bg-primary-muted"
             title="Places"
-            meta="Where your payments happened"
             href="/map"
           />
         </ListCard>

@@ -18,7 +18,7 @@ tags:
     id: profile.row.capture-sources
 - assertVisible:
     id: sources.back
-- assertVisible: Capture sources
+- assertVisible: Permissions
 - assertNotVisible: Moni works without any of these.*
 - assertVisible:
     id: sources.location
@@ -33,14 +33,6 @@ tags:
     id: sources.link-app
 - takeScreenshot: k3-l9-sources
 
-# Notification access on: the one row says what it reads and names no app.
-- runFlow:
-    when:
-      visible:
-        id: sources.notifications
-    commands:
-      - assertVisible: .*Reads alerts from the apps you link on your wallets
-
 # Notification access revoked: the denied state replaces the row.
 - runFlow:
     when:
@@ -48,7 +40,6 @@ tags:
         id: sources.notifications.open-settings
     commands:
       - assertVisible: Moni can't see notifications
-      - assertVisible: .*One-time codes never leave this phone.*
       - assertVisible:
           id: sources.notifications.by-hand
       - takeScreenshot: k3-l10-denied
@@ -71,6 +62,15 @@ tags:
       - assertVisible:
           id: sources.rule.grab.ask-again
 
+- scrollUntilVisible:
+    element:
+      id: sources.capture-log
+- tapOn:
+    id: sources.capture-log
+- assertVisible: Capture log
+- tapOn:
+    id: capture-log.back
+- assertNotVisible: Linked apps
 # The header scrolls away with the page, so bring it back before going back.
 - scrollUntilVisible:
     element:

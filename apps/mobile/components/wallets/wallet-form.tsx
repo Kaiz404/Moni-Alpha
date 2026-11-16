@@ -379,9 +379,8 @@ export function WalletForm({
                 variant="meta"
                 className="min-w-0 flex-1 text-ink-2"
               >
-                To fix the balance, tap Balance not right? on the
-                wallet. Moni adds a correction so your history still
-                adds up.
+                To fix the balance, tap the pencil beside the amount.
+                Moni adds a correction so your history still adds up.
               </Text>
             </View>
           ) : null}

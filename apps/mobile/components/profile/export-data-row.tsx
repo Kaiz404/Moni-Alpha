@@ -34,7 +34,6 @@ export function ExportDataRow({ userId }: { userId: string | null }) {
       icon="download"
       tint="sand"
       title="Export data"
-      meta="A CSV of everything in Moni"
       accessory={
         <Press
           testID={tid('profile', 'export-csv')}

@@ -36,6 +36,9 @@ tags:
 - assertVisible: Pets
 
 - tapOn: Pets
+- assertVisible: No budget for Pets
+- tapOn:
+    id: budget.category.edit
 - assertVisible: Edit category
 - takeScreenshot: a2-edit-category
 - tapOn:

@@ -1,6 +1,6 @@
 # Review captures
 
-Captures that Moni is not sure about wait in the Review deck as cards. Swipe a card left for Not mine, down for Later, and right for Approve. A screen reader gets the same three as actions on the card's source row. A capture with no wallet asks "Which wallet?" before it writes. When the deck is empty it shows "All caught up" with this session's results.
+Captures that Moni is not sure about wait in the Review deck as cards. Swipe a card left for Not mine, down for Later, and right for Approve. A screen reader gets the same three as actions on the card's source row. A capture with no wallet asks "Which wallet?" before it writes. When the deck is empty it shows "All caught up" with this session's results and a link to the capture log.
 
 ## Sub-features
 

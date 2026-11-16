@@ -107,16 +107,15 @@ describe('WalletHero balance correction', () => {
 
   it('opens the balance sheet for Fix it, says saving adds a correction, and previews it', () => {
     renderFixIt();
-    expect(screen.getByText(/Saving adds a balance correction transaction/)).toBeTruthy();
+    expect(screen.getByText('Edit Amount')).toBeTruthy();
+    expect(
+      screen.getByText('Adds a balance correction transaction for the difference.'),
+    ).toBeTruthy();
+    expect(screen.queryByText('Balance not right?')).toBeNull();
     fireEvent.changeText(
       screen.getByTestId('wallet.balance-sheet.input'),
       '60',
     );
-    expect(
-      screen.getByText(
-        'Moni adds a −RM3.60 balance correction. Not counted as spending or income.',
-      ),
-    ).toBeTruthy();
   });
 
   it('writes one correction with Undo, and Undo removes it', async () => {

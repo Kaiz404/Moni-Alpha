@@ -241,6 +241,19 @@ export function SpendChart({
               />
             </>
           ) : null}
+          {target.oneMonth && !daily && marks.projected !== null ? (
+            <FloatingLabel
+              key="projection"
+              testID={tid(screen, 'chart', 'projection')}
+              value={marks.shift + marks.projected}
+              shifted
+              zoom={zoom}
+              frame={frame}
+              className="font-display-bold text-foreground"
+              text={whole(marks.projected, currency)}
+              right
+            />
+          ) : null}
           {target.oneMonth && daily && marks.evenPace !== null ? (
             <FloatingLabel
               key="even-pace"
@@ -418,6 +431,24 @@ const LineMarks = memo(function LineMarks({
   });
   const evenStart = useDerivedValue(() => evenPace.get().p1);
   const evenEnd = useDerivedValue(() => evenPace.get().p2);
+  const projected = marks.projected;
+  const projection = useDerivedValue(() => {
+    const [f, t] = [from.get(), to.get()];
+    const x1 = xAt(marks.from, f, t, frame);
+    const x2 = xAt(marks.to, f, t, frame);
+    const y1 = yAt(marks.shift - shift.get(), low.get(), high.get(), frame);
+    const y2 = yAt((marks.shift + (projected ?? 0)) - shift.get(), low.get(), high.get(), frame);
+    const along = (x: number) => (x2 === x1 ? 0 : (x - x1) / (x2 - x1));
+    const start = clamp01(along(frame.left));
+    const end = clamp01(along(frame.right));
+    return {
+      p1: { x: x1 + (x2 - x1) * start, y: y1 + (y2 - y1) * start },
+      p2: { x: x1 + (x2 - x1) * end, y: y1 + (y2 - y1) * end },
+    };
+  });
+  const projectionStart = useDerivedValue(() => projection.get().p1);
+  const projectionEnd = useDerivedValue(() => projection.get().p2);
+  const projectionOpacity = useDerivedValue(() => (projected === null ? 0 : oneMonth.get()));
   return (
     <Canvas style={{ width, height: PLOT_HEIGHT }}>
       {budget !== null ? (
@@ -443,6 +474,18 @@ const LineMarks = memo(function LineMarks({
           color={tokens.inactive}
           strokeWidth={1.5}
           opacity={monthOpacity}
+        >
+          <DashPathEffect intervals={[5, 5]} />
+        </Line>
+      ) : null}
+      {projected !== null ? (
+        <Line
+          p1={projectionStart}
+          p2={projectionEnd}
+          style="stroke"
+          color={tokens.foreground}
+          strokeWidth={1.5}
+          opacity={projectionOpacity}
         >
           <DashPathEffect intervals={[5, 5]} />
         </Line>

@@ -6,8 +6,6 @@ import CaptureSourcesScreen from '@/app/capture-sources';
 import { retryCaptures } from '@/lib/ai/background-processor';
 import { enqueue, pruneCompleted, requeueGaveUp } from '@/lib/ai/processing-queue';
 import { markCaptureStatus } from '@/lib/notifications/capture-status';
-import { NOTIFICATION_ACCESS_DISCLOSURE } from '@/lib/notifications/permission';
-
 const MAYBANK = 'com.maybank2u.life';
 const MAYBANK_APP = {
   packageName: MAYBANK,
@@ -100,14 +98,13 @@ beforeEach(() => {
   mockAlert = null;
 });
 
-const NOTE_START = 'Moni saves a place only when a payment arrives, and never tracks where you go.';
-
-describe('Capture sources', () => {
+describe('Permissions', () => {
   it('aggregates notifications into one row with no app named anywhere', () => {
     render(<CaptureSourcesScreen />);
 
     expect(screen.getByText('Notifications')).toBeTruthy();
-    expect(screen.getByText('Reads alerts from the apps you link on your wallets')).toBeTruthy();
+    expect(screen.getByText('Permissions')).toBeTruthy();
+    expect(screen.queryByText('Reads alerts from the apps you link on your wallets')).toBeNull();
     expect(screen.queryByText('Bank notifications')).toBeNull();
     expect(screen.queryByText(/Maybank/)).toBeNull();
     expect(screen.queryByText('Linked apps')).toBeNull();
@@ -116,19 +113,12 @@ describe('Capture sources', () => {
     expect(screen.queryByTestId('sources.location.maybank')).toBeNull();
   });
 
-  it('keeps the disclosure next to the shield note while access is on', () => {
-    render(<CaptureSourcesScreen />);
-    expect(screen.getByText(`${NOTE_START} ${NOTIFICATION_ACCESS_DISCLOSURE}`)).toBeTruthy();
-  });
-
-  it('shows the disclosure once, on the denied card, when access is off', () => {
+  it('replaces the notifications row when access is off', () => {
     mockNotifications = 'off';
     render(<CaptureSourcesScreen />);
 
     expect(screen.getByText("Moni can't see notifications")).toBeTruthy();
     expect(screen.queryByText(/Maybank/)).toBeNull();
-    expect(screen.getByText(NOTIFICATION_ACCESS_DISCLOSURE)).toBeTruthy();
-    expect(screen.getByText(NOTE_START)).toBeTruthy();
     expect(screen.queryByTestId('sources.notifications')).toBeNull();
   });
 

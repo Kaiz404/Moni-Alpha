@@ -10,20 +10,16 @@ import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { currencySymbol } from '@/lib/finance/format-money';
 import type { SheetRequestOf } from '@/lib/sheet/sheet-store';
 import { tid } from '@/lib/test-ids';
-import { balanceDiffLine } from '@/lib/wallets/wallet-page';
 
 type BalanceSheetProps = SheetFrameProps & {
   request: SheetRequestOf<'balance'>;
   onSave: (balanceMinor: SheetRequestOf<'balance'>['balanceMinor']) => void;
 };
 
-/**
- * The wallet page's balance correction: the real balance in an amount field, a live line saying
- * what Moni will add, and the plain rule that saving adds a correction rather than changing history.
- */
+/** The wallet page's balance correction: the amount field and one sentence about what saving adds. */
 export function BalanceSheet({ request, onSave, ...frame }: BalanceSheetProps) {
   const tokens = useThemeTokens();
-  const { balanceMinor, currency, source } = request;
+  const { balanceMinor, currency } = request;
   const [draft, setDraft] = useState('');
   const typed = parseAmountDraft(draft, { signed: true });
   const save = () => {
@@ -33,7 +29,7 @@ export function BalanceSheet({ request, onSave, ...frame }: BalanceSheetProps) {
     <Sheet
       {...frame}
       size="fit"
-      title="Balance not right?"
+      title="Edit Amount"
       actions={
         <>
           <Button
@@ -57,19 +53,9 @@ export function BalanceSheet({ request, onSave, ...frame }: BalanceSheetProps) {
     >
       <View className="gap-3">
         <Text className="text-[15px] leading-[21px] text-ink-2">
-          Saving adds a balance correction transaction for the difference. Your past transactions
-          stay as they are.
+          Adds a balance correction transaction for the difference.
         </Text>
-        <View className="gap-1.5">
-          <Text
-            variant="meta"
-            className="text-muted"
-          >
-            {source.kind === 'cash'
-              ? `Cash you have, in ${currency}`
-              : `Balance your ${source.name} app shows, in ${currency}`}
-          </Text>
-          <View className="h-16 flex-row items-center gap-1 rounded-field border-2 border-foreground bg-card px-3.5">
+        <View className="h-16 flex-row items-center gap-1 rounded-field border-2 border-foreground bg-card px-3.5">
             <Text className="font-display-bold text-[28px] leading-[32px] text-muted">
               {currencySymbol(currency)}
             </Text>
@@ -91,19 +77,6 @@ export function BalanceSheet({ request, onSave, ...frame }: BalanceSheetProps) {
               style={{ fontVariant: ['tabular-nums'] }}
             />
           </View>
-          <Text
-            testID={tid('wallet', 'balance-sheet', 'line')}
-            variant="meta"
-            className="text-ink-2"
-          >
-            {balanceDiffLine(
-              balanceMinor,
-              currency,
-              typed === null ? null : minorToNumber(typed),
-              source,
-            )}
-          </Text>
-        </View>
       </View>
     </Sheet>
   );

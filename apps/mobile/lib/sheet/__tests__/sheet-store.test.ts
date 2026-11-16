@@ -1,3 +1,5 @@
+import { Keyboard } from 'react-native';
+
 import { dismissSheet, getOpenSheet, openSheet } from '@/lib/sheet/sheet-store';
 
 const deleteWallet = {
@@ -11,6 +13,12 @@ const deleteWallet = {
 afterEach(() => dismissSheet());
 
 describe('openSheet', () => {
+  it('dismisses the keyboard so the sheet does not open over it', () => {
+    const dismiss = jest.spyOn(Keyboard, 'dismiss').mockImplementation(() => {});
+    void openSheet(deleteWallet);
+    expect(dismiss).toHaveBeenCalledTimes(1);
+  });
+
   it('resolves to true when the confirm action runs', async () => {
     const answer = openSheet(deleteWallet);
     const open = getOpenSheet();

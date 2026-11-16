@@ -6,7 +6,6 @@ import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Press } from '@/components/ui/press';
 import { Text } from '@/components/ui/text';
 import { WalletIcon } from '@/components/wallets/wallet-icon';
-import { labelForNotificationPackage } from '@/constants/notification-apps';
 import { getWalletCardStyle } from '@/constants/wallet-card-styles';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { formatMoney, formatSignedMoney } from '@/lib/finance/format-money';
@@ -21,7 +20,6 @@ import { confirmWalletBalance } from '@/lib/supabase/wallets';
 import { tid } from '@/lib/test-ids';
 import { showToast } from '@/lib/toast/toast-store';
 import { correctBalance } from '@/lib/wallets/balance-correction';
-import { checkedLabel, type BalanceSource } from '@/lib/wallets/wallet-page';
 import type { WalletAlertLink } from '@/lib/wallets/wallet-link';
 import { walletMeta } from '@/lib/wallets/wallet-meta';
 
@@ -29,16 +27,11 @@ import { walletMeta } from '@/lib/wallets/wallet-meta';
  * Asks for the real balance in the balance sheet. A different balance writes one balance
  * correction and shows the toast with Undo; the same balance only marks it checked.
  */
-async function correctWalletBalance(
-  wallet: FinanceWallet,
-  balanceMinor: MinorAmount,
-  source: BalanceSource,
-) {
+async function correctWalletBalance(wallet: FinanceWallet, balanceMinor: MinorAmount) {
   const typed = await openSheet({
     kind: 'balance',
     currency: wallet.currency,
     balanceMinor,
-    source,
   });
   if (typed === null) return;
   const previousCheck = wallet.balanceConfirmedAt;
@@ -68,10 +61,7 @@ async function correctWalletBalance(
   }
 }
 
-/**
- * V2H-WalletDetail top: the wallet's name, then its BALANCE. The pencil and "Balance not right?"
- * open the balance sheet; the name edits on Edit wallet.
- */
+/** V2H-WalletDetail top: the wallet's name, then its amount. The pencil opens the balance sheet. */
 export function WalletHero({
   wallet,
   balanceMinor,
@@ -87,16 +77,7 @@ export function WalletHero({
   const tokens = useThemeTokens();
   const style = getWalletCardStyle(wallet.cardStyleId);
   const currency = wallet.currency;
-  const appName =
-    link.notificationAppLabel ??
-    (link.notificationPackage
-      ? labelForNotificationPackage(link.notificationPackage)
-      : null);
-  const source: BalanceSource =
-    wallet.type === 'cash'
-      ? { kind: 'cash' }
-      : { kind: 'app', name: appName ?? wallet.name };
-  const correct = () => void correctWalletBalance(wallet, balanceMinor, source);
+  const correct = () => void correctWalletBalance(wallet, balanceMinor);
 
   const asked = useRef(false);
   useEffect(() => {
@@ -139,16 +120,9 @@ export function WalletHero({
         </View>
       </View>
 
-      <View className="gap-0.5">
-        <Text
-          variant="caps"
-          className="text-muted"
-        >
-          Balance
-        </Text>
-        <Press
+      <Press
           testID={tid('wallet', 'balance', 'edit')}
-          accessibilityLabel={`Balance ${balance}. Correct the balance`}
+          accessibilityLabel={`Edit amount, ${balance}`}
           pressedClassName=""
           className="flex-row items-center gap-2 self-start"
           onPress={correct}
@@ -174,33 +148,6 @@ export function WalletHero({
             />
           </View>
         </Press>
-        <View className="flex-row flex-wrap items-center gap-x-1.5">
-          <Text
-            variant="meta"
-            className="text-muted"
-          >
-            {checkedLabel(wallet.balanceConfirmedAt)}
-          </Text>
-          <Text
-            variant="meta"
-            className="text-muted"
-            importantForAccessibility="no"
-          >
-            ·
-          </Text>
-          <Press
-            testID={tid('wallet', 'balance-not-right')}
-            accessibilityLabel="Balance not right? Fix it"
-            pressedClassName=""
-            hitSlop={13}
-            onPress={correct}
-          >
-            <Text className="font-display-bold text-[13px] leading-[18px] text-deep-mint">
-              Balance not right?
-            </Text>
-          </Press>
-        </View>
-      </View>
     </View>
   );
 }

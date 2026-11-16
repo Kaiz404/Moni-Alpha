@@ -5,7 +5,6 @@ import { type ReactNode } from 'react';
 import { View } from 'react-native';
 import { useUniwind } from 'uniwind';
 
-import { currencyHeldIn } from '@/components/profile/currency-words';
 import { ExportDataRow } from '@/components/profile/export-data-row';
 import { ImportDataRow } from '@/components/profile/import-data-row';
 import { MainCurrencyRow } from '@/components/profile/main-currency-row';
@@ -14,7 +13,6 @@ import {
   type ProfileTint,
 } from '@/components/profile/profile-row';
 import {
-  accessSummary,
   usePhoneAccess,
   type PhoneAccessId,
   type AccessState,
@@ -45,43 +43,18 @@ function displayName(user: User | null): string {
   return named?.trim() ?? user?.email?.split('@')[0] ?? '';
 }
 
-function walletsMeta(currencies: readonly string[]): string {
-  const counts = new Map<string, number>();
-  for (const currency of currencies) {
-    counts.set(currency, (counts.get(currency) ?? 0) + 1);
-  }
-  return [...counts]
-    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
-    .map(
-      ([currency, count]) =>
-        `${count} in ${currencyHeldIn(currency)}`,
-    )
-    .join(' · ');
-}
-
-/** Reading alerts is what the page is for, so that state speaks for the whole row. */
-function captureSourcesRow(
-  access: Record<PhoneAccessId, AccessState>,
-): {
-  meta: string;
-  tint: ProfileTint;
-} {
+/** A bell off and the attention bubble when notification access is off. The title stays one line. */
+function captureSourcesTint(access: Record<PhoneAccessId, AccessState>): ProfileTint {
   switch (access.notifications) {
     case 'on':
-      return { meta: 'Notifications on', tint: 'mint' };
+      return 'mint';
     case 'off':
     case 'not_set_up':
-      return { meta: 'Notifications off', tint: 'attention' };
+      return 'attention';
     case 'unavailable':
-      return { meta: accessSummary(access), tint: 'sand' };
     case 'checking':
-      // Holds the second line, so the title does not jump when the read lands.
-      return { meta: 'Notifications', tint: 'sand' };
+      return 'sand';
   }
-}
-
-function plural(count: number, one: string, many: string): string {
-  return `${count} ${count === 1 ? one : many}`;
 }
 
 function Section({
@@ -131,7 +104,7 @@ export default function ProfileScreen() {
   const name = displayName(user);
   const google = user?.app_metadata?.provider === 'google';
   const { access } = usePhoneAccess();
-  const sources = captureSourcesRow(access);
+  const sourcesTint = captureSourcesTint(access);
   const merchants = useMerchantNames();
 
   const wallets = useValue(walletsForUser$(userId));
@@ -202,9 +175,6 @@ export default function ProfileScreen() {
             icon="wallet"
             tint="lemon"
             title="Wallets"
-            meta={walletsMeta(
-              wallets.map((wallet) => wallet.currency),
-            )}
             value={String(wallets.length)}
             chevron="right"
             onPress={() => router.push('/wallets')}
@@ -214,7 +184,6 @@ export default function ProfileScreen() {
             icon="tag-outline"
             tint="lilac"
             title="Categories"
-            meta="Rename or add your own"
             value={String(categoryCount)}
             chevron="right"
             onPress={() => router.push('/categories')}
@@ -224,15 +193,6 @@ export default function ProfileScreen() {
             icon="store-edit-outline"
             tint="peach"
             title="Merchant names"
-            meta={
-              merchants.toName.length
-                ? plural(
-                    merchants.toName.length,
-                    'bank code to name',
-                    'bank codes to name',
-                  )
-                : 'Name the codes banks send'
-            }
             value={`${merchants.named.length} named`}
             chevron="right"
             onPress={() => router.push('/merchants')}
@@ -243,15 +203,22 @@ export default function ProfileScreen() {
           <ProfileRow
             testID={tid('profile', 'row', 'capture-sources')}
             icon={
-              sources.tint === 'attention'
+              sourcesTint === 'attention'
                 ? 'bell-off-outline'
                 : 'bell-outline'
             }
-            tint={sources.tint}
-            title="Capture sources"
-            meta={sources.meta}
+            tint={sourcesTint}
+            title="Permissions"
             chevron="right"
             onPress={() => router.push('/capture-sources')}
+          />
+          <ProfileRow
+            testID={tid('profile', 'row', 'capture-log')}
+            icon="cellphone-message"
+            tint="lilac"
+            title="Capture log"
+            chevron="right"
+            onPress={() => router.push('/capture-log')}
           />
           <ExportDataRow userId={userId} />
           <ImportDataRow />

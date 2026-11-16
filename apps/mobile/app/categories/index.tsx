@@ -77,7 +77,7 @@ function Row({
         </Text>
         <Text
           variant="meta"
-          className={category.userId ? 'text-muted' : 'text-ink-2'}
+          className="text-ink-2"
           numberOfLines={1}
           style={{ fontVariant: ['tabular-nums'] }}
         >
@@ -117,7 +117,6 @@ export default function CategoriesScreen() {
   }, []);
 
   const months = categoryMonths(all, currency, today);
-  const filed = new Set(all.map((row) => row.categoryId).filter(Boolean));
   const ofKind = categories.filter((category) => category.type === kind);
   const mine = ofKind.filter((c) => c.userId === userId && c.isActive);
   const presets = ofKind.filter((c) => c.userId === null && c.isActive);
@@ -142,16 +141,7 @@ export default function CategoriesScreen() {
       : `${amount} of ${formatMoney(budget.budgetAmountMinor, currency, { whole: true })}`;
   };
 
-  const customMeta = (category: Category) =>
-    spent(category) > 0
-      ? `Custom · ${formatMoney(spent(category), currency)} since ${since}`
-      : filed.has(category.id)
-        ? `Custom · nothing since ${since}`
-        : 'Custom · nothing filed yet';
-
-  const edit = (id: string) =>
-    router.push({ pathname: '/categories/form', params: { id } });
-  /** Expense presets open their category page; income has no budget, so it lists the month's rows under Categories. */
+  /** Expense categories open their page; income has no budget, so it lists the month's rows under Categories. */
   const open = (category: Category) =>
     kind === 'expense'
       ? router.push({ pathname: '/budget/[categoryId]', params: { categoryId: category.id } })
@@ -201,8 +191,14 @@ export default function CategoriesScreen() {
                 <Row
                   key={category.id}
                   category={category}
-                  meta={customMeta(category)}
-                  onPress={() => edit(category.id)}
+                  meta={presetMeta(category)}
+                  onPress={() => open(category)}
+                  trailing={
+                    <CategorySpark
+                      totals={months[category.id] ?? [0, 0]}
+                      color={category.color}
+                    />
+                  }
                 />
               ))}
             </ListCard>
@@ -223,14 +219,8 @@ export default function CategoriesScreen() {
 
         {presets.length ? (
           <View className="gap-1.5">
-            <View className="flex-row items-center justify-between px-1.5">
+            <View className="px-1.5">
               <SectionLabel>{`Presets · since ${since}`}</SectionLabel>
-              <View className="flex-row items-center gap-1">
-                <IconSymbol name="lock-outline" size={16} color={tokens.muted} />
-                <Text variant="meta" className="text-muted">
-                  Fixed for everyone
-                </Text>
-              </View>
             </View>
             <ListCard>
               {presets.map((category) => (

@@ -131,7 +131,7 @@ export default function CategoryFormScreen() {
     if (!confirmed) return;
     try {
       await deleteCategory(existing.id);
-      router.back();
+      router.dismissTo('/categories');
     } catch (error) {
       Alert.alert('Not saved', error instanceof Error ? error.message : 'Try again.');
     }

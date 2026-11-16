@@ -1,4 +1,4 @@
-import { View } from 'react-native';
+import { Keyboard, View } from 'react-native';
 
 import { Press } from '@/components/ui/press';
 import { Text } from '@/components/ui/text';
@@ -29,7 +29,10 @@ export function WalletColourSwatches({ value, onChange }: Props) {
               accessibilityState={{ selected }}
               pressedClassName=""
               className="h-11 max-w-9 flex-1 items-center justify-center"
-              onPress={() => onChange(style.id)}
+              onPress={() => {
+                Keyboard.dismiss();
+                onChange(style.id);
+              }}
             >
               <View
                 className={`h-9 w-9 items-center justify-center rounded-full border-2 ${selected ? 'border-foreground' : 'border-transparent'}`}

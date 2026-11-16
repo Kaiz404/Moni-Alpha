@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { View } from 'react-native';
+import { Keyboard, View } from 'react-native';
 
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Press } from '@/components/ui/press';
@@ -66,7 +66,10 @@ export function PickerField({
         radius={{ rest: 22, pressed: 16 }}
         pressedClassName="bg-hairline"
         className={`h-[60px] flex-row items-center gap-2.5 bg-sand px-2.5 ${className ?? ''}`}
-        onPress={onPress}
+        onPress={() => {
+          Keyboard.dismiss();
+          onPress();
+        }}
       >
         {leading}
         <View className="min-w-0 flex-1 gap-px">
@@ -105,7 +108,10 @@ export function PickerField({
       disabled={disabled}
       pressedClassName={fill === 'paper' ? 'bg-sand-light' : 'bg-hairline'}
       className={`h-16 flex-row items-center gap-2.5 rounded-field ${fill === 'paper' ? 'bg-card' : 'bg-sand'} px-3.5 ${className ?? ''}`}
-      onPress={onPress}
+      onPress={() => {
+        Keyboard.dismiss();
+        onPress();
+      }}
     >
       {leading}
       <View className="min-w-0 flex-1 gap-0.5">
