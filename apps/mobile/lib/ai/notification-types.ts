@@ -9,7 +9,7 @@ export type RawNotification = {
   id: string;
   /** Android package name from the native listener (same as packageName). */
   app: string;
-  /** Canonical routing key — equals `app` from react-native-android-notification-listener. */
+  /** Canonical routing key — equals `app` from the native listener (CaptureHandoff.kt). */
   packageName: string;
   title: string;
   titleBig?: string;

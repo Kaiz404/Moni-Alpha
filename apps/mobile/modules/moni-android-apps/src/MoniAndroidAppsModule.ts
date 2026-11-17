@@ -23,6 +23,10 @@ const stub = {
   async openAutostartSettingsAsync(): Promise<AutostartOpened> {
     return 'none';
   },
+  getListenerPermissionAsync: undefined as (() => Promise<'authorized' | 'denied'>) | undefined,
+  openListenerSettings: undefined as (() => boolean) | undefined,
+  /** Notifications whose capture task Android refused to start, as the listener's JSON payloads. */
+  drainCaptureInbox: undefined as (() => string[]) | undefined,
 };
 
 export type MoniAndroidAppsModule = typeof stub;

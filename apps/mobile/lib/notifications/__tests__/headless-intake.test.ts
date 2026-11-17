@@ -8,6 +8,7 @@ import {
 } from '@/lib/location/location-snapshot';
 import { getAll, pruneCompleted } from '@/lib/ai/processing-queue';
 import { writeLinkedPackages } from '@/lib/notifications/linked-packages-cache.core';
+import MoniAndroidApps from '@/modules/moni-android-apps';
 
 jest.mock('react-native-mmkv', () => {
   const stores = new Map<string, Map<string, string>>();
@@ -23,10 +24,9 @@ jest.mock('react-native-mmkv', () => {
     },
   };
 });
-jest.mock('react-native-android-notification-listener', () => ({
+jest.mock('@/modules/moni-android-apps', () => ({
   __esModule: true,
-  default: {},
-  RNAndroidNotificationListenerHeadlessJsName: 'RNAndroidNotificationListenerHeadlessJs',
+  default: { drainCaptureInbox: jest.fn(() => []) },
 }));
 jest.mock('expo-router/entry', () => ({}));
 jest.mock('expo-task-manager', () => ({ defineTask: jest.fn() }));
@@ -219,6 +219,20 @@ describe('the headless task', () => {
 
     expect(log().map((entry) => entry.status)).toEqual(['waiting_for_review']);
     expect(getAll().map((item) => item.id)).toEqual([log()[0]!.id]);
+  });
+
+  it('also takes what the listener kept while Android refused to start the task', async () => {
+    jest
+      .mocked(MoniAndroidApps.drainCaptureInbox!)
+      .mockReturnValueOnce([JSON.stringify(payment('900', `${ALERT} kept`))]);
+
+    await deliver(payment('1000'));
+
+    expect(log().map((entry) => [entry.text, entry.status])).toEqual([
+      [`${ALERT} kept`, 'waiting_for_review'],
+      [ALERT, 'waiting_for_review'],
+    ]);
+    expect(getAll()).toHaveLength(2);
   });
 
   it('keeps every capture in the queue past the 50 the log holds', async () => {

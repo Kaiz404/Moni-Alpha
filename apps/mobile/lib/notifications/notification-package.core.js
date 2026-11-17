@@ -1,6 +1,6 @@
 /**
  * Canonical Android package name for notification routing.
- * react-native-android-notification-listener sets `app` to sbn.getPackageName().
+ * The native listener (CaptureHandoff.kt in modules/moni-android-apps) sets `app` to sbn.getPackageName().
  *
  * CommonJS — required by the headless task in index.js and Node test suites.
  */

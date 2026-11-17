@@ -2,11 +2,6 @@ import { AppRegistry, Platform } from 'react-native';
 
 const mockLoaded: string[] = [];
 
-jest.mock('react-native-android-notification-listener', () => ({
-  __esModule: true,
-  default: {},
-  RNAndroidNotificationListenerHeadlessJsName: 'RNAndroidNotificationListenerHeadlessJs',
-}));
 jest.mock('expo-router/entry', () => {
   mockLoaded.push('router');
   return {};

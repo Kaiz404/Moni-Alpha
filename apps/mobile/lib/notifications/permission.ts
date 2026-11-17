@@ -1,6 +1,7 @@
 import { Platform } from 'react-native';
 
 import { openSheet } from '@/lib/sheet/sheet-store';
+import MoniAndroidApps from '@/modules/moni-android-apps';
 
 /** Android notification *listener* access (read other apps' alerts). Not POST_NOTIFICATIONS. */
 export type NotificationListenerPermission = 'authorized' | 'denied' | 'unknown' | 'unavailable';
@@ -15,17 +16,12 @@ function normalizeStatus(raw: unknown): NotificationListenerPermission {
   return 'unknown';
 }
 
-/**
- * Live read from Android — never cached. Uses NotificationManagerCompat
- * .getEnabledListenerPackages(), same as the native module.
- */
+/** Live read of Android's enabled listeners, never cached. A build without the native call reads unknown. */
 export async function readNotificationListenerPermission(): Promise<NotificationListenerPermission> {
   if (Platform.OS !== 'android') return 'unavailable';
 
   try {
-    const { default: RNAndroidNotificationListener } =
-      await import('react-native-android-notification-listener');
-    const raw = await RNAndroidNotificationListener.getPermissionStatus();
+    const raw = await MoniAndroidApps.getListenerPermissionAsync?.();
     return normalizeStatus(raw);
   } catch {
     return 'unknown';
@@ -41,11 +37,7 @@ export const NOTIFICATION_ACCESS_DISCLOSURE =
 
 export function openNotificationListenerSettings(): void {
   if (Platform.OS !== 'android') return;
-  void import('react-native-android-notification-listener').then(
-    ({ default: RNAndroidNotificationListener }) => {
-      RNAndroidNotificationListener.requestPermission();
-    },
-  );
+  MoniAndroidApps.openListenerSettings?.();
 }
 
 /** The way to ask for access. Android's settings page says nothing about what Moni does with it. */

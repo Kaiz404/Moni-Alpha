@@ -75,7 +75,6 @@
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "react-native": "0.86.0",
-    "react-native-android-notification-listener": "^5.0.1",
     "react-native-background-actions": "^4.0.1",
     "react-native-gesture-handler": "~2.32.0",
     "react-native-maps": "^1.27.2",

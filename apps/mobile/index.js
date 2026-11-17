@@ -5,10 +5,8 @@ if (process.env.EXPO_PUBLIC_E2E_NOW) {
 }
 
 if (Platform.OS === 'android') {
-  const {
-    RNAndroidNotificationListenerHeadlessJsName,
-  } = require('react-native-android-notification-listener');
-
+  // RNAndroidNotificationListenerHeadlessJsTaskService in modules/moni-android-apps starts it.
+  const CAPTURE_TASK = 'RNAndroidNotificationListenerHeadlessJs';
   const ALL_NOTIFICATIONS_KEY = 'captured_notifications';
   const MAX_STORED = 50;
 
@@ -137,10 +135,22 @@ if (Platform.OS === 'android') {
     }
   };
 
-  AppRegistry.registerHeadlessTask(
-    RNAndroidNotificationListenerHeadlessJsName,
-    () => headlessNotificationListener,
-  );
+  // What the native listener kept when Android refused to start this task (CaptureHandoff.kt).
+  async function handleKeptCaptures() {
+    let kept = [];
+    try {
+      kept = require('./modules/moni-android-apps').default.drainCaptureInbox?.() ?? [];
+    } catch (e) {
+      console.error('[NotifCapture] kept captures not read:', e?.message ?? e);
+    }
+    for (const notification of kept) await headlessNotificationListener({ notification });
+  }
+
+  AppRegistry.registerHeadlessTask(CAPTURE_TASK, () => async (task) => {
+    await headlessNotificationListener(task);
+    await handleKeptCaptures();
+  });
+  void handleKeptCaptures();
 
   // Not mine, Later and Approve on Moni's review notification, with the app in the background
   // or killed. The handler loads the store and review-actions only when a tap arrives.
