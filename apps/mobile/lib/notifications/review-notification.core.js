@@ -28,6 +28,13 @@ const APPROVED_ACTIONS = [
 ];
 const DECIDED_ACTIONS = [{ id: 'undo', title: 'Undo' }];
 
+/** One notification for everything Moni added without asking today; each add replaces it. */
+const AUTO_ADDED_IDENTIFIER = 'moni-auto-added';
+const AUTO_ADDED_CHANNEL = 'moni-auto-added';
+const AUTO_ADDED_CATEGORY = 'moni-auto-added';
+/** Undo takes back only the latest add. */
+const AUTO_ADDED_ACTIONS = [{ id: 'undo-auto-added', title: 'Undo' }];
+
 const OWN_PACKAGES = new Set(['com.anonymous.moni', 'com.anonymous.moni.e2e']);
 const MINUS = '−';
 
@@ -163,7 +170,57 @@ function buildOpenAppNotification({ proposalId, merchant, amountMinor, currency,
   };
 }
 
+/**
+ * The day's auto-added transactions with one more, oldest first. A new local day starts the list
+ * over, and a transaction already on it is not counted twice.
+ */
+function addToAutoAddedDigest(digest, item, day) {
+  const items = digest && digest.day === day ? digest.items : [];
+  if (items.some((kept) => kept.transactionId === item.transactionId)) return { day, items };
+  return { day, items: [...items, item] };
+}
+
+/** What the day's adds total, when they are all spending in one currency; null otherwise. */
+function spentTotal(items) {
+  const currency = items[0].currency;
+  if (!items.every((item) => item.type === 'expense' && item.currency === currency)) return null;
+  const sum = items.reduce((total, item) => total + Math.abs(Number(item.amountMinor)), 0);
+  return formatAmount(sum, currency, 'expense');
+}
+
+/**
+ * "Added · GRAB*FOOD · −RM23.40" over its category's budget line for the first add of the day;
+ * "3 added automatically today · −RM58.20" over the latest one after that. Undo takes the latest
+ * back, and a tap opens it, or Activity when there are several.
+ */
+function buildAutoAddedDigestNotification({ digest, categoryName, budgetText }) {
+  const latest = digest.items[digest.items.length - 1];
+  const count = digest.items.length;
+  const shown = `${latest.merchant} · ${formatAmount(latest.amountMinor, latest.currency, latest.type)}`;
+  const total = count > 1 ? spentTotal(digest.items) : null;
+  const note = budgetText || categoryName || null;
+  return {
+    identifier: AUTO_ADDED_IDENTIFIER,
+    channelId: AUTO_ADDED_CHANNEL,
+    title:
+      count === 1
+        ? `Added · ${shown}`
+        : `${count} added automatically today${total ? ` · ${total}` : ''}`,
+    subtitle: null,
+    body: (count === 1 ? [note] : [`Latest: ${shown}`, note]).filter(Boolean).join('\n'),
+    categoryIdentifier: AUTO_ADDED_CATEGORY,
+    actionIds: AUTO_ADDED_ACTIONS.map((action) => action.id),
+    data: { kind: 'auto-added', transactionId: latest.transactionId, count },
+  };
+}
+
 module.exports = {
+  AUTO_ADDED_IDENTIFIER,
+  AUTO_ADDED_CHANNEL,
+  AUTO_ADDED_CATEGORY,
+  AUTO_ADDED_ACTIONS,
+  addToAutoAddedDigest,
+  buildAutoAddedDigestNotification,
   REVIEW_TASK,
   REVIEW_CATEGORY,
   APPROVED_CATEGORY,

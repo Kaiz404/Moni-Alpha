@@ -23,7 +23,10 @@ import {
   captureStatusAfterExtraction,
   markCaptureStatus,
 } from '@/lib/notifications/capture-status';
-import { postReviewNotification } from '@/lib/notifications/review-notification';
+import {
+  postAutoAddedNotification,
+  postReviewNotification,
+} from '@/lib/notifications/review-notification';
 import { proposedTransactions$, transactions$ } from '@/lib/store';
 import { ensureStoreSync, waitForSync } from '@/lib/store/headless-sync';
 
@@ -114,6 +117,12 @@ async function settle(item: ProcessingQueueItem, result: RunExtractionResult): P
     if (result.proposalId && !result.transactionId) {
       await postReviewNotification(result.proposalId).catch((e) => {
         console.error(TAG, 'Review notification not posted:', e);
+      });
+    }
+    // A paired alert's payment was already announced by the capture it folded into.
+    if (result.transactionId && !result.paired) {
+      await postAutoAddedNotification(result.transactionId).catch((e) => {
+        console.error(TAG, 'Added automatically notification not posted:', e);
       });
     }
   }

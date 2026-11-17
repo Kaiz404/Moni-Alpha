@@ -11,7 +11,10 @@ import {
   type NotificationQueueItem,
 } from '@/lib/ai/processing-queue';
 import { readCaptureHealth, sourceHealth } from '@/lib/notifications/capture-health';
-import { postReviewNotification } from '@/lib/notifications/review-notification';
+import {
+  postAutoAddedNotification,
+  postReviewNotification,
+} from '@/lib/notifications/review-notification';
 
 import {
   delivered,
@@ -67,6 +70,7 @@ jest.mock('@/lib/ai/client', () => ({ getAiClient: jest.fn() }));
 jest.mock('@/lib/supabase/client', () => ({ getUserId: async () => 'user-1' }));
 jest.mock('@/lib/notifications/review-notification', () => ({
   postReviewNotification: jest.fn(async () => {}),
+  postAutoAddedNotification: jest.fn(async () => {}),
 }));
 jest.mock('@/lib/store/headless-sync', () => ({
   ensureStoreSync: async () => true,
@@ -336,6 +340,7 @@ describe('an alert the backend could not read, with another alert for the same p
     capture(second);
     await run();
     expect(ledgerRows()).toHaveLength(1);
+    expect(postAutoAddedNotification).not.toHaveBeenCalled();
 
     markProcessing(second.id);
     const extract = backendDownFor();

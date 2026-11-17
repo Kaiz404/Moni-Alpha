@@ -3,6 +3,7 @@ import { router } from 'expo-router';
 import { useEffect } from 'react';
 
 import {
+  autoAddedTargetOf,
   ensureReviewNotificationPermission,
   handleReviewNotificationResponse,
   reviewProposalIdOf,
@@ -11,7 +12,8 @@ import {
 
 /**
  * A tap on the review notification's body opens the deck on that capture, including the tap
- * that launched the app. An action tap while Moni is open runs here; with Moni in the
+ * that launched the app. A tap on the Added automatically digest opens its transaction, or
+ * Activity when it counts several. An action tap while Moni is open runs here; with Moni in the
  * background or killed it runs in the task index.js registers.
  */
 export function ReviewNotificationTaps() {
@@ -24,6 +26,18 @@ export function ReviewNotificationTaps() {
 
   useEffect(() => {
     if (!response) return;
+    const added = autoAddedTargetOf(response);
+    if (added) {
+      Notifications.clearLastNotificationResponse();
+      if (response.actionIdentifier !== Notifications.DEFAULT_ACTION_IDENTIFIER) {
+        void handleReviewNotificationResponse(response);
+      } else if (added.count === 1) {
+        router.push({ pathname: '/transaction/[id]', params: { id: added.transactionId } });
+      } else {
+        router.dismissTo('/activity');
+      }
+      return;
+    }
     const proposalId = reviewProposalIdOf(response);
     if (!proposalId) return;
     Notifications.clearLastNotificationResponse();

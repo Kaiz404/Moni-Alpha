@@ -9,7 +9,9 @@ import { deepStrictEqual, strictEqual } from 'node:assert';
 const require = createRequire(import.meta.url);
 const {
   ACCENT,
+  addToAutoAddedDigest,
   buildApprovedNotification,
+  buildAutoAddedDigestNotification,
   buildAutoAddedNotification,
   buildReviewNotification,
   buildSetAsideNotification,
@@ -113,6 +115,65 @@ check('Not mine and Later say what happened, with Undo', () => {
   const later = buildSetAsideNotification({ proposalId: 'p-grab', outcome: { action: 'later' } });
   strictEqual(later.title, 'Saved for later');
   strictEqual(later.body, 'It waits in Review and does not count yet.');
+});
+
+const added = (transactionId, merchant, amountMinor, type = 'expense', currency = 'MYR') => ({
+  transactionId,
+  merchant,
+  amountMinor,
+  currency,
+  type,
+});
+const oneAdded = addToAutoAddedDigest(null, added('t1', 'GRAB*FOOD', 2340), '2026-10-14');
+const digestOfOne = buildAutoAddedDigestNotification({
+  digest: oneAdded,
+  categoryName: 'Food & Dining',
+  budgetText: 'Food & Dining: RM76 left after this',
+});
+check('the first add of the day reads Added · GRAB*FOOD · −RM23.40 over the budget line', () => {
+  strictEqual(digestOfOne.title, 'Added · GRAB*FOOD · −RM23.40');
+  strictEqual(digestOfOne.body, 'Food & Dining: RM76 left after this');
+  strictEqual(digestOfOne.channelId, 'moni-auto-added');
+  deepStrictEqual(digestOfOne.actionIds, ['undo-auto-added']);
+  deepStrictEqual(digestOfOne.data, { kind: 'auto-added', transactionId: 't1', count: 1 });
+});
+check('with no budget it names the category', () =>
+  strictEqual(
+    buildAutoAddedDigestNotification({ digest: oneAdded, categoryName: 'Food & Dining', budgetText: null }).body,
+    'Food & Dining',
+  ),
+);
+const threeAdded = [added('t2', 'KFC', 1580), added('t3', 'JAYA GROCER', 1900)].reduce(
+  (digest, item) => addToAutoAddedDigest(digest, item, '2026-10-14'),
+  oneAdded,
+);
+const digestOfThree = buildAutoAddedDigestNotification({
+  digest: threeAdded,
+  categoryName: 'Groceries',
+  budgetText: 'Groceries: RM300 left after this',
+});
+check('later adds replace it with the day\'s count and total, the latest underneath', () => {
+  strictEqual(digestOfThree.title, '3 added automatically today · −RM58.20');
+  strictEqual(digestOfThree.body, 'Latest: JAYA GROCER · −RM19.00\nGroceries: RM300 left after this');
+  strictEqual(digestOfThree.identifier, digestOfOne.identifier);
+  deepStrictEqual(digestOfThree.data, { kind: 'auto-added', transactionId: 't3', count: 3 });
+});
+check('a transfer shows unsigned and leaves the total out', () => {
+  const withReload = addToAutoAddedDigest(
+    oneAdded,
+    added('t4', "Touch 'n Go reload", 10000, 'transfer'),
+    '2026-10-14',
+  );
+  const digest = buildAutoAddedDigestNotification({ digest: withReload, categoryName: null, budgetText: null });
+  strictEqual(digest.title, '2 added automatically today');
+  strictEqual(digest.body, "Latest: Touch 'n Go reload · RM100.00");
+});
+check('the same transaction is counted once, and a new day starts over', () => {
+  strictEqual(addToAutoAddedDigest(threeAdded, added('t3', 'JAYA GROCER', 1900), '2026-10-14').items.length, 3);
+  deepStrictEqual(
+    addToAutoAddedDigest(threeAdded, added('t5', 'GRAB*FOOD', 1200), '2026-10-15').items.map((i) => i.transactionId),
+    ['t5'],
+  );
 });
 
 check('the capture listener skips Moni\'s own notifications', () => {

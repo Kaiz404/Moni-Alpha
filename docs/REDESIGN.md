@@ -67,7 +67,7 @@ Values are in `redesign/tokens.md`, words in `redesign/glossary.md`.
 - **Visible affordances:** anything tappable looks tappable; long press and swipes only duplicate visible controls.
 - **First screen:** the key content of every tab root sits above y 744 on a 390 × 844 phone.
 - **No clutter:** no restating sentences, no status chips that repeat a number, no chart readout rows.
-- **Approvals:** AI never writes to the ledger without Approve; vocabulary Approve · Not mine · Later everywhere.
+- **Approvals:** AI writes to the ledger without Approve only for routine alerts, marked Auto and announced by the Added automatically notification on Android; vocabulary Approve · Not mine · Later everywhere.
 
 ## Code gaps (designed but not supported yet)
 

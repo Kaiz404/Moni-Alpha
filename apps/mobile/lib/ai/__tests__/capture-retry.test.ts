@@ -98,6 +98,7 @@ jest.mock('@/lib/ai/proposal-location-cache', () => ({
 }));
 jest.mock('@/lib/notifications/review-notification', () => ({
   postReviewNotification: jest.fn(async () => {}),
+  postAutoAddedNotification: jest.fn(async () => {}),
 }));
 jest.mock('@/lib/store/headless-sync', () => ({
   ensureStoreSync: async () => mockSync.signedIn,
@@ -419,6 +420,8 @@ describe('a capture across a kill', () => {
     await settle();
     expect(liveRows('transactions$').map((row) => row.id)).toEqual([ID]);
     expect(logStatus()).toBe('auto_added');
+    const { postAutoAddedNotification } = jest.requireMock('@/lib/notifications/review-notification');
+    expect(postAutoAddedNotification.mock.calls).toEqual([[ID]]);
     mockExtract.mockClear();
 
     first.queue.markProcessing(ID);

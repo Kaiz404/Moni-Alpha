@@ -14,6 +14,7 @@ The words the redesigned app uses, and the words it never uses. The design canva
 | Recently reviewed, Move back to review | The Review page's list of the last 30 days of Approve and Not mine, and the button on a Not mine row that returns it to the deck. |
 | Don't ask about similar | The checkbox on a capture. Moni then adds similar alerts without asking and marks them Auto. |
 | Auto | The pill on a row Moni added without asking (routine auto-add). |
+| Added automatically | The Android notification that names what Moni added without asking today, with Undo for the latest. |
 | Usual for you, Seen before | The Review card's source-row pill for a merchant the user has filed 3 or more times, or once or twice. Needs a wallet, Same payment and Maybe a duplicate outrank both. |
 | Added, Auto-added, Same payment, Waiting for review, Trying again, Couldn't reach Moni, Ignored, Not linked | What Moni did with an alert. The Capture log shows the ones from a linked app, except Ignored. Ignored and alerts from other apps stay in Debug tools. |
 | Same payment, Counted once | Two alerts or captures for one payment. Moni counts them as one row and keeps both visible, with Undo. The Review card's control is "Same payment". |

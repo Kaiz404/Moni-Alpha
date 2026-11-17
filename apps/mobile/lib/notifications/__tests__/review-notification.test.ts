@@ -2,7 +2,9 @@ import type { Observable } from '@legendapp/state';
 import { Platform } from 'react-native';
 
 import {
+  autoAddedTargetOf,
   handleReviewNotificationTask,
+  postAutoAddedNotification,
   postReviewNotification,
 } from '../review-notification';
 
@@ -12,7 +14,7 @@ jest.mock('expo-crypto', () => ({
 }));
 jest.mock('expo-notifications', () => ({
   DEFAULT_ACTION_IDENTIFIER: 'expo.modules.notifications.actions.DEFAULT',
-  AndroidImportance: { HIGH: 5, DEFAULT: 3 },
+  AndroidImportance: { HIGH: 5, DEFAULT: 3, LOW: 2 },
   AndroidNotificationVisibility: { PRIVATE: 0 },
   setNotificationChannelAsync: jest.fn(async () => null),
   setNotificationCategoryAsync: jest.fn(async () => null),
@@ -133,6 +135,11 @@ describe('review notification', () => {
       'moni-review',
       expect.objectContaining({ lockscreenVisibility: 0 }),
     );
+    expect(notifications.setNotificationChannelAsync).toHaveBeenCalledWith('moni-auto-added', {
+      name: 'Added automatically',
+      importance: 2,
+      lockscreenVisibility: 0,
+    });
 
     const filed = (id: string, merchant: string) => ({
       id,
@@ -220,5 +227,70 @@ describe('review notification', () => {
     await tap('approve', { kind: 'review', proposalId: 'p1' });
     expect(ledger()).toEqual([]);
     expect(lastShown().content).toMatchObject({ title: 'Pick a wallet in Moni' });
+  });
+});
+
+describe('the Added automatically digest', () => {
+  function added(id: string, merchant: string, amount: string) {
+    store.transactions$[id].set({
+      id,
+      user_id: 'user-1',
+      wallet_id: MAYBANK,
+      merchant,
+      description: null,
+      amount,
+      currency: 'MYR',
+      type: 'expense',
+      category_id: FOOD,
+      metadata: { ai_suggested: true },
+      deleted: false,
+    });
+  }
+
+  it('says what Moni added, then counts the day, and Undo takes back only the latest', async () => {
+    jest.setSystemTime(new Date('2026-10-14T04:00:00.000Z'));
+    added('t1', 'GRAB', '12.00');
+    await postAutoAddedNotification('t1');
+    expect(lastShown()).toMatchObject({
+      identifier: 'moni-auto-added',
+      content: {
+        title: 'Added \u00b7 GRAB \u00b7 \u2212RM12.00',
+        body: 'No budget for Food & Dining yet',
+        data: { kind: 'auto-added', transactionId: 't1', count: 1 },
+        categoryIdentifier: 'moni-auto-added',
+      },
+      trigger: { channelId: 'moni-auto-added' },
+    });
+
+    added('t2', 'KFC', '15.80');
+    await postAutoAddedNotification('t2');
+    await postAutoAddedNotification('t2');
+    expect(lastShown().content).toMatchObject({
+      title: '2 added automatically today \u00b7 \u2212RM27.80',
+      body: 'Latest: KFC \u00b7 \u2212RM15.80\nNo budget for Food & Dining yet',
+      data: { kind: 'auto-added', transactionId: 't2', count: 2 },
+    });
+
+    await tap('undo-auto-added', lastShown().content.data);
+    expect(ledger().map((row) => row.id)).toEqual(['t1']);
+    expect(notifications.dismissNotificationAsync).toHaveBeenLastCalledWith('moni-auto-added');
+
+    added('t3', 'MYDIN', '5.00');
+    await postAutoAddedNotification('t3');
+    expect(lastShown().content.title).toBe('2 added automatically today \u00b7 \u2212RM17.00');
+  });
+
+  it('starts the count over on a new day, and a tap opens the one transaction', async () => {
+    jest.setSystemTime(new Date('2026-10-20T04:00:00.000Z'));
+    added('t9', 'GRAB', '9.00');
+    await postAutoAddedNotification('t9');
+    const shown = lastShown();
+    expect(shown.content.title).toBe('Added \u00b7 GRAB \u00b7 \u2212RM9.00');
+    expect(
+      autoAddedTargetOf({
+        actionIdentifier: 'expo.modules.notifications.actions.DEFAULT',
+        notification: { request: { content: { data: shown.content.data } } },
+      } as never),
+    ).toEqual({ transactionId: 't9', count: 1 });
   });
 });
