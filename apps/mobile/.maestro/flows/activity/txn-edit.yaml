@@ -10,7 +10,9 @@ tags:
 - tapOn:
     id: nav.tab.activity
 - tapOn:
-    id: activity.filter.expense
+    id: activity.filter.type
+- tapOn:
+    id: sheet.option.expense
 - extendedWaitUntil:
     visible:
       id: 'activity\.transaction\..*'

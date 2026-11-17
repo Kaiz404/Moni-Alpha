@@ -9,6 +9,7 @@ import { BalanceSheet } from '@/components/sheets/balance-sheet';
 import { CategoryPickerSheet } from '@/components/sheets/category-picker-sheet';
 import { ConfirmSheet } from '@/components/sheets/confirm-sheet';
 import {
+  ActivityKindSheet,
   CurrencySheet,
   DateSheet,
   NotificationAppSheet,
@@ -80,6 +81,14 @@ function renderSheet(sheet: OpenSheet, frame: SheetFrameProps) {
     case 'transactionType':
       return (
         <TransactionTypeSheet
+          {...frame}
+          request={sheet.request}
+          onPick={sheet.settle}
+        />
+      );
+    case 'activityKind':
+      return (
+        <ActivityKindSheet
           {...frame}
           request={sheet.request}
           onPick={sheet.settle}

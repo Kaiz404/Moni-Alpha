@@ -32,6 +32,7 @@ import {
   currencySymbol,
   formatMoney,
 } from '@/lib/finance/format-money';
+import { ACTIVITY_KIND_LABELS, ACTIVITY_KINDS } from '@/lib/finance/activity-filter';
 import { useMainCurrency } from '@/lib/finance/main-currency';
 import { walletBalanceMinor$ } from '@/lib/finance/selectors';
 import { getCachedAppIcon, saveAppIcon } from '@/lib/notifications/app-icon-cache';
@@ -202,6 +203,7 @@ type KindSheetProps<
     | 'currency'
     | 'walletType'
     | 'transactionType'
+    | 'activityKind'
     | 'date'
     | 'notificationApp'
     | 'person',
@@ -382,6 +384,39 @@ export function TransactionTypeSheet({
       selectedId={request.selected}
       onPick={(id) => {
         const picked = TRANSACTION_TYPES.find((type) => type === id);
+        if (picked) onPick(picked);
+      }}
+    />
+  );
+}
+
+export function ActivityKindSheet({
+  request,
+  onPick,
+  ...frame
+}: KindSheetProps<'activityKind'>) {
+  const tokens = useThemeTokens();
+  const options: PickerOption[] = ACTIVITY_KINDS.map((kind) => ({
+    id: kind,
+    name: ACTIVITY_KIND_LABELS[kind],
+    leading: (
+      <Bubble>
+        <IconSymbol
+          name={kind === 'all' ? 'format-list-bulleted' : resolveTransactionIcon(null, kind)}
+          size={20}
+          color={tokens.foreground}
+        />
+      </Bubble>
+    ),
+  }));
+  return (
+    <OptionPickerSheet
+      {...frame}
+      title="Type"
+      options={options}
+      selectedId={request.selected}
+      onPick={(id) => {
+        const picked = ACTIVITY_KINDS.find((kind) => kind === id);
         if (picked) onPick(picked);
       }}
     />

@@ -5,7 +5,7 @@ import { useDeferredValue, useMemo, useRef, useState } from 'react';
 import { ScrollView, View } from 'react-native';
 import { useReducedMotion } from 'react-native-reanimated';
 
-import { FilterChips } from '@/components/activity/filter-chips';
+import { FilterRow } from '@/components/activity/filter-row';
 import { FlowCard } from '@/components/activity/flow-card';
 import { PagedTransactions } from '@/components/activity/paged-transactions';
 import { ReviewStrip } from '@/components/activity/review-strip';
@@ -21,6 +21,7 @@ import { Text } from '@/components/ui/text';
 import { useAuth } from '@/lib/auth/auth-context';
 import { toLocalDateInput } from '@/lib/dates/local-date-input';
 import {
+  ACTIVITY_KIND_LABELS,
   filterActivity,
   localDay,
   withinRange,
@@ -135,6 +136,11 @@ export default function ActivityScreen() {
       ? lookups.walletNames[walletId]
       : null;
 
+  const pickKind = async () => {
+    const picked = await openSheet({ kind: 'activityKind', selected: kind });
+    if (picked) setKind(picked);
+  };
+
   const pickWallet = async () => {
     const picked = await openSheet({
       kind: 'wallet',
@@ -236,10 +242,12 @@ export default function ActivityScreen() {
               onPickRange={() => void pickRange()}
               onClearRange={() => setRange(null)}
             />
-            <FilterChips
-              kind={kind}
-              onKind={setKind}
-              walletName={walletName}
+            <FilterRow
+              kindLabel={ACTIVITY_KIND_LABELS[kind]}
+              kindActive={kind !== 'all'}
+              onKind={() => void pickKind()}
+              walletLabel={walletName ?? 'All wallets'}
+              walletActive={walletName !== null}
               onWallet={() => void pickWallet()}
             />
             <View

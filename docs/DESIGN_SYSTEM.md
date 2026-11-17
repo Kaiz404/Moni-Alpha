@@ -123,7 +123,7 @@ v2 (N1). Four tabs and the + in the centre cell: Home · Activity · ( + ) · Bu
 | Tab          | Job                                                      | Core contents                                                                                                                             |
 | ------------ | -------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
 | **Home**     | The present: what matters today and what needs attention | Net worth, the spent card, the ask box, the review block, recent activity. The avatar pushes Profile; the Moni button pushes Moni chat.   |
-| **Activity** | What happened                                            | The Spending / Balance chart, search, type and wallet chips, day groups with the hold menu, the To review capsule, and the Moni button.   |
+| **Activity** | What happened                                            | The Spending / Balance chart, search, Type and Wallet pickers, day groups with the hold menu, the To review capsule, and the Moni button.   |
 | **Budget**   | The month against the plan                               | Month chart and calendar, budgets, bills.                                                                                                 |
 | **Debts**    | Money between people                                     | Net position, people, record and settle a debt.                                                                                           |
 

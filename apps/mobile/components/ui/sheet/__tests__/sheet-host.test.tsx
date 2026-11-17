@@ -149,6 +149,26 @@ describe('SheetHost', () => {
     await expect(answer).resolves.toEqual({ walletId: null });
   });
 
+  it('lists the four Activity types, marks the current one, and resolves to the tapped one', async () => {
+    render(<SheetHost />);
+    let answer!: Promise<string | null>;
+    act(() => {
+      answer = openSheet({ kind: 'activityKind', selected: 'income' });
+    });
+
+    expect(screen.getAllByRole('radio').map((row) => row.props.accessibilityLabel)).toEqual([
+      'All types',
+      'Expenses',
+      'Income',
+      'Transfers',
+    ]);
+    expect(screen.getByTestId('sheet.option.income')).toBeSelected();
+    fireEvent.press(screen.getByTestId('sheet.option.transfer'));
+
+    await act(() => new Promise((resolve) => setTimeout(resolve, 0)));
+    await expect(answer).resolves.toBe('transfer');
+  });
+
   it('closes the category sheet before running a Not counted in budgets choice', async () => {
     render(<SheetHost />);
     const onTransfer = jest.fn();

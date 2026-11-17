@@ -7,6 +7,15 @@ import type { FinanceTransaction } from '@/lib/finance/types';
 
 export type ActivityKind = 'all' | FinanceTransaction['type'];
 
+/** The Type picker's choices, in the order its sheet lists them. */
+export const ACTIVITY_KIND_LABELS: Readonly<Record<ActivityKind, string>> = {
+  all: 'All types',
+  expense: 'Expenses',
+  income: 'Income',
+  transfer: 'Transfers',
+};
+export const ACTIVITY_KINDS: readonly ActivityKind[] = ['all', 'expense', 'income', 'transfer'];
+
 /** Local `YYYY-MM-DD`, both ends included. Where one is expected, null means all time. */
 export type ActivityRange = { from: string; to: string };
 

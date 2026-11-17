@@ -1,5 +1,5 @@
-# A1 Activity tab: the search bar on top of the list, the chart and its dates, the wallet filter
-# and its chip, and the pager.
+# A1 Activity tab: the search bar on top of the list, the chart and its dates, the Type and
+# Wallet pickers, and the pager.
 # Run: scripts/device/run-flows.sh .maestro/flows/activity/activity.yaml
 appId: com.anonymous.moni.e2e
 name: A1 Activity tab
@@ -47,17 +47,27 @@ tags:
 - tapOn: "Touch 'n Go eWallet"
 - assertVisible:
     id: activity.filter.wallet
-    text: "Touch 'n Go"
+    text: "Wallets, Touch 'n Go"
 - takeScreenshot: a1-wallet-chip
 - tapOn:
     id: activity.filter.wallet
 - tapOn: All wallets
 
 - tapOn:
-    id: activity.filter.transfer
+    id: activity.filter.type
+- assertVisible:
+    id: sheet.option.transfer
+- takeScreenshot: a1-type-sheet
+- tapOn:
+    id: sheet.option.transfer
+- assertVisible:
+    id: activity.filter.type
+    text: 'Type, Transfers'
 - takeScreenshot: a1-transfers
 - tapOn:
-    id: activity.filter.all
+    id: activity.filter.type
+- tapOn:
+    id: sheet.option.all
 
 - scrollUntilVisible:
     element:

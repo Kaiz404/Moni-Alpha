@@ -149,11 +149,34 @@ describe('Activity pages', () => {
     expect(scroll.scrollTo).toHaveBeenCalledWith({ y: PAGE_HEADER_HEIGHT + 312, animated: true });
   });
 
-  it('goes back to page 1 when a filter changes', () => {
+  it('goes back to page 1 when a filter changes', async () => {
     render(<ActivityScreen />);
     fireEvent.press(screen.getByTestId('activity.pager.older'));
-    fireEvent.press(screen.getByTestId('activity.filter.expense'));
+    fireEvent.press(screen.getByTestId('activity.filter.type'));
+    await settleSheet('expense');
     expect(screen.getByTestId('activity.pager.page')).toHaveTextContent('Page 1 of 3');
+  });
+});
+
+describe('Activity type', () => {
+  it('opens the type sheet on the current type and shows the picked one', async () => {
+    render(<ActivityScreen />);
+    const trigger = screen.getByTestId('activity.filter.type');
+    expect(trigger).toHaveTextContent('All types');
+    fireEvent.press(trigger);
+    expect(getOpenSheet()?.request).toEqual({ kind: 'activityKind', selected: 'all' });
+    await settleSheet('income');
+    expect(screen.getByTestId('activity.filter.type')).toHaveTextContent('Income');
+    expect(shown('salary')).toBe(true);
+    expect(shown('r1')).toBe(false);
+  });
+
+  it('keeps the type when the sheet is dismissed', async () => {
+    render(<ActivityScreen />);
+    fireEvent.press(screen.getByTestId('activity.filter.type'));
+    await settleSheet(null);
+    expect(screen.getByTestId('activity.filter.type')).toHaveTextContent('All types');
+    expect(shown('r1')).toBe(true);
   });
 });
 
@@ -224,9 +247,10 @@ describe('Activity chart', () => {
     expect(screen.getByText('RM4,200.00')).toBeTruthy();
   });
 
-  it('hides the chart and keeps the date control when nothing is left to draw', () => {
+  it('hides the chart and keeps the date control when nothing is left to draw', async () => {
     render(<ActivityScreen />);
-    fireEvent.press(screen.getByTestId('activity.filter.transfer'));
+    fireEvent.press(screen.getByTestId('activity.filter.type'));
+    await settleSheet('transfer');
     expect(screen.queryByTestId('activity.chart')).toBeNull();
     expect(capsule()).toHaveTextContent('All time');
     expect(shown('reload')).toBe(true);

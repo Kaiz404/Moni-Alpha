@@ -14,7 +14,9 @@ tags:
       id: 'activity\.transaction\..*'
     timeout: 15000
 - tapOn:
-    id: activity.filter.expense
+    id: activity.filter.type
+- tapOn:
+    id: sheet.option.expense
 - longPressOn:
     id: 'activity\.transaction\..*'
     index: 0

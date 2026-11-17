@@ -5,7 +5,7 @@ import type { MinorAmount, TransactionType } from '@repo/types';
 import type { WalletKind } from '@/constants/wallet-form';
 import type { PlacePick } from '@/lib/capture/entry-place';
 import type { PastPlaceInput } from '@/lib/capture/place-search';
-import type { ActivityRange } from '@/lib/finance/activity-filter';
+import type { ActivityKind, ActivityRange } from '@/lib/finance/activity-filter';
 import type { TransactionLocationSnapshot } from '@/lib/transactions/prefetch-location';
 /** A category tile with this month's spending in the sheet's currency. */
 export type CategoryTile = {
@@ -68,6 +68,8 @@ type Sheets = {
   currency: { request: { selected: string }; result: string };
   walletType: { request: { selected: WalletKind }; result: WalletKind };
   transactionType: { request: { selected: TransactionType | null }; result: TransactionType };
+  /** Activity's Type filter. */
+  activityKind: { request: { selected: ActivityKind }; result: ActivityKind };
   notificationApp: {
     request: { selected: string | null; selectedLabel?: string | null };
     result: { app: NotificationApp | null };
