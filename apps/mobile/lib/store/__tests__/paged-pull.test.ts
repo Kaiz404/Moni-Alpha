@@ -44,7 +44,7 @@ function mockQuery(table: string) {
     then: (resolve: any, reject: any) => {
       const count = mockServer.requests.push(`${table} ${window?.join('-') ?? 'all'}`);
       if (mockServer.failOnRequest === count) {
-        return Promise.resolve({ data: null, error: { message: 'Network request failed' } }).then(
+        return Promise.resolve({ data: null, error: { message: 'TypeError: Network request failed' } }).then(
           resolve,
           reject,
         );
@@ -172,7 +172,7 @@ describe('pulling a table larger than the server returns in one response', () =>
     ]);
   });
 
-  it('keeps what the phone holds when a later page fails', async () => {
+  it('keeps what the phone holds when a later page fails offline, then pulls again', async () => {
     mockServer.tables.set('transactions', rows(1500));
     await launch();
     expect(heldIds()).toHaveLength(1500);
@@ -182,5 +182,9 @@ describe('pulling a table larger than the server returns in one response', () =>
     await syncState(transactions$).get().sync?.();
     await settle();
     expect(heldIds()).toHaveLength(1500);
+
+    await new Promise((resolve) => setTimeout(resolve, 2_500));
+    await settle();
+    expect(heldIds()).toHaveLength(2500);
   });
 });

@@ -32,7 +32,34 @@ configureSyncedSupabase({
   fieldDeleted: 'deleted',
 });
 
-type CreateParams = { onError: (error: Error, params: Record<string, unknown>) => void };
+type CreateParams = {
+  onError: (error: Error, params: Record<string, unknown>) => void;
+  cancelRetry?: boolean;
+};
+
+/**
+ * Offline, or the request never got an answer. The browser says "Failed to fetch"; React Native
+ * says "Network request failed", which supabase-js prefixes with the error's name.
+ */
+function isNetworkError(message: string | undefined): boolean {
+  return !!message && /Failed to fetch|Network request failed/.test(message);
+}
+
+/** Only a request that never reached Supabase is worth trying again; a refusal stays one. */
+const RETRY = { infinite: true, backoff: 'exponential', delay: 1_000, maxDelay: 5 * 60_000 } as const;
+
+/** Stops Legend-State retrying a write Supabase refused rather than one that never arrived. */
+function failWrite(params: CreateParams, message: string, source: string, input: unknown) {
+  if (!isNetworkError(message)) params.cancelRetry = true;
+  params.onError(new Error(message), {
+    setParams: params,
+    source,
+    type: 'set',
+    retry: params,
+    input,
+  });
+  return { data: undefined };
+}
 
 /**
  * A pull never brings a soft-deleted row to this phone, so a restore can create a row whose id the
@@ -41,16 +68,7 @@ type CreateParams = { onError: (error: Error, params: Record<string, unknown>) =
  */
 function createOrRevive(collection: string) {
   return async (input: Record<string, unknown>, params: CreateParams) => {
-    const fail = (message: string) => {
-      params.onError(new Error(message), {
-        setParams: params,
-        source: 'create',
-        type: 'set',
-        retry: params,
-        input,
-      });
-      return { data: undefined };
-    };
+    const fail = (message: string) => failWrite(params, message, 'create', input);
     if (collection === 'categories' || collection === 'wallets') {
       input = { ...input, color: legacyColor(input.color as string | null | undefined) };
     }
@@ -87,16 +105,7 @@ export function updateWithCurrentColor(collection: string) {
       .update(row)
       .eq('id', input.id as string)
       .select();
-    if (updated.error) {
-      params.onError(new Error(updated.error.message), {
-        setParams: params,
-        source: 'update',
-        type: 'set',
-        retry: params,
-        input,
-      });
-      return { data: undefined };
-    }
+    if (updated.error) return failWrite(params, updated.error.message, 'update', input);
     return { data: updated.data?.[0] };
   };
 }
@@ -110,7 +119,8 @@ const PULL_PAGE = 1000;
  * than asked may just mean the server's cap is lower than `PULL_PAGE`.
  */
 function pagedList(collection: string) {
-  return async ({ lastSync }: { lastSync?: number }) => {
+  return async (params: { lastSync?: number; cancelRetry?: boolean }) => {
+    const { lastSync } = params;
     const data: Record<string, unknown>[] = [];
     while (true) {
       const changed = lastSync
@@ -120,9 +130,12 @@ function pagedList(collection: string) {
             .gt('updated_at', new Date(lastSync).toISOString())
         : supabase.from(collection).select();
       const page = await changed.order('id').range(data.length, data.length + PULL_PAGE - 1);
-      // The plugin's own list rethrows this one so its retry can run.
-      if (page.error?.message?.includes('Failed to fetch')) throw page.error;
-      if (page.error) return { data: null, error: page.error };
+      // Thrown, so Legend-State's retry runs it again.
+      if (isNetworkError(page.error?.message)) throw page.error;
+      if (page.error) {
+        params.cancelRetry = true;
+        return { data: null, error: page.error };
+      }
       if (!page.data.length) return { data, error: null };
       data.push(...page.data);
     }
@@ -139,6 +152,7 @@ function syncTable(collection: string, extra?: Record<string, unknown>) {
       ? { update: updateWithCurrentColor(collection) as never }
       : {}),
     realtime: true,
+    retry: RETRY,
     persist: { name: collection, ...persistOptions },
     waitFor: waitForAuth,
     waitForSet: waitForAuth,

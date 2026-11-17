@@ -15,11 +15,14 @@ type Row = Record<string, unknown>;
 const mockServer = {
   tables: new Map<string, Row[]>(),
   calls: [] as string[],
+  offline: false,
 };
 
 function mockQuery(table: string, op: string) {
   const rows = mockServer.tables.get(table);
-  const result = rows
+  const result = mockServer.offline
+    ? { data: null, error: { message: 'TypeError: Network request failed' } }
+    : rows
     ? { data: op === 'probe' ? rows.slice(0, 1) : rows, error: null }
     : {
         data: null,
@@ -58,7 +61,7 @@ jest.mock('@/lib/supabase/client', () => ({
     from: (table: string) => ({
       select: () => mockQuery(table, 'list'),
       insert: (row: Row) => {
-        mockServer.tables.get(table)?.push(row);
+        if (!mockServer.offline) mockServer.tables.get(table)?.push(row);
         return mockQuery(table, 'insert');
       },
       update: () => mockQuery(table, 'update'),
@@ -196,6 +199,28 @@ describe('waiting for Supabase to accept a capture', () => {
     await opening;
 
     expect(await saved('after-open', 1000)).toBe(true);
+  });
+
+  it('tries a write again once the network is back, and a refused one only once', async () => {
+    const errors = jest.spyOn(console, 'error').mockImplementation(() => {});
+    mockServer.tables.set('transactions', []);
+    await enableStoreSync({ fullReset: true });
+    mockServer.calls.length = 0;
+    mockServer.offline = true;
+    transactions$['offline-row'].set(row('offline-row'));
+    await settle();
+    expect(callsFor('transactions')).toEqual(['insert transactions']);
+
+    mockServer.offline = false;
+    expect(await saved('offline-row', 3_000)).toBe(true);
+    expect(mockServer.tables.get('transactions')?.map((r) => r.id)).toEqual(['offline-row']);
+
+    mockServer.tables.delete('transactions');
+    mockServer.calls.length = 0;
+    transactions$['refused-once'].set(row('refused-once'));
+    await new Promise((resolve) => setTimeout(resolve, 2_500));
+    expect(callsFor('transactions')).toEqual(['insert transactions']);
+    errors.mockRestore();
   });
 
   it('is false while Supabase refuses the row, and other rows do not wait on it', async () => {
