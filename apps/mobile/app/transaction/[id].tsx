@@ -444,7 +444,6 @@ function Detail({ transaction: tx }: { transaction: FinanceTransaction }) {
           {
             name: 'place',
             title: label?.name ?? 'Where you paid',
-            meta: [label?.area, 'open map'].filter(Boolean).join(' · '),
             icon: 'map-marker-outline',
             trailing: 'chevron-right',
             bubble: <MapThumb />,

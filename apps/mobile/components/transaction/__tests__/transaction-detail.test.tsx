@@ -27,7 +27,7 @@ const mockRow: FinanceTransaction = {
   transactionDate: new Date(2026, 10, 16, 20, 48).toISOString(),
   locationLatitude: null,
   locationLongitude: null,
-  locationName: null,
+  locationName: 'Shell Bangsar, Jalan Maarof, Bangsar, Kuala Lumpur',
   placeId: null,
   placeCoordsAt: null,
   autoAdded: false,
@@ -126,6 +126,12 @@ describe('Transaction detail', () => {
       cancelLabel: 'Keep it',
     });
     act(() => dismissSheet());
+  });
+
+  it('names the place with no area or open map line under it', () => {
+    render(<TransactionDetailScreen />);
+    expect(screen.getByTestId('txn.link.place')).toHaveProp('accessibilityLabel', 'Shell Bangsar');
+    expect(screen.queryByText(/open map/)).toBeNull();
   });
 
   it('does not save a note that did not change', async () => {
