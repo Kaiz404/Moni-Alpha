@@ -314,6 +314,7 @@ async function persistProposal(
           },
         },
         'notification',
+        { id: UUID.test(proposalId) ? proposalId : undefined },
       );
       trace(logger, 'creator', 'auto-added-transfer', { transactionId: transaction.id });
       return {

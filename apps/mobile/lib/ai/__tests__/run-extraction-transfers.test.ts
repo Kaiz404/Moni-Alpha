@@ -107,6 +107,16 @@ describe('a reload funded from a bank', () => {
     });
   });
 
+  it('takes the capture id, so a run again after a kill finds the row and adds no second', async () => {
+    const reload = bankReload();
+    const first = await run(reload);
+    const again = await run(reload);
+
+    expect(first.transactionId).toBe(reload.id);
+    expect(again).toMatchObject({ created: true, transactionId: reload.id });
+    expect(ledgerRows().map((row) => row.id)).toEqual([reload.id]);
+  });
+
   it('waits in Review as a transfer from the e-wallet alert alone, asking which wallet paid', async () => {
     const result = await run(tngReload());
 
