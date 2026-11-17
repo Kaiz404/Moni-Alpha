@@ -81,6 +81,7 @@ jest.mock('@/lib/store', () => {
 });
 jest.mock('@/lib/supabase/client', () => ({ getUserId: async () => 'user-1' }));
 jest.mock('@/lib/supabase/wallets', () => ({
+  walletsArePulled: () => true,
   getWallets: async () => [
     { id: 'w1', name: 'Maybank', currency: 'MYR', notificationPackage: PACKAGE, isActive: true },
   ],

@@ -38,7 +38,7 @@ Capture entry points feeding the **extraction queue** (silent — not shown in C
 
 ### When the backend is unavailable
 
-A capture is never lost because the backend is down. `unavailable`, a non-2xx response, a network failure, a 100s timeout, a store write that throws, and a row Supabase has not accepted within 10s all leave the item queued. The processor turns store sync on itself before the first item, because with the app killed nothing else has. Only `skipped` is terminal: one-time codes, non-transactions, no linked wallet, and a receipt image that can't be read.
+A capture is never lost because the backend is down. `unavailable`, a non-2xx response, a network failure, a 100s timeout, a store write that throws, and a row Supabase has not accepted within 10s all leave the item queued. The processor turns store sync on itself before the first item, because with the app killed nothing else has. Only `skipped` is terminal: one-time codes, non-transactions, no linked wallet in a wallet list pulled from Supabase (a stale local list retries instead), and a receipt image that can't be read.
 
 | Rule | Value |
 | --- | --- |

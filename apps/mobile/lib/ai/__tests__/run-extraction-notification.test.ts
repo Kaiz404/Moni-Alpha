@@ -2,11 +2,13 @@ import { runExtraction } from '../run-extraction';
 import type { NotificationQueueItem } from '../processing-queue';
 
 const mockExtract = jest.fn(async () => ({ status: 'skipped', reason: 'stub' }));
+const mockWallets = { pulled: true };
 
 jest.mock('@/lib/ai/client', () => ({
   getAiClient: () => ({ extractFromNotification: mockExtract }),
 }));
 jest.mock('@/lib/supabase/wallets', () => ({
+  walletsArePulled: () => mockWallets.pulled,
   getWallets: async () => [
     { id: 'w1', name: 'Maybank', notificationPackage: 'com.maybank2u.life', isActive: true },
     {
@@ -65,7 +67,10 @@ function queued(notification: Record<string, unknown>): NotificationQueueItem {
   };
 }
 
-beforeEach(() => mockExtract.mockClear());
+beforeEach(() => {
+  mockExtract.mockClear();
+  mockWallets.pulled = true;
+});
 
 describe('an alert from an app Moni has never heard of', () => {
   const alert = (packageName: string) =>
@@ -155,6 +160,14 @@ describe('an alert from an app Moni has never heard of', () => {
       skipped: true,
       reason: 'No wallet linked to notification app',
     });
+  });
+
+  it('waits for a wallet list Supabase has sent before it calls the app unlinked', async () => {
+    mockWallets.pulled = false;
+    const result = await runExtraction(alert('com.example.otherbank'));
+
+    expect(mockExtract).not.toHaveBeenCalled();
+    expect(result).toEqual({ created: false, skipped: false, reason: 'Wallet list not synced yet' });
   });
 });
 

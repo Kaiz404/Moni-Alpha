@@ -1,3 +1,4 @@
+import { syncState } from '@legendapp/state';
 import { assertMigrated, wallets$, transactions$ } from '@/lib/store';
 import { getRecordValues, isActive, patchRow } from '@/lib/store/helpers';
 import { getUserId } from '@/lib/supabase/client';
@@ -56,6 +57,15 @@ function mapWalletRow(w: WalletRow, currentBalanceMinor?: MinorAmount) {
     createdAt: w.created_at ?? w.updated_at ?? '',
     updatedAt: w.updated_at ?? w.created_at ?? '',
   };
+}
+
+/**
+ * Whether this process holds the wallet list as Supabase last sent it. Before the first pull, or
+ * after one that failed, the phone may not know about a wallet linked elsewhere.
+ */
+export function walletsArePulled(): boolean {
+  const state$ = syncState(wallets$);
+  return state$.isLoaded.peek() && !state$.error.peek();
 }
 
 export async function getWallets() {

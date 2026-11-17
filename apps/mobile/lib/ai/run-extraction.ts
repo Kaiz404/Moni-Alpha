@@ -4,7 +4,7 @@
  */
 import type { CreateProposedTransaction } from '@repo/types';
 import { decimalToMinor } from '@repo/types';
-import { getWallets } from '@/lib/supabase/wallets';
+import { getWallets, walletsArePulled } from '@/lib/supabase/wallets';
 import { getCategories } from '@/lib/supabase/categories';
 import { createTransaction, getTransactions, transactionExists } from '@/lib/supabase/transactions';
 import {
@@ -536,11 +536,10 @@ export async function runExtraction(
         );
 
         if (candidates.length === 0) {
-          return {
-            created: false,
-            skipped: true,
-            reason: 'No wallet linked to notification app',
-          };
+          // Final only against a list fresh from Supabase: the link may be newer than the phone's copy.
+          return walletsArePulled()
+            ? { created: false, skipped: true, reason: 'No wallet linked to notification app' }
+            : { created: false, skipped: false, reason: 'Wallet list not synced yet' };
         }
 
         const result = await client.extractFromNotification({
