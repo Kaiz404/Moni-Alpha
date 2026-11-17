@@ -57,7 +57,37 @@ describe('one-time codes never leave the phone', () => {
   });
 });
 
+// Not yet in testdata/one_time_codes.json: the Go copy in one_time_code.go needs the footer rule first.
+const withSafetyFooter: Case[] = [
+  {
+    name: 'card ending beside a PIN footer',
+    title: 'Maybank',
+    text: 'RM50.00 debited from acct ending 1234 at KEDAI ABC. Never share your PIN.',
+  },
+  {
+    name: 'a year beside a PIN footer',
+    title: 'CIMB',
+    text: 'You paid RM12.00 to KEDAI ABC on 17-Nov-2026. Never share your PIN.',
+  },
+  {
+    name: 'a hotline beside a password footer',
+    title: 'RHB',
+    text: 'Received RM100.00 from ALI. Call 1300 88 6688 if this was not you. Do not reveal your password.',
+  },
+  {
+    name: 'a card footer naming several details',
+    title: 'Public Bank',
+    text: 'PBB: RM230.00 spent at AEON 0412. Never share your card details, PIN or password.',
+  },
+];
+
 describe('transaction alerts still pass', () => {
+  it.each(withSafetyFooter.map((c) => [c.name, c] as const))('%s', (_name, alert) => {
+    expect(isOneTimeCode(alert)).toBe(false);
+    expect(passesNotificationTransactionPrefilter(alert)).toBe(true);
+    expect(withoutOneTimeCode(alert)).toBe(alert);
+  });
+
   it.each(genuine.map((c) => [c.name, c] as const))('%s', (_name, alert) => {
     expect(isOneTimeCode(alert)).toBe(false);
     expect(passesNotificationTransactionPrefilter(alert)).toBe(true);

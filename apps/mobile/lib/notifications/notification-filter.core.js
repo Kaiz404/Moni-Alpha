@@ -14,6 +14,11 @@ const CODE_WORD =
 const CODE_VALUE = '(?:\\d{4,8}|\\d{3}[ -]\\d{3})';
 const AFTER_CODE_WORD = '(?:\\s+(?:is|ialah|adalah|anda)|\\s*[:=-])*\\s*';
 
+const SHARE_VERB =
+  '(?:share|reveal|disclose|give|tell|send|kongsi(?:kan)?|berkongsi|dedah(?:kan)?|mendedahkan|beri(?:kan)?)';
+const CREDENTIAL =
+  '(?:pin|passwords?|kata laluan|(?:card|account|personal|banking|bank|login|log-in) (?:details|number|info(?:rmation)?)|username|user ?id|cvv|cvc)\\b';
+
 // "Do not share your OTP 482910" reads as advice until the value arrives.
 const CODE_WORD_WITH_VALUE = new RegExp(
   `\\b(?:${CODE_WORD})${AFTER_CODE_WORD}${CODE_VALUE}\\b`,
@@ -27,6 +32,12 @@ const NOT_A_CODE = [
     'gi',
   ),
   new RegExp(`\\b(?:asking|asks?|requesting)\\s+(?:for\\s+)?your\\s+(?:${CODE_WORD})\\b`, 'gi'),
+  // A payment alert's footer: "Never share your PIN", "Do not reveal your password". Without it, a
+  // card ending, a date or a hotline number beside the warning reads as the code it warns about.
+  new RegExp(
+    `\\b(?:never|not|don'?t|dont|jangan)\\s+(?:\\w+\\s+){0,4}?${SHARE_VERB}\\s+(?:(?:your|any|the|anda|sebarang|or|and|atau|dan|&)[\\s,/]+)*${CREDENTIAL}(?:(?:\\s*[,/&]\\s*|\\s+(?:or|and|atau|dan)\\s+)${CREDENTIAL})*`,
+    'gi',
+  ),
   // A payee ("at TAC Trading", "Payment of RM45.00 to TAC", "TAC Cafe") and terms ("TAC apply").
   /\b(?:at|to|from|kepada|dari|daripada|merchant|payee|beneficiary|penerima)\s*:?\s+(?:the\s+)?(?:otp|tac)\b/gi,
   /\b(?:otp|tac)\s+(?:sdn|bhd|berhad|plt|ltd|inc|cafe|restaurant|restoran|kopitiam|trading|holdings?|enterprise|resources|services|solutions|group|mart|store|shop|apply|applies)\b/gi,
