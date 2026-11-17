@@ -274,8 +274,26 @@ function runOneTimeCreateRepair(): void {
   legendMMKV.set(SYNC_CREATE_REPAIR_KEY, true);
 }
 
+let storeSyncing: Promise<void> | null = null;
+
+/**
+ * Resolves once the pull in flight, if any, has finished. A full pull replaces each table, so a
+ * row written while it runs can vanish before it uploads.
+ */
+export function whenStoreSynced(): Promise<void> {
+  return storeSyncing ?? Promise.resolve();
+}
+
 /** Re-enable sync and pull from Supabase (after sign-in or when roots become observed). */
-export async function enableStoreSync(options: { fullReset?: boolean } = {}): Promise<void> {
+export function enableStoreSync(options: { fullReset?: boolean } = {}): Promise<void> {
+  const run = pullAll(options).finally(() => {
+    if (storeSyncing === run) storeSyncing = null;
+  });
+  storeSyncing = run;
+  return run;
+}
+
+async function pullAll(options: { fullReset?: boolean }): Promise<void> {
   if (!authReady$.get()) return;
 
   runOneTimeCreateRepair();

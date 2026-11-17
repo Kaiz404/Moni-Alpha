@@ -1,6 +1,13 @@
 import { observe } from '@legendapp/state';
-import { ALL_STORE_OBSERVABLES, autoAddRules$, enableStoreSync, wallets$ } from '@/lib/store';
+import {
+  ALL_STORE_OBSERVABLES,
+  autoAddRules$,
+  enableStoreSync,
+  transactions$,
+  wallets$,
+} from '@/lib/store';
 import { authReady$ } from '@/lib/store/auth-sync';
+import { ensureStoreSync, waitForSync } from '@/lib/store/headless-sync';
 import { createAutoAddRule, listAutoAddRules } from '@/lib/supabase/auto-add-rules';
 
 type Row = Record<string, unknown>;
@@ -151,5 +158,58 @@ describe('a synced table whose migration is not on the server yet', () => {
     await settle();
     expect(mockServer.calls).not.toContain('probe auto_add_rules');
     expect(errors).not.toHaveBeenCalled();
+  });
+});
+
+describe('waiting for Supabase to accept a capture', () => {
+  const row = (id: string) => ({ id, user_id: 'user-1', amount_minor: 1200, deleted: false });
+  const saved = (id: string, timeoutMs = 300) =>
+    waitForSync([transactions$], { rowIds: [id], timeoutMs });
+
+  beforeAll(() => {
+    ALL_STORE_OBSERVABLES.forEach((obs$) => observe(() => obs$.get()));
+    authReady$.set(true);
+  });
+
+  it('is true once the insert lands', async () => {
+    mockServer.tables.set('transactions', []);
+    await enableStoreSync({ fullReset: true });
+    transactions$['accepted-row'].set(row('accepted-row'));
+
+    expect(await saved('accepted-row', 1000)).toBe(true);
+    expect(mockServer.tables.get('transactions')?.map((r) => r.id)).toEqual(['accepted-row']);
+  });
+
+  it('is false for a row a full pull dropped before it uploaded', async () => {
+    mockServer.tables.set('transactions', []);
+    transactions$['dropped-row'].set(row('dropped-row'));
+    await enableStoreSync({ fullReset: true });
+
+    expect(await saved('dropped-row')).toBe(false);
+  });
+
+  it('holds a headless write until the pull the app runs as it opens has finished', async () => {
+    mockServer.tables.set('transactions', []);
+    const opening = enableStoreSync({ fullReset: true });
+    await ensureStoreSync();
+    transactions$['after-open'].set(row('after-open'));
+    await opening;
+
+    expect(await saved('after-open', 1000)).toBe(true);
+  });
+
+  it('is false while Supabase refuses the row, and other rows do not wait on it', async () => {
+    const errors = jest.spyOn(console, 'error').mockImplementation(() => {});
+    mockServer.tables.set('transactions', []);
+    await enableStoreSync({ fullReset: true });
+    transactions$['accepted-row'].set(row('accepted-row'));
+    expect(await saved('accepted-row', 1000)).toBe(true);
+    mockServer.tables.delete('transactions');
+    transactions$['refused-row'].set(row('refused-row'));
+    await settle();
+
+    expect(await saved('refused-row')).toBe(false);
+    expect(await saved('accepted-row')).toBe(true);
+    errors.mockRestore();
   });
 });

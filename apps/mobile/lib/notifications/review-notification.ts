@@ -2,7 +2,6 @@
  * The Android review notification (R2) on expo-notifications. Swapping the library touches
  * only this file: payloads live in review-notification.core.js, decisions in review-actions.
  */
-import { observe, syncState, when, type Observable } from '@legendapp/state';
 import type { MinorAmount, ProposedTransaction } from '@repo/types';
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
@@ -23,17 +22,14 @@ import {
   type ReviewOutcome,
 } from '@/lib/proposals/review-actions';
 import {
-  ALL_STORE_OBSERVABLES,
   autoAddRules$,
   categories$,
-  enableStoreSync,
   proposedTransactions$,
   transactions$,
   wallets$,
 } from '@/lib/store';
-import { authReady$ } from '@/lib/store/auth-sync';
+import { withStore } from '@/lib/store/headless-sync';
 import { getRecordValues } from '@/lib/store/helpers';
-import { supabase } from '@/lib/supabase/client';
 import { listMerchantAliases } from '@/lib/supabase/merchant-aliases';
 import { listAwaitingReview } from '@/lib/supabase/proposed-transactions';
 import { getDefaultWalletId } from '@/lib/wallets/default-wallet';
@@ -78,8 +74,6 @@ type ReviewData =
 
 /** A Later row snoozed past any real date still counts as unreviewed. */
 const END_OF_TIME = new Date(8.64e15);
-/** Bounds the wait for Supabase to accept the writes before the headless task ends. */
-const SYNC_WAIT_MS = 10_000;
 const FIRST_SHOWN_KEY = 'first-review-alert-shown';
 const storage = createMMKV({ id: 'moni-review-notification' });
 
@@ -210,35 +204,6 @@ export async function postReviewNotification(proposalId: string): Promise<void> 
   }
 }
 
-async function waitForSync(tables: Observable<unknown>[]): Promise<void> {
-  const synced = Promise.all(
-    tables.map((table$) => when(() => (syncState(table$).numPendingSets.get() ?? 0) === 0)),
-  );
-  await Promise.race([synced, new Promise((resolve) => setTimeout(resolve, SYNC_WAIT_MS))]);
-}
-
-/**
- * With the app killed, nothing has turned sync on: the React tree's StoreSyncActivator does
- * that. Turn it on here for a signed-in user, run the decision, and wait for Supabase.
- */
-async function withStore(run: () => Promise<void>): Promise<void> {
-  if (authReady$.peek()) {
-    await run();
-    return;
-  }
-  const { data } = await supabase.auth.getSession();
-  if (!data.session?.user) return;
-  const disposers = ALL_STORE_OBSERVABLES.map((obs$) => observe(() => obs$.get()));
-  authReady$.set(true);
-  try {
-    await enableStoreSync();
-    await run();
-    await waitForSync([transactions$, proposedTransactions$, autoAddRules$]);
-  } finally {
-    disposers.forEach((dispose) => dispose());
-  }
-}
-
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 /** Shows a decision with its Undo, then clears it after APPROVED_MS unless Undo brought the capture back. */
@@ -322,7 +287,9 @@ export async function handleReviewNotificationResponse(
     return;
   }
   try {
-    await withStore(() => act(response.actionIdentifier, data));
+    await withStore([transactions$, proposedTransactions$, autoAddRules$], () =>
+      act(response.actionIdentifier, data),
+    );
   } catch (error) {
     console.error('[ReviewNotif] action failed:', error instanceof Error ? error.message : error);
   }

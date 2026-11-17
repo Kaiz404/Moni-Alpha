@@ -24,6 +24,8 @@ import {
   markCaptureStatus,
 } from '@/lib/notifications/capture-status';
 import { postReviewNotification } from '@/lib/notifications/review-notification';
+import { proposedTransactions$, transactions$ } from '@/lib/store';
+import { ensureStoreSync, waitForSync } from '@/lib/store/headless-sync';
 
 const TAG = '[BGProc]';
 const NOTIF_TAG = '[NotifProc]';
@@ -67,9 +69,28 @@ const BACKGROUND_OPTIONS = {
   },
 };
 
-/** Records what became of an attempt. Returns the wait before the next run, if it has to retry. */
+/**
+ * Whether Supabase accepted the row this attempt wrote. A paired capture names no row of its own,
+ * so it waits for both tables.
+ */
+function isSaved(result: RunExtractionResult): Promise<boolean> {
+  const rowIds = [result.transactionId, result.proposalId].filter((id): id is string => !!id);
+  return waitForSync([transactions$, proposedTransactions$], {
+    rowIds: rowIds.length ? rowIds : undefined,
+  });
+}
+
+/**
+ * Records what became of an attempt. Returns the wait before the next run, if it has to retry.
+ * A row only on this phone is not done: the process may be frozen or killed before it uploads,
+ * and the retry finds the row and waits for it again.
+ */
 async function settle(item: ProcessingQueueItem, result: RunExtractionResult): Promise<number | null> {
   if (!result.created && !result.skipped) return markRetry(item.id).retryInMs;
+  if (result.created && !(await isSaved(result))) {
+    console.log(TAG, `\u{2502}  Not saved to Supabase yet, will retry id=${item.id}`);
+    return markRetry(item.id).retryInMs;
+  }
 
   if (result.created) markDone(item.id);
   else markError(item.id);
@@ -98,6 +119,10 @@ async function processingTask(taskData?: { delay?: number; foreground?: boolean 
 
   let retryInMs: number | null = null;
   try {
+    if (!(await ensureStoreSync())) {
+      console.log(TAG, '\u{2514}\u{2500}\u{2500} Signed out, leaving the queue for the next sign-in');
+      return;
+    }
     let processedCount = 0;
     const queueStart = Date.now();
 

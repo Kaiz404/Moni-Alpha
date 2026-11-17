@@ -49,6 +49,7 @@ jest.mock('@/lib/store', () => {
     ...tables,
     ALL_STORE_OBSERVABLES: Object.values(tables),
     enableStoreSync: jest.fn(async () => {}),
+    whenStoreSynced: async () => {},
     assertMigrated: () => {},
     isMigrated: () => true,
   };

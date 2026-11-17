@@ -34,6 +34,7 @@ const mockStores = new Map<string, Map<string, string>>();
 const mockTables: Record<string, Observable<Record<string, Record<string, unknown>>>> = {};
 let mockRules: Record<string, unknown>[] = [];
 const mockService = { running: false };
+const mockSync = { signedIn: true, saved: true };
 
 jest.mock('react-native-mmkv', () => ({
   createMMKV: ({ id }: { id: string }) => {
@@ -91,6 +92,10 @@ jest.mock('@/lib/ai/proposal-location-cache', () => ({
 }));
 jest.mock('@/lib/notifications/review-notification', () => ({
   postReviewNotification: jest.fn(async () => {}),
+}));
+jest.mock('@/lib/store/headless-sync', () => ({
+  ensureStoreSync: async () => mockSync.signedIn,
+  waitForSync: async () => mockSync.saved,
 }));
 
 type Queue = typeof import('../processing-queue');
@@ -162,6 +167,8 @@ beforeEach(() => {
   mockExtract.mockReset();
   mockStores.clear();
   mockRules = [];
+  mockSync.signedIn = true;
+  mockSync.saved = true;
   mockTables.transactions$?.set({});
   mockTables.proposedTransactions$?.set({});
 });
@@ -361,6 +368,47 @@ describe('a capture across a kill', () => {
     expect(queueState(second.queue)).toEqual({ status: 'done', attempts: 0 });
     expect(liveRows('transactions$').map((row) => row.id)).toEqual([ID]);
     expect(logStatus()).toBe('auto_added');
+  });
+});
+
+describe('a capture written while Supabase is out of reach', () => {
+  it('stays queued and unannounced until Supabase accepts the proposal, then is done once', async () => {
+    const { queue, processor } = launch();
+    const { postReviewNotification } = jest.requireMock('@/lib/notifications/review-notification');
+    const item = alert();
+    logged(item);
+    queue.enqueue(item);
+    mockExtract.mockResolvedValue(READ);
+    mockSync.saved = false;
+
+    await processor.startBackgroundProcessor();
+    await settle();
+    expect(liveRows('proposedTransactions$').map((row) => row.id)).toEqual([ID]);
+    expect(queueState(queue)).toEqual({ status: 'pending', attempts: 1 });
+    expect(logStatus()).toBe('trying_again');
+    expect(postReviewNotification).not.toHaveBeenCalled();
+
+    mockSync.saved = true;
+    await jest.advanceTimersByTimeAsync(31_000);
+    await settle();
+    expect(mockExtract).toHaveBeenCalledTimes(1);
+    expect(queueState(queue)).toEqual({ status: 'done', attempts: 1 });
+    expect(logStatus()).toBe('waiting_for_review');
+    expect(postReviewNotification).toHaveBeenCalledTimes(1);
+    expect(liveRows('proposedTransactions$')).toHaveLength(1);
+  });
+
+  it('leaves the queue alone while no one is signed in', async () => {
+    const { queue, processor } = launch();
+    queue.enqueue(alert());
+    mockExtract.mockResolvedValue(READ);
+    mockSync.signedIn = false;
+
+    await processor.startBackgroundProcessor();
+    await settle();
+    expect(mockExtract).not.toHaveBeenCalled();
+    expect(queueState(queue)).toEqual({ status: 'pending', attempts: 0 });
+    expect(processor.isBackgroundProcessorRunning()).toBe(false);
   });
 });
 

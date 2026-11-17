@@ -67,6 +67,10 @@ jest.mock('@/lib/supabase/client', () => ({ getUserId: async () => 'user-1' }));
 jest.mock('@/lib/notifications/review-notification', () => ({
   postReviewNotification: jest.fn(async () => {}),
 }));
+jest.mock('@/lib/store/headless-sync', () => ({
+  ensureStoreSync: async () => true,
+  waitForSync: async () => true,
+}));
 jest.mock('@/lib/store', () => {
   const { observable } = jest.requireActual('@legendapp/state');
   return {
