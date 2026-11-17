@@ -12,6 +12,7 @@ import { SearchField } from '@/components/ui/search-field';
 import {
   Sheet,
   SheetFlatList,
+  SHEET_ROWS_STYLE,
   type SheetFrameProps,
 } from '@/components/ui/sheet/sheet';
 import { Text } from '@/components/ui/text';
@@ -155,7 +156,7 @@ type OptionPickerSheetProps = SheetFrameProps & {
   footer?: ReactNode;
 };
 
-/** A Paper list card of option rows with a radio mark. Tapping a row saves and closes. */
+/** Option rows with a radio mark, straight on the sheet. Tapping a row saves and closes. */
 export function OptionPickerSheet({
   title,
   note,
@@ -199,18 +200,13 @@ export function OptionPickerSheet({
         <SheetFlatList
           data={shown}
           keyExtractor={(option) => option.id}
-          style={size === 'fit' ? { flexGrow: 0 } : undefined}
-          contentContainerClassName={
-            shown.length === 0
-              ? undefined
-              : 'overflow-hidden rounded-card bg-card'
-          }
+          style={size === 'fit' ? [SHEET_ROWS_STYLE, { flexGrow: 0 }] : SHEET_ROWS_STYLE}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
           initialNumToRender={12}
           ListFooterComponent={footer ? <>{footer}</> : undefined}
           ListEmptyComponent={
-            <View className="rounded-tile border-[1.5px] border-dashed border-hairline p-4">
+            <View className="mx-[18px] rounded-tile border-[1.5px] border-dashed border-hairline p-4">
               <Text className="text-center text-[15px] font-display-semibold text-foreground">
                 Nothing matches “{query.trim()}”.
               </Text>
@@ -364,8 +360,7 @@ export function WalletsSheet({
         <SheetFlatList
           data={options}
           keyExtractor={(option) => option.id}
-          style={{ flexGrow: 0 }}
-          contentContainerClassName="overflow-hidden rounded-card bg-card"
+          style={[SHEET_ROWS_STYLE, { flexGrow: 0 }]}
           showsVerticalScrollIndicator={false}
           renderItem={({ item: option }) => (
             <OptionRow

@@ -39,7 +39,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { scheduleOnRN } from 'react-native-worklets';
 
 import { IconSymbol } from '@/components/ui/icon-symbol';
-import { Press } from '@/components/ui/press';
+import { Press, PressRows } from '@/components/ui/press';
 import { Text } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import {
@@ -117,6 +117,17 @@ function useSheetScrollProps() {
  * The scroll view for a sheet's body. It stops at its top instead of stretching, and lets the
  * sheet know where it is, so a drag that starts with it at the top pulls the sheet down.
  */
+/** Rows sit straight on the sheet, never in a card. Pulling them out by their own 18 padding lines their text up with the title. */
+export const SHEET_ROWS_STYLE = { marginHorizontal: -18 } as const;
+
+export function SheetRows({ children }: { children: ReactNode }) {
+  return (
+    <View style={SHEET_ROWS_STYLE}>
+      <PressRows>{children}</PressRows>
+    </View>
+  );
+}
+
 export function SheetScrollView(props: ScrollViewProps) {
   const { sheet, onScroll } = useSheetScrollProps();
   const list = (

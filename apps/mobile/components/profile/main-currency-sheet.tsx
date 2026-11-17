@@ -8,9 +8,8 @@ import {
   type ProfileTint,
 } from '@/components/profile/profile-row';
 import { IconSymbol } from '@/components/ui/icon-symbol';
-import { ListCard } from '@/components/ui/list-card';
 import { Press } from '@/components/ui/press';
-import { Sheet } from '@/components/ui/sheet/sheet';
+import { Sheet, SheetRows } from '@/components/ui/sheet/sheet';
 import { Text } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { useAuth } from '@/lib/auth/auth-context';
@@ -100,7 +99,7 @@ export function MainCurrencySheet({
         closeLabel="Close"
       >
         <View className="gap-3.5">
-          <ListCard>
+          <SheetRows>
             {held.map((entry, index) => {
               const picked = entry.currency === selected;
               const meta = `${entry.wallets} ${entry.wallets === 1 ? 'wallet' : 'wallets'} · ${formatMoney(entry.totalMinor, entry.currency)}`;
@@ -145,7 +144,7 @@ export function MainCurrencySheet({
                 </Press>
               );
             })}
-          </ListCard>
+          </SheetRows>
           <View className="flex-row gap-2">
             <IconSymbol
               name="information-outline"

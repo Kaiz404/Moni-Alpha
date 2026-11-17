@@ -87,6 +87,7 @@ tags:
 - assertVisible:
     id: sheet.option.transfer
 - takeScreenshot: a1-type-sheet
+- waitForAnimationToEnd
 - tapOn:
     id: sheet.option.transfer
 - assertVisible:
