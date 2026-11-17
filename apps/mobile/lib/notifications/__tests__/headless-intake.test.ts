@@ -2,6 +2,10 @@ import { AppRegistry, Platform } from 'react-native';
 import { createMMKV } from 'react-native-mmkv';
 
 import { startBackgroundProcessor } from '@/lib/ai/background-processor';
+import {
+  captureHeadlessLocationSnapshot,
+  type LocationSnapshot,
+} from '@/lib/location/location-snapshot';
 import { getAll, pruneCompleted } from '@/lib/ai/processing-queue';
 import { writeLinkedPackages } from '@/lib/notifications/linked-packages-cache.core';
 
@@ -35,10 +39,18 @@ jest.mock('@/lib/ai/background-processor', () => ({
   startBackgroundProcessor: jest.fn(async () => {}),
 }));
 jest.mock('@/lib/location/location-snapshot', () => ({
-  captureLocationSnapshot: jest.fn(async () => null),
+  captureHeadlessLocationSnapshot: jest.fn(async () => null),
 }));
 
-type Payload = { app: string; title: string; text: string; time: string; icon?: string };
+type Payload = {
+  app: string;
+  title: string;
+  text: string;
+  time: string;
+  icon?: string;
+  iconLarge?: string;
+  image?: string;
+};
 type Entry = Record<string, unknown> & { id: string; status: string };
 
 const MAYBANK = 'com.maybank2u.life';
@@ -127,12 +139,44 @@ describe('the headless task', () => {
     expect(startBackgroundProcessor).not.toHaveBeenCalled();
   });
 
-  it('keeps no icon in the queue, where a capture can wait for days', async () => {
-    await deliver(payment('1000'));
+  it('keeps no icon or image in the queue or the log, which every capture rewrites', async () => {
+    await deliver({
+      ...payment('1000'),
+      iconLarge: 'data:image/png;base64,BBBB',
+      image: 'data:image/png;base64,CCCC',
+    });
 
     const [item] = getAll();
     expect(item!.type === 'notification' && item!.notification.text).toBe(ALERT);
     expect(JSON.stringify(item)).not.toContain('base64');
+    expect(notifications.getString(LOG_KEY)).not.toContain('base64');
+  });
+
+  it('queues the capture before its location arrives, then attaches the location', async () => {
+    let arrive!: (snapshot: LocationSnapshot) => void;
+    jest
+      .mocked(captureHeadlessLocationSnapshot)
+      .mockImplementationOnce(() => new Promise((resolve) => (arrive = resolve)));
+    const snapshot = {
+      latitude: 3.1,
+      longitude: 101.6,
+      name: null,
+      capturedAt: '2026-11-18T00:00:00.000Z',
+    };
+
+    const delivered = deliver(payment('1000'));
+    await new Promise((resolve) => setImmediate(resolve));
+
+    expect(getAll().map((item) => [item.id, item.locationSnapshot])).toEqual([
+      [log()[0]!.id, null],
+    ]);
+    expect(startBackgroundProcessor).not.toHaveBeenCalled();
+
+    arrive(snapshot);
+    await delivered;
+
+    expect(getAll()[0]!.locationSnapshot).toEqual(snapshot);
+    expect(startBackgroundProcessor).toHaveBeenCalledTimes(1);
   });
 
   it('blanks a one-time code, keeps it Ignored, and never queues it', async () => {
@@ -164,21 +208,22 @@ describe('the headless task', () => {
     expect(getAll().map((item) => item.id)).toEqual([first!.id]);
   });
 
-  it.each([['damaged', '[{"id":'], ['not a list', '{"id":"x"}']])(
-    'still queues and logs a payment when the stored log is %s',
-    async (_kind, stored) => {
-      jest.spyOn(console, 'error').mockImplementation(() => {});
-      notifications.set(LOG_KEY, stored);
+  it.each([
+    ['damaged', '[{"id":'],
+    ['not a list', '{"id":"x"}'],
+  ])('still queues and logs a payment when the stored log is %s', async (_kind, stored) => {
+    jest.spyOn(console, 'error').mockImplementation(() => {});
+    notifications.set(LOG_KEY, stored);
 
-      await deliver(payment('1000'));
+    await deliver(payment('1000'));
 
-      expect(log().map((entry) => entry.status)).toEqual(['waiting_for_review']);
-      expect(getAll().map((item) => item.id)).toEqual([log()[0]!.id]);
-    },
-  );
+    expect(log().map((entry) => entry.status)).toEqual(['waiting_for_review']);
+    expect(getAll().map((item) => item.id)).toEqual([log()[0]!.id]);
+  });
 
   it('keeps every capture in the queue past the 50 the log holds', async () => {
-    for (let time = 1; time <= 60; time += 1) await deliver(payment(String(time), `${ALERT} ${time}`));
+    for (let time = 1; time <= 60; time += 1)
+      await deliver(payment(String(time), `${ALERT} ${time}`));
 
     expect(log()).toHaveLength(50);
     expect(getAll()).toHaveLength(60);

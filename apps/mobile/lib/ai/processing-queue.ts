@@ -104,6 +104,15 @@ export function enqueue(item: ProcessingQueueItem) {
   writeQueue(evict([...readQueue(), item]));
 }
 
+/** A capture is queued before its location is known, so the location arrives after. */
+export function attachLocation(id: string, locationSnapshot: LocationSnapshot) {
+  const queue = readQueue();
+  const item = queue.find((i) => i.id === id);
+  if (!item) return;
+  item.locationSnapshot = locationSnapshot;
+  writeQueue(queue);
+}
+
 /** The next pending item, without removing it: fewest failed attempts, then oldest. */
 export function peekPending(): ProcessingQueueItem | null {
   const pending = readQueue().filter((i) => i.status === 'pending');

@@ -7,6 +7,40 @@ export type LocationSnapshot = {
   capturedAt: string;
 };
 
+/** Android stops the capture task after 15 s and may freeze the process before then. */
+export const HEADLESS_LOCATION_TIMEOUT_MS = 3000;
+const LAST_KNOWN_MAX_AGE_MS = 5 * 60_000;
+
+async function headlessPosition(): Promise<LocationSnapshot | null> {
+  const permission = await Location.getForegroundPermissionsAsync();
+  if (permission.status !== 'granted') return null;
+  const position =
+    (await Location.getLastKnownPositionAsync({ maxAge: LAST_KNOWN_MAX_AGE_MS })) ??
+    (await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced }));
+  return {
+    latitude: position.coords.latitude,
+    longitude: position.coords.longitude,
+    name: null,
+    capturedAt: new Date().toISOString(),
+  };
+}
+
+/**
+ * Where the phone is for a capture with no screen up: it never asks for permission, never waits on
+ * the network for a place name, and gives up after `HEADLESS_LOCATION_TIMEOUT_MS`.
+ */
+export async function captureHeadlessLocationSnapshot(): Promise<LocationSnapshot | null> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const timeout = new Promise<null>((resolve) => {
+    timer = setTimeout(() => resolve(null), HEADLESS_LOCATION_TIMEOUT_MS);
+  });
+  try {
+    return await Promise.race([headlessPosition().catch(() => null), timeout]);
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 export async function captureLocationSnapshot(): Promise<LocationSnapshot | null> {
   try {
     const permission = await Location.requestForegroundPermissionsAsync();

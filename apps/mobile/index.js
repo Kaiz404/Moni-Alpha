@@ -56,9 +56,10 @@ if (Platform.OS === 'android') {
       const { isOwnNotification } = require('./lib/notifications/review-notification.core');
 
       const notificationStorage = createMMKV({ id: 'moni-notifications' });
-      const parsed =
-        typeof notification === 'string' ? JSON.parse(notification) : notification;
-      const withPackage = withoutOneTimeCode(enrichNotificationPackage(parsed));
+      const parsed = typeof notification === 'string' ? JSON.parse(notification) : notification;
+      // Images stay out of the log and the queue, which every capture rewrites in full.
+      const { icon: _icon, iconLarge: _iconLarge, image: _image, ...text } = parsed;
+      const withPackage = withoutOneTimeCode(enrichNotificationPackage(text));
       if (isOwnNotification(withPackage.packageName)) return;
       const prefilterPassed = passesNotificationTransactionPrefilter(withPackage);
       const packageLinked = isPackageLinked(withPackage.packageName);
@@ -79,14 +80,25 @@ if (Platform.OS === 'android') {
         status: captureStatusAtIntake({ prefilterPassed, packageLinked, repeated }),
       };
 
-      // Always store in the full notifications list for the UI
+      const queueEligible = prefilterPassed && packageLinked && !repeated;
+      // Queued before anything slow, so a process Android stops early still keeps the capture.
+      if (queueEligible) {
+        require('./lib/ai/processing-queue').enqueue({
+          id: enriched.id,
+          type: 'notification',
+          notification: enriched,
+          createdAt: enriched.receivedAt,
+          status: 'pending',
+          locationSnapshot: null,
+        });
+      }
+
       appendToList(notificationStorage, ALL_NOTIFICATIONS_KEY, enriched, MAX_STORED);
       recordHeard(notificationStorage, {
         packageName: enriched.packageName,
         linked: packageLinked,
         at: enriched.receivedAt,
       });
-      const queueEligible = prefilterPassed && packageLinked && !repeated;
       console.log(
         '[NotifCapture] stored',
         enriched.packageName ?? enriched.app ?? 'unknown',
@@ -99,32 +111,20 @@ if (Platform.OS === 'android') {
               : 'repeat',
       );
 
-      // Queue only linked-app notifications that pass the prefilter
       if (queueEligible) {
-        const { captureLocationSnapshot } = require('./lib/location/location-snapshot');
-        const { enqueue } = require('./lib/ai/processing-queue');
-        const { startBackgroundProcessor } = require('./lib/ai/background-processor');
-
-        let locationSnapshot = null;
         try {
           if (isLocationRecordedForPackage(enriched.packageName)) {
-            locationSnapshot = await captureLocationSnapshot();
+            const { captureHeadlessLocationSnapshot } = require('./lib/location/location-snapshot');
+            const locationSnapshot = await captureHeadlessLocationSnapshot();
+            if (locationSnapshot) {
+              require('./lib/ai/processing-queue').attachLocation(enriched.id, locationSnapshot);
+            }
           }
-        } catch {
-          // Location is best-effort in headless context (no UI for permission prompts).
+        } catch (e) {
+          console.error('[NotifCapture] location skipped:', e?.message ?? e);
         }
 
-        // The icons stay out: a capture can wait here for days, next to a hundred others.
-        const { icon: _icon, image: _image, ...notification } = enriched;
-        enqueue({
-          id: enriched.id,
-          type: 'notification',
-          notification,
-          createdAt: enriched.receivedAt,
-          status: 'pending',
-          locationSnapshot,
-        });
-
+        const { startBackgroundProcessor } = require('./lib/ai/background-processor');
         // Kick off processing immediately from headless context so notification
         // extraction runs even when the app UI is not open. A new capture is also
         // a moment to retry the ones still waiting.
