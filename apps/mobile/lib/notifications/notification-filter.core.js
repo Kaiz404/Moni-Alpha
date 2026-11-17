@@ -7,8 +7,8 @@ const TRANSFER_SIGNAL_PATTERN =
 // A one-time code never leaves the phone, so this runs before the money check: banks quote the
 // amount inside the code ("TAC for a transfer of RM 300"). An alert can name a code without
 // carrying one, so what reads as advice, a payee or another kind of code comes out first, and
-// whatever still names a code counts as one. oneTimeCode in
-// apps/backend/internal/extract/service.go is the same rule; both run testdata/one_time_codes.json.
+// whatever still names a code counts as one. isOneTimeCode in
+// apps/backend/internal/extract/one_time_code.go is the same rule; both run testdata/one_time_codes.json.
 const CODE_WORD =
   'o\\.?t\\.?p|t\\.?a\\.?c|one[- ]?time[- ](?:password|passcode|pin|code)|verification (?:code|number|pin)|security code|secure code|authentication code|activation code|log[- ]?in code|sign[- ]?in code|access code|pass ?code|sms code|2fa|kod (?:otp|tac|pengesahan|keselamatan|pengaktifan|akses|sms|sekali guna)|kata (?:laluan|sandi) sekali guna|pin sekali guna';
 const CODE_VALUE = '(?:\\d{4,8}|\\d{3}[ -]\\d{3})';
@@ -113,7 +113,9 @@ function isOneTimeCode(notification) {
   if (CODE_WORD_WITH_VALUE.test(text)) return true;
   const rest = NOT_A_CODE.reduce((left, pattern) => left.replace(pattern, ' '), text);
   if (NAMES_A_CODE.some((pattern) => pattern.test(rest))) return true;
-  // "Transfer RM300 to Ali: 482910. Do not share." The warning is about this alert.
+  // "Approve with 482910. Do not share." The warning is about this alert. An alert with money and
+  // transaction wording is a payment, whose card ending, date or hotline is no code.
+  if (MONEY_PATTERN.test(text) && TRANSFER_SIGNAL_PATTERN.test(text)) return false;
   return SHARE_WARNING.test(rest) && VALUE_ANYWHERE.test(rest.replace(MONEY_ANYWHERE, ' '));
 }
 

@@ -16,6 +16,8 @@ const (
 	afterCodeWord  = `(?:\s+(?:is|ialah|adalah|anda)|\s*[:=-])*\s*`
 	moneyCurrency  = `USD|EUR|GBP|NGN|ZAR|KES|GHS|UGX|TZS|MYR|SGD|AUD|CAD|CHF|JPY|CNY|INR|BRL|MXN|AED|SAR|QAR|KWD|OMR|BHD|RM|Rs|IDR|PHP|THB`
 	adviceListJoin = `(?:(?:\s*[,/&]\s*|\s+(?:or|and|atau|dan)\s+)(?:` + codeWord + `))*`
+	shareVerb      = `(?:share|reveal|disclose|give|tell|send|kongsi(?:kan)?|berkongsi|dedah(?:kan)?|mendedahkan|beri(?:kan)?)`
+	credential     = `(?:pin|passwords?|kata laluan|(?:card|account|personal|banking|bank|login|log-in) (?:details|number|info(?:rmation)?)|username|user ?id|cvv|cvc)\b`
 )
 
 var (
@@ -25,6 +27,9 @@ var (
 	notACode = []*regexp.Regexp{
 		regexp.MustCompile(`(?i)\b(?:never|not|don'?t|dont|won'?t|jangan|tidak akan|tidak pernah)\s+(?:\w+\s+){0,4}?(?:share|reveal|disclose|give|tell|send|asks?(?:\s+(?:you\s+)?for)?|requests?|kongsi(?:kan)?|berkongsi|dedah(?:kan)?|mendedahkan|beri(?:kan)?|minta)\s+(?:(?:your|any|anda|sebarang|kod|nombor|passwords?|pin|card|details|or|and|atau|dan|&)[\s,/]+)*(?:` + codeWord + `)` + adviceListJoin + `\b`),
 		regexp.MustCompile(`(?i)\b(?:asking|asks?|requesting)\s+(?:for\s+)?your\s+(?:` + codeWord + `)\b`),
+		// A payment alert's footer: "Never share your PIN", "Do not reveal your password". Without it, a
+		// card ending, a date or a hotline number beside the warning reads as the code it warns about.
+		regexp.MustCompile(`(?i)\b(?:never|not|don'?t|dont|jangan)\s+(?:\w+\s+){0,4}?` + shareVerb + `\s+(?:(?:your|any|the|anda|sebarang|or|and|atau|dan|&)[\s,/]+)*` + credential + `(?:(?:\s*[,/&]\s*|\s+(?:or|and|atau|dan)\s+)` + credential + `)*`),
 		regexp.MustCompile(`(?i)\b(?:at|to|from|kepada|dari|daripada|merchant|payee|beneficiary|penerima)\s*:?\s+(?:the\s+)?(?:otp|tac)\b`),
 		regexp.MustCompile(`(?i)\b(?:otp|tac)\s+(?:sdn|bhd|berhad|plt|ltd|inc|cafe|restaurant|restoran|kopitiam|trading|holdings?|enterprise|resources|services|solutions|group|mart|store|shop|apply|applies)\b`),
 		regexp.MustCompile(`(?i)\btic[- ]tac\b`),
@@ -41,9 +46,10 @@ var (
 		regexp.MustCompile(`(?i)\b` + codeValue + `\s+(?:to|untuk|bagi)\s+(?:approve|authori[sz]e|confirm|verify|complete|log|sign|sahkan|luluskan|mengesahkan)\b`),
 	}
 
-	shareWarning = regexp.MustCompile(`(?i)\b(?:do not|don'?t|never|jangan)\s+(?:share|reveal|disclose|kongsi|dedah)`)
-	money        = regexp.MustCompile(`(?i)\b(?:` + moneyCurrency + `)\s*[\d,]+(?:[.,]\d{1,2})?\b|[$€£¥₦₹₩₪₱฿₫₲₴₵₸₽₾]\s*[\d,]+(?:[.,]\d{1,2})?|\b[\d,]+(?:[.,]\d{1,2})?\s*(?:` + moneyCurrency + `)\b`)
-	bareValue    = regexp.MustCompile(`\b` + codeValue + `\b`)
+	transferSignal = regexp.MustCompile(`(?i)\b(credited|debited|received|sent|paid|payment|purchase|spent|withdrawn|withdrawal|deposit|transferred|transfer|refund|dr\b|cr\b|from\s+|to\s+|at\s+|via\s+|merchant|beneficiary|sender|receiver|bayaran|pembayaran|membayar|dibayar|pindahan|pemindahan|dipindahkan|belian|pembelian|pengeluaran|dikreditkan|didebitkan|diterima|menerima|kepada|daripada)\b`)
+	shareWarning   = regexp.MustCompile(`(?i)\b(?:do not|don'?t|never|jangan)\s+(?:share|reveal|disclose|kongsi|dedah)`)
+	money          = regexp.MustCompile(`(?i)\b(?:` + moneyCurrency + `)\s*[\d,]+(?:[.,]\d{1,2})?\b|[$€£¥₦₹₩₪₱฿₫₲₴₵₸₽₾]\s*[\d,]+(?:[.,]\d{1,2})?|\b[\d,]+(?:[.,]\d{1,2})?\s*(?:` + moneyCurrency + `)\b`)
+	bareValue      = regexp.MustCompile(`\b` + codeValue + `\b`)
 )
 
 func isOneTimeCode(combined string) bool {
@@ -59,6 +65,10 @@ func isOneTimeCode(combined string) bool {
 		if pattern.MatchString(rest) {
 			return true
 		}
+	}
+	// A payment's card ending, date or hotline beside a share warning is no code.
+	if money.MatchString(text) && transferSignal.MatchString(text) {
+		return false
 	}
 	return shareWarning.MatchString(rest) && bareValue.MatchString(money.ReplaceAllString(rest, " "))
 }

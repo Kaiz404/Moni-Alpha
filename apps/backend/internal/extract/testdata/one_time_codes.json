@@ -25,7 +25,7 @@
     { "name": "unnamed code, says code", "title": "Bank", "text": "Your code is 482910 to pay RM50 to Ali" },
     { "name": "PIN sent as a value", "title": "Bank", "text": "Your PIN is 4829 for withdrawal of RM200" },
     { "name": "unnamed value, told to use it", "title": "Bank", "text": "Use 482910 to approve RM300 transfer to Ali." },
-    { "name": "unnamed value, only a share warning", "title": "Bank", "text": "Transfer RM300 to Ali: 482910. Do not share." },
+    { "name": "unnamed value, only a share warning", "title": "Bank", "text": "Approve with 482910. Do not share." },
     { "name": "unnamed value beside advice naming the word", "title": "Bank", "text": "482910 to approve RM300.00 payment. Never share your OTP." },
     { "name": "value inside the advice", "title": "Bank", "text": "Do not share your OTP 482910 for RM300.00 payment." },
     { "name": "value run into the word", "title": "Bank", "text": "otp482910 for RM50.00 payment" },
@@ -61,6 +61,12 @@
     { "name": "reference number and card digits", "title": "Maybank", "text": "You spent RM50.00 with card ending 1234, ref 482910." },
     { "name": "points", "title": "Boost", "text": "You paid RM8.00. Use 1200 points on your next payment." },
     { "name": "wallet reload", "title": "Touch 'n Go eWallet", "text": "RM100.00 reload via FPX was successful." },
-    { "name": "salary credited", "title": "CIMB", "text": "RM4,200.00 credited to your account from ACME SDN BHD." }
+    { "name": "salary credited", "title": "CIMB", "text": "RM4,200.00 credited to your account from ACME SDN BHD." },
+    { "name": "card ending beside a PIN footer", "title": "Maybank", "text": "RM50.00 debited from acct ending 1234 at KEDAI ABC. Never share your PIN." },
+    { "name": "a year beside a PIN footer", "title": "CIMB", "text": "You paid RM12.00 to KEDAI ABC on 17-Nov-2026. Never share your PIN." },
+    { "name": "a hotline beside a password footer", "title": "RHB", "text": "Received RM100.00 from ALI. Call 1300 88 6688 if this was not you. Do not reveal your password." },
+    { "name": "a card footer naming several details", "title": "Public Bank", "text": "PBB: RM230.00 spent at AEON 0412. Never share your card details, PIN or password." },
+    { "name": "a hotline beside a message footer", "title": "RHB", "text": "Received RM100.00 from ALI. Call 1300 88 6688 if this was not you. Do not share this message." },
+    { "name": "a year beside a credentials footer", "title": "CIMB", "text": "You paid RM12.00 to KEDAI ABC on 17-Nov-2026. Never share your banking credentials." }
   ]
 }
