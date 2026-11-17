@@ -1,4 +1,4 @@
-import { View } from 'react-native';
+import { ScrollView } from 'react-native';
 import Animated, { FadeIn, FadeOut, LinearTransition } from 'react-native-reanimated';
 
 import { IconSymbol } from '@/components/ui/icon-symbol';
@@ -33,10 +33,7 @@ function FilterTrigger({
   const tokens = useThemeTokens();
   const ink = active ? tokens.primaryForeground : tokens.foreground;
   return (
-    <Animated.View
-      layout={RESIZE}
-      className="min-w-0 flex-shrink"
-    >
+    <Animated.View layout={RESIZE}>
       <Press
         testID={testID}
         accessibilityLabel={`${name}, ${label}`}
@@ -51,7 +48,6 @@ function FilterTrigger({
         <Animated.View
           key={label}
           entering={LABEL_IN}
-          className="min-w-0 flex-shrink"
         >
           <Text
             className={`text-[14px] leading-[19px] font-display-semibold ${active ? 'text-primary-foreground' : 'text-foreground'}`}
@@ -70,7 +66,7 @@ function FilterTrigger({
   );
 }
 
-/** Activity's filters, one picker each, in one row that fits the screen. The dates clear with ×. */
+/** Activity's filters, one picker each, in one row that scrolls sideways edge to edge, so each label shows in full. The dates clear with ×. */
 export function FilterRow({
   rangeLabel,
   rangeActive,
@@ -96,9 +92,13 @@ export function FilterRow({
 }) {
   const tokens = useThemeTokens();
   return (
-    <View
+    <ScrollView
+      horizontal
       accessibilityLabel="Filter"
-      className="flex-row items-center gap-2"
+      showsHorizontalScrollIndicator={false}
+      keyboardShouldPersistTaps="handled"
+      className="-mx-screen"
+      contentContainerClassName="flex-row items-center gap-2 px-screen"
     >
       <FilterTrigger
         testID={tid('activity', 'range')}
@@ -143,6 +143,6 @@ export function FilterRow({
         active={walletActive}
         onPress={onWallet}
       />
-    </View>
+    </ScrollView>
   );
 }
