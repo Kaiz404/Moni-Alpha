@@ -1,7 +1,7 @@
 import { Platform } from 'react-native';
 import { requireNativeModule } from 'expo';
 
-import type { AutostartOpened, InstalledAppInfo } from './MoniAndroidApps.types';
+import type { AutostartOpened, InstalledAppInfo, ListenerState } from './MoniAndroidApps.types';
 
 const stub = {
   async getInstalledAppsAsync(_packageNames: string[]): Promise<InstalledAppInfo[]> {
@@ -24,6 +24,9 @@ const stub = {
     return 'none';
   },
   getListenerPermissionAsync: undefined as (() => Promise<'authorized' | 'denied'>) | undefined,
+  getListenerState: undefined as (() => ListenerState) | undefined,
+  /** Asks Android to bind the listener when access is on and it is not bound. True when asked. */
+  requestListenerRebind: undefined as (() => boolean) | undefined,
   openListenerSettings: undefined as (() => boolean) | undefined,
   /** Notifications whose capture task Android refused to start, as the listener's JSON payloads. */
   drainCaptureInbox: undefined as (() => string[]) | undefined,

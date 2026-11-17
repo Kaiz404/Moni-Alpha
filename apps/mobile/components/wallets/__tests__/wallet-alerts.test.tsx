@@ -23,6 +23,7 @@ jest.mock('@/lib/notifications/capture-status', () => ({ onCaptureStatusChanged:
 jest.mock('@/lib/notifications/permission', () => ({
   askForNotificationAccess: jest.fn(async () => {}),
   readNotificationListenerPermission: jest.fn(async () => 'authorized'),
+  rebindListenerIfUnbound: jest.fn(() => false),
 }));
 jest.mock('@/lib/sheet/sheet-store', () => ({ openSheet: jest.fn() }));
 jest.mock('@/lib/supabase/wallets', () => ({ updateWallet: jest.fn(async () => ({})) }));

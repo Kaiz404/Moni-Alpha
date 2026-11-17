@@ -26,7 +26,7 @@ jest.mock('react-native-mmkv', () => {
 });
 jest.mock('@/modules/moni-android-apps', () => ({
   __esModule: true,
-  default: { drainCaptureInbox: jest.fn(() => []) },
+  default: { drainCaptureInbox: jest.fn(() => []), requestListenerRebind: jest.fn(() => false) },
 }));
 jest.mock('expo-router/entry', () => ({}));
 jest.mock('expo-task-manager', () => ({ defineTask: jest.fn() }));
@@ -91,6 +91,10 @@ beforeEach(() => {
 });
 
 describe('the headless task', () => {
+  it('asks Android to bind the listener again when the process starts', () => {
+    expect(MoniAndroidApps.requestListenerRebind).toHaveBeenCalledTimes(1);
+  });
+
   it('queues a linked payment alert under the one UUID its log entry and row share', async () => {
     await deliver(payment('1000'));
 

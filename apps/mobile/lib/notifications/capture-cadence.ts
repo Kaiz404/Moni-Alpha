@@ -109,16 +109,19 @@ export function assessCaptureHealth({
 }: {
   apps: readonly AlertApp[];
   health: CaptureHealth;
-  listener: 'on' | 'off' | 'unknown';
+  /** `unbound`: access is on, but Android stopped sending notifications and a rebind did not help. */
+  listener: 'on' | 'off' | 'unknown' | 'unbound';
   battery: BatteryExemption | 'checking';
   autostart: boolean;
   now: Date;
 }): CaptureAlert | null {
   if (apps.length === 0) return null;
   if (listener === 'off') {
-    return health.accessOffDismissedAt ? null : { kind: 'access_off', apps: [...apps], fix: 'turn_on_access' };
+    return health.accessOffDismissedAt
+      ? null
+      : { kind: 'access_off', apps: [...apps], fix: 'turn_on_access' };
   }
-  if (listener !== 'on') return null;
+  if (listener !== 'on' && listener !== 'unbound') return null;
 
   const today = localDay(now.toISOString());
   const assessed = apps.map((app) => {
@@ -132,11 +135,12 @@ export function assessCaptureHealth({
     ? dayNumber(today) - dayNumber(localDay(health.listenerHeardAt))
     : null;
   const undismissed = assessed.filter(({ source }) => !isDismissed(source)).map(({ app }) => app);
-  if (heardDaysAgo !== null && heardDaysAgo >= LISTENER_SILENT_DAYS && undismissed.length > 0) {
+  const silent = heardDaysAgo !== null && heardDaysAgo >= LISTENER_SILENT_DAYS;
+  if ((silent || listener === 'unbound') && undismissed.length > 0) {
     return {
       kind: 'listener_stopped',
       apps: undismissed,
-      silentDays: heardDaysAgo,
+      silentDays: heardDaysAgo ?? 0,
       fix: batteryFix ?? (autostart ? 'autostart' : 'open_access'),
     };
   }
@@ -144,7 +148,9 @@ export function assessCaptureHealth({
   const quiet = assessed.flatMap(({ app, source, cadence }) =>
     cadence.kind === 'quiet' && !isDismissed(source) ? [{ app, source, cadence }] : [],
   );
-  const reported = assessed.filter(({ source }) => hasUnansweredReport(source)).map(({ app }) => app);
+  const reported = assessed
+    .filter(({ source }) => hasUnansweredReport(source))
+    .map(({ app }) => app);
   if (quiet.length === 0 && reported.length === 0) return null;
 
   if (quiet.length === 0) {
@@ -225,7 +231,9 @@ export function captureAlertCopy(alert: CaptureAlert): CaptureAlertCopy {
     case 'listener_stopped':
       return finish(
         'Moni stopped reading alerts',
-        `No notification from any app for ${days(alert.silentDays)}.`,
+        alert.silentDays > 0
+          ? `No notification from any app for ${days(alert.silentDays)}.`
+          : 'Android stopped sending notifications to Moni.',
       );
     case 'app_quiet':
       return finish(

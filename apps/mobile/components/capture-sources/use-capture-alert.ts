@@ -23,15 +23,24 @@ import {
   askForNotificationAccess,
   openNotificationListenerSettings,
   readNotificationListenerPermission,
+  rebindListenerIfUnbound,
 } from '@/lib/notifications/permission';
 
-type ListenerState = 'on' | 'off' | 'unknown';
+type ListenerState = 'on' | 'off' | 'unknown' | 'unbound';
 
 function useListenerState(): ListenerState {
   const [state, setState] = useState<ListenerState>('unknown');
   const refresh = useCallback(() => {
     void readNotificationListenerPermission().then((permission) =>
-      setState(permission === 'authorized' ? 'on' : permission === 'denied' ? 'off' : 'unknown'),
+      setState(
+        permission === 'authorized'
+          ? rebindListenerIfUnbound()
+            ? 'unbound'
+            : 'on'
+          : permission === 'denied'
+            ? 'off'
+            : 'unknown',
+      ),
     );
   }, []);
 

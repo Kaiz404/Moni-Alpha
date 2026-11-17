@@ -1,7 +1,7 @@
 import { Platform } from 'react-native';
 
 import { openSheet } from '@/lib/sheet/sheet-store';
-import MoniAndroidApps from '@/modules/moni-android-apps';
+import MoniAndroidApps, { type ListenerState } from '@/modules/moni-android-apps';
 
 /** Android notification *listener* access (read other apps' alerts). Not POST_NOTIFICATIONS. */
 export type NotificationListenerPermission = 'authorized' | 'denied' | 'unknown' | 'unavailable';
@@ -25,6 +25,33 @@ export async function readNotificationListenerPermission(): Promise<Notification
     return normalizeStatus(raw);
   } catch {
     return 'unknown';
+  }
+}
+
+/** Long enough for Android to bind the listener after a rebind, or after the process starts. */
+export const REBIND_GRACE_MS = 10_000;
+
+/**
+ * Access on is not the listener bound: HyperOS can unbind it until Moni opens again. Unbound only
+ * once a rebind has had time to land, since a process starts unbound until Android connects it.
+ */
+export function isListenerUnbound(state: ListenerState, now: number): boolean {
+  return (
+    !state.connected &&
+    state.rebindRequestedAt !== null &&
+    now - state.rebindRequestedAt >= REBIND_GRACE_MS
+  );
+}
+
+/** Asks Android to bind the listener again if it is not bound, and says whether it is unbound. */
+export function rebindListenerIfUnbound(now = Date.now()): boolean {
+  if (Platform.OS !== 'android') return false;
+  try {
+    MoniAndroidApps.requestListenerRebind?.();
+    const state = MoniAndroidApps.getListenerState?.();
+    return state ? isListenerUnbound(state, now) : false;
+  } catch {
+    return false;
   }
 }
 

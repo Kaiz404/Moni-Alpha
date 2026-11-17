@@ -196,11 +196,25 @@ describe('assessCaptureHealth', () => {
 
   it('needs no history to see the listener stopped, and no alert before it has heard anything', () => {
     const fresh = { [MAYBANK.packageName]: source() };
-    expect(
-      assess({ sources: fresh, heardAt: new Date(2026, 10, 2).toISOString() }),
-    ).toMatchObject({ kind: 'listener_stopped', silentDays: 3 });
+    expect(assess({ sources: fresh, heardAt: new Date(2026, 10, 2).toISOString() })).toMatchObject({
+      kind: 'listener_stopped',
+      silentDays: 3,
+    });
     expect(assess({ sources: fresh, heardAt: null })).toBeNull();
     expect(assess({ sources: fresh, heardAt: new Date(2026, 10, 4).toISOString() })).toBeNull();
+  });
+
+  it('says the listener stopped as soon as Android unbinds it and a rebind does not help', () => {
+    expect(assess({ listener: 'unbound', autostart: true })).toEqual({
+      kind: 'listener_stopped',
+      apps: [MAYBANK],
+      silentDays: 0,
+      fix: 'autostart',
+    });
+    expect(assess({ listener: 'unbound', heardAt: null })).toMatchObject({
+      kind: 'listener_stopped',
+      silentDays: 0,
+    });
   });
 
   it('offers the battery prompt first when Moni is not exempt', () => {
@@ -211,9 +225,9 @@ describe('assessCaptureHealth', () => {
   });
 
   it('offers Autostart next where the phone has it', () => {
-    expect(
-      assess({ autostart: true, heardAt: new Date(2026, 10, 1).toISOString() }),
-    ).toMatchObject({ kind: 'listener_stopped', fix: 'autostart' });
+    expect(assess({ autostart: true, heardAt: new Date(2026, 10, 1).toISOString() })).toMatchObject(
+      { kind: 'listener_stopped', fix: 'autostart' },
+    );
   });
 
   it('tells apart an app that still sends alerts none of which became captures', () => {
@@ -317,6 +331,12 @@ describe('captureAlertCopy', () => {
       actionLabel: 'Allow',
       dismissLabel: 'Nothing missed',
     });
+  });
+
+  it('says Android stopped sending when nothing has been silent a day yet', () => {
+    expect(
+      copy({ kind: 'listener_stopped', apps: [MAYBANK], silentDays: 0, fix: 'open_access' }).body,
+    ).toMatch(/^Android stopped sending notifications to Moni\./);
   });
 
   it('uses the permission words when access is off', () => {

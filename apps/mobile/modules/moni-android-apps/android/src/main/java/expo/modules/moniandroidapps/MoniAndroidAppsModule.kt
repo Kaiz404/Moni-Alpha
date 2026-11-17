@@ -1,6 +1,5 @@
 package expo.modules.moniandroidapps
 
-import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.pm.ApplicationInfo
@@ -23,6 +22,7 @@ import java.io.ByteArrayOutputStream
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import com.lesimoes.androidnotificationlistener.CaptureHandoff
+import com.lesimoes.androidnotificationlistener.RNAndroidNotificationListener
 
 class MoniAndroidAppsModule : Module() {
   private val reactContext
@@ -87,12 +87,15 @@ class MoniAndroidAppsModule : Module() {
 
     // The notification listener (com.lesimoes.androidnotificationlistener) that feeds capture.
     AsyncFunction("getListenerPermissionAsync") {
-      val enabled = Settings.Secure.getString(reactContext.contentResolver, "enabled_notification_listeners")
-      val granted =
-        enabled.orEmpty().split(':').any {
-          ComponentName.unflattenFromString(it)?.packageName == reactContext.packageName
-        }
-      if (granted) "authorized" else "denied"
+      if (RNAndroidNotificationListener.isAccessGranted(reactContext)) "authorized" else "denied"
+    }
+
+    Function("getListenerState") {
+      RNAndroidNotificationListener.state(reactContext)
+    }
+
+    Function("requestListenerRebind") {
+      RNAndroidNotificationListener.rebind(reactContext)
     }
 
     Function("openListenerSettings") {

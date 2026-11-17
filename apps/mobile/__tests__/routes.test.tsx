@@ -148,6 +148,7 @@ jest.mock('../modules/moni-android-apps', () => ({
 jest.mock('@/lib/notifications/permission', () => ({
   NOTIFICATION_ACCESS_DISCLOSURE: 'One-time codes never leave this phone.',
   readNotificationListenerPermission: async () => 'authorized',
+  rebindListenerIfUnbound: () => false,
   openNotificationListenerSettings: () => {},
 }));
 jest.mock('expo-image-picker', () => ({

@@ -1,2 +1,2 @@
 export { default, isMoniAndroidAppsNativeAvailable } from './src/MoniAndroidAppsModule';
-export type { AutostartOpened, InstalledAppInfo } from './src/MoniAndroidApps.types';
+export type { AutostartOpened, InstalledAppInfo, ListenerState } from './src/MoniAndroidApps.types';

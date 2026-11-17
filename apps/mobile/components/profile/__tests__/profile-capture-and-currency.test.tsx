@@ -53,6 +53,7 @@ jest.mock('@/lib/notifications/permission', () => ({
   askForNotificationAccess: jest.fn(),
   openNotificationListenerSettings: jest.fn(),
   readNotificationListenerPermission: jest.fn(),
+  rebindListenerIfUnbound: jest.fn(() => false),
 }));
 jest.mock('@/lib/speech/speech-recognition', () => ({ prepareOfflineSpeechModel: jest.fn() }));
 

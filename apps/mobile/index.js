@@ -152,6 +152,12 @@ if (Platform.OS === 'android') {
     await handleKeptCaptures();
   });
   void handleKeptCaptures();
+  // HyperOS can leave the listener unbound after the process dies, until something asks again.
+  try {
+    require('./modules/moni-android-apps').default.requestListenerRebind?.();
+  } catch (e) {
+    console.error('[NotifCapture] listener rebind not asked:', e?.message ?? e);
+  }
 
   // Not mine, Later and Approve on Moni's review notification, with the app in the background
   // or killed. The handler loads the store and review-actions only when a tap arrives.
