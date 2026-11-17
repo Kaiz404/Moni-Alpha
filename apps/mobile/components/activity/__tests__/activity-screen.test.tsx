@@ -82,7 +82,11 @@ jest.mock('@legendapp/state/react', () => ({
 jest.mock('@/lib/store', () => ({ transactions$: {} }));
 jest.mock('@/lib/finance/selectors', () => ({
   transactions$: () => () => mockRows,
-  walletsForUser$: () => () => [{ id: 'maybank', name: 'Maybank', currency: 'MYR' }],
+  walletsForUser$: () => () => [
+    { id: 'maybank', name: 'Maybank', currency: 'MYR' },
+    { id: 'tng', name: 'TNG', currency: 'MYR' },
+    { id: 'wise', name: 'Wise', currency: 'USD' },
+  ],
   categoriesForUser$: () => () => [],
   pendingProposals$: () => () => [],
 }));
@@ -177,6 +181,44 @@ describe('Activity type', () => {
     await settleSheet(null);
     expect(screen.getByTestId('activity.filter.type')).toHaveTextContent('All types');
     expect(shown('r1')).toBe(true);
+  });
+});
+
+describe('Activity wallets', () => {
+  it('offers the main-currency wallets, starting from all of them', () => {
+    render(<ActivityScreen />);
+    expect(screen.getByTestId('activity.filter.wallet')).toHaveTextContent('All wallets');
+    fireEvent.press(screen.getByTestId('activity.filter.wallet'));
+    const sheet = getOpenSheet();
+    expect(sheet?.kind).toBe('wallets');
+    const request = sheet?.request as { selectedIds: string[]; wallets: { id: string }[] };
+    expect(request.selectedIds).toEqual([]);
+    expect(request.wallets.map((wallet) => wallet.id)).toEqual(['maybank', 'tng']);
+  });
+
+  it('shows what one wallet or several cover, and names how many', async () => {
+    render(<ActivityScreen />);
+    fireEvent.press(screen.getByTestId('activity.filter.wallet'));
+    await settleSheet({ walletIds: ['tng'] });
+    expect(screen.getByTestId('activity.filter.wallet')).toHaveTextContent('TNG');
+    expect(shown('reload')).toBe(true);
+    expect(shown('r1')).toBe(false);
+
+    fireEvent.press(screen.getByTestId('activity.filter.wallet'));
+    expect((getOpenSheet()?.request as { selectedIds: string[] }).selectedIds).toEqual(['tng']);
+    await settleSheet({ walletIds: ['maybank', 'tng'] });
+    expect(screen.getByTestId('activity.filter.wallet')).toHaveTextContent('2 wallets');
+    expect(shown('r1')).toBe(true);
+  });
+
+  it('leaves the wallets as they were on Cancel', async () => {
+    render(<ActivityScreen />);
+    fireEvent.press(screen.getByTestId('activity.filter.wallet'));
+    await settleSheet({ walletIds: ['tng'] });
+    fireEvent.press(screen.getByTestId('activity.filter.wallet'));
+    await settleSheet(null);
+    expect(screen.getByTestId('activity.filter.wallet')).toHaveTextContent('TNG');
+    expect(shown('r1')).toBe(false);
   });
 });
 

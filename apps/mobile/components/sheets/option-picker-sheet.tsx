@@ -1,9 +1,11 @@
 import { useValue } from '@legendapp/state/react';
 import { useMemo, useState, type ReactNode } from 'react';
 import { ActivityIndicator, View } from 'react-native';
+import Animated, { FadeIn } from 'react-native-reanimated';
 
 import { sameName } from '@/components/debts/past-people';
 import { PersonAvatar } from '@/components/debts/person-avatar';
+import { Button } from '@/components/ui/button';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Press, PressRows } from '@/components/ui/press';
 import { SearchField } from '@/components/ui/search-field';
@@ -41,6 +43,7 @@ import { curatedPackagesEquivalent } from '@/lib/notifications/notification-pack
 import type {
   SheetRequestOf,
   SheetResult,
+  WalletOption,
 } from '@/lib/sheet/sheet-store';
 import { tid } from '@/lib/test-ids';
 import { resolveTransactionIcon } from '@/lib/transactions/icon';
@@ -75,6 +78,70 @@ function Bubble({
   );
 }
 
+const MARK_IN = FadeIn.duration(120);
+
+/** One picker row: its leading bubble, name and meta, and a radio mark, or a checkbox where several can be picked. */
+function OptionRow({
+  option,
+  selected,
+  onPress,
+  mark = 'radio',
+}: {
+  option: PickerOption;
+  selected: boolean;
+  onPress: () => void;
+  mark?: 'radio' | 'checkbox';
+}) {
+  const tokens = useThemeTokens();
+  const icon =
+    mark === 'radio'
+      ? selected
+        ? 'radiobox-marked'
+        : 'radiobox-blank'
+      : selected
+        ? 'checkbox-marked'
+        : 'checkbox-blank-outline';
+  return (
+    <Press
+      testID={tid('sheet', 'option', option.id)}
+      accessibilityRole={mark}
+      accessibilityState={mark === 'radio' ? { selected } : { checked: selected }}
+      accessibilityLabel={option.meta ? `${option.name}, ${option.meta}` : option.name}
+      radius={option.suggested ? { rest: 26, pressed: 16 } : undefined}
+      className={`min-h-[66px] flex-row items-center gap-3.5 px-[18px] py-3 ${option.suggested ? 'bg-primary-muted' : ''}`}
+      onPress={onPress}
+    >
+      {option.leading}
+      <View className="min-w-0 flex-1">
+        <Text
+          className="text-base leading-[22px] font-display-semibold text-foreground"
+          numberOfLines={1}
+        >
+          {option.name}
+        </Text>
+        {option.meta ? (
+          <Text
+            className="text-[13px] leading-[18px] text-muted"
+            numberOfLines={1}
+          >
+            {option.meta}
+          </Text>
+        ) : null}
+      </View>
+      <Animated.View
+        key={icon}
+        entering={mark === 'checkbox' ? MARK_IN : undefined}
+      >
+        <IconSymbol
+          name={icon}
+          size={24}
+          color={selected ? tokens.foreground : tokens.muted}
+        />
+      </Animated.View>
+    </Press>
+  );
+}
+
 type OptionPickerSheetProps = SheetFrameProps & {
   title: string;
   note?: string;
@@ -100,7 +167,6 @@ export function OptionPickerSheet({
   footer,
   ...frame
 }: OptionPickerSheetProps) {
-  const tokens = useThemeTokens();
   const [query, setQuery] = useState('');
   const shown = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -150,47 +216,13 @@ export function OptionPickerSheet({
               </Text>
             </View>
           }
-          renderItem={({ item: option }) => {
-            const selected = option.id === selectedId;
-            return (
-              <Press
-                testID={tid('sheet', 'option', option.id)}
-                accessibilityRole="radio"
-                accessibilityState={{ selected }}
-                accessibilityLabel={
-                  option.meta
-                    ? `${option.name}, ${option.meta}`
-                    : option.name
-                }
-                radius={option.suggested ? { rest: 26, pressed: 16 } : undefined}
-                className={`min-h-[66px] flex-row items-center gap-3.5 px-[18px] py-3 ${option.suggested ? 'bg-primary-muted' : ''}`}
-                onPress={() => onPick(option.id)}
-              >
-                {option.leading}
-                <View className="min-w-0 flex-1">
-                  <Text
-                    className="text-base leading-[22px] font-display-semibold text-foreground"
-                    numberOfLines={1}
-                  >
-                    {option.name}
-                  </Text>
-                  {option.meta ? (
-                    <Text
-                      className="text-[13px] leading-[18px] text-muted"
-                      numberOfLines={1}
-                    >
-                      {option.meta}
-                    </Text>
-                  ) : null}
-                </View>
-                <IconSymbol
-                  name={selected ? 'radiobox-marked' : 'radiobox-blank'}
-                  size={24}
-                  color={selected ? tokens.foreground : tokens.muted}
-                />
-              </Press>
-            );
-          }}
+          renderItem={({ item: option }) => (
+            <OptionRow
+              option={option}
+              selected={option.id === selectedId}
+              onPress={() => onPick(option.id)}
+            />
+          )}
         />
       </PressRows>
     </Sheet>
@@ -214,42 +246,42 @@ type KindSheetProps<
 
 const NONE = 'none';
 
+function useWalletOptions(
+  wallets: readonly WalletOption[],
+  suggestedId?: string | null,
+): PickerOption[] {
+  const balances = useValue(() =>
+    wallets.map((wallet) => walletBalanceMinor$(wallet.id).get()),
+  );
+  return wallets.map((wallet, index) => {
+    const style = getWalletCardStyle(wallet.cardStyleId);
+    const suggested = wallet.id === suggestedId;
+    const balance = formatMoney(balances[index] ?? 0, wallet.currency);
+    return {
+      id: wallet.id,
+      name: wallet.name,
+      meta: suggested ? `${balance} · Suggested` : balance,
+      suggested,
+      leading: (
+        <Bubble color={wallet.color ?? style.swatchHex}>
+          <WalletIcon
+            color={style.contentColor}
+            icon={wallet.icon}
+            type={wallet.type}
+            size={20}
+          />
+        </Bubble>
+      ),
+    };
+  });
+}
+
 export function WalletSheet({
   request,
   onPick,
   ...frame
 }: KindSheetProps<'wallet'>) {
-  const balances = useValue(() =>
-    request.wallets.map((wallet) =>
-      walletBalanceMinor$(wallet.id).get(),
-    ),
-  );
-  const options: PickerOption[] = request.wallets.map(
-    (wallet, index) => {
-      const style = getWalletCardStyle(wallet.cardStyleId);
-      const suggested = wallet.id === request.suggestedId;
-      const balance = formatMoney(
-        balances[index] ?? 0,
-        wallet.currency,
-      );
-      return {
-        id: wallet.id,
-        name: wallet.name,
-        meta: suggested ? `${balance} · Suggested` : balance,
-        suggested,
-        leading: (
-          <Bubble color={wallet.color ?? style.swatchHex}>
-            <WalletIcon
-              color={style.contentColor}
-              icon={wallet.icon}
-              type={wallet.type}
-              size={20}
-            />
-          </Bubble>
-        ),
-      };
-    },
-  );
+  const options = useWalletOptions(request.wallets, request.suggestedId);
   if (request.noneLabel)
     options.unshift({ id: NONE, name: request.noneLabel });
   return (
@@ -267,6 +299,85 @@ export function WalletSheet({
       }
       onPick={(id) => onPick({ walletId: id === NONE ? null : id })}
     />
+  );
+}
+
+const ALL = 'all';
+
+/**
+ * Several wallets at once: rows tick and untick, and nothing changes until Apply. The first row
+ * stands for every wallet, so ticking it clears the others, and ticking every wallet reads as it.
+ */
+export function WalletsSheet({
+  request,
+  onApply,
+  ...frame
+}: SheetFrameProps & {
+  request: SheetRequestOf<'wallets'>;
+  onApply: (result: SheetResult<'wallets'>) => void;
+}) {
+  const [draft, setDraft] = useState<ReadonlySet<string>>(() => new Set(request.selectedIds));
+  const walletOptions = useWalletOptions(request.wallets);
+  const every = request.wallets.every((wallet) => draft.has(wallet.id));
+  const options: PickerOption[] = [{ id: ALL, name: request.allLabel }, ...walletOptions];
+  const toggle = (id: string) => {
+    if (id === ALL) {
+      setDraft(new Set());
+      return;
+    }
+    const next = new Set(draft);
+    if (!next.delete(id)) next.add(id);
+    setDraft(next);
+  };
+  return (
+    <Sheet
+      {...frame}
+      size="fit"
+      title={request.title}
+      actions={
+        <>
+          <Button
+            testID={tid('sheet', 'cancel')}
+            className="flex-1"
+            pinned
+            variant="secondary"
+            label="Cancel"
+            onPress={frame.onDismiss}
+          />
+          <Button
+            testID={tid('sheet', 'apply')}
+            className="flex-1"
+            pinned
+            label="Apply"
+            onPress={() =>
+              onApply({
+                walletIds: every
+                  ? []
+                  : request.wallets.filter((wallet) => draft.has(wallet.id)).map((wallet) => wallet.id),
+              })
+            }
+          />
+        </>
+      }
+    >
+      <PressRows>
+        <SheetFlatList
+          data={options}
+          keyExtractor={(option) => option.id}
+          style={{ flexGrow: 0 }}
+          contentContainerClassName="overflow-hidden rounded-card bg-card"
+          showsVerticalScrollIndicator={false}
+          renderItem={({ item: option }) => (
+            <OptionRow
+              option={option}
+              mark="checkbox"
+              selected={option.id === ALL ? draft.size === 0 || every : draft.has(option.id)}
+              onPress={() => toggle(option.id)}
+            />
+          )}
+        />
+      </PressRows>
+    </Sheet>
   );
 }
 

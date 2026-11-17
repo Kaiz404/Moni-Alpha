@@ -16,6 +16,7 @@ import {
   PersonSheet,
   TransactionTypeSheet,
   WalletSheet,
+  WalletsSheet,
   WalletTypeSheet,
 } from '@/components/sheets/option-picker-sheet';
 import type { SheetFrameProps } from '@/components/ui/sheet/sheet';
@@ -60,6 +61,14 @@ function renderSheet(sheet: OpenSheet, frame: SheetFrameProps) {
           {...frame}
           request={sheet.request}
           onPick={sheet.settle}
+        />
+      );
+    case 'wallets':
+      return (
+        <WalletsSheet
+          {...frame}
+          request={sheet.request}
+          onApply={sheet.settle}
         />
       );
     case 'currency':

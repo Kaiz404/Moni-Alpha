@@ -45,13 +45,39 @@ tags:
 - tapOn:
     id: activity.filter.wallet
 - tapOn: "Touch 'n Go eWallet"
+- takeScreenshot: a1-wallets-sheet
+- tapOn:
+    id: sheet.apply
 - assertVisible:
     id: activity.filter.wallet
     text: "Wallets, Touch 'n Go"
 - takeScreenshot: a1-wallet-chip
 - tapOn:
     id: activity.filter.wallet
-- tapOn: All wallets
+- tapOn: Cash
+- tapOn:
+    id: sheet.apply
+- assertVisible:
+    id: activity.filter.wallet
+    text: 'Wallets, 2 wallets'
+- takeScreenshot: a1-two-wallets
+- tapOn:
+    id: activity.filter.wallet
+- tapOn: Maybank Savings
+- tapOn:
+    id: sheet.cancel
+- assertVisible:
+    id: activity.filter.wallet
+    text: 'Wallets, 2 wallets'
+- tapOn:
+    id: activity.filter.wallet
+- tapOn:
+    id: sheet.option.all
+- tapOn:
+    id: sheet.apply
+- assertVisible:
+    id: activity.filter.wallet
+    text: 'Wallets, All wallets'
 
 - tapOn:
     id: activity.filter.type

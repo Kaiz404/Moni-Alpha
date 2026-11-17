@@ -46,7 +46,7 @@ function row(
 const MYR = 'MYR' as CurrencyCode;
 const all: ActivityFilter = {
   query: '',
-  walletId: null,
+  walletIds: [],
   mainCurrency: MYR,
   kind: 'all',
   categoryNames: { food: 'Food & Dining' },
@@ -92,8 +92,37 @@ describe('filterActivity', () => {
       transferToWalletId: 'tng',
     });
     const rows = [grabFood, reload, tesco, grab];
-    expect(ids(filterActivity(rows, { ...all, walletId: 'tng' }))).toEqual(['reload']);
+    expect(ids(filterActivity(rows, { ...all, walletIds: ['tng'] }))).toEqual(['reload']);
     expect(ids(filterActivity(rows, { ...all, kind: 'transfer' }))).toEqual(['reload']);
+  });
+
+  it('keeps the rows of every chosen wallet and transfers into or out of any of them', () => {
+    const tngLunch = row('tng-lunch', 'Mamak', new Date(2026, 9, 14, 13), { walletId: 'tng' });
+    const cashTaxi = row('cash-taxi', 'Taxi', new Date(2026, 9, 14, 9), { walletId: 'cash' });
+    const reload = row('reload', null, new Date(2026, 9, 13, 8), {
+      type: 'transfer',
+      transferToWalletId: 'tng',
+    });
+    const withdraw = row('withdraw', null, new Date(2026, 9, 12, 8), {
+      type: 'transfer',
+      walletId: 'cash',
+      transferToWalletId: 'savings',
+    });
+    const rows = [tngLunch, cashTaxi, reload, withdraw, tesco];
+    expect(ids(filterActivity(rows, { ...all, walletIds: ['tng', 'cash'] }))).toEqual([
+      'tng-lunch',
+      'cash-taxi',
+      'reload',
+      'withdraw',
+    ]);
+    expect(ids(filterActivity(rows, { ...all, walletIds: ['savings'] }))).toEqual(['withdraw']);
+    expect(ids(filterActivity(rows, all))).toEqual([
+      'tng-lunch',
+      'cash-taxi',
+      'tesco',
+      'reload',
+      'withdraw',
+    ]);
   });
 
   it('orders by the moment, whichever way the date is written', () => {

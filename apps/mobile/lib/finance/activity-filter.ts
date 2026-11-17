@@ -21,8 +21,8 @@ export type ActivityRange = { from: string; to: string };
 
 export type ActivityFilter = {
   query: string;
-  /** Null shows every wallet; a wallet also matches transfers into it. */
-  walletId: string | null;
+  /** Empty shows every wallet; a wallet also matches transfers into it. */
+  walletIds: readonly string[];
   mainCurrency: CurrencyCode;
   kind: ActivityKind;
   categoryNames: Readonly<Record<string, string>>;
@@ -65,13 +65,14 @@ export function filterActivity(
   filter: ActivityFilter,
 ): FinanceTransaction[] {
   const query = filter.query.trim().toLowerCase();
+  const wallets = new Set(filter.walletIds);
   const kept: { at: number; transaction: FinanceTransaction }[] = [];
   for (const transaction of transactions) {
     if (
       transaction.currency === filter.mainCurrency &&
-      (filter.walletId === null ||
-        transaction.walletId === filter.walletId ||
-        transaction.transferToWalletId === filter.walletId) &&
+      (wallets.size === 0 ||
+        wallets.has(transaction.walletId) ||
+        (transaction.transferToWalletId !== null && wallets.has(transaction.transferToWalletId))) &&
       (filter.kind === 'all' || transaction.type === filter.kind) &&
       (query === '' || matchesQuery(transaction, query, filter.categoryNames))
     ) {

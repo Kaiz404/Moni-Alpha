@@ -65,6 +65,17 @@ type Sheets = {
     };
     result: { walletId: string | null };
   };
+  /** Several wallets, applied together. An empty list means every wallet. */
+  wallets: {
+    request: {
+      title: string;
+      wallets: WalletOption[];
+      selectedIds: readonly string[];
+      /** The first row, which stands for every wallet. */
+      allLabel: string;
+    };
+    result: { walletIds: string[] };
+  };
   currency: { request: { selected: string }; result: string };
   walletType: { request: { selected: WalletKind }; result: WalletKind };
   transactionType: { request: { selected: TransactionType | null }; result: TransactionType };

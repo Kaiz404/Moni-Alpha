@@ -169,6 +169,69 @@ describe('SheetHost', () => {
     await expect(answer).resolves.toBe('transfer');
   });
 
+  describe('the several-wallets sheet', () => {
+    const wallet = (id: string, name: string) => ({
+      id,
+      name,
+      currency: 'MYR',
+      type: 'bank',
+      icon: null,
+      color: null,
+      cardStyleId: null,
+    });
+    const open = (selectedIds: string[]) => {
+      let answer!: Promise<{ walletIds: string[] } | null>;
+      act(() => {
+        answer = openSheet({
+          kind: 'wallets',
+          title: 'Show wallets',
+          allLabel: 'All wallets',
+          selectedIds,
+          wallets: [wallet('w1', 'Maybank'), wallet('w2', 'TNG'), wallet('w3', 'Cash')],
+        });
+      });
+      return () => answer;
+    };
+    const settled = () => act(() => new Promise((resolve) => setTimeout(resolve, 0)));
+
+    it('ticks several wallets and applies them in the list order', async () => {
+      render(<SheetHost />);
+      const answer = open([]);
+      expect(screen.getByTestId('sheet.option.all')).toBeChecked();
+      fireEvent.press(screen.getByTestId('sheet.option.w3'));
+      fireEvent.press(screen.getByTestId('sheet.option.w1'));
+      expect(screen.getByTestId('sheet.option.all')).not.toBeChecked();
+      expect(screen.getByTestId('sheet.option.w2')).not.toBeChecked();
+      fireEvent.press(screen.getByTestId('sheet.apply'));
+      await settled();
+      await expect(answer()).resolves.toEqual({ walletIds: ['w1', 'w3'] });
+    });
+
+    it('unticks a wallet, clears all of them from the first row, and reads every wallet as all', async () => {
+      render(<SheetHost />);
+      const answer = open(['w1', 'w2']);
+      fireEvent.press(screen.getByTestId('sheet.option.w2'));
+      expect(screen.getByTestId('sheet.option.w2')).not.toBeChecked();
+      fireEvent.press(screen.getByTestId('sheet.option.all'));
+      expect(screen.getByTestId('sheet.option.w1')).not.toBeChecked();
+      fireEvent.press(screen.getByTestId('sheet.option.w1'));
+      fireEvent.press(screen.getByTestId('sheet.option.w2'));
+      fireEvent.press(screen.getByTestId('sheet.option.w3'));
+      fireEvent.press(screen.getByTestId('sheet.apply'));
+      await settled();
+      await expect(answer()).resolves.toEqual({ walletIds: [] });
+    });
+
+    it('changes nothing on Cancel', async () => {
+      render(<SheetHost />);
+      const answer = open(['w1']);
+      fireEvent.press(screen.getByTestId('sheet.option.w2'));
+      fireEvent.press(screen.getByTestId('sheet.cancel'));
+      await settled();
+      await expect(answer()).resolves.toBeNull();
+    });
+  });
+
   it('closes the category sheet before running a Not counted in budgets choice', async () => {
     render(<SheetHost />);
     const onTransfer = jest.fn();

@@ -71,7 +71,7 @@ export default function ActivityScreen() {
   const hold = useTransactionHold('activity');
   const [query, setQuery] = useState('');
   const [kind, setKind] = useState<ActivityKind>('all');
-  const [walletId, setWalletId] = useState<string | null>(null);
+  const [walletIds, setWalletIds] = useState<readonly string[]>([]);
   const [range, setRange] = useState<ActivityRange | null>(null);
   const searched = useDeferredValue(query);
   const listTop = useRef(0);
@@ -103,18 +103,32 @@ export default function ActivityScreen() {
     () => named.filter((transaction) => transaction.currency === currency),
     [named, currency],
   );
+  const mainWallets = wallets.filter((wallet) => wallet.currency === currency);
+  const shownWalletIds = useMemo(
+    () =>
+      walletIds.filter((id) =>
+        wallets.some((wallet) => wallet.id === id && wallet.currency === currency),
+      ),
+    [walletIds, wallets, currency],
+  );
+  const walletLabel =
+    shownWalletIds.length === 0
+      ? 'All wallets'
+      : shownWalletIds.length === 1
+        ? lookups.walletNames[shownWalletIds[0]]
+        : `${shownWalletIds.length} wallets`;
   const matching = useMemo(
     () =>
       filterActivity(named, {
         query: searched,
-        walletId,
+        walletIds: shownWalletIds,
         mainCurrency: currency,
         kind,
         categoryNames: Object.fromEntries(
           categories.map((category) => [category.id, category.name]),
         ),
       }),
-    [named, searched, walletId, currency, kind, categories],
+    [named, searched, shownWalletIds, currency, kind, categories],
   );
   const listed = useMemo(() => withinRange(matching, range), [matching, range]);
   const series = useMemo(
@@ -122,19 +136,12 @@ export default function ActivityScreen() {
     [matching, range, today, currency],
   );
   const [page, setPage] = usePageNumber(
-    JSON.stringify([searched, walletId, kind, range, currency]),
+    JSON.stringify([searched, shownWalletIds, kind, range, currency]),
   );
   const waiting = proposals.filter((proposal) => isAwaitingReview(proposal, new Date()));
   const reviewTotal = waiting
     .filter((proposal) => proposal.currency === currency)
     .reduce((sum, proposal) => sum + Number(proposal.amountMinor ?? 0), 0);
-  const mainWallets = wallets.filter(
-    (wallet) => wallet.currency === currency,
-  );
-  const walletName =
-    mainWallets.some((wallet) => wallet.id === walletId) && walletId
-      ? lookups.walletNames[walletId]
-      : null;
 
   const pickKind = async () => {
     const picked = await openSheet({ kind: 'activityKind', selected: kind });
@@ -143,8 +150,8 @@ export default function ActivityScreen() {
 
   const pickWallet = async () => {
     const picked = await openSheet({
-      kind: 'wallet',
-      title: 'Show wallet',
+      kind: 'wallets',
+      title: 'Show wallets',
       wallets: mainWallets.map((wallet) => ({
         id: wallet.id,
         name: wallet.name,
@@ -154,10 +161,10 @@ export default function ActivityScreen() {
         color: wallet.color,
         cardStyleId: wallet.cardStyleId,
       })),
-      selectedId: walletId,
-      noneLabel: 'All wallets',
+      selectedIds: shownWalletIds,
+      allLabel: 'All wallets',
     });
-    if (picked) setWalletId(picked.walletId);
+    if (picked) setWalletIds(picked.walletIds);
   };
 
   const open = (transaction: FinanceTransaction) =>
@@ -246,8 +253,8 @@ export default function ActivityScreen() {
               kindLabel={ACTIVITY_KIND_LABELS[kind]}
               kindActive={kind !== 'all'}
               onKind={() => void pickKind()}
-              walletLabel={walletName ?? 'All wallets'}
-              walletActive={walletName !== null}
+              walletLabel={walletLabel}
+              walletActive={shownWalletIds.length > 0}
               onWallet={() => void pickWallet()}
             />
             <View
