@@ -1,4 +1,4 @@
-# X4 a notification row keeps its bank alert per V2A-TxnDetailEdit: the amount edit reads "MYR · the alert said RM30.40".
+# X4 a notification row shows only the date and time under its name, and its amount edit has no hint line.
 # Run: scripts/device/run-flows.sh .maestro/flows/activity/txn-alert.yaml
 appId: com.anonymous.moni.e2e
 name: X4 transaction bank alert
@@ -20,10 +20,10 @@ tags:
 - tapOn:
     id: 'activity\.transaction\..*'
     index: 0
-- assertVisible: '(?i).*Alert says shell'
+- assertNotVisible: '(?i).*Alert says.*'
 - tapOn:
     id: txn.amount.edit
-- assertVisible: 'MYR · the alert said RM30.40'
+- assertNotVisible: '(?i).*the alert said.*'
 - takeScreenshot: x4-txn-alert
 - tapOn:
     id: txn.amount.cancel

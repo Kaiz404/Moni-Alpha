@@ -66,7 +66,7 @@ import { tid, type TestId } from '@/lib/test-ids';
 import { retypeFields, TRANSACTION_TYPE_COPY } from '@/lib/transactions/type-change';
 import { showToast } from '@/lib/toast/toast-store';
 import { captureSourceLabel } from '@/lib/proposals/capture-source';
-import { transactionAlert, transactionPairing } from '@/lib/transactions/alert';
+import { transactionPairing } from '@/lib/transactions/alert';
 import { resolveTransactionIcon } from '@/lib/transactions/icon';
 import { listParams } from '@/lib/transactions/list-scope';
 import { BALANCE_CORRECTION_TITLE } from '@/lib/wallets/balance-correction';
@@ -167,7 +167,6 @@ function Detail({ transaction: tx }: { transaction: FinanceTransaction }) {
     wallets.find((w) => w.id === tx.transferToWalletId) ?? null;
   const transfer = tx.type === 'transfer';
   const alert = source === 'notification' && tx.merchant !== null;
-  const bankAlert = source === 'notification' ? transactionAlert(raw?.metadata) : null;
   const counted = transactionPairing(raw?.metadata)?.absorbed ?? null;
   const correction = tx.balanceCorrection;
   const title = correction
@@ -475,13 +474,7 @@ function Detail({ transaction: tx }: { transaction: FinanceTransaction }) {
           className="text-muted"
           style={{ fontVariant: ['tabular-nums'] }}
         >
-          {[
-            formatDate(tx.transactionDate),
-            clockTime(tx.transactionDate),
-            alert ? `Alert says ${tx.merchant}` : null,
-          ]
-            .filter(Boolean)
-            .join(' · ')}
+          {`${formatDate(tx.transactionDate)} · ${clockTime(tx.transactionDate)}`}
         </Text>
       </View>
     </View>
@@ -521,11 +514,6 @@ function Detail({ transaction: tx }: { transaction: FinanceTransaction }) {
                 required
                 value={title}
                 maxLength={40}
-                hint={
-                  alert
-                    ? `The alert says ${tx.merchant}. Moni uses your name for every ${tx.merchant} payment.`
-                    : undefined
-                }
                 onSave={saveName}
               >
                 {({ editable, editor }) =>
@@ -551,11 +539,6 @@ function Detail({ transaction: tx }: { transaction: FinanceTransaction }) {
               kind="amount"
               prefix={`${sign}${currencySymbol(tx.currency)}`}
               value={tx.amountMinor}
-              hint={
-                bankAlert
-                  ? `${tx.currency} · the alert said ${formatMoney(bankAlert.amountMinor, bankAlert.currency)}`
-                  : tx.currency
-              }
               onSave={(value) =>
                 value === tx.amountMinor
                   ? undefined
