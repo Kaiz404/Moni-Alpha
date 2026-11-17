@@ -81,6 +81,33 @@ const withSafetyFooter: Case[] = [
   },
 ];
 
+describe('a summary notification', () => {
+  const summary = (lines: { title: string; text: string }[]) => ({
+    title: 'Maybank2u',
+    text: '2 new notifications',
+    groupedMessages: lines,
+  });
+
+  it('passes when only its grouped lines hold the payment', () => {
+    expect(
+      passesNotificationTransactionPrefilter(
+        summary([
+          { title: 'Maybank2u', text: 'You paid RM5.00 to KEDAI ABC' },
+          { title: 'Maybank2u', text: 'Login from a new device' },
+        ]),
+      ),
+    ).toBe(true);
+  });
+
+  it('is still ignored when no line holds a payment', () => {
+    expect(
+      passesNotificationTransactionPrefilter(
+        summary([{ title: 'Maybank2u', text: 'Login from a new device' }]),
+      ),
+    ).toBe(false);
+  });
+});
+
 describe('transaction alerts still pass', () => {
   it.each(withSafetyFooter.map((c) => [c.name, c] as const))('%s', (_name, alert) => {
     expect(isOneTimeCode(alert)).toBe(false);

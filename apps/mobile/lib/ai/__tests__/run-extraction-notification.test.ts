@@ -104,7 +104,9 @@ describe('an alert from an app Moni has never heard of', () => {
   const place = { latitude: 3.1, longitude: 101.6, name: 'Bangsar', capturedAt: 'now' };
 
   beforeEach(() => {
-    proposal().mockReset().mockImplementation(async () => ({ id: 'n1' }));
+    proposal()
+      .mockReset()
+      .mockImplementation(async () => ({ id: 'n1' }));
     saved().mockClear();
   });
 
@@ -171,6 +173,24 @@ describe('what a notification sends to the backend', () => {
       }),
     );
     expect(mockExtract).not.toHaveBeenCalled();
+  });
+
+  it('sends a summary whose amount is only in its grouped lines with those lines as its big text', async () => {
+    await runExtraction(
+      queued({
+        text: '2 new notifications',
+        groupedMessages: [
+          { title: 'Maybank', text: 'You paid RM5.00 to KEDAI ABC' },
+          { title: 'Transfer', text: 'RM12.00 received from ALI' },
+        ],
+      }),
+    );
+    const sent = (mockExtract.mock.calls as unknown as [{ notification: object }][])[0][0]
+      .notification;
+    expect(sent).toMatchObject({
+      text: '2 new notifications',
+      bigText: 'You paid RM5.00 to KEDAI ABC\nTransfer: RM12.00 received from ALI',
+    });
   });
 
   it('sends only the fields the backend reads', async () => {

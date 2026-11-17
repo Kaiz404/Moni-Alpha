@@ -76,6 +76,22 @@ function normalizeText(value) {
   return String(value).replace(/\s+/g, ' ').trim();
 }
 
+/**
+ * The lines of an InboxStyle summary ("2 new notifications"), which can be the only place a bank
+ * puts the amount. The listener splits each at its first colon, and the title defaults to the
+ * notification's own.
+ */
+function groupedLines(notification) {
+  if (!Array.isArray(notification.groupedMessages)) return [];
+  return notification.groupedMessages
+    .map((message) => {
+      const title = normalizeText(message?.title);
+      const text = normalizeText(message?.text);
+      return title && title !== normalizeText(notification.title) ? `${title}: ${text}` : text;
+    })
+    .filter(Boolean);
+}
+
 function notificationText(notification) {
   return [
     notification.title,
@@ -85,6 +101,7 @@ function notificationText(notification) {
     notification.subText,
     notification.summaryText,
     notification.extraInfoText,
+    ...groupedLines(notification),
   ]
     .map(normalizeText)
     .filter(Boolean)
@@ -92,13 +109,7 @@ function notificationText(notification) {
 }
 
 function isOneTimeCode(notification) {
-  const grouped = Array.isArray(notification.groupedMessages)
-    ? notification.groupedMessages.flatMap((message) => [message?.title, message?.text])
-    : [];
-  const text = [notificationText(notification), ...grouped.map(normalizeText)]
-    .filter(Boolean)
-    .join(' ')
-    .replace(/transaction authori[sz]ation code/gi, 'TAC');
+  const text = notificationText(notification).replace(/transaction authori[sz]ation code/gi, 'TAC');
   if (CODE_WORD_WITH_VALUE.test(text)) return true;
   const rest = NOT_A_CODE.reduce((left, pattern) => left.replace(pattern, ' '), text);
   if (NAMES_A_CODE.some((pattern) => pattern.test(rest))) return true;
@@ -132,6 +143,7 @@ function passesNotificationTransactionPrefilter(notification) {
 module.exports = {
   MONEY_PATTERN,
   TRANSFER_SIGNAL_PATTERN,
+  groupedLines,
   isOneTimeCode,
   notificationText,
   passesNotificationTransactionPrefilter,

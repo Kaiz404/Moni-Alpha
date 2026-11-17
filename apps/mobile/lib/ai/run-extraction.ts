@@ -28,7 +28,12 @@ import type { ProcessingQueueItem } from '@/lib/ai/processing-queue';
 import { extractDateContext, resolveOccurredAt } from '@/lib/ai/occurred-at';
 import { saveProposalLocationSnapshot } from '@/lib/ai/proposal-location-cache';
 import type { LocationSnapshot } from '@/lib/location/location-snapshot';
-import { passesNotificationTransactionPrefilter } from '@/lib/notifications/notification-filter';
+import {
+  MONEY_PATTERN,
+  groupedLines,
+  notificationText,
+  passesNotificationTransactionPrefilter,
+} from '@/lib/notifications/notification-filter';
 import {
   resolveNotificationPackageName,
   enrichNotificationPackage,
@@ -77,16 +82,48 @@ function trace(
   }
 }
 
+/** A summary ("2 new notifications") whose amount is only in its grouped lines sends them. */
+function summaryLines(notification: RawNotification): string | undefined {
+  if (MONEY_PATTERN.test(notificationText({ ...notification, groupedMessages: [] })))
+    return undefined;
+  return groupedLines(notification).join('\n') || undefined;
+}
+
 /**
- * Exactly the fields `RawNotification` in apps/backend/internal/extract/types.go reads. The listener
- * also hands over icons, images and grouped messages, and none of that leaves the phone.
+ * Exactly the fields `RawNotification` in apps/backend/internal/extract/types.go reads, with a
+ * summary's grouped lines as its big text. Icons and images never leave the phone.
  */
 function enrichNotificationForExtraction(
   notification: RawNotification & { packageName?: string },
 ): RawNotification {
-  const { id, app, packageName, title, titleBig, text, bigText, subText, summaryText, extraInfoText, time, receivedAt } =
-    enrichNotificationPackage(notification);
-  return { id, app, packageName, title, titleBig, text, bigText, subText, summaryText, extraInfoText, time, receivedAt };
+  const {
+    id,
+    app,
+    packageName,
+    title,
+    titleBig,
+    text,
+    bigText,
+    subText,
+    summaryText,
+    extraInfoText,
+    time,
+    receivedAt,
+  } = enrichNotificationPackage(notification);
+  return {
+    id,
+    app,
+    packageName,
+    title,
+    titleBig,
+    text,
+    bigText: bigText || summaryLines(notification),
+    subText,
+    summaryText,
+    extraInfoText,
+    time,
+    receivedAt,
+  };
 }
 
 async function loadWalletContext(): Promise<AiWalletContext[]> {
@@ -254,7 +291,9 @@ async function persistProposal(
         await pairCapture(toAbsorbedCapture({ ...proposal, id: proposalId }), duplicate);
         return { created: true, skipped: false, reason: 'Same payment', paired: true };
       } catch (e) {
-        trace(logger, 'creator', 'pairing-failed', { message: e instanceof Error ? e.message : String(e) });
+        trace(logger, 'creator', 'pairing-failed', {
+          message: e instanceof Error ? e.message : String(e),
+        });
       }
     }
 
@@ -294,27 +333,31 @@ async function persistProposal(
       (proposal.type === 'income' || proposal.type === 'expense') &&
       wallet?.currency?.toUpperCase() === proposal.currency
     ) {
-      const transaction = await createTransaction({
-        walletId: wallet.id,
-        amountMinor: proposal.amountMinor,
-        type: proposal.type,
-        categoryId: proposal.categoryId,
-        description: proposal.description,
-        merchant: proposal.merchant,
-        transactionDate: proposal.transactionDate ?? undefined,
-        locationLatitude: locationSnapshot?.latitude ?? null,
-        locationLongitude: locationSnapshot?.longitude ?? null,
-        locationName: locationSnapshot?.name ?? null,
-        metadata: {
-          ai_suggested: true,
-          ai_confidence: proposal.aiConfidence ?? undefined,
-          alert: captureAlert(proposal, proposalId),
+      const transaction = await createTransaction(
+        {
+          walletId: wallet.id,
+          amountMinor: proposal.amountMinor,
+          type: proposal.type,
+          categoryId: proposal.categoryId,
+          description: proposal.description,
+          merchant: proposal.merchant,
+          transactionDate: proposal.transactionDate ?? undefined,
+          locationLatitude: locationSnapshot?.latitude ?? null,
+          locationLongitude: locationSnapshot?.longitude ?? null,
+          locationName: locationSnapshot?.name ?? null,
+          metadata: {
+            ai_suggested: true,
+            ai_confidence: proposal.aiConfidence ?? undefined,
+            alert: captureAlert(proposal, proposalId),
+          },
         },
-      }, 'notification', {
-        // The queue item's id, so a retry after a kill finds this row instead of adding another.
-        // Items queued before intake used UUIDs cannot be row ids.
-        id: UUID.test(proposalId) ? proposalId : undefined,
-      });
+        'notification',
+        {
+          // The queue item's id, so a retry after a kill finds this row instead of adding another.
+          // Items queued before intake used UUIDs cannot be row ids.
+          id: UUID.test(proposalId) ? proposalId : undefined,
+        },
+      );
       trace(logger, 'creator', 'auto-added', { transactionId: transaction.id });
       return {
         created: true,
