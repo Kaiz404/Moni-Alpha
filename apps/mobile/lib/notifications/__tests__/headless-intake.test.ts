@@ -164,6 +164,19 @@ describe('the headless task', () => {
     expect(getAll().map((item) => item.id)).toEqual([first!.id]);
   });
 
+  it.each([['damaged', '[{"id":'], ['not a list', '{"id":"x"}']])(
+    'still queues and logs a payment when the stored log is %s',
+    async (_kind, stored) => {
+      jest.spyOn(console, 'error').mockImplementation(() => {});
+      notifications.set(LOG_KEY, stored);
+
+      await deliver(payment('1000'));
+
+      expect(log().map((entry) => entry.status)).toEqual(['waiting_for_review']);
+      expect(getAll().map((item) => item.id)).toEqual([log()[0]!.id]);
+    },
+  );
+
   it('keeps every capture in the queue past the 50 the log holds', async () => {
     for (let time = 1; time <= 60; time += 1) await deliver(payment(String(time), `${ALERT} ${time}`));
 

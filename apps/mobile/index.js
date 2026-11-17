@@ -12,9 +12,16 @@ if (Platform.OS === 'android') {
   const ALL_NOTIFICATIONS_KEY = 'captured_notifications';
   const MAX_STORED = 50;
 
+  // A log that cannot be read starts over, rather than failing every capture that follows.
   function readList(storage, key) {
     const existing = storage.getString(key);
-    return existing ? JSON.parse(existing) : [];
+    if (!existing) return [];
+    try {
+      const list = JSON.parse(existing);
+      if (Array.isArray(list)) return list;
+    } catch {}
+    console.error('[NotifCapture] capture log unreadable, starting a new one');
+    return [];
   }
 
   function appendToList(storage, key, item, max) {
