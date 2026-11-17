@@ -1,20 +1,25 @@
-// Android re-posts the same notification on updates and regrouping; identical
-// bank text within this window, or with the same post time at any age, is the
-// same event, not a second payment.
-const REPEAT_WINDOW_MS = 2 * 60 * 1000;
-
-function notificationKey(n) {
-  return [n.packageName ?? n.app ?? '', n.title ?? '', n.text ?? '', n.bigText ?? ''];
+// Android redelivers a notification, or re-posts it when it regroups, with the same key and post
+// time. Only that is a repeat, and only once the first copy was queued: two payments with the same
+// words are two notifications, and a first copy that never reached the queue was not captured.
+function sameNotification(a, b) {
+  if (a.key && b.key) return a.key === b.key;
+  // A capture logged before the listener passed Android's key.
+  return (
+    (a.packageName ?? a.app ?? '') === (b.packageName ?? b.app ?? '') &&
+    (a.title ?? '') === (b.title ?? '') &&
+    (a.text ?? '') === (b.text ?? '') &&
+    (a.bigText ?? '') === (b.bigText ?? '')
+  );
 }
 
-function isRepeatedNotification(recent, notification, nowMs) {
-  const key = notificationKey(notification);
-  return recent.some((item) => {
-    if (!notificationKey(item).every((part, i) => part === key[i])) return false;
-    if (notification.time && item.time === notification.time) return true;
-    const ageMs = nowMs - Date.parse(item.receivedAt);
-    return ageMs >= 0 && ageMs <= REPEAT_WINDOW_MS;
-  });
+function isRepeatedNotification(recent, notification) {
+  if (!notification.time) return false;
+  return recent.some(
+    (item) =>
+      item?.queued === true &&
+      item.time === notification.time &&
+      sameNotification(item, notification),
+  );
 }
 
-module.exports = { isRepeatedNotification, REPEAT_WINDOW_MS };
+module.exports = { isRepeatedNotification };

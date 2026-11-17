@@ -43,6 +43,7 @@ jest.mock('@/lib/location/location-snapshot', () => ({
 }));
 
 type Payload = {
+  key?: string;
   app: string;
   title: string;
   text: string;
@@ -219,6 +220,28 @@ describe('the headless task', () => {
 
     expect(log().map((entry) => entry.status)).toEqual(['waiting_for_review']);
     expect(getAll().map((item) => item.id)).toEqual([log()[0]!.id]);
+  });
+
+  it('queues two payments with the same words seconds apart', async () => {
+    await deliver({ ...payment('1000'), key: 'k1' });
+    await deliver({ ...payment('1030'), key: 'k2' });
+
+    expect(log().map((entry) => entry.status)).toEqual([
+      'waiting_for_review',
+      'waiting_for_review',
+    ]);
+    expect(getAll()).toHaveLength(2);
+  });
+
+  it('queues a redelivery whose first copy was not queued', async () => {
+    writeLinkedPackages([]);
+    await deliver({ ...payment('1000'), key: 'k1' });
+    writeLinkedPackages([MAYBANK]);
+
+    await deliver({ ...payment('1000'), key: 'k1' });
+
+    expect(log().map((entry) => entry.status)).toEqual(['waiting_for_review', 'not_linked']);
+    expect(getAll()).toHaveLength(1);
   });
 
   it('also takes what the listener kept while Android refused to start the task', async () => {

@@ -65,8 +65,8 @@ if (Platform.OS === 'android') {
       const repeated = isRepeatedNotification(
         readList(notificationStorage, ALL_NOTIFICATIONS_KEY),
         withPackage,
-        nowMs,
       );
+      const queueEligible = prefilterPassed && packageLinked && !repeated;
       const enriched = {
         ...withPackage,
         // A UUID, because the proposal or transaction it becomes takes this id into Postgres.
@@ -76,9 +76,10 @@ if (Platform.OS === 'android') {
         packageLinked,
         repeated,
         status: captureStatusAtIntake({ prefilterPassed, packageLinked, repeated }),
+        // What the repeat check reads: only a queued copy makes a redelivery a repeat.
+        queued: queueEligible,
       };
 
-      const queueEligible = prefilterPassed && packageLinked && !repeated;
       // Queued before anything slow, so a process Android stops early still keeps the capture.
       if (queueEligible) {
         require('./lib/ai/processing-queue').enqueue({
