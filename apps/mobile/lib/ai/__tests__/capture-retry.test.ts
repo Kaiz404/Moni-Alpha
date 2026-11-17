@@ -33,7 +33,7 @@ const mockExtract = jest.fn<Promise<ExtractResult>, [unknown]>();
 const mockStores = new Map<string, Map<string, string>>();
 const mockTables: Record<string, Observable<Record<string, Record<string, unknown>>>> = {};
 let mockRules: Record<string, unknown>[] = [];
-const mockService = { running: false };
+const mockService = { running: false, onStop: null as (() => void) | null };
 const mockSync = { signedIn: true, saved: true };
 
 jest.mock('react-native-mmkv', () => ({
@@ -47,19 +47,24 @@ jest.mock('react-native-mmkv', () => ({
     };
   },
 }));
-jest.mock('react-native-background-actions', () => ({
-  __esModule: true,
-  default: {
+/** Like react-native-background-actions 4: its wrapper stops the service once the task resolves. */
+jest.mock('react-native-background-actions', () => {
+  const service = {
     isRunning: () => mockService.running,
     start: async (task: (data: unknown) => Promise<void>, options: { parameters: unknown }) => {
       mockService.running = true;
-      void task(options.parameters);
+      void task(options.parameters).then(() => service.stop());
     },
     stop: async () => {
+      const onStop = mockService.onStop;
+      mockService.onStop = null;
+      onStop?.();
+      await new Promise((resolve) => setTimeout(resolve, 100));
       mockService.running = false;
     },
-  },
-}));
+  };
+  return { __esModule: true, default: service };
+});
 jest.mock('expo-linking', () => ({ resolveScheme: () => 'moni' }));
 jest.mock('@/lib/ai/client', () => ({
   getAiClient: () => ({ extractFromNotification: mockExtract }),
@@ -105,6 +110,7 @@ type Processor = typeof import('../background-processor');
 function launch(): { queue: Queue; processor: Processor } {
   jest.resetModules();
   mockService.running = false;
+  mockService.onStop = null;
   return {
     queue: require('../processing-queue'),
     processor: require('../background-processor'),
@@ -268,6 +274,60 @@ describe('a capture while the backend is down', () => {
     const started = processor.startBackgroundProcessor();
     await settle();
     await started;
+    expect(queueState(queue)).toEqual({ status: 'done', attempts: 0 });
+    expect(processor.isBackgroundProcessorRunning()).toBe(false);
+  });
+});
+
+describe('captures that arrive as a run ends', () => {
+  it('processes a capture that arrives while the last run is stopping its service', async () => {
+    const { queue, processor } = launch();
+    queue.enqueue(alert({ id: 'bank' }));
+    mockExtract.mockResolvedValue(READ);
+    mockService.onStop = () => {
+      queue.enqueue(alert({ id: 'e-wallet' }));
+      void processor.startBackgroundProcessor();
+    };
+
+    await processor.startBackgroundProcessor();
+    await settle();
+    await settle();
+    expect(queueState(queue, 'bank')).toEqual({ status: 'done', attempts: 0 });
+    expect(queueState(queue, 'e-wallet')).toEqual({ status: 'done', attempts: 0 });
+    expect(processor.isBackgroundProcessorRunning()).toBe(false);
+    expect(mockService.running).toBe(false);
+  });
+
+  it('runs again for a capture whose own start was skipped as the last run ended', async () => {
+    const { queue, processor } = launch();
+    queue.enqueue(alert({ id: 'first' }));
+    mockExtract.mockResolvedValue(READ);
+    mockService.onStop = () => queue.enqueue(alert({ id: 'late' }));
+
+    await processor.startBackgroundProcessor();
+    await settle();
+    await settle();
+    expect(queueState(queue, 'late')).toEqual({ status: 'done', attempts: 0 });
+    expect(processor.isBackgroundProcessorRunning()).toBe(false);
+  });
+
+  it('does not stay running for good when the service never runs its task', async () => {
+    const { queue, processor } = launch();
+    const service = jest.requireMock('react-native-background-actions').default;
+    jest.spyOn(service, 'start').mockImplementationOnce(async () => {
+      mockService.running = true;
+    });
+    jest.spyOn(console, 'error').mockImplementation(() => {});
+    queue.enqueue(alert());
+    mockExtract.mockResolvedValue(READ);
+
+    await processor.startBackgroundProcessor();
+    await settle();
+    expect(processor.isBackgroundProcessorRunning()).toBe(true);
+    expect(queueState(queue)).toEqual({ status: 'pending', attempts: 0 });
+
+    await jest.advanceTimersByTimeAsync(30_000);
+    await settle();
     expect(queueState(queue)).toEqual({ status: 'done', attempts: 0 });
     expect(processor.isBackgroundProcessorRunning()).toBe(false);
   });

@@ -48,19 +48,20 @@ jest.mock('react-native-mmkv', () => {
     },
   };
 });
-jest.mock('react-native-background-actions', () => ({
-  __esModule: true,
-  default: {
+/** Like react-native-background-actions 4: its wrapper stops the service once the task resolves. */
+jest.mock('react-native-background-actions', () => {
+  const service = {
     isRunning: () => mockService.running,
     start: async (task: (data: unknown) => Promise<void>, options: { parameters: unknown }) => {
       mockService.running = true;
-      void task(options.parameters);
+      void task(options.parameters).then(() => service.stop());
     },
     stop: async () => {
       mockService.running = false;
     },
-  },
-}));
+  };
+  return { __esModule: true, default: service };
+});
 jest.mock('expo-linking', () => ({ resolveScheme: () => 'moni' }));
 jest.mock('@/lib/ai/client', () => ({ getAiClient: jest.fn() }));
 jest.mock('@/lib/supabase/client', () => ({ getUserId: async () => 'user-1' }));

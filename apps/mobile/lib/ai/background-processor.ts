@@ -51,9 +51,18 @@ function formatTraceEvent(event: {
   return `  ${icon} [${event.stage}] ${event.event}${detailStr}`;
 }
 
-let isRunning = false;
+/** One start of the processor, from `startBackgroundProcessor` until its service has stopped. */
+type Run = { taskStarted: boolean };
+
+let current: Run | null = null;
+/** Set while a finished run waits for the library to stop its service. */
+let stopping: Promise<void> | null = null;
 let heldResumed = false;
 let retryTimer: ReturnType<typeof setTimeout> | null = null;
+
+/** Android may start the service and never run its task, e.g. when it refuses a background start. */
+const TASK_START_TIMEOUT_MS = 30_000;
+const STOP_TIMEOUT_MS = 5_000;
 
 const BACKGROUND_OPTIONS = {
   taskName: 'MoniTransactionProcessor',
@@ -111,13 +120,17 @@ async function settle(item: ProcessingQueueItem, result: RunExtractionResult): P
   return null;
 }
 
-async function processingTask(taskData?: { delay?: number; foreground?: boolean }) {
+async function processingTask(run: Run, taskData?: { delay?: number; foreground?: boolean }) {
+  // The service's task arriving after the watchdog already ran this one in the foreground.
+  if (run.taskStarted) return;
+  run.taskStarted = true;
   const delay = taskData?.delay ?? 500;
   await new Promise((r) => setTimeout(r, delay));
 
   console.log(TAG, '\u{250C}\u{2500}\u{2500} Background task started');
 
   let retryInMs: number | null = null;
+  let drained = false;
   try {
     if (!(await ensureStoreSync())) {
       console.log(TAG, '\u{2514}\u{2500}\u{2500} Signed out, leaving the queue for the next sign-in');
@@ -134,6 +147,7 @@ async function processingTask(taskData?: { delay?: number; foreground?: boolean 
           TAG,
           `\u{2514}\u{2500}\u{2500} Queue empty. ${processedCount} items processed in ${Date.now() - queueStart}ms`,
         );
+        drained = true;
         break;
       }
 
@@ -194,17 +208,48 @@ async function processingTask(taskData?: { delay?: number; foreground?: boolean 
     if (processedCount > 0) {
       console.log(TAG, `Total: ${processedCount} proposals created`);
     }
+  } catch (e) {
+    // Never reject: the library stops the service only when this task resolves.
+    console.error(TAG, 'Run failed:', e);
   } finally {
-    isRunning = false;
     if (retryInMs !== null) scheduleRetry(retryInMs);
-    try {
-      if (BackgroundService.isRunning()) {
-        await BackgroundService.stop();
-      }
-    } catch {
-      // Ignore stop errors
-    }
+    stopping = endRun(run, drained);
   }
+}
+
+async function until(done: () => boolean, timeoutMs: number): Promise<boolean> {
+  const deadline = Date.now() + timeoutMs;
+  while (!done()) {
+    if (Date.now() >= deadline) return false;
+    await new Promise((r) => setTimeout(r, 50));
+  }
+  return true;
+}
+
+/**
+ * react-native-background-actions stops the service itself once the task resolves. A run started
+ * before that stop lands would be stopped with it, so the next one waits here. A capture that
+ * arrived after the queue looked empty gets a run of its own.
+ */
+async function endRun(run: Run, drained: boolean): Promise<void> {
+  if (!(await until(() => !BackgroundService.isRunning(), STOP_TIMEOUT_MS))) {
+    await BackgroundService.stop().catch(() => {});
+  }
+  if (current === run) current = null;
+  stopping = null;
+  if (drained && getPendingCount() > 0) {
+    startBackgroundProcessor().catch((e) => console.error(TAG, 'Restart failed:', e));
+  }
+}
+
+/** Runs the queue in the app's own JS when the service never ran it. */
+function watchTaskStart(run: Run) {
+  setTimeout(() => {
+    if (run.taskStarted || current !== run) return;
+    console.error(TAG, 'Background task never started, processing in the foreground');
+    BackgroundService.stop().catch(() => {});
+    void processingTask(run, { ...BACKGROUND_OPTIONS.parameters, foreground: true });
+  }, TASK_START_TIMEOUT_MS);
 }
 
 function clearRetryTimer() {
@@ -229,7 +274,8 @@ function scheduleRetry(ms: number) {
  * Safe to call multiple times — will no-op if already active.
  */
 export async function startBackgroundProcessor(): Promise<void> {
-  if (isRunning) {
+  while (stopping) await stopping;
+  if (current) {
     console.log(TAG, 'Already running, skipping start');
     return;
   }
@@ -244,19 +290,21 @@ export async function startBackgroundProcessor(): Promise<void> {
   }
 
   console.log(TAG, `Starting with ${pending} pending items`);
-  isRunning = true;
+  const run: Run = { taskStarted: false };
+  current = run;
   clearRetryTimer();
 
   try {
-    await BackgroundService.start(processingTask, {
+    await BackgroundService.start((taskData) => processingTask(run, taskData), {
       ...BACKGROUND_OPTIONS,
       linkingURI: `${resolveScheme({})}://`,
     });
     console.log(TAG, 'Background service started');
+    watchTaskStart(run);
   } catch (e) {
     console.error(TAG, 'Failed to start background service:', e);
     console.log(TAG, 'Falling back to foreground processing');
-    await processingTask({ ...BACKGROUND_OPTIONS.parameters, foreground: true });
+    await processingTask(run, { ...BACKGROUND_OPTIONS.parameters, foreground: true });
   }
 }
 
@@ -266,16 +314,6 @@ export async function retryCaptures(id?: string): Promise<void> {
   await startBackgroundProcessor();
 }
 
-export async function stopBackgroundProcessor(): Promise<void> {
-  if (!isRunning) return;
-  isRunning = false;
-  try {
-    await BackgroundService.stop();
-  } catch {
-    // Ignore
-  }
-}
-
 export function isBackgroundProcessorRunning(): boolean {
-  return isRunning;
+  return current !== null;
 }
