@@ -11,14 +11,16 @@ export type LatLng = { latitude: number; longitude: number };
 /** Local calendar days, both ends inclusive, as `YYYY-MM-DD`. */
 export type DaySpan = { from: string; to: string };
 
-export type PlaceRangeKey = 'week' | 'month' | 'last-month';
+export type PlaceRangeKey = '7d' | '30d' | 'all';
 
-export type PlaceRange = DaySpan & {
+export type PlaceRange = {
   key: PlaceRangeKey;
-  /** Segment label: "This week", "October". */
+  /** Segment label: "Last 7 days". */
   label: string;
-  /** Sentence tail: "this week", "in October". */
+  /** Sentence tail: "in the last 7 days", "so far". */
   words: string;
+  /** Null for All time. */
+  span: DaySpan | null;
 };
 
 export type PlaceCategory = { categoryId: string | null; totalMinor: MinorAmount };
@@ -204,34 +206,17 @@ export function placesTotal(places: readonly Place[]): MinorAmount {
   return addMinor(0, ...places.map((place) => place.totalMinor));
 }
 
-function startOfWeek(now: Date): Date {
-  const offset = (now.getDay() + 6) % 7;
-  return new Date(now.getFullYear(), now.getMonth(), now.getDate() - offset);
-}
-
-/** The three map ranges: Monday to today, the 1st to today, and all of last month. */
+/** The map ranges: rolling 7 and 30 days ending today, and every day. */
 export function placeRanges(now: Date): PlaceRange[] {
   const today = toLocalDateInput(now);
-  const month = MONTHS[now.getMonth()];
-  const lastStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-  const lastEnd = new Date(now.getFullYear(), now.getMonth(), 0);
-  const last = MONTHS[lastStart.getMonth()];
+  const back = (days: number): DaySpan => ({
+    from: toLocalDateInput(new Date(now.getFullYear(), now.getMonth(), now.getDate() - (days - 1))),
+    to: today,
+  });
   return [
-    { key: 'week', label: 'This week', words: 'this week', from: toLocalDateInput(startOfWeek(now)), to: today },
-    {
-      key: 'month',
-      label: month,
-      words: `in ${month}`,
-      from: toLocalDateInput(new Date(now.getFullYear(), now.getMonth(), 1)),
-      to: today,
-    },
-    {
-      key: 'last-month',
-      label: last,
-      words: `in ${last}`,
-      from: toLocalDateInput(lastStart),
-      to: toLocalDateInput(lastEnd),
-    },
+    { key: '7d', label: 'Last 7 days', words: 'in the last 7 days', span: back(7) },
+    { key: '30d', label: 'Last 30 days', words: 'in the last 30 days', span: back(30) },
+    { key: 'all', label: 'All time', words: 'so far', span: null },
   ];
 }
 

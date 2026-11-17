@@ -1,5 +1,5 @@
 # M1 map: pins, the fixed place card, range and category filters, Top places.
-# Needs location granted, and located expenses this month.
+# Needs location granted, and located expenses in the last 30 days.
 # The map tiles stay blank until O6 adds com.anonymous.moni.e2e to the Maps key.
 # Run: scripts/device/run-flows.sh .maestro/flows/map/places.yaml
 appId: com.anonymous.moni.e2e
@@ -18,7 +18,9 @@ tags:
 - assertVisible:
     id: map.places.fit
 - assertVisible:
-    id: map.range.month
+    id: map.range.30d
+- assertVisible: Last 7 days
+- assertVisible: All time
 - assertVisible:
     id: map.category.all
 - assertVisible:
@@ -32,9 +34,11 @@ tags:
 - assertVisible:
     id: map.place-card.open
 - tapOn:
-    id: map.range.week
+    id: map.range.7d
 - tapOn:
-    id: map.range.month
+    id: map.range.all
+- tapOn:
+    id: map.range.30d
 - assertVisible:
     id: map.place-card.open
 - takeScreenshot: m1-l4-filter

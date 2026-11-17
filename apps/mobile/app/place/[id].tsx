@@ -73,7 +73,10 @@ export default function PlaceScreen() {
   const aliases = useValue(() => (userId ? listMerchantAliases(userId) : []));
 
   const range = useMemo(() => placeRange(params.range, new Date()), [params.range]);
-  const places = useMemo(() => groupPlaces(transactions, { currency, range }), [transactions, currency, range]);
+  const places = useMemo(
+    () => groupPlaces(transactions, { currency, range: range.span }),
+    [transactions, currency, range],
+  );
   const place = places.find((candidate) => candidate.id === params.id) ?? null;
   const nameOf = (raw: string | null) => merchantName(raw, aliases);
 
@@ -107,7 +110,7 @@ export default function PlaceScreen() {
   const regular = placeRegular(place);
   const regularWallet = regular?.walletId ? lookups.walletNames[regular.walletId] : null;
   const noticed = regular
-    ? `${nameOf(regular.merchant)} is your regular. ${regular.visits} visits ${range.key === 'month' ? 'this month' : range.words}, about ${formatMoney(regular.averageMinor, currency, { whole: true })} each${regularWallet ? `, always ${regularWallet}` : ''}.`
+    ? `${nameOf(regular.merchant)} is your regular. ${regular.visits} visits ${range.words}, about ${formatMoney(regular.averageMinor, currency, { whole: true })} each${regularWallet ? `, always ${regularWallet}` : ''}.`
     : null;
   const lead = categoryLook(place.categories[0]?.categoryId ?? null);
 
@@ -254,7 +257,7 @@ export default function PlaceScreen() {
       <MapHeader
         scope="place"
         title={place.name}
-        subtitle={[place.area, spanLabel(range)].filter(Boolean).join(' · ')}
+        subtitle={[place.area, range.span && spanLabel(range.span)].filter(Boolean).join(' · ')}
         action={{
           name: 'directions',
           icon: 'directions',

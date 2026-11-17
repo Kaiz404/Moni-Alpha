@@ -56,7 +56,7 @@ describe('list scope params', () => {
   it.each<ListScope>([
     { kind: 'bill', seriesKey: 'expense|MYR|netflix' },
     { kind: 'merchant', merchant: 'Grab', type: 'expense', currency: 'MYR', month: '2026-10' },
-    { kind: 'place', placeId: 'p1', range: 'week' },
+    { kind: 'place', placeId: 'p1', range: '7d' },
     { kind: 'place', placeId: 'p1', range: null },
     { kind: 'category', categoryId: 'salary', month: '2026-10' },
     { kind: 'category', categoryId: 'salary', month: null },

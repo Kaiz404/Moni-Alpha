@@ -499,7 +499,7 @@ One page for both modes: the "Moni" word and "Know what's safe to spend.", a Sig
 
 1. The map fills the top half in the board's warm map style, with the header floating over a cream fade. Pins are Paper capsules (category bubble, whole-ringgit total); pins that would overlap merge and show a count; the selected place's pin turns Ink.
 2. A cream sheet starts over the map's bottom edge. Its grabber drags or taps it up to just under the header; the map keeps its own pan and pinch.
-3. In the sheet: the range segmented control (This week, this month, last month), category chips, then the selected place as a fixed card in its top category's colour with **See this place**. It is part of the page and cannot be swiped away. "Top places" lists every place, largest first.
+3. In the sheet: the range segmented control (Last 7 days, Last 30 days, All time, rolling windows ending today, opening on Last 30 days), category chips, then the selected place as a fixed card in its top category's colour with **See this place**. It is part of the page and cannot be swiped away. "Top places" lists every place, largest first.
 4. The place page has a static map strip, the "Spent here" hero, "Your top place", captures pinned here that wait for review (kept out of the totals), "What you bought" as one split bar, a Moni noticed card when a merchant is a regular, the payments, and **See all**, which pushes them as a paged list under the place.
 5. With no located expenses the sheet shows the XM-Empty state: **Add an expense**, or **Turn location back on** when location is denied. With places and location denied, the places stay and one line offers to turn it back on.
 6. Main currency only; other currencies never reach the map.

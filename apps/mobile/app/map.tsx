@@ -70,7 +70,7 @@ export default function MapScreen() {
   const [hasMap] = useState(mapsAvailable);
 
   const ranges = useMemo(() => placeRanges(new Date()), []);
-  const [rangeKey, setRangeKey] = useState<PlaceRangeKey>('month');
+  const [rangeKey, setRangeKey] = useState<PlaceRangeKey>('30d');
   const [categoryId, setCategoryId] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [region, setRegion] = useState<Region | null>(null);
@@ -78,9 +78,12 @@ export default function MapScreen() {
   const range = ranges.find((option) => option.key === rangeKey) ?? ranges[1];
 
   const everywhere = useMemo(() => groupPlaces(transactions, { currency }), [transactions, currency]);
-  const inRange = useMemo(() => groupPlaces(transactions, { currency, range }), [transactions, currency, range]);
+  const inRange = useMemo(
+    () => groupPlaces(transactions, { currency, range: range.span }),
+    [transactions, currency, range],
+  );
   const places = useMemo(
-    () => (categoryId ? groupPlaces(transactions, { currency, range, categoryId }) : inRange),
+    () => (categoryId ? groupPlaces(transactions, { currency, range: range.span, categoryId }) : inRange),
     [transactions, currency, range, categoryId, inRange],
   );
   const chips = useMemo(() => categoryChips(inRange), [inRange]);

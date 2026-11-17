@@ -6,6 +6,7 @@ import {
   groupPlaces,
   zoomMoved,
   placeLabel,
+  placeRange,
   placeRanges,
   placeRegular,
   spanLabel,
@@ -154,13 +155,15 @@ describe('placeRegular', () => {
 });
 
 describe('placeRanges', () => {
-  it('runs the week from Monday and names this and last month', () => {
+  it('offers rolling 7 and 30 days ending today, and all time', () => {
     const now = new Date(2026, 9, 14, 14, 6);
     expect(placeRanges(now)).toEqual([
-      { key: 'week', label: 'This week', words: 'this week', from: '2026-10-12', to: '2026-10-14' },
-      { key: 'month', label: 'October', words: 'in October', from: '2026-10-01', to: '2026-10-14' },
-      { key: 'last-month', label: 'September', words: 'in September', from: '2026-09-01', to: '2026-09-30' },
+      { key: '7d', label: 'Last 7 days', words: 'in the last 7 days', span: { from: '2026-10-08', to: '2026-10-14' } },
+      { key: '30d', label: 'Last 30 days', words: 'in the last 30 days', span: { from: '2026-09-15', to: '2026-10-14' } },
+      { key: 'all', label: 'All time', words: 'so far', span: null },
     ]);
+    expect(placeRange(undefined, now).key).toBe('30d');
+    expect(placeRange('month', now).key).toBe('30d');
     expect(spanLabel({ from: '2026-10-01', to: '2026-10-14' })).toBe('1–14 Oct');
     expect(spanLabel({ from: '2026-09-28', to: '2026-10-04' })).toBe('28 Sep–4 Oct');
   });

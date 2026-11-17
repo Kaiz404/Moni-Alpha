@@ -129,7 +129,7 @@ export function scopedRows(
     case 'place': {
       const place = groupPlaces(transactions, {
         currency: mainCurrency,
-        range: scope.range ? placeRange(scope.range, now) : null,
+        range: scope.range ? placeRange(scope.range, now).span : null,
       }).find((candidate) => candidate.id === scope.placeId);
       return { rows: newestFirst([...(place?.transactions ?? [])]), currency: mainCurrency };
     }
