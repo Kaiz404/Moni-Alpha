@@ -217,18 +217,6 @@ describe('Activity chart', () => {
     expect(screen.getByText('RM4,200.00')).toBeTruthy();
   });
 
-  it('narrows the list to the bar tapped, in finer bars', () => {
-    render(<ActivityScreen />);
-    fireEvent.press(screen.getByTestId('activity.chart.2026-09'));
-    expect(capsule()).toHaveTextContent('Sep 2026');
-    expect(shown('r15')).toBe(true);
-    expect(shown('r1')).toBe(false);
-    expect(screen.getByTestId('activity.chart.2026-09-29')).toBeTruthy();
-    fireEvent.press(screen.getByTestId('activity.chart.2026-09-29'));
-    expect(capsule()).toHaveTextContent('29 Sep to 30 Sep');
-    expect(screen.getByTestId('activity.chart.2026-09-30')).toBeTruthy();
-  });
-
   it('follows the search, so the totals add up to what is listed', () => {
     render(<ActivityScreen />);
     fireEvent.changeText(screen.getByTestId('activity.search'), 'salary');
@@ -244,7 +232,7 @@ describe('Activity chart', () => {
     expect(shown('reload')).toBe(true);
   });
 
-  it('shows the bar held and only a tap narrows', () => {
+  it('shows the bar held and never changes the dates', () => {
     render(<ActivityScreen />);
     const bar = screen.getByTestId('activity.chart.2026-10');
     fireEvent(bar, 'pressIn');
@@ -254,5 +242,18 @@ describe('Activity chart', () => {
     fireEvent(bar, 'pressOut');
     expect(screen.queryByText('Spent RM140.00')).toBeNull();
     expect(capsule()).toHaveTextContent('Last 6 months');
+  });
+
+  it('keeps a tapped bar\'s figures up until it is tapped again, and leaves the list alone', () => {
+    render(<ActivityScreen />);
+    const bar = screen.getByTestId('activity.chart.2026-09');
+    fireEvent.press(bar);
+    expect(screen.getByText('Sep 2026')).toBeTruthy();
+    expect(capsule()).toHaveTextContent('Last 6 months');
+    expect(shown('r1')).toBe(true);
+    fireEvent.press(screen.getByTestId('activity.chart.2026-10'));
+    expect(screen.getByText('Spent RM140.00')).toBeTruthy();
+    fireEvent.press(screen.getByTestId('activity.chart.2026-10'));
+    expect(screen.queryByText('Spent RM140.00')).toBeNull();
   });
 });

@@ -21,7 +21,7 @@ import {
   FLOW_TOP,
   flowGeometry,
 } from '@/lib/finance/flow-geometry';
-import type { FlowBucket, FlowSeries } from '@/lib/finance/flow-series';
+import type { FlowSeries } from '@/lib/finance/flow-series';
 import { formatMoney } from '@/lib/finance/format-money';
 import { scrubStep } from '@/lib/haptics';
 import { springs } from '@/lib/motion/tokens';
@@ -89,16 +89,15 @@ function FlowChart({
   series,
   currency,
   now,
-  onNarrow,
 }: {
   series: FlowSeries;
   currency: string;
   now: Date;
-  onNarrow: (bucket: FlowBucket) => void;
 }) {
   const tokens = useThemeTokens();
   const [width, setWidth] = useState(318);
-  const [held, setHeld] = useState<number | null>(null);
+  const [pressing, setPressing] = useState<number | null>(null);
+  const [pinnedKey, setPinnedKey] = useState<string | null>(null);
   const geometry = useMemo(
     () => flowGeometry(series.buckets, width, currency),
     [series.buckets, width, currency],
@@ -112,6 +111,8 @@ function FlowChart({
     grownThisSession = true;
   }, []);
 
+  const pinned = series.buckets.findIndex((bucket) => bucket.key === pinnedKey);
+  const held = pressing ?? (pinned === -1 ? null : pinned);
   const heldSlot = held === null ? null : (geometry.slots[held] ?? null);
   const heldBucket = held === null ? null : (series.buckets[held] ?? null);
   const guideX = heldSlot ? heldSlot.spentX + geometry.bar : 0;
@@ -214,16 +215,15 @@ function FlowChart({
             <Press
               testID={tid('activity', 'chart', slot.key)}
               accessibilityLabel={`${rangeLabel(bucket, now)}: spent ${formatMoney(bucket.spentMinor, currency)}, money in ${formatMoney(bucket.inMinor, currency)}`}
-              accessibilityHint="Shows these dates"
               pressedScale={1}
               unstable_pressDelay={60}
-              onPressIn={() => setHeld(index)}
-              onPressOut={() => setHeld(null)}
+              onPressIn={() => setPressing(index)}
+              onPressOut={() => setPressing(null)}
+              // A tap keeps the bar's figures up until the same bar is tapped again; a hold shows them while held.
               onPress={() => {
                 scrubStep();
-                onNarrow(bucket);
+                setPinnedKey((key) => (key === bucket.key ? null : bucket.key));
               }}
-              // A hold reads the bar's figures; only a tap narrows the dates.
               onLongPress={() => {}}
               className="absolute"
               style={{
@@ -308,7 +308,6 @@ export function FlowCard({
   now,
   onPickRange,
   onClearRange,
-  onNarrow,
 }: {
   series: FlowSeries;
   range: ActivityRange | null;
@@ -316,7 +315,6 @@ export function FlowCard({
   now: Date;
   onPickRange: () => void;
   onClearRange: () => void;
-  onNarrow: (bucket: FlowBucket) => void;
 }) {
   const tokens = useThemeTokens();
   const drawn = series.spentMinor > 0 || series.inMinor > 0;
@@ -389,7 +387,6 @@ export function FlowCard({
             series={series}
             currency={currency}
             now={now}
-            onNarrow={onNarrow}
           />
         </>
       ) : null}

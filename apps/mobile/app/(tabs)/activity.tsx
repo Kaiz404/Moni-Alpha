@@ -235,7 +235,6 @@ export default function ActivityScreen() {
               now={now}
               onPickRange={() => void pickRange()}
               onClearRange={() => setRange(null)}
-              onNarrow={(bucket) => setRange({ from: bucket.from, to: bucket.to })}
             />
             <FilterChips
               kind={kind}
