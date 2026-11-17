@@ -35,8 +35,7 @@ export function rowMeta(
   metaLead: MetaLead,
   now?: Date,
 ): string {
-  if (row.kind === 'transfer')
-    return `${row.wallet} → ${row.toWallet}`;
+  if (row.kind === 'transfer') return `${row.wallet} to ${row.toWallet}`;
   const lead =
     metaLead === 'category'
       ? (row.category ??
@@ -149,13 +148,20 @@ export function TransactionRowBody({
               variant="inline"
             />
           ) : null}
-          <Text
-            variant="meta"
-            className="min-w-0 flex-shrink text-muted"
-            numberOfLines={1}
-          >
-            {meta}
-          </Text>
+          {row.kind === 'transfer' ? (
+            <TransferMeta
+              from={row.wallet}
+              to={row.toWallet}
+            />
+          ) : (
+            <Text
+              variant="meta"
+              className="min-w-0 flex-shrink text-muted"
+              numberOfLines={1}
+            >
+              {meta}
+            </Text>
+          )}
         </View>
       </View>
       <Text
@@ -164,6 +170,34 @@ export function TransactionRowBody({
         style={{ fontVariant: ['tabular-nums'] }}
       >
         {amount}
+      </Text>
+    </View>
+  );
+}
+
+/** A transfer's meta: the two wallets with an arrow icon centred between them. */
+function TransferMeta({ from, to }: { from: string; to: string }) {
+  const tokens = useThemeTokens();
+  return (
+    <View className="min-w-0 flex-shrink flex-row items-center gap-1">
+      <Text
+        variant="meta"
+        className="min-w-0 flex-shrink text-muted"
+        numberOfLines={1}
+      >
+        {from}
+      </Text>
+      <IconSymbol
+        name="arrow-right"
+        size={14}
+        color={tokens.muted}
+      />
+      <Text
+        variant="meta"
+        className="min-w-0 flex-shrink text-muted"
+        numberOfLines={1}
+      >
+        {to}
       </Text>
     </View>
   );

@@ -11,7 +11,7 @@ import { formatMoney } from '@/lib/finance/format-money';
 import { tid } from '@/lib/test-ids';
 
 /**
- * Safe to spend a day before and after this session's approvals: "RM24 → RM23" over
+ * Safe to spend a day before and after this session's approvals: RM24, an arrow, RM23 over
  * "RM420 left for 18 days after these.", or null without a budget or anything left.
  */
 function useSafeToSpend(addedMinor: number) {
@@ -22,10 +22,8 @@ function useSafeToSpend(addedMinor: number) {
   const before = Math.floor((left.leftMinor + addedMinor) / left.daysLeft / 100) * 100;
   const days = `${left.daysLeft} ${left.daysLeft === 1 ? 'day' : 'days'}`;
   return {
-    line:
-      before === left.perDayMinor
-        ? whole(left.perDayMinor)
-        : `${whole(before)} → ${whole(left.perDayMinor)}`,
+    before: before === left.perDayMinor ? null : whole(before),
+    after: whole(left.perDayMinor),
     sentence: `${whole(left.leftMinor)} left for ${days}${addedMinor > 0 ? ' after these' : ''}.`,
   };
 }
@@ -109,9 +107,27 @@ export function CaughtUp({
           >
             Safe to spend a day
           </Text>
-          <Text className="text-[34px] leading-[40px] font-display-bold text-on-pastel">
-            {safe.line}
-          </Text>
+          <View
+            accessible
+            accessibilityLabel={safe.before ? `${safe.before} to ${safe.after}` : safe.after}
+            className="flex-row items-center gap-1.5"
+          >
+            {safe.before ? (
+              <>
+                <Text className="text-[34px] leading-[40px] font-display-bold text-on-pastel">
+                  {safe.before}
+                </Text>
+                <IconSymbol
+                  name="arrow-right"
+                  size={26}
+                  color={tokens.onPastel}
+                />
+              </>
+            ) : null}
+            <Text className="text-[34px] leading-[40px] font-display-bold text-on-pastel">
+              {safe.after}
+            </Text>
+          </View>
           <Text
             variant="meta"
             className="text-on-pastel"

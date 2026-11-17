@@ -48,6 +48,36 @@ describe('TransactionRow', () => {
     expect(onPress).toHaveBeenCalledTimes(1);
   });
 
+  it('shows a transfer as two wallet names around an arrow icon, read as "to"', () => {
+    render(
+      <TransactionRow
+        testID={tid('activity', 'row', 'reload')}
+        row={{
+          kind: 'transfer',
+          title: 'Reload',
+          date: grab.date,
+          amountMinor: 5000 as MinorAmount,
+          currency: 'MYR',
+          icon: 'swap-horizontal',
+          color: null,
+          wallet: 'Maybank',
+          toWallet: "Touch 'n Go",
+          autoAdded: false,
+        }}
+        metaLead="category"
+        onPress={() => {}}
+        now={now}
+      />,
+    );
+    expect(screen.getByText('Maybank')).toBeTruthy();
+    expect(screen.getByText("Touch 'n Go")).toBeTruthy();
+    expect(screen.queryByText(/→/)).toBeNull();
+    expect(screen.getByTestId('activity.row.reload')).toHaveProp(
+      'accessibilityLabel',
+      "Reload, Maybank to Touch 'n Go, RM50.00",
+    );
+  });
+
   it('leads an auto-added row with the Auto pill and dates it outside day groups', () => {
     render(
       <TransactionRow
