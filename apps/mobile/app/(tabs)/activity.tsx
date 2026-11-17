@@ -162,7 +162,6 @@ export default function ActivityScreen() {
         cardStyleId: wallet.cardStyleId,
       })),
       selectedIds: shownWalletIds,
-      allLabel: 'All wallets',
     });
     if (picked) setWalletIds(picked.walletIds);
   };

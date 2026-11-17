@@ -167,6 +167,8 @@ export type SheetProps = {
   note?: string;
   /** Pickers carry the 44 close; confirm sheets do not. */
   closeLabel?: string;
+  /** A small control at the right of the title row, such as Select all. */
+  headerAction?: ReactNode;
   /** `fit` grows with its content; `large` stops 154 from the top. */
   size: 'fit' | 'large';
   /** Pinned 56 actions, 20 from the sides and the bottom. */
@@ -198,6 +200,7 @@ export function Sheet({
   title,
   note,
   closeLabel,
+  headerAction,
   size,
   actions,
   gap = 12,
@@ -422,6 +425,7 @@ export function Sheet({
                     </Text>
                   ) : null}
                 </View>
+                {headerAction ? <View className="pt-1">{headerAction}</View> : null}
                 {closeLabel ? (
                   <Press
                     testID={tid('sheet', 'close')}

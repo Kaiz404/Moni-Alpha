@@ -71,8 +71,6 @@ type Sheets = {
       title: string;
       wallets: WalletOption[];
       selectedIds: readonly string[];
-      /** The first row, which stands for every wallet. */
-      allLabel: string;
     };
     result: { walletIds: string[] };
   };

@@ -6,6 +6,7 @@ import Animated, { FadeIn } from 'react-native-reanimated';
 import { sameName } from '@/components/debts/past-people';
 import { PersonAvatar } from '@/components/debts/person-avatar';
 import { Button } from '@/components/ui/button';
+import { Chip } from '@/components/ui/chip';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Press, PressRows } from '@/components/ui/press';
 import { SearchField } from '@/components/ui/search-field';
@@ -298,11 +299,10 @@ export function WalletSheet({
   );
 }
 
-const ALL = 'all';
-
 /**
- * Several wallets at once: rows tick and untick, and nothing changes until Apply. The first row
- * stands for every wallet, so ticking it clears the others, and ticking every wallet reads as it.
+ * Several wallets at once: rows tick and untick, and nothing changes until Apply. No filter opens
+ * with every wallet ticked; Select all and Clear sit in the title row, and ticking every wallet
+ * applies as no filter.
  */
 export function WalletsSheet({
   request,
@@ -312,15 +312,17 @@ export function WalletsSheet({
   request: SheetRequestOf<'wallets'>;
   onApply: (result: SheetResult<'wallets'>) => void;
 }) {
-  const [draft, setDraft] = useState<ReadonlySet<string>>(() => new Set(request.selectedIds));
-  const walletOptions = useWalletOptions(request.wallets);
+  const [draft, setDraft] = useState<ReadonlySet<string>>(
+    () =>
+      new Set(
+        request.selectedIds.length > 0
+          ? request.selectedIds
+          : request.wallets.map((wallet) => wallet.id),
+      ),
+  );
+  const options = useWalletOptions(request.wallets);
   const every = request.wallets.every((wallet) => draft.has(wallet.id));
-  const options: PickerOption[] = [{ id: ALL, name: request.allLabel }, ...walletOptions];
   const toggle = (id: string) => {
-    if (id === ALL) {
-      setDraft(new Set());
-      return;
-    }
     const next = new Set(draft);
     if (!next.delete(id)) next.add(id);
     setDraft(next);
@@ -330,6 +332,15 @@ export function WalletsSheet({
       {...frame}
       size="fit"
       title={request.title}
+      headerAction={
+        <Chip
+          testID={tid('sheet', 'select-all')}
+          label={every ? 'Clear' : 'Select all'}
+          onPress={() =>
+            setDraft(new Set(every ? [] : request.wallets.map((wallet) => wallet.id)))
+          }
+        />
+      }
       actions={
         <>
           <Button
@@ -345,6 +356,7 @@ export function WalletsSheet({
             className="flex-1"
             pinned
             label="Apply"
+            disabled={draft.size === 0}
             onPress={() =>
               onApply({
                 walletIds: every
@@ -366,7 +378,7 @@ export function WalletsSheet({
             <OptionRow
               option={option}
               mark="checkbox"
-              selected={option.id === ALL ? draft.size === 0 || every : draft.has(option.id)}
+              selected={draft.has(option.id)}
               onPress={() => toggle(option.id)}
             />
           )}

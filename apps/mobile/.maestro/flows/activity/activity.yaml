@@ -47,6 +47,8 @@ tags:
 
 - tapOn:
     id: activity.filter.wallet
+- tapOn:
+    id: sheet.select-all
 - tapOn: "Touch 'n Go eWallet"
 - takeScreenshot: a1-wallets-sheet
 - tapOn:
@@ -75,7 +77,7 @@ tags:
 - tapOn:
     id: activity.filter.wallet
 - tapOn:
-    id: sheet.option.all
+    id: sheet.select-all
 - tapOn:
     id: sheet.apply
 - assertVisible:
@@ -103,7 +105,6 @@ tags:
     element:
       id: activity.pager.older
     direction: DOWN
-    centerElement: true
 - assertVisible:
     id: activity.pager.page
     text: 'Page 1 of \d+'
