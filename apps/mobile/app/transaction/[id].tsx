@@ -338,7 +338,7 @@ function Detail({ transaction: tx }: { transaction: FinanceTransaction }) {
         next === 'income'
           ? 'It counts as money in, and you choose an income category for it.'
           : 'It counts as spending, and you choose an expense category for it.',
-      confirmLabel: next === 'income' ? 'Make it income' : 'Make it an expense',
+      confirmLabel: 'Confirm',
       cancelLabel: 'Keep it',
     });
     if (confirmed)

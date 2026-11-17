@@ -5,6 +5,7 @@ import { Keyboard } from 'react-native';
 import TransactionDetailScreen from '@/app/transaction/[id]';
 import { formatDate } from '@/lib/dates/day-label';
 import type { FinanceTransaction } from '@/lib/finance/types';
+import { dismissSheet, getOpenSheet } from '@/lib/sheet/sheet-store';
 import { updateTransaction } from '@/lib/supabase/transactions';
 import { dismissToast } from '@/lib/toast/toast-store';
 
@@ -113,6 +114,18 @@ describe('Transaction detail', () => {
     await act(async () => page.unmount());
     expect(updateTransaction).toHaveBeenCalledTimes(1);
     expect(updateTransaction).toHaveBeenCalledWith('t1', { notes: 'Lunch' });
+  });
+
+  it('asks before a change of type with a button that reads Confirm', () => {
+    render(<TransactionDetailScreen />);
+    fireEvent.press(screen.getByTestId('txn.tile.type'));
+    const sheet = getOpenSheet();
+    expect(sheet?.kind === 'confirm' && sheet.request).toMatchObject({
+      title: 'Make this income?',
+      confirmLabel: 'Confirm',
+      cancelLabel: 'Keep it',
+    });
+    act(() => dismissSheet());
   });
 
   it('does not save a note that did not change', async () => {
