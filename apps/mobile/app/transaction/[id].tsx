@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Alert, View } from 'react-native';
 import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 
+import { WalletBubble } from '@/components/capture/field-bubble';
 import { BudgetLine } from '@/components/transaction/budget-line';
 import {
   DetailLinks,
@@ -344,7 +345,7 @@ function Detail({ transaction: tx }: { transaction: FinanceTransaction }) {
           label: 'From',
           value: wallet ? compactNames[wallet.id] : 'Wallet',
           spoken: wallet?.name,
-          dot: wallet?.color,
+          bubble: wallet ? <WalletBubble wallet={wallet} /> : undefined,
           action: { kind: 'pick', onPress: () => void pickWallet('from') },
         }
       : correction
@@ -352,16 +353,20 @@ function Detail({ transaction: tx }: { transaction: FinanceTransaction }) {
           name: 'category',
           label: 'Category',
           value: 'Not in budgets',
-          icon: 'scale-balance',
+          bubble: <TintBubble size={32} icon="scale-balance" color={tokens.lemon} />,
           action: null,
         }
       : {
           name: 'category',
           label: 'Category',
           value: category?.name ?? 'Choose',
-          icon: category
-            ? resolveTransactionIcon(category.icon, tx.type)
-            : undefined,
+          bubble: category ? (
+            <TintBubble
+              size={32}
+              icon={resolveTransactionIcon(category.icon, tx.type)}
+              color={category.color}
+            />
+          ) : undefined,
           action: { kind: 'pick', onPress: () => void pickCategory() },
         },
     transfer
@@ -370,7 +375,7 @@ function Detail({ transaction: tx }: { transaction: FinanceTransaction }) {
           label: 'To',
           value: toWallet ? compactNames[toWallet.id] : 'Wallet',
           spoken: toWallet?.name,
-          dot: toWallet?.color,
+          bubble: toWallet ? <WalletBubble wallet={toWallet} /> : undefined,
           action: { kind: 'pick', onPress: () => void pickWallet('to') },
         }
       : {
@@ -378,7 +383,7 @@ function Detail({ transaction: tx }: { transaction: FinanceTransaction }) {
           label: 'Wallet',
           value: wallet ? compactNames[wallet.id] : 'Wallet',
           spoken: wallet?.name,
-          dot: wallet?.color,
+          bubble: wallet ? <WalletBubble wallet={wallet} /> : undefined,
           action: { kind: 'pick', onPress: () => void pickWallet('from') },
         },
     {

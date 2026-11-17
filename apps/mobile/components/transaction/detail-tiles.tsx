@@ -1,4 +1,5 @@
 import { transactionSourceSchema, type TransactionSource } from '@repo/types';
+import type { ReactNode } from 'react';
 import { View } from 'react-native';
 
 import {
@@ -44,7 +45,8 @@ export type Tile = {
   /** What the screen reader hears when `value` is shortened: the full wallet name (V2A-TxnDetail). */
   spoken?: string;
   icon?: IconSymbolName;
-  dot?: string | null;
+  /** The category's or wallet's own 32 bubble, leading the label and value as on Type it. */
+  bubble?: ReactNode;
   /** `pick` opens a picker sheet (Sand, chevron down); `link` opens a page (Paper, chevron right). */
   action: { kind: 'pick' | 'link'; onPress: () => void } | null;
 };
@@ -54,30 +56,28 @@ function DetailTile({ tile }: { tile: Tile }) {
   const pick = tile.action?.kind === 'pick';
   const body = (
     <>
-      <Text variant="meta" className="text-muted">
-        {tile.label}
-      </Text>
-      <View className="flex-row items-center gap-1.5">
-        {tile.dot ? (
-          <View className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: tile.dot }} />
-        ) : null}
-        {tile.icon ? <IconSymbol name={tile.icon} size={18} color={tokens.foreground} /> : null}
-        <Text variant="rowTitle" className="min-w-0 flex-shrink text-foreground" numberOfLines={1}>
-          {tile.value}
+      {tile.bubble}
+      <View className="min-w-0 flex-1 gap-0.5">
+        <Text variant="meta" className="text-muted">
+          {tile.label}
         </Text>
-        {tile.action ? (
-          <View className="ml-auto">
-            <IconSymbol
-              name={pick ? 'chevron-down' : 'chevron-right'}
-              size={18}
-              color={tokens.ink2}
-            />
-          </View>
-        ) : null}
+        <View className="flex-row items-center gap-1.5">
+          {tile.icon ? <IconSymbol name={tile.icon} size={18} color={tokens.foreground} /> : null}
+          <Text variant="rowTitle" className="min-w-0 flex-shrink text-foreground" numberOfLines={1}>
+            {tile.value}
+          </Text>
+        </View>
       </View>
+      {tile.action ? (
+        <IconSymbol
+          name={pick ? 'chevron-down' : 'chevron-right'}
+          size={18}
+          color={tokens.ink2}
+        />
+      ) : null}
     </>
   );
-  const className = `min-h-[64px] flex-1 justify-center gap-0.5 rounded-field px-3.5 py-2 ${pick ? 'bg-sand' : 'bg-card'}`;
+  const className = `min-h-[64px] flex-1 flex-row items-center gap-2.5 rounded-field py-2 ${tile.bubble ? 'pl-2.5' : 'pl-3.5'} pr-3 ${pick ? 'bg-sand' : 'bg-card'}`;
   return tile.action ? (
     <Press
       testID={tid('txn', 'tile', tile.name)}
