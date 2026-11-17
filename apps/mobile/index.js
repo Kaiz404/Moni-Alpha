@@ -6,33 +6,8 @@ if (process.env.EXPO_PUBLIC_E2E_NOW) {
 
 if (Platform.OS === 'android') {
   const {
-    default: RNAndroidNotificationListener,
     RNAndroidNotificationListenerHeadlessJsName,
   } = require('react-native-android-notification-listener');
-  const { createMMKV } = require('react-native-mmkv');
-  const {
-    passesNotificationTransactionPrefilter,
-    withoutOneTimeCode,
-  } = require('./lib/notifications/notification-filter.core');
-  const { startBackgroundProcessor } = require('./lib/ai/background-processor');
-  const { enqueue } = require('./lib/ai/processing-queue');
-  const { randomUUID } = require('expo-crypto');
-  const { captureLocationSnapshot } = require('./lib/location/location-snapshot');
-  const {
-    isPackageLinked,
-    isLocationRecordedForPackage,
-  } = require('./lib/notifications/linked-packages-cache.core');
-  const { captureStatusAtIntake } = require('./lib/notifications/capture-status.core');
-  const { recordHeard } = require('./lib/notifications/capture-health.core');
-  const { enrichNotificationPackage } = require('./lib/notifications/notification-package.core');
-  const { isRepeatedNotification } = require('./lib/notifications/notification-repeat.core');
-  const { REVIEW_TASK, isOwnNotification } = require('./lib/notifications/review-notification.core');
-  const TaskManager = require('expo-task-manager');
-  const Notifications = require('expo-notifications');
-
-  void RNAndroidNotificationListener;
-
-  const notificationStorage = createMMKV({ id: 'moni-notifications' });
 
   const ALL_NOTIFICATIONS_KEY = 'captured_notifications';
   const MAX_STORED = 50;
@@ -48,6 +23,8 @@ if (Platform.OS === 'android') {
     storage.set(key, JSON.stringify(list.slice(0, max)));
   }
 
+  // Everything loads here, when a notification arrives, so registering the task never waits on the
+  // app's modules and a throw while they load reaches the catch below instead of the registration.
   const headlessNotificationListener = async ({ notification }) => {
     if (!notification) {
       console.log('[NotifCapture] empty payload — listener fired but no data');
@@ -55,6 +32,23 @@ if (Platform.OS === 'android') {
     }
 
     try {
+      const { createMMKV } = require('react-native-mmkv');
+      const {
+        passesNotificationTransactionPrefilter,
+        withoutOneTimeCode,
+      } = require('./lib/notifications/notification-filter.core');
+      const { randomUUID } = require('expo-crypto');
+      const {
+        isPackageLinked,
+        isLocationRecordedForPackage,
+      } = require('./lib/notifications/linked-packages-cache.core');
+      const { captureStatusAtIntake } = require('./lib/notifications/capture-status.core');
+      const { recordHeard } = require('./lib/notifications/capture-health.core');
+      const { enrichNotificationPackage } = require('./lib/notifications/notification-package.core');
+      const { isRepeatedNotification } = require('./lib/notifications/notification-repeat.core');
+      const { isOwnNotification } = require('./lib/notifications/review-notification.core');
+
+      const notificationStorage = createMMKV({ id: 'moni-notifications' });
       const parsed =
         typeof notification === 'string' ? JSON.parse(notification) : notification;
       const withPackage = withoutOneTimeCode(enrichNotificationPackage(parsed));
@@ -100,6 +94,10 @@ if (Platform.OS === 'android') {
 
       // Queue only linked-app notifications that pass the prefilter
       if (queueEligible) {
+        const { captureLocationSnapshot } = require('./lib/location/location-snapshot');
+        const { enqueue } = require('./lib/ai/processing-queue');
+        const { startBackgroundProcessor } = require('./lib/ai/background-processor');
+
         let locationSnapshot = null;
         try {
           if (isLocationRecordedForPackage(enriched.packageName)) {
@@ -139,12 +137,21 @@ if (Platform.OS === 'android') {
 
   // Not mine, Later and Approve on Moni's review notification, with the app in the background
   // or killed. The handler loads the store and review-actions only when a tap arrives.
-  TaskManager.defineTask(REVIEW_TASK, (body) =>
-    require('./lib/notifications/review-notification').handleReviewNotificationTask(body),
-  );
-  Notifications.registerTaskAsync(REVIEW_TASK).catch((e) => {
+  try {
+    const TaskManager = require('expo-task-manager');
+    const Notifications = require('expo-notifications');
+    const { REVIEW_TASK } = require('./lib/notifications/review-notification.core');
+    TaskManager.defineTask(REVIEW_TASK, (body) =>
+      require('./lib/notifications/review-notification').handleReviewNotificationTask(body),
+    );
+    Notifications.registerTaskAsync(REVIEW_TASK).catch((e) => {
+      console.error('[ReviewNotif] task not registered:', e?.message ?? e);
+    });
+  } catch (e) {
     console.error('[ReviewNotif] task not registered:', e?.message ?? e);
-  });
+  }
 }
 
-import 'expo-router/entry';
+// A require, not an import: imports are hoisted above the registration, and the router loads the
+// whole app.
+require('expo-router/entry');
