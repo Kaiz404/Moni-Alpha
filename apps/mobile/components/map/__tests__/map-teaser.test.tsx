@@ -51,9 +51,6 @@ const bangsar = {
 const card = (places: Place[]) => (
   <MapTeaser
     places={places}
-    expenses={30}
-    withPlace={25}
-    monthName="October"
     currency="MYR"
     onOpen={jest.fn()}
   />
@@ -70,7 +67,7 @@ describe('MapTeaser', () => {
     expect(screen.getByText('Google map', { includeHiddenElements: true })).toBeTruthy();
     expect(screen.getByText('RM293', { includeHiddenElements: true })).toBeTruthy();
     expect(mockMapProps.mock.calls[0][0].liteMode).toBe(true);
-    expect(screen.getByText('1 place · 25 of 30 expenses had a place')).toBeTruthy();
+    expect(screen.queryByText(/places? ·|had a place/)).toBeNull();
   });
 
   it('pins only the three biggest places', () => {
@@ -81,7 +78,6 @@ describe('MapTeaser', () => {
     expect(screen.getByText('RM400', hidden)).toBeTruthy();
     expect(screen.getByText('RM200', hidden)).toBeTruthy();
     expect(screen.queryByText('RM100', hidden)).toBeNull();
-    expect(screen.getByText('4 places · 25 of 30 expenses had a place')).toBeTruthy();
   });
 
   it('leaves the map out of a build with no Maps key, and keeps the card', () => {

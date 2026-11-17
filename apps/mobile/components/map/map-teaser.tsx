@@ -13,7 +13,6 @@ import { Press } from '@/components/ui/press';
 import { Text } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { formatMoney } from '@/lib/finance/format-money';
-import { monthSpend } from '@/lib/finance/budget-month';
 import { groupPlaces, regionFor, type Place } from '@/lib/finance/places';
 import { tid } from '@/lib/test-ids';
 
@@ -24,33 +23,25 @@ const PINS = 3;
 /** Room around the outermost pins, which are wider than the point they sit on. */
 const ZOOM_OUT = 2;
 
-/** The month's places and how many of its expenses had one. */
+/** The month's places, biggest first. */
 export function useMonthPlaces(
-  transactions: Parameters<typeof monthSpend>[0],
+  transactions: Parameters<typeof groupPlaces>[0],
   month: string,
   daysInMonth: number,
   currency: CurrencyCode,
 ) {
-  return useMemo(() => {
-    const spend = monthSpend(transactions, month, currency);
-    return {
-      places: groupPlaces(transactions, {
+  return useMemo(
+    () =>
+      groupPlaces(transactions, {
         currency,
         range: { from: `${month}-01`, to: `${month}-${daysInMonth}` },
       }),
-      expenses: spend.length,
-      withPlace: spend.filter(
-        (row) => row.locationLatitude !== null && row.locationLongitude !== null,
-      ).length,
-    };
-  }, [transactions, month, daysInMonth, currency]);
+    [transactions, month, daysInMonth, currency],
+  );
 }
 
 type MapTeaserProps = {
   places: readonly Place[];
-  expenses: number;
-  withPlace: number;
-  monthName: string;
   currency: CurrencyCode;
   onOpen: () => void;
 };
@@ -62,9 +53,6 @@ type MapTeaserProps = {
  */
 export function MapTeaser({
   places,
-  expenses,
-  withPlace,
-  monthName,
   currency,
   onOpen,
 }: MapTeaserProps) {
@@ -85,9 +73,6 @@ export function MapTeaser({
       : FALLBACK_REGION;
   }, [shown]);
   const clusters = usePinClusters(shown, region, size, currency);
-  const caption = expenses
-    ? `${places.length === 1 ? '1 place' : `${places.length} places`} · ${withPlace} of ${expenses} expenses had a place`
-    : `Nothing spent in ${monthName} yet`;
   const label = shown.length
     ? `Where you spend. Biggest: ${places
         .slice(0, LABELS)
@@ -150,12 +135,6 @@ export function MapTeaser({
           </MapView>
         ) : null}
       </View>
-      <Text
-        variant="meta"
-        className="text-muted"
-      >
-        {caption}
-      </Text>
     </Press>
   );
 }

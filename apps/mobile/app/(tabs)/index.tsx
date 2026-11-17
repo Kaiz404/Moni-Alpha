@@ -259,10 +259,7 @@ export default function HomeScreen() {
           />
           {overview.transactions.length > 0 ? (
             <MapTeaser
-              places={places.places}
-              expenses={places.expenses}
-              withPlace={places.withPlace}
-              monthName={monthLong(now)}
+              places={places}
               currency={currency}
               onOpen={() => router.push('/map')}
             />
