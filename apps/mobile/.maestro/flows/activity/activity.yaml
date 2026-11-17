@@ -1,5 +1,5 @@
-# A1 Activity tab: the search bar on top of the list, the chart and its dates, the Type and
-# Wallet pickers, and the pager.
+# A1 Activity tab: the search bar on top of the list, the filter row of Dates, Type and
+# Wallet pickers over the chart, and the pager.
 # Run: scripts/device/run-flows.sh .maestro/flows/activity/activity.yaml
 appId: com.anonymous.moni.e2e
 name: A1 Activity tab
@@ -21,7 +21,7 @@ tags:
     id: activity.chart
 - assertVisible:
     id: activity.range
-    text: 'Dates, Last 6 months'
+    text: 'Dates, All time'
 - assertNotVisible:
     id: activity.range.clear
 - takeScreenshot: a1-activity
@@ -41,6 +41,9 @@ tags:
     id: activity.range.clear
 - assertNotVisible:
     id: activity.range.clear
+- assertVisible:
+    id: activity.range
+    text: 'Dates, All time'
 
 - tapOn:
     id: activity.filter.wallet

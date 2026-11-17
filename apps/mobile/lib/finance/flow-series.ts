@@ -36,10 +36,25 @@ export type FlowSeries = {
   buckets: FlowBucket[];
 };
 
-const LAST_MONTHS = 6;
+const LEAST_MONTHS = 6;
 const MOST_DAILY_DAYS = 14;
 const MOST_WEEKLY_DAYS = 98;
 const MOST_MONTHLY_DAYS = 732;
+
+function allTime(
+  transactions: readonly FinanceTransaction[],
+  now: Date,
+  currency: CurrencyCode,
+): ActivityRange {
+  const month = monthKey(now);
+  let first = shiftMonth(month, 1 - LEAST_MONTHS);
+  for (const transaction of transactions) {
+    if (!countsAsSpend(transaction, currency) && !countsAsIncome(transaction, currency)) continue;
+    const at = monthKey(new Date(transaction.transactionDate));
+    if (at < first) first = at;
+  }
+  return { from: monthRange(first).from, to: monthRange(month).to };
+}
 
 function empty(key: string, label: string, from: string, to: string): FlowBucket {
   return { key, label, from, to, spentMinor: 0 as MinorAmount, inMinor: 0 as MinorAmount };
@@ -90,7 +105,8 @@ function bucketsOf({ from, to }: ActivityRange): FlowBucket[] {
 /**
  * Spent against Money in over a range, in bars of a size that stays readable at that span: days
  * up to two weeks, weeks up to about three months, months up to two years, then years. A null
- * range draws the last six months. Rows count as they do on Budget.
+ * range is all time: from the month of the first row that counts, and never less than the last
+ * six months. Rows count as they do on Budget.
  */
 export function flowSeries({
   transactions,
@@ -103,11 +119,7 @@ export function flowSeries({
   now: Date;
   currency: CurrencyCode;
 }): FlowSeries {
-  const month = monthKey(now);
-  const drawn = range ?? {
-    from: monthRange(shiftMonth(month, 1 - LAST_MONTHS)).from,
-    to: monthRange(month).to,
-  };
+  const drawn = range ?? allTime(transactions, now, currency);
   const buckets = bucketsOf(drawn);
   const starts = buckets.map((bucket) => localDay(bucket.from).getTime());
   const end = localDay(drawn.to, 1).getTime();
@@ -136,7 +148,7 @@ export function flowSeries({
   }
   return {
     range: drawn,
-    label: range ? rangeLabel(range, now) : `Last ${LAST_MONTHS} months`,
+    label: range ? rangeLabel(range, now) : 'All time',
     spentMinor,
     inMinor,
     buckets,

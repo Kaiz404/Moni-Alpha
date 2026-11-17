@@ -241,21 +241,22 @@ export default function ActivityScreen() {
           />
         ) : (
           <>
-            <FlowCard
-              series={series}
-              range={range}
-              currency={currency}
-              now={now}
-              onPickRange={() => void pickRange()}
-              onClearRange={() => setRange(null)}
-            />
             <FilterRow
+              rangeLabel={series.label}
+              rangeActive={range !== null}
+              onRange={() => void pickRange()}
+              onClearRange={() => setRange(null)}
               kindLabel={ACTIVITY_KIND_LABELS[kind]}
               kindActive={kind !== 'all'}
               onKind={() => void pickKind()}
               walletLabel={walletLabel}
               walletActive={shownWalletIds.length > 0}
               onWallet={() => void pickWallet()}
+            />
+            <FlowCard
+              series={series}
+              currency={currency}
+              now={now}
             />
             <View
               className="gap-3.5"

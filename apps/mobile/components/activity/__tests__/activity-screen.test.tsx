@@ -243,11 +243,22 @@ describe('Activity search', () => {
 });
 
 describe('Activity dates', () => {
-  it('opens on the last 6 months for the chart and all time for the list, and says so', () => {
+  it('opens on all time for the chart and the list alike', () => {
     render(<ActivityScreen />);
-    expect(capsule()).toHaveTextContent('Last 6 months');
-    expect(screen.getByText('List shows all time')).toBeTruthy();
+    expect(capsule()).toHaveTextContent('All time');
+    expect(screen.queryByText('List shows all time')).toBeNull();
     expect(screen.queryByTestId('activity.range.clear')).toBeNull();
+    expect(screen.getByTestId('activity.pager.page')).toHaveTextContent('Page 1 of 3');
+  });
+
+  it('narrows the totals, the chart and the list to the dates picked', async () => {
+    render(<ActivityScreen />);
+    fireEvent.press(capsule());
+    await settleSheet({ range: { from: '2026-10-01', to: '2026-10-14' } });
+    expect(screen.getByText('RM140.00')).toBeTruthy();
+    expect(screen.getByTestId('activity.chart.2026-10-01')).toBeTruthy();
+    expect(screen.queryByTestId('activity.chart.2026-09')).toBeNull();
+    expect(shown('r15')).toBe(false);
   });
 
   it('applies dates from the sheet, drops to page 1, and clears back', async () => {
@@ -262,7 +273,7 @@ describe('Activity dates', () => {
     expect(shown('r15')).toBe(false);
     expect(screen.queryByTestId('activity.pager.page')).toBeNull();
     fireEvent.press(screen.getByTestId('activity.range.clear'));
-    expect(capsule()).toHaveTextContent('Last 6 months');
+    expect(capsule()).toHaveTextContent('All time');
     expect(screen.getByTestId('activity.pager.page')).toHaveTextContent('Page 1 of 3');
   });
 
@@ -270,7 +281,7 @@ describe('Activity dates', () => {
     render(<ActivityScreen />);
     fireEvent.press(capsule());
     await settleSheet(null);
-    expect(capsule()).toHaveTextContent('Last 6 months');
+    expect(capsule()).toHaveTextContent('All time');
   });
 
 });
@@ -307,7 +318,7 @@ describe('Activity chart', () => {
     expect(screen.getByText('Money in RM4,200.00')).toBeTruthy();
     fireEvent(bar, 'pressOut');
     expect(screen.queryByText('Spent RM140.00')).toBeNull();
-    expect(capsule()).toHaveTextContent('Last 6 months');
+    expect(capsule()).toHaveTextContent('All time');
   });
 
   it('keeps a tapped bar\'s figures up until it is tapped again, and leaves the list alone', () => {
@@ -315,7 +326,7 @@ describe('Activity chart', () => {
     const bar = screen.getByTestId('activity.chart.2026-09');
     fireEvent.press(bar);
     expect(screen.getByText('Sep 2026')).toBeTruthy();
-    expect(capsule()).toHaveTextContent('Last 6 months');
+    expect(capsule()).toHaveTextContent('All time');
     expect(shown('r1')).toBe(true);
     fireEvent.press(screen.getByTestId('activity.chart.2026-10'));
     expect(screen.getByText('Spent RM140.00')).toBeTruthy();

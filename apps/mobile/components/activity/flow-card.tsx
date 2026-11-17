@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { View } from 'react-native';
 import Animated, {
+  FadeIn,
+  FadeOut,
   useAnimatedStyle,
   useReducedMotion,
   useSharedValue,
@@ -9,11 +11,10 @@ import Animated, {
 } from 'react-native-reanimated';
 import Svg, { Line } from 'react-native-svg';
 
-import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Press } from '@/components/ui/press';
 import { Text } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
-import { rangeLabel, type ActivityRange } from '@/lib/finance/activity-filter';
+import { rangeLabel } from '@/lib/finance/activity-filter';
 import {
   FLOW_AXIS,
   FLOW_BASE,
@@ -27,6 +28,8 @@ import { scrubStep } from '@/lib/haptics';
 import { springs } from '@/lib/motion/tokens';
 import { tid } from '@/lib/test-ids';
 
+const CARD_IN = FadeIn.duration(180);
+const CARD_OUT = FadeOut.duration(140);
 const CALLOUT_W = 148;
 const CALLOUT_RISE = 52;
 const PLOT_WITH_LABELS = FLOW_PLOT_HEIGHT + 20;
@@ -297,99 +300,40 @@ function Total({ label, fill, value }: { label: string; fill: string; value: str
   );
 }
 
-/**
- * Leads Activity: the dates the list and chart cover, then what came in and went out across them.
- * The chart goes when there is nothing to draw, and the date control stays so the dates can change.
- */
+/** Leads Activity: what came in and went out across the chosen dates. Gone when there is nothing to draw. */
 export function FlowCard({
   series,
-  range,
   currency,
   now,
-  onPickRange,
-  onClearRange,
 }: {
   series: FlowSeries;
-  range: ActivityRange | null;
   currency: string;
   now: Date;
-  onPickRange: () => void;
-  onClearRange: () => void;
 }) {
-  const tokens = useThemeTokens();
-  const drawn = series.spentMinor > 0 || series.inMinor > 0;
-  const period = range || drawn ? series.label : 'All time';
+  if (series.spentMinor === 0 && series.inMinor === 0) return null;
   return (
-    <View className="gap-2.5 rounded-card bg-card p-4">
-      <View className="flex-row items-center justify-between gap-2">
-        <Press
-          testID={tid('activity', 'range')}
-          accessibilityLabel={`Dates, ${period}`}
-          accessibilityHint="Opens a picker"
-          onPress={onPickRange}
-          hitSlop={4}
-          radius={{ rest: 18, pressed: 16 }}
-          pressedClassName="bg-hairline"
-          className="h-9 min-w-0 flex-shrink flex-row items-center gap-1 bg-sand pl-3.5 pr-2.5"
-        >
-          <Text
-            className="flex-shrink text-[14px] leading-[19px] font-display-semibold text-foreground"
-            numberOfLines={1}
-          >
-            {period}
-          </Text>
-          <IconSymbol
-            name="chevron-down"
-            size={18}
-            color={tokens.foreground}
-          />
-        </Press>
-        {range ? (
-          <Press
-            testID={tid('activity', 'range', 'clear')}
-            accessibilityLabel="Clear dates"
-            onPress={onClearRange}
-            hitSlop={4}
-            pressedClassName="bg-hairline"
-            className="h-9 w-9 items-center justify-center rounded-full bg-sand"
-          >
-            <IconSymbol
-              name="close"
-              size={18}
-              color={tokens.foreground}
-            />
-          </Press>
-        ) : drawn ? (
-          <Text
-            variant="meta"
-            className="flex-shrink text-muted"
-            numberOfLines={1}
-          >
-            List shows all time
-          </Text>
-        ) : null}
+    <Animated.View
+      entering={CARD_IN}
+      exiting={CARD_OUT}
+      className="gap-2.5 rounded-card bg-card p-4"
+    >
+      <View className="flex-row gap-4">
+        <Total
+          label="Spent"
+          fill="bg-primary"
+          value={formatMoney(series.spentMinor, currency)}
+        />
+        <Total
+          label="Money in"
+          fill="bg-deep-mint"
+          value={formatMoney(series.inMinor, currency)}
+        />
       </View>
-      {drawn ? (
-        <>
-          <View className="flex-row gap-4">
-            <Total
-              label="Spent"
-              fill="bg-primary"
-              value={formatMoney(series.spentMinor, currency)}
-            />
-            <Total
-              label="Money in"
-              fill="bg-deep-mint"
-              value={formatMoney(series.inMinor, currency)}
-            />
-          </View>
-          <FlowChart
-            series={series}
-            currency={currency}
-            now={now}
-          />
-        </>
-      ) : null}
-    </View>
+      <FlowChart
+        series={series}
+        currency={currency}
+        now={now}
+      />
+    </Animated.View>
   );
 }

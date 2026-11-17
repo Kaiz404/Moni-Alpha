@@ -102,9 +102,9 @@ describe('flowSeries bucket size follows the span', () => {
 });
 
 describe('flowSeries with no range', () => {
-  it('draws the last six calendar months and says so', () => {
-    const result = series([], null);
-    expect(result.label).toBe('Last 6 months');
+  it('draws all time as at least the last six calendar months', () => {
+    const result = series([row('recent', new Date(2026, 8, 3, 12), 700)], null);
+    expect(result.label).toBe('All time');
     expect(result.range).toEqual({ from: '2026-05-01', to: '2026-10-31' });
     expect(result.buckets.map((bucket) => bucket.label)).toEqual([
       'May',
@@ -116,13 +116,18 @@ describe('flowSeries with no range', () => {
     ]);
   });
 
-  it('leaves older rows out of the chart', () => {
+  it('reaches back to the month of the first row that counts, so the totals cover every row', () => {
     const result = series(
-      [row('old', new Date(2026, 3, 30, 23), 5000), row('kept', new Date(2026, 4, 1, 0), 700)],
+      [
+        row('old', new Date(2025, 10, 30, 23), 5000),
+        row('kept', new Date(2026, 4, 1, 0), 700),
+        row('older-transfer', new Date(2024, 0, 5, 12), 900, { type: 'transfer' }),
+      ],
       null,
     );
-    expect(result.spentMinor).toBe(700);
-    expect(result.buckets[0].spentMinor).toBe(700);
+    expect(result.range).toEqual({ from: '2025-11-01', to: '2026-10-31' });
+    expect(result.spentMinor).toBe(5700);
+    expect(result.buckets[0]).toMatchObject({ key: '2025-11', spentMinor: 5000 });
   });
 });
 

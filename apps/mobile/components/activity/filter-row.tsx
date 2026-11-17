@@ -1,5 +1,5 @@
 import { View } from 'react-native';
-import Animated, { FadeIn, LinearTransition } from 'react-native-reanimated';
+import Animated, { FadeIn, FadeOut, LinearTransition } from 'react-native-reanimated';
 
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Press } from '@/components/ui/press';
@@ -13,6 +13,7 @@ const RESIZE = LinearTransition.springify()
   .damping(springs.control.damping)
   .mass(springs.control.mass);
 const LABEL_IN = FadeIn.duration(180);
+const CLEAR_OUT = FadeOut.duration(140);
 
 /** A picker capsule: the current choice and a chevron, Ink once it narrows what shows. */
 function FilterTrigger({
@@ -69,8 +70,12 @@ function FilterTrigger({
   );
 }
 
-/** Activity's filters, one picker each, in one row that fits the screen. */
+/** Activity's filters, one picker each, in one row that fits the screen. The dates clear with ×. */
 export function FilterRow({
+  rangeLabel,
+  rangeActive,
+  onRange,
+  onClearRange,
   kindLabel,
   kindActive,
   onKind,
@@ -78,6 +83,10 @@ export function FilterRow({
   walletActive,
   onWallet,
 }: {
+  rangeLabel: string;
+  rangeActive: boolean;
+  onRange: () => void;
+  onClearRange: () => void;
   kindLabel: string;
   kindActive: boolean;
   onKind: () => void;
@@ -85,11 +94,41 @@ export function FilterRow({
   walletActive: boolean;
   onWallet: () => void;
 }) {
+  const tokens = useThemeTokens();
   return (
     <View
       accessibilityLabel="Filter"
       className="flex-row items-center gap-2"
     >
+      <FilterTrigger
+        testID={tid('activity', 'range')}
+        name="Dates"
+        label={rangeLabel}
+        active={rangeActive}
+        onPress={onRange}
+      />
+      {rangeActive ? (
+        <Animated.View
+          entering={LABEL_IN}
+          exiting={CLEAR_OUT}
+          layout={RESIZE}
+        >
+          <Press
+            testID={tid('activity', 'range', 'clear')}
+            accessibilityLabel="Clear dates"
+            onPress={onClearRange}
+            hitSlop={4}
+            pressedClassName="bg-hairline"
+            className="h-9 w-9 items-center justify-center rounded-full bg-sand"
+          >
+            <IconSymbol
+              name="close"
+              size={18}
+              color={tokens.foreground}
+            />
+          </Press>
+        </Animated.View>
+      ) : null}
       <FilterTrigger
         testID={tid('activity', 'filter', 'type')}
         name="Type"
