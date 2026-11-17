@@ -19,7 +19,7 @@ import { tid } from '@/lib/test-ids';
 export type DetailLink = {
   name: string;
   title: string;
-  meta: string;
+  meta?: string;
   icon: IconSymbolName;
   trailing: 'chevron-right' | 'plus';
   onPress: () => void;
@@ -31,7 +31,7 @@ function LinkRow({ link }: { link: DetailLink }) {
   return (
     <Press
       testID={tid('txn', 'link', link.name)}
-      accessibilityLabel={`${link.title}, ${link.meta}`}
+      accessibilityLabel={link.meta ? `${link.title}, ${link.meta}` : link.title}
       onPress={link.onPress}
       className="min-h-[66px] flex-row items-center gap-3.5 px-[18px] py-3"
     >
@@ -42,9 +42,11 @@ function LinkRow({ link }: { link: DetailLink }) {
         <Text variant="rowTitle" className="text-[15px] leading-[21px] text-foreground" numberOfLines={1}>
           {link.title}
         </Text>
-        <Text variant="meta" className="text-muted" numberOfLines={1}>
-          {link.meta}
-        </Text>
+        {link.meta ? (
+          <Text variant="meta" className="text-muted" numberOfLines={1}>
+            {link.meta}
+          </Text>
+        ) : null}
       </View>
       <IconSymbol name={link.trailing} size={20} color={tokens.muted} />
     </Press>
@@ -127,7 +129,7 @@ export function useReceiptLink(
   return {
     name: 'receipt',
     title: 'Add a receipt photo',
-    meta: saving ? 'Saving the photo' : 'Keeps the slip with this transaction',
+    meta: saving ? 'Saving the photo' : undefined,
     icon: 'image-plus',
     trailing: 'plus',
     bubble: saving ? <ActivityIndicator size={18} color={tokens.foreground} /> : undefined,

@@ -1,10 +1,17 @@
 import { useValue } from '@legendapp/state/react';
 import type { UpdateTransaction } from '@repo/types';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
-import { Alert, View } from 'react-native';
-import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from 'react';
+import { Alert, Keyboard, View } from 'react-native';
 
+import { TextTile } from '@/components/amount/text-tile';
 import { WalletBubble } from '@/components/capture/field-bubble';
 import { BudgetLine } from '@/components/transaction/budget-line';
 import {
@@ -22,14 +29,12 @@ import {
 } from '@/components/transaction/detail-tiles';
 import { Button } from '@/components/ui/button';
 import { NotFound } from '@/components/ui/empty-tile';
-import { IconSymbol } from '@/components/ui/icon-symbol';
 import {
   InPlaceField,
   InPlaceGroup,
   type Saved,
 } from '@/components/ui/in-place-field';
 import { Page, PageScroll } from '@/components/ui/page';
-import { Press } from '@/components/ui/press';
 import { Text } from '@/components/ui/text';
 import { TintBubble } from '@/components/ui/transaction-row';
 import { useAuth } from '@/lib/auth/auth-context';
@@ -63,7 +68,7 @@ import {
   deleteTransaction,
   updateTransaction,
 } from '@/lib/supabase/transactions';
-import { tid, type TestId } from '@/lib/test-ids';
+import { tid } from '@/lib/test-ids';
 import { retypeFields, TRANSACTION_TYPE_COPY } from '@/lib/transactions/type-change';
 import { showToast } from '@/lib/toast/toast-store';
 import { captureSourceLabel } from '@/lib/proposals/capture-source';
@@ -148,7 +153,6 @@ function Detail({ transaction: tx }: { transaction: FinanceTransaction }) {
     () => transactionTable$[tx.id].get() as RawRow | undefined,
   );
   const [timezone, setTimezone] = useState('UTC');
-  const [editing, setEditing] = useState<TestId | null>(null);
   const progress = useValue(budgetProgress$(userId, timezone));
 
   useEffect(() => {
@@ -160,6 +164,33 @@ function Detail({ transaction: tx }: { transaction: FinanceTransaction }) {
   useEffect(() => {
     if (tx.debtActivityId) router.dismissTo('/debts');
   }, [tx.debtActivityId]);
+
+  const [note, setNote] = useState(tx.notes ?? '');
+  const noteRef = useRef({ draft: note, saved: tx.notes ?? '', id: tx.id });
+  const typeNote = (text: string) => {
+    noteRef.current.draft = text;
+    setNote(text);
+  };
+  // Saves on blur, on the keyboard closing (Android's back keeps the input focused), and on leaving.
+  const saveNote = useCallback(() => {
+    const { draft, saved, id } = noteRef.current;
+    const next = draft.trim();
+    if (next === saved) return;
+    noteRef.current.saved = next;
+    saveWithUndo(id, 'Note', { notes: next || null }, { notes: saved || null });
+  }, []);
+  useEffect(() => {
+    noteRef.current.saved = tx.notes ?? '';
+    noteRef.current.draft = tx.notes ?? '';
+    setNote(tx.notes ?? '');
+  }, [tx.notes]);
+  useEffect(() => {
+    const hidden = Keyboard.addListener('keyboardDidHide', saveNote);
+    return () => {
+      hidden.remove();
+      saveNote();
+    };
+  }, [saveNote]);
 
   const source = transactionSource(raw?.metadata);
   const category = categories.find((c) => c.id === tx.categoryId) ?? null;
@@ -492,10 +523,7 @@ function Detail({ transaction: tx }: { transaction: FinanceTransaction }) {
       kind="pushed"
       title="Transaction"
     >
-      <InPlaceGroup
-        editing={editing}
-        onEditingChange={setEditing}
-      >
+      <InPlaceGroup>
         <PageScroll
           keyboardShouldPersistTaps="handled"
           contentContainerClassName="gap-3 px-screen pb-8"
@@ -599,69 +627,17 @@ function Detail({ transaction: tx }: { transaction: FinanceTransaction }) {
             </View>
           ) : null}
 
-          <View className="rounded-card bg-card pb-3.5 pl-[18px] pr-3 pt-3">
-            <InPlaceField
-              testID={tid('txn', 'note')}
-              label="Note"
-              kind="note"
-              value={tx.notes ?? ''}
-              maxLength={1000}
-              placeholder="Who it was with, what it was for"
-              onSave={(value) =>
-                value === (tx.notes ?? '')
-                  ? undefined
-                  : update(tx.id, { notes: value || null }, { notes: tx.notes })
-              }
-            >
-              {({ editable, editor, open }) => (
-                <View className="gap-1.5">
-                  <View className="min-h-8 flex-row items-center justify-between gap-2">
-                    <Text
-                      variant="meta"
-                      className="text-muted"
-                    >
-                      Note
-                    </Text>
-                    {tx.notes && editing === null ? (
-                      <Animated.View
-                        entering={FadeIn.duration(200)}
-                        exiting={FadeOut.duration(160)}
-                      >
-                        <Press
-                          testID={tid('txn', 'note', 'pencil')}
-                          accessibilityLabel="Edit note"
-                          accessibilityHint="Opens the keyboard"
-                          hitSlop={6}
-                          pressedClassName="bg-hairline"
-                          className="h-8 w-8 items-center justify-center rounded-full bg-sand"
-                          onPress={open}
-                        >
-                          <IconSymbol
-                            name="pencil-outline"
-                            size={16}
-                            color={tokens.foreground}
-                          />
-                        </Press>
-                      </Animated.View>
-                    ) : null}
-                  </View>
-                  {editor ??
-                    editable(
-                      <Text
-                        variant="body"
-                        className={`pr-1 ${tx.notes ? 'text-foreground' : 'text-muted'}`}
-                      >
-                        {tx.notes || 'Add a note: who it was with, what it was for'}
-                      </Text>,
-                      {
-                        pencil: false,
-                        className: 'min-h-11 flex-row items-center',
-                      },
-                    )}
-                </View>
-              )}
-            </InPlaceField>
-          </View>
+          <TextTile
+            testID={tid('txn', 'note')}
+            label="Note"
+            icon="pencil-outline"
+            placeholder="Add a note"
+            multiline
+            maxLength={1000}
+            value={note}
+            onChangeText={typeNote}
+            onBlur={saveNote}
+          />
 
           <DetailLinks links={links} />
 

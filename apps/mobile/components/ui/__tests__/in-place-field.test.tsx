@@ -307,33 +307,6 @@ describe('InPlaceField', () => {
     expect(screen.queryByTestId('nav.toast')).toBeNull();
   });
 
-  it('opens a multiline note with its buttons under it', () => {
-    const onNote = jest.fn();
-    render(
-      <InPlaceGroup>
-        <InPlaceField
-          testID={tid('txn', 'note')}
-          label="Note"
-          kind="note"
-          value=""
-          placeholder="Who it was with"
-          onSave={onNote}
-        >
-          <Text>Add a note</Text>
-        </InPlaceField>
-      </InPlaceGroup>,
-    );
-    fireEvent.press(screen.getByTestId('txn.note.edit'));
-    const input = screen.getByTestId('txn.note.input');
-    expect(input.props.multiline).toBe(true);
-    expect(input.props.placeholder).toBe('Who it was with');
-    fireEvent.changeText(input, 'Lunch with Mei\nat Pavilion');
-    fireEvent.press(screen.getByTestId('txn.note.save'));
-    expect(onNote).toHaveBeenCalledWith(
-      'Lunch with Mei\nat Pavilion',
-    );
-  });
-
   it('places the editor where the render function puts it and shows a hint from the draft', () => {
     render(
       <InPlaceGroup>

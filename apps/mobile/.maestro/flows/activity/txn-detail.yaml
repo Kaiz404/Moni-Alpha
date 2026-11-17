@@ -30,13 +30,13 @@ tags:
 - assertVisible: Source
 - assertNotVisible: Tags
 - assertNotVisible: '⋯'
+- assertNotVisible: Keeps the slip with this transaction
 - takeScreenshot: a2-detail
 
 - tapOn:
-    id: txn.note.edit
+    id: txn.note
 - inputText: With Mei
-- tapOn:
-    id: txn.note.save
+- hideKeyboard
 - assertVisible: Note saved
 - assertVisible: With Mei
 - takeScreenshot: a2-note

@@ -215,8 +215,7 @@ export type AmountFieldProps = Common & {
 };
 
 export type TextFieldProps = Common & {
-  /** `note` is multiline and keeps its buttons under the field. */
-  kind: 'text' | 'note';
+  kind: 'text';
   value: string;
   required?: boolean;
   maxLength?: number;
@@ -572,7 +571,6 @@ function Editor({
   const tokens = useThemeTokens();
   const { testID, label } = field;
   const amount = field.kind === 'amount';
-  const note = field.kind === 'note';
 
   // Saving unmounts the input, which can blur it; the blur must not cancel what was just saved.
   const settled = useRef(false);
@@ -641,9 +639,9 @@ function Editor({
       value={draft}
       onChangeText={onDraft}
       onBlur={cancel}
-      onSubmitEditing={note ? undefined : finish(onSave)}
-      submitBehavior={note ? 'newline' : 'submit'}
-      returnKeyType={note ? 'default' : 'done'}
+      onSubmitEditing={finish(onSave)}
+      submitBehavior="submit"
+      returnKeyType="done"
       keyboardType={
         field.kind !== 'amount'
           ? 'default'
@@ -653,7 +651,6 @@ function Editor({
               ? 'number-pad'
               : 'decimal-pad'
       }
-      multiline={note}
       maxLength={field.kind === 'amount' ? 12 : field.maxLength}
       placeholder={
         field.kind === 'amount' ? undefined : field.placeholder
@@ -667,60 +664,33 @@ function Editor({
       className={
         amount
           ? 'h-full min-w-0 flex-1 p-0 font-display-bold text-[40px] leading-[44px] text-foreground'
-          : note
-            ? 'min-h-[63px] p-0 font-display text-[15px] leading-[21px] text-foreground'
-            : 'h-full min-w-0 flex-1 p-0 font-display-semibold text-[18px] leading-[22px] text-foreground'
+          : 'h-full min-w-0 flex-1 p-0 font-display-semibold text-[18px] leading-[22px] text-foreground'
       }
-      style={
-        note
-          ? { textAlignVertical: 'top' }
-          : amount
-            ? { fontVariant: ['tabular-nums'] }
-            : undefined
-      }
+      style={amount ? { fontVariant: ['tabular-nums'] } : undefined}
     />
   );
 
   return (
     <View className="gap-1.5">
-      {note ? (
-        <>
-          <Animated.View
-            entering={FIELD_IN}
-            className="rounded-field border-2 border-foreground bg-card px-3 py-2.5"
-            style={GROWS_FROM_VALUE}
-          >
-            {input}
-          </Animated.View>
-          <View
-            ref={controls}
-            onLayout={onControlsLayout}
-            className="flex-row justify-end gap-2"
-          >
-            {buttons}
-          </View>
-        </>
-      ) : (
-        <View
-          ref={controls}
-          onLayout={onControlsLayout}
-          className="flex-row items-center gap-2"
+      <View
+        ref={controls}
+        onLayout={onControlsLayout}
+        className="flex-row items-center gap-2"
+      >
+        <Animated.View
+          entering={FIELD_IN}
+          className={`min-w-0 flex-1 flex-row items-center gap-1 rounded-field border-2 border-foreground bg-card px-3.5 ${amount ? 'h-16' : 'h-[52px]'}`}
+          style={GROWS_FROM_VALUE}
         >
-          <Animated.View
-            entering={FIELD_IN}
-            className={`min-w-0 flex-1 flex-row items-center gap-1 rounded-field border-2 border-foreground bg-card px-3.5 ${amount ? 'h-16' : 'h-[52px]'}`}
-            style={GROWS_FROM_VALUE}
-          >
-            {field.kind === 'amount' ? (
-              <Text className="font-display-bold text-[28px] leading-[32px] text-muted">
-                {field.prefix}
-              </Text>
-            ) : null}
-            {input}
-          </Animated.View>
-          {buttons}
-        </View>
-      )}
+          {field.kind === 'amount' ? (
+            <Text className="font-display-bold text-[28px] leading-[32px] text-muted">
+              {field.prefix}
+            </Text>
+          ) : null}
+          {input}
+        </Animated.View>
+        {buttons}
+      </View>
       {hint ? (
         <Animated.View
           entering={HINT_IN}

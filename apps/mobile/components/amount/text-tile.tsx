@@ -18,6 +18,8 @@ type TextTileProps = Pick<
   | 'autoCapitalize'
   | 'autoComplete'
   | 'maxLength'
+  | 'multiline'
+  | 'onBlur'
 > & {
   testID: TestId;
   label: string;
@@ -39,7 +41,7 @@ export function TextTile({
 }: TextTileProps) {
   const tokens = useThemeTokens();
   return (
-    <View className="h-[60px] flex-row items-center gap-2.5 rounded-tile bg-sand pl-2.5 pr-3">
+    <View className="min-h-[60px] flex-row items-center gap-2.5 rounded-tile bg-sand py-2 pl-2.5 pr-3">
       <FieldBubble color={tokens.card}>
         <IconSymbol
           name={icon}
