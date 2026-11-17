@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { AppState, Platform } from 'react-native';
 import { createMMKV } from 'react-native-mmkv';
 import type { CapturedNotificationStatus } from '@repo/types';
-import { onCaptureStatusChanged } from '@/lib/notifications/capture-status';
+import { onCaptureStatusChanged, withoutAlertImages } from '@/lib/notifications/capture-status';
 import {
   readNotificationListenerPermission,
   type NotificationListenerPermission,
@@ -42,14 +42,22 @@ const STORAGE_KEY = 'captured_notifications';
 
 const notificationStorage = createMMKV({ id: 'moni-notifications' });
 
-function readStoredNotifications(): CapturedNotification[] {
+/**
+ * Null when the stored log can't be read, which is not the same as an empty one: the page says so,
+ * and nothing writes over what is there.
+ */
+function readStoredNotifications(): CapturedNotification[] | null {
+  let stored: unknown;
   try {
     const raw = notificationStorage.getString(STORAGE_KEY);
-    const stored: StoredNotification[] = raw ? JSON.parse(raw) : [];
-    return stored.map((entry) => ({ ...entry, status: entry.status ?? 'ignored' }));
+    stored = raw ? JSON.parse(raw) : [];
   } catch {
-    return [];
+    return null;
   }
+  if (!Array.isArray(stored)) return null;
+  return (stored as (StoredNotification | null)[])
+    .filter((entry): entry is StoredNotification => typeof entry?.id === 'string')
+    .map((entry) => ({ ...withoutAlertImages(entry), status: entry.status ?? 'ignored' }));
 }
 
 function writeStoredNotifications(list: CapturedNotification[]): void {
@@ -60,12 +68,15 @@ export function useNotificationListener() {
   const [permissionStatus, setPermissionStatus] = useState<PermissionStatus>('unknown');
   const [lastPermissionCheckAt, setLastPermissionCheckAt] = useState<string | null>(null);
   const [notifications, setNotifications] = useState<CapturedNotification[]>([]);
+  const [unreadable, setUnreadable] = useState(false);
   const [isCheckingPermission, setIsCheckingPermission] = useState(false);
 
   const isAndroid = Platform.OS === 'android';
 
   const refresh = useCallback(() => {
-    setNotifications(readStoredNotifications());
+    const stored = readStoredNotifications();
+    setNotifications(stored ?? []);
+    setUnreadable(stored === null);
   }, []);
 
   const checkPermission = useCallback(async () => {
@@ -88,11 +99,13 @@ export function useNotificationListener() {
   const clearAll = useCallback(() => {
     notificationStorage.remove(STORAGE_KEY);
     setNotifications([]);
+    setUnreadable(false);
   }, []);
 
   /** Returns the removed entry so Undo can put it back. */
   const clearOne = useCallback((id: string): CapturedNotification | null => {
     const stored = readStoredNotifications();
+    if (!stored) return null;
     const updated = stored.filter((n) => n.id !== id);
     writeStoredNotifications(updated);
     setNotifications(updated);
@@ -101,7 +114,7 @@ export function useNotificationListener() {
 
   const restoreOne = useCallback((entry: CapturedNotification) => {
     const stored = readStoredNotifications();
-    if (stored.some((n) => n.id === entry.id)) return;
+    if (!stored || stored.some((n) => n.id === entry.id)) return;
     const updated = [...stored, entry].sort((a, b) => b.receivedAt.localeCompare(a.receivedAt));
     writeStoredNotifications(updated);
     setNotifications(updated);
@@ -131,6 +144,7 @@ export function useNotificationListener() {
     lastPermissionCheckAt,
     isCheckingPermission,
     notifications,
+    unreadable,
     checkPermission,
     refresh,
     clearAll,

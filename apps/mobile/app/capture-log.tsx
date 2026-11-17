@@ -124,7 +124,8 @@ function joinAnd(names: readonly string[]): string {
 
 export default function CaptureLogScreen() {
   const tokens = useThemeTokens();
-  const { notifications, refresh, clearAll, clearOne, restoreOne } = useNotificationListener();
+  const { notifications, unreadable, refresh, clearAll, clearOne, restoreOne } =
+    useNotificationListener();
   const { wallets, apps } = useLinkedApps();
   const listing = useInstalledApps();
   const installed = listing.kind === 'listed' ? listing.apps : null;
@@ -264,7 +265,19 @@ export default function CaptureLogScreen() {
           </Press>
         ) : null}
 
-        {total === 0 ? (
+        {unreadable ? (
+          <EmptyTile
+            icon="alert-circle-outline"
+            title="Couldn't read the Capture log"
+            body="The alerts kept on this phone can't be opened. Captures still reach Review. Clear the log to start it again."
+            action={{
+              testID: tid('capture-log', 'clear-unreadable'),
+              label: 'Clear all',
+              icon: 'trash-can-outline',
+              onPress: () => void confirmClearAll(),
+            }}
+          />
+        ) : total === 0 ? (
           <View className="gap-3">
             <EmptyTile
               icon="bell-outline"

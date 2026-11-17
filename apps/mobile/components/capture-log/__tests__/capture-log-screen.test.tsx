@@ -5,6 +5,7 @@ import { createMMKV } from 'react-native-mmkv';
 import CaptureLogScreen from '@/app/capture-log';
 import { retryCaptures } from '@/lib/ai/background-processor';
 import { enqueue, getAll, pruneCompleted } from '@/lib/ai/processing-queue';
+import { markCaptureStatus } from '@/lib/notifications/capture-status';
 import { undoPairing } from '@/lib/proposals/pairing';
 import { getOpenSheet } from '@/lib/sheet/sheet-store';
 import { tid } from '@/lib/test-ids';
@@ -319,5 +320,45 @@ describe('Capture log clearing', () => {
     expect(storedIds()).toEqual(['newest', 'middle', 'oldest']);
     expect(screen.queryByText('Your parcel is out for delivery.')).toBeNull();
     expect(screen.getByText(GRAB)).toBeTruthy();
+  });
+});
+
+describe('A Capture log that cannot be read', () => {
+  const DAMAGED = '[{"id":"newest","text":"MAYBANK: You\'ve spent RM8';
+
+  it('says so instead of Nothing captured yet, and leaves the stored value alone', () => {
+    storage.set(KEY, DAMAGED);
+    show();
+    expect(screen.getByText("Couldn't read the Capture log")).toBeTruthy();
+    expect(screen.queryByText('Nothing captured yet')).toBeNull();
+    expect(storage.getString(KEY)).toBe(DAMAGED);
+  });
+
+  it('starts again empty after Clear all', async () => {
+    storage.set(KEY, DAMAGED);
+    show();
+    fireEvent.press(screen.getByTestId('capture-log.clear-unreadable'));
+    await act(async () => getOpenSheet()?.settle(true));
+    expect(storage.getString(KEY)).toBeUndefined();
+    expect(screen.getByText('Nothing captured yet')).toBeTruthy();
+  });
+});
+
+describe('Alert images in the Capture log', () => {
+  it('are dropped from every entry the next time a status is written', () => {
+    const blob = 'iVBORw0KGgo'.repeat(1000);
+    storage.set(
+      KEY,
+      JSON.stringify([
+        { id: 'a', text: 'one', status: 'waiting_for_review', icon: blob, iconLarge: blob },
+        { id: 'b', text: 'two', status: 'ignored', image: blob },
+      ]),
+    );
+
+    markCaptureStatus('a', 'auto_added', 'tx-a');
+    expect(JSON.parse(storage.getString(KEY) ?? '[]')).toEqual([
+      { id: 'a', text: 'one', status: 'auto_added', transactionId: 'tx-a' },
+      { id: 'b', text: 'two', status: 'ignored' },
+    ]);
   });
 });

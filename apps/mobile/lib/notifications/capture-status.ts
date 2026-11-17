@@ -4,6 +4,7 @@ import type { CapturedNotificationStatus } from '@repo/types';
 import {
   captureStatusAfterExtraction as afterExtraction,
   setCaptureStatus,
+  withoutAlertImages as stripImages,
 } from './capture-status.core.js';
 
 const notificationStorage = createMMKV({ id: 'moni-notifications' });
@@ -15,6 +16,10 @@ export function captureStatusAfterExtraction(result: {
   skipped: boolean;
 }): CapturedNotificationStatus {
   return afterExtraction(result) as CapturedNotificationStatus;
+}
+
+export function withoutAlertImages<T extends object>(entry: T): T {
+  return stripImages(entry) as T;
 }
 
 export function markCaptureStatus(
