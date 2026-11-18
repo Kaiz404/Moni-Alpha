@@ -1,5 +1,5 @@
-# Y2 presets: Transit, Tolls, TNG Reloads, PTPTN and Takaful list under Presets, before Other Expenses.
-# Needs the migration 20261101000100_malaysian_categories.sql pushed.
+# Y2 presets: Transit and Tolls list before Other Expenses. TNG Reloads, PTPTN and Takaful are retired
+# (20261116000000_remove_reload_ptptn_takaful_presets.sql) and must not list.
 # Run: scripts/device/run-flows.sh .maestro/flows/account/malaysian-categories.yaml
 appId: com.anonymous.moni.e2e
 name: Y2 Malaysian categories
@@ -18,8 +18,8 @@ tags:
 - assertVisible: Tolls
 - takeScreenshot: y2-categories-transit-tolls
 - scrollUntilVisible:
-    element: Takaful
+    element: Other Expenses
     direction: DOWN
-- assertVisible: TNG Reloads
-- assertVisible: PTPTN
-- takeScreenshot: y2-categories-ptptn-takaful
+- assertNotVisible: Takaful
+- assertNotVisible: TNG Reloads
+- assertNotVisible: PTPTN
