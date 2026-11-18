@@ -9,8 +9,11 @@ import { State, type PanGesture } from 'react-native-gesture-handler';
 import { fireGestureHandler, getByGestureTestId } from 'react-native-gesture-handler/jest-utils';
 
 import ReviewScreen from '@/app/review';
-import { toFinanceTransaction, EMPTY_FINANCE_PROJECTION } from '@repo/core';
-import { buildBudgetMonth } from '@/lib/finance/budget-month';
+import {
+  toFinanceTransaction,
+  EMPTY_FINANCE_PROJECTION,
+  buildMoneyMonth,
+} from '@repo/core';
 import { financeProjection$ } from '@/lib/finance/projection';
 import { dismissSheet, getOpenSheet } from '@/lib/sheet/sheet-store';
 import { dismissToast, undoToast, useToast } from '@/lib/toast/toast-store';
@@ -301,17 +304,18 @@ describe('Review deck', () => {
     /** What Home and Budget count this month, from the real ledger rows. */
     const spent = () => {
       const now = new Date();
-      return buildBudgetMonth({
-        month: deviceCalendar.monthKey(now),
-        now,
-        currency: 'MYR' as CurrencyCode,
-        transactions: ledger().flatMap((row) => toFinanceTransaction(row) ?? []),
-        categories: [],
-        budgets: [],
-        monthlyTotalMinor: null,
-        bills: [],
-        debts: [],
-      }).spentMinor;
+      return buildMoneyMonth(
+        {
+          transactions: ledger().flatMap((row) => toFinanceTransaction(row) ?? []),
+          categories: [],
+          budgets: [],
+          monthlyTotalMinor: null,
+          bills: [],
+          overrides: [],
+          debts: [],
+        },
+        { month: deviceCalendar.monthKey(now), currency: 'MYR' as CurrencyCode, now, calendar: deviceCalendar },
+      ).spentMinor;
     };
 
     it('Same payment leaves one ledger row, counted once, and Undo brings the card back', async () => {

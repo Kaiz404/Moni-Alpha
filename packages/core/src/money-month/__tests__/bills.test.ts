@@ -1,9 +1,12 @@
+import { describe, expect, it } from 'vitest';
 import type { MinorAmount, RecurringOverride } from '@repo/types';
-import { BANK, tx } from '@/lib/ai/facts/__tests__/synthetic-ledger';
-import { selectUpcomingBills } from '../bills';
 
-const WED_14_OCT = new Date(2026, 9, 14, 10);
-const on = (month: number, day: number) => new Date(2026, month - 1, day, 9);
+import { createCalendar } from '../../calendar';
+import { selectBillsAhead, selectUpcomingBills } from '../bills';
+import { BANK, on, tx } from './facts-rows';
+
+const KL = createCalendar('Asia/Kuala_Lumpur');
+const WED_14_OCT = new Date('2026-10-14T10:00:00+08:00');
 const netflix = (months: number[]) =>
   months.map((m) => tx(on(m, 15), 'expense', '54.90', 'Netflix'));
 
@@ -25,7 +28,7 @@ function override(over: Partial<RecurringOverride>): RecurringOverride {
 
 describe('selectUpcomingBills', () => {
   it('lists a monthly Netflix charge as due tomorrow', () => {
-    expect(selectUpcomingBills(WED_14_OCT, netflix([7, 8, 9]), [])).toEqual([
+    expect(selectUpcomingBills(WED_14_OCT, netflix([7, 8, 9]), [], KL)).toEqual([
       {
         seriesKey: 'MYR|expense|netflix',
         name: 'Netflix',
@@ -40,12 +43,12 @@ describe('selectUpcomingBills', () => {
   });
 
   it('marks the bill paid once this month’s charge landed', () => {
-    const [bill] = selectUpcomingBills(new Date(2026, 9, 20, 10), netflix([7, 8, 9, 10]), []);
+    const [bill] = selectUpcomingBills(new Date('2026-10-20T10:00:00+08:00'), netflix([7, 8, 9, 10]), [], KL);
     expect(bill).toMatchObject({ dueDate: '2026-10-15', status: 'paid' });
   });
 
   it('adds a confirmed bill that has no history yet, due on its expected day', () => {
-    expect(selectUpcomingBills(WED_14_OCT, [], [override({})])).toEqual([
+    expect(selectUpcomingBills(WED_14_OCT, [], [override({})], KL)).toEqual([
       {
         seriesKey: 'MYR|expense|unifi',
         name: 'unifi',
@@ -68,6 +71,7 @@ describe('selectUpcomingBills', () => {
         override({ seriesKey: 'MYR|expense|netflix', status: 'dismissed', kind: null }),
         override({ seriesKey: 'MYR|income|acme', kind: 'income' }),
       ],
+      KL,
     );
     expect(bills).toEqual([]);
   });
@@ -75,13 +79,13 @@ describe('selectUpcomingBills', () => {
   it('skips a bill for the month its skipPeriod names', () => {
     const [bill] = selectUpcomingBills(WED_14_OCT, netflix([7, 8, 9]), [
       override({ seriesKey: 'MYR|expense|netflix', kind: 'subscription', skipPeriod: '2026-10' }),
-    ]);
+    ], KL);
     expect(bill).toMatchObject({ seriesKey: 'MYR|expense|netflix', status: 'skipped' });
   });
 
   it('dates a bill with no payments on its expected day', () => {
-    const [bill] = selectUpcomingBills(WED_14_OCT, [], [override({ expectedDay: 20 })]);
-    expect(bill.dueDate).toBe('2026-10-20');
+    const [bill] = selectUpcomingBills(WED_14_OCT, [], [override({ expectedDay: 20 })], KL);
+    expect(bill!.dueDate).toBe('2026-10-20');
   });
 
   it('marks a bill the user added paid once a payment under its name lands this month', () => {
@@ -89,16 +93,17 @@ describe('selectUpcomingBills', () => {
       WED_14_OCT,
       [tx(on(10, 14), 'expense', '129.00', 'Unifi')],
       [override({ name: 'Unifi fibre' })],
+      KL,
     );
     expect(bill).toMatchObject({ name: 'Unifi fibre', status: 'paid', walletId: BANK });
   });
 
   it('shows a bill due once only in its own month', () => {
     const once = override({ dueOnce: '2026-11-03', expectedDay: 3 });
-    expect(selectUpcomingBills(WED_14_OCT, [], [once])).toEqual([]);
-    expect(selectUpcomingBills(new Date(2026, 10, 1, 9), [], [once])).toMatchObject([
-      { dueDate: '2026-11-03', status: 'due' },
-    ]);
+    expect(selectUpcomingBills(WED_14_OCT, [], [once], KL)).toEqual([]);
+    expect(
+      selectUpcomingBills(new Date('2026-11-01T09:00:00+08:00'), [], [once], KL),
+    ).toMatchObject([{ dueDate: '2026-11-03', status: 'due' }]);
   });
 
   it('uses the name, amount and wallet the user gave a detected bill', () => {
@@ -111,7 +116,7 @@ describe('selectUpcomingBills', () => {
         expectedDay: 15,
         walletId: 'wallet-2',
       }),
-    ]);
+    ], KL);
     expect(bill).toMatchObject({
       name: 'Netflix Premium',
       amountMinor: 6290,
@@ -119,5 +124,34 @@ describe('selectUpcomingBills', () => {
       walletId: 'wallet-2',
       status: 'due',
     });
+  });
+
+  it('reads this month and its payments in the calendar zone', () => {
+    const rent = ['08', '09', '10'].map((m) =>
+      tx(`2026-${m}-01T07:00:00+08:00`, 'expense', '1500', 'Landlord'),
+    );
+    const due = (zone: string) =>
+      selectUpcomingBills(WED_14_OCT, rent, [], createCalendar(zone)).map((bill) => [
+        bill.dueDate,
+        bill.status,
+      ]);
+    expect(due('Asia/Kuala_Lumpur')).toEqual([['2026-10-01', 'paid']]);
+    expect(due('UTC')).toEqual([['2026-10-31', 'due']]);
+  });
+});
+
+describe('selectBillsAhead', () => {
+  it("adds next month's round of a bill already paid this month, in any zone", () => {
+    const thirtieth = new Date('2026-10-30T10:00:00+08:00');
+    for (const zone of ['Asia/Kuala_Lumpur', 'Europe/London']) {
+      expect(
+        selectBillsAhead(thirtieth, netflix([7, 8, 9, 10]), [], createCalendar(zone)).map(
+          (bill) => [bill.dueDate, bill.status],
+        ),
+      ).toEqual([
+        ['2026-10-15', 'paid'],
+        ['2026-11-15', 'due'],
+      ]);
+    }
   });
 });

@@ -1,22 +1,26 @@
-import type { CurrencyCode, MinorAmount, UpcomingBill } from '@repo/types';
+import {
+  decimalToMinor,
+  type CurrencyCode,
+  type MinorAmount,
+  type RecurringOverride,
+  type UpcomingBill,
+} from '@repo/types';
 
 import {
-  countsAsSpending,
+  type Calendar,
   dayOfMonth,
   daysInMonth,
-  formatMoney,
   lastDayOf,
   type MonthKey,
   monthOf,
-  monthSpend,
-  type FinanceBudget,
-  type FinanceCategory,
-  type FinanceDebt,
-  type FinanceTransaction,
-} from '@repo/core';
-
-import { debtPhrase } from '@/lib/finance/spent-summary';
-import { deviceCalendar } from '@/lib/dates/device-calendar';
+} from '../calendar';
+import { countsAsSpending } from '../ledger';
+import { monthSpend } from '../read-model/report';
+import type { DebtWithBalance } from '../read-model/selections';
+import type { FinanceBudget, FinanceCategory, FinanceTransaction } from '../read-model/types';
+import { selectUpcomingBills } from './bills';
+import { daysAtOrUnderPace, evenPace, safePerDay } from './pace';
+import { debtPhrase, leftLine, leftSentence } from './words';
 
 export type CategorySpend = {
   categoryId: string;
@@ -39,11 +43,25 @@ export type LeftThisMonth = {
   debtsDue: DebtDue[];
 };
 
-export type BudgetMonth = {
+/** The month's ready sentences; each is null where it does not apply. See `words.ts`. */
+export type MoneyMonthWords = {
+  /** Budget tab: "RM443 left for 18 days after bills and RM40 to Mei · RM24 a day". */
+  budgetLine: string | null;
+  /** Home's spent card: names debts due only when no bills strip carries them. */
+  homeLine: string | null;
+  /** New transaction's empty amount: "RM443 left for 18 days · RM24 a day". */
+  leftLine: string | null;
+  /** "RM40 to Mei", or "RM60 to 2 people". */
+  debts: string | null;
+};
+
+export type MoneyMonth = {
   month: MonthKey;
   currency: CurrencyCode;
   isCurrent: boolean;
   daysInMonth: number;
+  /** Today to the month's last day, both counted, in the current month; 0 for another month. */
+  daysLeft: number;
   /** The line runs to this day: today in the current month, the last day otherwise. */
   throughDay: number;
   /** Spend per day, index 0 is day 1. Days after `throughDay` are 0. */
@@ -53,40 +71,76 @@ export type BudgetMonth = {
   spentMinor: MinorAmount;
   budgetMinor: MinorAmount | null;
   evenPaceMinor: MinorAmount | null;
+  /** Of days 1 to `throughDay`, those spent at or under even pace; null without a budget. */
+  paceDays: { atOrUnder: number; counted: number } | null;
   budgeted: CategorySpend[];
   /** Categories spent in this month with no budget. */
   unbudgeted: CategorySpend[];
   /** Bills still due this month in this currency; empty for past months. */
   billsDue: UpcomingBill[];
   left: LeftThisMonth | null;
+  words: MoneyMonthWords;
 };
 
-export type BudgetMonthInput = {
-  month: MonthKey;
-  now: Date;
-  currency: CurrencyCode;
+/** The synced rows a money month reads, as stored. */
+export type MoneyLedgerRows = {
+  userId: string | null;
   transactions: readonly FinanceTransaction[];
+  categoriesById: Record<string, FinanceCategory>;
+  budgetsById: Record<string, FinanceBudget>;
+  /** `profile_preferences.monthly_budget`: a decimal, or null when the user set none. */
+  monthlyBudget: string | number | null | undefined;
+  overrides: readonly RecurringOverride[];
+  debts: readonly DebtWithBalance[];
+};
+
+/** One user's ledger, ready for any month. */
+export type MoneyLedger = {
+  transactions: readonly FinanceTransaction[];
+  /** The user's and the preset expense categories still in use. */
   categories: readonly FinanceCategory[];
   budgets: readonly FinanceBudget[];
   /** The user's monthly total; null falls back to the sum of category budgets. */
   monthlyTotalMinor: MinorAmount | null;
+  /** This month's bills. */
   bills: readonly UpcomingBill[];
-  debts: readonly { debt: FinanceDebt; balanceMinor: MinorAmount }[];
+  overrides: readonly RecurringOverride[];
+  debts: readonly DebtWithBalance[];
 };
+
+export function moneyLedger(rows: MoneyLedgerRows, now: Date, calendar: Calendar): MoneyLedger {
+  const { userId } = rows;
+  const transactions = rows.transactions.filter((transaction) => transaction.userId === userId);
+  return {
+    transactions,
+    categories: Object.values(rows.categoriesById).filter(
+      (category) =>
+        (category.userId === null || category.userId === userId) &&
+        category.isActive &&
+        category.type !== 'income',
+    ),
+    budgets: Object.values(rows.budgetsById).filter((budget) => budget.userId === userId),
+    monthlyTotalMinor: rows.monthlyBudget == null ? null : decimalToMinor(rows.monthlyBudget),
+    bills: selectUpcomingBills(now, transactions, rows.overrides, calendar),
+    overrides: rows.overrides,
+    debts: rows.debts,
+  };
+}
 
 /** Each day's spend for one month (index 0 is day 1) and where the line stops. */
 export function dailySpend(
   transactions: readonly FinanceTransaction[],
   month: MonthKey,
   now: Date,
+  calendar: Calendar,
 ): { daily: MinorAmount[]; throughDay: number; isCurrent: boolean } {
   const length = daysInMonth(month);
-  const today = deviceCalendar.dayKey(now);
+  const today = calendar.dayKey(now);
   const isCurrent = month === monthOf(today);
   const daily = Array.from({ length }, () => 0);
   for (const transaction of transactions) {
-    const day = deviceCalendar.dayKey(transaction.transactionDate);
-    if (monthOf(day) === month) daily[dayOfMonth(day) - 1] += Number(transaction.amountMinor);
+    const day = calendar.dayKey(transaction.transactionDate);
+    if (monthOf(day) === month) daily[dayOfMonth(day) - 1]! += Number(transaction.amountMinor);
   }
   return {
     daily: daily as MinorAmount[],
@@ -98,7 +152,7 @@ export function dailySpend(
 export function cumulativeSpend(daily: readonly MinorAmount[], throughDay: number): MinorAmount[] {
   const cumulative = [0];
   for (let day = 1; day <= throughDay; day += 1)
-    cumulative.push(cumulative[day - 1] + Number(daily[day - 1] ?? 0));
+    cumulative.push(cumulative[day - 1]! + Number(daily[day - 1] ?? 0));
   return cumulative as MinorAmount[];
 }
 
@@ -108,18 +162,26 @@ function byDisplayOrder(categories: readonly FinanceCategory[]) {
     (rank.get(a.categoryId) ?? 0) - (rank.get(b.categoryId) ?? 0);
 }
 
-export function buildBudgetMonth(input: BudgetMonthInput): BudgetMonth {
-  const { month, now, currency } = input;
-  const spend = input.transactions.filter(
+export function buildMoneyMonth(
+  ledger: MoneyLedger,
+  {
+    month,
+    currency,
+    now,
+    calendar,
+  }: { month: MonthKey; currency: CurrencyCode; now: Date; calendar: Calendar },
+): MoneyMonth {
+  const spend = ledger.transactions.filter(
     (transaction) =>
-      transaction.currency === currency && countsAsSpending(transaction) &&
-      deviceCalendar.monthKey(transaction.transactionDate) === month,
+      transaction.currency === currency &&
+      countsAsSpending(transaction) &&
+      calendar.monthKey(transaction.transactionDate) === month,
   );
-  const { daily, throughDay, isCurrent } = dailySpend(spend, month, now);
+  const { daily, throughDay, isCurrent } = dailySpend(spend, month, now, calendar);
   const cumulative = cumulativeSpend(daily, throughDay);
   const spentMinor = daily.reduce((sum, value) => sum + value, 0) as MinorAmount;
 
-  const sortedCategories = [...input.categories].sort(
+  const sortedCategories = [...ledger.categories].sort(
     (a, b) => a.displayOrder - b.displayOrder || a.name.localeCompare(b.name),
   );
   const categoriesById = new Map(sortedCategories.map((category) => [category.id, category]));
@@ -131,7 +193,7 @@ export function buildBudgetMonth(input: BudgetMonthInput): BudgetMonth {
       (spentByCategory.get(transaction.categoryId) ?? 0) + Number(transaction.amountMinor),
     );
   }
-  const budgets = input.budgets.filter(
+  const budgets = ledger.budgets.filter(
     (budget) => budget.currency === currency && categoriesById.has(budget.categoryId),
   );
   const budgetByCategory = new Map(
@@ -155,14 +217,14 @@ export function buildBudgetMonth(input: BudgetMonthInput): BudgetMonth {
     .sort(order);
 
   const capsMinor = budgets.reduce((sum, budget) => sum + Number(budget.amountMinor), 0);
-  const budgetMinor = (input.monthlyTotalMinor ??
+  const budgetMinor = (ledger.monthlyTotalMinor ??
     (capsMinor > 0 ? capsMinor : null)) as MinorAmount | null;
   const length = daysInMonth(month);
-  const evenPaceMinor =
-    budgetMinor === null ? null : (Math.floor(budgetMinor / length) as MinorAmount);
+  const evenPaceMinor = budgetMinor === null ? null : evenPace(budgetMinor, month);
+  const daysLeft = isCurrent ? length - dayOfMonth(calendar.dayKey(now)) + 1 : 0;
 
   const billsDue = isCurrent
-    ? input.bills.filter((bill) => bill.status === 'due' && bill.currency === currency)
+    ? ledger.bills.filter((bill) => bill.status === 'due' && bill.currency === currency)
     : [];
   const left =
     isCurrent && budgetMinor !== null
@@ -170,28 +232,44 @@ export function buildBudgetMonth(input: BudgetMonthInput): BudgetMonth {
           budgetMinor,
           spentMinor,
           billsDue,
-          debts: input.debts,
+          debts: ledger.debts,
           currency,
           month,
-          daysLeft: length - dayOfMonth(deviceCalendar.dayKey(now)) + 1,
+          daysLeft,
         })
       : null;
 
+  const debts = debtPhrase(left?.debtsDue ?? [], currency);
+  const shape = { budgetMinor, spentMinor, currency, left };
   return {
     month,
     currency,
     isCurrent,
     daysInMonth: length,
+    daysLeft,
     throughDay,
     daily,
     cumulative,
     spentMinor,
     budgetMinor,
     evenPaceMinor,
+    paceDays:
+      evenPaceMinor === null
+        ? null
+        : {
+            atOrUnder: daysAtOrUnderPace(daily.slice(0, throughDay), evenPaceMinor),
+            counted: throughDay,
+          },
     budgeted,
     unbudgeted,
     billsDue,
     left,
+    words: {
+      budgetLine: leftSentence(shape),
+      homeLine: left ? leftLine(left, currency, billsDue.length ? null : debts) : null,
+      leftLine: left ? leftLine(left, currency) : null,
+      debts,
+    },
   };
 }
 
@@ -207,7 +285,7 @@ function leftThisMonth({
   budgetMinor: MinorAmount;
   spentMinor: MinorAmount;
   billsDue: readonly UpcomingBill[];
-  debts: BudgetMonthInput['debts'];
+  debts: readonly DebtWithBalance[];
   currency: CurrencyCode;
   month: MonthKey;
   daysLeft: number;
@@ -233,37 +311,10 @@ function leftThisMonth({
   return {
     leftMinor: leftMinor as MinorAmount,
     daysLeft,
-    perDayMinor: (leftMinor > 0 ? Math.floor(leftMinor / daysLeft / 100) * 100 : 0) as MinorAmount,
+    perDayMinor: safePerDay(leftMinor, daysLeft),
     billsMinor: billsMinor as MinorAmount,
     debtsDue,
   };
-}
-
-/** "after bills and RM40 to Mei", or null when nothing is set aside. */
-export function setAsideLabel(left: LeftThisMonth, currency: string): string | null {
-  const parts: string[] = [];
-  if (left.billsMinor > 0) parts.push('bills');
-  const debts = debtPhrase(left.debtsDue, currency);
-  if (debts) parts.push(debts);
-  return parts.length ? `after ${parts.join(' and ')}` : null;
-}
-
-/** The line under "Spent in October": what is left, after what, and safe to spend a day. */
-export function leftSentence(month: BudgetMonth): string | null {
-  const { budgetMinor, spentMinor, currency, left } = month;
-  if (budgetMinor === null) return null;
-  const whole = (value: number) => formatMoney(value, currency, { whole: true });
-  if (!left) {
-    const under = budgetMinor - spentMinor;
-    return under >= 0
-      ? `${whole(under)} under the ${whole(budgetMinor)} budget`
-      : `${whole(-under)} over the ${whole(budgetMinor)} budget`;
-  }
-  const after = setAsideLabel(left, currency);
-  if (left.leftMinor < 0)
-    return [`${whole(-left.leftMinor)} over`, after].filter(Boolean).join(' ');
-  const days = left.daysLeft === 1 ? '1 day' : `${left.daysLeft} days`;
-  return `${[`${whole(left.leftMinor)} left for ${days}`, after].filter(Boolean).join(' ')} · ${whole(left.perDayMinor)} a day`;
 }
 
 /** Months the chooser offers, newest first: this month and every earlier month with spend. */
@@ -271,13 +322,14 @@ export function spendMonths(
   transactions: readonly FinanceTransaction[],
   currency: CurrencyCode,
   now: Date,
+  calendar: Calendar,
   limit = 12,
 ): { month: MonthKey; spentMinor: MinorAmount }[] {
-  const current = deviceCalendar.monthKey(now);
+  const current = calendar.monthKey(now);
   const totals = new Map<MonthKey, number>([[current, 0]]);
   for (const transaction of transactions) {
     if (transaction.currency !== currency || !countsAsSpending(transaction)) continue;
-    const month = deviceCalendar.monthKey(transaction.transactionDate);
+    const month = calendar.monthKey(transaction.transactionDate);
     if (month > current) continue;
     totals.set(month, (totals.get(month) ?? 0) + Number(transaction.amountMinor));
   }
@@ -297,7 +349,7 @@ export type SpendSlice = {
 };
 
 /**
- * A month's spending split by category, biggest first, adding up to `buildBudgetMonth`'s `spentMinor`.
+ * A month's spending split by category, biggest first, adding up to `buildMoneyMonth`'s `spentMinor`.
  * `categories` has to include archived ones: old spending still belongs to them.
  */
 export function spendSlices(
@@ -305,11 +357,13 @@ export function spendSlices(
   month: MonthKey,
   currency: CurrencyCode,
   categories: readonly Pick<FinanceCategory, 'id' | 'name' | 'icon' | 'color'>[],
+  calendar: Calendar,
 ): SpendSlice[] {
   const byId = new Map(categories.map((category) => [category.id, category]));
   const totals = new Map<string | null, number>();
-  for (const transaction of monthSpend(transactions, month, currency, deviceCalendar)) {
-    const id = transaction.categoryId && byId.has(transaction.categoryId) ? transaction.categoryId : null;
+  for (const transaction of monthSpend(transactions, month, currency, calendar)) {
+    const id =
+      transaction.categoryId && byId.has(transaction.categoryId) ? transaction.categoryId : null;
     totals.set(id, (totals.get(id) ?? 0) + Number(transaction.amountMinor));
   }
   return [...totals]

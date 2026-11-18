@@ -28,9 +28,22 @@ import {
   TransactionRow,
 } from '@/components/ui/transaction-row';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
-import { lastPaymentBySeries } from '@/lib/finance/bills';
-import { budgetNote } from '@/lib/finance/budget-note';
-import { cumulativeSpend, dailySpend } from '@/lib/finance/budget-month';
+import {
+  lastPaymentBySeries,
+  budgetNote,
+  cumulativeSpend,
+  dailySpend,
+  merchantKey,
+  monthSpend,
+  topMerchants,
+  merchantName,
+  currencySymbol,
+  dayLabel,
+  daysInMonth,
+  formatMoney,
+  isMonthKey,
+  monthName,
+} from '@repo/core';
 import { PLAN_LIMIT_MINOR } from '@/lib/finance/money';
 import { pendingProposals$ } from '@/lib/finance/selectors';
 import { openSheet } from '@/lib/sheet/sheet-store';
@@ -43,18 +56,6 @@ import { tid } from '@/lib/test-ids';
 import { showToast } from '@/lib/toast/toast-store';
 import { resolveTransactionIcon } from '@/lib/transactions/icon';
 import { proposalRow, transactionRow } from '@/lib/transactions/row';
-import {
-  merchantKey,
-  monthSpend,
-  topMerchants,
-  merchantName,
-  currencySymbol,
-  dayLabel,
-  daysInMonth,
-  formatMoney,
-  isMonthKey,
-  monthName,
-} from '@repo/core';
 import { deviceCalendar } from '@/lib/dates/device-calendar';
 
 const SHOWN_ROWS = 5;
@@ -105,7 +106,7 @@ export default function CategoryBudgetScreen() {
   );
   const { toName } = useMerchantNames();
   const { series, chartSeries } = useMemo(() => {
-    const { daily, throughDay } = dailySpend(spend, month, now);
+    const { daily, throughDay } = dailySpend(spend, month, now, deviceCalendar);
     return {
       series: cumulativeSpend(daily, throughDay),
       chartSeries: { month, values: daily.slice(0, throughDay) },

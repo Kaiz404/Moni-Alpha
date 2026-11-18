@@ -1,13 +1,10 @@
-import { decimalToMinor, type MinorAmount } from '@repo/types';
-
-import { selectUpcomingBills } from '@/lib/finance/bills';
-import { buildBudgetMonth } from '@/lib/finance/budget-month';
 import { selectMainCurrency } from '@/lib/finance/main-currency';
 import { financeProjection$ } from '@/lib/finance/projection';
 import { debtsWithBalance$, transactions$ } from '@/lib/finance/selectors';
 import { profilePreferences$ } from '@/lib/store';
 import { listAwaitingReview } from '@/lib/supabase/proposed-transactions';
 import { listRecurringOverrides } from '@/lib/supabase/recurring-overrides';
+import { buildMoneyMonth, moneyLedger } from '@repo/core';
 
 import type { AnswerSnapshot } from './answer-cards';
 import { deviceCalendar } from '@/lib/dates/device-calendar';
@@ -16,26 +13,25 @@ import { deviceCalendar } from '@/lib/dates/device-calendar';
 export function buildAnswerSnapshot(userId: string, now: Date = new Date()): AnswerSnapshot {
   const preferences = profilePreferences$.peek();
   const currency = selectMainCurrency(preferences);
-  const transactions = transactions$({ userId }).peek();
   const projection = financeProjection$.peek();
-  const month = buildBudgetMonth({
-    month: deviceCalendar.monthKey(now),
+  const ledger = moneyLedger(
+    {
+      userId,
+      transactions: transactions$({ userId }).peek(),
+      categoriesById: projection.categoriesById,
+      budgetsById: projection.budgetsById,
+      monthlyBudget: preferences?.monthly_budget,
+      overrides: listRecurringOverrides(userId),
+      debts: debtsWithBalance$(userId).peek(),
+    },
     now,
+    deviceCalendar,
+  );
+  const month = buildMoneyMonth(ledger, {
+    month: deviceCalendar.monthKey(now),
     currency,
-    transactions,
-    categories: Object.values(projection.categoriesById).filter(
-      (category) =>
-        (category.userId === null || category.userId === userId) &&
-        category.isActive &&
-        category.type !== 'income',
-    ),
-    budgets: Object.values(projection.budgetsById).filter((budget) => budget.userId === userId),
-    monthlyTotalMinor:
-      preferences?.monthly_budget == null
-        ? null
-        : (decimalToMinor(preferences.monthly_budget) as MinorAmount),
-    bills: selectUpcomingBills(now, transactions, listRecurringOverrides(userId)),
-    debts: debtsWithBalance$(userId).peek(),
+    now,
+    calendar: deviceCalendar,
   });
   return {
     currency,
@@ -51,7 +47,7 @@ export function buildAnswerSnapshot(userId: string, now: Date = new Date()): Ans
       spent: Number(month.spentMinor),
       budget: month.budgetMinor === null ? null : Number(month.budgetMinor),
       left: month.left ? Number(month.left.leftMinor) : null,
-      daysLeft: month.left?.daysLeft ?? month.daysInMonth - now.getDate() + 1,
+      daysLeft: month.daysLeft,
       perDay: month.left && month.left.perDayMinor > 0 ? Number(month.left.perDayMinor) : null,
       owed: month.left?.debtsDue ?? [],
     },

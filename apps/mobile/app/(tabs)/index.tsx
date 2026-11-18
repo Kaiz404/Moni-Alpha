@@ -21,7 +21,6 @@ import {
   useBudgetData,
   useBudgetMonth,
 } from '@/components/budget/use-budget';
-import { debtPhrase } from '@/lib/finance/spent-summary';
 import { openCaptureChooser } from '@/components/nav/capture-chooser';
 import { useTabBarClearance } from '@/components/nav/tab-bar';
 import { SyncBanner } from '@/components/providers/sync-banner';
@@ -166,9 +165,6 @@ export default function HomeScreen() {
   const showSetup =
     overview.transactions.length === 0 &&
     steps.some((step) => !step.done);
-  const debtsLabel = month.billsDue.length
-    ? null
-    : debtPhrase(month.left?.debtsDue ?? [], currency);
 
   const refresh = async () => {
     setRefreshing(true);
@@ -224,7 +220,6 @@ export default function HomeScreen() {
             currency={currency}
             transactions={budgetData.transactions}
             now={budgetData.now}
-            after={debtsLabel}
           />
           <AskBox
             onPress={() =>

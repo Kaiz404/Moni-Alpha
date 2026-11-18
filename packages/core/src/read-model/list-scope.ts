@@ -1,14 +1,9 @@
 import { transactionTypeSchema, type TransactionType } from '@repo/types';
 
-import { billPayments } from '@/lib/finance/bills';
-import {
-  groupPlaces,
-  placeRange,
-  type FinanceTransaction,
-  isMonthKey,
-  type MonthKey,
-} from '@repo/core';
-import { deviceCalendar } from '@/lib/dates/device-calendar';
+import { type Calendar, isMonthKey, type MonthKey } from '../calendar';
+import { billPayments } from '../money-month/bills';
+import { groupPlaces, placeRange } from './places';
+import type { FinanceTransaction } from './types';
 
 /**
  * Which rows `/transactions` lists: the "See all" of a detail page, pushed under it so Back
@@ -89,10 +84,11 @@ export function readListScope(params: ListParams): ListScope | null {
 export function inCategory(
   transaction: FinanceTransaction,
   scope: Extract<ListScope, { kind: 'category' }>,
+  calendar: Calendar,
 ): boolean {
   return (
     transaction.categoryId === scope.categoryId &&
-    (scope.month === null || deviceCalendar.monthKey(transaction.transactionDate) === scope.month)
+    (scope.month === null || calendar.monthKey(transaction.transactionDate) === scope.month)
   );
 }
 
@@ -105,6 +101,7 @@ export function scopedRows(
   transactions: readonly FinanceTransaction[],
   mainCurrency: string,
   now: Date,
+  calendar: Calendar,
 ): { rows: FinanceTransaction[]; currency: string } {
   const newestFirst = (rows: FinanceTransaction[]) =>
     rows.sort((a, b) => b.transactionDate.localeCompare(a.transactionDate));
@@ -122,24 +119,28 @@ export function scopedRows(
               row.merchant?.toLowerCase() === key &&
               row.currency === scope.currency &&
               row.type === scope.type &&
-              deviceCalendar.monthKey(row.transactionDate) === scope.month,
+              calendar.monthKey(row.transactionDate) === scope.month,
           ),
         ),
         currency: scope.currency,
       };
     }
     case 'place': {
-      const place = groupPlaces(transactions, {
-        currency: mainCurrency,
-        range: scope.range ? placeRange(scope.range, now, deviceCalendar).span : null,
-      }, deviceCalendar).find((candidate) => candidate.id === scope.placeId);
+      const place = groupPlaces(
+        transactions,
+        {
+          currency: mainCurrency,
+          range: scope.range ? placeRange(scope.range, now, calendar).span : null,
+        },
+        calendar,
+      ).find((candidate) => candidate.id === scope.placeId);
       return { rows: newestFirst([...(place?.transactions ?? [])]), currency: mainCurrency };
     }
     case 'category':
       return {
         rows: newestFirst(
           transactions.filter(
-            (row) => row.currency === mainCurrency && inCategory(row, scope),
+            (row) => row.currency === mainCurrency && inCategory(row, scope, calendar),
           ),
         ),
         currency: mainCurrency,

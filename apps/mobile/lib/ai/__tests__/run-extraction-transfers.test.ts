@@ -21,8 +21,11 @@ import {
   VISA,
   wallet,
 } from './pairing-fixture';
-import { toFinanceTransaction, groupActivityDays } from '@repo/core';
-import { buildBudgetMonth } from '@/lib/finance/budget-month';
+import {
+  toFinanceTransaction,
+  groupActivityDays,
+  buildMoneyMonth,
+} from '@repo/core';
 import { walletBalanceForTest } from './wallet-balance';
 import { markCaptureStatus } from '@/lib/notifications/capture-status';
 import { undoPairing } from '@/lib/proposals/pairing';
@@ -319,17 +322,10 @@ describe('a credit-card bill payment', () => {
     await run(bankPaid());
     const rows = ledgerRows().flatMap((row) => toFinanceTransaction(row) ?? []);
     const now = new Date(T0 + 60_000);
-    const budget = buildBudgetMonth({
-      month: deviceCalendar.monthKey(now),
-      now,
-      currency: 'MYR' as CurrencyCode,
-      transactions: rows,
-      categories: [],
-      budgets: [],
-      monthlyTotalMinor: null,
-      bills: [],
-      debts: [],
-    });
+    const budget = buildMoneyMonth(
+      { transactions: rows, categories: [], budgets: [], monthlyTotalMinor: null, bills: [], overrides: [], debts: [] },
+      { month: deviceCalendar.monthKey(now), currency: 'MYR' as CurrencyCode, now, calendar: deviceCalendar },
+    );
     expect(rows).toHaveLength(1);
     expect(budget.spentMinor).toBe(0);
     expect(groupActivityDays(rows, deviceCalendar)[0]!.spentMinor).toBe(0);
@@ -426,17 +422,10 @@ describe('spending totals', () => {
     await approve(card!);
 
     const rows = ledgerRows().flatMap((row) => toFinanceTransaction(row) ?? []);
-    const budget = buildBudgetMonth({
-      month: deviceCalendar.monthKey(NOW),
-      now: NOW,
-      currency: MYR,
-      transactions: rows,
-      categories: [],
-      budgets: [],
-      monthlyTotalMinor: null,
-      bills: [],
-      debts: [],
-    });
+    const budget = buildMoneyMonth(
+      { transactions: rows, categories: [], budgets: [], monthlyTotalMinor: null, bills: [], overrides: [], debts: [] },
+      { month: deviceCalendar.monthKey(NOW), currency: MYR, now: NOW, calendar: deviceCalendar },
+    );
     expect(rows).toHaveLength(2);
     expect(budget.spentMinor).toBe(1200);
     const today = groupActivityDays(

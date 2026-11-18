@@ -19,9 +19,13 @@ import { useMainCurrency } from '@/lib/finance/main-currency';
 import { budgetProgress$, categoriesForUser$, transactions$ } from '@/lib/finance/selectors';
 import { ensureFinanceTimezone } from '@/lib/supabase/profile';
 import { tid } from '@/lib/test-ids';
-import { listParams } from '@/lib/transactions/list-scope';
+import {
+  listParams,
+  categoryMonths,
+  type FinanceCategory,
+  formatMoney,
+} from '@repo/core';
 import { resolveTransactionIcon } from '@/lib/transactions/icon';
-import { categoryMonths, type FinanceCategory, formatMoney } from '@repo/core';
 import { deviceCalendar } from '@/lib/dates/device-calendar';
 
 type Kind = 'expense' | 'income';

@@ -40,7 +40,6 @@ import {
 import { useMainCurrency } from '@/lib/finance/main-currency';
 import { budgetProgress$, categoriesForUser$, recentExpenseCategories$, transactions$, walletsForUser$ } from '@/lib/finance/selectors';
 import { financeProjection$ } from '@/lib/finance/projection';
-import { leftLine } from '@/lib/finance/spent-summary';
 import { approve, toggleOn } from '@/lib/haptics';
 import { recordMissedTransaction } from '@/lib/notifications/capture-health';
 import { toCategoryTiles } from '@/lib/sheet/category-tiles';
@@ -231,9 +230,9 @@ export default function TypeItScreen() {
         incomeThisMonthMinor,
       });
     }
-    if (amount.minor === 0 && budgetMonth.left) {
+    if (amount.minor === 0 && budgetMonth.left && budgetMonth.words.leftLine) {
       return {
-        text: leftLine(budgetMonth.left, mainCurrency),
+        text: budgetMonth.words.leftLine,
         tone: budgetMonth.left.leftMinor < 0 ? 'over' : 'plain',
       };
     }

@@ -1,6 +1,7 @@
+import { describe, expect, it } from 'vitest';
 import type { MinorAmount } from '@repo/types';
 
-import { budgetNote } from '@/lib/finance/budget-note';
+import { budgetNote } from '../words';
 
 const rm = (ringgit: number) => Math.round(ringgit * 100) as MinorAmount;
 

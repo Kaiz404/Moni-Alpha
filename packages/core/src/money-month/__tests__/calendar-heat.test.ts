@@ -1,3 +1,4 @@
+import { describe, expect, it } from 'vitest';
 import type { MinorAmount } from '@repo/types';
 
 import { calendarHeat } from '../calendar-heat';

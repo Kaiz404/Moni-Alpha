@@ -12,11 +12,9 @@ import { Press } from '@/components/ui/press';
 import { Text } from '@/components/ui/text';
 import { TransactionRow } from '@/components/ui/transaction-row';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
-import { calendarHeat } from '@/lib/finance/calendar-heat';
-import type { BudgetMonth } from '@/lib/finance/budget-month';
-import { tid } from '@/lib/test-ids';
-import { transactionRow } from '@/lib/transactions/row';
 import {
+  calendarHeat,
+  type MoneyMonth,
   monthSpend,
   topMerchants,
   merchantName,
@@ -30,6 +28,8 @@ import {
   monthShort,
   weekdayShort,
 } from '@repo/core';
+import { tid } from '@/lib/test-ids';
+import { transactionRow } from '@/lib/transactions/row';
 
 import { deviceCalendar } from '@/lib/dates/device-calendar';
 
@@ -37,7 +37,7 @@ import { deviceCalendar } from '@/lib/dates/device-calendar';
 const DAY_ROWS = 3;
 
 type CalendarViewProps = {
-  month: BudgetMonth;
+  month: MoneyMonth;
   transactions: readonly FinanceTransaction[];
   categoriesById: Record<string, FinanceCategory>;
   walletNames: Record<string, string>;
@@ -109,14 +109,6 @@ export function CalendarView({
   const daySpent = Number(month.daily[selected - 1] ?? 0);
   const whole = (value: number) =>
     formatMoney(value, currency, { whole: true });
-  const atOrUnder = days.filter(
-    (day) =>
-      day.spentMinor !== null &&
-      (day.bucket === 'under' || day.bucket === 'plain'),
-  ).length;
-  const counted = days.filter(
-    (day) => day.spentMinor !== null,
-  ).length;
   const bill = billByDay[selected];
   const paceNote =
     evenPaceMinor === null
@@ -144,13 +136,13 @@ export function CalendarView({
 
   return (
     <View className="gap-3">
-      {evenPaceMinor !== null && month.spentMinor > 0 ? (
+      {evenPaceMinor !== null && month.paceDays !== null && month.spentMinor > 0 ? (
         <Text
           variant="meta"
           className="text-ink-2"
           style={{ fontVariant: ['tabular-nums'] }}
         >
-          {`${atOrUnder} of ${counted} days at or under even pace, ${whole(evenPaceMinor)} a day`}
+          {`${month.paceDays.atOrUnder} of ${month.paceDays.counted} days at or under even pace, ${whole(evenPaceMinor)} a day`}
         </Text>
       ) : null}
       <CalendarHeat

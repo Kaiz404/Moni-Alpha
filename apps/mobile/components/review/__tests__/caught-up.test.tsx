@@ -8,7 +8,10 @@ jest.mock('uniwind', () => ({
 }));
 jest.mock('@/components/budget/use-budget', () => ({
   useBudgetData: () => ({ currency: 'MYR', now: new Date(2026, 9, 13) }),
-  useBudgetMonth: () => ({ left: { leftMinor: 42000, daysLeft: 18, perDayMinor: 2300 } }),
+  useBudgetMonth: () => ({
+    currency: 'MYR',
+    left: { leftMinor: 42000, daysLeft: 18, perDayMinor: 2300 },
+  }),
 }));
 
 describe('CaughtUp', () => {

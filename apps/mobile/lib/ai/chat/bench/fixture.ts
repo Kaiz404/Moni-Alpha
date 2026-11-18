@@ -8,10 +8,10 @@
  * - gig: weekly ride-hailing payouts that swing widely and no regular payday.
  */
 import { decimalToMinor } from '@repo/types';
+import type { FactsTransaction } from '@repo/core';
 import {
   buildFinanceFactsByCurrency,
   parseAskedAmount,
-  type FactsTransaction,
   type FactsWallet,
 } from '@/lib/ai/facts';
 import {

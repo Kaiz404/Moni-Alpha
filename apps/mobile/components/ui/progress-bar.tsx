@@ -2,7 +2,7 @@ import type { CurrencyCode, MinorAmount } from '@repo/types';
 import { View } from 'react-native';
 
 import { Text } from '@/components/ui/text';
-import { budgetNote, type BudgetNote } from '@/lib/finance/budget-note';
+import { budgetNote, type BudgetNote } from '@repo/core';
 
 const heights = { tile: 4, row: 8, hero: 12 } as const;
 

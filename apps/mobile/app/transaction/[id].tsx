@@ -57,11 +57,8 @@ import { showToast } from '@/lib/toast/toast-store';
 import { captureSourceLabel } from '@/lib/proposals/capture-source';
 import { transactionPairing } from '@/lib/transactions/alert';
 import { resolveTransactionIcon } from '@/lib/transactions/icon';
-import { listParams } from '@/lib/transactions/list-scope';
-import { BALANCE_CORRECTION_TITLE } from '@/lib/wallets/balance-correction';
-import { compactWalletNames } from '@/lib/wallets/compact-name';
-import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import {
+  listParams,
   merchantKey,
   merchantName,
   groupPlaces,
@@ -73,6 +70,9 @@ import {
   formatSignedMoney,
   moneySign,
 } from '@repo/core';
+import { BALANCE_CORRECTION_TITLE } from '@/lib/wallets/balance-correction';
+import { compactWalletNames } from '@/lib/wallets/compact-name';
+import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { deviceCalendar } from '@/lib/dates/device-calendar';
 
 type RawRow = {

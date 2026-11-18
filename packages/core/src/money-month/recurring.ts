@@ -3,16 +3,11 @@
  * predict, they never post to the ledger. A series is one currency, one type and one merchant.
  */
 import type { MinorAmount, RecurringKind, RecurringOverride } from '@repo/types';
-import {
-  type FinanceTransaction,
-  merchantKey,
-  addMonths,
-  countsAsCashFlow,
-  dayFromNumber,
-  dayNumber,
-  dayOfMonth,
-} from '@repo/core';
-import { deviceCalendar } from '@/lib/dates/device-calendar';
+
+import { addMonths, type Calendar, dayFromNumber, dayNumber, dayOfMonth } from '../calendar';
+import { countsAsCashFlow } from '../ledger';
+import { merchantKey } from '../read-model/merchants';
+import type { FinanceTransaction } from '../read-model/types';
 
 export type FactsTransaction = Pick<
   FinanceTransaction,
@@ -77,7 +72,7 @@ function cadenceOf(gap: number): Cadence | null {
 function median(values: number[]): number {
   const sorted = [...values].sort((a, b) => a - b);
   const mid = Math.floor(sorted.length / 2);
-  return sorted.length % 2 ? sorted[mid] : Math.round((sorted[mid - 1] + sorted[mid]) / 2);
+  return sorted.length % 2 ? sorted[mid]! : Math.round((sorted[mid - 1]! + sorted[mid]!) / 2);
 }
 
 type Occurrence = { day: number; amountMinor: number; merchant: string; categoryId: string | null };
@@ -91,14 +86,14 @@ function detectSeries(
 ): RecurringSeries | null {
   if (occurrences.length < MIN_OCCURRENCES) return null;
   const sorted = [...occurrences].sort((a, b) => a.day - b.day);
-  const last = sorted[sorted.length - 1];
-  const cadence = cadenceOf(last.day - sorted[sorted.length - 2].day);
+  const last = sorted[sorted.length - 1]!;
+  const cadence = cadenceOf(last.day - sorted[sorted.length - 2]!.day);
   if (!cadence) return null;
 
   const run = [last];
   for (let i = sorted.length - 2; i >= 0; i -= 1) {
-    if (cadenceOf(sorted[i + 1].day - sorted[i].day) !== cadence) break;
-    run.unshift(sorted[i]);
+    if (cadenceOf(sorted[i + 1]!.day - sorted[i]!.day) !== cadence) break;
+    run.unshift(sorted[i]!);
   }
   if (run.length < MIN_OCCURRENCES) return null;
 
@@ -154,9 +149,10 @@ export function detectRecurring(
   transactions: readonly FactsTransaction[],
   overrides: readonly RecurringOverride[],
   now: Date,
+  calendar: Calendar,
   categoryNames: Record<string, string> = {},
 ): RecurringSeries[] {
-  const today = deviceCalendar.dayNumber(now);
+  const today = calendar.dayNumber(now);
   const byKey = new Map<string, Occurrence[]>();
   for (const tx of transactions) {
     if (!countsAsCashFlow(tx) || new Date(tx.transactionDate) > now) continue;
@@ -164,7 +160,7 @@ export function detectRecurring(
     if (!key) continue;
     const list = byKey.get(key) ?? [];
     list.push({
-      day: deviceCalendar.dayNumber(tx.transactionDate),
+      day: calendar.dayNumber(tx.transactionDate),
       amountMinor: Number(tx.amountMinor),
       merchant: tx.merchant ?? '',
       categoryId: tx.categoryId,

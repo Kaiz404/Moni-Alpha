@@ -7,7 +7,7 @@ import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Press } from '@/components/ui/press';
 import { Text } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
-import type { CategorySpend } from '@/lib/finance/budget-month';
+import type { CategorySpend } from '@repo/core';
 import { tid } from '@/lib/test-ids';
 
 type BudgetRingsProps = {

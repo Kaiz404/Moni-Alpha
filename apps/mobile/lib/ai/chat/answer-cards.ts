@@ -3,7 +3,7 @@
  * numbers never come from the model; the model's reply is only the caption.
  * Amounts are minor units of the snapshot's currency.
  */
-import type { DebtDue } from '@/lib/finance/budget-month';
+import type { DebtDue } from '@repo/core';
 
 export type BillLine ={ name: string; amount: number; dueDate: string };
 

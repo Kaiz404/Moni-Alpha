@@ -1,7 +1,9 @@
 import {
   addDays,
   dateLabel,
+  daysAtOrUnderPace,
   daysInMonth,
+  evenPace as evenPaceOf,
   firstDayOf,
   formatMoney,
   type MonthKey,
@@ -132,7 +134,7 @@ export function paceGeometry({
   if (mode === 'daily') {
     const right = width;
     const slot = Math.min(MAX_SLOT, (right - BAR_LEFT - BAR_TAIL) / Math.max(today, 1));
-    const evenPace = budget === null ? null : budget / days;
+    const evenPace = budget === null ? null : evenPaceOf(budget, month);
     const highest = Math.max(...series.values, evenPace ?? 0, safePerDay ?? 0, 1);
     const max = niceCeil(highest);
     const yOf = (minor: number) => BAR_BASE - (minor / max) * (BAR_BASE - TOP);
@@ -154,7 +156,6 @@ export function paceGeometry({
             return { x: last.x, top: last.top - 2 - height, height };
           })()
         : null;
-    const over = evenPace === null ? 0 : series.values.filter((v) => v > evenPace).length;
     return {
       mode,
       width,
@@ -192,7 +193,7 @@ export function paceGeometry({
         `Daily spending, 1 to ${today} ${name}.` +
         (evenPace === null
           ? ''
-          : ` ${today - over} of ${today} days stayed at or under the even pace of ${formatMoney(evenPace, currency, { whole: true })}.`),
+          : ` ${daysAtOrUnderPace(series.values, evenPace)} of ${today} days stayed at or under the even pace of ${formatMoney(evenPace, currency, { whole: true })}.`),
     };
   }
 

@@ -7,7 +7,7 @@ import {
 } from 'react-native-gesture-handler/jest-utils';
 
 import { shareOfSpending, SpendRing } from '@/components/budget/spend-ring';
-import type { SpendSlice } from '@/lib/finance/budget-month';
+import type { SpendSlice } from '@repo/core';
 import { scrubStep } from '@/lib/haptics';
 
 jest.mock('@/lib/haptics', () => ({ scrubStep: jest.fn() }));

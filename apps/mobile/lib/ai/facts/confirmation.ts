@@ -7,7 +7,7 @@ import {
   liquidWallets,
   type FactsWallet,
 } from './forecast';
-import type { FactsTransaction } from './recurring';
+import type { FactsTransaction } from '@repo/core';
 import { deviceCalendar } from '@/lib/dates/device-calendar';
 
 export type WalletToConfirm<W extends FactsWallet> = {

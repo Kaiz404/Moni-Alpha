@@ -1,6 +1,6 @@
 import { decimalToMinor } from '@repo/types';
 import { walletsNeedingConfirmation } from '../confirmation';
-import type { FactsTransaction } from '../recurring';
+import type { FactsTransaction } from '@repo/core';
 import { BANK, tx, wallet } from './synthetic-ledger';
 
 const NOW = new Date(2026, 9, 12, 10);

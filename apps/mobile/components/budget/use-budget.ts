@@ -1,11 +1,9 @@
 import { useValue } from '@legendapp/state/react';
-import { decimalToMinor, type MinorAmount } from '@repo/types';
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
 
 import { useAuth } from '@/lib/auth/auth-context';
-import { selectUpcomingBills } from '@/lib/finance/bills';
-import { buildBudgetMonth, type BudgetMonth } from '@/lib/finance/budget-month';
+import { deviceCalendar } from '@/lib/dates/device-calendar';
 import { useMainCurrency } from '@/lib/finance/main-currency';
 import { financeProjection$ } from '@/lib/finance/projection';
 import { categoriesForUser$, debtsWithBalance$, transactions$, walletsForUser$ } from '@/lib/finance/selectors';
@@ -17,7 +15,7 @@ import {
   type RecurringOverrideRow,
 } from '@/lib/supabase/recurring-overrides';
 import { compactWalletNames } from '@/lib/wallets/compact-name';
-import type { MonthKey } from '@repo/core';
+import { buildMoneyMonth, moneyLedger, type MoneyMonth, type MonthKey } from '@repo/core';
 
 /** A clock that moves on when the screen comes back into focus, so "today" never goes stale. */
 export function useNow(): Date {
@@ -39,70 +37,48 @@ export function useBudgetData() {
   const transactions = useValue(transactions$({ userId }));
   const wallets = useValue(walletsForUser$(userId));
   const debts = useValue(debtsWithBalance$(userId));
-  const categories = useValue(() =>
-    Object.values(financeProjection$.categoriesById.get()).filter(
-      (category) =>
-        (category.userId === null || category.userId === userId) &&
-        category.isActive &&
-        category.type !== 'income',
-    ),
-  );
+  // Legend changes a record in place; the copy is a new reference for the ledger's useMemo.
+  const categoriesById = useValue(() => ({ ...financeProjection$.categoriesById.get() }));
   const everyCategory = useValue(categoriesForUser$(userId));
-  const budgets = useValue(() =>
-    Object.values(financeProjection$.budgetsById.get()).filter(
-      (budget) => budget.userId === userId,
-    ),
-  );
+  const budgetsById = useValue(() => ({ ...financeProjection$.budgetsById.get() }));
   const aliases = useValue(() => (userId ? listMerchantAliases(userId) : []));
-  const monthlyTotal = useValue(() => profilePreferences$.get()?.monthly_budget ?? null);
+  const monthlyBudget = useValue(() => profilePreferences$.get()?.monthly_budget ?? null);
   const overrides = useValue(() =>
     userId
       ? selectRecurringOverrides(getRecordValues<RecurringOverrideRow>(recurringOverrides$), userId)
       : [],
   );
-  const bills = useMemo(
-    () => selectUpcomingBills(now, transactions, overrides),
-    [now, transactions, overrides],
+  const ledger = useMemo(
+    () =>
+      moneyLedger(
+        { userId, transactions, categoriesById, budgetsById, monthlyBudget, overrides, debts },
+        now,
+        deviceCalendar,
+      ),
+    [userId, transactions, categoriesById, budgetsById, monthlyBudget, overrides, debts, now],
   );
   const walletNames = useMemo(
     () => compactWalletNames(wallets),
     [wallets],
   );
   return {
+    ...ledger,
     userId,
     now,
     currency,
-    transactions,
     wallets,
     walletNames,
     aliases,
-    categories,
     /** Deleted ones too, for spending that still belongs to them. */
     everyCategory,
-    budgets,
-    monthlyTotalMinor: monthlyTotal === null ? null : (decimalToMinor(monthlyTotal) as MinorAmount),
-    overrides,
-    bills,
-    debts,
   };
 }
 
 export type BudgetData = ReturnType<typeof useBudgetData>;
 
-export function useBudgetMonth(data: BudgetData, month: MonthKey): BudgetMonth {
+export function useBudgetMonth(data: BudgetData, month: MonthKey): MoneyMonth {
   return useMemo(
-    () =>
-      buildBudgetMonth({
-        month,
-        now: data.now,
-        currency: data.currency,
-        transactions: data.transactions,
-        categories: data.categories,
-        budgets: data.budgets,
-        monthlyTotalMinor: data.monthlyTotalMinor,
-        bills: data.bills,
-        debts: data.debts,
-      }),
+    () => buildMoneyMonth(data, { month, currency: data.currency, now: data.now, calendar: deviceCalendar }),
     [
       month,
       data.now,

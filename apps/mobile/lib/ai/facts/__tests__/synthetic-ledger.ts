@@ -1,5 +1,6 @@
 import { decimalToMinor, type MinorAmount } from '@repo/types';
-import type { FactsTransaction, FactsWallet } from '../index';
+import type { FactsTransaction } from '@repo/core';
+import type { FactsWallet } from '../index';
 
 export const BANK = 'bank-myr';
 export const EWALLET = 'tng-myr';

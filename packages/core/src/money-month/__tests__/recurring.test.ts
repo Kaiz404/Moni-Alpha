@@ -1,10 +1,12 @@
+import { describe, expect, it } from 'vitest';
 import type { MinorAmount, RecurringOverride } from '@repo/types';
-import { detectRecurring, pickPayday, type RecurringSeries } from '../recurring';
-import { tx } from './synthetic-ledger';
-import { dayFromNumber } from '@repo/core';
 
-const NOW = new Date(2026, 9, 12, 10);
-const on = (month: number, day: number) => new Date(2026, month - 1, day, 9);
+import { createCalendar, dayFromNumber } from '../../calendar';
+import { detectRecurring, pickPayday, type RecurringSeries } from '../recurring';
+import { on, tx } from './facts-rows';
+
+const KL = createCalendar('Asia/Kuala_Lumpur');
+const NOW = new Date('2026-10-12T10:00:00+08:00');
 const monthly = (
   merchant: string,
   amount: string,
@@ -39,7 +41,7 @@ describe('detectRecurring', () => {
       tx(on(8, 25), 'income', '4500', 'Acme Sdn Bhd'),
       tx(on(9, 25), 'income', '4500', 'Acme Sdn Bhd'),
     ];
-    const series = detectRecurring(salary, [], NOW);
+    const series = detectRecurring(salary, [], NOW, KL);
     expect(series).toHaveLength(1);
     expect(series[0]).toMatchObject({
       key: 'MYR|income|acme sdn bhd',
@@ -50,7 +52,7 @@ describe('detectRecurring', () => {
       confidence: 0.6,
       needsConfirm: true,
     });
-    expect(dayFromNumber(series[0].nextExpectedDay)).toBe('2026-10-25');
+    expect(dayFromNumber(series[0]!.nextExpectedDay)).toBe('2026-10-25');
     expect(pickPayday(series)?.label).toBe('Acme Sdn Bhd');
   });
 
@@ -59,14 +61,14 @@ describe('detectRecurring', () => {
       ...monthly('Netflix', '54.90', 10, [6, 7, 8, 9]),
       tx(on(10, 10), 'expense', '59.90', 'NETFLIX'),
     ].map((t) => ({ ...t, categoryId: 'subs' }));
-    const [series] = detectRecurring(netflix, [], NOW, { subs: 'Subscriptions' });
+    const [series] = detectRecurring(netflix, [], NOW, KL, { subs: 'Subscriptions' });
     expect(series).toMatchObject({
       kind: 'subscription',
       occurrences: 5,
       confidence: 0.8,
       needsConfirm: false,
     });
-    expect(dayFromNumber(series.nextExpectedDay)).toBe('2026-11-10');
+    expect(dayFromNumber(series!.nextExpectedDay)).toBe('2026-11-10');
   });
 
   it('finds weekly and biweekly cadences', () => {
@@ -75,7 +77,7 @@ describe('detectRecurring', () => {
     );
     const gig = [8, 22].map((d) => tx(on(9, d), 'income', '600', 'Foodpanda Rider'));
     gig.push(tx(on(10, 6), 'income', '640', 'Foodpanda Rider'));
-    const series = detectRecurring([...gym, ...gig], [], NOW);
+    const series = detectRecurring([...gym, ...gig], [], NOW, KL);
     expect(series.map((s) => [s.label, s.cadence]).sort()).toEqual([
       ['Anytime Fitness', 'weekly'],
       ['Foodpanda Rider', 'biweekly'],
@@ -88,6 +90,7 @@ describe('detectRecurring', () => {
       [tx(on(9, 3), 'expense', '2499', 'Apple Store'), tx(on(10, 2), 'expense', '89.90', 'Lazada')],
       [],
       NOW,
+      KL,
     );
     expect(series).toEqual([]);
   });
@@ -100,8 +103,8 @@ describe('detectRecurring', () => {
       ['9', '27', '168.30'],
       ['10', '4', '231.90'],
       ['10', '11', '190.05'],
-    ].map(([m, d, amount]) => tx(on(Number(m), Number(d)), 'expense', amount, 'Jaya Grocer'));
-    expect(detectRecurring(groceries, [], NOW)).toEqual([]);
+    ].map(([m, d, amount]) => tx(on(Number(m), Number(d)), 'expense', amount!, 'Jaya Grocer'));
+    expect(detectRecurring(groceries, [], NOW, KL)).toEqual([]);
   });
 
   it('does not invent a payday from irregular gig income', () => {
@@ -116,7 +119,7 @@ describe('detectRecurring', () => {
     ].map(([m, d, amount]) =>
       tx(on(Number(m), Number(d)), 'income', String(amount), 'Grab Driver'),
     );
-    const series = detectRecurring(gig, [], NOW);
+    const series = detectRecurring(gig, [], NOW, KL);
     expect(series).toEqual([]);
     expect(pickPayday(series)).toBeNull();
   });
@@ -130,14 +133,15 @@ describe('detectRecurring', () => {
       ],
       [],
       NOW,
+      KL,
     );
     expect(series).toEqual([]);
   });
 
   it('retires a series once an expected payment is missed', () => {
     const gym = monthly('Celebrity Fitness', '159', 3, [5, 6, 7, 8]);
-    expect(detectRecurring(gym, [], NOW)).toEqual([]);
-    expect(labels(detectRecurring(gym, [], new Date(2026, 8, 6)))).toEqual(['Celebrity Fitness']);
+    expect(detectRecurring(gym, [], NOW, KL)).toEqual([]);
+    expect(labels(detectRecurring(gym, [], new Date('2026-09-06T00:00:00+08:00'), KL))).toEqual(['Celebrity Fitness']);
   });
 
   it('keeps currencies apart', () => {
@@ -148,6 +152,7 @@ describe('detectRecurring', () => {
       ],
       [],
       NOW,
+      KL,
     );
     expect(series.map((s) => [s.key, s.expectedAmountMinor]).sort()).toEqual([
       ['MYR|expense|spotify', 1590],
@@ -161,7 +166,7 @@ describe('detectRecurring', () => {
       tx(on(m, 2), 'expense', '20', 'Balance fix', { analysisExcluded: true }),
       tx(on(m, 3), 'expense', '100', 'Ali', { debtActivityId: 'debt', analysisExcluded: true }),
     ]);
-    expect(detectRecurring(rows, [], NOW)).toEqual([]);
+    expect(detectRecurring(rows, [], NOW, KL)).toEqual([]);
   });
 });
 
@@ -169,7 +174,7 @@ describe('recurring overrides', () => {
   const netflix = monthly('Netflix', '54.90', 10, [8, 9, 10]);
 
   it('hides a dismissed series', () => {
-    expect(detectRecurring(netflix, [override({ status: 'dismissed' })], NOW)).toEqual([]);
+    expect(detectRecurring(netflix, [override({ status: 'dismissed' })], NOW, KL)).toEqual([]);
   });
 
   it('trusts a confirmed series and applies its kind, amount and day', () => {
@@ -177,6 +182,7 @@ describe('recurring overrides', () => {
       netflix,
       [override({ kind: 'bill', expectedAmountMinor: 5990 as MinorAmount, expectedDay: 12 })],
       NOW,
+      KL,
     );
     expect(series).toMatchObject({
       confirmed: true,
@@ -185,7 +191,7 @@ describe('recurring overrides', () => {
       kind: 'bill',
       expectedAmountMinor: 5990,
     });
-    expect(dayFromNumber(series.nextExpectedDay)).toBe('2026-11-12');
+    expect(dayFromNumber(series!.nextExpectedDay)).toBe('2026-11-12');
   });
 
   it('prefers a confirmed income series for payday over a more regular one', () => {
@@ -196,8 +202,23 @@ describe('recurring overrides', () => {
       ],
       [override({ seriesKey: 'MYR|income|tuition centre' })],
       NOW,
+      KL,
     );
     expect(pickPayday(series)?.label).toBe('Tuition Centre');
     expect(pickPayday(series.filter((s) => !s.confirmed))?.label).toBe('Acme Sdn Bhd');
+  });
+});
+
+describe('the zone payments are read in', () => {
+  it('dates rent paid early on the 1st in Kuala Lumpur to the day before in UTC', () => {
+    const rent = ['08', '09', '10'].map((m) =>
+      tx(`2026-${m}-01T07:00:00+08:00`, 'expense', '1500', 'Landlord'),
+    );
+    const next = (zone: string) =>
+      detectRecurring(rent, [], NOW, createCalendar(zone)).map((s) =>
+        dayFromNumber(s.nextExpectedDay),
+      );
+    expect(next('Asia/Kuala_Lumpur')).toEqual(['2026-11-01']);
+    expect(next('UTC')).toEqual(['2026-10-31']);
   });
 });

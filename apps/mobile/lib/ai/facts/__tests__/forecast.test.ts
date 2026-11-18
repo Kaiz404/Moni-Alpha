@@ -2,7 +2,8 @@ import { decimalToMinor } from '@repo/types';
 import { gigLedger } from '@/lib/ai/chat/bench/fixture';
 import { walletsNeedingConfirmation } from '../confirmation';
 import { backtestForecast, forecastCurrency, type FactsWallet } from '../forecast';
-import { detectRecurring, pickPayday, type FactsTransaction } from '../recurring';
+import { detectRecurring, pickPayday, type FactsTransaction } from '@repo/core';
+import { deviceCalendar } from '@/lib/dates/device-calendar';
 import { BANK, EWALLET, salariedLedger, tx, wallet } from './synthetic-ledger';
 
 const NOW = new Date(2026, 9, 12, 10);
@@ -31,7 +32,7 @@ function forecast(
   now = NOW,
   extra?: string,
 ) {
-  const series = detectRecurring(transactions, [], now);
+  const series = detectRecurring(transactions, [], now, deviceCalendar);
   return forecastCurrency({
     currency: 'MYR',
     wallets,

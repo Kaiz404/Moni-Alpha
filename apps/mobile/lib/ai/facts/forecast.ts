@@ -11,8 +11,6 @@ import {
   seriesKey,
   type FactsTransaction,
   type RecurringSeries,
-} from './recurring';
-import {
   type FinanceWallet,
   addMonths,
   countsAsCashFlow,
@@ -380,7 +378,7 @@ export function backtestForecast(input: {
   let inside = 0;
   for (const now of input.days) {
     const known = input.transactions.filter((tx) => new Date(tx.transactionDate) <= now);
-    const series = detectRecurring(known, input.overrides ?? [], now, input.categoryNames).filter(
+    const series = detectRecurring(known, input.overrides ?? [], now, deviceCalendar, input.categoryNames).filter(
       (s) => s.currency === input.currency,
     );
     const payday = pickPayday(series);

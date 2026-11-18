@@ -1,13 +1,16 @@
+import { describe, expect, it } from 'vitest';
 import type { CurrencyCode, MinorAmount } from '@repo/types';
 
-import type { FinanceTransaction } from '@repo/core';
+import { type Calendar, createCalendar } from '../../calendar';
 import { listParams, readListScope, scopedRows, type ListScope } from '../list-scope';
+import type { FinanceTransaction } from '../types';
 
-const NOW = new Date(2026, 9, 14, 12);
+const KL = createCalendar('Asia/Kuala_Lumpur');
+const NOW = new Date('2026-10-14T12:00:00+08:00');
 
 function row(
   id: string,
-  date: Date,
+  date: string,
   fields: Partial<FinanceTransaction> = {},
 ): FinanceTransaction {
   return {
@@ -25,32 +28,35 @@ function row(
     description: null,
     merchant: null,
     notes: null,
-    transactionDate: date.toISOString(),
+    transactionDate: new Date(date).toISOString(),
     locationLatitude: null,
     locationLongitude: null,
     locationName: null,
+    placeId: null,
+    placeCoordsAt: null,
     autoAdded: false,
     balanceCorrection: false,
-    createdAt: date.toISOString(),
+    createdAt: new Date(date).toISOString(),
     ...fields,
   };
 }
 
 const rows = [
-  row('sep-salary', new Date(2026, 8, 25, 9), { type: 'income', categoryId: 'salary' }),
-  row('oct-salary', new Date(2026, 9, 1, 9), { type: 'income', categoryId: 'salary' }),
-  row('usd-salary', new Date(2026, 9, 2, 9), {
+  row('sep-salary', '2026-09-25T09:00:00+08:00', { type: 'income', categoryId: 'salary' }),
+  row('oct-salary', '2026-10-01T09:00:00+08:00', { type: 'income', categoryId: 'salary' }),
+  row('usd-salary', '2026-10-02T09:00:00+08:00', {
     type: 'income',
     categoryId: 'salary',
     currency: 'USD' as CurrencyCode,
   }),
-  row('grab-1', new Date(2026, 9, 3, 8), { merchant: 'GRAB' }),
-  row('grab-2', new Date(2026, 9, 9, 8), { merchant: 'Grab' }),
-  row('grab-sep', new Date(2026, 8, 9, 8), { merchant: 'Grab' }),
-  row('grab-refund', new Date(2026, 9, 10, 8), { merchant: 'Grab', type: 'income' }),
+  row('grab-1', '2026-10-03T08:00:00+08:00', { merchant: 'GRAB' }),
+  row('grab-2', '2026-10-09T08:00:00+08:00', { merchant: 'Grab' }),
+  row('grab-sep', '2026-09-09T08:00:00+08:00', { merchant: 'Grab' }),
+  row('grab-refund', '2026-10-10T08:00:00+08:00', { merchant: 'Grab', type: 'income' }),
 ];
 
-const ids = (scope: ListScope) => scopedRows(scope, rows, 'MYR', NOW).rows.map((item) => item.id);
+const ids = (scope: ListScope, calendar: Calendar = KL) =>
+  scopedRows(scope, rows, 'MYR', NOW, calendar).rows.map((item) => item.id);
 
 describe('list scope params', () => {
   it.each<ListScope>([
@@ -90,5 +96,14 @@ describe('scopedRows', () => {
   it('lists nothing for a place or bill that is gone', () => {
     expect(ids({ kind: 'place', placeId: 'gone', range: null })).toEqual([]);
     expect(ids({ kind: 'bill', seriesKey: 'gone' })).toEqual([]);
+  });
+
+  it("files a month's rows by the calendar's zone", () => {
+    const LA = createCalendar('America/Los_Angeles');
+    expect(ids({ kind: 'category', categoryId: 'salary', month: '2026-10' }, LA)).toEqual([]);
+    expect(ids({ kind: 'category', categoryId: 'salary', month: '2026-09' }, LA)).toEqual([
+      'oct-salary',
+      'sep-salary',
+    ]);
   });
 });

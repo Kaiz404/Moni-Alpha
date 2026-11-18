@@ -10,6 +10,7 @@ import {
   type ChartRange,
   chartTicks,
   type DayKey,
+  daysAtOrUnderPace,
   formatMoney,
   monthOf,
   monthShort,
@@ -31,6 +32,8 @@ export type SpendMonth = {
   daysInMonth: number;
   /** Minor units for the month. */
   budget: number | null;
+  /** The budget spread evenly over the month, from the money month. */
+  evenPace: number | null;
   /** Daily: today's dashed segment, in minor units. */
   safePerDay: number | null;
 };
@@ -113,7 +116,7 @@ export function monthMarks(index: SpendIndex, now: Date, month: SpendMonth): Mon
     to: from + month.daysInMonth,
     shift: index.cumulative[from]!,
     budget: month.budget,
-    evenPace: month.budget === null ? null : month.budget / month.daysInMonth,
+    evenPace: month.evenPace,
     safePerDay: month.safePerDay !== null && month.safePerDay > 0 ? month.safePerDay : null,
     today,
     projected:
@@ -196,9 +199,6 @@ export function spendTarget({
     if (oneMonth) highest = Math.max(highest, marks.evenPace ?? 0, marks.safePerDay ?? 0);
     const high = niceCeil(highest);
     const count = buckets.values.length - buckets.first;
-    let over = 0;
-    if (marks.evenPace !== null)
-      for (let day = from; day <= today; day++) if (index.spent[day]! > marks.evenPace) over++;
     const span = `from ${shortDate(addDays(index.firstDay, from), true)} to today`;
     return {
       ...shared,
@@ -208,7 +208,7 @@ export function spendTarget({
         ? `Daily spending, 1 to ${count} ${month.name}.` +
           (marks.evenPace === null
             ? ''
-            : ` ${count - over} of ${count} days stayed at or under the even pace of ${formatMoney(marks.evenPace, currency, { whole: true })}.`)
+            : ` ${daysAtOrUnderPace(index.spent.subarray(from, today + 1), marks.evenPace)} of ${count} days stayed at or under the even pace of ${formatMoney(marks.evenPace, currency, { whole: true })}.`)
         : `Spending per ${buckets.unit}, ${span}, ${money(spent)} in all.`,
     };
   }
