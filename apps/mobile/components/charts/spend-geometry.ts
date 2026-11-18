@@ -75,10 +75,6 @@ export type MonthMarks = {
 
 export type SpendReading = { date: string; value: string; accessibilityLabel: string };
 
-/** Whole money, rounded down, for axis labels and forward-looking numbers. */
-export function whole(minor: number, currency: string): string {
-  return formatMoney(minor, currency, { whole: true });
-}
 
 /** "Thu 1 Oct". */
 function weekdayDate(day: DayKey): string {
@@ -142,7 +138,7 @@ export function barScrubPoints({ starts, ends, values, first }: SpendBuckets): S
 
 /** Zero at the base, under the rows above it; drops a label that would repeat zero's, as RM0 does when nothing was spent. */
 function rows(above: AxisRow[], currency: string): AxisRow[] {
-  const zero = whole(0, currency);
+  const zero = formatMoney(0, currency, { whole: true });
   return [
     ...above.map((row) => (row.text === zero ? { ...row, text: null } : row)),
     { value: 0, text: zero, line: 'solid' },
@@ -205,12 +201,12 @@ export function spendTarget({
     return {
       ...shared,
       high,
-      rows: rows([{ value: high, text: whole(high, currency), line: 'dashed' }], currency),
+      rows: rows([{ value: high, text: formatMoney(high, currency, { whole: true }), line: 'dashed' }], currency),
       accessibilityLabel: oneMonth
         ? `Daily spending, 1 to ${count} ${month.name}.` +
           (marks.evenPace === null
             ? ''
-            : ` ${count - over} of ${count} days stayed at or under the even pace of ${whole(marks.evenPace, currency)}.`)
+            : ` ${count - over} of ${count} days stayed at or under the even pace of ${formatMoney(marks.evenPace, currency, { whole: true })}.`)
         : `Spending per ${buckets.unit}, ${span}, ${money(spent)} in all.`,
     };
   }
@@ -227,8 +223,8 @@ export function spendTarget({
   const atBudget = budget !== null && budget >= high;
   const crowded = budgetY !== null && budgetY - SPEND_TOP < AXIS_LABEL_HEIGHT;
   const above: AxisRow[] = [
-    { value: high, text: atBudget || crowded ? null : whole(high, currency), line: 'solid' },
-    { value: high / 2, text: atBudget ? whole(budget / 2, currency) : null, line: 'dashed' },
+    { value: high, text: atBudget || crowded ? null : formatMoney(high, currency, { whole: true }), line: 'solid' },
+    { value: high / 2, text: atBudget ? formatMoney(budget / 2, currency, { whole: true }) : null, line: 'dashed' },
   ];
   return {
     ...shared,
@@ -238,7 +234,7 @@ export function spendTarget({
       ? `Spent so far in ${month.name}, ${money(spent)}` +
         (budget === null
           ? '.'
-          : `, against the ${whole(budget, currency)} budget. Dashed line is an even pace.`)
+          : `, against the ${formatMoney(budget, currency, { whole: true })} budget. Dashed line is an even pace.`)
       : `Spent from ${shortDate(addDays(index.firstDay, from), true)} to today, ${money(spent)}.`,
   };
 }

@@ -43,7 +43,6 @@ import {
   monthMarks,
   spendReading,
   spendTarget,
-  whole,
   type MonthMarks,
   type SpendMonth,
   type SpendTarget,
@@ -64,7 +63,7 @@ import {
   type Zoom,
 } from './zoom';
 import { LABEL_IN, LABEL_OUT, YGrid, YLabels, ZoomTicks } from './zoom-axes';
-import type { ChartRange } from '@repo/core';
+import { formatMoney, type ChartRange } from '@repo/core';
 
 type Tokens = ReturnType<typeof useThemeTokens>;
 
@@ -227,7 +226,7 @@ export function SpendChart({
                 zoom={zoom}
                 frame={frame}
                 className="font-display-bold text-deep-mint"
-                text={whole(marks.budget, currency)}
+                text={formatMoney(marks.budget, currency, { whole: true })}
               />
               <FloatingLabel
                 key="budget-word"
@@ -250,7 +249,7 @@ export function SpendChart({
               zoom={zoom}
               frame={frame}
               className="font-display-bold text-foreground"
-              text={whole(marks.projected, currency)}
+              text={formatMoney(marks.projected, currency, { whole: true })}
               right
             />
           ) : null}
@@ -263,7 +262,7 @@ export function SpendChart({
               zoom={zoom}
               frame={frame}
               className="font-display-bold text-foreground"
-              text={whole(marks.evenPace, currency)}
+              text={formatMoney(marks.evenPace, currency, { whole: true })}
             />
           ) : null}
         </LayoutAnimationConfig>

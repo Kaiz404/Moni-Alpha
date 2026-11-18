@@ -10,6 +10,7 @@ import {
   monthOf,
 } from '@repo/core';
 
+import { debtPhrase } from '@/lib/finance/spent-summary';
 import { deviceCalendar } from '@/lib/dates/device-calendar';
 import type {
   FinanceBudget,
@@ -243,12 +244,8 @@ function leftThisMonth({
 export function setAsideLabel(left: LeftThisMonth, currency: string): string | null {
   const parts: string[] = [];
   if (left.billsMinor > 0) parts.push('bills');
-  if (left.debtsDue.length) {
-    const total = left.debtsDue.reduce((sum, debt) => sum + Number(debt.amountMinor), 0);
-    const who =
-      left.debtsDue.length === 1 ? left.debtsDue[0].name : `${left.debtsDue.length} people`;
-    parts.push(`${formatMoney(total, currency, { whole: true })} to ${who}`);
-  }
+  const debts = debtPhrase(left.debtsDue, currency);
+  if (debts) parts.push(debts);
   return parts.length ? `after ${parts.join(' and ')}` : null;
 }
 
