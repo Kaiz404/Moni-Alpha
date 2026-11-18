@@ -57,7 +57,7 @@ Use the `moni-device` skill: `run-flows.sh` for flows, `review-pair.sh` for a sc
 ## 3. Web
 
 - Unit: Vitest in the package or `apps/web`, called through the module's interface with literal inputs and literal expected outputs.
-- Screens: the `web-verify` skill once the shell exists (Playwright at 1440, 1024, 820 and 390 wide against the board renders in `~/.local/share/moni-canvas/web-r1/renders/`).
+- Screens: the `web-verify` skill. `pnpm --filter web verify` builds and starts the app, signs in as the e2e user, drives every route at 1440, 1024, 820 and 390 wide in light and dark, the keyboard paths, reduced motion and a resize across 700 with a half-typed field, and runs a real QR sign-in. The last line is `web-verify PASS (<n> checks)` or `web-verify FAIL: …`. Screenshots and board pairs land in `~/.local/share/moni-canvas/web-r1/renders/app/<commit>/`; open the pairs and name every difference.
 
 ## 4. Backend and database
 
