@@ -151,12 +151,3 @@ export type Category = z.infer<typeof categorySchema>;
 export type CreateCategory = z.infer<typeof createCategorySchema>;
 export type UpdateCategory = z.infer<typeof updateCategorySchema>;
 export type ReorderCategories = z.infer<typeof reorderCategoriesSchema>;
-
-// API Response types
-export type CategoryResponse = {
-  category: Category;
-};
-
-export type CategoryListResponse = {
-  categories: Category[];
-};

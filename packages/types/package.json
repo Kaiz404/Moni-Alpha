@@ -5,22 +5,37 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
-    "./wallet": "./src/wallet.ts",
-    "./transaction": "./src/transaction.ts",
+    "./auto-add-rule": "./src/auto-add-rule.ts",
+    "./bill": "./src/bill.ts",
+    "./captured-notification": "./src/captured-notification.ts",
     "./category": "./src/category.ts",
+    "./category-budget": "./src/category-budget.ts",
+    "./chat": "./src/chat.ts",
+    "./database": "./src/database.ts",
+    "./debt": "./src/debt.ts",
+    "./merchant-alias": "./src/merchant-alias.ts",
+    "./money": "./src/money.ts",
+    "./proposed-transaction": "./src/proposed-transaction.ts",
+    "./recurring-override": "./src/recurring-override.ts",
     "./tag": "./src/tag.ts",
+    "./transaction": "./src/transaction.ts",
     "./user": "./src/user.ts",
-    "./analytics": "./src/analytics.ts",
-    "./api": "./src/api.ts"
+    "./wallet": "./src/wallet.ts"
   },
   "dependencies": {
     "zod": "^3.24.1"
   },
   "scripts": {
-    "check-types": "tsc --noEmit"
+    "check-types": "tsc --noEmit",
+    "lint": "eslint --max-warnings 0 src",
+    "test": "vitest run",
+    "gen:db-types": "scripts/gen-db-types.sh"
   },
   "devDependencies": {
+    "@repo/eslint-config": "workspace:*",
     "@repo/typescript-config": "workspace:*",
-    "typescript": "5.9.2"
+    "eslint": "^9.39.1",
+    "typescript": "5.9.2",
+    "vitest": "^3.2.4"
   }
 }

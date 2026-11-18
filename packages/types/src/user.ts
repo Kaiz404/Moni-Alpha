@@ -49,20 +49,3 @@ export type Profile = z.infer<typeof profileSchema>;
 export type UpdateProfile = z.infer<typeof updateProfileSchema>;
 export type SignUp = z.infer<typeof signUpSchema>;
 export type SignIn = z.infer<typeof signInSchema>;
-
-// API Response types
-export type ProfileResponse = {
-  profile: Profile;
-};
-
-export type AuthResponse = {
-  user: {
-    id: string;
-    email: string;
-  };
-  session: {
-    access_token: string;
-    refresh_token: string;
-    expires_at: number;
-  };
-};

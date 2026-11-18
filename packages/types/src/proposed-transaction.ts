@@ -90,7 +90,3 @@ export type ProposedTransactionSourceType = z.infer<typeof proposedTransactionSo
 export type ProposedTransactionStatus = z.infer<typeof proposedTransactionStatusSchema>;
 export type ProposedTransaction = z.infer<typeof proposedTransactionSchema>;
 export type CreateProposedTransaction = z.infer<typeof createProposedTransactionSchema>;
-
-export type ProposedTransactionListResponse = {
-  proposedTransactions: ProposedTransaction[];
-};

@@ -28,12 +28,3 @@ export const updateTagSchema = z.object({
 export type Tag = z.infer<typeof tagSchema>;
 export type CreateTag = z.infer<typeof createTagSchema>;
 export type UpdateTag = z.infer<typeof updateTagSchema>;
-
-// API Response types
-export type TagResponse = {
-  tag: Tag;
-};
-
-export type TagListResponse = {
-  tags: Tag[];
-};

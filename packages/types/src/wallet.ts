@@ -89,19 +89,3 @@ export type Wallet = z.infer<typeof walletSchema>;
 export type CreateWallet = z.infer<typeof createWalletSchema>;
 export type UpdateWallet = z.infer<typeof updateWalletSchema>;
 export type ReorderWallets = z.infer<typeof reorderWalletsSchema>;
-
-// API Response types
-export type WalletResponse = {
-  wallet: Wallet;
-};
-
-export type WalletListResponse = {
-  wallets: Wallet[];
-};
-
-export type WalletBalanceResponse = {
-  walletId: string;
-  initialBalanceMinor: number;
-  currentBalanceMinor: number;
-  currency: string;
-};

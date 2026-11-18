@@ -1,5 +1,4 @@
 import { z } from 'zod';
-import type { Pagination } from './api';
 import { currencyCodeSchema, positiveMinorAmountSchema } from './money';
 
 // Transaction type enum
@@ -149,23 +148,6 @@ export const updateTransactionSchema = z
     path: ['transferToWalletId'],
   });
 
-// Transaction list params schema
-export const transactionListParamsSchema = z.object({
-  walletId: z.string().uuid().optional(),
-  categoryId: z.string().uuid().optional(),
-  type: transactionTypeSchema.optional(),
-  startDate: z.string().datetime().optional(),
-  endDate: z.string().datetime().optional(),
-  minAmountMinor: z.number().int().nonnegative().optional(),
-  maxAmountMinor: z.number().int().nonnegative().optional(),
-  search: z.string().optional(),
-  tagIds: z.array(z.string().uuid()).optional(),
-  page: z.number().int().positive().default(1),
-  limit: z.number().int().positive().max(100).default(50),
-  sortBy: z.enum(['date', 'amount', 'merchant']).optional().default('date'),
-  sortOrder: z.enum(['asc', 'desc']).optional().default('desc'),
-});
-
 // Type inference
 export type TransactionType = z.infer<typeof transactionTypeSchema>;
 export type TransactionSource = z.infer<typeof transactionSourceSchema>;
@@ -173,43 +155,3 @@ export type TransactionMetadata = z.infer<typeof transactionMetadataSchema>;
 export type Transaction = z.infer<typeof transactionSchema>;
 export type CreateTransaction = z.infer<typeof createTransactionSchema>;
 export type UpdateTransaction = z.infer<typeof updateTransactionSchema>;
-export type TransactionListParams = z.infer<typeof transactionListParamsSchema>;
-
-// API Response types
-export type TransactionResponse = {
-  transaction: Transaction;
-};
-
-export type TransactionListResponse = {
-  transactions: Transaction[];
-  pagination: Pagination;
-};
-
-// Transaction with relations
-export type TransactionWithRelations = Transaction & {
-  wallet?: {
-    id: string;
-    name: string;
-    type: string;
-    color: string;
-    icon: string;
-  };
-  category?: {
-    id: string;
-    name: string;
-    icon: string;
-    color: string;
-  };
-  tags?: Array<{
-    id: string;
-    name: string;
-    color: string;
-  }>;
-  transferToWallet?: {
-    id: string;
-    name: string;
-    type: string;
-    color: string;
-    icon: string;
-  };
-};
