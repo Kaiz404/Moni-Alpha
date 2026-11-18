@@ -58,8 +58,11 @@ tags:
     id: wallet.balance-sheet.input
 - inputText: '60'
 - takeScreenshot: k2-correction-typing
+# The toast's countdown bar keeps the screen moving, so Maestro's default wait for it to settle
+# would spend most of the toast before Undo.
 - tapOn:
     id: wallet.balance-sheet.save
+    waitToSettleTimeoutMs: 1000
 
 # Lane 3. Undo removes the row and the balance returns.
 - tapOn:
