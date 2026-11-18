@@ -1,5 +1,5 @@
 import { institutionById, textNames, type MoneySide } from './institutions';
-import { merchantKey } from './routine';
+import { merchantKey } from '@repo/core';
 
 /** Manual entries are often logged hours after paying, but yesterday's identical routine coffee is not a duplicate. */
 const SAME_PURCHASE_WINDOW_MS = 12 * 60 * 60 * 1000;

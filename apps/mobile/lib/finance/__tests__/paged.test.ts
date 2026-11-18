@@ -24,6 +24,17 @@ describe('pageOf', () => {
   it('has one empty page for an empty list', () => {
     expect(pageOf([], 1)).toEqual({ rows: [], page: 1, pageCount: 1, total: 0, first: 0, last: 0 });
   });
+
+  it('stays cheap over 10,000 rows', () => {
+    const many = Array.from({ length: 10_000 }, (_, index) => index + 1);
+    const runs = Array.from({ length: 7 }, () => {
+      const start = performance.now();
+      pageOf(many, 250);
+      return performance.now() - start;
+    }).sort((a, b) => a - b);
+    expect(runs[3]).toBeLessThan(250);
+    expect(pageOf(many, 250)).toMatchObject({ page: 250, first: 4981, last: 5000 });
+  });
 });
 
 describe('usePageNumber', () => {

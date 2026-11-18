@@ -25,7 +25,6 @@ import Animated, {
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Text } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
-import type { SpendBuckets, SpendIndex } from '@/lib/finance/spend-history';
 import { springs } from '@repo/design';
 import { tid, type Screen } from '@/lib/test-ids';
 
@@ -63,7 +62,7 @@ import {
   type Zoom,
 } from './zoom';
 import { LABEL_IN, LABEL_OUT, YGrid, YLabels, ZoomTicks } from './zoom-axes';
-import { formatMoney, type ChartRange } from '@repo/core';
+import { type SpendBuckets, type SpendIndex, formatMoney, type ChartRange } from '@repo/core';
 
 type Tokens = ReturnType<typeof useThemeTokens>;
 

@@ -10,7 +10,7 @@ import { router } from 'expo-router';
 import NewDebtScreen from '@/app/debt/new';
 import { SheetHost } from '@/components/ui/sheet/sheet-host';
 import { financeProjection$ } from '@/lib/finance/projection';
-import { EMPTY_FINANCE_PROJECTION } from '@/lib/finance/types';
+import { EMPTY_FINANCE_PROJECTION } from '@repo/core';
 import {
   addDebtPrincipal,
   createDebt,

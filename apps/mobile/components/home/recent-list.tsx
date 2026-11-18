@@ -10,7 +10,7 @@ import { Text } from '@/components/ui/text';
 import { useTransactionHold } from '@/components/transaction/use-transaction-hold';
 import { TransactionRow } from '@/components/ui/transaction-row';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
-import type { FinanceTransaction } from '@/lib/finance/types';
+import type { FinanceTransaction } from '@repo/core';
 import { tid } from '@/lib/test-ids';
 import {
   transactionRow,

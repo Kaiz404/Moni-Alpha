@@ -5,17 +5,17 @@ import { Button } from '@/components/ui/button';
 import { Chip } from '@/components/ui/chip';
 import { PickerField } from '@/components/ui/picker-field';
 import { Sheet, type SheetFrameProps } from '@/components/ui/sheet/sheet';
+import { pickDate } from '@/lib/sheet/pick-date';
+import type { SheetRequestOf, SheetResult } from '@/lib/sheet/sheet-store';
+import { tid } from '@/lib/test-ids';
 import {
   monthRange,
   orderRange,
   rangePresets,
   sameRange,
   type ActivityRange,
-} from '@/lib/finance/activity-filter';
-import { pickDate } from '@/lib/sheet/pick-date';
-import type { SheetRequestOf, SheetResult } from '@/lib/sheet/sheet-store';
-import { tid } from '@/lib/test-ids';
-import { dateLabel } from '@repo/core';
+  dateLabel,
+} from '@repo/core';
 import { deviceCalendar } from '@/lib/dates/device-calendar';
 
 /** Activity's dates: a preset applies at once; From and To apply on the button. */
@@ -28,7 +28,7 @@ export function RangeSheet({
   onPick: (result: SheetResult<'activityRange'>) => void;
 }) {
   const now = useMemo(() => new Date(), []);
-  const presets = useMemo(() => rangePresets(now), [now]);
+  const presets = useMemo(() => rangePresets(now, deviceCalendar), [now]);
   const [draft, setDraft] = useState<ActivityRange>(
     request.range ?? { from: monthRange(deviceCalendar.monthKey(now)).from, to: deviceCalendar.dayKey(now) },
   );

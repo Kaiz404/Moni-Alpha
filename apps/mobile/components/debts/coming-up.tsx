@@ -10,14 +10,8 @@ import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Press } from '@/components/ui/press';
 import { Text } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
-import type { ComingUpRow } from '@/lib/finance/debt-summary';
 import { tid } from '@/lib/test-ids';
-import {
-  dayOfMonth,
-  dueWords,
-  parseDayKey,
-  weekdayShort,
-} from '@repo/core';
+import { type ComingUpRow, dayOfMonth, dueWords, parseDayKey, weekdayShort } from '@repo/core';
 
 /** The Lemon block of debts with a due date: Pay what you owe, Remind who owes you. */
 export function ComingUp({ rows }: { rows: ComingUpRow[] }) {

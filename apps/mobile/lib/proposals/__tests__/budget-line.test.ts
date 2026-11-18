@@ -1,6 +1,6 @@
 import type { MinorAmount } from '@repo/types';
 
-import type { BudgetProgress } from '@/lib/finance/selectors';
+import type { BudgetProgress } from '@repo/core';
 import { budgetLine } from '@/lib/proposals/budget-line';
 
 const food = (spent: number, budget: number | null) =>

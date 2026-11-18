@@ -1,8 +1,9 @@
 import { addMinor, type CurrencyCode, type MinorAmount } from '@repo/types';
 
+import { addDays, type Calendar, dayOfMonth, monthOf } from '../calendar';
+import { shortDate } from '../glossary';
+import { countsAsSpending } from '../ledger';
 import type { FinanceTransaction } from './types';
-import { deviceCalendar } from '@/lib/dates/device-calendar';
-import { addDays, countsAsSpending, dayOfMonth, monthOf, shortDate } from '@repo/core';
 
 /** Rows within this distance of a place's anchor belong to it. */
 export const PLACE_RADIUS_M = 150;
@@ -100,7 +101,7 @@ export function placeLabel(locationName: string | null): { name: string; area: s
   const nameAt = parts.findIndex((part) => !/^\d+[A-Za-z]?$/.test(part));
   if (nameAt < 0) return null;
   const rest = parts.slice(nameAt + 1);
-  return { name: parts[nameAt], area: rest.length >= 2 ? rest[rest.length - 2] : null };
+  return { name: parts[nameAt]!, area: rest.length >= 2 ? rest[rest.length - 2]! : null };
 }
 
 function mostCommon<T>(values: T[]): T | undefined {
@@ -123,9 +124,13 @@ function nameFor(rows: Located[]): { name: string; area: string | null } {
   return { name: merchant ?? 'Pinned place', area: null };
 }
 
-function inSpan(transaction: FinanceTransaction, span: DaySpan | null | undefined): boolean {
+function inSpan(
+  transaction: FinanceTransaction,
+  span: DaySpan | null | undefined,
+  calendar: Calendar,
+): boolean {
   if (!span) return true;
-  const day = deviceCalendar.dayKey(transaction.transactionDate);
+  const day = calendar.dayKey(transaction.transactionDate);
   return day >= span.from && day <= span.to;
 }
 
@@ -134,7 +139,11 @@ function inSpan(transaction: FinanceTransaction, span: DaySpan | null | undefine
  * Anchors come from every located row, so a filter never moves or renames a
  * place; the filter only decides which rows count toward its totals.
  */
-export function groupPlaces(transactions: readonly FinanceTransaction[], filter: PlaceFilter): Place[] {
+export function groupPlaces(
+  transactions: readonly FinanceTransaction[],
+  filter: PlaceFilter,
+  calendar: Calendar,
+): Place[] {
   const rows = transactions
     .filter((transaction): transaction is Located => located(transaction, filter.currency))
     .sort((a, b) => a.transactionDate.localeCompare(b.transactionDate) || a.id.localeCompare(b.id));
@@ -159,7 +168,7 @@ export function groupPlaces(transactions: readonly FinanceTransaction[], filter:
   const places: Place[] = [];
   for (const anchor of anchors) {
     const counted = anchor.members.filter(
-      (row) => (!filter.categoryId || row.categoryId === filter.categoryId) && inSpan(row, filter.range),
+      (row) => (!filter.categoryId || row.categoryId === filter.categoryId) && inSpan(row, filter.range, calendar),
     );
     if (!counted.length) continue;
     const byCategory = new Map<string | null, MinorAmount>();
@@ -172,7 +181,7 @@ export function groupPlaces(transactions: readonly FinanceTransaction[], filter:
       ...nameFor(anchor.members),
       totalMinor: addMinor(...counted.map((row) => row.amountMinor)),
       count: counted.length,
-      days: new Set(counted.map((row) => deviceCalendar.dayKey(row.transactionDate))).size,
+      days: new Set(counted.map((row) => calendar.dayKey(row.transactionDate))).size,
       categories: [...byCategory.entries()]
         .map(([categoryId, totalMinor]) => ({ categoryId, totalMinor }))
         .sort((a, b) => b.totalMinor - a.totalMinor),
@@ -192,8 +201,8 @@ export function placesTotal(places: readonly Place[]): MinorAmount {
 }
 
 /** The map ranges: rolling 7 and 30 days ending today, and every day. */
-export function placeRanges(now: Date): PlaceRange[] {
-  const today = deviceCalendar.dayKey(now);
+export function placeRanges(now: Date, calendar: Calendar): PlaceRange[] {
+  const today = calendar.dayKey(now);
   const back = (days: number): DaySpan => ({
     from: addDays(today, -(days - 1)),
     to: today,
@@ -205,9 +214,9 @@ export function placeRanges(now: Date): PlaceRange[] {
   ];
 }
 
-export function placeRange(key: string | undefined, now: Date): PlaceRange {
-  const ranges = placeRanges(now);
-  return ranges.find((range) => range.key === key) ?? ranges[1];
+export function placeRange(key: string | undefined, now: Date, calendar: Calendar): PlaceRange {
+  const ranges = placeRanges(now, calendar);
+  return ranges.find((range) => range.key === key) ?? ranges[1]!;
 }
 
 /** "1–14 Oct", or "28 Sep–4 Oct" across a month end. */
@@ -240,82 +249,6 @@ export function placeRegular(place: Place): PlaceRegular | null {
     merchant,
     visits: visits.length,
     averageMinor: Math.round(addMinor(...visits.map((visit) => visit.amountMinor)) / visits.length) as MinorAmount,
-    walletId: wallets.size === 1 ? visits[0].walletId : null,
+    walletId: wallets.size === 1 ? visits[0]!.walletId : null,
   };
-}
-
-export type Region = LatLng & { latitudeDelta: number; longitudeDelta: number };
-
-/** A region that frames every point with some margin, or null with none. */
-export function regionFor(points: readonly LatLng[], minDelta = 0.02): Region | null {
-  if (!points.length) return null;
-  const lats = points.map((point) => point.latitude);
-  const lngs = points.map((point) => point.longitude);
-  const [minLat, maxLat, minLng, maxLng] = [Math.min(...lats), Math.max(...lats), Math.min(...lngs), Math.max(...lngs)];
-  return {
-    latitude: (minLat + maxLat) / 2,
-    longitude: (minLng + maxLng) / 2,
-    latitudeDelta: Math.max((maxLat - minLat) * 1.4, minDelta),
-    longitudeDelta: Math.max((maxLng - minLng) * 1.4, minDelta),
-  };
-}
-
-export type PinCluster = {
-  /** The largest member, whose spot the pin sits on. */
-  lead: Place;
-  members: Place[];
-  totalMinor: MinorAmount;
-};
-
-const PIN_GAP = 4;
-const PIN_ROW = 36;
-
-/**
- * Merges pins whose capsules would overlap on screen, largest place first, as
- * `XM-Places` draws "RM328 2". `toScreen` maps a coordinate to view pixels;
- * `widthOf` estimates a capsule's width from its label and member count.
- */
-export function clusterPins(
-  places: readonly Place[],
-  toScreen: (point: LatLng) => { x: number; y: number },
-  widthOf: (totalMinor: MinorAmount, members: number) => number,
-): PinCluster[] {
-  const seeds: (PinCluster & { x: number; y: number; width: number })[] = [];
-  for (const place of places) {
-    const { x, y } = toScreen(place);
-    const width = widthOf(place.totalMinor, 1);
-    const hit = seeds.find(
-      (seed) => Math.abs(seed.x - x) < (seed.width + width) / 2 + PIN_GAP && Math.abs(seed.y - y) < PIN_ROW,
-    );
-    if (hit) {
-      hit.members.push(place);
-      hit.totalMinor = addMinor(hit.totalMinor, place.totalMinor);
-      hit.width = widthOf(hit.totalMinor, hit.members.length);
-    } else {
-      seeds.push({ lead: place, members: [place], totalMinor: place.totalMinor, x, y, width });
-    }
-  }
-  return seeds.map(({ lead, members, totalMinor }) => ({ lead, members, totalMinor }));
-}
-
-/** Linear screen projection of a map region; close enough at city zoom. */
-/** About a tenth of a zoom level's change in scale: pins can merge, and a pinch frame is cheap to skip. */
-const ZOOM_STEP = 0.1;
-
-/**
- * Whether a moving map has zoomed enough to cluster its pins again. Panning alone keeps the pins'
- * distances, so it never needs to.
- */
-export function zoomMoved(previous: Region | null, next: Region): boolean {
-  if (!previous) return true;
-  return Math.abs(Math.log(next.latitudeDelta / previous.latitudeDelta)) > ZOOM_STEP;
-}
-
-export function projector(region: Region, size: { width: number; height: number }) {
-  const west = region.longitude - region.longitudeDelta / 2;
-  const north = region.latitude + region.latitudeDelta / 2;
-  return (point: LatLng) => ({
-    x: ((point.longitude - west) / region.longitudeDelta) * size.width,
-    y: ((north - point.latitude) / region.latitudeDelta) * size.height,
-  });
 }

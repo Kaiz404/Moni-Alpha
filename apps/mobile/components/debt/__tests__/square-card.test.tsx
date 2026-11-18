@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react-native';
 
 import { SquareCard } from '@/components/debt/debt-standing';
-import type { DebtLine } from '@/lib/finance/debt-summary';
+import type { DebtLine } from '@repo/core';
 
 jest.mock('uniwind', () => ({
   useCSSVariable: (names: string[]) => names.map(() => undefined),

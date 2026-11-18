@@ -9,7 +9,7 @@ import {
   wallets$,
 } from '@/lib/store';
 import { getRecordValues, patchRow } from '@/lib/store/helpers';
-import { normalizeCurrency } from './money';
+import { normalizeCurrency } from '@repo/core';
 
 export type FinanceIntegrityIssue = {
   table:

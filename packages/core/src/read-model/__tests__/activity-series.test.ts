@@ -1,10 +1,13 @@
+import { describe, expect, it } from 'vitest';
 import type { CurrencyCode, MinorAmount } from '@repo/types';
 
-import { categoryMonths } from '@/lib/finance/activity-series';
-import type { FinanceTransaction } from '@/lib/finance/types';
+import { categoryMonths } from '../activity-series';
+import type { FinanceTransaction } from '../types';
+import { createCalendar } from '../../calendar';
 
 const MYR = 'MYR' as CurrencyCode;
-const now = new Date(2026, 9, 3, 14, 6);
+const KL = createCalendar('Asia/Kuala_Lumpur');
+const now = new Date('2026-10-03T14:06:00+08:00');
 
 function txn(
   date: Date,
@@ -31,6 +34,8 @@ function txn(
     locationLatitude: null,
     locationLongitude: null,
     locationName: null,
+    placeId: null,
+    placeCoordsAt: null,
     autoAdded: false,
     balanceCorrection: false,
     createdAt: date.toISOString(),
@@ -38,34 +43,24 @@ function txn(
   };
 }
 
-const paced = {
-  evenPaceMinor: 5806 as MinorAmount,
-  left: {
-    leftMinor: 156000 as MinorAmount,
-    daysLeft: 29,
-    perDayMinor: 5300 as MinorAmount,
-    billsMinor: 0 as MinorAmount,
-    debtsDue: [],
-  },
-};
-
 describe('categoryMonths', () => {
   it('runs a total per category through today, leaving other currencies and months out', () => {
     expect(
       categoryMonths(
         [
-          txn(new Date(2026, 9, 1, 12), 'expense', 1250, { categoryId: 'food' }),
-          txn(new Date(2026, 9, 3, 9), 'expense', 4590, { categoryId: 'food' }),
-          txn(new Date(2026, 9, 2, 9), 'expense', 3040, { categoryId: 'transport' }),
-          txn(new Date(2026, 9, 2, 9), 'expense', 999, {
+          txn(new Date('2026-10-01T12:00:00+08:00'), 'expense', 1250, { categoryId: 'food' }),
+          txn(new Date('2026-10-03T09:00:00+08:00'), 'expense', 4590, { categoryId: 'food' }),
+          txn(new Date('2026-10-02T09:00:00+08:00'), 'expense', 3040, { categoryId: 'transport' }),
+          txn(new Date('2026-10-02T09:00:00+08:00'), 'expense', 999, {
             categoryId: 'food',
             currency: 'USD' as CurrencyCode,
           }),
-          txn(new Date(2026, 8, 30, 9), 'expense', 777, { categoryId: 'food' }),
-          txn(new Date(2026, 9, 1, 9), 'income', 420000, { categoryId: 'salary' }),
+          txn(new Date('2026-09-30T09:00:00+08:00'), 'expense', 777, { categoryId: 'food' }),
+          txn(new Date('2026-10-01T09:00:00+08:00'), 'income', 420000, { categoryId: 'salary' }),
         ],
         MYR,
         now,
+        KL,
       ),
     ).toEqual({
       food: [1250, 1250, 5840],

@@ -3,7 +3,6 @@
  * The chat model only narrates this; it is shown only when the inputs can carry it.
  */
 import { minorToNumber, type MinorAmount, type RecurringOverride } from '@repo/types';
-import type { FinanceWallet } from '@/lib/finance/types';
 import {
   CONFIDENT,
   detectRecurring,
@@ -13,7 +12,15 @@ import {
   type FactsTransaction,
   type RecurringSeries,
 } from './recurring';
-import { addMonths, countsAsCashFlow, countsAsSpending, dayFromNumber, dayNumber, walletEffect } from '@repo/core';
+import {
+  type FinanceWallet,
+  addMonths,
+  countsAsCashFlow,
+  countsAsSpending,
+  dayFromNumber,
+  dayNumber,
+  walletEffect,
+} from '@repo/core';
 import { deviceCalendar } from '@/lib/dates/device-calendar';
 
 export type FactsWallet = Pick<

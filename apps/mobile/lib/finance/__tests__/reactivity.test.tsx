@@ -4,8 +4,8 @@ import { act, render, screen } from '@testing-library/react-native';
 import { Text } from 'react-native';
 import { decimalToMinor } from '@repo/types';
 import { financeProjection$ } from '../projection';
+import type { FinanceProjection } from '@repo/core';
 import { walletBalanceMinor$, walletById$ } from '../selectors';
-import type { FinanceProjection } from '../types';
 
 it('does not rerender an unrelated fine-grained subscription', () => {
   const walletBalance$ = observable(100);

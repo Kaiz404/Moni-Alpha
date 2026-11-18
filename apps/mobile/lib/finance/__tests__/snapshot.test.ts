@@ -4,8 +4,8 @@ import {
   buildFinanceAssistantToolSnapshotByCurrency,
   PACE_MIN_DAY_OF_MONTH,
 } from '@/lib/ai/snapshot/finance-metrics';
+import type { FinanceTransaction } from '@repo/core';
 import { buildBudgetMonth } from '@/lib/finance/budget-month';
-import type { FinanceTransaction } from '@/lib/finance/types';
 
 describe('currency-scoped chat snapshot', () => {
   it('never combines metrics from different currencies', () => {

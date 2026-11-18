@@ -1,3 +1,4 @@
+import { describe, expect, it } from 'vitest';
 import { createTransactionSchema, transactionMetadataSchema } from '@repo/types';
 
 describe('transactionMetadataSchema', () => {

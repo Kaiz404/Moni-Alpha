@@ -12,6 +12,9 @@ import { Page, PageScroll, usePageContentTop } from '@/components/ui/page';
 import { Text } from '@/components/ui/text';
 import { TintBubble } from '@/components/ui/transaction-row';
 import { usePageNumber } from '@/lib/finance/paged';
+import { tid } from '@/lib/test-ids';
+import { resolveTransactionIcon } from '@/lib/transactions/icon';
+import type { RowLookups } from '@/lib/transactions/row';
 import {
   NO_CATEGORY_NAME,
   readSpendingParams,
@@ -20,11 +23,12 @@ import {
   totalMinor,
   type SpendingParams,
   type SpendingScope,
-} from '@/lib/reports/report';
-import { tid } from '@/lib/test-ids';
-import { resolveTransactionIcon } from '@/lib/transactions/icon';
-import type { RowLookups } from '@/lib/transactions/row';
-import { dateLabel, formatMoney, type MonthKey, monthName, parseDayKey } from '@repo/core';
+  dateLabel,
+  formatMoney,
+  type MonthKey,
+  monthName,
+  parseDayKey,
+} from '@repo/core';
 import { deviceCalendar } from '@/lib/dates/device-calendar';
 
 /** A Budget row's payments, one page at a time. Sits under the Budget tab, not in Activity. */
@@ -72,11 +76,11 @@ function Spending({
   const hold = useTransactionHold('budget');
   const [page, setPage] = usePageNumber(JSON.stringify([month, scope]));
   const rows = useMemo(
-    () => spendingRows(scope, month, transactions, currency, aliases),
+    () => spendingRows(scope, month, transactions, currency, aliases, deviceCalendar),
     [scope, month, transactions, currency, aliases],
   );
   const change = useMemo(
-    () => spendingChange(scope, month, now, transactions, currency, aliases),
+    () => spendingChange(scope, month, now, transactions, currency, aliases, deviceCalendar),
     [scope, month, now, transactions, currency, aliases],
   );
   const lookups = useMemo<RowLookups>(

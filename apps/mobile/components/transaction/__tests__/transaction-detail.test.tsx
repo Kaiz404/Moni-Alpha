@@ -3,11 +3,10 @@ import type { ReactNode } from 'react';
 import { Keyboard } from 'react-native';
 
 import TransactionDetailScreen from '@/app/transaction/[id]';
-import type { FinanceTransaction } from '@/lib/finance/types';
 import { dismissSheet, getOpenSheet } from '@/lib/sheet/sheet-store';
 import { updateTransaction } from '@/lib/supabase/transactions';
 import { dismissToast } from '@/lib/toast/toast-store';
-import { dateLabel } from '@repo/core';
+import { type FinanceTransaction, dateLabel } from '@repo/core';
 import { deviceCalendar } from '@/lib/dates/device-calendar';
 
 const mockRow: FinanceTransaction = {

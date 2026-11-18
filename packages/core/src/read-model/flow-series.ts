@@ -1,19 +1,17 @@
 import { addMinor, type CurrencyCode, type MinorAmount } from '@repo/types';
 
-import { monthRange, rangeLabel, type ActivityRange } from '@/lib/finance/activity-filter';
-import type { FinanceTransaction } from '@/lib/finance/types';
 import {
   addDays,
-  countsAsCashFlow,
-  countsAsSpending,
+  type Calendar,
   dayOfMonth,
   daysBetween,
   type MonthKey,
-  monthShort,
   shiftMonth,
-  shortDate,
-} from '@repo/core';
-import { deviceCalendar } from '@/lib/dates/device-calendar';
+} from '../calendar';
+import { monthShort, shortDate } from '../glossary';
+import { countsAsCashFlow, countsAsSpending } from '../ledger';
+import { monthRange, rangeLabel, type ActivityRange } from './activity-filter';
+import type { FinanceTransaction } from './types';
 
 export type FlowBucket = {
   key: string;
@@ -42,12 +40,13 @@ function allTime(
   transactions: readonly FinanceTransaction[],
   now: Date,
   currency: CurrencyCode,
+  calendar: Calendar,
 ): ActivityRange {
-  const month = deviceCalendar.monthKey(now);
+  const month = calendar.monthKey(now);
   let first = shiftMonth(month, 1 - LEAST_MONTHS);
   for (const transaction of transactions) {
     if (transaction.currency !== currency || !countsAsCashFlow(transaction)) continue;
-    const at = deviceCalendar.monthKey(transaction.transactionDate);
+    const at = calendar.monthKey(transaction.transactionDate);
     if (at < first) first = at;
   }
   return { from: monthRange(first).from, to: monthRange(month).to };
@@ -110,31 +109,33 @@ export function flowSeries({
   range,
   now,
   currency,
+  calendar,
 }: {
   transactions: readonly FinanceTransaction[];
   range: ActivityRange | null;
   now: Date;
   currency: CurrencyCode;
+  calendar: Calendar;
 }): FlowSeries {
-  const drawn = range ?? allTime(transactions, now, currency);
+  const drawn = range ?? allTime(transactions, now, currency, calendar);
   const buckets = bucketsOf(drawn);
-  const starts = buckets.map((bucket) => deviceCalendar.startOfDay(bucket.from).getTime());
-  const end = deviceCalendar.startOfDay(addDays(drawn.to, 1)).getTime();
+  const starts = buckets.map((bucket) => calendar.startOfDay(bucket.from).getTime());
+  const end = calendar.startOfDay(addDays(drawn.to, 1)).getTime();
   let spentMinor = 0 as MinorAmount;
   let inMinor = 0 as MinorAmount;
   for (const transaction of transactions) {
     if (transaction.currency !== currency || !countsAsCashFlow(transaction)) continue;
     const spends = countsAsSpending(transaction);
     const at = new Date(transaction.transactionDate).getTime();
-    if (at < starts[0] || at >= end) continue;
+    if (at < starts[0]! || at >= end) continue;
     let low = 0;
     let high = starts.length - 1;
     while (low < high) {
       const middle = Math.ceil((low + high) / 2);
-      if (starts[middle] <= at) low = middle;
+      if (starts[middle]! <= at) low = middle;
       else high = middle - 1;
     }
-    const bucket = buckets[low];
+    const bucket = buckets[low]!;
     if (spends) {
       bucket.spentMinor = addMinor(bucket.spentMinor, transaction.amountMinor);
       spentMinor = addMinor(spentMinor, transaction.amountMinor);
@@ -145,7 +146,7 @@ export function flowSeries({
   }
   return {
     range: drawn,
-    label: range ? rangeLabel(range, now) : 'All time',
+    label: range ? rangeLabel(range, now, calendar) : 'All time',
     spentMinor,
     inMinor,
     buckets,

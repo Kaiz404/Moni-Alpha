@@ -1,5 +1,5 @@
 import type { CreateProposedTransaction } from '@repo/types';
-import { merchantKey } from '@/lib/ai/routine';
+import { merchantKey } from '@repo/core';
 import { resolveDefaultWalletId } from '@/lib/wallets/default-wallet';
 
 /** Matches @repo/types wallet default when no wallet is resolved yet. */

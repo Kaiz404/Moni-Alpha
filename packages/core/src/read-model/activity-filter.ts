@@ -1,18 +1,16 @@
 import { addMinor, minorToNumber, type CurrencyCode, type MinorAmount } from '@repo/types';
 
-import type { FinanceTransaction } from '@/lib/finance/types';
 import {
   addDays,
-  dateLabel,
+  type Calendar,
   dayOfMonth,
   daysInMonth,
   firstDayOf,
   type MonthKey,
-  monthShort,
   shiftMonth,
-  shortDate,
-} from '@repo/core';
-import { deviceCalendar } from '@/lib/dates/device-calendar';
+} from '../calendar';
+import { dateLabel, monthShort, shortDate } from '../glossary';
+import type { FinanceTransaction } from './types';
 
 export type ActivityKind = 'all' | FinanceTransaction['type'];
 
@@ -97,10 +95,11 @@ export function filterActivity(
 export function withinRange(
   transactions: readonly FinanceTransaction[],
   range: ActivityRange | null,
+  calendar: Calendar,
 ): readonly FinanceTransaction[] {
   if (!range) return transactions;
-  const start = deviceCalendar.startOfDay(range.from).getTime();
-  const end = deviceCalendar.startOfDay(addDays(range.to, 1)).getTime();
+  const start = calendar.startOfDay(range.from).getTime();
+  const end = calendar.startOfDay(addDays(range.to, 1)).getTime();
   return transactions.filter((transaction) => {
     const at = new Date(transaction.transactionDate).getTime();
     return at >= start && at < end;
@@ -126,9 +125,10 @@ export function monthRange(month: MonthKey): ActivityRange {
 export type RangePreset = { key: string; label: string; range: ActivityRange | null };
 
 /** The date sheet's choices, in the order it shows them. */
-export function rangePresets(now: Date): RangePreset[] {
-  const today = deviceCalendar.dayKey(now);
-  const month = deviceCalendar.monthKey(now);
+export function rangePresets(now: Date, calendar: Calendar): RangePreset[] {
+  const today = calendar.dayKey(now);
+  const month = calendar.monthKey(now);
+  const year = today.slice(0, 4);
   const threeBack = shiftMonth(month, -3);
   const sameDayThreeBack = addDays(
     firstDayOf(threeBack),
@@ -150,7 +150,7 @@ export function rangePresets(now: Date): RangePreset[] {
     {
       key: 'this-year',
       label: 'This year',
-      range: { from: `${now.getFullYear()}-01-01`, to: `${now.getFullYear()}-12-31` },
+      range: { from: `${year}-01-01`, to: `${year}-12-31` },
     },
     { key: 'all-time', label: 'All time', range: null },
   ];
@@ -161,27 +161,31 @@ export function rangePresets(now: Date): RangePreset[] {
  * A range in words: "2026", "Oct 2026", "Mon 14 Sep", the rolling presets by name while they
  * still mean those days, else "1 Oct to 14 Oct", with years once it leaves this year.
  */
-export function rangeLabel(range: ActivityRange, now: Date): string {
+export function rangeLabel(range: ActivityRange, now: Date, calendar: Calendar): string {
   const { from, to } = range;
   const year = from.slice(0, 4);
   if (from === `${year}-01-01` && to === `${year}-12-31`) return year;
   const month = from.slice(0, 7) as MonthKey;
   if (sameRange(range, monthRange(month))) return `${monthShort(month)} ${year}`;
-  if (from === to) return dateLabel(from, deviceCalendar.dayKey(now));
-  const rolling = rangePresets(now).find(
+  const today = calendar.dayKey(now);
+  if (from === to) return dateLabel(from, today);
+  const rolling = rangePresets(now, calendar).find(
     (preset) => preset.key.startsWith('last-') && preset.key !== 'last-month' && sameRange(preset.range, range),
   );
   if (rolling) return rolling.label;
-  const thisYear = String(now.getFullYear());
+  const thisYear = today.slice(0, 4);
   if (year !== to.slice(0, 4)) return `${shortDate(from, true)} to ${shortDate(to, true)}`;
   return `${shortDate(from)} to ${shortDate(to, year !== thisYear)}`;
 }
 
 /** Groups newest-first rows by local day. Day totals leave transfers out. */
-export function groupActivityDays(transactions: readonly FinanceTransaction[]): ActivityDay[] {
+export function groupActivityDays(
+  transactions: readonly FinanceTransaction[],
+  calendar: Calendar,
+): ActivityDay[] {
   const days: ActivityDay[] = [];
   for (const transaction of transactions) {
-    const key = deviceCalendar.dayKey(transaction.transactionDate);
+    const key = calendar.dayKey(transaction.transactionDate);
     let day = days.at(-1);
     if (day?.key !== key) {
       day = {

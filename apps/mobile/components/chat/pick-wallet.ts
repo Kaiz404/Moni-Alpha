@@ -1,4 +1,4 @@
-import type { FinanceWallet } from '@/lib/finance/types';
+import type { FinanceWallet } from '@repo/core';
 import { openSheet } from '@/lib/sheet/sheet-store';
 
 /** "Which wallet paid?" over the wallets in the capture's currency (all of them when none match). */

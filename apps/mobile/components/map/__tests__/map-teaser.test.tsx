@@ -2,7 +2,7 @@ import { render, screen } from '@testing-library/react-native';
 import type { ReactNode } from 'react';
 
 import { MapTeaser } from '@/components/map/map-teaser';
-import type { Place } from '@/lib/finance/places';
+import type { Place } from '@repo/core';
 
 const mockNative: { hasGoogleMapsKey?: () => boolean } = {};
 const mockMapProps = jest.fn();

@@ -31,14 +31,13 @@ import {
   groupPlaces,
   placeRanges,
   placesTotal,
-  regionFor,
-  zoomMoved,
   sharePercent,
   type Place,
   type PlaceRangeKey,
-  type Region,
-} from '@/lib/finance/places';
+} from '@repo/core';
+import { regionFor, zoomMoved, type Region } from '@/lib/finance/map-view';
 import { tid } from '@/lib/test-ids';
+import { deviceCalendar } from '@/lib/dates/device-calendar';
 
 type MapState =
   | { kind: 'loading' }
@@ -69,7 +68,7 @@ export default function MapScreen() {
   const mapRef = useRef<MapView>(null);
   const [hasMap] = useState(mapsAvailable);
 
-  const ranges = useMemo(() => placeRanges(new Date()), []);
+  const ranges = useMemo(() => placeRanges(new Date(), deviceCalendar), []);
   const [rangeKey, setRangeKey] = useState<PlaceRangeKey>('30d');
   const [categoryId, setCategoryId] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -77,13 +76,13 @@ export default function MapScreen() {
   const [size, setSize] = useState<{ width: number; height: number } | null>(null);
   const range = ranges.find((option) => option.key === rangeKey) ?? ranges[1];
 
-  const everywhere = useMemo(() => groupPlaces(transactions, { currency }), [transactions, currency]);
+  const everywhere = useMemo(() => groupPlaces(transactions, { currency }, deviceCalendar), [transactions, currency]);
   const inRange = useMemo(
-    () => groupPlaces(transactions, { currency, range: range.span }),
+    () => groupPlaces(transactions, { currency, range: range.span }, deviceCalendar),
     [transactions, currency, range],
   );
   const places = useMemo(
-    () => (categoryId ? groupPlaces(transactions, { currency, range: range.span, categoryId }) : inRange),
+    () => (categoryId ? groupPlaces(transactions, { currency, range: range.span, categoryId }, deviceCalendar) : inRange),
     [transactions, currency, range, categoryId, inRange],
   );
   const chips = useMemo(() => categoryChips(inRange), [inRange]);

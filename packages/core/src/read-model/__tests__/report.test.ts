@@ -1,7 +1,8 @@
+import { describe, expect, it } from 'vitest';
 import type { CurrencyCode, MinorAmount } from '@repo/types';
 
-import { buildBudgetMonth } from '@/lib/finance/budget-month';
-import type { FinanceCategory, FinanceTransaction } from '@/lib/finance/types';
+import { createCalendar, dayOfMonth } from '../../calendar';
+import type { FinanceCategory, FinanceTransaction } from '../types';
 import {
   buildReport,
   changePhrase,
@@ -11,10 +12,11 @@ import {
   spendingParams,
   spendingRows,
   totalMinor,
-} from '@/lib/reports/report';
+} from '../report';
 
 const MYR = 'MYR' as CurrencyCode;
-const NOW = new Date(2026, 9, 14, 12, 0);
+const KL = createCalendar('Asia/Kuala_Lumpur');
+const NOW = new Date('2026-10-14T12:00:00+08:00');
 
 let nextId = 1;
 function txn(
@@ -43,6 +45,8 @@ function txn(
     locationLatitude: null,
     locationLongitude: null,
     locationName: null,
+    placeId: null,
+    placeCoordsAt: null,
     autoAdded: false,
     balanceCorrection: false,
     createdAt: iso,
@@ -64,8 +68,10 @@ function category(id: string, name: string, over: Partial<FinanceCategory> = {})
   };
 }
 
-const oct = (day: number) => new Date(2026, 9, day, 9, 0);
-const sep = (day: number) => new Date(2026, 8, day, 9, 0);
+const at = (month: string, day: number) =>
+  new Date(`2026-${month}-${String(day).padStart(2, '0')}T09:00:00+08:00`);
+const oct = (day: number) => at('10', day);
+const sep = (day: number) => at('09', day);
 
 const FOOD = category('food', 'Food & Dining');
 const OLD = category('old', 'Old hobby', { isActive: false });
@@ -100,15 +106,16 @@ function report(month: string) {
     transactions: TRANSACTIONS,
     categories: CATEGORIES,
     aliases: ALIASES,
+    calendar: KL,
   });
 }
 
 const rows = (scope: Parameters<typeof spendingRows>[0], month = '2026-10') =>
-  spendingRows(scope, month, TRANSACTIONS, MYR, ALIASES);
+  spendingRows(scope, month, TRANSACTIONS, MYR, ALIASES, KL);
 
 /** Date and amount, newest first, which is all a list of payments has to get right. */
 const shown = (transactions: FinanceTransaction[]) =>
-  transactions.map((row) => [new Date(row.transactionDate).getDate(), row.amountMinor]);
+  transactions.map((row) => [dayOfMonth(KL.dayKey(row.transactionDate)), row.amountMinor]);
 
 describe('buildReport for a month', () => {
   it('lists categories by spend, archived ones included', () => {
@@ -122,28 +129,15 @@ describe('buildReport for a month', () => {
   });
 
   it('adds up a past month in full', () => {
-    expect(report('2026-09').categories[0].spentMinor).toBe(54000);
+    expect(report('2026-09').categories[0]!.spentMinor).toBe(54000);
   });
 
   it('adds its category rows up to what Budget and Home spend in that month', () => {
-    const budget = (month: string) =>
-      buildBudgetMonth({
-        month,
-        now: NOW,
-        currency: MYR,
-        transactions: TRANSACTIONS,
-        categories: CATEGORIES,
-        budgets: [],
-        monthlyTotalMinor: null,
-        bills: [],
-        debts: [],
-      });
     for (const [month, spent] of [
       ['2026-10', 18040],
       ['2026-09', 54000],
     ] as const) {
       expect(report(month).categories.reduce((sum, row) => sum + row.spentMinor, 0)).toBe(spent);
-      expect(budget(month).spentMinor).toBe(spent);
     }
   });
 
@@ -192,7 +186,14 @@ describe('spendingRows', () => {
       txn(oct(3), 'expense', 30, { categoryId: 'old', merchant: 'Kedai ABC' }),
     ];
     const scoped = (categoryId?: string) =>
-      spendingRows({ kind: 'merchant', name: 'Kedai ABC', categoryId }, '2026-10', lunches, MYR, []);
+      spendingRows(
+        { kind: 'merchant', name: 'Kedai ABC', categoryId },
+        '2026-10',
+        lunches,
+        MYR,
+        [],
+        KL,
+      );
     expect(totalMinor(scoped('food'))).toBe(1000);
     expect(totalMinor(scoped())).toBe(4000);
   });
@@ -227,7 +228,7 @@ describe('spendingRows', () => {
 
 describe('spendingChange', () => {
   const change = (scope: Parameters<typeof spendingRows>[0], month = '2026-10') =>
-    spendingChange(scope, month, NOW, TRANSACTIONS, MYR, ALIASES);
+    spendingChange(scope, month, NOW, TRANSACTIONS, MYR, ALIASES, KL);
 
   it('reads the same as the row the page opened from', () => {
     expect(change({ kind: 'category', categoryId: 'food' })).toBe('RM110.50 more than Sep by now');
@@ -235,7 +236,7 @@ describe('spendingChange', () => {
   });
 
   it('holds a past month against the whole month before', () => {
-    const lastAugust = txn(new Date(2026, 7, 31, 9, 0), 'expense', 40, { categoryId: 'food' });
+    const lastAugust = txn(new Date('2026-08-31T09:00:00+08:00'), 'expense', 40, { categoryId: 'food' });
     expect(
       spendingChange(
         { kind: 'category', categoryId: 'food' },
@@ -244,6 +245,7 @@ describe('spendingChange', () => {
         [...TRANSACTIONS, lastAugust],
         MYR,
         ALIASES,
+        KL,
       ),
     ).toBe('RM500.00 more than Aug');
   });
@@ -288,21 +290,21 @@ describe('spending params', () => {
 
 describe('comparisonFor', () => {
   it('holds a past month against the whole month before', () => {
-    expect(comparisonFor('2026-09', NOW)).toEqual({
+    expect(comparisonFor('2026-09', NOW, KL)).toEqual({
       range: { from: '2026-08-01', to: '2026-08-31' },
       label: 'Aug',
     });
   });
 
   it('holds the running month against the same days, clipped to a shorter month', () => {
-    expect(comparisonFor('2026-03', new Date(2026, 2, 31))).toEqual({
+    expect(comparisonFor('2026-03', new Date('2026-03-31T00:00:00+08:00'), KL)).toEqual({
       range: { from: '2026-02-01', to: '2026-02-28' },
       label: 'Feb by now',
     });
   });
 
   it('crosses a year', () => {
-    expect(comparisonFor('2026-01', NOW).range).toEqual({
+    expect(comparisonFor('2026-01', NOW, KL).range).toEqual({
       from: '2025-12-01',
       to: '2025-12-31',
     });

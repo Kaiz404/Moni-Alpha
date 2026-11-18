@@ -2,7 +2,7 @@ import { act, renderHook } from '@testing-library/react-native';
 
 import { useDebtSummary } from '@/components/debts/use-debts';
 import { financeProjection$ } from '@/lib/finance/projection';
-import { EMPTY_FINANCE_PROJECTION, type FinanceDebt, type FinanceDebtActivity } from '@/lib/finance/types';
+import { EMPTY_FINANCE_PROJECTION, type FinanceDebt, type FinanceDebtActivity } from '@repo/core';
 
 jest.mock('@/lib/auth/auth-context', () => ({
   useAuth: () => ({ user: { id: 'user_1' } }),

@@ -1,6 +1,6 @@
 import type { MinorAmount } from '@repo/types';
 
-import type { BudgetProgress } from '@/lib/finance/selectors';
+import type { BudgetProgress } from '@repo/core';
 import type { CategoryTile } from '@/lib/sheet/sheet-store';
 
 type CategoryLike = {

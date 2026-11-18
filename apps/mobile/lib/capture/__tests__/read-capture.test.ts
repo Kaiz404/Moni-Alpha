@@ -5,10 +5,7 @@ import {
   draftFromExtraction,
   type ReadContext,
 } from '@/lib/capture/read-capture';
-import type {
-  FinanceTransaction,
-  FinanceWallet,
-} from '@/lib/finance/types';
+import type { FinanceTransaction, FinanceWallet } from '@repo/core';
 
 jest.mock('@/lib/ai/client', () => ({ getAiClient: jest.fn() }));
 

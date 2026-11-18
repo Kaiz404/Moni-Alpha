@@ -3,9 +3,15 @@
  * predict, they never post to the ledger. A series is one currency, one type and one merchant.
  */
 import type { MinorAmount, RecurringKind, RecurringOverride } from '@repo/types';
-import type { FinanceTransaction } from '@/lib/finance/types';
-import { merchantKey } from '../routine';
-import { addMonths, countsAsCashFlow, dayFromNumber, dayNumber, dayOfMonth } from '@repo/core';
+import {
+  type FinanceTransaction,
+  merchantKey,
+  addMonths,
+  countsAsCashFlow,
+  dayFromNumber,
+  dayNumber,
+  dayOfMonth,
+} from '@repo/core';
 import { deviceCalendar } from '@/lib/dates/device-calendar';
 
 export type FactsTransaction = Pick<

@@ -31,12 +31,8 @@ import { SKELETON_DELAY_MS } from '@/components/ui/skeleton';
 import { useAuth } from '@/lib/auth/auth-context';
 import { userPhotoUrl } from '@/lib/auth/user-photo';
 import { useMainCurrency } from '@/lib/finance/main-currency';
-import { merchantName } from '@/lib/finance/merchant-name';
-import {
-  financeOverview$,
-  pendingProposals$,
-} from '@/lib/finance/selectors';
-import type { FinanceTransaction } from '@/lib/finance/types';
+import { merchantName, type FinanceTransaction } from '@repo/core';
+import { financeOverview$, pendingProposals$ } from '@/lib/finance/selectors';
 import { wallets$ } from '@/lib/store';
 import { getRecordValues } from '@/lib/store/helpers';
 import { listMerchantAliases } from '@/lib/supabase/merchant-aliases';

@@ -1,6 +1,7 @@
+import { describe, expect, it } from 'vitest';
 import { createTransactionSchema } from '@repo/types';
 
-import { toFinanceTransaction } from '@/lib/finance/adapters';
+import { toFinanceTransaction } from '../rows';
 
 const ROW = {
   id: 't1',

@@ -8,16 +8,15 @@ import {
   lastDayOf,
   type MonthKey,
   monthOf,
+  monthSpend,
+  type FinanceBudget,
+  type FinanceCategory,
+  type FinanceDebt,
+  type FinanceTransaction,
 } from '@repo/core';
 
 import { debtPhrase } from '@/lib/finance/spent-summary';
 import { deviceCalendar } from '@/lib/dates/device-calendar';
-import type {
-  FinanceBudget,
-  FinanceCategory,
-  FinanceDebt,
-  FinanceTransaction,
-} from '@/lib/finance/types';
 
 export type CategorySpend = {
   categoryId: string;
@@ -288,61 +287,6 @@ export function spendMonths(
     .map(([month, spentMinor]) => ({ month, spentMinor: spentMinor as MinorAmount }));
 }
 
-export type MerchantSpend = {
-  name: string;
-  payments: number;
-  spentMinor: MinorAmount;
-  /** The wallet most of these payments came from. */
-  walletId: string;
-};
-
-/** The biggest merchants among some spending, by total. */
-export function topMerchants(
-  transactions: readonly FinanceTransaction[],
-  limit: number,
-): { merchants: MerchantSpend[]; count: number } {
-  const byName = new Map<string, MerchantSpend & { wallets: Map<string, number> }>();
-  for (const transaction of transactions) {
-    const name = transaction.merchant ?? transaction.description;
-    if (!name) continue;
-    const entry = byName.get(name) ?? {
-      name,
-      payments: 0,
-      spentMinor: 0 as MinorAmount,
-      walletId: transaction.walletId,
-      wallets: new Map<string, number>(),
-    };
-    entry.payments += 1;
-    entry.spentMinor = (entry.spentMinor + Number(transaction.amountMinor)) as MinorAmount;
-    entry.wallets.set(transaction.walletId, (entry.wallets.get(transaction.walletId) ?? 0) + 1);
-    byName.set(name, entry);
-  }
-  const merchants = [...byName.values()]
-    .sort((a, b) => b.spentMinor - a.spentMinor || a.name.localeCompare(b.name))
-    .map(({ wallets, ...merchant }) => ({
-      ...merchant,
-      walletId: [...wallets.entries()].sort((a, b) => b[1] - a[1])[0][0],
-    }));
-  return { merchants: merchants.slice(0, limit), count: merchants.length };
-}
-
-/** A month's spending in one currency, newest first; `categoryId` narrows it to one category. */
-export function monthSpend(
-  transactions: readonly FinanceTransaction[],
-  month: MonthKey,
-  currency: CurrencyCode,
-  categoryId?: string,
-): FinanceTransaction[] {
-  return transactions
-    .filter(
-      (transaction) =>
-        transaction.currency === currency && countsAsSpending(transaction) &&
-        (categoryId === undefined || transaction.categoryId === categoryId) &&
-        deviceCalendar.monthKey(transaction.transactionDate) === month,
-    )
-    .sort((a, b) => b.transactionDate.localeCompare(a.transactionDate));
-}
-
 export type SpendSlice = {
   /** Null for spending with no category. */
   categoryId: string | null;
@@ -364,7 +308,7 @@ export function spendSlices(
 ): SpendSlice[] {
   const byId = new Map(categories.map((category) => [category.id, category]));
   const totals = new Map<string | null, number>();
-  for (const transaction of monthSpend(transactions, month, currency)) {
+  for (const transaction of monthSpend(transactions, month, currency, deviceCalendar)) {
     const id = transaction.categoryId && byId.has(transaction.categoryId) ? transaction.categoryId : null;
     totals.set(id, (totals.get(id) ?? 0) + Number(transaction.amountMinor));
   }

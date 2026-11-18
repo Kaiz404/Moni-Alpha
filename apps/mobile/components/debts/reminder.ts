@@ -1,9 +1,8 @@
 import { useSyncExternalStore } from 'react';
 import { Share } from 'react-native';
 
-import type { DebtLine } from '@/lib/finance/debt-summary';
 import { preferencesMMKV } from '@/lib/mmkv/preferences';
-import { dateLabel, formatMoney, parseDayKey } from '@repo/core';
+import { type DebtLine, dateLabel, formatMoney, parseDayKey } from '@repo/core';
 import { deviceCalendar } from '@/lib/dates/device-calendar';
 
 const KEY = 'debt-reminded:';

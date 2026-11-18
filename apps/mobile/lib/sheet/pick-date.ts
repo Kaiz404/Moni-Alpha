@@ -1,7 +1,7 @@
 import { DateTimePickerAndroid } from '@react-native-community/datetimepicker';
 import { Platform } from 'react-native';
 
-import { orderRange, type ActivityRange } from '@/lib/finance/activity-filter';
+import { orderRange, type ActivityRange } from '@repo/core';
 import { openSheet } from '@/lib/sheet/sheet-store';
 import { deviceCalendar } from '@/lib/dates/device-calendar';
 

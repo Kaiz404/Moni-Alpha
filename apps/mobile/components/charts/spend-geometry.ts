@@ -1,9 +1,11 @@
-import { spendBuckets, type SpendBuckets, type SpendIndex } from '@/lib/finance/spend-history';
 
 import { niceCeil, type PaceChartMode } from './pace-geometry';
 import { scrubPoints, type ScrubPoints } from './scrub';
 import type { AxisRow, TickMark } from './zoom-axes';
 import {
+  spendBuckets,
+  type SpendBuckets,
+  type SpendIndex,
   addDays,
   type ChartRange,
   chartTicks,

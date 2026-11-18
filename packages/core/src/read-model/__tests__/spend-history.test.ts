@@ -1,12 +1,14 @@
+import { describe, expect, it } from 'vitest';
 import type { CurrencyCode, MinorAmount } from '@repo/types';
 
-import { spendBuckets, spendIndex, type SpendIndex } from '@/lib/finance/spend-history';
-import type { FinanceTransaction } from '@/lib/finance/types';
-import { addDays, rangeStartIndex } from '@repo/core';
-import { deviceCalendar } from '@/lib/dates/device-calendar';
+import { spendBuckets, spendIndex, type SpendIndex } from '../spend-history';
+import type { FinanceTransaction } from '../types';
+import { addDays, createCalendar } from '../../calendar';
+import { rangeStartIndex } from '../../chart-range';
 
-const now = new Date(2026, 10, 2, 12);
+const now = new Date('2026-11-02T12:00:00+08:00');
 const currency = 'MYR' as CurrencyCode;
+const KL = createCalendar('Asia/Kuala_Lumpur');
 
 function row(day: string, amount: number, extra: Partial<FinanceTransaction> = {}): FinanceTransaction {
   return {
@@ -14,7 +16,7 @@ function row(day: string, amount: number, extra: Partial<FinanceTransaction> = {
     type: 'expense',
     currency,
     amountMinor: amount as MinorAmount,
-    transactionDate: new Date(`${day}T12:00:00`).toISOString(),
+    transactionDate: new Date(`${day}T12:00:00+08:00`).toISOString(),
     analysisExcluded: false,
     debtActivityId: null,
     ...extra,
@@ -23,7 +25,7 @@ function row(day: string, amount: number, extra: Partial<FinanceTransaction> = {
 
 /** The bars a range draws, as dates, with what each holds. */
 function bars(index: SpendIndex, range: '7d' | '90d' | '1y' | 'all') {
-  const from = rangeStartIndex(index.firstDay, deviceCalendar.dayKey(now), range) ?? index.firstSpend;
+  const from = rangeStartIndex(index.firstDay, KL.dayKey(now), range) ?? index.firstSpend;
   const buckets = spendBuckets(index, from);
   const day = (at: number) => addDays(index.firstDay, at);
   return {
@@ -40,6 +42,7 @@ describe('spendIndex', () => {
   it('holds a year of days ending today, adds up each day, and counts what Budget counts', () => {
     const index = spendIndex({
       now,
+      calendar: KL,
       currency,
       transactions: [
         row('2026-11-02', 500),
@@ -62,19 +65,19 @@ describe('spendIndex', () => {
   });
 
   it('reaches back to the first spend when it is older than a year', () => {
-    const index = spendIndex({ now, currency, transactions: [row('2023-06-15', 100)] });
+    const index = spendIndex({ now, calendar: KL, currency, transactions: [row('2023-06-15', 100)] });
     expect([index.firstDay, index.firstSpend]).toEqual(['2023-06-15', 0]);
   });
 
   it('puts the first spend on today when nothing was spent', () => {
-    const index = spendIndex({ now, currency, transactions: [] });
+    const index = spendIndex({ now, calendar: KL, currency, transactions: [] });
     expect([index.days, index.firstSpend, index.cumulative[366]]).toEqual([366, 365, 0]);
   });
 });
 
 describe('spendBuckets', () => {
   it('7D has a bar a day, ending today', () => {
-    const index = spendIndex({ now, currency, transactions: [row('2026-11-02', 750), row('2026-10-27', 100)] });
+    const index = spendIndex({ now, calendar: KL, currency, transactions: [row('2026-11-02', 750), row('2026-10-27', 100)] });
     const { unit, bars: days } = bars(index, '7d');
     expect(unit).toBe('day');
     expect(days).toHaveLength(7);
@@ -85,6 +88,7 @@ describe('spendBuckets', () => {
   it('90D groups into weeks from its first day, and no money goes missing', () => {
     const index = spendIndex({
       now,
+      calendar: KL,
       currency,
       transactions: [row('2026-08-05', 100), row('2026-08-11', 200), row('2026-08-12', 400), row('2026-11-02', 800)],
     });
@@ -97,7 +101,7 @@ describe('spendBuckets', () => {
   });
 
   it('1Y groups into calendar months, its first and last ones partial', () => {
-    const { unit, bars: months } = bars(spendIndex({ now, currency, transactions: [] }), '1y');
+    const { unit, bars: months } = bars(spendIndex({ now, calendar: KL, currency, transactions: [] }), '1y');
     expect(unit).toBe('month');
     expect(months[0]).toEqual({ from: '2025-11-02', to: '2025-11-30', spentMinor: 0 });
     expect(months.at(-1)).toEqual({ from: '2026-11-01', to: '2026-11-02', spentMinor: 0 });
@@ -105,7 +109,7 @@ describe('spendBuckets', () => {
   });
 
   it('All starts at the first spend and widens to years over a long history', () => {
-    const index = spendIndex({ now, currency, transactions: [row('2023-06-15', 100), row('2026-01-01', 200)] });
+    const index = spendIndex({ now, calendar: KL, currency, transactions: [row('2023-06-15', 100), row('2026-01-01', 200)] });
     const { unit, bars: years } = bars(index, 'all');
     expect(unit).toBe('year');
     expect(years[0]!.from).toBe('2023-06-15');
@@ -113,7 +117,7 @@ describe('spendBuckets', () => {
   });
 
   it('keys day bars the same in every range, so a zoom between them keeps the bars', () => {
-    const index = spendIndex({ now, currency, transactions: [] });
+    const index = spendIndex({ now, calendar: KL, currency, transactions: [] });
     expect(spendBuckets(index, 359).key).toBe(spendBuckets(index, 336).key);
     expect(spendBuckets(index, 300).key).toBe('week:300');
   });

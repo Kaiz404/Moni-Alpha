@@ -18,11 +18,7 @@ import { dropHeldCapture, holdCapture } from '@/lib/capture/held-capture';
 import { readCapture } from '@/lib/capture/read-capture';
 import { keepScannedReceipt } from '@/lib/receipts/upload-queue';
 import { useMainCurrency } from '@/lib/finance/main-currency';
-import {
-  categoriesForUser$,
-  transactions$,
-  walletsForUser$,
-} from '@/lib/finance/selectors';
+import { categoriesForUser$, transactions$, walletsForUser$ } from '@/lib/finance/selectors';
 import { resolveTransactionIcon } from '@/lib/transactions/icon';
 import type { TransactionRowData } from '@/lib/transactions/row';
 import { showToast } from '@/lib/toast/toast-store';

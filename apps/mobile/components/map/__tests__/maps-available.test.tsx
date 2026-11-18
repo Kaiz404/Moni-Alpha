@@ -80,8 +80,9 @@ const mockTransaction = {
 };
 
 function mockPlaceId(): string {
-  const { groupPlaces } = jest.requireActual('@/lib/finance/places');
-  return groupPlaces([mockTransaction], { currency: 'MYR' })[0].id;
+  const { groupPlaces } = jest.requireActual('@repo/core');
+  const { deviceCalendar } = jest.requireActual('@/lib/dates/device-calendar');
+  return groupPlaces([mockTransaction], { currency: 'MYR' }, deviceCalendar)[0].id;
 }
 
 describe('the map when the installed build has no Google Maps key', () => {

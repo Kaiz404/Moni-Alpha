@@ -38,16 +38,9 @@ import {
   findTypedDuplicate,
 } from '@/lib/capture/type-duplicate';
 import { useMainCurrency } from '@/lib/finance/main-currency';
-import {
-  budgetProgress$,
-  categoriesForUser$,
-  recentExpenseCategories$,
-  transactions$,
-  walletsForUser$,
-} from '@/lib/finance/selectors';
+import { budgetProgress$, categoriesForUser$, recentExpenseCategories$, transactions$, walletsForUser$ } from '@/lib/finance/selectors';
 import { financeProjection$ } from '@/lib/finance/projection';
 import { leftLine } from '@/lib/finance/spent-summary';
-import type { FinanceWallet } from '@/lib/finance/types';
 import { approve, toggleOn } from '@/lib/haptics';
 import { recordMissedTransaction } from '@/lib/notifications/capture-health';
 import { toCategoryTiles } from '@/lib/sheet/category-tiles';
@@ -70,7 +63,7 @@ import { proposalRow, transactionRow } from '@/lib/transactions/row';
 import { compactWalletNames } from '@/lib/wallets/compact-name';
 import { pickDate as pickNativeDate } from '@/lib/sheet/pick-date';
 import { resolveDefaultWalletId } from '@/lib/wallets/default-wallet';
-import { dayLabel, parseDayKey } from '@repo/core';
+import { type FinanceWallet, dayLabel, parseDayKey } from '@repo/core';
 import { deviceCalendar } from '@/lib/dates/device-calendar';
 
 type Kind = 'expense' | 'income' | 'transfer';

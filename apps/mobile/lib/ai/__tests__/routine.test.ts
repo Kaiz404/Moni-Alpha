@@ -1,4 +1,4 @@
-import { matchRoutine, merchantKey, timesFiled, type RoutineHistoryTransaction } from '../routine';
+import { matchRoutine, timesFiled, type RoutineHistoryTransaction } from '../routine';
 
 const FOOD = 'food';
 const TRANSPORT = 'transport';
@@ -27,20 +27,6 @@ const candidate = {
   location: null,
   sourceApp: null,
 };
-
-describe('merchantKey', () => {
-  it.each([
-    ['GRAB* A-12XY', 'grab'],
-    ['GRAB*1234 KL', 'grab'],
-    ['SQ *KOPI KOPI', 'sq kopi kopi'],
-    ['Grab A-98QZ', 'grab'],
-    ['FamilyMart KLCC #0231', 'familymart klcc'],
-    ['  ', null],
-    [null, null],
-  ])('%s -> %s', (raw, key) => {
-    expect(merchantKey(raw)).toBe(key);
-  });
-});
 
 describe('matchRoutine', () => {
   it('sends the first transaction of its kind to review with nothing prefilled', () => {

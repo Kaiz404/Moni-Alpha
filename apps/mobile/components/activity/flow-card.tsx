@@ -14,7 +14,6 @@ import Svg, { Line } from 'react-native-svg';
 import { Press } from '@/components/ui/press';
 import { Text } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
-import { rangeLabel } from '@/lib/finance/activity-filter';
 import {
   FLOW_AXIS,
   FLOW_BASE,
@@ -22,11 +21,11 @@ import {
   FLOW_TOP,
   flowGeometry,
 } from '@/lib/finance/flow-geometry';
-import type { FlowSeries } from '@/lib/finance/flow-series';
 import { scrubStep } from '@/lib/haptics';
 import { springs } from '@repo/design';
 import { tid } from '@/lib/test-ids';
-import { formatMoney } from '@repo/core';
+import { rangeLabel, type FlowSeries, formatMoney } from '@repo/core';
+import { deviceCalendar } from '@/lib/dates/device-calendar';
 
 const CARD_IN = FadeIn.duration(180);
 const CARD_OUT = FadeOut.duration(140);
@@ -217,7 +216,7 @@ function FlowChart({
             ) : null}
             <Press
               testID={tid('activity', 'chart', slot.key)}
-              accessibilityLabel={`${rangeLabel(bucket, now)}: spent ${formatMoney(bucket.spentMinor, currency)}, money in ${formatMoney(bucket.inMinor, currency)}`}
+              accessibilityLabel={`${rangeLabel(bucket, now, deviceCalendar)}: spent ${formatMoney(bucket.spentMinor, currency)}, money in ${formatMoney(bucket.inMinor, currency)}`}
               pressedScale={1}
               unstable_pressDelay={60}
               onPressIn={() => setPressing(index)}
@@ -253,7 +252,7 @@ function FlowChart({
             className="text-[12px] leading-[15px] text-primary-foreground/90"
             numberOfLines={1}
           >
-            {rangeLabel(heldBucket, now)}
+            {rangeLabel(heldBucket, now, deviceCalendar)}
           </Text>
           {[
             { label: 'Spent', minor: heldBucket.spentMinor },

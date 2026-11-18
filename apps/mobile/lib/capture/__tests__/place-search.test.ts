@@ -1,7 +1,7 @@
 import type { CurrencyCode } from '@repo/types';
 
 import { nearPlaces, searchPastPlaces, searchRows } from '@/lib/capture/place-search';
-import type { FinanceTransaction } from '@/lib/finance/types';
+import type { FinanceTransaction } from '@repo/core';
 import { expense } from '@/lib/wallets/__tests__/balance-fixture';
 
 const MYR = 'MYR' as CurrencyCode;

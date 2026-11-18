@@ -12,13 +12,9 @@ import { Press } from '@/components/ui/press';
 import { Text } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { financeProjection$ } from '@/lib/finance/projection';
-import type {
-  FinanceDebt,
-  FinanceDebtActivity,
-} from '@/lib/finance/types';
 import { tid } from '@/lib/test-ids';
 import { compactWalletNames } from '@/lib/wallets/compact-name';
-import { dayLabel, formatMoney } from '@repo/core';
+import { type FinanceDebt, type FinanceDebtActivity, dayLabel, formatMoney } from '@repo/core';
 import { deviceCalendar } from '@/lib/dates/device-calendar';
 
 const GLYPHS: Record<FinanceDebtActivity['kind'], IconSymbolName> = {

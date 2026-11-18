@@ -5,19 +5,14 @@ import { Alert } from 'react-native';
 import { HoldMenu, type HoldAction, type HoldAnchor } from '@/components/ui/hold-menu';
 import { rowAmount, rowMeta, TransactionRowBody } from '@/components/ui/transaction-row';
 import { useAuth } from '@/lib/auth/auth-context';
-import {
-  budgetProgress$,
-  categoriesForUser$,
-  walletsForUser$,
-} from '@/lib/finance/selectors';
-import type { FinanceTransaction } from '@/lib/finance/types';
+import { budgetProgress$, categoriesForUser$, walletsForUser$ } from '@/lib/finance/selectors';
 import { toCategoryTiles } from '@/lib/sheet/category-tiles';
 import { openSheet } from '@/lib/sheet/sheet-store';
 import { ensureFinanceTimezone } from '@/lib/supabase/profile';
 import { deleteTransaction, updateTransaction } from '@/lib/supabase/transactions';
 import type { Screen } from '@/lib/test-ids';
 import type { TransactionRowData } from '@/lib/transactions/row';
-import { dateLabel, formatMoney } from '@repo/core';
+import { type FinanceTransaction, dateLabel, formatMoney } from '@repo/core';
 import { deviceCalendar } from '@/lib/dates/device-calendar';
 
 type Held = {

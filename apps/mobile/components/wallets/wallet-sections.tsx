@@ -19,10 +19,6 @@ import { Text } from '@/components/ui/text';
 import { TintBubble } from '@/components/ui/transaction-row';
 import { labelForNotificationPackage } from '@/constants/notification-apps';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
-import type {
-  FinanceProposal,
-  FinanceWallet,
-} from '@/lib/finance/types';
 import { assessCadence } from '@/lib/notifications/capture-cadence';
 import { sourceHealth, unreachedLine } from '@/lib/notifications/capture-health';
 import {
@@ -39,7 +35,7 @@ import {
   setDefaultWalletId,
 } from '@/lib/wallets/default-wallet';
 import { useWalletNamesLinkedTo, type WalletAlertLink } from '@/lib/wallets/wallet-link';
-import { formatMoney } from '@repo/core';
+import { type FinanceProposal, type FinanceWallet, formatMoney } from '@repo/core';
 import { deviceCalendar } from '@/lib/dates/device-calendar';
 
 function DetailRow({

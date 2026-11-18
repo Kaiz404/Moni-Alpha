@@ -6,10 +6,12 @@ import {
   summarizeDebts,
   type DebtLine,
   type DebtSummary,
-} from '@/lib/finance/debt-summary';
+  type FinanceDebt,
+  type FinanceDebtActivity,
+} from '@repo/core';
 import { useMainCurrency } from '@/lib/finance/main-currency';
 import { financeProjection$ } from '@/lib/finance/projection';
-import type { FinanceDebt, FinanceDebtActivity } from '@/lib/finance/types';
+import { deviceCalendar } from '@/lib/dates/device-calendar';
 
 function useOwnDebts(): {
   debts: FinanceDebt[];
@@ -30,7 +32,7 @@ function useOwnDebts(): {
 export function useDebtSummary(): DebtSummary {
   const { debts, activities } = useOwnDebts();
   const currency = useMainCurrency();
-  return summarizeDebts(debts, activities, new Date(), currency);
+  return summarizeDebts(debts, activities, new Date(), currency, deviceCalendar);
 }
 
 /** One debt and its activities, newest first, in whatever currency it is in. */

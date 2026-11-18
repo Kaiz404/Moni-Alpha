@@ -5,10 +5,7 @@ import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Press } from '@/components/ui/press';
 import { Text } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
-import type {
-  DebtSide,
-  DebtSummary,
-} from '@/lib/finance/debt-summary';
+import type { DebtSide, DebtSummary } from '@repo/core';
 import { tid } from '@/lib/test-ids';
 
 const TILES = [

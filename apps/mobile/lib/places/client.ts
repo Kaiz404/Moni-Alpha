@@ -2,7 +2,7 @@ import type { ZodType } from 'zod';
 
 import { AI_API_BASE_URL, AI_BACKEND_CONFIGURED } from '@/lib/ai/client/config';
 import { getAccessToken } from '@/lib/ai/client/http-client';
-import { distanceM } from '@/lib/finance/places';
+import { distanceM } from '@repo/core';
 
 import {
   autocompleteResultSchema,

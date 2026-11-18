@@ -4,8 +4,8 @@ import { useValue } from '@legendapp/state/react';
 import { walletsNeedingConfirmation, type WalletToConfirm } from '@/lib/ai/facts/confirmation';
 import { MIN_HISTORY_DAYS, historyDays } from '@/lib/ai/facts/forecast';
 import { useAuth } from '@/lib/auth/auth-context';
+import type { FinanceWallet } from '@repo/core';
 import { transactions$, walletsForUser$ } from '@/lib/finance/selectors';
-import type { FinanceWallet } from '@/lib/finance/types';
 import { preferencesMMKV } from '@/lib/mmkv/preferences';
 import { deviceCalendar } from '@/lib/dates/device-calendar';
 

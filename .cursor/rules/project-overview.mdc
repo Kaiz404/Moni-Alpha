@@ -16,7 +16,7 @@ apps/web/         Next.js 16 web app — being rebuilt on shared packages (docs/
 packages/types/   @repo/types — Zod schemas + inferred TS types
 packages/design/  @repo/design — design tokens; generates mobile global.css and web tokens.css
 packages/brand/   @repo/brand — Cat Pebble mascot, wordmark and lockups as SVG/HTML strings
-packages/core/    @repo/core — pure domain rules both apps share (calendar, glossary, ledger rules)
+packages/core/    @repo/core — pure domain rules both apps share (calendar, glossary, ledger rules, finance read model)
 supabase/         Migrations, RLS, storage
 docs/             ARCHITECTURE / SETUP / DATABASE / AI / research
 ```

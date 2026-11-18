@@ -18,24 +18,9 @@ import { Page, PageScroll, usePageContentTop } from '@/components/ui/page';
 import { SearchField } from '@/components/ui/search-field';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/lib/auth/auth-context';
-import {
-  ACTIVITY_KIND_LABELS,
-  filterActivity,
-  withinRange,
-  type ActivityKind,
-  type ActivityRange,
-} from '@/lib/finance/activity-filter';
-import { flowSeries } from '@/lib/finance/flow-series';
 import { useMainCurrency } from '@/lib/finance/main-currency';
-import { merchantName } from '@/lib/finance/merchant-name';
 import { usePageNumber } from '@/lib/finance/paged';
-import {
-  categoriesForUser$,
-  pendingProposals$,
-  transactions$,
-  walletsForUser$,
-} from '@/lib/finance/selectors';
-import type { FinanceTransaction } from '@/lib/finance/types';
+import { categoriesForUser$, pendingProposals$, transactions$, walletsForUser$ } from '@/lib/finance/selectors';
 import { pickActivityRange } from '@/lib/sheet/pick-date';
 import { openSheet } from '@/lib/sheet/sheet-store';
 import { transactions$ as transactionTable$ } from '@/lib/store';
@@ -44,7 +29,17 @@ import { isAwaitingReview } from '@/lib/supabase/proposed-transactions';
 import { tid } from '@/lib/test-ids';
 import type { RowLookups } from '@/lib/transactions/row';
 import { compactWalletNames } from '@/lib/wallets/compact-name';
-import { formatMoney } from '@repo/core';
+import {
+  ACTIVITY_KIND_LABELS,
+  filterActivity,
+  withinRange,
+  type ActivityKind,
+  type ActivityRange,
+  flowSeries,
+  merchantName,
+  type FinanceTransaction,
+  formatMoney,
+} from '@repo/core';
 import { deviceCalendar } from '@/lib/dates/device-calendar';
 
 export default function ActivityScreen() {
@@ -128,9 +123,15 @@ export default function ActivityScreen() {
       }),
     [named, searched, shownWalletIds, currency, kind, categories],
   );
-  const listed = useMemo(() => withinRange(matching, range), [matching, range]);
+  const listed = useMemo(() => withinRange(matching, range, deviceCalendar), [matching, range]);
   const series = useMemo(
-    () => flowSeries({ transactions: matching, range, now: deviceCalendar.startOfDay(today), currency }),
+    () => flowSeries({
+        transactions: matching,
+        range,
+        now: deviceCalendar.startOfDay(today),
+        currency,
+        calendar: deviceCalendar,
+      }),
     [matching, range, today, currency],
   );
   const [page, setPage] = usePageNumber(

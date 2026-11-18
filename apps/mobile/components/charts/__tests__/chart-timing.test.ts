@@ -3,9 +3,8 @@ import type { CurrencyCode, MinorAmount } from '@repo/types';
 import { spendTarget } from '@/components/charts/spend-geometry';
 import { frameFor, linePath } from '@/components/charts/zoom';
 import { netWorthTarget } from '@/components/wallets/net-worth-geometry';
-import { balanceIndex } from '@/lib/finance/balance-history';
-import { spendIndex } from '@/lib/finance/spend-history';
-import type { FinanceTransaction } from '@/lib/finance/types';
+import { balanceIndex, spendIndex, type FinanceTransaction } from '@repo/core';
+import { deviceCalendar } from '@/lib/dates/device-calendar';
 
 const now = new Date(2026, 10, 12, 12);
 const currency = 'MYR' as CurrencyCode;
@@ -54,8 +53,8 @@ describe('chart build timing (logged, not asserted)', () => {
       balanceMinor: 500000,
       createdAt: new Date(2023, 0, 1).toISOString(),
     }));
-    const spend = () => spendIndex({ now, transactions, currency });
-    const balance = () => balanceIndex({ now, wallets, transactions });
+    const spend = () => spendIndex({ now, transactions, currency, calendar: deviceCalendar });
+    const balance = () => balanceIndex({ now, wallets, transactions, calendar: deviceCalendar });
     const index = spend();
     const balances = balance();
     const frame = frameFor(314, 44, 142);

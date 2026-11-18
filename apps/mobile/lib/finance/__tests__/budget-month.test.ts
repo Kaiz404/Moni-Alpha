@@ -1,14 +1,15 @@
 import type { CurrencyCode, MinorAmount, UpcomingBill } from '@repo/types';
 
 import {
-  buildBudgetMonth,
-  leftSentence,
-  spendMonths,
-  spendSlices,
-  type BudgetMonthInput,
-} from '../budget-month';
+  buildReport,
+  type FinanceBudget,
+  type FinanceCategory,
+  type FinanceDebt,
+  type FinanceTransaction,
+} from '@repo/core';
+import { deviceCalendar } from '@/lib/dates/device-calendar';
+import { buildBudgetMonth, leftSentence, spendMonths, spendSlices, type BudgetMonthInput } from '../budget-month';
 import { leftLine } from '../spent-summary';
-import type { FinanceBudget, FinanceCategory, FinanceDebt, FinanceTransaction } from '../types';
 
 const MYR = 'MYR' as CurrencyCode;
 const WED_14_OCT = new Date(2026, 9, 14, 14, 6);
@@ -245,5 +246,49 @@ describe('spendMonths', () => {
       { month: '2026-10', spentMinor: sen(1116.2) },
       { month: '2026-09', spentMinor: sen(10) },
     ]);
+  });
+});
+
+describe('buildBudgetMonth against the report', () => {
+  it('spends what the report category rows add up to in that month', () => {
+    const sep = (day: number) => ({ transactionDate: new Date(2026, 8, day, 12).toISOString() });
+    const categories = [category('food', 'Food & Dining', 0), { ...category('old', 'Old hobby', 1), isActive: false }];
+    const transactions = [
+      spend(2, 100, 'food'),
+      spend(3, 50.5, 'food'),
+      spend(4, 20, 'old'),
+      spend(5, 9.9, null),
+      spend(6, 4200, null, { type: 'income' }),
+      spend(1, 30, 'food', sep(1)),
+      spend(14, 10, 'food', sep(14)),
+      spend(20, 500, 'food', sep(20)),
+      spend(2, 4000, null, { ...sep(2), type: 'income' }),
+      spend(7, 300, null, { type: 'transfer', transferToWalletId: 'tng' }),
+      spend(8, 77, null, { analysisExcluded: true, balanceCorrection: true }),
+      spend(8, 88, null, { type: 'income', analysisExcluded: true, balanceCorrection: true }),
+      spend(9, 66, null, { analysisExcluded: true, debtActivityId: 'a1' }),
+      spend(9, 55, null, { type: 'income', analysisExcluded: true, debtActivityId: 'a2' }),
+      spend(9, 44, null, { debtActivityId: 'a3' }),
+      spend(10, 999, 'food', { currency: 'USD' as CurrencyCode }),
+    ];
+    for (const [month, spent] of [
+      ['2026-10', 18040],
+      ['2026-09', 54000],
+    ] as const) {
+      const report = buildReport({ month, currency: MYR, transactions, categories, aliases: [], calendar: deviceCalendar });
+      expect(report.categories.reduce((sum, row) => sum + row.spentMinor, 0)).toBe(spent);
+      const budgetMonth = buildBudgetMonth({
+        month,
+        now: WED_14_OCT,
+        currency: MYR,
+        transactions,
+        categories,
+        budgets: [],
+        monthlyTotalMinor: null,
+        bills: [],
+        debts: [],
+      });
+      expect(budgetMonth.spentMinor).toBe(spent);
+    }
   });
 });

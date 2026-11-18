@@ -1,8 +1,8 @@
 import { addMinor, subtractMinor, type CurrencyCode, type MinorAmount } from '@repo/types';
 
+import { type Calendar, daysBetween, parseDayKey } from '../calendar';
+import { debtStatus, type DebtStatus, debtTotals } from '../ledger';
 import type { FinanceDebt, FinanceDebtActivity } from './types';
-import { daysBetween, debtStatus, type DebtStatus, debtTotals, parseDayKey } from '@repo/core';
-import { deviceCalendar } from '@/lib/dates/device-calendar';
 
 export type DebtSide = FinanceDebt['direction'];
 
@@ -64,9 +64,9 @@ export function describeDebt(debt: FinanceDebt, activities: readonly Activity[])
 }
 
 /** Whole local days from `now` to a local `YYYY-MM-DD`. */
-export function daysUntil(dueDate: string, now: Date): number | null {
+export function daysUntil(dueDate: string, now: Date, calendar: Calendar): number | null {
   const due = parseDayKey(dueDate);
-  return due ? daysBetween(deviceCalendar.dayKey(now), due) : null;
+  return due ? daysBetween(calendar.dayKey(now), due) : null;
 }
 
 function byDueThenName(a: DebtLine, b: DebtLine): number {
@@ -85,6 +85,7 @@ export function summarizeDebts(
   activities: readonly Activity[],
   now: Date,
   currency: CurrencyCode,
+  calendar: Calendar,
 ): DebtSummary {
   const lines = debts
     .filter((debt) => debt.currency === currency)
@@ -97,7 +98,7 @@ export function summarizeDebts(
   const iOweMinor = total('i_owe');
   const comingUp = open.flatMap((line): ComingUpRow[] => {
     const dueDate = line.debt.dueDate;
-    const daysLeft = dueDate ? daysUntil(dueDate, now) : null;
+    const daysLeft = dueDate ? daysUntil(dueDate, now, calendar) : null;
     return dueDate && daysLeft !== null ? [{ line, dueDate, daysLeft }] : [];
   });
   return {

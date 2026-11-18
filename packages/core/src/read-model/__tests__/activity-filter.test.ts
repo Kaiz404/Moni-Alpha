@@ -1,3 +1,4 @@
+import { describe, expect, it } from 'vitest';
 import type { CurrencyCode, MinorAmount } from '@repo/types';
 
 import {
@@ -8,8 +9,11 @@ import {
   rangePresets,
   withinRange,
   type ActivityFilter,
-} from '@/lib/finance/activity-filter';
-import type { FinanceTransaction } from '@/lib/finance/types';
+} from '../activity-filter';
+import type { FinanceTransaction } from '../types';
+import { createCalendar } from '../../calendar';
+
+const KL = createCalendar('Asia/Kuala_Lumpur');
 
 function row(
   id: string,
@@ -36,6 +40,8 @@ function row(
     locationLatitude: null,
     locationLongitude: null,
     locationName: null,
+    placeId: null,
+    placeCoordsAt: null,
     autoAdded: false,
     balanceCorrection: false,
     createdAt: date.toISOString(),
@@ -52,9 +58,9 @@ const all: ActivityFilter = {
   categoryNames: { food: 'Food & Dining' },
 };
 
-const grab = row('grab', 'Grab', new Date(2026, 9, 12, 9));
-const grabFood = row('grab-food', 'GrabFood', new Date(2026, 9, 14, 12));
-const tesco = row('tesco', 'Tesco', new Date(2026, 9, 13, 18));
+const grab = row('grab', 'Grab', new Date('2026-10-12T09:00:00+08:00'));
+const grabFood = row('grab-food', 'GrabFood', new Date('2026-10-14T12:00:00+08:00'));
+const tesco = row('tesco', 'Tesco', new Date('2026-10-13T18:00:00+08:00'));
 const ids = (rows: FinanceTransaction[]) => rows.map((r) => r.id);
 
 describe('filterActivity', () => {
@@ -66,7 +72,7 @@ describe('filterActivity', () => {
   });
 
   it('drops a USD wallet row when the main currency is MYR', () => {
-    const wise = row('wise', 'Grab', new Date(2026, 9, 14, 8), {
+    const wise = row('wise', 'Grab', new Date('2026-10-14T08:00:00+08:00'), {
       currency: 'USD' as CurrencyCode,
       walletId: 'wise',
     });
@@ -74,7 +80,7 @@ describe('filterActivity', () => {
   });
 
   it('matches the category name, the note, and the start of the amount', () => {
-    const lunch = row('lunch', 'Mamak Ali', new Date(2026, 9, 14, 13), {
+    const lunch = row('lunch', 'Mamak Ali', new Date('2026-10-14T13:00:00+08:00'), {
       categoryId: 'food',
       notes: 'With Mei',
       amountMinor: 1890 as MinorAmount,
@@ -87,7 +93,7 @@ describe('filterActivity', () => {
   });
 
   it('keeps a transfer into the chosen wallet and filters by kind', () => {
-    const reload = row('reload', null, new Date(2026, 9, 13, 8), {
+    const reload = row('reload', null, new Date('2026-10-13T08:00:00+08:00'), {
       type: 'transfer',
       transferToWalletId: 'tng',
     });
@@ -97,13 +103,13 @@ describe('filterActivity', () => {
   });
 
   it('keeps the rows of every chosen wallet and transfers into or out of any of them', () => {
-    const tngLunch = row('tng-lunch', 'Mamak', new Date(2026, 9, 14, 13), { walletId: 'tng' });
-    const cashTaxi = row('cash-taxi', 'Taxi', new Date(2026, 9, 14, 9), { walletId: 'cash' });
-    const reload = row('reload', null, new Date(2026, 9, 13, 8), {
+    const tngLunch = row('tng-lunch', 'Mamak', new Date('2026-10-14T13:00:00+08:00'), { walletId: 'tng' });
+    const cashTaxi = row('cash-taxi', 'Taxi', new Date('2026-10-14T09:00:00+08:00'), { walletId: 'cash' });
+    const reload = row('reload', null, new Date('2026-10-13T08:00:00+08:00'), {
       type: 'transfer',
       transferToWalletId: 'tng',
     });
-    const withdraw = row('withdraw', null, new Date(2026, 9, 12, 8), {
+    const withdraw = row('withdraw', null, new Date('2026-10-12T08:00:00+08:00'), {
       type: 'transfer',
       walletId: 'cash',
       transferToWalletId: 'savings',
@@ -133,25 +139,25 @@ describe('filterActivity', () => {
 });
 
 describe('withinRange', () => {
-  const sep30Late = row('sep30', null, new Date(2026, 8, 30, 23, 59));
-  const oct1Early = row('oct1', null, new Date(2026, 9, 1, 0, 0));
-  const oct14Late = row('oct14', null, new Date(2026, 9, 14, 23, 59, 59));
-  const oct15Early = row('oct15', null, new Date(2026, 9, 15, 0, 0));
+  const sep30Late = row('sep30', null, new Date('2026-09-30T23:59:00+08:00'));
+  const oct1Early = row('oct1', null, new Date('2026-10-01T00:00:00+08:00'));
+  const oct14Late = row('oct14', null, new Date('2026-10-14T23:59:59+08:00'));
+  const oct15Early = row('oct15', null, new Date('2026-10-15T00:00:00+08:00'));
   const rows = [oct15Early, oct14Late, oct1Early, sep30Late];
 
   it('includes both end days, whole, and nothing past them', () => {
-    expect(ids([...withinRange(rows, { from: '2026-10-01', to: '2026-10-14' })])).toEqual([
+    expect(ids([...withinRange(rows, { from: '2026-10-01', to: '2026-10-14' }, KL)])).toEqual([
       'oct14',
       'oct1',
     ]);
   });
 
   it('holds one day', () => {
-    expect(ids([...withinRange(rows, { from: '2026-10-14', to: '2026-10-14' })])).toEqual(['oct14']);
+    expect(ids([...withinRange(rows, { from: '2026-10-14', to: '2026-10-14' }, KL)])).toEqual(['oct14']);
   });
 
   it('keeps every row for all time', () => {
-    expect(ids([...withinRange(rows, null)])).toEqual(['oct15', 'oct14', 'oct1', 'sep30']);
+    expect(ids([...withinRange(rows, null, KL)])).toEqual(['oct15', 'oct14', 'oct1', 'sep30']);
   });
 });
 
@@ -164,7 +170,7 @@ describe('orderRange', () => {
 
 describe('rangePresets', () => {
   it('gives the sheet its six choices for a day in the month', () => {
-    expect(rangePresets(new Date(2026, 9, 14, 12)).map(({ label, range }) => [label, range])).toEqual([
+    expect(rangePresets(new Date('2026-10-14T12:00:00+08:00'), KL).map(({ label, range }) => [label, range])).toEqual([
       ['This month', { from: '2026-10-01', to: '2026-10-31' }],
       ['Last month', { from: '2026-09-01', to: '2026-09-30' }],
       ['Last 30 days', { from: '2026-09-15', to: '2026-10-14' }],
@@ -175,12 +181,12 @@ describe('rangePresets', () => {
   });
 
   it('keeps the last 3 months sensible from a day a shorter month lacks', () => {
-    const lastThree = rangePresets(new Date(2026, 4, 31, 12))[3];
-    expect(lastThree.range).toEqual({ from: '2026-03-01', to: '2026-05-31' });
+    const lastThree = rangePresets(new Date('2026-05-31T12:00:00+08:00'), KL)[3];
+    expect(lastThree!.range).toEqual({ from: '2026-03-01', to: '2026-05-31' });
   });
 
   it('crosses into last year in January', () => {
-    expect(rangePresets(new Date(2027, 0, 5))[1].range).toEqual({
+    expect(rangePresets(new Date('2027-01-05T00:00:00+08:00'), KL)[1]!.range).toEqual({
       from: '2026-12-01',
       to: '2026-12-31',
     });
@@ -188,7 +194,7 @@ describe('rangePresets', () => {
 });
 
 describe('rangeLabel', () => {
-  const now = new Date(2026, 9, 14, 12);
+  const now = new Date('2026-10-14T12:00:00+08:00');
   it.each([
     [{ from: '2026-10-01', to: '2026-10-31' }, 'Oct 2026'],
     [{ from: '2026-01-01', to: '2026-12-31' }, '2026'],
@@ -199,21 +205,21 @@ describe('rangeLabel', () => {
     [{ from: '2025-03-01', to: '2025-03-09' }, '1 Mar to 9 Mar 2025'],
     [{ from: '2025-12-20', to: '2026-01-02' }, '20 Dec 2025 to 2 Jan 2026'],
   ])('reads %j as %s', (range, label) => {
-    expect(rangeLabel(range, now)).toBe(label);
+    expect(rangeLabel(range, now, KL)).toBe(label);
   });
 });
 
 describe('groupActivityDays', () => {
   it('totals spending and money in per local day, leaving transfers out', () => {
-    const salary = row('salary', 'Salary', new Date(2026, 9, 14, 9), {
+    const salary = row('salary', 'Salary', new Date('2026-10-14T09:00:00+08:00'), {
       type: 'income',
       amountMinor: 420000 as MinorAmount,
     });
-    const reload = row('reload', null, new Date(2026, 9, 14, 8), {
+    const reload = row('reload', null, new Date('2026-10-14T08:00:00+08:00'), {
       type: 'transfer',
       amountMinor: 10000 as MinorAmount,
     });
-    const days = groupActivityDays(filterActivity([grab, grabFood, salary, reload, tesco], all));
+    const days = groupActivityDays(filterActivity([grab, grabFood, salary, reload, tesco], all), KL);
     expect(
       days.map((day) => [day.key, ids(day.transactions), day.spentMinor, day.inMinor]),
     ).toEqual([
@@ -221,5 +227,13 @@ describe('groupActivityDays', () => {
       ['2026-10-13', ['tesco'], 1000, 0],
       ['2026-10-12', ['grab'], 1000, 0],
     ]);
+  });
+
+  it("files a row under the calendar's day, not the process zone's", () => {
+    const morning = row('morning', null, new Date('2026-10-14T09:00:00+08:00'));
+    expect(groupActivityDays([morning], KL).map((day) => day.key)).toEqual(['2026-10-14']);
+    expect(
+      groupActivityDays([morning], createCalendar('America/New_York')).map((day) => day.key),
+    ).toEqual(['2026-10-13']);
   });
 });

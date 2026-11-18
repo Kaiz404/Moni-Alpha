@@ -1,4 +1,4 @@
-import { distanceM, type LatLng } from '@/lib/finance/places';
+import { distanceM, type LatLng } from '@repo/core';
 
 /**
  * Where a place's coordinates came from. `own` is the user's: the phone's position, a spot they

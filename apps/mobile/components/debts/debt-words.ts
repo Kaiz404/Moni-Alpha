@@ -1,5 +1,4 @@
-import type { DebtSide } from '@/lib/finance/debt-summary';
-import { formatMoney } from '@repo/core';
+import { type DebtSide, formatMoney } from '@repo/core';
 
 /**
  * Every word that flips with who owes whom, in one table, so a screen never

@@ -1,10 +1,10 @@
+import { describe, expect, it } from 'vitest';
 import type { MinorAmount } from '@repo/types';
 
 import type { FinanceTransaction } from '../types';
+import { createCalendar } from '../../calendar';
 import {
-  clusterPins,
   groupPlaces,
-  zoomMoved,
   placeLabel,
   placeRange,
   placeRanges,
@@ -12,6 +12,7 @@ import {
   spanLabel,
 } from '../places';
 
+const KL = createCalendar('Asia/Kuala_Lumpur');
 const MAMAK = { latitude: 3.13035, longitude: 101.67112 };
 const KLCC = { latitude: 3.15785, longitude: 101.71162 };
 const METRE_LAT = 1 / 111_320;
@@ -44,6 +45,7 @@ function row(
     placeId: null,
     placeCoordsAt: null,
     autoAdded: false,
+    balanceCorrection: false,
     createdAt: '2026-10-10T05:00:00.000Z',
     ...overrides,
   };
@@ -66,13 +68,13 @@ const rows = [
 
 describe('groupPlaces', () => {
   it('puts three rows within 30 m into one place and sums them ahead of KLCC', () => {
-    const places = groupPlaces(rows, { currency: 'MYR' });
+    const places = groupPlaces(rows, { currency: 'MYR' }, KL);
     expect(places.map((place) => [place.name, place.count, place.totalMinor])).toEqual([
       ['Mamak Ali', 3, 3670],
       ['Suria KLCC', 1, 1890],
     ]);
-    expect(places[0].transactions.map((t) => t.id)).toEqual(['m3', 'm2', 'm1']);
-    expect(places[0].area).toBe('Kuala Lumpur');
+    expect(places[0]!.transactions.map((t) => t.id)).toEqual(['m3', 'm2', 'm1']);
+    expect(places[0]!.area).toBe('Kuala Lumpur');
   });
 
   it('skips income, other currencies, excluded rows and rows with no place', () => {
@@ -85,15 +87,20 @@ describe('groupPlaces', () => {
         row('n1', null, 9999),
       ],
       { currency: 'MYR' },
+      KL,
     );
     expect(places.map((place) => place.totalMinor)).toEqual([3670, 1890]);
   });
 
   it('keeps a place id when a range or category filter drops its first row', () => {
-    const all = groupPlaces(rows, { currency: 'MYR' });
-    const later = groupPlaces(rows, { currency: 'MYR', range: { from: '2026-10-05', to: '2026-10-31' } });
-    expect(later.map((place) => [place.id, place.count])).toEqual([[all[0].id, 2]]);
-    expect(groupPlaces(rows, { currency: 'MYR', categoryId: 'groceries' })).toEqual([]);
+    const all = groupPlaces(rows, { currency: 'MYR' }, KL);
+    const later = groupPlaces(
+      rows,
+      { currency: 'MYR', range: { from: '2026-10-05', to: '2026-10-31' } },
+      KL,
+    );
+    expect(later.map((place) => [place.id, place.count])).toEqual([[all[0]!.id, 2]]);
+    expect(groupPlaces(rows, { currency: 'MYR', categoryId: 'groceries' }, KL)).toEqual([]);
   });
 
   it('gathers picks of one Google place, and keeps two shops in one mall apart', () => {
@@ -116,6 +123,7 @@ describe('groupPlaces', () => {
         }),
       ],
       { currency: 'MYR' },
+      KL,
     );
     expect(
       places.map((place) => [place.id, place.transactions.map((t) => t.id)]),
@@ -139,8 +147,8 @@ describe('placeLabel', () => {
 
 describe('placeRegular', () => {
   it('names the merchant seen most, its average, and the one wallet used', () => {
-    const [mamak] = groupPlaces(rows, { currency: 'MYR' });
-    expect(placeRegular(mamak)).toEqual({
+    const [mamak] = groupPlaces(rows, { currency: 'MYR' }, KL);
+    expect(placeRegular(mamak!)).toEqual({
       merchant: 'Mamak Ali',
       visits: 3,
       averageMinor: 1223,
@@ -149,53 +157,22 @@ describe('placeRegular', () => {
   });
 
   it('says nothing for a single visit', () => {
-    const [, klcc] = groupPlaces(rows, { currency: 'MYR' });
-    expect(placeRegular(klcc)).toBeNull();
+    const [, klcc] = groupPlaces(rows, { currency: 'MYR' }, KL);
+    expect(placeRegular(klcc!)).toBeNull();
   });
 });
 
 describe('placeRanges', () => {
   it('offers rolling 7 and 30 days ending today, and all time', () => {
-    const now = new Date(2026, 9, 14, 14, 6);
-    expect(placeRanges(now)).toEqual([
+    const now = new Date('2026-10-14T14:06:00+08:00');
+    expect(placeRanges(now, KL)).toEqual([
       { key: '7d', label: 'Last 7 days', words: 'in the last 7 days', span: { from: '2026-10-08', to: '2026-10-14' } },
       { key: '30d', label: 'Last 30 days', words: 'in the last 30 days', span: { from: '2026-09-15', to: '2026-10-14' } },
       { key: 'all', label: 'All time', words: 'so far', span: null },
     ]);
-    expect(placeRange(undefined, now).key).toBe('30d');
-    expect(placeRange('month', now).key).toBe('30d');
+    expect(placeRange(undefined, now, KL).key).toBe('30d');
+    expect(placeRange('month', now, KL).key).toBe('30d');
     expect(spanLabel({ from: '2026-10-01', to: '2026-10-14' })).toBe('1–14 Oct');
     expect(spanLabel({ from: '2026-09-28', to: '2026-10-04' })).toBe('28 Sep–4 Oct');
-  });
-});
-
-describe('clusterPins', () => {
-  it('merges capsules that overlap on screen under the larger place', () => {
-    const places = groupPlaces(rows, { currency: 'MYR' });
-    const near = clusterPins(places, () => ({ x: 100, y: 100 }), () => 90);
-    expect(near.map((cluster) => [cluster.lead.name, cluster.members.length, cluster.totalMinor])).toEqual([
-      ['Mamak Ali', 2, 5560],
-    ]);
-    const far = clusterPins(places, (point) => ({ x: point === places[0] ? 0 : 300, y: 0 }), () => 90);
-    expect(far.map((cluster) => cluster.members.length)).toEqual([1, 1]);
-  });
-});
-
-describe('zoomMoved', () => {
-  const at = (latitudeDelta: number, latitude = 3) => ({
-    latitude,
-    longitude: 101,
-    latitudeDelta,
-    longitudeDelta: latitudeDelta,
-  });
-
-  it.each([
-    ['the first region', null, at(0.1), true],
-    ['a pan at the same zoom', at(0.1), at(0.1, 3.5), false],
-    ['a tiny zoom', at(0.1), at(0.105), false],
-    ['a pinch in', at(0.1), at(0.08), true],
-    ['a pinch out', at(0.1), at(0.12), true],
-  ])('%s', (_name, previous, next, expected) => {
-    expect(zoomMoved(previous, next)).toBe(expected);
   });
 });

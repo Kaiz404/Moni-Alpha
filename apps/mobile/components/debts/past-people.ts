@@ -1,4 +1,4 @@
-import type { DebtLine, DebtSide } from '@/lib/finance/debt-summary';
+import type { DebtLine, DebtSide } from '@repo/core';
 
 export const sameName = (a: string, b: string) =>
   a.trim().toLowerCase() === b.trim().toLowerCase();
