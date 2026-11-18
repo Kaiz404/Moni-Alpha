@@ -46,9 +46,13 @@ tags:
 - assertVisible:
     id: capture-log.report-missed
 - takeScreenshot: y1-log-report
-# Maybank is the one app linked in seed-full, so this opens Type it without asking which wallet.
+# seed-full links two apps (Maybank and Touch 'n Go), so Moni asks which wallet missed it.
 - tapOn:
     id: capture-log.report-missed
-- assertVisible: New expense
+- assertVisible: Which wallet did Moni miss?
+- tapOn: Maybank Savings
+- extendedWaitUntil:
+    visible: New expense
+    timeout: 10000
 - takeScreenshot: y1-type-it-from-source
 - back
