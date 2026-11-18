@@ -37,6 +37,8 @@ export type PageHeader =
       kind: 'pushed';
       title: string;
       subtitle?: string;
+      /** Sits between the back button and the title, as Moni chat's cat does. */
+      mark?: ReactNode;
       trailing?: ReactNode;
       onBack?: () => void;
     }
@@ -236,6 +238,7 @@ function HeaderRow(props: PageProps) {
             accessibilityLabel={back ? 'Back' : 'Close'}
             onPress={leave}
           />
+          {props.kind === 'pushed' ? props.mark : null}
           <View className="min-w-0 flex-1">
             <Text
               variant="cardTitle"

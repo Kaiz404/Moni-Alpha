@@ -5,6 +5,7 @@ import { State } from 'react-native-gesture-handler';
 import { getByGestureTestId } from 'react-native-gesture-handler/jest-utils';
 
 import ChatScreen from '@/app/chat';
+import { appendMessage } from '@/lib/ai/chat/messages';
 
 jest.mock('uniwind', () => ({
   useCSSVariable: (names: string[]) => names.map(() => undefined),
@@ -149,5 +150,28 @@ describe('Moni chat mic', () => {
     await press();
     await letGo();
     expect(screen.queryByText(CAPSULE)).toBeNull();
+  });
+});
+
+describe('Moni chat cat', () => {
+  it('rests beside the name, then listens while the mic is open', async () => {
+    render(<ChatScreen />);
+    expect(screen.getByLabelText('Moni')).toBeTruthy();
+    await tapMic();
+    expect(screen.getByLabelText('Moni, listening')).toBeTruthy();
+    expect(screen.queryByLabelText('Moni')).toBeNull();
+  });
+
+  it('thinks while a reply is on its way', () => {
+    appendMessage({
+      id: 'status-1',
+      role: 'assistant',
+      kind: 'assistant_status',
+      content: 'Reading your words',
+      createdAt: new Date().toISOString(),
+    });
+    render(<ChatScreen />);
+    expect(screen.getByLabelText('Moni, thinking')).toBeTruthy();
+    expect(screen.getByLabelText('Moni is thinking. Reading your words')).toBeTruthy();
   });
 });

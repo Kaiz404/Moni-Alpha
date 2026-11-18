@@ -18,6 +18,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { ChatCat, chatMood } from '@/components/chat/chat-cat';
 import { ChatInputBar } from '@/components/chat/chat-input-bar';
 import { chatTime } from '@/components/chat/chat-time';
 import { MeetMoni } from '@/components/chat/meet-moni';
@@ -261,6 +262,7 @@ export default function ChatScreen() {
       screen="chat"
       kind="pushed"
       title="Moni"
+      mark={<ChatCat mood={chatMood(messages, listening !== null)} />}
       subtitle={isToday ? `${dayTitle(viewDay, now)} · ${chatTime(now.toISOString())}` : dayTitle(viewDay, now)}
       trailing={
         <HeaderIconButton
