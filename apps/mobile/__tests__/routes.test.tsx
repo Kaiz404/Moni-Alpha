@@ -146,7 +146,6 @@ jest.mock('../modules/moni-android-apps', () => ({
 }));
 // Its native module loads through import(), which Jest cannot run without ESM mode.
 jest.mock('@/lib/notifications/permission', () => ({
-  NOTIFICATION_ACCESS_DISCLOSURE: 'One-time codes never leave this phone.',
   readNotificationListenerPermission: async () => 'authorized',
   rebindListenerIfUnbound: () => false,
   openNotificationListenerSettings: () => {},

@@ -28,15 +28,8 @@ describe('isListenerUnbound', () => {
 });
 
 describe('asking for notification access', () => {
-  it('says what happens to alerts in one sentence, in the app, first', async () => {
+  it('shows the disclosure sheet in the app before Android settings', async () => {
     await askForNotificationAccess();
-    expect(openSheet).toHaveBeenCalledWith({
-      kind: 'confirm',
-      title: 'Let Moni read alerts?',
-      message:
-        'One-time codes never leave this phone, and other payment alerts from the apps you link go to a cloud AI model that reads them.',
-      confirmLabel: 'Open settings',
-      cancelLabel: 'Not now',
-    });
+    expect(openSheet).toHaveBeenCalledWith({ kind: 'notificationAccess' });
   });
 });

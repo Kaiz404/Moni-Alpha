@@ -120,8 +120,13 @@ include=()
 
 # Notification access only for the run: Home draws its access card without it, and the phone is the
 # operator's, so Moni E2E does not keep reading its notifications afterwards.
+# A needs-access-off run keeps it off, for the disclosure sheet that asks for it.
 listener=$package/com.lesimoes.androidnotificationlistener.RNAndroidNotificationListener
-adb shell cmd notification allow_listener "$listener" >/dev/null 2>&1 || true
+if [[ " ${tags[*]-} " == *" needs-access-off "* ]]; then
+  adb shell cmd notification disallow_listener "$listener" >/dev/null 2>&1 || true
+else
+  adb shell cmd notification allow_listener "$listener" >/dev/null 2>&1 || true
+fi
 trap 'adb shell cmd notification disallow_listener "$listener" >/dev/null 2>&1 || true' EXIT
 
 pinned() { adb shell dumpsys activity activities 2>/dev/null | node "$here/overlays.mjs" parse; }

@@ -120,6 +120,8 @@ type Sheets = {
     request: { currency: string; balanceMinor: MinorAmount };
     result: MinorAmount;
   };
+  /** "Let Moni read alerts?": the disclosure before Android's notification access page. */
+  notificationAccess: { request: object; result: true };
   /** A plain list of named choices, such as a birth month; resolves to the picked id. */
   choice: {
     request: {

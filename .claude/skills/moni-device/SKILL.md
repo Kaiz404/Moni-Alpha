@@ -80,7 +80,7 @@ Build with `EXPO_PUBLIC_E2E_NOW=2026-10-14T14:06:00+08:00 apps/mobile/scripts/de
 
 It takes the device lock and runs the doctor. Then it keeps Maestro's two driver apps on the phone with `install-driver.sh` and passes `--no-reinstall-driver`, because Maestro's default installs and removes them on every run and each install needs the operator. Then it installs the key if the phone has a different one, resets the e2e user's data with `seed.mjs --reset --profile <full|empty>` (default `full`), clears the app's data, grants the camera, microphone, and location permissions again, and pushes the receipt fixtures to `/sdcard/Pictures/moni-e2e/`. Then it runs Maestro with JUnit output. Each flow signs in on its own through `.maestro/subflows/launch.yaml`.
 
-It grants Moni E2E notification access for the run and takes it away afterwards. It leaves out flows tagged with the other seed and flows tagged `needs-speech`, `needs-posted-alert`, `needs-ai`, `needs-scanner`, or `perf`. Pass `--tag <that tag>` to include one. Areas are the folders under `apps/mobile/.maestro/flows/`. Run `run-flows.sh --area x` to list them.
+It grants Moni E2E notification access for the run and takes it away afterwards, except with `--tag needs-access-off`, which keeps it off. It leaves out flows tagged with the other seed and flows tagged `needs-speech`, `needs-posted-alert`, `needs-ai`, `needs-scanner`, `perf`, or `needs-access-off`. Pass `--tag <that tag>` to include one. Areas are the folders under `apps/mobile/.maestro/flows/`. Run `run-flows.sh --area x` to list them.
 
 The smoke suite is `flows/smoke/`: `launch`, `sign-in`, `tabs`, `chooser`, `transaction`, and `review`. Run it after any change to the app shell, sign-in, or navigation.
 

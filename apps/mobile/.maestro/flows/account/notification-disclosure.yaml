@@ -1,0 +1,35 @@
+# The notification access disclosure: what Moni sees, filters, sends and stores, the privacy policy
+# link, and nothing opens until Open settings is tapped. Needs access off, so run it with its tag:
+# Run: scripts/device/run-flows.sh --tag needs-access-off .maestro/flows/account/notification-disclosure.yaml
+appId: com.anonymous.moni.e2e
+name: Notification access disclosure
+tags:
+  - seed-full
+  - needs-access-off
+---
+- runFlow: ../../subflows/launch.yaml
+- tapOn:
+    id: home.avatar
+- scrollUntilVisible:
+    element:
+      id: profile.row.capture-sources
+- tapOn:
+    id: profile.row.capture-sources
+- tapOn:
+    id: sources.notifications.open-settings
+- assertVisible: Let Moni read alerts?
+- assertVisible: Moni can see every notification on this phone. It checks them here and keeps only alerts from the apps you link.
+- assertVisible: One-time codes never leave this phone.
+- assertVisible: "The alerts it keeps go to Moni's AI, when it's on, to read the payment, and are saved to Moni's cloud database with your account."
+- assertVisible:
+    id: sheet.privacy-policy
+- assertVisible:
+    id: sheet.confirm
+- takeScreenshot: notification-disclosure
+
+# Not now is not consent: the sheet closes and Moni stays on Capture sources.
+- tapOn:
+    id: sheet.cancel
+- assertNotVisible: Let Moni read alerts?
+- assertVisible:
+    id: sources.notifications.open-settings

@@ -8,6 +8,7 @@ import { CaptureChooserSheet } from '@/components/nav/capture-chooser';
 import { BalanceSheet } from '@/components/sheets/balance-sheet';
 import { CategoryPickerSheet } from '@/components/sheets/category-picker-sheet';
 import { ConfirmSheet } from '@/components/sheets/confirm-sheet';
+import { NotificationAccessSheet } from '@/components/sheets/notification-access-sheet';
 import {
   ActivityKindSheet,
   CurrencySheet,
@@ -165,6 +166,13 @@ function renderSheet(sheet: OpenSheet, frame: SheetFrameProps) {
           {...frame}
           request={sheet.request}
           onSave={sheet.settle}
+        />
+      );
+    case 'notificationAccess':
+      return (
+        <NotificationAccessSheet
+          {...frame}
+          onConfirm={() => sheet.settle(true)}
         />
       );
     case 'choice':

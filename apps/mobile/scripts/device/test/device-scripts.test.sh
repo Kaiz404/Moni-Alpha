@@ -327,7 +327,7 @@ expect "run-flows.sh exits 0 when every flow passes" 0 $?
 [[ $out == "2/2 flows passed, report $tmp/runs/rf-key/"*"/report.xml" ]] && pass "run-flows.sh prints the summary when no flow failed" || fail "run-flows.sh green summary: $out"
 for log in rf-adb rf-node rf-maestro; do mv "$tmp/$log.kept" "$tmp/$log.log"; done
 maestro_args=$(tr '\n' ' ' <"$tmp/rf-maestro.log")
-[[ $maestro_args == "test --device 100.64.0.9:40000 --no-reinstall-driver --include-tags smoke --exclude-tags seed-empty,needs-speech,needs-posted-alert,needs-ai,needs-scanner,perf --format junit --output $tmp/runs/rf-key/"*"/report.xml"* ]] && pass "run-flows.sh runs one Maestro suite with the smoke tag and the full seed's exclusions" || fail "maestro args: $maestro_args"
+[[ $maestro_args == "test --device 100.64.0.9:40000 --no-reinstall-driver --include-tags smoke --exclude-tags seed-empty,needs-speech,needs-posted-alert,needs-ai,needs-scanner,perf,needs-access-off --format junit --output $tmp/runs/rf-key/"*"/report.xml"* ]] && pass "run-flows.sh runs one Maestro suite with the smoke tag and the full seed's exclusions" || fail "maestro args: $maestro_args"
 [[ $maestro_args == *"-e E2E_EMAIL=e2e+test@example.com -e E2E_PASSWORD=pw-123 $(cd "$dir/../.." && pwd)/.maestro "* ]] && pass "run-flows.sh passes the e2e credentials and the workspace" || fail "maestro env args: $maestro_args"
 expect "run-flows.sh resets the seed it was given" "$(cd "$dir/../.." && pwd)/scripts/e2e/seed.mjs --reset --profile full" "$(grep seed.mjs "$tmp/rf-node.log")"
 [[ $(grep -c "^shell pm clear com.anonymous.moni.e2e$" "$tmp/rf-adb.log") == 1 && $(grep -c "^shell pm grant com.anonymous.moni.e2e android.permission.CAMERA$" "$tmp/rf-adb.log") == 2 ]] && pass "run-flows.sh clears the app's data and grants permissions again" || fail "adb calls: $(tr '\n' ';' <"$tmp/rf-adb.log")"
@@ -335,7 +335,7 @@ grep -q "^install " "$tmp/rf-adb.log" && fail "run-flows.sh reinstalled an APK t
 [[ -f $tmp/rf-out/smoke-home.png ]] && pass "run-flows.sh copies screenshots to --out" || fail "no screenshot in --out: $(ls "$tmp/rf-out" 2>&1)"
 run_flows --sha rf-key --seed empty --tag needs-ai --area home >/dev/null 2>&1
 maestro_args=$(tr '\n' ' ' <"$tmp/rf-maestro.log")
-[[ $maestro_args == *"--include-tags needs-ai --exclude-tags seed-full,needs-speech,needs-posted-alert,needs-scanner,perf "*" $(cd "$dir/../.." && pwd)/.maestro/flows/home "* ]] && pass "--seed empty excludes seed-full, a --tag lifts its default exclusion, and --area picks one folder" || fail "empty seed maestro args: $maestro_args"
+[[ $maestro_args == *"--include-tags needs-ai --exclude-tags seed-full,needs-speech,needs-posted-alert,needs-scanner,perf,needs-access-off "*" $(cd "$dir/../.." && pwd)/.maestro/flows/home "* ]] && pass "--seed empty excludes seed-full, a --tag lifts its default exclusion, and --area picks one folder" || fail "empty seed maestro args: $maestro_args"
 
 ra=$tmp/ra
 mkdir -p "$ra/scripts/device" "$ra/.maestro/flows/home" "$ra/.maestro/flows/perf" "$ra/.maestro/flows/review"
