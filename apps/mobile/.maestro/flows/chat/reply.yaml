@@ -1,0 +1,29 @@
+# Moni's prose reply streams in and its bubble grows (#63), then settles with
+# "Moni can be wrong" under the composer (#65).
+# Run: scripts/device/run-flows.sh .maestro/flows/chat/reply.yaml
+appId: com.anonymous.moni.e2e
+name: Chat prose reply
+tags:
+  - h2
+  - seed-full
+---
+- runFlow: ../../subflows/launch.yaml
+- extendedWaitUntil:
+    visible:
+      id: home.ask-box
+    timeout: 15000
+- tapOn:
+    id: home.ask-box
+- tapOn:
+    id: chat.input
+- inputText: What can you do?
+- tapOn:
+    id: chat.send
+- extendedWaitUntil:
+    visible: 'I add spends .*'
+    timeout: 30000
+- hideKeyboard
+- waitForAnimationToEnd:
+    timeout: 4000
+- assertVisible: 'Moni can be wrong. Check important numbers.'
+- takeScreenshot: chat-reply-settled

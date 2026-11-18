@@ -75,6 +75,7 @@ function dayTitle(day: string, now: Date): string {
 const MIC_EASE = { duration: 100, easing: Easing.bezier(0.23, 1, 0.32, 1) };
 
 const NOTHING_ASKED: ReadonlySet<string> = new Set();
+const STREAM_STEP_PX = 32;
 
 type ThreadProps = {
   messages: ChatMessage[];
@@ -129,8 +130,11 @@ const Thread = memo(function Thread({ messages, day, folded, onQuickReply, onNot
       keyboardShouldPersistTaps="handled"
       contentContainerClassName="grow justify-end px-5 pb-3 pt-1"
       onContentSizeChange={(_width, height) => {
+        // A streaming reply grows a few pixels a frame; following it without animation keeps
+        // its newest line pinned instead of restarting a scroll animation every frame.
+        const grew = height - contentHeight.current;
         contentHeight.current = height;
-        scrollThreadToEnd(true);
+        scrollThreadToEnd(grew > STREAM_STEP_PX);
       }}
       onLayout={(event) => {
         listHeight.current = event.nativeEvent.layout.height;
