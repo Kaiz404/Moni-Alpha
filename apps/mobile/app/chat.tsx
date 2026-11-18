@@ -348,16 +348,6 @@ export default function ChatScreen() {
               onNoticed={onNoticed}
             />
           )}
-          ListFooterComponent={
-            answered ? (
-              <Text
-                variant="smallest"
-                className="mt-3 text-center text-muted"
-              >
-                Moni can be wrong. Check important numbers.
-              </Text>
-            ) : null
-          }
         />
         {blank ? <StarterCards onStarter={setInput} /> : null}
         <ChatInputBar
@@ -388,8 +378,17 @@ export default function ChatScreen() {
           }}
           level={level}
           autoFocus={params.focus === '1'}
-          bottomInset={Math.max(8, 16 - insets.bottom)}
+          bottomInset={answered ? 6 : Math.max(8, 16 - insets.bottom)}
         />
+        {answered ? (
+          <Text
+            variant="smallest"
+            className="bg-canvas px-5 text-center text-muted"
+            style={{ paddingBottom: Math.max(8, 16 - insets.bottom) }}
+          >
+            Moni can be wrong. Check important numbers.
+          </Text>
+        ) : null}
         <LinearGradient
           pointerEvents="none"
           colors={[tokens.canvas, `${tokens.canvas}00`]}
