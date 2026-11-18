@@ -91,9 +91,16 @@ else
     wake=$(dev shell input keyevent KEYCODE_WAKEUP 2>&1)
     (($? == 0)) && [[ $wake != *SecurityException* ]]
     verdict $? "wake ${wake:-no SecurityException}"
-    battery=$(dev shell dumpsys battery | tr -d '\r' | awk '$1 == "level:" { print $2 }')
-    ((${battery:-0} > 30))
-    verdict $? "battery ${battery:-unknown}%"
+    battery_info=$(dev shell dumpsys battery | tr -d '\r')
+    battery=$(awk '$1 == "level:" { print $2 }' <<<"$battery_info")
+    # A run must not drain the phone flat; on a charger it can't, so a lower level is enough.
+    if grep -Eq '(AC|USB|Wireless) powered: true' <<<"$battery_info"; then
+      ((${battery:-0} > 15))
+      verdict $? "battery ${battery:-unknown}%, charging"
+    else
+      ((${battery:-0} > 30))
+      verdict $? "battery ${battery:-unknown}%"
+    fi
     if [[ $(dev shell dumpsys window policy) == *"showing=true"* ]]; then
       echo "note keyguard showing, unlock the phone before a lane drives an app"
     fi
