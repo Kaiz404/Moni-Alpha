@@ -183,6 +183,7 @@ apps/mobile/scripts/device/run-flows.sh --sha <key> .maestro/flows/review/decide
 - With no flow, `--tag`, or `--area`, it runs every flow. It always leaves out the other seed's tag, and it leaves out the `needs-*` and `perf` tags unless you pass that tag with `--tag`.
 - Each run writes `~/.local/share/moni-runs/<key>/<timestamp>/` with `seed.log`, `maestro.log`, `report.xml`, and `maestro/` (Maestro's commands JSON, `logs/`, and `takeScreenshot/` PNGs). `--out` also copies every PNG there. The last line is `<passed>/<total> flows passed, report <path>`, and the exit code is Maestro's. The run directory holds the e2e password in Maestro's command log, so do not paste it.
 - It exits 2 on a bad argument, before it takes the lock, and 3 when `.env.e2e` has no `E2E_EMAIL` or `E2E_PASSWORD`. The lock's exit codes are `with-device.sh`'s.
+- `parity.sh --base <ref> [--head <ref>] [<area>...]` proves a change leaves the app looking the same. It builds both commits on the boards' pinned clock in cached worktrees under `~/.cache/moni-parity/`, runs the areas with each build, and compares every `takeScreenshot` by name with `screens-diff.mjs` (status bar ignored). It prints `parity same` or `parity CHANGED` and writes base-left, head-right PNGs of each change under `diff/`.
 
 ## Map
 
