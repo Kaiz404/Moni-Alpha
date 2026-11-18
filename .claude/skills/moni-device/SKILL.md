@@ -11,7 +11,7 @@ This directory is a real directory in `.claude/skills/`. The pstack entries besi
 
 ## Rules
 
-- Touch the phone only through `apps/mobile/scripts/device/with-device.sh` or `run-flows.sh`, which takes the device lock itself. Only one lane uses the phone at a time.
+- Touch the phone only through `apps/mobile/scripts/device/with-device.sh` or `run-flows.sh`, which takes the device lock itself. Only one lane uses the phone at a time. `install-guards.sh` puts `adb` and `maestro` guards first on PATH: outside a lane, a bare `adb shell`, `adb install` or `maestro test` exits 97 with the command to use instead. Run it once per machine; the doctor's checks don't need it.
 - Never install, clear, or drive `com.anonymous.moni`. That is the owner's daily app with real data. `install.sh` refuses any other package. The one exception is `install.sh --preview`, which updates the daily app in place when the owner asks for it (see the `moni-issues` skill).
 - If `~/.local/share/moni-device/hold` exists, the owner is using the phone. The scripts exit 4. Do not delete the file. Report "device check pending operator" and move on.
 - Never run `build-apk.sh` in the main checkout `/home/kaiz404/projects/moni`, because `expo prebuild --clean` rewrites its `android/`. The script refuses with exit 3.

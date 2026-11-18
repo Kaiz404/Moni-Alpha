@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+# Installed ahead of the real adb on PATH by install-guards.sh. Commands that touch the phone run only
+# inside a with-device.sh lane, so two agents never drive the phone at once.
+real=${ANDROID_HOME:-$HOME/Android/Sdk}/platform-tools/adb
+case ${1:-} in
+  devices | connect | disconnect | version | start-server | kill-server | pair | mdns | help | --version | "")
+    exec "$real" "$@" ;;
+esac
+if [[ -n ${MONI_DEVICE_LOCK_HOLDER:-} ]] && kill -0 "$MONI_DEVICE_LOCK_HOLDER" 2>/dev/null; then
+  exec "$real" "$@"
+fi
+echo "adb $1 refused: the phone is shared. Run it inside the device lock:" >&2
+echo "  apps/mobile/scripts/device/with-device.sh --skip-doctor --lane <name> -- <your commands>" >&2
+echo "or use run-flows.sh / parity.sh, which take the lock themselves." >&2
+exit 97

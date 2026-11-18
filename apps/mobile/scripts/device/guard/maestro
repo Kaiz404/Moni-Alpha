@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+# Installed ahead of the real maestro on PATH by install-guards.sh. Flows run only inside the device
+# lock (run-flows.sh, parity.sh or with-device.sh), so two agents never drive the phone at once.
+real=$HOME/.maestro/bin/maestro
+case ${1:-} in
+  --version | -v | --help | -h | check-syntax | "") exec "$real" "$@" ;;
+esac
+if [[ -n ${MONI_DEVICE_LOCK_HOLDER:-} ]] && kill -0 "$MONI_DEVICE_LOCK_HOLDER" 2>/dev/null; then
+  exec "$real" "$@"
+fi
+echo "maestro $1 refused: the phone is shared. Use apps/mobile/scripts/device/run-flows.sh, or wrap the call in" >&2
+echo "  apps/mobile/scripts/device/with-device.sh --skip-doctor --lane <name> -- maestro ..." >&2
+exit 97

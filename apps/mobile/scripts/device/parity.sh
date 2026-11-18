@@ -31,26 +31,66 @@ mkdir -p "$out" "$cache"
 export EXPO_PUBLIC_E2E_NOW=${EXPO_PUBLIC_E2E_NOW:-2026-10-14T14:06:00+08:00}
 export EXPO_PUBLIC_E2E_TOAST_MS=${EXPO_PUBLIC_E2E_TOAST_MS:-15000}
 
-# run_side <base|head> <sha>: a clean worktree at the commit, its own build and flows.
+if ((!${#areas[@]})); then
+  while IFS= read -r area; do
+    [[ $area == perf ]] || areas+=("$area")
+  done < <(git -C "$root" ls-tree --name-only -d "$head:apps/mobile/.maestro/flows")
+fi
+
+# Two commits whose app, flows, packages and lockfile match draw the same screens, whatever else
+# changed, so their build and their screenshots are shared. Device scripts don't change the app.
+inputs_key() {
+  git -C "$root" ls-tree -r "$1" -- apps/mobile packages pnpm-lock.yaml pnpm-workspace.yaml package.json |
+    grep -v $'\tapps/mobile/scripts/' | sha256sum | cut -c1-16
+}
+
+# run_side <base|head> <sha>: a build and a flow run per area for the commit's inputs, each reused
+# from an earlier parity run with the same inputs (any lane, any commit) when one exists.
 run_side() {
-  local side=$1 sha=$2 wt=$cache/wt-$2 key
-  if [[ ! -d $wt ]]; then
-    git -C "$root" worktree add --detach "$wt" "$sha" >/dev/null
-    (cd "$wt" && pnpm install --frozen-lockfile --prefer-offline >/dev/null)
-  fi
-  key=$("$wt/apps/mobile/scripts/device/build-apk.sh" | awk '/^(built|cached) /{print $2}' | tail -n 1)
-  [[ -n $key ]] || { echo "parity: no build for $side $sha" >&2; exit 4; }
-  echo "$side $sha key $key"
+  local side=$1 sha=$2 wt=$cache/wt-$2 ikey key runs missing=() area
+  ikey=$(inputs_key "$sha")-${EXPO_PUBLIC_E2E_NOW//[^0-9]/}
+  runs=$cache/runs/$ikey
+  for area in "${areas[@]}"; do
+    [[ -f $runs/$area/.done ]] || missing+=("$area")
+  done
   rm -rf "${out:?}/$side"
-  "$wt/apps/mobile/scripts/device/run-areas.sh" --sha "$key" --out "$out/$side" "${areas[@]}" || echo "$side: some flows failed, see above"
+  mkdir -p "$out/$side"
+  if ((${#missing[@]})); then
+    key=$(cat "$cache/apk/$ikey" 2>/dev/null || true)
+    if [[ -z $key || ! -f $HOME/.cache/moni-apk/$key/app-release.apk ]]; then
+      if [[ ! -d $wt ]]; then
+        git -C "$root" worktree add --detach "$wt" "$sha" >/dev/null
+        (cd "$wt" && pnpm install --frozen-lockfile --prefer-offline >/dev/null)
+      fi
+      key=$("$wt/apps/mobile/scripts/device/build-apk.sh" | awk '/^(built|cached) /{print $2}' | tail -n 1)
+      [[ -n $key ]] || { echo "parity: no build for $side $sha" >&2; exit 4; }
+      mkdir -p "$cache/apk" && echo "$key" >"$cache/apk/$ikey"
+    fi
+    echo "$side $sha key $key, running ${missing[*]}"
+    [[ -d $wt ]] || git -C "$root" worktree add --detach "$wt" "$sha" >/dev/null
+    for area in "${missing[@]}"; do
+      rm -rf "${runs:?}/$area"
+      if "$wt/apps/mobile/scripts/device/run-areas.sh" --sha "$key" --out "$runs" "$area"; then
+        touch "$runs/$area/.done"
+      else
+        echo "$side: flows failed in $area, not cached"
+      fi
+    done
+  else
+    echo "$side $sha reuses every area from $runs"
+  fi
+  for area in "${areas[@]}"; do
+    [[ -d $runs/$area ]] && cp -r "$runs/$area" "$out/$side/$area"
+  done
 }
 
 run_side base "$base"
 run_side head "$head"
 
-status=0
-for dir in "$out/base"/*/; do
-  label=$(basename "$dir")
+status=0 compared=0
+while IFS= read -r dir; do
+  compared=$((compared + 1))
+  label=${dir#"$out/base/"}
   if [[ ! -d $out/head/$label ]]; then
     echo "$label: missing on head"
     status=1
@@ -58,6 +98,10 @@ for dir in "$out/base"/*/; do
   fi
   echo "== $label"
   node "$here/screens-diff.mjs" "$dir" "$out/head/$label" "$out/diff/$label" || status=1
-done
+done < <(find "$out/base" -name '*.png' -printf '%h\n' | sort -u)
+if ((compared == 0)); then
+  echo "parity: base produced no screenshots, nothing was compared"
+  status=1
+fi
 echo "parity $([[ $status == 0 ]] && echo same || echo CHANGED) base ${base:0:8} head ${head:0:8}, evidence $out"
 exit $status
