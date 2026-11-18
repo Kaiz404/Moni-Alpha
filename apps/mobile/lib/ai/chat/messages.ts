@@ -114,6 +114,22 @@ export function readThread(day: string): ChatThread {
   return readJson<ChatThread>(threadKey(day)) ?? { day, messages: [] };
 }
 
+/**
+ * `next` with every message that did not change replaced by its object from `shown`, so a
+ * re-read thread keeps the identity of the bubbles already on screen.
+ */
+export function keepUnchanged(shown: readonly ChatMessage[], next: ChatMessage[]): ChatMessage[] {
+  const before = new Map(shown.map((message) => [message.id, message]));
+  let same = shown.length === next.length;
+  const kept = next.map((message, index) => {
+    const old = before.get(message.id);
+    const keep = old !== undefined && JSON.stringify(old) === JSON.stringify(message);
+    if (!keep || shown[index] !== old) same = false;
+    return keep ? old : message;
+  });
+  return same ? (shown as ChatMessage[]) : kept;
+}
+
 /** Today's thread; opening chat always lands here. */
 export function readTodayThread(now: Date = new Date()): ChatThread {
   migrateLegacySession();

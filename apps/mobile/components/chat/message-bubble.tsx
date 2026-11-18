@@ -1,5 +1,5 @@
 import { Image } from 'expo-image';
-import { useEffect, useState, type ReactNode } from 'react';
+import { memo, useEffect, useState, type ReactNode } from 'react';
 import { View } from 'react-native';
 import Animated, { FadeInUp, useReducedMotion } from 'react-native-reanimated';
 
@@ -70,7 +70,7 @@ function Arrive({ id, typed, children }: { id: string; typed: boolean; children:
 }
 
 /** One thread item: the user's words on Sand, Moni's on Ink, and Moni's cards. */
-export function MessageBubble(props: MessageBubbleProps) {
+export const MessageBubble = memo(function MessageBubble(props: MessageBubbleProps) {
   const { message } = props;
   if (message.role !== 'assistant' || message.kind === 'assistant_status') return <ThreadItem {...props} />;
   const typed =
@@ -85,7 +85,7 @@ export function MessageBubble(props: MessageBubbleProps) {
       <ThreadItem {...props} />
     </Arrive>
   );
-}
+});
 
 function ThreadItem({ message, asked, onQuickReply, onNoticed }: MessageBubbleProps) {
   const tokens = useThemeTokens();
