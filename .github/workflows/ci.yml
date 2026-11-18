@@ -41,6 +41,11 @@ jobs:
       - run: pnpm --filter moni lint:copy
       - run: pnpm --filter moni lint:test-ids
       - run: pnpm --filter moni lint:flow-ids
+      - name: Build web
+        run: pnpm --filter web build
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ vars.EXPO_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ vars.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}
 
   test:
     name: Tests

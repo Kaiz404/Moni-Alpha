@@ -1,28 +1,15 @@
 import type { Metadata } from 'next';
-import { Inter } from 'next/font/google';
-import './globals.css';
-import { AuthProvider } from '@/lib/auth/auth-context';
-import { QueryProvider } from '@/lib/query/query-client';
-
-const inter = Inter({ subsets: ['latin'] });
+import type { ReactNode } from 'react';
 
 export const metadata: Metadata = {
-  title: 'Moni - Personal Finance',
-  description: 'Privacy-focused personal finance management',
+  title: 'Moni',
+  description: 'Moni keeps your spending, budgets and debts in one calm place.',
 };
 
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
-      <body className={inter.className}>
-        <AuthProvider>
-          <QueryProvider>{children}</QueryProvider>
-        </AuthProvider>
-      </body>
+      <body>{children}</body>
     </html>
   );
 }
