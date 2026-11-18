@@ -12,13 +12,19 @@ appId: com.anonymous.moni.e2e
     id: auth.email
 - eraseText: 80
 - inputText: ${E2E_EMAIL}
+# The keyboard shifts the form while it opens, so a tap measured mid-shift can land on Email.
+- hideKeyboard
 - tapOn:
     id: auth.password
 - eraseText: 80
-# Screenshots and failure captures must never show this password: stop here if it would be readable.
+# Screenshots and failure captures must never show this password: stop here if it would be readable,
+# or if Email still has focus and would show it in the clear.
 - assertVisible:
     id: auth.password.reveal
     text: Show password
+- assertVisible:
+    id: auth.password
+    focused: true
 - inputText: ${E2E_PASSWORD}
 - hideKeyboard
 - tapOn:
