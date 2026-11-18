@@ -8,10 +8,11 @@ tags:
   - seed-full
 ---
 - runFlow: ../../subflows/launch.yaml
+# The check-in is Home's last card, so it cannot scroll to the centre: centerElement keeps scrolling
+# while the map card still redraws, and times out.
 - scrollUntilVisible:
     element:
       id: home.check-in.right
-    centerElement: true
 - takeScreenshot: h1-l7-check-in
 - tapOn:
     id: home.check-in.right
