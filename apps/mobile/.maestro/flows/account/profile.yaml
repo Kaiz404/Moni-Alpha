@@ -14,7 +14,8 @@ tags:
     id: profile.back
 - assertVisible:
     id: profile.main-currency
-- assertVisible: APPEARANCE
+- assertVisible:
+    id: profile.theme
 - assertVisible: MONEY
 - assertNotVisible: Budgets
 - assertNotVisible: Home, Activity, Budget and Debts show this currency.*
@@ -43,7 +44,7 @@ tags:
       id: profile.back
 - assertNotVisible: Malaysian ringgit
 
-# The theme button switches to dark and back to light.
+# The header's theme button switches to dark and back to light.
 - tapOn:
     id: profile.theme
 - takeScreenshot: k1-l4-dark
