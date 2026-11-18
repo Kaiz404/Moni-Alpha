@@ -1,11 +1,11 @@
 import { addMinor, type CurrencyCode, type MinorAmount } from '@repo/types';
 
 import { monthRange, rangeLabel, type ActivityRange } from '@/lib/finance/activity-filter';
-import { countsAsSpend } from '@/lib/finance/budget-month';
 import type { FinanceTransaction } from '@/lib/finance/types';
-import { countsAsIncome } from '@/lib/reports/report';
 import {
   addDays,
+  countsAsCashFlow,
+  countsAsSpending,
   dayOfMonth,
   daysBetween,
   type MonthKey,
@@ -46,7 +46,7 @@ function allTime(
   const month = deviceCalendar.monthKey(now);
   let first = shiftMonth(month, 1 - LEAST_MONTHS);
   for (const transaction of transactions) {
-    if (!countsAsSpend(transaction, currency) && !countsAsIncome(transaction, currency)) continue;
+    if (transaction.currency !== currency || !countsAsCashFlow(transaction)) continue;
     const at = deviceCalendar.monthKey(transaction.transactionDate);
     if (at < first) first = at;
   }
@@ -123,8 +123,8 @@ export function flowSeries({
   let spentMinor = 0 as MinorAmount;
   let inMinor = 0 as MinorAmount;
   for (const transaction of transactions) {
-    const spends = countsAsSpend(transaction, currency);
-    if (!spends && !countsAsIncome(transaction, currency)) continue;
+    if (transaction.currency !== currency || !countsAsCashFlow(transaction)) continue;
+    const spends = countsAsSpending(transaction);
     const at = new Date(transaction.transactionDate).getTime();
     if (at < starts[0] || at >= end) continue;
     let low = 0;

@@ -1,11 +1,10 @@
 import { addMinor, subtractMinor, type CurrencyCode, type MinorAmount } from '@repo/types';
 
 import type { FinanceDebt, FinanceDebtActivity } from './types';
-import { daysBetween, parseDayKey } from '@repo/core';
+import { daysBetween, debtStatus, type DebtStatus, debtTotals, parseDayKey } from '@repo/core';
 import { deviceCalendar } from '@/lib/dates/device-calendar';
 
 export type DebtSide = FinanceDebt['direction'];
-export type DebtState = 'open' | 'settled' | 'written_off';
 
 type Activity = Pick<
   FinanceDebtActivity,
@@ -18,7 +17,7 @@ export type DebtLine = {
   principalMinor: MinorAmount;
   repaidMinor: MinorAmount;
   balanceMinor: MinorAmount;
-  state: DebtState;
+  state: DebtStatus;
   /** ISO time of the first principal ("Lent Sun 27 Sep"). */
   startedAt: string;
   /** ISO time of the newest activity; closed debts sort by it. */
@@ -50,22 +49,15 @@ export function describeDebt(debt: FinanceDebt, activities: readonly Activity[])
   const own = activities
     .filter((activity) => activity.debtId === debt.id)
     .sort((a, b) => a.activityDate.localeCompare(b.activityDate));
-  const of = (kind: Activity['kind']) =>
-    sum(own.filter((activity) => activity.kind === kind).map((activity) => activity.amountMinor));
   const first = own.find((activity) => activity.kind === 'principal');
   if (!first) return null;
-  const principalMinor = of('principal');
-  const repaidMinor = of('repayment');
-  const writtenOffMinor = of('write_off');
-  const balanceMinor = subtractMinor(principalMinor, addMinor(repaidMinor, writtenOffMinor));
-  const state: DebtState =
-    balanceMinor > 0 ? 'open' : writtenOffMinor > 0 ? 'written_off' : 'settled';
+  const { principalMinor, repaidMinor, balanceMinor } = debtTotals(own);
   return {
     debt,
     principalMinor,
     repaidMinor,
     balanceMinor,
-    state,
+    state: debtStatus(own),
     startedAt: first.activityDate,
     lastAt: own[own.length - 1]?.activityDate ?? first.activityDate,
   };

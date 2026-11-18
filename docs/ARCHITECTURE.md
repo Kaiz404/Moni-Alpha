@@ -84,7 +84,7 @@ apps/mobile/      Expo SDK 57 + expo-router — primary client
 apps/backend/     Go + Gin AI gateway (see apps/backend/README.md)
 apps/web/         Next.js 16 web app — desktop and phone layouts in one app (docs/WEB.md)
 packages/types/   @repo/types — Zod schemas + inferred TS types
-packages/core/    @repo/core — pure domain rules both apps share (calendar, glossary)
+packages/core/    @repo/core — pure domain rules both apps share (calendar, glossary, ledger rules)
 supabase/         Migrations, config.toml, storage policies
 docs/             This documentation set
 ```

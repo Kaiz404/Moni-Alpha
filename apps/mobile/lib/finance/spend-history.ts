@@ -1,8 +1,7 @@
 import type { CurrencyCode } from '@repo/types';
 
-import { countsAsSpend } from '@/lib/finance/budget-month';
 import type { FinanceTransaction } from '@/lib/finance/types';
-import { addDays, chartRangeStart, dayNumber, monthOf } from '@repo/core';
+import { addDays, chartRangeStart, countsAsSpending, dayNumber, monthOf } from '@repo/core';
 import { deviceCalendar } from '@/lib/dates/device-calendar';
 
 export type SpendUnit = 'day' | 'week' | 'month' | 'year';
@@ -62,7 +61,7 @@ export function spendIndex({
   const byDay = new Map<string, number>();
   let earliest = today;
   for (const transaction of transactions) {
-    if (!countsAsSpend(transaction, currency)) continue;
+    if (transaction.currency !== currency || !countsAsSpending(transaction)) continue;
     const day = deviceCalendar.dayKey(transaction.transactionDate);
     if (day > today) continue;
     byDay.set(day, (byDay.get(day) ?? 0) + Number(transaction.amountMinor));

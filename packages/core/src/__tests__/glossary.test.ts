@@ -133,7 +133,12 @@ describe('chartTicks', () => {
   });
 
   it('30D marks every Monday with its date', () => {
-    expect(labels('30d', '2026-10-14', '2026-11-12')).toEqual(['19 Oct', '26 Oct', '2 Nov', '9 Nov']);
+    expect(labels('30d', '2026-10-14', '2026-11-12')).toEqual([
+      '19 Oct',
+      '26 Oct',
+      '2 Nov',
+      '9 Nov',
+    ]);
   });
 
   it('1M marks the 1st, 8th, 15th, 22nd and 29th, naming the month only on the 1st', () => {
