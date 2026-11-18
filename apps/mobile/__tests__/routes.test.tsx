@@ -514,10 +514,9 @@ describe('a Budget row opens its payments under Budget', () => {
       'Netflix, 1 payment · Maybank, RM54.90',
     );
     const row = screen.getAllByTestId(/^budget\.by-category\./)[0];
-    const [, , amount] = row.props.accessibilityLabel.split(', ');
+    expect(row.props.accessibilityLabel).toBe('Housing, RM129.00');
     await open(row.props.testID);
-    expect(row.props.accessibilityLabel).toContain('Same as Aug');
-    expect(text('budget.spending.total')).toEqual([amount]);
+    expect(text('budget.spending.total')).toEqual(['RM129.00']);
     expect(text('budget.spending.meta')[0]).toMatch(/^September · \d+ payments?$/);
     expect(text('budget.spending.change')).toEqual(['Same as Aug']);
     expect(screen.queryByTestId('budget.back')).not.toBeNull();

@@ -22,7 +22,7 @@ export function ReportRow({
   icon: string | null;
   color: string | null;
   title: string;
-  meta: string | null;
+  meta?: string;
   amount: string;
   onPress: () => void;
 }) {

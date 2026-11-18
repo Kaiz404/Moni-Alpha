@@ -39,7 +39,7 @@ import {
   type BudgetMonth,
 } from '@/lib/finance/budget-month';
 import { formatMoney } from '@/lib/finance/format-money';
-import { buildReport, changePhrase } from '@/lib/reports/report';
+import { buildReport } from '@/lib/reports/report';
 import { openSheet } from '@/lib/sheet/sheet-store';
 import { tid } from '@/lib/test-ids';
 
@@ -241,13 +241,12 @@ function MonthView({
     () =>
       buildReport({
         month: budget.month,
-        now: data.now,
         currency,
         transactions: data.transactions,
         categories: data.everyCategory,
         aliases: data.aliases,
       }),
-    [budget.month, data.now, currency, data.transactions, data.everyCategory, data.aliases],
+    [budget.month, currency, data.transactions, data.everyCategory, data.aliases],
   );
 
   return (
@@ -342,10 +341,6 @@ function MonthView({
                 icon={row.icon}
                 color={row.color}
                 title={row.name}
-                meta={
-                  changePhrase(row.spentMinor, row.previousMinor, report.comparison, currency) ??
-                  `Nothing in ${report.comparison.label}`
-                }
                 amount={formatMoney(row.spentMinor, currency)}
                 onPress={() =>
                   openSpending({ kind: 'category', categoryId: row.categoryId }, budget.month)

@@ -53,7 +53,6 @@ export type ReportCategory = {
   icon: string | null;
   color: string | null;
   spentMinor: MinorAmount;
-  previousMinor: MinorAmount;
 };
 
 export type ReportMerchant = MerchantSpend & {
@@ -63,7 +62,6 @@ export type ReportMerchant = MerchantSpend & {
 };
 
 export type Report = {
-  comparison: ReportComparison;
   /** Biggest first; together they add up to the month's spending. */
   categories: ReportCategory[];
   merchants: ReportMerchant[];
@@ -72,7 +70,6 @@ export type Report = {
 
 export type ReportInput = {
   month: MonthKey;
-  now: Date;
   currency: CurrencyCode;
   transactions: readonly FinanceTransaction[];
   /** Every category, archived ones too: old spending still belongs to them. */
@@ -256,19 +253,14 @@ export function readSpendingParams(
 }
 
 export function buildReport(input: ReportInput): Report {
-  const { month, now, currency, transactions, aliases } = input;
-  const comparison = comparisonFor(month, now);
+  const { month, currency, transactions, aliases } = input;
   const current = monthSpend(transactions, month, currency).map((transaction) =>
     transaction.merchant
       ? { ...transaction, merchant: merchantName(transaction.merchant, aliases) }
       : transaction,
   );
-  const previous = monthSpend(transactions, shiftMonth(month, -1), currency).filter((transaction) =>
-    within(transaction, comparison.range),
-  );
 
   const categoriesById = new Map(input.categories.map((category) => [category.id, category]));
-  const previousByCategory = byCategory(previous);
   const categories = [...byCategory(current)]
     .map(([categoryId, spentMinor]): ReportCategory => {
       const category = categoryId ? categoriesById.get(categoryId) : undefined;
@@ -278,7 +270,6 @@ export function buildReport(input: ReportInput): Report {
         icon: category?.icon ?? null,
         color: category?.color ?? null,
         spentMinor: spentMinor as MinorAmount,
-        previousMinor: (previousByCategory.get(categoryId) ?? 0) as MinorAmount,
       };
     })
     .sort((a, b) => b.spentMinor - a.spentMinor || a.name.localeCompare(b.name));
@@ -286,7 +277,6 @@ export function buildReport(input: ReportInput): Report {
   const { merchants, count } = topMerchants(current, TOP_MERCHANTS);
 
   return {
-    comparison,
     categories,
     merchants: merchants.map((merchant) => {
       const newest = current.find(

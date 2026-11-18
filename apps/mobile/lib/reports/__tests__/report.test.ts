@@ -97,7 +97,6 @@ const ALIASES = [{ rawKey: 'grab', displayName: 'Grab ride' }];
 function report(month: string) {
   return buildReport({
     month,
-    now: NOW,
     currency: MYR,
     transactions: TRANSACTIONS,
     categories: CATEGORIES,
@@ -113,24 +112,18 @@ const shown = (transactions: FinanceTransaction[]) =>
   transactions.map((row) => [new Date(row.transactionDate).getDate(), row.amountMinor]);
 
 describe('buildReport for a month', () => {
-  it('lists categories by spend with the same days of last month, archived ones included', () => {
+  it('lists categories by spend, archived ones included', () => {
     expect(
-      report('2026-10').categories.map((row) => [
-        row.categoryId,
-        row.name,
-        row.spentMinor,
-        row.previousMinor,
-      ]),
+      report('2026-10').categories.map((row) => [row.categoryId, row.name, row.spentMinor]),
     ).toEqual([
-      ['food', 'Food & Dining', 15050, 4000],
-      ['old', 'Old hobby', 2000, 0],
-      [null, 'No category', 990, 0],
+      ['food', 'Food & Dining', 15050],
+      ['old', 'Old hobby', 2000],
+      [null, 'No category', 990],
     ]);
   });
 
-  it('holds a past month against the whole month before', () => {
+  it('adds up a past month in full', () => {
     expect(report('2026-09').categories[0].spentMinor).toBe(54000);
-    expect(report('2026-09').comparison.label).toBe('Aug');
   });
 
   it('adds its category rows up to what Budget and Home spend in that month', () => {
