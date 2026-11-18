@@ -87,4 +87,15 @@ describe('what the backend being down looks like to the queue', () => {
       reason: 'Not a transaction',
     });
   });
+
+  it('reads a token that says AI is off as the consent reason, which the queue waits on', async () => {
+    const client = clientAnswering(
+      403,
+      '{"details":{"reason":"consent"},"error":"Moni\'s AI is turned off for this account"}',
+    );
+    await expect(client.extractFromText(request)).resolves.toEqual({
+      status: 'unavailable',
+      reason: 'consent',
+    });
+  });
 });

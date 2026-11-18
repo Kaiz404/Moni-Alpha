@@ -1,3 +1,4 @@
+import type { AiUse } from '@repo/types';
 import { createMMKV } from 'react-native-mmkv';
 import type { RawNotification } from './notification-types';
 import type { LocationSnapshot } from '@/lib/location/location-snapshot';
@@ -25,8 +26,12 @@ type QueueItemBase = {
    * `pending` waits for the processor; a retry goes back here. `error` is a genuine skip.
    * `held` is on Say it or Scan's failed page, which is still deciding, so the processor leaves it.
    * `gave_up` could not reach the backend for `GIVE_UP_AFTER_MS` and waits for the user's Retry.
+   * `needs_ai` met Moni's AI turned off for its use. It neither retries nor ages, and goes back to
+   * pending once the user turns that use on.
    */
-  status: 'pending' | 'processing' | 'done' | 'error' | 'held' | 'gave_up';
+  status: 'pending' | 'processing' | 'done' | 'error' | 'held' | 'gave_up' | 'needs_ai';
+  /** Set when the type alone does not say: Moni chat's lines and photos are `chat`. */
+  use?: AiUse;
   /** Failed attempts. Fewest go first, so one item that always fails cannot block the rest. */
   attempts?: number;
   locationSnapshot?: LocationSnapshot | null;
@@ -72,7 +77,7 @@ function setStatus(id: string, status: ProcessingQueueItem['status']) {
   writeQueue(queue);
 }
 
-function markAlert(item: ProcessingQueueItem, status: 'trying_again' | 'gave_up') {
+function markAlert(item: ProcessingQueueItem, status: 'trying_again' | 'gave_up' | 'needs_ai') {
   if (item.type === 'notification') markCaptureStatus(item.id, status);
 }
 
@@ -92,7 +97,7 @@ function evict(queue: ProcessingQueueItem[]): ProcessingQueueItem[] {
   if (overflow > 0) {
     const byStatus = (status: ProcessingQueueItem['status']) =>
       live.filter((item) => item.status === status).sort(oldestFirst);
-    for (const item of [...byStatus('gave_up'), ...byStatus('pending')].slice(0, overflow)) {
+    for (const item of [...byStatus('gave_up'), ...byStatus('needs_ai'), ...byStatus('pending')].slice(0, overflow)) {
       dropped.add(item);
       markAlert(item, 'gave_up');
     }
@@ -118,6 +123,42 @@ export function peekPending(): ProcessingQueueItem | null {
   const pending = readQueue().filter((i) => i.status === 'pending');
   pending.sort((a, b) => (a.attempts ?? 0) - (b.attempts ?? 0) || oldestFirst(a, b));
   return pending[0] ?? null;
+}
+
+/** Which switch in Moni's AI this capture needs. */
+export function aiUseOf(item: ProcessingQueueItem): AiUse {
+  if (item.use) return item.use;
+  switch (item.type) {
+    case 'notification':
+      return 'alerts';
+    case 'image':
+      return 'receipts';
+    case 'text':
+      return 'add';
+  }
+}
+
+/** Moni's AI is off for this capture's use: it waits for the user, not for a backoff. */
+export function markNeedsAi(id: string) {
+  const queue = readQueue();
+  const item = queue.find((i) => i.id === id);
+  if (!item) return;
+  item.status = 'needs_ai';
+  markAlert(item, 'needs_ai');
+  writeQueue(queue);
+}
+
+/** Sends what waited for Moni's AI back to pending, for each use the user has on now. */
+export function releaseNeedsAi(allowed: ReadonlySet<AiUse>) {
+  const queue = readQueue();
+  for (const item of queue) {
+    if (item.status === 'needs_ai' && allowed.has(aiUseOf(item))) item.status = 'pending';
+  }
+  writeQueue(queue);
+}
+
+export function countNeedsAi(use: AiUse): number {
+  return readQueue().filter((i) => i.status === 'needs_ai' && aiUseOf(i) === use).length;
 }
 
 /** Mark an item as processing. */

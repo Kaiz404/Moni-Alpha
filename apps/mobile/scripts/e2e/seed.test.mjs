@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
-import { buildProfile, dayShift, merchantKey, shiftDate } from './fixtures.mjs';
+import { aiConsentRows, buildProfile, dayShift, merchantKey, shiftDate } from './fixtures.mjs';
 import { SeedError, parseArgs } from './seed.mjs';
 
 const SEED = fileURLToPath(new URL('./seed.mjs', import.meta.url));
@@ -88,6 +88,13 @@ test('every row belongs to the seed user, and a reseed writes the same ids', () 
   assert.equal(new Set(ids(first)).size, ids(first).length);
   const other = ids(full('2026-10-25', '11111111-1111-4111-8111-111111111111'));
   assert.ok(other.every((id) => !ids(first).includes(id)));
+});
+
+test("every profile turns each of Moni's AI switches on", () => {
+  assert.deepEqual(
+    aiConsentRows(USER).map((row) => [row.use, row.granted, row.user_id === USER]),
+    [['all', true, true], ['alerts', true, true], ['add', true, true], ['receipts', true, true], ['chat', true, true]],
+  );
 });
 
 test('the empty profile writes no rows', () => {

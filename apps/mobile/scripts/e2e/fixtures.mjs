@@ -184,6 +184,19 @@ function monthsBefore(day, count) {
   return isoDay(first.getTime());
 }
 
+/**
+ * Moni's AI on for every use, so every profile's flows reach the AI as they did before the opt-in;
+ * ai-consent.yaml turns it off itself. The table numbers its own rows, so these carry no id.
+ */
+export function aiConsentRows(userId) {
+  return ['all', 'alerts', 'add', 'receipts', 'chat'].map((use) => ({
+    user_id: userId,
+    use,
+    granted: true,
+    notice_version: '2026-11-19',
+  }));
+}
+
 export function buildProfile(profile, { userId, today, systemCategories }) {
   if (!PROFILES.includes(profile)) throw new Error(`unknown profile ${profile}, use ${PROFILES.join(' or ')}`);
   const base = { user_id: userId, deleted: false };
@@ -457,6 +470,7 @@ export function buildProfile(profile, { userId, today, systemCategories }) {
 }
 
 export const DELETE_ORDER = [
+  'ai_consents',
   'transaction_tags',
   'auto_add_rules',
   'merchant_aliases',

@@ -103,6 +103,12 @@ function entryAction(
     }
     case 'ignored':
       return reportAction(item, wallets);
+    case 'needs_ai':
+      return {
+        testID: tid('capture-log', 'entry', item.id, 'turn-on-ai'),
+        label: 'Turn on AI',
+        onPress: () => router.push({ pathname: '/ai-consent', params: { use: 'alerts' } }),
+      };
     case 'trying_again':
     case 'gave_up':
       // A long outage can push the kept copy out of the queue. The alert text is still here.

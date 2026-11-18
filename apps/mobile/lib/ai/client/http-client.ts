@@ -2,6 +2,8 @@
  * Real HTTP AI client for the Go backend (apps/backend).
  * Active when EXPO_PUBLIC_AI_API_URL is set.
  */
+import { AI_CONSENT_REASON } from '@/lib/ai/consent/model';
+
 import { AI_API_BASE_URL, AI_BACKEND_CONFIGURED, AI_UNAVAILABLE_REASON } from './config';
 import { buildImagePayload } from './image-payload';
 import type {
@@ -53,6 +55,8 @@ async function postJson<T>(path: string, body: unknown): Promise<T> {
       try {
         const err = await res.json();
         if (err?.error) message = String(err.error);
+        // The token says AI is off: the queue waits for the user instead of retrying.
+        if (res.status === 403 && err?.details?.reason === AI_CONSENT_REASON) message = AI_CONSENT_REASON;
       } catch {
         // ignore
       }

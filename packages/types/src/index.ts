@@ -14,3 +14,4 @@ export * from './auto-add-rule';
 export * from './merchant-alias';
 export * from './captured-notification';
 export * from './account-functions';
+export * from './ai-consent';

@@ -12,6 +12,8 @@ import { SheetHost } from '@/components/ui/sheet/sheet-host';
 import { dismissSheet, getOpenSheet } from '@/lib/sheet/sheet-store';
 
 jest.mock('expo-router', () => ({ router: { push: jest.fn() } }));
+const mockAi = { allowed: true };
+jest.mock('@/lib/ai/consent/state', () => ({ aiUseAllowedNow: async () => mockAi.allowed }));
 jest.mock('uniwind', () => ({
   useCSSVariable: (names: string[]) => names.map(() => undefined),
   useUniwind: () => ({ theme: 'light' }),
@@ -51,7 +53,10 @@ function openChooser() {
   return { chosen };
 }
 
-beforeEach(() => jest.mocked(router.push).mockClear());
+beforeEach(() => {
+  jest.mocked(router.push).mockClear();
+  mockAi.allowed = true;
+});
 afterEach(async () => {
   act(() => dismissSheet());
   await flush();
@@ -93,6 +98,21 @@ describe('capture chooser', () => {
 
     expect(router.push).toHaveBeenCalledWith('/capture/say');
     expect(getOpenSheet()).toBeNull();
+  });
+
+  it("puts the AI opt-in in front of Scan while Moni's AI is off for receipts, and it opens Scan after", async () => {
+    mockAi.allowed = false;
+    const { chosen } = openChooser();
+
+    fireEvent.press(screen.getByTestId('nav.chooser.scan'));
+    await flush();
+    await chosen;
+
+    expect(router.push).toHaveBeenCalledWith({
+      pathname: '/ai-consent',
+      params: { use: 'receipts', open: '1' },
+    });
+    expect(router.push).not.toHaveBeenCalledWith('/capture/scan');
   });
 
   it('pushes Moni chat for Ask Moni', async () => {
