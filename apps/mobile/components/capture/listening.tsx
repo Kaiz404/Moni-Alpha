@@ -12,6 +12,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 
+import { Mascot } from '@/components/brand/mascot';
 import { Button } from '@/components/ui/button';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Page } from '@/components/ui/page';
@@ -20,7 +21,7 @@ import { Text } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { tid } from '@/lib/test-ids';
 
-import { MicHero } from './reading-motion';
+import { VoiceWave } from './reading-motion';
 
 function elapsed(seconds: number) {
   return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
@@ -89,7 +90,13 @@ export function Listening({
             {elapsed(seconds)}
           </Text>
         </View>
-        <MicHero level={level} />
+        <View className="items-center gap-4">
+          <Mascot
+            mood="listening"
+            size={72}
+          />
+          <VoiceWave level={level} />
+        </View>
         <Text
           testID={tid('capture', 'transcript')}
           accessibilityLiveRegion="polite"

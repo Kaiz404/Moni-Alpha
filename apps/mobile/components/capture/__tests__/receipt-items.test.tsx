@@ -5,7 +5,7 @@ import { financeProjection$ } from '@/lib/finance/projection';
 import { EMPTY_FINANCE_PROJECTION } from '@/lib/finance/types';
 
 import { CaptureResult } from '../capture-result-card';
-import { CaptureAdded } from '../scan-stages';
+import { CaptureAdded, CaptureReading } from '../scan-stages';
 
 jest.mock('@/lib/auth/auth-context', () => ({
   useAuth: () => ({ user: { id: 'kai' } }),
@@ -87,5 +87,25 @@ describe('the receipt item count', () => {
     addedPage();
     expect(screen.getByText('Added to Groceries')).toBeTruthy();
     expect(screen.queryByText(/Cash/)).toBeNull();
+  });
+
+});
+
+describe('the cat on the capture pages', () => {
+  it('is the happy cat that says it was added', () => {
+    addedPage();
+    expect(screen.getByLabelText('Moni, happy')).toBeTruthy();
+  });
+
+  it('thinks beside the receipt while Moni reads it', () => {
+    render(<CaptureReading quote={{ source: 'camera', imageUri: 'file:///receipt.jpg' }} />);
+    expect(screen.getByLabelText('The scanned receipt')).toBeTruthy();
+    expect(screen.getByLabelText('Moni, thinking')).toBeTruthy();
+  });
+
+  it('thinks over the words heard while Moni reads them', () => {
+    render(<CaptureReading quote={{ source: 'voice', text: 'nasi lemak eight ringgit' }} />);
+    expect(screen.getByLabelText('nasi lemak eight ringgit')).toBeTruthy();
+    expect(screen.getByLabelText('Moni, thinking')).toBeTruthy();
   });
 });

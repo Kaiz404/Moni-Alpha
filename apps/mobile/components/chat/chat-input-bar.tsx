@@ -107,7 +107,6 @@ export function ChatInputBar({
       {listening || holding ? (
         <ListeningPanel
           transcript={input}
-          level={level}
           hint={holding ? 'Listening…' : 'Listening. Tap Done to send.'}
         />
       ) : null}
