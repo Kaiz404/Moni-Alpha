@@ -17,7 +17,6 @@ import { HoldHint } from '@/components/ui/hold-menu';
 import { Page, PageScroll, usePageContentTop } from '@/components/ui/page';
 import { SearchField } from '@/components/ui/search-field';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Text } from '@/components/ui/text';
 import { useAuth } from '@/lib/auth/auth-context';
 import { toLocalDateInput } from '@/lib/dates/local-date-input';
 import {
@@ -228,7 +227,7 @@ export default function ActivityScreen() {
           <Skeleton rows={4} />
         ) : inCurrency.length === 0 ? (
           <EmptyTile
-            icon="format-list-bulleted"
+            mood="neutral"
             title="No spending yet"
             body="Add your first spend with +, or link an app on a wallet so Moni catches them for you."
             action={{
@@ -265,20 +264,30 @@ export default function ActivityScreen() {
             >
               <HoldHint screen="activity" />
               {listed.length === 0 ? (
-                <View className="items-center gap-1 rounded-tile border-[1.5px] border-dashed border-hairline px-[18px] py-5">
-                  <Text variant="rowTitle" className="text-center text-foreground">
-                    {searched.trim()
+                <EmptyTile
+                  mood="thinking"
+                  title={
+                    searched.trim()
                       ? `No matches for "${searched.trim()}"`
                       : range
                         ? 'Nothing like that in these dates'
-                        : 'Nothing matches'}
-                  </Text>
-                  <Text variant="meta" className="text-center text-muted">
-                    {searched.trim()
+                        : 'Nothing matches'
+                  }
+                  body={
+                    searched.trim()
                       ? 'Try a merchant, a category or an amount like 18.90.'
-                      : 'Try another filter or other dates.'}
-                  </Text>
-                </View>
+                      : 'Try another filter or other dates.'
+                  }
+                  action={
+                    searched.trim()
+                      ? {
+                          testID: tid('activity', 'clear-search'),
+                          label: 'Clear search',
+                          onPress: () => setQuery(''),
+                        }
+                      : undefined
+                  }
+                />
               ) : (
                 <PagedTransactions
                   screen="activity"

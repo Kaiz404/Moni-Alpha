@@ -1,7 +1,7 @@
 import { View } from 'react-native';
 
+import { Mascot } from '@/components/brand/mascot';
 import { useBudgetData, useBudgetMonth } from '@/components/budget/use-budget';
-
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Press } from '@/components/ui/press';
 import { Text } from '@/components/ui/text';
@@ -74,13 +74,11 @@ export function CaughtUp({
       testID={tid('review', 'caught-up')}
       className="gap-3.5 rounded-card bg-block-mint px-[18px] py-[22px]"
     >
-      <View className="h-16 w-16 items-center justify-center rounded-full bg-primary">
-        <IconSymbol
-          name="check-all"
-          size={34}
-          color={tokens.primaryForeground}
-        />
-      </View>
+      <Mascot
+        mood="celebrate"
+        size={72}
+        pop
+      />
       <View className="gap-1">
         <Text
           variant="screenTitle"
@@ -143,19 +141,15 @@ export function CaughtUp({
 
 /** Opened with nothing waiting. */
 export function NothingToReview({ onCaptureLog }: { onCaptureLog: () => void }) {
-  const tokens = useThemeTokens();
   return (
     <View
       testID={tid('review', 'empty')}
       className="gap-3.5 rounded-card border-[1.5px] border-dashed border-hairline px-[22px] py-7"
     >
-      <View className="h-16 w-16 items-center justify-center rounded-full bg-sand">
-        <IconSymbol
-          name="check-all"
-          size={30}
-          color={tokens.foreground}
-        />
-      </View>
+      <Mascot
+        mood="happy"
+        size={72}
+      />
       <Text
         variant="screenTitle"
         className="text-foreground"

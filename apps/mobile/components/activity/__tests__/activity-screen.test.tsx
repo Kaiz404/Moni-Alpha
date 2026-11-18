@@ -239,6 +239,16 @@ describe('Activity search', () => {
     render(<ActivityScreen />);
     fireEvent.changeText(screen.getByTestId('activity.search'), 'zzqx');
     expect(screen.getByText('No matches for "zzqx"')).toBeTruthy();
+    expect(screen.getByLabelText('Moni, thinking')).toBeTruthy();
+  });
+
+  it('clears the search from the no matches tile and lists everything again', () => {
+    render(<ActivityScreen />);
+    fireEvent.changeText(screen.getByTestId('activity.search'), 'zzqx');
+    fireEvent.press(screen.getByTestId('activity.clear-search'));
+    expect(screen.getByTestId('activity.search').props.value).toBe('');
+    expect(screen.queryByText('No matches for "zzqx"')).toBeNull();
+    expect(shown('r1')).toBe(true);
   });
 });
 

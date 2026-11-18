@@ -1,13 +1,8 @@
 import { router } from 'expo-router';
-import { useEffect } from 'react';
 import { View } from 'react-native';
-import Animated, {
-  useAnimatedStyle,
-  useReducedMotion,
-  useSharedValue,
-  withSpring,
-} from 'react-native-reanimated';
+import { useReducedMotion } from 'react-native-reanimated';
 
+import { Mascot } from '@/components/brand/mascot';
 import { SIDE_WORDS } from '@/components/debts/debt-words';
 import { Button } from '@/components/ui/button';
 import { IconSymbol } from '@/components/ui/icon-symbol';
@@ -17,7 +12,6 @@ import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { formatDay } from '@/lib/dates/day-label';
 import type { DebtLine } from '@/lib/finance/debt-summary';
 import { formatMoney } from '@/lib/finance/format-money';
-import { springs } from '@/lib/motion/tokens';
 import { tid } from '@/lib/test-ids';
 
 function RepaidBar({
@@ -191,7 +185,7 @@ export function OpenStanding({
 
 /**
  * V2P-DebtSettle: the Mint card once everything is paid back. `pop` grows the
- * check in from 0.6 on the control spring, for the moment it settles on this page.
+ * celebrating cat in, for the moment it settles on this page.
  */
 export function SquareCard({
   line,
@@ -202,13 +196,6 @@ export function SquareCard({
 }) {
   const tokens = useThemeTokens();
   const reduceMotion = useReducedMotion();
-  const scale = useSharedValue(pop && !reduceMotion ? 0.6 : 1);
-  useEffect(() => {
-    scale.set(withSpring(1, springs.control));
-  }, [scale]);
-  const grow = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.get() }],
-  }));
   const { debt, principalMinor } = line;
   const words = SIDE_WORDS[debt.direction];
   return (
@@ -216,16 +203,11 @@ export function SquareCard({
       accessibilityLiveRegion="polite"
       className="gap-3.5 rounded-card bg-block-mint px-[18px] pb-[18px] pt-[22px]"
     >
-      <Animated.View
-        className="h-16 w-16 items-center justify-center rounded-full bg-card"
-        style={grow}
-      >
-        <IconSymbol
-          name="check-bold"
-          size={34}
-          color={tokens.states.approved}
-        />
-      </Animated.View>
+      <Mascot
+        mood="celebrate"
+        size={72}
+        pop={pop && !reduceMotion}
+      />
       <View className="gap-1">
         <Text
           variant="screenTitle"

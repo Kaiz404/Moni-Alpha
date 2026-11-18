@@ -1,5 +1,6 @@
 import { View } from 'react-native';
 
+import { Mascot, type MascotMood } from '@/components/brand/mascot';
 import {
   IconSymbol,
   type IconSymbolName,
@@ -10,8 +11,15 @@ import { Text } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import type { TestId } from '@/lib/test-ids';
 
-type EmptyTileProps = {
-  icon: IconSymbolName;
+/**
+ * A tile leads with a glyph, or, at a loud edge of the app (Kit 3 section 4),
+ * with Moni's 72 cat in one mood and its words centred under it.
+ */
+type EmptyTileLead =
+  | { icon: IconSymbolName; mood?: never }
+  | { mood: MascotMood; icon?: never };
+
+type EmptyTileProps = EmptyTileLead & {
   title: string;
   body: string;
   action?: {
@@ -60,6 +68,7 @@ const looks = {
 
 export function EmptyTile({
   icon,
+  mood,
   title,
   body,
   action,
@@ -68,25 +77,33 @@ export function EmptyTile({
 }: EmptyTileProps) {
   const tokens = useThemeTokens();
   const look = looks[tone];
+  const centred = mood !== undefined;
   return (
     <View
-      className={`items-start rounded-tile border-[1.5px] border-dashed ${look.frame} ${className ?? ''}`}
+      className={`${centred ? 'items-center' : 'items-start'} rounded-tile border-[1.5px] border-dashed ${look.frame} ${className ?? ''}`}
     >
-      <View className="h-[42px] w-[42px] items-center justify-center rounded-full bg-sand">
-        <IconSymbol
-          name={icon}
-          size={20}
-          color={tokens.foreground}
+      {mood !== undefined ? (
+        <Mascot
+          mood={mood}
+          size={72}
         />
-      </View>
+      ) : (
+        <View className="h-[42px] w-[42px] items-center justify-center rounded-full bg-sand">
+          <IconSymbol
+            name={icon}
+            size={20}
+            color={tokens.foreground}
+          />
+        </View>
+      )}
       <View style={{ gap: look.textGap }}>
         <Text
           variant={look.title}
-          className="text-foreground"
+          className={`text-foreground ${centred ? 'text-center' : ''}`}
         >
           {title}
         </Text>
-        <Text className={`${look.body} text-ink-2`}>{body}</Text>
+        <Text className={`${look.body} text-ink-2 ${centred ? 'text-center' : ''}`}>{body}</Text>
       </View>
       {action ? (
         <Press
