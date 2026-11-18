@@ -8,6 +8,7 @@ jest.mock('react-native-safe-area-context', () => ({
 }));
 jest.mock('uniwind', () => ({
   useCSSVariable: (names: string[]) => names.map(() => undefined),
+  useUniwind: () => ({ theme: 'light' }),
 }));
 
 describe('Listening', () => {
@@ -24,6 +25,7 @@ describe('Listening', () => {
     expect(screen.getByTestId('capture.timer')).toHaveTextContent('0:32');
     expect(screen.getByText('Listening…')).toBeTruthy();
     expect(screen.queryByText(/works offline/)).toBeNull();
+    expect(screen.getByLabelText('Moni, listening')).toBeTruthy();
   });
 
   it('starts over once there are words to clear', () => {
