@@ -11,6 +11,7 @@ import {
   type InsightMetricSnapshot,
   type TxForMetrics,
 } from '../insights/insight-metrics';
+import { countsAsSpending } from '@repo/core';
 import { addMinor, minorToNumber, type MinorAmount } from '@repo/types';
 import type { FinanceFacts } from '../facts';
 
@@ -79,7 +80,7 @@ export type FinanceAssistantToolSnapshot = {
 function sumExpenseInRange(txs: TxForMetrics[], startMs: number, endMs: number): MinorAmount {
   let s = 0 as MinorAmount;
   for (const tx of txs) {
-    if (tx.type !== 'expense' || tx.analysisExcluded) continue;
+    if (!countsAsSpending(tx)) continue;
     const t = new Date(tx.transactionDate).getTime();
     if (t >= startMs && t <= endMs) s = addMinor(s, tx.amountMinor);
   }
@@ -89,7 +90,7 @@ function sumExpenseInRange(txs: TxForMetrics[], startMs: number, endMs: number):
 function largestExpenseInRange(txs: TxForMetrics[], startMs: number, endMs: number): number {
   let largest = 0;
   for (const tx of txs) {
-    if (tx.type !== 'expense' || tx.analysisExcluded) continue;
+    if (!countsAsSpending(tx)) continue;
     const t = new Date(tx.transactionDate).getTime();
     if (t >= startMs && t <= endMs) largest = Math.max(largest, Number(tx.amountMinor));
   }
@@ -177,7 +178,7 @@ export function buildSpendingStorySnapshot(
   const startMs = endMs - 30 * 86400000;
   const catShares: Record<string, MinorAmount> = {};
   for (const tx of transactions) {
-    if (tx.type !== 'expense' || tx.analysisExcluded) continue;
+    if (!countsAsSpending(tx)) continue;
     const t = new Date(tx.transactionDate).getTime();
     if (t < startMs || t >= endMs) continue;
     const name =
@@ -189,7 +190,7 @@ export function buildSpendingStorySnapshot(
 
   let expenseTx = 0;
   for (const tx of transactions) {
-    if (tx.type !== 'expense' || tx.analysisExcluded) continue;
+    if (!countsAsSpending(tx)) continue;
     const t = new Date(tx.transactionDate).getTime();
     if (t >= startMs && t < endMs) expenseTx += 1;
   }

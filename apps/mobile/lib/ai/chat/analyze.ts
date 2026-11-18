@@ -4,7 +4,6 @@ import {
   buildFinanceAssistantToolSnapshotByCurrency,
   type BudgetRow,
   type ProposalForMetrics,
-  type TxForMetrics,
 } from '@/lib/ai/snapshot/finance-metrics';
 import { financeProjection$ } from '@/lib/finance/projection';
 import { getUserId } from '@/lib/supabase/client';
@@ -36,16 +35,6 @@ export async function analyzeUserFinances(message: string): Promise<AnalyzeFinan
       amountMinor: b.amountMinor,
     }));
 
-    const txs: TxForMetrics[] = transactions.map((t) => ({
-      amountMinor: t.amountMinor,
-      currency: t.currency,
-      analysisExcluded: t.analysisExcluded,
-      type: (t.type ?? 'expense') as TxForMetrics['type'],
-      categoryId: t.categoryId,
-      merchant: t.merchant ?? null,
-      transactionDate: t.transactionDate,
-    }));
-
     // A proposal's currency is its wallet's; text and receipt proposals without one carry a placeholder.
     const proposals: ProposalForMetrics[] = Object.values(projection.proposalsById).flatMap((p) =>
       p.userId === userId && p.type
@@ -75,7 +64,7 @@ export async function analyzeUserFinances(message: string): Promise<AnalyzeFinan
       now,
     );
     const snapshot = buildFinanceAssistantToolSnapshotByCurrency(
-      txs,
+      transactions,
       categoryMap,
       budgetRows,
       proposals,

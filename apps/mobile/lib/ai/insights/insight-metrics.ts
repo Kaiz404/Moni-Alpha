@@ -1,11 +1,10 @@
 /** Deterministic rolling-window metrics for the chat snapshot. The LLM only narrates them. */
+import { countsAsCashFlow, countsAsIncome, countsAsSpending, type LedgerTransaction } from '@repo/core';
 import { addMinor, minorToNumber, subtractMinor, type MinorAmount } from '@repo/types';
 
-export type TxForMetrics = {
+export type TxForMetrics = LedgerTransaction & {
   amountMinor: MinorAmount;
   currency?: string | null;
-  analysisExcluded?: boolean;
-  type: 'income' | 'expense' | 'transfer';
   categoryId?: string | null;
   merchant?: string | null;
   transactionDate: string;
@@ -23,27 +22,22 @@ function inRange(isoDate: string, startMs: number, endMs: number): boolean {
   return time >= startMs && time < endMs;
 }
 
-function sumByType(
+function sumInRange(
   txs: TxForMetrics[],
-  type: TxForMetrics['type'],
+  counts: (tx: TxForMetrics) => boolean,
   startMs: number,
   endMs: number,
 ): MinorAmount {
   return addMinor(
     ...txs
-      .filter(
-        (tx) =>
-          !tx.analysisExcluded && tx.type === type && inRange(tx.transactionDate, startMs, endMs),
-      )
+      .filter((tx) => counts(tx) && inRange(tx.transactionDate, startMs, endMs))
       .map((tx) => tx.amountMinor),
   );
 }
 
 function countInRange(txs: TxForMetrics[], startMs: number, endMs: number): number {
-  return txs.filter(
-    (tx) =>
-      tx.type !== 'transfer' && !tx.analysisExcluded && inRange(tx.transactionDate, startMs, endMs),
-  ).length;
+  return txs.filter((tx) => countsAsCashFlow(tx) && inRange(tx.transactionDate, startMs, endMs))
+    .length;
 }
 
 function groupExpenseBy(
@@ -54,12 +48,7 @@ function groupExpenseBy(
 ): Record<string, MinorAmount> {
   const totals: Record<string, MinorAmount> = {};
   for (const tx of txs) {
-    if (
-      tx.type !== 'expense' ||
-      tx.analysisExcluded ||
-      !inRange(tx.transactionDate, startMs, endMs)
-    )
-      continue;
+    if (!countsAsSpending(tx) || !inRange(tx.transactionDate, startMs, endMs)) continue;
     const key = keyFn(tx);
     totals[key] = addMinor(totals[key] ?? zero, tx.amountMinor);
   }
@@ -92,12 +81,7 @@ function largestExpense(
 } | null {
   let best: TxForMetrics | null = null;
   for (const tx of txs) {
-    if (
-      tx.type !== 'expense' ||
-      tx.analysisExcluded ||
-      !inRange(tx.transactionDate, startMs, endMs)
-    )
-      continue;
+    if (!countsAsSpending(tx) || !inRange(tx.transactionDate, startMs, endMs)) continue;
     if (!best || tx.amountMinor > best.amountMinor) best = tx;
   }
   if (!best) return null;
@@ -158,10 +142,10 @@ export function buildInsightMetricSnapshot(
   const endMs = startOfDayMs(now) + 86400000;
   const currentStartMs = endMs - PERIOD_DAYS * 86400000;
   const priorStartMs = currentStartMs - PERIOD_DAYS * 86400000;
-  const curExp = sumByType(transactions, 'expense', currentStartMs, endMs);
-  const curInc = sumByType(transactions, 'income', currentStartMs, endMs);
-  const priorExp = sumByType(transactions, 'expense', priorStartMs, currentStartMs);
-  const priorInc = sumByType(transactions, 'income', priorStartMs, currentStartMs);
+  const curExp = sumInRange(transactions, countsAsSpending, currentStartMs, endMs);
+  const curInc = sumInRange(transactions, countsAsIncome, currentStartMs, endMs);
+  const priorExp = sumInRange(transactions, countsAsSpending, priorStartMs, currentStartMs);
+  const priorInc = sumInRange(transactions, countsAsIncome, priorStartMs, currentStartMs);
   const categories = groupExpenseBy(transactions, currentStartMs, endMs, (tx) =>
     tx.categoryId && categoryMap[tx.categoryId] ? categoryMap[tx.categoryId] : 'Uncategorized',
   );

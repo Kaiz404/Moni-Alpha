@@ -11,7 +11,7 @@ import type {
   FinanceTransaction,
   FinanceWallet,
 } from './types';
-import { createCalendar, debtBalance, walletEffect } from '@repo/core';
+import { countsAsSpending, createCalendar, debtBalance, walletEffect } from '@repo/core';
 
 export type CurrencyTotal = {
   currency: CurrencyCode;
@@ -312,7 +312,7 @@ export function categoryExpensesByCurrency(
 ): Record<string, CategoryExpense[]> {
   const byCurrency = new Map<CurrencyCode, Map<string, CategoryExpense>>();
   for (const transaction of transactions) {
-    if (transaction.type !== 'expense' || transaction.analysisExcluded) continue;
+    if (!countsAsSpending(transaction)) continue;
     const totals = byCurrency.get(transaction.currency) ?? new Map<string, CategoryExpense>();
     const category = transaction.categoryId ? categories[transaction.categoryId] : null;
     const key = category?.id ?? '__uncategorized';
@@ -461,8 +461,7 @@ export function budgetProgress$(
     const month = calendar.monthKey(new Date());
     const spent = new Map<string, MinorAmount>();
     for (const transaction of transactions) {
-      if (transaction.type !== 'expense' || transaction.analysisExcluded || !transaction.categoryId)
-        continue;
+      if (!countsAsSpending(transaction) || !transaction.categoryId) continue;
       if (calendar.monthKey(transaction.transactionDate) !== month) continue;
       const key = `${transaction.categoryId}:${transaction.currency}`;
       spent.set(key, addMinor(spent.get(key) ?? 0, transaction.amountMinor));

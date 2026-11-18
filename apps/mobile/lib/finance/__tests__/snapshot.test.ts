@@ -1,9 +1,11 @@
-import { decimalToMinor } from '@repo/types';
+import { decimalToMinor, type CurrencyCode } from '@repo/types';
 import {
   buildCalendarMonthTrendSnapshot,
   buildFinanceAssistantToolSnapshotByCurrency,
   PACE_MIN_DAY_OF_MONTH,
 } from '@/lib/ai/snapshot/finance-metrics';
+import { buildBudgetMonth } from '@/lib/finance/budget-month';
+import type { FinanceTransaction } from '@/lib/finance/types';
 
 describe('currency-scoped chat snapshot', () => {
   it('never combines metrics from different currencies', () => {
@@ -14,6 +16,7 @@ describe('currency-scoped chat snapshot', () => {
           currency: 'USD',
           type: 'expense',
           analysisExcluded: false,
+          debtActivityId: null,
           categoryId: null,
           merchant: null,
           transactionDate: new Date().toISOString(),
@@ -23,6 +26,7 @@ describe('currency-scoped chat snapshot', () => {
           currency: 'SGD',
           type: 'expense',
           analysisExcluded: false,
+          debtActivityId: null,
           categoryId: null,
           merchant: null,
           transactionDate: new Date().toISOString(),
@@ -43,6 +47,7 @@ const expense = (amount: string, date: Date, currency: string | null = 'MYR') =>
   currency,
   type: 'expense' as const,
   analysisExcluded: false,
+  debtActivityId: null,
   categoryId: null,
   merchant: null,
   transactionDate: date.toISOString(),
@@ -134,5 +139,68 @@ describe('snapshot currency handling', () => {
       incomeTotal: 0,
     });
     expect(snapshot.currencies.SGD.rolling30.current.expenseTotal).toBe(0);
+  });
+});
+
+describe('Moni chat and Budget agree on spending', () => {
+  const now = new Date(2026, 9, 14, 14);
+  const row = (
+    day: number,
+    ringgit: string,
+    over: Partial<FinanceTransaction> = {},
+  ): FinanceTransaction => ({
+    id: `t${day}-${ringgit}`,
+    userId: 'u',
+    walletId: 'maybank',
+    amountMinor: decimalToMinor(ringgit),
+    currency: 'MYR' as CurrencyCode,
+    type: 'expense',
+    analysisExcluded: false,
+    debtActivityId: null,
+    categoryId: 'food',
+    transferToWalletId: null,
+    linkedTransactionId: null,
+    description: null,
+    merchant: 'Kopitiam',
+    notes: null,
+    transactionDate: new Date(2026, 9, day, 12).toISOString(),
+    locationLatitude: null,
+    locationLongitude: null,
+    locationName: null,
+    placeId: null,
+    placeCoordsAt: null,
+    autoAdded: false,
+    balanceCorrection: false,
+    createdAt: new Date(2026, 9, day, 12).toISOString(),
+    ...over,
+  });
+
+  it("counts the same spent this month when the month has a debt repayment (#68)", () => {
+    const transactions = [
+      row(3, '30'),
+      row(9, '12'),
+      row(10, '200', { debtActivityId: 'repay-mei', merchant: 'Mei', categoryId: null }),
+      row(11, '50', { analysisExcluded: true, balanceCorrection: true, categoryId: null }),
+    ];
+    const budget = buildBudgetMonth({
+      month: '2026-10',
+      now,
+      currency: 'MYR' as CurrencyCode,
+      transactions,
+      categories: [],
+      budgets: [],
+      monthlyTotalMinor: null,
+      bills: [],
+      debts: [],
+    });
+    const chat = buildFinanceAssistantToolSnapshotByCurrency(transactions, {}, [], [], now)
+      .currencies.MYR;
+
+    expect(budget.spentMinor).toBe(4200);
+    expect(chat.calendarMonth.expenseCurrentMonthToDate).toBe(42);
+    expect(chat.rolling30.current.expenseTotal).toBe(42);
+    expect(chat.rolling30.current.transactionCount).toBe(2);
+    expect(chat.rolling30.largestExpense?.amount).toBe(30);
+    expect(chat.spendingStory.expenseTransactionCount).toBe(2);
   });
 });
