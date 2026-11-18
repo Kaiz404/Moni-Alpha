@@ -192,7 +192,7 @@ export default function ProfileScreen() {
             testID={tid('profile', 'row', 'merchant-names')}
             icon="store-edit-outline"
             tint="peach"
-            title="Merchant names"
+            title="Merchants"
             value={`${merchants.named.length} named`}
             chevron="right"
             onPress={() => router.push('/merchants')}

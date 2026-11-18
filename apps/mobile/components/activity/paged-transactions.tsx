@@ -61,29 +61,42 @@ export function PagerStep({
   );
 }
 
-/** Newer and older around where this page sits. Nothing shows while everything fits on one page. */
+/** What a pager's steps and position call the rows: newest-first transactions, or a ranked list. */
+const PAGER_WORDS = {
+  transactions: {
+    back: ['newer', 'Newer transactions'],
+    forward: ['older', 'Older transactions'],
+    rows: 'transactions',
+  },
+  merchants: { back: ['previous', 'Previous page'], forward: ['next', 'Next page'], rows: 'merchants' },
+} as const;
+
+/** Back and forward around where this page sits. Nothing shows while everything fits on one page. */
 export function Pager<T>({
   screen,
   page,
   onPage,
+  of = 'transactions',
 }: {
   screen: Screen;
   page: Page<T>;
   onPage: (page: number) => void;
+  of?: keyof typeof PAGER_WORDS;
 }) {
+  const words = PAGER_WORDS[of];
   if (page.pageCount < 2) return null;
   return (
     <View className="flex-row items-center justify-between gap-3 pt-1">
       <PagerStep
-        testID={tid(screen, 'pager', 'newer')}
+        testID={tid(screen, 'pager', words.back[0])}
         icon="chevron-left"
-        label="Newer transactions"
+        label={words.back[1]}
         enabled={page.page > 1}
         onPress={() => onPage(page.page - 1)}
       />
       <View
         accessible
-        accessibilityLabel={`Page ${page.page} of ${page.pageCount}, transactions ${page.first} to ${page.last} of ${page.total}`}
+        accessibilityLabel={`Page ${page.page} of ${page.pageCount}, ${words.rows} ${page.first} to ${page.last} of ${page.total}`}
         className="min-w-0 flex-1 items-center"
       >
         <Text
@@ -102,9 +115,9 @@ export function Pager<T>({
         </Text>
       </View>
       <PagerStep
-        testID={tid(screen, 'pager', 'older')}
+        testID={tid(screen, 'pager', words.forward[0])}
         icon="chevron-right"
-        label="Older transactions"
+        label={words.forward[1]}
         enabled={page.page < page.pageCount}
         onPress={() => onPage(page.page + 1)}
       />

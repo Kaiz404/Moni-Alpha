@@ -365,6 +365,9 @@ function MonthView({
             onOpen={(merchant) =>
               openSpending({ kind: 'merchant', name: merchant.name }, budget.month)
             }
+            onSeeAll={() =>
+              router.push({ pathname: '/budget/merchants', params: { month: budget.month } })
+            }
           />
         </View>
       ) : null}

@@ -164,13 +164,38 @@ export function spendingRows(
   currency: CurrencyCode,
   aliases: Aliases,
 ): FinanceTransaction[] {
-  return monthSpend(transactions, month, currency)
-    .map((transaction) =>
-      transaction.merchant
-        ? { ...transaction, merchant: merchantName(transaction.merchant, aliases) }
-        : transaction,
-    )
-    .filter((transaction) => isInScope(transaction, scope));
+  return namedMonthSpend(transactions, month, currency, aliases).filter((transaction) =>
+    isInScope(transaction, scope),
+  );
+}
+
+/** A month's spending, newest first, under the names the user gave their merchants. */
+function namedMonthSpend(
+  transactions: readonly FinanceTransaction[],
+  month: MonthKey,
+  currency: CurrencyCode,
+  aliases: Aliases,
+): FinanceTransaction[] {
+  return monthSpend(transactions, month, currency).map((transaction) =>
+    transaction.merchant
+      ? { ...transaction, merchant: merchantName(transaction.merchant, aliases) }
+      : transaction,
+  );
+}
+
+/** Every merchant a month's spending went to, biggest first, with the category of its newest payment. */
+export function monthMerchants(
+  input: Pick<ReportInput, 'month' | 'currency' | 'transactions' | 'categories' | 'aliases'>,
+): ReportMerchant[] {
+  const current = namedMonthSpend(input.transactions, input.month, input.currency, input.aliases);
+  const categoriesById = new Map(input.categories.map((category) => [category.id, category]));
+  return topMerchants(current, Infinity).merchants.map((merchant) => {
+    const newest = current.find(
+      (transaction) => (transaction.merchant ?? transaction.description) === merchant.name,
+    );
+    const category = newest?.categoryId ? categoriesById.get(newest.categoryId) : undefined;
+    return { ...merchant, icon: category?.icon ?? null, color: category?.color ?? null };
+  });
 }
 
 export function totalMinor(transactions: readonly FinanceTransaction[]): MinorAmount {
@@ -254,11 +279,7 @@ export function readSpendingParams(
 
 export function buildReport(input: ReportInput): Report {
   const { month, currency, transactions, aliases } = input;
-  const current = monthSpend(transactions, month, currency).map((transaction) =>
-    transaction.merchant
-      ? { ...transaction, merchant: merchantName(transaction.merchant, aliases) }
-      : transaction,
-  );
+  const current = namedMonthSpend(transactions, month, currency, aliases);
 
   const categoriesById = new Map(input.categories.map((category) => [category.id, category]));
   const categories = [...byCategory(current)]
@@ -274,17 +295,11 @@ export function buildReport(input: ReportInput): Report {
     })
     .sort((a, b) => b.spentMinor - a.spentMinor || a.name.localeCompare(b.name));
 
-  const { merchants, count } = topMerchants(current, TOP_MERCHANTS);
+  const merchants = monthMerchants(input);
 
   return {
     categories,
-    merchants: merchants.map((merchant) => {
-      const newest = current.find(
-        (transaction) => (transaction.merchant ?? transaction.description) === merchant.name,
-      );
-      const category = newest?.categoryId ? categoriesById.get(newest.categoryId) : undefined;
-      return { ...merchant, icon: category?.icon ?? null, color: category?.color ?? null };
-    }),
-    merchantCount: count,
+    merchants: merchants.slice(0, TOP_MERCHANTS),
+    merchantCount: merchants.length,
   };
 }

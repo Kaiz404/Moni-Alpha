@@ -1,4 +1,4 @@
-# K3 Merchant names: name a code in place, then forget a name and undo it.
+# K3 Merchants: name a code in place, then forget a name and undo it.
 # Needs the merchant_aliases migration, which the dev project has.
 # Seed three or more alerts from one code (GRAB*FOOD) so it shows under To name.
 # Run: scripts/device/run-flows.sh .maestro/flows/account/merchants.yaml
@@ -16,7 +16,7 @@ tags:
       id: profile.row.merchant-names
 - tapOn:
     id: profile.row.merchant-names
-- assertVisible: Merchant names
+- assertVisible: Search a name or a bank code
 - takeScreenshot: k3-merchants
 
 # Name the first code in place.
