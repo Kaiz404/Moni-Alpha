@@ -54,3 +54,4 @@ modules/**/pnpm-lock.yaml
 # EAS signing credentials (eas credentials download)
 credentials.json
 credentials/
+scripts/brand/out/

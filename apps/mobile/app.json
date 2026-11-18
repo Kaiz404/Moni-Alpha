@@ -14,12 +14,22 @@
         "NSSpeechRecognitionUsageDescription": "Allow $(PRODUCT_NAME) to use speech recognition.",
         "NSMicrophoneUsageDescription": "Allow $(PRODUCT_NAME) to use the microphone.",
         "NSCameraUsageDescription": "Allow $(PRODUCT_NAME) to use the camera to scan receipts."
+      },
+      "icon": {
+        "light": "./assets/images/icon.png",
+        "dark": "./assets/images/icon-dark.png",
+        "tinted": "./assets/images/icon-tinted.png"
       }
     },
     "android": {
       "softwareKeyboardLayoutMode": "pan",
       "predictiveBackGestureEnabled": false,
       "package": "com.anonymous.moni",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/adaptive-icon.png",
+        "monochromeImage": "./assets/images/adaptive-icon-monochrome.png",
+        "backgroundColor": "#236B47"
+      },
       "permissions": [
         "android.permission.RECORD_AUDIO",
         "android.permission.ACCESS_COARSE_LOCATION",
@@ -64,7 +74,8 @@
       [
         "expo-notifications",
         {
-          "color": "#17181A"
+          "icon": "./assets/images/notification-icon.png",
+          "color": "#236B47"
         }
       ],
       "expo-speech-recognition",
@@ -80,9 +91,10 @@
           "image": "./assets/images/splash-icon.png",
           "imageWidth": 200,
           "resizeMode": "contain",
-          "backgroundColor": "#F6F2E9",
+          "backgroundColor": "#236B47",
           "dark": {
-            "backgroundColor": "#0B0A09"
+            "image": "./assets/images/splash-icon.png",
+            "backgroundColor": "#236B47"
           }
         }
       ]

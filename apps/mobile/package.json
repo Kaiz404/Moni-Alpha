@@ -26,7 +26,8 @@
     "test:default-wallet": "node ./scripts/default-wallet-suite.mjs",
     "lint:unreferenced": "node ./scripts/lint/find-unreferenced.mjs",
     "gen:tokens": "node ./scripts/tokens/gen-theme-tokens.mjs",
-    "lint:tokens": "node ./scripts/tokens/gen-theme-tokens.mjs --check"
+    "lint:tokens": "node ./scripts/tokens/gen-theme-tokens.mjs --check",
+    "brand:assets": "python3 scripts/brand/export.py && node scripts/brand/rasterize.mjs"
   },
   "dependencies": {
     "@expo-google-fonts/funnel-display": "^0.4.1",
@@ -103,6 +104,7 @@
     "jest": "^29.7.0",
     "jest-expo": "~57.0.2",
     "prettier": "^3.7.4",
+    "sharp": "0.34.5",
     "typescript": "~6.0.3"
   },
   "private": true,
