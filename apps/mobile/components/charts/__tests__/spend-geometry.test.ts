@@ -24,7 +24,7 @@ const index = spendIndex({
   transactions: [spend(10, 14, 1000), spend(10, 10, 2500), spend(9, 20, 4000)],
 });
 const today = index.days - 1;
-const october = { name: 'October', daysInMonth: 31, budget: 180000, safePerDay: 1700 };
+const october = { name: 'October', daysInMonth: 31, budget: 180000, evenPace: 5806, safePerDay: 1700 };
 const target = (range: ChartRange, mode: 'pace' | 'daily') =>
   spendTarget({ index, now, range, mode, month: october, currency });
 

@@ -1,7 +1,8 @@
 import type { MinorAmount, RecurringOverride, UpcomingBill } from '@repo/types';
 
 import { tx } from '@/lib/ai/facts/__tests__/synthetic-ledger';
-import { selectBillsAhead } from '@/lib/finance/bills';
+import { selectBillsAhead } from '@repo/core';
+import { deviceCalendar } from '@/lib/dates/device-calendar';
 
 import { billReminders, reminderAt, syncBillReminders } from '../bill-reminder';
 
@@ -85,7 +86,7 @@ describe('billReminders across the month boundary', () => {
   const firstOf = (month: number) => new Date(2026, month - 1, 1, 9);
   const astro = [8, 9, 10].map((month) => tx(firstOf(month), 'expense', '89.90', 'Astro'));
   const astroOn = [remind('MYR|expense|astro')];
-  const plan = (now: Date) => billReminders(selectBillsAhead(now, astro, astroOn), astroOn, now);
+  const plan = (now: Date) => billReminders(selectBillsAhead(now, astro, astroOn, deviceCalendar), astroOn, now);
   const astroReminder = (at: Date) => ({
     id: 'bill:MYR|expense|astro',
     at,
@@ -112,7 +113,7 @@ describe('billReminders across the month boundary', () => {
       currency: 'MYR',
     } as RecurringOverride;
     const now = new Date(2026, 8, 30, 7);
-    expect(billReminders(selectBillsAhead(now, [], [unifi]), [unifi], now)).toEqual([
+    expect(billReminders(selectBillsAhead(now, [], [unifi], deviceCalendar), [unifi], now)).toEqual([
       {
         id: 'bill:MYR|expense|unifi',
         at: new Date(2026, 8, 30, 9),
@@ -125,7 +126,7 @@ describe('billReminders across the month boundary', () => {
   it('reminds on 31 December for a bill due on 1 January', () => {
     const december = [10, 11, 12].map((month) => tx(firstOf(month), 'expense', '89.90', 'Astro'));
     const now = new Date(2026, 11, 30, 20);
-    expect(billReminders(selectBillsAhead(now, december, astroOn), astroOn, now)).toEqual([
+    expect(billReminders(selectBillsAhead(now, december, astroOn, deviceCalendar), astroOn, now)).toEqual([
       astroReminder(new Date(2026, 11, 31, 9)),
     ]);
   });
@@ -143,7 +144,7 @@ describe('billReminders across the month boundary', () => {
         skipPeriod: '2026-10',
       } as RecurringOverride,
     ];
-    expect(billReminders(selectBillsAhead(now, [], skipped), skipped, now)).toEqual([
+    expect(billReminders(selectBillsAhead(now, [], skipped, deviceCalendar), skipped, now)).toEqual([
       { ...astroReminder(new Date(2026, 10, 19, 9)), title: 'astro is due tomorrow' },
     ]);
   });
@@ -154,7 +155,7 @@ describe('billReminders across the month boundary', () => {
       tx(new Date(2026, month - 1, 15, 9), 'expense', '54.90', 'Netflix'),
     );
     const on = [remind('MYR|expense|netflix')];
-    expect(billReminders(selectBillsAhead(now, netflix, on), on, now)).toEqual([
+    expect(billReminders(selectBillsAhead(now, netflix, on, deviceCalendar), on, now)).toEqual([
       {
         id: 'bill:MYR|expense|netflix',
         at: new Date(2026, 10, 14, 9),

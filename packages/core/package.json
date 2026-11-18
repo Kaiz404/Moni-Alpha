@@ -9,6 +9,7 @@
     "./chart-range": "./src/chart-range.ts",
     "./glossary": "./src/glossary.ts",
     "./ledger": "./src/ledger.ts",
+    "./money-month": "./src/money-month/index.ts",
     "./read-model": "./src/read-model/index.ts"
   },
   "dependencies": {

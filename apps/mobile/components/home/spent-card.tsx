@@ -9,8 +9,6 @@ import { Text } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { tid } from '@/lib/test-ids';
 
-import type { BudgetMonth } from '@/lib/finance/budget-month';
-import { leftLine } from '@/lib/finance/spent-summary';
 import {
   spendIndex,
   type FinanceTransaction,
@@ -18,6 +16,7 @@ import {
   type ChartRange,
   countsAsSpending,
   currencySymbol,
+  type MoneyMonth,
   monthName,
 } from '@repo/core';
 import { deviceCalendar } from '@/lib/dates/device-calendar';
@@ -43,18 +42,15 @@ export function SpentCard({
   currency,
   transactions,
   now,
-  after,
 }: {
-  month: BudgetMonth;
+  month: MoneyMonth;
   currency: CurrencyCode;
   transactions: readonly FinanceTransaction[];
   now: Date;
-  /** D1 label when no bills strip carries it: "RM40 to Mei". */
-  after?: string | null;
 }) {
   const [mode, setMode] = useState<Mode>('pace');
   const [range, setRange] = useState<ChartRange>('1m');
-  const line = month.left ? leftLine(month.left, currency, after) : null;
+  const line = month.words.homeLine;
   const name = monthName(month.month);
   const title = range === '1m' ? `Spent in ${name}` : RANGE_TITLE[range];
   const index = useMemo(
@@ -67,9 +63,10 @@ export function SpentCard({
       name,
       daysInMonth: month.daysInMonth,
       budget: month.budgetMinor,
+      evenPace: month.evenPaceMinor,
       safePerDay: perDay > 0 ? perDay : null,
     }),
-    [name, month.daysInMonth, month.budgetMinor, perDay],
+    [name, month.daysInMonth, month.budgetMinor, month.evenPaceMinor, perDay],
   );
   const everSpent = useMemo(
     () => transactions.some(

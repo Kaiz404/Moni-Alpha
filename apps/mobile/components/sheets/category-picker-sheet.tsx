@@ -20,7 +20,7 @@ import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import {
   budgetNote,
   type BudgetNote,
-} from '@/lib/finance/budget-note';
+} from '@repo/core';
 import type {
   CategoryTile,
   SheetRequestOf,

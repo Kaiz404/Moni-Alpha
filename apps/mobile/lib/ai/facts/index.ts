@@ -22,10 +22,11 @@ import {
   type Cadence,
   type FactsTransaction,
   type RecurringSeries,
-} from './recurring';
-import { dayFromNumber } from '@repo/core';
+  dayFromNumber,
+} from '@repo/core';
+import { deviceCalendar } from '@/lib/dates/device-calendar';
 
-export type { FactsTransaction, FactsWallet, Forecast };
+export type { FactsWallet, Forecast };
 
 export type AskedAmount = { amountMinor: MinorAmount; currency: string | null };
 
@@ -119,7 +120,7 @@ export function buildFinanceFactsByCurrency(
   now: Date = new Date(),
 ): Record<string, FinanceFacts> {
   const transactions = input.transactions.filter((tx) => new Date(tx.transactionDate) <= now);
-  const series = detectRecurring(transactions, input.overrides, now, input.categoryNames);
+  const series = detectRecurring(transactions, input.overrides, now, deviceCalendar, input.categoryNames);
   const currencies = new Set([
     ...transactions.map((tx) => tx.currency),
     ...input.wallets.filter((w) => w.isActive).map((w) => w.currency),

@@ -15,13 +15,8 @@ import { useAuth } from '@/lib/auth/auth-context';
 import { useMainCurrency } from '@/lib/finance/main-currency';
 import { financeProjection$ } from '@/lib/finance/projection';
 import { transactions$ } from '@/lib/finance/selectors';
-import { debtPhrase } from '@/lib/finance/spent-summary';
-import { tid } from '@/lib/test-ids';
-
-import { CapturesCard } from './captures-card';
-import { RevealText } from './reveal-text';
-import { InkCardLabel, useOnInk } from './ink-card';
 import {
+  debtPhrase,
   countsAsSpending,
   dateLabel,
   type DayKey,
@@ -34,6 +29,11 @@ import {
   parseDayKey,
   shortDate,
 } from '@repo/core';
+import { tid } from '@/lib/test-ids';
+
+import { CapturesCard } from './captures-card';
+import { RevealText } from './reveal-text';
+import { InkCardLabel, useOnInk } from './ink-card';
 import { deviceCalendar } from '@/lib/dates/device-calendar';
 
 type CardMessage = Extract<ChatMessage, { kind: 'assistant_card' }>;

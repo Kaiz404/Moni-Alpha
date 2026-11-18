@@ -6,9 +6,13 @@ import { Text } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { tid } from '@/lib/test-ids';
 
-import type { BudgetMonth } from '@/lib/finance/budget-month';
-import { debtPhrase } from '@/lib/finance/spent-summary';
-import { dueWhen, formatMoney, monthName } from '@repo/core';
+import {
+  type MoneyMonth,
+  debtPhrase,
+  dueWhen,
+  formatMoney,
+  monthName,
+} from '@repo/core';
 import { deviceCalendar } from '@/lib/dates/device-calendar';
 
 /** The next bill due and what is set aside for the rest of the month (D1 names debts due here). */
@@ -18,7 +22,7 @@ export function BillsStrip({
   now,
   onPress,
 }: {
-  month: BudgetMonth;
+  month: MoneyMonth;
   currency: string;
   now: Date;
   onPress: () => void;

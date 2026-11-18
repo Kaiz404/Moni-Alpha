@@ -4,8 +4,11 @@ import {
   buildFinanceAssistantToolSnapshotByCurrency,
   PACE_MIN_DAY_OF_MONTH,
 } from '@/lib/ai/snapshot/finance-metrics';
-import type { FinanceTransaction } from '@repo/core';
-import { buildBudgetMonth } from '@/lib/finance/budget-month';
+import { deviceCalendar } from '@/lib/dates/device-calendar';
+import {
+  type FinanceTransaction,
+  buildMoneyMonth,
+} from '@repo/core';
 
 describe('currency-scoped chat snapshot', () => {
   it('never combines metrics from different currencies', () => {
@@ -182,17 +185,10 @@ describe('Moni chat and Budget agree on spending', () => {
       row(10, '200', { debtActivityId: 'repay-mei', merchant: 'Mei', categoryId: null }),
       row(11, '50', { analysisExcluded: true, balanceCorrection: true, categoryId: null }),
     ];
-    const budget = buildBudgetMonth({
-      month: '2026-10',
-      now,
-      currency: 'MYR' as CurrencyCode,
-      transactions,
-      categories: [],
-      budgets: [],
-      monthlyTotalMinor: null,
-      bills: [],
-      debts: [],
-    });
+    const budget = buildMoneyMonth(
+      { transactions, categories: [], budgets: [], monthlyTotalMinor: null, bills: [], overrides: [], debts: [] },
+      { month: '2026-10', currency: 'MYR' as CurrencyCode, now, calendar: deviceCalendar },
+    );
     const chat = buildFinanceAssistantToolSnapshotByCurrency(transactions, {}, [], [], now)
       .currencies.MYR;
 

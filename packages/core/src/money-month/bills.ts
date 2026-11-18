@@ -1,15 +1,18 @@
 import type { RecurringOverride, UpcomingBill } from '@repo/types';
-import { detectRecurring, seriesKey, type FactsTransaction } from '@/lib/ai/facts/recurring';
+
 import {
   addMonths,
-  countsAsCashFlow,
+  type Calendar,
   dayFromNumber,
   dayNumber,
   firstDayOf,
   monthOf,
   shiftMonth,
-} from '@repo/core';
-import { deviceCalendar } from '@/lib/dates/device-calendar';
+} from '../calendar';
+import { countsAsCashFlow } from '../ledger';
+import { detectRecurring, seriesKey, type FactsTransaction } from './recurring';
+
+const NOON_MS = 12 * 60 * 60 * 1000;
 
 /** Each series' latest payment, for the wallet it pays from and the category it lands in. */
 export function lastPaymentBySeries<T extends FactsTransaction>(
@@ -45,8 +48,9 @@ export function selectUpcomingBills(
   now: Date,
   transactions: readonly FactsTransaction[],
   overrides: readonly RecurringOverride[],
+  calendar: Calendar,
 ): UpcomingBill[] {
-  const todayKey = deviceCalendar.dayKey(now);
+  const todayKey = calendar.dayKey(now);
   const period = monthOf(todayKey);
   const monthStart = dayNumber(firstDayOf(period));
   const monthEnd = dayNumber(firstDayOf(shiftMonth(period, 1)));
@@ -55,7 +59,7 @@ export function selectUpcomingBills(
   const latest = lastPaymentBySeries(transactions);
   const paidThisMonth = new Set(
     transactions
-      .filter((tx) => countsAsCashFlow(tx) && inMonth(deviceCalendar.dayNumber(tx.transactionDate)))
+      .filter((tx) => countsAsCashFlow(tx) && inMonth(calendar.dayNumber(tx.transactionDate)))
       .map((tx) => seriesKey(tx)),
   );
 
@@ -81,7 +85,7 @@ export function selectUpcomingBills(
   };
 
   const bills = new Map<string, UpcomingBill>();
-  for (const series of detectRecurring(transactions, overrides, now)) {
+  for (const series of detectRecurring(transactions, overrides, now, calendar)) {
     if (series.type !== 'expense') continue;
     const due = inMonth(series.nextExpectedDay);
     if (!due && !inMonth(series.lastDay)) continue;
@@ -109,7 +113,7 @@ export function selectUpcomingBills(
       ...bill(
         override.seriesKey,
         {
-          name: override.seriesKey.split('|')[2],
+          name: override.seriesKey.split('|')[2]!,
           amountMinor: override.expectedAmountMinor,
           currency: override.currency,
           dueDate: addMonths(todayKey, 0, override.expectedDay),
@@ -133,10 +137,13 @@ export function selectBillsAhead(
   now: Date,
   transactions: readonly FactsTransaction[],
   overrides: readonly RecurringOverride[],
+  calendar: Calendar,
 ): UpcomingBill[] {
-  const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1, 12);
+  const nextMonth = new Date(
+    calendar.startOfDay(firstDayOf(shiftMonth(calendar.monthKey(now), 1))).getTime() + NOON_MS,
+  );
   return [
-    ...selectUpcomingBills(now, transactions, overrides),
-    ...selectUpcomingBills(nextMonth, transactions, overrides),
+    ...selectUpcomingBills(now, transactions, overrides, calendar),
+    ...selectUpcomingBills(nextMonth, transactions, overrides, calendar),
   ];
 }

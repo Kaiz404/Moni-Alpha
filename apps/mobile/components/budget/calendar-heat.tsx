@@ -2,12 +2,12 @@ import { View } from 'react-native';
 
 import { Press } from '@/components/ui/press';
 import { Text } from '@/components/ui/text';
-import type {
-  HeatBucket,
-  HeatDay,
-} from '@/lib/finance/calendar-heat';
+import {
+  type HeatBucket,
+  type HeatDay,
+  formatMoney,
+} from '@repo/core';
 import { tid } from '@/lib/test-ids';
-import { formatMoney } from '@repo/core';
 
 const WEEKDAY_INITIALS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 const WEEKDAYS = [

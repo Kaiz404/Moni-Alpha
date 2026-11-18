@@ -7,26 +7,8 @@ import { Press } from '@/components/ui/press';
 import { Text } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { tid } from '@/lib/test-ids';
-import { formatMoney } from '@repo/core';
+import { reviewSafeToSpend } from '@repo/core';
 import { deviceCalendar } from '@/lib/dates/device-calendar';
-
-/**
- * Safe to spend a day before and after this session's approvals: RM24, an arrow, RM23 over
- * "RM420 left for 18 days after these.", or null without a budget or anything left.
- */
-function useSafeToSpend(addedMinor: number) {
-  const data = useBudgetData();
-  const { left } = useBudgetMonth(data, deviceCalendar.monthKey(data.now));
-  if (!left || left.leftMinor <= 0) return null;
-  const whole = (minor: number) => formatMoney(minor, data.currency, { whole: true });
-  const before = Math.floor((left.leftMinor + addedMinor) / left.daysLeft / 100) * 100;
-  const days = `${left.daysLeft} ${left.daysLeft === 1 ? 'day' : 'days'}`;
-  return {
-    before: before === left.perDayMinor ? null : whole(before),
-    after: whole(left.perDayMinor),
-    sentence: `${whole(left.leftMinor)} left for ${days}${addedMinor > 0 ? ' after these' : ''}.`,
-  };
-}
 
 function CaptureLogLink({ onPress }: { onPress: () => void }) {
   const tokens = useThemeTokens();
@@ -68,7 +50,9 @@ export function CaughtUp({
   onCaptureLog: () => void;
 }) {
   const tokens = useThemeTokens();
-  const safe = useSafeToSpend(addedMinor);
+  const data = useBudgetData();
+  const month = useBudgetMonth(data, deviceCalendar.monthKey(data.now));
+  const safe = reviewSafeToSpend(month, addedMinor);
   return (
     <View
       testID={tid('review', 'caught-up')}

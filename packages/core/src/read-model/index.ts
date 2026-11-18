@@ -4,6 +4,7 @@ export * from './balance-history';
 export * from './category-presets';
 export * from './debt-summary';
 export * from './flow-series';
+export * from './list-scope';
 export * from './merchants';
 export * from './places';
 export * from './projection';

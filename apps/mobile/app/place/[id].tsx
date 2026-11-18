@@ -27,9 +27,8 @@ import { getProposalLocationSnapshot } from '@/lib/ai/proposal-location-cache';
 import { pendingProposals$ } from '@/lib/finance/selectors';
 import { listMerchantAliases } from '@/lib/supabase/merchant-aliases';
 import { tid } from '@/lib/test-ids';
-import { listParams } from '@/lib/transactions/list-scope';
-import { transactionRow } from '@/lib/transactions/row';
 import {
+  listParams,
   merchantName,
   groupPlaces,
   isAtPlace,
@@ -41,6 +40,7 @@ import {
   type Place,
   formatMoney,
 } from '@repo/core';
+import { transactionRow } from '@/lib/transactions/row';
 import { deviceCalendar } from '@/lib/dates/device-calendar';
 
 /** XM-Detail's map strip; the sheet starts 28 above its bottom edge. */

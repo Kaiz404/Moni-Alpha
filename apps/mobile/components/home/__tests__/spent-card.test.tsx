@@ -7,9 +7,11 @@ import {
 
 import { finger } from '@/components/charts/__tests__/scrub-fixture';
 import { SpentCard } from '@/components/home/spent-card';
-import type { BudgetMonth } from '@/lib/finance/budget-month';
+import type { CurrencyCode, MinorAmount } from '@repo/types';
+
+import { buildMoneyMonth, type FinanceTransaction, CHART_RANGES } from '@repo/core';
+import { deviceCalendar } from '@/lib/dates/device-calendar';
 import { chartStep } from '@/lib/haptics';
-import { type FinanceTransaction, CHART_RANGES } from '@repo/core';
 
 jest.mock('@/lib/haptics', () => ({ scrubStep: jest.fn(), chartStep: jest.fn() }));
 jest.mock('uniwind', () => ({
@@ -17,22 +19,6 @@ jest.mock('uniwind', () => ({
   useUniwind: () => ({ theme: 'light' }),
 }));
 
-// The chart reads 1M from the same transactions as the other ranges, so the month matches them.
-const month = {
-  month: '2026-10',
-  daysInMonth: 31,
-  throughDay: 14,
-  daily: Array.from({ length: 31 }, (_, day) => (day === 9 ? 2500 : day === 13 ? 1000 : 0)),
-  spentMinor: 3500,
-  budgetMinor: 180000,
-  left: {
-    leftMinor: 31700,
-    daysLeft: 18,
-    perDayMinor: 1700,
-    billsMinor: 0,
-    debtsDue: [],
-  },
-} as unknown as BudgetMonth;
 
 function rootOrder(): string[] {
   const seen: string[] = [];
@@ -55,6 +41,32 @@ const spends = [
   { id: 'b', type: 'expense', currency: 'MYR', amountMinor: 2500, transactionDate: new Date(2026, 9, 10, 9).toISOString(), analysisExcluded: false, debtActivityId: null },
   { id: 'c', type: 'expense', currency: 'MYR', amountMinor: 4000, transactionDate: new Date(2026, 8, 20, 9).toISOString(), analysisExcluded: false, debtActivityId: null },
 ] as FinanceTransaction[];
+
+// The chart reads 1M from the same transactions as the other ranges, so the month matches them.
+// A RM1,448 bill still due leaves RM317 of the RM1,800 budget.
+const month = buildMoneyMonth(
+  {
+    transactions: spends,
+    categories: [],
+    budgets: [],
+    monthlyTotalMinor: 180000 as MinorAmount,
+    bills: [
+      {
+        seriesKey: 'MYR|expense|rent',
+        name: 'Rent',
+        amountMinor: 144800 as MinorAmount,
+        currency: 'MYR',
+        dueDate: '2026-10-25',
+        status: 'due',
+        walletId: null,
+        categoryId: null,
+      },
+    ],
+    overrides: [],
+    debts: [],
+  },
+  { month: '2026-10', currency: 'MYR' as CurrencyCode, now: NOW, calendar: deviceCalendar },
+);
 
 /** The plot runs from x 54 to 310 at the default width; 310 is always today's point. */
 const RIGHT = 310;

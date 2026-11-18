@@ -11,18 +11,19 @@ import { HeaderIconButton } from '@/components/ui/header-icon-button';
 import { HoldHint } from '@/components/ui/hold-menu';
 import { Page, PageScroll, usePageContentTop } from '@/components/ui/page';
 import { useAuth } from '@/lib/auth/auth-context';
+import { deviceCalendar } from '@/lib/dates/device-calendar';
 import { useMainCurrency } from '@/lib/finance/main-currency';
-import { merchantName } from '@repo/core';
-import { usePageNumber } from '@/lib/finance/paged';
-import { categoriesForUser$, transactions$, walletsForUser$ } from '@/lib/finance/selectors';
-import { listMerchantAliases } from '@/lib/supabase/merchant-aliases';
-import { tid } from '@/lib/test-ids';
 import {
+  merchantName,
   readListScope,
   scopedRows,
   type ListParams,
   type ListScope,
-} from '@/lib/transactions/list-scope';
+} from '@repo/core';
+import { usePageNumber } from '@/lib/finance/paged';
+import { categoriesForUser$, transactions$, walletsForUser$ } from '@/lib/finance/selectors';
+import { listMerchantAliases } from '@/lib/supabase/merchant-aliases';
+import { tid } from '@/lib/test-ids';
 import type { RowLookups } from '@/lib/transactions/row';
 import { compactWalletNames } from '@/lib/wallets/compact-name';
 
@@ -75,7 +76,7 @@ function ScopedList({ title, scope }: { title: string; scope: ListScope }) {
   const hold = useTransactionHold('list');
   const [page, setPage] = usePageNumber(JSON.stringify(scope));
   const { rows, currency } = useMemo(
-    () => scopedRows(scope, all, mainCurrency, new Date()),
+    () => scopedRows(scope, all, mainCurrency, new Date(), deviceCalendar),
     [scope, all, mainCurrency],
   );
   const named = useMemo(

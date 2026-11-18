@@ -28,11 +28,18 @@ import { Press } from '@/components/ui/press';
 import { Segmented } from '@/components/ui/segmented';
 import { Text } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
-import { lastPaymentBySeries } from '@/lib/finance/bills';
-import { leftSentence, spendMonths, spendSlices, type BudgetMonth } from '@/lib/finance/budget-month';
+import {
+  lastPaymentBySeries,
+  spendMonths,
+  spendSlices,
+  type MoneyMonth,
+  buildReport,
+  formatMoney,
+  monthName,
+  monthShort,
+} from '@repo/core';
 import { openSheet } from '@/lib/sheet/sheet-store';
 import { tid } from '@/lib/test-ids';
-import { buildReport, formatMoney, monthName, monthShort } from '@repo/core';
 import { deviceCalendar } from '@/lib/dates/device-calendar';
 
 type BudgetView = 'month' | 'calendar';
@@ -54,7 +61,7 @@ export default function BudgetScreen() {
   const [view, setView] = useState<BudgetView>('month');
   const budget = useBudgetMonth(data, month);
   const months = useMemo(
-    () => spendMonths(data.transactions, data.currency, data.now),
+    () => spendMonths(data.transactions, data.currency, data.now, deviceCalendar),
     [data.transactions, data.currency, data.now],
   );
   const categoriesById = useMemo(
@@ -173,13 +180,13 @@ function MonthView({
   data,
   monthsSpent,
 }: {
-  budget: BudgetMonth;
+  budget: MoneyMonth;
   data: ReturnType<typeof useBudgetData>;
   monthsSpent: { month: string; spentMinor: number }[];
 }) {
   const { currency } = budget;
   const name = monthName(budget.month);
-  const sentence = leftSentence(budget);
+  const sentence = budget.words.budgetLine;
   const looks = useMemo(() => {
     const latest = lastPaymentBySeries(data.transactions);
     const categories = Object.fromEntries(
@@ -226,6 +233,7 @@ function MonthView({
         budget.month,
         currency,
         data.everyCategory,
+        deviceCalendar,
       ),
     [data.transactions, budget.month, currency, data.everyCategory],
   );
