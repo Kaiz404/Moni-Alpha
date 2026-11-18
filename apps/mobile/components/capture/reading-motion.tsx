@@ -1,9 +1,10 @@
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useEffect, useState } from 'react';
-import { View } from 'react-native';
+import { useWindowDimensions, View } from 'react-native';
 import Animated, {
   Easing,
+  useAnimatedReaction,
   useAnimatedStyle,
   useReducedMotion,
   useSharedValue,
@@ -62,8 +63,40 @@ function ThinkingCat() {
   );
 }
 
-const RECEIPT_W = 184;
-const RECEIPT_H = 236;
+/**
+ * The cat over the receipt while Moni reads it: its head follows the band down the receipt, leaning
+ * one way then the other as if reading line by line, and it hops each time the band starts over.
+ * Under Reduce Motion the band never moves, so the cat sits still.
+ */
+function ReadingCat({ sweep }: { sweep: SharedValue<number> }) {
+  const hop = useSharedValue(0);
+  useAnimatedReaction(
+    () => sweep.get(),
+    (now, before) => {
+      if (before !== null && now < before - 0.5) {
+        hop.set(withSequence(withSpring(-12, springs.control), withSpring(0, springs.throw)));
+      }
+    },
+  );
+  const style = useAnimatedStyle(() => {
+    const at = sweep.get();
+    return {
+      transform: [
+        { translateY: hop.get() + Math.sin(Math.PI * at) * 6 },
+        { rotate: `${Math.sin(2 * Math.PI * at) * 7}deg` },
+      ],
+    };
+  });
+  return (
+    <Animated.View style={style}>
+      <Mascot
+        mood="thinking"
+        size={72}
+      />
+    </Animated.View>
+  );
+}
+
 const BAND_H = 72;
 const CORNER = 26;
 const CORNER_GAP = 12;
@@ -105,27 +138,34 @@ function Corner({ x, y, breath }: { x: -1 | 1; y: -1 | 1; breath: SharedValue<nu
   );
 }
 
-/** The receipt in a breathing viewfinder with a Lilac band sweeping down it, and the thinking cat beside it. */
+/** Receipts run tall: the frame is this much higher than it is wide. */
+const RECEIPT_RATIO = 1.3;
+
+/** The receipt large in a breathing viewfinder with a Lilac band sweeping down it, and the cat on top reading along. */
 export function ScanningReceipt({ imageUri }: { imageUri: string }) {
   const tokens = useThemeTokens();
   const reduceMotion = useReducedMotion();
-  const sweep = useLoop(1900);
+  const screen = useWindowDimensions();
+  const width = Math.round(Math.min(screen.width - 88, 320, (screen.height * 0.5) / RECEIPT_RATIO));
+  const height = Math.round(width * RECEIPT_RATIO);
+  const sweep = useLoop(2200);
   const breath = useBreath(1800);
   const band = useAnimatedStyle(() => ({
-    transform: [{ translateY: -BAND_H + sweep.get() * (RECEIPT_H + BAND_H) }],
+    transform: [{ translateY: -BAND_H + sweep.get() * (height + BAND_H) }],
   }));
   return (
-    <View className="flex-row items-end gap-5">
-      <View style={{ width: RECEIPT_W, height: RECEIPT_H }}>
+    <View className="items-center gap-6">
+      <ReadingCat sweep={sweep} />
+      <View style={{ width, height }}>
         <View
           className="overflow-hidden rounded-tile bg-sand"
-          style={{ width: RECEIPT_W, height: RECEIPT_H }}
+          style={{ width, height }}
         >
           <Image
             source={{ uri: imageUri }}
             contentFit="cover"
             accessibilityLabel="The scanned receipt"
-            style={{ width: RECEIPT_W, height: RECEIPT_H }}
+            style={{ width, height }}
           />
           {reduceMotion ? null : (
             <Animated.View
@@ -148,7 +188,6 @@ export function ScanningReceipt({ imageUri }: { imageUri: string }) {
           />
         ))}
       </View>
-      <ThinkingCat />
     </View>
   );
 }
