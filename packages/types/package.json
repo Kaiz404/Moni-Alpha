@@ -5,6 +5,7 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
+    "./account-functions": "./src/account-functions.ts",
     "./auto-add-rule": "./src/auto-add-rule.ts",
     "./bill": "./src/bill.ts",
     "./captured-notification": "./src/captured-notification.ts",

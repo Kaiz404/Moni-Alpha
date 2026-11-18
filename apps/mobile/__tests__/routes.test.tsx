@@ -254,6 +254,7 @@ const ROUTES: Record<string, RouteSpec> = {
   ),
   'debt/new.tsx': differ('/debt/new', 'Add who and an amount', 'Add a MYR wallet first'),
   'debug/index.tsx': same('/debug', 'Debug tools'),
+  'delete-account.tsx': same('/delete-account', 'WHAT IS DELETED'),
   'map.tsx': same('/map', 'Where you spend'),
   'merchants.tsx': differ(
     '/merchants',

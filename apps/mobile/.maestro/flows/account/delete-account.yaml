@@ -1,0 +1,48 @@
+# Profile › Delete your account (W2-Parts, issue #56): what goes, Export data first, and the button
+# that waits for DELETE in any letter case. Stops short of Delete my account: the flow never deletes
+# the e2e user.
+# Run: scripts/device/run-flows.sh .maestro/flows/account/delete-account.yaml
+appId: com.anonymous.moni.e2e
+name: Delete your account
+tags:
+  - seed-any
+---
+- runFlow: ../../subflows/launch.yaml
+- tapOn:
+    id: home.avatar
+- scrollUntilVisible:
+    element:
+      id: profile.row.delete-account
+- assertVisible: Delete your account
+- takeScreenshot: delete-account-row
+- tapOn:
+    id: profile.row.delete-account
+- assertVisible: WHAT IS DELETED
+- assertVisible: Receipt photos
+- assertVisible: Your sign-in, on every device
+- assertVisible:
+    id: profile.delete.export
+- assertVisible:
+    id: profile.delete.submit
+    enabled: false
+- takeScreenshot: delete-account-page
+
+# A word other than DELETE keeps the button off; lowercase delete turns it on.
+- tapOn:
+    id: profile.delete.confirm
+- inputText: DELET
+- assertVisible:
+    id: profile.delete.submit
+    enabled: false
+- eraseText: 5
+- inputText: delete
+- hideKeyboard
+- assertVisible:
+    id: profile.delete.submit
+    enabled: true
+- takeScreenshot: delete-account-confirmed
+
+- tapOn:
+    id: profile.delete.cancel
+- assertVisible:
+    id: profile.row.delete-account

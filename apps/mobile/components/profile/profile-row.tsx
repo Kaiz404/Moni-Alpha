@@ -38,6 +38,8 @@ type ProfileRowProps = {
   value?: string;
   /** Main currency shows its code in ink 700, other values stay Ink 2. */
   strongValue?: boolean;
+  /** Delete your account titles its row in Over red. */
+  over?: boolean;
 } & (
   | {
       testID: TestId;
@@ -66,7 +68,7 @@ export function ProfileRow(props: ProfileRowProps) {
       <View className="min-w-0 flex-1">
         <Text
           variant="rowTitle"
-          className="text-foreground"
+          className={props.over ? 'text-over' : 'text-foreground'}
           numberOfLines={1}
         >
           {props.title}
