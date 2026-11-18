@@ -21,7 +21,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ChatCat, chatMood } from '@/components/chat/chat-cat';
 import { ChatInputBar } from '@/components/chat/chat-input-bar';
 import { chatTime } from '@/components/chat/chat-time';
-import { MeetMoni } from '@/components/chat/meet-moni';
+import { BlankGreeting, StarterCards } from '@/components/chat/blank-slate';
 import { MessageBubble } from '@/components/chat/message-bubble';
 import { foldedOnReopen } from '@/components/chat/thread-fold';
 import { HeaderIconButton } from '@/components/ui/header-icon-button';
@@ -251,6 +251,7 @@ export default function ChatScreen() {
   const answered = messages.some(
     (m) => m.kind === 'assistant_card' || (m.kind === 'assistant_text' && m.status === 'done'),
   );
+  const blank = firstRun && !messages.length;
   const now = new Date();
 
   const body = useAnimatedStyle(() => ({
@@ -277,6 +278,9 @@ export default function ChatScreen() {
         className="flex-1"
         style={body}
       >
+        {blank ? (
+          <BlankGreeting name={user?.user_metadata?.display_name ?? user?.user_metadata?.full_name ?? null} />
+        ) : null}
         <FlatList
           ref={listRef}
           data={shown}
@@ -292,12 +296,7 @@ export default function ChatScreen() {
             scrollThreadToEnd(false);
           }}
           ListHeaderComponent={
-            firstRun && !messages.length ? (
-              <MeetMoni
-                name={user?.user_metadata?.display_name ?? user?.user_metadata?.full_name ?? null}
-                onStarter={setInput}
-              />
-            ) : messages.length ? (
+            messages.length ? (
               <View className="mb-3 gap-3">
                 <Text
                   variant="caps"
@@ -351,10 +350,11 @@ export default function ChatScreen() {
             ) : null
           }
         />
+        {blank ? <StarterCards onStarter={send} /> : null}
         <ChatInputBar
           input={input}
           onChangeText={setInput}
-          placeholder={firstRun && !messages.length ? 'Try “lunch 12.50 at Mamak Ali”' : 'Ask or add a transaction'}
+          placeholder={blank ? 'Try “lunch 12.50 at Mamak Ali”' : 'Ask or add a transaction'}
           attachedImage={attachedImage}
           onRemoveImage={() => setAttachedImage(null)}
           onOpenCamera={() =>

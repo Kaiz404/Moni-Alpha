@@ -245,7 +245,7 @@ const ROUTES: Record<string, RouteSpec> = {
     'RM235.30 of RM350',
     "Make one for anything the presets don't fit",
   ),
-  'chat.tsx': same('/chat', "Hi Kai. Tell me what you spent and I'll file it."),
+  'chat.tsx': same('/chat', 'What did you spend?'),
   'chat/history.tsx': same('/chat/history', 'No past days yet'),
   'debt/[id].tsx': differ(`/debt/${MEI}`, 'You owe Mei', "This debt isn't here any more"),
   'debt/amount.tsx': differ(
