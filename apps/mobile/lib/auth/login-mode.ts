@@ -1,3 +1,5 @@
+import { isOldEnoughToSignUp, type BirthMonth } from '@repo/types';
+
 export type LoginMode = 'signIn' | 'createAccount';
 
 export type LoginVia = 'password' | 'google';
@@ -14,7 +16,13 @@ export type LoginStatus =
 
 export type LoginState = { mode: LoginMode; status: LoginStatus };
 
-export type LoginDetails = { name: string; email: string; password: string };
+export type LoginDetails = {
+  name: string;
+  email: string;
+  password: string;
+  /** Create account only; null until both the month and the year are picked. */
+  birthMonth: BirthMonth | null;
+};
 
 export type LoginEvent =
   | { type: 'setMode'; mode: LoginMode }
@@ -33,17 +41,29 @@ export const initialLoginState: LoginState = {
 
 export const MIN_PASSWORD_LENGTH = 8;
 
+export const UNDER_AGE = "Moni is for people 18 and over, so we can't create an account for you.";
+
 const NETWORK = /network request failed|failed to fetch|fetch failed|network error|timed out|offline/i;
 
 /** Checks the form before it reaches Supabase, so Zod's wording never shows. */
-export function checkDetails(mode: LoginMode, details: LoginDetails): LoginStatus | null {
+export function checkDetails(
+  mode: LoginMode,
+  details: LoginDetails,
+  today: Date,
+): LoginStatus | null {
   const email = details.email.trim();
   if (mode === 'createAccount') {
-    if (!details.name.trim() || !email || !details.password) {
-      return { kind: 'failed', message: 'Add your name, email and a password.' };
+    if (!details.name.trim() || !email || !details.password || !details.birthMonth) {
+      return {
+        kind: 'failed',
+        message: 'Add your name, email, a password and your date of birth.',
+      };
     }
     if (details.password.length < MIN_PASSWORD_LENGTH) {
       return { kind: 'failed', message: 'Use at least 8 characters for your password.' };
+    }
+    if (!isOldEnoughToSignUp(details.birthMonth, today)) {
+      return { kind: 'failed', message: UNDER_AGE };
     }
     return null;
   }

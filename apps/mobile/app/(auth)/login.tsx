@@ -3,6 +3,11 @@ import { useReducer, useRef, useState } from 'react';
 import { ScrollView, TextInput, View } from 'react-native';
 
 import { AuthField } from '@/components/auth/auth-field';
+import {
+  BirthMonthField,
+  birthMonthOf,
+  type BirthPick,
+} from '@/components/auth/birth-month-field';
 import { Lockup } from '@/components/brand/lockup';
 import { GoogleSignInButton } from '@/components/auth/google-sign-in-button';
 import {
@@ -44,6 +49,10 @@ export default function LoginScreen() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [birth, setBirth] = useState<BirthPick>({
+    month: null,
+    year: null,
+  });
   const [showPassword, setShowPassword] = useState(false);
   const emailRef = useRef<TextInput>(null);
   const passwordRef = useRef<TextInput>(null);
@@ -52,24 +61,30 @@ export default function LoginScreen() {
   const busy = status.kind === 'busy';
   const wrong = status.kind === 'wrongDetails';
 
-  const edit = (set: (value: string) => void) => (value: string) => {
+  const edit = <T,>(set: (value: T) => void) => (value: T) => {
     set(value);
     dispatch({ type: 'edited' });
   };
 
   const submit = async () => {
-    const problem = checkDetails(mode, { name, email, password });
+    const birthMonth = birthMonthOf(birth);
+    const problem = checkDetails(
+      mode,
+      { name, email, password, birthMonth },
+      new Date(),
+    );
     if (problem) {
       dispatch({ type: 'rejected', status: problem });
       return;
     }
     dispatch({ type: 'started', via: 'password' });
     const address = email.trim();
-    if (creating) {
+    if (creating && birthMonth) {
       const { error, session } = await signUp(
         address,
         password,
         name.trim(),
+        birthMonth,
       );
       if (error) {
         dispatch({
@@ -229,6 +244,14 @@ export default function LoginScreen() {
               </Press>
             }
           />
+          {creating ? (
+            <BirthMonthField
+              value={birth}
+              onChange={edit(setBirth)}
+              thisYear={new Date().getFullYear()}
+              disabled={busy}
+            />
+          ) : null}
           {wrong || status.kind === 'failed' ? (
             <View className="-mt-2">
               <LoginError

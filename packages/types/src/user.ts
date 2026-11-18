@@ -38,6 +38,21 @@ export const signUpSchema = z.object({
   displayName: z.string().min(1).max(100),
 });
 
+/** Sign-up asks for the month and year of birth, never the day: `YYYY-MM`. */
+export const birthMonthSchema = z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/);
+
+export const MIN_SIGN_UP_AGE = 18;
+
+/**
+ * Without the day, someone counts as 18 from the first day of their 18th birthday's month.
+ * `today` is read in local time, as the user sees the date.
+ */
+export function isOldEnoughToSignUp(birthMonth: BirthMonth, today: Date): boolean {
+  const [year, month] = birthMonth.split('-').map(Number) as [number, number];
+  const monthsOld = (today.getFullYear() - year) * 12 + (today.getMonth() + 1 - month);
+  return monthsOld >= MIN_SIGN_UP_AGE * 12;
+}
+
 export const signInSchema = z.object({
   email: z.string().email(),
   password: z.string().min(8).max(100),
@@ -49,3 +64,4 @@ export type Profile = z.infer<typeof profileSchema>;
 export type UpdateProfile = z.infer<typeof updateProfileSchema>;
 export type SignUp = z.infer<typeof signUpSchema>;
 export type SignIn = z.infer<typeof signInSchema>;
+export type BirthMonth = z.infer<typeof birthMonthSchema>;

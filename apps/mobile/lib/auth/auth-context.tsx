@@ -5,7 +5,13 @@ import React, {
   useState,
 } from 'react';
 import type { Session, User } from '@supabase/supabase-js';
-import { signInSchema, signUpSchema } from '@repo/types';
+import {
+  birthMonthSchema,
+  isOldEnoughToSignUp,
+  signInSchema,
+  signUpSchema,
+  type BirthMonth,
+} from '@repo/types';
 import { supabase } from '@/lib/supabase/client';
 import { syncBillReminders } from '@/lib/notifications/bill-reminder';
 import { clearStore } from '@/lib/store';
@@ -30,6 +36,7 @@ type AuthContextType = {
     email: string,
     password: string,
     displayName: string,
+    birthMonth: BirthMonth,
   ) => Promise<{ error: Error | null; session: Session | null }>;
   signInWithGoogle: () => Promise<{
     error: Error | null;
@@ -91,7 +98,15 @@ export function AuthProvider({
     email: string,
     password: string,
     displayName: string,
+    birthMonth: BirthMonth,
   ) => {
+    const birth = birthMonthSchema.safeParse(birthMonth);
+    if (!birth.success || !isOldEnoughToSignUp(birth.data, new Date())) {
+      return {
+        error: new Error('Moni is for people 18 and over.'),
+        session: null,
+      };
+    }
     const parsed = signUpSchema.safeParse({
       email,
       password,
@@ -108,7 +123,12 @@ export function AuthProvider({
     const { data, error } = await supabase.auth.signUp({
       email: parsed.data.email,
       password: parsed.data.password,
-      options: { data: { display_name: parsed.data.displayName } },
+      options: {
+        data: {
+          display_name: parsed.data.displayName,
+          birth_month: birth.data,
+        },
+      },
     });
     if (error)
       return { error: new Error(error.message), session: null };

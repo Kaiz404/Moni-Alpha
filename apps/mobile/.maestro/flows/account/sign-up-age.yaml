@@ -1,0 +1,59 @@
+# Create account asks for the birth month and year, and turns away anyone under 18 without making an account.
+# Starts signed out. Ends signed in through the sign-in subflow.
+# Run: scripts/device/run-flows.sh .maestro/flows/account/sign-up-age.yaml
+appId: com.anonymous.moni.e2e
+name: Sign-up age check
+tags:
+  - seed-any
+---
+- runFlow: ../../subflows/launch.yaml
+- runFlow: ../../subflows/sign-out.yaml
+- extendedWaitUntil:
+    visible:
+      id: auth.email
+    timeout: 15000
+- tapOn:
+    id: auth.mode.create-account
+- assertVisible: Create your Moni account
+- assertVisible: Moni is for people 18 and over. We keep only the month and year.
+
+- tapOn:
+    id: auth.name
+- inputText: Young Kai
+- tapOn:
+    id: auth.email
+- inputText: under-age-e2e@example.com
+- tapOn:
+    id: auth.password
+- inputText: long-enough-1
+- hideKeyboard
+- takeScreenshot: sign-up-age-form
+
+- tapOn:
+    id: auth.birth.month
+- assertVisible: Birth month
+- tapOn:
+    id: sheet.option.4
+- tapOn:
+    id: auth.birth.year
+- assertVisible: Birth year
+- scrollUntilVisible:
+    element:
+      id: sheet.option.2010
+    direction: DOWN
+- tapOn:
+    id: sheet.option.2010
+- assertVisible: Apr
+- assertVisible: '2010'
+- takeScreenshot: sign-up-age-picked
+
+- tapOn:
+    id: auth.create-account
+- extendedWaitUntil:
+    visible: "Moni is for people 18 and over, so we can't create an account for you."
+    timeout: 5000
+- assertVisible:
+    id: auth.create-account
+- takeScreenshot: sign-up-age-under-18
+
+- runFlow: ../../subflows/sign-in.yaml
