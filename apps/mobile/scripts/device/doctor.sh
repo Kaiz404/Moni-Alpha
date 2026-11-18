@@ -101,6 +101,10 @@ else
       ((${battery:-0} > 30))
       verdict $? "battery ${battery:-unknown}%"
     fi
+    # A picture-in-picture window (a video call) sits over the app and takes the taps under it.
+    floating=$(dev shell dumpsys activity activities | tr -d '\r' | awk '/^ *\* Task\{/ && /mode=pinned/ { if (match($0, /A=[0-9]+:[^ ]+/)) print substr($0, RSTART + 2, RLENGTH - 2) }' | sed 's/^[0-9]*://' | head -n 1)
+    [[ -z $floating ]]
+    verdict $? "floating ${floating:+window from $floating covers the screen, close it or end the call}${floating:-none}"
     if [[ $(dev shell dumpsys window policy) == *"showing=true"* ]]; then
       echo "note keyguard showing, unlock the phone before a lane drives an app"
     fi

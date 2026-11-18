@@ -126,16 +126,21 @@ trap 'adb shell cmd notification disallow_listener "$listener" >/dev/null 2>&1 |
 
 pinned() { adb shell dumpsys activity activities 2>/dev/null | node "$here/overlays.mjs" parse; }
 pinned >"$run/overlays.txt" || true
+# A floating window can appear mid-run (a call comes in), so look every few seconds.
+( while true; do pinned >>"$run/overlays.txt" 2>/dev/null; sleep 3; done ) 9>&- &
+poller=$!
 
 rc=0
 maestro test --device "$MONI_DEVICE_SERIAL" --no-reinstall-driver "${include[@]}" --exclude-tags "$(IFS=,; echo "${exclude[*]}")" \
   --format junit --output "$run/report.xml" --test-output-dir "$run/maestro" \
   -e "E2E_EMAIL=$email" -e "E2E_PASSWORD=$password" "${paths[@]}" >"$run/maestro.log" 2>&1 || rc=$?
 tail -n 20 "$run/maestro.log" >&2
+kill "$poller" 2>/dev/null || true
 pinned >>"$run/overlays.txt" || true
 sort -u -o "$run/overlays.txt" "$run/overlays.txt"
 if [[ -s $run/overlays.txt ]]; then
   echo "blacked out another app's floating window in the screenshots: $(tr '\n' ';' <"$run/overlays.txt")" >&2
+  echo "UNRELIABLE run: a floating window covered part of the screen and takes taps there" >&2
   node "$here/overlays.mjs" mask "$run/overlays.txt" "$run/maestro" || echo "masking the floating window failed" >&2
 fi
 
