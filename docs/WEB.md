@@ -2,7 +2,7 @@
 
 Moni is getting a full web app with the same features as the phone app, plus desktop-only capabilities. The design is locked on the claude.ai design canvas. This file tells an implementing agent where the design lives, which boards are final, the rules every screen follows, and what is still the owner's call. The architecture and the build order are in [`web/PLAN.md`](web/PLAN.md). The prompt for an implementing agent is in [`web/PROMPT.md`](web/PROMPT.md).
 
-**Status (19 Nov 2026):** the design is locked (round 2 screens, round 3 edges, and the combined landing page). No web code is written yet. The existing `apps/web` is a stale v1 dashboard and is rebuilt, not extended (see PLAN.md, phase 0).
+**Status (19 Nov 2026):** the design is locked (round 2 screens, round 3 edges, and the combined landing page). Phase 0 of PLAN.md is done: the v1 dashboard is gone and `apps/web` is an empty Next.js 16 app with the Supabase cookie session, the auth callback and the private-path proxy. No screen is built yet.
 
 ## Authority
 

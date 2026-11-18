@@ -6,7 +6,7 @@ Local-first, privacy-focused personal finance app. Track wallets and transaction
 
 - **`apps/mobile`** — Expo / React Native app, the primary client. Syncs directly to Supabase via Legend-State (offline-first, MMKV-persisted).
 - **`apps/backend`** — Go + Gin AI gateway. Verifies your Supabase JWT, routes AI requests to OpenRouter, returns structured extractions. Stateless — no DB access.
-- **`apps/web`** — Next.js dashboard. Isolated from mobile; talks to Supabase through its own API routes. Deprioritized for now.
+- **`apps/web`** — Next.js web app, being rebuilt to the locked web design on shared packages ([docs/WEB.md](docs/WEB.md), [docs/web/PLAN.md](docs/web/PLAN.md)). Talks to Supabase directly under RLS, like mobile.
 - **`packages/types`** — `@repo/types`: Zod schemas + inferred TypeScript types shared by mobile and web.
 - **`supabase/`** — migrations, RLS policies, storage buckets.
 
@@ -25,7 +25,7 @@ cp apps/backend/.env.example apps/backend/.env
 pnpm dev                       # everything, or:
 pnpm --filter moni dev         # mobile
 pnpm --filter backend dev      # Go AI backend (:8080)
-pnpm --filter web dev          # web dashboard (:3000)
+pnpm --filter web dev          # web app (:3000)
 ```
 
 Requires Node >= 18, pnpm 9, Go >= 1.26. Mobile needs a native dev client (`npx expo run:android` locally, or GitHub Actions for CI APKs) — Expo Go doesn't support the native modules. On Windows, build Android from WSL — see [apps/mobile/README.md](apps/mobile/README.md).
@@ -57,5 +57,5 @@ Requires Node >= 18, pnpm 9, Go >= 1.26. Mobile needs a native dev client (`npx 
 | Mobile     | Expo SDK 57, expo-router, Legend-State + MMKV, Uniwind (Tailwind), Reanimated |
 | AI backend | Go 1.26, Gin, OpenRouter (`deepseek/deepseek-v4.1-flash` for text and vision) |
 | Data       | Supabase (Postgres, Auth with ES256 JWTs, Storage, Realtime)                  |
-| Web        | Next.js 16 App Router, Tailwind, TanStack Query                               |
+| Web        | Next.js 16 App Router, `@supabase/ssr`, shared workspace packages             |
 | Monorepo   | Turborepo + pnpm workspaces (Go integrated via package scripts)               |

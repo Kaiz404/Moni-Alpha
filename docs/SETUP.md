@@ -81,8 +81,11 @@ The e2e APK (`apps/mobile/scripts/device/build-apk.sh`), the e2e seed (`apps/mob
 ```bash
 NEXT_PUBLIC_SUPABASE_URL=https://<project-ref>.supabase.co
 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_...
-SUPABASE_SECRET_KEY=sb_secret_...   # server-side scripts only
 ```
+
+The web app holds no secret key. CI's web build reads the `EXPO_PUBLIC_SUPABASE_*` repository variables as its `NEXT_PUBLIC_*` values.
+
+Database types for both apps are generated: after pushing a migration, run `pnpm gen:db-types` (needs a linked Supabase CLI) and commit `packages/types/src/database.ts`. A test in `@repo/types` fails when the file predates the newest migration.
 
 ### `apps/backend/.env`
 
@@ -225,7 +228,7 @@ After changing native config or env, rebuild: `npx expo run:android` locally or 
 
 ## GitHub Actions Android CI
 
-The repository workflow is intentionally advisory. On every PR and `main` push it runs three jobs: `Lint and typecheck` (lint, typecheck, and the mobile copy and testID lints), `Tests` (`pnpm test`: Jest and `go test ./...`), and `Android debug build`, which generates the Expo Android project and runs Gradle `assembleDebug`. A failed check does not block merging, but resolve it before the next release.
+The repository workflow is intentionally advisory. On every PR and `main` push it runs three jobs: `Lint and typecheck` (lint, typecheck, the mobile copy and testID lints, and `next build` for the web app), `Tests` (`pnpm test`: Jest, Vitest for the packages and web, and `go test ./...`), and `Android debug build`, which generates the Expo Android project and runs Gradle `assembleDebug`. A failed check does not block merging, but resolve it before the next release.
 
 Successful `main` and manually dispatched runs upload `app-debug.apk` as a seven-day Actions artifact. PR builds verify compilation but do not publish an APK. This is a development APK, so it needs Metro; a standalone tester build is deferred until the signed Google Play Internal Testing AAB exists.
 

@@ -1,174 +1,42 @@
 ---
-description: Next.js App Router patterns for the Moni web app (isolated dashboard)
+description: Next.js App Router patterns for the Moni web app (a full Supabase client on shared packages)
 globs: apps/web/**
 alwaysApply: false
 ---
 
-# Web App – Next.js App Router Patterns
+# Web App – Next.js App Router
 
-> **Being rebuilt (19 Nov 2026).** The web app is becoming a full client with the same features as mobile, on shared packages. Read `docs/WEB.md` (design handoff) and `docs/web/PLAN.md` (architecture and build order) first; where they conflict with this rule, they win. The API-route pattern below describes the old v1 dashboard, which phase 0 of the plan deletes: the new web app reads Supabase directly with RLS, as mobile does. Rewrite this rule when phase 0 lands.
+Read `docs/WEB.md` (the design handoff: boards, layouts, rules) and `docs/web/PLAN.md` (architecture and build order) before building a screen. The canvas boards are the spec; `docs/redesign/tokens.md` and `glossary.md` hold values and words.
 
-**The web app is isolated.** Its API routes serve only its own dashboard pages — the mobile app does NOT call them (mobile talks to Supabase directly). Web is deprioritized vs mobile + Go backend.
+## Data
 
-## Directory Structure
+- **The web is a Supabase client like the phone.** It reads and writes Postgres directly under RLS with the publishable key. There are no API route handlers for app data, and none may be added: secret-key operations (account deletion, QR sign-in) are Supabase Edge Functions both apps call, and AI goes to the Go backend.
+- Synced rows are soft-deleted (`deleted = true`), never `DELETE`d, or phones never learn of the delete.
+- Never sum across currencies; money is `MinorAmount` from `@repo/types`.
+- Ledger data loads into the browser (the shared store, `docs/adr/0003-web-shares-the-legend-state-store.md`); only the landing page, auth and the shell render on the server.
+- Domain rules come from workspace packages, never re-typed in `apps/web`. Add each package to `transpilePackages` in `next.config.js`.
+- DB types: `import type { Database } from '@repo/types/database'` (generated, `pnpm gen:db-types`).
+
+## Structure
 
 ```
-src/app/
-├── layout.tsx              - Root layout
-├── page.tsx                - Landing page
-├── (auth)/login|register/  - Auth pages (no sidebar)
-├── (dashboard)/            - Authenticated dashboard (has sidebar layout)
-│   ├── layout.tsx
-│   ├── page.tsx            - Overview
-│   ├── transactions/
-│   ├── wallets/
-│   ├── analytics/
-│   └── settings/
-└── api/                    - REST route handlers (web dashboard only)
-    ├── auth/
-    ├── wallets/[id]/route.ts
-    ├── transactions/[id]/route.ts
-    ├── categories/route.ts
-    └── analytics/overview/route.ts
+src/proxy.ts                    session refresh + private-path redirect (Next 16 name for middleware)
+src/lib/routes.ts               public paths, safe `next` redirects
+src/lib/supabase/client.ts      browser client (cookies via @supabase/ssr)
+src/lib/supabase/server.ts      Server Components / route handlers
+src/app/auth/callback/route.ts  PKCE exchange (Google, email links)
 ```
 
-## API Route Handler Pattern
+A new public route (landing, legal, the public deletion page) goes in `PUBLIC_PATHS` in `src/lib/routes.ts` with a test case.
 
-Every route handler must: authenticate → validate → query → respond.
+## Supabase clients
 
-```typescript
-// apps/web/src/app/api/wallets/route.ts
-import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
-import { createWalletSchema, type WalletListResponse } from '@repo/types';
+- `@/lib/supabase/server` in Server Components and route handlers; `@/lib/supabase/client` in client components.
+- In `proxy.ts`, nothing runs between `createServerClient` and `auth.getClaims()`.
+- Never use the secret key (`sb_secret_...`) anywhere in `apps/web`.
 
-export async function GET(request: NextRequest) {
-  const supabase = createClient();
-  const { data: { user }, error: authError } = await supabase.auth.getUser();
-  if (authError || !user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+## Testing
 
-  const { data, error } = await supabase
-    .from('wallets')
-    .select('*')
-    .eq('user_id', user.id)
-    .eq('is_active', true)
-    .order('display_order');
-
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  }
-
-  const response: WalletListResponse = { wallets: data || [] };
-  return NextResponse.json(response);
-}
-
-export async function POST(request: NextRequest) {
-  const supabase = createClient();
-  const { data: { user }, error: authError } = await supabase.auth.getUser();
-  if (authError || !user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
-
-  try {
-    const body = await request.json();
-    const validated = createWalletSchema.parse(body); // Always validate with Zod
-    const { data, error } = await supabase.from('wallets')
-      .insert({ ...validated, user_id: user.id })
-      .select().single();
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-    return NextResponse.json({ wallet: data });
-  } catch (error) {
-    return handleApiError(error);
-  }
-}
-```
-
-Use the `withAuth` middleware from `@/lib/api-middleware.ts` when available to reduce boilerplate.
-
-## Error Handling
-
-Centralise in `src/lib/errors.ts`:
-
-```typescript
-import { ZodError } from 'zod';
-
-export function handleApiError(error: unknown) {
-  if (error instanceof ZodError) {
-    return NextResponse.json({ error: 'Validation error', details: error.errors }, { status: 400 });
-  }
-  if (error instanceof Error) {
-    if (error.message.includes('duplicate key'))
-      return NextResponse.json({ error: 'Already exists' }, { status: 409 });
-  }
-  return NextResponse.json({ error: 'An unexpected error occurred' }, { status: 500 });
-}
-```
-
-Standard status codes: 400 validation, 401 unauth, 403 forbidden, 404 not found, 409 conflict, 500 server error.
-
-## Server vs Client Components
-
-- **Server Components** (default): Fetch directly from Supabase, no `'use client'`
-- **Client Components**: Prefix with `'use client'`, use TanStack Query for data fetching
-
-```typescript
-// Server component — fetch on server
-export default async function DashboardPage() {
-  const supabase = createClient(); // server client
-  const { data: wallets } = await supabase.from('wallets').select('*');
-  return <WalletGrid wallets={wallets ?? []} />;
-}
-
-// Client component — fetch with TanStack Query
-'use client';
-export function TransactionTable() {
-  const { data, isLoading } = useQuery({
-    queryKey: ['transactions'],
-    queryFn: async () => {
-      const res = await fetch('/api/transactions');
-      if (!res.ok) throw new Error('Failed to fetch');
-      return res.json() as Promise<TransactionListResponse>;
-    },
-  });
-  // ...
-}
-```
-
-## Realtime (Supabase)
-
-Use `invalidateQueries` on realtime events — don't mutate cache manually:
-
-```typescript
-'use client';
-export function useRealtimeTransactions(userId: string) {
-  const queryClient = useQueryClient();
-  const supabase = createClient(); // browser client
-
-  useEffect(() => {
-    const channel = supabase.channel('transactions')
-      .on('postgres_changes', {
-        event: '*', schema: 'public', table: 'transactions',
-        filter: `user_id=eq.${userId}`,
-      }, () => {
-        queryClient.invalidateQueries({ queryKey: ['transactions'] });
-      })
-      .subscribe();
-    return () => { supabase.removeChannel(channel); };
-  }, [userId]);
-}
-```
-
-## Supabase Client Usage
-
-- `@/lib/supabase/server` → server components and route handlers
-- `@/lib/supabase/client` → client components and hooks
-
-## Row Level Security
-
-Never bypass RLS. All Supabase queries automatically scope to the authenticated user. Never use the secret key (`sb_secret_...`) in client-side code — it's for server-side scripts only.
-
-## Styling
-
-Standard Tailwind CSS. Use `cn()` from `@/lib/utils` for conditional classes. Keep component styles co-located; avoid global CSS except in `globals.css`.
+- Vitest for web modules (`pnpm --filter web test`): call the interface with literal inputs, assert literal outputs.
+- Playwright drives the real app for each screen at 1440, 1024, 820 and 390 wide against the board renders.
+- CI runs `next build`, so a prerender failure fails the job.

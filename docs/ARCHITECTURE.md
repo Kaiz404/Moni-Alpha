@@ -1,6 +1,6 @@
 # Moni Architecture
 
-Moni is a local-first personal finance app: an Expo mobile client (primary), a Go AI backend, a Supabase project (database + auth + storage), and an isolated Next.js dashboard.
+Moni is a local-first personal finance app: an Expo mobile client (primary), a Go AI backend, a Supabase project (database + auth + storage), and a Next.js web app being rebuilt on shared packages ([`WEB.md`](WEB.md), [`web/PLAN.md`](web/PLAN.md)).
 
 ## System diagram
 
@@ -16,11 +16,11 @@ flowchart LR
   end
   llm[OpenRouter API]
   supa[(Supabase: Postgres + Auth + Storage)]
-  web[Next.js dashboard isolated]
+  web[Next.js web app]
 
   chat -->|"Bearer user JWT"| authmw --> router --> llm
   legend <-->|"publishable key + user JWT"| supa
-  web <-->|"own API routes"| supa
+  web <-->|"publishable key + cookie session"| supa
   authmw -.->|"JWKS fetch"| supa
 ```
 
@@ -29,7 +29,7 @@ flowchart LR
 - **Mobile is a first-class Supabase client.** Legend-State observables (`apps/mobile/lib/store/index.ts`) sync directly to Postgres via `@legendapp/state/sync-plugins/supabase`, persisted locally in MMKV. Writes hit the local store first; sync is gated on the Supabase session and the local cache resets on sign-out. Soft deletes (`deleted` column) and `last-sync` change tracking. A create that clashes with a soft-deleted row revives it, which is how a restore from a CSV export stays idempotent. A pull reads each table page by page, so PostgREST's `max_rows` cannot leave a table short on the phone. A pull or write that never reached Supabase retries with backoff while the app runs; one Supabase refused does not.
 - **Finance reads are projected, not refetched per screen.** `apps/mobile/lib/finance/` adapts synced rows into a non-persisted normalized projection, then exposes cached Legend `computed` selectors for cards, charts, lists, budgets, debts, and AI snapshots. Components subscribe only to their selector; commands remain the only place that mutate synced stores.
 - **Money is integer minor units in application contracts.** `@repo/types` exposes branded `MinorAmount` fields (`amountMinor`, `initialBalanceMinor`, and similar). Decimal conversion occurs only at database, form, and external AI/API boundaries. Aggregates and charts retain their ISO currency key; they never combine currencies.
-- **Mobile and web never talk to each other.** The Next.js app (`apps/web`) is a self-contained dashboard with its own API routes for its own pages. Anything both clients need lives in Supabase (data) or the Go backend (AI).
+- **Mobile and web never talk to each other.** Both are Supabase clients under RLS that honour soft deletes; the web has no API routes of its own. Anything both clients need lives in Supabase (data, and Edge Functions for secret-key operations), the Go backend (AI), or a shared workspace package (`packages/*`, source TypeScript consumed by Metro and Next with no build step). Views are written once per platform; logic is written once ([ADR 0001](adr/0001-share-logic-write-views-twice.md)).
 - **The Go backend is stateless.** It verifies the caller's Supabase JWT against the project JWKS (ES256), calls OpenRouter, and returns extraction results. It never touches the database — the mobile client inserts `proposed_transactions` rows itself.
 - **The Go backend also proxies Google Places (New)** shop search, so the Places key never ships in the app. It returns place IDs and coordinates and stores nothing.
 - **AI writes to the ledger only for routine notifications and for alerts that name a transfer without doubt.** An extraction becomes a `proposed_transactions` row that the user approves, marks Not mine, or saves for Later in the Review deck or from its Android notification unless it is a bank notification matching the user's own recent, consistently categorized history; those are added directly with `metadata.ai_suggested = true`. A notification that completes an own-wallet transfer pair (`lib/ai/duplicates.ts`) is combined with its other half into one transfer automatically. Manual inputs (text, voice, receipts) always go to review. Learning is the transaction history itself; there is no separate model or table.
@@ -79,7 +79,7 @@ Android notifications are prefiltered on-device (`lib/notifications/notification
 ```
 apps/mobile/      Expo SDK 57 + expo-router — primary client
 apps/backend/     Go + Gin AI gateway (see apps/backend/README.md)
-apps/web/         Next.js 16 dashboard — isolated, deprioritized
+apps/web/         Next.js 16 web app — desktop and phone layouts in one app (docs/WEB.md)
 packages/types/   @repo/types — Zod schemas + inferred TS types
 supabase/         Migrations, config.toml, storage policies
 docs/             This documentation set
@@ -94,3 +94,4 @@ Designed for a solo developer targeting ~1000 users at minimal cost:
 - Supabase free tier (Postgres, auth, storage, realtime)
 - OpenRouter pay-per-token credit (`deepseek-v4.1-flash`; cost estimate in `docs/AI.md`)
 - Go backend on Cloud Run with scale-to-zero (free tier covers this traffic)
+- Web app on Vercel Pro, Singapore (`sin1`); it holds only the publishable key

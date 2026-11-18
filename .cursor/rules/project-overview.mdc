@@ -23,7 +23,7 @@ Run: `pnpm --filter moni dev` / `pnpm --filter backend dev` / `pnpm --filter web
 ## Architecture rules
 
 - **Mobile syncs directly to Supabase** via Legend-State (`apps/mobile/lib/store/index.ts`) with MMKV persistence and soft deletes. There is NO PowerSync, NO SQLite/Drizzle, NO local LLM — do not reintroduce them.
-- **Mobile and web never talk to each other.** Web's API routes serve only the web dashboard. Shared needs go through Supabase (data) or the Go backend (AI).
+- **Mobile and web never talk to each other.** Both are Supabase clients under RLS (soft deletes only); the web has no app-data API routes. Shared needs go through Supabase (data; Edge Functions for secret-key operations), the Go backend (AI), or workspace packages (`packages/*`, source TS: logic shared, views written per platform, `docs/adr/`).
 - **Go backend is stateless**: verifies Supabase user JWTs via JWKS (ES256), calls OpenRouter, returns extractions. No database access.
 - **Supabase keys**: new system only — `sb_publishable_...` in clients, `sb_secret_...` server-side. Never use legacy anon/service_role keys.
 - **AI wire contract**: `apps/mobile/lib/ai/client/types.ts` ↔ `apps/backend/internal/extract/types.go` must stay in sync manually.

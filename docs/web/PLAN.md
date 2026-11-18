@@ -39,7 +39,7 @@ All packages export raw TypeScript (as `@repo/types` does today): Metro consumes
 
 Each phase ends in a verifiable state. Mobile must behave the same after every phase: run its jest suites, and prove screens that could change on the device with the `moni-device` skill. Callers move to the new module and the old copies are deleted in the same change; no compatibility layers.
 
-0. **Subtract and set up.** Delete the old web app except the kept files. Pin web React to 19.2.3 (mobile's version) so a shared package never loads two copies of React. Add `packages/typescript-config/shared.json`. Add Vitest for packages and web, and a web `build` to CI (`.github/workflows/ci.yml`). Generate database types into `@repo/types`; drop the dead analytics schemas; export every file. Fix or drop the `wallet_balances` view, which counts soft-deleted transactions.
+0. **Subtract and set up.** Delete the old web app except the kept files. Pin web React to 19.2.3 (mobile's version) so a shared package never loads two copies of React. Add `packages/typescript-config/shared.json`. Add Vitest for packages and web, and a web `build` to CI (`.github/workflows/ci.yml`). Generate database types into `@repo/types`; drop the dead analytics schemas; export every file. (Done. The 22 hand-written mobile row types move to the generated ones with the store in phase 4, when `lib/supabase/*.ts` moves.) Fix or drop the `wallet_balances` view, which counts soft-deleted transactions.
 1. **`@repo/core`: calendar and glossary, then ledger rules.** Migrate every mobile caller and delete the duplicates. This fixes Moni chat counting debt repayments as spending; add a test for it.
 2. **`@repo/core`: money month and read model.** Mobile's selectors become thin adapters; the finance test suites move with the code.
 3. **`@repo/design` and `@repo/brand`.** Mobile's `global.css` and brand assets become generated output with no visual change (compare device screenshots before and after).
@@ -62,4 +62,4 @@ Vercel Pro in Singapore (`sin1`) (owner's decision, 19 Nov 2026). The Hobby plan
 
 ## Docs and rules to change with the code
 
-When phase 0 lands, rewrite what still describes the old web app as "isolated, deprioritized" with its own API routes: `.cursor/rules/web-nextjs.mdc`, `.cursor/rules/project-overview.mdc`, `docs/ARCHITECTURE.md`, `docs/SETUP.md`, the root `README.md` and `apps/web/README.md`. Each package gets a short README. Record decisions 1, 2 and 6 as ADRs in `docs/adr/` so later reviews don't reopen them.
+When phase 0 lands, rewrite what still describes the old web app as "isolated, deprioritized" with its own API routes: `.cursor/rules/web-nextjs.mdc`, `.cursor/rules/project-overview.mdc`, `docs/ARCHITECTURE.md`, `docs/SETUP.md`, the root `README.md` and `apps/web/README.md`. Each package gets a short README. Decisions 1, 2 and 6 are recorded as ADRs in `docs/adr/` (0001 to 0003) so later reviews don't reopen them.
