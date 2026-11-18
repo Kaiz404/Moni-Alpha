@@ -3,6 +3,7 @@ import { router } from 'expo-router';
 import { View } from 'react-native';
 import Animated, { FadeInUp } from 'react-native-reanimated';
 
+import { Mascot } from '@/components/brand/mascot';
 import { Button } from '@/components/ui/button';
 import {
   IconSymbol,
@@ -18,7 +19,6 @@ import type {
 } from '@/lib/capture/capture-stage';
 import { tid } from '@/lib/test-ids';
 
-import { AddedTick } from './added-tick';
 import { HeardQuote, ScanningReceipt } from './reading-motion';
 
 /** V2A-CaptureScan `reading`: what the user gave Moni, centred and moving while Moni reads it. */
@@ -41,7 +41,7 @@ export function CaptureReading({ quote }: { quote: CaptureQuote }) {
   );
 }
 
-/** V2A-CaptureScan `approved`: the tick, where it went, and two ways on, centred on the page. */
+/** V2A-CaptureScan `approved`: the happy cat, where it went, and two ways on, centred on the page. */
 export function CaptureAdded({
   categoryName,
   another,
@@ -56,7 +56,11 @@ export function CaptureAdded({
       title=""
     >
       <View className="flex-1 items-center justify-center gap-2 px-5 pb-10">
-        <AddedTick />
+        <Mascot
+          mood="happy"
+          size={72}
+          pop
+        />
         <Animated.View entering={FadeInUp.delay(380).duration(320)}>
           <Text
             variant="screenTitle"

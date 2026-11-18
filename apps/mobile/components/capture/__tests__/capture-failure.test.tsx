@@ -281,6 +281,7 @@ describe('the failed page', () => {
     );
     expect(screen.queryByTestId('capture.failed.keep')).toBeNull();
     expect(screen.getByText("Moni couldn't find a total")).toBeTruthy();
+    expect(screen.queryByLabelText(/^Moni(, \w+)?$/)).toBeNull();
   });
 });
 
