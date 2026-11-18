@@ -65,12 +65,18 @@ else
   verdict 0 "port-5037 no Windows adb server"
 fi
 
-peer=$(timeout 10 "$MONI_TAILSCALE" status 2>/dev/null | tr -d '\r' | awk -v ip="$MONI_DEVICE_HOST" '$1 == ip { $1 = $1; print }')
-[[ -n $peer && $peer != *offline* ]]
-verdict $? "tailscale-status ${peer:-$MONI_DEVICE_HOST not in tailscale status}"
+# A phone on the same Wi-Fi is reached by its LAN address, so Tailscale has nothing to say about it;
+# the device check below proves adb reaches it.
+if [[ $MONI_DEVICE_HOST =~ ^(10\.|192\.168\.|172\.(1[6-9]|2[0-9]|3[01])\.) ]]; then
+  verdict 0 "tailscale skipped, $MONI_DEVICE_HOST is a LAN address"
+else
+  peer=$(timeout 10 "$MONI_TAILSCALE" status 2>/dev/null | tr -d '\r' | awk -v ip="$MONI_DEVICE_HOST" '$1 == ip { $1 = $1; print }')
+  [[ -n $peer && $peer != *offline* ]]
+  verdict $? "tailscale-status ${peer:-$MONI_DEVICE_HOST not in tailscale status}"
 
-"$MONI_TAILSCALE" ping --c 1 --timeout 5s "$MONI_DEVICE_HOST" >/dev/null 2>&1
-verdict $? "tailscale-ping $MONI_DEVICE_HOST"
+  "$MONI_TAILSCALE" ping --c 1 --timeout 5s "$MONI_DEVICE_HOST" >/dev/null 2>&1
+  verdict $? "tailscale-ping $MONI_DEVICE_HOST"
+fi
 
 dev() { timeout 10 adb -s "$MONI_DEVICE_SERIAL" "$@"; }
 release="" hyperos=""
