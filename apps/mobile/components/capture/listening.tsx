@@ -51,18 +51,24 @@ function RecordingDot() {
   );
 }
 
-/** V2A-CaptureSay: the timer, the live transcript, Done speaking and Type it instead. */
+/**
+ * V2A-CaptureSay: the timer, the live transcript, Done speaking and Type it
+ * instead, plus Start over (owner's direction, 18 Nov 2026) for a misspoken
+ * sentence: it clears the words and listens again.
+ */
 export function Listening({
   seconds,
   transcript,
   level,
   onDone,
+  onStartOver,
 }: {
   seconds: number;
   transcript: string;
   /** Mic loudness from 0 to 1. */
   level: SharedValue<number>;
   onDone: () => void;
+  onStartOver: () => void;
 }) {
   return (
     <Page
@@ -95,6 +101,15 @@ export function Listening({
         <Text className="text-center text-[14px] leading-[20px] text-ink-2">
           Say the shop, the amount and how you paid.
         </Text>
+        <Button
+          testID={tid('capture', 'start-over')}
+          variant="secondary"
+          compact
+          icon="refresh"
+          label="Start over"
+          disabled={!transcript}
+          onPress={onStartOver}
+        />
       </View>
       <View className="gap-1 px-5 pb-3">
         <Button

@@ -49,6 +49,7 @@ export default function SayScreen() {
   const [seconds, setSeconds] = useState(0);
   const [transcript, setTranscript] = useState('');
   const committed = useRef('');
+  const restarting = useRef(false);
   const reduceMotion = useReducedMotion();
   const level = useSharedValue(0);
 
@@ -85,13 +86,34 @@ export default function SayScreen() {
     level.set(withTiming(micLevel(event.value), LEVEL_EASE));
   });
 
+  useSpeechRecognitionEvent('end', () => {
+    if (!restarting.current) return;
+    restarting.current = false;
+    ExpoSpeechRecognitionModule.start(buildSpeechRecognitionOptions());
+  });
+
   useSpeechRecognitionEvent('result', (event) => {
+    if (restarting.current) return;
     const text = getTranscriptFromResult(event);
     if (!text) return;
     const joined = committed.current ? `${committed.current} ${text}` : text;
     if (event.isFinal) committed.current = joined;
     setTranscript(joined);
   });
+
+  const startOver = () => {
+    restarting.current = true;
+    try {
+      ExpoSpeechRecognitionModule.abort();
+    } catch {
+      restarting.current = false;
+      ExpoSpeechRecognitionModule.start(buildSpeechRecognitionOptions());
+    }
+    committed.current = '';
+    setTranscript('');
+    setSeconds(0);
+    level.set(0);
+  };
 
   const done = () => {
     stopListening();
@@ -119,6 +141,7 @@ export default function SayScreen() {
           transcript={transcript}
           level={level}
           onDone={done}
+          onStartOver={startOver}
         />
       );
     case 'reading':

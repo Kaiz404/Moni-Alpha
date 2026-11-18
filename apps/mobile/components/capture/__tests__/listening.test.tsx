@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react-native';
+import { fireEvent, render, screen } from '@testing-library/react-native';
 
 import { Listening } from '@/components/capture/listening';
 
@@ -18,10 +18,28 @@ describe('Listening', () => {
         transcript=""
         level={{ get: () => 0.5 } as never}
         onDone={jest.fn()}
+        onStartOver={jest.fn()}
       />,
     );
     expect(screen.getByTestId('capture.timer')).toHaveTextContent('0:32');
     expect(screen.getByText('Listening…')).toBeTruthy();
     expect(screen.queryByText(/works offline/)).toBeNull();
+  });
+
+  it('starts over once there are words to clear', () => {
+    const onStartOver = jest.fn();
+    const props = {
+      seconds: 4,
+      level: { get: () => 0 } as never,
+      onDone: jest.fn(),
+      onStartOver,
+    };
+    const { rerender } = render(<Listening {...props} transcript="" />);
+    fireEvent.press(screen.getByTestId('capture.start-over'));
+    expect(onStartOver).not.toHaveBeenCalled();
+
+    rerender(<Listening {...props} transcript="Grab fifty ringgit" />);
+    fireEvent.press(screen.getByTestId('capture.start-over'));
+    expect(onStartOver).toHaveBeenCalledTimes(1);
   });
 });
