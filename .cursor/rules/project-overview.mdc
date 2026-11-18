@@ -12,7 +12,7 @@ alwaysApply: true
 ```
 apps/mobile/      Expo SDK 57 + expo-router — PRIMARY client (focus)
 apps/backend/     Go + Gin AI gateway → OpenRouter (focus)
-apps/web/         Next.js 16 dashboard — ISOLATED, deprioritized
+apps/web/         Next.js 16 web app — being rebuilt on shared packages (docs/WEB.md, docs/web/PLAN.md)
 packages/types/   @repo/types — Zod schemas + inferred TS types
 supabase/         Migrations, RLS, storage
 docs/             ARCHITECTURE / SETUP / DATABASE / AI / research

@@ -6,6 +6,8 @@ alwaysApply: false
 
 # Web App – Next.js App Router Patterns
 
+> **Being rebuilt (19 Nov 2026).** The web app is becoming a full client with the same features as mobile, on shared packages. Read `docs/WEB.md` (design handoff) and `docs/web/PLAN.md` (architecture and build order) first; where they conflict with this rule, they win. The API-route pattern below describes the old v1 dashboard, which phase 0 of the plan deletes: the new web app reads Supabase directly with RLS, as mobile does. Rewrite this rule when phase 0 lands.
+
 **The web app is isolated.** Its API routes serve only its own dashboard pages — the mobile app does NOT call them (mobile talks to Supabase directly). Web is deprioritized vs mobile + Go backend.
 
 ## Directory Structure
