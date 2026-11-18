@@ -1,6 +1,7 @@
 import type { CurrencyCode, MinorAmount } from '@repo/types';
 import { View } from 'react-native';
 
+import { MoniGlyph } from '@/components/brand/mascot';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Press } from '@/components/ui/press';
 import { StatusPill } from '@/components/ui/status-pill';
@@ -221,8 +222,7 @@ export function MoniNoticed({ sentence, onAsk }: { sentence: string; onAsk: () =
       pressedClassName="bg-primary-pressed"
       className="flex-row items-start gap-3 rounded-card bg-primary p-[18px]"
     >
-      <IconSymbol
-        name="creation"
+      <MoniGlyph
         size={20}
         color={tokens.moniGlyph}
       />

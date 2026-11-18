@@ -6,10 +6,10 @@ import { tid } from '@/lib/test-ids';
 
 import { InkCardLabel, InkRow, useOnInk, type SoftTint } from './ink-card';
 
-const STARTERS: { text: string; icon: IconSymbolName; tint: SoftTint }[] = [
+const STARTERS: { text: string; icon: IconSymbolName | 'moni'; tint: SoftTint }[] = [
   { text: 'lunch 12.50 at Mamak Ali', icon: 'silverware-fork-knife', tint: 'coral' },
   { text: 'Set a RM450 food budget', icon: 'calendar-blank', tint: 'mint' },
-  { text: 'What can you do?', icon: 'creation', tint: 'lilac' },
+  { text: 'What can you do?', icon: 'moni', tint: 'lilac' },
 ];
 
 /** The first time chat opens: who Moni is, and three things to try. */

@@ -1,6 +1,6 @@
 import { View } from 'react-native';
 
-import { IconSymbol } from '@/components/ui/icon-symbol';
+import { MoniGlyph } from '@/components/brand/mascot';
 import { Press } from '@/components/ui/press';
 import { Text } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
@@ -17,8 +17,7 @@ export function AskBox({ onPress }: { onPress: () => void }) {
       className="h-12 flex-row items-center gap-2.5 rounded-full border-[1.5px] border-hairline bg-card px-4"
     >
       <View pointerEvents="none">
-        <IconSymbol
-          name="creation"
+        <MoniGlyph
           size={20}
           color={tokens.deepMint}
         />

@@ -1,6 +1,7 @@
 import { View } from 'react-native';
 
 import { glyphOn } from '@/lib/theme/glyph-on';
+import { MoniGlyph } from '@/components/brand/mascot';
 import { CategoryIcon } from '@/components/categories/category-icon';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Press } from '@/components/ui/press';
@@ -41,6 +42,7 @@ export function SoftBubble({
   tint,
   size = 40,
 }: {
+  /** A category icon name, or `moni` for Moni's cat head. */
   icon: string | null;
   tint: SoftTint;
   size?: 36 | 40 | 42;
@@ -53,11 +55,18 @@ export function SoftBubble({
       className={`items-center justify-center overflow-hidden rounded-full ${typeof tint === 'object' ? (color ? '' : 'bg-sand') : FILL[tint]}`}
       style={{ width: size, height: size, backgroundColor: color ?? undefined }}
     >
-      <CategoryIcon
-        icon={icon}
-        size={glyph}
-        color={color ? glyphOn(color) : tokens.foreground}
-      />
+      {icon === 'moni' ? (
+        <MoniGlyph
+          size={glyph}
+          color={tokens.foreground}
+        />
+      ) : (
+        <CategoryIcon
+          icon={icon}
+          size={glyph}
+          color={color ? glyphOn(color) : tokens.foreground}
+        />
+      )}
     </View>
   );
 }
@@ -74,8 +83,7 @@ export function InkCardLabel({
   const onInk = useOnInk();
   return (
     <View className="flex-row items-center gap-2">
-      <IconSymbol
-        name="creation"
+      <MoniGlyph
         size={16}
         color={tokens.moniGlyph}
       />

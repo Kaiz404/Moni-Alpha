@@ -2,6 +2,7 @@ import { transactionSourceSchema, type TransactionSource } from '@repo/types';
 import type { ReactNode } from 'react';
 import { View } from 'react-native';
 
+import { MoniGlyph } from '@/components/brand/mascot';
 import {
   IconSymbol,
   type IconSymbolName,
@@ -11,10 +12,13 @@ import { Text } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { tid } from '@/lib/test-ids';
 
-const SOURCES: Record<TransactionSource, { label: string; icon: IconSymbolName }> = {
+/** `moni` is Moni's cat head; the rest are icon names. */
+type TileIcon = IconSymbolName | 'moni';
+
+const SOURCES: Record<TransactionSource, { label: string; icon: TileIcon }> = {
   manual: { label: 'Manual', icon: 'pencil-outline' },
   voice: { label: 'Voice', icon: 'microphone-outline' },
-  moni: { label: 'Moni', icon: 'creation' },
+  moni: { label: 'Moni', icon: 'moni' },
   notification: { label: 'Notification', icon: 'bell-outline' },
   camera: { label: 'Camera', icon: 'camera-outline' },
 };
@@ -44,7 +48,7 @@ export type Tile = {
   value: string;
   /** What the screen reader hears when `value` is shortened: the full wallet name (V2A-TxnDetail). */
   spoken?: string;
-  icon?: IconSymbolName;
+  icon?: TileIcon;
   /** The category's or wallet's own 32 bubble, leading the label and value as on Type it. */
   bubble?: ReactNode;
   /** `pick` opens a picker sheet (Sand, chevron down); `link` opens a page (Paper, chevron right). */
@@ -62,7 +66,11 @@ function DetailTile({ tile }: { tile: Tile }) {
           {tile.label}
         </Text>
         <View className="flex-row items-center gap-1.5">
-          {tile.icon ? <IconSymbol name={tile.icon} size={18} color={tokens.foreground} /> : null}
+          {tile.icon === 'moni' ? (
+            <MoniGlyph size={18} color={tokens.foreground} />
+          ) : tile.icon ? (
+            <IconSymbol name={tile.icon} size={18} color={tokens.foreground} />
+          ) : null}
           <Text variant="rowTitle" className="min-w-0 flex-shrink text-foreground" numberOfLines={1}>
             {tile.value}
           </Text>
@@ -110,6 +118,6 @@ export function DetailTiles({ tiles }: { tiles: [Tile, Tile, Tile, Tile] }) {
   );
 }
 
-export function sourceIcon(source: TransactionSource): IconSymbolName {
+export function sourceIcon(source: TransactionSource): TileIcon {
   return SOURCES[source].icon;
 }

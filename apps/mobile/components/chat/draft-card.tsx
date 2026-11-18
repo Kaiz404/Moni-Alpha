@@ -4,6 +4,7 @@ import { router } from 'expo-router';
 import { useState } from 'react';
 import { View } from 'react-native';
 
+import { MoniGlyph } from '@/components/brand/mascot';
 import { PickerChip } from '@/components/review/picker-chip';
 import { IconSymbol, type IconSymbolName } from '@/components/ui/icon-symbol';
 import { InPlaceField, InPlaceGroup } from '@/components/ui/in-place-field';
@@ -281,8 +282,7 @@ export function DraftCard({ message }: { message: DraftMessage }) {
 
       {proposal.aiReasoning ? (
         <View className="flex-row gap-2">
-          <IconSymbol
-            name="creation"
+          <MoniGlyph
             size={16}
             color={tokens.deepMint}
           />

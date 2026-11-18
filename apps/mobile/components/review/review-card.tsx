@@ -2,6 +2,7 @@ import type { MinorAmount, ProposedTransaction, TransactionType } from '@repo/ty
 import { memo, useEffect, useMemo, useState } from 'react';
 import { useWindowDimensions, View, type AccessibilityActionEvent } from 'react-native';
 
+import { MoniGlyph } from '@/components/brand/mascot';
 import { FieldRow, FieldRows } from '@/components/review/field-row';
 import type { ChipLook } from '@/components/review/picker-chip';
 import { SourcePill } from '@/components/review/source-pill';
@@ -71,10 +72,10 @@ export type ReviewCardHandlers = {
 
 const SOURCE: Record<
   ProposedTransaction['sourceType'],
-  { icon: IconSymbolName; tint: string; onPastel: boolean }
+  { icon: IconSymbolName | 'moni'; tint: string; onPastel: boolean }
 > = {
   notification: { icon: 'bell-outline', tint: 'bg-attention-fill', onPastel: false },
-  text: { icon: 'creation', tint: 'bg-pending-fill', onPastel: false },
+  text: { icon: 'moni', tint: 'bg-pending-fill', onPastel: false },
   image: { icon: 'receipt-text-outline', tint: 'bg-block-peach', onPastel: true },
 };
 
@@ -93,11 +94,18 @@ function SourceIcon({ proposal }: { proposal: ProposedTransaction }) {
   }
   return (
     <View className={`h-9 w-9 items-center justify-center rounded-[12px] ${source.tint}`}>
-      <IconSymbol
-        name={source.icon}
-        size={20}
-        color={source.onPastel ? tokens.onPastel : tokens.foreground}
-      />
+      {source.icon === 'moni' ? (
+        <MoniGlyph
+          size={20}
+          color={tokens.foreground}
+        />
+      ) : (
+        <IconSymbol
+          name={source.icon}
+          size={20}
+          color={source.onPastel ? tokens.onPastel : tokens.foreground}
+        />
+      )}
     </View>
   );
 }

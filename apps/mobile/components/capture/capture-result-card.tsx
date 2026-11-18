@@ -4,6 +4,7 @@ import { ScrollView, View } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 
 import { TextTile } from '@/components/amount/text-tile';
+import { MoniGlyph } from '@/components/brand/mascot';
 import { FieldBubble, WalletBubble } from '@/components/capture/field-bubble';
 import { LocationField } from '@/components/capture/location-field';
 import { HEADER_H, ReceiptPhoto } from '@/components/capture/receipt-photo';
@@ -350,8 +351,7 @@ export function CaptureResult({
         />
         <View className="flex-row gap-1.5 px-1 pt-1">
           <View className="mt-px">
-            <IconSymbol
-              name="creation"
+            <MoniGlyph
               size={16}
               color={tokens.ink2}
             />

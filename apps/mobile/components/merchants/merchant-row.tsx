@@ -6,6 +6,7 @@ import Animated, {
   type EntryAnimationsValues,
 } from 'react-native-reanimated';
 
+import { MoniGlyph } from '@/components/brand/mascot';
 import type { MerchantRow as MerchantRowData } from '@/components/merchants/use-merchant-names';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { InPlaceField, type Saved } from '@/components/ui/in-place-field';
@@ -83,8 +84,7 @@ export function MerchantRow({ row, section, rises, onSave, onForget }: MerchantR
                   pressedClassName="bg-block-lilac"
                   className="h-9 flex-row items-center gap-1.5 self-start bg-pending-fill pl-2.5 pr-3.5"
                 >
-                  <IconSymbol
-                    name="creation"
+                  <MoniGlyph
                     size={16}
                     color={tokens.states.pending}
                   />

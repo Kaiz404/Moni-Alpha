@@ -2,6 +2,7 @@ import { router, type Href } from 'expo-router';
 import { View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { MoniGlyph } from '@/components/brand/mascot';
 import {
   PlusButton,
   plusRingBottom,
@@ -27,7 +28,7 @@ import { tid } from '@/lib/test-ids';
 
 type Choice = {
   label: string;
-  icon: IconSymbolName;
+  icon: IconSymbolName | 'moni';
   bubble: string;
   glyph: 'onCategory' | 'moniGlyph';
   href: Href;
@@ -57,7 +58,7 @@ const CHOICES = {
   },
   ask: {
     label: 'Ask Moni',
-    icon: 'creation',
+    icon: 'moni',
     bubble: 'bg-primary',
     glyph: 'moniGlyph',
     href: { pathname: '/chat', params: { focus: '1' } },
@@ -133,11 +134,18 @@ export function CaptureChooserSheet({
                     <View
                       className={`h-11 w-11 items-center justify-center rounded-full ${choice.bubble}`}
                     >
-                      <IconSymbol
-                        name={choice.icon}
-                        size={22}
-                        color={tokens[choice.glyph]}
-                      />
+                      {choice.icon === 'moni' ? (
+                        <MoniGlyph
+                          size={22}
+                          color={tokens[choice.glyph]}
+                        />
+                      ) : (
+                        <IconSymbol
+                          name={choice.icon}
+                          size={22}
+                          color={tokens[choice.glyph]}
+                        />
+                      )}
                     </View>
                     <Text
                       variant="cardTitle"
