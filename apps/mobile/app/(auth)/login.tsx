@@ -155,7 +155,7 @@ export default function LoginScreen() {
           variant="screenTitle"
           className="text-foreground"
         >
-          {creating ? 'Start with a clearer view' : 'Welcome back'}
+          {creating ? 'Create your Moni account' : 'Welcome back'}
         </Text>
 
         <LoginNotice status={status} />

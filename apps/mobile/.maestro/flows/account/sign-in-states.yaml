@@ -18,7 +18,8 @@ tags:
 # Create account shows the name field and the 8-character hint.
 - tapOn:
     id: auth.mode.create-account
-- assertVisible: Start with a clearer view
+- assertVisible: Create your Moni account
+- takeScreenshot: k1-create-account-heading
 - assertVisible:
     id: auth.name
 - assertVisible: At least 8 characters
