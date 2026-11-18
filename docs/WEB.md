@@ -2,7 +2,7 @@
 
 Moni is getting a full web app with the same features as the phone app, plus desktop-only capabilities. The design is locked on the claude.ai design canvas. This file tells an implementing agent where the design lives, which boards are final, the rules every screen follows, and what is still the owner's call. The architecture and the build order are in [`web/PLAN.md`](web/PLAN.md). The prompt for an implementing agent is in [`web/PROMPT.md`](web/PROMPT.md).
 
-**Status (19 Nov 2026):** the design is locked (round 2 screens, round 3 edges, and the combined landing page). Phase 0 of PLAN.md is done: the v1 dashboard is gone and `apps/web` is an empty Next.js 16 app with the Supabase cookie session, the auth callback and the private-path proxy. Phase 3 is done: tokens (`@repo/design`, with `tokens.css` for the web) and the mascot (`@repo/brand`) are shared packages that mobile's generated files come from. No screen is built yet.
+**Status (19 Nov 2026):** the design is locked (round 2 screens, round 3 edges, and the combined landing page). Phase 0 of PLAN.md is done: the v1 dashboard is gone and `apps/web` is an empty Next.js 16 app with the Supabase cookie session, the auth callback and the private-path proxy. Phase 3 is done: tokens (`@repo/design`, with `tokens.css` for the web) and the mascot (`@repo/brand`) are shared packages that mobile's generated files come from. Phase 6 is done: auth (email, Google, forgot, verify, 18+ check, sign in with your phone by QR) and the shell (sidebar, rail, phone tab bar, Ctrl K, shortcuts, account menu, toasts, Moni chat and Add panes, light and dark, reduce motion), each section showing its title and empty state. The `web-verify` skill drives it. No ledger screen is built yet.
 
 ## Authority
 
@@ -53,7 +53,7 @@ Ignore everything on the Archive page, including the rejected web directions A, 
 
 ## Layouts
 
-- Width 1360 and up: the full Ink sidebar. 1024 to 1359: the labelled rail. 700 to 1023: the rail with one column, and docked panes become overlays.
+- Width 1360 and up: the full Ink sidebar (W2-Parts still says 1280; W2-Responsive's 1360 wins). 1024 to 1359: the labelled rail. 700 to 1023: the rail with one column, and docked panes become overlays.
 - Under 700 wide, or under 500 tall: the **phone layout**, which is the mobile v2 app's design drawn in the same Next.js app (floating Ink tab bar, the same cards and words). It is not a third design and not a separate app.
 - The layout follows the viewport, not the device. Crossing a breakpoint keeps the route, the selected row and any half-typed field, because that state lives in the URL and the store.
 - iPad and other touch screens keep the desktop layout, with hover-only affordances made visible (⋯ on the selected row, long-press as right-click) and targets of at least 44.
