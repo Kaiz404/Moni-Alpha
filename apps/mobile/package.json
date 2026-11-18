@@ -25,8 +25,7 @@
     "test:notification-review": "node ./scripts/notification-review-suite.mjs",
     "test:default-wallet": "node ./scripts/default-wallet-suite.mjs",
     "lint:unreferenced": "node ./scripts/lint/find-unreferenced.mjs",
-    "gen:tokens": "node ./scripts/tokens/gen-theme-tokens.mjs",
-    "lint:tokens": "node ./scripts/tokens/gen-theme-tokens.mjs --check",
+    "lint:tokens": "node ../../packages/design/scripts/generate.ts --check",
     "brand:assets": "python3 scripts/brand/export.py && node scripts/brand/rasterize.mjs"
   },
   "dependencies": {
@@ -40,6 +39,7 @@
     "@react-native-vector-icons/fontawesome6": "^13.1.2",
     "@react-native-vector-icons/ionicons": "^13.1.2",
     "@react-native-vector-icons/material-design-icons": "^13.1.2",
+    "@repo/design": "workspace:*",
     "@repo/types": "workspace:*",
     "@shopify/react-native-skia": "2.6.2",
     "@supabase/supabase-js": "^2.47.10",

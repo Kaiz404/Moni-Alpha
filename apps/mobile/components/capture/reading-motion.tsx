@@ -18,7 +18,7 @@ import Animated, {
 import { Mascot } from '@/components/brand/mascot';
 import { Text } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
-import { springs } from '@/lib/motion/tokens';
+import { springs } from '@repo/design';
 import { wordOrder } from '@/lib/text/word-order';
 
 /** 0 → 1 → 0 forever on a sine, starting `delay` ms in; stays 0 under Reduce Motion. */

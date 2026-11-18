@@ -156,7 +156,7 @@ Use Tailwind's 4-point scale (`p-1` = 4) plus the v2 named spacing in `global.cs
 
 The system is rounded and soft, not cartoonishly pill-shaped. Surfaces are plain Uniwind rounded views on the v2 radii below; there is no squircle layer.
 
-v2 radii (`global.css` `@theme`, values in [`redesign/tokens.md`](redesign/tokens.md)):
+v2 radii (`packages/design/src/shape.ts`, generated into `global.css` `@theme`; values in [`redesign/tokens.md`](redesign/tokens.md)):
 
 | Utility        | Value | Use                                          |
 | -------------- | ----: | -------------------------------------------- |
@@ -534,7 +534,7 @@ Motion must communicate cause and effect, preserve spatial orientation, and feel
 
 ### Springs and haptics (v2)
 
-- `lib/motion/tokens.ts` holds the six motion tokens from [`redesign/tokens.md`](redesign/tokens.md): `springs.press`, `value`, `control`, `sheet`, `throw` (mass 1, for `withSpring`) and `drag` (1:1, no spring while held). Flings decide on `projectedPosition(x, v)` against `FLING_COMMIT_THRESHOLD` (40%). Containers may bounce; anything that encodes money uses `value`.
+- `@repo/design` (`packages/design/src/motion.ts`) holds the six motion tokens from [`redesign/tokens.md`](redesign/tokens.md): `springs.press`, `value`, `control`, `sheet`, `throw` (mass 1, for `withSpring`) and `drag` (1:1, no spring while held). Flings decide on `projectedPosition(x, v)` against `FLING_COMMIT_THRESHOLD` (40%). Containers may bounce; anything that encodes money uses `value`.
 - `lib/haptics` has one function per moment in the tokens.md haptics table: `keypadTap`, `approve`, `notMine`, `thresholdOn`, `thresholdOff`, `scrubStep`, `chartStep`, `toggleOn`, `toggleOff`, `holdCommit`. Android plays the `AndroidHaptics` constant, iOS the table's equivalent. ESLint rejects `expo-haptics` imports under `app/` and `components/`.
 - Fire a haptic on the same frame as the visual, at most once per user action, and never as the only feedback. Pressing the + and choosing from it play none.
 - Continuous AI gradient: slow and low-contrast; never pulse urgently unless an error actually requires attention.
@@ -620,7 +620,7 @@ springs.press / value / control / sheet / throw, drag
 
 Do not name UI tokens after a one-off visual result (`purpleCard`, `greenButton2`, `chartBlue`).
 
-Token values live only in `apps/mobile/global.css`. `pnpm --filter moni gen:tokens` copies the light and dark semantic colours into `constants/theme-tokens.generated.ts` for `useThemeTokens()`, and CI fails when that file is stale. The root layout resolves those colours once per theme and hands them down through a context, so every `useThemeTokens()` reader shares one object.
+Token values live only in `@repo/design` (`packages/design/src`). `pnpm --filter @repo/design gen` writes them into `apps/mobile/global.css` (the Uniwind `@theme` and `@variant` blocks), `constants/theme-tokens.generated.ts` (the colours for `useThemeTokens()`) and the web's `tokens.css`, and CI fails when any of them is stale. The root layout resolves those colours once per theme and hands them down through a context, so every `useThemeTokens()` reader shares one object.
 
 ### Design-review checklist
 

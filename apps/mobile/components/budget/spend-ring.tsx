@@ -32,7 +32,7 @@ import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import type { SpendSlice } from '@/lib/finance/budget-month';
 import { formatMoney } from '@/lib/finance/format-money';
 import { scrubStep } from '@/lib/haptics';
-import { springs } from '@/lib/motion/tokens';
+import { springs } from '@repo/design';
 import { tid } from '@/lib/test-ids';
 import { resolveTransactionIcon } from '@/lib/transactions/icon';
 

@@ -1,20 +1,16 @@
+import { describe, expect, it } from 'vitest';
+
 import {
   drag,
   FLING_COMMIT_THRESHOLD,
   projectedPosition,
+  springCurve,
   springs,
+  type Spring,
   type SpringToken,
-} from '@/lib/motion/tokens';
+} from '../motion';
 
-function overshoot({
-  stiffness,
-  damping,
-  mass,
-}: {
-  stiffness: number;
-  damping: number;
-  mass: number;
-}) {
+function overshoot({ stiffness, damping, mass }: Spring) {
   const ratio = damping / (2 * Math.sqrt(stiffness * mass));
   return ratio >= 1 ? 0 : Math.exp((-Math.PI * ratio) / Math.sqrt(1 - ratio * ratio));
 }
@@ -50,5 +46,30 @@ describe('motion tokens', () => {
     expect(commits(170, 0)).toBe(true);
     expect(commits(60, 300)).toBe(true);
     expect(commits(60, 0)).toBe(false);
+  });
+});
+
+describe('springCurve', () => {
+  it('samples the press spring over its settle time, as the W2-Motion board generator does', () => {
+    expect(springCurve(springs.press)).toEqual({
+      linear:
+        'linear(0.0, 0.023, 0.0788, 0.153, 0.2356, 0.3236, 0.4055, 0.4822, 0.5525, 0.6157, 0.6719, 0.7212, 0.7658, 0.8025, 0.8341, 0.861, 0.8838, 0.9031, 0.9194, 0.9331, 0.9445, 0.9545, 0.9624, 0.969, 0.9744, 0.979, 0.9827, 0.9858, 0.9884, 0.9905, 0.9922, 0.9937, 0.9948, 0.9958, 0.9965, 0.9972, 0.9977, 0.9981, 0.9985, 0.9988, 1.0)',
+      durationMs: 231.25,
+    });
+  });
+
+  it('keeps the throw overshoot above 1 and settles slower than every other spring', () => {
+    expect(springCurve(springs.throw).linear).toContain(', 1.0458, ');
+    expect(
+      Object.fromEntries(
+        Object.entries(springs).map(([name, s]) => [name, springCurve(s).durationMs]),
+      ),
+    ).toEqual({
+      press: 231.25,
+      value: 316,
+      control: 359,
+      sheet: 434.5,
+      throw: 818.25,
+    });
   });
 });

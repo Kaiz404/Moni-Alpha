@@ -14,7 +14,7 @@ import { Press } from '@/components/ui/press';
 import { Text } from '@/components/ui/text';
 import { TintBubble } from '@/components/ui/transaction-row';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
-import { springs } from '@/lib/motion/tokens';
+import { springs } from '@repo/design';
 import { tid } from '@/lib/test-ids';
 
 export type MerchantSection = 'to-name' | 'named';

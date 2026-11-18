@@ -13,7 +13,7 @@ import {
   type MascotMood,
 } from '@/components/brand/mascot-art.generated';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
-import { springs } from '@/lib/motion/tokens';
+import { springs } from '@repo/design';
 
 export {
   MASCOT_MOODS,

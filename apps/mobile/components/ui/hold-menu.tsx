@@ -33,7 +33,7 @@ import { Text } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { holdCommit } from '@/lib/haptics';
 import { preferencesMMKV } from '@/lib/mmkv/preferences';
-import { springs } from '@/lib/motion/tokens';
+import { springs } from '@repo/design';
 import { tid, type Screen } from '@/lib/test-ids';
 
 export const HOLD_BLOOM_MS = 250;

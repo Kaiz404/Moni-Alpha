@@ -7,7 +7,7 @@ import { Press } from '@/components/ui/press';
 import { Text } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import type { LocationFieldState } from '@/lib/capture/entry-place';
-import { springs } from '@/lib/motion/tokens';
+import { springs } from '@repo/design';
 import { tid } from '@/lib/test-ids';
 
 const WORDS: Record<Exclude<LocationFieldState['kind'], 'place'>, string> = {

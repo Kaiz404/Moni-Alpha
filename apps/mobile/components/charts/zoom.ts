@@ -6,7 +6,7 @@ import {
   type SharedValue,
 } from 'react-native-reanimated';
 
-import { springs } from '@/lib/motion/tokens';
+import { springs } from '@repo/design';
 
 /** The plot's pixel box: x from `left` to `right`, values from `base` (the low end) up to `top`. */
 export type Frame = { left: number; right: number; top: number; base: number };

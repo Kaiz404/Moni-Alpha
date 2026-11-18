@@ -53,7 +53,7 @@ import {
 import { placeLabel, type LatLng } from '@/lib/finance/places';
 import { financeProjection$ } from '@/lib/finance/projection';
 import { scrubStep } from '@/lib/haptics';
-import { springs } from '@/lib/motion/tokens';
+import { springs } from '@repo/design';
 import { getPlacesClient } from '@/lib/places/client';
 import { OWN_COORDS, type SavedPlace } from '@/lib/places/coords';
 import { createGoogleSearch, GOOGLE_MIN_CHARS, type GoogleSearch } from '@/lib/places/place-search';

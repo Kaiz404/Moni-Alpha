@@ -17,7 +17,7 @@ import { Text } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import type { DebtLine } from '@/lib/finance/debt-summary';
 import { formatMoney } from '@/lib/finance/format-money';
-import { springs } from '@/lib/motion/tokens';
+import { springs } from '@repo/design';
 import { tid } from '@/lib/test-ids';
 
 /** "Settled and written off": a hairline capsule with a count that opens the closed debts. */

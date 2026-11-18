@@ -1,6 +1,12 @@
 import { FunnelDisplay_400Regular } from '@expo-google-fonts/funnel-display/400Regular';
 import { FunnelDisplay_600SemiBold } from '@expo-google-fonts/funnel-display/600SemiBold';
 import { FunnelDisplay_700Bold } from '@expo-google-fonts/funnel-display/700Bold';
+import {
+  fontFaces,
+  typeScale,
+  type TypeStyle,
+  type TypeVariant,
+} from '@repo/design';
 import { createContext, useContext } from 'react';
 import {
   Text as RNText,
@@ -12,71 +18,35 @@ export const textFonts = {
   FunnelDisplay_400Regular,
   FunnelDisplay_600SemiBold,
   FunnelDisplay_700Bold,
-};
+} satisfies Record<
+  (typeof fontFaces)[keyof typeof fontFaces]['expo'],
+  unknown
+>;
 
-type FontFamily = keyof typeof textFonts;
+function variantStyle({
+  face,
+  size,
+  line,
+  tracking,
+  uppercase,
+}: TypeStyle): TextStyle {
+  return {
+    fontFamily: fontFaces[face].expo,
+    fontSize: size,
+    lineHeight: line,
+    ...(tracking ? { letterSpacing: size * tracking } : {}),
+    ...(uppercase ? { textTransform: 'uppercase' } : {}),
+  };
+}
 
-const variantStyles = {
-  hero: {
-    fontFamily: 'FunnelDisplay_700Bold',
-    fontSize: 64,
-    lineHeight: 64,
-    letterSpacing: -1.92,
-  },
-  amountHero: {
-    fontFamily: 'FunnelDisplay_700Bold',
-    fontSize: 52,
-    lineHeight: 54,
-    letterSpacing: -1.04,
-  },
-  screenTitle: {
-    fontFamily: 'FunnelDisplay_700Bold',
-    fontSize: 28,
-    lineHeight: 32,
-    letterSpacing: -0.56,
-  },
-  sectionTitle: {
-    fontFamily: 'FunnelDisplay_700Bold',
-    fontSize: 22,
-    lineHeight: 26,
-    letterSpacing: -0.44,
-  },
-  cardTitle: {
-    fontFamily: 'FunnelDisplay_700Bold',
-    fontSize: 18,
-    lineHeight: 22,
-    letterSpacing: -0.36,
-  },
-  rowTitle: {
-    fontFamily: 'FunnelDisplay_600SemiBold',
-    fontSize: 16,
-    lineHeight: 22,
-  },
-  body: {
-    fontFamily: 'FunnelDisplay_400Regular',
-    fontSize: 15,
-    lineHeight: 21,
-  },
-  meta: {
-    fontFamily: 'FunnelDisplay_400Regular',
-    fontSize: 13,
-    lineHeight: 18,
-  },
-  smallest: {
-    fontFamily: 'FunnelDisplay_400Regular',
-    fontSize: 12,
-    lineHeight: 16,
-  },
-  caps: {
-    fontFamily: 'FunnelDisplay_700Bold',
-    fontSize: 12,
-    lineHeight: 16,
-    letterSpacing: 0.48,
-    textTransform: 'uppercase',
-  },
-} satisfies Record<string, TextStyle & { fontFamily: FontFamily }>;
+const variantStyles = Object.fromEntries(
+  Object.entries(typeScale).map(([variant, style]) => [
+    variant,
+    variantStyle(style),
+  ]),
+) as Record<TypeVariant, TextStyle>;
 
-export type TextVariant = keyof typeof variantStyles;
+export type TextVariant = TypeVariant;
 
 export type TextProps = RNTextProps & { variant?: TextVariant };
 

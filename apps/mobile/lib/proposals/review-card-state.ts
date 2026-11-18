@@ -1,4 +1,4 @@
-import { projectedPosition } from '@/lib/motion/tokens';
+import { projectedPosition } from '@repo/design';
 import type { ReviewField, ReviewResult } from '@/lib/proposals/review-actions';
 
 export type ReviewDecision = 'approve' | 'notMine' | 'later';

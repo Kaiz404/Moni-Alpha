@@ -65,6 +65,9 @@ importers:
       '@react-native-vector-icons/material-design-icons':
         specifier: ^13.1.2
         version: 13.1.2(@expo/config-plugins@57.0.11(typescript@6.0.3))(@react-native/assets-registry@0.86.0)(expo-font@57.0.1(expo@57.0.6(@babel/core@7.29.0)(@expo/dom-webview@57.0.1)(@expo/metro-runtime@57.0.5)(expo-router@57.0.6)(react-dom@19.2.3(react@19.2.3))(react-native-web@0.21.2(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(react-native-worklets@0.10.0(@babel/core@7.29.0)(@react-native/metro-config@0.86.0(@babel/core@7.29.0))(react-native@0.86.0(@babel/core@7.29.0)(@react-native/jest-preset@0.85.3(@babel/core@7.29.0)(react@19.2.3))(@react-native/metro-config@0.86.0(@babel/core@7.29.0))(@types/react@19.2.14)(react@19.2.3))(react@19.2.3))(react-native@0.86.0(@babel/core@7.29.0)(@react-native/jest-preset@0.85.3(@babel/core@7.29.0)(react@19.2.3))(@react-native/metro-config@0.86.0(@babel/core@7.29.0))(@types/react@19.2.14)(react@19.2.3))(react@19.2.3)(typescript@6.0.3))(react-native@0.86.0(@babel/core@7.29.0)(@react-native/jest-preset@0.85.3(@babel/core@7.29.0)(react@19.2.3))(@react-native/metro-config@0.86.0(@babel/core@7.29.0))(@types/react@19.2.14)(react@19.2.3))(react@19.2.3))(react-native@0.86.0(@babel/core@7.29.0)(@react-native/jest-preset@0.85.3(@babel/core@7.29.0)(react@19.2.3))(@react-native/metro-config@0.86.0(@babel/core@7.29.0))(@types/react@19.2.14)(react@19.2.3))(react@19.2.3)
+      '@repo/design':
+        specifier: workspace:*
+        version: link:../../packages/design
       '@repo/types':
         specifier: workspace:*
         version: link:../../packages/types
@@ -261,6 +264,9 @@ importers:
 
   apps/web:
     dependencies:
+      '@repo/design':
+        specifier: workspace:*
+        version: link:../../packages/design
       '@repo/types':
         specifier: workspace:*
         version: link:../../packages/types
@@ -295,6 +301,27 @@ importers:
       '@types/react-dom':
         specifier: ~19.2.3
         version: 19.2.7(@types/react@19.2.14)
+      eslint:
+        specifier: ^9.39.1
+        version: 9.39.1(jiti@2.6.1)
+      typescript:
+        specifier: 5.9.2
+        version: 5.9.2
+      vitest:
+        specifier: ^3.2.4
+        version: 3.2.7(@types/node@22.15.3)(jiti@2.6.1)(jsdom@20.0.3)(lightningcss@1.32.0)(terser@5.46.0)(yaml@2.8.2)
+
+  packages/design:
+    devDependencies:
+      '@repo/eslint-config':
+        specifier: workspace:*
+        version: link:../eslint-config
+      '@repo/typescript-config':
+        specifier: workspace:*
+        version: link:../typescript-config
+      '@types/node':
+        specifier: ^22.15.3
+        version: 22.15.3
       eslint:
         specifier: ^9.39.1
         version: 9.39.1(jiti@2.6.1)

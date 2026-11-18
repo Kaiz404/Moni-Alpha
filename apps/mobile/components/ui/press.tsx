@@ -15,7 +15,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 
-import { springs } from '@/lib/motion/tokens';
+import { springs } from '@repo/design';
 import type { TestId } from '@/lib/test-ids';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);

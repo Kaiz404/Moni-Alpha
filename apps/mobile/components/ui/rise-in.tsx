@@ -15,7 +15,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 
-import { springs, type SpringToken } from '@/lib/motion/tokens';
+import { springs, type SpringToken } from '@repo/design';
 
 const RISE = 8;
 const FADE = { duration: 200 };

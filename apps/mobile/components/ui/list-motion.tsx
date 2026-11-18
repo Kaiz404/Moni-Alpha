@@ -8,7 +8,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 
-import { springs } from '@/lib/motion/tokens';
+import { springs } from '@repo/design';
 
 const EXIT_MS = 160;
 const EXIT = { duration: EXIT_MS, easing: Easing.bezier(0.23, 1, 0.32, 1) };

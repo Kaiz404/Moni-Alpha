@@ -19,7 +19,7 @@ import { scheduleOnRN } from 'react-native-worklets';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { holdCommit, thresholdOff, thresholdOn, toggleOff } from '@/lib/haptics';
-import { springs } from '@/lib/motion/tokens';
+import { springs } from '@repo/design';
 import { tid } from '@/lib/test-ids';
 
 import { useOnInk } from './ink-card';

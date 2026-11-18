@@ -64,7 +64,7 @@ import {
 } from '@/lib/finance/selectors';
 import type { FinanceCategory, FinanceWallet } from '@/lib/finance/types';
 import * as haptics from '@/lib/haptics';
-import { springs } from '@/lib/motion/tokens';
+import { springs } from '@repo/design';
 import { reviewStatus } from '@/lib/proposals/review-status';
 import { canPairInto, undoPairing } from '@/lib/proposals/pairing';
 import { captureSourceLabel, captureTime } from '@/lib/proposals/capture-source';
