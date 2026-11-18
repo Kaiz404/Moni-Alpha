@@ -44,6 +44,16 @@ inputs_key() {
     grep -v $'\tapps/mobile/scripts/' | sha256sum | cut -c1-16
 }
 
+# lacks_base_shots <area> <head dir>: true when the base run has a named screenshot the head lacks.
+lacks_base_shots() {
+  local name
+  [[ -d $out/base/$1 ]] || return 1
+  while IFS= read -r name; do
+    [[ -n $(find "$2" -name "$name" -print -quit 2>/dev/null) ]] || return 0
+  done < <(find "$out/base/$1" -name '*.png' ! -name 'step-*' -printf '%f\n')
+  return 1
+}
+
 # run_side <base|head> <sha>: a build and a flow run per area for the commit's inputs, each reused
 # from an earlier parity run with the same inputs (any lane, any commit) when one exists.
 run_side() {
@@ -73,14 +83,16 @@ run_side() {
     # or the lock reaches an old base too. Restored after, so the worktree's next build key is clean.
     rsync -a --delete "$here/" "$wt/apps/mobile/scripts/device/"
     # The base is cached whatever its flows did: a flow that fails there fails the same way for every
-    # lane, and its missing screenshots simply aren't compared. The head is never cached, and an area
-    # that fails is run once more, so a flaky flow doesn't read as a missing screenshot.
+    # lane, and its missing screenshots simply aren't compared. The head is never cached. A head area
+    # runs once more only when it lacks a screenshot the base has, so a flaky flow doesn't read as a
+    # change, while a flow that fails on both sides costs one run.
     for area in "${missing[@]}"; do
       rm -rf "${runs:?}/$area"
-      if ! "$wt/apps/mobile/scripts/device/run-areas.sh" --sha "$key" --out "$runs" "$area" && [[ $side == head ]]; then
-        echo "head: flows failed in $area, running it once more"
+      "$wt/apps/mobile/scripts/device/run-areas.sh" --sha "$key" --out "$runs" "$area" || true
+      if [[ $side == head ]] && lacks_base_shots "$area" "$runs/$area"; then
+        echo "head: $area lacks screenshots the base has, running it once more"
         rm -rf "${runs:?}/$area"
-        "$wt/apps/mobile/scripts/device/run-areas.sh" --sha "$key" --out "$runs" "$area" || echo "head: flows failed in $area again"
+        "$wt/apps/mobile/scripts/device/run-areas.sh" --sha "$key" --out "$runs" "$area" || true
       fi
       # A run the doctor stopped before any flow leaves no folder; that is no result to cache.
       [[ $side == head || ! -d $runs/$area ]] || touch "$runs/$area/.done"
