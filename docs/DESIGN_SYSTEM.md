@@ -202,6 +202,10 @@ Every screen imports `Text` from `@/components/ui/text` (ESLint rejects the `rea
 - Dynamic Type is mandatory. Critical cards must reflow vertically instead of clip.
 - Do not use subtitles beneath titles, section headings, sheet headings, or settings rows. A title stands on its own; keep essential instructions in the relevant control, state, or dedicated content instead.
 
+### 5.4a Brand
+
+Moni's mascot is Cat Pebble: a paper-white money-box cat hugging a gold coin, no tail and no sparkle, drawn only from the locked art (`apps/mobile/components/brand/`). On light pages the cat is Deep mint with Paper eyes, on dark pages Paper with Ink eyes, and the app icon is the Paper cat on a Deep mint tile. Each of its nine moods belongs to one moment (happy under budget, worried over budget, listening during voice capture, and so on); use one cat per screen at most. The wordmark is "moni" in Funnel Display Bold, lowercase, with an optional round i-dot (Deep mint on light, Mint key on dark), and the cat never goes inside it. System surfaces (notification icon, themed icons) use the official one-colour cat. Generate every asset with `pnpm --filter moni brand:assets`; never hand-draw or recolour the cat.
+
 ### 5.5 Iconography
 
 Use simple, warm line icons with rounded terminals and a consistent optical weight. Use native symbol assets when they fit; customize the set’s stroke and fill behavior rather than mixing unrelated libraries.
@@ -209,7 +213,7 @@ Use simple, warm line icons with rounded terminals and a consistent optical weig
 - Icons support labels; they do not replace them for finance-critical actions.
 - Category icon + category color is a recurring recognition pair.
 - Use filled icon treatment only for selected/active state or high-emphasis status.
-- Avoid generic robot/sparkle overload for AI. The future companion or a restrained sparkle/accent may signal assistance.
+- No robot or sparkle icons for AI. Moni's own mark is the one-colour cat (`MoniGlyph`).
 
 ---
 
