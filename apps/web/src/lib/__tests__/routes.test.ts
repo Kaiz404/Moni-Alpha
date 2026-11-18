@@ -1,10 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import { isPublicPath, safeNextPath } from '../routes';
+import { isPublicPath, isSignedOutOnly, safeNextPath } from '../routes';
 
 describe('isPublicPath', () => {
   it.each([
     ['/', true],
     ['/login', true],
+    ['/login/forgot', true],
+    ['/login/verify', true],
+    ['/login/reset', true],
+    ['/help', true],
     ['/delete-account', true],
     ['/privacy', true],
     ['/terms', true],
@@ -15,6 +19,19 @@ describe('isPublicPath', () => {
     ['/auth', false],
   ])('%s is public: %s', (path, expected) => {
     expect(isPublicPath(path)).toBe(expected);
+  });
+});
+
+describe('isSignedOutOnly', () => {
+  it.each([
+    ['/', true],
+    ['/login', true],
+    ['/login/forgot', true],
+    ['/login/verify', false],
+    ['/login/reset', false],
+    ['/home', false],
+  ])('%s sends a signed-in visitor home: %s', (path, expected) => {
+    expect(isSignedOutOnly(path)).toBe(expected);
   });
 });
 
