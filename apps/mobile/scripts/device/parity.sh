@@ -50,6 +50,7 @@ run_side() {
   local side=$1 sha=$2 wt=$cache/wt-$2 ikey key runs missing=() area
   ikey=$(inputs_key "$sha")-${EXPO_PUBLIC_E2E_NOW//[^0-9]/}
   runs=$cache/runs/$ikey
+  [[ $side == base ]] || runs=$cache/runs/head-$$/$ikey
   for area in "${areas[@]}"; do
     [[ -f $runs/$area/.done ]] || missing+=("$area")
   done
@@ -71,13 +72,17 @@ run_side() {
     # The commit's app and flows, driven by this checkout's device scripts, so a fix to the doctor
     # or the lock reaches an old base too. Restored after, so the worktree's next build key is clean.
     rsync -a --delete "$here/" "$wt/apps/mobile/scripts/device/"
+    # The base is cached whatever its flows did: a flow that fails there fails the same way for every
+    # lane, and its missing screenshots simply aren't compared. The head is never cached, and an area
+    # that fails is run once more, so a flaky flow doesn't read as a missing screenshot.
     for area in "${missing[@]}"; do
       rm -rf "${runs:?}/$area"
-      if "$wt/apps/mobile/scripts/device/run-areas.sh" --sha "$key" --out "$runs" "$area"; then
-        touch "$runs/$area/.done"
-      else
-        echo "$side: flows failed in $area, not cached"
+      if ! "$wt/apps/mobile/scripts/device/run-areas.sh" --sha "$key" --out "$runs" "$area" && [[ $side == head ]]; then
+        echo "head: flows failed in $area, running it once more"
+        rm -rf "${runs:?}/$area"
+        "$wt/apps/mobile/scripts/device/run-areas.sh" --sha "$key" --out "$runs" "$area" || echo "head: flows failed in $area again"
       fi
+      [[ $side == head ]] || touch "$runs/$area/.done"
     done
     git -C "$wt" checkout -q -- apps/mobile/scripts/device
     git -C "$wt" clean -qfd -- apps/mobile/scripts/device
@@ -87,6 +92,7 @@ run_side() {
   for area in "${areas[@]}"; do
     [[ -d $runs/$area ]] && cp -r "$runs/$area" "$out/$side/$area"
   done
+  [[ $side == base ]] || rm -rf "$cache/runs/head-$$"
 }
 
 run_side base "$base"
