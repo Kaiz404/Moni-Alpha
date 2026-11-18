@@ -199,6 +199,17 @@ export default function ProfileScreen() {
           />
         </Section>
 
+        <Section label="ON THE WEB">
+          <ProfileRow
+            testID={tid('profile', 'row', 'scan-sign-in')}
+            icon="qrcode-scan"
+            tint="aqua"
+            title="Scan to sign in"
+            chevron="right"
+            onPress={() => router.push('/sign-in/scan')}
+          />
+        </Section>
+
         <Section label="PRIVACY AND DATA">
           <ProfileRow
             testID={tid('profile', 'row', 'capture-sources')}

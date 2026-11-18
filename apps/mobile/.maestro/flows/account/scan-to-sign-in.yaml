@@ -1,0 +1,45 @@
+# Profile › Scan to sign in (W2-Auth): the camera page, then the confirm page a scanned code opens.
+# Maestro can't show the camera a QR, so the flow starts a real sign-in on the dev project
+# (scripts/qr-start.js) and opens its moni-e2e://sign-in link, which is what a scan does.
+# Approving signs a browser that never polls; the request lapses in 10 minutes.
+# Run: scripts/device/run-flows.sh .maestro/flows/account/scan-to-sign-in.yaml
+appId: com.anonymous.moni.e2e
+name: Scan to sign in
+tags:
+  - seed-any
+---
+- runFlow: ../../subflows/launch.yaml
+- tapOn:
+    id: home.avatar
+- scrollUntilVisible:
+    element:
+      id: profile.row.scan-sign-in
+- takeScreenshot: scan-sign-in-row
+- tapOn:
+    id: profile.row.scan-sign-in
+- assertVisible: On the Moni website, choose Sign in with your phone, then point the camera at the code.
+- takeScreenshot: scan-sign-in-camera
+- pressKey: Back
+
+- runScript: ../../scripts/qr-start.js
+- openLink: moni-e2e://sign-in?code=${output.qrCode}
+- extendedWaitUntil:
+    visible:
+      id: profile.web-sign-in.question
+    timeout: 15000
+- assertVisible: Sign in on Chrome on Windows?
+- takeScreenshot: scan-sign-in-confirm
+- tapOn:
+    id: profile.web-sign-in.approve
+- extendedWaitUntil:
+    visible: Signed in on Chrome on Windows
+    timeout: 15000
+- takeScreenshot: scan-sign-in-approved
+
+# The same code works once.
+- openLink: moni-e2e://sign-in?code=${output.qrCode}
+- extendedWaitUntil:
+    visible: This code was already used. Scan the new one.
+    timeout: 15000
+- assertVisible:
+    id: profile.web-sign-in.scan-again

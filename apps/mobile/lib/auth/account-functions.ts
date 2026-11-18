@@ -1,6 +1,9 @@
 import {
   deleteAccountResponseSchema,
   functionErrorSchema,
+  qrApproveCheckResponseSchema,
+  qrApproveResponseSchema,
+  type QrApproveRequest,
 } from '@repo/types';
 import { FunctionsHttpError } from '@supabase/supabase-js';
 import type { z } from 'zod';
@@ -38,4 +41,16 @@ async function invoke<S extends z.ZodTypeAny>(
 /** Deletes the signed-in user's account, receipts and every row on the server. Safe to retry. */
 export function deleteAccount() {
   return invoke('delete-account', {}, deleteAccountResponseSchema);
+}
+
+/** The browser waiting behind a scanned sign-in code, such as "Chrome on Windows". */
+export function checkWebSignIn(code: string) {
+  const body: QrApproveRequest = { code, step: 'check' };
+  return invoke('qr-approve', body, qrApproveCheckResponseSchema);
+}
+
+/** Signs that browser in as the phone's user. A code works once. */
+export function approveWebSignIn(code: string) {
+  const body: QrApproveRequest = { code, step: 'approve' };
+  return invoke('qr-approve', body, qrApproveResponseSchema);
 }

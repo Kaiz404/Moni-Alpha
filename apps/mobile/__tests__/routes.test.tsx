@@ -158,6 +158,10 @@ jest.mock('expo-image-picker', () => ({
   launchCameraAsync: async () => ({ canceled: true, assets: null }),
   launchImageLibraryAsync: async () => ({ canceled: true, assets: null }),
 }));
+jest.mock('expo-camera', () => ({
+  CameraView: () => null,
+  useCameraPermissions: () => [{ granted: false, canAskAgain: true, status: 'undetermined' }, async () => {}],
+}));
 jest.mock('expo-network', () => ({
   useNetworkState: () => ({
     isConnected: mockOnline,
@@ -264,6 +268,8 @@ const ROUTES: Record<string, RouteSpec> = {
   'place/[id].tsx': differ(`/place/${BANGSAR}`, 'Bangsar', 'Nothing here in this range'),
   'profile.tsx': differ('/profile', 'Wallets', 'Main currency'),
   'review.tsx': differ('/review', 'RM131.10 not counted yet', 'Nothing to review'),
+  'sign-in/index.tsx': same('/sign-in', "That isn't a Moni sign-in code."),
+  'sign-in/scan.tsx': same('/sign-in/scan', 'Moni needs the camera to read the code.'),
   'transaction/[id].tsx': differ(
     `/transaction/${SALARY}`,
     '+RM4,200.00',
