@@ -340,6 +340,10 @@ html[data-layout='rail-one-column'] .cmd-field {
   border-top: 1.5px solid var(--color-sand-light);
 }
 
+.settings-row-over {
+  color: var(--color-over);
+}
+
 /* ---------- phone layout ---------- */
 
 .phone-head {

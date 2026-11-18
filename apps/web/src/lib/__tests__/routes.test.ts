@@ -10,6 +10,8 @@ describe('isPublicPath', () => {
     ['/login/reset', true],
     ['/help', true],
     ['/delete-account', true],
+    ['/delete-account/done', true],
+    ['/delete-account/other', false],
     ['/privacy', true],
     ['/terms', true],
     ['/auth/callback', true],

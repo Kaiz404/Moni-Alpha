@@ -47,7 +47,7 @@ Each phase ends in a verifiable state. Mobile must behave the same after every p
 5. **`@repo/ai`.** The wire contract as Zod plus the golden fixture tested from TypeScript and Go. Zero data retention on the gateway (issue #55) and the AI consent gate (issue #57: a custom access-token hook adds a consent claim; the gateway checks it).
 6. **Web shell.** Next.js app, tokens, Funnel Display, auth (email, Google, QR sign-in through the Edge Functions `qr-start` and `qr-poll`, then `verifyOtp`), the sidebar, rail and phone layouts with the breakpoint switch, Ctrl K, toasts, motion. (Done. The `web-verify` skill drives every route at four widths in both themes; `apps/web/README.md` describes the shell.)
 7. **Web screens**, in this order: Home, Activity, Review (with review decisions), Budget, Debts, Where you spend, Moni chat, Settings and data (import, merchant names, rules, capture sources).
-8. **Edges.** Landing page and the public deletion page, onboarding, states and empty states, the phone layout for every screen, privacy policy and terms pages.
+8. **Edges.** Landing page and the public deletion page (the deletion page and Settings › Delete your account are done, 19 Nov 2026; its Export data waits for a web export), onboarding, states and empty states, the phone layout for every screen, privacy policy and terms pages.
 
 ## Testing
 

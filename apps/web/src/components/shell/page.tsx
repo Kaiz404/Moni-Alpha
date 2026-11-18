@@ -38,11 +38,14 @@ export function Page({
   title,
   sub,
   phone,
+  back = '/home',
   children,
 }: {
   title: string;
   sub?: string;
   phone: PhoneRole;
+  /** Where the phone layout's back button goes from a pushed page. */
+  back?: string;
   children: ReactNode;
 }) {
   const { user } = useShellApi();
@@ -73,7 +76,7 @@ export function Page({
         )}
         {phone === 'pushed' && (
           <>
-            <Link href="/home" className="back-button press" aria-label="Back">
+            <Link href={back} className="back-button press" aria-label="Back">
               <Icon name="chevron-left" size={22} />
             </Link>
             <h1 className="phone-pushed-title">{title}</h1>

@@ -37,7 +37,13 @@ const ROUTES = [
   { path: '/debts', title: /^Debts$/ },
   { path: '/review', title: /^Review$/, pushed: true },
   { path: '/settings', title: /^Settings$/, pushed: true },
+  { path: '/settings/delete-account', title: /^Delete your account$/, pushed: true },
 ];
+const CORS = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-api-version',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+};
 const NAV_FOR = { sidebar: 'nav.sidebar', rail: 'nav.rail', 'rail-one-column': 'nav.rail', phone: 'nav.tabbar' };
 const BACKGROUND = { light: 'rgb(246, 242, 233)', dark: 'rgb(11, 10, 9)' };
 
@@ -167,9 +173,9 @@ async function shot(page, name) {
   return path;
 }
 
-/** Board render on the left, the app on the right, at the same height. */
+/** Board render on the left, the app on the right, at the same height. `board` is under RENDERS or absolute. */
 async function pair(name, board, app) {
-  const boardPath = join(RENDERS, board);
+  const boardPath = board.startsWith('/') ? board : join(RENDERS, board);
   if (!existsSync(boardPath)) return check(`board render ${board} exists`, false, boardPath);
   const page = await browser.newPage({ viewport: { width: 2900, height: 900 } });
   const img = (p) =>
@@ -180,6 +186,43 @@ async function pair(name, board, app) {
   await page.waitForFunction(() => [...document.images].every((i) => i.complete && i.naturalWidth > 0));
   await page.locator('body').screenshot({ path: join(OUT, 'pairs', `${name}.png`) });
   await page.close();
+}
+
+/** One band of a tall board render, such as one section of W2-Parts, saved beside the pairs. */
+async function boardBand(board, name, y, height) {
+  const page = await browser.newPage({ viewport: { width: 1440, height } });
+  await page.setContent(
+    `<body style="margin:0;overflow:hidden"><img src="data:image/png;base64,${readFileSync(join(RENDERS, board)).toString('base64')}" style="display:block;margin-top:-${y}px"></body>`,
+  );
+  await page.waitForFunction(() => [...document.images].every((i) => i.complete && i.naturalWidth > 0));
+  const path = join(OUT, 'pairs', `board-${name}.png`);
+  await page.screenshot({ path });
+  await page.close();
+  return path;
+}
+
+/**
+ * Never lets a check delete the e2e user: `delete-account` answers ok without reaching the server, and
+ * sign-out stays in this browser so the shared e2e session survives. Returns the calls it caught.
+ */
+async function stubDeletion(context) {
+  const calls = [];
+  await context.route('**/functions/v1/delete-account', (route) => {
+    if (route.request().method() === 'POST') calls.push({ authorization: route.request().headers().authorization ?? '' });
+    return route.fulfill({ json: { ok: true }, headers: CORS });
+  });
+  await context.route('**/auth/v1/logout**', (route) => route.fulfill({ status: 204, headers: CORS, body: '' }));
+  return calls;
+}
+
+/** Answers the public page's email-link request without sending mail. Returns the requests it caught. */
+async function stubEmailLink(context) {
+  const requests = [];
+  await context.route('**/auth/v1/otp**', (route) => {
+    if (route.request().method() === 'POST') requests.push({ url: route.request().url(), body: route.request().postDataJSON() });
+    return route.fulfill({ json: {}, headers: CORS });
+  });
+  return requests;
 }
 
 async function open(page, path) {
@@ -214,7 +257,7 @@ async function stubQr(context) {
   const later = (ms) => new Date(Date.now() + ms).toISOString();
   await context.route('**/functions/v1/qr-start', (route) =>
     route.fulfill({
-      json: { requestId: 'stub', pollSecret: 'stub', code: 'stub-code', codeExpiresAt: later(42_000), expiresAt: later(600_000) },
+      json: { requestId: '6f1c2a4e-8b3d-4c5f-9a7e-1d2b3c4d5e6f', pollSecret: 'stub', code: 'stub-code', codeExpiresAt: later(42_000), expiresAt: later(600_000) },
     }),
   );
   await context.route('**/functions/v1/qr-poll', (route) =>
@@ -354,6 +397,112 @@ try {
   for (const size of WIDTHS) {
     await pair(`home-${size.width}`, 'r2/W2-Home.png', join(OUT, `home-${size.width}-light.png`));
   }
+
+  // ---------- Delete your account: the public page, the flow in Settings, done ----------
+  // stubDeletion keeps every click here away from the real delete-account; live-check.mjs proves that one.
+  const wideEnough = (p) => p.evaluate(() => document.documentElement.scrollWidth <= innerWidth);
+  const groundOf = (p) => p.evaluate(() => getComputedStyle(document.body).backgroundColor);
+  for (const theme of ['light', 'dark']) {
+    for (const size of WIDTHS.filter((w) => w.width === 1440 || w.width === 390)) {
+      const where = `at ${size.width} ${theme}`;
+      const viewport = { width: size.width, height: size.height };
+
+      const anon = await browser.newContext({ viewport, colorScheme: theme });
+      await anon.addInitScript(() => localStorage.setItem('moni-theme', 'system'));
+      const sentTo = await stubEmailLink(anon);
+      const a = await anon.newPage();
+      await a.goto(`${base}/delete-account`);
+      const anonState = {
+        url: a.url(),
+        title: await a.getByRole('heading', { name: 'Delete your Moni account' }).isVisible(),
+        list: await a.getByText('Receipt photos').isVisible(),
+        undone: await a.getByText("It goes at once and can't be undone.").isVisible(),
+        signIn: await a.getByRole('link', { name: 'sign in' }).getAttribute('href'),
+        bg: await groundOf(a),
+        wide: await wideEnough(a),
+      };
+      check(
+        `/delete-account signed out ${where}: public, says what goes and that it can't be undone, offers sign-in back here`,
+        anonState.url === `${base}/delete-account` &&
+          anonState.title &&
+          anonState.list &&
+          anonState.undone &&
+          anonState.signIn === '/login?next=%2Fdelete-account' &&
+          anonState.bg === BACKGROUND[theme] &&
+          anonState.wide,
+        anonState,
+      );
+      await shot(a, `delete-account-public-${size.width}-${theme}`);
+      if (size.width === 1440 && theme === 'light') {
+        await a.getByLabel('Email').fill('kai@example.com');
+        await a.getByRole('button', { name: 'Email me a link' }).click();
+        await a.getByRole('status').filter({ hasText: 'kai@example.com' }).waitFor({ timeout: 10_000 }).catch(() => {});
+        const asked = sentTo[0];
+        check(
+          'Email me a link asks for a sign-in link back to /delete-account, never a new account, and says it is on its way',
+          sentTo.length === 1 &&
+            asked.body?.email === 'kai@example.com' &&
+            asked.body?.create_user === false &&
+            new URL(asked.url).searchParams.get('redirect_to') === `${base}/auth/callback?next=%2Fdelete-account` &&
+            (await a.getByText('has a Moni account, a link is on its way').isVisible()),
+          asked,
+        );
+        await shot(a, 'delete-account-public-sent-1440-light');
+      }
+      await anon.close();
+
+      const ctx = await browser.newContext({ viewport, storageState: storage, colorScheme: theme });
+      await ctx.addInitScript(() => localStorage.setItem('moni-theme', 'system'));
+      const calls = await stubDeletion(ctx);
+      const p = await ctx.newPage();
+      for (const [path, name] of [
+        ['/delete-account', 'public-signed-in'],
+        ['/settings/delete-account', 'in-app'],
+      ]) {
+        await p.goto(`${base}${path}`);
+        const field = p.getByLabel('Type DELETE to confirm');
+        const button = p.getByRole('button', { name: 'Delete my account' });
+        await field.waitFor({ timeout: 15_000 }).catch(() => {});
+        check(
+          `${path} signed in ${where}: what goes, then Delete my account disabled before the word, no sideways scroll`,
+          (await p.getByText('Your sign-in, on every device').isVisible()) &&
+            (await button.isDisabled()) &&
+            (await wideEnough(p)),
+        );
+        await shot(p, `delete-account-${name}-${size.width}-${theme}`);
+        await field.fill('DELET');
+        await field.press('Enter');
+        await p.waitForTimeout(300);
+        check(
+          `${path} ${where}: Enter does nothing until the word matches`,
+          calls.length === 0 && p.url() === `${base}${path}` && (await button.isDisabled()),
+          { calls: calls.length, url: p.url() },
+        );
+        await field.fill(' delete');
+        check(`${path} ${where}: DELETE in any letter case enables Delete my account`, await button.isEnabled());
+        await shot(p, `delete-account-${name}-typed-${size.width}-${theme}`);
+      }
+      await p.getByRole('button', { name: 'Delete my account' }).click();
+      await p.waitForURL(`${base}/delete-account/done`, { timeout: 15_000 }).catch(() => {});
+      check(
+        `Delete my account ${where}: one call with the access token, then the done page`,
+        calls.length === 1 &&
+          /^Bearer ey/.test(calls[0].authorization) &&
+          p.url() === `${base}/delete-account/done` &&
+          (await p.getByRole('heading', { name: 'Your account is deleted' }).isVisible()),
+        { calls: calls.length, url: p.url() },
+      );
+      await shot(p, `delete-account-done-${size.width}-${theme}`);
+      await p.goto(`${base}/home`);
+      check(`after Delete ${where} this browser is signed out`, p.url().startsWith(`${base}/login`), p.url());
+      await ctx.close();
+    }
+  }
+  const inAppBand = await boardBand('r3/W2-Parts.png', 'delete-in-app', 3900, 710);
+  await pair('delete-account-in-app', inAppBand, join(OUT, 'delete-account-in-app-typed-1440-light.png'));
+  await pair('delete-account-done', inAppBand, join(OUT, 'delete-account-done-1440-light.png'));
+  const publicBand = await boardBand('r3/W2-Parts.png', 'delete-public', 4630, 480);
+  await pair('delete-account-public', publicBand, join(OUT, 'delete-account-public-1440-light.png'));
 
   // ---------- reduced motion ----------
   for (const reducedMotion of ['no-preference', 'reduce']) {

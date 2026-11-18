@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { Icon } from '@/components/icon';
 import { Page } from '@/components/shell/page';
 import { useShellApi } from '@/components/shell/shell-context';
@@ -12,7 +13,7 @@ const THEMES: { pref: ThemePref; label: string }[] = [
   { pref: 'system', label: 'System' },
 ];
 
-/** Settings until W2-Data's sections arrive: the two things every layout needs, Theme and Sign out. */
+/** Settings until W2-Data's sections arrive: Theme, Sign out and Delete your account. */
 export default function SettingsPage() {
   const { user, run } = useShellApi();
   const { pref, setTheme } = useTheme();
@@ -43,6 +44,11 @@ export default function SettingsPage() {
           <Icon name="logout" size={22} />
           <span style={{ flex: '1 1 auto', fontWeight: 600 }}>Sign out</span>
         </button>
+        <Link href="/settings/delete-account" className="settings-row settings-row-over">
+          <Icon name="account-remove-outline" size={22} />
+          <span style={{ flex: '1 1 auto', fontWeight: 600 }}>Delete your account</span>
+          <Icon name="chevron-right" size={20} />
+        </Link>
       </section>
     </Page>
   );

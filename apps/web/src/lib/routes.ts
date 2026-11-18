@@ -5,6 +5,7 @@ const PUBLIC_PATHS = [
   '/login/verify',
   '/login/reset',
   '/delete-account',
+  '/delete-account/done',
   '/privacy',
   '/terms',
   '/help',

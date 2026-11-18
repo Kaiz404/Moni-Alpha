@@ -41,6 +41,7 @@ The feature map in [`features/`](features/README.md) says how each part is reach
 4. Reduced motion: Add slides in normally and fades under `prefers-reduced-motion`.
 5. Keys at 1440: Ctrl K, typing, Enter, `/`, Esc, `?`, G then D, Tab from the palette into Moni chat, the theme switch toast with Undo, Ctrl Z, and the account menu.
 6. At 1024 it opens Add, types into it, resizes to 390 and back, and asserts the route, the text and the same DOM element survive.
+7. Delete your account at 1440 and 390 in both themes: `/delete-account` signed out (and, once, Email me a link), then signed in on `/delete-account` and `/settings/delete-account` before and after typing DELETE, then Delete my account against a stubbed `delete-account` through to the done page. No check deletes the e2e user.
 
 Only the QR step calls `qr-start` for real. `qr-start` allows 10 live requests per address for 10 minutes, so every other page that shows the QR gets a stubbed code (`stubQr`). Opening `/login` by hand at 1024 wide or more uses one request each time. If the QR step fails with "Too many sign-in codes", wait 10 minutes; another lane on this machine may be using the same allowance.
 
