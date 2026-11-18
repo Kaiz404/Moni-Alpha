@@ -64,5 +64,6 @@ tags:
     timeout: 15000
 - takeScreenshot: k1-l8-google-cancel
 
-- runFlow: ../../subflows/sign-in.yaml
+# Relaunch for an empty form: a tap lands mid-field, so eraseText would keep the typed email's tail.
+- runFlow: ../../subflows/launch.yaml
 - takeScreenshot: k1-l1-signed-in
