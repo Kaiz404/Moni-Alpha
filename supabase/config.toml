@@ -52,3 +52,17 @@ skip_nonce_check = false
 
 [auth.external.github]
 enabled = false
+
+# These functions check the caller themselves: qr-start and qr-poll take no sign-in, and the others
+# verify the access token against the project's signing keys (functions/_shared/http.ts).
+[functions.delete-account]
+verify_jwt = false
+
+[functions.qr-start]
+verify_jwt = false
+
+[functions.qr-approve]
+verify_jwt = false
+
+[functions.qr-poll]
+verify_jwt = false

@@ -29,6 +29,18 @@ Auth signs user access tokens with an **ES256 asymmetric key**. The Go backend v
 
 Bucket `receipts` — receipt images at `{userId}/{proposalId}.jpg`, policies restrict access by `auth.uid()` prefix (`20260323000000_storage_receipts_bucket.sql`). If mobile logs `Bucket not found`, push migrations.
 
+## Edge Functions
+
+`functions/` holds the operations that need the secret key: `delete-account`, and `qr-start`, `qr-approve` and `qr-poll` for QR sign-in (contract: [docs/ARCHITECTURE.md § Auth](../docs/ARCHITECTURE.md#auth)). They read the key from the runtime's `SUPABASE_SECRET_KEYS`, so nothing needs setting. `config.toml` turns off the gateway's JWT check for each, because they check the caller themselves. Folders starting with `_` are not functions: `_shared/` holds the code they share.
+
+```bash
+npx supabase functions deploy delete-account qr-start qr-approve qr-poll --use-api
+deno test supabase/functions/_shared/          # code rotation, expiry, single use, receipt deletion
+node supabase/functions/_check/live-check.mjs  # the deployed functions on the dev project
+```
+
+The live check reads `apps/mobile/.env.e2e`. It creates a throwaway user with rows in every table and two receipts, deletes it through `delete-account`, and checks that nothing is left; then it runs a QR sign-in approved by the e2e user through to `verifyOtp`. It waits 61 s for a code to rotate; `--skip-rotation` skips that part.
+
 ## Seeded data
 
 18 system categories (`user_id IS NULL`) from the initial schema; profile rows auto-created on signup by trigger.

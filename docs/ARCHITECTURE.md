@@ -66,6 +66,9 @@ Android notifications are prefiltered on-device (`lib/notifications/notification
 - Users authenticate with Supabase Auth (email/password). Sessions persist in MMKV on mobile, cookies on web.
 - Supabase signs access tokens with an **asymmetric ES256 key**; the Go backend verifies them statelessly via the JWKS endpoint.
 - API keys are the new Supabase key system: `sb_publishable_...` in clients, `sb_secret_...` server-side only. Legacy `anon`/`service_role` JWT keys are being phased out.
+- Work that needs the secret key runs as Supabase Edge Functions (`supabase/functions/`), which both apps call:
+  - `delete-account` (the user's access token): deletes everything under `receipts/{uid}/`, then the auth user, which every table cascades from. A retry after a partial run converges. Returns `{ ok: true }`, or `{ error }` with 401 or 500. The app then runs its usual sign-out.
+  - QR sign-in, so a browser signs in from the phone. The web calls `qr-start` with no session and gets `{ requestId, pollSecret, code, codeExpiresAt, expiresAt }`; it shows `moni://sign-in?code=<code>` as a QR (the e2e build's scheme is `moni-e2e`) and polls `qr-poll` with `{ pollSecret }` every few seconds. The answer is `{ status: 'waiting', code, codeExpiresAt }` (the code rotates every 60 s; show the newest), `{ status: 'approved', tokenHash }` exactly once, or `{ status: 'expired' }` (the request lives 10 minutes; start a new one). The phone scans, calls `qr-approve` with its access token and `{ code, step: 'check' }` to get `{ browser }` ("Chrome on Windows"), asks the user, then sends `step: 'approve'` and gets `{ ok: true }`. A lapsed code answers 410 and a used one 409. The web finishes with `supabase.auth.verifyOtp({ token_hash: tokenHash, type: 'magiclink' })`. `qr-start` allows 10 live requests per address (429 beyond).
 
 ## Mobile theming (Uniwind)
 

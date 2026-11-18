@@ -5,6 +5,7 @@
 - Node.js >= 18, pnpm 9 (`corepack enable`)
 - Go >= 1.26 (for `apps/backend`)
 - Supabase CLI (`npx supabase`) logged in and linked to the project
+- Deno 2, only to test the Edge Functions (`deno test supabase/functions/_shared/`; [supabase/README.md](../supabase/README.md#edge-functions))
 - **Android dev client** — native modules (camera, notifications, Google Sign-In); Expo Go is not enough. Local build: `cd apps/mobile && npx expo run:android`. GitHub Actions builds debug APKs in CI. On Windows, use **WSL2** for local Android builds ([toolchain below](#wsl-android-toolchain); day-to-day workflow in [apps/mobile/README.md](../apps/mobile/README.md)).
 
 ## Install

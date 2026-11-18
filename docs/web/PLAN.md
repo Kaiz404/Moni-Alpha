@@ -43,9 +43,9 @@ Each phase ends in a verifiable state. Mobile must behave the same after every p
 1. **`@repo/core`: calendar and glossary, then ledger rules.** Migrate every mobile caller and delete the duplicates. This fixes Moni chat counting debt repayments as spending; add a test for it.
 2. **`@repo/core`: money month and read model.** Mobile's selectors become thin adapters; the finance test suites move with the code.
 3. **`@repo/design` and `@repo/brand`.** Mobile's `global.css` and brand assets become generated output with no visual change (compare device screenshots before and after).
-4. **`@repo/data` and write plans.** Mobile runs on the shared store (`createMoniStore`). Edge Function `delete-account` and the in-app deletion (issue #56).
+4. **`@repo/data` and write plans.** Mobile runs on the shared store (`createMoniStore`). Edge Function `delete-account` and the in-app deletion (issue #56). (The functions `delete-account`, `qr-start`, `qr-approve` and `qr-poll` landed early, 19 Nov 2026; the contract is in `docs/ARCHITECTURE.md` § Auth.)
 5. **`@repo/ai`.** The wire contract as Zod plus the golden fixture tested from TypeScript and Go. Zero data retention on the gateway (issue #55) and the AI consent gate (issue #57: a custom access-token hook adds a consent claim; the gateway checks it).
-6. **Web shell.** Next.js app, tokens, Funnel Display, auth (email, Google, QR sign-in through Edge Functions `qr-start` and `qr-redeem`), the sidebar, rail and phone layouts with the breakpoint switch, Ctrl K, toasts, motion.
+6. **Web shell.** Next.js app, tokens, Funnel Display, auth (email, Google, QR sign-in through the Edge Functions `qr-start` and `qr-poll`, then `verifyOtp`), the sidebar, rail and phone layouts with the breakpoint switch, Ctrl K, toasts, motion.
 7. **Web screens**, in this order: Home, Activity, Review (with review decisions), Budget, Debts, Where you spend, Moni chat, Settings and data (import, merchant names, rules, capture sources).
 8. **Edges.** Landing page and the public deletion page, onboarding, states and empty states, the phone layout for every screen, privacy policy and terms pages.
 
