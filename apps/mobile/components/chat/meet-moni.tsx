@@ -4,7 +4,7 @@ import type { IconSymbolName } from '@/components/ui/icon-symbol';
 import { Text } from '@/components/ui/text';
 import { tid } from '@/lib/test-ids';
 
-import { InkCardLabel, InkRow, useOnInk, type SoftTint } from './ink-card';
+import { InkCardLabel, InkRow, type SoftTint } from './ink-card';
 
 const STARTERS: { text: string; icon: IconSymbolName | 'moni'; tint: SoftTint }[] = [
   { text: 'lunch 12.50 at Mamak Ali', icon: 'silverware-fork-knife', tint: 'coral' },
@@ -20,7 +20,6 @@ export function MeetMoni({
   name: string | null;
   onStarter: (text: string) => void;
 }) {
-  const onInk = useOnInk();
   const first = name?.trim().split(/\s+/)[0];
   return (
     <View
@@ -33,12 +32,6 @@ export function MeetMoni({
         className="text-primary-foreground"
       >
         {`Hi${first ? ` ${first}` : ''}. Tell me what you spent and I'll file it.`}
-      </Text>
-      <Text
-        variant="body"
-        className={onInk.body}
-      >
-        Type it like a text, or tap the mic. Once you have a few days in, I can answer questions about your money too.
       </Text>
       <View className="gap-1">
         {STARTERS.map((starter, index) => (
