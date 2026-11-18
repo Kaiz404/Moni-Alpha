@@ -1,6 +1,6 @@
 import type { CurrencyCode, MinorAmount } from '@repo/types';
 
-import type { FinanceTransaction } from '@/lib/finance/types';
+import type { FinanceTransaction } from '@repo/core';
 import { listParams, readListScope, scopedRows, type ListScope } from '../list-scope';
 
 const NOW = new Date(2026, 9, 14, 12);

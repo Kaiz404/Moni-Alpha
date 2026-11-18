@@ -30,8 +30,6 @@ import { PickerField } from '@/components/ui/picker-field';
 import { Press } from '@/components/ui/press';
 import { Text } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
-import { daysUntil, type DebtLine } from '@/lib/finance/debt-summary';
-import type { FinanceDebtActivity } from '@/lib/finance/types';
 import { approve } from '@/lib/haptics';
 import { openSheet } from '@/lib/sheet/sheet-store';
 import {
@@ -43,7 +41,14 @@ import {
 } from '@/lib/supabase/debts';
 import { tid } from '@/lib/test-ids';
 import { showToast } from '@/lib/toast/toast-store';
-import { dateLabel, dueWords, formatMoney } from '@repo/core';
+import {
+  daysUntil,
+  type DebtLine,
+  type FinanceDebtActivity,
+  dateLabel,
+  dueWords,
+  formatMoney,
+} from '@repo/core';
 import { deviceCalendar } from '@/lib/dates/device-calendar';
 
 export default function DebtDetailScreen() {
@@ -174,7 +179,7 @@ function DebtPage({
   };
 
   const days = debt.dueDate
-    ? daysUntil(debt.dueDate, new Date())
+    ? daysUntil(debt.dueDate, new Date(), deviceCalendar)
     : null;
   const dueText = debt.dueDate
     ? `${dueLabel(debt.dueDate)}${days === null ? '' : ` · ${dueWords(days).toLowerCase()}`}`

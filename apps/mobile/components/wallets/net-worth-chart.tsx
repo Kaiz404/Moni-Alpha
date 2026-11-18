@@ -5,8 +5,6 @@ import Animated, { LinearTransition } from 'react-native-reanimated';
 import { Segmented } from '@/components/ui/segmented';
 import { Text } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
-import { balanceIndex } from '@/lib/finance/balance-history';
-import type { FinanceTransaction, FinanceWallet } from '@/lib/finance/types';
 import { springs } from '@repo/design';
 import { tid } from '@/lib/test-ids';
 import { compactWalletNames } from '@/lib/wallets/compact-name';
@@ -18,7 +16,15 @@ import {
   walletLineStyles,
   type NetWorthView,
 } from './net-worth-geometry';
-import { CHART_RANGES, type ChartRange, formatMoney } from '@repo/core';
+import {
+  balanceIndex,
+  type FinanceTransaction,
+  type FinanceWallet,
+  CHART_RANGES,
+  type ChartRange,
+  formatMoney,
+} from '@repo/core';
+import { deviceCalendar } from '@/lib/dates/device-calendar';
 
 /** The wallet tints are pale on Paper, so their lines run thicker than the Ink total. */
 const WALLET_LINE_WIDTH = 3.5;
@@ -62,6 +68,7 @@ export function NetWorthChart({
     () =>
       balanceIndex({
         now,
+        calendar: deviceCalendar,
         wallets: wallets.map((wallet) => ({
           id: wallet.id,
           balanceMinor: Number(balances[wallet.id] ?? 0),

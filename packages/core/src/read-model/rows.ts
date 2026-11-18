@@ -1,5 +1,5 @@
-import { decimalToMinor, proposedTransactionStatusSchema } from '@repo/types';
-import { normalizeCurrency } from './money';
+import { decimalToMinor, proposedTransactionStatusSchema, type CurrencyCode } from '@repo/types';
+
 import type {
   FinanceBudget,
   FinanceCategory,
@@ -14,6 +14,13 @@ type RawRow = Record<string, unknown> & {
   id?: unknown;
   deleted?: unknown;
 };
+
+export function normalizeCurrency(value: unknown, fallback: CurrencyCode = 'USD'): CurrencyCode {
+  const currency = String(value ?? '')
+    .trim()
+    .toUpperCase();
+  return /^[A-Z]{3}$/.test(currency) ? (currency as CurrencyCode) : fallback;
+}
 
 function stringValue(value: unknown): string {
   return typeof value === 'string' ? value : value == null ? '' : String(value);

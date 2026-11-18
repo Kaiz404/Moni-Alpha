@@ -1,8 +1,9 @@
 import type { CurrencyCode } from '@repo/types';
 
-import type { FinanceTransaction } from '@/lib/finance/types';
-import { addDays, chartRangeStart, countsAsSpending, dayNumber, monthOf } from '@repo/core';
-import { deviceCalendar } from '@/lib/dates/device-calendar';
+import { addDays, type Calendar, dayNumber, monthOf } from '../calendar';
+import { chartRangeStart } from '../chart-range';
+import { countsAsSpending } from '../ledger';
+import type { FinanceTransaction } from './types';
 
 export type SpendUnit = 'day' | 'week' | 'month' | 'year';
 
@@ -52,22 +53,24 @@ export function spendIndex({
   now,
   transactions,
   currency,
+  calendar,
 }: {
   now: Date;
   transactions: readonly FinanceTransaction[];
   currency: CurrencyCode;
+  calendar: Calendar;
 }): SpendIndex {
-  const today = deviceCalendar.dayKey(now);
+  const today = calendar.dayKey(now);
   const byDay = new Map<string, number>();
   let earliest = today;
   for (const transaction of transactions) {
     if (transaction.currency !== currency || !countsAsSpending(transaction)) continue;
-    const day = deviceCalendar.dayKey(transaction.transactionDate);
+    const day = calendar.dayKey(transaction.transactionDate);
     if (day > today) continue;
     byDay.set(day, (byDay.get(day) ?? 0) + Number(transaction.amountMinor));
     if (day < earliest) earliest = day;
   }
-  const yearAgo = chartRangeStart(deviceCalendar.dayKey(now), '1y')!;
+  const yearAgo = chartRangeStart(calendar.dayKey(now), '1y')!;
   const firstDay = earliest < yearAgo ? earliest : yearAgo;
   const origin = dayNumber(firstDay);
   const days = dayNumber(today) - origin + 1;

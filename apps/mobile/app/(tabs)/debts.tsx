@@ -18,7 +18,7 @@ import { Page, PageScroll } from '@/components/ui/page';
 import { Press } from '@/components/ui/press';
 import { Text } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
-import type { DebtSide } from '@/lib/finance/debt-summary';
+import type { DebtSide } from '@repo/core';
 import { tid } from '@/lib/test-ids';
 
 export default function DebtsScreen() {

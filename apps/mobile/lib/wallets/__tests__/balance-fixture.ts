@@ -4,7 +4,7 @@ import {
   type FinanceProjection,
   type FinanceTransaction,
   type FinanceWallet,
-} from '@/lib/finance/types';
+} from '@repo/core';
 
 export const USER = 'user_1';
 export const NOW = new Date(2026, 9, 12, 10);

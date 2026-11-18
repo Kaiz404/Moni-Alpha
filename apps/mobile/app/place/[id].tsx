@@ -24,8 +24,13 @@ import { Button } from '@/components/ui/button';
 import { Text } from '@/components/ui/text';
 import { TransactionRow } from '@/components/ui/transaction-row';
 import { getProposalLocationSnapshot } from '@/lib/ai/proposal-location-cache';
-import { merchantName } from '@/lib/finance/merchant-name';
+import { pendingProposals$ } from '@/lib/finance/selectors';
+import { listMerchantAliases } from '@/lib/supabase/merchant-aliases';
+import { tid } from '@/lib/test-ids';
+import { listParams } from '@/lib/transactions/list-scope';
+import { transactionRow } from '@/lib/transactions/row';
 import {
+  merchantName,
   groupPlaces,
   isAtPlace,
   placeRange,
@@ -34,13 +39,9 @@ import {
   sharePercent,
   spanLabel,
   type Place,
-} from '@/lib/finance/places';
-import { pendingProposals$ } from '@/lib/finance/selectors';
-import { listMerchantAliases } from '@/lib/supabase/merchant-aliases';
-import { tid } from '@/lib/test-ids';
-import { listParams } from '@/lib/transactions/list-scope';
-import { transactionRow } from '@/lib/transactions/row';
-import { formatMoney } from '@repo/core';
+  formatMoney,
+} from '@repo/core';
+import { deviceCalendar } from '@/lib/dates/device-calendar';
 
 /** XM-Detail's map strip; the sheet starts 28 above its bottom edge. */
 const MAP_HEIGHT = 240;
@@ -72,9 +73,9 @@ export default function PlaceScreen() {
   const proposals = useValue(pendingProposals$(userId));
   const aliases = useValue(() => (userId ? listMerchantAliases(userId) : []));
 
-  const range = useMemo(() => placeRange(params.range, new Date()), [params.range]);
+  const range = useMemo(() => placeRange(params.range, new Date(), deviceCalendar), [params.range]);
   const places = useMemo(
-    () => groupPlaces(transactions, { currency, range: range.span }),
+    () => groupPlaces(transactions, { currency, range: range.span }, deviceCalendar),
     [transactions, currency, range],
   );
   const place = places.find((candidate) => candidate.id === params.id) ?? null;

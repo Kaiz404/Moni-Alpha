@@ -1,22 +1,21 @@
 import type { CurrencyCode, MerchantAlias, MinorAmount } from '@repo/types';
 
-import { monthSpend, topMerchants, type MerchantSpend } from '@/lib/finance/budget-month';
-import { merchantName } from '@/lib/finance/merchant-name';
-import type { FinanceCategory, FinanceTransaction } from '@/lib/finance/types';
 import {
   addDays,
+  type Calendar,
   dayOfMonth,
   daysInMonth,
   firstDayOf,
-  formatMoney,
   isMonthKey,
   lastDayOf,
-  monthShort,
+  type MonthKey,
   parseDayKey,
   shiftMonth,
-  type MonthKey,
-} from '@repo/core';
-import { deviceCalendar } from '@/lib/dates/device-calendar';
+} from '../calendar';
+import { formatMoney, monthShort } from '../glossary';
+import { countsAsSpending } from '../ledger';
+import { merchantName, topMerchants, type MerchantSpend } from './merchants';
+import type { FinanceCategory, FinanceTransaction } from './types';
 
 type Aliases = readonly Pick<MerchantAlias, 'rawKey' | 'displayName'>[];
 
@@ -77,6 +76,7 @@ export type ReportInput = {
   /** Every category, archived ones too: old spending still belongs to them. */
   categories: readonly Pick<FinanceCategory, 'id' | 'name' | 'icon' | 'color'>[];
   aliases: Aliases;
+  calendar: Calendar;
 };
 
 const TOP_MERCHANTS = 5;
@@ -89,12 +89,12 @@ function monthRange(month: MonthKey): ReportRange {
  * A past month against the whole month before. The running month against the same days of the
  * month before, as Activity's "than Sep by now" does.
  */
-export function comparisonFor(month: MonthKey, now: Date): ReportComparison {
+export function comparisonFor(month: MonthKey, now: Date, calendar: Calendar): ReportComparison {
   const previous = shiftMonth(month, -1);
   const name = monthShort(previous);
   const whole = monthRange(previous);
-  if (month !== deviceCalendar.monthKey(now)) return { range: whole, label: name };
-  const day = Math.min(dayOfMonth(deviceCalendar.dayKey(now)), daysInMonth(previous));
+  if (month !== calendar.monthKey(now)) return { range: whole, label: name };
+  const day = Math.min(dayOfMonth(calendar.dayKey(now)), daysInMonth(previous));
   return {
     range: { from: whole.from, to: addDays(firstDayOf(previous), day - 1) },
     label: `${name} by now`,
@@ -115,11 +115,11 @@ export function changePhrase(
   return `${amount} ${change > 0 ? 'more' : 'less'} than ${comparison.label}`;
 }
 
-const dayOf = (transaction: FinanceTransaction) =>
-  deviceCalendar.dayKey(transaction.transactionDate);
+const dayOf = (transaction: FinanceTransaction, calendar: Calendar) =>
+  calendar.dayKey(transaction.transactionDate);
 
-const within = (transaction: FinanceTransaction, { from, to }: ReportRange) =>
-  dayOf(transaction) >= from && dayOf(transaction) <= to;
+const within = (transaction: FinanceTransaction, { from, to }: ReportRange, calendar: Calendar) =>
+  dayOf(transaction, calendar) >= from && dayOf(transaction, calendar) <= to;
 
 function byCategory(transactions: readonly FinanceTransaction[]): Map<string | null, number> {
   const totals = new Map<string | null, number>();
@@ -132,7 +132,7 @@ function byCategory(transactions: readonly FinanceTransaction[]): Map<string | n
   return totals;
 }
 
-function isInScope(transaction: FinanceTransaction, scope: SpendingScope): boolean {
+function isInScope(transaction: FinanceTransaction, scope: SpendingScope, calendar: Calendar): boolean {
   switch (scope.kind) {
     case 'category':
       return transaction.categoryId === scope.categoryId;
@@ -142,7 +142,7 @@ function isInScope(transaction: FinanceTransaction, scope: SpendingScope): boole
         (scope.categoryId === undefined || transaction.categoryId === scope.categoryId)
       );
     case 'day':
-      return dayOf(transaction) === scope.day;
+      return dayOf(transaction, calendar) === scope.day;
   }
 }
 
@@ -153,10 +153,29 @@ export function spendingRows(
   transactions: readonly FinanceTransaction[],
   currency: CurrencyCode,
   aliases: Aliases,
+  calendar: Calendar,
 ): FinanceTransaction[] {
-  return namedMonthSpend(transactions, month, currency, aliases).filter((transaction) =>
-    isInScope(transaction, scope),
+  return namedMonthSpend(transactions, month, currency, aliases, calendar).filter((transaction) =>
+    isInScope(transaction, scope, calendar),
   );
+}
+
+/** A month's spending in one currency, newest first; `categoryId` narrows it to one category. */
+export function monthSpend(
+  transactions: readonly FinanceTransaction[],
+  month: MonthKey,
+  currency: CurrencyCode,
+  calendar: Calendar,
+  categoryId?: string,
+): FinanceTransaction[] {
+  return transactions
+    .filter(
+      (transaction) =>
+        transaction.currency === currency && countsAsSpending(transaction) &&
+        (categoryId === undefined || transaction.categoryId === categoryId) &&
+        calendar.monthKey(transaction.transactionDate) === month,
+    )
+    .sort((a, b) => b.transactionDate.localeCompare(a.transactionDate));
 }
 
 /** A month's spending, newest first, under the names the user gave their merchants. */
@@ -165,8 +184,9 @@ function namedMonthSpend(
   month: MonthKey,
   currency: CurrencyCode,
   aliases: Aliases,
+  calendar: Calendar,
 ): FinanceTransaction[] {
-  return monthSpend(transactions, month, currency).map((transaction) =>
+  return monthSpend(transactions, month, currency, calendar).map((transaction) =>
     transaction.merchant
       ? { ...transaction, merchant: merchantName(transaction.merchant, aliases) }
       : transaction,
@@ -175,9 +195,18 @@ function namedMonthSpend(
 
 /** Every merchant a month's spending went to, biggest first, with the category of its newest payment. */
 export function monthMerchants(
-  input: Pick<ReportInput, 'month' | 'currency' | 'transactions' | 'categories' | 'aliases'>,
+  input: Pick<
+    ReportInput,
+    'month' | 'currency' | 'transactions' | 'categories' | 'aliases' | 'calendar'
+  >,
 ): ReportMerchant[] {
-  const current = namedMonthSpend(input.transactions, input.month, input.currency, input.aliases);
+  const current = namedMonthSpend(
+    input.transactions,
+    input.month,
+    input.currency,
+    input.aliases,
+    input.calendar,
+  );
   const categoriesById = new Map(input.categories.map((category) => [category.id, category]));
   return topMerchants(current, Infinity).merchants.map((merchant) => {
     const newest = current.find(
@@ -203,18 +232,20 @@ export function spendingChange(
   transactions: readonly FinanceTransaction[],
   currency: CurrencyCode,
   aliases: Aliases,
+  calendar: Calendar,
 ): string | null {
   if (scope.kind === 'day') return null;
-  const comparison = comparisonFor(month, now);
+  const comparison = comparisonFor(month, now, calendar);
   const previous = spendingRows(
     scope,
     shiftMonth(month, -1),
     transactions,
     currency,
     aliases,
-  ).filter((transaction) => within(transaction, comparison.range));
+    calendar,
+  ).filter((transaction) => within(transaction, comparison.range, calendar));
   return changePhrase(
-    totalMinor(spendingRows(scope, month, transactions, currency, aliases)),
+    totalMinor(spendingRows(scope, month, transactions, currency, aliases, calendar)),
     totalMinor(previous),
     comparison,
     currency,
@@ -268,8 +299,8 @@ export function readSpendingParams(
 }
 
 export function buildReport(input: ReportInput): Report {
-  const { month, currency, transactions, aliases } = input;
-  const current = namedMonthSpend(transactions, month, currency, aliases);
+  const { month, currency, transactions, aliases, calendar } = input;
+  const current = namedMonthSpend(transactions, month, currency, aliases, calendar);
 
   const categoriesById = new Map(input.categories.map((category) => [category.id, category]));
   const categories = [...byCategory(current)]

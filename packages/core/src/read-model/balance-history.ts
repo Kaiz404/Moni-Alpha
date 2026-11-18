@@ -1,6 +1,7 @@
-import type { FinanceTransaction } from '@/lib/finance/types';
-import { type ChartRange, chartWindow, dayNumber, daysBetween, walletEffect } from '@repo/core';
-import { deviceCalendar } from '@/lib/dates/device-calendar';
+import { type Calendar, dayNumber, daysBetween } from '../calendar';
+import { type ChartRange, chartWindow } from '../chart-range';
+import { walletEffect } from '../ledger';
+import type { FinanceTransaction } from './types';
 
 /**
  * Closing balances, one entry per local day from the day the first wallet began to today, built
@@ -27,25 +28,27 @@ export function balanceIndex({
   now,
   wallets,
   transactions,
+  calendar,
 }: {
   now: Date;
+  calendar: Calendar;
   wallets: readonly { id: string; balanceMinor: number; createdAt?: string | null }[];
   transactions: readonly Pick<
     FinanceTransaction,
     'walletId' | 'transferToWalletId' | 'amountMinor' | 'type' | 'transactionDate'
   >[];
 }): BalanceIndex {
-  const today = deviceCalendar.dayKey(now);
+  const today = calendar.dayKey(now);
   const began = new Map(
     wallets.map((wallet) => {
-      const created = wallet.createdAt ? deviceCalendar.dayKey(wallet.createdAt) : today;
+      const created = wallet.createdAt ? calendar.dayKey(wallet.createdAt) : today;
       return [wallet.id, created < today ? created : today];
     }),
   );
   const changes = new Map(wallets.map((wallet) => [wallet.id, new Map<string, number>()]));
   const afterToday = new Map(wallets.map((wallet) => [wallet.id, 0]));
   for (const transaction of transactions) {
-    const day = deviceCalendar.dayKey(transaction.transactionDate);
+    const day = calendar.dayKey(transaction.transactionDate);
     for (const id of [transaction.walletId, transaction.transferToWalletId]) {
       const change = id ? changes.get(id) : undefined;
       if (!id || !change) continue;
@@ -93,9 +96,10 @@ export function balanceViewport(
   index: BalanceIndex,
   now: Date,
   range: ChartRange,
+  calendar: Calendar,
   back = 0,
 ): { from: number; to: number } {
-  const { start, end } = chartWindow(deviceCalendar.dayKey(now), range, back);
+  const { start, end } = chartWindow(calendar.dayKey(now), range, back);
   return {
     from: Math.max(0, start === null ? 0 : daysBetween(index.firstDay, start)),
     to: Math.min(index.days - 1, daysBetween(index.firstDay, end)),
@@ -103,6 +107,12 @@ export function balanceViewport(
 }
 
 /** Whether a step older than `back` still shows a day of the index. */
-export function hasOlderWindow(index: BalanceIndex, now: Date, range: ChartRange, back: number): boolean {
-  return range !== 'all' && balanceViewport(index, now, range, back + 1).to >= 0;
+export function hasOlderWindow(
+  index: BalanceIndex,
+  now: Date,
+  range: ChartRange,
+  back: number,
+  calendar: Calendar,
+): boolean {
+  return range !== 'all' && balanceViewport(index, now, range, calendar, back + 1).to >= 0;
 }

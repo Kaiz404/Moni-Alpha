@@ -5,9 +5,8 @@ import { SIDE_WORDS } from '@/components/debts/debt-words';
 import { PersonAvatar } from '@/components/debts/person-avatar';
 import { Press } from '@/components/ui/press';
 import { Text } from '@/components/ui/text';
-import type { DebtLine } from '@/lib/finance/debt-summary';
 import { tid } from '@/lib/test-ids';
-import { dateLabel, formatMoney } from '@repo/core';
+import { type DebtLine, dateLabel, formatMoney } from '@repo/core';
 import { deviceCalendar } from '@/lib/dates/device-calendar';
 
 /** An open debt in the people list; the whole row opens the person's page. */

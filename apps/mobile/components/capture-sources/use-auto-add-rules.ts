@@ -1,8 +1,7 @@
 import { useValue } from '@legendapp/state/react';
 import type { AutoAddRule } from '@repo/types';
 
-import { guessMerchantName } from '@/components/merchants/merchant-list';
-import { merchantKey } from '@/lib/ai/routine';
+import { guessMerchantName, merchantKey } from '@repo/core';
 import { useAuth } from '@/lib/auth/auth-context';
 import { categories$, transactions$, wallets$ } from '@/lib/store';
 import { getRecordValues } from '@/lib/store/helpers';

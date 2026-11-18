@@ -10,7 +10,7 @@ import * as Location from 'expo-location';
 import TypeItScreen from '@/app/transaction/new';
 import type { PlacePick } from '@/lib/capture/entry-place';
 import { financeProjection$ } from '@/lib/finance/projection';
-import { EMPTY_FINANCE_PROJECTION } from '@/lib/finance/types';
+import { EMPTY_FINANCE_PROJECTION } from '@repo/core';
 import { getOpenSheet } from '@/lib/sheet/sheet-store';
 import { createTransaction } from '@/lib/supabase/transactions';
 import { expense, financeWallet } from '@/lib/wallets/__tests__/balance-fixture';

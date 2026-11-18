@@ -1,10 +1,6 @@
 import { useValue } from '@legendapp/state/react';
 
-import {
-  merchantNameList,
-  type MerchantEntry,
-  type MerchantPayment,
-} from '@/components/merchants/merchant-list';
+import { merchantNameList, type MerchantEntry, type MerchantPayment } from '@repo/core';
 import { useAuth } from '@/lib/auth/auth-context';
 import { categories$, transactions$, wallets$ } from '@/lib/store';
 import { getRecordValues } from '@/lib/store/helpers';

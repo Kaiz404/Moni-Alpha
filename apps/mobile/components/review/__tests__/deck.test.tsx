@@ -9,10 +9,9 @@ import { State, type PanGesture } from 'react-native-gesture-handler';
 import { fireGestureHandler, getByGestureTestId } from 'react-native-gesture-handler/jest-utils';
 
 import ReviewScreen from '@/app/review';
-import { toFinanceTransaction } from '@/lib/finance/adapters';
+import { toFinanceTransaction, EMPTY_FINANCE_PROJECTION } from '@repo/core';
 import { buildBudgetMonth } from '@/lib/finance/budget-month';
 import { financeProjection$ } from '@/lib/finance/projection';
-import { EMPTY_FINANCE_PROJECTION } from '@/lib/finance/types';
 import { dismissSheet, getOpenSheet } from '@/lib/sheet/sheet-store';
 import { dismissToast, undoToast, useToast } from '@/lib/toast/toast-store';
 import { financeWallet } from '@/lib/wallets/__tests__/balance-fixture';

@@ -9,6 +9,13 @@ import {
   wallets$,
 } from '@/lib/store';
 import {
+  emptyProjection,
+  type FinanceDebtActivity,
+  type FinanceProjection,
+  type FinanceTransaction,
+  projectFinance,
+  type RawTable,
+  sortedInsert,
   toFinanceBudget,
   toFinanceCategory,
   toFinanceDebt,
@@ -16,45 +23,16 @@ import {
   toFinanceProposal,
   toFinanceTransaction,
   toFinanceWallet,
-} from './adapters';
-import { type FinanceDebtActivity, type FinanceProjection, type FinanceTransaction } from './types';
+  transactionWalletIds,
+} from '@repo/core';
 
-type RawRecord = Record<string, Record<string, unknown> | undefined>;
 type Adapter<T> = (row: Record<string, unknown>) => T | null;
-
-function emptyProjection(): FinanceProjection {
-  return {
-    walletsById: {},
-    transactionsById: {},
-    transactionsByWallet: {},
-    categoriesById: {},
-    budgetsById: {},
-    debtsById: {},
-    debtActivitiesById: {},
-    debtActivityIdsByDebt: {},
-    proposalsById: {},
-  };
-}
 
 /**
  * Ephemeral normalized read model. It is intentionally not persisted: the
  * Legend synced tables remain the sole source of truth and MMKV cache.
  */
 export const financeProjection$ = observable<FinanceProjection>(emptyProjection());
-
-function sortedInsert(ids: string[], id: string, dateForId: (id: string) => string): string[] {
-  const without = ids.filter((current) => current !== id);
-  without.push(id);
-  return without.sort((a, b) => dateForId(b).localeCompare(dateForId(a)));
-}
-
-function transactionWalletIds(
-  transaction: Pick<FinanceTransaction, 'walletId' | 'transferToWalletId'>,
-): string[] {
-  return [
-    ...new Set([transaction.walletId, transaction.transferToWalletId].filter(Boolean) as string[]),
-  ];
-}
 
 function activityDebtIds(activity: Pick<FinanceDebtActivity, 'debtId'>): string[] {
   return activity.debtId ? [activity.debtId] : [];
@@ -123,49 +101,24 @@ function upsertDebtActivity(id: string, next: FinanceDebtActivity | null): void 
   );
 }
 
-function readRaw(table$: Observable<any>): RawRecord {
+function readRaw(table$: Observable<any>): RawTable {
   const value = table$.peek();
-  return value && typeof value === 'object' ? (value as RawRecord) : {};
-}
-
-function mapRows<T>(table$: Observable<any>, adapter: Adapter<T>): Record<string, T> {
-  const mapped: Record<string, T> = {};
-  for (const [id, row] of Object.entries(readRaw(table$))) {
-    if (!row || row.deleted) continue;
-    const entity = adapter({ ...row, id });
-    if (entity) mapped[id] = entity;
-  }
-  return mapped;
+  return value && typeof value === 'object' ? (value as RawTable) : {};
 }
 
 /** Initial hydration is O(n); subsequent Legend table changes update only changed rows/indexes. */
 export function rehydrateFinanceProjection(): void {
-  const projection = emptyProjection();
-  projection.walletsById = mapRows(wallets$, toFinanceWallet);
-  projection.transactionsById = mapRows(transactions$, toFinanceTransaction);
-  projection.categoriesById = mapRows(categories$, toFinanceCategory);
-  projection.budgetsById = mapRows(categoryBudgets$, toFinanceBudget);
-  projection.debtsById = mapRows(debts$, toFinanceDebt);
-  projection.debtActivitiesById = mapRows(debtActivities$, toFinanceDebtActivity);
-  projection.proposalsById = mapRows(proposedTransactions$, toFinanceProposal);
-
-  for (const transaction of Object.values(projection.transactionsById)) {
-    for (const walletId of transactionWalletIds(transaction)) {
-      projection.transactionsByWallet[walletId] = sortedInsert(
-        projection.transactionsByWallet[walletId] ?? [],
-        transaction.id,
-        (id) => projection.transactionsById[id]?.transactionDate ?? '',
-      );
-    }
-  }
-  for (const activity of Object.values(projection.debtActivitiesById)) {
-    projection.debtActivityIdsByDebt[activity.debtId] = sortedInsert(
-      projection.debtActivityIdsByDebt[activity.debtId] ?? [],
-      activity.id,
-      (id) => projection.debtActivitiesById[id]?.activityDate ?? '',
-    );
-  }
-  financeProjection$.set(projection);
+  financeProjection$.set(
+    projectFinance({
+      wallets: readRaw(wallets$),
+      transactions: readRaw(transactions$),
+      categories: readRaw(categories$),
+      budgets: readRaw(categoryBudgets$),
+      debts: readRaw(debts$),
+      debtActivities: readRaw(debtActivities$),
+      proposals: readRaw(proposedTransactions$),
+    }),
+  );
 }
 
 function changedRowIds(changes: Array<{ path: string[] }>): string[] | null {

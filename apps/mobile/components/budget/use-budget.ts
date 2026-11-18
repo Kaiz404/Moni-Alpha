@@ -8,12 +8,7 @@ import { selectUpcomingBills } from '@/lib/finance/bills';
 import { buildBudgetMonth, type BudgetMonth } from '@/lib/finance/budget-month';
 import { useMainCurrency } from '@/lib/finance/main-currency';
 import { financeProjection$ } from '@/lib/finance/projection';
-import {
-  categoriesForUser$,
-  debtsWithBalance$,
-  transactions$,
-  walletsForUser$,
-} from '@/lib/finance/selectors';
+import { categoriesForUser$, debtsWithBalance$, transactions$, walletsForUser$ } from '@/lib/finance/selectors';
 import { profilePreferences$, recurringOverrides$ } from '@/lib/store';
 import { getRecordValues } from '@/lib/store/helpers';
 import { listMerchantAliases } from '@/lib/supabase/merchant-aliases';

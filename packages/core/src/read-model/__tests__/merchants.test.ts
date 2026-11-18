@@ -1,4 +1,39 @@
-import { guessMerchantName, merchantNameList, type MerchantPayment } from '../merchant-list';
+import { describe, expect, it } from 'vitest';
+import {
+  guessMerchantName,
+  merchantKey,
+  merchantName,
+  merchantNameList,
+  type MerchantPayment,
+} from '../merchants';
+
+describe('merchantKey', () => {
+  it.each([
+    ['GRAB* A-12XY', 'grab'],
+    ['GRAB*1234 KL', 'grab'],
+    ['SQ *KOPI KOPI', 'sq kopi kopi'],
+    ['Grab A-98QZ', 'grab'],
+    ['FamilyMart KLCC #0231', 'familymart klcc'],
+    ['  ', null],
+    [null, null],
+  ])('%s -> %s', (raw, key) => {
+    expect(merchantKey(raw)).toBe(key);
+  });
+});
+
+const aliases = [{ rawKey: 'grab', displayName: 'Grab' }];
+
+describe('merchantName', () => {
+  it("shows the user's name for a raw alert merchant", () => {
+    expect(merchantName('GRAB*1234 KL', aliases)).toBe('Grab');
+    expect(merchantName('Grab A-98QZ', aliases)).toBe('Grab');
+  });
+
+  it('keeps the raw text for a merchant without a name', () => {
+    expect(merchantName('KEDAI ABC', aliases)).toBe('KEDAI ABC');
+    expect(merchantName(null, aliases)).toBe(null);
+  });
+});
 
 const pay = (
   merchant: string,

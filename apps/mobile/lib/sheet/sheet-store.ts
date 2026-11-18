@@ -5,7 +5,7 @@ import type { MinorAmount, TransactionType } from '@repo/types';
 import type { WalletKind } from '@/constants/wallet-form';
 import type { PlacePick } from '@/lib/capture/entry-place';
 import type { PastPlaceInput } from '@/lib/capture/place-search';
-import type { ActivityKind, ActivityRange } from '@/lib/finance/activity-filter';
+import type { ActivityKind, ActivityRange } from '@repo/core';
 import type { TransactionLocationSnapshot } from '@/lib/transactions/prefetch-location';
 /** A category tile with this month's spending in the sheet's currency. */
 export type CategoryTile = {

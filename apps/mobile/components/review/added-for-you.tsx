@@ -4,7 +4,7 @@ import { router } from 'expo-router';
 import { ListSection } from '@/components/ui/list-card';
 import { TransactionRow } from '@/components/ui/transaction-row';
 import { useAuth } from '@/lib/auth/auth-context';
-import { merchantName } from '@/lib/finance/merchant-name';
+import { merchantName } from '@repo/core';
 import { categoriesForUser$, transactions$, walletsForUser$ } from '@/lib/finance/selectors';
 import { listMerchantAliases } from '@/lib/supabase/merchant-aliases';
 import { tid } from '@/lib/test-ids';

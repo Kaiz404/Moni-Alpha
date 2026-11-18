@@ -5,9 +5,8 @@ import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Press } from '@/components/ui/press';
 import { Text } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
-import type { BudgetProgress } from '@/lib/finance/selectors';
 import { tid } from '@/lib/test-ids';
-import { formatMoney } from '@repo/core';
+import { type BudgetProgress, formatMoney } from '@repo/core';
 
 export function BudgetLine({ budget }: { budget: BudgetProgress }) {
   const tokens = useThemeTokens();

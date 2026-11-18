@@ -9,20 +9,21 @@ import {
   extractDateContext,
   resolveOccurredAt,
 } from '@/lib/ai/occurred-at';
-import { matchRoutine, merchantKey } from '@/lib/ai/routine';
+import { matchRoutine } from '@/lib/ai/routine';
 import type {
   CaptureDraft,
   CaptureQuote,
   ReadResult,
 } from '@/lib/capture/capture-stage';
 import { AUTO_PLACE } from '@/lib/capture/entry-place';
-import type {
-  FinanceCategory,
-  FinanceTransaction,
-  FinanceWallet,
-} from '@/lib/finance/types';
 import { compactWalletNames } from '@/lib/wallets/compact-name';
-import { formatMoney } from '@repo/core';
+import {
+  merchantKey,
+  type FinanceCategory,
+  type FinanceTransaction,
+  type FinanceWallet,
+  formatMoney,
+} from '@repo/core';
 
 export type ReadContext = {
   /** Main-currency wallets only: a live capture never lands in another currency. */

@@ -1,11 +1,13 @@
+import { describe, expect, it } from 'vitest';
 import type { CurrencyCode, MinorAmount } from '@repo/types';
 
-import { flowGeometry } from '@/lib/finance/flow-geometry';
-import { flowSeries } from '@/lib/finance/flow-series';
-import type { FinanceTransaction } from '@/lib/finance/types';
+import { flowSeries } from '../flow-series';
+import type { FinanceTransaction } from '../types';
+import { createCalendar } from '../../calendar';
 
 const MYR = 'MYR' as CurrencyCode;
-const now = new Date(2026, 9, 14, 12);
+const KL = createCalendar('Asia/Kuala_Lumpur');
+const now = new Date('2026-10-14T12:00:00+08:00');
 
 function row(
   id: string,
@@ -32,6 +34,8 @@ function row(
     locationLatitude: null,
     locationLongitude: null,
     locationName: null,
+    placeId: null,
+    placeCoordsAt: null,
     autoAdded: false,
     balanceCorrection: false,
     createdAt: date.toISOString(),
@@ -42,7 +46,7 @@ function row(
 const series = (
   transactions: FinanceTransaction[],
   range: { from: string; to: string } | null,
-) => flowSeries({ transactions, range, now, currency: MYR });
+) => flowSeries({ transactions, range, now, currency: MYR, calendar: KL });
 const shape = (result: ReturnType<typeof series>) =>
   result.buckets.map((bucket) => [bucket.key, bucket.label, bucket.from, bucket.to]);
 
@@ -103,7 +107,7 @@ describe('flowSeries bucket size follows the span', () => {
 
 describe('flowSeries with no range', () => {
   it('draws all time as at least the last six calendar months', () => {
-    const result = series([row('recent', new Date(2026, 8, 3, 12), 700)], null);
+    const result = series([row('recent', new Date('2026-09-03T12:00:00+08:00'), 700)], null);
     expect(result.label).toBe('All time');
     expect(result.range).toEqual({ from: '2026-05-01', to: '2026-10-31' });
     expect(result.buckets.map((bucket) => bucket.label)).toEqual([
@@ -119,9 +123,9 @@ describe('flowSeries with no range', () => {
   it('reaches back to the month of the first row that counts, so the totals cover every row', () => {
     const result = series(
       [
-        row('old', new Date(2025, 10, 30, 23), 5000),
-        row('kept', new Date(2026, 4, 1, 0), 700),
-        row('older-transfer', new Date(2024, 0, 5, 12), 900, { type: 'transfer' }),
+        row('old', new Date('2025-11-30T23:00:00+08:00'), 5000),
+        row('kept', new Date('2026-05-01T00:00:00+08:00'), 700),
+        row('older-transfer', new Date('2024-01-05T12:00:00+08:00'), 900, { type: 'transfer' }),
       ],
       null,
     );
@@ -133,13 +137,13 @@ describe('flowSeries with no range', () => {
 
 describe('flowSeries counts as Budget does', () => {
   const rows = [
-    row('lunch', new Date(2026, 9, 14, 13), 1890),
-    row('salary', new Date(2026, 9, 2, 9), 420000, { type: 'income' }),
-    row('reload', new Date(2026, 9, 3), 10000, { type: 'transfer', transferToWalletId: 'tng' }),
-    row('excluded', new Date(2026, 9, 3), 300, { analysisExcluded: true }),
-    row('debt', new Date(2026, 9, 4), 5000, { debtActivityId: 'd1' }),
-    row('debt-in', new Date(2026, 9, 4), 7000, { type: 'income', debtActivityId: 'd2' }),
-    row('usd', new Date(2026, 9, 4), 9000, { currency: 'USD' as CurrencyCode }),
+    row('lunch', new Date('2026-10-14T13:00:00+08:00'), 1890),
+    row('salary', new Date('2026-10-02T09:00:00+08:00'), 420000, { type: 'income' }),
+    row('reload', new Date('2026-10-03T00:00:00+08:00'), 10000, { type: 'transfer', transferToWalletId: 'tng' }),
+    row('excluded', new Date('2026-10-03T00:00:00+08:00'), 300, { analysisExcluded: true }),
+    row('debt', new Date('2026-10-04T00:00:00+08:00'), 5000, { debtActivityId: 'd1' }),
+    row('debt-in', new Date('2026-10-04T00:00:00+08:00'), 7000, { type: 'income', debtActivityId: 'd2' }),
+    row('usd', new Date('2026-10-04T00:00:00+08:00'), 9000, { currency: 'USD' as CurrencyCode }),
   ];
 
   it('totals spending and money in, leaving out transfers, exclusions, debt cash and other currencies', () => {
@@ -162,51 +166,14 @@ describe('flowSeries counts as Budget does', () => {
   it('keeps both end days whole', () => {
     const result = series(
       [
-        row('before', new Date(2026, 9, 12, 23, 59), 1),
-        row('first', new Date(2026, 9, 13, 0, 0), 10),
-        row('last', new Date(2026, 9, 14, 23, 59), 100),
-        row('after', new Date(2026, 9, 15, 0, 0), 1000),
+        row('before', new Date('2026-10-12T23:59:00+08:00'), 1),
+        row('first', new Date('2026-10-13T00:00:00+08:00'), 10),
+        row('last', new Date('2026-10-14T23:59:00+08:00'), 100),
+        row('after', new Date('2026-10-15T00:00:00+08:00'), 1000),
       ],
       { from: '2026-10-13', to: '2026-10-14' },
     );
     expect(result.buckets.map((bucket) => bucket.spentMinor)).toEqual([10, 100]);
     expect(result.spentMinor).toBe(110);
-  });
-});
-
-describe('flowGeometry', () => {
-  const buckets = (count: number) =>
-    series([], { from: '2026-10-01', to: `2026-10-${String(count).padStart(2, '0')}` }).buckets;
-
-  it('draws each pair on one zero-based axis, tallest filling the plot', () => {
-    const result = flowSeries({
-      transactions: [
-        row('in', new Date(2026, 9, 1, 9), 100000, { type: 'income' }),
-        row('out', new Date(2026, 9, 2, 9), 50000),
-      ],
-      range: { from: '2026-10-01', to: '2026-10-02' },
-      now,
-      currency: MYR,
-    });
-    const geometry = flowGeometry(result.buckets, 318, 'MYR');
-    expect(geometry.slots[0].inHeight).toBe(86);
-    expect(geometry.slots[1].spentHeight).toBe(43);
-    expect(geometry.slots[0].spentHeight).toBe(0);
-    expect(geometry.topLabel).toBe('RM1,000');
-    expect(geometry.zeroLabel).toBe('RM0');
-  });
-
-  it('keeps full bars and every label while there is room', () => {
-    const geometry = flowGeometry(buckets(6), 318, 'MYR');
-    expect(geometry.bar).toBe(12);
-    expect(geometry.slots.every((slot) => slot.label !== null)).toBe(true);
-  });
-
-  it('narrows bars and drops labels that would collide at 24 months', () => {
-    const months = series([], { from: '2024-11-01', to: '2026-10-31' }).buckets;
-    const geometry = flowGeometry(months, 318, 'MYR');
-    expect(geometry.slot).toBeCloseTo(11.42, 2);
-    expect(geometry.bar).toBeCloseTo(2.71, 2);
-    expect(geometry.slots.filter((slot) => slot.label !== null)).toHaveLength(8);
   });
 });

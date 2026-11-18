@@ -33,12 +33,7 @@ import {
 } from '@/lib/capture/entry-place';
 import { spokenAmount } from '@/lib/capture/spoken-amount';
 import { useMainCurrency } from '@/lib/finance/main-currency';
-import {
-  budgetProgress$,
-  categoriesForUser$,
-  transactions$,
-  walletsForUser$,
-} from '@/lib/finance/selectors';
+import { budgetProgress$, categoriesForUser$, transactions$, walletsForUser$ } from '@/lib/finance/selectors';
 import { toCategoryTiles } from '@/lib/sheet/category-tiles';
 import { pickDate as pickNativeDate } from '@/lib/sheet/pick-date';
 import { openSheet } from '@/lib/sheet/sheet-store';

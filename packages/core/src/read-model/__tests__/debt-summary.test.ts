@@ -1,10 +1,13 @@
+import { describe, expect, it } from 'vitest';
 import type { CurrencyCode, MinorAmount } from '@repo/types';
 
 import { summarizeDebts } from '../debt-summary';
+import { createCalendar } from '../../calendar';
 import type { FinanceDebt, FinanceDebtActivity } from '../types';
 
-const WED_14_OCT = new Date(2026, 9, 14, 14, 6);
+const WED_14_OCT = new Date('2026-10-14T14:06:00+08:00');
 const MYR = 'MYR' as CurrencyCode;
+const KL = createCalendar('Asia/Kuala_Lumpur');
 
 function debt(
   id: string,
@@ -56,6 +59,7 @@ describe('summarizeDebts', () => {
       ],
       WED_14_OCT,
       MYR,
+      KL,
     );
 
     expect(summary.netMinor).toBe(4000);
@@ -86,6 +90,7 @@ describe('summarizeDebts', () => {
       ],
       WED_14_OCT,
       MYR,
+      KL,
     );
 
     expect(summary.owedToMeMinor).toBe(20000);
@@ -110,6 +115,7 @@ describe('summarizeDebts', () => {
       ],
       WED_14_OCT,
       MYR,
+      KL,
     );
 
     expect(summary.closed.map((line) => [line.debt.id, line.state, line.principalMinor])).toEqual([
@@ -132,6 +138,7 @@ describe('summarizeDebts', () => {
       ],
       WED_14_OCT,
       MYR,
+      KL,
     );
 
     expect(summary.open.map((line) => line.debt.id)).toEqual(['Mei']);
@@ -145,6 +152,7 @@ describe('summarizeDebts', () => {
       [activity('Mei', 'principal', 40, '2026-09-25T04:00:00.000Z')],
       WED_14_OCT,
       MYR,
+      KL,
     );
 
     expect(summary.comingUp.map((row) => row.daysLeft)).toEqual([-2]);

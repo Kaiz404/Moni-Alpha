@@ -7,8 +7,7 @@ import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
 import { createMMKV } from 'react-native-mmkv';
 
-import { merchantKey } from '@/lib/ai/routine';
-import { merchantName } from '@/lib/finance/merchant-name';
+import { merchantKey, merchantName } from '@repo/core';
 import { financeProjection$, rehydrateFinanceProjection } from '@/lib/finance/projection';
 import { budgetProgress$ } from '@/lib/finance/selectors';
 import { budgetLine } from '@/lib/proposals/budget-line';

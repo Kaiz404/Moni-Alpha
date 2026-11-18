@@ -2,7 +2,7 @@ import { render, screen } from '@testing-library/react-native';
 
 import type { CaptureDraft } from '@/lib/capture/capture-stage';
 import { financeProjection$ } from '@/lib/finance/projection';
-import { EMPTY_FINANCE_PROJECTION } from '@/lib/finance/types';
+import { EMPTY_FINANCE_PROJECTION } from '@repo/core';
 
 import { CaptureResult } from '../capture-result-card';
 import { CaptureAdded, CaptureReading } from '../scan-stages';

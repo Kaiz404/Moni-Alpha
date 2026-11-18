@@ -1,4 +1,4 @@
-import { placeLabel } from '@/lib/finance/places';
+import { placeLabel } from '@repo/core';
 import { placeColumns, type PlaceColumns } from '@/lib/places/coords';
 import type {
   EntryLocation,

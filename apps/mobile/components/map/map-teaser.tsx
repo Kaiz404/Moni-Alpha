@@ -12,9 +12,10 @@ import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Press } from '@/components/ui/press';
 import { Text } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
-import { groupPlaces, regionFor, type Place } from '@/lib/finance/places';
+import { regionFor } from '@/lib/finance/map-view';
 import { tid } from '@/lib/test-ids';
-import { formatMoney } from '@repo/core';
+import { groupPlaces, type Place, formatMoney } from '@repo/core';
+import { deviceCalendar } from '@/lib/dates/device-calendar';
 
 const HEIGHT = 132;
 const LABELS = 3;
@@ -35,7 +36,7 @@ export function useMonthPlaces(
       groupPlaces(transactions, {
         currency,
         range: { from: `${month}-01`, to: `${month}-${daysInMonth}` },
-      }),
+      }, deviceCalendar),
     [transactions, month, daysInMonth, currency],
   );
 }

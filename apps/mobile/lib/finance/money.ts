@@ -11,7 +11,7 @@ export {
   type MinorAmount,
 } from '@repo/types';
 
-import { decimalToMinor, type CurrencyCode, type MinorAmount } from '@repo/types';
+import { decimalToMinor, type MinorAmount } from '@repo/types';
 
 /** Budgets and bills stay below RM100,000 (`V2P-BillDetail`, `V2P-BudgetEdit`). */
 export const PLAN_LIMIT_MINOR = 10_000_000;
@@ -22,11 +22,4 @@ export function parseAmountInput(value: string): MinorAmount {
   const amount = decimalToMinor(cleaned);
   if (amount <= 0) throw new Error('Enter a positive amount.');
   return amount;
-}
-
-export function normalizeCurrency(value: unknown, fallback: CurrencyCode = 'USD'): CurrencyCode {
-  const currency = String(value ?? '')
-    .trim()
-    .toUpperCase();
-  return /^[A-Z]{3}$/.test(currency) ? (currency as CurrencyCode) : fallback;
 }

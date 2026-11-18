@@ -4,12 +4,8 @@ import { useMemo } from 'react';
 
 import { useAuth } from '@/lib/auth/auth-context';
 import { useMainCurrency } from '@/lib/finance/main-currency';
-import type { Place } from '@/lib/finance/places';
-import {
-  categoriesForUser$,
-  transactions$,
-  walletsForUser$,
-} from '@/lib/finance/selectors';
+import type { Place } from '@repo/core';
+import { categoriesForUser$, transactions$, walletsForUser$ } from '@/lib/finance/selectors';
 import { transactions$ as transactionTable$ } from '@/lib/store';
 import {
   resolveTransactionIcon,

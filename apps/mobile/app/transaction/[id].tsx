@@ -38,17 +38,7 @@ import { Page, PageScroll } from '@/components/ui/page';
 import { Text } from '@/components/ui/text';
 import { TintBubble } from '@/components/ui/transaction-row';
 import { useAuth } from '@/lib/auth/auth-context';
-import { merchantKey } from '@/lib/ai/routine';
-import { merchantName } from '@/lib/finance/merchant-name';
-import { groupPlaces, placeLabel } from '@/lib/finance/places';
-import {
-  budgetProgress$,
-  categoriesForUser$,
-  transactionById$,
-  transactions$,
-  walletsForUser$,
-} from '@/lib/finance/selectors';
-import type { FinanceTransaction } from '@/lib/finance/types';
+import { budgetProgress$, categoriesForUser$, transactionById$, transactions$, walletsForUser$ } from '@/lib/finance/selectors';
 import { toCategoryTiles } from '@/lib/sheet/category-tiles';
 import { openSheet } from '@/lib/sheet/sheet-store';
 import { transactions$ as transactionTable$ } from '@/lib/store';
@@ -71,7 +61,18 @@ import { listParams } from '@/lib/transactions/list-scope';
 import { BALANCE_CORRECTION_TITLE } from '@/lib/wallets/balance-correction';
 import { compactWalletNames } from '@/lib/wallets/compact-name';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
-import { currencySymbol, dateLabel, formatMoney, formatSignedMoney, moneySign } from '@repo/core';
+import {
+  merchantKey,
+  merchantName,
+  groupPlaces,
+  placeLabel,
+  type FinanceTransaction,
+  currencySymbol,
+  dateLabel,
+  formatMoney,
+  formatSignedMoney,
+  moneySign,
+} from '@repo/core';
 import { deviceCalendar } from '@/lib/dates/device-calendar';
 
 type RawRow = {
@@ -233,7 +234,7 @@ function Detail({ transaction: tx }: { transaction: FinanceTransaction }) {
     () =>
       tx.locationLatitude === null
         ? null
-        : (groupPlaces(all, { currency: tx.currency }).find((candidate) =>
+        : (groupPlaces(all, { currency: tx.currency }, deviceCalendar).find((candidate) =>
             candidate.transactions.some((row) => row.id === tx.id),
           ) ?? null),
     [all, tx.id, tx.currency, tx.locationLatitude],

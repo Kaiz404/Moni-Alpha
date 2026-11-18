@@ -7,9 +7,8 @@ import {
 import { Press } from '@/components/ui/press';
 import { Text } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
-import type { FinanceProposal } from '@/lib/finance/types';
 import { tid } from '@/lib/test-ids';
-import { formatMoney } from '@repo/core';
+import { type FinanceProposal, formatMoney } from '@repo/core';
 
 const sourceIcon: Record<FinanceProposal['sourceType'], IconSymbolName> = {
   notification: 'bell-outline',

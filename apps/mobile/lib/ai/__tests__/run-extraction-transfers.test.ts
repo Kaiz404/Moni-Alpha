@@ -21,8 +21,7 @@ import {
   VISA,
   wallet,
 } from './pairing-fixture';
-import { toFinanceTransaction } from '@/lib/finance/adapters';
-import { groupActivityDays } from '@/lib/finance/activity-filter';
+import { toFinanceTransaction, groupActivityDays } from '@repo/core';
 import { buildBudgetMonth } from '@/lib/finance/budget-month';
 import { walletBalanceForTest } from './wallet-balance';
 import { markCaptureStatus } from '@/lib/notifications/capture-status';
@@ -333,7 +332,7 @@ describe('a credit-card bill payment', () => {
     });
     expect(rows).toHaveLength(1);
     expect(budget.spentMinor).toBe(0);
-    expect(groupActivityDays(rows)[0]!.spentMinor).toBe(0);
+    expect(groupActivityDays(rows, deviceCalendar)[0]!.spentMinor).toBe(0);
     expect(walletBalanceForTest(rows, VISA)).toBe(50000);
   });
 
@@ -442,6 +441,7 @@ describe('spending totals', () => {
     expect(budget.spentMinor).toBe(1200);
     const today = groupActivityDays(
       [...rows].sort((a, b) => b.transactionDate.localeCompare(a.transactionDate)),
+      deviceCalendar,
     )[0]!;
     expect(today.spentMinor).toBe(1200);
     expect(today.transactions.map((row) => row.type).sort()).toEqual(['expense', 'transfer']);

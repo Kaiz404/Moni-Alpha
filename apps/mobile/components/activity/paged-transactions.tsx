@@ -10,12 +10,16 @@ import { Press } from '@/components/ui/press';
 import { Text } from '@/components/ui/text';
 import { TransactionRow } from '@/components/ui/transaction-row';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
-import { groupActivityDays, type ActivityDay } from '@/lib/finance/activity-filter';
 import { pageOf, type Page } from '@/lib/finance/paged';
-import type { FinanceTransaction } from '@/lib/finance/types';
 import { tid, type Screen, type TestId } from '@/lib/test-ids';
 import { transactionRow, type RowLookups, type TransactionRowData } from '@/lib/transactions/row';
-import { dayHeading, formatSignedMoney } from '@repo/core';
+import {
+  groupActivityDays,
+  type ActivityDay,
+  type FinanceTransaction,
+  dayHeading,
+  formatSignedMoney,
+} from '@repo/core';
 import { deviceCalendar } from '@/lib/dates/device-calendar';
 
 function dayTotal(day: ActivityDay, currency: string) {
@@ -157,10 +161,10 @@ export function PagedTransactions({
   const current = useMemo(() => pageOf(transactions, page), [transactions, page]);
   const totals = useMemo(() => {
     const byDay = new Map<string, string>();
-    for (const day of groupActivityDays(transactions)) byDay.set(day.key, dayTotal(day, currency));
+    for (const day of groupActivityDays(transactions, deviceCalendar)) byDay.set(day.key, dayTotal(day, currency));
     return byDay;
   }, [transactions, currency]);
-  const days = useMemo(() => groupActivityDays(current.rows), [current.rows]);
+  const days = useMemo(() => groupActivityDays(current.rows, deviceCalendar), [current.rows]);
   return (
     <View className="gap-3.5">
       {/* Turning the page swaps every row at once, so the old rows leave without animating. */}

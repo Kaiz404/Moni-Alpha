@@ -3,8 +3,8 @@ import type { MinorAmount } from '@repo/types';
 import { useMemo } from 'react';
 
 import { useAuth } from '@/lib/auth/auth-context';
+import type { FinanceWallet } from '@repo/core';
 import { walletBalancesMinor$, walletsForUser$ } from '@/lib/finance/selectors';
-import type { FinanceWallet } from '@/lib/finance/types';
 import { openSheet } from '@/lib/sheet/sheet-store';
 
 /** A debt's money moves only through wallets in its own currency. */

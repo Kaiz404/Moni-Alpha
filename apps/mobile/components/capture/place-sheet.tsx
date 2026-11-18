@@ -50,7 +50,7 @@ import {
   type PlaceOption,
   type PlaceRow,
 } from '@/lib/capture/place-search';
-import { placeLabel, type LatLng } from '@/lib/finance/places';
+import { placeLabel, type LatLng } from '@repo/core';
 import { financeProjection$ } from '@/lib/finance/projection';
 import { scrubStep } from '@/lib/haptics';
 import { springs } from '@repo/design';

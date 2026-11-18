@@ -9,7 +9,7 @@ import {
   type RecurringOverride,
   type SetRecurringOverrideInput,
 } from '@repo/types';
-import { merchantKey } from '@/lib/ai/routine';
+import { merchantKey } from '@repo/core';
 import { assertMigrated, recurringOverrides$ } from '@/lib/store';
 import { getRecordValues, patchRow } from '@/lib/store/helpers';
 import { getUserId } from '@/lib/supabase/client';

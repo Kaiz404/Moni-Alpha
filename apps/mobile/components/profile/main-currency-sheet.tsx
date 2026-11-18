@@ -13,10 +13,7 @@ import { Sheet, SheetRows } from '@/components/ui/sheet/sheet';
 import { Text } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { useAuth } from '@/lib/auth/auth-context';
-import {
-  walletBalanceMinor$,
-  walletsForUser$,
-} from '@/lib/finance/selectors';
+import { walletBalanceMinor$, walletsForUser$ } from '@/lib/finance/selectors';
 import { tid } from '@/lib/test-ids';
 import { currencySymbol, formatMoney } from '@repo/core';
 

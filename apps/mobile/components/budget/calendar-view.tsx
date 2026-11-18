@@ -13,15 +13,15 @@ import { Text } from '@/components/ui/text';
 import { TransactionRow } from '@/components/ui/transaction-row';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { calendarHeat } from '@/lib/finance/calendar-heat';
-import { monthSpend, topMerchants, type BudgetMonth } from '@/lib/finance/budget-month';
-import { merchantName } from '@/lib/finance/merchant-name';
-import type {
-  FinanceCategory,
-  FinanceTransaction,
-} from '@/lib/finance/types';
+import type { BudgetMonth } from '@/lib/finance/budget-month';
 import { tid } from '@/lib/test-ids';
 import { transactionRow } from '@/lib/transactions/row';
 import {
+  monthSpend,
+  topMerchants,
+  merchantName,
+  type FinanceCategory,
+  type FinanceTransaction,
   addDays,
   dayOfMonth,
   firstDayOf,
@@ -67,7 +67,7 @@ export function CalendarView({
     picked?.month === month.month ? picked.day : month.throughDay;
   const spend = useMemo(
     () =>
-      monthSpend(transactions, month.month, currency).map((transaction) =>
+      monthSpend(transactions, month.month, currency, deviceCalendar).map((transaction) =>
         transaction.merchant
           ? { ...transaction, merchant: merchantName(transaction.merchant, aliases) }
           : transaction,

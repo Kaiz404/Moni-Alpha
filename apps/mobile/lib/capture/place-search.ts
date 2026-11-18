@@ -1,12 +1,18 @@
 import type { CurrencyCode, MerchantAlias } from '@repo/types';
 
-import { merchantKey } from '@/lib/ai/routine';
-import { merchantName } from '@/lib/finance/merchant-name';
-import { distanceM, groupPlaces, type LatLng, type Place } from '@/lib/finance/places';
-import type { FinanceTransaction } from '@/lib/finance/types';
+import {
+  merchantKey,
+  merchantName,
+  distanceM,
+  groupPlaces,
+  type LatLng,
+  type Place,
+  type FinanceTransaction,
+} from '@repo/core';
 import type { PlaceCoords } from '@/lib/places/coords';
 import type { GoogleSearch } from '@/lib/places/place-search';
 import type { PlacePrediction } from '@/lib/places/types';
+import { deviceCalendar } from '@/lib/dates/device-calendar';
 
 /**
  * A row in the place sheet that is already a place: one of the user's own, or the geocoder's.
@@ -80,7 +86,7 @@ export function searchPastPlaces(query: string, input: PastPlaceInput): PlaceOpt
   const q = query.trim().toLowerCase();
   if (!q) return [];
   const found: { option: PlaceOption; visits: number }[] = [];
-  for (const place of groupPlaces(input.transactions, { currency: input.currency })) {
+  for (const place of groupPlaces(input.transactions, { currency: input.currency }, deviceCalendar)) {
     const base = placeBase(place);
     const shops = shopsAt(place, input.aliases, (name) => name.toLowerCase().includes(q));
     for (const shop of shops)
@@ -119,7 +125,7 @@ export function distanceWords(metres: number | null): string | null {
  */
 export function nearPlaces(centre: LatLng | null, input: PastPlaceInput): PlaceOption[] {
   if (!centre) return [];
-  return groupPlaces(input.transactions, { currency: input.currency })
+  return groupPlaces(input.transactions, { currency: input.currency }, deviceCalendar)
     .map((place) => ({ place, metres: distanceM(centre, place) }))
     .filter(({ metres }) => metres <= NEAR_M)
     .sort((a, b) => a.metres - b.metres || b.place.count - a.place.count)

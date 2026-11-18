@@ -53,14 +53,7 @@ import type { DuplicateMatch } from '@/lib/ai/duplicates';
 import { timesFiled } from '@/lib/ai/routine';
 import { useAuth } from '@/lib/auth/auth-context';
 import { useMainCurrency } from '@/lib/finance/main-currency';
-import { merchantName } from '@/lib/finance/merchant-name';
-import {
-  budgetProgress$,
-  categoriesForUser$,
-  transactions$,
-  walletsForUser$,
-} from '@/lib/finance/selectors';
-import type { FinanceCategory, FinanceWallet } from '@/lib/finance/types';
+import { budgetProgress$, categoriesForUser$, transactions$, walletsForUser$ } from '@/lib/finance/selectors';
 import * as haptics from '@/lib/haptics';
 import { springs } from '@repo/design';
 import { reviewStatus } from '@/lib/proposals/review-status';
@@ -115,7 +108,14 @@ import { showToast } from '@/lib/toast/toast-store';
 import { getDefaultWalletId } from '@/lib/wallets/default-wallet';
 import { compactWalletNames } from '@/lib/wallets/compact-name';
 import { lastWalletForMerchant, resolveInitialWalletId } from '@/lib/wallets/proposal-wallet';
-import { dateLabel, formatMoney, formatSignedMoney } from '@repo/core';
+import {
+  merchantName,
+  type FinanceCategory,
+  type FinanceWallet,
+  dateLabel,
+  formatMoney,
+  formatSignedMoney,
+} from '@repo/core';
 import { deviceCalendar } from '@/lib/dates/device-calendar';
 
 /** A Later row snoozed past any real date still counts as unreviewed. */

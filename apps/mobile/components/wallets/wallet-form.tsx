@@ -32,7 +32,6 @@ import {
   type WalletKind,
 } from '@/constants/wallet-form';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
-import type { FinanceWallet } from '@/lib/finance/types';
 import { openSheet } from '@/lib/sheet/sheet-store';
 import { createWallet, updateWallet } from '@/lib/supabase/wallets';
 import { tid, type TestId } from '@/lib/test-ids';
@@ -43,7 +42,7 @@ import {
   useWalletNamesLinkedTo,
   type WalletAlertLink,
 } from '@/lib/wallets/wallet-link';
-import { currencySymbol } from '@repo/core';
+import { type FinanceWallet, currencySymbol } from '@repo/core';
 
 export type WalletFormValues = {
   name: string;

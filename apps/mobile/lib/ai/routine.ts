@@ -7,7 +7,7 @@
  * Correcting a category breaks the streak, so the next one goes back to review.
  */
 import type { AutoAddRule } from '@repo/types';
-import { isFiled } from '@repo/core';
+import { distanceM, isFiled, merchantKey } from '@repo/core';
 
 /** Recent matches that must agree on one category before a transaction is added automatically. */
 export const STREAK = 3;
@@ -47,39 +47,6 @@ export type RoutineMatch =
   | { kind: 'rule'; walletId: string; categoryId: string }
   | { kind: 'streak'; categoryId: string; merchant: string | null }
   | { kind: 'proposal'; categoryId: string | null; merchant: string | null };
-
-/**
- * Drops id-like tokens (any digit), then keeps letters: "GRAB* A-12XY" and "Grab A-98QZ" become
- * "grab". Card processors write "GRAB*1234 KL": a reference right after the star means the
- * merchant is the part before it.
- */
-export function merchantKey(merchant: string | null): string | null {
-  const text = (merchant ?? '').toLowerCase();
-  const star = text.indexOf('*');
-  const afterStar = star < 0 ? '' : (text.slice(star + 1).trim().split(/\s+/)[0] ?? '');
-  const name = star > 0 && /\d/.test(afterStar) ? text.slice(0, star) : text.replace(/\*/g, ' ');
-  const key = name
-    .split(/\s+/)
-    .filter((token) => !/\d/.test(token))
-    .join(' ')
-    .replace(/[^a-z\s]/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
-  return key || null;
-}
-
-function distanceM(
-  a: { latitude: number; longitude: number },
-  b: { latitude: number; longitude: number },
-): number {
-  const rad = Math.PI / 180;
-  const dLat = (b.latitude - a.latitude) * rad;
-  const dLng = (b.longitude - a.longitude) * rad;
-  const h =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos(a.latitude * rad) * Math.cos(b.latitude * rad) * Math.sin(dLng / 2) ** 2;
-  return 2 * 6371000 * Math.asin(Math.sqrt(h));
-}
 
 function isSimilar(
   tx: RoutineHistoryTransaction,

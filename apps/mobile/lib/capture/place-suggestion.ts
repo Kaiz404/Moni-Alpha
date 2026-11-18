@@ -1,15 +1,16 @@
 import type { CurrencyCode, MerchantAlias } from '@repo/types';
 
-import { merchantKey } from '@/lib/ai/routine';
-import { merchantName } from '@/lib/finance/merchant-name';
 import {
+  merchantKey,
+  merchantName,
   distanceM,
   groupPlaces,
   isAtPlace,
   type LatLng,
   type Place,
-} from '@/lib/finance/places';
-import type { FinanceTransaction } from '@/lib/finance/types';
+  type FinanceTransaction,
+} from '@repo/core';
+import { deviceCalendar } from '@/lib/dates/device-calendar';
 
 export type PlaceSuggestion = {
   merchant: string;
@@ -87,7 +88,7 @@ export function placeSuggestion(
   const rows = input.transactions.filter(
     (row) => !input.locationOffWalletIds.has(row.walletId),
   );
-  const nearby = groupPlaces(rows, { currency: input.currency })
+  const nearby = groupPlaces(rows, { currency: input.currency }, deviceCalendar)
     .filter((place) => isAtPlace(place, input.here))
     .map((place) => ({
       place,

@@ -1,7 +1,7 @@
 import { decimalToMinor } from '@repo/types';
 import { financeProjection$ } from '../projection';
+import type { FinanceProjection } from '@repo/core';
 import { transactions$, walletBalanceMinor$ } from '../selectors';
-import type { FinanceProjection } from '../types';
 
 it('keeps a 10k-transaction wallet query on its wallet index', () => {
   const transactionsById: FinanceProjection['transactionsById'] = {};

@@ -1,5 +1,5 @@
+import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { categoryIconNames, customCategoryColors } from '@repo/types';
 
 import { hideShadowedPresets, type CategoryIdentity } from '../category-presets';
@@ -37,7 +37,7 @@ describe('hideShadowedPresets', () => {
 
 describe('the Malaysian presets migration', () => {
   const sql = readFileSync(
-    join(__dirname, '../../../../../supabase/migrations/20261101000100_malaysian_categories.sql'),
+    new URL('../../../../../supabase/migrations/20261101000100_malaysian_categories.sql', import.meta.url),
     'utf8',
   );
   const presets = [...sql.matchAll(/\('([^']+)', '([a-z-]+)', '(#[0-9A-F]{6})', (\d+)\)/g)].map(
@@ -46,7 +46,7 @@ describe('the Malaysian presets migration', () => {
 
   it('adds the five names, each fitting the name limit, in order before Other Expenses', () => {
     expect(presets.map((p) => p.name)).toEqual(['Transit', 'Tolls', 'TNG Reloads', 'PTPTN', 'Takaful']);
-    expect(presets.every((p) => p.name.length <= 20)).toBe(true);
+    expect(presets.every((p) => p.name!.length <= 20)).toBe(true);
     expect(presets.map((p) => p.order)).toEqual([13, 14, 15, 16, 17]);
   });
 
@@ -58,7 +58,7 @@ describe('the Malaysian presets migration', () => {
 
   it("uses colours from the preset palette and writes to no user's row", () => {
     const palette = readFileSync(
-      join(__dirname, '../../../../../supabase/migrations/20260721000000_refresh_category_catalog.sql'),
+      new URL('../../../../../supabase/migrations/20260721000000_refresh_category_catalog.sql', import.meta.url),
       'utf8',
     ).match(/user_id IS NULL AND color = ANY \(ARRAY\[([^\]]+)\]/)![1]!;
     for (const preset of presets) expect(palette).toContain(preset.color);
@@ -71,7 +71,7 @@ describe('the Malaysian presets migration', () => {
 
 describe('the migration that retires TNG Reloads, PTPTN and Takaful', () => {
   const sql = readFileSync(
-    join(__dirname, '../../../../../supabase/migrations/20261116000000_remove_reload_ptptn_takaful_presets.sql'),
+    new URL('../../../../../supabase/migrations/20261116000000_remove_reload_ptptn_takaful_presets.sql', import.meta.url),
     'utf8',
   );
   const statements = sql

@@ -6,7 +6,7 @@ import {
 } from '@repo/types';
 
 import type { DuplicateMatch } from '@/lib/ai/duplicates';
-import { merchantKey } from '@/lib/ai/routine';
+import { merchantKey } from '@repo/core';
 import { markCaptureStatus } from '@/lib/notifications/capture-status';
 import { canPairInto, pairCapture, toAbsorbedCapture, undoPairing } from '@/lib/proposals/pairing';
 import { emitProposedTransactionsChanged } from '@/lib/proposals/proposed-transactions-events';

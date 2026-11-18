@@ -9,10 +9,9 @@ import { Press } from '@/components/ui/press';
 import { Text } from '@/components/ui/text';
 import { TintBubble } from '@/components/ui/transaction-row';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
-import type { MerchantSpend } from '@/lib/finance/budget-month';
 import { tid, type Screen } from '@/lib/test-ids';
 import { resolveTransactionIcon } from '@/lib/transactions/icon';
-import { formatMoney } from '@repo/core';
+import { type MerchantSpend, formatMoney } from '@repo/core';
 
 type MerchantListProps<M extends MerchantSpend> = {
   merchants: readonly M[];

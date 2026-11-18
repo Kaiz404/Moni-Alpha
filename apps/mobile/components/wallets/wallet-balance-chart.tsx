@@ -6,13 +6,15 @@ import { PagerStep } from '@/components/activity/paged-transactions';
 import { Segmented } from '@/components/ui/segmented';
 import { Text } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
-import { balanceIndex, hasOlderWindow } from '@/lib/finance/balance-history';
-import type { FinanceTransaction, FinanceWallet } from '@/lib/finance/types';
 import { tid } from '@/lib/test-ids';
 
 import { BalancePlot } from './balance-plot';
 import { dayReading, netWorthTarget } from './net-worth-geometry';
 import {
+  balanceIndex,
+  hasOlderWindow,
+  type FinanceTransaction,
+  type FinanceWallet,
   addDays,
   CHART_RANGES,
   type ChartRange,
@@ -101,6 +103,7 @@ export function WalletBalanceChart({
     () =>
       balanceIndex({
         now,
+        calendar: deviceCalendar,
         wallets: [{ id: wallet.id, balanceMinor, createdAt: wallet.createdAt }],
         transactions,
       }),
@@ -181,7 +184,7 @@ export function WalletBalanceChart({
               testID={tid('wallet', 'chart', 'earlier')}
               icon="chevron-left"
               label="Earlier"
-              enabled={hasOlderWindow(index, now, range, back)}
+              enabled={hasOlderWindow(index, now, range, back, deviceCalendar)}
               onPress={() => setWindow({ range, back: back + 1 })}
             />
             <PagerStep

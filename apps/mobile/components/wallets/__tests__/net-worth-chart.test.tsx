@@ -13,18 +13,19 @@ import {
   netWorthTarget,
   walletLineStyles,
 } from '@/components/wallets/net-worth-geometry';
-import { balanceIndex } from '@/lib/finance/balance-history';
 import { lightThemeTokens } from '@/constants/theme-tokens.generated';
-import type {
-  FinanceTransaction,
-  FinanceWallet,
-} from '@/lib/finance/types';
 import { chartStep } from '@/lib/haptics';
 import {
   expense,
   financeWallet,
 } from '@/lib/wallets/__tests__/balance-fixture';
-import { CHART_RANGES } from '@repo/core';
+import {
+  balanceIndex,
+  type FinanceTransaction,
+  type FinanceWallet,
+  CHART_RANGES,
+} from '@repo/core';
+import { deviceCalendar } from '@/lib/dates/device-calendar';
 
 jest.mock('@/lib/haptics', () => ({ scrubStep: jest.fn(), chartStep: jest.fn() }));
 jest.mock('uniwind', () => ({
@@ -229,6 +230,7 @@ describe('NetWorthChart', () => {
 describe('netWorthTarget', () => {
   const index = balanceIndex({
     now,
+    calendar: deviceCalendar,
     wallets: [{ id: 'maybank', balanceMinor: 243180, createdAt: old }],
     transactions: [
       {
@@ -290,6 +292,7 @@ describe('netWorthTarget', () => {
   it('holds a single day when the only wallet began today', () => {
     const today = balanceIndex({
       now,
+      calendar: deviceCalendar,
       wallets: [{ id: 'maybank', balanceMinor: 243180, createdAt: on(10, 14) }],
       transactions: [],
     });
@@ -309,6 +312,7 @@ describe('netWorthTarget', () => {
   it('leaves a later wallet empty before the day it began', () => {
     const later = balanceIndex({
       now,
+      calendar: deviceCalendar,
       wallets: [
         { id: 'maybank', balanceMinor: 100000, createdAt: old },
         { id: 'cash', balanceMinor: 5000, createdAt: on(10, 13) },
@@ -335,6 +339,7 @@ describe('netWorthScrubPoints', () => {
   it('stops on every day, and ticks once on each day a transaction moved a balance, however many moved it', () => {
     const index = balanceIndex({
       now,
+      calendar: deviceCalendar,
       wallets: [
         { id: 'maybank', balanceMinor: 240000, createdAt: old },
         { id: 'cash', balanceMinor: 10000, createdAt: old },

@@ -1,9 +1,12 @@
+import { describe, expect, it } from 'vitest';
 import type { MinorAmount } from '@repo/types';
 
 import type { FinanceTransaction } from '../types';
 import { balanceIndex, balanceViewport } from '../balance-history';
-import { addDays, type ChartRange } from '@repo/core';
-import { deviceCalendar } from '@/lib/dates/device-calendar';
+import { addDays, createCalendar } from '../../calendar';
+import type { ChartRange } from '../../chart-range';
+
+const KL = createCalendar('Asia/Kuala_Lumpur');
 
 type Row = Pick<
   FinanceTransaction,
@@ -30,9 +33,9 @@ function row(
 function balanceHistory({
   range,
   ...input
-}: Parameters<typeof balanceIndex>[0] & { range: ChartRange }) {
-  const index = balanceIndex(input);
-  const { from, to } = balanceViewport(index, input.now, range);
+}: Omit<Parameters<typeof balanceIndex>[0], 'calendar'> & { range: ChartRange }) {
+  const index = balanceIndex({ ...input, calendar: KL });
+  const { from, to } = balanceViewport(index, input.now, range, KL);
   const days = Array.from({ length: to - from + 1 }, (_, day) =>
     addDays(index.firstDay, from + day),
   );
@@ -47,7 +50,9 @@ function balanceHistory({
   };
 }
 
-const noon = (year: number, month: number, day: number) => new Date(year, month - 1, day, 12);
+const pad = (value: number) => String(value).padStart(2, '0');
+const noon = (year: number, month: number, day: number) =>
+  new Date(`${year}-${pad(month)}-${pad(day)}T12:00:00+08:00`);
 const old = noon(2020, 1, 1).toISOString();
 
 describe('balanceIndex through a range', () => {
@@ -126,7 +131,7 @@ describe('balanceIndex through a range', () => {
   });
 
   it('gives each local day exactly once across a daylight saving change', () => {
-    // 8 March and 1 November 2026 are the US changes. Run with TZ=America/New_York to feel them.
+    // 8 March and 1 November 2026 are the US changes. Build the calendar for America/New_York to feel them.
     const days = (now: Date) =>
       balanceHistory({
         now,
@@ -165,7 +170,7 @@ describe('balanceIndex through a range', () => {
       now: noon(2026, 10, 2),
       range: '1m',
       wallets: [{ id: 'maybank', balanceMinor: 9000, createdAt: old }],
-      transactions: [row('expense', 'maybank', 1000, new Date(2026, 9, 2, 23, 30))],
+      transactions: [row('expense', 'maybank', 1000, new Date('2026-10-02T23:30:00+08:00'))],
     });
     expect(history.total).toEqual([10000, 9000]);
   });
@@ -217,7 +222,7 @@ describe('balanceIndex through a range', () => {
 });
 
 describe('balanceIndex on the short and open ranges', () => {
-  const now = new Date(2026, 10, 2, 12);
+  const now = new Date('2026-11-02T12:00:00+08:00');
   const wallets = [{ id: 'w', balanceMinor: 1000, createdAt: '2024-03-05T04:00:00Z' }];
 
   it('7D is seven days ending today', () => {

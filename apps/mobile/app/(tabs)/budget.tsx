@@ -30,10 +30,9 @@ import { Text } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { lastPaymentBySeries } from '@/lib/finance/bills';
 import { leftSentence, spendMonths, spendSlices, type BudgetMonth } from '@/lib/finance/budget-month';
-import { buildReport } from '@/lib/reports/report';
 import { openSheet } from '@/lib/sheet/sheet-store';
 import { tid } from '@/lib/test-ids';
-import { formatMoney, monthName, monthShort } from '@repo/core';
+import { buildReport, formatMoney, monthName, monthShort } from '@repo/core';
 import { deviceCalendar } from '@/lib/dates/device-calendar';
 
 type BudgetView = 'month' | 'calendar';
@@ -238,6 +237,7 @@ function MonthView({
         transactions: data.transactions,
         categories: data.everyCategory,
         aliases: data.aliases,
+        calendar: deviceCalendar,
       }),
     [budget.month, currency, data.transactions, data.everyCategory, data.aliases],
   );

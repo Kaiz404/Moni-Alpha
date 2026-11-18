@@ -17,16 +17,9 @@ import { WalletMenu } from '@/components/wallets/wallet-menu';
 import { ReviewStrip } from '@/components/wallets/wallet-sections';
 import { useAuth } from '@/lib/auth/auth-context';
 import { useMainCurrency } from '@/lib/finance/main-currency';
-import { merchantName } from '@/lib/finance/merchant-name';
+import { merchantName } from '@repo/core';
 import { usePageNumber } from '@/lib/finance/paged';
-import {
-  categoriesForUser$,
-  pendingProposals$,
-  transactions$,
-  walletBalanceMinor$,
-  walletById$,
-  walletsForUser$,
-} from '@/lib/finance/selectors';
+import { categoriesForUser$, pendingProposals$, transactions$, walletBalanceMinor$, walletById$, walletsForUser$ } from '@/lib/finance/selectors';
 import { listMerchantAliases } from '@/lib/supabase/merchant-aliases';
 import type { RowLookups } from '@/lib/transactions/row';
 import { compactWalletNames } from '@/lib/wallets/compact-name';

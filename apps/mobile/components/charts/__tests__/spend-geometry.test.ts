@@ -1,9 +1,8 @@
 import type { CurrencyCode, MinorAmount } from '@repo/types';
 
 import { spendReading, spendTarget } from '@/components/charts/spend-geometry';
-import { spendIndex } from '@/lib/finance/spend-history';
-import type { FinanceTransaction } from '@/lib/finance/types';
-import type { ChartRange } from '@repo/core';
+import { spendIndex, type FinanceTransaction, type ChartRange } from '@repo/core';
+import { deviceCalendar } from '@/lib/dates/device-calendar';
 
 const now = new Date(2026, 9, 14, 12);
 const currency = 'MYR' as CurrencyCode;
@@ -20,6 +19,7 @@ const spend = (month: number, day: number, amount: number) =>
 
 const index = spendIndex({
   now,
+  calendar: deviceCalendar,
   currency,
   transactions: [spend(10, 14, 1000), spend(10, 10, 2500), spend(9, 20, 4000)],
 });
@@ -104,6 +104,7 @@ describe('scrub points', () => {
   it('counts several spends on one day as one tick', () => {
     const busy = spendIndex({
       now,
+      calendar: deviceCalendar,
       currency,
       transactions: [spend(10, 12, 100), spend(10, 12, 200), spend(10, 12, 300)],
     });

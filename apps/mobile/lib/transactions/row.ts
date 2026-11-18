@@ -1,6 +1,6 @@
 import type { CurrencyCode, MinorAmount } from '@repo/types';
 
-import type { FinanceProposal, FinanceTransaction } from '@/lib/finance/types';
+import type { FinanceProposal, FinanceTransaction } from '@repo/core';
 import { resolveTransactionIcon, type TransactionIconName } from '@/lib/transactions/icon';
 import { BALANCE_CORRECTION_TITLE } from '@/lib/wallets/balance-correction';
 

@@ -1,6 +1,72 @@
-import type { MerchantAlias } from '@repo/types';
+import type { MerchantAlias, MinorAmount } from '@repo/types';
 
-import { merchantKey } from '@/lib/ai/routine';
+import type { FinanceTransaction } from './types';
+
+/**
+ * Drops id-like tokens (any digit), then keeps letters: "GRAB* A-12XY" and "Grab A-98QZ" become
+ * "grab". Card processors write "GRAB*1234 KL": a reference right after the star means the
+ * merchant is the part before it.
+ */
+export function merchantKey(merchant: string | null): string | null {
+  const text = (merchant ?? '').toLowerCase();
+  const star = text.indexOf('*');
+  const afterStar = star < 0 ? '' : (text.slice(star + 1).trim().split(/\s+/)[0] ?? '');
+  const name = star > 0 && /\d/.test(afterStar) ? text.slice(0, star) : text.replace(/\*/g, ' ');
+  const key = name
+    .split(/\s+/)
+    .filter((token) => !/\d/.test(token))
+    .join(' ')
+    .replace(/[^a-z\s]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  return key || null;
+}
+
+export function merchantName(
+  raw: string | null,
+  aliases: readonly Pick<MerchantAlias, 'rawKey' | 'displayName'>[],
+): string | null {
+  const key = merchantKey(raw);
+  return (key && aliases.find((alias) => alias.rawKey === key)?.displayName) || raw;
+}
+
+export type MerchantSpend = {
+  name: string;
+  payments: number;
+  spentMinor: MinorAmount;
+  /** The wallet most of these payments came from. */
+  walletId: string;
+};
+
+/** The biggest merchants among some spending, by total. */
+export function topMerchants(
+  transactions: readonly FinanceTransaction[],
+  limit: number,
+): { merchants: MerchantSpend[]; count: number } {
+  const byName = new Map<string, MerchantSpend & { wallets: Map<string, number> }>();
+  for (const transaction of transactions) {
+    const name = transaction.merchant ?? transaction.description;
+    if (!name) continue;
+    const entry = byName.get(name) ?? {
+      name,
+      payments: 0,
+      spentMinor: 0 as MinorAmount,
+      walletId: transaction.walletId,
+      wallets: new Map<string, number>(),
+    };
+    entry.payments += 1;
+    entry.spentMinor = (entry.spentMinor + Number(transaction.amountMinor)) as MinorAmount;
+    entry.wallets.set(transaction.walletId, (entry.wallets.get(transaction.walletId) ?? 0) + 1);
+    byName.set(name, entry);
+  }
+  const merchants = [...byName.values()]
+    .sort((a, b) => b.spentMinor - a.spentMinor || a.name.localeCompare(b.name))
+    .map(({ wallets, ...merchant }) => ({
+      ...merchant,
+      walletId: [...wallets.entries()].sort((a, b) => b[1] - a[1])[0]![0],
+    }));
+  return { merchants: merchants.slice(0, limit), count: merchants.length };
+}
 
 /** A code shows up in To name once it has this many payments. */
 export const TO_NAME_MIN_PAYMENTS = 3;
@@ -44,7 +110,7 @@ function looksLikeCode(raw: string): boolean {
 export function guessMerchantName(key: string): string | null {
   const words = key.split(' ');
   if (words.length > 3 || words.some((word) => word.length < 3)) return null;
-  return words.map((word) => word[0].toUpperCase() + word.slice(1)).join(' ');
+  return words.map((word) => word[0]!.toUpperCase() + word.slice(1)).join(' ');
 }
 
 function topWallet(wallets: Map<string, number>, walletNames: Record<string, string>) {

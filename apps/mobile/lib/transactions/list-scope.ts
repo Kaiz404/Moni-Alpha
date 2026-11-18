@@ -1,9 +1,13 @@
 import { transactionTypeSchema, type TransactionType } from '@repo/types';
 
 import { billPayments } from '@/lib/finance/bills';
-import { groupPlaces, placeRange } from '@/lib/finance/places';
-import type { FinanceTransaction } from '@/lib/finance/types';
-import { isMonthKey, type MonthKey } from '@repo/core';
+import {
+  groupPlaces,
+  placeRange,
+  type FinanceTransaction,
+  isMonthKey,
+  type MonthKey,
+} from '@repo/core';
 import { deviceCalendar } from '@/lib/dates/device-calendar';
 
 /**
@@ -127,8 +131,8 @@ export function scopedRows(
     case 'place': {
       const place = groupPlaces(transactions, {
         currency: mainCurrency,
-        range: scope.range ? placeRange(scope.range, now).span : null,
-      }).find((candidate) => candidate.id === scope.placeId);
+        range: scope.range ? placeRange(scope.range, now, deviceCalendar).span : null,
+      }, deviceCalendar).find((candidate) => candidate.id === scope.placeId);
       return { rows: newestFirst([...(place?.transactions ?? [])]), currency: mainCurrency };
     }
     case 'category':

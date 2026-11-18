@@ -29,10 +29,7 @@ import { UserAvatar } from '@/components/ui/user-avatar';
 import { useAiConsent } from '@/lib/ai/consent/state';
 import { useAuth } from '@/lib/auth/auth-context';
 import { userPhotoUrl } from '@/lib/auth/user-photo';
-import {
-  categoriesForUser$,
-  walletsForUser$,
-} from '@/lib/finance/selectors';
+import { categoriesForUser$, walletsForUser$ } from '@/lib/finance/selectors';
 import { tid } from '@/lib/test-ids';
 import { switchTheme } from '@/lib/theme/reveal';
 

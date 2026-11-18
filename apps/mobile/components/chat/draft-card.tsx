@@ -15,11 +15,7 @@ import { replaceMessage, type ChatMessage, type DraftOutcome } from '@/lib/ai/ch
 import { financeTimezone, threadDay } from '@/lib/ai/chat/sessions';
 import { useAuth } from '@/lib/auth/auth-context';
 import { financeProjection$ } from '@/lib/finance/projection';
-import {
-  budgetProgress$,
-  categoriesForUser$,
-  walletsForUser$,
-} from '@/lib/finance/selectors';
+import { budgetProgress$, categoriesForUser$, walletsForUser$ } from '@/lib/finance/selectors';
 import * as haptics from '@/lib/haptics';
 import {
   approve,

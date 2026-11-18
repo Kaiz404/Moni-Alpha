@@ -4,7 +4,7 @@ import {
   placeSuggestion,
   type PlaceSuggestionInput,
 } from '@/lib/capture/place-suggestion';
-import type { FinanceTransaction } from '@/lib/finance/types';
+import type { FinanceTransaction } from '@repo/core';
 import { expense } from '@/lib/wallets/__tests__/balance-fixture';
 
 const MYR = 'MYR' as CurrencyCode;

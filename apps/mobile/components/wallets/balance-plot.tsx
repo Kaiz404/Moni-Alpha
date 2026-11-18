@@ -29,11 +29,10 @@ import { YGrid, YLabels, ZoomTicks } from '@/components/charts/zoom-axes';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Text } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
-import type { BalanceIndex } from '@/lib/finance/balance-history';
 import { tid } from '@/lib/test-ids';
 
 import { NET_WORTH_BASE, NET_WORTH_TOP, type NetWorthTarget } from './net-worth-geometry';
-import { addDays, dayLabel, formatMoney } from '@repo/core';
+import { type BalanceIndex, addDays, dayLabel, formatMoney } from '@repo/core';
 import { deviceCalendar } from '@/lib/dates/device-calendar';
 
 const DEFAULT_WIDTH = 314;

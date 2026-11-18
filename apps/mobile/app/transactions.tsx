@@ -12,13 +12,9 @@ import { HoldHint } from '@/components/ui/hold-menu';
 import { Page, PageScroll, usePageContentTop } from '@/components/ui/page';
 import { useAuth } from '@/lib/auth/auth-context';
 import { useMainCurrency } from '@/lib/finance/main-currency';
-import { merchantName } from '@/lib/finance/merchant-name';
+import { merchantName } from '@repo/core';
 import { usePageNumber } from '@/lib/finance/paged';
-import {
-  categoriesForUser$,
-  transactions$,
-  walletsForUser$,
-} from '@/lib/finance/selectors';
+import { categoriesForUser$, transactions$, walletsForUser$ } from '@/lib/finance/selectors';
 import { listMerchantAliases } from '@/lib/supabase/merchant-aliases';
 import { tid } from '@/lib/test-ids';
 import {

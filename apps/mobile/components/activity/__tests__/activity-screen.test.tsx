@@ -4,7 +4,7 @@ import { ScrollView } from 'react-native';
 
 import ActivityScreen from '@/app/(tabs)/activity';
 import { PAGE_HEADER_HEIGHT } from '@/components/ui/page';
-import type { FinanceTransaction } from '@/lib/finance/types';
+import type { FinanceTransaction } from '@repo/core';
 import { dismissSheet, getOpenSheet } from '@/lib/sheet/sheet-store';
 
 function mockRow(

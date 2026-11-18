@@ -30,7 +30,6 @@ import { labelForNotificationPackage } from '@/constants/notification-apps';
 import { getWalletCardStyle } from '@/constants/wallet-card-styles';
 import { WALLET_TYPE_OPTIONS } from '@/constants/wallet-form';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
-import { ACTIVITY_KIND_LABELS, ACTIVITY_KINDS } from '@/lib/finance/activity-filter';
 import { useMainCurrency } from '@/lib/finance/main-currency';
 import { walletBalanceMinor$ } from '@/lib/finance/selectors';
 import { getCachedAppIcon, saveAppIcon } from '@/lib/notifications/app-icon-cache';
@@ -47,7 +46,13 @@ import {
   TRANSACTION_TYPE_COPY,
   TRANSACTION_TYPES,
 } from '@/lib/transactions/type-change';
-import { currencySymbol, dayLabel, formatMoney } from '@repo/core';
+import {
+  ACTIVITY_KIND_LABELS,
+  ACTIVITY_KINDS,
+  currencySymbol,
+  dayLabel,
+  formatMoney,
+} from '@repo/core';
 import { deviceCalendar } from '@/lib/dates/device-calendar';
 
 export type PickerOption = {

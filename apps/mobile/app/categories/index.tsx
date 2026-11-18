@@ -15,19 +15,13 @@ import { Text } from '@/components/ui/text';
 import { TintBubble } from '@/components/ui/transaction-row';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { useAuth } from '@/lib/auth/auth-context';
-import { categoryMonths } from '@/lib/finance/activity-series';
 import { useMainCurrency } from '@/lib/finance/main-currency';
-import {
-  budgetProgress$,
-  categoriesForUser$,
-  transactions$,
-} from '@/lib/finance/selectors';
-import type { FinanceCategory } from '@/lib/finance/types';
+import { budgetProgress$, categoriesForUser$, transactions$ } from '@/lib/finance/selectors';
 import { ensureFinanceTimezone } from '@/lib/supabase/profile';
 import { tid } from '@/lib/test-ids';
 import { listParams } from '@/lib/transactions/list-scope';
 import { resolveTransactionIcon } from '@/lib/transactions/icon';
-import { formatMoney } from '@repo/core';
+import { categoryMonths, type FinanceCategory, formatMoney } from '@repo/core';
 import { deviceCalendar } from '@/lib/dates/device-calendar';
 
 type Kind = 'expense' | 'income';
@@ -116,7 +110,7 @@ export default function CategoriesScreen() {
       .catch(() => {});
   }, []);
 
-  const months = categoryMonths(all, currency, today);
+  const months = categoryMonths(all, currency, today, deviceCalendar);
   const ofKind = categories.filter((category) => category.type === kind);
   const mine = ofKind.filter((c) => c.userId === userId && c.isActive);
   const presets = ofKind.filter((c) => c.userId === null && c.isActive);

@@ -1,7 +1,6 @@
 import { createCategorySchema, decimalToMinor, legacyColor, minorToDecimal, type MerchantAlias } from '@repo/types';
 
-import { merchantKey } from '@/lib/ai/routine';
-import { merchantName } from '@/lib/finance/merchant-name';
+import { merchantKey, merchantName } from '@repo/core';
 
 import type { ImportRow } from './generic-csv';
 import type { BackupTables, RawRow, TableName } from './moni-export';

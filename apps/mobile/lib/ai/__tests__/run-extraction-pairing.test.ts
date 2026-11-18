@@ -18,10 +18,8 @@ import {
   TNG_APP,
   wallet,
 } from './pairing-fixture';
-import { toFinanceTransaction } from '@/lib/finance/adapters';
-import { groupActivityDays } from '@/lib/finance/activity-filter';
+import { toFinanceTransaction, groupActivityDays, type FinanceTransaction } from '@repo/core';
 import { buildBudgetMonth } from '@/lib/finance/budget-month';
-import type { FinanceTransaction } from '@/lib/finance/types';
 import { markCaptureStatus } from '@/lib/notifications/capture-status';
 import { undoPairing } from '@/lib/proposals/pairing';
 import { approve, duplicateOf, notMine, undo } from '@/lib/proposals/review-actions';
@@ -380,6 +378,7 @@ describe('spending totals', () => {
     expect(budget.spentMinor).toBe(3 * 2000 + 1590);
     const today = groupActivityDays(
       [...rows].sort((a, b) => b.transactionDate.localeCompare(a.transactionDate)),
+      deviceCalendar,
     )[0]!;
     expect(today.spentMinor).toBe(1590);
     expect(today.transactions).toHaveLength(1);

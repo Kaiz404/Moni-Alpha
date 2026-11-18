@@ -17,8 +17,6 @@ import { Segmented } from '@/components/ui/segmented';
 import { Text } from '@/components/ui/text';
 import { showToast } from '@/lib/toast/toast-store';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
-import type { DebtLine } from '@/lib/finance/debt-summary';
-import type { FinanceDebtActivity } from '@/lib/finance/types';
 import { approve } from '@/lib/haptics';
 import {
   addDebtPrincipal,
@@ -30,7 +28,7 @@ import { readAmount } from '@/lib/amount/amount-input';
 import { tid } from '@/lib/test-ids';
 import { compactWalletNames } from '@/lib/wallets/compact-name';
 import { minorToDecimal } from '@repo/types';
-import { formatMoney } from '@repo/core';
+import { type DebtLine, type FinanceDebtActivity, formatMoney } from '@repo/core';
 
 type Mode = 'repay' | 'more';
 

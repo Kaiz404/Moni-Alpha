@@ -9,9 +9,8 @@ import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Press } from '@/components/ui/press';
 import { Text } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
-import type { DebtLine } from '@/lib/finance/debt-summary';
 import { tid } from '@/lib/test-ids';
-import { dayLabel, formatMoney } from '@repo/core';
+import { type DebtLine, dayLabel, formatMoney } from '@repo/core';
 import { deviceCalendar } from '@/lib/dates/device-calendar';
 
 function RepaidBar({

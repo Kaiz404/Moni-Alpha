@@ -11,10 +11,8 @@ import { Text } from '@/components/ui/text';
 import { TintBubble, TransactionRowBody, rowAmount } from '@/components/ui/transaction-row';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { useAuth } from '@/lib/auth/auth-context';
-import { merchantName } from '@/lib/finance/merchant-name';
 import { financeProjection$ } from '@/lib/finance/projection';
 import { categoriesForUser$, walletsForUser$ } from '@/lib/finance/selectors';
-import type { FinanceTransaction } from '@/lib/finance/types';
 import { captureTime } from '@/lib/proposals/capture-source';
 import { listMerchantAliases } from '@/lib/supabase/merchant-aliases';
 import {
@@ -26,7 +24,7 @@ import {
 import { tid } from '@/lib/test-ids';
 import { transactionRow, type RowLookups, type TransactionRowData } from '@/lib/transactions/row';
 import { compactWalletNames } from '@/lib/wallets/compact-name';
-import { dayHeading, formatSignedMoney } from '@repo/core';
+import { merchantName, type FinanceTransaction, dayHeading, formatSignedMoney } from '@repo/core';
 import { deviceCalendar } from '@/lib/dates/device-calendar';
 
 type Lookups = RowLookups & {

@@ -24,9 +24,7 @@ import {
   TransactionRow,
 } from '@/components/ui/transaction-row';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
-import { merchantKey } from '@/lib/ai/routine';
 import { billPayments } from '@/lib/finance/bills';
-import { monthSpend } from '@/lib/finance/budget-month';
 import { PLAN_LIMIT_MINOR } from '@/lib/finance/money';
 import { ensureBillReminderPermission, reminderAt } from '@/lib/notifications/bill-reminder';
 import { openSheet } from '@/lib/sheet/sheet-store';
@@ -52,6 +50,8 @@ import { resolveTransactionIcon } from '@/lib/transactions/icon';
 import { transactionRow } from '@/lib/transactions/row';
 import { resolveDefaultWalletId } from '@/lib/wallets/default-wallet';
 import {
+  merchantKey,
+  monthSpend,
   addMonths,
   currencySymbol,
   dateLabel,
@@ -251,7 +251,7 @@ export default function BillScreen() {
   };
   const pickCategory = async () => {
     const spent = new Map<string, number>();
-    for (const row of monthSpend(data.transactions, period, currency))
+    for (const row of monthSpend(data.transactions, period, currency, deviceCalendar))
       if (row.categoryId)
         spent.set(
           row.categoryId,

@@ -7,19 +7,20 @@ import { SpendChart } from '@/components/charts/spend-chart';
 import { Segmented } from '@/components/ui/segmented';
 import { Text } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
-import { spendIndex } from '@/lib/finance/spend-history';
 import { tid } from '@/lib/test-ids';
 
 import type { BudgetMonth } from '@/lib/finance/budget-month';
-import type { FinanceTransaction } from '@/lib/finance/types';
 import { leftLine } from '@/lib/finance/spent-summary';
 import {
+  spendIndex,
+  type FinanceTransaction,
   CHART_RANGES,
   type ChartRange,
   countsAsSpending,
   currencySymbol,
   monthName,
 } from '@repo/core';
+import { deviceCalendar } from '@/lib/dates/device-calendar';
 
 type Mode = 'pace' | 'daily';
 
@@ -57,7 +58,7 @@ export function SpentCard({
   const name = monthName(month.month);
   const title = range === '1m' ? `Spent in ${name}` : RANGE_TITLE[range];
   const index = useMemo(
-    () => spendIndex({ now, transactions, currency }),
+    () => spendIndex({ now, transactions, currency, calendar: deviceCalendar }),
     [now, transactions, currency],
   );
   const perDay = month.left?.perDayMinor ?? 0;

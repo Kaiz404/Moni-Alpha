@@ -18,13 +18,11 @@ import { Page, PageScroll, usePageContentTop } from '@/components/ui/page';
 import { SearchField } from '@/components/ui/search-field';
 import { Text } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
-import { merchantKey } from '@/lib/ai/routine';
 import { pageOf, usePageNumber } from '@/lib/finance/paged';
-import { monthMerchants } from '@/lib/reports/report';
 import { forgetMerchantName, nameMerchant } from '@/lib/supabase/merchant-aliases';
 import { tid, type TestId } from '@/lib/test-ids';
 import { showToast } from '@/lib/toast/toast-store';
-import { isMonthKey, monthName } from '@repo/core';
+import { merchantKey, monthMerchants, isMonthKey, monthName } from '@repo/core';
 import { deviceCalendar } from '@/lib/dates/device-calendar';
 
 function failed(error: unknown) {
@@ -56,7 +54,14 @@ export default function MerchantsScreen() {
     year === thisMonth.slice(0, 4) ? monthName(month) : `${monthName(month)} ${year}`;
   const { transactions, currency, everyCategory, aliases, walletNames } = data;
   const merchants = useMemo(
-    () => monthMerchants({ month, currency, transactions, categories: everyCategory, aliases }),
+    () => monthMerchants({
+        month,
+        currency,
+        transactions,
+        categories: everyCategory,
+        aliases,
+        calendar: deviceCalendar,
+      }),
     [month, currency, transactions, everyCategory, aliases],
   );
 

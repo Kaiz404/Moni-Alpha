@@ -6,7 +6,7 @@ import {
   type UpdateCategory,
 } from '@repo/types';
 import { categories$ } from '@/lib/store';
-import { hideShadowedPresets } from '@/lib/finance/category-presets';
+import { hideShadowedPresets } from '@repo/core';
 import { getRecordValues, isActive, patchRow } from '@/lib/store/helpers';
 import { getUserId } from '@/lib/supabase/client';
 

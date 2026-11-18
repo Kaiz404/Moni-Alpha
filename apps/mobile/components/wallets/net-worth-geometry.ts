@@ -1,10 +1,11 @@
 import { niceCeil } from '@/components/charts/pace-geometry';
 import type { BubbleTint } from '@/components/ui/nav-row';
 import { walletBubbleTint } from '@/constants/wallet-card-styles';
-import { balanceViewport, type BalanceIndex } from '@/lib/finance/balance-history';
 import { scrubPoints, type ScrubPoints } from '@/components/charts/scrub';
 import type { AxisRow, TickMark } from '@/components/charts/zoom-axes';
 import {
+  balanceViewport,
+  type BalanceIndex,
   addDays,
   type ChartRange,
   chartTicks,
@@ -103,7 +104,7 @@ export function netWorthTarget({
   /** What the screen reader calls the total line. */
   title?: string;
 }): NetWorthTarget {
-  const { from, to } = balanceViewport(index, now, range, back);
+  const { from, to } = balanceViewport(index, now, range, deviceCalendar, back);
   const ids = Object.keys(names);
   const series =
     view === 'total' ? [index.total] : ids.map((id) => index.byWallet[id]).filter((values) => values !== undefined);
