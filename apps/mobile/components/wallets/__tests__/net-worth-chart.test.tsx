@@ -15,7 +15,6 @@ import {
 } from '@/components/wallets/net-worth-geometry';
 import { balanceIndex } from '@/lib/finance/balance-history';
 import { lightThemeTokens } from '@/constants/theme-tokens.generated';
-import { CHART_RANGES } from '@/lib/finance/chart-range';
 import type {
   FinanceTransaction,
   FinanceWallet,
@@ -25,6 +24,7 @@ import {
   expense,
   financeWallet,
 } from '@/lib/wallets/__tests__/balance-fixture';
+import { CHART_RANGES } from '@repo/core';
 
 jest.mock('@/lib/haptics', () => ({ scrubStep: jest.fn(), chartStep: jest.fn() }));
 jest.mock('uniwind', () => ({

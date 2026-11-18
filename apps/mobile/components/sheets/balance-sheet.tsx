@@ -7,9 +7,9 @@ import { parseAmountDraft } from '@/components/ui/in-place-field';
 import { Sheet, type SheetFrameProps } from '@/components/ui/sheet/sheet';
 import { Text } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
-import { currencySymbol } from '@/lib/finance/format-money';
 import type { SheetRequestOf } from '@/lib/sheet/sheet-store';
 import { tid } from '@/lib/test-ids';
+import { currencySymbol } from '@repo/core';
 
 type BalanceSheetProps = SheetFrameProps & {
   request: SheetRequestOf<'balance'>;

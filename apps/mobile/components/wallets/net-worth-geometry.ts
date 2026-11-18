@@ -1,14 +1,21 @@
-import { MONTHS, niceCeil } from '@/components/charts/pace-geometry';
+import { niceCeil } from '@/components/charts/pace-geometry';
 import type { BubbleTint } from '@/components/ui/nav-row';
 import { walletBubbleTint } from '@/constants/wallet-card-styles';
-import { dayLabel } from '@/lib/dates/day-label';
-import { toLocalDateInput } from '@/lib/dates/local-date-input';
 import { balanceViewport, type BalanceIndex } from '@/lib/finance/balance-history';
-import { dateAt, type ChartRange } from '@/lib/finance/chart-range';
-import { chartTicks } from '@/lib/finance/chart-ticks';
-import { formatMoney } from '@/lib/finance/format-money';
 import { scrubPoints, type ScrubPoints } from '@/components/charts/scrub';
 import type { AxisRow, TickMark } from '@/components/charts/zoom-axes';
+import {
+  addDays,
+  type ChartRange,
+  chartTicks,
+  type DayKey,
+  dayLabel,
+  formatMoney,
+  monthOf,
+  monthShort,
+  shortDate,
+} from '@repo/core';
+import { deviceCalendar } from '@/lib/dates/device-calendar';
 
 export type NetWorthView = 'total' | 'by-wallet';
 
@@ -58,9 +65,8 @@ export function walletLineStyles(
   );
 }
 
-function spanDate(date: Date, long: boolean): string {
-  const month = MONTHS[date.getMonth()];
-  return long ? `${month} ${date.getFullYear()}` : `${date.getDate()} ${month}`;
+function spanDate(day: DayKey, long: boolean): string {
+  return long ? `${monthShort(monthOf(day))} ${day.slice(0, 4)}` : shortDate(day);
 }
 
 /** Every day in the range; days on which a transaction moved a balance tick. */
@@ -119,8 +125,8 @@ export function netWorthTarget({
   const money = (minor: number) => formatMoney(minor, currency);
   const count = to - from + 1;
   const long = to - from > LONG_RANGE_DAYS;
-  const end = back > 0 ? spanDate(dateAt(index.firstDay, to), long) : 'today';
-  const span = count > 1 ? `${spanDate(dateAt(index.firstDay, from), long)} to ${end}` : end;
+  const end = back > 0 ? spanDate(addDays(index.firstDay, to), long) : 'today';
+  const span = count > 1 ? `${spanDate(addDays(index.firstDay, from), long)} to ${end}` : end;
   const reading =
     view === 'total'
       ? `${title}, ${span}${count > 1 ? `, from ${money(index.total[from]!)} to ${money(index.total[to]!)}` : `, ${money(index.total[to]!)}`}.`
@@ -157,7 +163,7 @@ export function dayReading(
   currency: string,
   now: Date,
 ): string {
-  const date = dayLabel(toLocalDateInput(dateAt(index.firstDay, day)), now);
+  const date = dayLabel(addDays(index.firstDay, day), deviceCalendar.dayKey(now));
   if (view === 'total') return `${date}, ${formatMoney(index.total[day]!, currency)}`;
   const parts = Object.entries(names).map(([id, name]) => {
     const value = index.byWallet[id]?.[day] ?? NaN;

@@ -13,7 +13,6 @@ import { openSpending } from '@/components/budget/open-spending';
 import { useMerchantNames } from '@/components/merchants/use-merchant-names';
 import { useBudgetData } from '@/components/budget/use-budget';
 import { PaceChart } from '@/components/charts/pace-chart';
-import { monthFromKey } from '@/components/charts/pace-geometry';
 import { Button } from '@/components/ui/button';
 import { NotFound } from '@/components/ui/empty-tile';
 import { HeaderIconButton } from '@/components/ui/header-icon-button';
@@ -30,20 +29,9 @@ import {
 } from '@/components/ui/transaction-row';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { merchantKey } from '@/lib/ai/routine';
-import { dayLabel } from '@/lib/dates/day-label';
 import { lastPaymentBySeries } from '@/lib/finance/bills';
 import { budgetNote } from '@/lib/finance/budget-note';
-import {
-  cumulativeSpend,
-  dailySpend,
-  daysInMonth,
-  isMonthKey,
-  monthKey,
-  monthName,
-  monthSpend,
-  topMerchants,
-} from '@/lib/finance/budget-month';
-import { currencySymbol, formatMoney } from '@/lib/finance/format-money';
+import { cumulativeSpend, dailySpend, monthSpend, topMerchants } from '@/lib/finance/budget-month';
 import { merchantName } from '@/lib/finance/merchant-name';
 import { PLAN_LIMIT_MINOR } from '@/lib/finance/money';
 import { pendingProposals$ } from '@/lib/finance/selectors';
@@ -57,6 +45,8 @@ import { tid } from '@/lib/test-ids';
 import { showToast } from '@/lib/toast/toast-store';
 import { resolveTransactionIcon } from '@/lib/transactions/icon';
 import { proposalRow, transactionRow } from '@/lib/transactions/row';
+import { currencySymbol, dayLabel, daysInMonth, formatMoney, isMonthKey, monthName } from '@repo/core';
+import { deviceCalendar } from '@/lib/dates/device-calendar';
 
 const SHOWN_ROWS = 5;
 
@@ -76,8 +66,8 @@ export default function CategoryBudgetScreen() {
   const tokens = useThemeTokens();
   const data = useBudgetData();
   const { currency, now } = data;
-  const month = isMonthKey(params.month) ? params.month : monthKey(now);
-  const isCurrent = month === monthKey(now);
+  const month = isMonthKey(params.month) ? params.month : deviceCalendar.monthKey(now);
+  const isCurrent = month === deviceCalendar.monthKey(now);
   const category = data.categories.find(
     (item) => item.id === params.categoryId,
   );
@@ -108,7 +98,7 @@ export default function CategoryBudgetScreen() {
     const { daily, throughDay } = dailySpend(spend, month, now);
     return {
       series: cumulativeSpend(daily, throughDay),
-      chartSeries: { month: monthFromKey(month), values: daily.slice(0, throughDay) },
+      chartSeries: { month, values: daily.slice(0, throughDay) },
     };
   }, [spend, month, now]);
   const spentMinor = series[series.length - 1] ?? (0 as MinorAmount);
@@ -183,7 +173,7 @@ export default function CategoryBudgetScreen() {
     if (typedMinor === before) return;
     await upsertCategoryBudget(category.id, currency, typedMinor);
     return {
-      text: `${category.name} budget is ${formatMoney(typedMinor, currency, { whole: true })} from ${monthName(monthKey(now))}`,
+      text: `${category.name} budget is ${formatMoney(typedMinor, currency, { whole: true })} from ${monthName(deviceCalendar.monthKey(now))}`,
       undo: () =>
         void (before === null
           ? deleteCategoryBudget(category.id, currency)
@@ -385,7 +375,7 @@ export default function CategoryBudgetScreen() {
                   {[
                     "Set one and this page shows what's left as you go.",
                     bills[0]
-                      ? `${bills[0].name}, ${formatMoney(bills[0].amountMinor, currency)}, is due ${dayLabel(bills[0].dueDate, now)}.`
+                      ? `${bills[0].name}, ${formatMoney(bills[0].amountMinor, currency)}, is due ${dayLabel(bills[0].dueDate, deviceCalendar.dayKey(now))}.`
                       : null,
                   ]
                     .filter(Boolean)

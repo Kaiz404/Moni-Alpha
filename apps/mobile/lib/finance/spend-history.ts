@@ -1,9 +1,9 @@
 import type { CurrencyCode } from '@repo/types';
 
-import { toLocalDateInput } from '@/lib/dates/local-date-input';
 import { countsAsSpend } from '@/lib/finance/budget-month';
-import { chartRangeStart, dateAt, dayNumber } from '@/lib/finance/chart-range';
 import type { FinanceTransaction } from '@/lib/finance/types';
+import { addDays, chartRangeStart, dayNumber, monthOf } from '@repo/core';
+import { deviceCalendar } from '@/lib/dates/device-calendar';
 
 export type SpendUnit = 'day' | 'week' | 'month' | 'year';
 
@@ -58,17 +58,17 @@ export function spendIndex({
   transactions: readonly FinanceTransaction[];
   currency: CurrencyCode;
 }): SpendIndex {
-  const today = toLocalDateInput(now);
+  const today = deviceCalendar.dayKey(now);
   const byDay = new Map<string, number>();
   let earliest = today;
   for (const transaction of transactions) {
     if (!countsAsSpend(transaction, currency)) continue;
-    const day = toLocalDateInput(new Date(transaction.transactionDate));
+    const day = deviceCalendar.dayKey(transaction.transactionDate);
     if (day > today) continue;
     byDay.set(day, (byDay.get(day) ?? 0) + Number(transaction.amountMinor));
     if (day < earliest) earliest = day;
   }
-  const yearAgo = chartRangeStart(now, '1y')!;
+  const yearAgo = chartRangeStart(deviceCalendar.dayKey(now), '1y')!;
   const firstDay = earliest < yearAgo ? earliest : yearAgo;
   const origin = dayNumber(firstDay);
   const days = dayNumber(today) - origin + 1;
@@ -92,13 +92,13 @@ export function spendBuckets(index: SpendIndex, from: number): SpendBuckets {
   const values: number[] = [];
   let openKey = '';
   for (let day = from; day <= last; day++) {
-    const date = dateAt(index.firstDay, day);
+    const date = addDays(index.firstDay, day);
     const key =
       unit === 'week'
         ? String(Math.floor((day - from) / 7))
         : unit === 'month'
-          ? `${date.getFullYear()}-${date.getMonth()}`
-          : String(date.getFullYear());
+          ? monthOf(date)
+          : date.slice(0, 4);
     if (key === openKey) {
       ends[ends.length - 1] = day;
       values[values.length - 1]! += index.spent[day]!;

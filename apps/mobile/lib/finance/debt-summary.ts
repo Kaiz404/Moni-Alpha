@@ -1,7 +1,8 @@
 import { addMinor, subtractMinor, type CurrencyCode, type MinorAmount } from '@repo/types';
 
-import { parseLocalDateInput } from '@/lib/dates/local-date-input';
 import type { FinanceDebt, FinanceDebtActivity } from './types';
+import { daysBetween, parseDayKey } from '@repo/core';
+import { deviceCalendar } from '@/lib/dates/device-calendar';
 
 export type DebtSide = FinanceDebt['direction'];
 export type DebtState = 'open' | 'settled' | 'written_off';
@@ -72,10 +73,8 @@ export function describeDebt(debt: FinanceDebt, activities: readonly Activity[])
 
 /** Whole local days from `now` to a local `YYYY-MM-DD`. */
 export function daysUntil(dueDate: string, now: Date): number | null {
-  const due = parseLocalDateInput(dueDate);
-  if (!due) return null;
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  return Math.round((due.getTime() - today.getTime()) / 86_400_000);
+  const due = parseDayKey(dueDate);
+  return due ? daysBetween(deviceCalendar.dayKey(now), due) : null;
 }
 
 function byDueThenName(a: DebtLine, b: DebtLine): number {

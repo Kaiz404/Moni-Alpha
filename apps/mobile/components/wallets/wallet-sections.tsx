@@ -19,8 +19,6 @@ import { Text } from '@/components/ui/text';
 import { TintBubble } from '@/components/ui/transaction-row';
 import { labelForNotificationPackage } from '@/constants/notification-apps';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
-import { toLocalDateInput } from '@/lib/dates/local-date-input';
-import { formatMoney } from '@/lib/finance/format-money';
 import type {
   FinanceProposal,
   FinanceWallet,
@@ -41,6 +39,8 @@ import {
   setDefaultWalletId,
 } from '@/lib/wallets/default-wallet';
 import { useWalletNamesLinkedTo, type WalletAlertLink } from '@/lib/wallets/wallet-link';
+import { formatMoney } from '@repo/core';
+import { deviceCalendar } from '@/lib/dates/device-calendar';
 
 function DetailRow({
   testID,
@@ -292,7 +292,7 @@ export function WalletAlerts({
               source={source}
               unreached={unreachedLine(unreached, packageName)}
               quiet={
-                assessCadence(source, toLocalDateInput(new Date())).kind === 'quiet'
+                assessCadence(source, deviceCalendar.dayKey(new Date())).kind === 'quiet'
               }
               accessOff={Platform.OS === 'android' && !listenerOn}
               onChange={() => void changeApp()}

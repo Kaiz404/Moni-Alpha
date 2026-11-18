@@ -5,8 +5,8 @@ import { View } from 'react-native';
 import { ReviewDeck, useReviewSession } from '@/components/review/deck';
 import { Page } from '@/components/ui/page';
 import { Text } from '@/components/ui/text';
-import { formatMoney } from '@/lib/finance/format-money';
 import { useMainCurrency } from '@/lib/finance/main-currency';
+import { formatMoney } from '@repo/core';
 
 /** `XA-Review`: the card deck. `id` puts that capture first. */
 export default function ReviewScreen() {

@@ -1,9 +1,9 @@
 import { DateTimePickerAndroid } from '@react-native-community/datetimepicker';
 import { Platform } from 'react-native';
 
-import { toLocalDateInput } from '@/lib/dates/local-date-input';
 import { orderRange, type ActivityRange } from '@/lib/finance/activity-filter';
 import { openSheet } from '@/lib/sheet/sheet-store';
+import { deviceCalendar } from '@/lib/dates/device-calendar';
 
 /**
  * Picks a past or present day and resolves `YYYY-MM-DD`, or null when dismissed. Android opens the
@@ -17,7 +17,7 @@ export function pickDate(selected: string): Promise<string | null> {
       value: new Date(`${selected}T12:00:00`),
       maximumDate: new Date(),
       onChange: (event, date) =>
-        resolve(event.type === 'set' && date ? toLocalDateInput(date) : null),
+        resolve(event.type === 'set' && date ? deviceCalendar.dayKey(date) : null),
     });
   });
 }

@@ -1,8 +1,8 @@
 import type { CapturedNotificationStatus } from '@repo/types';
-import { formatDayHeading } from '@/lib/dates/day-label';
-import { toLocalDateInput } from '@/lib/dates/local-date-input';
 import { isOneTimeCode } from '@/lib/notifications/notification-filter';
 import { curatedPackagesEquivalent } from '@/lib/notifications/notification-package-aliases';
+import { dayHeading } from '@repo/core';
+import { deviceCalendar } from '@/lib/dates/device-calendar';
 
 /** The glossary words, in the order the filter chips and the legend list them. */
 export const CAPTURE_STATUS_LABELS = {
@@ -181,10 +181,14 @@ export function groupCaptureLog(
   const days = new Map<string, CaptureLogDay>();
   for (const entry of received) {
     const date = new Date(entry.at);
-    const key = toLocalDateInput(date);
+    const key = deviceCalendar.dayKey(date);
     let day = days.get(key);
     if (!day) {
-      day = { key, label: formatDayHeading(date, now), items: [] };
+      day = {
+        key,
+        label: dayHeading(deviceCalendar.dayKey(date), deviceCalendar.dayKey(now)),
+        items: [],
+      };
       days.set(key, day);
     }
     const same = sameAddedPayment(entry, received);

@@ -7,10 +7,11 @@ import { Press } from '@/components/ui/press';
 import { Text } from '@/components/ui/text';
 import { TintBubble } from '@/components/ui/transaction-row';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
-import { parseLocalDateInput } from '@/lib/dates/local-date-input';
-import { formatMoney } from '@/lib/finance/format-money';
 import { tid } from '@/lib/test-ids';
 import { resolveTransactionIcon } from '@/lib/transactions/icon';
+import { daysBetween, formatMoney, parseDayKey } from '@repo/core';
+
+import { deviceCalendar } from '@/lib/dates/device-calendar';
 
 export type BillLook = {
   wallet: string | null;
@@ -25,15 +26,8 @@ export function dueLabel(
   dueDate: string,
   now: Date,
 ): { text: string; tone: DueTone } {
-  const due = parseLocalDateInput(dueDate) ?? now;
-  const today = new Date(
-    now.getFullYear(),
-    now.getMonth(),
-    now.getDate(),
-  );
-  const days = Math.round(
-    (due.getTime() - today.getTime()) / 86_400_000,
-  );
+  const today = deviceCalendar.dayKey(now);
+  const days = daysBetween(today, parseDayKey(dueDate) ?? today);
   if (days < 0) return { text: 'Overdue', tone: 'late' };
   if (days === 0) return { text: 'Today', tone: 'soon' };
   if (days === 1) return { text: 'Tomorrow', tone: 'soon' };

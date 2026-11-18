@@ -19,12 +19,13 @@ import { SearchField } from '@/components/ui/search-field';
 import { Text } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { merchantKey } from '@/lib/ai/routine';
-import { isMonthKey, monthKey, monthName } from '@/lib/finance/budget-month';
 import { pageOf, usePageNumber } from '@/lib/finance/paged';
 import { monthMerchants } from '@/lib/reports/report';
 import { forgetMerchantName, nameMerchant } from '@/lib/supabase/merchant-aliases';
 import { tid, type TestId } from '@/lib/test-ids';
 import { showToast } from '@/lib/toast/toast-store';
+import { isMonthKey, monthName } from '@repo/core';
+import { deviceCalendar } from '@/lib/dates/device-calendar';
 
 function failed(error: unknown) {
   showToast({ text: error instanceof Error ? error.message : "Couldn't save the name." });
@@ -48,7 +49,7 @@ export default function MerchantsScreen() {
   const reduceMotion = useReducedMotion();
   const contentTop = usePageContentTop();
 
-  const thisMonth = monthKey(data.now);
+  const thisMonth = deviceCalendar.monthKey(data.now);
   const month = isMonthKey(params.month) ? params.month : thisMonth;
   const year = month.slice(0, 4);
   const monthLabel =

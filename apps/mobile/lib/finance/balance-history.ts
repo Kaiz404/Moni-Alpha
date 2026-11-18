@@ -1,7 +1,7 @@
-import { toLocalDateInput } from '@/lib/dates/local-date-input';
-import { chartWindow, dayNumber, daysBetween, type ChartRange } from '@/lib/finance/chart-range';
 import { transactionDeltaMinor } from '@/lib/finance/ledger';
 import type { FinanceTransaction } from '@/lib/finance/types';
+import { type ChartRange, chartWindow, dayNumber, daysBetween } from '@repo/core';
+import { deviceCalendar } from '@/lib/dates/device-calendar';
 
 /**
  * Closing balances, one entry per local day from the day the first wallet began to today, built
@@ -36,17 +36,17 @@ export function balanceIndex({
     'walletId' | 'transferToWalletId' | 'amountMinor' | 'type' | 'transactionDate'
   >[];
 }): BalanceIndex {
-  const today = toLocalDateInput(now);
+  const today = deviceCalendar.dayKey(now);
   const began = new Map(
     wallets.map((wallet) => {
-      const created = wallet.createdAt ? toLocalDateInput(new Date(wallet.createdAt)) : today;
+      const created = wallet.createdAt ? deviceCalendar.dayKey(wallet.createdAt) : today;
       return [wallet.id, created < today ? created : today];
     }),
   );
   const changes = new Map(wallets.map((wallet) => [wallet.id, new Map<string, number>()]));
   const afterToday = new Map(wallets.map((wallet) => [wallet.id, 0]));
   for (const transaction of transactions) {
-    const day = toLocalDateInput(new Date(transaction.transactionDate));
+    const day = deviceCalendar.dayKey(transaction.transactionDate);
     for (const id of [transaction.walletId, transaction.transferToWalletId]) {
       const change = id ? changes.get(id) : undefined;
       if (!id || !change) continue;
@@ -96,7 +96,7 @@ export function balanceViewport(
   range: ChartRange,
   back = 0,
 ): { from: number; to: number } {
-  const { start, end } = chartWindow(now, range, back);
+  const { start, end } = chartWindow(deviceCalendar.dayKey(now), range, back);
   return {
     from: Math.max(0, start === null ? 0 : daysBetween(index.firstDay, start)),
     to: Math.min(index.days - 1, daysBetween(index.firstDay, end)),

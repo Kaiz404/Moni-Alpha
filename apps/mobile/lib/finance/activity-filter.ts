@@ -1,9 +1,18 @@
 import { addMinor, minorToNumber, type CurrencyCode, type MinorAmount } from '@repo/types';
 
-import { formatDate } from '@/lib/dates/day-label';
-import { toLocalDateInput } from '@/lib/dates/local-date-input';
-import { daysInMonth, monthKey, monthShort, shiftMonth, type MonthKey } from '@/lib/finance/budget-month';
 import type { FinanceTransaction } from '@/lib/finance/types';
+import {
+  addDays,
+  dateLabel,
+  dayOfMonth,
+  daysInMonth,
+  firstDayOf,
+  type MonthKey,
+  monthShort,
+  shiftMonth,
+  shortDate,
+} from '@repo/core';
+import { deviceCalendar } from '@/lib/dates/device-calendar';
 
 export type ActivityKind = 'all' | FinanceTransaction['type'];
 
@@ -84,20 +93,14 @@ export function filterActivity(
   return kept.map((row) => row.transaction);
 }
 
-/** Midnight at the start of a local `YYYY-MM-DD`. */
-export function localDay(key: string, addDays = 0): Date {
-  const [year, month, day] = key.split('-').map(Number);
-  return new Date(year, month - 1, day + addDays);
-}
-
 /** The rows inside a range, in the order given. A null range keeps them all. */
 export function withinRange(
   transactions: readonly FinanceTransaction[],
   range: ActivityRange | null,
 ): readonly FinanceTransaction[] {
   if (!range) return transactions;
-  const start = localDay(range.from).getTime();
-  const end = localDay(range.to, 1).getTime();
+  const start = deviceCalendar.startOfDay(range.from).getTime();
+  const end = deviceCalendar.startOfDay(addDays(range.to, 1)).getTime();
   return transactions.filter((transaction) => {
     const at = new Date(transaction.transactionDate).getTime();
     return at >= start && at < end;
@@ -124,22 +127,25 @@ export type RangePreset = { key: string; label: string; range: ActivityRange | n
 
 /** The date sheet's choices, in the order it shows them. */
 export function rangePresets(now: Date): RangePreset[] {
-  const today = toLocalDateInput(now);
-  const month = monthKey(now);
+  const today = deviceCalendar.dayKey(now);
+  const month = deviceCalendar.monthKey(now);
   const threeBack = shiftMonth(month, -3);
-  const sameDayThreeBack = `${threeBack}-${String(Math.min(now.getDate(), daysInMonth(threeBack))).padStart(2, '0')}`;
+  const sameDayThreeBack = addDays(
+    firstDayOf(threeBack),
+    Math.min(dayOfMonth(today), daysInMonth(threeBack)) - 1,
+  );
   return [
     { key: 'this-month', label: 'This month', range: monthRange(month) },
     { key: 'last-month', label: 'Last month', range: monthRange(shiftMonth(month, -1)) },
     {
       key: 'last-30-days',
       label: 'Last 30 days',
-      range: { from: toLocalDateInput(localDay(today, -29)), to: today },
+      range: { from: addDays(today, -29), to: today },
     },
     {
       key: 'last-3-months',
       label: 'Last 3 months',
-      range: { from: toLocalDateInput(localDay(sameDayThreeBack, 1)), to: today },
+      range: { from: addDays(sameDayThreeBack, 1), to: today },
     },
     {
       key: 'this-year',
@@ -150,12 +156,6 @@ export function rangePresets(now: Date): RangePreset[] {
   ];
 }
 
-/** "1 Oct", with the year only when asked. */
-export function shortDay(key: string, withYear = false): string {
-  const [year, month, day] = key.split('-');
-  const label = `${Number(day)} ${monthShort(`${year}-${month}` as MonthKey)}`;
-  return withYear ? `${label} ${year}` : label;
-}
 
 /**
  * A range in words: "2026", "Oct 2026", "Mon 14 Sep", the rolling presets by name while they
@@ -167,21 +167,21 @@ export function rangeLabel(range: ActivityRange, now: Date): string {
   if (from === `${year}-01-01` && to === `${year}-12-31`) return year;
   const month = from.slice(0, 7) as MonthKey;
   if (sameRange(range, monthRange(month))) return `${monthShort(month)} ${year}`;
-  if (from === to) return formatDate(localDay(from), now);
+  if (from === to) return dateLabel(from, deviceCalendar.dayKey(now));
   const rolling = rangePresets(now).find(
     (preset) => preset.key.startsWith('last-') && preset.key !== 'last-month' && sameRange(preset.range, range),
   );
   if (rolling) return rolling.label;
   const thisYear = String(now.getFullYear());
-  if (year !== to.slice(0, 4)) return `${shortDay(from, true)} to ${shortDay(to, true)}`;
-  return `${shortDay(from)} to ${shortDay(to, year !== thisYear)}`;
+  if (year !== to.slice(0, 4)) return `${shortDate(from, true)} to ${shortDate(to, true)}`;
+  return `${shortDate(from)} to ${shortDate(to, year !== thisYear)}`;
 }
 
 /** Groups newest-first rows by local day. Day totals leave transfers out. */
 export function groupActivityDays(transactions: readonly FinanceTransaction[]): ActivityDay[] {
   const days: ActivityDay[] = [];
   for (const transaction of transactions) {
-    const key = toLocalDateInput(new Date(transaction.transactionDate));
+    const key = deviceCalendar.dayKey(transaction.transactionDate);
     let day = days.at(-1);
     if (day?.key !== key) {
       day = {

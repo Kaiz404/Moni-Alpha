@@ -1,7 +1,7 @@
 import { minorToNumber } from '@repo/types';
 
-import { formatMoney } from '@/lib/finance/format-money';
 import type { FlowBucket } from '@/lib/finance/flow-series';
+import { formatMoney } from '@repo/core';
 
 export const FLOW_PLOT_HEIGHT = 96;
 export const FLOW_TOP = 6;

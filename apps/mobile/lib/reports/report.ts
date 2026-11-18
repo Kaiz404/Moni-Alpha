@@ -1,20 +1,22 @@
 import type { CurrencyCode, MerchantAlias, MinorAmount } from '@repo/types';
 
-import { parseLocalDateInput, toLocalDateInput } from '@/lib/dates/local-date-input';
-import {
-  daysInMonth,
-  isMonthKey,
-  monthKey,
-  monthShort,
-  monthSpend,
-  shiftMonth,
-  topMerchants,
-  type MerchantSpend,
-  type MonthKey,
-} from '@/lib/finance/budget-month';
-import { formatMoney } from '@/lib/finance/format-money';
+import { monthSpend, topMerchants, type MerchantSpend } from '@/lib/finance/budget-month';
 import { merchantName } from '@/lib/finance/merchant-name';
 import type { FinanceCategory, FinanceTransaction } from '@/lib/finance/types';
+import {
+  addDays,
+  dayOfMonth,
+  daysInMonth,
+  firstDayOf,
+  formatMoney,
+  isMonthKey,
+  lastDayOf,
+  monthShort,
+  parseDayKey,
+  shiftMonth,
+  type MonthKey,
+} from '@repo/core';
+import { deviceCalendar } from '@/lib/dates/device-calendar';
 
 type Aliases = readonly Pick<MerchantAlias, 'rawKey' | 'displayName'>[];
 
@@ -79,8 +81,6 @@ export type ReportInput = {
 
 const TOP_MERCHANTS = 5;
 
-const pad = (value: number) => String(value).padStart(2, '0');
-
 /** Money in that counts: income, not balance corrections or debt cash (same as Activity's day totals). */
 export function countsAsIncome(transaction: FinanceTransaction, currency: CurrencyCode): boolean {
   return (
@@ -92,7 +92,7 @@ export function countsAsIncome(transaction: FinanceTransaction, currency: Curren
 }
 
 function monthRange(month: MonthKey): ReportRange {
-  return { from: `${month}-01`, to: `${month}-${pad(daysInMonth(month))}` };
+  return { from: firstDayOf(month), to: lastDayOf(month) };
 }
 
 /**
@@ -103,10 +103,10 @@ export function comparisonFor(month: MonthKey, now: Date): ReportComparison {
   const previous = shiftMonth(month, -1);
   const name = monthShort(previous);
   const whole = monthRange(previous);
-  if (month !== monthKey(now)) return { range: whole, label: name };
-  const day = Math.min(now.getDate(), daysInMonth(previous));
+  if (month !== deviceCalendar.monthKey(now)) return { range: whole, label: name };
+  const day = Math.min(dayOfMonth(deviceCalendar.dayKey(now)), daysInMonth(previous));
   return {
-    range: { from: whole.from, to: `${previous}-${pad(day)}` },
+    range: { from: whole.from, to: addDays(firstDayOf(previous), day - 1) },
     label: `${name} by now`,
   };
 }
@@ -126,7 +126,7 @@ export function changePhrase(
 }
 
 const dayOf = (transaction: FinanceTransaction) =>
-  toLocalDateInput(new Date(transaction.transactionDate));
+  deviceCalendar.dayKey(transaction.transactionDate);
 
 const within = (transaction: FinanceTransaction, { from, to }: ReportRange) =>
   dayOf(transaction) >= from && dayOf(transaction) <= to;
@@ -271,7 +271,7 @@ export function readSpendingParams(
       },
     };
   }
-  if (params.day && parseLocalDateInput(params.day)) {
+  if (params.day && parseDayKey(params.day)) {
     return { month: params.day.slice(0, 7), scope: { kind: 'day', day: params.day } };
   }
   return null;

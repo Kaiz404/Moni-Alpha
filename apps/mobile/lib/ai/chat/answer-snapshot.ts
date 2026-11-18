@@ -1,7 +1,7 @@
 import { decimalToMinor, type MinorAmount } from '@repo/types';
 
 import { selectUpcomingBills } from '@/lib/finance/bills';
-import { buildBudgetMonth, monthKey } from '@/lib/finance/budget-month';
+import { buildBudgetMonth } from '@/lib/finance/budget-month';
 import { selectMainCurrency } from '@/lib/finance/main-currency';
 import { financeProjection$ } from '@/lib/finance/projection';
 import { debtsWithBalance$, transactions$ } from '@/lib/finance/selectors';
@@ -10,6 +10,7 @@ import { listAwaitingReview } from '@/lib/supabase/proposed-transactions';
 import { listRecurringOverrides } from '@/lib/supabase/recurring-overrides';
 
 import type { AnswerSnapshot } from './answer-cards';
+import { deviceCalendar } from '@/lib/dates/device-calendar';
 
 /** This month in the main currency, read from the ledger the moment a question is asked. */
 export function buildAnswerSnapshot(userId: string, now: Date = new Date()): AnswerSnapshot {
@@ -18,7 +19,7 @@ export function buildAnswerSnapshot(userId: string, now: Date = new Date()): Ans
   const transactions = transactions$({ userId }).peek();
   const projection = financeProjection$.peek();
   const month = buildBudgetMonth({
-    month: monthKey(now),
+    month: deviceCalendar.monthKey(now),
     now,
     currency,
     transactions,

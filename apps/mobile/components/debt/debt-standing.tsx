@@ -9,10 +9,10 @@ import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Press } from '@/components/ui/press';
 import { Text } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
-import { formatDay } from '@/lib/dates/day-label';
 import type { DebtLine } from '@/lib/finance/debt-summary';
-import { formatMoney } from '@/lib/finance/format-money';
 import { tid } from '@/lib/test-ids';
+import { dayLabel, formatMoney } from '@repo/core';
+import { deviceCalendar } from '@/lib/dates/device-calendar';
 
 function RepaidBar({
   line,
@@ -265,7 +265,10 @@ export function SquareCard({
 /** A debt let go of: nothing left, no money moved. */
 export function WrittenOff({ line }: { line: DebtLine }) {
   const { debt, principalMinor, repaidMinor, lastAt } = line;
-  const day = formatDay(lastAt);
+  const day = dayLabel(
+    deviceCalendar.dayKey(lastAt),
+    deviceCalendar.dayKey(new Date()),
+  );
   const when =
     day === 'Today' || day === 'Yesterday'
       ? day.toLowerCase()

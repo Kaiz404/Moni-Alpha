@@ -3,19 +3,17 @@ import { useMemo, useState } from 'react';
 import { View } from 'react-native';
 import Svg, { Circle, Line, Rect } from 'react-native-svg';
 
-import { monthFromKey, monthName } from '@/components/charts/pace-geometry';
 import { SpendChart } from '@/components/charts/spend-chart';
 import { Segmented } from '@/components/ui/segmented';
 import { Text } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
-import { currencySymbol } from '@/lib/finance/format-money';
 import { spendIndex } from '@/lib/finance/spend-history';
 import { tid } from '@/lib/test-ids';
 
 import { countsAsSpend, type BudgetMonth } from '@/lib/finance/budget-month';
-import { CHART_RANGES, type ChartRange } from '@/lib/finance/chart-range';
 import type { FinanceTransaction } from '@/lib/finance/types';
 import { leftLine } from '@/lib/finance/spent-summary';
+import { CHART_RANGES, type ChartRange, currencySymbol, monthName } from '@repo/core';
 
 type Mode = 'pace' | 'daily';
 
@@ -50,7 +48,7 @@ export function SpentCard({
   const [mode, setMode] = useState<Mode>('pace');
   const [range, setRange] = useState<ChartRange>('1m');
   const line = month.left ? leftLine(month.left, currency, after) : null;
-  const name = monthName(monthFromKey(month.month));
+  const name = monthName(month.month);
   const title = range === '1m' ? `Spent in ${name}` : RANGE_TITLE[range];
   const index = useMemo(
     () => spendIndex({ now, transactions, currency }),

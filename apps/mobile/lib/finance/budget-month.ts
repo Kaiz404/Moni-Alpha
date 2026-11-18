@@ -1,15 +1,14 @@
 import type { CurrencyCode, MinorAmount, UpcomingBill } from '@repo/types';
 
-import { formatMoney } from '@/lib/finance/format-money';
+import { dayOfMonth, daysInMonth, formatMoney, lastDayOf, monthOf, type MonthKey } from '@repo/core';
+
+import { deviceCalendar } from '@/lib/dates/device-calendar';
 import type {
   FinanceBudget,
   FinanceCategory,
   FinanceDebt,
   FinanceTransaction,
 } from '@/lib/finance/types';
-
-/** `YYYY-MM` in device-local time, the month the Budget tab shows. */
-export type MonthKey = string;
 
 export type CategorySpend = {
   categoryId: string;
@@ -67,27 +66,6 @@ export type BudgetMonthInput = {
   debts: readonly { debt: FinanceDebt; balanceMinor: MinorAmount }[];
 };
 
-const pad = (value: number) => String(value).padStart(2, '0');
-
-/** For a month that arrived as a route param. */
-export function isMonthKey(value: string | undefined): value is MonthKey {
-  return value !== undefined && /^\d{4}-(0[1-9]|1[0-2])$/.test(value);
-}
-
-export function monthKey(date: Date): MonthKey {
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}`;
-}
-
-export function daysInMonth(month: MonthKey): number {
-  const [year, number] = month.split('-').map(Number);
-  return new Date(year, number, 0).getDate();
-}
-
-export function shiftMonth(month: MonthKey, by: number): MonthKey {
-  const [year, number] = month.split('-').map(Number);
-  return monthKey(new Date(year, number - 1 + by, 1));
-}
-
 /** Spending the Budget tab counts: the user's own expenses, not transfers or debt mirrors. */
 export function countsAsSpend(transaction: FinanceTransaction, currency: CurrencyCode): boolean {
   return (
@@ -98,11 +76,6 @@ export function countsAsSpend(transaction: FinanceTransaction, currency: Currenc
   );
 }
 
-function localDay(value: string): { month: MonthKey; day: number } {
-  const date = new Date(value);
-  return { month: monthKey(date), day: date.getDate() };
-}
-
 /** Each day's spend for one month (index 0 is day 1) and where the line stops. */
 export function dailySpend(
   transactions: readonly FinanceTransaction[],
@@ -110,15 +83,16 @@ export function dailySpend(
   now: Date,
 ): { daily: MinorAmount[]; throughDay: number; isCurrent: boolean } {
   const length = daysInMonth(month);
-  const isCurrent = month === monthKey(now);
+  const today = deviceCalendar.dayKey(now);
+  const isCurrent = month === monthOf(today);
   const daily = Array.from({ length }, () => 0);
   for (const transaction of transactions) {
-    const at = localDay(transaction.transactionDate);
-    if (at.month === month) daily[at.day - 1] += Number(transaction.amountMinor);
+    const day = deviceCalendar.dayKey(transaction.transactionDate);
+    if (monthOf(day) === month) daily[dayOfMonth(day) - 1] += Number(transaction.amountMinor);
   }
   return {
     daily: daily as MinorAmount[],
-    throughDay: isCurrent ? now.getDate() : length,
+    throughDay: isCurrent ? dayOfMonth(today) : length,
     isCurrent,
   };
 }
@@ -140,7 +114,8 @@ export function buildBudgetMonth(input: BudgetMonthInput): BudgetMonth {
   const { month, now, currency } = input;
   const spend = input.transactions.filter(
     (transaction) =>
-      countsAsSpend(transaction, currency) && localDay(transaction.transactionDate).month === month,
+      countsAsSpend(transaction, currency) &&
+      deviceCalendar.monthKey(transaction.transactionDate) === month,
   );
   const { daily, throughDay, isCurrent } = dailySpend(spend, month, now);
   const cumulative = cumulativeSpend(daily, throughDay);
@@ -200,7 +175,7 @@ export function buildBudgetMonth(input: BudgetMonthInput): BudgetMonth {
           debts: input.debts,
           currency,
           month,
-          daysLeft: length - now.getDate() + 1,
+          daysLeft: length - dayOfMonth(deviceCalendar.dayKey(now)) + 1,
         })
       : null;
 
@@ -239,7 +214,7 @@ function leftThisMonth({
   month: MonthKey;
   daysLeft: number;
 }): LeftThisMonth {
-  const monthEnd = `${month}-${pad(daysInMonth(month))}`;
+  const monthEnd = lastDayOf(month);
   const debtsDue = debts
     .filter(
       ({ debt, balanceMinor }) =>
@@ -304,11 +279,11 @@ export function spendMonths(
   now: Date,
   limit = 12,
 ): { month: MonthKey; spentMinor: MinorAmount }[] {
-  const current = monthKey(now);
+  const current = deviceCalendar.monthKey(now);
   const totals = new Map<MonthKey, number>([[current, 0]]);
   for (const transaction of transactions) {
     if (!countsAsSpend(transaction, currency)) continue;
-    const { month } = localDay(transaction.transactionDate);
+    const month = deviceCalendar.monthKey(transaction.transactionDate);
     if (month > current) continue;
     totals.set(month, (totals.get(month) ?? 0) + Number(transaction.amountMinor));
   }
@@ -368,7 +343,7 @@ export function monthSpend(
       (transaction) =>
         countsAsSpend(transaction, currency) &&
         (categoryId === undefined || transaction.categoryId === categoryId) &&
-        localDay(transaction.transactionDate).month === month,
+        deviceCalendar.monthKey(transaction.transactionDate) === month,
     )
     .sort((a, b) => b.transactionDate.localeCompare(a.transactionDate));
 }
@@ -410,33 +385,4 @@ export function spendSlices(
       };
     })
     .sort((a, b) => b.spentMinor - a.spentMinor || a.name.localeCompare(b.name));
-}
-
-/** Day of month for a transaction in device-local time. */
-export function dayOfMonth(transaction: Pick<FinanceTransaction, 'transactionDate'>): number {
-  return localDay(transaction.transactionDate).day;
-}
-
-const MONTH_NAMES = [
-  'January',
-  'February',
-  'March',
-  'April',
-  'May',
-  'June',
-  'July',
-  'August',
-  'September',
-  'October',
-  'November',
-  'December',
-];
-
-export function monthName(month: MonthKey): string {
-  return MONTH_NAMES[Number(month.split('-')[1]) - 1];
-}
-
-/** "Oct" as dates write it. */
-export function monthShort(month: MonthKey): string {
-  return monthName(month).slice(0, 3);
 }

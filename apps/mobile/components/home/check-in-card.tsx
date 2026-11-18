@@ -7,12 +7,12 @@ import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Press } from '@/components/ui/press';
 import { Text } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
-import { formatMoney } from '@/lib/finance/format-money';
 import { approve } from '@/lib/haptics';
 import { confirmWalletBalance } from '@/lib/supabase/wallets';
 import { tid } from '@/lib/test-ids';
 import { undoWindowMs } from '@/lib/toast/toast-store';
 import { useBalanceConfirmation } from '@/lib/wallets/balance-confirmation';
+import { formatMoney } from '@repo/core';
 
 /** After an answer the card shows one line with Undo, then steps aside. */
 type Answered =

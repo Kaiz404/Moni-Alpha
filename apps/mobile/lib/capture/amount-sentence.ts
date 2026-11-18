@@ -1,7 +1,7 @@
 import type { MinorAmount } from '@repo/types';
 
 import type { AmountSentence } from '@/lib/amount/amount-input';
-import { currencySymbol, formatMoney } from '@/lib/finance/format-money';
+import { currencySymbol, formatMoney } from '@repo/core';
 
 
 export type AmountSentenceInput =

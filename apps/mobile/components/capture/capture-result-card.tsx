@@ -32,17 +32,6 @@ import {
   savedLocation,
 } from '@/lib/capture/entry-place';
 import { spokenAmount } from '@/lib/capture/spoken-amount';
-import { formatDay } from '@/lib/dates/day-label';
-import {
-  isoToLocalDateInput,
-  localDateInputToIso,
-  toLocalDateInput,
-} from '@/lib/dates/local-date-input';
-import {
-  currencySymbol,
-  formatMoney,
-  formatSignedMoney,
-} from '@/lib/finance/format-money';
 import { useMainCurrency } from '@/lib/finance/main-currency';
 import {
   budgetProgress$,
@@ -59,6 +48,15 @@ import { tid, type TestId } from '@/lib/test-ids';
 import { resolveTransactionIcon } from '@/lib/transactions/icon';
 import type { EntryLocation } from '@/lib/transactions/prefetch-location';
 import { compactWalletNames } from '@/lib/wallets/compact-name';
+import {
+  currencySymbol,
+  dayLabel,
+  formatMoney,
+  formatSignedMoney,
+  moneySign,
+  parseDayKey,
+} from '@repo/core';
+import { deviceCalendar } from '@/lib/dates/device-calendar';
 
 type CaptureResultProps = {
   quote: CaptureQuote;
@@ -118,7 +116,7 @@ export function CaptureResult({
     here,
     phoneAllowed: phoneMayLocate(
       wallet,
-      isoToLocalDateInput(draft.transactionDate),
+      deviceCalendar.dayKey(draft.transactionDate),
     ),
   };
   const row = progress.find(
@@ -183,13 +181,15 @@ export function CaptureResult({
   };
 
   const pickDate = async () => {
-    const picked = await pickNativeDate(isoToLocalDateInput(draft.transactionDate));
+    const picked = await pickNativeDate(deviceCalendar.dayKey(draft.transactionDate));
     if (!picked) return;
     onEdit({
       transactionDate:
-        picked === toLocalDateInput(new Date())
+        picked === deviceCalendar.dayKey(new Date())
           ? new Date().toISOString()
-          : (localDateInputToIso(picked) ?? draft.transactionDate),
+          : parseDayKey(picked)
+            ? deviceCalendar.startOfDay(picked).toISOString()
+            : draft.transactionDate,
     });
   };
 
@@ -254,7 +254,7 @@ export function CaptureResult({
             testID={tid('capture', 'amount')}
             label="Amount"
             kind="amount"
-            prefix={`${draft.kind === 'expense' ? '−' : '+'}${currencySymbol(currency)}`}
+            prefix={`${moneySign(draft.kind === 'expense' ? 'expense' : 'income')}${currencySymbol(currency)}`}
             hint={
               read.amountMinor > 0
                 ? `${currency} · ${amountRead}`
@@ -321,7 +321,7 @@ export function CaptureResult({
             size="capture"
             className="flex-1"
             label="Date"
-            value={formatDay(draft.transactionDate)}
+            value={dayLabel(deviceCalendar.dayKey(draft.transactionDate), deviceCalendar.dayKey(new Date()))}
             spokenValue={dayAndTime(draft.transactionDate)}
             leading={
               <FieldBubble color={tokens.card}>

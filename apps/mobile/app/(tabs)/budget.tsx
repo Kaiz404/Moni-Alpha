@@ -29,19 +29,12 @@ import { Segmented } from '@/components/ui/segmented';
 import { Text } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { lastPaymentBySeries } from '@/lib/finance/bills';
-import {
-  leftSentence,
-  monthKey,
-  monthName,
-  monthShort,
-  spendMonths,
-  spendSlices,
-  type BudgetMonth,
-} from '@/lib/finance/budget-month';
-import { formatMoney } from '@/lib/finance/format-money';
+import { leftSentence, spendMonths, spendSlices, type BudgetMonth } from '@/lib/finance/budget-month';
 import { buildReport } from '@/lib/reports/report';
 import { openSheet } from '@/lib/sheet/sheet-store';
 import { tid } from '@/lib/test-ids';
+import { formatMoney, monthName, monthShort } from '@repo/core';
+import { deviceCalendar } from '@/lib/dates/device-calendar';
 
 type BudgetView = 'month' | 'calendar';
 
@@ -56,7 +49,7 @@ export default function BudgetScreen() {
   const tokens = useThemeTokens();
   const clearance = useTabBarClearance();
   const data = useBudgetData();
-  const current = monthKey(data.now);
+  const current = deviceCalendar.monthKey(data.now);
   const [chosen, setChosen] = useState<string | null>(null);
   const month = chosen ?? current;
   const [view, setView] = useState<BudgetView>('month');

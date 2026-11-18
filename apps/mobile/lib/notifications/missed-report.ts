@@ -1,5 +1,5 @@
-import { toLocalDateInput } from '@/lib/dates/local-date-input';
 import { curatedPackagesEquivalent } from '@/lib/notifications/notification-package-aliases';
+import { deviceCalendar } from '@/lib/dates/device-calendar';
 
 /** Params for Type it (`app/transaction/new.tsx`). `missedFrom` records the source on save. */
 export type MissedTransactionParams = {
@@ -27,7 +27,7 @@ export function prefillFromAlert(
   return {
     ...(amount ? { amount } : {}),
     ...(note ? { note } : {}),
-    ...(Number.isNaN(received.getTime()) ? {} : { date: toLocalDateInput(received) }),
+    ...(Number.isNaN(received.getTime()) ? {} : { date: deviceCalendar.dayKey(received) }),
     ...(INCOME.test(text) ? { type: 'income' as const } : {}),
   };
 }

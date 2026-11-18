@@ -7,10 +7,10 @@ import { Press } from '@/components/ui/press';
 import { Text } from '@/components/ui/text';
 import { TintBubble } from '@/components/ui/transaction-row';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
-import { formatMoney } from '@/lib/finance/format-money';
 import { placesTotal, type Place } from '@/lib/finance/places';
 import { tid } from '@/lib/test-ids';
 import { placeCategoryLine, plural, type CategoryLook } from './use-places';
+import { formatMoney } from '@repo/core';
 
 type TopPlacesProps = {
   places: Place[];

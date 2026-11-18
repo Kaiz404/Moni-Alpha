@@ -10,12 +10,6 @@ import { Press } from '@/components/ui/press';
 import { Segmented } from '@/components/ui/segmented';
 import { Text } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
-import { formatDate } from '@/lib/dates/day-label';
-import { parseLocalDateInput } from '@/lib/dates/local-date-input';
-import {
-  currencySymbol,
-  formatMoney,
-} from '@/lib/finance/format-money';
 import { useMainCurrency } from '@/lib/finance/main-currency';
 import { readAmount } from '@/lib/amount/amount-input';
 import {
@@ -24,6 +18,13 @@ import {
 } from '@/lib/supabase/recurring-overrides';
 import { tid } from '@/lib/test-ids';
 import { showToast } from '@/lib/toast/toast-store';
+import {
+  currencySymbol,
+  dateLabel,
+  formatMoney,
+  parseDayKey,
+} from '@repo/core';
+import { deviceCalendar } from '@/lib/dates/device-calendar';
 
 type Often = 'monthly' | 'once';
 
@@ -140,7 +141,11 @@ export default function NewBillScreen() {
               label="Due"
               value={
                 due
-                  ? formatDate(parseLocalDateInput(due) ?? new Date())
+                  ? dateLabel(
+                      parseDayKey(due) ??
+                        deviceCalendar.dayKey(new Date()),
+                      deviceCalendar.dayKey(new Date()),
+                    )
                   : ''
               }
               className="flex-1"

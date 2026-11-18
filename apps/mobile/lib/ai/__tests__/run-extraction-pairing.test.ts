@@ -20,12 +20,13 @@ import {
 } from './pairing-fixture';
 import { toFinanceTransaction } from '@/lib/finance/adapters';
 import { groupActivityDays } from '@/lib/finance/activity-filter';
-import { buildBudgetMonth, monthKey } from '@/lib/finance/budget-month';
+import { buildBudgetMonth } from '@/lib/finance/budget-month';
 import type { FinanceTransaction } from '@/lib/finance/types';
 import { markCaptureStatus } from '@/lib/notifications/capture-status';
 import { undoPairing } from '@/lib/proposals/pairing';
 import { approve, duplicateOf, notMine, undo } from '@/lib/proposals/review-actions';
 import { listAwaitingReview } from '@/lib/supabase/proposed-transactions';
+import { deviceCalendar } from '@/lib/dates/device-calendar';
 
 let mockNextId = 0;
 jest.mock('expo-crypto', () => ({
@@ -366,7 +367,7 @@ describe('spending totals', () => {
 
     const rows = ledger();
     const budget = buildBudgetMonth({
-      month: monthKey(NOW),
+      month: deviceCalendar.monthKey(NOW),
       now: NOW,
       currency: MYR,
       transactions: rows,

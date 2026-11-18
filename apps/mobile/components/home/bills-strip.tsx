@@ -1,15 +1,15 @@
 import { View } from 'react-native';
 
-import { monthFromKey, monthName } from '@/components/charts/pace-geometry';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Press } from '@/components/ui/press';
 import { Text } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
-import { formatMoney } from '@/lib/finance/format-money';
 import { tid } from '@/lib/test-ids';
 
 import type { BudgetMonth } from '@/lib/finance/budget-month';
-import { debtPhrase, dueWhen } from '@/lib/finance/spent-summary';
+import { debtPhrase } from '@/lib/finance/spent-summary';
+import { dueWhen, formatMoney, monthName } from '@repo/core';
+import { deviceCalendar } from '@/lib/dates/device-calendar';
 
 /** The next bill due and what is set aside for the rest of the month (D1 names debts due here). */
 export function BillsStrip({
@@ -31,10 +31,10 @@ export function BillsStrip({
   const debtsDue = month.left?.debtsDue ?? [];
   const debtsMinor = debtsDue.reduce((sum, debt) => sum + Number(debt.amountMinor), 0);
   const debts = debtPhrase(debtsDue, currency);
-  const headline = `${next.name} ${formatMoney(next.amountMinor, currency)} is due ${dueWhen(next.dueDate, now)}`;
+  const headline = `${next.name} ${formatMoney(next.amountMinor, currency)} is due ${dueWhen(next.dueDate, deviceCalendar.dayKey(now))}`;
   const detail = debts
     ? `${formatMoney(billsMinor + debtsMinor, currency)} set aside for bills and ${debts}`
-    : `${count} ${count === 1 ? 'bill' : 'bills'}, ${formatMoney(billsMinor, currency)} by ${month.daysInMonth} ${monthName(monthFromKey(month.month)).slice(0, 3)}, already set aside`;
+    : `${count} ${count === 1 ? 'bill' : 'bills'}, ${formatMoney(billsMinor, currency)} by ${month.daysInMonth} ${monthName(month.month).slice(0, 3)}, already set aside`;
 
   return (
     <Press

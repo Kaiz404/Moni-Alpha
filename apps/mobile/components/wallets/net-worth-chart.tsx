@@ -6,8 +6,6 @@ import { Segmented } from '@/components/ui/segmented';
 import { Text } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { balanceIndex } from '@/lib/finance/balance-history';
-import { CHART_RANGES, type ChartRange } from '@/lib/finance/chart-range';
-import { formatMoney } from '@/lib/finance/format-money';
 import type { FinanceTransaction, FinanceWallet } from '@/lib/finance/types';
 import { springs } from '@repo/design';
 import { tid } from '@/lib/test-ids';
@@ -20,6 +18,7 @@ import {
   walletLineStyles,
   type NetWorthView,
 } from './net-worth-geometry';
+import { CHART_RANGES, type ChartRange, formatMoney } from '@repo/core';
 
 /** The wallet tints are pale on Paper, so their lines run thicker than the Ink total. */
 const WALLET_LINE_WIDTH = 3.5;

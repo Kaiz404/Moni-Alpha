@@ -3,11 +3,12 @@ import type { ReactNode } from 'react';
 import { Keyboard } from 'react-native';
 
 import TransactionDetailScreen from '@/app/transaction/[id]';
-import { formatDate } from '@/lib/dates/day-label';
 import type { FinanceTransaction } from '@/lib/finance/types';
 import { dismissSheet, getOpenSheet } from '@/lib/sheet/sheet-store';
 import { updateTransaction } from '@/lib/supabase/transactions';
 import { dismissToast } from '@/lib/toast/toast-store';
+import { dateLabel } from '@repo/core';
+import { deviceCalendar } from '@/lib/dates/device-calendar';
 
 const mockRow: FinanceTransaction = {
   id: 't1',
@@ -95,7 +96,7 @@ afterEach(() => {
 describe('Transaction detail', () => {
   it('shows only the date and time under a notification row\'s name', () => {
     render(<TransactionDetailScreen />);
-    expect(screen.getByText(`${formatDate(mockRow.transactionDate)} · 8:48 pm`)).toBeTruthy();
+    expect(screen.getByText(`${dateLabel(deviceCalendar.dayKey(mockRow.transactionDate), deviceCalendar.dayKey(new Date()))} · 8:48 pm`)).toBeTruthy();
     expect(screen.queryByText(/Alert says/)).toBeNull();
     expect(screen.queryByText('Keeps the slip with this transaction')).toBeNull();
   });

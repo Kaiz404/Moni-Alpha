@@ -1,10 +1,10 @@
 import { transactionTypeSchema, type TransactionType } from '@repo/types';
 
-import { toLocalDateInput } from '@/lib/dates/local-date-input';
 import { billPayments } from '@/lib/finance/bills';
-import { isMonthKey, type MonthKey } from '@/lib/finance/budget-month';
 import { groupPlaces, placeRange } from '@/lib/finance/places';
 import type { FinanceTransaction } from '@/lib/finance/types';
+import { isMonthKey, type MonthKey } from '@repo/core';
+import { deviceCalendar } from '@/lib/dates/device-calendar';
 
 /**
  * Which rows `/transactions` lists: the "See all" of a detail page, pushed under it so Back
@@ -81,8 +81,6 @@ export function readListScope(params: ListParams): ListScope | null {
   return null;
 }
 
-const monthOf = (iso: string) => toLocalDateInput(new Date(iso)).slice(0, 7);
-
 /** Whether a row falls in a category, in one month or in any. */
 export function inCategory(
   transaction: FinanceTransaction,
@@ -90,7 +88,7 @@ export function inCategory(
 ): boolean {
   return (
     transaction.categoryId === scope.categoryId &&
-    (scope.month === null || monthOf(transaction.transactionDate) === scope.month)
+    (scope.month === null || deviceCalendar.monthKey(transaction.transactionDate) === scope.month)
   );
 }
 
@@ -120,7 +118,7 @@ export function scopedRows(
               row.merchant?.toLowerCase() === key &&
               row.currency === scope.currency &&
               row.type === scope.type &&
-              monthOf(row.transactionDate) === scope.month,
+              deviceCalendar.monthKey(row.transactionDate) === scope.month,
           ),
         ),
         currency: scope.currency,

@@ -29,14 +29,12 @@ import { YGrid, YLabels, ZoomTicks } from '@/components/charts/zoom-axes';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Text } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
-import { dayLabel } from '@/lib/dates/day-label';
-import { toLocalDateInput } from '@/lib/dates/local-date-input';
 import type { BalanceIndex } from '@/lib/finance/balance-history';
-import { dateAt } from '@/lib/finance/chart-range';
-import { formatMoney } from '@/lib/finance/format-money';
 import { tid } from '@/lib/test-ids';
 
 import { NET_WORTH_BASE, NET_WORTH_TOP, type NetWorthTarget } from './net-worth-geometry';
+import { addDays, dayLabel, formatMoney } from '@repo/core';
+import { deviceCalendar } from '@/lib/dates/device-calendar';
 
 const DEFAULT_WIDTH = 314;
 const GUIDE_TOP = 38;
@@ -153,7 +151,7 @@ export function BalancePlot({
               frame={frame}
               width={width}
               tokens={tokens}
-              date={dayLabel(toLocalDateInput(dateAt(index.firstDay, selected)), now)}
+              date={dayLabel(addDays(index.firstDay, selected), deviceCalendar.dayKey(now))}
               value={formatMoney(index.total[selected]!, currency)}
             />
           </Tip>

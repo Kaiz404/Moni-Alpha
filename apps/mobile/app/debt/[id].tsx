@@ -13,7 +13,7 @@ import {
   DueDateSheet,
 } from '@/components/debt/due-date-sheet';
 import { useDebtWallets } from '@/components/debts/debt-wallets';
-import { dueWords, SIDE_WORDS } from '@/components/debts/debt-words';
+import { SIDE_WORDS } from '@/components/debts/debt-words';
 import { PersonAvatar } from '@/components/debts/person-avatar';
 import {
   sendReminder,
@@ -30,9 +30,7 @@ import { PickerField } from '@/components/ui/picker-field';
 import { Press } from '@/components/ui/press';
 import { Text } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
-import { formatDate } from '@/lib/dates/day-label';
 import { daysUntil, type DebtLine } from '@/lib/finance/debt-summary';
-import { formatMoney } from '@/lib/finance/format-money';
 import type { FinanceDebtActivity } from '@/lib/finance/types';
 import { approve } from '@/lib/haptics';
 import { openSheet } from '@/lib/sheet/sheet-store';
@@ -45,6 +43,8 @@ import {
 } from '@/lib/supabase/debts';
 import { tid } from '@/lib/test-ids';
 import { showToast } from '@/lib/toast/toast-store';
+import { dateLabel, dueWords, formatMoney } from '@repo/core';
+import { deviceCalendar } from '@/lib/dates/device-calendar';
 
 export default function DebtDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -241,7 +241,7 @@ function DebtPage({
                       variant="meta"
                       className="-mt-2 text-muted"
                     >
-                      {words.started} {formatDate(line.startedAt)}
+                      {words.started} {dateLabel(deviceCalendar.dayKey(line.startedAt), deviceCalendar.dayKey(new Date()))}
                     </Text>
                   </View>
                 </View>

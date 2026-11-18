@@ -15,9 +15,7 @@ import { Text } from '@/components/ui/text';
 import { TintBubble } from '@/components/ui/transaction-row';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { useAuth } from '@/lib/auth/auth-context';
-import { toLocalDateInput } from '@/lib/dates/local-date-input';
 import { categoryMonths } from '@/lib/finance/activity-series';
-import { formatMoney } from '@/lib/finance/format-money';
 import { useMainCurrency } from '@/lib/finance/main-currency';
 import {
   budgetProgress$,
@@ -29,6 +27,8 @@ import { ensureFinanceTimezone } from '@/lib/supabase/profile';
 import { tid } from '@/lib/test-ids';
 import { listParams } from '@/lib/transactions/list-scope';
 import { resolveTransactionIcon } from '@/lib/transactions/icon';
+import { formatMoney } from '@repo/core';
+import { deviceCalendar } from '@/lib/dates/device-calendar';
 
 type Kind = 'expense' | 'income';
 
@@ -107,7 +107,7 @@ export default function CategoriesScreen() {
   const [timezone, setTimezone] = useState('UTC');
   const progress = useValue(budgetProgress$(userId, timezone));
   const [kind, setKind] = useState<Kind>('expense');
-  const todayKey = toLocalDateInput(new Date());
+  const todayKey = deviceCalendar.dayKey(new Date());
   const today = dayOf(todayKey);
 
   useEffect(() => {

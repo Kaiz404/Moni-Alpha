@@ -2,8 +2,8 @@ import type { MinorAmount } from '@repo/types';
 
 import { findDuplicate, type LedgerEntry } from '@/lib/ai/duplicates';
 import { clockTime } from '@/lib/capture/clock-time';
-import { formatDay } from '@/lib/dates/day-label';
-import { formatMoney } from '@/lib/finance/format-money';
+import { dayLabel, formatMoney } from '@repo/core';
+import { deviceCalendar } from '@/lib/dates/device-calendar';
 
 /** A typed expense this long after a saved or waiting one with the same amount reads as the same purchase. */
 const TYPED_DUPLICATE_WINDOW_MS = 3 * 24 * 60 * 60 * 1000;
@@ -47,7 +47,7 @@ export function duplicateCopy(
   ]
     .filter(Boolean)
     .join(' ');
-  const day = formatDay(at, now);
+  const day = dayLabel(deviceCalendar.dayKey(at), deviceCalendar.dayKey(now));
   const when =
     day === 'Today'
       ? `at ${clockTime(at)}`

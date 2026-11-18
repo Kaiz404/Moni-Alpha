@@ -13,15 +13,7 @@ import { Text } from '@/components/ui/text';
 import { TransactionRow } from '@/components/ui/transaction-row';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { calendarHeat } from '@/lib/finance/calendar-heat';
-import {
-  dayOfMonth,
-  monthName,
-  monthShort,
-  monthSpend,
-  topMerchants,
-  type BudgetMonth,
-} from '@/lib/finance/budget-month';
-import { formatMoney } from '@/lib/finance/format-money';
+import { monthSpend, topMerchants, type BudgetMonth } from '@/lib/finance/budget-month';
 import { merchantName } from '@/lib/finance/merchant-name';
 import type {
   FinanceCategory,
@@ -29,8 +21,18 @@ import type {
 } from '@/lib/finance/types';
 import { tid } from '@/lib/test-ids';
 import { transactionRow } from '@/lib/transactions/row';
+import {
+  addDays,
+  dayOfMonth,
+  firstDayOf,
+  formatMoney,
+  monthName,
+  monthShort,
+  weekdayShort,
+} from '@repo/core';
 
-const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+import { deviceCalendar } from '@/lib/dates/device-calendar';
+
 /** The day panel shows this many rows, then links to the rest in Activity. */
 const DAY_ROWS = 3;
 
@@ -98,12 +100,11 @@ export function CalendarView({
     [month.daily, month.throughDay, billByDay, evenPaceMinor],
   );
   const short = monthShort(month.month);
-  const [year, number] = month.month.split('-').map(Number);
-  const weekday =
-    WEEKDAYS[new Date(year, number - 1, selected).getDay()];
+  const weekday = weekdayShort(addDays(firstDayOf(month.month), selected - 1));
   const title = `${selected === today ? 'Today, ' : ''}${weekday} ${selected} ${short}`;
   const rows = spend.filter(
-    (transaction) => dayOfMonth(transaction) === selected,
+    (transaction) =>
+      dayOfMonth(deviceCalendar.dayKey(transaction.transactionDate)) === selected,
   );
   const daySpent = Number(month.daily[selected - 1] ?? 0);
   const whole = (value: number) =>

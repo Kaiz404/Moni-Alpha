@@ -1,0 +1,14 @@
+---
+description: Pure domain rules in @repo/core, shared by the phone and the web
+globs: packages/core/**
+alwaysApply: false
+---
+
+# Shared Domain Rules – @repo/core
+
+`packages/core` holds rules both apps must agree on, as plain TypeScript functions over plain data. Read `packages/core/README.md` for the modules.
+
+- No platform code: it compiles with `@repo/typescript-config/shared.json` (no DOM) and lints with `@repo/eslint-config/shared` (no React Native, Expo, Next or Legend imports).
+- No hidden clock or zone. A function that needs today takes a `DayKey`; one that reads an instant takes a `Calendar` built with `createCalendar(zone)`. Never call `getDate()`, `getMonth()` or `getFullYear()` on a `Date` in this package.
+- Callers move here and the old copy is deleted in the same change; no re-exports from app code.
+- Tests are Vitest (`pnpm --filter @repo/core test`): call the exported function with literal inputs and assert literal outputs. Anything that reads an instant is asserted under at least two zones.

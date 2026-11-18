@@ -17,8 +17,6 @@ import { Press } from '@/components/ui/press';
 import { Text } from '@/components/ui/text';
 import { TintBubble } from '@/components/ui/transaction-row';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
-import { monthKey, monthName } from '@/lib/finance/budget-month';
-import { currencySymbol, formatMoney } from '@/lib/finance/format-money';
 import { PLAN_LIMIT_MINOR } from '@/lib/finance/money';
 import {
   setMonthlyBudget,
@@ -27,6 +25,8 @@ import {
 import { tid, type TestId } from '@/lib/test-ids';
 import { showToast } from '@/lib/toast/toast-store';
 import { resolveTransactionIcon } from '@/lib/transactions/icon';
+import { currencySymbol, formatMoney, monthName } from '@repo/core';
+import { deviceCalendar } from '@/lib/dates/device-calendar';
 
 const TOTAL = 'total';
 const DONUT = 96;
@@ -48,7 +48,7 @@ export default function EditBudgetsScreen() {
   const tokens = useThemeTokens();
   const data = useBudgetData();
   const { currency } = data;
-  const month = useBudgetMonth(data, monthKey(data.now));
+  const month = useBudgetMonth(data, deviceCalendar.monthKey(data.now));
   const saved = useMemo(
     () =>
       Object.fromEntries(
@@ -109,7 +109,7 @@ export default function EditBudgetsScreen() {
   const counted = rows.filter(
     (category) => live(category.id) > 0,
   ).length;
-  const thisMonth = monthName(monthKey(data.now));
+  const thisMonth = monthName(deviceCalendar.monthKey(data.now));
 
   const scale = Math.max(liveTotal, sum, 1);
   const arcs: {

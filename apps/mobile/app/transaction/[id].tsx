@@ -39,13 +39,6 @@ import { Text } from '@/components/ui/text';
 import { TintBubble } from '@/components/ui/transaction-row';
 import { useAuth } from '@/lib/auth/auth-context';
 import { merchantKey } from '@/lib/ai/routine';
-import { formatDate } from '@/lib/dates/day-label';
-import { toLocalDateInput } from '@/lib/dates/local-date-input';
-import {
-  currencySymbol,
-  formatMoney,
-  formatSignedMoney,
-} from '@/lib/finance/format-money';
 import { merchantName } from '@/lib/finance/merchant-name';
 import { groupPlaces, placeLabel } from '@/lib/finance/places';
 import {
@@ -78,6 +71,8 @@ import { listParams } from '@/lib/transactions/list-scope';
 import { BALANCE_CORRECTION_TITLE } from '@/lib/wallets/balance-correction';
 import { compactWalletNames } from '@/lib/wallets/compact-name';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
+import { currencySymbol, dateLabel, formatMoney, formatSignedMoney, moneySign } from '@repo/core';
+import { deviceCalendar } from '@/lib/dates/device-calendar';
 
 type RawRow = {
   metadata?: unknown;
@@ -209,10 +204,10 @@ function Detail({ transaction: tx }: { transaction: FinanceTransaction }) {
       tx.description ??
       category?.name ??
       'Transaction');
-  const sign = tx.type === 'expense' ? '−' : tx.type === 'income' ? '+' : '';
+  const sign = moneySign(tx.type);
   const thisMonth =
-    toLocalDateInput(new Date(tx.transactionDate)).slice(0, 7) ===
-    toLocalDateInput(new Date()).slice(0, 7);
+    deviceCalendar.monthKey(tx.transactionDate) ===
+    deviceCalendar.monthKey(new Date());
   const budget =
     !transfer && thisMonth
       ? progress.find(
@@ -222,17 +217,16 @@ function Detail({ transaction: tx }: { transaction: FinanceTransaction }) {
             row.budgetAmountMinor !== null,
         )
       : undefined;
-  const monthOf = (iso: string) => toLocalDateInput(new Date(iso)).slice(0, 7);
   const sameMerchant = useMemo(() => {
     if (!tx.merchant || transfer) return [];
-    const month = monthOf(tx.transactionDate);
+    const month = deviceCalendar.monthKey(tx.transactionDate);
     const key = tx.merchant.toLowerCase();
     return all.filter(
       (row) =>
         row.merchant?.toLowerCase() === key &&
         row.currency === tx.currency &&
         row.type === tx.type &&
-        monthOf(row.transactionDate) === month,
+        deviceCalendar.monthKey(row.transactionDate) === month,
     );
   }, [all, tx, transfer]);
   const place = useMemo(
@@ -358,7 +352,7 @@ function Detail({ transaction: tx }: { transaction: FinanceTransaction }) {
     const confirmed = await openSheet({
       kind: 'confirm',
       title: 'Delete this transaction?',
-      message: `${title} ${formatSignedMoney(tx.type, tx.amountMinor, tx.currency)} on ${formatDate(tx.transactionDate)} comes out of ${month}${category && !transfer ? ` and out of ${category.name}` : ''}.`,
+      message: `${title} ${formatSignedMoney(tx.type, tx.amountMinor, tx.currency)} on ${dateLabel(deviceCalendar.dayKey(tx.transactionDate), deviceCalendar.dayKey(new Date()))} comes out of ${month}${category && !transfer ? ` and out of ${category.name}` : ''}.`,
       confirmLabel: 'Delete',
       cancelLabel: 'Keep it',
       destructive: true,
@@ -477,7 +471,7 @@ function Detail({ transaction: tx }: { transaction: FinanceTransaction }) {
                   merchant: tx.merchant ?? title,
                   type: tx.type,
                   currency: tx.currency,
-                  month: monthOf(tx.transactionDate),
+                  month: deviceCalendar.monthKey(tx.transactionDate),
                 }),
               }),
           } satisfies DetailLink,
@@ -509,7 +503,7 @@ function Detail({ transaction: tx }: { transaction: FinanceTransaction }) {
           className="text-muted"
           style={{ fontVariant: ['tabular-nums'] }}
         >
-          {`${formatDate(tx.transactionDate)} · ${clockTime(tx.transactionDate)}`}
+          {`${dateLabel(deviceCalendar.dayKey(tx.transactionDate), deviceCalendar.dayKey(new Date()))} · ${clockTime(tx.transactionDate)}`}
         </Text>
       </View>
     </View>

@@ -3,20 +3,25 @@ import { View } from 'react-native';
 import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 
 import { PagerStep } from '@/components/activity/paged-transactions';
-import { MONTHS } from '@/components/charts/pace-geometry';
 import { Segmented } from '@/components/ui/segmented';
 import { Text } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
-import { toLocalDateInput } from '@/lib/dates/local-date-input';
 import { balanceIndex, hasOlderWindow } from '@/lib/finance/balance-history';
-import { monthKey, monthName } from '@/lib/finance/budget-month';
-import { CHART_RANGES, dateAt, type ChartRange } from '@/lib/finance/chart-range';
-import { formatMoney, formatSignedMoney } from '@/lib/finance/format-money';
 import type { FinanceTransaction, FinanceWallet } from '@/lib/finance/types';
 import { tid } from '@/lib/test-ids';
 
 import { BalancePlot } from './balance-plot';
 import { dayReading, netWorthTarget } from './net-worth-geometry';
+import {
+  addDays,
+  CHART_RANGES,
+  type ChartRange,
+  formatMoney,
+  formatSignedMoney,
+  monthName,
+  monthShort,
+} from '@repo/core';
+import { deviceCalendar } from '@/lib/dates/device-calendar';
 
 const STEPS_IN = FadeIn.duration(180);
 const STEPS_OUT = FadeOut.duration(180);
@@ -40,7 +45,7 @@ export function walletFlows(
   let movedMinor = 0;
   for (const transaction of transactions) {
     if (transaction.balanceCorrection) continue;
-    const day = toLocalDateInput(new Date(transaction.transactionDate));
+    const day = deviceCalendar.dayKey(transaction.transactionDate);
     if (day < first || day > last) continue;
     const amount = Number(transaction.amountMinor);
     if (transaction.type === 'transfer') {
@@ -57,14 +62,14 @@ export function walletFlows(
 /** "3 Nov", with the year when it is not this year's. */
 function shortDate(date: Date, now: Date): string {
   const year = date.getFullYear() === now.getFullYear() ? '' : ` ${date.getFullYear()}`;
-  return `${date.getDate()} ${MONTHS[date.getMonth()]}${year}`;
+  return `${date.getDate()} ${monthShort(deviceCalendar.monthKey(date))}${year}`;
 }
 
 /** The window's name: its month on 1M, "Last 30 days" while it ends today, else its dates. */
 function windowLabel(range: ChartRange, back: number, start: Date, end: Date, now: Date): string {
   if (range === '1m') {
     const year = start.getFullYear() === now.getFullYear() ? '' : ` ${start.getFullYear()}`;
-    return `${monthName(monthKey(start))}${year}`;
+    return `${monthName(deviceCalendar.monthKey(start))}${year}`;
   }
   if (back === 0) return LAST[range];
   return `${shortDate(start, now)} to ${shortDate(end, now)}`;
@@ -132,10 +137,10 @@ export function WalletBalanceChart({
   );
 
   const { from, to } = target;
-  const start = dateAt(index.firstDay, from);
-  const end = dateAt(index.firstDay, to);
+  const start = deviceCalendar.startOfDay(addDays(index.firstDay, from));
+  const end = deviceCalendar.startOfDay(addDays(index.firstDay, to));
   const label = windowLabel(range, back, start, end, now);
-  const flows = walletFlows(wallet.id, transactions, toLocalDateInput(start), toLocalDateInput(end));
+  const flows = walletFlows(wallet.id, transactions, deviceCalendar.dayKey(start), deviceCalendar.dayKey(end));
   // The balance before the window's first day, so the change counts that day as In and Out do.
   const opening = from > 0 ? index.total[from - 1]! : index.total[from]!;
   const change = index.total[to]! - opening;

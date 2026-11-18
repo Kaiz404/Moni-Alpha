@@ -8,7 +8,6 @@ import { Text } from '@/components/ui/text';
 import { WalletIcon } from '@/components/wallets/wallet-icon';
 import { getWalletCardStyle } from '@/constants/wallet-card-styles';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
-import { formatMoney, formatSignedMoney } from '@/lib/finance/format-money';
 import { minorToNumber } from '@/lib/finance/money';
 import type { FinanceWallet } from '@/lib/finance/types';
 import { openSheet } from '@/lib/sheet/sheet-store';
@@ -22,6 +21,7 @@ import { showToast } from '@/lib/toast/toast-store';
 import { correctBalance } from '@/lib/wallets/balance-correction';
 import type { WalletAlertLink } from '@/lib/wallets/wallet-link';
 import { walletMeta } from '@/lib/wallets/wallet-meta';
+import { formatMoney, formatSignedMoney } from '@repo/core';
 
 /**
  * Asks for the real balance in the balance sheet. A different balance writes one balance

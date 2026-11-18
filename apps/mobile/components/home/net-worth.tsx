@@ -4,8 +4,8 @@ import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Press } from '@/components/ui/press';
 import { Text } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
-import { formatMoney } from '@/lib/finance/format-money';
 import { tid } from '@/lib/test-ids';
+import { formatMoney } from '@repo/core';
 
 /** Net worth: main-currency wallets only. Opens Wallets; on first run it explains itself instead. */
 export function NetWorth({

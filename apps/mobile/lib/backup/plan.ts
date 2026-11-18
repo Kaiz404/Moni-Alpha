@@ -1,13 +1,13 @@
 import { createCategorySchema, decimalToMinor, legacyColor, minorToDecimal, type MerchantAlias } from '@repo/types';
 
 import { merchantKey } from '@/lib/ai/routine';
-import { toLocalDateInput } from '@/lib/dates/local-date-input';
 import { merchantName } from '@/lib/finance/merchant-name';
 
 import type { ImportRow } from './generic-csv';
 import type { BackupTables, RawRow, TableName } from './moni-export';
 import { TABLE_ORDER } from './moni-export';
 import type { MoniFile, RowProblem } from './read-moni-export';
+import { deviceCalendar } from '@/lib/dates/device-calendar';
 
 export type TableCount = { fresh: number; here: number };
 
@@ -306,7 +306,7 @@ export function planGeneric(
       continue;
     }
     const key = identity(
-      toLocalDateInput(date),
+      deviceCalendar.dayKey(date),
       String(row.type),
       minor,
       String(row.currency ?? '').toUpperCase(),

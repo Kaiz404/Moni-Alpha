@@ -30,11 +30,11 @@ import { IconSymbol, type IconSymbolName } from '@/components/ui/icon-symbol';
 import { Text } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import type { SpendSlice } from '@/lib/finance/budget-month';
-import { formatMoney } from '@/lib/finance/format-money';
 import { scrubStep } from '@/lib/haptics';
 import { springs } from '@repo/design';
 import { tid } from '@/lib/test-ids';
 import { resolveTransactionIcon } from '@/lib/transactions/icon';
+import { formatMoney } from '@repo/core';
 
 const SIZE = 284;
 const CENTRE = SIZE / 2;

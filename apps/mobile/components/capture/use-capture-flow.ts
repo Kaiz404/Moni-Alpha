@@ -8,7 +8,6 @@ import { releaseHeld } from '@/lib/ai/processing-queue';
 import { useAuth } from '@/lib/auth/auth-context';
 import { approveCapture } from '@/lib/capture/approve-capture';
 import { phoneMayLocate } from '@/lib/capture/entry-place';
-import { isoToLocalDateInput } from '@/lib/dates/local-date-input';
 import {
   START,
   captureStage,
@@ -33,6 +32,7 @@ import {
   prefetchTransactionLocation,
   type EntryLocation,
 } from '@/lib/transactions/prefetch-location';
+import { deviceCalendar } from '@/lib/dates/device-calendar';
 
 const HISTORY = 500;
 
@@ -138,7 +138,7 @@ export function useCaptureFlow(source: CaptureSource) {
           here,
           phoneAllowed: phoneMayLocate(
             wallet,
-            isoToLocalDateInput(draft.transactionDate),
+            deviceCalendar.dayKey(draft.transactionDate),
           ),
         },
       );

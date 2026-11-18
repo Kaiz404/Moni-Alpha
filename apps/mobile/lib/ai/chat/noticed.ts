@@ -1,9 +1,9 @@
-import { formatMoney } from '@/lib/finance/format-money';
-import { dueWhen } from '@/lib/finance/spent-summary';
 import { resolveTransactionIcon } from '@/lib/transactions/icon';
 
 import type { AnswerSnapshot } from './answer-cards';
 import type { NoticedItem } from './messages';
+import { dueWhen, formatMoney } from '@repo/core';
+import { deviceCalendar } from '@/lib/dates/device-calendar';
 
 /** What Moni points out when today's thread opens: an overspent category, waiting captures, the next bill. */
 export function noticedItems(
@@ -44,7 +44,7 @@ export function noticedItems(
   const bill = snapshot.bills[0];
   if (bill)
     items.push({
-      title: `${bill.name} is due ${dueWhen(bill.dueDate, now)}`,
+      title: `${bill.name} is due ${dueWhen(bill.dueDate, deviceCalendar.dayKey(now))}`,
       meta: bill.walletName ? `${money(bill.amount)} from ${bill.walletName}` : money(bill.amount),
       icon: 'repeat',
       tint: 'lemon',

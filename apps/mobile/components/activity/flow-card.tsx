@@ -23,10 +23,10 @@ import {
   flowGeometry,
 } from '@/lib/finance/flow-geometry';
 import type { FlowSeries } from '@/lib/finance/flow-series';
-import { formatMoney } from '@/lib/finance/format-money';
 import { scrubStep } from '@/lib/haptics';
 import { springs } from '@repo/design';
 import { tid } from '@/lib/test-ids';
+import { formatMoney } from '@repo/core';
 
 const CARD_IN = FadeIn.duration(180);
 const CARD_OUT = FadeOut.duration(140);

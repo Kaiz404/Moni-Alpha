@@ -24,7 +24,6 @@ import { Button } from '@/components/ui/button';
 import { Text } from '@/components/ui/text';
 import { TransactionRow } from '@/components/ui/transaction-row';
 import { getProposalLocationSnapshot } from '@/lib/ai/proposal-location-cache';
-import { formatMoney } from '@/lib/finance/format-money';
 import { merchantName } from '@/lib/finance/merchant-name';
 import {
   groupPlaces,
@@ -41,6 +40,7 @@ import { listMerchantAliases } from '@/lib/supabase/merchant-aliases';
 import { tid } from '@/lib/test-ids';
 import { listParams } from '@/lib/transactions/list-scope';
 import { transactionRow } from '@/lib/transactions/row';
+import { formatMoney } from '@repo/core';
 
 /** XM-Detail's map strip; the sheet starts 28 above its bottom edge. */
 const MAP_HEIGHT = 240;

@@ -13,12 +13,12 @@ import { Sheet, SheetRows } from '@/components/ui/sheet/sheet';
 import { Text } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { useAuth } from '@/lib/auth/auth-context';
-import { currencySymbol, formatMoney } from '@/lib/finance/format-money';
 import {
   walletBalanceMinor$,
   walletsForUser$,
 } from '@/lib/finance/selectors';
 import { tid } from '@/lib/test-ids';
+import { currencySymbol, formatMoney } from '@repo/core';
 
 const TINTS: ProfileTint[] = ['lemon', 'aqua', 'mint', 'peach', 'lilac'];
 

@@ -3,7 +3,6 @@ import { addMinor, subtractMinor, type CurrencyCode, type MinorAmount } from '@r
 import { categories$ } from '@/lib/store';
 import { hideShadowedPresets } from './category-presets';
 import { toFinanceCategory } from './adapters';
-import { monthKeyInTimezone } from './dates';
 import { outstandingDebtBalanceMinor, transactionDeltaMinor } from './ledger';
 import { financeProjection$ } from './projection';
 import type {
@@ -13,6 +12,7 @@ import type {
   FinanceTransaction,
   FinanceWallet,
 } from './types';
+import { createCalendar } from '@repo/core';
 
 export type CurrencyTotal = {
   currency: CurrencyCode;
@@ -458,12 +458,13 @@ export function budgetProgress$(
       (budget) => budget.userId === userId,
     );
     const transactions = transactions$({ userId }).get();
-    const month = monthKeyInTimezone(new Date(), timezone);
+    const calendar = createCalendar(timezone);
+    const month = calendar.monthKey(new Date());
     const spent = new Map<string, MinorAmount>();
     for (const transaction of transactions) {
       if (transaction.type !== 'expense' || transaction.analysisExcluded || !transaction.categoryId)
         continue;
-      if (monthKeyInTimezone(transaction.transactionDate, timezone) !== month) continue;
+      if (calendar.monthKey(transaction.transactionDate) !== month) continue;
       const key = `${transaction.categoryId}:${transaction.currency}`;
       spent.set(key, addMinor(spent.get(key) ?? 0, transaction.amountMinor));
     }

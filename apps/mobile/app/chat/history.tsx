@@ -24,13 +24,17 @@ import {
   type ChatThread,
 } from '@/lib/ai/chat/messages';
 import { todayThreadDay } from '@/lib/ai/chat/sessions';
-import { formatDate } from '@/lib/dates/day-label';
-import { parseLocalDateInput } from '@/lib/dates/local-date-input';
-import { formatSignedMoney } from '@/lib/finance/format-money';
 import { financeProjection$ } from '@/lib/finance/projection';
 import { tid } from '@/lib/test-ids';
 import { showToast } from '@/lib/toast/toast-store';
 import { resolveTransactionIcon } from '@/lib/transactions/icon';
+import {
+  addDays,
+  dateLabel,
+  formatSignedMoney,
+  parseDayKey,
+} from '@repo/core';
+import { deviceCalendar } from '@/lib/dates/device-calendar';
 
 type Topic = { icon: string | null; tint: SoftTint };
 
@@ -113,11 +117,11 @@ function previewOf(messages: readonly ChatMessage[]): string {
 }
 
 function toRow(thread: ChatThread, now: Date): Row {
-  const date = parseLocalDateInput(thread.day) ?? now;
-  const title =
-    thread.day === todayThreadDay(now)
-      ? 'Today'
-      : formatDate(date, now);
+  const date = dateLabel(
+    parseDayKey(thread.day) ?? deviceCalendar.dayKey(now),
+    deviceCalendar.dayKey(now),
+  );
+  const title = thread.day === todayThreadDay(now) ? 'Today' : date;
   const talk = thread.messages.filter(
     (m) =>
       m.kind !== 'assistant_status' && m.kind !== 'assistant_noticed',
@@ -152,8 +156,7 @@ function toRow(thread: ChatThread, now: Date): Row {
         : null,
     preview,
     topic: topicOf(thread.messages),
-    searchText:
-      `${title} ${formatDate(date, now)} ${words} ${preview}`.toLowerCase(),
+    searchText: `${title} ${date} ${words} ${preview}`.toLowerCase(),
   };
 }
 
@@ -179,13 +182,7 @@ export default function ChatHistoryScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [threads, query]);
 
-  const weekStart = new Date(
-    now.getFullYear(),
-    now.getMonth(),
-    now.getDate() - 6,
-  );
-  const pad = (n: number) => String(n).padStart(2, '0');
-  const weekKey = `${weekStart.getFullYear()}-${pad(weekStart.getMonth() + 1)}-${pad(weekStart.getDate())}`;
+  const weekKey = addDays(deviceCalendar.dayKey(now), -6);
   const groups = [
     {
       name: 'This week',

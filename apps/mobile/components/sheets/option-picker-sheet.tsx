@@ -30,12 +30,6 @@ import { labelForNotificationPackage } from '@/constants/notification-apps';
 import { getWalletCardStyle } from '@/constants/wallet-card-styles';
 import { WALLET_TYPE_OPTIONS } from '@/constants/wallet-form';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
-import { dayLabel } from '@/lib/dates/day-label';
-import { toLocalDateInput } from '@/lib/dates/local-date-input';
-import {
-  currencySymbol,
-  formatMoney,
-} from '@/lib/finance/format-money';
 import { ACTIVITY_KIND_LABELS, ACTIVITY_KINDS } from '@/lib/finance/activity-filter';
 import { useMainCurrency } from '@/lib/finance/main-currency';
 import { walletBalanceMinor$ } from '@/lib/finance/selectors';
@@ -53,6 +47,8 @@ import {
   TRANSACTION_TYPE_COPY,
   TRANSACTION_TYPES,
 } from '@/lib/transactions/type-change';
+import { currencySymbol, dayLabel, formatMoney } from '@repo/core';
+import { deviceCalendar } from '@/lib/dates/device-calendar';
 
 export type PickerOption = {
   id: string;
@@ -554,14 +550,12 @@ export function DateSheet({
     return Array.from(
       { length: DATE_RANGE_DAYS },
       (_, back): PickerOption => {
-        const day = toLocalDateInput(
-          new Date(
+        const day = deviceCalendar.dayKey(new Date(
             today.getFullYear(),
             today.getMonth(),
             today.getDate() - back,
-          ),
-        );
-        return { id: day, name: dayLabel(day, today) };
+          ));
+        return { id: day, name: dayLabel(day, deviceCalendar.dayKey(today)) };
       },
     );
   }, []);

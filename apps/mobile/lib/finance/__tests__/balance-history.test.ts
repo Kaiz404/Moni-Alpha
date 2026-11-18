@@ -1,11 +1,9 @@
 import type { MinorAmount } from '@repo/types';
 
-import { toLocalDateInput } from '@/lib/dates/local-date-input';
-
-import type { ChartRange } from '../chart-range';
-import { dateAt } from '../chart-range';
 import type { FinanceTransaction } from '../types';
 import { balanceIndex, balanceViewport } from '../balance-history';
+import { addDays, type ChartRange } from '@repo/core';
+import { deviceCalendar } from '@/lib/dates/device-calendar';
 
 type Row = Pick<
   FinanceTransaction,
@@ -36,7 +34,7 @@ function balanceHistory({
   const index = balanceIndex(input);
   const { from, to } = balanceViewport(index, input.now, range);
   const days = Array.from({ length: to - from + 1 }, (_, day) =>
-    toLocalDateInput(dateAt(index.firstDay, from + day)),
+    addDays(index.firstDay, from + day),
   );
   const slice = (values: Float64Array) =>
     Array.from(values.subarray(from, to + 1), (value) => (Number.isNaN(value) ? null : value));

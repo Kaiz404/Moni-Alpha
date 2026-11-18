@@ -1,7 +1,7 @@
-import { parseLocalDateInput } from '@/lib/dates/local-date-input';
-
 import { parseCsv, type CsvRow } from './csv';
 import type { RowProblem } from './read-moni-export';
+import { dayKeyOf, parseDayKey } from '@repo/core';
+import { deviceCalendar } from '@/lib/dates/device-calendar';
 
 export type DateOrder = 'dmy' | 'mdy';
 
@@ -106,8 +106,6 @@ export function mappingIsComplete(mapping: ColumnMapping): boolean {
   );
 }
 
-const pad = (value: number) => String(value).padStart(2, '0');
-
 function fullYear(text: string): number {
   const year = Number(text);
   return text.length <= 2 ? 2000 + year : year;
@@ -136,9 +134,9 @@ const MONTHS: Record<string, number> = {
 type ParsedDate = { day: string; at: string };
 
 function build(year: number, month: number, date: number, rest: string): ParsedDate | null {
-  const day = `${year}-${pad(month)}-${pad(date)}`;
-  const midnight = parseLocalDateInput(day);
-  if (!midnight) return null;
+  const day = parseDayKey(dayKeyOf(year, month, date));
+  if (!day) return null;
+  const midnight = deviceCalendar.startOfDay(day);
   const time = /(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(am|pm)?/i.exec(rest);
   if (!time) return { day, at: midnight.toISOString() };
   let hours = Number(time[1]);
@@ -160,7 +158,7 @@ export function parseImportDate(cell: string, order: DateOrder): ParsedDate | nu
     if (Number.isNaN(time)) return null;
     const date = new Date(time);
     return {
-      day: `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`,
+      day: deviceCalendar.dayKey(date),
       at: date.toISOString(),
     };
   }

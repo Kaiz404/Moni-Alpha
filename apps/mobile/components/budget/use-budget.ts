@@ -5,7 +5,7 @@ import { useCallback, useMemo, useState } from 'react';
 
 import { useAuth } from '@/lib/auth/auth-context';
 import { selectUpcomingBills } from '@/lib/finance/bills';
-import { buildBudgetMonth, type BudgetMonth, type MonthKey } from '@/lib/finance/budget-month';
+import { buildBudgetMonth, type BudgetMonth } from '@/lib/finance/budget-month';
 import { useMainCurrency } from '@/lib/finance/main-currency';
 import { financeProjection$ } from '@/lib/finance/projection';
 import {
@@ -22,6 +22,7 @@ import {
   type RecurringOverrideRow,
 } from '@/lib/supabase/recurring-overrides';
 import { compactWalletNames } from '@/lib/wallets/compact-name';
+import type { MonthKey } from '@repo/core';
 
 /** A clock that moves on when the screen comes back into focus, so "today" never goes stale. */
 export function useNow(): Date {

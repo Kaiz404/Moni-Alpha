@@ -1,22 +1,19 @@
 import { addMinor, type CurrencyCode, type MinorAmount } from '@repo/types';
 
-import { toLocalDateInput } from '@/lib/dates/local-date-input';
-import {
-  localDay,
-  monthRange,
-  rangeLabel,
-  shortDay,
-  type ActivityRange,
-} from '@/lib/finance/activity-filter';
-import {
-  countsAsSpend,
-  monthKey,
-  monthShort,
-  shiftMonth,
-  type MonthKey,
-} from '@/lib/finance/budget-month';
+import { monthRange, rangeLabel, type ActivityRange } from '@/lib/finance/activity-filter';
+import { countsAsSpend } from '@/lib/finance/budget-month';
 import type { FinanceTransaction } from '@/lib/finance/types';
 import { countsAsIncome } from '@/lib/reports/report';
+import {
+  addDays,
+  dayOfMonth,
+  daysBetween,
+  type MonthKey,
+  monthShort,
+  shiftMonth,
+  shortDate,
+} from '@repo/core';
+import { deviceCalendar } from '@/lib/dates/device-calendar';
 
 export type FlowBucket = {
   key: string;
@@ -46,11 +43,11 @@ function allTime(
   now: Date,
   currency: CurrencyCode,
 ): ActivityRange {
-  const month = monthKey(now);
+  const month = deviceCalendar.monthKey(now);
   let first = shiftMonth(month, 1 - LEAST_MONTHS);
   for (const transaction of transactions) {
     if (!countsAsSpend(transaction, currency) && !countsAsIncome(transaction, currency)) continue;
-    const at = monthKey(new Date(transaction.transactionDate));
+    const at = deviceCalendar.monthKey(transaction.transactionDate);
     if (at < first) first = at;
   }
   return { from: monthRange(first).from, to: monthRange(month).to };
@@ -61,14 +58,14 @@ function empty(key: string, label: string, from: string, to: string): FlowBucket
 }
 
 function bucketsOf({ from, to }: ActivityRange): FlowBucket[] {
-  const days = Math.round((localDay(to).getTime() - localDay(from).getTime()) / 86_400_000) + 1;
+  const days = daysBetween(from, to) + 1;
   const buckets: FlowBucket[] = [];
   if (days <= MOST_WEEKLY_DAYS) {
     const step = days <= MOST_DAILY_DAYS ? 1 : 7;
     for (let start = 0; start < days; start += step) {
-      const first = toLocalDateInput(localDay(from, start));
-      const last = toLocalDateInput(localDay(from, Math.min(start + step, days) - 1));
-      const label = step === 1 ? String(localDay(first).getDate()) : shortDay(first);
+      const first = addDays(from, start);
+      const last = addDays(from, Math.min(start + step, days) - 1);
+      const label = step === 1 ? String(dayOfMonth(first)) : shortDate(first);
       buckets.push(empty(first, label, first, last));
     }
     return buckets;
@@ -121,8 +118,8 @@ export function flowSeries({
 }): FlowSeries {
   const drawn = range ?? allTime(transactions, now, currency);
   const buckets = bucketsOf(drawn);
-  const starts = buckets.map((bucket) => localDay(bucket.from).getTime());
-  const end = localDay(drawn.to, 1).getTime();
+  const starts = buckets.map((bucket) => deviceCalendar.startOfDay(bucket.from).getTime());
+  const end = deviceCalendar.startOfDay(addDays(drawn.to, 1)).getTime();
   let spentMinor = 0 as MinorAmount;
   let inMinor = 0 as MinorAmount;
   for (const transaction of transactions) {

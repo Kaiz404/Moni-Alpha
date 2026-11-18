@@ -1,4 +1,3 @@
-import { toLocalDateInput } from '@/lib/dates/local-date-input';
 import { preferencesMMKV } from '@/lib/mmkv/preferences';
 import { isMigrated, transactions$ } from '@/lib/store';
 import { getRecordValues } from '@/lib/store/helpers';
@@ -6,6 +5,7 @@ import { setPlaceCoords, type PlaceCoordsUpdate } from '@/lib/supabase/transacti
 
 import { getPlacesClient } from './client';
 import type { DetailsResult } from './types';
+import { deviceCalendar } from '@/lib/dates/device-calendar';
 
 const DAY_MS = 86_400_000;
 /** Google's coordinates are refreshed from this age, leaving five days of daily retries. */
@@ -72,7 +72,7 @@ let running = false;
 
 /** Once a day, on foreground: refresh or drop Google coordinates that are getting old. */
 export async function refreshPlaceCoordsDaily(now = new Date()): Promise<void> {
-  const today = toLocalDateInput(now);
+  const today = deviceCalendar.dayKey(now);
   if (running || !isMigrated('transaction_place_ids')) return;
   if (preferencesMMKV.getString(REFRESHED_ON_KEY) === today) return;
   running = true;

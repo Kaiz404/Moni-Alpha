@@ -5,7 +5,6 @@
 import { minorToNumber, type MinorAmount, type RecurringOverride } from '@repo/types';
 import { transactionDeltaMinor } from '@/lib/finance/ledger';
 import type { FinanceWallet } from '@/lib/finance/types';
-import { dayKey, dayNumber, dayStart, nextMonthStart } from './days';
 import {
   CONFIDENT,
   detectRecurring,
@@ -16,6 +15,8 @@ import {
   type FactsTransaction,
   type RecurringSeries,
 } from './recurring';
+import { addMonths, dayFromNumber, dayNumber } from '@repo/core';
+import { deviceCalendar } from '@/lib/dates/device-calendar';
 
 export type FactsWallet = Pick<
   FinanceWallet,
@@ -112,10 +113,10 @@ export function inUseWallets(
   transactions: FactsTransaction[],
   now: Date,
 ): FactsWallet[] {
-  const from = dayNumber(now) - LOOKBACK_DAYS;
+  const from = deviceCalendar.dayNumber(now) - LOOKBACK_DAYS;
   const active = new Set(
     transactions
-      .filter((tx) => dayNumber(tx.transactionDate) >= from)
+      .filter((tx) => deviceCalendar.dayNumber(tx.transactionDate) >= from)
       .flatMap((tx) => [tx.walletId, tx.transferToWalletId]),
   );
   return liquid.filter((w) => active.has(w.id) || balanceMinor([w], transactions, now) !== 0);
@@ -123,12 +124,16 @@ export function inUseWallets(
 
 /** Days since the first income or expense; transfers and debt activity don't count. */
 export function historyDays(transactions: readonly FactsTransaction[], today: number): number {
-  const flowDays = transactions.filter(isCashFlow).map((tx) => dayNumber(tx.transactionDate));
+  const flowDays = transactions
+    .filter(isCashFlow)
+    .map((tx) => deviceCalendar.dayNumber(tx.transactionDate));
   return flowDays.length ? today - Math.min(...flowDays) : 0;
 }
 
 export function confirmedDaysAgo(wallet: FactsWallet, today: number): number | null {
-  return wallet.balanceConfirmedAt ? today - dayNumber(wallet.balanceConfirmedAt) : null;
+  return wallet.balanceConfirmedAt
+    ? today - deviceCalendar.dayNumber(wallet.balanceConfirmedAt)
+    : null;
 }
 
 function basisFor(
@@ -142,7 +147,7 @@ function basisFor(
   let logged = 0;
   let corrected = 0;
   for (const tx of transactions) {
-    const day = dayNumber(tx.transactionDate);
+    const day = deviceCalendar.dayNumber(tx.transactionDate);
     if (tx.type !== 'expense' || day < from || day > today || tx.debtActivityId) continue;
     if (!tx.analysisExcluded) logged += Number(tx.amountMinor);
     else if (ids.has(tx.walletId)) corrected += Number(tx.amountMinor);
@@ -170,7 +175,7 @@ function irregularIncomeShare(
   let irregular = 0;
   let spent = 0;
   for (const tx of transactions) {
-    const day = dayNumber(tx.transactionDate);
+    const day = deviceCalendar.dayNumber(tx.transactionDate);
     if (!isCashFlow(tx) || day < today - LOOKBACK_DAYS || day > today) continue;
     if (tx.type === 'expense') spent += Number(tx.amountMinor);
     else if (tx.type === 'income' && !trustedKeys.has(seriesKey(tx) ?? '')) {
@@ -193,7 +198,7 @@ function variableWindowMinor(
     if (tx.type !== 'expense' || !isCashFlow(tx)) continue;
     const key = seriesKey(tx);
     if (key && recurringKeys.has(key)) continue;
-    const index = dayNumber(tx.transactionDate) - (today - lookback);
+    const index = deviceCalendar.dayNumber(tx.transactionDate) - (today - lookback);
     if (index >= 0 && index < lookback) daily[index] += Number(tx.amountMinor);
   }
   const sums: number[] = [];
@@ -222,7 +227,7 @@ export function forecastCurrency(input: {
   extraSpendMinor?: MinorAmount | null;
 }): Forecast {
   const { currency, now } = input;
-  const today = dayNumber(now);
+  const today = deviceCalendar.dayNumber(now);
   const transactions = input.transactions.filter(
     (tx) => tx.currency === currency && new Date(tx.transactionDate) <= now,
   );
@@ -257,7 +262,7 @@ export function forecastCurrency(input: {
   }
 
   const payday = input.payday && input.payday.nextExpectedDay > today ? input.payday : null;
-  const endDay = payday ? payday.nextExpectedDay : nextMonthStart(today);
+  const endDay = payday ? payday.nextExpectedDay : dayNumber(addMonths(dayFromNumber(today), 1, 1));
   const daysLeft = endDay - today;
 
   const lines = (list: RecurringSeries[], from: number) =>
@@ -312,7 +317,7 @@ export function forecastCurrency(input: {
   const toLine = (l: { name: string; minor: number; day: number }) => ({
     name: l.name,
     amount: minorToNumber(l.minor),
-    date: dayKey(l.day),
+    date: dayFromNumber(l.day),
   });
   const band = (b: { low: number; likely: number; high: number }): Band => ({
     low: minorToNumber(b.low),
@@ -324,7 +329,7 @@ export function forecastCurrency(input: {
   return {
     status: 'ready',
     horizon: payday ? 'payday' : 'month_end',
-    horizonDate: dayKey(payday ? endDay : endDay - 1),
+    horizonDate: dayFromNumber(payday ? endDay : endDay - 1),
     daysLeft,
     startBalance: minorToNumber(startMinor),
     bills: bills.map(toLine),
@@ -363,7 +368,9 @@ export function backtestForecast(input: {
   days: readonly Date[];
 }): BacktestResult {
   const liquid = liquidWallets(input.wallets, input.currency);
-  const lastDay = Math.max(...input.transactions.map((tx) => dayNumber(tx.transactionDate)));
+  const lastDay = Math.max(
+    ...input.transactions.map((tx) => deviceCalendar.dayNumber(tx.transactionDate)),
+  );
   let evaluated = 0;
   let inside = 0;
   for (const now of input.days) {
@@ -387,10 +394,14 @@ export function backtestForecast(input: {
       .filter(
         (tx) => payday && tx.transactionDate > now.toISOString() && seriesKey(tx) === payday.key,
       )
-      .map((tx) => dayNumber(tx.transactionDate));
+      .map((tx) => deviceCalendar.dayNumber(tx.transactionDate));
     const endDay = Math.min(horizonDay, ...paid);
     const actual = minorToNumber(
-      balanceMinor(liquid, input.transactions, new Date(dayStart(endDay).getTime() - 1)),
+      balanceMinor(
+        liquid,
+        input.transactions,
+        new Date(deviceCalendar.startOfDay(dayFromNumber(endDay)).getTime() - 1),
+      ),
     );
     evaluated += 1;
     if (actual >= forecast.endBalance.low && actual <= forecast.endBalance.high) inside += 1;

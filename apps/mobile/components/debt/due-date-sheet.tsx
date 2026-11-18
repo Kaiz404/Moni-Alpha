@@ -7,11 +7,16 @@ import {
 } from '@/components/sheets/option-picker-sheet';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
-import { formatDate } from '@/lib/dates/day-label';
 import {
-  parseLocalDateInput,
-  toLocalDateInput,
-} from '@/lib/dates/local-date-input';
+  addDays,
+  addMonths,
+  dateLabel,
+  dayOfMonth,
+  lastDayOf,
+  monthOf,
+  parseDayKey,
+} from '@repo/core';
+import { deviceCalendar } from '@/lib/dates/device-calendar';
 
 const NONE = 'none';
 
@@ -20,32 +25,26 @@ export function dueLabel(
   dueDate: string | null,
   now = new Date(),
 ): string {
-  const due = dueDate ? parseLocalDateInput(dueDate) : null;
-  return due ? formatDate(due, now) : 'No date';
+  const due = dueDate ? parseDayKey(dueDate) : null;
+  return due ? dateLabel(due, deviceCalendar.dayKey(now)) : 'No date';
 }
 
 function dueChoices(
   now: Date,
   current: string | null,
 ): { id: string; name: string; meta: string }[] {
-  const y = now.getFullYear();
-  const m = now.getMonth();
-  const daysIn = (month: number) =>
-    new Date(y, month + 1, 0).getDate();
-  const today = toLocalDateInput(now);
+  const today = deviceCalendar.dayKey(now);
   const candidates = [
     {
-      id: toLocalDateInput(new Date(y, m, now.getDate() + 7)),
+      id: addDays(today, 7),
       name: 'In a week',
     },
     {
-      id: toLocalDateInput(new Date(y, m, daysIn(m))),
+      id: lastDayOf(monthOf(today)),
       name: 'End of month',
     },
     {
-      id: toLocalDateInput(
-        new Date(y, m + 1, Math.min(now.getDate(), daysIn(m + 1))),
-      ),
+      id: addMonths(today, 1, dayOfMonth(today)),
       name: 'In a month',
     },
   ];
