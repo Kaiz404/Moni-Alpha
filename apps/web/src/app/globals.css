@@ -1,0 +1,367 @@
+/* Values come from @repo/design's tokens.css (imported in the root layout). Nothing here restates a hex. */
+
+:root {
+  --scrim: color-mix(in srgb, var(--color-tab-bar) 18%, transparent);
+  --shadow-float: 0 12px 32px color-mix(in srgb, var(--color-tab-bar) 18%, transparent);
+  --on-bar-hover: color-mix(in srgb, var(--color-on-tab-bar) 12%, transparent);
+  --font: var(--font-funnel), var(--font-display);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+}
+
+body {
+  background: var(--color-background);
+  color: var(--color-foreground);
+  font-family: var(--font);
+  font-size: var(--text-body);
+  line-height: var(--text-body--line-height);
+  -webkit-font-smoothing: antialiased;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  border: 0;
+  background: none;
+  padding: 0;
+  margin: 0;
+  cursor: pointer;
+  text-align: inherit;
+}
+
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+  margin: 0;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--color-muted);
+  opacity: 1;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-foreground);
+  outline-offset: 2px;
+}
+
+.wordmark > div {
+  font-family: var(--font) !important;
+}
+
+/* Two drawings of one thing, one per theme (the page cat). */
+.only-dark {
+  display: none !important;
+}
+
+[data-theme='dark'] .only-dark {
+  display: inline-flex !important;
+}
+
+[data-theme='dark'] .only-light {
+  display: none !important;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) .only-dark {
+    display: inline-flex !important;
+  }
+
+  :root:not([data-theme]) .only-light {
+    display: none !important;
+  }
+}
+
+.num {
+  font-variant-numeric: tabular-nums;
+}
+
+.caps {
+  font-size: var(--text-caps);
+  line-height: var(--text-caps--line-height);
+  letter-spacing: var(--text-caps--letter-spacing);
+  font-weight: var(--text-caps--font-weight);
+  color: var(--color-muted);
+  text-transform: uppercase;
+}
+
+.meta {
+  font-size: var(--text-meta);
+  line-height: var(--text-meta--line-height);
+  color: var(--color-muted);
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* ---------- press, buttons, keys ---------- */
+
+.press {
+  transition:
+    transform var(--duration-press) var(--ease-press),
+    background-color 120ms ease,
+    color 120ms ease,
+    border-color 120ms ease;
+}
+
+.press:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 44px;
+  padding: 0 18px;
+  border-radius: 9999px;
+  font-size: 15px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.btn-lg {
+  height: 52px;
+  width: 100%;
+  font-size: 16px;
+}
+
+.btn-ink {
+  background: var(--color-primary);
+  color: var(--color-primary-foreground);
+}
+
+.btn-ink:hover:not(:disabled) {
+  background: var(--color-primary-pressed);
+}
+
+.btn-sand {
+  background: var(--color-sand);
+  color: var(--color-foreground);
+}
+
+.btn-sand:hover:not(:disabled) {
+  background: var(--color-hairline);
+}
+
+.btn:disabled {
+  background: var(--color-sand);
+  color: var(--color-muted);
+  cursor: default;
+}
+
+.link {
+  color: var(--color-success);
+  font-weight: 700;
+}
+
+.link:hover {
+  text-decoration: underline;
+}
+
+.kbd {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  border-radius: 7px;
+  border: 1.5px solid var(--color-hairline);
+  background: var(--color-card);
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 700;
+  color: var(--color-ink-2);
+  white-space: nowrap;
+}
+
+.kbd-on-ink {
+  background: transparent;
+  border-color: color-mix(in srgb, currentColor 35%, transparent);
+  color: inherit;
+}
+
+.keys {
+  display: inline-flex;
+  gap: 4px;
+}
+
+/* ---------- fields ---------- */
+
+.label {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 13px;
+  line-height: 18px;
+  font-weight: 700;
+  color: var(--color-ink-2);
+  margin-bottom: 6px;
+}
+
+.field {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  height: 48px;
+  padding: 0 14px 0 16px;
+  border-radius: var(--radius-field);
+  background: var(--color-card);
+  box-shadow: inset 0 0 0 1.5px var(--color-hairline);
+  color: var(--color-ink-2);
+  transition: box-shadow 120ms ease;
+}
+
+.field:focus-within {
+  box-shadow: inset 0 0 0 2px var(--color-foreground);
+}
+
+.field[data-invalid='true'] {
+  box-shadow: inset 0 0 0 2px var(--color-over);
+}
+
+.field input,
+.field select {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 100%;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--color-foreground);
+  font-size: 16px;
+  appearance: none;
+}
+
+.field-error {
+  display: flex;
+  gap: 6px;
+  margin-top: 6px;
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--color-over);
+}
+
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 9999px;
+  color: var(--color-ink-2);
+}
+
+.icon-btn:hover {
+  background: var(--color-sand);
+}
+
+/* ---------- motion ---------- */
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+@keyframes grow-in {
+  from {
+    opacity: 0;
+    transform: scale(0.98);
+  }
+}
+
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+}
+
+@keyframes slide-in-right {
+  from {
+    opacity: 0;
+    transform: translateX(48px);
+  }
+}
+
+@keyframes timer {
+  from {
+    transform: scaleX(1);
+  }
+  to {
+    transform: scaleX(0);
+  }
+}
+
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+
+[data-theme-switch='circle']::view-transition-new(root) {
+  animation: reveal 650ms cubic-bezier(0.5, 0, 0.75, 0);
+}
+
+[data-theme-switch='fade']::view-transition-new(root) {
+  animation: fade-in 180ms ease;
+}
+
+@keyframes reveal {
+  from {
+    clip-path: circle(0 at var(--reveal-x) var(--reveal-y));
+  }
+  to {
+    clip-path: circle(var(--reveal-r) at var(--reveal-x) var(--reveal-y));
+  }
+}
+
+/* W2-Motion 18: under Reduce motion every movement becomes a short fade, and nothing squishes. */
+@media (prefers-reduced-motion: reduce) {
+  .press:active:not(:disabled) {
+    transform: none;
+  }
+
+  .motion-rise,
+  .motion-grow,
+  .motion-pop,
+  .motion-slide,
+  .page-enter {
+    animation: fade-in 180ms ease both !important;
+  }
+}
