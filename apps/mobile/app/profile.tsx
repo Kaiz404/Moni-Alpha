@@ -222,6 +222,15 @@ export default function ProfileScreen() {
           />
           <ExportDataRow userId={userId} />
           <ImportDataRow />
+          <ProfileRow
+            testID={tid('profile', 'row', 'delete-account')}
+            icon="account-remove-outline"
+            tint="peach"
+            title="Delete your account"
+            over
+            chevron="right"
+            onPress={() => router.push('/delete-account')}
+          />
         </Section>
 
         {__DEV__ ? (

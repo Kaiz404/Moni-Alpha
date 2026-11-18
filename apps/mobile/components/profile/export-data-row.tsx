@@ -11,11 +11,9 @@ import { readBackupTables } from '@/lib/backup/store-tables';
 import { tid } from '@/lib/test-ids';
 import { showToast } from '@/lib/toast/toast-store';
 
-/** Export data: one CSV of everything Moni keeps, handed to the Android share sheet. */
-export function ExportDataRow({ userId }: { userId: string | null }) {
-  const tokens = useThemeTokens();
+/** One CSV of everything Moni keeps, handed to the Android share sheet. Profile and Delete your account share it. */
+export function useExportCsv(userId: string | null) {
   const [busy, setBusy] = useState(false);
-
   const share = async () => {
     if (!userId) return;
     setBusy(true);
@@ -28,6 +26,13 @@ export function ExportDataRow({ userId }: { userId: string | null }) {
       setBusy(false);
     }
   };
+  return { busy, share };
+}
+
+/** Export data on Profile. */
+export function ExportDataRow({ userId }: { userId: string | null }) {
+  const tokens = useThemeTokens();
+  const { busy, share } = useExportCsv(userId);
 
   return (
     <ProfileRow
