@@ -158,6 +158,9 @@ Nothing goes to an AI provider until the user turns Moni's AI on (#57). The choi
 - **Record:** `ai_consents` in Postgres, append only, with the notice version and a server timestamp ([DATABASE.md](DATABASE.md)). Not in `profiles.preferences`, whose read-modify-write races across devices.
 - **Server gate:** a Custom Access Token Hook copies the master switch into the access token as `ai_consent`, and the Go middleware refuses extract and chat calls when it is `false`. The backend stays stateless. Per-use switches are enforced on the phone only.
 - **Rollout:** a token without the claim still passes. The daily app shipped before the consent screen, and the hook adds no claim for a user never asked, so that app keeps working. Once every client in use ships the consent screen, make the gate strict: a missing claim refuses too (`auth.RequireAIConsent`).
+- **Phone gate:** `getAiClient(use)` returns `{ status: 'unavailable', reason: 'consent' }` without touching the network when that use is off, and treats a 403 the same way. The queue parks such a capture as `needs_ai` instead of retrying; turning the use on sends it.
+- **Refresh:** after a change the phone calls `refreshSession()`, so the next request carries the new claim.
+- **Asking:** the opt-in page stands in front of the first chat message, Scan or Say it while that use is off, and Turn on sends what was waiting. An alert has no one watching, so it waits as `needs_ai` (Capture log: "AI is off") and the next app open shows the page to a user never asked. Profile › Moni's AI holds the switches. Moni chat's header and both pages carry the AI label.
 - `node scripts/verify/ai-consent-live.mjs` runs the whole path against the dev project and restores the e2e user's consent afterwards.
 
 ## Model allocation

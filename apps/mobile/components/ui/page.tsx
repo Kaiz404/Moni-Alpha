@@ -39,6 +39,8 @@ export type PageHeader =
       subtitle?: string;
       /** Sits between the back button and the title, as Moni chat's cat does. */
       mark?: ReactNode;
+      /** Follows the title on its line, as Moni chat's AI label does. */
+      titleTag?: ReactNode;
       trailing?: ReactNode;
       onBack?: () => void;
     }
@@ -240,14 +242,28 @@ function HeaderRow(props: PageProps) {
           />
           {props.kind === 'pushed' ? props.mark : null}
           <View className="min-w-0 flex-1">
-            <Text
-              variant="cardTitle"
-              className="text-foreground"
-              accessibilityRole="header"
-              numberOfLines={1}
-            >
-              {props.title}
-            </Text>
+            {props.kind === 'pushed' && props.titleTag ? (
+              <View className="flex-row items-center gap-2">
+                <Text
+                  variant="cardTitle"
+                  className="shrink text-foreground"
+                  accessibilityRole="header"
+                  numberOfLines={1}
+                >
+                  {props.title}
+                </Text>
+                {props.titleTag}
+              </View>
+            ) : (
+              <Text
+                variant="cardTitle"
+                className="text-foreground"
+                accessibilityRole="header"
+                numberOfLines={1}
+              >
+                {props.title}
+              </Text>
+            )}
             {props.subtitle ? (
               <Text
                 variant="meta"

@@ -14,6 +14,7 @@ export type Screen =
   | 'sheet'
   | 'merchants' | 'sources' | 'capture-log'
   | 'map' | 'import'
+  | 'ai'
   | 'list';
 
 export type TestId = `${Screen}.${string}`;

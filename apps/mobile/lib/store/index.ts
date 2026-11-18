@@ -10,6 +10,8 @@ import { legacyColor, type UserPreferences } from '@repo/types';
 import { legendMMKV, legendPersistPlugin } from '@/lib/mmkv/legend-store';
 import { supabase } from '@/lib/supabase/client';
 import { getProfilePreferences } from '@/lib/supabase/profile';
+import { fetchAiConsent } from '@/lib/supabase/ai-consent';
+import type { AiConsent } from '@/lib/ai/consent/model';
 import { randomUUID } from 'expo-crypto';
 import { authReady$ } from '@/lib/store/auth-sync';
 
@@ -240,6 +242,15 @@ export const profilePreferences$ = observable<UserPreferences | undefined>(
   }),
 );
 
+/** The user's choice about Moni's AI (`ai_consents`). Undefined until the first fetch lands. */
+export const aiConsent$ = observable<AiConsent | undefined>(
+  synced({
+    get: fetchAiConsent,
+    persist: { name: 'ai_consent', ...persistOptions },
+    waitFor: waitForAuth,
+  }),
+);
+
 export const ALL_STORE_OBSERVABLES: Observable<any>[] = [
   wallets$,
   transactions$,
@@ -254,6 +265,7 @@ export const ALL_STORE_OBSERVABLES: Observable<any>[] = [
   autoAddRules$,
   merchantAliases$,
   profilePreferences$,
+  aiConsent$,
 ];
 
 /**

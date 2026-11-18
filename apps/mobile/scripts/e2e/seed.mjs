@@ -3,7 +3,7 @@ import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { DELETE_ORDER, INSERT_ORDER, PROFILES, buildProfile, todayInTimezone } from './fixtures.mjs';
+import { DELETE_ORDER, INSERT_ORDER, PROFILES, aiConsentRows, buildProfile, todayInTimezone } from './fixtures.mjs';
 
 const MOBILE_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const usage = () => `usage: seed.mjs --reset --profile <${PROFILES.join('|')}> [--today YYYY-MM-DD]
@@ -140,6 +140,7 @@ async function reset(request, userId, profile, today) {
     const rows = fixtures.rows[table];
     if (rows?.length) await request(`/rest/v1/${table}`, { method: 'POST', body: rows, prefer: 'return=minimal' });
   }
+  await request('/rest/v1/ai_consents', { method: 'POST', body: aiConsentRows(userId), prefer: 'return=minimal' });
   await request('/rest/v1/profiles?on_conflict=id', {
     method: 'POST',
     body: { id: userId, display_name: fixtures.displayName, preferences: fixtures.preferences },

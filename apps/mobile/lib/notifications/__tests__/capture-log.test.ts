@@ -68,6 +68,7 @@ describe('capture statuses a failed read can hold', () => {
       waiting_for_review: 0,
       trying_again: 0,
       gave_up: 1,
+      needs_ai: 0,
       ignored: 0,
       not_linked: 0,
     });
@@ -239,6 +240,7 @@ describe('groupCaptureLog', () => {
       waiting_for_review: 1,
       trying_again: 0,
       gave_up: 0,
+      needs_ai: 0,
       ignored: 1,
       not_linked: 1,
     });
@@ -268,12 +270,13 @@ describe('shownOnCaptureLog', () => {
   });
 });
 
-describe('the eight statuses', () => {
+describe('the nine statuses', () => {
   it('has the glossary word for each, in the order the chips list them', () => {
     expect(CAPTURE_STATUS_ORDER.map((status) => [status, CAPTURE_STATUS_LABELS[status]])).toEqual([
       ['waiting_for_review', 'Waiting for review'],
       ['trying_again', 'Trying again'],
       ['gave_up', "Couldn't reach Moni"],
+      ['needs_ai', 'AI is off'],
       ['auto_added', 'Auto-added'],
       ['added', 'Added'],
       ['same_payment', 'Same payment'],

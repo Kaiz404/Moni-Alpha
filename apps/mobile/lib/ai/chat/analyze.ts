@@ -72,7 +72,7 @@ export async function analyzeUserFinances(message: string): Promise<AnalyzeFinan
       facts,
     );
 
-    const result = await getAiClient().analyzeFinances({
+    const result = await getAiClient('chat').analyzeFinances({
       message,
       snapshot,
       history: exportHistoryForApi(),

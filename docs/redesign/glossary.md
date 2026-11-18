@@ -16,9 +16,11 @@ The words the redesigned app uses, and the words it never uses. The design canva
 | Auto | The pill on a row Moni added without asking (routine auto-add). |
 | Added automatically | The Android notification that names what Moni added without asking today, with Undo for the latest. |
 | Usual for you, Seen before | The Review card's source-row pill for a merchant the user has filed 3 or more times, or once or twice. Needs a wallet, Same payment and Maybe a duplicate outrank both. |
-| Added, Auto-added, Same payment, Waiting for review, Trying again, Couldn't reach Moni, Ignored, Not linked | What Moni did with an alert. The Capture log shows the ones from a linked app, except Ignored. Ignored and alerts from other apps stay in Debug tools. |
+| Added, Auto-added, Same payment, Waiting for review, Trying again, Couldn't reach Moni, AI is off, Ignored, Not linked | What Moni did with an alert. The Capture log shows the ones from a linked app, except Ignored. Ignored and alerts from other apps stay in Debug tools. |
 | Same payment, Counted once | Two alerts or captures for one payment. Moni counts them as one row and keeps both visible, with Undo. The Review card's control is "Same payment". |
 | It's a transfer, It's spending, It's income | The Review card's controls when a capture looks like the other side of a transfer between the user's own wallets, or was read as a transfer and wasn't. |
+| Moni's AI, Let Moni use AI, Turn on Moni's AI, Not now | The AI opt-in and its Profile page. The master switch is "Let Moni use AI"; the opt-in page's buttons are "Turn on Moni's AI" and "Not now". "AI" in a Lilac tag labels Moni chat and these pages. |
+| AI is off | What Moni did with an alert while Moni's AI was off for alerts: it keeps the alert and reads it once AI is on. The Capture log's action is "Turn on AI". |
 | Trying again, Couldn't reach Moni, Retry | A capture the backend could not read. Trying again: Moni keeps it and tries by itself. Couldn't reach Moni: it tried for 7 days and stopped. Retry is the control on both, and Capture sources counts them: "2 couldn't reach Moni". Never Ignored, which means not a payment. |
 | Keep it for Review, Kept for Review | The button on Say it and Scan's failed page, and its toast. Moni reads the capture once it is back, and it lands in Review. |
 | safe to spend a day | What's left ÷ days left in the month ("RM443 left for 18 days · RM24 a day"). |

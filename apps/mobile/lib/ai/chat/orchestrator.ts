@@ -2,6 +2,7 @@ import { randomUUID } from 'expo-crypto';
 
 import { startBackgroundProcessor } from '@/lib/ai/background-processor';
 import { AI_UNAVAILABLE_REASON } from '@/lib/ai/client';
+import { AI_CONSENT_REASON } from '@/lib/ai/consent/model';
 import { enqueue, type ProcessingQueueItem } from '@/lib/ai/processing-queue';
 import { runExtraction } from '@/lib/ai/run-extraction';
 import { captureLocationSnapshot } from '@/lib/location/location-snapshot';
@@ -30,6 +31,7 @@ const CLARIFY_TEXT = 'Did you want to add a transaction or ask about your money?
 function friendlyFailure(reason: string): string {
   console.warn('[chat] failed:', reason);
   if (reason === AI_UNAVAILABLE_REASON) return "Moni can't answer in this build yet. You can still add spends here.";
+  if (reason === AI_CONSENT_REASON) return "Moni's AI is off for chat. Turn it on in Profile › Moni's AI.";
   if (/network request failed|failed to fetch|timed? ?out|keys are not loaded|backend error \(5\d\d\)/i.test(reason)) {
     return "Moni can't answer right now. Check your connection and try again.";
   }
@@ -115,6 +117,7 @@ async function extractImage(imageUri: string, caption: string, turn: Turn) {
   const queueItem: ProcessingQueueItem = {
     id,
     type: 'image',
+    use: 'chat',
     imageUri: await saveImageLocally(imageUri),
     userContext: caption || undefined,
     createdAt: new Date().toISOString(),
@@ -141,6 +144,7 @@ async function extractImage(imageUri: string, caption: string, turn: Turn) {
       content: "Moni can't read this receipt right now. It's safe on this phone and goes to Review once Moni reads it.",
       status: 'error',
     });
+  else if (result === 'needs_ai') turn.fail(AI_CONSENT_REASON);
   else turn.fail(result === 'timeout' ? 'timed out' : 'receipt');
 }
 
@@ -149,6 +153,7 @@ async function extractText(text: string, turn: Turn, answerIfSkipped: boolean) {
   const result = await runExtraction({
     id: proposalId,
     type: 'text',
+    use: 'chat',
     text,
     createdAt: new Date().toISOString(),
     status: 'pending',

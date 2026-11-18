@@ -24,7 +24,7 @@ import { matchRoutine } from '@/lib/ai/routine';
 import { listAutoAddRules } from '@/lib/supabase/auto-add-rules';
 import { getUserId } from '@/lib/supabase/client';
 import { getAiClient, type AiWalletContext, type ExtractResult } from '@/lib/ai/client';
-import type { ProcessingQueueItem } from '@/lib/ai/processing-queue';
+import { aiUseOf, type ProcessingQueueItem } from '@/lib/ai/processing-queue';
 import { extractDateContext, resolveOccurredAt } from '@/lib/ai/occurred-at';
 import { saveProposalLocationSnapshot } from '@/lib/ai/proposal-location-cache';
 import type { LocationSnapshot } from '@/lib/location/location-snapshot';
@@ -431,7 +431,7 @@ export async function runExtraction(
   options?: { trace?: TraceLogger },
 ): Promise<RunExtractionResult> {
   const logger = options?.trace;
-  const client = getAiClient();
+  const client = getAiClient(aiUseOf(item));
 
   // A retry after a kill: this item already wrote its row before the queue could record that.
   if (proposalExists(item.id)) {

@@ -24,6 +24,7 @@ import { chatTime } from '@/components/chat/chat-time';
 import { BlankGreeting, StarterCards } from '@/components/chat/blank-slate';
 import { MessageBubble } from '@/components/chat/message-bubble';
 import { foldedOnReopen } from '@/components/chat/thread-fold';
+import { AiTag } from '@/components/ui/ai-tag';
 import { HeaderIconButton } from '@/components/ui/header-icon-button';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Page } from '@/components/ui/page';
@@ -44,6 +45,7 @@ import {
 import { noticedItems } from '@/lib/ai/chat/noticed';
 import { handleQuickReply, sendChatMessage } from '@/lib/ai/chat/orchestrator';
 import { todayThreadDay } from '@/lib/ai/chat/sessions';
+import { useAiGate } from '@/lib/ai/consent/use-ai-gate';
 import { useAuth } from '@/lib/auth/auth-context';
 import { pendingProposals$ } from '@/lib/finance/selectors';
 import { scanAndNormalizeReceipt } from '@/lib/receipts/scan-receipt';
@@ -169,18 +171,21 @@ export default function ChatScreen() {
       });
   }, [user?.id, isToday, firstRun, today]);
 
+  const withAi = useAiGate('chat');
   const send = useCallback(
     (text: string) => {
       const image = attachedImage;
       if (!text.trim() && !image) return;
-      setInput('');
-      setAttachedImage(null);
-      setViewDay(todayThreadDay());
-      void sendChatMessage({ text, imageUri: image }).catch((error) =>
-        console.warn('[chat] send failed', error),
-      );
+      withAi(() => {
+        setInput('');
+        setAttachedImage(null);
+        setViewDay(todayThreadDay());
+        void sendChatMessage({ text, imageUri: image }).catch((error) =>
+          console.warn('[chat] send failed', error),
+        );
+      });
     },
-    [attachedImage],
+    [attachedImage, withAi],
   );
 
   useSpeechRecognitionEvent('result', (event: ExpoSpeechRecognitionResultEvent) => {
@@ -231,7 +236,7 @@ export default function ChatScreen() {
 
   const onQuickReply = (option: QuickReplyOption, message: ChatMessage) => {
     if (message.kind !== 'assistant_clarify') return;
-    void handleQuickReply(option, message.pendingContext, message.pendingImageUri);
+    withAi(() => void handleQuickReply(option, message.pendingContext, message.pendingImageUri));
   };
 
   const onNoticed = (item: NoticedItem) => {
@@ -263,6 +268,7 @@ export default function ChatScreen() {
       screen="chat"
       kind="pushed"
       title="Moni"
+      titleTag={<AiTag />}
       mark={blank ? undefined : <ChatCat mood={chatMood(messages, listening !== null)} />}
       subtitle={isToday ? `${dayTitle(viewDay, now)} · ${chatTime(now.toISOString())}` : dayTitle(viewDay, now)}
       trailing={

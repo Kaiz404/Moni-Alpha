@@ -212,6 +212,8 @@ const ROUTES: Record<string, RouteSpec> = {
   '(tabs)/budget.tsx': differ('/budget', 'RM200.80 due by 31 Oct', 'Start with one wallet'),
   '(tabs)/debts.tsx': differ('/debts', 'Pay Mei RM40', 'No debts yet'),
   '+not-found.tsx': same('/no-such-page', 'This screen moved'),
+  'ai-consent.tsx': same('/ai-consent?use=chat', "What gets sent, only when it's on"),
+  'moni-ai.tsx': same('/moni-ai', 'Let Moni use AI'),
   'import/index.tsx': same('/import', 'Choose a CSV'),
   'import/columns.tsx': same('/import/columns', 'No file chosen'),
   'import/preview.tsx': same('/import/preview', 'No file chosen'),

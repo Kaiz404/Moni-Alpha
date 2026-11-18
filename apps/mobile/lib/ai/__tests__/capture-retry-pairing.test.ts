@@ -34,6 +34,13 @@ import {
 const mockService = { running: false };
 let mockNextId = 0;
 
+const ALL_ON = {
+  kind: 'answered',
+  on: true,
+  at: '2026-11-01T00:00:00.000Z',
+  uses: { alerts: true, add: true, receipts: true, chat: true },
+} as const;
+const mockConsent: { value: unknown } = { value: ALL_ON };
 jest.mock('expo-crypto', () => ({
   randomUUID: () => `00000000-0000-4000-a000-${String(++mockNextId).padStart(12, '0')}`,
 }));
@@ -66,6 +73,9 @@ jest.mock('react-native-background-actions', () => {
   return { __esModule: true, default: service };
 });
 jest.mock('expo-linking', () => ({ resolveScheme: () => 'moni' }));
+jest.mock('@/lib/ai/consent/state', () => ({
+  currentAiConsent: async () => mockConsent.value,
+}));
 jest.mock('@/lib/ai/client', () => ({ getAiClient: jest.fn() }));
 jest.mock('@/lib/supabase/client', () => ({ getUserId: async () => 'user-1' }));
 jest.mock('@/lib/notifications/review-notification', () => ({

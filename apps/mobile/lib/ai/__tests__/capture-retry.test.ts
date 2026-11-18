@@ -36,6 +36,13 @@ let mockRules: Record<string, unknown>[] = [];
 const mockService = { running: false, onStop: null as (() => void) | null };
 const mockSync = { signedIn: true, saved: true };
 
+const ALL_ON = {
+  kind: 'answered',
+  on: true,
+  at: '2026-11-01T00:00:00.000Z',
+  uses: { alerts: true, add: true, receipts: true, chat: true },
+} as const;
+const mockConsent: { value: unknown } = { value: ALL_ON };
 jest.mock('react-native-mmkv', () => ({
   createMMKV: ({ id }: { id: string }) => {
     const store = mockStores.get(id) ?? new Map<string, string>();
@@ -66,6 +73,9 @@ jest.mock('react-native-background-actions', () => {
   return { __esModule: true, default: service };
 });
 jest.mock('expo-linking', () => ({ resolveScheme: () => 'moni' }));
+jest.mock('@/lib/ai/consent/state', () => ({
+  currentAiConsent: async () => mockConsent.value,
+}));
 jest.mock('@/lib/ai/client', () => ({
   getAiClient: () => ({ extractFromNotification: mockExtract }),
 }));
@@ -177,6 +187,7 @@ beforeEach(() => {
   mockRules = [];
   mockSync.signedIn = true;
   mockSync.saved = true;
+  mockConsent.value = ALL_ON;
   mockTables.transactions$?.set({});
   mockTables.proposedTransactions$?.set({});
 });
@@ -278,6 +289,42 @@ describe('a capture while the backend is down', () => {
     await started;
     expect(queueState(queue)).toEqual({ status: 'done', attempts: 0 });
     expect(processor.isBackgroundProcessorRunning()).toBe(false);
+  });
+});
+
+describe("an alert while Moni's AI is off for alerts", () => {
+  const CONSENT_OFF: ExtractResult = { status: 'unavailable', reason: 'consent' };
+  const ALERTS_OFF = { ...ALL_ON, uses: { ...ALL_ON.uses, alerts: false } };
+
+  it('waits as AI is off without a backoff, never gives up, and is read once alerts are on', async () => {
+    const { queue, processor } = launch();
+    mockConsent.value = ALERTS_OFF;
+    const item = alert();
+    logged(item);
+    queue.enqueue(item);
+    queue.enqueue(alert({ id: 'next' }));
+    mockExtract.mockResolvedValue(CONSENT_OFF);
+
+    await processor.startBackgroundProcessor();
+    await settle();
+    expect(mockExtract).toHaveBeenCalledTimes(2);
+    expect(queueState(queue)).toEqual({ status: 'needs_ai', attempts: 0 });
+    expect(queueState(queue, 'next')).toEqual({ status: 'needs_ai', attempts: 0 });
+    expect(logStatus()).toBe('needs_ai');
+
+    await jest.advanceTimersByTimeAsync(8 * DAY);
+    await processor.startBackgroundProcessor();
+    await settle();
+    expect(mockExtract).toHaveBeenCalledTimes(2);
+    expect(queueState(queue)).toEqual({ status: 'needs_ai', attempts: 0 });
+
+    mockConsent.value = ALL_ON;
+    mockExtract.mockResolvedValue(READ);
+    await processor.startBackgroundProcessor();
+    await settle();
+    expect(queueState(queue)).toEqual({ status: 'done', attempts: 0 });
+    expect(logStatus()).toBe('waiting_for_review');
+    expect(liveRows('proposedTransactions$').map((row) => row.id)).toContain(ID);
   });
 });
 

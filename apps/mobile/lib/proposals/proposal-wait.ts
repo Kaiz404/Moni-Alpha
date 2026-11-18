@@ -4,8 +4,11 @@ import { getAll } from '@/lib/ai/processing-queue';
 import { PROPOSED_TRANSACTIONS_CHANGED } from '@/lib/proposals/proposed-transactions-events';
 import { getProposedTransactions } from '@/lib/supabase/proposed-transactions';
 
-/** `retrying`: the backend could not be reached, and the capture stays queued for Review. */
-export type ProposalWaitResult = 'ready' | 'error' | 'retrying' | 'timeout';
+/**
+ * `retrying`: the backend could not be reached, and the capture stays queued for Review.
+ * `needs_ai`: Moni's AI is off for it, and it waits until the user turns it on.
+ */
+export type ProposalWaitResult = 'ready' | 'error' | 'retrying' | 'needs_ai' | 'timeout';
 
 /**
  * Wait for an already-enqueued, user-initiated capture to become reviewable.
@@ -37,8 +40,8 @@ export function waitForProposal(
         }
 
         const item = getAll().find((entry) => entry.id === proposalId);
-        if (item?.status === 'error') {
-          finish('error');
+        if (item?.status === 'error' || item?.status === 'needs_ai') {
+          finish(item.status);
           return;
         }
         if (item?.status === 'pending' && (item.attempts ?? 0) > 0) {

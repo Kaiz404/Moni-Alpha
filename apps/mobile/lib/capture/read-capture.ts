@@ -178,7 +178,7 @@ export async function readCapture(
     type: wallet.type,
     currency: wallet.currency,
   }));
-  const client = getAiClient();
+  const client = getAiClient(quote.source === 'voice' ? 'add' : 'receipts');
   try {
     const result =
       quote.source === 'voice'

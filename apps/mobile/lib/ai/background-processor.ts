@@ -6,17 +6,22 @@
  */
 import { resolveScheme } from 'expo-linking';
 import BackgroundService from 'react-native-background-actions';
+import { AI_USES } from '@repo/types';
 import {
   peekPending,
   markProcessing,
   markDone,
   markError,
+  markNeedsAi,
   markRetry,
   getPendingCount,
+  releaseNeedsAi,
   requeueGaveUp,
   resumeInterrupted,
   type ProcessingQueueItem,
 } from './processing-queue';
+import { AI_CONSENT_REASON, aiUseAllowed } from './consent/model';
+import { currentAiConsent } from './consent/state';
 import { runExtraction, type RunExtractionResult } from './run-extraction';
 import { recordCapture } from '@/lib/notifications/capture-health';
 import {
@@ -98,6 +103,10 @@ function isSaved(result: RunExtractionResult): Promise<boolean> {
  * and the retry finds the row and waits for it again.
  */
 async function settle(item: ProcessingQueueItem, result: RunExtractionResult): Promise<number | null> {
+  if (!result.created && !result.skipped && result.reason === AI_CONSENT_REASON) {
+    markNeedsAi(item.id);
+    return null;
+  }
   if (!result.created && !result.skipped) return markRetry(item.id).retryInMs;
   if (result.created && !(await isSaved(result))) {
     console.log(TAG, `\u{2502}  Not saved to Supabase yet, will retry id=${item.id}`);
@@ -291,6 +300,8 @@ export async function startBackgroundProcessor(): Promise<void> {
 
   resumeInterrupted({ includeHeld: !heldResumed });
   heldResumed = true;
+  const consent = await currentAiConsent();
+  releaseNeedsAi(new Set(AI_USES.filter((use) => aiUseAllowed(consent, use))));
 
   const pending = getPendingCount();
   if (pending === 0) {

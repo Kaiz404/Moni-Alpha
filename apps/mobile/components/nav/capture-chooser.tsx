@@ -25,6 +25,7 @@ import {
   openSheet,
   type CaptureChoice,
 } from '@/lib/sheet/sheet-store';
+import { openWithAi } from '@/lib/ai/consent/use-ai-gate';
 import { tid } from '@/lib/test-ids';
 
 type Choice = {
@@ -83,7 +84,11 @@ const SHEET_BOTTOM_PADDING = 20;
  */
 export async function openCaptureChooser() {
   const choice = await openSheet({ kind: 'chooser' });
-  if (choice) router.push(CHOICES[choice].href);
+  if (!choice) return;
+  const open = () => router.push(CHOICES[choice].href);
+  if (choice === 'scan') return openWithAi('receipts', open);
+  if (choice === 'say') return openWithAi('add', open);
+  open();
 }
 
 type CaptureChooserSheetProps = SheetFrameProps & {

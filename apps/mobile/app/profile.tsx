@@ -25,6 +25,7 @@ import { NavRow } from '@/components/ui/nav-row';
 import { Page, PageScroll } from '@/components/ui/page';
 import { Text } from '@/components/ui/text';
 import { UserAvatar } from '@/components/ui/user-avatar';
+import { useAiConsent } from '@/lib/ai/consent/state';
 import { useAuth } from '@/lib/auth/auth-context';
 import { userPhotoUrl } from '@/lib/auth/user-photo';
 import {
@@ -106,6 +107,8 @@ export default function ProfileScreen() {
   const { access } = usePhoneAccess();
   const sourcesTint = captureSourcesTint(access);
   const merchants = useMerchantNames();
+  const aiConsent = useAiConsent();
+  const aiOn = aiConsent?.kind === 'answered' && aiConsent.on;
 
   const wallets = useValue(walletsForUser$(userId));
   const categoryCount = useValue(
@@ -211,6 +214,15 @@ export default function ProfileScreen() {
         </Section>
 
         <Section label="PRIVACY AND DATA">
+          <ProfileRow
+            testID={tid('profile', 'row', 'moni-ai')}
+            icon="creation"
+            tint="lilac"
+            title="Moni's AI"
+            value={aiOn ? 'On' : 'Off'}
+            chevron="right"
+            onPress={() => router.push('/moni-ai')}
+          />
           <ProfileRow
             testID={tid('profile', 'row', 'capture-sources')}
             icon={

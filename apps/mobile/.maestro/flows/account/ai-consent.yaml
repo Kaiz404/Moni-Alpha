@@ -1,0 +1,70 @@
+# #57 Moni's AI: Profile › Moni's AI with every switch on, the master turned off, Moni chat's AI
+# label, the opt-in page that stands in front of a chat message while AI is off, and Turn on, which
+# sends the waiting message. Needs the full seed, which turns every switch on.
+# Run: scripts/device/run-flows.sh .maestro/flows/account/ai-consent.yaml
+appId: com.anonymous.moni.e2e
+name: AI consent
+tags:
+  - ai-consent
+  - seed-full
+---
+- runFlow: ../../subflows/launch.yaml
+- tapOn:
+    id: home.avatar
+- scrollUntilVisible:
+    element:
+      id: profile.row.moni-ai
+    direction: DOWN
+- assertVisible: "Moni's AI, On"
+- tapOn:
+    id: profile.row.moni-ai
+- extendedWaitUntil:
+    visible: 'Turned on by you on .*'
+    timeout: 15000
+- assertVisible: What Moni sends, and only when you use it
+- takeScreenshot: ai-settings-on
+
+- tapOn:
+    id: ai.switch.all
+- extendedWaitUntil:
+    visible: 'Turned off by you on .*'
+    timeout: 15000
+- takeScreenshot: ai-settings-off
+
+- tapOn:
+    id: ai.back
+- assertVisible: "Moni's AI, Off"
+- tapOn:
+    id: profile.back
+- tapOn:
+    id: home.ask-box
+- extendedWaitUntil:
+    visible:
+      id: chat.input
+    timeout: 15000
+- assertVisible:
+    text: AI
+    rightOf:
+      id: chat.back
+- takeScreenshot: ai-chat-label
+
+- tapOn:
+    id: chat.input
+- inputText: how much did I spend on food
+- tapOn:
+    id: chat.send
+- extendedWaitUntil:
+    visible:
+      id: ai.consent.turn-on
+    timeout: 15000
+- assertVisible: "What gets sent, only when it's on"
+- assertVisible:
+    id: ai.consent.not-now
+- takeScreenshot: ai-consent-optin
+
+- tapOn:
+    id: ai.consent.turn-on
+- extendedWaitUntil:
+    visible: how much did I spend on food
+    timeout: 15000
+- takeScreenshot: ai-chat-sent
