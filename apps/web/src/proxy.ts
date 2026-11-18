@@ -1,6 +1,6 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
-import { isPublicPath } from '@/lib/routes';
+import { isPublicPath, isSignedOutOnly, safeNextPath } from '@/lib/routes';
 
 export async function proxy(request: NextRequest) {
   let response = NextResponse.next({ request });
@@ -27,11 +27,12 @@ export async function proxy(request: NextRequest) {
   const { data } = await supabase.auth.getClaims();
   const { pathname, search } = request.nextUrl;
 
-  if (!data?.claims && !isPublicPath(pathname)) {
-    const url = request.nextUrl.clone();
-    url.pathname = '/login';
-    url.search = `?next=${encodeURIComponent(pathname + search)}`;
-    const redirect = NextResponse.redirect(url);
+  const signedIn = Boolean(data?.claims);
+  if (signedIn ? isSignedOutOnly(pathname) : !isPublicPath(pathname)) {
+    const target = signedIn
+      ? safeNextPath(request.nextUrl.searchParams.get('next'))
+      : `/login?next=${encodeURIComponent(pathname + search)}`;
+    const redirect = NextResponse.redirect(new URL(target, request.url));
     response.cookies.getAll().forEach((cookie) => redirect.cookies.set(cookie));
     return redirect;
   }
