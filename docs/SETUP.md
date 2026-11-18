@@ -85,6 +85,7 @@ The e2e APK (`apps/mobile/scripts/device/build-apk.sh`), the e2e seed (`apps/mob
 ```bash
 NEXT_PUBLIC_SUPABASE_URL=https://<project-ref>.supabase.co
 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_...
+NEXT_PUBLIC_MONI_APP_SCHEME=moni   # what the sign-in QR opens; moni-e2e for the Moni E2E app
 ```
 
 The web app holds no secret key. CI's web build reads the `EXPO_PUBLIC_SUPABASE_*` repository variables as its `NEXT_PUBLIC_*` values.
@@ -167,7 +168,7 @@ pnpm --filter moni dev          # mobile Metro (terminal 1)
 pnpm --filter moni dev:tailscale # Metro for a phone on your tailnet: open http://<tailscale-ip>:8081 in the dev build (WSL needs networkingMode=mirrored)
 cd apps/mobile && npx expo run:android   # local dev client install/rebuild (terminal 2, when needed)
 pnpm --filter backend dev       # Go AI backend on :8080
-pnpm --filter web dev           # Next.js dashboard on :3000
+pnpm --filter web dev           # Next.js web app on :3000
 ```
 
 Useful checks:
@@ -180,7 +181,10 @@ pnpm --filter moni lint:test-ids                # testID lint
 pnpm format:check                               # Prettier (run `pnpm format` to fix)
 pnpm --filter backend test                      # Go tests
 pnpm --filter moni test:notification-detection  # notification prefilter suite
+pnpm --filter web verify                        # drive the web app in Chromium (the web-verify skill)
 ```
+
+The web drive needs Playwright's Chromium once: `cd apps/web && npx playwright install chromium`. On an Ubuntu newer than Playwright knows (26.04), prefix it with `PLAYWRIGHT_HOST_PLATFORM_OVERRIDE=ubuntu24.04-x64`.
 
 ## Google Maps (spending map)
 
@@ -205,7 +209,7 @@ Shop search calls Google Places API (New) through the Go backend (`/v1/places/au
 
 Location capture itself is handled by `expo-location` (permissions configured via the plugin); transactions store `location_latitude` / `location_longitude` / `location_name`.
 
-## Google Sign-In (mobile)
+## Google Sign-In
 
 Native Google auth uses `@react-native-google-signin/google-signin` + `supabase.auth.signInWithIdToken`. Requires a dev client rebuild — not Expo Go.
 
@@ -223,6 +227,10 @@ Native Google auth uses `@react-native-google-signin/google-signin` + `supabase.
 
 - Enable Google provider with the **Web** client ID and secret.
 - For native mobile sign-in, enable **Skip nonce check** on the hosted project (Dashboard → Auth → Google). Local `supabase/config.toml` has `skip_nonce_check = false` — change to `true` if you test Google auth against local Supabase.
+
+### Web
+
+The web app signs in with `signInWithOAuth`, which returns to `<origin>/auth/callback`. Add each web origin's callback (for example `http://localhost:3000/auth/callback` and the production domain's) to **Supabase → Auth → URL Configuration → Redirect URLs**. Without it, Supabase sends Google sign-in back to the Site URL instead. Google itself redirects to Supabase's own callback, which the **Web application** OAuth client already lists, so the Google client needs no change per web origin. Email confirmation and password-reset links use the same allow list.
 
 ### Mobile env (`apps/mobile/.env`)
 

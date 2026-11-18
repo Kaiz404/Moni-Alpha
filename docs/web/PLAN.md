@@ -45,7 +45,7 @@ Each phase ends in a verifiable state. Mobile must behave the same after every p
 3. **`@repo/design` and `@repo/brand`.** Mobile's `global.css` and brand assets become generated output with no visual change (compare device screenshots before and after). (Done. The spring curves come from the W2-Motion board's simulation, so their durations are its settle times, 231 to 818 ms, not the hand-saved `curves.txt` and the 272 to 840 ms the boards quote. The phone's Python asset generator reads `@repo/brand` through `packages/brand/python/catart.py`; the canvas kit's own `catart.py` copy outside the repo can switch to that bridge. The wordmark and lockups stay HTML, because the word is live text.)
 4. **`@repo/data` and write plans.** Mobile runs on the shared store (`createMoniStore`). Edge Function `delete-account` and the in-app deletion (issue #56). (The functions `delete-account`, `qr-start`, `qr-approve` and `qr-poll` landed early, 19 Nov 2026; the contract is in `docs/ARCHITECTURE.md` § Auth.)
 5. **`@repo/ai`.** The wire contract as Zod plus the golden fixture tested from TypeScript and Go. Zero data retention on the gateway (issue #55) and the AI consent gate (issue #57: a custom access-token hook adds a consent claim; the gateway checks it).
-6. **Web shell.** Next.js app, tokens, Funnel Display, auth (email, Google, QR sign-in through the Edge Functions `qr-start` and `qr-poll`, then `verifyOtp`), the sidebar, rail and phone layouts with the breakpoint switch, Ctrl K, toasts, motion.
+6. **Web shell.** Next.js app, tokens, Funnel Display, auth (email, Google, QR sign-in through the Edge Functions `qr-start` and `qr-poll`, then `verifyOtp`), the sidebar, rail and phone layouts with the breakpoint switch, Ctrl K, toasts, motion. (Done. The `web-verify` skill drives every route at four widths in both themes; `apps/web/README.md` describes the shell.)
 7. **Web screens**, in this order: Home, Activity, Review (with review decisions), Budget, Debts, Where you spend, Moni chat, Settings and data (import, merchant names, rules, capture sources).
 8. **Edges.** Landing page and the public deletion page, onboarding, states and empty states, the phone layout for every screen, privacy policy and terms pages.
 
@@ -53,7 +53,7 @@ Each phase ends in a verifiable state. Mobile must behave the same after every p
 
 - Shared packages: Vitest, run by the existing CI `pnpm test` job. Tests call each module's interface with literal inputs and assert literal outputs; the timezone is a parameter, not a process setting.
 - Mobile: its jest suites keep running; moved suites run under Vitest in their package.
-- Web: Vitest for its own modules, and Playwright driving the real app for each screen, comparing against the board renders in `~/.local/share/moni-canvas/web-r1/renders/`. A project `verify` skill for the web app is worth generating once the shell exists (`/create-verification-skill`).
+- Web: Vitest for its own modules, and Playwright driving the real app for each screen, comparing against the board renders in `~/.local/share/moni-canvas/web-r1/renders/`. The `web-verify` skill (`.claude/skills/web-verify/`) runs it; each screen phase extends its drive.
 - The AI contract: one golden JSON fixture parsed by Zod in TypeScript and unmarshalled with `DisallowUnknownFields` in Go.
 
 ## Hosting

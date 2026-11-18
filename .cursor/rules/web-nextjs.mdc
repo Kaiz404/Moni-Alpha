@@ -21,11 +21,21 @@ Read `docs/WEB.md` (the design handoff: boards, layouts, rules) and `docs/web/PL
 
 ```
 src/proxy.ts                    session refresh + private-path redirect (Next 16 name for middleware)
-src/lib/routes.ts               public paths, safe `next` redirects
+src/lib/routes.ts               public paths, signed-out-only paths, safe `next` redirects
 src/lib/supabase/client.ts      browser client (cookies via @supabase/ssr)
 src/lib/supabase/server.ts      Server Components / route handlers
 src/app/auth/callback/route.ts  PKCE exchange (Google, email links)
+src/app/(auth)/login/…          sign in / create account, forgot, verify, reset (components/auth/)
+src/app/(app)/<section>/        signed-in pages inside the shell (components/shell/)
+src/lib/layout.ts               breakpoints → layout kind, the generated media queries and layout script
+src/lib/nav.ts                  every destination; sidebar, rail, tab bar, palette and G keys read it
+src/lib/commands.ts, keys.ts    Ctrl K rows and filtering; the shell's key map
+scripts/verify/drive.mjs        the Playwright drive behind the web-verify skill
 ```
+
+- Every colour, radius, type size and spring comes from `@repo/design/tokens.css` variables; never write a hex in `apps/web`.
+- The shell renders one tree for every layout and shows parts with `data-only="sidebar rail rail-one-column phone"`; never branch the React tree on the viewport, or crossing a breakpoint remounts half-typed fields. State that must survive goes in the URL or `components/shell/shell-store.ts`.
+- New places go in `NAV`; new shell actions in `CommandAction` / `ShortcutAction`, run by `Shell`'s `run`.
 
 A new public route (landing, legal, the public deletion page) goes in `PUBLIC_PATHS` in `src/lib/routes.ts` with a test case.
 
@@ -38,5 +48,5 @@ A new public route (landing, legal, the public deletion page) goes in `PUBLIC_PA
 ## Testing
 
 - Vitest for web modules (`pnpm --filter web test`): call the interface with literal inputs, assert literal outputs.
-- Playwright drives the real app for each screen at 1440, 1024, 820 and 390 wide against the board renders.
+- Playwright drives the real app for each screen at 1440, 1024, 820 and 390 wide against the board renders: the `web-verify` skill (`pnpm --filter web verify`). Extend its drive when a screen lands.
 - CI runs `next build`, so a prerender failure fails the job.
