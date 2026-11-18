@@ -20,8 +20,13 @@ Single PostgreSQL database on Supabase. Migrations live in `supabase/migrations/
 | `auto_add_rules`        | "Don't ask about similar": a notification from `source_app` whose merchant key (`merchantKey` in `apps/mobile/lib/ai/routine.ts`) equals `merchant_key` is added to `wallet_id` under `category_id` without review. Not unique; the newest `updated_at` wins                                                                                                                                                                                                                                    | Own rows                                  |
 | `merchant_aliases`      | The name the user gave a merchant: rows whose merchant key equals `raw_key` show `display_name`. Not unique; the newest `updated_at` wins                                                                                                                                                                                                                                                                                                                                                       | Own rows                                  |
 | `qr_sign_ins`           | A browser's QR sign-in request, written only by the Edge Functions `qr-start`, `qr-approve` and `qr-poll` (`docs/ARCHITECTURE.md` § Auth). Holds the rotating `code`, SHA-256 hashes of the poll secret and the caller's address, the `browser` label, and once the phone approves, `user_id` and the magic-link `token_hash` together. `qr-poll` deletes the row as it hands the hash out; `qr-start` deletes lapsed rows. Not synced | RLS on, no policy and no grant: clients can't read or write it |
+| `ai_consents`           | The consent record for Moni's AI, append only: one row per change, never updated. `use` is `all` (the master switch) or `alerts` / `add` / `receipts` / `chat`; `granted`, `notice_version` (the notice's date) and `created_at`, which only the server sets. The newest row per use is the current choice; no `all` row means the user was never asked. Not synced through Legend-State | Own rows: read and insert only |
 
 **View:** `wallet_balances` — computed balance per live wallet (initial balance + deltas of live transactions; soft-deleted rows don't count).
+
+**View:** `ai_consent_current` — the newest `ai_consents` row per user and use.
+
+**Auth hook:** `custom_access_token_hook` copies the newest `all` row into each access token as `ai_consent` (`supabase/README.md`).
 
 ## Sync-related columns
 

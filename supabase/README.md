@@ -25,6 +25,18 @@ Legacy `anon` / `service_role` JWT keys should stay deactivated once nothing use
 
 Auth signs user access tokens with an **ES256 asymmetric key**. The Go backend verifies tokens against `https://<project-ref>.supabase.co/auth/v1/.well-known/jwks.json` — don't revert to the legacy HS256 shared secret or backend auth breaks.
 
+## Custom Access Token Hook
+
+`public.custom_access_token_hook` adds `ai_consent` (the user's master AI switch, from `ai_consents`) to every access token, and adds nothing for a user never asked. A migration cannot turn a hook on, so enable it once per project, in the dashboard (Authentication → Hooks) or with the Management API:
+
+```bash
+curl -X PATCH "https://api.supabase.com/v1/projects/<project-ref>/config/auth" \
+  -H "Authorization: Bearer $(cat ~/.supabase/access-token)" -H "Content-Type: application/json" \
+  -d '{"hook_custom_access_token_enabled":true,"hook_custom_access_token_uri":"pg-functions://postgres/public/custom_access_token_hook"}'
+```
+
+It is on for the dev project. `node scripts/verify/ai-consent-live.mjs` proves the claim and the backend's answer to it.
+
 ## Storage
 
 Bucket `receipts` — receipt images at `{userId}/{proposalId}.jpg`, policies restrict access by `auth.uid()` prefix (`20260323000000_storage_receipts_bucket.sql`). If mobile logs `Bucket not found`, push migrations.

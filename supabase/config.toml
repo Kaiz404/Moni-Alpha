@@ -36,6 +36,12 @@ additional_redirect_urls = ["http://localhost:8081", "http://localhost:3000/auth
 jwt_expiry = 3600
 enable_signup = true
 
+# Adds the ai_consent claim (20261119120100_ai_consent_token_hook.sql). Hosted projects enable it
+# through the dashboard or the Management API, see supabase/README.md.
+[auth.hook.custom_access_token]
+enabled = true
+uri = "pg-functions://postgres/public/custom_access_token_hook"
+
 [auth.email]
 enable_signup = true
 double_confirm_changes = true
