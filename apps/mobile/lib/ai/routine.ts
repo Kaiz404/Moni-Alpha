@@ -7,6 +7,7 @@
  * Correcting a category breaks the streak, so the next one goes back to review.
  */
 import type { AutoAddRule } from '@repo/types';
+import { isFiled } from '@repo/core';
 
 /** Recent matches that must agree on one category before a transaction is added automatically. */
 export const STREAK = 3;
@@ -23,8 +24,8 @@ export type RoutineHistoryTransaction = {
   merchant: string | null;
   locationLatitude: number | null;
   locationLongitude: number | null;
-  analysisExcluded?: boolean;
-  debtActivityId?: string | null;
+  analysisExcluded: boolean;
+  debtActivityId: string | null;
 };
 
 export type RoutineCandidate = {
@@ -105,11 +106,6 @@ function isSimilar(
       longitude: tx.locationLongitude,
     }) <= NEARBY_M
   );
-}
-
-/** Transfers, balance adjustments and debt-linked rows say nothing about a merchant. */
-function isFiled(tx: RoutineHistoryTransaction): boolean {
-  return !!tx.categoryId && !tx.analysisExcluded && !tx.debtActivityId;
 }
 
 /** How many of the user's filed transactions share this capture's merchant, type and currency. */

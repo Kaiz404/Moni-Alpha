@@ -7,7 +7,8 @@
     ".": "./src/index.ts",
     "./calendar": "./src/calendar.ts",
     "./chart-range": "./src/chart-range.ts",
-    "./glossary": "./src/glossary.ts"
+    "./glossary": "./src/glossary.ts",
+    "./ledger": "./src/ledger.ts"
   },
   "dependencies": {
     "@repo/types": "workspace:*"

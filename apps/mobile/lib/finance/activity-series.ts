@@ -2,7 +2,7 @@ import type { CurrencyCode } from '@repo/types';
 
 import type { FinanceTransaction } from '@/lib/finance/types';
 import { deviceCalendar } from '@/lib/dates/device-calendar';
-import { addDays, dayOfMonth, firstDayOf, monthOf } from '@repo/core';
+import { addDays, countsAsCashFlow, dayOfMonth, firstDayOf, monthOf } from '@repo/core';
 
 export type MonthDay<V extends string> = { key: string; day: number } & Record<V, number>;
 
@@ -13,16 +13,6 @@ function monthDays(now: Date): { key: string; day: number }[] {
     key: addDays(first, index),
     day: index + 1,
   }));
-}
-
-/** Spending leaves out transfers, balance corrections and debt cash. */
-function isSpending(transaction: FinanceTransaction, currency: CurrencyCode): boolean {
-  return (
-    transaction.type === 'expense' &&
-    transaction.currency === currency &&
-    !transaction.analysisExcluded &&
-    !transaction.debtActivityId
-  );
 }
 
 /**
@@ -40,10 +30,8 @@ export function categoryMonths(
   for (const transaction of transactions) {
     if (
       !transaction.categoryId ||
-      transaction.type === 'transfer' ||
       transaction.currency !== currency ||
-      transaction.analysisExcluded ||
-      transaction.debtActivityId
+      !countsAsCashFlow(transaction)
     )
       continue;
     const i = index.get(deviceCalendar.dayKey(transaction.transactionDate));

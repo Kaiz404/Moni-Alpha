@@ -1,7 +1,7 @@
 import { transactions$, wallets$ } from '@/lib/store';
 import { getRecordValues } from '@/lib/store/helpers';
 import { decimalToMinor, addMinor, type MinorAmount } from '@repo/types';
-import { isTransactionRelevantToWallet, transactionDeltaMinor } from '@/lib/finance/ledger';
+import { touchesWallet, walletEffect } from '@repo/core';
 
 type TransactionBalanceRow = {
   wallet_id?: string | null;
@@ -31,12 +31,9 @@ export async function getWalletBalance(walletId: string): Promise<MinorAmount> {
 
   const txs = getRecordValues<TransactionBalanceRow>(transactions$)
     .map(toLedgerTransaction)
-    .filter((transaction) => isTransactionRelevantToWallet(transaction, walletId));
+    .filter((transaction) => touchesWallet(transaction, walletId));
 
-  return addMinor(
-    initialBalance,
-    ...txs.map((transaction) => transactionDeltaMinor(transaction, walletId)),
-  );
+  return addMinor(initialBalance, ...txs.map((transaction) => walletEffect(transaction, walletId)));
 }
 
 export async function getWalletBalances(walletIds: string[]): Promise<Record<string, MinorAmount>> {
@@ -60,14 +57,11 @@ export async function getWalletBalances(walletIds: string[]): Promise<Record<str
   for (const tx of txs) {
     const walletId = tx.walletId;
     if (walletId && walletIdSet.has(walletId)) {
-      balances[walletId] = addMinor(balances[walletId] ?? 0, transactionDeltaMinor(tx, walletId));
+      balances[walletId] = addMinor(balances[walletId] ?? 0, walletEffect(tx, walletId));
     }
     const transferTo = tx.transferToWalletId;
     if (transferTo && walletIdSet.has(transferTo)) {
-      balances[transferTo] = addMinor(
-        balances[transferTo] ?? 0,
-        transactionDeltaMinor(tx, transferTo),
-      );
+      balances[transferTo] = addMinor(balances[transferTo] ?? 0, walletEffect(tx, transferTo));
     }
   }
 

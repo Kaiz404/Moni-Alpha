@@ -3,19 +3,17 @@
  * The chat model only narrates this; it is shown only when the inputs can carry it.
  */
 import { minorToNumber, type MinorAmount, type RecurringOverride } from '@repo/types';
-import { transactionDeltaMinor } from '@/lib/finance/ledger';
 import type { FinanceWallet } from '@/lib/finance/types';
 import {
   CONFIDENT,
   detectRecurring,
-  isCashFlow,
   pickPayday,
   seriesDates,
   seriesKey,
   type FactsTransaction,
   type RecurringSeries,
 } from './recurring';
-import { addMonths, dayFromNumber, dayNumber } from '@repo/core';
+import { addMonths, countsAsCashFlow, dayFromNumber, dayNumber, walletEffect } from '@repo/core';
 import { deviceCalendar } from '@/lib/dates/device-calendar';
 
 export type FactsWallet = Pick<
@@ -94,7 +92,7 @@ export function balanceMinor(
   for (const tx of transactions) {
     if (new Date(tx.transactionDate) > asOf) continue;
     for (const id of new Set([tx.walletId, tx.transferToWalletId])) {
-      if (id && ids.has(id)) total += Number(transactionDeltaMinor(tx, id));
+      if (id && ids.has(id)) total += Number(walletEffect(tx, id));
     }
   }
   return total;
@@ -125,7 +123,7 @@ export function inUseWallets(
 /** Days since the first income or expense; transfers and debt activity don't count. */
 export function historyDays(transactions: readonly FactsTransaction[], today: number): number {
   const flowDays = transactions
-    .filter(isCashFlow)
+    .filter(countsAsCashFlow)
     .map((tx) => deviceCalendar.dayNumber(tx.transactionDate));
   return flowDays.length ? today - Math.min(...flowDays) : 0;
 }
@@ -176,7 +174,7 @@ function irregularIncomeShare(
   let spent = 0;
   for (const tx of transactions) {
     const day = deviceCalendar.dayNumber(tx.transactionDate);
-    if (!isCashFlow(tx) || day < today - LOOKBACK_DAYS || day > today) continue;
+    if (!countsAsCashFlow(tx) || day < today - LOOKBACK_DAYS || day > today) continue;
     if (tx.type === 'expense') spent += Number(tx.amountMinor);
     else if (tx.type === 'income' && !trustedKeys.has(seriesKey(tx) ?? '')) {
       irregular += Number(tx.amountMinor);
@@ -195,7 +193,7 @@ function variableWindowMinor(
 ): Record<keyof typeof SPEND_PERCENTILES, number> {
   const daily = new Array<number>(lookback).fill(0);
   for (const tx of transactions) {
-    if (tx.type !== 'expense' || !isCashFlow(tx)) continue;
+    if (tx.type !== 'expense' || !countsAsCashFlow(tx)) continue;
     const key = seriesKey(tx);
     if (key && recurringKeys.has(key)) continue;
     const index = deviceCalendar.dayNumber(tx.transactionDate) - (today - lookback);

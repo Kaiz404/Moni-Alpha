@@ -65,11 +65,11 @@ describe('startOfDay', () => {
 });
 
 it('gives an unreadable instant no day instead of throwing', () => {
-  expect([kualaLumpur.dayKey('not a date'), kualaLumpur.monthKey(''), newYork.dayNumber(NaN)]).toEqual([
-    '',
-    '',
-    NaN,
-  ]);
+  expect([
+    kualaLumpur.dayKey('not a date'),
+    kualaLumpur.monthKey(''),
+    newYork.dayNumber(NaN),
+  ]).toEqual(['', '', NaN]);
 });
 
 it('refuses a zone the runtime does not know', () => {

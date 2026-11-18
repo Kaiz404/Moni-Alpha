@@ -1,11 +1,14 @@
 import type { RecurringOverride, UpcomingBill } from '@repo/types';
+import { detectRecurring, seriesKey, type FactsTransaction } from '@/lib/ai/facts/recurring';
 import {
-  detectRecurring,
-  isCashFlow,
-  seriesKey,
-  type FactsTransaction,
-} from '@/lib/ai/facts/recurring';
-import { addMonths, dayFromNumber, dayNumber, firstDayOf, monthOf, shiftMonth } from '@repo/core';
+  addMonths,
+  countsAsCashFlow,
+  dayFromNumber,
+  dayNumber,
+  firstDayOf,
+  monthOf,
+  shiftMonth,
+} from '@repo/core';
 import { deviceCalendar } from '@/lib/dates/device-calendar';
 
 /** Each series' latest payment, for the wallet it pays from and the category it lands in. */
@@ -14,7 +17,7 @@ export function lastPaymentBySeries<T extends FactsTransaction>(
 ): Map<string, T> {
   const latest = new Map<string, T>();
   for (const tx of transactions) {
-    if (!isCashFlow(tx)) continue;
+    if (!countsAsCashFlow(tx)) continue;
     const key = seriesKey(tx);
     if (!key) continue;
     const current = latest.get(key);
@@ -29,7 +32,7 @@ export function billPayments<T extends FactsTransaction>(
   key: string,
 ): T[] {
   return transactions
-    .filter((tx) => isCashFlow(tx) && seriesKey(tx) === key)
+    .filter((tx) => countsAsCashFlow(tx) && seriesKey(tx) === key)
     .sort((a, b) => b.transactionDate.localeCompare(a.transactionDate));
 }
 
@@ -44,7 +47,6 @@ export function selectUpcomingBills(
   overrides: readonly RecurringOverride[],
 ): UpcomingBill[] {
   const todayKey = deviceCalendar.dayKey(now);
-  const today = dayNumber(todayKey);
   const period = monthOf(todayKey);
   const monthStart = dayNumber(firstDayOf(period));
   const monthEnd = dayNumber(firstDayOf(shiftMonth(period, 1)));
@@ -53,7 +55,7 @@ export function selectUpcomingBills(
   const latest = lastPaymentBySeries(transactions);
   const paidThisMonth = new Set(
     transactions
-      .filter((tx) => isCashFlow(tx) && inMonth(deviceCalendar.dayNumber(tx.transactionDate)))
+      .filter((tx) => countsAsCashFlow(tx) && inMonth(deviceCalendar.dayNumber(tx.transactionDate)))
       .map((tx) => seriesKey(tx)),
   );
 

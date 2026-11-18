@@ -13,6 +13,8 @@ function tx(over: Partial<RoutineHistoryTransaction>): RoutineHistoryTransaction
     merchant: 'FamilyMart KLCC',
     locationLatitude: null,
     locationLongitude: null,
+    analysisExcluded: false,
+    debtActivityId: null,
     ...over,
   };
 }

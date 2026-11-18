@@ -5,7 +5,7 @@
 import type { MinorAmount, RecurringKind, RecurringOverride } from '@repo/types';
 import type { FinanceTransaction } from '@/lib/finance/types';
 import { merchantKey } from '../routine';
-import { addMonths, dayFromNumber, dayNumber, dayOfMonth } from '@repo/core';
+import { addMonths, countsAsCashFlow, dayFromNumber, dayNumber, dayOfMonth } from '@repo/core';
 import { deviceCalendar } from '@/lib/dates/device-calendar';
 
 export type FactsTransaction = Pick<
@@ -61,13 +61,6 @@ export function seriesKey(
   const merchant = merchantKey(tx.merchant);
   if (!merchant || (tx.type !== 'income' && tx.type !== 'expense')) return null;
   return `${tx.currency}|${tx.type}|${merchant}`;
-}
-
-/** Ledger rows that are the user's own money moving: no transfers, adjustments or debt mirrors. */
-export function isCashFlow(tx: FactsTransaction): boolean {
-  return (
-    (tx.type === 'income' || tx.type === 'expense') && !tx.analysisExcluded && !tx.debtActivityId
-  );
 }
 
 function cadenceOf(gap: number): Cadence | null {
@@ -160,7 +153,7 @@ export function detectRecurring(
   const today = deviceCalendar.dayNumber(now);
   const byKey = new Map<string, Occurrence[]>();
   for (const tx of transactions) {
-    if (!isCashFlow(tx) || new Date(tx.transactionDate) > now) continue;
+    if (!countsAsCashFlow(tx) || new Date(tx.transactionDate) > now) continue;
     const key = seriesKey(tx);
     if (!key) continue;
     const list = byKey.get(key) ?? [];

@@ -10,10 +10,16 @@ import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { spendIndex } from '@/lib/finance/spend-history';
 import { tid } from '@/lib/test-ids';
 
-import { countsAsSpend, type BudgetMonth } from '@/lib/finance/budget-month';
+import type { BudgetMonth } from '@/lib/finance/budget-month';
 import type { FinanceTransaction } from '@/lib/finance/types';
 import { leftLine } from '@/lib/finance/spent-summary';
-import { CHART_RANGES, type ChartRange, currencySymbol, monthName } from '@repo/core';
+import {
+  CHART_RANGES,
+  type ChartRange,
+  countsAsSpending,
+  currencySymbol,
+  monthName,
+} from '@repo/core';
 
 type Mode = 'pace' | 'daily';
 
@@ -65,7 +71,9 @@ export function SpentCard({
     [name, month.daysInMonth, month.budgetMinor, perDay],
   );
   const everSpent = useMemo(
-    () => transactions.some((transaction) => countsAsSpend(transaction, currency)),
+    () => transactions.some(
+        (transaction) => transaction.currency === currency && countsAsSpending(transaction),
+      ),
     [transactions, currency],
   );
   // The first-run hint only until there is spending or a budget; after that every range is one chart.

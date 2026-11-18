@@ -6,7 +6,6 @@ import {
   buildReport,
   changePhrase,
   comparisonFor,
-  countsAsIncome,
   readSpendingParams,
   spendingChange,
   spendingParams,
@@ -284,14 +283,6 @@ describe('spending params', () => {
     expect(readSpendingParams({}, '2026-11')).toBeNull();
     expect(readSpendingParams({ day: '2026-13-40' }, '2026-11')).toBeNull();
     expect(readSpendingParams({ month: '2026-10' }, '2026-11')).toBeNull();
-  });
-});
-
-describe('countsAsIncome', () => {
-  it('counts income only, leaving out corrections, debt cash and other currencies', () => {
-    expect(TRANSACTIONS.filter((row) => countsAsIncome(row, MYR)).map((row) => row.amountMinor)).toEqual(
-      [420000, 400000],
-    );
   });
 });
 

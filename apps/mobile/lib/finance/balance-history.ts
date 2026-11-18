@@ -1,6 +1,5 @@
-import { transactionDeltaMinor } from '@/lib/finance/ledger';
 import type { FinanceTransaction } from '@/lib/finance/types';
-import { type ChartRange, chartWindow, dayNumber, daysBetween } from '@repo/core';
+import { type ChartRange, chartWindow, dayNumber, daysBetween, walletEffect } from '@repo/core';
 import { deviceCalendar } from '@/lib/dates/device-calendar';
 
 /**
@@ -50,7 +49,7 @@ export function balanceIndex({
     for (const id of [transaction.walletId, transaction.transferToWalletId]) {
       const change = id ? changes.get(id) : undefined;
       if (!id || !change) continue;
-      const delta = Number(transactionDeltaMinor(transaction, id));
+      const delta = Number(walletEffect(transaction, id));
       if (day > today) {
         afterToday.set(id, afterToday.get(id)! + delta);
         continue;

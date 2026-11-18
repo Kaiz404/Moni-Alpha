@@ -23,7 +23,9 @@ describe('chartWindow', () => {
 
   it('starts from the day the zone is on', () => {
     const at = new Date('2026-10-31T20:00:00.000Z');
-    expect(chartRangeStart(createCalendar('Asia/Kuala_Lumpur').dayKey(at), '1m')).toBe('2026-11-01');
+    expect(chartRangeStart(createCalendar('Asia/Kuala_Lumpur').dayKey(at), '1m')).toBe(
+      '2026-11-01',
+    );
     expect(chartRangeStart(createCalendar('America/New_York').dayKey(at), '1m')).toBe('2026-10-01');
   });
 });

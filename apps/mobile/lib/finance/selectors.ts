@@ -3,7 +3,6 @@ import { addMinor, subtractMinor, type CurrencyCode, type MinorAmount } from '@r
 import { categories$ } from '@/lib/store';
 import { hideShadowedPresets } from './category-presets';
 import { toFinanceCategory } from './adapters';
-import { outstandingDebtBalanceMinor, transactionDeltaMinor } from './ledger';
 import { financeProjection$ } from './projection';
 import type {
   FinanceCategory,
@@ -12,7 +11,7 @@ import type {
   FinanceTransaction,
   FinanceWallet,
 } from './types';
-import { createCalendar } from '@repo/core';
+import { createCalendar, debtBalance, walletEffect } from '@repo/core';
 
 export type CurrencyTotal = {
   currency: CurrencyCode;
@@ -138,7 +137,7 @@ export function walletBalanceMinor$(walletId: string): Observable<MinorAmount> {
       wallet.initialBalanceMinor,
       ...ids.map((id) => {
         const transaction = financeProjection$.transactionsById[id].get();
-        return transaction ? transactionDeltaMinor(transaction, walletId) : (0 as MinorAmount);
+        return transaction ? walletEffect(transaction, walletId) : (0 as MinorAmount);
       }),
     );
   });
@@ -376,7 +375,7 @@ export function balanceLinesByCurrency(
     if (!relevant.length) points.push({ x: new Date(), yMinor: running });
     for (const transaction of relevant) {
       for (const walletId of transactionWalletIds(transaction).filter((id) => walletIds.has(id))) {
-        running = addMinor(running, transactionDeltaMinor(transaction, walletId));
+        running = addMinor(running, walletEffect(transaction, walletId));
       }
       points.push({
         x: new Date(transaction.transactionDate),
@@ -524,7 +523,7 @@ export function debtsWithBalance$(
       .filter((debt) => debt.userId === userId)
       .map((debt) => ({
         debt,
-        balanceMinor: outstandingDebtBalanceMinor(
+        balanceMinor: debtBalance(
           (financeProjection$.debtActivityIdsByDebt[debt.id].get() ?? [])
             .map((activityId) => financeProjection$.debtActivitiesById[activityId].get())
             .filter((activity): activity is NonNullable<typeof activity> => Boolean(activity)),

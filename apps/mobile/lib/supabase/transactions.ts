@@ -1,7 +1,6 @@
 import { isMigrated, transactions$, wallets$ } from '@/lib/store';
 import { getRecordValues, hasRow, patchRow } from '@/lib/store/helpers';
 import { getUserId } from '@/lib/supabase/client';
-import { isTransactionRelevantToWallet } from '@/lib/finance/ledger';
 import type {
   CreateTransaction,
   TransactionSource,
@@ -10,6 +9,7 @@ import type {
 import { decimalToMinor, minorToDecimal, updateTransactionSchema } from '@repo/types';
 import { randomUUID } from 'expo-crypto';
 import type { BalanceCorrection } from '@/lib/wallets/balance-correction';
+import { touchesWallet } from '@repo/core';
 
 type TransactionRow = {
   id: string;
@@ -100,7 +100,7 @@ export async function getTransactions(walletId?: string, limit: number = 100) {
   const transactions = rows.map(mapTransactionRow);
   return (
     walletId
-      ? transactions.filter((transaction) => isTransactionRelevantToWallet(transaction, walletId))
+      ? transactions.filter((transaction) => touchesWallet(transaction, walletId))
       : transactions
   ).slice(0, limit);
 }

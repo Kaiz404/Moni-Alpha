@@ -1,6 +1,14 @@
 import type { CurrencyCode, MinorAmount, UpcomingBill } from '@repo/types';
 
-import { dayOfMonth, daysInMonth, formatMoney, lastDayOf, monthOf, type MonthKey } from '@repo/core';
+import {
+  countsAsSpending,
+  dayOfMonth,
+  daysInMonth,
+  formatMoney,
+  lastDayOf,
+  type MonthKey,
+  monthOf,
+} from '@repo/core';
 
 import { deviceCalendar } from '@/lib/dates/device-calendar';
 import type {
@@ -66,16 +74,6 @@ export type BudgetMonthInput = {
   debts: readonly { debt: FinanceDebt; balanceMinor: MinorAmount }[];
 };
 
-/** Spending the Budget tab counts: the user's own expenses, not transfers or debt mirrors. */
-export function countsAsSpend(transaction: FinanceTransaction, currency: CurrencyCode): boolean {
-  return (
-    transaction.type === 'expense' &&
-    !transaction.analysisExcluded &&
-    !transaction.debtActivityId &&
-    transaction.currency === currency
-  );
-}
-
 /** Each day's spend for one month (index 0 is day 1) and where the line stops. */
 export function dailySpend(
   transactions: readonly FinanceTransaction[],
@@ -114,7 +112,7 @@ export function buildBudgetMonth(input: BudgetMonthInput): BudgetMonth {
   const { month, now, currency } = input;
   const spend = input.transactions.filter(
     (transaction) =>
-      countsAsSpend(transaction, currency) &&
+      transaction.currency === currency && countsAsSpending(transaction) &&
       deviceCalendar.monthKey(transaction.transactionDate) === month,
   );
   const { daily, throughDay, isCurrent } = dailySpend(spend, month, now);
@@ -282,7 +280,7 @@ export function spendMonths(
   const current = deviceCalendar.monthKey(now);
   const totals = new Map<MonthKey, number>([[current, 0]]);
   for (const transaction of transactions) {
-    if (!countsAsSpend(transaction, currency)) continue;
+    if (transaction.currency !== currency || !countsAsSpending(transaction)) continue;
     const month = deviceCalendar.monthKey(transaction.transactionDate);
     if (month > current) continue;
     totals.set(month, (totals.get(month) ?? 0) + Number(transaction.amountMinor));
@@ -341,7 +339,7 @@ export function monthSpend(
   return transactions
     .filter(
       (transaction) =>
-        countsAsSpend(transaction, currency) &&
+        transaction.currency === currency && countsAsSpending(transaction) &&
         (categoryId === undefined || transaction.categoryId === categoryId) &&
         deviceCalendar.monthKey(transaction.transactionDate) === month,
     )

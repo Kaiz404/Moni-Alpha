@@ -3,10 +3,8 @@ import { batch } from '@legendapp/state';
 import {
   createDebtActivityInputSchema,
   createDebtInputSchema,
-  addMinor,
   decimalToMinor,
   minorToDecimal,
-  subtractMinor,
   type Debt,
   type DebtActivity,
   type DebtActivityKind,
@@ -16,6 +14,7 @@ import {
 import { debtActivities$, debts$, transactions$, wallets$ } from '@/lib/store';
 import { getRecordValues, patchRow } from '@/lib/store/helpers';
 import { getUserId } from '@/lib/supabase/client';
+import { debtBalance, debtStatus } from '@repo/core';
 
 type DebtRow = {
   id: string;
@@ -82,41 +81,6 @@ function mapActivity(row: ActivityRow): DebtActivity {
   };
 }
 
-export function outstandingDebtBalance(
-  activities: Array<Pick<DebtActivity, 'kind' | 'amountMinor'>>,
-): MinorAmount {
-  return addMinor(
-    ...activities.map((activity) =>
-      activity.kind === 'principal' ? activity.amountMinor : subtractMinor(0, activity.amountMinor),
-    ),
-  );
-}
-
-export function debtDueState(
-  debt: Pick<Debt, 'status' | 'dueDate'>,
-  balance: MinorAmount,
-  today = new Date(),
-  timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC',
-): 'open' | 'due_soon' | 'overdue' | 'settled' | 'written_off' {
-  if (debt.status === 'written_off') return 'written_off';
-  if (balance <= 0) return 'settled';
-  if (!debt.dueDate) return 'open';
-  const parts = new Intl.DateTimeFormat('en-CA', {
-    timeZone: timezone,
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  }).formatToParts(today);
-  const current = Object.fromEntries(parts.map((part) => [part.type, part.value]));
-  const todayKey = `${current.year}-${current.month}-${current.day}`;
-  const days = Math.round(
-    (Date.parse(`${debt.dueDate}T00:00:00Z`) - Date.parse(`${todayKey}T00:00:00Z`)) / 86400000,
-  );
-  if (days < 0) return 'overdue';
-  if (days <= 7) return 'due_soon';
-  return 'open';
-}
-
 export async function getDebts(): Promise<Debt[]> {
   const userId = await getUserId();
   if (!userId) return [];
@@ -174,13 +138,6 @@ function cashDescription(
   return outgoing ? `Repayment to ${counterparty}` : `Repayment from ${counterparty}`;
 }
 
-function debtStatus(debt: Debt, nextActivities: DebtActivity[]): Debt['status'] {
-  const balance = outstandingDebtBalance(nextActivities);
-  const latest = nextActivities.find((activity) => activity.kind === 'write_off');
-  const status: Debt['status'] = balance <= 0 ? (latest ? 'written_off' : 'settled') : 'open';
-  return status;
-}
-
 async function addActivity(
   debt: Debt,
   data: {
@@ -197,7 +154,7 @@ async function addActivity(
   if (!userId) throw new Error('Not authenticated');
   // No await from this read to the batch below, so two quick taps can't both pass the balance check.
   const activities = activitiesOf(userId, debt.id);
-  const currentBalance = outstandingDebtBalance(activities);
+  const currentBalance = debtBalance(activities);
   if ((data.kind === 'repayment' || data.kind === 'write_off') && data.amountMinor > currentBalance)
     throw new Error('Amount cannot exceed the outstanding balance');
   if (data.kind === 'write_off' && data.amountMinor !== currentBalance)
@@ -263,7 +220,7 @@ async function addActivity(
       });
     }
     patchRow(debts$, debt.id, {
-      status: debtStatus(debt, nextActivities),
+      status: debtStatus(nextActivities),
       updated_at: now,
     });
   });
@@ -274,7 +231,7 @@ async function addActivity(
 export async function refreshDebtStatus(debtId: string): Promise<void> {
   const debt = await getDebtById(debtId);
   if (!debt) return;
-  const status = debtStatus(debt, await getDebtActivities(debtId));
+  const status = debtStatus(await getDebtActivities(debtId));
   if (status !== debt.status) {
     patchRow(debts$, debtId, { status, updated_at: new Date().toISOString() });
   }
@@ -386,7 +343,7 @@ export async function writeOffDebt(debt: Debt, note?: string | null) {
   const activities = await getDebtActivities(debt.id);
   return addActivity(debt, {
     kind: 'write_off',
-    amountMinor: outstandingDebtBalance(activities),
+    amountMinor: debtBalance(activities),
     note,
   });
 }
@@ -407,7 +364,7 @@ export async function deleteDebtActivity(debt: Debt, activityId: string): Promis
         updated_at: now,
       });
     patchRow(debts$, debt.id, {
-      status: debtStatus(debt, remaining),
+      status: debtStatus(remaining),
       updated_at: now,
     });
   });
