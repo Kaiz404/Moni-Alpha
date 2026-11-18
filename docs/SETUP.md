@@ -59,6 +59,9 @@ EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_...
 # Android emulator: http://10.0.2.2:8080 — physical device: use ngrok URL from `pnpm --filter backend dev`
 EXPO_PUBLIC_AI_API_URL=https://slang-compound-landmass.ngrok-free.dev
 EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID=<web-client-id>.apps.googleusercontent.com
+# The web app's privacy policy page, linked from the notification access sheet. Unset hides the link.
+# The production domain is not chosen yet; a store build needs it.
+EXPO_PUBLIC_PRIVACY_POLICY_URL=https://<web-app-domain>/privacy
 # Native Maps SDK keys. Do not commit real values.
 ANDROID_GOOGLE_MAPS_API_KEY=<android-maps-key>
 # IOS_GOOGLE_MAPS_API_KEY=<ios-maps-key>
@@ -245,6 +248,7 @@ In **Repository → Settings → Secrets and variables → Actions**, add:
 | Variable | `EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Mobile client configuration, when CI needs it.                                                |
 | Variable | `EXPO_PUBLIC_AI_API_URL`               | Mobile client configuration, when CI needs it.                                                |
 | Variable | `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID`     | Mobile client configuration, when CI needs it.                                                |
+| Variable | `EXPO_PUBLIC_PRIVACY_POLICY_URL`       | Mobile client configuration, when CI needs it.                                                |
 
 `EXPO_PUBLIC_*` values are compiled into the client app and must never contain private credentials. The Android workflow injects the listed variables so its generated app configuration matches local development.
 

@@ -12,7 +12,6 @@ import {
 } from '@/components/wallets/notification-source';
 import { labelForNotificationPackage } from '@/constants/notification-apps';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
-import { NOTIFICATION_ACCESS_DISCLOSURE } from '@/lib/notifications/permission';
 import { openSheet } from '@/lib/sheet/sheet-store';
 import { tid } from '@/lib/test-ids';
 import type { WalletAlertLink } from '@/lib/wallets/wallet-link';
@@ -60,7 +59,7 @@ export function WalletNotificationLinkSection({
           Let Moni read alerts
         </Text>
         <Text className="text-[13px] leading-[18px] text-muted">
-          Turn on notification access before linking an app. {NOTIFICATION_ACCESS_DISCLOSURE}
+          Turn on notification access before linking an app.
         </Text>
       </View>
     </Press>

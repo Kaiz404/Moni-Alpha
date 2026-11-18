@@ -55,26 +55,16 @@ export function rebindListenerIfUnbound(now = Date.now()): boolean {
   }
 }
 
-/**
- * Google Play wants this in the app right before access is asked for. Both halves must stay true:
- * `isOneTimeCode` holds the first, and run-extraction sends the rest to the Go backend's model.
- */
-export const NOTIFICATION_ACCESS_DISCLOSURE =
-  'One-time codes never leave this phone, and other payment alerts from the apps you link go to a cloud AI model that reads them.';
-
 export function openNotificationListenerSettings(): void {
   if (Platform.OS !== 'android') return;
   MoniAndroidApps.openListenerSettings?.();
 }
 
-/** The way to ask for access. Android's settings page says nothing about what Moni does with it. */
+/**
+ * The way to ask for access. Android's settings page says nothing about what Moni does with it,
+ * so Google Play wants the disclosure sheet first and an affirmative tap.
+ */
 export async function askForNotificationAccess(): Promise<void> {
-  const confirmed = await openSheet({
-    kind: 'confirm',
-    title: 'Let Moni read alerts?',
-    message: NOTIFICATION_ACCESS_DISCLOSURE,
-    confirmLabel: 'Open settings',
-    cancelLabel: 'Not now',
-  });
+  const confirmed = await openSheet({ kind: 'notificationAccess' });
   if (confirmed) openNotificationListenerSettings();
 }
