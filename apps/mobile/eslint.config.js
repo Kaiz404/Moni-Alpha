@@ -41,6 +41,15 @@ module.exports = defineConfig([
           ],
         },
       ],
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector:
+            "Property[key.name=/^(backgroundColor|borderColor|color)$/] > LogicalExpression[operator='??'][right.type='Identifier'][right.name='undefined']",
+          message:
+            "An inline colour of undefined still overrides the className's colour and paints nothing. Leave the key out when there is no colour: style={c ? { backgroundColor: c } : undefined}.",
+        },
+      ],
     },
   },
 ]);

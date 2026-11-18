@@ -53,7 +53,7 @@ export function SoftBubble({
   return (
     <View
       className={`items-center justify-center overflow-hidden rounded-full ${typeof tint === 'object' ? (color ? '' : 'bg-sand') : FILL[tint]}`}
-      style={{ width: size, height: size, backgroundColor: color ?? undefined }}
+      style={color ? { width: size, height: size, backgroundColor: color } : { width: size, height: size }}
     >
       {icon === 'moni' ? (
         <MoniGlyph

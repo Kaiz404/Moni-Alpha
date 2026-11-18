@@ -167,10 +167,11 @@ export function WhatYouBought({
           <View
             key={part.categoryId ?? 'none'}
             className={`rounded-full ${part.look.color ? '' : 'bg-hairline'}`}
-            style={{
-              flex: part.totalMinor,
-              backgroundColor: part.look.color ?? undefined,
-            }}
+            style={
+              part.look.color
+                ? { flex: part.totalMinor, backgroundColor: part.look.color }
+                : { flex: part.totalMinor }
+            }
           />
         ))}
       </View>
