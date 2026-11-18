@@ -309,6 +309,7 @@ describe('Capture log clearing', () => {
     await act(async () => sheet.settle(true));
     expect(storage.getString(KEY)).toBeUndefined();
     expect(screen.getByText('Nothing captured yet')).toBeTruthy();
+    expect(screen.getByLabelText('Moni, sleepy')).toBeTruthy();
     expect(screen.getByText('Capture log cleared')).toBeTruthy();
     expect(screen.queryByTestId('capture-log.clear-all')).toBeNull();
   });
@@ -330,6 +331,7 @@ describe('A Capture log that cannot be read', () => {
     storage.set(KEY, DAMAGED);
     show();
     expect(screen.getByText("Couldn't read the Capture log")).toBeTruthy();
+    expect(screen.queryByLabelText(/^Moni/)).toBeNull();
     expect(screen.queryByText('Nothing captured yet')).toBeNull();
     expect(storage.getString(KEY)).toBe(DAMAGED);
   });

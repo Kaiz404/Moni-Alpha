@@ -280,7 +280,7 @@ export default function CaptureLogScreen() {
         ) : total === 0 ? (
           <View className="gap-3">
             <EmptyTile
-              icon="bell-outline"
+              mood="sleepy"
               title="Nothing captured yet"
               body={
                 appNames.length > 0

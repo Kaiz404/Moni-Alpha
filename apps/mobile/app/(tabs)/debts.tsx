@@ -159,7 +159,7 @@ function RecordDebtCard() {
 function NoDebtsTile() {
   return (
     <EmptyTile
-      icon="handshake-outline"
+      mood="happy"
       title="No debts yet"
       body="Lent a friend money, or they covered you? Note it here. Moni shows who owes who."
       action={{

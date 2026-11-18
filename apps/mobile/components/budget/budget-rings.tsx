@@ -122,7 +122,7 @@ export function BudgetRings({
         </View>
       ) : (
         <EmptyTile
-          icon="chart-box"
+          mood="thinking"
           title="No budgets yet"
           body={emptyBody}
           action={{
