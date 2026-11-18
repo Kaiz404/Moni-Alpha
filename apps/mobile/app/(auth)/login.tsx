@@ -3,8 +3,12 @@ import { useReducer, useRef, useState } from 'react';
 import { ScrollView, TextInput, View } from 'react-native';
 
 import { AuthField } from '@/components/auth/auth-field';
+import { Lockup } from '@/components/brand/lockup';
 import { GoogleSignInButton } from '@/components/auth/google-sign-in-button';
-import { LoginError, LoginNotice } from '@/components/auth/login-notice';
+import {
+  LoginError,
+  LoginNotice,
+} from '@/components/auth/login-notice';
 import { Button } from '@/components/ui/button';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Page } from '@/components/ui/page';
@@ -62,12 +66,23 @@ export default function LoginScreen() {
     dispatch({ type: 'started', via: 'password' });
     const address = email.trim();
     if (creating) {
-      const { error, session } = await signUp(address, password, name.trim());
+      const { error, session } = await signUp(
+        address,
+        password,
+        name.trim(),
+      );
       if (error) {
-        dispatch({ type: 'passwordFailed', message: error.message, email: address });
+        dispatch({
+          type: 'passwordFailed',
+          message: error.message,
+          email: address,
+        });
       } else if (!session) {
         setPassword('');
-        dispatch({ type: 'accountNeedsConfirmation', email: address });
+        dispatch({
+          type: 'accountNeedsConfirmation',
+          email: address,
+        });
       } else {
         dispatch({ type: 'signedIn' });
         router.replace('/(tabs)');
@@ -76,7 +91,11 @@ export default function LoginScreen() {
     }
     const { error } = await signIn(address, password);
     if (error) {
-      dispatch({ type: 'passwordFailed', message: error.message, email: address });
+      dispatch({
+        type: 'passwordFailed',
+        message: error.message,
+        email: address,
+      });
       return;
     }
     dispatch({ type: 'signedIn' });
@@ -105,13 +124,11 @@ export default function LoginScreen() {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        <View className="gap-0.5">
-          <Text
-            className="text-[40px] leading-[40px] font-display-bold text-foreground"
-            accessibilityRole="header"
-          >
-            Moni
-          </Text>
+        <View className="gap-3">
+          <Lockup
+            kind="horizontal"
+            size={44}
+          />
           <Text
             variant="body"
             className="text-ink-2"
@@ -128,7 +145,9 @@ export default function LoginScreen() {
             options={MODES}
             value={mode}
             disabled={busy}
-            onChange={(next) => dispatch({ type: 'setMode', mode: next })}
+            onChange={(next) =>
+              dispatch({ type: 'setMode', mode: next })
+            }
           />
         </View>
 
@@ -177,7 +196,9 @@ export default function LoginScreen() {
             testID={tid('auth', 'password')}
             label="Password"
             icon="lock-outline"
-            placeholder={creating ? 'Choose a password' : 'Your password'}
+            placeholder={
+              creating ? 'Choose a password' : 'Your password'
+            }
             hint={creating ? 'At least 8 characters' : undefined}
             invalid={wrong}
             value={password}
@@ -199,7 +220,9 @@ export default function LoginScreen() {
                 className="h-11 w-11 items-center justify-center rounded-full"
               >
                 <IconSymbol
-                  name={showPassword ? 'eye-off-outline' : 'eye-outline'}
+                  name={
+                    showPassword ? 'eye-off-outline' : 'eye-outline'
+                  }
                   size={20}
                   color={tokens.ink2}
                 />
@@ -210,17 +233,24 @@ export default function LoginScreen() {
             <View className="-mt-2">
               <LoginError
                 message={
-                  status.kind === 'failed' ? status.message : WRONG_DETAILS
+                  status.kind === 'failed'
+                    ? status.message
+                    : WRONG_DETAILS
                 }
               />
             </View>
           ) : null}
           <Button
-            testID={tid('auth', creating ? 'create-account' : 'sign-in')}
+            testID={tid(
+              'auth',
+              creating ? 'create-account' : 'sign-in',
+            )}
             className="mt-2"
             label={creating ? 'Create account' : 'Sign in'}
             loading={busy && status.via === 'password'}
-            loadingLabel={creating ? 'Creating account…' : 'Signing in…'}
+            loadingLabel={
+              creating ? 'Creating account…' : 'Signing in…'
+            }
             disabled={busy && status.via === 'google'}
             onPress={() => void submit()}
           />
