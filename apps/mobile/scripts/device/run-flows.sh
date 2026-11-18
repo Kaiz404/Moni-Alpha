@@ -124,15 +124,25 @@ listener=$package/com.lesimoes.androidnotificationlistener.RNAndroidNotification
 adb shell cmd notification allow_listener "$listener" >/dev/null 2>&1 || true
 trap 'adb shell cmd notification disallow_listener "$listener" >/dev/null 2>&1 || true' EXIT
 
+pinned() { adb shell dumpsys activity activities 2>/dev/null | node "$here/overlays.mjs" parse; }
+pinned >"$run/overlays.txt" || true
+
 rc=0
 maestro test --device "$MONI_DEVICE_SERIAL" --no-reinstall-driver "${include[@]}" --exclude-tags "$(IFS=,; echo "${exclude[*]}")" \
   --format junit --output "$run/report.xml" --test-output-dir "$run/maestro" \
   -e "E2E_EMAIL=$email" -e "E2E_PASSWORD=$password" "${paths[@]}" >"$run/maestro.log" 2>&1 || rc=$?
 tail -n 20 "$run/maestro.log" >&2
+pinned >>"$run/overlays.txt" || true
+sort -u -o "$run/overlays.txt" "$run/overlays.txt"
+if [[ -s $run/overlays.txt ]]; then
+  echo "blacked out another app's floating window in the screenshots: $(tr '\n' ';' <"$run/overlays.txt")" >&2
+  node "$here/overlays.mjs" mask "$run/overlays.txt" "$run/maestro" || echo "masking the floating window failed" >&2
+fi
 
 if [[ -n $out ]]; then
   mkdir -p "$out"
   find "$run/maestro" -name '*.png' -exec cp {} "$out/" \; 2>/dev/null || true
+  cat "$run/overlays.txt" >>"$out/overlays.txt"
 fi
 cases=$(grep -o '<testcase ' "$run/report.xml" 2>/dev/null | wc -l)
 failed=$(grep -o '<failure' "$run/report.xml" 2>/dev/null | wc -l)

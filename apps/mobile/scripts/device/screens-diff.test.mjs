@@ -26,7 +26,7 @@ test('sorts screenshots into same, changed, missing and new, ignoring the status
   const r = await diffFolders(a, b, join(dir, 'out'));
   assert.deepEqual(r.same, ['home.png']);
   assert.deepEqual(r.changed.map((c) => c.name), ['budget.png']);
-  assert.equal(r.changed[0].fraction, 400 / (100 * 192));
+  assert.equal(r.changed[0].fraction, 400 / (100 * 190));
   assert.deepEqual(r.onlyBase, ['debts.png']);
   assert.deepEqual(r.onlyHead, ['chat.png']);
 });

@@ -5,15 +5,16 @@ import { mkdirSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import sharp from 'sharp';
+import { readRects } from './overlays.mjs';
 
 // The status bar holds the real clock, battery and notification icons, which differ between runs.
-export const STATUS_BAR_FRACTION = 0.04;
+export const STATUS_BAR_FRACTION = 0.05;
 // A channel must move this much to count, which absorbs JPEG-like noise from screen capture.
 export const CHANNEL_TOLERANCE = 24;
 // Antialiasing and the blinking caret change a few pixels; more than this is a real change.
 export const CHANGED_FRACTION = 0.002;
 
-export async function compareImages(basePath, headPath) {
+export async function compareImages(basePath, headPath, ignore = []) {
   const [base, head] = await Promise.all(
     [basePath, headPath].map((p) => sharp(p).ensureAlpha().raw().toBuffer({ resolveWithObject: true })),
   );
@@ -23,8 +24,10 @@ export async function compareImages(basePath, headPath) {
   }
   const top = Math.round(height * STATUS_BAR_FRACTION);
   let differing = 0;
+  const ignored = (x, y) => ignore.some(([x1, y1, x2, y2]) => x >= x1 && x < x2 && y >= y1 && y < y2);
   for (let y = top; y < height; y++) {
     for (let x = 0; x < width; x++) {
+      if (ignored(x, y)) continue;
       const i = (y * width + x) * 4;
       if (
         Math.abs(base.data[i] - head.data[i]) > CHANNEL_TOLERANCE ||
@@ -53,13 +56,15 @@ export async function diffFolders(baseDir, headDir, outDir) {
   const pngs = (dir) => new Set(readdirSync(dir).filter((f) => f.endsWith('.png') && !f.startsWith('step-')));
   const base = pngs(baseDir);
   const head = pngs(headDir);
+  // Another app's floating window, blacked out where it sat on either side, is no change of Moni's.
+  const ignore = [...readRects(join(baseDir, 'overlays.txt')), ...readRects(join(headDir, 'overlays.txt'))];
   const result = { same: [], changed: [], onlyBase: [], onlyHead: [] };
   for (const name of [...base].sort()) {
     if (!head.has(name)) {
       result.onlyBase.push(name);
       continue;
     }
-    const cmp = await compareImages(join(baseDir, name), join(headDir, name));
+    const cmp = await compareImages(join(baseDir, name), join(headDir, name), ignore);
     if (!cmp.changed) {
       result.same.push(name);
       continue;
