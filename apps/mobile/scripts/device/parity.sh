@@ -82,7 +82,8 @@ run_side() {
         rm -rf "${runs:?}/$area"
         "$wt/apps/mobile/scripts/device/run-areas.sh" --sha "$key" --out "$runs" "$area" || echo "head: flows failed in $area again"
       fi
-      [[ $side == head ]] || touch "$runs/$area/.done"
+      # A run the doctor stopped before any flow leaves no folder; that is no result to cache.
+      [[ $side == head || ! -d $runs/$area ]] || touch "$runs/$area/.done"
     done
     git -C "$wt" checkout -q -- apps/mobile/scripts/device
     git -C "$wt" clean -qfd -- apps/mobile/scripts/device
