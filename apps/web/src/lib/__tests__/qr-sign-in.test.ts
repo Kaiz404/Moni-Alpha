@@ -8,6 +8,7 @@ const showing: QrState = qrReducer(
   {
     type: 'started',
     start: {
+      requestId: '6f1c2a4e-8b3d-4c5f-9a7e-1d2b3c4d5e6f',
       pollSecret: 'secret',
       code: 'code-1',
       codeExpiresAt: '2026-11-19T10:01:00.000Z',

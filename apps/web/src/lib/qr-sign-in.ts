@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { qrPollResponseSchema, qrStartResponseSchema, type QrPollResponse, type QrStartResponse } from '@repo/types';
 
 /**
  * Sign in with your phone: the browser's half. `qr-start` opens a request, `qr-poll` answers with the
@@ -7,24 +7,11 @@ import { z } from 'zod';
  */
 export const POLL_MS = 3000;
 
-const startSchema = z.object({
-  pollSecret: z.string().min(1),
-  code: z.string().min(1),
-  codeExpiresAt: z.string().datetime(),
-  expiresAt: z.string().datetime(),
-});
+export type QrStart = QrStartResponse;
+export type QrPoll = QrPollResponse;
 
-const pollSchema = z.discriminatedUnion('status', [
-  z.object({ status: z.literal('waiting'), code: z.string().min(1), codeExpiresAt: z.string().datetime() }),
-  z.object({ status: z.literal('approved'), tokenHash: z.string().min(1) }),
-  z.object({ status: z.literal('expired') }),
-]);
-
-export type QrStart = z.infer<typeof startSchema>;
-export type QrPoll = z.infer<typeof pollSchema>;
-
-export const parseQrStart = (body: unknown): QrStart => startSchema.parse(body);
-export const parseQrPoll = (body: unknown): QrPoll => pollSchema.parse(body);
+export const parseQrStart = (body: unknown): QrStart => qrStartResponseSchema.parse(body);
+export const parseQrPoll = (body: unknown): QrPoll => qrPollResponseSchema.parse(body);
 
 export type QrState =
   | { kind: 'starting' }
