@@ -22,6 +22,7 @@ import { CapturesCard } from './captures-card';
 import { RevealText } from './reveal-text';
 import { InkCardLabel, useOnInk } from './ink-card';
 import {
+  countsAsSpending,
   dateLabel,
   type DayKey,
   dayOfMonth,
@@ -53,7 +54,7 @@ function useMonthDaily(createdAt: string, currency: string, categoryId: string |
       return null;
     const values = Array.from({ length: now.getDate() }, () => 0);
     for (const tx of transactions) {
-      if (tx.type !== 'expense' || tx.analysisExcluded || tx.currency !== currency) continue;
+      if (!countsAsSpending(tx) || tx.currency !== currency) continue;
       if (categoryId && tx.categoryId !== categoryId) continue;
       const date = new Date(tx.transactionDate);
       if (date.getFullYear() !== now.getFullYear() || date.getMonth() !== now.getMonth()) continue;

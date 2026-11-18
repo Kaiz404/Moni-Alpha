@@ -13,7 +13,7 @@ import {
   type FactsTransaction,
   type RecurringSeries,
 } from './recurring';
-import { addMonths, countsAsCashFlow, dayFromNumber, dayNumber, walletEffect } from '@repo/core';
+import { addMonths, countsAsCashFlow, countsAsSpending, dayFromNumber, dayNumber, walletEffect } from '@repo/core';
 import { deviceCalendar } from '@/lib/dates/device-calendar';
 
 export type FactsWallet = Pick<
@@ -193,7 +193,7 @@ function variableWindowMinor(
 ): Record<keyof typeof SPEND_PERCENTILES, number> {
   const daily = new Array<number>(lookback).fill(0);
   for (const tx of transactions) {
-    if (tx.type !== 'expense' || !countsAsCashFlow(tx)) continue;
+    if (!countsAsSpending(tx)) continue;
     const key = seriesKey(tx);
     if (key && recurringKeys.has(key)) continue;
     const index = deviceCalendar.dayNumber(tx.transactionDate) - (today - lookback);

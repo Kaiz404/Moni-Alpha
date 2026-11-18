@@ -2,7 +2,7 @@ import { addMinor, type CurrencyCode, type MinorAmount } from '@repo/types';
 
 import type { FinanceTransaction } from './types';
 import { deviceCalendar } from '@/lib/dates/device-calendar';
-import { addDays, dayOfMonth, monthOf, shortDate } from '@repo/core';
+import { addDays, countsAsSpending, dayOfMonth, monthOf, shortDate } from '@repo/core';
 
 /** Rows within this distance of a place's anchor belong to it. */
 export const PLACE_RADIUS_M = 150;
@@ -72,8 +72,7 @@ export function isAtPlace(place: LatLng, point: LatLng): boolean {
 
 function located(transaction: FinanceTransaction, currency: CurrencyCode): transaction is Located {
   return (
-    transaction.type === 'expense' &&
-    !transaction.analysisExcluded &&
+    countsAsSpending(transaction) &&
     transaction.currency === currency &&
     transaction.locationLatitude !== null &&
     transaction.locationLongitude !== null

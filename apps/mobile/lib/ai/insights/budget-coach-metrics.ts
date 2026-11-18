@@ -1,4 +1,5 @@
 /** Deterministic calendar-month budget metrics. Amounts become decimals only in the AI wire snapshot. */
+import { countsAsSpending } from '@repo/core';
 import { addMinor, minorToNumber, subtractMinor, type MinorAmount } from '@repo/types';
 import type { TxForMetrics } from './insight-metrics';
 
@@ -90,8 +91,7 @@ export function buildBudgetCoachSnapshot(
 
   for (const tx of transactions) {
     if (
-      tx.type !== 'expense' ||
-      tx.analysisExcluded ||
+      !countsAsSpending(tx) ||
       !tx.categoryId ||
       !inCalendarMonth(tx.transactionDate, year, month)
     )
