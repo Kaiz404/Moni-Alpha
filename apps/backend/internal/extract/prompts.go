@@ -94,22 +94,40 @@ Required:
 
 Best-effort (infer if possible, null if not):
 - type: "income" or "expense" (receipts are usually "expense")
-- merchant: the store/business name from the receipt
-- description: 2-4 sentences: what category of purchase this is, main items or departments, quantities or notable lines if readable. Avoid generic one-word answers.
-- category_hint: spending category (food, groceries, transport, health, entertainment, utilities, etc.)
+- merchant: the shop's everyday name, as a customer would say it. Drop company suffixes (Sdn Bhd, Bhd, Berhad, (M), Ltd), registration numbers, branch and outlet names, and the dots in initials: "MR. D.I.Y. (M) SDN. BHD." -> "Mr DIY", "FAMILYMART KLCC" or "FM Retail Sdn Bhd" -> "FamilyMart", "WATSONS Mid Valley" -> "Watsons". Prefer the brand printed at the top over the legal entity under it.
+- items: up to 5 of the receipt's product lines, in the printed order, each as 1 to 3 plain lowercase words saying what the thing is. Drop brands, codes, sizes, weights, quantities and prices: "PANTENE TRT 3MIN MIRACLE HFC 180ML" -> "hair treatment", "AC GLUE GUN 10-20W 0.7CM" -> "glue gun", "Milo Ais 400ml" -> "iced milo". Never list tax, service charge, rounding, discount, points or payment lines. Empty array when no product lines are readable.
+- description: null
+- category_hint: exactly one name from CATEGORIES, copied as written. Pick it from the shop and the items together.
 - occurred_at: the purchase date printed on the receipt as YYYY-MM-DD; null if unreadable or if the message has no TODAY line
 - item_count: how many items the receipt lists, as a whole number. Use the count the receipt prints ("6 items"), else count the product lines. Never count tax, service charge, rounding, discount or payment lines. Null if the document lists no items or the lines are unreadable.
 - confidence: number 0-1
 - reasoning: one short sentence explaining what you read from the receipt
 
 Rules:
-1. Return ONLY valid JSON with keys: amount, type, merchant, description, category_hint, occurred_at, item_count, confidence, reasoning. Do not include currency or wallet fields — the app assigns the user's default wallet and its currency.
+1. Return ONLY valid JSON with keys: amount, type, merchant, items, description, category_hint, occurred_at, item_count, confidence, reasoning. Do not include currency or wallet fields — the app assigns the user's default wallet and its currency.
 2. Prefer the final amount paid (including tax) — "Grand total", "Total due", "Payment amount", "Amount paid", "NETT TOTAL", "AMOUNT PAYABLE" — over subtotal before tax.
 3. If both a subtotal and a larger tax-inclusive total appear, use the TAX-INCLUSIVE / FINAL total — NOT the pre-tax subtotal.
 4. The merchant name is usually at the top of the receipt.
 5. Default type to "expense" for receipts.
 6. Ignore unrelated numbers (change given, loyalty points, unit prices without a clear line total).
-7. Receipt dates are usually day first (DD/MM/YYYY or DD-MM-YY). Use TODAY to pick the century for two-digit years. If the user message names a different date ("this was yesterday"), resolve it against TODAY instead.`
+7. Receipt dates are usually day first (DD/MM/YYYY or DD-MM-YY). Use TODAY to pick the century for two-digit years. If the user message names a different date ("this was yesterday"), resolve it against TODAY instead.
+
+CATEGORIES (expense names; for a refund or other income receipt use "Other Income"):
+- Food & Dining: restaurants, cafes, mamak, bubble tea, fast food, food delivery, convenience stores, supermarkets and groceries
+- Shopping: hardware, household and home goods, stationery, clothing, shoes, electronics, beauty and personal care, department stores, general retail
+- Healthcare: pharmacies (medicine, vitamins), clinics, hospitals, dental, optical
+- Transportation: petrol, parking, car service and repairs, ride-hailing, taxis
+- Transit: train, LRT, MRT, bus and ferry fares
+- Tolls: highway tolls
+- Housing: rent, utilities (electricity, water, internet, phone bills), home repairs and furniture
+- Entertainment: cinema, games, events, sports and hobbies
+- Education: school and course fees, books for study
+- Travel: hotels, flights, travel agents
+- Subscriptions: recurring plans and memberships
+- Gifts & Donations: gifts, charity, donations
+- Fees & Charges: bank fees, government fees, fines
+- Work: work supplies and business expenses
+- Other Expenses: only when nothing above fits`
 
 const notificationDetectionPrompt = `You are a strict notification transaction detector for a personal finance app.
 

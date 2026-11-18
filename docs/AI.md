@@ -147,6 +147,8 @@ Chat analyze (`POST /v1/chat/analyze`):
 
 Text and image requests also carry optional `clientNow` (device local time, RFC 3339 with offset) and `timezone` (IANA). Without them the backend sends no `TODAY` line and returns `occurredAt: null`, so older clients keep working.
 
+A receipt's `merchant` is the Shop or note line, the shop's everyday name and up to 4 items: `Mr DIY: hair treatment, glue gun, hook, glue stick`, or `... and 3 more` past four. The model returns the clean name and an `items` array; the backend joins them (`receiptNote` in `service.go`) and puts the full item list in `description`. Older app builds show the line with no change. The receipt prompt also names one category from a fixed list that matches the stored category catalogue (`Food & Dining`, `Shopping`, `Healthcare`, ...), so the client's name match finds it.
+
 `itemCount` is additive: the backend leaves the key out unless the model returned a whole number from 1 to 200, so a missing or garbage `item_count` never fails a receipt, and older app builds ignore the key.
 
 `type` is `income` | `expense` | `transfer`. Transfers use `walletId` as the source wallet and `transferToWalletId` as the destination (either may be `null` for user completion in the review UI). Receipt and notification extraction remain income/expense only on the wire (the client reads reloads and card payments itself, with no wire change); **text** extraction detects transfers (e.g. "move 500 from Maybank to savings").
@@ -187,7 +189,7 @@ Every request asks for `response_format: json_object`, disables reasoning (even 
 
 ### Model benchmark (2026-10-07)
 
-`pnpm --filter backend bench:llm` runs 29 labelled Malaysian cases (11 text, 14 notifications, 4 synthetic receipts) through the production extraction service per candidate model and writes a scorecard to `apps/backend/bench-results/` (gitignored). Setup, flags and the model list are in `apps/backend/README.md`. A pass means amount, type and every labelled field (currency, merchant, wallets) matched, or that a non-transaction was skipped. OpenRouter calls ran with reasoning disabled; even low effort used the whole 512-token budget on `qwen3.7-flash`.
+`pnpm --filter backend bench:llm` runs 30 labelled Malaysian cases (11 text, 14 notifications, 5 synthetic receipts) through the production extraction service per candidate model and writes a scorecard to `apps/backend/bench-results/` (gitignored). Setup, flags and the model list are in `apps/backend/README.md`. A pass means amount, type and every labelled field (currency, merchant, wallets) matched, or that a non-transaction was skipped. Receipts are also labelled with the right category names and the items their note must list. OpenRouter calls ran with reasoning disabled; even low effort used the whole 512-token budget on `qwen3.7-flash`.
 
 Full run, 3 runs per case, before the notification prompt accepted payments from any app:
 
@@ -244,7 +246,7 @@ Every extract and chat request is one [Langfuse](https://langfuse.com) trace, se
 - **Text transfer patterns:** deposits ("deposited cash to bank"), withdrawals, top-ups, and explicit "from X to Y" moves are transfers between wallets in `AVAILABLE_WALLETS` — not income. The model uses wallet names/types to infer direction (e.g. cash → bank for deposits).
 - **Notification rule:** each wallet may link any one launchable Android app (`notification_package` on `wallets`). Notifications from unlinked apps are captured for debug but not queued. Candidate wallets are narrowed by package before extraction; ambiguous same-app wallets may create proposals with `walletId: null` for review (`run-extraction.ts`).
 - **Notification prefilter stays on-device** (`apps/mobile/lib/notifications/notification-filter.core.js`): requires a money-amount signal AND a transfer signal before an LLM ever sees it. Test suite: `pnpm --filter moni test:notification-detection`.
-- **Receipt images:** Android ML Kit document scanner (`modules/moni-document-scanner`) → normalized ≤1024px JPEG (`lib/receipts/normalize-scan.ts`). `lib/ai/client/image-payload.ts` base64-encodes (defensive downscale fallback) or sends the Storage URL if already uploaded. User cancel / empty scan never reaches the queue. Backend extracts amount, merchant, description, and the item count only; mobile assigns the default wallet and its currency.
+- **Receipt images:** Android ML Kit document scanner (`modules/moni-document-scanner`) → normalized ≤1024px JPEG (`lib/receipts/normalize-scan.ts`). `lib/ai/client/image-payload.ts` base64-encodes (defensive downscale fallback) or sends the Storage URL if already uploaded. User cancel / empty scan never reaches the queue. Backend extracts amount, the Shop or note line, the item list, a catalogue category and the item count only; mobile assigns the default wallet and its currency.
 
 ## Chat routing (on-device)
 
