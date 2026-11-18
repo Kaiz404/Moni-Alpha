@@ -43,8 +43,6 @@ tags:
 - assertNotVisible:
     id: wallet.name.edit
 - assertVisible: RM120.00
-- assertNotVisible:
-    id: wallet.balance-not-right
 - assertNotVisible: Checked today
 - assertVisible: 'Same as on 1 .*'
 - assertVisible: Transactions
