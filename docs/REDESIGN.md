@@ -38,13 +38,13 @@ If a board contradicts these docs, the board is newer only if it was published a
 | Debts tab | `V2P-Debts`, `V2P-DebtDetail`, `V2P-DebtNew`, `V2P-DebtsEmpty`, `V2P-DebtSettle` | Debts as a tab: net position, coming up, people, per-person page, record a debt, settle | `(tabs)/debts.tsx`, `debt/*` |
 | Map | `XM-Places`, `XM-Detail`, `XM-Empty` | Where you spend (fixed place card), place detail, empty and location-off | `heatmap.tsx` |
 | Type | `XB-Type` | Decision record: Funnel Display for everything | font loading |
+| Brand | `XB-Brand9C`, `XB-Kit1-Guidelines`, `XB-Kit3-InApp` (`XB-Kit2-Assets` is marketing, not app) | Cat Pebble mascot, app icon, splash, notification icon, wordmark, and where the cat shows in the app (loud edges only, one cat per screen, no sparkles) | `components/brand/*`, `scripts/brand/*` (`pnpm --filter moni brand:assets`), `app.json` |
 
 Board titles on the canvas say which variant is the chosen one. Ignore any board not in this table.
 
 ## Ignore
 
 - The **Archive** page (since 18 Nov 2026) holds every rejected option. That covers the brand explorations that weren't picked (`XB-Characters`, `XB-CharacterLogo`, `XB-Languages`, `XB-Brand1`, `XB-Brand9`–`12`, `XB-Brand9B` and the older mascot rounds). It also has the rejected v2 options (Home B–F, Insights B/C, capture flows VB/VC, Sort/Stream/Deck, Heat/Hex/Map, Plan, Category detail, MoveMoney, AmountSheet, BudgetTab, Activity/TxnDetail VB, AskMoni VB) and the v1 and style exploration rows (`Hi-*`, `Flow-Map`, `StA*`, `StB*`, `StC*`).
-- The **v2 · Brand kit (locked)** row (`XB-Brand9C`, `XB-Kit1-Guidelines`, `XB-Kit2-Assets`, `XB-Kit3-InApp`) is the locked brand. The mascot is Cat Pebble, and "moni" is a plain wordmark. It is brand exploration only, so don't add the mascot, the icon or the new logo to the app until the owner asks.
 - **Research** page (`R-*`, `D-*`): background only.
 - **Inspiration**, **Design system (current app)** and **Take-home** pages: not part of v2.
 
@@ -91,7 +91,7 @@ The app builds the default for each. [`redesign/PLAN.md`](redesign/PLAN.md) ("Op
 
 - D1. "Left this month" subtracts bills and debts due, labelled "after bills and RM40 to Mei" (Home, Budget, and Activity's safe to spend a day).
 - D2. Budgets show as rings on the Budget tab.
-- D3. No reactions and no logging streak. The logo and mascot were locked on the canvas on 18 Nov 2026 (the Brand kit row), but they aren't in the app yet; wait for the owner to say so.
+- D3. No reactions and no logging streak. The brand (Cat Pebble, the wordmark, the icons) was locked on 18 Nov 2026 and is in the app, except onboarding, which the owner has not designed yet.
 - D4. Decided 16 Nov 2026: Home keeps the ask box only; the Moni header button is gone from Home and Activity.
 - D5. Debts hero tiles filter in place; Remind opens the Android share sheet.
 - D6. Decided 25 Oct 2026: Review keeps its history. "Recently reviewed" lists 30 days; rows older than 90 days are soft-deleted.
