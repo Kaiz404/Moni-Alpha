@@ -2,6 +2,7 @@ import {
   appendMessage,
   deleteThread,
   exportHistoryForApi,
+  keepUnchanged,
   type ChatMessage,
 } from '@/lib/ai/chat/messages';
 import { threadDay } from '@/lib/ai/chat/sessions';
@@ -79,5 +80,25 @@ describe('exportHistoryForApi', () => {
       '[10:07] q7',
       '[10:07] a7',
     ]);
+  });
+});
+
+describe('keepUnchanged', () => {
+  const first = user('lunch 12', at(12, 5));
+  const second = reply('RM12 on lunch', at(12, 6));
+
+  it('returns the shown thread itself when a re-read changed nothing', () => {
+    const shown = [first, second];
+    expect(keepUnchanged(shown, JSON.parse(JSON.stringify(shown)))).toBe(shown);
+  });
+
+  it('keeps unchanged messages and takes the new and changed ones from the re-read', () => {
+    const edited = { ...second, content: 'RM12.50 on lunch' };
+    const third = user('coffee 4', at(12, 9));
+    const next = keepUnchanged([first, second], JSON.parse(JSON.stringify([first, edited, third])));
+    expect(next[0]).toBe(first);
+    expect(next[1]).toEqual(edited);
+    expect(next[1]).not.toBe(second);
+    expect(next[2]).toEqual(third);
   });
 });

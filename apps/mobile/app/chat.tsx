@@ -1,4 +1,3 @@
-import { useValue } from '@legendapp/state/react';
 import {
   ExpoSpeechRecognitionModule,
   useSpeechRecognitionEvent,
@@ -6,7 +5,7 @@ import {
 } from 'expo-speech-recognition';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { FlatList, View } from 'react-native';
 import Animated, {
   Easing,
@@ -34,6 +33,7 @@ import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { buildAnswerSnapshot } from '@/lib/ai/chat/answer-snapshot';
 import {
   appendMessage,
+  keepUnchanged,
   listThreads,
   readThread,
   readTodayThread,
@@ -74,6 +74,109 @@ function dayTitle(day: string, now: Date): string {
 
 const MIC_EASE = { duration: 100, easing: Easing.bezier(0.23, 1, 0.32, 1) };
 
+const NOTHING_ASKED: ReadonlySet<string> = new Set();
+
+type ThreadProps = {
+  messages: ChatMessage[];
+  day: string;
+  /** How many of the oldest messages hide under "Earlier today" until tapped. */
+  folded: number;
+  onQuickReply: (option: QuickReplyOption, message: ChatMessage) => void;
+  onNoticed: (item: NoticedItem) => void;
+};
+
+/**
+ * The thread, apart from the composer so typing never re-renders it. Bubbles are memoised and
+ * keep their message objects across thread writes, so a new message renders only itself.
+ */
+const Thread = memo(function Thread({ messages, day, folded, onQuickReply, onNoticed }: ThreadProps) {
+  const tokens = useThemeTokens();
+  const [unfolded, setUnfolded] = useState(false);
+  const listRef = useRef<FlatList<ChatMessage>>(null);
+  const contentHeight = useRef(0);
+  const listHeight = useRef(0);
+  // Not FlatList.scrollToEnd: it reckons the end from the last cell's measured height, which lags the
+  // content size when a tall card arrives, and it stops with that card under the composer.
+  const scrollThreadToEnd = (animated: boolean) =>
+    listRef.current?.scrollToOffset({
+      offset: Math.max(contentHeight.current - listHeight.current, 0),
+      animated,
+    });
+
+  const hidden = unfolded ? 0 : Math.min(folded, messages.length);
+  const shown = useMemo(() => messages.slice(hidden), [messages, hidden]);
+  const asked = useMemo(
+    () => new Set(messages.flatMap((message) => (message.kind === 'user_text' ? [message.content] : []))),
+    [messages],
+  );
+  const renderItem = useCallback(
+    ({ item }: { item: ChatMessage }) => (
+      <MessageBubble
+        message={item}
+        asked={item.kind === 'assistant_noticed' ? asked : NOTHING_ASKED}
+        onQuickReply={onQuickReply}
+        onNoticed={onNoticed}
+      />
+    ),
+    [asked, onQuickReply, onNoticed],
+  );
+
+  return (
+    <FlatList
+      ref={listRef}
+      data={shown}
+      keyExtractor={(item) => item.id}
+      keyboardShouldPersistTaps="handled"
+      contentContainerClassName="grow justify-end px-5 pb-3 pt-1"
+      onContentSizeChange={(_width, height) => {
+        contentHeight.current = height;
+        scrollThreadToEnd(true);
+      }}
+      onLayout={(event) => {
+        listHeight.current = event.nativeEvent.layout.height;
+        scrollThreadToEnd(false);
+      }}
+      ListHeaderComponent={
+        messages.length ? (
+          <View className="mb-3 gap-3">
+            <Text
+              variant="caps"
+              className="text-center text-muted"
+            >
+              {dayTitle(day, new Date())}
+            </Text>
+            {folded > 0 ? (
+              <Press
+                testID={tid('chat', 'earlier')}
+                accessibilityState={{ expanded: unfolded }}
+                onPress={() => setUnfolded((open) => !open)}
+                radius={{ rest: 22, pressed: 16 }}
+                className="min-h-11 flex-row items-center gap-2.5 border-[1.5px] border-hairline pl-3.5 pr-2"
+              >
+                <IconSymbol
+                  name="clock-outline"
+                  size={18}
+                  color={tokens.ink2}
+                />
+                <Text className="flex-1 text-[15px] leading-[20px] font-display-semibold text-foreground">
+                  {`Earlier today · ${folded} ${folded === 1 ? 'message' : 'messages'}`}
+                </Text>
+                <IconSymbol
+                  name={unfolded ? 'chevron-up' : 'chevron-down'}
+                  size={20}
+                  color={tokens.muted}
+                />
+              </Press>
+            ) : null}
+          </View>
+        ) : null
+      }
+      ItemSeparatorComponent={ThreadGap}
+      renderItem={renderItem}
+    />
+  );
+});
+
 export default function ChatScreen() {
   const tokens = useThemeTokens();
   const insets = useSafeAreaInsets();
@@ -95,28 +198,18 @@ export default function ChatScreen() {
     viewDay === today ? readTodayThread().messages : readThread(viewDay).messages,
   );
   const [firstRun] = useState(() => listThreads().length === 0);
-  const proposals = useValue(pendingProposals$(user?.id ?? null));
-  const folded = useRef(
-    isToday
-      ? foldedOnReopen(messages, new Set(proposals.map((proposal) => proposal.id)), new Date())
-      : 0,
-  );
-  const [unfolded, setUnfolded] = useState(false);
+  const folded = useRef<number | null>(null);
+  if (folded.current === null) {
+    const pending = pendingProposals$(user?.id ?? null).peek();
+    folded.current = isToday
+      ? foldedOnReopen(messages, new Set(pending.map((proposal) => proposal.id)), new Date())
+      : 0;
+  }
   const [input, setInput] = useState(params.draft ?? '');
   const [attachedImage, setAttachedImage] = useState<string | null>(null);
   // Who asked: a tap stays open until Done, and a hold ends with the finger.
   const [listening, setListening] = useState<'tap' | 'hold' | null>(null);
 
-  const listRef = useRef<FlatList<ChatMessage>>(null);
-  const contentHeight = useRef(0);
-  const listHeight = useRef(0);
-  // Not FlatList.scrollToEnd: it reckons the end from the last cell's measured height, which lags the
-  // content size when a tall card arrives, and it stops with that card under the composer.
-  const scrollThreadToEnd = (animated: boolean) =>
-    listRef.current?.scrollToOffset({
-      offset: Math.max(contentHeight.current - listHeight.current, 0),
-      animated,
-    });
   const inputRef = useRef(input);
   inputRef.current = input;
   const speechBase = useRef('');
@@ -127,9 +220,9 @@ export default function ChatScreen() {
 
   useEffect(() => {
     if (viewDay !== today) folded.current = 0;
-    setMessages(readThread(viewDay).messages);
+    setMessages((shown) => keepUnchanged(shown, readThread(viewDay).messages));
     return subscribeThreads((day) => {
-      if (day === viewDay) setMessages(readThread(day).messages);
+      if (day === viewDay) setMessages((shown) => keepUnchanged(shown, readThread(day).messages));
     });
   }, [viewDay, today]);
 
@@ -234,25 +327,28 @@ export default function ChatScreen() {
     ExpoSpeechRecognitionModule.stop();
   };
 
-  const onQuickReply = (option: QuickReplyOption, message: ChatMessage) => {
+  const onQuickReply = useCallback((option: QuickReplyOption, message: ChatMessage) => {
     if (message.kind !== 'assistant_clarify') return;
     withAi(() => void handleQuickReply(option, message.pendingContext, message.pendingImageUri));
-  };
+  }, [withAi]);
 
-  const onNoticed = (item: NoticedItem) => {
-    if (item.target.kind === 'ask') {
-      send(item.target.question);
-      return;
-    }
-    const first = proposals.find((proposal) => isAwaitingReview(proposal, new Date()));
-    if (first) router.push({ pathname: '/review', params: { id: first.id } });
-  };
-
-  const hidden = unfolded ? 0 : Math.min(folded.current, messages.length);
-  const shown = messages.slice(hidden);
-  const asked = new Set(
-    messages.flatMap((message) => (message.kind === 'user_text' ? [message.content] : [])),
+  const sendRef = useRef(send);
+  sendRef.current = send;
+  const userId = user?.id ?? null;
+  const onNoticed = useCallback(
+    (item: NoticedItem) => {
+      if (item.target.kind === 'ask') {
+        sendRef.current(item.target.question);
+        return;
+      }
+      const first = pendingProposals$(userId)
+        .peek()
+        .find((proposal) => isAwaitingReview(proposal, new Date()));
+      if (first) router.push({ pathname: '/review', params: { id: first.id } });
+    },
+    [userId],
   );
+
   const answered = messages.some(
     (m) => m.kind === 'assistant_card' || (m.kind === 'assistant_text' && m.status === 'done'),
   );
@@ -290,64 +386,12 @@ export default function ChatScreen() {
             mood={listening !== null ? 'listening' : 'neutral'}
           />
         ) : null}
-        <FlatList
-          ref={listRef}
-          data={shown}
-          keyExtractor={(item) => item.id}
-          keyboardShouldPersistTaps="handled"
-          contentContainerClassName="grow justify-end px-5 pb-3 pt-1"
-          onContentSizeChange={(_width, height) => {
-            contentHeight.current = height;
-            scrollThreadToEnd(true);
-          }}
-          onLayout={(event) => {
-            listHeight.current = event.nativeEvent.layout.height;
-            scrollThreadToEnd(false);
-          }}
-          ListHeaderComponent={
-            messages.length ? (
-              <View className="mb-3 gap-3">
-                <Text
-                  variant="caps"
-                  className="text-center text-muted"
-                >
-                  {dayTitle(viewDay, now)}
-                </Text>
-                {folded.current > 0 ? (
-                  <Press
-                    testID={tid('chat', 'earlier')}
-                    accessibilityState={{ expanded: unfolded }}
-                    onPress={() => setUnfolded((open) => !open)}
-                    radius={{ rest: 22, pressed: 16 }}
-                    className="min-h-11 flex-row items-center gap-2.5 border-[1.5px] border-hairline pl-3.5 pr-2"
-                  >
-                    <IconSymbol
-                      name="clock-outline"
-                      size={18}
-                      color={tokens.ink2}
-                    />
-                    <Text className="flex-1 text-[15px] leading-[20px] font-display-semibold text-foreground">
-                      {`Earlier today · ${folded.current} ${folded.current === 1 ? 'message' : 'messages'}`}
-                    </Text>
-                    <IconSymbol
-                      name={unfolded ? 'chevron-up' : 'chevron-down'}
-                      size={20}
-                      color={tokens.muted}
-                    />
-                  </Press>
-                ) : null}
-              </View>
-            ) : null
-          }
-          ItemSeparatorComponent={ThreadGap}
-          renderItem={({ item }) => (
-            <MessageBubble
-              message={item}
-              asked={asked}
-              onQuickReply={onQuickReply}
-              onNoticed={onNoticed}
-            />
-          )}
+        <Thread
+          messages={messages}
+          day={viewDay}
+          folded={folded.current}
+          onQuickReply={onQuickReply}
+          onNoticed={onNoticed}
         />
         {blank ? <StarterCards onStarter={setInput} /> : null}
         <ChatInputBar
