@@ -31,6 +31,9 @@ tags:
 - assertNotVisible:
     id: capture.location.accept
 - assertVisible: Food & Dining
-- assertNotVisible: Optional
+# Not assertNotVisible "Optional": Maestro also matches an input's hint, and the note keeps it once filled.
+- assertVisible:
+    id: capture.note
+    text: Mamak Ali
 - takeScreenshot: y4-place-offer-used
 - pressKey: Back
