@@ -4,8 +4,8 @@ import { Button } from '@/components/ui/button';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Text } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
-import { currencySymbol } from '@/lib/finance/format-money';
 import { tid } from '@/lib/test-ids';
+import { currencySymbol } from '@repo/core';
 
 export type EmptyReason = 'location-off' | 'no-places';
 

@@ -1,13 +1,16 @@
 import type { CurrencyCode } from '@repo/types';
 
-import { toLocalDateInput } from '@/lib/dates/local-date-input';
 import type { FinanceTransaction } from '@/lib/finance/types';
+import { deviceCalendar } from '@/lib/dates/device-calendar';
+import { addDays, dayOfMonth, firstDayOf, monthOf } from '@repo/core';
 
 export type MonthDay<V extends string> = { key: string; day: number } & Record<V, number>;
 
 function monthDays(now: Date): { key: string; day: number }[] {
-  return Array.from({ length: now.getDate() }, (_, index) => ({
-    key: toLocalDateInput(new Date(now.getFullYear(), now.getMonth(), index + 1)),
+  const today = deviceCalendar.dayKey(now);
+  const first = firstDayOf(monthOf(today));
+  return Array.from({ length: dayOfMonth(today) }, (_, index) => ({
+    key: addDays(first, index),
     day: index + 1,
   }));
 }
@@ -43,7 +46,7 @@ export function categoryMonths(
       transaction.debtActivityId
     )
       continue;
-    const i = index.get(toLocalDateInput(new Date(transaction.transactionDate)));
+    const i = index.get(deviceCalendar.dayKey(transaction.transactionDate));
     if (i === undefined) continue;
     const row = (daily[transaction.categoryId] ??= days.map(() => 0));
     row[i] += Number(transaction.amountMinor);

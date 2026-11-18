@@ -6,8 +6,8 @@ import type {
   HeatBucket,
   HeatDay,
 } from '@/lib/finance/calendar-heat';
-import { formatMoney } from '@/lib/finance/format-money';
 import { tid } from '@/lib/test-ids';
+import { formatMoney } from '@repo/core';
 
 const WEEKDAY_INITIALS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 const WEEKDAYS = [

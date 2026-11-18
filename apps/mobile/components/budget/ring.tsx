@@ -13,10 +13,10 @@ import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Press } from '@/components/ui/press';
 import { Text } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
-import { formatMoney } from '@/lib/finance/format-money';
 import { springs } from '@repo/design';
 import type { TestId } from '@/lib/test-ids';
 import { resolveTransactionIcon } from '@/lib/transactions/icon';
+import { formatMoney } from '@repo/core';
 
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 

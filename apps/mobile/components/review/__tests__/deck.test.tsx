@@ -10,12 +10,13 @@ import { fireGestureHandler, getByGestureTestId } from 'react-native-gesture-han
 
 import ReviewScreen from '@/app/review';
 import { toFinanceTransaction } from '@/lib/finance/adapters';
-import { buildBudgetMonth, monthKey } from '@/lib/finance/budget-month';
+import { buildBudgetMonth } from '@/lib/finance/budget-month';
 import { financeProjection$ } from '@/lib/finance/projection';
 import { EMPTY_FINANCE_PROJECTION } from '@/lib/finance/types';
 import { dismissSheet, getOpenSheet } from '@/lib/sheet/sheet-store';
 import { dismissToast, undoToast, useToast } from '@/lib/toast/toast-store';
 import { financeWallet } from '@/lib/wallets/__tests__/balance-fixture';
+import { deviceCalendar } from '@/lib/dates/device-calendar';
 
 let mockNextId = 0;
 let mockParams: { id?: string } = {};
@@ -302,7 +303,7 @@ describe('Review deck', () => {
     const spent = () => {
       const now = new Date();
       return buildBudgetMonth({
-        month: monthKey(now),
+        month: deviceCalendar.monthKey(now),
         now,
         currency: 'MYR' as CurrencyCode,
         transactions: ledger().flatMap((row) => toFinanceTransaction(row) ?? []),

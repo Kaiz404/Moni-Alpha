@@ -5,10 +5,10 @@ import { SIDE_WORDS } from '@/components/debts/debt-words';
 import { PersonAvatar } from '@/components/debts/person-avatar';
 import { Press } from '@/components/ui/press';
 import { Text } from '@/components/ui/text';
-import { formatDate } from '@/lib/dates/day-label';
 import type { DebtLine } from '@/lib/finance/debt-summary';
-import { formatMoney } from '@/lib/finance/format-money';
 import { tid } from '@/lib/test-ids';
+import { dateLabel, formatMoney } from '@repo/core';
+import { deviceCalendar } from '@/lib/dates/device-calendar';
 
 /** An open debt in the people list; the whole row opens the person's page. */
 export function PersonRow({ line }: { line: DebtLine }) {
@@ -49,7 +49,11 @@ export function PersonRow({ line }: { line: DebtLine }) {
           className="text-muted"
           numberOfLines={1}
         >
-          {words.started} {formatDate(line.startedAt)}
+          {words.started}{' '}
+          {dateLabel(
+            deviceCalendar.dayKey(line.startedAt),
+            deviceCalendar.dayKey(new Date()),
+          )}
         </Text>
       </View>
       <View className="items-end">

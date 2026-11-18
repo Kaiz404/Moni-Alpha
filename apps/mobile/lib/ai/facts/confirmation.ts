@@ -1,5 +1,4 @@
 import type { MinorAmount } from '@repo/types';
-import { dayNumber } from './days';
 import {
   MAX_BALANCE_AGE_DAYS,
   balanceMinor,
@@ -9,6 +8,7 @@ import {
   type FactsWallet,
 } from './forecast';
 import type { FactsTransaction } from './recurring';
+import { deviceCalendar } from '@/lib/dates/device-calendar';
 
 export type WalletToConfirm<W extends FactsWallet> = {
   wallet: W;
@@ -37,7 +37,7 @@ export function walletsNeedingConfirmation<W extends FactsWallet>(
       ).map((w) => w.id),
     ),
   );
-  const day = dayNumber(today);
+  const day = deviceCalendar.dayNumber(today);
   return wallets.flatMap((wallet) => {
     const daysSinceConfirmed = confirmedDaysAgo(wallet, day);
     if (

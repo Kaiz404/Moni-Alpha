@@ -1,4 +1,5 @@
-import { formatDay } from '@/lib/dates/day-label';
+import { dayLabel } from '@repo/core';
+import { deviceCalendar } from '@/lib/dates/device-calendar';
 
 /** Glossary time: lowercase with a space, `12:41 pm`. */
 export function clockTime(date: Date): string {
@@ -10,5 +11,5 @@ export function clockTime(date: Date): string {
 /** A capture's date field: `Today, 2:05 pm`, `Tue 13 Oct, 9:12 am`. */
 export function dayAndTime(iso: string, now: Date = new Date()): string {
   const date = new Date(iso);
-  return `${formatDay(date, now)}, ${clockTime(date)}`;
+  return `${dayLabel(deviceCalendar.dayKey(date), deviceCalendar.dayKey(now))}, ${clockTime(date)}`;
 }

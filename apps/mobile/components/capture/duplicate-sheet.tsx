@@ -13,9 +13,10 @@ import {
 } from '@/components/ui/transaction-row';
 import { clockTime } from '@/lib/capture/clock-time';
 import type { DuplicateCopy } from '@/lib/capture/type-duplicate';
-import { formatDay } from '@/lib/dates/day-label';
 import type { TransactionRowData } from '@/lib/transactions/row';
 import { tid } from '@/lib/test-ids';
+import { dayLabel } from '@repo/core';
+import { deviceCalendar } from '@/lib/dates/device-calendar';
 
 export type DuplicateHit = DuplicateCopy & {
   row: TransactionRowData;
@@ -59,7 +60,10 @@ export function DuplicateSheet({
 
   const at = new Date(hit.row.date);
   const meta =
-    formatDay(at) === 'Today' && hit.row.wallet
+    dayLabel(
+      deviceCalendar.dayKey(at),
+      deviceCalendar.dayKey(new Date()),
+    ) === 'Today' && hit.row.wallet
       ? `${clockTime(at)} · ${hit.row.wallet}`
       : rowMeta(hit.row, 'date');
 

@@ -36,7 +36,7 @@ import {
 } from './pace-geometry';
 import { DENSE_POINT_PX } from './scrub';
 
-export type { ChartMonth, DaySeries, PaceChartMode } from './pace-geometry';
+export type { DaySeries, PaceChartMode } from './pace-geometry';
 
 type Tokens = ReturnType<typeof useThemeTokens>;
 

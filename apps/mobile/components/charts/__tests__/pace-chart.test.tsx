@@ -14,7 +14,7 @@ jest.mock('uniwind', () => ({
   useCSSVariable: (names: string[]) => names.map(() => undefined),
 }));
 
-const october = { year: 2026, month: 9 };
+const october = '2026-10';
 // The V2H-Home sample: RM1,116.20 spent over 1 to 14 October.
 const spend = [
   1250, 7890, 12930, 12735, 7100, 13970, 9030, 7220, 4200, 15960, 7815, 4020,
@@ -124,7 +124,7 @@ describe('paceGeometry', () => {
   it('ends a past month on its last day instead of today', () => {
     const geometry = paceGeometry({
       mode: 'pace',
-      series: { month: { year: 2026, month: 8 }, values: Array.from({ length: 30 }, () => 1000) },
+      series: { month: '2026-09', values: Array.from({ length: 30 }, () => 1000) },
       budget,
       currency: 'MYR',
       width: 314,

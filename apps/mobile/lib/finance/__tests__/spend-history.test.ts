@@ -1,9 +1,9 @@
 import type { CurrencyCode, MinorAmount } from '@repo/types';
 
-import { toLocalDateInput } from '@/lib/dates/local-date-input';
-import { dateAt, rangeStartIndex } from '@/lib/finance/chart-range';
 import { spendBuckets, spendIndex, type SpendIndex } from '@/lib/finance/spend-history';
 import type { FinanceTransaction } from '@/lib/finance/types';
+import { addDays, rangeStartIndex } from '@repo/core';
+import { deviceCalendar } from '@/lib/dates/device-calendar';
 
 const now = new Date(2026, 10, 2, 12);
 const currency = 'MYR' as CurrencyCode;
@@ -23,9 +23,9 @@ function row(day: string, amount: number, extra: Partial<FinanceTransaction> = {
 
 /** The bars a range draws, as dates, with what each holds. */
 function bars(index: SpendIndex, range: '7d' | '90d' | '1y' | 'all') {
-  const from = rangeStartIndex(index.firstDay, now, range) ?? index.firstSpend;
+  const from = rangeStartIndex(index.firstDay, deviceCalendar.dayKey(now), range) ?? index.firstSpend;
   const buckets = spendBuckets(index, from);
-  const day = (at: number) => toLocalDateInput(dateAt(index.firstDay, at));
+  const day = (at: number) => addDays(index.firstDay, at);
   return {
     unit: buckets.unit,
     bars: Array.from(buckets.values.subarray(buckets.first), (spentMinor, at) => ({

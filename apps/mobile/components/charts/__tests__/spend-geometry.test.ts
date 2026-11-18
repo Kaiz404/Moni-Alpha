@@ -1,9 +1,9 @@
 import type { CurrencyCode, MinorAmount } from '@repo/types';
 
 import { spendReading, spendTarget } from '@/components/charts/spend-geometry';
-import type { ChartRange } from '@/lib/finance/chart-range';
 import { spendIndex } from '@/lib/finance/spend-history';
 import type { FinanceTransaction } from '@/lib/finance/types';
+import type { ChartRange } from '@repo/core';
 
 const now = new Date(2026, 9, 14, 12);
 const currency = 'MYR' as CurrencyCode;

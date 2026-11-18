@@ -1,10 +1,10 @@
-import { toLocalDateInput } from '@/lib/dates/local-date-input';
 import { placeLabel } from '@/lib/finance/places';
 import { placeColumns, type PlaceColumns } from '@/lib/places/coords';
 import type {
   EntryLocation,
   TransactionLocationSnapshot,
 } from '@/lib/transactions/prefetch-location';
+import { deviceCalendar } from '@/lib/dates/device-calendar';
 
 /**
  * Where a new entry says it happened. `auto` follows the phone's position where the wallet's
@@ -40,7 +40,7 @@ export type EntryPlaceInput = {
 export function phoneMayLocate(
   wallet: { recordLocation?: boolean } | null | undefined,
   localDate: string,
-  today: string = toLocalDateInput(new Date()),
+  today: string = deviceCalendar.dayKey(new Date()),
 ): boolean {
   return wallet?.recordLocation !== false && localDate === today;
 }

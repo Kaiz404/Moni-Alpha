@@ -23,12 +23,13 @@ import {
 } from './pairing-fixture';
 import { toFinanceTransaction } from '@/lib/finance/adapters';
 import { groupActivityDays } from '@/lib/finance/activity-filter';
-import { buildBudgetMonth, monthKey } from '@/lib/finance/budget-month';
+import { buildBudgetMonth } from '@/lib/finance/budget-month';
 import { walletBalanceForTest } from './wallet-balance';
 import { markCaptureStatus } from '@/lib/notifications/capture-status';
 import { undoPairing } from '@/lib/proposals/pairing';
 import { approve } from '@/lib/proposals/review-actions';
 import { listAwaitingReview } from '@/lib/supabase/proposed-transactions';
+import { deviceCalendar } from '@/lib/dates/device-calendar';
 
 let mockNextId = 0;
 jest.mock('expo-crypto', () => ({
@@ -320,7 +321,7 @@ describe('a credit-card bill payment', () => {
     const rows = ledgerRows().flatMap((row) => toFinanceTransaction(row) ?? []);
     const now = new Date(T0 + 60_000);
     const budget = buildBudgetMonth({
-      month: monthKey(now),
+      month: deviceCalendar.monthKey(now),
       now,
       currency: 'MYR' as CurrencyCode,
       transactions: rows,
@@ -427,7 +428,7 @@ describe('spending totals', () => {
 
     const rows = ledgerRows().flatMap((row) => toFinanceTransaction(row) ?? []);
     const budget = buildBudgetMonth({
-      month: monthKey(NOW),
+      month: deviceCalendar.monthKey(NOW),
       now: NOW,
       currency: MYR,
       transactions: rows,

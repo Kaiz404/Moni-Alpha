@@ -11,9 +11,6 @@ import { Text } from '@/components/ui/text';
 import { TintBubble, TransactionRowBody, rowAmount } from '@/components/ui/transaction-row';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { useAuth } from '@/lib/auth/auth-context';
-import { formatDayHeading } from '@/lib/dates/day-label';
-import { toLocalDateInput } from '@/lib/dates/local-date-input';
-import { formatSignedMoney } from '@/lib/finance/format-money';
 import { merchantName } from '@/lib/finance/merchant-name';
 import { financeProjection$ } from '@/lib/finance/projection';
 import { categoriesForUser$, walletsForUser$ } from '@/lib/finance/selectors';
@@ -29,6 +26,8 @@ import {
 import { tid } from '@/lib/test-ids';
 import { transactionRow, type RowLookups, type TransactionRowData } from '@/lib/transactions/row';
 import { compactWalletNames } from '@/lib/wallets/compact-name';
+import { dayHeading, formatSignedMoney } from '@repo/core';
+import { deviceCalendar } from '@/lib/dates/device-calendar';
 
 type Lookups = RowLookups & {
   aliases: ReturnType<typeof listMerchantAliases>;
@@ -88,10 +87,10 @@ export function historyGroups(
 ): HistoryGroup[] {
   const groups = new Map<string, HistoryGroup>();
   for (const proposal of reviewed) {
-    const key = toLocalDateInput(new Date(proposal.reviewedAt));
+    const key = deviceCalendar.dayKey(proposal.reviewedAt);
     const group = groups.get(key) ?? {
       key,
-      label: formatDayHeading(proposal.reviewedAt, now),
+      label: dayHeading(deviceCalendar.dayKey(proposal.reviewedAt), deviceCalendar.dayKey(now)),
       rows: [],
     };
     group.rows.push(historyRow(proposal, lookups, now));

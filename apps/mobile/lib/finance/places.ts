@@ -1,7 +1,8 @@
 import { addMinor, type CurrencyCode, type MinorAmount } from '@repo/types';
 
-import { toLocalDateInput } from '@/lib/dates/local-date-input';
 import type { FinanceTransaction } from './types';
+import { deviceCalendar } from '@/lib/dates/device-calendar';
+import { addDays, dayOfMonth, monthOf, shortDate } from '@repo/core';
 
 /** Rows within this distance of a place's anchor belong to it. */
 export const PLACE_RADIUS_M = 150;
@@ -52,21 +53,6 @@ export type PlaceFilter = {
 type Located = FinanceTransaction & { locationLatitude: number; locationLongitude: number };
 
 const EARTH_M = 6_371_000;
-const MONTHS = [
-  'January',
-  'February',
-  'March',
-  'April',
-  'May',
-  'June',
-  'July',
-  'August',
-  'September',
-  'October',
-  'November',
-  'December',
-];
-
 export function distanceM(a: LatLng, b: LatLng): number {
   const rad = Math.PI / 180;
   const dLat = (b.latitude - a.latitude) * rad;
@@ -140,7 +126,7 @@ function nameFor(rows: Located[]): { name: string; area: string | null } {
 
 function inSpan(transaction: FinanceTransaction, span: DaySpan | null | undefined): boolean {
   if (!span) return true;
-  const day = toLocalDateInput(new Date(transaction.transactionDate));
+  const day = deviceCalendar.dayKey(transaction.transactionDate);
   return day >= span.from && day <= span.to;
 }
 
@@ -187,7 +173,7 @@ export function groupPlaces(transactions: readonly FinanceTransaction[], filter:
       ...nameFor(anchor.members),
       totalMinor: addMinor(...counted.map((row) => row.amountMinor)),
       count: counted.length,
-      days: new Set(counted.map((row) => toLocalDateInput(new Date(row.transactionDate)))).size,
+      days: new Set(counted.map((row) => deviceCalendar.dayKey(row.transactionDate))).size,
       categories: [...byCategory.entries()]
         .map(([categoryId, totalMinor]) => ({ categoryId, totalMinor }))
         .sort((a, b) => b.totalMinor - a.totalMinor),
@@ -208,9 +194,9 @@ export function placesTotal(places: readonly Place[]): MinorAmount {
 
 /** The map ranges: rolling 7 and 30 days ending today, and every day. */
 export function placeRanges(now: Date): PlaceRange[] {
-  const today = toLocalDateInput(now);
+  const today = deviceCalendar.dayKey(now);
   const back = (days: number): DaySpan => ({
-    from: toLocalDateInput(new Date(now.getFullYear(), now.getMonth(), now.getDate() - (days - 1))),
+    from: addDays(today, -(days - 1)),
     to: today,
   });
   return [
@@ -227,12 +213,9 @@ export function placeRange(key: string | undefined, now: Date): PlaceRange {
 
 /** "1–14 Oct", or "28 Sep–4 Oct" across a month end. */
 export function spanLabel({ from, to }: DaySpan): string {
-  const [fy, fm, fd] = from.split('-').map(Number);
-  const [ty, tm, td] = to.split('-').map(Number);
-  const short = (m: number) => MONTHS[m - 1].slice(0, 3);
-  if (from === to) return `${td} ${short(tm)}`;
-  if (fy === ty && fm === tm) return `${fd}–${td} ${short(tm)}`;
-  return `${fd} ${short(fm)}–${td} ${short(tm)}`;
+  if (from === to) return shortDate(to);
+  if (monthOf(from) === monthOf(to)) return `${dayOfMonth(from)}–${shortDate(to)}`;
+  return `${shortDate(from)}–${shortDate(to)}`;
 }
 
 export type PlaceRegular = {

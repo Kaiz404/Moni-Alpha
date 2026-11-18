@@ -11,10 +11,6 @@ import { HoldHint } from '@/components/ui/hold-menu';
 import { Page, PageScroll, usePageContentTop } from '@/components/ui/page';
 import { Text } from '@/components/ui/text';
 import { TintBubble } from '@/components/ui/transaction-row';
-import { formatDate } from '@/lib/dates/day-label';
-import { parseLocalDateInput } from '@/lib/dates/local-date-input';
-import { monthKey, monthName, type MonthKey } from '@/lib/finance/budget-month';
-import { formatMoney } from '@/lib/finance/format-money';
 import { usePageNumber } from '@/lib/finance/paged';
 import {
   NO_CATEGORY_NAME,
@@ -28,12 +24,14 @@ import {
 import { tid } from '@/lib/test-ids';
 import { resolveTransactionIcon } from '@/lib/transactions/icon';
 import type { RowLookups } from '@/lib/transactions/row';
+import { dateLabel, formatMoney, type MonthKey, monthName, parseDayKey } from '@repo/core';
+import { deviceCalendar } from '@/lib/dates/device-calendar';
 
 /** A Budget row's payments, one page at a time. Sits under the Budget tab, not in Activity. */
 export default function SpendingScreen() {
   const params = useLocalSearchParams<SpendingParams>();
   const data = useBudgetData();
-  const link = readSpendingParams(params, monthKey(data.now));
+  const link = readSpendingParams(params, deviceCalendar.monthKey(data.now));
   if (!link)
     return (
       <Page
@@ -97,10 +95,10 @@ function Spending({
       ? (category?.name ?? NO_CATEGORY_NAME)
       : scope.kind === 'merchant'
         ? scope.name
-        : formatDate(parseLocalDateInput(scope.day) ?? now, now);
+        : dateLabel(parseDayKey(scope.day) ?? deviceCalendar.dayKey(now), deviceCalendar.dayKey(now));
   const year = month.slice(0, 4);
   const monthLabel =
-    year === monthKey(now).slice(0, 4) ? monthName(month) : `${monthName(month)} ${year}`;
+    year === deviceCalendar.monthKey(now).slice(0, 4) ? monthName(month) : `${monthName(month)} ${year}`;
   const meta = [
     scope.kind === 'day' ? null : monthLabel,
     scope.kind === 'merchant' ? categoryOf(scope.categoryId)?.name : null,

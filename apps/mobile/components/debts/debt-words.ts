@@ -1,5 +1,5 @@
-import { formatMoney } from '@/lib/finance/format-money';
 import type { DebtSide } from '@/lib/finance/debt-summary';
+import { formatMoney } from '@repo/core';
 
 /**
  * Every word that flips with who owes whom, in one table, so a screen never
@@ -72,14 +72,6 @@ export const SIDE_WORDS = {
       `You already owe ${name} ${amount}. This goes on ${name}'s page too.`,
   },
 } as const satisfies Record<DebtSide, unknown>;
-
-/** "In 6 days", "Tomorrow", "Today", "2 days late". */
-export function dueWords(daysLeft: number): string {
-  if (daysLeft > 1) return `In ${daysLeft} days`;
-  if (daysLeft === 1) return 'Tomorrow';
-  if (daysLeft === 0) return 'Today';
-  return daysLeft === -1 ? '1 day late' : `${-daysLeft} days late`;
-}
 
 /** Money on the Debts tab: "RM110" when it is whole ringgit, "RM25.50" when it is not. */
 export function debtMoney(minor: number, currency: string): string {

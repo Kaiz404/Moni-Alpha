@@ -12,25 +12,34 @@ import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import type { AnswerCard as Card, BillLine } from '@/lib/ai/chat/answer-cards';
 import type { ChatMessage } from '@/lib/ai/chat/messages';
 import { useAuth } from '@/lib/auth/auth-context';
-import { formatDate } from '@/lib/dates/day-label';
-import { parseLocalDateInput } from '@/lib/dates/local-date-input';
-import { formatMoney } from '@/lib/finance/format-money';
 import { useMainCurrency } from '@/lib/finance/main-currency';
 import { financeProjection$ } from '@/lib/finance/projection';
 import { transactions$ } from '@/lib/finance/selectors';
-import { debtPhrase, dueWhen } from '@/lib/finance/spent-summary';
+import { debtPhrase } from '@/lib/finance/spent-summary';
 import { tid } from '@/lib/test-ids';
 
 import { CapturesCard } from './captures-card';
 import { RevealText } from './reveal-text';
 import { InkCardLabel, useOnInk } from './ink-card';
+import {
+  dateLabel,
+  type DayKey,
+  dayOfMonth,
+  daysInMonth,
+  dueWhen,
+  formatMoney,
+  lastDayOf,
+  monthOf,
+  parseDayKey,
+  shortDate,
+} from '@repo/core';
+import { deviceCalendar } from '@/lib/dates/device-calendar';
 
 type CardMessage = Extract<ChatMessage, { kind: 'assistant_card' }>;
 
-/** "31 Oct": the last day of the month a question was asked in. */
-function monthEndLabel(asked: Date): string {
-  const end = new Date(asked.getFullYear(), asked.getMonth() + 1, 0);
-  return formatDate(end, asked).replace(/^\S+ /, '');
+/** "31 Oct": the last day of the month `day` is in. */
+function monthEndLabel(day: DayKey): string {
+  return shortDate(lastDayOf(monthOf(day)));
 }
 
 /** Spend per day this month in `currency`, for one category or all. */
@@ -51,7 +60,7 @@ function useMonthDaily(createdAt: string, currency: string, categoryId: string |
       if (date.getDate() > values.length) continue;
       values[date.getDate() - 1]! += Number(tx.amountMinor);
     }
-    return { month: { year: now.getFullYear(), month: now.getMonth() }, values };
+    return { month: deviceCalendar.monthKey(now), values };
   }, [transactions, createdAt, currency, categoryId]);
 }
 
@@ -105,16 +114,17 @@ function BillTimeline({
   const tokens = useThemeTokens();
   const onInk = useOnInk();
   const [width, setWidth] = useState(0);
-  const first = parseLocalDateInput(subject.dueDate);
+  const first = parseDayKey(subject.dueDate);
   if (!first) return null;
-  const endDay = new Date(first.getFullYear(), first.getMonth() + 1, 0).getDate();
+  const firstDay = dayOfMonth(first);
+  const endDay = daysInMonth(monthOf(first));
   const left = 23.8;
   const right = Math.max(width - 6, left);
   const x = (day: number) =>
-    endDay === first.getDate() ? left : left + ((day - first.getDate()) / (endDay - first.getDate())) * (right - left);
+    endDay === firstDay ? left : left + ((day - firstDay) / (endDay - firstDay)) * (right - left);
   const bars = ahead.flatMap((bill) => {
-    const date = parseLocalDateInput(bill.dueDate);
-    return date ? [{ ...bill, day: date.getDate() }] : [];
+    const date = parseDayKey(bill.dueDate);
+    return date ? [{ ...bill, day: dayOfMonth(date) }] : [];
   });
   const most = Math.max(...bars.map((bar) => bar.amount), 1);
   const height = (amount: number) => Math.max(6, (amount / most) * BAR_MAX);
@@ -125,7 +135,7 @@ function BillTimeline({
     null,
   );
   const dayLabels = [...new Set(others.map((bar) => bar.day))].filter(
-    (day) => day !== first.getDate() && x(endDay) - x(day) > 28,
+    (day) => day !== firstDay && x(endDay) - x(day) > 28,
   );
   const label = (key: string, center: number, top: number, text: string, strong: boolean) => (
     <View
@@ -179,7 +189,7 @@ function BillTimeline({
               />
             ))}
           </Svg>
-          {label('amount', x(first.getDate()), BASE_Y - height(subject.amount) - 19, formatMoney(subject.amount, currency), true)}
+          {label('amount', x(firstDay), BASE_Y - height(subject.amount) - 19, formatMoney(subject.amount, currency), true)}
           {biggest
             ? label(
                 'biggest',
@@ -189,7 +199,7 @@ function BillTimeline({
                 false,
               )
             : null}
-          {label('first', x(first.getDate()), 68, formatDate(first, asked).replace(/ \S+$/, ''), true)}
+          {label('first', x(firstDay), 68, dateLabel(first, deviceCalendar.dayKey(asked)).replace(/ \S+$/, ''), true)}
           {dayLabels.map((day) => label(`day-${day}`, x(day), 68, String(day), false))}
           <Text
             className={`absolute right-1.5 text-[12px] leading-[16px] ${onInk.meta}`}
@@ -395,7 +405,7 @@ function LedgerAnswer({ message, card }: { message: CardMessage; card: LedgerCar
     switch (answer.kind) {
       case 'category_spend':
         return answer.budget !== null && answer.spent > answer.budget
-          ? `Budget shows ${name} as over until ${monthEndLabel(at)}. If ${whole(answer.budget)} is too tight, change it there.`
+          ? `Budget shows ${name} as over until ${monthEndLabel(deviceCalendar.dayKey(at))}. If ${whole(answer.budget)} is too tight, change it there.`
           : null;
       case 'budget_progress':
         return answer.perDay !== null
@@ -409,7 +419,7 @@ function LedgerAnswer({ message, card }: { message: CardMessage; card: LedgerCar
           owed.reduce((sum, debt) => sum + Number(debt.amountMinor), 0);
         const people = debtPhrase(owed, money);
         const allows = answer.perDay ? ` Your ${whole(answer.perDay)} a day already allows for it.` : '';
-        return `${people ? `Bills and ${people}` : 'Bills'} come to ${formatMoney(total, money)} before ${monthEndLabel(at)}.${allows}`;
+        return `${people ? `Bills and ${people}` : 'Bills'} come to ${formatMoney(total, money)} before ${monthEndLabel(deviceCalendar.dayKey(at))}.${allows}`;
       }
     }
   }
@@ -428,6 +438,6 @@ function titleFor(card: LedgerCard, categoryName: string, currency: string, aske
         ? `${whole(-card.left)} over this month`
         : `${whole(card.left)} left for ${card.daysLeft} ${card.daysLeft === 1 ? 'day' : 'days'}`;
     case 'bill_due':
-      return `${card.name} takes ${formatMoney(card.amount, currency)} ${dueWhen(card.dueDate, asked)}`;
+      return `${card.name} takes ${formatMoney(card.amount, currency)} ${dueWhen(card.dueDate, deviceCalendar.dayKey(asked))}`;
   }
 }

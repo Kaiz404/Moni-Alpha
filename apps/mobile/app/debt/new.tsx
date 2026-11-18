@@ -24,7 +24,6 @@ import { Text } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { readAmount } from '@/lib/amount/amount-input';
 import type { DebtSide } from '@/lib/finance/debt-summary';
-import { formatMoney } from '@/lib/finance/format-money';
 import { useMainCurrency } from '@/lib/finance/main-currency';
 import { approve } from '@/lib/haptics';
 import { openSheet } from '@/lib/sheet/sheet-store';
@@ -37,6 +36,7 @@ import {
 import { tid } from '@/lib/test-ids';
 import { showToast } from '@/lib/toast/toast-store';
 import { compactWalletNames } from '@/lib/wallets/compact-name';
+import { formatMoney } from '@repo/core';
 
 const DIRECTIONS = ['owed_to_me', 'i_owe'] as const;
 

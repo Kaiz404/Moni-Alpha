@@ -10,7 +10,6 @@ import { Text } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import type { DraftOutcome } from '@/lib/ai/chat/messages';
 import { useAuth } from '@/lib/auth/auth-context';
-import { formatMoney, formatSignedMoney } from '@/lib/finance/format-money';
 import { useMainCurrency } from '@/lib/finance/main-currency';
 import { financeProjection$ } from '@/lib/finance/projection';
 import { walletsForUser$ } from '@/lib/finance/selectors';
@@ -31,6 +30,7 @@ import { resolveTransactionIcon } from '@/lib/transactions/icon';
 
 import { InkCardLabel, SoftBubble, useOnInk } from './ink-card';
 import { pickWallet } from './pick-wallet';
+import { formatMoney, formatSignedMoney } from '@repo/core';
 
 type Settled = DraftOutcome['kind'];
 

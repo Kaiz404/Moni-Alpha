@@ -11,13 +11,10 @@ import { Press } from '@/components/ui/press';
 import { StatusPill } from '@/components/ui/status-pill';
 import { Text } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
-import { formatDay } from '@/lib/dates/day-label';
-import {
-  formatMoney,
-  formatSignedMoney,
-} from '@/lib/finance/format-money';
 import type { TestId } from '@/lib/test-ids';
 import type { TransactionRowData } from '@/lib/transactions/row';
+import { dayLabel, formatMoney, formatSignedMoney } from '@repo/core';
+import { deviceCalendar } from '@/lib/dates/device-calendar';
 
 export type MetaLead = 'category' | 'date';
 
@@ -40,7 +37,7 @@ export function rowMeta(
     metaLead === 'category'
       ? (row.category ??
         (row.kind === 'income' ? 'Income' : 'No category'))
-      : formatDay(row.date, now);
+      : dayLabel(deviceCalendar.dayKey(row.date), deviceCalendar.dayKey(now ?? new Date()));
   return `${lead} · ${row.wallet ?? 'no wallet yet'}`;
 }
 

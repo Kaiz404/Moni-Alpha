@@ -5,8 +5,6 @@ import { Alert } from 'react-native';
 import { HoldMenu, type HoldAction, type HoldAnchor } from '@/components/ui/hold-menu';
 import { rowAmount, rowMeta, TransactionRowBody } from '@/components/ui/transaction-row';
 import { useAuth } from '@/lib/auth/auth-context';
-import { formatDate } from '@/lib/dates/day-label';
-import { formatMoney } from '@/lib/finance/format-money';
 import {
   budgetProgress$,
   categoriesForUser$,
@@ -19,6 +17,8 @@ import { ensureFinanceTimezone } from '@/lib/supabase/profile';
 import { deleteTransaction, updateTransaction } from '@/lib/supabase/transactions';
 import type { Screen } from '@/lib/test-ids';
 import type { TransactionRowData } from '@/lib/transactions/row';
+import { dateLabel, formatMoney } from '@repo/core';
+import { deviceCalendar } from '@/lib/dates/device-calendar';
 
 type Held = {
   transaction: FinanceTransaction;
@@ -106,7 +106,7 @@ export function useTransactionHold(screen: Screen): {
     const confirmed = await openSheet({
       kind: 'confirm',
       title: 'Delete this transaction?',
-      message: `${row.title} ${formatMoney(row.amountMinor, row.currency)} on ${formatDate(row.date)} comes out of ${month}${category ? ` and out of ${category}` : ''}.`,
+      message: `${row.title} ${formatMoney(row.amountMinor, row.currency)} on ${dateLabel(deviceCalendar.dayKey(row.date), deviceCalendar.dayKey(new Date()))} comes out of ${month}${category ? ` and out of ${category}` : ''}.`,
       confirmLabel: 'Delete',
       cancelLabel: 'Keep it',
       destructive: true,

@@ -12,7 +12,6 @@ import { InPlaceField, InPlaceGroup } from '@/components/ui/in-place-field';
 import { Press } from '@/components/ui/press';
 import { Text } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
-import { formatSignedMoney } from '@/lib/finance/format-money';
 import {
   cardFit,
   type EditField as EditFieldName,
@@ -22,6 +21,7 @@ import type { ReviewStatus } from '@/lib/proposals/review-status';
 import { tid } from '@/lib/test-ids';
 import { resolveTransactionIcon } from '@/lib/transactions/icon';
 import { TRANSACTION_TYPE_COPY } from '@/lib/transactions/type-change';
+import { formatSignedMoney } from '@repo/core';
 
 const FIELD = { merchant: tid('review', 'merchant'), amount: tid('review', 'amount') } as const;
 

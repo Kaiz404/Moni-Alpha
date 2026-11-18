@@ -16,13 +16,13 @@ import { walletBubbleTint } from '@/constants/wallet-card-styles';
 import { resolveWalletIcon } from '@/constants/wallet-form';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { useAuth } from '@/lib/auth/auth-context';
-import { formatMoney } from '@/lib/finance/format-money';
 import { useMainCurrency } from '@/lib/finance/main-currency';
 import { financeOverview$ } from '@/lib/finance/selectors';
 import type { FinanceWallet } from '@/lib/finance/types';
 import { wallets$ } from '@/lib/store';
 import { getRecordValues } from '@/lib/store/helpers';
 import { tid } from '@/lib/test-ids';
+import { formatMoney } from '@repo/core';
 
 /** Section name and the plural used in the "kept apart" note. */
 const CURRENCY_NAMES: Record<string, [string, string]> = {

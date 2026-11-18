@@ -10,13 +10,13 @@ import { Press } from '@/components/ui/press';
 import { Text } from '@/components/ui/text';
 import { TransactionRow } from '@/components/ui/transaction-row';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
-import { formatDayHeading } from '@/lib/dates/day-label';
 import { groupActivityDays, type ActivityDay } from '@/lib/finance/activity-filter';
-import { formatMoney } from '@/lib/finance/format-money';
 import { pageOf, type Page } from '@/lib/finance/paged';
 import type { FinanceTransaction } from '@/lib/finance/types';
 import { tid, type Screen, type TestId } from '@/lib/test-ids';
 import { transactionRow, type RowLookups, type TransactionRowData } from '@/lib/transactions/row';
+import { dayHeading, formatMoney } from '@repo/core';
+import { deviceCalendar } from '@/lib/dates/device-calendar';
 
 function dayTotal(day: ActivityDay, currency: string) {
   return [
@@ -171,7 +171,7 @@ export function PagedTransactions({
         {days.map((group) => (
           <ListItemMotion key={group.key}>
             <DayGroup
-              label={formatDayHeading(group.transactions[0].transactionDate, now)}
+              label={dayHeading(deviceCalendar.dayKey(group.transactions[0].transactionDate), deviceCalendar.dayKey(now))}
               total={totals.get(group.key) ?? ''}
             >
               {group.transactions.map((transaction) => {

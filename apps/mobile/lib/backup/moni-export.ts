@@ -1,8 +1,8 @@
 import { decimalToMinor, minorToDecimal } from '@repo/types';
 
-import { toLocalDateInput } from '@/lib/dates/local-date-input';
 
 import { textCell, valueCell } from './csv';
+import { deviceCalendar } from '@/lib/dates/device-calendar';
 
 export type RawRow = Record<string, unknown>;
 
@@ -143,7 +143,7 @@ export const TABLES: Record<TableName, { title: string; columns: Column[] }> = {
         header: 'Date',
         show: (row) => {
           const date = new Date(String(row.transaction_date));
-          return Number.isNaN(date.getTime()) ? null : toLocalDateInput(date);
+          return Number.isNaN(date.getTime()) ? null : deviceCalendar.dayKey(date);
         },
       },
       text('Timestamp', 'transaction_date'),
@@ -206,7 +206,7 @@ const byId = (rows: readonly RawRow[], nameField: string) =>
   new Map(rows.map((row) => [String(row.id), plain(row[nameField])]));
 
 export function exportFileName(now: Date): string {
-  return `moni-${toLocalDateInput(now)}.csv`;
+  return `moni-${deviceCalendar.dayKey(now)}.csv`;
 }
 
 /**

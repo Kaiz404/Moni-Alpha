@@ -60,6 +60,7 @@ import {
   buildSetAsideNotification,
   identifierFor,
 } from './review-notification.core.js';
+import { deviceCalendar } from '@/lib/dates/device-calendar';
 
 export { REVIEW_TASK, isOwnNotification } from './review-notification.core.js';
 
@@ -231,11 +232,6 @@ export async function postReviewNotification(proposalId: string): Promise<void> 
   }
 }
 
-function localDay(at = new Date()): string {
-  const pad = (n: number) => String(n).padStart(2, '0');
-  return `${at.getFullYear()}-${pad(at.getMonth() + 1)}-${pad(at.getDate())}`;
-}
-
 function readDigest(): AutoAddedDigest | null {
   try {
     const raw = storage.getString(DIGEST_KEY);
@@ -291,7 +287,7 @@ export async function postAutoAddedNotification(transactionId: string): Promise<
         currency: row.currency ?? 'MYR',
         type: row.type,
       },
-      localDay(),
+      deviceCalendar.dayKey(new Date()),
     ) as AutoAddedDigest;
     storage.set(DIGEST_KEY, JSON.stringify(digest));
     const categoryName =

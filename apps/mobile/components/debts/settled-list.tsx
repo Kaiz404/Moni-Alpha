@@ -16,9 +16,9 @@ import { Press } from '@/components/ui/press';
 import { Text } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import type { DebtLine } from '@/lib/finance/debt-summary';
-import { formatMoney } from '@/lib/finance/format-money';
 import { springs } from '@repo/design';
 import { tid } from '@/lib/test-ids';
+import { formatMoney } from '@repo/core';
 
 /** "Settled and written off": a hairline capsule with a count that opens the closed debts. */
 export function SettledList({

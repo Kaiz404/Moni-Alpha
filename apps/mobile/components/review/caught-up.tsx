@@ -6,9 +6,9 @@ import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Press } from '@/components/ui/press';
 import { Text } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
-import { monthKey } from '@/lib/finance/budget-month';
-import { formatMoney } from '@/lib/finance/format-money';
 import { tid } from '@/lib/test-ids';
+import { formatMoney } from '@repo/core';
+import { deviceCalendar } from '@/lib/dates/device-calendar';
 
 /**
  * Safe to spend a day before and after this session's approvals: RM24, an arrow, RM23 over
@@ -16,7 +16,7 @@ import { tid } from '@/lib/test-ids';
  */
 function useSafeToSpend(addedMinor: number) {
   const data = useBudgetData();
-  const { left } = useBudgetMonth(data, monthKey(data.now));
+  const { left } = useBudgetMonth(data, deviceCalendar.monthKey(data.now));
   if (!left || left.leftMinor <= 0) return null;
   const whole = (minor: number) => formatMoney(minor, data.currency, { whole: true });
   const before = Math.floor((left.leftMinor + addedMinor) / left.daysLeft / 100) * 100;

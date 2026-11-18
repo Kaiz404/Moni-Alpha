@@ -45,8 +45,6 @@ import { noticedItems } from '@/lib/ai/chat/noticed';
 import { handleQuickReply, sendChatMessage } from '@/lib/ai/chat/orchestrator';
 import { todayThreadDay } from '@/lib/ai/chat/sessions';
 import { useAuth } from '@/lib/auth/auth-context';
-import { formatDate } from '@/lib/dates/day-label';
-import { parseLocalDateInput } from '@/lib/dates/local-date-input';
 import { pendingProposals$ } from '@/lib/finance/selectors';
 import { scanAndNormalizeReceipt } from '@/lib/receipts/scan-receipt';
 import {
@@ -60,14 +58,16 @@ import {
 import { isAwaitingReview } from '@/lib/supabase/proposed-transactions';
 import { tid } from '@/lib/test-ids';
 import MoniAndroidApps from '@/modules/moni-android-apps';
+import { dateLabel, parseDayKey } from '@repo/core';
+import { deviceCalendar } from '@/lib/dates/device-calendar';
 
 function ThreadGap() {
   return <View className="h-3" />;
 }
 
 function dayTitle(day: string, now: Date): string {
-  const date = parseLocalDateInput(day) ?? now;
-  return day === todayThreadDay(now) ? `Today · ${formatDate(date, now)}` : formatDate(date, now);
+  const label = dateLabel(parseDayKey(day) ?? deviceCalendar.dayKey(now), deviceCalendar.dayKey(now));
+  return day === todayThreadDay(now) ? `Today · ${label}` : label;
 }
 
 const MIC_EASE = { duration: 100, easing: Easing.bezier(0.23, 1, 0.32, 1) };

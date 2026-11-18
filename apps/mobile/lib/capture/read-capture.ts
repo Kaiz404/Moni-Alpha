@@ -10,7 +10,6 @@ import {
   resolveOccurredAt,
 } from '@/lib/ai/occurred-at';
 import { matchRoutine, merchantKey } from '@/lib/ai/routine';
-import { formatMoney } from '@/lib/finance/format-money';
 import type {
   CaptureDraft,
   CaptureQuote,
@@ -23,6 +22,7 @@ import type {
   FinanceWallet,
 } from '@/lib/finance/types';
 import { compactWalletNames } from '@/lib/wallets/compact-name';
+import { formatMoney } from '@repo/core';
 
 export type ReadContext = {
   /** Main-currency wallets only: a live capture never lands in another currency. */

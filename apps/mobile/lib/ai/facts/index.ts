@@ -9,7 +9,6 @@ import {
   type RecurringKind,
   type RecurringOverride,
 } from '@repo/types';
-import { dayKey } from './days';
 import {
   balanceMinor,
   forecastCurrency,
@@ -24,6 +23,7 @@ import {
   type FactsTransaction,
   type RecurringSeries,
 } from './recurring';
+import { dayFromNumber } from '@repo/core';
 
 export type { FactsTransaction, FactsWallet, Forecast };
 
@@ -106,8 +106,8 @@ function recurringFact(s: RecurringSeries): RecurringFact {
     kind: s.kind,
     cadence: s.cadence,
     amount: minorToNumber(s.expectedAmountMinor),
-    lastDate: dayKey(s.lastDay),
-    nextDate: dayKey(s.nextExpectedDay),
+    lastDate: dayFromNumber(s.lastDay),
+    nextDate: dayFromNumber(s.nextExpectedDay),
     occurrences: s.occurrences,
     confidence: s.confidence,
     needsConfirm: s.needsConfirm,
@@ -154,7 +154,7 @@ export function buildFinanceFactsByCurrency(
             name: payday.label,
             amount: minorToNumber(payday.expectedAmountMinor),
             cadence: payday.cadence,
-            nextDate: dayKey(payday.nextExpectedDay),
+            nextDate: dayFromNumber(payday.nextExpectedDay),
           }
         : null,
       forecast: forecastCurrency({

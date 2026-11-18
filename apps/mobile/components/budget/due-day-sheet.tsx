@@ -2,8 +2,8 @@ import { useEffect, useState } from 'react';
 import { BackHandler, StyleSheet, View } from 'react-native';
 
 import { OptionPickerSheet } from '@/components/sheets/option-picker-sheet';
-import { dayLabel } from '@/lib/dates/day-label';
-import { toLocalDateInput } from '@/lib/dates/local-date-input';
+import { dayLabel } from '@repo/core';
+import { deviceCalendar } from '@/lib/dates/device-calendar';
 
 const DAYS_AHEAD = 31;
 
@@ -47,10 +47,10 @@ export function DueDaySheet({
   const today = new Date();
   const options = Array.from({ length: DAYS_AHEAD }, (_, ahead) => {
     const date = new Date(today.getFullYear(), today.getMonth(), today.getDate() + ahead);
-    const id = toLocalDateInput(date);
+    const id = deviceCalendar.dayKey(date);
     return {
       id,
-      name: dayLabel(id, today),
+      name: dayLabel(id, deviceCalendar.dayKey(today)),
       meta: monthly ? `Every month on the ${ordinal(date.getDate())}` : undefined,
     };
   });

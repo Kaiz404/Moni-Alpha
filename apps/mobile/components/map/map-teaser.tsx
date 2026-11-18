@@ -12,9 +12,9 @@ import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Press } from '@/components/ui/press';
 import { Text } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
-import { formatMoney } from '@/lib/finance/format-money';
 import { groupPlaces, regionFor, type Place } from '@/lib/finance/places';
 import { tid } from '@/lib/test-ids';
+import { formatMoney } from '@repo/core';
 
 const HEIGHT = 132;
 const LABELS = 3;

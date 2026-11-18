@@ -25,18 +25,8 @@ import {
 } from '@/components/ui/transaction-row';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { merchantKey } from '@/lib/ai/routine';
-import { formatDate } from '@/lib/dates/day-label';
-import {
-  parseLocalDateInput,
-  toLocalDateInput,
-} from '@/lib/dates/local-date-input';
 import { billPayments } from '@/lib/finance/bills';
-import {
-  monthKey,
-  monthName,
-  monthSpend,
-} from '@/lib/finance/budget-month';
-import { currencySymbol, formatMoney } from '@/lib/finance/format-money';
+import { monthSpend } from '@/lib/finance/budget-month';
 import { PLAN_LIMIT_MINOR } from '@/lib/finance/money';
 import { ensureBillReminderPermission, reminderAt } from '@/lib/notifications/bill-reminder';
 import { openSheet } from '@/lib/sheet/sheet-store';
@@ -61,24 +51,26 @@ import { showToast } from '@/lib/toast/toast-store';
 import { resolveTransactionIcon } from '@/lib/transactions/icon';
 import { transactionRow } from '@/lib/transactions/row';
 import { resolveDefaultWalletId } from '@/lib/wallets/default-wallet';
+import {
+  addMonths,
+  currencySymbol,
+  dateLabel,
+  type DayKey,
+  dayOfMonth,
+  formatMoney,
+  monthName,
+  parseDayKey,
+} from '@repo/core';
+import { deviceCalendar } from '@/lib/dates/device-calendar';
 
 const HISTORY_ROWS = 3;
 const REMINDER_TIME = '9:00 am';
 
 
 /** The same day of the month after a `YYYY-MM-DD`, clamped to that month's length. */
-function nextMonthDay(dueDate: string): Date {
-  const due = parseLocalDateInput(dueDate) ?? new Date();
-  const length = new Date(
-    due.getFullYear(),
-    due.getMonth() + 2,
-    0,
-  ).getDate();
-  return new Date(
-    due.getFullYear(),
-    due.getMonth() + 1,
-    Math.min(due.getDate(), length),
-  );
+function nextMonthDay(dueDate: string): DayKey {
+  const due = parseDayKey(dueDate) ?? deviceCalendar.dayKey(new Date());
+  return addMonths(due, 1, dayOfMonth(due));
 }
 
 function errorText(error: unknown): string {
@@ -155,13 +147,13 @@ export default function BillScreen() {
   );
   const once = Boolean(override?.dueOnce);
   const open = bill.status === 'due';
-  const period = monthKey(now);
+  const period = deviceCalendar.monthKey(now);
   const nextDue =
     open || once
-      ? (parseLocalDateInput(bill.dueDate) ?? now)
+      ? (parseDayKey(bill.dueDate) ?? deviceCalendar.dayKey(now))
       : nextMonthDay(bill.dueDate);
   const remindOn = override?.remind === true;
-  const reminder = reminderAt(toLocalDateInput(nextDue));
+  const reminder = reminderAt(nextDue);
   const sourceApp = walletId ? linkedApps[walletId] : null;
   const rule = rules.find((item) => item.source_app === sourceApp);
   const lookup = {
@@ -230,7 +222,7 @@ export default function BillScreen() {
       once
         ? { dueOnce: picked, expectedDay: day }
         : { expectedDay: day },
-      `Due ${formatDate(parseLocalDateInput(picked) ?? now, now)}`,
+      `Due ${dateLabel(parseDayKey(picked) ?? deviceCalendar.dayKey(now), deviceCalendar.dayKey(now))}`,
       once
         ? { dueOnce: override?.dueOnce ?? null, expectedDay: was }
         : { expectedDay: was },
@@ -417,7 +409,7 @@ export default function BillScreen() {
               hint={(value) =>
                 value === null
                   ? `Type an amount above ${formatMoney(0, bill.currency, { whole: true })}.`
-                  : `From ${formatDate(nextDue, now)} on. Past payments stay as they were.`
+                  : `From ${dateLabel(nextDue, deviceCalendar.dayKey(now))} on. Past payments stay as they were.`
               }
               onSave={(expectedAmountMinor) =>
                 expectedAmountMinor === bill.amountMinor
@@ -470,7 +462,7 @@ export default function BillScreen() {
               <PickerField
                 testID={tid('budget', 'bill', 'due')}
                 label={once ? 'Due · once' : 'Next due · monthly'}
-                value={formatDate(nextDue, now)}
+                value={dateLabel(nextDue, deviceCalendar.dayKey(now))}
                 className="flex-1"
                 mark={
                   <IconSymbol
@@ -655,7 +647,7 @@ export default function BillScreen() {
       </Page>
       <DueDaySheet
         open={dueOpen}
-        selected={toLocalDateInput(nextDue)}
+        selected={nextDue}
         monthly={!once}
         onPick={pickDue}
         onDismiss={() => setDueOpen(false)}

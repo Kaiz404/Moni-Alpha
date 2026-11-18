@@ -1,7 +1,5 @@
-import { formatDate } from '@/lib/dates/day-label';
-import { parseLocalDateInput } from '@/lib/dates/local-date-input';
 import type { DebtDue, LeftThisMonth } from '@/lib/finance/budget-month';
-import { formatMoney } from '@/lib/finance/format-money';
+import { formatMoney } from '@repo/core';
 
 /** Home's words for a BudgetMonth; the numbers come from buildBudgetMonth (D1). */
 
@@ -23,13 +21,4 @@ export function leftLine(left: LeftThisMonth, currency: string, after?: string |
   return left.perDayMinor > 0
     ? `${whole(left.leftMinor)} left for ${days} · ${whole(left.perDayMinor)} a day`
     : `${whole(left.leftMinor)} left for ${days}`;
-}
-
-/** "today", "tomorrow", or "on Fri 16 Oct" for a local YYYY-MM-DD. */
-export function dueWhen(dueDate: string, now: Date): string {
-  const due = parseLocalDateInput(dueDate);
-  if (!due) return `on ${dueDate}`;
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const days = Math.round((due.getTime() - today.getTime()) / 86_400_000);
-  return days <= 0 ? 'today' : days === 1 ? 'tomorrow' : `on ${formatDate(due, now)}`;
 }

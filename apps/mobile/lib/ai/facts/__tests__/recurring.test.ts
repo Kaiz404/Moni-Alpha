@@ -1,7 +1,7 @@
 import type { MinorAmount, RecurringOverride } from '@repo/types';
-import { dayKey } from '../days';
 import { detectRecurring, pickPayday, type RecurringSeries } from '../recurring';
 import { tx } from './synthetic-ledger';
+import { dayFromNumber } from '@repo/core';
 
 const NOW = new Date(2026, 9, 12, 10);
 const on = (month: number, day: number) => new Date(2026, month - 1, day, 9);
@@ -50,7 +50,7 @@ describe('detectRecurring', () => {
       confidence: 0.6,
       needsConfirm: true,
     });
-    expect(dayKey(series[0].nextExpectedDay)).toBe('2026-10-25');
+    expect(dayFromNumber(series[0].nextExpectedDay)).toBe('2026-10-25');
     expect(pickPayday(series)?.label).toBe('Acme Sdn Bhd');
   });
 
@@ -66,7 +66,7 @@ describe('detectRecurring', () => {
       confidence: 0.8,
       needsConfirm: false,
     });
-    expect(dayKey(series.nextExpectedDay)).toBe('2026-11-10');
+    expect(dayFromNumber(series.nextExpectedDay)).toBe('2026-11-10');
   });
 
   it('finds weekly and biweekly cadences', () => {
@@ -185,7 +185,7 @@ describe('recurring overrides', () => {
       kind: 'bill',
       expectedAmountMinor: 5990,
     });
-    expect(dayKey(series.nextExpectedDay)).toBe('2026-11-12');
+    expect(dayFromNumber(series.nextExpectedDay)).toBe('2026-11-12');
   });
 
   it('prefers a confirmed income series for payday over a more regular one', () => {

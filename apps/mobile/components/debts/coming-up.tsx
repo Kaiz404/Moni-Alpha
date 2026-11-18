@@ -1,7 +1,7 @@
 import { router } from 'expo-router';
 import { View } from 'react-native';
 
-import { debtMoney, dueWords } from '@/components/debts/debt-words';
+import { debtMoney } from '@/components/debts/debt-words';
 import {
   sendReminder,
   useRemindedToday,
@@ -10,11 +10,14 @@ import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Press } from '@/components/ui/press';
 import { Text } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
-import { parseLocalDateInput } from '@/lib/dates/local-date-input';
 import type { ComingUpRow } from '@/lib/finance/debt-summary';
 import { tid } from '@/lib/test-ids';
-
-const WEEKDAYS = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
+import {
+  dayOfMonth,
+  dueWords,
+  parseDayKey,
+  weekdayShort,
+} from '@repo/core';
 
 /** The Lemon block of debts with a due date: Pay what you owe, Remind who owes you. */
 export function ComingUp({ rows }: { rows: ComingUpRow[] }) {
@@ -61,7 +64,7 @@ function Row({
     note,
     currency,
   } = line.debt;
-  const due = parseLocalDateInput(dueDate);
+  const due = parseDayKey(dueDate);
   const amount = debtMoney(line.balanceMinor, currency);
   const iOwe = direction === 'i_owe';
   const title = iOwe
@@ -76,10 +79,10 @@ function Row({
           className="h-[46px] w-11 items-center justify-center rounded-[14px] bg-card"
         >
           <Text className="text-[12px] leading-[14px] font-display-bold tracking-[0.48px] text-ink-2">
-            {due ? WEEKDAYS[due.getDay()] : ''}
+            {due ? weekdayShort(due).toUpperCase() : ''}
           </Text>
           <Text className="text-[18px] leading-[20px] font-display-bold text-foreground">
-            {due ? due.getDate() : ''}
+            {due ? dayOfMonth(due) : ''}
           </Text>
         </View>
         <View

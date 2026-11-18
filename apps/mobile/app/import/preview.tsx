@@ -13,10 +13,10 @@ import type { ImportRow } from '@/lib/backup/generic-csv';
 import { getImportSession, planImport, setImportSession } from '@/lib/backup/import-session';
 import { TABLES, TABLE_ORDER } from '@/lib/backup/moni-export';
 import { restoreTotals, type ImportPlan } from '@/lib/backup/plan';
-import { dayLabel } from '@/lib/dates/day-label';
-import { formatSignedMoney } from '@/lib/finance/format-money';
 import { tid } from '@/lib/test-ids';
 import { showToast } from '@/lib/toast/toast-store';
+import { dayLabel, formatSignedMoney } from '@repo/core';
+import { deviceCalendar } from '@/lib/dates/device-calendar';
 
 const SHOWN_ROWS = 20;
 
@@ -114,7 +114,7 @@ function RowList({
           <PlainRow
             key={row.line}
             title={row.merchant ?? row.note ?? 'No merchant'}
-            meta={dayLabel(row.day)}
+            meta={dayLabel(row.day, deviceCalendar.dayKey(new Date()))}
             trailing={formatSignedMoney(row.type, row.amountMinor, currency)}
           />
         ))}

@@ -7,10 +7,10 @@ import {
 
 import { finger } from '@/components/charts/__tests__/scrub-fixture';
 import { SpentCard } from '@/components/home/spent-card';
-import { CHART_RANGES } from '@/lib/finance/chart-range';
 import type { FinanceTransaction } from '@/lib/finance/types';
 import type { BudgetMonth } from '@/lib/finance/budget-month';
 import { chartStep } from '@/lib/haptics';
+import { CHART_RANGES } from '@repo/core';
 
 jest.mock('@/lib/haptics', () => ({ scrubStep: jest.fn(), chartStep: jest.fn() }));
 jest.mock('uniwind', () => ({

@@ -11,8 +11,6 @@ import { ListCard } from '@/components/ui/list-card';
 import { Press } from '@/components/ui/press';
 import { Text } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
-import { formatDay } from '@/lib/dates/day-label';
-import { formatMoney } from '@/lib/finance/format-money';
 import { financeProjection$ } from '@/lib/finance/projection';
 import type {
   FinanceDebt,
@@ -20,6 +18,8 @@ import type {
 } from '@/lib/finance/types';
 import { tid } from '@/lib/test-ids';
 import { compactWalletNames } from '@/lib/wallets/compact-name';
+import { dayLabel, formatMoney } from '@repo/core';
+import { deviceCalendar } from '@/lib/dates/device-calendar';
 
 const GLYPHS: Record<FinanceDebtActivity['kind'], IconSymbolName> = {
   principal: 'hand-coin-outline',
@@ -74,7 +74,7 @@ export function DebtHistory({
                 : 'Written off';
           const plus = activity.kind === 'repayment' && owedToMe;
           const amount = `${plus ? '+' : ''}${formatMoney(activity.amountMinor, debt.currency)}`;
-          const meta = [formatDay(activity.activityDate), where]
+          const meta = [dayLabel(deviceCalendar.dayKey(activity.activityDate), deviceCalendar.dayKey(new Date())), where]
             .filter(Boolean)
             .join(' · ');
           const body = (

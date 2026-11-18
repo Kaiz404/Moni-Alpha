@@ -5,7 +5,8 @@
 import type { MinorAmount, RecurringKind, RecurringOverride } from '@repo/types';
 import type { FinanceTransaction } from '@/lib/finance/types';
 import { merchantKey } from '../routine';
-import { addMonths, dayNumber, dayOfMonth } from './days';
+import { addMonths, dayFromNumber, dayNumber, dayOfMonth } from '@repo/core';
+import { deviceCalendar } from '@/lib/dates/device-calendar';
 
 export type FactsTransaction = Pick<
   FinanceTransaction,
@@ -108,10 +109,11 @@ function detectSeries(
   const inBand = run.filter((o) => Math.abs(o.amountMinor - typical) <= typical * band);
   if (inBand.length < Math.max(MIN_OCCURRENCES, Math.ceil(run.length * 0.75))) return null;
 
-  const expectedDay = override?.expectedDay ?? median(run.slice(-6).map((o) => dayOfMonth(o.day)));
+  const expectedDay =
+    override?.expectedDay ?? median(run.slice(-6).map((o) => dayOfMonth(dayFromNumber(o.day))));
   const nextExpectedDay =
     cadence === 'monthly'
-      ? addMonths(last.day, 1, expectedDay)
+      ? dayNumber(addMonths(dayFromNumber(last.day), 1, expectedDay))
       : last.day + (cadence === 'weekly' ? 7 : 14);
   if (today > nextExpectedDay + CADENCES[cadence].grace) return null;
 
@@ -155,7 +157,7 @@ export function detectRecurring(
   now: Date,
   categoryNames: Record<string, string> = {},
 ): RecurringSeries[] {
-  const today = dayNumber(now);
+  const today = deviceCalendar.dayNumber(now);
   const byKey = new Map<string, Occurrence[]>();
   for (const tx of transactions) {
     if (!isCashFlow(tx) || new Date(tx.transactionDate) > now) continue;
@@ -163,7 +165,7 @@ export function detectRecurring(
     if (!key) continue;
     const list = byKey.get(key) ?? [];
     list.push({
-      day: dayNumber(tx.transactionDate),
+      day: deviceCalendar.dayNumber(tx.transactionDate),
       amountMinor: Number(tx.amountMinor),
       merchant: tx.merchant ?? '',
       categoryId: tx.categoryId,
@@ -197,13 +199,13 @@ export function pickPayday(series: readonly RecurringSeries[]): RecurringSeries 
 /** Expected payment days from the next one (possibly already past due) up to `beforeDay`. */
 export function seriesDates(series: RecurringSeries, beforeDay: number): number[] {
   const days: number[] = [];
-  const dom = dayOfMonth(series.nextExpectedDay);
+  const dom = dayOfMonth(dayFromNumber(series.nextExpectedDay));
   let day = series.nextExpectedDay;
   for (let step = 1; day < beforeDay; step += 1) {
     days.push(day);
     day =
       series.cadence === 'monthly'
-        ? addMonths(series.nextExpectedDay, step, dom)
+        ? dayNumber(addMonths(dayFromNumber(series.nextExpectedDay), step, dom))
         : series.nextExpectedDay + step * (series.cadence === 'weekly' ? 7 : 14);
   }
   return days;

@@ -18,6 +18,7 @@ Current rule map:
 - `apps/mobile/**`: `.cursor/rules/mobile-expo.mdc`
 - `apps/mobile/lib/notifications/**`, `apps/mobile/index.js`, `apps/mobile/scripts/*notification*`: `.cursor/rules/mobile-headless-js.mdc`
 - `packages/types/**`: `.cursor/rules/shared-types.mdc`
+- `packages/core/**`: `.cursor/rules/shared-core.mdc`
 
 When in doubt, prefer reading the relevant Cursor rule over guessing from memory.
 

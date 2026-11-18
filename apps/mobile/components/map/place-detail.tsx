@@ -7,10 +7,10 @@ import { Press } from '@/components/ui/press';
 import { StatusPill } from '@/components/ui/status-pill';
 import { Text } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
-import { formatMoney } from '@/lib/finance/format-money';
 import type { FinanceProposal } from '@/lib/finance/types';
 import { tid } from '@/lib/test-ids';
 import { plural, type CategoryLook } from './use-places';
+import { formatMoney } from '@repo/core';
 
 export function PlaceHero({
   heading,

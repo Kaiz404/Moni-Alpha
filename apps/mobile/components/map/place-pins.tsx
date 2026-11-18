@@ -7,7 +7,6 @@ import { Marker } from 'react-native-maps';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Text } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
-import { formatMoney } from '@/lib/finance/format-money';
 import {
   clusterPins,
   projector,
@@ -16,6 +15,7 @@ import {
   type Region,
 } from '@/lib/finance/places';
 import type { CategoryLook } from './use-places';
+import { formatMoney } from '@repo/core';
 
 type Size = { width: number; height: number };
 

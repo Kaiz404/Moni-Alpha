@@ -1,15 +1,19 @@
 import type { RecurringOverride, UpcomingBill } from '@repo/types';
 import * as Notifications from 'expo-notifications';
 
-import { parseLocalDateInput } from '@/lib/dates/local-date-input';
-import { formatMoney } from '@/lib/finance/format-money';
+import { addDays, formatMoney, parseDayKey } from '@repo/core';
+
+import { deviceCalendar } from '@/lib/dates/device-calendar';
 
 export const REMINDER_HOUR = 9;
 
 /** 9:00 am local on the day before a `YYYY-MM-DD` due date. */
 export function reminderAt(dueDate: string): Date | null {
-  const due = parseLocalDateInput(dueDate);
-  return due ? new Date(due.getFullYear(), due.getMonth(), due.getDate() - 1, REMINDER_HOUR) : null;
+  const due = parseDayKey(dueDate);
+  if (!due) return null;
+  const at = deviceCalendar.startOfDay(addDays(due, -1));
+  at.setHours(REMINDER_HOUR);
+  return at;
 }
 
 export type BillReminder = {

@@ -37,12 +37,6 @@ import {
   duplicateCopy,
   findTypedDuplicate,
 } from '@/lib/capture/type-duplicate';
-import { dayLabel } from '@/lib/dates/day-label';
-import { monthKey } from '@/lib/finance/budget-month';
-import {
-  localDateInputToIso,
-  toLocalDateInput,
-} from '@/lib/dates/local-date-input';
 import { useMainCurrency } from '@/lib/finance/main-currency';
 import {
   budgetProgress$,
@@ -76,6 +70,8 @@ import { proposalRow, transactionRow } from '@/lib/transactions/row';
 import { compactWalletNames } from '@/lib/wallets/compact-name';
 import { pickDate as pickNativeDate } from '@/lib/sheet/pick-date';
 import { resolveDefaultWalletId } from '@/lib/wallets/default-wallet';
+import { dayLabel, parseDayKey } from '@repo/core';
+import { deviceCalendar } from '@/lib/dates/device-calendar';
 
 type Kind = 'expense' | 'income' | 'transfer';
 
@@ -133,7 +129,7 @@ export default function TypeItScreen() {
   );
   const [walletId, setWalletId] = useState<string | null>(null);
   const [toWalletId, setToWalletId] = useState<string | null>(null);
-  const [date, setDate] = useState(() => first(params.date) ?? toLocalDateInput(new Date()));
+  const [date, setDate] = useState(() => first(params.date) ?? deviceCalendar.dayKey(new Date()));
   const [note, setNote] = useState(first(params.note) ?? '');
   const [here, setHere] = useState<EntryLocation>({ status: 'none' });
   const [place, setPlace] = useState<EntryPlace>(AUTO_PLACE);
@@ -155,7 +151,7 @@ export default function TypeItScreen() {
     userId ? listMerchantAliases(userId) : [],
   );
   const budgetData = useBudgetData();
-  const budgetMonth = useBudgetMonth(budgetData, monthKey(budgetData.now));
+  const budgetMonth = useBudgetMonth(budgetData, deviceCalendar.monthKey(budgetData.now));
 
   const wallets = useMemo(
     () => allWallets.filter((wallet) => wallet.currency === mainCurrency),
@@ -232,7 +228,7 @@ export default function TypeItScreen() {
           (row) =>
             row.type === 'income' &&
             row.currency === mainCurrency &&
-            toLocalDateInput(new Date(row.transactionDate)).startsWith(month),
+            deviceCalendar.dayKey(row.transactionDate).startsWith(month),
         )
         .reduce((sum, row) => sum + row.amountMinor, 0) as MinorAmount;
       return amountSentence({
@@ -359,9 +355,11 @@ export default function TypeItScreen() {
 
   /** The page has no time field: today keeps the real time, so duplicates line up with alerts. */
   const transactionDate =
-    date === toLocalDateInput(new Date())
+    date === deviceCalendar.dayKey(new Date())
       ? new Date().toISOString()
-      : (localDateInputToIso(date) ?? new Date().toISOString());
+      : parseDayKey(date)
+        ? deviceCalendar.startOfDay(date).toISOString()
+        : new Date().toISOString();
 
   const findRepeat = async (): Promise<boolean> => {
     if (!wallet || kind === 'transfer') return false;
@@ -485,7 +483,7 @@ export default function TypeItScreen() {
       size="capture"
       className="flex-1"
       label="Date"
-      value={dayLabel(date)}
+      value={dayLabel(date, deviceCalendar.dayKey(new Date()))}
       leading={
         <FieldBubble color={tokens.card}>
           <IconSymbol

@@ -11,18 +11,11 @@ import {
   readAmount,
   type AmountSentence,
 } from '@/lib/amount/amount-input';
-import { currencySymbol } from '@/lib/finance/format-money';
 import { tid, type Screen } from '@/lib/test-ids';
+import { currencySymbol, moneySign } from '@repo/core';
 
 /** The amount's sign and colour: expense `−` in ink, income `+` in deep mint, a transfer in Meta, a debt plain. */
 export type AmountDirection = 'expense' | 'income' | 'transfer' | 'plain';
-
-const SIGN: Record<AmountDirection, string> = {
-  expense: '−',
-  income: '+',
-  transfer: '',
-  plain: '',
-};
 
 const TONE: Record<AmountDirection, string> = {
   expense: 'text-foreground',
@@ -82,7 +75,7 @@ export function AmountPage({
   action,
 }: AmountPageProps) {
   const { display } = readAmount(typed);
-  const shown = `${SIGN[direction]}${currencySymbol(currency)}${display}`;
+  const shown = `${direction === 'plain' ? '' : moneySign(direction)}${currencySymbol(currency)}${display}`;
   return (
     <Page
       screen={screen}

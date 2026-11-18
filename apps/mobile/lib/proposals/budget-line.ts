@@ -1,7 +1,7 @@
 import type { MinorAmount } from '@repo/types';
 
-import { formatMoney } from '@/lib/finance/format-money';
 import type { BudgetProgress } from '@/lib/finance/selectors';
+import { formatMoney } from '@repo/core';
 
 export type BudgetTone = 'onTrack' | 'near' | 'over' | 'review';
 export type BudgetLine = { tone: BudgetTone; text: string };

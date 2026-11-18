@@ -1,19 +1,27 @@
-import { dateAt, rangeStartIndex, type ChartRange } from '@/lib/finance/chart-range';
-import { chartTicks } from '@/lib/finance/chart-ticks';
-import { formatMoney } from '@/lib/finance/format-money';
 import { spendBuckets, type SpendBuckets, type SpendIndex } from '@/lib/finance/spend-history';
 
-import { MONTHS, niceCeil, type PaceChartMode } from './pace-geometry';
+import { niceCeil, type PaceChartMode } from './pace-geometry';
 import { scrubPoints, type ScrubPoints } from './scrub';
 import type { AxisRow, TickMark } from './zoom-axes';
+import {
+  addDays,
+  type ChartRange,
+  chartTicks,
+  type DayKey,
+  formatMoney,
+  monthOf,
+  monthShort,
+  rangeStartIndex,
+  shortDate,
+  weekdayShort,
+} from '@repo/core';
+import { deviceCalendar } from '@/lib/dates/device-calendar';
 
 export const SPEND_TOP = 44;
 export const LINE_BASE = 142;
 export const BAR_BASE = 141.2;
 /** Just over budget, the top label and the budget label would print on each other. */
 const AXIS_LABEL_HEIGHT = 16;
-
-const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 /** The calendar month Home's 1M shows, with its budget. */
 export type SpendMonth = {
@@ -69,38 +77,32 @@ export type SpendReading = { date: string; value: string; accessibilityLabel: st
 
 /** Whole money, rounded down, for axis labels and forward-looking numbers. */
 export function whole(minor: number, currency: string): string {
-  return formatMoney(Math.floor(minor / 100) * 100, currency, { whole: true });
+  return formatMoney(minor, currency, { whole: true });
 }
 
 /** "Thu 1 Oct". */
-function weekdayDate(date: Date): string {
-  return `${WEEKDAYS[date.getDay()]} ${date.getDate()} ${MONTHS[date.getMonth()]}`;
-}
-
-/** "1 Oct", or "1 Oct 2025". */
-function shortDate(date: Date, withYear = false): string {
-  const label = `${date.getDate()} ${MONTHS[date.getMonth()]}`;
-  return withYear ? `${label} ${date.getFullYear()}` : label;
+function weekdayDate(day: DayKey): string {
+  return `${weekdayShort(day)} ${shortDate(day)}`;
 }
 
 function bucketName(index: SpendIndex, buckets: SpendBuckets, bucket: number): string {
-  const from = dateAt(index.firstDay, buckets.starts[bucket]!);
-  const to = dateAt(index.firstDay, buckets.ends[bucket]!);
+  const from = addDays(index.firstDay, buckets.starts[bucket]!);
+  const to = addDays(index.firstDay, buckets.ends[bucket]!);
   switch (buckets.unit) {
     case 'day':
       return weekdayDate(from);
     case 'week':
-      return from.getTime() === to.getTime() ? shortDate(from) : `${shortDate(from)} to ${shortDate(to)}`;
+      return from === to ? shortDate(from) : `${shortDate(from)} to ${shortDate(to)}`;
     case 'month':
-      return `${MONTHS[from.getMonth()]} ${from.getFullYear()}`;
+      return `${monthShort(monthOf(from))} ${from.slice(0, 4)}`;
     case 'year':
-      return String(from.getFullYear());
+      return from.slice(0, 4);
   }
 }
 
 /** The first day of a range in the index; All starts at the first spend. */
 export function spendRangeFrom(index: SpendIndex, now: Date, range: ChartRange): number {
-  return Math.max(0, rangeStartIndex(index.firstDay, now, range) ?? index.firstSpend);
+  return Math.max(0, rangeStartIndex(index.firstDay, deviceCalendar.dayKey(now), range) ?? index.firstSpend);
 }
 
 export function monthMarks(index: SpendIndex, now: Date, month: SpendMonth): MonthMarks {
@@ -199,7 +201,7 @@ export function spendTarget({
     let over = 0;
     if (marks.evenPace !== null)
       for (let day = from; day <= today; day++) if (index.spent[day]! > marks.evenPace) over++;
-    const span = `from ${shortDate(dateAt(index.firstDay, from), true)} to today`;
+    const span = `from ${shortDate(addDays(index.firstDay, from), true)} to today`;
     return {
       ...shared,
       high,
@@ -237,7 +239,7 @@ export function spendTarget({
         (budget === null
           ? '.'
           : `, against the ${whole(budget, currency)} budget. Dashed line is an even pace.`)
-      : `Spent from ${shortDate(dateAt(index.firstDay, from), true)} to today, ${money(spent)}.`,
+      : `Spent from ${shortDate(addDays(index.firstDay, from), true)} to today, ${money(spent)}.`,
   };
 }
 
@@ -254,7 +256,7 @@ export function spendReading(
     const value = money(target.buckets.values[id]!);
     return { date: name, value, accessibilityLabel: `${name}, ${value} spent` };
   }
-  const date = dateAt(index.firstDay, id);
+  const date = addDays(index.firstDay, id);
   const value = money(index.cumulative[id + 1]! - target.shift);
   const named = target.oneMonth ? weekdayDate(date) : shortDate(date);
   return {

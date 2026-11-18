@@ -52,8 +52,6 @@ import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import type { DuplicateMatch } from '@/lib/ai/duplicates';
 import { timesFiled } from '@/lib/ai/routine';
 import { useAuth } from '@/lib/auth/auth-context';
-import { formatDate } from '@/lib/dates/day-label';
-import { formatMoney, formatSignedMoney } from '@/lib/finance/format-money';
 import { useMainCurrency } from '@/lib/finance/main-currency';
 import { merchantName } from '@/lib/finance/merchant-name';
 import {
@@ -117,6 +115,8 @@ import { showToast } from '@/lib/toast/toast-store';
 import { getDefaultWalletId } from '@/lib/wallets/default-wallet';
 import { compactWalletNames } from '@/lib/wallets/compact-name';
 import { lastWalletForMerchant, resolveInitialWalletId } from '@/lib/wallets/proposal-wallet';
+import { dateLabel, formatMoney, formatSignedMoney } from '@repo/core';
+import { deviceCalendar } from '@/lib/dates/device-calendar';
 
 /** A Later row snoozed past any real date still counts as unreviewed. */
 const END_OF_TIME = new Date(8.64e15);
@@ -279,7 +279,7 @@ function duplicateText(match: DuplicateMatch, currency: string): string {
   if (match.kind === 'transfer_pair') return 'Looks like money moving between two of your wallets.';
   const { target } = match;
   const amount = formatMoney((target.amountMinor ?? 0) as MinorAmount, target.currency || currency);
-  return `You may already have this: ${target.merchant ?? 'a payment'} ${amount} on ${formatDate(target.at)}.`;
+  return `You may already have this: ${target.merchant ?? 'a payment'} ${amount} on ${dateLabel(deviceCalendar.dayKey(target.at), deviceCalendar.dayKey(new Date()))}.`;
 }
 
 /** The other capture this card already counts, as the evidence line says it. */

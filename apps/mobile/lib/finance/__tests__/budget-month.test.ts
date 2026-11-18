@@ -7,7 +7,6 @@ import {
   spendSlices,
   type BudgetMonthInput,
 } from '../budget-month';
-import { formatMoney } from '../format-money';
 import { leftLine } from '../spent-summary';
 import type { FinanceBudget, FinanceCategory, FinanceDebt, FinanceTransaction } from '../types';
 

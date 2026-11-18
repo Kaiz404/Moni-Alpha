@@ -1,11 +1,12 @@
 import type { RecurringOverride, UpcomingBill } from '@repo/types';
-import { addMonths, dayKey, dayNumber, nextMonthStart } from '@/lib/ai/facts/days';
 import {
   detectRecurring,
   isCashFlow,
   seriesKey,
   type FactsTransaction,
 } from '@/lib/ai/facts/recurring';
+import { addMonths, dayFromNumber, dayNumber, firstDayOf, monthOf, shiftMonth } from '@repo/core';
+import { deviceCalendar } from '@/lib/dates/device-calendar';
 
 /** Each series' latest payment, for the wallet it pays from and the category it lands in. */
 export function lastPaymentBySeries<T extends FactsTransaction>(
@@ -42,16 +43,17 @@ export function selectUpcomingBills(
   transactions: readonly FactsTransaction[],
   overrides: readonly RecurringOverride[],
 ): UpcomingBill[] {
-  const today = dayNumber(now);
-  const monthStart = addMonths(today, 0, 1);
-  const monthEnd = nextMonthStart(today);
-  const period = dayKey(today).slice(0, 7);
+  const todayKey = deviceCalendar.dayKey(now);
+  const today = dayNumber(todayKey);
+  const period = monthOf(todayKey);
+  const monthStart = dayNumber(firstDayOf(period));
+  const monthEnd = dayNumber(firstDayOf(shiftMonth(period, 1)));
   const inMonth = (day: number) => day >= monthStart && day < monthEnd;
   const verdicts = new Map(overrides.map((override) => [override.seriesKey, override]));
   const latest = lastPaymentBySeries(transactions);
   const paidThisMonth = new Set(
     transactions
-      .filter((tx) => isCashFlow(tx) && inMonth(dayNumber(tx.transactionDate)))
+      .filter((tx) => isCashFlow(tx) && inMonth(deviceCalendar.dayNumber(tx.transactionDate)))
       .map((tx) => seriesKey(tx)),
   );
 
@@ -68,7 +70,7 @@ export function selectUpcomingBills(
       amountMinor: override?.expectedAmountMinor ?? fallback.amountMinor,
       currency: fallback.currency,
       dueDate: override?.expectedDay
-        ? dayKey(addMonths(today, 0, override.expectedDay))
+        ? addMonths(todayKey, 0, override.expectedDay)
         : fallback.dueDate,
       status: override?.skipPeriod === period ? 'skipped' : paid ? 'paid' : 'due',
       walletId: override?.walletId ?? last?.walletId ?? null,
@@ -89,7 +91,7 @@ export function selectUpcomingBills(
           name: series.label,
           amountMinor: series.expectedAmountMinor,
           currency: series.currency,
-          dueDate: dayKey(due ? series.nextExpectedDay : series.lastDay),
+          dueDate: dayFromNumber(due ? series.nextExpectedDay : series.lastDay),
         },
         !due,
       ),
@@ -100,7 +102,7 @@ export function selectUpcomingBills(
     if (override.status !== 'confirmed' || bills.has(override.seriesKey)) continue;
     if (override.kind !== 'bill' && override.kind !== 'subscription') continue;
     if (!override.expectedDay || !override.expectedAmountMinor) continue;
-    if (override.dueOnce && !inMonth(dayNumber(new Date(`${override.dueOnce}T12:00:00`)))) continue;
+    if (override.dueOnce && !inMonth(dayNumber(override.dueOnce))) continue;
     bills.set(override.seriesKey, {
       ...bill(
         override.seriesKey,
@@ -108,7 +110,7 @@ export function selectUpcomingBills(
           name: override.seriesKey.split('|')[2],
           amountMinor: override.expectedAmountMinor,
           currency: override.currency,
-          dueDate: dayKey(addMonths(today, 0, override.expectedDay)),
+          dueDate: addMonths(todayKey, 0, override.expectedDay),
         },
         paidThisMonth.has(override.seriesKey),
       ),

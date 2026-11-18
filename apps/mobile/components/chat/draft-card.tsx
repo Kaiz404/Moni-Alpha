@@ -14,7 +14,6 @@ import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { replaceMessage, type ChatMessage, type DraftOutcome } from '@/lib/ai/chat/messages';
 import { financeTimezone, threadDay } from '@/lib/ai/chat/sessions';
 import { useAuth } from '@/lib/auth/auth-context';
-import { formatMoney, formatSignedMoney } from '@/lib/finance/format-money';
 import { financeProjection$ } from '@/lib/finance/projection';
 import {
   budgetProgress$,
@@ -40,6 +39,7 @@ import { resolveTransactionIcon } from '@/lib/transactions/icon';
 import { compactWalletNames } from '@/lib/wallets/compact-name';
 
 import { pickWallet } from './pick-wallet';
+import { formatMoney, formatSignedMoney } from '@repo/core';
 
 type DraftMessage = Extract<ChatMessage, { kind: 'assistant_draft' }>;
 

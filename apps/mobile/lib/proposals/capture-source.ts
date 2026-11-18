@@ -1,8 +1,9 @@
 import type { ProposedTransaction } from '@repo/types';
 
-import { formatDay } from '@/lib/dates/day-label';
 import { getCachedInstalledAppsMap } from '@/lib/notifications/installed-apps';
 import { linkedAppLabel } from '@/lib/notifications/linked-packages-cache';
+import { dayLabel } from '@repo/core';
+import { deviceCalendar } from '@/lib/dates/device-calendar';
 
 type Source = Pick<
   ProposedTransaction,
@@ -35,6 +36,6 @@ export function captureTime(value: string, now: Date = new Date()): string {
   const date = new Date(value);
   const hours = date.getHours();
   const time = `${hours % 12 || 12}:${String(date.getMinutes()).padStart(2, '0')} ${hours < 12 ? 'am' : 'pm'}`;
-  const day = formatDay(date, now);
+  const day = dayLabel(deviceCalendar.dayKey(date), deviceCalendar.dayKey(now));
   return day === 'Today' ? time : `${day}, ${time}`;
 }

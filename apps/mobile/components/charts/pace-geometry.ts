@@ -1,15 +1,21 @@
-import { formatMoney } from '@/lib/finance/format-money';
+import {
+  addDays,
+  dateLabel,
+  daysInMonth,
+  firstDayOf,
+  formatMoney,
+  type MonthKey,
+  monthName,
+  monthShort,
+} from '@repo/core';
 
 export type PaceChartMode = 'pace' | 'daily';
-
-/** A calendar month; `month` is 0 for January. */
-export type ChartMonth = { year: number; month: number };
 
 /**
  * Spend per day of `month` so far, in minor units: index 0 is day 1 and the
  * last entry is today. `pace` adds them up.
  */
-export type DaySeries = { month: ChartMonth; values: readonly number[] };
+export type DaySeries = { month: MonthKey; values: readonly number[] };
 
 export type AxisLabel = { y: number; text: string; tone: 'meta' | 'ink' | 'mint' };
 
@@ -66,46 +72,15 @@ const BAR_LEFT = 50;
 const BAR_TAIL = 24;
 const MAX_SLOT = 24;
 
-const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-export const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-const MONTH_NAMES = [
-  'January',
-  'February',
-  'March',
-  'April',
-  'May',
-  'June',
-  'July',
-  'August',
-  'September',
-  'October',
-  'November',
-  'December',
-];
-
-/** `YYYY-MM` to a ChartMonth. */
-export function monthFromKey(key: string): ChartMonth {
-  const [year, month] = key.split('-').map(Number);
-  return { year: year!, month: month! - 1 };
-}
-
-export function daysInMonth({ year, month }: ChartMonth): number {
-  return new Date(year, month + 1, 0).getDate();
-}
-
-export function monthName({ month }: ChartMonth): string {
-  return MONTH_NAMES[month]!;
-}
-
 /** "Thu 1 Oct". */
-export function dayDate({ year, month }: ChartMonth, day: number): string {
-  const date = new Date(year, month, day);
-  return `${WEEKDAYS[date.getDay()]} ${day} ${MONTHS[month]}`;
+function dayDate(month: MonthKey, day: number): string {
+  const first = firstDayOf(month);
+  return dateLabel(addDays(first, day - 1), first);
 }
 
 /** Whole money, rounded down, for axis labels and forward-looking numbers. */
 function whole(minor: number, currency: string): string {
-  return formatMoney(Math.floor(minor / 100) * 100, currency, { whole: true });
+  return formatMoney(minor, currency, { whole: true });
 }
 
 /** The smallest of 1, 2, 2.5, 5 × 10^k at or above `value`. */
@@ -154,7 +129,7 @@ export function paceGeometry({
   const days = daysInMonth(month);
   const today = series.values.length;
   const name = monthName(month);
-  const short = MONTHS[month.month];
+  const short = monthShort(month);
   const lastTick = { text: `${days} ${short}`, today: false };
   const money = (minor: number) => formatMoney(minor, currency);
 

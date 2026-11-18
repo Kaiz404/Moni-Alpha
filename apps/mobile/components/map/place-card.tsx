@@ -5,10 +5,10 @@ import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Press } from '@/components/ui/press';
 import { Text } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
-import { formatMoney } from '@/lib/finance/format-money';
 import type { Place } from '@/lib/finance/places';
 import { tid } from '@/lib/test-ids';
 import { plural, type CategoryLook } from './use-places';
+import { formatMoney } from '@repo/core';
 
 type PlaceCardProps = {
   place: Place;

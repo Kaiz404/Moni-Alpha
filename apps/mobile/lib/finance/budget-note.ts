@@ -1,6 +1,6 @@
 import type { MinorAmount } from '@repo/types';
 
-import { formatMoney } from '@/lib/finance/format-money';
+import { formatMoney } from '@repo/core';
 
 export type BudgetNote = {
   label: string;

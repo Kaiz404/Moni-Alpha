@@ -2,12 +2,12 @@ import { useCallback, useMemo } from 'react';
 import { observable } from '@legendapp/state';
 import { useValue } from '@legendapp/state/react';
 import { walletsNeedingConfirmation, type WalletToConfirm } from '@/lib/ai/facts/confirmation';
-import { dayNumber } from '@/lib/ai/facts/days';
 import { MIN_HISTORY_DAYS, historyDays } from '@/lib/ai/facts/forecast';
 import { useAuth } from '@/lib/auth/auth-context';
 import { transactions$, walletsForUser$ } from '@/lib/finance/selectors';
 import type { FinanceWallet } from '@/lib/finance/types';
 import { preferencesMMKV } from '@/lib/mmkv/preferences';
+import { deviceCalendar } from '@/lib/dates/device-calendar';
 
 export const BALANCE_CONFIRMATION_DISMISSED_KEY = 'balance-confirmation-dismissed-until';
 export const BALANCE_CONFIRMATION_SNOOZE_DAYS = 7;
@@ -38,7 +38,7 @@ export function useBalanceConfirmation(): {
       ({ wallet }) =>
         historyDays(
           transactions.filter((tx) => tx.currency === wallet.currency),
-          dayNumber(now),
+          deviceCalendar.dayNumber(now),
         ) >= MIN_HISTORY_DAYS,
     );
   }, [wallets, transactions]);
