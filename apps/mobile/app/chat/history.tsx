@@ -2,6 +2,7 @@ import { router } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { View } from 'react-native';
 
+import { Mascot } from '@/components/brand/mascot';
 import {
   SoftBubble,
   type SoftTint,
@@ -43,7 +44,7 @@ type Row = {
   searchText: string;
 };
 
-/** The bubble a day wears: what its latest card was about, or Moni's Lilac for plain talk. */
+/** The bubble a day wears: what its latest card was about, or Moni's cat on Lilac for plain talk. */
 function topicOf(messages: readonly ChatMessage[]): Topic {
   const projection = financeProjection$.peek();
   const categoryTopic = (
@@ -80,7 +81,7 @@ function topicOf(messages: readonly ChatMessage[]): Topic {
         return { icon: 'inbox-arrow-down', tint: 'lilac' };
     }
   }
-  return { icon: 'creation', tint: 'lilac' };
+  return { icon: 'moni', tint: 'lilac' };
 }
 
 /** The latest thing said that a row can quote: words, a draft's merchant and amount, or its outcome. */
@@ -343,21 +344,35 @@ export default function ChatHistoryScreen() {
         ))}
 
         {groups.length === 0 ? (
-          <View className="gap-1 rounded-tile border-[1.5px] border-dashed border-hairline p-[18px]">
+          <View className="items-center gap-2 px-2 py-7">
+            <Mascot
+              mood={query ? 'thinking' : 'sleepy'}
+              size={72}
+            />
             <Text
-              variant="rowTitle"
-              className="text-foreground"
+              variant="cardTitle"
+              className="mt-1 text-center text-foreground"
             >
               {query ? 'No days match' : 'No past days yet'}
             </Text>
-            <Text
-              variant="body"
-              className="text-ink-2"
-            >
+            <Text className="text-center text-[14px] leading-[20px] text-ink-2">
               {query
                 ? 'Try a day, a shop, a category or an amount.'
                 : 'Each day with Moni gets its own thread here.'}
             </Text>
+            {query ? (
+              <Press
+                testID={tid('chat', 'history', 'clear')}
+                onPress={() => setQuery('')}
+                radius={{ rest: 22, pressed: 16 }}
+                pressedClassName="bg-hairline"
+                className="mt-2 h-11 justify-center bg-sand px-[18px]"
+              >
+                <Text className="text-[15px] leading-[21px] font-display-semibold text-foreground">
+                  Clear search
+                </Text>
+              </Press>
+            ) : null}
           </View>
         ) : null}
       </PageScroll>

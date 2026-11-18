@@ -1,7 +1,7 @@
-import { render, screen } from '@testing-library/react-native';
+import { fireEvent, render, screen } from '@testing-library/react-native';
 
 import ChatHistoryScreen from '@/app/chat/history';
-import { appendMessage } from '@/lib/ai/chat/messages';
+import { appendMessage, deleteThread, listThreads } from '@/lib/ai/chat/messages';
 
 jest.mock('uniwind', () => ({
   useCSSVariable: (names: string[]) => names.map(() => undefined),
@@ -33,5 +33,19 @@ describe('Past days', () => {
     expect(screen.getByText('2 messages')).toBeTruthy();
     expect(screen.getByText('1 draft')).toBeTruthy();
     expect(screen.getByText('· Is Netflix covered?')).toBeTruthy();
+  });
+
+  it('shows the sleepy cat before any day, and the thinking cat with Clear search when nothing matches', () => {
+    for (const thread of listThreads()) deleteThread(thread.day);
+    render(<ChatHistoryScreen />);
+    expect(screen.getByText('No past days yet')).toBeTruthy();
+    expect(screen.getByLabelText('Moni, sleepy')).toBeTruthy();
+
+    fireEvent.changeText(screen.getByLabelText('Search past days'), 'netflix');
+    expect(screen.getByText('No days match')).toBeTruthy();
+    expect(screen.getByLabelText('Moni, thinking')).toBeTruthy();
+
+    fireEvent.press(screen.getByText('Clear search'));
+    expect(screen.getByLabelText('Moni, sleepy')).toBeTruthy();
   });
 });
