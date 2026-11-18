@@ -11,6 +11,7 @@ import { formatMoney } from '@/lib/finance/format-money';
 import { approve } from '@/lib/haptics';
 import { confirmWalletBalance } from '@/lib/supabase/wallets';
 import { tid } from '@/lib/test-ids';
+import { undoWindowMs } from '@/lib/toast/toast-store';
 import { useBalanceConfirmation } from '@/lib/wallets/balance-confirmation';
 
 /** After an answer the card shows one line with Undo, then steps aside. */
@@ -18,7 +19,7 @@ type Answered =
   | { kind: 'right'; walletId: string; text: string; previousAt: string | null }
   | { kind: 'later'; text: string };
 
-const ANSWERED_MS = 6000;
+const ANSWERED_MS = undoWindowMs(6000);
 
 /** V2H-Home check-in: asks about one main-currency wallet whose balance has gone unchecked. */
 export function CheckInCard({ currency }: { currency: string }) {

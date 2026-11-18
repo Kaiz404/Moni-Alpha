@@ -1,4 +1,5 @@
 import {
+  act,
   fireEvent,
   render,
   screen,
@@ -106,6 +107,16 @@ describe('CheckInCard', () => {
     );
     fireEvent.press(screen.getByTestId('home.check-in.undo'));
     expect(screen.getByText('Is Maybank still RM2,900.00?')).toBeTruthy();
+  });
+
+  it('keeps the Not now line and its Undo for 6 s, then steps aside', () => {
+    render(<CheckInCard currency="MYR" />);
+    fireEvent.press(screen.getByTestId('home.check-in.not-now'));
+    act(() => jest.advanceTimersByTime(5999));
+    expect(screen.getByTestId('home.check-in.undo')).toBeTruthy();
+    act(() => jest.advanceTimersByTime(1));
+    expect(screen.queryByTestId('home.check-in.undo')).toBeNull();
+    expect(screen.queryByText('Is Maybank still RM2,900.00?')).toBeNull();
   });
 
   it('renders nothing when every main-currency balance is fresh', () => {

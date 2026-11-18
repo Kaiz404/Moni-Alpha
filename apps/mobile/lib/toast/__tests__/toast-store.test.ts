@@ -49,4 +49,18 @@ describe('toast store', () => {
   it('lasts 4 seconds', () => {
     expect(TOAST_MS).toBe(4000);
   });
+
+  it("holds every Undo for the flow-run build's time when it sets one", () => {
+    const before = process.env.EXPO_PUBLIC_E2E_TOAST_MS;
+    process.env.EXPO_PUBLIC_E2E_TOAST_MS = '15000';
+    try {
+      jest.isolateModules(() => {
+        const store = require('@/lib/toast/toast-store') as typeof import('@/lib/toast/toast-store');
+        expect(store.TOAST_MS).toBe(15000);
+        expect(store.undoWindowMs(6000)).toBe(15000);
+      });
+    } finally {
+      process.env.EXPO_PUBLIC_E2E_TOAST_MS = before;
+    }
+  });
 });

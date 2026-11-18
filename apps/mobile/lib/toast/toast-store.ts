@@ -2,9 +2,15 @@ import { useSyncExternalStore } from 'react';
 
 import type { IconSymbolName } from '@/components/ui/icon-symbol';
 
-// Maestro takes longer than this to reach Undo, so a flow-run build passes a longer time.
-const TEST_TOAST_MS = Number(process.env.EXPO_PUBLIC_E2E_TOAST_MS);
-export const TOAST_MS = TEST_TOAST_MS > 0 ? TEST_TOAST_MS : 4000;
+// Maestro takes longer than any Undo window to reach Undo, so a flow-run build passes a longer time.
+const TEST_UNDO_MS = Number(process.env.EXPO_PUBLIC_E2E_TOAST_MS);
+
+/** How long an Undo stays on screen: `ms`, or the flow-run build's longer time. */
+export function undoWindowMs(ms: number): number {
+  return TEST_UNDO_MS > 0 ? TEST_UNDO_MS : ms;
+}
+
+export const TOAST_MS = undoWindowMs(4000);
 
 export type ToastTone = 'done' | 'removed';
 
