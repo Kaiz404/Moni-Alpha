@@ -68,6 +68,9 @@ run_side() {
     fi
     echo "$side $sha key $key, running ${missing[*]}"
     [[ -d $wt ]] || git -C "$root" worktree add --detach "$wt" "$sha" >/dev/null
+    # The commit's app and flows, driven by this checkout's device scripts, so a fix to the doctor
+    # or the lock reaches an old base too. Restored after, so the worktree's next build key is clean.
+    rsync -a --delete "$here/" "$wt/apps/mobile/scripts/device/"
     for area in "${missing[@]}"; do
       rm -rf "${runs:?}/$area"
       if "$wt/apps/mobile/scripts/device/run-areas.sh" --sha "$key" --out "$runs" "$area"; then
@@ -76,6 +79,8 @@ run_side() {
         echo "$side: flows failed in $area, not cached"
       fi
     done
+    git -C "$wt" checkout -q -- apps/mobile/scripts/device
+    git -C "$wt" clean -qfd -- apps/mobile/scripts/device
   else
     echo "$side $sha reuses every area from $runs"
   fi
