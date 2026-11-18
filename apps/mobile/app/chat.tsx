@@ -251,7 +251,7 @@ export default function ChatScreen() {
   const answered = messages.some(
     (m) => m.kind === 'assistant_card' || (m.kind === 'assistant_text' && m.status === 'done'),
   );
-  const blank = firstRun && !messages.length;
+  const blank = isToday && !messages.length;
   const now = new Date();
 
   const body = useAnimatedStyle(() => ({
@@ -263,7 +263,7 @@ export default function ChatScreen() {
       screen="chat"
       kind="pushed"
       title="Moni"
-      mark={<ChatCat mood={chatMood(messages, listening !== null)} />}
+      mark={blank ? undefined : <ChatCat mood={chatMood(messages, listening !== null)} />}
       subtitle={isToday ? `${dayTitle(viewDay, now)} · ${chatTime(now.toISOString())}` : dayTitle(viewDay, now)}
       trailing={
         <HeaderIconButton
@@ -279,7 +279,10 @@ export default function ChatScreen() {
         style={body}
       >
         {blank ? (
-          <BlankGreeting name={user?.user_metadata?.display_name ?? user?.user_metadata?.full_name ?? null} />
+          <BlankGreeting
+            name={user?.user_metadata?.display_name ?? user?.user_metadata?.full_name ?? null}
+            mood={listening !== null ? 'listening' : 'neutral'}
+          />
         ) : null}
         <FlatList
           ref={listRef}

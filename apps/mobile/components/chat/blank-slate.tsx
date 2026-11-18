@@ -1,6 +1,7 @@
 import { ScrollView, View } from 'react-native';
 import Animated, { FadeOut } from 'react-native-reanimated';
 
+import { Mascot, type MascotMood } from '@/components/brand/mascot';
 import { IconSymbol, type IconSymbolName } from '@/components/ui/icon-symbol';
 import { Press } from '@/components/ui/press';
 import { Text } from '@/components/ui/text';
@@ -15,14 +16,22 @@ const STARTERS: { title: string; meta: string; send: string; icon: IconSymbolNam
 
 const LEAVE = FadeOut.duration(160);
 
-/** The first open's hello, top left of the empty thread. */
-export function BlankGreeting({ name }: { name: string | null }) {
+/** The empty thread's hello, top left: the chat's one cat, then the greeting. */
+export function BlankGreeting({ name, mood }: { name: string | null; mood: MascotMood }) {
   const first = name?.trim().split(/\s+/)[0];
   return (
     <Animated.View
       exiting={LEAVE}
       className="px-5 pt-6"
     >
+      <View className="mb-4">
+        <Mascot
+          testID={tid('chat', 'blank', 'cat')}
+          mood={mood}
+          size={72}
+          pop
+        />
+      </View>
       <Text
         variant="screenTitle"
         className="text-foreground"

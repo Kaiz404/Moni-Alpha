@@ -81,6 +81,36 @@ describe('Moni chat first open', () => {
     expect(sendChatMessage).not.toHaveBeenCalled();
   });
 
+  it('shows the cat once, in the greeting, until the thread starts', () => {
+    render(<ChatScreen />);
+    expect(screen.getAllByLabelText(/^Moni(, \w+)?$/)).toHaveLength(1);
+    expect(screen.getByTestId('chat.blank.cat')).toBeTruthy();
+    expect(screen.queryByTestId('chat.cat')).toBeNull();
+    act(() => {
+      appendMessage({
+        id: 'u2',
+        role: 'user',
+        kind: 'user_text',
+        content: 'coffee 9.00',
+        createdAt: new Date().toISOString(),
+      });
+    });
+    expect(screen.getByTestId('chat.cat')).toBeTruthy();
+  });
+
+  it('greets again on a new day after earlier days of chat', () => {
+    appendMessage({
+      id: 'y1',
+      role: 'user',
+      kind: 'user_text',
+      content: 'coffee 9.00',
+      createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+    });
+    render(<ChatScreen />);
+    expect(screen.getByText('What did you spend?')).toBeTruthy();
+    expect(screen.getByTestId('chat.starter.0')).toBeTruthy();
+  });
+
   it('leaves once the thread has a message', () => {
     render(<ChatScreen />);
     act(() => {
