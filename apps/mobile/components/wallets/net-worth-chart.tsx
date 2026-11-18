@@ -9,7 +9,7 @@ import { balanceIndex } from '@/lib/finance/balance-history';
 import { CHART_RANGES, type ChartRange } from '@/lib/finance/chart-range';
 import { formatMoney } from '@/lib/finance/format-money';
 import type { FinanceTransaction, FinanceWallet } from '@/lib/finance/types';
-import { springs } from '@/lib/motion/tokens';
+import { springs } from '@repo/design';
 import { tid } from '@/lib/test-ids';
 import { compactWalletNames } from '@/lib/wallets/compact-name';
 

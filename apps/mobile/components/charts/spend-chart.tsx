@@ -27,7 +27,7 @@ import { Text } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import type { ChartRange } from '@/lib/finance/chart-range';
 import type { SpendBuckets, SpendIndex } from '@/lib/finance/spend-history';
-import { springs } from '@/lib/motion/tokens';
+import { springs } from '@repo/design';
 import { tid, type Screen } from '@/lib/test-ids';
 
 import {

@@ -46,7 +46,7 @@ import {
   FLING_COMMIT_THRESHOLD,
   projectedPosition,
   springs,
-} from '@/lib/motion/tokens';
+} from '@repo/design';
 import { tid } from '@/lib/test-ids';
 
 const SCRIM = 'rgba(23,24,26,0.32)';

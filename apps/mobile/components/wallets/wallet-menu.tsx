@@ -11,7 +11,7 @@ import {
 import { Press, PressRows } from '@/components/ui/press';
 import { Text } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
-import { springs } from '@/lib/motion/tokens';
+import { springs } from '@repo/design';
 import { tid } from '@/lib/test-ids';
 
 /** V2H-WalletDetail's menu `rise`: up 8 and fade in on the sheet spring. */

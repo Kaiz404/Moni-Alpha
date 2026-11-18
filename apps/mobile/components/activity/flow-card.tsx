@@ -25,7 +25,7 @@ import {
 import type { FlowSeries } from '@/lib/finance/flow-series';
 import { formatMoney } from '@/lib/finance/format-money';
 import { scrubStep } from '@/lib/haptics';
-import { springs } from '@/lib/motion/tokens';
+import { springs } from '@repo/design';
 import { tid } from '@/lib/test-ids';
 
 const CARD_IN = FadeIn.duration(180);

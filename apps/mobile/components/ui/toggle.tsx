@@ -10,7 +10,7 @@ import Animated, {
 
 import { Press } from '@/components/ui/press';
 import { toggleOff, toggleOn } from '@/lib/haptics';
-import { springs } from '@/lib/motion/tokens';
+import { springs } from '@repo/design';
 import type { TestId } from '@/lib/test-ids';
 
 /** Knob travel inside the 52 × 32 track: 2 from the left when off, 24 when on. */
