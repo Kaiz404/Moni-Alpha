@@ -78,10 +78,6 @@ function dayDate(month: MonthKey, day: number): string {
   return dateLabel(addDays(first, day - 1), first);
 }
 
-/** Whole money, rounded down, for axis labels and forward-looking numbers. */
-function whole(minor: number, currency: string): string {
-  return formatMoney(minor, currency, { whole: true });
-}
 
 /** The smallest of 1, 2, 2.5, 5 × 10^k at or above `value`. */
 export function niceCeil(value: number): number {
@@ -165,11 +161,11 @@ export function paceGeometry({
       top: TOP,
       baseline: BAR_BASE,
       labels: [
-        { y: TOP, text: whole(max, currency), tone: 'meta' },
+        { y: TOP, text: formatMoney(max, currency, { whole: true }), tone: 'meta' },
         ...(evenY === null
           ? []
-          : [{ y: evenY, text: whole(evenPace!, currency), tone: 'ink' as const }]),
-        { y: BAR_BASE, text: whole(0, currency), tone: 'meta' },
+          : [{ y: evenY, text: formatMoney(evenPace!, currency, { whole: true }), tone: 'ink' as const }]),
+        { y: BAR_BASE, text: formatMoney(0, currency, { whole: true }), tone: 'meta' },
       ],
       points: series.values.map((value, index) => ({
         x: centre(index),
@@ -196,7 +192,7 @@ export function paceGeometry({
         `Daily spending, 1 to ${today} ${name}.` +
         (evenPace === null
           ? ''
-          : ` ${today - over} of ${today} days stayed at or under the even pace of ${whole(evenPace, currency)}.`),
+          : ` ${today - over} of ${today} days stayed at or under the even pace of ${formatMoney(evenPace, currency, { whole: true })}.`),
     };
   }
 
@@ -226,22 +222,22 @@ export function paceGeometry({
   const labels: AxisLabel[] =
     budget !== null && budget >= max
       ? [
-          { y: TOP, text: whole(budget, currency), tone: 'mint' },
-          { y: (TOP + LINE_BASE) / 2, text: whole(budget / 2, currency), tone: 'meta' },
+          { y: TOP, text: formatMoney(budget, currency, { whole: true }), tone: 'mint' },
+          { y: (TOP + LINE_BASE) / 2, text: formatMoney(budget / 2, currency, { whole: true }), tone: 'meta' },
         ]
       : [
           // Just over budget, the two labels would print on each other.
           ...(budgetY !== null && budgetY - TOP < AXIS_LABEL_HEIGHT
             ? []
-            : [{ y: TOP, text: whole(max, currency), tone: 'meta' as const }]),
-          ...(budgetY === null ? [] : [{ y: budgetY, text: whole(budget!, currency), tone: 'mint' as const }]),
+            : [{ y: TOP, text: formatMoney(max, currency, { whole: true }), tone: 'meta' as const }]),
+          ...(budgetY === null ? [] : [{ y: budgetY, text: formatMoney(budget!, currency, { whole: true }), tone: 'mint' as const }]),
         ];
   return {
     mode,
     width,
     top: TOP,
     baseline: LINE_BASE,
-    labels: [...labels, { y: LINE_BASE, text: whole(0, currency), tone: 'meta' as const }].filter(
+    labels: [...labels, { y: LINE_BASE, text: formatMoney(0, currency, { whole: true }), tone: 'meta' as const }].filter(
       (label, index, all) => index === all.length - 1 || label.text !== all[all.length - 1]!.text,
     ),
     points,
@@ -256,7 +252,7 @@ export function paceGeometry({
       `${what ?? `Spent so far in ${name}`}, ${money(spent)}` +
       (budget === null
         ? '.'
-        : `, against the ${whole(budget, currency)} budget. Dashed line is an even pace.`),
+        : `, against the ${formatMoney(budget, currency, { whole: true })} budget. Dashed line is an even pace.`),
   };
 }
 

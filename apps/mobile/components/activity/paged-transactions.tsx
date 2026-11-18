@@ -15,13 +15,13 @@ import { pageOf, type Page } from '@/lib/finance/paged';
 import type { FinanceTransaction } from '@/lib/finance/types';
 import { tid, type Screen, type TestId } from '@/lib/test-ids';
 import { transactionRow, type RowLookups, type TransactionRowData } from '@/lib/transactions/row';
-import { dayHeading, formatMoney } from '@repo/core';
+import { dayHeading, formatSignedMoney } from '@repo/core';
 import { deviceCalendar } from '@/lib/dates/device-calendar';
 
 function dayTotal(day: ActivityDay, currency: string) {
   return [
-    day.spentMinor > 0 ? `−${formatMoney(day.spentMinor, currency)}` : null,
-    day.inMinor > 0 ? `+${formatMoney(day.inMinor, currency)}` : null,
+    day.spentMinor > 0 ? formatSignedMoney('expense', day.spentMinor, currency) : null,
+    day.inMinor > 0 ? formatSignedMoney('income', day.inMinor, currency) : null,
   ]
     .filter(Boolean)
     .join(' · ');
