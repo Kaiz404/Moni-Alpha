@@ -149,7 +149,16 @@ Text and image requests also carry optional `clientNow` (device local time, RFC 
 
 `type` is `income` | `expense` | `transfer`. Transfers use `walletId` as the source wallet and `transferToWalletId` as the destination (either may be `null` for user completion in the review UI). Receipt and notification extraction remain income/expense only on the wire (the client reads reloads and card payments itself, with no wire change); **text** extraction detects transfers (e.g. "move 500 from Maybank to savings").
 
-Auth: `Authorization: Bearer <supabase-user-jwt>`, verified via JWKS (ES256). Errors: `{ error, details? }`. Until the JWKS has loaded, every authenticated request gets a 503 with `Retry-After: 30` and `details.retryAfterSeconds`; no request passes auth without verified keys. The client treats any non-2xx or network failure as `unavailable`.
+Auth: `Authorization: Bearer <supabase-user-jwt>`, verified via JWKS (ES256). The extract and chat routes refuse a token whose `ai_consent` claim is `false` with 403 and `details.reason: "consent"` (see [Consent](#consent)). Errors: `{ error, details? }`. Until the JWKS has loaded, every authenticated request gets a 503 with `Retry-After: 30` and `details.retryAfterSeconds`; no request passes auth without verified keys. The client treats any non-2xx or network failure as `unavailable`.
+
+## Consent
+
+Nothing goes to an AI provider until the user turns Moni's AI on (#57). The choice has a master switch, "Let Moni use AI", and one switch per use: `alerts` (payment alerts), `add` (what the user says in Say it), `receipts` (Scan a receipt) and `chat` (everything sent in Moni chat, its receipt photos included). A use works only when both its switch and the master are on.
+
+- **Record:** `ai_consents` in Postgres, append only, with the notice version and a server timestamp ([DATABASE.md](DATABASE.md)). Not in `profiles.preferences`, whose read-modify-write races across devices.
+- **Server gate:** a Custom Access Token Hook copies the master switch into the access token as `ai_consent`, and the Go middleware refuses extract and chat calls when it is `false`. The backend stays stateless. Per-use switches are enforced on the phone only.
+- **Rollout:** a token without the claim still passes. The daily app shipped before the consent screen, and the hook adds no claim for a user never asked, so that app keeps working. Once every client in use ships the consent screen, make the gate strict: a missing claim refuses too (`auth.RequireAIConsent`).
+- `node scripts/verify/ai-consent-live.mjs` runs the whole path against the dev project and restores the e2e user's consent afterwards.
 
 ## Model allocation
 

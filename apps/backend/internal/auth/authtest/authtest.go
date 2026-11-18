@@ -53,7 +53,17 @@ func KeyAndJWKS(t testing.TB) (jwk.Key, *httptest.Server) {
 // SignToken returns a signed access token for sub that expires at exp.
 func SignToken(t testing.TB, priv jwk.Key, sub string, exp time.Time) string {
 	t.Helper()
-	tok, err := jwt.NewBuilder().Subject(sub).IssuedAt(time.Now()).Expiration(exp).Build()
+	return SignTokenWithClaims(t, priv, sub, exp, nil)
+}
+
+// SignTokenWithClaims adds private claims, such as `ai_consent`, to the token SignToken makes.
+func SignTokenWithClaims(t testing.TB, priv jwk.Key, sub string, exp time.Time, claims map[string]any) string {
+	t.Helper()
+	b := jwt.NewBuilder().Subject(sub).IssuedAt(time.Now()).Expiration(exp)
+	for name, value := range claims {
+		b = b.Claim(name, value)
+	}
+	tok, err := b.Build()
 	if err != nil {
 		t.Fatal(err)
 	}

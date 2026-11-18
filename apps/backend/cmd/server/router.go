@@ -46,7 +46,7 @@ func newRouter(verifier *auth.Verifier, limiter, ipLimiter *auth.RateLimiter, ll
 	r.GET("/healthz", health)
 
 	ipLimit := ipLimiter.MiddlewareBy(func(c *gin.Context) string { return auth.ClientIP(c.Request) }, "Too many requests — try again shortly")
-	v1 := r.Group("/v1", ipLimit, verifier.Middleware(), limiter.Middleware(), limitBody(maxBodyBytes))
+	v1 := r.Group("/v1", ipLimit, verifier.Middleware(), auth.RequireAIConsent(), limiter.Middleware(), limitBody(maxBodyBytes))
 	extract.NewHandler(extract.NewService(llmClient)).Register(v1)
 	chat.NewHandler(chat.NewService(llmClient)).Register(v1)
 	// Search as you type sends a call every few keystrokes, which the AI limit would throttle.

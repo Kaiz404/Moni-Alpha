@@ -19,7 +19,8 @@ import (
 )
 
 const (
-	userIDKey = "moni_user_id"
+	userIDKey    = "moni_user_id"
+	aiConsentKey = "moni_ai_consent"
 
 	// The first fetch holds startup back so a healthy cold start serves its first request with
 	// keys, as it always has. It is bounded so a black-holed host cannot keep the port closed.
@@ -95,15 +96,32 @@ func (v *Verifier) KeysLoaded() bool {
 	return v.loaded.Load()
 }
 
-// VerifyToken parses and validates a Supabase access token, returning the
-// user id (sub claim). It returns ErrKeysNotLoaded before the JWKS has loaded.
-func (v *Verifier) VerifyToken(ctx context.Context, raw string) (string, error) {
+// AIConsent is what an access token says about the user's AI opt-in, from the `ai_consent` claim
+// that the Supabase Custom Access Token Hook adds.
+type AIConsent int
+
+const (
+	// AIConsentUnstated means no claim: a token minted before the hook, or a user never asked.
+	AIConsentUnstated AIConsent = iota
+	AIConsentGiven
+	AIConsentRefused
+)
+
+// Identity is what a verified access token says about its user.
+type Identity struct {
+	UserID    string
+	AIConsent AIConsent
+}
+
+// VerifyToken parses and validates a Supabase access token. It returns ErrKeysNotLoaded before
+// the JWKS has loaded.
+func (v *Verifier) VerifyToken(ctx context.Context, raw string) (Identity, error) {
 	if !v.loaded.Load() {
-		return "", ErrKeysNotLoaded
+		return Identity{}, ErrKeysNotLoaded
 	}
 	set, err := v.cache.Get(ctx, v.jwksURL)
 	if err != nil {
-		return "", errors.Join(ErrKeysNotLoaded, err)
+		return Identity{}, errors.Join(ErrKeysNotLoaded, err)
 	}
 	tok, err := jwt.Parse([]byte(raw),
 		jwt.WithKeySet(set),
@@ -111,9 +129,22 @@ func (v *Verifier) VerifyToken(ctx context.Context, raw string) (string, error) 
 		jwt.WithAcceptableSkew(30*time.Second),
 	)
 	if err != nil {
-		return "", err
+		return Identity{}, err
 	}
-	return tok.Subject(), nil
+	return Identity{UserID: tok.Subject(), AIConsent: aiConsentOf(tok)}, nil
+}
+
+// aiConsentOf reads the claim. Anything but a JSON boolean counts as unstated.
+func aiConsentOf(tok jwt.Token) AIConsent {
+	claim, _ := tok.Get("ai_consent")
+	switch claim {
+	case true:
+		return AIConsentGiven
+	case false:
+		return AIConsentRefused
+	default:
+		return AIConsentUnstated
+	}
 }
 
 // Middleware authenticates requests with `Authorization: Bearer <jwt>`. Without keys it answers
@@ -126,7 +157,7 @@ func (v *Verifier) Middleware() gin.HandlerFunc {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Missing bearer token"})
 			return
 		}
-		userID, err := v.VerifyToken(c.Request.Context(), token)
+		id, err := v.VerifyToken(c.Request.Context(), token)
 		if errors.Is(err, ErrKeysNotLoaded) {
 			c.Header("Retry-After", strconv.Itoa(retryAfterSeconds))
 			c.AbortWithStatusJSON(http.StatusServiceUnavailable, gin.H{
@@ -135,11 +166,28 @@ func (v *Verifier) Middleware() gin.HandlerFunc {
 			})
 			return
 		}
-		if err != nil || userID == "" {
+		if err != nil || id.UserID == "" {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Invalid or expired token"})
 			return
 		}
-		c.Set(userIDKey, userID)
+		c.Set(userIDKey, id.UserID)
+		c.Set(aiConsentKey, id.AIConsent)
+		c.Next()
+	}
+}
+
+// RequireAIConsent runs after Middleware on the routes that send personal data to an AI
+// provider. It refuses only a token that says the user turned AI off: a token without the claim
+// passes while app builds without the consent screen are still in use (docs/AI.md).
+func RequireAIConsent() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		if consent, _ := c.Get(aiConsentKey); consent == AIConsentRefused {
+			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{
+				"error":   "Moni's AI is turned off for this account",
+				"details": gin.H{"reason": "consent"},
+			})
+			return
+		}
 		c.Next()
 	}
 }

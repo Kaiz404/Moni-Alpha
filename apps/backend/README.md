@@ -38,6 +38,8 @@ An unreachable JWKS does not stop the process. This matters when a free-tier Sup
 - A background loop retries from 2s, doubling up to 60s, until a fetch returns at least one key. After that the JWKS cache refreshes on its own and keeps the last good keys when a refresh fails.
 - Until keys load, a `/v1` request with a bearer token gets `503 { "error": "Auth keys are not loaded yet", "details": { "retryAfterSeconds": 30 } }` and `Retry-After: 30`. No request reaches a handler without a verified token (`internal/auth/keys_test.go`). The mobile client reads a 503 as `unavailable` and keeps the capture queued.
 
+The extract and chat routes also check the token's `ai_consent` claim (`auth.RequireAIConsent`). `false` gets `403 { "error": "Moni's AI is turned off for this account", "details": { "reason": "consent" } }` before the rate limit or the provider. `true` and a missing claim pass; see [docs/AI.md § Consent](../../docs/AI.md#consent) for when a missing claim starts to refuse. Places ignores the claim.
+
 ## Run locally
 
 ```bash

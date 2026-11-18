@@ -77,6 +77,8 @@ type testServer struct {
 	handler http.Handler
 	llm     *fakeLLM
 	token   func(sub string) string
+	// tokenWith signs a token for user-1 that carries these claims.
+	tokenWith func(claims map[string]any) string
 }
 
 func newTestServer(t *testing.T, limiter *auth.RateLimiter, replies ...llmReply) *testServer {
@@ -99,6 +101,9 @@ func newTestServer(t *testing.T, limiter *auth.RateLimiter, replies ...llmReply)
 		llm:     fake,
 		token: func(sub string) string {
 			return authtest.SignToken(t, priv, sub, time.Now().Add(time.Hour))
+		},
+		tokenWith: func(claims map[string]any) string {
+			return authtest.SignTokenWithClaims(t, priv, "user-1", time.Now().Add(time.Hour), claims)
 		},
 	}
 }
@@ -218,6 +223,49 @@ func TestV1RoutesRejectMissingOrInvalidTokens(t *testing.T) {
 	}
 	if len(s.llm.requests) != 0 {
 		t.Fatalf("unauthenticated requests reached the provider: %d", len(s.llm.requests))
+	}
+}
+
+var aiRoutes = []string{"/v1/extract/text", "/v1/extract/image", "/v1/extract/notification", "/v1/chat/analyze"}
+
+func TestAIRoutesRefuseATokenThatTurnedAIOff(t *testing.T) {
+	s := newTestServer(t, nil)
+	refused := s.tokenWith(map[string]any{"ai_consent": false})
+	for _, route := range aiRoutes {
+		code, _, body := s.call(t, http.MethodPost, route, refused, `{"message":"hi","text":"lunch 12"}`)
+		if code != http.StatusForbidden || body["error"] != "Moni's AI is turned off for this account" {
+			t.Errorf("%s: got %d %v", route, code, body)
+		}
+		if details, _ := body["details"].(map[string]any); details["reason"] != "consent" {
+			t.Errorf("%s: details %v, want reason consent", route, body["details"])
+		}
+	}
+	if len(s.llm.requests) != 0 {
+		t.Fatalf("%d requests reached the provider with AI turned off", len(s.llm.requests))
+	}
+}
+
+func TestAIRoutesServeAGivenOrUnstatedConsent(t *testing.T) {
+	otp := notificationBody("OTP 551203 for your RM 89.90 purchase. Don't share it.")
+	for name, claims := range map[string]map[string]any{
+		"given":         {"ai_consent": true},
+		"unstated":      nil,
+		"not a boolean": {"ai_consent": "false"},
+	} {
+		s := newTestServer(t, nil)
+		code, _, body := s.call(t, http.MethodPost, "/v1/extract/notification", s.tokenWith(claims), otp)
+		if code != http.StatusOK || body["status"] != "skipped" {
+			t.Errorf("%s: got %d %v", name, code, body)
+		}
+	}
+}
+
+func TestPlacesIgnoreTheAIConsentClaim(t *testing.T) {
+	s := newTestServer(t, nil)
+	refused := s.tokenWith(map[string]any{"ai_consent": false})
+	code, _, body := s.call(t, http.MethodPost, "/v1/places/autocomplete", refused, `{}`)
+	if code == http.StatusForbidden {
+		t.Fatalf("places refused a token with AI off: %v", body)
 	}
 }
 
