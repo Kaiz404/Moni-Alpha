@@ -13,6 +13,7 @@ import {
   CurrencySheet,
   DateSheet,
   NotificationAppSheet,
+  OptionPickerSheet,
   PersonSheet,
   TransactionTypeSheet,
   WalletSheet,
@@ -164,6 +165,17 @@ function renderSheet(sheet: OpenSheet, frame: SheetFrameProps) {
           {...frame}
           request={sheet.request}
           onSave={sheet.settle}
+        />
+      );
+    case 'choice':
+      return (
+        <OptionPickerSheet
+          {...frame}
+          title={sheet.request.title}
+          options={sheet.request.options}
+          selectedId={sheet.request.selected}
+          size={sheet.request.options.length > 12 ? 'large' : 'fit'}
+          onPick={sheet.settle}
         />
       );
     case 'confirm':

@@ -61,25 +61,54 @@ describe('loginReducer', () => {
 });
 
 describe('checkDetails', () => {
+  const today = new Date(2026, 10, 19);
+  const kai = {
+    name: 'Kai',
+    email: 'kai@example.com',
+    password: 'long enough',
+    birthMonth: '1996-04',
+  };
+
   it('treats a short password on sign in as wrong details', () => {
-    expect(checkDetails('signIn', { name: '', email: 'kai@example.com', password: 'short' })).toEqual(
-      { kind: 'wrongDetails' },
-    );
+    expect(
+      checkDetails(
+        'signIn',
+        { name: '', email: 'kai@example.com', password: 'short', birthMonth: null },
+        today,
+      ),
+    ).toEqual({ kind: 'wrongDetails' });
   });
 
   it('asks for at least 8 characters when creating an account', () => {
-    expect(
-      checkDetails('createAccount', { name: 'Kai', email: 'kai@example.com', password: 'short' }),
-    ).toEqual({ kind: 'failed', message: 'Use at least 8 characters for your password.' });
+    expect(checkDetails('createAccount', { ...kai, password: 'short' }, today)).toEqual({
+      kind: 'failed',
+      message: 'Use at least 8 characters for your password.',
+    });
+  });
+
+  it('asks for the date of birth before creating an account', () => {
+    expect(checkDetails('createAccount', { ...kai, birthMonth: null }, today)).toEqual({
+      kind: 'failed',
+      message: 'Add your name, email, a password and your date of birth.',
+    });
+  });
+
+  it('turns away anyone under 18, counting from their 18th birthday month', () => {
+    const underAge = {
+      kind: 'failed',
+      message: "Moni is for people 18 and over, so we can't create an account for you.",
+    };
+    expect(checkDetails('createAccount', { ...kai, birthMonth: '2008-12' }, today)).toEqual(
+      underAge,
+    );
+    expect(checkDetails('createAccount', { ...kai, birthMonth: '2010-01' }, today)).toEqual(
+      underAge,
+    );
+    expect(checkDetails('createAccount', { ...kai, birthMonth: '2008-11' }, today)).toBeNull();
+    expect(checkDetails('createAccount', { ...kai, birthMonth: '2008-10' }, today)).toBeNull();
   });
 
   it('passes complete details', () => {
-    expect(
-      checkDetails('createAccount', {
-        name: 'Kai',
-        email: 'kai@example.com',
-        password: 'long enough',
-      }),
-    ).toBeNull();
+    expect(checkDetails('createAccount', kai, today)).toBeNull();
   });
 });

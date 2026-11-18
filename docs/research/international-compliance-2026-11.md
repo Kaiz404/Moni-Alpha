@@ -110,7 +110,7 @@ What every market and both stores converge on:
 - [ ] OpenRouter: ZDR in account settings and per request; accept its DPA. Accept Supabase's and Google Cloud's DPAs.
 - [ ] Processor list (public, in or linked from the policy): Supabase, Google Cloud (Cloud Run, Places, Maps), OpenRouter and its model hosts, Apple/Google for push and billing.
 - [ ] Confirm the Supabase region and write it in `docs/SETUP.md`.
-- [ ] Age gate: neutral birth month and year at sign-up; refuse under-13s everywhere (COPPA) and decide on 13–17 (GDPR lets countries set 13–16 for consent, [Art. 8](https://gdpr-info.eu/art-8-gdpr/); India counts under-18s as children). The simplest rule is 18+.
+- [ ] Age gate (phone email sign-up done: 18+, birth month and year; web sign-up and Google sign-in still open, #60): neutral birth month and year at sign-up; refuse under-13s everywhere (COPPA) and decide on 13–17 (GDPR lets countries set 13–16 for consent, [Art. 8](https://gdpr-info.eu/art-8-gdpr/); India counts under-18s as children). The simplest rule is 18+.
 - [ ] App Privacy labels, Data safety form and Financial features declaration filled to match the policy.
 - [ ] Moni chat labelled as AI.
 - [ ] Security basics that also satisfy a GLBA reading: MFA on every admin console (Supabase, Google Cloud, OpenRouter, GitHub, store consoles), encryption in transit and at rest (Supabase default), least-privilege keys, secrets in Secret Manager.

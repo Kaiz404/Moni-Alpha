@@ -120,6 +120,15 @@ type Sheets = {
     request: { currency: string; balanceMinor: MinorAmount };
     result: MinorAmount;
   };
+  /** A plain list of named choices, such as a birth month; resolves to the picked id. */
+  choice: {
+    request: {
+      title: string;
+      options: { id: string; name: string }[];
+      selected: string | null;
+    };
+    result: string;
+  };
   confirm: {
     request: {
       title: string;
