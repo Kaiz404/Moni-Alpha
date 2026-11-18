@@ -67,7 +67,20 @@ describe('Record a debt on the Debts tab', () => {
     jest.mocked(useDebtSummary).mockReturnValue({ comingUp: [], closed: [], open: [] } as never);
     render(<DebtsScreen />);
     expect(screen.queryByTestId('debts.record-debt')).toBeNull();
+    expect(screen.getByLabelText('Moni, happy')).toBeTruthy();
     fireEvent.press(screen.getByTestId('debts.empty.record-debt'));
     expect(router.push).toHaveBeenCalledWith('/debt/new');
+  });
+
+  it('shows one happy cat on the all settled tile', () => {
+    jest.mocked(useDebtSummary).mockReturnValue({
+      comingUp: [],
+      closed: [{ debt: { id: 'ali', direction: 'owed_to_me' } }],
+      open: [],
+    } as never);
+    render(<DebtsScreen />);
+    expect(screen.getByText('Nobody owes anybody')).toBeTruthy();
+    expect(screen.getAllByLabelText(/^Moni/)).toHaveLength(1);
+    expect(screen.getByLabelText('Moni, happy')).toBeTruthy();
   });
 });

@@ -2,6 +2,7 @@ import { router, useScrollToTop } from 'expo-router';
 import { useRef, useState } from 'react';
 import { ScrollView, View } from 'react-native';
 
+import { Mascot } from '@/components/brand/mascot';
 import { ComingUp } from '@/components/debts/coming-up';
 import { SIDE_WORDS } from '@/components/debts/debt-words';
 import { NetPosition } from '@/components/debts/net-position';
@@ -173,16 +174,12 @@ function NoDebtsTile() {
 }
 
 function AllSettledTile() {
-  const tokens = useThemeTokens();
   return (
     <View className="flex-row items-center gap-3.5 rounded-tile border-[1.5px] border-dashed border-border-strong p-[18px]">
-      <View className="h-[42px] w-[42px] items-center justify-center rounded-full bg-primary-muted">
-        <IconSymbol
-          name="check-bold"
-          size={20}
-          color={tokens.states.approved}
-        />
-      </View>
+      <Mascot
+        mood="happy"
+        size={44}
+      />
       <View className="min-w-0 flex-1 gap-0.5">
         <Text
           variant="cardTitle"
