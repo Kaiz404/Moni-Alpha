@@ -76,6 +76,11 @@ export const CHAT_FIXTURES: { asked: RegExp; reply: string }[] = [
     asked: /^how much (?:on|for) transport this month$/,
     reply: 'Most of your Transport this month went on Grab rides and petrol.',
   },
+  {
+    asked: /^what can you do$/,
+    reply:
+      "I add spends you type, say or snap from a receipt, and I answer questions about your spending, budgets, bills and what's left until payday.",
+  },
 ];
 
 export function normalizeSaid(text: string): string {
