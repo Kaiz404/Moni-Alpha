@@ -1,0 +1,9 @@
+{
+  "extends": "@repo/typescript-config/shared.json",
+  "compilerOptions": {
+    "allowImportingTsExtensions": true,
+    "types": []
+  },
+  "include": ["src"],
+  "exclude": ["node_modules"]
+}
