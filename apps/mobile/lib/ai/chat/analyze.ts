@@ -7,6 +7,7 @@ import {
 } from '@/lib/ai/snapshot/finance-metrics';
 import { financeProjection$ } from '@/lib/finance/projection';
 import { getUserId } from '@/lib/supabase/client';
+import { profilePreferences$ } from '@/lib/store';
 import { listRecurringOverrides } from '@/lib/supabase/recurring-overrides';
 import { exportHistoryForApi } from './messages';
 
@@ -76,6 +77,7 @@ export async function analyzeUserFinances(message: string): Promise<AnalyzeFinan
       message,
       snapshot,
       history: exportHistoryForApi(),
+      tone: profilePreferences$.peek()?.moni_tone,
     });
 
     if (result.status === 'ok') {

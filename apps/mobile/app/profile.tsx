@@ -8,6 +8,7 @@ import { useUniwind } from 'uniwind';
 import { ExportDataRow } from '@/components/profile/export-data-row';
 import { ImportDataRow } from '@/components/profile/import-data-row';
 import { MainCurrencyRow } from '@/components/profile/main-currency-row';
+import { MoniToneRow } from '@/components/profile/moni-tone-row';
 import {
   ProfileRow,
   type ProfileTint,
@@ -200,6 +201,10 @@ export default function ProfileScreen() {
             chevron="right"
             onPress={() => router.push('/merchants')}
           />
+        </Section>
+
+        <Section label="MONI CHAT">
+          <MoniToneRow />
         </Section>
 
         <Section label="ON THE WEB">

@@ -32,7 +32,7 @@ func (s *Service) Analyze(ctx context.Context, req AnalyzeRequest) AnalyzeResult
 	userContent.WriteString("\n\nUSER_QUESTION:\n")
 	userContent.WriteString(strings.TrimSpace(req.Message))
 
-	messages := []llm.Message{{Role: "system", Content: analyzeSystemPrompt}}
+	messages := []llm.Message{{Role: "system", Content: systemPrompt(req.Tone)}}
 	for _, h := range req.History {
 		role := strings.TrimSpace(h.Role)
 		content := strings.TrimSpace(h.Content)

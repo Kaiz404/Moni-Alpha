@@ -8,7 +8,7 @@ import (
 
 // Answers the questions exported by `pnpm --filter moni bench:chat:live` through the real chat
 // service and writes the replies for the mobile scorer. Opt in with MONI_CHAT_BENCH_IN and
-// MONI_CHAT_BENCH_OUT on top of the live-test variables.
+// MONI_CHAT_BENCH_OUT on top of the live-test variables; MONI_CHAT_BENCH_TONE picks Moni's voice.
 func TestLiveChatBench(t *testing.T) {
 	in, out := os.Getenv("MONI_CHAT_BENCH_IN"), os.Getenv("MONI_CHAT_BENCH_OUT")
 	if in == "" || out == "" {
@@ -31,7 +31,11 @@ func TestLiveChatBench(t *testing.T) {
 	s := newLiveServer(t)
 	replies := map[string]map[string]any{}
 	for _, q := range bench.Questions {
-		_, res := s.post(t, "/v1/chat/analyze", map[string]any{"message": q.Question, "snapshot": q.Snapshot})
+		body := map[string]any{"message": q.Question, "snapshot": q.Snapshot}
+		if tone := os.Getenv("MONI_CHAT_BENCH_TONE"); tone != "" {
+			body["tone"] = tone
+		}
+		_, res := s.post(t, "/v1/chat/analyze", body)
 		replies[q.ID] = res
 	}
 	data, err := json.Marshal(map[string]any{"replies": replies})

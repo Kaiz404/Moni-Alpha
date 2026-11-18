@@ -6,9 +6,9 @@ const snapshot = buildBenchSnapshot();
 const benchCase = (id: string) => CHAT_BENCH_CASES.find((c) => c.id === id)!;
 
 describe('chat bench fixture', () => {
-  it('holds 31 cases', () => {
-    expect(CHAT_BENCH_CASES).toHaveLength(31);
-    expect(new Set(CHAT_BENCH_CASES.map((c) => c.id)).size).toBe(31);
+  it('holds 32 cases', () => {
+    expect(CHAT_BENCH_CASES).toHaveLength(32);
+    expect(new Set(CHAT_BENCH_CASES.map((c) => c.id)).size).toBe(32);
   });
 
   it('keeps MYR, SGD and USD apart and leaves the transfer out of spending', () => {

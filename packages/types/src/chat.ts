@@ -7,11 +7,17 @@ export const chatHistoryMessageSchema = z.object({
 
 export type ChatHistoryMessage = z.infer<typeof chatHistoryMessageSchema>;
 
+/** The voice the user picks for Moni's chat replies. */
+export const moniToneSchema = z.enum(['friendly', 'direct', 'playful']);
+
+export type MoniTone = z.infer<typeof moniToneSchema>;
+
 /** Wire request for POST /v1/chat/analyze */
 export const chatAnalyzeRequestSchema = z.object({
   message: z.string().min(1).max(2000),
   snapshot: z.record(z.unknown()),
   history: z.array(chatHistoryMessageSchema).max(12).optional(),
+  tone: moniToneSchema.optional(),
 });
 
 export type ChatAnalyzeRequest = z.infer<typeof chatAnalyzeRequestSchema>;

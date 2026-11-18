@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+import { moniToneSchema } from './chat';
+
 // User preferences schema
 export const userPreferencesSchema = z.object({
   /** Main currency: the one totals and the Budget tab count in. */
@@ -12,6 +14,8 @@ export const userPreferencesSchema = z.object({
   finance_timezone: z.string().min(1).max(100).optional(),
   /** The month's total budget in the main currency, whole units; null falls back to the sum of category budgets. */
   monthly_budget: z.number().int().positive().nullable().optional(),
+  /** The voice Moni chat answers in; absent, or a tone this build doesn't know, means friendly. */
+  moni_tone: moniToneSchema.optional().catch(undefined),
 });
 
 // Profile schema
