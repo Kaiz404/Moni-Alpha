@@ -9,7 +9,8 @@
     "start": "next start",
     "lint": "eslint --max-warnings 0",
     "check-types": "next typegen && tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "verify": "node scripts/verify/drive.mjs"
   },
   "dependencies": {
     "@mdi/js": "7.4.47",

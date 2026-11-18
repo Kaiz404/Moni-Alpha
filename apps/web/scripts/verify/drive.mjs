@@ -1,0 +1,482 @@
+#!/usr/bin/env node
+// Drives the real web app the way a user does and prints PASS or FAIL per check; the last line is the verdict.
+//   node apps/web/scripts/verify/drive.mjs [--no-build] [--dev] [--out <dir>] [--skip-qr] [--doctor]
+// Builds and starts the app on a free port with the dev project's keys from apps/mobile/.env.e2e (this
+// checkout's, then the main checkout's), signs in as the e2e user, and saves screenshots beside the board
+// renders, with board-and-app pairs for the screens a board draws.
+import { execFileSync, spawn } from 'node:child_process';
+import { existsSync, mkdirSync, readFileSync } from 'node:fs';
+import { createServer } from 'node:net';
+import { homedir } from 'node:os';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { chromium } from '@playwright/test';
+
+const web = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
+const repo = join(web, '..', '..');
+const args = process.argv.slice(2);
+const flag = (name) => args.includes(name);
+const option = (name) => (args.includes(name) ? args[args.indexOf(name) + 1] : null);
+
+const RENDERS = process.env.MONI_BOARD_RENDERS ?? join(homedir(), '.local/share/moni-canvas/web-r1/renders');
+const sha = execFileSync('git', ['-C', repo, 'rev-parse', '--short', 'HEAD'], { encoding: 'utf8' }).trim();
+const dirty = execFileSync('git', ['-C', repo, 'status', '--porcelain', '--', 'apps/web'], { encoding: 'utf8' }).trim() !== '';
+const OUT = option('--out') ?? join(RENDERS, 'app', `${sha}${dirty ? '-dirty' : ''}`);
+mkdirSync(join(OUT, 'pairs'), { recursive: true });
+
+const WIDTHS = [
+  { width: 1440, height: 900, layout: 'sidebar' },
+  { width: 1024, height: 768, layout: 'rail' },
+  { width: 820, height: 1180, layout: 'rail-one-column' },
+  { width: 390, height: 844, layout: 'phone' },
+];
+const ROUTES = [
+  { path: '/home', title: /^Welcome to Moni, / },
+  { path: '/activity', title: /^Activity$/ },
+  { path: '/budget', title: /^Budget$/ },
+  { path: '/debts', title: /^Debts$/ },
+  { path: '/review', title: /^Review$/, pushed: true },
+  { path: '/settings', title: /^Settings$/, pushed: true },
+];
+const NAV_FOR = { sidebar: 'nav.sidebar', rail: 'nav.rail', 'rail-one-column': 'nav.rail', phone: 'nav.tabbar' };
+const BACKGROUND = { light: 'rgb(246, 242, 233)', dark: 'rgb(11, 10, 9)' };
+
+let failures = 0;
+let passes = 0;
+function check(name, ok, detail) {
+  console.log(`${ok ? 'PASS' : 'FAIL'} ${name}${ok || detail === undefined ? '' : ` (${JSON.stringify(detail)})`}`);
+  if (ok) passes++;
+  else failures++;
+  return ok;
+}
+
+function loadEnv() {
+  const main = /^worktree (.+)$/m.exec(
+    execFileSync('git', ['-C', repo, 'worktree', 'list', '--porcelain'], { encoding: 'utf8' }),
+  )?.[1];
+  const env = {};
+  for (const root of [repo, main]) {
+    const file = root && join(root, 'apps/mobile/.env.e2e');
+    if (!file || !existsSync(file)) continue;
+    for (const line of readFileSync(file, 'utf8').split(/\r?\n/)) {
+      const match = /^\s*([A-Z_][A-Z0-9_]*)=(.*)$/.exec(line);
+      if (match && !(match[1] in env)) env[match[1]] = match[2].trim().replace(/^['"]|['"]$/g, '');
+    }
+  }
+  for (const key of ['EXPO_PUBLIC_SUPABASE_URL', 'EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY', 'E2E_EMAIL', 'E2E_PASSWORD']) {
+    if (!env[key]) throw new Error(`${key} is missing from apps/mobile/.env.e2e`);
+  }
+  return env;
+}
+
+function freePort() {
+  return new Promise((resolve, reject) => {
+    const server = createServer();
+    server.listen(0, '127.0.0.1', () => {
+      const { port } = server.address();
+      server.close(() => resolve(port));
+    });
+    server.on('error', reject);
+  });
+}
+
+async function waitFor(url, ms) {
+  const until = Date.now() + ms;
+  while (Date.now() < until) {
+    try {
+      const res = await fetch(url, { redirect: 'manual' });
+      if (res.status < 500) return true;
+    } catch {
+      // not up yet
+    }
+    await new Promise((r) => setTimeout(r, 500));
+  }
+  return false;
+}
+
+const env = loadEnv();
+const supabaseUrl = env.EXPO_PUBLIC_SUPABASE_URL.replace(/\/$/, '');
+const publishable = env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
+const appEnv = {
+  ...process.env,
+  NEXT_PUBLIC_SUPABASE_URL: supabaseUrl,
+  NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: publishable,
+  NEXT_PUBLIC_MONI_APP_SCHEME: 'moni-e2e',
+  NEXT_TELEMETRY_DISABLED: '1',
+};
+const next = join(web, 'node_modules', '.bin', 'next');
+
+if (flag('--doctor')) {
+  check('apps/mobile/.env.e2e has the dev project keys and the e2e user', true);
+  check('Playwright has its Chromium', existsSync(chromium.executablePath()), chromium.executablePath());
+  const poll = await fetch(`${supabaseUrl}/functions/v1/qr-poll`, {
+    method: 'POST',
+    headers: { apikey: publishable, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ pollSecret: 'doctor' }),
+  })
+    .then((res) => res.json())
+    .catch((error) => ({ error: String(error) }));
+  check('the dev project answers qr-poll', poll?.status === 'expired', poll);
+  const start = await fetch(`${supabaseUrl}/functions/v1/qr-start`, { method: 'OPTIONS' }).catch(() => null);
+  check('qr-start is deployed', start?.ok === true, start?.status);
+  console.log(failures === 0 ? 'web-verify doctor PASS' : `web-verify doctor FAIL: ${failures} checks`);
+  process.exit(failures === 0 ? 0 : 1);
+}
+const dev = flag('--dev');
+
+if (!dev && !flag('--no-build')) {
+  console.log('building the web app');
+  execFileSync(next, ['build'], { cwd: web, env: appEnv, stdio: ['ignore', 'ignore', 'inherit'] });
+}
+const port = await freePort();
+const base = `http://127.0.0.1:${port}`;
+const server = spawn(next, [dev ? 'dev' : 'start', '--port', String(port), '--hostname', '127.0.0.1'], {
+  cwd: web,
+  env: appEnv,
+  stdio: ['ignore', 'ignore', 'inherit'],
+});
+const stop = () => server.kill('SIGTERM');
+process.on('exit', stop);
+if (!(await waitFor(`${base}/login`, 120_000))) {
+  console.log('FAIL the app did not start');
+  process.exit(1);
+}
+console.log(`app on ${base}, screenshots in ${OUT}`);
+
+const browser = await chromium.launch();
+
+/** Waits out the short entrance animations (page fade, pane slide) so a screenshot shows the settled screen. */
+async function settle(page) {
+  await page.evaluate(() =>
+    Promise.all(
+      document
+        .getAnimations()
+        .filter((a) => {
+          const timing = a.effect?.getComputedTiming();
+          return timing && Number.isFinite(timing.endTime) && timing.endTime < 1500;
+        })
+        .map((a) => a.finished.catch(() => {})),
+    ),
+  );
+}
+
+async function shot(page, name) {
+  await settle(page);
+  const path = join(OUT, `${name}.png`);
+  await page.screenshot({ path });
+  return path;
+}
+
+/** Board render on the left, the app on the right, at the same height. */
+async function pair(name, board, app) {
+  const boardPath = join(RENDERS, board);
+  if (!existsSync(boardPath)) return check(`board render ${board} exists`, false, boardPath);
+  const page = await browser.newPage({ viewport: { width: 2900, height: 900 } });
+  const img = (p) =>
+    `<img src="data:image/png;base64,${readFileSync(p).toString('base64')}" style="height:900px;width:auto;display:block">`;
+  await page.setContent(
+    `<body style="margin:0;display:flex;gap:20px;background:#888;width:max-content">${img(boardPath)}${img(app)}</body>`,
+  );
+  await page.waitForFunction(() => [...document.images].every((i) => i.complete && i.naturalWidth > 0));
+  await page.locator('body').screenshot({ path: join(OUT, 'pairs', `${name}.png`) });
+  await page.close();
+}
+
+async function open(page, path) {
+  await page.goto(`${base}${path}`);
+  await page.waitForFunction(() => document.documentElement.dataset.shellReady === 'true');
+}
+
+async function layoutOf(page) {
+  return page.evaluate(() => document.documentElement.dataset.layout);
+}
+
+async function visibleNav(page) {
+  return page.evaluate(() =>
+    ['nav.sidebar', 'nav.rail', 'nav.tabbar'].filter((s) => {
+      const el = document.querySelector(s);
+      return el && getComputedStyle(el).display !== 'none';
+    }),
+  );
+}
+
+async function signInWithPassword(context) {
+  const page = await context.newPage();
+  await page.goto(`${base}/login`);
+  await page.getByLabel('Email').fill(env.E2E_EMAIL);
+  await page.getByLabel('Password', { exact: true }).fill(env.E2E_PASSWORD);
+  await page.locator('form button[type="submit"]').click();
+  await page.waitForURL(`${base}/home`, { timeout: 20_000 }).catch(() => {});
+  return page;
+}
+
+async function stubQr(context) {
+  const later = (ms) => new Date(Date.now() + ms).toISOString();
+  await context.route('**/functions/v1/qr-start', (route) =>
+    route.fulfill({
+      json: { requestId: 'stub', pollSecret: 'stub', code: 'stub-code', codeExpiresAt: later(42_000), expiresAt: later(600_000) },
+    }),
+  );
+  await context.route('**/functions/v1/qr-poll', (route) =>
+    route.fulfill({ json: { status: 'waiting', code: 'stub-code', codeExpiresAt: later(42_000) } }),
+  );
+}
+
+async function phoneToken() {
+  const res = await fetch(`${supabaseUrl}/auth/v1/token?grant_type=password`, {
+    method: 'POST',
+    headers: { apikey: publishable, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email: env.E2E_EMAIL, password: env.E2E_PASSWORD }),
+  });
+  const json = await res.json();
+  return json.access_token;
+}
+
+async function approve(token, code, step) {
+  const res = await fetch(`${supabaseUrl}/functions/v1/qr-approve`, {
+    method: 'POST',
+    headers: { apikey: publishable, Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ code, step }),
+  });
+  return { status: res.status, json: await res.json().catch(() => null) };
+}
+
+try {
+  // ---------- signed out ----------
+  // qr-start allows 10 live requests per address, so only the QR sign-in below asks the real function.
+  const out = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+  await stubQr(out);
+  const page = await out.newPage();
+  await page.goto(`${base}/budget`);
+  check('a signed-out visit to /budget lands on sign in with next', page.url() === `${base}/login?next=%2Fbudget`, page.url());
+  await page.goto(`${base}/login`);
+  await page.locator('[data-qr-state="showing"]').waitFor({ timeout: 15_000 }).catch(() => {});
+  check('sign in shows a QR code', (await page.locator('[data-qr-state="showing"]').count()) === 1);
+  const timer = await page.locator('.qr-card .meta').textContent().catch(() => '');
+  check('the QR card counts down to the next code', /New code in \d:\d\d/.test(timer ?? ''), timer);
+  await pair('auth-sign-in', 'r3/W2-Auth.png', await shot(page, 'auth-sign-in-1440'));
+
+  await page.getByLabel('Email').fill(env.E2E_EMAIL);
+  await page.getByLabel('Password', { exact: true }).fill('not-the-password');
+  await page.locator('form button[type="submit"]').click();
+  await page.getByText("That email and password don't match. Check both and try again.").waitFor({ timeout: 15_000 }).catch(() => {});
+  check('a wrong password shows the W2-Auth error', await page.getByText("That email and password don't match").isVisible());
+  await pair('auth-error', 'r3/W2-Auth-error/W2-Auth.png', await shot(page, 'auth-error-1440'));
+
+  await page.getByRole('button', { name: 'Create account', exact: true }).first().click();
+  check('Create account puts mode=create in the URL', page.url().endsWith('/login?mode=create'), page.url());
+  await page.getByLabel('Name').fill('Kai');
+  await page.getByLabel('Email').fill('kai@example.com');
+  await page.getByLabel('Password', { exact: true }).fill('password1');
+  await page.getByLabel('Month').selectOption('12');
+  await page.getByLabel('Year').selectOption(String(new Date().getFullYear() - 18));
+  await page.getByRole('checkbox').check();
+  check('an under-18 birth month shows the age message', await page.getByText('Moni is for people 18 and over, so we can').isVisible());
+  check('Create account stays disabled under 18', await page.locator('form button[type="submit"]').isDisabled());
+  await page.getByLabel('Year').selectOption('1995');
+  check('Create account enables at 18 and over with the terms ticked', await page.locator('form button[type="submit"]').isEnabled());
+  await pair('auth-register', 'r3/W2-Auth-register/W2-Auth.png', await shot(page, 'auth-register-1440'));
+
+  await page.goto(`${base}/login/forgot?email=kai%40example.com`);
+  check('forgot password opens with the email filled', (await page.getByLabel('Email').inputValue()) === 'kai@example.com');
+  await pair('auth-forgot', 'r3/W2-Auth-forgot/W2-Auth.png', await shot(page, 'auth-forgot-1440'));
+  await page.goto(`${base}/login/verify?email=kai%40example.com`);
+  check('verify names the email', await page.getByText('kai@example.com').first().isVisible());
+  await pair('auth-verify', 'r3/W2-Auth-verify/W2-Auth.png', await shot(page, 'auth-verify-1440'));
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto(`${base}/login`);
+  await shot(page, 'auth-sign-in-390');
+  check('sign in at 390 has no sideways scroll', await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
+  await out.close();
+
+  // ---------- QR sign-in, approved the way the phone does ----------
+  if (!flag('--skip-qr')) {
+    const qr = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+    const qrPage = await qr.newPage();
+    await qrPage.goto(`${base}/login`);
+    const box = qrPage.locator('[data-qr-value]');
+    await qrPage.locator('[data-qr-state="showing"], [data-qr-state="failed"]').waitFor({ timeout: 15_000 });
+    const failed = await qrPage.locator('[data-qr-state="failed"]').textContent().catch(() => null);
+    check('qr-start gives this browser a code', failed === null, failed);
+    const link = failed === null ? await box.getAttribute('data-qr-value') : null;
+    const code = /^moni-e2e:\/\/sign-in\?code=(.+)$/.exec(link ?? '')?.[1];
+    if (check('the QR holds a moni-e2e sign-in link', Boolean(code), link)) {
+    const token = await phoneToken();
+    const asked = await approve(token, decodeURIComponent(code ?? ''), 'check');
+    check('the phone check names this browser', typeof asked.json?.browser === 'string', asked);
+    const approved = await approve(token, decodeURIComponent(code ?? ''), 'approve');
+    check('the phone approves the code', approved.json?.ok === true, approved);
+    await qrPage.waitForURL(`${base}/home`, { timeout: 20_000 }).catch(() => {});
+    check('the browser signs itself in after the approval', qrPage.url() === `${base}/home`, qrPage.url());
+    }
+    await qr.close();
+  }
+
+  // ---------- signed in: every route at every width, light and dark ----------
+  const auth = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+  await stubQr(auth);
+  const signedIn = await signInWithPassword(auth);
+  check('password sign-in reaches /home', signedIn.url() === `${base}/home`, signedIn.url());
+  const storage = await auth.storageState();
+  await auth.close();
+
+  for (const theme of ['light', 'dark']) {
+    for (const size of WIDTHS) {
+      const ctx = await browser.newContext({
+        viewport: { width: size.width, height: size.height },
+        storageState: storage,
+        colorScheme: theme,
+      });
+      await ctx.addInitScript(() => localStorage.setItem('moni-theme', 'system'));
+      const p = await ctx.newPage();
+      for (const route of ROUTES) {
+        await p.goto(`${base}${route.path}`);
+        const where = `${route.path} at ${size.width} ${theme}`;
+        const layout = await layoutOf(p);
+        const navs = await visibleNav(p);
+        const title = await p.locator('h1:visible').first().textContent();
+        const bg = await p.evaluate(() => getComputedStyle(document.body).backgroundColor);
+        const wide = await p.evaluate(() => document.documentElement.scrollWidth <= innerWidth);
+        // On the phone layout a pushed page (Review, Settings) has no tab bar.
+        const nav = size.layout === 'phone' && route.pushed ? [] : [NAV_FOR[size.layout]];
+        const ok =
+          layout === size.layout &&
+          navs.join() === nav.join() &&
+          route.title.test(title ?? '') &&
+          bg === BACKGROUND[theme] &&
+          wide;
+        check(`${where}: ${size.layout}, its nav, title, ${theme} ground, no sideways scroll`, ok, { layout, navs, title, bg, wide });
+        await shot(p, `${route.path.slice(1)}-${size.width}-${theme}`);
+      }
+      await ctx.close();
+    }
+  }
+  for (const size of WIDTHS) {
+    await pair(`home-${size.width}`, 'r2/W2-Home.png', join(OUT, `home-${size.width}-light.png`));
+  }
+
+  // ---------- reduced motion ----------
+  for (const reducedMotion of ['no-preference', 'reduce']) {
+    const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, storageState: storage, reducedMotion });
+    const p = await ctx.newPage();
+    await open(p, '/home');
+    await p.keyboard.press('n');
+    const pane = p.locator('aside[data-pane="add"]');
+    await pane.waitFor();
+    const animation = await pane.evaluate((el) => getComputedStyle(el).animationName);
+    const expected = reducedMotion === 'reduce' ? 'fade-in' : 'slide-in-right';
+    check(`Add opens with ${expected} when motion is ${reducedMotion}`, animation === expected, animation);
+    await p.waitForTimeout(600);
+    await shot(p, `add-1440-${reducedMotion === 'reduce' ? 'reduced' : 'motion'}`);
+    await ctx.close();
+  }
+
+  // ---------- keyboard ----------
+  const keysCtx = await browser.newContext({ viewport: { width: 1440, height: 900 }, storageState: storage });
+  const k = await keysCtx.newPage();
+  await open(k, '/home');
+  await k.keyboard.press('Control+k');
+  const palette = k.getByRole('dialog', { name: 'Search or ask Moni' });
+  check('Ctrl K opens the command bar', await palette.isVisible());
+  await k.waitForTimeout(500);
+  await shot(k, 'palette-1440');
+  await k.keyboard.type('bud');
+  const options = (await k.getByRole('option').allTextContents()).join('|');
+  check('typing narrows the results to Budget and Ask Moni', options === 'BudgetGB|Ask Moni: budTab', options);
+  await k.keyboard.press('Enter');
+  await k.waitForURL(`${base}/budget`).catch(() => {});
+  check('Enter goes to the highlighted place', k.url() === `${base}/budget`, k.url());
+  check('the command bar closes after running', !(await palette.isVisible()));
+
+  await k.keyboard.press('/');
+  await k.waitForURL(/pane=chat/).catch(() => {});
+  check('/ docks Moni chat and puts it in the URL', (await k.locator('aside[data-pane="chat"]').isVisible()) && k.url().endsWith('/budget?pane=chat'), k.url());
+  await k.waitForTimeout(600);
+  await shot(k, 'chat-1440');
+  await k.keyboard.press('Escape');
+  await k.waitForURL(`${base}/budget`).catch(() => {});
+  check('Esc closes Moni chat', !(await k.locator('aside[data-pane="chat"]').isVisible()) && k.url() === `${base}/budget`, k.url());
+
+  await k.keyboard.press('Shift+?');
+  const shortcuts = k.getByRole('dialog', { name: 'Keyboard shortcuts' });
+  check('? opens the shortcuts dialog', await shortcuts.isVisible());
+  await k.waitForTimeout(500);
+  await shot(k, 'shortcuts-1440');
+  await k.keyboard.press('Escape');
+  check('Esc closes the shortcuts dialog', !(await shortcuts.isVisible()));
+
+  await k.keyboard.press('g');
+  await k.keyboard.press('d');
+  await k.waitForURL(`${base}/debts`).catch(() => {});
+  check('G then D goes to Debts', k.url() === `${base}/debts`, k.url());
+
+  await k.keyboard.press('Control+k');
+  await k.keyboard.type('what did I spend');
+  await k.keyboard.press('Tab');
+  await k.waitForURL(/pane=chat/).catch(() => {});
+  const draft = await k.getByLabel('Ask or add a transaction').inputValue().catch(() => '');
+  check('Tab in the command bar asks Moni with the typed words', draft === 'what did I spend', draft);
+  await k.keyboard.press('Escape');
+
+  await k.keyboard.press('Control+k');
+  await k.keyboard.type('switch to dark');
+  await k.keyboard.press('Enter');
+  const toast = k.getByRole('status').filter({ hasText: 'Dark theme on' });
+  await toast.waitFor({ timeout: 5000 }).catch(() => {});
+  check('switching theme from the command bar shows a toast with Undo', await toast.getByRole('button', { name: 'Undo' }).isVisible());
+  await k.waitForFunction(() => document.documentElement.dataset.theme === 'dark', null, { timeout: 3000 }).catch(() => {});
+  check('the theme is dark', (await k.evaluate(() => document.documentElement.dataset.theme)) === 'dark');
+  const toastBox = await toast.boundingBox();
+  check('the toast sits bottom left beside the sidebar', toastBox !== null && toastBox.x >= 280 && toastBox.x < 300 && toastBox.y > 800, toastBox);
+  await k.waitForTimeout(500);
+  await shot(k, 'toast-1440-dark');
+  await k.keyboard.press('Control+z');
+  await k.waitForFunction(() => document.documentElement.dataset.theme === 'light', null, { timeout: 3000 }).catch(() => {});
+  check('Ctrl Z undoes the theme switch', (await k.evaluate(() => document.documentElement.dataset.theme)) === 'light');
+
+  await k.getByRole('button', { name: /Settings$/ }).first().click();
+  const menu = k.getByRole('menu', { name: 'Account' });
+  check('the name at the foot of the sidebar opens the account menu', await menu.isVisible());
+  await k.waitForTimeout(500);
+  await shot(k, 'account-menu-1440');
+  await k.keyboard.press('Escape');
+  check('Esc closes the account menu', !(await menu.isVisible()));
+  await keysCtx.close();
+
+  // ---------- crossing 700 keeps the route and the half-typed field ----------
+  const resize = await browser.newContext({ viewport: { width: 1024, height: 768 }, storageState: storage });
+  const r = await resize.newPage();
+  await open(r, '/activity');
+  await r.keyboard.press('n');
+  const field = r.locator('#add-draft');
+  await field.fill('12.50 lunch at Mamak');
+  await field.evaluate((el) => {
+    el.dataset.marker = 'kept';
+  });
+  const before = r.url();
+  await r.setViewportSize({ width: 390, height: 844 });
+  await r.waitForFunction(() => document.documentElement.dataset.layout === 'phone');
+  check('at 390 the layout is the phone layout', (await layoutOf(r)) === 'phone');
+  check('crossing 700 keeps the route', r.url() === before, { before, after: r.url() });
+  check(
+    'crossing 700 keeps the half-typed field, in the same element',
+    (await field.inputValue()) === '12.50 lunch at Mamak' && (await field.getAttribute('data-marker')) === 'kept',
+  );
+  await settle(r);
+  const addBox = await r.locator('aside[data-pane="add"]').boundingBox();
+  check('the Add pane fills the phone screen', addBox?.x === 0 && addBox?.width === 390, addBox);
+  await shot(r, 'add-390-after-resize');
+  await r.setViewportSize({ width: 1024, height: 768 });
+  await r.waitForFunction(() => document.documentElement.dataset.layout === 'rail');
+  check('and back across 700 the draft is still there', (await field.inputValue()) === '12.50 lunch at Mamak');
+  await resize.close();
+} catch (error) {
+  check('the drive ran to the end', false, String(error?.stack ?? error));
+} finally {
+  await browser.close();
+  stop();
+}
+
+console.log(`screenshots: ${OUT}`);
+console.log(failures === 0 ? `web-verify PASS (${passes} checks)` : `web-verify FAIL: ${failures} of ${passes + failures} checks`);
+process.exit(failures === 0 ? 0 : 1);

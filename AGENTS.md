@@ -26,7 +26,7 @@ When in doubt, prefer reading the relevant Cursor rule over guessing from memory
 
 A core subset of [pstack](https://github.com/cursor/plugins/tree/main/pstack) (v0.15.13, commit `77526ff`, MIT) is vendored in `.cursor/skills/` (`poteto-mode`, `how`, `why`, `architect`, `tdd`, `unslop`, `no-comments`, `technical-writing`, `typescript-best-practices`, `create-verification-skill`, `show-me-your-work`, `arena`, `swarm`, `interrogate`, `principle-*`). `.claude/skills/` symlinks to the same directories; `.cursor/agents/` and `.claude/agents/` hold the `poteto-agent` and Comment Sicko subagents. To update, re-copy from upstream rather than editing in place.
 
-`.claude/skills/moni-device/`, `.claude/skills/moni-issues/` and `.claude/skills/moni-verify/` are not pstack. They are this repo's own skills, for driving the phone, for filing and churning app issues (GitHub Issues on this repo), and for the verification contract every change passes (`scripts/verify/gate.sh`, render parity, screenshot parity on the affected areas), kept as real directories, and `.cursor/skills/` links to each. Edit them in place.
+`.claude/skills/moni-device/`, `.claude/skills/moni-issues/`, `.claude/skills/moni-verify/` and `.claude/skills/web-verify/` are not pstack. They are this repo's own skills, for driving the phone, for filing and churning app issues (GitHub Issues on this repo), for the verification contract every change passes (`scripts/verify/gate.sh`, render parity, screenshot parity on the affected areas), and for driving the web app in Chromium, kept as real directories, and `.cursor/skills/` links to each. Edit them in place.
 
 pstack is written for Cursor. Outside Cursor, translate:
 
