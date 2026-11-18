@@ -59,9 +59,13 @@ type ChatRequest struct {
 	Reasoning struct {
 		Enabled bool `json:"enabled"`
 	} `json:"reasoning"`
-	// RequireParameters keeps requests off upstream hosts that would silently ignore JSON mode.
+	// RequireParameters keeps requests off upstream hosts that would silently ignore JSON mode. ZDR
+	// and DataCollection "deny" keep bank alerts, receipts and chat off hosts that store or train
+	// on prompts.
 	Provider struct {
-		RequireParameters bool `json:"require_parameters"`
+		RequireParameters bool   `json:"require_parameters"`
+		ZDR               bool   `json:"zdr"`
+		DataCollection    string `json:"data_collection"`
 	} `json:"provider"`
 }
 
@@ -144,6 +148,8 @@ func (c *Client) completeOnce(ctx context.Context, messages []Message, opts Opti
 		MaxTokens:   opts.MaxTokens,
 	}
 	reqBody.Provider.RequireParameters = true
+	reqBody.Provider.ZDR = true
+	reqBody.Provider.DataCollection = "deny"
 	if opts.JSONMode {
 		reqBody.ResponseFormat = &struct {
 			Type string `json:"type"`
