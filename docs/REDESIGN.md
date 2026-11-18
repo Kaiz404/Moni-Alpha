@@ -43,8 +43,8 @@ Board titles on the canvas say which variant is the chosen one. Ignore any board
 
 ## Ignore
 
-- Every row titled **"Archive · …"**: rejected v2 options (Home B–F, Insights B/C, capture flows VB/VC, Sort/Stream/Deck, Heat/Hex/Map, Plan, Category detail, MoveMoney, AmountSheet, BudgetTab, Activity/TxnDetail VB, AskMoni VB) and the v1 / style exploration rows (`Hi-*`, `Flow-Map`, `StA*`, `StB*`, `StC*`).
-- **Brand explorations** (`XB-Characters`, `XB-CharacterLogo`, `XB-Languages`, `XB-Brand1`): the logo and mascot are not decided. Do not add a mascot or a new logo to the app.
+- The **Archive** page (since 18 Nov 2026) holds every rejected option. That covers the brand explorations that weren't picked (`XB-Characters`, `XB-CharacterLogo`, `XB-Languages`, `XB-Brand1`, `XB-Brand9`–`12`, `XB-Brand9B` and the older mascot rounds). It also has the rejected v2 options (Home B–F, Insights B/C, capture flows VB/VC, Sort/Stream/Deck, Heat/Hex/Map, Plan, Category detail, MoveMoney, AmountSheet, BudgetTab, Activity/TxnDetail VB, AskMoni VB) and the v1 and style exploration rows (`Hi-*`, `Flow-Map`, `StA*`, `StB*`, `StC*`).
+- The **v2 · Brand kit (locked)** row (`XB-Brand9C`, `XB-Kit1-Guidelines`, `XB-Kit2-Assets`, `XB-Kit3-InApp`) is the locked brand. The mascot is Cat Pebble, and "moni" is a plain wordmark. It is brand exploration only, so don't add the mascot, the icon or the new logo to the app until the owner asks.
 - **Research** page (`R-*`, `D-*`): background only.
 - **Inspiration**, **Design system (current app)** and **Take-home** pages: not part of v2.
 
@@ -91,7 +91,7 @@ The app builds the default for each. [`redesign/PLAN.md`](redesign/PLAN.md) ("Op
 
 - D1. "Left this month" subtracts bills and debts due, labelled "after bills and RM40 to Mei" (Home, Budget, and Activity's safe to spend a day).
 - D2. Budgets show as rings on the Budget tab.
-- D3. No logo, mascot, reactions, or logging streak.
+- D3. No reactions and no logging streak. The logo and mascot were locked on the canvas on 18 Nov 2026 (the Brand kit row), but they aren't in the app yet; wait for the owner to say so.
 - D4. Decided 16 Nov 2026: Home keeps the ask box only; the Moni header button is gone from Home and Activity.
 - D5. Debts hero tiles filter in place; Remind opens the Android share sheet.
 - D6. Decided 25 Oct 2026: Review keeps its history. "Recently reviewed" lists 30 days; rows older than 90 days are soft-deleted.
