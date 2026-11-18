@@ -88,11 +88,15 @@ const (
 	kindImage        benchKind = "image"
 )
 
-// A zero amount means the case must be skipped. Empty strings are not checked.
+// A zero amount means the case must be skipped. Empty strings and nil slices are not checked.
 type benchWant struct {
 	amount                     float64
 	txType, currency, merchant string
 	wallet, toWallet           string
+	// categories lists every category name that counts as right; the hint must equal one.
+	categories []string
+	// items must each appear in the merchant line, the receipt's "Shop: items" note.
+	items []string
 }
 
 type benchCase struct {
@@ -136,10 +140,11 @@ var benchCases = []benchCase{
 	{kindNotification, "failed payment", pkgTNG, "Payment failed", "Your payment of RM 45.00 to GRAB was unsuccessful. No money was deducted.", benchWant{}},
 	{kindNotification, "shipping update", "com.shopee.my", "Order shipped", "Your order 220931 (RM 89.00) has been shipped and will arrive in 2 days.", benchWant{}},
 
-	{kindImage, "familymart", "", "", "familymart.png", benchWant{amount: 12.5, txType: "expense", merchant: "familymart"}},
-	{kindImage, "mamak sst and change", "", "", "mamak.png", benchWant{amount: 31.9, txType: "expense", merchant: "pelita"}},
-	{kindImage, "watsons discount and points", "", "", "watsons.png", benchWant{amount: 59.04, txType: "expense", merchant: "watsons"}},
-	{kindImage, "tealive service tax", "", "", "tealive.png", benchWant{amount: 24.7, txType: "expense", merchant: "tealive"}},
+	{kindImage, "familymart", "", "", "familymart.png", benchWant{amount: 12.5, txType: "expense", merchant: "familymart", categories: []string{"Food & Dining"}, items: []string{"onigiri"}}},
+	{kindImage, "mamak sst and change", "", "", "mamak.png", benchWant{amount: 31.9, txType: "expense", merchant: "pelita", categories: []string{"Food & Dining"}}},
+	{kindImage, "watsons discount and points", "", "", "watsons.png", benchWant{amount: 59.04, txType: "expense", merchant: "watsons", categories: []string{"Healthcare", "Shopping"}, items: []string{"sunscreen"}}},
+	{kindImage, "tealive service tax", "", "", "tealive.png", benchWant{amount: 24.7, txType: "expense", merchant: "tealive", categories: []string{"Food & Dining"}}},
+	{kindImage, "mr diy legal name", "", "", "mrdiy.png", benchWant{amount: 33.2, txType: "expense", merchant: "mrdiy", categories: []string{"Shopping"}, items: []string{"glue gun", "hook", "glue stick"}}},
 }
 
 func (c benchCase) run(ctx context.Context, s *Service, images map[string]string) Result {
@@ -194,6 +199,13 @@ func (c benchCase) check(r Result) string {
 		return "wallet"
 	case w.toWallet != "" && !is(e.TransferToWalletID, w.toWallet):
 		return "to wallet"
+	case w.categories != nil && (e.CategoryHint == nil || !slices.ContainsFunc(w.categories, func(c string) bool { return strings.EqualFold(c, *e.CategoryHint) })):
+		return "category " + deref(e.CategoryHint)
+	}
+	for _, item := range w.items {
+		if e.Merchant == nil || !strings.Contains(strings.ToLower(*e.Merchant), item) {
+			return fmt.Sprintf("note %q", deref(e.Merchant))
+		}
 	}
 	return ""
 }
@@ -491,6 +503,13 @@ func benchReport(targets []benchTarget, results [][]benchOutcome, runs int) stri
 		}
 	}
 	return b.String()
+}
+
+func deref(s *string) string {
+	if s == nil {
+		return "<nil>"
+	}
+	return *s
 }
 
 func truncate(s string, n int) string {

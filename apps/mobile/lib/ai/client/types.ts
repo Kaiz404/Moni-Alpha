@@ -22,7 +22,9 @@ export type ExtractedTransaction = {
   amount: number;
   type: 'income' | 'expense' | 'transfer';
   currency: string;
+  /** For a receipt, the Shop or note line: "Mr DIY: glue gun, hook, glue stick". */
   merchant: string | null;
+  /** For a receipt, its item list when the reader has one. */
   description: string | null;
   walletHint: string | null;
   categoryHint: string | null;

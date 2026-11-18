@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"math"
 	"regexp"
 	"strings"
@@ -76,6 +77,50 @@ func itemCount(raw json.RawMessage) *int {
 	}
 	count := int(n)
 	return &count
+}
+
+// receiptItems keeps the model's item names, lowercased; anything but an array of strings means none.
+func receiptItems(raw json.RawMessage) []string {
+	var items []string
+	if json.Unmarshal(raw, &items) != nil {
+		return nil
+	}
+	var out []string
+	for _, item := range items {
+		if name := strings.ToLower(strings.TrimSpace(item)); name != "" {
+			out = append(out, name)
+		}
+	}
+	return out
+}
+
+// maxNoteItems keeps the receipt's note to a glance; the rest reads as "and 3 more".
+// promptItems is the most the receipt prompt lets the model list.
+const (
+	maxNoteItems = 4
+	promptItems  = 5
+)
+
+// receiptNote is the Shop or note line: the shop, then what was bought. The printed item count
+// only adds to the list when the model hit its cap: below it, the count's extra lines are
+// discounts and points that the prompt tells the model to leave out.
+func receiptNote(shop *string, items []string, count *int) *string {
+	if len(items) == 0 {
+		return shop
+	}
+	shown := items[:min(len(items), maxNoteItems)]
+	note := strings.Join(shown, ", ")
+	total := len(items)
+	if count != nil && len(items) >= promptItems && *count > total {
+		total = *count
+	}
+	if rest := total - len(shown); rest > 0 {
+		note += fmt.Sprintf(" and %d more", rest)
+	}
+	if shop != nil {
+		note = strings.TrimSpace(*shop) + ": " + note
+	}
+	return &note
 }
 
 // FromText extracts a transaction from free-form user text.
@@ -157,6 +202,11 @@ func (s *Service) FromImage(ctx context.Context, req ImageRequest) Result {
 	ex := s.finalize(out, req.Wallets, req.UserContext, 0.8, nil, currencyFromWallet, true)
 	ex.OccurredAt = occurredAt(out.OccurredAt, req.DateContext)
 	ex.ItemCount = itemCount(out.ItemCount)
+	if items := receiptItems(out.Items); len(items) > 0 {
+		list := strings.Join(items, ", ")
+		ex.Description = &list
+		ex.Merchant = receiptNote(ex.Merchant, items, ex.ItemCount)
+	}
 	return OK(ex)
 }
 

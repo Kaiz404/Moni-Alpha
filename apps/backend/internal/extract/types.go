@@ -17,10 +17,13 @@ type WalletContext struct {
 
 // Extraction is a normalized transaction candidate.
 type Extraction struct {
-	Amount               float64 `json:"amount"`
-	Type                 string  `json:"type"` // "income" | "expense" | "transfer"
-	Currency             string  `json:"currency"`
-	Merchant             *string `json:"merchant"`
+	Amount   float64 `json:"amount"`
+	Type     string  `json:"type"` // "income" | "expense" | "transfer"
+	Currency string  `json:"currency"`
+	// Merchant is the shop for text and notifications. For a receipt it is the Shop or note line,
+	// the shop's everyday name and what was bought: "Mr DIY: hair treatment, glue gun, hook".
+	Merchant *string `json:"merchant"`
+	// Description is the receipt's item list ("hair treatment, glue gun, hook") when it has one.
 	Description          *string `json:"description"`
 	WalletHint           *string `json:"walletHint"`
 	CategoryHint         *string `json:"categoryHint"`
@@ -139,6 +142,8 @@ type llmExtraction struct {
 	OccurredAt           *string  `json:"occurred_at"`
 	// ItemCount stays raw: a typed field would fail the whole receipt on "six" or 6.5.
 	ItemCount json.RawMessage `json:"item_count"`
+	// Items stays raw for the same reason: a string where the array goes must not fail the receipt.
+	Items json.RawMessage `json:"items"`
 }
 
 // llmNotificationResult matches the notification detection schema.

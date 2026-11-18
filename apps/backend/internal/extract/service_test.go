@@ -295,3 +295,42 @@ func TestOnlyReceiptsCarryAnItemCount(t *testing.T) {
 		t.Fatalf("text: status %q, extraction %+v, want ok and no count", got.Status, got.Extraction)
 	}
 }
+
+func TestReceiptNoteListsTheItemsAfterTheShop(t *testing.T) {
+	cases := []struct {
+		name, content, merchant, description string
+	}{
+		{"four items", `{"amount":33.2,"merchant":"Mr DIY","items":["hair treatment"," Glue Gun ","hook","glue stick"],"item_count":4}`,
+			"Mr DIY: hair treatment, glue gun, hook, glue stick", "hair treatment, glue gun, hook, glue stick"},
+		{"more items than the note shows", `{"amount":59,"merchant":"Watsons","items":["painkiller","sunscreen","cotton pads","lip balm","shampoo"]}`,
+			"Watsons: painkiller, sunscreen, cotton pads, lip balm and 1 more", "painkiller, sunscreen, cotton pads, lip balm, shampoo"},
+		{"a full list defers to the printed count", `{"amount":80,"merchant":"Jaya Grocer","items":["eggs","milk","bread","rice","oil"],"item_count":9}`,
+			"Jaya Grocer: eggs, milk, bread, rice and 5 more", "eggs, milk, bread, rice, oil"},
+		{"a short list ignores a count that includes discount lines", `{"amount":59,"merchant":"Watsons","items":["panadol","sunscreen","cotton pads"],"item_count":4}`,
+			"Watsons: panadol, sunscreen, cotton pads", "panadol, sunscreen, cotton pads"},
+		{"no items keeps the shop", `{"amount":12,"merchant":"Tealive","items":[]}`, "Tealive", "<nil>"},
+		{"items as a string are ignored", `{"amount":12,"merchant":"Tealive","items":"milk tea"}`, "Tealive", "<nil>"},
+		{"no shop reads the items", `{"amount":12,"items":["milk tea"]}`, "milk tea", "milk tea"},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			got := readReceipt(t, c.content)
+			if got.Status != "ok" {
+				t.Fatalf("status = %q (%s), want ok", got.Status, got.Reason)
+			}
+			if m := deref(got.Extraction.Merchant); m != c.merchant {
+				t.Fatalf("merchant = %q, want %q", m, c.merchant)
+			}
+			if d := deref(got.Extraction.Description); d != c.description {
+				t.Fatalf("description = %q, want %q", d, c.description)
+			}
+		})
+	}
+}
+
+func TestTextKeepsItsMerchantWhenTheModelListsItems(t *testing.T) {
+	got := fakeModel(t, `{"amount":12,"merchant":"Tealive","items":["milk tea"]}`).FromText(context.Background(), TextRequest{Text: "tealive 12"})
+	if got.Status != "ok" || deref(got.Extraction.Merchant) != "Tealive" {
+		t.Fatalf("text: status %q, merchant %q, want ok and Tealive", got.Status, deref(got.Extraction.Merchant))
+	}
+}
