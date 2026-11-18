@@ -1,4 +1,4 @@
-"""Exports the locked Cat Pebble art (catart.py) for the app.
+"""Exports the locked Cat Pebble art (@repo/brand, through packages/brand/python/catart.py) for the app.
 
 Writes components/brand/mascot-art.generated.ts (the in-app registry) and the SVG masters in
 scripts/brand/out/ that rasterize.mjs turns into assets/images/*.png. Run: pnpm --filter moni brand:assets
@@ -8,7 +8,7 @@ import os
 import re
 import sys
 
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '../../../../packages/brand/python'))
 import catart as C  # noqa: E402
 
 HERE = os.path.dirname(os.path.abspath(__file__))
