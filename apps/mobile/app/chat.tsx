@@ -350,7 +350,7 @@ export default function ChatScreen() {
             ) : null
           }
         />
-        {blank ? <StarterCards onStarter={send} /> : null}
+        {blank ? <StarterCards onStarter={setInput} /> : null}
         <ChatInputBar
           input={input}
           onChangeText={setInput}

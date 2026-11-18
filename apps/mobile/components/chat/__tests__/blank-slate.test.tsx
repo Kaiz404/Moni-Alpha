@@ -74,10 +74,11 @@ describe('Moni chat first open', () => {
     [0, 'lunch 12.50 at Mamak Ali'],
     [1, 'Set a RM450 food budget'],
     [2, 'What can you do?'],
-  ])('starter %i sends %s', (index, text) => {
+  ])('starter %i puts %s in the composer without sending it', (index, text) => {
     render(<ChatScreen />);
     fireEvent.press(screen.getByTestId(`chat.starter.${index}`));
-    expect(sendChatMessage).toHaveBeenCalledWith({ text, imageUri: null });
+    expect(screen.getByTestId('chat.input').props.value).toBe(text);
+    expect(sendChatMessage).not.toHaveBeenCalled();
   });
 
   it('leaves once the thread has a message', () => {
