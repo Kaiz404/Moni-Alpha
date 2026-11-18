@@ -1,8 +1,9 @@
 import { router, type Href } from 'expo-router';
 import { View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useUniwind } from 'uniwind';
 
-import { MoniGlyph } from '@/components/brand/mascot';
+import { Mascot } from '@/components/brand/mascot';
 import {
   PlusButton,
   plusRingBottom,
@@ -28,11 +29,9 @@ import { tid } from '@/lib/test-ids';
 
 type Choice = {
   label: string;
-  icon: IconSymbolName | 'moni';
   bubble: string;
-  glyph: 'onCategory' | 'moniGlyph';
   href: Href;
-};
+} & ({ icon: IconSymbolName; glyph: 'onCategory' } | { icon: 'moni' });
 
 const CHOICES = {
   type: {
@@ -60,7 +59,6 @@ const CHOICES = {
     label: 'Ask Moni',
     icon: 'moni',
     bubble: 'bg-primary',
-    glyph: 'moniGlyph',
     href: { pathname: '/chat', params: { focus: '1' } },
   },
 } as const satisfies Record<CaptureChoice, Choice>;
@@ -102,6 +100,7 @@ export function CaptureChooserSheet({
 }: CaptureChooserSheetProps) {
   const insets = useSafeAreaInsets();
   const tokens = useThemeTokens();
+  const dark = useUniwind().theme === 'dark';
 
   return (
     <>
@@ -135,9 +134,10 @@ export function CaptureChooserSheet({
                       className={`h-11 w-11 items-center justify-center rounded-full ${choice.bubble}`}
                     >
                       {choice.icon === 'moni' ? (
-                        <MoniGlyph
-                          size={22}
-                          color={tokens[choice.glyph]}
+                        <Mascot
+                          decorative
+                          size={32}
+                          variant={dark ? 'light' : 'dark'}
                         />
                       ) : (
                         <IconSymbol

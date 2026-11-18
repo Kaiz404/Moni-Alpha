@@ -14,6 +14,7 @@ import { dismissSheet, getOpenSheet } from '@/lib/sheet/sheet-store';
 jest.mock('expo-router', () => ({ router: { push: jest.fn() } }));
 jest.mock('uniwind', () => ({
   useCSSVariable: (names: string[]) => names.map(() => undefined),
+  useUniwind: () => ({ theme: 'light' }),
 }));
 jest.mock('react-native-safe-area-context', () => ({
   useSafeAreaInsets: () => ({
