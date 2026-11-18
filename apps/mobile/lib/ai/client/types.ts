@@ -4,10 +4,10 @@
  */
 
 import type { RawNotification } from '@/lib/ai/notification-types';
-import type { ChatAnalyzeResult, ChatHistoryMessage } from '@repo/types';
+import type { ChatAnalyzeResult, ChatHistoryMessage, MoniTone } from '@repo/types';
 import type { FinanceAssistantToolSnapshot } from '@/lib/ai/snapshot/finance-metrics';
 
-export type { ChatAnalyzeResult, ChatHistoryMessage };
+export type { ChatAnalyzeResult, ChatHistoryMessage, MoniTone };
 
 export type AiWalletContext = {
   id: string;
@@ -80,6 +80,8 @@ export type ChatAnalyzeRequest = {
   message: string;
   snapshot: FinanceAssistantToolSnapshot;
   history?: ChatHistoryMessage[];
+  /** Absent means friendly; older backends ignore it. */
+  tone?: MoniTone;
 };
 
 /**

@@ -30,6 +30,7 @@ The words the redesigned app uses, and the words it never uses. The design canva
 | Net worth | The sum of wallets in the main currency only. |
 | Compact wallet name | Rows, transfer meta, chips and picker fields drop a trailing account word: "Maybank Savings" reads "Maybank". Wallet lists, wallet pages, the choices in a picker, sentences a board writes in full, and check-in keep the full name. So does any wallet whose compact name another of the user's wallets shares. |
 | Main currency | The Profile setting (default MYR) that picks the one currency focused pages show. Other-currency wallets appear only on Wallets and their own detail. |
+| Moni's tone, Friendly, Straight to the point, Playful | The Profile setting for how Moni sounds in chat, and its three choices. The figures never change with it. |
 | Merchants | The page Profile's Merchants row and Budget's merchant count open: a month's merchants with what each got, the raw codes from alerts still to name, and the names the user gave them. "Name this merchant" names one in place. |
 | Balance correction, Edit Amount | The transaction Moni adds when the user fixes a wallet's balance. The sheet is "Edit Amount". Check-in buttons: "That's right", "Fix it". |
 | Import data, Match columns, Check the file | The Profile row and pages that read a CSV back. |

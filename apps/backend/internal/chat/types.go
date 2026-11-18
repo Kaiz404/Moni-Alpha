@@ -11,6 +11,9 @@ type AnalyzeRequest struct {
 	Message  string           `json:"message" binding:"required,min=1,max=2000"`
 	Snapshot json.RawMessage  `json:"snapshot" binding:"required"`
 	History  []HistoryMessage `json:"history,omitempty" binding:"max=12,dive"`
+	// The voice the user picked for Moni. Empty or unknown means friendly, so older and newer
+	// clients both keep working.
+	Tone string `json:"tone,omitempty" binding:"max=32"`
 }
 
 type AnalyzeResult struct {

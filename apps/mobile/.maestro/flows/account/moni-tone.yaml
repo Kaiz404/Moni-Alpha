@@ -1,0 +1,47 @@
+# Moni's tone (#66): Profile's row opens the sheet, a pick shows on the row and sticks after
+# reopening, and Friendly goes back so the seed's profile stays as it was.
+# Run: scripts/device/run-flows.sh .maestro/flows/account/moni-tone.yaml
+appId: com.anonymous.moni.e2e
+name: Moni's tone
+tags:
+  - k1
+  - seed-full
+---
+- runFlow: ../../subflows/launch.yaml
+- tapOn:
+    id: home.avatar
+- scrollUntilVisible:
+    element:
+      id: profile.moni-tone
+- assertVisible: MONI CHAT
+- assertVisible: Friendly
+- tapOn:
+    id: profile.moni-tone
+- extendedWaitUntil:
+    visible:
+      id: profile.tone.friendly
+    timeout: 5000
+- assertVisible:
+    id: profile.tone.friendly
+    selected: true
+- takeScreenshot: moni-tone-sheet
+- tapOn:
+    id: profile.tone.direct
+- extendedWaitUntil:
+    notVisible:
+      id: profile.tone.direct
+    timeout: 5000
+- assertVisible: Straight to the point
+- takeScreenshot: moni-tone-direct
+- tapOn:
+    id: profile.moni-tone
+- assertVisible:
+    id: profile.tone.direct
+    selected: true
+- tapOn:
+    id: profile.tone.friendly
+- extendedWaitUntil:
+    notVisible:
+      id: profile.tone.friendly
+    timeout: 5000
+- assertVisible: Friendly

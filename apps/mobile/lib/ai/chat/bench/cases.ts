@@ -25,7 +25,7 @@ export type ChatBenchCase = {
 
 const REFUSAL =
   /\b(can't|cannot|can not|don't have|don't see|doesn't|isn't|aren't|not able|unable|not available|no fair|no reliable|not tracked|no data)\b/i;
-const MAX_REPLY_WORDS = 150;
+const MAX_REPLY_WORDS = 90;
 const INTERNAL_NAME =
   /\bnull\b|\bsnapshot\b|calendarMonth|rolling30|pendingProposals|dailyPace|endBalance|needsConfirm|fitsWorstCase|worstCaseAfter|likelyAfter|changeLast30Days/i;
 
@@ -324,5 +324,12 @@ export const CHAT_BENCH_CASES: ChatBenchCase[] = [
     refuse: true,
     facts: [],
     reference: 'I cannot see your debts yet. The Debts screen lists them.',
+  },
+  {
+    id: 'about-moni',
+    question: 'What can you do?',
+    facts: [],
+    reference:
+      "I add spends you type, say or snap from a receipt, and answer questions about your spending, budgets, bills and what's left until payday.",
   },
 ];
