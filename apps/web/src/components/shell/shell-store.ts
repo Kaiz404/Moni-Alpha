@@ -1,6 +1,7 @@
 'use client';
 
 import { useSyncExternalStore } from 'react';
+import { createClient } from '@/lib/supabase/client';
 
 /**
  * Shell state that must outlive any one view: the open overlay and the half-typed drafts. Docked panes
@@ -40,6 +41,20 @@ function subscribe(listener: () => void) {
 export function setShell(patch: Partial<ShellState>) {
   state = { ...state, ...patch };
   emit();
+}
+
+/**
+ * The one way out of an account, for Sign out and after Delete your account: drops the half-typed drafts
+ * and the session. When the server can't end the session (offline, or the user is already deleted), this
+ * browser still forgets it.
+ */
+export async function signOut(): Promise<void> {
+  state = { overlay: 'none', addDraft: '', chatDraft: '' };
+  toast = null;
+  emit();
+  const auth = createClient().auth;
+  const { error } = await auth.signOut();
+  if (error) await auth.signOut({ scope: 'local' });
 }
 
 export function useShell(): ShellState {

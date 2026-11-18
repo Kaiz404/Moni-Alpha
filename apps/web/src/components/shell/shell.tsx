@@ -5,13 +5,12 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } fro
 import { useTheme } from '@/components/use-theme';
 import { INITIAL_KEY_STATE, keyStep, type KeyState } from '@/lib/keys';
 import { navItem } from '@/lib/nav';
-import { createClient } from '@/lib/supabase/client';
 import { CommandPalette } from './command-palette';
 import { Rail, Sidebar, TabBar } from './nav-bars';
 import { AccountMenu, ShortcutsDialog, Toaster } from './overlays';
 import { AddPane, ChatPane } from './panes';
 import { ShellContext, type Pane, type ShellAction, type ShellApi, type ShellUser } from './shell-context';
-import { setShell, showToast, undoToast, useShell } from './shell-store';
+import { setShell, showToast, signOut, undoToast, useShell } from './shell-store';
 
 function isTyping(target: EventTarget | null): boolean {
   if (!(target instanceof HTMLElement)) return false;
@@ -103,13 +102,10 @@ export function Shell({ user, children }: { user: ShellUser; children: ReactNode
           undoToast();
           return;
         case 'signOut':
-          setShell({ overlay: 'none' });
-          void createClient()
-            .auth.signOut()
-            .then(() => {
-              router.replace('/login');
-              router.refresh();
-            });
+          void signOut().then(() => {
+            router.replace('/login');
+            router.refresh();
+          });
           return;
       }
     },
