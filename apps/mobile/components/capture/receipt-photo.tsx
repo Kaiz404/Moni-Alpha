@@ -30,7 +30,7 @@ const EXPAND = { duration: 280, easing: Easing.out(Easing.cubic) };
 
 type Frame = { x: number; y: number; width: number; height: number };
 
-/** The scanned receipt across the top of the check page; a press opens it full screen. */
+/** The scanned receipt across the top of the check page, cropped to its middle, where the items and total sit; a press opens it full screen. */
 export function ReceiptPhoto({ uri }: { uri: string }) {
   const tokens = useThemeTokens();
   const frame = useRef<View>(null);
@@ -56,7 +56,7 @@ export function ReceiptPhoto({ uri }: { uri: string }) {
           <Image
             source={{ uri }}
             contentFit="cover"
-            contentPosition="top"
+            contentPosition="center"
             style={StyleSheet.absoluteFill}
           />
           <View className="absolute bottom-3 right-3 h-9 w-9 items-center justify-center rounded-full bg-primary">
@@ -194,7 +194,7 @@ function ReceiptViewer({ uri, origin, onClosed }: { uri: string; origin: Frame; 
               <Image
                 source={{ uri }}
                 contentFit="cover"
-                contentPosition="top"
+                contentPosition="center"
                 style={StyleSheet.absoluteFill}
               />
             </Animated.View>
