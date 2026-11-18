@@ -44,7 +44,8 @@ tags:
     id: wallet.name.edit
 - assertVisible: RM120.00
 - assertNotVisible: Checked today
-- assertVisible: 'Same as on 1 .*'
+# A wallet made today has no history before today, so the chart's headline counts from today.
+- assertVisible: 'No change since .*'
 - assertVisible: Transactions
 - assertNotVisible: Use as default
 - takeScreenshot: k2-l2-pair
