@@ -191,7 +191,7 @@ html[data-layout='phone'] .offline-time {
   background: color-mix(in srgb, var(--color-tab-bar) 32%, transparent);
 }
 
-.session-dialog {
+.dialog.session-dialog {
   width: min(460px, 100%);
   max-height: none;
   background: var(--color-background);

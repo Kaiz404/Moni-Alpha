@@ -21,7 +21,9 @@ export default async function NotFound() {
         <Link href="/home?palette=open" className="btn btn-out press">
           <Glyph name="magnify" size={20} />
           Search Moni
-          <span className="kbd">Ctrl K</span>
+          <span className="kbd" data-only="sidebar rail rail-one-column">
+            Ctrl K
+          </span>
         </Link>
       )}
     </FullPage>
