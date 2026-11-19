@@ -163,7 +163,7 @@ if (!dev && !flag('--no-build')) {
 }
 console.log(`reseeding ${env.email} with the full profile for ${SEED_DAY}`);
 webSeed('--reset', '--profile', 'full', '--today', SEED_DAY);
-const seeded = JSON.parse(webSeed('--query', 'fingerprint'));
+let seeded = JSON.parse(webSeed('--query', 'fingerprint'));
 const port = option('--port') ? Number(option('--port')) : await freePort();
 const base = `http://127.0.0.1:${port}`;
 const server = spawn(next, [dev ? 'dev' : 'start', '--port', String(port), '--hostname', '127.0.0.1'], {
@@ -408,7 +408,11 @@ try {
   };
 
   // ---------- first run on an empty account, then the full seed back ----------
-  if (runs('firstrun')) await verifyFirstRun({ browser, base, storage, check, shot, settle, pair, boardBand, out: OUT, widths: WIDTHS, background: BACKGROUND, seed, webSeed, rest, email: env.email, password: env.password });
+  if (runs('firstrun')) {
+    await verifyFirstRun({ browser, base, storage, check, shot, settle, pair, boardBand, out: OUT, widths: WIDTHS, background: BACKGROUND, seed, webSeed, rest, email: env.email, password: env.password });
+    // The full seed it puts back stamps three wallets' check-in with the time of the reseed.
+    seeded = JSON.parse(webSeed('--query', 'fingerprint'));
+  }
 
   if (runs('routes')) {
   for (const theme of ['light', 'dark']) {
