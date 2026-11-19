@@ -67,4 +67,21 @@ export const SHORTCUT_GROUPS: readonly { title: string; rows: readonly ShortcutR
     ],
   },
   { title: 'Go to', rows: NAV.map((item) => ({ label: item.label, keys: ['G', item.go.toUpperCase()] })) },
+  {
+    title: 'Home',
+    rows: [
+      { label: 'Pace', keys: ['P'] },
+      { label: 'Daily', keys: ['D'] },
+    ],
+  },
+  {
+    title: 'Activity',
+    rows: [
+      { label: 'Next and previous row', keys: ['J', 'K'] },
+      { label: 'Tick the row', keys: ['X'] },
+      { label: 'Open details', keys: ['Enter'] },
+      { label: 'Edit category', keys: ['C'] },
+      { label: 'Delete', keys: ['Del'] },
+    ],
+  },
 ];
