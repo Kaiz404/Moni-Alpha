@@ -994,3 +994,51 @@ html[data-layout='phone'] :is(.home .toggle button, .check-in-btn, .not-now)::be
   font-size: 16px;
   line-height: 21px;
 }
+
+/* W2-Responsive, Get the app: an Android phone's first visits, under the greeting. */
+.get-app {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  border-radius: 22px;
+  background: var(--color-card);
+  padding: 12px 6px 12px 12px;
+  box-shadow: 0 0 0 1.5px var(--color-hairline);
+  margin-bottom: 12px;
+}
+
+.get-app-top {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.get-app-text {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  font-size: 13px;
+  line-height: 18px;
+  color: var(--color-muted);
+}
+
+.get-app-text b {
+  font-size: 15px;
+  line-height: 20px;
+  color: var(--color-foreground);
+}
+
+.get-app-close {
+  width: 44px;
+  height: 44px;
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-muted);
+}
+
+.get-app .btn {
+  margin-right: 6px;
+}

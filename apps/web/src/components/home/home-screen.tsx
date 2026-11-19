@@ -22,6 +22,7 @@ import { moniStore } from '@/lib/moni-store';
 import { useScreenKeys } from '@/lib/screen-keys';
 import type { ChecklistItem } from '@/lib/setup';
 import { RecentCard } from './recent-card';
+import { GetAppBanner } from './get-app-banner';
 import { ReviewCard } from './review-card';
 import { useSetupChecklist } from './setup-card';
 import { NextDaysCard, PlacesCard, WalletsCard } from './side-cards';
@@ -176,6 +177,7 @@ export function HomeScreen() {
       }
     >
       <div className="home" data-editing={editing || undefined} data-loaded={ledger.loaded || undefined}>
+        <GetAppBanner />
         <a href="#" className="net-worth-block" data-only="phone" onClick={(event) => event.preventDefault()}>
           <span className="caps net-worth-caps">
             Net worth <Icon name="chevron-right" size={16} />

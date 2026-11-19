@@ -6,6 +6,7 @@ import {
   searchCurrencies,
   setupChecklist,
   showsChecklist,
+  showsGetApp,
   suggestedCurrency,
   walletsReady,
   walletsToCreate,
@@ -92,5 +93,18 @@ describe("Home's Get set up card", () => {
     expect(phoneLinkMail('kai@example.com', 'https://play.example/moni')).toBe(
       'mailto:kai%40example.com?subject=Moni%20for%20your%20phone&body=Get%20Moni%20on%20your%20Android%20phone%3A%20https%3A%2F%2Fplay.example%2Fmoni%0A%0ASign%20in%20with%20kai%40example.com%20and%20everything%20it%20captures%20shows%20on%20the%20web%20too.',
     );
+  });
+});
+
+describe('Get the app', () => {
+  const android = 'Mozilla/5.0 (Linux; Android 14; Redmi Note 13) AppleWebKit/537.36 Chrome/131.0 Mobile Safari/537.36';
+  const iphone = 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 Mobile/15E148';
+  const day = 24 * 60 * 60 * 1000;
+
+  it('shows on Android only, and stays closed for 30 days', () => {
+    expect(showsGetApp(android, null, 100 * day)).toBe(true);
+    expect(showsGetApp(iphone, null, 100 * day)).toBe(false);
+    expect(showsGetApp(android, 80 * day, 100 * day)).toBe(false);
+    expect(showsGetApp(android, 70 * day, 100 * day)).toBe(true);
   });
 });

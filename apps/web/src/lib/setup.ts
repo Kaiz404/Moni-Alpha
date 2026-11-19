@@ -171,3 +171,13 @@ export function phoneLinkMail(email: string, playLink: string): string {
   const body = `Get Moni on your Android phone: ${playLink}\n\nSign in with ${email} and everything it captures shows on the web too.`;
   return `mailto:${encodeURIComponent(email)}?subject=${encodeURIComponent('Moni for your phone')}&body=${encodeURIComponent(body)}`;
 }
+
+const GET_APP_PAUSE_MS = 30 * 24 * 60 * 60 * 1000;
+
+/**
+ * W2-Responsive's Get the app banner: Android phones only (iPhone has no app yet), and not for 30 days
+ * after it was closed.
+ */
+export function showsGetApp(userAgent: string, closedAt: number | null, now: number): boolean {
+  return /Android/i.test(userAgent) && (closedAt === null || now - closedAt >= GET_APP_PAUSE_MS);
+}
