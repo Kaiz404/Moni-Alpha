@@ -92,71 +92,55 @@ export function MainCurrencySheet({
         onExited={onExited}
         size="fit"
         title="Main currency"
-        note="Home, Activity, Budget and Debts show this currency. Other currencies stay on Wallets."
+        note="The whole app uses this currency."
         closeLabel="Close"
       >
-        <View className="gap-3.5">
-          <SheetRows>
-            {held.map((entry, index) => {
-              const picked = entry.currency === selected;
-              const meta = `${entry.wallets} ${entry.wallets === 1 ? 'wallet' : 'wallets'} · ${formatMoney(entry.totalMinor, entry.currency)}`;
-              return (
-                <Press
-                  key={entry.currency}
-                  testID={tid('profile', 'currency', entry.currency)}
-                  accessibilityRole="radio"
-                  accessibilityState={{ selected: picked }}
-                  accessibilityLabel={`${currencyName(entry.currency)}, ${meta}`}
-                  className="min-h-[66px] flex-row items-center gap-3.5 px-[18px] py-3"
-                  onPress={() => onPick(entry.currency)}
+        <SheetRows>
+          {held.map((entry, index) => {
+            const picked = entry.currency === selected;
+            const meta = `${entry.wallets} ${entry.wallets === 1 ? 'wallet' : 'wallets'} · ${formatMoney(entry.totalMinor, entry.currency)}`;
+            return (
+              <Press
+                key={entry.currency}
+                testID={tid('profile', 'currency', entry.currency)}
+                accessibilityRole="radio"
+                accessibilityState={{ selected: picked }}
+                accessibilityLabel={`${currencyName(entry.currency)}, ${meta}`}
+                className="min-h-[66px] flex-row items-center gap-3.5 px-[18px] py-3"
+                onPress={() => onPick(entry.currency)}
+              >
+                <View
+                  className={`h-[42px] w-[42px] items-center justify-center rounded-full ${PROFILE_TINT_CLASS[TINTS[index % TINTS.length]]}`}
                 >
-                  <View
-                    className={`h-[42px] w-[42px] items-center justify-center rounded-full ${PROFILE_TINT_CLASS[TINTS[index % TINTS.length]]}`}
+                  <Text className="text-[15px] font-display-bold text-on-category">
+                    {currencySymbol(entry.currency)}
+                  </Text>
+                </View>
+                <View className="min-w-0 flex-1">
+                  <Text
+                    variant="rowTitle"
+                    className="text-foreground"
+                    numberOfLines={1}
                   >
-                    <Text className="text-[15px] font-display-bold text-on-category">
-                      {currencySymbol(entry.currency)}
-                    </Text>
-                  </View>
-                  <View className="min-w-0 flex-1">
-                    <Text
-                      variant="rowTitle"
-                      className="text-foreground"
-                      numberOfLines={1}
-                    >
-                      {currencyName(entry.currency)}
-                    </Text>
-                    <Text
-                      variant="meta"
-                      className="text-muted"
-                      numberOfLines={1}
-                    >
-                      {meta}
-                    </Text>
-                  </View>
-                  <IconSymbol
-                    name={picked ? 'radiobox-marked' : 'radiobox-blank'}
-                    size={24}
-                    color={picked ? tokens.foreground : tokens.muted}
-                  />
-                </Press>
-              );
-            })}
-          </SheetRows>
-          <View className="flex-row gap-2">
-            <IconSymbol
-              name="information-outline"
-              size={16}
-              color={tokens.muted}
-            />
-            <Text
-              variant="meta"
-              className="flex-1 text-ink-2"
-            >
-              Only currencies you hold a wallet in are listed. Moni never
-              converts between them.
-            </Text>
-          </View>
-        </View>
+                    {currencyName(entry.currency)}
+                  </Text>
+                  <Text
+                    variant="meta"
+                    className="text-muted"
+                    numberOfLines={1}
+                  >
+                    {meta}
+                  </Text>
+                </View>
+                <IconSymbol
+                  name={picked ? 'radiobox-marked' : 'radiobox-blank'}
+                  size={24}
+                  color={picked ? tokens.foreground : tokens.muted}
+                />
+              </Press>
+            );
+          })}
+        </SheetRows>
       </Sheet>
     </Modal>
   );

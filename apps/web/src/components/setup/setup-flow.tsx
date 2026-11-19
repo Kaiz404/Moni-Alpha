@@ -235,7 +235,7 @@ export function SetupFlow({ name, email }: { name: string; email: string }) {
               <h1 className="setup-h" id="setup-title">
                 Your main currency
               </h1>
-              <p className="setup-lead">Moni adds up everything in one currency. Pick the one you spend in most.</p>
+              <p className="setup-lead">The whole app uses this currency.</p>
               <CurrencyList
                 choices={choices}
                 suggested={suggested}

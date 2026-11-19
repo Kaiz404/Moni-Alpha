@@ -129,15 +129,15 @@ describe('Profile, Capture sources', () => {
 });
 
 describe('Profile, Main currency', () => {
-  const NOTE =
-    'Home, Activity, Budget and Debts show this currency. Other currencies stay on Wallets.';
+  const NOTE = 'The whole app uses this currency.';
 
-  it('keeps the description in the sheet, not under the row', async () => {
+  it('says what the setting does in one line in the sheet, with no footnote', async () => {
     await showProfile('authorized');
     expect(screen.queryByText(NOTE)).toBeNull();
 
     fireEvent.press(screen.getByTestId('profile.main-currency'));
     expect(screen.getByText(NOTE)).toBeTruthy();
+    expect(screen.queryByText(/Only currencies you hold a wallet in/)).toBeNull();
   });
 });
 
