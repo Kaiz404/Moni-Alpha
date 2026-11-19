@@ -362,6 +362,21 @@ export async function driveLedgerScreens({ browser, storage, base, check, shot, 
   for (let presses = 0; presses < 40 && (await dates.isVisible()); presses++) await a.keyboard.press('Tab');
   check('Tab out of Dates closes it instead of leaving it open behind the focus', !(await dates.isVisible()) && (await a.evaluate(() => document.activeElement !== document.body)));
   await a.locator('.filter-chip').filter({ hasText: 'Dates' }).click();
+  await dates.getByRole('grid').waitFor();
+  const marks = await dates.evaluate((pop) => ({
+    selectedCells: pop.querySelectorAll('[role="gridcell"][aria-selected="true"]').length,
+    selectedDayButtons: pop.querySelectorAll('[data-day][aria-selected]').length,
+    labels: [...pop.querySelectorAll('[data-day]')].map((day) => day.getAttribute('aria-label')).filter((label) => label?.includes('range')),
+  }));
+  check(
+    "the range's ends are selected gridcells, named start and end of range",
+    marks.selectedCells === 2 &&
+      marks.selectedDayButtons === 0 &&
+      marks.labels.filter((label) => label.endsWith(', start of range')).length === 1 &&
+      marks.labels.filter((label) => label.endsWith(', end of range')).length === 1 &&
+      marks.labels.some((label) => label.endsWith(', in range')),
+    marks,
+  );
   await dates.locator('[data-day$="-10"]').click();
   await dates.locator('[data-day$="-03"]').click();
   await a.waitForURL(/from=\d{4}-\d{2}-03/).catch(() => {});

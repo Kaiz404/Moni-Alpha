@@ -32,6 +32,12 @@ const STEPS: Record<string, (day: DayKey) => DayKey> = {
   PageDown: (day) => addMonths(day, 1, dayOfMonth(day)),
 };
 
+const SPAN_WORDS: Record<string, string> = {
+  start: ', start of range',
+  end: ', end of range',
+  mid: ', in range',
+};
+
 function clampDay(day: DayKey, min?: DayKey, max?: DayKey): DayKey {
   if (min && day < min) return min;
   if (max && day > max) return max;
@@ -153,14 +159,14 @@ export function MonthCalendar({
                   role="gridcell"
                   className="calendar-day"
                   data-span={spanOf(day)}
+                  aria-selected={day === from || day === to}
                 >
                   <button
                     type="button"
                     data-day={day}
                     tabIndex={day === tabStop ? 0 : -1}
-                    aria-label={dateLabel(day, today)}
+                    aria-label={`${dateLabel(day, today)}${SPAN_WORDS[spanOf(day) ?? ''] ?? ''}`}
                     data-focus-first={day === tabStop || undefined}
-                    aria-selected={day === from || day === to}
                     aria-current={day === today ? 'date' : undefined}
                     disabled={
                       (!!min && day < min) || (!!max && day > max)

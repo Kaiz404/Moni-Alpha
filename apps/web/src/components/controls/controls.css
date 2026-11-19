@@ -258,7 +258,7 @@
   text-underline-offset: 3px;
 }
 
-.calendar-day button[aria-selected='true'] {
+.calendar-day[aria-selected='true'] button {
   background: var(--color-primary);
   color: var(--color-primary-foreground);
 }
