@@ -285,6 +285,9 @@ importers:
       '@mdi/js':
         specifier: 7.4.47
         version: 7.4.47
+      '@repo/ai':
+        specifier: workspace:*
+        version: link:../../packages/ai
       '@repo/brand':
         specifier: workspace:*
         version: link:../../packages/brand
