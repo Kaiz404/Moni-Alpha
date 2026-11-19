@@ -15,10 +15,12 @@ import { chromium } from '@playwright/test';
 import { verifyBudgetDebts } from './budget-debts.mjs';
 import { STUB_AI_URL, verifyChat } from './chat.mjs';
 import { driveLedgerScreens, readSeed } from './ledger-screens.mjs';
+import { verifyPhoneLayout } from './phone-layout.mjs';
 import { verifyPlaces } from './places.mjs';
 import { verifyReview } from './review.mjs';
 import { verifySettings } from './settings.mjs';
 import { verifySite } from './site.mjs';
+import { verifyFirstRun, verifyStates } from './states.mjs';
 
 const web = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const repo = join(web, '..', '..');
@@ -394,6 +396,19 @@ try {
   check(`the web's e2e seed was written for ${SEED_DAY}; the ledger screens are checked at 3 pm that day`, seed.seedDay === SEED_DAY, seed.seedDay);
   const storage = await auth.storageState();
   await auth.close();
+  const rest = async (path, { method = 'GET', body } = {}) => {
+    const token = await userToken();
+    const res = await fetch(`${supabaseUrl}/rest/v1/${path}`, {
+      method,
+      headers: { apikey: publishable, Authorization: `Bearer ${token}`, 'Content-Type': 'application/json', Prefer: 'return=representation' },
+      body: body === undefined ? undefined : JSON.stringify(body),
+    });
+    if (!res.ok) throw new Error(`${method} ${path}: ${res.status} ${await res.text()}`);
+    return res.json();
+  };
+
+  // ---------- first run on an empty account, then the full seed back ----------
+  if (runs('firstrun')) await verifyFirstRun({ browser, base, storage, check, shot, settle, pair, boardBand, out: OUT, widths: WIDTHS, background: BACKGROUND, seed, webSeed, rest, email: env.email, password: env.password });
 
   if (runs('routes')) {
   for (const theme of ['light', 'dark']) {
@@ -668,19 +683,9 @@ try {
   }
   if (runs('chat'))
     await verifyChat({ browser, base, storage, check, shot, settle, pair, seed, supabaseUrl, publishable, token: await userToken(), secret: env.SUPABASE_SECRET_KEY, widths: WIDTHS, background: BACKGROUND, realGateway });
-  if (runs('settings')) {
-    const token = await userToken();
-    const rest = async (path, { method = 'GET', body } = {}) => {
-      const res = await fetch(`${supabaseUrl}/rest/v1/${path}`, {
-        method,
-        headers: { apikey: publishable, Authorization: `Bearer ${token}`, 'Content-Type': 'application/json', Prefer: 'return=representation' },
-        body: body === undefined ? undefined : JSON.stringify(body),
-      });
-      if (!res.ok) throw new Error(`${method} ${path}: ${res.status} ${await res.text()}`);
-      return res.json();
-    };
-    await verifySettings({ browser, base, storage, check, shot, pair, settle, widths: WIDTHS, background: BACKGROUND, out: OUT, rest, seed });
-  }
+  if (runs('settings')) await verifySettings({ browser, base, storage, check, shot, pair, settle, widths: WIDTHS, background: BACKGROUND, out: OUT, rest, seed });
+  if (runs('states')) await verifyStates({ browser, base, storage, check, shot, settle, pair, boardBand, out: OUT, widths: WIDTHS, background: BACKGROUND, seed, rest, password: env.password });
+  if (runs('phone')) await verifyPhoneLayout({ browser, base, storage, check, shot, settle, background: BACKGROUND, seed });
   if (runs('ledger')) await verifyBudgetDebts({ browser, base, storage, check, shot, pair, settle, open, out: OUT, widths: WIDTHS, background: BACKGROUND, navFor: NAV_FOR, seed, query: (name) => JSON.parse(webSeed('--query', name)) });
   if (runs('review')) await verifyReview({ browser, base, storage, check, shot, pair, settle, out: OUT, widths: WIDTHS, background: BACKGROUND, navFor: NAV_FOR, seed, query: (name) => JSON.parse(webSeed('--query', name)) });
   if (runs('places')) await verifyPlaces({ browser, base, storage, check, shot, pair, settle, open, out: OUT, widths: WIDTHS, background: BACKGROUND, navFor: NAV_FOR, seed, query: (name) => JSON.parse(webSeed('--query', name)) });

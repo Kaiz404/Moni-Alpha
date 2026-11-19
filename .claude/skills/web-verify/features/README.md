@@ -18,3 +18,6 @@ One file per user-facing part of the web app. Each says how a user reaches it, h
 | Moni chat: the docked pane, consent, answer cards, drafts for many rows | [chat.md](chat.md) |
 | Settings: Profile, Moni's AI, Merchant names, Import and export | [settings.md](settings.md) |
 | The public site: landing page, privacy policy, terms (English and Malay) | [site.md](site.md) |
+| First run: set-up, Home's Get set up card, every empty screen | [first-run.md](first-run.md) |
+| Loading, errors, 404, 500, maintenance, offline, toasts, Sign in again | [states.md](states.md) |
+| The phone layout on every screen, upright and held sideways | [phone-layout.md](phone-layout.md) |
