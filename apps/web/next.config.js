@@ -5,7 +5,7 @@ const root = fileURLToPath(new URL('../..', import.meta.url));
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  transpilePackages: ['@repo/brand', '@repo/core', '@repo/data', '@repo/design', '@repo/types'],
+  transpilePackages: ['@repo/ai', '@repo/brand', '@repo/core', '@repo/data', '@repo/design', '@repo/types'],
   outputFileTracingRoot: root,
   turbopack: { root },
 };
