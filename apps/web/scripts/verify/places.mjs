@@ -179,6 +179,12 @@ export async function verifyPlaces(t) {
   await p.waitForURL((url) => url.searchParams.get('place') === order[1]).catch(() => {});
   check('J moves to the next place', new URL(p.url()).searchParams.get('place') === order[1], p.url());
   check('the pane counts where it is', (await p.locator('.pane-index').textContent()) === `2 of ${order.length}`);
+  check(
+    'K sits on the up chevron and J on the down chevron, and the list has no loose J K',
+    (await p.getByRole('button', { name: 'Previous place (K)' }).locator('.kbd').textContent()) === 'K' &&
+      (await p.getByRole('button', { name: 'Next place (J)' }).locator('.kbd').textContent()) === 'J' &&
+      (await p.locator('.side-list-head .kbd').count()) === 0,
+  );
   const onPin = await p.locator(`.map-pin-big[data-on]`).getAttribute('data-place');
   check("the open place's pin turns Ink", onPin === order[1], onPin);
   await settle(p);

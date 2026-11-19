@@ -53,10 +53,6 @@ function PlacesList({ ledger, data, hoverId, onPick, onHover, onSort, categoryWo
       </div>
       <div className="side-list-head">
         <span className="caps">Places</span>
-        <span className="key-hint" data-only="sidebar rail rail-one-column">
-          <span className="kbd">J</span>
-          <span className="kbd">K</span>
-        </span>
         <span className="pseg pseg-sm" role="radiogroup" aria-label="Sort places">
           <span className="pseg-pill" aria-hidden="true" style={{ transform: `translateX(${query.sort === 'visits' ? 100 : 0}%)` }} />
           <button type="button" role="radio" aria-checked={query.sort === 'spent'} onClick={() => onSort('spent')}>
@@ -140,11 +136,17 @@ function PlacePane({ ledger, data, onPick, place, categoryWords }: SideProps & {
         <span className="meta num pane-index">
           {index + 1} of {places.length}
         </span>
-        <button type="button" className="icon-round press" aria-label="Previous place (K)" disabled={index <= 0} onClick={() => onPick(places[index - 1]!.id)}>
+        <button type="button" className="icon-round icon-round-key press" aria-label="Previous place (K)" disabled={index <= 0} onClick={() => onPick(places[index - 1]!.id)}>
           <Mdi name="chevron-up" size={20} />
+          <span className="kbd kbd-inline" data-only="sidebar rail rail-one-column">
+            K
+          </span>
         </button>
-        <button type="button" className="icon-round press" aria-label="Next place (J)" disabled={index >= places.length - 1} onClick={() => onPick(places[index + 1]!.id)}>
+        <button type="button" className="icon-round icon-round-key press" aria-label="Next place (J)" disabled={index >= places.length - 1} onClick={() => onPick(places[index + 1]!.id)}>
           <Mdi name="chevron-down" size={20} />
+          <span className="kbd kbd-inline" data-only="sidebar rail rail-one-column">
+            J
+          </span>
         </button>
       </div>
       <div className="pane-title-row">
