@@ -93,7 +93,6 @@ jest.mock('@/lib/finance/selectors', () => ({
 jest.mock('@/lib/auth/auth-context', () => ({ useAuth: () => ({ user: { id: 'kai' } }) }));
 jest.mock('@/lib/finance/main-currency', () => ({ useMainCurrency: () => 'MYR' }));
 jest.mock('@/lib/supabase/merchant-aliases', () => ({ listMerchantAliases: () => [] }));
-jest.mock('@/lib/supabase/proposed-transactions', () => ({ isAwaitingReview: () => false }));
 jest.mock('@/components/nav/tab-bar', () => ({ useTabBarClearance: () => 100 }));
 jest.mock('@/components/providers/sync-banner', () => ({ SyncBanner: () => null }));
 jest.mock('@/components/ui/hold-menu', () => ({

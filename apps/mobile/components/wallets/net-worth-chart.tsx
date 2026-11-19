@@ -7,7 +7,7 @@ import { Text } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { springs } from '@repo/design';
 import { tid } from '@/lib/test-ids';
-import { compactWalletNames } from '@/lib/wallets/compact-name';
+import { compactWalletNames } from '@repo/core';
 
 import { BalancePlot, type BalanceLineSpec } from './balance-plot';
 import {

@@ -7,14 +7,10 @@ import { deviceCalendar } from '@/lib/dates/device-calendar';
 import { useMainCurrency } from '@/lib/finance/main-currency';
 import { financeProjection$ } from '@/lib/finance/projection';
 import { categoriesForUser$, debtsWithBalance$, transactions$, walletsForUser$ } from '@/lib/finance/selectors';
-import { profilePreferences$, recurringOverrides$ } from '@/lib/store';
-import { getRecordValues } from '@/lib/store/helpers';
+import { profilePreferences$ } from '@/lib/store';
 import { listMerchantAliases } from '@/lib/supabase/merchant-aliases';
-import {
-  selectRecurringOverrides,
-  type RecurringOverrideRow,
-} from '@/lib/supabase/recurring-overrides';
-import { compactWalletNames } from '@/lib/wallets/compact-name';
+import { listRecurringOverrides } from '@/lib/supabase/recurring-overrides';
+import { compactWalletNames } from '@repo/core';
 import { buildMoneyMonth, moneyLedger, type MoneyMonth, type MonthKey } from '@repo/core';
 
 /** A clock that moves on when the screen comes back into focus, so "today" never goes stale. */
@@ -43,11 +39,7 @@ export function useBudgetData() {
   const budgetsById = useValue(() => ({ ...financeProjection$.budgetsById.get() }));
   const aliases = useValue(() => (userId ? listMerchantAliases(userId) : []));
   const monthlyBudget = useValue(() => profilePreferences$.get()?.monthly_budget ?? null);
-  const overrides = useValue(() =>
-    userId
-      ? selectRecurringOverrides(getRecordValues<RecurringOverrideRow>(recurringOverrides$), userId)
-      : [],
-  );
+  const overrides = useValue(() => (userId ? listRecurringOverrides(userId) : []));
   const ledger = useMemo(
     () =>
       moneyLedger(

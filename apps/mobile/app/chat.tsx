@@ -57,7 +57,7 @@ import {
   mergeTranscriptWithBase,
   prepareOfflineSpeechModel,
 } from '@/lib/speech/speech-recognition';
-import { isAwaitingReview } from '@/lib/supabase/proposed-transactions';
+import { isAwaitingReview } from '@repo/core';
 import { tid } from '@/lib/test-ids';
 import MoniAndroidApps from '@/modules/moni-android-apps';
 import { dateLabel, parseDayKey } from '@repo/core';

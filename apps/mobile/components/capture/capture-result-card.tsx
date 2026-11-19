@@ -42,7 +42,7 @@ import { ensureFinanceTimezone } from '@/lib/supabase/profile';
 import { tid, type TestId } from '@/lib/test-ids';
 import { resolveTransactionIcon } from '@/lib/transactions/icon';
 import type { EntryLocation } from '@/lib/transactions/prefetch-location';
-import { compactWalletNames } from '@/lib/wallets/compact-name';
+import { compactWalletNames } from '@repo/core';
 import {
   currencySymbol,
   dayLabel,

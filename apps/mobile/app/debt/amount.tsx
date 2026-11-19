@@ -26,7 +26,7 @@ import {
 } from '@/lib/supabase/debts';
 import { readAmount } from '@/lib/amount/amount-input';
 import { tid } from '@/lib/test-ids';
-import { compactWalletNames } from '@/lib/wallets/compact-name';
+import { compactWalletNames } from '@repo/core';
 import { minorToDecimal } from '@repo/types';
 import { type DebtLine, type FinanceDebtActivity, formatMoney } from '@repo/core';
 

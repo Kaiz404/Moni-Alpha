@@ -2,7 +2,6 @@ import type { StoredRow } from '@repo/core';
 import { randomUUID } from 'expo-crypto';
 import {
   billNameSchema,
-  decimalToMinor,
   minorToDecimal,
   setRecurringOverrideInputSchema,
   type CurrencyCode,
@@ -10,57 +9,16 @@ import {
   type RecurringOverride,
   type SetRecurringOverrideInput,
 } from '@repo/types';
-import { merchantKey } from '@repo/core';
+import { merchantKey, recurringOverridesFromRows } from '@repo/core';
 import { assertMigrated, recurringOverrides$ } from '@/lib/store';
-import { getRecordValues, patchRow } from '@/lib/store/helpers';
+import { patchRow } from '@/lib/store/helpers';
 import { getUserId } from '@/lib/supabase/client';
 
 export type RecurringOverrideRow = StoredRow<'recurring_overrides'>;
 
-function rowToOverride(row: RecurringOverrideRow): RecurringOverride {
-  return {
-    id: row.id,
-    userId: row.user_id ?? '',
-    seriesKey: row.series_key ?? '',
-    status: row.status === 'dismissed' ? 'dismissed' : 'confirmed',
-    kind:
-      row.kind === 'income' || row.kind === 'bill' || row.kind === 'subscription' ? row.kind : null,
-    expectedAmountMinor: row.expected_amount === null ? null : decimalToMinor(row.expected_amount),
-    expectedDay: row.expected_day ?? null,
-    currency: (row.currency ?? '').toUpperCase(),
-    skipPeriod: row.skip_period ?? null,
-    remind: row.remind === true,
-    name: row.name ?? null,
-    walletId: row.wallet_id ?? null,
-    categoryId: row.category_id ?? null,
-    dueOnce: row.due_once ?? null,
-    createdAt: row.created_at ?? '',
-    updatedAt: row.updated_at ?? row.created_at ?? '',
-  };
-}
-
-/** One verdict per series: offline devices can each write one, so the latest update wins. */
-export function selectRecurringOverrides(
-  rows: readonly RecurringOverrideRow[],
-  userId: string,
-): RecurringOverride[] {
-  const latest = new Map<string, RecurringOverride>();
-  for (const row of rows) {
-    if (row.user_id !== userId || !row.series_key || row.deleted) continue;
-    const override = rowToOverride(row);
-    const current = latest.get(override.seriesKey);
-    if (!current || override.updatedAt > current.updatedAt)
-      latest.set(override.seriesKey, override);
-  }
-  return [...latest.values()];
-}
-
 /** The user's live verdicts; the recurring detector reads these. */
 export function listRecurringOverrides(userId: string): RecurringOverride[] {
-  return selectRecurringOverrides(
-    getRecordValues<RecurringOverrideRow>(recurringOverrides$),
-    userId,
-  );
+  return recurringOverridesFromRows(recurringOverrides$.get() ?? {}, userId);
 }
 
 /** Columns from the bills migration; writing one before it runs would stall the table's sync. */

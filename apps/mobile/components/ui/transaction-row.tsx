@@ -202,6 +202,8 @@ function TransferMeta({ from, to }: { from: string; to: string }) {
 
 function RowBubble({ row }: { row: TransactionRowData }) {
   const tokens = useThemeTokens();
+  // Rows only carry names that passed transactionIcon's MDI check.
+  const icon = row.icon as IconSymbolName;
   if (row.kind === 'pending') {
     return (
       <View
@@ -209,7 +211,7 @@ function RowBubble({ row }: { row: TransactionRowData }) {
         style={{ borderColor: row.color ?? tokens.sky }}
       >
         <IconSymbol
-          name={row.icon}
+          name={icon}
           size={20}
           color={tokens.foreground}
         />
@@ -218,8 +220,8 @@ function RowBubble({ row }: { row: TransactionRowData }) {
   }
   return (
     <TintBubble
-      icon={row.icon}
-      color={row.kind === 'transfer' ? null : row.color}
+      icon={icon}
+      color={row.color}
     />
   );
 }

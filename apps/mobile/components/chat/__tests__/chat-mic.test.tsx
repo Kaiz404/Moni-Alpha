@@ -49,7 +49,6 @@ jest.mock('@/lib/finance/selectors', () => {
   return { pendingProposals$: () => observable([]) };
 });
 jest.mock('@/lib/receipts/scan-receipt', () => ({ scanAndNormalizeReceipt: jest.fn() }));
-jest.mock('@/lib/supabase/proposed-transactions', () => ({ isAwaitingReview: () => false }));
 jest.mock('@/lib/haptics', () => ({
   holdCommit: jest.fn(),
   thresholdOn: jest.fn(),

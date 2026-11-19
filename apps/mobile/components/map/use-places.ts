@@ -11,8 +11,8 @@ import {
   resolveTransactionIcon,
   type TransactionIconName,
 } from '@/lib/transactions/icon';
-import type { RowLookups } from '@/lib/transactions/row';
-import { compactWalletNames } from '@/lib/wallets/compact-name';
+import type { RowLookups } from '@repo/core';
+import { compactWalletNames } from '@repo/core';
 
 export type CategoryLook = {
   name: string;

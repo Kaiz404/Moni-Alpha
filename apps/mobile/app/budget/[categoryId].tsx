@@ -55,7 +55,8 @@ import {
 import { tid } from '@/lib/test-ids';
 import { showToast } from '@/lib/toast/toast-store';
 import { resolveTransactionIcon } from '@/lib/transactions/icon';
-import { proposalRow, transactionRow } from '@/lib/transactions/row';
+import { proposalRow } from '@/lib/transactions/row';
+import { transactionRow } from '@repo/core';
 import { deviceCalendar } from '@/lib/dates/device-calendar';
 
 const SHOWN_ROWS = 5;

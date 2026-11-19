@@ -1,88 +1,27 @@
 import type { CurrencyCode, MinorAmount } from '@repo/types';
 
-import type { FinanceProposal, FinanceTransaction } from '@repo/core';
-import { resolveTransactionIcon, type TransactionIconName } from '@/lib/transactions/icon';
-import { BALANCE_CORRECTION_TITLE } from '@repo/core';
+import type { FinanceProposal, RowLookups, TransactionRow } from '@repo/core';
+import { resolveTransactionIcon } from '@/lib/transactions/icon';
 
-/** tokens.md Lemon: the balance correction bubble on every list. */
-const LEMON = '#F7CF3A';
-
-type RowBase = {
+/** A capture still waiting in Review, shown among saved rows. */
+export type PendingRowData = {
+  kind: 'pending';
   title: string;
   date: string;
   amountMinor: MinorAmount;
   currency: CurrencyCode;
-  icon: TransactionIconName;
+  icon: string;
   color: string | null;
+  category: string | null;
+  wallet: string | null;
 };
 
-export type TransactionRowData = RowBase &
-  (
-    | {
-        kind: 'expense' | 'income';
-        category: string | null;
-        wallet: string;
-        autoAdded: boolean;
-      }
-    | { kind: 'transfer'; wallet: string; toWallet: string; autoAdded: boolean }
-    | { kind: 'pending'; category: string | null; wallet: string | null }
-  );
-
-export type RowLookups = {
-  categoriesById: Record<string, { name: string; icon: string | null; color: string | null }>;
-  walletNames: Record<string, string>;
-};
-
-export function transactionRow(
-  transaction: FinanceTransaction,
-  { categoriesById, walletNames }: RowLookups,
-): TransactionRowData {
-  const category = transaction.categoryId ? categoriesById[transaction.categoryId] : undefined;
-  const wallet = walletNames[transaction.walletId] ?? 'Wallet';
-  const base: RowBase = {
-    title: transaction.merchant ?? transaction.description ?? category?.name ?? 'Transaction',
-    date: transaction.transactionDate,
-    amountMinor: transaction.amountMinor,
-    currency: transaction.currency,
-    icon: resolveTransactionIcon(category?.icon, transaction.type),
-    color: category?.color ?? null,
-  };
-  if (transaction.type === 'transfer') {
-    const toWallet = walletNames[transaction.transferToWalletId ?? ''] ?? 'Wallet';
-    return {
-      ...base,
-      title: transaction.description ?? 'Transfer',
-      kind: 'transfer',
-      wallet,
-      toWallet,
-      autoAdded: transaction.autoAdded,
-    };
-  }
-  if (transaction.balanceCorrection) {
-    return {
-      ...base,
-      title: BALANCE_CORRECTION_TITLE,
-      icon: 'scale-balance',
-      color: LEMON,
-      kind: transaction.type,
-      category: 'Not in budgets',
-      wallet,
-      autoAdded: false,
-    };
-  }
-  return {
-    ...base,
-    kind: transaction.type,
-    category: category?.name ?? null,
-    wallet,
-    autoAdded: transaction.autoAdded,
-  };
-}
+export type TransactionRowData = TransactionRow | PendingRowData;
 
 export function proposalRow(
   proposal: FinanceProposal,
   { categoriesById, walletNames }: RowLookups,
-): TransactionRowData {
+): PendingRowData {
   const category = proposal.categoryId ? categoriesById[proposal.categoryId] : undefined;
   return {
     kind: 'pending',

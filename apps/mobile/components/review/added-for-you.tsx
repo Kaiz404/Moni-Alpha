@@ -8,8 +8,8 @@ import { merchantName } from '@repo/core';
 import { categoriesForUser$, transactions$, walletsForUser$ } from '@/lib/finance/selectors';
 import { listMerchantAliases } from '@/lib/supabase/merchant-aliases';
 import { tid } from '@/lib/test-ids';
-import { transactionRow } from '@/lib/transactions/row';
-import { compactWalletNames } from '@/lib/wallets/compact-name';
+import { transactionRow } from '@repo/core';
+import { compactWalletNames } from '@repo/core';
 
 /** How far back "Added for you" looks for rows Moni added without asking. */
 const WINDOW_DAYS = 7;

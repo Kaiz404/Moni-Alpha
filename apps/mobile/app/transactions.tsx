@@ -24,8 +24,8 @@ import { usePageNumber } from '@/lib/finance/paged';
 import { categoriesForUser$, transactions$, walletsForUser$ } from '@/lib/finance/selectors';
 import { listMerchantAliases } from '@/lib/supabase/merchant-aliases';
 import { tid } from '@/lib/test-ids';
-import type { RowLookups } from '@/lib/transactions/row';
-import { compactWalletNames } from '@/lib/wallets/compact-name';
+import type { RowLookups } from '@repo/core';
+import { compactWalletNames } from '@repo/core';
 
 /**
  * `/transactions`: a detail page's See all, pushed under it so Back returns there. The bill,

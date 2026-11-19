@@ -29,7 +29,7 @@ import {
   weekdayShort,
 } from '@repo/core';
 import { tid } from '@/lib/test-ids';
-import { transactionRow } from '@/lib/transactions/row';
+import { transactionRow } from '@repo/core';
 
 import { deviceCalendar } from '@/lib/dates/device-calendar';
 

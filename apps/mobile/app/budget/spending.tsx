@@ -14,7 +14,7 @@ import { TintBubble } from '@/components/ui/transaction-row';
 import { usePageNumber } from '@/lib/finance/paged';
 import { tid } from '@/lib/test-ids';
 import { resolveTransactionIcon } from '@/lib/transactions/icon';
-import type { RowLookups } from '@/lib/transactions/row';
+import type { RowLookups } from '@repo/core';
 import {
   NO_CATEGORY_NAME,
   readSpendingParams,

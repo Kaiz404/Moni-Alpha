@@ -2,7 +2,6 @@ import type { Observable } from '@legendapp/state';
 import {
   approveProposedTransaction,
   getProposedTransactions,
-  isAwaitingReview,
   laterProposedTransaction,
   listAwaitingReview,
   listRecentlyReviewed,
@@ -62,15 +61,6 @@ function seed(id: string, over: Record<string, unknown>) {
 }
 
 describe('Later', () => {
-  it('hides a snoozed proposal until its snooze passes', () => {
-    const inAnHour = new Date(NOW.getTime() + HOUR).toISOString();
-    const anHourAgo = new Date(NOW.getTime() - HOUR).toISOString();
-    expect(isAwaitingReview({ status: 'later', snoozedUntil: inAnHour }, NOW)).toBe(false);
-    expect(isAwaitingReview({ status: 'later', snoozedUntil: anHourAgo }, NOW)).toBe(true);
-    expect(isAwaitingReview({ status: 'pending', snoozedUntil: null }, NOW)).toBe(true);
-    expect(isAwaitingReview({ status: 'rejected', snoozedUntil: null }, NOW)).toBe(false);
-  });
-
   it('review lists pending rows and Later rows that are due, not ones still snoozed', async () => {
     seed('pending', {});
     seed('due', { status: 'later', snoozed_until: new Date(NOW.getTime() - HOUR).toISOString() });

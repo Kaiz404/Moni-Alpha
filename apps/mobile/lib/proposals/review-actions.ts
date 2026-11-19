@@ -29,7 +29,7 @@ import {
   type RejectedProposal,
 } from '@/lib/supabase/proposed-transactions';
 import { deleteTransaction } from '@/lib/supabase/transactions';
-import { captureAlert } from '@/lib/transactions/alert';
+import { captureAlert } from '@repo/core';
 import { retypeFields } from '@/lib/transactions/type-change';
 
 /**

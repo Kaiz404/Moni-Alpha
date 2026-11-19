@@ -17,6 +17,7 @@ jest.mock('uniwind', () => ({
 }));
 
 const grab: TransactionRowData = {
+  id: 'grab',
   kind: 'expense',
   title: 'GRAB*FOOD',
   date: new Date(2026, 9, 14, 12, 41).toISOString(),
@@ -26,6 +27,7 @@ const grab: TransactionRowData = {
   color: '#F1A399',
   category: 'Food & Dining',
   wallet: 'Maybank',
+  toWallet: null,
   autoAdded: false,
 };
 const now = new Date(2026, 9, 14, 14, 6);
@@ -53,6 +55,7 @@ describe('TransactionRow', () => {
       <TransactionRow
         testID={tid('activity', 'row', 'reload')}
         row={{
+          id: 'reload',
           kind: 'transfer',
           title: 'Reload',
           date: grab.date,
@@ -60,6 +63,7 @@ describe('TransactionRow', () => {
           currency: 'MYR',
           icon: 'swap-horizontal',
           color: null,
+          category: null,
           wallet: 'Maybank',
           toWallet: "Touch 'n Go",
           autoAdded: false,

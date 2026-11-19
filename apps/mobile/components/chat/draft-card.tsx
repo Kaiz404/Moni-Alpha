@@ -32,7 +32,7 @@ import { openSheet } from '@/lib/sheet/sheet-store';
 import { tid, type TestId } from '@/lib/test-ids';
 import { showToast, undoToast } from '@/lib/toast/toast-store';
 import { resolveTransactionIcon } from '@/lib/transactions/icon';
-import { compactWalletNames } from '@/lib/wallets/compact-name';
+import { compactWalletNames } from '@repo/core';
 
 import { pickWallet } from './pick-wallet';
 import { formatMoney, formatSignedMoney } from '@repo/core';

@@ -7,7 +7,7 @@ import {
 } from '@/lib/store';
 import { getRecordValues, hasRow, patchRow } from '@/lib/store/helpers';
 import { ledgerView } from '@/lib/store/writes';
-import { checkTransfer, toProposal } from '@repo/core';
+import { checkTransfer, isAwaitingReview, toProposal } from '@repo/core';
 import { getUserId } from '@/lib/supabase/client';
 import { randomUUID } from 'expo-crypto';
 import {
@@ -118,15 +118,6 @@ export function pruneReviewHistory(now = new Date()): number {
   );
   for (const proposal of old) softDelete(proposal.id);
   return old.length;
-}
-
-export function isAwaitingReview(
-  proposal: Pick<ProposedTransaction, 'status' | 'snoozedUntil'>,
-  now: Date,
-): boolean {
-  if (proposal.status === 'pending') return true;
-  if (proposal.status !== 'later') return false;
-  return !proposal.snoozedUntil || Date.parse(proposal.snoozedUntil) <= now.getTime();
 }
 
 /** Captures waiting for a decision, newest first. Reads the store, so it is safe in a reactive selector. */
