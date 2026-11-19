@@ -9,7 +9,7 @@ import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { lastCapturedLine, reportedMissedLine, type CaptureSourceHealth } from '@/lib/notifications/capture-health';
 import { tid, type TestId } from '@/lib/test-ids';
 
-function AppBubble({ packageName }: { packageName: string }) {
+export function AppBubble({ packageName }: { packageName: string }) {
   const tokens = useThemeTokens();
   const icon = useAppIcon(packageName);
   if (icon) {

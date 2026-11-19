@@ -1,5 +1,6 @@
 # G4 Review history: Recently reviewed folds under the deck, lists the decisions under All caught up,
-# and Move back to review returns a Not mine card to the deck.
+# Ask again on the GRAB "Don't ask about similar" rule beside it, then Undo, and Move back to review
+# returns a Not mine card to the deck.
 # Needs a signed-in e2e build with at least two pending captures, and the review_history migration
 # pushed (without it decisions are soft-deleted and the list stays empty).
 # Run: scripts/device/run-flows.sh .maestro/flows/review/history.yaml
@@ -35,6 +36,31 @@ tags:
           id: review.card
       - assertVisible: Not mine
       - takeScreenshot: g4-history-open
+      - scrollUntilVisible:
+          element:
+            id: review.rule.grab.ask-again
+          direction: DOWN
+          optional: true
+      - runFlow:
+          when:
+            visible:
+              id: review.rule.grab.ask-again
+          commands:
+            - assertVisible: Don't ask about similar
+            - assertVisible: Adds to .* without asking
+            - tapOn:
+                id: review.rule.grab.ask-again
+                waitToSettleTimeoutMs: 1000
+            - assertVisible: Moni will ask about .* again
+            - takeScreenshot: g4-ask-again
+            - tapOn:
+                id: nav.toast.undo
+            - assertVisible:
+                id: review.rule.grab.ask-again
+      - scrollUntilVisible:
+          element:
+            id: review.history.toggle
+          direction: UP
       - tapOn:
           id: review.history.toggle
       - extendedWaitUntil:

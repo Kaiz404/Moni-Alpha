@@ -81,7 +81,7 @@ Checked 21 Oct 2026. Every row is built; new data work adds Zod schemas in `pack
 | Designed | Built on | Status |
 | --- | --- | --- |
 | Bills list with due dates, "Add a bill" | `selectUpcomingBills` (`@repo/core`); bill pages edit `recurring_overrides`; Remind schedules through `syncBillReminders` | Done |
-| "Don't ask about similar" | `auto_add_rules`; `matchRoutine` applies a rule before the history heuristic | Done: Review (R1), list and "Ask again" in Capture sources (K3) |
+| "Don't ask about similar" | `auto_add_rules`; `matchRoutine` applies a rule before the history heuristic | Done: Review (R1); the list with "Ask again" sits under Recently reviewed on Review, phone and web (#78) |
 | Source tile (Manual, Voice, Moni, Notification, Camera) | `transactions.metadata.source`; older rows read as Manual | Done (A2) |
 | Merchant names | `merchantName(raw, aliases)` in `@repo/core` | Done on Home, Activity, wallet pages and Review |
 | Main currency | `preferences.currency`, `useMainCurrency()`, set from Profile | Done on every focused page |

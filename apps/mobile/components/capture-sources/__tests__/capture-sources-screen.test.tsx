@@ -53,7 +53,6 @@ jest.mock('@/lib/supabase/auto-add-rules', () => ({
   createAutoAddRule: jest.fn(),
   deleteAutoAddRule: jest.fn(),
 }));
-jest.mock('@/components/capture-sources/use-auto-add-rules', () => ({ useAutoAddRules: () => [] }));
 jest.mock('@/components/capture-sources/use-capture-alert', () => ({
   useCaptureAlert: () => mockAlert,
 }));

@@ -1,5 +1,6 @@
 export * from './activity-filter';
 export * from './activity-series';
+export * from './auto-add-rules';
 export * from './balance-history';
 export * from './category-presets';
 export * from './check-in';

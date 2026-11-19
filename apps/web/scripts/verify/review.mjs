@@ -184,6 +184,13 @@ export async function verifyReview(t) {
   const recent = p.locator('aside[aria-label="Recently reviewed"]');
   await recent.waitFor({ timeout: 5000 }).catch(() => {});
   check('Recently reviewed lists the Not mine with Move back to Review', (await visible(recent.locator('.recent-row[data-status="rejected"]').first())) && (await visible(recent.getByRole('button', { name: 'Move back to Review' }).first())));
+  const rules = recent.locator('.recent-row[data-rule]');
+  const ruleLines = await rules.locator('.inbox-text > span').allInnerTexts();
+  check(
+    "each Don't ask about similar rule says what it does and has Ask again",
+    ruleLines.every((line) => / without asking$/.test(line)) && (await rules.getByRole('button', { name: 'Ask again' }).count()) === ruleLines.length,
+    ruleLines,
+  );
   await shot(p, 'review-1440-recent');
   await recent.getByRole('button', { name: 'Move back to Review' }).first().click();
   const moved = await until('proposals', (r) => r.some((row) => row.id === first.id && row.status === 'pending' && !row.reviewed_at));

@@ -1,6 +1,6 @@
 'use client';
 
-import { dayLabel, formatMoney, formatSignedMoney, planReopen, type ReviewedProposal, type StoredRow } from '@repo/core';
+import { dayLabel, formatMoney, formatSignedMoney, planned, planReopen, type AutoAddRuleItem, type ReviewedProposal, type StoredRow } from '@repo/core';
 import Link from 'next/link';
 import { Cat } from '@/components/brand';
 import { Bubble, Glyph } from '@/components/ledger/glyph';
@@ -15,6 +15,43 @@ function moveBack(proposal: ReviewedProposal) {
   const row = (moniStore().proposedTransactions$.peek() as Record<string, StoredRow<'proposed_transactions'>> | undefined)?.[proposal.id];
   if (!row) return;
   commit(planReopen({ ...row }, { transactionId: null, rule: null }, !row.deleted, { now: new Date().toISOString() }), `${captureName(proposal)} is back in Review`);
+}
+
+/** Deletes a "Don't ask about similar" rule, so the next alert like it waits in Review again. Undo puts it back. */
+function askAgain(item: AutoAddRuleItem) {
+  commit(
+    planned({ softDelete: [{ table: 'auto_add_rules', id: item.rule.id, at: new Date().toISOString() }] }, null),
+    `Moni will ask about ${item.name} again`,
+  );
+}
+
+/** The rules "Don't ask about similar" made, beside the decisions that made them. */
+function RuleList({ rules, categoriesById }: { rules: AutoAddRuleItem[]; categoriesById: Ledger['projection']['categoriesById'] }) {
+  if (rules.length === 0) return null;
+  return (
+    <>
+      <div className="recent-head">
+        <h2 className="card-title">Don&apos;t ask about similar</h2>
+      </div>
+      <ul className="recent-rows" aria-label="Don't ask about similar">
+        {rules.map((item) => {
+          const category = categoriesById[item.rule.categoryId];
+          return (
+            <li key={item.rule.id} className="recent-row" data-rule={item.rule.merchantKey}>
+              <Bubble icon={category?.icon} color={category?.color} size={36} glyph={18} />
+              <span className="inbox-text">
+                <b>{item.name}</b>
+                <span>{item.line}</span>
+              </span>
+              <button type="button" className="btn btn-out press move-back" onClick={() => askAgain(item)}>
+                Ask again
+              </button>
+            </li>
+          );
+        })}
+      </ul>
+    </>
+  );
 }
 
 /** Recently reviewed: 30 days of Approve and Not mine, and Move back to Review for a Not mine. */
@@ -68,6 +105,7 @@ export function RecentList({ ledger, onClose }: { ledger: Ledger; onClose?: () =
           })}
         </ul>
       )}
+      <RuleList rules={ledger.autoAddRules} categoriesById={projection.categoriesById} />
     </div>
   );
 }

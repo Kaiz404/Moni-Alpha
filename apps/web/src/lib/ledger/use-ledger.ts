@@ -3,10 +3,12 @@
 import { syncState } from '@legendapp/state';
 import { useValue } from '@legendapp/state/react';
 import {
+  autoAddRuleItems,
   buildMoneyMonth,
   compactWalletNames,
   createCalendar,
   debtsWithBalance,
+  liveAutoAddRules,
   merchantAliasesFromRows,
   moneyLedger,
   pendingProposals,
@@ -16,6 +18,7 @@ import {
   toProposal,
   walletBalance,
   walletsForUser,
+  type AutoAddRuleItem,
   type BudgetRow,
   type Calendar,
   type FinanceProjection,
@@ -27,6 +30,7 @@ import {
   type MoneyMonth,
   type RawTable,
   type ReviewedProposal,
+  type StoredRow,
 } from '@repo/core';
 import type { CurrencyCode, MerchantAlias, MinorAmount } from '@repo/types';
 import { useEffect, useMemo, useState } from 'react';
@@ -61,6 +65,8 @@ export type Ledger = {
   reviewed: ReviewedProposal[];
   /** Budget rows as stored, soft-deleted ones included, for the budget plans. */
   budgetRows: BudgetRow[];
+  /** The "Don't ask about similar" rules, listed beside Recently reviewed. */
+  autoAddRules: AutoAddRuleItem[];
   /** The wallet the profile picks for new entries, if any. */
   defaultWalletId: string | null;
   /** Tables whose pull failed, so a card can say it couldn't load while the rest of the screen stays. */
@@ -105,6 +111,7 @@ function useTables() {
       proposals: copy(store.proposedTransactions$),
       overrides: copy(store.recurringOverrides$),
       aliases: copy(store.merchantAliases$),
+      rules: copy(store.autoAddRules$),
       monthlyBudget: store.profilePreferences$.get()?.monthly_budget ?? null,
       defaultWalletId: store.profilePreferences$.get()?.default_wallet_id ?? null,
       failed: (
@@ -213,6 +220,13 @@ export function useLedger(): Ledger {
         now,
       ),
       budgetRows: Object.values(tables?.budgets ?? EMPTY).filter(Boolean) as BudgetRow[],
+      autoAddRules: autoAddRuleItems(
+        liveAutoAddRules(Object.values(tables?.rules ?? EMPTY).filter(Boolean) as StoredRow<'auto_add_rules'>[], user.id),
+        {
+          aliases: new Map(merchantAliasesFromRows(tables?.aliases ?? {}, user.id).map((alias) => [alias.rawKey, alias.displayName])),
+          categoryNames: Object.fromEntries(Object.values(projection.categoriesById).map((category) => [category.id, category.name])),
+        },
+      ),
       defaultWalletId: tables?.defaultWalletId ?? null,
       failed: tables?.failed ?? [],
       setup: { finishedAt: tables?.setupFinishedAt, hidden: tables?.setupHidden },

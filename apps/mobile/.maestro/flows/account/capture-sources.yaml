@@ -1,6 +1,5 @@
-# K3 Capture sources: one Notifications row with no app named, phone access, rules added without
-# asking, links. The Ask again step runs when a GRAB auto-add rule exists.
-# Ask again is undone at the end so the flow can run twice; lane 7 skips the Undo.
+# K3 Capture sources: one Notifications row with no app named, phone access and links. The
+# "Don't ask about similar" rules live on Review (review/history.yaml), never here.
 # Run: scripts/device/run-flows.sh .maestro/flows/account/capture-sources.yaml
 appId: com.anonymous.moni.e2e
 name: K3 capture sources
@@ -44,24 +43,7 @@ tags:
           id: sources.notifications.by-hand
       - takeScreenshot: k3-l10-denied
 
-# Ask again on the GRAB rule, then Undo.
-- scrollUntilVisible:
-    element:
-      text: Added without asking
-- runFlow:
-    when:
-      visible:
-        id: sources.rule.grab.ask-again
-    commands:
-      - tapOn:
-          id: sources.rule.grab.ask-again
-          waitToSettleTimeoutMs: 1000
-      - assertVisible: Moni will ask about .* again
-      - takeScreenshot: k3-l7-ask-again
-      - tapOn:
-          id: nav.toast.undo
-      - assertVisible:
-          id: sources.rule.grab.ask-again
+- assertNotVisible: Added without asking
 
 - scrollUntilVisible:
     element:

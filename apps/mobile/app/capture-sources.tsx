@@ -2,7 +2,6 @@ import { router, type Href } from 'expo-router';
 import { Platform, View } from 'react-native';
 
 import { NotificationsDenied, PermissionRow } from '@/components/capture-sources/permission-row';
-import { useAutoAddRules, type AutoAddRuleRow } from '@/components/capture-sources/use-auto-add-rules';
 import { KeepCaptureRunning } from '@/components/capture-sources/keep-capture-running';
 import { useCaptureAlert } from '@/components/capture-sources/use-capture-alert';
 import { useCaptureHealth } from '@/components/capture-sources/use-capture-health';
@@ -14,36 +13,9 @@ import { ListCard, ListSection } from '@/components/ui/list-card';
 import { Page, PageScroll } from '@/components/ui/page';
 import { Press } from '@/components/ui/press';
 import { Text } from '@/components/ui/text';
-import { TintBubble } from '@/components/ui/transaction-row';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { retryCaptures } from '@/lib/ai/background-processor';
-import { createAutoAddRule, deleteAutoAddRule } from '@/lib/supabase/auto-add-rules';
 import { tid, type TestId } from '@/lib/test-ids';
-import { showToast } from '@/lib/toast/toast-store';
-
-function failed(error: unknown) {
-  showToast({ text: error instanceof Error ? error.message : "Couldn't save that change." });
-}
-
-function askAgain({ rule, name }: AutoAddRuleRow) {
-  try {
-    deleteAutoAddRule(rule.id);
-  } catch (error) {
-    failed(error);
-    return;
-  }
-  showToast({
-    text: `Moni will ask about ${name} again`,
-    undo: () => {
-      void createAutoAddRule({
-        merchantKey: rule.merchantKey,
-        sourceApp: rule.sourceApp,
-        walletId: rule.walletId,
-        categoryId: rule.categoryId,
-      }).catch(failed);
-    },
-  });
-}
 
 function LinkRow({
   testID,
@@ -96,7 +68,6 @@ export default function CaptureSourcesScreen() {
   const { apps } = useLinkedApps();
   const { unreached } = useCaptureHealth();
   const captureAlert = useCaptureAlert();
-  const rules = useAutoAddRules();
   const denied = Platform.OS === 'android' && access.notifications === 'off';
 
   return (
@@ -191,43 +162,6 @@ export default function CaptureSourcesScreen() {
 
         {Platform.OS === 'android' && (apps.length > 0 || access.notifications === 'on') ? (
           <KeepCaptureRunning />
-        ) : null}
-
-        {rules.length > 0 ? (
-          <ListSection label="Added without asking">
-              {rules.map((row) => (
-                <View
-                  key={row.rule.id}
-                  className="min-h-[66px] flex-row items-center gap-3.5 px-[18px] py-3"
-                >
-                  <TintBubble
-                    icon={row.icon}
-                    color={row.color}
-                  />
-                  <View className="min-w-0 flex-1">
-                    <Text
-                      variant="rowTitle"
-                      className="text-foreground"
-                      numberOfLines={1}
-                    >
-                      {row.name}
-                    </Text>
-                  </View>
-                  <Press
-                    testID={tid('sources', 'rule', row.rule.merchantKey, 'ask-again')}
-                    onPress={() => askAgain(row)}
-                    accessibilityLabel={`Ask again about ${row.name}`}
-                    radius={{ rest: 22, pressed: 16 }}
-                    pressedClassName="bg-hairline"
-                    className="h-11 justify-center bg-sand px-3"
-                  >
-                    <Text className="text-[15px] leading-[21px] font-display-semibold text-foreground">
-                      Ask again
-                    </Text>
-                  </Press>
-                </View>
-              ))}
-            </ListSection>
         ) : null}
 
         <ListCard>

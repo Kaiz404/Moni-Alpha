@@ -32,6 +32,7 @@ import Animated, {
 import { scheduleOnRN } from 'react-native-worklets';
 
 import { AddedForYou } from '@/components/review/added-for-you';
+import { AutoAddRules } from '@/components/review/auto-add-rules';
 import { CaughtUp, NothingToReview } from '@/components/review/caught-up';
 import { EdgeCues } from '@/components/review/edge-cues';
 import {
@@ -1013,6 +1014,7 @@ export function ReviewDeck({ session }: { session: ReviewSession }) {
             <NothingToReview onCaptureLog={() => router.push('/capture-log')} />
             <AddedForYou />
             {recentlyReviewed}
+            <AutoAddRules />
           </ScrollView>
           {homeRow}
         </View>
@@ -1041,6 +1043,7 @@ export function ReviewDeck({ session }: { session: ReviewSession }) {
           />
           <AddedForYou />
           {recentlyReviewed}
+          <AutoAddRules />
         </ScrollView>
         {homeRow}
       </View>
@@ -1061,6 +1064,7 @@ export function ReviewDeck({ session }: { session: ReviewSession }) {
           onMoveBack={moveBack}
           heading={false}
         />
+        <AutoAddRules />
       </ScrollView>
     );
   }

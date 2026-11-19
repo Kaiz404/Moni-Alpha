@@ -1,4 +1,4 @@
-import type { StoredRow } from '@repo/core';
+import { liveAutoAddRules, type StoredRow } from '@repo/core';
 import { randomUUID } from 'expo-crypto';
 import {
   createAutoAddRuleInputSchema,
@@ -11,41 +11,8 @@ import { getUserId } from '@/lib/supabase/client';
 
 export type AutoAddRuleRow = StoredRow<'auto_add_rules'>;
 
-const ruleKey = (sourceApp: string, merchantKey: string) => `${sourceApp}|${merchantKey}`;
-
-function rowToRule(row: AutoAddRuleRow): AutoAddRule {
-  return {
-    id: row.id,
-    userId: row.user_id ?? '',
-    merchantKey: row.merchant_key ?? '',
-    sourceApp: row.source_app ?? '',
-    walletId: row.wallet_id ?? '',
-    categoryId: row.category_id ?? '',
-    createdAt: row.created_at ?? '',
-    updatedAt: row.updated_at ?? row.created_at ?? '',
-    deleted: row.deleted === true,
-  };
-}
-
-/** Offline devices can each write a rule for the same app and merchant. */
-function latestRulePerAppAndMerchant(
-  rows: readonly AutoAddRuleRow[],
-  userId: string,
-): AutoAddRule[] {
-  const latest = new Map<string, AutoAddRule>();
-  for (const row of rows) {
-    if (row.user_id !== userId || row.deleted) continue;
-    if (!row.merchant_key || !row.source_app || !row.wallet_id || !row.category_id) continue;
-    const rule = rowToRule(row);
-    const key = ruleKey(rule.sourceApp, rule.merchantKey);
-    const current = latest.get(key);
-    if (!current || rule.updatedAt > current.updatedAt) latest.set(key, rule);
-  }
-  return [...latest.values()];
-}
-
 export function listAutoAddRules(userId: string): AutoAddRule[] {
-  return latestRulePerAppAndMerchant(getRecordValues<AutoAddRuleRow>(autoAddRules$), userId);
+  return liveAutoAddRules(getRecordValues<AutoAddRuleRow>(autoAddRules$), userId);
 }
 
 export async function createAutoAddRule(input: CreateAutoAddRuleInput): Promise<void> {
