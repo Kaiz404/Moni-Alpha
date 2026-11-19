@@ -360,7 +360,7 @@ function BudgetLoaded({ ledger }: { ledger: Ledger }) {
             </>
           )}
         </div>
-        <SidePane label="Category" open={Boolean(selected)} onClose={() => select(null)}>
+        <SidePane label="Category" name="category" open={Boolean(selected)} onClose={() => select(null)}>
           {selected && (
             <CategoryPane
               line={selected}

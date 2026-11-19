@@ -202,6 +202,22 @@ export async function driveLedgerScreens({ browser, storage, base, check, shot, 
   await a.getByRole('button', { name: 'Amount', exact: true }).click();
   await a.waitForURL(/dir=asc/).catch(() => {});
   check('a second click flips the sort', a.url().includes('dir=asc'), a.url());
+  const categoryHead = a.locator('.activity-table [role="columnheader"]').filter({ hasText: 'Category' });
+  const headWidth = async () => Math.round((await categoryHead.boundingBox())?.width ?? 0);
+  const headBefore = await headWidth();
+  const seam = a.getByRole('separator', { name: 'Resize Category' });
+  const seamBox = await seam.boundingBox();
+  await a.mouse.move(seamBox.x + seamBox.width / 2, seamBox.y + seamBox.height / 2);
+  await a.mouse.down();
+  await a.mouse.move(seamBox.x + seamBox.width / 2 + 40, seamBox.y + seamBox.height / 2, { steps: 4 });
+  await a.mouse.up();
+  const dragged = await headWidth();
+  await a.reload();
+  await waitLoaded(a, '.activity');
+  const kept = await headWidth();
+  await seam.dblclick();
+  const reset = await headWidth();
+  check('dragging a column edge widens it, a reload keeps it, and a double click puts it back', dragged === headBefore + 40 && kept === dragged && reset === headBefore, { headBefore, dragged, kept, reset });
   await a.goto(`${base}/activity`);
   await waitLoaded(a, '.activity');
 
@@ -220,6 +236,23 @@ export async function driveLedgerScreens({ browser, storage, base, check, shot, 
   await a.keyboard.press('k');
   await a.waitForTimeout(300);
   check('K moves back', a.url() === firstOpen, a.url());
+  const paneBox = async () => (await a.getByRole('complementary', { name: 'Transaction' }).boundingBox()) ?? { x: 0, width: 0 };
+  const paneSeam = a.getByRole('separator', { name: 'Resize the transaction pane' });
+  const paneBefore = await paneBox();
+  await paneSeam.focus();
+  await a.keyboard.press('ArrowLeft');
+  await a.keyboard.press('ArrowLeft');
+  await a.waitForTimeout(500);
+  const paneWider = await paneBox();
+  const tableEnd = await a.locator('.activity-table').evaluate((table) => table.getBoundingClientRect().right);
+  check(
+    'the pane\'s left edge takes the arrows: two presses make it 32 wider and the table reflows beside it',
+    Math.round(paneWider.width - paneBefore.width) === 32 && tableEnd <= paneWider.x,
+    { paneBefore, paneWider, tableEnd },
+  );
+  await paneSeam.press('Enter');
+  await a.waitForTimeout(500);
+  check('Enter on the edge puts the pane back to 380', Math.round((await paneBox()).width) === 380, await paneBox());
   await settle(a);
   await shot(a, 'activity-1440-pane');
   await pair('activity-pane-1440', 'r2/W2-Activity.png', join(OUT, 'activity-1440-pane.png'));

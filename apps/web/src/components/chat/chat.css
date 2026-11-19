@@ -669,3 +669,20 @@ html[data-layout='phone'] .pane-chat .composer-send {
     animation: fade-in 900ms ease-in-out infinite alternate;
   }
 }
+
+/* The chat pane's left edge drags it wider (#95); the page beside it makes room through --pane-width. */
+.resize-handle.pane-resize {
+  position: fixed;
+  top: 12px;
+  bottom: 12px;
+  right: calc(12px + var(--pane-width) - 6px);
+  z-index: 31;
+}
+
+.pane-chat:hover + .pane-resize::after {
+  opacity: 0.6;
+}
+
+html[data-layout='phone'] .pane-resize {
+  display: none;
+}

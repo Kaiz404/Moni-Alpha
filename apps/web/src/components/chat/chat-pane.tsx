@@ -6,12 +6,14 @@ import { useEffect, useMemo, useRef, type KeyboardEvent } from 'react';
 import { AskMoniMark, Cat } from '@/components/brand';
 import { Icon } from '@/components/icon';
 import { Glyph } from '@/components/ledger/glyph';
+import { ResizeHandle, useRootWidth, useStoredSize } from '@/components/ledger/resize-handle';
 import { useShellApi } from '@/components/shell/shell-context';
 import { setShell, useShell } from '@/components/shell/shell-store';
 import { activityItems } from '@/lib/activity-items';
 import { parseActivityQuery } from '@/lib/activity-query';
 import { lookingAt, type ChatMessage } from '@/lib/chat-thread';
 import { destinationOf } from '@/lib/nav';
+import { PANE_SPANS } from '@/lib/sizes';
 import { useLedger } from '@/lib/ledger/use-ledger';
 import { AnswerCardView } from './answer-card';
 import { ask, notNowForChat, turnOnAndAnswer, type AskFrom } from './ask';
@@ -154,9 +156,12 @@ export function ChatPane() {
     box.current?.focus();
   };
   const first = chat.length === 0;
+  const [width, setWidth] = useStoredSize('pane-chat', PANE_SPANS.chat);
+  useRootWidth('--chat-pane-width', width, true);
   const today = ledger.mounted ? ledger.calendar.dayKey(ledger.now) : null;
 
   return (
+    <>
     <aside className="pane pane-chat motion-slide" aria-label="Moni chat" data-pane="chat">
       <header className="pane-head chat-head">
         <button type="button" className="back-button press" data-only="phone" onClick={() => run({ kind: 'closePane' })} aria-label="Back">
@@ -237,5 +242,7 @@ export function ChatPane() {
       </form>
       {chatAsk && <ConsentDialog use="chat" onTurnOn={() => void turnOnAndAnswer(from)} onNotNow={() => void notNowForChat()} />}
     </aside>
+    <ResizeHandle label="Resize Moni chat" span={PANE_SPANS.chat} value={width} grows="left" onChange={setWidth} className="pane-resize" />
+    </>
   );
 }

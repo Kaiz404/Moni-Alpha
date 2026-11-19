@@ -10,7 +10,7 @@ import {
 } from '@repo/core';
 import Link from 'next/link';
 import { useParams, usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { useEffect, useMemo, useState, type MouseEvent, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, type CSSProperties, type MouseEvent, type ReactNode } from 'react';
 import { Cat } from '@/components/brand';
 import { Icon } from '@/components/icon';
 import { Bubble, Glyph } from '@/components/ledger/glyph';
@@ -41,7 +41,9 @@ import { commit, planContext } from '@/lib/ledger/commit';
 import { SOURCE_ICONS, SOURCE_LABELS, rowAmount } from '@/lib/ledger/format';
 import { useLedger } from '@/lib/ledger/use-ledger';
 import { useScreenKeys } from '@/lib/screen-keys';
+import { ResizeHandle } from '@/components/ledger/resize-handle';
 import { SidePane } from '@/components/ledger/side-pane';
+import { COLUMN_SPANS, parseColumnWidths, type ColumnWidths, type ResizableColumn } from '@/lib/sizes';
 import { ConfirmDelete } from './confirm-delete';
 import { DetailPane } from './detail-pane';
 import { FilterBar } from './filters';
@@ -49,6 +51,7 @@ import { RunningCard } from './running-card';
 import './activity.css';
 
 const VIEWS_KEY = 'moni-activity-views';
+const COLUMNS_KEY = 'moni-activity-columns';
 const COLUMNS: { key: SortKey; label: string }[] = [
   { key: 'date', label: 'Date' },
   { key: 'merchant', label: 'Merchant' },
@@ -74,6 +77,27 @@ function readViews(): SavedView[] {
   } catch {
     return [];
   }
+}
+
+function readColumns(): ColumnWidths {
+  try {
+    return parseColumnWidths(window.localStorage.getItem(COLUMNS_KEY));
+  } catch {
+    return {};
+  }
+}
+
+function writeColumns(widths: ColumnWidths) {
+  try {
+    window.localStorage.setItem(COLUMNS_KEY, JSON.stringify(widths));
+  } catch {
+    // Without storage the widths last until the tab closes.
+  }
+}
+
+/** The table's dragged column widths as the CSS its grid reads; an untouched column keeps the board's. */
+function columnStyle(widths: ColumnWidths): CSSProperties {
+  return Object.fromEntries(Object.entries(widths).map(([key, width]) => [`--col-${key}`, `${width}px`])) as CSSProperties;
 }
 
 function writeViews(views: SavedView[]) {
@@ -108,7 +132,17 @@ export function ActivityScreen() {
   const [cell, setCell] = useState<CellEdit | null>(null);
   const [bulkOpen, setBulkOpen] = useState<'category' | 'wallet' | null>(null);
   const [naming, setNaming] = useState<string | null>(null);
+  const [columns, setColumns] = useState<ColumnWidths>({});
   useEffect(() => setViews(readViews()), []);
+  useEffect(() => setColumns(readColumns()), []);
+  const resizeColumn = (key: ResizableColumn, width: number | null) =>
+    setColumns((current) => {
+      const next = { ...current };
+      if (width === null) delete next[key];
+      else next[key] = width;
+      writeColumns(next);
+      return next;
+    });
   useEffect(() => () => setShell({ ticked: [] }), []);
 
   const today = ledger.calendar.dayKey(ledger.now);
@@ -281,7 +315,9 @@ export function ActivityScreen() {
           <Bubble icon={item.row.icon} color={item.row.color} size={22} glyph={12} />
           <Glyph name="arrow-right" size={15} />
           <Bubble icon={target.icon} color={target.color} size={22} glyph={12} />
-          <span className="cell-text">{target.name}</span>
+          <span className="cell-text" title={target.name}>
+            {target.name}
+          </span>
         </span>
       );
     if (item.kind === 'transfer')
@@ -349,7 +385,9 @@ export function ActivityScreen() {
         }}
       >
         <Bubble icon={item.row.icon} color={item.row.color} size={22} glyph={12} />
-        <span className="cell-text">{item.category ?? 'No category'}</span>
+        <span className="cell-text" title={item.category ?? undefined}>
+          {item.category ?? 'No category'}
+        </span>
       </button>
     );
   };
@@ -496,7 +534,7 @@ export function ActivityScreen() {
               </div>
             ) : (
               <>
-                <div role="grid" aria-label="Transactions" aria-rowcount={page.total} className="activity-table" data-only="sidebar rail">
+                <div role="grid" aria-label="Transactions" aria-rowcount={page.total} className="activity-table" data-only="sidebar rail" style={columnStyle(columns)}>
                   <div role="row" className="tr th-row">
                     <span role="columnheader">
                       <button
@@ -510,12 +548,22 @@ export function ActivityScreen() {
                         {ticked > 0 && <Glyph name={ticked === pageIds.length ? 'check' : 'minus'} size={14} />}
                       </button>
                     </span>
-                    {COLUMNS.map((column) => (
-                      <span role="columnheader" key={column.key} aria-sort={query.sort === column.key ? (query.dir === 'asc' ? 'ascending' : 'descending') : 'none'}>
-                        <button type="button" className="th" data-right={column.key === 'amount' || undefined} onClick={() => go({ ...nextSort(query, column.key), page: 1 })}>
-                          {column.label}
-                          <Glyph name={query.sort === column.key && query.dir === 'asc' ? 'arrow-up' : 'arrow-down'} size={15} className={query.sort === column.key ? 'sort-on' : 'sort-off'} />
+                    {COLUMNS.map(({ key: sortKey, label }) => (
+                      <span role="columnheader" key={sortKey} aria-sort={query.sort === sortKey ? (query.dir === 'asc' ? 'ascending' : 'descending') : 'none'}>
+                        <button type="button" className="th" data-right={sortKey === 'amount' || undefined} onClick={() => go({ ...nextSort(query, sortKey), page: 1 })}>
+                          {label}
+                          <Glyph name={query.sort === sortKey && query.dir === 'asc' ? 'arrow-up' : 'arrow-down'} size={15} className={query.sort === sortKey ? 'sort-on' : 'sort-off'} />
                         </button>
+                        {sortKey !== 'merchant' && (
+                          <ResizeHandle
+                            label={`Resize ${label}`}
+                            span={COLUMN_SPANS[sortKey]}
+                            value={columns[sortKey] ?? COLUMN_SPANS[sortKey].initial}
+                            grows="right"
+                            onChange={(width) => resizeColumn(sortKey, width)}
+                            className="col-resize"
+                          />
+                        )}
                       </span>
                     ))}
                     <span />
@@ -540,7 +588,9 @@ export function ActivityScreen() {
                         {ledger.mounted ? dayHeading(item.day, today).replace(/^(Today|Yesterday) · /, '') : ''}
                       </span>
                       <span role="gridcell" className="td-merchant">
-                        <span className="td-title">{item.title}</span>
+                        <span className="td-title" title={item.title}>
+                          {item.title}
+                        </span>
                         {item.auto && <span className="auto-pill">Auto</span>}
                         {query.saved === 'check' && checkReason(item) && (
                           <span className="check-pill">
@@ -552,7 +602,9 @@ export function ActivityScreen() {
                       <span role="gridcell">{categoryCell(item)}</span>
                       <span role="gridcell" className="td-plain">
                         <Bubble icon={ledger.projection.walletsById[item.walletId]?.icon} color={ledger.projection.walletsById[item.walletId]?.color} size={22} glyph={12} />
-                        <span className="cell-text">{item.wallet}</span>
+                        <span className="cell-text" title={item.wallet}>
+                          {item.wallet}
+                        </span>
                       </span>
                       <span role="gridcell" className="td-plain td-meta">
                         <Glyph name={SOURCE_ICONS[item.source]} size={16} />
@@ -717,7 +769,7 @@ export function ActivityScreen() {
           </div>
         )}
       </div>
-      <SidePane label="Transaction" open={Boolean(open) && !pane} width={380} onClose={() => openRow(null)}>
+      <SidePane label="Transaction" name="transaction" open={Boolean(open) && !pane} onClose={() => openRow(null)}>
         {open && (
           <DetailPane
             ledger={ledger}

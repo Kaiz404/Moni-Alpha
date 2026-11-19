@@ -20,7 +20,7 @@ html[data-layout='rail'] .shell[data-pane='chat'] .shell-main {
 }
 
 .shell {
-  --pane-width: 420px;
+  --pane-width: min(var(--chat-pane-width, 420px), max(50vw, 420px));
 }
 
 .page-enter {

@@ -1,0 +1,57 @@
+/* A seam the viewer drags (resize-handle.tsx, #95). A 12 px hit area with a 3 px bar that shows on hover,
+   on keyboard focus and while dragging. */
+
+.resize-handle {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 12px;
+  z-index: 2;
+  cursor: col-resize;
+  touch-action: none;
+  outline: none;
+}
+
+.resize-handle::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 3px;
+  height: min(48px, 60%);
+  border-radius: 9999px;
+  background: var(--color-hairline);
+  transform: translate(-50%, -50%);
+  opacity: 0;
+  transition:
+    opacity 120ms ease,
+    background-color 120ms ease,
+    height 160ms var(--ease-sheet);
+}
+
+.resize-handle:hover::after,
+.resize-handle:focus-visible::after,
+.resize-handle[data-dragging]::after {
+  opacity: 1;
+  background: var(--color-foreground);
+}
+
+.resize-handle:focus-visible::after,
+.resize-handle[data-dragging]::after {
+  height: min(72px, 80%);
+}
+
+html:has(.resize-handle[data-dragging]) {
+  cursor: col-resize;
+  user-select: none;
+}
+
+html:has(.resize-handle[data-dragging]) .shell-main {
+  transition: none;
+}
+
+@media (hover: none) {
+  .resize-handle::after {
+    opacity: 1;
+  }
+}
