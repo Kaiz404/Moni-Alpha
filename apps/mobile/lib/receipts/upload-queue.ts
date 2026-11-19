@@ -1,3 +1,4 @@
+import { receiptPath } from '@repo/core';
 import type { ProposedTransaction } from '@repo/types';
 
 import { imageUploadMMKV } from '@/lib/mmkv/image-uploads';
@@ -55,8 +56,9 @@ export function keepProposalReceipt(
 ): void {
   const uri = proposal.sourceImageUri;
   if (!uri) return;
-  if (uri.startsWith('http')) {
-    setTransactionReceipt(transactionId, uri);
+  const stored = receiptPath(uri);
+  if (stored) {
+    setTransactionReceipt(transactionId, stored);
     return;
   }
   const queue = readQueue();
@@ -87,9 +89,9 @@ export async function keepScannedReceipt(imageUri: string, transactionId: string
 }
 
 /** True once the item needs no more tries: linked, or its transaction was deleted. */
-async function link(item: PendingUpload, remoteUrl: string): Promise<boolean> {
-  if (item.target === 'proposal') return updateProposalImageUri(item.id, remoteUrl);
-  if (hasRow(transactions$, item.id)) setTransactionReceipt(item.id, remoteUrl);
+async function link(item: PendingUpload, path: string): Promise<boolean> {
+  if (item.target === 'proposal') return updateProposalImageUri(item.id, path);
+  if (hasRow(transactions$, item.id)) setTransactionReceipt(item.id, path);
   return true;
 }
 
@@ -107,8 +109,8 @@ export async function drainImageUploadQueue(): Promise<number> {
   for (const item of queue) {
     if (item.userId !== authenticatedUserID) continue;
     try {
-      const remoteUrl = await uploadReceiptImage(item.localUri, item.userId, item.id);
-      if (remoteUrl && (await link(item, remoteUrl))) done.add(item);
+      const path = await uploadReceiptImage(item.localUri, item.userId, item.id);
+      if (path && (await link(item, path))) done.add(item);
     } catch {}
   }
   removeUploaded(done);

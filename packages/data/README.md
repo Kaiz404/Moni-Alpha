@@ -10,7 +10,7 @@ The synced ledger both apps hold (ADR [0003](../../docs/adr/0003-web-shares-the-
 | `backup.ts` | Import data and Export data on the store: `readStoreSnapshot(store)` (every table an export or import reads, soft-deleted rows included), `storeRows`, `storeHasPulled(store)` (every such table has pulled since the app opened, so an import can tell new rows from missing ones), and `applyPlan(store, plan, { newId, onProgress })`, which writes a `@repo/core` import plan in chunks, parents first, waits for each table's sets to reach the server, and applies `planDebtStatus` to each debt a restore added activity to. |
 | `persist.ts` | `MoniPersist` is a Legend persistence plugin plus a small flag store. `memoryPersist()` keeps both in memory for the web and tests. |
 | `profile.ts` | Reads the profile preferences and the AI consent for the signed-in user, merges a patch into the preferences (`updateProfilePreferences`), and appends the consent rows a change records (`recordAiConsent`). |
-| `receipts.ts` | `receiptPhotoUrl(supabase, stored)`: where to load a receipt photo from what a capture or transaction stores (a URL as kept, a path in the `receipts` bucket as its public URL, nothing for a file still on a phone). |
+| `receipts.ts` | `receiptPhotos(supabase)` returns the reader both apps show receipt photos through: it takes what a capture or transaction stores (`receiptPath` in `@repo/core`), signs a link for an hour (`createSignedUrl`, the bucket is private) and keeps it until five minutes before it expires; nothing for a photo not uploaded yet or one storage refuses. |
 
 ## Adapters
 

@@ -101,7 +101,7 @@ export async function saveImageLocally(sourceUri: string): Promise<string> {
 /**
  * Upload a local receipt image to Supabase Storage.
  * Bucket: `receipts`, path: `{userId}/{proposalId}.jpg`
- * Returns the public/signed URL on success, or null on failure.
+ * Returns the path to store on the row on success, or null on failure; `lib/receipts/photo.ts` signs it to show it.
  */
 export async function uploadReceiptImage(
   localUri: string,
@@ -144,9 +144,7 @@ export async function uploadReceiptImage(
       return null;
     }
 
-    const { data } = supabase.storage.from('receipts').getPublicUrl(storagePath);
-
-    return data.publicUrl;
+    return storagePath;
   } catch (e) {
     console.warn('[ReceiptImages] upload exception:', e);
     return null;

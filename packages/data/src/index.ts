@@ -24,4 +24,4 @@ export {
   type ApplyPlanOptions,
   type ApplyProgress,
 } from './backup';
-export { receiptPhotoUrl, RECEIPTS_BUCKET } from './receipts';
+export { receiptPhotos, type ReceiptPhotos } from './receipts';

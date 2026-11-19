@@ -101,9 +101,10 @@ export async function deleteTransaction(id: string) {
   commit(planTransactionsDelete([id], { now: new Date().toISOString() }));
 }
 
-export function setTransactionReceipt(id: string, url: string): void {
+/** `path` is where the photo sits in the `receipts` bucket. */
+export function setTransactionReceipt(id: string, path: string): void {
   patchRow(transactions$, id, {
-    receipt_image_url: url,
+    receipt_image_url: path,
     updated_at: new Date().toISOString(),
   });
 }
