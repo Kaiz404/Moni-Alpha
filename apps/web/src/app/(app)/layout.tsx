@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 import { Suspense, type ReactNode } from 'react';
 import { userPreferencesSchema } from '@repo/types';
 import { Shell } from '@/components/shell/shell';
+import { StoreSync } from '@/components/store/store-sync';
 import { createClient } from '@/lib/supabase/server';
 import '../shell.css';
 
@@ -23,7 +24,10 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
 
   return (
     <Suspense>
-      <Shell user={{ name, initial: name.charAt(0).toUpperCase(), currency }}>{children}</Shell>
+      <Shell user={{ name, initial: name.charAt(0).toUpperCase(), currency }}>
+        <StoreSync />
+        {children}
+      </Shell>
     </Suspense>
   );
 }

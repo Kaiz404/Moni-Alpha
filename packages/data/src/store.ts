@@ -282,7 +282,9 @@ export function createMoniStore({ supabase, persist, uuid }: CreateMoniStoreOpti
     await effects.beforeClear?.();
     await clearStore();
     await effects.afterClear?.();
-    await supabase.auth.signOut();
+    // Offline, or with the user already deleted, the server can't end the session; this device still forgets it.
+    const { error } = await supabase.auth.signOut();
+    if (error) await supabase.auth.signOut({ scope: 'local' });
   }
 
   return {

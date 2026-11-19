@@ -23,6 +23,8 @@ Read `docs/WEB.md` (the design handoff: boards, layouts, rules) and `docs/web/PL
 src/proxy.ts                    session refresh + private-path redirect (Next 16 name for middleware)
 src/lib/routes.ts               public paths, signed-out-only paths, safe `next` redirects
 src/lib/supabase/client.ts      browser client (cookies via @supabase/ssr)
+src/lib/moni-store.ts           the shared store (`@repo/data`) on that client with memory persistence; one per tab
+src/components/store/store-sync.tsx  observes the tables, pulls on sign-in; sign-out goes through `signOutEverywhere`
 src/lib/supabase/server.ts      Server Components / route handlers
 src/app/auth/callback/route.ts  PKCE exchange (Google, email links)
 src/app/(auth)/login/…          sign in / create account, forgot, verify, reset (components/auth/)

@@ -273,12 +273,21 @@ importers:
 
   apps/web:
     dependencies:
+      '@legendapp/state':
+        specifier: 3.0.0-beta.47
+        version: 3.0.0-beta.47(react@19.2.3)
       '@mdi/js':
         specifier: 7.4.47
         version: 7.4.47
       '@repo/brand':
         specifier: workspace:*
         version: link:../../packages/brand
+      '@repo/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+      '@repo/data':
+        specifier: workspace:*
+        version: link:../../packages/data
       '@repo/design':
         specifier: workspace:*
         version: link:../../packages/design

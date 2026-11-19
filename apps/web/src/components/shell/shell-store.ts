@@ -1,7 +1,7 @@
 'use client';
 
 import { useSyncExternalStore } from 'react';
-import { createClient } from '@/lib/supabase/client';
+import { moniStore } from '@/lib/moni-store';
 
 /**
  * Shell state that must outlive any one view: the open overlay and the half-typed drafts. Docked panes
@@ -44,17 +44,17 @@ export function setShell(patch: Partial<ShellState>) {
 }
 
 /**
- * The one way out of an account, for Sign out and after Delete your account: drops the half-typed drafts
- * and the session. When the server can't end the session (offline, or the user is already deleted), this
- * browser still forgets it.
+ * The one way out of an account, for Sign out and after Delete your account: drops the half-typed drafts,
+ * the synced ledger and the session.
  */
 export async function signOut(): Promise<void> {
-  state = { overlay: 'none', addDraft: '', chatDraft: '' };
-  toast = null;
-  emit();
-  const auth = createClient().auth;
-  const { error } = await auth.signOut();
-  if (error) await auth.signOut({ scope: 'local' });
+  await moniStore().signOutEverywhere({
+    beforeClear: () => {
+      state = { overlay: 'none', addDraft: '', chatDraft: '' };
+      toast = null;
+      emit();
+    },
+  });
 }
 
 export function useShell(): ShellState {
