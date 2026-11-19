@@ -162,7 +162,8 @@ All under `apps/mobile/scripts/device/` unless named otherwise, each with usage 
 - `maestro-timing.py <run dir> [--flows]` prints a run's per-command time. It prints names and durations only.
 - `run-flows.sh [--sha <key>] [--seed full|empty] [--out <dir>] [--tag <tag>]... [--area <area>]... [<flow or dir>...]`.
 - `screenshot.sh <out.png>`, `screenrecord.sh <seconds> <out.mp4>`, `review-pair.sh <slug> <Board> <device.png> [--out <dir>]`.
-- `parity.sh --base <ref> [--head <ref>] [--out <dir>] [<area>...]` builds both commits on the pinned clock, runs the areas on each, and compares screenshots with `screens-diff.mjs <base-dir> <head-dir> [<diff-dir>]`. The `moni-verify` skill says when to use it.
+- `parity.sh --base <ref> [--head <ref>] [--out <dir>] [--affected | <area>...]` builds both commits on the pinned clock, runs the areas on each, and compares screenshots with `screens-diff.mjs <base-dir> <head-dir> [<diff-dir>]`. `--affected` runs only the areas `scripts/verify/affected.mjs` finds the range reaches, from the table in `areas.json`. The `moni-verify` skill says when to use it.
+- `scripts/verify/render-parity.sh --base <ref> [--head <ref>]` (repo root) diffs what every route renders at two commits in Jest, with no phone. Run it before any phone parity.
 - `perf.sh --sha <key> [--flow <flow.yaml>]` and `perf-compare.mjs base.json head.json --rule <metric>=<limit>` for cold start, APK size, and jank.
 - `apps/mobile/scripts/e2e/seed.mjs --reset --profile <full|empty>` and `--query <name>`.
 - `taildrop.sh <file>` sends a file to the phone when adb is down.
