@@ -34,10 +34,10 @@ export function personMeta(line: DebtLine, today: string, startedDay: string): s
   return line.debt.note ? `${state}, ${line.debt.note}` : state;
 }
 
-/** "2 people open": the people, not the debts, with something still open. */
+/** "Open with 2 people": the people, not the debts, with something still open. */
 export function openLabel(open: readonly DebtLine[]): string {
   const people = new Set(open.map((line) => line.debt.counterpartyName.trim().toLocaleLowerCase())).size;
-  return `${people} ${people === 1 ? 'person' : 'people'} open`;
+  return `Open with ${people} ${people === 1 ? 'person' : 'people'}`;
 }
 
 /** The bar under the balance: what came back so far, and what is still to go. */

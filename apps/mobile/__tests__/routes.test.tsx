@@ -232,7 +232,7 @@ const ROUTES: Record<string, RouteSpec> = {
   'budget/suggest.tsx': same('/budget/suggest', 'Suggest a budget'),
   'budget/merchants.tsx': differ(
     '/budget/merchants?month=2026-10',
-    '22 spent in October',
+    '22 merchants in October',
     'Nothing to name. Moni lists a code here once it shows up 3 times.',
   ),
   'budget/spending.tsx': differ(
@@ -267,7 +267,7 @@ const ROUTES: Record<string, RouteSpec> = {
   'map.tsx': same('/map', 'Where you spend'),
   'merchants.tsx': differ(
     '/merchants',
-    '1 to name',
+    '1 code to name',
     'Nothing to name. Moni lists a code here once it shows up 3 times.',
   ),
   'place/[id].tsx': differ(`/place/${BANGSAR}`, 'Bangsar', 'Nothing here in this range'),
@@ -581,7 +581,7 @@ describe('a Budget row opens its payments under Budget', () => {
     );
     await open('budget.merchants.see-all');
     expect(screen.getPathname()).toBe('/budget/merchants');
-    expect(text('merchants.month.label')).toEqual(['22 spent in October']);
+    expect(text('merchants.month.label')).toEqual(['22 merchants in October']);
     expect(text('merchants.pager.page')).toEqual(['Page 1 of 2']);
     expect(screen.queryByTestId('merchants.merchant.parking-klcc')).toBeNull();
     await open('merchants.pager.next');
@@ -592,12 +592,12 @@ describe('a Budget row opens its payments under Budget', () => {
 
     act(() => fireEvent.changeText(screen.getByTestId('merchants.search'), 'PARKING'));
     await settle();
-    expect(text('merchants.month.label')).toEqual(['1 spent in October']);
+    expect(text('merchants.month.label')).toEqual(['1 merchant in October']);
     expect(screen.queryByTestId('merchants.pager.page')).toBeNull();
     expect(screen.queryByTestId('merchants.merchant.parking-klcc')).not.toBeNull();
     act(() => fireEvent.changeText(screen.getByTestId('merchants.search'), 'grab'));
     await settle();
-    expect(text('merchants.month.label')).toEqual(['2 spent in October']);
+    expect(text('merchants.month.label')).toEqual(['2 merchants in October']);
     expect(screen.queryByTestId('merchants.pager.page')).toBeNull();
     expect(screen.getByTestId('merchants.merchant.grab').props.accessibilityLabel).toBe(
       "Grab, 2 payments, Touch 'n Go, RM41.60",

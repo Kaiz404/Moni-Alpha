@@ -56,8 +56,8 @@ describe('debt words', () => {
   });
 
   it('counts people, not debts', () => {
-    expect(openLabel([debtLine({}), debtLine({ id: 'd2' }), debtLine({ counterpartyName: 'Mei' })])).toBe('2 people open');
-    expect(openLabel([debtLine({})])).toBe('1 person open');
+    expect(openLabel([debtLine({}), debtLine({ id: 'd2' }), debtLine({ counterpartyName: 'Mei' })])).toBe('Open with 2 people');
+    expect(openLabel([debtLine({})])).toBe('Open with 1 person');
   });
 
   it('says what came back and what is left', () => {

@@ -1266,7 +1266,7 @@ describe('Recently reviewed', () => {
     expect(screen.getByText('GRAB')).toBeTruthy();
     expect(screen.queryByText('KEDAI ABC')).toBeNull();
 
-    await act(async () => fireEvent.press(screen.getByText('1 recently reviewed')));
+    await act(async () => fireEvent.press(screen.getByText('1 recent review')));
 
     expect(screen.queryByTestId('review.deck')).toBeNull();
     expect(screen.getByText('KEDAI ABC')).toBeTruthy();
@@ -1278,6 +1278,6 @@ describe('Recently reviewed', () => {
 
     expect(screen.getByText('KEDAI ABC')).toBeTruthy();
     expect(screen.getByText('1 of 2')).toBeTruthy();
-    expect(screen.queryByText('1 recently reviewed')).toBeNull();
+    expect(screen.queryByText('1 recent review')).toBeNull();
   });
 });
