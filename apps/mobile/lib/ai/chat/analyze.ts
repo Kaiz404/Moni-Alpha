@@ -1,10 +1,6 @@
+import { buildChatSnapshot } from '@repo/core';
 import { getAiClient } from '@/lib/ai/client';
-import { buildFinanceFactsByCurrency, parseAskedAmount } from '@/lib/ai/facts';
-import {
-  buildFinanceAssistantToolSnapshotByCurrency,
-  type BudgetRow,
-  type ProposalForMetrics,
-} from '@/lib/ai/snapshot/finance-metrics';
+import { deviceCalendar } from '@/lib/dates/device-calendar';
 import { financeProjection$ } from '@/lib/finance/projection';
 import { getUserId } from '@/lib/supabase/client';
 import { profilePreferences$ } from '@/lib/store';
@@ -17,61 +13,14 @@ export async function analyzeUserFinances(message: string): Promise<AnalyzeFinan
   try {
     const userId = await getUserId();
     if (!userId) return { ok: false, reason: 'Not authenticated' };
-    const projection = financeProjection$.peek();
-    const transactions = Object.values(projection.transactionsById).filter(
-      (transaction) => transaction.userId === userId,
-    );
-    const budgets = Object.values(projection.budgetsById).filter(
-      (budget) => budget.userId === userId,
-    );
-
-    const categoryMap = Object.fromEntries(
-      Object.values(projection.categoriesById)
-        .filter((category) => category.userId === null || category.userId === userId)
-        .map((category) => [category.id, category.name]),
-    );
-    const budgetRows: BudgetRow[] = budgets.map((b) => ({
-      categoryId: b.categoryId,
-      currency: b.currency,
-      amountMinor: b.amountMinor,
-    }));
-
-    // A proposal's currency is its wallet's; text and receipt proposals without one carry a placeholder.
-    const proposals: ProposalForMetrics[] = Object.values(projection.proposalsById).flatMap((p) =>
-      p.userId === userId && p.type
-        ? [
-            {
-              amountMinor: p.amountMinor,
-              currency: p.walletId
-                ? (projection.walletsById[p.walletId]?.currency ?? null)
-                : p.sourceType === 'notification'
-                  ? p.currency
-                  : null,
-              type: p.type,
-            },
-          ]
-        : [],
-    );
-
-    const now = new Date();
-    const facts = buildFinanceFactsByCurrency(
-      {
-        wallets: Object.values(projection.walletsById).filter((w) => w.userId === userId),
-        transactions,
-        overrides: listRecurringOverrides(userId),
-        categoryNames: categoryMap,
-        askedAmount: parseAskedAmount(message),
-      },
-      now,
-    );
-    const snapshot = buildFinanceAssistantToolSnapshotByCurrency(
-      transactions,
-      categoryMap,
-      budgetRows,
-      proposals,
-      now,
-      facts,
-    );
+    const snapshot = buildChatSnapshot({
+      projection: financeProjection$.peek(),
+      userId,
+      overrides: listRecurringOverrides(userId),
+      message,
+      now: new Date(),
+      calendar: deviceCalendar,
+    });
 
     const result = await getAiClient('chat').analyzeFinances({
       message,

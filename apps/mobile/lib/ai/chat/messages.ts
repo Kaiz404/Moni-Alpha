@@ -3,7 +3,7 @@ import { createMMKV } from 'react-native-mmkv';
 
 import type { SoftTint } from '@/components/chat/ink-card';
 
-import type { AnswerCard } from './answer-cards';
+import type { AnswerCard } from '@repo/core';
 import { threadDay, todayThreadDay } from './sessions';
 
 const storage = createMMKV({ id: 'moni-chat' });

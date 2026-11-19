@@ -1,4 +1,4 @@
-import type { AnswerSnapshot } from '@/lib/ai/chat/answer-cards';
+import type { AnswerSnapshot } from '@repo/core';
 import { noticedItems } from '@/lib/ai/chat/noticed';
 
 const snapshot: AnswerSnapshot = {

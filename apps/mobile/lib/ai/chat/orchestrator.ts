@@ -2,7 +2,12 @@ import { randomUUID } from 'expo-crypto';
 
 import { startBackgroundProcessor } from '@/lib/ai/background-processor';
 import { AI_UNAVAILABLE_REASON } from '@/lib/ai/client/mock';
-import { AI_CONSENT_REASON } from '@repo/core';
+import {
+  AI_CONSENT_REASON,
+  pickAnswerCard,
+  resolveRoute,
+  type ForcedIntent,
+} from '@repo/core';
 import { enqueue, type ProcessingQueueItem } from '@/lib/ai/processing-queue';
 import { runExtraction } from '@/lib/ai/run-extraction';
 import { captureLocationSnapshot } from '@/lib/location/location-snapshot';
@@ -12,11 +17,9 @@ import { enqueueImageUpload } from '@/lib/receipts/upload-queue';
 import { getUserId } from '@/lib/supabase/client';
 
 import { analyzeUserFinances } from './analyze';
-import { pickAnswerCard } from './answer-cards';
-import { buildAnswerSnapshot } from './answer-snapshot';
+import { peekAnswerSnapshot } from './answer-snapshot';
 import { markFresh } from './fresh-replies';
 import { appendMessage, replaceMessage, type ChatMessage, type QuickReplyOption } from './messages';
-import { resolveRoute, type ForcedIntent } from './routing';
 import { threadDay } from './sessions';
 
 export type SendChatInput = {
@@ -179,7 +182,7 @@ async function extractText(text: string, turn: Turn, answerIfSkipped: boolean) {
 /** The card's numbers come from the ledger; the model's reply is its caption. */
 async function answer(text: string, turn: Turn) {
   const userId = await getUserId();
-  const card = userId ? pickAnswerCard(text, buildAnswerSnapshot(userId)) : null;
+  const card = userId ? pickAnswerCard(text, peekAnswerSnapshot(userId)) : null;
   if (card?.kind === 'captures')
     return turn.finish({ role: 'assistant', kind: 'assistant_card', card, content: '', analysis: false });
   const analysis = await analyzeUserFinances(text);

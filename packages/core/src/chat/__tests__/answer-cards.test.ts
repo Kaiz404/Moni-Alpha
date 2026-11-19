@@ -1,12 +1,20 @@
+import { describe, expect, it } from 'vitest';
 import type { MinorAmount } from '@repo/types';
 
-import { pickAnswerCard, type AnswerSnapshot } from '@/lib/ai/chat/answer-cards';
+import { pickAnswerCard, type AnswerSnapshot } from '../answer-cards';
 
 const snapshot: AnswerSnapshot = {
   currency: 'MYR',
   categories: [
     { id: 'food', name: 'Food & Dining', icon: null, color: null, spent: 34980, budget: 45000 },
-    { id: 'transport', name: 'Transport', icon: 'car', color: '#9FC4E8', spent: 14000, budget: 12000 },
+    {
+      id: 'transport',
+      name: 'Transport',
+      icon: 'car',
+      color: '#9FC4E8',
+      spent: 14000,
+      budget: 12000,
+    },
   ],
   month: {
     spent: 111620,
@@ -17,7 +25,13 @@ const snapshot: AnswerSnapshot = {
     owed: [{ name: 'Mei', amountMinor: 4000 as MinorAmount }],
   },
   bills: [
-    { seriesKey: 'netflix', name: 'Netflix', amount: 5490, dueDate: '2026-10-15', walletName: 'Maybank Savings' },
+    {
+      seriesKey: 'netflix',
+      name: 'Netflix',
+      amount: 5490,
+      dueDate: '2026-10-15',
+      walletName: 'Maybank Savings',
+    },
     { seriesKey: 'unifi', name: 'Unifi', amount: 12900, dueDate: '2026-10-20', walletName: null },
   ],
   waiting: ['p1', 'p2'],
@@ -37,8 +51,22 @@ describe('pickAnswerCard', () => {
     const presets = {
       ...snapshot,
       categories: [
-        { id: 'transportation', name: 'Transportation', icon: 'car', color: '#9FD8D5', spent: 14000, budget: 12000 },
-        { id: 'monthly', name: 'Monthly fees', icon: 'cash', color: '#9FD8D5', spent: 500, budget: null },
+        {
+          id: 'transportation',
+          name: 'Transportation',
+          icon: 'car',
+          color: '#9FD8D5',
+          spent: 14000,
+          budget: 12000,
+        },
+        {
+          id: 'monthly',
+          name: 'Monthly fees',
+          icon: 'cash',
+          color: '#9FD8D5',
+          spent: 500,
+          budget: null,
+        },
       ],
     };
     expect(pickAnswerCard('How much on Transport this month', presets)).toEqual({
@@ -47,7 +75,12 @@ describe('pickAnswerCard', () => {
       spent: 14000,
       budget: 12000,
     });
-    expect(pickAnswerCard('How much this month', { ...presets, month: { ...presets.month, budget: null, left: null } })).toBeNull();
+    expect(
+      pickAnswerCard('How much this month', {
+        ...presets,
+        month: { ...presets.month, budget: null, left: null },
+      }),
+    ).toBeNull();
   });
 
   it('reads a category by its first word', () => {

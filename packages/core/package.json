@@ -9,6 +9,7 @@
     "./calendar": "./src/calendar.ts",
     "./chart-range": "./src/chart-range.ts",
     "./charts": "./src/charts/month-charts.ts",
+    "./chat": "./src/chat/index.ts",
     "./glossary": "./src/glossary.ts",
     "./ledger": "./src/ledger.ts",
     "./money-month": "./src/money-month/index.ts",

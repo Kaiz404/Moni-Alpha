@@ -7,10 +7,12 @@ import {
   type Band,
   type Forecast,
   type ForecastBasis,
-  type ForecastLine,
   type MinorAmount,
   type RecurringOverride,
 } from '@repo/types';
+
+import { addMonths, dayFromNumber, dayNumber, type Calendar } from '../calendar';
+import { countsAsCashFlow, countsAsSpending, walletEffect } from '../ledger';
 import {
   CONFIDENT,
   detectRecurring,
@@ -19,15 +21,8 @@ import {
   seriesKey,
   type FactsTransaction,
   type RecurringSeries,
-  type FinanceWallet,
-  addMonths,
-  countsAsCashFlow,
-  countsAsSpending,
-  dayFromNumber,
-  dayNumber,
-  walletEffect,
-} from '@repo/core';
-import { deviceCalendar } from '@/lib/dates/device-calendar';
+} from '../money-month/recurring';
+import type { FinanceWallet } from '../read-model/types';
 
 export type FactsWallet = Pick<
   FinanceWallet,
@@ -77,36 +72,43 @@ function quantile(sorted: number[], q: number): number {
   const at = (sorted.length - 1) * q;
   const lower = Math.floor(at);
   const upper = Math.ceil(at);
-  return sorted[lower] + (sorted[upper] - sorted[lower]) * (at - lower);
+  return sorted[lower]! + (sorted[upper]! - sorted[lower]!) * (at - lower);
 }
 
 /** Liquid wallets holding money or used in the lookback; a dormant empty one needs no confirming. */
 export function inUseWallets(
   liquid: FactsWallet[],
-  transactions: FactsTransaction[],
+  transactions: readonly FactsTransaction[],
   now: Date,
+  calendar: Calendar,
 ): FactsWallet[] {
-  const from = deviceCalendar.dayNumber(now) - LOOKBACK_DAYS;
+  const from = calendar.dayNumber(now) - LOOKBACK_DAYS;
   const active = new Set(
     transactions
-      .filter((tx) => deviceCalendar.dayNumber(tx.transactionDate) >= from)
+      .filter((tx) => calendar.dayNumber(tx.transactionDate) >= from)
       .flatMap((tx) => [tx.walletId, tx.transferToWalletId]),
   );
   return liquid.filter((w) => active.has(w.id) || balanceMinor([w], transactions, now) !== 0);
 }
 
 /** Days since the first income or expense; transfers and debt activity don't count. */
-export function historyDays(transactions: readonly FactsTransaction[], today: number): number {
+export function historyDays(
+  transactions: readonly FactsTransaction[],
+  today: number,
+  calendar: Calendar,
+): number {
   const flowDays = transactions
     .filter(countsAsCashFlow)
-    .map((tx) => deviceCalendar.dayNumber(tx.transactionDate));
+    .map((tx) => calendar.dayNumber(tx.transactionDate));
   return flowDays.length ? today - Math.min(...flowDays) : 0;
 }
 
-export function confirmedDaysAgo(wallet: FactsWallet, today: number): number | null {
-  return wallet.balanceConfirmedAt
-    ? today - deviceCalendar.dayNumber(wallet.balanceConfirmedAt)
-    : null;
+export function confirmedDaysAgo(
+  wallet: FactsWallet,
+  today: number,
+  calendar: Calendar,
+): number | null {
+  return wallet.balanceConfirmedAt ? today - calendar.dayNumber(wallet.balanceConfirmedAt) : null;
 }
 
 function basisFor(
@@ -114,13 +116,14 @@ function basisFor(
   inUse: FactsWallet[],
   transactions: FactsTransaction[],
   today: number,
+  calendar: Calendar,
 ): ForecastBasis {
   const ids = new Set(liquid.map((w) => w.id));
   const from = today - LOOKBACK_DAYS;
   let logged = 0;
   let corrected = 0;
   for (const tx of transactions) {
-    const day = deviceCalendar.dayNumber(tx.transactionDate);
+    const day = calendar.dayNumber(tx.transactionDate);
     if (tx.type !== 'expense' || day < from || day > today || tx.debtActivityId) continue;
     if (!tx.analysisExcluded) logged += Number(tx.amountMinor);
     else if (ids.has(tx.walletId)) corrected += Number(tx.amountMinor);
@@ -128,12 +131,12 @@ function basisFor(
   const coveragePct =
     logged + corrected === 0 ? 100 : Math.round((logged / (logged + corrected)) * 100);
 
-  const ages = inUse.map((w) => confirmedDaysAgo(w, today));
+  const ages = inUse.map((w) => confirmedDaysAgo(w, today, calendar));
   const balanceConfirmedDaysAgo =
     ages.length && ages.every((age) => age !== null) ? Math.max(...(ages as number[])) : null;
 
   return {
-    historyDays: historyDays(transactions, today),
+    historyDays: historyDays(transactions, today, calendar),
     coveragePct,
     balanceConfirmedDaysAgo,
   };
@@ -144,11 +147,12 @@ function irregularIncomeShare(
   transactions: FactsTransaction[],
   trustedKeys: Set<string>,
   today: number,
+  calendar: Calendar,
 ): number {
   let irregular = 0;
   let spent = 0;
   for (const tx of transactions) {
-    const day = deviceCalendar.dayNumber(tx.transactionDate);
+    const day = calendar.dayNumber(tx.transactionDate);
     if (!countsAsCashFlow(tx) || day < today - LOOKBACK_DAYS || day > today) continue;
     if (tx.type === 'expense') spent += Number(tx.amountMinor);
     else if (tx.type === 'income' && !trustedKeys.has(seriesKey(tx) ?? '')) {
@@ -165,14 +169,15 @@ function variableWindowMinor(
   today: number,
   lookback: number,
   windowDays: number,
+  calendar: Calendar,
 ): Record<keyof typeof SPEND_PERCENTILES, number> {
   const daily = new Array<number>(lookback).fill(0);
   for (const tx of transactions) {
     if (!countsAsSpending(tx)) continue;
     const key = seriesKey(tx);
     if (key && recurringKeys.has(key)) continue;
-    const index = deviceCalendar.dayNumber(tx.transactionDate) - (today - lookback);
-    if (index >= 0 && index < lookback) daily[index] += Number(tx.amountMinor);
+    const index = calendar.dayNumber(tx.transactionDate) - (today - lookback);
+    if (index >= 0 && index < lookback) daily[index] = daily[index]! + Number(tx.amountMinor);
   }
   const sums: number[] = [];
   for (let start = 0; start + windowDays <= lookback; start += 1) {
@@ -197,16 +202,17 @@ export function forecastCurrency(input: {
   series: readonly RecurringSeries[];
   payday: RecurringSeries | null;
   now: Date;
+  calendar: Calendar;
   extraSpendMinor?: MinorAmount | null;
 }): Forecast {
-  const { currency, now } = input;
-  const today = deviceCalendar.dayNumber(now);
+  const { currency, now, calendar } = input;
+  const today = calendar.dayNumber(now);
   const transactions = input.transactions.filter(
     (tx) => tx.currency === currency && new Date(tx.transactionDate) <= now,
   );
   const liquid = liquidWallets(input.wallets, currency);
-  const inUse = inUseWallets(liquid, transactions, now);
-  const basis = basisFor(liquid, inUse, transactions, today);
+  const inUse = inUseWallets(liquid, transactions, now, calendar);
+  const basis = basisFor(liquid, inUse, transactions, today, calendar);
   const startMinor = balanceMinor(liquid, transactions, now);
 
   const reasons: string[] = [];
@@ -224,7 +230,7 @@ export function forecastCurrency(input: {
   );
   if (
     !input.payday &&
-    irregularIncomeShare(transactions, new Set(trustedIncome.map((s) => s.key)), today) >
+    irregularIncomeShare(transactions, new Set(trustedIncome.map((s) => s.key)), today, calendar) >
       MAX_IRREGULAR_INCOME_SHARE
   ) {
     return {
@@ -265,6 +271,7 @@ export function forecastCurrency(input: {
     today,
     Math.min(LOOKBACK_DAYS, basis.historyDays),
     windowDays,
+    calendar,
   );
   const scale = daysLeft / windowDays;
   const spend = {
@@ -339,18 +346,24 @@ export function backtestForecast(input: {
   overrides?: readonly RecurringOverride[];
   categoryNames?: Record<string, string>;
   days: readonly Date[];
+  calendar: Calendar;
 }): BacktestResult {
+  const { calendar } = input;
   const liquid = liquidWallets(input.wallets, input.currency);
   const lastDay = Math.max(
-    ...input.transactions.map((tx) => deviceCalendar.dayNumber(tx.transactionDate)),
+    ...input.transactions.map((tx) => calendar.dayNumber(tx.transactionDate)),
   );
   let evaluated = 0;
   let inside = 0;
   for (const now of input.days) {
     const known = input.transactions.filter((tx) => new Date(tx.transactionDate) <= now);
-    const series = detectRecurring(known, input.overrides ?? [], now, deviceCalendar, input.categoryNames).filter(
-      (s) => s.currency === input.currency,
-    );
+    const series = detectRecurring(
+      known,
+      input.overrides ?? [],
+      now,
+      calendar,
+      input.categoryNames,
+    ).filter((s) => s.currency === input.currency);
     const payday = pickPayday(series);
     const forecast = forecastCurrency({
       currency: input.currency,
@@ -359,6 +372,7 @@ export function backtestForecast(input: {
       series,
       payday,
       now,
+      calendar,
     });
     if (forecast.status !== 'ready') continue;
     const horizonDay = dayNumber(forecast.horizonDate) + (forecast.horizon === 'payday' ? 0 : 1);
@@ -367,13 +381,13 @@ export function backtestForecast(input: {
       .filter(
         (tx) => payday && tx.transactionDate > now.toISOString() && seriesKey(tx) === payday.key,
       )
-      .map((tx) => deviceCalendar.dayNumber(tx.transactionDate));
+      .map((tx) => calendar.dayNumber(tx.transactionDate));
     const endDay = Math.min(horizonDay, ...paid);
     const actual = minorToNumber(
       balanceMinor(
         liquid,
         input.transactions,
-        new Date(deviceCalendar.startOfDay(dayFromNumber(endDay)).getTime() - 1),
+        new Date(calendar.startOfDay(dayFromNumber(endDay)).getTime() - 1),
       ),
     );
     evaluated += 1;

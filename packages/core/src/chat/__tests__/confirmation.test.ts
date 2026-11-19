@@ -1,14 +1,16 @@
+import { describe, expect, it } from 'vitest';
 import { decimalToMinor } from '@repo/types';
-import { walletsNeedingConfirmation } from '../confirmation';
-import type { FactsTransaction } from '@repo/core';
-import { BANK, tx, wallet } from './synthetic-ledger';
 
-const NOW = new Date(2026, 9, 12, 10);
+import type { FactsTransaction } from '../../money-month/recurring';
+import { walletsNeedingConfirmation } from '../confirmation';
+import { BANK, KL, kl, tx, wallet } from './synthetic-ledger';
+
+const NOW = kl(2026, 9, 12, 10);
 const confirmed = (daysAgo: number) => new Date(NOW.getTime() - daysAgo * 86_400_000).toISOString();
-const spend: FactsTransaction[] = [tx(new Date(2026, 9, 1, 12), 'expense', '100', 'Mamak Corner')];
+const spend: FactsTransaction[] = [tx(kl(2026, 9, 1, 12), 'expense', '100', 'Mamak Corner')];
 
 function due(wallets: Parameters<typeof walletsNeedingConfirmation>[0], rows = spend) {
-  return walletsNeedingConfirmation(wallets, rows, NOW).map((w) => [
+  return walletsNeedingConfirmation(wallets, rows, NOW, KL).map((w) => [
     w.wallet.id,
     w.balanceMinor,
     w.daysSinceConfirmed,
@@ -43,7 +45,7 @@ describe('walletsNeedingConfirmation', () => {
   it('keeps each wallet in its own currency and in input order', () => {
     const rows = [
       ...spend,
-      tx(new Date(2026, 9, 2, 12), 'expense', '20', 'Hawker', {
+      tx(kl(2026, 9, 2, 12), 'expense', '20', 'Hawker', {
         walletId: 'dbs',
         currency: 'SGD',
       }),
@@ -55,6 +57,7 @@ describe('walletsNeedingConfirmation', () => {
       ],
       rows,
       NOW,
+      KL,
     );
     expect(
       result.map((w) => [w.wallet.id, w.wallet.currency, w.balanceMinor, w.daysSinceConfirmed]),
@@ -67,8 +70,8 @@ describe('walletsNeedingConfirmation', () => {
   it('counts an empty wallet used only through transfers, and the transfer in its balance', () => {
     const rows = [
       ...spend,
-      tx(new Date(2026, 9, 5, 10), 'transfer', '50', null, { transferToWalletId: 'tng' }),
-      tx(new Date(2026, 9, 20, 10), 'transfer', '70', null, { transferToWalletId: 'tng' }),
+      tx(kl(2026, 9, 5, 10), 'transfer', '50', null, { transferToWalletId: 'tng' }),
+      tx(kl(2026, 9, 20, 10), 'transfer', '70', null, { transferToWalletId: 'tng' }),
     ];
     expect(
       due(

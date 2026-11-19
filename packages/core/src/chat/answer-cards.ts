@@ -3,9 +3,9 @@
  * numbers never come from the model; the model's reply is only the caption.
  * Amounts are minor units of the snapshot's currency.
  */
-import type { DebtDue } from '@repo/core';
+import type { DebtDue } from '../money-month/month';
 
-export type BillLine ={ name: string; amount: number; dueDate: string };
+export type BillLine = { name: string; amount: number; dueDate: string };
 
 export type AnswerCard =
   | { kind: 'category_spend'; categoryId: string; spent: number; budget: number | null }

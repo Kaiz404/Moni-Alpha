@@ -1,5 +1,4 @@
 /** Deterministic rolling-window metrics for the chat snapshot. The LLM only narrates them. */
-import { countsAsCashFlow, countsAsIncome, countsAsSpending, type LedgerTransaction } from '@repo/core';
 import {
   addMinor,
   minorToNumber,
@@ -7,6 +6,14 @@ import {
   type InsightMetricSnapshot,
   type MinorAmount,
 } from '@repo/types';
+
+import type { Calendar } from '../calendar';
+import {
+  countsAsCashFlow,
+  countsAsIncome,
+  countsAsSpending,
+  type LedgerTransaction,
+} from '../ledger';
 
 export type TxForMetrics = LedgerTransaction & {
   amountMinor: MinorAmount;
@@ -19,17 +26,13 @@ export type TxForMetrics = LedgerTransaction & {
 const PERIOD_DAYS = 30;
 const zero = 0 as MinorAmount;
 
-function startOfDayMs(date: Date): number {
-  return new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
-}
-
 function inRange(isoDate: string, startMs: number, endMs: number): boolean {
   const time = new Date(isoDate).getTime();
   return time >= startMs && time < endMs;
 }
 
 function sumInRange(
-  txs: TxForMetrics[],
+  txs: readonly TxForMetrics[],
   counts: (tx: TxForMetrics) => boolean,
   startMs: number,
   endMs: number,
@@ -41,13 +44,13 @@ function sumInRange(
   );
 }
 
-function countInRange(txs: TxForMetrics[], startMs: number, endMs: number): number {
+function countInRange(txs: readonly TxForMetrics[], startMs: number, endMs: number): number {
   return txs.filter((tx) => countsAsCashFlow(tx) && inRange(tx.transactionDate, startMs, endMs))
     .length;
 }
 
 function groupExpenseBy(
-  txs: TxForMetrics[],
+  txs: readonly TxForMetrics[],
   startMs: number,
   endMs: number,
   keyFn: (tx: TxForMetrics) => string,
@@ -75,7 +78,7 @@ function topEntries(
 }
 
 function largestExpense(
-  txs: TxForMetrics[],
+  txs: readonly TxForMetrics[],
   categoryMap: Record<string, string>,
   startMs: number,
   endMs: number,
@@ -94,7 +97,7 @@ function largestExpense(
   return {
     amount: minorToNumber(best.amountMinor),
     merchant: best.merchant?.trim() || null,
-    category: best.categoryId && categoryMap[best.categoryId] ? categoryMap[best.categoryId] : null,
+    category: (best.categoryId && categoryMap[best.categoryId]) || null,
     date: best.transactionDate,
   };
 }
@@ -105,20 +108,24 @@ function pctDelta(current: MinorAmount, prior: MinorAmount): number | null {
 }
 
 export function buildInsightMetricSnapshot(
-  transactions: TxForMetrics[],
+  transactions: readonly TxForMetrics[],
   categoryMap: Record<string, string>,
   currencyHint: string,
-  now: Date = new Date(),
+  now: Date,
+  calendar: Calendar,
 ): InsightMetricSnapshot {
-  const endMs = startOfDayMs(now) + 86400000;
+  const endMs = calendar.startOfDay(calendar.dayKey(now)).getTime() + 86400000;
   const currentStartMs = endMs - PERIOD_DAYS * 86400000;
   const priorStartMs = currentStartMs - PERIOD_DAYS * 86400000;
   const curExp = sumInRange(transactions, countsAsSpending, currentStartMs, endMs);
   const curInc = sumInRange(transactions, countsAsIncome, currentStartMs, endMs);
   const priorExp = sumInRange(transactions, countsAsSpending, priorStartMs, currentStartMs);
   const priorInc = sumInRange(transactions, countsAsIncome, priorStartMs, currentStartMs);
-  const categories = groupExpenseBy(transactions, currentStartMs, endMs, (tx) =>
-    tx.categoryId && categoryMap[tx.categoryId] ? categoryMap[tx.categoryId] : 'Uncategorized',
+  const categories = groupExpenseBy(
+    transactions,
+    currentStartMs,
+    endMs,
+    (tx) => (tx.categoryId && categoryMap[tx.categoryId]) || 'Uncategorized',
   );
   const merchants = groupExpenseBy(
     transactions,

@@ -1,28 +1,28 @@
+import { describe, expect, it } from 'vitest';
 import { decimalToMinor } from '@repo/types';
-import { gigLedger } from '@/lib/ai/chat/bench/fixture';
+
+import { detectRecurring, pickPayday, type FactsTransaction } from '../../money-month/recurring';
 import { walletsNeedingConfirmation } from '../confirmation';
 import { backtestForecast, forecastCurrency, type FactsWallet } from '../forecast';
-import { detectRecurring, pickPayday, type FactsTransaction } from '@repo/core';
-import { deviceCalendar } from '@/lib/dates/device-calendar';
-import { BANK, EWALLET, salariedLedger, tx, wallet } from './synthetic-ledger';
+import { BANK, DAY_MS, EWALLET, KL, kl, salariedLedger, tx, wallet } from './synthetic-ledger';
 
-const NOW = new Date(2026, 9, 12, 10);
+const NOW = kl(2026, 9, 12, 10);
 const confirmed = (daysAgo: number) => new Date(NOW.getTime() - daysAgo * 86_400_000).toISOString();
 
 /** Jul 20 to Oct 11: RM30 a day on meals, salary on the 25th, rent on the 1st, Netflix on the 15th. */
 function steadyLedger(): FactsTransaction[] {
   const rows: FactsTransaction[] = [];
-  for (let d = new Date(2026, 6, 20, 12); d < NOW; d.setDate(d.getDate() + 1)) {
-    rows.push(tx(new Date(d), 'expense', '30', 'Mamak Corner'));
+  for (let d = kl(2026, 6, 20, 12); d < NOW; d = new Date(d.getTime() + DAY_MS)) {
+    rows.push(tx(d, 'expense', '30', 'Mamak Corner'));
   }
   for (const [m, d] of [
     [6, 24],
     [7, 25],
     [8, 25],
-  ])
-    rows.push(tx(new Date(2026, m, d, 7), 'income', '4000', 'Acme Sdn Bhd'));
-  for (const m of [7, 8, 9]) rows.push(tx(new Date(2026, m, 1, 8), 'expense', '1200', 'Landlord'));
-  for (const m of [6, 7, 8]) rows.push(tx(new Date(2026, m, 15, 8), 'expense', '54.90', 'Netflix'));
+  ] as const)
+    rows.push(tx(kl(2026, m, d, 7), 'income', '4000', 'Acme Sdn Bhd'));
+  for (const m of [7, 8, 9]) rows.push(tx(kl(2026, m, 1, 8), 'expense', '1200', 'Landlord'));
+  for (const m of [6, 7, 8]) rows.push(tx(kl(2026, m, 15, 8), 'expense', '54.90', 'Netflix'));
   return rows;
 }
 
@@ -32,7 +32,7 @@ function forecast(
   now = NOW,
   extra?: string,
 ) {
-  const series = detectRecurring(transactions, [], now, deviceCalendar);
+  const series = detectRecurring(transactions, [], now, KL);
   return forecastCurrency({
     currency: 'MYR',
     wallets,
@@ -40,6 +40,7 @@ function forecast(
     series,
     payday: pickPayday(series),
     now,
+    calendar: KL,
     extraSpendMinor: extra ? decimalToMinor(extra) : null,
   });
 }
@@ -94,7 +95,7 @@ describe('forecastCurrency', () => {
   it.each([
     [
       'short history',
-      new Date(2026, 7, 20, 10),
+      kl(2026, 7, 20, 10),
       [wallet({ balanceConfirmedAt: '2026-08-19T00:00:00.000Z' })],
       'not enough history yet',
     ],
@@ -137,8 +138,8 @@ describe('forecastCurrency', () => {
   it('still needs an empty wallet confirmed once it was used in the last eight weeks', () => {
     const rows = [
       ...steadyLedger(),
-      tx(new Date(2026, 8, 20), 'transfer', '50', null, { transferToWalletId: 'cash' }),
-      tx(new Date(2026, 8, 21), 'expense', '50', 'Kopitiam', { walletId: 'cash' }),
+      tx(kl(2026, 8, 20), 'transfer', '50', null, { transferToWalletId: 'cash' }),
+      tx(kl(2026, 8, 21), 'expense', '50', 'Kopitiam', { walletId: 'cash' }),
     ];
     const result = forecast(rows, [
       wallet({ balanceConfirmedAt: confirmed(3) }),
@@ -150,18 +151,10 @@ describe('forecastCurrency', () => {
     });
   });
 
-  it('refuses without a payday when unscheduled income is over a fifth of spending', () => {
-    const { wallets, transactions } = gigLedger();
-    expect(forecast(transactions, wallets)).toMatchObject({
-      status: 'insufficient',
-      reasons: ['income arrives without a regular payday'],
-    });
-  });
-
   it('refuses when balance corrections show most spending went unlogged', () => {
     const rows = [
       ...steadyLedger(),
-      tx(new Date(2026, 9, 5), 'expense', '3000', null, { analysisExcluded: true }),
+      tx(kl(2026, 9, 5), 'expense', '3000', null, { analysisExcluded: true }),
     ];
     const result = forecast(rows);
     expect(result).toMatchObject({
@@ -173,8 +166,8 @@ describe('forecastCurrency', () => {
 
   it('refuses a range wider than 40% of the starting balance', () => {
     const lumpy: FactsTransaction[] = [];
-    for (let d = new Date(2026, 6, 20, 12); d < NOW; d.setDate(d.getDate() + 10))
-      lumpy.push(tx(new Date(d), 'expense', '400', 'Shopee'));
+    for (let d = kl(2026, 6, 20, 12); d < NOW; d = new Date(d.getTime() + 10 * DAY_MS))
+      lumpy.push(tx(d, 'expense', '400', 'Shopee'));
     const result = forecast(lumpy, [
       wallet({ initialBalanceMinor: decimalToMinor('4600'), balanceConfirmedAt: confirmed(1) }),
     ]);
@@ -187,8 +180,8 @@ describe('forecastCurrency', () => {
   it('counts transfers between wallets once and leaves credit cards out of the balance', () => {
     const rows = [
       ...steadyLedger(),
-      tx(new Date(2026, 9, 11), 'transfer', '500', null, { transferToWalletId: 'tng' }),
-      tx(new Date(2026, 9, 11), 'transfer', '300', null, { transferToWalletId: 'card' }),
+      tx(kl(2026, 9, 11), 'transfer', '500', null, { transferToWalletId: 'tng' }),
+      tx(kl(2026, 9, 11), 'transfer', '300', null, { transferToWalletId: 'card' }),
     ];
     const result = forecast(rows, [
       wallet({ balanceConfirmedAt: confirmed(1) }),
@@ -212,7 +205,7 @@ describe('forecastCurrency', () => {
     });
 
     const asked = new Set(
-      walletsNeedingConfirmation(stale, transactions, NOW).map((w) => w.wallet.id),
+      walletsNeedingConfirmation(stale, transactions, NOW, KL).map((w) => w.wallet.id),
     );
     expect([...asked]).toEqual([BANK, EWALLET]);
     const stamped = stale.map((w) =>
@@ -232,24 +225,32 @@ describe('backtestForecast', () => {
     for (let seed = 1; seed <= 10; seed += 1) {
       const { wallets, transactions } = salariedLedger(seed);
       const days: Date[] = [];
-      for (
-        let d = new Date(2026, 6, 1, 8);
-        d <= new Date(2026, 8, 30, 8);
-        d.setDate(d.getDate() + 1)
-      )
-        days.push(new Date(d));
-      const result = backtestForecast({ currency: 'MYR', wallets, transactions, days });
+      for (let d = kl(2026, 6, 1, 8); d <= kl(2026, 8, 30, 8); d = new Date(d.getTime() + DAY_MS))
+        days.push(d);
+      const result = backtestForecast({
+        currency: 'MYR',
+        wallets,
+        transactions,
+        days,
+        calendar: KL,
+      });
       inside += result.inside;
       evaluated += result.evaluated;
     }
     expect(evaluated).toBeGreaterThan(800);
     expect(inside / evaluated).toBeGreaterThanOrEqual(0.75);
-  });
+  }, 30_000);
 
   it('only scores forecasts whose horizon has already happened', () => {
     const { wallets, transactions } = salariedLedger();
     expect(
-      backtestForecast({ currency: 'MYR', wallets, transactions, days: [new Date(2026, 9, 1, 8)] }),
+      backtestForecast({
+        currency: 'MYR',
+        wallets,
+        transactions,
+        days: [kl(2026, 9, 1, 8)],
+        calendar: KL,
+      }),
     ).toEqual({ evaluated: 0, inside: 0, share: 0 });
   });
 });

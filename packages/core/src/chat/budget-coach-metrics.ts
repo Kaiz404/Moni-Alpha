@@ -1,16 +1,17 @@
 /** Deterministic calendar-month budget metrics. Amounts become decimals only in the AI wire snapshot. */
-import { countsAsSpending } from '@repo/core';
 import {
   addMinor,
   minorToNumber,
   subtractMinor,
-  type BudgetCategoryMetric,
   type BudgetCoachToolSnapshot,
   type MinorAmount,
 } from '@repo/types';
+
+import type { Calendar } from '../calendar';
+import { countsAsSpending } from '../ledger';
 import type { TxForMetrics } from './insight-metrics';
 
-export type BudgetRow = {
+export type BudgetForMetrics = {
   categoryId: string;
   currency: string;
   amountMinor: MinorAmount;
@@ -36,11 +37,6 @@ function classifyMerchantLine(
   return 'other';
 }
 
-function inCalendarMonth(isoDate: string, year: number, monthIndex: number): boolean {
-  const date = new Date(isoDate);
-  return date.getFullYear() === year && date.getMonth() === monthIndex;
-}
-
 type CategoryTotals = {
   total: MinorAmount;
   dining: MinorAmount;
@@ -51,17 +47,17 @@ type CategoryTotals = {
 };
 
 export function buildBudgetCoachSnapshot(
-  transactions: TxForMetrics[],
+  transactions: readonly TxForMetrics[],
   categoryMap: Record<string, string>,
-  budgets: BudgetRow[],
+  budgets: readonly BudgetForMetrics[],
   currencyHint: string,
-  now: Date = new Date(),
+  now: Date,
+  calendar: Calendar,
 ): BudgetCoachToolSnapshot {
   const sortedBudgets = [...budgets].sort((a, b) =>
     `${a.currency}:${a.categoryId}`.localeCompare(`${b.currency}:${b.categoryId}`),
   );
-  const year = now.getFullYear();
-  const month = now.getMonth();
+  const monthKey = calendar.monthKey(now);
   const totals: Record<string, CategoryTotals> = {};
   for (const budget of sortedBudgets)
     totals[`${budget.categoryId}:${budget.currency.toUpperCase()}`] = {
@@ -77,7 +73,7 @@ export function buildBudgetCoachSnapshot(
     if (
       !countsAsSpending(tx) ||
       !tx.categoryId ||
-      !inCalendarMonth(tx.transactionDate, year, month)
+      calendar.monthKey(tx.transactionDate) !== monthKey
     )
       continue;
     const target = totals[`${tx.categoryId}:${(tx.currency ?? currencyHint).toUpperCase()}`];
@@ -94,7 +90,7 @@ export function buildBudgetCoachSnapshot(
   }
 
   const categories = sortedBudgets.map((budget) => {
-    const total = totals[`${budget.categoryId}:${budget.currency.toUpperCase()}`];
+    const total = totals[`${budget.categoryId}:${budget.currency.toUpperCase()}`]!;
     const budgetAmount = minorToNumber(budget.amountMinor);
     const spentTotal = minorToNumber(total.total);
     const topMerchants = Object.entries(total.merchants)
@@ -128,7 +124,7 @@ export function buildBudgetCoachSnapshot(
   });
   return {
     schema: 'budget_coach_tool_v1',
-    monthKey: `${year}-${String(month + 1).padStart(2, '0')}`,
+    monthKey,
     currencyHint,
     generatedAt: now.toISOString(),
     categories,

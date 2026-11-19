@@ -1,10 +1,14 @@
 import { useCallback, useMemo } from 'react';
 import { observable } from '@legendapp/state';
 import { useValue } from '@legendapp/state/react';
-import { walletsNeedingConfirmation, type WalletToConfirm } from '@/lib/ai/facts/confirmation';
-import { MIN_HISTORY_DAYS, historyDays } from '@/lib/ai/facts/forecast';
 import { useAuth } from '@/lib/auth/auth-context';
-import type { FinanceWallet } from '@repo/core';
+import {
+  MIN_HISTORY_DAYS,
+  historyDays,
+  walletsNeedingConfirmation,
+  type FinanceWallet,
+  type WalletToConfirm,
+} from '@repo/core';
 import { transactions$, walletsForUser$ } from '@/lib/finance/selectors';
 import { preferencesMMKV } from '@/lib/mmkv/preferences';
 import { deviceCalendar } from '@/lib/dates/device-calendar';
@@ -34,11 +38,12 @@ export function useBalanceConfirmation(): {
 
   const due = useMemo(() => {
     const now = new Date();
-    return walletsNeedingConfirmation(wallets, transactions, now).filter(
+    return walletsNeedingConfirmation(wallets, transactions, now, deviceCalendar).filter(
       ({ wallet }) =>
         historyDays(
           transactions.filter((tx) => tx.currency === wallet.currency),
           deviceCalendar.dayNumber(now),
+          deviceCalendar,
         ) >= MIN_HISTORY_DAYS,
     );
   }, [wallets, transactions]);
