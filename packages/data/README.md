@@ -6,6 +6,7 @@ The synced ledger both apps hold (ADR [0003](../../docs/adr/0003-web-shares-the-
 | --- | --- |
 | `store.ts` | `createMoniStore({ supabase, persist, uuid })` returns one observable per synced table plus `profilePreferences$` and `aiConsent$`, and `enableStoreSync`, `whenStoreSynced`, `clearStore`, `isMigrated`, `assertMigrated`, `watchSession` and `signOutEverywhere(effects)`. It pulls by `updated_at` since the last sync, merges realtime, retries a request that never arrived (not one Supabase refused), probes the gated migrations before their tables sync, and re-queues rows an old app version never inserted. |
 | `gateway.ts` | `createRowGateway(supabase)`: `createOrRevive` (a key clash revives a soft-deleted row or adopts the live one), `update` (sends today's colour for a legacy hex), `softDelete`, and `list`, which pages in id order around PostgREST's `max_rows`. Results say whether a failure is worth retrying. |
+| `apply.ts` | `applyWrites(store, writes)` carries a `@repo/core` write plan out in one Legend batch, all or nothing: a patch or soft delete whose row is missing throws before anything is written. `src/__tests__/apply.test.ts` holds it and core's `applyToTables` to one contract. |
 | `persist.ts` | `MoniPersist` is a Legend persistence plugin plus a small flag store. `memoryPersist()` keeps both in memory for the web and tests. |
 | `profile.ts` | Reads the profile preferences and the AI consent for the signed-in user. |
 

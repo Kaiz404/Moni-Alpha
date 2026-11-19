@@ -6,6 +6,9 @@ import {
   type MinorAmount,
 } from '@repo/types';
 
+import { planTransaction } from './transactions';
+import type { LedgerView, PlanContext, Planned } from './types';
+
 export const BALANCE_CORRECTION_TITLE = 'Balance correction';
 
 /** The ledger row that moves a wallet from the balance Moni has to the one the user typed. */
@@ -35,6 +38,16 @@ export function correctBalance(
     analysisExcluded: true,
     metadata: { kind: 'balance_correction' },
   };
+}
+
+/** The correction as a ledger row dated now, analysis-excluded so it never counts as spending. */
+export function planBalanceCorrection(
+  walletId: string,
+  correction: BalanceCorrection,
+  view: Pick<LedgerView, 'walletsById'>,
+  ctx: PlanContext,
+): Planned<{ id: string }> {
+  return planTransaction({ ...correction, walletId, transactionDate: ctx.now }, 'manual', view, ctx);
 }
 
 /** The typed balance as a decimal, or `null` while it is not a 2-decimal amount. Accepts commas and U+2212. */

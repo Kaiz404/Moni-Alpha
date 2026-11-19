@@ -1,7 +1,8 @@
+import type { SyncedTable } from '@repo/core';
 import { legacyColor } from '@repo/types';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
-import { isNetworkError, type MoniSupabase, type SyncedTable } from './supabase';
+import { isNetworkError, type MoniSupabase } from './supabase';
 
 export type Row = Record<string, unknown>;
 

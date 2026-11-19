@@ -1,7 +1,7 @@
 import type { Observable } from '@legendapp/state';
 import type { MinorAmount, ProposedTransaction } from '@repo/types';
 import { approveProposedTransaction } from '../proposed-transactions';
-import { correctBalance } from '@/lib/wallets/balance-correction';
+import { correctBalance } from '@repo/core';
 import { createBalanceCorrection, createTransaction } from '../transactions';
 
 let mockNextId = 0;
@@ -11,6 +11,8 @@ jest.mock('@/lib/store', () => {
   const { observable } = jest.requireActual('@legendapp/state');
   return {
     wallets$: observable({ w1: { id: 'w1', currency: 'MYR', deleted: false } }),
+    debts$: observable({}),
+    debtActivities$: observable({}),
     transactions$: observable({}),
     proposedTransactions$: observable({}),
     isMigrated: () => true,

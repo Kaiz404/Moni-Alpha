@@ -1,3 +1,4 @@
+import { describe, expect, it } from 'vitest';
 import { minorToNumber } from '@repo/types';
 import { correctBalance, parseBalanceInput } from '../balance-correction';
 

@@ -5,8 +5,8 @@ export {
   createMoniStore,
   type CreateMoniStoreOptions,
   type GatedMigration,
-  type LocalRow,
   type MoniStore,
   type SignOutEffects,
 } from './store';
-export { isNetworkError, SYNCED_TABLES, type MoniSupabase, type SyncedTable } from './supabase';
+export { applyWrites } from './apply';
+export { isNetworkError, type MoniSupabase } from './supabase';

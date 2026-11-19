@@ -1,20 +1,27 @@
-import { randomUUID } from 'expo-crypto';
-import { batch } from '@legendapp/state';
 import {
   createDebtActivityInputSchema,
   createDebtInputSchema,
   decimalToMinor,
-  minorToDecimal,
   type Debt,
   type DebtActivity,
   type DebtActivityKind,
   type DebtDirection,
   type MinorAmount,
 } from '@repo/types';
-import { debtActivities$, debts$, transactions$, wallets$ } from '@/lib/store';
+import {
+  debtBalance,
+  planDebt,
+  planDebtActivity,
+  planDebtActivityDelete,
+  planDebtMirrorRepair,
+  planDebtStatus,
+  type DebtActivityInput,
+  type NewDebt,
+} from '@repo/core';
+import { debtActivities$, debts$ } from '@/lib/store';
 import { getRecordValues, patchRow } from '@/lib/store/helpers';
+import { commit, ledgerView, planContext } from '@/lib/store/writes';
 import { getUserId } from '@/lib/supabase/client';
-import { debtBalance, debtStatus } from '@repo/core';
 
 type DebtRow = {
   id: string;
@@ -106,187 +113,25 @@ function activitiesOf(userId: string, debtId?: string): DebtActivity[] {
     .sort((a, b) => b.activityDate.localeCompare(a.activityDate));
 }
 
-function walletCurrency(walletId: string): string {
-  const wallet = getRecordValues<{
-    id: string;
-    currency: string | null;
-  }>(wallets$).find((item) => item.id === walletId);
-  if (!wallet) throw new Error('Wallet not found');
-  const currency = normalizeCurrency(wallet.currency);
-  if (!currency) throw new Error('Wallet has an invalid currency code');
-  return currency;
-}
-
-function cashType(direction: DebtDirection, kind: 'principal' | 'repayment'): 'income' | 'expense' {
-  return direction === 'owed_to_me'
-    ? kind === 'principal'
-      ? 'expense'
-      : 'income'
-    : kind === 'principal'
-      ? 'income'
-      : 'expense';
-}
-
-function cashDescription(
-  direction: DebtDirection,
-  kind: 'principal' | 'repayment',
-  counterparty: string,
-): string {
-  const outgoing = cashType(direction, kind) === 'expense';
-  if (kind === 'principal')
-    return outgoing ? `Lent to ${counterparty}` : `Borrowed from ${counterparty}`;
-  return outgoing ? `Repayment to ${counterparty}` : `Repayment from ${counterparty}`;
-}
-
-async function addActivity(
-  debt: Debt,
-  data: {
-    kind: DebtActivityKind;
-    amountMinor: MinorAmount;
-    walletId?: string;
-    note?: string | null;
-    activityDate?: string;
-  },
-): Promise<DebtActivity> {
-  if (!Number.isSafeInteger(data.amountMinor) || data.amountMinor <= 0)
-    throw new Error('Amount must be positive');
-  const userId = await getUserId();
-  if (!userId) throw new Error('Not authenticated');
-  // No await from this read to the batch below, so two quick taps can't both pass the balance check.
-  const activities = activitiesOf(userId, debt.id);
-  const currentBalance = debtBalance(activities);
-  if ((data.kind === 'repayment' || data.kind === 'write_off') && data.amountMinor > currentBalance)
-    throw new Error('Amount cannot exceed the outstanding balance');
-  if (data.kind === 'write_off' && data.amountMinor !== currentBalance)
-    throw new Error('Write-off must settle the full remaining balance');
-  if (data.kind !== 'write_off' && !data.walletId) throw new Error('Select a wallet');
-  if (data.walletId && walletCurrency(data.walletId) !== debt.currency)
-    throw new Error(`Select a ${debt.currency} wallet`);
-  const now = new Date().toISOString();
-  const id = randomUUID();
-  const cashTransactionId = data.kind === 'write_off' ? null : randomUUID();
-  const activityDate = data.activityDate ?? now;
-  const activity = mapActivity({
-    id,
-    user_id: userId,
-    debt_id: debt.id,
-    kind: data.kind,
-    amount: minorToDecimal(data.amountMinor),
-    activity_date: activityDate,
-    wallet_id: data.walletId ?? null,
-    cash_transaction_id: cashTransactionId,
-    note: data.note ?? null,
-    created_at: now,
-    updated_at: now,
-  });
-  const nextActivities = [activity, ...activities];
-  batch(() => {
-    debtActivities$[id].set({
-      id,
-      user_id: userId,
-      debt_id: debt.id,
-      kind: data.kind,
-      amount: minorToDecimal(data.amountMinor),
-      activity_date: activityDate,
-      wallet_id: data.walletId ?? null,
-      cash_transaction_id: cashTransactionId,
-      note: data.note ?? null,
-      deleted: false,
-    });
-    if (cashTransactionId && data.walletId) {
-      const cashKind = data.kind as 'principal' | 'repayment';
-      transactions$[cashTransactionId].set({
-        id: cashTransactionId,
-        user_id: userId,
-        wallet_id: data.walletId,
-        amount: minorToDecimal(data.amountMinor),
-        currency: debt.currency,
-        type: cashType(debt.direction, cashKind),
-        category_id: null,
-        transfer_to_wallet_id: null,
-        linked_transaction_id: null,
-        debt_activity_id: id,
-        analysis_excluded: true,
-        description: cashDescription(debt.direction, cashKind, debt.counterpartyName),
-        merchant: null,
-        notes: data.note ?? null,
-        transaction_date: activityDate,
-        location_latitude: null,
-        location_longitude: null,
-        location_name: null,
-        receipt_image_url: null,
-        metadata: { debt_activity_id: id },
-        deleted: false,
-      });
-    }
-    patchRow(debts$, debt.id, {
-      status: debtStatus(nextActivities),
-      updated_at: now,
-    });
-  });
-  return activity;
+async function addActivity(debt: Debt, data: DebtActivityInput): Promise<DebtActivity> {
+  const ctx = await planContext();
+  const { activity } = commit(planDebtActivity(debt, data, ledgerView(), ctx));
+  return { ...activity, createdAt: ctx.now, updatedAt: ctx.now };
 }
 
 /** Works a debt's status out again after a restore added activity to it. */
-export async function refreshDebtStatus(debtId: string): Promise<void> {
-  const debt = await getDebtById(debtId);
-  if (!debt) return;
-  const status = debtStatus(await getDebtActivities(debtId));
-  if (status !== debt.status) {
-    patchRow(debts$, debtId, { status, updated_at: new Date().toISOString() });
-  }
+export function refreshDebtStatus(debtId: string): void {
+  commit(planDebtStatus(debtId, ledgerView(), { now: new Date().toISOString() }));
 }
 
-export async function createDebt(data: {
-  counterpartyName: string;
-  direction: DebtDirection;
-  amountMinor: MinorAmount;
-  walletId: string;
-  dueDate?: string | null;
-  note?: string | null;
-  activityDate?: string;
-}): Promise<Debt> {
+export async function createDebt(data: NewDebt): Promise<Debt> {
   const parsed = createDebtInputSchema.safeParse(data);
   if (!parsed.success) throw new Error(parsed.error.errors[0]?.message ?? 'Invalid debt');
-  data = parsed.data;
-  const userId = await getUserId();
-  const name = data.counterpartyName.trim();
-  if (!userId) throw new Error('Not authenticated');
-  if (!name) throw new Error('Enter a person’s name');
-  const now = new Date().toISOString();
-  const currency = walletCurrency(data.walletId);
-  const id = randomUUID();
-  debts$[id].set({
-    id,
-    user_id: userId,
-    counterparty_name: name,
-    direction: data.direction,
-    currency,
-    due_date: data.dueDate ?? null,
-    note: data.note ?? null,
-    status: 'open',
-    deleted: false,
+  const ctx = await planContext().catch(() => {
+    throw new Error('Not authenticated');
   });
-  const debt = mapDebt({
-    id,
-    user_id: userId,
-    counterparty_name: name,
-    direction: data.direction,
-    currency,
-    due_date: data.dueDate ?? null,
-    note: data.note ?? null,
-    status: 'open',
-    created_at: now,
-    updated_at: now,
-  });
-  await addActivity(debt, {
-    kind: 'principal',
-    amountMinor: data.amountMinor,
-    walletId: data.walletId,
-    note: data.note,
-    activityDate: data.activityDate,
-  });
-  return debt;
+  const { debt } = commit(planDebt(parsed.data, ledgerView(), ctx));
+  return { ...debt, createdAt: ctx.now, updatedAt: ctx.now };
 }
 
 /** In-place edits on the debt page. Money never changes here; it moves through activities. */
@@ -348,71 +193,13 @@ export async function writeOffDebt(debt: Debt, note?: string | null) {
   });
 }
 
-export async function deleteDebtActivity(debt: Debt, activityId: string): Promise<void> {
-  const activity = (await getDebtActivities(debt.id)).find((item) => item.id === activityId);
-  if (!activity) throw new Error('Debt activity not found');
-  const now = new Date().toISOString();
-  const remaining = (await getDebtActivities(debt.id)).filter((item) => item.id !== activity.id);
-  batch(() => {
-    patchRow(debtActivities$, activity.id, {
-      deleted: true,
-      updated_at: now,
-    });
-    if (activity.cashTransactionId)
-      patchRow(transactions$, activity.cashTransactionId, {
-        deleted: true,
-        updated_at: now,
-      });
-    patchRow(debts$, debt.id, {
-      status: debtStatus(remaining),
-      updated_at: now,
-    });
-  });
+export function deleteDebtActivity(debt: Debt, activityId: string): void {
+  commit(planDebtActivityDelete(debt, activityId, ledgerView(), { now: new Date().toISOString() }));
 }
 
 /** Idempotently reconstruct a missing local cash mirror after an interrupted offline write. */
 export async function reconcileDebtTransactions(): Promise<number> {
-  const debts = await getDebts();
-  const activities = await getDebtActivities();
-  let repaired = 0;
-  const txIds = new Set(
-    getRecordValues<{ id: string }>(transactions$).map((transaction) => transaction.id),
-  );
-  for (const activity of activities) {
-    if (!activity.cashTransactionId || !activity.walletId || txIds.has(activity.cashTransactionId))
-      continue;
-    const debt = debts.find((item) => item.id === activity.debtId);
-    if (!debt || activity.kind === 'write_off') continue;
-    const cashTransactionId = activity.cashTransactionId;
-    const kind = activity.kind;
-    const userId = await getUserId();
-    if (!userId) break;
-    batch(() =>
-      transactions$[cashTransactionId].set({
-        id: cashTransactionId,
-        user_id: userId,
-        wallet_id: activity.walletId,
-        amount: minorToDecimal(activity.amountMinor),
-        currency: debt.currency,
-        type: cashType(debt.direction, kind),
-        category_id: null,
-        transfer_to_wallet_id: null,
-        linked_transaction_id: null,
-        debt_activity_id: activity.id,
-        analysis_excluded: true,
-        description: cashDescription(debt.direction, kind, debt.counterpartyName),
-        merchant: null,
-        notes: activity.note,
-        transaction_date: activity.activityDate,
-        location_latitude: null,
-        location_longitude: null,
-        location_name: null,
-        receipt_image_url: null,
-        metadata: { debt_activity_id: activity.id },
-        deleted: false,
-      }),
-    );
-    repaired += 1;
-  }
-  return repaired;
+  const userId = await getUserId();
+  if (!userId) return 0;
+  return commit(planDebtMirrorRepair(ledgerView(), { userId })).repaired;
 }

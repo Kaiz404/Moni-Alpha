@@ -16,14 +16,15 @@ import { wallets$ } from '@/lib/store';
 import { use$ } from '@legendapp/state/react';
 const wallets = use$(wallets$);
 
-// Write — via helpers in lib/supabase/*.ts which set() into the store;
-// Legend-State syncs to Postgres in the background
-wallets$[id].set({ ...wallet, name: 'Updated' });
+// Write — via helpers in lib/supabase/*.ts. Ledger commands (transactions, transfers, balance
+// correction, debts, wallet deletion, import) build a plan in @repo/core's write-plans and
+// commit it through lib/store/writes.ts; Legend-State syncs to Postgres in the background.
+commit(planTransfer(input, 'manual', ledgerView(), await planContext()));
 
 // Delete — soft delete only (synced tables have a `deleted` column)
 ```
 
-New synced table checklist: migration adds `created_at`/`updated_at`/`deleted` + RLS + realtime → `pnpm gen:db-types` → add it to `SYNCED_TABLES` and the store in `packages/data` → export it from `lib/store/index.ts` → CRUD helper in `lib/supabase/`.
+New synced table checklist: migration adds `created_at`/`updated_at`/`deleted` + RLS + realtime → `pnpm gen:db-types` → add it to `SYNCED_TABLES` (`packages/core/src/write-plans/types.ts`) and the store (`packages/data/src/store.ts`) → export it from `lib/store/index.ts` → CRUD helper in `lib/supabase/`.
 
 ## MMKV instances (lib/mmkv/)
 

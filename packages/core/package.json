@@ -11,7 +11,8 @@
     "./glossary": "./src/glossary.ts",
     "./ledger": "./src/ledger.ts",
     "./money-month": "./src/money-month/index.ts",
-    "./read-model": "./src/read-model/index.ts"
+    "./read-model": "./src/read-model/index.ts",
+    "./write-plans": "./src/write-plans/index.ts"
   },
   "dependencies": {
     "@repo/types": "workspace:*"

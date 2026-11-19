@@ -1,14 +1,15 @@
 import { syncState } from '@legendapp/state';
-import { assertMigrated, wallets$, transactions$ } from '@/lib/store';
+import { assertMigrated, wallets$ } from '@/lib/store';
 import { getRecordValues, isActive, patchRow } from '@/lib/store/helpers';
+import { commit, ledgerView } from '@/lib/store/writes';
 import { getUserId } from '@/lib/supabase/client';
 import { getWalletBalances } from '@/lib/supabase/balances';
 import { recordSourceLinked } from '@/lib/notifications/capture-health';
-import { refreshLinkedPackagesFromStore } from '@/lib/notifications/linked-packages-cache';
 import { clearDefaultWalletIfDeleted } from '@/lib/wallets/default-wallet';
 import { DEFAULT_WALLET_CARD_STYLE_ID } from '@/constants/wallet-card-styles';
 import type { CreateWallet, UpdateWallet, MinorAmount } from '@repo/types';
 import { decimalToMinor, minorToDecimal } from '@repo/types';
+import { planWalletDelete } from '@repo/core';
 import { randomUUID } from 'expo-crypto';
 
 type WalletRow = {
@@ -121,7 +122,6 @@ export async function createWallet(data: CreateWallet) {
   });
 
   if (data.notificationPackage) recordSourceLinked(data.notificationPackage);
-  refreshLinkedPackagesFromStore();
 
   const created = getRecordValues<WalletRow>(wallets$).find((w) => w.id === id);
   if (!created) throw new Error('Failed to create wallet');
@@ -159,7 +159,6 @@ export async function updateWallet(id: string, data: UpdateWallet) {
     recordSourceLinked(data.notificationPackage, now);
   }
   patchRow(wallets$, id, patch);
-  refreshLinkedPackagesFromStore();
 
   const updated = getRecordValues<WalletRow>(wallets$).find((w) => w.id === id);
   if (!updated) throw new Error('Failed to update wallet');
@@ -173,21 +172,6 @@ export function confirmWalletBalance(id: string, at: string | null = new Date().
 }
 
 export async function deleteWallet(id: string) {
-  const now = new Date().toISOString();
-
-  for (const tx of getRecordValues<{
-    id: string;
-    wallet_id: string | null;
-  }>(transactions$)) {
-    if (tx.wallet_id === id) {
-      patchRow(transactions$, tx.id, {
-        deleted: true,
-        updated_at: now,
-      });
-    }
-  }
-
-  patchRow(wallets$, id, { deleted: true, updated_at: now });
+  commit(planWalletDelete(id, ledgerView(), { now: new Date().toISOString() }));
   await clearDefaultWalletIfDeleted(id);
-  refreshLinkedPackagesFromStore();
 }

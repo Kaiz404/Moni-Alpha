@@ -3,12 +3,13 @@ import { synced } from '@legendapp/state/sync';
 import { configureSyncedSupabase, syncedSupabase } from '@legendapp/state/sync-plugins/supabase';
 import type { AiConsent } from '@repo/core';
 import type { UserPreferences } from '@repo/types';
-import type { Json, TablesInsert } from '@repo/types/database';
 
 import { createRowGateway, type Failure, type Row } from './gateway';
 import type { MoniPersist } from './persist';
 import { fetchAiConsent, fetchProfilePreferences } from './profile';
-import type { MoniSupabase, SyncedTable } from './supabase';
+import type { SyncedTable } from '@repo/core';
+
+import type { MoniSupabase } from './supabase';
 
 type WriteParams = {
   onError: (error: Error, params: Record<string, unknown>) => void;
@@ -34,30 +35,9 @@ const GATED_COLUMNS = {
 } as const;
 export type GatedMigration = keyof typeof GATED_MIGRATIONS | keyof typeof GATED_COLUMNS;
 
-/**
- * A row as the store holds it: everything a pull brings, or only what a local create set before
- * the server filled its defaults (`created_at`, `updated_at`).
- */
-export type LocalRow<T extends SyncedTable> = {
-  [K in keyof TablesInsert<T>]: K extends DecimalColumn
-    ? TablesInsert<T>[K] | string
-    : Json extends TablesInsert<T>[K]
-      ? JsonColumn
-      : TablesInsert<T>[K];
-} & { id: string };
-
-/** Until the phone's hand-written row types give way to `LocalRow`, its writers set rows of their own shape. */
+/** Until the phone's hand-written row types give way to `StoredRow`, its writers set rows of their own shape. */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars
 type StoreRow<T extends SyncedTable> = Record<string, any>;
-
-/**
- * `numeric` money columns. A pull brings them as numbers; a local write keeps the exact decimal
- * string `minorToDecimal` makes, so a float never rounds a cent.
- */
-type DecimalColumn = 'amount' | 'initial_balance' | 'expected_amount';
-
-/** A `jsonb` column. Legend's observable types recurse through the generated `Json` without end. */
-type JsonColumn = Record<string, unknown> | unknown[] | string | number | boolean | null | undefined;
 
 const TABLE_FOUND_KEY_PREFIX = 'table-found:';
 const SYNC_CREATE_REPAIR_KEY = 'legend-sync-create-repair-v1';

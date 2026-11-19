@@ -86,6 +86,8 @@ jest.mock('@/lib/store', () => {
     mockTables.transactions$ = observable({});
     mockTables.proposedTransactions$ = observable({});
     mockTables.autoAddRules$ = observable({});
+    mockTables.debts$ = observable({});
+    mockTables.debtActivities$ = observable({});
   }
   return { ...mockTables, assertMigrated: () => {}, isMigrated: () => true };
 });

@@ -70,7 +70,7 @@ import {
   formatSignedMoney,
   moneySign,
 } from '@repo/core';
-import { BALANCE_CORRECTION_TITLE } from '@/lib/wallets/balance-correction';
+import { BALANCE_CORRECTION_TITLE } from '@repo/core';
 import { compactWalletNames } from '@/lib/wallets/compact-name';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { deviceCalendar } from '@/lib/dates/device-calendar';

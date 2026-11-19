@@ -90,6 +90,8 @@ jest.mock('@/lib/store', () => {
   const { observable } = jest.requireActual('@legendapp/state');
   return {
     wallets$: observable({}),
+    debts$: observable({}),
+    debtActivities$: observable({}),
     transactions$: observable({}),
     categories$: observable({}),
     proposedTransactions$: observable({}),
