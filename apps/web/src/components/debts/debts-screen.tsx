@@ -84,6 +84,8 @@ function DebtsLoaded({ ledger }: { ledger: Ledger }) {
     if (repay && repay.debtId !== debtId) setRepay(null);
     setParams({ person: debtId, record: null });
   };
+  /** Picking the open person again closes their pane. */
+  const pick = (debtId: string) => select(debtId === selectedId ? null : debtId);
   const move = (by: 1 | -1) => {
     if (!order.length) return;
     const next = index < 0 ? (by === 1 ? 0 : order.length - 1) : Math.min(order.length - 1, Math.max(0, index + by));
@@ -296,7 +298,7 @@ function DebtsLoaded({ ledger }: { ledger: Ledger }) {
                 side={side}
                 selectedId={selectedId}
                 today={today}
-                onPick={select}
+                onPick={pick}
                 onClearSide={() => setParams({ side: null })}
               />
               {summary.closed.length > 0 && (
@@ -308,7 +310,7 @@ function DebtsLoaded({ ledger }: { ledger: Ledger }) {
                   </div>
                   <div role="grid" aria-label="Settled debts">
                     {summary.closed.map((line) => (
-                      <PersonRow key={line.debt.id} line={line} today={today} selected={selectedId === line.debt.id} onPick={select} />
+                      <PersonRow key={line.debt.id} line={line} today={today} selected={selectedId === line.debt.id} onPick={pick} />
                     ))}
                   </div>
                 </section>
@@ -316,7 +318,7 @@ function DebtsLoaded({ ledger }: { ledger: Ledger }) {
             </>
           )}
         </div>
-        <SidePane label={recording ? 'Record a debt' : 'Person'} open={Boolean(paneOpen)} idle={order.length > 0} onClose={() => (recording ? setParams({ record: null }) : select(null))}>
+        <SidePane label={recording ? 'Record a debt' : 'Person'} open={Boolean(paneOpen)} onClose={() => (recording ? setParams({ record: null }) : select(null))}>
           {recording ? (
             <RecordDebt
               draft={draft}
@@ -344,12 +346,7 @@ function DebtsLoaded({ ledger }: { ledger: Ledger }) {
               onMove={move}
               onClose={() => select(null)}
             />
-          ) : (
-            <div className="detail-empty">
-              <Glyph name="account-outline" size={32} />
-              <span>Pick a person to see what was lent and paid back.</span>
-            </div>
-          )}
+          ) : null}
         </SidePane>
       </div>
       {writingOff && (

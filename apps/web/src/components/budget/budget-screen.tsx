@@ -104,6 +104,8 @@ function BudgetLoaded({ ledger }: { ledger: Ledger }) {
     if (edit && edit.categoryId !== categoryId) setEdit(null);
     setParams({ category: categoryId });
   };
+  /** Picking the open category again closes its pane. */
+  const pick = (categoryId: string) => select(categoryId === selectedId ? null : categoryId);
   const move = (by: 1 | -1) => {
     if (!lines.length) return;
     const next = index < 0 ? (by === 1 ? 0 : lines.length - 1) : Math.min(lines.length - 1, Math.max(0, index + by));
@@ -293,14 +295,14 @@ function BudgetLoaded({ ledger }: { ledger: Ledger }) {
             {monthNav}
           </div>
           <div className="budget-top">
-            <RingCard data={data} currency={currency} onPick={(id) => select(id)} />
+            <RingCard data={data} currency={currency} onPick={pick} />
             {view === 'month' && money.isCurrent && <BillsCard data={data} ledger={ledger} />}
           </div>
           {view === 'calendar' ? (
             <CalendarCard data={data} ledger={ledger} />
           ) : (
             <>
-              <BudgetRings lines={lines} currency={currency} selectedId={selectedId} onPick={select} show={showTable} />
+              <BudgetRings lines={lines} currency={currency} selectedId={selectedId} onPick={pick} show={showTable} />
               {!showTable && (
                 <section className="card budgets-empty-card" aria-label="Budgets" data-only="phone">
                   <NoBudgets data={data} currency={currency} onStart={() => setSetup(true)} />
@@ -338,7 +340,7 @@ function BudgetLoaded({ ledger }: { ledger: Ledger }) {
                     selectedId={selectedId}
                     edit={edit}
                     editable={editable}
-                    onPick={select}
+                    onPick={pick}
                     onEdit={(line) => startEdit(line, 'table')}
                     onDraft={(draft) => setEdit((current) => current && { ...current, draft })}
                     onSave={save}
@@ -358,8 +360,8 @@ function BudgetLoaded({ ledger }: { ledger: Ledger }) {
             </>
           )}
         </div>
-        <SidePane label="Category" open={Boolean(selected)} idle onClose={() => select(null)}>
-          {selected ? (
+        <SidePane label="Category" open={Boolean(selected)} onClose={() => select(null)}>
+          {selected && (
             <CategoryPane
               line={selected}
               index={index}
@@ -382,11 +384,6 @@ function BudgetLoaded({ ledger }: { ledger: Ledger }) {
               onMove={move}
               onClose={() => select(null)}
             />
-          ) : (
-            <div className="detail-empty">
-              <Glyph name="gesture-tap" size={32} />
-              <span>Pick a category to see its months, its payments and its budget.</span>
-            </div>
           )}
         </SidePane>
       </div>

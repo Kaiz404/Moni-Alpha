@@ -356,6 +356,19 @@ textarea::placeholder {
   }
 }
 
+@keyframes slide-out-right {
+  to {
+    opacity: 0;
+    transform: translateX(48px);
+  }
+}
+
+@keyframes fade-out {
+  to {
+    opacity: 0;
+  }
+}
+
 @keyframes timer {
   from {
     transform: scaleX(1);

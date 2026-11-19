@@ -1,7 +1,7 @@
-/* The docked detail pane (side-pane.tsx). Docked on the right from top to bottom on the sidebar layout and
-   on the rail from 1240 wide, and the page (its header too) makes room for it. Narrower than that a docked
-   pane would squeeze the tables under 600 wide, so the rail and the rail with one column open it over the
-   page with a scrim. On the phone layout it is the pushed page, with no tab bar. Moni chat docks in its
+/* The docked pane (side-pane.tsx). It exists only while something is open. Docked on the right from top to
+   bottom on the sidebar layout and on the rail from 1240 wide, and the page (its header too) makes room for
+   it. Narrower than that a docked pane would squeeze the tables under 600 wide, so the rail and the rail
+   with one column open it over the page with a scrim. On the phone layout it is the pushed page, with no tab bar. Moni chat docks in its
    place while it is open. */
 
 .side-pane {
@@ -20,47 +20,40 @@
   flex-direction: column;
 }
 
-.side-pane:not([data-idle])[data-open] {
+.side-pane[data-open] {
   animation: slide-in-right var(--duration-sheet) var(--ease-sheet) both;
+}
+
+html[data-layout] .side-pane[data-closing] {
+  pointer-events: none;
+  animation: slide-out-right 240ms var(--ease-sheet) both;
 }
 
 .side-pane-scrim {
   display: none;
 }
 
-.shell-main:has(.side-pane[data-width='408']) {
+.shell-main:has(.side-pane[data-open][data-width='408']) {
   --side-pane-room: calc(408px + 24px);
 }
 
-.shell-main:has(.side-pane[data-width='380']) {
+.shell-main:has(.side-pane[data-open][data-width='380']) {
   --side-pane-room: calc(380px + 12px + 24px);
 }
 
-html[data-layout='sidebar'] .shell:not([data-pane='chat']) .shell-main:has(.side-pane) {
+html[data-layout='sidebar'] .shell:not([data-pane='chat']) .shell-main:has(.side-pane[data-open]) {
   padding-right: var(--side-pane-room);
 }
 
 @media (min-width: 1240px) {
-  html[data-layout='rail'] .shell:not([data-pane='chat']) .shell-main:has(.side-pane) {
+  html[data-layout='rail'] .shell:not([data-pane='chat']) .shell-main:has(.side-pane[data-open]) {
     padding-right: var(--side-pane-room);
   }
 }
 
-@media (max-width: 1239.98px) {
-  html[data-layout='rail'] .side-pane:not([data-open]) {
-    display: none;
-  }
-}
-
-html[data-layout='rail-one-column'] .side-pane:not([data-open]),
-html[data-layout='phone'] .side-pane:not([data-open]) {
-  display: none;
-}
-
-html[data-layout='rail-one-column'] .side-pane[data-open],
-html[data-layout='rail'] .side-pane[data-open] {
+html[data-layout='rail-one-column'] .side-pane,
+html[data-layout='rail'] .side-pane {
   z-index: 31;
-  animation: slide-in-right var(--duration-sheet) var(--ease-sheet) both;
   box-shadow:
     var(--shadow-float),
     0 0 0 1.5px var(--color-hairline);
@@ -77,13 +70,9 @@ html[data-layout='rail'] .side-pane-scrim[data-open] {
 }
 
 @media (min-width: 1240px) {
-  html[data-layout='rail'] .side-pane[data-open] {
+  html[data-layout='rail'] .side-pane {
     z-index: 5;
     box-shadow: none;
-  }
-
-  html[data-layout='rail'] .side-pane[data-idle][data-open] {
-    animation: none;
   }
 
   html[data-layout='rail'] .side-pane-scrim[data-open] {
@@ -91,7 +80,7 @@ html[data-layout='rail'] .side-pane-scrim[data-open] {
   }
 }
 
-html[data-layout='phone'] .side-pane[data-open] {
+html[data-layout='phone'] .side-pane {
   inset: 0;
   width: auto;
   border-radius: 0;
@@ -103,7 +92,7 @@ html[data-layout='phone'] .side-pane[data-open] {
 
 /* Held sideways, the pushed page keeps the phone's 480 column, as the tab roots do. */
 @media (max-height: 499.98px) {
-  html[data-layout='phone'] .side-pane[data-open] {
+  html[data-layout='phone'] .side-pane {
     padding-inline: max(var(--spacing-screen), calc(50% - 240px));
   }
 }
@@ -123,7 +112,7 @@ html[data-layout='phone'] .shell:has(.side-pane[data-open]) .tabbar {
     animation: fade-in 180ms ease both;
   }
 
-  html[data-layout='sidebar'] .side-pane[data-idle][data-open] {
-    animation: none;
+  html[data-layout] .side-pane[data-closing] {
+    animation: fade-out 180ms ease both;
   }
 }

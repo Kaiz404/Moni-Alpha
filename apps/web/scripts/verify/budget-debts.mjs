@@ -62,10 +62,9 @@ export async function verifyBudgetDebts(t) {
           screen === 'debts'
             ? await p.locator('.people-card').first().isVisible()
             : await p.locator(size.layout === 'phone' ? 'section.rings' : '.budgets-card').isVisible();
-        const docks = size.layout === 'sidebar';
         check(
-          `${where}: ${size.layout} with its nav, ${theme} ground, ${docks ? 'the pane docked' : 'no pane until a row is picked'}, no sideways scroll`,
-          state.layout === size.layout && nav && state.bg === background[theme] && state.docked === docks && !(await scrolls(p)) && tableShown,
+          `${where}: ${size.layout} with its nav, ${theme} ground, no pane until a row is picked, no sideways scroll`,
+          state.layout === size.layout && nav && state.bg === background[theme] && state.docked === null && !(await scrolls(p)) && tableShown,
           { ...state, nav, tableShown },
         );
         if (screen === 'budget') {
@@ -93,7 +92,16 @@ export async function verifyBudgetDebts(t) {
           await shot(p, `${screen}-${size.width}-${theme}-pane`);
           await p.keyboard.press('Escape');
           await p.waitForURL((url) => !/category=|person=/.test(url.search)).catch(() => {});
-          check(`${where}: Esc closes the pane`, !/category=|person=/.test(p.url()), p.url());
+          const gone = await p.locator('aside.side-pane').waitFor({ state: 'detached', timeout: 2000 }).then(() => true, () => false);
+          check(`${where}: Esc slides the pane out`, !/category=|person=/.test(p.url()) && gone, p.url());
+          if (size.layout === 'sidebar') {
+            await firstRow.click();
+            await p.waitForURL(screen === 'budget' ? /category=/ : /person=/);
+            await settle(p);
+            await firstRow.click();
+            await p.waitForURL((url) => !/category=|person=/.test(url.search)).catch(() => {});
+            check(`${where}: picking the open row again closes its pane`, !/category=|person=/.test(p.url()), p.url());
+          }
         }
       }
       await ctx.close();
