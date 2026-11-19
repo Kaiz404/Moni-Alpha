@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { createContext, useContext, useEffect, useRef } from 'react';
 import { useShellApi, type Pane } from '@/components/shell/shell-context';
 import { useShell } from '@/components/shell/shell-store';
 import { INITIAL_KEY_STATE, keyStep, type KeyState } from '@/lib/keys';
@@ -9,6 +9,9 @@ function isTyping(target: EventTarget | null): boolean {
   if (!(target instanceof HTMLElement)) return false;
   return target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName);
 }
+
+/** True inside a pane while it slides out: what it shows is on its way out and takes no keys. */
+export const KeysAsleep = createContext(false);
 
 /**
  * A screen's own keys (P and D on Home; J, K, X and Esc on Activity; J, K, E, R, M, D on Budget and
@@ -20,9 +23,10 @@ function isTyping(target: EventTarget | null): boolean {
 export function useScreenKeys(handler: (key: string, event: KeyboardEvent) => boolean | void, inPane: Pane = null) {
   const { overlay } = useShell();
   const { pane } = useShellApi();
+  const asleep = useContext(KeysAsleep);
   const state = useRef<KeyState>(INITIAL_KEY_STATE);
   const latest = useRef({ handler, blocked: false });
-  latest.current = { handler, blocked: overlay !== 'none' || pane !== inPane };
+  latest.current = { handler, blocked: asleep || overlay !== 'none' || pane !== inPane };
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {

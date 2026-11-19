@@ -265,6 +265,21 @@ export async function verifyReview(t) {
   check('Esc in Recently reviewed steps back to the captures', p.url().includes('review=deck'), p.url());
   await p.keyboard.press('Escape');
 
+  // Closing with the focus inside: the focus leaves first, and keys pressed while it slides out do nothing.
+  await p.goto(`${base}/home?review=deck&capture=${first.id}`);
+  await ready(p);
+  await drawer(p).getByRole('button', { name: 'Next capture (J)' }).focus();
+  await p.keyboard.press('Escape');
+  await p.locator('aside.side-pane[data-closing]').waitFor({ state: 'attached', timeout: 2000 }).catch(() => {});
+  const sliding = await p.evaluate(() => {
+    const aside = document.querySelector('aside.side-pane');
+    return { inert: aside?.inert ?? null, hidden: aside?.getAttribute('aria-hidden') ?? null, inside: Boolean(aside?.contains(document.activeElement)) };
+  });
+  await p.keyboard.press('x');
+  await p.locator('aside.side-pane').waitFor({ state: 'detached', timeout: 2000 }).catch(() => {});
+  const untouched = query('proposals').some((row) => row.id === first.id && row.status === 'pending');
+  check('closing moves the focus out, the sliding pane is inert, and X while it slides marks nothing', sliding.inert === true && sliding.hidden === null && !sliding.inside && untouched, sliding);
+
   // Old /review links open Home with the drawer, signed out through the sign-in page too.
   for (const [from, to] of [
     ['/review', '/home?review=deck'],

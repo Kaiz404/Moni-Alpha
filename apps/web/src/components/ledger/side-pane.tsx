@@ -3,6 +3,7 @@
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { useShellApi } from '@/components/shell/shell-context';
 import { PANE_COVERS_QUERY } from '@/lib/layout';
+import { KeysAsleep } from '@/lib/screen-keys';
 import { PANE_SPANS, type PaneName } from '@/lib/sizes';
 import { ResizeHandle, useRootWidth, useStoredSize } from './resize-handle';
 import './side-pane.css';
@@ -92,14 +93,14 @@ export function SidePane({
         tabIndex={-1}
         className="side-pane"
         aria-label={label}
-        aria-hidden={closing || undefined}
+        inert={closing}
         data-open={open || undefined}
         data-closing={closing || undefined}
         onAnimationEnd={(event) => {
           if (closing && event.target === event.currentTarget) setPresent(false);
         }}
       >
-        {open ? children : kept.current}
+        <KeysAsleep.Provider value={closing}>{open ? children : kept.current}</KeysAsleep.Provider>
       </aside>
       {open && <ResizeHandle label={`Resize the ${label.toLowerCase()} pane`} span={span} value={width} grows="left" onChange={setWidth} className="side-pane-resize" />}
     </>
