@@ -238,6 +238,11 @@ function BudgetLoaded({ ledger }: { ledger: Ledger }) {
           ) : (
             <>
               <BudgetRings lines={lines} currency={currency} selectedId={selectedId} onPick={select} show={showTable} />
+              {!showTable && (
+                <section className="card budgets-empty-card" aria-label="Budgets" data-only="phone">
+                  <NoBudgets data={data} currency={currency} onStart={() => setSetup(true)} />
+                </section>
+              )}
               <section className="card budgets-card" aria-label="Budgets" data-only="sidebar rail rail-one-column">
                 <div className="card-head">
                   <h2 className="card-title">Budgets</h2>
@@ -571,7 +576,9 @@ function NoBudgets({ data, currency, onStart }: { data: BudgetData; currency: st
       <button type="button" className="btn btn-ink press" onClick={onStart}>
         <Glyph name="plus" />
         Set budgets
-        <span className="kbd kbd-on-ink">E</span>
+        <span className="kbd kbd-on-ink" data-only="sidebar rail rail-one-column">
+          E
+        </span>
       </button>
     </div>
   );
