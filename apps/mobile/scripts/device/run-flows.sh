@@ -130,12 +130,17 @@ pinned >"$run/overlays.txt" || true
 ( while true; do pinned >>"$run/overlays.txt" 2>/dev/null; sleep 3; done ) 9>&- &
 poller=$!
 
+# The screen must stay on for the whole run; a phone that sleeps mid-run records black frames.
+adb shell svc power stayon true >/dev/null 2>&1 || true
+adb shell input keyevent KEYCODE_WAKEUP >/dev/null 2>&1 || true
+
 rc=0
 maestro test --device "$MONI_DEVICE_SERIAL" --no-reinstall-driver "${include[@]}" --exclude-tags "$(IFS=,; echo "${exclude[*]}")" \
   --format junit --output "$run/report.xml" --test-output-dir "$run/maestro" \
   -e "E2E_EMAIL=$email" -e "E2E_PASSWORD=$password" "${paths[@]}" >"$run/maestro.log" 2>&1 || rc=$?
 tail -n 20 "$run/maestro.log" >&2
 kill "$poller" 2>/dev/null || true
+adb shell svc power stayon false >/dev/null 2>&1 || true
 pinned >>"$run/overlays.txt" || true
 sort -u -o "$run/overlays.txt" "$run/overlays.txt"
 if [[ -s $run/overlays.txt ]]; then

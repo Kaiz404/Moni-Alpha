@@ -106,7 +106,11 @@ run_side() {
         "$wt/apps/mobile/scripts/device/run-areas.sh" --sha "$key" --out "$runs" "$area" || true
       fi
       # A run the doctor stopped before any flow leaves no folder; that is no result to cache.
-      [[ $side == head || ! -d $runs/$area ]] || touch "$runs/$area/.done"
+      # Cache a base area only if a flow got far enough to take a named screenshot: a run that never
+      # reached the app (locked or sleeping phone) is no base to compare against.
+      if [[ $side == base && -n $(find "$runs/$area" -name '*.png' ! -name 'step-*' -print -quit 2>/dev/null) ]]; then
+        touch "$runs/$area/.done"
+      fi
     done
     git -C "$wt" checkout -q -- apps/mobile/scripts/device
     git -C "$wt" clean -qfd -- apps/mobile/scripts/device

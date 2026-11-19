@@ -105,9 +105,9 @@ else
     floating=$(dev shell dumpsys activity activities | tr -d '\r' | awk '/^ *\* Task\{/ && /mode=pinned/ { if (match($0, /A=[0-9]+:[^ ]+/)) print substr($0, RSTART + 2, RLENGTH - 2) }' | sed 's/^[0-9]*://' | head -n 1)
     [[ -z $floating ]]
     verdict $? "floating ${floating:+window from $floating covers the screen, close it or end the call}${floating:-none}"
-    if [[ $(dev shell dumpsys window policy) == *"showing=true"* ]]; then
-      echo "note keyguard showing, unlock the phone before a lane drives an app"
-    fi
+    # A locked phone records every screenshot black and no flow can reach the app.
+    [[ $(dev shell dumpsys window policy) != *"showing=true"* ]]
+    verdict $? "lock screen $( [[ $(dev shell dumpsys window policy) == *"showing=true"* ]] && echo 'showing, unlock the phone' || echo 'off')"
     release=$(dev shell getprop ro.build.version.release | tr -d '\r')
     hyperos=$(dev shell getprop ro.mi.os.version.name | tr -d '\r')
   fi
