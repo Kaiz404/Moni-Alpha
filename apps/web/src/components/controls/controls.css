@@ -27,6 +27,8 @@
 
 .popover-row {
   box-sizing: border-box;
+  flex: none;
+  width: 100%;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -35,6 +37,7 @@
   border-radius: 14px;
   font-size: 15px;
   font-weight: 600;
+  text-align: left;
   color: inherit;
   cursor: pointer;
   white-space: nowrap;
@@ -53,6 +56,26 @@
 
 .popover-row[data-tone='over'] {
   color: var(--color-over);
+}
+
+.popover-row-text {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.popover-tick {
+  flex: none;
+  margin-left: auto;
+  display: inline-flex;
+  color: var(--color-foreground);
+}
+
+.popover-side + .popover-tick,
+.popover-row > .meta + .popover-tick,
+.popover-row > .num + .popover-tick {
+  margin-left: 4px;
 }
 
 .popover-side {

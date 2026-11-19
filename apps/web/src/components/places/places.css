@@ -1403,9 +1403,6 @@ html[data-layout='rail'] .day-row {
   padding: 0 6px;
 }
 
-.choose-row {
-  width: 100%;
-}
 
 .choose-name {
   flex: 1 1 auto;
