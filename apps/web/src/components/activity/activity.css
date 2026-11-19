@@ -1132,6 +1132,40 @@ html[data-layout='phone'] .previous-tag {
   display: none;
 }
 
+/* On the phone layout a control drawn under 44 keeps a 44 hit area. The chip row scrolls sideways, so it
+   pads its top and bottom to leave the hit areas room inside it. */
+html[data-layout='phone'] .phone-kinds {
+  margin-block: -4px;
+  padding-block: 4px;
+}
+
+html[data-layout='phone'] .pane-note {
+  min-height: 44px;
+}
+
+html[data-layout='phone'] .pg {
+  width: 44px;
+  height: 44px;
+}
+
+html[data-layout='phone'] .field-chip-date input {
+  inset: -4px 0;
+}
+
+html[data-layout='phone'] :is(.kind-chip, .pencil) {
+  position: relative;
+}
+
+html[data-layout='phone'] :is(.kind-chip, .pencil, .field-chip)::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: max(100%, 44px);
+  height: max(100%, 44px);
+  transform: translate(-50%, -50%);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .activity {
     transition: none;

@@ -868,3 +868,18 @@ html[data-layout='rail-one-column'] .customise-btn {
     transition: none;
   }
 }
+
+/* On the phone layout Pace | Daily and the check-in's buttons keep a 44 hit area. */
+html[data-layout='phone'] :is(.home .toggle button, .check-in-btn, .not-now) {
+  position: relative;
+}
+
+html[data-layout='phone'] :is(.home .toggle button, .check-in-btn, .not-now)::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: max(100%, 44px);
+  height: max(100%, 44px);
+  transform: translate(-50%, -50%);
+}

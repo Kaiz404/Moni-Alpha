@@ -1450,6 +1450,17 @@ html[data-layout='rail'] .day-row {
   opacity: 0.4;
 }
 
+/* On the phone layout the range, Spent | Visits and the pins keep a 44 hit area. */
+html[data-layout='phone'] :is(.pseg button, .map-pin-big)::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: max(100%, 44px);
+  height: max(100%, 44px);
+  transform: translate(-50%, -50%);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .place-pane {
     animation: fade-in 180ms ease both;

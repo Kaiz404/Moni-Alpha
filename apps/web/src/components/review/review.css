@@ -997,3 +997,18 @@ html[data-layout='phone'] .caught-up-actions {
     animation: fade-in 150ms ease both;
   }
 }
+
+/* On the phone layout the pencils keep a 44 hit area. */
+html[data-layout='phone'] .pen {
+  position: relative;
+}
+
+html[data-layout='phone'] .pen::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 44px;
+  height: 44px;
+  transform: translate(-50%, -50%);
+}

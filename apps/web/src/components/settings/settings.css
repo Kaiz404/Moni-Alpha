@@ -1466,6 +1466,32 @@ html[data-layout='phone'] .mn-name {
   width: 100%;
 }
 
+/* On the phone layout a control drawn under 44 keeps a 44 hit area. The name chip clips its text, so a
+   clear border makes its room instead. */
+html[data-layout='phone'] :is(.mn-search, .mn-cell) {
+  height: 44px;
+}
+
+html[data-layout='phone'] .mn-guess {
+  height: 44px;
+  border-block: 6px solid transparent;
+  background-clip: padding-box;
+}
+
+html[data-layout='phone'] :is(.set-card .seg button, .tone-option, .mn-seg button) {
+  position: relative;
+}
+
+html[data-layout='phone'] :is(.set-card .seg button, .tone-option, .mn-seg button, .switch)::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: max(100%, 44px);
+  height: max(100%, 44px);
+  transform: translate(-50%, -50%);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .set-card {
     animation-name: fade-in;
