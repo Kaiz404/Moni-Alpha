@@ -654,3 +654,10 @@
     transition: none;
   }
 }
+
+/* The fields under a docked pane's title: Activity's transaction, a Debts person. */
+.pane-fields {
+  margin: 8px 0 0;
+  display: flex;
+  flex-direction: column;
+}

@@ -1,7 +1,17 @@
 'use client';
 
 import { applyWrites } from '@repo/data';
-import { undoWrites, type BudgetRow, type PlanContext, type Planned, type RowWrites, type SyncedTable } from '@repo/core';
+import {
+  projectFinance,
+  undoWrites,
+  type BudgetRow,
+  type LedgerView,
+  type PlanContext,
+  type Planned,
+  type RawTable,
+  type RowWrites,
+  type SyncedTable,
+} from '@repo/core';
 import { showToast } from '@/components/shell/shell-store';
 import { moniStore } from '@/lib/moni-store';
 
@@ -75,4 +85,19 @@ export function budgetRowsNow(): BudgetRow[] {
   return Object.values((moniStore().categoryBudgets$.peek() ?? {}) as Record<string, BudgetRow | undefined>).filter(
     (row): row is BudgetRow => Boolean(row),
   );
+}
+
+/** The ledger a plan reads, from the store as it is this instant: for an Undo that runs after other writes. */
+export function ledgerViewNow(): LedgerView {
+  const store = moniStore();
+  const table = (rows: unknown) => ({ ...((rows ?? {}) as RawTable) });
+  return projectFinance({
+    wallets: table(store.wallets$.peek()),
+    transactions: table(store.transactions$.peek()),
+    categories: {},
+    budgets: {},
+    debts: table(store.debts$.peek()),
+    debtActivities: table(store.debtActivities$.peek()),
+    proposals: {},
+  });
 }

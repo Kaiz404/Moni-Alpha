@@ -11,6 +11,7 @@ import { homedir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chromium } from '@playwright/test';
+import { verifyBudgetDebts } from './budget-debts.mjs';
 import { driveLedgerScreens, readSeed } from './ledger-screens.mjs';
 
 const web = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
@@ -18,6 +19,9 @@ const repo = join(web, '..', '..');
 const args = process.argv.slice(2);
 const flag = (name) => args.includes(name);
 const option = (name) => (args.includes(name) ? args[args.indexOf(name) + 1] : null);
+const only = option('--only')?.split(',') ?? null;
+/** `--only ledger,keys` runs just those parts after sign-in; every part runs by default. */
+const runs = (part) => !only || only.includes(part);
 
 const RENDERS = process.env.MONI_BOARD_RENDERS ?? join(homedir(), '.local/share/moni-canvas/web-r1/renders');
 const sha = execFileSync('git', ['-C', repo, 'rev-parse', '--short', 'HEAD'], { encoding: 'utf8' }).trim();
@@ -287,6 +291,7 @@ async function approve(token, code, step) {
 
 try {
   // ---------- signed out ----------
+  if (runs('auth')) {
   // qr-start allows 10 live requests per address, so only the QR sign-in below asks the real function.
   const out = await browser.newContext({ viewport: { width: 1440, height: 900 } });
   await stubQr(out);
@@ -333,8 +338,9 @@ try {
   check('sign in at 390 has no sideways scroll', await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
   await out.close();
 
+  }
   // ---------- QR sign-in, approved the way the phone does ----------
-  if (!flag('--skip-qr')) {
+  if (!flag('--skip-qr') && runs('qr')) {
     const qr = await browser.newContext({ viewport: { width: 1440, height: 900 } });
     const qrPage = await qr.newPage();
     await qrPage.goto(`${base}/login`);
@@ -366,6 +372,7 @@ try {
   const storage = await auth.storageState();
   await auth.close();
 
+  if (runs('routes')) {
   for (const theme of ['light', 'dark']) {
     for (const size of WIDTHS) {
       const ctx = await browser.newContext({
@@ -403,10 +410,12 @@ try {
     await pair(`home-${size.width}`, 'r2/W2-Home.png', join(OUT, `home-${size.width}-light.png`));
   }
 
+  }
   // ---------- Home and Activity against the seed ----------
-  await driveLedgerScreens({ browser, storage, base, check, shot, settle, pair, boardBand, OUT, seed });
+  if (runs('ledger')) await driveLedgerScreens({ browser, storage, base, check, shot, settle, pair, boardBand, OUT, seed });
 
   // ---------- Delete your account: the public page, the flow in Settings, done ----------
+  if (runs('delete')) {
   // stubDeletion keeps every click here away from the real delete-account; live-check.mjs proves that one.
   const wideEnough = (p) => p.evaluate(() => document.documentElement.scrollWidth <= innerWidth);
   const groundOf = (p) => p.evaluate(() => getComputedStyle(document.body).backgroundColor);
@@ -512,7 +521,9 @@ try {
   const publicBand = await boardBand('r3/W2-Parts.png', 'delete-public', 4630, 480);
   await pair('delete-account-public', publicBand, join(OUT, 'delete-account-public-1440-light.png'));
 
+  }
   // ---------- reduced motion ----------
+  if (runs('motion')) {
   for (const reducedMotion of ['no-preference', 'reduce']) {
     const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, storageState: storage, reducedMotion });
     const p = await ctx.newPage();
@@ -528,7 +539,9 @@ try {
     await ctx.close();
   }
 
+  }
   // ---------- keyboard ----------
+  if (runs('keys')) {
   const keysCtx = await browser.newContext({ viewport: { width: 1440, height: 900 }, storageState: storage });
   const k = await keysCtx.newPage();
   await open(k, '/home');
@@ -600,7 +613,9 @@ try {
   check('Esc closes the account menu', !(await menu.isVisible()));
   await keysCtx.close();
 
+  }
   // ---------- crossing 700 keeps the route and the half-typed field ----------
+  if (runs('resize')) {
   const resize = await browser.newContext({ viewport: { width: 1024, height: 768 }, storageState: storage });
   const r = await resize.newPage();
   await open(r, '/activity');
@@ -627,6 +642,8 @@ try {
   await r.waitForFunction(() => document.documentElement.dataset.layout === 'rail');
   check('and back across 700 the draft is still there', (await field.inputValue()) === '12.50 lunch at Mamak');
   await resize.close();
+  }
+  if (runs('ledger')) await verifyBudgetDebts({ browser, base, storage, check, shot, pair, settle, open, repo, out: OUT, widths: WIDTHS, background: BACKGROUND, navFor: NAV_FOR });
 } catch (error) {
   check('the drive ran to the end', false, String(error?.stack ?? error));
 } finally {

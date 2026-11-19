@@ -1,0 +1,604 @@
+/* W2-Debts: the mint net position, Coming up, the people table and the person pane's forms.
+   The phone layout is the mobile Debts tab: the same cards stacked, rows with the amount on the right. */
+
+
+
+.record-btn {
+  padding: 0 12px 0 16px;
+}
+
+.ledger .btn-paper {
+  background: var(--color-card);
+  color: var(--color-foreground);
+  height: 40px;
+  padding: 0 14px;
+}
+
+.debts-empty {
+  min-height: 420px;
+  justify-content: center;
+  align-items: center;
+  margin: 0;
+  max-width: none;
+  padding: 32px 24px;
+  text-align: center;
+}
+
+.debts-empty > * {
+  max-width: 380px;
+}
+
+/* ---------- net position ---------- */
+
+.net-strip {
+  background: var(--color-block-mint);
+  color: var(--color-on-pastel);
+  min-height: 120px;
+  padding: 18px 18px 18px 26px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 16px;
+}
+
+.net-words {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.net-label {
+  font-size: 15px;
+  line-height: 20px;
+  font-weight: 600;
+  color: var(--color-on-mint);
+}
+
+.net-amount {
+  font-size: 52px;
+  line-height: 56px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+}
+
+.net-tiles {
+  display: flex;
+  gap: 16px;
+}
+
+.net-tile {
+  width: 150px;
+  height: 84px;
+  border-radius: 20px;
+  background: var(--color-card);
+  color: var(--color-foreground);
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  text-align: left;
+  transition:
+    background-color 160ms ease,
+    color 160ms ease;
+}
+
+.net-tile:hover {
+  background: var(--color-sand-light);
+}
+
+.net-tile[aria-pressed='true'] {
+  background: var(--color-primary);
+  color: var(--color-primary-foreground);
+}
+
+.net-tile-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.net-tile-amount {
+  font-size: 26px;
+  line-height: 30px;
+  font-weight: 700;
+}
+
+html[data-layout='phone'] .net-strip {
+  flex-direction: column;
+  align-items: stretch;
+  padding: 18px;
+}
+
+html[data-layout='phone'] .net-amount {
+  font-size: 40px;
+  line-height: 44px;
+}
+
+html[data-layout='phone'] .net-tile {
+  flex: 1 1 0;
+  width: auto;
+}
+
+.record-card {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 14px;
+  min-height: 66px;
+  padding: 12px 12px 12px 18px;
+  border-radius: 22px;
+  text-align: left;
+}
+
+.record-card > b {
+  flex: 1 1 auto;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.record-plus {
+  width: 42px;
+  height: 42px;
+  border-radius: 9999px;
+  background: var(--color-sand);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ---------- coming up ---------- */
+
+.coming-up {
+  background: var(--color-block-lemon);
+  color: var(--color-on-pastel);
+  padding: 14px 22px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.coming-up .caps {
+  color: var(--color-on-pastel);
+}
+
+.coming-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.coming-note {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  color: var(--color-on-lemon);
+}
+
+.coming-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-height: 52px;
+}
+
+.coming-row .row-text {
+  flex: 1 1 auto;
+}
+
+.coming-row .row-text > span {
+  color: var(--color-on-lemon);
+}
+
+.coming-row .row-text > span.tone-over {
+  color: var(--color-over);
+}
+
+.date-tile {
+  width: 48px;
+  height: 52px;
+  flex: none;
+  border-radius: 14px;
+  background: var(--color-card);
+  color: var(--color-foreground);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.date-tile .caps {
+  font-size: 11px;
+  line-height: 13px;
+  color: var(--color-ink-2);
+}
+
+.date-tile b {
+  font-size: 20px;
+  line-height: 22px;
+}
+
+.reminded {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-ink-2);
+  animation: rise-in var(--duration-control) var(--ease-control) both;
+}
+
+.coming-up .reminded {
+  color: var(--color-on-lemon);
+}
+
+[data-theme='dark'] .coming-up,
+[data-theme='dark'] .net-strip {
+  color: var(--color-on-pastel);
+}
+
+/* ---------- people ---------- */
+
+.people-card {
+  padding-top: 6px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  container: people / inline-size;
+}
+
+.people-title,
+.settled-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.settled-title {
+  font-size: 16px;
+}
+
+.ledger .filter-chip {
+  height: 32px;
+  font-size: 13px;
+  padding: 0 10px 0 12px;
+}
+
+.people-row {
+  grid-template-columns: minmax(0, 1fr) 120px 100px 100px 32px;
+  column-gap: 16px;
+  padding-right: 12px;
+}
+
+.grid-row.people-row {
+  min-height: 64px;
+}
+
+.grid-row.people-row[aria-selected='true']::before {
+  top: 10px;
+  bottom: 10px;
+}
+
+.grid-row.people-row[data-state='settled'],
+.grid-row.people-row[data-state='written_off'] {
+  opacity: 0.85;
+}
+
+.grid-total.people-row {
+  min-height: 52px;
+}
+
+.grid-head.people-row > :nth-child(2) {
+  text-align: left;
+}
+
+.due-cell {
+  min-width: 0;
+}
+
+.due-cell .due-date {
+  font-size: 14px;
+  line-height: 18px;
+}
+
+.amount-cell {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.grid-total .num {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.open-label {
+  font-size: 15px;
+}
+
+.phone-amount {
+  display: none;
+}
+
+.nobody {
+  margin: 0;
+  padding: 16px 22px;
+}
+
+.all-settled {
+  margin: 4px 18px 18px;
+}
+
+@container people (max-width: 520px) {
+  .people-row {
+    grid-template-columns: minmax(0, 1fr) 96px 96px 32px;
+  }
+
+  .people-row [data-col='due'] {
+    display: none;
+  }
+}
+
+html[data-layout='phone'] .people-row {
+  grid-template-columns: minmax(0, 1fr) auto;
+  padding: 0 16px 0 18px;
+}
+
+html[data-layout='phone'] .people-row [data-col],
+html[data-layout='phone'] .people-row .row-more {
+  display: none;
+}
+
+html[data-layout='phone'] .people-row .phone-amount {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+html[data-layout='phone'] .people-row .phone-amount .meta {
+  font-weight: 400;
+  font-size: 13px;
+}
+
+html[data-layout='phone'] .remind-name {
+  display: none;
+}
+
+html[data-layout='phone'] .grid-total.people-row {
+  display: none;
+}
+
+/* ---------- the person pane ---------- */
+
+.person-balance {
+  font-size: 40px;
+  line-height: 44px;
+}
+
+.bar-words {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--color-ink-2);
+}
+
+.pane-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 14px;
+  flex-wrap: wrap;
+}
+
+.pane-actions .btn {
+  padding: 0 10px 0 18px;
+}
+
+.pill-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.repay-form {
+  margin-top: 14px;
+  border-radius: 20px;
+  padding: 14px 16px 16px;
+  background: var(--color-background);
+  box-shadow: inset 0 0 0 1.5px var(--color-hairline);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  animation: rise-in var(--duration-control) var(--ease-control) both;
+}
+
+.repay-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 16px;
+}
+
+.repay-amount {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.amount-field {
+  flex: 1 1 auto;
+  height: 48px;
+  padding: 0 16px;
+  border-radius: 9999px;
+  background: var(--color-card);
+  box-shadow: 0 0 0 2px var(--color-foreground);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.amount-field > span {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--color-ink-2);
+}
+
+.amount-field input {
+  flex: 1 1 auto;
+  min-width: 0;
+  border: 0;
+  outline: none;
+  background: transparent;
+  font: inherit;
+  font-size: 22px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-foreground);
+}
+
+.chip[aria-pressed='true'] {
+  background: var(--color-primary);
+  color: var(--color-primary-foreground);
+}
+
+.repay-buttons {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+
+.repay-buttons .btn {
+  padding: 0 10px 0 16px;
+}
+
+.form-note {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.pane-foot-actions {
+  display: flex;
+  padding-top: 16px;
+}
+
+.pane-foot-actions .btn-out {
+  height: 40px;
+  padding: 0 14px;
+  color: var(--color-ink-2);
+}
+
+/* ---------- record a debt ---------- */
+
+.record-debt {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 100%;
+}
+
+.who-owes {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+}
+
+.who-owes button {
+  height: 38px;
+}
+
+.debt-input {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 52px;
+  padding: 0 18px;
+  border-radius: 18px;
+  background: var(--color-background);
+  box-shadow: inset 0 0 0 1.5px var(--color-hairline);
+  transition: box-shadow 120ms ease;
+}
+
+.debt-input:focus-within {
+  box-shadow: inset 0 0 0 2px var(--color-foreground);
+}
+
+.debt-input .label-text {
+  width: 64px;
+  flex: none;
+  font-size: 14px;
+  color: var(--color-muted);
+}
+
+.debt-input input {
+  flex: 1 1 auto;
+  min-width: 0;
+  border: 0;
+  outline: none;
+  background: transparent;
+  font: inherit;
+  font-size: 16px;
+  color: var(--color-foreground);
+}
+
+.debt-amount {
+  min-height: 64px;
+}
+
+.debt-amount b,
+.debt-amount input {
+  font-size: 26px;
+  font-weight: 700;
+}
+
+.debt-amount b {
+  color: var(--color-ink-2);
+}
+
+.people-chips {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: -4px;
+}
+
+.person-chip {
+  height: 34px;
+  padding: 0 12px 0 4px;
+  gap: 8px;
+  font-size: 14px;
+}
+
+.form-hint {
+  font-size: 13px;
+  line-height: 18px;
+  color: var(--color-ink-2);
+  background: var(--color-attention-fill);
+  border-radius: 12px;
+  padding: 8px 12px;
+  animation: rise-in var(--duration-control) var(--ease-control) both;
+}
+
+.remind-note {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.record-save {
+  height: 52px;
+  padding: 0 12px 0 18px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .repay-form,
+  .form-hint,
+  .reminded {
+    animation: fade-in 150ms ease both;
+  }
+}

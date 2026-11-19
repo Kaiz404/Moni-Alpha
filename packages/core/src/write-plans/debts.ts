@@ -2,7 +2,16 @@ import { minorToDecimal, type DebtActivityKind, type DebtDirection, type MinorAm
 
 import { debtBalance, debtStatus } from '../ledger';
 import type { FinanceDebt, FinanceDebtActivity } from '../read-model/types';
-import { planned, refused, type LedgerView, type PlanContext, type Planned, type RowInsert, type StoredRow } from './types';
+import {
+  planned,
+  refused,
+  type LedgerView,
+  type PlanContext,
+  type Planned,
+  type RowInsert,
+  type StoredPatch,
+  type StoredRow,
+} from './types';
 
 type CashKind = 'principal' | 'repayment';
 
@@ -217,6 +226,47 @@ export function planDebtActivityDelete(
           : []),
       ],
       patch: [{ table: 'debts', id: debt.id, patch: { status: debtStatus(remaining), updated_at: ctx.now } }],
+    },
+    null,
+  );
+}
+
+/** Changes a debt's own fields: who, when it is due, its note. Unnamed fields stay as they are. */
+export function planDebtEdit(
+  debt: FinanceDebt,
+  edit: { counterpartyName?: string; dueDate?: string | null; note?: string | null },
+  ctx: Pick<PlanContext, 'now'>,
+): Planned<null> {
+  const patch: StoredPatch<'debts'> = {};
+  if (edit.counterpartyName !== undefined) {
+    const name = edit.counterpartyName.trim();
+    if (!name) return refused('Enter a person’s name');
+    patch.counterparty_name = name;
+  }
+  if (edit.dueDate !== undefined) patch.due_date = edit.dueDate;
+  if (edit.note !== undefined) patch.note = edit.note;
+  if (!Object.keys(patch).length) return planned({}, null);
+  return planned({ patch: [{ table: 'debts', id: debt.id, patch: { ...patch, updated_at: ctx.now } }] }, null);
+}
+
+/** Removes a whole debt: the debt, every activity on it and the cash each one moved, all softly. */
+export function planDebtDelete(
+  debt: FinanceDebt,
+  view: Pick<LedgerView, 'debtActivitiesById'>,
+  ctx: Pick<PlanContext, 'now'>,
+): Planned<null> {
+  const activities = activitiesOfDebt(view, debt.id);
+  return planned(
+    {
+      softDelete: [
+        ...activities.flatMap((activity) => [
+          ...(activity.cashTransactionId
+            ? [{ table: 'transactions' as const, id: activity.cashTransactionId, at: ctx.now }]
+            : []),
+          { table: 'debt_activities' as const, id: activity.id, at: ctx.now },
+        ]),
+        { table: 'debts', id: debt.id, at: ctx.now },
+      ],
     },
     null,
   );

@@ -11,3 +11,5 @@ One file per user-facing part of the web app. Each says how a user reaches it, h
 | Delete your account, in Settings and the public page | [delete-account.md](delete-account.md) |
 | Home: spent chart, review, next 14 days, wallets, Customise | [home.md](home.md) |
 | Activity: chart, views, filters, table, bulk bar, detail pane | [activity.md](activity.md) |
+| Budget: ring, budget table, category pane, bills, calendar | [budget.md](budget.md) |
+| Debts: net position, Coming up, people, person pane, Record a debt | [debts.md](debts.md) |
