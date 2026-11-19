@@ -11,6 +11,7 @@ import {
   planWalletDelete,
   planWalletEdit,
   transactionRow,
+  waitingLine,
   walletColour,
   WALLET_TYPES,
   type FinanceWallet,
@@ -99,7 +100,6 @@ function WalletLoaded({ ledger, wallet }: { ledger: Ledger; wallet: FinanceWalle
   const pages = Math.max(1, Math.ceil(own.length / PAGE_SIZE));
   const shown = own.slice((Math.min(page, pages) - 1) * PAGE_SIZE, Math.min(page, pages) * PAGE_SIZE);
   const waiting = ledger.waiting.filter((proposal) => proposal.walletId === wallet.id && proposal.currency === wallet.currency);
-  const waitingMinor = waiting.reduce((sum, proposal) => sum + Number(proposal.amountMinor ?? 0), 0);
   const typeLabel = WALLET_TYPES.find((option) => option.value === wallet.type)?.label ?? 'Wallet';
   const alertsFrom = wallet.notificationAppLabel ?? (wallet.notificationPackage ? 'your bank app' : null);
   const deleteCount = transactions.filter((transaction) => transaction.walletId === wallet.id).length;
@@ -234,7 +234,7 @@ function WalletLoaded({ ledger, wallet }: { ledger: Ledger; wallet: FinanceWalle
                 <span className="row-title">
                   {waiting.length} {waiting.length === 1 ? 'capture' : 'captures'} to review
                 </span>
-                <span className="row-meta-text num">{formatMoney(waitingMinor, wallet.currency)} isn&apos;t in this balance yet</span>
+                <span className="row-meta-text num">{waitingLine(waiting, wallet.id, wallet.currency)}</span>
               </span>
               <Glyph name="chevron-right" size={20} />
             </Link>

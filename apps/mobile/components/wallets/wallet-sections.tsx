@@ -1,7 +1,6 @@
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { AppState, Platform, View } from 'react-native';
-import { addMinor, type MinorAmount } from '@repo/types';
 
 import { reportMissedFrom } from '@/components/capture-sources/report-missed';
 import { LinkedAppRow } from '@/components/capture-sources/linked-app-row';
@@ -35,7 +34,7 @@ import {
   setDefaultWalletId,
 } from '@/lib/wallets/default-wallet';
 import { useWalletNamesLinkedTo, type WalletAlertLink } from '@/lib/wallets/wallet-link';
-import { type FinanceProposal, type FinanceWallet, formatMoney } from '@repo/core';
+import { type FinanceProposal, type FinanceWallet, waitingLine } from '@repo/core';
 import { deviceCalendar } from '@/lib/dates/device-calendar';
 
 function DetailRow({
@@ -102,21 +101,18 @@ function DetailRow({
   );
 }
 
-/** "2 captures to review · RM109.80 isn't in this balance yet". Hidden when nothing waits. */
+/** "2 captures to review", then what they would do to this balance. Hidden when nothing waits. */
 export function ReviewStrip({
   proposals,
+  walletId,
   currency,
 }: {
   proposals: FinanceProposal[];
+  walletId: string;
   currency: string;
 }) {
   const first = proposals[0];
   if (!first) return null;
-  const waiting = addMinor(
-    ...proposals.map(
-      (proposal) => proposal.amountMinor ?? (0 as MinorAmount),
-    ),
-  );
   const count = proposals.length;
   return (
     <ListCard>
@@ -125,7 +121,7 @@ export function ReviewStrip({
         icon="bell-outline"
         tint="lilac"
         title={`${count} ${count === 1 ? 'capture' : 'captures'} to review`}
-        meta={`${formatMoney(waiting, currency)} isn't in this balance yet`}
+        meta={waitingLine(proposals, walletId, currency)}
         onPress={() =>
           router.push({
             pathname: '/review',

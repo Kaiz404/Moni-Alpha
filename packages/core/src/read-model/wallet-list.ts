@@ -1,6 +1,9 @@
 import type { MinorAmount } from '@repo/types';
 
-import type { FinanceWallet } from './types';
+import { formatMoney } from '../glossary';
+import { walletEffect } from '../ledger';
+
+import type { FinanceProposal, FinanceWallet } from './types';
 
 /** The pastel a wallet's 42 list bubble takes. */
 export type WalletTint = 'sand' | 'mint' | 'lemon' | 'lilac' | 'peach' | 'coral' | 'sky' | 'aqua';
@@ -95,4 +98,20 @@ export function walletGroups(
 /** The note under another currency's section. */
 export function keptApartLine(currency: string, mainCurrency: string): string {
   return `Kept apart. Moni never converts ${currencyName(currency).plural} or adds them to your ${currencyName(mainCurrency).plural}.`;
+}
+
+/** What a wallet's waiting captures would do to its balance once approved; a capture with no type yet moves nothing. */
+export function waitingLine(
+  proposals: readonly Pick<FinanceProposal, 'type' | 'walletId' | 'transferToWalletId' | 'amountMinor'>[],
+  walletId: string,
+  currency: string,
+): string {
+  let net = 0;
+  for (const proposal of proposals) {
+    if (!proposal.type || !proposal.walletId || proposal.amountMinor === null) continue;
+    net += Number(walletEffect({ type: proposal.type, walletId: proposal.walletId, transferToWalletId: proposal.transferToWalletId, amountMinor: proposal.amountMinor }, walletId));
+  }
+  if (net < 0) return `${formatMoney(-net, currency)} comes off this balance after review`;
+  if (net > 0) return `${formatMoney(net, currency)} goes on this balance after review`;
+  return "Not in this balance yet";
 }

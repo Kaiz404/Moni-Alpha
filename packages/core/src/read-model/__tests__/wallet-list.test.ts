@@ -2,7 +2,7 @@ import type { MinorAmount } from '@repo/types';
 import { describe, expect, it } from 'vitest';
 
 import type { FinanceWallet } from '../types';
-import { keptApartLine, walletGroups, walletListMeta } from '../wallet-list';
+import { keptApartLine, waitingLine, walletGroups, walletListMeta } from '../wallet-list';
 
 const wallet = (id: string, currency: string, type = 'bank') => ({ id, currency, type, name: id }) as FinanceWallet;
 
@@ -33,5 +33,24 @@ describe('walletListMeta', () => {
 describe('keptApartLine', () => {
   it('names both currencies in words', () => {
     expect(keptApartLine('USD', 'MYR')).toBe('Kept apart. Moni never converts dollars or adds them to your ringgit.');
+  });
+});
+
+describe('waitingLine', () => {
+  const capture = (type: 'income' | 'expense' | 'transfer' | null, amount: number | null, walletId = 'mb', transferToWalletId: string | null = null) => ({
+    type,
+    walletId,
+    transferToWalletId,
+    amountMinor: amount as MinorAmount | null,
+  });
+
+  it('takes spending off and adds income on, net', () => {
+    expect(waitingLine([capture('expense', 4520), capture('expense', 6460)], 'mb', 'MYR')).toBe('RM109.80 comes off this balance after review');
+    expect(waitingLine([capture('income', 20000), capture('expense', 4520)], 'mb', 'MYR')).toBe('RM154.80 goes on this balance after review');
+  });
+
+  it('reads a transfer by its direction and leaves a capture with no type or amount out', () => {
+    expect(waitingLine([capture('transfer', 5000, 'card', 'mb'), capture(null, 900), capture('expense', null)], 'mb', 'MYR')).toBe('RM50.00 goes on this balance after review');
+    expect(waitingLine([capture(null, 900)], 'mb', 'MYR')).toBe('Not in this balance yet');
   });
 });
