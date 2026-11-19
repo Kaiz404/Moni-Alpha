@@ -8,6 +8,7 @@ import {
   extractResultSchema,
   extractTextRequestSchema,
 } from '../ai';
+import { budgetSuggestRequestSchema, budgetSuggestResultSchema } from '../budget-suggest';
 import { chatAnalyzeRequestSchema, chatAnalyzeResultSchema } from '../chat';
 import {
   autocompleteRequestSchema,
@@ -30,6 +31,10 @@ const schemaOf: Record<string, ZodTypeAny> = {
   'extract-result-ok': extractResultSchema,
   'extract-result-skipped': extractResultSchema,
   'extract-result-unavailable': extractResultSchema,
+  'budget-suggest-request': budgetSuggestRequestSchema,
+  'budget-suggest-result-questions': budgetSuggestResultSchema,
+  'budget-suggest-result-suggestion': budgetSuggestResultSchema,
+  'budget-suggest-result-unavailable': budgetSuggestResultSchema,
   'chat-analyze-request': chatAnalyzeRequestSchema,
   'chat-analyze-result-ok': chatAnalyzeResultSchema,
   'chat-analyze-result-unavailable': chatAnalyzeResultSchema,

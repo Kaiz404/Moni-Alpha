@@ -3,7 +3,7 @@ import type { CurrencyCode, MinorAmount } from '@repo/types';
 
 import { createCalendar } from '../../calendar';
 import type { FinanceTransaction } from '../../read-model/types';
-import { lastMonthAndAverage, spendByMonth } from '../spend-by-month';
+import { lastMonthAndAverage, spendByMonth, suggestionMonths } from '../spend-by-month';
 
 const KL = createCalendar('Asia/Kuala_Lumpur');
 const MYR = 'MYR' as CurrencyCode;
@@ -78,5 +78,24 @@ describe('spendByMonth', () => {
   it('has no average before any spending', () => {
     const history = spendByMonth([], { month: '2026-10', count: 6, currency: MYR, calendar: KL });
     expect(lastMonthAndAverage(history, history.totals)).toEqual({ lastMonthMinor: 0, averageMinor: null });
+  });
+});
+
+describe('suggestionMonths', () => {
+  it('reads the three full months before this one, from the first spend on', () => {
+    const at = { month: '2026-10' as const, currency: MYR, calendar: KL };
+    expect(suggestionMonths(rows, at, 'transport')).toEqual([
+      { month: '2026-08', spentMinor: 9000 },
+      { month: '2026-09', spentMinor: 6000 },
+    ]);
+    expect(suggestionMonths(rows, at, null)).toEqual([
+      { month: '2026-08', spentMinor: 9000 },
+      { month: '2026-09', spentMinor: 9000 },
+    ]);
+    expect(suggestionMonths(rows, at, 'gifts')).toEqual([
+      { month: '2026-08', spentMinor: 0 },
+      { month: '2026-09', spentMinor: 0 },
+    ]);
+    expect(suggestionMonths([], at, null)).toEqual([]);
   });
 });

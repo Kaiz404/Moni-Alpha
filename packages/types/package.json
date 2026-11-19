@@ -10,6 +10,7 @@
     "./ai-consent": "./src/ai-consent.ts",
     "./auto-add-rule": "./src/auto-add-rule.ts",
     "./bill": "./src/bill.ts",
+    "./budget-suggest": "./src/budget-suggest.ts",
     "./captured-notification": "./src/captured-notification.ts",
     "./category": "./src/category.ts",
     "./category-budget": "./src/category-budget.ts",

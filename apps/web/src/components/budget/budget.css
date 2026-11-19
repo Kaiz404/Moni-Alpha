@@ -715,3 +715,133 @@ html[data-layout='phone'] .calendar-grid {
     animation: fade-in 150ms ease both;
   }
 }
+
+.suggest-dialog {
+  width: min(560px, 100%);
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.suggest-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.suggest-head .dialog-title {
+  flex: 1;
+  min-width: 0;
+}
+
+.suggest-pick {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.suggest-row {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 10px;
+  border: 0;
+  border-radius: 16px;
+  background: none;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.suggest-row:hover {
+  background: var(--color-sand-light);
+}
+
+.suggest-questions,
+.suggest-answer {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.suggest-question {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.suggest-question legend {
+  padding: 0;
+  margin-bottom: 10px;
+  font-size: 17px;
+  font-weight: 600;
+}
+
+.suggest-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.suggest-chips .chip {
+  height: 36px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 18px;
+  background: var(--color-sand);
+  color: var(--color-foreground);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.suggest-chips .chip[aria-pressed='true'] {
+  background: var(--color-primary);
+  color: var(--color-primary-foreground);
+}
+
+.suggest-question input,
+.suggest-amount input {
+  height: 44px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 14px;
+  background: var(--color-sand);
+  color: var(--color-foreground);
+  font: inherit;
+}
+
+.suggest-amount {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 28px;
+  font-weight: 700;
+}
+
+.suggest-amount input {
+  width: 160px;
+  font-size: 28px;
+  font-weight: 700;
+}
+
+.suggest-note {
+  margin: 0;
+  color: var(--color-ink-2);
+}
+
+.suggest-foot {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.suggest-wait {
+  margin: 0;
+}

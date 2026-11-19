@@ -18,6 +18,7 @@ internal/llm/       OpenRouter HTTP client, model constant, JSON-mode helpers
 internal/extract/   text/image/notification extraction + wallet ladder + prompts
 internal/tracing/   Langfuse traces over OpenTelemetry: one per AI request, a generation per model call (docs/AI.md#tracing)
 internal/chat/      finance Q&A from pre-aggregated snapshot
+internal/budget/    budget suggestion: questions first, then a monthly amount from history and answers
 internal/places/    Google Places (New) autocomplete + details proxy, daily cap with a per-user allowance; Essentials field mask only
 internal/cors/      CORS for the web origins in CORS_ALLOWED_ORIGINS, ahead of auth
 internal/contract/  test only: the golden fixtures of the wire contract decoded into the structs
@@ -27,7 +28,7 @@ internal/contract/  test only: the golden fixtures of the wire contract decoded 
 
 - Handlers bind with `ShouldBindJSON`; invalid body → `400 {"error": "...", "details": ...}`. All error responses use `{ error, details? }`.
 - Extraction endpoints return HTTP 200 with a discriminated `Result` (`ok | skipped | unavailable`) — model/provider failures become `unavailable`, NOT 5xx, because the mobile queue treats `unavailable` as retryable.
-- Wire structs (`internal/{extract,chat,places}/types.go`) use camelCase JSON and mirror the Zod schemas in `@repo/types`; `internal/contract` decodes the golden fixtures in `packages/types/fixtures/ai/` into them with unknown fields refused. LLM-facing schemas are snake_case (see prompts) and mapped explicitly.
+- Wire structs (`internal/{extract,chat,places,budget}/types.go`) use camelCase JSON and mirror the Zod schemas in `@repo/types`; `internal/contract` decodes the golden fixtures in `packages/types/fixtures/ai/` into them with unknown fields refused. LLM-facing schemas are snake_case (see prompts) and mapped explicitly.
 - One model for every flow, `llm.Model` in `internal/llm/models.go`. Don't inline model IDs elsewhere; rerun `pnpm bench:llm` before changing it.
 - LLM calls: `llm.CompleteJSON` (JSON mode + fence-stripping + unmarshal). Live flows keep `MaxRetryWait` ≤ 5s; background flows may wait longer on 429.
 - Wallet resolution: model picks `wallet_id` from `AVAILABLE_WALLETS` in the prompt; backend validates ids against the client list, then deterministic hint fallback, `nil` when unsure (user picks in review modal). Never invent wallet IDs.

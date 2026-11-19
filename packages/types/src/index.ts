@@ -10,6 +10,7 @@ export * from './debt';
 export * from './recurring-override';
 export * from './money';
 export * from './bill';
+export * from './budget-suggest';
 export * from './auto-add-rule';
 export * from './merchant-alias';
 export * from './captured-notification';

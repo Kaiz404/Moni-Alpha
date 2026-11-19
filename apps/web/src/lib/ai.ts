@@ -63,6 +63,7 @@ const unavailable: AiClient = {
   extractFromImage: async () => ({ status: 'unavailable', reason: 'no AI gateway' }),
   extractFromNotification: async () => ({ status: 'unavailable', reason: 'no AI gateway' }),
   analyzeFinances: async () => ({ status: 'unavailable', reason: 'no AI gateway' }),
+  suggestBudget: async () => ({ status: 'unavailable', reason: 'no AI gateway' }),
 };
 
 /** The gateway client for one use, asking the user's consent before every call. */

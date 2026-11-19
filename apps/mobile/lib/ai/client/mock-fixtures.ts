@@ -4,6 +4,8 @@
  * `isE2eBuild()` is true; any other input keeps the mock's `unavailable` result.
  */
 import type {
+  BudgetSuggestRequest,
+  BudgetSuggestResult,
   ChatAnalyzeRequest,
   ChatAnalyzeResult,
   ExtractedTransaction,
@@ -122,4 +124,27 @@ export function chatFixture(req: ChatAnalyzeRequest): ChatAnalyzeResult | null {
   const asked = normalizeSaid(req.message);
   const hit = CHAT_FIXTURES.find((fixture) => fixture.asked.test(asked));
   return hit ? { status: 'ok', reply: hit.reply, modelId: FIXTURE_MODEL } : null;
+}
+
+/** Two questions, then the history's average rounded down to RM10, or RM450 with no history. */
+export function budgetFixture(req: BudgetSuggestRequest): BudgetSuggestResult {
+  if (!req.answers.length)
+    return {
+      status: 'ok',
+      step: 'questions',
+      questions: [
+        { text: 'How often do you eat out?', choices: ['Most days', 'A few times a week', 'Rarely'] },
+        { text: 'What does a meal out usually cost?', choices: ['About RM10', 'About RM15', 'About RM25'] },
+      ],
+      modelId: FIXTURE_MODEL,
+    };
+  const spent = req.months.map((month) => month.spentMinor);
+  const average = spent.length ? spent.reduce((sum, each) => sum + each, 0) / spent.length : 0;
+  return {
+    status: 'ok',
+    step: 'suggestion',
+    amountMinor: average >= 1000 ? Math.floor(average / 1000) * 1000 : 45000,
+    note: 'Close to what you usually spend, with room for your meals out.',
+    modelId: FIXTURE_MODEL,
+  };
 }

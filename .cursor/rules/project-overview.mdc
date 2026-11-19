@@ -31,7 +31,7 @@ Run: `pnpm --filter moni dev` / `pnpm --filter backend dev` / `pnpm --filter web
 - **Mobile and web never talk to each other.** Both are Supabase clients under RLS (soft deletes only); the web has no app-data API routes. Shared needs go through Supabase (data; Edge Functions for secret-key operations), the Go backend (AI), or workspace packages (`packages/*`, source TS: logic shared, views written per platform, `docs/adr/`).
 - **Go backend is stateless**: verifies Supabase user JWTs via JWKS (ES256), calls OpenRouter, returns extractions. No database access.
 - **Supabase keys**: new system only — `sb_publishable_...` in clients, `sb_secret_...` server-side. Never use legacy anon/service_role keys.
-- **AI wire contract**: Zod schemas in `@repo/types` (`ai.ts`, `chat.ts`, `finance-snapshot.ts`, `places.ts`) ↔ the Go structs in `apps/backend/internal/{extract,chat,places}`, checked by the golden fixtures in `packages/types/fixtures/ai/` (a Vitest test and `apps/backend/internal/contract`). Change a shape on both sides and its fixture together.
+- **AI wire contract**: Zod schemas in `@repo/types` (`ai.ts`, `chat.ts`, `finance-snapshot.ts`, `places.ts`, `budget-suggest.ts`) ↔ the Go structs in `apps/backend/internal/{extract,chat,places,budget}`, checked by the golden fixtures in `packages/types/fixtures/ai/` (a Vitest test and `apps/backend/internal/contract`). Change a shape on both sides and its fixture together.
 
 ## Conventions
 

@@ -59,3 +59,20 @@ export function lastMonthAndAverage(
     averageMinor: counted.length ? (Math.round(sum / counted.length) as MinorAmount) : null,
   };
 }
+
+/**
+ * The months a budget suggestion starts from: the three full months before `month`, in its
+ * currency, leaving out months before the user's first spending. `categoryId` null reads the
+ * whole month, for the monthly total.
+ */
+export function suggestionMonths(
+  transactions: readonly FinanceTransaction[],
+  { month, currency, calendar }: { month: MonthKey; currency: CurrencyCode; calendar: Calendar },
+  categoryId: string | null,
+): { month: MonthKey; spentMinor: MinorAmount }[] {
+  const history = spendByMonth(transactions, { month: shiftMonth(month, -1), count: 3, currency, calendar });
+  const row = categoryId === null ? history.totals : (history.byCategory.get(categoryId) ?? history.totals.map(() => 0 as MinorAmount));
+  return history.months.flatMap((key, index) =>
+    history.firstMonth !== null && key >= history.firstMonth ? [{ month: key, spentMinor: row[index]! }] : [],
+  );
+}

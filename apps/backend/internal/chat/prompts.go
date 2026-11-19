@@ -36,10 +36,15 @@ var tones = map[string]string{
 
 const defaultTone = "friendly"
 
-func systemPrompt(tone string) string {
-	voice, ok := tones[tone]
-	if !ok {
-		voice = tones[defaultTone]
+// Voice is the prompt instruction for a tone. Empty or unknown means friendly, so older and newer
+// clients both keep working.
+func Voice(tone string) string {
+	if voice, ok := tones[tone]; ok {
+		return voice
 	}
-	return strings.Replace(analyzeSystemPrompt, "{{voice}}", voice, 1)
+	return tones[defaultTone]
+}
+
+func systemPrompt(tone string) string {
+	return strings.Replace(analyzeSystemPrompt, "{{voice}}", Voice(tone), 1)
 }

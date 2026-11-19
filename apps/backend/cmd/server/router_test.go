@@ -152,7 +152,7 @@ var wallets = []map[string]any{
 	{"id": "w-tng", "name": "Touch n Go", "type": "ewallet", "currency": "MYR"},
 }
 
-var v1Routes = []string{"/v1/extract/text", "/v1/extract/image", "/v1/extract/notification", "/v1/chat/analyze", "/v1/places/autocomplete", "/v1/places/details"}
+var v1Routes = []string{"/v1/extract/text", "/v1/extract/image", "/v1/extract/notification", "/v1/chat/analyze", "/v1/budget/suggest", "/v1/places/autocomplete", "/v1/places/details"}
 
 func noPlaces() *places.Handler { return places.NewHandler(nil, 0, 0, time.Now) }
 
@@ -227,7 +227,7 @@ func TestV1RoutesRejectMissingOrInvalidTokens(t *testing.T) {
 	}
 }
 
-var aiRoutes = []string{"/v1/extract/text", "/v1/extract/image", "/v1/extract/notification", "/v1/chat/analyze"}
+var aiRoutes = []string{"/v1/extract/text", "/v1/extract/image", "/v1/extract/notification", "/v1/chat/analyze", "/v1/budget/suggest"}
 
 func TestAIRoutesRefuseATokenThatTurnedAIOff(t *testing.T) {
 	s := newTestServer(t, nil)
@@ -279,6 +279,8 @@ func TestInvalidBodiesReturn400WithoutCallingProvider(t *testing.T) {
 		{"/v1/chat/analyze", `{"message":"` + strings.Repeat("a", 2001) + `","snapshot":{}}`},
 		{"/v1/chat/analyze", `{"message":"hi","snapshot":[1,2]}`},
 		{"/v1/chat/analyze", `{"message":"hi","snapshot":{},"history":[{"role":"system","content":"x"}]}`},
+		{"/v1/budget/suggest", `{}`},
+		{"/v1/budget/suggest", `{"category":null,"currency":"MYR","months":[{"month":"August","spentMinor":1}],"answers":[]}`},
 	}
 	for _, c := range cases {
 		code, body := s.post(t, c.route, c.body)
@@ -525,6 +527,34 @@ func TestChatAnalyzeUnavailableWhenProviderFails(t *testing.T) {
 	code, res := s.post(t, "/v1/chat/analyze", map[string]any{"message": "hi", "snapshot": map[string]any{}})
 	if code != http.StatusOK || res["status"] != "unavailable" {
 		t.Fatalf("got %d %v", code, res)
+	}
+}
+
+func TestBudgetSuggestAsksQuestionsThenSuggests(t *testing.T) {
+	s := newTestServer(t, nil,
+		ok(`{"questions":[{"text":"How often do you eat out?","choices":["Most days","Rarely"]}]}`),
+		ok(`{"amount":452.7,"note":"About 22 meals out at RM 15."}`),
+		llmReply{http.StatusInternalServerError, "down"},
+	)
+	body := map[string]any{"category": "Food & Dining", "currency": "MYR", "months": []any{}, "answers": []any{}}
+
+	code, res := s.post(t, "/v1/budget/suggest", body)
+	questions, _ := json.Marshal(res["questions"])
+	if code != http.StatusOK || res["step"] != "questions" ||
+		string(questions) != `[{"choices":["Most days","Rarely"],"text":"How often do you eat out?"}]` {
+		t.Fatalf("questions: got %d %v", code, res)
+	}
+
+	body["answers"] = []map[string]string{{"question": "How often do you eat out?", "answer": "Most days"}}
+	code, res = s.post(t, "/v1/budget/suggest", body)
+	if code != http.StatusOK || res["step"] != "suggestion" || res["amountMinor"] != float64(45200) ||
+		res["note"] != "About 22 meals out at RM15." || res["modelId"] != llm.Model {
+		t.Fatalf("suggestion: got %d %v", code, res)
+	}
+
+	code, res = s.post(t, "/v1/budget/suggest", body)
+	if code != http.StatusOK || res["status"] != "unavailable" {
+		t.Fatalf("provider failure: got %d %v", code, res)
 	}
 }
 

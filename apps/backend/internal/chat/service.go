@@ -61,7 +61,7 @@ func (s *Service) Analyze(ctx context.Context, req AnalyzeRequest) AnalyzeResult
 
 	return AnalyzeResult{
 		Status:  "ok",
-		Reply:   clamp(glossaryReply(reply), 2000),
+		Reply:   clamp(GlossaryReply(reply), 2000),
 		ModelID: llm.Model,
 	}
 }

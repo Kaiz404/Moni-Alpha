@@ -1,5 +1,7 @@
 import type { AiClient } from '@repo/ai';
 import type {
+  BudgetSuggestRequest,
+  BudgetSuggestResult,
   ChatAnalyzeRequest,
   ChatAnalyzeResult,
   ExtractImageRequest,
@@ -9,7 +11,13 @@ import type {
 } from '@repo/types';
 
 import { isE2eBuild } from '@/lib/app-variant';
-import { chatFixture, imageFixture, notificationFixture, textFixture } from './mock-fixtures';
+import {
+  budgetFixture,
+  chatFixture,
+  imageFixture,
+  notificationFixture,
+  textFixture,
+} from './mock-fixtures';
 
 /** What every call answers while `EXPO_PUBLIC_AI_API_URL` is unset and no e2e fixture matches. */
 export const AI_UNAVAILABLE_REASON =
@@ -68,6 +76,13 @@ export const mockAiClient: AiClient = {
       messageLength: req.message.length,
       historyLength: req.history?.length ?? 0,
     });
+    return { status: 'unavailable', reason: AI_UNAVAILABLE_REASON };
+  },
+
+  async suggestBudget(req: BudgetSuggestRequest): Promise<BudgetSuggestResult> {
+    await simulateNetwork(300);
+    if (isE2eBuild()) return budgetFixture(req);
+    console.log(TAG, 'POST /v1/budget/suggest', { answers: req.answers.length });
     return { status: 'unavailable', reason: AI_UNAVAILABLE_REASON };
   },
 };

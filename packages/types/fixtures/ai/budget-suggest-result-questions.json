@@ -1,0 +1,9 @@
+{
+  "status": "ok",
+  "step": "questions",
+  "questions": [
+    { "text": "How often do you eat out?", "choices": ["Most days", "Most weekdays", "A few times a week", "Rarely"] },
+    { "text": "What does a meal out usually cost?", "choices": ["Under RM10", "About RM15", "About RM25", "More than RM40"] }
+  ],
+  "modelId": "deepseek/deepseek-v4.1-flash"
+}

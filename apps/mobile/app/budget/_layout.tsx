@@ -14,6 +14,7 @@ export default function BudgetLayout() {
       <Stack.Screen name="list" />
       <Stack.Screen name="merchants" />
       <Stack.Screen name="spending" />
+      <Stack.Screen name="suggest" />
     </Stack>
   );
 }

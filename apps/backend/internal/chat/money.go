@@ -69,6 +69,11 @@ func formatMoney(value float64, currency string, r rounding) string {
 	return sign + currency + " " + groupThousands(digits)
 }
 
+// FormatMinor writes a minor-unit amount the glossary way, to the cent.
+func FormatMinor(minor int64, currency string) string {
+	return formatMoney(float64(minor)/100, currency, cents)
+}
+
 func groupThousands(digits string) string {
 	whole, fraction, hasFraction := strings.Cut(digits, ".")
 	var b strings.Builder
@@ -140,10 +145,10 @@ var ringgitAmount = regexp.MustCompile(
 		`|([-–−]?)\b(` + replyNumber + `) ?(?:MYR|ringgit)\b`,
 )
 
-// glossaryReply rewrites the ringgit amounts a reply still writes its own way to the glossary
+// GlossaryReply rewrites the ringgit amounts a reply still writes its own way to the glossary
 // form. A dash glued to the word before it ("RM5-RM9") is a range, not a minus. Other currencies
 // are left as written.
-func glossaryReply(reply string) string {
+func GlossaryReply(reply string) string {
 	var b strings.Builder
 	last := 0
 	for _, loc := range ringgitAmount.FindAllStringSubmatchIndex(reply, -1) {

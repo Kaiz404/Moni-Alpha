@@ -1,7 +1,10 @@
 import { AI_CONSENT_REASON } from '@repo/core';
 import {
+  budgetSuggestResultSchema,
   chatAnalyzeResultSchema,
   extractResultSchema,
+  type BudgetSuggestRequest,
+  type BudgetSuggestResult,
   type ChatAnalyzeRequest,
   type ChatAnalyzeResult,
   type ExtractImageRequest,
@@ -20,6 +23,8 @@ export interface AiClient {
   extractFromImage(req: ExtractImageRequest): Promise<ExtractResult>;
   extractFromNotification(req: ExtractNotificationRequest): Promise<ExtractResult>;
   analyzeFinances(req: ChatAnalyzeRequest): Promise<ChatAnalyzeResult>;
+  /** Moni's questions without answers, a monthly amount with them. */
+  suggestBudget(req: BudgetSuggestRequest): Promise<BudgetSuggestResult>;
 }
 
 /** A receipt the backend can read: a URL it fetches, or the JPEG inline. */
@@ -63,6 +68,7 @@ function httpAiClient({ encodeImage, ...backend }: Omit<AiClientOptions, 'consen
     extractFromNotification: (req) =>
       call(backend, '/v1/extract/notification', req, extractResultSchema),
     analyzeFinances: (req) => call(backend, '/v1/chat/analyze', req, chatAnalyzeResultSchema),
+    suggestBudget: (req) => call(backend, '/v1/budget/suggest', req, budgetSuggestResultSchema),
   };
 }
 
@@ -76,6 +82,7 @@ export function withConsent(client: AiClient, allowed: () => Promise<boolean>): 
     extractFromNotification: async (req) =>
       (await allowed()) ? client.extractFromNotification(req) : OFF,
     analyzeFinances: async (req) => ((await allowed()) ? client.analyzeFinances(req) : OFF),
+    suggestBudget: async (req) => ((await allowed()) ? client.suggestBudget(req) : OFF),
   };
 }
 

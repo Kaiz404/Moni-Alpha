@@ -1,0 +1,14 @@
+{
+  "category": "Food & Dining",
+  "currency": "MYR",
+  "months": [
+    { "month": "2026-08", "spentMinor": 52130 },
+    { "month": "2026-09", "spentMinor": 47890 },
+    { "month": "2026-10", "spentMinor": 34980 }
+  ],
+  "answers": [
+    { "question": "How often do you eat out?", "answer": "Most weekdays" },
+    { "question": "What does a meal out usually cost?", "answer": "About RM15" }
+  ],
+  "tone": "friendly"
+}

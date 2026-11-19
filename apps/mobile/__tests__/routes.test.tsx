@@ -226,6 +226,7 @@ const ROUTES: Record<string, RouteSpec> = {
   'budget/[categoryId].tsx': differ(`/budget/${FOOD}`, 'of RM450', 'No budget for Food & Dining'),
   'budget/edit.tsx': same('/budget/edit', 'Monthly total'),
   'budget/list.tsx': same('/budget/list', 'Monthly total'),
+  'budget/suggest.tsx': same('/budget/suggest', 'Suggest a budget'),
   'budget/merchants.tsx': differ(
     '/budget/merchants?month=2026-10',
     'Spent in October · 22',

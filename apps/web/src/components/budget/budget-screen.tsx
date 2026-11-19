@@ -21,7 +21,7 @@ import {
 import { updateProfilePreferences } from '@repo/data';
 import { userPreferencesSchema, type MinorAmount } from '@repo/types';
 import { useState, type ReactNode } from 'react';
-import { Cat } from '@/components/brand';
+import { AskMoniMark, Cat } from '@/components/brand';
 import { SidePane } from '@/components/ledger/side-pane';
 import { Page } from '@/components/shell/page';
 import { showToast } from '@/components/shell/shell-store';
@@ -36,6 +36,7 @@ import { moniStore } from '@/lib/moni-store';
 import { BudgetEditor, type BudgetEdit } from './budget-editor';
 import { CategoryPane } from './category-pane';
 import { SpendRing } from './spend-ring';
+import { SuggestDialog, type SuggestTarget } from './suggest-dialog';
 import { useBudget, type BudgetData } from './use-budget';
 import '@/components/ledger/ledger.css';
 import '@/components/ledger/table-pane.css';
@@ -89,6 +90,7 @@ function BudgetLoaded({ ledger }: { ledger: Ledger }) {
   const view = params.get('view') === 'calendar' ? 'calendar' : 'month';
   const [edit, setEdit] = useState<BudgetEdit | null>(null);
   const [totalDraft, setTotalDraft] = useState<string | null>(null);
+  const [suggesting, setSuggesting] = useState(false);
   const { money, table, month, current, history } = data;
   const currency = ledger.currency;
   const lines = [...table.budgeted, ...table.unbudgeted];
@@ -166,6 +168,18 @@ function BudgetLoaded({ ledger }: { ledger: Ledger }) {
         tone: 'done',
         undo: () => void saveMonthlyTotal(savedTotal),
       });
+    });
+  };
+
+  const setSuggested = (target: SuggestTarget, amountMinor: MinorAmount) => {
+    setSuggesting(false);
+    const text = `${target.kind === 'total' ? 'Monthly total' : target.name} set to ${formatMoney(amountMinor, currency, { whole: true })}`;
+    if (target.kind === 'category') {
+      writeBudgets([{ categoryId: target.id, currency, amountMinor }], text);
+      return;
+    }
+    void saveMonthlyTotal(amountMinor).then((kept) => {
+      if (kept) showToast({ text, tone: 'done', undo: () => void saveMonthlyTotal(savedTotal) });
     });
   };
 
@@ -303,6 +317,12 @@ function BudgetLoaded({ ledger }: { ledger: Ledger }) {
                         move · <span className="kbd">E</span>edit budget
                       </span>
                       {editable && (
+                        <button type="button" className="btn btn-out press suggest-btn" onClick={() => setSuggesting(true)}>
+                          <AskMoniMark size={20} id="suggest-open" />
+                          Ask Moni to suggest
+                        </button>
+                      )}
+                      {editable && (
                         <button type="button" className="btn btn-out press copy-btn" onClick={copyLastMonth}>
                           <Glyph name="content-copy" size={18} />
                           Copy {monthName(lastMonth)}&apos;s spending
@@ -370,6 +390,9 @@ function BudgetLoaded({ ledger }: { ledger: Ledger }) {
           )}
         </SidePane>
       </div>
+      {suggesting && (
+        <SuggestDialog ledger={ledger} categories={data.ledger.categories} onSet={setSuggested} onClose={() => setSuggesting(false)} />
+      )}
     </Page>
   );
 }

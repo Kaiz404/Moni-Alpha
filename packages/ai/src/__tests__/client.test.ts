@@ -163,6 +163,24 @@ describe('what the client accepts back', () => {
   });
 });
 
+describe('suggestBudget', () => {
+  it('posts to /v1/budget/suggest and reads the suggestion', async () => {
+    const { client, fetch } = clientAnswering(
+      200,
+      '{"status":"ok","step":"suggestion","amountMinor":45000,"note":"Near your usual.","modelId":"m"}',
+    );
+    await expect(
+      client.suggestBudget({
+        category: 'Food & Dining',
+        currency: 'MYR',
+        months: [{ month: '2026-09', spentMinor: 47890 }],
+        answers: [{ question: 'How often do you eat out?', answer: 'Most days' }],
+      }),
+    ).resolves.toEqual({ status: 'ok', step: 'suggestion', amountMinor: 45000, note: 'Near your usual.', modelId: 'm' });
+    expect(fetch.mock.calls[0]?.[0]).toBe('https://backend.test/v1/budget/suggest');
+  });
+});
+
 describe("a call while that use of Moni's AI is off", () => {
   it('answers unavailable for consent and never reaches the backend', async () => {
     const { client, fetch } = clientAnswering(200, '{"status":"skipped","reason":"x"}', {
@@ -180,8 +198,9 @@ describe("a call while that use of Moni's AI is off", () => {
         message: 'hi',
         snapshot: { schema: 'finance_assistant_tool_v4', generatedAt: 'g', currencies: {} },
       }),
+      client.suggestBudget({ category: null, currency: 'MYR', months: [], answers: [] }),
     ];
-    await expect(Promise.all(calls)).resolves.toEqual([off, off, off, off]);
+    await expect(Promise.all(calls)).resolves.toEqual([off, off, off, off, off]);
     expect(fetch.mock.calls.length).toBe(0);
   });
 

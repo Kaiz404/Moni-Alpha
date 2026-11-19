@@ -17,6 +17,7 @@ import { Button } from '@/components/ui/button';
 import { NotFound } from '@/components/ui/empty-tile';
 import { HeaderIconButton } from '@/components/ui/header-icon-button';
 import { IconSymbol } from '@/components/ui/icon-symbol';
+import { AskMoniButton } from '@/components/budget/ask-moni-button';
 import { InPlaceField, InPlaceGroup, type Saved } from '@/components/ui/in-place-field';
 import { ListCard } from '@/components/ui/list-card';
 import { Page, PageScroll } from '@/components/ui/page';
@@ -410,6 +411,12 @@ export default function CategoryBudgetScreen() {
                     Set a budget
                   </Text>
                 </Press>
+                <AskMoniButton
+                  testID={tid('budget', 'category', 'ask-moni')}
+                  label="Ask Moni"
+                  accessibilityLabel={`Ask Moni to suggest a budget for ${category.name}`}
+                  href={{ pathname: '/budget/suggest', params: { category: category.id } }}
+                />
               </View>
             )
           }

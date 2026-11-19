@@ -39,8 +39,8 @@ func TestGlossaryReply(t *testing.T) {
 		{"No money here, just 25 October.", "No money here, just 25 October."},
 	}
 	for _, tc := range cases {
-		if got := glossaryReply(tc.in); got != tc.want {
-			t.Errorf("glossaryReply(%q)\n got %q\nwant %q", tc.in, got, tc.want)
+		if got := GlossaryReply(tc.in); got != tc.want {
+			t.Errorf("GlossaryReply(%q)\n got %q\nwant %q", tc.in, got, tc.want)
 		}
 	}
 }

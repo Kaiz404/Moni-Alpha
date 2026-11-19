@@ -1,0 +1,64 @@
+# B1 Ask Moni to suggest a budget (#80): from Edit budgets, pick a category, answer Moni's
+# questions, then Use this amount puts the suggestion into the draft. Nothing is saved.
+# Needs Moni's AI on for chat; the e2e build's mock answers with fixed questions.
+# Run: scripts/device/run-flows.sh .maestro/flows/budget/suggest.yaml
+appId: com.anonymous.moni.e2e
+name: B1 ask Moni to suggest a budget
+tags:
+  - b1
+  - seed-full
+---
+- runFlow: ../../subflows/launch.yaml
+- extendedWaitUntil:
+    visible:
+      id: nav.tab.budget
+    timeout: 15000
+- tapOn:
+    id: nav.tab.budget
+- scrollUntilVisible:
+    element: Budgets
+    centerElement: true
+- runFlow:
+    when:
+      visible:
+        id: budget.edit-budgets
+    commands:
+      - tapOn:
+          id: budget.edit-budgets
+- runFlow:
+    when:
+      visible:
+        id: budget.set-budgets
+    commands:
+      - tapOn:
+          id: budget.set-budgets
+- tapOn:
+    id: budget.edit.ask-moni
+- assertVisible: Ask Moni
+- assertVisible: .* last month
+- takeScreenshot: b1-suggest-pick
+- tapOn:
+    id: budget\.suggest\.pick\..*
+    index: 1
+- extendedWaitUntil:
+    visible:
+      id: budget\.suggest\.answer\.0\..*
+    timeout: 15000
+- takeScreenshot: b1-suggest-questions
+- tapOn:
+    id: budget\.suggest\.answer\.0\..*
+    index: 0
+- tapOn:
+    id: budget\.suggest\.answer\.1\..*
+    index: 0
+- tapOn:
+    id: budget.suggest.next
+- extendedWaitUntil:
+    visible: Moni suggests
+    timeout: 15000
+- assertVisible: .* a month
+- takeScreenshot: b1-suggest-amount
+- tapOn:
+    id: budget.suggest.set
+- assertVisible: Edit budgets
+- takeScreenshot: b1-suggest-in-draft

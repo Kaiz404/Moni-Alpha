@@ -41,6 +41,7 @@ export const iconNames = [
   'calendar-blank',
   'calendar-blank-outline',
   'calendar-clock',
+  'calendar-month-outline',
   'calendar-remove-outline',
   'calendar-today',
   'camera',

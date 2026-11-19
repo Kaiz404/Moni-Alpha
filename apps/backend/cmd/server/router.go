@@ -5,6 +5,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/kaiz404/moni/backend/internal/auth"
+	"github.com/kaiz404/moni/backend/internal/budget"
 	"github.com/kaiz404/moni/backend/internal/chat"
 	"github.com/kaiz404/moni/backend/internal/cors"
 	"github.com/kaiz404/moni/backend/internal/extract"
@@ -36,6 +37,7 @@ var traceNames = map[string]string{
 	"/v1/extract/image":        "extract-receipt",
 	"/v1/extract/notification": "extract-notification",
 	"/v1/chat/analyze":         "chat-analyze",
+	"/v1/budget/suggest":       "budget-suggest",
 }
 
 // newRouter wires every route behind its middleware. main and the endpoint tests share it.
@@ -60,6 +62,7 @@ func newRouter(verifier *auth.Verifier, limiter, ipLimiter *auth.RateLimiter, ll
 		tracing.Middleware(traceNames, auth.UserID))
 	extract.NewHandler(extract.NewService(llmClient)).Register(v1)
 	chat.NewHandler(chat.NewService(llmClient)).Register(v1)
+	budget.NewHandler(budget.NewService(llmClient)).Register(v1)
 	// Search as you type sends a call every few keystrokes, which the AI limit would throttle.
 	placesLimiter := auth.NewRateLimiter(60, 20)
 	placesV1 := r.Group("/v1", ipLimit, verifier.Middleware(), placesLimiter.Middleware(), limitBody(placesBodyBytes))

@@ -1,8 +1,10 @@
 import type { MinorAmount } from '@repo/types';
+import { useValue } from '@legendapp/state/react';
 import { router } from 'expo-router';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { View } from 'react-native';
 
+import { AskMoniButton } from '@/components/budget/ask-moni-button';
 import { CategoryRing, RingAmount, type RingSlice } from '@/components/budget/category-ring';
 import {
   useBudgetData,
@@ -17,6 +19,7 @@ import { Press } from '@/components/ui/press';
 import { Text } from '@/components/ui/text';
 import { TintBubble } from '@/components/ui/transaction-row';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
+import { pickedSuggestion$ } from '@/lib/budget/suggestion';
 import { PLAN_LIMIT_MINOR } from '@/lib/finance/money';
 import {
   setMonthlyBudget,
@@ -68,6 +71,17 @@ export default function EditBudgetsScreen() {
   const [editing, setEditing] = useState<TestId | null>(null);
   const [typedMinor, setTypedMinor] = useState<MinorAmount | null>(null);
   const [saving, setSaving] = useState(false);
+  const picked = useValue(pickedSuggestion$);
+  useEffect(() => {
+    if (!picked) return;
+    pickedSuggestion$.set(null);
+    const amount = wholeOf(picked.amountMinor);
+    if (picked.target.kind === 'total') setTotal(amount);
+    else {
+      const { id } = picked.target;
+      setCaps((current) => ({ ...current, [id]: amount }));
+    }
+  }, [picked]);
 
   const spentByCategory = useMemo(
     () =>
@@ -243,6 +257,13 @@ export default function EditBudgetsScreen() {
               )
             }
           </InPlaceField>
+          <AskMoniButton
+            testID={tid('budget', 'edit', 'ask-moni')}
+            label="Ask Moni to suggest"
+            accessibilityLabel="Ask Moni to suggest a budget"
+            href={{ pathname: '/budget/suggest', params: { from: 'edit' } }}
+            disabled={editing !== null}
+          />
         </View>
 
         {rows.length ? (

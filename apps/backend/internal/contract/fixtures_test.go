@@ -13,6 +13,7 @@ import (
 	"testing"
 
 	"github.com/gin-gonic/gin/binding"
+	"github.com/kaiz404/moni/backend/internal/budget"
 	"github.com/kaiz404/moni/backend/internal/chat"
 	"github.com/kaiz404/moni/backend/internal/extract"
 	"github.com/kaiz404/moni/backend/internal/places"
@@ -38,6 +39,10 @@ var shapes = map[string]shape{
 	"chat-analyze-request":                   {func() any { return &chat.AnalyzeRequest{} }, false},
 	"chat-analyze-result-ok":                 {func() any { return &chat.AnalyzeResult{} }, true},
 	"chat-analyze-result-unavailable":        {func() any { return &chat.AnalyzeResult{} }, true},
+	"budget-suggest-request":                 {func() any { return &budget.Request{} }, false},
+	"budget-suggest-result-questions":        {func() any { return &budget.Result{} }, true},
+	"budget-suggest-result-suggestion":       {func() any { return &budget.Result{} }, true},
+	"budget-suggest-result-unavailable":      {func() any { return &budget.Result{} }, true},
 	"places-autocomplete-request":            {func() any { return &places.AutocompleteRequest{} }, false},
 	"places-autocomplete-result-ok":          {func() any { return &places.AutocompleteResult{} }, true},
 	"places-autocomplete-result-unavailable": {func() any { return &places.AutocompleteResult{} }, true},
