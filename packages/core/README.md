@@ -4,6 +4,7 @@ Pure domain rules the phone app and the web app share. Raw TypeScript, no build 
 
 | Module | What it answers |
 | --- | --- |
+| `ai-consent.ts` | The user's choice about Moni's AI from the `ai_consent_current` rows (`consentFromRows`), whether a use may run (`aiUseAllowed`), and what Turn on and Not now record. |
 | `calendar.ts` | `createCalendar(zone)` reads an instant as a day key, a month key or a day number in one IANA zone, and finds when a day starts. Day and month arithmetic (`addDays`, `daysBetween`, `daysInMonth`, `shiftMonth`, `addMonths`) needs no zone. |
 | `glossary.ts` | The words `docs/redesign/glossary.md` fixes: money (`RM1,116.20`, U+2212, whole ringgit for forward-looking numbers), day labels, due phrases, month names and chart ticks. Every date word takes day keys. |
 | `ledger.ts` | What a row means: whether a transaction counts as spending, as income or as cash flow, whether it is filed, and what it does to a wallet's balance; a debt's totals, its stored status, and its state on a day (open, due soon, overdue, settled, written off). |

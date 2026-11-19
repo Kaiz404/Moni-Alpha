@@ -20,7 +20,7 @@ import {
   resumeInterrupted,
   type ProcessingQueueItem,
 } from './processing-queue';
-import { AI_CONSENT_REASON, aiUseAllowed } from './consent/model';
+import { AI_CONSENT_REASON, aiUseAllowed } from '@repo/core';
 import { currentAiConsent } from './consent/state';
 import { runExtraction, type RunExtractionResult } from './run-extraction';
 import { recordCapture } from '@/lib/notifications/capture-health';

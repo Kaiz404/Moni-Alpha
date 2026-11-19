@@ -11,7 +11,7 @@ import { Page, PageScroll } from '@/components/ui/page';
 import { Text } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { startBackgroundProcessor } from '@/lib/ai/background-processor';
-import { notNow, turnOnFor, UNASKED } from '@/lib/ai/consent/model';
+import { notNow, turnOnFor, UNASKED } from '@repo/core';
 import { changeAiConsent, useAiConsent } from '@/lib/ai/consent/state';
 import { tid } from '@/lib/test-ids';
 import { showToast } from '@/lib/toast/toast-store';

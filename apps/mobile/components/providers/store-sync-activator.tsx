@@ -1,12 +1,7 @@
 import { useEffect } from 'react';
 import { observe } from '@legendapp/state';
 import { useAuth } from '@/lib/auth/auth-context';
-import { authReady$ } from '@/lib/store/auth-sync';
-import {
-  ALL_STORE_OBSERVABLES,
-  enableStoreSync,
-  wallets$,
-} from '@/lib/store';
+import { authReady$, enableStoreSync, store, wallets$ } from '@/lib/store';
 import { startFinanceProjection } from '@/lib/finance/projection';
 import { repairFinanceIntegrity } from '@/lib/finance/integrity';
 import { reconcileDebtTransactions } from '@/lib/supabase/debts';
@@ -28,7 +23,7 @@ export function StoreSyncActivator() {
     let cancelled = false;
 
     // Observe roots before enabling sync so Legend-State does not skip remote I/O.
-    const disposers = ALL_STORE_OBSERVABLES.map((obs$) =>
+    const disposers = store.all.map((obs$) =>
       observe(() => {
         obs$.get();
       }),

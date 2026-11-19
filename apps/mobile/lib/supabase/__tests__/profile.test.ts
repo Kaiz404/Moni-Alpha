@@ -21,6 +21,7 @@ jest.mock('@/lib/supabase/client', () => {
   return {
     getUserId: async () => 'user-1',
     supabase: {
+      auth: { getSession: async () => ({ data: { session: { user: { id: 'user-1' } } } }) },
       from: () => ({
         select: () => query(() => mockStored),
         update: (row: { preferences: unknown }) => {

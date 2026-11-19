@@ -10,13 +10,7 @@ import {
   readStoreSnapshot,
   storeHasPulled,
 } from '@/lib/backup/store-tables';
-import {
-  ALL_STORE_OBSERVABLES,
-  enableStoreSync,
-  transactions$,
-  wallets$,
-} from '@/lib/store';
-import { authReady$ } from '@/lib/store/auth-sync';
+import { authReady$, enableStoreSync, store, transactions$, wallets$ } from '@/lib/store';
 import { deleteTransaction } from '@/lib/supabase/transactions';
 
 /**
@@ -117,6 +111,7 @@ function mockQuery(table: string) {
 jest.mock('@/lib/supabase/client', () => ({
   getUserId: async () => 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
   supabase: {
+    auth: { getSession: async () => ({ data: { session: null } }) },
     from: (table: string) => mockQuery(table),
     channel: () => {
       const channel: any = { on: () => channel, subscribe: () => channel, unsubscribe: () => {} };
@@ -211,7 +206,7 @@ describe('restoring through the real store', () => {
   beforeAll(async () => {
     seedServer();
     mockServer.offline = true;
-    ALL_STORE_OBSERVABLES.forEach((obs$) => observe(() => obs$.get()));
+    store.all.forEach((obs$) => observe(() => obs$.get()));
     authReady$.set(true);
   });
 

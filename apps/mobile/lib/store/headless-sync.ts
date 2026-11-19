@@ -5,8 +5,7 @@
  */
 import { observe, syncState, type Observable } from '@legendapp/state';
 
-import { ALL_STORE_OBSERVABLES, enableStoreSync, whenStoreSynced } from '@/lib/store';
-import { authReady$ } from '@/lib/store/auth-sync';
+import { authReady$, enableStoreSync, store, whenStoreSynced } from '@/lib/store';
 import { supabase } from '@/lib/supabase/client';
 
 /** Bounds the wait for Supabase to accept the writes before a headless task ends. */
@@ -19,7 +18,7 @@ async function start(): Promise<boolean> {
   const { data } = await supabase.auth.getSession();
   if (!data.session?.user) return false;
   // Legend-State skips remote I/O for a root no one observes. These last as long as the process.
-  for (const obs$ of ALL_STORE_OBSERVABLES) observe(() => obs$.get());
+  for (const obs$ of store.all) observe(() => obs$.get());
   authReady$.set(true);
   await enableStoreSync();
   return true;

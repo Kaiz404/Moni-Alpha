@@ -211,7 +211,6 @@ export const iconNames = [
   'tray-arrow-down',
   'tshirt-crew',
   'undo',
-  'update',
   'upload',
   'wallet',
   'wallet-outline',

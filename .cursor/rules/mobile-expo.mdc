@@ -8,7 +8,7 @@ alwaysApply: false
 
 ## Data layer: Legend-State → Supabase (no SQLite, no Drizzle, no TanStack Query for app data)
 
-All synced data lives in Legend-State observables (`lib/store/index.ts`), persisted to MMKV and synced to Supabase via `syncedSupabase`. Never call the Supabase REST API directly for CRUD — mutate the observables.
+All synced data lives in Legend-State observables from `@repo/data`'s `createMoniStore` (paging, revive, retry, gated migrations, sign-out), which `lib/store/index.ts` mounts with the Expo client, the MMKV persist plugin and `expo-crypto`. Sync rules change in `packages/data`, never in the app. Never call the Supabase REST API directly for CRUD — mutate the observables.
 
 ```typescript
 // Read (reactive) — components use the observable hooks
@@ -23,7 +23,7 @@ wallets$[id].set({ ...wallet, name: 'Updated' });
 // Delete — soft delete only (synced tables have a `deleted` column)
 ```
 
-New synced table checklist: migration adds `created_at`/`updated_at`/`deleted` + RLS + realtime → add observable in `lib/store/index.ts` → CRUD helper in `lib/supabase/`.
+New synced table checklist: migration adds `created_at`/`updated_at`/`deleted` + RLS + realtime → `pnpm gen:db-types` → add it to `SYNCED_TABLES` and the store in `packages/data` → export it from `lib/store/index.ts` → CRUD helper in `lib/supabase/`.
 
 ## MMKV instances (lib/mmkv/)
 

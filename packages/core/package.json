@@ -5,6 +5,7 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
+    "./ai-consent": "./src/ai-consent.ts",
     "./calendar": "./src/calendar.ts",
     "./chart-range": "./src/chart-range.ts",
     "./glossary": "./src/glossary.ts",

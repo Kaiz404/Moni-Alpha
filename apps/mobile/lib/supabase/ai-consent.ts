@@ -1,15 +1,7 @@
-import { AI_NOTICE_VERSION, aiConsentRowSchema, type AiConsentScope } from '@repo/types';
+import { AI_NOTICE_VERSION, type AiConsentScope } from '@repo/types';
 
-import { consentFromRows, type AiConsent, type ConsentChange } from '@/lib/ai/consent/model';
+import type { ConsentChange } from '@repo/core';
 import { getUserId, supabase } from '@/lib/supabase/client';
-
-export async function fetchAiConsent(): Promise<AiConsent> {
-  const { data, error } = await supabase
-    .from('ai_consent_current')
-    .select('use, granted, created_at');
-  if (error) throw error;
-  return consentFromRows(aiConsentRowSchema.array().parse(data ?? []));
-}
 
 /** Appends one consent row per changed switch. The server stamps the time. */
 export async function recordAiConsent(change: ConsentChange): Promise<void> {

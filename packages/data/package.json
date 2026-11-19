@@ -1,0 +1,33 @@
+{
+  "name": "@repo/data",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@repo/core": "workspace:*",
+    "@repo/types": "workspace:*"
+  },
+  "peerDependencies": {
+    "@legendapp/state": "3.0.0-beta.47",
+    "@supabase/supabase-js": "^2.47.10",
+    "react": "19.2.3"
+  },
+  "scripts": {
+    "check-types": "tsc --noEmit",
+    "lint": "eslint --max-warnings 0 src",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@legendapp/state": "3.0.0-beta.47",
+    "@repo/eslint-config": "workspace:*",
+    "@repo/typescript-config": "workspace:*",
+    "@supabase/supabase-js": "^2.47.10",
+    "eslint": "^9.39.1",
+    "react": "19.2.3",
+    "typescript": "5.9.2",
+    "vitest": "^3.2.4"
+  }
+}
