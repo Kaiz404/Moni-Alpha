@@ -29,11 +29,6 @@ export function useLayout(): LayoutKind | null {
   return useSyncExternalStore(subscribe, current, () => null);
 }
 
-/** Whether the user folded the sidebar to the rail; false on the server. */
-export function useNavFolded(): boolean {
-  return useSyncExternalStore(subscribe, folded, () => false);
-}
-
 /**
  * Folds the sidebar to the rail or opens it again, remembered in this browser. The sidebar and the
  * rail morph into each other as one view-transition group, and the page slides with them; under
