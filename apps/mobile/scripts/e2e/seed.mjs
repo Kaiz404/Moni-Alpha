@@ -19,6 +19,12 @@ export const USERS = {
   web: { email: 'E2E_WEB_EMAIL', password: 'E2E_WEB_PASSWORD' },
 };
 
+/** web-verify slot n>0 (MONI_WEB_SLOT) gets its own user beside the web's, so runs in parallel never share rows. */
+export function slotEmail(email, slot) {
+  const n = Number(slot ?? 0);
+  return n > 0 ? email.replace('@', `-slot${n}@`) : email;
+}
+
 export class SeedError extends Error {
   constructor(message, code) {
     super(message);
@@ -81,7 +87,8 @@ export function loadEnv(env = process.env) {
 export function e2eConfig(env, user = 'phone') {
   const keys = USERS[user];
   const url = env.EXPO_PUBLIC_SUPABASE_URL?.replace(/\/+$/, '');
-  const email = env[keys.email]?.trim().toLowerCase();
+  const given = env[keys.email]?.trim().toLowerCase();
+  const email = given && user === 'web' ? slotEmail(given, env.MONI_WEB_SLOT) : given;
   if (!email || !/^e2e[^@]*@/.test(email))
     throw new SeedError(`${keys.email} must be a dedicated test user whose address starts with e2e, got ${email ? email.replace(/^(.).*@/, '$1…@') : 'nothing'}`, 2);
   const other = Object.entries(USERS).find(([name, k]) => name !== user && env[k.email]?.trim().toLowerCase() === email);

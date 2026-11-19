@@ -3,7 +3,7 @@ import { spawnSync } from 'node:child_process';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { aiConsentRows, buildProfile, dayShift, merchantKey, shiftDate } from './fixtures.mjs';
-import { SeedError, e2eConfig, parseArgs } from './seed.mjs';
+import { SeedError, e2eConfig, parseArgs, slotEmail } from './seed.mjs';
 
 const SEED = fileURLToPath(new URL('./seed.mjs', import.meta.url));
 const USER = '9d73080a-d17e-4a32-b882-ff4ac1978ecc';
@@ -144,4 +144,10 @@ test('--user web seeds the web lane\'s own user, never the phone\'s', () => {
     () => e2eConfig({ ...env, E2E_WEB_EMAIL: undefined }, 'web'),
     (error) => error instanceof SeedError && error.message === 'E2E_WEB_EMAIL must be a dedicated test user whose address starts with e2e, got nothing',
   );
+});
+
+test('a web-verify slot past the first seeds its own user', () => {
+  assert.equal(slotEmail('e2e+web@example.com', undefined), 'e2e+web@example.com');
+  assert.equal(slotEmail('e2e+web@example.com', '0'), 'e2e+web@example.com');
+  assert.equal(slotEmail('e2e+web@example.com', '2'), 'e2e+web-slot2@example.com');
 });

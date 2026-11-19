@@ -21,6 +21,7 @@ import { verifyReview } from './review.mjs';
 import { verifySettings } from './settings.mjs';
 import { verifySite } from './site.mjs';
 import { verifyFirstRun, verifyStates } from './states.mjs';
+import { slotEmail } from '../../../mobile/scripts/e2e/seed.mjs';
 
 const web = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const repo = join(web, '..', '..');
@@ -86,7 +87,7 @@ function loadEnv() {
   for (const key of ['EXPO_PUBLIC_SUPABASE_URL', 'EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY', 'SUPABASE_SECRET_KEY', 'E2E_WEB_EMAIL', 'E2E_WEB_PASSWORD']) {
     if (!env[key]) throw new Error(`${key} is missing from apps/mobile/.env.e2e`);
   }
-  return { ...env, email: env.E2E_WEB_EMAIL, password: env.E2E_WEB_PASSWORD };
+  return { ...env, email: slotEmail(env.E2E_WEB_EMAIL, process.env.MONI_WEB_SLOT), password: env.E2E_WEB_PASSWORD };
 }
 
 /** The boards' sample day, Wed 14 Oct 2026: the seed is written for it and every pinned page reads it. */
