@@ -73,7 +73,8 @@ The e2e APK (`apps/mobile/scripts/device/build-apk.sh`), the e2e seed (`apps/mob
 
 - `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY` for the dev project `yucjcjquwpwkgowzthhn`, which holds the e2e data.
 - `SUPABASE_SECRET_KEY`, for the seed only. Read it with `npx supabase projects api-keys --project-ref yucjcjquwpwkgowzthhn --reveal`. The app never receives it, because Expo inlines only `EXPO_PUBLIC_` variables.
-- `E2E_EMAIL` and `E2E_PASSWORD`, the one e2e user. The address must start with `e2e`. The first `seed.mjs --reset` creates the user.
+- `E2E_EMAIL` and `E2E_PASSWORD`, the phone's e2e user, which Maestro signs in as. The address must start with `e2e`. The first `seed.mjs --reset` creates the user.
+- `E2E_WEB_EMAIL` and `E2E_WEB_PASSWORD`, the web's e2e user. `web-verify` reseeds it at the start of every run (`seed.mjs --user web`) and signs in only as it, so a phone run's reseed never changes rows under a web check. It must start with `e2e` and differ from `E2E_EMAIL`.
 - `EXPO_PUBLIC_AI_API_URL` left empty, so the e2e app uses the mock AI client and its fixtures.
 
 ### Daily app signing key

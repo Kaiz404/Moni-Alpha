@@ -1,7 +1,6 @@
 // Budget and Debts in web-verify (`--only ledger`): every layout in both themes, the keys, reduced
 // motion, the 700 crossing with a half-typed budget and repayment, and the numbers against the e2e
 // user's rows. Every write goes to the e2e user and is undone with Ctrl Z before the part ends.
-import { execFileSync } from 'node:child_process';
 import { join } from 'node:path';
 
 /** "RM1,116.20", "−RM45.90" or "RM20 over" to a number of ringgit; NaN when there is none. */
@@ -17,9 +16,13 @@ const cents = (value) => `RM${Math.abs(value).toLocaleString('en-US', { minimumF
 const near = (a, b) => Math.abs(a - b) < 0.005;
 
 export async function verifyBudgetDebts(t) {
-  const { browser, base, storage, check, shot, pair, settle, open, repo, widths, background, navFor } = t;
-  const query = (name) =>
-    JSON.parse(execFileSync('node', [join(repo, 'apps/mobile/scripts/e2e/seed.mjs'), '--query', name], { encoding: 'utf8' }));
+  const { browser, base, storage, check, shot, pair, settle, open, widths, background, navFor, query, seed } = t;
+  /** A context on the seed's day at 3 pm in the user's zone, like Home's, so the month is the seed's month. */
+  const pinned = async (options) => {
+    const ctx = await browser.newContext({ timezoneId: seed.zone, ...options });
+    await ctx.clock.setFixedTime(seed.pin);
+    return ctx;
+  };
   /** Polls the dev project until `test` holds for a query's rows, since sync sends writes a moment later. */
   async function until(name, test, ms = 20_000) {
     const end = Date.now() + ms;
@@ -39,7 +42,7 @@ export async function verifyBudgetDebts(t) {
   // ---------- every layout, light and dark ----------
   for (const theme of ['light', 'dark']) {
     for (const size of widths) {
-      const ctx = await browser.newContext({ viewport: { width: size.width, height: size.height }, storageState: storage, colorScheme: theme });
+      const ctx = await pinned({ viewport: { width: size.width, height: size.height }, storageState: storage, colorScheme: theme });
       await ctx.addInitScript(() => localStorage.setItem('moni-theme', 'system'));
       const p = await ctx.newPage();
       for (const screen of ['budget', 'debts']) {
@@ -100,7 +103,7 @@ export async function verifyBudgetDebts(t) {
   await pair('debts-1440', 'r2/W2-Debts.png', join(t.out, 'debts-1440-light-pane.png'));
 
   // ---------- Budget: numbers against the rows, the keys, edits undone ----------
-  const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, storageState: storage });
+  const ctx = await pinned({ viewport: { width: 1440, height: 900 }, storageState: storage });
   const p = await ctx.newPage();
   const originalBudgets = budgetMap(query('budgets'));
   for (const monthStep of [0, -1]) {
@@ -234,7 +237,7 @@ export async function verifyBudgetDebts(t) {
   await ctx.close();
 
   // ---------- Debts: numbers against the rows, repay and record, undone ----------
-  const dctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, storageState: storage });
+  const dctx = await pinned({ viewport: { width: 1440, height: 900 }, storageState: storage });
   const d = await dctx.newPage();
   await open(d, '/debts');
   await ready(d);
@@ -320,7 +323,7 @@ export async function verifyBudgetDebts(t) {
 
   // ---------- reduced motion ----------
   for (const reducedMotion of ['no-preference', 'reduce']) {
-    const mctx = await browser.newContext({ viewport: { width: 820, height: 1180 }, storageState: storage, reducedMotion });
+    const mctx = await pinned({ viewport: { width: 820, height: 1180 }, storageState: storage, reducedMotion });
     const m = await mctx.newPage();
     await open(m, '/debts');
     await ready(m);
@@ -333,7 +336,7 @@ export async function verifyBudgetDebts(t) {
   }
 
   // ---------- crossing 700 keeps the half-typed budget and repayment ----------
-  const rctx = await browser.newContext({ viewport: { width: 820, height: 1180 }, storageState: storage });
+  const rctx = await pinned({ viewport: { width: 820, height: 1180 }, storageState: storage });
   const r = await rctx.newPage();
   await open(r, '/budget');
   await ready(r);

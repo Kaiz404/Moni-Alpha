@@ -24,7 +24,7 @@ function e2eEnv(): Record<string, string> | null {
       if (match?.[1] && !(match[1] in env)) env[match[1]] = (match[2] ?? '').trim().replace(/^['"]|['"]$/g, '');
     }
   }
-  const keys = ['EXPO_PUBLIC_SUPABASE_URL', 'EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY', 'E2E_EMAIL', 'E2E_PASSWORD'];
+  const keys = ['EXPO_PUBLIC_SUPABASE_URL', 'EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY', 'E2E_WEB_EMAIL', 'E2E_WEB_PASSWORD'];
   return keys.every((key) => env[key]) ? env : null;
 }
 
@@ -41,9 +41,9 @@ afterAll(async () => {
 });
 
 describe.skipIf(!supabase)('the web store against the dev project', () => {
-  it('pulls the e2e user’s wallets', { timeout: 30_000 }, async () => {
+  it('pulls the web e2e user’s wallets', { timeout: 30_000 }, async () => {
     const client = supabase!;
-    const { error } = await client.auth.signInWithPassword({ email: env!.E2E_EMAIL!, password: env!.E2E_PASSWORD! });
+    const { error } = await client.auth.signInWithPassword({ email: env!.E2E_WEB_EMAIL!, password: env!.E2E_WEB_PASSWORD! });
     expect(error).toBeNull();
     const { data: server } = await client.from('wallets').select('id').eq('deleted', false);
 
