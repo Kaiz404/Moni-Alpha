@@ -325,13 +325,13 @@ export async function verifyChat(t) {
       });
       await r.setViewportSize({ width: 390, height: 844 });
       await r.waitForFunction(() => document.documentElement.dataset.layout === 'phone');
+      await settle(r);
       const chatBox = await r.locator('aside[data-pane="chat"]').boundingBox();
       check(
         'crossing 700 keeps the thread and the half-typed message in the same box, now the pushed chat page',
         (await box(r).inputValue()) === 'and Starbu' && (await box(r).getAttribute('data-marker')) === 'kept' && (await r.locator('.draft-card').count()) === 1 && chatBox?.x === 0 && chatBox?.width === 390,
         chatBox,
       );
-      await settle(r);
       await shot(r, 'chat-390-after-resize');
       await r.setViewportSize({ width: 1024, height: 768 });
       await r.waitForFunction(() => document.documentElement.dataset.layout === 'rail');
