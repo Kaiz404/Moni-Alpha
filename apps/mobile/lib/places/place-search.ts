@@ -1,4 +1,5 @@
-import type { PlacePrediction, PlacesClient } from './types';
+import type { PlacesClient } from '@repo/ai';
+import type { PlacePrediction } from '@repo/types';
 
 /** What Google search shows for the current query. */
 export type GoogleSearch =

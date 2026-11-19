@@ -16,7 +16,7 @@ All `/v1` routes require `Authorization: Bearer <supabase-user-jwt>`.
 | POST   | `/v1/places/autocomplete`  | Shop search suggestions in Malaysia              | Google Places Autocomplete (New) |
 | POST   | `/v1/places/details`       | Coordinates and address of a picked place        | Google Place Details (New), Essentials |
 
-Extraction responses are a discriminated union: `{ status: "ok", extraction }`, `{ status: "skipped", reason }`, or `{ status: "unavailable", reason }`. Chat analyze returns `{ status: "ok", reply, modelId }` or `{ status: "unavailable", reason }`. Errors use `{ error, details? }`. The wire contract mirrors `apps/mobile/lib/ai/client/types.ts`.
+Extraction responses are a discriminated union: `{ status: "ok", extraction }`, `{ status: "skipped", reason }`, or `{ status: "unavailable", reason }`. Chat analyze returns `{ status: "ok", reply, modelId }` or `{ status: "unavailable", reason }`. Errors use `{ error, details? }`. The wire contract is the Zod schemas in `@repo/types`; `internal/contract` decodes the golden fixtures in `packages/types/fixtures/ai/` into these structs with unknown fields refused, so a field either side lacks fails `go test`. `package.json` lists `@repo/types` so Turborepo reruns the Go tests when a fixture changes.
 
 ### Places
 

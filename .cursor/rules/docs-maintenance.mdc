@@ -25,7 +25,7 @@ Docs are lean and single-source-of-truth. When a change affects any area below, 
 
 Also keep in sync:
 
-- AI wire contract: `apps/mobile/lib/ai/client/types.ts` ↔ `apps/backend/internal/extract/types.go` (manual mirror — changing one requires changing the other and noting it in `docs/AI.md`)
+- AI wire contract: `@repo/types` schemas ↔ `apps/backend/internal/{extract,chat,places}` structs, checked by the golden fixtures in `packages/types/fixtures/ai/` (changing one side means changing the other and the fixture, and noting it in `docs/AI.md`)
 - New/changed shared shapes → `packages/types` Zod schemas first, then consumers
 - If a cursor rule in `.cursor/rules/` states something this change makes false, fix the rule too
 

@@ -1,19 +1,20 @@
 /**
  * Deterministic finance metrics snapshot for chat analysis.
  */
-import {
-  buildBudgetCoachSnapshot,
-  type BudgetCoachToolSnapshot,
-  type BudgetRow,
-} from '../insights/budget-coach-metrics';
-import {
-  buildInsightMetricSnapshot,
-  type InsightMetricSnapshot,
-  type TxForMetrics,
-} from '../insights/insight-metrics';
+import { buildBudgetCoachSnapshot, type BudgetRow } from '../insights/budget-coach-metrics';
+import { buildInsightMetricSnapshot, type TxForMetrics } from '../insights/insight-metrics';
 import { countsAsSpending } from '@repo/core';
-import { addMinor, minorToNumber, type MinorAmount } from '@repo/types';
-import type { FinanceFacts } from '../facts';
+import {
+  addMinor,
+  minorToNumber,
+  type CalendarMonthTrendSnapshot,
+  type FinanceAssistantCurrencySnapshot,
+  type FinanceAssistantToolSnapshot,
+  type FinanceFacts,
+  type MinorAmount,
+  type PendingProposalsSnapshot,
+  type SpendingStorySnapshot,
+} from '@repo/types';
 
 export type { BudgetRow, TxForMetrics };
 
@@ -23,59 +24,11 @@ export type ProposalForMetrics = {
   type: 'income' | 'expense' | 'transfer';
 };
 
-/** Logged but not yet reviewed, so absent from every other total. */
-export type PendingProposalsSnapshot = {
-  count: number;
-  expenseTotal: number;
-  incomeTotal: number;
-};
-
 /** Average daily spend is too noisy to compare before this day of the month. */
 export const PACE_MIN_DAY_OF_MONTH = 7;
 
 /** Above this share of month-to-date spend, one bill (rent) would read as a fast daily pace. */
 export const PACE_MAX_SINGLE_EXPENSE_SHARE = 0.5;
-
-export type CalendarMonthTrendSnapshot = {
-  currencyHint: string;
-  currentMonthKey: string;
-  previousMonthKey: string;
-  expenseCurrentMonthToDate: number;
-  expensePreviousCalendarMonth: number;
-  dayOfMonthNow: number;
-  daysInCurrentMonth: number;
-  avgDailyExpenseCurrentMonth: number;
-  avgDailyExpensePreviousMonth: number;
-  /** Average daily spend so far vs last month's. Not a forecast; null before day 7 or when one bill dominates. */
-  dailyPaceVsPreviousMonthPct: number | null;
-};
-
-export type SpendingStorySnapshot = {
-  currencyHint: string;
-  periodLabel: string;
-  topCategories: { name: string; amount: number; sharePct: number }[];
-  topMerchants: { name: string; amount: number; sharePct: number }[];
-  categoryConcentration: number;
-  expenseTransactionCount: number;
-};
-
-export type FinanceAssistantCurrencySnapshot = {
-  generatedAt: string;
-  rolling30: InsightMetricSnapshot;
-  calendarMonth: CalendarMonthTrendSnapshot;
-  budgetCoach: BudgetCoachToolSnapshot;
-  spendingStory: SpendingStorySnapshot;
-  pendingProposals: PendingProposalsSnapshot;
-  /** Balances, recurring series, payday and forecast; absent when the caller has no ledger facts. */
-  facts?: FinanceFacts;
-};
-
-/** Chat payload: every metric is scoped to exactly one currency. */
-export type FinanceAssistantToolSnapshot = {
-  schema: 'finance_assistant_tool_v4';
-  generatedAt: string;
-  currencies: Record<string, FinanceAssistantCurrencySnapshot>;
-};
 
 function sumExpenseInRange(txs: TxForMetrics[], startMs: number, endMs: number): MinorAmount {
   let s = 0 as MinorAmount;

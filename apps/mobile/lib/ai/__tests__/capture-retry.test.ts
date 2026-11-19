@@ -1,6 +1,6 @@
 import type { Observable } from '@legendapp/state';
 
-import type { ExtractResult } from '@/lib/ai/client';
+import type { ExtractResult } from '@repo/types';
 import type { NotificationQueueItem } from '../processing-queue';
 
 const HOUR = 60 * 60_000;

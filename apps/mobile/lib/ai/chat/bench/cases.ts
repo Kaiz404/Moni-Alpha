@@ -4,7 +4,7 @@
  * snapshot cannot answer. `reference` is a reply `scoreReply` must accept; a live model's reply
  * would be scored the same way.
  */
-import type { FinanceAssistantToolSnapshot } from '@/lib/ai/snapshot/finance-metrics';
+import type { FinanceAssistantToolSnapshot } from '@repo/types';
 import { buildBenchSnapshot, type BenchFixture } from './fixture';
 import { checkGrounding, citedNumbers, matches } from './grounding';
 

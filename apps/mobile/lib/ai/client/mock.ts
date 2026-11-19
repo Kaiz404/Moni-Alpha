@@ -1,15 +1,19 @@
-import { isE2eBuild } from '@/lib/app-variant';
-import { AI_UNAVAILABLE_REASON } from './config';
-import { chatFixture, imageFixture, notificationFixture, textFixture } from './mock-fixtures';
+import type { AiClient } from '@repo/ai';
 import type {
-  AiClient,
   ChatAnalyzeRequest,
   ChatAnalyzeResult,
   ExtractImageRequest,
   ExtractNotificationRequest,
   ExtractResult,
   ExtractTextRequest,
-} from './types';
+} from '@repo/types';
+
+import { isE2eBuild } from '@/lib/app-variant';
+import { chatFixture, imageFixture, notificationFixture, textFixture } from './mock-fixtures';
+
+/** What every call answers while `EXPO_PUBLIC_AI_API_URL` is unset and no e2e fixture matches. */
+export const AI_UNAVAILABLE_REASON =
+  'AI backend is not available yet. Inference will run on a dedicated Go service.';
 
 const TAG = '[AiClient/mock]';
 

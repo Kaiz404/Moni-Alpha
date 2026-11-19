@@ -1,6 +1,6 @@
 import type { AiUse } from '@repo/types';
 import { createMMKV } from 'react-native-mmkv';
-import type { RawNotification } from './notification-types';
+import type { RawNotification } from '@repo/types';
 import type { LocationSnapshot } from '@/lib/location/location-snapshot';
 import { markCaptureStatus } from '@/lib/notifications/capture-status';
 

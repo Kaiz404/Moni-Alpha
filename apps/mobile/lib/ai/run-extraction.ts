@@ -23,7 +23,7 @@ import { classifyMovement, isTrackedMovement } from '@/lib/ai/money-movement';
 import { matchRoutine } from '@/lib/ai/routine';
 import { listAutoAddRules } from '@/lib/supabase/auto-add-rules';
 import { getUserId } from '@/lib/supabase/client';
-import { getAiClient, type AiWalletContext, type ExtractResult } from '@/lib/ai/client';
+import { getAiClient } from '@/lib/ai/client';
 import { aiUseOf, type ProcessingQueueItem } from '@/lib/ai/processing-queue';
 import { extractDateContext, resolveOccurredAt } from '@/lib/ai/occurred-at';
 import { saveProposalLocationSnapshot } from '@/lib/ai/proposal-location-cache';
@@ -39,7 +39,7 @@ import {
   enrichNotificationPackage,
 } from '@/lib/notifications/notification-package';
 import { resolveNotificationCandidates } from '@/lib/notifications/notification-routing';
-import type { RawNotification } from '@/lib/ai/notification-types';
+import type { AiWalletContext, ExtractResult, RawNotification } from '@repo/types';
 import { getDefaultWalletId } from '@/lib/wallets/default-wallet';
 import { alertKey, captureAlert } from '@/lib/transactions/alert';
 import { FALLBACK_CURRENCY, finalizeProposalWallet } from '@/lib/wallets/proposal-wallet';

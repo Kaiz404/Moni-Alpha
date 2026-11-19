@@ -7,7 +7,7 @@
  *   one confirmed bank balance.
  * - gig: weekly ride-hailing payouts that swing widely and no regular payday.
  */
-import { decimalToMinor } from '@repo/types';
+import { decimalToMinor, type FinanceAssistantToolSnapshot } from '@repo/types';
 import type { FactsTransaction } from '@repo/core';
 import {
   buildFinanceFactsByCurrency,
@@ -17,7 +17,6 @@ import {
 import {
   buildFinanceAssistantToolSnapshotByCurrency,
   type BudgetRow,
-  type FinanceAssistantToolSnapshot,
   type ProposalForMetrics,
 } from '@/lib/ai/snapshot/finance-metrics';
 

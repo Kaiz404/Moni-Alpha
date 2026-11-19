@@ -11,7 +11,7 @@ Input (chat text / receipt photo / notification / + chooser scan or voice)
   → MMKV processing queue                 apps/mobile/lib/ai/processing-queue.ts
   → background processor (Android FG svc) apps/mobile/lib/ai/background-processor.ts
   → run-extraction                        apps/mobile/lib/ai/run-extraction.ts
-  → AiClient                              apps/mobile/lib/ai/client/
+  → AiClient                              @repo/ai (createAiClient; the phone's adapters in apps/mobile/lib/ai/client/)
   → Go backend                            apps/backend (Gin, stateless)
   → OpenRouter
   → routine detection                     apps/mobile/lib/ai/routine.ts
@@ -104,7 +104,7 @@ Chat answers balance, payday, subscription and affordability questions from fact
 
 ## Wire contract
 
-Defined in `apps/mobile/lib/ai/client/types.ts`. Extraction structs mirror `apps/backend/internal/extract/types.go`; chat analyze mirrors `apps/backend/internal/chat/types.go`. **Keep these in sync manually.**
+Defined as Zod schemas in `@repo/types`: `ai.ts` (extraction), `chat.ts` with `finance-snapshot.ts` (chat analyze) and `places.ts`. The Go structs in `apps/backend/internal/{extract,chat,places}/types.go` mirror them, **checked by the golden fixtures**: one JSON file per request and response shape in `packages/types/fixtures/ai/`, which `@repo/types` parses with Zod (no key dropped) and `apps/backend/internal/contract` decodes into the Go structs with unknown fields refused, then runs the handler's binding rules on a request and re-encodes a response to the same JSON. A field one side lacks fails a test. Change a shape on both sides and its fixture together. `@repo/ai` parses every response at the network boundary; a body that does not parse is `unavailable`, and keys a newer backend adds are dropped.
 
 Every extract endpoint returns:
 
@@ -153,7 +153,7 @@ A receipt's `merchant` is the Shop or note line, the shop's everyday name and up
 
 `type` is `income` | `expense` | `transfer`. Transfers use `walletId` as the source wallet and `transferToWalletId` as the destination (either may be `null` for user completion in the review UI). Receipt and notification extraction remain income/expense only on the wire (the client reads reloads and card payments itself, with no wire change); **text** extraction detects transfers (e.g. "move 500 from Maybank to savings").
 
-Auth: `Authorization: Bearer <supabase-user-jwt>`, verified via JWKS (ES256). The extract and chat routes refuse a token whose `ai_consent` claim is `false` with 403 and `details.reason: "consent"` (see [Consent](#consent)). Errors: `{ error, details? }`. Until the JWKS has loaded, every authenticated request gets a 503 with `Retry-After: 30` and `details.retryAfterSeconds`; no request passes auth without verified keys. The client treats any non-2xx or network failure as `unavailable`.
+Auth: `Authorization: Bearer <supabase-user-jwt>`, verified via JWKS (ES256). The extract and chat routes refuse a token whose `ai_consent` claim is `false` with 403 and `details.reason: "consent"` (see [Consent](#consent)). Errors: `{ error, details? }`. Until the JWKS has loaded, every authenticated request gets a 503 with `Retry-After: 30` and `details.retryAfterSeconds`; no request passes auth without verified keys. The client treats any non-2xx or network failure as `unavailable`. The gateway answers CORS only for the browser origins in `CORS_ALLOWED_ORIGINS` (the web app); the phone sends no `Origin`.
 
 ## Consent
 
@@ -235,7 +235,7 @@ Findings:
 - **Text transfer patterns:** deposits ("deposited cash to bank"), withdrawals, top-ups, and explicit "from X to Y" moves are transfers between wallets in `AVAILABLE_WALLETS` — not income. The model uses wallet names/types to infer direction (e.g. cash → bank for deposits).
 - **Notification rule:** each wallet may link any one launchable Android app (`notification_package` on `wallets`). Notifications from unlinked apps are captured for debug but not queued. Candidate wallets are narrowed by package before extraction; ambiguous same-app wallets may create proposals with `walletId: null` for review (`run-extraction.ts`).
 - **Notification prefilter stays on-device** (`apps/mobile/lib/notifications/notification-filter.core.js`): requires a money-amount signal AND a transfer signal before an LLM ever sees it. Test suite: `pnpm --filter moni test:notification-detection`.
-- **Receipt images:** Android ML Kit document scanner (`modules/moni-document-scanner`) → normalized ≤1024px JPEG (`lib/receipts/normalize-scan.ts`). `lib/ai/client/image-payload.ts` base64-encodes (defensive downscale fallback) or sends the Storage URL if already uploaded. User cancel / empty scan never reaches the queue. Backend extracts amount, the Shop or note line, the item list, a catalogue category and the item count only; mobile assigns the default wallet and its currency.
+- **Receipt images:** Android ML Kit document scanner (`modules/moni-document-scanner`) → normalized ≤1024px JPEG (`lib/receipts/normalize-scan.ts`). `lib/ai/client/image-payload.ts` (the phone's `encodeImage` for `@repo/ai`) base64-encodes (defensive downscale fallback) or sends the Storage URL if already uploaded. User cancel / empty scan never reaches the queue. Backend extracts amount, the Shop or note line, the item list, a catalogue category and the item count only; mobile assigns the default wallet and its currency.
 
 ## Chat routing (on-device)
 

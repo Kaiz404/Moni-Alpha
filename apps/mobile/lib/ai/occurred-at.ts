@@ -1,4 +1,4 @@
-import type { ExtractDateContext } from '@/lib/ai/client/types';
+import type { ExtractDateContext } from '@repo/types';
 
 const DAY_MS = 86400000;
 export const MAX_BACKDATE_DAYS = 90;

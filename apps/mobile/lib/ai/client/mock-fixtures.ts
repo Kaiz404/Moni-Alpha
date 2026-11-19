@@ -11,7 +11,7 @@ import type {
   ExtractNotificationRequest,
   ExtractResult,
   ExtractTextRequest,
-} from './types';
+} from '@repo/types';
 
 const FIXTURE_MODEL = 'e2e-fixture';
 

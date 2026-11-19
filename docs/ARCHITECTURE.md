@@ -33,7 +33,8 @@ flowchart LR
 - **The Go backend is stateless.** It verifies the caller's Supabase JWT against the project JWKS (ES256), calls OpenRouter, and returns extraction results. It never touches the database — the mobile client inserts `proposed_transactions` rows itself.
 - **The Go backend also proxies Google Places (New)** shop search, so the Places key never ships in the app. It returns place IDs and coordinates and stores nothing.
 - **AI writes to the ledger only for routine notifications and for alerts that name a transfer without doubt.** An extraction becomes a `proposed_transactions` row that the user approves, marks Not mine, or saves for Later in the Review deck or from its Android notification unless it is a bank notification matching the user's own recent, consistently categorized history; those are added directly with `metadata.ai_suggested = true`. A notification that completes an own-wallet transfer pair (`lib/ai/duplicates.ts`) is combined with its other half into one transfer automatically. Manual inputs (text, voice, receipts) always go to review. Learning is the transaction history itself; there is no separate model or table.
-- **Shared types via `@repo/types`.** Zod schemas are the single source of truth; TS types are inferred. The Go backend mirrors the wire contract from `apps/mobile/lib/ai/client/types.ts` (kept in sync by convention — see `docs/AI.md`).
+- **Shared types via `@repo/types`.** Zod schemas are the single source of truth; TS types are inferred. The AI wire contract is Zod schemas there too; the Go structs mirror it, and golden fixtures in `packages/types/fixtures/ai/` that both sides decode keep the two in step (see `docs/AI.md`).
+- **One AI client for both apps.** `@repo/ai`'s `createAiClient` takes the gateway URL, a token getter, an image encoder and a consent check, and never throws. The phone passes its Expo pieces; the web passes its own and calls the gateway from the browser, which allows only the origins in `CORS_ALLOWED_ORIGINS`.
 
 ## AI data flow
 
@@ -86,6 +87,7 @@ apps/web/         Next.js 16 web app — desktop and phone layouts in one app (d
 packages/types/   @repo/types — Zod schemas + inferred TS types
 packages/core/    @repo/core — pure domain rules both apps share (calendar, glossary, ledger rules, money month, finance read model, AI consent)
 packages/data/    @repo/data — the synced Legend-State store and Supabase row gateway both apps mount
+packages/ai/      @repo/ai — the Go AI gateway client (extraction, chat, places) both apps create
 supabase/         Migrations, config.toml, storage policies
 docs/             This documentation set
 ```

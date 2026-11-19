@@ -4,7 +4,7 @@ import { getRecordValues } from '@/lib/store/helpers';
 import { setPlaceCoords, type PlaceCoordsUpdate } from '@/lib/supabase/transactions';
 
 import { getPlacesClient } from './client';
-import type { DetailsResult } from './types';
+import type { DetailsResult } from '@repo/types';
 import { deviceCalendar } from '@/lib/dates/device-calendar';
 
 const DAY_MS = 86_400_000;

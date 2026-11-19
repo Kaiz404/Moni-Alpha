@@ -57,7 +57,7 @@ import { springs } from '@repo/design';
 import { getPlacesClient } from '@/lib/places/client';
 import { OWN_COORDS, type SavedPlace } from '@/lib/places/coords';
 import { createGoogleSearch, GOOGLE_MIN_CHARS, type GoogleSearch } from '@/lib/places/place-search';
-import type { PlacePrediction } from '@/lib/places/types';
+import type { PlacePrediction } from '@repo/types';
 import type { SheetRequestOf } from '@/lib/sheet/sheet-store';
 import { tid } from '@/lib/test-ids';
 import { resolveTransactionIcon } from '@/lib/transactions/icon';

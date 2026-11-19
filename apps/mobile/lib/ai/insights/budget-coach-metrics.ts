@@ -1,6 +1,13 @@
 /** Deterministic calendar-month budget metrics. Amounts become decimals only in the AI wire snapshot. */
 import { countsAsSpending } from '@repo/core';
-import { addMinor, minorToNumber, subtractMinor, type MinorAmount } from '@repo/types';
+import {
+  addMinor,
+  minorToNumber,
+  subtractMinor,
+  type BudgetCategoryMetric,
+  type BudgetCoachToolSnapshot,
+  type MinorAmount,
+} from '@repo/types';
 import type { TxForMetrics } from './insight-metrics';
 
 export type BudgetRow = {
@@ -33,29 +40,6 @@ function inCalendarMonth(isoDate: string, year: number, monthIndex: number): boo
   const date = new Date(isoDate);
   return date.getFullYear() === year && date.getMonth() === monthIndex;
 }
-
-export type BudgetCategoryMetric = {
-  categoryId: string;
-  categoryName: string;
-  currency: string;
-  budgetAmount: number;
-  spentTotal: number;
-  pctOfBudget: number | null;
-  remaining: number;
-  txCount: number;
-  spendDiningOutLike: number;
-  spendGroceryLike: number;
-  spendOther: number;
-  diningOutSharePct: number | null;
-  topMerchants: { name: string; amount: number }[];
-};
-export type BudgetCoachToolSnapshot = {
-  schema: 'budget_coach_tool_v1';
-  monthKey: string;
-  currencyHint: string;
-  generatedAt: string;
-  categories: BudgetCategoryMetric[];
-};
 
 type CategoryTotals = {
   total: MinorAmount;

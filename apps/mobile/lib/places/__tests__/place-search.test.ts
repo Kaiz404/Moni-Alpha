@@ -1,5 +1,6 @@
 import { createGoogleSearch, type GoogleSearch } from '@/lib/places/place-search';
-import type { AutocompleteRequest, AutocompleteResult, PlacesClient } from '@/lib/places/types';
+import type { PlacesClient } from '@repo/ai';
+import type { AutocompleteRequest, AutocompleteResult } from '@repo/types';
 
 const BIAS = { latitude: 3.13, longitude: 101.671 };
 

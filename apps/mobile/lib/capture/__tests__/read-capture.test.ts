@@ -1,6 +1,6 @@
 import type { CurrencyCode, MinorAmount } from '@repo/types';
 
-import type { ExtractedTransaction } from '@/lib/ai/client/types';
+import type { ExtractedTransaction } from '@repo/types';
 import {
   draftFromExtraction,
   type ReadContext,

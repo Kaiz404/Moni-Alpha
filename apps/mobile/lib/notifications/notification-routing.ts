@@ -1,4 +1,4 @@
-import type { AiWalletContext } from '@/lib/ai/client/types';
+import type { AiWalletContext } from '@repo/types';
 import { curatedPackagesEquivalent } from '@/lib/notifications/notification-package-aliases';
 
 export type WalletNotificationLink = {
