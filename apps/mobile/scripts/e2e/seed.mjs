@@ -116,11 +116,17 @@ async function findUser(request, email) {
 }
 
 // Creates the user with a confirmed email, or resets its password to the one in .env.e2e,
-// so the Maestro sign-in subflow always has working credentials.
+// so the Maestro sign-in subflow always has working credentials. A password that already signs in
+// is left alone: setting it ends every session the user has, and a drive still signed in would
+// find its session gone at the next token refresh.
 async function ensureUserWithPassword(request, { email, password }) {
   const existing = await findUser(request, email);
   if (existing) {
-    await request(`/auth/v1/admin/users/${existing.id}`, { method: 'PUT', body: { password, email_confirm: true } });
+    const signsIn = await request('/auth/v1/token?grant_type=password', { method: 'POST', body: { email, password } }).then(
+      () => true,
+      () => false,
+    );
+    if (!signsIn) await request(`/auth/v1/admin/users/${existing.id}`, { method: 'PUT', body: { password, email_confirm: true } });
     return { id: existing.id, created: false };
   }
   const { json } = await request('/auth/v1/admin/users', {
