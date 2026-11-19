@@ -33,6 +33,8 @@ export const SITE_FACTS = {
   legalEntity: confirm('legal entity'),
   /** The Play Store listing, https://play.google.com/store/apps/details?id=<package>; the package is still a placeholder. */
   googlePlayUrl: confirm('Google Play link'),
+  /** The public status page the 404, 500 and maintenance pages link to as Moni status. */
+  statusPage: confirm('Moni status page'),
   /** The legal entity's postal address, for the privacy policy's contact section. */
   postalAddress: confirm('postal address'),
   /** The AI providers' retention terms, as OpenRouter's zero-data-retention routing promises them. */

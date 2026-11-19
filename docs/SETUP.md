@@ -89,6 +89,7 @@ NEXT_PUBLIC_SUPABASE_URL=https://<project-ref>.supabase.co
 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_...
 NEXT_PUBLIC_MONI_APP_SCHEME=moni   # what the sign-in QR opens; moni-e2e for the Moni E2E app
 NEXT_PUBLIC_AI_API_URL=            # the Go AI gateway; unset, the web has no AI
+MONI_MAINTENANCE_UNTIL=            # an ISO time while an update runs: every page but the legal ones shows the maintenance page
 ```
 
 The web app holds no secret key. CI's web build reads the `EXPO_PUBLIC_SUPABASE_*` repository variables as its `NEXT_PUBLIC_*` values.

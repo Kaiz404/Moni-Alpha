@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { isPublicPath, isSignedOutOnly, safeNextPath } from '../routes';
+import { isPublicPath, isSignedOutOnly, safeNextPath, showsMaintenance } from '../routes';
 
 describe('isPublicPath', () => {
   it.each([
@@ -9,6 +9,7 @@ describe('isPublicPath', () => {
     ['/login/verify', true],
     ['/login/reset', true],
     ['/help', true],
+    ['/maintenance', true],
     ['/delete-account', true],
     ['/delete-account/done', true],
     ['/delete-account/other', false],
@@ -49,5 +50,18 @@ describe('safeNextPath', () => {
     ['https://evil.example', '/home'],
   ])('%s becomes %s', (next, expected) => {
     expect(safeNextPath(next)).toBe(expected);
+  });
+});
+
+describe('showsMaintenance', () => {
+  it.each([
+    ['/home', '2026-10-14T07:30:00Z', true],
+    ['/', '2026-10-14T07:30:00Z', true],
+    ['/maintenance', '2026-10-14T07:30:00Z', false],
+    ['/privacy/ms', '2026-10-14T07:30:00Z', false],
+    ['/home', undefined, false],
+    ['/home', '', false],
+  ])('%s while the update runs until %s: %s', (path, until, expected) => {
+    expect(showsMaintenance(path, until)).toBe(expected);
   });
 });

@@ -11,6 +11,7 @@ const PUBLIC_PATHS = [
   '/terms',
   '/terms/ms',
   '/help',
+  '/maintenance',
 ];
 const PUBLIC_PREFIXES = ['/auth/'];
 /** Pages a signed-in visitor skips: they go straight to the app. The landing page stays, with a link in. */
@@ -28,4 +29,12 @@ export function isSignedOutOnly(pathname: string): boolean {
 
 export function safeNextPath(next: string | null): string {
   return next && next.startsWith('/') && !next.startsWith('//') ? next : SIGNED_IN_HOME;
+}
+
+/** Pages that stay up during an update: the maintenance page itself and the legal documents it links. */
+const DURING_MAINTENANCE = ['/maintenance', '/privacy', '/privacy/ms', '/terms', '/terms/ms'];
+
+/** While an update runs (`until` is set), every other page shows the maintenance page. */
+export function showsMaintenance(pathname: string, until: string | undefined): boolean {
+  return Boolean(until) && !DURING_MAINTENANCE.includes(pathname);
 }

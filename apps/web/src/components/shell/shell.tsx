@@ -113,6 +113,16 @@ export function Shell({ user, children }: { user: ShellUser; children: ReactNode
     [closeOverlay, openOverlay, overlay, pane, pref, router, setPane, setTheme],
   );
 
+  // The 404 page's Search Moni lands on /home?palette=open: open the command bar and drop the parameter.
+  useEffect(() => {
+    if (searchParams.get('palette') !== 'open') return;
+    openOverlay('palette');
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete('palette');
+    const query = params.toString();
+    router.replace(`${pathname}${query ? `?${query}` : ''}`, { scroll: false });
+  }, [openOverlay, pathname, router, searchParams]);
+
   useEffect(() => {
     // The keys work from here on; the verify script waits for this before pressing any.
     document.documentElement.dataset.shellReady = 'true';

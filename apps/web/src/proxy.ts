@@ -1,8 +1,11 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
-import { isPublicPath, isSignedOutOnly, safeNextPath } from '@/lib/routes';
+import { isPublicPath, isSignedOutOnly, safeNextPath, showsMaintenance } from '@/lib/routes';
 
 export async function proxy(request: NextRequest) {
+  if (showsMaintenance(request.nextUrl.pathname, process.env.MONI_MAINTENANCE_UNTIL)) {
+    return NextResponse.rewrite(new URL('/maintenance', request.url), { status: 503 });
+  }
   let response = NextResponse.next({ request });
 
   // A new client per request: with Fluid compute a module-level client would leak sessions.

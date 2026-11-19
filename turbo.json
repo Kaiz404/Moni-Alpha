@@ -16,7 +16,8 @@
         "bin/**"
       ],
       "env": [
-        "NEXT_PUBLIC_*"
+        "NEXT_PUBLIC_*",
+        "MONI_MAINTENANCE_UNTIL"
       ]
     },
     "test": {

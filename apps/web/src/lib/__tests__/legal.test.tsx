@@ -80,6 +80,7 @@ describe('site facts', () => {
       'domain',
       'legalEntity',
       'googlePlayUrl',
+      'statusPage',
       'postalAddress',
       'aiNoRetention',
       'legalEffectiveDate',

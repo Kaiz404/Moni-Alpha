@@ -1,0 +1,124 @@
+/* W2-States: the full pages (404, 500, maintenance) and the connection banner. */
+
+.full-page {
+  min-height: 100dvh;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  padding: 32px 48px;
+  background: var(--color-background);
+}
+
+.full-page-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.full-page-logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.full-page-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 15px;
+}
+
+.full-page-main {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 24px 0 40px;
+  animation: rise-in var(--duration-sheet) var(--ease-sheet) both;
+}
+
+.full-page-title {
+  margin: 28px 0 0;
+  font-family: var(--font-display);
+  font-size: 48px;
+  line-height: 52px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+}
+
+.full-page-line {
+  margin: 14px 0 0;
+  max-width: 560px;
+  font-size: 19px;
+  line-height: 28px;
+  color: var(--color-ink-2);
+}
+
+.full-page-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 28px;
+}
+
+.full-page-actions .btn {
+  height: 52px;
+  padding: 0 22px;
+}
+
+.full-page .btn-out {
+  box-shadow: inset 0 0 0 1.5px var(--color-hairline);
+  background: transparent;
+}
+
+.full-page .btn-out:hover {
+  background: var(--color-sand-light);
+}
+
+.full-page-foot {
+  display: flex;
+  justify-content: center;
+  gap: 24px;
+  font-size: 14px;
+  color: var(--color-ink-2);
+}
+
+@media (max-width: 699.98px) {
+  .full-page {
+    padding: 20px var(--spacing-screen) 24px;
+  }
+
+  .full-page-title {
+    font-size: 32px;
+    line-height: 36px;
+  }
+
+  .full-page-line {
+    font-size: 16px;
+    line-height: 23px;
+  }
+}
+
+.full-page-cat {
+  display: inline-flex;
+}
+
+@media (max-height: 499.98px) {
+  .full-page-cat {
+    display: none;
+  }
+
+  .full-page-title {
+    margin-top: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .full-page-main {
+    animation: fade-in 180ms ease both;
+  }
+}
