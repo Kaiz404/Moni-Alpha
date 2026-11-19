@@ -41,6 +41,7 @@ import { SOURCE_ICONS, SOURCE_LABELS, rowAmount } from '@/lib/ledger/format';
 import { useLedger } from '@/lib/ledger/use-ledger';
 import { useScreenKeys } from '@/lib/screen-keys';
 import { SidePane } from '@/components/ledger/side-pane';
+import { ConfirmDelete } from './confirm-delete';
 import { DetailPane } from './detail-pane';
 import { FilterBar } from './filters';
 import { RunningCard } from './running-card';
@@ -159,7 +160,13 @@ export function ActivityScreen() {
     go({ ...(view?.filters ?? NO_FILTERS), saved, page: 1 });
   };
   const setFilters = (next: Partial<ActivityFilters>) => go({ ...next, page: 1 });
-  const removeRows = (ids: readonly string[], label: string) => {
+  // W2-Parts: a delete asks first, with what it takes off the month; Undo still comes in the toast.
+  const [confirming, setConfirming] = useState<{ ids: readonly string[]; label: string } | null>(null);
+  const removeRows = (ids: readonly string[], label: string) => setConfirming({ ids, label });
+  const confirmRemove = () => {
+    if (!confirming) return;
+    const { ids, label } = confirming;
+    setConfirming(null);
     if (commit(planTransactionsDelete(ids, { now: new Date().toISOString() }), label) === null) return;
     setSelected(new Set());
     if (openId && ids.includes(openId)) openRow(null);
@@ -729,10 +736,18 @@ export function ActivityScreen() {
             position={openIndex === -1 ? '' : `${openIndex + 1} of ${all.length}`}
             onMove={move}
             onClose={() => openRow(null)}
-            onDeleted={() => openRow(null)}
+            onDelete={() => removeRows([open.id], `${items.find((item) => item.id === open.id)?.title ?? 'Transaction'} deleted`)}
           />
         )}
       </SidePane>
+      {confirming && (
+        <ConfirmDelete
+          items={confirming.ids.map((id) => items.find((item) => item.id === id)).filter((item): item is Shown => Boolean(item))}
+          currency={ledger.currency}
+          onCancel={() => setConfirming(null)}
+          onDelete={confirmRemove}
+        />
+      )}
     </Page>
   );
 }

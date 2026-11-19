@@ -1,4 +1,4 @@
-import type { ActivityKind } from '@repo/core';
+import { formatMoney, monthName, type ActivityKind } from '@repo/core';
 
 /**
  * Activity's view of the ledger as the URL holds it (W2-Responsive: where you are lives in the URL), so
@@ -255,4 +255,30 @@ export function noMatchLine(
   const paid = filters.wallets.length ? ` paid with ${or(filters.wallets, names.wallets)}` : '';
   const matching = filters.q.trim() ? ` matching “${filters.q.trim()}”` : '';
   return `No ${what}${paid}${matching} from ${dayRange(filters.from ?? range.from, filters.to ?? range.to)}.`;
+}
+
+/**
+ * W2-Parts' delete confirm: what goes, and what it does to the month, with Undo in the toast after.
+ * Only spending moves the month's total, so the line names it when there is some.
+ */
+export function deleteWords(
+  items: readonly Pick<ActivityItem, 'kind' | 'amountMinor' | 'day'>[],
+  currency: string,
+): { title: string; line: string; action: string } {
+  const spent = items.filter((item) => item.kind === 'expense');
+  const total = formatMoney(spent.reduce((sum, item) => sum + item.amountMinor, 0), currency);
+  const months = [...new Set(spent.map((item) => item.day.slice(0, 7)))];
+  const whose = months.length === 1 ? `${monthName(months[0]!)}'s spending` : 'your spending';
+  if (items.length === 1) {
+    return {
+      title: 'Delete this transaction?',
+      line: spent.length ? `${whose.charAt(0).toUpperCase()}${whose.slice(1)} goes down by ${total}. You can undo it from the toast.` : 'You can undo it from the toast.',
+      action: 'Delete',
+    };
+  }
+  return {
+    title: `Delete ${items.length} transactions?`,
+    line: spent.length ? `${total} comes off ${whose}. Undo puts all ${items.length} back.` : `Undo puts all ${items.length} back.`,
+    action: `Delete ${items.length}`,
+  };
 }

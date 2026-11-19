@@ -4,7 +4,6 @@ import {
   dateLabel,
   merchantName,
   planTransactionEdit,
-  planTransactionsDelete,
   transactionRow,
   type FinanceTransaction,
 } from '@repo/core';
@@ -28,14 +27,15 @@ export function DetailPane({
   position,
   onMove,
   onClose,
-  onDeleted,
+  onDelete,
 }: {
   ledger: Ledger;
   transaction: FinanceTransaction;
   position: string;
   onMove: (step: 1 | -1) => void;
   onClose: () => void;
-  onDeleted: () => void;
+  /** Asks to confirm, then deletes (W2-Parts). */
+  onDelete: () => void;
 }) {
   const { projection, walletNames, aliases, calendar, now, userId, wallets } = ledger;
   const [open, setOpen] = useState<Field>(null);
@@ -55,9 +55,6 @@ export function DetailPane({
     setOpen(null);
     setEditing(null);
     commit(planTransactionEdit(transaction.id, data, projection, planContext(userId)), done);
-  };
-  const remove = () => {
-    if (commit(planTransactionsDelete([transaction.id], { now: new Date().toISOString() }), `${row.title} deleted`) !== null) onDeleted();
   };
   const categories = Object.values(projection.categoriesById)
     .filter((category) => category.isActive && (category.userId === null || category.userId === userId) && (category.type === null || category.type === transaction.type))
@@ -292,7 +289,7 @@ export function DetailPane({
         {linked ? (
           <p className="meta">This row belongs to a debt. Change it on Debts.</p>
         ) : (
-          <button type="button" className="btn delete-btn press" onClick={remove}>
+          <button type="button" className="btn delete-btn press" onClick={onDelete}>
             <Icon name="delete-outline" size={20} />
             Delete transaction
             <span className="kbd" data-only="sidebar rail rail-one-column">

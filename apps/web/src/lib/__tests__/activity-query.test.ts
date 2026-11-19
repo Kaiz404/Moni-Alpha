@@ -5,6 +5,7 @@ import {
   checkReason,
   nextSort,
   noMatchLine,
+  deleteWords,
   pageOf,
   parseActivityQuery,
   parseSavedViews,
@@ -129,5 +130,26 @@ describe('noMatchLine', () => {
       'No Gifts or Food & Dining matching “grab” from 28 Sep to 3 Oct.',
     );
     expect(noMatchLine({ ...none, kind: 'income' }, { from: '2026-10-01', to: '2026-10-14' }, names)).toBe('No income from 1 to 14 Oct.');
+  });
+});
+
+describe('deleteWords', () => {
+  it('says what deleting does to the month, one row or many', () => {
+    expect(deleteWords([{ kind: 'expense', amountMinor: 6000, day: '2026-10-02' }], 'MYR')).toEqual({
+      title: 'Delete this transaction?',
+      line: "October's spending goes down by RM60.00. You can undo it from the toast.",
+      action: 'Delete',
+    });
+    expect(
+      deleteWords(
+        [
+          { kind: 'expense', amountMinor: 1520, day: '2026-10-13' },
+          { kind: 'expense', amountMinor: 2740, day: '2026-10-13' },
+          { kind: 'income', amountMinor: 420000, day: '2026-10-01' },
+        ],
+        'MYR',
+      ),
+    ).toEqual({ title: 'Delete 3 transactions?', line: "RM42.60 comes off October's spending. Undo puts all 3 back.", action: 'Delete 3' });
+    expect(deleteWords([{ kind: 'transfer', amountMinor: 10000, day: '2026-10-06' }], 'MYR').line).toBe('You can undo it from the toast.');
   });
 });
