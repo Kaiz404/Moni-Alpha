@@ -166,6 +166,25 @@ async function reset(request, userId, profile, today) {
 const select = (request, path) => request(path).then(({ json }) => json);
 
 /**
+ * The web lane's receipt capture carries a photo in the receipts bucket, so web Review shows the
+ * source beside the proposal. The phone's seed keeps none, which keeps its screenshots as they were.
+ */
+async function attachReceiptPhoto({ url, secret }, request, userId) {
+  const [receipt] = await select(request, `/rest/v1/proposed_transactions?user_id=eq.${userId}&source_type=eq.image&select=id`);
+  if (!receipt) return null;
+  const path = `${userId}/${receipt.id}.jpg`;
+  const upload = await fetch(`${url}/storage/v1/object/receipts/${path}`, {
+    method: 'POST',
+    headers: { apikey: secret, Authorization: `Bearer ${secret}`, 'Content-Type': 'image/jpeg', 'x-upsert': 'true' },
+    body: readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'receipt.jpg')),
+  });
+  if (!upload.ok) throw new SeedError(`receipt upload failed with ${upload.status}: ${(await upload.text()).slice(0, 300)}`, 1);
+  const photo = `${url}/storage/v1/object/public/receipts/${path}`;
+  await request(`/rest/v1/proposed_transactions?id=eq.${receipt.id}`, { method: 'PATCH', body: { source_image_uri: photo }, prefer: 'return=minimal' });
+  return photo;
+}
+
+/**
  * Each live row's content as a short hash by table and id, without the columns every write or undo
  * touches. Two fingerprints are equal when a run left the user's ledger as the seed wrote it.
  */
@@ -205,6 +224,18 @@ export const QUERIES = {
     select(request, `/rest/v1/debts?user_id=eq.${userId}&deleted=eq.false&select=counterparty_name,direction,status,due_date&order=due_date`),
   budgets: (request, userId) =>
     select(request, `/rest/v1/category_budgets?user_id=eq.${userId}&deleted=eq.false&select=amount,currency,categories(name)&order=category_id`),
+  proposals: (request, userId) =>
+    select(
+      request,
+      `/rest/v1/proposed_transactions?user_id=eq.${userId}&deleted=eq.false&select=id,source_type,status,merchant,amount,currency,wallet_id,category_id,transaction_id,reviewed_at,source_image_uri,transaction_date&order=transaction_date`,
+    ),
+  'auto-add-rules': (request, userId) =>
+    select(request, `/rest/v1/auto_add_rules?user_id=eq.${userId}&deleted=eq.false&select=id,merchant_key,source_app,wallet_id,category_id&order=merchant_key`),
+  alerts: (request, userId) =>
+    select(
+      request,
+      `/rest/v1/transactions?user_id=eq.${userId}&deleted=eq.false&type=eq.expense&metadata->>source=eq.notification&select=id,amount,currency,merchant,category_id,wallet_id,transaction_date,metadata&order=transaction_date.desc`,
+    ),
   expenses: (request, userId) =>
     select(
       request,
@@ -234,6 +265,7 @@ async function main(argv) {
   console.log(`user ${config.email} ${user.id}${user.created ? ' created' : ''}`);
   console.log(`before ${JSON.stringify(await counts(request, user.id))}`);
   await reset(request, user.id, args.profile, today);
+  if (args.user === 'web' && args.profile === 'full') console.log(`receipt photo ${await attachReceiptPhoto(config, request, user.id)}`);
   console.log(`after  ${JSON.stringify(await counts(request, user.id))}`);
   console.log(`seeded profile ${args.profile} for ${today}`);
 }

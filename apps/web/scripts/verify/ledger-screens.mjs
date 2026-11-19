@@ -21,7 +21,7 @@ export async function readSeed({ supabaseUrl, publishable, token }) {
   const [transactions, profiles, proposals, aliases] = await Promise.all([
     get('transactions?deleted=eq.false&select=id,type,amount,currency,merchant,description,transaction_date,analysis_excluded,debt_activity_id,category_id'),
     get('profiles?select=preferences'),
-    get('proposed_transactions?deleted=eq.false&select=id,status,snoozed_until,amount,type'),
+    get('proposed_transactions?deleted=eq.false&select=id,status,amount,type'),
     get('merchant_aliases?deleted=eq.false&select=raw_key,display_name').catch(() => []),
   ]);
   const zone = profiles[0]?.preferences?.finance_timezone ?? 'Asia/Kuala_Lumpur';
@@ -54,7 +54,7 @@ export function expected(seed) {
     .filter((row) => row.currency === currency)
     .sort((a, b) => Date.parse(b.transaction_date) - Date.parse(a.transaction_date))[0];
   const sign = newest.type === 'expense' ? MINUS : newest.type === 'income' ? '+' : '';
-  const waiting = proposals.filter((row) => row.amount !== null && row.type !== null && (row.status === 'pending' || (row.status === 'later' && (!row.snoozed_until || Date.parse(row.snoozed_until) <= seed.pin.getTime())))).length;
+  const waiting = proposals.filter((row) => row.amount !== null && row.type !== null && row.status === 'pending').length;
   const names = [newest.merchant, newest.description, ...seed.aliases.map((alias) => alias.display_name)].filter(Boolean);
   return {
     spent: money(spentMinor),
