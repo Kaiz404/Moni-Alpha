@@ -75,9 +75,10 @@ tags:
 - assertVisible:
     id: sources.back
 - pressKey: Back
+# The row after Capture log: Maestro counts a row clipped by the screen's bottom edge as visible.
 - scrollUntilVisible:
     element:
-      id: profile.row.capture-log
+      id: profile.row.delete-account
 - tapOn:
     id: profile.row.capture-log
 - assertVisible:
