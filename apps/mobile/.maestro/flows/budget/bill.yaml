@@ -34,6 +34,7 @@ tags:
 - takeScreenshot: b2-l2-pair
 - tapOn:
     id: budget.bill.skip
+    waitToSettleTimeoutMs: 1000
 - tapOn:
     id: nav.toast.undo
 - assertVisible:

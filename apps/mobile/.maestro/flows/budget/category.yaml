@@ -39,6 +39,7 @@ tags:
 - inputText: '200'
 - tapOn:
     id: budget.category-budget.save
+    waitToSettleTimeoutMs: 1000
 - assertVisible: .*budget is RM200 from .*
 - takeScreenshot: b1-l7-edit
 - tapOn: Undo

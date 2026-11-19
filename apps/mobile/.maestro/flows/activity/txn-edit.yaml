@@ -30,6 +30,7 @@ tags:
 - inputText: '18.20'
 - tapOn:
     id: txn.amount.save
+    waitToSettleTimeoutMs: 1000
 - assertVisible: Amount saved
 - assertVisible: '−RM18.20'
 - takeScreenshot: a2-amount-saved

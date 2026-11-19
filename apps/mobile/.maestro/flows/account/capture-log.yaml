@@ -63,6 +63,7 @@ tags:
       - tapOn:
           id: 'capture-log\.entry\..*\.dismiss'
           index: 0
+          waitToSettleTimeoutMs: 1000
       - assertVisible: Alert removed
       - takeScreenshot: p1-dismiss-undo
       - tapOn:

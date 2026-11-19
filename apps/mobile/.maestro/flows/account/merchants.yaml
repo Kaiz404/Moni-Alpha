@@ -46,6 +46,7 @@ tags:
           index: 0
       - tapOn:
           id: merchants\.named\..*\.forget
+          waitToSettleTimeoutMs: 1000
       - assertVisible: Name forgotten
       - takeScreenshot: k3-l6-forget
       - tapOn:

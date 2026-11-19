@@ -38,6 +38,7 @@ tags:
     id: chat.history.edit
 - tapOn:
     id: 'chat\.history\.delete\..*'
+    waitToSettleTimeoutMs: 1000
 - assertVisible: Today deleted
 - tapOn: Undo
 - assertVisible: Today

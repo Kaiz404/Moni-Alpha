@@ -55,6 +55,7 @@ tags:
     commands:
       - tapOn:
           id: sources.rule.grab.ask-again
+          waitToSettleTimeoutMs: 1000
       - assertVisible: Moni will ask about .* again
       - takeScreenshot: k3-l7-ask-again
       - tapOn:
