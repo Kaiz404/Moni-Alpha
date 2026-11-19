@@ -15,6 +15,7 @@ export function fakeSupabase() {
     failOnRequest: null as number | null,
     requests: 0,
     calls: [] as string[],
+    userId: 'user-1' as string | null,
   };
 
   const missing = (table: string): Result => ({
@@ -23,7 +24,7 @@ export function fakeSupabase() {
   });
   const offline: Result = { data: null, error: { message: 'TypeError: Network request failed' } };
 
-  function query(table: string, op: string, run: (rows: Row[]) => Row[], inserting?: Row) {
+  function query(table: string, op: string, run: (rows: Row[]) => Row[], inserting?: Row[]) {
     const filters: ((row: Row) => boolean)[] = [];
     let orderBy: string | null = null;
     let window: [number, number] | null = null;
@@ -62,11 +63,11 @@ export function fakeSupabase() {
         const rows = server.tables.get(table);
         if (server.offline || server.failOnRequest === server.requests) result = offline;
         else if (!rows) result = missing(table);
-        else if (inserting && rows.some((row) => row.id === inserting.id))
+        else if (inserting && rows.some((row) => inserting.some((insert) => insert.id !== undefined && row.id === insert.id)))
           result = { data: null, error: { code: '23505', message: 'duplicate key value violates unique constraint' } };
         else if (inserting) {
-          rows.push(inserting);
-          result = { data: [inserting], error: null };
+          rows.push(...inserting);
+          result = { data: inserting, error: null };
         } else {
           const all = run(rows.filter((row) => filters.every((keep) => keep(row))));
           if (orderBy) {
@@ -85,7 +86,7 @@ export function fakeSupabase() {
   const client = {
     from: (table: string) => ({
       select: () => query(table, 'list', (rows) => [...rows]),
-      insert: (row: Row) => query(table, 'insert', () => [], row),
+      insert: (row: Row | Row[]) => query(table, 'insert', () => [], Array.isArray(row) ? row : [row]),
       update: (patch: Row) =>
         query(table, 'update', (matched) =>
           matched.map((row) => Object.assign(row, patch)),
@@ -104,7 +105,9 @@ export function fakeSupabase() {
     },
     removeChannel: () => {},
     auth: {
-      getSession: async () => ({ data: { session: { user: { id: 'user-1' } } } }),
+      getSession: async () => ({
+        data: { session: server.userId ? { user: { id: server.userId } } : null },
+      }),
       onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } }),
       signOut: async () => ({ error: null }),
     },

@@ -119,8 +119,9 @@ jest.mock('@/lib/supabase/client', () => ({
     },
   },
 }));
-jest.mock('@/lib/supabase/profile', () => ({
-  getProfilePreferences: async () => ({}),
+jest.mock('@/lib/supabase/profile', () => ({ getProfilePreferences: async () => ({}) }));
+jest.mock('@repo/data', () => ({
+  ...jest.requireActual('@repo/data'),
   updateProfilePreferences: async () => {},
 }));
 let mockNextId = 900;

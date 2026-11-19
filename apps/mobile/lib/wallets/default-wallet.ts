@@ -1,5 +1,7 @@
 import { preferencesMMKV } from '@/lib/mmkv/preferences';
-import { getProfilePreferences, updateProfilePreferences } from '@/lib/supabase/profile';
+import { updateProfilePreferences } from '@repo/data';
+import { supabase } from '@/lib/supabase/client';
+import { getProfilePreferences } from '@/lib/supabase/profile';
 
 export const DEFAULT_WALLET_ID_KEY = 'default-wallet-id';
 
@@ -30,7 +32,7 @@ export async function syncDefaultWalletFromProfile(): Promise<string | null> {
 
 export async function setDefaultWalletId(walletId: string | null): Promise<void> {
   cacheDefaultWalletId(walletId);
-  await updateProfilePreferences({ default_wallet_id: walletId });
+  await updateProfilePreferences(supabase, { default_wallet_id: walletId });
 }
 
 /** Returns stored id only when it still exists in the given wallet list. */
