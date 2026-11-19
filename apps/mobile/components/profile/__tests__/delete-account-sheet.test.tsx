@@ -1,5 +1,6 @@
 import 'react-native-gesture-handler/jestSetup';
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
+import { BackHandler } from 'react-native';
 
 import { SheetHost } from '@/components/ui/sheet/sheet-host';
 import { deleteAccount } from '@/lib/auth/account-functions';
@@ -24,17 +25,27 @@ jest.mock('@/components/profile/export-data-row', () => ({
 }));
 
 afterEach(async () => {
+  jest.restoreAllMocks();
   act(() => dismissSheet());
   await act(() => new Promise((resolve) => setTimeout(resolve, 0)));
 });
+
+const onDeleted = jest.fn(async () => {});
 
 function openDeleteSheet() {
   render(<SheetHost />);
   let result: Promise<true | null> = Promise.resolve(null);
   act(() => {
-    result = openSheet({ kind: 'deleteAccount', userId: 'user-1' });
+    result = openSheet({ kind: 'deleteAccount', userId: 'user-1', onDeleted });
   });
   return result;
+}
+
+/** Android calls the newest back listener first and stops at the first that returns true. */
+function pressBack(handlers: (() => boolean | null | undefined)[]) {
+  act(() => {
+    [...handlers].reverse().some((handler) => handler());
+  });
 }
 
 const submit = () => screen.getByTestId('profile.delete.submit');
@@ -58,6 +69,35 @@ describe('Delete your account sheet', () => {
     expect(submit().props.accessibilityState.disabled).toBe(false);
     fireEvent.press(submit());
     await expect(result).resolves.toBe(true);
+    expect(onDeleted).toHaveBeenCalledTimes(1);
+  });
+
+  it('holds while the deletion is out and still runs onDeleted when the sheet goes anyway', async () => {
+    const handlers: (() => boolean | null | undefined)[] = [];
+    jest.spyOn(BackHandler, 'addEventListener').mockImplementation((_, handler) => {
+      handlers.push(handler);
+      return { remove: () => handlers.splice(handlers.indexOf(handler), 1) && undefined };
+    });
+    let finish: (value: unknown) => void = () => {};
+    jest.mocked(deleteAccount).mockReturnValue(new Promise((resolve) => (finish = resolve)) as never);
+    onDeleted.mockClear();
+    const result = openDeleteSheet();
+    fireEvent.changeText(screen.getByTestId('profile.delete.confirm'), 'DELETE');
+    fireEvent.press(submit());
+
+    const cancel = screen.getByTestId('profile.delete.cancel');
+    expect(cancel.props.accessibilityState.disabled).toBe(true);
+    fireEvent.press(cancel);
+    fireEvent.press(screen.getByTestId('sheet.scrim'));
+    pressBack(handlers);
+    expect(screen.getByTestId('profile.delete.confirm')).toBeTruthy();
+
+    act(() => dismissSheet());
+    await expect(result).resolves.toBeNull();
+    expect(onDeleted).not.toHaveBeenCalled();
+
+    await act(async () => finish({ kind: 'ok', data: { ok: true } }));
+    expect(onDeleted).toHaveBeenCalledTimes(1);
   });
 
   it('stays open with the reason when the deletion fails', async () => {

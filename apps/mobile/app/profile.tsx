@@ -123,11 +123,15 @@ export default function ProfileScreen() {
     router.replace('/(auth)/login');
   };
 
-  const handleDeleteAccount = async () => {
-    if (!(await openSheet({ kind: 'deleteAccount', userId }))) return;
-    await handleSignOut();
-    showToast({ text: 'Your account is deleted' });
-  };
+  const handleDeleteAccount = () =>
+    void openSheet({
+      kind: 'deleteAccount',
+      userId,
+      onDeleted: async () => {
+        await handleSignOut();
+        showToast({ text: 'Your account is deleted' });
+      },
+    });
 
   return (
     <Page
@@ -262,7 +266,7 @@ export default function ProfileScreen() {
             title="Delete your account"
             over
             chevron="down"
-            onPress={() => void handleDeleteAccount()}
+            onPress={handleDeleteAccount}
           />
         </Section>
 

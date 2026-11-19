@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { View } from 'react-native';
+import { useEffect, useState } from 'react';
+import { BackHandler, View } from 'react-native';
 
 import { AuthField } from '@/components/auth/auth-field';
 import { useExportCsv } from '@/components/profile/export-data-row';
@@ -17,8 +17,8 @@ function confirmsDeletion(typed: string): boolean {
 
 /**
  * Profile's Delete your account: one line on what goes, Export data first, and Delete my account,
- * which waits for DELETE. It calls the Edge Function and resolves once the account is gone; the
- * caller signs out.
+ * which waits for DELETE. It calls the Edge Function, runs the request's `onDeleted` once the
+ * account is gone, and holds the sheet open while the call is out so nothing can drop that step.
  */
 export function DeleteAccountSheet({
   request,
@@ -31,12 +31,23 @@ export function DeleteAccountSheet({
   const [failure, setFailure] = useState<string | null>(null);
   const confirmed = confirmsDeletion(typed);
 
+  useEffect(() => {
+    if (!deleting) return;
+    const subscription = BackHandler.addEventListener('hardwareBackPress', () => true);
+    return () => subscription.remove();
+  }, [deleting]);
+
+  const dismiss = () => {
+    if (!deleting) frame.onDismiss();
+  };
+
   const remove = async () => {
     if (!confirmed || deleting) return;
     setDeleting(true);
     setFailure(null);
     const result = await deleteAccount();
     if (result.kind === 'ok') {
+      void request.onDeleted();
       onDeleted();
       return;
     }
@@ -51,6 +62,7 @@ export function DeleteAccountSheet({
   return (
     <Sheet
       {...frame}
+      onDismiss={dismiss}
       size="fit"
       title="Delete your account"
       note="Everything Moni keeps for you goes for good, on every device."
@@ -62,7 +74,8 @@ export function DeleteAccountSheet({
             pinned
             variant="secondary"
             label="Cancel"
-            onPress={frame.onDismiss}
+            disabled={deleting}
+            onPress={dismiss}
           />
           <Button
             testID={tid('profile', 'delete', 'submit')}
