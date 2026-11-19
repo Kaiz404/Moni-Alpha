@@ -16,6 +16,8 @@ function debt(
   return {
     id,
     userId: 'kai',
+    createdAt: '2026-10-01T00:00:00.000Z',
+    updatedAt: '2026-10-01T00:00:00.000Z',
     counterpartyName: id,
     currency: MYR,
     dueDate: null,
@@ -35,6 +37,8 @@ function activity(
   return {
     id: `a${nextActivity++}`,
     userId: 'kai',
+    createdAt: '2026-10-01T00:00:00.000Z',
+    updatedAt: '2026-10-01T00:00:00.000Z',
     debtId,
     kind,
     amountMinor: (ringgit * 100) as MinorAmount,

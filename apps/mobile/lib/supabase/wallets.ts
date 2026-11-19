@@ -1,3 +1,4 @@
+import type { StoredRow } from '@repo/core';
 import { syncState } from '@legendapp/state';
 import { assertMigrated, wallets$ } from '@/lib/store';
 import { getRecordValues, isActive, patchRow } from '@/lib/store/helpers';
@@ -9,56 +10,11 @@ import { clearDefaultWalletIfDeleted } from '@/lib/wallets/default-wallet';
 import { DEFAULT_WALLET_CARD_STYLE_ID } from '@/constants/wallet-card-styles';
 import type { CreateWallet, UpdateWallet, MinorAmount } from '@repo/types';
 import { decimalToMinor, minorToDecimal } from '@repo/types';
-import { planWalletDelete } from '@repo/core';
+import { planWalletDelete, toFinanceWallet } from '@repo/core';
 import { randomUUID } from 'expo-crypto';
 
-type WalletRow = {
-  id: string;
-  user_id: string | null;
-  name: string | null;
-  type: string | null;
-  currency: string | null;
-  initial_balance: string | number | null;
-  color: string | null;
-  icon: string | null;
-  card_style_id: string | null;
-  is_active: boolean | number | null;
-  display_order: number | null;
-  notification_package: string | null;
-  notification_app_label: string | null;
-  notification_account_hint: string | null;
-  balance_confirmed_at?: string | null;
-  record_location?: boolean | null;
-  created_at: string | null;
-  updated_at: string | null;
-  deleted?: boolean;
-};
+type WalletRow = StoredRow<'wallets'>;
 
-function mapWalletRow(w: WalletRow, currentBalanceMinor?: MinorAmount) {
-  const initialMinor = decimalToMinor(w.initial_balance);
-  const balanceMinor = currentBalanceMinor ?? initialMinor;
-  return {
-    id: w.id,
-    userId: w.user_id ?? '',
-    name: w.name ?? '',
-    type: w.type,
-    currency: w.currency,
-    initialBalanceMinor: initialMinor,
-    currentBalanceMinor: balanceMinor,
-    color: w.color,
-    icon: w.icon,
-    cardStyleId: w.card_style_id ?? DEFAULT_WALLET_CARD_STYLE_ID,
-    isActive: isActive(w.is_active),
-    displayOrder: w.display_order ?? 0,
-    notificationPackage: w.notification_package ?? null,
-    notificationAppLabel: w.notification_app_label ?? null,
-    notificationAccountHint: w.notification_account_hint ?? null,
-    balanceConfirmedAt: w.balance_confirmed_at ?? null,
-    recordLocation: w.record_location !== false,
-    createdAt: w.created_at ?? w.updated_at ?? '',
-    updatedAt: w.updated_at ?? w.created_at ?? '',
-  };
-}
 
 /**
  * Whether this process holds the wallet list as Supabase last sent it. Before the first pull, or
@@ -67,6 +23,17 @@ function mapWalletRow(w: WalletRow, currentBalanceMinor?: MinorAmount) {
 export function walletsArePulled(): boolean {
   const state$ = syncState(wallets$);
   return state$.isLoaded.peek() && !state$.error.peek();
+}
+
+/** A wallet as the screens read it: the read model's, with its balance and a card style to draw. */
+function walletView(row: WalletRow, currentBalanceMinor?: MinorAmount) {
+  const wallet = toFinanceWallet(row);
+  if (!wallet) return null;
+  return {
+    ...wallet,
+    cardStyleId: wallet.cardStyleId ?? DEFAULT_WALLET_CARD_STYLE_ID,
+    currentBalanceMinor: currentBalanceMinor ?? wallet.initialBalanceMinor,
+  };
 }
 
 export async function getWallets() {
@@ -80,7 +47,7 @@ export async function getWallets() {
   const walletIds = wallets.map((w) => w.id);
   const balances = await getWalletBalances(walletIds);
 
-  return wallets.map((w) => mapWalletRow(w, balances[w.id] ?? decimalToMinor(w.initial_balance)));
+  return wallets.flatMap((w) => walletView(w, balances[w.id]) ?? []);
 }
 
 export async function getWalletById(id: string) {
@@ -93,7 +60,7 @@ export async function getWalletById(id: string) {
   if (!w) return null;
 
   const balances = await getWalletBalances([w.id]);
-  return mapWalletRow(w, balances[w.id] ?? decimalToMinor(w.initial_balance));
+  return walletView(w, balances[w.id]);
 }
 
 export async function createWallet(data: CreateWallet) {
@@ -126,7 +93,7 @@ export async function createWallet(data: CreateWallet) {
   const created = getRecordValues<WalletRow>(wallets$).find((w) => w.id === id);
   if (!created) throw new Error('Failed to create wallet');
 
-  return mapWalletRow(created);
+  return walletView(created);
 }
 
 export async function updateWallet(id: string, data: UpdateWallet) {
@@ -163,7 +130,7 @@ export async function updateWallet(id: string, data: UpdateWallet) {
   const updated = getRecordValues<WalletRow>(wallets$).find((w) => w.id === id);
   if (!updated) throw new Error('Failed to update wallet');
 
-  return mapWalletRow(updated);
+  return walletView(updated);
 }
 
 /** The user saw this wallet's balance and says it is still right. Undo passes back the earlier time. */

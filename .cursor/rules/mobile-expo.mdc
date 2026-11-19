@@ -24,6 +24,8 @@ commit(planTransfer(input, 'manual', ledgerView(), await planContext()));
 // Delete — soft delete only (synced tables have a `deleted` column)
 ```
 
+Row types come from the generated database types (`StoredRow<'table'>` from `@repo/core`) and reads map through the read model's adapters; never hand-write a `*Row` type or a `map*Row`.
+
 New synced table checklist: migration adds `created_at`/`updated_at`/`deleted` + RLS + realtime → `pnpm gen:db-types` → add it to `SYNCED_TABLES` (`packages/core/src/write-plans/types.ts`) and the store (`packages/data/src/store.ts`) → export it from `lib/store/index.ts` → CRUD helper in `lib/supabase/`.
 
 ## MMKV instances (lib/mmkv/)

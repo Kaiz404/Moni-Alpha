@@ -1,3 +1,4 @@
+import type { StoredRow } from '@repo/core';
 import { transactions$ } from '@/lib/store';
 import { getRecordValues, hasRow, patchRow } from '@/lib/store/helpers';
 import { commit, ledgerView, planContext } from '@/lib/store/writes';
@@ -9,98 +10,26 @@ import {
   planTransactionEdit,
   planTransactionsDelete,
   planTransfer,
+  toFinanceTransaction,
   touchesWallet,
+  type FinanceTransaction,
   type BalanceCorrection,
   type TransferInput,
 } from '@repo/core';
 
-type TransactionRow = {
-  id: string;
-  user_id: string | null;
-  wallet_id: string | null;
-  amount: string | number | null;
-  currency: string | null;
-  type: string | null;
-  analysis_excluded?: boolean | number | null;
-  debt_activity_id?: string | null;
-  category_id: string | null;
-  transfer_to_wallet_id: string | null;
-  linked_transaction_id: string | null;
-  description: string | null;
-  merchant: string | null;
-  notes: string | null;
-  transaction_date: string | null;
-  location_latitude: string | number | null;
-  location_longitude: string | number | null;
-  location_name: string | null;
-  place_id?: string | null;
-  place_coords_at?: string | null;
-  receipt_image_url: string | null;
-  metadata: string | Record<string, unknown> | null;
-  created_at: string | null;
-  updated_at: string | null;
-  deleted?: boolean;
-};
+type TransactionRow = StoredRow<'transactions'>;
 
 /** Normalize persisted transaction_date values (string, epoch ms, etc.) for sorting/display. */
-function toDateSortKey(value: unknown): string {
-  if (value == null || value === '') return '';
-  if (typeof value === 'string') return value;
-  if (typeof value === 'number' && Number.isFinite(value)) {
-    return new Date(value).toISOString();
-  }
-  const parsed = Date.parse(String(value));
-  return Number.isNaN(parsed) ? '' : new Date(parsed).toISOString();
-}
 
-function mapTransactionRow(t: TransactionRow) {
-  let metadata: Record<string, unknown> = {};
-  if (typeof t.metadata === 'string' && t.metadata) {
-    try {
-      metadata = JSON.parse(t.metadata) as Record<string, unknown>;
-    } catch {
-      metadata = {};
-    }
-  } else if (t.metadata && typeof t.metadata === 'object') {
-    metadata = t.metadata as Record<string, unknown>;
-  }
 
-  return {
-    id: t.id,
-    userId: t.user_id ?? '',
-    walletId: t.wallet_id ?? '',
-    amountMinor: decimalToMinor(t.amount),
-    currency: (t.currency ?? 'USD').toUpperCase(),
-    type: t.type,
-    analysisExcluded: t.analysis_excluded === true || t.analysis_excluded === 1,
-    debtActivityId: t.debt_activity_id ?? null,
-    categoryId: t.category_id,
-    transferToWalletId: t.transfer_to_wallet_id,
-    linkedTransactionId: t.linked_transaction_id,
-    description: t.description,
-    merchant: t.merchant,
-    notes: t.notes,
-    transactionDate: toDateSortKey(t.transaction_date) || toDateSortKey(t.created_at),
-    locationLatitude: t.location_latitude != null ? parseFloat(String(t.location_latitude)) : null,
-    locationLongitude:
-      t.location_longitude != null ? parseFloat(String(t.location_longitude)) : null,
-    locationName: t.location_name,
-    placeId: t.place_id ?? null,
-    placeCoordsAt: t.place_coords_at ?? null,
-    receiptImageUrl: t.receipt_image_url,
-    metadata,
-    createdAt: t.created_at ?? t.updated_at ?? '',
-    updatedAt: t.updated_at ?? t.created_at ?? '',
-  };
+function liveTransactions(): FinanceTransaction[] {
+  return getRecordValues<TransactionRow>(transactions$).flatMap((row) => toFinanceTransaction(row) ?? []);
 }
 
 export async function getTransactions(walletId?: string, limit: number = 100) {
-  let rows = getRecordValues<TransactionRow>(transactions$);
-
-  rows.sort((a, b) =>
-    toDateSortKey(b.transaction_date).localeCompare(toDateSortKey(a.transaction_date)),
+  const transactions = liveTransactions().sort((a, b) =>
+    b.transactionDate.localeCompare(a.transactionDate),
   );
-  const transactions = rows.map(mapTransactionRow);
   return (
     walletId
       ? transactions.filter((transaction) => touchesWallet(transaction, walletId))
@@ -109,9 +38,8 @@ export async function getTransactions(walletId?: string, limit: number = 100) {
 }
 
 export async function getTransactionById(id: string) {
-  const t = getRecordValues<TransactionRow>(transactions$).find((row) => row.id === id);
-  if (!t) return null;
-  return mapTransactionRow(t);
+  const row = getRecordValues<TransactionRow>(transactions$).find((item) => item.id === id);
+  return row ? toFinanceTransaction(row) : null;
 }
 
 export async function updateTransaction(id: string, data: UpdateTransaction) {

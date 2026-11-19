@@ -101,6 +101,8 @@ function activityWrites(
     walletId: data.walletId ?? null,
     cashTransactionId,
     note: data.note ?? null,
+    createdAt: ctx.now,
+    updatedAt: ctx.now,
   };
   const insert: RowInsert[] = [
     {
@@ -175,6 +177,8 @@ export function planDebt(
     dueDate: data.dueDate ?? null,
     note: data.note ?? null,
     status: 'open',
+    createdAt: ctx.now,
+    updatedAt: ctx.now,
   };
   const principal = { kind: 'principal' as const, ...data, note: data.note };
   const written = activityWrites(debt, principal, [], view, ctx);

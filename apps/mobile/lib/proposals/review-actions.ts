@@ -6,7 +6,7 @@ import {
 } from '@repo/types';
 
 import type { DuplicateMatch } from '@/lib/ai/duplicates';
-import { checkTransfer, merchantKey } from '@repo/core';
+import { checkTransfer, merchantKey, type StoredRow } from '@repo/core';
 import { markCaptureStatus } from '@/lib/notifications/capture-status';
 import { canPairInto, pairCapture, toAbsorbedCapture, undoPairing } from '@/lib/proposals/pairing';
 import { emitProposedTransactionsChanged } from '@/lib/proposals/proposed-transactions-events';
@@ -49,7 +49,7 @@ export type ReviewEdits = {
 };
 
 /** The proposed_transactions row as stored, kept so Undo can put it back. */
-export type ProposalRowSnapshot = Record<string, unknown> & { id: string };
+export type ProposalRowSnapshot = StoredRow<'proposed_transactions'>;
 
 /** Everything Undo needs. Plain JSON, so a notification can carry it. */
 export type ReviewOutcome =

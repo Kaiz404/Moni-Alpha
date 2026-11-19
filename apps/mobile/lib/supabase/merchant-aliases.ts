@@ -1,18 +1,11 @@
+import type { StoredRow } from '@repo/core';
 import { randomUUID } from 'expo-crypto';
 import { merchantAliasSchema, type MerchantAlias } from '@repo/types';
 import { assertMigrated, merchantAliases$ } from '@/lib/store';
 import { getRecordValues, patchRow } from '@/lib/store/helpers';
 import { getUserId } from '@/lib/supabase/client';
 
-export type MerchantAliasRow = {
-  id: string;
-  user_id: string | null;
-  raw_key: string | null;
-  display_name: string | null;
-  created_at?: string | null;
-  updated_at?: string | null;
-  deleted?: boolean;
-};
+export type MerchantAliasRow = StoredRow<'merchant_aliases'>;
 
 /** Offline devices can each name the same merchant key. */
 function latestAliasPerMerchantKey(

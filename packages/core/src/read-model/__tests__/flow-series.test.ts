@@ -18,6 +18,9 @@ function row(
   return {
     id,
     userId: 'kai',
+    receiptImageUrl: null,
+    metadata: {},
+    updatedAt: '2026-10-01T00:00:00.000Z',
     walletId: 'maybank',
     amountMinor: amountMinor as MinorAmount,
     currency: MYR,

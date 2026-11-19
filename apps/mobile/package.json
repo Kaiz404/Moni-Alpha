@@ -46,7 +46,6 @@
     "@repo/types": "workspace:*",
     "@shopify/react-native-skia": "2.6.2",
     "@supabase/supabase-js": "^2.47.10",
-    "@tanstack/react-query": "^5.64.3",
     "expo": "~57.0.6",
     "expo-build-properties": "~57.0.5",
     "expo-camera": "~57.0.6",

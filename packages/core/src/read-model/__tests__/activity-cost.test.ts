@@ -16,6 +16,9 @@ const rows: FinanceTransaction[] = Array.from({ length: COUNT }, (_, index) => {
   return {
     id: `t${index}`,
     userId: 'kai',
+    receiptImageUrl: null,
+    metadata: {},
+    updatedAt: '2026-10-01T00:00:00.000Z',
     walletId: index % 3 ? 'maybank' : 'tng',
     amountMinor: (100 + (index % 9000)) as MinorAmount,
     currency: MYR,

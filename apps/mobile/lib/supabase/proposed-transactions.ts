@@ -1,3 +1,4 @@
+import type { StoredRow } from '@repo/core';
 import {
   assertMigrated,
   isMigrated,
@@ -6,7 +7,7 @@ import {
 } from '@/lib/store';
 import { getRecordValues, hasRow, patchRow } from '@/lib/store/helpers';
 import { ledgerView } from '@/lib/store/writes';
-import { checkTransfer } from '@repo/core';
+import { checkTransfer, toProposal } from '@repo/core';
 import { getUserId } from '@/lib/supabase/client';
 import { randomUUID } from 'expo-crypto';
 import {
@@ -35,39 +36,7 @@ import {
 import { emitProposedTransactionsChanged } from '@/lib/proposals/proposed-transactions-events';
 import { markCaptureStatus } from '@/lib/notifications/capture-status';
 
-export type ProposedTransactionRow = {
-  id: string;
-  user_id: string | null;
-  source_type: string | null;
-  source_app: string | null;
-  source_text: string | null;
-  source_image_uri: string | null;
-  notification_title: string | null;
-  notification_body: string | null;
-  notification_received_at: string | null;
-  ai_reasoning: string | null;
-  ai_confidence: string | number | null;
-  wallet_id: string | null;
-  wallet_hint: string | null;
-  transfer_to_wallet_id: string | null;
-  transfer_to_wallet_hint: string | null;
-  amount: string | number | null;
-  currency: string | null;
-  type: string | null;
-  description: string | null;
-  merchant: string | null;
-  category_id: string | null;
-  category_hint: string | null;
-  transaction_date: string | null;
-  status: string | null;
-  snoozed_until?: string | null;
-  reviewed_at?: string | null;
-  transaction_id?: string | null;
-  pairing?: unknown;
-  created_at: string | null;
-  updated_at: string | null;
-  deleted?: boolean;
-};
+export type ProposedTransactionRow = StoredRow<'proposed_transactions'>;
 
 const TRANSACTION_SOURCE_BY_PROPOSAL_SOURCE: Record<
   ProposedTransactionSourceType,
@@ -85,41 +54,6 @@ export function proposalSource(sourceType: ProposedTransactionSourceType): Trans
 const DAY_MS = 86_400_000;
 export const REVIEW_HISTORY_DAYS = 30;
 export const REVIEW_RETENTION_DAYS = 90;
-
-export function rowToProposedTransaction(row: ProposedTransactionRow): ProposedTransaction {
-  return {
-    id: row.id,
-    userId: row.user_id ?? '',
-    sourceType: (row.source_type ?? 'notification') as ProposedTransaction['sourceType'],
-    sourceApp: row.source_app,
-    sourceText: row.source_text ?? null,
-    sourceImageUri: row.source_image_uri ?? null,
-    notificationTitle: row.notification_title,
-    notificationBody: row.notification_body,
-    notificationReceivedAt: row.notification_received_at,
-    aiReasoning: row.ai_reasoning,
-    aiConfidence: row.ai_confidence != null ? parseFloat(String(row.ai_confidence)) : null,
-    walletId: row.wallet_id,
-    walletHint: row.wallet_hint,
-    transferToWalletId: row.transfer_to_wallet_id,
-    transferToWalletHint: row.transfer_to_wallet_hint,
-    amountMinor: row.amount != null ? decimalToMinor(row.amount) : null,
-    currency: row.currency ?? 'USD',
-    type: row.type as ProposedTransaction['type'],
-    description: row.description,
-    merchant: row.merchant,
-    categoryId: row.category_id,
-    categoryHint: row.category_hint,
-    transactionDate: row.transaction_date,
-    status: proposedTransactionStatusSchema.catch('pending').parse(row.status),
-    snoozedUntil: row.snoozed_until ?? null,
-    reviewedAt: row.reviewed_at ?? null,
-    transactionId: row.transaction_id ?? null,
-    pairing: capturePairingSchema.safeParse(row.pairing).data ?? null,
-    createdAt: row.created_at ?? '',
-    updatedAt: row.updated_at ?? '',
-  };
-}
 
 function isReviewableRow(row: ProposedTransactionRow): boolean {
   if (row.amount == null || !row.type) return false;
@@ -150,7 +84,7 @@ function asReviewed(proposal: ProposedTransaction): ReviewedProposal | null {
 function readProposals(): ProposedTransaction[] {
   return getRecordValues<ProposedTransactionRow>(proposedTransactions$)
     .filter(isReviewableRow)
-    .map(rowToProposedTransaction);
+    .flatMap((row) => toProposal(row) ?? []);
 }
 
 function readUnreviewedProposals(): ProposedTransaction[] {
@@ -165,7 +99,8 @@ function readReviewedProposals(): ReviewedProposal[] {
 
 export function isOpenProposal(id: string): boolean {
   const row = proposedTransactions$[id].peek() as ProposedTransactionRow | undefined;
-  return !!row && !row.deleted && isUnreviewed(rowToProposedTransaction(row));
+  const proposal = row ? toProposal(row) : null;
+  return !!proposal && isUnreviewed(proposal);
 }
 
 /** Safe in a reactive selector. */
@@ -274,7 +209,8 @@ export async function createProposedTransaction(
 
   const created = getRecordValues<ProposedTransactionRow>(proposedTransactions$).find((r) => r.id === id);
   if (!created) throw new Error('Failed to create proposed transaction');
-  const result = rowToProposedTransaction(created);
+  const result = toProposal(created);
+  if (!result) throw new Error('Failed to create proposed transaction');
   emitProposedTransactionsChanged();
   return result;
 }
@@ -325,8 +261,9 @@ export async function approveProposedTransaction(
 
 export async function rejectProposedTransaction(id: string): Promise<void> {
   const row = proposedTransactions$[id].peek() as ProposedTransactionRow | undefined;
-  if (!row) throw new Error(`Cannot reject missing proposal: ${id}`);
-  closeProposal(rowToProposedTransaction(row), 'rejected');
+  const proposal = row ? toProposal(row) : null;
+  if (!proposal) throw new Error(`Cannot reject missing proposal: ${id}`);
+  closeProposal(proposal, 'rejected');
 }
 
 /** Before review_history is pushed there is no reviewed_at column, so the row is soft-deleted. */
@@ -393,12 +330,7 @@ function ledgerType(type: string | null): LedgerEntry['type'] {
   return type === 'income' || type === 'expense' || type === 'transfer' ? type : null;
 }
 
-type WalletRow = {
-  id: string;
-  name: string | null;
-  type: string | null;
-  notification_package?: string | null;
-};
+type WalletRow = StoredRow<'wallets'>;
 
 function readWalletLookup(): Map<string, InstitutionWallet> {
   return new Map(

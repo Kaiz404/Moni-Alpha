@@ -3,6 +3,7 @@
  * visible and Undo can bring it back. The one path for automatic pairing (run-extraction) and for
  * the Review card's controls. See docs/AI.md, "Duplicate detection".
  */
+import { toProposal } from '@repo/core';
 import type { AbsorbedCapture, CapturePairing, ProposedTransaction } from '@repo/types';
 import { capturePairingSchema } from '@repo/types';
 
@@ -16,7 +17,6 @@ import {
   createProposedTransaction,
   retireProposal,
   type ProposedTransactionRow,
-  rowToProposedTransaction,
 } from '@/lib/supabase/proposed-transactions';
 import { deleteTransaction } from '@/lib/supabase/transactions';
 import {
@@ -126,9 +126,10 @@ function readRow(kind: DuplicateMatch['target']['kind'], id: string): Row | null
  */
 async function completeTransfer(id: string, pairing: CapturePairing): Promise<string> {
   const row = readRow('proposal', id) as ProposedTransactionRow | null;
-  if (!row) throw new Error(`Cannot complete missing proposal: ${id}`);
+  const stored = row ? toProposal(row) : null;
+  if (!stored) throw new Error(`Cannot complete missing proposal: ${id}`);
   const proposal: ProposedTransaction = {
-    ...rowToProposedTransaction(row),
+    ...stored,
     pairing: { ...pairing, promotedFromProposalId: id },
   };
   const transactionId = await approveProposedTransaction(
@@ -254,7 +255,8 @@ export type ProcessedAlert = {
 export function findProcessedAlert(key: string, captureId: string): ProcessedAlert | null {
   const skipped = { created: false, skipped: true, reason: 'Redelivered notification' };
   for (const row of getRecordValues<ProposedTransactionRow>(proposedTransactions$)) {
-    const proposal = rowToProposedTransaction(row);
+    const proposal = toProposal(row);
+    if (!proposal) continue;
     if (proposal.sourceType === 'notification' && alertKey(proposal) === key) {
       return proposal.id === captureId
         ? { created: true, skipped: false, reason: 'Already processed', proposalId: proposal.id }

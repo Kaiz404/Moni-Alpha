@@ -1,3 +1,4 @@
+import type { StoredRow } from '@repo/core';
 import { randomUUID } from 'expo-crypto';
 import {
   decimalToMinor,
@@ -11,17 +12,7 @@ import { getRecordValues, patchRow } from '@/lib/store/helpers';
 import { getUserId } from '@/lib/supabase/client';
 import { updateProfilePreferences } from '@/lib/supabase/profile';
 
-type BudgetRow = {
-  id: string;
-  user_id: string | null;
-  category_id: string | null;
-  currency: string | null;
-  amount: string | number | null;
-  period: string | null;
-  created_at: string | null;
-  updated_at: string | null;
-  deleted?: boolean;
-};
+type BudgetRow = StoredRow<'category_budgets'>;
 
 function rowToBudget(row: BudgetRow): CategoryBudget {
   return {

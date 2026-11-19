@@ -1,3 +1,4 @@
+import type { StoredRow } from '@repo/core';
 import { randomUUID } from 'expo-crypto';
 import {
   billNameSchema,
@@ -14,25 +15,7 @@ import { assertMigrated, recurringOverrides$ } from '@/lib/store';
 import { getRecordValues, patchRow } from '@/lib/store/helpers';
 import { getUserId } from '@/lib/supabase/client';
 
-export type RecurringOverrideRow = {
-  id: string;
-  user_id: string | null;
-  series_key: string | null;
-  status: string | null;
-  kind: string | null;
-  expected_amount: string | number | null;
-  expected_day: number | null;
-  currency: string | null;
-  skip_period?: string | null;
-  remind?: boolean | null;
-  name?: string | null;
-  wallet_id?: string | null;
-  category_id?: string | null;
-  due_once?: string | null;
-  created_at: string | null;
-  updated_at: string | null;
-  deleted?: boolean;
-};
+export type RecurringOverrideRow = StoredRow<'recurring_overrides'>;
 
 function rowToOverride(row: RecurringOverrideRow): RecurringOverride {
   return {
