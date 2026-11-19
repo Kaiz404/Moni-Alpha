@@ -302,10 +302,11 @@ export function RangePicker({
 }) {
   const [pending, setPending] = useState<DayKey | null>(null);
   return (
-    <>
+    <div className="range-body">
       <div
         role="listbox"
         aria-label="Presets"
+        className="range-presets"
       >
         {presets.map((preset) => (
           <button
@@ -331,43 +332,43 @@ export function RangePicker({
           </button>
         ))}
       </div>
-      <span
-        className="popover-rule"
-        aria-hidden="true"
-      />
-      <MonthCalendar
-        from={pending ?? value.from}
-        to={pending ?? value.to}
-        today={today}
-        onPick={(day) => {
-          if (!pending) return setPending(day);
-          setPending(null);
-          onRange(
-            day < pending
-              ? { from: day, to: pending }
-              : { from: pending, to: day },
-          );
-        }}
-      />
-      <div
-        className="range-ends"
-        aria-live="polite"
-      >
-        <span
-          className="range-end"
-          data-active={!pending || undefined}
+      <div className="range-pick">
+        <MonthCalendar
+          from={pending ?? value.from}
+          to={pending ?? value.to}
+          today={today}
+          onPick={(day) => {
+            if (!pending) return setPending(day);
+            setPending(null);
+            onRange(
+              day < pending
+                ? { from: day, to: pending }
+                : { from: pending, to: day },
+            );
+          }}
+        />
+        <div
+          className="range-ends"
+          aria-live="polite"
         >
-          From
-          <b>{shortDate(pending ?? value.from, true)}</b>
-        </span>
-        <span
-          className="range-end"
-          data-active={pending ? true : undefined}
-        >
-          To
-          <b>{pending ? 'Pick a day' : shortDate(value.to, true)}</b>
-        </span>
+          <span
+            className="range-end"
+            data-active={!pending || undefined}
+          >
+            From
+            <b>{shortDate(pending ?? value.from, true)}</b>
+          </span>
+          <span
+            className="range-end"
+            data-active={pending ? true : undefined}
+          >
+            To
+            <b>
+              {pending ? 'Pick a day' : shortDate(value.to, true)}
+            </b>
+          </span>
+        </div>
       </div>
-    </>
+    </div>
   );
 }

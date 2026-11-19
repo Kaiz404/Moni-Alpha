@@ -236,6 +236,9 @@
 .calendar-day button {
   width: 34px;
   height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   border-radius: 9999px;
   color: inherit;
   font: inherit;
@@ -280,7 +283,26 @@
 /* ---------- the Dates range: presets, a calendar, From and To ---------- */
 
 .range-pop {
-  width: 300px;
+  width: auto;
+}
+
+.range-body {
+  display: flex;
+  gap: 10px;
+}
+
+.range-presets {
+  flex: none;
+  width: 170px;
+  display: flex;
+  flex-direction: column;
+  padding-right: 10px;
+  border-right: 1.5px solid var(--color-sand-light);
+}
+
+.range-pick {
+  width: 270px;
+  padding: 4px 4px 2px 0;
 }
 
 .range-ends {

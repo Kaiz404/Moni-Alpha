@@ -118,7 +118,7 @@ export function FilterBar({
         spanLabel(span),
         changed('from') || changed('to'),
         <RangePicker
-          presets={presets.map((preset) => ({ key: preset.key, label: preset.label, selected: sameRange(presetSpan(preset), span) }))}
+          presets={presets.map((preset) => ({ key: preset.key, label: preset.label, selected: filters.from === null && filters.to === null ? preset.key === 'this-month' : sameRange(presetSpan(preset), span) }))}
           value={span}
           today={today}
           onPreset={(key) => {
