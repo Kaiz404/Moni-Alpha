@@ -14,7 +14,7 @@ import { Button } from '@/components/ui/button';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { InPlaceField, InPlaceGroup } from '@/components/ui/in-place-field';
 import { ListCard } from '@/components/ui/list-card';
-import { Page, PageScroll } from '@/components/ui/page';
+import { Page, PageActions, PageScroll } from '@/components/ui/page';
 import { Press } from '@/components/ui/press';
 import { Text } from '@/components/ui/text';
 import { TintBubble } from '@/components/ui/transaction-row';
@@ -436,9 +436,10 @@ export default function EditBudgetsScreen() {
         ) : null}
       </PageScroll>
       </InPlaceGroup>
-      <View className="border-t-[1.5px] border-sand bg-canvas px-5 pb-[26px] pt-3">
+      <PageActions>
         <Button
           testID={tid('budget', 'edit', 'save')}
+          className="flex-1"
           label={
             counted === 1
               ? 'Save 1 budget'
@@ -450,7 +451,7 @@ export default function EditBudgetsScreen() {
           disabled={editing !== null}
           onPress={saveAll}
         />
-      </View>
+      </PageActions>
     </Page>
   );
 }

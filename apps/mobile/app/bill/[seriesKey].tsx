@@ -3,6 +3,7 @@ import type { MinorAmount } from '@repo/types';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useMemo, useState, type ReactNode } from 'react';
 import { View } from 'react-native';
+import Animated, { FadeIn } from 'react-native-reanimated';
 
 import { DueDaySheet } from '@/components/budget/due-day-sheet';
 import { Toggle } from '@/components/ui/toggle';
@@ -17,7 +18,8 @@ import {
   type Saved,
 } from '@/components/ui/in-place-field';
 import { ListCard } from '@/components/ui/list-card';
-import { Page, PageScroll } from '@/components/ui/page';
+import { Page, PageActions, PageScroll } from '@/components/ui/page';
+import { HeaderIconButton } from '@/components/ui/header-icon-button';
 import { PickerField } from '@/components/ui/picker-field';
 import { Text } from '@/components/ui/text';
 import {
@@ -65,6 +67,7 @@ import { resolveDefaultWalletId } from '@/lib/wallets/default-wallet';
 import { deviceCalendar } from '@/lib/dates/device-calendar';
 
 const HISTORY_ROWS = 3;
+const SWAP_IN = FadeIn.duration(200);
 const REMINDER_TIME = '9:00 am';
 
 
@@ -82,6 +85,7 @@ function errorText(error: unknown): string {
 
 /** `V2P-BillDetail`: one bill, its name and amount in place, its schedule, and its payments. */
 export default function BillScreen() {
+  const tokens = useThemeTokens();
   const { seriesKey } = useLocalSearchParams<{ seriesKey: string }>();
   const data = useBudgetData();
   const { now, currency } = data;
@@ -341,10 +345,18 @@ export default function BillScreen() {
   return (
     <View className="flex-1">
       <Page
-      headerScrolls
+        headerScrolls
         screen="budget"
         kind="pushed"
         title="Bill"
+        trailing={
+          <HeaderIconButton
+            testID={tid('budget', 'bill', 'stop')}
+            icon="trash-can-outline"
+            accessibilityLabel={`Stop tracking ${bill.name}`}
+            onPress={() => void stop()}
+          />
+        }
       >
         <InPlaceGroup>
         <PageScroll
@@ -437,24 +449,6 @@ export default function BillScreen() {
                 )
               }
             </InPlaceField>
-            {open ? (
-              <View className="flex-row gap-2">
-                <Button
-                  testID={tid('budget', 'bill', 'mark-paid')}
-                  label="Mark paid"
-                  icon="check"
-                  className="flex-1"
-                  onPress={markPaid}
-                />
-                <Button
-                  testID={tid('budget', 'bill', 'skip')}
-                  variant="secondary"
-                  label={`Skip ${monthName(period)}`}
-                  className="flex-1"
-                  onPress={skip}
-                />
-              </View>
-            ) : null}
           </View>
 
           <View className="gap-2">
@@ -624,15 +618,56 @@ export default function BillScreen() {
             </View>
           ) : null}
 
-          <Button
-            testID={tid('budget', 'bill', 'stop')}
-            variant="destructive"
-            icon="trash-can-outline"
-            label={`Stop tracking ${bill.name}`}
-            onPress={stop}
-          />
         </PageScroll>
         </InPlaceGroup>
+        <PageActions>
+          <Animated.View
+            key={bill.status}
+            entering={SWAP_IN}
+            className="flex-1 flex-row gap-2"
+          >
+            {open ? (
+              <>
+                <Button
+                  testID={tid('budget', 'bill', 'mark-paid')}
+                  label="Mark paid"
+                  icon="check"
+                  pinned
+                  className="flex-1"
+                  onPress={markPaid}
+                />
+                <Button
+                  testID={tid('budget', 'bill', 'skip')}
+                  variant="secondary"
+                  label={`Skip ${monthName(period)}`}
+                  pinned
+                  className="flex-1"
+                  onPress={skip}
+                />
+              </>
+            ) : (
+              <View
+                testID={tid('budget', 'bill', 'settled')}
+                accessibilityLiveRegion="polite"
+                className="h-14 flex-1 flex-row items-center justify-center gap-2"
+              >
+                <IconSymbol
+                  name={bill.status === 'paid' ? 'check-circle-outline' : 'skip-next-circle-outline'}
+                  size={20}
+                  color={tokens.ink2}
+                />
+                <Text
+                  variant="rowTitle"
+                  className="text-ink-2"
+                >
+                  {bill.status === 'paid'
+                    ? `${monthName(period)} is paid`
+                    : `${monthName(period)} is skipped`}
+                </Text>
+              </View>
+            )}
+          </Animated.View>
+        </PageActions>
       </Page>
       <DueDaySheet
         open={dueOpen}

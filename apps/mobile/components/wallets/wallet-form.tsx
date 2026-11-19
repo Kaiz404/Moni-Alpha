@@ -18,7 +18,7 @@ import { Button } from '@/components/ui/button';
 import { FieldBubble } from '@/components/ui/field-bubble';
 import { HeaderIconButton } from '@/components/ui/header-icon-button';
 import { IconSymbol } from '@/components/ui/icon-symbol';
-import { Page } from '@/components/ui/page';
+import { Page, PageActions } from '@/components/ui/page';
 import {
   FieldGlyph,
   FieldText,
@@ -383,9 +383,10 @@ export function WalletForm({
             </View>
           ) : null}
         </ScrollView>
-        <View className="px-5 pb-5 pt-2">
+        <PageActions>
           <Button
             testID={tid('wallet', 'form', 'submit')}
+            className="flex-1"
             pinned
             label={editing ? 'Save changes' : 'Create wallet'}
             loading={saving}
@@ -393,7 +394,7 @@ export function WalletForm({
             disabled={!name}
             onPress={() => void save()}
           />
-        </View>
+        </PageActions>
       </KeyboardAvoidingView>
     </Page>
   );

@@ -18,7 +18,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { HeaderIconButton } from '@/components/ui/header-icon-button';
 import { IconSymbol } from '@/components/ui/icon-symbol';
-import { Page, PageScroll } from '@/components/ui/page';
+import { Page, PageActions, PageScroll } from '@/components/ui/page';
 import { Press } from '@/components/ui/press';
 import { Segmented } from '@/components/ui/segmented';
 import { Text } from '@/components/ui/text';
@@ -281,9 +281,10 @@ export default function CategoryFormScreen() {
           </View>
         </View>
       </PageScroll>
-      <View className="border-t border-sand-light px-screen pt-3">
+      <PageActions>
         <Button
           testID={tid('activity', 'category-form', 'save')}
+          className="flex-1"
           icon="check"
           label={existing ? 'Save changes' : 'Create category'}
           loading={saving}
@@ -291,7 +292,7 @@ export default function CategoryFormScreen() {
           pinned
           onPress={() => void save()}
         />
-      </View>
+      </PageActions>
     </Page>
   );
 }

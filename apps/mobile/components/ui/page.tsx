@@ -152,6 +152,18 @@ export const PageScroll = forwardRef<ScrollView, ScrollViewProps>(
   },
 );
 
+/**
+ * A page's main actions, pinned under its scroll in thumb reach on a hairline. They never move
+ * the content above them; a swap of what they hold happens inside the bar.
+ */
+export function PageActions({ children }: { children: ReactNode }) {
+  return (
+    <View className="min-h-[81px] flex-row items-center gap-2 border-t border-sand-light bg-canvas px-5 py-3">
+      {children}
+    </View>
+  );
+}
+
 const PageLift = createContext<SharedValue<number> | null>(null);
 
 /**

@@ -219,7 +219,7 @@ const ROUTES: Record<string, RouteSpec> = {
   'import/preview.tsx': same('/import/preview', 'No file chosen'),
   'bill/[seriesKey].tsx': differ(
     `/bill/${NETFLIX}`,
-    'Stop tracking Netflix',
+    'Skip October',
     "This bill isn't due this month",
   ),
   'bill/new.tsx': same('/bill/new', 'How much is it each time?'),
