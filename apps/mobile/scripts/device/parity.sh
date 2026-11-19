@@ -6,21 +6,23 @@ set -euo pipefail
 here=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 
 usage() {
-  echo "usage: parity.sh --base <ref> [--head <ref>] [--out <dir>] [<area>...]" >&2
+  echo "usage: parity.sh --base <ref> [--head <ref>] [--out <dir>] [--affected | <area>...]" >&2
   exit 2
 }
 
-base_ref="" head_ref=HEAD out="" areas=()
+base_ref="" head_ref=HEAD out="" affected=false areas=()
 while (($#)); do
   case $1 in
     --base) (($# >= 2)) || usage; base_ref=$2; shift 2 ;;
     --head) (($# >= 2)) || usage; head_ref=$2; shift 2 ;;
     --out) (($# >= 2)) || usage; out=$2; shift 2 ;;
+    --affected) affected=true; shift ;;
     -*) usage ;;
     *) areas+=("$1"); shift ;;
   esac
 done
 [[ -n $base_ref ]] || usage
+! $affected || ((!${#areas[@]})) || usage
 root=$(git -C "$here" rev-parse --show-toplevel)
 base=$(git -C "$root" rev-parse --verify "$base_ref^{commit}")
 head=$(git -C "$root" rev-parse --verify "$head_ref^{commit}")
@@ -31,7 +33,16 @@ mkdir -p "$out" "$cache"
 export EXPO_PUBLIC_E2E_NOW=${EXPO_PUBLIC_E2E_NOW:-2026-10-14T14:06:00+08:00}
 export EXPO_PUBLIC_E2E_TOAST_MS=${EXPO_PUBLIC_E2E_TOAST_MS:-15000}
 
-if ((!${#areas[@]})); then
+if $affected; then
+  # Its own line, so a failing affected.mjs stops the run instead of reading as no areas.
+  list=$(node "$root/scripts/verify/affected.mjs" --base "$base" --head "$head" --list)
+  read -ra areas <<<"$list"
+  if ((!${#areas[@]})); then
+    echo "parity skipped: no phone screen reached"
+    exit 0
+  fi
+  echo "affected areas: ${areas[*]}"
+elif ((!${#areas[@]})); then
   while IFS= read -r area; do
     [[ $area == perf ]] || areas+=("$area")
   done < <(git -C "$root" ls-tree --name-only -d "$head:apps/mobile/.maestro/flows")
