@@ -28,6 +28,7 @@ import {
   TOAST_MS,
   undoToast,
   useToast,
+  useToastFloor,
   type ShownToast,
 } from '@/lib/toast/toast-store';
 
@@ -39,6 +40,7 @@ export function ToastHost() {
   const insets = useSafeAreaInsets();
   const keyboard = useAnimatedKeyboard();
   const onTabRoot = useSegments()[0] === '(tabs)';
+  const floor = useToastFloor();
 
   useEffect(() => {
     const sub = AppState.addEventListener('change', (state) => {
@@ -47,10 +49,12 @@ export function ToastHost() {
     return () => sub.remove();
   }, []);
 
-  // V2F-Components "Toast with Undo": 10 above the + ring on a tab root, else 20 above the keyboard or the bottom edge.
+  // V2F-Components "Toast with Undo": 10 above the + ring on a tab root or a page's pinned actions, else 20 above the keyboard or the bottom edge.
   const rest = onTabRoot
     ? tabBarBottom(insets.bottom) + TAB_BAR_REACH + 10
-    : insets.bottom + 20;
+    : floor > 0
+      ? insets.bottom + floor + 10
+      : insets.bottom + 20;
   const lift = useAnimatedStyle(() => {
     const up = keyboard.height.get();
     return { paddingBottom: up > 0 ? up + 20 : rest };

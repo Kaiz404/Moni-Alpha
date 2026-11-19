@@ -20,13 +20,15 @@ global.fetch = fakeFetch as typeof fetch;
 import { act, cleanup, fireEvent, renderRouter, screen } from 'expo-router/testing-library';
 import type { MinorAmount } from '@repo/types';
 import { router } from 'expo-router';
-import { Share } from 'react-native';
+import { Share, StyleSheet } from 'react-native';
+import type { ReactTestInstance } from 'react-test-renderer';
 
 import { authMMKV } from '@/lib/mmkv/auth';
 import { dismissSheet } from '@/lib/sheet/sheet-store';
 import { clearStore } from '@/lib/store';
 import { createTransaction, updateTransaction } from '@/lib/supabase/transactions';
-import { dismissToast } from '@/lib/toast/toast-store';
+import { dismissToast, showToast } from '@/lib/toast/toast-store';
+import { tid } from '@/lib/test-ids';
 /* eslint-enable import/first */
 
 let mockTheme: 'light' | 'dark' = 'light';
@@ -718,4 +720,26 @@ const pressableIds = (): string[] => [
     }
     expect(failures).toEqual([]);
   }, 590_000);
+});
+
+describe('a toast on a page with pinned actions', () => {
+  const restsAt = (text: string) => {
+    let node: ReactTestInstance | null = screen.getByText(text);
+    while (node && StyleSheet.flatten(node.props.style)?.paddingBottom === undefined) node = node.parent;
+    return StyleSheet.flatten(node?.props.style)?.paddingBottom;
+  };
+
+  it('rests 10 above the bar while its page is in front, and 20 above the edge on a page pushed over it', async () => {
+    await mount(`/debt/${MEI}`, { profile: 'full', theme: 'light' });
+    let bar: ReactTestInstance | null = screen.getByTestId(tid('debts', 'record-repayment'));
+    while (bar && !bar.props.onLayout) bar = bar.parent;
+    act(() => bar?.props.onLayout({ nativeEvent: { layout: { x: 0, y: 0, width: 400, height: 81 } } }));
+    act(() => showToast({ text: 'Note saved' }));
+    expect(restsAt('Note saved')).toBe(91);
+
+    act(() => router.push('/debt/new'));
+    await settle();
+    act(() => showToast({ text: 'On a page without a bar' }));
+    expect(restsAt('On a page without a bar')).toBe(20);
+  });
 });

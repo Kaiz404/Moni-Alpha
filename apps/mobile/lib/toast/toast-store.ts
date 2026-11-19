@@ -70,3 +70,37 @@ function subscribe(listener: () => void) {
 export function useToast(): ShownToast | null {
   return useSyncExternalStore(subscribe, () => current);
 }
+
+const floors = new Set<{ height: number }>();
+const floorListeners = new Set<() => void>();
+let floor = 0;
+
+/**
+ * A pinned bar the toast must sit above while it shows, such as `PageActions`. Returns the release;
+ * the toast rests on the tallest bar still held.
+ */
+export function holdToastFloor(height: number): () => void {
+  const held = { height };
+  const publishFloor = () => {
+    floor = Math.max(0, ...[...floors].map((entry) => entry.height));
+    floorListeners.forEach((listener) => listener());
+  };
+  floors.add(held);
+  publishFloor();
+  return () => {
+    floors.delete(held);
+    publishFloor();
+  };
+}
+
+export function useToastFloor(): number {
+  return useSyncExternalStore(
+    (listener) => {
+      floorListeners.add(listener);
+      return () => {
+        floorListeners.delete(listener);
+      };
+    },
+    () => floor,
+  );
+}
