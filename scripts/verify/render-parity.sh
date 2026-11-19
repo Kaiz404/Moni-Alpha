@@ -22,8 +22,10 @@ done
 [[ -n $base_ref ]] || usage
 [[ -d $HOME/.nvm/versions/node/v22.23.3/bin ]] && export PATH="$HOME/.nvm/versions/node/v22.23.3/bin:$PATH"
 root=$(git -C "$here" rev-parse --show-toplevel)
-base=$(git -C "$root" rev-parse --verify "$base_ref^{commit}")
-head=$(git -C "$root" rev-parse --verify "$head_ref^{commit}")
+# Refs such as HEAD mean the checkout the caller stands in, which may be a worktree of this repo.
+refs_repo=$(git rev-parse --show-toplevel 2>/dev/null || echo "$root")
+base=$(git -C "$refs_repo" rev-parse --verify "$base_ref^{commit}")
+head=$(git -C "$refs_repo" rev-parse --verify "$head_ref^{commit}")
 worktrees=${MONI_PARITY_DIR:-$HOME/.cache/moni-parity}
 dumps=${MONI_RENDER_DIR:-$HOME/.cache/moni-render}
 mkdir -p "$worktrees" "$dumps"

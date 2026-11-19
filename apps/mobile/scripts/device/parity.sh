@@ -24,8 +24,10 @@ done
 [[ -n $base_ref ]] || usage
 ! $affected || ((!${#areas[@]})) || usage
 root=$(git -C "$here" rev-parse --show-toplevel)
-base=$(git -C "$root" rev-parse --verify "$base_ref^{commit}")
-head=$(git -C "$root" rev-parse --verify "$head_ref^{commit}")
+# Refs such as HEAD mean the checkout the caller stands in, which may be a worktree of this repo.
+refs_repo=$(git rev-parse --show-toplevel 2>/dev/null || echo "$root")
+base=$(git -C "$refs_repo" rev-parse --verify "$base_ref^{commit}")
+head=$(git -C "$refs_repo" rev-parse --verify "$head_ref^{commit}")
 out=${out:-$HOME/.local/share/moni-runs/parity/${base:0:8}-${head:0:8}}
 cache=${MONI_PARITY_DIR:-$HOME/.cache/moni-parity}
 mkdir -p "$out" "$cache"
