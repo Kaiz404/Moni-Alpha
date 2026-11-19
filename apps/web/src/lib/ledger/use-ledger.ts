@@ -80,7 +80,19 @@ function useTables() {
     const store = moniStore();
     const copy = (table$: { get(): unknown }) => ({ ...((table$.get() as RawTable | undefined) ?? EMPTY) });
     return {
-      loaded: [store.wallets$, store.transactions$, store.categories$, store.categoryBudgets$, store.debts$, store.debtActivities$, store.proposedTransactions$].every(
+      // Every table copied below, the merchant names too: they pull last, behind a migration probe and a
+      // second page, and a screen that called itself loaded without them reshuffled its rows once they came.
+      loaded: [
+        store.wallets$,
+        store.transactions$,
+        store.categories$,
+        store.categoryBudgets$,
+        store.debts$,
+        store.debtActivities$,
+        store.proposedTransactions$,
+        store.recurringOverrides$,
+        store.merchantAliases$,
+      ].every(
         // A table whose pull failed counts as settled, so its card can say so while the rest show.
         (table$) => syncState(table$).isLoaded.get() || Boolean(syncState(table$).error.get()),
       ),
