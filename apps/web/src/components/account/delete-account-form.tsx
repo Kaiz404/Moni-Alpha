@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { FieldError } from '@/components/auth/fields';
 import { Icon } from '@/components/icon';
 import { signOut } from '@/components/shell/shell-store';
@@ -13,7 +14,7 @@ import './account.css';
 
 export const DONE_PATH = '/delete-account/done';
 
-/** W2-Parts' list of what goes. The public page shows it before sign-in too. */
+/** W2-Parts' list of what goes, on the public page the Play listing links to. */
 export function WhatIsDeleted() {
   return (
     <section className="deleted-list" aria-labelledby="what-is-deleted">
@@ -34,12 +35,18 @@ export function WhatIsDeleted() {
 
 export const FOR_GOOD = "It goes at once and can't be undone. Copies in Moni's backups are gone within 7 days.";
 
+/** The one line the Settings dialog says about what goes, as the phone's sheet does. */
+export const WHAT_GOES = 'Everything Moni keeps for you goes for good, on every device.';
+
+/** Cancel leaves for a page on the public site, or closes the dialog in Settings. */
+type Cancel = { href: string } | { close: () => void };
+
 /**
- * W2-Parts "Delete your account": what goes, Export data for a copy first, then DELETE typed in any letter case. The
- * button stays Sand until the word matches. Deleting calls the Edge Function with this browser's access
- * token, signs out the usual way and leaves the app for the done page.
+ * W2-Parts "Delete your account": Export data first, then DELETE typed in any letter case. The button
+ * stays Sand until the word matches. Deleting calls the Edge Function with this browser's access token,
+ * signs out the usual way and leaves the app for the done page.
  */
-export function DeleteAccountForm({ cancelHref, userId, zone }: { cancelHref: string; userId: string; zone: string | null }) {
+export function DeleteAccountForm({ cancel, userId, zone }: { cancel: Cancel; userId: string; zone: string | null }) {
   const router = useRouter();
   const [typed, setTyped] = useState('');
   const [deleting, setDeleting] = useState(false);
@@ -69,13 +76,7 @@ export function DeleteAccountForm({ cancelHref, userId, zone }: { cancelHref: st
         void remove();
       }}
     >
-      <WhatIsDeleted />
-      <div className="delete-note">
-        <Icon name="download" size={20} />
-        <span className="delete-note-line">Keep a copy first: a CSV of every transaction.</span>
-        <ExportDataButton userId={userId} zone={zone} className="btn delete-export press" />
-      </div>
-      <p className="delete-line">{FOR_GOOD}</p>
+      <ExportDataButton userId={userId} zone={zone} label="Export data first" className="btn delete-export press" />
       <div>
         <div className="label">
           <label htmlFor="delete-confirm">Type DELETE to confirm</label>
@@ -99,14 +100,53 @@ export function DeleteAccountForm({ cancelHref, userId, zone }: { cancelHref: st
         )}
       </div>
       <div className="delete-actions">
-        <Link href={cancelHref} className="btn btn-sand press">
-          Cancel
-        </Link>
+        {'href' in cancel ? (
+          <Link href={cancel.href} className="btn btn-sand press">
+            Cancel
+          </Link>
+        ) : (
+          <button type="button" className="btn btn-sand press" onClick={cancel.close}>
+            Cancel
+            <span className="kbd">Esc</span>
+          </button>
+        )}
         <button type="submit" className="btn btn-over press" disabled={!confirmed || deleting} aria-busy={deleting}>
           <Icon name="delete-outline" size={20} />
           {deleting ? 'Deleting' : 'Delete my account'}
         </button>
       </div>
     </form>
+  );
+}
+
+/**
+ * Settings › Profile › Delete your account: a confirm dialog, like the phone's sheet, with one line on
+ * what goes. Esc, a click outside and Cancel close it.
+ */
+export function DeleteAccountDialog({ userId, zone, onClose }: { userId: string; zone: string | null; onClose: () => void }) {
+  return createPortal(
+    <div className="scrim scrim-center" onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
+      <div
+        role="alertdialog"
+        aria-modal="true"
+        aria-labelledby="delete-account-title"
+        aria-describedby="delete-account-line"
+        className="dialog confirm-dialog motion-pop"
+        onKeyDown={(event) => {
+          if (event.key !== 'Escape') return;
+          event.stopPropagation();
+          onClose();
+        }}
+      >
+        <h2 id="delete-account-title" className="dialog-title">
+          Delete your account
+        </h2>
+        <p id="delete-account-line" className="confirm-line">
+          {WHAT_GOES}
+        </p>
+        <DeleteAccountForm cancel={{ close: onClose }} userId={userId} zone={zone} />
+      </div>
+    </div>,
+    document.body,
   );
 }

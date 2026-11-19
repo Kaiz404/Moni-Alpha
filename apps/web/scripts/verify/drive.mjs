@@ -52,7 +52,6 @@ const ROUTES = [
   { path: '/home/places', title: /^Where you spend$/, pushed: true },
   { path: '/review', title: /^Review$/, pushed: true },
   { path: '/settings', title: /^Settings$/, pushed: true },
-  { path: '/settings/delete-account', title: /^Settings$/, phoneTitle: /^Delete your account$/, pushed: true },
 ];
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -522,17 +521,23 @@ try {
       await ctx.addInitScript(() => localStorage.setItem('moni-theme', 'system'));
       const calls = await stubDeletion(ctx);
       const p = await ctx.newPage();
-      for (const [path, name] of [
-        ['/delete-account', 'public-signed-in'],
-        ['/settings/delete-account', 'in-app'],
+      for (const [path, name, opens, says] of [
+        ['/delete-account', 'public-signed-in', null, 'Your sign-in, on every device'],
+        ['/settings/profile', 'in-app', 'Delete your account', 'Everything Moni keeps for you goes for good, on every device.'],
       ]) {
         await p.goto(`${base}${path}`);
+        if (opens) {
+          const row = p.getByRole('button', { name: opens });
+          await row.waitFor({ timeout: 15_000 }).catch(() => {});
+          await row.click().catch(() => {});
+        }
         const field = p.getByLabel('Type DELETE to confirm');
         const button = p.getByRole('button', { name: 'Delete my account' });
         await field.waitFor({ timeout: 15_000 }).catch(() => {});
         check(
-          `${path} signed in ${where}: what goes, then Delete my account disabled before the word, no sideways scroll`,
-          (await p.getByText('Your sign-in, on every device').isVisible()) &&
+          `${path} signed in ${where}: ${opens ? 'a dialog with one line on' : 'the list of'} what goes, then Delete my account disabled before the word, no sideways scroll`,
+          (await p.getByText(says).isVisible()) &&
+            (opens ? await p.getByRole('alertdialog', { name: 'Delete your account' }).isVisible() : true) &&
             (await button.isDisabled()) &&
             (await wideEnough(p)),
         );

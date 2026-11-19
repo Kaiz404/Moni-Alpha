@@ -50,7 +50,6 @@ const SCREENS = [
   { name: 'settings-ai', path: '/settings/ai', title: /^Moni's AI$/, loaded: 'section[aria-labelledby="ai-title"]:not([aria-busy])' },
   { name: 'settings-merchants', path: '/settings/merchants', title: /^Merchant names$/, loaded: '.set-card[data-loaded]' },
   { name: 'settings-import', path: '/settings/import', title: /^Import and export$/ },
-  { name: 'settings-delete-account', path: '/settings/delete-account', title: /^Delete your account$/ },
   { name: 'chat', path: '/home?pane=chat', title: /^Moni chat/, titleAt: '.pane-chat .pane-title' },
   { name: 'add', path: '/home?pane=add', title: /^Add a transaction$/, titleAt: '.pane-add .pane-title' },
 ];

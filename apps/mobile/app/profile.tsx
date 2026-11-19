@@ -29,9 +29,11 @@ import { UserAvatar } from '@/components/ui/user-avatar';
 import { useAiConsent } from '@/lib/ai/consent/state';
 import { useAuth } from '@/lib/auth/auth-context';
 import { userPhotoUrl } from '@/lib/auth/user-photo';
+import { openSheet } from '@/lib/sheet/sheet-store';
 import { categoriesForUser$, walletsForUser$ } from '@/lib/finance/selectors';
 import { tid } from '@/lib/test-ids';
 import { switchTheme } from '@/lib/theme/reveal';
+import { showToast } from '@/lib/toast/toast-store';
 
 function displayName(user: User | null): string {
   const meta = user?.user_metadata ?? {};
@@ -119,6 +121,12 @@ export default function ProfileScreen() {
   const handleSignOut = async () => {
     await signOut();
     router.replace('/(auth)/login');
+  };
+
+  const handleDeleteAccount = async () => {
+    if (!(await openSheet({ kind: 'deleteAccount', userId }))) return;
+    await handleSignOut();
+    showToast({ text: 'Your account is deleted' });
   };
 
   return (
@@ -253,8 +261,8 @@ export default function ProfileScreen() {
             tint="peach"
             title="Delete your account"
             over
-            chevron="right"
-            onPress={() => router.push('/delete-account')}
+            chevron="down"
+            onPress={() => void handleDeleteAccount()}
           />
         </Section>
 

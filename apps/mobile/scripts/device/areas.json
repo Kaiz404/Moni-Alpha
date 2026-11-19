@@ -165,7 +165,7 @@
     "apps/mobile/app/moni-ai.tsx": [
       "account"
     ],
-    "apps/mobile/app/delete-account.tsx": [
+    "apps/mobile/components/profile/delete-account-sheet.tsx": [
       "account"
     ],
     "apps/mobile/app/sign-in/**": [

@@ -23,7 +23,17 @@ function download(name: string, text: string) {
  * Export data (issue #70): the phone's Moni export of everything the store holds for the user, as one
  * CSV that Import data restores. It waits for the store's first pull, or the file would miss rows.
  */
-export function ExportDataButton({ userId, zone, className = 'btn btn-out press' }: { userId: string; zone: string | null; className?: string }) {
+export function ExportDataButton({
+  userId,
+  zone,
+  className = 'btn btn-out press',
+  label = 'Export data',
+}: {
+  userId: string;
+  zone: string | null;
+  className?: string;
+  label?: string;
+}) {
   const ready = useValue(() => storeHasPulled(moniStore()));
   const [failed, setFailed] = useState(false);
 
@@ -42,7 +52,7 @@ export function ExportDataButton({ userId, zone, className = 'btn btn-out press'
   return (
     <button type="button" className={className} disabled={!ready} aria-busy={!ready} onClick={save} title={failed ? "Couldn't make the CSV. Try again." : undefined}>
       <Icon name="download" size={18} />
-      {ready ? (failed ? 'Try again' : 'Export data') : 'Loading your data'}
+      {ready ? (failed ? 'Try again' : label) : 'Loading your data'}
     </button>
   );
 }

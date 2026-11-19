@@ -128,6 +128,8 @@ type Sheets = {
     request: { title: string; layout: GridLayout; selected: string | null; startPage: number };
     result: string;
   };
+  /** Profile's Delete your account; resolves once the account is gone. */
+  deleteAccount: { request: { userId: string | null }; result: true };
   confirm: {
     request: {
       title: string;

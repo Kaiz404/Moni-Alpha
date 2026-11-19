@@ -12,7 +12,6 @@ const SECTIONS = [
   { path: '/settings/ai', name: 'ai', phoneTitle: "Moni's AI" },
   { path: '/settings/merchants', name: 'merchants', phoneTitle: 'Merchant names' },
   { path: '/settings/import', name: 'import', phoneTitle: 'Import and export' },
-  { path: '/settings/delete-account', name: 'delete-account', phoneTitle: 'Delete your account' },
 ];
 
 /** The merchant key the app groups codes by, written again here so the oracle shares no code with the app. */
@@ -382,9 +381,10 @@ export async function verifySettings(t) {
   check('the live transaction count is as it was', after.length === txns.length, { before: txns.length, after: after.length });
 
   // ---------- Export data: the file's transactions are the live ones ----------
-  for (const path of ['/settings/import', '/settings/delete-account']) {
+  for (const [path, opens] of [['/settings/import', null], ['/settings/profile', 'Delete your account']]) {
     await p.goto(`${base}${path}`);
     await ready(p);
+    if (opens) await p.getByRole('button', { name: opens }).click().catch(() => {});
     const button = p.getByRole('button', { name: 'Export data' });
     await button.waitFor({ timeout: 30_000 }).catch(() => {});
     const [download] = await Promise.all([p.waitForEvent('download', { timeout: 10_000 }).catch(() => null), button.click().catch(() => {})]);

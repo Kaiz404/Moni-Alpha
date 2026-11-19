@@ -4,6 +4,7 @@ import { BackHandler, StyleSheet, View } from 'react-native';
 import { RangeSheet } from '@/components/activity/range-sheet';
 import { MonthSheet } from '@/components/budget/month-sheet';
 import { PlaceSheet } from '@/components/capture/place-sheet';
+import { DeleteAccountSheet } from '@/components/profile/delete-account-sheet';
 import { CaptureChooserSheet } from '@/components/nav/capture-chooser';
 import { BalanceSheet } from '@/components/sheets/balance-sheet';
 import { CategoryPickerSheet } from '@/components/sheets/category-picker-sheet';
@@ -184,6 +185,14 @@ function renderSheet(sheet: OpenSheet, frame: SheetFrameProps) {
           selectedId={sheet.request.selected}
           startPage={sheet.request.startPage}
           onPick={sheet.settle}
+        />
+      );
+    case 'deleteAccount':
+      return (
+        <DeleteAccountSheet
+          {...frame}
+          request={sheet.request}
+          onDeleted={() => sheet.settle(true)}
         />
       );
     case 'confirm':

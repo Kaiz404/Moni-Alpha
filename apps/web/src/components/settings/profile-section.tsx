@@ -4,6 +4,8 @@ import { useValue } from '@legendapp/state/react';
 import { updateProfilePreferences } from '@repo/data';
 import { userPreferencesSchema, type MoniTone } from '@repo/types';
 import Link from 'next/link';
+import { useState } from 'react';
+import { DeleteAccountDialog } from '@/components/account/delete-account-form';
 import { Icon } from '@/components/icon';
 import { showToast } from '@/components/shell/shell-store';
 import { useShellApi } from '@/components/shell/shell-context';
@@ -47,6 +49,7 @@ export function ProfileSection() {
   const { user, run } = useShellApi();
   const { pref, setTheme } = useTheme();
   const picked = useValue(() => moniStore().profilePreferences$.get()?.moni_tone ?? 'friendly');
+  const [deleting, setDeleting] = useState(false);
 
   const pickTone = (tone: MoniTone) => {
     if (tone === picked) return;
@@ -145,14 +148,12 @@ export function ProfileSection() {
           <Icon name="logout" size={20} />
           <span className="set-row-title">Sign out</span>
         </button>
-        <Link href="/settings/delete-account" className="set-row" data-tone="over">
+        <button type="button" className="set-row" data-tone="over" aria-haspopup="dialog" onClick={() => setDeleting(true)}>
           <Icon name="account-remove-outline" size={20} />
-          <span className="set-row-title" style={{ flex: '1 1 auto' }}>
-            Delete your account
-          </span>
-          <Icon name="chevron-right" size={20} />
-        </Link>
+          <span className="set-row-title">Delete your account</span>
+        </button>
       </div>
+      {deleting && <DeleteAccountDialog userId={user.id} zone={user.zone} onClose={() => setDeleting(false)} />}
     </section>
   );
 }

@@ -7,11 +7,5 @@ describe('settingsPlace', () => {
     expect(settingsPlace('/settings/merchants')).toEqual({ section: 'merchants', index: false, phoneTitle: 'Merchant names', back: '/settings' });
     expect(settingsPlace('/settings/import/')).toEqual({ section: 'import', index: false, phoneTitle: 'Import and export', back: '/settings' });
     expect(settingsPlace('/settings/ai')).toEqual({ section: 'ai', index: false, phoneTitle: "Moni's AI", back: '/settings' });
-    expect(settingsPlace('/settings/delete-account')).toEqual({
-      section: 'profile',
-      index: false,
-      phoneTitle: 'Delete your account',
-      back: '/settings/profile',
-    });
   });
 });

@@ -24,9 +24,6 @@ export type SettingsPlace = { section: SettingsSection; index: boolean; phoneTit
 
 export function settingsPlace(pathname: string): SettingsPlace {
   const path = pathname.replace(/\/$/, '');
-  if (path === '/settings/delete-account') {
-    return { section: 'profile', index: false, phoneTitle: 'Delete your account', back: '/settings/profile' };
-  }
   const item = SETTINGS_GROUPS.flatMap((group) => group.items).find((each) => path === each.href);
   if (!item) return { section: 'profile', index: true, phoneTitle: 'Settings', back: '/home' };
   return { section: item.key, index: false, phoneTitle: item.label, back: '/settings' };

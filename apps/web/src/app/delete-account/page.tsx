@@ -13,8 +13,8 @@ export const metadata: Metadata = {
 
 /**
  * The public deletion page the Play listing links to. Signed out, it lists what goes and emails a sign-in
- * link that comes back here; signed in, it is the same flow as Settings › Delete your account, and pulls
- * the ledger so Export data has every row.
+ * link that comes back here; signed in, it adds the form Settings' Delete your account dialog holds, and
+ * pulls the ledger so Export data has every row.
  */
 export default async function DeleteAccountPage() {
   const { data } = await (await createClient()).auth.getClaims();
@@ -30,7 +30,9 @@ export default async function DeleteAccountPage() {
             Signed in as <strong>{email ?? 'you'}</strong>. Type DELETE below and Moni deletes the account at once.
           </p>
           <StoreSync />
-          <DeleteAccountForm cancelHref="/" userId={data.claims.sub} zone={null} />
+          <WhatIsDeleted />
+          <p className="delete-line">{FOR_GOOD}</p>
+          <DeleteAccountForm cancel={{ href: '/' }} userId={data.claims.sub} zone={null} />
         </>
       ) : (
         <>
