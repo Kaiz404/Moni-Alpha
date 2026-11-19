@@ -1,4 +1,4 @@
-import type { CurrencyCode, MinorAmount, ProposedTransaction } from '@repo/types';
+import type { CurrencyCode, MinorAmount } from '@repo/types';
 
 import { BALANCE_CORRECTION_TITLE } from '../write-plans/balance-correction';
 import type { FinanceTransaction } from './types';
@@ -25,13 +25,6 @@ export function compactWalletNames(wallets: readonly { id: string; name: string 
   return Object.fromEntries(
     wallets.map((wallet) => [wallet.id, readers.get(key(wallet.name)) === 1 ? compactWalletName(wallet.name) : wallet.name]),
   );
-}
-
-/** A capture still waiting: pending, or Later whose time has come. */
-export function isAwaitingReview(proposal: Pick<ProposedTransaction, 'status' | 'snoozedUntil'>, now: Date): boolean {
-  if (proposal.status === 'pending') return true;
-  if (proposal.status !== 'later') return false;
-  return !proposal.snoozedUntil || Date.parse(proposal.snoozedUntil) <= now.getTime();
 }
 
 /** The category glyph by its MDI name, or the type's arrow when the category has none. */

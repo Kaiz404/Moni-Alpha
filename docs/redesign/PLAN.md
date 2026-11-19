@@ -1304,7 +1304,7 @@ These are owner calls that no experiment settles. Each PR implements the default
 - [ ] Lane 2. Pair the deck with the `XA-Review` render. Save `r1-l2-pair.png`. Pass when the card blocks match the board and the card under it is blank at 0.96.
 - [ ] Lane 3. Swipe the top card right with Maestro `swipe`. Save `r1-l3-swipe-right.png`. Pass when the ledger gains the row, the vibrator dump shows `Toggle_On` then `Confirm`, and the toast shows **Undo**.
 - [ ] Lane 4. Swipe left. Save `r1-l4-swipe-left.png`. Pass when the toast reads "1 not mine" and the row has `status` equal to `rejected`.
-- [ ] Lane 5. Swipe down. Save `r1-l5-swipe-down.png`. Pass when the row has `status` equal to `later` and a future `snoozed_until`.
+- [ ] Lane 5. Swipe down. Save `r1-l5-swipe-down.png`. Pass when the card comes back and nothing is written (Later was removed, #69).
 - [ ] Lane 6. Drag right to 25 percent and release slowly. Save `r1-l6-snap-back.png`. Pass when the card returns to the centre and nothing is written.
 - [ ] Lane 7. Run `flows/review/edit-in-card.yaml`, which edits the amount in place and then tries to swipe. Save `r1-l7-edit.png`. Pass when the keyboard opens, the swipe does nothing while editing, and Approve after save writes the edited amount.
 - [ ] Lane 8. Open a seeded proposal with no wallet. Save `r1-l8-needs-wallet.png`. Pass when **Approve** asks for a wallet and nothing is written until one is picked.

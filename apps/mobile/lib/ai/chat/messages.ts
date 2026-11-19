@@ -15,7 +15,7 @@ export type QuickReplyOption = 'log_transaction' | 'analyze_finances';
 
 /** How a draft card was settled; the card keeps showing it after the proposal is gone. */
 export type DraftOutcome = {
-  kind: 'approved' | 'later' | 'not_mine';
+  kind: 'approved' | 'not_mine';
   title: string;
   meta: string;
 };

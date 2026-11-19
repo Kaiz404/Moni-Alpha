@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { compactWalletName, compactWalletNames, isAwaitingReview, transactionRow } from '../transaction-row';
+import { compactWalletName, compactWalletNames, transactionRow } from '../transaction-row';
 import type { FinanceTransaction } from '../types';
 
 const lookups = {
@@ -121,20 +121,5 @@ describe('compactWalletName', () => {
     ['Current Fund', 'Current Fund'],
   ])('reads %s as %s', (full, compact) => {
     expect(compactWalletName(full)).toBe(compact);
-  });
-});
-
-describe('isAwaitingReview', () => {
-  const now = new Date('2026-10-14T05:00:00.000Z');
-  it('waits while pending or once Later runs out', () => {
-    expect(
-      [
-        { status: 'pending' as const, snoozedUntil: null },
-        { status: 'later' as const, snoozedUntil: '2026-10-14T04:00:00.000Z' },
-        { status: 'later' as const, snoozedUntil: '2026-10-15T04:00:00.000Z' },
-        { status: 'approved' as const, snoozedUntil: null },
-        { status: 'rejected' as const, snoozedUntil: null },
-      ].map((proposal) => isAwaitingReview(proposal, now)),
-    ).toEqual([true, true, false, false, false]);
   });
 });

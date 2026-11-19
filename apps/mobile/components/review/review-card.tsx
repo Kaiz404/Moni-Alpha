@@ -148,12 +148,11 @@ export const ReviewCard = memo(function ReviewCard({
   );
   const evidence = fit.evidenceLines > 0 ? model.evidence : null;
   const similar = fit.similar ? model.similar : null;
-  // A screen reader can't swipe, so the swipe's three decisions are this row's actions.
+  // A screen reader can't swipe, so the swipe's two decisions are this row's actions.
   const decisions: { name: ReviewDecision; label: string }[] = canDecide
     ? [
         { name: 'approve', label: model.canApprove ? `Approve ${amountText}` : 'Pick wallet' },
         { name: 'notMine', label: 'Not mine. Nothing gets added' },
-        { name: 'later', label: 'Later. Save it for later' },
       ]
     : [];
   const onDecisionAction = ({ nativeEvent }: AccessibilityActionEvent) => {

@@ -2,7 +2,6 @@ import type { Observable } from '@legendapp/state';
 import {
   approveProposedTransaction,
   getProposedTransactions,
-  laterProposedTransaction,
   listAwaitingReview,
   listRecentlyReviewed,
   pruneReviewHistory,
@@ -60,27 +59,18 @@ function seed(id: string, over: Record<string, unknown>) {
   });
 }
 
-describe('Later', () => {
-  it('review lists pending rows and Later rows that are due, not ones still snoozed', async () => {
+describe('Review', () => {
+  it('lists every unreviewed capture, a Later row an older app stored among them, as pending', async () => {
     seed('pending', {});
-    seed('due', { status: 'later', snoozed_until: new Date(NOW.getTime() - HOUR).toISOString() });
-    seed('snoozed', {
-      status: 'later',
-      snoozed_until: new Date(NOW.getTime() + HOUR).toISOString(),
-    });
+    seed('stale', { status: 'later', snoozed_until: new Date(NOW.getTime() + HOUR).toISOString() });
+    seed('done', { status: 'approved', reviewed_at: daysAgo(0.1) });
 
-    const ids = (await getProposedTransactions(NOW)).map((p) => p.id).sort();
+    const waiting = (await getProposedTransactions()).map((p) => [p.id, p.status]).sort();
 
-    expect(ids).toEqual(['due', 'pending']);
-  });
-
-  it('laterProposedTransaction stores the status and the snooze end', () => {
-    seed('p1', {});
-    laterProposedTransaction('p1', new Date(NOW.getTime() + HOUR));
-    expect(proposedTransactions$.p1.peek()).toMatchObject({
-      status: 'later',
-      snoozed_until: '2026-10-14T11:00:00.000Z',
-    });
+    expect(waiting).toEqual([
+      ['pending', 'pending'],
+      ['stale', 'pending'],
+    ]);
   });
 });
 
@@ -98,7 +88,7 @@ describe('Not mine', () => {
       transaction_id: null,
       deleted: false,
     });
-    expect(listAwaitingReview(NOW)).toEqual([]);
+    expect(listAwaitingReview()).toEqual([]);
   });
 
   it('soft-deletes the row as before while the review_history migration is not pushed', async () => {
@@ -129,7 +119,7 @@ describe('Not mine', () => {
 describe('Approve', () => {
   it('keeps the row with the id of the ledger row it created', async () => {
     seed('p3', {});
-    const [proposal] = listAwaitingReview(NOW);
+    const [proposal] = listAwaitingReview();
 
     const transactionId = await approveProposedTransaction(proposal, { walletId: 'w1' });
 
@@ -146,7 +136,6 @@ describe('Approve', () => {
 describe('Recently reviewed', () => {
   it('lists Approve and Not mine decisions of the last 30 days, newest first', () => {
     seed('pending', {});
-    seed('snoozed', { status: 'later', snoozed_until: daysAgo(-1) });
     seed('yesterday', { status: 'approved', reviewed_at: daysAgo(1), transaction_id: 'tx-9' });
     seed('today', { status: 'rejected', reviewed_at: daysAgo(0.1) });
     seed('day-29', { status: 'rejected', reviewed_at: daysAgo(29) });

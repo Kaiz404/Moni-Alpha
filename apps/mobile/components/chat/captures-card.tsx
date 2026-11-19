@@ -17,13 +17,11 @@ import * as haptics from '@/lib/haptics';
 import { captureSourceLabel } from '@/lib/proposals/capture-source';
 import {
   approve,
-  later,
   notMine,
   undo,
   type ReviewOutcome,
   type ReviewResult,
 } from '@/lib/proposals/review-actions';
-import { isAwaitingReview } from '@repo/core';
 import { tid } from '@/lib/test-ids';
 import { showToast } from '@/lib/toast/toast-store';
 import { resolveTransactionIcon } from '@/lib/transactions/icon';
@@ -34,7 +32,7 @@ import { formatMoney, formatSignedMoney } from '@repo/core';
 
 type Settled = DraftOutcome['kind'];
 
-const STATUS: Record<Settled, string> = { approved: 'Approved', later: 'Later', not_mine: 'Not mine' };
+const STATUS: Record<Settled, string> = { approved: 'Approved', not_mine: 'Not mine' };
 
 function Circle({
   testID,
@@ -182,14 +180,6 @@ function CaptureRow({
             }}
           />
           <Circle
-            testID={tid('chat', 'captures', 'later', proposal.id)}
-            label={`Later: ${title}`}
-            icon="clock-outline"
-            fill="bg-sand"
-            ink={tokens.foreground}
-            onPress={() => void decide('later', () => later(proposal))}
-          />
-          <Circle
             testID={tid('chat', 'captures', 'approve', proposal.id)}
             label={proposal.walletId ? `Approve ${title}` : `Pick a wallet for ${title}`}
             icon={proposal.walletId ? 'check' : 'wallet-outline'}
@@ -215,9 +205,7 @@ export function CapturesCard({ proposalIds }: { proposalIds: readonly string[] }
       return proposal ? [proposal] : [];
     }),
   );
-  const now = new Date();
-  const rows = proposals.filter((proposal) => settled[proposal.id] || isAwaitingReview(proposal, now));
-  const open = rows.filter((proposal) => !settled[proposal.id]);
+  const open = proposals.filter((proposal) => !settled[proposal.id]);
   const oneCurrency = open.every((proposal) => proposal.currency === currency);
   const total = open.reduce((sum, proposal) => sum + Number(proposal.amountMinor ?? 0), 0);
   const title = open.length
@@ -246,7 +234,7 @@ export function CapturesCard({ proposalIds }: { proposalIds: readonly string[] }
         </Text>
       </View>
       <View>
-        {rows.map((proposal) => (
+        {proposals.map((proposal) => (
           <CaptureRow
             key={proposal.id}
             proposal={proposal}

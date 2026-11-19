@@ -25,7 +25,6 @@ import { pickActivityRange } from '@/lib/sheet/pick-date';
 import { openSheet } from '@/lib/sheet/sheet-store';
 import { transactions$ as transactionTable$ } from '@/lib/store';
 import { listMerchantAliases } from '@/lib/supabase/merchant-aliases';
-import { isAwaitingReview } from '@repo/core';
 import { tid } from '@/lib/test-ids';
 import type { RowLookups } from '@repo/core';
 import { compactWalletNames } from '@repo/core';
@@ -137,8 +136,7 @@ export default function ActivityScreen() {
   const [page, setPage] = usePageNumber(
     JSON.stringify([searched, shownWalletIds, kind, range, currency]),
   );
-  const waiting = proposals.filter((proposal) => isAwaitingReview(proposal, new Date()));
-  const reviewTotal = waiting
+  const reviewTotal = proposals
     .filter((proposal) => proposal.currency === currency)
     .reduce((sum, proposal) => sum + Number(proposal.amountMinor ?? 0), 0);
 
@@ -190,16 +188,16 @@ export default function ActivityScreen() {
       kind="tabRoot"
       title="Activity"
       trailing={
-        waiting.length ? (
+        proposals.length ? (
           <ReviewStrip
-            count={waiting.length}
+            count={proposals.length}
             amount={
               reviewTotal > 0 ? formatMoney(reviewTotal, currency) : null
             }
             onPress={() =>
               router.push({
                 pathname: '/review',
-                params: { id: waiting[0].id },
+                params: { id: proposals[0].id },
               })
             }
           />

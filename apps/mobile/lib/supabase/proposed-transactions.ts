@@ -1,13 +1,12 @@
 import type { StoredRow } from '@repo/core';
 import {
-  assertMigrated,
   isMigrated,
   proposedTransactions$,
   wallets$,
 } from '@/lib/store';
 import { getRecordValues, hasRow, patchRow } from '@/lib/store/helpers';
 import { ledgerView } from '@/lib/store/writes';
-import { checkTransfer, isAwaitingReview, toProposal } from '@repo/core';
+import { checkTransfer, toProposal } from '@repo/core';
 import { getUserId } from '@/lib/supabase/client';
 import { randomUUID } from 'expo-crypto';
 import {
@@ -65,7 +64,7 @@ function isReviewableRow(row: ProposedTransactionRow): boolean {
 }
 
 export function isUnreviewed(proposal: Pick<ProposedTransaction, 'status'>): boolean {
-  return proposal.status === 'pending' || proposal.status === 'later';
+  return proposal.status === 'pending';
 }
 
 export type ReviewedProposal = ProposedTransaction & {
@@ -87,7 +86,8 @@ function readProposals(): ProposedTransaction[] {
     .flatMap((row) => toProposal(row) ?? []);
 }
 
-function readUnreviewedProposals(): ProposedTransaction[] {
+/** Captures waiting for a decision, newest first. Reads the store, so it is safe in a reactive selector. */
+export function listAwaitingReview(): ProposedTransaction[] {
   return readProposals()
     .filter(isUnreviewed)
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
@@ -120,23 +120,8 @@ export function pruneReviewHistory(now = new Date()): number {
   return old.length;
 }
 
-/** Captures waiting for a decision, newest first. Reads the store, so it is safe in a reactive selector. */
-export function listAwaitingReview(now = new Date()): ProposedTransaction[] {
-  return readUnreviewedProposals().filter((proposal) => isAwaitingReview(proposal, now));
-}
-
-export async function getProposedTransactions(now = new Date()): Promise<ProposedTransaction[]> {
-  return listAwaitingReview(now);
-}
-
-export function laterProposedTransaction(id: string, until: Date): void {
-  assertMigrated('review_later_and_auto_add_rules');
-  patchRow(proposedTransactions$, id, {
-    status: 'later',
-    snoozed_until: until.toISOString(),
-    updated_at: new Date().toISOString(),
-  });
-  emitProposedTransactionsChanged();
+export async function getProposedTransactions(): Promise<ProposedTransaction[]> {
+  return listAwaitingReview();
 }
 
 /** Soft-delete stub rows left by image-upload races (no amount/type). Safe to call on startup. */
@@ -387,7 +372,7 @@ function proposalLedgerEntry(
 
 export async function getLedgerEntries(): Promise<LedgerEntry[]> {
   const transactions = await getTransactions(undefined, 500);
-  const proposals = readUnreviewedProposals();
+  const proposals = listAwaitingReview();
   const wallets = readWalletLookup();
   return [
     ...transactions

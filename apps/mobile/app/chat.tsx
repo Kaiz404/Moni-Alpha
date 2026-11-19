@@ -57,7 +57,6 @@ import {
   mergeTranscriptWithBase,
   prepareOfflineSpeechModel,
 } from '@/lib/speech/speech-recognition';
-import { isAwaitingReview } from '@repo/core';
 import { tid } from '@/lib/test-ids';
 import MoniAndroidApps from '@/modules/moni-android-apps';
 import { dateLabel, parseDayKey } from '@repo/core';
@@ -244,9 +243,7 @@ export default function ChatScreen() {
     if (!userId || !isToday || firstRun) return;
     if (readThread(today).messages.some((m) => m.kind === 'assistant_noticed')) return;
     const now = new Date();
-    const waiting = pendingProposals$(userId)
-      .peek()
-      .filter((proposal) => isAwaitingReview(proposal, now));
+    const waiting = pendingProposals$(userId).peek();
     const snapshot = buildAnswerSnapshot(userId, now);
     const items = noticedItems(
       snapshot,
@@ -345,9 +342,7 @@ export default function ChatScreen() {
         sendRef.current(item.target.question);
         return;
       }
-      const first = pendingProposals$(userId)
-        .peek()
-        .find((proposal) => isAwaitingReview(proposal, new Date()));
+      const [first] = pendingProposals$(userId).peek();
       if (first) router.push({ pathname: '/review', params: { id: first.id } });
     },
     [userId],

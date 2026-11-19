@@ -28,7 +28,6 @@ jest.mock('@/lib/supabase/proposed-transactions', () => ({
   ...jest.requireActual('@/lib/supabase/proposed-transactions'),
   approveProposedTransaction: jest.fn(async () => 't1'),
   rejectProposedTransaction: jest.fn(async () => {}),
-  laterProposedTransaction: jest.fn(),
   findProposalDuplicate: jest.fn(async () => null),
 }));
 jest.mock('@/lib/supabase/transactions', () => ({ deleteTransaction: jest.fn(async () => {}) }));

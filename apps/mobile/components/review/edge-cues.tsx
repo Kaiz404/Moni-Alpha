@@ -18,21 +18,15 @@ import {
 
 const SIDE_WIDTH = 28;
 const SIDE_LENGTH = 128;
-const LATER_GAP = 12;
-const LATER_HEIGHT = 32;
-/** What the Later cue needs under a card, so the deck can keep it clear. */
-export const LATER_ROOM = LATER_GAP + LATER_HEIGHT;
 /** Past this much fill the label switches to the ink that reads on the action colour. */
 const INK_SWITCH = 0.55;
 
 type CueProps = {
   x: SharedValue<number>;
-  y: SharedValue<number>;
   /** The one answer to which side is lit, so a cue can't disagree with the card. */
   selection: SharedValue<SwipeSelection>;
   room: SharedValue<SwipeRoom>;
   width: number;
-  height: number;
   canApprove: boolean;
 };
 
@@ -44,29 +38,25 @@ type Look = { canvas: string; border: string; hex: string };
  */
 function useCue(
   side: SwipeSide,
-  { x, y, selection, room, width, height, canApprove }: CueProps,
+  { x, selection, room, width, canApprove }: CueProps,
   look: Look,
 ) {
   const read = () => {
     'worklet';
-    const dy = y.get();
     const current = selection.get();
-    const reach = selectionReach(current, { dx: x.get(), dy, width, height, room: room.get() });
+    const reach = selectionReach(current, { dx: x.get(), width, room: room.get() });
     const mine = current?.side === side;
     const p = mine ? reach : 0;
     const full = mine && current.engaged;
     const on = full && (side !== 'right' || canApprove);
-    return { dimmed: !mine && reach > 0, mine, p, on, full, fill: full ? 1 : 0.8 * p, dy };
+    return { dimmed: !mine && reach > 0, p, on, full, fill: full ? 1 : 0.8 * p };
   };
 
   const wrap = useAnimatedStyle(() => {
     const cue = read();
     return {
       opacity: cue.dimmed ? 0.3 : 1,
-      transform: [
-        ...(side === 'down' ? [{ translateY: cue.mine ? Math.max(0, cue.dy) * 0.5 : 0 }] : []),
-        { scale: cue.on ? 1.3 : 1 + 0.18 * cue.p },
-      ],
+      transform: [{ scale: cue.on ? 1.3 : 1 + 0.18 * cue.p }],
     };
   });
   const face = useAnimatedStyle(() => {
@@ -97,36 +87,31 @@ function CueContent({
   label,
   ink,
   vertical,
-  sizer,
   style,
 }: {
   icon: IconSymbolName;
   label: string;
   ink: string;
-  vertical: 'up' | 'down' | null;
-  /** The one layer that sets the down cue's width; the others sit over it. */
-  sizer: boolean;
+  vertical: 'up' | 'down';
   style: AnimatedStyle<ViewStyle>;
 }) {
   return (
     <Animated.View
-      className={`${vertical === 'up' ? 'flex-row-reverse' : 'flex-row'} items-center justify-center gap-1.5 ${vertical ? '' : sizer ? 'h-full pl-2.5 pr-3.5' : 'absolute inset-0'}`}
+      className={`${vertical === 'up' ? 'flex-row-reverse' : 'flex-row'} items-center justify-center gap-1.5`}
       style={[
-        vertical
-          ? {
-              position: 'absolute',
-              width: SIDE_LENGTH,
-              height: SIDE_WIDTH,
-              left: (SIDE_WIDTH - SIDE_LENGTH) / 2,
-              top: (SIDE_LENGTH - SIDE_WIDTH) / 2,
-              transform: [{ rotate: vertical === 'down' ? '90deg' : '-90deg' }],
-            }
-          : undefined,
+        {
+          position: 'absolute',
+          width: SIDE_LENGTH,
+          height: SIDE_WIDTH,
+          left: (SIDE_WIDTH - SIDE_LENGTH) / 2,
+          top: (SIDE_LENGTH - SIDE_WIDTH) / 2,
+          transform: [{ rotate: vertical === 'down' ? '90deg' : '-90deg' }],
+        },
         style,
       ]}
     >
       {/* The rail turns its label, and the arrow stays upright at the top so it points the way to swipe. */}
-      <View style={vertical ? { transform: [{ rotate: vertical === 'down' ? '-90deg' : '90deg' }] } : undefined}>
+      <View style={{ transform: [{ rotate: vertical === 'down' ? '-90deg' : '90deg' }] }}>
         <IconSymbol
           name={icon}
           size={18}
@@ -167,7 +152,7 @@ function Cue({
 }) {
   const tokens = useThemeTokens();
   const cue = useCue(side, props, look);
-  const vertical = side === 'right' ? 'down' : side === 'left' ? 'up' : null;
+  const vertical = side === 'right' ? 'down' : 'up';
   const layers = [
     { key: 'rest', icon: arrow, ink: tokens.muted, style: cue.layers.rest },
     { key: 'moving', icon: arrow, ink: tokens.foreground, style: cue.layers.moving },
@@ -177,17 +162,16 @@ function Cue({
   return (
     <Animated.View style={[position, cue.wrap]}>
       <Animated.View
-        className={`rounded-full border-[1.5px] ${vertical ? 'h-32 w-7' : 'h-8'}`}
+        className="h-32 w-7 rounded-full border-[1.5px]"
         style={cue.face}
       >
-        {layers.map((layer, i) => (
+        {layers.map((layer) => (
           <CueContent
             key={layer.key}
             icon={layer.icon}
             label={label}
             ink={layer.ink}
             vertical={vertical}
-            sizer={i === 0}
             style={layer.style}
           />
         ))}
@@ -197,15 +181,13 @@ function Cue({
 }
 
 /**
- * "Not mine" on the left edge, "Approve" on the right, "Later" under the card, as `XA-Review`
- * draws them: each fills toward its colour as the card moves its way and swaps its arrow for
- * the action icon once armed.
+ * "Not mine" on the left edge and "Approve" on the right, as `XA-Review` draws them: each fills
+ * toward its colour as the card moves its way and swaps its arrow for the action icon once armed.
  */
 export function EdgeCues(props: CueProps & { centerY: number }) {
   const tokens = useThemeTokens();
   const base = { canvas: tokens.canvas, border: tokens.border };
   const sideTop = props.centerY - SIDE_LENGTH / 2;
-  const laterTop = props.centerY + props.height / 2 + LATER_GAP;
 
   return (
     <View
@@ -233,21 +215,6 @@ export function EdgeCues(props: CueProps & { centerY: number }) {
         label="Not mine"
         onInk={tokens.primaryForeground}
       />
-      <View
-        className="absolute inset-x-0 items-center"
-        style={{ top: laterTop }}
-      >
-        <Cue
-          side="down"
-          position={{ transformOrigin: '50% 100%' }}
-          props={props}
-          look={{ ...base, hex: tokens.lemon }}
-          arrow="arrow-down"
-          action="clock-outline"
-          label="Later"
-          onInk={tokens.onCategory}
-        />
-      </View>
     </View>
   );
 }

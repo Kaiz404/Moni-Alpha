@@ -35,7 +35,6 @@ import { financeOverview$, pendingProposals$ } from '@/lib/finance/selectors';
 import { wallets$ } from '@/lib/store';
 import { getRecordValues } from '@/lib/store/helpers';
 import { listMerchantAliases } from '@/lib/supabase/merchant-aliases';
-import { isAwaitingReview } from '@repo/core';
 import { tid } from '@/lib/test-ids';
 import type { RowLookups } from '@repo/core';
 import { compactWalletNames } from '@repo/core';
@@ -118,9 +117,6 @@ export default function HomeScreen() {
   const firstRun =
     overview.wallets.length === 0 &&
     overview.transactions.length === 0;
-  const waiting = proposals.filter((proposal) =>
-    isAwaitingReview(proposal, now),
-  );
   const recent = useMemo(
     () =>
       overview.transactions
@@ -230,12 +226,12 @@ export default function HomeScreen() {
             }
           />
           <ReviewBlock
-            proposals={waiting}
+            proposals={proposals}
             currency={currency}
             onPress={() =>
               router.push({
                 pathname: '/review',
-                params: { id: waiting[0]!.id },
+                params: { id: proposals[0]!.id },
               })
             }
           />

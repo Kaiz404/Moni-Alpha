@@ -3,10 +3,10 @@ import { transactionTypeSchema } from './transaction';
 import { currencyCodeSchema, positiveMinorAmountSchema } from './money';
 
 /**
- * `pending` and `later` are unreviewed; a `later` row comes back once `snoozedUntil` passes.
- * Approve and Not mine stamp their status and `reviewedAt` and keep the row as review history.
+ * `pending` is unreviewed. Approve and Not mine stamp their status and `reviewedAt` and keep the
+ * row as review history.
  */
-export const proposedTransactionStatusSchema = z.enum(['pending', 'later', 'rejected', 'approved']);
+export const proposedTransactionStatusSchema = z.enum(['pending', 'rejected', 'approved']);
 export const proposedTransactionSourceTypeSchema = z.enum(['notification', 'text', 'image']);
 
 /** What was captured and what Moni read from it, before any decision. */
@@ -61,7 +61,6 @@ export const proposedTransactionSchema = capturedFieldsSchema.extend({
   userId: z.string().uuid(),
 
   status: proposedTransactionStatusSchema,
-  snoozedUntil: z.string().datetime().nullable().optional(),
   /** Set by Approve and Not mine; cleared when the capture goes back to review. */
   reviewedAt: z.string().datetime().nullable().optional(),
   /** The ledger row Approve created; null for Not mine and once that row is deleted. */

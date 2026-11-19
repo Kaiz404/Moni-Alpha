@@ -178,7 +178,7 @@ describe('a reload funded from a bank', () => {
 
   it('folds into a row the user already approved', async () => {
     await run(tngReload(0));
-    const [card] = listAwaitingReview(new Date(T0 + 1000));
+    const [card] = listAwaitingReview();
     await approve(card!, { walletId: MAYBANK });
     expect(ledgerRows().map(transferShape)).toEqual([RELOAD]);
 
@@ -420,7 +420,7 @@ describe('spending totals', () => {
         merchant: 'MAMAK',
       }, 20),
     );
-    const [card] = listAwaitingReview(new Date(T0 + 30 * 60_000));
+    const [card] = listAwaitingReview();
     await approve(card!);
 
     const rows = ledgerRows().flatMap((row) => toFinanceTransaction(row) ?? []);

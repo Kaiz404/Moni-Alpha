@@ -19,7 +19,7 @@ Input (chat text / receipt photo / notification / + chooser scan or voice)
       reload or card bill naming both wallets → a transfer in transactions (metadata.ai_suggested)
       routine notification → transactions (metadata.ai_suggested, shown as "Auto"; metadata.alert keeps the alert)
       otherwise            → proposed_transactions (category/merchant prefilled from history)
-  → Review deck (`app/review.tsx`) → Approve / Not mine / Later
+  → Review deck (`app/review.tsx`) → Approve / Not mine
 ```
 
 ### Moni chat (conversational)

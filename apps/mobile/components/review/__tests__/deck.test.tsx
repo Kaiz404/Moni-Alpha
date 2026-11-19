@@ -135,7 +135,7 @@ async function show(ui: React.ReactElement) {
 }
 
 /** The way a screen reader decides: the card's own accessibility actions. */
-async function decide(actionName: 'approve' | 'notMine' | 'later') {
+async function decide(actionName: 'approve' | 'notMine') {
   await act(async () =>
     fireEvent(screen.getByTestId('review.summary'), 'accessibilityAction', {
       nativeEvent: { actionName },
@@ -500,7 +500,6 @@ describe('Review deck', () => {
   it.each([
     ['Approve', 'approve', 'approved'],
     ['Not mine', 'notMine', 'rejected'],
-    ['Later', 'later', 'later'],
   ] as const)('Undo after %s puts the card back on top of the next one', async (_name, action, status) => {
     seed('p1');
     seed('p2', { merchant: 'JAYA GROCER', created_at: '2020-01-01T00:00:00.000Z' });
@@ -689,13 +688,12 @@ describe('Review deck', () => {
     const actions = () =>
       screen.getByTestId('review.summary').props.accessibilityActions as { name: string; label: string }[];
 
-    it('offers a screen reader the three decisions, with the amount on Approve', async () => {
+    it('offers a screen reader the two decisions, with the amount on Approve', async () => {
       seed('p1');
       await show(<ReviewScreen />);
       expect(actions()).toEqual([
         { name: 'approve', label: 'Approve −RM12.00' },
         { name: 'notMine', label: 'Not mine. Nothing gets added' },
-        { name: 'later', label: 'Later. Save it for later' },
       ]);
     });
 
@@ -985,7 +983,7 @@ describe('Review deck', () => {
       render(<ReviewScreen />);
       await act(async () => {});
       fireEvent(screen.getByTestId('review.deck'), 'layout', {
-        nativeEvent: { layout: { width: 312, height: 482 } },
+        nativeEvent: { layout: { width: 312, height: 438 } },
       });
 
       expect(cardHeight()).toBe(422);
@@ -1074,7 +1072,7 @@ describe('Review deck', () => {
     expect(ledger()).toEqual([expect.objectContaining({ amount: '15.50' })]);
   });
 
-  it("Don't ask about similar adds an auto-add rule on Approve; Later snoozes the capture", async () => {
+  it("Don't ask about similar adds an auto-add rule on Approve, and the summary counts both answers", async () => {
     seed('p1');
     seed('p2', { merchant: 'JAYA GROCER', created_at: '2020-01-01T00:00:00.000Z' });
     await show(<ReviewScreen />);
@@ -1086,9 +1084,9 @@ describe('Review deck', () => {
       expect.objectContaining({ merchant_key: 'grab', wallet_id: MAYBANK, category_id: FOOD }),
     ]);
 
-    await decide('later');
-    expect(store.proposedTransactions$.p2.status.peek()).toBe('later');
-    expect(screen.getByText(/^1 approved, 0 not mine, 1 for later\./)).toBeTruthy();
+    await decide('notMine');
+    expect(store.proposedTransactions$.p2.status.peek()).toBe('rejected');
+    expect(screen.getByText(/^1 approved, 1 not mine\. /)).toBeTruthy();
   });
 
   it('shows Nothing to review when the queue is empty', async () => {
