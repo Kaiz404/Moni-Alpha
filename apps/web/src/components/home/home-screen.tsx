@@ -19,8 +19,10 @@ import {
 } from '@/lib/home-layout';
 import { useLedger, type Ledger } from '@/lib/ledger/use-ledger';
 import { useScreenKeys } from '@/lib/screen-keys';
+import type { ChecklistItem } from '@/lib/setup';
 import { RecentCard } from './recent-card';
 import { ReviewCard } from './review-card';
+import { useSetupChecklist } from './setup-card';
 import { NextDaysCard, PlacesCard, WalletsCard } from './side-cards';
 import { SpentCard, type SpentMode } from './spent-card';
 import './home.css';
@@ -61,10 +63,10 @@ function headerDate(now: Date, zone: string): string {
   return `${part({ weekday: 'long' })}, ${part({ day: 'numeric' })} ${part({ month: 'short' })}`;
 }
 
-function cardFor(card: HomeCard, ledger: Ledger, firstRun: boolean, checkInDismissed: boolean, dismissCheckIn: () => void): ReactNode {
+function cardFor(card: HomeCard, ledger: Ledger, setup: ChecklistItem[] | null, checkInDismissed: boolean, dismissCheckIn: () => void): ReactNode {
   switch (card) {
     case 'review':
-      return <ReviewCard ledger={ledger} firstRun={firstRun} />;
+      return <ReviewCard ledger={ledger} setup={setup} />;
     case 'recent':
       return <RecentCard ledger={ledger} />;
     case 'next':
@@ -113,7 +115,9 @@ export function HomeScreen() {
   });
 
   const zone = ledger.calendar.zone;
-  const firstRun = ledger.loaded && ledger.wallets.length === 0 && ledger.transactions.length === 0;
+  // Until the first transaction Home welcomes the new account and its chart says what will draw there.
+  const firstRun = ledger.loaded && ledger.transactions.length === 0;
+  const setup = useSetupChecklist(ledger);
   const title = editing
     ? 'Customise Home'
     : !ledger.mounted
@@ -208,7 +212,7 @@ export function HomeScreen() {
         onDragOver={editing ? (event) => event.preventDefault() : undefined}
         onDrop={editing ? dropOn(card) : undefined}
       >
-        {(!hidden || editing) && cardFor(card, ledger, firstRun, checkInDismissed, () => setCheckInDismissed(true))}
+        {(!hidden || editing) && cardFor(card, ledger, setup, checkInDismissed, () => setCheckInDismissed(true))}
         {editing && (
           <div
             className="slot-edit"

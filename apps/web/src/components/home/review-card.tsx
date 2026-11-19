@@ -18,6 +18,8 @@ import { Bubble, Glyph } from '@/components/ledger/glyph';
 import { commit, planContext, reviewContext, reviewView } from '@/lib/ledger/commit';
 import { captureSource, clockTime } from '@/lib/ledger/format';
 import type { Ledger } from '@/lib/ledger/use-ledger';
+import type { ChecklistItem } from '@/lib/setup';
+import { SetupCard } from './setup-card';
 
 const SHOWN = 3;
 
@@ -27,11 +29,11 @@ function waitingTotal(captures: readonly FinanceProposal[], currency: string): s
 }
 
 /** W2-Home's lilac card: the newest captures with Approve in place, and "Approve all N usual". */
-export function ReviewCard({ ledger, firstRun }: { ledger: Ledger; firstRun: boolean }) {
+export function ReviewCard({ ledger, setup }: { ledger: Ledger; setup: ChecklistItem[] | null }) {
   const { waiting, transactions, projection, walletNames, currency, calendar, wallets, userId } = ledger;
   const usual = usualCaptures(waiting, transactions);
   const [picking, setPicking] = useState<string | null>(null);
-  if (firstRun) return <SetupSteps />;
+  if (setup) return <SetupCard items={setup} />;
   if (waiting.length === 0) return <CaughtUp />;
 
   const approve = (captures: readonly FinanceProposal[]) => {
@@ -147,31 +149,6 @@ function CaughtUp() {
     <section aria-label="Captures to review" className="card review-card review-empty" data-card="review">
       <h2 className="card-title">Nothing to review</h2>
       <p className="review-sub">New captures from notifications, receipts and chat wait here until you say yes.</p>
-    </section>
-  );
-}
-
-/** W2-Empty, Home first run: the Review slot holds the phone's three steps in Mint, with the screen's one cat. */
-function SetupSteps() {
-  return (
-    <section aria-label="Three steps" className="card steps-card" data-card="review">
-      <h2 className="card-title">Three steps and Moni is ready</h2>
-      <p className="steps-sub">Each one takes about a minute.</p>
-      <ol className="steps">
-        {[
-          ['Add a wallet', 'Bank, cash, e-wallet or card'],
-          ["Set this month's budget", 'This draws your spending chart'],
-          ['Let Moni read bank alerts', 'Optional, on the Moni phone app'],
-        ].map(([title, line], index) => (
-          <li key={title} className="step">
-            <span className="step-n">{index + 1}</span>
-            <span className="row-text">
-              <span className="row-title">{title}</span>
-              <span className="row-meta">{line}</span>
-            </span>
-          </li>
-        ))}
-      </ol>
     </section>
   );
 }

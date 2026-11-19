@@ -1,6 +1,6 @@
 'use client';
 
-import { dailyChart, monthName, paceChart, type ChartBox, type MoneyMonth } from '@repo/core';
+import { currencySymbol, dailyChart, monthName, paceChart, type ChartBox, type ChartLabel, type MoneyMonth } from '@repo/core';
 import { useEffect, useMemo } from 'react';
 import { AxisLabels, Callout, ChartEmpty, TickRow, useHoverDay, useSize } from '@/components/ledger/chart-parts';
 
@@ -83,7 +83,7 @@ export function SpentCard({
             {mode === 'pace' ? (
               <svg width={box.width} height={box.height} className="chart-svg" aria-hidden="true">
                 <line x1={pace.grid.left} x2={pace.grid.right} y1={pace.grid.top} y2={pace.grid.top} className="grid-solid" />
-                <line x1={pace.grid.left} x2={pace.grid.right} y1={pace.grid.middle} y2={pace.grid.middle} className="grid-dashed" />
+                {!firstRun && <line x1={pace.grid.left} x2={pace.grid.right} y1={pace.grid.middle} y2={pace.grid.middle} className="grid-dashed" />}
                 <line x1={pace.grid.left} x2={pace.grid.right} y1={pace.grid.base} y2={pace.grid.base} className="grid-solid" />
                 {!firstRun && <path d={pace.area} className="area" />}
                 {pace.evenPace && <line {...pace.evenPace} className="even-pace" />}
@@ -115,7 +115,7 @@ export function SpentCard({
                 {daily.evenPaceY !== null && <line x1={daily.grid.left} x2={daily.grid.right} y1={daily.evenPaceY} y2={daily.evenPaceY} className="pace-line" />}
               </svg>
             )}
-            <AxisLabels labels={mode === 'pace' ? pace.labels : daily.labels} axis={box.axis} />
+            <AxisLabels labels={firstRun ? emptyLabels(mode === 'pace' ? pace.labels : daily.labels, month.currency) : mode === 'pace' ? pace.labels : daily.labels} axis={box.axis} />
             {mode === 'pace' && pace.budget && (
               <span className="chart-caption" style={{ top: pace.grid.top - 26 }}>
                 Budget
@@ -132,4 +132,12 @@ export function SpentCard({
       {line && <p className="spent-line num">{line}</p>}
     </section>
   );
+}
+
+/** W2-Empty's empty chart: no scale yet, so the top reads RM– and only the base reads RM0. */
+function emptyLabels(labels: readonly ChartLabel[], currency: string): ChartLabel[] {
+  const top = labels[0];
+  const base = labels.at(-1);
+  if (!top || !base || top === base) return [...labels];
+  return [{ ...top, text: `${currencySymbol(currency)}–` }, base];
 }

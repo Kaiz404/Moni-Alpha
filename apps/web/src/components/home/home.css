@@ -329,48 +329,105 @@ html[data-layout='phone'] .spent-card .toggle-pill[data-at='daily'] {
   gap: 6px;
 }
 
-.steps-card {
+/* W2-Onboarding, Done: the Mint Get set up card in the Review slot until every step is done or it is closed. */
+.home-setup {
   background: var(--color-block-mint);
-  padding: 20px;
+  color: var(--color-on-pastel);
+  padding: 14px 16px 12px 18px;
   gap: 8px;
 }
 
-.steps-sub {
-  margin: 0;
-  font-size: 13px;
-  color: var(--color-on-mint);
-}
-
-.steps {
-  list-style: none;
-  margin: 8px 0 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.step {
+.home-setup-head {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 12px;
-  border-radius: 18px;
-  background: var(--color-card);
 }
 
-.step-n {
+.home-setup-titles {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.home-setup-count {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--color-on-mint);
+}
+
+.home-setup-close {
+  background: transparent;
+  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--color-on-mint) 25%, transparent);
+}
+
+.home-setup-bar {
+  display: block;
+  height: 8px;
+  border-radius: 9999px;
+  background: color-mix(in srgb, var(--color-card) 60%, transparent);
+  overflow: hidden;
+}
+
+.home-setup-bar > span {
+  display: block;
+  height: 100%;
+  border-radius: 9999px;
+  background: var(--color-deep-mint);
+  transition: width var(--duration-value) var(--ease-value);
+}
+
+.home-setup-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.home-setup-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 46px;
+}
+
+.home-setup-row .row-meta {
+  color: var(--color-on-mint);
+}
+
+.home-setup-row[data-done] .row-title {
+  text-decoration: line-through;
+  text-decoration-thickness: 1.5px;
+  color: var(--color-on-mint);
+  opacity: 0.7;
+}
+
+.home-setup-dot {
   width: 28px;
   height: 28px;
   flex: none;
+  box-sizing: border-box;
   border-radius: 9999px;
-  background: var(--color-primary);
-  color: var(--color-primary-foreground);
-  display: inline-flex;
+  border: 1.5px solid var(--color-on-mint);
+  background: var(--color-card);
+  display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 13px;
-  font-weight: 700;
+  transition:
+    background-color var(--duration-control) var(--ease-control),
+    border-color var(--duration-control) var(--ease-control);
+}
+
+.home-setup-row[data-done] .home-setup-dot {
+  background: var(--color-deep-mint);
+  border-color: var(--color-deep-mint);
+  color: var(--color-card);
+}
+
+.home-setup-act {
+  height: 36px;
+  padding: 0 14px;
+  font-size: 14px;
 }
 
 /* ---------- Recent ---------- */

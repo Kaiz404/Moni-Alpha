@@ -1,0 +1,22 @@
+/* A category or wallet bubble (glyph.tsx), wherever it is drawn. */
+
+.bubble {
+  flex: none;
+  box-sizing: border-box;
+  border-radius: 9999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-on-category);
+}
+
+.bubble[data-plain] {
+  background: var(--color-sand);
+  color: var(--color-foreground);
+}
+
+.bubble[data-dashed] {
+  background: transparent;
+  border: 1.5px dashed var(--color-border-strong);
+  color: var(--color-ink-2);
+}

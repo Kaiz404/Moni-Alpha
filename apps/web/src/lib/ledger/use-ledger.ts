@@ -63,6 +63,8 @@ export type Ledger = {
   budgetRows: BudgetRow[];
   /** The wallet the profile picks for new entries, if any. */
   defaultWalletId: string | null;
+  /** First-run set-up: when it finished, and whether Home's Get set up card was closed. */
+  setup: { finishedAt?: string; hidden?: boolean };
 };
 
 const EMPTY: Record<string, never> = {};
@@ -88,6 +90,8 @@ function useTables() {
       aliases: copy(store.merchantAliases$),
       monthlyBudget: store.profilePreferences$.get()?.monthly_budget ?? null,
       defaultWalletId: store.profilePreferences$.get()?.default_wallet_id ?? null,
+      setupFinishedAt: store.profilePreferences$.get()?.setup_finished_at,
+      setupHidden: store.profilePreferences$.get()?.setup_checklist_hidden,
     };
   });
 }
@@ -186,6 +190,7 @@ export function useLedger(): Ledger {
       ),
       budgetRows: Object.values(tables?.budgets ?? EMPTY).filter(Boolean) as BudgetRow[],
       defaultWalletId: tables?.defaultWalletId ?? null,
+      setup: { finishedAt: tables?.setupFinishedAt, hidden: tables?.setupHidden },
     };
   }, [tables, clock, calendar, currency, user.id]);
 }

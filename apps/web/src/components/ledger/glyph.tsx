@@ -1,6 +1,7 @@
 import { legacyColor } from '@repo/types';
 import type { CSSProperties } from 'react';
 import { GLYPHS } from '@/lib/glyphs.generated';
+import './glyph.css';
 
 /** An MDI glyph a row names as data (a category's or a wallet's icon); unknown names draw a dot. */
 export function Glyph({ name, size = 20, className }: { name: string | null | undefined; size?: number; className?: string }) {

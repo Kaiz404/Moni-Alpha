@@ -50,6 +50,20 @@ const names = [
     'image-off-outline',
     // Moni chat: a draft turned down.
     'close-circle-outline',
+    // Set-up, the states and the empty states (W2-Onboarding, W2-States, W2-Empty).
+    'google-play',
+    'keyboard-outline',
+    'shield-lock-outline',
+    'file-delimited-outline',
+    'bell-ring-outline',
+    'currency-usd',
+    'robot-happy-outline',
+    'cellphone-arrow-down',
+    'cloud-alert-outline',
+    'home-outline',
+    'open-in-new',
+    'alert-circle',
+    'store-outline',
   ]),
 ].sort();
 const pascal = (name) => `mdi${name.replace(/(^|-)([a-z0-9])/g, (_, __, c) => c.toUpperCase())}`;
