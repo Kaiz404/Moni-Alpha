@@ -8,6 +8,19 @@
   min-width: 0;
 }
 
+html[data-layout='sidebar'] .settings {
+  align-items: stretch;
+  min-height: calc(100dvh - 136px);
+}
+
+html[data-layout='sidebar'] .settings-nav {
+  align-self: flex-start;
+}
+
+html[data-layout='sidebar'] .settings-panel > .set-card {
+  flex: 1 1 auto;
+}
+
 .settings-nav {
   width: 236px;
   flex: none;
@@ -411,6 +424,14 @@ button.set-row:hover {
   white-space: nowrap;
 }
 
+.map-more {
+  align-self: flex-start;
+  margin-left: 78px;
+  min-height: 32px;
+  white-space: normal;
+  text-align: left;
+}
+
 .text-link:hover {
   text-decoration: underline;
   text-underline-offset: 3px;
@@ -733,15 +754,19 @@ button.set-row:hover {
   box-shadow: inset 0 3px 0 var(--color-foreground);
 }
 
-.pth[data-align='end'],
-.ptd[data-align='end'] {
-  align-items: flex-end;
+.pth[data-align='end'] {
   justify-content: flex-end;
   text-align: right;
 }
 
 .ptd[data-align='end'] {
-  justify-content: center;
+  align-items: flex-end;
+  text-align: right;
+}
+
+.pth[data-field='merchant'],
+.ptd[data-field='merchant'] {
+  flex-grow: 1.6;
 }
 
 .p-status {
@@ -885,6 +910,10 @@ button.set-row:hover {
   display: none;
 }
 
+.import-flow {
+  display: contents;
+}
+
 /* ---------- merchant names ---------- */
 
 .mn-tools {
@@ -948,6 +977,7 @@ button.set-row:hover {
 
 .mn-sort {
   position: relative;
+  flex: none;
 }
 
 .mn-sort select {
@@ -1002,6 +1032,11 @@ button.set-row:hover {
   border-bottom: 1.5px solid var(--color-sand-light);
   border-radius: 0;
   margin-bottom: 4px;
+}
+
+.mn-head > span {
+  font-size: 12px;
+  font-weight: 700;
 }
 
 .mn-tick {
@@ -1128,7 +1163,7 @@ button.set-row:hover {
 }
 
 .mn-cell[data-empty] {
-  flex: 0 1 150px;
+  flex: 0 1 130px;
   border: 1.5px dashed var(--color-border-strong);
   background: var(--color-card);
 }
@@ -1163,8 +1198,9 @@ button.set-row:hover {
   font-size: 13px;
   font-weight: 600;
   white-space: nowrap;
-  max-width: 120px;
+  max-width: 150px;
   overflow: hidden;
+  flex: none;
 }
 
 .mn-guess:hover {
@@ -1212,7 +1248,7 @@ button.set-row:hover {
 .rename-pop {
   position: absolute;
   left: 50%;
-  bottom: 84px;
+  bottom: 68px;
   width: 400px;
   margin-left: -200px;
   z-index: 30;
@@ -1346,7 +1382,7 @@ html[data-layout='rail-one-column'] .mn-name {
 html[data-layout='phone'] .settings {
   flex-direction: column;
   align-items: stretch;
-  padding: 0 20px 40px;
+  padding-bottom: 40px;
 }
 
 html[data-layout='phone'] .settings[data-index] .settings-panel,
@@ -1393,7 +1429,7 @@ html[data-layout='phone'] .set-card {
   padding: 18px;
 }
 
-html[data-layout='phone'] .set-card > .set-head .set-title {
+html[data-layout='phone'] .set-title {
   display: none;
 }
 
