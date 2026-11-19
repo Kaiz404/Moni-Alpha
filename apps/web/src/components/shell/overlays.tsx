@@ -6,7 +6,8 @@ import { useTheme } from '@/components/use-theme';
 import { SHORTCUT_GROUPS } from '@/lib/keys';
 import type { ThemePref } from '@/lib/theme';
 import { useShellApi } from './shell-context';
-import { dismissToast, undoToast, useToast } from './shell-store';
+import { Glyph } from '@/components/ledger/glyph';
+import { dismissToast, undoToast, useToast, type ToastTone } from './shell-store';
 
 /** W2-Parts "Keyboard shortcuts", on ?. Screens add their groups as they arrive. */
 export function ShortcutsDialog() {
@@ -133,7 +134,8 @@ export function AccountMenu({ anchor }: { anchor: DOMRect | null }) {
   );
 }
 
-const TOAST_MS = 4000;
+const TOAST_MS: Record<ToastTone, number | null> = { done: 4000, info: 4000, undone: 2000, error: null };
+const TOAST_ICON: Record<ToastTone, string> = { done: 'check-circle', undone: 'undo', error: 'alert-circle', info: 'information-outline' };
 
 /**
  * Toasts bottom left (above the tab bar on the phone layout), one at a time. The Mint bar runs out with
@@ -145,7 +147,7 @@ export function Toaster() {
   return (
     <div className="toast-slot">
       <div key={toast.id} role="status" className="toast motion-rise" data-tone={toast.tone}>
-        <Icon name={toast.tone === 'error' ? 'alert-circle-outline' : 'check-circle'} size={20} className="toast-icon" />
+        <Glyph name={TOAST_ICON[toast.tone]} size={20} className="toast-icon" />
         <span style={{ fontSize: 14, lineHeight: '19px' }}>{toast.text}</span>
         {toast.undo && (
           <button type="button" className="toast-action press" onClick={() => undoToast()}>
@@ -156,16 +158,29 @@ export function Toaster() {
             </span>
           </button>
         )}
+        {toast.retry && (
+          <button
+            type="button"
+            className="toast-action press"
+            onClick={() => {
+              dismissToast(toast.id);
+              toast.retry?.();
+            }}
+          >
+            <Icon name="refresh" size={18} />
+            Try again
+          </button>
+        )}
         {toast.tone === 'error' && (
-          <button type="button" className="toast-action press" aria-label="Close" onClick={() => dismissToast(toast.id)}>
+          <button type="button" className="toast-action toast-close press" aria-label="Close" onClick={() => dismissToast(toast.id)}>
             <Icon name="close" size={18} />
           </button>
         )}
-        {toast.tone !== 'error' && (
+        {TOAST_MS[toast.tone] !== null && (
           <span
             aria-hidden="true"
             className="toast-timer"
-            style={{ animationDuration: `${TOAST_MS}ms` }}
+            style={{ animationDuration: `${TOAST_MS[toast.tone]}ms` }}
             onAnimationEnd={() => dismissToast(toast.id)}
           />
         )}

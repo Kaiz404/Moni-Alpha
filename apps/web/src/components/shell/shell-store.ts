@@ -9,7 +9,7 @@ import { moniStore } from '@/lib/moni-store';
  * thread and Activity's ticked rows (which Moni chat reads). Docked panes (Moni chat, Add) live in the
  * URL instead (`?pane=`), so a reload or a resize keeps them too.
  */
-export type Overlay = 'none' | 'palette' | 'shortcuts' | 'account';
+export type Overlay = 'none' | 'palette' | 'shortcuts' | 'account' | 'session';
 
 export type ShellState = {
   overlay: Overlay;
@@ -21,19 +21,35 @@ export type ShellState = {
   ticked: readonly string[];
 };
 
-export type ToastTone = 'done' | 'error';
+/**
+ * W2-States' toast catalogue: done (a change with Undo, 4 s), undone (2 s, no button: an undo can't be
+ * undone), error (stays until Try again or ×) and info (news, 4 s).
+ */
+export type ToastTone = 'done' | 'undone' | 'error' | 'info';
 
 export type Toast = {
   id: number;
   text: string;
   tone: ToastTone;
   undo?: () => void;
+  /** The Undone toast's words; "Undone." by default. */
+  undoneText?: string;
+  /** An error's Try again. */
+  retry?: () => void;
 };
 
 const INITIAL: ShellState = { overlay: 'none', addDraft: '', chatDraft: '', chat: [], chatAsk: null, ticked: [] };
 let state: ShellState = INITIAL;
 let toast: Toast | null = null;
+/** The latest change Ctrl Z can take back, kept after its toast has gone. */
+let lastUndo: Pick<Toast, 'undo' | 'undoneText'> | null = null;
 let nextToastId = 1;
+/** True once this tab chose to sign out, so its own sign-out never reads as an expired session. */
+let signingOut = false;
+
+export function isSigningOut(): boolean {
+  return signingOut;
+}
 const listeners = new Set<() => void>();
 
 function emit() {
@@ -59,10 +75,12 @@ export function getShell(): ShellState {
  * the synced ledger and the session.
  */
 export async function signOut(): Promise<void> {
+  signingOut = true;
   await moniStore().signOutEverywhere({
     beforeClear: () => {
       state = INITIAL;
       toast = null;
+      lastUndo = null;
       emit();
     },
   });
@@ -75,6 +93,7 @@ export function useShell(): ShellState {
 /** One toast at a time: a new one replaces the old (W2-Parts, Toasts and the tab). */
 export function showToast(next: Omit<Toast, 'id'>): number {
   toast = { ...next, id: nextToastId++ };
+  if (next.undo) lastUndo = { undo: next.undo, undoneText: next.undoneText };
   emit();
   return toast.id;
 }
@@ -85,13 +104,22 @@ export function dismissToast(id: number) {
   emit();
 }
 
-/** Runs the showing toast's Undo (its button, or Ctrl Z), then closes it. */
+/**
+ * Runs the latest change's Undo (the toast's button, or Ctrl Z even after the toast has gone), then says
+ * Undone for 2 s. A change whose toast was dismissed by its own second control (a card's Undo) is gone.
+ */
 export function undoToast(): boolean {
-  if (!toast?.undo) return false;
-  const { undo, id } = toast;
-  dismissToast(id);
-  undo();
+  const latest = toast?.undo ? toast : lastUndo;
+  if (!latest?.undo) return false;
+  lastUndo = null;
+  latest.undo();
+  showToast({ text: latest.undoneText ?? 'Undone.', tone: 'undone' });
   return true;
+}
+
+/** Forgets the latest change's Undo, when something else already took it back. */
+export function forgetUndo(undo: () => void) {
+  if (lastUndo?.undo === undo) lastUndo = null;
 }
 
 export function useToast(): Toast | null {

@@ -15,7 +15,7 @@ import {
   type StoredRow,
   type SyncedTable,
 } from '@repo/core';
-import { dismissToast, showToast } from '@/components/shell/shell-store';
+import { dismissToast, forgetUndo, showToast } from '@/components/shell/shell-store';
 import { moniStore } from '@/lib/moni-store';
 
 /** Who writes and when, for a plan made now. */
@@ -91,11 +91,14 @@ export function commit<Result>(
     else applyWrites(moniStore(), undoWrites(plan.writes, before, new Date().toISOString()));
     onUndone?.();
   };
-  const toastId = showToast({ text: typeof done === 'string' ? done : done(plan.result), tone: 'done', undo: putBack });
+  // Offline the row is safe in this tab's store and syncs on reconnect (W2-States, Connection).
+  const text = typeof navigator !== 'undefined' && !navigator.onLine ? "Saved in this tab. Syncs when you're back online." : typeof done === 'string' ? done : done(plan.result);
+  const toastId = showToast({ text, tone: 'done', undo: putBack });
   return {
     result: plan.result,
     undo: () => {
       dismissToast(toastId);
+      forgetUndo(putBack);
       putBack();
     },
   };
