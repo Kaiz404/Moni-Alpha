@@ -15,7 +15,9 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/kaiz404/moni/backend/internal/auth"
 	"github.com/kaiz404/moni/backend/internal/auth/authtest"
+	"github.com/kaiz404/moni/backend/internal/config"
 	"github.com/kaiz404/moni/backend/internal/llm"
+	"github.com/kaiz404/moni/backend/internal/tracing"
 )
 
 // Live tests call the real OpenRouter API through the full router (local JWKS stands in for Supabase).
@@ -50,6 +52,18 @@ func newLiveServer(t *testing.T) *testServer {
 	if err != nil {
 		t.Fatal(err)
 	}
+	tracingCfg, err := config.TracingFromEnv()
+	if err != nil {
+		t.Fatal(err)
+	}
+	flush, err := tracing.Setup(context.Background(), tracingCfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		flush(context.Background())
+		tracing.Reset()
+	})
 	return &testServer{
 		handler: newRouter(verifier, auth.NewRateLimiter(600, 100), auth.NewRateLimiter(6000, 1000), llm.NewClient(key, liveBaseURL()), noPlaces()),
 		token: func(sub string) string {

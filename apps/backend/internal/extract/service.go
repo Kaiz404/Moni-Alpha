@@ -88,13 +88,13 @@ func (s *Service) FromText(ctx context.Context, req TextRequest) Result {
 
 	var out llmExtraction
 	err := s.llm.CompleteJSON(ctx, messages,
-		llm.Options{Model: s.model, Temperature: 0.2, MaxTokens: 768, MaxRetryWait: 3 * time.Second},
+		llm.Options{Name: "extract-transaction", Model: s.model, Temperature: 0.2, MaxTokens: 768, MaxRetryWait: 3 * time.Second},
 		&out,
 	)
 	if err != nil && !errors.Is(err, llm.ErrTruncated) {
 		// JSON-mode output is occasionally unparseable; one retry.
 		err = s.llm.CompleteJSON(ctx, messages,
-			llm.Options{Model: s.model, Temperature: 0.2, MaxTokens: 768},
+			llm.Options{Name: "extract-transaction", Model: s.model, Temperature: 0.2, MaxTokens: 768},
 			&out,
 		)
 	}
@@ -110,17 +110,21 @@ func (s *Service) FromText(ctx context.Context, req TextRequest) Result {
 	return OK(ex)
 }
 
+// imageURL is the image as the model receives it: the public URL, else a data URI.
+func (r ImageRequest) imageURL() string {
+	if url := strings.TrimSpace(r.ImageURL); url != "" {
+		return url
+	}
+	if r.ImageBase64 == "" || strings.HasPrefix(r.ImageBase64, "data:") {
+		return r.ImageBase64
+	}
+	return "data:image/jpeg;base64," + r.ImageBase64
+}
+
 // FromImage extracts a transaction from a receipt image. Accepts a public
 // URL (preferred) or base64 payload.
 func (s *Service) FromImage(ctx context.Context, req ImageRequest) Result {
-	imageURL := strings.TrimSpace(req.ImageURL)
-	if imageURL == "" && req.ImageBase64 != "" {
-		b64 := req.ImageBase64
-		if !strings.HasPrefix(b64, "data:") {
-			b64 = "data:image/jpeg;base64," + b64
-		}
-		imageURL = b64
-	}
+	imageURL := req.imageURL()
 	if imageURL == "" {
 		return Skipped("No image data provided — upload the receipt or include base64")
 	}
@@ -140,6 +144,7 @@ func (s *Service) FromImage(ctx context.Context, req ImageRequest) Result {
 	var out llmExtraction
 	err := s.llm.CompleteJSON(ctx, messages,
 		llm.Options{
+			Name:         "read-receipt",
 			Model:        s.model,
 			Temperature:  0.1,
 			MaxTokens:    1024,
@@ -179,7 +184,7 @@ func (s *Service) FromNotification(ctx context.Context, req NotificationRequest)
 		{Role: "system", Content: notificationDetectionPrompt},
 		{Role: "user", Content: user},
 	}
-	opts := llm.Options{Model: s.model, Temperature: 0, MaxTokens: 512, MaxRetryWait: 30 * time.Second}
+	opts := llm.Options{Name: "classify-notification", Model: s.model, Temperature: 0, MaxTokens: 512, MaxRetryWait: 30 * time.Second}
 
 	var out llmNotificationResult
 	err := s.llm.CompleteJSON(ctx, messages, opts, &out)

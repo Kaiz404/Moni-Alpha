@@ -4,6 +4,8 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+
+	"github.com/kaiz404/moni/backend/internal/tracing"
 )
 
 type Handler struct {
@@ -28,5 +30,8 @@ func (h *Handler) analyze(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid snapshot", "details": err.Error()})
 		return
 	}
-	c.JSON(http.StatusOK, h.svc.Analyze(c.Request.Context(), req))
+	ctx := c.Request.Context()
+	res := h.svc.Analyze(ctx, req)
+	tracing.Record(ctx, req, res, res.Status, res.Reason)
+	c.JSON(http.StatusOK, res)
 }

@@ -69,9 +69,11 @@ go test ./...
 go vet ./...
 ```
 
+`cmd/server/tracing_test.go` checks the Langfuse spans with an in-memory exporter: one trace per request with a generation per attempt, the trace id in `X-Trace-Id`, no base64 image in any span, and no content with capture off.
+
 `go test ./...` is offline: `cmd/server/router_test.go` drives every endpoint through the real router (`newRouter`) with a local JWKS (`internal/auth/authtest`) and a fake OpenRouter server, covering auth, validation, `ok`/`skipped`/`unavailable`, the retry and the per-user rate limit. `internal/places/handler_test.go` fakes Google: the request body, headers and field mask sent, the mapping, `not_found`, `unavailable`, the daily cap and the per-user allowance.
 
-`pnpm test:live` (or `MONI_LIVE_TESTS=1 go test ./cmd/server -run Live -v`) calls the real OpenRouter API with `.env`'s `OPENROUTER_API_KEY`: it checks OpenRouter still serves `llm.Model` (`internal/llm/models.go`), then extracts from text, four notifications, the `cmd/server/testdata/receipt.png` receipt, and answers a chat question. Run it after changing models, prompts or keys.
+`pnpm test:live` (or `MONI_LIVE_TESTS=1 go test ./cmd/server -run Live -v`) calls the real OpenRouter API with `.env`'s `OPENROUTER_API_KEY`: it checks OpenRouter still serves `llm.Model` (`internal/llm/models.go`), then extracts from text, four notifications, the `cmd/server/testdata/receipt.png` receipt, and answers a chat question. Run it after changing models, prompts or keys. With Langfuse keys in `.env`, each request is traced under the `live-test` environment.
 
 `pnpm bench:llm` compares candidate models on accuracy, latency and cost. It runs 29 labelled cases (11 text, 14 notifications, 4 receipts in `internal/extract/testdata/bench/`) through the production `extract.Service`, once per model in `benchTargets` (`internal/extract/bench_test.go`), and writes a scorecard to `bench-results/` (gitignored). Groq models need `GROQ_API_KEY`; OpenRouter models need `OPENROUTER_API_KEY` and are skipped without it. `MONI_BENCH_RUNS=1` shortens a run and `MONI_BENCH_MODELS=qwen,glm` keeps only matching models. Free-tier Groq hits per-minute token limits, so a full run takes 10 to 20 minutes; the bench waits out 429s and reports them in their own column instead of as failures.
 
@@ -102,6 +104,14 @@ The trigger keeps the service's existing env, so a new secret needs one manual u
 ```bash
 gcloud run services update moni-ai-backend --region asia-southeast3 \
   --update-secrets GOOGLE_PLACES_API_KEY=google-places-api-key:latest
+```
+
+Langfuse tracing is the same: store the two keys as `langfuse-public-key` and `langfuse-secret-key`, then run the command below. Production sends no request content unless `LANGFUSE_CAPTURE_CONTENT=true` ([docs/AI.md § Tracing](../../docs/AI.md#tracing)).
+
+```bash
+gcloud run services update moni-ai-backend --region asia-southeast3 \
+  --update-secrets LANGFUSE_PUBLIC_KEY=langfuse-public-key:latest,LANGFUSE_SECRET_KEY=langfuse-secret-key:latest \
+  --update-env-vars LANGFUSE_BASE_URL=https://jp.cloud.langfuse.com,LANGFUSE_TRACING_ENVIRONMENT=production
 ```
 
 Then set `EXPO_PUBLIC_AI_API_URL` in `apps/mobile/.env` to the Cloud Run URL.

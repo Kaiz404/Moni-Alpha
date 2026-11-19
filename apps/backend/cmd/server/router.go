@@ -9,6 +9,7 @@ import (
 	"github.com/kaiz404/moni/backend/internal/extract"
 	"github.com/kaiz404/moni/backend/internal/llm"
 	"github.com/kaiz404/moni/backend/internal/places"
+	"github.com/kaiz404/moni/backend/internal/tracing"
 )
 
 // maxBodyBytes fits a base64 receipt image inside the JSON envelope.
@@ -26,6 +27,14 @@ func limitBody(max int64) gin.HandlerFunc {
 		c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, max)
 		c.Next()
 	}
+}
+
+// traceNames are the Langfuse trace names. Evaluators and saved views target them, so keep them stable.
+var traceNames = map[string]string{
+	"/v1/extract/text":         "extract-text",
+	"/v1/extract/image":        "extract-receipt",
+	"/v1/extract/notification": "extract-notification",
+	"/v1/chat/analyze":         "chat-analyze",
 }
 
 // newRouter wires every route behind its middleware. main and the endpoint tests share it.
@@ -46,7 +55,8 @@ func newRouter(verifier *auth.Verifier, limiter, ipLimiter *auth.RateLimiter, ll
 	r.GET("/healthz", health)
 
 	ipLimit := ipLimiter.MiddlewareBy(func(c *gin.Context) string { return auth.ClientIP(c.Request) }, "Too many requests — try again shortly")
-	v1 := r.Group("/v1", ipLimit, verifier.Middleware(), auth.RequireAIConsent(), limiter.Middleware(), limitBody(maxBodyBytes))
+	v1 := r.Group("/v1", ipLimit, verifier.Middleware(), auth.RequireAIConsent(), limiter.Middleware(), limitBody(maxBodyBytes),
+		tracing.Middleware(traceNames, auth.UserID))
 	extract.NewHandler(extract.NewService(llmClient)).Register(v1)
 	chat.NewHandler(chat.NewService(llmClient)).Register(v1)
 	// Search as you type sends a call every few keystrokes, which the AI limit would throttle.

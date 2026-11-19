@@ -13,6 +13,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/kaiz404/moni/backend/internal/tracing"
 )
 
 type Client struct {
@@ -76,6 +78,11 @@ type chatResponse struct {
 		} `json:"message"`
 		FinishReason string `json:"finish_reason"`
 	} `json:"choices"`
+	Usage struct {
+		PromptTokens     int      `json:"prompt_tokens"`
+		CompletionTokens int      `json:"completion_tokens"`
+		Cost             *float64 `json:"cost"`
+	} `json:"usage"`
 	Error *struct {
 		Message string `json:"message"`
 	} `json:"error"`
@@ -94,6 +101,8 @@ func (e *RateLimitedError) Error() string {
 }
 
 type Options struct {
+	// Name labels the call in traces by what it does, e.g. "read-receipt".
+	Name        string
 	Model       string
 	Temperature float64
 	MaxTokens   int
@@ -140,7 +149,21 @@ func asRateLimited(err error, target **RateLimitedError) bool {
 	return false
 }
 
+// completeOnce makes one request, traced as one Langfuse generation.
 func (c *Client) completeOnce(ctx context.Context, messages []Message, opts Options) (string, error) {
+	params := map[string]any{"temperature": opts.Temperature, "max_tokens": opts.MaxTokens, "json_mode": opts.JSONMode}
+	gen := tracing.StartGeneration(ctx, opts.Name, opts.Model, params, messages)
+	content, usage, err := c.send(ctx, messages, opts)
+	var rle *RateLimitedError
+	gen.End(content, usage, err, errors.Is(err, ErrTruncated) || asRateLimited(err, &rle))
+	if err != nil {
+		return "", err
+	}
+	return content, nil
+}
+
+func (c *Client) send(ctx context.Context, messages []Message, opts Options) (string, tracing.Usage, error) {
+	var usage tracing.Usage
 	reqBody := ChatRequest{
 		Model:       opts.Model,
 		Messages:    messages,
@@ -158,26 +181,26 @@ func (c *Client) completeOnce(ctx context.Context, messages []Message, opts Opti
 
 	payload, err := json.Marshal(reqBody)
 	if err != nil {
-		return "", err
+		return "", usage, err
 	}
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost,
 		c.baseURL+"/chat/completions", bytes.NewReader(payload))
 	if err != nil {
-		return "", err
+		return "", usage, err
 	}
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", "Bearer "+c.apiKey)
 
 	res, err := c.http.Do(req)
 	if err != nil {
-		return "", err
+		return "", usage, err
 	}
 	defer res.Body.Close()
 
 	body, err := io.ReadAll(io.LimitReader(res.Body, 1<<20))
 	if err != nil {
-		return "", err
+		return "", usage, err
 	}
 
 	if res.StatusCode == http.StatusTooManyRequests {
@@ -187,27 +210,28 @@ func (c *Client) completeOnce(ctx context.Context, messages []Message, opts Opti
 				wait = time.Duration(secs) * time.Second
 			}
 		}
-		return "", &RateLimitedError{RetryAfter: wait}
+		return "", usage, &RateLimitedError{RetryAfter: wait}
 	}
 	if res.StatusCode != http.StatusOK {
 		var parsed chatResponse
 		if json.Unmarshal(body, &parsed) == nil && parsed.Error != nil {
-			return "", fmt.Errorf("llm %d: %s", res.StatusCode, parsed.Error.Message)
+			return "", usage, fmt.Errorf("llm %d: %s", res.StatusCode, parsed.Error.Message)
 		}
-		return "", fmt.Errorf("llm %d: %s", res.StatusCode, truncate(string(body), 200))
+		return "", usage, fmt.Errorf("llm %d: %s", res.StatusCode, truncate(string(body), 200))
 	}
 
 	var parsed chatResponse
 	if err := json.Unmarshal(body, &parsed); err != nil {
-		return "", fmt.Errorf("llm: invalid response body: %w", err)
+		return "", usage, fmt.Errorf("llm: invalid response body: %w", err)
 	}
+	usage = tracing.Usage{InputTokens: parsed.Usage.PromptTokens, OutputTokens: parsed.Usage.CompletionTokens, Cost: parsed.Usage.Cost}
 	if len(parsed.Choices) == 0 {
-		return "", fmt.Errorf("llm: empty choices")
+		return "", usage, fmt.Errorf("llm: empty choices")
 	}
 	if parsed.Choices[0].FinishReason == "length" {
-		return "", ErrTruncated
+		return parsed.Choices[0].Message.Content, usage, ErrTruncated
 	}
-	return parsed.Choices[0].Message.Content, nil
+	return parsed.Choices[0].Message.Content, usage, nil
 }
 
 // CompleteJSON runs a completion in JSON mode and unmarshals the result

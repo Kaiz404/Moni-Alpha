@@ -4,6 +4,8 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+
+	"github.com/kaiz404/moni/backend/internal/tracing"
 )
 
 type Handler struct {
@@ -26,7 +28,10 @@ func (h *Handler) text(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body", "details": err.Error()})
 		return
 	}
-	c.JSON(http.StatusOK, h.svc.FromText(c.Request.Context(), req))
+	ctx := c.Request.Context()
+	res := h.svc.FromText(ctx, req)
+	tracing.Record(ctx, req, res, res.Status, res.Reason)
+	c.JSON(http.StatusOK, res)
 }
 
 func (h *Handler) image(c *gin.Context) {
@@ -35,7 +40,13 @@ func (h *Handler) image(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body", "details": err.Error()})
 		return
 	}
-	c.JSON(http.StatusOK, h.svc.FromImage(c.Request.Context(), req))
+	image := req.imageURL()
+	ctx := tracing.WithMedia(c.Request.Context(), image)
+	res := h.svc.FromImage(ctx, req)
+	traced := req
+	traced.ImageBase64, traced.ImageURL = "", image
+	tracing.Record(ctx, traced, res, res.Status, res.Reason)
+	c.JSON(http.StatusOK, res)
 }
 
 func (h *Handler) notification(c *gin.Context) {
@@ -44,5 +55,9 @@ func (h *Handler) notification(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body", "details": err.Error()})
 		return
 	}
-	c.JSON(http.StatusOK, h.svc.FromNotification(c.Request.Context(), req))
+	ctx := c.Request.Context()
+	tracing.Metadata(ctx, map[string]string{"app": req.Notification.PackageNameForRouting()})
+	res := h.svc.FromNotification(ctx, req)
+	tracing.Record(ctx, req, res, res.Status, res.Reason)
+	c.JSON(http.StatusOK, res)
 }

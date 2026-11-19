@@ -56,6 +56,7 @@ func (f *fakeLLM) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	json.NewEncoder(w).Encode(map[string]any{
 		"choices": []any{map[string]any{"message": map[string]string{"content": reply.content}}},
+		"usage":   map[string]any{"prompt_tokens": 120, "completion_tokens": 30, "cost": 0.0002},
 	})
 }
 

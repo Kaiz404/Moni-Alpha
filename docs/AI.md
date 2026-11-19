@@ -213,6 +213,17 @@ Findings:
 - **Best fits.** `deepseek-v4.1-flash` for one model across every flow (tightest p95). `qwen3.7-flash` for the lowest cost at about a quarter of the price. Rough estimate at 1000 users and 30 extractions a day: about $115 a month on DeepSeek, $30 on Qwen.
 - **Limits.** The cases are too easy to rank the top models, and the receipts are clean synthetic images. Real phone photos and real notifications would separate them.
 
+## Tracing
+
+Every extract and chat request is one [Langfuse](https://langfuse.com) trace, sent by the backend over OpenTelemetry (`apps/backend/internal/tracing`) to the JP cloud project. Without `LANGFUSE_PUBLIC_KEY` and `LANGFUSE_SECRET_KEY` nothing is sent.
+
+- **Trace:** named for the route: `extract-text`, `extract-receipt`, `extract-notification`, `chat-analyze`. Input is the request, output the response. Metadata `status` is `ok`, `skipped` or `unavailable`; `reason` says why; `app` is a notification's package. An `unavailable` answer is level ERROR. Evaluators and saved views target these names, so keep them stable.
+- **Generation:** one per model attempt, nested in the trace: `extract-transaction`, `read-receipt`, `classify-notification`, `answer-question`. Each carries the messages, the raw model output, model, parameters, tokens and OpenRouter's cost. A failed attempt is ERROR; a truncation or 429 is WARNING.
+- **Attributes on every span:** `userId` (the Supabase user id), `environment` (`LANGFUSE_TRACING_ENVIRONMENT`: `production`, `development`, `live-test`) and `release` (the Cloud Run revision).
+- **Receipt images** go to Langfuse media storage and appear in the trace as a media token, never as base64.
+- **Content:** `LANGFUSE_CAPTURE_CONTENT` defaults to off in `production` and on elsewhere. Off, a trace keeps names, timings, tokens, cost, status and errors, but no request, reply, image or model reason. Turn it on in production only once the privacy policy names Langfuse as a processor.
+- The response header `X-Trace-Id` names the trace, so a client can attach feedback to it later. Clients ignore it today.
+
 ## Extraction pipeline details
 
 - **Prompts** live in `apps/backend/internal/extract/prompts.go` and `internal/chat/prompts.go`.

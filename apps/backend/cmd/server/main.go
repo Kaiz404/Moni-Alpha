@@ -19,6 +19,7 @@ import (
 	"github.com/kaiz404/moni/backend/internal/config"
 	"github.com/kaiz404/moni/backend/internal/llm"
 	"github.com/kaiz404/moni/backend/internal/places"
+	"github.com/kaiz404/moni/backend/internal/tracing"
 )
 
 func main() {
@@ -29,6 +30,11 @@ func main() {
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
+
+	shutdownTracing, err := tracing.Setup(ctx, cfg.Tracing)
+	if err != nil {
+		log.Fatalf("tracing: %v", err)
+	}
 
 	verifier, err := auth.NewVerifier(ctx, cfg.JWKSURL())
 	if err != nil {
@@ -72,5 +78,8 @@ func main() {
 	defer cancel()
 	if err := srv.Shutdown(shutdownCtx); err != nil {
 		log.Printf("shutdown: %v", err)
+	}
+	if err := shutdownTracing(shutdownCtx); err != nil {
+		log.Printf("tracing: flush on shutdown: %v", err)
 	}
 }

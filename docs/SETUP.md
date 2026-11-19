@@ -96,6 +96,10 @@ OPENROUTER_API_KEY=sk-or-...         # openrouter.ai/keys
 GOOGLE_PLACES_API_KEY=...            # optional; see "Places search (backend)" below
 # PLACES_DAILY_CAP=1000              # optional; calls per Pacific day, per endpoint
 # PLACES_USER_DAILY_CAP=100          # optional; one user's share of that, per endpoint
+LANGFUSE_PUBLIC_KEY=pk-lf-...        # optional; Langfuse project > Settings > API keys
+LANGFUSE_SECRET_KEY=sk-lf-...
+LANGFUSE_BASE_URL=https://jp.cloud.langfuse.com
+LANGFUSE_TRACING_ENVIRONMENT=development
 ```
 
 ## WSL Android toolchain

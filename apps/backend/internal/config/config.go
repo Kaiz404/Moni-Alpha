@@ -4,8 +4,11 @@ package config
 import (
 	"fmt"
 	"os"
+	"regexp"
 	"strconv"
 	"strings"
+
+	"github.com/kaiz404/moni/backend/internal/tracing"
 )
 
 type Config struct {
@@ -23,6 +26,8 @@ type Config struct {
 	PlacesDailyCap int
 	// PlacesUserDailyCap limits each user's calls per Pacific day, per endpoint, within PlacesDailyCap.
 	PlacesUserDailyCap int
+	// Tracing sends AI requests to Langfuse. Off without keys.
+	Tracing tracing.Config
 }
 
 func (c Config) JWKSURL() string {
@@ -38,6 +43,9 @@ func Load() (Config, error) {
 		GooglePlacesAPIKey: os.Getenv("GOOGLE_PLACES_API_KEY"),
 	}
 	var err error
+	if cfg.Tracing, err = TracingFromEnv(); err != nil {
+		return cfg, err
+	}
 	if cfg.PlacesDailyCap, err = nonNegativeInt("PLACES_DAILY_CAP", 1000); err != nil {
 		return cfg, err
 	}
@@ -50,6 +58,31 @@ func Load() (Config, error) {
 	if cfg.OpenRouterAPIKey == "" {
 		return cfg, fmt.Errorf("OPENROUTER_API_KEY is required")
 	}
+	return cfg, nil
+}
+
+// langfuseEnvironment is the pattern Langfuse accepts for an environment name.
+var langfuseEnvironment = regexp.MustCompile(`^[a-z0-9_-]{1,40}$`)
+
+// TracingFromEnv reads the Langfuse settings. Live tests use it without the rest of Config.
+func TracingFromEnv() (tracing.Config, error) {
+	cfg := tracing.Config{
+		PublicKey:   os.Getenv("LANGFUSE_PUBLIC_KEY"),
+		SecretKey:   os.Getenv("LANGFUSE_SECRET_KEY"),
+		BaseURL:     getenv("LANGFUSE_BASE_URL", "https://jp.cloud.langfuse.com"),
+		Environment: getenv("LANGFUSE_TRACING_ENVIRONMENT", "development"),
+		// Cloud Run names each deploy's revision in K_REVISION.
+		Release: getenv("LANGFUSE_RELEASE", os.Getenv("K_REVISION")),
+	}
+	if !langfuseEnvironment.MatchString(cfg.Environment) || strings.HasPrefix(cfg.Environment, "langfuse") {
+		return cfg, fmt.Errorf("LANGFUSE_TRACING_ENVIRONMENT must be lowercase letters, digits, - or _, and not start with langfuse")
+	}
+	// Production keeps receipts, alerts and chat out of Langfuse until the privacy policy names it.
+	capture, err := strconv.ParseBool(getenv("LANGFUSE_CAPTURE_CONTENT", strconv.FormatBool(cfg.Environment != "production")))
+	if err != nil {
+		return cfg, fmt.Errorf("LANGFUSE_CAPTURE_CONTENT must be true or false")
+	}
+	cfg.CaptureContent = capture
 	return cfg, nil
 }
 
