@@ -23,9 +23,15 @@ tags:
     visible:
       id: chat.draft.approve
     timeout: 30000
+# With the keyboard still up from sending, the history tap can go to closing the keyboard.
+- hideKeyboard
 - tapOn:
     id: chat.history
-- assertVisible: Past days
+# Not "Past days": that is also the history button's own label, so it held on the chat page.
+- extendedWaitUntil:
+    visible:
+      id: chat.history.search
+    timeout: 10000
 - tapOn:
     id: chat.history.search
 - inputText: parking
