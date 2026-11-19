@@ -55,11 +55,14 @@ tags:
       id: activity.categories-kind.income
     direction: UP
 
-# An income preset opens this month's rows for it in Activity, as expense presets open their page.
+# An income preset has no budget, so it opens the month's rows for it in a list under Categories.
 - tapOn:
     id: activity.categories-kind.income
 - tapOn: Salary
 - assertVisible:
-    id: activity.search
-- assertVisible: 'Salary · .*'
+    id: list.back
+- assertVisible: '\d+ transactions?'
+- assertVisible:
+    id: 'list\.transaction\..*'
+    index: 0
 - takeScreenshot: a2-income-preset
