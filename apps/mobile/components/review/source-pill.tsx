@@ -1,7 +1,7 @@
 import { View } from 'react-native';
 
 import { Text } from '@/components/ui/text';
-import type { ReviewStatus } from '@/lib/proposals/review-status';
+import type { ReviewStatus } from '@repo/core';
 
 const TONES: Record<ReviewStatus['tone'], { fill: string; text: string; dot: string }> = {
   onTrack: { fill: 'bg-primary-muted', text: 'text-state-approved', dot: 'bg-state-approved' },

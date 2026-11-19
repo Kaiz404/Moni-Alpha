@@ -17,7 +17,7 @@ import {
   type EditField as EditFieldName,
   type ReviewDecision,
 } from '@/lib/proposals/review-card-state';
-import type { ReviewStatus } from '@/lib/proposals/review-status';
+import type { ReviewStatus } from '@repo/core';
 import { tid } from '@/lib/test-ids';
 import { resolveTransactionIcon } from '@/lib/transactions/icon';
 import { TRANSACTION_TYPE_COPY } from '@/lib/transactions/type-change';

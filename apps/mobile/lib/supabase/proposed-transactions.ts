@@ -1,11 +1,14 @@
 import {
   planReview,
+  reviewedLately,
+  reviewedProposals,
   toProposal,
   type CaptureMark,
   type Planned,
   type ReviewChanges,
   type ReviewContext,
   type ReviewDecision,
+  type ReviewedProposal,
   type ReviewView,
   type StoredRow,
 } from '@repo/core';
@@ -58,7 +61,6 @@ export function proposalSource(sourceType: ProposedTransactionSourceType): Trans
 }
 
 const DAY_MS = 86_400_000;
-export const REVIEW_HISTORY_DAYS = 30;
 export const REVIEW_RETENTION_DAYS = 90;
 
 function isReviewableRow(row: ProposedTransactionRow): boolean {
@@ -74,19 +76,6 @@ export function isUnreviewed(proposal: Pick<ProposedTransaction, 'status'>): boo
   return proposal.status === 'pending';
 }
 
-export type ReviewedProposal = ProposedTransaction & {
-  status: 'approved' | 'rejected';
-  reviewedAt: string;
-};
-export type RejectedProposal = ReviewedProposal & { status: 'rejected' };
-
-function asReviewed(proposal: ProposedTransaction): ReviewedProposal | null {
-  const { status, reviewedAt } = proposal;
-  return (status === 'approved' || status === 'rejected') && reviewedAt
-    ? { ...proposal, status, reviewedAt }
-    : null;
-}
-
 function readProposals(): ProposedTransaction[] {
   return getRecordValues<ProposedTransactionRow>(proposedTransactions$)
     .filter(isReviewableRow)
@@ -100,10 +89,6 @@ export function listAwaitingReview(): ProposedTransaction[] {
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 }
 
-function readReviewedProposals(): ReviewedProposal[] {
-  return readProposals().flatMap((proposal) => asReviewed(proposal) ?? []);
-}
-
 export function isOpenProposal(id: string): boolean {
   const row = proposedTransactions$[id].peek() as ProposedTransactionRow | undefined;
   const proposal = row ? toProposal(row) : null;
@@ -112,15 +97,12 @@ export function isOpenProposal(id: string): boolean {
 
 /** Safe in a reactive selector. */
 export function listRecentlyReviewed(now = new Date()): ReviewedProposal[] {
-  const since = now.getTime() - REVIEW_HISTORY_DAYS * DAY_MS;
-  return readReviewedProposals()
-    .filter((proposal) => Date.parse(proposal.reviewedAt) >= since)
-    .sort((a, b) => Date.parse(b.reviewedAt) - Date.parse(a.reviewedAt));
+  return reviewedLately(readProposals(), now);
 }
 
 export function pruneReviewHistory(now = new Date()): number {
   const before = now.getTime() - REVIEW_RETENTION_DAYS * DAY_MS;
-  const old = readReviewedProposals().filter(
+  const old = reviewedProposals(readProposals()).filter(
     (proposal) => Date.parse(proposal.reviewedAt) < before,
   );
   for (const proposal of old) softDelete(proposal.id);

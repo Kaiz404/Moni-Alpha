@@ -1,13 +1,12 @@
 import type { Observable } from '@legendapp/state';
 import type { MinorAmount } from '@repo/types';
 
-import { editedProposal } from '@repo/core';
+import { editedProposal, retypeEdits } from '@repo/core';
 
 import {
   approve,
   moveBackToReview,
   notMine,
-  retypeEdits,
   undo,
 } from '../review-actions';
 import {

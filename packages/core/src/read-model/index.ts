@@ -11,6 +11,7 @@ export * from './place-map';
 export * from './places';
 export * from './projection';
 export * from './report';
+export * from './review-inbox';
 export * from './rows';
 export * from './selections';
 export * from './spend-history';
