@@ -32,11 +32,11 @@ export function sortPlaces(places: readonly Place[], sort: PlacesQuery['sort']):
 
 const plural = (count: number, word: string) => `${count} ${word}${count === 1 ? '' : 's'}`;
 
-/** "Groceries, Food +2 with 6 visits": the two biggest categories, then how many payments. */
+/** "6 visits for Groceries, Food +2": how many payments, then the two biggest categories. */
 export function placeMeta(place: Place, categoryName: (id: string | null) => string): string {
   const names = place.categories.map((category) => categoryName(category.categoryId));
   const more = names.length > 2 ? ` +${names.length - 2}` : '';
-  return `${names.slice(0, 2).join(', ')}${more} with ${plural(place.count, 'visit')}`;
+  return `${plural(place.count, 'visit')} for ${names.slice(0, 2).join(', ')}${more}`;
 }
 
 /** "Kuala Lumpur, 6 payments on 4 days". */

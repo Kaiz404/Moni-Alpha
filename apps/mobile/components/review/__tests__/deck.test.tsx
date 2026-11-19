@@ -1204,8 +1204,8 @@ describe('Recently reviewed', () => {
     expect(screen.getByText('Nothing to review')).toBeTruthy();
     expect(screen.getByText(/^Yesterday, /)).toBeTruthy();
     expect(screen.getByText('−RM12.50')).toBeTruthy();
-    expect(screen.getByText(/^Notification, Yesterday, /)).toBeTruthy();
-    expect(screen.getByText(/^Moni, Yesterday, /)).toBeTruthy();
+    expect(screen.getByText('Yesterday at 10:00 am from a notification')).toBeTruthy();
+    expect(screen.getByText('Yesterday at 10:00 am from Moni')).toBeTruthy();
 
     fireEvent.press(screen.getByTestId('review.history.ok'));
 

@@ -31,11 +31,11 @@ export function captureSourceLabel(proposal: Source): string {
   }
 }
 
-/** "12:41 pm" today, otherwise "Yesterday, 7:00 pm" or "Wed 14 Oct, 7:00 pm". */
+/** "12:41 pm" today, otherwise "Yesterday at 7:00 pm" or "Wed 14 Oct at 7:00 pm". */
 export function captureTime(value: string, now: Date = new Date()): string {
   const date = new Date(value);
   const hours = date.getHours();
   const time = `${hours % 12 || 12}:${String(date.getMinutes()).padStart(2, '0')} ${hours < 12 ? 'am' : 'pm'}`;
   const day = dayLabel(deviceCalendar.dayKey(date), deviceCalendar.dayKey(now));
-  return day === 'Today' ? time : `${day}, ${time}`;
+  return day === 'Today' ? time : `${day} at ${time}`;
 }

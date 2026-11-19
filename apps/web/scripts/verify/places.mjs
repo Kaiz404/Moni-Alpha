@@ -233,8 +233,8 @@ export async function verifyPlaces(t) {
 
   await p.getByRole('radio', { name: 'Visits' }).click();
   await p.waitForURL(/sort=visits/);
-  const visitCounts = await p.locator('.place-row .row-meta').evaluateAll((els) => els.map((el) => Number(/(\d+) visits?$/.exec(el.textContent)?.[1])));
-  check('Visits sorts by visits', visitCounts.every((count, index) => index === 0 || visitCounts[index - 1] >= count), visitCounts);
+  const visitCounts = await p.locator('.place-row .row-meta').evaluateAll((els) => els.map((el) => Number(/^(\d+) visits? for /.exec(el.textContent)?.[1])));
+  check('Visits sorts by visits', visitCounts.length > 0 && visitCounts.every((count, index) => Number.isInteger(count) && (index === 0 || visitCounts[index - 1] >= count)), visitCounts);
   await p.getByRole('radio', { name: 'Spent' }).click();
 
   await p.getByRole('button', { name: /^Category/ }).click();

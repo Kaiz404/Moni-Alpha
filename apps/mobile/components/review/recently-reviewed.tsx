@@ -2,7 +2,6 @@ import { useSelector, useValue } from '@legendapp/state/react';
 import { router } from 'expo-router';
 import { View } from 'react-native';
 
-import { sourceLabel } from '@/components/transaction/detail-tiles';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { ListSection } from '@/components/ui/list-card';
 import { Press } from '@/components/ui/press';
@@ -20,6 +19,7 @@ import {
   proposalSource,
 } from '@/lib/supabase/proposed-transactions';
 import { tid } from '@/lib/test-ids';
+import type { TransactionSource } from '@repo/types';
 import { type TransactionRowData } from '@/lib/transactions/row';
 import { approvedRow, type RowLookups } from '@repo/core';
 import { compactWalletNames } from '@repo/core';
@@ -46,8 +46,16 @@ export type HistoryRow =
 
 export type HistoryGroup = { key: string; label: string; rows: HistoryRow[] };
 
+const FROM: Record<TransactionSource, string> = {
+  notification: 'from a notification',
+  camera: 'from a receipt',
+  voice: 'by voice',
+  moni: 'from Moni',
+  manual: 'typed in',
+};
+
 function historyRow(proposal: ReviewedProposal, lookups: Lookups, now: Date): HistoryRow {
-  const meta = `${sourceLabel(proposalSource(proposal.sourceType))}, ${captureTime(proposal.transactionDate ?? proposal.createdAt, now)}`;
+  const meta = `${captureTime(proposal.transactionDate ?? proposal.createdAt, now)} ${FROM[proposalSource(proposal.sourceType)]}`;
   const row = approvedRow(proposal, lookups.transactionsById, lookups);
   if (row) return { kind: 'approved', id: proposal.id, transactionId: row.id, row, meta };
   const direction =
