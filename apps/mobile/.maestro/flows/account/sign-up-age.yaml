@@ -1,5 +1,5 @@
 # Create account asks for the birth month and year, and turns away anyone under 18 without making an account.
-# Starts signed out. Ends signed in through the sign-in subflow.
+# Starts signed out. Ends signed in: the relaunch empties the form, then launch.yaml signs in.
 # Run: scripts/device/run-flows.sh .maestro/flows/account/sign-up-age.yaml
 appId: com.anonymous.moni.e2e
 name: Sign-up age check
@@ -16,25 +16,6 @@ tags:
     id: auth.mode.create-account
 - assertVisible: Create your Moni account
 - assertVisible: Moni is for people 18 and over. We keep only the month and year.
-
-- tapOn:
-    id: auth.name
-- inputText: Young Kai
-- hideKeyboard
-# Fills each field the way subflows/sign-in.yaml does: text typed straight after the tap can be
-# dropped, and the open keyboard covers the password field, so a tap there lands on a key.
-- tapOn:
-    id: auth.email
-- eraseText: 40
-- inputText: under-age-e2e@example.com
-- hideKeyboard
-- assertVisible: under-age-e2e@example.com
-- tapOn:
-    id: auth.password
-- eraseText: 40
-- inputText: long-enough-1
-- hideKeyboard
-- takeScreenshot: sign-up-age-form
 
 - tapOn:
     id: auth.birth.month
@@ -54,8 +35,30 @@ tags:
 - assertVisible: '2010'
 - takeScreenshot: sign-up-age-picked
 
+# Once the e2e sign-in is saved, Email gaining focus opens Google's "Use your saved password" dialog.
+# It takes the keys typed next and the Back that would hide the keyboard, so answer it as a user does.
+# The keyboard's Next key moves between fields, so no tap lands under the open keyboard.
 - tapOn:
-    id: auth.create-account
+    id: auth.name
+- inputText: Young Kai
+- pressKey: Enter
+- tapOn:
+    text: No thanks
+    optional: true
+- assertVisible:
+    id: auth.email
+    focused: true
+- inputText: under-age-e2e@example.com
+- assertVisible: under-age-e2e@example.com
+- pressKey: Enter
+- assertVisible:
+    id: auth.password
+    focused: true
+- inputText: long-enough-1
+- takeScreenshot: sign-up-age-form
+
+# Go on the password keyboard submits the form, the same as the Create account button.
+- pressKey: Enter
 - extendedWaitUntil:
     visible: "Moni is for people 18 and over, so we can't create an account for you."
     timeout: 5000
@@ -63,4 +66,4 @@ tags:
     id: auth.create-account
 - takeScreenshot: sign-up-age-under-18
 
-- runFlow: ../../subflows/sign-in.yaml
+- runFlow: ../../subflows/launch.yaml
