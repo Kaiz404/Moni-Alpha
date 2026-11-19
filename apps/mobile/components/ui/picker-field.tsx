@@ -1,7 +1,11 @@
 import type { ReactNode } from 'react';
 import { Keyboard, View } from 'react-native';
 
-import { IconSymbol } from '@/components/ui/icon-symbol';
+import { FieldBubble } from '@/components/ui/field-bubble';
+import {
+  IconSymbol,
+  type IconSymbolName,
+} from '@/components/ui/icon-symbol';
 import { Press } from '@/components/ui/press';
 import { Text } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
@@ -17,26 +21,17 @@ type PickerFieldProps = {
   onPress: () => void;
   /** Shown in Meta while `value` is empty, such as "Pick a date". */
   placeholder?: string;
-  /** An 18 glyph or 10 dot just before the value, as V2F-Components draws the category and wallet fields. */
-  mark?: ReactNode;
-  /** A bubble beside the label and value, for the capture pages' larger marks. */
+  /** The glyph in the field's Paper bubble while `leading` is empty. */
+  icon: IconSymbolName;
+  /** A 32 bubble that stands for the pick, such as the wallet's or the category's tint. */
   leading?: ReactNode;
   className?: string;
   disabled?: boolean;
-  /**
-   * `capture` is the Type it field (V2A-CaptureType): 60 tall, radius 22, a 32
-   * bubble in `leading`, label 12/16 Ink 2 over a 15/20 600 value, and a 20
-   * Ink 2 chevron at the end.
-   */
-  size?: 'default' | 'capture';
-  /** `paper` sits on the canvas among Paper cards, as on the wallet form; Sand is the default. */
-  fill?: 'sand' | 'paper';
 };
 
 /**
- * The Sand field that opens a picker sheet (V2F-Components "Pickers"):
- * radius 16, 64 tall, label 13/18 over the value row: mark, value 16/22
- * 600, and an 18 chevron-down, 6 apart.
+ * The one field that opens a picker sheet, as Type it draws it (V2A-CaptureType): Sand, 60 tall,
+ * radius 22, a 32 bubble, label 12/16 Ink 2 over a 15/20 600 value, and a 20 Ink 2 chevron.
  */
 export function PickerField({
   testID,
@@ -45,60 +40,13 @@ export function PickerField({
   spokenValue,
   onPress,
   placeholder = 'Choose',
-  mark,
+  icon,
   leading,
   className,
   disabled = false,
-  size = 'default',
-  fill = 'sand',
 }: PickerFieldProps) {
   const tokens = useThemeTokens();
   const empty = value.trim().length === 0;
-  const shown = empty ? placeholder : value;
-  if (size === 'capture') {
-    return (
-      <Press
-        testID={testID}
-        accessibilityLabel={`${label}, ${empty ? 'not chosen' : (spokenValue ?? value)}`}
-        accessibilityHint="Opens a picker"
-        accessibilityState={{ disabled }}
-        disabled={disabled}
-        radius={{ rest: 22, pressed: 16 }}
-        pressedClassName="bg-hairline"
-        className={`h-[60px] flex-row items-center gap-2.5 bg-sand px-2.5 ${className ?? ''}`}
-        onPress={() => {
-          Keyboard.dismiss();
-          onPress();
-        }}
-      >
-        {leading}
-        <View className="min-w-0 flex-1 gap-px">
-          <Text
-            className="text-[12px] leading-[16px] text-ink-2"
-            numberOfLines={1}
-          >
-            {label}
-          </Text>
-          <View className="flex-row items-center gap-1.5">
-            {mark}
-            <Text
-              className={`min-w-0 flex-1 text-[15px] leading-[20px] font-display-semibold ${empty ? 'text-muted' : 'text-foreground'}`}
-              numberOfLines={1}
-            >
-              {shown}
-            </Text>
-          </View>
-        </View>
-        <View pointerEvents="none">
-          <IconSymbol
-            name="chevron-down"
-            size={20}
-            color={tokens.ink2}
-          />
-        </View>
-      </Press>
-    );
-  }
   return (
     <Press
       testID={testID}
@@ -106,40 +54,75 @@ export function PickerField({
       accessibilityHint="Opens a picker"
       accessibilityState={{ disabled }}
       disabled={disabled}
-      pressedClassName={fill === 'paper' ? 'bg-sand-light' : 'bg-hairline'}
-      className={`h-16 flex-row items-center gap-2.5 rounded-field ${fill === 'paper' ? 'bg-card' : 'bg-sand'} px-3.5 ${className ?? ''}`}
+      radius={{ rest: 22, pressed: 16 }}
+      pressedClassName="bg-hairline"
+      className={`h-[60px] flex-row items-center gap-2.5 bg-sand px-2.5 ${className ?? ''}`}
       onPress={() => {
         Keyboard.dismiss();
         onPress();
       }}
     >
-      {leading}
-      <View className="min-w-0 flex-1 gap-0.5">
-        <Text
-          variant="meta"
-          className="text-muted"
-          numberOfLines={1}
-        >
-          {label}
-        </Text>
-        <View className="flex-row items-center gap-1.5">
-          {mark}
-          <Text
-            variant="rowTitle"
-            className={`min-w-0 flex-1 ${empty ? 'text-muted' : 'text-foreground'}`}
-            numberOfLines={1}
-          >
-            {shown}
-          </Text>
-          <View pointerEvents="none">
-            <IconSymbol
-              name="chevron-down"
-              size={18}
-              color={tokens.foreground}
-            />
-          </View>
-        </View>
+      {leading ?? <FieldGlyph name={icon} />}
+      <FieldText
+        label={label}
+        value={empty ? placeholder : value}
+        muted={empty}
+      />
+      <View pointerEvents="none">
+        <IconSymbol
+          name="chevron-down"
+          size={20}
+          color={tokens.ink2}
+        />
       </View>
     </Press>
+  );
+}
+
+/** A glyph in the field's 32 Paper bubble. */
+export function FieldGlyph({ name }: { name: IconSymbolName }) {
+  const tokens = useThemeTokens();
+  return (
+    <FieldBubble color={tokens.card}>
+      <IconSymbol
+        name={name}
+        size={17}
+        color={tokens.foreground}
+      />
+    </FieldBubble>
+  );
+}
+
+/** The field's label 12/16 Ink 2 over its 15/20 600 value. */
+export function FieldText({
+  label,
+  value,
+  muted = false,
+  trailing,
+}: {
+  label: string;
+  value: string;
+  muted?: boolean;
+  /** After the value on its line, such as a lock. */
+  trailing?: ReactNode;
+}) {
+  return (
+    <View className="min-w-0 flex-1 gap-px">
+      <Text
+        className="text-[12px] leading-[16px] text-ink-2"
+        numberOfLines={1}
+      >
+        {label}
+      </Text>
+      <View className="flex-row items-center gap-1.5">
+        <Text
+          className={`min-w-0 flex-1 text-[15px] leading-[20px] font-display-semibold ${muted ? 'text-muted' : 'text-foreground'}`}
+          numberOfLines={1}
+        >
+          {value}
+        </Text>
+        {trailing}
+      </View>
+    </View>
   );
 }

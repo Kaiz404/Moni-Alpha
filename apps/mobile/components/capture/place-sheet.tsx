@@ -25,7 +25,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useUniwind } from 'uniwind';
 
-import { FieldBubble } from '@/components/capture/field-bubble';
+import { FieldBubble } from '@/components/ui/field-bubble';
 import { FALLBACK_REGION, shopMapStyles } from '@/components/map/map-style';
 import { mapsAvailable } from '@/components/map/maps-available';
 import { Button } from '@/components/ui/button';

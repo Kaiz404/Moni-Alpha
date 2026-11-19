@@ -1,7 +1,7 @@
 import { View } from 'react-native';
 import Animated, { FadeIn, ZoomIn } from 'react-native-reanimated';
 
-import { FieldBubble } from '@/components/capture/field-bubble';
+import { FieldBubble } from '@/components/ui/field-bubble';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Press } from '@/components/ui/press';
 import { Text } from '@/components/ui/text';
@@ -29,7 +29,7 @@ export type LocationOffer = {
 };
 
 /**
- * The capture pages' Location field, shaped like the `PickerField size="capture"` beside it:
+ * The capture pages' Location field, shaped like the `PickerField` beside it:
  * the place saved with the entry, and a tap opens the place sheet. Near a shop the user paid at
  * before, it reads "Been here?" with the shop and a check that fills it in. With a place set, an
  * X in the chevron's slot takes it off the entry, so the place name loses no room.

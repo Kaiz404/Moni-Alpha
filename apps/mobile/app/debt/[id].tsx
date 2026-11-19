@@ -336,13 +336,7 @@ function DebtPage({
               testID={tid('debts', 'due-date')}
               label="Due date"
               value={dueText}
-              mark={
-                <IconSymbol
-                  name="calendar-clock"
-                  size={18}
-                  color={tokens.foreground}
-                />
-              }
+              icon="calendar-clock"
               onPress={() => setDueOpen(true)}
             />
           ) : null}

@@ -1,13 +1,11 @@
 import { router } from 'expo-router';
-import { useState, type ReactNode } from 'react';
+import { useState } from 'react';
 import {
   Alert,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-  TextInput,
   View,
-  type TextInputProps,
 } from 'react-native';
 import {
   createWalletSchema,
@@ -15,11 +13,17 @@ import {
   updateWalletSchema,
 } from '@repo/types';
 
+import { TextTile } from '@/components/amount/text-tile';
 import { Button } from '@/components/ui/button';
+import { FieldBubble } from '@/components/ui/field-bubble';
 import { HeaderIconButton } from '@/components/ui/header-icon-button';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Page } from '@/components/ui/page';
-import { PickerField } from '@/components/ui/picker-field';
+import {
+  FieldGlyph,
+  FieldText,
+  PickerField,
+} from '@/components/ui/picker-field';
 import { Text } from '@/components/ui/text';
 import { WalletColourSwatches } from '@/components/wallets/wallet-colour-swatches';
 import { WalletIcon } from '@/components/wallets/wallet-icon';
@@ -34,7 +38,7 @@ import {
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { openSheet } from '@/lib/sheet/sheet-store';
 import { createWallet, updateWallet } from '@/lib/supabase/wallets';
-import { tid, type TestId } from '@/lib/test-ids';
+import { tid } from '@/lib/test-ids';
 import { parseBalanceInput } from '@repo/core';
 import { confirmDeleteWallet } from '@/lib/wallets/delete-wallet';
 import { walletMeta } from '@/lib/wallets/wallet-meta';
@@ -258,32 +262,33 @@ export function WalletForm({
             </View>
           </View>
 
-          <PaperField label="Name">
-            <PaperInput
-              testID={tid('wallet', 'form', 'name')}
-              accessibilityLabel="Name"
-              value={values.name}
-              onChangeText={(text) => set({ name: text })}
-              placeholder="e.g. Everyday bank"
-              maxLength={NAME_MAX}
-              autoCapitalize="words"
-              returnKeyType="done"
-            />
-          </PaperField>
+          <TextTile
+            testID={tid('wallet', 'form', 'name')}
+            label="Name"
+            icon="pencil-outline"
+            value={values.name}
+            onChangeText={(text) => set({ name: text })}
+            placeholder="e.g. Everyday bank"
+            maxLength={NAME_MAX}
+            autoCapitalize="words"
+            returnKeyType="done"
+          />
 
           <View className="flex-row gap-2">
             <PickerField
               testID={tid('wallet', 'type')}
               className="min-w-0 flex-1"
               label="Type"
-              fill="paper"
               value={type.label}
-              mark={
-                <WalletIcon
-                  color={tokens.foreground}
-                  icon={type.icon}
-                  size={18}
-                />
+              icon="wallet-outline"
+              leading={
+                <FieldBubble color={tokens.card}>
+                  <WalletIcon
+                    color={tokens.foreground}
+                    icon={type.icon}
+                    size={17}
+                  />
+                </FieldBubble>
               }
               onPress={() => void pickType()}
             />
@@ -291,53 +296,47 @@ export function WalletForm({
               <View
                 accessible
                 accessibilityLabel={`Currency, ${values.currency}. A wallet keeps its currency.`}
-                className="h-16 min-w-0 flex-1 justify-center rounded-field bg-card px-3.5"
+                className="h-[60px] min-w-0 flex-1 flex-row items-center gap-2.5 rounded-tile bg-sand px-2.5"
               >
-                <Text className="text-[13px] leading-[18px] text-muted">
-                  Currency
-                </Text>
-                <View className="flex-row items-center gap-1.5">
-                  <Text className="min-w-0 flex-1 text-base leading-[22px] font-display-semibold text-foreground">
-                    {values.currency}
-                  </Text>
-                  <IconSymbol
-                    name="lock-outline"
-                    size={16}
-                    color={tokens.muted}
-                  />
-                </View>
+                <FieldGlyph name="cash" />
+                <FieldText
+                  label="Currency"
+                  value={values.currency}
+                  trailing={
+                    <IconSymbol
+                      name="lock-outline"
+                      size={16}
+                      color={tokens.muted}
+                    />
+                  }
+                />
               </View>
             ) : (
               <PickerField
                 testID={tid('wallet', 'currency')}
                 className="min-w-0 flex-1"
                 label="Currency"
-                fill="paper"
                 value={values.currency}
+                icon="cash"
                 onPress={() => void pickCurrency()}
               />
             )}
           </View>
 
           {editing ? null : (
-            <PaperField label="Starting balance">
-              <View className="flex-row items-center">
-                <Text className="text-base leading-[22px] font-display-semibold text-muted">
-                  {currencySymbol(values.currency)}
-                </Text>
-                <PaperInput
-                  testID={tid('wallet', 'form', 'starting-balance')}
-                  accessibilityLabel={`Starting balance in ${values.currency}`}
-                  value={startingBalance}
-                  onChangeText={(text) =>
-                    setStartingBalance(text.replace(/[^0-9.,]/g, ''))
-                  }
-                  placeholder="0.00"
-                  keyboardType="decimal-pad"
-                  returnKeyType="done"
-                />
-              </View>
-            </PaperField>
+            <TextTile
+              testID={tid('wallet', 'form', 'starting-balance')}
+              label="Starting balance"
+              icon="bank-outline"
+              prefix={currencySymbol(values.currency)}
+              value={startingBalance}
+              onChangeText={(text) =>
+                setStartingBalance(text.replace(/[^0-9.,]/g, ''))
+              }
+              placeholder="0.00"
+              keyboardType="decimal-pad"
+              returnKeyType="done"
+            />
           )}
 
           {mode.kind === 'new' ? (
@@ -397,38 +396,5 @@ export function WalletForm({
         </View>
       </KeyboardAvoidingView>
     </Page>
-  );
-}
-
-/** V2H-WalletForm's field in Paper rather than the board's Sand: label 13 Meta over a 16/600 value, radius 16. */
-function PaperField({
-  label,
-  children,
-}: {
-  label: string;
-  children: ReactNode;
-}) {
-  return (
-    <View className="min-h-16 justify-center rounded-field bg-card px-3.5 py-2">
-      <Text className="text-[13px] leading-[18px] text-muted">
-        {label}
-      </Text>
-      {children}
-    </View>
-  );
-}
-
-function PaperInput({
-  testID,
-  ...props
-}: Omit<TextInputProps, 'testID'> & { testID: TestId }) {
-  const tokens = useThemeTokens();
-  return (
-    <TextInput
-      {...props}
-      testID={testID}
-      placeholderTextColor={tokens.muted}
-      className="min-w-0 flex-1 p-0 font-display-semibold text-base leading-[22px] text-foreground"
-    />
   );
 }

@@ -89,13 +89,13 @@ export function WalletNotificationLinkSection({
       <PickerField
         testID={tid('wallet', 'alerts-from')}
         label="Alerts from"
-        fill="paper"
         value={selectedLabel ?? "Don't link"}
-        mark={
+        icon="bell-outline"
+        leading={
           value.notificationPackage ? (
             <NotificationAppIcon
               iconUri={icon}
-              size={20}
+              size={32}
             />
           ) : undefined
         }

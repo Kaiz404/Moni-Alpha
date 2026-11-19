@@ -11,13 +11,11 @@ import {
   DuplicateSheet,
   type DuplicateHit,
 } from '@/components/capture/duplicate-sheet';
-import { FieldBubble, WalletBubble } from '@/components/capture/field-bubble';
+import { WalletBubble } from '@/components/ui/field-bubble';
 import { LocationField } from '@/components/capture/location-field';
-import { IconSymbol } from '@/components/ui/icon-symbol';
 import { PickerField } from '@/components/ui/picker-field';
 import { Segmented } from '@/components/ui/segmented';
 import { TintBubble } from '@/components/ui/transaction-row';
-import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import type { LedgerEntry } from '@/lib/ai/duplicates';
 import { useAuth } from '@/lib/auth/auth-context';
 import { readAmount, type AmountSentence } from '@/lib/amount/amount-input';
@@ -99,7 +97,6 @@ function walletOption(wallet: FinanceWallet): WalletOption {
 export default function TypeItScreen() {
   const { user } = useAuth();
   const userId = user?.id ?? null;
-  const tokens = useThemeTokens();
   const mainCurrency = useMainCurrency();
   const params = useLocalSearchParams<{
     walletId?: string | string[];
@@ -473,19 +470,10 @@ export default function TypeItScreen() {
   const dateField = (
     <PickerField
       testID={tid('capture', 'date')}
-      size="capture"
       className="flex-1"
       label="Date"
       value={dayLabel(date, deviceCalendar.dayKey(new Date()))}
-      leading={
-        <FieldBubble color={tokens.card}>
-          <IconSymbol
-            name="calendar-today"
-            size={17}
-            color={tokens.foreground}
-          />
-        </FieldBubble>
-      }
+      icon="calendar-today"
       onPress={() => void chooseDate()}
     />
   );
@@ -542,21 +530,21 @@ export default function TypeItScreen() {
             <View className="flex-row gap-2">
               <PickerField
                 testID={tid('capture', 'wallet')}
-                size="capture"
                 className="flex-1"
                 label="From"
                 value={walletName(wallet)}
                 spokenValue={wallet?.name}
+                icon="wallet-outline"
                 leading={walletBubble(wallet)}
                 onPress={() => void pickWallet('from')}
               />
               <PickerField
                 testID={tid('capture', 'to-wallet')}
-                size="capture"
                 className="flex-1"
                 label="To"
                 value={walletName(toWallet)}
                 spokenValue={toWallet?.name}
+                icon="wallet-outline"
                 leading={walletBubble(toWallet)}
                 onPress={() => void pickWallet('to')}
               />
@@ -569,20 +557,20 @@ export default function TypeItScreen() {
             <View className="flex-row gap-2">
               <PickerField
                 testID={tid('capture', 'wallet')}
-                size="capture"
                 className="flex-1"
                 label={kind === 'income' ? 'Into' : 'Paid with'}
                 value={walletName(wallet)}
                 spokenValue={wallet?.name}
+                icon="wallet-outline"
                 leading={walletBubble(wallet)}
                 onPress={() => void pickWallet('from')}
               />
               <PickerField
                 testID={tid('capture', 'category')}
-                size="capture"
                 className="flex-1"
                 label="Category"
                 value={category?.name ?? ''}
+                icon="shape-outline"
                 leading={
                   category ? (
                     <TintBubble

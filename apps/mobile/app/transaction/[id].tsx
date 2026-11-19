@@ -12,7 +12,7 @@ import {
 import { Alert, Keyboard, View } from 'react-native';
 
 import { TextTile } from '@/components/amount/text-tile';
-import { WalletBubble } from '@/components/capture/field-bubble';
+import { WalletBubble } from '@/components/ui/field-bubble';
 import { BudgetLine } from '@/components/transaction/budget-line';
 import {
   DetailLinks,

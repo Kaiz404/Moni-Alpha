@@ -66,6 +66,7 @@ export function RangeSheet({
             testID={tid('sheet', 'range', 'from')}
             label="From"
             value={dateLabel(draft.from, deviceCalendar.dayKey(now))}
+            icon="calendar-today"
             onPress={() => void edit('from')}
             className="min-w-0 flex-1"
           />
@@ -73,6 +74,7 @@ export function RangeSheet({
             testID={tid('sheet', 'range', 'to')}
             label="To"
             value={dateLabel(draft.to, deviceCalendar.dayKey(now))}
+            icon="calendar-today"
             onPress={() => void edit('to')}
             className="min-w-0 flex-1"
           />

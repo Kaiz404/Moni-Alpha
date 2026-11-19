@@ -1,8 +1,9 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
-import { TextInput, View } from 'react-native';
+import { View } from 'react-native';
 
 import { AmountPage } from '@/components/amount/amount-page';
+import { TextTile } from '@/components/amount/text-tile';
 import {
   pickDebtWallet,
   useDebtWallets,
@@ -10,13 +11,12 @@ import {
 import { SIDE_WORDS } from '@/components/debts/debt-words';
 import { useDebt } from '@/components/debts/use-debts';
 import { Chip } from '@/components/ui/chip';
+import { WalletBubble } from '@/components/ui/field-bubble';
 import { NotFound } from '@/components/ui/empty-tile';
 import { Page } from '@/components/ui/page';
 import { PickerField } from '@/components/ui/picker-field';
 import { Segmented } from '@/components/ui/segmented';
-import { Text } from '@/components/ui/text';
 import { showToast } from '@/lib/toast/toast-store';
-import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { approve } from '@/lib/haptics';
 import {
   addDebtPrincipal,
@@ -79,7 +79,6 @@ function DebtMoneyForm({
   activities: FinanceDebtActivity[];
   initial: Mode;
 }) {
-  const tokens = useThemeTokens();
   const { debt, balanceMinor } = line;
   const { counterpartyName: name, direction, currency } = debt;
   const words = SIDE_WORDS[direction];
@@ -193,6 +192,8 @@ function DebtMoneyForm({
           label={walletLabel}
           value={wallet ? compactWalletNames(wallets)[wallet.id] : ''}
           spokenValue={wallet?.name}
+          icon="wallet-outline"
+          leading={wallet ? <WalletBubble wallet={wallet} /> : undefined}
           onPress={async () => {
             const picked = await pickDebtWallet(
               walletLabel,
@@ -203,16 +204,12 @@ function DebtMoneyForm({
             if (picked) setWalletId(picked);
           }}
         />
-        <View className="h-16 flex-1 justify-center rounded-field bg-sand px-3.5">
-          <Text className="text-[13px] leading-[18px] text-muted">
-            Note
-          </Text>
-          <TextInput
+        <View className="flex-1">
+          <TextTile
             testID={tid('debts', 'amount', 'note')}
-            accessibilityLabel="Note"
-            className="h-[22px] p-0 font-display-semibold text-base text-foreground"
+            label="Note"
+            icon="note-text-outline"
             placeholder={debt.note ?? 'What for?'}
-            placeholderTextColor={tokens.muted}
             value={note}
             onChangeText={setNote}
             maxLength={1000}

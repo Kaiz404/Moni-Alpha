@@ -127,6 +127,7 @@ export default function ImportColumnsScreen() {
           testID={tid('import', 'wallet')}
           label="Add to"
           placeholder="Choose a wallet"
+          icon="wallet-outline"
           value={wallets.find((item) => item.id === wallet?.id)?.name ?? ''}
           onPress={() => void chooseWallet()}
         />
@@ -138,6 +139,7 @@ export default function ImportColumnsScreen() {
               testID={tid('import', 'column', item.field)}
               label={item.label}
               placeholder="Not in this file"
+              icon="table-column"
               value={column === null ? '' : generic.table.headers[column] || `Column ${column + 1}`}
               onPress={() => setPicking(item)}
             />

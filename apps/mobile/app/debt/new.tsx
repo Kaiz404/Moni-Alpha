@@ -4,7 +4,7 @@ import { Keyboard, View } from 'react-native';
 
 import { AmountPage } from '@/components/amount/amount-page';
 import { TextTile } from '@/components/amount/text-tile';
-import { FieldBubble, WalletBubble } from '@/components/capture/field-bubble';
+import { WalletBubble } from '@/components/ui/field-bubble';
 import {
   dueLabel,
   DueDateSheet,
@@ -212,11 +212,11 @@ export default function NewDebtScreen() {
         <View className="flex-row gap-2">
           <PickerField
             testID={tid('debts', 'new', 'wallet')}
-            size="capture"
             className="flex-1"
             label={walletLabel}
             value={wallet ? compactWalletNames(wallets)[wallet.id] : ''}
             spokenValue={wallet?.name}
+            icon="wallet-outline"
             leading={wallet ? <WalletBubble wallet={wallet} /> : undefined}
             onPress={async () => {
               const picked = await pickDebtWallet(
@@ -230,19 +230,10 @@ export default function NewDebtScreen() {
           />
           <PickerField
             testID={tid('debts', 'new', 'due-date')}
-            size="capture"
             className="flex-1"
             label="Due date"
             value={dueLabel(dueDate)}
-            leading={
-              <FieldBubble color={tokens.card}>
-                <IconSymbol
-                  name="calendar-clock"
-                  size={17}
-                  color={tokens.foreground}
-                />
-              </FieldBubble>
-            }
+            icon="calendar-clock"
             onPress={() => setDueOpen(true)}
           />
         </View>

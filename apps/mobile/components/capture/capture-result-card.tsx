@@ -5,7 +5,7 @@ import Animated, { FadeIn } from 'react-native-reanimated';
 
 import { TextTile } from '@/components/amount/text-tile';
 import { MoniGlyph } from '@/components/brand/mascot';
-import { FieldBubble, WalletBubble } from '@/components/capture/field-bubble';
+import { WalletBubble } from '@/components/ui/field-bubble';
 import { LocationField } from '@/components/capture/location-field';
 import { HEADER_H, ReceiptPhoto } from '@/components/capture/receipt-photo';
 import { Button } from '@/components/ui/button';
@@ -284,20 +284,20 @@ export function CaptureResult({
         <View className="flex-row gap-2">
           <PickerField
             testID={tid('capture', 'result', 'wallet')}
-            size="capture"
             className="flex-1"
             label={draft.kind === 'income' ? 'Into' : 'Paid with'}
             value={wallet ? (compactWalletNames(allWallets)[wallet.id] ?? wallet.name) : ''}
             spokenValue={wallet?.name}
+            icon="wallet-outline"
             leading={wallet ? <WalletBubble wallet={wallet} /> : undefined}
             onPress={() => void pickWallet()}
           />
           <PickerField
             testID={tid('capture', 'result', 'category')}
-            size="capture"
             className="flex-1"
             label="Category"
             value={category?.name ?? ''}
+            icon="shape-outline"
             leading={
               category ? (
                 <TintBubble
@@ -313,20 +313,11 @@ export function CaptureResult({
         <View className="flex-row gap-2">
           <PickerField
             testID={tid('capture', 'result', 'date')}
-            size="capture"
             className="flex-1"
             label="Date"
             value={dayLabel(deviceCalendar.dayKey(draft.transactionDate), deviceCalendar.dayKey(new Date()))}
             spokenValue={dayAndTime(draft.transactionDate)}
-            leading={
-              <FieldBubble color={tokens.card}>
-                <IconSymbol
-                  name="calendar-today"
-                  size={17}
-                  color={tokens.foreground}
-                />
-              </FieldBubble>
-            }
+            icon="calendar-today"
             onPress={() => void pickDate()}
           />
           <LocationField

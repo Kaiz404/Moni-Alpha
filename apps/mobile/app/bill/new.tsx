@@ -1,15 +1,14 @@
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { TextInput, View } from 'react-native';
+import { View } from 'react-native';
 
 import { DueDaySheet } from '@/components/budget/due-day-sheet';
 import { AmountPage } from '@/components/amount/amount-page';
-import { IconSymbol } from '@/components/ui/icon-symbol';
+import { TextTile } from '@/components/amount/text-tile';
 import { PickerField } from '@/components/ui/picker-field';
 import { Press } from '@/components/ui/press';
 import { Segmented } from '@/components/ui/segmented';
 import { Text } from '@/components/ui/text';
-import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { useMainCurrency } from '@/lib/finance/main-currency';
 import { readAmount } from '@/lib/amount/amount-input';
 import {
@@ -37,7 +36,6 @@ const CHIPS = ['10', '50', '100'];
 
 /** "Add a bill" on the amount page (`V2P-AmountPage`, New bill): new money gets the keypad. */
 export default function NewBillScreen() {
-  const tokens = useThemeTokens();
   const currency = useMainCurrency();
   const [often, setOften] = useState<Often>('monthly');
   const [typed, setTyped] = useState('');
@@ -120,20 +118,16 @@ export default function NewBillScreen() {
       >
         <View className="gap-3">
           <View className="flex-row gap-2">
-            <View className="h-16 flex-1 justify-center rounded-field bg-sand px-3.5">
-              <Text className="text-[13px] leading-[18px] text-muted">
-                Bill name
-              </Text>
-              <TextInput
+            <View className="flex-1">
+              <TextTile
                 testID={tid('budget', 'bill-new', 'name')}
-                accessibilityLabel="Bill name"
+                label="Bill name"
+                icon="repeat"
                 value={name}
                 onChangeText={(text) => setName(text.slice(0, 30))}
                 placeholder="e.g. Unifi fibre"
-                placeholderTextColor={tokens.muted}
                 autoCapitalize="words"
                 returnKeyType="done"
-                className="p-0 font-display-semibold text-[16px] leading-[22px] text-foreground"
               />
             </View>
             <PickerField
@@ -149,13 +143,7 @@ export default function NewBillScreen() {
                   : ''
               }
               className="flex-1"
-              mark={
-                <IconSymbol
-                  name="calendar"
-                  size={18}
-                  color={due ? tokens.foreground : tokens.muted}
-                />
-              }
+              icon="calendar"
               onPress={() => setDueOpen(true)}
             />
           </View>

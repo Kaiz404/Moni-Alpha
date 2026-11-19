@@ -8,6 +8,7 @@ import { DueDaySheet } from '@/components/budget/due-day-sheet';
 import { Toggle } from '@/components/ui/toggle';
 import { useBudgetData } from '@/components/budget/use-budget';
 import { Button } from '@/components/ui/button';
+import { WalletBubble } from '@/components/ui/field-bubble';
 import { NotFound } from '@/components/ui/empty-tile';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import {
@@ -81,7 +82,6 @@ function errorText(error: unknown): string {
 
 /** `V2P-BillDetail`: one bill, its name and amount in place, its schedule, and its payments. */
 export default function BillScreen() {
-  const tokens = useThemeTokens();
   const { seriesKey } = useLocalSearchParams<{ seriesKey: string }>();
   const data = useBudgetData();
   const { now, currency } = data;
@@ -461,16 +461,10 @@ export default function BillScreen() {
             <View className="flex-row gap-2">
               <PickerField
                 testID={tid('budget', 'bill', 'due')}
-                label={once ? 'Due · once' : 'Next due · monthly'}
+                label={once ? 'Due' : 'Next due'}
                 value={dateLabel(nextDue, deviceCalendar.dayKey(now))}
                 className="flex-1"
-                mark={
-                  <IconSymbol
-                    name="calendar"
-                    size={18}
-                    color={tokens.foreground}
-                  />
-                }
+                icon="calendar"
                 onPress={() => setDueOpen(true)}
               />
               <PickerField
@@ -479,14 +473,8 @@ export default function BillScreen() {
                 value={wallet ? data.walletNames[wallet.id] : ''}
                 spokenValue={wallet?.name}
                 className="flex-1"
-                mark={
-                  wallet?.color ? (
-                    <View
-                      className="h-2.5 w-2.5 rounded-full"
-                      style={{ backgroundColor: wallet.color }}
-                    />
-                  ) : undefined
-                }
+                icon="wallet-outline"
+                leading={wallet ? <WalletBubble wallet={wallet} /> : undefined}
                 onPress={pickWallet}
               />
             </View>
@@ -494,12 +482,13 @@ export default function BillScreen() {
               testID={tid('budget', 'bill', 'category')}
               label="Category"
               value={category?.name ?? ''}
-              mark={
+              icon="shape-outline"
+              leading={
                 category ? (
-                  <IconSymbol
-                    name={bubbleIcon}
-                    size={18}
-                    color={tokens.foreground}
+                  <TintBubble
+                    size={32}
+                    icon={bubbleIcon}
+                    color={category.color}
                   />
                 ) : undefined
               }
