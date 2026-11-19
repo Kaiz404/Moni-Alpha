@@ -10,7 +10,7 @@
     "lint": "eslint --max-warnings 0",
     "check-types": "next typegen && tsc --noEmit",
     "test": "vitest run",
-    "verify": "node scripts/verify/drive.mjs"
+    "verify": "flock --verbose -w 7200 \"${XDG_RUNTIME_DIR:-/tmp}/moni-web-verify.lock\" node scripts/verify/drive.mjs"
   },
   "dependencies": {
     "@legendapp/state": "3.0.0-beta.47",
