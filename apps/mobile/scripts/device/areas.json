@@ -1,52 +1,176 @@
 {
   "areas": {
-    "apps/mobile/app/_layout.tsx": ["*"],
-    "apps/mobile/app/(tabs)/_layout.tsx": ["*"],
-    "apps/mobile/app/(auth)/**": ["smoke", "account"],
-    "apps/mobile/app/(tabs)/index.tsx": ["home", "smoke"],
-    "apps/mobile/app/(tabs)/activity.tsx": ["activity", "smoke"],
-    "apps/mobile/app/(tabs)/budget.tsx": ["budget", "smoke"],
-    "apps/mobile/app/(tabs)/debts.tsx": ["debts", "smoke"],
+    "apps/mobile/app/_layout.tsx": [
+      "*"
+    ],
+    "apps/mobile/app/(tabs)/_layout.tsx": [
+      "*"
+    ],
+    "apps/mobile/app/(auth)/**": [
+      "smoke",
+      "account"
+    ],
+    "apps/mobile/app/(tabs)/index.tsx": [
+      "home",
+      "smoke"
+    ],
+    "apps/mobile/app/(tabs)/activity.tsx": [
+      "activity",
+      "smoke"
+    ],
+    "apps/mobile/app/(tabs)/budget.tsx": [
+      "budget",
+      "smoke"
+    ],
+    "apps/mobile/app/(tabs)/debts.tsx": [
+      "debts",
+      "smoke"
+    ],
     "apps/mobile/app/+not-found.tsx": [],
-    "apps/mobile/app/bill/**": ["budget"],
-    "apps/mobile/app/budget/**": ["budget"],
-    "apps/mobile/app/capture/**": ["capture"],
-    "apps/mobile/app/capture-log.tsx": ["account", "review"],
-    "apps/mobile/app/capture-sources.tsx": ["account"],
-    "apps/mobile/app/categories/**": ["activity", "account"],
-    "apps/mobile/app/chat.tsx": ["chat", "home", "nav"],
-    "apps/mobile/app/chat/**": ["chat"],
-    "apps/mobile/app/debt/**": ["debts"],
+    "apps/mobile/app/bill/**": [
+      "budget"
+    ],
+    "apps/mobile/app/budget/**": [
+      "budget"
+    ],
+    "apps/mobile/app/capture/**": [
+      "capture"
+    ],
+    "apps/mobile/app/capture-log.tsx": [
+      "account",
+      "review"
+    ],
+    "apps/mobile/app/capture-sources.tsx": [
+      "account"
+    ],
+    "apps/mobile/app/categories/**": [
+      "activity",
+      "account"
+    ],
+    "apps/mobile/app/chat.tsx": [
+      "chat",
+      "home",
+      "nav"
+    ],
+    "apps/mobile/app/chat/**": [
+      "chat"
+    ],
+    "apps/mobile/app/debt/**": [
+      "debts"
+    ],
     "apps/mobile/app/debug/**": [],
-    "apps/mobile/app/import/**": ["account"],
-    "apps/mobile/app/map.tsx": ["map", "home"],
-    "apps/mobile/app/place/**": ["map"],
-    "apps/mobile/app/merchants.tsx": ["account"],
-    "apps/mobile/app/profile.tsx": ["account", "components"],
-    "apps/mobile/app/review.tsx": ["review", "smoke"],
-    "apps/mobile/app/transaction/**": ["activity", "budget", "smoke"],
-    "apps/mobile/app/transactions.tsx": ["activity", "budget"],
-    "apps/mobile/app/wallet/**": ["account", "home", "components"],
-    "apps/mobile/app/wallets.tsx": ["account", "home"],
-    "apps/mobile/components/nav/**": ["nav", "smoke", "capture"],
-    "apps/mobile/components/sheets/**": ["components"],
-    "apps/mobile/components/ui/sheet/**": ["components"],
-    "apps/mobile/components/ui/hold-menu.tsx": ["components"],
-    "apps/mobile/.maestro/subflows/**": ["*"],
-    "apps/mobile/.maestro/config.yaml": ["*"],
-    "apps/mobile/.maestro/fixtures/**": ["capture", "review"],
-    "apps/mobile/scripts/e2e/**": ["*"],
-    "apps/mobile/global.css": ["*"],
-    "apps/mobile/index.js": ["*"],
-    "apps/mobile/app.config.ts": ["*"],
-    "apps/mobile/app.json": ["*"],
-    "apps/mobile/package.json": ["*"],
-    "apps/mobile/babel.config.js": ["*"],
-    "apps/mobile/metro.config.js": ["*"],
-    "apps/mobile/modules/**": ["*"],
-    "apps/mobile/plugins/**": ["*"],
-    "apps/mobile/assets/fonts/**": ["*"],
-    "pnpm-lock.yaml": ["*"]
+    "apps/mobile/app/import/**": [
+      "account"
+    ],
+    "apps/mobile/app/map.tsx": [
+      "map",
+      "home"
+    ],
+    "apps/mobile/app/place/**": [
+      "map"
+    ],
+    "apps/mobile/app/merchants.tsx": [
+      "account"
+    ],
+    "apps/mobile/app/profile.tsx": [
+      "account",
+      "components"
+    ],
+    "apps/mobile/app/review.tsx": [
+      "review",
+      "smoke"
+    ],
+    "apps/mobile/app/transaction/**": [
+      "activity",
+      "budget",
+      "smoke"
+    ],
+    "apps/mobile/app/transactions.tsx": [
+      "activity",
+      "budget"
+    ],
+    "apps/mobile/app/wallet/**": [
+      "account",
+      "home",
+      "components"
+    ],
+    "apps/mobile/app/wallets.tsx": [
+      "account",
+      "home"
+    ],
+    "apps/mobile/components/nav/**": [
+      "nav",
+      "smoke",
+      "capture"
+    ],
+    "apps/mobile/components/sheets/**": [
+      "components"
+    ],
+    "apps/mobile/components/ui/sheet/**": [
+      "components"
+    ],
+    "apps/mobile/components/ui/hold-menu.tsx": [
+      "components"
+    ],
+    "apps/mobile/.maestro/subflows/**": [
+      "*"
+    ],
+    "apps/mobile/.maestro/config.yaml": [
+      "*"
+    ],
+    "apps/mobile/.maestro/fixtures/**": [
+      "capture",
+      "review"
+    ],
+    "apps/mobile/scripts/e2e/**": [
+      "*"
+    ],
+    "apps/mobile/global.css": [
+      "*"
+    ],
+    "apps/mobile/index.js": [
+      "*"
+    ],
+    "apps/mobile/app.config.ts": [
+      "*"
+    ],
+    "apps/mobile/app.json": [
+      "*"
+    ],
+    "apps/mobile/package.json": [
+      "*"
+    ],
+    "apps/mobile/babel.config.js": [
+      "*"
+    ],
+    "apps/mobile/metro.config.js": [
+      "*"
+    ],
+    "apps/mobile/modules/**": [
+      "*"
+    ],
+    "apps/mobile/plugins/**": [
+      "*"
+    ],
+    "apps/mobile/assets/fonts/**": [
+      "*"
+    ],
+    "pnpm-lock.yaml": [
+      "*"
+    ],
+    "apps/mobile/app/ai-consent.tsx": [
+      "account",
+      "chat"
+    ],
+    "apps/mobile/app/moni-ai.tsx": [
+      "account"
+    ],
+    "apps/mobile/app/delete-account.tsx": [
+      "account"
+    ],
+    "apps/mobile/app/sign-in/**": [
+      "account"
+    ]
   },
   "pixels": {
     "files": [
