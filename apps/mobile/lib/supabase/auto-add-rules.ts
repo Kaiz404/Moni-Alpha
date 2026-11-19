@@ -1,3 +1,4 @@
+import type { StoredRow } from '@repo/core';
 import { randomUUID } from 'expo-crypto';
 import {
   createAutoAddRuleInputSchema,
@@ -8,17 +9,7 @@ import { assertMigrated, autoAddRules$ } from '@/lib/store';
 import { getRecordValues, patchRow } from '@/lib/store/helpers';
 import { getUserId } from '@/lib/supabase/client';
 
-export type AutoAddRuleRow = {
-  id: string;
-  user_id: string | null;
-  merchant_key: string | null;
-  source_app: string | null;
-  wallet_id: string | null;
-  category_id: string | null;
-  created_at?: string | null;
-  updated_at?: string | null;
-  deleted?: boolean;
-};
+export type AutoAddRuleRow = StoredRow<'auto_add_rules'>;
 
 const ruleKey = (sourceApp: string, merchantKey: string) => `${sourceApp}|${merchantKey}`;
 

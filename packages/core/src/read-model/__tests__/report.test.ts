@@ -29,6 +29,9 @@ function txn(
   return {
     id: `t${nextId++}`,
     userId: 'kai',
+    receiptImageUrl: null,
+    metadata: {},
+    updatedAt: '2026-10-01T00:00:00.000Z',
     walletId: 'maybank',
     amountMinor: Math.round(ringgit * 100) as MinorAmount,
     currency: MYR,
@@ -58,6 +61,8 @@ function category(id: string, name: string, over: Partial<FinanceCategory> = {})
   return {
     id,
     userId: null,
+    createdAt: '2026-10-01T00:00:00.000Z',
+    updatedAt: '2026-10-01T00:00:00.000Z',
     name,
     icon: 'silverware',
     type: 'expense',

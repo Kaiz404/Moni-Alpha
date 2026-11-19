@@ -32,6 +32,8 @@ function category(id: string, name: string, displayOrder: number): FinanceCatego
   return {
     id,
     userId: null,
+    createdAt: '2026-10-01T00:00:00.000Z',
+    updatedAt: '2026-10-01T00:00:00.000Z',
     name,
     icon: null,
     color: null,
@@ -51,6 +53,9 @@ function spend(
   return {
     id: `t${nextId++}`,
     userId: 'u',
+    receiptImageUrl: null,
+    metadata: {},
+    updatedAt: '2026-10-01T00:00:00.000Z',
     walletId: 'maybank',
     amountMinor: sen(ringgit),
     currency: MYR,
@@ -103,6 +108,8 @@ function bill(name: string, ringgit: number, dueDate: string): UpcomingBill {
 const mei: FinanceDebt = {
   id: 'd1',
   userId: 'u',
+  createdAt: '2026-10-01T00:00:00.000Z',
+  updatedAt: '2026-10-01T00:00:00.000Z',
   counterpartyName: 'Mei',
   direction: 'i_owe',
   currency: MYR,

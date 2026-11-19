@@ -18,6 +18,11 @@ export type FinanceWallet = {
   createdAt?: string | null;
   /** False once the user turned location off for the app linked to this wallet. */
   recordLocation?: boolean;
+  /** The banking app whose alerts land in this wallet. */
+  notificationPackage: string | null;
+  notificationAppLabel: string | null;
+  notificationAccountHint: string | null;
+  updatedAt: string;
 };
 
 export type FinanceTransaction = {
@@ -47,7 +52,10 @@ export type FinanceTransaction = {
   autoAdded: boolean;
   /** A wallet balance fix (metadata.kind balance_correction): kept out of budgets and spending. */
   balanceCorrection: boolean;
+  receiptImageUrl: string | null;
+  metadata: Record<string, unknown>;
   createdAt: string;
+  updatedAt: string;
 };
 
 export type FinanceCategory = {
@@ -60,6 +68,8 @@ export type FinanceCategory = {
   color: string | null;
   isActive: boolean;
   displayOrder: number;
+  createdAt: string;
+  updatedAt: string;
 };
 
 export type FinanceBudget = {
@@ -80,6 +90,8 @@ export type FinanceDebt = {
   dueDate: string | null;
   note: string | null;
   status: 'open' | 'settled' | 'written_off';
+  createdAt: string;
+  updatedAt: string;
 };
 
 export type FinanceDebtActivity = {
@@ -92,6 +104,8 @@ export type FinanceDebtActivity = {
   walletId: string | null;
   cashTransactionId: string | null;
   note: string | null;
+  createdAt: string;
+  updatedAt: string;
 };
 
 export type FinanceProposal = ProposedTransaction;

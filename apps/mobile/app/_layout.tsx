@@ -29,7 +29,6 @@ import {
   useResolvedThemeTokens,
 } from '@/hooks/use-theme-tokens';
 import { AuthProvider } from '@/lib/auth/auth-context';
-import { QueryProvider } from '@/lib/query/query-client';
 import { drainImageUploadQueue } from '@/lib/receipts/upload-queue';
 import { pruneIncompleteProposals } from '@/lib/supabase/proposed-transactions';
 import { pruneReviewHistoryDaily } from '@/lib/proposals/review-history';
@@ -133,38 +132,36 @@ export default function RootLayout() {
     <GestureHandlerRootView style={StyleSheet.absoluteFill}>
       <ThemeTokensContext value={tokens}>
         <SafeAreaProvider>
-          <QueryProvider>
-            <ThemeProvider value={navigationTheme}>
-              <AuthProvider>
-                <StoreSyncActivator />
-                <AuthGuard>
-                  <Stack
-                    screenOptions={{
-                      // A theme change recolours every mounted screen, so hidden ones wait until they show.
-                      freezeOnBlur: true,
-                      headerShown: false,
-                      animation: reduceMotion
-                        ? 'fade'
-                        : 'slide_from_right',
-                    }}
-                  >
-                    <Stack.Screen
-                      name="(auth)"
-                      options={{ animation: 'fade' }}
-                    />
-                    <Stack.Screen
-                      name="(tabs)"
-                      options={{ animation: 'fade' }}
-                    />
-                  </Stack>
-                  <SheetHost />
-                  <ReviewNotificationTaps />
-                </AuthGuard>
-                <ToastHost />
-                <ThemeStatusBar theme={theme} />
-              </AuthProvider>
-            </ThemeProvider>
-          </QueryProvider>
+          <ThemeProvider value={navigationTheme}>
+            <AuthProvider>
+              <StoreSyncActivator />
+              <AuthGuard>
+                <Stack
+                  screenOptions={{
+                    // A theme change recolours every mounted screen, so hidden ones wait until they show.
+                    freezeOnBlur: true,
+                    headerShown: false,
+                    animation: reduceMotion
+                      ? 'fade'
+                      : 'slide_from_right',
+                  }}
+                >
+                  <Stack.Screen
+                    name="(auth)"
+                    options={{ animation: 'fade' }}
+                  />
+                  <Stack.Screen
+                    name="(tabs)"
+                    options={{ animation: 'fade' }}
+                  />
+                </Stack>
+                <SheetHost />
+                <ReviewNotificationTaps />
+              </AuthGuard>
+              <ToastHost />
+              <ThemeStatusBar theme={theme} />
+            </AuthProvider>
+          </ThemeProvider>
         </SafeAreaProvider>
       </ThemeTokensContext>
     </GestureHandlerRootView>

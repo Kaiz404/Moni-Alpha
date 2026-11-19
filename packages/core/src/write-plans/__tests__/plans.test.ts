@@ -49,6 +49,10 @@ const wallet = (id: string, currency: 'MYR' | 'SGD' = 'MYR'): FinanceWallet => (
   isActive: true,
   displayOrder: 0,
   balanceConfirmedAt: null,
+  notificationPackage: null,
+  notificationAppLabel: null,
+  notificationAccountHint: null,
+  updatedAt: NOW,
 });
 
 const transaction = (id: string, walletId: string, over: Partial<FinanceTransaction> = {}): FinanceTransaction =>
@@ -73,6 +77,10 @@ const transaction = (id: string, walletId: string, over: Partial<FinanceTransact
     locationName: null,
     placeId: null,
     placeCoordsAt: null,
+    receiptImageUrl: null,
+    metadata: {},
+    createdAt: NOW,
+    updatedAt: NOW,
     ...over,
   }) as FinanceTransaction;
 
@@ -85,6 +93,8 @@ const DEBT: FinanceDebt = {
   dueDate: null,
   note: null,
   status: 'open',
+  createdAt: NOW,
+  updatedAt: NOW,
 };
 
 const activity = (id: string, kind: FinanceDebtActivity['kind'], amount: number, over: Partial<FinanceDebtActivity> = {}) => ({
@@ -97,6 +107,8 @@ const activity = (id: string, kind: FinanceDebtActivity['kind'], amount: number,
   walletId: 'maybank',
   cashTransactionId: `cash-${id}`,
   note: null,
+  createdAt: '2026-10-01T00:00:00.000Z',
+  updatedAt: '2026-10-01T00:00:00.000Z',
   ...over,
 });
 

@@ -1,3 +1,4 @@
+import type { Observable } from '@legendapp/state';
 import { applyToTables, type MemoryTables, type RowWrites, type SyncedTable } from '@repo/core';
 import { describe, expect, it } from 'vitest';
 
@@ -63,7 +64,10 @@ function withLegend(before: MemoryTables, writes: RowWrites): MemoryTables {
   const { supabase } = fakeSupabase();
   const store = createMoniStore({ supabase, persist: memoryPersist(), uuid: () => 'unused' });
   // Legend keeps the object it is given, so the store gets its own copy of the starting rows.
-  for (const table of TABLES) store.tables[table].set(structuredClone(before[table] ?? {}) as never);
+  for (const table of TABLES) {
+    const rows$ = store.tables[table] as unknown as Observable<MemoryTables[SyncedTable]>;
+    rows$.set(structuredClone(before[table] ?? {}));
+  }
   applyWrites(store, writes);
   return Object.fromEntries(
     TABLES.map((table) => [table, store.tables[table].peek() as Record<string, Record<string, unknown>>]).filter(

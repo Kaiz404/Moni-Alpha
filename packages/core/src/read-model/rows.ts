@@ -1,4 +1,4 @@
-import { decimalToMinor, proposedTransactionStatusSchema, type CurrencyCode } from '@repo/types';
+import { capturePairingSchema, decimalToMinor, proposedTransactionStatusSchema, type CurrencyCode } from '@repo/types';
 
 import type {
   FinanceBudget,
@@ -72,6 +72,17 @@ function nullableIsoInstant(value: unknown): string | null {
   return Number.isNaN(at.getTime()) ? null : at.toISOString();
 }
 
+/** When the server first and last saw a row; a row made on this device has neither until it syncs. */
+function stamps(row: RawRow) {
+  const createdAt = isoDate(row.created_at) || isoDate(row.updated_at);
+  return { createdAt, updatedAt: isoDate(row.updated_at) || createdAt };
+}
+
+/** What a capture said, exactly: the alert's words are matched again when Android redelivers it. */
+function capturedText(value: unknown): string | null {
+  return typeof value === 'string' && value ? value : null;
+}
+
 export function isLiveRow(row: RawRow | null | undefined): row is RawRow & { id: string } {
   return Boolean(row && !row.deleted && typeof row.id === 'string' && row.id);
 }
@@ -95,6 +106,10 @@ export function toFinanceWallet(row: RawRow): FinanceWallet | null {
     balanceConfirmedAt: isoDate(row.balance_confirmed_at) || null,
     createdAt: isoDate(row.created_at) || null,
     recordLocation: row.record_location !== false,
+    notificationPackage: nullableString(row.notification_package),
+    notificationAppLabel: nullableString(row.notification_app_label),
+    notificationAccountHint: nullableString(row.notification_account_hint),
+    updatedAt: stamps(row).updatedAt,
   };
 }
 
@@ -129,7 +144,10 @@ export function toFinanceTransaction(row: RawRow): FinanceTransaction | null {
     placeCoordsAt: nullableIsoInstant(row.place_coords_at),
     autoAdded: metadata.ai_suggested === true,
     balanceCorrection: metadata.kind === 'balance_correction',
+    receiptImageUrl: nullableString(row.receipt_image_url),
+    metadata,
     createdAt: isoDate(row.created_at, transactionDate),
+    updatedAt: isoDate(row.updated_at, isoDate(row.created_at, transactionDate)),
   };
 }
 
@@ -145,6 +163,7 @@ export function toFinanceCategory(row: RawRow): FinanceCategory | null {
     color: nullableString(row.color),
     isActive: active(row.is_active),
     displayOrder: Number(row.display_order ?? 0) || 0,
+    ...stamps(row),
   };
 }
 
@@ -177,6 +196,7 @@ export function toFinanceDebt(row: RawRow): FinanceDebt | null {
     dueDate: nullableString(row.due_date),
     note: nullableString(row.note),
     status,
+    ...stamps(row),
   };
 }
 
@@ -197,14 +217,20 @@ export function toFinanceDebtActivity(row: RawRow): FinanceDebtActivity | null {
     walletId: nullableString(row.wallet_id),
     cashTransactionId: nullableString(row.cash_transaction_id),
     note: nullableString(row.note),
+    ...stamps(row),
   };
 }
 
 /** Captures still waiting for a decision. Approve and Not mine rows are review history only. */
 export function toFinanceProposal(row: RawRow): FinanceProposal | null {
+  const proposal = toProposal(row);
+  return proposal && proposal.status !== 'approved' && proposal.status !== 'rejected' ? proposal : null;
+}
+
+/** Any live capture, reviewed ones included, for the review history and the decisions. */
+export function toProposal(row: RawRow): FinanceProposal | null {
   if (!isLiveRow(row)) return null;
   const status = proposedTransactionStatusSchema.catch('pending').parse(row.status);
-  if (status === 'approved' || status === 'rejected') return null;
   const type =
     row.type === 'income' || row.type === 'expense' || row.type === 'transfer' ? row.type : null;
   const parsedAmount = row.amount == null ? null : amountMinor(row.amount);
@@ -215,10 +241,10 @@ export function toFinanceProposal(row: RawRow): FinanceProposal | null {
     sourceType:
       row.source_type === 'text' || row.source_type === 'image' ? row.source_type : 'notification',
     sourceApp: nullableString(row.source_app),
-    sourceText: nullableString(row.source_text),
+    sourceText: capturedText(row.source_text),
     sourceImageUri: nullableString(row.source_image_uri),
-    notificationTitle: nullableString(row.notification_title),
-    notificationBody: nullableString(row.notification_body),
+    notificationTitle: capturedText(row.notification_title),
+    notificationBody: capturedText(row.notification_body),
     notificationReceivedAt: nullableString(row.notification_received_at),
     aiReasoning: nullableString(row.ai_reasoning),
     aiConfidence: numberValue(row.ai_confidence),
@@ -238,5 +264,8 @@ export function toFinanceProposal(row: RawRow): FinanceProposal | null {
     updatedAt: isoDate(row.updated_at, isoDate(row.created_at)),
     status,
     snoozedUntil: nullableString(row.snoozed_until),
+    reviewedAt: nullableString(row.reviewed_at),
+    transactionId: nullableString(row.transaction_id),
+    pairing: capturePairingSchema.safeParse(row.pairing).data ?? null,
   };
 }

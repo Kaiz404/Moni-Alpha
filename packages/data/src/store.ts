@@ -7,7 +7,7 @@ import type { UserPreferences } from '@repo/types';
 import { createRowGateway, type Failure, type Row } from './gateway';
 import type { MoniPersist } from './persist';
 import { fetchAiConsent, fetchProfilePreferences } from './profile';
-import type { SyncedTable } from '@repo/core';
+import type { StoredRow, SyncedTable } from '@repo/core';
 
 import type { MoniSupabase } from './supabase';
 
@@ -34,10 +34,6 @@ const GATED_COLUMNS = {
   transaction_place_ids: 'transactions.place_id',
 } as const;
 export type GatedMigration = keyof typeof GATED_MIGRATIONS | keyof typeof GATED_COLUMNS;
-
-/** Until the phone's hand-written row types give way to `StoredRow`, its writers set rows of their own shape. */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars
-type StoreRow<T extends SyncedTable> = Record<string, any>;
 
 const TABLE_FOUND_KEY_PREFIX = 'table-found:';
 const SYNC_CREATE_REPAIR_KEY = 'legend-sync-create-repair-v1';
@@ -100,9 +96,9 @@ export function createMoniStore({ supabase, persist, uuid }: CreateMoniStoreOpti
     return { data: null, error: { message: result.message } };
   };
 
-  function syncTable<T extends SyncedTable>(table: T, gate?: Observable<boolean>): Record<string, StoreRow<T>> {
-    // Inferring the row type from the client's schema over a union of tables never finishes; StoreRow names it.
-    const sync = syncedSupabase as (props: object) => Record<string, StoreRow<T>>;
+  function syncTable<T extends SyncedTable>(table: T, gate?: Observable<boolean>): Record<string, StoredRow<T>> {
+    // Inferring the row type from the client's schema over a union of tables never finishes; StoredRow names it.
+    const sync = syncedSupabase as (props: object) => Record<string, StoredRow<T>>;
     return sync({
       supabase,
       collection: table,

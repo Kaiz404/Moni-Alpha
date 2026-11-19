@@ -1,14 +1,10 @@
+import type { StoredRow } from '@repo/core';
 import { transactions$, wallets$ } from '@/lib/store';
 import { getRecordValues } from '@/lib/store/helpers';
 import { decimalToMinor, addMinor, type MinorAmount } from '@repo/types';
 import { touchesWallet, walletEffect } from '@repo/core';
 
-type TransactionBalanceRow = {
-  wallet_id?: string | null;
-  transfer_to_wallet_id?: string | null;
-  amount?: string | number | null;
-  type?: 'income' | 'expense' | 'transfer' | null;
-};
+type TransactionBalanceRow = StoredRow<'transactions'>;
 
 function toLedgerTransaction(row: TransactionBalanceRow) {
   return {

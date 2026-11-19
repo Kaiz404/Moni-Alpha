@@ -1,3 +1,4 @@
+import type { StoredRow } from '@repo/core';
 import {
   createDebtActivityInputSchema,
   createDebtInputSchema,
@@ -15,6 +16,8 @@ import {
   planDebtActivityDelete,
   planDebtMirrorRepair,
   planDebtStatus,
+  toFinanceDebt,
+  toFinanceDebtActivity,
   type DebtActivityInput,
   type NewDebt,
 } from '@repo/core';
@@ -23,33 +26,8 @@ import { getRecordValues, patchRow } from '@/lib/store/helpers';
 import { commit, ledgerView, planContext } from '@/lib/store/writes';
 import { getUserId } from '@/lib/supabase/client';
 
-type DebtRow = {
-  id: string;
-  user_id: string | null;
-  counterparty_name: string | null;
-  direction: DebtDirection | null;
-  currency: string | null;
-  due_date: string | null;
-  note: string | null;
-  status: Debt['status'] | null;
-  created_at: string | null;
-  updated_at: string | null;
-  deleted?: boolean;
-};
-type ActivityRow = {
-  id: string;
-  user_id: string | null;
-  debt_id: string | null;
-  kind: DebtActivityKind | null;
-  amount: string | number | null;
-  activity_date: string | null;
-  wallet_id: string | null;
-  cash_transaction_id: string | null;
-  note: string | null;
-  created_at: string | null;
-  updated_at: string | null;
-  deleted?: boolean;
-};
+type DebtRow = StoredRow<'debts'>;
+type ActivityRow = StoredRow<'debt_activities'>;
 
 function normalizeCurrency(value: unknown): string | null {
   const currency = String(value ?? '')
@@ -58,42 +36,13 @@ function normalizeCurrency(value: unknown): string | null {
   return /^[A-Z]{3}$/.test(currency) ? currency : null;
 }
 
-function mapDebt(row: DebtRow): Debt {
-  return {
-    id: row.id,
-    userId: row.user_id ?? '',
-    counterpartyName: row.counterparty_name ?? '',
-    direction: row.direction ?? 'owed_to_me',
-    currency: normalizeCurrency(row.currency) ?? 'USD',
-    dueDate: row.due_date,
-    note: row.note,
-    status: row.status ?? 'open',
-    createdAt: row.created_at ?? '',
-    updatedAt: row.updated_at ?? row.created_at ?? '',
-  };
-}
-function mapActivity(row: ActivityRow): DebtActivity {
-  return {
-    id: row.id,
-    userId: row.user_id ?? '',
-    debtId: row.debt_id ?? '',
-    kind: row.kind ?? 'principal',
-    amountMinor: decimalToMinor(row.amount),
-    activityDate: row.activity_date ?? row.created_at ?? '',
-    walletId: row.wallet_id,
-    cashTransactionId: row.cash_transaction_id,
-    note: row.note,
-    createdAt: row.created_at ?? '',
-    updatedAt: row.updated_at ?? row.created_at ?? '',
-  };
-}
 
 export async function getDebts(): Promise<Debt[]> {
   const userId = await getUserId();
   if (!userId) return [];
   return getRecordValues<DebtRow>(debts$)
     .filter((row) => row.user_id === userId)
-    .map(mapDebt);
+    .flatMap((row) => toFinanceDebt(row) ?? []);
 }
 
 export async function getDebtById(id: string): Promise<Debt | null> {
@@ -109,14 +58,13 @@ export async function getDebtActivities(debtId?: string): Promise<DebtActivity[]
 function activitiesOf(userId: string, debtId?: string): DebtActivity[] {
   return getRecordValues<ActivityRow>(debtActivities$)
     .filter((row) => row.user_id === userId && (!debtId || row.debt_id === debtId))
-    .map(mapActivity)
+    .flatMap((row) => toFinanceDebtActivity(row) ?? [])
     .sort((a, b) => b.activityDate.localeCompare(a.activityDate));
 }
 
 async function addActivity(debt: Debt, data: DebtActivityInput): Promise<DebtActivity> {
   const ctx = await planContext();
-  const { activity } = commit(planDebtActivity(debt, data, ledgerView(), ctx));
-  return { ...activity, createdAt: ctx.now, updatedAt: ctx.now };
+  return commit(planDebtActivity(debt, data, ledgerView(), ctx)).activity;
 }
 
 /** Works a debt's status out again after a restore added activity to it. */
@@ -130,8 +78,7 @@ export async function createDebt(data: NewDebt): Promise<Debt> {
   const ctx = await planContext().catch(() => {
     throw new Error('Not authenticated');
   });
-  const { debt } = commit(planDebt(parsed.data, ledgerView(), ctx));
-  return { ...debt, createdAt: ctx.now, updatedAt: ctx.now };
+  return commit(planDebt(parsed.data, ledgerView(), ctx)).debt;
 }
 
 /** In-place edits on the debt page. Money never changes here; it moves through activities. */

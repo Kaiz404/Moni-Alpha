@@ -255,7 +255,7 @@ export function useReviewSession(firstId: string | undefined) {
 
 export type ReviewSession = ReturnType<typeof useReviewSession>;
 
-type Category = Omit<FinanceCategory, 'displayOrder'>;
+type Category = Omit<FinanceCategory, 'displayOrder' | 'createdAt' | 'updatedAt'>;
 
 type Lookups = {
   wallets: FinanceWallet[];

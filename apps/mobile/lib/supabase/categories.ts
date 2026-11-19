@@ -1,3 +1,5 @@
+import { toFinanceCategory } from '@repo/core';
+import type { StoredRow } from '@repo/core';
 import { randomUUID } from 'expo-crypto';
 import {
   createCategorySchema,
@@ -10,34 +12,8 @@ import { hideShadowedPresets } from '@repo/core';
 import { getRecordValues, isActive, patchRow } from '@/lib/store/helpers';
 import { getUserId } from '@/lib/supabase/client';
 
-type CategoryRow = {
-  id: string;
-  user_id: string | null;
-  name: string | null;
-  icon: string | null;
-  color: string | null;
-  type: string | null;
-  is_active: boolean | number | null;
-  display_order: number | null;
-  created_at: string | null;
-  updated_at: string | null;
-  deleted?: boolean;
-};
+type CategoryRow = StoredRow<'categories'>;
 
-function mapCategoryRow(c: CategoryRow) {
-  return {
-    id: c.id,
-    userId: c.user_id,
-    name: c.name,
-    icon: c.icon,
-    color: c.color,
-    type: c.type,
-    isActive: isActive(c.is_active),
-    displayOrder: c.display_order,
-    createdAt: c.created_at,
-    updatedAt: c.updated_at,
-  };
-}
 
 function getAllCategoryRows(userId: string | null, includeArchived = false): CategoryRow[] {
   const merged = getRecordValues<CategoryRow>(categories$).filter(
@@ -50,7 +26,7 @@ function getAllCategoryRows(userId: string | null, includeArchived = false): Cat
 
   return hideShadowedPresets(
     merged.filter((c) => c.user_id === null || c.user_id === userId),
-    (c) => ({ userId: c.user_id, name: c.name, type: c.type, isActive: isActive(c.is_active) }),
+    (c) => ({ userId: c.user_id ?? null, name: c.name, type: c.type, isActive: isActive(c.is_active) }),
   );
 }
 
@@ -68,7 +44,7 @@ export async function getCategories(type?: 'income' | 'expense') {
     return (a.name ?? '').localeCompare(b.name ?? '');
   });
 
-  return categories.map(mapCategoryRow);
+  return categories.flatMap((row) => toFinanceCategory(row) ?? []);
 }
 
 export async function createCategory(input: CreateCategory) {
