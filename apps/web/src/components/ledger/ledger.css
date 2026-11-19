@@ -661,3 +661,111 @@
   display: flex;
   flex-direction: column;
 }
+
+/* ---------- checkboxes (Activity, Review) ---------- */
+
+.cbx {
+  width: 22px;
+  height: 22px;
+  flex: none;
+  border-radius: 6px;
+  box-shadow: inset 0 0 0 1.5px var(--color-border-strong);
+  background: var(--color-card);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-primary-foreground);
+  position: relative;
+}
+
+.cbx::after {
+  content: '';
+  position: absolute;
+  inset: -11px;
+}
+
+.cbx[aria-checked='true'],
+.cbx[aria-checked='mixed'],
+.cbx[data-on] {
+  background: var(--color-primary);
+  box-shadow: none;
+}
+
+/* ---------- the Ink bulk bar (Activity, Review) ---------- */
+
+.bulk-slot {
+  position: fixed;
+  left: var(--content-left);
+  right: 32px;
+  bottom: 80px;
+  z-index: 35;
+  display: flex;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.bulk-bar {
+  pointer-events: auto;
+  height: 56px;
+  border-radius: 9999px;
+  background: var(--color-tab-bar);
+  color: var(--color-on-tab-bar);
+  padding: 0 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  box-shadow: var(--shadow-float);
+}
+
+.bulk-close,
+.bulk-btn {
+  height: 40px;
+  border-radius: 9999px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 12px;
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.bulk-close {
+  width: 40px;
+  padding: 0;
+  justify-content: center;
+}
+
+.bulk-close:hover,
+.bulk-btn:hover {
+  background: var(--on-bar-hover);
+}
+
+.bulk-count {
+  padding: 0 12px 0 4px;
+  font-size: 14px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.bulk-rule {
+  width: 1.5px;
+  height: 24px;
+  margin-right: 4px;
+  background: var(--on-bar-hover);
+}
+
+.bulk-delete {
+  color: var(--color-coral);
+}
+
+.bulk-pop {
+  top: auto;
+  bottom: calc(100% + 10px);
+  left: 0;
+  right: auto;
+  max-height: 360px;
+  overflow: auto;
+  color: var(--color-foreground);
+  transform-origin: bottom left;
+}

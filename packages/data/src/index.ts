@@ -10,3 +10,4 @@ export {
 } from './store';
 export { applyWrites } from './apply';
 export { isNetworkError, type MoniSupabase } from './supabase';
+export { receiptPhotoUrl, RECEIPTS_BUCKET } from './receipts';

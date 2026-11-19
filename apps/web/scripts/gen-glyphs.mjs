@@ -43,6 +43,11 @@ const names = [
     'text-box-remove-outline',
     'content-copy',
     'gesture-tap',
+    // Review: the alert bubble, ticked and part-ticked boxes, a receipt photo still on the phone.
+    'bell',
+    'check-bold',
+    'minus-thick',
+    'image-off-outline',
   ]),
 ].sort();
 const pascal = (name) => `mdi${name.replace(/(^|-)([a-z0-9])/g, (_, __, c) => c.toUpperCase())}`;

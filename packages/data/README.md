@@ -9,6 +9,7 @@ The synced ledger both apps hold (ADR [0003](../../docs/adr/0003-web-shares-the-
 | `apply.ts` | `applyWrites(store, writes)` carries a `@repo/core` write plan out in one Legend batch, all or nothing: a patch or soft delete whose row is missing throws before anything is written. `src/__tests__/apply.test.ts` holds it and core's `applyToTables` to one contract. |
 | `persist.ts` | `MoniPersist` is a Legend persistence plugin plus a small flag store. `memoryPersist()` keeps both in memory for the web and tests. |
 | `profile.ts` | Reads the profile preferences and the AI consent for the signed-in user. |
+| `receipts.ts` | `receiptPhotoUrl(supabase, stored)`: where to load a receipt photo from what a capture or transaction stores (a URL as kept, a path in the `receipts` bucket as its public URL, nothing for a file still on a phone). |
 
 ## Adapters
 

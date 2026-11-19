@@ -12,6 +12,8 @@ import {
   pendingProposals,
   projectFinance,
   recurringOverridesFromRows,
+  reviewedLately,
+  toProposal,
   walletBalance,
   walletsForUser,
   type BudgetRow,
@@ -23,6 +25,7 @@ import {
   type MoneyLedger,
   type MoneyMonth,
   type RawTable,
+  type ReviewedProposal,
 } from '@repo/core';
 import type { CurrencyCode, MerchantAlias, MinorAmount } from '@repo/types';
 import { useEffect, useMemo, useState } from 'react';
@@ -51,6 +54,8 @@ export type Ledger = {
   month: MoneyMonth;
   /** Captures waiting for a decision, newest first. */
   waiting: FinanceProposal[];
+  /** Recently reviewed: the last 30 days of Approve and Not mine, newest first. */
+  reviewed: ReviewedProposal[];
   /** Budget rows as stored, soft-deleted ones included, for the budget plans. */
   budgetRows: BudgetRow[];
   /** The wallet the profile picks for new entries, if any. */
@@ -66,7 +71,7 @@ function useTables() {
     const store = moniStore();
     const copy = (table$: { get(): unknown }) => ({ ...((table$.get() as RawTable | undefined) ?? EMPTY) });
     return {
-      loaded: [store.wallets$, store.transactions$, store.categories$, store.categoryBudgets$, store.debts$, store.debtActivities$].every(
+      loaded: [store.wallets$, store.transactions$, store.categories$, store.categoryBudgets$, store.debts$, store.debtActivities$, store.proposedTransactions$].every(
         (table$) => syncState(table$).isLoaded.get(),
       ),
       wallets: copy(store.wallets$),
@@ -171,6 +176,13 @@ export function useLedger(): Ledger {
       money,
       month: buildMoneyMonth(money, { month: calendar.monthKey(now), currency, now, calendar }),
       waiting: pendingProposals(projection.proposalsById, user.id),
+      reviewed: reviewedLately(
+        Object.values(tables?.proposals ?? EMPTY).flatMap((row) => {
+          const proposal = row ? toProposal(row as Parameters<typeof toProposal>[0]) : null;
+          return proposal && proposal.userId === user.id ? [proposal] : [];
+        }),
+        now,
+      ),
       budgetRows: Object.values(tables?.budgets ?? EMPTY).filter(Boolean) as BudgetRow[],
       defaultWalletId: tables?.defaultWalletId ?? null,
     };

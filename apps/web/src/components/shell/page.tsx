@@ -43,6 +43,7 @@ export function Page({
   commandText = 'Search or ask Moni',
   phoneSub,
   crumb,
+  meta,
   children,
 }: {
   title: string;
@@ -58,6 +59,8 @@ export function Page({
   commandText?: string | null;
   /** The phone Home header's date line over the greeting. */
   phoneSub?: string;
+  /** A line under the title: Review's "RM115.80 not counted yet". */
+  meta?: string;
   children: ReactNode;
 }) {
   const { user } = useShellApi();
@@ -73,6 +76,7 @@ export function Page({
           )}
           {sub && <div className="meta">{sub}</div>}
           <h1 className="page-title">{title}</h1>
+          {meta && <div className="meta num page-meta">{meta}</div>}
         </div>
         <div className="page-actions">
           {actions}
