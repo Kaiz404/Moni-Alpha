@@ -197,7 +197,7 @@ function spentTotal(items) {
 
 /**
  * "Added −RM23.40 at GRAB*FOOD" over its category's budget line for the first add of the day;
- * "3 added automatically today, −RM58.20 in total" over the latest one after that. Undo takes the latest
+ * "3 added automatically today, −RM58.20" over the latest one after that. Undo takes the latest
  * back, and a tap opens it, or Activity when there are several.
  */
 function buildAutoAddedDigestNotification({ digest, categoryName, budgetText }) {
@@ -212,7 +212,7 @@ function buildAutoAddedDigestNotification({ digest, categoryName, budgetText }) 
     title:
       count === 1
         ? `Added ${shown}`
-        : `${count} added automatically today${total ? `, ${total} in total` : ''}`,
+        : `${count} added automatically today${total ? `, ${total}` : ''}`,
     subtitle: null,
     body: (count === 1 ? [note] : [`Latest: ${shown}`, note]).filter(Boolean).join('\n'),
     categoryIdentifier: AUTO_ADDED_CATEGORY,

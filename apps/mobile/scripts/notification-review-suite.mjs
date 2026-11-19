@@ -170,7 +170,7 @@ const digestOfThree = buildAutoAddedDigestNotification({
   budgetText: 'Groceries: RM300 left after this',
 });
 check('later adds replace it with the day\'s count and total, the latest underneath', () => {
-  strictEqual(digestOfThree.title, '3 added automatically today, −RM58.20 in total');
+  strictEqual(digestOfThree.title, '3 added automatically today, −RM58.20');
   strictEqual(digestOfThree.body, 'Latest: −RM19.00 at JAYA GROCER\nGroceries: RM300 left after this');
   strictEqual(digestOfThree.identifier, digestOfOne.identifier);
   deepStrictEqual(digestOfThree.data, { kind: 'auto-added', transactionId: 't3', count: 3 });

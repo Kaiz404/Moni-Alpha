@@ -280,7 +280,7 @@ describe('the Added automatically digest', () => {
     await postAutoAddedNotification('t2');
     await postAutoAddedNotification('t2');
     expect(lastShown().content).toMatchObject({
-      title: '2 added automatically today, \u2212RM27.80 in total',
+      title: '2 added automatically today, \u2212RM27.80',
       body: 'Latest: \u2212RM15.80 at KFC\nNo budget for Food & Dining yet',
       data: { kind: 'auto-added', transactionId: 't2', count: 2 },
     });
@@ -291,7 +291,7 @@ describe('the Added automatically digest', () => {
 
     added('t3', 'MYDIN', '5.00');
     await postAutoAddedNotification('t3');
-    expect(lastShown().content.title).toBe('2 added automatically today, \u2212RM17.00 in total');
+    expect(lastShown().content.title).toBe('2 added automatically today, \u2212RM17.00');
   });
 
   it('starts the count over on a new day, and a tap opens the one transaction', async () => {
