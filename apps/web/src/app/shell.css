@@ -989,3 +989,11 @@ html[data-layout='phone'] .toast-slot {
     animation: fade-in 150ms ease both;
   }
 }
+
+/* W2-Empty, Search with no results: Ask Moni stays first and selected, so Tab still sends the words. */
+.palette-miss {
+  display: flex;
+  justify-content: center;
+  padding: 24px 24px 26px;
+  border-top: 1.5px solid var(--color-sand-light);
+}

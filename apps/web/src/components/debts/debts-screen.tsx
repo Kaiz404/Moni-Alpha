@@ -321,7 +321,7 @@ function DebtsLoaded({ ledger }: { ledger: Ledger }) {
             </>
           )}
         </div>
-        <SidePane label={recording ? 'Record a debt' : 'Person'} open={Boolean(paneOpen)} idle onClose={() => (recording ? setParams({ record: null }) : select(null))}>
+        <SidePane label={recording ? 'Record a debt' : 'Person'} open={Boolean(paneOpen)} idle={order.length > 0} onClose={() => (recording ? setParams({ record: null }) : select(null))}>
           {recording ? (
             <RecordDebt
               draft={draft}

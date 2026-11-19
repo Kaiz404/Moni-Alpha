@@ -1,7 +1,9 @@
 'use client';
 
+import { useRouter } from 'next/navigation';
 import { useMemo, useState, type KeyboardEvent } from 'react';
-import { AskMoniMark } from '@/components/brand';
+import { AskMoniMark, Cat } from '@/components/brand';
+import { Glyph } from '@/components/ledger/glyph';
 import { Icon } from '@/components/icon';
 import { buildCommands, filterCommands, type Command } from '@/lib/commands';
 import { useTheme } from '@/components/use-theme';
@@ -16,6 +18,7 @@ type Row = { id: string; command: Command | null; title: string };
  */
 export function CommandPalette() {
   const { run } = useShellApi();
+  const router = useRouter();
   const { resolved } = useTheme();
   const [query, setQuery] = useState('');
   const [active, setActive] = useState(0);
@@ -127,6 +130,26 @@ export function CommandPalette() {
               <ul role="group" aria-label="Ask Moni" style={{ listStyle: 'none', margin: 0, padding: 0 }}>
                 {rowView(rows[rows.length - 1]!, <AskMoniMark size={28} id="cmd-ask-typed" />, ['Tab'])}
               </ul>
+            </li>
+          )}
+          {typed && groups.length === 0 && (
+            <li role="presentation" className="palette-miss">
+              <div className="empty">
+                <Cat mood="thinking" size={72} id="palette-miss" />
+                <h2 className="empty-title">No matches for “{typed}”</h2>
+                <p className="empty-line">Try a merchant, a category or an amount like 18.90.</p>
+                <button
+                  type="button"
+                  className="btn btn-sand press"
+                  onClick={() => {
+                    setShell({ overlay: 'none' });
+                    router.push(`/activity?q=${encodeURIComponent(typed)}`);
+                  }}
+                >
+                  <Glyph name="magnify" size={20} />
+                  Search Activity for “{typed}”
+                </button>
+              </div>
             </li>
           )}
         </ul>

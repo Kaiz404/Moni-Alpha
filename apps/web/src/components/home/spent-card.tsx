@@ -1,8 +1,8 @@
 'use client';
 
-import { currencySymbol, dailyChart, monthName, paceChart, type ChartBox, type ChartLabel, type MoneyMonth } from '@repo/core';
+import { dailyChart, monthName, paceChart, type ChartBox, type MoneyMonth } from '@repo/core';
 import { useEffect, useMemo } from 'react';
-import { AxisLabels, Callout, ChartEmpty, TickRow, useHoverDay, useSize } from '@/components/ledger/chart-parts';
+import { AxisLabels, Callout, ChartEmpty, TickRow, emptyLabels, useHoverDay, useSize } from '@/components/ledger/chart-parts';
 
 export type SpentMode = 'pace' | 'daily';
 
@@ -132,12 +132,4 @@ export function SpentCard({
       {line && <p className="spent-line num">{line}</p>}
     </section>
   );
-}
-
-/** W2-Empty's empty chart: no scale yet, so the top reads RM– and only the base reads RM0. */
-function emptyLabels(labels: readonly ChartLabel[], currency: string): ChartLabel[] {
-  const top = labels[0];
-  const base = labels.at(-1);
-  if (!top || !base || top === base) return [...labels];
-  return [{ ...top, text: `${currencySymbol(currency)}–` }, base];
 }

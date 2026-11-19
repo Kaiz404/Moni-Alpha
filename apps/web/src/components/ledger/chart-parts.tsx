@@ -1,6 +1,6 @@
 'use client';
 
-import { nearestDay, type ChartLabel, type ChartTickMark } from '@repo/core';
+import { currencySymbol, nearestDay, type ChartLabel, type ChartTickMark } from '@repo/core';
 import { useEffect, useState, type ReactNode } from 'react';
 
 /**
@@ -76,6 +76,13 @@ export function Callout({ x, width, date, value }: { x: number; width: number; d
       <span className="num chart-tip-value">{value}</span>
     </span>
   );
+}
+
+/** W2-Empty's empty chart: no scale yet, so the top reads RM– and only the base reads RM0. */
+export function emptyLabels(labels: readonly ChartLabel[], currency: string): ChartLabel[] {
+  if (labels.length < 2) return [...labels];
+  const byY = [...labels].sort((a, b) => a.y - b.y);
+  return [{ ...byY[0]!, text: `${currencySymbol(currency)}–` }, byY.at(-1)!];
 }
 
 export function ChartEmpty({ children }: { children: ReactNode }) {

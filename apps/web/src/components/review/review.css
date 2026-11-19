@@ -1012,3 +1012,32 @@ html[data-layout='phone'] .pen::before {
   height: 44px;
   transform: translate(-50%, -50%);
 }
+
+/* W2-Empty, Nothing to review: the queue opened empty, so no celebration; one line says where captures come from. */
+.nothing-to-review {
+  flex: 1 1 auto;
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.nothing-to-review .empty {
+  margin-inline: auto;
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.capture-from {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 10px 0;
+  border-top: 1.5px solid var(--color-sand-light);
+  font-size: 14px;
+  color: var(--color-ink-2);
+}

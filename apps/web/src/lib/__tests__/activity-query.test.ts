@@ -4,6 +4,7 @@ import {
   activityQueryString,
   checkReason,
   nextSort,
+  noMatchLine,
   pageOf,
   parseActivityQuery,
   parseSavedViews,
@@ -113,5 +114,20 @@ describe('saved views', () => {
       },
     ]);
     expect(parseSavedViews('nope')).toEqual([]);
+  });
+});
+
+describe('noMatchLine', () => {
+  const names = { categories: { gifts: 'Gifts', food: 'Food & Dining' }, wallets: { tng: "Touch 'n Go" } };
+  const none = { ...DEFAULT_QUERY };
+
+  it('names the filters in plain words', () => {
+    expect(noMatchLine({ ...none, categories: ['gifts'], wallets: ['tng'] }, { from: '2026-10-01', to: '2026-10-14' }, names)).toBe(
+      "No Gifts paid with Touch 'n Go from 1 to 14 Oct.",
+    );
+    expect(noMatchLine({ ...none, categories: ['gifts', 'food'], q: ' grab ', from: '2026-09-28', to: '2026-10-03' }, { from: '2026-10-01', to: '2026-10-14' }, names)).toBe(
+      'No Gifts or Food & Dining matching “grab” from 28 Sep to 3 Oct.',
+    );
+    expect(noMatchLine({ ...none, kind: 'income' }, { from: '2026-10-01', to: '2026-10-14' }, names)).toBe('No income from 1 to 14 Oct.');
   });
 });

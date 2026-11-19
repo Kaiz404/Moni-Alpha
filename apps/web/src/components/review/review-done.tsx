@@ -72,9 +72,29 @@ export function RecentList({ ledger, onClose }: { ledger: Ledger; onClose?: () =
   );
 }
 
-/** All caught up (W2-Review, W2-Empty): the celebrate cat, today's decisions, and Recently reviewed below. */
+/**
+ * All caught up (W2-Review, W2-Empty): the celebrate cat once Kai has cleared captures today, today's
+ * decisions, and Recently reviewed below. With nothing decided today there is nothing to celebrate, so
+ * the pane says there is nothing to review and where captures come from.
+ */
 export function CaughtUp({ ledger, now }: { ledger: Ledger; now: Date }) {
   const { calendar, currency } = ledger;
+  const today = calendar.dayKey(now);
+  if (!ledger.reviewed.some((proposal) => calendar.dayKey(proposal.reviewedAt) === today)) {
+    return (
+      <div className="nothing-to-review">
+        <div className="empty">
+          <Cat mood="neutral" size={72} id="review-nothing" />
+          <h2 className="empty-title">Nothing to review</h2>
+          <p className="empty-line">New captures from notifications, receipts and chat wait here until you say yes.</p>
+        </div>
+        <p className="capture-from">
+          <Glyph name="bell-outline" size={18} />
+          {capturesFrom(ledger.wallets.map((wallet) => wallet.notificationAppLabel))}
+        </p>
+      </div>
+    );
+  }
   return (
     <>
       <div className="caught-up rise">
@@ -95,4 +115,12 @@ export function CaughtUp({ ledger, now }: { ledger: Ledger; now: Date }) {
       <RecentList ledger={ledger} />
     </>
   );
+}
+
+/** "Captures come from Maybank and Touch 'n Go alerts on your phone." from the wallets linked to a banking app. */
+export function capturesFrom(appLabels: readonly (string | null)[]): string {
+  const apps = [...new Set(appLabels.filter((label): label is string => Boolean(label)))];
+  if (!apps.length) return 'Captures come from bank alerts, receipts and Moni chat on your phone.';
+  const named = apps.length === 1 ? apps[0] : `${apps.slice(0, -1).join(', ')} and ${apps.at(-1)}`;
+  return `Captures come from ${named} alerts on your phone.`;
 }

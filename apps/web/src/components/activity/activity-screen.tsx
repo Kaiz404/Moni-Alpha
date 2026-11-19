@@ -26,6 +26,7 @@ import {
   checkReason,
   filtersOf,
   nextSort,
+  noMatchLine,
   pageOf,
   parseActivityQuery,
   parseSavedViews,
@@ -100,7 +101,7 @@ function csv(rows: readonly Shown[]): string {
  */
 export function ActivityScreen() {
   const ledger = useLedger();
-  const { pane } = useShellApi();
+  const { pane, run } = useShellApi();
   const router = useRouter();
   const pathname = usePathname();
   const params = useSearchParams();
@@ -464,11 +465,24 @@ export function ActivityScreen() {
                 <Cat mood="neutral" size={72} id="activity-empty" />
                 <h2 className="card-title">No spending yet</h2>
                 <p className="meta">Add your first spend with N, or link an app on a wallet so Moni catches them for you.</p>
+                <button type="button" className="btn btn-ink press" onClick={() => run({ kind: 'add' })}>
+                  <Icon name="plus" size={20} />
+                  Add a transaction
+                  <span className="kbd kbd-on-ink" data-only="sidebar rail rail-one-column">
+                    N
+                  </span>
+                </button>
               </div>
             ) : all.length === 0 && ledger.loaded ? (
               <div className="activity-empty">
                 <Cat mood="thinking" size={72} id="activity-none" />
                 <h2 className="card-title">Nothing matches these filters</h2>
+                <p className="meta">
+                  {noMatchLine(filtersOf(query), range, {
+                    categories: Object.fromEntries(Object.values(ledger.projection.categoriesById).map((category) => [category.id, category.name])),
+                    wallets: ledger.walletNames,
+                  })}
+                </p>
                 <button type="button" className="btn btn-sand press" onClick={() => setFilters({ ...base })}>
                   <Glyph name="filter-remove-outline" size={18} />
                   Clear filters

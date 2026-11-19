@@ -12,7 +12,7 @@ import {
   type ChartBox,
 } from '@repo/core';
 import { useMemo } from 'react';
-import { AxisLabels, Callout, TickRow, useHoverDay, useSize } from '@/components/ledger/chart-parts';
+import { AxisLabels, Callout, ChartEmpty, TickRow, emptyLabels, useHoverDay, useSize } from '@/components/ledger/chart-parts';
 import type { Ledger } from '@/lib/ledger/use-ledger';
 
 /** W2-Activity's chart: this month's running spend against last month's, dashed, with the budget line. */
@@ -47,6 +47,8 @@ export function RunningCard({ ledger }: { ledger: Ledger }) {
   const name = monthName(month.month);
   const [amount, ...rest] = phrase?.split(' ') ?? [];
   const more = rest[0] === 'more';
+  // W2-Empty, Activity with no transactions: the card stays, flat, and says what will draw here.
+  const blank = ledger.loaded && transactions.length === 0;
 
   return (
     <section aria-label={`Spent this month against ${monthName(previousMonth)}`} className="card running-card">
@@ -102,15 +104,15 @@ export function RunningCard({ ledger }: { ledger: Ledger }) {
             {...handlers}
           >
             <svg width={box.width} height={box.height} className="chart-svg" aria-hidden="true">
-              {chart.rows.map((y, index) => (
+              {(blank ? [chart.rows[0]!, chart.rows.at(-1)!] : chart.rows).map((y, index) => (
                 <line key={index} x1={chart.grid.left} x2={chart.grid.right} y1={y} y2={y} className={index === 0 ? 'grid-solid' : 'grid-dashed'} />
               ))}
               {chart.budget && <line x1={chart.grid.left} x2={chart.grid.right} y1={chart.budget.y} y2={chart.budget.y} className="budget-line" />}
               {chart.area && <path d={chart.area} className="area" />}
-              {chart.previous.length > 0 && <polyline points={chart.previous.map((point) => `${point.x},${point.y}`).join(' ')} className="previous-line" />}
-              {chart.previousEnd && <circle cx={chart.previousEnd.x} cy={chart.previousEnd.y} r={4} className="hollow-dot" />}
+              {!blank && chart.previous.length > 0 && <polyline points={chart.previous.map((point) => `${point.x},${point.y}`).join(' ')} className="previous-line" />}
+              {!blank && chart.previousEnd && <circle cx={chart.previousEnd.x} cy={chart.previousEnd.y} r={4} className="hollow-dot" />}
               {chart.line.length > 0 && <polyline points={chart.line.map((point) => `${point.x},${point.y}`).join(' ')} pathLength={1} className="spend-line draw" />}
-              {chart.line.at(-1) && <circle cx={chart.line.at(-1)!.x} cy={chart.line.at(-1)!.y} r={5} className="hover-dot" />}
+              {!blank && chart.line.at(-1) && <circle cx={chart.line.at(-1)!.x} cy={chart.line.at(-1)!.y} r={5} className="hover-dot" />}
               {hover && (
                 <>
                   <line x1={hover.x} x2={hover.x} y1={38} y2={hover.y} className="guide" />
@@ -119,13 +121,14 @@ export function RunningCard({ ledger }: { ledger: Ledger }) {
                 </>
               )}
             </svg>
-            <AxisLabels labels={chart.labels} axis={box.axis} />
+            <AxisLabels labels={blank ? emptyLabels(chart.labels, currency) : chart.labels} axis={box.axis} />
+            {blank && <ChartEmpty>Your spending draws a line here, day by day, against an even pace.</ChartEmpty>}
             {chart.budget && (
               <span className="budget-label num" style={{ left: chart.grid.left + 8, top: chart.budget.y - 19 }}>
                 {chart.budget.text}
               </span>
             )}
-            {chart.previousEnd && (
+            {!blank && chart.previousEnd && (
               <span className="previous-tag num" style={{ left: chart.previousEnd.x + 8, top: chart.previousEnd.y - 11 }}>
                 <span>{chart.previousEnd.month}</span>
                 <b>{chart.previousEnd.value}</b>

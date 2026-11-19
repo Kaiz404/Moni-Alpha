@@ -230,3 +230,29 @@ export function parseSavedViews(raw: string | null): SavedView[] {
     return [];
   }
 }
+
+const SHORT_MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+/** "1 to 14 Oct", or "28 Sep to 14 Oct" across a month, from two local days. */
+function dayRange(from: string, to: string): string {
+  const [, fromMonth, fromDay] = from.split('-').map(Number);
+  const [, toMonth, toDay] = to.split('-').map(Number);
+  const month = (m: number | undefined) => SHORT_MONTHS[(m ?? 1) - 1];
+  return fromMonth === toMonth ? `${fromDay} to ${toDay} ${month(toMonth)}` : `${fromDay} ${month(fromMonth)} to ${toDay} ${month(toMonth)}`;
+}
+
+/**
+ * W2-Empty's line for filters that match nothing, naming them in plain words so it is clear why:
+ * "No Gifts paid with Touch 'n Go from 1 to 14 Oct."
+ */
+export function noMatchLine(
+  filters: ActivityFilters,
+  range: { from: string; to: string },
+  names: { categories: Record<string, string>; wallets: Record<string, string> },
+): string {
+  const or = (ids: readonly string[], byId: Record<string, string>) => ids.map((id) => byId[id] ?? 'one').join(' or ');
+  const what = filters.categories.length ? or(filters.categories, names.categories) : filters.kind === 'income' ? 'income' : filters.kind === 'transfer' ? 'transfers' : filters.kind === 'expense' ? 'spending' : 'transactions';
+  const paid = filters.wallets.length ? ` paid with ${or(filters.wallets, names.wallets)}` : '';
+  const matching = filters.q.trim() ? ` matching “${filters.q.trim()}”` : '';
+  return `No ${what}${paid}${matching} from ${dayRange(filters.from ?? range.from, filters.to ?? range.to)}.`;
+}
