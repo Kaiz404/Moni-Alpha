@@ -12,9 +12,8 @@ import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Press } from '@/components/ui/press';
 import { Text } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
-import { regionFor } from '@/lib/finance/map-view';
 import { tid } from '@/lib/test-ids';
-import { groupPlaces, type Place, formatMoney } from '@repo/core';
+import { formatMoney, groupPlaces, regionFor, type Place } from '@repo/core';
 import { deviceCalendar } from '@/lib/dates/device-calendar';
 
 const HEIGHT = 132;

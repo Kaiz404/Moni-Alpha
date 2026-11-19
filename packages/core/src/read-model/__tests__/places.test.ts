@@ -5,11 +5,16 @@ import type { FinanceTransaction } from '../types';
 import { createCalendar } from '../../calendar';
 import {
   groupPlaces,
+  placeByDay,
+  placeDays,
   placeLabel,
+  placeLocation,
   placeRange,
   placeRanges,
   placeRegular,
+  placesSpan,
   spanLabel,
+  unplacedExpenses,
 } from '../places';
 
 const KL = createCalendar('Asia/Kuala_Lumpur');
@@ -177,5 +182,83 @@ describe('placeRanges', () => {
     expect(placeRange('month', now, KL).key).toBe('30d');
     expect(spanLabel({ from: '2026-10-01', to: '2026-10-14' })).toBe('1–14 Oct');
     expect(spanLabel({ from: '2026-09-28', to: '2026-10-04' })).toBe('28 Sep–4 Oct');
+  });
+});
+
+describe('the wallet filter', () => {
+  it('counts only that wallet, and keeps every place where it was', () => {
+    const mixed = [...rows, row('m4', MAMAK, 500, { walletId: 'maybank', transactionDate: '2026-10-12T05:00:00.000Z' })];
+    const all = groupPlaces(mixed, { currency: 'MYR' }, KL);
+    const maybank = groupPlaces(mixed, { currency: 'MYR', walletId: 'maybank' }, KL);
+    expect(maybank.map((place) => [place.id, place.name, place.totalMinor, place.count])).toEqual([[all[0]!.id, 'Mamak Ali', 500, 1]]);
+  });
+});
+
+describe('unplacedExpenses', () => {
+  const loose = [
+    ...rows,
+    row('s1', null, 1940, { merchant: 'Shopee', transactionDate: '2026-10-11T03:00:00.000Z' }),
+    row('n1', null, 5490, { merchant: 'Netflix', categoryId: 'subscriptions', transactionDate: '2026-09-15T03:00:00.000Z' }),
+    row('i1', null, 9000, { type: 'income', transactionDate: '2026-10-12T03:00:00.000Z' }),
+    row('u1', null, 1000, { currency: 'USD', transactionDate: '2026-10-12T03:00:00.000Z' }),
+  ];
+
+  it('lists expenses in the currency with no location, newest first', () => {
+    expect(unplacedExpenses(loose, { currency: 'MYR' }, KL).map((transaction) => transaction.id)).toEqual(['s1', 'n1']);
+  });
+
+  it('takes the range and the category like the map', () => {
+    expect(unplacedExpenses(loose, { currency: 'MYR', range: { from: '2026-10-01', to: '2026-10-14' } }, KL).map((t) => t.id)).toEqual(['s1']);
+    expect(unplacedExpenses(loose, { currency: 'MYR', categoryId: 'subscriptions' }, KL).map((t) => t.id)).toEqual(['n1']);
+  });
+});
+
+describe('Day by day', () => {
+  it('lists each day of a span with weekends and month starts', () => {
+    expect(placeDays({ from: '2026-09-29', to: '2026-10-04' })).toEqual([
+      { day: '2026-09-29', date: 29, month: 'Sep', weekend: false },
+      { day: '2026-09-30', date: 30, month: null, weekend: false },
+      { day: '2026-10-01', date: 1, month: 'Oct', weekend: false },
+      { day: '2026-10-02', date: 2, month: null, weekend: false },
+      { day: '2026-10-03', date: 3, month: null, weekend: true },
+      { day: '2026-10-04', date: 4, month: null, weekend: true },
+    ]);
+  });
+
+  it('starts All time on the earliest payment at a place', () => {
+    const places = groupPlaces(rows, { currency: 'MYR' }, KL);
+    const now = new Date('2026-10-14T15:00:00+08:00');
+    expect(placesSpan(placeRange('all', now, KL), places, '2026-10-14', KL)).toEqual({ from: '2026-10-01', to: '2026-10-14' });
+    expect(placesSpan(placeRange('7d', now, KL), places, '2026-10-14', KL)).toEqual({ from: '2026-10-08', to: '2026-10-14' });
+    expect(placesSpan(placeRange('all', now, KL), [], '2026-10-14', KL)).toEqual({ from: '2026-10-14', to: '2026-10-14' });
+  });
+
+  it('adds up a place by local day, coloured by the day’s largest payment', () => {
+    const day = [
+      row('a', MAMAK, 1000, { transactionDate: '2026-10-10T02:00:00.000Z' }),
+      row('b', MAMAK, 2500, { categoryId: 'groceries', transactionDate: '2026-10-10T09:00:00.000Z' }),
+      row('c', MAMAK, 700, { transactionDate: '2026-10-10T17:00:00.000Z' }),
+    ];
+    const [place] = groupPlaces(day, { currency: 'MYR' }, KL);
+    expect(placeByDay(place!, KL)).toEqual({
+      '2026-10-10': { totalMinor: 3500, categoryId: 'groceries' },
+      '2026-10-11': { totalMinor: 700, categoryId: 'food' },
+    });
+    const [utc] = groupPlaces(day, { currency: 'MYR' }, createCalendar('UTC'));
+    expect(placeByDay(utc!, createCalendar('UTC'))).toEqual({
+      '2026-10-10': { totalMinor: 4200, categoryId: 'groceries' },
+    });
+  });
+});
+
+describe('placeLocation', () => {
+  it('is the anchor, the most common address and any place ID', () => {
+    const [mamak] = groupPlaces([...rows.slice(0, 2), row('p', MAMAK, 900, { placeId: 'gp-1' })], { currency: 'MYR' }, KL);
+    expect(placeLocation(mamak!)).toEqual({
+      latitude: MAMAK.latitude,
+      longitude: MAMAK.longitude,
+      locationName: 'Mamak Ali, Jalan Telawi 3, Kuala Lumpur, Wilayah Persekutuan',
+      placeId: 'gp-1',
+    });
   });
 });

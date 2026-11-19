@@ -7,9 +7,8 @@ import { Marker } from 'react-native-maps';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Text } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
-import { clusterPins, projector, type PinCluster, type Region } from '@/lib/finance/map-view';
 import type { CategoryLook } from './use-places';
-import { type Place, formatMoney } from '@repo/core';
+import { clusterPins, formatMoney, projector, type PinCluster, type Place, type Region } from '@repo/core';
 
 type Size = { width: number; height: number };
 

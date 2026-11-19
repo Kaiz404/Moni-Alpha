@@ -13,3 +13,4 @@ One file per user-facing part of the web app. Each says how a user reaches it, h
 | Activity: chart, views, filters, table, bulk bar, detail pane | [activity.md](activity.md) |
 | Budget: ring, budget table, category pane, bills, calendar | [budget.md](budget.md) |
 | Debts: net position, Coming up, people, person pane, Record a debt | [debts.md](debts.md) |
+| Where you spend: map, pins, places list, place pane, Day by day, Without a place | [places.md](places.md) |

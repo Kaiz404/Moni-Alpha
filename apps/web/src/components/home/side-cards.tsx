@@ -13,6 +13,7 @@ import {
   type FinanceDebtActivity,
 } from '@repo/core';
 import { minorToNumber } from '@repo/types';
+import Link from 'next/link';
 import { useMemo, useState } from 'react';
 import { Icon } from '@/components/icon';
 import { Bubble, Glyph } from '@/components/ledger/glyph';
@@ -236,10 +237,10 @@ export function PlacesCard({ ledger }: { ledger: Ledger }) {
       <div className="section-head">
         <h2 className="card-title">Where you spend</h2>
         {places.length > 0 && (
-          <span className="see-all see-all-quiet" title="The map arrives with Where you spend">
+          <Link href="/home/places" className="see-all">
             Open map
             <Icon name="chevron-right" size={18} />
-          </span>
+          </Link>
         )}
       </div>
       {places.length === 0 ? (

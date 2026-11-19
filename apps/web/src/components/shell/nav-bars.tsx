@@ -121,10 +121,11 @@ export function Rail() {
 /** The phone layout's floating Ink tab bar: Home · Activity · + · Budget · Debts (docs/redesign/tokens.md). */
 export function TabBar() {
   const { run } = useShellApi();
-  const current = destinationOf(usePathname());
+  const pathname = usePathname();
+  const current = destinationOf(pathname);
   const [home, activity, budget, debts] = MAIN_NAV;
-  // Pushed pages (Review, Settings) have no tab bar, as on the phone.
-  if (!MAIN_NAV.some((item) => item.key === current)) return null;
+  // Pushed pages (Review, Settings, and Home's own pages such as Where you spend) have no tab bar, as on the phone.
+  if (!MAIN_NAV.some((item) => item.key === current) || pathname.startsWith('/home/')) return null;
   const cell = (item: typeof home) => (
     <Link key={item!.key} href={item!.href} className="tab" aria-current={current === item!.key ? 'page' : undefined}>
       <Icon name={item!.icon} size={24} />

@@ -31,11 +31,13 @@ import {
   groupPlaces,
   placeRanges,
   placesTotal,
+  regionFor,
   sharePercent,
+  zoomMoved,
   type Place,
   type PlaceRangeKey,
+  type Region,
 } from '@repo/core';
-import { regionFor, zoomMoved, type Region } from '@/lib/finance/map-view';
 import { tid } from '@/lib/test-ids';
 import { deviceCalendar } from '@/lib/dates/device-calendar';
 

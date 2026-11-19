@@ -1,7 +1,7 @@
 import { addMinor, type CurrencyCode, type MinorAmount } from '@repo/types';
 
-import { addDays, type Calendar, dayOfMonth, monthOf } from '../calendar';
-import { shortDate } from '../glossary';
+import { addDays, type Calendar, dayOfMonth, daysBetween, type DayKey, monthOf, weekday } from '../calendar';
+import { monthShort, shortDate } from '../glossary';
 import { countsAsSpending } from '../ledger';
 import type { FinanceTransaction } from './types';
 
@@ -48,8 +48,17 @@ export type Place = LatLng & {
 export type PlaceFilter = {
   currency: CurrencyCode;
   categoryId?: string | null;
+  walletId?: string | null;
   range?: DaySpan | null;
 };
+
+function counts(transaction: FinanceTransaction, filter: PlaceFilter, calendar: Calendar): boolean {
+  return (
+    (!filter.categoryId || transaction.categoryId === filter.categoryId) &&
+    (!filter.walletId || transaction.walletId === filter.walletId) &&
+    inSpan(transaction, filter.range, calendar)
+  );
+}
 
 type Located = FinanceTransaction & { locationLatitude: number; locationLongitude: number };
 
@@ -167,9 +176,7 @@ export function groupPlaces(
 
   const places: Place[] = [];
   for (const anchor of anchors) {
-    const counted = anchor.members.filter(
-      (row) => (!filter.categoryId || row.categoryId === filter.categoryId) && inSpan(row, filter.range, calendar),
-    );
+    const counted = anchor.members.filter((row) => counts(row, filter, calendar));
     if (!counted.length) continue;
     const byCategory = new Map<string | null, MinorAmount>();
     for (const row of counted)
@@ -250,5 +257,90 @@ export function placeRegular(place: Place): PlaceRegular | null {
     visits: visits.length,
     averageMinor: Math.round(addMinor(...visits.map((visit) => visit.amountMinor)) / visits.length) as MinorAmount,
     walletId: wallets.size === 1 ? visits[0]!.walletId : null,
+  };
+}
+
+/**
+ * Expenses in one currency that carry no location, newest first: what "Without a place" lists and
+ * Add a place can pin. The filter counts as it does for `groupPlaces`.
+ */
+export function unplacedExpenses(
+  transactions: readonly FinanceTransaction[],
+  filter: PlaceFilter,
+  calendar: Calendar,
+): FinanceTransaction[] {
+  return transactions
+    .filter(
+      (transaction) =>
+        countsAsSpending(transaction) &&
+        transaction.currency === filter.currency &&
+        (transaction.locationLatitude === null || transaction.locationLongitude === null) &&
+        counts(transaction, filter, calendar),
+    )
+    .sort((a, b) => b.transactionDate.localeCompare(a.transactionDate) || b.id.localeCompare(a.id));
+}
+
+/** The days a range covers; All time starts on the earliest payment at any of `places`. */
+export function placesSpan(range: PlaceRange, places: readonly Place[], today: DayKey, calendar: Calendar): DaySpan {
+  if (range.span) return range.span;
+  const days = places.flatMap((place) => place.transactions.map((transaction) => calendar.dayKey(transaction.transactionDate)));
+  return { from: days.reduce((first, day) => (day < first ? day : first), today), to: today };
+}
+
+export type PlaceDay = {
+  day: DayKey;
+  date: number;
+  /** "Oct" on the first column and on each month's 1st, else null. */
+  month: string | null;
+  weekend: boolean;
+};
+
+/** Each day of a span: the columns of Day by day and the bars of a place's visits. */
+export function placeDays(span: DaySpan): PlaceDay[] {
+  const count = daysBetween(span.from, span.to) + 1;
+  return Array.from({ length: Math.max(count, 0) }, (_, index) => {
+    const day = addDays(span.from, index);
+    const date = dayOfMonth(day);
+    return {
+      day,
+      date,
+      month: index === 0 || date === 1 ? monthShort(monthOf(day)) : null,
+      weekend: weekday(day) === 0 || weekday(day) === 6,
+    };
+  });
+}
+
+export type PlaceDayTotal = {
+  totalMinor: MinorAmount;
+  /** The day's largest payment's category, which colours its dot or bar. */
+  categoryId: string | null;
+};
+
+/** What a place took on each day it was paid, by day key. */
+export function placeByDay(place: Place, calendar: Calendar): Record<DayKey, PlaceDayTotal> {
+  const days: Record<DayKey, PlaceDayTotal & { largest: MinorAmount }> = {};
+  for (const transaction of [...place.transactions].reverse()) {
+    const day = calendar.dayKey(transaction.transactionDate);
+    const current = days[day];
+    if (!current) {
+      days[day] = { totalMinor: transaction.amountMinor, categoryId: transaction.categoryId, largest: transaction.amountMinor };
+    } else {
+      current.totalMinor = addMinor(current.totalMinor, transaction.amountMinor);
+      if (transaction.amountMinor > current.largest) {
+        current.largest = transaction.amountMinor;
+        current.categoryId = transaction.categoryId;
+      }
+    }
+  }
+  return Object.fromEntries(Object.entries(days).map(([day, { totalMinor, categoryId }]) => [day, { totalMinor, categoryId }]));
+}
+
+/** Where a payment pinned to a place goes: its anchor, its most common address, its Google place ID. */
+export function placeLocation(place: Place): LatLng & { locationName: string; placeId: string | null } {
+  return {
+    latitude: place.latitude,
+    longitude: place.longitude,
+    locationName: mostCommon(place.transactions.map((row) => row.locationName).filter((name): name is string => !!name)) ?? place.name,
+    placeId: place.transactions.find((row) => row.placeId)?.placeId ?? null,
   };
 }

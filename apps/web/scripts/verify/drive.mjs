@@ -14,6 +14,7 @@ import { fileURLToPath } from 'node:url';
 import { chromium } from '@playwright/test';
 import { verifyBudgetDebts } from './budget-debts.mjs';
 import { driveLedgerScreens, readSeed } from './ledger-screens.mjs';
+import { verifyPlaces } from './places.mjs';
 
 const web = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const repo = join(web, '..', '..');
@@ -41,6 +42,7 @@ const ROUTES = [
   { path: '/activity', title: /^Activity$/ },
   { path: '/budget', title: /^Budget$/ },
   { path: '/debts', title: /^Debts$/ },
+  { path: '/home/places', title: /^Where you spend$/, pushed: true },
   { path: '/review', title: /^Review$/, pushed: true },
   { path: '/settings', title: /^Settings$/, pushed: true },
   { path: '/settings/delete-account', title: /^Delete your account$/, pushed: true },
@@ -657,6 +659,7 @@ try {
   await resize.close();
   }
   if (runs('ledger')) await verifyBudgetDebts({ browser, base, storage, check, shot, pair, settle, open, out: OUT, widths: WIDTHS, background: BACKGROUND, navFor: NAV_FOR, seed, query: (name) => JSON.parse(webSeed('--query', name)) });
+  if (runs('places')) await verifyPlaces({ browser, base, storage, check, shot, pair, settle, open, out: OUT, widths: WIDTHS, background: BACKGROUND, navFor: NAV_FOR, seed, query: (name) => JSON.parse(webSeed('--query', name)) });
 
   // ---------- every write above was undone ----------
   let left = JSON.parse(webSeed('--query', 'fingerprint'));

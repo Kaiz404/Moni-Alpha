@@ -42,10 +42,13 @@ export function Page({
   actions,
   commandText = 'Search or ask Moni',
   phoneSub,
+  crumb,
   children,
 }: {
   title: string;
   sub?: string;
+  /** The page this one is pushed from, over the title: "Home ›". */
+  crumb?: { label: string; href: string };
   phone: PhoneRole;
   /** Where the phone layout's back button goes from a pushed page. */
   back?: string;
@@ -62,6 +65,12 @@ export function Page({
     <>
       <header className="page-head" data-only="sidebar rail rail-one-column">
         <div style={{ minWidth: 0 }}>
+          {crumb && (
+            <nav aria-label="Breadcrumb" className="crumb">
+              <Link href={crumb.href}>{crumb.label}</Link>
+              <Icon name="chevron-right" size={16} />
+            </nav>
+          )}
           {sub && <div className="meta">{sub}</div>}
           <h1 className="page-title">{title}</h1>
         </div>
