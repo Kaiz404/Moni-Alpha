@@ -360,6 +360,18 @@ try {
   await stubQr(auth);
   const signedIn = await signInWithPassword(auth);
   check('password sign-in reaches /home', signedIn.url() === `${base}/home`, signedIn.url());
+  const seeded = JSON.parse(
+    execFileSync('node', [join(repo, 'apps/mobile/scripts/e2e/seed.mjs'), '--query', 'wallets'], { encoding: 'utf8' }),
+  );
+  const shown = await signedIn
+    .locator('[data-wallet-count]')
+    .getAttribute('data-wallet-count', { timeout: 20_000 })
+    .catch(() => null);
+  check(
+    `Home shows the e2e user's ${seeded.length} wallets from the shared store`,
+    shown === String(seeded.length),
+    { shown, seeded: seeded.length },
+  );
   const storage = await auth.storageState();
   await auth.close();
 

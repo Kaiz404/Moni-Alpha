@@ -37,7 +37,7 @@ The feature map in [`features/`](features/README.md) says how each part is reach
 
 1. Signed out: a private path redirects to `/login?next=…`; sign in, the wrong-password error, Create account's 18+ check and its Sand-until-valid button, forgot password, check your email, and sign in at 390.
 2. A real QR sign-in: the page's code (from `data-qr-value`) is approved with the e2e user's token through `qr-approve` (its `check` step, then `approve`), the way the phone does, and the browser must land on `/home`.
-3. Signed in by password, every app route at each width in both themes. Per route it asserts the layout (`<html data-layout>`), that only that layout's nav shows (no tab bar on pushed pages at 390), the page title, the theme's ground colour and no sideways scroll.
+3. Signed in by password, Home's wallet count from the shared store must equal `seed.mjs --query wallets` for the e2e user; then every app route at each width in both themes. Per route it asserts the layout (`<html data-layout>`), that only that layout's nav shows (no tab bar on pushed pages at 390), the page title, the theme's ground colour and no sideways scroll.
 4. Reduced motion: Add slides in normally and fades under `prefers-reduced-motion`.
 5. Keys at 1440: Ctrl K, typing, Enter, `/`, Esc, `?`, G then D, Tab from the palette into Moni chat, the theme switch toast with Undo, Ctrl Z, and the account menu.
 6. At 1024 it opens Add, types into it, resizes to 390 and back, and asserts the route, the text and the same DOM element survive.

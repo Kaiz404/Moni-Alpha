@@ -94,10 +94,12 @@ export function PageEmpty({
   title,
   line,
   action,
+  children,
 }: {
   mood: Mood;
   title: string;
   line: string;
+  children?: ReactNode;
   action?: { label: string; icon: IconName; keys?: string; tone: 'ink' | 'sand'; run: ShellAction };
 }) {
   const { run } = useShellApi();
@@ -107,6 +109,7 @@ export function PageEmpty({
         <Cat mood={mood} size={72} id={`empty-${mood}`} />
         <h2 className="empty-title">{title}</h2>
         <p className="empty-line">{line}</p>
+        {children}
         {action && (
           <button type="button" className={`btn btn-${action.tone} press`} onClick={() => run(action.run)}>
             <Icon name={action.icon} size={20} />
