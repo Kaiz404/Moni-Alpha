@@ -1,0 +1,19 @@
+{
+  "status": "ok",
+  "extraction": {
+    "amount": 15.3,
+    "type": "expense",
+    "currency": "MYR",
+    "merchant": "Restoran Nasi Kandar Ali: nasi kandar, teh tarik",
+    "description": "nasi kandar, teh tarik",
+    "walletHint": null,
+    "categoryHint": "Food & Dining",
+    "walletId": null,
+    "transferToWalletHint": null,
+    "transferToWalletId": null,
+    "confidence": 0.86,
+    "reasoning": "Printed total RM15.30.",
+    "occurredAt": "2026-10-13",
+    "itemCount": 2
+  }
+}

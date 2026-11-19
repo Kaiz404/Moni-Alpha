@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+import { financeAssistantToolSnapshotSchema } from './finance-snapshot';
+
 export const chatHistoryMessageSchema = z.object({
   role: z.enum(['user', 'assistant']),
   content: z.string().max(4000),
@@ -15,8 +17,9 @@ export type MoniTone = z.infer<typeof moniToneSchema>;
 /** Wire request for POST /v1/chat/analyze */
 export const chatAnalyzeRequestSchema = z.object({
   message: z.string().min(1).max(2000),
-  snapshot: z.record(z.unknown()),
+  snapshot: financeAssistantToolSnapshotSchema,
   history: z.array(chatHistoryMessageSchema).max(12).optional(),
+  /** Absent means friendly; older backends ignore it. */
   tone: moniToneSchema.optional(),
 });
 

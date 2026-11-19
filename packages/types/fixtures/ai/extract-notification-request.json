@@ -1,0 +1,26 @@
+{
+  "notification": {
+    "id": "0|com.maybank2u.life|1|null|10123",
+    "app": "com.maybank2u.life",
+    "packageName": "com.maybank2u.life",
+    "title": "Maybank",
+    "titleBig": "Maybank2u",
+    "text": "You've spent RM23.40 at GRAB*FOOD.",
+    "bigText": "MAYBANK: You've spent RM23.40 at GRAB*FOOD on 14/10 12:41 with card ending 1234.",
+    "subText": "Cards",
+    "summaryText": "1 new",
+    "extraInfoText": "",
+    "time": "1760416860000",
+    "receivedAt": "2026-10-14T04:41:00.000Z"
+  },
+  "wallets": [
+    {
+      "id": "4f9a7c2e-1b3d-4e5f-8a9b-0c1d2e3f4a5b",
+      "name": "Maybank",
+      "type": "bank",
+      "currency": "MYR",
+      "accountHint": "1234"
+    }
+  ],
+  "lockedWalletId": "4f9a7c2e-1b3d-4e5f-8a9b-0c1d2e3f4a5b"
+}

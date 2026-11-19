@@ -15,3 +15,6 @@ export * from './merchant-alias';
 export * from './captured-notification';
 export * from './account-functions';
 export * from './ai-consent';
+export * from './ai';
+export * from './finance-snapshot';
+export * from './places';
