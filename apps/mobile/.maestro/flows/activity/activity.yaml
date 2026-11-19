@@ -105,6 +105,9 @@ tags:
     element:
       id: activity.pager.older
     direction: DOWN
+# The pager is the list's last row: scrollUntilVisible stops once it enters the screen, under the
+# floating tab bar, which then takes the tap. At the list's end it sits clear of the bar.
+- scroll
 - assertVisible:
     id: activity.pager.page
     text: 'Page 1 of \d+'
