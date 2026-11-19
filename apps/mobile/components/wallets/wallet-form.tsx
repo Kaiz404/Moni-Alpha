@@ -35,7 +35,7 @@ import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { openSheet } from '@/lib/sheet/sheet-store';
 import { createWallet, updateWallet } from '@/lib/supabase/wallets';
 import { tid, type TestId } from '@/lib/test-ids';
-import { parseBalanceInput } from '@/lib/wallets/balance-correction';
+import { parseBalanceInput } from '@repo/core';
 import { confirmDeleteWallet } from '@/lib/wallets/delete-wallet';
 import { walletMeta } from '@/lib/wallets/wallet-meta';
 import {

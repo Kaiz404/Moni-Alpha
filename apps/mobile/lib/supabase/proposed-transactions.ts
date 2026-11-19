@@ -2,10 +2,11 @@ import {
   assertMigrated,
   isMigrated,
   proposedTransactions$,
-  transactions$,
   wallets$,
 } from '@/lib/store';
 import { getRecordValues, hasRow, patchRow } from '@/lib/store/helpers';
+import { ledgerView } from '@/lib/store/writes';
+import { checkTransfer } from '@repo/core';
 import { getUserId } from '@/lib/supabase/client';
 import { randomUUID } from 'expo-crypto';
 import {
@@ -292,11 +293,9 @@ export async function approveProposedTransaction(
   const walletId = wallets.walletId;
   const transferToWalletId = wallets.transferToWalletId ?? proposal.transferToWalletId ?? null;
 
-  if (proposal.type === 'transfer' && !transferToWalletId) {
-    throw new Error('Cannot approve transfer: destination wallet is required');
-  }
-  if (proposal.type === 'transfer' && walletId === transferToWalletId) {
-    throw new Error('Source and destination wallets must differ');
+  if (proposal.type === 'transfer') {
+    const problem = checkTransfer(ledgerView(), walletId, transferToWalletId);
+    if (problem) throw new Error(problem.kind === 'error' ? problem.message : 'Select the wallet it went to');
   }
 
   const earlyLocation = getProposalLocationSnapshot(proposal.id);

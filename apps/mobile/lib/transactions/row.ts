@@ -2,7 +2,7 @@ import type { CurrencyCode, MinorAmount } from '@repo/types';
 
 import type { FinanceProposal, FinanceTransaction } from '@repo/core';
 import { resolveTransactionIcon, type TransactionIconName } from '@/lib/transactions/icon';
-import { BALANCE_CORRECTION_TITLE } from '@/lib/wallets/balance-correction';
+import { BALANCE_CORRECTION_TITLE } from '@repo/core';
 
 /** tokens.md Lemon: the balance correction bubble on every list. */
 const LEMON = '#F7CF3A';

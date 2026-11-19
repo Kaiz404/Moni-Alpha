@@ -59,6 +59,8 @@ jest.mock('@/lib/store', () => {
         deleted: false,
       },
     }),
+    debts$: observable({}),
+    debtActivities$: observable({}),
     transactions$: observable({}),
   };
 });

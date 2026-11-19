@@ -6,13 +6,14 @@ import {
 } from '@repo/types';
 
 import type { DuplicateMatch } from '@/lib/ai/duplicates';
-import { merchantKey } from '@repo/core';
+import { checkTransfer, merchantKey } from '@repo/core';
 import { markCaptureStatus } from '@/lib/notifications/capture-status';
 import { canPairInto, pairCapture, toAbsorbedCapture, undoPairing } from '@/lib/proposals/pairing';
 import { emitProposedTransactionsChanged } from '@/lib/proposals/proposed-transactions-events';
 import { keepProposalReceipt } from '@/lib/receipts/upload-queue';
-import { proposedTransactions$, wallets$ } from '@/lib/store';
-import { getRecordValues, hasRow, patchRow } from '@/lib/store/helpers';
+import { proposedTransactions$ } from '@/lib/store';
+import { hasRow, patchRow } from '@/lib/store/helpers';
+import { ledgerView } from '@/lib/store/writes';
 import {
   createAutoAddRule,
   deleteAutoAddRule,
@@ -78,13 +79,6 @@ function openRow(id: string): ProposalRowSnapshot | null {
 
 function messageOf(error: unknown, fallback: string): string {
   return error instanceof Error ? error.message : fallback;
-}
-
-function walletCurrency(walletId: string): string | null {
-  const wallet = getRecordValues<{ id: string; currency: string | null }>(wallets$).find(
-    (w) => w.id === walletId,
-  );
-  return wallet?.currency?.toUpperCase() ?? null;
 }
 
 export function reviewType(
@@ -159,13 +153,9 @@ export async function approve(
   const next = editedProposal(proposal, edits);
   if (!next.walletId) return { status: 'needsInput', field: 'wallet' };
   if (next.type === 'transfer') {
-    if (!next.transferToWalletId) return { status: 'needsInput', field: 'destination' };
-    if (next.walletId === next.transferToWalletId) {
-      return { status: 'error', message: 'Pick two different wallets.' };
-    }
-    if (walletCurrency(next.walletId) !== walletCurrency(next.transferToWalletId)) {
-      return { status: 'error', message: 'Both wallets need the same currency.' };
-    }
+    const problem = checkTransfer(ledgerView(), next.walletId, next.transferToWalletId);
+    if (problem?.kind === 'needsInput') return { status: 'needsInput', field: problem.field };
+    if (problem) return { status: 'error', message: problem.message };
   }
   if (!next.amountMinor || next.amountMinor <= 0) {
     return { status: 'error', message: 'Enter an amount above zero.' };

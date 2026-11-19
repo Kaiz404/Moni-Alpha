@@ -1,15 +1,18 @@
-import { isMigrated, transactions$, wallets$ } from '@/lib/store';
+import { transactions$ } from '@/lib/store';
 import { getRecordValues, hasRow, patchRow } from '@/lib/store/helpers';
-import { getUserId } from '@/lib/supabase/client';
-import type {
-  CreateTransaction,
-  TransactionSource,
-  UpdateTransaction,
-} from '@repo/types';
-import { decimalToMinor, minorToDecimal, updateTransactionSchema } from '@repo/types';
-import { randomUUID } from 'expo-crypto';
-import type { BalanceCorrection } from '@/lib/wallets/balance-correction';
-import { touchesWallet } from '@repo/core';
+import { commit, ledgerView, planContext } from '@/lib/store/writes';
+import type { CreateTransaction, TransactionSource, UpdateTransaction } from '@repo/types';
+import { decimalToMinor } from '@repo/types';
+import {
+  planBalanceCorrection,
+  planTransaction,
+  planTransactionEdit,
+  planTransactionsDelete,
+  planTransfer,
+  touchesWallet,
+  type BalanceCorrection,
+  type TransferInput,
+} from '@repo/core';
 
 type TransactionRow = {
   id: string;
@@ -112,49 +115,8 @@ export async function getTransactionById(id: string) {
 }
 
 export async function updateTransaction(id: string, data: UpdateTransaction) {
-  const current = await getTransactionById(id);
-  if (current?.debtActivityId) {
-    throw new Error('Debt-linked transactions must be changed from the debt activity.');
-  }
-  const parsed = updateTransactionSchema.safeParse(data);
-  if (!parsed.success) {
-    throw new Error(parsed.error.errors[0]?.message ?? 'Invalid update');
-  }
-
-  const p = parsed.data;
-  const patch: Record<string, unknown> = {
-    updated_at: new Date().toISOString(),
-  };
-
-  if (p.walletId !== undefined) patch.wallet_id = p.walletId;
-  if (p.amountMinor !== undefined) patch.amount = minorToDecimal(p.amountMinor);
-  if (p.type !== undefined) patch.type = p.type;
-  if (p.analysisExcluded !== undefined) patch.analysis_excluded = p.analysisExcluded;
-  if (p.categoryId !== undefined) patch.category_id = p.categoryId;
-  if (p.transferToWalletId !== undefined) patch.transfer_to_wallet_id = p.transferToWalletId;
-  if (p.description !== undefined) patch.description = p.description;
-  if (p.merchant !== undefined) patch.merchant = p.merchant;
-  if (p.notes !== undefined) patch.notes = p.notes;
-  if (p.transactionDate !== undefined) patch.transaction_date = p.transactionDate;
-  if (p.locationLatitude !== undefined) patch.location_latitude = p.locationLatitude;
-  if (p.locationLongitude !== undefined) patch.location_longitude = p.locationLongitude;
-  if (p.locationName !== undefined) patch.location_name = p.locationName;
-  if (isMigrated('transaction_place_ids')) {
-    if (p.placeId !== undefined) patch.place_id = p.placeId;
-    if (p.placeCoordsAt !== undefined) patch.place_coords_at = p.placeCoordsAt;
-  }
-
-  if (p.walletId !== undefined) {
-    const wallet = getRecordValues<{
-      id: string;
-      currency: string | null;
-    }>(wallets$).find((w) => w.id === p.walletId);
-    if (!wallet) throw new Error('Wallet not found');
-    patch.currency = (wallet.currency ?? 'USD').toUpperCase();
-  }
-
-  patchRow(transactions$, id, patch);
-
+  const ctx = await planContext();
+  commit(planTransactionEdit(id, data, ledgerView(), ctx));
   return getTransactionById(id);
 }
 
@@ -183,106 +145,32 @@ export async function createTransaction(
   source: TransactionSource,
   options?: { id?: string },
 ) {
-  const userId = await getUserId();
-  if (!userId) throw new Error('User ID required');
-
-  const id = options?.id ?? randomUUID();
-  const transactionDate = data.transactionDate || new Date().toISOString();
-
-  transactions$[id].set({
-    id,
-    user_id: userId,
-    wallet_id: data.walletId,
-    amount: minorToDecimal(data.amountMinor),
-    currency: (
-      getRecordValues<{ id: string; currency: string | null }>(wallets$).find(
-        (w) => w.id === data.walletId,
-      )?.currency ?? 'USD'
-    ).toUpperCase(),
-    type: data.type,
-    analysis_excluded: data.analysisExcluded ?? false,
-    debt_activity_id: data.debtActivityId ?? null,
-    category_id: data.categoryId || null,
-    transfer_to_wallet_id: data.transferToWalletId || null,
-    linked_transaction_id: null,
-    description: data.description || null,
-    merchant: data.merchant || null,
-    notes: data.notes || null,
-    transaction_date: transactionDate,
-    location_latitude: data.locationLatitude ?? null,
-    location_longitude: data.locationLongitude ?? null,
-    location_name: data.locationName || null,
-    // An unknown column fails the whole row's sync, so these wait for the migration.
-    ...(isMigrated('transaction_place_ids')
-      ? { place_id: data.placeId ?? null, place_coords_at: data.placeCoordsAt ?? null }
-      : {}),
-    receipt_image_url: null,
-    metadata: { ...data.metadata, source },
-    deleted: false,
-  });
-
+  const ctx = await planContext();
+  const { id } = commit(planTransaction(data, source, ledgerView(), ctx, options?.id));
   const result = await getTransactionById(id);
   if (!result) throw new Error('Failed to create transaction');
   return result;
 }
 
-export async function createTransfer(data: {
-  fromWalletId: string;
-  toWalletId: string;
-  amountMinor: number;
-  description?: string | null;
-  notes?: string | null;
-  transactionDate?: string;
-}, source: TransactionSource) {
-  if (data.fromWalletId === data.toWalletId) {
-    throw new Error('Source and destination wallets must differ');
-  }
-  if (!Number.isInteger(data.amountMinor) || data.amountMinor <= 0) {
-    throw new Error('Amount must be positive');
-  }
-
-  const wallets = getRecordValues<{
-    id: string;
-    currency: string | null;
-  }>(wallets$);
-  const fromWallet = wallets.find((w) => w.id === data.fromWalletId);
-  const toWallet = wallets.find((w) => w.id === data.toWalletId);
-
-  if (!fromWallet) throw new Error('Source wallet not found');
-  if (!toWallet) throw new Error('Destination wallet not found');
-
-  const fromCurrency = (fromWallet.currency ?? 'USD').toUpperCase();
-  const toCurrency = (toWallet.currency ?? 'USD').toUpperCase();
-  if (fromCurrency !== toCurrency) {
-    throw new Error('Transfers require both wallets to use the same currency');
-  }
-
-  return createTransaction({
-    walletId: data.fromWalletId,
-    transferToWalletId: data.toWalletId,
-    amountMinor: data.amountMinor as CreateTransaction['amountMinor'],
-    type: 'transfer',
-    categoryId: null,
-    description: data.description ?? null,
-    merchant: null,
-    notes: data.notes ?? null,
-    transactionDate: data.transactionDate,
-  }, source);
+export async function createTransfer(data: TransferInput, source: TransactionSource) {
+  const ctx = await planContext();
+  const { id } = commit(planTransfer(data, source, ledgerView(), ctx));
+  const result = await getTransactionById(id);
+  if (!result) throw new Error('Failed to create transaction');
+  return result;
 }
 
 /** Writes the row `correctBalance` built. Returns the created transaction so the caller can undo it. */
 export async function createBalanceCorrection(walletId: string, correction: BalanceCorrection) {
-  return createTransaction(
-    { ...correction, walletId, transactionDate: new Date().toISOString() },
-    'manual',
-  );
+  const ctx = await planContext();
+  const { id } = commit(planBalanceCorrection(walletId, correction, ledgerView(), ctx));
+  const result = await getTransactionById(id);
+  if (!result) throw new Error('Failed to create transaction');
+  return result;
 }
 
 export async function deleteTransaction(id: string) {
-  patchRow(transactions$, id, {
-    deleted: true,
-    updated_at: new Date().toISOString(),
-  });
+  commit(planTransactionsDelete([id], { now: new Date().toISOString() }));
 }
 
 export function setTransactionReceipt(id: string, url: string): void {

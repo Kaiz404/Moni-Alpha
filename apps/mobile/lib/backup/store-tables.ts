@@ -1,4 +1,5 @@
 import { syncState, type Observable } from '@legendapp/state';
+import type { SyncedTable } from '@repo/core';
 
 import {
   categories$,
@@ -11,6 +12,16 @@ import {
 
 import type { BackupTables, RawRow, TableName } from './moni-export';
 import type { StoreSnapshot } from './plan';
+
+/** The synced table behind each table of a Moni export. */
+export const STORE_TABLE_NAMES = {
+  wallets: 'wallets',
+  categories: 'categories',
+  budgets: 'category_budgets',
+  debts: 'debts',
+  debtActivities: 'debt_activities',
+  transactions: 'transactions',
+} as const satisfies Record<TableName, SyncedTable>;
 
 export const STORE_TABLES: Record<TableName, Observable<any>> = {
   wallets: wallets$,

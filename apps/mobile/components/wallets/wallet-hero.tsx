@@ -17,7 +17,7 @@ import {
 import { confirmWalletBalance } from '@/lib/supabase/wallets';
 import { tid } from '@/lib/test-ids';
 import { showToast } from '@/lib/toast/toast-store';
-import { correctBalance } from '@/lib/wallets/balance-correction';
+import { correctBalance } from '@repo/core';
 import type { WalletAlertLink } from '@/lib/wallets/wallet-link';
 import { walletMeta } from '@/lib/wallets/wallet-meta';
 import { type FinanceWallet, formatMoney, formatSignedMoney } from '@repo/core';
