@@ -40,6 +40,10 @@
   background: var(--color-card);
 }
 
+.delete-note-line {
+  flex: 1 1 auto;
+}
+
 .delete-export {
   height: 38px;
   padding: 0 14px;
@@ -51,6 +55,30 @@
 
 .delete-export:hover:not(:disabled) {
   background: var(--color-sand-light);
+}
+
+/* On the phone layout the line keeps the width and Export data goes under it, with a 44 hit area. */
+html[data-layout='phone'] .delete-note {
+  flex-wrap: wrap;
+}
+
+html[data-layout='phone'] .delete-note-line {
+  flex-basis: calc(100% - 32px);
+}
+
+html[data-layout='phone'] .delete-export {
+  position: relative;
+  margin-left: 32px;
+}
+
+html[data-layout='phone'] .delete-export::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: 100%;
+  height: 44px;
+  transform: translateY(-50%);
 }
 
 .delete-line {

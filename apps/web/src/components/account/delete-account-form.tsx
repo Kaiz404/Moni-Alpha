@@ -72,7 +72,7 @@ export function DeleteAccountForm({ cancelHref, userId, zone }: { cancelHref: st
       <WhatIsDeleted />
       <div className="delete-note">
         <Icon name="download" size={20} />
-        <span style={{ flex: '1 1 auto' }}>Keep a copy first: a CSV of every transaction.</span>
+        <span className="delete-note-line">Keep a copy first: a CSV of every transaction.</span>
         <ExportDataButton userId={userId} zone={zone} className="btn delete-export press" />
       </div>
       <p className="delete-line">{FOR_GOOD}</p>
