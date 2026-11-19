@@ -2,6 +2,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useRef, useState } from 'react';
 import { View } from 'react-native';
 
+import { TextTile } from '@/components/amount/text-tile';
 import { DebtHistory } from '@/components/debt/debt-history';
 import {
   OpenStanding,
@@ -21,15 +22,15 @@ import {
 } from '@/components/debts/reminder';
 import { useDebt } from '@/components/debts/use-debts';
 import { SyncBanner } from '@/components/providers/sync-banner';
+import { Button } from '@/components/ui/button';
 import { NotFound } from '@/components/ui/empty-tile';
-import { IconSymbol } from '@/components/ui/icon-symbol';
+import { HeaderIconButton } from '@/components/ui/header-icon-button';
 import { InPlaceField, InPlaceGroup, type Saved } from '@/components/ui/in-place-field';
 import { ListCard } from '@/components/ui/list-card';
-import { Page, PageScroll } from '@/components/ui/page';
+import { Page, PageActions, PageScroll } from '@/components/ui/page';
 import { PickerField } from '@/components/ui/picker-field';
-import { Press } from '@/components/ui/press';
+import { NavRow } from '@/components/ui/nav-row';
 import { Text } from '@/components/ui/text';
-import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { approve } from '@/lib/haptics';
 import { openSheet } from '@/lib/sheet/sheet-store';
 import {
@@ -101,7 +102,6 @@ function DebtPage({
   line: DebtLine;
   activities: FinanceDebtActivity[];
 }) {
-  const tokens = useThemeTokens();
   const { debt, balanceMinor, state } = line;
   const {
     id,
@@ -181,22 +181,38 @@ function DebtPage({
   const days = debt.dueDate
     ? daysUntil(debt.dueDate, new Date(), deviceCalendar)
     : null;
-  const dueText = debt.dueDate
-    ? `${dueLabel(debt.dueDate)}${days === null ? '' : ` · ${dueWords(days).toLowerCase()}`}`
-    : 'No date';
+  const dueTitle =
+    days === null
+      ? 'Due date'
+      : days < 0
+        ? dueWords(days)
+        : `Due ${dueWords(days).toLowerCase()}`;
+  const toAmount = (mode: 'repay' | 'more') =>
+    router.push({ pathname: '/debt/amount', params: { id, mode } });
+  const remindedToday = reminded(id);
 
   return (
     <View className="flex-1">
       <Page
-      headerScrolls
+        headerScrolls
         screen="debts"
         kind="pushed"
         title="Debt"
+        trailing={
+          open ? (
+            <HeaderIconButton
+              testID={tid('debts', 'write-off')}
+              icon="text-box-remove-outline"
+              accessibilityLabel={`Write off ${money(balanceMinor)}`}
+              onPress={() => void writeOff()}
+            />
+          ) : undefined
+        }
       >
         <InPlaceGroup>
         <PageScroll
           className="flex-1"
-          contentContainerClassName="gap-4 px-5 pb-10"
+          contentContainerClassName="gap-4 px-5 pb-8"
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
@@ -255,12 +271,7 @@ function DebtPage({
           </InPlaceField>
 
           {open ? (
-            <OpenStanding
-              line={line}
-              remindedToday={reminded(id)}
-              onSettle={() => void settle()}
-              onRemind={() => void sendReminder(line)}
-            />
+            <OpenStanding line={line} />
           ) : state === 'settled' ? (
             <SquareCard
               line={line}
@@ -270,102 +281,70 @@ function DebtPage({
             <WrittenOff line={line} />
           )}
 
-          <InPlaceField
-            testID={tid('debts', 'note')}
-            label="Note"
-            kind="text"
-            maxLength={1000}
-            placeholder="What is it for?"
-            value={note ?? ''}
-            onSave={(value) =>
-              value === (note ?? '')
-                ? undefined
-                : saveField(id, { note: value || null }, { note })
-            }
-          >
-            {({ editable, editor }) =>
-              editor ? (
-                <View className="gap-1.5">
-                  <Text
-                    variant="meta"
-                    className="text-muted"
-                  >
-                    Note
-                  </Text>
-                  {editor}
-                </View>
-              ) : (
-                <ListCard>
-                  {editable(
-                    <View className="flex-row items-center gap-3.5">
-                      <View className="h-[42px] w-[42px] items-center justify-center rounded-full bg-sand">
-                        <IconSymbol
-                          name="note-text-outline"
-                          size={20}
-                          color={tokens.foreground}
-                        />
-                      </View>
-                      <View className="min-w-0 flex-1">
-                        <Text
-                          variant="meta"
-                          className="text-muted"
-                        >
-                          Note
-                        </Text>
-                        <Text
-                          variant="rowTitle"
-                          className={note ? 'text-foreground' : 'text-muted'}
-                          numberOfLines={1}
-                        >
-                          {note ?? 'Add a note'}
-                        </Text>
-                      </View>
-                    </View>,
-                    {
-                      className: 'flex-row items-center gap-3.5 px-[18px] py-3',
-                      accessibilityLabel: `Edit note, ${note ?? 'no note'}`,
-                    },
-                  )}
-                </ListCard>
-              )
-            }
-          </InPlaceField>
+          <View className="gap-2">
+            {open ? (
+              <PickerField
+                testID={tid('debts', 'due-date')}
+                label={dueTitle}
+                value={debt.dueDate ? dueLabel(debt.dueDate) : 'No date'}
+                icon="calendar-clock"
+                onPress={() => setDueOpen(true)}
+              />
+            ) : null}
+            <NoteField
+              key={note ?? ''}
+              id={id}
+              note={note}
+            />
+          </View>
 
           {open ? (
-            <PickerField
-              testID={tid('debts', 'due-date')}
-              label="Due date"
-              value={dueText}
-              icon="calendar-clock"
-              onPress={() => setDueOpen(true)}
-            />
+            <ListCard>
+              <NavRow
+                testID={tid('debts', 'settle')}
+                icon="check-all"
+                title={words.settle}
+                onPress={() => void settle()}
+              />
+              {direction === 'owed_to_me' ? (
+                <NavRow
+                  testID={tid('debts', 'remind')}
+                  icon="send-outline"
+                  title={`Remind ${name}`}
+                  value={remindedToday ? 'Reminded today' : undefined}
+                  onPress={() => void sendReminder(line)}
+                />
+              ) : null}
+            </ListCard>
           ) : null}
 
           <DebtHistory
             debt={debt}
             activities={activities}
           />
-
-          {open ? (
-            <Press
-              testID={tid('debts', 'write-off')}
-              radius={{ rest: 22, pressed: 16 }}
-              pressedClassName="bg-destructive-pressed"
-              className="h-11 flex-row items-center justify-center gap-2 self-center bg-destructive-fill px-[18px]"
-              onPress={() => void writeOff()}
-            >
-              <IconSymbol
-                name="cancel"
-                size={20}
-                color={tokens.states.destructive}
-              />
-              <Text className="text-[15px] leading-[21px] font-display-semibold text-state-destructive">
-                Write off {money(balanceMinor)}
-              </Text>
-            </Press>
-          ) : null}
         </PageScroll>
         </InPlaceGroup>
+        {open ? (
+          <PageActions>
+            <Button
+              testID={tid('debts', 'record-repayment')}
+              icon="cash-refund"
+              label="Record repayment"
+              pinned
+              className="flex-1"
+              onPress={() => toAmount('repay')}
+            />
+            <Button
+              testID={tid('debts', 'lend-more')}
+              variant="secondary"
+              icon="plus"
+              label={words.more}
+              pinned
+              className="flex-1"
+              onPress={() => toAmount('more')}
+            />
+          </PageActions>
+        ) : null}
       </Page>
       <DueDateSheet
         open={dueOpen}
@@ -383,5 +362,31 @@ function DebtPage({
         }}
       />
     </View>
+  );
+}
+
+/** The Note in the app's typed field: it saves when the keyboard leaves it, with Undo. */
+function NoteField({ id, note }: { id: string; note: string | null }) {
+  const [draft, setDraft] = useState(note ?? '');
+  return (
+    <TextTile
+      testID={tid('debts', 'note')}
+      label="Note"
+      icon="note-text-outline"
+      placeholder="What is it for?"
+      maxLength={1000}
+      value={draft}
+      onChangeText={setDraft}
+      onBlur={() => {
+        const next = draft.trim() || null;
+        if (next === note) return;
+        try {
+          const { undo } = saveField(id, { note: next }, { note });
+          showToast({ text: 'Note saved', undo });
+        } catch (error) {
+          failed(error);
+        }
+      }}
+    />
   );
 }

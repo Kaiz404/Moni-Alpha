@@ -63,122 +63,32 @@ function RepaidBar({
   );
 }
 
-/** An open debt: what's left, how much came back, and the ways to move money on it. */
-export function OpenStanding({
-  line,
-  remindedToday,
-  onSettle,
-  onRemind,
-}: {
-  line: DebtLine;
-  remindedToday: boolean;
-  onSettle: () => void;
-  onRemind: () => void;
-}) {
-  const tokens = useThemeTokens();
+/** An open debt: what's left and how much came back. */
+export function OpenStanding({ line }: { line: DebtLine }) {
   const { debt, balanceMinor } = line;
   const words = SIDE_WORDS[debt.direction];
-  const owedToMe = debt.direction === 'owed_to_me';
-  const toAmount = (mode: 'repay' | 'more') =>
-    router.push({
-      pathname: '/debt/amount',
-      params: { id: debt.id, mode },
-    });
   return (
-    <>
-      <View
-        accessible
-        accessibilityLiveRegion="polite"
-        className="gap-1"
+    <View
+      accessible
+      accessibilityLiveRegion="polite"
+      className="gap-1"
+    >
+      <Text
+        variant="caps"
+        className="text-ink-2"
       >
-        <Text
-          variant="caps"
-          className="text-ink-2"
-        >
-          {words.caps(debt.counterpartyName)}
-        </Text>
-        <Text
-          variant="amountHero"
-          className={owedToMe ? 'text-deep-mint' : 'text-foreground'}
-          numberOfLines={1}
-          adjustsFontSizeToFit
-        >
-          {formatMoney(balanceMinor, debt.currency)}
-        </Text>
-        <RepaidBar line={line} />
-      </View>
-      <View className="gap-1">
-        <View className="flex-row gap-2">
-          <Button
-            testID={tid('debts', 'record-repayment')}
-            className="flex-1"
-            icon="cash-refund"
-            label="Record repayment"
-            onPress={() => toAmount('repay')}
-          />
-          <Press
-            testID={tid('debts', 'lend-more')}
-            radius={{ rest: 26, pressed: 16 }}
-            pressedClassName="bg-hairline"
-            className="h-[52px] flex-row items-center justify-center gap-1.5 bg-sand px-[18px]"
-            onPress={() => toAmount('more')}
-          >
-            <IconSymbol
-              name="plus"
-              size={18}
-              color={tokens.foreground}
-            />
-            <Text className="text-[15px] leading-[21px] font-display-semibold text-foreground">
-              {words.more}
-            </Text>
-          </Press>
-        </View>
-        <View className="flex-row gap-1">
-          <Press
-            testID={tid('debts', 'settle')}
-            className="h-11 flex-row items-center gap-1.5 rounded-full pl-1 pr-3"
-            onPress={onSettle}
-          >
-            <IconSymbol
-              name="check-all"
-              size={18}
-              color={tokens.deepMint}
-            />
-            <Text className="text-[15px] leading-[21px] font-display-semibold text-deep-mint">
-              {words.settle}
-            </Text>
-          </Press>
-          {!owedToMe ? null : remindedToday ? (
-            <View className="h-11 flex-row items-center gap-1.5 px-3">
-              <IconSymbol
-                name="check"
-                size={18}
-                color={tokens.muted}
-              />
-              <Text className="text-[15px] leading-[21px] font-display-semibold text-muted">
-                Reminded today
-              </Text>
-            </View>
-          ) : (
-            <Press
-              testID={tid('debts', 'remind')}
-              accessibilityHint="Opens the share sheet with a message"
-              className="h-11 flex-row items-center gap-1.5 rounded-full px-3"
-              onPress={onRemind}
-            >
-              <IconSymbol
-                name="send-outline"
-                size={18}
-                color={tokens.deepMint}
-              />
-              <Text className="text-[15px] leading-[21px] font-display-semibold text-deep-mint">
-                Remind {debt.counterpartyName}
-              </Text>
-            </Press>
-          )}
-        </View>
-      </View>
-    </>
+        {words.caps(debt.counterpartyName)}
+      </Text>
+      <Text
+        variant="amountHero"
+        className={debt.direction === 'owed_to_me' ? 'text-deep-mint' : 'text-foreground'}
+        numberOfLines={1}
+        adjustsFontSizeToFit
+      >
+        {formatMoney(balanceMinor, debt.currency)}
+      </Text>
+      <RepaidBar line={line} />
+    </View>
   );
 }
 

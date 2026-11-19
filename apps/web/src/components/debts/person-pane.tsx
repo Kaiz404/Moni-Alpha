@@ -99,6 +99,11 @@ export function PersonPane({
           </button>
         </span>
         <span className="count num">{index >= 0 && <span className="desk-nav">{index + 1} of {count}</span>}</span>
+        {open && (
+          <button type="button" className="round-btn small pane-write-off" onClick={onWriteOff} aria-label={`Write off ${money(line.balanceMinor)}`}>
+            <Glyph name="text-box-remove-outline" />
+          </button>
+        )}
         <button type="button" className="round-btn small desk-nav" onClick={onClose} aria-label="Close (Esc)">
           <Glyph name="close" />
         </button>
@@ -124,27 +129,67 @@ export function PersonPane({
         </span>
       </div>
 
-      {open && !repay && (
-        <div className="pane-actions">
-          <button type="button" className="btn btn-ink press" onClick={onRepay}>
-            Record a repayment
-            <span className="kbd kbd-on-ink">R</span>
-          </button>
-          {mine &&
-            (reminded ? (
-              <span className="reminded">
-                <Glyph name="check" size={18} />
-                Reminded today
+      {!repay && (
+        <div className="pane-fields">
+          {debt.note && (
+            <div className="field-row">
+              <span className="label-text">Note</span>
+              <span className="pill-field">
+                <Glyph name="note-text-outline" size={18} />
+                <span className="pill-text">{debt.note}</span>
               </span>
-            ) : (
-              <button type="button" className="btn btn-sand press" onClick={onRemind}>
-                Remind
-                <span className="kbd">M</span>
-              </button>
-            ))}
+            </div>
+          )}
+          {open && (
+            <div className="field-row">
+              <span className="label-text">Due date</span>
+              <span className="pill-field">
+                <Glyph name="calendar-blank-outline" size={18} />
+                {debt.dueDate ? dateLabel(debt.dueDate, today) : 'No date'}
+              </span>
+            </div>
+          )}
+          {open && (
+            <div className="field-row">
+              <span className="label-text">{mine ? 'Lent from' : 'Borrowed into'}</span>
+              <span className="pill-field">
+                <Glyph name="wallet-outline" size={18} />
+                {walletName ?? 'No wallet'}
+              </span>
+            </div>
+          )}
         </div>
       )}
 
+      <div className="detail-rule">
+        <span className="caps">History</span>
+        <div className="tl">
+          {open && debt.dueDate && (
+            <div className="tl-item">
+              <span className="tl-node" data-kind="due">
+                <Glyph name="calendar-clock" size={17} />
+              </span>
+              <span className="row-text">
+                <b>Due {dateLabel(debt.dueDate, today)}</b>
+                <span>Moni reminds you {dateLabel(addDays(debt.dueDate, -1), today)}</span>
+              </span>
+            </div>
+          )}
+          {items.map((item) => (
+            <div key={item.id} className="tl-item" data-activity={item.kind}>
+              <span className="tl-node" data-kind={item.kind}>
+                <Glyph name={item.kind === 'repayment' ? 'cash-check' : item.kind === 'write_off' ? 'text-box-remove-outline' : 'hand-coin-outline'} size={17} />
+              </span>
+              <span className="row-text">
+                <b>{item.title}</b>
+                <span>{item.meta}</span>
+              </span>
+              <span className={`num tl-amount${item.kind === 'repayment' && mine ? ' tone-in' : ''}`}>{item.amount}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+      <span style={{ flex: '1 1 auto' }} />
       {open && repay && (
         <div className="repay-form" role="group" aria-label="Record a repayment">
           <div className="repay-head">
@@ -220,79 +265,34 @@ export function PersonPane({
       )}
 
       {!repay && (
-        <div className="pane-fields">
-          {debt.note && (
-            <div className="field-row">
-              <span className="label-text">Note</span>
-              <span className="pill-field">
-                <Glyph name="note-text-outline" size={18} />
-                <span className="pill-text">{debt.note}</span>
-              </span>
-            </div>
-          )}
-          {open && (
-            <div className="field-row">
-              <span className="label-text">Due date</span>
-              <span className="pill-field">
-                <Glyph name="calendar-blank-outline" size={18} />
-                {debt.dueDate ? dateLabel(debt.dueDate, today) : 'No date'}
-              </span>
-            </div>
-          )}
-          {open && (
-            <div className="field-row">
-              <span className="label-text">{mine ? 'Lent from' : 'Borrowed into'}</span>
-              <span className="pill-field">
-                <Glyph name="wallet-outline" size={18} />
-                {walletName ?? 'No wallet'}
-              </span>
-            </div>
+        <div className="pane-foot-actions">
+          {open ? (
+            <>
+              <button type="button" className="btn btn-ink press" onClick={onRepay}>
+                Record a repayment
+                <span className="kbd kbd-on-ink">R</span>
+              </button>
+              {mine &&
+                (reminded ? (
+                  <span className="reminded">
+                    <Glyph name="check" size={18} />
+                    Reminded today
+                  </span>
+                ) : (
+                  <button type="button" className="btn btn-sand press" onClick={onRemind}>
+                    Remind
+                    <span className="kbd">M</span>
+                  </button>
+                ))}
+            </>
+          ) : (
+            <button type="button" className="btn btn-sand press" onClick={onRecordAgain}>
+              <Glyph name="plus" />
+              Record a new debt with {debt.counterpartyName}
+            </button>
           )}
         </div>
       )}
-
-      <div className="detail-rule">
-        <span className="caps">History</span>
-        <div className="tl">
-          {open && debt.dueDate && (
-            <div className="tl-item">
-              <span className="tl-node" data-kind="due">
-                <Glyph name="calendar-clock" size={17} />
-              </span>
-              <span className="row-text">
-                <b>Due {dateLabel(debt.dueDate, today)}</b>
-                <span>Moni reminds you {dateLabel(addDays(debt.dueDate, -1), today)}</span>
-              </span>
-            </div>
-          )}
-          {items.map((item) => (
-            <div key={item.id} className="tl-item" data-activity={item.kind}>
-              <span className="tl-node" data-kind={item.kind}>
-                <Glyph name={item.kind === 'repayment' ? 'cash-check' : item.kind === 'write_off' ? 'text-box-remove-outline' : 'hand-coin-outline'} size={17} />
-              </span>
-              <span className="row-text">
-                <b>{item.title}</b>
-                <span>{item.meta}</span>
-              </span>
-              <span className={`num tl-amount${item.kind === 'repayment' && mine ? ' tone-in' : ''}`}>{item.amount}</span>
-            </div>
-          ))}
-        </div>
-      </div>
-      <span style={{ flex: '1 1 auto' }} />
-      <div className="pane-foot-actions">
-        {open ? (
-          <button type="button" className="btn btn-out press" onClick={onWriteOff}>
-            <Glyph name="text-box-remove-outline" size={18} />
-            Write off
-          </button>
-        ) : (
-          <button type="button" className="btn btn-sand press" onClick={onRecordAgain}>
-            <Glyph name="plus" />
-            Record a new debt with {debt.counterpartyName}
-          </button>
-        )}
-      </div>
     </div>
   );
 }

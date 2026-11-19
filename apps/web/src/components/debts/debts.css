@@ -389,17 +389,6 @@ html[data-layout='phone'] .grid-total.people-row {
   color: var(--color-ink-2);
 }
 
-.pane-actions {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-top: 14px;
-  flex-wrap: wrap;
-}
-
-.pane-actions .btn {
-  padding: 0 10px 0 18px;
-}
 
 .pill-text {
   overflow: hidden;
@@ -485,13 +474,14 @@ html[data-layout='phone'] .grid-total.people-row {
 
 .pane-foot-actions {
   display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
   padding-top: 16px;
 }
 
-.pane-foot-actions .btn-out {
-  height: 40px;
-  padding: 0 14px;
-  color: var(--color-ink-2);
+.pane-foot-actions .btn {
+  padding: 0 10px 0 18px;
 }
 
 /* ---------- record a debt ---------- */
@@ -601,4 +591,9 @@ html[data-layout='phone'] .grid-total.people-row {
   .reminded {
     animation: fade-in 150ms ease both;
   }
+}
+
+html[data-layout='phone'] .pane-write-off {
+  width: 44px;
+  height: 44px;
 }

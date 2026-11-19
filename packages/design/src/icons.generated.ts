@@ -205,6 +205,7 @@ export const iconNames = [
   'tag-outline',
   'target',
   'text',
+  'text-box-remove-outline',
   'timer',
   'timer-sand',
   'train',
