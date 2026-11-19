@@ -40,6 +40,10 @@ test('literal ids match the tid() calls that render them, kebab-cased', () => {
   );
 });
 
+test('an id filled from script output matches where a runtime part is, and nowhere else', () => {
+  assert.deepEqual(unknown('id: sheet.option.${output.year}\nid: home.${output.part}'), ['2 home.${output.part}']);
+});
+
 test('a literal id that no tid() renders fails', () => {
   assert.deepEqual(unknown('id: home.transactions\nid: nav.tab.budget\nid: budget.recordDebt'), [
     '1 home.transactions',

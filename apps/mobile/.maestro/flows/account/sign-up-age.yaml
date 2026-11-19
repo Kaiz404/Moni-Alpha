@@ -22,18 +22,19 @@ tags:
 - assertVisible: Birth month
 - tapOn:
     id: sheet.option.4
+- runScript: ../../scripts/birth-years.js
 - tapOn:
     id: auth.birth.year
 - assertVisible: Birth year
-- assertVisible: 2000s
+- assertVisible: ${output.openDecade}
 - takeScreenshot: sign-up-age-year-grid
 - tapOn:
     id: sheet.page.next
-- assertVisible: 2010s
+- assertVisible: ${output.nextDecade}
 - tapOn:
-    id: sheet.option.2010
+    id: sheet.option.${output.underAgeYear}
 - assertVisible: Apr
-- assertVisible: '2010'
+- assertVisible: ${output.underAgeYear}
 - takeScreenshot: sign-up-age-picked
 
 # Once the e2e sign-in is saved, Email gaining focus opens Google's "Use your saved password" dialog.

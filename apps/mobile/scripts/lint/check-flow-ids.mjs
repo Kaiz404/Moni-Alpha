@@ -113,9 +113,9 @@ function renderings(parts, pool, spreadPool = pool) {
   return ids;
 }
 
-// Maestro reads `id:` as a regex.
+// Maestro reads `id:` as a regex, after it fills each `${...}` from a script's output.
 export function idMatches(flowId, compiled) {
-  const literal = flowId.replace(/\\\./g, '.');
+  const literal = flowId.replace(/\$\{[^}]*\}/g, SAMPLE_PART).replace(/\\\./g, '.');
   if (/^[A-Za-z0-9._-]+$/.test(literal))
     return compiled.some((template) => template.regex.test(literal));
   let pattern;
