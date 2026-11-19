@@ -70,6 +70,7 @@ Values are in `redesign/tokens.md`, words in `redesign/glossary.md`.
 - **Short sheet copy** (owner, 20 Nov 2026): a sheet has its title and at most one short line under it. It does not list the screens a setting affects or add a footnote. The Main currency sheet reads "Main currency" over one line saying the whole app uses it (#75).
 - **Confirmations are bottom sheets** (owner, 20 Nov 2026), destructive ones included. They are never pushed pages laid out as forms. Delete your account moves into a sheet and says what goes in far fewer words (#74).
 - **No middle-dot separators** (owner, 20 Nov 2026): never join two pieces of text with " · ". Put them in two places (the row's right side or a second line), set them apart with weight or colour, or use plain words. `tokens.md`, `DESIGN_SYSTEM.md` and the boards still describe "Category · Wallet" meta until #76 replaces it and adds a copy lint that fails on the dot.
+- **No dot status chips** (owner, 20 Nov 2026): no capsule with a coloured dot and a label ("Looks like a duplicate", "RM500 unassigned"). Say the status through the title, text weight or colour, or an icon. The `standalone` `StatusPill` goes in #85.
 - **Approvals:** AI writes to the ledger without Approve only for routine alerts, marked Auto and announced by the Added automatically notification on Android; vocabulary Approve · Not mine · Later everywhere.
 
 ## Code gaps (designed but not supported yet)
