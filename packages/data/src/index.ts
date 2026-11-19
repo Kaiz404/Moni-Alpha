@@ -16,4 +16,12 @@ export {
 } from './store';
 export { applyWrites } from './apply';
 export { isNetworkError, type MoniSupabase } from './supabase';
+export {
+  applyPlan,
+  readStoreSnapshot,
+  storeHasPulled,
+  storeRows,
+  type ApplyPlanOptions,
+  type ApplyProgress,
+} from './backup';
 export { receiptPhotoUrl, RECEIPTS_BUCKET } from './receipts';

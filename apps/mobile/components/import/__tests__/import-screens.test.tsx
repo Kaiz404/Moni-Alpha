@@ -5,9 +5,7 @@ import type { ReactNode } from 'react';
 import ImportColumnsScreen from '@/app/import/columns';
 import ImportScreen from '@/app/import/index';
 import ImportPreviewScreen from '@/app/import/preview';
-import { applyPlan } from '@/lib/backup/apply';
-import { pickFile, setImportSession } from '@/lib/backup/import-session';
-import { storeHasPulled } from '@/lib/backup/store-tables';
+import { applyImport, importReady, pickFile, setImportSession } from '@/lib/backup/import-session';
 import { deviceCalendar } from '@/lib/dates/device-calendar';
 import { showToast } from '@/lib/toast/toast-store';
 import { buildMoniExport, readImportFile, type ImportSession } from '@repo/core';
@@ -38,15 +36,12 @@ jest.mock('uniwind', () => ({
 jest.mock('@/lib/auth/auth-context', () => ({
   useAuth: () => ({ user: { id: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa' } }),
 }));
-jest.mock('@/lib/backup/apply', () => ({ applyPlan: jest.fn(async () => 3) }));
 jest.mock('@/lib/toast/toast-store', () => ({ showToast: jest.fn() }));
-jest.mock('@/lib/backup/store-tables', () => ({
-  ...jest.requireActual('@/lib/backup/store-tables'),
-  storeHasPulled: jest.fn(() => true),
-}));
 jest.mock('@/lib/backup/import-session', () => ({
   ...jest.requireActual('@/lib/backup/import-session'),
   pickFile: jest.fn(),
+  importReady: jest.fn(() => true),
+  applyImport: jest.fn(async () => 3),
 }));
 
 const bytes = (text: string) => Uint8Array.from(Buffer.from(text, 'utf8'));
@@ -66,12 +61,12 @@ function genericWithWallet(text: string): ImportSession {
 beforeEach(() => {
   jest.clearAllMocks();
   setImportSession(null);
-  (storeHasPulled as jest.Mock).mockReturnValue(true);
+  (importReady as jest.Mock).mockReturnValue(true);
 });
 
 describe('Import data', () => {
   it('holds choosing a file back until the first pull has run', () => {
-    (storeHasPulled as jest.Mock).mockReturnValue(false);
+    (importReady as jest.Mock).mockReturnValue(false);
     render(<ImportScreen />);
     expect(screen.getByText(/Moni is still loading your data/)).toBeTruthy();
     expect(screen.queryByTestId('import.choose')).toBeNull();
@@ -160,7 +155,7 @@ describe('Check the file', () => {
     expect(screen.getByText('−RM12.00')).toBeTruthy();
     expect(screen.getByText('Line 3')).toBeTruthy();
     expect(screen.getByText("The date can't be read")).toBeTruthy();
-    expect(applyPlan).not.toHaveBeenCalled();
+    expect(applyImport).not.toHaveBeenCalled();
   });
 
   it('writes on the button, then opens Activity', async () => {
@@ -168,7 +163,7 @@ describe('Check the file', () => {
     render(<ImportPreviewScreen />);
     fireEvent.press(screen.getByTestId('import.write'));
     await waitFor(() => expect(router.dismissTo).toHaveBeenCalledWith('/activity'));
-    expect(applyPlan).toHaveBeenCalledTimes(1);
+    expect(applyImport).toHaveBeenCalledTimes(1);
     expect(showToast).toHaveBeenCalledWith({ text: 'Added 3 transactions' });
   });
 
@@ -182,7 +177,7 @@ describe('Check the file', () => {
     render(<ImportPreviewScreen />);
     expect(screen.getByTestId('import.new')).toHaveTextContent('0');
     fireEvent.press(screen.getByTestId('import.write'));
-    expect(applyPlan).not.toHaveBeenCalled();
+    expect(applyImport).not.toHaveBeenCalled();
     expect(router.dismissTo).toHaveBeenCalledWith('/profile');
   });
 });

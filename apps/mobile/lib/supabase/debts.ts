@@ -15,7 +15,6 @@ import {
   planDebtActivity,
   planDebtActivityDelete,
   planDebtMirrorRepair,
-  planDebtStatus,
   toFinanceDebt,
   toFinanceDebtActivity,
   type DebtActivityInput,
@@ -65,11 +64,6 @@ function activitiesOf(userId: string, debtId?: string): DebtActivity[] {
 async function addActivity(debt: Debt, data: DebtActivityInput): Promise<DebtActivity> {
   const ctx = await planContext();
   return commit(planDebtActivity(debt, data, ledgerView(), ctx)).activity;
-}
-
-/** Works a debt's status out again after a restore added activity to it. */
-export function refreshDebtStatus(debtId: string): void {
-  commit(planDebtStatus(debtId, ledgerView(), { now: new Date().toISOString() }));
 }
 
 export async function createDebt(data: NewDebt): Promise<Debt> {

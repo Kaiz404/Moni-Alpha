@@ -8,8 +8,7 @@ import { ListCard, ListSection } from '@/components/ui/list-card';
 import { Page, PageScroll } from '@/components/ui/page';
 import { Text } from '@/components/ui/text';
 import { useAuth } from '@/lib/auth/auth-context';
-import { applyPlan, type ApplyProgress } from '@/lib/backup/apply';
-import { getImportSession, planImportNow, setImportSession } from '@/lib/backup/import-session';
+import { applyImport, getImportSession, planImportNow, setImportSession } from '@/lib/backup/import-session';
 import { tid } from '@/lib/test-ids';
 import { showToast } from '@/lib/toast/toast-store';
 import {
@@ -21,6 +20,7 @@ import {
   type ImportPlan,
   type ImportRow,
 } from '@repo/core';
+import type { ApplyProgress } from '@repo/data';
 import { deviceCalendar } from '@/lib/dates/device-calendar';
 
 const SHOWN_ROWS = 20;
@@ -175,7 +175,7 @@ export default function ImportPreviewScreen() {
     try {
       // Planned again here: anything that arrived since the preview is not written twice.
       const latest = planImportNow(session, userId);
-      const written = latest ? await applyPlan(latest, setProgress) : 0;
+      const written = latest ? await applyImport(latest, setProgress) : 0;
       showToast({ text: `${verb === 'Add' ? 'Added' : 'Restored'} ${nouns(written)}` });
       leave('/activity');
     } catch {
