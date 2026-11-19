@@ -542,6 +542,26 @@ try {
             (await wideEnough(p)),
         );
         await shot(p, `delete-account-${name}-${size.width}-${theme}`);
+        if (opens) {
+          const focusedId = () => p.evaluate(() => document.activeElement?.id ?? '');
+          const inDialog = () => p.evaluate(() => !!document.activeElement?.closest('[role="alertdialog"]'));
+          const onField = (await focusedId()) === 'delete-confirm';
+          const stays = [];
+          for (const key of ['Tab', 'Tab', 'Tab', 'Tab', 'Shift+Tab', 'Shift+Tab', 'Shift+Tab', 'Shift+Tab', 'Shift+Tab']) {
+            await p.keyboard.press(key);
+            stays.push(await inDialog());
+          }
+          await p.keyboard.press('Escape');
+          await p.getByRole('alertdialog').waitFor({ state: 'detached', timeout: 5_000 }).catch(() => {});
+          const back = await p.evaluate(() => document.activeElement?.textContent ?? '');
+          check(
+            `${path} ${where}: the dialog opens on the DELETE field, Tab stays inside, Esc closes it back to the row`,
+            onField && stays.every(Boolean) && (await p.getByRole('alertdialog').count()) === 0 && back.includes(opens),
+            { onField, stays, back },
+          );
+          await p.getByRole('button', { name: opens }).click();
+          await field.waitFor({ timeout: 5_000 }).catch(() => {});
+        }
         await field.fill('DELET');
         await field.press('Enter');
         await p.waitForTimeout(300);

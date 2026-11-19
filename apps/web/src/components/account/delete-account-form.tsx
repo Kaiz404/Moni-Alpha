@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { FieldError } from '@/components/auth/fields';
 import { Icon } from '@/components/icon';
@@ -121,9 +121,25 @@ export function DeleteAccountForm({ cancel, userId, zone }: { cancel: Cancel; us
 
 /**
  * Settings › Profile › Delete your account: a confirm dialog, like the phone's sheet, with one line on
- * what goes. Esc, a click outside and Cancel close it.
+ * what goes. It opens on the DELETE field, keeps Tab inside, and hands focus back to the opener when
+ * Esc, a click outside or Cancel closes it.
  */
 export function DeleteAccountDialog({ userId, zone, onClose }: { userId: string; zone: string | null; onClose: () => void }) {
+  const dialog = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    dialog.current?.querySelector<HTMLInputElement>('#delete-confirm')?.focus();
+    return () => opener?.focus();
+  }, []);
+
+  function trapTab(event: React.KeyboardEvent) {
+    const stops = [...(dialog.current?.querySelectorAll<HTMLElement>('a[href], button:not(:disabled), input:not(:disabled)') ?? [])];
+    const edge = event.shiftKey ? stops[0] : stops.at(-1);
+    if (document.activeElement !== edge) return;
+    event.preventDefault();
+    (event.shiftKey ? stops.at(-1) : stops[0])?.focus();
+  }
+
   return createPortal(
     <div className="scrim scrim-center" onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
       <div
@@ -131,8 +147,10 @@ export function DeleteAccountDialog({ userId, zone, onClose }: { userId: string;
         aria-modal="true"
         aria-labelledby="delete-account-title"
         aria-describedby="delete-account-line"
+        ref={dialog}
         className="dialog confirm-dialog motion-pop"
         onKeyDown={(event) => {
+          if (event.key === 'Tab') return trapTab(event);
           if (event.key !== 'Escape') return;
           event.stopPropagation();
           onClose();
