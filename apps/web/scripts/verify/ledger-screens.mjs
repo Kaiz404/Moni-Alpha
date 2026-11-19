@@ -271,7 +271,9 @@ export async function driveLedgerScreens({ browser, storage, base, check, shot, 
   const after = (await a.locator(`[data-row-id="${rowId}"] .cell-text`).first().textContent()) ?? '';
   check(`Enter saves ${target} in place`, after === target, { before, after, target });
   await a.keyboard.press('Control+z');
-  await a.waitForTimeout(400);
+  await a
+    .waitForFunction(({ id, was }) => document.querySelector(`[data-row-id="${id}"] .cell-text`)?.textContent === was, { id: rowId, was: before }, { timeout: 5000 })
+    .catch(() => {});
   const undone = (await a.locator(`[data-row-id="${rowId}"] .cell-text`).first().textContent()) ?? '';
   check('Ctrl Z puts the category back', undone === before, { before, undone });
 
