@@ -64,10 +64,15 @@ export function yearGrid(newest: number, count: number): GridLayout {
   return { columns: 5, pages };
 }
 
-/** A month a page, Sunday first, from `first`'s month to `last`'s; days outside them can't be picked. */
-export function dayGrid(first: DayKey, last: DayKey, today: DayKey): GridLayout {
-  const start = monthOf(first);
-  const pages = Array.from({ length: monthsBetween(start, monthOf(last)) + 1 }, (_, offset) => {
+/**
+ * A month a page, Sunday first, from `first`'s month to `last`'s; days outside them can't be picked.
+ * `kept`, the date already set, stays pickable and its month is shown even when it falls outside,
+ * such as an overdue due date.
+ */
+export function dayGrid(first: DayKey, last: DayKey, today: DayKey, kept: DayKey | null = null): GridLayout {
+  const start = monthOf(kept && kept < first ? kept : first);
+  const end = monthOf(kept && kept > last ? kept : last);
+  const pages = Array.from({ length: monthsBetween(start, end) + 1 }, (_, offset) => {
     const month = shiftMonth(start, offset);
     const firstOfMonth = firstDayOf(month);
     const days = Array.from({ length: daysInMonth(month) }, (_, index): GridCell => {
@@ -76,7 +81,7 @@ export function dayGrid(first: DayKey, last: DayKey, today: DayKey): GridLayout 
         id: day,
         label: String(dayOfMonth(day)),
         accessibilityLabel: dayLabel(day, today),
-        disabled: day < first || day > last,
+        disabled: day !== kept && (day < first || day > last),
       };
     });
     return {

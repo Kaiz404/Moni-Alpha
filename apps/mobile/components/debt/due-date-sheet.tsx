@@ -16,7 +16,10 @@ export function dueLabel(
   return due ? dateLabel(due, deviceCalendar.dayKey(now)) : 'No date';
 }
 
-/** The debt's due date: a month of days at a time, today to a year ahead, with No date under them. */
+/**
+ * The debt's due date: a month of days at a time, today to a year ahead, with No date under them.
+ * It opens on the date already set, even an overdue one, and No date shows picked when there is none.
+ */
 export function DueDateSheet({
   open,
   selected,
@@ -29,7 +32,7 @@ export function DueDateSheet({
   onDismiss: () => void;
 }) {
   const today = deviceCalendar.dayKey(new Date());
-  const layout = dayGrid(today, addMonths(today, MONTHS_AHEAD, dayOfMonth(today)), today);
+  const layout = dayGrid(today, addMonths(today, MONTHS_AHEAD, dayOfMonth(today)), today, selected);
   return (
     <PageGridPicker
       open={open}
@@ -42,7 +45,8 @@ export function DueDateSheet({
       footer={
         <Button
           testID={tid('debts', 'due', 'none')}
-          variant="secondary"
+          variant={selected === null ? 'primary' : 'secondary'}
+          selected={selected === null}
           icon="calendar-remove-outline"
           label="No date"
           onPress={() => onPick(null)}

@@ -59,8 +59,29 @@ describe('Debt due date', () => {
     expect(screen.getByText('January 2027')).toBeTruthy();
     expect(screen.getByTestId('sheet.option.2027-01-15').props.accessibilityState.selected).toBe(true);
 
+    expect(screen.getByTestId('debts.due.none').props.accessibilityState.selected).toBe(false);
+
     fireEvent.press(screen.getByTestId('debts.due.none'));
     expect(onPick).toHaveBeenCalledWith(null);
+  });
+
+  it('opens on an overdue date, picked, with only that past day pickable', () => {
+    render(<DueDateSheet open selected="2026-08-03" onPick={jest.fn()} onDismiss={jest.fn()} />);
+    expect(screen.getByText('August 2026')).toBeTruthy();
+    expect(screen.getByTestId('sheet.option.2026-08-03').props.accessibilityState.selected).toBe(true);
+    expect(pickable('2026-08-03')).toBe(true);
+    expect(pickable('2026-08-04')).toBe(false);
+    expect(screen.getByTestId('sheet.page.previous').props.accessibilityState.disabled).toBe(true);
+
+    fireEvent.press(screen.getByTestId('sheet.page.next'));
+    expect(screen.getByText('September 2026')).toBeTruthy();
+    expect(pickable('2026-09-30')).toBe(false);
+  });
+
+  it('shows No date picked when the debt has none', () => {
+    render(<DueDateSheet open selected={null} onPick={jest.fn()} onDismiss={jest.fn()} />);
+    expect(screen.getByText('October 2026')).toBeTruthy();
+    expect(screen.getByTestId('debts.due.none').props.accessibilityState.selected).toBe(true);
   });
 
   it('reaches a year ahead and no further', () => {

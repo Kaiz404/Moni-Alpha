@@ -113,6 +113,8 @@ export type ButtonProps = {
   /** Replaces the label while loading, such as "Saving". */
   loadingLabel?: string;
   disabled?: boolean;
+  /** The choice already made, among a picker's options. */
+  selected?: boolean;
   /** Layout only (margins, flex, width); the variant owns colour and size. */
   className?: string;
   accessibilityLabel?: string;
@@ -135,6 +137,7 @@ export function Button({
   loading = false,
   loadingLabel,
   disabled = false,
+  selected,
   className,
   accessibilityLabel,
   pinned = false,
@@ -187,7 +190,7 @@ export function Button({
       }}
       disabled={inactive}
       accessibilityLabel={accessibilityLabel ?? label}
-      accessibilityState={{ disabled: inactive, busy: loading }}
+      accessibilityState={{ disabled: inactive, busy: loading, selected }}
       radius={{ rest: height / 2, pressed: 16 }}
       pressedClassName={look.pressed}
       className={`flex-row items-center justify-center ${gap} ${padding} ${restFill} ${className ?? ''}`}

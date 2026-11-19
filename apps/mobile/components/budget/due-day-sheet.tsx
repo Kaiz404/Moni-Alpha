@@ -22,7 +22,7 @@ export function DueDaySheet({
   onDismiss: () => void;
 }) {
   const today = deviceCalendar.dayKey(new Date());
-  const layout = dayGrid(today, addDays(today, DAYS_AHEAD), today);
+  const layout = dayGrid(today, addDays(today, DAYS_AHEAD), today, selected);
   return (
     <PageGridPicker
       open={open}

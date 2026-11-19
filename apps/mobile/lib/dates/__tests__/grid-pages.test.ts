@@ -45,6 +45,22 @@ describe('dayGrid', () => {
   });
 });
 
+describe('dayGrid with a date already set', () => {
+  it('adds the months back to an earlier date and keeps only that day pickable', () => {
+    const grid = dayGrid('2026-10-14', '2026-11-13', '2026-10-14', '2026-08-31');
+    expect(grid.pages.map((page) => page.label)).toEqual(['August 2026', 'September 2026', 'October 2026', 'November 2026']);
+    const days = grid.pages.flatMap((page) => page.cells).filter((cell) => cell && !cell.disabled);
+    expect(days[0]?.id).toBe('2026-08-31');
+    expect(days[1]?.id).toBe('2026-10-14');
+  });
+
+  it('adds the months on to a later date', () => {
+    const grid = dayGrid('2026-10-14', '2026-11-13', '2026-10-14', '2027-01-02');
+    expect(grid.pages.map((page) => page.label)).toEqual(['October 2026', 'November 2026', 'December 2026', 'January 2027']);
+    expect(grid.pages[3].cells.find((cell) => cell?.id === '2027-01-02')?.disabled).toBe(false);
+  });
+});
+
 describe('pageOf', () => {
   const grid = yearGrid(2026, 101);
 
