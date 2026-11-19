@@ -32,7 +32,7 @@ function rowsOf(element: HTMLElement): HTMLElement[] {
 
 /**
  * A popover in the top layer, placed beside its anchor (or at a click) so it fits inside the window
- * and `boundary`, flipping side or edge when it must. It closes on Esc or a press outside, gives the
+ * and `boundary`, flipping side or edge when it must. It closes on Esc, a press outside or the focus tabbing out, gives the
  * focus back to the anchor, and moves through its rows with the arrow keys.
  */
 export function Floating({
@@ -139,10 +139,20 @@ export function Floating({
       first?.focus({ preventScroll: true });
       first?.scrollIntoView({ block: 'nearest' });
     }
+    let pressing = false;
     const away = (event: PointerEvent) => {
+      pressing = true;
       const node = event.target as Node;
       if (!element.contains(node) && !target?.contains(node))
         closeRef.current();
+    };
+    const released = () => {
+      pressing = false;
+    };
+    // A press is handled by `away`; this is Tab or Shift+Tab leaving a dialog, which would otherwise stay open.
+    const left = (event: FocusEvent) => {
+      const next = event.relatedTarget as Node | null;
+      if (!pressing && next && !element.contains(next)) closeRef.current();
     };
     const escape = (event: globalThis.KeyboardEvent) => {
       if (event.key !== 'Escape' || stack.at(-1) !== self) return;
@@ -151,10 +161,16 @@ export function Floating({
       closeRef.current();
     };
     document.addEventListener('pointerdown', away, true);
+    document.addEventListener('pointerup', released, true);
+    document.addEventListener('pointercancel', released, true);
+    element.addEventListener('focusout', left);
     window.addEventListener('keydown', escape, true);
     return () => {
       stack.splice(stack.indexOf(self), 1);
       document.removeEventListener('pointerdown', away, true);
+      document.removeEventListener('pointerup', released, true);
+      document.removeEventListener('pointercancel', released, true);
+      element.removeEventListener('focusout', left);
       window.removeEventListener('keydown', escape, true);
       const focus = document.activeElement;
       if (

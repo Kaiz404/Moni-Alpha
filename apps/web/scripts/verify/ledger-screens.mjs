@@ -359,6 +359,9 @@ export async function driveLedgerScreens({ browser, storage, base, check, shot, 
   check("Dates shows Moni's calendar with the chosen preset ticked, no browser date inputs", (await dates.locator('input[type="date"]').count()) === 0 && (await dates.getByRole('grid').isVisible()) && (await dates.getByRole('option', { selected: true }).count()) === 1);
   await settle(a);
   await shot(a, 'activity-1440-dates');
+  for (let presses = 0; presses < 40 && (await dates.isVisible()); presses++) await a.keyboard.press('Tab');
+  check('Tab out of Dates closes it instead of leaving it open behind the focus', !(await dates.isVisible()) && (await a.evaluate(() => document.activeElement !== document.body)));
+  await a.locator('.filter-chip').filter({ hasText: 'Dates' }).click();
   await dates.locator('[data-day$="-10"]').click();
   await dates.locator('[data-day$="-03"]').click();
   await a.waitForURL(/from=\d{4}-\d{2}-03/).catch(() => {});
