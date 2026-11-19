@@ -6,7 +6,7 @@ import {
   screen,
 } from '@testing-library/react-native';
 import { useState } from 'react';
-import { Keyboard, View } from 'react-native';
+import { Keyboard, TextInput, View } from 'react-native';
 
 import {
   InPlaceField,
@@ -600,6 +600,71 @@ describe('InPlaceField and the keyboard', () => {
     fireEvent.changeText(input, ' ');
     fireEvent(input, 'submitEditing');
     expect(screen.getByTestId('txn.merchant.input')).toBeTruthy();
+  });
+});
+
+describe('InPlaceField and Android focus', () => {
+  type Input = { props: { testID?: string; autoFocus?: boolean; onBlur?: () => void } };
+  let focused: Input | null;
+  let mounted: Input[];
+  let focusMoves: (string | undefined)[];
+
+  // Android, when a focused input leaves the screen, focuses the next one and keeps the keyboard up.
+  beforeEach(() => {
+    focused = null;
+    mounted = [];
+    focusMoves = [];
+    const proto = TextInput.prototype as unknown as Record<string, unknown>;
+    proto.componentDidMount = function (this: Input) {
+      mounted.push(this);
+      if (this.props.autoFocus) focused = this;
+    };
+    proto.componentWillUnmount = function (this: Input) {
+      mounted = mounted.filter((input) => input !== this);
+      if (focused !== this) return;
+      focused = mounted[0] ?? null;
+      focusMoves.push(focused?.props.testID);
+    };
+    jest.spyOn(TextInput.prototype, 'isFocused').mockImplementation(function (this: Input) {
+      return focused === this;
+    });
+    jest.spyOn(TextInput.prototype, 'blur').mockImplementation(function (this: Input) {
+      if (focused !== this) return;
+      focused = null;
+      this.props.onBlur?.();
+    });
+  });
+  afterEach(() => {
+    const proto = TextInput.prototype as unknown as Record<string, unknown>;
+    delete proto.componentDidMount;
+    delete proto.componentWillUnmount;
+    jest.restoreAllMocks();
+  });
+
+  function WithNote() {
+    return (
+      <>
+        <Fields />
+        <TextInput testID={tid('txn', 'note')} />
+      </>
+    );
+  }
+
+  it('leaves no field focused after a save, so the keyboard does not move to Note', () => {
+    render(<WithNote />);
+    fireEvent.press(screen.getByTestId('txn.amount.edit'));
+    fireEvent.changeText(screen.getByTestId('txn.amount.input'), '18.20');
+    fireEvent.press(screen.getByTestId('txn.amount.save'));
+    expect(focusMoves).toEqual([]);
+    expect(focused).toBeNull();
+  });
+
+  it('leaves no field focused after a cancel', () => {
+    render(<WithNote />);
+    fireEvent.press(screen.getByTestId('txn.merchant.edit'));
+    fireEvent.press(screen.getByTestId('txn.merchant.cancel'));
+    expect(focusMoves).toEqual([]);
+    expect(focused).toBeNull();
   });
 });
 
