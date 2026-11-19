@@ -2,11 +2,11 @@
 
 ## Sub-features
 
-The public page `/delete-account` (the Play listing's deletion link): signed out it lists what is deleted, says it can't be undone, emails a sign-in link back to itself (Email me a link) and links to Sign in with `next=/delete-account`; signed in it is the deletion flow. Settings › Delete your account (`/settings/delete-account`) is the same flow inside the shell. Both end on `/delete-account/done`, outside the app.
+The public page `/delete-account` (the Play listing's deletion link): signed out it lists what is deleted, says it can't be undone, emails a sign-in link back to itself (Email me a link) and links to Sign in with `next=/delete-account`; signed in it is the deletion flow. Settings › Profile › Delete your account opens the same flow as a confirm dialog with one line on what goes; it opens on the DELETE field, keeps Tab inside, and Esc, a click outside or Cancel hand focus back to the row. Both end on `/delete-account/done`, outside the app.
 
 ## How to get to it (user POV)
 
-Settings, then the last row, Delete your account, in Over red. Or open `/delete-account` from the store listing.
+Settings › Profile, then the last row, Delete your account, in Over red. Or open `/delete-account` from the store listing.
 
 ## Driving it with Playwright
 
@@ -19,4 +19,4 @@ Settings, then the last row, Delete your account, in Over red. Or open `/delete-
 
 - Never let a click reach the real `delete-account` for the e2e user: every context that can press Delete my account calls `stubDeletion` first. `supabase/functions/_check/live-check.mjs` deletes a throwaway user for real.
 - The logout stub matters too: a real global sign-out would end the e2e user's other sessions, including the storage state later checks reuse.
-- Signed in, the note's Export data downloads the Moni export (issue #70) once the store has pulled; the public page mounts `StoreSync` for it. Signed out, the page says to sign in or use the phone. `settings.mjs` checks the download from `/settings/delete-account`.
+- Signed in, the note's Export data downloads the Moni export (issue #70) once the store has pulled; the public page mounts `StoreSync` for it. Signed out, the page says to sign in or use the phone. `settings.mjs` checks the download from the dialog on `/settings/profile`.

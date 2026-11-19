@@ -2,7 +2,7 @@
 
 ## Sub-features
 
-The section nav (`/settings`, then `/settings/profile`, `/settings/ai`, `/settings/merchants`, `/settings/import`; `/settings/delete-account` marks Profile). Profile: name and email read-only, Theme, Moni's tone, Sign out, Delete your account. Moni's AI: Let Moni use AI and four per-use switches. Merchant names: All, To name, Named, search, sort, 25 a page, a name edited in its cell, Moni's guess, ticks with the Ink bulk bar (Rename, Use Moni's guess, Forget names). Import and export: Choose a file, Match columns beside the live preview, Check the file, Add with progress and Undo, and Export data. Under 700 wide `/settings` is the phone's Profile rows and each section a pushed page; CSV matching and ticks are desktop only there.
+The section nav (`/settings`, then `/settings/profile`, `/settings/ai`, `/settings/merchants`, `/settings/import`). Profile: name and email read-only, Theme, Moni's tone, Sign out, Delete your account, which opens a confirm dialog. Moni's AI: Let Moni use AI and four per-use switches. Merchant names: All, To name, Named, search, sort, 25 a page, a name edited in its cell, Moni's guess, ticks with the Ink bulk bar (Rename, Use Moni's guess, Forget names). Import and export: Choose a file, Match columns beside the live preview, Check the file, Add with progress and Undo, and Export data. Under 700 wide `/settings` is the phone's Profile rows and each section a pushed page; CSV matching and ticks are desktop only there.
 
 ## How to get to it (user POV)
 
