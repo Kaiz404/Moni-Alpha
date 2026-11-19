@@ -19,7 +19,7 @@ The client for the Go AI gateway (`apps/backend`), shared by the phone and the w
 
 ## Adapters
 
-The web has no AI screen yet; its column is the plan for web Moni chat (phase 7 in `docs/web/PLAN.md`).
+The web uses it for Moni chat (`apps/web/src/lib/ai.ts`, `apps/web/src/components/chat/ask.ts`).
 
 | | Phone | Web |
 | --- | --- | --- |
