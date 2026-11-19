@@ -25,7 +25,10 @@ node apps/web/scripts/verify/drive.mjs --no-build          # reuse the last .nex
 node apps/web/scripts/verify/drive.mjs --dev               # next dev instead of build + start
 node apps/web/scripts/verify/drive.mjs --skip-qr           # leave out the real QR sign-in
 node apps/web/scripts/verify/drive.mjs --out <dir>         # screenshots elsewhere
+node apps/web/scripts/verify/drive.mjs --dev --only ledger # sign in, then only these parts
 ```
+
+Parts for `--only` (comma-separated): `auth`, `qr`, `routes`, `delete`, `motion`, `keys`, `resize`, `ledger` (Home, Activity, Budget and Debts against the seed). Sign-in always runs.
 
 It builds with the dev project's keys from `.env.e2e` (never `apps/web/.env`, so a run can't hit another project) and `NEXT_PUBLIC_MONI_APP_SCHEME=moni-e2e`, starts `next start` on a free port on 127.0.0.1, and kills only the server it started, also when a check throws. Each check prints `PASS <what>` or `FAIL <what> (<detail>)`. The last line is `web-verify PASS (<n> checks)` or `web-verify FAIL: <k> of <n> checks`; the exit code matches. Paste that line in the report. The password is never printed.
 
@@ -42,13 +45,14 @@ The feature map in [`features/`](features/README.md) says how each part is reach
 5. Keys at 1440: Ctrl K, typing, Enter, `/`, Esc, `?`, G then D, Tab from the palette into Moni chat, the theme switch toast with Undo, Ctrl Z, and the account menu.
 6. At 1024 it opens Add, types into it, resizes to 390 and back, and asserts the route, the text and the same DOM element survive.
 7. Home and Activity against the e2e seed (`scripts/verify/ledger-screens.mjs`), with the clock pinned to 3 pm on the seed's day: Home's spent figure, Recent's first row and the review count equal what the rows read over REST say; the tooltip follows the pointer; P and D; Customise hides, swaps, survives a reload and resets; Activity's total and 25-row page, sorting in the URL, J and K through the docked pane, X and the bulk bar, Esc in order, the right-click menu and ⋯, a category edited in its cell and undone with Ctrl Z, List kept across a reload, a half-typed cell surviving 700 and back, and the phone's pushed detail. Each screen at the four widths in both themes, with pairs against W2-Home, W2-Activity and W2-Responsive.
-8. Delete your account at 1440 and 390 in both themes: `/delete-account` signed out (and, once, Email me a link), then signed in on `/delete-account` and `/settings/delete-account` before and after typing DELETE, then Delete my account against a stubbed `delete-account` through to the done page. No check deletes the e2e user.
+8. Budget and Debts (`scripts/verify/budget-debts.mjs`): both screens at each width in both themes with a row's pane open, the numbers against the e2e user's rows (`seed.mjs --query budgets`, `debts`, `debt-activities`), a budget edited, cleared and copied and each undone with Ctrl Z, a repayment and a new debt recorded and undone, J, K, E, R, D, Esc, G then D, reduced motion on the pane, and the 700 crossing with a half-typed budget and repayment.
+9. Delete your account at 1440 and 390 in both themes: `/delete-account` signed out (and, once, Email me a link), then signed in on `/delete-account` and `/settings/delete-account` before and after typing DELETE, then Delete my account against a stubbed `delete-account` through to the done page. No check deletes the e2e user.
 
 Only the QR step calls `qr-start` for real. `qr-start` allows 10 live requests per address for 10 minutes, so every other page that shows the QR gets a stubbed code (`stubQr`). Opening `/login` by hand at 1024 wide or more uses one request each time. If the QR step fails with "Too many sign-in codes", wait 10 minutes; another lane on this machine may be using the same allowance.
 
 ## Evidence
 
-Screenshots go to `~/.local/share/moni-canvas/web-r1/renders/app/<commit>[-dirty]/`, beside the board renders: `<route>-<width>-<light|dark>.png`, the auth states, the palette, shortcuts, account menu, Moni chat, toast and Add before and after the resize. `pairs/` holds the board render on the left and the app on the right, at the same height, for the screens a board draws (W2-Auth's states, and Home at each width against W2-Home for the shell's chrome). Open every pair and list each difference in the report. A difference the change intends is fine; say which. Cleanup never deletes this folder.
+Screenshots go to `~/.local/share/moni-canvas/web-r1/renders/app/<commit>[-dirty]/`, beside the board renders: `<route>-<width>-<light|dark>.png`, the auth states, the palette, shortcuts, account menu, Moni chat, toast and Add before and after the resize. `pairs/` holds the board render on the left and the app on the right, at the same height, for the screens a board draws (W2-Auth's states, Home at each width against W2-Home for the shell's chrome, and W2-Budget and W2-Debts at 1440 with a pane open). Open every pair and list each difference in the report. A difference the change intends is fine; say which. Cleanup never deletes this folder.
 
 ## Extending it
 

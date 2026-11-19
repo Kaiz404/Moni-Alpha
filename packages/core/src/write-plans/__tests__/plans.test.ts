@@ -7,6 +7,8 @@ import {
   planDebt,
   planDebtActivity,
   planDebtActivityDelete,
+  planDebtDelete,
+  planDebtEdit,
   planDebtMirrorRepair,
   planDebtStatus,
 } from '../debts';
@@ -457,6 +459,40 @@ describe('debt plans', () => {
     expect(planDebtStatus('debt-1', settled, context())).toEqual({
       kind: 'writes',
       writes: { insert: [], patch: [], softDelete: [] },
+      result: null,
+    });
+  });
+
+  it('edits only the fields it is given, and refuses an empty name', () => {
+    expect(planDebtEdit(DEBT, { dueDate: '2026-11-30' }, context())).toEqual({
+      kind: 'writes',
+      writes: { insert: [], patch: [{ table: 'debts', id: 'debt-1', patch: { due_date: '2026-11-30', updated_at: NOW } }], softDelete: [] },
+      result: null,
+    });
+    expect(planDebtEdit(DEBT, {}, context())).toEqual({ kind: 'writes', writes: { insert: [], patch: [], softDelete: [] }, result: null });
+    expect(planDebtEdit(DEBT, { counterpartyName: '  ' }, context())).toEqual({ kind: 'error', message: 'Enter a person’s name' });
+  });
+
+  it('removes a whole debt with every activity and its cash, leaving other debts alone', () => {
+    const ledger = view({
+      debtActivitiesById: {
+        a1: activity('a1', 'principal', 10000),
+        a2: activity('a2', 'write_off', 10000, { cashTransactionId: null, activityDate: '2026-10-02T00:00:00.000Z' }),
+        b1: activity('b1', 'principal', 500, { debtId: 'debt-2' }),
+      },
+    });
+    expect(planDebtDelete(DEBT, ledger, context())).toEqual({
+      kind: 'writes',
+      writes: {
+        insert: [],
+        patch: [],
+        softDelete: [
+          { table: 'debt_activities', id: 'a2', at: NOW },
+          { table: 'transactions', id: 'cash-a1', at: NOW },
+          { table: 'debt_activities', id: 'a1', at: NOW },
+          { table: 'debts', id: 'debt-1', at: NOW },
+        ],
+      },
       result: null,
     });
   });

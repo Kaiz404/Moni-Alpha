@@ -980,12 +980,6 @@ html[data-layout='phone'] .icon-round-line {
   font-weight: 700;
 }
 
-.pane-fields {
-  margin: 8px 0 0;
-  display: flex;
-  flex-direction: column;
-}
-
 .pane-field {
   display: flex;
   align-items: center;

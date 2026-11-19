@@ -683,11 +683,7 @@ html[data-layout='phone'] .edit-hint {
   display: none;
 }
 
-html[data-layout='phone'] .desk-nav-group {
-  display: contents;
-}
-
-.phone-back {
+html[data-layout='phone'] .phone-back {
   display: inline-flex;
 }
 

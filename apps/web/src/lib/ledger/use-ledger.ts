@@ -54,6 +54,8 @@ export type Ledger = {
   waiting: FinanceProposal[];
   /** Budget rows as stored, soft-deleted ones included, for the budget plans. */
   budgetRows: BudgetRow[];
+  /** The wallet the profile picks for new entries, if any. */
+  defaultWalletId: string | null;
 };
 
 const EMPTY: Record<string, never> = {};
@@ -78,6 +80,7 @@ function useTables() {
       overrides: copy(store.recurringOverrides$),
       aliases: copy(store.merchantAliases$),
       monthlyBudget: store.profilePreferences$.get()?.monthly_budget ?? null,
+      defaultWalletId: store.profilePreferences$.get()?.default_wallet_id ?? null,
     };
   });
 }
@@ -170,6 +173,7 @@ export function useLedger(): Ledger {
       month: buildMoneyMonth(money, { month: calendar.monthKey(now), currency, now, calendar }),
       waiting: pendingProposals(projection.proposalsById, user.id).filter((proposal) => isAwaitingReview(proposal, now)),
       budgetRows: Object.values(tables?.budgets ?? EMPTY).filter(Boolean) as BudgetRow[],
+      defaultWalletId: tables?.defaultWalletId ?? null,
     };
   }, [tables, clock, calendar, currency, user.id]);
 }
