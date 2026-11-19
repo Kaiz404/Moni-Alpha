@@ -16,7 +16,6 @@ import { Mascot } from '@/components/brand/mascot';
 import { Button } from '@/components/ui/button';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Page } from '@/components/ui/page';
-import { StatusPill } from '@/components/ui/status-pill';
 import { Text } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { tid } from '@/lib/test-ids';
@@ -168,12 +167,6 @@ export function SayDenied({ onTurnOn }: { onTurnOn: () => void }) {
             "Turn on microphone access to say a transaction. Speech becomes text on this phone, and the recording isn't kept."
           }
         </Text>
-        <StatusPill
-          tone="near"
-          size="compact"
-          align="center"
-          label="Microphone is off for Moni"
-        />
       </View>
       <View className="gap-2.5 px-5 pb-3">
         <Button

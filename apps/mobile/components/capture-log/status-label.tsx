@@ -1,6 +1,6 @@
 import type { CapturedNotificationStatus } from '@repo/types';
 
-import { StatusPill, type StatusTone } from '@/components/ui/status-pill';
+import { StatusText, type StatusTone } from '@/components/ui/status-text';
 import { CAPTURE_STATUS_LABELS } from '@/lib/notifications/capture-log';
 
 const TONES: Record<CapturedNotificationStatus, StatusTone> = {
@@ -15,12 +15,11 @@ const TONES: Record<CapturedNotificationStatus, StatusTone> = {
   ignored: 'quiet',
 };
 
-/** The capture log's compact status pill; one tone per glossary status. */
-export function CaptureStatusPill({ status }: { status: CapturedNotificationStatus }) {
+/** The capture log's status, one colour per glossary status. */
+export function CaptureStatusLabel({ status }: { status: CapturedNotificationStatus }) {
   return (
-    <StatusPill
+    <StatusText
       tone={TONES[status]}
-      size="compact"
       label={CAPTURE_STATUS_LABELS[status]}
     />
   );

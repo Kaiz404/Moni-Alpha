@@ -148,10 +148,6 @@ function CaptureRow({
           radius={{ rest: 16, pressed: 12 }}
           className={`h-8 flex-row items-center gap-1.5 px-2.5 ${settled.kind === 'approved' ? 'bg-primary-muted' : 'bg-sand'}`}
         >
-          <View
-            className="h-1.5 w-1.5 rounded-full"
-            style={{ backgroundColor: settled.kind === 'approved' ? tokens.states.approved : tokens.ink2 }}
-          />
           <Text
             className="text-[12px] leading-[16px] font-display-bold"
             style={{ color: settled.kind === 'approved' ? tokens.states.approved : tokens.ink2 }}

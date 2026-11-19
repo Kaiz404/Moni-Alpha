@@ -256,7 +256,7 @@ describe('the failed page', () => {
       />,
     );
     expect(screen.getByText('“paid 12 ringgit at kedai abc”')).toBeTruthy();
-    expect(screen.getByText("Couldn't reach Moni")).toBeTruthy();
+    expect(screen.getByText("Moni can't read it right now")).toBeTruthy();
     expect(
       screen.getByText(
         'Moni kept what you said. Try again, or keep it and it goes to Review once Moni reads it. Nothing was added.',

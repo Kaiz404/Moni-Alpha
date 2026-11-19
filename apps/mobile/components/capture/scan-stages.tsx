@@ -10,7 +10,6 @@ import {
   type IconSymbolName,
 } from '@/components/ui/icon-symbol';
 import { Page } from '@/components/ui/page';
-import { StatusPill } from '@/components/ui/status-pill';
 import { Text } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import type { ReadFailure } from '@repo/core';
@@ -151,16 +150,6 @@ export function CaptureFailed({
               {`“${quote.text}”`}
             </Text>
           ) : null}
-          <StatusPill
-            tone="near"
-            size="compact"
-            align="center"
-            label={
-              unavailable
-                ? "Couldn't reach Moni"
-                : "Couldn't read it"
-            }
-          />
           <Text
             variant="screenTitle"
             className="text-center text-foreground"

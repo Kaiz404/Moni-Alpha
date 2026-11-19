@@ -136,7 +136,6 @@ function DecisionBody({
             <StatusPill
               tone="auto"
               label="Not mine"
-              variant="inline"
             />
           ) : null}
           <Text

@@ -4,7 +4,6 @@ import { View } from 'react-native';
 import { MoniGlyph } from '@/components/brand/mascot';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Press } from '@/components/ui/press';
-import { StatusPill } from '@/components/ui/status-pill';
 import { Text } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { tid } from '@/lib/test-ids';
@@ -53,11 +52,12 @@ export function PlaceHero({
       </Text>
       <View className="mt-2 flex-row flex-wrap items-center gap-2">
         {top ? (
-          <StatusPill
-            tone="review"
-            size="small"
-            label="Your top place"
-          />
+          <Text
+            variant="body"
+            className="font-display-bold text-foreground"
+          >
+            Your top place
+          </Text>
         ) : null}
         <Text
           variant="body"

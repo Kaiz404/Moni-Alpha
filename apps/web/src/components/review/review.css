@@ -142,35 +142,18 @@ html[data-layout='phone'] .drawer-head .icon-round {
 }
 
 .tone-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  height: 24px;
-  padding: 0 10px;
-  border-radius: 9999px;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 700;
   white-space: nowrap;
-  background: var(--color-block-mint);
-  color: var(--color-on-mint);
-}
-
-.tone-pill::before {
-  content: '';
-  width: 6px;
-  height: 6px;
-  border-radius: 9999px;
-  background: currentColor;
+  color: var(--color-state-approved);
 }
 
 .tone-pill[data-tone='near'] {
-  background: var(--color-block-lemon);
-  color: var(--color-on-lemon);
+  color: var(--color-state-attention);
 }
 
 .tone-pill[data-tone='review'] {
-  background: var(--color-block-lilac);
-  color: var(--color-on-lilac);
+  color: var(--color-state-pending);
 }
 
 .inbox-empty {

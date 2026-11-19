@@ -1,5 +1,5 @@
 # C1 duplicate: typing an amount and shop already saved or waiting in the last
-# three days opens "Looks like a duplicate" with its three ways on.
+# three days opens the Already in Review or Already added sheet with its three ways on.
 # Needs the default seed, which holds RM23.40 at GRAB*FOOD from yesterday.
 # Run: scripts/device/run-flows.sh .maestro/flows/capture/type-duplicate.yaml
 appId: com.anonymous.moni.e2e
@@ -27,7 +27,7 @@ tags:
 - hideKeyboard
 - tapOn:
     id: capture.submit
-- assertVisible: Looks like a duplicate
+- assertVisible: Already (in Review|added)
 - assertVisible:
     id: capture.duplicate.row
 - assertVisible:
@@ -41,7 +41,8 @@ tags:
 # Change the amount clears it and keeps the page.
 - tapOn:
     id: capture.duplicate.change-amount
-- assertNotVisible: Looks like a duplicate
+- assertNotVisible:
+    id: capture.duplicate.row
 - assertVisible: −RM0
 
 # Add mine anyway saves the second row.

@@ -136,13 +136,11 @@ export function TransactionRowBody({
             <StatusPill
               tone="review"
               label="To review"
-              variant="inline"
             />
           ) : row.autoAdded ? (
             <StatusPill
               tone="auto"
               label="Auto"
-              variant="inline"
             />
           ) : null}
           {row.kind === 'transfer' ? (

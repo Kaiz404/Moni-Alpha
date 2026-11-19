@@ -1,7 +1,7 @@
 import { Image } from 'expo-image';
 import { View } from 'react-native';
 
-import { CaptureStatusPill } from '@/components/capture-log/status-pill';
+import { CaptureStatusLabel } from '@/components/capture-log/status-label';
 import { useAppIcon } from '@/components/wallets/notification-source';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Press } from '@/components/ui/press';
@@ -73,7 +73,7 @@ export function LogEntry({
         ) : null}
         <View className="mt-0.5 flex-row items-start gap-2">
           <View className="min-w-0 flex-1 flex-row flex-wrap items-center gap-x-2.5 gap-y-1">
-            <CaptureStatusPill status={item.status} />
+            <CaptureStatusLabel status={item.status} />
             {action ? (
               <Press
                 testID={action.testID}

@@ -28,7 +28,6 @@ tags:
     visible: Moni can't read it right now
     timeout: 20000
 - assertVisible: .*coffee.*
-- assertVisible: Couldn't reach Moni
 - assertVisible: Moni kept what you said.*
 - takeScreenshot: y5-say-unavailable
 

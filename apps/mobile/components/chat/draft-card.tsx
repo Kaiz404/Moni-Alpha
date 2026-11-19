@@ -288,21 +288,13 @@ export function DraftCard({ message }: { message: DraftMessage }) {
       ) : null}
 
       {afterMinor !== null && category ? (
-        <View
-          className={`min-h-7 flex-row items-center gap-1.5 self-start rounded-full px-3 py-1 ${afterMinor < 0 ? 'bg-destructive-fill' : 'bg-sand'}`}
+        <Text
+          variant="meta"
+          className="font-display-semibold"
+          style={{ color: afterMinor < 0 ? tokens.states.destructive : tokens.ink2 }}
         >
-          <View
-            className="h-1.5 w-1.5 rounded-full"
-            style={{ backgroundColor: afterMinor < 0 ? tokens.states.destructive : tokens.ink2 }}
-          />
-          <Text
-            variant="meta"
-            className="font-display-semibold"
-            style={{ color: afterMinor < 0 ? tokens.states.destructive : tokens.ink2 }}
-          >
-            {`${category.name}: ${formatMoney(Math.abs(afterMinor), currency, { whole: true })} ${afterMinor < 0 ? 'over' : 'left'} after this`}
-          </Text>
-        </View>
+          {`${category.name}: ${formatMoney(Math.abs(afterMinor), currency, { whole: true })} ${afterMinor < 0 ? 'over' : 'left'} after this`}
+        </Text>
       ) : null}
 
       <View className="flex-row gap-2">

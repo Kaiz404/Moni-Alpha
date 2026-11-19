@@ -4,7 +4,6 @@ import { BackHandler, View } from 'react-native';
 import { Button } from '@/components/ui/button';
 import { Press } from '@/components/ui/press';
 import { Sheet, SheetRows } from '@/components/ui/sheet/sheet';
-import { StatusPill } from '@/components/ui/status-pill';
 import { Text } from '@/components/ui/text';
 import {
   TransactionRowBody,
@@ -77,18 +76,12 @@ export function DuplicateSheet({
       closeLabel="Close"
     >
       <View className="gap-3.5">
-        <View className="gap-2 px-1">
-          <StatusPill
-            tone="near"
-            label="Looks like a duplicate"
-          />
-          <Text
-            variant="body"
-            className="text-foreground"
-          >
-            {hit.message}
-          </Text>
-        </View>
+        <Text
+          variant="body"
+          className="px-1 text-foreground"
+        >
+          {hit.message}
+        </Text>
         <SheetRows>
           <Press
             testID={tid('capture', 'duplicate', 'row')}

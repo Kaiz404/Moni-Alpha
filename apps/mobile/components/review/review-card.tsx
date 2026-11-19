@@ -5,7 +5,7 @@ import { useWindowDimensions, View, type AccessibilityActionEvent } from 'react-
 import { MoniGlyph } from '@/components/brand/mascot';
 import { FieldRow, FieldRows } from '@/components/review/field-row';
 import type { ChipLook } from '@/components/review/picker-chip';
-import { SourcePill } from '@/components/review/source-pill';
+import { StatusText } from '@/components/ui/status-text';
 import { NotificationAppIcon, useAppIcon } from '@/components/wallets/notification-source';
 import { IconSymbol, type IconSymbolName } from '@/components/ui/icon-symbol';
 import { InPlaceField, InPlaceGroup } from '@/components/ui/in-place-field';
@@ -194,7 +194,7 @@ export const ReviewCard = memo(function ReviewCard({
           </Text>
         </View>
         {model.status ? (
-          <SourcePill
+          <StatusText
             tone={model.status.tone}
             label={model.status.label}
           />

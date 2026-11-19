@@ -61,7 +61,7 @@ Known breaks are listed in `taste-allow.txt`, each with an open issue. The list 
 **6. No dot-and-label status chips.**
 - Do: say a status through the title, text weight, colour or an icon.
 - Don't: use a capsule with a coloured dot and a label ("• Looks like a duplicate", "• RM500 unassigned").
-- Example: #85 (in flight) removes `StatusPill` `standalone`.
+- Example: the duplicate sheet's "• Looks like a duplicate" chip went, since the title says it, and Edit budgets' "• RM500 unassigned" became coloured bold text (#85). `StatusText` says a status in its tone's colour and weight. `StatusPill` is now only the 20-tall meta pill (Auto, To review, Not mine) with no dot and no `standalone` variant, so the type check refuses a chip. The web's `tone-pill` is coloured text.
 - Owner: "the chip looks very sloppy"
 
 ## Layout

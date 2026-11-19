@@ -24,7 +24,6 @@ onFlowComplete:
     text: (?i)(don.t allow|deny)
     optional: true
 - assertVisible: Moni can't hear you yet
-- assertVisible: Microphone is off for Moni
 - assertVisible:
     id: capture.turn-on-mic
 - takeScreenshot: c2-l6-denied

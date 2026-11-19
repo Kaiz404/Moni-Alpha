@@ -2,7 +2,7 @@ import { useCallback } from 'react';
 import { View } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 
-import { CaptureStatusPill } from '@/components/capture-log/status-pill';
+import { CaptureStatusLabel } from '@/components/capture-log/status-label';
 import { ListCard } from '@/components/ui/list-card';
 import { Page, PageScroll } from '@/components/ui/page';
 import { Text } from '@/components/ui/text';
@@ -94,7 +94,7 @@ export default function DebugPage() {
                     {item.text ? (
                       <Text className="text-[14px] leading-[20px] text-ink-2">{item.text}</Text>
                     ) : null}
-                    <CaptureStatusPill status={item.status} />
+                    <CaptureStatusLabel status={item.status} />
                   </View>
                 ))}
               </ListCard>

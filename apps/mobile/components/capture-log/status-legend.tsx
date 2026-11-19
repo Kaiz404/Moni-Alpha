@@ -1,7 +1,7 @@
 import type { CapturedNotificationStatus } from '@repo/types';
 import { View } from 'react-native';
 
-import { CaptureStatusPill } from '@/components/capture-log/status-pill';
+import { CaptureStatusLabel } from '@/components/capture-log/status-label';
 import { ListCard } from '@/components/ui/list-card';
 import { Text } from '@/components/ui/text';
 import { CAPTURE_STATUS_ORDER } from '@/lib/notifications/capture-log';
@@ -35,7 +35,7 @@ export function StatusLegend() {
             accessible
             className="items-start gap-1 px-[18px] py-2.5"
           >
-            <CaptureStatusPill status={status} />
+            <CaptureStatusLabel status={status} />
             <Text className="text-[14px] leading-[20px] text-ink-2">{MEANING[status]}</Text>
           </View>
         ))}
