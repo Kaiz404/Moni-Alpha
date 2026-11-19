@@ -21,7 +21,7 @@ import {
 } from '@/lib/supabase/proposed-transactions';
 import { tid } from '@/lib/test-ids';
 import { type TransactionRowData } from '@/lib/transactions/row';
-import { transactionRow, type RowLookups } from '@repo/core';
+import { approvedRow, type RowLookups } from '@repo/core';
 import { compactWalletNames } from '@repo/core';
 import { merchantName, type FinanceTransaction, dayHeading, formatSignedMoney, type RejectedProposal, type ReviewedProposal } from '@repo/core';
 import { deviceCalendar } from '@/lib/dates/device-calendar';
@@ -48,19 +48,8 @@ export type HistoryGroup = { key: string; label: string; rows: HistoryRow[] };
 
 function historyRow(proposal: ReviewedProposal, lookups: Lookups, now: Date): HistoryRow {
   const meta = `${sourceLabel(proposalSource(proposal.sourceType))} · ${captureTime(proposal.transactionDate ?? proposal.createdAt, now)}`;
-  const transaction = proposal.transactionId
-    ? lookups.transactionsById[proposal.transactionId]
-    : undefined;
-  if (proposal.status === 'approved' && transaction) {
-    const named = { ...transaction, merchant: merchantName(transaction.merchant, lookups.aliases) };
-    return {
-      kind: 'approved',
-      id: proposal.id,
-      transactionId: transaction.id,
-      row: transactionRow(named, lookups),
-      meta,
-    };
-  }
+  const row = approvedRow(proposal, lookups.transactionsById, lookups);
+  if (row) return { kind: 'approved', id: proposal.id, transactionId: row.id, row, meta };
   const direction =
     proposal.type === 'income' ? 'income' : proposal.type === 'transfer' ? 'transfer' : 'expense';
   const shown = {

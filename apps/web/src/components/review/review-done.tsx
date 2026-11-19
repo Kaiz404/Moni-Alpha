@@ -1,6 +1,6 @@
 'use client';
 
-import { dayLabel, formatMoney, formatSignedMoney, planned, planReopen, type AutoAddRuleItem, type ReviewedProposal, type StoredRow } from '@repo/core';
+import { approvedRow, dayLabel, formatMoney, formatSignedMoney, planned, planReopen, type AutoAddRuleItem, type ReviewedProposal, type StoredRow } from '@repo/core';
 import Link from 'next/link';
 import { Cat } from '@/components/brand';
 import { Bubble, Glyph } from '@/components/ledger/glyph';
@@ -63,7 +63,8 @@ function RuleList({ rules, wallets }: { rules: AutoAddRuleItem[]; wallets: Ledge
 
 /** Recently reviewed: 30 days of Approve and Not mine, and Move back to Review for a Not mine. */
 export function RecentList({ ledger, onClose }: { ledger: Ledger; onClose?: () => void }) {
-  const { projection, calendar, now, walletNames } = ledger;
+  const { projection, calendar, now, walletNames, aliases } = ledger;
+  const lookups = { categoriesById: projection.categoriesById, walletNames, aliases };
   const today = calendar.dayKey(now);
   return (
     <div className="recent-list" id="recently-reviewed">
@@ -82,17 +83,19 @@ export function RecentList({ ledger, onClose }: { ledger: Ledger; onClose?: () =
         <ul className="recent-rows">
           {ledger.reviewed.map((proposal) => {
             const notMine = proposal.status === 'rejected';
-            const category = proposal.categoryId ? projection.categoriesById[proposal.categoryId] : undefined;
+            const proposed = proposal.categoryId ? projection.categoriesById[proposal.categoryId] : undefined;
+            const row = approvedRow(proposal, projection.transactionsById, lookups);
+            const category = row ? { name: row.category, icon: row.icon, color: row.color } : proposed;
             const day = calendar.dayKey(proposal.reviewedAt);
             const when = day === today ? clockTime(proposal.reviewedAt, calendar.zone) : dayLabel(day, today);
             const where = notMine
               ? captureSource(proposal)
-              : `${category?.name ?? 'No category'} · ${(proposal.walletId && walletNames[proposal.walletId]) || 'Wallet'}`;
+              : `${category?.name ?? 'No category'} · ${row?.wallet ?? ((proposal.walletId && walletNames[proposal.walletId]) || 'Wallet')}`;
             return (
               <li key={proposal.id} className="recent-row" data-status={proposal.status}>
                 {notMine ? <Bubble icon="close" color={null} size={36} glyph={18} /> : <Bubble icon={category?.icon} color={category?.color} size={36} glyph={18} />}
                 <span className="inbox-text">
-                  <b>{captureName(proposal)}</b>
+                  <b>{row?.title ?? captureName(proposal)}</b>
                   <span>
                     {notMine ? 'Not mine' : 'Approved'} · {where} · {when}
                   </span>

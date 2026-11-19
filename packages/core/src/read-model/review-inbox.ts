@@ -1,9 +1,10 @@
-import type { ProposedTransaction } from '@repo/types';
+import type { MerchantAlias, ProposedTransaction } from '@repo/types';
 
 import type { Calendar } from '../calendar';
 import { isFiled } from '../ledger';
 import { similarRule, USUAL_AFTER, type ReviewEdits } from '../write-plans/review';
-import { merchantKey } from './merchants';
+import { merchantKey, merchantName } from './merchants';
+import { transactionRow, type RowLookups, type TransactionRow } from './transaction-row';
 import type { FinanceTransaction } from './types';
 
 /** Recently reviewed reaches back this many days. */
@@ -44,6 +45,21 @@ export function reviewedLately(proposals: readonly ProposedTransaction[], now: D
   return reviewedProposals(proposals)
     .filter((proposal) => Date.parse(proposal.reviewedAt) >= since)
     .sort((a, b) => Date.parse(b.reviewedAt) - Date.parse(a.reviewedAt));
+}
+
+/**
+ * What an Approve row in Recently reviewed shows: the ledger row the approval created, read as it is now,
+ * so a category set by the routine match or changed after approval shows. Null for Not mine, or when that
+ * row has since been deleted.
+ */
+export function approvedRow(
+  proposal: ReviewedProposal,
+  transactionsById: Record<string, FinanceTransaction>,
+  lookups: RowLookups & { aliases: readonly Pick<MerchantAlias, 'rawKey' | 'displayName'>[] },
+): TransactionRow | null {
+  const transaction = proposal.status === 'approved' && proposal.transactionId ? transactionsById[proposal.transactionId] : undefined;
+  if (!transaction) return null;
+  return transactionRow({ ...transaction, merchant: merchantName(transaction.merchant, lookups.aliases) }, lookups);
 }
 
 function alertApp(metadata: Record<string, unknown>): string | null {

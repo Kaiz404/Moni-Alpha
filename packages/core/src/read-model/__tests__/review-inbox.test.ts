@@ -2,7 +2,7 @@ import type { MinorAmount, ProposedTransaction } from '@repo/types';
 import { describe, expect, it } from 'vitest';
 
 import { createCalendar } from '../../calendar';
-import { inboxOrder, merchantHistory, reviewedLately, reviewStatus, similarMatches } from '../review-inbox';
+import { approvedRow, inboxOrder, merchantHistory, reviewedLately, reviewStatus, similarMatches, type ReviewedProposal } from '../review-inbox';
 import type { FinanceTransaction } from '../types';
 
 const KL = createCalendar('Asia/Kuala_Lumpur');
@@ -152,5 +152,30 @@ describe('inboxOrder', () => {
       capture({ id: 'no-date', transactionDate: null, createdAt: '2026-10-14T04:50:00.000Z' }),
     ]);
     expect(order.map((proposal) => proposal.id)).toEqual(['grab', 'no-date', 'parking']);
+  });
+});
+
+describe('approvedRow', () => {
+  const lookups = {
+    categoriesById: { 'c-food': { name: 'Food & Dining', icon: 'silverware-fork-knife', color: '#FF7F70' } },
+    walletNames: { 'w-tng': "Touch 'n Go" },
+    aliases: [{ rawKey: 'grab food', displayName: 'GrabFood' }],
+  };
+  const approved = capture({ status: 'approved', reviewedAt: '2026-10-14T05:00:00.000Z', categoryId: null, transactionId: 't-1' }) as ReviewedProposal;
+  const ledger = { 't-1': row('t-1', '2026-10-14T04:41:00.000Z', { walletId: 'w-tng', amountMinor: 2340 as MinorAmount, description: null, transferToWalletId: null, autoAdded: true, balanceCorrection: false }) };
+
+  it('shows the category set on the ledger row when the capture had none', () => {
+    expect(approvedRow(approved, ledger, lookups)).toMatchObject({
+      title: 'GrabFood',
+      category: 'Food & Dining',
+      icon: 'silverware-fork-knife',
+      color: '#FF7F70',
+      wallet: "Touch 'n Go",
+    });
+  });
+
+  it('is null for Not mine and for a ledger row since deleted', () => {
+    expect(approvedRow({ ...approved, status: 'rejected' }, ledger, lookups)).toBeNull();
+    expect(approvedRow(approved, {}, lookups)).toBeNull();
   });
 });
