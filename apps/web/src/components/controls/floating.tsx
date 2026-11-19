@@ -10,6 +10,8 @@ import {
 import {
   intersect,
   placeFloating,
+  TYPE_AHEAD_MS,
+  typeAheadIndex,
   type Align,
   type Side,
 } from '@/lib/floating';
@@ -163,6 +165,30 @@ export function Floating({
     };
   }, [anchor, autoFocus]);
 
+  const typed = useRef({ text: '', at: 0 });
+  const typeAhead = (
+    event: KeyboardEvent<HTMLDivElement>,
+    rows: HTMLElement[],
+    at: number,
+  ) => {
+    const fresh = event.timeStamp - typed.current.at > TYPE_AHEAD_MS;
+    if (
+      event.key.length !== 1 ||
+      event.ctrlKey ||
+      event.metaKey ||
+      event.altKey ||
+      (event.key === ' ' && fresh)
+    )
+      return null;
+    const text = (fresh ? '' : typed.current.text) + event.key;
+    typed.current = { text, at: event.timeStamp };
+    const labels = rows.map(
+      (row) =>
+        (row.querySelector('.popover-row-text') ?? row).textContent ?? '',
+    );
+    return rows[typeAheadIndex(labels, at, text)] ?? null;
+  };
+
   const keys = (event: KeyboardEvent<HTMLDivElement>) => {
     // The screen's own keys (J, K, X, Enter) must not act on the rows behind an open popover.
     event.stopPropagation();
@@ -180,9 +206,16 @@ export function Floating({
       Home: 0,
       End: rows.length - 1,
     }[event.key];
-    if (next === undefined) return;
-    event.preventDefault();
-    rows[(next + rows.length) % rows.length]?.focus();
+    if (next !== undefined) {
+      event.preventDefault();
+      rows[(next + rows.length) % rows.length]?.focus();
+      return;
+    }
+    const match = typeAhead(event, rows, at);
+    if (match) {
+      event.preventDefault();
+      match.focus();
+    }
   };
 
   return (

@@ -376,6 +376,8 @@ try {
     (await page.evaluate(() => document.activeElement?.textContent?.trim())) === '1995' && !!list && !!chosen && chosen.y >= list.y && chosen.y + chosen.height <= list.y + list.height,
     { list, chosen },
   );
+  await page.keyboard.type('1981');
+  check('typing 1981 in Year moves to 1981, as a native select does', (await page.evaluate(() => document.activeElement?.textContent?.trim())) === '1981');
   await page.keyboard.press('Escape');
   check('Create account enables at 18 and over with the terms ticked', await page.locator('form button[type="submit"]').isEnabled());
   await pair('auth-register', 'r3/W2-Auth-register/W2-Auth.png', await shot(page, 'auth-register-1440'));
