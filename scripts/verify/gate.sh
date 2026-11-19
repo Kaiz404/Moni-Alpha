@@ -31,6 +31,7 @@ done
 check go-vet bash -c 'cd apps/backend && go vet ./...'
 if ! $fast; then
   check test pnpm turbo test --output-logs=errors-only
+  check verify-scripts node --test 'scripts/verify/**/*.test.mjs'
   check web-build pnpm --filter web build
 fi
 
