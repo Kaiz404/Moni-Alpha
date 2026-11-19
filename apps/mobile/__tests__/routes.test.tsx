@@ -25,7 +25,8 @@ import type { ReactTestInstance } from 'react-test-renderer';
 
 import { authMMKV } from '@/lib/mmkv/auth';
 import { dismissSheet } from '@/lib/sheet/sheet-store';
-import { clearStore } from '@/lib/store';
+import { clearStore, debts$ } from '@/lib/store';
+import { patchRow } from '@/lib/store/helpers';
 import { createTransaction, updateTransaction } from '@/lib/supabase/transactions';
 import { dismissToast, showToast } from '@/lib/toast/toast-store';
 import { tid } from '@/lib/test-ids';
@@ -764,4 +765,17 @@ describe('the debt page rows that act in place', () => {
 it('the new wallet form reads the starting balance with its currency', async () => {
   await mount('/wallet/new', { profile: 'full', theme: 'light' });
   expect(screen.getByTestId(tid('wallet', 'form', 'starting-balance')).props.accessibilityLabel).toBe('Starting balance in MYR');
+});
+
+it.each([
+  ['spaces round it', '  Penang trip  '],
+  ['nothing in it', ''],
+])('leaving a debt note untouched saves nothing when the stored note has %s', async (_label, stored) => {
+  await mount(`/debt/${id('debt', 'aiman')}`, { profile: 'full', theme: 'light' });
+  act(() => patchRow(debts$, id('debt', 'aiman'), { note: stored }));
+  await settle();
+  const note = screen.getByTestId(tid('debts', 'note'));
+  fireEvent(note, 'focus');
+  fireEvent(note, 'blur');
+  expect(screen.queryByText('Note saved')).toBeNull();
 });
