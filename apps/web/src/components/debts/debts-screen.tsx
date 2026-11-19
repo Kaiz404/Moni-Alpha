@@ -262,31 +262,23 @@ function DebtsLoaded({ ledger }: { ledger: Ledger }) {
                   </div>
                   {summary.comingUp.map(({ line, dueDate, daysLeft }) => {
                     const words = comingUpWords(line, daysLeft);
-                    const theyOwe = line.debt.direction === 'owed_to_me';
                     return (
                       <div key={line.debt.id} className="coming-row" data-debt={line.debt.id}>
-                        <span className="date-tile">
-                          <span className="caps">{weekdayShort(dueDate)}</span>
-                          <b className="num">{dayOfMonth(dueDate)}</b>
-                        </span>
-                        <span className="row-text">
-                          <b>{words.title}</b>
-                          <span className={daysLeft < 0 ? 'tone-over' : undefined}>{words.meta}</span>
-                        </span>
-                        {theyOwe ? (
-                          reminded.has(line.debt.id) ? (
-                            <span className="reminded">
-                              <Glyph name="check" size={18} />
-                              Reminded today
-                            </span>
-                          ) : (
-                            <button type="button" className="btn btn-paper press" onClick={() => void remind(line)}>
-                              <Glyph name="send-outline" size={18} />
-                              Remind<span className="remind-name"> {line.debt.counterpartyName}</span>
-                            </button>
-                          )
-                        ) : (
-                          <button type="button" className="btn btn-ink press" onClick={() => startRepay(line)}>
+                        <button type="button" className="coming-open press" aria-current={selectedId === line.debt.id || undefined} onClick={() => select(line.debt.id)}>
+                          <span className="date-tile">
+                            <span className="caps">{weekdayShort(dueDate)}</span>
+                            <b className="num">{dayOfMonth(dueDate)}</b>
+                          </span>
+                          <span className="row-text">
+                            <b>{words.title}</b>
+                            <span className={daysLeft < 0 ? 'tone-over' : undefined}>{words.meta}</span>
+                          </span>
+                          <span className="coming-chevron" data-only="phone rail-one-column">
+                            <Glyph name="chevron-right" />
+                          </span>
+                        </button>
+                        {line.debt.direction === 'i_owe' && (
+                          <button type="button" className="btn btn-ink press" data-only="rail sidebar" onClick={() => startRepay(line)}>
                             Pay
                           </button>
                         )}

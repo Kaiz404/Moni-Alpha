@@ -99,7 +99,7 @@ The app builds the default for each. [`redesign/PLAN.md`](redesign/PLAN.md) ("Op
 - D2. Budgets show as rings on the Budget tab.
 - D3. No reactions and no logging streak. The brand (Cat Pebble, the wordmark, the icons) was locked on 18 Nov 2026 and is in the app, except onboarding, which the owner has not designed yet.
 - D4. Decided 16 Nov 2026: Home keeps the ask box only; the Moni header button is gone from Home and Activity.
-- D5. Debts hero tiles filter in place; Remind opens the Android share sheet.
+- D5. Debts hero tiles filter in place; Remind, on the debt page only (Coming up rows carry no buttons since #87), opens the Android share sheet.
 - D6. Decided 25 Oct 2026: Review keeps its history. "Recently reviewed" lists 30 days; rows older than 90 days are soft-deleted.
 - D7. Superseded by the owner on 1 Nov 2026: the next card shows real content under the top card, hidden until the top card moves.
 - D8. Motion has six tokens: five springs and `drag`.
