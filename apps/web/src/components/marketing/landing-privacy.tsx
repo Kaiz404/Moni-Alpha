@@ -19,7 +19,7 @@ const FACTS: readonly { title: string; body: ReactNode }[] = [
   },
   {
     title: 'Leave whenever you like.',
-    body: 'Export your transactions as a CSV file from the app, or delete your account and everything in it, from the app or the web.',
+    body: 'Export your transactions as a CSV file, or delete your account and everything in it, from the app or the web.',
   },
 ];
 
