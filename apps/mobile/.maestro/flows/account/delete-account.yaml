@@ -31,9 +31,13 @@ tags:
 - tapOn:
     id: profile.delete.confirm
 - inputText: DELET
+# The keyboard covers the button.
+- hideKeyboard
 - assertVisible:
     id: profile.delete.submit
     enabled: false
+- tapOn:
+    id: profile.delete.confirm
 - eraseText: 5
 - inputText: delete
 - hideKeyboard
