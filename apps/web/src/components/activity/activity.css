@@ -653,7 +653,8 @@ html[data-layout='rail'] .shell[data-pane='chat'] .activity-days {
 /* A docked pane, the row's or Moni chat's, leaves the rail too narrow for the table and the sidebar
    without room for Source. */
 html[data-layout='rail'] .activity[data-pane-open] .activity-table,
-html[data-layout='rail'] .shell[data-pane='chat'] .activity-table {
+html[data-layout='rail'] .shell[data-pane='chat'] .activity-table,
+html[data-layout='rail'] .shell[data-pane='chat'] .toggle-lg {
   display: none !important;
 }
 

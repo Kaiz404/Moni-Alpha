@@ -568,6 +568,15 @@
   line-height: 16px;
 }
 
+/* ---------- the page beside it ---------- */
+
+/* Docked chat narrows the page; the command field gives way before the title does. */
+.shell[data-pane='chat'] .cmd-field {
+  flex: 0 1 340px;
+  width: auto;
+  min-width: 160px;
+}
+
 /* ---------- Moni chat uses AI ---------- */
 
 .chat-consent-scrim {
