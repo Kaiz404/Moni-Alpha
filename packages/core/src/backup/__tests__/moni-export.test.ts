@@ -1,5 +1,10 @@
-import { parseCsv, readTextCell, textCell, valueCell, detectDelimiter } from '@/lib/backup/csv';
-import { buildMoniExport, exportFileName, type BackupTables } from '@/lib/backup/moni-export';
+import { describe, expect, it } from 'vitest';
+
+import { createCalendar } from '../../calendar';
+import { parseCsv, readTextCell, textCell, valueCell, detectDelimiter, type CsvRow } from '../csv';
+import { buildMoniExport, exportFileName, type BackupTables } from '../moni-export';
+
+const KL = createCalendar('Asia/Kuala_Lumpur');
 
 const WALLET = '11111111-1111-4111-8111-111111111111';
 const FOOD = '22222222-2222-4222-8222-222222222222';
@@ -25,7 +30,7 @@ function section(csv: string, title: string): string[] {
 
 describe('buildMoniExport', () => {
   it('starts with a byte order mark and a line naming the format and account', () => {
-    const csv = buildMoniExport(EMPTY, 'kai', NOW);
+    const csv = buildMoniExport(EMPTY, 'kai', NOW, KL);
     expect(csv.charCodeAt(0)).toBe(0xfeff);
     expect(csv.slice(1).split('\n')[0]).toBe('Moni export,1,kai,2026-10-14T06:00:00.000Z');
   });
@@ -54,8 +59,9 @@ describe('buildMoniExport', () => {
       },
       'kai',
       NOW,
+      KL,
     );
-    const [header, row] = parseCsv(csv.slice(1).split('Transactions\n')[1]).rows;
+    const [header, row] = parseCsv(csv.slice(1).split('Transactions\n')[1]!).rows as [CsvRow, CsvRow];
     const cell = (name: string) => row.cells[header.cells.indexOf(name)];
     expect(cell('Id')).toBe(TXN);
     expect(cell('Timestamp')).toBe('2026-10-14T04:00:00.000Z');
@@ -69,7 +75,7 @@ describe('buildMoniExport', () => {
     expect(cell('Wallet id')).toBe(WALLET);
     expect(cell('Note')).toBe('said "lunch"');
     expect(cell('Source')).toBe('notification');
-    expect(JSON.parse(cell('Metadata'))).toEqual({
+    expect(JSON.parse(cell('Metadata')!)).toEqual({
       source: 'notification',
       alert: { text: 'RM12.50 at GRAB' },
     });
@@ -86,11 +92,12 @@ describe('buildMoniExport', () => {
       },
       'kai',
       NOW,
+      KL,
     );
     const [header, first, second] = section(csv, 'Transactions').map((line) => line.split(','));
-    expect(first[0]).toBe('a');
-    expect(second[0]).toBe('b');
-    expect(first[header.indexOf('Source')]).toBe('manual');
+    expect(first![0]).toBe('a');
+    expect(second![0]).toBe('b');
+    expect(first![header!.indexOf('Source')]).toBe('manual');
   });
 
   it('keeps a negative opening balance a number, and never converts a currency', () => {
@@ -98,8 +105,9 @@ describe('buildMoniExport', () => {
       { ...EMPTY, wallets: [{ id: WALLET, name: 'Wise', currency: 'USD', initial_balance: -120 }] },
       'kai',
       NOW,
+      KL,
     );
-    expect(section(csv, 'Wallets')[1].split(',').slice(0, 5)).toEqual([
+    expect(section(csv, 'Wallets')[1]!.split(',').slice(0, 5)).toEqual([
       WALLET,
       'Wise',
       '',
@@ -119,11 +127,12 @@ describe('buildMoniExport', () => {
       },
       'kai',
       NOW,
+      KL,
     );
     expect(section(csv, 'Budgets')).toEqual(['Id,Category,Category id,Currency,Amount', `b1,Yoga,${FOOD},MYR,200.00`]);
     expect(section(csv, 'Debts')[1]).toBe('d1,Mei,i_owe,MYR,,,open');
     expect(section(csv, 'Debt activity')[1]).toBe('a1,Mei,d1,principal,40.00,2026-10-01,,,,');
-    expect(section(csv, 'Categories')[1].split(',').at(-1)).toBe('yes');
+    expect(section(csv, 'Categories')[1]!.split(',').at(-1)).toBe('yes');
   });
 
   it("writes a place's Google id and when its coordinates were fetched", () => {
@@ -145,14 +154,15 @@ describe('buildMoniExport', () => {
       },
       'kai',
       NOW,
+      KL,
     );
     const [header, row] = section(csv, 'Transactions').map((line) => line.split(','));
-    expect(row[header.indexOf('Place id')]).toBe('ChIJ5-rvAcdJzDERfSgcL1uO2fQ');
-    expect(row[header.indexOf('Place fetched')]).toBe('2026-10-14T00:00:00.000Z');
+    expect(row![header!.indexOf('Place id')]).toBe('ChIJ5-rvAcdJzDERfSgcL1uO2fQ');
+    expect(row![header!.indexOf('Place fetched')]).toBe('2026-10-14T00:00:00.000Z');
   });
 
   it('names the file for the local day', () => {
-    expect(exportFileName(new Date(2026, 9, 14, 14, 6))).toBe('moni-2026-10-14.csv');
+    expect(exportFileName(new Date('2026-10-14T06:06:00.000Z'), KL)).toBe('moni-2026-10-14.csv');
   });
 });
 
@@ -167,8 +177,8 @@ describe('text cells', () => {
   it("stops a spreadsheet running a cell, and gets the value back exactly", () => {
     for (const value of ['=HYPERLINK("x")', '+60123', '-5', '@sum', "'=already", "''+two", "it's"]) {
       const { rows } = parseCsv(`${textCell(value)},x\n`);
-      expect(rows[0].cells[0].startsWith("'") || !/^[=+\-@]/.test(value)).toBe(true);
-      expect(readTextCell(rows[0].cells[0])).toBe(value);
+      expect(rows[0]!.cells[0]!.startsWith("'") || !/^[=+\-@]/.test(value)).toBe(true);
+      expect(readTextCell(rows[0]!.cells[0]!)).toBe(value);
     }
   });
 });

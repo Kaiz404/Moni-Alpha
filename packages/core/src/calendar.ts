@@ -113,6 +113,8 @@ export type Calendar = {
   dayNumber(at: Instant): number;
   /** The instant `day` begins in this zone. */
   startOfDay(day: DayKey): Date;
+  /** The instant this zone's clock reads `seconds` past the start of `day`. */
+  wallTime(day: DayKey, seconds: number): Date;
 };
 
 function epochMs(at: Instant): number {
@@ -182,10 +184,13 @@ function buildCalendar(zone: string): Calendar {
     dayNumber: civilDay,
     dayKey: (at) => dayFromNumber(civilDay(at)),
     monthKey: (at) => dayFromNumber(civilDay(at)).slice(0, 7),
-    startOfDay(day) {
-      const wall = dayNumber(day) * DAY_MS;
-      const guess = wall - offset(wall);
-      return new Date(wall - offset(guess));
-    },
+    startOfDay: (day) => wallTime(day, 0),
+    wallTime,
   };
+
+  function wallTime(day: DayKey, seconds: number): Date {
+    const wall = dayNumber(day) * DAY_MS + seconds * 1000;
+    const guess = wall - offset(wall);
+    return new Date(wall - offset(guess));
+  }
 }

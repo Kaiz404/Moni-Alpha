@@ -11,15 +11,11 @@ import { PickerField } from '@/components/ui/picker-field';
 import { Segmented } from '@/components/ui/segmented';
 import { Text } from '@/components/ui/text';
 import { useAuth } from '@/lib/auth/auth-context';
-import {
-  mappingIsComplete,
-  type DateOrder,
-  type MappedField,
-} from '@/lib/backup/generic-csv';
 import { getImportSession, setImportSession } from '@/lib/backup/import-session';
 import { walletsForUser$ } from '@/lib/finance/selectors';
 import { openSheet } from '@/lib/sheet/sheet-store';
 import { tid } from '@/lib/test-ids';
+import { mappingIsComplete, type DateOrder, type MappedField } from '@repo/core';
 
 const NOT_IN_FILE = 'none';
 

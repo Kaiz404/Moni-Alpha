@@ -1,8 +1,8 @@
 import { decimalToMinor, minorToDecimal } from '@repo/types';
 
-
+import type { Calendar } from '../calendar';
+import type { SyncedTable } from '../write-plans/types';
 import { textCell, valueCell } from './csv';
-import { deviceCalendar } from '@/lib/dates/device-calendar';
 
 export type RawRow = Record<string, unknown>;
 
@@ -27,10 +27,23 @@ export const TABLE_ORDER: readonly TableName[] = [
   'transactions',
 ];
 
+/** The synced table behind each table of a Moni export. */
+export const STORE_TABLE_NAMES = {
+  wallets: 'wallets',
+  categories: 'categories',
+  budgets: 'category_budgets',
+  debts: 'debts',
+  debtActivities: 'debt_activities',
+  transactions: 'transactions',
+} as const satisfies Record<TableName, SyncedTable>;
+
 export const EXPORT_MARKER = 'Moni export';
 export const EXPORT_VERSION = 1;
 
 type Names = { wallets: Map<string, string>; categories: Map<string, string>; debts: Map<string, string> };
+
+/** What a column shown for people reads besides its row: other tables' names, and the days to count in. */
+type ShowContext = { names: Names; calendar: Calendar };
 
 export type ColumnKind = 'text' | 'money' | 'bool' | 'number' | 'json' | 'instant';
 
@@ -39,7 +52,7 @@ export type Column = {
   /** The store column this restores. A column without one is only there for people reading the file. */
   field?: string;
   kind?: ColumnKind;
-  show?: (row: RawRow, names: Names) => string | null | undefined;
+  show?: (row: RawRow, context: ShowContext) => string | null | undefined;
 };
 
 const text = (header: string, field: string): Column => ({ header, field });
@@ -102,7 +115,7 @@ export const TABLES: Record<TableName, { title: string; columns: Column[] }> = {
     title: 'Budgets',
     columns: [
       text('Id', 'id'),
-      { header: 'Category', show: (row, names) => nameIn(names.categories, row.category_id) },
+      { header: 'Category', show: (row, { names }) => nameIn(names.categories, row.category_id) },
       text('Category id', 'category_id'),
       text('Currency', 'currency'),
       money('Amount', 'amount'),
@@ -124,12 +137,12 @@ export const TABLES: Record<TableName, { title: string; columns: Column[] }> = {
     title: 'Debt activity',
     columns: [
       text('Id', 'id'),
-      { header: 'Person', show: (row, names) => nameIn(names.debts, row.debt_id) },
+      { header: 'Person', show: (row, { names }) => nameIn(names.debts, row.debt_id) },
       text('Debt id', 'debt_id'),
       text('Kind', 'kind'),
       money('Amount', 'amount'),
       text('Date', 'activity_date'),
-      { header: 'Wallet', show: (row, names) => nameIn(names.wallets, row.wallet_id) },
+      { header: 'Wallet', show: (row, { names }) => nameIn(names.wallets, row.wallet_id) },
       text('Wallet id', 'wallet_id'),
       text('Cash transaction id', 'cash_transaction_id'),
       text('Note', 'note'),
@@ -141,9 +154,9 @@ export const TABLES: Record<TableName, { title: string; columns: Column[] }> = {
       text('Id', 'id'),
       {
         header: 'Date',
-        show: (row) => {
+        show: (row, { calendar }) => {
           const date = new Date(String(row.transaction_date));
-          return Number.isNaN(date.getTime()) ? null : deviceCalendar.dayKey(date);
+          return Number.isNaN(date.getTime()) ? null : calendar.dayKey(date);
         },
       },
       text('Timestamp', 'transaction_date'),
@@ -152,11 +165,11 @@ export const TABLES: Record<TableName, { title: string; columns: Column[] }> = {
       text('Currency', 'currency'),
       text('Merchant', 'merchant'),
       text('Description', 'description'),
-      { header: 'Category', show: (row, names) => nameIn(names.categories, row.category_id) },
+      { header: 'Category', show: (row, { names }) => nameIn(names.categories, row.category_id) },
       text('Category id', 'category_id'),
-      { header: 'Wallet', show: (row, names) => nameIn(names.wallets, row.wallet_id) },
+      { header: 'Wallet', show: (row, { names }) => nameIn(names.wallets, row.wallet_id) },
       text('Wallet id', 'wallet_id'),
-      { header: 'To wallet', show: (row, names) => nameIn(names.wallets, row.transfer_to_wallet_id) },
+      { header: 'To wallet', show: (row, { names }) => nameIn(names.wallets, row.transfer_to_wallet_id) },
       text('To wallet id', 'transfer_to_wallet_id'),
       text('Note', 'notes'),
       {
@@ -185,8 +198,8 @@ function plain(value: unknown): string {
   return value === null || value === undefined ? '' : String(value);
 }
 
-function cellFor(column: Column, row: RawRow, names: Names): string {
-  if (column.show) return textCell(column.show(row, names));
+function cellFor(column: Column, row: RawRow, context: ShowContext): string {
+  if (column.show) return textCell(column.show(row, context));
   const value = row[column.field!];
   switch (column.kind) {
     case 'money':
@@ -205,8 +218,8 @@ function cellFor(column: Column, row: RawRow, names: Names): string {
 const byId = (rows: readonly RawRow[], nameField: string) =>
   new Map(rows.map((row) => [String(row.id), plain(row[nameField])]));
 
-export function exportFileName(now: Date): string {
-  return `moni-${deviceCalendar.dayKey(now)}.csv`;
+export function exportFileName(now: Date, calendar: Calendar): string {
+  return `moni-${calendar.dayKey(now)}.csv`;
 }
 
 /**
@@ -214,11 +227,19 @@ export function exportFileName(now: Date): string {
  * The first line names the format and the account, so a restore can check both. Transactions run
  * oldest first. The byte order mark tells Excel the file is UTF-8.
  */
-export function buildMoniExport(tables: BackupTables, account: string, now: Date): string {
-  const names: Names = {
-    wallets: byId(tables.wallets, 'name'),
-    categories: byId(tables.categories, 'name'),
-    debts: byId(tables.debts, 'counterparty_name'),
+export function buildMoniExport(
+  tables: BackupTables,
+  account: string,
+  now: Date,
+  calendar: Calendar,
+): string {
+  const context: ShowContext = {
+    calendar,
+    names: {
+      wallets: byId(tables.wallets, 'name'),
+      categories: byId(tables.categories, 'name'),
+      debts: byId(tables.debts, 'counterparty_name'),
+    },
   };
   const sorted: BackupTables = {
     ...tables,
@@ -231,8 +252,21 @@ export function buildMoniExport(tables: BackupTables, account: string, now: Date
     const { title, columns } = TABLES[table];
     lines.push('', title, columns.map((column) => column.header).join(','));
     for (const row of sorted[table]) {
-      lines.push(columns.map((column) => cellFor(column, row, names)).join(','));
+      lines.push(columns.map((column) => cellFor(column, row, context)).join(','));
     }
   }
-  return `﻿${lines.join('\n')}\n`;
+  return `\uFEFF${lines.join('\n')}\n`;
+}
+
+/** What an export holds from the store's rows: the user's live rows, archived wallets and system categories too. */
+export function backupTables(store: BackupTables, userId: string): BackupTables {
+  const live = (rows: readonly RawRow[]) => rows.filter((row) => !row.deleted && row.user_id === userId);
+  return {
+    wallets: live(store.wallets),
+    categories: store.categories.filter((row) => !row.deleted && (row.user_id === userId || !row.user_id)),
+    budgets: live(store.budgets),
+    debts: live(store.debts),
+    debtActivities: live(store.debtActivities),
+    transactions: live(store.transactions),
+  };
 }

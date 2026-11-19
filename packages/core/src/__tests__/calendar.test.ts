@@ -64,6 +64,18 @@ describe('startOfDay', () => {
   });
 });
 
+describe('wallTime', () => {
+  it("is the instant the zone's clock reads a time of day", () => {
+    expect(kualaLumpur.wallTime('2026-10-14', 12 * 3600 + 41 * 60).toISOString()).toBe('2026-10-14T04:41:00.000Z');
+    expect(kathmandu.wallTime('2026-10-14', 9 * 3600).toISOString()).toBe('2026-10-14T03:15:00.000Z');
+  });
+
+  it('reads the clock after a daylight saving change on the day it happens', () => {
+    expect(newYork.wallTime('2026-03-08', 1 * 3600).toISOString()).toBe('2026-03-08T06:00:00.000Z');
+    expect(newYork.wallTime('2026-03-08', 13 * 3600).toISOString()).toBe('2026-03-08T17:00:00.000Z');
+  });
+});
+
 it('gives an unreadable instant no day instead of throwing', () => {
   expect([
     kualaLumpur.dayKey('not a date'),

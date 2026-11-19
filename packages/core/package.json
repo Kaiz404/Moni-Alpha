@@ -6,6 +6,7 @@
   "exports": {
     ".": "./src/index.ts",
     "./ai-consent": "./src/ai-consent.ts",
+    "./backup": "./src/backup/index.ts",
     "./calendar": "./src/calendar.ts",
     "./chart-range": "./src/chart-range.ts",
     "./charts": "./src/charts/month-charts.ts",
@@ -17,7 +18,8 @@
     "./write-plans": "./src/write-plans/index.ts"
   },
   "dependencies": {
-    "@repo/types": "workspace:*"
+    "@repo/types": "workspace:*",
+    "zod": "^3.24.1"
   },
   "scripts": {
     "check-types": "tsc --noEmit",

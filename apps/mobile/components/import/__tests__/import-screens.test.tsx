@@ -6,10 +6,11 @@ import ImportColumnsScreen from '@/app/import/columns';
 import ImportScreen from '@/app/import/index';
 import ImportPreviewScreen from '@/app/import/preview';
 import { applyPlan } from '@/lib/backup/apply';
-import { pickFile, readPickedFile, setImportSession, type ImportSession } from '@/lib/backup/import-session';
-import { buildMoniExport } from '@/lib/backup/moni-export';
+import { pickFile, setImportSession } from '@/lib/backup/import-session';
 import { storeHasPulled } from '@/lib/backup/store-tables';
+import { deviceCalendar } from '@/lib/dates/device-calendar';
 import { showToast } from '@/lib/toast/toast-store';
+import { buildMoniExport, readImportFile, type ImportSession } from '@repo/core';
 
 const USER = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
 const WALLET = '11111111-1111-4111-8111-111111111111';
@@ -51,7 +52,7 @@ jest.mock('@/lib/backup/import-session', () => ({
 const bytes = (text: string) => Uint8Array.from(Buffer.from(text, 'utf8'));
 
 function session(text: string): ImportSession {
-  const read = readPickedFile('bank.csv', bytes(text), USER);
+  const read = readImportFile('bank.csv', bytes(text), USER);
   if (read.kind !== 'ok') throw new Error(read.reason);
   return read.session;
 }
@@ -84,6 +85,7 @@ describe('Import data', () => {
           { wallets: [], categories: [], budgets: [], debts: [], debtActivities: [], transactions: [] },
           USER,
           new Date(),
+          deviceCalendar,
         ),
       ),
     });
@@ -175,6 +177,7 @@ describe('Check the file', () => {
       { wallets: [], categories: [], budgets: [], debts: [], debtActivities: [], transactions: [] },
       USER,
       new Date(),
+      deviceCalendar,
     )));
     render(<ImportPreviewScreen />);
     expect(screen.getByTestId('import.new')).toHaveTextContent('0');

@@ -1,7 +1,6 @@
+import { dayKeyOf, parseDayKey, type Calendar } from '../calendar';
 import { parseCsv, type CsvRow } from './csv';
 import type { RowProblem } from './read-moni-export';
-import { dayKeyOf, parseDayKey } from '@repo/core';
-import { deviceCalendar } from '@/lib/dates/device-calendar';
 
 export type DateOrder = 'dmy' | 'mdy';
 
@@ -73,11 +72,11 @@ export function readGenericTable(text: string): GenericTable | null {
   const filled = (row: CsvRow) => row.cells.filter((cell) => cell.trim() !== '').length;
   const widths = new Map<number, number>();
   for (const row of rows.slice(0, 50)) widths.set(filled(row), (widths.get(filled(row)) ?? 0) + 1);
-  const usual = [...widths.entries()].sort((a, b) => b[1] - a[1] || b[0] - a[0])[0][0];
+  const usual = [...widths.entries()].sort((a, b) => b[1] - a[1] || b[0] - a[0])[0]![0];
   const start = rows.findIndex((row) => filled(row) >= Math.max(2, usual));
   if (start < 0) return null;
   return {
-    headers: rows[start].cells.map((cell) => cell.trim()),
+    headers: rows[start]!.cells.map((cell) => cell.trim()),
     rows: rows.slice(start + 1),
     brokenLines,
   };
@@ -133,23 +132,28 @@ const MONTHS: Record<string, number> = {
 
 type ParsedDate = { day: string; at: string };
 
-function build(year: number, month: number, date: number, rest: string): ParsedDate | null {
+function build(
+  year: number,
+  month: number,
+  date: number,
+  rest: string,
+  calendar: Calendar,
+): ParsedDate | null {
   const day = parseDayKey(dayKeyOf(year, month, date));
   if (!day) return null;
-  const midnight = deviceCalendar.startOfDay(day);
   const time = /(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(am|pm)?/i.exec(rest);
-  if (!time) return { day, at: midnight.toISOString() };
+  if (!time) return { day, at: calendar.startOfDay(day).toISOString() };
   let hours = Number(time[1]);
   const meridiem = time[4]?.toLowerCase();
   if (meridiem === 'pm' && hours < 12) hours += 12;
   if (meridiem === 'am' && hours === 12) hours = 0;
   if (hours > 23 || Number(time[2]) > 59) return null;
-  midnight.setHours(hours, Number(time[2]), Number(time[3] ?? 0));
-  return { day, at: midnight.toISOString() };
+  const seconds = hours * 3600 + Number(time[2]) * 60 + Number(time[3] ?? 0);
+  return { day, at: calendar.wallTime(day, seconds).toISOString() };
 }
 
 /** Reads the date formats banks and apps write, day first unless `order` says otherwise. */
-export function parseImportDate(cell: string, order: DateOrder): ParsedDate | null {
+export function parseImportDate(cell: string, order: DateOrder, calendar: Calendar): ParsedDate | null {
   const text = cell.trim().replace(WEEKDAY, '');
   if (!text) return null;
 
@@ -158,35 +162,35 @@ export function parseImportDate(cell: string, order: DateOrder): ParsedDate | nu
     if (Number.isNaN(time)) return null;
     const date = new Date(time);
     return {
-      day: deviceCalendar.dayKey(date),
+      day: calendar.dayKey(date),
       at: date.toISOString(),
     };
   }
   const iso = /^(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})(.*)$/.exec(text);
-  if (iso) return build(Number(iso[1]), Number(iso[2]), Number(iso[3]), iso[4]);
+  if (iso) return build(Number(iso[1]), Number(iso[2]), Number(iso[3]), iso[4]!, calendar);
 
   const numeric = /^(\d{1,2})[-/.](\d{1,2})[-/.](\d{2}|\d{4})(?!\d)(.*)$/.exec(text);
   if (numeric) {
     const [first, second] = [Number(numeric[1]), Number(numeric[2])];
     return order === 'dmy'
-      ? build(fullYear(numeric[3]), second, first, numeric[4])
-      : build(fullYear(numeric[3]), first, second, numeric[4]);
+      ? build(fullYear(numeric[3]!), second, first, numeric[4]!, calendar)
+      : build(fullYear(numeric[3]!), first, second, numeric[4]!, calendar);
   }
 
   const named = /^(\d{1,2})[-\s/]([a-z]{3,9})[-\s/,]+(\d{2}|\d{4})(?!\d)(.*)$/i.exec(text);
   if (named) {
-    const month = MONTHS[named[2].slice(0, 3).toLowerCase()];
-    return month ? build(fullYear(named[3]), month, Number(named[1]), named[4]) : null;
+    const month = MONTHS[named[2]!.slice(0, 3).toLowerCase()];
+    return month ? build(fullYear(named[3]!), month, Number(named[1]), named[4]!, calendar) : null;
   }
   const monthFirst = /^([a-z]{3,9})\s+(\d{1,2}),?\s+(\d{4})(.*)$/i.exec(text);
   if (monthFirst) {
-    const month = MONTHS[monthFirst[1].slice(0, 3).toLowerCase()];
-    return month ? build(Number(monthFirst[3]), month, Number(monthFirst[2]), monthFirst[4]) : null;
+    const month = MONTHS[monthFirst[1]!.slice(0, 3).toLowerCase()];
+    return month ? build(Number(monthFirst[3]), month, Number(monthFirst[2]), monthFirst[4]!, calendar) : null;
   }
   // An Excel date saved as its serial number: days since 30 Dec 1899.
   if (/^\d{5}$/.test(text)) {
     const date = new Date(Date.UTC(1899, 11, 30) + Number(text) * DAY_MS);
-    return build(date.getUTCFullYear(), date.getUTCMonth() + 1, date.getUTCDate(), '');
+    return build(date.getUTCFullYear(), date.getUTCMonth() + 1, date.getUTCDate(), '', calendar);
   }
   return null;
 }
@@ -236,7 +240,7 @@ export function parseImportAmount(cell: string): ParsedAmount | null {
   if (point >= 0) {
     const tail = text.slice(point + 1);
     const both = lastDot >= 0 && lastComma >= 0;
-    const separator = text[point];
+    const separator = text.charAt(point);
     const repeated = text.indexOf(separator) !== point;
     if (both || (tail.length <= 2 && !repeated)) {
       whole = text.slice(0, point);
@@ -278,6 +282,7 @@ export function readImportRows(
   table: GenericTable,
   mapping: ColumnMapping,
   order: DateOrder,
+  calendar: Calendar,
 ): { rows: ImportRow[]; problems: RowProblem[] } {
   const problems: RowProblem[] = table.brokenLines.map((line) => ({
     line,
@@ -291,7 +296,7 @@ export function readImportRows(
 
   for (const row of table.rows) {
     const fail = (reason: string) => problems.push({ line: row.line, reason });
-    const date = parseImportDate(cellAt(row, mapping.date), order);
+    const date = parseImportDate(cellAt(row, mapping.date), order, calendar);
     if (!date) {
       fail("The date can't be read");
       continue;
