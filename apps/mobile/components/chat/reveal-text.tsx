@@ -9,7 +9,7 @@ import Animated, {
 
 import { Text } from '@/components/ui/text';
 import { isFresh, settle } from '@/lib/ai/chat/fresh-replies';
-import { springs } from '@/lib/motion/tokens';
+import { springs } from '@repo/design';
 
 const TICK_MS = 50;
 const MS_PER_WORD = 45;

@@ -12,7 +12,8 @@ import { startBackgroundProcessor } from '@/lib/ai/background-processor';
 import { turnOnFor, UNASKED, type AiConsent, type ConsentChange } from '@/lib/ai/consent/model';
 import { changeAiConsent, useAiConsent } from '@/lib/ai/consent/state';
 import { chatTime } from '@/components/chat/chat-time';
-import { formatDate } from '@/lib/dates/day-label';
+import { dateLabel } from '@repo/core';
+import { deviceCalendar } from '@/lib/dates/device-calendar';
 import { tid, type TestId } from '@/lib/test-ids';
 import { showToast } from '@/lib/toast/toast-store';
 
@@ -40,7 +41,7 @@ const USES: { use: AiUse; icon: IconSymbolName; title: string; meta?: string }[]
 
 function masterMeta(consent: AiConsent): string {
   if (consent.kind === 'unasked') return 'Off. Nothing goes to AI.';
-  const when = `${formatDate(consent.at)}, ${chatTime(consent.at)}`;
+  const when = `${dateLabel(deviceCalendar.dayKey(new Date(consent.at)), deviceCalendar.dayKey(new Date()))}, ${chatTime(consent.at)}`;
   return `Turned ${consent.on ? 'on' : 'off'} by you on ${when}`;
 }
 
