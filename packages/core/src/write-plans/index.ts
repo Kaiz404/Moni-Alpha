@@ -3,6 +3,7 @@ export * from './budgets';
 export * from './debts';
 export * from './import';
 export * from './memory';
+export * from './merchant-names';
 export * from './review';
 export * from './transactions';
 export * from './types';

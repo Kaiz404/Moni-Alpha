@@ -65,6 +65,7 @@ describe('merchantNameList', () => {
         name: null,
         count: 3,
         wallet: 'Maybank',
+        walletId: 'maybank',
         categoryId: 'food',
         guess: 'Grab Food',
       },

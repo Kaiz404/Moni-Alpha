@@ -86,8 +86,9 @@ export type MerchantEntry = {
   raw: string;
   name: string | null;
   count: number;
-  /** The wallet most of its payments came from. */
+  /** The wallet most of its payments came from, by name and by id. */
   wallet: string | null;
+  walletId: string | null;
   categoryId: string | null;
   guess: string | null;
 };
@@ -113,7 +114,7 @@ export function guessMerchantName(key: string): string | null {
   return words.map((word) => word[0]!.toUpperCase() + word.slice(1)).join(' ');
 }
 
-function topWallet(wallets: Map<string, number>, walletNames: Record<string, string>) {
+function topWallet(wallets: Map<string, number>): string | null {
   let best: string | null = null;
   let bestCount = 0;
   for (const [walletId, count] of wallets) {
@@ -122,7 +123,7 @@ function topWallet(wallets: Map<string, number>, walletNames: Record<string, str
       bestCount = count;
     }
   }
-  return best ? (walletNames[best] ?? null) : null;
+  return best;
 }
 
 /**
@@ -157,15 +158,19 @@ export function merchantNameList(
     tallies.set(key, tally);
   }
 
-  const entry = (key: string, tally: Tally | undefined, name: string | null): MerchantEntry => ({
-    key,
-    raw: tally?.raw ?? key.toUpperCase(),
-    name,
-    count: tally?.count ?? 0,
-    wallet: tally ? topWallet(tally.wallets, walletNames) : null,
-    categoryId: tally?.categoryId ?? null,
-    guess: guessMerchantName(key),
-  });
+  const entry = (key: string, tally: Tally | undefined, name: string | null): MerchantEntry => {
+    const walletId = tally ? topWallet(tally.wallets) : null;
+    return {
+      key,
+      raw: tally?.raw ?? key.toUpperCase(),
+      name,
+      count: tally?.count ?? 0,
+      wallet: walletId ? (walletNames[walletId] ?? null) : null,
+      walletId,
+      categoryId: tally?.categoryId ?? null,
+      guess: guessMerchantName(key),
+    };
+  };
   const byCount = (a: MerchantEntry, b: MerchantEntry) =>
     b.count - a.count || a.raw.localeCompare(b.raw);
 
