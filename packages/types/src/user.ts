@@ -16,6 +16,10 @@ export const userPreferencesSchema = z.object({
   monthly_budget: z.number().int().positive().nullable().optional(),
   /** The voice Moni chat answers in; absent, or a tone this build doesn't know, means friendly. */
   moni_tone: moniToneSchema.optional().catch(undefined),
+  /** When the web's first-run set-up finished; absent on an account that never went through it. */
+  setup_finished_at: z.string().datetime().optional().catch(undefined),
+  /** Home's Get set up card was closed before every step was done. */
+  setup_checklist_hidden: z.boolean().optional().catch(undefined),
 });
 
 // Profile schema

@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 
-import { recordAiConsent, updateProfilePreferences } from '../profile';
+import { needsSetup, recordAiConsent, updateProfilePreferences } from '../profile';
 import { fakeSupabase } from './fake-supabase';
 
 const { server, supabase } = fakeSupabase();
@@ -82,5 +82,37 @@ describe('recordAiConsent', () => {
     await expect(recordAiConsent(supabase, { all: true })).rejects.toEqual({
       message: 'TypeError: Network request failed',
     });
+  });
+});
+
+describe('needsSetup', () => {
+  type Row = Record<string, unknown>;
+  const tables = (preferences: Row, wallets: Row[], transactions: Row[]) => {
+    server.tables.set('profiles', [{ id: 'user-1', preferences }]);
+    server.tables.set('wallets', wallets);
+    server.tables.set('transactions', transactions);
+  };
+
+  it('sends a brand-new account through set-up', async () => {
+    tables({ currency: 'MYR' }, [{ id: 'w-2', user_id: 'user-2' }], []);
+    expect(await needsSetup(supabase, 'user-1')).toBe(true);
+  });
+
+  it('never again once set-up finished, even with no wallet left', async () => {
+    tables({ currency: 'MYR', setup_finished_at: '2026-10-14T07:00:00.000Z' }, [], []);
+    expect(await needsSetup(supabase, 'user-1')).toBe(false);
+  });
+
+  it('never for an account the phone already filled, a deleted wallet included', async () => {
+    tables({ currency: 'MYR' }, [{ id: 'w-1', user_id: 'user-1', deleted: true }], []);
+    expect(await needsSetup(supabase, 'user-1')).toBe(false);
+    tables({ currency: 'MYR' }, [], [{ id: 't-1', user_id: 'user-1' }]);
+    expect(await needsSetup(supabase, 'user-1')).toBe(false);
+  });
+
+  it('not when the account cannot be read, so a failed read never shows set-up to an existing account', async () => {
+    tables({ currency: 'MYR' }, [], []);
+    server.offline = true;
+    expect(await needsSetup(supabase, 'user-1')).toBe(false);
   });
 });

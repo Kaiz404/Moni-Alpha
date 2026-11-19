@@ -14,6 +14,21 @@ export async function signedInUserId(supabase: MoniSupabase): Promise<string | n
   return data.session?.user.id ?? null;
 }
 
+/**
+ * A brand-new account: set-up never finished, and no wallet or transaction, live or deleted, under it.
+ * An account the phone or an import already filled is never sent through set-up, flag or not.
+ */
+export async function needsSetup(supabase: MoniSupabase, userId: string): Promise<boolean> {
+  const [profile, wallets, transactions] = await Promise.all([
+    supabase.from('profiles').select('preferences').eq('id', userId).maybeSingle(),
+    supabase.from('wallets').select('id').eq('user_id', userId).limit(1),
+    supabase.from('transactions').select('id').eq('user_id', userId).limit(1),
+  ]);
+  if (profile.error || wallets.error || transactions.error) return false;
+  const preferences = userPreferencesSchema.safeParse(profile.data?.preferences ?? {}).data;
+  return !preferences?.setup_finished_at && !wallets.data?.length && !transactions.data?.length;
+}
+
 export async function fetchProfilePreferences(supabase: MoniSupabase): Promise<UserPreferences> {
   const userId = await signedInUserId(supabase);
   if (!userId) throw new Error('User ID required');

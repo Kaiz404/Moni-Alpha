@@ -60,6 +60,7 @@ export function fakeSupabase() {
         new Promise((resolve, reject) =>
           builder.then((result) => resolve({ ...result, data: result.data?.[0] ?? null }), reject),
         ),
+      maybeSingle: () => builder.single(),
       then: (resolve: (result: Result) => unknown, reject: (error: unknown) => unknown) => {
         const label = op === 'list' && limit !== null ? 'probe' : op;
         server.calls.push(`${label} ${table}${window ? ` ${window.join('-')}` : ''}`);
