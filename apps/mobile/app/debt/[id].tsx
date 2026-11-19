@@ -313,6 +313,7 @@ function DebtPage({
                   icon="send-outline"
                   title={`Remind ${name}`}
                   value={remindedToday ? 'Reminded today' : undefined}
+                  action="Opens the share sheet with a message"
                   onPress={() => void sendReminder(line)}
                 />
               ) : null}

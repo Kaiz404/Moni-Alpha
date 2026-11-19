@@ -753,4 +753,10 @@ describe('the debt page rows that act in place', () => {
     expect(settleRow.props.accessibilityHint).toBe('Records RM150.00 paid back and settles the debt');
     expect(chevrons(tid('debts', 'settle'))).toBe(0);
   });
+
+  it('Remind says it opens the share sheet', async () => {
+    await mount(`/debt/${id('debt', 'aiman')}`, { profile: 'full', theme: 'light' });
+    expect(screen.getByTestId(tid('debts', 'remind')).props.accessibilityHint).toBe('Opens the share sheet with a message');
+    expect(chevrons(tid('debts', 'remind'))).toBe(0);
+  });
 });
