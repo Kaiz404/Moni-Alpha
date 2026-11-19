@@ -2,6 +2,8 @@
 
 import { formatMoney, type NewDebt } from '@repo/core';
 import { parseAmountDraft } from '@/lib/budget-view';
+import { DateField } from '@/components/controls/date-picker';
+import { Select } from '@/components/controls/select';
 import { Glyph, PersonTile } from '@/components/ledger/glyph';
 import type { DebtsData } from './use-debts';
 
@@ -20,6 +22,7 @@ export function RecordDebt({
   onDraft,
   data,
   currency,
+  today,
   onSave,
   onClose,
 }: {
@@ -27,6 +30,7 @@ export function RecordDebt({
   onDraft: (draft: DebtDraft) => void;
   data: DebtsData;
   currency: string;
+  today: string;
   onSave: (input: NewDebt) => void;
   onClose: () => void;
 }) {
@@ -125,23 +129,19 @@ export function RecordDebt({
       <div>
         <div className="field-row">
           <span className="label-text">{owed ? 'Lent from' : 'Borrowed into'}</span>
-          <label className="pill-field">
-            <Glyph name="wallet-outline" size={18} />
-            <select aria-label={owed ? 'Lent from wallet' : 'Borrowed into wallet'} value={draft.walletId ?? ''} onChange={(event) => set({ walletId: event.target.value || null })}>
-              {data.wallets.map((item) => (
-                <option key={item.id} value={item.id}>
-                  {item.name}
-                </option>
-              ))}
-            </select>
-          </label>
+          <Select
+            label={owed ? 'Lent from wallet' : 'Borrowed into wallet'}
+            className="pill-field press"
+            value={draft.walletId}
+            placeholder="Pick a wallet"
+            lead={<Glyph name="wallet-outline" size={18} />}
+            options={data.wallets.map((item) => ({ value: item.id, label: item.name }))}
+            onChange={(walletId) => set({ walletId })}
+          />
         </div>
         <div className="field-row">
           <span className="label-text">Due date</span>
-          <label className="pill-field">
-            <Glyph name="calendar-blank-outline" size={18} />
-            <input type="date" aria-label="Due date" value={draft.dueDate} onChange={(event) => set({ dueDate: event.target.value })} />
-          </label>
+          <DateField label="Due date" className="pill-field press" today={today} value={draft.dueDate || null} onChange={(dueDate) => set({ dueDate })} onClear={() => set({ dueDate: '' })} />
         </div>
       </div>
       <label className="debt-input">

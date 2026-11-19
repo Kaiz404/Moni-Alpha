@@ -5,6 +5,8 @@ import type { MinorAmount } from '@repo/types';
 import { parseAmountDraft } from '@/lib/budget-view';
 import { repaidWords, timeline } from '@/lib/debts-view';
 import type { Ledger } from '@/lib/ledger/use-ledger';
+import { DateField } from '@/components/controls/date-picker';
+import { Select } from '@/components/controls/select';
 import { Glyph, PersonTile } from '@/components/ledger/glyph';
 import type { DebtsData } from './use-debts';
 
@@ -223,33 +225,19 @@ export function PersonPane({
           )}
           <div className="field-row">
             <span className="label-text">{mine ? 'Into' : 'From'}</span>
-            <label className="pill-field">
-              <Glyph name="wallet-outline" size={18} />
-              <select
-                aria-label={mine ? 'Into wallet' : 'From wallet'}
-                value={repay.walletId ?? ''}
-                onChange={(event) => onRepayDraft({ ...repay, walletId: event.target.value || null })}
-              >
-                {wallets.map((wallet) => (
-                  <option key={wallet.id} value={wallet.id}>
-                    {wallet.name}
-                  </option>
-                ))}
-              </select>
-            </label>
+            <Select
+              label={mine ? 'Into wallet' : 'From wallet'}
+              className="pill-field press"
+              value={repay.walletId}
+              placeholder="Pick a wallet"
+              lead={<Glyph name="wallet-outline" size={18} />}
+              options={wallets.map((wallet) => ({ value: wallet.id, label: wallet.name }))}
+              onChange={(walletId) => onRepayDraft({ ...repay, walletId })}
+            />
           </div>
           <div className="field-row">
             <span className="label-text">Date</span>
-            <label className="pill-field">
-              <Glyph name="calendar-blank-outline" size={18} />
-              <input
-                type="date"
-                aria-label="Date paid back"
-                max={today}
-                value={repay.date ?? today}
-                onChange={(event) => onRepayDraft({ ...repay, date: event.target.value || today })}
-              />
-            </label>
+            <DateField label="Date paid back" className="pill-field press" max={today} today={today} value={repay.date ?? today} onChange={(date) => onRepayDraft({ ...repay, date })} />
           </div>
           <div className="repay-buttons">
             <button type="button" className="btn btn-sand press" onClick={cancel}>

@@ -1,7 +1,9 @@
 'use client';
 
-import { ACTIVITY_KIND_LABELS, ACTIVITY_KINDS, rangePresets, spanLabel, type ActivityKind } from '@repo/core';
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { ACTIVITY_KIND_LABELS, ACTIVITY_KINDS, rangePresets, sameRange, spanLabel, type ActivityKind, type RangePreset } from '@repo/core';
+import { useRef, useState, type ReactNode } from 'react';
+import { RangePicker } from '@/components/controls/date-picker';
+import { Floating } from '@/components/controls/floating';
 import { Icon } from '@/components/icon';
 import { Bubble, Glyph } from '@/components/ledger/glyph';
 import { NO_FILTERS, type ActivityFilters, type SourceFilter } from '@/lib/activity-query';
@@ -22,30 +24,40 @@ function names(ids: readonly string[], lookup: (id: string) => string | undefine
   return ids.length === 1 ? first : `${first} +${ids.length - 1}`;
 }
 
-/** Closes on Esc or a click outside, and gives the focus back to the chip. */
-function Popover({ onClose, children, label }: { onClose: () => void; children: ReactNode; label: string }) {
-  const ref = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    const away = (event: MouseEvent) => {
-      if (ref.current && !ref.current.parentElement?.contains(event.target as Node)) onClose();
-    };
-    const key = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        event.stopPropagation();
-        onClose();
-      }
-    };
-    document.addEventListener('mousedown', away);
-    window.addEventListener('keydown', key, true);
-    return () => {
-      document.removeEventListener('mousedown', away);
-      window.removeEventListener('keydown', key, true);
-    };
-  }, [onClose]);
+/** A filter chip and its popover; the whole chip opens it. */
+function FilterChip({
+  label,
+  value,
+  changed,
+  open,
+  search,
+  wide,
+  onOpen,
+  children,
+}: {
+  label: string;
+  value: string;
+  changed: boolean;
+  open: boolean;
+  search?: boolean;
+  wide?: boolean;
+  onOpen: (open: boolean) => void;
+  children: ReactNode;
+}) {
+  const anchor = useRef<HTMLButtonElement>(null);
   return (
-    <div ref={ref} role="dialog" aria-label={label} className="popover filter-pop motion-pop">
-      {children}
-    </div>
+    <>
+      <button ref={anchor} type="button" className="filter-chip press" aria-haspopup="dialog" aria-expanded={open} aria-pressed={changed} onClick={() => onOpen(!open)}>
+        {search ? <Glyph name="magnify" size={16} /> : <span className="filter-label">{label}</span>}
+        <span className="filter-value">{value}</span>
+        <Icon name="chevron-down" size={16} />
+      </button>
+      {open && (
+        <Floating anchor={anchor} role="dialog" label={label} className={wide ? 'range-pop' : 'filter-pop'} onClose={() => onOpen(false)}>
+          {children}
+        </Floating>
+      )}
+    </>
   );
 }
 
@@ -83,29 +95,16 @@ export function FilterBar({
     .sort((a, b) => a.displayOrder - b.displayOrder || a.name.localeCompare(b.name));
   const wallets = ledger.wallets.filter((wallet) => wallet.currency === ledger.currency);
   const span = { from: filters.from ?? range.from, to: filters.to ?? range.to };
+  const today = ledger.calendar.dayKey(ledger.now);
+  const presets = rangePresets(ledger.now, ledger.calendar);
+  const presetSpan = (preset: RangePreset) => ({ from: preset.range?.from ?? '2000-01-01', to: preset.range?.to ?? range.to });
   const amount =
     filters.min === null && filters.max === null ? 'Any' : filters.max === null ? `${filters.min}+` : `${filters.min ?? 0}–${filters.max}`;
 
   const chip = (key: Key, label: string, value: string, changed: boolean, body: ReactNode) => (
-    <span className="picker-anchor" key={key}>
-      <button
-        type="button"
-        className="filter-chip press"
-        aria-haspopup="dialog"
-        aria-expanded={open === key}
-        aria-pressed={changed}
-        onClick={() => setOpen(open === key ? null : key)}
-      >
-        {key === 'search' ? <Glyph name="magnify" size={16} /> : <span className="filter-label">{label}</span>}
-        <span className="filter-value">{value}</span>
-        <Icon name="chevron-down" size={16} />
-      </button>
-      {open === key && (
-        <Popover label={label} onClose={close}>
-          {body}
-        </Popover>
-      )}
-    </span>
+    <FilterChip key={key} label={label} value={value} changed={changed} open={open === key} search={key === 'search'} wide={key === 'dates'} onOpen={(next) => setOpen(next ? key : null)}>
+      {body}
+    </FilterChip>
   );
 
   const changed = (key: keyof ActivityFilters) => JSON.stringify(filters[key]) !== JSON.stringify(base[key]);
@@ -118,32 +117,19 @@ export function FilterBar({
         'Dates',
         spanLabel(span),
         changed('from') || changed('to'),
-        <>
-          {rangePresets(ledger.now, ledger.calendar).map((preset) => (
-            <button
-              type="button"
-              key={preset.key}
-              className="popover-row"
-              aria-selected={preset.range?.from === span.from && preset.range?.to === span.to}
-              onClick={() => {
-                onChange(preset.key === 'this-month' ? { from: null, to: null } : { from: preset.range?.from ?? '2000-01-01', to: preset.range?.to ?? range.to });
-                close();
-              }}
-            >
-              {preset.label}
-            </button>
-          ))}
-          <div className="filter-dates">
-            <label>
-              From
-              <input type="date" value={span.from} max={span.to} onChange={(event) => event.target.value && onChange({ from: event.target.value })} />
-            </label>
-            <label>
-              To
-              <input type="date" value={span.to} min={span.from} onChange={(event) => event.target.value && onChange({ to: event.target.value })} />
-            </label>
-          </div>
-        </>,
+        <RangePicker
+          presets={presets.map((preset) => ({ key: preset.key, label: preset.label, selected: sameRange(presetSpan(preset), span) }))}
+          value={span}
+          today={today}
+          onPreset={(key) => {
+            onChange(key === 'this-month' ? { from: null, to: null } : presetSpan(presets.find((preset) => preset.key === key)!));
+            close();
+          }}
+          onRange={(next) => {
+            onChange(next);
+            close();
+          }}
+        />,
       )}
       {chip(
         'type',
@@ -157,13 +143,17 @@ export function FilterBar({
             role="menuitemradio"
             aria-checked={filters.kind === kind}
             className="popover-row"
-            aria-selected={filters.kind === kind}
             onClick={() => {
               onChange({ kind });
               close();
             }}
           >
-            {ACTIVITY_KIND_LABELS[kind]}
+            <span className="popover-row-text">{ACTIVITY_KIND_LABELS[kind]}</span>
+            {filters.kind === kind && (
+              <span className="popover-tick" aria-hidden="true">
+                <Icon name="check" size={18} />
+              </span>
+            )}
           </button>
         )),
       )}

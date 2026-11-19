@@ -325,6 +325,7 @@ function DebtsLoaded({ ledger }: { ledger: Ledger }) {
               onDraft={setDraft}
               data={data}
               currency={currency}
+              today={ledger.calendar.dayKey(ledger.now)}
               onSave={saveDebt}
               onClose={() => setParams({ record: null })}
             />
