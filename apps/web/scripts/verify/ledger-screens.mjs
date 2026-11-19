@@ -345,6 +345,10 @@ export async function driveLedgerScreens({ browser, storage, base, check, shot, 
   check('the arrow keys move through the menu', await a.evaluate(() => document.activeElement === document.querySelectorAll('[role="menu"] [role="menuitem"]')[1]));
   await a.keyboard.press('Escape');
   check('Esc gives the focus back to ⋯', await a.evaluate(() => document.activeElement?.classList.contains('more')));
+  await third.locator('.more').click();
+  const openedBy = await menu.isVisible();
+  await third.locator('.more').click();
+  check('a second click on ⋯ closes its menu and leaves the pane shut', openedBy && !(await menu.isVisible()) && a.url() === `${base}/activity`, a.url());
 
   await a.locator('.filter-chip').filter({ hasText: 'Type' }).click();
   const typePop = a.getByRole('dialog', { name: 'Type' });

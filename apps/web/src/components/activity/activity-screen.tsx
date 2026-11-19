@@ -621,7 +621,7 @@ export function ActivityScreen() {
                       </span>
                       <span role="gridcell">{amountCell(item)}</span>
                       <span role="gridcell">
-                        <button type="button" className="more press" aria-label={`${item.title} menu`} aria-haspopup="menu" onClick={(event) => rowMenu(event, item)}>
+                        <button type="button" className="more press" aria-label={`${item.title} menu`} aria-haspopup="menu" aria-expanded={menu?.id === item.id} onClick={(event) => (menu?.id === item.id ? (event.stopPropagation(), setMenu(null)) : rowMenu(event, item))}>
                           <Glyph name="dots-horizontal" size={20} />
                         </button>
                       </span>
