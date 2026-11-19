@@ -20,12 +20,13 @@ import {
 import type { MinorAmount } from '@repo/types';
 import { useState } from 'react';
 import { Cat } from '@/components/brand';
+import { ConfirmDialog } from '@/components/confirm-dialog';
 import { Glyph, PersonTile } from '@/components/ledger/glyph';
 import { useQueryParams } from '@/components/ledger/use-query-param';
 import { SidePane } from '@/components/ledger/side-pane';
 import { Page } from '@/components/shell/page';
 import { showToast } from '@/components/shell/shell-store';
-import { comingUpWords, netLabel, openLabel, personMeta } from '@/lib/debts-view';
+import { comingUpWords, netLabel, openLabel, personMeta, writeOffWords } from '@/lib/debts-view';
 import { applyPlan, commit, ledgerViewNow, planContext } from '@/lib/ledger/commit';
 import { useLedger, type Ledger } from '@/lib/ledger/use-ledger';
 import { useScreenKeys } from '@/lib/screen-keys';
@@ -75,6 +76,8 @@ function DebtsLoaded({ ledger }: { ledger: Ledger }) {
   const [repay, setRepay] = useState<RepayDraft | null>(null);
   const [draft, setDraft] = useState<DebtDraft>(() => emptyDraft(data.defaultWalletId));
   const [reminded, setReminded] = useState<Set<string>>(() => new Set());
+  const [writingOffId, setWritingOffId] = useState<string | null>(null);
+  const writingOff = data.allLines.find((line) => line.debt.id === writingOffId && line.state === 'open') ?? null;
   const empty = summary.open.length === 0 && summary.closed.length === 0;
 
   const select = (debtId: string | null) => {
@@ -336,7 +339,7 @@ function DebtsLoaded({ ledger }: { ledger: Ledger }) {
               onRepayDraft={setRepay}
               onSaveRepay={saveRepay}
               onRemind={() => void remind(selected)}
-              onWriteOff={() => writeOff(selected)}
+              onWriteOff={() => setWritingOffId(selected.debt.id)}
               onRecordAgain={() => startRecord(selected.debt.counterpartyName, selected.debt.direction)}
               onMove={move}
               onClose={() => select(null)}
@@ -349,6 +352,18 @@ function DebtsLoaded({ ledger }: { ledger: Ledger }) {
           )}
         </SidePane>
       </div>
+      {writingOff && (
+        <ConfirmDialog
+          {...writeOffWords(writingOff)}
+          action="Write off"
+          icon="text-box-remove-outline"
+          onCancel={() => setWritingOffId(null)}
+          onConfirm={() => {
+            setWritingOffId(null);
+            writeOff(writingOff);
+          }}
+        />
+      )}
     </Page>
   );
 }

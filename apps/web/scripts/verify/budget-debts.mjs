@@ -295,6 +295,37 @@ export async function verifyBudgetDebts(t) {
     await d.keyboard.press('Control+z');
     const gone = await until('debt-activities', (rows) => rows.length === activities);
     check('Ctrl Z removes the repayment, on screen and in the dev project', gone.ok && near(ringgit(await d.locator('[data-testid="person-balance"]').textContent()), before), gone.rows.length);
+
+    const writeOffButton = d.locator('.pane-write-off');
+    const asks = d.getByRole('alertdialog', { name: /^Write off RM[\d,.]+\?$/ });
+    await writeOffButton.click();
+    await asks.waitFor({ timeout: 5000 }).catch(() => {});
+    check(
+      'Write off asks first, says no money moves, and focuses Cancel',
+      (await asks.isVisible()) &&
+        (await asks.getByText('No money moves, and this history stays.').isVisible()) &&
+        (await asks.getByRole('button', { name: /^Cancel/ }).evaluate((el) => el === document.activeElement)),
+    );
+    await shot(d, 'debts-1440-light-write-off');
+    await d.keyboard.press('j');
+    await d.keyboard.press('Escape');
+    await d.waitForTimeout(300);
+    check(
+      'Esc closes the ask and nothing else: the pane stays on the same person, J did not move it, nothing written off',
+      !(await asks.isVisible()) && new RegExp(`person=${target.id}`).test(d.url()) && !query('debt-activities').some((row) => row.debt_id === target.id && row.kind === 'write_off'),
+      d.url(),
+    );
+    await writeOffButton.click();
+    await asks.getByRole('button', { name: 'Write off' }).click();
+    const wrote = d.getByRole('status').filter({ hasText: /^Wrote off/ });
+    await wrote.waitFor({ timeout: 5000 }).catch(() => {});
+    check('Write off in the ask writes it off with a toast that offers Undo', await wrote.getByRole('button', { name: 'Undo' }).isVisible().catch(() => false));
+    await wrote.hover().catch(() => {});
+    const off = await until('debt-activities', (rows) => rows.some((row) => row.debt_id === target.id && row.kind === 'write_off'));
+    check('the dev project holds the write-off', off.ok);
+    await d.keyboard.press('Control+z');
+    const back = await until('debt-activities', (rows) => !rows.some((row) => row.debt_id === target.id && row.kind === 'write_off'));
+    check('Ctrl Z takes the write-off back, on screen and in the dev project', back.ok && near(ringgit(await d.locator('[data-testid="person-balance"]').textContent()), before));
     await d.keyboard.press('Escape');
   }
 

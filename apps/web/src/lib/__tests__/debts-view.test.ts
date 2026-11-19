@@ -1,7 +1,7 @@
 import type { DebtLine, FinanceDebt, FinanceDebtActivity } from '@repo/core';
 import type { CurrencyCode, MinorAmount } from '@repo/types';
 import { describe, expect, it } from 'vitest';
-import { comingUpWords, netLabel, openLabel, personMeta, repaidWords, timeline } from '../debts-view';
+import { comingUpWords, netLabel, openLabel, personMeta, repaidWords, timeline, writeOffWords } from '../debts-view';
 
 const m = (value: number) => value as MinorAmount;
 
@@ -80,5 +80,18 @@ describe('debt words', () => {
       ['Paid you back', 'Today', '+RM50.00'],
       ['Lent', 'Sun 27 Sep · from Maybank', 'RM150.00'],
     ]);
+  });
+});
+
+describe('writeOffWords', () => {
+  it('says who stops owing, either way round', () => {
+    expect(writeOffWords(debtLine({}, { balanceMinor: m(12000) }))).toEqual({
+      title: 'Write off RM120.00?',
+      line: "Aiman won't owe you anything. No money moves, and this history stays.",
+    });
+    expect(writeOffWords(debtLine({ direction: 'i_owe', counterpartyName: 'Mei' }, { balanceMinor: m(4050) }))).toEqual({
+      title: 'Write off RM40.50?',
+      line: "You won't owe Mei anything. No money moves, and this history stays.",
+    });
   });
 });

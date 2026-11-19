@@ -2,7 +2,7 @@
 
 ## Sub-features
 
-The net position with Owed to you and You owe, which filter the table (`?side=owed_to_me|i_owe`). Coming up: open debts with a due date, Pay (opens Record a repayment) or Remind <name> (the share sheet, else the clipboard). People: Person, Due, Owes you, You owe, and an Open total; Settled and written off below. The person pane (`?person=<debt id>`): what is still owed and the bar, Record a repayment (amount, All of it, wallet, date), Remind, the note, due date and wallet, the history, Write off. Record a debt (`?record=debt`): who owes who, the name with past people, the amount, wallet, due date and note. Each write has Undo. The phone layout stacks the same cards with a Record a debt row, and the pane is a page.
+The net position with Owed to you and You owe, which filter the table (`?side=owed_to_me|i_owe`). Coming up: open debts with a due date, Pay (opens Record a repayment) or Remind <name> (the share sheet, else the clipboard). People: Person, Due, Owes you, You owe, and an Open total; Settled and written off below. The person pane (`?person=<debt id>`): what is still owed and the bar, Record a repayment (amount, All of it, wallet, date), Remind, the note, due date and wallet, the history, Write off (an alertdialog asks first, Cancel focused, Esc closes only the ask). Record a debt (`?record=debt`): who owes who, the name with past people, the amount, wallet, due date and note. Each write has Undo. The phone layout stacks the same cards with a Record a debt row, and the pane is a page.
 
 ## How to get to it (user POV)
 

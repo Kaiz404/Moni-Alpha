@@ -50,6 +50,15 @@ export function repaidWords(line: DebtLine): { left: string; right: string } {
   };
 }
 
+/** The confirm before a write-off, in the phone's words: who stops owing and what stays. */
+export function writeOffWords(line: DebtLine): { title: string; line: string } {
+  const name = line.debt.counterpartyName;
+  return {
+    title: `Write off ${formatMoney(line.balanceMinor, line.debt.currency)}?`,
+    line: `${line.debt.direction === 'owed_to_me' ? `${name} won't owe you anything` : `You won't owe ${name} anything`}. No money moves, and this history stays.`,
+  };
+}
+
 export type TimelineItem = {
   id: string;
   kind: FinanceDebtActivity['kind'];
