@@ -89,12 +89,26 @@ export function staticMapUrl({
   const params = new URLSearchParams({
     center: `${center.lat.toFixed(5)},${center.lng.toFixed(5)}`,
     zoom: String(zoom),
-    size: `${Math.min(640, Math.round(width))}x${Math.min(640, Math.round(height))}`,
+    size: `${Math.min(STATIC_MAX, Math.round(width))}x${Math.min(STATIC_MAX, Math.round(height))}`,
     scale: '2',
     key,
   });
   for (const rule of styles) params.append('style', staticStyle(rule));
   return `https://maps.googleapis.com/maps/api/staticmap?${params}`;
+}
+
+/** The Static Maps API's largest `size` side, before `scale`. */
+export const STATIC_MAX = 640;
+
+/**
+ * The image to ask for so it covers a `width` × `height` tile: sides rounded up to `step` (fewer distinct
+ * URLs as a window resizes) and at most 640, and the CSS `zoom` that stretches it over a tile wider or
+ * taller than that. The scale=2 pixels keep a stretched image sharp up to 1280 px.
+ */
+export function staticCover(width: number, height: number, step = 40): { width: number; height: number; zoom: number } {
+  const zoom = Math.max(1, width / STATIC_MAX, height / STATIC_MAX);
+  const side = (length: number) => Math.min(STATIC_MAX, Math.ceil(length / zoom / step) * step);
+  return { width: side(width), height: side(height), zoom };
 }
 
 /** Web Mercator px at zoom 0 (one 256 px world). */

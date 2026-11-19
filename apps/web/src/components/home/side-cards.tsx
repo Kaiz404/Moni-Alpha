@@ -21,7 +21,7 @@ import { useSize } from '@/components/ledger/chart-parts';
 import { Bubble, Glyph } from '@/components/ledger/glyph';
 import { useMapsUsable } from '@/components/places/map-ground';
 import { useTheme } from '@/components/use-theme';
-import { MAPS_KEY, staticFrame, staticMapUrl } from '@/lib/google-maps';
+import { MAPS_KEY, staticCover, staticFrame, staticMapUrl } from '@/lib/google-maps';
 import { commit, planContext } from '@/lib/ledger/commit';
 import type { Ledger } from '@/lib/ledger/use-ledger';
 
@@ -223,8 +223,6 @@ export function WalletsCard({ ledger, onDismiss, dismissed }: { ledger: Ledger; 
 }
 
 /** Static Maps sizes step by 40 px, so a small resize asks for the same image again from the cache. */
-const STEP = 40;
-const MAX_STATIC = 640;
 
 /**
  * Where you spend: a Maps Static API image of this month's three biggest places with their pins drawn on
@@ -241,10 +239,9 @@ export function PlacesCard({ ledger }: { ledger: Ledger }) {
   const [ref, size] = useSize<HTMLAnchorElement>();
   const usable = useMapsUsable();
   const dark = useTheme().resolved === 'dark';
-  const width = Math.min(MAX_STATIC, Math.ceil(size.width / STEP) * STEP);
-  const height = Math.min(MAX_STATIC, Math.ceil(size.height / STEP) * STEP);
-  const frame = width > 0 && height > 0 && places.length ? staticFrame(places.map((place) => ({ lat: place.latitude, lng: place.longitude })), width, height, 36) : null;
-  const offset = { x: (size.width - width) / 2, y: (size.height - height) / 2 };
+  const { width, height, zoom } = staticCover(size.width, size.height);
+  const frame = width > 0 && height > 0 && places.length ? staticFrame(places.map((place) => ({ lat: place.latitude, lng: place.longitude })), width, height, 36 / zoom) : null;
+  const offset = { x: (size.width - width * zoom) / 2, y: (size.height - height * zoom) / 2 };
   return (
     <section aria-label="Where you spend" className="card places-card" data-card="map">
       <div className="section-head">
@@ -278,8 +275,8 @@ export function PlacesCard({ ledger }: { ledger: Ledger }) {
             <img
               className="mini-map-image"
               alt=""
-              width={width}
-              height={height}
+              width={width * zoom}
+              height={height * zoom}
               style={{ left: offset.x, top: offset.y }}
               src={staticMapUrl({ key: MAPS_KEY, center: frame.center, zoom: frame.zoom, width, height, styles: dark ? miniMapStyles.dark : miniMapStyles.light })}
             />
@@ -291,7 +288,7 @@ export function PlacesCard({ ledger }: { ledger: Ledger }) {
               const category = place.categories[0]?.categoryId ? projection.categoriesById[place.categories[0].categoryId] : undefined;
               const at = frame.at({ lat: place.latitude, lng: place.longitude });
               return (
-                <span key={place.id} className="map-pin" style={{ left: at.x + offset.x, top: at.y + offset.y }} title={place.name}>
+                <span key={place.id} className="map-pin" style={{ left: at.x * zoom + offset.x, top: at.y * zoom + offset.y }} title={place.name}>
                   <Bubble icon={category?.icon} color={category?.color ?? null} size={26} glyph={15} />
                   <span className="num">{formatMoney(place.totalMinor, currency, { whole: true })}</span>
                 </span>

@@ -1,7 +1,8 @@
 // Where you spend in web-verify (`--only places`): every layout in both themes with a place open, the
 // numbers against the e2e user's expenses, the keys, hover linking a row and its pin, zoom and Fit,
 // Pins | Heat, the filters, Add a place undone with Ctrl Z, the 700 crossing keeping the place, and
-// reduced motion on the pane. The one write is undone before the part ends.
+// reduced motion on the pane, and Home's tile covered edge to edge at 1000, 1440 and 2400 wide. The one write is
+// undone before the part ends.
 import { join } from 'node:path';
 
 function ringgit(text) {
@@ -306,6 +307,26 @@ export async function verifyPlaces(t) {
     art: await h.locator('section[aria-label="Where you spend"] .map-art').count(),
   };
   check("Home's Where you spend tile is a Google static map, or Map unavailable with no key, with the month's top places pinned", tileState.pins > 0 && tileState.pins <= 3 && tileState.art === 0 && (tileState.image === 1 || tileState.unavailable), tileState);
+  for (const width of [1000, 1440, 2400]) {
+    await h.setViewportSize({ width, height: 900 });
+    await h.waitForFunction(() => {
+      const box = document.querySelector('section[aria-label="Where you spend"] .mini-map')?.getBoundingClientRect();
+      const img = document.querySelector('.mini-map-image')?.getBoundingClientRect();
+      return !img || (box && img.width >= box.width - 0.5);
+    }, null, { timeout: 5_000 }).catch(() => {});
+    const cover = await tile.evaluate((el) => {
+      const box = el.getBoundingClientRect();
+      const img = el.querySelector('.mini-map-image')?.getBoundingClientRect();
+      const pins = [...el.querySelectorAll('.map-pin')].map((pin) => pin.getBoundingClientRect());
+      return {
+        tile: Math.round(box.width),
+        covered: !img || (img.left <= box.left + 0.5 && img.right >= box.right - 0.5 && img.top <= box.top + 0.5 && img.bottom >= box.bottom - 0.5),
+        pinsInside: pins.every((pin) => pin.left + pin.width / 2 >= box.left && pin.left + pin.width / 2 <= box.right && pin.top + pin.height / 2 >= box.top && pin.top + pin.height / 2 <= box.bottom),
+      };
+    });
+    check(`at ${width} wide the ${cover.tile} px Where you spend map covers its tile edge to edge with every pin inside`, cover.covered && cover.pinsInside, cover);
+  }
+  await h.setViewportSize({ width: 1440, height: 900 });
   await h.getByRole('link', { name: 'Open map', exact: true }).click();
   await h.waitForURL(/\/home\/places/);
   check("Home's Where you spend card opens the map", new URL(h.url()).pathname === '/home/places', h.url());

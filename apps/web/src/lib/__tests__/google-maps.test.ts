@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { staticFrame, staticMapUrl, staticStyle } from '../google-maps';
+import { staticCover, staticFrame, staticMapUrl, staticStyle } from '../google-maps';
 
 describe('staticStyle', () => {
   it('writes a rule in the Static Maps words, colours as 0x hex', () => {
@@ -41,5 +41,16 @@ describe('staticFrame', () => {
   it('keeps one place in the middle at the street zoom cap', () => {
     const frame = staticFrame([{ lat: 3.1579, lng: 101.7123 }], 400, 140, 24);
     expect([frame.zoom, frame.at({ lat: 3.1579, lng: 101.7123 })]).toEqual([16, { x: 200, y: 70 }]);
+  });
+});
+
+describe('staticCover', () => {
+  it('asks for the tile rounded up to 40 px while it fits the 640 px limit', () => {
+    expect(staticCover(388, 142)).toEqual({ width: 400, height: 160, zoom: 1 });
+  });
+
+  it('stretches a smaller image over a tile wider than 640 px so no edge is left bare', () => {
+    expect(staticCover(800, 300)).toEqual({ width: 640, height: 240, zoom: 1.25 });
+    expect(staticCover(700, 300)).toEqual({ width: 640, height: 280, zoom: 1.09375 });
   });
 });
