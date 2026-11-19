@@ -6,6 +6,7 @@ import { applyWrites, updateProfilePreferences } from '@repo/data';
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useReducer, useRef, useState, type ReactNode } from 'react';
 import { Cat, Wordmark } from '@/components/brand';
+import { Select } from '@/components/controls/select';
 import { Icon } from '@/components/icon';
 import { Bubble, Glyph } from '@/components/ledger/glyph';
 import { signOut } from '@/components/shell/shell-store';
@@ -506,28 +507,27 @@ function WalletRows({
               <span className="sr-only">Wallet {index + 1} name</span>
               <input value={wallet.name} placeholder={index === 0 ? 'Maybank Savings' : 'Name'} maxLength={100} onChange={(event) => onChange(wallet.key, { name: event.target.value })} />
             </label>
-            <label className="setup-in setup-sel">
-              <span className="sr-only">Wallet {index + 1} type</span>
-              <select value={wallet.kind} onChange={(event) => onChange(wallet.key, { kind: event.target.value as WalletKind })}>
-                {(Object.keys(WALLET_KINDS) as WalletKind[]).map((key) => (
-                  <option key={key} value={key}>
-                    {WALLET_KINDS[key].label}
-                  </option>
-                ))}
-              </select>
-              <Icon name="chevron-down" size={18} />
-            </label>
+            <Select
+              label={`Wallet ${index + 1} type`}
+              className="setup-in setup-sel"
+              value={wallet.kind}
+              options={(Object.keys(WALLET_KINDS) as WalletKind[]).map((key) => ({ value: key, label: WALLET_KINDS[key].label }))}
+              onChange={(kind) => onChange(wallet.key, { kind })}
+            />
             <label className="setup-in setup-wbal num" data-bad={bad || undefined}>
               <span className="setup-sym">{choices.find((choice) => choice.code === wallet.currency)?.symbol ?? wallet.currency}</span>
               <span className="sr-only">Wallet {index + 1} starting balance</span>
               <input value={wallet.balance} inputMode="decimal" placeholder="0.00" onChange={(event) => onChange(wallet.key, { balance: event.target.value })} />
-              <select className="setup-wcur" aria-label={`Wallet ${index + 1} currency`} value={wallet.currency} onChange={(event) => onChange(wallet.key, { currency: event.target.value })}>
-                {choices.map((choice) => (
-                  <option key={choice.code} value={choice.code}>
-                    {choice.code}
-                  </option>
-                ))}
-              </select>
+              <Select
+                label={`Wallet ${index + 1} currency`}
+                className="setup-wcur"
+                align="end"
+                value={wallet.currency}
+                options={choices.map((choice) => ({ value: choice.code, label: choice.code }))}
+                onChange={(currency) => onChange(wallet.key, { currency })}
+              >
+                {wallet.currency}
+              </Select>
             </label>
             <button type="button" className="setup-wx press" aria-label={`Remove ${wallet.name.trim() || `wallet ${index + 1}`}`} onClick={() => onRemove(wallet.key)}>
               <Icon name="close" size={18} />

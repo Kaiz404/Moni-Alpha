@@ -148,9 +148,11 @@ export async function verifyFirstRun({ browser, base, storage, check, shot, sett
       await sp.getByLabel('Wallet 2 starting balance').fill('63.60');
       await sp.getByRole('button', { name: 'Add another wallet' }).click();
       await sp.getByLabel('Wallet 3 name').fill('Wise USD');
-      await sp.getByLabel('Wallet 3 type').selectOption('bank');
+      await sp.getByRole('button', { name: /^Wallet 3 type/ }).click();
+      await sp.getByRole('option', { name: 'Bank', exact: true }).click();
       await sp.getByLabel('Wallet 3 starting balance').fill('120');
-      await sp.getByLabel('Wallet 3 currency').selectOption('USD');
+      await sp.getByRole('button', { name: /^Wallet 3 currency/ }).click();
+      await sp.getByRole('option', { name: 'USD', exact: true }).click();
       const preview = (await sp.locator('.setup-preview').textContent()) ?? '';
       check('the preview adds up only the MYR wallets and says the USD one keeps its own currency', preview.includes('RM2,345.40') && preview.includes('Wise USD keeps its own currency'), preview);
       await pair('setup-3', await boardBand(ONBOARDING, 'setup-3', frameY(3), 900), await shot(sp, 'setup-3-1440'));

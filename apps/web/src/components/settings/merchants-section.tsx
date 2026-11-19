@@ -10,6 +10,8 @@ import {
 } from '@repo/core';
 import { useRef, useState, type FormEvent } from 'react';
 import { Cat } from '@/components/brand';
+import { Floating } from '@/components/controls/floating';
+import { Select } from '@/components/controls/select';
 import { Icon } from '@/components/icon';
 import { Bubble } from '@/components/ledger/glyph';
 import { commit, planContext } from '@/lib/ledger/commit';
@@ -47,7 +49,7 @@ export function MerchantsSection() {
   const [pageNumber, setPageNumber] = useState(1);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [renaming, setRenaming] = useState<string | null>(null);
-  const [menu, setMenu] = useState<string | null>(null);
+  const [menu, setMenu] = useState<{ key: string; anchor: { readonly current: HTMLElement } } | null>(null);
   const [drafts, setDrafts] = useState<Record<string, string>>({});
   /** The cell Esc just left, whose blur must not save the draft it dropped. */
   const dropped = useRef<string | null>(null);
@@ -156,13 +158,17 @@ export function MerchantsSection() {
               <input value={query} placeholder="Search codes or names" onChange={(event) => go(() => setQuery(event.target.value))} />
             </label>
             <span className="mn-sort pick">
-              <select aria-label="Sort" value={sort} onChange={(event) => go(() => setSort(event.target.value as MerchantSort))}>
-                <option value="payments">Most payments</option>
-                <option value="name">Name, A to Z</option>
-              </select>
-              <span className="pick-chevron">
-                <Mdi path={SETTINGS_ICONS.chevronDown} size={18} />
-              </span>
+              <Select
+                label="Sort"
+                className="pick-trigger"
+                align="end"
+                value={sort}
+                options={[
+                  { value: 'payments', label: 'Most payments' },
+                  { value: 'name', label: 'Name, A to Z' },
+                ]}
+                onChange={(next) => go(() => setSort(next))}
+              />
             </span>
           </div>
 
@@ -275,12 +281,12 @@ export function MerchantsSection() {
                       </>
                     )}
                   </span>
-                  <span className="picker-anchor" style={{ position: 'relative' }}>
-                    <button type="button" className="mn-more press" aria-label={`More for ${entry.raw}`} aria-expanded={menu === entry.key} onClick={() => setMenu(menu === entry.key ? null : entry.key)}>
+                  <span>
+                    <button type="button" className="mn-more press" aria-label={`More for ${entry.raw}`} aria-haspopup="menu" aria-expanded={menu?.key === entry.key} onClick={(event) => setMenu(menu?.key === entry.key ? null : { key: entry.key, anchor: { current: event.currentTarget } })}>
                       <Mdi path={SETTINGS_ICONS.more} size={20} />
                     </button>
-                    {menu === entry.key && (
-                      <div role="menu" aria-label={entry.raw} className="popover row-menu motion-pop" style={{ right: 0, top: 40, left: 'auto' }}>
+                    {menu?.key === entry.key && (
+                      <Floating anchor={menu.anchor} role="menu" label={entry.raw} align="end" className="row-menu" onClose={() => setMenu(null)}>
                         <button
                           type="button"
                           role="menuitem"
@@ -305,7 +311,7 @@ export function MerchantsSection() {
                             Forget name
                           </button>
                         )}
-                      </div>
+                      </Floating>
                     )}
                   </span>
                 </div>

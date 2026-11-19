@@ -276,16 +276,23 @@ textarea::placeholder {
   transition: box-shadow 120ms ease;
 }
 
-.field:focus-within {
+.field:focus-within,
+.field:focus-visible {
+  outline: none;
   box-shadow: inset 0 0 0 2px var(--color-foreground);
+}
+
+.field.select-trigger {
+  width: 100%;
+  font-size: 16px;
+  color: var(--color-foreground);
 }
 
 .field[data-invalid='true'] {
   box-shadow: inset 0 0 0 2px var(--color-over);
 }
 
-.field input,
-.field select {
+.field input {
   flex: 1 1 auto;
   min-width: 0;
   height: 100%;

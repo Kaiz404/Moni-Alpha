@@ -17,6 +17,7 @@ import {
 } from '@repo/core';
 import { decimalToMinor, type MinorAmount, type TransactionType } from '@repo/types';
 import { useEffect, useState, type ReactNode } from 'react';
+import { Select, type SelectOption } from '@/components/controls/select';
 import { Icon } from '@/components/icon';
 import { Bubble, Glyph } from '@/components/ledger/glyph';
 import { captureSource, clockTime } from '@/lib/ledger/format';
@@ -25,7 +26,6 @@ import { useReceiptPhoto } from '@/lib/receipt-photo';
 import { captureName } from '@/lib/review-view';
 import { SourceBubble } from './source-bubble';
 
-type Field = 'type' | 'category' | 'wallet' | 'to';
 
 const TYPES: readonly { value: TransactionType; label: string }[] = [
   { value: 'expense', label: 'Expense' },
@@ -72,27 +72,12 @@ export function CapturePane({
   onNotMine: () => void;
 }) {
   const { projection, calendar, now, wallets, walletNames, userId } = ledger;
-  const [open, setOpen] = useState<Field | null>(null);
   const [editing, setEditing] = useState<'merchant' | 'amount' | null>(null);
   const [draft, setDraft] = useState('');
   const photo = useReceiptPhoto(capture.sourceType === 'image' ? capture.sourceImageUri : null);
   useEffect(() => {
-    setOpen(null);
     setEditing(null);
   }, [capture.id]);
-  useEffect(() => {
-    if (!open) return;
-    // Capture phase, so Esc shuts the picker before the drawer's keys see it and close the drawer.
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key !== 'Escape' || event.defaultPrevented) return;
-      event.preventDefault();
-      const anchor = document.activeElement?.closest('.picker-anchor');
-      anchor?.querySelector<HTMLElement>('.capture-field-btn')?.focus();
-      setOpen(null);
-    };
-    window.addEventListener('keydown', onKey, true);
-    return () => window.removeEventListener('keydown', onKey, true);
-  }, [open]);
 
   const next = editedProposal(capture, edits);
   const type = next.type ?? 'expense';
@@ -124,7 +109,6 @@ export function CapturePane({
     `${(row.categoryId && projection.categoriesById[row.categoryId]?.name) || 'No category'} · ${walletNames[row.walletId] ?? 'Wallet'}`;
 
   const set = (patch: ReviewEdits) => {
-    setOpen(null);
     onEdits({ ...edits, ...patch });
   };
   const startEdit = (kind: 'merchant' | 'amount') => {
@@ -172,52 +156,18 @@ export function CapturePane({
       </button>
     </form>
   );
-  const row = (field: Field, label: string, lead: ReactNode, value: string, options: ReactNode, tone?: 'lemon') => (
-    <div className="picker-anchor capture-field">
-      <button
-        type="button"
-        className="capture-field-btn press"
-        data-tone={tone}
-        aria-haspopup="listbox"
-        aria-expanded={open === field}
-        aria-label={`${label}: ${value}`}
-        onClick={() => setOpen(open === field ? null : field)}
-      >
+  const row = <T extends string>(label: string, lead: ReactNode, value: string, chosen: T | null, options: SelectOption<T>[], pick: (value: T) => void, tone?: 'lemon') => (
+    <div className="capture-field" data-tone={tone}>
+      <Select label={label} text={value} className="capture-field-btn press" listClassName="capture-pop" align="end" value={chosen} options={options} onChange={pick}>
         <span className="capture-field-label">{label}</span>
         {lead}
         <span className="capture-field-value">{value}</span>
         <Icon name="chevron-down" size={20} />
-      </button>
-      {open === field && (
-        <ul role="listbox" aria-label={label} className="popover motion-pop capture-pop">
-          {options}
-        </ul>
-      )}
+      </Select>
     </div>
   );
-  const option = (key: string, text: string, chosen: boolean, pick: () => void, lead?: ReactNode) => (
-    <li
-      key={key}
-      role="option"
-      aria-selected={chosen}
-      tabIndex={0}
-      className="popover-row"
-      onClick={pick}
-      onKeyDown={(event) => {
-        if (event.key === 'Enter' || event.key === ' ') {
-          event.preventDefault();
-          pick();
-        }
-      }}
-    >
-      {lead}
-      {text}
-    </li>
-  );
-  const walletOptions = (current: string | null, pick: (id: string) => void, skip?: string | null) =>
-    sameCurrency
-      .filter((each) => each.id !== skip)
-      .map((each) => option(each.id, each.name, each.id === current, () => pick(each.id), <Bubble icon={each.icon} color={each.color} size={28} glyph={15} />));
+  const walletOptions = (skip?: string | null) =>
+    sameCurrency.filter((each) => each.id !== skip).map((each) => ({ value: each.id, label: each.name, lead: <Bubble icon={each.icon} color={each.color} size={28} glyph={15} /> }));
 
   return (
     <section className="capture-card" aria-label="Capture" data-capture={capture.id}>
@@ -307,37 +257,39 @@ export function CapturePane({
           </div>
           <div className="capture-fields">
             {row(
-              'type',
               'Type',
               null,
               TYPES.find((each) => each.value === type)!.label,
-              TYPES.map((each) => option(each.value, each.label, each.value === type, () => set(retypeEdits(capture, each.value)))),
+              type,
+              TYPES.map((each) => ({ value: each.value, label: each.label })),
+              (value) => set(retypeEdits(capture, value)),
             )}
             {type !== 'transfer' &&
               row(
-                'category',
                 'Category',
                 category ? <Bubble icon={category.icon} color={category.color} size={28} glyph={15} /> : null,
                 category?.name ?? 'Pick a category',
-                categories.map((each) =>
-                  option(each.id, each.name, each.id === next.categoryId, () => set({ categoryId: each.id }), <Bubble icon={each.icon} color={each.color} size={28} glyph={15} />),
-                ),
+                next.categoryId,
+                categories.map((each) => ({ value: each.id, label: each.name, lead: <Bubble icon={each.icon} color={each.color} size={28} glyph={15} /> })),
+                (id) => set({ categoryId: id }),
               )}
             {row(
-              'wallet',
               type === 'transfer' ? 'From' : 'Wallet',
               wallet ? <Bubble icon={wallet.icon} color={wallet.color} size={28} glyph={15} /> : <Glyph name="wallet-outline" size={18} />,
               wallet?.name ?? 'Pick a wallet',
-              walletOptions(next.walletId, (id) => set({ walletId: id })),
+              next.walletId,
+              walletOptions(),
+              (id) => set({ walletId: id }),
               needsWallet ? 'lemon' : undefined,
             )}
             {type === 'transfer' &&
               row(
-                'to',
                 'To',
                 to ? <Bubble icon={to.icon} color={to.color} size={28} glyph={15} /> : null,
                 to?.name ?? 'Pick a wallet',
-                walletOptions(next.transferToWalletId, (id) => set({ transferToWalletId: id }), next.walletId),
+                next.transferToWalletId,
+                walletOptions(next.walletId),
+                (id) => set({ transferToWalletId: id }),
                 to ? undefined : 'lemon',
               )}
           </div>

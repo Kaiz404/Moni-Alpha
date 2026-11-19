@@ -21,6 +21,7 @@ import {
 import { applyPlan, applyWrites, readStoreSnapshot, storeHasPulled, type ApplyProgress } from '@repo/data';
 import { useMemo, useRef, useState, type ReactNode } from 'react';
 import { ExportDataButton } from '@/components/account/export-data-button';
+import { Select } from '@/components/controls/select';
 import { Bubble } from '@/components/ledger/glyph';
 import { showToast } from '@/components/shell/shell-store';
 import { useShellApi } from '@/components/shell/shell-context';
@@ -65,11 +66,12 @@ function Stepper({ step }: { step: ImportStep }) {
   );
 }
 
-/** A native select drawn as W2-Data's picker, with the chosen column's letter in front. */
+/** W2-Data's picker, with the chosen column's letter in front. */
 function Picker({
   label,
   value,
   options,
+  placeholder,
   lead,
   focused,
   empty,
@@ -77,8 +79,9 @@ function Picker({
   onChange,
 }: {
   label: string;
-  value: string;
+  value: string | null;
   options: { value: string; label: string }[];
+  placeholder?: string;
   lead: ReactNode;
   focused?: boolean;
   empty?: boolean;
@@ -86,18 +89,8 @@ function Picker({
   onChange: (value: string) => void;
 }) {
   return (
-    <span className="pick" data-focus={focused || undefined} data-empty={empty || undefined}>
-      <span className="pick-lead">{lead}</span>
-      <select aria-label={label} value={value} onFocus={onFocus} onChange={(event) => onChange(event.target.value)}>
-        {options.map((option) => (
-          <option key={option.value} value={option.value}>
-            {option.label}
-          </option>
-        ))}
-      </select>
-      <span className="pick-chevron">
-        <Mdi path={SETTINGS_ICONS.chevronDown} size={20} />
-      </span>
+    <span className="pick" data-focus={focused || undefined} data-empty={empty || undefined} onFocus={onFocus}>
+      <Select label={label} className="pick-trigger" value={value} placeholder={placeholder} lead={lead} options={options} onChange={onChange} />
     </span>
   );
 }
@@ -583,9 +576,10 @@ function MatchColumns({
         <MapRow label="Wallet">
           <Picker
             label="Wallet to add to"
-            value={choices.wallet?.id ?? ''}
+            value={choices.wallet?.id ?? null}
+            placeholder="Choose a wallet"
             empty={!wallet}
-            options={[{ value: '', label: 'Choose a wallet' }, ...ledger.wallets.map((each) => ({ value: each.id, label: each.name }))]}
+            options={ledger.wallets.map((each) => ({ value: each.id, label: each.name }))}
             lead={wallet ? <Bubble icon={wallet.icon} color={wallet.color} size={26} glyph={14} /> : lead(null)}
             onChange={(id) => {
               const chosen = ledger.wallets.find((each) => each.id === id);

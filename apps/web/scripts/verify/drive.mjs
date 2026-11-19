@@ -357,12 +357,16 @@ try {
   await page.getByLabel('Name').fill('Kai');
   await page.getByLabel('Email').fill('kai@example.com');
   await page.getByLabel('Password', { exact: true }).fill('password1');
-  await page.getByLabel('Month').selectOption('12');
-  await page.getByLabel('Year').selectOption(String(new Date().getFullYear() - 18));
+  await page.getByRole('button', { name: /^Month:/ }).click();
+  check('Month opens Moni\'s list, not the browser\'s', await page.getByRole('listbox', { name: 'Month' }).isVisible());
+  await page.getByRole('option', { name: 'December', exact: true }).click();
+  await page.getByRole('button', { name: /^Year:/ }).click();
+  await page.getByRole('option', { name: String(new Date().getFullYear() - 18), exact: true }).click();
   await page.getByRole('checkbox').check();
   check('an under-18 birth month shows the age message', await page.getByText('Moni is for people 18 and over, so we can').isVisible());
   check('Create account stays disabled under 18', await page.locator('form button[type="submit"]').isDisabled());
-  await page.getByLabel('Year').selectOption('1995');
+  await page.getByRole('button', { name: /^Year:/ }).click();
+  await page.getByRole('option', { name: '1995', exact: true }).click();
   check('Create account enables at 18 and over with the terms ticked', await page.locator('form button[type="submit"]').isEnabled());
   await pair('auth-register', 'r3/W2-Auth-register/W2-Auth.png', await shot(page, 'auth-register-1440'));
 

@@ -516,9 +516,10 @@ html[data-layout='phone'] .drawer-head .icon-round {
 .capture-field-value {
   font-size: 15px;
   font-weight: 600;
+  color: var(--color-foreground);
 }
 
-.capture-field-btn[data-tone='lemon'] .capture-field-value {
+.capture-field[data-tone='lemon'] .capture-field-value {
   padding: 6px 12px;
   border-radius: 9999px;
   background: var(--color-lemon);

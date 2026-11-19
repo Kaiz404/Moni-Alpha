@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState, type FormEvent } from 'react';
+import { Select } from '@/components/controls/select';
 import { Icon } from '@/components/icon';
 import {
   authErrorStatus,
@@ -228,29 +229,23 @@ export function LoginView({
               Date of birth
             </span>
             <div className="auth-row" role="group" aria-labelledby="dob-label">
-              <div className="field" data-invalid={!age.ok && age.underAge ? 'true' : undefined}>
-                <Icon name="calendar-blank-outline" size={20} />
-                <select aria-label="Month" value={birthMonth} onChange={(e) => edited(setBirthMonth)(e.target.value)}>
-                  <option value="">Month</option>
-                  {MONTHS.map((label, i) => (
-                    <option key={label} value={String(i + 1).padStart(2, '0')}>
-                      {label}
-                    </option>
-                  ))}
-                </select>
-                <Icon name="chevron-down" size={20} />
-              </div>
-              <div className="field" data-invalid={!age.ok && age.underAge ? 'true' : undefined}>
-                <select aria-label="Year" value={birthYear} onChange={(e) => edited(setBirthYear)(e.target.value)}>
-                  <option value="">Year</option>
-                  {Array.from({ length: 100 }, (_, i) => String(thisYear - i)).map((year) => (
-                    <option key={year} value={year}>
-                      {year}
-                    </option>
-                  ))}
-                </select>
-                <Icon name="chevron-down" size={20} />
-              </div>
+              <Select
+                label="Month"
+                className="field"
+                invalid={!age.ok && age.underAge}
+                lead={<Icon name="calendar-blank-outline" size={20} />}
+                value={birthMonth || null}
+                options={MONTHS.map((label, i) => ({ value: String(i + 1).padStart(2, '0'), label }))}
+                onChange={edited(setBirthMonth)}
+              />
+              <Select
+                label="Year"
+                className="field"
+                invalid={!age.ok && age.underAge}
+                value={birthYear || null}
+                options={Array.from({ length: 100 }, (_, i) => String(thisYear - i)).map((year) => ({ value: year, label: year }))}
+                onChange={edited(setBirthYear)}
+              />
             </div>
             {!age.ok && age.underAge ? (
               <FieldError>{UNDER_AGE}</FieldError>

@@ -14,6 +14,7 @@ import type { MinorAmount } from '@repo/types';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { useState } from 'react';
+import { Select } from '@/components/controls/select';
 import { Icon } from '@/components/icon';
 import { Bubble, Glyph } from '@/components/ledger/glyph';
 import { commit, planContext, reviewContext, reviewView } from '@/lib/ledger/commit';
@@ -35,7 +36,6 @@ function waitingTotal(captures: readonly FinanceProposal[], currency: string): s
 export function ReviewCard({ ledger, setup }: { ledger: Ledger; setup: ChecklistItem[] | null }) {
   const { waiting, transactions, projection, walletNames, currency, calendar, wallets, userId } = ledger;
   const usual = usualCaptures(waiting, transactions);
-  const [picking, setPicking] = useState<string | null>(null);
   const online = useOnline();
   // With the drawer already open, the card's links change what it shows instead of stacking history.
   const drawerOpen = useSearchParams().has('review');
@@ -50,7 +50,6 @@ export function ReviewCard({ ledger, setup }: { ledger: Ledger; setup: Checklist
     );
   };
   const pickWallet = (capture: FinanceProposal, walletId: string) => {
-    setPicking(null);
     commit(planCaptureWallet(capture.id, walletId, projection, planContext(userId)), `${walletNames[walletId] ?? 'Wallet'} picked`);
   };
   const title = waiting.length === 1 ? '1 capture to review' : `${waiting.length} captures to review`;
@@ -108,32 +107,21 @@ export function ReviewCard({ ledger, setup }: { ledger: Ledger; setup: Checklist
                   Approve
                 </button>
               ) : (
-                <span className="picker-anchor">
-                  <button
-                    type="button"
-                    className="btn btn-sand review-approve press"
-                    aria-haspopup="listbox"
-                    aria-expanded={picking === capture.id}
-                    aria-label={`Pick a wallet for ${merchant}`}
-                    onClick={() => setPicking(picking === capture.id ? null : capture.id)}
-                  >
-                    <Glyph name="wallet-outline" size={18} />
-                    Wallet
-                    <Icon name="chevron-down" size={16} />
-                  </button>
-                  {picking === capture.id && (
-                    <ul role="listbox" aria-label="Wallet" className="popover motion-pop">
-                      {wallets
-                        .filter((wallet) => wallet.currency === capture.currency)
-                        .map((wallet) => (
-                          <li key={wallet.id} role="option" aria-selected={false} tabIndex={0} className="popover-row" onClick={() => pickWallet(capture, wallet.id)}>
-                            <Bubble icon={wallet.icon} color={wallet.color} size={28} glyph={15} />
-                            {wallet.name}
-                          </li>
-                        ))}
-                    </ul>
-                  )}
-                </span>
+                <Select
+                  label="Wallet"
+                  className="btn btn-sand review-approve press"
+                  align="end"
+                  triggerLabel={`Pick a wallet for ${merchant}`}
+                  value={null}
+                  options={wallets
+                    .filter((wallet) => wallet.currency === capture.currency)
+                    .map((wallet) => ({ value: wallet.id, label: wallet.name, lead: <Bubble icon={wallet.icon} color={wallet.color} size={28} glyph={15} /> }))}
+                  onChange={(walletId) => pickWallet(capture, walletId)}
+                >
+                  <Glyph name="wallet-outline" size={18} />
+                  Wallet
+                  <Icon name="chevron-down" size={16} />
+                </Select>
               )}
             </li>
           );

@@ -103,8 +103,51 @@
   background: var(--color-sand-light);
 }
 
+/* ---------- Select: one trigger, the caller's shape, the whole of it opens the list ---------- */
+
+.select-trigger {
+  box-sizing: border-box;
+  cursor: pointer;
+  text-align: left;
+}
+
+.select-trigger[data-empty] .select-value {
+  color: var(--color-muted);
+  font-weight: 400;
+}
+
+.popover[role='listbox'] {
+  max-height: 360px;
+}
+
+.select-trigger:disabled {
+  cursor: default;
+}
+
+.select-value {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.select-trigger > svg:last-child {
+  flex: none;
+  margin-left: auto;
+  color: var(--color-muted);
+}
+
+.select-trigger[aria-expanded='true'] > svg:last-child {
+  transform: rotate(180deg);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .popover {
     animation: fade-in 120ms ease both;
+  }
+
+  .select-trigger[aria-expanded='true'] > svg:last-child {
+    transform: none;
   }
 }

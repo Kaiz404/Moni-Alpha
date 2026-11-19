@@ -22,6 +22,7 @@ import { updateProfilePreferences } from '@repo/data';
 import { userPreferencesSchema, type MinorAmount } from '@repo/types';
 import { useState, type ReactNode } from 'react';
 import { AskMoniMark, Cat } from '@/components/brand';
+import { Select } from '@/components/controls/select';
 import { SidePane } from '@/components/ledger/side-pane';
 import { Page } from '@/components/shell/page';
 import { showToast } from '@/components/shell/shell-store';
@@ -240,19 +241,15 @@ function BudgetLoaded({ ledger }: { ledger: Ledger }) {
       <button type="button" className="round-btn" aria-label={monthName(shiftMonth(month, -1))} onClick={() => setMonth(shiftMonth(month, -1))}>
         <Glyph name="chevron-left" />
       </button>
-      <label className="chip">
-        <span className="sr-only">Month</span>
-        <select value={month} onChange={(event) => setMonth(event.target.value)} aria-label="Month">
-          {[...new Set([month, ...data.months.map((item) => item.month)])]
-            .sort((a, b) => b.localeCompare(a))
-            .map((key) => (
-              <option key={key} value={key}>
-                {monthName(key)} {key.slice(0, 4)}
-              </option>
-            ))}
-        </select>
-        <Glyph name="chevron-down" size={18} />
-      </label>
+      <Select
+        label="Month"
+        className="chip press"
+        value={month}
+        options={[...new Set([month, ...data.months.map((item) => item.month)])]
+          .sort((a, b) => b.localeCompare(a))
+          .map((key) => ({ value: key, label: `${monthName(key)} ${key.slice(0, 4)}` }))}
+        onChange={setMonth}
+      />
       <button
         type="button"
         className="round-btn"

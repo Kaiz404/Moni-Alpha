@@ -1,7 +1,8 @@
 'use client';
 
 import { formatMoney, placeRanges, type PlaceRangeKey } from '@repo/core';
-import { useEffect, useState, type ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
+import { Select } from '@/components/controls/select';
 import { Bubble } from '@/components/ledger/glyph';
 import { useQueryParams } from '@/components/ledger/use-query-param';
 import { Page } from '@/components/shell/page';
@@ -46,46 +47,36 @@ export function PlacesScreen() {
   );
 }
 
-function FilterChip({ label, options, value, open, onOpen, onPick, currency }: {
+const ALL = 'all';
+
+function FilterChip({ label, options, value, onPick, currency }: {
   label: string;
   options: FilterOption[];
   value: string | null;
-  open: boolean;
-  onOpen: (open: boolean) => void;
   onPick: (id: string | null) => void;
   currency: string;
 }) {
   const current = options.find((option) => option.id === value) ?? options[0]!;
   return (
-    <span className="picker-anchor">
-      <button type="button" className="map-chip press" aria-haspopup="listbox" aria-expanded={open} onClick={() => onOpen(!open)}>
-        <Bubble icon={current.icon} color={current.color} size={26} glyph={15} />
-        <span className="map-chip-label">{label}</span>
-        {value === null ? 'All' : current.label}
-        <Mdi name="chevron-down" size={18} />
-      </button>
-      {open && (
-        <div className="popover map-popover motion-pop" role="listbox" aria-label={label}>
-          {options.map((option) => (
-            <button
-              key={option.id ?? 'all'}
-              type="button"
-              role="option"
-              aria-selected={option.id === value}
-              className="popover-row map-option"
-              onClick={() => {
-                onPick(option.id);
-                onOpen(false);
-              }}
-            >
-              <Bubble icon={option.icon} color={option.color} size={28} glyph={16} />
-              <span className="map-option-label">{option.label}</span>
-              <span className="num meta">{formatMoney(option.amountMinor, currency)}</span>
-            </button>
-          ))}
-        </div>
-      )}
-    </span>
+    <Select
+      label={label}
+      className="map-chip press"
+      listClassName="map-popover"
+      text={value === null ? 'All' : current.label}
+      value={value ?? ALL}
+      options={options.map((option) => ({
+        value: option.id ?? ALL,
+        label: option.label,
+        lead: <Bubble icon={option.icon} color={option.color} size={28} glyph={16} />,
+        side: <span className="num meta">{formatMoney(option.amountMinor, currency)}</span>,
+      }))}
+      onChange={(id) => onPick(id === ALL ? null : id)}
+    >
+      <Bubble icon={current.icon} color={current.color} size={26} glyph={15} />
+      <span className="map-chip-label">{label}</span>
+      {value === null ? 'All' : current.label}
+      <Mdi name="chevron-down" size={18} />
+    </Select>
   );
 }
 
@@ -96,7 +87,6 @@ function PlacesLoaded({ ledger }: { ledger: Ledger }) {
   const { query, places, selected, range } = data;
   const [hoverId, setHoverId] = useState<string | null>(null);
   const [view, setView] = useState<MapView>(FIT);
-  const [popover, setPopover] = useState<'category' | 'wallet' | null>(null);
   const [picked, setPicked] = useState<string[]>([]);
   const [choosing, setChoosing] = useState(false);
   const ranges = placeRanges(ledger.now, ledger.calendar);
@@ -112,19 +102,9 @@ function PlacesLoaded({ ledger }: { ledger: Ledger }) {
     pick(places[next]!.id);
   };
 
-  useEffect(() => {
-    if (popover === null) return;
-    const close = (event: MouseEvent) => {
-      if (!(event.target as HTMLElement).closest('.picker-anchor')) setPopover(null);
-    };
-    document.addEventListener('mousedown', close);
-    return () => document.removeEventListener('mousedown', close);
-  }, [popover]);
-
   useScreenKeys((key) => {
     if (key === 'Escape') {
       if (choosing) setChoosing(false);
-      else if (popover) setPopover(null);
       else if (selected) pick(null);
       else if (picked.length) setPicked([]);
       else return false;
@@ -174,8 +154,6 @@ function PlacesLoaded({ ledger }: { ledger: Ledger }) {
               label="Category"
               options={data.categoryOptions}
               value={query.categoryId}
-              open={popover === 'category'}
-              onOpen={(open) => setPopover(open ? 'category' : null)}
               onPick={(id) => setParams({ category: id })}
               currency={ledger.currency}
             />
@@ -183,8 +161,6 @@ function PlacesLoaded({ ledger }: { ledger: Ledger }) {
               label="Wallets"
               options={data.walletOptions}
               value={query.walletId}
-              open={popover === 'wallet'}
-              onOpen={(open) => setPopover(open ? 'wallet' : null)}
               onPick={(id) => setParams({ wallet: id })}
               currency={ledger.currency}
             />
