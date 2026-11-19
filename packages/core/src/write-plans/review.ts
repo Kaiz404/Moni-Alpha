@@ -152,6 +152,14 @@ export function editedProposal<P extends ProposedTransaction>(proposal: P, edits
 }
 
 /**
+ * The capture was read as the wrong type. A category belongs to one type, so it goes; going back to
+ * the type Moni read brings back the category it read with it.
+ */
+export function retypeEdits(proposal: Pick<ProposedTransaction, 'type'>, next: TransactionType): ReviewEdits {
+  return next === proposal.type ? { type: undefined, categoryId: undefined } : { type: next, categoryId: null };
+}
+
+/**
  * A decision on one capture: Approve or Not mine, the only two (issue #69). `similar` is "Don't ask
  * about similar"; `automatically` marks a capture Moni completed without asking.
  */

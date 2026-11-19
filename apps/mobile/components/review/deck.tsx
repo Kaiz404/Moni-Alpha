@@ -56,7 +56,7 @@ import { useMainCurrency } from '@/lib/finance/main-currency';
 import { budgetProgress$, categoriesForUser$, transactions$, walletsForUser$ } from '@/lib/finance/selectors';
 import * as haptics from '@/lib/haptics';
 import { springs } from '@repo/design';
-import { reviewStatus } from '@/lib/proposals/review-status';
+import { retypeEdits, reviewStatus, type RejectedProposal } from '@repo/core';
 import { canPairInto, undoPairing } from '@/lib/proposals/pairing';
 import { captureSourceLabel, captureTime } from '@/lib/proposals/capture-source';
 import {
@@ -65,7 +65,6 @@ import {
   moveBackToReview,
   notATransfer,
   notMine,
-  retypeEdits,
   reviewType,
   samePayment,
   undo,
@@ -101,7 +100,7 @@ import { toCategoryTiles } from '@/lib/sheet/category-tiles';
 import { openSheet, type WalletOption } from '@/lib/sheet/sheet-store';
 import { listMerchantAliases } from '@/lib/supabase/merchant-aliases';
 import { ensureFinanceTimezone } from '@/lib/supabase/profile';
-import { listAwaitingReview, type RejectedProposal } from '@/lib/supabase/proposed-transactions';
+import { listAwaitingReview } from '@/lib/supabase/proposed-transactions';
 import { tid } from '@/lib/test-ids';
 import { showToast } from '@/lib/toast/toast-store';
 import { getDefaultWalletId } from '@/lib/wallets/default-wallet';

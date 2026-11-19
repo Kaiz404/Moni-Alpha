@@ -18,14 +18,12 @@ import { listMerchantAliases } from '@/lib/supabase/merchant-aliases';
 import {
   listRecentlyReviewed,
   proposalSource,
-  type RejectedProposal,
-  type ReviewedProposal,
 } from '@/lib/supabase/proposed-transactions';
 import { tid } from '@/lib/test-ids';
 import { type TransactionRowData } from '@/lib/transactions/row';
 import { transactionRow, type RowLookups } from '@repo/core';
 import { compactWalletNames } from '@repo/core';
-import { merchantName, type FinanceTransaction, dayHeading, formatSignedMoney } from '@repo/core';
+import { merchantName, type FinanceTransaction, dayHeading, formatSignedMoney, type RejectedProposal, type ReviewedProposal } from '@repo/core';
 import { deviceCalendar } from '@/lib/dates/device-calendar';
 
 type Lookups = RowLookups & {

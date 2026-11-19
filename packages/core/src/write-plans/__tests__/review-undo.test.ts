@@ -12,6 +12,7 @@ import {
   planNotATransfer,
   planReopen,
   planReview,
+  retypeEdits,
   similarRule,
   timesFiled,
   usualCaptures,
@@ -265,6 +266,13 @@ describe('planReview', () => {
       kind: 'error',
       message: 'Enter an amount above zero.',
     });
+  });
+});
+
+describe('retypeEdits', () => {
+  it('drops the category for another type and brings it back with the type Moni read', () => {
+    expect(retypeEdits(capture(), 'income')).toEqual({ type: 'income', categoryId: null });
+    expect(retypeEdits(capture(), 'expense')).toEqual({ type: undefined, categoryId: undefined });
   });
 });
 

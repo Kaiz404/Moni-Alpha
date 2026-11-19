@@ -6,6 +6,7 @@ import {
   planNotATransfer,
   planReopen,
   planSimilarRule,
+  type RejectedProposal,
   type ReviewChanges,
   type ReviewEdits as EditsOnCapture,
   type StoredRow,
@@ -24,9 +25,7 @@ import {
   planDecision,
   reviewContext,
   reviewView,
-  type RejectedProposal,
 } from '@/lib/supabase/proposed-transactions';
-import { retypeFields } from '@/lib/transactions/type-change';
 
 /**
  * What the user changed on a capture before deciding. A field left undefined keeps the
@@ -75,11 +74,6 @@ export function reviewType(
   edits: ReviewEdits,
 ): TransactionType | null {
   return edits.type ?? proposal.type;
-}
-
-/** Going back to the type Moni read brings back the category it read with it. */
-export function retypeEdits(proposal: ProposedTransaction, next: TransactionType): ReviewEdits {
-  return next === proposal.type ? { type: undefined, categoryId: undefined } : retypeFields(next);
 }
 
 /** Writes the ledger row. Nothing is written until every required field is present. */
