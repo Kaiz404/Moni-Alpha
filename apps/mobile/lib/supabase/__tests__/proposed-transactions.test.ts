@@ -1,12 +1,14 @@
 import type { Observable } from '@legendapp/state';
 import {
-  approveProposedTransaction,
+  commitReview,
   getProposedTransactions,
   listAwaitingReview,
   listRecentlyReviewed,
   pruneReviewHistory,
-  rejectProposedTransaction,
 } from '../proposed-transactions';
+
+const reject = (id: string) =>
+  commitReview(listAwaitingReview().find((proposal) => proposal.id === id)!, { kind: 'notMine' });
 
 jest.mock('expo-crypto', () => ({ randomUUID: () => 'tx-1' }));
 jest.mock('@/lib/supabase/client', () => ({ getUserId: async () => 'user-1' }));
@@ -19,6 +21,7 @@ jest.mock('@/lib/store', () => {
     debtActivities$: observable({}),
     transactions$: observable({}),
     proposedTransactions$: observable({}),
+    autoAddRules$: observable({}),
     assertMigrated: () => {},
     isMigrated: jest.fn(() => true),
   };
@@ -79,7 +82,7 @@ describe('Not mine', () => {
     jest.useFakeTimers({ now: NOW });
     seed('p2', {});
 
-    await rejectProposedTransaction('p2');
+    await reject('p2');
     jest.useRealTimers();
 
     expect(proposedTransactions$.p2.peek()).toMatchObject({
@@ -97,11 +100,12 @@ describe('Not mine', () => {
     const statuses: unknown[] = [];
     const stop = proposedTransactions$.p2.status.onChange(({ value }) => statuses.push(value));
 
-    await rejectProposedTransaction('p2');
+    await reject('p2');
     stop();
 
     expect(statuses).toEqual(['rejected']);
-    expect(proposedTransactions$.peek().p2).toBeUndefined();
+    expect(proposedTransactions$.peek().p2).toMatchObject({ status: 'rejected', deleted: true });
+    expect(listAwaitingReview()).toEqual([]);
   });
 
   it('marks the capture log entry of a notification proposal Ignored', async () => {
@@ -109,8 +113,8 @@ describe('Not mine', () => {
     seed('from-alert', {});
     seed('from-chat', { source_type: 'text' });
 
-    await rejectProposedTransaction('from-alert');
-    await rejectProposedTransaction('from-chat');
+    await reject('from-alert');
+    await reject('from-chat');
 
     expect(markCaptureStatus.mock.calls).toEqual([['from-alert', 'ignored']]);
   });
@@ -121,7 +125,7 @@ describe('Approve', () => {
     seed('p3', {});
     const [proposal] = listAwaitingReview();
 
-    const transactionId = await approveProposedTransaction(proposal, { walletId: 'w1' });
+    const { transactionId } = await commitReview(proposal, { kind: 'approve', edits: { walletId: 'w1' } });
 
     expect(transactionId).toBe('tx-1');
     expect(proposedTransactions$.p3.peek()).toMatchObject({

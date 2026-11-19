@@ -9,22 +9,40 @@ import {
   type PlanContext,
   type Planned,
   type RawTable,
+  type ReviewContext,
+  type ReviewView,
   type RowWrites,
+  type StoredRow,
   type SyncedTable,
 } from '@repo/core';
 import { showToast } from '@/components/shell/shell-store';
 import { moniStore } from '@/lib/moni-store';
 
 /** Who writes and when, for a plan made now. */
-export function planContext(userId: string): PlanContext & { reviewHistory: boolean } {
+export function planContext(userId: string): PlanContext {
   const store = moniStore();
   return {
     userId,
     now: new Date().toISOString(),
     newId: () => crypto.randomUUID(),
     isMigrated: (migration) => store.isMigrated(migration),
-    reviewHistory: store.isMigrated('review_history'),
   };
+}
+
+/** Who decides on a capture and when, and which of the review migrations the server has. */
+export function reviewContext(userId: string): ReviewContext {
+  const store = moniStore();
+  return {
+    ...planContext(userId),
+    reviewHistory: store.isMigrated('review_history'),
+    autoAddRules: store.isMigrated('review_later_and_auto_add_rules'),
+  };
+}
+
+/** What a review decision reads: the live wallets, and the auto-add rules as the store holds them now. */
+export function reviewView(view: Pick<LedgerView, 'walletsById'>): ReviewView {
+  const rows = (moniStore().autoAddRules$.peek() ?? {}) as Record<string, StoredRow<'auto_add_rules'> | undefined>;
+  return { walletsById: view.walletsById, autoAddRules: Object.values(rows).filter((row): row is StoredRow<'auto_add_rules'> => Boolean(row)) };
 }
 
 function snapshot(writes: RowWrites) {

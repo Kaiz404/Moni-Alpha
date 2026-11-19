@@ -4,8 +4,8 @@ import {
   combine,
   familiarity,
   formatMoney,
-  planApprove,
   planCaptureWallet,
+  planReview,
   timesFiled,
   usualCaptures,
   type FinanceProposal,
@@ -15,7 +15,7 @@ import Link from 'next/link';
 import { useState } from 'react';
 import { Icon } from '@/components/icon';
 import { Bubble, Glyph } from '@/components/ledger/glyph';
-import { commit, planContext } from '@/lib/ledger/commit';
+import { commit, planContext, reviewContext, reviewView } from '@/lib/ledger/commit';
 import { captureSource, clockTime } from '@/lib/ledger/format';
 import type { Ledger } from '@/lib/ledger/use-ledger';
 
@@ -35,8 +35,9 @@ export function ReviewCard({ ledger, firstRun }: { ledger: Ledger; firstRun: boo
   if (waiting.length === 0) return <CaughtUp />;
 
   const approve = (captures: readonly FinanceProposal[]) => {
-    const ctx = planContext(userId);
-    commit(combine(captures.map((capture) => planApprove(capture, projection, ctx))), (results) =>
+    const ctx = reviewContext(userId);
+    const view = reviewView(projection);
+    commit(combine(captures.map((capture) => planReview(capture, { kind: 'approve' }, view, ctx))), (results) =>
       results.length === 1 ? `${captures[0]!.merchant ?? 'Capture'} approved` : `${results.length} approved`,
     );
   };

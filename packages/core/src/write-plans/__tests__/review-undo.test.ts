@@ -4,24 +4,41 @@ import { describe, expect, it } from 'vitest';
 import type { FinanceTransaction, FinanceWallet } from '../../read-model/types';
 import { planCheckIn, correctBalance } from '../balance-correction';
 import { applyToTables, type MemoryTables } from '../memory';
-import { alertKey, captureAlert, familiarity, planApprove, planCaptureWallet, timesFiled, usualCaptures } from '../review';
+import {
+  alertKey,
+  captureAlert,
+  familiarity,
+  planCaptureWallet,
+  planNotATransfer,
+  planReopen,
+  planReview,
+  similarRule,
+  timesFiled,
+  usualCaptures,
+  type ReviewContext,
+} from '../review';
 import { planTransactionsDelete, planTransactionsEdit } from '../transactions';
-import type { PlanContext } from '../types';
+import type { StoredRow } from '../types';
 import { undoWrites } from '../undo';
 
 const NOW = '2026-10-14T05:00:00.000Z';
 const LATER = '2026-10-14T05:01:00.000Z';
 const minor = (value: number) => value as MinorAmount;
-const ctx = (reviewHistory = true): PlanContext & { reviewHistory: boolean } => ({
-  userId: 'user-1',
-  now: NOW,
-  newId: () => '00000000-0000-4000-8000-000000000001',
-  isMigrated: () => true,
-  reviewHistory,
-});
+const ctx = (reviewHistory = true): ReviewContext => {
+  let next = 0;
+  return {
+    userId: 'user-1',
+    now: NOW,
+    newId: () => `00000000-0000-4000-8000-00000000000${++next}`,
+    isMigrated: () => true,
+    reviewHistory,
+    autoAddRules: true,
+  };
+};
 
 const wallet = { id: 'w-1', currency: 'MYR' } as FinanceWallet;
-const view = { walletsById: { 'w-1': wallet }, transactionsById: {} };
+const view = { walletsById: { 'w-1': wallet, 'w-2': { id: 'w-2', currency: 'MYR' } as FinanceWallet }, transactionsById: {}, autoAddRules: [] };
+const approve = { kind: 'approve' } as const;
 
 const capture = (over: Partial<ProposedTransaction> = {}): ProposedTransaction => ({
   id: 'p-1',
@@ -85,9 +102,9 @@ describe('familiarity', () => {
   });
 });
 
-describe('planApprove', () => {
-  it('writes the ledger row with the alert and closes the capture as approved', () => {
-    const plan = planApprove(capture(), view, ctx());
+describe('planReview', () => {
+  it('Approve writes the ledger row with the alert, closes the capture and marks the capture log added', () => {
+    const plan = planReview(capture(), approve, view, ctx());
     expect(plan.kind).toBe('writes');
     if (plan.kind !== 'writes') return;
     expect(plan.writes.insert[0]).toMatchObject({
@@ -113,11 +130,119 @@ describe('planApprove', () => {
       },
     ]);
     expect(plan.writes.softDelete).toEqual([]);
+    expect(plan.result).toEqual({
+      decision: 'approve',
+      transactionId: '00000000-0000-4000-8000-000000000001',
+      rule: null,
+      captureMarks: [{ captureId: 'p-1', status: 'added', transactionId: '00000000-0000-4000-8000-000000000001' }],
+    });
   });
 
   it('soft-deletes the capture where the server has no review history yet', () => {
-    const plan = planApprove(capture(), view, ctx(false));
+    const plan = planReview(capture(), approve, view, ctx(false));
     expect(plan.kind === 'writes' && plan.writes.softDelete).toEqual([{ table: 'proposed_transactions', id: 'p-1', at: NOW }]);
+  });
+
+  it('writes what the user changed, with the place the phone saw and the Auto mark', () => {
+    const plan = planReview(
+      capture({ sourceType: 'text', merchant: 'parking' }),
+      {
+        kind: 'approve',
+        edits: { amountMinor: minor(600), merchant: ' Parking KLCC ', categoryId: 'c-car', walletId: 'w-2' },
+        automatically: true,
+        place: { latitude: 3.1579, longitude: 101.7116, name: 'KLCC' },
+      },
+      view,
+      ctx(),
+    );
+    expect(plan.kind === 'writes' && plan.writes.insert[0]!.row).toMatchObject({
+      wallet_id: 'w-2',
+      amount: '6.00',
+      merchant: 'Parking KLCC',
+      category_id: 'c-car',
+      location_latitude: 3.1579,
+      location_longitude: 101.7116,
+      location_name: 'KLCC',
+      metadata: { source: 'moni', ai_suggested: true },
+    });
+    expect(plan.kind === 'writes' && plan.result.captureMarks).toEqual([]);
+  });
+
+  it('keeps a receipt photo already in storage on the ledger row', () => {
+    const photo = 'https://dev.supabase.co/storage/v1/object/public/receipts/user-1/p-1.jpg';
+    const stored = planReview(capture({ sourceType: 'image', sourceImageUri: photo }), approve, view, ctx());
+    expect(stored.kind === 'writes' && stored.writes.insert[0]!.row).toMatchObject({ receipt_image_url: photo, metadata: { source: 'camera' } });
+    const uploading = planReview(capture({ sourceType: 'image', sourceImageUri: 'file:///receipts/p-1.jpg' }), approve, view, ctx());
+    expect(uploading.kind === 'writes' && uploading.writes.insert[0]!.row).toMatchObject({ receipt_image_url: null });
+  });
+
+  it("Don't ask about similar saves a rule for the app and merchant, or updates the live one", () => {
+    const fresh = planReview(capture(), { kind: 'approve', similar: true }, view, ctx());
+    expect(fresh.kind === 'writes' && fresh.writes.insert[1]).toEqual({
+      table: 'auto_add_rules',
+      row: {
+        id: '00000000-0000-4000-8000-000000000002',
+        user_id: 'user-1',
+        merchant_key: 'grab food',
+        source_app: 'com.maybank2u.life',
+        wallet_id: 'w-1',
+        category_id: 'c-food',
+        deleted: false,
+      },
+    });
+    expect(fresh.kind === 'writes' && fresh.result.rule).toEqual({ id: '00000000-0000-4000-8000-000000000002', created: true });
+
+    const rules = [
+      { id: 'r-old', user_id: 'user-1', merchant_key: 'grab food', source_app: 'com.maybank2u.life', wallet_id: 'w-2', category_id: 'c-x', deleted: false, updated_at: '2026-10-01T00:00:00Z' },
+      { id: 'r-new', user_id: 'user-1', merchant_key: 'grab food', source_app: 'com.maybank2u.life', wallet_id: 'w-2', category_id: 'c-y', deleted: false, updated_at: '2026-10-02T00:00:00Z' },
+    ] as StoredRow<'auto_add_rules'>[];
+    const again = planReview(capture(), { kind: 'approve', similar: true }, { ...view, autoAddRules: rules }, ctx());
+    expect(again.kind === 'writes' && again.writes.patch[1]).toEqual({
+      table: 'auto_add_rules',
+      id: 'r-new',
+      patch: { merchant_key: 'grab food', source_app: 'com.maybank2u.life', wallet_id: 'w-1', category_id: 'c-food', updated_at: NOW },
+    });
+    expect(again.kind === 'writes' && again.result.rule).toEqual({ id: 'r-new', created: false });
+  });
+
+  it('saves no rule for a retyped capture, a typed capture, or before the rules table exists', () => {
+    expect(similarRule(capture(), { type: 'income' })).toBeNull();
+    expect(similarRule(capture({ sourceType: 'image' }))).toBeNull();
+    expect(similarRule(capture(), { walletId: 'w-2', merchant: 'Grab*Food Lunch' })).toEqual({
+      merchantKey: 'grab food lunch',
+      sourceApp: 'com.maybank2u.life',
+      walletId: 'w-2',
+      categoryId: 'c-food',
+    });
+    const before = planReview(capture(), { kind: 'approve', similar: true }, view, { ...ctx(), autoAddRules: false });
+    expect(before.kind === 'writes' && [before.writes.insert.length, before.result.rule]).toEqual([1, null]);
+  });
+
+  it('Not mine closes the capture as rejected and marks it and the alert it absorbed ignored', () => {
+    const paired = capture({
+      pairing: {
+        kind: 'same_payment',
+        absorbed: { id: 'p-0', sourceType: 'notification' },
+        before: {},
+      } as unknown as ProposedTransaction['pairing'],
+    });
+    expect(planReview(paired, { kind: 'notMine' }, view, ctx())).toEqual({
+      kind: 'writes',
+      writes: {
+        insert: [],
+        patch: [{ table: 'proposed_transactions', id: 'p-1', patch: { status: 'rejected', reviewed_at: NOW, transaction_id: null, updated_at: NOW } }],
+        softDelete: [],
+      },
+      result: {
+        decision: 'notMine',
+        transactionId: null,
+        rule: null,
+        captureMarks: [
+          { captureId: 'p-1', status: 'ignored' },
+          { captureId: 'p-0', status: 'ignored' },
+        ],
+      },
+    });
   });
 
   it('picks a wallet for a capture that needs one', () => {
@@ -129,12 +254,85 @@ describe('planApprove', () => {
     expect(planCaptureWallet('p-1', 'w-9', view, ctx())).toEqual({ kind: 'error', message: 'Wallet not found' });
   });
 
-  it('asks for a wallet first, and refuses a capture already decided', () => {
-    expect(planApprove(capture({ walletId: null }), view, ctx())).toEqual({ kind: 'needsInput', field: 'wallet' });
-    expect(planApprove(capture({ status: 'approved' }), view, ctx())).toEqual({
+  it('asks for a wallet or a destination first, and refuses a capture already decided', () => {
+    expect(planReview(capture({ walletId: null }), approve, view, ctx())).toEqual({ kind: 'needsInput', field: 'wallet' });
+    expect(planReview(capture({ type: 'transfer' }), approve, view, ctx())).toEqual({ kind: 'needsInput', field: 'destination' });
+    expect(planReview(capture({ status: 'rejected' }), { kind: 'notMine' }, view, ctx())).toEqual({
       kind: 'error',
       message: 'This capture was already reviewed.',
     });
+    expect(planReview(capture(), { kind: 'approve', edits: { amountMinor: minor(0) } }, view, ctx())).toEqual({
+      kind: 'error',
+      message: 'Enter an amount above zero.',
+    });
+  });
+});
+
+describe('planReopen', () => {
+  const row = {
+    id: 'p-1',
+    user_id: 'user-1',
+    source_type: 'notification',
+    status: 'pending',
+    reviewed_at: null,
+    transaction_id: null,
+    pairing: null,
+    deleted: false,
+  } as unknown as StoredRow<'proposed_transactions'>;
+
+  it('puts the capture back, removes the row and a rule the decision made, and marks the log waiting', () => {
+    expect(planReopen(row, { transactionId: 't-9', rule: { id: 'r-1', created: true } }, true, { now: LATER })).toEqual({
+      kind: 'writes',
+      writes: {
+        insert: [],
+        patch: [{ table: 'proposed_transactions', id: 'p-1', patch: { status: 'pending', reviewed_at: null, transaction_id: null, updated_at: LATER } }],
+        softDelete: [
+          { table: 'transactions', id: 't-9', at: LATER },
+          { table: 'auto_add_rules', id: 'r-1', at: LATER },
+        ],
+      },
+      result: { captureMarks: [{ captureId: 'p-1', status: 'waiting_for_review' }] },
+    });
+  });
+
+  it('writes a soft-deleted capture again whole, and keeps a rule that was there before', () => {
+    const plan = planReopen({ ...row, source_type: 'image' }, { transactionId: null, rule: { id: 'r-1', created: false } }, false, { now: LATER });
+    expect(plan).toEqual({
+      kind: 'writes',
+      writes: {
+        insert: [{ table: 'proposed_transactions', row: { ...row, source_type: 'image', status: 'pending', reviewed_at: null, transaction_id: null, updated_at: LATER, deleted: false } }],
+        patch: [],
+        softDelete: [],
+      },
+      result: { captureMarks: [] },
+    });
+  });
+
+  it('a decision then its reopen leaves the capture as it was', () => {
+    const state: MemoryTables = { proposed_transactions: { 'p-1': { ...row } } };
+    const plan = planReview(capture(), approve, view, ctx());
+    if (plan.kind !== 'writes') throw new Error(plan.kind);
+    const after = applyToTables(state, plan.writes);
+    const reopen = planReopen(row, plan.result, true, { now: LATER });
+    if (reopen.kind !== 'writes') throw new Error(reopen.kind);
+    const back = applyToTables(after, reopen.writes);
+    expect(back.proposed_transactions!['p-1']).toEqual({ ...row, updated_at: LATER });
+    expect(back.transactions!['00000000-0000-4000-8000-000000000001']!.deleted).toBe(true);
+  });
+});
+
+describe('planNotATransfer', () => {
+  it('turns a misread transfer into spending from the alert wallet, or income into the other side', () => {
+    const spend = planNotATransfer(capture({ type: 'transfer', transferToWalletId: 'w-2', description: 'To savings' }), { now: NOW });
+    expect(spend.kind === 'writes' && spend.writes.patch[0]!.patch).toEqual({
+      type: 'expense',
+      wallet_id: 'w-1',
+      transfer_to_wallet_id: null,
+      description: null,
+      updated_at: NOW,
+    });
+    const income = planNotATransfer(capture({ type: 'transfer', walletId: null, transferToWalletId: 'w-2' }), { now: NOW });
+    expect(income.kind === 'writes' && income.writes.patch[0]!.patch).toMatchObject({ type: 'income', wallet_id: 'w-2' });
   });
 });
 
@@ -177,7 +375,7 @@ describe('undoWrites', () => {
 
   it('takes an approval back: the new row goes and the capture waits again', () => {
     const state = tables();
-    const plan = planApprove(capture(), view, ctx());
+    const plan = planReview(capture(), approve, view, ctx());
     if (plan.kind !== 'writes') throw new Error(plan.kind);
     const undo = undoWrites(plan.writes, beforeOf(state), LATER);
     expect(undo.softDelete).toEqual([{ table: 'transactions', id: '00000000-0000-4000-8000-000000000001', at: LATER }]);

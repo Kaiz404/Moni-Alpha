@@ -1,6 +1,6 @@
 import type { Observable } from '@legendapp/state';
 import type { MinorAmount, ProposedTransaction } from '@repo/types';
-import { approveProposedTransaction } from '../proposed-transactions';
+import { commitReview } from '../proposed-transactions';
 import { correctBalance } from '@repo/core';
 import { createBalanceCorrection, createTransaction } from '../transactions';
 
@@ -15,6 +15,7 @@ jest.mock('@/lib/store', () => {
     debtActivities$: observable({}),
     transactions$: observable({}),
     proposedTransactions$: observable({}),
+    autoAddRules$: observable({}),
     isMigrated: () => true,
   };
 });
@@ -63,12 +64,14 @@ describe('transaction source', () => {
       description: 'Parking',
       merchant: 'KLCC',
       transactionDate: '2026-10-14T02:00:00.000Z',
+      status: 'pending',
+      currency: 'MYR',
     } as unknown as ProposedTransaction;
     proposedTransactions$[proposal.id].set({ id: proposal.id, deleted: false });
 
     const before = new Set(Object.keys(transactions$.peek()));
 
-    await approveProposedTransaction(proposal, { walletId: 'w1' });
+    await commitReview(proposal, { kind: 'approve', edits: { walletId: 'w1' } });
 
     const added = Object.keys(transactions$.peek()).filter((id) => !before.has(id));
     expect(added.map(metadataOf)).toEqual([{ source }]);

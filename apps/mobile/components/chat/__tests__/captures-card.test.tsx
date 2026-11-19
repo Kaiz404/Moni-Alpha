@@ -4,7 +4,6 @@ import { act, fireEvent, render, screen } from '@testing-library/react-native';
 import { CapturesCard } from '@/components/chat/captures-card';
 import { financeProjection$ } from '@/lib/finance/projection';
 import { proposedTransactions$ } from '@/lib/store';
-import { rejectProposedTransaction } from '@/lib/supabase/proposed-transactions';
 import { USER, financeWallet, projection } from '@/lib/wallets/__tests__/balance-fixture';
 
 jest.mock('@/lib/auth/auth-context', () => ({
@@ -16,10 +15,9 @@ jest.mock('uniwind', () => ({
 }));
 jest.mock('@/lib/haptics', () => ({ approve: jest.fn(), notMine: jest.fn() }));
 jest.mock('expo-router', () => ({ router: { push: jest.fn() } }));
-jest.mock('@/lib/supabase/proposed-transactions', () => ({
-  ...jest.requireActual('@/lib/supabase/proposed-transactions'),
-  rejectProposedTransaction: jest.fn(async () => {}),
-  restoreRejectedProposal: jest.fn(async () => {}),
+jest.mock('@/lib/supabase/client', () => ({
+  ...jest.requireActual('@/lib/supabase/client'),
+  getUserId: async () => 'user_1',
 }));
 
 const createdAt = new Date(2026, 9, 14, 13, 30).toISOString();
@@ -72,7 +70,7 @@ describe('CapturesCard', () => {
     expect(screen.getByText('−RM23.40 · Maybank alert')).toBeTruthy();
 
     await act(async () => fireEvent.press(screen.getByTestId('chat.captures.not-mine.p1')));
-    expect(rejectProposedTransaction).toHaveBeenCalledWith('p1');
+    expect(proposedTransactions$.p1.status.peek()).toBe('rejected');
     expect(screen.getByText('Not mine')).toBeTruthy();
     expect(screen.getByTestId('chat.answer.title')).toHaveTextContent('1 capture, RM86.40');
   });

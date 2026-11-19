@@ -6,12 +6,7 @@ import { Text } from '@/components/ui/text';
 import { appendMessage, readThread, type ChatMessage } from '@/lib/ai/chat/messages';
 import { threadDay } from '@/lib/ai/chat/sessions';
 import { financeProjection$ } from '@/lib/finance/projection';
-import { proposedTransactions$ } from '@/lib/store';
-import {
-  approveProposedTransaction,
-  rejectProposedTransaction,
-} from '@/lib/supabase/proposed-transactions';
-import { deleteTransaction } from '@/lib/supabase/transactions';
+import { proposedTransactions$, transactions$, wallets$ } from '@/lib/store';
 import { dismissToast, useToast } from '@/lib/toast/toast-store';
 import { USER, financeWallet, projection } from '@/lib/wallets/__tests__/balance-fixture';
 
@@ -26,11 +21,13 @@ jest.mock('@/lib/haptics', () => ({ approve: jest.fn(), notMine: jest.fn() }));
 jest.mock('expo-router', () => ({ router: { push: jest.fn() } }));
 jest.mock('@/lib/supabase/proposed-transactions', () => ({
   ...jest.requireActual('@/lib/supabase/proposed-transactions'),
-  approveProposedTransaction: jest.fn(async () => 't1'),
-  rejectProposedTransaction: jest.fn(async () => {}),
   findProposalDuplicate: jest.fn(async () => null),
 }));
-jest.mock('@/lib/supabase/transactions', () => ({ deleteTransaction: jest.fn(async () => {}) }));
+jest.mock('@/lib/supabase/client', () => ({
+  ...jest.requireActual('@/lib/supabase/client'),
+  getUserId: async () => 'user_1',
+}));
+jest.mock('expo-crypto', () => ({ randomUUID: () => 't1' }));
 
 const createdAt = new Date(2026, 9, 14, 13, 30).toISOString();
 
@@ -83,6 +80,8 @@ describe('DraftCard', () => {
       ...projection([financeWallet()]),
       proposalsById: { p1: parking },
     });
+    wallets$.set({ maybank: { id: 'maybank', currency: 'MYR', deleted: false } });
+    transactions$.set({});
     proposedTransactions$.p1.set({ id: 'p1', status: 'pending', deleted: false });
     appendMessage(draft);
   });
@@ -104,11 +103,8 @@ describe('DraftCard', () => {
     expect(screen.getByTestId('chat.draft.amount-text')).toHaveTextContent('−RM7.00');
 
     await act(async () => fireEvent.press(screen.getByTestId('chat.draft.approve')));
-    expect(jest.mocked(approveProposedTransaction).mock.calls[0]?.[0]).toMatchObject({
-      id: 'p1',
-      amountMinor: 700,
-      walletId: 'maybank',
-    });
+    expect(transactions$.t1.peek()).toMatchObject({ amount: '7.00', wallet_id: 'maybank', deleted: false });
+    expect(proposedTransactions$.p1.status.peek()).toBe('approved');
     expect(screen.getByText('Added −RM7.00')).toBeTruthy();
     const stored = readThread(threadDay(createdAt)).messages.find((m) => m.id === 'm1');
     expect(stored).toMatchObject({
@@ -116,7 +112,8 @@ describe('DraftCard', () => {
     });
 
     await act(async () => fireEvent.press(screen.getByText('Undo')));
-    expect(deleteTransaction).toHaveBeenCalledWith('t1');
+    expect(transactions$.t1.deleted.peek()).toBe(true);
+    expect(proposedTransactions$.p1.status.peek()).toBe('pending');
     const undone = readThread(threadDay(createdAt)).messages.find((m) => m.id === 'm1');
     expect(undone).not.toHaveProperty('outcome');
   });
@@ -129,7 +126,7 @@ describe('DraftCard', () => {
       </>,
     );
     await act(async () => fireEvent.press(screen.getByTestId('chat.draft.not-mine')));
-    expect(rejectProposedTransaction).toHaveBeenCalledWith('p1');
+    expect(proposedTransactions$.p1.status.peek()).toBe('rejected');
     expect(screen.getAllByText('1 not mine')).toHaveLength(2);
     const stored = readThread(threadDay(createdAt)).messages.find((m) => m.id === 'm1');
     expect(stored).toMatchObject({ outcome: { kind: 'not_mine' } });

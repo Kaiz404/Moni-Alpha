@@ -13,13 +13,13 @@ import { emitProposedTransactionsChanged } from '@/lib/proposals/proposed-transa
 import { isMigrated, proposedTransactions$, transactions$ } from '@/lib/store';
 import { getRecordValues, patchRow } from '@/lib/store/helpers';
 import {
-  approveProposedTransaction,
+  commitReview,
   createProposedTransaction,
   retireProposal,
   type ProposedTransactionRow,
 } from '@/lib/supabase/proposed-transactions';
 import { deleteTransaction } from '@/lib/supabase/transactions';
-import { alertKey, captureAlert } from '@repo/core';
+import { alertKey } from '@repo/core';
 import { parseMetadata, transactionAlert, transactionPairing } from '@/lib/transactions/alert';
 
 type Row = Record<string, unknown> & { id: string };
@@ -127,13 +127,8 @@ async function completeTransfer(id: string, pairing: CapturePairing): Promise<st
     ...stored,
     pairing: { ...pairing, promotedFromProposalId: id },
   };
-  const transactionId = await approveProposedTransaction(
-    proposal,
-    { walletId: proposal.walletId!, transferToWalletId: proposal.transferToWalletId },
-    captureAlert(proposal, id),
-    { automatically: true },
-  );
-  if (proposal.sourceType === 'notification') markCaptureStatus(id, 'auto_added', transactionId);
+  const { transactionId } = await commitReview(proposal, { kind: 'approve', automatically: true });
+  if (!transactionId) throw new Error(`Cannot complete proposal: ${id}`);
   return transactionId;
 }
 
