@@ -80,14 +80,23 @@ check('the first alert after install uses the heads-up channel', () => {
   strictEqual(buildReviewNotification({ ...grabInput(), firstAlert: true }).channelId, 'moni-review-first');
   strictEqual(grab.channelId, 'moni-review');
 });
-check('thousands take commas, income takes +, transfers no sign', () => {
+check('thousands take commas, income takes + and from, transfers no sign and to', () => {
   strictEqual(
     buildReviewNotification({ ...grabInput(), amountMinor: 111620 }).title,
     '−RM1,116.20 at GRAB*FOOD',
   );
-  strictEqual(buildReviewNotification({ ...grabInput(), type: 'income' }).title, '+RM23.40 at GRAB*FOOD');
-  strictEqual(buildReviewNotification({ ...grabInput(), type: 'transfer' }).title, 'RM23.40 at GRAB*FOOD');
+  strictEqual(
+    buildReviewNotification({ ...grabInput(), merchant: 'ACME SDN BHD', type: 'income' }).title,
+    '+RM23.40 from ACME SDN BHD',
+  );
+  strictEqual(
+    buildReviewNotification({ ...grabInput(), merchant: "Touch 'n Go reload", type: 'transfer' }).title,
+    "RM23.40 to Touch 'n Go reload",
+  );
 });
+check('a capture with no merchant is titled by its amount alone', () =>
+  strictEqual(buildReviewNotification({ ...grabInput(), merchant: null }).title, '−RM23.40'),
+);
 check('the accent is Deep mint', () => strictEqual(ACCENT, '#236B47'));
 
 const shown = { proposalId: 'p-grab', merchant: 'GRAB*FOOD', amountMinor: 2340, currency: 'MYR', type: 'expense' };
@@ -106,6 +115,17 @@ check('after Don\'t ask about similar it says what Moni does now and keeps Undo'
   const auto = buildAutoAddedNotification({ ...shown, outcome: { action: 'approve' } });
   strictEqual(auto.body, 'Moni adds GRAB*FOOD alerts like this without asking and marks them Auto.');
   deepStrictEqual(auto.actionIds, ['undo']);
+});
+check('with no merchant the decided notifications leave it out', () => {
+  const nameless = { ...shown, merchant: null };
+  strictEqual(
+    buildApprovedNotification({ ...nameless, budgetText: null, outcome: { action: 'approve' } }).title,
+    'Approved −RM23.40',
+  );
+  strictEqual(
+    buildAutoAddedNotification({ ...nameless, outcome: { action: 'approve' } }).body,
+    'Moni adds alerts like this without asking and marks them Auto.',
+  );
 });
 check('Not mine says what happened, with Undo', () => {
   const notMine = buildNotMineNotification({ proposalId: 'p-grab', outcome: { action: 'notMine' } });
@@ -155,7 +175,7 @@ check('later adds replace it with the day\'s count and total, the latest underne
   strictEqual(digestOfThree.identifier, digestOfOne.identifier);
   deepStrictEqual(digestOfThree.data, { kind: 'auto-added', transactionId: 't3', count: 3 });
 });
-check('a transfer shows unsigned and leaves the total out', () => {
+check('a transfer shows unsigned, goes to its merchant and leaves the total out', () => {
   const withReload = addToAutoAddedDigest(
     oneAdded,
     added('t4', "Touch 'n Go reload", 10000, 'transfer'),
@@ -163,7 +183,7 @@ check('a transfer shows unsigned and leaves the total out', () => {
   );
   const digest = buildAutoAddedDigestNotification({ digest: withReload, categoryName: null, budgetText: null });
   strictEqual(digest.title, '2 added automatically today');
-  strictEqual(digest.body, "Latest: RM100.00 at Touch 'n Go reload");
+  strictEqual(digest.body, "Latest: RM100.00 to Touch 'n Go reload");
 });
 check('the same transaction is counted once, and a new day starts over', () => {
   strictEqual(addToAutoAddedDigest(threeAdded, added('t3', 'JAYA GROCER', 1900), '2026-10-14').items.length, 3);

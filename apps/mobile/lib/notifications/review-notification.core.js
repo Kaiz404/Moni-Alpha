@@ -57,6 +57,15 @@ function formatAmount(amountMinor, currency, type) {
   return `${sign}${symbol}${digits}`;
 }
 
+/** Spending happens at a merchant, income comes from one, a transfer goes to one. */
+const MERCHANT_WORD = { expense: 'at', income: 'from', transfer: 'to' };
+
+/** "−RM23.40 at GRAB*FOOD", "+RM23.40 from GRAB*FOOD", or the amount alone with no merchant. */
+function amountWithMerchant(merchant, amountMinor, currency, type) {
+  const amount = formatAmount(amountMinor, currency, type);
+  return merchant ? `${amount} ${MERCHANT_WORD[type] || 'at'} ${merchant}` : amount;
+}
+
 function identifierFor(proposalId) {
   return `review-${proposalId}`;
 }
@@ -88,7 +97,7 @@ function buildReviewNotification({
   return {
     identifier: identifierFor(proposalId),
     channelId: firstAlert ? HEADS_UP_CHANNEL : QUIET_CHANNEL,
-    title: `${formatAmount(amountMinor, currency, type)} at ${merchant}`,
+    title: amountWithMerchant(merchant, amountMinor, currency, type),
     subtitle: bankName || null,
     body: [alertText, moniLine(categoryName, seenCount)].filter(Boolean).join('\n'),
     categoryIdentifier: REVIEW_CATEGORY,
@@ -122,7 +131,7 @@ function buildApprovedNotification({
 }) {
   return decided({
     proposalId,
-    title: `Approved ${merchant} ${formatAmount(amountMinor, currency, type)}`,
+    title: ['Approved', merchant, formatAmount(amountMinor, currency, type)].filter(Boolean).join(' '),
     body: budgetText,
     categoryIdentifier: APPROVED_CATEGORY,
     actions: APPROVED_ACTIONS,
@@ -134,8 +143,8 @@ function buildApprovedNotification({
 function buildAutoAddedNotification({ proposalId, merchant, amountMinor, currency, type, outcome }) {
   return decided({
     proposalId,
-    title: `Approved ${merchant} ${formatAmount(amountMinor, currency, type)}`,
-    body: `Moni adds ${merchant} alerts like this without asking and marks them Auto.`,
+    title: ['Approved', merchant, formatAmount(amountMinor, currency, type)].filter(Boolean).join(' '),
+    body: `Moni adds ${merchant ? `${merchant} ` : ''}alerts like this without asking and marks them Auto.`,
     categoryIdentifier: DECIDED_CATEGORY,
     actions: DECIDED_ACTIONS,
     outcome,
@@ -161,7 +170,7 @@ function buildOpenAppNotification({ proposalId, merchant, amountMinor, currency,
     channelId: QUIET_CHANNEL,
     title: reason,
     subtitle: null,
-    body: `${formatAmount(amountMinor, currency, type)} at ${merchant}`,
+    body: amountWithMerchant(merchant, amountMinor, currency, type),
     categoryIdentifier: null,
     actionIds: [],
     data: { kind: 'review', proposalId },
@@ -194,7 +203,7 @@ function spentTotal(items) {
 function buildAutoAddedDigestNotification({ digest, categoryName, budgetText }) {
   const latest = digest.items[digest.items.length - 1];
   const count = digest.items.length;
-  const shown = `${formatAmount(latest.amountMinor, latest.currency, latest.type)} at ${latest.merchant}`;
+  const shown = amountWithMerchant(latest.merchant, latest.amountMinor, latest.currency, latest.type);
   const total = count > 1 ? spentTotal(digest.items) : null;
   const note = budgetText || categoryName || null;
   return {

@@ -83,7 +83,7 @@ type NotificationData = ReviewData | AutoAddedData;
 
 type AutoAddedItem = {
   transactionId: string;
-  merchant: string;
+  merchant: string | null;
   amountMinor: number;
   currency: string;
   type: string;
@@ -152,9 +152,9 @@ function findProposal(id: string): ProposedTransaction | undefined {
   return listAwaitingReview().find((p) => p.id === id);
 }
 
-function shownMerchant(proposal: ProposedTransaction): string {
+function shownMerchant(proposal: ProposedTransaction): string | null {
   const aliases = proposal.userId ? listMerchantAliases(proposal.userId) : [];
-  return merchantName(proposal.merchant, aliases) ?? proposal.description ?? 'Capture';
+  return merchantName(proposal.merchant, aliases) ?? proposal.description ?? null;
 }
 
 function amountOf(proposal: ProposedTransaction) {
@@ -278,7 +278,7 @@ export async function postAutoAddedNotification(transactionId: string): Promise<
       readDigest(),
       {
         transactionId,
-        merchant: merchantName(row.merchant, aliases) ?? row.description ?? 'Transaction',
+        merchant: merchantName(row.merchant, aliases) ?? row.description ?? null,
         amountMinor,
         currency: row.currency ?? 'MYR',
         type: row.type,

@@ -73,6 +73,6 @@ The words the redesigned app uses, and the words it never uses. The design canva
 - Other currencies show an unambiguous symbol (`US$120.00`, owner, 21 Nov 2026) and never sum with ringgit or convert.
 - Dates day first: `Wed 14 Oct`; September is `Sep`. Times lowercase with a space: `12:41 pm`. "Today" and "Yesterday" for the last two days.
 - Straight apostrophe: `Touch 'n Go`.
-- No middle dot (·) between two pieces of text. Two attribute nouns take a comma ("Food & Dining, Maybank"), a day and a time take "at" ("Today at 12:41 pm"), a count goes in plain words ("3 to name") or on the right side, and a merchant and an amount read "−RM23.40 at GRAB*FOOD". `lint:copy` fails on the dot in any string, phone and web.
+- No middle dot (·) between two pieces of text. Two attribute nouns take a comma ("Food & Dining, Maybank"), a day and a time take "at" ("Today at 12:41 pm"), a count goes in plain words ("3 to name") or on the right side, and an amount takes its merchant by type: "−RM23.40 at GRAB*FOOD", "+RM3,200.00 from ACME SDN BHD", "RM100.00 to Touch 'n Go reload", or the amount alone when there is no merchant. `lint:copy` fails on the dot in any string, phone and web.
 - Raw alert text is quoted exactly as the bank sent it.
 - Greetings follow the local time of day ("Morning, Kai", "Afternoon, Kai", "Evening, Kai").

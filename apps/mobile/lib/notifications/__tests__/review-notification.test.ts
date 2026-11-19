@@ -230,6 +230,20 @@ describe('review notification', () => {
   });
 });
 
+describe('the merchant in the title', () => {
+  it('income comes from its merchant', async () => {
+    seed({ type: 'income', merchant: 'ACME SDN BHD', notification_body: null });
+    await postReviewNotification('p1');
+    expect(lastShown().content.title).toBe('+RM12.00 from ACME SDN BHD');
+  });
+
+  it('a capture with no merchant or description shows the amount alone', async () => {
+    seed({ merchant: null, description: null });
+    await postReviewNotification('p1');
+    expect(lastShown().content.title).toBe('\u2212RM12.00');
+  });
+});
+
 describe('the Added automatically digest', () => {
   function added(id: string, merchant: string, amount: string) {
     store.transactions$[id].set({
