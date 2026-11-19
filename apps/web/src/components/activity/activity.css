@@ -898,6 +898,27 @@ html[data-layout='phone'] .icon-round-line {
   color: var(--color-muted);
 }
 
+.pane-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.field-saving {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-muted);
+}
+
+.field-saved {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--color-deep-mint);
+}
+
 .pane-field dd {
   margin: 0;
   min-width: 0;

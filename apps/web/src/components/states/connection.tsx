@@ -34,6 +34,11 @@ function pendingWrites(): number {
   return moniStore().all.reduce((sum, table$) => sum + (syncState(table$).numPendingSets.get() ?? 0), 0);
 }
 
+/** Resolves once every row this tab wrote has reached the server. */
+export function whenSynced(): Promise<unknown> {
+  return when(() => pendingWrites() === 0);
+}
+
 /**
  * Back online: once the rows saved offline reach the server, an info toast says how many synced
  * (W2-States, Connection). Legend's sync queues the writes; this only watches it drain.
