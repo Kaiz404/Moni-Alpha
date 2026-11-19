@@ -1,56 +1,34 @@
-import { merchantAliasesFromRows, type StoredRow } from '@repo/core';
-import { randomUUID } from 'expo-crypto';
-import { merchantAliasSchema, type MerchantAlias } from '@repo/types';
-import { assertMigrated, merchantAliases$ } from '@/lib/store';
-import { getRecordValues, patchRow } from '@/lib/store/helpers';
-import { getUserId } from '@/lib/supabase/client';
+import {
+  merchantAliasesFromRows,
+  planForgetMerchantNames,
+  planMerchantNames,
+  type MerchantAliasRow,
+} from '@repo/core';
+import type { MerchantAlias } from '@repo/types';
+import { merchantAliases$ } from '@/lib/store';
+import { commit, planContext } from '@/lib/store/writes';
 
-export type MerchantAliasRow = StoredRow<'merchant_aliases'>;
+export type { MerchantAliasRow };
+
+/** Every row, soft-deleted ones too: a plan revives a forgotten name rather than adding a second row. */
+function aliasRows(): MerchantAliasRow[] {
+  return Object.values((merchantAliases$.peek() ?? {}) as Record<string, MerchantAliasRow | undefined>).filter(
+    (row): row is MerchantAliasRow => row != null,
+  );
+}
 
 export function listMerchantAliases(userId: string): MerchantAlias[] {
   return merchantAliasesFromRows(merchantAliases$.get() ?? {}, userId);
 }
 
+/** Names a code; naming it again renames it, and a forgotten name comes back on its own row. */
 export async function nameMerchant(rawKey: string, displayName: string): Promise<void> {
-  assertMigrated('merchant_aliases_and_wallet_location');
-  const userId = await getUserId();
-  if (!userId) throw new Error('Not authenticated');
-  const data = merchantAliasSchema.pick({ rawKey: true, displayName: true }).parse({
-    rawKey,
-    displayName,
-  });
-
-  const existing = Object.values(
-    (merchantAliases$.peek() ?? {}) as Record<string, MerchantAliasRow | undefined>,
-  ).find((row) => row?.user_id === userId && row.raw_key === data.rawKey);
-  if (existing) {
-    merchantAliases$[existing.id].set({
-      ...existing,
-      display_name: data.displayName,
-      deleted: false,
-      updated_at: new Date().toISOString(),
-    });
-    return;
-  }
-
-  const id = randomUUID();
-  merchantAliases$[id].set({
-    id,
-    user_id: userId,
-    raw_key: data.rawKey,
-    display_name: data.displayName,
-    deleted: false,
-  });
+  const ctx = await planContext();
+  commit(planMerchantNames(aliasRows(), [rawKey], displayName, ctx));
 }
 
 /** "Forget this name": soft-deletes every alias for the key, including other devices' copies. */
 export async function forgetMerchantName(rawKey: string): Promise<void> {
-  assertMigrated('merchant_aliases_and_wallet_location');
-  const userId = await getUserId();
-  if (!userId) throw new Error('Not authenticated');
-  const updatedAt = new Date().toISOString();
-  for (const row of getRecordValues<MerchantAliasRow>(merchantAliases$)) {
-    if (row.user_id !== userId || row.raw_key !== rawKey) continue;
-    patchRow(merchantAliases$, row.id, { deleted: true, updated_at: updatedAt });
-  }
+  const ctx = await planContext();
+  commit(planForgetMerchantNames(aliasRows(), [rawKey], ctx));
 }

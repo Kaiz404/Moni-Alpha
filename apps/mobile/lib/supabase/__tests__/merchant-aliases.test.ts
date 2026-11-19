@@ -6,7 +6,11 @@ jest.mock('expo-crypto', () => ({ randomUUID: () => `alias-${++mockNextId}` }));
 jest.mock('@/lib/supabase/client', () => ({ getUserId: async () => 'user-1' }));
 jest.mock('@/lib/store', () => {
   const { observable } = jest.requireActual('@legendapp/state');
-  return { merchantAliases$: observable({}), assertMigrated: () => {} };
+  const tables = [
+    'wallets$', 'transactions$', 'categories$', 'tags$', 'transactionTags$', 'categoryBudgets$', 'debts$',
+    'debtActivities$', 'proposedTransactions$', 'recurringOverrides$', 'autoAddRules$', 'merchantAliases$',
+  ];
+  return { ...Object.fromEntries(tables.map((name) => [name, observable({})])), isMigrated: () => true };
 });
 
 const { merchantAliases$ } = jest.requireMock('@/lib/store') as {
