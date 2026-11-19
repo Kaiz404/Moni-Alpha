@@ -153,17 +153,15 @@ export function DetailPane({
           Transaction
         </span>
         <span data-only="sidebar rail rail-one-column" className="pane-nav">
-          <button type="button" className="icon-round icon-round-line press" aria-label="Previous transaction (K)" onClick={() => onMove(-1)}>
+          <button type="button" className="icon-round icon-round-line icon-round-key press" aria-label="Previous transaction (K)" onClick={() => onMove(-1)}>
             <Glyph name="chevron-up" size={20} />
+            <span className="kbd kbd-inline">K</span>
           </button>
-          <button type="button" className="icon-round icon-round-line press" aria-label="Next transaction (J)" onClick={() => onMove(1)}>
+          <button type="button" className="icon-round icon-round-line icon-round-key press" aria-label="Next transaction (J)" onClick={() => onMove(1)}>
             <Icon name="chevron-down" size={20} />
+            <span className="kbd kbd-inline">J</span>
           </button>
           <span className="meta num pane-position">{position}</span>
-          <span className="key-hint">
-            <span className="kbd">J</span>
-            <span className="kbd">K</span>
-          </span>
           <button type="button" className="icon-round icon-round-line press" aria-label="Close (Esc)" onClick={onClose}>
             <Icon name="close" size={20} />
           </button>

@@ -114,6 +114,11 @@ export async function driveLedgerScreens({ browser, storage, base, check, shot, 
   check('the tooltip follows the pointer', tipBox && tipBox2 && tipBox2.x > tipBox.x, { tipBox, tipBox2 });
   await shot(h, 'home-1440-hover');
   await h.mouse.move(5, 5);
+  check(
+    'P and D sit inside Pace and Daily',
+    (await h.getByRole('radio', { name: 'Pace' }).locator('.kbd').textContent()) === 'P' &&
+      (await h.getByRole('radio', { name: 'Daily' }).locator('.kbd').textContent()) === 'D',
+  );
   await h.keyboard.press('d');
   check('D shows Daily', (await h.getByRole('radio', { name: 'Daily' }).getAttribute('aria-checked')) === 'true');
   await h.waitForTimeout(400);
@@ -207,6 +212,11 @@ export async function driveLedgerScreens({ browser, storage, base, check, shot, 
   await a.keyboard.press('j');
   await a.waitForTimeout(300);
   check('J moves to the next row', a.url() !== firstOpen, a.url());
+  check(
+    'K sits on the up chevron and J on the down chevron',
+    (await a.getByRole('button', { name: 'Previous transaction (K)' }).locator('.kbd').textContent()) === 'K' &&
+      (await a.getByRole('button', { name: 'Next transaction (J)' }).locator('.kbd').textContent()) === 'J',
+  );
   await a.keyboard.press('k');
   await a.waitForTimeout(300);
   check('K moves back', a.url() === firstOpen, a.url());

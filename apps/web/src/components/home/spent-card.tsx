@@ -53,16 +53,19 @@ export function SpentCard({
       <div className="card-head">
         <span className="caps">Spent in {name}</span>
         <span className="card-head-end">
-          <span className="key-hint" data-only="sidebar rail rail-one-column">
-            <span className="kbd">P</span> <span className="kbd">D</span>
-          </span>
           <span className="toggle" role="radiogroup" aria-label="Chart">
             <span className="toggle-pill" aria-hidden="true" data-at={mode} />
             <button type="button" role="radio" aria-checked={mode === 'pace'} onClick={() => onMode('pace')}>
               Pace
+              <span className="kbd kbd-inline" data-only="sidebar rail rail-one-column">
+                P
+              </span>
             </button>
             <button type="button" role="radio" aria-checked={mode === 'daily'} onClick={() => onMode('daily')}>
               Daily
+              <span className="kbd kbd-inline" data-only="sidebar rail rail-one-column">
+                D
+              </span>
             </button>
           </span>
         </span>

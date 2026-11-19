@@ -788,6 +788,12 @@ html[data-layout='sidebar'] .shell[data-pane='chat'] .tr > :nth-child(6) {
   box-shadow: inset 0 0 0 1.5px var(--color-hairline);
 }
 
+.icon-round-key {
+  width: auto;
+  padding: 0 8px 0 6px;
+  gap: 4px;
+}
+
 .icon-round-line:hover {
   background: var(--color-sand-light);
 }

@@ -247,6 +247,10 @@
 
 .toggle button {
   position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
   z-index: 1;
   font-size: 13px;
   font-weight: 600;

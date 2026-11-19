@@ -233,6 +233,18 @@ textarea::placeholder {
   color: inherit;
 }
 
+.kbd-inline {
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  border-radius: 5px;
+  font-size: 11px;
+  line-height: 14px;
+  background: transparent;
+  border-color: color-mix(in srgb, currentColor 35%, transparent);
+  color: inherit;
+}
+
 .keys {
   display: inline-flex;
   gap: 4px;
