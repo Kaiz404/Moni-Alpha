@@ -1,7 +1,7 @@
 // All wallets and a wallet's page in web-verify (`--only wallets`): Home's card opens them, every
 // wallet's balance against the e2e user's wallet_balances, net worth in the main currency, a wallet's
 // page with its transactions, Edit amount saved then undone with Ctrl Z, and the New wallet and Edit
-// wallet panes closing on Esc. The one write is undone before the part ends.
+// wallet panes closing on Esc, and deleting the default wallet then Ctrl Z. Each write is undone before the part ends.
 
 function ringgit(text) {
   const match = /(−|-)?[^\d−-]*([\d,]+(?:\.\d+)?)/.exec((text ?? '').replace(/\s/g, ''));
@@ -117,5 +117,21 @@ export async function verifyWallets(t) {
   await p.keyboard.press('Escape');
   await edit.waitFor({ state: 'detached' }).catch(() => {});
   check('Edit wallet opens filled in and Esc closes it unsaved', typed === name && !(await edit.isVisible()), { typed, name });
+
+  const defaultId = query('preferences')?.default_wallet_id;
+  await open(p, `/home/wallets/${defaultId}`);
+  await p.locator('[data-screen="wallet"]').waitFor({ timeout: 20_000 });
+  const defaultName = await p.locator('.wallet-hero-name').textContent();
+  await p.getByRole('button', { name: 'Delete', exact: true }).click();
+  await p.getByRole('alertdialog', { name: `Delete ${defaultName}?` }).getByRole('button', { name: 'Delete', exact: true }).click();
+  await p.waitForURL(/\/home\/wallets$/);
+  const cleared = await until('preferences', (prefs) => prefs?.default_wallet_id === null);
+  const walletGone = await until('wallets', (rows) => !rows.some((row) => row.name === defaultName));
+  check('deleting the default wallet clears the default on the server', cleared && walletGone, { defaultId, defaultName, cleared, walletGone });
+  await p.getByText(`${defaultName} deleted`).hover().catch(() => {});
+  await p.keyboard.press('Control+z');
+  const restored = await until('preferences', (prefs) => prefs?.default_wallet_id === defaultId);
+  const walletBack = await until('wallets', (rows) => rows.some((row) => row.name === defaultName));
+  check('Ctrl Z brings the wallet back as the default', restored && walletBack, { defaultId, restored, walletBack });
   await ctx.close();
 }

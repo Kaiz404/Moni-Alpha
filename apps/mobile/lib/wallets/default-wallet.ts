@@ -1,5 +1,5 @@
 import { preferencesMMKV } from '@/lib/mmkv/preferences';
-import { updateProfilePreferences } from '@repo/data';
+import { moveDefaultWallet, updateProfilePreferences } from '@repo/data';
 import { supabase } from '@/lib/supabase/client';
 import { getProfilePreferences } from '@/lib/supabase/profile';
 
@@ -45,7 +45,7 @@ export function resolveDefaultWalletId(
 }
 
 export async function clearDefaultWalletIfDeleted(walletId: string): Promise<void> {
-  if (getDefaultWalletId() === walletId) {
-    await setDefaultWalletId(null);
-  }
+  if (getDefaultWalletId() !== walletId) return;
+  cacheDefaultWalletId(null);
+  await moveDefaultWallet(supabase, walletId, null);
 }

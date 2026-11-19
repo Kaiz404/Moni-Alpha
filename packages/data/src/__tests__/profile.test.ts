@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 
-import { needsSetup, recordAiConsent, updateProfilePreferences } from '../profile';
+import { moveDefaultWallet, needsSetup, recordAiConsent, updateProfilePreferences } from '../profile';
 import { fakeSupabase } from './fake-supabase';
 
 const { server, supabase } = fakeSupabase();
@@ -48,6 +48,31 @@ describe('updateProfilePreferences', () => {
       'User ID required',
     );
     expect(server.tables.get('profiles')).toEqual([{ id: 'user-1', preferences: { currency: 'SGD' } }]);
+  });
+});
+
+describe('moveDefaultWallet', () => {
+  it('clears the default when its wallet is deleted, and Undo puts it back', async () => {
+    server.tables.set('profiles', [{ id: 'user-1', preferences: { currency: 'SGD', default_wallet_id: 'a1b2c3d4-0000-4000-8000-000000000001' } }]);
+
+    const cleared = await moveDefaultWallet(supabase, 'a1b2c3d4-0000-4000-8000-000000000001', null);
+    expect(cleared).toEqual({ currency: 'SGD', theme: 'system', notifications_enabled: true, default_wallet_id: null });
+
+    const restored = await moveDefaultWallet(supabase, null, 'a1b2c3d4-0000-4000-8000-000000000001');
+    expect(restored).toEqual({ currency: 'SGD', theme: 'system', notifications_enabled: true, default_wallet_id: 'a1b2c3d4-0000-4000-8000-000000000001' });
+    expect(server.tables.get('profiles')).toEqual([
+      { id: 'user-1', preferences: { currency: 'SGD', theme: 'system', notifications_enabled: true, default_wallet_id: 'a1b2c3d4-0000-4000-8000-000000000001' } },
+    ]);
+  });
+
+  it('leaves a different default alone', async () => {
+    server.tables.set('profiles', [{ id: 'user-1', preferences: { currency: 'SGD', default_wallet_id: 'a1b2c3d4-0000-4000-8000-000000000002' } }]);
+
+    expect(await moveDefaultWallet(supabase, 'a1b2c3d4-0000-4000-8000-000000000001', null)).toBeNull();
+    expect(await moveDefaultWallet(supabase, null, 'a1b2c3d4-0000-4000-8000-000000000001')).toBeNull();
+    expect(server.tables.get('profiles')).toEqual([
+      { id: 'user-1', preferences: { currency: 'SGD', default_wallet_id: 'a1b2c3d4-0000-4000-8000-000000000002' } },
+    ]);
   });
 });
 

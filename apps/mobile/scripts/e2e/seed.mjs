@@ -220,6 +220,8 @@ export const QUERIES = {
   counts: (request, userId) => counts(request, userId),
   fingerprint: (request, userId) => fingerprint(request, userId),
   user: async (request, userId, config) => ({ id: userId, email: config.email }),
+  preferences: async (request, userId) =>
+    (await select(request, `/rest/v1/profiles?id=eq.${userId}&select=preferences`))[0]?.preferences ?? null,
   wallets: (request, userId) =>
     select(request, `/rest/v1/wallet_balances?user_id=eq.${userId}&select=name,currency,current_balance&order=display_order`),
   'latest-transaction': async (request, userId) =>

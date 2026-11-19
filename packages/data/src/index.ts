@@ -3,6 +3,7 @@ export { memoryPersist, type FlagStore, type MoniPersist } from './persist';
 export {
   fetchAiConsent,
   fetchProfilePreferences,
+  moveDefaultWallet,
   needsSetup,
   recordAiConsent,
   signedInUserId,

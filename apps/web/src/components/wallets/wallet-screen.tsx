@@ -15,6 +15,7 @@ import {
   WALLET_TYPES,
   type FinanceWallet,
 } from '@repo/core';
+import { moveDefaultWallet } from '@repo/data';
 import { minorToNumber } from '@repo/types';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -27,6 +28,7 @@ import { Page } from '@/components/shell/page';
 import { commit, planContext } from '@/lib/ledger/commit';
 import { rowDay } from '@/lib/ledger/format';
 import { useLedger, type Ledger } from '@/lib/ledger/use-ledger';
+import { moniStore } from '@/lib/moni-store';
 import { useScreenKeys } from '@/lib/screen-keys';
 import { BalanceCard } from './balance-card';
 import { editWalletDraft, typeIcon, WalletForm, type WalletDraft } from './wallet-form';
@@ -134,8 +136,13 @@ function WalletLoaded({ ledger, wallet }: { ledger: Ledger; wallet: FinanceWalle
   };
   const remove = () => {
     setConfirming(false);
-    const done = commit(planWalletDelete(wallet.id, projection, planContext(userId)), `${wallet.name} deleted`);
-    if (done) router.push('/home/wallets');
+    let cleared: Promise<boolean> | null = null;
+    const done = commit(planWalletDelete(wallet.id, projection, planContext(userId)), `${wallet.name} deleted`, undefined, () => {
+      void cleared?.then((was) => was && moveDefault(null, wallet.id));
+    });
+    if (!done) return;
+    cleared = moveDefault(wallet.id, null);
+    router.push('/home/wallets');
   };
 
   useScreenKeys((key) => {
@@ -279,6 +286,14 @@ function WalletLoaded({ ledger, wallet }: { ledger: Ledger; wallet: FinanceWalle
       {confirming && <ConfirmDeleteWallet name={wallet.name} count={deleteCount} onCancel={() => setConfirming(false)} onDelete={remove} />}
     </Frame>
   );
+}
+
+/** The default wallet follows a delete and its Undo. */
+async function moveDefault(from: string | null, to: string | null): Promise<boolean> {
+  const store = moniStore();
+  const kept = await moveDefaultWallet(store.supabase, from, to).catch(() => null);
+  if (kept) store.profilePreferences$.set(kept);
+  return kept !== null;
 }
 
 function ConfirmDeleteWallet({ name, count, onCancel, onDelete }: { name: string; count: number; onCancel: () => void; onDelete: () => void }) {

@@ -55,6 +55,20 @@ export async function updateProfilePreferences(
   return userPreferencesSchema.parse(data?.preferences ?? merged);
 }
 
+/**
+ * Points the default wallet at `to` only while it is `from`, so a wallet's delete and its Undo never
+ * overwrite a default picked since. Returns the stored preferences, or null when nothing changed.
+ */
+export async function moveDefaultWallet(
+  supabase: MoniSupabase,
+  from: string | null,
+  to: string | null,
+): Promise<UserPreferences | null> {
+  const preferences = await fetchProfilePreferences(supabase);
+  if ((preferences.default_wallet_id ?? null) !== from) return null;
+  return updateProfilePreferences(supabase, { default_wallet_id: to });
+}
+
 /** Appends one consent row per changed switch. The server stamps the time. */
 export async function recordAiConsent(supabase: MoniSupabase, change: ConsentChange): Promise<void> {
   const userId = await signedInUserId(supabase);
