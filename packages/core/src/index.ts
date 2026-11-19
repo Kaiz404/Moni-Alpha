@@ -2,6 +2,7 @@ export * from './ai-consent';
 export * from './calendar';
 export * from './chart-range';
 export * from './charts/month-charts';
+export * from './chat';
 export * from './glossary';
 export * from './ledger';
 export * from './money-month';

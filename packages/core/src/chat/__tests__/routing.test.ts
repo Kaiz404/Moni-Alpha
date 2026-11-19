@@ -1,4 +1,6 @@
-import { classifyTextIntent, resolveRoute, type RouteIntent } from '@/lib/ai/chat/routing';
+import { describe, expect, it } from 'vitest';
+
+import { classifyTextIntent, resolveRoute, type RouteIntent } from '../routing';
 
 const cases: [string, RouteIntent][] = [
   // Logging a transaction

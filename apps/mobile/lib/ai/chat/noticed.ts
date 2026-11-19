@@ -1,6 +1,6 @@
 import { resolveTransactionIcon } from '@/lib/transactions/icon';
 
-import type { AnswerSnapshot } from './answer-cards';
+import type { AnswerSnapshot } from '@repo/core';
 import type { NoticedItem } from './messages';
 import { dueWhen, formatMoney } from '@repo/core';
 import { deviceCalendar } from '@/lib/dates/device-calendar';

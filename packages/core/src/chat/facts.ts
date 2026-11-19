@@ -8,24 +8,17 @@ import {
   type FinanceFacts,
   type MinorAmount,
   type RecurringFact,
-  type RecurringKind,
   type RecurringOverride,
 } from '@repo/types';
-import {
-  balanceMinor,
-  forecastCurrency,
-  liquidWallets,
-  type FactsWallet,
-} from './forecast';
+
+import { dayFromNumber, type Calendar } from '../calendar';
 import {
   detectRecurring,
   pickPayday,
-  type Cadence,
   type FactsTransaction,
   type RecurringSeries,
-  dayFromNumber,
-} from '@repo/core';
-import { deviceCalendar } from '@/lib/dates/device-calendar';
+} from '../money-month/recurring';
+import { balanceMinor, forecastCurrency, liquidWallets, type FactsWallet } from './forecast';
 
 export type { FactsWallet };
 
@@ -69,17 +62,17 @@ export function parseAskedAmount(message: string): AskedAmount | null {
   const before = TAGGED_BEFORE.exec(message);
   if (before)
     return {
-      amountMinor: toMinor(before[2], before[3]),
-      currency: CURRENCY_TOKENS[before[1].toLowerCase()],
+      amountMinor: toMinor(before[2]!, before[3]),
+      currency: CURRENCY_TOKENS[before[1]!.toLowerCase()] ?? null,
     };
   const after = TAGGED_AFTER.exec(message);
   if (after)
     return {
-      amountMinor: toMinor(after[1], after[2]),
-      currency: CURRENCY_TOKENS[after[3].toLowerCase()],
+      amountMinor: toMinor(after[1]!, after[2]),
+      currency: CURRENCY_TOKENS[after[3]!.toLowerCase()] ?? null,
     };
   const bare = BARE.exec(message);
-  return bare ? { amountMinor: toMinor(bare[1], bare[2]), currency: null } : null;
+  return bare ? { amountMinor: toMinor(bare[1]!, bare[2]), currency: null } : null;
 }
 
 function recurringFact(s: RecurringSeries): RecurringFact {
@@ -98,10 +91,11 @@ function recurringFact(s: RecurringSeries): RecurringFact {
 
 export function buildFinanceFactsByCurrency(
   input: FinanceFactsInput,
-  now: Date = new Date(),
+  now: Date,
+  calendar: Calendar,
 ): Record<string, FinanceFacts> {
   const transactions = input.transactions.filter((tx) => new Date(tx.transactionDate) <= now);
-  const series = detectRecurring(transactions, input.overrides, now, deviceCalendar, input.categoryNames);
+  const series = detectRecurring(transactions, input.overrides, now, calendar, input.categoryNames);
   const currencies = new Set([
     ...transactions.map((tx) => tx.currency),
     ...input.wallets.filter((w) => w.isActive).map((w) => w.currency),
@@ -146,6 +140,7 @@ export function buildFinanceFactsByCurrency(
         series: own,
         payday,
         now,
+        calendar,
         extraSpendMinor:
           asked && (asked.currency === null || asked.currency === currency)
             ? asked.amountMinor

@@ -8,17 +8,16 @@
  * - gig: weekly ride-hailing payouts that swing widely and no regular payday.
  */
 import { decimalToMinor, type FinanceAssistantToolSnapshot } from '@repo/types';
-import type { FactsTransaction } from '@repo/core';
-import {
-  buildFinanceFactsByCurrency,
-  parseAskedAmount,
-  type FactsWallet,
-} from '@/lib/ai/facts';
 import {
   buildFinanceAssistantToolSnapshotByCurrency,
-  type BudgetRow,
+  buildFinanceFactsByCurrency,
+  parseAskedAmount,
+  type BudgetForMetrics,
+  type FactsTransaction,
+  type FactsWallet,
   type ProposalForMetrics,
-} from '@/lib/ai/snapshot/finance-metrics';
+} from '@repo/core';
+import { deviceCalendar } from '@/lib/dates/device-calendar';
 
 export const BENCH_NOW = new Date(2026, 9, 12, 10, 0);
 
@@ -128,7 +127,7 @@ export const BENCH_TRANSACTIONS: FactsTransaction[] = [
   tx([10, 2], 'USD', 'expense', '2.99', 'entertainment', 'iCloud'),
 ];
 
-export const BENCH_BUDGETS: BudgetRow[] = [
+export const BENCH_BUDGETS: BudgetForMetrics[] = [
   { categoryId: 'groceries', currency: 'MYR', amountMinor: decimalToMinor('600') },
   { categoryId: 'food', currency: 'MYR', amountMinor: decimalToMinor('300') },
   { categoryId: 'food', currency: 'SGD', amountMinor: decimalToMinor('100') },
@@ -280,14 +279,16 @@ export function buildBenchSnapshot(
       askedAmount: parseAskedAmount(question),
     },
     BENCH_NOW,
+    deviceCalendar,
   );
   const extras = fixture === 'default';
-  return buildFinanceAssistantToolSnapshotByCurrency(
+  return buildFinanceAssistantToolSnapshotByCurrency({
     transactions,
-    BENCH_CATEGORIES,
-    extras ? BENCH_BUDGETS : [],
-    extras ? BENCH_PROPOSALS : [],
-    BENCH_NOW,
+    categoryNames: BENCH_CATEGORIES,
+    budgets: extras ? BENCH_BUDGETS : [],
+    proposals: extras ? BENCH_PROPOSALS : [],
     facts,
-  );
+    now: BENCH_NOW,
+    calendar: deviceCalendar,
+  });
 }

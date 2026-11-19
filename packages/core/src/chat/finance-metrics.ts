@@ -1,9 +1,6 @@
 /**
  * Deterministic finance metrics snapshot for chat analysis.
  */
-import { buildBudgetCoachSnapshot, type BudgetRow } from '../insights/budget-coach-metrics';
-import { buildInsightMetricSnapshot, type TxForMetrics } from '../insights/insight-metrics';
-import { countsAsSpending } from '@repo/core';
 import {
   addMinor,
   minorToNumber,
@@ -16,7 +13,19 @@ import {
   type SpendingStorySnapshot,
 } from '@repo/types';
 
-export type { BudgetRow, TxForMetrics };
+import {
+  addDays,
+  dayOfMonth,
+  daysInMonth,
+  firstDayOf,
+  shiftMonth,
+  type Calendar,
+} from '../calendar';
+import { countsAsSpending } from '../ledger';
+import { buildBudgetCoachSnapshot, type BudgetForMetrics } from './budget-coach-metrics';
+import { buildInsightMetricSnapshot, type TxForMetrics } from './insight-metrics';
+
+export type { BudgetForMetrics, TxForMetrics };
 
 export type ProposalForMetrics = {
   amountMinor: MinorAmount | null;
@@ -30,7 +39,11 @@ export const PACE_MIN_DAY_OF_MONTH = 7;
 /** Above this share of month-to-date spend, one bill (rent) would read as a fast daily pace. */
 export const PACE_MAX_SINGLE_EXPENSE_SHARE = 0.5;
 
-function sumExpenseInRange(txs: TxForMetrics[], startMs: number, endMs: number): MinorAmount {
+function sumExpenseInRange(
+  txs: readonly TxForMetrics[],
+  startMs: number,
+  endMs: number,
+): MinorAmount {
   let s = 0 as MinorAmount;
   for (const tx of txs) {
     if (!countsAsSpending(tx)) continue;
@@ -40,7 +53,11 @@ function sumExpenseInRange(txs: TxForMetrics[], startMs: number, endMs: number):
   return s;
 }
 
-function largestExpenseInRange(txs: TxForMetrics[], startMs: number, endMs: number): number {
+function largestExpenseInRange(
+  txs: readonly TxForMetrics[],
+  startMs: number,
+  endMs: number,
+): number {
   let largest = 0;
   for (const tx of txs) {
     if (!countsAsSpending(tx)) continue;
@@ -51,32 +68,30 @@ function largestExpenseInRange(txs: TxForMetrics[], startMs: number, endMs: numb
 }
 
 export function buildCalendarMonthTrendSnapshot(
-  transactions: TxForMetrics[],
+  transactions: readonly TxForMetrics[],
   currencyHint: string,
-  now: Date = new Date(),
+  now: Date,
+  calendar: Calendar,
 ): CalendarMonthTrendSnapshot {
-  const y = now.getFullYear();
-  const m = now.getMonth();
-  const currentMonthKey = `${y}-${String(m + 1).padStart(2, '0')}`;
-  const prev = m === 0 ? { y: y - 1, m: 11 } : { y, m: m - 1 };
-  const previousMonthKey = `${prev.y}-${String(prev.m + 1).padStart(2, '0')}`;
+  const currentMonthKey = calendar.monthKey(now);
+  const previousMonthKey = shiftMonth(currentMonthKey, -1);
 
-  const startCurr = new Date(y, m, 1).getTime();
+  const startCurr = calendar.startOfDay(firstDayOf(currentMonthKey)).getTime();
   const endNow = now.getTime();
-  const startPrev = new Date(prev.y, prev.m, 1).getTime();
-  const endPrev = new Date(prev.y, prev.m + 1, 0, 23, 59, 59, 999).getTime();
+  const startPrev = calendar.startOfDay(firstDayOf(previousMonthKey)).getTime();
+  const endPrev = startCurr - 1;
 
   const expenseCurrentMonthToDateMinor = sumExpenseInRange(transactions, startCurr, endNow);
   const expensePreviousCalendarMonthMinor = sumExpenseInRange(transactions, startPrev, endPrev);
   const expenseCurrentMonthToDate = minorToNumber(expenseCurrentMonthToDateMinor);
   const expensePreviousCalendarMonth = minorToNumber(expensePreviousCalendarMonthMinor);
 
-  const dayOfMonthNow = now.getDate();
-  const daysInCurrentMonth = new Date(y, m + 1, 0).getDate();
+  const dayOfMonthNow = dayOfMonth(calendar.dayKey(now));
+  const daysInCurrentMonth = daysInMonth(currentMonthKey);
 
   const avgDailyExpenseCurrentMonth =
     dayOfMonthNow > 0 ? Math.round((expenseCurrentMonthToDate / dayOfMonthNow) * 100) / 100 : 0;
-  const daysInPrevMonth = new Date(prev.y, prev.m + 1, 0).getDate();
+  const daysInPrevMonth = daysInMonth(previousMonthKey);
   const avgDailyExpensePreviousMonth =
     daysInPrevMonth > 0
       ? Math.round((expensePreviousCalendarMonth / daysInPrevMonth) * 100) / 100
@@ -112,12 +127,19 @@ export function buildCalendarMonthTrendSnapshot(
 }
 
 export function buildSpendingStorySnapshot(
-  transactions: TxForMetrics[],
+  transactions: readonly TxForMetrics[],
   categoryMap: Record<string, string>,
   currencyHint: string,
-  now: Date = new Date(),
+  now: Date,
+  calendar: Calendar,
 ): SpendingStorySnapshot {
-  const rolling = buildInsightMetricSnapshot(transactions, categoryMap, currencyHint, now);
+  const rolling = buildInsightMetricSnapshot(
+    transactions,
+    categoryMap,
+    currencyHint,
+    now,
+    calendar,
+  );
   const total = rolling.current.expenseTotal || 1;
   const topCategories = rolling.topCategories.slice(0, 5).map((c) => ({
     ...c,
@@ -127,15 +149,14 @@ export function buildSpendingStorySnapshot(
     ...m,
     sharePct: Math.round((m.amount / total) * 1000) / 10,
   }));
-  const endMs = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1).getTime();
+  const endMs = calendar.startOfDay(addDays(calendar.dayKey(now), 1)).getTime();
   const startMs = endMs - 30 * 86400000;
   const catShares: Record<string, MinorAmount> = {};
   for (const tx of transactions) {
     if (!countsAsSpending(tx)) continue;
     const t = new Date(tx.transactionDate).getTime();
     if (t < startMs || t >= endMs) continue;
-    const name =
-      tx.categoryId && categoryMap[tx.categoryId] ? categoryMap[tx.categoryId] : 'Uncategorized';
+    const name = (tx.categoryId && categoryMap[tx.categoryId]) || 'Uncategorized';
     catShares[name] = addMinor(catShares[name] ?? 0, tx.amountMinor);
   }
   const shares = Object.values(catShares).map((amountMinor) => minorToNumber(amountMinor) / total);
@@ -159,7 +180,7 @@ export function buildSpendingStorySnapshot(
 }
 
 export function buildPendingProposalsSnapshot(
-  proposals: ProposalForMetrics[],
+  proposals: readonly ProposalForMetrics[],
 ): PendingProposalsSnapshot {
   let expense = 0 as MinorAmount;
   let income = 0 as MinorAmount;
@@ -175,25 +196,52 @@ export function buildPendingProposalsSnapshot(
   };
 }
 
+/** What the chat snapshot reads: the user's rows, already filtered to the user. */
+export type FinanceSnapshotInput = {
+  transactions: readonly TxForMetrics[];
+  /** Category id to name, for the user's and the preset categories. */
+  categoryNames: Record<string, string>;
+  budgets: readonly BudgetForMetrics[];
+  proposals?: readonly ProposalForMetrics[];
+  /** One facts block per currency (`buildFinanceFactsByCurrency`). */
+  facts?: Record<string, FinanceFacts>;
+  now: Date;
+  calendar: Calendar;
+};
+
 function buildFinanceAssistantCurrencySnapshot(
-  transactions: TxForMetrics[],
+  transactions: readonly TxForMetrics[],
   categoryMap: Record<string, string>,
-  budgets: BudgetRow[],
-  proposals: ProposalForMetrics[],
+  budgets: readonly BudgetForMetrics[],
+  proposals: readonly ProposalForMetrics[],
   facts: FinanceFacts | undefined,
   currencyHint: string,
-  now: Date = new Date(),
+  now: Date,
+  calendar: Calendar,
 ): FinanceAssistantCurrencySnapshot {
-  const rolling30 = buildInsightMetricSnapshot(transactions, categoryMap, currencyHint, now);
-  const calendarMonth = buildCalendarMonthTrendSnapshot(transactions, currencyHint, now);
+  const rolling30 = buildInsightMetricSnapshot(
+    transactions,
+    categoryMap,
+    currencyHint,
+    now,
+    calendar,
+  );
+  const calendarMonth = buildCalendarMonthTrendSnapshot(transactions, currencyHint, now, calendar);
   const budgetCoach = buildBudgetCoachSnapshot(
     transactions,
     categoryMap,
     budgets,
     currencyHint,
     now,
+    calendar,
   );
-  const spendingStory = buildSpendingStorySnapshot(transactions, categoryMap, currencyHint, now);
+  const spendingStory = buildSpendingStorySnapshot(
+    transactions,
+    categoryMap,
+    currencyHint,
+    now,
+    calendar,
+  );
 
   return {
     generatedAt: now.toISOString(),
@@ -211,7 +259,10 @@ function currencyOf(row: { currency?: string | null }): string | null {
 }
 
 /** Rows without a currency are dropped: guessing one would file the money under the wrong key. */
-function withCurrency<T extends { currency?: string | null }>(rows: T[], label: string): T[] {
+function withCurrency<T extends { currency?: string | null }>(
+  rows: readonly T[],
+  label: string,
+): T[] {
   const kept = rows.filter((row) => currencyOf(row) !== null);
   if (kept.length < rows.length) {
     console.warn(
@@ -221,14 +272,15 @@ function withCurrency<T extends { currency?: string | null }>(rows: T[], label: 
   return kept;
 }
 
-export function buildFinanceAssistantToolSnapshotByCurrency(
-  transactions: TxForMetrics[],
-  categoryMap: Record<string, string>,
-  budgets: BudgetRow[],
-  proposals: ProposalForMetrics[] = [],
-  now: Date = new Date(),
-  facts: Record<string, FinanceFacts> = {},
-): FinanceAssistantToolSnapshot {
+export function buildFinanceAssistantToolSnapshotByCurrency({
+  transactions,
+  categoryNames,
+  budgets,
+  proposals = [],
+  facts = {},
+  now,
+  calendar,
+}: FinanceSnapshotInput): FinanceAssistantToolSnapshot {
   const txs = withCurrency(transactions, 'transactions');
   const pending = withCurrency(proposals, 'pending proposals');
   const currencies = new Set(
@@ -242,12 +294,13 @@ export function buildFinanceAssistantToolSnapshotByCurrency(
       currency,
       buildFinanceAssistantCurrencySnapshot(
         txs.filter((transaction) => currencyOf(transaction) === currency),
-        categoryMap,
+        categoryNames,
         budgets.filter((budget) => currencyOf(budget) === currency),
         pending.filter((proposal) => currencyOf(proposal) === currency),
         facts[currency],
         currency,
         now,
+        calendar,
       ),
     ]),
   );

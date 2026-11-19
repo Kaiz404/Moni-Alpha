@@ -1,6 +1,17 @@
 import { decimalToMinor, type MinorAmount } from '@repo/types';
-import type { FactsTransaction } from '@repo/core';
-import type { FactsWallet } from '../index';
+
+import { addDays, createCalendar, dayNumber, weekday } from '../../calendar';
+import type { FactsTransaction } from '../../money-month/recurring';
+import type { FactsWallet } from '../forecast';
+
+export const KL = createCalendar('Asia/Kuala_Lumpur');
+
+/** A Kuala Lumpur wall time, months from 0 as `new Date` counts them. */
+export function kl(year: number, monthIndex: number, day: number, hour = 0, minute = 0): Date {
+  return new Date(Date.UTC(year, monthIndex, day, hour - 8, minute));
+}
+
+export const DAY_MS = 86_400_000;
 
 export const BANK = 'bank-myr';
 export const EWALLET = 'tng-myr';
@@ -59,17 +70,17 @@ export function salariedLedger(seed = 7): {
   const rand = random(seed);
   const between = (min: number, max: number) => Math.round((min + rand() * (max - min)) * 100);
   const transactions: FactsTransaction[] = [];
-  let nextGrocery = new Date(2026, 3, 3).getTime();
-  for (let d = new Date(2026, 3, 1); d <= new Date(2026, 9, 11); d.setDate(d.getDate() + 1)) {
-    const at = (hour: number) => new Date(d.getFullYear(), d.getMonth(), d.getDate(), hour);
-    const day = d.getDate();
+  let nextGrocery = dayNumber('2026-04-03');
+  for (let key = '2026-04-01'; key <= '2026-10-11'; key = addDays(key, 1)) {
+    const [year, month, day] = key.split('-').map(Number) as [number, number, number];
+    const at = (hour: number) => kl(year, month - 1, day, hour);
     if (day === 1) transactions.push(tx(at(8), 'expense', '1500', 'Landlord'));
     if (day === 10) transactions.push(tx(at(8), 'expense', '54.90', 'Netflix'));
     if (day === 15) transactions.push(tx(at(8), 'expense', '129', 'Unifi'));
     if (day === 20) transactions.push(tx(at(8), 'expense', '48', 'CelcomDigi'));
-    const payday = new Date(d.getFullYear(), d.getMonth(), 25);
-    while (payday.getDay() === 0 || payday.getDay() === 6) payday.setDate(payday.getDate() - 1);
-    if (day === payday.getDate()) transactions.push(tx(at(7), 'income', '4500', 'Acme Sdn Bhd'));
+    let payday = `${key.slice(0, 7)}-25`;
+    while (weekday(payday) === 0 || weekday(payday) === 6) payday = addDays(payday, -1);
+    if (key === payday) transactions.push(tx(at(7), 'income', '4500', 'Acme Sdn Bhd'));
 
     if (rand() < 0.85)
       transactions.push(
@@ -80,9 +91,9 @@ export function salariedLedger(seed = 7): {
     if (rand() < 0.3)
       transactions.push(tx(at(9), 'expense', between(10, 40), 'Grab', { walletId: EWALLET }));
     if (rand() < 0.08) transactions.push(tx(at(21), 'expense', between(50, 300), 'Shopee'));
-    if (d.getTime() >= nextGrocery) {
+    if (dayNumber(key) >= nextGrocery) {
       transactions.push(tx(at(18), 'expense', between(120, 260), 'Jaya Grocer'));
-      nextGrocery = d.getTime() + Math.round(5 + rand() * 5) * 86_400_000;
+      nextGrocery = dayNumber(key) + Math.round(5 + rand() * 5);
     }
     if (day === 5)
       transactions.push(tx(at(10), 'transfer', '300', null, { transferToWalletId: EWALLET }));

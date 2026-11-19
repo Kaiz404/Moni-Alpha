@@ -16,6 +16,13 @@ describe('chat bench fixture', () => {
     expect(snapshot.currencies.MYR.rolling30.current.expenseTotal).toBe(2123.4);
   });
 
+  it('refuses the gig forecast: unscheduled income is over a fifth of spending', () => {
+    expect(buildBenchSnapshot('gig').currencies.MYR.facts?.forecast).toMatchObject({
+      status: 'insufficient',
+      reasons: ['income arrives without a regular payday'],
+    });
+  });
+
   describe.each(CHAT_BENCH_CASES)('$id', (c) => {
     const caseSnapshot = benchSnapshot(c);
 

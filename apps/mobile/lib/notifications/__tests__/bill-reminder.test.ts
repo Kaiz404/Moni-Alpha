@@ -1,10 +1,27 @@
-import type { MinorAmount, RecurringOverride, UpcomingBill } from '@repo/types';
+import { decimalToMinor, type MinorAmount, type RecurringOverride, type UpcomingBill } from '@repo/types';
 
-import { tx } from '@/lib/ai/facts/__tests__/synthetic-ledger';
-import { selectBillsAhead } from '@repo/core';
+import { selectBillsAhead, type FactsTransaction } from '@repo/core';
 import { deviceCalendar } from '@/lib/dates/device-calendar';
 
 import { billReminders, reminderAt, syncBillReminders } from '../bill-reminder';
+
+const tx = (
+  date: Date,
+  type: FactsTransaction['type'],
+  amount: string,
+  merchant: string,
+): FactsTransaction => ({
+  walletId: 'bank-myr',
+  transferToWalletId: null,
+  amountMinor: decimalToMinor(amount),
+  currency: 'MYR',
+  type,
+  analysisExcluded: false,
+  debtActivityId: null,
+  categoryId: null,
+  merchant,
+  transactionDate: date.toISOString(),
+});
 
 type Request = { identifier: string; content: { title: string; body: string; data: object } };
 jest.mock('expo-notifications', () => {

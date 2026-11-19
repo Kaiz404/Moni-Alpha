@@ -1,9 +1,11 @@
+import { describe, expect, it } from 'vitest';
 import { decimalToMinor } from '@repo/types';
-import { buildFinanceAssistantToolSnapshotByCurrency } from '@/lib/ai/snapshot/finance-metrics';
-import { buildFinanceFactsByCurrency, parseAskedAmount } from '../index';
-import { salariedLedger, tx, wallet } from './synthetic-ledger';
 
-const NOW = new Date(2026, 9, 11, 22);
+import { buildFinanceFactsByCurrency, parseAskedAmount } from '../facts';
+import { buildFinanceAssistantToolSnapshotByCurrency } from '../finance-metrics';
+import { KL, kl, salariedLedger, tx, wallet } from './synthetic-ledger';
+
+const NOW = kl(2026, 9, 11, 22);
 
 describe('parseAskedAmount', () => {
   it.each([
@@ -30,7 +32,7 @@ describe('parseAskedAmount', () => {
 describe('buildFinanceFactsByCurrency', () => {
   const { wallets, transactions } = salariedLedger();
   const sgd = [8, 9, 10].map((m) =>
-    tx(new Date(2026, m - 1, 3, 9), 'expense', '9.90', 'Spotify', {
+    tx(kl(2026, m - 1, 3, 9), 'expense', '9.90', 'Spotify', {
       currency: 'SGD',
       walletId: 'sgd',
     }),
@@ -47,49 +49,57 @@ describe('buildFinanceFactsByCurrency', () => {
       askedAmount: { amountMinor: decimalToMinor('800'), currency: 'MYR' },
     },
     NOW,
+    KL,
   );
 
   it('keeps every currency on its own key with its own series and balance', () => {
     expect(Object.keys(facts)).toEqual(['MYR', 'SGD']);
-    expect(facts.SGD.recurring.map((r) => [r.name, r.amount, r.kind])).toEqual([
+    expect(facts.SGD!.recurring.map((r) => [r.name, r.amount, r.kind])).toEqual([
       ['Spotify', 9.9, 'bill'],
     ]);
-    expect(facts.SGD.balances).toEqual({ liquid: 70.3, changeLast30Days: -9.9, walletCount: 1 });
-    expect(facts.SGD.payday).toBeNull();
-    expect(facts.SGD.forecast).toMatchObject({
+    expect(facts.SGD!.balances).toEqual({ liquid: 70.3, changeLast30Days: -9.9, walletCount: 1 });
+    expect(facts.SGD!.payday).toBeNull();
+    expect(facts.SGD!.forecast).toMatchObject({
       status: 'insufficient',
       reasons: ['wallet balances not confirmed recently'],
     });
   });
 
   it('lists the salary first, names payday and forecasts to it with the asked amount', () => {
-    expect(facts.MYR.recurring.map((r) => r.name)).toEqual([
+    expect(facts.MYR!.recurring.map((r) => r.name)).toEqual([
       'Acme Sdn Bhd',
       'Landlord',
       'Unifi',
       'Netflix',
       'CelcomDigi',
     ]);
-    expect(facts.MYR.payday).toEqual({
+    expect(facts.MYR!.payday).toEqual({
       name: 'Acme Sdn Bhd',
       amount: 4500,
       cadence: 'monthly',
       nextDate: '2026-10-25',
     });
-    expect(facts.MYR.balances?.walletCount).toBe(2);
-    expect(facts.MYR.forecast).toMatchObject({
+    expect(facts.MYR!.balances?.walletCount).toBe(2);
+    expect(facts.MYR!.forecast).toMatchObject({
       status: 'ready',
       horizon: 'payday',
       horizonDate: '2026-10-25',
     });
-    expect(facts.MYR.forecast.status === 'ready' && facts.MYR.forecast.afford?.amount).toBe(800);
+    expect(facts.MYR!.forecast.status === 'ready' && facts.MYR!.forecast.afford?.amount).toBe(800);
   });
 
   it('feeds snapshot v4, one facts block per currency', () => {
-    const snapshot = buildFinanceAssistantToolSnapshotByCurrency([], {}, [], [], NOW, facts);
+    const snapshot = buildFinanceAssistantToolSnapshotByCurrency({
+      transactions: [],
+      categoryNames: {},
+      budgets: [],
+      facts,
+      now: NOW,
+      calendar: KL,
+    });
     expect(snapshot.schema).toBe('finance_assistant_tool_v4');
     expect(Object.keys(snapshot.currencies)).toEqual(['MYR', 'SGD']);
-    expect(snapshot.currencies.MYR.facts).toBe(facts.MYR);
-    expect(snapshot.currencies.SGD.facts).toBe(facts.SGD);
+    expect(snapshot.currencies.MYR!.facts).toBe(facts.MYR);
+    expect(snapshot.currencies.SGD!.facts).toBe(facts.SGD);
   });
 });

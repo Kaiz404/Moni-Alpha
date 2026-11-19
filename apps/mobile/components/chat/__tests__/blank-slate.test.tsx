@@ -34,7 +34,7 @@ jest.mock('@/lib/ai/chat/orchestrator', () => ({
   handleQuickReply: jest.fn(),
   sendChatMessage: jest.fn(),
 }));
-jest.mock('@/lib/ai/chat/answer-snapshot', () => ({ buildAnswerSnapshot: jest.fn(() => null) }));
+jest.mock('@/lib/ai/chat/answer-snapshot', () => ({ peekAnswerSnapshot: jest.fn(() => null) }));
 jest.mock('@/lib/ai/chat/noticed', () => ({ noticedItems: () => [] }));
 jest.mock('@/lib/finance/selectors', () => {
   const { observable } = jest.requireActual('@legendapp/state');

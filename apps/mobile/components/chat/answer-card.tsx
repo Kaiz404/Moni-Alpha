@@ -9,7 +9,7 @@ import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Press } from '@/components/ui/press';
 import { Text } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
-import type { AnswerCard as Card, BillLine } from '@/lib/ai/chat/answer-cards';
+import type { AnswerCard as Card, BillLine } from '@repo/core';
 import type { ChatMessage } from '@/lib/ai/chat/messages';
 import { useAuth } from '@/lib/auth/auth-context';
 import { useMainCurrency } from '@/lib/finance/main-currency';

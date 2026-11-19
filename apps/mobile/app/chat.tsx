@@ -30,7 +30,7 @@ import { Page } from '@/components/ui/page';
 import { Press } from '@/components/ui/press';
 import { Text } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
-import { buildAnswerSnapshot } from '@/lib/ai/chat/answer-snapshot';
+import { peekAnswerSnapshot } from '@/lib/ai/chat/answer-snapshot';
 import {
   appendMessage,
   keepUnchanged,
@@ -244,7 +244,7 @@ export default function ChatScreen() {
     if (readThread(today).messages.some((m) => m.kind === 'assistant_noticed')) return;
     const now = new Date();
     const waiting = pendingProposals$(userId).peek();
-    const snapshot = buildAnswerSnapshot(userId, now);
+    const snapshot = peekAnswerSnapshot(userId, now);
     const items = noticedItems(
       snapshot,
       {

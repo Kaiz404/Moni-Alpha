@@ -1,47 +1,57 @@
+import { describe, expect, it, vi } from 'vitest';
 import { decimalToMinor, type CurrencyCode } from '@repo/types';
+
+import { buildMoneyMonth } from '../../money-month/month';
+import type { FinanceTransaction } from '../../read-model/types';
 import {
   buildCalendarMonthTrendSnapshot,
   buildFinanceAssistantToolSnapshotByCurrency,
   PACE_MIN_DAY_OF_MONTH,
-} from '@/lib/ai/snapshot/finance-metrics';
-import { deviceCalendar } from '@/lib/dates/device-calendar';
-import {
-  type FinanceTransaction,
-  buildMoneyMonth,
-} from '@repo/core';
+  type TxForMetrics,
+} from '../finance-metrics';
+import { KL, kl } from './synthetic-ledger';
+
+const snapshotOf = (
+  transactions: TxForMetrics[],
+  over: Partial<Parameters<typeof buildFinanceAssistantToolSnapshotByCurrency>[0]> = {},
+) =>
+  buildFinanceAssistantToolSnapshotByCurrency({
+    transactions,
+    categoryNames: {},
+    budgets: [],
+    now: new Date(),
+    calendar: KL,
+    ...over,
+  });
 
 describe('currency-scoped chat snapshot', () => {
   it('never combines metrics from different currencies', () => {
-    const snapshot = buildFinanceAssistantToolSnapshotByCurrency(
-      [
-        {
-          amountMinor: decimalToMinor('10'),
-          currency: 'USD',
-          type: 'expense',
-          analysisExcluded: false,
-          debtActivityId: null,
-          categoryId: null,
-          merchant: null,
-          transactionDate: new Date().toISOString(),
-        },
-        {
-          amountMinor: decimalToMinor('20'),
-          currency: 'SGD',
-          type: 'expense',
-          analysisExcluded: false,
-          debtActivityId: null,
-          categoryId: null,
-          merchant: null,
-          transactionDate: new Date().toISOString(),
-        },
-      ],
-      {},
-      [],
-    );
+    const snapshot = snapshotOf([
+      {
+        amountMinor: decimalToMinor('10'),
+        currency: 'USD',
+        type: 'expense',
+        analysisExcluded: false,
+        debtActivityId: null,
+        categoryId: null,
+        merchant: null,
+        transactionDate: new Date().toISOString(),
+      },
+      {
+        amountMinor: decimalToMinor('20'),
+        currency: 'SGD',
+        type: 'expense',
+        analysisExcluded: false,
+        debtActivityId: null,
+        categoryId: null,
+        merchant: null,
+        transactionDate: new Date().toISOString(),
+      },
+    ]);
     expect(snapshot.schema).toBe('finance_assistant_tool_v4');
     expect(Object.keys(snapshot.currencies)).toEqual(['SGD', 'USD']);
-    expect(snapshot.currencies.USD.rolling30.current.expenseTotal).toBe(10);
-    expect(snapshot.currencies.SGD.rolling30.current.expenseTotal).toBe(20);
+    expect(snapshot.currencies.USD!.rolling30.current.expenseTotal).toBe(10);
+    expect(snapshot.currencies.SGD!.rolling30.current.expenseTotal).toBe(20);
   });
 });
 
@@ -57,40 +67,43 @@ const expense = (amount: string, date: Date, currency: string | null = 'MYR') =>
 });
 
 describe('calendar month pace', () => {
-  const september = [expense('3000', new Date(2026, 8, 15))];
+  const september = [expense('3000', kl(2026, 8, 15))];
 
   it('stays null in the first days of a month, so rent on day 1 is not a +1450% forecast', () => {
     const snapshot = buildCalendarMonthTrendSnapshot(
-      [...september, expense('1500', new Date(2026, 9, 1, 9))],
+      [...september, expense('1500', kl(2026, 9, 1, 9))],
       'MYR',
-      new Date(2026, 9, 1, 10),
+      kl(2026, 9, 1, 10),
+      KL,
     );
     expect(snapshot.expenseCurrentMonthToDate).toBe(1500);
     expect(snapshot.dailyPaceVsPreviousMonthPct).toBeNull();
     expect(snapshot).not.toHaveProperty('pctExpenseChangeVsPreviousFullMonth');
     for (let day = 2; day < PACE_MIN_DAY_OF_MONTH; day += 1) {
-      const later = buildCalendarMonthTrendSnapshot(september, 'MYR', new Date(2026, 9, day, 10));
+      const later = buildCalendarMonthTrendSnapshot(september, 'MYR', kl(2026, 9, day, 10), KL);
       expect(later.dailyPaceVsPreviousMonthPct).toBeNull();
     }
   });
 
   const daily = (from: number, to: number) =>
-    Array.from({ length: to - from + 1 }, (_, i) => expense('100', new Date(2026, 9, from + i, 9)));
+    Array.from({ length: to - from + 1 }, (_, i) => expense('100', kl(2026, 9, from + i, 9)));
 
   it('compares average daily spend from day 7 when spending is spread out', () => {
     const snapshot = buildCalendarMonthTrendSnapshot(
       [...september, ...daily(1, 7)],
       'MYR',
-      new Date(2026, 9, 7, 10),
+      kl(2026, 9, 7, 10),
+      KL,
     );
     expect(snapshot.dailyPaceVsPreviousMonthPct).toBe(0);
   });
 
   it.each([8, 12])('stays null on day %i while rent paid on day 1 dominates the month', (day) => {
     const snapshot = buildCalendarMonthTrendSnapshot(
-      [...september, expense('1500', new Date(2026, 9, 1, 9)), ...daily(2, day)],
+      [...september, expense('1500', kl(2026, 9, 1, 9)), ...daily(2, day)],
       'MYR',
-      new Date(2026, 9, day, 10),
+      kl(2026, 9, day, 10),
+      KL,
     );
     expect(snapshot.dailyPaceVsPreviousMonthPct).toBeNull();
   });
@@ -98,55 +111,44 @@ describe('calendar month pace', () => {
 
 describe('snapshot currency handling', () => {
   it('skips rows without a currency instead of filing them under USD', () => {
-    const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
-    const snapshot = buildFinanceAssistantToolSnapshotByCurrency(
-      [expense('10', new Date()), expense('99', new Date(), null)],
-      {},
-      [],
-    );
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const snapshot = snapshotOf([expense('10', new Date()), expense('99', new Date(), null)]);
     expect(Object.keys(snapshot.currencies)).toEqual(['MYR']);
-    expect(snapshot.currencies.MYR.rolling30.current.expenseTotal).toBe(10);
+    expect(snapshot.currencies.MYR!.rolling30.current.expenseTotal).toBe(10);
     expect(warn).toHaveBeenCalledWith(expect.stringContaining('skipped 1 transactions'));
     warn.mockRestore();
   });
 
   it('leaves the rolling change null when the prior 30 days had nothing to compare with', () => {
-    const snapshot = buildFinanceAssistantToolSnapshotByCurrency(
-      [expense('10', new Date())],
-      {},
-      [],
-    );
-    expect(snapshot.currencies.MYR.rolling30.deltas.expensePctVsPrior).toBeNull();
+    const snapshot = snapshotOf([expense('10', new Date())]);
+    expect(snapshot.currencies.MYR!.rolling30.deltas.expensePctVsPrior).toBeNull();
   });
 
   it('reports pending proposals per currency without per-row data', () => {
-    const snapshot = buildFinanceAssistantToolSnapshotByCurrency(
-      [expense('10', new Date())],
-      {},
-      [],
-      [
+    const snapshot = snapshotOf([expense('10', new Date())], {
+      proposals: [
         { amountMinor: decimalToMinor('12'), currency: 'MYR', type: 'expense' },
         { amountMinor: decimalToMinor('3.50'), currency: 'MYR', type: 'expense' },
         { amountMinor: decimalToMinor('200'), currency: 'MYR', type: 'income' },
         { amountMinor: decimalToMinor('8'), currency: 'SGD', type: 'expense' },
       ],
-    );
-    expect(snapshot.currencies.MYR.pendingProposals).toEqual({
+    });
+    expect(snapshot.currencies.MYR!.pendingProposals).toEqual({
       count: 3,
       expenseTotal: 15.5,
       incomeTotal: 200,
     });
-    expect(snapshot.currencies.SGD.pendingProposals).toEqual({
+    expect(snapshot.currencies.SGD!.pendingProposals).toEqual({
       count: 1,
       expenseTotal: 8,
       incomeTotal: 0,
     });
-    expect(snapshot.currencies.SGD.rolling30.current.expenseTotal).toBe(0);
+    expect(snapshot.currencies.SGD!.rolling30.current.expenseTotal).toBe(0);
   });
 });
 
 describe('Moni chat and Budget agree on spending', () => {
-  const now = new Date(2026, 9, 14, 14);
+  const now = kl(2026, 9, 14, 14);
   const row = (
     day: number,
     ringgit: string,
@@ -166,7 +168,7 @@ describe('Moni chat and Budget agree on spending', () => {
     description: null,
     merchant: 'Kopitiam',
     notes: null,
-    transactionDate: new Date(2026, 9, day, 12).toISOString(),
+    transactionDate: kl(2026, 9, day, 12).toISOString(),
     locationLatitude: null,
     locationLongitude: null,
     locationName: null,
@@ -174,11 +176,14 @@ describe('Moni chat and Budget agree on spending', () => {
     placeCoordsAt: null,
     autoAdded: false,
     balanceCorrection: false,
-    createdAt: new Date(2026, 9, day, 12).toISOString(),
+    createdAt: kl(2026, 9, day, 12).toISOString(),
+    receiptImageUrl: null,
+    metadata: {},
+    updatedAt: kl(2026, 9, day, 12).toISOString(),
     ...over,
   });
 
-  it("counts the same spent this month when the month has a debt repayment (#68)", () => {
+  it('counts the same spent this month when the month has a debt repayment (#68)', () => {
     const transactions = [
       row(3, '30'),
       row(9, '12'),
@@ -186,11 +191,18 @@ describe('Moni chat and Budget agree on spending', () => {
       row(11, '50', { analysisExcluded: true, balanceCorrection: true, categoryId: null }),
     ];
     const budget = buildMoneyMonth(
-      { transactions, categories: [], budgets: [], monthlyTotalMinor: null, bills: [], overrides: [], debts: [] },
-      { month: '2026-10', currency: 'MYR' as CurrencyCode, now, calendar: deviceCalendar },
+      {
+        transactions,
+        categories: [],
+        budgets: [],
+        monthlyTotalMinor: null,
+        bills: [],
+        overrides: [],
+        debts: [],
+      },
+      { month: '2026-10', currency: 'MYR' as CurrencyCode, now, calendar: KL },
     );
-    const chat = buildFinanceAssistantToolSnapshotByCurrency(transactions, {}, [], [], now)
-      .currencies.MYR;
+    const chat = snapshotOf(transactions, { now }).currencies.MYR!;
 
     expect(budget.spentMinor).toBe(4200);
     expect(chat.calendarMonth.expenseCurrentMonthToDate).toBe(42);

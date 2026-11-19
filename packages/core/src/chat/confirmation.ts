@@ -1,4 +1,7 @@
 import type { MinorAmount } from '@repo/types';
+
+import type { Calendar } from '../calendar';
+import type { FactsTransaction } from '../money-month/recurring';
 import {
   MAX_BALANCE_AGE_DAYS,
   balanceMinor,
@@ -7,8 +10,6 @@ import {
   liquidWallets,
   type FactsWallet,
 } from './forecast';
-import type { FactsTransaction } from '@repo/core';
-import { deviceCalendar } from '@/lib/dates/device-calendar';
 
 export type WalletToConfirm<W extends FactsWallet> = {
   wallet: W;
@@ -26,6 +27,7 @@ export function walletsNeedingConfirmation<W extends FactsWallet>(
   wallets: readonly W[],
   transactions: readonly FactsTransaction[],
   today: Date,
+  calendar: Calendar,
 ): WalletToConfirm<W>[] {
   const known = transactions.filter((tx) => new Date(tx.transactionDate) <= today);
   const inUse = new Set(
@@ -34,12 +36,13 @@ export function walletsNeedingConfirmation<W extends FactsWallet>(
         liquidWallets(wallets, currency),
         known.filter((tx) => tx.currency === currency),
         today,
+        calendar,
       ).map((w) => w.id),
     ),
   );
-  const day = deviceCalendar.dayNumber(today);
+  const day = calendar.dayNumber(today);
   return wallets.flatMap((wallet) => {
-    const daysSinceConfirmed = confirmedDaysAgo(wallet, day);
+    const daysSinceConfirmed = confirmedDaysAgo(wallet, day, calendar);
     if (
       !inUse.has(wallet.id) ||
       (daysSinceConfirmed !== null && daysSinceConfirmed <= MAX_BALANCE_AGE_DAYS)
