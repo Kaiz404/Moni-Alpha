@@ -15,7 +15,7 @@ import {
   type ReviewEdits,
   type StoredRow,
 } from '@repo/core';
-import { useRef, useState } from 'react';
+import { useRef, useState, type Dispatch, type SetStateAction } from 'react';
 import { Glyph } from '@/components/ledger/glyph';
 import { SidePane } from '@/components/ledger/side-pane';
 import { useQueryParams } from '@/components/ledger/use-query-param';
@@ -52,10 +52,25 @@ function isLive(id: string): boolean {
 export function ReviewDrawer({ ledger }: { ledger: Ledger }) {
   const [params, setParams] = useQueryParams();
   const view = parseReviewView(params.get('review'));
+  // Kept here, not in the body, so closing the drawer and opening it again keeps what was picked.
+  const [drafts, setDrafts] = useState<Record<string, ReviewEdits>>({});
+  const [similar, setSimilar] = useState<Record<string, boolean>>({});
   const close = () => setParams({ review: null, capture: null });
   return (
     <SidePane label="Review" name="review" open={view !== null && ledger.loaded} onClose={close}>
-      {view && ledger.loaded && <ReviewBody ledger={ledger} view={view} asked={params.get('capture')} setParams={setParams} onClose={close} />}
+      {view && ledger.loaded && (
+        <ReviewBody
+          ledger={ledger}
+          view={view}
+          asked={params.get('capture')}
+          setParams={setParams}
+          onClose={close}
+          drafts={drafts}
+          setDrafts={setDrafts}
+          similar={similar}
+          setSimilar={setSimilar}
+        />
+      )}
     </SidePane>
   );
 }
@@ -66,20 +81,26 @@ function ReviewBody({
   asked,
   setParams,
   onClose,
+  drafts,
+  setDrafts,
+  similar,
+  setSimilar,
 }: {
   ledger: Ledger;
   view: ReviewView;
   asked: string | null;
   setParams: (patch: Record<string, string | null>) => void;
   onClose: () => void;
+  drafts: Record<string, ReviewEdits>;
+  setDrafts: Dispatch<SetStateAction<Record<string, ReviewEdits>>>;
+  similar: Record<string, boolean>;
+  setSimilar: Dispatch<SetStateAction<Record<string, boolean>>>;
 }) {
   const { projection, currency, calendar, now, userId } = ledger;
   const queue = inboxOrder(ledger.waiting);
   const open = queue.find((capture) => capture.id === asked) ?? queue[0] ?? null;
   const index = open ? queue.indexOf(open) : -1;
   const [selected, setSelected] = useState<ReadonlySet<string>>(() => new Set());
-  const [drafts, setDrafts] = useState<Record<string, ReviewEdits>>({});
-  const [similar, setSimilar] = useState<Record<string, boolean>>({});
   const picked = queue.filter((capture) => selected.has(capture.id));
   const edited = (capture: FinanceProposal) => editedProposal(capture, drafts[capture.id] ?? {});
   const empty = queue.length === 0;

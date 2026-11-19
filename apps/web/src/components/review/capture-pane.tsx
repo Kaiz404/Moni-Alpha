@@ -80,6 +80,19 @@ export function CapturePane({
     setOpen(null);
     setEditing(null);
   }, [capture.id]);
+  useEffect(() => {
+    if (!open) return;
+    // Capture phase, so Esc shuts the picker before the drawer's keys see it and close the drawer.
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape' || event.defaultPrevented) return;
+      event.preventDefault();
+      const anchor = document.activeElement?.closest('.picker-anchor');
+      anchor?.querySelector<HTMLElement>('.capture-field-btn')?.focus();
+      setOpen(null);
+    };
+    window.addEventListener('keydown', onKey, true);
+    return () => window.removeEventListener('keydown', onKey, true);
+  }, [open]);
 
   const next = editedProposal(capture, edits);
   const type = next.type ?? 'expense';

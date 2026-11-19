@@ -178,6 +178,24 @@ export async function verifyReview(t) {
   check('a capture with no wallet waits for one: Approve reads Pick a wallet and is off', await approveChat.isDisabled());
   await shot(p, 'review-1440-chat');
 
+  // Esc shuts an open picker, not the drawer; a picked wallet outlives the drawer closing.
+  const walletField = drawer(p).getByRole('button', { name: /^Wallet: / });
+  await walletField.click();
+  const walletList = drawer(p).getByRole('listbox', { name: 'Wallet' });
+  await walletList.waitFor({ timeout: 3000 });
+  await p.keyboard.press('Escape');
+  check('Esc in the wallet picker shuts the picker and leaves the drawer open', !(await visible(walletList)) && (await visible(drawer(p))) && p.url().includes(`capture=${chat.id}`), p.url());
+  await walletField.click();
+  await walletList.getByRole('option').first().click();
+  await p.keyboard.press('Escape');
+  await p.locator('aside.side-pane').waitFor({ state: 'detached', timeout: 2000 }).catch(() => {});
+  await p.locator('.review-card').getByRole('link', { name: /^Review/ }).filter({ visible: true }).click();
+  await ready(p);
+  await drawer(p).getByRole('radio', { name: `All ${pending.length}` }).click();
+  await p.locator(`.inbox-row[data-capture="${chat.id}"]`).click();
+  await p.waitForURL(new RegExp(`capture=${chat.id}`));
+  check('the wallet picked before the drawer closed is still picked when it opens again', await pane.getByRole('button', { name: /^Approve/ }).isEnabled());
+
   // Not mine for everything: All caught up, then Recently reviewed with Move back, then undo.
   await drawer(p).getByRole('radio', { name: `All ${pending.length}` }).click();
   await p.waitForURL(/review=list/);
