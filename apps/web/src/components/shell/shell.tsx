@@ -9,9 +9,12 @@ import { CommandPalette } from './command-palette';
 import { Rail, Sidebar, TabBar } from './nav-bars';
 import { AccountMenu, ShortcutsDialog, Toaster } from './overlays';
 import { ChatPane } from '@/components/chat/chat-pane';
+import { useReconnectToast } from '@/components/states/connection';
 import { AddPane } from './panes';
 import { ShellContext, type Pane, type ShellAction, type ShellApi, type ShellUser } from './shell-context';
-import { setShell, showToast, signOut, undoToast, useShell } from './shell-store';
+import { SessionDialog } from '@/components/states/session-dialog';
+import { moniStore } from '@/lib/moni-store';
+import { isSigningOut, setShell, showToast, signOut, undoToast, useShell } from './shell-store';
 
 function isTyping(target: EventTarget | null): boolean {
   if (!(target instanceof HTMLElement)) return false;
@@ -36,6 +39,7 @@ export function Shell({ user, children }: { user: ShellUser; children: ReactNode
   const { pref, setTheme } = useTheme();
   const [anchor, setAnchor] = useState<DOMRect | null>(null);
   const keys = useRef<KeyState>(INITIAL_KEY_STATE);
+  useReconnectToast();
   const returnFocus = useRef<HTMLElement | null>(null);
 
   const setPane = useCallback(
@@ -73,6 +77,7 @@ export function Shell({ user, children }: { user: ShellUser; children: ReactNode
           setAnchor(origin?.getBoundingClientRect() ?? null);
           return overlay === 'account' ? closeOverlay() : openOverlay('account');
         case 'close':
+          if (overlay === 'session') return;
           if (overlay !== 'none') return closeOverlay();
           if (pane) return setPane(null);
           return;
@@ -112,6 +117,14 @@ export function Shell({ user, children }: { user: ShellUser; children: ReactNode
     },
     [closeOverlay, openOverlay, overlay, pane, pref, router, setPane, setTheme],
   );
+
+  // A session that ends without Sign out (it expired, or another tab signed out) asks to sign in again over the page.
+  useEffect(() => {
+    const { data } = moniStore().supabase.auth.onAuthStateChange((event) => {
+      if (event === 'SIGNED_OUT' && !isSigningOut()) setShell({ overlay: 'session' });
+    });
+    return () => data.subscription.unsubscribe();
+  }, []);
 
   // The 404 page's Search Moni lands on /home?palette=open: open the command bar and drop the parameter.
   useEffect(() => {
@@ -171,6 +184,7 @@ export function Shell({ user, children }: { user: ShellUser; children: ReactNode
         {overlay === 'palette' && <CommandPalette />}
         {overlay === 'shortcuts' && <ShortcutsDialog />}
         {overlay === 'account' && <AccountMenu anchor={anchor} />}
+        {overlay === 'session' && <SessionDialog />}
         <Toaster />
       </div>
     </ShellContext.Provider>

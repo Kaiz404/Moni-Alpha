@@ -460,7 +460,17 @@ export function ActivityScreen() {
             <FilterBar ledger={ledger} filters={filtersOf(query)} base={base} range={range} onChange={setFilters} />
           </div>
           <section aria-label="Transactions" className="card activity-list-card" onClick={() => setMenu(null)}>
-            {empty ? (
+            {!ledger.loaded ? (
+              <div className="activity-loading" aria-busy="true" aria-label="Loading transactions">
+                {Array.from({ length: 8 }, (_, index) => (
+                  <span key={index} className="activity-loading-row">
+                    <span className="block" />
+                    <span className="block" />
+                    <span className="block" />
+                  </span>
+                ))}
+              </div>
+            ) : empty ? (
               <div className="activity-empty">
                 <Cat mood="neutral" size={72} id="activity-empty" />
                 <h2 className="card-title">No spending yet</h2>

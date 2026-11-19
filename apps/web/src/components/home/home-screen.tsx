@@ -17,7 +17,8 @@ import {
   type HomeCard,
   type HomeLayout,
 } from '@/lib/home-layout';
-import { useLedger, type Ledger } from '@/lib/ledger/use-ledger';
+import { useLedger, type Ledger, type LedgerPart } from '@/lib/ledger/use-ledger';
+import { moniStore } from '@/lib/moni-store';
 import { useScreenKeys } from '@/lib/screen-keys';
 import type { ChecklistItem } from '@/lib/setup';
 import { RecentCard } from './recent-card';
@@ -63,7 +64,17 @@ function headerDate(now: Date, zone: string): string {
   return `${part({ weekday: 'long' })}, ${part({ day: 'numeric' })} ${part({ month: 'short' })}`;
 }
 
+/** Which part of the ledger each card reads, so one that failed to load says so in its own place. */
+const CARD_PART: Record<HomeCard, { part: LedgerPart; what: string }> = {
+  review: { part: 'captures', what: 'your captures' },
+  recent: { part: 'transactions', what: 'your transactions' },
+  next: { part: 'transactions', what: 'your bills' },
+  map: { part: 'transactions', what: 'your places' },
+  wallets: { part: 'wallets', what: 'your wallets' },
+};
+
 function cardFor(card: HomeCard, ledger: Ledger, setup: ChecklistItem[] | null, checkInDismissed: boolean, dismissCheckIn: () => void): ReactNode {
+  if (ledger.failed.includes(CARD_PART[card].part)) return <CardError title={HOME_CARD_LABELS[card]} what={CARD_PART[card].what} />;
   switch (card) {
     case 'review':
       return <ReviewCard ledger={ledger} setup={setup} />;
@@ -175,7 +186,7 @@ export function HomeScreen() {
         </a>
         <div className="home-top">
           <div className="home-slot slot-spent" data-locked={editing || undefined}>
-            <SpentCard month={ledger.month} mode={mode} onMode={setMode} firstRun={firstRun} />
+            {ledger.loaded ? <SpentCard month={ledger.month} mode={mode} onMode={setMode} firstRun={firstRun} /> : <LoadingCard title={`Spent in ${monthName(ledger.month.month)}`} chart />}
             {editing && (
               <div className="slot-edit slot-edit-locked">
                 <span className="slot-lock">
@@ -212,7 +223,7 @@ export function HomeScreen() {
         onDragOver={editing ? (event) => event.preventDefault() : undefined}
         onDrop={editing ? dropOn(card) : undefined}
       >
-        {(!hidden || editing) && cardFor(card, ledger, setup, checkInDismissed, () => setCheckInDismissed(true))}
+        {(!hidden || editing) && (ledger.loaded ? cardFor(card, ledger, setup, checkInDismissed, () => setCheckInDismissed(true)) : <LoadingCard title={label} />)}
         {editing && (
           <div
             className="slot-edit"
@@ -252,4 +263,44 @@ export function HomeScreen() {
       </div>
     );
   }
+}
+
+/** A card on a session's first load: its title at once, still Sand blocks where the numbers will be. */
+function LoadingCard({ title, chart = false }: { title: string; chart?: boolean }) {
+  return (
+    <section className="card card-loading" aria-busy="true" aria-label={title}>
+      <h2 className={chart ? 'caps' : 'card-title'}>{title}</h2>
+      <span className="block" style={{ width: '42%', height: chart ? 34 : 22 }} />
+      <span className="block" style={{ flex: '1 1 auto', minHeight: 40 }} />
+      {!chart && <span className="block" style={{ width: '64%', height: 18 }} />}
+    </section>
+  );
+}
+
+/**
+ * W2-States, Couldn't load: the card that failed says so and the rest of Home stays. No cat, because it
+ * holds data. Moni tries again when the window regains focus, and Try again does it now.
+ */
+function CardError({ title, what }: { title: string; what: string }) {
+  useEffect(() => {
+    const retry = () => void moniStore().enableStoreSync();
+    window.addEventListener('focus', retry);
+    return () => window.removeEventListener('focus', retry);
+  }, []);
+  return (
+    <section className="card card-error" aria-label={title} role="alert">
+      <h2 className="card-title">{title}</h2>
+      <div className="card-error-body">
+        <span className="tile-empty-icon">
+          <Glyph name="cloud-alert-outline" size={22} />
+        </span>
+        <b>Couldn&apos;t load {what}</b>
+        <span className="meta">The rest of Home is up to date.</span>
+        <button type="button" className="btn btn-sand press" onClick={() => void moniStore().enableStoreSync()}>
+          <Glyph name="refresh" size={18} />
+          Try again
+        </button>
+      </div>
+    </section>
+  );
 }

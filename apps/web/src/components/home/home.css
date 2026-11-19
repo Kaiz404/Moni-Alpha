@@ -940,3 +940,57 @@ html[data-layout='phone'] :is(.home .toggle button, .check-in-btn, .not-now)::be
   height: max(100%, 44px);
   transform: translate(-50%, -50%);
 }
+
+/* W2-States, offline: Review's card says it waits for a connection instead of offering Approve. */
+.review-offline {
+  flex: 1 1 auto;
+  border-radius: 18px;
+  background: var(--color-card);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  text-align: center;
+  padding: 26px 24px 0;
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--color-ink-2);
+}
+
+.review-offline b {
+  font-size: 15px;
+  color: var(--color-foreground);
+}
+
+.review-list[hidden] {
+  display: none;
+}
+
+/* W2-States, Home's first load: each card keeps its size and title; Sand blocks wait for the numbers. */
+.card-loading {
+  gap: 12px;
+}
+
+.card-loading .block {
+  display: block;
+  border-radius: 12px;
+  background: var(--color-sand-light);
+  animation: fade-in 180ms ease 300ms both;
+}
+
+/* W2-States, Couldn't load: one card fails in its own place. */
+.card-error-body {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  text-align: center;
+  padding: 0 20px 12px;
+}
+
+.card-error-body b {
+  font-size: 16px;
+  line-height: 21px;
+}

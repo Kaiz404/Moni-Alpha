@@ -63,11 +63,15 @@ export type Ledger = {
   budgetRows: BudgetRow[];
   /** The wallet the profile picks for new entries, if any. */
   defaultWalletId: string | null;
+  /** Tables whose pull failed, so a card can say it couldn't load while the rest of the screen stays. */
+  failed: readonly LedgerPart[];
   /** First-run set-up: when it finished, and whether Home's Get set up card was closed. */
   setup: { finishedAt?: string; hidden?: boolean };
 };
 
 const EMPTY: Record<string, never> = {};
+
+export type LedgerPart = 'wallets' | 'transactions' | 'captures';
 
 /** Every table a screen reads, copied so a change in place still gives React a new reference. */
 function useTables() {
@@ -90,6 +94,13 @@ function useTables() {
       aliases: copy(store.merchantAliases$),
       monthlyBudget: store.profilePreferences$.get()?.monthly_budget ?? null,
       defaultWalletId: store.profilePreferences$.get()?.default_wallet_id ?? null,
+      failed: (
+        [
+          ['wallets', store.wallets$],
+          ['transactions', store.transactions$],
+          ['captures', store.proposedTransactions$],
+        ] as const
+      ).flatMap(([part, table$]) => (syncState(table$).error.get() ? [part] : [])) as LedgerPart[],
       setupFinishedAt: store.profilePreferences$.get()?.setup_finished_at,
       setupHidden: store.profilePreferences$.get()?.setup_checklist_hidden,
     };
@@ -190,6 +201,7 @@ export function useLedger(): Ledger {
       ),
       budgetRows: Object.values(tables?.budgets ?? EMPTY).filter(Boolean) as BudgetRow[],
       defaultWalletId: tables?.defaultWalletId ?? null,
+      failed: tables?.failed ?? [],
       setup: { finishedAt: tables?.setupFinishedAt, hidden: tables?.setupHidden },
     };
   }, [tables, clock, calendar, currency, user.id]);

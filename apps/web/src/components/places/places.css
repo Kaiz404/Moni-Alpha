@@ -33,6 +33,7 @@ html[data-layout='phone'] .places {
 }
 
 .places .skeleton {
+  animation: fade-in 180ms ease 300ms both;
   border-radius: var(--radius-card);
   background: var(--color-sand-light);
   min-height: var(--map-h);

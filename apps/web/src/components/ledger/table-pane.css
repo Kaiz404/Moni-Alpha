@@ -31,9 +31,10 @@ html[data-layout='phone'] .ledger-main {
   flex: 1 1 auto;
 }
 
+/* W2-States: loading blocks are still (they never pulse) and show only after 300 ms of a session's first load. */
 .skeleton {
   background: var(--color-sand-light);
-  animation: fade-in 400ms ease both;
+  animation: fade-in 180ms ease 300ms both;
 }
 
 .hint-keys {

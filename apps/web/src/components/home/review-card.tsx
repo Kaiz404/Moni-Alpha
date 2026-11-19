@@ -19,6 +19,7 @@ import { commit, planContext, reviewContext, reviewView } from '@/lib/ledger/com
 import { captureSource, clockTime } from '@/lib/ledger/format';
 import type { Ledger } from '@/lib/ledger/use-ledger';
 import type { ChecklistItem } from '@/lib/setup';
+import { useOnline } from '@/components/states/connection';
 import { SetupCard } from './setup-card';
 
 const SHOWN = 3;
@@ -33,6 +34,7 @@ export function ReviewCard({ ledger, setup }: { ledger: Ledger; setup: Checklist
   const { waiting, transactions, projection, walletNames, currency, calendar, wallets, userId } = ledger;
   const usual = usualCaptures(waiting, transactions);
   const [picking, setPicking] = useState<string | null>(null);
+  const online = useOnline();
   if (setup) return <SetupCard items={setup} />;
   if (waiting.length === 0) return <CaughtUp />;
 
@@ -66,7 +68,16 @@ export function ReviewCard({ ledger, setup }: { ledger: Ledger; setup: Checklist
           <Icon name="chevron-right" size={18} />
         </Link>
       </div>
-      <ul className="review-list" data-only="sidebar rail rail-one-column">
+      {!online && (
+        <div className="review-offline">
+          <Glyph name="cloud-off-outline" size={24} />
+          <b>Review needs a connection</b>
+          <span>
+            The {waiting.length === 1 ? 'capture waits' : `${waiting.length} captures wait`} in Moni&apos;s cloud. They&apos;ll be here when you&apos;re back.
+          </span>
+        </div>
+      )}
+      <ul className="review-list" data-only="sidebar rail rail-one-column" hidden={!online}>
         {waiting.slice(0, SHOWN).map((capture) => {
           const known = familiarity(timesFiled(capture, transactions));
           const category = capture.categoryId ? projection.categoriesById[capture.categoryId] : undefined;
@@ -125,7 +136,7 @@ export function ReviewCard({ ledger, setup }: { ledger: Ledger; setup: Checklist
         })}
       </ul>
       <span className="grow-space" />
-      {usual.length > 0 ? (
+      {!online ? null : usual.length > 0 ? (
         <button type="button" className="btn btn-ink approve-usual press" data-only="sidebar rail rail-one-column" onClick={() => approve(usual)}>
           <Glyph name="check-all" size={20} />
           <span className="approve-usual-text">Approve all {usual.length} usual</span>

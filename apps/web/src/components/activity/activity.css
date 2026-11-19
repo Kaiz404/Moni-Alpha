@@ -1171,3 +1171,26 @@ html[data-layout='phone'] :is(.kind-chip, .pencil, .field-chip)::before {
     transition: none;
   }
 }
+
+/* W2-States, Activity's first load: block rows take the real rows' space, so the pager doesn't move. */
+.activity-loading {
+  display: flex;
+  flex-direction: column;
+  padding: 8px 0;
+}
+
+.activity-loading-row {
+  display: grid;
+  grid-template-columns: 84px minmax(0, 1fr) 120px;
+  gap: 24px;
+  align-items: center;
+  height: 52px;
+  padding: 0 22px;
+}
+
+.activity-loading-row .block {
+  height: 14px;
+  border-radius: 8px;
+  background: var(--color-sand-light);
+  animation: fade-in 180ms ease 300ms both;
+}

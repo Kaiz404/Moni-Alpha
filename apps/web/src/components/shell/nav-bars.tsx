@@ -5,11 +5,13 @@ import { usePathname } from 'next/navigation';
 import { AskMoniMark, Cat, Wordmark } from '@/components/brand';
 import { Icon } from '@/components/icon';
 import { destinationOf, MAIN_NAV, navItem } from '@/lib/nav';
+import { useOnline } from '@/components/states/connection';
 import { useShellApi } from './shell-context';
 
 /** W2-Parts "Full sidebar", 1360 and wider: the phone's Ink tab bar turned upright. */
 export function Sidebar() {
   const { user, run, hrefWithPane, pane } = useShellApi();
+  const online = useOnline();
   const current = destinationOf(usePathname());
   const review = navItem('review');
   return (
@@ -37,7 +39,14 @@ export function Sidebar() {
         <Icon name={review.icon} size={22} />
         <span style={{ flex: '1 1 auto' }}>Review</span>
       </Link>
-      <button type="button" className="navi" aria-pressed={pane === 'chat'} onClick={() => run({ kind: 'ask' })}>
+      <button
+        type="button"
+        className="navi"
+        aria-pressed={pane === 'chat'}
+        data-offline={!online || undefined}
+        title={online ? undefined : 'Moni chat needs a connection'}
+        onClick={() => run({ kind: 'ask' })}
+      >
         <AskMoniMark size={24} onInk id="sb-ask" />
         <span style={{ flex: '1 1 auto', color: 'var(--color-on-tab-bar)' }}>Ask Moni</span>
         <span className="kbd kbd-on-ink">/</span>

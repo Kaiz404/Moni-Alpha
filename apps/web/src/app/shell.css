@@ -937,6 +937,11 @@ html[data-layout='phone'] .toast-slot {
   color: var(--color-on-ink-positive);
 }
 
+.toast[data-tone='undone'] .toast-icon,
+.toast[data-tone='info'] .toast-icon {
+  color: var(--color-on-ink-body);
+}
+
 .toast[data-tone='error'] .toast-icon {
   color: var(--color-over);
 }
@@ -996,4 +1001,9 @@ html[data-layout='phone'] .toast-slot {
   justify-content: center;
   padding: 24px 24px 26px;
   border-top: 1.5px solid var(--color-sand-light);
+}
+
+/* W2-States, offline: Ask Moni dims, because Moni chat waits for a connection. */
+.navi[data-offline] {
+  opacity: 0.45;
 }

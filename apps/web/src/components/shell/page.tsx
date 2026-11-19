@@ -6,6 +6,7 @@ import { AskMoniMark, Cat } from '@/components/brand';
 import { Icon } from '@/components/icon';
 import type { IconName } from '@/lib/icons';
 import type { Mood } from '@repo/brand';
+import { OfflineBanner } from '@/components/states/connection';
 import { useShellApi, type ShellAction } from './shell-context';
 
 /** How the page sits in the phone layout: a tab root (in the tab bar) or a page pushed over one. */
@@ -114,6 +115,7 @@ export function Page({
           </>
         )}
       </header>
+      <OfflineBanner />
       {children}
     </>
   );
