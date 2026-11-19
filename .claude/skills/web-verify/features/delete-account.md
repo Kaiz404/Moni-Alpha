@@ -19,4 +19,4 @@ Settings, then the last row, Delete your account, in Over red. Or open `/delete-
 
 - Never let a click reach the real `delete-account` for the e2e user: every context that can press Delete my account calls `stubDeletion` first. `supabase/functions/_check/live-check.mjs` deletes a throwaway user for real.
 - The logout stub matters too: a real global sign-out would end the e2e user's other sessions, including the storage state later checks reuse.
-- Export data has no web builder yet, so the note points to the phone's Profile › Export data and has no button.
+- Signed in, the note's Export data downloads the Moni export (issue #70) once the store has pulled; the public page mounts `StoreSync` for it. Signed out, the page says to sign in or use the phone. `settings.mjs` checks the download from `/settings/delete-account`.

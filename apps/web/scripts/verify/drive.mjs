@@ -17,6 +17,7 @@ import { STUB_AI_URL, verifyChat } from './chat.mjs';
 import { driveLedgerScreens, readSeed } from './ledger-screens.mjs';
 import { verifyPlaces } from './places.mjs';
 import { verifyReview } from './review.mjs';
+import { verifySettings } from './settings.mjs';
 
 const web = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const repo = join(web, '..', '..');
@@ -47,7 +48,7 @@ const ROUTES = [
   { path: '/home/places', title: /^Where you spend$/, pushed: true },
   { path: '/review', title: /^Review$/, pushed: true },
   { path: '/settings', title: /^Settings$/, pushed: true },
-  { path: '/settings/delete-account', title: /^Delete your account$/, pushed: true },
+  { path: '/settings/delete-account', title: /^Settings$/, phoneTitle: /^Delete your account$/, pushed: true },
 ];
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -418,7 +419,7 @@ try {
         const ok =
           layout === size.layout &&
           navs.join() === nav.join() &&
-          route.title.test(title ?? '') &&
+          (size.layout === 'phone' && route.phoneTitle ? route.phoneTitle : route.title).test(title ?? '') &&
           bg === BACKGROUND[theme] &&
           wide;
         check(`${where}: ${size.layout}, its nav, title, ${theme} ground, no sideways scroll`, ok, { layout, navs, title, bg, wide });
@@ -666,6 +667,19 @@ try {
   }
   if (runs('chat'))
     await verifyChat({ browser, base, storage, check, shot, settle, pair, seed, supabaseUrl, publishable, token: await userToken(), secret: env.SUPABASE_SECRET_KEY, widths: WIDTHS, background: BACKGROUND, realGateway });
+  if (runs('settings')) {
+    const token = await userToken();
+    const rest = async (path, { method = 'GET', body } = {}) => {
+      const res = await fetch(`${supabaseUrl}/rest/v1/${path}`, {
+        method,
+        headers: { apikey: publishable, Authorization: `Bearer ${token}`, 'Content-Type': 'application/json', Prefer: 'return=representation' },
+        body: body === undefined ? undefined : JSON.stringify(body),
+      });
+      if (!res.ok) throw new Error(`${method} ${path}: ${res.status} ${await res.text()}`);
+      return res.json();
+    };
+    await verifySettings({ browser, base, storage, check, shot, pair, settle, widths: WIDTHS, background: BACKGROUND, out: OUT, rest, seed });
+  }
   if (runs('ledger')) await verifyBudgetDebts({ browser, base, storage, check, shot, pair, settle, open, out: OUT, widths: WIDTHS, background: BACKGROUND, navFor: NAV_FOR, seed, query: (name) => JSON.parse(webSeed('--query', name)) });
   if (runs('review')) await verifyReview({ browser, base, storage, check, shot, pair, settle, out: OUT, widths: WIDTHS, background: BACKGROUND, navFor: NAV_FOR, seed, query: (name) => JSON.parse(webSeed('--query', name)) });
   if (runs('places')) await verifyPlaces({ browser, base, storage, check, shot, pair, settle, open, out: OUT, widths: WIDTHS, background: BACKGROUND, navFor: NAV_FOR, seed, query: (name) => JSON.parse(webSeed('--query', name)) });

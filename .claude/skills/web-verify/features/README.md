@@ -16,3 +16,4 @@ One file per user-facing part of the web app. Each says how a user reaches it, h
 | Debts: net position, Coming up, people, person pane, Record a debt | [debts.md](debts.md) |
 | Where you spend: map, pins, places list, place pane, Day by day, Without a place | [places.md](places.md) |
 | Moni chat: the docked pane, consent, answer cards, drafts for many rows | [chat.md](chat.md) |
+| Settings: Profile, Moni's AI, Merchant names, Import and export | [settings.md](settings.md) |
