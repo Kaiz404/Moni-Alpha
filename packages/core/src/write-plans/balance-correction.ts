@@ -7,7 +7,7 @@ import {
 } from '@repo/types';
 
 import { planTransaction } from './transactions';
-import type { LedgerView, PlanContext, Planned } from './types';
+import { planned, refused, type LedgerView, type PlanContext, type Planned } from './types';
 
 export const BALANCE_CORRECTION_TITLE = 'Balance correction';
 
@@ -48,6 +48,28 @@ export function planBalanceCorrection(
   ctx: PlanContext,
 ): Planned<{ id: string }> {
   return planTransaction({ ...correction, walletId, transactionDate: ctx.now }, 'manual', view, ctx);
+}
+
+/**
+ * The check-in's answer: "That's right" (no correction) or "Fix it" with the typed balance. Either way
+ * the wallet's balance counts as seen now.
+ */
+export function planCheckIn(
+  walletId: string,
+  correction: BalanceCorrection | null,
+  view: Pick<LedgerView, 'walletsById'>,
+  ctx: PlanContext,
+): Planned<{ id: string | null }> {
+  if (!view.walletsById[walletId]) return refused('Wallet not found');
+  const confirm = {
+    table: 'wallets' as const,
+    id: walletId,
+    patch: { balance_confirmed_at: ctx.now, updated_at: ctx.now },
+  };
+  if (!correction) return planned({ patch: [confirm] }, { id: null });
+  const row = planBalanceCorrection(walletId, correction, view, ctx);
+  if (row.kind !== 'writes') return row;
+  return planned({ insert: row.writes.insert, patch: [confirm] }, { id: row.result.id });
 }
 
 /** The typed balance as a decimal, or `null` while it is not a 2-decimal amount. Accepts commas and U+2212. */

@@ -361,6 +361,19 @@ html[data-layout='rail-one-column'] .cmd-field {
   font-size: 18px;
 }
 
+.page-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.phone-greeting-block {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
 .phone-greeting {
   flex: 1 1 auto;
   margin: 0;

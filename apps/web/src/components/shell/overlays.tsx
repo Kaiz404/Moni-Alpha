@@ -151,6 +151,9 @@ export function Toaster() {
           <button type="button" className="toast-action press" onClick={() => undoToast()}>
             <Icon name="undo" size={18} />
             Undo
+            <span className="kbd kbd-on-ink" data-only="sidebar rail rail-one-column">
+              Ctrl Z
+            </span>
           </button>
         )}
         {toast.tone === 'error' && (
