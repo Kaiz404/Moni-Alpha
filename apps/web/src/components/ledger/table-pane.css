@@ -1,10 +1,5 @@
-/* Budget and Debts (W2-Budget, W2-Debts): the tables, the docked detail pane and its forms, on top of
-   ledger.css's cards and rows. One tree for every layout: the pane docks on the sidebar and rail
-   layouts, overlays the rail with one column, and is the pushed page on the phone layout. */
-
-.shell {
-  --detail-width: 408px;
-}
+/* Budget and Debts (W2-Budget, W2-Debts): the tables and the detail pane's forms, on top of ledger.css's
+   cards and rows. The pane itself is side-pane.tsx. */
 
 .ledger {
   flex: 1 1 auto;
@@ -12,49 +7,6 @@
   grid-template-columns: minmax(0, 1fr);
   gap: 16px;
   align-items: start;
-}
-
-/* On the sidebar layout, and the rail from 1240 wide, the pane docks on the right from top to bottom
-   as Moni chat does, and the page (its header too) makes room for it. Narrower than that a docked pane
-   would leave the tables under 600 wide, so the rail opens it over the page as the one-column rail
-   does. Moni chat docks in its place while it is open. */
-html[data-layout='sidebar'] .shell:not([data-pane='chat']) .shell-main:has(.detail) {
-  padding-right: calc(var(--detail-width) + 24px);
-}
-
-@media (min-width: 1240px) {
-  html[data-layout='rail'] .shell:not([data-pane='chat']) .shell-main:has(.detail) {
-    padding-right: calc(var(--detail-width) + 24px);
-  }
-}
-
-@media (max-width: 1239.98px) {
-  html[data-layout='rail'] .detail {
-    display: none;
-  }
-
-  html[data-layout='rail'] .detail[data-open] {
-    display: flex;
-    z-index: 30;
-    animation: slide-in-right var(--duration-sheet) var(--ease-sheet) both;
-    box-shadow:
-      var(--shadow-float),
-      0 0 0 1.5px var(--color-hairline);
-  }
-
-  html[data-layout='rail'] .detail-scrim[data-open] {
-    display: block;
-    position: fixed;
-    inset: 0;
-    z-index: 25;
-    background: var(--scrim);
-    animation: fade-in 200ms ease both;
-  }
-}
-
-.shell[data-pane='chat'] .detail,
-.shell[data-pane='chat'] .detail-scrim {
-  display: none !important;
 }
 
 .ledger-main {
@@ -347,65 +299,7 @@ html[data-layout='phone'] .hint-keys {
   text-overflow: ellipsis;
 }
 
-/* ---------- the detail pane ---------- */
-
-.detail {
-  position: fixed;
-  top: 12px;
-  right: 12px;
-  bottom: 12px;
-  width: var(--detail-width);
-  z-index: 5;
-  border-radius: 26px;
-  background: var(--color-card);
-  padding: 14px 22px 18px;
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-}
-
-html[data-layout='rail-one-column'] .detail,
-html[data-layout='phone'] .detail {
-  display: none;
-}
-
-html[data-layout='rail-one-column'] .detail[data-open],
-html[data-layout='phone'] .detail[data-open] {
-  display: flex;
-  z-index: 30;
-  animation: slide-in-right var(--duration-sheet) var(--ease-sheet) both;
-}
-
-html[data-layout='rail-one-column'] .detail[data-open] {
-  box-shadow:
-    var(--shadow-float),
-    0 0 0 1.5px var(--color-hairline);
-}
-
-html[data-layout='phone'] .detail[data-open] {
-  inset: 0;
-  width: auto;
-  border-radius: 0;
-  background: var(--color-background);
-  padding: 12px var(--spacing-screen) 32px;
-}
-
-html[data-layout='phone'] .shell:has(.detail[data-open]) .tabbar {
-  display: none;
-}
-
-.detail-scrim {
-  display: none;
-}
-
-html[data-layout='rail-one-column'] .detail-scrim[data-open] {
-  display: block;
-  position: fixed;
-  inset: 0;
-  z-index: 25;
-  background: var(--scrim);
-  animation: fade-in 200ms ease both;
-}
+/* ---------- the detail pane's parts (side-pane.tsx is the pane) ---------- */
 
 .detail-body {
   display: flex;
@@ -692,11 +586,6 @@ html[data-layout='phone'] .desk-nav {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  html[data-layout='rail-one-column'] .detail[data-open],
-  html[data-layout='phone'] .detail[data-open] {
-    animation: fade-in 180ms ease both;
-  }
-
   .meter > span {
     transition: none;
   }

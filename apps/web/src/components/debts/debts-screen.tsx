@@ -22,6 +22,7 @@ import { useState } from 'react';
 import { Cat } from '@/components/brand';
 import { Glyph, PersonTile } from '@/components/ledger/glyph';
 import { useQueryParams } from '@/components/ledger/use-query-param';
+import { SidePane } from '@/components/ledger/side-pane';
 import { Page } from '@/components/shell/page';
 import { showToast } from '@/components/shell/shell-store';
 import { comingUpWords, netLabel, openLabel, personMeta } from '@/lib/debts-view';
@@ -320,8 +321,7 @@ function DebtsLoaded({ ledger }: { ledger: Ledger }) {
             </>
           )}
         </div>
-        <div className="detail-scrim" data-open={paneOpen ? '' : undefined} onMouseDown={() => (recording ? setParams({ record: null }) : select(null))} />
-        <aside className="detail" aria-label={recording ? 'Record a debt' : 'Person'} data-open={paneOpen ? '' : undefined}>
+        <SidePane label={recording ? 'Record a debt' : 'Person'} open={Boolean(paneOpen)} idle onClose={() => (recording ? setParams({ record: null }) : select(null))}>
           {recording ? (
             <RecordDebt
               draft={draft}
@@ -355,7 +355,7 @@ function DebtsLoaded({ ledger }: { ledger: Ledger }) {
               <span>Pick a person to see what was lent and paid back.</span>
             </div>
           )}
-        </aside>
+        </SidePane>
       </div>
     </Page>
   );

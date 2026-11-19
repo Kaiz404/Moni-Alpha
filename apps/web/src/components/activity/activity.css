@@ -9,11 +9,6 @@
   transition: padding-right var(--duration-sheet) var(--ease-sheet);
 }
 
-html[data-layout='sidebar'] .shell-main:has(.detail-pane),
-html[data-layout='rail'] .shell-main:has(.detail-pane) {
-  padding-right: calc(380px + 12px + 24px);
-}
-
 .toggle-lg {
   height: 44px;
   padding: 4px;
@@ -762,43 +757,6 @@ html[data-layout='sidebar'] .shell[data-pane='chat'] .tr > :nth-child(6) {
 
 /* ---------- the detail pane ---------- */
 
-.detail-pane {
-  position: fixed;
-  top: 12px;
-  right: 12px;
-  bottom: 12px;
-  width: 380px;
-  z-index: 26;
-  box-sizing: border-box;
-  border-radius: var(--radius-card);
-  background: var(--color-card);
-  padding: 12px 22px 18px;
-  display: flex;
-  flex-direction: column;
-  overflow: auto;
-  animation: slide-in-right var(--duration-sheet) var(--ease-sheet) both;
-}
-
-html[data-layout='rail-one-column'] .detail-pane {
-  box-shadow:
-    var(--shadow-float),
-    0 0 0 1.5px var(--color-hairline);
-  z-index: 31;
-}
-
-.scrim-detail {
-  z-index: 30;
-}
-
-html[data-layout='phone'] .detail-pane {
-  inset: 0;
-  width: auto;
-  border-radius: 0;
-  background: var(--color-background);
-  padding: 8px 20px 24px;
-  z-index: 45;
-}
-
 .pane-top {
   display: flex;
   align-items: center;
@@ -1170,16 +1128,11 @@ html[data-layout='phone'] .day-head {
   padding-left: 18px;
 }
 
-html[data-layout='phone'] .shell:has(.detail-pane) .tabbar,
 html[data-layout='phone'] .previous-tag {
   display: none;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .detail-pane {
-    animation: fade-in 180ms ease both;
-  }
-
   .activity {
     transition: none;
   }

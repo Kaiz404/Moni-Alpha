@@ -39,6 +39,7 @@ import { commit, planContext } from '@/lib/ledger/commit';
 import { SOURCE_ICONS, SOURCE_LABELS, rowAmount } from '@/lib/ledger/format';
 import { useLedger } from '@/lib/ledger/use-ledger';
 import { useScreenKeys } from '@/lib/screen-keys';
+import { SidePane } from '@/components/ledger/side-pane';
 import { DetailPane } from './detail-pane';
 import { FilterBar } from './filters';
 import { RunningCard } from './running-card';
@@ -696,9 +697,8 @@ export function ActivityScreen() {
           </div>
         )}
       </div>
-      {open && !pane && (
-        <>
-          <div className="scrim scrim-detail" data-only="rail-one-column" onMouseDown={() => openRow(null)} />
+      <SidePane label="Transaction" open={Boolean(open) && !pane} width={380} onClose={() => openRow(null)}>
+        {open && (
           <DetailPane
             ledger={ledger}
             transaction={open}
@@ -707,8 +707,8 @@ export function ActivityScreen() {
             onClose={() => openRow(null)}
             onDeleted={() => openRow(null)}
           />
-        </>
-      )}
+        )}
+      </SidePane>
     </Page>
   );
 }

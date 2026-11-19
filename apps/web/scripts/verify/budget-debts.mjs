@@ -53,7 +53,7 @@ export async function verifyBudgetDebts(t) {
           layout: document.documentElement.dataset.layout,
           bg: getComputedStyle(document.body).backgroundColor,
           docked: (() => {
-            const pane = document.querySelector('aside.detail');
+            const pane = document.querySelector('aside.side-pane');
             return pane ? getComputedStyle(pane).display !== 'none' : null;
           })(),
         }));
@@ -78,9 +78,9 @@ export async function verifyBudgetDebts(t) {
           await firstRow.click();
           await p.waitForURL(screen === 'budget' ? /category=/ : /person=/);
           await settle(p);
-          const box = await p.locator('aside.detail').boundingBox();
+          const box = await p.locator('aside.side-pane').boundingBox();
           const tabbar = await p.locator('nav.tabbar').isVisible();
-          const back = await p.locator('aside.detail .phone-back').isVisible();
+          const back = await p.locator('aside.side-pane .phone-back').isVisible();
           const fills =
             size.layout === 'phone'
               ? box?.x === 0 && box?.width === size.width && !tabbar && back
@@ -166,7 +166,7 @@ export async function verifyBudgetDebts(t) {
   const firstName = await first.locator('.row-name b').textContent();
   await first.locator('.row-name').click();
   await p.waitForURL(new RegExp(`category=${firstId}`));
-  check('picking a row opens its category pane with its name', (await p.locator('aside.detail h2').textContent()) === firstName);
+  check('picking a row opens its category pane with its name', (await p.locator('aside.side-pane h2').textContent()) === firstName);
   await p.keyboard.press('j');
   await p.waitForURL(new RegExp(`category=${rowIds[rowIds.indexOf(firstId) + 1] ?? firstId}`)).catch(() => {});
   check('J moves to the next category', p.url().includes(`category=${rowIds[rowIds.indexOf(firstId) + 1] ?? firstId}`), p.url());
@@ -307,7 +307,7 @@ export async function verifyBudgetDebts(t) {
   await d.keyboard.press('Enter');
   const made = d.getByRole('status').filter({ hasText: 'Recorded a debt with E2E Verify' });
   await made.waitFor({ timeout: 5000 }).catch(() => {});
-  const opened = await d.locator('aside.detail h2', { hasText: /^E2E Verify$/ }).waitFor({ timeout: 5000 }).then(() => true, () => false);
+  const opened = await d.locator('aside.side-pane h2', { hasText: /^E2E Verify$/ }).waitFor({ timeout: 5000 }).then(() => true, () => false);
   check('Enter records the debt and opens its person', (await made.isVisible()) && opened && /person=/.test(d.url()) && !d.url().includes('record='), d.url());
   await made.hover().catch(() => {});
   const inDb = await until('debts', (rows) => rows.some((row) => row.counterparty_name === 'E2E Verify'));
@@ -328,8 +328,8 @@ export async function verifyBudgetDebts(t) {
     await open(m, '/debts');
     await ready(m);
     await m.locator('.people-row[data-debt]').first().click();
-    await m.locator('aside.detail[data-open]').waitFor();
-    const name = await m.locator('aside.detail').evaluate((el) => getComputedStyle(el).animationName);
+    await m.locator('aside.side-pane[data-open]').waitFor();
+    const name = await m.locator('aside.side-pane').evaluate((el) => getComputedStyle(el).animationName);
     const expected = reducedMotion === 'reduce' ? 'fade-in' : 'slide-in-right';
     check(`the person pane opens with ${expected} when motion is ${reducedMotion}`, name === expected, name);
     await mctx.close();
@@ -357,7 +357,7 @@ export async function verifyBudgetDebts(t) {
   await r.setViewportSize({ width: 390, height: 844 });
   await r.waitForFunction(() => document.documentElement.dataset.layout === 'phone');
   await settle(r);
-  const paneInput = r.locator('aside.detail input[aria-label$="budget in ringgit, editing"]');
+  const paneInput = r.locator('aside.side-pane input[aria-label$="budget in ringgit, editing"]');
   check(
     'crossing 700 with a half-typed budget keeps the route and shows the draft on the category page',
     r.url() === at && r.url().includes(`category=${rowId}`) && (await paneInput.inputValue().catch(() => '')) === '12',

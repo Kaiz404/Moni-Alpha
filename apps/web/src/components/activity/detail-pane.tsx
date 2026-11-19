@@ -111,7 +111,7 @@ export function DetailPane({
   );
 
   return (
-    <aside aria-label="Transaction" className="detail-pane">
+    <>
       <div className="pane-top">
         <button type="button" className="icon-round icon-round-line press" aria-label="Back" data-only="phone" onClick={onClose}>
           <Icon name="chevron-left" size={22} />
@@ -301,6 +301,6 @@ export function DetailPane({
           </button>
         )}
       </div>
-    </aside>
+    </>
   );
 }

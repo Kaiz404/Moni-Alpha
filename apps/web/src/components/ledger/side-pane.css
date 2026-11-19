@@ -1,0 +1,122 @@
+/* The docked detail pane (side-pane.tsx). Docked on the right from top to bottom on the sidebar layout and
+   on the rail from 1240 wide, and the page (its header too) makes room for it. Narrower than that a docked
+   pane would squeeze the tables under 600 wide, so the rail and the rail with one column open it over the
+   page with a scrim. On the phone layout it is the pushed page, with no tab bar. Moni chat docks in its
+   place while it is open. */
+
+.side-pane {
+  position: fixed;
+  top: 12px;
+  right: 12px;
+  bottom: 12px;
+  width: var(--side-pane-width);
+  z-index: 5;
+  box-sizing: border-box;
+  border-radius: var(--radius-card);
+  background: var(--color-card);
+  padding: 12px 22px 18px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.side-pane:not([data-idle])[data-open] {
+  animation: slide-in-right var(--duration-sheet) var(--ease-sheet) both;
+}
+
+.side-pane-scrim {
+  display: none;
+}
+
+.shell-main:has(.side-pane[data-width='408']) {
+  --side-pane-room: calc(408px + 24px);
+}
+
+.shell-main:has(.side-pane[data-width='380']) {
+  --side-pane-room: calc(380px + 12px + 24px);
+}
+
+html[data-layout='sidebar'] .shell:not([data-pane='chat']) .shell-main:has(.side-pane) {
+  padding-right: var(--side-pane-room);
+}
+
+@media (min-width: 1240px) {
+  html[data-layout='rail'] .shell:not([data-pane='chat']) .shell-main:has(.side-pane) {
+    padding-right: var(--side-pane-room);
+  }
+}
+
+@media (max-width: 1239.98px) {
+  html[data-layout='rail'] .side-pane:not([data-open]) {
+    display: none;
+  }
+}
+
+html[data-layout='rail-one-column'] .side-pane:not([data-open]),
+html[data-layout='phone'] .side-pane:not([data-open]) {
+  display: none;
+}
+
+html[data-layout='rail-one-column'] .side-pane[data-open],
+html[data-layout='rail'] .side-pane[data-open] {
+  z-index: 31;
+  animation: slide-in-right var(--duration-sheet) var(--ease-sheet) both;
+  box-shadow:
+    var(--shadow-float),
+    0 0 0 1.5px var(--color-hairline);
+}
+
+html[data-layout='rail-one-column'] .side-pane-scrim[data-open],
+html[data-layout='rail'] .side-pane-scrim[data-open] {
+  display: block;
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  background: var(--scrim);
+  animation: fade-in 200ms ease both;
+}
+
+@media (min-width: 1240px) {
+  html[data-layout='rail'] .side-pane[data-open] {
+    z-index: 5;
+    box-shadow: none;
+  }
+
+  html[data-layout='rail'] .side-pane[data-idle][data-open] {
+    animation: none;
+  }
+
+  html[data-layout='rail'] .side-pane-scrim[data-open] {
+    display: none;
+  }
+}
+
+html[data-layout='phone'] .side-pane[data-open] {
+  inset: 0;
+  width: auto;
+  border-radius: 0;
+  background: var(--color-background);
+  padding: 8px var(--spacing-screen) 32px;
+  z-index: 45;
+  animation: slide-in-right var(--duration-sheet) var(--ease-sheet) both;
+}
+
+html[data-layout='phone'] .shell:has(.side-pane[data-open]) .tabbar {
+  display: none;
+}
+
+.shell[data-pane='chat'] .side-pane,
+.shell[data-pane='chat'] .side-pane-scrim {
+  display: none !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .side-pane[data-open],
+  html[data-layout] .side-pane[data-open] {
+    animation: fade-in 180ms ease both;
+  }
+
+  html[data-layout='sidebar'] .side-pane[data-idle][data-open] {
+    animation: none;
+  }
+}

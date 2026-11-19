@@ -21,6 +21,7 @@ import {
 import type { MinorAmount } from '@repo/types';
 import { useState, type ReactNode } from 'react';
 import { Cat } from '@/components/brand';
+import { SidePane } from '@/components/ledger/side-pane';
 import { Page } from '@/components/shell/page';
 import { showToast } from '@/components/shell/shell-store';
 import { useLayout } from '@/components/shell/use-layout';
@@ -276,8 +277,7 @@ function BudgetLoaded({ ledger }: { ledger: Ledger }) {
             </>
           )}
         </div>
-        <div className="detail-scrim" data-open={selected ? '' : undefined} onMouseDown={() => select(null)} />
-        <aside className="detail" aria-label="Category" data-open={selected ? '' : undefined}>
+        <SidePane label="Category" open={Boolean(selected)} idle onClose={() => select(null)}>
           {selected ? (
             <CategoryPane
               line={selected}
@@ -307,7 +307,7 @@ function BudgetLoaded({ ledger }: { ledger: Ledger }) {
               <span>Pick a category to see its months, its payments and its budget.</span>
             </div>
           )}
-        </aside>
+        </SidePane>
       </div>
     </Page>
   );
