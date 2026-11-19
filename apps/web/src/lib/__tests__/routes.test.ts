@@ -26,7 +26,8 @@ describe('isPublicPath', () => {
 
 describe('isSignedOutOnly', () => {
   it.each([
-    ['/', true],
+    ['/', false],
+    ['/privacy', false],
     ['/login', true],
     ['/login/forgot', true],
     ['/login/verify', false],

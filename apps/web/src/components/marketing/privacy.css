@@ -1,0 +1,310 @@
+/*
+ * The privacy block (W2-LandingFinal at 1440, W2-LandingFinalPhone at 390): the facts beside the live Your data
+ * card on Deep mint. Below 1200 the card comes first, then the facts. Text on the block uses the tokens that
+ * flip with Deep mint, so it stays dark on light in dark mode.
+ */
+
+.pv-block {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 420px;
+  grid-template-areas:
+    'h card'
+    'facts card'
+    'link card';
+  column-gap: 56px;
+  row-gap: 40px;
+  align-items: center;
+  padding: 72px 64px;
+  border-radius: 44px;
+  background: var(--color-deep-mint);
+}
+
+.pv-block > .lp-h2 {
+  grid-area: h;
+}
+
+.pv-facts {
+  grid-area: facts;
+  display: flex;
+  flex-direction: column;
+}
+
+.pv-fact {
+  display: grid;
+  grid-template-columns: 200px minmax(0, 1fr);
+  gap: 24px;
+  padding: 20px 0;
+  border-top: 1.5px solid color-mix(in srgb, var(--color-card) 24%, transparent);
+}
+
+.pv-fact h3 {
+  margin: 0;
+  font-size: 24px;
+  line-height: 30px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--color-card);
+}
+
+.pv-fact p {
+  margin: 0;
+  font-size: 17px;
+  line-height: 26px;
+  color: var(--color-primary-muted);
+}
+
+.pv-link {
+  grid-area: link;
+  justify-self: start;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--color-block-mint);
+}
+
+.pv-link:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* ---------- Your data ---------- */
+
+.pv-card {
+  grid-area: card;
+  padding: 18px;
+  border-radius: 32px;
+  background: var(--color-card);
+  box-shadow: 0 24px 64px color-mix(in srgb, var(--color-on-mint) 40%, transparent);
+}
+
+.pv-card-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 6px 12px;
+}
+
+.pv-card-icon {
+  width: 36px;
+  height: 36px;
+  flex: none;
+  border-radius: 9999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-sand);
+}
+
+.pv-card-head h3 {
+  margin: 0;
+  font-size: 20px;
+  line-height: 24px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.pv-card-tag {
+  margin-left: auto;
+  font-size: 13px;
+  color: var(--color-muted);
+}
+
+.pv-group {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: 22px;
+  background: var(--color-background);
+}
+
+.pv-row {
+  width: 100%;
+  min-height: 68px;
+  padding: 10px 18px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  text-align: left;
+  border-bottom: 1.5px solid var(--color-sand-light);
+}
+
+.pv-row:last-child {
+  border-bottom: 0;
+}
+
+.pv-row-button {
+  cursor: pointer;
+  transition: background-color 120ms ease;
+}
+
+.pv-row-button:hover {
+  background: var(--color-sand-light);
+}
+
+.pv-row-button:focus-visible {
+  outline: 2px solid var(--color-foreground);
+  outline-offset: -2px;
+}
+
+.pv-row-text {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.pv-row-title {
+  flex: 1 1 auto;
+  font-size: 15px;
+  line-height: 20px;
+  font-weight: 600;
+}
+
+.pv-row-sub {
+  font-size: 13px;
+  line-height: 18px;
+  color: var(--color-muted);
+}
+
+.pv-row-icon {
+  color: var(--color-ink-2);
+}
+
+.pv-row-chev {
+  color: var(--color-muted);
+}
+
+.pv-danger {
+  color: var(--color-over);
+}
+
+.pv-switch {
+  position: relative;
+  width: 44px;
+  height: 26px;
+  flex: none;
+  border-radius: 9999px;
+  background: var(--color-inactive);
+  transition: background-color 200ms ease;
+}
+
+.pv-switch span {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 20px;
+  height: 20px;
+  border-radius: 9999px;
+  background: var(--color-card);
+  transition: translate 272ms var(--lp-spring);
+}
+
+[aria-checked='true'] > .pv-switch {
+  background: var(--color-deep-mint);
+}
+
+[aria-checked='true'] > .pv-switch span {
+  translate: 18px 0;
+}
+
+/* ---------- tablet and phone: the card first, then the facts ---------- */
+
+@media (max-width: 1199px) {
+  .pv-block {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: 'h' 'card' 'facts' 'link';
+    row-gap: 32px;
+    padding: 64px 48px;
+  }
+
+  .pv-card {
+    width: 100%;
+    max-width: 480px;
+  }
+}
+
+@media (max-width: 699px) {
+  .pv-block {
+    row-gap: 24px;
+    margin: 0 calc(-1 * var(--lp-pad));
+    padding: 56px var(--lp-pad) 48px;
+    border-radius: 0;
+  }
+
+  .pv-card {
+    padding: 14px;
+  }
+
+  .pv-fact {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 6px;
+    padding: 16px 0;
+  }
+
+  .pv-fact h3 {
+    font-size: 20px;
+    line-height: 26px;
+  }
+
+  .pv-fact p {
+    font-size: 15px;
+    line-height: 22px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pv-switch span {
+    transition: opacity 180ms ease;
+  }
+}
+
+/*
+ * Dark mode: Deep mint turns light mint, which glares as a block this big on the black page. The block
+ * stays a deep green instead, with light text as in the light theme.
+ */
+[data-theme='dark'] .pv-block {
+  background: color-mix(in srgb, var(--color-deep-mint) 22%, var(--color-background));
+}
+
+[data-theme='dark'] .pv-block > .lp-h2,
+[data-theme='dark'] .pv-fact h3 {
+  color: var(--color-foreground);
+}
+
+[data-theme='dark'] .pv-fact p {
+  color: var(--color-ink-2);
+}
+
+[data-theme='dark'] .pv-fact {
+  border-top-color: color-mix(in srgb, var(--color-foreground) 16%, transparent);
+}
+
+[data-theme='dark'] .pv-link {
+  color: var(--color-deep-mint);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) .pv-block {
+    background: color-mix(in srgb, var(--color-deep-mint) 22%, var(--color-background));
+  }
+
+  :root:not([data-theme]) .pv-block > .lp-h2,
+  :root:not([data-theme]) .pv-fact h3 {
+    color: var(--color-foreground);
+  }
+
+  :root:not([data-theme]) .pv-fact p {
+    color: var(--color-ink-2);
+  }
+
+  :root:not([data-theme]) .pv-fact {
+    border-top-color: color-mix(in srgb, var(--color-foreground) 16%, transparent);
+  }
+
+  :root:not([data-theme]) .pv-link {
+    color: var(--color-deep-mint);
+  }
+}

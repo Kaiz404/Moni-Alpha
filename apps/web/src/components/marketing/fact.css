@@ -1,0 +1,10 @@
+/* A fact the owner has not confirmed yet: the boards' "[CONFIRM: …]" highlight. */
+mark.confirm {
+  background: var(--color-attention-fill);
+  color: var(--color-on-lemon);
+  border-radius: 6px;
+  padding: 0 4px;
+  font-weight: 600;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+}

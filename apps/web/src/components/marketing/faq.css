@@ -1,0 +1,151 @@
+/* The FAQ (W2-LandingFinal's "Questions"): <details>, so it opens without JS; the open and close animate where ::details-content is supported. */
+
+.lp-sec.fq-sec {
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 80px;
+}
+
+.fq-side {
+  width: 360px;
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.fq-sec .fq-write {
+  font-size: 17px;
+  line-height: 26px;
+}
+
+.fq-mail {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.fq-list {
+  flex: 1 1 auto;
+  min-width: 0;
+  border-top: 1.5px solid var(--color-hairline);
+  interpolate-size: allow-keywords;
+}
+
+.fq-item {
+  border-bottom: 1.5px solid var(--color-hairline);
+}
+
+.fq-item::details-content {
+  block-size: 0;
+  overflow: clip;
+  transition: block-size var(--duration-sheet) var(--ease-sheet), content-visibility var(--duration-sheet) allow-discrete;
+}
+
+.fq-item[open]::details-content {
+  block-size: auto;
+}
+
+.fq-q {
+  min-height: 80px;
+  padding: 0 8px 0 0;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  font-size: 21px;
+  line-height: 27px;
+  font-weight: 700;
+  list-style: none;
+  cursor: pointer;
+  border-radius: 16px;
+  transition: background-color 120ms ease;
+}
+
+.fq-q::-webkit-details-marker {
+  display: none;
+}
+
+.fq-q > span:first-child {
+  flex: 1 1 auto;
+}
+
+.fq-q:hover {
+  background: var(--color-sand-light);
+}
+
+.fq-q:focus-visible {
+  outline: 2px solid var(--color-foreground);
+  outline-offset: 2px;
+}
+
+.fq-chev {
+  width: 40px;
+  height: 40px;
+  flex: none;
+  border-radius: 9999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-sand);
+  transition: transform 272ms var(--lp-spring);
+}
+
+.fq-item[open] .fq-chev {
+  transform: rotate(180deg);
+}
+
+.fq-sec .fq-a {
+  padding: 0 56px 22px 0;
+  font-size: 17px;
+  line-height: 26px;
+}
+
+@media (max-width: 1199px) {
+  .lp-sec.fq-sec {
+    gap: 48px;
+  }
+
+  .fq-side {
+    width: 280px;
+  }
+}
+
+@media (max-width: 899px) {
+  .lp-sec.fq-sec {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 32px;
+  }
+
+  .fq-side {
+    width: auto;
+  }
+}
+
+@media (max-width: 699px) {
+  .fq-q {
+    min-height: 68px;
+    font-size: 18px;
+    line-height: 24px;
+  }
+
+  .fq-sec .fq-a {
+    padding-right: 0;
+    font-size: 16px;
+    line-height: 24px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fq-item::details-content {
+    transition: opacity 180ms ease, content-visibility 180ms allow-discrete;
+    opacity: 0;
+  }
+
+  .fq-item[open]::details-content {
+    opacity: 1;
+  }
+
+  .fq-chev {
+    transition: opacity 180ms ease;
+  }
+}
