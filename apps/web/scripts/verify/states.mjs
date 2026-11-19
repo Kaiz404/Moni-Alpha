@@ -75,9 +75,6 @@ export async function verifyFirstRun({ browser, base, storage, check, shot, sett
     await ep.locator('aside[data-pane="add"]').waitFor({ timeout: 5000 }).catch(() => {});
     check("Activity's Add a transaction opens Add", await ep.locator('aside[data-pane="add"]').isVisible());
     await ep.keyboard.press('Escape');
-    await ep.goto(`${base}/activity?categories=00000000-0000-4000-8000-000000000000`);
-    await ep.getByText('Nothing matches these filters').waitFor({ timeout: 10_000 }).catch(() => {});
-    check('filters that match nothing say so and offer Clear filters', await ep.getByRole('button', { name: 'Clear filters' }).isVisible());
     await ep.goto(`${base}/debts`);
     await ep.getByText('No debts yet').waitFor({ timeout: 10_000 });
     check('Debts with nobody: one Record a debt, and no empty pane beside it', (await ep.getByRole('button', { name: /Record a debt/ }).count()) === 1 && (await ep.locator('aside.side-pane').count()) === 0);
@@ -312,6 +309,22 @@ export async function verifyStates({ browser, base, storage, check, shot, pair, 
     check('signed out, a path outside the public site asks to sign in first, as any private path does', ap.url() === `${base}/login?next=%2Fno-such-page`, ap.url());
     await anon.close();
     await pair('states-404', await boardBand(STATES, 'states-full-pages', 4300, 360), `${out}/states-404-1440x900-light.png`);
+  });
+
+  // ---------- filters that match nothing, on the full seed so there are rows to filter out ----------
+  await block(check, 'no match', async () => {
+    const nm = await pinned({ viewport: { width: 1440, height: 900 } });
+    const n = await nm.newPage();
+    await n.goto(`${base}/activity?categories=00000000-0000-4000-8000-000000000000`);
+    const none = n.locator('.activity-empty').filter({ hasText: 'Nothing matches these filters' });
+    await none.waitFor({ timeout: 30_000 }).catch(() => {});
+    await none.getByRole('button', { name: 'Clear filters' }).click();
+    await n.locator('.activity-table [role="row"][data-row-id]').first().waitFor({ timeout: 10_000 }).catch(() => {});
+    check(
+      'filters that match nothing say so, and their Clear filters brings the rows back',
+      !(await none.isVisible()) && (await n.locator('.activity-table [role="row"][data-row-id]').count()) > 0,
+    );
+    await nm.close();
   });
 
   // ---------- offline: the store keeps working from memory and syncs on reconnect ----------
