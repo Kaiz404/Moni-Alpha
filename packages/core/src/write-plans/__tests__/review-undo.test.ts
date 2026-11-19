@@ -1,4 +1,4 @@
-import type { MinorAmount, ProposedTransaction } from '@repo/types';
+import type { CurrencyCode, MinorAmount, ProposedTransaction } from '@repo/types';
 import { describe, expect, it } from 'vitest';
 
 import type { FinanceTransaction, FinanceWallet } from '../../read-model/types';
@@ -92,6 +92,23 @@ describe('familiarity', () => {
     expect(timesFiled(capture(), history)).toBe(3);
     expect(timesFiled(capture({ merchant: 'Jaya Grocer' }), history)).toBe(1);
     expect([3, 1, 0].map(familiarity)).toEqual(['usual', 'seen', null]);
+  });
+
+  it.each([
+    ['another currency', filed('GRAB*FOOD', { currency: 'USD' as CurrencyCode })],
+    ['a balance adjustment', filed('GRAB*FOOD', { analysisExcluded: true })],
+    ['a debt-linked row', filed('GRAB*FOOD', { debtActivityId: 'debt-1' })],
+    ['another type', filed('GRAB*FOOD', { type: 'income' })],
+  ])('does not count %s', (_, row) => {
+    expect(timesFiled(capture(), [row])).toBe(0);
+  });
+
+  it.each([
+    ['a transfer', capture({ type: 'transfer' })],
+    ['a merchant that is only digits', capture({ merchant: '1234' })],
+    ['no merchant', capture({ merchant: null })],
+  ])('counts nothing for %s', (_, proposal) => {
+    expect(timesFiled(proposal, [filed('1234'), filed('GRAB*FOOD', { type: 'transfer' })])).toBe(0);
   });
 
   it('takes only usual captures with a wallet and a category into Approve all usual', () => {
