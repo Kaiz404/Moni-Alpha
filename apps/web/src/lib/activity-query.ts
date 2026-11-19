@@ -1,4 +1,5 @@
-import { formatMoney, monthName, type ActivityKind } from '@repo/core';
+import { formatMoney, monthName, textCell, valueCell, type ActivityKind } from '@repo/core';
+import { SOURCE_LABELS } from './ledger/format';
 
 /**
  * Activity's view of the ledger as the URL holds it (W2-Responsive: where you are lives in the URL), so
@@ -281,4 +282,21 @@ export function deleteWords(
     line: spent.length ? `${total} comes off ${whose}. Undo puts all ${items.length} back.` : `Undo puts all ${items.length} back.`,
     action: `Delete ${items.length}`,
   };
+}
+
+/** The Ink bar's CSV: the ticked rows, spending as a negative amount. */
+export function activityCsv(rows: readonly Pick<ActivityItem, 'day' | 'title' | 'category' | 'wallet' | 'source' | 'kind' | 'amountMinor'>[]): string {
+  return [
+    'Date,Merchant,Category,Wallet,Source,Amount',
+    ...rows.map((item) =>
+      [
+        textCell(item.day),
+        textCell(item.title),
+        textCell(item.category),
+        textCell(item.wallet),
+        textCell(SOURCE_LABELS[item.source]),
+        valueCell(String((item.kind === 'expense' ? -item.amountMinor : item.amountMinor) / 100)),
+      ].join(','),
+    ),
+  ].join('\n');
 }

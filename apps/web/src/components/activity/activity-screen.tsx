@@ -22,6 +22,7 @@ import { activityItems, type ActivityEntry } from '@/lib/activity-items';
 import {
   BUILT_IN_VIEWS,
   NO_FILTERS,
+  activityCsv,
   activityQueryString,
   checkReason,
   filtersOf,
@@ -81,18 +82,6 @@ function writeViews(views: SavedView[]) {
   } catch {
     // Without storage a saved view lasts until the tab closes.
   }
-}
-
-function csv(rows: readonly Shown[]): string {
-  const cell = (value: string) => (/[",\n]/.test(value) ? `"${value.replaceAll('"', '""')}"` : value);
-  return [
-    'Date,Merchant,Category,Wallet,Source,Amount',
-    ...rows.map((item) =>
-      [item.day, item.title, item.category ?? '', item.wallet, SOURCE_LABELS[item.source], (item.kind === 'expense' ? -item.amountMinor : item.amountMinor) / 100]
-        .map((value) => cell(String(value)))
-        .join(','),
-    ),
-  ].join('\n');
 }
 
 /**
@@ -714,7 +703,7 @@ export function ActivityScreen() {
               <a
                 className="bulk-btn press"
                 download={`moni-activity-${today}.csv`}
-                href={`data:text/csv;charset=utf-8,${encodeURIComponent(csv(selectedRows))}`}
+                href={`data:text/csv;charset=utf-8,${encodeURIComponent(activityCsv(selectedRows))}`}
               >
                 <Glyph name="tray-arrow-down" size={18} />
                 Export CSV

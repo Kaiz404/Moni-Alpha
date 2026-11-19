@@ -1,4 +1,4 @@
-import { currencyName, walletEffect, walletListMeta, type Calendar, type FinanceTransaction, type WalletGroup } from '@repo/core';
+import { currencyName, textCell, valueCell, walletEffect, walletListMeta, type Calendar, type FinanceTransaction, type WalletGroup } from '@repo/core';
 import { minorToDecimal, type MinorAmount } from '@repo/types';
 
 /** What each wallet gained or lost this month, today included: All wallets' This month column. */
@@ -32,10 +32,6 @@ export function assetsAndOwed(group: WalletGroup | undefined, balances: Readonly
   return { assetsMinor, owedMinor };
 }
 
-function cell(text: string): string {
-  return /[",\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
-}
-
 /** Download CSV on All wallets: one row a wallet, in list order, balances as plain decimals. */
 export function walletsCsv(
   groups: readonly WalletGroup[],
@@ -46,15 +42,13 @@ export function walletsCsv(
   const rows = groups.flatMap((group) =>
     group.wallets.map((wallet) =>
       [
-        wallet.name,
-        walletListMeta(wallet, group.main, linked.has(wallet.id)),
-        currencyName(wallet.currency).name,
-        wallet.currency,
-        minorToDecimal(balances[wallet.id] ?? 0),
-        minorToDecimal(changes[wallet.id] ?? 0),
-      ]
-        .map(cell)
-        .join(','),
+        textCell(wallet.name),
+        textCell(walletListMeta(wallet, group.main, linked.has(wallet.id))),
+        textCell(currencyName(wallet.currency).name),
+        textCell(wallet.currency),
+        valueCell(minorToDecimal(balances[wallet.id] ?? 0)),
+        valueCell(minorToDecimal(changes[wallet.id] ?? 0)),
+      ].join(','),
     ),
   );
   return ['Wallet,Kind,Currency name,Currency,Balance,This month', ...rows].join('\n') + '\n';

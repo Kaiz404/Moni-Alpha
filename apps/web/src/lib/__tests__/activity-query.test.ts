@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   DEFAULT_QUERY,
+  activityCsv,
   activityQueryString,
   checkReason,
   nextSort,
@@ -151,5 +152,22 @@ describe('deleteWords', () => {
       ),
     ).toEqual({ title: 'Delete 3 transactions?', line: "RM42.60 comes off October's spending. Undo puts all 3 back.", action: 'Delete 3' });
     expect(deleteWords([{ kind: 'transfer', amountMinor: 10000, day: '2026-10-06' }], 'MYR').line).toBe('You can undo it from the toast.');
+  });
+});
+
+describe('activityCsv', () => {
+  it('writes spending as a negative amount and keeps a merchant from running as a formula', () => {
+    expect(
+      activityCsv([
+        { day: '2026-10-14', title: '=cmd|calc', category: 'Food, drinks', wallet: 'Maybank', source: 'notification', kind: 'expense', amountMinor: 1250 },
+        { day: '2026-10-13', title: '@Salary', category: null, wallet: '-Cash', source: 'manual', kind: 'income', amountMinor: 500000 },
+      ]),
+    ).toBe(
+      [
+        'Date,Merchant,Category,Wallet,Source,Amount',
+        `2026-10-14,'=cmd|calc,"Food, drinks",Maybank,Notification,-12.5`,
+        "2026-10-13,'@Salary,,'-Cash,Manual,5000",
+      ].join('\n'),
+    );
   });
 });

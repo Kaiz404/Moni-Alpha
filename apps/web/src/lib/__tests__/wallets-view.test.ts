@@ -49,4 +49,15 @@ describe('walletsCsv', () => {
       ].join('\n'),
     );
   });
+
+  it('keeps a spreadsheet from running a wallet name as a formula, and a negative balance a number', () => {
+    const named = [wallet('a', '=HYPERLINK("x")', 'bank'), wallet('b', '+60 Petty', 'cash'), wallet('c', '@cash', 'cash'), wallet('d', '-Loan', 'credit')];
+    const owed = { a: m(100), b: m(0), c: m(0), d: m(-2500) };
+    expect(walletsCsv(walletGroups(named, owed, 'MYR'), owed, {}, new Set()).split('\n').slice(1, 5)).toEqual([
+      `"'=HYPERLINK(""x"")",Bank,Ringgit,MYR,1.00,0.00`,
+      "'+60 Petty,In your pocket,Ringgit,MYR,0.00,0.00",
+      "'@cash,In your pocket,Ringgit,MYR,0.00,0.00",
+      "'-Loan,Card,Ringgit,MYR,-25.00,0.00",
+    ]);
+  });
 });
