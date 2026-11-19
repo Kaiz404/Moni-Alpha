@@ -572,18 +572,23 @@ function Editor({
   const { testID, label } = field;
   const amount = field.kind === 'amount';
 
-  // Saving unmounts the input, which can blur it; the blur must not cancel what was just saved.
+  // Android hands focus to the page's next input, keyboard and all, when a focused input is
+  // removed. A blur sent with the close lands after the removal, so the field closes on the blur.
+  const inputRef = useRef<TextInput>(null);
   const settled = useRef(false);
-  const finish = (action: (() => void) | null) => () => {
-    if (settled.current || !action) return;
-    settled.current = true;
-    action();
-  };
-  const cancel = useCallback(() => {
+  const afterBlur = useRef<(() => void) | null>(null);
+  const close = useCallback((action: () => void) => {
     if (settled.current) return;
     settled.current = true;
-    onCancel();
-  }, [onCancel]);
+    const input = inputRef.current;
+    if (!input?.isFocused()) return action();
+    afterBlur.current = action;
+    input.blur();
+  }, []);
+  const finish = (action: (() => void) | null) => () => {
+    if (action) close(action);
+  };
+  const cancel = useCallback(() => close(onCancel), [close, onCancel]);
   useCancelOnDismiss(cancel);
   const { controls, onControlsLayout } = useClearKeyboard(refitRef);
 
@@ -633,12 +638,18 @@ function Editor({
 
   const input = (
     <TextInput
+      ref={inputRef}
       testID={tid(testID, 'input')}
       accessibilityLabel={`${label}, editing`}
       autoFocus
       value={draft}
       onChangeText={onDraft}
-      onBlur={cancel}
+      onBlur={() => {
+        const action = afterBlur.current;
+        afterBlur.current = null;
+        if (action) action();
+        else cancel();
+      }}
       onSubmitEditing={finish(onSave)}
       submitBehavior="submit"
       returnKeyType="done"
