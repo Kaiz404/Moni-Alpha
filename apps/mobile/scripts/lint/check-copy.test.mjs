@@ -145,6 +145,25 @@ test('a middle dot fails in any string, even one joined far from the screen', ()
   );
 });
 
+test('a middle dot written as an HTML entity in JSX fails', () => {
+  for (const entity of ['&middot;', '&MIDDOT;', '&#183;', '&#00183;', '&#xb7;', '&#XB7;', '&#x00B7;']) {
+    assert.deepEqual(terms(`const A = () => <Text>Food{' '}${entity} Maybank</Text>;`), [
+      `middle dot: ${entity} Maybank`,
+    ]);
+  }
+  assert.deepEqual(terms('const A = () => <Text>Fish &amp; chips &#8226;</Text>;'), []);
+});
+
+test('a middle dot in CSS content fails, escaped or not, and other CSS passes', () => {
+  const css = (source) =>
+    copyHits('src/app/sample.css', source).map(({ line, term, text }) => `${line} ${term}: ${text}`);
+  assert.deepEqual(
+    css(".a::after {\n  content: ' · ';\n}\n.b::before { content: \"\\b7\"; }\n.c::after { content: '\\0000B7 x'; }"),
+    ['2 middle dot: ·', '4 middle dot: ·', '5 middle dot: ·x'],
+  );
+  assert.deepEqual(css(".a::after { content: ''; justify-content: center; }\n.b { content: ', '; }"), []);
+});
+
 test('a banned word outside the screen still passes', () => {
   assert.deepEqual(terms(`const route = 'Insights';`), []);
 });

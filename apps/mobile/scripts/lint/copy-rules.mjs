@@ -101,7 +101,7 @@ export const RULES = [
   },
   {
     term: 'middle dot',
-    pattern: /·/,
+    pattern: /·|&(?:middot|#0*183|#x0*b7);/i,
     reason: 'no · separators: a second line, the right side, weight or colour, or plain words',
     anyString: true,
   },

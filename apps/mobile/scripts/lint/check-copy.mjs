@@ -49,7 +49,7 @@ function sourceFiles(roots) {
         if (!['__tests__', 'node_modules', 'generated'].includes(entry.name))
           walk(path);
       } else if (
-        /\.(tsx?|m?js)$/.test(entry.name) &&
+        /\.(tsx?|m?js|css)$/.test(entry.name) &&
         !/\.(d|test|spec)\.[tj]sx?$/.test(entry.name)
       ) {
         files.push(relative(REPO_ROOT, path).split(sep).join('/'));
@@ -166,8 +166,23 @@ function copyTexts(fileName, source) {
   return texts;
 }
 
+// CSS shows text only through `content`; its escapes (\b7, \0000b7) are decoded first.
+function cssContentTexts(source) {
+  const texts = [];
+  source.split('\n').forEach((lineText, index) => {
+    for (const [, , value] of lineText.matchAll(/\bcontent\s*:\s*(['"])(.*?)\1/g)) {
+      const text = value
+        .replace(/\\([0-9a-f]{1,6})\s?/gi, (_, hex) => String.fromCodePoint(parseInt(hex, 16)))
+        .trim();
+      if (text) texts.push({ line: index + 1, text, shown: true });
+    }
+  });
+  return texts;
+}
+
 export function copyHits(file, source) {
-  return copyTexts(file, source).flatMap(({ line, text, shown }) =>
+  const texts = file.endsWith('.css') ? cssContentTexts(source) : copyTexts(file, source);
+  return texts.flatMap(({ line, text, shown }) =>
     termsIn(text, { shown }).map(({ term, reason }) => ({
       file,
       line,
