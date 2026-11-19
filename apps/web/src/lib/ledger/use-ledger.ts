@@ -15,6 +15,7 @@ import {
   recurringOverridesFromRows,
   walletBalance,
   walletsForUser,
+  type BudgetRow,
   type Calendar,
   type FinanceProjection,
   type FinanceProposal,
@@ -51,6 +52,8 @@ export type Ledger = {
   month: MoneyMonth;
   /** Captures waiting for a decision, newest first. */
   waiting: FinanceProposal[];
+  /** Budget rows as stored, soft-deleted ones included, for the budget plans. */
+  budgetRows: BudgetRow[];
 };
 
 const EMPTY: Record<string, never> = {};
@@ -62,7 +65,9 @@ function useTables() {
     const store = moniStore();
     const copy = (table$: { get(): unknown }) => ({ ...((table$.get() as RawTable | undefined) ?? EMPTY) });
     return {
-      loaded: syncState(store.transactions$).isLoaded.get() && syncState(store.wallets$).isLoaded.get(),
+      loaded: [store.wallets$, store.transactions$, store.categories$, store.categoryBudgets$, store.debts$, store.debtActivities$].every(
+        (table$) => syncState(table$).isLoaded.get(),
+      ),
       wallets: copy(store.wallets$),
       transactions: copy(store.transactions$),
       categories: copy(store.categories$),
@@ -164,6 +169,7 @@ export function useLedger(): Ledger {
       money,
       month: buildMoneyMonth(money, { month: calendar.monthKey(now), currency, now, calendar }),
       waiting: pendingProposals(projection.proposalsById, user.id).filter((proposal) => isAwaitingReview(proposal, now)),
+      budgetRows: Object.values(tables?.budgets ?? EMPTY).filter(Boolean) as BudgetRow[],
     };
   }, [tables, clock, calendar, currency, user.id]);
 }

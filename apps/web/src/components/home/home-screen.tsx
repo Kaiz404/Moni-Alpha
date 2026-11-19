@@ -83,7 +83,7 @@ function cardFor(card: HomeCard, ledger: Ledger, firstRun: boolean, checkInDismi
  */
 export function HomeScreen() {
   const ledger = useLedger();
-  const { user, run, pane } = useShellApi();
+  const { user, run } = useShellApi();
   const [mode, setMode] = useState<SpentMode>('pace');
   const [editing, setEditing] = useState(false);
   const [layout, setLayout] = useState<HomeLayout>(DEFAULT_HOME_LAYOUT);
@@ -101,7 +101,7 @@ export function HomeScreen() {
     );
 
   useScreenKeys((key) => {
-    if (key === 'Escape' && editing && !pane) {
+    if (key === 'Escape' && editing) {
       setEditing(false);
       return true;
     }

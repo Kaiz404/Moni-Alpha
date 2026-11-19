@@ -39,3 +39,17 @@ export function Bubble({
     </span>
   );
 }
+
+/** A person's rounded-square initial, coloured by who owes whom. */
+export function PersonTile({ name, owedToMe, size = 40 }: { name: string; owedToMe: boolean; size?: number }) {
+  return (
+    <span
+      aria-hidden="true"
+      className="person-tile"
+      data-side={owedToMe ? 'in' : 'out'}
+      style={{ width: size, height: size, borderRadius: Math.round(size * 0.36), fontSize: Math.round(size * 0.4) }}
+    >
+      {name.trim().charAt(0).toUpperCase() || '?'}
+    </span>
+  );
+}

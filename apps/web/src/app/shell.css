@@ -362,9 +362,12 @@ html[data-layout='rail-one-column'] .cmd-field {
 }
 
 .page-actions {
+  flex: 1 1 auto;
   display: flex;
   align-items: center;
+  justify-content: flex-end;
   gap: 12px;
+  min-width: 0;
 }
 
 .phone-greeting-block {
