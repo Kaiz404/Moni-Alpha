@@ -90,6 +90,9 @@ The smoke suite is `flows/smoke/`: `launch`, `sign-in`, `tabs`, `chooser`, `tran
 - Select by `id:` only with testIDs that `tid()` in `apps/mobile/lib/test-ids.ts` builds, such as `home.avatar`, `nav.tab.activity`, `nav.plus`, `nav.chooser.type`, `review.card`, or `'activity\.transaction\..*'` with `index: 0`. Maestro reads `id:` as a regex. `pnpm --filter moni lint:flow-ids` fails on an id that no `tid()` call renders.
 - Check syntax with `maestro check-syntax <flow.yaml>`.
 - Read the live tree when a selector does not match: `maestro --device "$MONI_DEVICE_SERIAL" hierarchy` under `with-device.sh`.
+- Don't use `centerElement`. Its swipe can overshoot and stop with the element under the status bar, where a tap scrolls the page to the top, and it times out on an element that can never reach the centre, such as a list's last row. Scroll until a later element enters from below, or add a `scroll` to reach a list's end. Maestro also counts an element as visible under the floating tab bar, which then takes the tap.
+- After a tap that shows an Undo toast, set `waitToSettleTimeoutMs: 1000` on that tap. The toast's countdown bar keeps the screen moving, so the default settle wait spends most of the toast before the flow reaches Undo.
+- Maestro matches an input's hint text, so `assertNotVisible` on a placeholder fails once the field is filled. Assert the field's value instead.
 
 ### Data
 

@@ -16,12 +16,14 @@ tags:
 - tapOn:
     id: nav.tab.budget
 - assertNotVisible: Reports
+# No centerElement: its swipe can overshoot and leave By category under the status bar. Top merchants
+# entering from below puts the whole By category list, heading first, on screen.
 - scrollUntilVisible:
-    element:
-      id: budget\.by-category\..*
-      text: 'Food & Dining,.*'
-    centerElement: true
+    element: Top merchants
 - assertVisible: By category
+- assertVisible:
+    id: budget\.by-category\..*
+    text: 'Food & Dining,.*'
 - takeScreenshot: b1-by-category
 - tapOn:
     id: budget\.by-category\..*

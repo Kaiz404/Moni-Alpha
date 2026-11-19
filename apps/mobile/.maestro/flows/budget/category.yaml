@@ -14,10 +14,11 @@ tags:
     timeout: 15000
 - tapOn:
     id: nav.tab.budget
+# No centerElement: its swipe can overshoot and leave the ring under the status bar, where a tap
+# scrolls the page to the top instead.
 - scrollUntilVisible:
     element:
       id: budget\.ring\..*
-    centerElement: true
 - tapOn:
     id: budget\.ring\..*
     index: 0
