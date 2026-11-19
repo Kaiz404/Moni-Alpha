@@ -43,37 +43,31 @@ function alertText(row: FinanceTransaction): string {
 }
 
 /**
- * W2-Review's capture: the source beside the proposed transaction, each field edited in place, "Don't
- * ask about similar" with its rule preview, and Not mine · Approve. One element for every layout: docked
- * on the desktop, over the list on the one-column rail, and the deck's one card on the phone layout.
+ * W2-Review's capture: the source beside the proposed transaction (above it in a narrow drawer), each
+ * field edited in place, "Don't ask about similar" with its rule preview, and Not mine and Approve.
  */
 export function CapturePane({
   ledger,
   capture,
   position,
-  asked,
   edits,
   onEdits,
   similar,
   onSimilar,
   picked,
   onMove,
-  onClose,
   onApprove,
   onNotMine,
 }: {
   ledger: Ledger;
   capture: FinanceProposal;
   position: string;
-  /** The URL names this capture, so the one-column rail lays the pane over the list. */
-  asked: boolean;
   edits: ReviewEdits;
   onEdits: (edits: ReviewEdits) => void;
   similar: boolean;
   onSimilar: (on: boolean) => void;
   picked: number;
   onMove: (by: 1 | -1) => void;
-  onClose: () => void;
   onApprove: () => void;
   onNotMine: () => void;
 }) {
@@ -213,7 +207,7 @@ export function CapturePane({
       .map((each) => option(each.id, each.name, each.id === current, () => pick(each.id), <Bubble icon={each.icon} color={each.color} size={28} glyph={15} />));
 
   return (
-    <aside className="review-pane" aria-label="Capture" data-open={asked ? '' : undefined} data-capture={capture.id}>
+    <section className="capture-card" aria-label="Capture" data-capture={capture.id}>
       <div className="capture-top">
         <span className="pane-nav" data-only="sidebar rail rail-one-column">
           <button type="button" className="icon-round icon-round-line press" aria-label="Previous capture (K)" onClick={() => onMove(-1)}>
@@ -224,9 +218,6 @@ export function CapturePane({
           </button>
         </span>
         <span className="num meta capture-position">{position}</span>
-        <button type="button" className="icon-round icon-round-line press" aria-label="Close (Esc)" data-only="rail-one-column" onClick={onClose}>
-          <Glyph name="close" size={20} />
-        </button>
       </div>
       <div key={capture.id} className="capture-body rise">
         <section aria-label="Source" className="capture-source">
@@ -447,6 +438,6 @@ export function CapturePane({
           </span>
         </button>
       </div>
-    </aside>
+    </section>
   );
 }

@@ -20,6 +20,7 @@ import { captureSource, clockTime } from '@/lib/ledger/format';
 import type { Ledger } from '@/lib/ledger/use-ledger';
 import type { ChecklistItem } from '@/lib/setup';
 import { useOnline } from '@/components/states/connection';
+import { RECENTLY_REVIEWED_HREF, reviewHref } from '@/lib/review-view';
 import { SetupCard } from './setup-card';
 
 const SHOWN = 3;
@@ -59,11 +60,11 @@ export function ReviewCard({ ledger, setup }: { ledger: Ledger; setup: Checklist
           <h2 className="card-title num">{title}</h2>
           <span className="review-sub num">{waitingTotal(waiting, currency)}</span>
         </div>
-        <Link href="/review" className="review-link press" data-only="sidebar rail rail-one-column">
+        <Link href={reviewHref()} scroll={false} className="review-link press" data-only="sidebar rail rail-one-column">
           Review
           <Icon name="chevron-right" size={18} />
         </Link>
-        <Link href="/review" className="btn btn-ink review-pill press" data-only="phone">
+        <Link href={reviewHref()} scroll={false} className="btn btn-ink review-pill press" data-only="phone">
           Review
           <Icon name="chevron-right" size={18} />
         </Link>
@@ -86,7 +87,7 @@ export function ReviewCard({ ledger, setup }: { ledger: Ledger; setup: Checklist
           const merchant = capture.merchant ?? capture.description ?? 'Capture';
           return (
             <li key={capture.id} className="review-row">
-              <Link href="/review" className="review-row-link">
+              <Link href={reviewHref(capture.id)} scroll={false} className="review-row-link">
                 <Bubble icon={category?.icon ?? 'help-circle-outline'} color={null} size={34} glyph={17} dashed />
                 <span className="row-text">
                   <span className="review-row-top">
@@ -160,6 +161,11 @@ function CaughtUp() {
     <section aria-label="Captures to review" className="card review-card review-empty" data-card="review">
       <h2 className="card-title">Nothing to review</h2>
       <p className="review-sub">New captures from notifications, receipts and chat wait here until you say yes.</p>
+      <span className="grow-space" />
+      <Link href={RECENTLY_REVIEWED_HREF} scroll={false} className="review-link press">
+        Recently reviewed
+        <Icon name="chevron-right" size={18} />
+      </Link>
     </section>
   );
 }

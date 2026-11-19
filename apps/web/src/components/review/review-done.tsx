@@ -62,21 +62,13 @@ function RuleList({ rules, wallets }: { rules: AutoAddRuleItem[]; wallets: Ledge
 }
 
 /** Recently reviewed: 30 days of Approve and Not mine, and Move back to Review for a Not mine. */
-export function RecentList({ ledger, onClose }: { ledger: Ledger; onClose?: () => void }) {
+export function RecentList({ ledger, titled = true }: { ledger: Ledger; titled?: boolean }) {
   const { projection, calendar, now, walletNames, aliases } = ledger;
   const lookups = { categoriesById: projection.categoriesById, walletNames, aliases };
   const today = calendar.dayKey(now);
   return (
     <div className="recent-list" id="recently-reviewed">
-      <div className="recent-head">
-        <h2 className="card-title">Recently reviewed</h2>
-        <span className="meta">Last 30 days of Approve and Not mine</span>
-        {onClose && (
-          <button type="button" className="icon-round icon-round-line press recent-close" aria-label="Close (Esc)" onClick={onClose}>
-            <Glyph name="close" size={20} />
-          </button>
-        )}
-      </div>
+      {titled && <h3 className="recent-head caps">Recently reviewed</h3>}
       {ledger.reviewed.length === 0 ? (
         <p className="meta recent-none">Nothing reviewed in the last 30 days.</p>
       ) : (
@@ -121,45 +113,35 @@ export function RecentList({ ledger, onClose }: { ledger: Ledger; onClose?: () =
 }
 
 /**
- * All caught up (W2-Review, W2-Empty): the celebrate cat once Kai has cleared captures today, today's
- * decisions, and Recently reviewed below. With nothing decided today there is nothing to celebrate, so
- * the pane says there is nothing to review and where captures come from.
+ * The drawer with nothing waiting (W2-Review, W2-Empty): the celebrate cat once Kai has cleared captures
+ * today, with today's decisions, or else one line on where captures come from; Recently reviewed below.
+ * Home's card already says there is nothing to review, so the drawer doesn't say it again.
  */
 export function CaughtUp({ ledger, now }: { ledger: Ledger; now: Date }) {
   const { calendar, currency } = ledger;
   const today = calendar.dayKey(now);
-  if (!ledger.reviewed.some((proposal) => calendar.dayKey(proposal.reviewedAt) === today)) {
-    return (
-      <div className="nothing-to-review">
-        <div className="empty">
-          <Cat mood="neutral" size={72} id="review-nothing" />
-          <h2 className="empty-title">Nothing to review</h2>
-          <p className="empty-line">New captures from notifications, receipts and chat wait here until you say yes.</p>
+  const cleared = ledger.reviewed.some((proposal) => calendar.dayKey(proposal.reviewedAt) === today);
+  return (
+    <>
+      {cleared ? (
+        <div className="caught-up rise">
+          <Cat mood="celebrate" size={120} id="review-done" />
+          <div className="caught-up-words">
+            <h3 className="caught-up-title">All caught up</h3>
+            <p className="num">{caughtUpLine(ledger.reviewed, today, (at) => calendar.dayKey(at), currency)}</p>
+            <div className="caught-up-actions">
+              <Link href="/activity" className="btn btn-sand press">
+                See it in Activity
+              </Link>
+            </div>
+          </div>
         </div>
+      ) : (
         <p className="capture-from">
           <Glyph name="bell-outline" size={18} />
           {capturesFrom(ledger.wallets.map((wallet) => wallet.notificationAppLabel))}
         </p>
-      </div>
-    );
-  }
-  return (
-    <>
-      <div className="caught-up rise">
-        <Cat mood="celebrate" size={168} id="review-done" />
-        <div className="caught-up-words">
-          <h2 className="caught-up-title">All caught up</h2>
-          <p className="num">{caughtUpLine(ledger.reviewed, calendar.dayKey(now), (at) => calendar.dayKey(at), currency)}</p>
-          <div className="caught-up-actions">
-            <Link href="/home" className="btn btn-ink press">
-              Back to Home
-            </Link>
-            <Link href="/activity" className="btn btn-sand press">
-              See it in Activity
-            </Link>
-          </div>
-        </div>
-      </div>
+      )}
       <RecentList ledger={ledger} />
     </>
   );

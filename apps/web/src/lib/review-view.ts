@@ -3,6 +3,24 @@ import type { MinorAmount } from '@repo/types';
 
 type Capture = { id: string; merchant: string | null; description: string | null; amountMinor: MinorAmount | null; currency: string };
 
+/**
+ * What Home's Review drawer shows (#104), from `?review=`: one capture at a time, every waiting capture
+ * as a list, or Recently reviewed. No value means the drawer is shut.
+ */
+export type ReviewView = 'deck' | 'list' | 'recent';
+
+export function parseReviewView(value: string | null): ReviewView | null {
+  if (value === null) return null;
+  return value === 'list' || value === 'recent' ? value : 'deck';
+}
+
+/** Home with the Review drawer open, at one capture when it names one. */
+export function reviewHref(captureId?: string): string {
+  return captureId ? `/home?review=deck&capture=${encodeURIComponent(captureId)}` : '/home?review=deck';
+}
+
+export const RECENTLY_REVIEWED_HREF = '/home?review=recent';
+
 /** A capture's name on a row or a toast: the merchant, else what Moni read, else "Capture". */
 export function captureName(capture: Pick<Capture, 'merchant' | 'description'>): string {
   return capture.merchant?.trim() || capture.description?.trim() || 'Capture';

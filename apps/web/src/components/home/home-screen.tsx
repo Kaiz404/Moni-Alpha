@@ -23,6 +23,7 @@ import { useScreenKeys } from '@/lib/screen-keys';
 import type { ChecklistItem } from '@/lib/setup';
 import { RecentCard } from './recent-card';
 import { GetAppBanner } from './get-app-banner';
+import { ReviewDrawer } from '@/components/review/review-drawer';
 import { ReviewCard } from './review-card';
 import { useSetupChecklist } from './setup-card';
 import { NextDaysCard, PlacesCard, WalletsCard } from './side-cards';
@@ -208,6 +209,7 @@ export function HomeScreen() {
           {[1, 2, 3, 4].map(renderSlot)}
         </div>
       </div>
+      <ReviewDrawer ledger={ledger} />
     </Page>
   );
 

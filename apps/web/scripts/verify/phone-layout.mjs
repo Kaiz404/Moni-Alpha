@@ -44,7 +44,7 @@ const SCREENS = [
     titleAt: '.side-pane[data-open] .detail-name',
   },
   { name: 'places', path: '/home/places', title: /^Where you spend$/ },
-  { name: 'review', path: '/review', title: /^Review$/ },
+  { name: 'review', path: '/home?review=deck', title: /^Review$/, titleAt: '.side-pane[data-open] .drawer-title' },
   { name: 'settings', path: '/settings', title: /^Settings$/ },
   { name: 'settings-profile', path: '/settings/profile', title: /^Profile$/ },
   { name: 'settings-ai', path: '/settings/ai', title: /^Moni's AI$/, loaded: 'section[aria-labelledby="ai-title"]:not([aria-busy])' },

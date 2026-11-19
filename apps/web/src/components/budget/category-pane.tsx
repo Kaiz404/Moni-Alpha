@@ -13,6 +13,7 @@ import Link from 'next/link';
 import { chartTop, type BudgetLine } from '@/lib/budget-view';
 import type { Calendar } from '@repo/core';
 import { Bubble, Glyph } from '@/components/ledger/glyph';
+import { reviewHref } from '@/lib/review-view';
 import { BudgetEditor, type BudgetEdit } from './budget-editor';
 
 const CHART_W = 340;
@@ -214,7 +215,7 @@ export function CategoryPane({
       </div>
       <div className="pane-list">
         {reviewRows.map((proposal) => (
-          <Link key={proposal.id} href="/review" className="pane-row">
+          <Link key={proposal.id} href={reviewHref(proposal.id)} className="pane-row">
             <Bubble icon={line.icon} color={line.color} size={30} glyph={16} />
             <span className="row-text">
               <b>{proposal.merchant ?? proposal.description ?? line.name}</b>

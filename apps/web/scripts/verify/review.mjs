@@ -1,8 +1,9 @@
-// Review in web-verify (`--only review`): every layout in both themes, the numbers and the order against
-// the web e2e user's captures, J, K, Space, A, X and Ctrl Z, bulk Approve, the source beside the
-// proposal (the bank alert, the chat line, the receipt photo from storage), the rule preview for
-// "Don't ask about similar", All caught up, Recently reviewed with Move back, the 700 crossing with a
-// half-typed name, and reduced motion. Every decision is undone before the part ends.
+// Review in web-verify (`--only review`): Home's Review drawer (#104) at every layout in both themes, the
+// numbers and the order against the web e2e user's captures, J, K, Space, A, X and Ctrl Z, the list with
+// bulk Approve, the source with the proposal (the bank alert, the chat line, the receipt photo from
+// storage), the rule preview for "Don't ask about similar", All caught up, Recently reviewed with Move
+// back, the 700 crossing with a half-typed name, and reduced motion. Every decision is undone before the
+// part ends.
 
 import { merchantKey } from '../../../mobile/scripts/e2e/fixtures.mjs';
 
@@ -27,6 +28,7 @@ export async function verifyReview(t) {
     return { ok: test(rows), rows };
   }
   const ready = (p) => p.locator('[data-screen="review"]').waitFor({ timeout: 30_000 });
+  const drawer = (p) => p.getByRole('complementary', { name: 'Review' });
   const scrolls = (p) => p.evaluate(() => document.documentElement.scrollWidth > innerWidth);
   const visible = (locator) => locator.isVisible().catch(() => false);
 
@@ -48,41 +50,48 @@ export async function verifyReview(t) {
       const ctx = await pinned({ viewport: { width: size.width, height: size.height }, colorScheme: theme });
       await ctx.addInitScript(() => localStorage.setItem('moni-theme', 'system'));
       const p = await ctx.newPage();
-      await p.goto(`${base}/review`);
-      await ready(p);
+      await p.goto(`${base}/home`);
+      await p.locator('.home[data-loaded]').waitFor({ timeout: 30_000 });
       const where = `Review at ${size.width} ${theme}`;
+      check(`${where}: Home has no Review drawer until the card opens it`, (await p.locator('aside.side-pane').count()) === 0);
+      await p.locator('.review-card').getByRole('link', { name: /^Review/ }).filter({ visible: true }).click();
+      await p.waitForURL(/review=deck/);
+      await ready(p);
+      await settle(p);
       const layout = await p.evaluate(() => document.documentElement.dataset.layout);
-      const title = await p.locator('h1:visible').first().textContent();
+      const title = await drawer(p).locator('.drawer-title').textContent();
       const ground = await p.evaluate(() => getComputedStyle(document.body).backgroundColor);
       const nav = await p.evaluate(() => ['nav.sidebar', 'nav.rail', 'nav.tabbar'].filter((s) => { const el = document.querySelector(s); return el && getComputedStyle(el).display !== 'none'; }));
       check(
-        `${where}: ${size.layout}, its nav, the title, the ground, no sideways scroll`,
+        `${where}: ${size.layout}, the drawer titled Review, the ground, no sideways scroll`,
         layout === size.layout && title === 'Review' && ground === background[theme] && !(await scrolls(p)) && nav.join() === (size.layout === 'phone' ? '' : navFor[size.layout]),
         { layout, title, ground, nav },
       );
-      const pane = p.locator('aside.review-pane[aria-label="Capture"]');
+      const pane = p.locator('section.capture-card:visible');
+      const box = await drawer(p).boundingBox();
+      check(`${where}: the deck shows one capture, the oldest`, (await pane.count()) === 1 && (await pane.getAttribute('data-capture')) === first.id);
+      check(`${where}: Not mine and Approve sit at the foot of the capture`, (await visible(pane.getByRole('button', { name: /^Not mine/ }))) && (await visible(pane.getByRole('button', { name: /^Approve/ }))));
       if (size.layout === 'phone') {
-        check(`${where}: the deck shows one capture, the oldest, and no inbox`, (await visible(pane)) && !(await visible(p.locator('.review-inbox'))) && (await pane.getAttribute('data-capture')) === first.id);
-        check(`${where}: Not mine and Approve sit at the foot of the card`, (await visible(p.getByRole('button', { name: /^Not mine/ }))) && (await visible(p.getByRole('button', { name: /^Approve/ }))));
+        check(`${where}: the drawer is the full-screen Review page`, box?.x === 0 && box?.width === size.width && !(await visible(p.locator('nav.tabbar'))), box);
       } else {
-        const names = await p.locator('.inbox-row .inbox-name').allTextContents();
-        check(`${where}: the inbox lists the ${pending.length} waiting captures, oldest first`, names.join('|') === pending.map((row) => row.merchant).join('|'), names);
-        const meta = await p.locator('.page-meta').first().textContent();
+        const meta = await drawer(p).locator('.drawer-titles .meta').textContent();
         check(`${where}: the header says ${cents(waitingMinor)} not counted yet`, meta === `${cents(waitingMinor)} not counted yet`, meta);
-        if (size.layout === 'rail-one-column') {
-          check(`${where}: the capture waits until one is opened`, !(await visible(pane)));
-          await p.locator(`.inbox-row[data-capture="${first.id}"]`).click();
-          await p.waitForURL(/capture=/);
-          await pane.waitFor();
-          await settle(p);
-          check(`${where}: opening a capture slides it over the list`, await visible(pane));
+        check(`${where}: the drawer slides in on the right, top to bottom`, box !== null && box.y <= 14 && Math.round(box.x + box.width) >= size.width - 14 && box.width === 520, box);
+        if (size.layout === 'sidebar') {
+          const homeEnd = await p.locator('.home').evaluate((el) => el.getBoundingClientRect().right);
+          check(`${where}: Home makes room beside the drawer`, homeEnd <= box.x, { homeEnd, box });
         } else {
-          check(`${where}: the oldest capture is open beside the inbox`, (await pane.getAttribute('data-capture')) === first.id);
-          const box = await pane.boundingBox();
-          check(`${where}: the capture docks right of the inbox, top to bottom`, box !== null && box.y <= 14 && box.x > 440 && box.x + box.width >= size.width - 14, box);
+          check(`${where}: the drawer lies over Home with a scrim`, await visible(p.locator('.side-pane-scrim[data-open]')));
         }
+        await drawer(p).getByRole('radio', { name: `All ${pending.length}` }).click();
+        await p.waitForURL(/review=list/);
+        const names = await p.locator('.inbox-row .inbox-name').allTextContents();
+        check(`${where}: All ${pending.length} lists the waiting captures, oldest first`, names.join('|') === pending.map((row) => row.merchant).join('|'), names);
       }
       await shot(p, `review-${size.width}-${theme}`);
+      await p.keyboard.press('Escape');
+      const gone = await p.locator('aside.side-pane').waitFor({ state: 'detached', timeout: 2000 }).then(() => true, () => false);
+      check(`${where}: Esc slides the drawer out and Home stays`, gone && !p.url().includes('review='), p.url());
       await ctx.close();
     }
   }
@@ -90,10 +99,10 @@ export async function verifyReview(t) {
   // ---------- 1440: the board pair, the source, keys, the rule preview, decisions undone ----------
   const ctx = await pinned({ viewport: { width: 1440, height: 900 } });
   const p = await ctx.newPage();
-  await p.goto(`${base}/review`);
+  await p.goto(`${base}/home?review=deck`);
   await ready(p);
   await settle(p);
-  const pane = p.locator('aside.review-pane[aria-label="Capture"]');
+  const pane = p.locator('section.capture-card:visible');
   const quote = await p.locator('.source-alert blockquote').textContent();
   check('the bank alert sits beside the proposal, quoted', /^“.*GRAB\*FOOD.*”$/.test(quote ?? ''), quote);
   const amount = await p.getByTestId('capture-amount').textContent();
@@ -109,7 +118,7 @@ export async function verifyReview(t) {
   check('the preview says what happens next time, and Approve says it saves the rule', (await visible(p.getByText('Added automatically'))) && (await p.locator('.capture-note').textContent()) === 'Saves the rule too');
   await settle(p);
   await shot(p, 'review-1440-rule');
-  await pair('review-1440', 'r2/W2-Review.png', `${t.out}/review-1440-rule.png`);
+  await pair('review-1440', 'r2/W2-Home.png', `${t.out}/review-1440-rule.png`);
 
   await p.keyboard.press('a');
   const added = p.getByRole('status').filter({ hasText: 'similar ones will be Auto' });
@@ -117,12 +126,12 @@ export async function verifyReview(t) {
   const approved = await until('proposals', (r) => r.some((row) => row.id === first.id && row.status === 'approved' && row.transaction_id));
   const rule = await until('auto-add-rules', (r) => r.some((row) => row.merchant_key === merchantKey(first.merchant) && row.wallet_id === first.wallet_id));
   check('the dev project has the capture approved with its ledger row, and the rule', approved.ok && rule.ok, { rules: rule.rows });
-  check('the inbox moves on to the next capture', (await pane.getAttribute('data-capture')) === pending[1].id);
+  check('the deck moves on to the next capture', (await pane.getAttribute('data-capture')) === pending[1].id);
   await p.keyboard.press('Control+z');
   const back = await until('proposals', (r) => r.some((row) => row.id === first.id && row.status === 'pending' && !row.transaction_id));
   const ruleGone = await until('auto-add-rules', (r) => !r.some((row) => row.merchant_key === merchantKey(first.merchant)));
   check('Ctrl Z puts the capture back, removes the row and the rule it made', back.ok && ruleGone.ok, { rules: ruleGone.rows });
-  await p.waitForFunction((id) => document.querySelector('aside.review-pane')?.getAttribute('data-capture') === id, first.id, { timeout: 5000 }).catch(() => {});
+  await p.waitForFunction((id) => document.querySelector('section.capture-card')?.getAttribute('data-capture') === id, first.id, { timeout: 5000 }).catch(() => {});
   check('and opens it again', (await pane.getAttribute('data-capture')) === first.id);
 
   await p.keyboard.press('j');
@@ -132,13 +141,14 @@ export async function verifyReview(t) {
   await p.waitForURL(new RegExp(`capture=${first.id}`)).catch(() => {});
   check('K goes back', (await pane.getAttribute('data-capture')) === first.id);
 
+  await drawer(p).getByRole('radio', { name: `All ${pending.length}` }).click();
+  await p.waitForURL(/review=list/);
   await p.evaluate(() => document.activeElement?.blur?.());
   await p.keyboard.press(' ');
   await p.keyboard.press('j');
   await p.keyboard.press(' ');
   const bar = p.getByRole('toolbar', { name: 'Selected captures' });
   check('Space ticks the open capture, twice for two, and the Ink bar counts them', (await visible(bar)) && (await bar.textContent())?.includes('2 selected'));
-  check('the Approve button counts the ticked captures', await visible(p.getByRole('button', { name: /^Approve 2/ })));
   await shot(p, 'review-1440-bulk');
   await bar.getByRole('button', { name: /^Approve/ }).click();
   const both = await until('proposals', (r) => [first.id, pending[1].id].every((id) => r.some((row) => row.id === id && row.status === 'approved')));
@@ -149,6 +159,7 @@ export async function verifyReview(t) {
 
   // The receipt photo comes from storage; the chat capture quotes the line and needs a wallet.
   await p.locator(`.inbox-row[data-capture="${receipt.id}"]`).click();
+  await p.waitForURL(/review=deck/);
   const img = p.locator('.source-photo img');
   await img.waitFor({ timeout: 10_000 }).catch(() => {});
   const photo = await img.evaluate((el) => ({ src: el.currentSrc, width: el.naturalWidth })).catch(() => null);
@@ -158,6 +169,8 @@ export async function verifyReview(t) {
     photo,
   );
   await shot(p, 'review-1440-receipt');
+  await p.goto(`${base}/home?review=list`);
+  await ready(p);
   await p.locator(`.inbox-row[data-capture="${chat.id}"]`).click();
   const said = await p.locator('.source-chat blockquote').waitFor({ timeout: 5000 }).then(() => p.locator('.source-chat blockquote').textContent(), () => null);
   check('a chat capture quotes what was said', Boolean(said?.trim()), said);
@@ -166,23 +179,27 @@ export async function verifyReview(t) {
   await shot(p, 'review-1440-chat');
 
   // Not mine for everything: All caught up, then Recently reviewed with Move back, then undo.
+  await drawer(p).getByRole('radio', { name: `All ${pending.length}` }).click();
+  await p.waitForURL(/review=list/);
   await p.getByRole('checkbox', { name: 'Select all' }).click();
   await p.keyboard.press('x');
-  await p.locator('aside[aria-label="All caught up"]').waitFor({ timeout: 5000 }).catch(() => {});
+  await p.getByRole('heading', { name: 'All caught up' }).waitFor({ timeout: 5000 }).catch(() => {});
   const allGone = await until('proposals', (r) => pending.every((one) => r.some((row) => row.id === one.id && row.status === 'rejected')));
   check('Select all then X marks every capture Not mine, and All caught up shows', allGone.ok && (await visible(p.getByRole('heading', { name: 'All caught up' }))));
-  check('the inbox says nothing is waiting', await visible(p.getByText('Nothing waiting. New captures land here.')));
+  check('the header says nothing is waiting, once', (await drawer(p).locator('.drawer-titles .meta').textContent()) === 'Nothing waiting' && (await drawer(p).getByText(/Nothing waiting/).count()) === 1);
   await settle(p);
   await shot(p, 'review-1440-done');
   await p.keyboard.press('Control+z');
   const allBack = await until('proposals', (r) => pending.every((one) => r.some((row) => row.id === one.id && row.status === 'pending')));
   check('Ctrl Z brings all four back', allBack.ok);
 
+  await p.goto(`${base}/home?review=deck&capture=${first.id}`);
+  await ready(p);
   await p.keyboard.press('x');
   await until('proposals', (r) => r.some((row) => row.id === first.id && row.status === 'rejected'));
   await p.getByRole('button', { name: /Recently reviewed/ }).click();
-  const recent = p.locator('aside[aria-label="Recently reviewed"]');
-  await recent.waitFor({ timeout: 5000 }).catch(() => {});
+  await p.waitForURL(/review=recent/);
+  const recent = drawer(p);
   check('Recently reviewed lists the Not mine with Move back to Review', (await visible(recent.locator('.recent-row[data-status="rejected"]').first())) && (await visible(recent.getByRole('button', { name: 'Move back to Review' }).first())));
   const rules = recent.locator('.recent-row[data-rule]');
   const ruleLines = await rules.locator('.inbox-text > span').allInnerTexts();
@@ -209,12 +226,15 @@ export async function verifyReview(t) {
   const moved = await until('proposals', (r) => r.some((row) => row.id === first.id && row.status === 'pending' && !row.reviewed_at));
   check('Move back to Review puts the capture back', moved.ok);
   await p.keyboard.press('Escape');
+  await p.waitForURL(/review=deck/).catch(() => {});
+  check('Esc in Recently reviewed steps back to the captures', p.url().includes('review=deck'), p.url());
+  await p.keyboard.press('Escape');
   await ctx.close();
 
   // ---------- the 700 crossing keeps the open capture and a half-typed name ----------
   const rctx = await pinned({ viewport: { width: 1024, height: 768 } });
   const r = await rctx.newPage();
-  await r.goto(`${base}/review?capture=${pending[1].id}`);
+  await r.goto(`${base}/home?review=deck&capture=${pending[1].id}`);
   await ready(r);
   await r.getByRole('button', { name: 'Edit merchant name' }).click();
   const field = r.getByLabel('Merchant name');
@@ -232,15 +252,15 @@ export async function verifyReview(t) {
   check('and back across 700 it is still there', (await field.inputValue()) === 'Jaya Grocer Bangs');
   await rctx.close();
 
-  // ---------- reduced motion: the capture slides over the one-column rail, or fades ----------
+  // ---------- reduced motion: the drawer slides in, or fades ----------
   for (const reducedMotion of ['no-preference', 'reduce']) {
     const mctx = await pinned({ viewport: { width: 820, height: 1180 }, reducedMotion });
     const m = await mctx.newPage();
-    await m.goto(`${base}/review?capture=${first.id}`);
+    await m.goto(`${base}/home?review=deck&capture=${first.id}`);
     await ready(m);
-    const name = await m.locator('aside.review-pane').evaluate((el) => getComputedStyle(el).animationName);
+    const name = await m.locator('aside.side-pane').evaluate((el) => getComputedStyle(el).animationName);
     const expected = reducedMotion === 'reduce' ? 'fade-in' : 'slide-in-right';
-    check(`the capture opens over the list with ${expected} when motion is ${reducedMotion}`, name === expected, name);
+    check(`the drawer opens over Home with ${expected} when motion is ${reducedMotion}`, name === expected, name);
     await mctx.close();
   }
 }

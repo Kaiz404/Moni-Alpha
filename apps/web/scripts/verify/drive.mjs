@@ -59,7 +59,6 @@ const ROUTES = [
   { path: '/debts', title: /^Debts$/ },
   { path: '/home/places', title: /^Where you spend$/, pushed: true },
   { path: '/home/wallets', title: /^Wallets$/, pushed: true },
-  { path: '/review', title: /^Review$/, pushed: true },
   { path: '/settings', title: /^Settings$/, pushed: true },
 ];
 const CORS = {
@@ -471,7 +470,7 @@ try {
         const title = await p.locator('h1:visible').first().textContent();
         const bg = await p.evaluate(() => getComputedStyle(document.body).backgroundColor);
         const wide = await p.evaluate(() => document.documentElement.scrollWidth <= innerWidth);
-        // On the phone layout a pushed page (Review, Settings) has no tab bar.
+        // On the phone layout a pushed page (Settings, Where you spend) has no tab bar.
         const nav = size.layout === 'phone' && route.pushed ? [] : [NAV_FOR[size.layout]];
         const ok =
           layout === size.layout &&

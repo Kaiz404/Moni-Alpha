@@ -2,7 +2,7 @@ import type { ReviewedProposal } from '@repo/core';
 import type { MinorAmount } from '@repo/types';
 import { describe, expect, it } from 'vitest';
 
-import { approvedText, captureName, caughtUpLine, notMineText, waitingCount, waitingLine } from '../review-view';
+import { approvedText, captureName, caughtUpLine, notMineText, parseReviewView, reviewHref, waitingCount, waitingLine } from '../review-view';
 
 const capture = (merchant: string | null, amount: number, currency = 'MYR') => ({
   id: merchant ?? 'x',
@@ -45,5 +45,15 @@ describe('review words', () => {
     ).toBe('2 approved, 1 not mine · RM109.80 added to October');
     expect(caughtUpLine([reviewed('rejected', 600, '2026-10-14T05:02:00Z')], '2026-10-14', dayOf, 'MYR')).toBe('1 not mine');
     expect(caughtUpLine([], '2026-10-14', dayOf, 'MYR')).toBe('Nothing waiting. New captures land here.');
+  });
+
+  it('reads the drawer from the URL and links to it', () => {
+    expect(parseReviewView(null)).toBeNull();
+    expect(parseReviewView('deck')).toBe('deck');
+    expect(parseReviewView('list')).toBe('list');
+    expect(parseReviewView('recent')).toBe('recent');
+    expect(parseReviewView('')).toBe('deck');
+    expect(reviewHref()).toBe('/home?review=deck');
+    expect(reviewHref('a1')).toBe('/home?review=deck&capture=a1');
   });
 });

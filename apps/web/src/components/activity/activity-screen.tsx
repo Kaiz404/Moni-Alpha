@@ -40,6 +40,7 @@ import {
 import { commit, planContext } from '@/lib/ledger/commit';
 import { SOURCE_ICONS, SOURCE_LABELS, rowAmount } from '@/lib/ledger/format';
 import { useLedger } from '@/lib/ledger/use-ledger';
+import { reviewHref } from '@/lib/review-view';
 import { useScreenKeys } from '@/lib/screen-keys';
 import { ResizeHandle } from '@/components/ledger/resize-handle';
 import { SidePane } from '@/components/ledger/side-pane';
@@ -427,7 +428,7 @@ export function ActivityScreen() {
       <div className="activity" data-show={query.show} data-pane-open={(open && !pane) || undefined} data-loaded={ledger.loaded || undefined}>
         <div className="phone-tools" data-only="phone">
           {ledger.waiting.length > 0 && (
-            <Link href="/review" className="to-review press">
+            <Link href={reviewHref()} className="to-review press">
               <span className="to-review-n">{ledger.waiting.length}</span>
               <span className="to-review-text">
                 To review

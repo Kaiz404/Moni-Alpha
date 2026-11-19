@@ -7,6 +7,7 @@ import { useState, type PointerEvent } from 'react';
 import { Glyph } from '@/components/ledger/glyph';
 import type { ChatMessage } from '@/lib/chat-thread';
 import type { Ledger } from '@/lib/ledger/use-ledger';
+import { reviewHref } from '@/lib/review-view';
 
 type CardMessage = Extract<ChatMessage, { kind: 'card' }>;
 type LedgerCard = Exclude<AnswerCard, { kind: 'captures' }>;
@@ -126,7 +127,7 @@ export function AnswerCardView({ message, ledger }: { message: CardMessage; ledg
           {count ? `${count} ${count === 1 ? 'capture is' : 'captures are'} waiting for review.` : 'Nothing is waiting for review.'}
         </p>
         {count > 0 && (
-          <Link href="/review?pane=chat" className="answer-link press">
+          <Link href={reviewHref()} className="answer-link press">
             <Glyph name="tray-full" size={18} />
             Open Review
           </Link>

@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { AskMoniMark, Cat, Wordmark } from '@/components/brand';
 import { Icon } from '@/components/icon';
-import { destinationOf, MAIN_NAV, navItem } from '@/lib/nav';
+import { destinationOf, MAIN_NAV } from '@/lib/nav';
 import { useOnline } from '@/components/states/connection';
 import { useShellApi } from './shell-context';
 
@@ -13,7 +13,6 @@ export function Sidebar() {
   const { user, run, hrefWithPane, pane } = useShellApi();
   const online = useOnline();
   const current = destinationOf(usePathname());
-  const review = navItem('review');
   return (
     <nav aria-label="Moni" className="sidebar" data-only="sidebar">
       <div className="sidebar-top">
@@ -43,10 +42,6 @@ export function Sidebar() {
         </Link>
       ))}
       <span className="sidebar-rule" aria-hidden="true" />
-      <Link href={hrefWithPane(review.href)} className="navi" aria-current={current === 'review' ? 'page' : undefined}>
-        <Icon name={review.icon} size={22} />
-        <span style={{ flex: '1 1 auto' }}>Review</span>
-      </Link>
       <button
         type="button"
         className="navi"
@@ -82,7 +77,6 @@ export function Sidebar() {
 export function Rail() {
   const { user, run, hrefWithPane, pane } = useShellApi();
   const current = destinationOf(usePathname());
-  const review = navItem('review');
   return (
     <nav aria-label="Moni" className="rail" data-only="rail rail-one-column">
       <Link href={hrefWithPane('/home')} aria-label="Moni home" style={{ paddingBottom: 6 }}>
@@ -110,12 +104,6 @@ export function Rail() {
         </Link>
       ))}
       <span className="rail-rule" aria-hidden="true" />
-      <Link href={hrefWithPane(review.href)} aria-current={current === 'review' ? 'page' : undefined}>
-        <span className="ind">
-          <Icon name={review.icon} size={22} />
-        </span>
-        Review
-      </Link>
       <button type="button" aria-pressed={pane === 'chat'} onClick={() => run({ kind: 'ask' })} title="Ask Moni (/)">
         <span className="ind">
           <AskMoniMark size={26} onInk id="rail-ask" />

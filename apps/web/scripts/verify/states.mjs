@@ -34,7 +34,6 @@ export async function verifyFirstRun({ browser, base, storage, check, shot, sett
     // ---------- every empty screen, at each width in both themes ----------
     const screens = [
       { path: '/activity', name: 'activity', text: 'No spending yet' },
-      { path: '/review', name: 'review', text: 'Nothing to review' },
       { path: '/budget', name: 'budget', text: 'No budgets yet' },
       { path: '/debts', name: 'debts', text: 'No debts yet' },
       { path: '/home/places', name: 'places', text: 'No places yet' },
@@ -78,12 +77,6 @@ export async function verifyFirstRun({ browser, base, storage, check, shot, sett
     await ep.goto(`${base}/debts`);
     await ep.getByText('No debts yet').waitFor({ timeout: 10_000 });
     check('Debts with nobody: one Record a debt, and no empty pane beside it', (await ep.getByRole('button', { name: /Record a debt/ }).count()) === 1 && (await ep.locator('aside.side-pane').count()) === 0);
-    await ep.goto(`${base}/review`);
-    await ep.getByText('Nothing to review').waitFor({ timeout: 10_000 });
-    check(
-      'Review opened empty: no celebration, the neutral words, and where captures come from',
-      !(await ep.getByText('All caught up').isVisible()) && (await ep.getByText('Captures come from bank alerts, receipts and Moni chat on your phone.').isVisible()),
-    );
     await ep.keyboard.press('Control+k');
     await ep.keyboard.type('starbuks');
     const miss = await ep.getByText('No matches for “starbuks”').isVisible();
@@ -202,6 +195,18 @@ export async function verifyFirstRun({ browser, base, storage, check, shot, sett
         await shot(sp, `setup-home-${size.width}`);
       }
       await pair('empty-home', await boardBand(EMPTY, 'empty-home', 570, 900), `${out}/setup-home-1440.png`);
+      // A set-up account with no captures: Home's Review drawer opened empty.
+      await sp.setViewportSize({ width: 1440, height: 900 });
+      await sp.goto(`${base}/home?review=deck`);
+      const none = await sp.locator('.review-drawer').getByText('Nothing reviewed in the last 30 days.').waitFor({ timeout: 10_000 }).then(() => true, () => false);
+      check(
+        'Review opened empty: no celebration, nothing said twice, and where captures come from',
+        none &&
+          !(await sp.getByText('All caught up').isVisible()) &&
+          (await sp.locator('.review-drawer').getByText(/Nothing to review|Nothing waiting\. New captures land here\./).count()) === 0 &&
+          (await sp.getByText('Captures come from bank alerts, receipts and Moni chat on your phone.').isVisible()),
+      );
+      await shot(sp, 'empty-review-1440');
       await s.close();
     });
 

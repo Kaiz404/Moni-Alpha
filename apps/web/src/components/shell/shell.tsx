@@ -104,7 +104,8 @@ export function Shell({ user, children }: { user: ShellUser; children: ReactNode
         case 'go': {
           setShell({ overlay: 'none' });
           const href = navItem(action.to).href;
-          return router.push(pane === 'chat' ? `${href}?pane=chat` : href);
+          // Review is a drawer that Moni chat would cover, so going there leaves chat.
+          return router.push(pane === 'chat' && !href.includes('?') ? `${href}?pane=chat` : href);
         }
         case 'theme': {
           setShell({ overlay: 'none' });

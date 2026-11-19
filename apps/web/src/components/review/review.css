@@ -1,42 +1,46 @@
-/* Review (W2-Review, W2-Empty, W2-Responsive): the inbox beside the open capture. One tree for every
-   layout: the capture docks top to bottom right of the 440 inbox on the sidebar and rail, slides over
-   the list on the one-column rail, and is the deck's one card on the phone layout. Every value comes
-   from @repo/design's tokens.css. */
+/* Review (W2-Review on W2-Home, W2-Empty, #104): the drawer Home's review card opens, inside the shared
+   docked pane (side-pane.tsx). One capture at a time or every waiting capture as a list, Recently
+   reviewed one step in. On the phone layout the pane is the pushed Review page. Every value comes from
+   @repo/design's tokens.css. */
 
-.review {
-  --inbox-width: 440px;
+.review-drawer {
   flex: 1 1 auto;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: 16px;
-  align-items: start;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-height: 100%;
 }
 
-.review-side {
+.drawer-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 48px;
+}
+
+.drawer-titles {
+  flex: 1 1 auto;
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 16px;
 }
 
-.page-meta {
-  margin-top: 2px;
-  font-size: 13px;
-  line-height: 18px;
+.drawer-title {
+  margin: 0;
+  font-size: 22px;
+  line-height: 28px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
 }
 
-/* On the sidebar and the rail the page keeps the inbox's width, header included, and the capture
-   takes the rest of the screen. A docked shell pane (Moni chat, Add) takes the capture's place. */
-html:is([data-layout='sidebar'], [data-layout='rail']) .shell:not([data-pane]) .shell-main:has(.review) {
-  padding-right: calc(100vw - var(--content-left) - var(--inbox-width, 440px));
+html[data-layout='phone'] .drawer-head .icon-round {
+  width: 44px;
+  height: 44px;
 }
 
-html:is([data-layout='sidebar'], [data-layout='rail']) .shell:not([data-pane]) .shell-main:has(.review) .page-head {
-  align-items: center;
-}
-
-html:is([data-layout='sidebar'], [data-layout='rail']) .shell:not([data-pane]) .shell-main:has(.review) .cmd-field {
-  width: 256px;
+.drawer-head .seg-tabs button {
+  height: 32px;
+  padding: 0 12px;
 }
 
 .inbox-tools .hint-keys {
@@ -222,138 +226,24 @@ html:is([data-layout='sidebar'], [data-layout='rail']) .shell:not([data-pane]) .
   background: var(--color-block-peach);
 }
 
-.recent-link {
-  flex-direction: row;
-  align-items: center;
-  gap: 12px;
-  min-height: 60px;
-  padding: 0 16px 0 14px;
-  border-radius: 22px;
-  text-align: left;
-}
-
-.recent-link:hover,
-.recent-link[aria-pressed='true'] {
-  background: var(--color-sand-light);
-}
-
-.recent-link-icon {
-  width: 36px;
-  height: 36px;
-  flex: none;
-  border-radius: 9999px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--color-sand);
-}
-
-.recent-link .inbox-text > b {
-  font-size: 15px;
-}
-
-.review-keys {
-  border-radius: 22px;
-  border: 1.5px dashed var(--color-hairline);
-  padding: 10px 18px;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  column-gap: 12px;
-}
-
-.review-key {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  height: 30px;
-  font-size: 14px;
-  color: var(--color-ink-2);
-}
-
+/* The list's bulk bar sits at the drawer's foot. */
 .review-bulk {
-  left: var(--content-left);
-  right: auto;
-  width: var(--inbox-width);
-  bottom: 24px;
-}
-
-html[data-layout='rail-one-column'] .review-bulk {
-  width: auto;
-  right: 32px;
+  position: sticky;
+  bottom: 0;
+  align-self: center;
+  margin-top: 12px;
 }
 
 .bulk-approve {
   color: var(--color-block-mint);
 }
 
-/* ---------- the capture pane ---------- */
+/* ---------- one capture ---------- */
 
-.review-pane {
-  position: fixed;
-  top: 12px;
-  right: 12px;
-  bottom: 12px;
-  left: calc(var(--content-left) + var(--inbox-width, 440px) + 16px);
-  z-index: 5;
-  box-sizing: border-box;
-  border-radius: 26px;
-  background: var(--color-card);
-  padding: 12px 24px 20px;
+.capture-card {
   display: flex;
   flex-direction: column;
   container-type: inline-size;
-  overflow: hidden;
-}
-
-.review-pane-list {
-  overflow-y: auto;
-  padding: 28px 28px 20px;
-}
-
-.shell[data-pane] .review-pane,
-.shell[data-pane] .review-scrim {
-  display: none;
-}
-
-.review-scrim {
-  display: none;
-}
-
-html[data-layout='rail-one-column'] .review-pane {
-  display: none;
-  left: auto;
-  width: min(640px, calc(100vw - 120px));
-}
-
-html[data-layout='rail-one-column'] .review-pane[data-open] {
-  display: flex;
-  z-index: 30;
-  animation: slide-in-right var(--duration-sheet) var(--ease-sheet) both;
-  box-shadow:
-    var(--shadow-float),
-    0 0 0 1.5px var(--color-hairline);
-}
-
-html[data-layout='rail-one-column'] .review-scrim[data-open] {
-  display: block;
-  position: fixed;
-  inset: 0;
-  z-index: 25;
-  background: var(--scrim);
-  animation: fade-in 200ms ease both;
-}
-
-/* The phone layout is the deck: the capture is the page's one card, the inbox stays on the desktop. */
-html[data-layout='phone'] .review-pane {
-  position: static;
-  order: -1;
-  padding: 14px 16px 16px;
-  border-radius: var(--radius-card);
-  overflow: visible;
-}
-
-html[data-layout='phone'] .review-pane-list {
-  padding: 18px 16px;
 }
 
 .capture-top {
@@ -386,9 +276,6 @@ html[data-layout='phone'] .review-pane-list {
 }
 
 .capture-body {
-  flex: 1 1 auto;
-  min-height: 0;
-  overflow-y: auto;
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   gap: 18px;
@@ -402,10 +289,6 @@ html[data-layout='phone'] .review-pane-list {
     grid-template-columns: minmax(230px, 320px) minmax(0, 1fr);
     gap: 24px;
   }
-}
-
-html[data-layout='phone'] .capture-body {
-  overflow: visible;
 }
 
 .capture-source {
@@ -855,12 +738,25 @@ html[data-layout='phone'] .capture-body {
   opacity: 1;
 }
 
-html[data-layout='phone'] .capture-actions {
+/* The drawer scrolls, and Not mine and Approve stay at its foot. */
+.capture-actions {
   position: sticky;
-  bottom: 12px;
-  margin: 0 -16px -16px;
-  padding: 12px 16px 16px;
+  bottom: 0;
+  margin: 0 -22px;
+  padding: 14px 22px 18px;
   background: var(--color-card);
+}
+
+/* The phone layout is the deck: the capture is the page's one card. */
+html[data-layout='phone'] .capture-card {
+  padding: 14px 16px 0;
+  border-radius: var(--radius-card);
+  background: var(--color-card);
+}
+
+html[data-layout='phone'] .capture-actions {
+  margin: 0 -16px;
+  padding: 12px 16px 16px;
   border-radius: 0 0 var(--radius-card) var(--radius-card);
 }
 
@@ -935,23 +831,7 @@ html[data-layout='phone'] .caught-up-actions {
 }
 
 .recent-head {
-  display: flex;
-  align-items: baseline;
-  gap: 12px;
-  flex-wrap: wrap;
-  margin: 20px 10px 6px;
-}
-
-.review-pane-list > .recent-list:first-child .recent-head {
-  margin-top: 0;
-}
-
-.recent-head .card-title {
-  flex: 1 1 auto;
-}
-
-.recent-close {
-  align-self: center;
+  margin: 12px 10px 4px;
 }
 
 .recent-none {
@@ -992,12 +872,6 @@ html[data-layout='phone'] .caught-up-actions {
   font-size: 13px;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  html[data-layout='rail-one-column'] .review-pane[data-open] {
-    animation: fade-in 150ms ease both;
-  }
-}
-
 /* On the phone layout the pencils keep a 44 hit area. */
 html[data-layout='phone'] .pen {
   position: relative;
@@ -1013,31 +887,37 @@ html[data-layout='phone'] .pen::before {
   transform: translate(-50%, -50%);
 }
 
-/* W2-Empty, Nothing to review: the queue opened empty, so no celebration; one line says where captures come from. */
-.nothing-to-review {
-  flex: 1 1 auto;
-  min-height: 100%;
-  display: flex;
-  flex-direction: column;
-}
-
-.nothing-to-review .empty {
-  margin-inline: auto;
-  flex: 1 1 auto;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-}
-
+/* W2-Empty: with nothing decided today there is nothing to celebrate; one line says where captures come from. */
 .capture-from {
   margin: 0;
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 12px 10px 0;
-  border-top: 1.5px solid var(--color-sand-light);
+  padding: 4px 10px 12px;
+  border-bottom: 1.5px solid var(--color-sand-light);
   font-size: 14px;
   color: var(--color-ink-2);
+}
+
+/* Recently reviewed, one step into the drawer. */
+.recent-link {
+  margin-top: auto;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 52px;
+  padding: 0 14px;
+  border-radius: 18px;
+  background: var(--color-sand-light);
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.recent-link > span {
+  flex: 1 1 auto;
+  text-align: left;
+}
+
+.recent-link:hover {
+  background: var(--color-sand);
 }
