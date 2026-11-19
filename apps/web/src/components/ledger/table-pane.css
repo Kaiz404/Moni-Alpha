@@ -398,21 +398,19 @@ html[data-layout='phone'] .hint-keys {
   transition: background-color 120ms ease;
 }
 
-button.pill-field:hover {
+button.pill-field:hover:not(:disabled) {
   background: var(--color-hairline);
 }
 
-.pill-field select,
-.pill-field input {
-  border: 0;
-  background: transparent;
-  font: inherit;
-  color: inherit;
-  outline: none;
-  min-width: 0;
+/* A pane's values share one width, editable or not (#100). */
+.field-row > .pill-field {
+  box-sizing: border-box;
+  flex: none;
+  width: min(62%, 250px);
 }
 
-.pill-field:focus-within {
+.pill-field:focus-visible {
+  outline: none;
   box-shadow: inset 0 0 0 2px var(--color-foreground);
 }
 

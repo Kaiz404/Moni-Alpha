@@ -274,6 +274,9 @@ export async function driveLedgerScreens({ browser, storage, base, check, shot, 
   await shot(a, 'activity-1440-pane');
   await pair('activity-pane-1440', 'r2/W2-Activity.png', join(OUT, 'activity-1440-pane.png'));
   const pane = a.getByRole('complementary', { name: 'Transaction' });
+  const fieldWidths = await pane.locator('.pane-field dd').evaluateAll((els) => els.map((el) => Math.round(el.getBoundingClientRect().width)));
+  check("the pane's values share one width, editable or not", fieldWidths.length >= 4 && new Set(fieldWidths).size === 1, fieldWidths);
+  check('the pane asks for its date with no browser date input', (await pane.locator('input[type="date"]').count()) === 0);
   const categoryChip = pane.locator('.pane-field').filter({ hasText: 'Category' }).locator('.field-chip');
   const categoryBefore = ((await categoryChip.textContent()) ?? '').trim();
   await categoryChip.click();
@@ -289,9 +292,6 @@ export async function driveLedgerScreens({ browser, storage, base, check, shot, 
   await a.keyboard.press('Control+z');
   await a.waitForFunction((was) => document.querySelector('aside .pane-field .field-chip')?.textContent?.trim() === was, categoryBefore, { timeout: 5000 }).catch(() => {});
   check('Ctrl Z puts the pane\'s category back', ((await categoryChip.textContent()) ?? '').trim() === categoryBefore, { categoryBefore });
-  await a.keyboard.press('x');
-  const bulk = a.getByRole('toolbar', { name: 'Selected rows' });
-  check('X ticks the open row and the Ink bulk bar appears', (await bulk.isVisible()) && /^1 selected/.test((await bulk.locator('.bulk-count').textContent()) ?? ''));
   const placed = (menu) =>
     menu.evaluate((el) => {
       const box = el.getBoundingClientRect();
@@ -313,6 +313,9 @@ export async function driveLedgerScreens({ browser, storage, base, check, shot, 
   const lastFit = await placed(a.getByRole('menu'));
   check("the last row's menu stays on screen", lastFit.onScreen && lastFit.offPane, lastFit);
   await a.keyboard.press('Escape');
+  await a.keyboard.press('x');
+  const bulk = a.getByRole('toolbar', { name: 'Selected rows' });
+  check('X ticks the open row and the Ink bulk bar appears', (await bulk.isVisible()) && /^1 selected/.test((await bulk.locator('.bulk-count').textContent()) ?? ''));
   await a.locator('.activity-table [role="row"][data-row-id]').nth(2).getByRole('checkbox').click();
   check('a second tick counts 2', /^2 selected/.test((await bulk.locator('.bulk-count').textContent()) ?? ''));
   await settle(a);
@@ -335,6 +338,34 @@ export async function driveLedgerScreens({ browser, storage, base, check, shot, 
   await third.hover();
   await a.waitForTimeout(250);
   check('pointing at a row shows its ⋯', (await third.locator('.more').evaluate((el) => getComputedStyle(el).opacity)) === '1');
+  await third.locator('.more').focus();
+  await a.keyboard.press('Enter');
+  check('Enter on ⋯ opens the menu with its first item focused', await a.evaluate(() => document.activeElement?.getAttribute('role') === 'menuitem'));
+  await a.keyboard.press('ArrowDown');
+  check('the arrow keys move through the menu', await a.evaluate(() => document.activeElement === document.querySelectorAll('[role="menu"] [role="menuitem"]')[1]));
+  await a.keyboard.press('Escape');
+  check('Esc gives the focus back to ⋯', await a.evaluate(() => document.activeElement?.classList.contains('more')));
+
+  await a.locator('.filter-chip').filter({ hasText: 'Type' }).click();
+  const typePop = a.getByRole('dialog', { name: 'Type' });
+  const typeRows = await typePop.evaluate((pop) => {
+    const inner = pop.clientWidth - 12;
+    return [...pop.querySelectorAll(".popover-row")].map((row) => Math.round(row.offsetWidth - inner));
+  });
+  check('every Type row spans its menu', typeRows.length === 4 && typeRows.every((gap) => Math.abs(gap) <= 1), typeRows);
+  await a.keyboard.press('Escape');
+  await a.locator('.filter-chip').filter({ hasText: 'Dates' }).click();
+  const dates = a.getByRole('dialog', { name: 'Dates' });
+  check("Dates shows Moni's calendar with the chosen preset ticked, no browser date inputs", (await dates.locator('input[type="date"]').count()) === 0 && (await dates.getByRole('grid').isVisible()) && (await dates.getByRole('option', { selected: true }).count()) === 1);
+  await settle(a);
+  await shot(a, 'activity-1440-dates');
+  await dates.locator('[data-day$="-10"]').click();
+  await dates.locator('[data-day$="-03"]').click();
+  await a.waitForURL(/from=\d{4}-\d{2}-03/).catch(() => {});
+  const picked = new URL(a.url()).searchParams;
+  check('two clicks on the calendar set From and To in either order', /-03$/.test(picked.get('from') ?? '') && /-10$/.test(picked.get('to') ?? ''), a.url());
+  await a.goto(`${base}/activity`);
+  await waitLoaded(a, '.activity');
 
   // One write, undone: a category changed in its cell, then Ctrl Z.
   const editRow = a.locator('.activity-table [role="row"][data-row-id]').filter({ has: a.locator('.cell') }).first();

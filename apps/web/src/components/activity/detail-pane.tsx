@@ -8,14 +8,14 @@ import {
   type FinanceTransaction,
 } from '@repo/core';
 import { decimalToMinor, type UpdateTransaction } from '@repo/types';
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useState } from 'react';
+import { DateField } from '@/components/controls/date-picker';
+import { Select } from '@/components/controls/select';
 import { Icon } from '@/components/icon';
 import { Bubble, Glyph } from '@/components/ledger/glyph';
 import { commit, planContext } from '@/lib/ledger/commit';
 import { SOURCE_ICONS, SOURCE_LABELS, clockTime, rowAmount, sourceOf } from '@/lib/ledger/format';
 import type { Ledger } from '@/lib/ledger/use-ledger';
-
-type Field = 'category' | 'wallet' | 'type' | null;
 
 /**
  * The docked detail pane (W2-Activity): J and K move, each value is a chip with its popover, merchant
@@ -38,11 +38,9 @@ export function DetailPane({
   onDelete: () => void;
 }) {
   const { projection, walletNames, aliases, calendar, now, userId, wallets } = ledger;
-  const [open, setOpen] = useState<Field>(null);
   const [editing, setEditing] = useState<'merchant' | 'amount' | 'note' | null>(null);
   const [draft, setDraft] = useState('');
   useEffect(() => {
-    setOpen(null);
     setEditing(null);
   }, [transaction.id]);
 
@@ -53,7 +51,6 @@ export function DetailPane({
   const linked = transaction.debtActivityId !== null;
   // The change's toast says it saved, with Undo, in the one bottom-left slot (#103); the field shows no note of its own.
   const save = (data: UpdateTransaction, done: string) => {
-    setOpen(null);
     setEditing(null);
     commit(planTransactionEdit(transaction.id, data, projection, planContext(userId)), done);
   };
@@ -61,20 +58,6 @@ export function DetailPane({
     .filter((category) => category.isActive && (category.userId === null || category.userId === userId) && (category.type === null || category.type === transaction.type))
     .sort((a, b) => a.displayOrder - b.displayOrder || a.name.localeCompare(b.name));
 
-  const chip = (field: Exclude<Field, null>, lead: ReactNode, text: string, options: ReactNode) => (
-    <span className="picker-anchor">
-      <button type="button" className="field-chip press" aria-haspopup="listbox" aria-expanded={open === field} disabled={linked} onClick={() => setOpen(open === field ? null : field)}>
-        {lead}
-        <span>{text}</span>
-        <Icon name="chevron-down" size={18} />
-      </button>
-      {open === field && (
-        <ul role="listbox" aria-label={field} className="popover motion-pop pane-pop">
-          {options}
-        </ul>
-      )}
-    </span>
-  );
   const inPlace = (kind: 'merchant' | 'amount', initial: string) => {
     setDraft(initial);
     setEditing(kind);
@@ -175,98 +158,102 @@ export function DetailPane({
             <div className="pane-field">
               <dt>Category</dt>
               <dd>
-                {chip(
-                  'category',
-                  <Bubble icon={row.icon} color={row.color} size={26} glyph={15} />,
-                  row.category ?? 'Pick a category',
-                  categories.map((category) => (
-                    <li key={category.id} role="option" aria-selected={category.id === transaction.categoryId} tabIndex={0} className="popover-row" onClick={() => save({ categoryId: category.id }, `Moved to ${category.name}`)}>
-                      <Bubble icon={category.icon} color={category.color} size={26} glyph={14} />
-                      {category.name}
-                    </li>
-                  )),
-                )}
+                <Select
+                  label="Category"
+                  className="field-chip press"
+                  disabled={linked}
+                  value={transaction.categoryId}
+                  text={row.category ?? 'Pick a category'}
+                  lead={<Bubble icon={row.icon} color={row.color} size={26} glyph={15} />}
+                  listClassName="pane-pop"
+                  options={categories.map((category) => ({ value: category.id, label: category.name, lead: <Bubble icon={category.icon} color={category.color} size={26} glyph={14} /> }))}
+                  onChange={(id) => save({ categoryId: id }, `Moved to ${projection.categoriesById[id]?.name ?? 'that category'}`)}
+                />
               </dd>
             </div>
           )}
           <div className="pane-field">
             <dt>Wallet</dt>
             <dd>
-              {chip(
-                'wallet',
-                <Bubble icon={projection.walletsById[transaction.walletId]?.icon} color={projection.walletsById[transaction.walletId]?.color} size={26} glyph={15} />,
-                row.kind === 'transfer' ? `${row.wallet} → ${row.toWallet}` : row.wallet,
-                wallets
+              <Select
+                label="Wallet"
+                className="field-chip press"
+                disabled={linked}
+                value={transaction.walletId}
+                listClassName="pane-pop"
+                text={row.kind === 'transfer' ? `${row.wallet} → ${row.toWallet}` : row.wallet}
+                options={wallets
                   .filter((wallet) => wallet.currency === transaction.currency)
-                  .map((wallet) => (
-                    <li key={wallet.id} role="option" aria-selected={wallet.id === transaction.walletId} tabIndex={0} className="popover-row" onClick={() => save({ walletId: wallet.id }, `Moved to ${walletNames[wallet.id] ?? wallet.name}`)}>
-                      <Bubble icon={wallet.icon} color={wallet.color} size={26} glyph={14} />
-                      {wallet.name}
-                    </li>
-                  )),
-              )}
+                  .map((wallet) => ({
+                    value: wallet.id,
+                    label: wallet.name,
+                    lead: <Bubble icon={wallet.icon} color={wallet.color} size={26} glyph={14} />,
+                  }))}
+                onChange={(id) => save({ walletId: id }, `Moved to ${walletNames[id] ?? 'that wallet'}`)}
+              />
             </dd>
           </div>
           {transaction.type !== 'transfer' && (
             <div className="pane-field">
               <dt>Type</dt>
               <dd>
-                {chip(
-                  'type',
-                  <span className="mini-bubble">
-                    <Glyph name="swap-vertical" size={15} />
-                  </span>,
-                  transaction.type === 'income' ? 'Income' : 'Expense',
-                  (['expense', 'income'] as const).map((type) => (
-                    <li key={type} role="option" aria-selected={type === transaction.type} tabIndex={0} className="popover-row" onClick={() => save({ type, categoryId: null }, type === 'income' ? 'Now income' : 'Now an expense')}>
-                      {type === 'income' ? 'Income' : 'Expense'}
-                    </li>
-                  )),
-                )}
+                <Select
+                  label="Type"
+                  className="field-chip press"
+                  disabled={linked}
+                  value={transaction.type}
+                  lead={
+                    <span className="mini-bubble">
+                      <Glyph name="swap-vertical" size={15} />
+                    </span>
+                  }
+                  options={[
+                    { value: 'expense', label: 'Expense' },
+                    { value: 'income', label: 'Income' },
+                  ]}
+                  onChange={(type) => save({ type, categoryId: null }, type === 'income' ? 'Now income' : 'Now an expense')}
+                />
               </dd>
             </div>
           )}
           <div className="pane-field">
             <dt>Date</dt>
             <dd>
-              <label className="field-chip field-chip-date press">
-                <span className="mini-bubble">
-                  <Glyph name="calendar-blank-outline" size={15} />
-                </span>
-                <span>
-                  {dateLabel(calendar.dayKey(transaction.transactionDate), calendar.dayKey(now))} · {clockTime(transaction.transactionDate, calendar.zone)}
-                </span>
-                <input
-                  type="date"
-                  aria-label="Date"
-                  disabled={linked}
-                  value={calendar.dayKey(transaction.transactionDate)}
-                  onChange={(event) => {
-                    if (!event.target.value) return;
-                    const at = new Date(transaction.transactionDate);
-                    const shift = calendar.startOfDay(event.target.value).getTime() - calendar.startOfDay(calendar.dayKey(at)).getTime();
-                    save({ transactionDate: new Date(at.getTime() + shift).toISOString() }, 'Date saved');
-                  }}
-                />
-              </label>
+              <DateField
+                label="Date"
+                className="field-chip press"
+                disabled={linked}
+                value={calendar.dayKey(transaction.transactionDate)}
+                today={calendar.dayKey(now)}
+                lead={
+                  <span className="mini-bubble">
+                    <Glyph name="calendar-blank-outline" size={15} />
+                  </span>
+                }
+                onChange={(day) => {
+                  const at = new Date(transaction.transactionDate);
+                  const shift = calendar.startOfDay(day).getTime() - calendar.startOfDay(calendar.dayKey(at)).getTime();
+                  save({ transactionDate: new Date(at.getTime() + shift).toISOString() }, 'Date saved');
+                }}
+              />
             </dd>
           </div>
           <div className="pane-field">
             <dt>Place</dt>
-            <dd className="field-static">
+            <dd className="field-chip field-static">
               <span className="mini-bubble">
                 <Glyph name="map-marker-outline" size={15} />
               </span>
-              {transaction.locationName ?? 'No place'}
+              <span className="select-value">{transaction.locationName ?? 'No place'}</span>
             </dd>
           </div>
           <div className="pane-field">
             <dt>Source</dt>
-            <dd className="field-static">
+            <dd className="field-chip field-static">
               <span className="mini-bubble">
                 <Glyph name={SOURCE_ICONS[source]} size={15} />
               </span>
-              {SOURCE_LABELS[source]}
+              <span className="select-value">{SOURCE_LABELS[source]}</span>
             </dd>
           </div>
         </dl>

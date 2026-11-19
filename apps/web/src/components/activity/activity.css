@@ -873,53 +873,37 @@ html[data-layout='phone'] .icon-round-line {
 }
 
 .pane-field dd {
+  flex: none;
+  width: min(64%, 240px);
   margin: 0;
   min-width: 0;
 }
 
+/* Every value in the pane: one width, shape and height, editable or not (#100). */
 .field-chip {
   position: relative;
-  height: 36px;
-  max-width: 230px;
-  padding: 0 10px 0 5px;
+  box-sizing: border-box;
+  width: 100%;
+  height: 38px;
+  padding: 0 10px 0 6px;
   border-radius: 9999px;
   background: var(--color-sand);
-  display: inline-flex;
+  display: flex;
   align-items: center;
   gap: 8px;
   font-size: 15px;
   font-weight: 600;
   white-space: nowrap;
-  cursor: pointer;
-}
-
-.field-chip > span:not(.mini-bubble):not(.bubble) {
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 .field-chip:hover:not(:disabled) {
   background: var(--color-hairline);
 }
 
-.field-chip-date input {
-  position: absolute;
-  inset: 0;
-  opacity: 0;
-  cursor: pointer;
-}
-
-.field-static {
-  max-width: 230px;
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 15px;
-  font-weight: 600;
-  padding-right: 10px;
+.field-chip.field-static {
+  background: transparent;
+  box-shadow: inset 0 0 0 1.5px var(--color-hairline);
+  color: var(--color-ink-2);
 }
 
 .mini-bubble {
@@ -1119,10 +1103,6 @@ html[data-layout='phone'] .pane-note {
 html[data-layout='phone'] .pg {
   width: 44px;
   height: 44px;
-}
-
-html[data-layout='phone'] .field-chip-date input {
-  inset: -4px 0;
 }
 
 html[data-layout='phone'] :is(.kind-chip, .pencil) {

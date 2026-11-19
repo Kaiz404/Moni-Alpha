@@ -13,7 +13,6 @@ import {
 import type { MinorAmount } from '@repo/types';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { useState } from 'react';
 import { Select } from '@/components/controls/select';
 import { Icon } from '@/components/icon';
 import { Bubble, Glyph } from '@/components/ledger/glyph';
