@@ -30,10 +30,6 @@ jest.mock('@/lib/notifications/capture-status', () => ({ markCaptureStatus: jest
 jest.mock('@/lib/notifications/installed-apps', () => ({
   getCachedInstalledAppsMap: () => new Map([['com.maybank2u.life', { label: 'Maybank' }]]),
 }));
-jest.mock('@/lib/store/auth-sync', () => {
-  const { observable } = jest.requireActual('@legendapp/state');
-  return { authReady$: observable(false) };
-});
 jest.mock('@/lib/store', () => {
   const { observable } = jest.requireActual('@legendapp/state');
   const tables = {
@@ -49,7 +45,8 @@ jest.mock('@/lib/store', () => {
   };
   return {
     ...tables,
-    ALL_STORE_OBSERVABLES: Object.values(tables),
+    authReady$: observable(false),
+    store: { all: Object.values(tables) },
     enableStoreSync: jest.fn(async () => {}),
     whenStoreSynced: async () => {},
     assertMigrated: () => {},

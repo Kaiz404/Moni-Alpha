@@ -2,7 +2,7 @@
  * Real HTTP AI client for the Go backend (apps/backend).
  * Active when EXPO_PUBLIC_AI_API_URL is set.
  */
-import { AI_CONSENT_REASON } from '@/lib/ai/consent/model';
+import { AI_CONSENT_REASON } from '@repo/core';
 
 import { AI_API_BASE_URL, AI_BACKEND_CONFIGURED, AI_UNAVAILABLE_REASON } from './config';
 import { buildImagePayload } from './image-payload';

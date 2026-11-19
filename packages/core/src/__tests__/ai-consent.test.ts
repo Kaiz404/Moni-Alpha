@@ -1,3 +1,6 @@
+import type { AiConsentScope } from '@repo/types';
+import { describe, expect, it } from 'vitest';
+
 import {
   aiUseAllowed,
   applyChange,
@@ -5,10 +8,10 @@ import {
   notNow,
   turnOnFor,
   UNASKED,
-} from '@/lib/ai/consent/model';
+} from '../ai-consent';
 
 const AT = '2026-10-14T01:12:00.000Z';
-const row = (use: string, granted: boolean) => ({ use, granted, created_at: AT }) as const;
+const row = (use: AiConsentScope, granted: boolean) => ({ use, granted, created_at: AT });
 
 describe('the choice read from the consent record', () => {
   it('is unasked until the master switch has a row', () => {

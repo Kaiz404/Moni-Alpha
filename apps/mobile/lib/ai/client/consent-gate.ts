@@ -1,4 +1,4 @@
-import { AI_CONSENT_REASON } from '@/lib/ai/consent/model';
+import { AI_CONSENT_REASON } from '@repo/core';
 
 import type { AiClient } from './types';
 

@@ -14,8 +14,7 @@ import {
 } from '@repo/types';
 import { supabase } from '@/lib/supabase/client';
 import { syncBillReminders } from '@/lib/notifications/bill-reminder';
-import { clearStore } from '@/lib/store';
-import { authReady$, initAuthReadySync } from '@/lib/store/auth-sync';
+import { store } from '@/lib/store';
 import {
   configureGoogleSignIn,
   signInWithGoogleNative,
@@ -60,7 +59,7 @@ export function AuthProvider({
 
   useEffect(() => {
     configureGoogleSignIn();
-    initAuthReadySync();
+    const stopWatching = store.watchSession();
 
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
@@ -75,7 +74,10 @@ export function AuthProvider({
       setUser(session?.user ?? null);
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      stopWatching();
+      subscription.unsubscribe();
+    };
   }, []);
 
   const signIn = async (email: string, password: string) => {
@@ -139,16 +141,16 @@ export function AuthProvider({
     return signInWithGoogleNative();
   };
 
-  const signOut = async () => {
-    authReady$.set(false);
-    clearDefaultWalletCache();
-    // A capture waiting on the backend must not land in the next account on this phone.
-    pruneCompleted();
-    await syncBillReminders([]).catch(() => {});
-    await clearStore();
-    await signOutGoogleNative();
-    await supabase.auth.signOut();
-  };
+  const signOut = () =>
+    store.signOutEverywhere({
+      beforeClear: async () => {
+        clearDefaultWalletCache();
+        // A capture waiting on the backend must not land in the next account on this phone.
+        pruneCompleted();
+        await syncBillReminders([]).catch(() => {});
+      },
+      afterClear: signOutGoogleNative,
+    });
 
   return (
     <AuthContext.Provider

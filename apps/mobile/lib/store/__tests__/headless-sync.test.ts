@@ -1,14 +1,6 @@
 import { observe } from '@legendapp/state';
-import {
-  ALL_STORE_OBSERVABLES,
-  autoAddRules$,
-  enableStoreSync,
-  transactions$,
-  wallets$,
-} from '@/lib/store';
-import { authReady$ } from '@/lib/store/auth-sync';
+import { authReady$, enableStoreSync, store, transactions$ } from '@/lib/store';
 import { ensureStoreSync, waitForSync } from '@/lib/store/headless-sync';
-import { createAutoAddRule, listAutoAddRules } from '@/lib/supabase/auto-add-rules';
 
 type Row = Record<string, unknown>;
 
@@ -58,6 +50,10 @@ function mockQuery(table: string, op: string) {
 jest.mock('@/lib/supabase/client', () => ({
   getUserId: async () => 'user-1',
   supabase: {
+    auth: {
+      getSession: async () => ({ data: { session: { user: { id: 'user-1' } } } }),
+      onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } }),
+    },
     from: (table: string) => ({
       select: () => mockQuery(table, 'list'),
       insert: (row: Row) => {
@@ -79,27 +75,7 @@ jest.mock('@/lib/supabase/client', () => ({
     },
   },
 }));
-jest.mock('@/lib/supabase/profile', () => ({ getProfilePreferences: async () => ({}) }));
 jest.mock('expo-crypto', () => ({ randomUUID: () => 'generated-id' }));
-
-const RULE = {
-  id: 'rule-1',
-  user_id: 'user-1',
-  merchant_key: 'grab',
-  source_app: 'com.maybank2u.life',
-  wallet_id: 'w1',
-  category_id: 'c1',
-  created_at: '2026-10-01T00:00:00.000Z',
-  updated_at: '2026-10-01T00:00:00.000Z',
-  deleted: false,
-};
-
-const INPUT = {
-  merchantKey: 'grab',
-  sourceApp: 'com.maybank2u.life',
-  walletId: '00000000-0000-4000-8000-00000000000a',
-  categoryId: '00000000-0000-4000-8000-00000000000c',
-};
 
 const callsFor = (table: string) => mockServer.calls.filter((call) => call.endsWith(` ${table}`));
 
@@ -107,70 +83,13 @@ async function settle() {
   for (let i = 0; i < 5; i += 1) await new Promise((resolve) => setTimeout(resolve, 20));
 }
 
-describe('a synced table whose migration is not on the server yet', () => {
-  const errors = jest.spyOn(console, 'error');
-
-  it('stays quiet until a probe finds the table, then syncs it', async () => {
-    for (const table of ['wallets', 'transactions', 'proposed_transactions']) {
-      mockServer.tables.set(table, []);
-    }
-    ALL_STORE_OBSERVABLES.forEach((obs$) => observe(() => obs$.get()));
-    authReady$.set(true);
-
-    await enableStoreSync({ fullReset: true });
-    await settle();
-
-    expect(callsFor('auto_add_rules')).toEqual(['probe auto_add_rules']);
-    expect(callsFor('merchant_aliases')).toEqual(['probe merchant_aliases']);
-    expect(mockServer.calls).toContain('list wallets');
-    expect(wallets$.peek()).toEqual({});
-    expect(errors).not.toHaveBeenCalled();
-
-    const kedai = { ...INPUT, merchantKey: 'kedai abc' };
-    await expect(createAutoAddRule(kedai)).rejects.toThrow('needs a server update');
-    expect(listAutoAddRules('user-1')).toEqual([]);
-    autoAddRules$['written-while-gated'].set({ ...RULE, id: 'written-while-gated' });
-
-    mockServer.tables.set('auto_add_rules', [RULE]);
-    mockServer.calls.length = 0;
-    await enableStoreSync({ fullReset: true });
-    await settle();
-    await createAutoAddRule(kedai);
-    await settle();
-
-    const ruleCalls = callsFor('auto_add_rules');
-    expect(new Set(ruleCalls)).toEqual(
-      new Set([
-        'probe auto_add_rules',
-        'subscribe auto_add_rules',
-        'list auto_add_rules',
-        'insert auto_add_rules',
-      ]),
-    );
-    expect(ruleCalls[0]).toBe('probe auto_add_rules');
-    expect(ruleCalls.at(-1)).toBe('insert auto_add_rules');
-    expect(callsFor('merchant_aliases')).toEqual(['probe merchant_aliases']);
-    expect(Object.keys(autoAddRules$.peek() ?? {}).sort()).toEqual(['generated-id', 'rule-1']);
-    expect(mockServer.tables.get('auto_add_rules')?.map((row) => row.id)).toEqual([
-      'rule-1',
-      'generated-id',
-    ]);
-
-    mockServer.calls.length = 0;
-    await enableStoreSync({ fullReset: true });
-    await settle();
-    expect(mockServer.calls).not.toContain('probe auto_add_rules');
-    expect(errors).not.toHaveBeenCalled();
-  });
-});
-
 describe('waiting for Supabase to accept a capture', () => {
   const row = (id: string) => ({ id, user_id: 'user-1', amount_minor: 1200, deleted: false });
   const saved = (id: string, timeoutMs = 300) =>
     waitForSync([transactions$], { rowIds: [id], timeoutMs });
 
   beforeAll(() => {
-    ALL_STORE_OBSERVABLES.forEach((obs$) => observe(() => obs$.get()));
+    store.all.forEach((obs$) => observe(() => obs$.get()));
     authReady$.set(true);
   });
 

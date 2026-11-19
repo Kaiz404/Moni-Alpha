@@ -1,10 +1,11 @@
 import { createClient } from '@supabase/supabase-js';
+import type { Database } from '@repo/types/database';
 import { authMMKV } from '@/lib/mmkv/auth';
 
 const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL!;
 const supabasePublishableKey = process.env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY!;
 
-export const supabase = createClient(supabaseUrl, supabasePublishableKey, {
+export const supabase = createClient<Database>(supabaseUrl, supabasePublishableKey, {
   auth: {
     storage: authMMKV,
     autoRefreshToken: true,

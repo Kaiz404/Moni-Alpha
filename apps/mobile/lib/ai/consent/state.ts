@@ -6,7 +6,7 @@ import { aiConsent$ } from '@/lib/store';
 import { recordAiConsent } from '@/lib/supabase/ai-consent';
 import { supabase } from '@/lib/supabase/client';
 
-import { aiUseAllowed, applyChange, UNASKED, type AiConsent, type ConsentChange } from './model';
+import { aiUseAllowed, applyChange, UNASKED, type AiConsent, type ConsentChange } from '@repo/core';
 
 /** A fresh install waits this long for the first fetch before it treats the user as unasked. */
 const FIRST_FETCH_MS = 5_000;

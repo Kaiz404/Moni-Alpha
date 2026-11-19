@@ -9,7 +9,7 @@ import { Text } from '@/components/ui/text';
 import { Toggle } from '@/components/ui/toggle';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { startBackgroundProcessor } from '@/lib/ai/background-processor';
-import { turnOnFor, UNASKED, type AiConsent, type ConsentChange } from '@/lib/ai/consent/model';
+import { turnOnFor, UNASKED, type AiConsent, type ConsentChange } from '@repo/core';
 import { changeAiConsent, useAiConsent } from '@/lib/ai/consent/state';
 import { chatTime } from '@/components/chat/chat-time';
 import { dateLabel } from '@repo/core';

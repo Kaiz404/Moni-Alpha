@@ -16,7 +16,8 @@ apps/web/         Next.js 16 web app — being rebuilt on shared packages (docs/
 packages/types/   @repo/types — Zod schemas + inferred TS types
 packages/design/  @repo/design — design tokens; generates mobile global.css and web tokens.css
 packages/brand/   @repo/brand — Cat Pebble mascot, wordmark and lockups as SVG/HTML strings
-packages/core/    @repo/core — pure domain rules both apps share (calendar, glossary, ledger rules, money month, finance read model)
+packages/core/    @repo/core — pure domain rules both apps share (calendar, glossary, ledger rules, money month, finance read model, AI consent)
+packages/data/    @repo/data — the synced Legend-State store (`createMoniStore`) and Supabase row gateway both apps mount
 supabase/         Migrations, RLS, storage
 docs/             ARCHITECTURE / SETUP / DATABASE / AI / research
 ```
@@ -25,7 +26,7 @@ Run: `pnpm --filter moni dev` / `pnpm --filter backend dev` / `pnpm --filter web
 
 ## Architecture rules
 
-- **Mobile syncs directly to Supabase** via Legend-State (`apps/mobile/lib/store/index.ts`) with MMKV persistence and soft deletes. There is NO PowerSync, NO SQLite/Drizzle, NO local LLM — do not reintroduce them.
+- **Mobile syncs directly to Supabase** via the shared Legend-State store (`@repo/data`'s `createMoniStore`, mounted in `apps/mobile/lib/store/index.ts`) with MMKV persistence and soft deletes. There is NO PowerSync, NO SQLite/Drizzle, NO local LLM — do not reintroduce them.
 - **Mobile and web never talk to each other.** Both are Supabase clients under RLS (soft deletes only); the web has no app-data API routes. Shared needs go through Supabase (data; Edge Functions for secret-key operations), the Go backend (AI), or workspace packages (`packages/*`, source TS: logic shared, views written per platform, `docs/adr/`).
 - **Go backend is stateless**: verifies Supabase user JWTs via JWKS (ES256), calls OpenRouter, returns extractions. No database access.
 - **Supabase keys**: new system only — `sb_publishable_...` in clients, `sb_secret_...` server-side. Never use legacy anon/service_role keys.
