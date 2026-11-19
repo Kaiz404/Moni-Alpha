@@ -6,6 +6,7 @@ import { useState } from 'react';
 import { FieldError } from '@/components/auth/fields';
 import { Icon } from '@/components/icon';
 import { signOut } from '@/components/shell/shell-store';
+import { ExportDataButton } from './export-data-button';
 import { deleteAccount } from '@/lib/account-functions';
 import { confirmsDeletion, DELETED, deletionFailure } from '@/lib/delete-account';
 import './account.css';
@@ -34,11 +35,11 @@ export function WhatIsDeleted() {
 export const FOR_GOOD = "It goes at once and can't be undone. Copies in Moni's backups are gone within 7 days.";
 
 /**
- * W2-Parts "Delete your account": what goes, a copy first, then DELETE typed in any letter case. The
+ * W2-Parts "Delete your account": what goes, Export data for a copy first, then DELETE typed in any letter case. The
  * button stays Sand until the word matches. Deleting calls the Edge Function with this browser's access
  * token, signs out the usual way and leaves the app for the done page.
  */
-export function DeleteAccountForm({ cancelHref }: { cancelHref: string }) {
+export function DeleteAccountForm({ cancelHref, userId, zone }: { cancelHref: string; userId: string; zone: string | null }) {
   const router = useRouter();
   const [typed, setTyped] = useState('');
   const [deleting, setDeleting] = useState(false);
@@ -71,7 +72,8 @@ export function DeleteAccountForm({ cancelHref }: { cancelHref: string }) {
       <WhatIsDeleted />
       <div className="delete-note">
         <Icon name="download" size={20} />
-        <span>Keep a copy first: on your phone, Profile › Export data makes a CSV of every transaction.</span>
+        <span style={{ flex: '1 1 auto' }}>Keep a copy first: a CSV of every transaction.</span>
+        <ExportDataButton userId={userId} zone={zone} className="btn delete-export press" />
       </div>
       <p className="delete-line">{FOR_GOOD}</p>
       <div>
