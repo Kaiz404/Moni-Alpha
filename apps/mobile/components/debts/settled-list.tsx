@@ -93,7 +93,7 @@ function ClosedRow({ line }: { line: DebtLine }) {
   const settled = line.state === 'settled';
   const meta = [settled ? 'Settled' : 'Written off', note]
     .filter(Boolean)
-    .join(' · ');
+    .join(', ');
   return (
     <Press
       testID={tid('debts', 'settled', id)}

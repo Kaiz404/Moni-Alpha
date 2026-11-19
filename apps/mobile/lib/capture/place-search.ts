@@ -120,7 +120,7 @@ export function distanceWords(metres: number | null): string | null {
 
 /**
  * "Near you": the user's own places within `NEAR_M` of the map's centre, nearest first, each
- * under its most visited shop with "120 m · 4 visits". Free, and the likeliest answers.
+ * under its most visited shop with "120 m, 4 visits". Free, and the likeliest answers.
  */
 export function nearPlaces(centre: LatLng | null, input: PastPlaceInput): PlaceOption[] {
   if (!centre) return [];
@@ -137,7 +137,7 @@ export function nearPlaces(centre: LatLng | null, input: PastPlaceInput): PlaceO
         ...placeBase(place),
         id: place.id,
         title: shop?.name ?? place.name,
-        meta: [distanceWords(metres), visits].filter(Boolean).join(' · '),
+        meta: [distanceWords(metres), visits].filter(Boolean).join(', '),
         shop: shop?.name ?? null,
       };
     });

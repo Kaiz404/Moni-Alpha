@@ -26,7 +26,7 @@ const WORDS: Record<Lang, { draft: string; draftNote: string; effective: string;
 
 export function legalMetadata(kind: LegalKind, lang: Lang): Metadata {
   return {
-    title: `${LEGAL_DOCS[kind][lang].title} · Moni`,
+    title: `${LEGAL_DOCS[kind][lang].title} | Moni`,
     alternates: {
       canonical: legalPath(kind, lang),
       languages: Object.fromEntries(LANGS.map((l) => [l.lang, legalPath(kind, l.lang)])),

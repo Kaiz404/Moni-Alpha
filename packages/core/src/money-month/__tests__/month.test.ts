@@ -164,32 +164,32 @@ describe('buildMoneyMonth', () => {
       debtsDue: [{ name: 'Mei', amountMinor: sen(40) }],
     });
     expect(month.words.budgetLine).toBe(
-      'RM443 left for 18 days after bills and RM40 to Mei · RM24 a day',
+      'RM443 left for 18 days after bills and RM40 to Mei, RM24 a day',
     );
   });
 
   it('gives Home and Budget the same RM24 a day after bills and debts due (D1)', () => {
     const { words } = build(october());
     expect(words).toEqual({
-      budgetLine: 'RM443 left for 18 days after bills and RM40 to Mei · RM24 a day',
-      homeLine: 'RM443 left for 18 days · RM24 a day',
-      leftLine: 'RM443 left for 18 days · RM24 a day',
+      budgetLine: 'RM443 left for 18 days after bills and RM40 to Mei, RM24 a day',
+      homeLine: 'RM443 left for 18 days, RM24 a day',
+      leftLine: 'RM443 left for 18 days, RM24 a day',
       debts: 'RM40 to Mei',
     });
   });
 
   it('names the debt on Home only when no bill is due to carry it', () => {
     expect(build(october({ bills: [] })).words).toEqual({
-      budgetLine: 'RM643 left for 18 days after RM40 to Mei · RM35 a day',
-      homeLine: 'RM643 left for 18 days after RM40 to Mei · RM35 a day',
-      leftLine: 'RM643 left for 18 days · RM35 a day',
+      budgetLine: 'RM643 left for 18 days after RM40 to Mei, RM35 a day',
+      homeLine: 'RM643 left for 18 days after RM40 to Mei, RM35 a day',
+      leftLine: 'RM643 left for 18 days, RM35 a day',
       debts: 'RM40 to Mei',
     });
   });
 
   it('keeps "RM0 a day" on Budget and drops it on Home once less than RM1 a day is left', () => {
     expect(build(october({ monthlyTotalMinor: sen(1372) })).words).toEqual({
-      budgetLine: 'RM15 left for 18 days after bills and RM40 to Mei · RM0 a day',
+      budgetLine: 'RM15 left for 18 days after bills and RM40 to Mei, RM0 a day',
       homeLine: 'RM15 left for 18 days',
       leftLine: 'RM15 left for 18 days',
       debts: 'RM40 to Mei',
@@ -329,7 +329,7 @@ describe('moneyLedger', () => {
       ['unifi', '2026-10-20', 'due'],
     ]);
     expect(build(ledger).words.budgetLine).toBe(
-      'RM1,571 left for 18 days after bills and RM40 to Mei · RM87 a day',
+      'RM1,571 left for 18 days after bills and RM40 to Mei, RM87 a day',
     );
   });
 });

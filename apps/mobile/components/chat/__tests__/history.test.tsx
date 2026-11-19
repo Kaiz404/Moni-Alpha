@@ -32,7 +32,7 @@ describe('Past days', () => {
     render(<ChatHistoryScreen />);
     expect(screen.getByText('2 messages')).toBeTruthy();
     expect(screen.getByText('1 draft')).toBeTruthy();
-    expect(screen.getByText('· Is Netflix covered?')).toBeTruthy();
+    expect(screen.getByText('Is Netflix covered?')).toBeTruthy();
   });
 
   it('shows the sleepy cat before any day, and the thinking cat with Clear search when nothing matches', () => {

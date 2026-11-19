@@ -83,7 +83,7 @@ export function CheckInCard({ currency }: { currency: string }) {
         >
           {daysSinceConfirmed === null
             ? 'Check-in'
-            : `Check-in · last done ${daysSinceConfirmed} days ago`}
+            : `Check-in, last done ${daysSinceConfirmed} days ago`}
         </Text>
         <Text
           variant="cardTitle"

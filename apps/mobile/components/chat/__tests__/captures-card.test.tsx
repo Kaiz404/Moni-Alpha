@@ -67,7 +67,7 @@ describe('CapturesCard', () => {
   it('lists the waiting captures and settles one in place', async () => {
     render(<CapturesCard proposalIds={['p1', 'p2']} />);
     expect(screen.getByTestId('chat.answer.title')).toHaveTextContent('2 captures, RM109.80');
-    expect(screen.getByText('−RM23.40 · Maybank alert')).toBeTruthy();
+    expect(screen.getByText('−RM23.40, Maybank alert')).toBeTruthy();
 
     await act(async () => fireEvent.press(screen.getByTestId('chat.captures.not-mine.p1')));
     expect(proposedTransactions$.p1.status.peek()).toBe('rejected');

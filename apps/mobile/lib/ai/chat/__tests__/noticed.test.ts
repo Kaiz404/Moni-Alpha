@@ -27,7 +27,7 @@ describe('noticedItems', () => {
       },
       {
         title: '3 captures to review',
-        meta: 'RM115.80 · not in your totals yet',
+        meta: 'RM115.80, not in your totals yet',
         icon: 'inbox-arrow-down',
         tint: 'lilac',
         target: { kind: 'ask', question: 'Show my 3 captures' },

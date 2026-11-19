@@ -47,7 +47,7 @@ export type HistoryRow =
 export type HistoryGroup = { key: string; label: string; rows: HistoryRow[] };
 
 function historyRow(proposal: ReviewedProposal, lookups: Lookups, now: Date): HistoryRow {
-  const meta = `${sourceLabel(proposalSource(proposal.sourceType))} · ${captureTime(proposal.transactionDate ?? proposal.createdAt, now)}`;
+  const meta = `${sourceLabel(proposalSource(proposal.sourceType))}, ${captureTime(proposal.transactionDate ?? proposal.createdAt, now)}`;
   const row = approvedRow(proposal, lookups.transactionsById, lookups);
   if (row) return { kind: 'approved', id: proposal.id, transactionId: row.id, row, meta };
   const direction =
@@ -290,14 +290,14 @@ export function HistoryToggle({
       testID={tid('review', 'history', 'toggle')}
       accessibilityRole="button"
       accessibilityState={{ expanded: open }}
-      accessibilityLabel={count ? `Recently reviewed, ${count}` : 'Recently reviewed'}
+      accessibilityLabel={count ? `${count} recently reviewed` : 'Recently reviewed'}
       onPress={onPress}
       radius={{ rest: 22, pressed: 16 }}
       pressedClassName="bg-hairline"
       className="h-11 flex-row items-center gap-1.5 self-center bg-sand px-[18px]"
     >
       <Text className="text-[15px] leading-[21px] font-display-semibold text-foreground">
-        {count ? `Recently reviewed · ${count}` : 'Recently reviewed'}
+        {count ? `${count} recently reviewed` : 'Recently reviewed'}
       </Text>
       <IconSymbol
         name={open ? 'chevron-up' : 'chevron-down'}

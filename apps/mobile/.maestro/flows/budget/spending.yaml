@@ -36,7 +36,7 @@ tags:
     text: 'RM[\d,]+\.\d\d'
 - assertVisible:
     id: budget.spending.meta
-    text: '.* · \d+ payments?'
+    text: '.*, \d+ payments?'
 - assertVisible: Mamak Ali
 - assertNotVisible:
     id: activity.search
@@ -84,7 +84,7 @@ tags:
     index: 0
 - assertVisible:
     id: budget.spending.meta
-    text: '.* · \d+ payments?'
+    text: '.*, \d+ payments?'
 - assertVisible:
     id: budget\.transaction\..*
     index: 0

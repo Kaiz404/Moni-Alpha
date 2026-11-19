@@ -1,4 +1,5 @@
-import { join } from 'node:path';
+import { readdirSync, readFileSync } from 'node:fs';
+import { join, relative, sep } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import ts from 'typescript';
 import { termsIn } from './copy-rules.mjs';
@@ -7,17 +8,57 @@ import {
   baseList,
   ratchet,
   readList,
-  readSource,
-  sourceFiles,
   writeList,
 } from './ratchet.mjs';
 
-const ALLOW_PATH = join(
-  MOBILE_ROOT,
-  'scripts',
-  'lint',
-  'copy-allow.txt',
-);
+const REPO_ROOT = join(MOBILE_ROOT, '..', '..');
+
+// Each app's copy, with its own allow list. The packages both apps share are checked with the phone.
+const TARGETS = {
+  mobile: {
+    roots: [
+      'apps/mobile/app',
+      'apps/mobile/components',
+      'apps/mobile/lib',
+      ...readdirSync(join(REPO_ROOT, 'packages')).map(
+        (name) => `packages/${name}/src`,
+      ),
+    ],
+    allow: join(MOBILE_ROOT, 'scripts', 'lint', 'copy-allow.txt'),
+    command: 'pnpm --filter moni lint:copy',
+  },
+  web: {
+    roots: ['apps/web/src'],
+    allow: join(REPO_ROOT, 'apps', 'web', 'scripts', 'copy-allow.txt'),
+    command: 'pnpm --filter web lint:copy',
+  },
+};
+
+function sourceFiles(roots) {
+  const files = [];
+  const walk = (dir) => {
+    let entries;
+    try {
+      entries = readdirSync(dir, { withFileTypes: true });
+    } catch {
+      return;
+    }
+    for (const entry of entries) {
+      const path = join(dir, entry.name);
+      if (entry.isDirectory()) {
+        if (!['__tests__', 'node_modules', 'generated'].includes(entry.name))
+          walk(path);
+      } else if (
+        /\.(tsx?|m?js)$/.test(entry.name) &&
+        !/\.(d|test|spec)\.[tj]sx?$/.test(entry.name)
+      ) {
+        files.push(relative(REPO_ROOT, path).split(sep).join('/'));
+      }
+    }
+  };
+  for (const root of roots) walk(join(REPO_ROOT, root));
+  return files.sort();
+}
 
 // Slots whose string is shown or read aloud. Any other attribute or property (className, name of an
 // icon, testID, route names) holds code, not copy.
@@ -98,25 +139,25 @@ function copyTexts(fileName, source) {
     true,
   );
   const texts = [];
-  const add = (node, text) => {
+  const add = (node, text, shown) => {
     const clean = text.replace(/\s+/g, ' ').trim();
     if (!clean) return;
     const { line } = sourceFile.getLineAndCharacterOfPosition(
       node.getStart(sourceFile),
     );
-    texts.push({ line: line + 1, text: clean });
+    texts.push({ line: line + 1, text: clean, shown });
   };
   const visit = (node) => {
     switch (node.kind) {
       case ts.SyntaxKind.JsxText:
-        add(node, node.text);
+        add(node, node.text, true);
         break;
       case ts.SyntaxKind.StringLiteral:
-        if (displaySlot(node)) add(node, node.text);
+        add(node, node.text, Boolean(displaySlot(node)));
         break;
       case ts.SyntaxKind.NoSubstitutionTemplateLiteral:
       case ts.SyntaxKind.TemplateExpression:
-        if (displaySlot(node)) add(node, templateText(node));
+        add(node, templateText(node), Boolean(displaySlot(node)));
         break;
     }
     ts.forEachChild(node, visit);
@@ -126,8 +167,8 @@ function copyTexts(fileName, source) {
 }
 
 export function copyHits(file, source) {
-  return copyTexts(file, source).flatMap(({ line, text }) =>
-    termsIn(text).map(({ term, reason }) => ({
+  return copyTexts(file, source).flatMap(({ line, text, shown }) =>
+    termsIn(text, { shown }).map(({ term, reason }) => ({
       file,
       line,
       term,
@@ -154,24 +195,26 @@ export function checkCopy({ hits, allow, base }) {
 }
 
 function main() {
-  const hits = sourceFiles().flatMap((file) =>
-    copyHits(file, readSource(file)),
+  const name = process.argv.find((arg) => arg in TARGETS) ?? 'mobile';
+  const target = TARGETS[name];
+  const hits = sourceFiles(target.roots).flatMap((file) =>
+    copyHits(file, readFileSync(join(REPO_ROOT, file), 'utf8')),
   );
   if (process.argv.includes('--write')) {
     writeList(
-      ALLOW_PATH,
+      target.allow,
       [
         'v1 copy that breaks docs/redesign/glossary.md and may stay until its screen is rebuilt.',
         'Entries are `<file>: <term>: <text>`. The list only shrinks.',
-        'Regenerate: pnpm --filter moni lint:copy --write',
+        `Regenerate: ${target.command} --write`,
       ],
       hits.map(allowKey),
     );
   }
-  const { ref, entries: base } = baseList(ALLOW_PATH);
+  const { ref, entries: base } = baseList(target.allow);
   const { newHits, stale, grownBy } = checkCopy({
     hits,
-    allow: readList(ALLOW_PATH),
+    allow: readList(target.allow),
     base,
   });
   for (const hit of newHits) {
@@ -183,15 +226,11 @@ function main() {
     console.log(`stale allow entry: ${entry}`);
   if (grownBy)
     console.log(
-      `copy-allow.txt grew by ${grownBy} entries over ${ref}`,
-    );
-  if (base === null)
-    console.log(
-      `no copy-allow.txt at ${ref}, nothing to compare its size with`,
+      `${relative(REPO_ROOT, target.allow)} grew by ${grownBy} entries over ${ref}`,
     );
   const allowed = hits.length - newHits.length;
   console.log(
-    `${newHits.length} new copy hits, ${allowed} allowed v1 hits`,
+    `${name}: ${newHits.length} new copy hits, ${allowed} allowed v1 hits`,
   );
   process.exitCode =
     newHits.length || stale.length || grownBy ? 1 : 0;

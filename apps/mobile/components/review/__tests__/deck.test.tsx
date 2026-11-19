@@ -1150,7 +1150,7 @@ describe('Recently reviewed', () => {
     await decide('notMine');
 
     expect(screen.getByText('Recently reviewed')).toBeTruthy();
-    expect(screen.getByText(/^Today · /)).toBeTruthy();
+    expect(screen.getByText(/^Today, /)).toBeTruthy();
     expect(screen.getByText('Not mine')).toBeTruthy();
     expect(screen.getByText('−RM86.40')).toBeTruthy();
     expect(screen.queryByTestId('review.history.p1.move-back')).toBeNull();
@@ -1202,10 +1202,10 @@ describe('Recently reviewed', () => {
     await show(<ReviewScreen />);
 
     expect(screen.getByText('Nothing to review')).toBeTruthy();
-    expect(screen.getByText(/^Yesterday · /)).toBeTruthy();
+    expect(screen.getByText(/^Yesterday, /)).toBeTruthy();
     expect(screen.getByText('−RM12.50')).toBeTruthy();
-    expect(screen.getByText(/^Notification · Yesterday, /)).toBeTruthy();
-    expect(screen.getByText(/^Moni · Yesterday, /)).toBeTruthy();
+    expect(screen.getByText(/^Notification, Yesterday, /)).toBeTruthy();
+    expect(screen.getByText(/^Moni, Yesterday, /)).toBeTruthy();
 
     fireEvent.press(screen.getByTestId('review.history.ok'));
 
@@ -1266,7 +1266,7 @@ describe('Recently reviewed', () => {
     expect(screen.getByText('GRAB')).toBeTruthy();
     expect(screen.queryByText('KEDAI ABC')).toBeNull();
 
-    await act(async () => fireEvent.press(screen.getByText('Recently reviewed · 1')));
+    await act(async () => fireEvent.press(screen.getByText('1 recently reviewed')));
 
     expect(screen.queryByTestId('review.deck')).toBeNull();
     expect(screen.getByText('KEDAI ABC')).toBeTruthy();
@@ -1278,6 +1278,6 @@ describe('Recently reviewed', () => {
 
     expect(screen.getByText('KEDAI ABC')).toBeTruthy();
     expect(screen.getByText('1 of 2')).toBeTruthy();
-    expect(screen.queryByText('Recently reviewed · 1')).toBeNull();
+    expect(screen.queryByText('1 recently reviewed')).toBeNull();
   });
 });

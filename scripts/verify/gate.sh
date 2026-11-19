@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # The static gate every change to this repo passes before it lands: types, lint and tests for every
-# workspace, the mobile custom lints, Go vet, and a production web build. Prints one PASS or FAIL
+# workspace, the mobile custom lints, the web copy lint, Go vet, and a production web build. Prints one PASS or FAIL
 # line per check and exits non-zero if any failed. --fast skips the web build and the test suites.
 set -uo pipefail
 root=$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)
@@ -28,6 +28,7 @@ check lint pnpm turbo lint --output-logs=errors-only
 for l in lint:tokens lint:copy lint:taste lint:test-ids lint:flow-ids lint:unreferenced; do
   check "moni-$l" pnpm --filter moni "$l"
 done
+check web-lint:copy pnpm --filter web lint:copy
 check go-vet bash -c 'cd apps/backend && go vet ./...'
 if ! $fast; then
   check test pnpm turbo test --output-logs=errors-only

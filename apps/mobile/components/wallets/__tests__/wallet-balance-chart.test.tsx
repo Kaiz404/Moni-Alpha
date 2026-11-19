@@ -45,7 +45,7 @@ describe('WalletBalanceChart', () => {
     chart();
     expect(shown()).toEqual({ window: 'October', earlier: true, later: false });
     expect(screen.getByText('Up RM4,401.10 since 1 Oct')).toBeTruthy();
-    expect(screen.getByText('In +RM4,550.00 · Out −RM45.90 · Moved RM100.00')).toBeTruthy();
+    expect(screen.getByText('In +RM4,550.00, Out −RM45.90, Moved RM100.00')).toBeTruthy();
     expect(screen.getByTestId('wallet.chart.plot').props.accessibilityValue.text).toBe(
       'Today, RM5,000.00',
     );

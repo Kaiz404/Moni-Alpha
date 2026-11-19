@@ -16,7 +16,7 @@ tags:
 - tapOn:
     id: profile.row.categories
 - assertVisible: Categories
-- assertVisible: 'Presets · since .*'
+- assertVisible: 'Presets since .*'
 - takeScreenshot: a2-categories
 
 - tapOn:

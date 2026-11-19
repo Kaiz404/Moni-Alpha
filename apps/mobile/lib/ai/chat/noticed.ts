@@ -32,7 +32,7 @@ export function noticedItems(
   if (waiting.count > 0)
     items.push({
       title: `${waiting.count} ${waiting.count === 1 ? 'capture' : 'captures'} to review`,
-      meta: `${money(waiting.amount)} · not in your totals yet`,
+      meta: `${money(waiting.amount)}, not in your totals yet`,
       icon: 'inbox-arrow-down',
       tint: 'lilac',
       target: {

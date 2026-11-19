@@ -123,10 +123,10 @@ export function dayLabel(day: DayKey, today: DayKey): string {
   return relativeDay(day, today) ?? dateLabel(day, today);
 }
 
-/** A day group's heading: "Today · Wed 14 Oct", or the date alone. */
+/** A day group's heading: "Today, Wed 14 Oct", or the date alone. */
 export function dayHeading(day: DayKey, today: DayKey): string {
   const relative = relativeDay(day, today);
-  return relative ? `${relative} · ${dateLabel(day, today)}` : dateLabel(day, today);
+  return relative ? `${relative}, ${dateLabel(day, today)}` : dateLabel(day, today);
 }
 
 /** "today", "tomorrow", or "on Fri 16 Oct"; a past day reads "today". */

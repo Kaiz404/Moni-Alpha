@@ -29,5 +29,5 @@ tags:
     id: activity.hold.edit-category
 - assertVisible: Edit category
 - tapOn: 'Food.*'
-- assertVisible: 'Food.* · .*'
+- assertVisible: 'Food.*, .*'
 - takeScreenshot: a1-edit-category

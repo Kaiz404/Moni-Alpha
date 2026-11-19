@@ -107,7 +107,7 @@ export default function WalletsScreen() {
                     className="text-muted"
                     accessibilityRole="header"
                   >
-                    {isMain ? `${name} · main currency` : name}
+                    {isMain ? `${name}, main currency` : name}
                   </Text>
                   <Text className="text-[13px] leading-[18px] font-display-semibold text-ink-2">
                     {formatMoney(group.totalMinor, group.currency)}

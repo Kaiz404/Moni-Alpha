@@ -158,7 +158,7 @@ export function WalletBalanceChart({
     flows.movedMinor ? `Moved ${formatMoney(flows.movedMinor, wallet.currency)}` : null,
   ]
     .filter(Boolean)
-    .join(' · ');
+    .join(', ');
 
   return (
     <View

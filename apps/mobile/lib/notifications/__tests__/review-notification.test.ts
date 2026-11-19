@@ -113,13 +113,13 @@ beforeEach(() => {
 afterEach(() => jest.useRealTimers());
 
 describe('review notification', () => {
-  it('posts GRAB · −RM12.00 from Maybank with the alert, the category and the review actions', async () => {
+  it('posts −RM12.00 at GRAB from Maybank with the alert, the category and the review actions', async () => {
     seed();
     await postReviewNotification('p1');
     expect(lastShown()).toEqual({
       identifier: 'review-p1',
       content: {
-        title: 'GRAB · \u2212RM12.00',
+        title: '\u2212RM12.00 at GRAB',
         subtitle: 'Maybank',
         body: "MAYBANK: You've spent RM12.00 at GRAB on 14/10 12:41.\nMoni: Food & Dining.",
         color: '#236B47',
@@ -254,7 +254,7 @@ describe('the Added automatically digest', () => {
     expect(lastShown()).toMatchObject({
       identifier: 'moni-auto-added',
       content: {
-        title: 'Added \u00b7 GRAB \u00b7 \u2212RM12.00',
+        title: 'Added \u2212RM12.00 at GRAB',
         body: 'No budget for Food & Dining yet',
         data: { kind: 'auto-added', transactionId: 't1', count: 1 },
         categoryIdentifier: 'moni-auto-added',
@@ -266,8 +266,8 @@ describe('the Added automatically digest', () => {
     await postAutoAddedNotification('t2');
     await postAutoAddedNotification('t2');
     expect(lastShown().content).toMatchObject({
-      title: '2 added automatically today \u00b7 \u2212RM27.80',
-      body: 'Latest: KFC \u00b7 \u2212RM15.80\nNo budget for Food & Dining yet',
+      title: '2 added automatically today, \u2212RM27.80 in total',
+      body: 'Latest: \u2212RM15.80 at KFC\nNo budget for Food & Dining yet',
       data: { kind: 'auto-added', transactionId: 't2', count: 2 },
     });
 
@@ -277,7 +277,7 @@ describe('the Added automatically digest', () => {
 
     added('t3', 'MYDIN', '5.00');
     await postAutoAddedNotification('t3');
-    expect(lastShown().content.title).toBe('2 added automatically today \u00b7 \u2212RM17.00');
+    expect(lastShown().content.title).toBe('2 added automatically today, \u2212RM17.00 in total');
   });
 
   it('starts the count over on a new day, and a tap opens the one transaction', async () => {
@@ -285,7 +285,7 @@ describe('the Added automatically digest', () => {
     added('t9', 'GRAB', '9.00');
     await postAutoAddedNotification('t9');
     const shown = lastShown();
-    expect(shown.content.title).toBe('Added \u00b7 GRAB \u00b7 \u2212RM9.00');
+    expect(shown.content.title).toBe('Added \u2212RM9.00 at GRAB');
     expect(
       autoAddedTargetOf({
         actionIdentifier: 'expo.modules.notifications.actions.DEFAULT',

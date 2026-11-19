@@ -165,7 +165,7 @@ function PlacePane({ ledger, data, onPick, place, categoryWords }: SideProps & {
         {sharePercent(place.totalMinor, placesTotal(places))}% of your spending{categoryWords} at places
       </span>
       <section className="pane-section" aria-label="Visits by day">
-        <span className="caps">By day · {range.label}</span>
+        <span className="caps">By day, {range.label}</span>
         <div className="visit-bars" style={{ gap: many ? 3 : 6 }}>
           {days.map((day, at) => {
             const value = byDay[day.day];
@@ -174,7 +174,7 @@ function PlacePane({ ledger, data, onPick, place, categoryWords }: SideProps & {
             const label = at === days.length - 1 ? 'Today' : `${day.date}${day.month ? ` ${day.month}` : ''}`;
             const tick = at === 0 || at === days.length - 1 || day.date === 1 || (!many && at % 2 === 0);
             return (
-              <span key={day.day} className="visit-col" title={value ? `${day.date} ${day.month ?? ''} · ${formatMoney(value.totalMinor, currency)}`.replace('  ', ' ') : undefined}>
+              <span key={day.day} className="visit-col" title={value ? `${formatMoney(value.totalMinor, currency)} on ${day.date}${day.month ? ` ${day.month}` : ''}` : undefined}>
                 <span className="visit-bar grow" style={{ height, ['--bar' as string]: category?.color ? legacyColor(category.color) : undefined }}/>
                 {value && value.totalMinor === dayMax && <span className="num visit-top">{formatMoney(value.totalMinor, currency)}</span>}
                 <span className="visit-tick" data-edge={at === 0 ? 'start' : at === days.length - 1 ? 'end' : undefined}>
@@ -204,7 +204,7 @@ function PlacePane({ ledger, data, onPick, place, categoryWords }: SideProps & {
         })}
       </section>
       <section className="pane-section pane-pays" aria-label="Payments">
-        <span className="caps">Payments · newest first</span>
+        <span className="caps">Payments, newest first</span>
         <ul>
           {place.transactions.map((transaction) => {
             const category = projectionCategory(ledger, transaction.categoryId);
@@ -214,7 +214,7 @@ function PlacePane({ ledger, data, onPick, place, categoryWords }: SideProps & {
                   <Bubble icon={category?.icon} color={category?.color ?? null} size={26} glyph={15} />
                   <span className="pay-name">{merchantName(transaction.merchant, ledger.aliases) ?? transaction.description ?? category?.name ?? 'Payment'}</span>
                   <span className="meta pay-meta">
-                    {rowDay(transaction.transactionDate, now, calendar)} · {ledger.walletNames[transaction.walletId] ?? 'Wallet'}
+                    {rowDay(transaction.transactionDate, now, calendar)}, {ledger.walletNames[transaction.walletId] ?? 'Wallet'}
                   </span>
                   <span className="num pay-amount">−{formatMoney(transaction.amountMinor, currency)}</span>
                 </Link>

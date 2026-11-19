@@ -30,7 +30,7 @@ tags:
 - assertVisible:
     id: wallet.alerts
 - assertVisible: Maybank
-- assertVisible: "(.*· )?(No captures yet|Last captured .*)"
+- assertVisible: "(.*, )?(No captures yet|Last captured .*)"
 - takeScreenshot: wallet-linked-app
 
 # Location off and back on.

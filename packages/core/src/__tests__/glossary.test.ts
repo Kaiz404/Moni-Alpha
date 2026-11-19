@@ -59,7 +59,7 @@ describe('day words', () => {
   });
 
   it('heads a day group with the relative day and the date', () => {
-    expect(dayHeading('2026-10-14', today)).toBe('Today · Wed 14 Oct');
+    expect(dayHeading('2026-10-14', today)).toBe('Today, Wed 14 Oct');
     expect(dayHeading('2026-10-12', today)).toBe('Mon 12 Oct');
   });
 

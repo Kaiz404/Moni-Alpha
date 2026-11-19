@@ -1,0 +1,5 @@
+# v1 copy that breaks docs/redesign/glossary.md and may stay until its screen is rebuilt.
+# Entries are `<file>: <term>: <text>`. The list only shrinks.
+# Regenerate: pnpm --filter web lint:copy --write
+apps/web/src/components/legal/privacy-en.tsx: Tags: Wallets and their balances, transactions, categories, tags, budgets, debts, bills, merchant names you set and the rules you make, such as &quot;Don&apos;t ask about similar&quot;.
+apps/web/src/components/legal/privacy-ms.tsx: Tags: Dompet dan bakinya, transaksi, kategori, tag, belanjawan, hutang, bil, nama peniaga yang anda tetapkan dan peraturan yang anda buat, seperti &quot;Don&apos;t ask about similar&quot;.

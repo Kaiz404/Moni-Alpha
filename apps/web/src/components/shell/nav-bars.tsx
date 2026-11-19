@@ -129,7 +129,7 @@ export function Rail() {
   );
 }
 
-/** The phone layout's floating Ink tab bar: Home · Activity · + · Budget · Debts (docs/redesign/tokens.md). */
+/** The phone layout's floating Ink tab bar: Home, Activity, +, Budget and Debts (docs/redesign/tokens.md). */
 export function TabBar() {
   const { run } = useShellApi();
   const pathname = usePathname();

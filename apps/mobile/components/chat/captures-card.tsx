@@ -87,7 +87,7 @@ function CaptureRow({
     proposal.amountMinor === null
       ? 'No amount'
       : formatSignedMoney(direction, proposal.amountMinor, proposal.currency);
-  const meta = `${amount} · ${proposal.walletId ? captureSourceLabel(proposal) : 'no wallet yet'}`;
+  const meta = `${amount}, ${proposal.walletId ? captureSourceLabel(proposal) : 'no wallet yet'}`;
 
   const decide = async (kind: Settled, run: () => Promise<ReviewResult>) => {
     const result = await run();

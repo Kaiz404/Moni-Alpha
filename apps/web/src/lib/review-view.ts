@@ -38,9 +38,9 @@ export function waitingLine(waiting: readonly Capture[], currency: string): stri
   return `${formatMoney(total as MinorAmount, currency)} not counted yet`;
 }
 
-/** The list's toolbar: "3 waiting · oldest first". */
+/** The list's toolbar: "3 waiting, oldest first". */
 export function waitingCount(count: number): string {
-  return `${count} waiting · oldest first`;
+  return `${count} waiting, oldest first`;
 }
 
 /**
@@ -61,7 +61,7 @@ export function approvedText({
   const head =
     approved.length === 1 ? (category ? `Added to ${category}` : `${captureName(approved[0]!)} approved`) : `${approved.length} approved`;
   const rule = ruleSaved && approved.length === 1 ? ', similar ones will be Auto' : '';
-  const wait = skipped.length ? ` · ${captureName(skipped[0]!)} still needs a wallet` : '';
+  const wait = skipped.length ? `. ${captureName(skipped[0]!)} still needs a wallet` : '';
   return `${head}${rule}${wait}`;
 }
 
@@ -77,5 +77,5 @@ export function caughtUpLine(reviewed: readonly ReviewedProposal[], today: strin
   if (todays.length === 0) return 'Nothing waiting. New captures land here.';
   const added = approved.filter((proposal) => proposal.currency === currency).reduce((sum, proposal) => sum + Number(proposal.amountMinor ?? 0), 0);
   const counts = [approved.length ? `${approved.length} approved` : null, notMine ? `${notMine} not mine` : null].filter(Boolean).join(', ');
-  return approved.length ? `${counts} · ${formatMoney(added as MinorAmount, currency)} added to ${monthName(today.slice(0, 7))}` : counts;
+  return approved.length ? `${counts}, ${formatMoney(added as MinorAmount, currency)} added to ${monthName(today.slice(0, 7))}` : counts;
 }

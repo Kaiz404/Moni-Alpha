@@ -67,7 +67,7 @@ describe('MapTeaser', () => {
     expect(screen.getByText('Google map', { includeHiddenElements: true })).toBeTruthy();
     expect(screen.getByText('RM293', { includeHiddenElements: true })).toBeTruthy();
     expect(mockMapProps.mock.calls[0][0].liteMode).toBe(true);
-    expect(screen.queryByText(/places? ·|had a place/)).toBeNull();
+    expect(screen.queryByText(/places?,|had a place/)).toBeNull();
   });
 
   it('pins only the three biggest places', () => {

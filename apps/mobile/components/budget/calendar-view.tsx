@@ -193,7 +193,7 @@ export function CalendarView({
                 paceNote,
               ]
                 .filter(Boolean)
-                .join(' · ')}
+                .join(', ')}
             </Text>
             <ListCard>
               {rows.slice(0, DAY_ROWS).map((transaction) => (

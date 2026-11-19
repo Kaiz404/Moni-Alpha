@@ -38,7 +38,7 @@ tags:
 - tapOn:
     id: activity.hold.change-wallet
 - tapOn: Cash
-- assertVisible: '.* · Cash'
+- assertVisible: '.*, Cash'
 - takeScreenshot: f4-l4-changed-wallet
 - longPressOn:
     id: 'activity\.transaction\..*'

@@ -4,7 +4,7 @@ import { HeroBubble } from './hero-parts';
 import { MdiIcon } from './parts';
 
 const ROWS = [
-  { icon: mdiSilverwareForkKnife, tone: 'coral', name: 'Mamak Ali', meta: 'Today · Cash', amount: '−RM13.20' },
+  { icon: mdiSilverwareForkKnife, tone: 'coral', name: 'Mamak Ali', meta: 'Today, Cash', amount: '−RM13.20' },
   { icon: mdiMedicalBag, tone: 'pink', name: 'Guardian', meta: 'Yesterday', amount: '−RM15.90' },
   { icon: mdiSilverwareForkKnife, tone: 'coral', name: 'GRAB*FOOD', meta: 'Yesterday', amount: '−RM45.90' },
 ];

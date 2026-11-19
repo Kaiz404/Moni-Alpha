@@ -46,7 +46,7 @@ function riseIn(reduceMotion: boolean) {
 export function MerchantRow({ row, section, rises, onSave, onForget }: MerchantRowProps) {
   const reduceMotion = useReducedMotion();
   const tokens = useThemeTokens();
-  const meta = row.wallet ? `${payments(row.count)} · ${row.wallet}` : payments(row.count);
+  const meta = row.wallet ? `${payments(row.count)}, ${row.wallet}` : payments(row.count);
   return (
     <Animated.View entering={rises ? riseIn(reduceMotion) : undefined}>
       <InPlaceField
@@ -73,7 +73,7 @@ export function MerchantRow({ row, section, rises, onSave, onForget }: MerchantR
                 >
                   {row.raw}
                 </Text>
-                {` · ${meta}`}
+                {` ${meta}`}
               </Text>
               {editor}
               {section === 'to-name' && row.guess && draft.trim() !== row.guess ? (
@@ -141,8 +141,8 @@ export function MerchantRow({ row, section, rises, onSave, onForget }: MerchantR
                     numberOfLines={1}
                   >
                     {row.name
-                      ? `${row.raw} · ${payments(row.count)}`
-                      : `${payments(row.count)} · ${row.wallet ?? 'no wallet'}`}
+                      ? `${row.raw}, ${payments(row.count)}`
+                      : `${payments(row.count)}, ${row.wallet ?? 'no wallet'}`}
                   </Text>
                 </View>
               </View>,

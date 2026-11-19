@@ -11,7 +11,7 @@ function linkLabel(link: WalletAlertLink): string | null {
   );
 }
 
-/** "Bank · MYR · alerts from MAE": the line under a wallet's name on the form preview and the wallet page. */
+/** "Bank, MYR, alerts from MAE": the line under a wallet's name on the form preview and the wallet page. */
 export function walletMeta(
   type: string,
   currency: string,
@@ -23,5 +23,5 @@ export function walletMeta(
   const app = linkLabel(link);
   return [label, currency, app ? `alerts from ${app}` : null]
     .filter(Boolean)
-    .join(' · ');
+    .join(', ');
 }

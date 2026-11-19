@@ -227,7 +227,7 @@ export default function ImportPreviewScreen() {
               <PlainRow
                 key={table}
                 title={TABLES[table].title}
-                trailing={`${plan.counts[table].fresh} new · ${plan.counts[table].here} here`}
+                trailing={`${plan.counts[table].fresh} new, ${plan.counts[table].here} here`}
               />
             ))}
           </ListCard>
@@ -247,7 +247,7 @@ export default function ImportPreviewScreen() {
         )}
         {plan.problems.length ? (
           <ListSection
-            label={`Can't be read · ${plan.problems.length}`}
+            label={`${plan.problems.length} can't be read`}
             gap={8}
             className="mt-2"
           >

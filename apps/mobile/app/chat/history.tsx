@@ -307,7 +307,7 @@ export default function ChatHistoryScreen() {
                           className="min-w-0 flex-1 text-muted"
                           numberOfLines={1}
                         >
-                          {`· ${row.preview}`}
+                          {row.preview}
                         </Text>
                       ) : null}
                     </View>

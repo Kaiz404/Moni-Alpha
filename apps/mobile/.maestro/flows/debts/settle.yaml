@@ -34,6 +34,6 @@ tags:
 - scrollUntilVisible:
     element:
       id: 'debts\.settled\..*'
-      text: 'Suresh, Settled · Suresh lunch, .*'
+      text: 'Suresh, Settled, Suresh lunch, .*'
     centerElement: true
 - takeScreenshot: d1-l6-settled-list

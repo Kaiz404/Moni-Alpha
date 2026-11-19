@@ -96,7 +96,7 @@ export function ReviewCard({ ledger, setup }: { ledger: Ledger; setup: Checklist
                     <span className="num row-amount">{formatMoney(capture.amountMinor ?? 0, capture.currency)}</span>
                   </span>
                   <span className="row-meta" data-tone={capture.walletId ? 'lilac' : 'lemon'}>
-                    {who} · {where} · {clockTime(capture.transactionDate ?? capture.createdAt, calendar.zone)}
+                    {who}, {where} at {clockTime(capture.transactionDate ?? capture.createdAt, calendar.zone)}
                   </span>
                 </span>
               </Link>

@@ -72,7 +72,7 @@ export function DebtHistory({
           const amount = `${plus ? '+' : ''}${formatMoney(activity.amountMinor, debt.currency)}`;
           const meta = [dayLabel(deviceCalendar.dayKey(activity.activityDate), deviceCalendar.dayKey(new Date())), where]
             .filter(Boolean)
-            .join(' · ');
+            .join(', ');
           const body = (
             <>
               <View

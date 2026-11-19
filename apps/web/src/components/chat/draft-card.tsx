@@ -88,7 +88,7 @@ export function DraftCard({ message, ledger }: { message: DraftMessage; ledger: 
       }}
     >
       <div className="draft-top">
-        <span className="caps">Draft · Change category</span>
+        <span className="caps">Draft category change</span>
         <span className="caps num">
           {draft.rows.length} {draft.rows.length === 1 ? 'row' : 'rows'}
         </span>

@@ -63,7 +63,7 @@ export function DuplicateSheet({
       deviceCalendar.dayKey(at),
       deviceCalendar.dayKey(new Date()),
     ) === 'Today' && hit.row.wallet
-      ? `${clockTime(at)} · ${hit.row.wallet}`
+      ? `${clockTime(at)}, ${hit.row.wallet}`
       : rowMeta(hit.row, 'date');
 
   return (

@@ -132,10 +132,10 @@ export default function CategoriesScreen() {
         row.currency === currency &&
         row.budgetAmountMinor !== null,
     );
-    if (!budget?.budgetAmountMinor) return `${amount} · no budget`;
+    if (!budget?.budgetAmountMinor) return `${amount}, no budget`;
     const left = Number(budget.budgetAmountMinor) - spent(category);
     return left < 0
-      ? `${amount} · ${formatMoney(-left, currency, { whole: true })} over`
+      ? `${amount}, ${formatMoney(-left, currency, { whole: true })} over`
       : `${amount} of ${formatMoney(budget.budgetAmountMinor, currency, { whole: true })}`;
   };
 
@@ -218,7 +218,7 @@ export default function CategoriesScreen() {
         {presets.length ? (
           <View className="gap-1.5">
             <View className="px-1.5">
-              <SectionLabel>{`Presets · since ${since}`}</SectionLabel>
+              <SectionLabel>{`Presets since ${since}`}</SectionLabel>
             </View>
             <ListCard>
               {presets.map((category) => (

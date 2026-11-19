@@ -70,9 +70,9 @@ const LIST_TYPE: Record<string, string> = {
 /** The line under a wallet's name on All wallets: its type, and whether bank alerts reach it. */
 export function walletListMeta(wallet: Pick<FinanceWallet, 'type' | 'currency'>, main: boolean, alertsOn: boolean): string {
   const type = LIST_TYPE[wallet.type] ?? 'Wallet';
-  if (!main) return `${type} · ${currencyName(wallet.currency).plural}`;
+  if (!main) return `${type}, ${currencyName(wallet.currency).plural}`;
   if (wallet.type === 'cash' && !alertsOn) return 'In your pocket';
-  return alertsOn ? `${type} · alerts on` : type;
+  return alertsOn ? `${type}, alerts on` : type;
 }
 
 export type WalletGroup = { currency: string; main: boolean; wallets: FinanceWallet[]; totalMinor: number };

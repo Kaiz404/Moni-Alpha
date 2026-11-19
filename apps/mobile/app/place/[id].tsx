@@ -258,7 +258,7 @@ export default function PlaceScreen() {
       <MapHeader
         scope="place"
         title={place.name}
-        subtitle={[place.area, range.span && spanLabel(range.span)].filter(Boolean).join(' · ')}
+        subtitle={[place.area, range.span && spanLabel(range.span)].filter(Boolean).join(', ')}
         action={{
           name: 'directions',
           icon: 'directions',

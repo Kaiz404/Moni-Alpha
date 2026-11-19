@@ -337,7 +337,7 @@ export default function EditBudgetsScreen() {
                               className="text-muted"
                               numberOfLines={1}
                             >
-                              {`${was !== undefined && was !== cap ? `Was ${whole(was)} · ` : ''}${spent(category.id)} spent`}
+                              {`${was !== undefined && was !== cap ? `Was ${whole(was)}, ` : ''}${spent(category.id)} spent`}
                             </Text>
                           </View>
                           {editor

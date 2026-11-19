@@ -69,7 +69,7 @@ describe('CheckInCard', () => {
   it('asks about the main-currency wallet only, in its own currency', () => {
     render(<CheckInCard currency="MYR" />);
     expect(screen.getByText('Is Maybank still RM2,900.00?')).toBeTruthy();
-    expect(screen.getByText('Check-in · last done 40 days ago')).toBeTruthy();
+    expect(screen.getByText('Check-in, last done 40 days ago')).toBeTruthy();
     expect(screen.queryByText(/DBS/)).toBeNull();
   });
 

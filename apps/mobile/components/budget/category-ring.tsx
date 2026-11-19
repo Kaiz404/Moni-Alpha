@@ -516,7 +516,7 @@ export function CategoryRing({
                   style={{ maxWidth: NUMBER_WIDTH }}
                 >
                   {selected.members.length
-                    ? `${selected.members.length} categories · ${Math.max(1, Math.round(selected.share * 100))}%`
+                    ? `${selected.members.length} categories, ${Math.max(1, Math.round(selected.share * 100))}%`
                     : shareOf(selected.share, of)}
                 </Text>
               </Animated.View>

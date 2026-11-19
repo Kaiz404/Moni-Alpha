@@ -30,7 +30,7 @@ export function DayGrid({ ledger, places, days, rangeLabel, emptyLine, litId, on
     <section aria-label="Day by day" className="card day-grid-card" data-only="sidebar rail rail-one-column">
       <div className="card-head">
         <h2 className="card-title">Day by day</h2>
-        <span className="meta">Weekends shaded · {rangeLabel}</span>
+        <span className="meta">Weekends shaded, {rangeLabel}</span>
       </div>
       <div className="day-grid" style={columns}>
         <div className="day-axis" aria-hidden="true">
@@ -74,7 +74,7 @@ export function DayGrid({ ledger, places, days, rangeLabel, emptyLine, litId, on
                   const dotColor = projectionCategory(ledger, value?.categoryId ?? null)?.color;
                   const size = value ? Math.round((big ? 10 : 8) + (big ? 16 : 10) * Math.sqrt(value.totalMinor / max)) : 0;
                   return (
-                    <span key={day.day} className="day-cell" data-weekend={day.weekend || undefined} title={value ? `${place.name} · ${day.date} ${day.month ?? ''} · ${formatMoney(value.totalMinor, currency)}` : undefined}>
+                    <span key={day.day} className="day-cell" data-weekend={day.weekend || undefined} title={value ? `${formatMoney(value.totalMinor, currency)} at ${place.name} on ${day.date}${day.month ? ` ${day.month}` : ''}` : undefined}>
                       {value && <span className="day-dot" data-day={day.day} style={{ width: size, height: size, ['--dot' as string]: dotColor ? legacyColor(dotColor) : undefined }} />}
                     </span>
                   );

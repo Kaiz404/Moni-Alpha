@@ -32,16 +32,16 @@ export function sortPlaces(places: readonly Place[], sort: PlacesQuery['sort']):
 
 const plural = (count: number, word: string) => `${count} ${word}${count === 1 ? '' : 's'}`;
 
-/** "Groceries, Food +2 · 6 visits": the two biggest categories, then how many payments. */
+/** "Groceries, Food +2 with 6 visits": the two biggest categories, then how many payments. */
 export function placeMeta(place: Place, categoryName: (id: string | null) => string): string {
   const names = place.categories.map((category) => categoryName(category.categoryId));
   const more = names.length > 2 ? ` +${names.length - 2}` : '';
-  return `${names.slice(0, 2).join(', ')}${more} · ${plural(place.count, 'visit')}`;
+  return `${names.slice(0, 2).join(', ')}${more} with ${plural(place.count, 'visit')}`;
 }
 
-/** "Kuala Lumpur · 6 payments on 4 days". */
+/** "Kuala Lumpur, 6 payments on 4 days". */
 export function placeSub(place: Place): string {
-  return `${place.area ? `${place.area} · ` : ''}${plural(place.count, 'payment')} on ${plural(place.days, 'day')}`;
+  return `${place.area ? `${place.area}, ` : ''}${plural(place.count, 'payment')} on ${plural(place.days, 'day')}`;
 }
 
 /** The summary's sentence: the hot spot and its share, or where all of it went. */

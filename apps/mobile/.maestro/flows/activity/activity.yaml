@@ -16,7 +16,7 @@ tags:
     timeout: 15000
 - assertVisible:
     id: activity.search
-- assertVisible: 'Today · .*'
+- assertVisible: 'Today, .*'
 - assertVisible:
     id: activity.chart
 - assertVisible:

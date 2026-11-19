@@ -128,7 +128,7 @@ function RowList({ title, rows, currency, today }: { title: string; rows: readon
   return (
     <section className="check-list" aria-label={title}>
       <h3 className="caps">
-        {title} · {rows.length.toLocaleString('en-US')}
+        {rows.length.toLocaleString('en-US')} {title.toLowerCase()}
       </h3>
       {rows.slice(0, LISTED_ROWS).map((row) => (
         <div key={row.line} className="check-row">
@@ -277,8 +277,8 @@ export function ImportSection() {
         <span className="file-name">{session.fileName}</span>
         <span className="file-meta num">
           {session.kind === 'generic'
-            ? `${plural(session.table.rows.length, 'row')} · ${plural(session.table.headers.length, 'column')} · not a Moni export, so match its columns`
-            : 'A Moni export from this account · restores what this browser doesn’t hold'}
+            ? `${plural(session.table.rows.length, 'row')} and ${plural(session.table.headers.length, 'column')}. Not a Moni export, so match its columns.`
+            : 'A Moni export from this account. It restores what this browser doesn’t hold.'}
         </span>
       </span>
       <button type="button" className="text-link press" onClick={chooseAnother} disabled={flow.step === 'check' && flow.writing !== null}>
@@ -411,7 +411,7 @@ export function ImportSection() {
                       <span>{TABLES[table].title}</span>
                     </span>
                     <span className="num">
-                      {plan.counts[table].fresh} new · {plan.counts[table].here} already here
+                      {plan.counts[table].fresh} new, {plan.counts[table].here} already here
                     </span>
                   </div>
                 ))}
@@ -424,7 +424,7 @@ export function ImportSection() {
             )}
             {plan && plan.problems.length > 0 && (
               <section className="check-list" aria-label="Rows that can't be read">
-                <h3 className="caps">Can&apos;t be read · {plan.problems.length}</h3>
+                <h3 className="caps">{plan.problems.length} can&apos;t be read</h3>
                 {plan.problems.slice(0, LISTED_ROWS).map((problem) => (
                   <div key={`${problem.line}-${problem.reason}`} className="check-row">
                     <span className="set-row-text">
@@ -566,7 +566,7 @@ function MatchColumns({
     <div className="import-body">
       <div className="map-fields">
         <span className="caps" style={{ color: 'var(--color-muted)' }}>
-          Moni field · from your file
+          Match Moni fields to your file
         </span>
         <MapRow label="Wallet">
           <Picker
@@ -612,7 +612,7 @@ function MatchColumns({
       <div className="preview">
         <div className="preview-head">
           <span className="caps" style={{ color: 'var(--color-muted)' }}>
-            Your file · first {Math.min(PREVIEW_ROWS, table.rows.length)} of {plural(table.rows.length, 'row')}
+            First {Math.min(PREVIEW_ROWS, table.rows.length)} of {plural(table.rows.length, 'row')} in your file
           </span>
         </div>
         <div role="table" aria-label="First rows of the file" className="preview-table">

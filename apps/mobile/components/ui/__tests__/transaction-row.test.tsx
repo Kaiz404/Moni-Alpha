@@ -45,7 +45,7 @@ describe('TransactionRow', () => {
       />,
     );
     expect(screen.getByText('−RM45.90')).toBeTruthy();
-    expect(screen.getByText('Food & Dining · Maybank')).toBeTruthy();
+    expect(screen.getByText('Food & Dining, Maybank')).toBeTruthy();
     fireEvent.press(screen.getByTestId('activity.row.grab'));
     expect(onPress).toHaveBeenCalledTimes(1);
   });
@@ -93,7 +93,7 @@ describe('TransactionRow', () => {
       />,
     );
     expect(screen.getByText('Auto')).toBeTruthy();
-    expect(screen.getByText('Today · Maybank')).toBeTruthy();
+    expect(screen.getByText('Today, Maybank')).toBeTruthy();
   });
 
   it('shows a pending capture unsigned with To review and no wallet yet', () => {
@@ -118,7 +118,7 @@ describe('TransactionRow', () => {
     );
     expect(screen.getByText('RM6.00')).toBeTruthy();
     expect(screen.getByText('To review')).toBeTruthy();
-    expect(screen.getByText('Today · no wallet yet')).toBeTruthy();
+    expect(screen.getByText('Today, no wallet yet')).toBeTruthy();
   });
 });
 
@@ -137,7 +137,7 @@ describe('TransactionRow pills', () => {
       />,
     );
     expect(screen.getByText(label).props.numberOfLines).toBe(1);
-    expect(screen.getByText('Today · Maybank').props.className).toContain('flex-shrink');
+    expect(screen.getByText('Today, Maybank').props.className).toContain('flex-shrink');
     expect(screen.getByText(label).props.className).not.toContain('flex-shrink');
   });
 });

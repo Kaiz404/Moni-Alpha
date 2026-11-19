@@ -17,7 +17,7 @@ tags:
     end: 50%, 75%
     duration: 400
 - extendedWaitUntil:
-    visible: 'GRAB · .RM12\.00'
+    visible: '.RM12\.00 at GRAB'
     timeout: 20000
 - assertVisible: '(?s).*Moni: .*'
 - assertVisible: Not mine
@@ -41,7 +41,7 @@ tags:
 - takeScreenshot: r2-l4-undo
 
 # A tap on the body opens the deck on that capture.
-- tapOn: 'GRAB · .RM12\.00'
+- tapOn: '.RM12\.00 at GRAB'
 - extendedWaitUntil:
     visible:
       id: review.card

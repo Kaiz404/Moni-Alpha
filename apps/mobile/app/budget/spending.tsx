@@ -109,7 +109,7 @@ function Spending({
     rows.length === 1 ? '1 payment' : `${rows.length} payments`,
   ]
     .filter(Boolean)
-    .join(' · ');
+    .join(', ');
   const total = formatMoney(totalMinor(rows), currency);
 
   const turnPage = (next: number) => {

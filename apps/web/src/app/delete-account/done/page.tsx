@@ -4,7 +4,7 @@ import { Cat, Wordmark } from '@/components/brand';
 import '@/components/account/account.css';
 
 export const metadata: Metadata = {
-  title: 'Your account is deleted · Moni',
+  title: 'Your account is deleted | Moni',
 };
 
 /** W2-Parts "Done": outside the app, because the account and every session are gone. */

@@ -45,11 +45,11 @@ export type LeftThisMonth = {
 
 /** The month's ready sentences; each is null where it does not apply. See `words.ts`. */
 export type MoneyMonthWords = {
-  /** Budget tab: "RM443 left for 18 days after bills and RM40 to Mei · RM24 a day". */
+  /** Budget tab: "RM443 left for 18 days after bills and RM40 to Mei, RM24 a day". */
   budgetLine: string | null;
   /** Home's spent card: names debts due only when no bills strip carries them. */
   homeLine: string | null;
-  /** New transaction's empty amount: "RM443 left for 18 days · RM24 a day". */
+  /** New transaction's empty amount: "RM443 left for 18 days, RM24 a day". */
   leftLine: string | null;
   /** "RM40 to Mei", or "RM60 to 2 people". */
   debts: string | null;

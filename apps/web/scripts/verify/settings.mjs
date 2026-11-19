@@ -365,7 +365,7 @@ export async function verifySettings(t) {
   await p.keyboard.press('Enter');
   await p.locator('[data-import-step="check"]').waitFor({ timeout: 5000 }).catch(() => {});
   const lists = { fresh: await p.getByRole('region', { name: 'New' }).textContent().catch(() => ''), here: await p.getByRole('region', { name: 'Already here' }).textContent().catch(() => '') };
-  check('Enter goes to Check the file, which lists the new and already-here rows', lists.fresh.includes(fresh[1].merchant) && lists.here.includes(`Already here · ${known.length}`), lists);
+  check('Enter goes to Check the file, which lists the new and already-here rows', lists.fresh.includes(fresh[1].merchant) && lists.here.includes(`${known.length} already here`), lists);
   const nothingYet = await rest(`transactions?merchant=like.VERIFY*${run}&select=id`);
   check('nothing is written before Add', nothingYet.length === 0, nothingYet);
   await shot(p, 'settings-import-1440-check');

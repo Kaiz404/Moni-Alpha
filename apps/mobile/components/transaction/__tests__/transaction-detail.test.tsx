@@ -112,7 +112,7 @@ afterEach(() => {
 describe('Transaction detail', () => {
   it('shows only the date and time under a notification row\'s name', () => {
     render(<TransactionDetailScreen />);
-    expect(screen.getByText(`${dateLabel(deviceCalendar.dayKey(mockRow.transactionDate), deviceCalendar.dayKey(new Date()))} · 8:48 pm`)).toBeTruthy();
+    expect(screen.getByText(`${dateLabel(deviceCalendar.dayKey(mockRow.transactionDate), deviceCalendar.dayKey(new Date()))} at 8:48 pm`)).toBeTruthy();
     expect(screen.queryByText(/Alert says/)).toBeNull();
     expect(screen.queryByText('Keeps the slip with this transaction')).toBeNull();
   });

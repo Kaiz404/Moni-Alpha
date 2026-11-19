@@ -405,7 +405,7 @@ export default function BillScreen() {
                         variant="meta"
                         className="text-muted"
                       >
-                        {once ? 'Bill · just once' : 'Bill · every month'}
+                        {once ? 'One-time bill' : 'Monthly bill'}
                       </Text>
                     </View>
                   </View>
@@ -581,7 +581,7 @@ export default function BillScreen() {
                         variant="meta"
                         className="text-muted"
                       >
-                        {`Skipped · ${monthName(period)}`}
+                        {`Skipped in ${monthName(period)}`}
                       </Text>
                     </View>
                     <Text

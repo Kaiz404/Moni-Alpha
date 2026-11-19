@@ -13,7 +13,7 @@ export function PromoPanel() {
         <div className="num" style={{ fontSize: 52, lineHeight: '56px', fontWeight: 700, letterSpacing: '-0.03em', marginTop: 6 }}>
           RM24
         </div>
-        <div style={{ fontSize: 15, color: 'var(--color-ink-2)' }}>RM443 left for 18 days · RM24 a day</div>
+        <div style={{ fontSize: 15, color: 'var(--color-ink-2)' }}>RM443 left for 18 days, RM24 a day</div>
         <div className="promo-track">
           <span />
         </div>

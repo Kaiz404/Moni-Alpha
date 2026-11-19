@@ -16,7 +16,7 @@ describe('review words', () => {
   it('sums what waits in the main currency only, or says nothing waits', () => {
     expect(waitingLine([capture('GRAB*FOOD', 2340), capture('Jaya Grocer', 8640), capture('Steam', 999, 'USD')], 'MYR')).toBe('RM109.80 not counted yet');
     expect(waitingLine([], 'MYR')).toBe('Nothing waiting');
-    expect(waitingCount(3)).toBe('3 waiting · oldest first');
+    expect(waitingCount(3)).toBe('3 waiting, oldest first');
   });
 
   it('names one approval by its category, counts several, and names a capture left without a wallet', () => {
@@ -25,7 +25,7 @@ describe('review words', () => {
     );
     expect(
       approvedText({ approved: [capture('GRAB*FOOD', 2340), capture('Jaya Grocer', 8640)], category: null, ruleSaved: false, skipped: [capture('Parking KLCC', 600)] }),
-    ).toBe('2 approved · Parking KLCC still needs a wallet');
+    ).toBe('2 approved. Parking KLCC still needs a wallet');
     expect(approvedText({ approved: [capture(null, 600)], category: null, ruleSaved: false, skipped: [] })).toBe('Capture approved');
     expect(notMineText(1)).toBe('1 not mine');
     expect(captureName({ merchant: '  ', description: 'Parking' })).toBe('Parking');
@@ -42,7 +42,7 @@ describe('review words', () => {
         dayOf,
         'MYR',
       ),
-    ).toBe('2 approved, 1 not mine · RM109.80 added to October');
+    ).toBe('2 approved, 1 not mine, RM109.80 added to October');
     expect(caughtUpLine([reviewed('rejected', 600, '2026-10-14T05:02:00Z')], '2026-10-14', dayOf, 'MYR')).toBe('1 not mine');
     expect(caughtUpLine([], '2026-10-14', dayOf, 'MYR')).toBe('Nothing waiting. New captures land here.');
   });

@@ -42,9 +42,9 @@ describe('walletsCsv', () => {
     expect(walletsCsv(walletGroups(wallets, balances, 'MYR'), balances, { mb: 480000 }, new Set(['mb']))).toBe(
       [
         'Wallet,Kind,Currency name,Currency,Balance,This month',
-        'Maybank Savings,Bank · alerts on,Ringgit,MYR,2281.80,4800.00',
+        'Maybank Savings,"Bank, alerts on",Ringgit,MYR,2281.80,4800.00',
         '"CIMB, Visa",Card,Ringgit,MYR,-450.00,0.00',
-        'DBS,Bank · Singapore dollars,Singapore dollar,SGD,120.00,0.00',
+        'DBS,"Bank, Singapore dollars",Singapore dollar,SGD,120.00,0.00',
         '',
       ].join('\n'),
     );

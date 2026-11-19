@@ -211,7 +211,7 @@ const differ = (href: string, seeded: string, empty: string): Pick<RouteSpec, 's
 const ROUTES: Record<string, RouteSpec> = {
   '(auth)/login.tsx': { ...same('/login', 'Welcome back'), signedOut: true },
   '(tabs)/index.tsx': differ('/', 'Netflix RM54.90 is due tomorrow', 'Let Moni read bank alerts'),
-  '(tabs)/activity.tsx': differ('/activity', 'Food & Dining · Cash', 'No spending yet'),
+  '(tabs)/activity.tsx': differ('/activity', 'Food & Dining, Cash', 'No spending yet'),
   '(tabs)/budget.tsx': differ('/budget', 'RM200.80 due by 31 Oct', 'Start with one wallet'),
   '(tabs)/debts.tsx': differ('/debts', 'Pay Mei RM40', 'No debts yet'),
   '+not-found.tsx': same('/no-such-page', 'This screen moved'),
@@ -232,12 +232,12 @@ const ROUTES: Record<string, RouteSpec> = {
   'budget/suggest.tsx': same('/budget/suggest', 'Suggest a budget'),
   'budget/merchants.tsx': differ(
     '/budget/merchants?month=2026-10',
-    'Spent in October · 22',
+    '22 spent in October',
     'Nothing to name. Moni lists a code here once it shows up 3 times.',
   ),
   'budget/spending.tsx': differ(
     `/budget/spending?month=2026-10&categoryId=${FOOD}`,
-    'October · 13 payments',
+    'October, 13 payments',
     'No payments left here',
   ),
   'capture-log.tsx': same('/capture-log', 'Nothing captured yet'),
@@ -267,7 +267,7 @@ const ROUTES: Record<string, RouteSpec> = {
   'map.tsx': same('/map', 'Where you spend'),
   'merchants.tsx': differ(
     '/merchants',
-    'To name · 1',
+    '1 to name',
     'Nothing to name. Moni lists a code here once it shows up 3 times.',
   ),
   'place/[id].tsx': differ(`/place/${BANGSAR}`, 'Bangsar', 'Nothing here in this range'),
@@ -299,7 +299,7 @@ const ROUTES: Record<string, RouteSpec> = {
   'wallet/new.tsx': same('/wallet/new', 'Create wallet'),
   'wallets.tsx': differ(
     '/wallets',
-    'Ringgit · main currency',
+    'Ringgit, main currency',
     'Net worth',
   ),
 };
@@ -313,7 +313,7 @@ const PARAM_VISITS: [label: string, Visit][] = [
   ['budget category, month 13', { href: `/budget/${FOOD}?month=2026-13`, text: 'Spent in October' }],
   ['spending, no scope', { href: '/budget/spending', text: 'These payments are gone' }],
   ['spending, nonsense day', { href: '/budget/spending?day=2026-13-40', text: 'These payments are gone' }],
-  ['spending, nonsense month', { href: `/budget/spending?month=nonsense&categoryId=${FOOD}`, text: 'October · 13 payments' }],
+  ['spending, nonsense month', { href: `/budget/spending?month=nonsense&categoryId=${FOOD}`, text: 'October, 13 payments' }],
   ['spending, unknown category', { href: '/budget/spending?month=2026-10&categoryId=unknown', text: 'No category' }],
   ['spending, no category', { href: '/budget/spending?month=2026-10&categoryId=none', text: 'No category' }],
   ['spending, a name with & in it', { href: '/budget/spending?month=2026-10&merchant=A%26W', text: 'A&W' }],
@@ -527,13 +527,13 @@ describe('a Budget row opens its payments under Budget', () => {
     await open('sheet.option.2026-09');
     expect(text('budget.month')).toEqual(['September']);
     expect(screen.getByTestId('budget.merchant.netflix').props.accessibilityLabel).toBe(
-      'Netflix, 1 payment · Maybank, RM54.90',
+      'Netflix, 1 payment, Maybank, RM54.90',
     );
     const row = screen.getAllByTestId(/^budget\.by-category\./)[0];
     expect(row.props.accessibilityLabel).toBe('Housing, RM129.00');
     await open(row.props.testID);
     expect(text('budget.spending.total')).toEqual(['RM129.00']);
-    expect(text('budget.spending.meta')[0]).toMatch(/^September · \d+ payments?$/);
+    expect(text('budget.spending.meta')[0]).toMatch(/^September, \d+ payments?$/);
     expect(text('budget.spending.change')).toEqual(['Same as Aug']);
     expect(screen.queryByTestId('budget.back')).not.toBeNull();
     expect(screen.queryByTestId('activity.search')).toBeNull();
@@ -565,13 +565,13 @@ describe('a Budget row opens its payments under Budget', () => {
     const parts = row.props.accessibilityLabel.split(', ');
     await open(row.props.testID);
     expect(text('budget.spending.total')).toEqual([parts[parts.length - 1]]);
-    expect(text('budget.spending.meta')[0]).toMatch(/^October · Food & Dining · \d+ payments?$/);
+    expect(text('budget.spending.meta')[0]).toMatch(/^October, Food & Dining, \d+ payments?$/);
   });
 
   it("a category page's See all stays under Budget", async () => {
     await mount(`/budget/${FOOD}`, { profile: 'full', theme: 'light' });
     await open('budget.category.see-all');
-    expect(text('budget.spending.meta')).toEqual(['October · 13 payments']);
+    expect(text('budget.spending.meta')).toEqual(['October, 13 payments']);
   });
 
   it('the merchant count opens every merchant under Budget, 20 a page, searchable', async () => {
@@ -581,7 +581,7 @@ describe('a Budget row opens its payments under Budget', () => {
     );
     await open('budget.merchants.see-all');
     expect(screen.getPathname()).toBe('/budget/merchants');
-    expect(text('merchants.month.label')).toEqual(['Spent in October · 22']);
+    expect(text('merchants.month.label')).toEqual(['22 spent in October']);
     expect(text('merchants.pager.page')).toEqual(['Page 1 of 2']);
     expect(screen.queryByTestId('merchants.merchant.parking-klcc')).toBeNull();
     await open('merchants.pager.next');
@@ -592,20 +592,20 @@ describe('a Budget row opens its payments under Budget', () => {
 
     act(() => fireEvent.changeText(screen.getByTestId('merchants.search'), 'PARKING'));
     await settle();
-    expect(text('merchants.month.label')).toEqual(['Spent in October · 1']);
+    expect(text('merchants.month.label')).toEqual(['1 spent in October']);
     expect(screen.queryByTestId('merchants.pager.page')).toBeNull();
     expect(screen.queryByTestId('merchants.merchant.parking-klcc')).not.toBeNull();
     act(() => fireEvent.changeText(screen.getByTestId('merchants.search'), 'grab'));
     await settle();
-    expect(text('merchants.month.label')).toEqual(['Spent in October · 2']);
+    expect(text('merchants.month.label')).toEqual(['2 spent in October']);
     expect(screen.queryByTestId('merchants.pager.page')).toBeNull();
     expect(screen.getByTestId('merchants.merchant.grab').props.accessibilityLabel).toBe(
-      "Grab, 2 payments · Touch 'n Go, RM41.60",
+      "Grab, 2 payments, Touch 'n Go, RM41.60",
     );
     await open('merchants.merchant.grab');
     expect(screen.getPathname()).toBe('/budget/spending');
     expect(text('budget.spending.total')).toEqual(['RM41.60']);
-    expect(text('budget.spending.meta')[0]).toMatch(/^October · .*2 payments$/);
+    expect(text('budget.spending.meta')[0]).toMatch(/^October, .*2 payments$/);
     await leave();
     await leave();
     expect(screen.getPathname()).toBe('/budget');
@@ -642,7 +642,7 @@ describe('a Budget row opens its payments under Budget', () => {
     });
     await settle();
     expect(text('budget.pager.page')).toEqual(['Page 1 of 2']);
-    expect(text('budget.spending.meta')).toEqual(['October · 21 payments']);
+    expect(text('budget.spending.meta')).toEqual(['October, 21 payments']);
     await open('budget.pager.older');
     expect(text('budget.pager.page')).toEqual(['Page 2 of 2']);
     expect(text('budget.spending.total')).toEqual(['RM357.80']);

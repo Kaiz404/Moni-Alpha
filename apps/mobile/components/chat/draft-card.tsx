@@ -173,7 +173,7 @@ export function DraftCard({ message }: { message: DraftMessage }) {
             : null,
         ]
           .filter(Boolean)
-          .join(' · '),
+          .join(', '),
       }),
       () => `Added ${amountText}`,
     );
@@ -189,7 +189,7 @@ export function DraftCard({ message }: { message: DraftMessage }) {
         variant="meta"
         className="text-muted"
       >
-        {"Moni's draft · not counted yet"}
+        {"Moni's draft, not counted yet"}
       </Text>
 
       <InPlaceGroup

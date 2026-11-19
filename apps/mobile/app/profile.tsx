@@ -175,7 +175,7 @@ export default function ProfileScreen() {
               className="text-ink-2"
               numberOfLines={1}
             >
-              {google ? `${user?.email} · Google` : user?.email}
+              {google ? `${user?.email} with Google` : user?.email}
             </Text>
           </View>
         </View>

@@ -159,7 +159,7 @@ export function WalletsCard({ ledger, onDismiss, dismissed }: { ledger: Ledger; 
             <span className="wallet-name">{ask.wallet.name}</span>
             <span className="num wallet-balance">{formatMoney(ask.balanceMinor, currency)}</span>
           </div>
-          <span className="caps check-in-caps">Check-in{ask.daysAgo !== null ? ` · last done ${ask.daysAgo} days ago` : ''}</span>
+          <span className="caps check-in-caps">Check-in{ask.daysAgo !== null ? `, last done ${ask.daysAgo} days ago` : ''}</span>
           <span className="check-in-question num">
             Is {ask.wallet.name} still {formatMoney(ask.balanceMinor, currency)}?
           </span>

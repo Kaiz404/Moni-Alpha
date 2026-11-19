@@ -120,7 +120,7 @@ describe('SpentCard', () => {
     );
     expect(screen.getByTestId('home.chart.projection')).toHaveTextContent('RM77');
     expect(screen.getByTestId('home.spent.left')).toHaveTextContent(
-      'RM317 left for 18 days · RM17 a day',
+      'RM317 left for 18 days, RM17 a day',
     );
     const order = rootOrder();
     expect(order.indexOf('home.spent.left')).toBeGreaterThan(
@@ -329,7 +329,7 @@ describe('SpentCard', () => {
     );
     fireEvent.press(screen.getByTestId('home.chart.daily'));
     expect(screen.getByTestId('home.spent.left')).toHaveTextContent(
-      'RM317 left for 18 days · RM17 a day',
+      'RM317 left for 18 days, RM17 a day',
     );
     const order = rootOrder();
     expect(order.indexOf('home.spent.left')).toBeGreaterThan(

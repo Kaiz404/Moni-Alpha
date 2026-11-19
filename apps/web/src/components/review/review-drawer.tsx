@@ -338,10 +338,10 @@ function ReviewBody({
                   <span className="inbox-text">
                     <b className="inbox-name">{captureName(next)}</b>
                     <span>
-                      {captureSource(capture)} · {clockTime(capture.transactionDate ?? capture.createdAt, calendar.zone)}
+                      {captureSource(capture)} at {clockTime(capture.transactionDate ?? capture.createdAt, calendar.zone)}
                     </span>
                     <span>
-                      {category?.name ?? 'No category'} · {wallet ?? <span className="pick-wallet">Pick a wallet</span>}
+                      {category?.name ?? 'No category'}, {wallet ?? <span className="pick-wallet">Pick a wallet</span>}
                     </span>
                   </span>
                   <span className="inbox-end">

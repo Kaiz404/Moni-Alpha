@@ -66,7 +66,7 @@ export function LinkedAppRow({
     unreached,
   ]
     .filter(Boolean)
-    .join(' · ');
+    .join(', ');
   return (
     <View>
       <Press

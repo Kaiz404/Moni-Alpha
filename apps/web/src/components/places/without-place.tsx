@@ -68,7 +68,7 @@ export function WithoutPlace({ ledger, loose, everywhere, picked, onPicked, choo
                   <span className="row-text">
                     <span className="row-title">{name}</span>
                     <span className="row-meta">
-                      {rowDay(transaction.transactionDate, now, calendar)} · {ledger.walletNames[transaction.walletId] ?? 'Wallet'}
+                      {rowDay(transaction.transactionDate, now, calendar)}, {ledger.walletNames[transaction.walletId] ?? 'Wallet'}
                     </span>
                   </span>
                   <span className="num without-amount">−{formatMoney(transaction.amountMinor, currency)}</span>

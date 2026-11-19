@@ -52,7 +52,7 @@ function Row({ row }: { row: ComingUpRow }) {
     direction === 'i_owe'
       ? `Pay ${name} ${amount}`
       : `${name} pays ${amount}`;
-  const meta = [dueWords(daysLeft), note].filter(Boolean).join(' · ');
+  const meta = [dueWords(daysLeft), note].filter(Boolean).join(', ');
   return (
     <Press
       testID={tid('debts', 'coming-up', id)}

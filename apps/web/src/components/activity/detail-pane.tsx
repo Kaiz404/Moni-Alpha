@@ -146,8 +146,8 @@ export function DetailPane({
               </span>
             )}
             <span className="meta">
-              {dateLabel(calendar.dayKey(transaction.transactionDate), calendar.dayKey(now))} · {clockTime(transaction.transactionDate, calendar.zone)}
-              {transaction.merchant && row.title !== transaction.merchant ? ` · Alert says ${transaction.merchant}` : ''}
+              {dateLabel(calendar.dayKey(transaction.transactionDate), calendar.dayKey(now))} at {clockTime(transaction.transactionDate, calendar.zone)}
+              {transaction.merchant && row.title !== transaction.merchant ? `, alert says ${transaction.merchant}` : ''}
             </span>
           </div>
         </div>

@@ -147,7 +147,7 @@ function WalletsLoaded({ ledger }: { ledger: Ledger }) {
             return (
               <section key={group.currency} className="card wallet-group" aria-label={name}>
                 <div className="wallet-group-head">
-                  <span className="caps">{group.main ? `${name} · main currency` : name}</span>
+                  <span className="caps">{group.main ? `${name}, main currency` : name}</span>
                   <span className="num wallet-group-total">{formatMoney(group.totalMinor, group.currency)}</span>
                 </div>
                 <div className="wallet-cols" data-only="sidebar rail rail-one-column" aria-hidden="true">

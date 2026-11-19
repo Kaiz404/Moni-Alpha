@@ -23,10 +23,10 @@ describe('walletGroups', () => {
 
 describe('walletListMeta', () => {
   it('reads the type, alerts, cash in your pocket, and another currency by name', () => {
-    expect(walletListMeta(wallet('a', 'MYR'), true, true)).toBe('Bank · alerts on');
+    expect(walletListMeta(wallet('a', 'MYR'), true, true)).toBe('Bank, alerts on');
     expect(walletListMeta(wallet('b', 'MYR', 'cash'), true, false)).toBe('In your pocket');
     expect(walletListMeta(wallet('c', 'MYR', 'credit'), true, false)).toBe('Card');
-    expect(walletListMeta(wallet('d', 'SGD', 'ewallet'), false, false)).toBe('E-wallet · Singapore dollars');
+    expect(walletListMeta(wallet('d', 'SGD', 'ewallet'), false, false)).toBe('E-wallet, Singapore dollars');
   });
 });
 

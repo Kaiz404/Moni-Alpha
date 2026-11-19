@@ -20,7 +20,7 @@ When the owner gives new design feedback, add or sharpen a rule here in the same
 | Check | Rules it enforces | Run |
 | --- | --- | --- |
 | `apps/mobile/scripts/lint/check-taste.mjs` | sparkle icon, confirm dialog, text arrow (phone and web), native control (web) | `pnpm --filter moni lint:taste` (in `scripts/verify/gate.sh`) |
-| `apps/mobile/scripts/lint/copy-rules.mjs` | glossary words, Archive, gesture hints, money and date format | `pnpm --filter moni lint:copy` (in the gate) |
+| `apps/mobile/scripts/lint/copy-rules.mjs` | glossary words, Archive, gesture hints, money and date format, middle dot (phone, shared packages and web) | `pnpm --filter moni lint:copy` and `pnpm --filter web lint:copy` (both in the gate) |
 | `~/.local/share/moni-canvas/tools/lint_terms.py` | the same words on canvas boards | before publishing boards |
 | Screenshot review | everything else below | `moni-verify` step 5 |
 
@@ -49,7 +49,7 @@ Known breaks are listed in `taste-allow.txt`, each with an open issue. The list 
 **4. No middle-dot separators.**
 - Do: put two facts in two places (the right side, a second line), or set them apart with weight, colour or plain words.
 - Don't: join text with " · ".
-- Example: "5 wallets · RM2,555.40", "Bill · every month" (#76, in flight; its copy lint fails on the dot).
+- Example: "5 wallets · RM2,555.40" became "5 wallets with RM2,555.40", "Bill · every month" became "Monthly bill", and "Today · 12:41 pm" became "Today at 12:41 pm" (#76). The copy lint fails on the dot in any string on the phone, the shared packages and the web.
 - Owner: "I think it looks very AI-like… Feels a bit kind of sloppy."
 
 **5. Nothing that looks AI-generated.**

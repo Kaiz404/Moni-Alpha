@@ -258,7 +258,7 @@ function useWalletOptions(
     return {
       id: wallet.id,
       name: wallet.name,
-      meta: suggested ? `${balance} · Suggested` : balance,
+      meta: suggested ? `${balance}, suggested` : balance,
       suggested,
       leading: (
         <Bubble color={wallet.color ?? style.swatchHex}>
@@ -409,7 +409,7 @@ export function CurrencySheet({
       .map(
         (currency): PickerOption => ({
           id: currency.code,
-          name: `${currency.code} · ${currency.name}`,
+          name: `${currency.code}, ${currency.name}`,
           meta:
             currency.code === main ? 'Your main currency' : undefined,
           leading: (

@@ -70,7 +70,7 @@ function moniLine(categoryName, seenCount) {
 }
 
 /**
- * `XA-Notification` 1: "Moni · Maybank · now" over "GRAB*FOOD · −RM23.40", the alert as the bank
+ * `XA-Notification` 1: Moni and Maybank in the header over "−RM23.40 at GRAB*FOOD", the alert as the bank
  * sent it, Moni's category, and Not mine, Approve. `firstAlert` picks the heads-up channel.
  */
 function buildReviewNotification({
@@ -88,7 +88,7 @@ function buildReviewNotification({
   return {
     identifier: identifierFor(proposalId),
     channelId: firstAlert ? HEADS_UP_CHANNEL : QUIET_CHANNEL,
-    title: `${merchant} · ${formatAmount(amountMinor, currency, type)}`,
+    title: `${formatAmount(amountMinor, currency, type)} at ${merchant}`,
     subtitle: bankName || null,
     body: [alertText, moniLine(categoryName, seenCount)].filter(Boolean).join('\n'),
     categoryIdentifier: REVIEW_CATEGORY,
@@ -161,7 +161,7 @@ function buildOpenAppNotification({ proposalId, merchant, amountMinor, currency,
     channelId: QUIET_CHANNEL,
     title: reason,
     subtitle: null,
-    body: `${merchant} · ${formatAmount(amountMinor, currency, type)}`,
+    body: `${formatAmount(amountMinor, currency, type)} at ${merchant}`,
     categoryIdentifier: null,
     actionIds: [],
     data: { kind: 'review', proposalId },
@@ -187,14 +187,14 @@ function spentTotal(items) {
 }
 
 /**
- * "Added · GRAB*FOOD · −RM23.40" over its category's budget line for the first add of the day;
- * "3 added automatically today · −RM58.20" over the latest one after that. Undo takes the latest
+ * "Added −RM23.40 at GRAB*FOOD" over its category's budget line for the first add of the day;
+ * "3 added automatically today, −RM58.20 in total" over the latest one after that. Undo takes the latest
  * back, and a tap opens it, or Activity when there are several.
  */
 function buildAutoAddedDigestNotification({ digest, categoryName, budgetText }) {
   const latest = digest.items[digest.items.length - 1];
   const count = digest.items.length;
-  const shown = `${latest.merchant} · ${formatAmount(latest.amountMinor, latest.currency, latest.type)}`;
+  const shown = `${formatAmount(latest.amountMinor, latest.currency, latest.type)} at ${latest.merchant}`;
   const total = count > 1 ? spentTotal(digest.items) : null;
   const note = budgetText || categoryName || null;
   return {
@@ -202,8 +202,8 @@ function buildAutoAddedDigestNotification({ digest, categoryName, budgetText }) 
     channelId: AUTO_ADDED_CHANNEL,
     title:
       count === 1
-        ? `Added · ${shown}`
-        : `${count} added automatically today${total ? ` · ${total}` : ''}`,
+        ? `Added ${shown}`
+        : `${count} added automatically today${total ? `, ${total} in total` : ''}`,
     subtitle: null,
     body: (count === 1 ? [note] : [`Latest: ${shown}`, note]).filter(Boolean).join('\n'),
     categoryIdentifier: AUTO_ADDED_CATEGORY,

@@ -57,13 +57,13 @@ describe('the places list', () => {
 
   it('names two categories, how many more, and the visits', () => {
     const name = (id: string | null) => (id ? names[id]! : 'Other');
-    expect(placeMeta(bangsar, name)).toBe('Groceries, Food & Dining · 6 visits');
-    expect(placeMeta(midValley, name)).toBe('Shopping, Food & Dining +2 · 4 visits');
-    expect(placeMeta(place('t', 'TTDI', 6000, 1, ['transport']), () => 'Transport')).toBe('Transport · 1 visit');
+    expect(placeMeta(bangsar, name)).toBe('Groceries, Food & Dining with 6 visits');
+    expect(placeMeta(midValley, name)).toBe('Shopping, Food & Dining +2 with 4 visits');
+    expect(placeMeta(place('t', 'TTDI', 6000, 1, ['transport']), () => 'Transport')).toBe('Transport with 1 visit');
   });
 
   it('says where a place is and how often', () => {
-    expect(placeSub(bangsar)).toBe('Kuala Lumpur · 6 payments on 6 days');
+    expect(placeSub(bangsar)).toBe('Kuala Lumpur, 6 payments on 6 days');
     expect(placeSub(place('h', 'Home', 100, 1, ['food'], null))).toBe('1 payment on 1 day');
   });
 

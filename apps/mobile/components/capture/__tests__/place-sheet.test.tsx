@@ -102,9 +102,9 @@ describe('the place sheet', () => {
   it("opens on the user's own places near the map, without asking Google", async () => {
     await openPlaceSheet();
     expect(screen.getByText('Near you')).toBeTruthy();
-    expect(screen.getByLabelText('Mamak Ali, 120 m · 1 visit')).toBeTruthy();
+    expect(screen.getByLabelText('Mamak Ali, 120 m, 1 visit')).toBeTruthy();
     expect(mockClient.autocomplete).not.toHaveBeenCalled();
-    fireEvent.press(screen.getByLabelText('Mamak Ali, 120 m · 1 visit'));
+    fireEvent.press(screen.getByLabelText('Mamak Ali, 120 m, 1 visit'));
     expect(screen.getByTestId('sheet.place.name').props.children).toBe('Mamak Ali');
     expect(screen.getByText('Choose a place')).toBeTruthy();
     fireEvent.press(screen.getByTestId('sheet.place.confirm'));

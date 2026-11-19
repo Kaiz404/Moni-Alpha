@@ -50,7 +50,7 @@ export function BentoChat() {
           <div className="bn-draft" inert={decision !== 'draft'}>
             <div className="bn-draft-top" aria-hidden="true">
               <span className="bn-draft-caps">
-                <span className="caps">Draft · Name a merchant</span>
+                <span className="caps">Draft merchant name</span>
                 <span className="caps bn-draft-count">3 rows</span>
               </span>
               <span className="bn-draft-rename">

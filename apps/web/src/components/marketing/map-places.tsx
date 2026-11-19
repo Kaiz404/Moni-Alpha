@@ -21,11 +21,11 @@ type Place = {
 };
 
 const PLACES: readonly Place[] = [
-  { name: 'Bangsar', meta: 'Groceries, Food · 6 visits', amount: 'RM293.80', pinAmount: 'RM293', icon: mdiCart, tone: 'mint', x: 401.8, y: 286.4 },
-  { name: 'Mid Valley', meta: 'Shopping, Food +2 · 4 visits', amount: 'RM241.10', pinAmount: 'RM241', icon: mdiShopping, tone: 'peach', x: 447.3, y: 377.7 },
-  { name: 'Home, Bangsar South', meta: 'Food · 3 visits', amount: 'RM106.10', pinAmount: 'RM106', icon: mdiSilverwareForkKnife, tone: 'coral', x: 361.3, y: 426.2 },
-  { name: 'SS2, Petaling Jaya', meta: 'Groceries, Food · 2 visits', amount: 'RM74.00', pinAmount: 'RM74', icon: mdiCart, tone: 'mint', x: 44.1, y: 368.7 },
-  { name: 'TTDI', meta: 'Transport · 1 visit', amount: 'RM60.00', pinAmount: 'RM60', icon: mdiCar, tone: 'sky', x: 92.6, y: 216.5 },
+  { name: 'Bangsar', meta: 'Groceries, Food with 6 visits', amount: 'RM293.80', pinAmount: 'RM293', icon: mdiCart, tone: 'mint', x: 401.8, y: 286.4 },
+  { name: 'Mid Valley', meta: 'Shopping, Food +2 with 4 visits', amount: 'RM241.10', pinAmount: 'RM241', icon: mdiShopping, tone: 'peach', x: 447.3, y: 377.7 },
+  { name: 'Home, Bangsar South', meta: 'Food with 3 visits', amount: 'RM106.10', pinAmount: 'RM106', icon: mdiSilverwareForkKnife, tone: 'coral', x: 361.3, y: 426.2 },
+  { name: 'SS2, Petaling Jaya', meta: 'Groceries, Food with 2 visits', amount: 'RM74.00', pinAmount: 'RM74', icon: mdiCart, tone: 'mint', x: 44.1, y: 368.7 },
+  { name: 'TTDI', meta: 'Transport with 1 visit', amount: 'RM60.00', pinAmount: 'RM60', icon: mdiCar, tone: 'sky', x: 92.6, y: 216.5 },
 ];
 
 /** Places outside the top five: plain dots. */

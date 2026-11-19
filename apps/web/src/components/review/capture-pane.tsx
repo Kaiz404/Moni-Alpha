@@ -89,7 +89,7 @@ export function CapturePane({
     .filter((each) => each.isActive && (each.userId === null || each.userId === userId) && (each.type === null || each.type === type))
     .sort((a, b) => a.displayOrder - b.displayOrder || a.name.localeCompare(b.name));
   const at = capture.transactionDate ?? capture.createdAt;
-  const when = `${dayLabel(calendar.dayKey(at), calendar.dayKey(now))} · ${clockTime(at, calendar.zone)}`;
+  const when = `${dayLabel(calendar.dayKey(at), calendar.dayKey(now))} at ${clockTime(at, calendar.zone)}`;
   const pill = reviewStatus({
     hasWallet: Boolean(next.walletId),
     paired: Boolean(capture.pairing),
@@ -106,7 +106,7 @@ export function CapturePane({
     : undefined;
   const needsWallet = !next.walletId;
   const filedAs = (row: FinanceTransaction) =>
-    `${(row.categoryId && projection.categoriesById[row.categoryId]?.name) || 'No category'} · ${walletNames[row.walletId] ?? 'Wallet'}`;
+    `${(row.categoryId && projection.categoriesById[row.categoryId]?.name) || 'No category'}, ${walletNames[row.walletId] ?? 'Wallet'}`;
 
   const set = (patch: ReviewEdits) => {
     onEdits({ ...edits, ...patch });
@@ -204,7 +204,7 @@ export function CapturePane({
                 <span className="source-alert-bell">
                   <Glyph name="bell-outline" size={13} />
                 </span>
-                <b>{capture.notificationTitle ?? 'Bank'}</b> · {clockTime(capture.notificationReceivedAt ?? at, calendar.zone)}
+                <b>{capture.notificationTitle ?? 'Bank'}</b> at {clockTime(capture.notificationReceivedAt ?? at, calendar.zone)}
               </span>
               <blockquote>“{capture.notificationBody ?? capture.sourceText ?? ''}”</blockquote>
             </div>
@@ -212,7 +212,7 @@ export function CapturePane({
           {capture.sourceType === 'text' && (
             <div className="source-chat">
               <blockquote>{capture.sourceText ?? captureName(capture)}</blockquote>
-              <span className="meta">You, in Moni chat · {clockTime(at, calendar.zone)}</span>
+              <span className="meta">You, in Moni chat at {clockTime(at, calendar.zone)}</span>
             </div>
           )}
           {capture.sourceType === 'image' &&
@@ -316,14 +316,14 @@ export function CapturePane({
           {rule ? (
             <div className="rule-preview rise" aria-label="Rule preview">
               <p className="rule-line">
-                {capture.notificationTitle ?? 'Bank'} alerts from {captureName(next)} <Glyph name="arrow-right" size={15} /> {category?.name ?? 'No category'} ·{' '}
+                {capture.notificationTitle ?? 'Bank'} alerts from {captureName(next)} <Glyph name="arrow-right" size={15} /> {category?.name ?? 'No category'},{' '}
                 {wallet?.name ?? 'Wallet'}
               </p>
               <div className="rule-head">
                 <span className="caps">Would have matched</span>
                 <span className="num rule-meta">
                   {matches.length
-                    ? `${matches.length} ${matches.length === 1 ? 'alert' : 'alerts'} this month · ${formatMoney(sum(matches), capture.currency)}`
+                    ? `${matches.length} ${matches.length === 1 ? 'alert' : 'alerts'} this month, ${formatMoney(sum(matches), capture.currency)} in total`
                     : 'None this month'}
                 </span>
               </div>
@@ -337,7 +337,7 @@ export function CapturePane({
                       <span className="inbox-text">
                         <span className="rule-quote">“{alertText(match)}”</span>
                         <span>
-                          {dayLabel(calendar.dayKey(match.transactionDate), calendar.dayKey(now))} · {clockTime(match.transactionDate, calendar.zone)} · filed {filedAs(match)}
+                          {dayLabel(calendar.dayKey(match.transactionDate), calendar.dayKey(now))} at {clockTime(match.transactionDate, calendar.zone)}, filed as {filedAs(match)}
                         </span>
                       </span>
                       <span className="num rule-amount">{formatSignedMoney('expense', match.amountMinor, match.currency)}</span>
@@ -355,7 +355,7 @@ export function CapturePane({
                     {captureName(next)} <span className="auto-chip">Auto</span>
                   </b>
                   <span>
-                    {category?.name ?? 'No category'} · {wallet?.name ?? 'Wallet'}
+                    {category?.name ?? 'No category'}, {wallet?.name ?? 'Wallet'}
                   </span>
                 </span>
                 <span className="rule-auto">Added automatically</span>
@@ -367,7 +367,7 @@ export function CapturePane({
                 <div className="rule-head">
                   <span className="caps">{captureName(next).toUpperCase()} this month</span>
                   <span className="num rule-meta">
-                    {history.length} {history.length === 1 ? 'time' : 'times'} · {formatMoney(sum(history), capture.currency)}
+                    {history.length} {history.length === 1 ? 'time' : 'times'}, {formatMoney(sum(history), capture.currency)} in total
                   </span>
                 </div>
                 {history.slice(0, 4).map((each) => {

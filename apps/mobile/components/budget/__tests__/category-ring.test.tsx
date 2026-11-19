@@ -158,7 +158,7 @@ describe('CategoryRing', () => {
 
     activate('budget.slice.other');
     expect(screen.getByTestId('budget.spend-ring.selected')).toHaveTextContent(
-      'RM59.80Other2 categories · 5%',
+      'RM59.80Other2 categories, 5%',
     );
   });
 

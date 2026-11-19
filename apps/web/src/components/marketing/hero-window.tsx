@@ -199,7 +199,7 @@ function SpentCard() {
           ))}
         </div>
       </div>
-      <span className="num hw-spent-foot">RM443 left for 18 days · RM24 a day</span>
+      <span className="num hw-spent-foot">RM443 left for 18 days, RM24 a day</span>
     </div>
   );
 }
@@ -209,21 +209,21 @@ const CAPTURES = [
     icon: mdiSilverwareForkKnife,
     name: 'GRAB*FOOD',
     amount: 'RM23.40',
-    meta: 'Usual for you · Maybank · 12:41 pm',
+    meta: 'Usual for you, Maybank at 12:41 pm',
     usual: true,
   },
   {
     icon: mdiCart,
     name: 'Jaya Grocer',
     amount: 'RM86.40',
-    meta: 'Usual for you · Maybank · 12:50 pm',
+    meta: 'Usual for you, Maybank at 12:50 pm',
     usual: true,
   },
   {
     icon: mdiCar,
     name: 'Parking KLCC',
     amount: 'RM6.00',
-    meta: 'Needs a wallet · Moni chat · 1:30 pm',
+    meta: 'Needs a wallet, Moni chat at 1:30 pm',
     usual: false,
   },
 ];
@@ -286,13 +286,13 @@ const RECENT = [
     icon: mdiSilverwareForkKnife,
     tone: 'coral',
     name: 'Mamak Ali',
-    meta: 'Today · Cash',
+    meta: 'Today, Cash',
     amount: '−RM13.20',
   },
   {
     icon: mdiSwapHorizontal,
     tone: 'sand',
-    name: 'Touch ’n Go reload',
+    name: "Touch 'n Go reload",
     meta: 'Yesterday',
     amount: 'RM100.00',
     auto: true,
@@ -301,21 +301,21 @@ const RECENT = [
     icon: mdiMedicalBag,
     tone: 'pink',
     name: 'Guardian',
-    meta: 'Yesterday · Touch ’n Go',
+    meta: "Yesterday, Touch 'n Go",
     amount: '−RM15.90',
   },
   {
     icon: mdiSilverwareForkKnife,
     tone: 'coral',
     name: 'GRAB*FOOD',
-    meta: 'Yesterday · Maybank',
+    meta: 'Yesterday, Maybank',
     amount: '−RM45.90',
   },
   {
     icon: mdiCar,
     tone: 'sky',
     name: 'Shell',
-    meta: 'Mon 12 Oct · Maybank',
+    meta: 'Mon 12 Oct, Maybank',
     amount: '−RM30.40',
   },
 ];
@@ -487,7 +487,7 @@ function WalletsCard() {
           <span className="hw-wname">Maybank Savings</span>
           <span className="num hw-wamt">RM2,281.80</span>
         </div>
-        <span className="hx-cap hw-check-cap">CHECK-IN · LAST DONE 40 DAYS AGO</span>
+        <span className="hx-cap hw-check-cap">CHECK-IN, LAST DONE 40 DAYS AGO</span>
         <span className="num hw-check-q">Is Maybank Savings still RM2,281.80?</span>
         <div className="hw-check-actions">
           <span className="hx-btn hw-btn-mint">
@@ -500,7 +500,7 @@ function WalletsCard() {
       </div>
       <div className="hw-wrow">
         <HeroBubble size={32} glyph={18} icon={mdiCellphone} tone="block-lilac" />
-        <span className="hw-wname">Touch ’n Go eWallet</span>
+        <span className="hw-wname">Touch &apos;n Go eWallet</span>
         <span className="num hw-wamt">RM86.40</span>
       </div>
       <div className="hw-wrow">

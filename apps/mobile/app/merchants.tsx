@@ -176,7 +176,7 @@ export default function MerchantsScreen() {
         ) : null}
 
         {shownToName.length > 0 ? (
-          <ListSection label={`To name · ${shownToName.length}`}>
+          <ListSection label={`${shownToName.length} to name`}>
             {rows(shownToName, 'to-name')}
           </ListSection>
         ) : words ? null : (
@@ -208,7 +208,7 @@ export default function MerchantsScreen() {
               className="pl-1 text-muted"
               accessibilityRole="header"
             >
-              {`Spent in ${monthLabel} · ${spent.length}`}
+              {`${spent.length} spent in ${monthLabel}`}
             </Text>
             {/* Turning the page swaps every row at once, so the old rows leave without animating. */}
             <LayoutAnimationConfig
@@ -248,7 +248,7 @@ export default function MerchantsScreen() {
         ) : null}
 
         {shownNamed.length > 0 ? (
-          <ListSection label={`Named · ${shownNamed.length}`}>
+          <ListSection label={`${shownNamed.length} named`}>
             {rows(shownNamed, 'named')}
           </ListSection>
         ) : null}

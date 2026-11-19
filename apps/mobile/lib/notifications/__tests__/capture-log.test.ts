@@ -97,8 +97,8 @@ describe('groupCaptureLog', () => {
     const days = groupCaptureLog(entries, now);
 
     expect(days.map((day) => day.label)).toEqual([
-      'Today · Wed 14 Oct',
-      'Yesterday · Tue 13 Oct',
+      'Today, Wed 14 Oct',
+      'Yesterday, Tue 13 Oct',
       'Mon 12 Oct',
     ]);
     expect(days.map((day) => day.items.map((item) => item.id))).toEqual([
@@ -249,7 +249,7 @@ describe('groupCaptureLog', () => {
         day.label,
         day.items.map((item) => item.id),
       ]),
-    ).toEqual([['Today · Wed 14 Oct', ['today-review']]]);
+    ).toEqual([['Today, Wed 14 Oct', ['today-review']]]);
   });
 });
 

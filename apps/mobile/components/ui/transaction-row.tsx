@@ -38,7 +38,7 @@ export function rowMeta(
       ? (row.category ??
         (row.kind === 'income' ? 'Income' : 'No category'))
       : dayLabel(deviceCalendar.dayKey(row.date), deviceCalendar.dayKey(now ?? new Date()));
-  return `${lead} · ${row.wallet ?? 'no wallet yet'}`;
+  return `${lead}, ${row.wallet ?? 'no wallet yet'}`;
 }
 
 export function rowAmount(row: TransactionRowData): string {

@@ -23,7 +23,7 @@ tags:
     visible:
       id: chat.draft.approve
     timeout: 30000
-- assertVisible: "Moni's draft · not counted yet"
+- assertVisible: "Moni's draft, not counted yet"
 - assertVisible:
     id: chat.draft.amount-text
     text: '−RM6.00'

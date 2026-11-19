@@ -187,6 +187,7 @@ Useful checks:
 turbo run lint check-types                      # whole repo
 pnpm test                                       # Jest (mobile) and Go tests via turbo
 pnpm --filter moni lint:copy                    # glossary copy lint
+pnpm --filter web lint:copy                     # the same copy lint on apps/web
 pnpm --filter moni lint:test-ids                # testID lint
 pnpm format:check                               # Prettier (run `pnpm format` to fix)
 pnpm --filter backend test                      # Go tests

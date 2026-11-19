@@ -29,7 +29,7 @@ function dayTotal(day: ActivityDay, currency: string) {
     day.inMinor > 0 ? formatSignedMoney('income', day.inMinor, currency) : null,
   ]
     .filter(Boolean)
-    .join(' · ');
+    .join(', ');
 }
 
 export function PagerStep({

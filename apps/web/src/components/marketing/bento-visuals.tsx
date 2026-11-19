@@ -74,13 +74,13 @@ export function BentoFan() {
             <i className="bn-caret" />
           </span>
         }
-        row={<MiniRow category="food" name="Mamak Ali" meta="Food & Dining · Cash" amount="−RM13.20" />}
+        row={<MiniRow category="food" name="Mamak Ali" meta="Food & Dining, Cash" amount="−RM13.20" />}
       />
       <FanCard
         icon={mdiMicrophone}
         label="Say it"
         top={<span className="bn-say">“paid 6 ringgit parking at KLCC”</span>}
-        row={<MiniRow category="transport" name="Parking KLCC" meta="Transport · today" amount="−RM6.00" />}
+        row={<MiniRow category="transport" name="Parking KLCC" meta="Transport, today" amount="−RM6.00" />}
       />
       <FanCard
         icon={mdiCameraOutline}
@@ -96,7 +96,7 @@ export function BentoFan() {
             </span>
           </span>
         }
-        row={<MiniRow category="food" name="Dinner at Bangsar Shopping Centre" meta="Food & Dining · Sat 10 Oct" amount="−RM86.00" />}
+        row={<MiniRow category="food" name="Dinner at Bangsar Shopping Centre" meta="Food & Dining, Sat 10 Oct" amount="−RM86.00" />}
       />
       <FanCard
         icon={mdiBellRingOutline}
@@ -104,10 +104,10 @@ export function BentoFan() {
         tag="Android"
         top={
           <span className="bn-alert">
-            <b>Maybank</b> · You’ve spent RM86.40 at JAYA GROCER on 14/10 12:50.
+            <b>Maybank</b> You’ve spent RM86.40 at JAYA GROCER on 14/10 12:50.
           </span>
         }
-        row={<MiniRow category="groceries" name="Jaya Grocer" meta="Groceries · Maybank" amount="−RM86.40" />}
+        row={<MiniRow category="groceries" name="Jaya Grocer" meta="Groceries, Maybank" amount="−RM86.40" />}
       />
     </div>
   );
@@ -118,7 +118,7 @@ export function BentoReceipt() {
     <div className="bn-snap" aria-hidden="true">
       <div className="bn-rcpt">
         <b className="bn-rcpt-shop">UNIQLO</b>
-        <span className="bn-rcpt-where">MID VALLEY · 06/10/2026</span>
+        <span className="bn-rcpt-where">MID VALLEY 06/10/2026</span>
         {[86, 64, 78, 52].map((w) => (
           <span key={w} className="bn-rl" style={{ width: `${w}%` }} />
         ))}
@@ -133,7 +133,7 @@ export function BentoReceipt() {
         <span className="bn-scan" />
       </div>
       <div className="bn-snap-res">
-        <MiniRow category="shopping" name="Uniqlo" meta="Shopping · Maybank · Tue 6 Oct" amount="−RM129.90" />
+        <MiniRow category="shopping" name="Uniqlo" meta="Shopping, Maybank, Tue 6 Oct" amount="−RM129.90" />
       </div>
     </div>
   );
@@ -178,7 +178,7 @@ export function BentoDebts() {
       <div className="bn-nt">
         <Cat size={40} ground="deep" tile id="lp-bento-debt" />
         <span className="bn-nt-text">
-          <span className="bn-nt-app">Moni · Thu 29 Oct</span>
+          <span className="bn-nt-app">Moni, Thu 29 Oct</span>
           <b className="bn-nt-title">Aiman pays you back tomorrow</b>
           <span className="bn-nt-line">RM150.00 for the Penang trip hotel share.</span>
         </span>

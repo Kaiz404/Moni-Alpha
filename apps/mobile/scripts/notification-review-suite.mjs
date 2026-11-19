@@ -49,8 +49,8 @@ function grabInput() {
 
 const grab = buildReviewNotification(grabInput());
 
-check('a RM23.40 GRAB*FOOD capture is titled GRAB*FOOD · −RM23.40', () =>
-  strictEqual(grab.title, 'GRAB*FOOD · −RM23.40'),
+check('a RM23.40 GRAB*FOOD capture is titled −RM23.40 at GRAB*FOOD', () =>
+  strictEqual(grab.title, '−RM23.40 at GRAB*FOOD'),
 );
 check('the bank goes in the header beside Moni', () => strictEqual(grab.subtitle, 'Maybank'));
 check('the body is the alert as sent, then Moni\'s category and how often', () =>
@@ -83,10 +83,10 @@ check('the first alert after install uses the heads-up channel', () => {
 check('thousands take commas, income takes +, transfers no sign', () => {
   strictEqual(
     buildReviewNotification({ ...grabInput(), amountMinor: 111620 }).title,
-    'GRAB*FOOD · −RM1,116.20',
+    '−RM1,116.20 at GRAB*FOOD',
   );
-  strictEqual(buildReviewNotification({ ...grabInput(), type: 'income' }).title, 'GRAB*FOOD · +RM23.40');
-  strictEqual(buildReviewNotification({ ...grabInput(), type: 'transfer' }).title, 'GRAB*FOOD · RM23.40');
+  strictEqual(buildReviewNotification({ ...grabInput(), type: 'income' }).title, '+RM23.40 at GRAB*FOOD');
+  strictEqual(buildReviewNotification({ ...grabInput(), type: 'transfer' }).title, 'RM23.40 at GRAB*FOOD');
 });
 check('the accent is Deep mint', () => strictEqual(ACCENT, '#236B47'));
 
@@ -127,8 +127,8 @@ const digestOfOne = buildAutoAddedDigestNotification({
   categoryName: 'Food & Dining',
   budgetText: 'Food & Dining: RM76 left after this',
 });
-check('the first add of the day reads Added · GRAB*FOOD · −RM23.40 over the budget line', () => {
-  strictEqual(digestOfOne.title, 'Added · GRAB*FOOD · −RM23.40');
+check('the first add of the day reads Added −RM23.40 at GRAB*FOOD over the budget line', () => {
+  strictEqual(digestOfOne.title, 'Added −RM23.40 at GRAB*FOOD');
   strictEqual(digestOfOne.body, 'Food & Dining: RM76 left after this');
   strictEqual(digestOfOne.channelId, 'moni-auto-added');
   deepStrictEqual(digestOfOne.actionIds, ['undo-auto-added']);
@@ -150,8 +150,8 @@ const digestOfThree = buildAutoAddedDigestNotification({
   budgetText: 'Groceries: RM300 left after this',
 });
 check('later adds replace it with the day\'s count and total, the latest underneath', () => {
-  strictEqual(digestOfThree.title, '3 added automatically today · −RM58.20');
-  strictEqual(digestOfThree.body, 'Latest: JAYA GROCER · −RM19.00\nGroceries: RM300 left after this');
+  strictEqual(digestOfThree.title, '3 added automatically today, −RM58.20 in total');
+  strictEqual(digestOfThree.body, 'Latest: −RM19.00 at JAYA GROCER\nGroceries: RM300 left after this');
   strictEqual(digestOfThree.identifier, digestOfOne.identifier);
   deepStrictEqual(digestOfThree.data, { kind: 'auto-added', transactionId: 't3', count: 3 });
 });
@@ -163,7 +163,7 @@ check('a transfer shows unsigned and leaves the total out', () => {
   );
   const digest = buildAutoAddedDigestNotification({ digest: withReload, categoryName: null, budgetText: null });
   strictEqual(digest.title, '2 added automatically today');
-  strictEqual(digest.body, "Latest: Touch 'n Go reload · RM100.00");
+  strictEqual(digest.body, "Latest: RM100.00 at Touch 'n Go reload");
 });
 check('the same transaction is counted once, and a new day starts over', () => {
   strictEqual(addToAutoAddedDigest(threeAdded, added('t3', 'JAYA GROCER', 1900), '2026-10-14').items.length, 3);

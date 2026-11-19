@@ -35,7 +35,7 @@ tags:
 - hideKeyboard
 - tapOn:
     id: wallet.colour.coral-bloom
-- assertVisible: Cash · MYR
+- assertVisible: Cash, MYR
 - takeScreenshot: k2-form-new
 - tapOn:
     id: wallet.form.submit
@@ -58,7 +58,7 @@ tags:
 - inputText: USD
 - tapOn:
     id: sheet.option.usd
-- assertVisible: Bank · USD
+- assertVisible: Bank, USD
 - tapOn:
     id: wallet.alerts-from
 - assertVisible: Moni reads spending alerts only from the app you pick.

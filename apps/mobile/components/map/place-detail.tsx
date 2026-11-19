@@ -48,7 +48,7 @@ export function PlaceHero({
         className="mt-1 text-ink-2"
         style={{ fontVariant: ['tabular-nums'] }}
       >
-        {`${plural(count, 'payment')} on ${plural(days, 'day')} · ${each} each`}
+        {`${plural(count, 'payment')} on ${plural(days, 'day')}, ${each} each`}
       </Text>
       <View className="mt-2 flex-row flex-wrap items-center gap-2">
         {top ? (

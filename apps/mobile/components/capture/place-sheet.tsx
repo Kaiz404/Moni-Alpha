@@ -614,7 +614,7 @@ export function PlaceSheet({ request, onPick, ...frame }: PlaceSheetProps) {
                   meta={
                     [distanceWords(row.prediction.distanceMeters), row.prediction.secondaryText]
                       .filter(Boolean)
-                      .join(' · ') || null
+                      .join(', ') || null
                   }
                   busy={opening === row.prediction.placeId}
                   error={failed === row.prediction.placeId ? "Couldn't open this place. Try again." : null}

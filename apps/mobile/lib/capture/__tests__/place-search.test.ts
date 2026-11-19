@@ -96,7 +96,7 @@ describe('Near you, before the user types', () => {
   it("lists the user's places within 500 m, nearest first, under their most visited shop", () => {
     const centre = { latitude: BANGSAR + 120 * METRE_LAT, longitude: LNG };
     expect(nearPlaces(centre, input).map(({ title, meta, shop }) => ({ title, meta, shop }))).toEqual([
-      { title: 'Mamak Ali', meta: '120 m · 2 visits', shop: 'Mamak Ali' },
+      { title: 'Mamak Ali', meta: '120 m, 2 visits', shop: 'Mamak Ali' },
     ]);
   });
 

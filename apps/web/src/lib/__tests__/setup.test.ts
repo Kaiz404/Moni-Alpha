@@ -73,13 +73,13 @@ describe("Home's Get set up card", () => {
 
   it('lists the four set-up steps and this month’s budget, with what each one holds', () => {
     expect(items()).toEqual([
-      { key: 'currency', title: 'Pick your main currency', line: 'MYR · Malaysian ringgit', done: true },
-      { key: 'ai', title: "Choose about Moni's AI", line: 'On · change it in Settings', done: true },
+      { key: 'currency', title: 'Pick your main currency', line: 'MYR, Malaysian ringgit', done: true },
+      { key: 'ai', title: "Choose about Moni's AI", line: 'On, change it in Settings', done: true },
       { key: 'wallets', title: 'Add your wallets', line: '4 wallets', done: true },
       { key: 'budget', title: "Set October's budget", line: 'This draws your spending chart', done: false },
       { key: 'phone', title: 'Get the phone app', line: 'For bank alerts and receipts', done: false },
     ]);
-    expect(items({ aiOn: false, wallets: 1 }).slice(1, 3).map((item) => item.line)).toEqual(['Off · change it in Settings', '1 wallet']);
+    expect(items({ aiOn: false, wallets: 1 }).slice(1, 3).map((item) => item.line)).toEqual(['Off, change it in Settings', '1 wallet']);
   });
 
   it('shows from the end of set-up until every step is done or it is closed', () => {

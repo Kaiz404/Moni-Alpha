@@ -3,10 +3,10 @@
  * the edges its own way, and these are the only copies:
  *
  * - Budget (`budgetLine`, `leftSentence`) names bills and debts: "RM443 left for 18 days after
- *   bills and RM40 to Mei · RM24 a day". It keeps "· RM0 a day" when nothing is safe to spend, and
+ *   bills and RM40 to Mei, RM24 a day". It keeps ", RM0 a day" when nothing is safe to spend, and
  *   over budget it keeps what was set aside: "RM20 over after bills and RM40 to Mei".
  * - Home (`homeLine`) names only debts, and only when no bills strip carries them: "RM443 left
- *   for 18 days after RM40 to Mei · RM24 a day". At RM0 a day it drops the per-day part, and over
+ *   for 18 days after RM40 to Mei, RM24 a day". At RM0 a day it drops the per-day part, and over
  *   budget it says only "RM20 over". New transaction (`leftLine`) reads the same, naming nothing.
  * - Review (`reviewSafeToSpend`) says "RM420 left for 18 days after these." under the per-day
  *   change its approvals made.
@@ -27,13 +27,13 @@ export function debtPhrase(debtsDue: readonly DebtDue[], currency: string): stri
     : `${amount} to ${debtsDue.length} people`;
 }
 
-/** "RM443 left for 18 days · RM24 a day", or "RM20 over". `after` names what else came off it. */
+/** "RM443 left for 18 days, RM24 a day", or "RM20 over". `after` names what else came off it. */
 export function leftLine(left: LeftThisMonth, currency: string, after?: string | null): string {
   const whole = (minor: number) => formatMoney(minor, currency, { whole: true });
   if (left.leftMinor < 0) return `${whole(-left.leftMinor)} over`;
   const days = `${left.daysLeft} ${left.daysLeft === 1 ? 'day' : 'days'}${after ? ` after ${after}` : ''}`;
   return left.perDayMinor > 0
-    ? `${whole(left.leftMinor)} left for ${days} · ${whole(left.perDayMinor)} a day`
+    ? `${whole(left.leftMinor)} left for ${days}, ${whole(left.perDayMinor)} a day`
     : `${whole(left.leftMinor)} left for ${days}`;
 }
 
@@ -63,7 +63,7 @@ export function leftSentence(
   if (left.leftMinor < 0)
     return [`${whole(-left.leftMinor)} over`, after].filter(Boolean).join(' ');
   const days = left.daysLeft === 1 ? '1 day' : `${left.daysLeft} days`;
-  return `${[`${whole(left.leftMinor)} left for ${days}`, after].filter(Boolean).join(' ')} · ${whole(left.perDayMinor)} a day`;
+  return `${[`${whole(left.leftMinor)} left for ${days}`, after].filter(Boolean).join(' ')}, ${whole(left.perDayMinor)} a day`;
 }
 
 /**

@@ -97,5 +97,5 @@ tags:
 - scrollUntilVisible:
     element:
       id: 'debts\.settled\..*'
-      text: 'Hana, Settled · Lunch, .*'
+      text: 'Hana, Settled, Lunch, .*'
     centerElement: true

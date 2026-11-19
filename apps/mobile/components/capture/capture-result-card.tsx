@@ -252,7 +252,7 @@ export function CaptureResult({
             prefix={`${moneySign(draft.kind === 'expense' ? 'expense' : 'income')}${currencySymbol(currency)}`}
             hint={
               read.amountMinor > 0
-                ? `${currency} · ${amountRead}`
+                ? `${currency}, ${amountRead}`
                 : currency
             }
             value={draft.amountMinor > 0 ? draft.amountMinor : null}

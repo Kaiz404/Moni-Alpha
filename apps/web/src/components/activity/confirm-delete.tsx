@@ -20,7 +20,7 @@ export function ConfirmDelete({ items, currency, onCancel, onDelete }: { items: 
             <li key={item.id} className="confirm-row">
               <Bubble icon={item.row.icon} color={item.row.color} size={items.length > 1 ? 26 : 36} glyph={items.length > 1 ? 14 : 18} />
               <span className="confirm-name">{item.title}</span>
-              <span className="meta">{[item.category, item.wallet].filter(Boolean).join(' · ')}</span>
+              <span className="meta">{[item.category, item.wallet].filter(Boolean).join(', ')}</span>
               <span className="num confirm-amount" data-tone={amount.tone}>
                 {amount.text}
               </span>

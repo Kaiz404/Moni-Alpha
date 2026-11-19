@@ -7,7 +7,7 @@ import { StoreSync } from '@/components/store/store-sync';
 import { createClient } from '@/lib/supabase/server';
 
 export const metadata: Metadata = {
-  title: 'Delete your Moni account · Moni',
+  title: 'Delete your Moni account | Moni',
   description: 'Delete your Moni account and everything Moni keeps for you, with or without the app.',
 };
 

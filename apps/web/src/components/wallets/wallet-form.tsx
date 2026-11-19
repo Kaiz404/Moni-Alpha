@@ -89,8 +89,8 @@ export function WalletForm({
         <span className="row-text">
           <b data-empty={!name || undefined}>{name || 'New wallet'}</b>
           <span className="meta">
-            {typeLabel} · {draft.currency}
-            {alertsFrom ? ` · alerts from ${alertsFrom}` : ''}
+            {typeLabel}, {draft.currency}
+            {alertsFrom ? `, alerts from ${alertsFrom}` : ''}
           </span>
         </span>
       </div>

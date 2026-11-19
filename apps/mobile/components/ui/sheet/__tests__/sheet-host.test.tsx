@@ -286,6 +286,6 @@ describe('SheetHost', () => {
     });
 
     expect(screen.getByText('RM0.00')).toBeTruthy();
-    expect(screen.getByText('RM0.00 · Suggested')).toBeTruthy();
+    expect(screen.getByText('RM0.00, suggested')).toBeTruthy();
   });
 });

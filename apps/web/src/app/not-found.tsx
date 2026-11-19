@@ -4,7 +4,7 @@ import { Glyph } from '@/components/ledger/glyph';
 import { FullPage } from '@/components/states/full-page';
 import { createClient } from '@/lib/supabase/server';
 
-export const metadata: Metadata = { title: "This page isn't here · Moni" };
+export const metadata: Metadata = { title: "This page isn't here | Moni" };
 
 /** W2-States 404: thinking, because Moni is looking for the page. Signed out, the way home is the landing page. */
 export default async function NotFound() {

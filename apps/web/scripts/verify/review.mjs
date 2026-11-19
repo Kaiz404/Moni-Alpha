@@ -130,7 +130,7 @@ export async function verifyReview(t) {
     (row) => merchantKey(row.merchant) === merchantKey(first.merchant) && row.metadata?.alert && seed.dayOf(row.transaction_date).slice(0, 7) === seed.seedDay.slice(0, 7) && row.wallet_id === first.wallet_id,
   );
   const preview = (await p.locator('[aria-label="Rule preview"] .rule-meta').textContent()) ?? '';
-  const want = `${alerts.length} ${alerts.length === 1 ? 'alert' : 'alerts'} this month · ${cents(alerts.reduce((sum, row) => sum + minorOf(row.amount), 0))}`;
+  const want = `${alerts.length} ${alerts.length === 1 ? 'alert' : 'alerts'} this month, ${cents(alerts.reduce((sum, row) => sum + minorOf(row.amount), 0))} in total`;
   check(`"Don't ask about similar" previews the ${alerts.length} alerts the rule would have matched`, preview === want && (await p.locator('.rule-matches li').count()) === alerts.length, { preview, want });
   check('the preview says what happens next time, and Approve says it saves the rule', (await visible(p.getByText('Added automatically'))) && (await p.locator('.capture-note').textContent()) === 'Saves the rule too');
   await settle(p);

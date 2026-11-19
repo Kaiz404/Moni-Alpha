@@ -119,7 +119,7 @@ export function BillsList({
                   >
                     {due.text}
                   </Text>
-                  {look?.wallet ? ` · ${look.wallet}` : ''}
+                  {look?.wallet ? `, ${look.wallet}` : ''}
                 </Text>
               </View>
               <Text

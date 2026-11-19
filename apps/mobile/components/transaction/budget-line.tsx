@@ -31,7 +31,7 @@ export function BudgetLine({ budget }: { budget: BudgetProgress }) {
     >
       <View className="min-w-0 flex-1" accessibilityLiveRegion="polite">
         <Text variant="body" className="text-foreground">
-          {`${budget.categoryName} · `}
+          {`${budget.categoryName} ${over ? 'is' : 'has'} `}
           <Text className={`font-display-semibold ${over ? 'text-over' : 'text-deep-mint'}`}>
             {over ? `${value} over` : `${value} left`}
           </Text>

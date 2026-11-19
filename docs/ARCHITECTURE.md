@@ -55,7 +55,7 @@ proposed_transactions (unreviewed)
         │
         ▼
 Review deck (app/review.tsx) → Approve → real transaction / Not mine → rejected
-   or the Android review notification (Not mine · Approve), handled headless
+   or the Android review notification (Not mine and Approve), handled headless
 ```
 
 A new notification capture also posts a Moni notification with the same three actions. An action tap runs in a headless task (expo-task-manager, registered in `index.js`) even with the app killed: it turns store sync on for the signed-in session, runs the same `lib/proposals/review-actions.ts` the deck uses (the phone's adapter over `@repo/core`'s `planReview`, which the web's Review page decides through too; the adapter adds what only the phone has: the capture log, the receipt upload queue and where the phone was), and waits for Supabase before the task ends. Only a routine alert reaches the ledger without Approve; once Supabase has it, the processor posts or replaces one Added automatically notification for the day, whose Undo removes that latest row.

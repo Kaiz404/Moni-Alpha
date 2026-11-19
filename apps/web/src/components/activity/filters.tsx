@@ -72,7 +72,7 @@ function Check({ on, children, onToggle }: { on: boolean; children: ReactNode; o
   );
 }
 
-/** Dates · Type · Wallets · Category · Source · Amount, each a chip with its popover (W2-Activity). */
+/** Dates, Type, Wallets, Category, Source and Amount, each a chip with its popover (W2-Activity). */
 export function FilterBar({
   ledger,
   filters,

@@ -68,7 +68,7 @@ function ThreadGap() {
 
 function dayTitle(day: string, now: Date): string {
   const label = dateLabel(parseDayKey(day) ?? deviceCalendar.dayKey(now), deviceCalendar.dayKey(now));
-  return day === todayThreadDay(now) ? `Today · ${label}` : label;
+  return day === todayThreadDay(now) ? `Today, ${label}` : label;
 }
 
 const MIC_EASE = { duration: 100, easing: Easing.bezier(0.23, 1, 0.32, 1) };
@@ -162,7 +162,7 @@ const Thread = memo(function Thread({ messages, day, folded, onQuickReply, onNot
                   color={tokens.ink2}
                 />
                 <Text className="flex-1 text-[15px] leading-[20px] font-display-semibold text-foreground">
-                  {`Earlier today · ${folded} ${folded === 1 ? 'message' : 'messages'}`}
+                  {`${folded} ${folded === 1 ? 'message' : 'messages'} earlier today`}
                 </Text>
                 <IconSymbol
                   name={unfolded ? 'chevron-up' : 'chevron-down'}
@@ -365,7 +365,7 @@ export default function ChatScreen() {
       title="Moni"
       titleTag={<AiTag />}
       mark={blank ? undefined : <ChatCat mood={chatMood(messages, listening !== null)} />}
-      subtitle={isToday ? `${dayTitle(viewDay, now)} · ${chatTime(now.toISOString())}` : dayTitle(viewDay, now)}
+      subtitle={isToday ? `${dayTitle(viewDay, now)} at ${chatTime(now.toISOString())}` : dayTitle(viewDay, now)}
       trailing={
         <HeaderIconButton
           testID={tid('chat', 'history')}

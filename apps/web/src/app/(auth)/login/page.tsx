@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { LoginView } from '@/components/auth/login-view';
 import { safeNextPath } from '@/lib/routes';
 
-export const metadata: Metadata = { title: 'Sign in · Moni' };
+export const metadata: Metadata = { title: 'Sign in | Moni' };
 
 type Search = Promise<Record<string, string | string[] | undefined>>;
 

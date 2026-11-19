@@ -98,7 +98,7 @@ export function MainCurrencySheet({
         <SheetRows>
           {held.map((entry, index) => {
             const picked = entry.currency === selected;
-            const meta = `${entry.wallets} ${entry.wallets === 1 ? 'wallet' : 'wallets'} · ${formatMoney(entry.totalMinor, entry.currency)}`;
+            const meta = `${entry.wallets} ${entry.wallets === 1 ? 'wallet' : 'wallets'} with ${formatMoney(entry.totalMinor, entry.currency)}`;
             return (
               <Press
                 key={entry.currency}

@@ -461,7 +461,7 @@ function Detail({ transaction: tx }: { transaction: FinanceTransaction }) {
                 0,
               ),
               tx.currency,
-            )} in total · see ${sameMerchant.length === 2 ? 'both' : 'all'}`,
+            )} in total, see ${sameMerchant.length === 2 ? 'both' : 'all'}`,
             icon: 'magnify',
             trailing: 'chevron-right',
             onPress: () =>
@@ -504,7 +504,7 @@ function Detail({ transaction: tx }: { transaction: FinanceTransaction }) {
           className="text-muted"
           style={{ fontVariant: ['tabular-nums'] }}
         >
-          {`${dateLabel(deviceCalendar.dayKey(tx.transactionDate), deviceCalendar.dayKey(new Date()))} · ${clockTime(tx.transactionDate)}`}
+          {`${dateLabel(deviceCalendar.dayKey(tx.transactionDate), deviceCalendar.dayKey(new Date()))} at ${clockTime(tx.transactionDate)}`}
         </Text>
       </View>
     </View>

@@ -95,7 +95,7 @@ export function MerchantList<M extends MerchantSpend>({
 }
 
 /**
- * One merchant's spending: bubble, name over "3 payments · wallet", amount, chevron. A bank code
+ * One merchant's spending: bubble, name over "3 payments, wallet", amount, chevron. A bank code
  * still to name (`codeKey`) is named in place from its title; the amount side opens its payments.
  */
 export function MerchantSpendRow({
@@ -120,7 +120,7 @@ export function MerchantSpendRow({
   onName?: (key: string, raw: string, name: string) => Promise<Saved | void>;
 }) {
   const tokens = useThemeTokens();
-  const meta = `${merchant.payments === 1 ? '1 payment' : `${merchant.payments} payments`} · ${walletNames[merchant.walletId] ?? 'Wallet'}`;
+  const meta = `${merchant.payments === 1 ? '1 payment' : `${merchant.payments} payments`}, ${walletNames[merchant.walletId] ?? 'Wallet'}`;
   const amount = formatMoney(merchant.spentMinor, currency);
   if (!codeKey || !onName)
     return (

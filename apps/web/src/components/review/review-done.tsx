@@ -79,17 +79,17 @@ export function RecentList({ ledger, titled = true }: { ledger: Ledger; titled?:
             const row = approvedRow(proposal, projection.transactionsById, lookups);
             const category = row ? { name: row.category, icon: row.icon, color: row.color } : proposed;
             const day = calendar.dayKey(proposal.reviewedAt);
-            const when = day === today ? clockTime(proposal.reviewedAt, calendar.zone) : dayLabel(day, today);
+            const when = day === today ? ` at ${clockTime(proposal.reviewedAt, calendar.zone)}` : `, ${dayLabel(day, today)}`;
             const where = notMine
               ? captureSource(proposal)
-              : `${category?.name ?? 'No category'} · ${row?.wallet ?? ((proposal.walletId && walletNames[proposal.walletId]) || 'Wallet')}`;
+              : `${category?.name ?? 'No category'}, ${row?.wallet ?? ((proposal.walletId && walletNames[proposal.walletId]) || 'Wallet')}`;
             return (
               <li key={proposal.id} className="recent-row" data-status={proposal.status}>
                 {notMine ? <Bubble icon="close" color={null} size={36} glyph={18} /> : <Bubble icon={category?.icon} color={category?.color} size={36} glyph={18} />}
                 <span className="inbox-text">
                   <b>{row?.title ?? captureName(proposal)}</b>
                   <span>
-                    {notMine ? 'Not mine' : 'Approved'} · {where} · {when}
+                    {notMine ? 'Not mine' : 'Approved'}, {where}{when}
                   </span>
                 </span>
                 <span className="num recent-amount" data-tone={notMine ? 'quiet' : undefined}>

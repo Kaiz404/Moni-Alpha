@@ -1,7 +1,8 @@
 // Ported from the design canvas tool lint_terms.py, which follows the "Never use" table and the
 // Formatting list in docs/redesign/glossary.md. Keep the two in step. lint_terms.py also has a
 // greeting rule and a "time after now" rule; both test the canvas sample time of 2:06 pm, so they
-// stay on the canvas side only.
+// stay on the canvas side only. A rule with `anyString` checks every string in the source, not
+// only the ones that reach JSX: a separator is usually joined into copy far from the screen.
 export const RULES = [
   {
     term: 'Split',
@@ -99,14 +100,22 @@ export const RULES = [
     reason: 'day first: Wed 14 Oct',
   },
   {
+    term: 'middle dot',
+    pattern: /·/,
+    reason: 'no · separators: a second line, the right side, weight or colour, or plain words',
+    anyString: true,
+  },
+  {
     term: 'curly apostrophe',
     pattern: /Touch ’n Go/,
     reason: "straight apostrophe: Touch 'n Go",
   },
 ];
 
-export function termsIn(text) {
-  return RULES.filter(({ pattern }) => pattern.test(text)).map(
+export function termsIn(text, { shown = true } = {}) {
+  return RULES.filter(
+    ({ pattern, anyString }) => (shown || anyString) && pattern.test(text),
+  ).map(
     ({ term, reason }) => ({
       term,
       reason,

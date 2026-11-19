@@ -8,6 +8,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint --max-warnings 0",
+    "lint:copy": "node ../mobile/scripts/lint/check-copy.mjs web",
     "check-types": "next typegen && tsc --noEmit",
     "test": "vitest run",
     "verify": "scripts/verify/with-slot.sh node scripts/verify/drive.mjs"

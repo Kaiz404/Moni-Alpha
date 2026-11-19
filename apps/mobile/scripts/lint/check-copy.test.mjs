@@ -129,3 +129,22 @@ test('the Archive labels 4a8dedb6 replaced with Delete fail', () => {
   );
   assert.deepEqual(terms('const A = () => <Button label="Delete category" />;'), []);
 });
+
+test('a middle dot fails in any string, even one joined far from the screen', () => {
+  assert.deepEqual(
+    terms(`const meta = [category, wallet].filter(Boolean).join(' · ');`),
+    ['middle dot: ·'],
+  );
+  assert.deepEqual(
+    terms('const A = ({ n }) => <Text>{`Recently reviewed · ${n}`}</Text>;'),
+    ['middle dot: Recently reviewed · {}'],
+  );
+  assert.deepEqual(
+    terms(`const meta = [category, wallet].filter(Boolean).join(', ');`),
+    [],
+  );
+});
+
+test('a banned word outside the screen still passes', () => {
+  assert.deepEqual(terms(`const route = 'Insights';`), []);
+});

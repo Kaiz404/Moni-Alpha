@@ -273,7 +273,7 @@ export async function verifyChat(t) {
     await p.keyboard.press('Enter');
     await p.locator('.draft-settled[data-state="done"]').waitFor({ timeout: 5000 }).catch(() => {});
     const done = await p.locator('.draft-settled[data-state="done"]').textContent().catch(() => '');
-    check(`Enter approves: "Changed ${ids.length} rows to ${transport.name} · Undo"`, done === `Changed ${ids.length} rows to ${transport.name}Undo`, done);
+    check(`Enter approves: "Changed ${ids.length} rows to ${transport.name}, then Undo"`, done === `Changed ${ids.length} rows to ${transport.name}Undo`, done);
     let moved = await until(async () => {
       const now = await categoryOf(ids);
       return { ok: ids.every((id) => now[id] === transport.id), now };

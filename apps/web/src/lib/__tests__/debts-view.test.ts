@@ -40,10 +40,10 @@ describe('debt words', () => {
   });
 
   it('words Coming up from who pays whom', () => {
-    expect(comingUpWords(debtLine({}), 16)).toEqual({ title: 'Aiman pays RM150', meta: 'In 16 days · penang trip hotel share' });
+    expect(comingUpWords(debtLine({}), 16)).toEqual({ title: 'Aiman pays RM150', meta: 'In 16 days, penang trip hotel share' });
     expect(comingUpWords(debtLine({ counterpartyName: 'Mei', direction: 'i_owe', note: 'Concert tickets' }, { balanceMinor: m(4050) }), 1)).toEqual({
       title: 'Pay Mei RM40',
-      meta: 'Tomorrow · concert tickets',
+      meta: 'Tomorrow, concert tickets',
     });
     expect(comingUpWords(debtLine({ note: null }), -2)).toEqual({ title: 'Aiman pays RM150', meta: '2 days late' });
   });
@@ -51,13 +51,13 @@ describe('debt words', () => {
   it('says when a debt started or how it closed', () => {
     expect(personMeta(debtLine({}), '2026-10-14', '2026-09-27')).toBe('Lent Sun 27 Sep');
     expect(personMeta(debtLine({ direction: 'i_owe' }), '2026-10-14', '2026-09-25')).toBe('Borrowed Fri 25 Sep');
-    expect(personMeta(debtLine({ note: 'Lunch' }, { state: 'settled' }), '2026-10-14', '2026-09-01')).toBe('Settled · Lunch');
+    expect(personMeta(debtLine({ note: 'Lunch' }, { state: 'settled' }), '2026-10-14', '2026-09-01')).toBe('Settled, Lunch');
     expect(personMeta(debtLine({ note: null }, { state: 'written_off' }), '2026-10-14', '2026-09-01')).toBe('Written off');
   });
 
   it('counts people, not debts', () => {
-    expect(openLabel([debtLine({}), debtLine({ id: 'd2' }), debtLine({ counterpartyName: 'Mei' })])).toBe('Open · 2 people');
-    expect(openLabel([debtLine({})])).toBe('Open · 1 person');
+    expect(openLabel([debtLine({}), debtLine({ id: 'd2' }), debtLine({ counterpartyName: 'Mei' })])).toBe('2 people open');
+    expect(openLabel([debtLine({})])).toBe('1 person open');
   });
 
   it('says what came back and what is left', () => {
@@ -78,7 +78,7 @@ describe('debt words', () => {
     );
     expect(items.map(({ title, meta, amount }) => [title, meta, amount])).toEqual([
       ['Paid you back', 'Today', '+RM50.00'],
-      ['Lent', 'Sun 27 Sep · from Maybank', 'RM150.00'],
+      ['Lent', 'Sun 27 Sep from Maybank', 'RM150.00'],
     ]);
   });
 });

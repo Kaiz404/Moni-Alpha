@@ -24,7 +24,7 @@ describe('transactionRow for a balance correction', () => {
     );
     expect([row.title, rowMeta(row, 'category'), rowAmount(row)]).toEqual([
       'Balance correction',
-      'Not in budgets · Maybank',
+      'Not in budgets, Maybank',
       '−RM3.60',
     ]);
   });

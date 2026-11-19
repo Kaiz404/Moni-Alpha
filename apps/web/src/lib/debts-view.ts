@@ -19,25 +19,25 @@ function lowerFirst(text: string): string {
   return text.charAt(0).toLowerCase() + text.slice(1);
 }
 
-/** A Coming up row: "Pay Mei RM40" or "Aiman pays RM150", then "In 6 days · concert tickets". */
+/** A Coming up row: "Pay Mei RM40" or "Aiman pays RM150", then "In 6 days, concert tickets". */
 export function comingUpWords(line: DebtLine, daysLeft: number): { title: string; meta: string } {
   const { debt, balanceMinor } = line;
   const amount = formatMoney(balanceMinor, debt.currency, { whole: true });
   const title = debt.direction === 'i_owe' ? `Pay ${debt.counterpartyName} ${amount}` : `${debt.counterpartyName} pays ${amount}`;
-  return { title, meta: [dueWords(daysLeft), debt.note ? lowerFirst(debt.note) : null].filter(Boolean).join(' · ') };
+  return { title, meta: [dueWords(daysLeft), debt.note ? lowerFirst(debt.note) : null].filter(Boolean).join(', ') };
 }
 
-/** The People row's line under the name: "Lent Sun 27 Sep", or for a closed debt "Settled · Lunch". */
+/** The People row's line under the name: "Lent Sun 27 Sep", or for a closed debt "Settled, Lunch". */
 export function personMeta(line: DebtLine, today: string, startedDay: string): string {
   if (line.state === 'open') return `${line.debt.direction === 'owed_to_me' ? 'Lent' : 'Borrowed'} ${dateLabel(startedDay, today)}`;
   const state = line.state === 'settled' ? 'Settled' : 'Written off';
-  return line.debt.note ? `${state} · ${line.debt.note}` : state;
+  return line.debt.note ? `${state}, ${line.debt.note}` : state;
 }
 
-/** "Open · 2 people": the people, not the debts, with something still open. */
+/** "2 people open": the people, not the debts, with something still open. */
 export function openLabel(open: readonly DebtLine[]): string {
   const people = new Set(open.map((line) => line.debt.counterpartyName.trim().toLocaleLowerCase())).size;
-  return `Open · ${people} ${people === 1 ? 'person' : 'people'}`;
+  return `${people} ${people === 1 ? 'person' : 'people'} open`;
 }
 
 /** The bar under the balance: what came back so far, and what is still to go. */
@@ -88,7 +88,7 @@ export function timeline(
             id: activity.id,
             kind: activity.kind,
             title: mine ? 'Lent' : 'Borrowed',
-            meta: `${day} · ${wallet ? `${mine ? 'from' : 'into'} ${wallet}` : `${name} paid directly`}`,
+            meta: wallet ? `${day} ${mine ? 'from' : 'into'} ${wallet}` : `${day}, ${name} paid directly`,
             amount: money,
           };
         case 'repayment':
@@ -96,7 +96,7 @@ export function timeline(
             id: activity.id,
             kind: activity.kind,
             title: mine ? 'Paid you back' : 'You paid back',
-            meta: wallet ? `${day} · ${mine ? 'into' : 'from'} ${wallet}` : day,
+            meta: wallet ? `${day} ${mine ? 'into' : 'from'} ${wallet}` : day,
             amount: mine ? `+${money}` : money,
           };
         case 'write_off':

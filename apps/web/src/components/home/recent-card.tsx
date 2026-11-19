@@ -56,7 +56,7 @@ export function RecentCard({ ledger }: { ledger: Ledger }) {
               key={row.id}
               row={row}
               href={`/activity/${row.id}`}
-              meta={row.kind === 'transfer' ? rowDay(row.date, now, calendar) : `${rowDay(row.date, now, calendar)} · ${row.wallet}`}
+              meta={row.kind === 'transfer' ? rowDay(row.date, now, calendar) : `${rowDay(row.date, now, calendar)}, ${row.wallet}`}
               style={{ animationDelay: `${index * 30}ms` }}
             />
           ))}

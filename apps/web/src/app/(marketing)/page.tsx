@@ -14,7 +14,7 @@ import { SITE_FACTS, TAGLINE, factText } from '@/lib/site-facts';
 import '@/components/marketing/landing.css';
 
 export const metadata: Metadata = {
-  title: 'Moni · Know what’s safe to spend, every day',
+  title: 'Moni | Know what’s safe to spend, every day',
   description:
     'Type it, snap it, say it, or let Moni read your bank alerts. Moni files each payment and tells you what you can spend today. Android and the web.',
 };

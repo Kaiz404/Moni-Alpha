@@ -140,11 +140,11 @@ export function setupChecklist(input: {
   phoneUsed: boolean;
 }): ChecklistItem[] {
   return [
-    { key: 'currency', title: 'Pick your main currency', line: `${input.currency} · ${input.currencyName}`, done: true },
+    { key: 'currency', title: 'Pick your main currency', line: `${input.currency}, ${input.currencyName}`, done: true },
     {
       key: 'ai',
       title: "Choose about Moni's AI",
-      line: input.aiOn === null ? 'Moni asks before anything goes to AI' : `${input.aiOn ? 'On' : 'Off'} · change it in Settings`,
+      line: input.aiOn === null ? 'Moni asks before anything goes to AI' : `${input.aiOn ? 'On' : 'Off'}, change it in Settings`,
       done: input.aiOn !== null,
     },
     {

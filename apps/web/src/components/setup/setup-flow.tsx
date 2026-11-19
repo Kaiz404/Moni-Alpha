@@ -328,7 +328,7 @@ export function SetupFlow({ name, email }: { name: string; email: string }) {
         <aside className="setup-preview" aria-label="Preview">
           <span className="caps setup-preview-cap">
             <Glyph name="eye-outline" size={16} />
-            {state.step === 2 ? 'Preview · one bank alert' : state.step === 4 ? 'Preview · on your phone' : 'Preview · your Home'}
+            {state.step === 2 ? 'Preview of one bank alert' : state.step === 4 ? 'Preview on your phone' : 'Preview of your Home'}
           </span>
           <Preview step={state.step} name={name} today={today} main={main} wallets={state.wallets} ai={state.ai} />
         </aside>
@@ -338,11 +338,11 @@ export function SetupFlow({ name, email }: { name: string; email: string }) {
 }
 
 function Stepper({ step, currency, ai, wallets }: { step: SetupStep; currency: CurrencyChoice; ai: boolean | null; wallets: number }) {
-  const done = [`${currency.code} · ${currency.name}`, ai === null ? '' : ai ? 'On' : 'Off', wallets === 1 ? '1 wallet' : `${wallets} wallets`, 'Later'];
+  const done = [`${currency.code}, ${currency.name}`, ai === null ? '' : ai ? 'On' : 'Off', wallets === 1 ? '1 wallet' : `${wallets} wallets`, 'Later'];
   return (
     <nav className="setup-steps" aria-label="Set-up steps">
       <div className="setup-steps-card">
-        <span className="caps">Set up Moni · step {step} of 4</span>
+        <span className="caps">Step {step} of 4 to set up Moni</span>
         <span className="setup-bar" aria-hidden="true">
           <span style={{ width: `${(step / 4) * 100}%` }} />
         </span>
@@ -414,7 +414,7 @@ function CurrencyList({
             {row(top)}
           </>
         )}
-        <span className="setup-grp">{query.trim() ? `${rest.length} found` : `All currencies · ${choices.length}`}</span>
+        <span className="setup-grp">{query.trim() ? `${rest.length} found` : `All ${choices.length} currencies`}</span>
         {rest.map(row)}
         {!found.length && <p className="setup-none">No currency matches “{query.trim()}”. Try its code, like USD.</p>}
       </div>
@@ -556,7 +556,7 @@ function Preview({
           <span className="setup-zero num">{money(0)}</span>
           <span className="setup-chip setup-chip-sand">
             <Glyph name="currency-usd" size={16} />
-            Main currency · {main.code}
+            Main currency is {main.code}
           </span>
         </div>
         <div className="setup-pcard">
@@ -566,7 +566,7 @@ function Preview({
             <line x1="0" y1="88" x2="360" y2="88" />
           </svg>
           <span className="num setup-pline">
-            <b>{money(0)}</b> spent · budgets and bills in {main.code}
+            <b>{money(0)}</b> spent, budgets and bills in {main.code}
           </span>
         </div>
         <div className="setup-pcard setup-pdash">
@@ -586,7 +586,7 @@ function Preview({
         <div className="setup-pcard">
           <span className="meta setup-alert-from">
             <Bubble icon="bank" color={WALLET_KINDS.bank.color} size={28} glyph={16} />
-            Bank alert · 12:41 pm
+            Bank alert at 12:41 pm
           </span>
           <blockquote className="setup-quote">You&apos;ve spent {money(2340)} at GRAB*FOOD.</blockquote>
           <span className="setup-tag" data-off={ai === false || undefined}>
@@ -606,7 +606,7 @@ function Preview({
               <Bubble icon="silverware-fork-knife" color="var(--color-coral)" size={42} glyph={20} />
               <span className="setup-li-text">
                 <b>GRAB*FOOD</b>
-                <span>Food &amp; Dining · Bank · 12:41 pm</span>
+                <span>Food &amp; Dining, Bank at 12:41 pm</span>
               </span>
               <b className="num">{formatMoney(-2340, main.code)}</b>
             </div>
@@ -661,18 +661,18 @@ function Preview({
         <div className="setup-notif">
           <span className="setup-notif-from">
             <Bubble icon="bank" color={WALLET_KINDS.bank.color} size={20} glyph={12} />
-            Your bank · now
+            Your bank, now
           </span>
           <span>You&apos;ve spent {money(2340)} at GRAB*FOOD.</span>
         </div>
         <div className="setup-notif setup-notif-moni">
           <span className="setup-notif-from">
             <Cat size={20} ground="deep" tile id="setup-notif" />
-            Moni · now
+            Moni, now
           </span>
           <b>New transaction to review</b>
           <span>
-            GRAB*FOOD {formatMoney(-2340, main.code)} · Food &amp; Dining
+            {formatMoney(-2340, main.code)} at GRAB*FOOD in Food &amp; Dining
           </span>
         </div>
       </div>
