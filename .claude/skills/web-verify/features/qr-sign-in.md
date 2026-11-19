@@ -11,7 +11,7 @@ The code from `qr-start`, drawn as a QR with the Moni tile; "New code in 0:42"; 
 ## Driving it with Playwright
 
 - `[data-qr-state]` on the card is `starting`, `showing`, `approved`, `expired` or `failed`. `[data-qr-value]` holds the link, `moni-e2e://sign-in?code=<code>` in the drive.
-- Approve as the phone: password-grant a token for the e2e user, then POST `functions/v1/qr-approve` with `{ code, step: 'check' }` (answers `{ browser }`) and `{ code, step: 'approve' }` (answers `{ ok: true }`). The page then lands on `next` (default `/home`).
+- Approve as the phone: password-grant a token for the web e2e user, then POST `functions/v1/qr-approve` with `{ code, step: 'check' }` (answers `{ browser }`) and `{ code, step: 'approve' }` (answers `{ ok: true }`). The page then lands on `next` (default `/home`).
 - Rotation timing is unit-tested in `apps/web/src/lib/__tests__/qr-sign-in.test.ts`; the live rotation takes 61 s and is covered by `supabase/functions/_check/live-check.mjs`.
 
 ## Gotchas

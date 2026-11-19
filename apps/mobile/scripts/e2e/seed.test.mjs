@@ -3,7 +3,7 @@ import { spawnSync } from 'node:child_process';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { aiConsentRows, buildProfile, dayShift, merchantKey, shiftDate } from './fixtures.mjs';
-import { SeedError, parseArgs } from './seed.mjs';
+import { SeedError, e2eConfig, parseArgs } from './seed.mjs';
 
 const SEED = fileURLToPath(new URL('./seed.mjs', import.meta.url));
 const USER = '9d73080a-d17e-4a32-b882-ff4ac1978ecc';
@@ -102,7 +102,9 @@ test('the empty profile writes no rows', () => {
 });
 
 test('the arguments are checked before anything runs', () => {
-  assert.deepEqual(parseArgs(['--reset', '--profile', 'full']), { mode: 'reset', profile: 'full', today: null, name: null });
+  assert.deepEqual(parseArgs(['--reset', '--profile', 'full']), { mode: 'reset', profile: 'full', today: null, name: null, user: 'phone' });
+  assert.deepEqual(parseArgs(['--user', 'web', '--query', 'debts']), { mode: 'query', profile: null, today: null, name: 'debts', user: 'web' });
+  assert.throws(() => parseArgs(['--user', 'tablet', '--reset', '--profile', 'full']), (error) => error instanceof SeedError && error.code === 2);
   assert.throws(() => parseArgs(['--reset', '--profile', 'heavy']), (error) => error instanceof SeedError && error.code === 2);
   assert.throws(() => parseArgs(['--query', 'everything']), (error) => error instanceof SeedError && error.code === 2);
 });
@@ -121,4 +123,25 @@ test('the guard refuses a user that is not a dedicated e2e user, with exit 2 and
   assert.equal(run.status, 2);
   assert.match(run.stderr, /E2E_EMAIL must be a dedicated test user whose address starts with e2e, got k…@gmail.com/);
   assert.equal(run.stdout, '');
+});
+
+test('--user web seeds the web lane\'s own user, never the phone\'s', () => {
+  const env = {
+    EXPO_PUBLIC_SUPABASE_URL: 'https://dev.supabase.co/',
+    SUPABASE_SECRET_KEY: 'sb_secret_x',
+    E2E_EMAIL: 'e2e+moni@example.com',
+    E2E_PASSWORD: 'phone-pw',
+    E2E_WEB_EMAIL: 'E2E+web@example.com',
+    E2E_WEB_PASSWORD: 'web-pw',
+  };
+  assert.deepEqual(e2eConfig(env), { url: 'https://dev.supabase.co', email: 'e2e+moni@example.com', password: 'phone-pw', secret: 'sb_secret_x' });
+  assert.deepEqual(e2eConfig(env, 'web'), { url: 'https://dev.supabase.co', email: 'e2e+web@example.com', password: 'web-pw', secret: 'sb_secret_x' });
+  assert.throws(
+    () => e2eConfig({ ...env, E2E_WEB_EMAIL: 'e2e+moni@example.com' }, 'web'),
+    (error) => error instanceof SeedError && error.message === 'E2E_WEB_EMAIL must differ from E2E_EMAIL, or the two lanes share rows',
+  );
+  assert.throws(
+    () => e2eConfig({ ...env, E2E_WEB_EMAIL: undefined }, 'web'),
+    (error) => error instanceof SeedError && error.message === 'E2E_WEB_EMAIL must be a dedicated test user whose address starts with e2e, got nothing',
+  );
 });

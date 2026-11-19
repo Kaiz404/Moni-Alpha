@@ -1,13 +1,23 @@
 #!/usr/bin/env node
 import { execFileSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { DELETE_ORDER, INSERT_ORDER, PROFILES, aiConsentRows, buildProfile, todayInTimezone } from './fixtures.mjs';
 
 const MOBILE_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
-const usage = () => `usage: seed.mjs --reset --profile <${PROFILES.join('|')}> [--today YYYY-MM-DD]
-       seed.mjs --query <${Object.keys(QUERIES).join('|')}>`;
+const usage = () => `usage: seed.mjs [--user <${Object.keys(USERS).join('|')}>] --reset --profile <${PROFILES.join('|')}> [--today YYYY-MM-DD]
+       seed.mjs [--user <${Object.keys(USERS).join('|')}>] --query <${Object.keys(QUERIES).join('|')}>`;
+
+/**
+ * Each test lane owns one user, so a phone run that reseeds never changes rows under a web check.
+ * `phone` is Maestro's user on Moni E2E; `web` is web-verify's.
+ */
+export const USERS = {
+  phone: { email: 'E2E_EMAIL', password: 'E2E_PASSWORD' },
+  web: { email: 'E2E_WEB_EMAIL', password: 'E2E_WEB_PASSWORD' },
+};
 
 export class SeedError extends Error {
   constructor(message, code) {
@@ -17,7 +27,7 @@ export class SeedError extends Error {
 }
 
 export function parseArgs(argv) {
-  const args = { mode: null, profile: null, today: null, name: null };
+  const args = { mode: null, profile: null, today: null, name: null, user: 'phone' };
   for (let i = 0; i < argv.length; i++) {
     const flag = argv[i];
     const value = () => {
@@ -29,11 +39,13 @@ export function parseArgs(argv) {
     else if (flag === '--profile') args.profile = value();
     else if (flag === '--today') args.today = value();
     else if (flag === '--query') [args.mode, args.name] = ['query', value()];
+    else if (flag === '--user') args.user = value();
     else throw new SeedError(`unknown argument ${flag}`, 2);
   }
   if (args.mode === 'reset' && !PROFILES.includes(args.profile ?? ''))
     throw new SeedError(`--reset needs --profile ${PROFILES.join(' or ')}`, 2);
   if (args.mode === 'query' && !(args.name in QUERIES)) throw new SeedError(`unknown query ${args.name}`, 2);
+  if (!(args.user in USERS)) throw new SeedError(`--user is ${Object.keys(USERS).join(' or ')}`, 2);
   if (args.today && !/^\d{4}-\d{2}-\d{2}$/.test(args.today)) throw new SeedError('--today is YYYY-MM-DD', 2);
   if (!args.mode) throw new SeedError('pass --reset or --query', 2);
   return args;
@@ -66,15 +78,18 @@ export function loadEnv(env = process.env) {
   return loaded;
 }
 
-export function e2eConfig(env) {
+export function e2eConfig(env, user = 'phone') {
+  const keys = USERS[user];
   const url = env.EXPO_PUBLIC_SUPABASE_URL?.replace(/\/+$/, '');
-  const email = env.E2E_EMAIL?.trim().toLowerCase();
+  const email = env[keys.email]?.trim().toLowerCase();
   if (!email || !/^e2e[^@]*@/.test(email))
-    throw new SeedError(`E2E_EMAIL must be a dedicated test user whose address starts with e2e, got ${email ? email.replace(/^(.).*@/, '$1…@') : 'nothing'}`, 2);
-  const missing = ['EXPO_PUBLIC_SUPABASE_URL', 'SUPABASE_SECRET_KEY', 'E2E_PASSWORD'].filter((key) => !env[key]);
+    throw new SeedError(`${keys.email} must be a dedicated test user whose address starts with e2e, got ${email ? email.replace(/^(.).*@/, '$1…@') : 'nothing'}`, 2);
+  const other = Object.entries(USERS).find(([name, k]) => name !== user && env[k.email]?.trim().toLowerCase() === email);
+  if (other) throw new SeedError(`${keys.email} must differ from ${other[1].email}, or the two lanes share rows`, 2);
+  const missing = ['EXPO_PUBLIC_SUPABASE_URL', 'SUPABASE_SECRET_KEY', keys.password].filter((key) => !env[key]);
   if (missing.length) throw new SeedError(`set ${missing.join(', ')} in apps/mobile/.env.e2e`, 3);
   if (!env.SUPABASE_SECRET_KEY.startsWith('sb_secret_')) throw new SeedError('SUPABASE_SECRET_KEY must be an sb_secret_ key', 3);
-  return { url, email, password: env.E2E_PASSWORD, secret: env.SUPABASE_SECRET_KEY };
+  return { url, email, password: env[keys.password], secret: env.SUPABASE_SECRET_KEY };
 }
 
 function client({ url, secret }) {
@@ -150,8 +165,29 @@ async function reset(request, userId, profile, today) {
 
 const select = (request, path) => request(path).then(({ json }) => json);
 
+/**
+ * Each live row's content as a short hash by table and id, without the columns every write or undo
+ * touches. Two fingerprints are equal when a run left the user's ledger as the seed wrote it.
+ */
+async function fingerprint(request, userId) {
+  const result = {};
+  for (const table of INSERT_ORDER) {
+    const rows = await select(request, `/rest/v1/${table}?user_id=eq.${userId}&select=*&order=id`);
+    result[table] = Object.fromEntries(
+      rows
+        .filter((row) => row.deleted !== true)
+        .map(({ created_at, updated_at, deleted, ...row }) => [
+          row.id,
+          createHash('sha256').update(JSON.stringify(row, Object.keys(row).sort())).digest('hex').slice(0, 12),
+        ]),
+    );
+  }
+  return result;
+}
+
 export const QUERIES = {
   counts: (request, userId) => counts(request, userId),
+  fingerprint: (request, userId) => fingerprint(request, userId),
   user: async (request, userId, config) => ({ id: userId, email: config.email }),
   wallets: (request, userId) =>
     select(request, `/rest/v1/wallet_balances?user_id=eq.${userId}&select=name,currency,current_balance&order=display_order`),
@@ -180,7 +216,7 @@ export const QUERIES = {
 
 async function main(argv) {
   const args = parseArgs(argv);
-  const config = e2eConfig(loadEnv());
+  const config = e2eConfig(loadEnv(), args.user);
   const request = client(config);
   if (args.mode === 'query') {
     const user = await findUser(request, config.email);

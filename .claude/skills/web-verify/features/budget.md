@@ -13,7 +13,7 @@ The Budget tab, or G then B. Pick a row or a ring slice for its pane.
 - Rows: `.budget-row[data-category]`, with `data-budgeted`, cells `[data-col="spent|budget|left|last|avg"]`. Click `.row-name`, not the row's middle, which can land on the budget cell and start an edit. The total is `[data-testid="budget-total"]`.
 - The cell editor: `.budget-cell input`; in the pane or on the phone layout, `aside.detail input[aria-label$="budget in ringgit, editing"]`. Enter saves, Esc cancels.
 - Keys: J and K move, E edits the selected budget (or starts Set budgets), Esc cancels the edit, then closes the pane.
-- Compare with `seed.mjs --query budgets` (category name, amount, currency).
+- Compare with `seed.mjs --user web --query budgets` (category name, amount, currency).
 
 ## Gotchas
 

@@ -2,8 +2,9 @@
 // Drives the real web app the way a user does and prints PASS or FAIL per check; the last line is the verdict.
 //   node apps/web/scripts/verify/drive.mjs [--no-build] [--dev] [--out <dir>] [--skip-qr] [--doctor]
 // Builds and starts the app on a free port with the dev project's keys from apps/mobile/.env.e2e (this
-// checkout's, then the main checkout's), signs in as the e2e user, and saves screenshots beside the board
-// renders, with board-and-app pairs for the screens a board draws.
+// checkout's, then the main checkout's), reseeds the web's own e2e user (E2E_WEB_EMAIL) for the boards'
+// day, signs in only as that user, and saves screenshots beside the board renders, with board-and-app
+// pairs for the screens a board draws. The phone's e2e user is never read or written.
 import { execFileSync, spawn } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync } from 'node:fs';
 import { createServer } from 'node:net';
@@ -74,10 +75,18 @@ function loadEnv() {
       if (match && !(match[1] in env)) env[match[1]] = match[2].trim().replace(/^['"]|['"]$/g, '');
     }
   }
-  for (const key of ['EXPO_PUBLIC_SUPABASE_URL', 'EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY', 'E2E_EMAIL', 'E2E_PASSWORD']) {
+  for (const key of ['EXPO_PUBLIC_SUPABASE_URL', 'EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY', 'SUPABASE_SECRET_KEY', 'E2E_WEB_EMAIL', 'E2E_WEB_PASSWORD']) {
     if (!env[key]) throw new Error(`${key} is missing from apps/mobile/.env.e2e`);
   }
-  return env;
+  return { ...env, email: env.E2E_WEB_EMAIL, password: env.E2E_WEB_PASSWORD };
+}
+
+/** The boards' sample day, Wed 14 Oct 2026: the seed is written for it and every pinned page reads it. */
+const SEED_DAY = '2026-10-14';
+const seedScript = join(repo, 'apps/mobile/scripts/e2e/seed.mjs');
+/** seed.mjs for the web's own user, so a phone run reseeding its user never moves a row under a check here. */
+function webSeed(...seedArgs) {
+  return execFileSync('node', [seedScript, '--user', 'web', ...seedArgs], { encoding: 'utf8' });
 }
 
 function freePort() {
@@ -118,7 +127,8 @@ const appEnv = {
 const next = join(web, 'node_modules', '.bin', 'next');
 
 if (flag('--doctor')) {
-  check('apps/mobile/.env.e2e has the dev project keys and the e2e user', true);
+  check("apps/mobile/.env.e2e has the dev project keys and the web's e2e user", true);
+  check("the web's e2e user is not the phone's", env.email.toLowerCase() !== env.E2E_EMAIL?.toLowerCase(), env.email);
   check('Playwright has its Chromium', existsSync(chromium.executablePath()), chromium.executablePath());
   const poll = await fetch(`${supabaseUrl}/functions/v1/qr-poll`, {
     method: 'POST',
@@ -139,6 +149,9 @@ if (!dev && !flag('--no-build')) {
   console.log('building the web app');
   execFileSync(next, ['build'], { cwd: web, env: appEnv, stdio: ['ignore', 'ignore', 'inherit'] });
 }
+console.log(`reseeding ${env.email} with the full profile for ${SEED_DAY}`);
+webSeed('--reset', '--profile', 'full', '--today', SEED_DAY);
+const seeded = JSON.parse(webSeed('--query', 'fingerprint'));
 const port = await freePort();
 const base = `http://127.0.0.1:${port}`;
 const server = spawn(next, [dev ? 'dev' : 'start', '--port', String(port), '--hostname', '127.0.0.1'], {
@@ -251,8 +264,8 @@ async function visibleNav(page) {
 async function signInWithPassword(context) {
   const page = await context.newPage();
   await page.goto(`${base}/login`);
-  await page.getByLabel('Email').fill(env.E2E_EMAIL);
-  await page.getByLabel('Password', { exact: true }).fill(env.E2E_PASSWORD);
+  await page.getByLabel('Email').fill(env.email);
+  await page.getByLabel('Password', { exact: true }).fill(env.password);
   await page.locator('form button[type="submit"]').click();
   await page.waitForURL(`${base}/home`, { timeout: 20_000 }).catch(() => {});
   return page;
@@ -274,7 +287,7 @@ async function phoneToken() {
   const res = await fetch(`${supabaseUrl}/auth/v1/token?grant_type=password`, {
     method: 'POST',
     headers: { apikey: publishable, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email: env.E2E_EMAIL, password: env.E2E_PASSWORD }),
+    body: JSON.stringify({ email: env.email, password: env.password }),
   });
   const json = await res.json();
   return json.access_token;
@@ -305,7 +318,7 @@ try {
   check('the QR card counts down to the next code', /New code in \d:\d\d/.test(timer ?? ''), timer);
   await pair('auth-sign-in', 'r3/W2-Auth.png', await shot(page, 'auth-sign-in-1440'));
 
-  await page.getByLabel('Email').fill(env.E2E_EMAIL);
+  await page.getByLabel('Email').fill(env.email);
   await page.getByLabel('Password', { exact: true }).fill('not-the-password');
   await page.locator('form button[type="submit"]').click();
   await page.getByText("That email and password don't match. Check both and try again.").waitFor({ timeout: 15_000 }).catch(() => {});
@@ -368,7 +381,7 @@ try {
   const signedIn = await signInWithPassword(auth);
   check('password sign-in reaches /home', signedIn.url() === `${base}/home`, signedIn.url());
   const seed = await readSeed({ supabaseUrl, publishable, token: await phoneToken() });
-  check(`the e2e seed was written for ${seed.seedDay}; Home and Activity are checked at 3 pm that day`, Boolean(seed.seedDay), seed.seedDay);
+  check(`the web's e2e seed was written for ${SEED_DAY}; the ledger screens are checked at 3 pm that day`, seed.seedDay === SEED_DAY, seed.seedDay);
   const storage = await auth.storageState();
   await auth.close();
 
@@ -643,7 +656,20 @@ try {
   check('and back across 700 the draft is still there', (await field.inputValue()) === '12.50 lunch at Mamak');
   await resize.close();
   }
-  if (runs('ledger')) await verifyBudgetDebts({ browser, base, storage, check, shot, pair, settle, open, repo, out: OUT, widths: WIDTHS, background: BACKGROUND, navFor: NAV_FOR });
+  if (runs('ledger')) await verifyBudgetDebts({ browser, base, storage, check, shot, pair, settle, open, out: OUT, widths: WIDTHS, background: BACKGROUND, navFor: NAV_FOR, seed, query: (name) => JSON.parse(webSeed('--query', name)) });
+
+  // ---------- every write above was undone ----------
+  let left = JSON.parse(webSeed('--query', 'fingerprint'));
+  for (let tries = 0; tries < 10 && JSON.stringify(left) !== JSON.stringify(seeded); tries++) {
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+    left = JSON.parse(webSeed('--query', 'fingerprint'));
+  }
+  const drift = Object.keys(seeded).flatMap((table) =>
+    [...new Set([...Object.keys(seeded[table]), ...Object.keys(left[table] ?? {})])]
+      .filter((id) => seeded[table][id] !== left[table]?.[id])
+      .map((id) => `${table}/${id}: ${seeded[table][id] ?? 'added'} -> ${left[table]?.[id] ?? 'gone'}`),
+  );
+  check("the web's e2e user's live rows end as the seed wrote them", drift.length === 0, drift);
 } catch (error) {
   check('the drive ran to the end', false, String(error?.stack ?? error));
 } finally {
