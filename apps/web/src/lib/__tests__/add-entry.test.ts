@@ -1,7 +1,7 @@
 import { createCalendar, type FinanceWallet, type PlanContext } from '@repo/core';
 import type { CurrencyCode, MinorAmount } from '@repo/types';
 import { describe, expect, it } from 'vitest';
-import { EMPTY_ADD_FORM, addedAt, formFromDraft, planAdd, readAmount } from '../add-entry';
+import { EMPTY_ADD_FORM, addedAt, editForm, formFromDraft, planAdd, readAmount } from '../add-entry';
 
 const calendar = createCalendar('Asia/Kuala_Lumpur');
 const now = new Date('2026-10-14T06:30:00.000Z');
@@ -113,6 +113,13 @@ describe('planAdd', () => {
   it('sources a form Moni filled to Moni', () => {
     const plan = planAdd({ ...EMPTY_ADD_FORM, amount: '5', walletId: CASH, evidence: 'Heard it.' }, view, calendar, ctx, now);
     expect(plan.kind === 'writes' && plan.writes.insert[0]?.row).toMatchObject({ metadata: { source: 'moni' } });
+  });
+
+  it("sources a Moni-filled form the user then changed to Manual, and drops Moni's evidence", () => {
+    const edited = editForm({ ...EMPTY_ADD_FORM, amount: '5', walletId: CASH, note: 'Mamak Ali', evidence: 'Heard it.' }, { amount: '6' });
+    expect(edited).toEqual({ ...EMPTY_ADD_FORM, amount: '6', walletId: CASH, note: 'Mamak Ali', evidence: null });
+    const plan = planAdd(edited, view, calendar, ctx, now);
+    expect(plan.kind === 'writes' && plan.writes.insert[0]?.row).toMatchObject({ amount: '6.00', metadata: { source: 'manual' } });
   });
 
   it('writes a transfer between two wallets with the note as its description', () => {

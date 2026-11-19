@@ -805,6 +805,16 @@ try {
   );
   await d.waitForTimeout(400);
   await shot(d, 'add-ask-filled-1440');
+  const evidenceShown = await addPane.locator('.add-evidence').isVisible();
+  await amount.fill('9.40');
+  check("Moni's note shows on its read and goes once the user changes a field", evidenceShown && !(await addPane.locator('.add-evidence').isVisible()));
+  await d.keyboard.press('Escape');
+  await addPane.waitFor({ state: 'detached', timeout: 5000 }).catch(() => {});
+  await d.keyboard.press('n');
+  await addPane.locator('.add-choice').first().waitFor({ timeout: 5000 }).catch(() => {});
+  const reopened = await addPane.locator('.add-choice').count();
+  await d.keyboard.press('t');
+  check('closed without adding, Add opens again on the chooser and Type it is empty', reopened === 2 && (await amount.inputValue().catch(() => 'missing')) === '' && (await addPane.getByLabel('Shop or note').inputValue().catch(() => 'missing')) === '');
   await d.keyboard.press('Escape');
   await addCtx.close();
   }

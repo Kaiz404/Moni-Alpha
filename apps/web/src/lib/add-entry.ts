@@ -83,6 +83,11 @@ export function formFromDraft(draft: ReadDraft, calendar: Calendar): AddForm {
   };
 }
 
+/** The user's own change: from then on the form is theirs, so it saves as Manual. */
+export function editForm(form: AddForm, patch: Partial<AddForm>): AddForm {
+  return { ...form, ...patch, evidence: null };
+}
+
 /** When it happened: Moni's own time on Moni's day, now for today, else the start of the day. */
 export function addedAt(form: Pick<AddForm, 'day' | 'at'>, calendar: Calendar, now: Date): string {
   if (form.at && form.day === calendar.dayKey(form.at)) return form.at;

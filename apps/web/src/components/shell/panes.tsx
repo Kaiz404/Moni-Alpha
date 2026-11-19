@@ -7,7 +7,7 @@ import { ConsentDialog } from '@/components/chat/consent-dialog';
 import { Icon } from '@/components/icon';
 import { Bubble, Glyph } from '@/components/ledger/glyph';
 import { useOnline } from '@/components/states/connection';
-import { ADD_COPY, EMPTY_ADD_FORM, formFromDraft, planAdd, readAmount, type AddForm, type AddKind, type AddMode } from '@/lib/add-entry';
+import { ADD_COPY, editForm, formFromDraft, planAdd, readAmount, type AddForm, type AddKind, type AddMode } from '@/lib/add-entry';
 import { changeAiConsent, currentAiConsent, webAiClient } from '@/lib/ai';
 import { commit, planContext } from '@/lib/ledger/commit';
 import { useLedger, type Ledger } from '@/lib/ledger/use-ledger';
@@ -42,7 +42,7 @@ const CHOICES: { mode: Exclude<AddMode, 'choose'>; label: string; key: string }[
 ];
 
 const setMode = (addMode: AddMode) => setShell({ addMode });
-const setForm = (patch: Partial<AddForm>) => setShell((shell) => ({ addForm: { ...shell.addForm, ...patch } }));
+const setForm = (patch: Partial<AddForm>) => setShell((shell) => ({ addForm: editForm(shell.addForm, patch) }));
 
 /**
  * Add slides over the page from the right (W2-Motion 3); under 700 wide it is the + page. It opens on
@@ -105,11 +105,6 @@ function mainWallets(ledger: Ledger): FinanceWallet[] {
   return ledger.wallets.filter((wallet) => wallet.currency === ledger.currency);
 }
 
-/** Back to the chooser with nothing typed, once an entry is in. */
-function resetAdd() {
-  setShell({ addMode: 'choose', addDraft: '', addForm: EMPTY_ADD_FORM });
-}
-
 type Picker = 'wallet' | 'to' | 'category' | null;
 
 /** The phone's Type it (V2A-CaptureType): Expense, Income or Transfer, the amount, then the details. */
@@ -151,7 +146,6 @@ function TypeIt({ ledger }: { ledger: Ledger }) {
     if (!ready) return;
     const plan = planAdd({ ...form, walletId }, ledger.projection, ledger.calendar, planContext(ledger.userId), new Date());
     if (!commit(plan, copy.added)) return;
-    resetAdd();
     run({ kind: 'closePane' });
   };
 

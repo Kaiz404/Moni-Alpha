@@ -4,6 +4,7 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useTheme } from '@/components/use-theme';
 import { INITIAL_KEY_STATE, keyStep, type KeyState } from '@/lib/keys';
+import { EMPTY_ADD_FORM } from '@/lib/add-entry';
 import { navItem } from '@/lib/nav';
 import { CommandPalette } from './command-palette';
 import { Rail, Sidebar, TabBar } from './nav-bars';
@@ -54,6 +55,13 @@ export function Shell({ user, children }: { user: ShellUser; children: ReactNode
     },
     [pathname, router, searchParams],
   );
+
+  // Closing Add, however it closes, starts the next Add on the chooser with nothing typed.
+  const lastPane = useRef(pane);
+  useEffect(() => {
+    if (lastPane.current === 'add' && pane !== 'add') setShell({ addMode: 'choose', addDraft: '', addForm: EMPTY_ADD_FORM, addAsk: false });
+    lastPane.current = pane;
+  }, [pane]);
 
   const hrefWithPane = useCallback((href: string) => (pane === 'chat' ? `${href}?pane=chat` : href), [pane]);
 
