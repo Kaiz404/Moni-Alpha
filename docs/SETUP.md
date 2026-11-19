@@ -110,7 +110,9 @@ LANGFUSE_TRACING_ENVIRONMENT=development
 CORS_ALLOWED_ORIGINS=http://localhost:3000   # browser origins allowed to call it, comma-separated
 ```
 
-The web app calls the gateway from the browser, so its origin must be in `CORS_ALLOWED_ORIGINS`: `http://localhost:3000` locally, the Vercel domain in production. Each entry is an exact origin (`https://app.example.com`), with no path or wildcard; the backend refuses to start on anything else.
+The web app calls the gateway from the browser, so its origin must be in `CORS_ALLOWED_ORIGINS`: `http://localhost:3000` locally, the Vercel domain in production. Today that is `https://moni-web-plum.vercel.app,http://localhost:3000` on `moni-ai-backend`.
+
+The web app deploys as Vercel project `moni-web` (team Kai's projects): root directory `apps/web`, framework Next.js, functions in `sin1`, and the env vars `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` and `NEXT_PUBLIC_AI_API_URL` for production and preview. Supabase Auth's site URL is the web origin, and its redirect allow list holds `https://moni-web-plum.vercel.app/**` and the localhost origins beside the `moni://` deep links. Deploy with `npx vercel@59 deploy --prod` from the repo root after `vercel link --project moni-web`. Each entry is an exact origin (`https://app.example.com`), with no path or wildcard; the backend refuses to start on anything else.
 
 ## WSL Android toolchain
 

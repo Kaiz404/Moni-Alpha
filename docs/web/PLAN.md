@@ -58,7 +58,7 @@ Each phase ends in a verifiable state. Mobile must behave the same after every p
 
 ## Hosting
 
-Vercel Pro in Singapore (`sin1`) (owner's decision, 19 Nov 2026). The Hobby plan rules out commercial use. The web needs only the Supabase publishable key. `render.yaml` is unused and can go.
+Vercel Pro in Singapore (`sin1`) (owner's decision, 19 Nov 2026). The Hobby plan rules out commercial use. The web needs only the Supabase publishable key. `render.yaml` is unused and can go. Deployed 19 Nov 2026 as Vercel project `moni-web` (root directory `apps/web`, functions in `sin1`) at https://moni-web-plum.vercel.app, on the account's Hobby plan for testing; move it to Pro before launch.
 
 ## Docs and rules to change with the code
 
