@@ -39,7 +39,9 @@ It is on for the dev project. `node scripts/verify/ai-consent-live.mjs` proves t
 
 ## Storage
 
-Bucket `receipts` — receipt images at `{userId}/{proposalId}.jpg`, policies restrict access by `auth.uid()` prefix (`20260323000000_storage_receipts_bucket.sql`). If mobile logs `Bucket not found`, push migrations.
+Bucket `receipts` — receipt images at `{userId}/{proposalId}.jpg`, policies restrict access by `auth.uid()` prefix (`20260323000000_storage_receipts_bucket.sql`). If mobile logs `Bucket not found`, push migrations. Both apps read photos through signed links only.
+
+`20261119140000_receipts_private.sql` makes the bucket private and is committed but **not pushed**. Push it only after the owner installs a preview build that signs links: the installed daily app uses this project and loads the public URLs it stored, which stop working at once. Then `npx supabase db push`; the generated types do not change.
 
 ## Edge Functions
 
