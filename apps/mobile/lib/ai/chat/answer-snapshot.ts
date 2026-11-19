@@ -51,7 +51,7 @@ export function buildAnswerSnapshot(userId: string, now: Date = new Date()): Ans
       perDay: month.left && month.left.perDayMinor > 0 ? Number(month.left.perDayMinor) : null,
       owed: month.left?.debtsDue ?? [],
     },
-    waiting: listAwaitingReview(now)
+    waiting: listAwaitingReview()
       .filter((proposal) => proposal.userId === userId)
       .map((proposal) => proposal.id),
     bills: month.billsDue.map((bill) => ({

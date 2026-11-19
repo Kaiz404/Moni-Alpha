@@ -1,5 +1,5 @@
 # R1 lanes 3 to 6: swipe the top card right from near the edge, left, down, and a short slow drag that snaps back.
-# Needs the full seed's four pending captures. It decides the first three, which each have a wallet.
+# Needs the full seed's four pending captures. It decides the first two, which each have a wallet.
 # Run: scripts/device/run-flows.sh .maestro/flows/review/swipe.yaml
 appId: com.anonymous.moni.e2e
 name: R1 swipe the Review deck
@@ -48,18 +48,20 @@ tags:
     timeout: 3000
 - takeScreenshot: r1-l4-swipe-left
 
+- tapOn:
+    id: nav.toast.undo
+- assertNotVisible: 1 not mine
+- assertVisible:
+    id: review.card
+- takeScreenshot: r1-undo-not-mine
+
+# Down is not an answer: the card gives a little, comes back, and nothing is written.
 - swipe:
     from:
       id: review.card
     direction: DOWN
-- extendedWaitUntil:
-    visible: Saved for later
-    timeout: 3000
-- takeScreenshot: r1-l5-swipe-down
-
-- tapOn:
-    id: nav.toast.undo
-- assertNotVisible: Saved for later
 - assertVisible:
     id: review.card
-- takeScreenshot: r1-undo-later
+- assertNotVisible: 1 not mine
+- assertNotVisible: 'Approved .*'
+- takeScreenshot: r1-l5-swipe-down

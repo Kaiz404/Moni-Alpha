@@ -446,7 +446,6 @@ export function buildProfile(profile, { userId, today, systemCategories }) {
       category_hint: CATEGORY_NAMES[p.category],
       transaction_date: received,
       status: 'pending',
-      snoozed_until: null,
       created_at: new Date(Date.parse(now) - index * 60_000).toISOString(),
     };
   });

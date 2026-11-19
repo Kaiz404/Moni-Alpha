@@ -97,7 +97,7 @@ describe('one purchase, two alerts', () => {
     ['the e-wallet alert', ewallet, bank],
   ])('folds into the ledger row after %s was approved', async (_name, first, second) => {
     await run(first(0));
-    const [waiting] = listAwaitingReview(new Date(T0 + 1000));
+    const [waiting] = listAwaitingReview();
     const approved = await approve(waiting!);
     expect(approved.status).toBe('done');
 
@@ -155,7 +155,7 @@ describe('one purchase, two alerts', () => {
       ),
     );
 
-    const cards = listAwaitingReview(new Date(T0 + 300_000));
+    const cards = listAwaitingReview();
     expect(cards).toHaveLength(2);
     await expect(duplicateOf(cards[0]!)).resolves.toMatchObject({
       kind: 'same_purchase',
@@ -264,7 +264,7 @@ describe('Undo', () => {
     await run(bank(0));
     const second = ewallet(2);
     await run(second);
-    const [card] = listAwaitingReview(new Date(T0 + 1000));
+    const [card] = listAwaitingReview();
     await approve(card!);
     expect(ledgerRows()[0]!.metadata).toMatchObject({ pairing: { absorbed: { id: second.id } } });
 
@@ -279,7 +279,7 @@ describe('Undo', () => {
     await run(bank(0));
     const second = ewallet(2);
     await run(second);
-    const [card] = listAwaitingReview(new Date(T0 + 1000));
+    const [card] = listAwaitingReview();
     const approved = await approve(card!);
     if (approved.status !== 'done') throw new Error('not approved');
 
@@ -294,7 +294,7 @@ describe('Undo', () => {
     await run(bank(0));
     const second = ewallet(2);
     await run(second);
-    const [card] = listAwaitingReview(new Date(T0 + 1000));
+    const [card] = listAwaitingReview();
 
     await notMine(card!);
 
@@ -315,7 +315,7 @@ describe('a redelivered notification', () => {
 
   it('creates nothing after the row was approved', async () => {
     await run(bank(0));
-    const [card] = listAwaitingReview(new Date(T0 + 1000));
+    const [card] = listAwaitingReview();
     await approve(card!);
     await expect(run(bank(0))).resolves.toMatchObject({ created: false });
     expect(ledgerRows()).toHaveLength(1);

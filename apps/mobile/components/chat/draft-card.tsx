@@ -20,7 +20,6 @@ import * as haptics from '@/lib/haptics';
 import {
   approve,
   editedProposal,
-  later,
   notMine,
   undo,
   type ReviewEdits,
@@ -39,7 +38,7 @@ import { formatMoney, formatSignedMoney } from '@repo/core';
 
 type DraftMessage = Extract<ChatMessage, { kind: 'assistant_draft' }>;
 
-/** A chat capture as the compact Review card: edit in place, then Not mine, Later, or Approve. */
+/** A chat capture as the compact Review card: edit in place, then Not mine or Approve. */
 export function DraftCard({ message }: { message: DraftMessage }) {
   const tokens = useThemeTokens();
   const { user } = useAuth();
@@ -118,23 +117,20 @@ export function DraftCard({ message }: { message: DraftMessage }) {
     const done = view(outcome);
     setShown(done);
     replaceMessage(day, message.id, { ...draft, outcome: done });
-    setUndoable(outcome.action !== 'later');
+    setUndoable(true);
     showToast({
       text: toast(outcome),
-      tone: outcome.action === 'approve' || outcome.action === 'later' ? 'done' : 'removed',
-      undo:
-        outcome.action === 'later'
-          ? undefined
-          : () => {
-              setUndoable(false);
-              setShown(null);
-              undo(outcome)
-                .then(() => replaceMessage(day, message.id, draft))
-                .catch(() => {
-                  setShown(done);
-                  showToast({ text: "Couldn't undo that.", tone: 'removed' });
-                });
-            },
+      tone: outcome.action === 'approve' ? 'done' : 'removed',
+      undo: () => {
+        setUndoable(false);
+        setShown(null);
+        undo(outcome)
+          .then(() => replaceMessage(day, message.id, draft))
+          .catch(() => {
+            setShown(done);
+            showToast({ text: "Couldn't undo that.", tone: 'removed' });
+          });
+      },
       commit: () => setUndoable(false),
     });
   };
@@ -326,20 +322,6 @@ export function DraftCard({ message }: { message: DraftMessage }) {
           }}
         />
         <ActionButton
-          testID={tid('chat', 'draft', 'later')}
-          label="Later"
-          icon="clock-outline"
-          fill="bg-sand"
-          accessibilityLabel="Later. It waits in Review"
-          onPress={() =>
-            void decide(
-              () => later(proposal),
-              () => ({ kind: 'later', title: 'Saved for later', meta: 'It waits in Review, not counted yet' }),
-              () => 'Saved for later',
-            )
-          }
-        />
-        <ActionButton
           testID={tid('chat', 'draft', 'approve')}
           label={wallet ? 'Approve' : 'Pick wallet'}
           icon={wallet ? 'check' : 'wallet-outline'}
@@ -363,7 +345,7 @@ function DoneRow({
 }) {
   const tokens = useThemeTokens();
   const icon: IconSymbolName =
-    outcome.kind === 'approved' ? 'check' : outcome.kind === 'later' ? 'clock-outline' : 'close';
+    outcome.kind === 'approved' ? 'check' : 'close';
   return (
     <View
       accessibilityRole="text"

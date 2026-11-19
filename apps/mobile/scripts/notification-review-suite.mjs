@@ -14,7 +14,7 @@ const {
   buildAutoAddedDigestNotification,
   buildAutoAddedNotification,
   buildReviewNotification,
-  buildSetAsideNotification,
+  buildNotMineNotification,
   isOwnNotification,
 } = require('../lib/notifications/review-notification.core.js');
 
@@ -69,8 +69,8 @@ check('one earlier match reads like last time, none just names the category', ()
     'Moni: Food & Dining.',
   );
 });
-check('its actions are not-mine, later, approve in that order', () =>
-  deepStrictEqual(grab.actionIds, ['not-mine', 'later', 'approve']),
+check('its actions are not-mine, approve in that order', () =>
+  deepStrictEqual(grab.actionIds, ['not-mine', 'approve']),
 );
 check('it carries the proposal id and replaces any earlier notification for it', () => {
   deepStrictEqual(grab.data, { kind: 'review', proposalId: 'p-grab' });
@@ -107,14 +107,11 @@ check('after Don\'t ask about similar it says what Moni does now and keeps Undo'
   strictEqual(auto.body, 'Moni adds GRAB*FOOD alerts like this without asking and marks them Auto.');
   deepStrictEqual(auto.actionIds, ['undo']);
 });
-check('Not mine and Later say what happened, with Undo', () => {
-  const notMine = buildSetAsideNotification({ proposalId: 'p-grab', outcome: { action: 'notMine' } });
+check('Not mine says what happened, with Undo', () => {
+  const notMine = buildNotMineNotification({ proposalId: 'p-grab', outcome: { action: 'notMine' } });
   strictEqual(notMine.title, '1 not mine');
   strictEqual(notMine.body, 'Nothing was added.');
   deepStrictEqual(notMine.actionIds, ['undo']);
-  const later = buildSetAsideNotification({ proposalId: 'p-grab', outcome: { action: 'later' } });
-  strictEqual(later.title, 'Saved for later');
-  strictEqual(later.body, 'It waits in Review and does not count yet.');
 });
 
 const added = (transactionId, merchant, amountMinor, type = 'expense', currency = 'MYR') => ({

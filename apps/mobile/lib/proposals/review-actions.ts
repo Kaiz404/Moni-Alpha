@@ -24,7 +24,6 @@ import {
   approveProposedTransaction,
   findProposalDuplicate,
   isOpenProposal,
-  laterProposedTransaction,
   rejectProposedTransaction,
   type RejectedProposal,
 } from '@/lib/supabase/proposed-transactions';
@@ -61,8 +60,7 @@ export type ReviewOutcome =
       ruleAdded: boolean;
     }
   | { action: 'notMine'; proposal: ProposedTransaction; row: ProposalRowSnapshot }
-  | { action: 'pair'; proposal: ProposedTransaction }
-  | { action: 'later'; proposal: ProposedTransaction; until: string };
+  | { action: 'pair'; proposal: ProposedTransaction };
 
 export type ReviewField = 'wallet' | 'destination';
 
@@ -233,30 +231,6 @@ export function notATransfer(proposal: ProposedTransaction): void {
   emitProposedTransactionsChanged();
 }
 
-/** Neither XA-Review nor XA-Notification names a snooze, so Later waits until 8 am tomorrow. */
-export function laterUntil(now: Date = new Date()): Date {
-  const until = new Date(now);
-  until.setDate(until.getDate() + 1);
-  until.setHours(8, 0, 0, 0);
-  return until;
-}
-
-export async function later(
-  proposal: ProposedTransaction,
-  now: Date = new Date(),
-): Promise<ReviewResult> {
-  const until = laterUntil(now);
-  try {
-    laterProposedTransaction(proposal.id, until);
-    return {
-      status: 'done',
-      outcome: { action: 'later', proposal, until: until.toISOString() },
-    };
-  } catch (error) {
-    return { status: 'error', message: messageOf(error, "Couldn't save. Try again.") };
-  }
-}
-
 function restoreRow(row: ProposalRowSnapshot): void {
   const pending = { status: 'pending', snoozed_until: null, updated_at: new Date().toISOString() };
   if (hasRow(proposedTransactions$, row.id)) {
@@ -300,14 +274,6 @@ export async function undo(outcome: ReviewOutcome): Promise<void> {
       return;
     case 'pair':
       await undoPairing(outcome.proposal.id);
-      return;
-    case 'later':
-      patchRow(proposedTransactions$, outcome.proposal.id, {
-        status: 'pending',
-        snoozed_until: null,
-        updated_at: new Date().toISOString(),
-      });
-      emitProposedTransactionsChanged();
       return;
   }
 }

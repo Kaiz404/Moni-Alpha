@@ -20,7 +20,7 @@ tags:
 - assertVisible:
     id: review.summary
 - assertVisible: Not mine
-- assertVisible: Later
+- assertNotVisible: Later
 - assertVisible: Approve
 - takeScreenshot: smoke-review
 - pressKey: Back

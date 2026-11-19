@@ -192,16 +192,7 @@ describe('review notification', () => {
     });
   });
 
-  it('Not mine and Later show what happened with Undo for 8 s, and Undo brings the capture back', async () => {
-    seed();
-    await tap('later', { kind: 'review', proposalId: 'p1' });
-    expect(store.proposedTransactions$.p1.status.peek()).toBe('later');
-    expect(lastShown().content).toMatchObject({
-      title: 'Saved for later',
-      body: 'It waits in Review and does not count yet.',
-      categoryIdentifier: 'moni-review-decided',
-    });
-
+  it('Not mine shows what happened with Undo for 8 s, and Undo brings the capture back', async () => {
     seed();
     notifications.getPresentedNotificationsAsync.mockResolvedValueOnce([
       { request: { identifier: 'review-p1', content: { data: { kind: 'decided' } } } },
@@ -210,12 +201,24 @@ describe('review notification', () => {
     expect(store.proposedTransactions$.p1.status.peek()).toBe('rejected');
     expect(ledger()).toEqual([]);
     const notMine = lastShown();
-    expect(notMine.content).toMatchObject({ title: '1 not mine', body: 'Nothing was added.' });
+    expect(notMine.content).toMatchObject({
+      title: '1 not mine',
+      body: 'Nothing was added.',
+      categoryIdentifier: 'moni-review-decided',
+    });
     expect(notifications.dismissNotificationAsync).toHaveBeenLastCalledWith('review-p1');
 
     await tap('undo', notMine.content.data);
     expect(store.proposedTransactions$.p1.status.peek()).toBe('pending');
     expect(lastShown().content.categoryIdentifier).toBe('moni-review');
+  });
+
+  it('a Later tap on a notification posted before Later was removed changes nothing', async () => {
+    seed();
+    const before = notifications.scheduleNotificationAsync.mock.calls.length;
+    await tap('later', { kind: 'review', proposalId: 'p1' });
+    expect(store.proposedTransactions$.p1.status.peek()).toBe('pending');
+    expect(notifications.scheduleNotificationAsync.mock.calls.length).toBe(before);
   });
 
   it('Approve on a capture with no wallet writes nothing and asks for a tap', async () => {

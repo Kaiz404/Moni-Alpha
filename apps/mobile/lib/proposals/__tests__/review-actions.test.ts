@@ -4,8 +4,6 @@ import type { MinorAmount } from '@repo/types';
 import {
   approve,
   editedProposal,
-  later,
-  laterUntil,
   moveBackToReview,
   notMine,
   retypeEdits,
@@ -49,7 +47,6 @@ const { wallets$, transactions$, proposedTransactions$, autoAddRules$ } = jest.r
 const MAYBANK = '00000000-0000-4000-8000-00000000000a';
 const FOOD = '00000000-0000-4000-8000-0000000000f0';
 const TNG = '00000000-0000-4000-8000-00000000000b';
-const NOW = new Date('2026-10-14T04:41:00.000Z');
 
 function seed(id: string, over: Record<string, unknown> = {}) {
   proposedTransactions$[id].set({
@@ -69,7 +66,7 @@ function seed(id: string, over: Record<string, unknown> = {}) {
     deleted: false,
     ...over,
   });
-  const proposal = listAwaitingReview(NOW).find((p) => p.id === id);
+  const proposal = listAwaitingReview().find((p) => p.id === id);
   if (!proposal) throw new Error(`seed ${id} is not awaiting review`);
   return proposal;
 }
@@ -183,7 +180,7 @@ describe('approve', () => {
       }),
     ]);
     expect(statuses).toEqual(['approved']);
-    expect(listAwaitingReview(NOW)).toEqual([]);
+    expect(listAwaitingReview()).toEqual([]);
   });
 
   it('keeps the bank alert on the ledger row with the amount the alert said, not the edit', async () => {
@@ -293,7 +290,7 @@ describe('approve', () => {
     expect(Object.values(autoAddRules$.peek())).toEqual([
       expect.objectContaining({ merchant_key: 'grab', deleted: true }),
     ]);
-    expect(listAwaitingReview(NOW).map((p) => p.id)).toEqual(['p1']);
+    expect(listAwaitingReview().map((p) => p.id)).toEqual(['p1']);
     expect(proposedTransactions$.p1.peek()).toMatchObject({
       status: 'pending',
       reviewed_at: null,
@@ -315,11 +312,11 @@ describe('Not mine', () => {
 
     expect(statuses).toEqual(['rejected']);
     expect(ledger()).toEqual([]);
-    expect(listAwaitingReview(NOW)).toEqual([]);
+    expect(listAwaitingReview()).toEqual([]);
 
     if (result.status !== 'done') throw new Error(result.status);
     await undo(result.outcome);
-    expect(listAwaitingReview(NOW).map((p) => p.id)).toEqual(['p2']);
+    expect(listAwaitingReview().map((p) => p.id)).toEqual(['p2']);
     expect(proposedTransactions$.p2.peek()).toMatchObject({ status: 'pending', reviewed_at: null });
   });
 
@@ -334,26 +331,8 @@ describe('Not mine', () => {
 
     moveBackToReview({ ...reviewed, status: 'rejected' });
 
-    expect(listAwaitingReview(NOW).map((p) => p.id)).toEqual(['p2']);
+    expect(listAwaitingReview().map((p) => p.id)).toEqual(['p2']);
     expect(listRecentlyReviewed()).toEqual([]);
     expect(markCaptureStatus.mock.calls).toEqual([['p2', 'waiting_for_review']]);
-  });
-});
-
-describe('Later', () => {
-  it('snoozes until 8 am the next morning, local time', () => {
-    const until = laterUntil(new Date(2026, 9, 14, 23, 30));
-    expect(until).toEqual(new Date(2026, 9, 15, 8, 0, 0, 0));
-  });
-
-  it('stores the Later status and hides the capture until the snooze ends', async () => {
-    const proposal = seed('p3');
-
-    const result = await later(proposal, NOW);
-
-    expect(result).toMatchObject({ status: 'done', outcome: { action: 'later' } });
-    expect(proposedTransactions$.p3.status.peek()).toBe('later');
-    expect(listAwaitingReview(NOW)).toEqual([]);
-    expect(listAwaitingReview(laterUntil(NOW)).map((p) => p.id)).toEqual(['p3']);
   });
 });

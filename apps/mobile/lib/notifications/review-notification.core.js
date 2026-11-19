@@ -6,7 +6,7 @@
 const REVIEW_TASK = 'moni-review-notification-action';
 const REVIEW_CATEGORY = 'moni-review';
 const APPROVED_CATEGORY = 'moni-review-approved';
-/** Not mine, Later, and Approve after Don't ask about similar: only Undo is left. */
+/** Not mine, and Approve after Don't ask about similar: only Undo is left. */
 const DECIDED_CATEGORY = 'moni-review-decided';
 /** The first alert after install pops up as heads-up; later ones arrive quietly in the shade. */
 const HEADS_UP_CHANNEL = 'moni-review-first';
@@ -19,7 +19,6 @@ const ACCENT = '#236B47';
 /** Same order as the Review card: Approve on the right. */
 const REVIEW_ACTIONS = [
   { id: 'not-mine', title: 'Not mine' },
-  { id: 'later', title: 'Later' },
   { id: 'approve', title: 'Approve' },
 ];
 const APPROVED_ACTIONS = [
@@ -72,7 +71,7 @@ function moniLine(categoryName, seenCount) {
 
 /**
  * `XA-Notification` 1: "Moni · Maybank · now" over "GRAB*FOOD · −RM23.40", the alert as the bank
- * sent it, Moni's category, and Not mine, Later, Approve. `firstAlert` picks the heads-up channel.
+ * sent it, Moni's category, and Not mine, Approve. `firstAlert` picks the heads-up channel.
  */
 function buildReviewNotification({
   proposalId,
@@ -143,13 +142,12 @@ function buildAutoAddedNotification({ proposalId, merchant, amountMinor, currenc
   });
 }
 
-/** After Not mine or Later: "1 not mine" or "Saved for later", what that means, and Undo. */
-function buildSetAsideNotification({ proposalId, outcome }) {
-  const notMine = outcome.action === 'notMine';
+/** After Not mine: "1 not mine", that nothing was added, and Undo. */
+function buildNotMineNotification({ proposalId, outcome }) {
   return decided({
     proposalId,
-    title: notMine ? '1 not mine' : 'Saved for later',
-    body: notMine ? 'Nothing was added.' : 'It waits in Review and does not count yet.',
+    title: '1 not mine',
+    body: 'Nothing was added.',
     categoryIdentifier: DECIDED_CATEGORY,
     actions: DECIDED_ACTIONS,
     outcome,
@@ -238,6 +236,6 @@ module.exports = {
   buildReviewNotification,
   buildApprovedNotification,
   buildAutoAddedNotification,
-  buildSetAsideNotification,
+  buildNotMineNotification,
   buildOpenAppNotification,
 };

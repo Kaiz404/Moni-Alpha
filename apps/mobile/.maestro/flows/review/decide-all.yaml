@@ -15,7 +15,7 @@ tags:
       id: review.card
     timeout: 10000
 - assertVisible: Not mine
-- assertVisible: Later
+- assertNotVisible: Later
 - assertVisible: Approve
 
 - runFlow: ../../subflows/review-not-mine.yaml

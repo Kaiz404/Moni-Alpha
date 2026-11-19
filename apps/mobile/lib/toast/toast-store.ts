@@ -17,7 +17,7 @@ export type ToastTone = 'done' | 'removed';
 export type ToastRequest = {
   text: string;
   tone?: ToastTone;
-  /** A cream glyph in place of the tone's, such as XA-Review's close for Not mine and clock for Later. */
+  /** A cream glyph in place of the tone's, such as XA-Review's close for Not mine. */
   icon?: IconSymbolName;
   undo?: () => void;
   commit?: () => void;

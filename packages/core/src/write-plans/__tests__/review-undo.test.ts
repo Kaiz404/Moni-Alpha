@@ -50,7 +50,6 @@ const capture = (over: Partial<ProposedTransaction> = {}): ProposedTransaction =
   createdAt: NOW,
   updatedAt: NOW,
   status: 'pending',
-  snoozedUntil: null,
   reviewedAt: null,
   transactionId: null,
   pairing: null,

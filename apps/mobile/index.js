@@ -159,7 +159,7 @@ if (Platform.OS === 'android') {
     console.error('[NotifCapture] listener rebind not asked:', e?.message ?? e);
   }
 
-  // Not mine, Later and Approve on Moni's review notification, with the app in the background
+  // Not mine and Approve on Moni's review notification, with the app in the background
   // or killed. The handler loads the store and review-actions only when a tap arrives.
   try {
     const TaskManager = require('expo-task-manager');

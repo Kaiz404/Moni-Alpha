@@ -15,7 +15,6 @@ import { captureBankName } from '@/lib/proposals/capture-source';
 import {
   approve,
   dontAskAboutSimilar,
-  later,
   notMine,
   undo,
   type ReviewOutcome,
@@ -56,7 +55,7 @@ import {
   buildAutoAddedNotification,
   buildOpenAppNotification,
   buildReviewNotification,
-  buildSetAsideNotification,
+  buildNotMineNotification,
   identifierFor,
 } from './review-notification.core.js';
 import { deviceCalendar } from '@/lib/dates/device-calendar';
@@ -91,8 +90,6 @@ type AutoAddedItem = {
 };
 type AutoAddedDigest = { day: string; items: AutoAddedItem[] };
 
-/** A Later row snoozed past any real date still counts as unreviewed. */
-const END_OF_TIME = new Date(8.64e15);
 const FIRST_SHOWN_KEY = 'first-review-alert-shown';
 const DIGEST_KEY = 'auto-added-digest';
 const storage = createMMKV({ id: 'moni-review-notification' });
@@ -152,7 +149,7 @@ async function present(payload: Payload): Promise<void> {
 }
 
 function findProposal(id: string): ProposedTransaction | undefined {
-  return listAwaitingReview(END_OF_TIME).find((p) => p.id === id);
+  return listAwaitingReview().find((p) => p.id === id);
 }
 
 function shownMerchant(proposal: ProposedTransaction): string {
@@ -359,10 +356,10 @@ async function act(action: string, data: ReviewData): Promise<void> {
     await Notifications.dismissNotificationAsync(id);
     return;
   }
-  if (action === 'not-mine' || action === 'later') {
-    const result = action === 'later' ? await later(proposal) : await notMine(proposal);
+  if (action === 'not-mine') {
+    const result = await notMine(proposal);
     if (result.status === 'done') {
-      await showDecided(buildSetAsideNotification({ proposalId: proposal.id, outcome: result.outcome }));
+      await showDecided(buildNotMineNotification({ proposalId: proposal.id, outcome: result.outcome }));
     }
     return;
   }
@@ -388,7 +385,7 @@ async function act(action: string, data: ReviewData): Promise<void> {
 }
 
 /**
- * Runs a Not mine, Later, Approve, Undo or Don't ask about similar tap through
+ * Runs a Not mine, Approve, Undo or Don't ask about similar tap through
  * review-actions, with no React. A tap on the body opens the app instead.
  */
 export async function handleReviewNotificationResponse(

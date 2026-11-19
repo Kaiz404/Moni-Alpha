@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { createTransactionSchema } from '@repo/types';
 
-import { toFinanceTransaction } from '../rows';
+import { toFinanceProposal, toFinanceTransaction } from '../rows';
 
 const ROW = {
   id: 't1',
@@ -20,6 +20,30 @@ describe('toFinanceTransaction', () => {
 
   it('drops a place_coords_at that is not a date', () => {
     expect(toFinanceTransaction({ ...ROW, place_coords_at: 'soon' })?.placeCoordsAt).toBeNull();
+  });
+});
+
+describe('toFinanceProposal', () => {
+  const capture = {
+    id: 'p1',
+    user_id: 'u1',
+    source_type: 'notification',
+    amount: '12.00',
+    currency: 'MYR',
+    type: 'expense',
+    created_at: '2026-11-12T03:00:00.000Z',
+    updated_at: '2026-11-12T03:00:00.000Z',
+  };
+
+  it('reads a later row an older app wrote offline as pending, so it waits in Review', () => {
+    expect(
+      toFinanceProposal({ ...capture, status: 'later', snoozed_until: '2026-11-13T00:00:00.000Z' })?.status,
+    ).toBe('pending');
+  });
+
+  it('leaves Approve and Not mine out of the waiting captures', () => {
+    expect(toFinanceProposal({ ...capture, status: 'approved' })).toBeNull();
+    expect(toFinanceProposal({ ...capture, status: 'rejected' })).toBeNull();
   });
 });
 

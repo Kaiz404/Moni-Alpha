@@ -21,7 +21,7 @@ tags:
     timeout: 20000
 - assertVisible: '(?s).*Moni: .*'
 - assertVisible: Not mine
-- assertVisible: Later
+- assertNotVisible: Later
 - assertVisible: Approve
 - takeScreenshot: r2-l2-shade
 
@@ -33,7 +33,7 @@ tags:
 - assertVisible: "Don't ask about similar"
 - takeScreenshot: r2-l3-approved
 
-# Undo within 8 s brings the capture back with its three actions.
+# Undo within 8 s brings the capture back with its two actions.
 - tapOn: Undo
 - extendedWaitUntil:
     visible: Approve

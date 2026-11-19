@@ -60,7 +60,7 @@ Ignore everything on the Archive page, including the rejected web directions A, 
 
 ## Rules that apply to every web screen
 
-- All of `REDESIGN.md`'s rules, with the exceptions below. One main currency on focused pages, one progress style, charts lead, one home per chart, visible affordances, Approve · Not mine · Later, Delete visible on a detail view, numbered pages, every state change animates.
+- All of `REDESIGN.md`'s rules, with the exceptions below. One main currency on focused pages, one progress style, charts lead, one home per chart, visible affordances, Approve · Not mine, Delete visible on a detail view, numbered pages, every state change animates.
 - **Phone rules the web bends:** a ⋯ shows only on the hovered or selected row and right-click opens the same menu; key hints show beside actions that have a key; detail, Moni chat and Add dock on the right instead of opening as sheets or pushed pages; toasts sit bottom left; chart tooltips follow the pointer; desktop pages scroll vertically and never squash a chart to fit the first screen.
 - **The Ask Moni mark is the cat** everywhere on the web, never the MDI `creation` sparkle.
 - **Android and the web only.** No App Store links or iPhone app copy until the owner opens iOS.

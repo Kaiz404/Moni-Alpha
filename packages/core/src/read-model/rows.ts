@@ -263,7 +263,6 @@ export function toProposal(row: RawRow): FinanceProposal | null {
     createdAt: isoDate(row.created_at),
     updatedAt: isoDate(row.updated_at, isoDate(row.created_at)),
     status,
-    snoozedUntil: nullableString(row.snoozed_until),
     reviewedAt: nullableString(row.reviewed_at),
     transactionId: nullableString(row.transaction_id),
     pairing: capturePairingSchema.safeParse(row.pairing).data ?? null,

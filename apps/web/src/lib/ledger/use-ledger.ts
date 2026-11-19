@@ -7,7 +7,6 @@ import {
   compactWalletNames,
   createCalendar,
   debtsWithBalance,
-  isAwaitingReview,
   merchantAliasesFromRows,
   moneyLedger,
   pendingProposals,
@@ -171,7 +170,7 @@ export function useLedger(): Ledger {
       aliases: merchantAliasesFromRows(tables?.aliases ?? {}, user.id),
       money,
       month: buildMoneyMonth(money, { month: calendar.monthKey(now), currency, now, calendar }),
-      waiting: pendingProposals(projection.proposalsById, user.id).filter((proposal) => isAwaitingReview(proposal, now)),
+      waiting: pendingProposals(projection.proposalsById, user.id),
       budgetRows: Object.values(tables?.budgets ?? EMPTY).filter(Boolean) as BudgetRow[],
       defaultWalletId: tables?.defaultWalletId ?? null,
     };
