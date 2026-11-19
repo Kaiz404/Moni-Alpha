@@ -47,6 +47,22 @@ for attempt in 0 1 2 3; do
   timeout 10 adb connect "$serial" >&2 || true
 done
 
+# Wireless debugging picks a new port each time it restarts. Look for open ports on the host and take
+# the first one adb connects to; the pairing port refuses or stays offline.
+host=${serial%:*}
+while read -r port; do
+  [[ $host:$port == "$serial" ]] && continue
+  if timeout 10 adb connect "$host:$port" 2>/dev/null | grep -q '^connected to'; then
+    serial=$host:$port
+    if ready; then
+      remember
+      echo "connected $serial (found by scanning)"
+      exit 0
+    fi
+    timeout 10 adb disconnect "$serial" >/dev/null 2>&1 || true
+  fi
+done < <(seq 30000 49999 | xargs -P 400 -I{} bash -c "timeout 0.6 bash -c '</dev/tcp/$host/{}' 2>/dev/null && echo {}")
+
 final=$(state)
 echo "adb down, run taildrop.sh or ask the operator for O2. $serial is ${final:-not connected}. If Wireless debugging shows a new port, run connect.sh ${serial%:*}:<port>." >&2
 exit 3
