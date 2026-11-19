@@ -59,8 +59,9 @@ EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_...
 # Android emulator: http://10.0.2.2:8080 — physical device: use ngrok URL from `pnpm --filter backend dev`
 EXPO_PUBLIC_AI_API_URL=https://slang-compound-landmass.ngrok-free.dev
 EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID=<web-client-id>.apps.googleusercontent.com
-# The web app's privacy policy page, linked from the notification access sheet. Unset hides the link.
-# The production domain is not chosen yet; a store build needs it.
+# The web app's privacy policy page (apps/web `/privacy`, Malay at `/privacy/ms`), linked from the
+# notification access sheet. Unset hides the link. The domain is still a [CONFIRM] fact in
+# apps/web/src/lib/site-facts.ts; a store build needs it.
 EXPO_PUBLIC_PRIVACY_POLICY_URL=https://<web-app-domain>/privacy
 # Native Maps SDK keys. Do not commit real values.
 ANDROID_GOOGLE_MAPS_API_KEY=<android-maps-key>
