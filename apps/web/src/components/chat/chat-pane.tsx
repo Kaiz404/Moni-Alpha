@@ -159,6 +159,9 @@ export function ChatPane() {
   return (
     <aside className="pane pane-chat motion-slide" aria-label="Moni chat" data-pane="chat">
       <header className="pane-head chat-head">
+        <button type="button" className="back-button press" data-only="phone" onClick={() => run({ kind: 'closePane' })} aria-label="Back">
+          <Icon name="chevron-left" size={22} />
+        </button>
         <Cat size={40} ground="ink" tile id="chat-head" />
         <div className="chat-title">
           <h2 className="pane-title">
@@ -169,7 +172,13 @@ export function ChatPane() {
             <span>Looking at {context}</span>
           </span>
         </div>
-        <button type="button" className="pane-close press" onClick={() => run({ kind: 'closePane' })} aria-label="Close Moni chat">
+        <button
+          type="button"
+          className="pane-close press"
+          data-only="sidebar rail rail-one-column"
+          onClick={() => run({ kind: 'closePane' })}
+          aria-label="Close Moni chat"
+        >
           <Icon name="close" size={20} />
           <span className="kbd">Esc</span>
         </button>

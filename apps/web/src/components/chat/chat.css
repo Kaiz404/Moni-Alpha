@@ -568,6 +568,40 @@
   line-height: 16px;
 }
 
+/* ---------- the phone layout ---------- */
+
+html[data-layout='phone'] .pane-chat .chat-composer textarea {
+  padding: 11px 0;
+}
+
+html[data-layout='phone'] .pane-chat .composer-send {
+  width: 44px;
+  height: 44px;
+}
+
+/* Held sideways, the chat keeps the phone's 480 column, and first open fits its greeting above the
+   starters by dropping their icons. */
+@media (max-height: 499.98px) {
+  html[data-layout='phone'] .pane-chat > :is(.chat-head, .chat-thread, .chat-foot) {
+    padding-inline: max(16px, calc(50% - 240px));
+  }
+
+  html[data-layout='phone'] .chat-hello {
+    padding-top: 0;
+    font-size: 22px;
+    line-height: 28px;
+  }
+
+  html[data-layout='phone'] .chat-starter {
+    gap: 4px;
+    padding: 10px 12px;
+  }
+
+  html[data-layout='phone'] .chat-starter-icon {
+    display: none;
+  }
+}
+
 /* ---------- the page beside it ---------- */
 
 /* Docked chat narrows the page; the command field gives way before the title does. */
