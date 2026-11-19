@@ -130,11 +130,12 @@ export function Floating({
     stack.push(self);
     if (autoFocus && !element.contains(document.activeElement)) {
       const rows = rowsOf(element);
-      (
+      const first =
         rows.find((row) => row.matches(CHOSEN)) ??
         rows[0] ??
-        element.querySelector<HTMLElement>('[data-focus-first]')
-      )?.focus({ preventScroll: true });
+        element.querySelector<HTMLElement>('[data-focus-first]');
+      first?.focus({ preventScroll: true });
+      first?.scrollIntoView({ block: 'nearest' });
     }
     const away = (event: PointerEvent) => {
       const node = event.target as Node;

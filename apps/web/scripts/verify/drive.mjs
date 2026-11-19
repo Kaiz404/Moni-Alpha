@@ -367,6 +367,16 @@ try {
   check('Create account stays disabled under 18', await page.locator('form button[type="submit"]').isDisabled());
   await page.getByRole('button', { name: /^Year:/ }).click();
   await page.getByRole('option', { name: '1995', exact: true }).click();
+  await page.getByRole('button', { name: /^Year:/ }).click();
+  const year = page.getByRole('listbox', { name: 'Year' });
+  await page.waitForTimeout(300);
+  const [list, chosen] = await Promise.all([year.boundingBox(), year.getByRole('option', { name: '1995', exact: true }).boundingBox()]);
+  check(
+    'Year reopens with 1995 focused and in view',
+    (await page.evaluate(() => document.activeElement?.textContent?.trim())) === '1995' && !!list && !!chosen && chosen.y >= list.y && chosen.y + chosen.height <= list.y + list.height,
+    { list, chosen },
+  );
+  await page.keyboard.press('Escape');
   check('Create account enables at 18 and over with the terms ticked', await page.locator('form button[type="submit"]').isEnabled());
   await pair('auth-register', 'r3/W2-Auth-register/W2-Auth.png', await shot(page, 'auth-register-1440'));
 
