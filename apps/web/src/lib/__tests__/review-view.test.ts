@@ -2,7 +2,7 @@ import type { ReviewedProposal } from '@repo/core';
 import type { MinorAmount } from '@repo/types';
 import { describe, expect, it } from 'vitest';
 
-import { approvedText, captureName, caughtUpLine, notMineText, parseReviewView, reviewHref, waitingCount, waitingLine } from '../review-view';
+import { approvedText, captureName, caughtUpLine, notMineText, oldReviewHref, parseReviewView, reviewHref, waitingCount, waitingLine } from '../review-view';
 
 const capture = (merchant: string | null, amount: number, currency = 'MYR') => ({
   id: merchant ?? 'x',
@@ -55,5 +55,11 @@ describe('review words', () => {
     expect(parseReviewView('')).toBe('deck');
     expect(reviewHref()).toBe('/home?review=deck');
     expect(reviewHref('a1')).toBe('/home?review=deck&capture=a1');
+  });
+
+  it('sends an old /review link to the drawer on Home', () => {
+    expect(oldReviewHref(null, null)).toBe('/home?review=deck');
+    expect(oldReviewHref(null, 'a1')).toBe('/home?review=deck&capture=a1');
+    expect(oldReviewHref('recent', null)).toBe('/home?review=recent');
   });
 });

@@ -229,6 +229,22 @@ export async function verifyReview(t) {
   await p.waitForURL(/review=deck/).catch(() => {});
   check('Esc in Recently reviewed steps back to the captures', p.url().includes('review=deck'), p.url());
   await p.keyboard.press('Escape');
+
+  // Old /review links open Home with the drawer, signed out through the sign-in page too.
+  for (const [from, to] of [
+    ['/review', '/home?review=deck'],
+    [`/review?capture=${first.id}`, `/home?review=deck&capture=${first.id}`],
+    ['/review?view=recent', '/home?review=recent'],
+  ]) {
+    await p.goto(`${base}${from}`);
+    await ready(p);
+    check(`${from} opens ${to}`, p.url() === `${base}${to}`, p.url());
+  }
+  const outCtx = await browser.newContext();
+  const out = await outCtx.newPage();
+  await out.goto(`${base}/review?view=recent`);
+  check('signed out, /review asks to sign in and comes back to it', out.url() === `${base}/login?next=${encodeURIComponent('/review?view=recent')}`, out.url());
+  await outCtx.close();
   await ctx.close();
 
   // ---------- the 700 crossing keeps the open capture and a half-typed name ----------

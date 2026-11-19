@@ -21,6 +21,11 @@ export function reviewHref(captureId?: string): string {
 
 export const RECENTLY_REVIEWED_HREF = '/home?review=recent';
 
+/** Where an old `/review` link lands: `?view=recent` was Recently reviewed, `?capture=` one capture. */
+export function oldReviewHref(view: string | null, capture: string | null): string {
+  return view === 'recent' ? RECENTLY_REVIEWED_HREF : reviewHref(capture ?? undefined);
+}
+
 /** A capture's name on a row or a toast: the merchant, else what Moni read, else "Capture". */
 export function captureName(capture: Pick<Capture, 'merchant' | 'description'>): string {
   return capture.merchant?.trim() || capture.description?.trim() || 'Capture';
