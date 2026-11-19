@@ -48,6 +48,8 @@ const names = [
     'check-bold',
     'minus-thick',
     'image-off-outline',
+    // Moni chat: a draft turned down.
+    'close-circle-outline',
   ]),
 ].sort();
 const pascal = (name) => `mdi${name.replace(/(^|-)([a-z0-9])/g, (_, __, c) => c.toUpperCase())}`;

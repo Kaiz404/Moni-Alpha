@@ -4,12 +4,9 @@ import {
   dayHeading,
   firstDayOf,
   formatMoney,
-  merchantName,
   planTransactionEdit,
   planTransactionsDelete,
   planTransactionsEdit,
-  transactionRow,
-  type TransactionRow,
 } from '@repo/core';
 import Link from 'next/link';
 import { useParams, usePathname, useRouter, useSearchParams } from 'next/navigation';
@@ -19,6 +16,9 @@ import { Icon } from '@/components/icon';
 import { Bubble, Glyph } from '@/components/ledger/glyph';
 import { Page } from '@/components/shell/page';
 import { useShellApi } from '@/components/shell/shell-context';
+import { setShell, useShell } from '@/components/shell/shell-store';
+import { useDraftMarks } from '@/components/chat/draft-marks';
+import { activityItems, type ActivityEntry } from '@/lib/activity-items';
 import {
   BUILT_IN_VIEWS,
   NO_FILTERS,
@@ -31,14 +31,13 @@ import {
   parseSavedViews,
   selectActivity,
   type ActivityFilters,
-  type ActivityItem,
   type ActivityQuery,
   type SavedView,
   type SortKey,
 } from '@/lib/activity-query';
 import { commit, planContext } from '@/lib/ledger/commit';
-import { SOURCE_ICONS, SOURCE_LABELS, rowAmount, sourceOf } from '@/lib/ledger/format';
-import { useLedger, type Ledger } from '@/lib/ledger/use-ledger';
+import { SOURCE_ICONS, SOURCE_LABELS, rowAmount } from '@/lib/ledger/format';
+import { useLedger } from '@/lib/ledger/use-ledger';
 import { useScreenKeys } from '@/lib/screen-keys';
 import { DetailPane } from './detail-pane';
 import { FilterBar } from './filters';
@@ -61,7 +60,7 @@ const PHONE_KINDS = [
   { kind: 'transfer', label: 'Transfers' },
 ] as const;
 
-type Shown = ActivityItem & { row: TransactionRow };
+type Shown = ActivityEntry;
 type Menu = { id: string; x: number; y: number };
 type CellEdit = { id: string; text: string };
 
@@ -79,40 +78,6 @@ function writeViews(views: SavedView[]) {
   } catch {
     // Without storage a saved view lasts until the tab closes.
   }
-}
-
-function useItems(ledger: Ledger): Shown[] {
-  const { transactions, currency, aliases, projection, walletNames, calendar } = ledger;
-  return useMemo(
-    () =>
-      transactions
-        .filter((transaction) => transaction.currency === currency)
-        .map((transaction) => {
-          const row = transactionRow(
-            { ...transaction, merchant: merchantName(transaction.merchant, aliases) },
-            { categoriesById: projection.categoriesById, walletNames },
-          );
-          return {
-            id: transaction.id,
-            at: transaction.transactionDate,
-            day: calendar.dayKey(transaction.transactionDate),
-            title: row.title,
-            kind: transaction.type,
-            categoryId: transaction.categoryId,
-            category: row.category,
-            walletId: transaction.walletId,
-            toWalletId: transaction.transferToWalletId,
-            wallet: row.wallet,
-            source: sourceOf(transaction.metadata),
-            auto: transaction.autoAdded,
-            amountMinor: Number(transaction.amountMinor),
-            hasPlace: transaction.locationLatitude !== null || transaction.locationName !== null,
-            notes: transaction.notes,
-            row,
-          };
-        }),
-    [transactions, currency, aliases, projection, walletNames, calendar],
-  );
 }
 
 function csv(rows: readonly Shown[]): string {
@@ -140,14 +105,19 @@ export function ActivityScreen() {
   const params = useSearchParams();
   const { id: openId } = useParams<{ id?: string }>();
   const query = useMemo(() => parseActivityQuery(new URLSearchParams(params.toString())), [params]);
-  const items = useItems(ledger);
+  const items = useMemo(() => activityItems(ledger), [ledger]);
   const [views, setViews] = useState<SavedView[]>([]);
-  const [selected, setSelected] = useState<ReadonlySet<string>>(new Set());
+  const { ticked: tickedIds } = useShell();
+  const drafted = useDraftMarks();
+  const selected: ReadonlySet<string> = useMemo(() => new Set(tickedIds), [tickedIds]);
+  const setSelected = (next: ReadonlySet<string> | ((current: ReadonlySet<string>) => ReadonlySet<string>)) =>
+    setShell((shell) => ({ ticked: [...(typeof next === 'function' ? next(new Set(shell.ticked)) : next)] }));
   const [menu, setMenu] = useState<Menu | null>(null);
   const [cell, setCell] = useState<CellEdit | null>(null);
   const [bulkOpen, setBulkOpen] = useState<'category' | 'wallet' | null>(null);
   const [naming, setNaming] = useState<string | null>(null);
   useEffect(() => setViews(readViews()), []);
+  useEffect(() => () => setShell({ ticked: [] }), []);
 
   const today = ledger.calendar.dayKey(ledger.now);
   const range = { from: firstDayOf(ledger.calendar.monthKey(ledger.now)), to: today };
@@ -305,6 +275,17 @@ export function ActivityScreen() {
     </button>
   );
   const categoryCell = (item: Shown): ReactNode => {
+    const draftTo = drafted.get(item.id);
+    const target = draftTo ? ledger.projection.categoriesById[draftTo] : undefined;
+    if (target)
+      return (
+        <span className="draft-to" aria-label={`Moni's draft: ${item.category ?? 'No category'} to ${target.name}`}>
+          <Bubble icon={item.row.icon} color={item.row.color} size={22} glyph={12} />
+          <Glyph name="arrow-right" size={15} />
+          <Bubble icon={target.icon} color={target.color} size={22} glyph={12} />
+          <span className="cell-text">{target.name}</span>
+        </span>
+      );
     if (item.kind === 'transfer')
       return (
         <span className="td-plain">
@@ -527,6 +508,7 @@ export function ActivityScreen() {
                       style={{ animationDelay: `${Math.min(index, 6) * 30}ms` }}
                       aria-selected={item.id === openId}
                       data-checked={selected.has(item.id) || undefined}
+                      data-draft={drafted.has(item.id) || undefined}
                       data-menu={menu?.id === item.id || undefined}
                       data-edit={cell?.id === item.id || undefined}
                       onClick={() => openRow(item.id)}
@@ -581,6 +563,7 @@ export function ActivityScreen() {
                           className="lrow"
                           aria-selected={item.id === openId}
                           data-checked={selected.has(item.id) || undefined}
+                          data-draft={drafted.has(item.id) || undefined}
                           onClick={() => openRow(item.id)}
                           onContextMenu={(event) => rowMenu(event, item)}
                         >
@@ -590,7 +573,7 @@ export function ActivityScreen() {
                             <span className="row-title">{item.title}</span>
                             <span className="row-meta">
                               {item.auto && <span className="auto-pill">Auto</span>}
-                              <span className="row-meta-text">{item.kind === 'transfer' ? `${item.wallet} → ${item.row.toWallet}` : `${item.category ?? 'No category'} · ${item.wallet}`}</span>
+                              <span className="row-meta-text">{item.kind === 'transfer' ? `${item.wallet} → ${item.row.toWallet}` : `${item.category ?? 'No category'}${drafted.has(item.id) ? ` → ${ledger.projection.categoriesById[drafted.get(item.id)!]?.name ?? ''}` : ''} · ${item.wallet}`}</span>
                             </span>
                           </span>
                           {amountCell(item)}

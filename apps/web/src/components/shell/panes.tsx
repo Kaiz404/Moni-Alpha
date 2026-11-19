@@ -1,62 +1,20 @@
 'use client';
 
-import { AskMoniMark, Cat } from '@/components/brand';
+import { Cat } from '@/components/brand';
 import { Icon } from '@/components/icon';
 import { useShellApi } from './shell-context';
 import { setShell, useShell } from './shell-store';
 
-function PaneHead({ title, children }: { title: string; children?: React.ReactNode }) {
+function PaneHead({ title }: { title: string }) {
   const { run } = useShellApi();
   return (
     <header className="pane-head">
-      {children}
       <h2 className="pane-title">{title}</h2>
       <button type="button" className="pane-close press" onClick={() => run({ kind: 'closePane' })} aria-label="Close">
         <Icon name="close" size={20} />
         <span className="kbd">Esc</span>
       </button>
     </header>
-  );
-}
-
-/**
- * Moni chat docked on the right (W2-Chat), its first-run look from W2-Empty. Under 700 wide it is the
- * pushed chat page. Answers arrive with phase 7; the draft already survives a resize and a section change.
- */
-export function ChatPane() {
-  const { user } = useShellApi();
-  const { chatDraft } = useShell();
-  return (
-    <aside className="pane pane-chat motion-slide" aria-label="Moni chat" data-pane="chat">
-      <PaneHead title="Moni chat">
-        <AskMoniMark size={32} id="chat-head" />
-      </PaneHead>
-      <div className="pane-body" style={{ justifyContent: 'flex-end' }}>
-        <div>
-          <div style={{ fontSize: 28, lineHeight: '34px', fontWeight: 700, letterSpacing: '-0.02em' }}>Hi {user.name}.</div>
-          <div style={{ fontSize: 28, lineHeight: '34px', fontWeight: 700, letterSpacing: '-0.02em', color: 'var(--color-muted)' }}>
-            What did you spend?
-          </div>
-        </div>
-      </div>
-      <form className="pane-foot" onSubmit={(event) => event.preventDefault()}>
-        <div className="composer">
-          <textarea
-            aria-label="Ask or add a transaction"
-            placeholder="Ask or add a transaction"
-            rows={2}
-            value={chatDraft}
-            onChange={(event) => setShell({ chatDraft: event.target.value })}
-          />
-          <button type="submit" className="composer-send" aria-label="Send" disabled>
-            <Icon name="arrow-up" size={20} />
-          </button>
-        </div>
-        <span className="meta" style={{ padding: '0 6px', fontSize: 12, lineHeight: '16px' }}>
-          Moni chat uses AI and can get things wrong. Nothing is saved until you approve it.
-        </span>
-      </form>
-    </aside>
   );
 }
 

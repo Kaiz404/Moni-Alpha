@@ -23,6 +23,7 @@ import {
   type FinanceTransaction,
   type FinanceWallet,
   type MoneyLedger,
+  type MoneyLedgerRows,
   type MoneyMonth,
   type RawTable,
   type ReviewedProposal,
@@ -49,6 +50,8 @@ export type Ledger = {
   balances: Record<string, MinorAmount>;
   walletNames: Record<string, string>;
   aliases: MerchantAlias[];
+  /** What `money` was read from, for Moni chat's snapshots. */
+  moneyRows: MoneyLedgerRows;
   money: MoneyLedger;
   /** This month in the main currency. */
   month: MoneyMonth;
@@ -145,21 +148,18 @@ export function useLedger(): Ledger {
         ids.map((id) => projection.transactionsById[id]!).filter(Boolean),
       );
     }
-    const money = moneyLedger(
-      {
-        userId: user.id,
-        transactions,
-        categoriesById: projection.categoriesById,
-        budgetsById: projection.budgetsById,
-        monthlyBudget: tables?.monthlyBudget ?? null,
-        overrides: recurringOverridesFromRows(tables?.overrides ?? {}, user.id),
-        debts: debtsWithBalance(projection.debtsById, user.id, (debtId) =>
-          (projection.debtActivityIdsByDebt[debtId] ?? []).map((id) => projection.debtActivitiesById[id]!),
-        ),
-      },
-      now,
-      calendar,
-    );
+    const moneyRows: MoneyLedgerRows = {
+      userId: user.id,
+      transactions,
+      categoriesById: projection.categoriesById,
+      budgetsById: projection.budgetsById,
+      monthlyBudget: tables?.monthlyBudget ?? null,
+      overrides: recurringOverridesFromRows(tables?.overrides ?? {}, user.id),
+      debts: debtsWithBalance(projection.debtsById, user.id, (debtId) =>
+        (projection.debtActivityIdsByDebt[debtId] ?? []).map((id) => projection.debtActivitiesById[id]!),
+      ),
+    };
+    const money = moneyLedger(moneyRows, now, calendar);
     return {
       loaded: (tables?.loaded ?? false) && clock !== null,
       mounted: clock !== null,
@@ -173,6 +173,7 @@ export function useLedger(): Ledger {
       balances,
       walletNames: compactWalletNames(Object.values(projection.walletsById)),
       aliases: merchantAliasesFromRows(tables?.aliases ?? {}, user.id),
+      moneyRows,
       money,
       month: buildMoneyMonth(money, { month: calendar.monthKey(now), currency, now, calendar }),
       waiting: pendingProposals(projection.proposalsById, user.id),
