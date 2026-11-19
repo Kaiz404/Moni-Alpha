@@ -18,7 +18,8 @@ import {
   weekday,
   type BudgetInput,
 } from '@repo/core';
-import type { MinorAmount } from '@repo/types';
+import { updateProfilePreferences } from '@repo/data';
+import { userPreferencesSchema, type MinorAmount } from '@repo/types';
 import { useState, type ReactNode } from 'react';
 import { Cat } from '@/components/brand';
 import { SidePane } from '@/components/ledger/side-pane';
@@ -31,6 +32,7 @@ import { useScreenKeys } from '@/lib/screen-keys';
 import { parseBudgetDraft, type BudgetLine } from '@/lib/budget-view';
 import { applyPlan, budgetRowsNow, commit, planContext } from '@/lib/ledger/commit';
 import { useLedger, type Ledger } from '@/lib/ledger/use-ledger';
+import { moniStore } from '@/lib/moni-store';
 import { BudgetEditor, type BudgetEdit } from './budget-editor';
 import { CategoryPane } from './category-pane';
 import { SpendRing } from './spend-ring';
@@ -60,6 +62,25 @@ function wholeText(minor: number | null): string {
   return minor ? String(Math.floor(minor / 100)) : '';
 }
 
+/**
+ * Shows the monthly total at once, then writes `preferences.monthly_budget` in whole units, as the
+ * phone's Edit budgets does; a refused write puts the old one back. Null goes back to the budgets' sum.
+ */
+async function saveMonthlyTotal(totalMinor: MinorAmount | null): Promise<boolean> {
+  const store = moniStore();
+  const previous = store.profilePreferences$.peek();
+  const monthly_budget = totalMinor === null ? null : Number(totalMinor) / 100;
+  store.profilePreferences$.set({ ...userPreferencesSchema.parse(previous ?? {}), monthly_budget });
+  try {
+    store.profilePreferences$.set(await updateProfilePreferences(store.supabase, { monthly_budget }));
+    return true;
+  } catch {
+    store.profilePreferences$.set(previous);
+    showToast({ text: "Couldn't save the monthly total. Try again.", tone: 'error' });
+    return false;
+  }
+}
+
 function BudgetLoaded({ ledger }: { ledger: Ledger }) {
   const layout = useLayout();
   const [params, setParams] = useQueryParams();
@@ -67,6 +88,7 @@ function BudgetLoaded({ ledger }: { ledger: Ledger }) {
   const data = useBudget(ledger, params.get('month'), setup);
   const view = params.get('view') === 'calendar' ? 'calendar' : 'month';
   const [edit, setEdit] = useState<BudgetEdit | null>(null);
+  const [totalDraft, setTotalDraft] = useState<string | null>(null);
   const { money, table, month, current, history } = data;
   const currency = ledger.currency;
   const lines = [...table.budgeted, ...table.unbudgeted];
@@ -87,6 +109,7 @@ function BudgetLoaded({ ledger }: { ledger: Ledger }) {
   };
   const startEdit = (line: BudgetLine, at: BudgetEdit['at']) => {
     if (!editable) return;
+    setTotalDraft(null);
     setEdit({ categoryId: line.categoryId, at, draft: wholeText(line.budgetMinor) });
     if (selectedId !== line.categoryId) setParams({ category: line.categoryId });
   };
@@ -119,6 +142,31 @@ function BudgetLoaded({ ledger }: { ledger: Ledger }) {
         ? `${line.name} budget cleared`
         : `${line.name} budget saved: ${formatMoney(amountMinor, currency, { whole: true })}`;
     if (writeBudgets([{ categoryId: line.categoryId, currency, amountMinor }], text)) setEdit(null);
+  };
+
+  const savedTotal = data.ledger.monthlyTotalMinor;
+  const startTotal = () => {
+    if (!editable) return;
+    setEdit(null);
+    setTotalDraft(wholeText(table.budgetMinor));
+  };
+  const saveTotal = () => {
+    if (totalDraft === null) return;
+    const totalMinor = parseBudgetDraft(totalDraft);
+    if (totalMinor === undefined) {
+      showToast({ text: 'Type a whole amount, like 1800', tone: 'error' });
+      return;
+    }
+    setTotalDraft(null);
+    if (totalMinor === table.budgetMinor || (totalMinor === null && savedTotal === null)) return;
+    void saveMonthlyTotal(totalMinor).then((kept) => {
+      if (!kept) return;
+      showToast({
+        text: totalMinor === null ? 'Monthly total cleared' : `Monthly total saved: ${formatMoney(totalMinor, currency, { whole: true })}`,
+        tone: 'done',
+        undo: () => void saveMonthlyTotal(savedTotal),
+      });
+    });
   };
 
   const lastMonth = shiftMonth(month, -1);
@@ -156,7 +204,8 @@ function BudgetLoaded({ ledger }: { ledger: Ledger }) {
         return true;
       }
       case 'Escape':
-        if (edit) setEdit(null);
+        if (totalDraft !== null) setTotalDraft(null);
+        else if (edit) setEdit(null);
         else if (selectedId) select(null);
         else return false;
         return true;
@@ -274,6 +323,13 @@ function BudgetLoaded({ ledger }: { ledger: Ledger }) {
                     onDraft={(draft) => setEdit((current) => current && { ...current, draft })}
                     onSave={save}
                     onCancel={() => setEdit(null)}
+                    total={{
+                      draft: totalDraft,
+                      onEdit: startTotal,
+                      onDraft: setTotalDraft,
+                      onSave: saveTotal,
+                      onCancel: () => setTotalDraft(null),
+                    }}
                   />
                 ) : (
                   <NoBudgets data={data} currency={currency} onStart={() => setSetup(true)} />
@@ -426,6 +482,7 @@ function BudgetGrid({
   onDraft,
   onSave,
   onCancel,
+  total,
 }: {
   data: BudgetData;
   currency: string;
@@ -437,6 +494,8 @@ function BudgetGrid({
   onDraft: (draft: string) => void;
   onSave: () => void;
   onCancel: () => void;
+  /** The monthly total, edited in the Total row's Budget cell. */
+  total: { draft: string | null; onEdit: () => void; onDraft: (draft: string) => void; onSave: () => void; onCancel: () => void };
 }) {
   const { table } = data;
   const money = (minor: number) => formatMoney(minor, currency);
@@ -462,7 +521,7 @@ function BudgetGrid({
         </span>
         <span role="gridcell" className="budget-cell" data-col="budget">
           {editing && edit ? (
-            <BudgetEditor name={line.name} edit={edit} onDraft={onDraft} onSave={onSave} onCancel={onCancel} />
+            <BudgetEditor name={`${line.name} budget`} draft={edit.draft} at={edit.at} onDraft={onDraft} onSave={onSave} onCancel={onCancel} />
           ) : line.budgetMinor !== null ? (
             <button
               type="button"
@@ -545,8 +604,22 @@ function BudgetGrid({
         <span className="num" data-col="spent">
           {money(table.spentMinor)}
         </span>
-        <span className="num" data-col="budget">
-          {table.budgetMinor === null ? '' : formatMoney(table.budgetMinor, currency, { whole: true })}
+        <span className="budget-cell" data-col="budget">
+          {total.draft !== null ? (
+            <BudgetEditor name="Monthly total" draft={total.draft} at="table" onDraft={total.onDraft} onSave={total.onSave} onCancel={total.onCancel} />
+          ) : editable ? (
+            <button
+              type="button"
+              className="bcell num"
+              data-testid="budget-monthly-total"
+              onClick={total.onEdit}
+              aria-label={`Monthly total, ${table.budgetMinor === null ? 'not set' : formatMoney(table.budgetMinor, currency, { whole: true })}, edit`}
+            >
+              {table.budgetMinor === null ? 'Set' : formatMoney(table.budgetMinor, currency, { whole: true })}
+            </button>
+          ) : (
+            <span className="num">{table.budgetMinor === null ? '' : formatMoney(table.budgetMinor, currency, { whole: true })}</span>
+          )}
         </span>
         <span data-col="left" />
         <span data-col="bar" />

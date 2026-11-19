@@ -106,33 +106,6 @@ export function parseAmountDraft(text: string): MinorAmount | undefined {
   return minor > 0 && minor <= 999_999_999 ? (minor as MinorAmount) : undefined;
 }
 
-/** One slice of the spending ring, in degrees clockwise from twelve o'clock. */
-export type RingSegment = { key: string; start: number; span: number };
-
-/**
- * The ring's slices: each in proportion to what it spent, except that small ones are widened to
- * `minimum` degrees so their glyph still fits; the rest share what is left.
- */
-export function ringSegments(slices: readonly { key: string; spentMinor: number }[], minimum = 25): RingSegment[] {
-  const live = slices.filter((slice) => slice.spentMinor > 0);
-  const total = live.reduce((sum, slice) => sum + slice.spentMinor, 0);
-  if (!total) return [];
-  if (live.length * minimum >= 360) {
-    return live.map((slice, index) => ({ key: slice.key, start: (index * 360) / live.length, span: 360 / live.length }));
-  }
-  const raw = live.map((slice) => (slice.spentMinor / total) * 360);
-  const small = raw.map((angle) => angle < minimum);
-  const bigTotal = raw.reduce((sum, angle, index) => (small[index] ? sum : sum + angle), 0);
-  const scale = (360 - minimum * small.filter(Boolean).length) / bigTotal;
-  let start = 0;
-  return live.map((slice, index) => {
-    const span = small[index] ? minimum : raw[index]! * scale;
-    const segment = { key: slice.key, start, span };
-    start += span;
-    return segment;
-  });
-}
-
 /** The pane's chart: a rounded top for the y axis that leaves room above the tallest bar and the budget. */
 export function chartTop(values: readonly number[], budgetMinor: number | null): number {
   const most = Math.max(0, ...values, budgetMinor ?? 0) / 100;

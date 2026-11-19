@@ -2,8 +2,8 @@ import type { MinorAmount } from '@repo/types';
 import { router } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { View } from 'react-native';
-import Svg, { Circle } from 'react-native-svg';
 
+import { CategoryRing, RingAmount, type RingSlice } from '@/components/budget/category-ring';
 import {
   useBudgetData,
   useBudgetMonth,
@@ -29,10 +29,8 @@ import { currencySymbol, formatMoney, monthName } from '@repo/core';
 import { deviceCalendar } from '@/lib/dates/device-calendar';
 
 const TOTAL = 'total';
-const DONUT = 96;
-const DONUT_R = 40;
-const DONUT_C = 2 * Math.PI * DONUT_R;
-const ARC_GAP = 2;
+/** Leaves room for the pencil inside the ring. */
+const TOTAL_WIDTH = 150;
 
 const fieldOf = (id: string) =>
   id === TOTAL ? tid('budget', 'total') : tid('budget', 'cap', id);
@@ -111,34 +109,32 @@ export default function EditBudgetsScreen() {
   ).length;
   const thisMonth = monthName(deviceCalendar.monthKey(data.now));
 
-  const scale = Math.max(liveTotal, sum, 1);
-  const arcs: {
-    id: string;
-    color: string;
-    dash: string;
-    offset: number;
-  }[] = [];
-  for (let i = 0, at = 0; i < rows.length; i += 1) {
-    const length = (live(rows[i].id) / scale) * DONUT_C;
-    if (length <= 0) continue;
-    arcs.push({
-      id: rows[i].id,
-      color: rows[i].color ?? tokens.inactive,
-      dash: `${Math.max(length - ARC_GAP, 1)} ${DONUT_C}`,
-      offset: -at,
-    });
-    at += length;
-  }
-  const fits = liveTotal >= sum;
-  const status = fits
-    ? {
-        pill: `${whole(liveTotal - sum)} unassigned`,
-        sentence: `${whole(sum)} across ${counted === 1 ? '1 budget' : `${counted} budgets`}. The rest covers everything else.`,
-      }
-    : {
-        pill: `${whole(sum - liveTotal)} over the total`,
-        sentence: `${whole(sum)} across ${counted === 1 ? '1 budget' : `${counted} budgets`}, more than the total. Raise it or lower one.`,
-      };
+  const ringSlices = useMemo(
+    () =>
+      data.categories.flatMap((category): RingSlice[] => {
+        const cap =
+          editing === fieldOf(category.id) && typedMinor !== null
+            ? wholeOf(typedMinor)
+            : (caps[category.id] ?? 0);
+        return cap > 0
+          ? [
+              {
+                categoryId: category.id,
+                name: category.name,
+                icon: category.icon,
+                color: category.color,
+                amountMinor: (cap * 100) as MinorAmount,
+              },
+            ]
+          : [];
+      }),
+    [data.categories, caps, editing, typedMinor],
+  );
+  const status = total === null
+    ? { text: 'in budgets', over: false }
+    : liveTotal >= sum
+      ? { text: `${whole(liveTotal - sum)} for everything else`, over: false }
+      : { text: `${whole(sum - liveTotal)} more in budgets`, over: true };
 
   const dropIfUnset = (id: string) => {
     if (caps[id] !== 0) return;
@@ -203,83 +199,50 @@ export default function EditBudgetsScreen() {
             whole
             max={PLAN_LIMIT_MINOR}
             value={liveTotal ? ((liveTotal * 100) as MinorAmount) : null}
+            hint={
+              <Text
+                variant="meta"
+                className="text-muted"
+              >
+                {`${whole(sum)} in budgets`}
+              </Text>
+            }
             onDraftChange={setTypedMinor}
             onSave={(minor) => setTotal(wholeOf(minor))}
           >
             {({ editable, editor }) =>
-              editor ??
-              editable(
-                <Text
-                  className="text-[40px] leading-[44px] font-display-bold text-foreground"
-                  style={{ fontVariant: ['tabular-nums'] }}
-                >
-                  {whole(liveTotal)}
-                </Text>,
-                { accessibilityLabel: `Monthly total ${whole(liveTotal)}. Edit` },
+              editor ?? (
+                <CategoryRing
+                  testID={tid('budget', 'edit', 'ring')}
+                  slices={ringSlices}
+                  currency={currency}
+                  month={deviceCalendar.monthKey(data.now)}
+                  of="budgets"
+                  wholeAmounts
+                  centre={
+                    <View className="items-center">
+                      {editable(
+                        <RingAmount
+                          text={whole(liveTotal)}
+                          whole
+                          width={TOTAL_WIDTH}
+                        />,
+                        { accessibilityLabel: `Monthly total ${whole(liveTotal)}. Edit` },
+                      )}
+                      <Text
+                        testID={tid('budget', 'edit', 'status')}
+                        numberOfLines={1}
+                        maxFontSizeMultiplier={1.2}
+                        className={`text-[13px] leading-[18px] ${status.over ? 'font-display-bold text-over' : 'text-muted'}`}
+                      >
+                        {status.text}
+                      </Text>
+                    </View>
+                  }
+                />
               )
             }
           </InPlaceField>
-          <View className="flex-row items-center gap-4">
-            <View
-              accessible
-              accessibilityRole="image"
-              accessibilityLabel={`The ${whole(liveTotal)} monthly total: ${rows
-                .map(
-                  (category) =>
-                    `${category.name} ${whole(live(category.id))}`,
-                )
-                .join(', ')}. ${status.pill}.`}
-            >
-              <Svg
-                width={DONUT}
-                height={DONUT}
-              >
-                <Circle
-                  cx={DONUT / 2}
-                  cy={DONUT / 2}
-                  r={DONUT_R}
-                  fill="none"
-                  stroke={tokens.track}
-                  strokeWidth={12}
-                />
-                {arcs.map((arc) => (
-                  <Circle
-                    key={arc.id}
-                    cx={DONUT / 2}
-                    cy={DONUT / 2}
-                    r={DONUT_R}
-                    fill="none"
-                    stroke={arc.color}
-                    strokeWidth={12}
-                    strokeDasharray={arc.dash}
-                    strokeDashoffset={arc.offset}
-                    transform={`rotate(-90 ${DONUT / 2} ${DONUT / 2})`}
-                  />
-                ))}
-              </Svg>
-            </View>
-            <View className="min-w-0 flex-1 items-start gap-2">
-              <View
-                className={`h-7 flex-row items-center gap-1.5 rounded-full px-3 ${fits ? 'bg-primary-muted' : 'bg-destructive-fill'}`}
-              >
-                <View
-                  className={`h-1.5 w-1.5 rounded-full ${fits ? 'bg-state-approved' : 'bg-state-destructive'}`}
-                />
-                <Text
-                  className={`text-[13px] font-display-bold ${fits ? 'text-state-approved' : 'text-state-destructive'}`}
-                  style={{ fontVariant: ['tabular-nums'] }}
-                >
-                  {status.pill}
-                </Text>
-              </View>
-              <Text
-                variant="meta"
-                className="text-ink-2"
-              >
-                {status.sentence}
-              </Text>
-            </View>
-          </View>
         </View>
 
         {rows.length ? (

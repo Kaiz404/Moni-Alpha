@@ -1,7 +1,7 @@
 import type { MoneyMonth, SpendByMonth } from '@repo/core';
 import type { MinorAmount } from '@repo/types';
 import { describe, expect, it } from 'vitest';
-import { budgetTable, chartTop, parseAmountDraft, parseBudgetDraft, ringSegments } from '../budget-view';
+import { budgetTable, chartTop, parseAmountDraft, parseBudgetDraft } from '../budget-view';
 
 const m = (value: number) => value as MinorAmount;
 
@@ -69,23 +69,6 @@ describe('parseBudgetDraft', () => {
 describe('parseAmountDraft', () => {
   it('keeps cents and refuses nothing or too many decimals', () => {
     expect(['150', 'RM1,200.5', '40.00', '0', '', '1.234'].map(parseAmountDraft)).toEqual([15000, 120050, 4000, undefined, undefined, undefined]);
-  });
-});
-
-describe('ringSegments', () => {
-  it('widens small slices to the minimum and shares the rest by spend', () => {
-    expect(
-      ringSegments([
-        { key: 'a', spentMinor: 900 },
-        { key: 'b', spentMinor: 90 },
-        { key: 'c', spentMinor: 10 },
-        { key: 'none', spentMinor: 0 },
-      ]).map(({ key, start, span }) => [key, Math.round(start), Math.round(span)]),
-    ).toEqual([
-      ['a', 0, 305],
-      ['b', 305, 30],
-      ['c', 335, 25],
-    ]);
   });
 });
 

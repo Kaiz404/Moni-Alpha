@@ -1,6 +1,6 @@
 import type { MinorAmount } from '@repo/types';
 import { glyphOn } from '@/lib/theme/glyph-on';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { View } from 'react-native';
 import {
   Gesture,
@@ -19,23 +19,20 @@ import Animated, {
 import Svg, { Circle, Path } from 'react-native-svg';
 import { useUniwind } from 'uniwind';
 
-import {
-  arcPath,
-  ringHit,
-  ringPoint,
-  ringSegments,
-  type RingOptions,
-} from '@/components/budget/ring-geometry';
+import { arcPath, ringPoint } from '@/components/budget/ring-geometry';
 import { IconSymbol, type IconSymbolName } from '@/components/ui/icon-symbol';
 import { Text } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import {
-  type SpendSlice,
   formatMoney,
+  ringHit,
+  ringSegments,
+  type RingOptions,
+  type SpendSlice,
 } from '@repo/core';
 import { scrubStep } from '@/lib/haptics';
 import { springs } from '@repo/design';
-import { tid } from '@/lib/test-ids';
+import { tid, type TestId } from '@/lib/test-ids';
 import { resolveTransactionIcon } from '@/lib/transactions/icon';
 
 const SIZE = 284;
@@ -78,9 +75,14 @@ type RingArc = {
   gone: boolean;
 };
 
-function ringArcs(slices: readonly SpendSlice[]): RingArc[] {
+/** One category's share of the ring: what it spent on the Budget tab, its budget on Edit budgets. */
+export type RingSlice = Pick<SpendSlice, 'categoryId' | 'name' | 'icon' | 'color'> & {
+  amountMinor: MinorAmount;
+};
+
+function ringArcs(slices: readonly RingSlice[]): RingArc[] {
   return ringSegments(
-    slices.map((slice) => Number(slice.spentMinor)),
+    slices.map((slice) => Number(slice.amountMinor)),
     RING,
   ).map((segment) => {
     const place = { share: segment.share, start: segment.start, sweep: segment.sweep, gone: false };
@@ -269,14 +271,16 @@ function ArcIcon(
 }
 
 /** "RM1,116.20" as a quiet symbol, big digits, quiet cents. */
-function RingAmount({
+export function RingAmount({
   testID,
   text,
   whole,
+  width = NUMBER_WIDTH,
 }: {
   testID?: ReturnType<typeof tid>;
   text: string;
   whole: boolean;
+  width?: number;
 }) {
   const parts = /^([^\d]*)([\d,]+)(\.\d+)?$/.exec(text);
   const quiet = 'font-display-bold text-muted';
@@ -288,7 +292,7 @@ function RingAmount({
       minimumFontScale={0.6}
       maxFontSizeMultiplier={1.2}
       className="text-center font-display-bold text-foreground"
-      style={[hero, { width: NUMBER_WIDTH }]}
+      style={[hero, { width }]}
     >
       {parts ? (
         <>
@@ -310,34 +314,42 @@ function RingAmount({
 }
 
 /** "31% of spending", without a tiny share rounding to none or a big one to all of it. */
-export function shareOfSpending(share: number): string {
-  if (share > 0 && share < 0.01) return 'Under 1% of spending';
-  if (share < 1 && share > 0.99) return 'Over 99% of spending';
-  return `${Math.round(share * 100)}% of spending`;
+export function shareOf(share: number, whole: string): string {
+  if (share > 0 && share < 0.01) return `Under 1% of ${whole}`;
+  if (share < 1 && share > 0.99) return `Over 99% of ${whole}`;
+  return `${Math.round(share * 100)}% of ${whole}`;
 }
 
-type SpendRingProps = {
-  slices: readonly SpendSlice[];
-  /** The month's spending, the same total the rest of the tab shows. */
-  totalMinor: MinorAmount;
-  budgetMinor: MinorAmount | null;
+type CategoryRingProps = {
+  /** Parts are `<testID>.tap`, `.selected` and the caller's own in the middle. */
+  testID: TestId;
+  slices: readonly RingSlice[];
   currency: string;
+  /** A picked arc lasts until this changes. */
   month: string;
-  monthName: string;
+  /** What the slices add up to, for "31% of spending". */
+  of: string;
+  /** Budgets read in whole ringgit; spending keeps its cents. */
+  wholeAmounts?: boolean;
+  /** What the middle shows while no arc is picked. */
+  centre: ReactNode;
 };
 
 /**
- * The month's spending by category: separate round-capped arcs round the total, biggest first.
- * Tap an arc to read it in the middle; tap it again, or the middle, for the total.
+ * Categories as separate round-capped arcs round a middle, biggest first: the month's spending on
+ * the Budget tab and the budgets on Edit budgets. Tap an arc to read it in the middle; tap it
+ * again, or the middle, to go back.
  */
-export function SpendRing({
+export function CategoryRing({
+  testID,
   slices,
-  totalMinor,
-  budgetMinor,
   currency,
   month,
-  monthName,
-}: SpendRingProps) {
+  of,
+  wholeAmounts = false,
+  centre,
+}: CategoryRingProps) {
+  const money = (minor: number) => formatMoney(minor, currency, { whole: wholeAmounts });
   const tokens = useThemeTokens();
   const dark = useUniwind().theme === 'dark';
   const reduceMotion = useReducedMotion();
@@ -387,7 +399,7 @@ export function SpendRing({
   };
 
   const tap = Gesture.Tap()
-    .withTestId('budget.spend-ring.tap')
+    .withTestId(tid(testID, 'tap'))
     .runOnJS(true)
     .onEnd((event, success) => {
       if (!success) return;
@@ -403,22 +415,9 @@ export function SpendRing({
   const [width, setWidth] = useState(SIZE);
   const scale = Math.min(1, width / SIZE);
 
-  const total = formatMoney(totalMinor, currency);
-  const spentNothing = Number(totalMinor) === 0;
-  const budgetWords =
-    budgetMinor === null
-      ? null
-      : `of ${formatMoney(budgetMinor, currency, { whole: true })}`;
-  const overMinor =
-    budgetMinor === null ? 0 : Number(totalMinor) - Number(budgetMinor);
-  const overWords =
-    overMinor > 0
-      ? `${formatMoney(overMinor, currency, { whole: true })} over`
-      : null;
-
   return (
     <View
-      testID={tid('budget', 'spend-ring')}
+      testID={testID}
       onLayout={(event) => setWidth(event.nativeEvent.layout.width)}
       className="items-center justify-center"
       style={{ height: SIZE * scale }}
@@ -473,8 +472,8 @@ export function SpendRing({
                 fan={fan}
                 selected={selected?.key === arc.key}
                 dimmed={selected !== null && selected.key !== arc.key}
-                amount={formatMoney(arc.amountMinor, currency)}
-                shareWords={shareOfSpending(arc.share)}
+                amount={money(arc.amountMinor)}
+                shareWords={shareOf(arc.share, of)}
                 onActivate={() => toggle(arc.key)}
               />
             ))}
@@ -486,20 +485,20 @@ export function SpendRing({
             {selected ? (
               <Animated.View
                 key={`${month}:${selected.key}`}
-                testID={tid('budget', 'spend-ring', 'selected')}
+                testID={tid(testID, 'selected')}
                 collapsable={false}
                 entering={FadeIn.duration(NUMBER_FADE_MS)}
                 accessible
                 accessibilityRole="button"
-                accessibilityLabel={`${selected.name}, ${formatMoney(selected.amountMinor, currency)}, ${shareOfSpending(selected.share)}`}
-                accessibilityHint="Shows the month's total"
+                accessibilityLabel={`${selected.name}, ${money(selected.amountMinor)}, ${shareOf(selected.share, of)}`}
+                accessibilityHint="Shows the total"
                 accessibilityActions={[{ name: 'activate' }]}
                 onAccessibilityAction={backToTotal}
                 className="items-center"
               >
                 <RingAmount
-                  text={formatMoney(selected.amountMinor, currency)}
-                  whole={false}
+                  text={money(selected.amountMinor)}
+                  whole={wholeAmounts}
                 />
                 <Text
                   numberOfLines={1}
@@ -518,7 +517,7 @@ export function SpendRing({
                 >
                   {selected.members.length
                     ? `${selected.members.length} categories · ${Math.max(1, Math.round(selected.share * 100))}%`
-                    : shareOfSpending(selected.share)}
+                    : shareOf(selected.share, of)}
                 </Text>
               </Animated.View>
             ) : (
@@ -526,27 +525,61 @@ export function SpendRing({
                 key={month}
                 collapsable={false}
                 entering={FadeIn.duration(NUMBER_FADE_MS)}
-                accessible
-                accessibilityLabel={`Spent in ${monthName}, ${total}${budgetWords ? ` ${budgetWords}` : ''}${overWords ? `, ${overWords}` : ''}`}
                 className="items-center"
               >
-                <RingAmount
-                  testID={tid('budget', 'spend-ring', 'total')}
-                  text={spentNothing ? formatMoney(0, currency, { whole: true }) : total}
-                  whole={spentNothing}
-                />
-                <Text
-                  numberOfLines={1}
-                  maxFontSizeMultiplier={1.2}
-                  className={`text-[13px] leading-[18px] ${overWords ? 'font-display-bold text-over' : 'text-muted'}`}
-                >
-                  {overWords ?? budgetWords ?? 'spent'}
-                </Text>
+                {centre}
               </Animated.View>
             )}
           </View>
         </View>
       </GestureDetector>
+    </View>
+  );
+}
+
+/** The Budget tab's middle: the month's spending, then what it is of the budget or how far over. */
+export function SpentCentre({
+  totalMinor,
+  budgetMinor,
+  currency,
+  monthName,
+}: {
+  /** The month's spending, the same total the rest of the tab shows. */
+  totalMinor: MinorAmount;
+  budgetMinor: MinorAmount | null;
+  currency: string;
+  monthName: string;
+}) {
+  const total = formatMoney(totalMinor, currency);
+  const spentNothing = Number(totalMinor) === 0;
+  const budgetWords =
+    budgetMinor === null
+      ? null
+      : `of ${formatMoney(budgetMinor, currency, { whole: true })}`;
+  const overMinor =
+    budgetMinor === null ? 0 : Number(totalMinor) - Number(budgetMinor);
+  const overWords =
+    overMinor > 0
+      ? `${formatMoney(overMinor, currency, { whole: true })} over`
+      : null;
+  return (
+    <View
+      accessible
+      accessibilityLabel={`Spent in ${monthName}, ${total}${budgetWords ? ` ${budgetWords}` : ''}${overWords ? `, ${overWords}` : ''}`}
+      className="items-center"
+    >
+      <RingAmount
+        testID={tid('budget', 'spend-ring', 'total')}
+        text={spentNothing ? formatMoney(0, currency, { whole: true }) : total}
+        whole={spentNothing}
+      />
+      <Text
+        numberOfLines={1}
+        maxFontSizeMultiplier={1.2}
+        className={`text-[13px] leading-[18px] ${overWords ? 'font-display-bold text-over' : 'text-muted'}`}
+      >
+        {overWords ?? budgetWords ?? 'spent'}
+      </Text>
     </View>
   );
 }

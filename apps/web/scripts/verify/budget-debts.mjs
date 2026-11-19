@@ -368,6 +368,18 @@ export async function verifyBudgetDebts(t) {
   await r.waitForFunction(() => document.documentElement.dataset.layout === 'rail-one-column');
   check('and back across 700 the same cell still holds the draft', (await half.inputValue()) === '12' && (await half.getAttribute('data-marker')) === 'kept');
   await half.press('Escape');
+  await r.keyboard.press('Escape');
+  await r.waitForURL((url) => !url.search.includes('category='));
+  const totalCell = r.getByTestId('budget-monthly-total');
+  const shown = (await totalCell.innerText()).replace(/[^\d]/g, '');
+  await totalCell.click();
+  const totalInput = r.getByLabel('Monthly total in ringgit, editing');
+  check('the Total row opens the monthly total in place, starting from the amount it shows', (await totalInput.inputValue()) === shown, {
+    shown,
+    typed: await totalInput.inputValue(),
+  });
+  await totalInput.press('Escape');
+  check('Esc closes it without a write', (await totalInput.count()) === 0 && (await totalCell.isVisible()));
 
   await open(r, '/debts');
   await ready(r);

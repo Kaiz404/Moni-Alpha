@@ -9,28 +9,30 @@ export type BudgetEdit = { categoryId: string; at: 'table' | 'pane'; draft: stri
  */
 export function BudgetEditor({
   name,
-  edit,
+  draft,
+  at,
   onDraft,
   onSave,
   onCancel,
   wide = false,
 }: {
   name: string;
-  edit: BudgetEdit;
+  draft: string;
+  at: BudgetEdit['at'];
   onDraft: (draft: string) => void;
   onSave: () => void;
   onCancel: () => void;
   wide?: boolean;
 }) {
   return (
-    <div className="edit-capsule" style={wide ? { width: 128, height: 40 } : undefined} data-at={edit.at}>
+    <div className="edit-capsule" style={wide ? { width: 128, height: 40 } : undefined} data-at={at}>
       <span>RM</span>
       <input
         type="text"
         inputMode="numeric"
         autoFocus
-        aria-label={`${name} budget in ringgit, editing`}
-        value={edit.draft}
+        aria-label={`${name} in ringgit, editing`}
+        value={draft}
         onChange={(event) => onDraft(event.target.value)}
         onClick={(event) => event.stopPropagation()}
         onKeyDown={(event) => {

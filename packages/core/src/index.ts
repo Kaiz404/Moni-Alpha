@@ -3,6 +3,7 @@ export * from './backup';
 export * from './calendar';
 export * from './chart-range';
 export * from './charts/month-charts';
+export * from './charts/ring';
 export * from './chat';
 export * from './glossary';
 export * from './ledger';

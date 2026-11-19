@@ -177,7 +177,6 @@ export const iconNames = [
   'scale',
   'scale-balance',
   'school',
-  'segment',
   'select',
   'select-all',
   'send',

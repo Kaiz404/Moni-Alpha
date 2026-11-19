@@ -105,6 +105,7 @@ The app builds the default for each. [`redesign/PLAN.md`](redesign/PLAN.md) ("Op
 - D9. Decided 25 Oct 2026: the "Edit" link beside Budgets is gone (canvas thread 8cd5c2da). Rings open their category page, where the budget edits in place; the Budgets heading's chevron opens `V2P-BudgetEdit`.
 - D10. The dev-only `debug/` route stays, reachable from Profile in `__DEV__` builds.
 - D11. Scan a receipt uses the ML Kit document scanner instead of the in-app camera that `V2A-CaptureScan` draws.
+- D12. Decided 20 Nov 2026 (#79): Edit budgets draws its budgets on the Budget tab's ring, never a second chart. The monthly total sits in the ring's middle and edits in place, with one line under it; the unassigned pill and the sentence are gone. The web lays its ring out with the same geometry (`ringSegments` in `@repo/core`).
 
 ## Where the app differs from a board
 

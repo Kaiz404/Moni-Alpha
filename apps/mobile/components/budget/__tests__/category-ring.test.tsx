@@ -6,8 +6,12 @@ import {
   getByGestureTestId,
 } from 'react-native-gesture-handler/jest-utils';
 
-import { shareOfSpending, SpendRing } from '@/components/budget/spend-ring';
-import type { SpendSlice } from '@repo/core';
+import {
+  CategoryRing,
+  shareOf,
+  SpentCentre,
+  type RingSlice,
+} from '@/components/budget/category-ring';
 import { scrubStep } from '@/lib/haptics';
 
 jest.mock('@/lib/haptics', () => ({ scrubStep: jest.fn() }));
@@ -16,12 +20,12 @@ jest.mock('uniwind', () => ({
   useUniwind: () => ({ theme: 'light' }),
 }));
 
-const slice = (name: string, ringgit: number, color: string | null = '#FB7F77'): SpendSlice => ({
+const slice = (name: string, ringgit: number, color: string | null = '#FB7F77'): RingSlice => ({
   categoryId: name.toLowerCase(),
   name,
   icon: 'car',
   color,
-  spentMinor: Math.round(ringgit * 100) as MinorAmount,
+  amountMinor: Math.round(ringgit * 100) as MinorAmount,
 });
 
 const seed = [
@@ -42,19 +46,26 @@ function renderRing({
   budget = 180000,
   month = '2026-10',
 }: {
-  slices?: SpendSlice[];
+  slices?: RingSlice[];
   total?: number;
   budget?: number | null;
   month?: string;
 } = {}) {
   return (
-    <SpendRing
+    <CategoryRing
+      testID="budget.spend-ring"
       slices={slices}
-      totalMinor={total as MinorAmount}
-      budgetMinor={budget as MinorAmount | null}
       currency="MYR"
       month={month}
-      monthName="October"
+      of="spending"
+      centre={
+        <SpentCentre
+          totalMinor={total as MinorAmount}
+          budgetMinor={budget as MinorAmount | null}
+          currency="MYR"
+          monthName="October"
+        />
+      }
     />
   );
 }
@@ -73,7 +84,7 @@ const tapAt = (x: number, y: number) =>
     ]);
   });
 
-describe('SpendRing', () => {
+describe('CategoryRing', () => {
   beforeEach(() => jest.mocked(scrubStep).mockClear());
 
   it('leads with the month total and the budget', () => {
@@ -176,15 +187,33 @@ describe('SpendRing', () => {
     expect(screen.queryByTestId('budget.slice.housing')).toBeNull();
     expect(screen.getByTestId('budget.slice.transportation')).toBeTruthy();
   });
+
+  it('reads budgets in whole ringgit as a share of the budgets', () => {
+    render(
+      <CategoryRing
+        testID="budget.edit.ring"
+        slices={[slice('Food & Dining', 600), slice('Transportation', 200)]}
+        currency="MYR"
+        month="2026-10"
+        of="budgets"
+        wholeAmounts
+        centre={null}
+      />,
+    );
+    activate('budget.slice.food-dining');
+    expect(screen.getByTestId('budget.edit.ring.selected')).toHaveTextContent(
+      'RM600Food & Dining75% of budgets',
+    );
+  });
 });
 
-describe('shareOfSpending', () => {
+describe('shareOf', () => {
   it.each([
     [1, '100% of spending'],
     [0.313, '31% of spending'],
     [0.002, 'Under 1% of spending'],
     [0.996, 'Over 99% of spending'],
   ])('%s reads %s', (share, words) => {
-    expect(shareOfSpending(share)).toBe(words);
+    expect(shareOf(share, 'spending')).toBe(words);
   });
 });

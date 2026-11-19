@@ -185,7 +185,7 @@ export function CategoryPane({
         <div className="field-row">
           <span className="label-text">Monthly budget · every month</span>
           {editing && edit ? (
-            <BudgetEditor name={line.name} edit={edit} onDraft={onDraft} onSave={onSave} onCancel={onCancel} wide />
+            <BudgetEditor name={`${line.name} budget`} draft={edit.draft} at={edit.at} onDraft={onDraft} onSave={onSave} onCancel={onCancel} wide />
           ) : line.budgetMinor !== null ? (
             <button type="button" className="pill-field num" onClick={onEdit} aria-label={`${line.name} monthly budget, ${formatMoney(line.budgetMinor, currency, { whole: true })}, edit`}>
               {formatMoney(line.budgetMinor, currency, { whole: true })}

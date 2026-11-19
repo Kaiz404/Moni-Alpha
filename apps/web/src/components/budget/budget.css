@@ -82,6 +82,21 @@ html[data-layout='phone'] .ring-card .spend-ring {
   opacity: 0.85;
 }
 
+.ring-slice[data-plain] {
+  stroke: var(--color-hairline);
+  cursor: default;
+}
+
+[data-theme='dark'] .ring-slice[data-plain] {
+  stroke: var(--color-inactive);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) .ring-slice[data-plain] {
+    stroke: var(--color-inactive);
+  }
+}
+
 .ring-glyph {
   position: absolute;
   pointer-events: none;

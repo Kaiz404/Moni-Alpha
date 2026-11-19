@@ -11,7 +11,7 @@ import { CalendarView } from '@/components/budget/calendar-view';
 import { MerchantList } from '@/components/budget/merchant-list';
 import { openSpending } from '@/components/budget/open-spending';
 import { ReportRow } from '@/components/budget/report-row';
-import { SpendRing } from '@/components/budget/spend-ring';
+import { CategoryRing, SpentCentre } from '@/components/budget/category-ring';
 import {
   useBudgetData,
   useBudgetMonth,
@@ -234,7 +234,7 @@ function MonthView({
         currency,
         data.everyCategory,
         deviceCalendar,
-      ),
+      ).map((slice) => ({ ...slice, amountMinor: slice.spentMinor })),
     [data.transactions, budget.month, currency, data.everyCategory],
   );
   const report = useMemo(
@@ -262,13 +262,20 @@ function MonthView({
         >
           {`Spent in ${name}`}
         </Text>
-        <SpendRing
+        <CategoryRing
+          testID={tid('budget', 'spend-ring')}
           slices={slices}
-          totalMinor={budget.spentMinor}
-          budgetMinor={budget.budgetMinor}
           currency={currency}
           month={budget.month}
-          monthName={name}
+          of="spending"
+          centre={
+            <SpentCentre
+              totalMinor={budget.spentMinor}
+              budgetMinor={budget.budgetMinor}
+              currency={currency}
+              monthName={name}
+            />
+          }
         />
         {sentence ? (
           <Text
