@@ -20,11 +20,18 @@ tags:
 - tapOn:
     id: auth.name
 - inputText: Young Kai
+- hideKeyboard
+# Fills each field the way subflows/sign-in.yaml does: text typed straight after the tap can be
+# dropped, and the open keyboard covers the password field, so a tap there lands on a key.
 - tapOn:
     id: auth.email
+- eraseText: 40
 - inputText: under-age-e2e@example.com
+- hideKeyboard
+- assertVisible: under-age-e2e@example.com
 - tapOn:
     id: auth.password
+- eraseText: 40
 - inputText: long-enough-1
 - hideKeyboard
 - takeScreenshot: sign-up-age-form
