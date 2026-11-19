@@ -51,11 +51,73 @@ html[data-layout='rail'] .shell[data-pane='chat'] .shell-main {
   overflow-y: auto;
 }
 
+.sidebar-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 0 18px 6px;
+}
+
 .sidebar-logo {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 0 6px 18px;
+}
+
+/* The fold button (#91): folds the sidebar to the rail at the top of the sidebar, opens it at the top of the rail. */
+.nav-fold {
+  height: 32px;
+  padding: 0 6px 0 8px;
+  border-radius: 9999px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--color-inactive);
+  transition:
+    background-color 120ms ease,
+    color 120ms ease;
+}
+
+.nav-fold:hover {
+  background: var(--on-bar-hover);
+  color: var(--color-on-tab-bar);
+}
+
+.rail > .nav-fold {
+  width: auto;
+  flex-direction: row;
+  padding: 0 6px 0 8px;
+}
+
+/* Folding morphs the sidebar into the rail as one group, and the page moves with it. */
+html[data-nav-swap] .sidebar,
+html[data-nav-swap] .rail {
+  view-transition-name: nav;
+}
+
+html[data-nav-swap] .shell-main {
+  view-transition-name: shell-main;
+}
+
+::view-transition-group(nav),
+::view-transition-group(shell-main) {
+  animation-duration: var(--duration-sheet);
+  animation-timing-function: var(--ease-sheet);
+}
+
+::view-transition-group(nav) {
+  overflow: clip;
+  border-radius: 28px;
+}
+
+::view-transition-old(nav),
+::view-transition-new(nav),
+::view-transition-old(shell-main),
+::view-transition-new(shell-main) {
+  width: auto;
+  height: auto;
+  object-fit: none;
+  object-position: left top;
 }
 
 .sidebar-add {

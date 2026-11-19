@@ -11,6 +11,8 @@ import { AccountMenu, ShortcutsDialog, Toaster } from './overlays';
 import { ChatPane } from '@/components/chat/chat-pane';
 import { useReconnectToast } from '@/components/states/connection';
 import { AddPane } from './panes';
+import { setNavFolded } from './use-layout';
+import { LAYOUT_QUERIES, NAV_FOLDED_ATTR } from '@/lib/layout';
 import { ShellContext, type Pane, type ShellAction, type ShellApi, type ShellUser } from './shell-context';
 import { SessionDialog } from '@/components/states/session-dialog';
 import { moniStore } from '@/lib/moni-store';
@@ -104,6 +106,10 @@ export function Shell({ user, children }: { user: ShellUser; children: ReactNode
             undo: () => setTheme(before),
           });
         }
+        case 'fold':
+          setShell({ overlay: 'none' });
+          if (!window.matchMedia(LAYOUT_QUERIES.sidebar).matches) return;
+          return setNavFolded(!document.documentElement.hasAttribute(NAV_FOLDED_ATTR));
         case 'undo':
           undoToast();
           return;

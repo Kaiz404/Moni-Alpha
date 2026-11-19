@@ -53,7 +53,7 @@ Ignore everything on the Archive page, including the rejected web directions A, 
 
 ## Layouts
 
-- Width 1360 and up: the full Ink sidebar (W2-Parts still says 1280; W2-Responsive's 1360 wins). 1024 to 1359: the labelled rail. 700 to 1023: the rail with one column, and docked panes become overlays.
+- Width 1360 and up: the full Ink sidebar (W2-Parts still says 1280; W2-Responsive's 1360 wins). Its fold button (or `[`) folds it to the rail and back, remembered per browser; narrower windows always show the rail. 1024 to 1359: the labelled rail. 700 to 1023: the rail with one column, and docked panes become overlays.
 - Under 700 wide, or under 500 tall: the **phone layout**, which is the mobile v2 app's design drawn in the same Next.js app (floating Ink tab bar, the same cards and words). It is not a third design and not a separate app.
 - The layout follows the viewport, not the device. Crossing a breakpoint keeps the route, the selected row and any half-typed field, because that state lives in the URL and the store.
 - iPad and other touch screens keep the desktop layout, with hover-only affordances made visible (⋯ on the selected row, long-press as right-click) and targets of at least 44.

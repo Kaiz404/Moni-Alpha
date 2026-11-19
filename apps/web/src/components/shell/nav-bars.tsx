@@ -16,12 +16,18 @@ export function Sidebar() {
   const review = navItem('review');
   return (
     <nav aria-label="Moni" className="sidebar" data-only="sidebar">
+      <div className="sidebar-top">
       <Link href={hrefWithPane('/home')} className="sidebar-logo" aria-label="Moni home">
         <Cat size={36} ground="deep" tile id="sb-logo" />
         <span className="wordmark">
           <Wordmark size={28} onInk />
         </span>
       </Link>
+      <button type="button" className="nav-fold press" aria-label="Fold the sidebar" title="Fold the sidebar ([)" onClick={() => run({ kind: 'fold' })}>
+        <Icon name="dock-left" size={20} />
+        <span className="kbd kbd-inline">[</span>
+      </button>
+      </div>
       <button type="button" className="sidebar-add press" onClick={() => run({ kind: 'add' })}>
         <Icon name="plus" size={24} />
         <span>Add</span>
@@ -80,6 +86,10 @@ export function Rail() {
       <Link href={hrefWithPane('/home')} aria-label="Moni home" style={{ paddingBottom: 6 }}>
         <Cat size={40} ground="deep" tile id="rail-logo" />
       </Link>
+      <button type="button" className="nav-fold press" data-fold aria-label="Open the sidebar" title="Open the sidebar ([)" onClick={() => run({ kind: 'fold' })}>
+        <Icon name="dock-left" size={20} />
+        <span className="kbd kbd-inline">[</span>
+      </button>
       <button type="button" className="press" onClick={() => run({ kind: 'add' })} title="Add a transaction (N)">
         <span className="rail-add">
           <Icon name="plus" size={28} />

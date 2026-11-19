@@ -697,6 +697,17 @@ try {
   await k.waitForFunction(() => document.documentElement.dataset.theme === 'light', null, { timeout: 3000 }).catch(() => {});
   check('Ctrl Z undoes the theme switch', (await k.evaluate(() => document.documentElement.dataset.theme)) === 'light');
 
+  await k.getByRole('button', { name: 'Fold the sidebar' }).click();
+  await k.waitForFunction(() => document.documentElement.dataset.layout === 'rail', null, { timeout: 3000 }).catch(() => {});
+  check('the fold button turns the sidebar into the rail at 1440', (await visibleNav(k)).join() === 'nav.rail' && (await layoutOf(k)) === 'rail');
+  await k.reload();
+  await k.waitForFunction(() => document.documentElement.dataset.shellReady === 'true');
+  check('the fold holds across a reload', (await layoutOf(k)) === 'rail');
+  await shot(k, 'rail-folded-1440');
+  await k.keyboard.press('[');
+  await k.waitForFunction(() => document.documentElement.dataset.layout === 'sidebar', null, { timeout: 3000 }).catch(() => {});
+  check('[ opens the sidebar again', (await visibleNav(k)).join() === 'nav.sidebar');
+
   await k.getByRole('button', { name: /Settings$/ }).first().click();
   const menu = k.getByRole('menu', { name: 'Account' });
   check('the name at the foot of the sidebar opens the account menu', await menu.isVisible());

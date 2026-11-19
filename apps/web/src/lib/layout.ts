@@ -10,11 +10,26 @@ export const ONE_COLUMN_MAX_WIDTH = 1024;
 export const RAIL_MAX_WIDTH = 1360;
 export const PHONE_MAX_HEIGHT = 500;
 
-export function layoutFor(width: number, height: number): LayoutKind {
-  if (width < PHONE_MAX_WIDTH || height < PHONE_MAX_HEIGHT) return 'phone';
-  if (width < ONE_COLUMN_MAX_WIDTH) return 'rail-one-column';
-  if (width < RAIL_MAX_WIDTH) return 'rail';
-  return 'sidebar';
+/**
+ * What a layout becomes while the user has folded the sidebar (#91). Only the sidebar folds; narrower
+ * windows already show the rail.
+ */
+export const FOLDS_TO: Partial<Record<LayoutKind, LayoutKind>> = { sidebar: 'rail' };
+
+/** On <html> while the sidebar is folded; the pre-paint script sets it from `NAV_FOLDED_KEY`. */
+export const NAV_FOLDED_ATTR = 'data-nav-folded';
+export const NAV_FOLDED_KEY = 'moni-nav-folded';
+
+export function layoutFor(width: number, height: number, folded = false): LayoutKind {
+  const kind: LayoutKind =
+    width < PHONE_MAX_WIDTH || height < PHONE_MAX_HEIGHT
+      ? 'phone'
+      : width < ONE_COLUMN_MAX_WIDTH
+        ? 'rail-one-column'
+        : width < RAIL_MAX_WIDTH
+          ? 'rail'
+          : 'sidebar';
+  return folded ? (FOLDS_TO[kind] ?? kind) : kind;
 }
 
 const below = (px: number) => `${px - 0.02}px`;
@@ -37,20 +52,31 @@ export const CONTENT_LEFT: Record<LayoutKind, number> = {
 
 export const LAYOUT_KINDS = Object.keys(LAYOUT_QUERIES) as LayoutKind[];
 
-/**
- * One rule per layout: parts marked `data-only="sidebar rail"` show only in those layouts, and the
- * root carries `--layout` (read by the verify script) and `--content-left`.
- */
-export function layoutCss(): string {
-  return LAYOUT_KINDS.map(
-    (kind) =>
-      `@media ${LAYOUT_QUERIES[kind]}{:root{--layout:${kind};--content-left:${CONTENT_LEFT[kind]}px}` +
-      `[data-only]:not([data-only~="${kind}"]){display:none!important}}`,
-  ).join('\n');
+function shows(kind: LayoutKind, root: string): string {
+  return (
+    `${root}{--layout:${kind};--content-left:${CONTENT_LEFT[kind]}px}` +
+    `${root} [data-only]:not([data-only~="${kind}"]){display:none!important}`
+  );
 }
 
 /**
- * Runs before first paint and on every resize: puts the current layout on <html data-layout>, for
- * styles that differ by layout and for the verify script.
+ * One rule per layout: parts marked `data-only="sidebar rail"` show only in those layouts, and the
+ * root carries `--layout` (read by the verify script) and `--content-left`. A layout that folds has a
+ * second rule under the folded attribute, and parts marked `data-fold` (the fold button) show only there.
  */
-export const LAYOUT_SCRIPT = `(function(){var q=${JSON.stringify(LAYOUT_QUERIES)};function s(){for(var k in q)if(matchMedia(q[k]).matches){document.documentElement.dataset.layout=k;return}}s();addEventListener('resize',s)})()`;
+export function layoutCss(): string {
+  return LAYOUT_KINDS.map((kind) => {
+    const folded = FOLDS_TO[kind];
+    const rules = folded
+      ? shows(kind, `:root:not([${NAV_FOLDED_ATTR}])`) + shows(folded, `:root[${NAV_FOLDED_ATTR}]`)
+      : shows(kind, ':root') + '[data-fold]{display:none!important}';
+    return `@media ${LAYOUT_QUERIES[kind]}{${rules}}`;
+  }).join('\n');
+}
+
+/**
+ * Runs before first paint, on every resize and on `moni-layout`: reads the fold from storage on first
+ * run, then puts the current layout on <html data-layout>, for styles that differ by layout and for the
+ * verify script.
+ */
+export const LAYOUT_SCRIPT = `(function(){var q=${JSON.stringify(LAYOUT_QUERIES)},f=${JSON.stringify(FOLDS_TO)},r=document.documentElement;try{if(localStorage.getItem('${NAV_FOLDED_KEY}')==='1')r.setAttribute('${NAV_FOLDED_ATTR}','')}catch(e){}function s(){for(var k in q)if(matchMedia(q[k]).matches){r.dataset.layout=r.hasAttribute('${NAV_FOLDED_ATTR}')&&f[k]||k;return}}s();addEventListener('resize',s);addEventListener('moni-layout',s)})()`;

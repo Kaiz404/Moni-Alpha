@@ -7,6 +7,7 @@ export type ShortcutAction =
   | { kind: 'ask' }
   | { kind: 'shortcuts' }
   | { kind: 'add' }
+  | { kind: 'fold' }
   | { kind: 'undo' }
   | { kind: 'go'; to: Destination };
 
@@ -47,6 +48,8 @@ export function keyStep(state: KeyState, input: KeyInput): { state: KeyState; ac
       return IDLE({ kind: 'shortcuts' });
     case 'n':
       return IDLE({ kind: 'add' });
+    case '[':
+      return IDLE({ kind: 'fold' });
     default:
       return IDLE();
   }
@@ -61,6 +64,7 @@ export const SHORTCUT_GROUPS: readonly { title: string; rows: readonly ShortcutR
       { label: 'Search or ask Moni', keys: ['Ctrl', 'K'] },
       { label: 'Add a transaction', keys: ['N'] },
       { label: 'Moni chat', keys: ['/'] },
+      { label: 'Fold or open the sidebar', keys: ['['] },
       { label: 'Undo', keys: ['Ctrl', 'Z'] },
       { label: 'These shortcuts', keys: ['?'] },
       { label: 'Close', keys: ['Esc'] },

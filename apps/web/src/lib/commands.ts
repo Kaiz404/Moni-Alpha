@@ -8,6 +8,7 @@ export type CommandAction =
   | { kind: 'ask' }
   | { kind: 'theme'; theme: 'light' | 'dark' }
   | { kind: 'shortcuts' }
+  | { kind: 'fold' }
   | { kind: 'signOut' };
 
 export type CommandGroup = 'Go to' | 'Actions';
@@ -51,6 +52,7 @@ export function buildCommands({ resolvedTheme }: { resolvedTheme: 'light' | 'dar
       keywords: ['appearance', 'theme', 'mode'],
       action: { kind: 'theme', theme: other },
     },
+    { id: 'fold', group: 'Actions', title: 'Fold or open the sidebar', icon: 'dock-left', keys: ['['], keywords: ['collapse', 'expand', 'rail', 'sidebar'], action: { kind: 'fold' } },
     { id: 'shortcuts', group: 'Actions', title: 'Keyboard shortcuts', icon: 'keyboard-outline', keys: ['?'], keywords: ['keys', 'help'], action: { kind: 'shortcuts' } },
     { id: 'sign-out', group: 'Actions', title: 'Sign out', icon: 'logout', keywords: ['log out', 'leave'], action: { kind: 'signOut' } },
   ];

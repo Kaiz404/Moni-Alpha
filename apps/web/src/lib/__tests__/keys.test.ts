@@ -19,6 +19,8 @@ describe('keyStep', () => {
     [press('/'), { kind: 'ask' }],
     [press('?'), { kind: 'shortcuts' }],
     [press('n'), { kind: 'add' }],
+    [press('['), { kind: 'fold' }],
+    [press('[', { typing: true }), null],
     [press('z', { ctrl: true }), { kind: 'undo' }],
     [press('/', { typing: true }), null],
     [press('n', { typing: true }), null],

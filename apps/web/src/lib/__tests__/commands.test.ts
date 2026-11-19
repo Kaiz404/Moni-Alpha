@@ -8,7 +8,7 @@ describe('filterCommands', () => {
   it('lists every place and action when nothing is typed', () => {
     expect(titles('')).toEqual([
       ['Go to', ['Home', 'Activity', 'Budget', 'Debts', 'Review', 'Settings']],
-      ['Actions', ['Add a transaction', 'Ask Moni', 'Switch to dark theme', 'Keyboard shortcuts', 'Sign out']],
+      ['Actions', ['Add a transaction', 'Ask Moni', 'Switch to dark theme', 'Fold or open the sidebar', 'Keyboard shortcuts', 'Sign out']],
     ]);
   });
 
