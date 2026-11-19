@@ -1,6 +1,12 @@
 /** Deterministic rolling-window metrics for the chat snapshot. The LLM only narrates them. */
 import { countsAsCashFlow, countsAsIncome, countsAsSpending, type LedgerTransaction } from '@repo/core';
-import { addMinor, minorToNumber, subtractMinor, type MinorAmount } from '@repo/types';
+import {
+  addMinor,
+  minorToNumber,
+  subtractMinor,
+  type InsightMetricSnapshot,
+  type MinorAmount,
+} from '@repo/types';
 
 export type TxForMetrics = LedgerTransaction & {
   amountMinor: MinorAmount;
@@ -97,41 +103,6 @@ function pctDelta(current: MinorAmount, prior: MinorAmount): number | null {
   if (prior <= 0) return null;
   return Math.round(((Number(current) - Number(prior)) / Number(prior)) * 1000) / 10;
 }
-
-export type InsightMetricSnapshot = {
-  periodDays: typeof PERIOD_DAYS;
-  currencyHint: string;
-  generatedAt: string;
-  current: {
-    startIso: string;
-    endIso: string;
-    expenseTotal: number;
-    incomeTotal: number;
-    net: number;
-    transactionCount: number;
-  };
-  prior: {
-    startIso: string;
-    endIso: string;
-    expenseTotal: number;
-    incomeTotal: number;
-    net: number;
-    transactionCount: number;
-  };
-  topCategories: { name: string; amount: number }[];
-  topMerchants: { name: string; amount: number }[];
-  largestExpense: {
-    amount: number;
-    merchant: string | null;
-    category: string | null;
-    date: string;
-  } | null;
-  deltas: {
-    expensePctVsPrior: number | null;
-    incomePctVsPrior: number | null;
-  };
-  rates: { dailyExpense: number; savingsMargin: number | null };
-};
 
 export function buildInsightMetricSnapshot(
   transactions: TxForMetrics[],

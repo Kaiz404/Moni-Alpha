@@ -1,7 +1,7 @@
 import { randomUUID } from 'expo-crypto';
 
 import { startBackgroundProcessor } from '@/lib/ai/background-processor';
-import { AI_UNAVAILABLE_REASON } from '@/lib/ai/client';
+import { AI_UNAVAILABLE_REASON } from '@/lib/ai/client/mock';
 import { AI_CONSENT_REASON } from '@repo/core';
 import { enqueue, type ProcessingQueueItem } from '@/lib/ai/processing-queue';
 import { runExtraction } from '@/lib/ai/run-extraction';

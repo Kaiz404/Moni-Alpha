@@ -1,6 +1,6 @@
 import { createMMKV } from 'react-native-mmkv';
 
-import type { ExtractResult } from '@/lib/ai/client/types';
+import type { ExtractResult } from '@repo/types';
 import { getAiClient } from '@/lib/ai/client';
 import { startBackgroundProcessor } from '@/lib/ai/background-processor';
 import {

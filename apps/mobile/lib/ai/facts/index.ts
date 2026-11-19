@@ -5,7 +5,9 @@
 import {
   decimalToMinor,
   minorToNumber,
+  type FinanceFacts,
   type MinorAmount,
+  type RecurringFact,
   type RecurringKind,
   type RecurringOverride,
 } from '@repo/types';
@@ -14,7 +16,6 @@ import {
   forecastCurrency,
   liquidWallets,
   type FactsWallet,
-  type Forecast,
 } from './forecast';
 import {
   detectRecurring,
@@ -26,7 +27,7 @@ import {
 } from '@repo/core';
 import { deviceCalendar } from '@/lib/dates/device-calendar';
 
-export type { FactsWallet, Forecast };
+export type { FactsWallet };
 
 export type AskedAmount = { amountMinor: MinorAmount; currency: string | null };
 
@@ -37,26 +38,6 @@ export type FinanceFactsInput = {
   categoryNames?: Record<string, string>;
   /** An amount the user asked about ("can I afford RM800?"); without a currency it is tried in each. */
   askedAmount?: AskedAmount | null;
-};
-
-export type RecurringFact = {
-  name: string;
-  kind: RecurringKind;
-  cadence: Cadence;
-  amount: number;
-  lastDate: string;
-  nextDate: string;
-  occurrences: number;
-  confidence: number;
-  needsConfirm: boolean;
-};
-
-export type FinanceFacts = {
-  /** Cash, bank, debit and e-wallet accounts only; credit and investment wallets are left out. */
-  balances: { liquid: number; changeLast30Days: number; walletCount: number } | null;
-  recurring: RecurringFact[];
-  payday: { name: string; amount: number; cadence: Cadence; nextDate: string } | null;
-  forecast: Forecast;
 };
 
 const MAX_RECURRING = 15;

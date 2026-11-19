@@ -4,6 +4,7 @@
  */
 import { Image } from 'react-native';
 import * as ImageManipulator from 'expo-image-manipulator';
+import type { ImagePayload } from '@repo/ai';
 
 /**
  * ML Kit scans are normalized to ~1024px max edge in `normalize-scan.ts` before they reach
@@ -11,8 +12,6 @@ import * as ImageManipulator from 'expo-image-manipulator';
  */
 const MAX_EDGE_FALLBACK_PX = 1024;
 const JPEG_QUALITY = 0.7;
-
-export type ImagePayload = { imageUrl: string } | { imageBase64: string } | null;
 
 function getImageSize(uri: string): Promise<{ width: number; height: number }> {
   return new Promise((resolve, reject) => {
@@ -24,7 +23,7 @@ function getImageSize(uri: string): Promise<{ width: number; height: number }> {
   });
 }
 
-export async function buildImagePayload(imageUri: string): Promise<ImagePayload> {
+export async function buildImagePayload(imageUri: string): Promise<ImagePayload | null> {
   const uri = imageUri.trim();
   if (!uri) return null;
 

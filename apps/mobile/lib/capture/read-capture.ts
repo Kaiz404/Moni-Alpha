@@ -1,10 +1,11 @@
-import { decimalToMinor, type MinorAmount } from '@repo/types';
+import {
+  decimalToMinor,
+  type ExtractedTransaction,
+  type ExtractResult,
+  type MinorAmount,
+} from '@repo/types';
 
 import { getAiClient } from '@/lib/ai/client';
-import type {
-  ExtractedTransaction,
-  ExtractResult,
-} from '@/lib/ai/client/types';
 import {
   extractDateContext,
   resolveOccurredAt,

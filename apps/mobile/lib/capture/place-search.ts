@@ -1,4 +1,4 @@
-import type { CurrencyCode, MerchantAlias } from '@repo/types';
+import type { CurrencyCode, MerchantAlias, PlacePrediction } from '@repo/types';
 
 import {
   merchantKey,
@@ -11,7 +11,6 @@ import {
 } from '@repo/core';
 import type { PlaceCoords } from '@/lib/places/coords';
 import type { GoogleSearch } from '@/lib/places/place-search';
-import type { PlacePrediction } from '@/lib/places/types';
 import { deviceCalendar } from '@/lib/dates/device-calendar';
 
 /**

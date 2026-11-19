@@ -1,11 +1,10 @@
 import 'react-native-gesture-handler/jestSetup';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
-import type { CurrencyCode } from '@repo/types';
+import type { AutocompleteResult, CurrencyCode, DetailsResult } from '@repo/types';
 import * as Location from 'expo-location';
 
 import { SheetHost } from '@/components/ui/sheet/sheet-host';
 import type { PlacePick } from '@/lib/capture/entry-place';
-import type { AutocompleteResult, DetailsResult } from '@/lib/places/types';
 import { dismissSheet, openSheet } from '@/lib/sheet/sheet-store';
 import { expense } from '@/lib/wallets/__tests__/balance-fixture';
 

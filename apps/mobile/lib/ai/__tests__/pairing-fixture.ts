@@ -1,6 +1,6 @@
 import type { Observable } from '@legendapp/state';
 import { getAiClient } from '@/lib/ai/client';
-import type { ExtractNotificationRequest, ExtractResult } from '@/lib/ai/client/types';
+import type { ExtractNotificationRequest, ExtractResult } from '@repo/types';
 import type { NotificationQueueItem } from '@/lib/ai/processing-queue';
 import { runExtraction } from '@/lib/ai/run-extraction';
 

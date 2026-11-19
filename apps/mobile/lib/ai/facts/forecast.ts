@@ -2,7 +2,15 @@
  * Liquid balance and a cash forecast to the next payday (or month end) for one currency.
  * The chat model only narrates this; it is shown only when the inputs can carry it.
  */
-import { minorToNumber, type MinorAmount, type RecurringOverride } from '@repo/types';
+import {
+  minorToNumber,
+  type Band,
+  type Forecast,
+  type ForecastBasis,
+  type ForecastLine,
+  type MinorAmount,
+  type RecurringOverride,
+} from '@repo/types';
 import {
   CONFIDENT,
   detectRecurring,
@@ -43,44 +51,6 @@ const WINDOW_DAYS = 7;
  * covers about 80%.
  */
 const SPEND_PERCENTILES = { low: 0.1, likely: 0.5, high: 0.9 };
-
-export type ForecastBasis = {
-  historyDays: number;
-  /** Logged spending as a share of logged spending plus balance corrections that lowered a balance. */
-  coveragePct: number;
-  /** Age of the stalest confirmed balance among liquid wallets in use. */
-  balanceConfirmedDaysAgo: number | null;
-};
-
-export type ForecastLine = { name: string; amount: number; date: string };
-export type Band = { low: number; likely: number; high: number };
-
-export type Afford = {
-  amount: number;
-  worstCaseAfter: number;
-  likelyAfter: number;
-  /** True when the worst case still ends at or above zero after this spend. */
-  fitsWorstCase: boolean;
-};
-
-export type Forecast =
-  | ({
-      status: 'ready';
-      horizon: 'payday' | 'month_end';
-      horizonDate: string;
-      daysLeft: number;
-      startBalance: number;
-      bills: ForecastLine[];
-      billsTotal: number;
-      income: ForecastLine[];
-      incomeTotal: number;
-      /** Day-to-day spending until the horizon; `high` is the heavy-spending case. */
-      variableSpend: Band;
-      /** Balance just before the horizon; `low` is the worst case. */
-      endBalance: Band;
-      afford?: Afford;
-    } & ForecastBasis)
-  | ({ status: 'insufficient'; reasons: string[] } & ForecastBasis);
 
 export function liquidWallets(wallets: readonly FactsWallet[], currency: string): FactsWallet[] {
   return wallets.filter((w) => w.isActive && w.currency === currency && LIQUID_TYPES.has(w.type));

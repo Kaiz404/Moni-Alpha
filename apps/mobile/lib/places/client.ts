@@ -1,58 +1,9 @@
-import type { ZodType } from 'zod';
-
-import { AI_API_BASE_URL, AI_BACKEND_CONFIGURED } from '@/lib/ai/client/config';
-import { getAccessToken } from '@/lib/ai/client/http-client';
+import { createPlacesClient, type PlacesClient } from '@repo/ai';
 import { distanceM } from '@repo/core';
 
-import {
-  autocompleteResultSchema,
-  detailsResultSchema,
-  type PlacesClient,
-} from './types';
+import { AI_BACKEND_CONFIGURED, aiBackend } from '@/lib/ai/client/config';
 
-const REQUEST_TIMEOUT_MS = 8_000;
 const UNAVAILABLE = { status: 'unavailable' } as const;
-
-async function post<T>(
-  path: string,
-  body: unknown,
-  schema: ZodType<T>,
-  signal?: AbortSignal,
-): Promise<T | null> {
-  const abort = new AbortController();
-  const timeout = setTimeout(() => abort.abort(), REQUEST_TIMEOUT_MS);
-  const cancel = () => abort.abort();
-  signal?.addEventListener('abort', cancel);
-  try {
-    const token = await getAccessToken();
-    const res = await fetch(`${AI_API_BASE_URL}${path}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      },
-      body: JSON.stringify(body),
-      signal: abort.signal,
-    });
-    if (!res.ok) return null;
-    const parsed = schema.safeParse(await res.json());
-    return parsed.success ? parsed.data : null;
-  } catch {
-    return null;
-  } finally {
-    clearTimeout(timeout);
-    signal?.removeEventListener('abort', cancel);
-  }
-}
-
-const httpPlacesClient: PlacesClient = {
-  async autocomplete(req, signal) {
-    return (await post('/v1/places/autocomplete', req, autocompleteResultSchema, signal)) ?? UNAVAILABLE;
-  },
-  async details(req) {
-    return (await post('/v1/places/details', req, detailsResultSchema)) ?? UNAVAILABLE;
-  },
-};
 
 /** A few real Kuala Lumpur places, so search works with no backend (dev, e2e). */
 export const MOCK_PLACES = [
@@ -140,5 +91,5 @@ export const mockPlacesClient: PlacesClient = {
 
 /** The backend proxy when `EXPO_PUBLIC_AI_API_URL` is set, the mock otherwise (as `getAiClient`). */
 export function getPlacesClient(): PlacesClient {
-  return AI_BACKEND_CONFIGURED ? httpPlacesClient : mockPlacesClient;
+  return AI_BACKEND_CONFIGURED ? createPlacesClient(aiBackend) : mockPlacesClient;
 }

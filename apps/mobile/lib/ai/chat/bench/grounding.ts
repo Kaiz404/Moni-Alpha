@@ -3,7 +3,7 @@
  * user's question) under the currency it is cited in, and no number may be a cross-currency sum.
  * Percentages must be snapshot values as they stand, never derived.
  */
-import type { FinanceAssistantToolSnapshot } from '@/lib/ai/snapshot/finance-metrics';
+import type { FinanceAssistantToolSnapshot } from '@repo/types';
 
 export type GroundingIssue = {
   value: number;

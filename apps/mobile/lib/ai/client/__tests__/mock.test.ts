@@ -1,5 +1,5 @@
-import type { AiClient } from '@/lib/ai/client/types';
-import type { FinanceAssistantToolSnapshot } from '@/lib/ai/snapshot/finance-metrics';
+import type { AiClient } from '@repo/ai';
+import type { FinanceAssistantToolSnapshot } from '@repo/types';
 
 function loadMock(appVariant: string | undefined): AiClient {
   let client!: AiClient;
