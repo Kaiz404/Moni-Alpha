@@ -1,4 +1,5 @@
 import type { StoredRow } from '@repo/core';
+import { updateProfilePreferences } from '@repo/data';
 import { randomUUID } from 'expo-crypto';
 import {
   decimalToMinor,
@@ -9,8 +10,7 @@ import {
 } from '@repo/types';
 import { categoryBudgets$, profilePreferences$ } from '@/lib/store';
 import { getRecordValues, patchRow } from '@/lib/store/helpers';
-import { getUserId } from '@/lib/supabase/client';
-import { updateProfilePreferences } from '@/lib/supabase/profile';
+import { getUserId, supabase } from '@/lib/supabase/client';
 
 type BudgetRow = StoredRow<'category_budgets'>;
 
@@ -90,7 +90,7 @@ export async function upsertCategoryBudget(
 export async function setMonthlyBudget(total: number | null): Promise<void> {
   const current = profilePreferences$.peek() ?? userPreferencesSchema.parse({});
   profilePreferences$.set({ ...current, monthly_budget: total });
-  await updateProfilePreferences({ monthly_budget: total });
+  await updateProfilePreferences(supabase, { monthly_budget: total });
 }
 
 export async function deleteCategoryBudget(categoryId: string, currency: string): Promise<void> {

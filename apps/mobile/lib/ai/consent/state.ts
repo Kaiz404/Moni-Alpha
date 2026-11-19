@@ -1,9 +1,9 @@
 import { syncState, when } from '@legendapp/state';
 import { useValue } from '@legendapp/state/react';
+import { recordAiConsent } from '@repo/data';
 import type { AiUse } from '@repo/types';
 
 import { aiConsent$ } from '@/lib/store';
-import { recordAiConsent } from '@/lib/supabase/ai-consent';
 import { supabase } from '@/lib/supabase/client';
 
 import { aiUseAllowed, applyChange, UNASKED, type AiConsent, type ConsentChange } from '@repo/core';
@@ -41,7 +41,7 @@ export async function changeAiConsent(change: ConsentChange): Promise<void> {
   const before = aiConsent$.peek() ?? UNASKED;
   aiConsent$.set(applyChange(before, change, new Date().toISOString()));
   try {
-    await recordAiConsent(change);
+    await recordAiConsent(supabase, change);
   } catch (error) {
     aiConsent$.set(before);
     throw error;

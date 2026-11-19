@@ -1,5 +1,6 @@
 import { useValue } from '@legendapp/state/react';
 import { userPreferencesSchema, type MoniTone } from '@repo/types';
+import { updateProfilePreferences } from '@repo/data';
 import { useState } from 'react';
 import { Modal, View } from 'react-native';
 
@@ -10,7 +11,7 @@ import { Sheet, SheetRows } from '@/components/ui/sheet/sheet';
 import { Text } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { profilePreferences$ } from '@/lib/store';
-import { updateProfilePreferences } from '@/lib/supabase/profile';
+import { supabase } from '@/lib/supabase/client';
 import { tid } from '@/lib/test-ids';
 import { showToast } from '@/lib/toast/toast-store';
 
@@ -25,7 +26,7 @@ async function saveTone(tone: MoniTone) {
   const previous = profilePreferences$.peek();
   profilePreferences$.set({ ...userPreferencesSchema.parse(previous ?? {}), moni_tone: tone });
   try {
-    profilePreferences$.set(await updateProfilePreferences({ moni_tone: tone }));
+    profilePreferences$.set(await updateProfilePreferences(supabase, { moni_tone: tone }));
   } catch {
     profilePreferences$.set(previous);
     showToast({ text: "Couldn't change Moni's tone. Try again.", tone: 'removed' });

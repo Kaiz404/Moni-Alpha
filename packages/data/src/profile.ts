@@ -1,5 +1,11 @@
-import { consentFromRows, type AiConsent } from '@repo/core';
-import { aiConsentRowSchema, userPreferencesSchema, type UserPreferences } from '@repo/types';
+import { consentFromRows, type AiConsent, type ConsentChange } from '@repo/core';
+import {
+  AI_NOTICE_VERSION,
+  aiConsentRowSchema,
+  userPreferencesSchema,
+  type AiConsentScope,
+  type UserPreferences,
+} from '@repo/types';
 
 import type { MoniSupabase } from './supabase';
 
@@ -14,6 +20,39 @@ export async function fetchProfilePreferences(supabase: MoniSupabase): Promise<U
   const { data, error } = await supabase.from('profiles').select('preferences').eq('id', userId).single();
   if (error) throw error;
   return userPreferencesSchema.parse(data?.preferences ?? {});
+}
+
+/** Merges `patch` into the stored preferences and returns what the server kept. */
+export async function updateProfilePreferences(
+  supabase: MoniSupabase,
+  patch: Partial<UserPreferences>,
+): Promise<UserPreferences> {
+  const userId = await signedInUserId(supabase);
+  if (!userId) throw new Error('User ID required');
+  const merged = { ...(await fetchProfilePreferences(supabase)), ...patch };
+  const { data, error } = await supabase
+    .from('profiles')
+    .update({ preferences: merged })
+    .eq('id', userId)
+    .select('preferences')
+    .single();
+  if (error) throw error;
+  return userPreferencesSchema.parse(data?.preferences ?? merged);
+}
+
+/** Appends one consent row per changed switch. The server stamps the time. */
+export async function recordAiConsent(supabase: MoniSupabase, change: ConsentChange): Promise<void> {
+  const userId = await signedInUserId(supabase);
+  if (!userId) throw new Error('Sign in again, then try once more.');
+  const rows = (Object.entries(change) as [AiConsentScope, boolean][]).map(([use, granted]) => ({
+    user_id: userId,
+    use,
+    granted,
+    notice_version: AI_NOTICE_VERSION,
+  }));
+  if (!rows.length) return;
+  const { error } = await supabase.from('ai_consents').insert(rows);
+  if (error) throw error;
 }
 
 export async function fetchAiConsent(supabase: MoniSupabase): Promise<AiConsent> {

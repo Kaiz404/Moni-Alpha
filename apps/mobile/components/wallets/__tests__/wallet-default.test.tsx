@@ -1,6 +1,8 @@
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
 
-import { updateProfilePreferences } from '@/lib/supabase/profile';
+import { updateProfilePreferences } from '@repo/data';
+
+import { supabase } from '@/lib/supabase/client';
 import { financeWallet } from '@/lib/wallets/__tests__/balance-fixture';
 import { getDefaultWalletId } from '@/lib/wallets/default-wallet';
 import { WalletDefault } from '../wallet-sections';
@@ -10,8 +12,10 @@ jest.mock('uniwind', () => ({
   useUniwind: () => ({ theme: 'light' }),
 }));
 jest.mock('@/components/capture-sources/use-linked-apps', () => ({ useLinkedApps: jest.fn() }));
-jest.mock('@/lib/supabase/profile', () => ({
-  getProfilePreferences: jest.fn(async () => ({})),
+jest.mock('@/lib/supabase/client', () => ({ supabase: { name: 'the phone client' } }));
+jest.mock('@/lib/supabase/profile', () => ({ getProfilePreferences: jest.fn(async () => ({})) }));
+jest.mock('@repo/data', () => ({
+  ...jest.requireActual('@repo/data'),
   updateProfilePreferences: jest.fn(async () => {}),
 }));
 
@@ -23,12 +27,12 @@ describe('WalletDefault', () => {
 
     await act(async () => fireEvent.press(toggle));
     expect(getDefaultWalletId()).toBe('maybank');
-    expect(updateProfilePreferences).toHaveBeenLastCalledWith({ default_wallet_id: 'maybank' });
+    expect(updateProfilePreferences).toHaveBeenLastCalledWith(supabase, { default_wallet_id: 'maybank' });
     expect(screen.getByTestId('wallet.default')).toBeChecked();
 
     await act(async () => fireEvent.press(toggle));
     expect(getDefaultWalletId()).toBeNull();
-    expect(updateProfilePreferences).toHaveBeenLastCalledWith({ default_wallet_id: null });
+    expect(updateProfilePreferences).toHaveBeenLastCalledWith(supabase, { default_wallet_id: null });
   });
 
   it('keeps the old default when saving fails', async () => {

@@ -1,6 +1,12 @@
 export { createRowGateway, type RowGateway, type Row, type RowResult, type ListResult } from './gateway';
 export { memoryPersist, type FlagStore, type MoniPersist } from './persist';
-export { fetchAiConsent, fetchProfilePreferences, signedInUserId } from './profile';
+export {
+  fetchAiConsent,
+  fetchProfilePreferences,
+  recordAiConsent,
+  signedInUserId,
+  updateProfilePreferences,
+} from './profile';
 export {
   createMoniStore,
   type CreateMoniStoreOptions,

@@ -1,4 +1,5 @@
 import { userPreferencesSchema } from '@repo/types';
+import { updateProfilePreferences } from '@repo/data';
 import { useState } from 'react';
 
 import { MainCurrencySheet } from '@/components/profile/main-currency-sheet';
@@ -6,7 +7,7 @@ import { ProfileRow } from '@/components/profile/profile-row';
 import { ListCard } from '@/components/ui/list-card';
 import { useMainCurrency } from '@/lib/finance/main-currency';
 import { profilePreferences$ } from '@/lib/store';
-import { updateProfilePreferences } from '@/lib/supabase/profile';
+import { supabase } from '@/lib/supabase/client';
 import { tid } from '@/lib/test-ids';
 import { showToast } from '@/lib/toast/toast-store';
 
@@ -18,7 +19,7 @@ async function saveMainCurrency(currency: string) {
     currency,
   });
   try {
-    profilePreferences$.set(await updateProfilePreferences({ currency }));
+    profilePreferences$.set(await updateProfilePreferences(supabase, { currency }));
   } catch {
     profilePreferences$.set(previous);
     showToast({
