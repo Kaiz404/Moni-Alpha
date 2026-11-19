@@ -101,6 +101,13 @@ html[data-layout='phone'] .side-pane[data-open] {
   animation: slide-in-right var(--duration-sheet) var(--ease-sheet) both;
 }
 
+/* Held sideways, the pushed page keeps the phone's 480 column, as the tab roots do. */
+@media (max-height: 499.98px) {
+  html[data-layout='phone'] .side-pane[data-open] {
+    padding-inline: max(var(--spacing-screen), calc(50% - 240px));
+  }
+}
+
 html[data-layout='phone'] .shell:has(.side-pane[data-open]) .tabbar {
   display: none;
 }
