@@ -9,8 +9,11 @@ function PaneHead({ title }: { title: string }) {
   const { run } = useShellApi();
   return (
     <header className="pane-head">
+      <button type="button" className="back-button press" data-only="phone" onClick={() => run({ kind: 'closePane' })} aria-label="Back">
+        <Icon name="chevron-left" size={22} />
+      </button>
       <h2 className="pane-title">{title}</h2>
-      <button type="button" className="pane-close press" onClick={() => run({ kind: 'closePane' })} aria-label="Close">
+      <button type="button" className="pane-close press" data-only="sidebar rail rail-one-column" onClick={() => run({ kind: 'closePane' })} aria-label="Close">
         <Icon name="close" size={20} />
         <span className="kbd">Esc</span>
       </button>
