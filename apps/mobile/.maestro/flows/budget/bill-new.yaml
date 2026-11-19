@@ -45,8 +45,9 @@ tags:
 - takeScreenshot: b2-l6-amount-page
 - tapOn:
     id: budget.submit
+# The tab keeps its scroll and its header scrolls away with it, so the tab bar proves the tab root.
 - assertVisible:
-    id: budget.month
+    id: nav.tab.budget
 - scrollUntilVisible:
     element:
       id: budget.bills.row.indah-water

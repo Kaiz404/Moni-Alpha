@@ -46,5 +46,6 @@ tags:
 - tapOn: Undo
 - tapOn:
     id: budget.back
+# The tab keeps its scroll and its header scrolls away with it, so the tab bar proves the tab root.
 - assertVisible:
-    id: budget.month
+    id: nav.tab.budget
