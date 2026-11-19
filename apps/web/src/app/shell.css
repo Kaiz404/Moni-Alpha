@@ -113,11 +113,21 @@ html[data-layout='rail'] .shell[data-pane='chat'] .shell-main {
 .sidebar-me {
   min-height: 56px;
   padding: 0 12px 0 8px;
-  color: var(--color-on-ink-body);
+  color: var(--color-on-tab-bar);
 }
 
-.sidebar-me:hover {
-  color: var(--color-on-tab-bar);
+.sidebar-me-name {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  line-height: 18px;
+  font-size: 15px;
+}
+
+.sidebar-me-name > span:last-child {
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--color-inactive);
 }
 
 .me-tile {

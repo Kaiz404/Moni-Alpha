@@ -60,9 +60,9 @@ export function Sidebar() {
         onClick={(event) => run({ kind: 'account' }, event.currentTarget)}
       >
         <span className="me-tile">{user.initial}</span>
-        <span style={{ flex: '1 1 auto', display: 'flex', flexDirection: 'column', lineHeight: '18px' }}>
-          <span style={{ fontSize: 15 }}>{user.name}</span>
-          <span style={{ fontSize: 13, fontWeight: 400 }}>Settings</span>
+        <span className="sidebar-me-name">
+          <span>{user.name}</span>
+          <span>Settings</span>
         </span>
         <Icon name="cog-outline" size={20} />
       </button>
