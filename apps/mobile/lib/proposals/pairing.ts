@@ -3,7 +3,7 @@
  * visible and Undo can bring it back. The one path for automatic pairing (run-extraction) and for
  * the Review card's controls. See docs/AI.md, "Duplicate detection".
  */
-import { toProposal } from '@repo/core';
+import { receiptPath, toProposal } from '@repo/core';
 import type { AbsorbedCapture, CapturePairing, ProposedTransaction } from '@repo/types';
 import { capturePairingSchema } from '@repo/types';
 
@@ -98,7 +98,7 @@ function pairedColumns(
       next.merchant = row.merchant ?? capture.merchant;
       next.category_id = row.category_id ?? capture.categoryId;
     }
-    const image = capture.sourceImageUri?.startsWith('http') ? capture.sourceImageUri : null;
+    const image = receiptPath(capture.sourceImageUri);
     const imageColumn = match.target.kind === 'transaction' ? 'receipt_image_url' : 'source_image_uri';
     if (image && !row[imageColumn]) next[imageColumn] = image;
   }

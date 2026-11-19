@@ -11,6 +11,7 @@ import {
 } from '@repo/types';
 
 import { isFiled } from '../ledger';
+import { receiptPath } from '../receipts';
 import { merchantKey } from '../read-model/merchants';
 import type { FinanceTransaction } from '../read-model/types';
 import { checkTransfer, planTransaction } from './transactions';
@@ -322,7 +323,7 @@ function approve(
   if (row.kind !== 'writes') return row;
   const transactionId = row.result.id;
   // A receipt photo already in storage goes with the row; one still uploading is the phone's to link.
-  const receipt = next.sourceImageUri?.startsWith('http') ? next.sourceImageUri : null;
+  const receipt = receiptPath(next.sourceImageUri);
   const inserts = row.writes.insert.map((write) =>
     write.table === 'transactions' && receipt ? { ...write, row: { ...write.row, receipt_image_url: receipt } } : write,
   );

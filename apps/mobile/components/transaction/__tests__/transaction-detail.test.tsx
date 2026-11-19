@@ -1,6 +1,7 @@
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
 import type { ReactNode } from 'react';
-import { Keyboard } from 'react-native';
+import { Image } from 'expo-image';
+import { Keyboard, Linking } from 'react-native';
 
 import TransactionDetailScreen from '@/app/transaction/[id]';
 import { dismissSheet, getOpenSheet } from '@/lib/sheet/sheet-store';
@@ -36,6 +37,8 @@ const mockRow: FinanceTransaction = {
 } as unknown as FinanceTransaction;
 
 let mockHidden: (() => void) | null = null;
+let mockRaw: Record<string, unknown> = { metadata: { source: 'notification' } };
+const mockSigns: string[] = [];
 
 jest.mock('expo-router', () => ({
   router: { push: jest.fn(), back: jest.fn(), dismissTo: jest.fn() },
@@ -50,7 +53,7 @@ jest.mock('@legendapp/state/react', () => ({
   useValue: (read: () => unknown) => read(),
 }));
 jest.mock('@/lib/store', () => ({
-  transactions$: { t1: { get: () => ({ metadata: { source: 'notification' } }) } },
+  transactions$: { t1: { get: () => mockRaw } },
 }));
 jest.mock('@/lib/finance/selectors', () => ({
   transactionById$: () => () => mockRow,
@@ -73,6 +76,18 @@ jest.mock('@/lib/supabase/transactions', () => ({
   setTransactionReceipt: jest.fn(),
 }));
 jest.mock('@/lib/receipts/images', () => ({}));
+jest.mock('@/lib/supabase/client', () => ({
+  supabase: {
+    storage: {
+      from: (bucket: string) => ({
+        createSignedUrl: async (path: string, seconds: number) => {
+          mockSigns.push(`${bucket} ${path} ${seconds}`);
+          return { data: { signedUrl: `https://dev.supabase.co/storage/v1/object/sign/${bucket}/${path}?token=t1` }, error: null };
+        },
+      }),
+    },
+  },
+}));
 jest.mock('uniwind', () => ({
   useCSSVariable: (names: string[]) => names.map(() => undefined),
   useUniwind: () => ({ theme: 'light' }),
@@ -90,6 +105,8 @@ beforeEach(() => {
 afterEach(() => {
   act(() => dismissToast());
   jest.clearAllMocks();
+  mockRaw = { metadata: { source: 'notification' } };
+  mockSigns.length = 0;
 });
 
 describe('Transaction detail', () => {
@@ -126,6 +143,18 @@ describe('Transaction detail', () => {
       cancelLabel: 'Keep it',
     });
     act(() => dismissSheet());
+  });
+
+  it('shows a stored receipt photo through a signed link and opens the same link', async () => {
+    mockRaw = { metadata: { source: 'camera' }, receipt_image_url: 'kai/t1.jpg' };
+    const openURL = jest.spyOn(Linking, 'openURL').mockResolvedValue(true);
+    render(<TransactionDetailScreen />);
+    await act(async () => {});
+    const signed = 'https://dev.supabase.co/storage/v1/object/sign/receipts/kai/t1.jpg?token=t1';
+    expect(screen.UNSAFE_queryAllByType(Image).map((image) => (image.props.source as { uri: string }).uri)).toEqual([signed]);
+    await act(async () => fireEvent.press(screen.getByTestId('txn.link.receipt')));
+    expect(openURL).toHaveBeenCalledWith(signed);
+    expect(mockSigns).toEqual(['receipts kai/t1.jpg 3600']);
   });
 
   it('names the place with no area or open map line under it', () => {

@@ -15,15 +15,14 @@ import {
   type FinanceTransaction,
   type ReviewEdits,
 } from '@repo/core';
-import { receiptPhotoUrl } from '@repo/data';
 import { decimalToMinor, type MinorAmount, type TransactionType } from '@repo/types';
 import { useEffect, useState, type ReactNode } from 'react';
 import { Icon } from '@/components/icon';
 import { Bubble, Glyph } from '@/components/ledger/glyph';
 import { captureSource, clockTime } from '@/lib/ledger/format';
 import type { Ledger } from '@/lib/ledger/use-ledger';
+import { useReceiptPhoto } from '@/lib/receipt-photo';
 import { captureName } from '@/lib/review-view';
-import { createClient } from '@/lib/supabase/client';
 import { SourceBubble } from './source-bubble';
 
 type Field = 'type' | 'category' | 'wallet' | 'to';
@@ -82,6 +81,7 @@ export function CapturePane({
   const [open, setOpen] = useState<Field | null>(null);
   const [editing, setEditing] = useState<'merchant' | 'amount' | null>(null);
   const [draft, setDraft] = useState('');
+  const photo = useReceiptPhoto(capture.sourceType === 'image' ? capture.sourceImageUri : null);
   useEffect(() => {
     setOpen(null);
     setEditing(null);
@@ -112,7 +112,6 @@ export function CapturePane({
   const hintWallet = !next.walletId && capture.walletHint
     ? sameCurrency.find((each) => each.name.toLowerCase().includes(capture.walletHint!.toLowerCase()) || capture.walletHint!.toLowerCase().includes(each.name.toLowerCase()))
     : undefined;
-  const photo = capture.sourceType === 'image' ? receiptPhotoUrl(createClient(), capture.sourceImageUri) : null;
   const needsWallet = !next.walletId;
   const filedAs = (row: FinanceTransaction) =>
     `${(row.categoryId && projection.categoriesById[row.categoryId]?.name) || 'No category'} · ${walletNames[row.walletId] ?? 'Wallet'}`;
@@ -261,7 +260,9 @@ export function CapturePane({
             </div>
           )}
           {capture.sourceType === 'image' &&
-            (photo ? (
+            (photo === undefined ? (
+              <div className="source-photo" aria-busy="true" />
+            ) : photo ? (
               <a className="source-photo" href={photo} target="_blank" rel="noreferrer">
                 {/* eslint-disable-next-line @next/next/no-img-element -- a user's own photo from storage, any size */}
                 <img src={photo} alt={`Receipt from ${captureName(capture)}`} />

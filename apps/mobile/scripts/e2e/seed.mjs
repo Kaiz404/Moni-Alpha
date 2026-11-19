@@ -179,9 +179,8 @@ async function attachReceiptPhoto({ url, secret }, request, userId) {
     body: readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'receipt.jpg')),
   });
   if (!upload.ok) throw new SeedError(`receipt upload failed with ${upload.status}: ${(await upload.text()).slice(0, 300)}`, 1);
-  const photo = `${url}/storage/v1/object/public/receipts/${path}`;
-  await request(`/rest/v1/proposed_transactions?id=eq.${receipt.id}`, { method: 'PATCH', body: { source_image_uri: photo }, prefer: 'return=minimal' });
-  return photo;
+  await request(`/rest/v1/proposed_transactions?id=eq.${receipt.id}`, { method: 'PATCH', body: { source_image_uri: path }, prefer: 'return=minimal' });
+  return path;
 }
 
 /**

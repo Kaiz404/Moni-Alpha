@@ -84,7 +84,8 @@ export const transactionSchema = z
     placeCoordsAt: z.string().datetime({ offset: true }).nullable(),
 
     // Receipt
-    receiptImageUrl: z.string().url().nullable(),
+    /** The photo's path in the private `receipts` bucket; rows from before #72 hold its public URL. */
+    receiptImageUrl: z.string().min(1).nullable(),
 
     // Metadata
     metadata: transactionMetadataSchema,

@@ -238,12 +238,12 @@ export async function commitReview(
   return applyReview(proposal.id, await planDecision(proposal, decision));
 }
 
-export async function updateProposalImageUri(id: string, remoteUrl: string): Promise<boolean> {
+export async function updateProposalImageUri(id: string, path: string): Promise<boolean> {
   // Image uploads can finish before extraction creates the proposal row — skip until then.
   if (!hasRow(proposedTransactions$, id)) return false;
 
   patchRow(proposedTransactions$, id, {
-    source_image_uri: remoteUrl,
+    source_image_uri: path,
     updated_at: new Date().toISOString(),
   });
   emitProposedTransactionsChanged();

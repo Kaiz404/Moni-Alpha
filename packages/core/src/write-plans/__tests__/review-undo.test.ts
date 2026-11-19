@@ -170,9 +170,15 @@ describe('planReview', () => {
   });
 
   it('keeps a receipt photo already in storage on the ledger row', () => {
-    const photo = 'https://dev.supabase.co/storage/v1/object/public/receipts/user-1/p-1.jpg';
-    const stored = planReview(capture({ sourceType: 'image', sourceImageUri: photo }), approve, view, ctx());
-    expect(stored.kind === 'writes' && stored.writes.insert[0]!.row).toMatchObject({ receipt_image_url: photo, metadata: { source: 'camera' } });
+    const stored = planReview(capture({ sourceType: 'image', sourceImageUri: 'user-1/p-1.jpg' }), approve, view, ctx());
+    expect(stored.kind === 'writes' && stored.writes.insert[0]!.row).toMatchObject({ receipt_image_url: 'user-1/p-1.jpg', metadata: { source: 'camera' } });
+    const before72 = planReview(
+      capture({ sourceType: 'image', sourceImageUri: 'https://dev.supabase.co/storage/v1/object/public/receipts/user-1/p-1.jpg' }),
+      approve,
+      view,
+      ctx(),
+    );
+    expect(before72.kind === 'writes' && before72.writes.insert[0]!.row).toMatchObject({ receipt_image_url: 'user-1/p-1.jpg' });
     const uploading = planReview(capture({ sourceType: 'image', sourceImageUri: 'file:///receipts/p-1.jpg' }), approve, view, ctx());
     expect(uploading.kind === 'writes' && uploading.writes.insert[0]!.row).toMatchObject({ receipt_image_url: null });
   });

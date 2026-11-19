@@ -152,7 +152,11 @@ export async function verifyReview(t) {
   const img = p.locator('.source-photo img');
   await img.waitFor({ timeout: 10_000 }).catch(() => {});
   const photo = await img.evaluate((el) => ({ src: el.currentSrc, width: el.naturalWidth })).catch(() => null);
-  check('a receipt capture shows its photo from storage beside the proposal', photo?.src === receipt.source_image_uri && photo.width > 0, photo);
+  check(
+    'a receipt capture shows its photo from storage through a signed link',
+    Boolean(photo?.src.includes(`/storage/v1/object/sign/receipts/${receipt.source_image_uri}?token=`)) && photo.width > 0,
+    photo,
+  );
   await shot(p, 'review-1440-receipt');
   await p.locator(`.inbox-row[data-capture="${chat.id}"]`).click();
   const said = await p.locator('.source-chat blockquote').waitFor({ timeout: 5000 }).then(() => p.locator('.source-chat blockquote').textContent(), () => null);

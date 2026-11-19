@@ -22,8 +22,7 @@ jest.mock('@/lib/supabase/client', () => ({ getUserId: async () => 'user-1' }));
 jest.mock('@/lib/notifications/capture-status', () => ({ markCaptureStatus: jest.fn() }));
 jest.mock('@/lib/receipts/images', () => ({
   saveImageLocally: jest.fn(),
-  uploadReceiptImage: async (_local: string, userId: string, id: string) =>
-    `https://cdn.test/receipts/${userId}/${id}.jpg`,
+  uploadReceiptImage: async (_local: string, userId: string, id: string) => `${userId}/${id}.jpg`,
 }));
 jest.mock('@/lib/store', () => {
   const { observable } = jest.requireActual('@legendapp/state');
@@ -229,12 +228,11 @@ describe('approve', () => {
   });
 
   it('keeps an uploaded receipt photo on the approved transaction', async () => {
-    const photo = 'https://cdn.test/receipts/user-1/p1.jpg';
-    const proposal = seed('p1', { source_type: 'image', source_image_uri: photo });
+    const proposal = seed('p1', { source_type: 'image', source_image_uri: 'user-1/p1.jpg' });
 
     await approve(proposal);
 
-    expect(ledger()).toEqual([expect.objectContaining({ receipt_image_url: photo })]);
+    expect(ledger()).toEqual([expect.objectContaining({ receipt_image_url: 'user-1/p1.jpg' })]);
   });
 
   it('links a receipt photo that was still uploading to the transaction once it lands', async () => {
@@ -253,7 +251,7 @@ describe('approve', () => {
     expect(ledger()).toEqual([
       expect.objectContaining({
         id: result.outcome.transactionId,
-        receipt_image_url: `https://cdn.test/receipts/user-1/${result.outcome.transactionId}.jpg`,
+        receipt_image_url: `user-1/${result.outcome.transactionId}.jpg`,
       }),
     ]);
   });
@@ -273,7 +271,7 @@ describe('approve', () => {
     expect(ledger()).toEqual([
       expect.objectContaining({
         id: second.outcome.transactionId,
-        receipt_image_url: `https://cdn.test/receipts/user-1/${second.outcome.transactionId}.jpg`,
+        receipt_image_url: `user-1/${second.outcome.transactionId}.jpg`,
       }),
     ]);
     expect(getPendingUploadCount()).toBe(0);

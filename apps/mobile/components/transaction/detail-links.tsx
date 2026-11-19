@@ -1,3 +1,4 @@
+import { receiptPath } from '@repo/core';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { useState, type ReactNode } from 'react';
@@ -13,6 +14,7 @@ import { Press } from '@/components/ui/press';
 import { Text } from '@/components/ui/text';
 import { useThemeTokens } from '@/hooks/use-theme-tokens';
 import { saveImageLocally, uploadReceiptImage } from '@/lib/receipts/images';
+import { receiptPhoto, useReceiptPhoto } from '@/lib/receipts/photo';
 import { setTransactionReceipt } from '@/lib/supabase/transactions';
 import { tid } from '@/lib/test-ids';
 
@@ -92,19 +94,23 @@ export function DetailLinks({ links }: { links: DetailLink[] }) {
 export function useReceiptLink(
   transactionId: string,
   userId: string | null,
-  url: string | null,
+  stored: string | null,
 ): DetailLink {
   const tokens = useThemeTokens();
   const [saving, setSaving] = useState(false);
-  if (url)
+  const photo = useReceiptPhoto(stored);
+  if (receiptPath(stored))
     return {
       name: 'receipt',
       title: 'Receipt photo',
       meta: 'Open the slip',
       icon: 'receipt-text-outline',
       trailing: 'chevron-right',
-      bubble: <Image source={{ uri: url }} style={{ width: 42, height: 42 }} contentFit="cover" />,
-      onPress: () => void Linking.openURL(url),
+      bubble: photo ? <Image source={{ uri: photo }} style={{ width: 42, height: 42 }} contentFit="cover" /> : undefined,
+      onPress: () =>
+        void receiptPhoto(stored).then((url) => {
+          if (url) void Linking.openURL(url);
+        }),
     };
   const add = async () => {
     if (!userId || saving) return;
@@ -117,9 +123,9 @@ export function useReceiptLink(
     setSaving(true);
     try {
       const local = await saveImageLocally(asset.uri);
-      const remote = await uploadReceiptImage(local, userId, transactionId);
-      if (!remote) throw new Error('upload');
-      setTransactionReceipt(transactionId, remote);
+      const path = await uploadReceiptImage(local, userId, transactionId);
+      if (!path) throw new Error('upload');
+      setTransactionReceipt(transactionId, path);
     } catch {
       Alert.alert('Photo not saved', 'Moni needs a connection to keep the photo. Try again when you are online.');
     } finally {
