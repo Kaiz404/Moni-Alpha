@@ -822,6 +822,21 @@ try {
   const reopened = await addPane.locator('.add-choice').count();
   await d.keyboard.press('t');
   check('closed without adding, Add opens again on the chooser and Type it is empty', reopened === 2 && (await amount.inputValue().catch(() => 'missing')) === '' && (await addPane.getByLabel('Shop or note').inputValue().catch(() => 'missing')) === '');
+  await d.unroute('**/v1/extract/text');
+  await d.route('**/v1/extract/text', async (route) => {
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+    await route.fulfill({
+      headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'authorization, content-type' },
+      json: { status: 'ok', extraction: { amount: 5, type: 'expense', currency: 'MYR', merchant: 'Late Read', description: null, walletHint: null, categoryHint: null, walletId: null, transferToWalletHint: null, transferToWalletId: null, confidence: 0.9, reasoning: 'Late.', occurredAt: null } },
+    }).catch(() => {});
+  });
+  await addPane.getByRole('radio', { name: 'Ask Moni' }).click();
+  await d.locator('#add-draft').fill('5.00 at Late Read');
+  await d.locator('#add-draft').press('Enter');
+  await addPane.getByRole('radio', { name: 'Type it' }).click();
+  await amount.fill('3.00');
+  await d.waitForTimeout(3000);
+  check("a read that lands after the user switched to Type it leaves what they typed", (await amount.inputValue().catch(() => '')) === '3.00' && (await addPane.getByLabel('Shop or note').inputValue().catch(() => '')) === '');
   await d.keyboard.press('Escape');
   await addCtx.close();
   }

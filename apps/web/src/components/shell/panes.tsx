@@ -316,6 +316,7 @@ function AskMoni({ ledger }: { ledger: Ledger }) {
 
   const read = async (sentence: string) => {
     setReading(true);
+    const asked = getShell();
     const at = new Date();
     const wallets = mainWallets(ledger);
     const result = await webAiClient('add').extractFromText({
@@ -324,6 +325,8 @@ function AskMoni({ ledger }: { ledger: Ledger }) {
       ...extractDateContext(at),
     });
     setReading(false);
+    const now = getShell();
+    if (now.addMode !== 'ask' || now.addDraft !== asked.addDraft || now.addForm !== asked.addForm) return;
     if (result.status === 'unavailable' && result.reason === 'consent') return setShell({ addAsk: true });
     const draft = draftFromExtraction(
       result,
