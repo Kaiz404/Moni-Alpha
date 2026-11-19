@@ -47,7 +47,10 @@ Add `needs-info` when an agent cannot act on the issue yet. Ask the owner the on
    **Steps**
    **Build** Moni (daily) <sha> | Moni E2E (dev)
    **Notes** Suspected files, related issues, owner quotes
+   **Also on** The web screen (`apps/web`, `docs/WEB.md` board) and the canvas boards for the same feature, or "phone only"
    ```
+
+   The **Also on** line is required for any UI or flow issue (rule: `.cursor/rules/project-overview.mdc`, "Keep the phone, the web and the canvas in step"). A fix covers every place it lists, or files a linked issue for what it leaves.
 
 5. For **Build**, read the daily app's installed build when adb is up: `apps/mobile/scripts/device/with-device.sh --skip-doctor -- adb shell cat /data/local/tmp/moni-preview.sha`. Write `unknown` when it fails. Do not spend more than that on it.
 6. Reply with each issue's number, title, and link, one line each.

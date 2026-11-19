@@ -40,6 +40,14 @@ Run: `pnpm --filter moni dev` / `pnpm --filter backend dev` / `pnpm --filter web
 
 The mobile app is being rebuilt to a new design kept on a claude.ai design canvas. Before building or changing any mobile screen, read `docs/REDESIGN.md`: which canvas boards to build and which to ignore, the target navigation (Home · Activity · + · Budget · Debts; Moni chat as a pushed page), the rules every screen follows, the code gaps, and the open owner decisions. Values and words: `docs/redesign/tokens.md`, `docs/redesign/glossary.md`.
 
+## Keep the phone, the web and the canvas in step
+
+Every UI or flow change, issue, or design decision covers all three records: the mobile app, the web app (`docs/WEB.md`, `apps/web`), and the claude.ai design canvas (Redesign and Web app pages). They must describe the same thing.
+
+- When you file an issue, name the web screen and the canvas boards that show the same feature, or write that there is none.
+- When you change a flow or a rule on one, change the others in the same pass, or file a linked issue for what you could not change. Update `docs/REDESIGN.md` and `docs/WEB.md` (and `tokens.md`, `glossary.md`, `DESIGN_SYSTEM.md` where they state it) at the same time.
+- Report any difference you leave as an open item. Do not let one record drift silently.
+
 ## Product research
 
 Before you plan features, pricing, onboarding, or AI behavior, read `docs/research/competitor-reviews-2026-10.md`. It summarizes about 30k competitor app-store reviews and research on the Malaysian market (October 2026), and states what they imply for Moni.
