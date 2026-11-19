@@ -382,6 +382,16 @@ export async function driveLedgerScreens({ browser, storage, base, check, shot, 
   await a.waitForURL(/from=\d{4}-\d{2}-03/).catch(() => {});
   const picked = new URL(a.url()).searchParams;
   check('two clicks on the calendar set From and To in either order', /-03$/.test(picked.get('from') ?? '') && /-10$/.test(picked.get('to') ?? ''), a.url());
+  const titles = (await a.locator('.activity-table [role="row"][data-row-id] .td-title').allTextContents()).map((title) => title.trim());
+  const lone = titles.find((title) => titles.filter((other) => other.includes(title)).length === 1) ?? titles[0];
+  await a.goto(`${base}/activity?q=${encodeURIComponent(lone)}`);
+  await waitLoaded(a, '.activity');
+  const fewRows = a.locator('.activity-table [role="row"][data-row-id]');
+  await fewRows.first().waitFor({ timeout: 10_000 }).catch(() => {});
+  await fewRows.last().locator('.more').click();
+  const fit = await menu.evaluate((element) => ({ rows: element.querySelectorAll('[role="menuitem"]').length, scrolls: element.scrollHeight > element.clientHeight + 1 }));
+  check(`with ${await fewRows.count()} row(s) shown, the row menu opens whole, not cut to the list`, (await fewRows.count()) <= 3 && fit.rows >= 4 && !fit.scrolls, fit);
+  await a.keyboard.press('Escape');
   await a.goto(`${base}/activity`);
   await waitLoaded(a, '.activity');
 

@@ -32,7 +32,7 @@ function rowsOf(element: HTMLElement): HTMLElement[] {
 
 /**
  * A popover in the top layer, placed beside its anchor (or at a click) so it fits inside the window
- * and `boundary`, flipping side or edge when it must. It closes on Esc, a press outside or the focus tabbing out, gives the
+ * and between `boundary`'s sides, flipping side or edge when it must. It closes on Esc, a press outside or the focus tabbing out, gives the
  * focus back to the anchor, and moves through its rows with the arrow keys.
  */
 export function Floating({
@@ -52,7 +52,7 @@ export function Floating({
   anchor: { readonly current: HTMLElement | null };
   /** A click in viewport pixels, for a menu that opens where the pointer is. */
   point?: { x: number; y: number };
-  /** The popover stays inside this element too, as the row menu stays off the docked pane. */
+  /** The popover stays between this element's left and right edges too, as the row menu stays off the docked pane. */
   boundary?: { readonly current: HTMLElement | null };
   side?: Side;
   align?: Align;
@@ -91,9 +91,10 @@ export function Floating({
         width: window.innerWidth,
         height: window.innerHeight,
       };
-      const within = boundary?.current
+      const fence = boundary?.current?.getBoundingClientRect();
+      const within = fence
         ? intersect(
-            boundary.current.getBoundingClientRect(),
+            { ...viewport, left: fence.left, width: fence.width },
             viewport,
           )
         : viewport;
