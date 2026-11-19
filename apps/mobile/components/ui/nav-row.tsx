@@ -38,6 +38,8 @@ type NavRowProps = {
   tint?: BubbleTint;
   value?: string;
   disabled?: boolean;
+  /** The row acts where it is instead of opening a page: no chevron, and this hint says what it does. */
+  action?: string;
 };
 
 export function NavRow({
@@ -48,6 +50,7 @@ export function NavRow({
   tint = 'sand',
   value,
   disabled = false,
+  action,
 }: NavRowProps) {
   const tokens = useThemeTokens();
   return (
@@ -56,6 +59,7 @@ export function NavRow({
       onPress={onPress}
       disabled={disabled}
       accessibilityLabel={value ? `${title}, ${value}` : title}
+      accessibilityHint={action}
       accessibilityState={{ disabled }}
       className={`min-h-[66px] flex-row items-center gap-3.5 py-3 pl-[18px] pr-3 ${disabled ? 'opacity-50' : ''}`}
     >
@@ -88,11 +92,13 @@ export function NavRow({
           {value}
         </Text>
       ) : null}
-      <IconSymbol
-        name="chevron-right"
-        size={20}
-        color={tokens.muted}
-      />
+      {action ? null : (
+        <IconSymbol
+          name="chevron-right"
+          size={20}
+          color={tokens.muted}
+        />
+      )}
     </Press>
   );
 }

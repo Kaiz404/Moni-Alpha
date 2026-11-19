@@ -304,6 +304,7 @@ function DebtPage({
                 testID={tid('debts', 'settle')}
                 icon="check-all"
                 title={words.settle}
+                action={`Records ${money(balanceMinor)} paid back and settles the debt`}
                 onPress={() => void settle()}
               />
               {direction === 'owed_to_me' ? (

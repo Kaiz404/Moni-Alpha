@@ -743,3 +743,14 @@ describe('a toast on a page with pinned actions', () => {
     expect(restsAt('On a page without a bar')).toBe(20);
   });
 });
+
+describe('the debt page rows that act in place', () => {
+  const chevrons = (testID: string) => screen.getByTestId(testID).findAll((node) => node.props.name === 'chevron-right').length;
+
+  it('Paid back in full has no chevron and says it records the rest', async () => {
+    await mount(`/debt/${id('debt', 'aiman')}`, { profile: 'full', theme: 'light' });
+    const settleRow = screen.getByTestId(tid('debts', 'settle'));
+    expect(settleRow.props.accessibilityHint).toBe('Records RM150.00 paid back and settles the debt');
+    expect(chevrons(tid('debts', 'settle'))).toBe(0);
+  });
+});
