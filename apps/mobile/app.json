@@ -78,6 +78,7 @@
           "color": "#236B47"
         }
       ],
+      "./plugins/with-notification-large-icon",
       "expo-speech-recognition",
       [
         "expo-camera",

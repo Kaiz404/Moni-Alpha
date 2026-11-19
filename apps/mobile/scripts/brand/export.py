@@ -111,6 +111,8 @@ def masters():
         'splash-icon.svg': inset(1024, 0.56, paper_cat),
         # A 24 dp small icon draws inside a 20 dp live area.
         'notification-icon.svg': inset(96, 20 / 24, white),
+        # The full-colour tile Android shows beside a notification's text.
+        'notification-large-icon.svg': svg((0, 0, 240, 240), tile('neutral'), 256),
         'favicon.svg': rounded.replace('viewBox="0 0 240 240"', 'viewBox="0 0 240 240" width="48" height="48"', 1),
     }
 

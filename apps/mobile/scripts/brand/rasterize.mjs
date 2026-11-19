@@ -19,6 +19,7 @@ const ASSETS = [
   ['adaptive-icon-monochrome', 1024],
   ['splash-icon', 1024],
   ['notification-icon', 96],
+  ['notification-large-icon', 256],
   ['favicon', 48],
 ];
 
