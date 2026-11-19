@@ -296,14 +296,21 @@ async function stubQr(context) {
   );
 }
 
+// Parallel slots sign in at once, and Supabase rate-limits password sign-ins, so a refusal waits and retries.
 async function userToken() {
-  const res = await fetch(`${supabaseUrl}/auth/v1/token?grant_type=password`, {
-    method: 'POST',
-    headers: { apikey: publishable, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email: env.email, password: env.password }),
-  });
-  const json = await res.json();
-  return json.access_token;
+  let last;
+  for (let attempt = 0; attempt < 6; attempt++) {
+    const res = await fetch(`${supabaseUrl}/auth/v1/token?grant_type=password`, {
+      method: 'POST',
+      headers: { apikey: publishable, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: env.email, password: env.password }),
+    });
+    const json = await res.json().catch(() => ({}));
+    if (json.access_token) return json.access_token;
+    last = `${res.status} ${json.error_code ?? json.msg ?? json.error ?? ''}`;
+    await new Promise((r) => setTimeout(r, 2000 * 2 ** attempt));
+  }
+  throw new Error(`the e2e user could not sign in: ${last}`);
 }
 
 async function approve(token, code, step) {
