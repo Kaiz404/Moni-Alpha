@@ -253,6 +253,23 @@ export async function driveLedgerScreens({ browser, storage, base, check, shot, 
   await paneSeam.press('Enter');
   await a.waitForTimeout(500);
   check('Enter on the edge puts the pane back to 380', Math.round((await paneBox()).width) === 380, await paneBox());
+  // Stored wider than half the window: the edge reads and drags from the width that shows.
+  await paneSeam.press('End');
+  await a.setViewportSize({ width: 1380, height: 900 });
+  await a.waitForTimeout(500);
+  const capped = Math.round((await paneBox()).width);
+  const now = Number(await paneSeam.getAttribute('aria-valuenow'));
+  const edge = await paneSeam.boundingBox();
+  await a.mouse.move(edge.x + edge.width / 2, edge.y + edge.height / 2);
+  await a.mouse.down();
+  await a.mouse.move(edge.x + edge.width / 2 + 20, edge.y + edge.height / 2, { steps: 4 });
+  await a.mouse.up();
+  await a.waitForTimeout(500);
+  const narrower = Math.round((await paneBox()).width);
+  check('a pane stored past half the window reads the width that shows and the first 20 px of drag narrow it', capped === 690 && now === 690 && narrower === 670, { capped, now, narrower });
+  await paneSeam.press('Enter');
+  await a.setViewportSize({ width: 1440, height: 900 });
+  await a.waitForTimeout(500);
   await settle(a);
   await shot(a, 'activity-1440-pane');
   await pair('activity-pane-1440', 'r2/W2-Activity.png', join(OUT, 'activity-1440-pane.png'));

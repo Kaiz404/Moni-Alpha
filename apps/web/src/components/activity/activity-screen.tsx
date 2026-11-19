@@ -561,6 +561,7 @@ export function ActivityScreen() {
                             span={COLUMN_SPANS[sortKey]}
                             value={columns[sortKey] ?? COLUMN_SPANS[sortKey].initial}
                             grows="right"
+                            sizes="parent"
                             onChange={(width) => resizeColumn(sortKey, width)}
                             className="col-resize"
                           />

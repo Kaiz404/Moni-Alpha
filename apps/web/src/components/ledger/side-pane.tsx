@@ -102,7 +102,7 @@ export function SidePane({
       >
         <KeysAsleep.Provider value={closing}>{open ? children : kept.current}</KeysAsleep.Provider>
       </aside>
-      {open && <ResizeHandle label={`Resize the ${label.toLowerCase()} pane`} span={span} value={width} grows="left" onChange={setWidth} className="side-pane-resize" />}
+      {open && <ResizeHandle label={`Resize the ${label.toLowerCase()} pane`} span={span} value={width} grows="left" sizes="previous" onChange={setWidth} className="side-pane-resize" />}
     </>
   );
 }

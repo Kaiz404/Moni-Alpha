@@ -242,7 +242,7 @@ export function ChatPane() {
       </form>
       {chatAsk && <ConsentDialog use="chat" onTurnOn={() => void turnOnAndAnswer(from)} onNotNow={() => void notNowForChat()} />}
     </aside>
-    <ResizeHandle label="Resize Moni chat" span={PANE_SPANS.chat} value={width} grows="left" onChange={setWidth} className="pane-resize" />
+    <ResizeHandle label="Resize Moni chat" span={PANE_SPANS.chat} value={width} grows="left" sizes="previous" onChange={setWidth} className="pane-resize" />
     </>
   );
 }
