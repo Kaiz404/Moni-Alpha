@@ -140,7 +140,8 @@ maestro test --device "$MONI_DEVICE_SERIAL" --no-reinstall-driver "${include[@]}
   -e "E2E_EMAIL=$email" -e "E2E_PASSWORD=$password" "${paths[@]}" >"$run/maestro.log" 2>&1 || rc=$?
 tail -n 20 "$run/maestro.log" >&2
 kill "$poller" 2>/dev/null || true
-adb shell svc power stayon false >/dev/null 2>&1 || true
+# A caller running many areas (parity.sh) keeps the screen on across them and restores it itself.
+[[ -n ${MONI_KEEP_AWAKE:-} ]] || adb shell svc power stayon false >/dev/null 2>&1 || true
 pinned >>"$run/overlays.txt" || true
 sort -u -o "$run/overlays.txt" "$run/overlays.txt"
 if [[ -s $run/overlays.txt ]]; then

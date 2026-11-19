@@ -133,6 +133,12 @@ run_side() {
   fi
 }
 
+# Between areas the screen would time out and lock, and a locked phone fails every flow. Keep it on
+# for the whole run and put the owner's setting back at the end.
+export MONI_KEEP_AWAKE=1
+"$here/with-device.sh" --skip-doctor --lane parity-awake -- adb shell svc power stayon true >/dev/null 2>&1 || true
+trap '"$here/with-device.sh" --skip-doctor --lane parity-awake -- adb shell svc power stayon false >/dev/null 2>&1 || true' EXIT
+
 run_side base "$base"
 run_side head "$head"
 
