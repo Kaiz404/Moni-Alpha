@@ -47,6 +47,7 @@ Every UI or flow change, issue, or design decision covers all three records: the
 - When you file an issue, name the web screen and the canvas boards that show the same feature, or write that there is none.
 - When you change a flow or a rule on one, change the others in the same pass, or file a linked issue for what you could not change. Update `docs/REDESIGN.md` and `docs/WEB.md` (and `tokens.md`, `glossary.md`, `DESIGN_SYSTEM.md` where they state it) at the same time.
 - Report any difference you leave as an open item. Do not let one record drift silently.
+- In step means the same features, words, data and rules, not the same layout. The phone is the clean, minimal version. The web in landscape (the desktop dashboard) should fit in more: extra quick actions, inline actions where the phone pushes a page, more data side by side. Add these where the width helps, and record each one in `docs/WEB.md` ("Phone rules the web bends") and on its `W2-*` board. A phone simplification, such as #87 dropping the Coming up buttons, does not have to remove a web quick action, but say so in the issue. The web in portrait follows the phone.
 
 ## Product research
 
