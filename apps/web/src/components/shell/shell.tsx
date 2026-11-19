@@ -142,7 +142,7 @@ export function Shell({ user, children }: { user: ShellUser; children: ReactNode
         <Sidebar />
         <Rail />
         <main className="shell-main">
-          <div key={pathname} className="page-enter">
+          <div key={pathname.split('/')[1]} className="page-enter">
             {children}
           </div>
         </main>

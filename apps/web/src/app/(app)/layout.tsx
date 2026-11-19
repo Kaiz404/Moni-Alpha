@@ -20,11 +20,13 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
     .maybeSingle();
   const email = typeof data.claims.email === 'string' ? data.claims.email : '';
   const name = profile?.display_name?.trim() || email.split('@')[0] || 'You';
-  const currency = userPreferencesSchema.safeParse(profile?.preferences ?? {}).data?.currency ?? 'MYR';
+  const preferences = userPreferencesSchema.safeParse(profile?.preferences ?? {}).data;
+  const currency = preferences?.currency ?? 'MYR';
+  const zone = preferences?.finance_timezone ?? null;
 
   return (
     <Suspense>
-      <Shell user={{ name, initial: name.charAt(0).toUpperCase(), currency }}>
+      <Shell user={{ id: userId, name, initial: name.charAt(0).toUpperCase(), currency, zone }}>
         <StoreSync />
         {children}
       </Shell>

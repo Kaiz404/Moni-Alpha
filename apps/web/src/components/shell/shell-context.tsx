@@ -7,9 +7,12 @@ import type { ShortcutAction } from '@/lib/keys';
 export type ShellAction = CommandAction | ShortcutAction | { kind: 'account' } | { kind: 'closePane' };
 
 export type ShellUser = {
+  id: string;
   name: string;
   initial: string;
   currency: string;
+  /** The profile's finance timezone; null reads days in the browser's zone. */
+  zone: string | null;
 };
 
 export type Pane = 'chat' | 'add' | null;
