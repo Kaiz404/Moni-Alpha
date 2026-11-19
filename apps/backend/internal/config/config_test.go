@@ -1,6 +1,9 @@
 package config
 
-import "testing"
+import (
+	"slices"
+	"testing"
+)
 
 func TestPlacesCaps(t *testing.T) {
 	t.Setenv("SUPABASE_URL", "https://example.supabase.co")
@@ -29,5 +32,30 @@ func TestPlacesCaps(t *testing.T) {
 				}
 			})
 		}
+	}
+}
+
+func TestCORSAllowedOrigins(t *testing.T) {
+	t.Setenv("SUPABASE_URL", "https://example.supabase.co")
+	t.Setenv("OPENROUTER_API_KEY", "key")
+
+	cfg, err := Load()
+	if err != nil || cfg.CORSAllowedOrigins != nil {
+		t.Fatalf("unset: %q, %v", cfg.CORSAllowedOrigins, err)
+	}
+
+	t.Setenv("CORS_ALLOWED_ORIGINS", " http://localhost:3000 , https://app.moni.test,")
+	cfg, err = Load()
+	if err != nil || !slices.Equal(cfg.CORSAllowedOrigins, []string{"http://localhost:3000", "https://app.moni.test"}) {
+		t.Fatalf("list: %q, %v", cfg.CORSAllowedOrigins, err)
+	}
+
+	for _, bad := range []string{"*", "https://*.moni.test", "app.moni.test", "https://app.moni.test/", "ftp://app.moni.test"} {
+		t.Run(bad, func(t *testing.T) {
+			t.Setenv("CORS_ALLOWED_ORIGINS", bad)
+			if _, err := Load(); err == nil {
+				t.Fatalf("accepted %q", bad)
+			}
+		})
 	}
 }

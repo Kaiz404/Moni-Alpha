@@ -65,7 +65,7 @@ func newLiveServer(t *testing.T) *testServer {
 		tracing.Reset()
 	})
 	return &testServer{
-		handler: newRouter(verifier, auth.NewRateLimiter(600, 100), auth.NewRateLimiter(6000, 1000), llm.NewClient(key, liveBaseURL()), noPlaces()),
+		handler: newRouter(verifier, auth.NewRateLimiter(600, 100), auth.NewRateLimiter(6000, 1000), llm.NewClient(key, liveBaseURL()), noPlaces(), nil),
 		token: func(sub string) string {
 			return authtest.SignToken(t, priv, sub, time.Now().Add(time.Hour))
 		},

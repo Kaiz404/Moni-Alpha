@@ -86,6 +86,7 @@ The e2e APK (`apps/mobile/scripts/device/build-apk.sh`), the e2e seed (`apps/mob
 NEXT_PUBLIC_SUPABASE_URL=https://<project-ref>.supabase.co
 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_...
 NEXT_PUBLIC_MONI_APP_SCHEME=moni   # what the sign-in QR opens; moni-e2e for the Moni E2E app
+NEXT_PUBLIC_AI_API_URL=            # the Go AI gateway; unset, the web has no AI
 ```
 
 The web app holds no secret key. CI's web build reads the `EXPO_PUBLIC_SUPABASE_*` repository variables as its `NEXT_PUBLIC_*` values.
@@ -104,7 +105,10 @@ LANGFUSE_PUBLIC_KEY=pk-lf-...        # optional; Langfuse project > Settings > A
 LANGFUSE_SECRET_KEY=sk-lf-...
 LANGFUSE_BASE_URL=https://jp.cloud.langfuse.com
 LANGFUSE_TRACING_ENVIRONMENT=development
+CORS_ALLOWED_ORIGINS=http://localhost:3000   # browser origins allowed to call it, comma-separated
 ```
+
+The web app calls the gateway from the browser, so its origin must be in `CORS_ALLOWED_ORIGINS`: `http://localhost:3000` locally, the Vercel domain in production. Each entry is an exact origin (`https://app.example.com`), with no path or wildcard; the backend refuses to start on anything else.
 
 ## WSL Android toolchain
 

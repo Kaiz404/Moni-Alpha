@@ -6,6 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/kaiz404/moni/backend/internal/auth"
 	"github.com/kaiz404/moni/backend/internal/chat"
+	"github.com/kaiz404/moni/backend/internal/cors"
 	"github.com/kaiz404/moni/backend/internal/extract"
 	"github.com/kaiz404/moni/backend/internal/llm"
 	"github.com/kaiz404/moni/backend/internal/places"
@@ -38,10 +39,10 @@ var traceNames = map[string]string{
 }
 
 // newRouter wires every route behind its middleware. main and the endpoint tests share it.
-func newRouter(verifier *auth.Verifier, limiter, ipLimiter *auth.RateLimiter, llmClient *llm.Client, placesHandler *places.Handler) *gin.Engine {
+func newRouter(verifier *auth.Verifier, limiter, ipLimiter *auth.RateLimiter, llmClient *llm.Client, placesHandler *places.Handler, allowedOrigins []string) *gin.Engine {
 	r := gin.New()
 	r.SetTrustedProxies(nil)
-	r.Use(gin.Recovery(), gin.Logger())
+	r.Use(gin.Recovery(), gin.Logger(), cors.Middleware(allowedOrigins))
 
 	health := func(c *gin.Context) {
 		authKeys := "loading"

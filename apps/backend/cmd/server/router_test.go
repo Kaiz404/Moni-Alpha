@@ -98,7 +98,7 @@ func newTestServer(t *testing.T, limiter *auth.RateLimiter, replies ...llmReply)
 		limiter = auth.NewRateLimiter(600, 100)
 	}
 	return &testServer{
-		handler: newRouter(verifier, limiter, auth.NewRateLimiter(6000, 1000), llm.NewClient("test-key", llmSrv.URL), noPlaces()),
+		handler: newRouter(verifier, limiter, auth.NewRateLimiter(6000, 1000), llm.NewClient("test-key", llmSrv.URL), noPlaces(), nil),
 		llm:     fake,
 		token: func(sub string) string {
 			return authtest.SignToken(t, priv, sub, time.Now().Add(time.Hour))
@@ -181,7 +181,7 @@ func TestRoutesWithTheJWKSUnreachable(t *testing.T) {
 	fake := &fakeLLM{}
 	llmSrv := httptest.NewServer(fake)
 	t.Cleanup(llmSrv.Close)
-	h := newRouter(verifier, auth.NewRateLimiter(600, 100), auth.NewRateLimiter(600, 100), llm.NewClient("test-key", llmSrv.URL), noPlaces())
+	h := newRouter(verifier, auth.NewRateLimiter(600, 100), auth.NewRateLimiter(600, 100), llm.NewClient("test-key", llmSrv.URL), noPlaces(), nil)
 	priv, _ := authtest.KeyAndJWKS(t)
 	token := authtest.SignToken(t, priv, "user-1", time.Now().Add(time.Hour))
 
@@ -556,7 +556,37 @@ func newLimitedServer(t *testing.T, user, ip *auth.RateLimiter) http.Handler {
 	if err != nil {
 		t.Fatal(err)
 	}
-	return newRouter(verifier, user, ip, llm.NewClient("test-key", "http://127.0.0.1:0"), noPlaces())
+	return newRouter(verifier, user, ip, llm.NewClient("test-key", "http://127.0.0.1:0"), noPlaces(), nil)
+}
+
+func TestTheWebOriginPassesPreflightBeforeAuth(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	gin.DefaultWriter = io.Discard
+	_, jwks := authtest.KeyAndJWKS(t)
+	verifier, err := auth.NewVerifier(context.Background(), jwks.URL)
+	if err != nil {
+		t.Fatal(err)
+	}
+	h := newRouter(verifier, auth.NewRateLimiter(600, 100), auth.NewRateLimiter(600, 100), llm.NewClient("test-key", "http://127.0.0.1:0"), noPlaces(), []string{"http://localhost:3000"})
+
+	for _, route := range v1Routes {
+		req := httptest.NewRequest(http.MethodOptions, route, nil)
+		req.Header.Set("Origin", "http://localhost:3000")
+		req.Header.Set("Access-Control-Request-Method", "POST")
+		rec := httptest.NewRecorder()
+		h.ServeHTTP(rec, req)
+		if rec.Code != http.StatusNoContent || rec.Header().Get("Access-Control-Allow-Origin") != "http://localhost:3000" {
+			t.Fatalf("preflight %s: got %d, allow-origin %q", route, rec.Code, rec.Header().Get("Access-Control-Allow-Origin"))
+		}
+	}
+
+	req := httptest.NewRequest(http.MethodPost, "/v1/extract/text", strings.NewReader(`{}`))
+	req.Header.Set("Origin", "http://localhost:3000")
+	rec := httptest.NewRecorder()
+	h.ServeHTTP(rec, req)
+	if rec.Code != http.StatusUnauthorized || rec.Header().Get("Access-Control-Allow-Origin") != "http://localhost:3000" {
+		t.Fatalf("unsigned call: got %d, allow-origin %q; the browser must be able to read the 401", rec.Code, rec.Header().Get("Access-Control-Allow-Origin"))
+	}
 }
 
 func TestOversizeBodyIs413(t *testing.T) {
